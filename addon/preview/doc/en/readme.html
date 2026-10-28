@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Eloquence C listening preview</title>
+<h1>Eloquence C listening preview</h1>
+<p>This experimental listening preview is not a general-purpose NVDA voice.
+Your existing NVDA synthesizer remains active.</p>
+<h2>Install and use</h2>
+<ol><li>In NVDA, open Tools, Add-on Store, Install from external source, and select
+the <code>.nvda-addon</code> file. Alternatively, open the file in Explorer while
+NVDA is running.</li><li>Confirm installation and restart NVDA. Your selected
+synthesizer is unchanged.</li><li>Press NVDA+Control+Shift+F11, enter text, and
+press Enter. NVDA+Control+Shift+F10 cancels preview playback.</li></ol>
+<p>Try these verified short texts, including punctuation:
+<strong>Pappe. Packen. Tappen.</strong> (pre-filled),
+<strong>Packte. Packten. Tippte. Kippte.</strong>,
+<strong>Pack Tipp.</strong>, <strong>Pack Pack.</strong>,
+<strong>Papp Tipp.</strong>, <strong>Pack Tipp. Hack Tipp.</strong>,
+<strong>Pass.</strong>, <strong>Tiss.</strong>, <strong>Kuss.</strong>,
+<strong>Bett.</strong>, <strong>Deck.</strong>, <strong>Guck.</strong>,
+<strong>Bad.</strong>, <strong>Mett.</strong>, <strong>Mut.</strong>,
+<strong>Nock.</strong>, <strong>Not.</strong>. A final <strong>Mett</strong> or
+<strong>Bett</strong> also works without a period. Your existing NVDA voice
+reports whether an unknown spelling or a missing acoustic model prevented
+speech.</p>
+<p>The C port currently covers only a small set of short German utterances at
+11,025 Hz. NVDA must run as a 64-bit process capable of loading the included
+x64 DLL, such as x64 NVDA or ARM64EC NVDA on Windows ARM. The
+preview does not support 32-bit or pure ARM64 NVDA. It reports Windows loader
+details if the DLL cannot be loaded. The user confirmed that the previous
+preview loaded in ARM64EC NVDA; this updated build still needs a listening
+test. The package contains neither Apple nor OpenEVV binaries.</p>
+</html>

@@ -1,0 +1,47 @@
+{
+  "retrieved": "2026-10-11",
+  "source": "https://github.com/nvaccess/nvda",
+  "files": [
+    {
+      "path": "baseObject.py",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/master/source/baseObject.py",
+      "sha256": "9949f0719494e7242ed30dd944ffa6077338a98179e9cac77eace6fcb03ee64b"
+    },
+    {
+      "path": "autoSettingsUtils/driverSetting.py",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/master/source/autoSettingsUtils/driverSetting.py",
+      "sha256": "5bf81460ad2dedb0b37ba0cc942bd74102ddc1f6307e1996b3356aad84ad6ec0"
+    },
+    {
+      "path": "autoSettingsUtils/utils.py",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/master/source/autoSettingsUtils/utils.py",
+      "sha256": "6720295bd8445b6c53fc5cf07de8dcaf488368f33be744bc082d778834479df9"
+    },
+    {
+      "path": "autoSettingsUtils/autoSettings.py",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/master/source/autoSettingsUtils/autoSettings.py",
+      "sha256": "aff321a295d8deed79af8208067f07e6fad9ec26700a01d3cac670880101c823"
+    },
+    {
+      "path": "synthDriverHandler.py",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/master/source/synthDriverHandler.py",
+      "sha256": "7455c370237521d7b084964886168a2bd98bf36ba65e6c84b3186790d947b9f0"
+    },
+    {
+      "path": "speech/commands.py",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/master/source/speech/commands.py",
+      "sha256": "65cd34df452b5bfce4e0699180cc77b94cd6d6ae419b81af443e0763c73d9bd2"
+    },
+    {
+      "path": "gui/settingsDialogs.py",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/master/source/gui/settingsDialogs.py",
+      "sha256": "e086fb10b6cbb81d4ff54f8a6a013557308add9eed2a626c1d795d327b13b3a3"
+    },
+    {
+      "path": "config/__init__.py",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/master/source/config/__init__.py",
+      "retrieved": "2026-10-23",
+      "sha256": "c78c32e886c28e51a4ae10cbd5929db8759f121c8aacc7644b1c124e4f3e2c6d"
+    }
+  ]
+}

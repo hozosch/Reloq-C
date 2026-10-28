@@ -1,0 +1,96 @@
+{"id": "compound_001", "category": "compound_positive", "text": "Tonqualität", "left": "Ton", "right": "qualität", "joiner": ""}
+{"id": "compound_002", "category": "compound_positive", "text": "Klangqualität", "left": "Klang", "right": "qualität", "joiner": ""}
+{"id": "compound_003", "category": "compound_positive", "text": "Bildqualität", "left": "Bild", "right": "qualität", "joiner": ""}
+{"id": "compound_004", "category": "compound_positive", "text": "Sprachqualität", "left": "Sprach", "right": "qualität", "joiner": ""}
+{"id": "compound_005", "category": "compound_positive", "text": "Stimmqualität", "left": "Stimm", "right": "qualität", "joiner": ""}
+{"id": "compound_006", "category": "compound_positive", "text": "Lebensqualität", "left": "Leben", "right": "qualität", "joiner": "s"}
+{"id": "compound_007", "category": "compound_positive", "text": "Schlafqualität", "left": "Schlaf", "right": "qualität", "joiner": ""}
+{"id": "compound_008", "category": "compound_positive", "text": "Tonaufnahme", "left": "Ton", "right": "aufnahme", "joiner": ""}
+{"id": "compound_009", "category": "compound_positive", "text": "Sprachaufnahme", "left": "Sprach", "right": "aufnahme", "joiner": ""}
+{"id": "compound_010", "category": "compound_positive", "text": "Bildaufnahme", "left": "Bild", "right": "aufnahme", "joiner": ""}
+{"id": "compound_011", "category": "compound_positive", "text": "Videoaufnahme", "left": "Video", "right": "aufnahme", "joiner": ""}
+{"id": "compound_012", "category": "compound_positive", "text": "Filmaufnahme", "left": "Film", "right": "aufnahme", "joiner": ""}
+{"id": "compound_013", "category": "compound_positive", "text": "Musikaufnahme", "left": "Musik", "right": "aufnahme", "joiner": ""}
+{"id": "compound_014", "category": "compound_positive", "text": "Datenaufnahme", "left": "Daten", "right": "aufnahme", "joiner": ""}
+{"id": "compound_015", "category": "compound_positive", "text": "Sprachausgabe", "left": "Sprach", "right": "ausgabe", "joiner": ""}
+{"id": "compound_016", "category": "compound_positive", "text": "Textausgabe", "left": "Text", "right": "ausgabe", "joiner": ""}
+{"id": "compound_017", "category": "compound_positive", "text": "Bildausgabe", "left": "Bild", "right": "ausgabe", "joiner": ""}
+{"id": "compound_018", "category": "compound_positive", "text": "Tonausgabe", "left": "Ton", "right": "ausgabe", "joiner": ""}
+{"id": "compound_019", "category": "compound_positive", "text": "Datenausgabe", "left": "Daten", "right": "ausgabe", "joiner": ""}
+{"id": "compound_020", "category": "compound_positive", "text": "Tonfarbe", "left": "Ton", "right": "farbe", "joiner": ""}
+{"id": "compound_021", "category": "compound_positive", "text": "Klangfarbe", "left": "Klang", "right": "farbe", "joiner": ""}
+{"id": "compound_022", "category": "compound_positive", "text": "Lichtfarbe", "left": "Licht", "right": "farbe", "joiner": ""}
+{"id": "compound_023", "category": "compound_positive", "text": "Haarfarbe", "left": "Haar", "right": "farbe", "joiner": ""}
+{"id": "compound_024", "category": "compound_positive", "text": "Wasserfarbe", "left": "Wasser", "right": "farbe", "joiner": ""}
+{"id": "compound_025", "category": "compound_positive", "text": "Tonhöhe", "left": "Ton", "right": "höhe", "joiner": ""}
+{"id": "compound_026", "category": "compound_positive", "text": "Raumhöhe", "left": "Raum", "right": "höhe", "joiner": ""}
+{"id": "compound_027", "category": "compound_positive", "text": "Wortliste", "left": "Wort", "right": "liste", "joiner": ""}
+{"id": "compound_028", "category": "compound_positive", "text": "Dateiliste", "left": "Datei", "right": "liste", "joiner": ""}
+{"id": "compound_029", "category": "compound_positive", "text": "Kontaktliste", "left": "Kontakt", "right": "liste", "joiner": ""}
+{"id": "compound_030", "category": "compound_positive", "text": "Paketliste", "left": "Paket", "right": "liste", "joiner": ""}
+{"id": "compound_031", "category": "compound_positive", "text": "Gästeliste", "left": "Gäste", "right": "liste", "joiner": ""}
+{"id": "compound_032", "category": "compound_positive", "text": "Hausnummer", "left": "Haus", "right": "nummer", "joiner": ""}
+{"id": "compound_033", "category": "compound_positive", "text": "Zugnummer", "left": "Zug", "right": "nummer", "joiner": ""}
+{"id": "compound_034", "category": "compound_positive", "text": "Paketnummer", "left": "Paket", "right": "nummer", "joiner": ""}
+{"id": "compound_035", "category": "compound_positive", "text": "Telefonnummer", "left": "Telefon", "right": "nummer", "joiner": ""}
+{"id": "compound_036", "category": "compound_positive", "text": "Seitennummer", "left": "Seiten", "right": "nummer", "joiner": ""}
+{"id": "compound_037", "category": "compound_positive", "text": "Reisezeit", "left": "Reise", "right": "zeit", "joiner": ""}
+{"id": "compound_038", "category": "compound_positive", "text": "Antwortzeit", "left": "Antwort", "right": "zeit", "joiner": ""}
+{"id": "compound_039", "category": "compound_positive", "text": "Nachtzeit", "left": "Nacht", "right": "zeit", "joiner": ""}
+{"id": "compound_040", "category": "compound_positive", "text": "Sommerzeit", "left": "Sommer", "right": "zeit", "joiner": ""}
+{"id": "compound_041", "category": "compound_positive", "text": "Kaffeepause", "left": "Kaffee", "right": "pause", "joiner": ""}
+{"id": "compound_042", "category": "compound_positive", "text": "Lernpause", "left": "Lern", "right": "pause", "joiner": ""}
+{"id": "compound_043", "category": "compound_positive", "text": "Schlafpause", "left": "Schlaf", "right": "pause", "joiner": ""}
+{"id": "compound_044", "category": "compound_positive", "text": "Wetterbericht", "left": "Wetter", "right": "bericht", "joiner": ""}
+{"id": "compound_045", "category": "compound_positive", "text": "Reisebericht", "left": "Reise", "right": "bericht", "joiner": ""}
+{"id": "compound_046", "category": "compound_positive", "text": "Unfallbericht", "left": "Unfall", "right": "bericht", "joiner": ""}
+{"id": "compound_047", "category": "compound_positive", "text": "Testbericht", "left": "Test", "right": "bericht", "joiner": ""}
+{"id": "compound_048", "category": "compound_positive", "text": "Bildbericht", "left": "Bild", "right": "bericht", "joiner": ""}
+{"id": "compound_049", "category": "compound_positive", "text": "Wetterkarte", "left": "Wetter", "right": "karte", "joiner": ""}
+{"id": "compound_050", "category": "compound_positive", "text": "Fahrkarte", "left": "Fahr", "right": "karte", "joiner": ""}
+{"id": "compound_051", "category": "compound_positive", "text": "Stadtkarte", "left": "Stadt", "right": "karte", "joiner": ""}
+{"id": "compound_052", "category": "compound_positive", "text": "Landkarte", "left": "Land", "right": "karte", "joiner": ""}
+{"id": "compound_053", "category": "compound_positive", "text": "Kreditkarte", "left": "Kredit", "right": "karte", "joiner": ""}
+{"id": "compound_054", "category": "compound_positive", "text": "Textfenster", "left": "Text", "right": "fenster", "joiner": ""}
+{"id": "compound_055", "category": "compound_positive", "text": "Browserfenster", "left": "Browser", "right": "fenster", "joiner": ""}
+{"id": "compound_056", "category": "compound_positive", "text": "Programmfenster", "left": "Programm", "right": "fenster", "joiner": ""}
+{"id": "compound_057", "category": "compound_positive", "text": "Dialogfenster", "left": "Dialog", "right": "fenster", "joiner": ""}
+{"id": "compound_058", "category": "compound_positive", "text": "Textdatei", "left": "Text", "right": "datei", "joiner": ""}
+{"id": "compound_059", "category": "compound_positive", "text": "Bilddatei", "left": "Bild", "right": "datei", "joiner": ""}
+{"id": "compound_060", "category": "compound_positive", "text": "Audiodatei", "left": "Audio", "right": "datei", "joiner": ""}
+{"id": "compound_061", "category": "compound_positive", "text": "Tondatei", "left": "Ton", "right": "datei", "joiner": ""}
+{"id": "compound_062", "category": "compound_positive", "text": "Sprachdatei", "left": "Sprach", "right": "datei", "joiner": ""}
+{"id": "compound_063", "category": "compound_positive", "text": "Musikdatei", "left": "Musik", "right": "datei", "joiner": ""}
+{"id": "compound_064", "category": "compound_positive", "text": "Textfeld", "left": "Text", "right": "feld", "joiner": ""}
+{"id": "compound_065", "category": "compound_positive", "text": "Suchfeld", "left": "Such", "right": "feld", "joiner": ""}
+{"id": "compound_066", "category": "compound_positive", "text": "Passwortfeld", "left": "Passwort", "right": "feld", "joiner": ""}
+{"id": "compound_067", "category": "compound_positive", "text": "Eingabefeld", "left": "Eingabe", "right": "feld", "joiner": ""}
+{"id": "compound_068", "category": "compound_positive", "text": "Zahlenfeld", "left": "Zahlen", "right": "feld", "joiner": ""}
+{"id": "compound_069", "category": "compound_positive", "text": "Satzanfang", "left": "Satz", "right": "anfang", "joiner": ""}
+{"id": "compound_070", "category": "compound_positive", "text": "Wortanfang", "left": "Wort", "right": "anfang", "joiner": ""}
+{"id": "compound_071", "category": "compound_positive", "text": "Textanfang", "left": "Text", "right": "anfang", "joiner": ""}
+{"id": "compound_072", "category": "compound_positive", "text": "Filmanfang", "left": "Film", "right": "anfang", "joiner": ""}
+{"id": "compound_073", "category": "compound_positive", "text": "Satzende", "left": "Satz", "right": "ende", "joiner": ""}
+{"id": "compound_074", "category": "compound_positive", "text": "Wortende", "left": "Wort", "right": "ende", "joiner": ""}
+{"id": "compound_075", "category": "compound_positive", "text": "Textende", "left": "Text", "right": "ende", "joiner": ""}
+{"id": "compound_076", "category": "compound_positive", "text": "Filmende", "left": "Film", "right": "ende", "joiner": ""}
+{"id": "compound_077", "category": "compound_positive", "text": "Arbeitszeit", "left": "Arbeit", "right": "zeit", "joiner": "s"}
+{"id": "compound_078", "category": "compound_positive", "text": "Einkaufsliste", "left": "Einkauf", "right": "liste", "joiner": "s"}
+{"id": "compound_079", "category": "compound_positive", "text": "Mittagspause", "left": "Mittag", "right": "pause", "joiner": "s"}
+{"id": "compound_080", "category": "compound_positive", "text": "Geburtstag", "left": "Geburt", "right": "tag", "joiner": "s"}
+{"id": "negative_internet", "category": "compound_negative", "text": "Internet"}
+{"id": "negative_außerdem", "category": "compound_negative", "text": "Außerdem"}
+{"id": "negative_praktikum", "category": "compound_negative", "text": "Praktikum"}
+{"id": "negative_status", "category": "compound_negative", "text": "Status"}
+{"id": "negative_bevorzugen", "category": "compound_negative", "text": "bevorzugen"}
+{"id": "negative_aufgabe", "category": "compound_negative", "text": "Aufgabe"}
+{"id": "negative_zusage", "category": "compound_negative", "text": "Zusage"}
+{"id": "negative_aussage", "category": "compound_negative", "text": "Aussage"}
+{"id": "negative_angabe", "category": "compound_negative", "text": "Angabe"}
+{"id": "negative_unterricht", "category": "compound_negative", "text": "Unterricht"}
+{"id": "negative_bildung", "category": "compound_negative", "text": "Bildung"}
+{"id": "negative_verstand", "category": "compound_negative", "text": "Verstand"}
+{"id": "negative_widerstand", "category": "compound_negative", "text": "Widerstand"}
+{"id": "negative_anlage", "category": "compound_negative", "text": "Anlage"}
+{"id": "negative_vortrag", "category": "compound_negative", "text": "Vortrag"}
+{"id": "negative_tatsache", "category": "compound_negative", "text": "Tatsache"}

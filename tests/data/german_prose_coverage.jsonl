@@ -1,0 +1,30 @@
+{"id": "dede_compound", "source": "user_capture", "text": "Die Sprachausgabe ist klar."}
+{"id": "dede_loanword", "source": "user_capture", "text": "Peter packt Pakete und trinkt Kaffee."}
+{"id": "dede_umlauts", "source": "user_capture", "text": "Öl, Übung, Bär und Fuß."}
+{"id": "dede_compounds", "source": "user_capture", "text": "Die Nachricht kommt aus der Sprachausgabe."}
+{"id": "dede_ch_words", "source": "user_capture", "text": "Sprache, Bach, machen, Kuchen."}
+{"id": "dede_numerals", "source": "user_capture", "text": "Am 11. Oktober um 16 Uhr."}
+{"id": "dede_abbreviations", "source": "user_capture", "text": "Zum Beispiel heißt das z. B. so."}
+{"id": "dede_paren_phrase", "source": "user_capture", "text": "Er sagte (ganz leise), dass es fertig war."}
+{"id": "dede_paren_spaced", "source": "user_capture", "text": "Er sagte ( ganz leise ), dass es fertig war."}
+{"id": "dede_square_phrase", "source": "user_capture", "text": "Die Notiz [Entwurf] liegt hier."}
+{"id": "dede_comma_phrase", "source": "user_capture", "text": "Hallo, Welt."}
+{"id": "dede_stress_unsere", "source": "user_capture", "text": "unsere"}
+{"id": "dede_stress_unser_control", "source": "user_capture", "text": "unser"}
+{"id": "dede_stress_internet", "source": "user_capture", "text": "Internet"}
+{"id": "dede_stress_ausserdem", "source": "user_capture", "text": "außerdem"}
+{"id": "dede_stress_bevorzugen", "source": "user_capture", "text": "bevorzugen"}
+{"id": "dede_stress_praktikum", "source": "user_capture", "text": "Praktikum"}
+{"id": "dede_stress_wasser_control", "source": "user_capture", "text": "Wasser"}
+{"id": "dede_stress_sentence", "source": "user_capture", "text": "Unser Praktikum im Internet bevorzugen wir außerdem."}
+{"id": "plain_dede_01", "source": "general_prose_fixture", "text": "Hallo. Hier spricht der Eloquence Sprachsynthesizer."}
+{"id": "plain_dede_02", "source": "general_prose_fixture", "text": "Dr. Schmidt zahlte 1.234,56 Euro am 3. Mai 2026 um 19:45 Uhr."}
+{"id": "plain_dede_03", "source": "general_prose_fixture", "text": "Der schnelle braune Fuchs springt ueber den faulen Hund; z.B. www.beispiel.de/pfad?q=1"}
+{"id": "plain_dede_04", "source": "general_prose_fixture", "text": "Test 1 2 3, ABC XYZ, Bindestrich-Woerter und GROSSBUCHSTABEN."}
+{"id": "plain_dede_05", "source": "general_prose_fixture", "text": "Ein Wort. Und noch eins; dazu \"zitierter Text\" mittendrin."}
+{"id": "plain_dede_06", "source": "general_prose_fixture", "text": "Rechtschreibpruefung, Donaudampfschifffahrt, 42% von 3,14159, und Herr Mueller-Lued Jr."}
+{"id": "plain_dede_07", "source": "general_prose_fixture", "text": "Er sagte: nicht doch! Dann (nebenbei) 1/2 + 3/4 = 5/4; siehe S. 12."}
+{"id": "control_mett", "source": "calibration", "text": "Mett"}
+{"id": "control_bett", "source": "calibration", "text": "Bett"}
+{"id": "control_pack", "source": "calibration", "text": "Pack."}
+{"id": "control_connected", "source": "calibration", "text": "Papp Tipp."}

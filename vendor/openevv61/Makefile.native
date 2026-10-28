@@ -1,0 +1,60 @@
+.DELETE_ON_ERROR:
+# ReLoq private native-C rule provider. No bytecode or interpreter build.
+CC ?= cc
+AR ?= ar
+OPT ?= -O2
+RULE_OPT ?= -O2
+BUILD ?= build/native
+PORT ?= posix
+DIRS := rom/jajp rom/cjk rom/greek src $(patsubst %/,%,$(wildcard src/*/ src/*/*/))
+LANGUAGES := enus61 dede61 ptbr fifi engb61 eses61 esmx61 frfr61 frca61 itit61 jajp61 kokr61 zhcn61 zhtw61 elgr61
+INCLUDES := -Iinclude -I../../include $(addprefix -I,$(DIRS)) $(addprefix -Ilang/,$(LANGUAGES))
+SOURCES := $(filter-out src/port/port_$(if $(filter win32,$(PORT)),posix,win32).c,$(foreach d,$(DIRS),$(wildcard $(d)/*.c)))
+SOURCES += $(foreach lang,$(LANGUAGES),$(wildcard lang/$(lang)/*.c))
+OBJECTS := $(patsubst %.c,$(BUILD)/%.o,$(SOURCES))
+OBJECTS += $(BUILD)/reloq_voice_filter.o
+OBJECTS += $(BUILD)/reloq_orthography.o
+OBJECTS += $(BUILD)/reloq_german_word_edges.o
+OBJECTS += $(BUILD)/reloq_english_word_edges.o
+HEADERS := $(foreach d,$(DIRS),$(wildcard $(d)/*.h)) $(wildcard include/*.h) $(foreach lang,$(LANGUAGES),$(wildcard lang/$(lang)/*.h))
+HEADERS += ../../include/reloq_voice_filter.h
+HEADERS += ../../include/reloq_voice_controls.h
+CFLAGS_NATIVE := $(OPT) $(if $(filter posix,$(PORT)),-fPIC) -std=gnu11 -fno-strict-aliasing -ffp-contract=off -fvisibility=hidden -ffunction-sections -fdata-sections -MMD -MP -DEVV_ARENA=1 -DEVV_NO_BYTECODE -DEVV_ROM_JAJP $(INCLUDES)
+.PHONY: all clean
+all: $(BUILD)/libreloq61.a
+probe: $(BUILD)/reloq61-probe
+$(BUILD)/reloq61-probe: tools/reloq61_probe.c $(BUILD)/libreloq61.a
+	$(CC) $(OPT) -Iinclude $< $(BUILD)/libreloq61.a -pthread -Wl,--gc-sections -lm -o $@
+# Keep shared authored boundaries in the release LTO unit. Input layouts,
+# scalar callbacks and short projection readers can inline into the language
+# callers just like the already-native record primitives.
+INLINE_SOURCES := lang/% src/delta/% src/reloq61_acoustic_output.c src/reloq61_spr_output.c src/reloq61_input_counts.c src/reloq61_record_readers.c src/reloq61_segment_rules.c
+$(BUILD)/src/reloq61_acoustic_output.o $(BUILD)/src/reloq61_spr_output.o $(BUILD)/src/reloq61_input_counts.o: Makefile.native
+$(BUILD)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(if $(filter $(INLINE_SOURCES),$<),$(CFLAGS_NATIVE),$(filter-out -flto%,$(CFLAGS_NATIVE))) $(if $(filter lang/%,$<),$(RULE_OPT)) -c $< -o $@
+$(BUILD)/reloq_voice_filter.o: ../../src/reloq_voice_filter.c ../../include/reloq_voice_filter.h
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS_NATIVE) -c $< -o $@
+$(BUILD)/reloq_orthography.o: ../../src/reloq_orthography.c ../../include/reloq_orthography.h
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS_NATIVE) -c $< -o $@
+$(BUILD)/src/reloq61_orthography.o: src/reloq61_german_alphabet.inc ../../include/reloq_orthography.h
+$(BUILD)/reloq_german_word_edges.o: ../../src/reloq_german_word_edges.c ../../include/reloq_german_word_edges.h
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS_NATIVE) -c $< -o $@
+$(BUILD)/src/reloq61_word_edges.o: src/reloq61_german_alphabet.inc ../../include/reloq_german_word_edges.h
+$(BUILD)/lang/enus61/text_rules_enus61.o $(BUILD)/lang/dede61/text_rules_dede61.o: src/reloq61_text_case.inc
+$(BUILD)/reloq_english_word_edges.o: ../../src/reloq_english_word_edges.c ../../include/reloq_english_word_edges.h
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS_NATIVE) -c $< -o $@
+$(BUILD)/src/reloq61_english_word_edges.o: src/reloq61_english_alphabet.inc ../../include/reloq_english_word_edges.h
+$(BUILD)/rom/cjk/reloq_cjk_romanizer.o: rom/cjk/reloq_cjk_data.inc rom/cjk/reloq_korean_extra.inc
+$(BUILD)/rom/greek/reloq_greek.o: rom/greek/reloq_greek_letters.inc rom/greek/reloq_greek_character_accents.inc ../../include/reloq_inline_tags.h
+$(BUILD)/lang/elgr61/character_rules_elgr61.o: lang/elgr61/greek_character_names.inc
+$(BUILD)/libreloq61.a: $(OBJECTS)
+	rm -f $@
+	$(AR) rcs $@ $(OBJECTS)
+clean:
+	rm -rf $(BUILD)
+-include $(OBJECTS:.o=.d)

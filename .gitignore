@@ -1,0 +1,13 @@
+**/__pycache__/
+*.pyc
+*.o
+*.a
+*.so
+*.dll
+*.exe
+/eci/build/
+/vendor/openevv61/build/
+/dist/
+*.wav
+*.pcm
+*.s16

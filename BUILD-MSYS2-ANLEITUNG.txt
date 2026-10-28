@@ -1,0 +1,22 @@
+ReLoq C 0.2.28 – DLL und Wörterbuch unter Windows bauen
+
+1. Quellordner entpacken, z.B. C:\reloq-c. In diesem Ordner
+   build-msys2.cmd mit Enter starten (oder im Windows-Terminal ausführen).
+2. Benötigt: MSYS2 UCRT64 oder MINGW64 mit gcc, binutils, make und Python.
+   Die Batch-Datei sucht C:\msys64 und C:\msys2; bei anderem Ort
+   MSYS2_ROOT in build-msys2.cmd anpassen.
+3. Bei Erfolg liegen in dist\replacement-files zwei Dateien:
+   eci.dll
+   german_apple_observed.rlex
+4. Diese in der installierten NVDA-Erweiterung in
+   synthDrivers\reloqC\ ersetzen und NVDA neu starten.
+   Vor dem Austausch bitte den bisherigen Addon-Ordner sichern.
+   Die Datei german_apple_observed.rlex enthält das zusammengeführte
+   deutsche Wörterbuch (erwartet 16208 Einträge).
+5. Der Treiber selbst wird NICHT geändert. Beide Dateien sind für
+   ReLoq C 0.2.28 und Windows x64 gebaut. Keine ARM64-DLL.
+
+Hinweis: Das Paket wurde hier auf die Ausgabeform und die identische
+Wörterbuchkombination gegen das vorhandene 0.2.28-Addon geprüft. Ein
+Windows-/MSYS2-Kompiliertest konnte in dieser Linux-Umgebung nicht
+stattfinden.

@@ -1,0 +1,92 @@
+{"id":"everyday_01","category":"everyday","text":"Der Zug fährt heute pünktlich ab."}
+{"id":"everyday_02","category":"everyday","text":"Ich warte noch auf eine Antwort."}
+{"id":"everyday_03","category":"everyday","text":"Am Morgen öffnet die Bäckerei wieder."}
+{"id":"everyday_04","category":"everyday","text":"Wir treffen uns nach der Arbeit."}
+{"id":"everyday_05","category":"everyday","text":"Das kleine Kind schläft auf dem Sofa."}
+{"id":"everyday_06","category":"everyday","text":"Bitte bring die Tasche mit."}
+{"id":"everyday_07","category":"everyday","text":"Im Garten blühen schon die Blumen."}
+{"id":"everyday_08","category":"everyday","text":"Sie möchte heute länger bleiben."}
+{"id":"dialogue_01","category":"dialogue","text":"Wie spät ist es eigentlich?"}
+{"id":"dialogue_02","category":"dialogue","text":"Nein, das habe ich nicht gemeint."}
+{"id":"dialogue_03","category":"dialogue","text":"Kannst du mir das bitte erklären?"}
+{"id":"dialogue_04","category":"dialogue","text":"Natürlich, ich rufe dich später an."}
+{"id":"dialogue_05","category":"dialogue","text":"Warum steht das Fenster offen?"}
+{"id":"dialogue_06","category":"dialogue","text":"Vielleicht kommen sie erst morgen."}
+{"id":"dialogue_07","category":"dialogue","text":"Ja, wir haben den Brief erhalten."}
+{"id":"dialogue_08","category":"dialogue","text":"Kommst du mit oder bleibst du hier?"}
+{"id":"morphology_01","category":"morphology","text":"Die Kinder spielten gestern draußen."}
+{"id":"morphology_02","category":"morphology","text":"Er hat die Unterlagen bereits abgegeben."}
+{"id":"morphology_03","category":"morphology","text":"Wir müssen die Entscheidung überdenken."}
+{"id":"morphology_04","category":"morphology","text":"Sie fängt nach dem Essen wieder an."}
+{"id":"morphology_05","category":"morphology","text":"Der Fahrer hätte rechtzeitig bremsen können."}
+{"id":"morphology_06","category":"morphology","text":"Ich versuche, den Text vorzulesen."}
+{"id":"morphology_07","category":"morphology","text":"Die Arbeit wurde gestern fertiggestellt."}
+{"id":"morphology_08","category":"morphology","text":"Wir lernten viel aus dieser Erfahrung."}
+{"id":"compound_01","category":"compound","text":"Die Sprachausgabe liest den Bildschirm vor."}
+{"id":"compound_02","category":"compound","text":"Im Hauptbahnhof öffnet ein neues Café."}
+{"id":"compound_03","category":"compound","text":"Die Wettervorhersage meldet starken Regen."}
+{"id":"compound_04","category":"compound","text":"Der Paketdienst bringt die Bestellung morgen."}
+{"id":"compound_05","category":"compound","text":"Das Passwortfeld steht unter dem Benutzernamen."}
+{"id":"compound_06","category":"compound","text":"Am Freitagnachmittag beginnt die Besprechung."}
+{"id":"compound_07","category":"compound","text":"Die Straßenbahn hält an der Kreuzung."}
+{"id":"compound_08","category":"compound","text":"Das Wörterbuch enthält viele Fremdwörter."}
+{"id":"clusters_01","category":"clusters","text":"Peter packt die Pakete sorgfältig ein."}
+{"id":"clusters_02","category":"clusters","text":"Der Bäcker backt frisches Brot."}
+{"id":"clusters_03","category":"clusters","text":"Chris spricht über den nächsten Schritt."}
+{"id":"clusters_04","category":"clusters","text":"Der Arzt prüft den Bericht noch einmal."}
+{"id":"clusters_05","category":"clusters","text":"Klara schreibt den kurzen Satz auf."}
+{"id":"clusters_06","category":"clusters","text":"Die Gäste warten vor der Tür."}
+{"id":"clusters_07","category":"clusters","text":"Sie klappt das Buch zu und steht auf."}
+{"id":"clusters_08","category":"clusters","text":"Plötzlich springt der Hund zurück."}
+{"id":"punctuation_01","category":"punctuation","text":"Guten Morgen, Frau Müller!"}
+{"id":"punctuation_02","category":"punctuation","text":"Er sagt: Das stimmt so nicht."}
+{"id":"punctuation_03","category":"punctuation","text":"Bitte lesen Sie (falls nötig) den Hinweis."}
+{"id":"punctuation_04","category":"punctuation","text":"Heute ist es warm; morgen wird es kühler."}
+{"id":"punctuation_05","category":"punctuation","text":"Sie fragte: „Ist der Termin bestätigt?“"}
+{"id":"punctuation_06","category":"punctuation","text":"Das ist wichtig, aber noch nicht dringend."}
+{"id":"punctuation_07","category":"punctuation","text":"Der Eintrag [Entwurf] wurde gespeichert."}
+{"id":"punctuation_08","category":"punctuation","text":"Warte kurz ... jetzt geht es weiter."}
+{"id":"numbers_01","category":"numbers","text":"Der Termin ist am 8. Oktober 2026."}
+{"id":"numbers_02","category":"numbers","text":"Es kostet 12,50 Euro pro Stück."}
+{"id":"numbers_03","category":"numbers","text":"Um 14:30 Uhr beginnt die Sitzung."}
+{"id":"numbers_04","category":"numbers","text":"Bitte lies Seite 42 und Absatz 3."}
+{"id":"numbers_05","category":"numbers","text":"Der Zug fährt von Gleis 11 ab."}
+{"id":"numbers_06","category":"numbers","text":"Die Datei ist etwa 1.024 Kilobyte groß."}
+{"id":"numbers_07","category":"numbers","text":"Noch 25 % sind verfügbar."}
+{"id":"numbers_08","category":"numbers","text":"Die Temperatur liegt bei 16 Grad."}
+{"id":"ui_01","category":"ui","text":"Desktop, Liste. Google Chrome, geöffnet."}
+{"id":"ui_02","category":"ui","text":"Speichern unter, Dateiname, Eingabefeld."}
+{"id":"ui_03","category":"ui","text":"Die Einstellung wurde erfolgreich übernommen."}
+{"id":"ui_04","category":"ui","text":"Kontrollfeld, aktiviert, zum Umschalten Leertaste drücken."}
+{"id":"ui_05","category":"ui","text":"Es sind keine weiteren Suchergebnisse vorhanden."}
+{"id":"ui_06","category":"ui","text":"Menü Datei, neuer Tab, schließen."}
+{"id":"ui_07","category":"ui","text":"Die Verbindung wurde unterbrochen. Bitte erneut versuchen."}
+{"id":"ui_08","category":"ui","text":"Der Download ist abgeschlossen und kann geöffnet werden."}
+{"id":"loan_01","category":"loan_stress","text":"Das Internet funktioniert heute wieder."}
+{"id":"loan_02","category":"loan_stress","text":"Außerdem beginnt morgen mein Praktikum."}
+{"id":"loan_03","category":"loan_stress","text":"Der Status des Projekts bleibt offen."}
+{"id":"loan_04","category":"loan_stress","text":"Sie bevorzugen einen anderen Vorschlag."}
+{"id":"loan_05","category":"loan_stress","text":"Ein Update für das Programm ist verfügbar."}
+{"id":"loan_06","category":"loan_stress","text":"Die Präsentation beginnt nach dem Workshop."}
+{"id":"loan_07","category":"loan_stress","text":"Im Restaurant bestellte er einen Kaffee."}
+{"id":"loan_08","category":"loan_stress","text":"Bitte öffne die App im Browser."}
+{"id":"longer_01","category":"longer","text":"Nach dem Frühstück öffnete er das Fenster, hörte die Vögel und begann zu lesen."}
+{"id":"longer_02","category":"longer","text":"Wenn der Zug pünktlich kommt, erreichen wir den Anschluss und sind vor Mittag dort."}
+{"id":"longer_03","category":"longer","text":"Die Datei wurde gespeichert. Anschließend öffnete sich ein neues Fenster mit dem Ergebnis."}
+{"id":"longer_04","category":"longer","text":"Ich wollte gestern anrufen, doch das Telefon war ausgeschaltet. Heute versuche ich es erneut."}
+{"id":"longer_05","category":"longer","text":"Im Unterricht beantwortet die Schülerin die Frage, während die anderen aufmerksam zuhören."}
+{"id":"longer_06","category":"longer","text":"Der Text enthält mehrere Absätze, kurze Sätze und eine Frage am Ende. Klingt das natürlich?"}
+{"id":"longer_07","category":"longer","text":"Zuerst prüfe ich die Einstellungen, danach starte ich die Sprachausgabe und höre den Satz erneut."}
+{"id":"longer_08","category":"longer","text":"Die Besucher warten vor dem Gebäude, bis die Tür geöffnet wird und die Führung beginnt."}
+{"id":"symbols_01","category":"cp1252_symbols","text":"Das Gesetz steht in § 12 des Vertrags."}
+{"id":"symbols_02","category":"cp1252_symbols","text":"Alle Rechte © 2026 beim Verlag."}
+{"id":"symbols_03","category":"cp1252_symbols","text":"Draußen sind es nur 8 °C."}
+{"id":"symbols_04","category":"cp1252_symbols","text":"Der Ordner liegt unter C:\\Dokumente\\Audio."}
+{"id":"symbols_05","category":"cp1252_symbols","text":"Das Wort œuvre stammt aus dem Französischen."}
+{"id":"symbols_06","category":"cp1252_symbols","text":"Im Norden steht der Buchstabe ø im Namen."}
+{"id":"symbols_07","category":"cp1252_symbols","text":"Im Programm steht A & B als Auswahl."}
+{"id":"symbols_08","category":"cp1252_symbols","text":"Die Gebühr beträgt 5 €, inklusive 7 % Steuer."}
+{"id":"reported_01","category":"reported_silence","text":"Tonqualität"}
+{"id":"reported_02","category":"reported_silence","text":"Die Tonqualität ist heute besser."}
+{"id":"reported_03","category":"reported_silence","text":"Bitte prüfe die Tonqualität und lies den nächsten Satz."}
+{"id":"reported_04","category":"reported_silence","text":"Tonqualität. Danach geht es weiter."}

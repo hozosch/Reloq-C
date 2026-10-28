@@ -1,0 +1,514 @@
+# Bytes the rules of Japanese name by address, out of ETI Eloquence 6.1 as Apple
+# ships it: each under the address 6.1 had it at, and the fences its
+# compiler wrote out inline under the statement types they fence.
+
+bytes eti_null    00
+bytes eti_s_86dd0 60 5b 00
+bytes eti_s_86dd3 2e 00
+bytes eti_s_86dd5 5d 00
+bytes eti_s_86dd7 20 00
+bytes eti_s_86dd9 60 30 30 20 00
+bytes eti_s_86dde 60 32 20 00
+bytes eti_s_86de2 60 33 20 00
+bytes eti_s_86de6 60 34 20 00
+bytes eti_s_86dea 60 00
+bytes eti_s_86dec 68 00
+bytes eti_s_86dee 41 00
+bytes eti_s_86df0 45 00
+bytes eti_s_86df2 49 00
+bytes eti_s_86df4 4f 00
+bytes eti_s_86df6 55 00
+bytes eti_s_86df8 27 74 73 27 00
+bytes eti_s_86dfd 27 74 53 27 00
+bytes eti_s_86e02 27 64 5a 27 00
+bytes eti_s_8765c 00
+bytes eti_s_8a000 00 01 02 03 04 05 06 07 08
+bytes eti_s_8a009 30 04 03 0c 02 00 00
+bytes eti_s_8a010 12 04 18 02 1c 01 48 1a 02 49 19 05 1a 04 0d 02 19 05 41
+bytes eti_s_8a023 2f 01 18 04 04
+bytes eti_s_8a028 25 01 15 01 12 04
+bytes eti_s_8a02e 26 03 18 04 04
+bytes eti_s_8a033 09 0b 01 01 0c 10 01 15
+bytes eti_s_8a03b 09 11 03 03 19 01 15
+bytes eti_s_8a042 08 0c 10 03 18 04 04
+bytes eti_s_8a049 33 04 19 10 03 18 04 04
+bytes eti_s_8a051 25 03 18 04 12 04
+bytes eti_s_8a057 c7
+bytes eti_s_8a058 00 01 02 03 04 05 06 07 08
+bytes eti_s_8a061 19
+bytes eti_s_8a062 04
+bytes eti_s_8a063 05
+bytes eti_s_8a064 c7
+bytes eti_s_8a065 ca
+bytes eti_s_8a066 19
+bytes eti_s_8a067 07
+bytes eti_s_8a068 04
+bytes eti_s_8a069 14
+bytes eti_s_8a06a 12
+bytes eti_s_8a06b 05
+bytes eti_s_8a06c 19
+bytes eti_s_8a06d 07
+bytes eti_s_8a06e 04
+bytes eti_s_8a06f 00 01
+bytes eti_s_8a071 04
+bytes eti_s_8a072 19
+bytes eti_s_8a073 19
+bytes eti_s_8a074 4c
+bytes eti_s_8a075 5d 45
+bytes eti_s_8a077 c7 48
+bytes eti_s_8a079 48
+bytes eti_s_8a07a 35 35
+bytes eti_s_8a07c 57
+bytes eti_s_8a07d 58
+bytes eti_s_8a07e 16
+bytes eti_s_8a07f c7
+bytes eti_s_8a080 03
+bytes eti_s_8a081 1b
+bytes eti_s_8a082 0f
+bytes eti_s_8a083 10
+bytes eti_s_8a084 0b
+bytes eti_s_8a085 0e
+bytes eti_s_8a086 18
+bytes eti_s_8a087 1e
+bytes eti_s_8a088 19
+bytes eti_s_8a089 1c 16 14
+bytes eti_s_8a08c 04
+bytes eti_s_8a08d 02
+bytes eti_s_8a08e 19 16
+bytes eti_s_8a090 35
+bytes eti_s_8a091 36
+bytes eti_s_8a092 37
+bytes eti_s_8a093 19 18
+bytes eti_s_8a095 03 15 16
+bytes eti_s_8a098 19 16 18
+bytes eti_s_8a09b 1a
+bytes eti_s_8a09c 50
+bytes eti_s_8a09d 4b
+bytes eti_s_8a09e 05 03
+bytes eti_s_8a0a0 16 16
+bytes eti_s_8a0a2 01
+bytes eti_s_8a0a3 06
+bytes eti_s_8a0a4 13
+bytes eti_s_8a0a5 28
+bytes eti_s_8a0a6 25
+bytes eti_s_8a0a7 2e
+bytes eti_s_8a0a8 2d
+bytes eti_s_8a0a9 23
+bytes eti_s_8a0aa 0d
+bytes eti_s_8a0ab 22
+bytes eti_s_8a0ac 05
+bytes eti_s_8a0ad 02
+bytes eti_s_8a0ae 1e
+bytes eti_s_8a0af 33
+bytes eti_s_8a0b0 04
+bytes eti_s_8a0b1 48
+bytes eti_s_8a0b2 3f
+bytes eti_s_8a0b3 48
+bytes eti_s_8a0b4 c7
+bytes eti_s_8a0b5 c7 48
+bytes eti_s_8a0b7 48
+bytes eti_s_8a0b8 01 02 03 04 05 06 07 08
+bytes eti_s_8a0c0 05
+bytes eti_s_8a0c1 04
+bytes eti_s_8a0c2 c7
+bytes eti_s_8a0c3 40
+bytes eti_s_8a0c4 00 01 02 03 04 05 06 07 08
+bytes eti_s_8a0cd 48
+bytes eti_s_8a0ce 05
+bytes eti_s_8a0cf 48
+bytes eti_s_8a0d0 41
+bytes eti_s_8a0d1 43
+bytes eti_s_8a0d2 42
+bytes eti_s_8a0d3 45
+bytes eti_s_8a0d4 44
+bytes eti_s_8a0d5 40
+bytes eti_s_8a0d6 04
+bytes eti_s_8a0d7 c0
+bytes eti_s_8a0d8 49
+bytes eti_s_8a0d9 58
+bytes eti_s_8a0da 3f
+bytes eti_s_8a0db ca
+bytes eti_s_8a0dc ad
+bytes eti_s_8a0dd ae
+bytes eti_s_8a0de 46
+bytes eti_s_8a0df 50
+bytes eti_s_8a0e0 52
+bytes eti_s_8a0e1 60
+bytes eti_s_8a0e2 a7
+bytes eti_s_8a0e3 48 41
+bytes eti_s_8a0e5 47
+bytes eti_s_8a0e6 51
+bytes eti_s_8a0e7 a8
+bytes eti_s_8a0e8 c7
+bytes eti_s_8a0e9 c7 48
+bytes eti_s_8a0eb 41 41
+bytes eti_s_8a0ed 53
+bytes eti_s_8a0ee 2f
+bytes eti_s_8a0ef 06
+bytes eti_s_8a0f0 2e
+bytes eti_s_8a0f1 08
+bytes eti_s_8a0f2 29
+bytes eti_s_8a0f3 21
+bytes eti_s_8a0f4 2a
+bytes eti_s_8a0f5 20
+bytes eti_s_8a0f6 07
+bytes eti_s_8a0f7 25
+bytes eti_s_8a0f8 2d
+bytes eti_s_8a0f9 2b
+bytes eti_s_8a0fa 31
+bytes eti_s_8a0fb 09
+bytes eti_s_8a0fc 28
+bytes eti_s_8a0fd 24
+bytes eti_s_8a0fe 22
+bytes eti_s_8a0ff 23
+bytes eti_s_8a100 0a
+bytes eti_s_8a101 33
+bytes eti_s_8a102 26
+bytes eti_s_8a103 27
+bytes eti_s_8a104 30
+bytes eti_s_8a105 2c
+bytes eti_s_8a106 34
+bytes eti_s_8a107 32
+bytes eti_s_8a108 66
+bytes eti_s_8a109 70
+bytes eti_s_8a10a 71
+bytes eti_s_8a10b 67
+bytes eti_s_8a10c 68
+bytes eti_s_8a10d 72
+bytes eti_s_8a10e 6a
+bytes eti_s_8a10f 74
+bytes eti_s_8a110 69
+bytes eti_s_8a111 73
+bytes eti_s_8a112 7a
+bytes eti_s_8a113 81
+bytes eti_s_8a114 88
+bytes eti_s_8a115 90
+bytes eti_s_8a116 98
+bytes eti_s_8a117 7b
+bytes eti_s_8a118 89
+bytes eti_s_8a119 7c
+bytes eti_s_8a11a 8a
+bytes eti_s_8a11b 9c
+bytes eti_s_8a11c 7d
+bytes eti_s_8a11d 82
+bytes eti_s_8a11e 8b
+bytes eti_s_8a11f 92
+bytes eti_s_8a120 94
+bytes eti_s_8a121 9e
+bytes eti_s_8a122 7e
+bytes eti_s_8a123 8c
+bytes eti_s_8a124 96
+bytes eti_s_8a125 8e
+bytes eti_s_8a126 9a
+bytes eti_s_8a127 04
+bytes eti_s_8a128 4c
+bytes eti_s_8a129 1b
+bytes eti_s_8a12a 16
+bytes eti_s_8a12b 01
+bytes eti_s_8a12c 06
+bytes eti_s_8a12d 57
+bytes eti_s_8a12e 4a
+bytes eti_s_8a12f 05
+bytes eti_s_8a130 51
+bytes eti_s_8a131 41
+bytes eti_s_8a132 02
+bytes eti_s_8a133 49
+bytes eti_s_8a134 04
+bytes eti_s_8a135 02 03 04 06 07 08
+bytes eti_s_8a13b 02 03 04 06 07 08
+bytes eti_s_8a141 07
+bytes eti_s_8a142 09
+bytes eti_s_8a143 35
+bytes eti_s_8a144 36
+bytes eti_s_8a145 37
+bytes eti_s_8a146 38
+bytes eti_s_8a147 39
+bytes eti_s_8a148 3a
+bytes eti_s_8a149 3b
+bytes eti_s_8a14a 3c
+bytes eti_s_8a14b 3d
+bytes eti_s_8a14c 3e
+bytes eti_s_8a14d 04
+bytes eti_s_8a14e 48
+bytes eti_s_8a14f c7 48
+bytes eti_s_8a151 46
+bytes eti_s_8a152 47
+bytes eti_s_8a153 4c 50
+bytes eti_s_8a155 5d 45 50
+bytes eti_s_8a158 03
+bytes eti_s_8a159 05 00 00 00 00 00 00
+bytes eti_s_8a160 0b 03 12 12 05 18 03 14 06 49 12 05
+bytes eti_s_8a16c 01 1a 1a 04 14 06 49 12 05
+bytes eti_s_8a175 2e 06 49 16 05
+bytes eti_s_8a17a 0d 04 49 18 05
+bytes eti_s_8a17f 16 06 49 19 02 2a 1a 04
+bytes eti_s_8a187 12 01 18 01 49 1a 1a 04
+bytes eti_s_8a18f 01 2a 0d 04
+bytes eti_s_8a193 01 19 05 1a 02 18 03 49 19 05 12 05
+bytes eti_s_8a19f 12 01 49 12 12 04
+bytes eti_s_8a1a5 12 01 49 12 12 04 48 1a 04 49 0d 34 03
+bytes eti_s_8a1b2 10 01 49 03 0e 05 2a
+bytes eti_s_8a1b9 12 01 19 02 2a
+bytes eti_s_8a1be 03 12 09 49 18 05
+bytes eti_s_8a1c4 16 05 18 01 19 05
+bytes eti_s_8a1ca 0b 01 12 12 05 19 05 18 01 49 2e 2e 05
+bytes eti_s_8a1d7 1a 01 1a 02 0b 09
+bytes eti_s_8a1dd 0b 01 12 12 05 12 05 09 49 1a 04
+bytes eti_s_8a1e8 1a 03 49 18 05 0d 02
+bytes eti_s_8a1ef 12 01 49 12 12 04 1a 04 49 0d 34 03
+bytes eti_s_8a1fb 19 02 14 03 12 04 49 18 04 2a
+bytes eti_s_8a205 12 04 49 18 04 2a
+bytes eti_s_8a20b 01 16 04 49 19 05 1a 04 18 04 0e 03
+bytes eti_s_8a217 12 05 09 49 1a 04
+bytes eti_s_8a21d 12 04 49 2a 14 01
+bytes eti_s_8a223 1e 04 49 18 03 1a 2e 08 19 01 49 03
+bytes eti_s_8a22f 0d 04 1a 1a 04
+bytes eti_s_8a234 1e 04 49 18 03 09 49 12 08
+bytes eti_s_8a23d 19 05 18 01 49 2e 2e 05
+bytes eti_s_8a245 10 01 1a 02 15 01 14 06 49 12 05
+bytes eti_s_8a250 03 1a 2e 03
+bytes eti_s_8a254 15 03 49
+bytes eti_s_8a257 19 01 2a
+bytes eti_s_8a25a 1e 04 49 2a
+bytes eti_s_8a25e 0f 04 49
+bytes eti_s_8a261 18 04 12 05 49
+bytes eti_s_8a266 15 01 49 15 01
+bytes eti_s_8a26b 10 01 1a 2e 03 49
+bytes eti_s_8a271 12 1e 0a 49
+bytes eti_s_8a275 1f 02 49 18 04
+bytes eti_s_8a27a 07 49
+bytes eti_s_8a27c 0b 08 49
+bytes eti_s_8a27f 2e 08 49
+bytes eti_s_8a282 0d 08 49
+bytes eti_s_8a285 08 49
+bytes eti_s_8a287 02 49 0e 05
+bytes eti_s_8a28b 0d 34 08 49
+bytes eti_s_8a28f 02 49 03 1a 2e 03
+bytes eti_s_8a295 01 49 03
+bytes eti_s_8a298 0d 34 02 49 03
+bytes eti_s_8a29d 12 02 49 03
+bytes eti_s_8a2a1 02 49 18 05
+bytes eti_s_8a2a5 02 49 14 05
+bytes eti_s_8a2a9 02 49 15 05
+bytes eti_s_8a2ad 09 49
+bytes eti_s_8a2af 16 08 49
+bytes eti_s_8a2b2 06 18 05
+bytes eti_s_8a2b5 02 49 19 05
+bytes eti_s_8a2b9 1a 08 49
+bytes eti_s_8a2bc 1e 0a 49
+bytes eti_s_8a2bf 0b 05 49 03
+bytes eti_s_8a2c3 0d 01 49 0b 05 18 1e 0a
+bytes eti_s_8a2cb 02 49 12 12 05 19 05
+bytes eti_s_8a2d2 1c 01 49 03
+bytes eti_s_8a2d6 1f 02 49 1a 1a 04
+bytes eti_s_8a2dc 12 03 0f 09
+bytes eti_s_8a2e0 02 49 15 1e 01
+bytes eti_s_8a2e5 0b 07 49 1a 01
+bytes eti_s_8a2ea 1e 0a 49 18 04
+bytes eti_s_8a2ef 2e 09 18 1e 01 12 05
+bytes eti_s_8a2f6 02 49 19 19 05
+bytes eti_s_8a2fb 09 49 48 07 49
+bytes eti_s_8a300 12 05 09 49 1a 04 1a 04 49 0d 34 03
+bytes eti_s_8a30c 0b 05 49 18 02 1a 1a 04
+bytes eti_s_8a314 0d 01 49 2e 2e 05
+bytes eti_s_8a31a 2e 09 10 1e 09 00
+bytes eti_s_8a320 19 01 12 01 19 01 14 01 15 04 48 0b 03 12 12 05 18 03 14 06 49 12 05
+bytes eti_s_8a337 19 02 49 2a 1a 04
+bytes eti_s_8a33d 16 04 49 2a 0d 04
+bytes eti_s_8a343 02 49 2a
+bytes eti_s_8a346 19 02 49 1a 19 05 15 04 48 03 49 2a
+bytes eti_s_8a352 0b 05 2a 04 49 2a 16 05
+bytes eti_s_8a35a 12 04 16 08 18 01 49 03 1a 04 00 00 00 00 00 00 00 00 00 00 00 00
+bytes eti_s_8a370 05 02 15 03 49 48 12 01 12 01 49 18 02 1a 01 48 01 49 03
+bytes eti_s_8a383 1a 09 18 04 12 05
+bytes eti_s_8a389 1a 2e 09 04 49 2a 16 05
+bytes eti_s_8a391 0d 04
+bytes eti_s_8a393 16 05 18 01 19 05 48 14 01 03 15 01 19 05 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+bytes eti_s_8a3b0 05 02 15 03 49 48 12 01 12 01 49 18 02 1a 01 48 15 03 49 00 00 00 00 00 00 00 00 00 00 00 00 00
+bytes eti_s_8a3d0 05 02 15 03 49 48 12 01 12 01 49 18 02 1a 01 48 19 01 2a
+bytes eti_s_8a3e3 14 1e 0a
+bytes eti_s_8a3e6 0b 05 2a 19 02 1a 19 05 15 04 48 03 49 2a 00 00 00 00 00 00 00 00 00 00 00 00
+bytes eti_s_8a400 05 02 15 03 49 48 12 01 12 01 49 18 02 1a 01 48 03 1a 2e 03
+bytes eti_s_8a414 1e 04 2a 0b 05 2a 15 04 48 03 1a 2e 03
+bytes eti_s_8a421 15 03 0b 05 2a 15 04 48 03 1a 2e 03
+bytes eti_s_8a42d 1e 04 2a 0b 05 2a 15 04 48 19 01 2a 00 00 00 00 00 00 00
+bytes eti_s_8a440 19 01 12 01 19 01 14 01 15 04 48 10 01 1a 02 15 14 06 49 12 05
+bytes eti_s_8a455 12 01 12 02 49 18 05
+bytes eti_s_8a45c 1c 01 18 05
+bytes eti_s_8a460 04
+bytes eti_s_8a461 05
+bytes eti_s_8a462 06
+bytes eti_s_8a463 01
+bytes eti_s_8a464 02
+bytes eti_s_8a465 03
+bytes eti_s_8a466 0a
+bytes eti_s_8a467 09
+bytes eti_s_8a468 0b
+bytes eti_s_8a469 08
+bytes eti_s_8a46a 0c
+bytes eti_s_8a46b 07
+bytes eti_s_8a46c 0d
+bytes eti_s_8a46d 0e
+bytes eti_s_8a46e 0f
+bytes eti_s_8a46f 10
+bytes eti_s_8a470 13
+bytes eti_s_8a471 12
+bytes eti_s_8a472 11
+bytes eti_s_8a473 17
+bytes eti_s_8a474 12 18
+bytes eti_s_8a476 14
+bytes eti_s_8a477 16
+bytes eti_s_8a478 15
+bytes eti_s_8a479 19
+bytes eti_s_8a47a 18
+bytes eti_s_8a47b 05
+bytes eti_s_8a47c 10
+bytes eti_s_8a47d 00 01
+bytes eti_s_8a47f 04
+bytes eti_s_8a480 05
+bytes eti_s_8a481 06
+bytes eti_s_8a482 19
+bytes eti_s_8a483 10
+bytes eti_s_8a484 18
+bytes eti_s_8a485 0f
+bytes eti_s_8a486 0e
+bytes eti_s_8a487 0a
+bytes eti_s_8a488 13
+bytes eti_s_8a489 11
+bytes eti_s_8a48a 07
+bytes eti_s_8a48b 02
+bytes eti_s_8a48c 15
+bytes eti_s_8a48d 12
+bytes eti_s_8a48e 0d
+bytes eti_s_8a48f 0b
+bytes eti_s_8a490 16
+bytes eti_s_8a491 14
+bytes eti_s_8a492 03
+bytes eti_s_8a493 17
+bytes eti_s_8a494 01
+bytes eti_s_8a495 07
+bytes eti_s_8a496 10
+bytes eti_s_8a497 04
+bytes eti_s_8a498 14
+bytes eti_s_8a499 16
+bytes eti_s_8a49a 15
+bytes eti_s_8a49b 05
+bytes eti_s_8a49c 11
+bytes eti_s_8a49d 06
+bytes eti_s_8a49e 19
+bytes eti_s_8a49f 04 04
+bytes eti_s_8a4a1 05 05
+bytes eti_s_8a4a3 06 06
+bytes eti_s_8a4a5 08 08
+bytes eti_s_8a4a7 0c 0c
+bytes eti_s_8a4a9 12
+bytes eti_s_8a4aa 13
+bytes eti_s_8a4ab 01
+bytes eti_s_8a4ac 01
+bytes eti_s_8a4ad 0b
+bytes eti_s_8a4ae 02
+bytes eti_s_8a4af 0a
+bytes eti_s_8a4b0 03
+bytes eti_s_8a4b1 04
+bytes eti_s_8a4b2 05
+bytes eti_s_8a4b3 06
+bytes eti_s_8a4b4 0e
+bytes eti_s_8a4b5 0f
+bytes eti_s_8a4b6 10
+bytes eti_s_8a4b7 07
+bytes eti_s_8a4b8 08
+bytes eti_s_8a4b9 0c
+bytes eti_s_8a4ba 0d
+bytes eti_s_8a4bb 13
+bytes eti_s_8a4bc 12
+bytes eti_s_8a4bd 11
+bytes eti_s_8a4be 18
+bytes eti_s_8a4bf 14
+bytes eti_s_8a4c0 15
+bytes eti_s_8a4c1 17
+bytes eti_s_8a4c2 16
+bytes eti_s_8a4c3 03 14
+bytes eti_s_8a4c5 19
+bytes eti_s_8a4c6 05
+bytes eti_s_8a4c7 18
+bytes eti_s_8a4c8 15
+bytes eti_s_8a4c9 17
+bytes eti_s_8a4ca 14
+bytes eti_s_8a4cb 16
+bytes eti_s_8a4cc 0f
+bytes eti_s_8a4cd 01
+bytes eti_s_8a4ce 04
+bytes eti_s_8a4cf 0e
+bytes eti_s_8a4d0 10
+bytes eti_s_8a4d1 00 01
+bytes eti_s_8a4d3 11
+bytes eti_s_8a4d4 08
+bytes eti_s_8a4d5 0c
+bytes eti_s_8a4d6 12
+bytes eti_s_8a4d7 0a
+bytes eti_s_8a4d8 19
+bytes eti_s_8a4d9 07
+bytes eti_s_8a4da 0b
+bytes eti_s_8a4db 03 14
+bytes eti_s_8a4dd 07
+bytes eti_s_8a4de 0c
+bytes eti_s_8a4df 08
+bytes eti_s_8a4e0 08 15 02
+bytes eti_s_8a4e3 16
+bytes eti_s_8a4e4 05
+bytes eti_s_8a4e5 08 18 0e
+bytes eti_s_8a4e8 00 00 00 01
+bytes eti_s_8a4ec 09
+bytes eti_s_8a4ed 0a
+bytes eti_s_8a4ee 0b
+bytes eti_s_8a4ef 04
+bytes eti_s_8a4f0 06
+bytes eti_s_8a4f1 00 01
+bytes eti_s_8a4f3 04
+bytes eti_s_8a4f4 49
+bytes eti_s_8a4f5 2a
+bytes eti_s_8a4f6 2c
+bytes eti_s_8a4f7 16
+bytes eti_s_8a4f8 04
+bytes eti_s_8a4f9 0b
+bytes eti_s_8a4fa 01
+bytes eti_s_8a4fb 1a 19
+bytes eti_s_8a4fd 05 08
+bytes eti_s_8a4ff 1a 2e
+bytes eti_s_8a501 05 0c
+bytes eti_s_8a503 0d 34
+bytes eti_s_8a505 02 0d
+bytes eti_s_8a507 1a
+bytes eti_s_8a508 05
+bytes eti_s_8a509 0d
+bytes eti_s_8a50a 02
+bytes eti_s_8a50b 12
+bytes eti_s_8a50c 06
+bytes eti_s_8a50d 0f
+bytes eti_s_8a50e 03
+bytes eti_s_8a50f 0e
+bytes eti_s_8a510 0a
+bytes eti_s_8a511 19
+bytes eti_s_8a512 08
+bytes eti_s_8a513 2e
+bytes eti_s_8a514 0c
+bytes eti_s_8a515 1f
+bytes eti_s_8a516 07
+bytes eti_s_8a517 10
+bytes eti_s_8a518 1e
+bytes eti_s_8a519 09
+bytes eti_s_8a51a 14
+bytes eti_s_8a51b 15
+bytes eti_s_8a51c 2a
+bytes eti_s_8a51d 18
+bytes eti_s_8a51e 11
+bytes eti_s_8a51f 1c
+bytes eti_s_8a520 13
+bytes eti_s_8a521 17
+bytes eti_s_8a522 04
+bytes eti_s_8a523 10 00 00 00 00 00 00 00 00 00 00 00 00
+bytes eti_s_8d044 00
+bytes eti_s_8d048 00
+bytes eti_s_8d04c 00 00
+bytes eti_s_8d051 00 00
+bytes eti_s_8d053 00 00

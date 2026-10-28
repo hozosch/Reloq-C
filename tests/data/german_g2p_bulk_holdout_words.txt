@@ -1,0 +1,34 @@
+# Frozen independently of Apple output and the 203-form development matrix.
+# Natural nominalizations for one-time bulk G2P evaluation.
+Erkennbarkeit
+Nachvollziehbarkeit
+Verfügbarkeit
+Verwendbarkeit
+Erreichbarkeit
+Übertragbarkeit
+Vergleichbarkeit
+Berechenbarkeit
+Messbarkeit
+Prüfbarkeit
+Verstehbarkeit
+Erlebbarkeit
+Erfüllbarkeit
+Belastbarkeit
+Genießbarkeit
+Anwendbarkeit
+Vereinbarkeit
+Geborgenheit
+Gewissheit
+Offenheit
+Menschlichkeit
+Dankbarkeit
+Gemeinsamkeit
+Einsamkeit
+Wirksamkeit
+Genauigkeit
+Korrektheit
+Zerbrechlichkeit
+Gerechtigkeit
+Lebendigkeit
+Eigenheit
+Fröhlichkeit

@@ -1,0 +1,269 @@
+# German translation of the Eloquence C NVDA add-on.
+# The source language of the interface is English.
+msgid ""
+msgstr ""
+"Project-Id-Version: Eloquence C 0.2.186\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-12 22:55+0300\n"
+"PO-Revision-Date: 2026-10-12 00:00+0000\n"
+"Last-Translator: Eloquence C port project\n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Translators: Name in NVDA's synthesizer selection dialog.
+#: addon/synth/synthDrivers/reloqC/__init__.py:161
+msgid "Eloquence C (experimental)"
+msgstr "Eloquence C (experimentell)"
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:165
+msgid "&Language"
+msgstr "&Sprache"
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:172
+msgid "&Head size"
+msgstr "Kopf&größe"
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:173
+msgid "Rou&ghness"
+msgstr "&Rauigkeit"
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:174
+msgid "&Breathiness"
+msgstr "&Behauchtheit"
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:175
+msgid "Process &ECI tags"
+msgstr "ECI-&Tags verarbeiten"
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:176
+msgid "Shorten pa&uses"
+msgstr "&Pausen verkürzen"
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:177
+msgid "&Sample rate"
+msgstr "&Abtastrate"
+
+#. Translators: Audio sample rates; localize the decimal separator.
+#: addon/synth/synthDrivers/reloqC/__init__.py:242
+msgid "8 kHz"
+msgstr "8 kHz"
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:242
+msgid "11.025 kHz"
+msgstr "11,025 kHz"
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:242
+msgid "16 kHz"
+msgstr "16 kHz"
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:242
+msgid "22.05 kHz"
+msgstr "22,05 kHz"
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:243
+msgid "32 kHz"
+msgstr "32 kHz"
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:243
+msgid "44.1 kHz"
+msgstr "44,1 kHz"
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:243
+msgid "48 kHz"
+msgstr "48 kHz"
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:300
+msgid "Never"
+msgstr "Nie"
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:300
+msgid "Only at text end"
+msgstr "Nur am Textende"
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:300
+msgid "Always"
+msgstr "Immer"
+
+#: nvda/_reloq_languages.py:74
+msgid "German"
+msgstr "Deutsch"
+
+#. Translators: Voice preset labels, independent of the spoken language.
+#: nvda/_reloq_languages.py:77
+msgid "Male 1"
+msgstr "Männlich 1"
+
+#: nvda/_reloq_languages.py:78
+msgid "Female 1"
+msgstr "Weiblich 1"
+
+#: nvda/_reloq_languages.py:79
+msgid "Child"
+msgstr "Kind"
+
+#: nvda/_reloq_languages.py:80
+msgid "Male 2"
+msgstr "Männlich 2"
+
+#: nvda/_reloq_languages.py:81
+msgid "Male 3"
+msgstr "Männlich 3"
+
+#: nvda/_reloq_languages.py:82
+msgid "Female 2"
+msgstr "Weiblich 2"
+
+#: nvda/_reloq_languages.py:83
+msgid "Female 3"
+msgstr "Weiblich 3"
+
+#: nvda/_reloq_languages.py:84
+msgid "Male 4"
+msgstr "Männlich 4"
+
+#. Translators: Add-on name shown in NVDA's add-on manager.
+#: addon/build_translations.py:30
+msgid "Eloquence C: fifteen language variants"
+msgstr "Eloquence C: fünfzehn Sprachvarianten"
+
+#. Translators: Add-on description; this refers to the spoken language.
+#: addon/build_translations.py:32
+msgid "Native C synthesizer with fifteen language variants at 8 to 48 kHz, including Japanese, Korean, Chinese and Greek."
+msgstr "Nativer C-Synthesizer mit fünfzehn Sprachvarianten bei 8 bis 48 kHz, einschließlich Japanisch, Koreanisch, Chinesisch und Griechisch."
+
+msgid "English (United States)"
+msgstr "Englisch (USA)"
+
+msgid "Portuguese (Brazil)"
+msgstr "Portugiesisch (Brasilien)"
+
+msgid "Finnish"
+msgstr "Finnisch"
+
+msgid "English (United Kingdom)"
+msgstr "Englisch (Großbritannien)"
+
+msgid "Spanish (Spain)"
+msgstr "Spanisch (Spanien)"
+
+msgid "Spanish (Mexico)"
+msgstr "Spanisch (Mexiko)"
+
+msgid "French (France)"
+msgstr "Französisch (Frankreich)"
+
+msgid "French (Canada)"
+msgstr "Französisch (Kanada)"
+
+msgid "Italian"
+msgstr "Italienisch"
+
+msgid "Japanese"
+msgstr "Japanisch"
+
+msgid "Korean"
+msgstr "Koreanisch"
+
+msgid "Chinese"
+msgstr "Chinesisch"
+
+msgid "Greek"
+msgstr "Griechisch"
+
+#: synthDrivers/reloqC/__init__.py
+msgid "Use &community pronunciation dictionaries"
+msgstr "&Gemeinschaftswörterbücher für die Aussprache verwenden"
+
+msgid "Eloquence C pronunciation dictionaries"
+msgstr "Eloquence C: Aussprachewörterbücher"
+
+msgid "&Own dictionary files (later files take priority):"
+msgstr "Eigene &Wörterbuchdateien (spätere Dateien haben Vorrang):"
+
+msgid "&Add file…"
+msgstr "Datei &hinzufügen…"
+
+msgid "&Remove"
+msgstr "&Entfernen"
+
+msgid "Move &up"
+msgstr "Nach &oben"
+
+msgid "Move &down"
+msgstr "Nach &unten"
+
+msgid "Own entries override community entries. Original files are kept unchanged."
+msgstr "Eigene Einträge haben Vorrang vor Community-Einträgen. Originaldateien bleiben unverändert."
+
+msgid "&Update now"
+msgstr "&Jetzt aktualisieren"
+
+msgid "&Save own files"
+msgstr "Eigene Dateien &speichern"
+
+msgid "Close"
+msgstr "Schließen"
+
+msgid "Main words"
+msgstr "Hauptwörterbuch"
+
+msgid "Word roots"
+msgstr "Wortstämme"
+
+msgid "Abbreviations"
+msgstr "Abkürzungen"
+
+msgid "Choose a pronunciation dictionary"
+msgstr "Aussprachewörterbuch auswählen"
+
+msgid "Dictionary files (*.dic)|*.dic|All files (*.*)|*.*"
+msgstr "Wörterbuchdateien (*.dic)|*.dic|Alle Dateien (*.*)|*.*"
+
+msgid "Language of the dictionary:"
+msgstr "Sprache des Wörterbuchs:"
+
+msgid "Dictionary language"
+msgstr "Wörterbuchsprache"
+
+msgid "Dictionary type:"
+msgstr "Wörterbuchtyp:"
+
+msgid "Dictionary type"
+msgstr "Wörterbuchtyp"
+
+msgid "Updating pronunciation dictionaries…"
+msgstr "Aussprachewörterbücher werden aktualisiert…"
+
+msgid "Dictionary update failed: %s"
+msgstr "Wörterbuchaktualisierung fehlgeschlagen: %s"
+
+msgid "Dictionaries updated. Community revision: %s"
+msgstr "Wörterbücher aktualisiert. Community-Stand: %s"
+
+msgid "Own dictionaries updated."
+msgstr "Eigene Wörterbücher aktualisiert."
+
+msgid "Eloquence C pronunciation &dictionaries…"
+msgstr "Eloquence C: Aussprache&wörterbücher…"
+
+msgid "Select Eloquence C as the synthesizer first."
+msgstr "Bitte zuerst Eloquence C als Sprachausgabe auswählen."
+
+msgid "Pronunciation dictionaries"
+msgstr "Aussprachewörterbücher"
+
+msgid "Eloquence C"
+msgstr "Eloquence C"
+
+msgid "Use OK or Apply to save. Changes to selected .dic files are loaded automatically."
+msgstr "Mit OK oder Übernehmen speichern. Änderungen an eingebundenen .dic-Dateien werden automatisch geladen."
+
+msgid "&Update dictionaries now"
+msgstr "Wörterbücher &jetzt aktualisieren"
+
+msgid "Wait for the dictionary update to finish."
+msgstr "Bitte warten, bis die Wörterbuchaktualisierung abgeschlossen ist."

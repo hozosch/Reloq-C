@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="de"><meta charset="utf-8"><title>Eloquence-C-Hörtest</title>
+<h1>Eloquence-C-Hörtest</h1>
+<p>Dies ist ein früher, experimenteller Hörtest des unabhängigen C-Ports. Er ist
+noch keine NVDA-Stimme für den Alltag. Ihre gewählte NVDA-Stimme bleibt aktiv.</p>
+<h2>Installation und Bedienung</h2>
+<ol><li>Installieren Sie die Datei mit der Endung <code>.nvda-addon</code> über
+NVDA-Menü, Werkzeuge, Add-on Store, „Aus externer Quelle installieren“. Sie
+können die Datei auch im Explorer öffnen, während NVDA läuft.</li>
+<li>Bestätigen Sie die Installation und starten Sie NVDA neu. Die bisherige
+NVDA-Stimme bleibt ausgewählt.</li>
+<li>Drücken Sie NVDA+Strg+Umschalt+F11. Geben Sie einen Testtext in das Dialogfeld
+ein und bestätigen Sie mit Eingabe. NVDA+Strg+Umschalt+F10 bricht die laufende
+Vorschau ab.</li></ol>
+<p>Zum Einstieg ist <strong>Pappe. Packen. Tappen.</strong> im Eingabefeld
+vorbelegt. Diese mehrsilbigen Wörter entstehen aus gemeinsamen Lautregeln.
+Weitere geprüfte Beispiele sind <strong>Kette.</strong>,
+<strong>Packte. Packten. Tippte. Kippte.</strong>,
+<strong>Pack Tipp.</strong>,
+<strong>Pack Pack.</strong>, <strong>Papp Tipp.</strong>,
+<strong>Pack Tipp. Hack Tipp.</strong>, <strong>Pass.</strong>,
+<strong>Tiss.</strong>, <strong>Kuss.</strong>, <strong>Bett.</strong>,
+<strong>Deck.</strong>, <strong>Guck.</strong>, <strong>Bad.</strong>,
+<strong>Mett.</strong>, <strong>Mut.</strong>, <strong>Nock.</strong> und
+<strong>Not.</strong>.
+<strong>Mett</strong> und <strong>Bett</strong> gehen jetzt auch ohne Punkt.
+Bei nicht abgedeckten Texten hören Sie mit Ihrer normalen NVDA-Stimme, ob ein
+Wort fehlt oder für eine erkannte Aussprache noch das Klangmodell fehlt.</p>
+<p>Der Port spricht bisher nur einen kleinen Teil kurzer deutscher Texte mit
+11.025 Hz. NVDA muss als 64-Bit-Prozess die mitgelieferte x64-DLL laden können.
+Die vorige Fassung konnte der Nutzer in ARM64EC-NVDA laden; auch x64-NVDA
+kann diese x64-DLL laden. NVDA 32 Bit und reines ARM64-NVDA werden nicht
+unterstützt. Bei einem Ladefehler meldet der Hörtest die Windows-Fehlerdetails.
+Die neue Fassung muss in NVDA noch gehört werden. Das Paket enthält
+ausschließlich den C-Port und Python-Steuerung, keine Apple- oder
+OpenEVV-Binärdateien.</p>
+</html>

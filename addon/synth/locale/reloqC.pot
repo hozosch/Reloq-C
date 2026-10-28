@@ -1,0 +1,236 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the Eloquence C package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Eloquence C 0.2.186\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-28 14:11+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Translators: Name in NVDA's synthesizer selection dialog.
+#: addon/synth/synthDrivers/reloqC/__init__.py:154
+msgid "Eloquence C (experimental)"
+msgstr ""
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:165
+msgid "&Head size"
+msgstr ""
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:166
+msgid "Rou&ghness"
+msgstr ""
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:167
+msgid "&Breathiness"
+msgstr ""
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:168
+msgid "Process &ECI tags"
+msgstr ""
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:169
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:30
+msgid "Use &community pronunciation dictionaries"
+msgstr ""
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:170
+msgid "Shorten pa&uses"
+msgstr ""
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:171
+msgid "&Sample rate"
+msgstr ""
+
+#. Translators: Audio sample rates; localize the decimal separator.
+#: addon/synth/synthDrivers/reloqC/__init__.py:241
+msgid "8 kHz"
+msgstr ""
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:241
+msgid "11.025 kHz"
+msgstr ""
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:241
+msgid "16 kHz"
+msgstr ""
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:241
+msgid "22.05 kHz"
+msgstr ""
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:242
+msgid "32 kHz"
+msgstr ""
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:242
+msgid "44.1 kHz"
+msgstr ""
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:242
+msgid "48 kHz"
+msgstr ""
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:361
+msgid "Never"
+msgstr ""
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:361
+msgid "Only at text end"
+msgstr ""
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:361
+msgid "Always"
+msgstr ""
+
+#: nvda/_reloq_languages.py:70
+msgid "German"
+msgstr ""
+
+#: nvda/_reloq_languages.py:94
+msgid "Finnish"
+msgstr ""
+
+#: nvda/_reloq_languages.py:102
+msgid "Italian"
+msgstr ""
+
+#: nvda/_reloq_languages.py:107
+msgid "Japanese"
+msgstr ""
+
+#: nvda/_reloq_languages.py:108
+msgid "Korean"
+msgstr ""
+
+#: nvda/_reloq_languages.py:109
+msgid "Greek"
+msgstr ""
+
+#. Translators: Add-on name shown in NVDA's add-on manager.
+#: addon/build_translations.py:30
+msgid "Eloquence C: fifteen language variants"
+msgstr ""
+
+#. Translators: Add-on description; this refers to the spoken language.
+#: addon/build_translations.py:32
+msgid ""
+"Native C synthesizer with fifteen language variants at 8 to 48 kHz, "
+"including Japanese, Korean, Chinese and Greek."
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:16
+msgid "Eloquence C"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:25
+msgid "Main words"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:25
+msgid "Word roots"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:25
+msgid "Abbreviations"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:29
+msgid "Pronunciation dictionaries"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:33
+msgid "&Own dictionary files (later files take priority):"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:40
+msgid "&Add file…"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:40
+msgid "&Remove"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:41
+msgid "Move &up"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:42
+msgid "Move &down"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:49
+msgid ""
+"Use OK or Apply to save. Changes to selected .dic files are loaded "
+"automatically."
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:52
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:186
+msgid ""
+"Own entries override community entries. Original files are kept unchanged."
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:53
+msgid "Select Eloquence C as the synthesizer first."
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:56
+msgid "&Update dictionaries now"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:79
+msgid "Choose a pronunciation dictionary"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:80
+msgid "Dictionary files (*.dic)|*.dic|All files (*.*)|*.*"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:86
+msgid "Language of the dictionary:"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:87
+msgid "Dictionary language"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:91
+msgid "Dictionary type:"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:92
+msgid "Dictionary type"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:117
+msgid "Updating pronunciation dictionaries…"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:123
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:156
+#, python-format
+msgid "Dictionary update failed: %s"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:126
+#, python-format
+msgid "Dictionaries updated. Community revision: %s"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:127
+msgid "Own dictionaries updated."
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:150
+msgid "Wait for the dictionary update to finish."
+msgstr ""

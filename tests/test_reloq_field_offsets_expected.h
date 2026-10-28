@@ -1,0 +1,21 @@
+/* Retained field positions from the checked 0.2.133 metadata. */
+static const uint16_t expected_enus61_0[]={0};
+static const uint16_t expected_enus61_1[]={3,0,4,1,2};
+static const uint16_t expected_enus61_2[]={8,0,1,2,3,4,5,6,9,10,11,12};
+static const uint16_t expected_enus61_3[]={0,1,2};
+static const uint16_t expected_enus61_4[]={0,2,3,4,5,6,7,8,10,11,12,14};
+static const uint16_t expected_enus61_5[]={0,2,3,4,5,6,8};
+static const uint16_t expected_enus61_6[]={0,2,4,6,8,10,12,14,16,24,32,40,42,44,46};
+static const uint16_t expected_enus61_7[]={0};
+static const uint16_t expected_enus61_8[]={0};
+static const uint16_t *const expected_enus61[]={expected_enus61_0,expected_enus61_1,expected_enus61_2,expected_enus61_3,expected_enus61_4,expected_enus61_5,expected_enus61_6,expected_enus61_7,expected_enus61_8};
+static const uint16_t expected_dede61_0[]={0};
+static const uint16_t expected_dede61_1[]={3,0,4,1,2};
+static const uint16_t expected_dede61_2[]={11,0,1,2,3,4,5,6,7,8,9,10,12,14,15,16,18};
+static const uint16_t expected_dede61_3[]={0,1,2};
+static const uint16_t expected_dede61_4[]={0,2,3,4,6,7,8,10,12,14};
+static const uint16_t expected_dede61_5[]={0,2,3,4,5,6,8};
+static const uint16_t expected_dede61_6[]={0,2,4,6,8,10,12,14,16,24,32,40,42,44,46};
+static const uint16_t expected_dede61_7[]={0};
+static const uint16_t expected_dede61_8[]={0};
+static const uint16_t *const expected_dede61[]={expected_dede61_0,expected_dede61_1,expected_dede61_2,expected_dede61_3,expected_dede61_4,expected_dede61_5,expected_dede61_6,expected_dede61_7,expected_dede61_8};
