@@ -21,7 +21,7 @@ For the Windows x64 DLL, install the MinGW-w64 x64 compiler and run:
 make -C eci -j4 windows-x64
 ```
 
-See `BUILD-MSYS2-ANLEITUNG.txt` for the Windows environment. The NVDA adapter and dictionary settings are in `nvda/`; packaging tools and tests are in `addon/`. A release must be packaged and tested separately; the imported source alone is not a new add-on release.
+See `docs/BUILD.md` for the Windows environment and add-on packaging. The NVDA adapter and dictionary settings are in `nvda/`; packaging tools and tests are in `addon/`. A release must be packaged and tested separately; the imported source alone is not a new add-on release.
 
 ## Current work
 
@@ -33,6 +33,8 @@ The following user-reported problems remain open:
 - Changes in the intended dictionary folder do not reliably become active.
 
 Passing an isolated pronunciation test does not establish that these runtime problems are fixed. Their latest user report takes precedence over previous test results.
+
+The concrete source findings and verification scope are recorded in `docs/CURRENT-WORK.md`.
 
 The German acoustic planner and agreed pronunciation departures are retained; see `GEWUENSCHTE-ABWEICHUNGEN-DE.md`. The native C migration is ongoing. No speech-result cache, original runtime DLL/SYN or runtime bytecode belongs in the add-on. Verification PCM stays in memory; tests must not write audio files.
 
