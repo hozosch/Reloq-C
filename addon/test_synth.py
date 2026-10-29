@@ -564,9 +564,9 @@ def main(inspect_adapter=None):
                 driver.voice = "2"
                 assert driver.headSize == 50 and driver.breathiness == 50
                 assert driver.pitch == 81 and driver.inflection == 30
-                until(lambda: len(Engine.instances) >= 2)
-                female_worker = Engine.instances[-1]
+                female_worker = worker
                 until(lambda: dict(female_worker.parameters).get(0x1010) == 1)
+                assert len(Engine.instances) == 1, "voice preset duplicated the language core"
                 driver.headSize = 22
                 driver.roughness = 27
                 driver.breathiness = 61

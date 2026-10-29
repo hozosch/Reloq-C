@@ -650,8 +650,10 @@ static int consonants_impl(const unsigned char *text, size_t length,
              * approximation. German <c> before front vowels is usually
              * /ts/, otherwise /k/; <y> can be /j/ before a vowel. The
              * strict frontend rejects these ambiguous spellings earlier. */
-            case 'c': if (approximate) p = pos + 1 < length &&
-                strchr("eiy", text[pos + 1]) ? "T" : "k"; break;
+            case 'c':
+                if (approximate) p = pos + 1 < length &&
+                    strchr("eiy", text[pos + 1]) ? "T" : "k";
+                break;
             case 'd': p = final ? "t" : "d"; break;
             case 'g': p = final ? "k" : "g"; break;
             case 'f': p = "f"; break;

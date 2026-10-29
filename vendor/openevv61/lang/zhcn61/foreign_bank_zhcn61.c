@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <string.h>
 #include "reloq61_english_bank.h"
+#include "reloq61_latin.h"
 #include "delta_rules_c.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,12 +50,12 @@ int reloq_zhcn61_bank_property(void*state,int32_t a)
 }
 int reloq_zhcn61_bank_pending(void*state){return *((unsigned char*)state+DG_BASE+2284+9)!=0;}
 void reloq_zhcn61_bank_set_property(void*state,int value){*((unsigned char*)state+DG_BASE+2284+9)=(unsigned char)value;}
-static int bank_letter(unsigned char c){return(c>='a'&&c<='z')||(c>='A'&&c<='Z');}
+static int bank_letter(unsigned char c){return reloq61_latin_letter_byte(c);}
 int32_t reloq_zhcn61_bank_letters(void*state,int32_t a,int32_t b)
 {
  if(!reloq_zhcn61_bank_pending(state))return -1;delta_state*d=state;int32_t at=argument_point(a),last=at;unsigned count=0,letters=0;char prev=0;
- for(;count<255;++count){int32_t next;char c=input_character(d,last,&next);int alpha=(c>='a'&&c<='z')||(c>='A'&&c<='Z');int valid=alpha||(c>='0'&&c<='9')||(count&&(c=='\''||c=='-'));
-  if(c=='-'){int32_t after;char following=input_character(d,next,&after);valid=count&&((following>='a'&&following<='z')||(following>='A'&&following<='Z'));}
+ for(;count<255;++count){int32_t next;char c=input_character(d,last,&next);int alpha=bank_letter((unsigned char)c);int valid=alpha||(c>='0'&&c<='9')||(count&&(c=='\''||c=='-'));
+  if(c=='-'){int32_t after;char following=input_character(d,next,&after);valid=count&&bank_letter((unsigned char)following);}
   /* Keep internal initials together; a final period remains punctuation. */
   if(c=='.'&&count){int32_t after;char q=input_character(d,next,&after);valid=(prev>='0'&&prev<='9'&&q>='0'&&q<='9')||(bank_letter((unsigned char)prev)&&bank_letter((unsigned char)q));}
   if(!valid)break;letters+=alpha;prev=c;last=next;

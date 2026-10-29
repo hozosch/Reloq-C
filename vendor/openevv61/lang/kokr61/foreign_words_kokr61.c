@@ -4,12 +4,15 @@
 #include <stdint.h>
 #include <string.h>
 #include "reloq61_english_plan.h"
+#include "reloq61_latin.h"
 #include "delta.h"
 #include "delta_rules_c.h"
 #include "reloq61_scalar_state.h"
 extern int reloq61_english_word(void *,const char *,char *,size_t);
 
-static const char input_ascii[]="\0aeiouAEIOUbcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ0123456789-,.?:;!() '#_`~*@[]{}`$+%/=^&|\\<>\"";
+static const unsigned char input_ascii[]={
+#include "reloq61_english_alphabet.inc"
+};
 static int32_t position(int32_t argument)
 {int32_t p;memcpy(&p,EVV_AT(const unsigned char *,argument)+4,4);return p;}
 static int32_t right(delta_state *d,int32_t p,unsigned projection)
@@ -79,7 +82,7 @@ static int32_t foreign_sequence(void *state,int32_t begin,int32_t end,int leadin
         int32_t node=record(d,last,1);if(!node)break;
         unsigned name=*(const unsigned char *)delta_record_field(&vstmtbl[1],0,body(node));
         char c=name<sizeof input_ascii?input_ascii[name]:0;
-        int letter=(c>='a'&&c<='z')||(c>='A'&&c<='Z');int decimal=0;if(c=='.'&&count&&spelling[count-1]>='0'&&spelling[count-1]<='9'){int32_t next=record(d,after(node),1);if(next){unsigned v=body(next)[4];char nc=v<sizeof input_ascii?input_ascii[v]:0;decimal=nc>='0'&&nc<='9';}}
+        int letter=reloq61_latin_letter_byte((unsigned char)c);int decimal=0;if(c=='.'&&count&&spelling[count-1]>='0'&&spelling[count-1]<='9'){int32_t next=record(d,after(node),1);if(next){unsigned v=body(next)[4];char nc=v<sizeof input_ascii?input_ascii[v]:0;decimal=nc>='0'&&nc<='9';}}
         if(!letter&&!(c>='0'&&c<='9'&&(count||leading_digits))&&!(count&&(c=='\''||c=='-'))&&!decimal)break;
         spelling[count]=c;letters+=letter;digits+=c>='0'&&c<='9';last=after(node);++count;
     }

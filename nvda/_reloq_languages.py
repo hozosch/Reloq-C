@@ -151,6 +151,8 @@ class LanguageEngine:
         self._guard = threading.RLock()
         self._cancelled = threading.Event()
         self._engines = {}
+        self._engine_keys = {}
+        self._engine_parameters = {}
         self._parameters = {}
         self._dictionary_path = None
         self._active = None
@@ -185,25 +187,35 @@ class LanguageEngine:
     def _activate(self, key):
         self._assert_owner()
         profile = self._languages[key[0]]
-        engine = self._engines.get(key)
-        if engine is None:
+        language = key[0]
+        engine = self._engines.get(language)
+        created = engine is None
+        if created:
             engine = self._factory(
                 self._dll, dialect=profile.id, encoding=profile.encoding,
                 experimental_generic=True,
                 lexicon_path=self._dll.with_name(profile.lexicon) if profile.lexicon else None,
             )
-            self._engines[key] = engine
-            try:
-                if self._dictionary_path is not None:
-                    engine.set_dictionary_path(self._dictionary_path)
-                for parameter, value in profile.voice(key[1]).parameters:
+            self._engines[language] = engine
+            self._engine_parameters[language] = {}
+        try:
+            if created and self._dictionary_path is not None:
+                engine.set_dictionary_path(self._dictionary_path)
+            wanted = dict(profile.voice(key[1]).parameters)
+            wanted.update((parameter, self._parameter_for(key, parameter, value))
+                          for parameter, value in self._parameters.items())
+            current = self._engine_parameters[language]
+            for parameter, value in wanted.items():
+                if current.get(parameter) != value:
                     engine.set_parameter(parameter, value)
-                for parameter, value in self._parameters.items():
-                    engine.set_parameter(parameter, self._parameter_for(key, parameter, value))
-            except BaseException:
-                del self._engines[key]
+                    current[parameter] = value
+            self._engine_keys[language] = key
+        except BaseException:
+            if created:
+                del self._engines[language]
+                del self._engine_parameters[language]
                 engine.close()
-                raise
+            raise
         with self._guard:
             self._active = engine
         return engine
@@ -234,8 +246,10 @@ class LanguageEngine:
 
     def set_parameter(self, parameter, value):
         self._assert_owner()
-        for key, engine in self._engines.items():
-            engine.set_parameter(parameter, self._parameter_for(key, parameter, value))
+        for language, engine in self._engines.items():
+            adapted = self._parameter_for(self._engine_keys[language], parameter, value)
+            engine.set_parameter(parameter, adapted)
+            self._engine_parameters[language][parameter] = adapted
         self._parameters[parameter] = value
 
     def speak(self, parts, on_pcm, on_index):
@@ -294,6 +308,8 @@ class LanguageEngine:
             self._active = None
             self._closed = True
             engines, self._engines = tuple(self._engines.values()), {}
+            self._engine_keys.clear()
+            self._engine_parameters.clear()
         # Closing a native dictionary can be expensive. Cancel needs this
         # guard on NVDA's UI thread and must see the detached state at once.
         for engine in engines:

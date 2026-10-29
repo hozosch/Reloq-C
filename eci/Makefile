@@ -8,6 +8,10 @@ WINDOWS_CC ?= x86_64-w64-mingw32-gcc
 WINDOWS_OBJDUMP ?= x86_64-w64-mingw32-objdump
 WINDOWS_CFLAGS ?= -O2 -std=c11 -Wall -Wextra -Werror -pedantic
 WINDOWS_LDFLAGS ?= -static -Wl,--strip-all,--no-insert-timestamp
+ANDROID_CC ?= aarch64-linux-android26-clang
+ANDROID_AR ?= llvm-ar
+# NDK r30's complex.h expands the standard I macro to an imaginary literal.
+ANDROID_CFLAGS := $(CFLAGS) -fsigned-char -Wno-c2y-extensions
 # Keep component-test archives inexpensive; optimize the shipped provider
 # across translation units, including its many small C rule primitives.
 PROVIDER_OPT ?= -O3
@@ -17,6 +21,7 @@ PROVIDER_LTO ?= -flto=4
 PROVIDER_LINK := $(PROVIDER_OPT) $(PROVIDER_LTO) -fno-strict-aliasing -ffp-contract=off
 RULES61 := ../vendor/openevv61/build/release/libreloq61.a
 RULES61_WIN := ../vendor/openevv61/build/windows-release/libreloq61.a
+RULES61_ANDROID := ../vendor/openevv61/build/android-arm64/libreloq61.a
 RULES61_SOURCES := $(wildcard ../vendor/openevv61/src/*.c ../vendor/openevv61/src/*/*.c ../vendor/openevv61/src/*/*/*.c ../vendor/openevv61/src/*/*.h ../vendor/openevv61/src/*/*/*.h ../vendor/openevv61/include/*.h ../vendor/openevv61/lang/*/*.c ../vendor/openevv61/lang/*/*.h) ../vendor/openevv61/Makefile.native
 RULES61_SOURCES += $(wildcard ../vendor/openevv61/rom/*/*.c ../vendor/openevv61/rom/*/*.h ../vendor/openevv61/rom/*/*.inc)
 RULES61_SOURCES += ../src/reloq_voice_filter.c ../include/reloq_voice_filter.h
@@ -26,6 +31,7 @@ RULES61_SOURCES += ../src/reloq_german_word_edges.c ../include/reloq_german_word
 RULES61_SOURCES += ../vendor/openevv61/src/reloq61_german_alphabet.inc
 RULES61_SOURCES += ../src/reloq_english_word_edges.c ../include/reloq_english_word_edges.h
 RULES61_SOURCES += ../vendor/openevv61/src/reloq61_english_alphabet.inc
+RULES61_SOURCES += ../vendor/openevv61/src/reloq61_latin_data.inc
 RULES61_SOURCES += ../vendor/openevv61/src/reloq61_text_case.inc
 RULES61_SOURCES += ../vendor/openevv61/src/reloq61_dictionary.inc
 RULES61_SOURCES += ../vendor/openevv61/lang/kokr61/foreign_words_lexicon_kokr61.inc ../vendor/openevv61/lang/kokr61/foreign_units_kokr61.inc ../vendor/openevv61/lang/kokr61/foreign_expansions_kokr61.inc ../vendor/openevv61/lang/kokr61/foreign_vowels_kokr61.inc
@@ -33,6 +39,8 @@ $(RULES61): $(RULES61_SOURCES)
 	$(MAKE) -C ../vendor/openevv61 -f Makefile.native BUILD=build/release OPT='$(PROVIDER_OPT) $(PROVIDER_LTO)' RULE_OPT='$(PROVIDER_OPT)'
 $(RULES61_WIN): $(RULES61_SOURCES)
 	$(MAKE) -C ../vendor/openevv61 -f Makefile.native BUILD=build/windows-release OPT='$(PROVIDER_OPT) $(PROVIDER_LTO)' RULE_OPT='$(PROVIDER_OPT)' PORT=win32 CC=$(WINDOWS_CC) AR=$(patsubst %gcc-posix,%gcc-ar-posix,$(patsubst %gcc,%gcc-ar,$(WINDOWS_CC)))
+$(RULES61_ANDROID): $(RULES61_SOURCES)
+	$(MAKE) -C ../vendor/openevv61 -f Makefile.native BUILD=build/android-arm64 OPT='-O2 -fsigned-char' RULE_OPT=-O2 PORT=posix CC=$(ANDROID_CC) AR=$(ANDROID_AR)
 libreloq_eci.so test_reloq_eci: $(RULES61)
 eci.dll: $(RULES61_WIN)
 libreloq_eci.so test_reloq_eci eci.dll: Makefile
@@ -64,6 +72,15 @@ HEADERS += ../src/reloq_german_feminine_protected75.inc ../src/reloq_german_pred
 # rules and Delta primitives, not to the acoustic composer or legacy ECI ABI.
 OBJECTS := $(patsubst ../src/%.c,build/posix/%.o,$(SOURCE))
 WINDOWS_OBJECTS := $(patsubst ../src/%.c,build/windows/%.o,$(SOURCE))
+ANDROID_OBJECTS := $(patsubst ../src/%.c,build/android-arm64/%.o,$(SOURCE))
+build/android-arm64/%.o: ../src/%.c $(HEADERS)
+	@mkdir -p $(dir $@)
+	$(ANDROID_CC) $(CPPFLAGS) $(ANDROID_CFLAGS) $(SECTIONS) -ffp-contract=off -fPIC -fvisibility=hidden -I../include -c $< -o $@
+build/android-arm64/reloq_jni.o: ../android/native/reloq_jni.c ../include/reloq_eci.h
+	@mkdir -p $(dir $@)
+	$(ANDROID_CC) $(ANDROID_CFLAGS) $(SECTIONS) -fPIC -fvisibility=hidden -I../include -c $< -o $@
+libreloq_android.so: $(ANDROID_OBJECTS) build/android-arm64/reloq_jni.o $(RULES61_ANDROID)
+	$(ANDROID_CC) -shared $^ -Wl,--gc-sections,--no-undefined,-z,max-page-size=16384 -lm -o $@
 build/posix/%.o: ../src/%.c $(HEADERS)
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SECTIONS) -ffp-contract=off -fPIC -fvisibility=hidden -I../include -c $< -o $@

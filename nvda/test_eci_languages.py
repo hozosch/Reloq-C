@@ -133,6 +133,7 @@ def cancellation():
 
 
 def voice_presets():
+    before = len(Native.instances)
     Native.calls.clear()
     engine = LanguageEngine("eci.dll", engine_factory=Native)
     engine.set_parameter(NATIVE_SPEED, 176)
@@ -153,6 +154,7 @@ def voice_presets():
     assert Native.calls[-1][2][ROUGHNESS] == 27
     assert Native.calls[-1][2][BREATHINESS] == 61
     engine.close()
+    assert len(Native.instances) == before + 1, "presets duplicated their language core"
 
 
 def native_regression():

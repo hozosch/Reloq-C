@@ -8,6 +8,8 @@
 /eci/build/
 /vendor/openevv61/build/
 /dist/
+/android/build/
+*.apk
 *.wav
 *.pcm
 *.s16

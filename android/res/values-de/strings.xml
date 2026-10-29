@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="preview_help">Offline-Sprachausgabe zum Testen, Version 0.2.189. Wähle eine Sprache und Stimme für die Sprachprobe oder ReLoq C Preview in den Android-Einstellungen zur Text-in-Sprache-Ausgabe.</string>
+    <string name="language">Testsprache</string>
+    <string name="profile">Stimme</string>
+    <string name="sample_rate">Abtastrate</string>
+    <string name="pause_mode">Pausen verkürzen</string>
+    <string name="sample_text">Text zum Vorlesen</string>
+    <string name="save">Einstellungen speichern</string>
+    <string name="saved">Einstellungen gespeichert</string>
+    <string name="speak">Testtext vorlesen</string>
+    <string name="stop">Stoppen</string>
+    <string name="system_settings">Android-Spracheinstellungen</string>
+    <string name="initializing">Sprachausgabe wird initialisiert</string>
+    <string name="ready">Sprachausgabe bereit</string>
+    <string name="unavailable">Sprachausgabe nicht verfügbar. Öffne die Android-Spracheinstellungen und wähle ReLoq C Preview.</string>
+    <string-array name="pause_modes"><item>Nie</item><item>Am Ende</item><item>Immer</item></string-array>
+</resources>

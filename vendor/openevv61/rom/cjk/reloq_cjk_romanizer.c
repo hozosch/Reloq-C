@@ -7,6 +7,7 @@
 #include "evv_abi.h"
 #include "reloq_pinyin.h"
 #include "reloq_inline_tags.h"
+#include "reloq61_latin.h"
 
 extern void *cpp_new(uint32_t);
 extern void cpp_delete(void *);
@@ -83,6 +84,8 @@ static uint32_t width_fold(uint32_t cp)
 {return cp>=0xff01&&cp<=0xff5e?cp-0xfee0:cp;}
 static int ascii_letter(uint32_t cp)
 {return(cp>='a'&&cp<='z')||(cp>='A'&&cp<='Z');}
+static int latin_letter(uint32_t cp)
+{return reloq61_latin_byte(cp)!=0;}
 /* The foreign-word property includes its internal digits and punctuation.
  * Classifying each letter run separately split Wi-Fi, ABC123def and email
  * addresses into different native word properties. A change between full
@@ -99,9 +102,10 @@ static size_t latin_token(struct cjk_romanizer *r,const unsigned char *text,
             else if(cp==0x201c||cp==0x201d||cp==0x300c||cp==0x300d||
                     cp==0x300e||cp==0x300f)cp='"';
         }
-        if(cp<=32||cp>=127||cp=='`')break;
+        int letter=reloq61_latin_byte(cp);
+        if(cp<=32||(cp>=127&&!letter)||cp=='`')break;
         if(first){*wide=full;first=0;}
-        if(korean){if(ascii_letter(cp)&&full!=*wide)break;}
+        if(korean){if(letter&&full!=*wide)break;}
         else {
             if(cp==','||cp==';'||cp=='!'||cp=='?'||
                (i&&(cp=='('||cp=='['||cp=='{'||cp=='<')))break;
@@ -117,14 +121,14 @@ static size_t latin_token(struct cjk_romanizer *r,const unsigned char *text,
                    (previous&&strchr("_+#$^~*|",(int)previous))))break;
             }
         }
-        char c=(char)cp;if(append(&r->wide,&c,1))return 0;i+=z;
+        char c=(char)(letter?letter:cp);if(append(&r->wide,&c,1))return 0;i+=z;
     }
     return i;
 }
 static int chinese_literal_letters(const struct text_buffer *word)
 {
     unsigned letters=0,capitals=0;
-    for(size_t i=0;i<word->length;++i){unsigned c=(unsigned char)word->data[i];letters+=ascii_letter(c);capitals+=c>='A'&&c<='Z';}
+    for(size_t i=0;i<word->length;++i){unsigned c=(unsigned char)word->data[i];if(c>=128)return 0;letters+=ascii_letter(c);capitals+=c>='A'&&c<='Z';}
     if(letters==1)return 1;
     /* Two capital initials stay with the Chinese letter-name grammar.
        Longer abbreviations belong to the original English property. */
@@ -161,7 +165,7 @@ static int chinese_latin(struct cjk_romanizer *r,const unsigned char *text,
             if(chinese_symbol(r,cp,previous))return -1;
             active=0;last_width=-1;i+=z;continue;
         }
-        const int changed=foreign&&ascii_letter(cp)&&last_width>=0&&last_width!=full;
+        const int changed=foreign&&latin_letter(cp)&&last_width>=0&&last_width!=full;
         if(!active||changed) {
             if(foreign) {
                 if(!active&&*previous==1&&say(&r->output," `p40 "))return -1;
@@ -169,11 +173,11 @@ static int chinese_latin(struct cjk_romanizer *r,const unsigned char *text,
             } else if(!active&&*previous==1&&say(&r->output," "))return -1;
             *previous=foreign?2:1;active=1;
         }
-        if(ascii_letter(cp))last_width=full;
+        if(latin_letter(cp))last_width=full;
         else if(!(cp>='0'&&cp<='9'))last_width=-1;
         if(cp=='\\'&&foreign) {
             if(say(&r->output,"\\\\\\\\"))return -1;
-        } else {char c=(char)cp;if(append(&r->output,&c,1))return -1;}
+        } else {int letter=reloq61_latin_byte(cp);char c=(char)(letter?letter:cp);if(append(&r->output,&c,1))return -1;}
         i+=z;
     }
     return 0;
@@ -226,7 +230,7 @@ static size_t chinese_latin_phrase(const unsigned char *text,size_t n,unsigned *
         uint32_t cp;size_t used=decode(text+i,n-i,&cp);if(!used)break;
         cp=width_fold(cp);
         if(cp>127||cp=='`'||cp==','||cp==';'||cp=='.'||cp=='!'||cp=='?')break;
-        if(ascii_letter(cp)) {
+        if(latin_letter(cp)) {
             if(!inside) {
                 if(reloq_pinyin_prefix(text+i,n-i))break;
                 ++*words;inside=1;
@@ -286,9 +290,9 @@ static int chinese(struct cjk_romanizer *r,const unsigned char *text,size_t n)
         uint32_t following=0;
         if(i+used<n)decode(text+i+used,n-i-used,&following);
         const int enclosing=(cp=='('||cp=='['||cp=='{'||cp=='<'||cp=='"'||
-            cp==0x201c||cp==0x300c||cp==0x300e)&&ascii_letter(width_fold(following))&&
+            cp==0x201c||cp==0x300c||cp==0x300e)&&latin_letter(width_fold(following))&&
             !reloq_pinyin_prefix(text+i+used,n-i-used);
-        if(ascii_letter(width_fold(cp))||enclosing) {
+        if(latin_letter(width_fold(cp))||enclosing) {
             size_t pinyin=cp<128&&!enclosing?reloq_pinyin_prefix(text+i,n-i):0;
             if(pinyin){
                 if(previous_word==2&&say(&r->output," `p40 "))return -1;
@@ -353,7 +357,7 @@ static int korean(struct cjk_romanizer *r,const unsigned char *text,size_t n)
             if(append(&r->output,text+i,end-i))return -1;
             i=end;kind=0;active=SIZE_MAX;continue;
         }
-        if(ascii_letter(width_fold(cp))){
+        if(latin_letter(width_fold(cp))){
             int full=0;size_t length=latin_token(r,text+i,n-i,1,&full);if(!length)return -1;
             if(korean_property(r,'A',&active)||append(&r->output,r->wide.data,r->wide.length))return -1;
             i+=length;kind=2;continue;
@@ -372,7 +376,7 @@ static int korean(struct cjk_romanizer *r,const unsigned char *text,size_t n)
                 i=end;continue;
             }
             uint32_t after_hyphen=0;if(next=='-'&&end+1<n)decode(text+end+1,n-end-1,&after_hyphen);
-            if(ascii_letter(width_fold(next))||(next=='-'&&ascii_letter(width_fold(after_hyphen)))) {
+            if(latin_letter(width_fold(next))||(next=='-'&&latin_letter(width_fold(after_hyphen)))) {
                 int full=0;size_t length=latin_token(r,text+i,n-i,1,&full);if(!length)return -1;
                 if(korean_property(r,'A',&active)||append(&r->output,r->wide.data,r->wide.length))return -1;
                 i+=length;kind=2;continue;

@@ -2,7 +2,7 @@
 
 ReLoq C is a speech synthesis project that preserves the familiar character of Eloquence while improving pronunciation, responsiveness and control over the voice. Apple Eloquence serves as the reference for language behaviour and sound.
 
-The shared synthesis engine is written in C. **NVDA is the first integration and the current testing platform. Windows SAPI5 and Android are planned next.** Work on those integrations will follow the remaining language and stability fixes, and reductions in the core's size and resource use.
+The shared synthesis engine is written in C. **NVDA is the first integration and the current speech testing platform. An initial Android ARM64 preview is now buildable from the same core.** Windows SAPI5 is planned. Language reliability, responsiveness and lower resource use remain active priorities.
 
 ## Current features
 
@@ -19,7 +19,7 @@ First, make the supported languages and everyday speech reliable. This includes 
 
 Next, reduce binary size, memory use and CPU demand, and keep navigation responsive even at high sample rates. These improvements belong in the shared C core so that every platform can benefit. The project aims for compact, independently expressed C rules without runtime bytecode or original DLL/SYN modules.
 
-Then add a **SAPI5 integration for Windows** and an **Android speech engine** using the same core. These are planned targets, not currently available packages.
+Develop the **Android speech engine** and add a **SAPI5 integration for Windows** using the same core. Android currently has an experimental offline TTS service and a test screen; it still needs real-device and TalkBack testing. SAPI5 is not yet implemented.
 
 ## Using the NVDA add-on
 
@@ -29,7 +29,13 @@ Installable packages belong under [Releases and downloads](https://github.com/ho
 
 Once a package is available, install the `.nvda-addon` file with NVDA, restart NVDA and press **NVDA+Control+S** to select **Eloquence C (experimental)**. Choose your language and voice in NVDA's Speech settings.
 
-The [English user guide](docs/USER-GUIDE.en.md) and [German user guide](docs/USER-GUIDE.de.md) cover languages, settings and dictionaries. [Changes and known limitations in 0.2.188](docs/changes/0.2.188.md) are documented separately.
+The [English user guide](docs/USER-GUIDE.en.md) and [German user guide](docs/USER-GUIDE.de.md) cover languages, settings and dictionaries. [Changes and known limitations in 0.2.189](docs/changes/0.2.189.md) are documented separately.
+
+## Android preview
+
+The first preview targets **ARM64 devices running Android 8 or later**. It includes all 14 language variants and eight voice presets, runs offline, and appears as **ReLoq C Preview** in Android's text-to-speech settings. Its launcher screen provides labelled test controls and sample-rate and pause settings.
+
+The [Android instructions](android/README.md) explain installation, building and validation limits. Native output and the JNI streaming bridge have been tested in memory on the host; Pixel and TalkBack testing remain outstanding. This preview does not yet include NVDA's optional dictionary manager.
 
 ## Feedback and contributions
 

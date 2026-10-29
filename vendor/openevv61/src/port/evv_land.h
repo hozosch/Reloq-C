@@ -39,6 +39,11 @@
 #define EVV_LAND_WORDS 10
 #endif
 
+#elif defined(__aarch64__)
+
+/* x19-x30, platform register x18, SP, FPCR/FPSR and low halves of v8-v15. */
+#define EVV_LAND_WORDS 24
+
 #elif defined(__thumb2__)
 
 /* r4-r11, the stack pointer and the return address, then d8-d15. */

@@ -1,0 +1,227 @@
+{
+  "version": "0.2.189",
+  "android_version": "0.2.189-preview1",
+  "no_audio_files": true,
+  "artifacts": {
+    "eci/eci.dll": {
+      "bytes": 61276672,
+      "sha256": "76495eff2ac97b8fef505883dc07d94571835315f7fbc27a6cb357daeff0d156"
+    },
+    "eci/libreloq_eci.so": {
+      "bytes": 63450864,
+      "sha256": "21a22d98bef432a553772fef0e25e624d85ff24ef3cab87bd722820b7e81c3b9"
+    },
+    "eci/libreloq_android.so": {
+      "bytes": 55492856,
+      "sha256": "91b82227c92ddb081d59aed3c026eae6bc4cef5195a4d5c236c90d0a70e3f8d8"
+    },
+    "dist/reloq-c-synth-experimental-x64-0.2.189.nvda-addon": {
+      "bytes": 23272661,
+      "sha256": "a54be8c8b988a06c1f0334542dbbe9597bea0640a9c0a38be4dac374a357bdb8"
+    },
+    "dist/reloq-c-android-arm64-0.2.189-preview1.apk": {
+      "bytes": 17658757,
+      "sha256": "cf00b486ac6a3ce7af6d984db555cdcb8a449aeff2f83b0381af9abb5ac9f51d"
+    }
+  },
+  "voice_controller_comparison": {
+    "library": "frozen 0.2.188 Linux core, identical for both adapters",
+    "library_sha256": "46f27a0ec6c329bb18ee3621d4c3121aabafc1434a0bbffd33a6bf499d9ab31c",
+    "full_community_dictionaries": true,
+    "baseline": {
+      "handles": 8,
+      "before_close_seconds": 1.6055684090024442,
+      "no_audio_files": true,
+      "peak_rss_kib": 110060,
+      "close_seconds": 0.2044039829997928
+    },
+    "current": {
+      "handles": 1,
+      "before_close_seconds": 0.32462021799437935,
+      "no_audio_files": true,
+      "peak_rss_kib": 38876,
+      "close_seconds": 0.027579481997236144
+    },
+    "pcm_lengths_and_hashes_identical": true,
+    "rows": [
+      {
+        "voice": "1",
+        "pcm_bytes": 43824,
+        "sha256": "d889438c1e2bfb550d89467e02ee0a0e6be7a1813ec79fbdc938be0e232784ca"
+      },
+      {
+        "voice": "2",
+        "pcm_bytes": 43824,
+        "sha256": "eaefbb2cd35a12ddbddb6fd07a6eab47625206d95f690ccb98ff495af6bd3d56"
+      },
+      {
+        "voice": "3",
+        "pcm_bytes": 43824,
+        "sha256": "c37839eb079563b3ca95a531881d2be646f15b7a445dac4ab416341e227b87a9"
+      },
+      {
+        "voice": "4",
+        "pcm_bytes": 43824,
+        "sha256": "078587311da728cd479e963c184cec6b27bddd85d3d2d3b081627fd559d14acf"
+      },
+      {
+        "voice": "5",
+        "pcm_bytes": 43824,
+        "sha256": "2ba3dbf48b180378ccf5ce94334e1aebfb7dcb54e89718516f291494efb902bf"
+      },
+      {
+        "voice": "6",
+        "pcm_bytes": 43824,
+        "sha256": "53cb3672249c06b64b610efc1ffd57f56dbf8d504583a6d75504a87b822e4ffa"
+      },
+      {
+        "voice": "7",
+        "pcm_bytes": 43824,
+        "sha256": "d980c58da53e892bff11c55b8ba8f65b83897e19d717763acc4f3f2952a833b2"
+      },
+      {
+        "voice": "8",
+        "pcm_bytes": 43824,
+        "sha256": "0b8145ea08e577ddb66f820044cf265a74838dfbec24cd618adba942c0faad3c"
+      },
+      {
+        "voice": "8",
+        "pcm_bytes": 43824,
+        "sha256": "0b8145ea08e577ddb66f820044cf265a74838dfbec24cd618adba942c0faad3c"
+      },
+      {
+        "voice": "7",
+        "pcm_bytes": 43824,
+        "sha256": "d980c58da53e892bff11c55b8ba8f65b83897e19d717763acc4f3f2952a833b2"
+      },
+      {
+        "voice": "6",
+        "pcm_bytes": 43824,
+        "sha256": "53cb3672249c06b64b610efc1ffd57f56dbf8d504583a6d75504a87b822e4ffa"
+      },
+      {
+        "voice": "5",
+        "pcm_bytes": 43824,
+        "sha256": "2ba3dbf48b180378ccf5ce94334e1aebfb7dcb54e89718516f291494efb902bf"
+      },
+      {
+        "voice": "4",
+        "pcm_bytes": 43824,
+        "sha256": "078587311da728cd479e963c184cec6b27bddd85d3d2d3b081627fd559d14acf"
+      },
+      {
+        "voice": "3",
+        "pcm_bytes": 43824,
+        "sha256": "c37839eb079563b3ca95a531881d2be646f15b7a445dac4ab416341e227b87a9"
+      },
+      {
+        "voice": "2",
+        "pcm_bytes": 43824,
+        "sha256": "eaefbb2cd35a12ddbddb6fd07a6eab47625206d95f690ccb98ff495af6bd3d56"
+      },
+      {
+        "voice": "1",
+        "pcm_bytes": 43824,
+        "sha256": "d889438c1e2bfb550d89467e02ee0a0e6be7a1813ec79fbdc938be0e232784ca"
+      }
+    ],
+    "limits": "Local host timings, not Windows/NVDA or Android device measurements; eight-profile sequence."
+  },
+  "validation": {
+    "native_eci_unit_suite": "passed",
+    "public_eci_exports": 21,
+    "eci_diagnostics": "passed",
+    "native_language_pcm_index_comparisons": 40,
+    "native_dictionary_semantics_cases": 25,
+    "dictionary_manager_tests": 18,
+    "dictionary_tests": 7,
+    "native_dictionary_queue_reload_cancel_cycles": 12,
+    "native_dictionary_queue_recovery_hz": 48000,
+    "cjk_latin_unicode_fragment_index_checks": 366,
+    "cjk_baseline_comparison": "passed for ordinary ASCII/Pinyin and Japanese accent cases",
+    "nvda_package_ui_languages": [
+      "en",
+      "de"
+    ],
+    "nvda_playback_queue": "passed",
+    "nvda_player_watchdog": "passed",
+    "android_host_jni_pcm_comparisons": 26,
+    "android_host_jni_cancel_stale_stop_recovery": "passed",
+    "android_host_bounded_queue_and_112_voice_names": "passed",
+    "android_arm64_compiled_register_stack_fp_bounds_test": "passed under Unicorn",
+    "android_apk_signature": "v2 and v3 verified",
+    "android_elf_page_alignment_bytes": 16384,
+    "android_apk_manifest_dex_architecture_dependencies": "checked",
+    "windows_pe": {
+      "actual_release_dll_executed": true,
+      "cpu_emulation": true,
+      "windows_nvda_execution": false,
+      "patched_speech_code": false,
+      "cross_platform_strict_pcm_tolerance": true,
+      "cases": [
+        {
+          "language": 65536,
+          "text": "NVDA.",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "pitch": 50,
+          "inflection": 30,
+          "samples": 5544,
+          "sha256": "ceb3f06ca57a1bfa9e60afeff91224aab102927406033fb398ab5fd7b2a7069d",
+          "native_sha256": "c1ccf684eef3a873d3f55525c1fe1d9686d1dc307f5eba6aeb9c6099deed8267",
+          "changed_samples": 3,
+          "maximum_absolute_pcm_delta": 2,
+          "rms_pcm_delta": 0.046524210519923545,
+          "native_rms": 2848.927557076342,
+          "error_db_relative_to_native_rms": -95.74004787715668
+        },
+        {
+          "language": 655360,
+          "text": "café.",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "pitch": 50,
+          "inflection": 30,
+          "samples": 4752,
+          "sha256": "f77bfb6ea18ef7c51c0cee049f6c8ae43c8111f70016e000d54a711df35e7bc1",
+          "native_sha256": "f443a18259a668211eb40b64a77f1c7b8c90a58ec947383bafd54743109c538b",
+          "changed_samples": 5,
+          "maximum_absolute_pcm_delta": 2,
+          "rms_pcm_delta": 0.06487491201346025,
+          "native_rms": 2145.4264550508337,
+          "error_db_relative_to_native_rms": -90.38873699436385
+        },
+        {
+          "language": 393216,
+          "text": "Müller café.",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "pitch": 50,
+          "inflection": 30,
+          "samples": 5973,
+          "sha256": "1e74041c38bd2ae39d6a812630343e6bf07dba25096d8e0b9a5b21af99dc7063",
+          "native_sha256": "6ce12b1767ac4baa05ced0f445ef45375ee402e90e1a6b87dd0e025767141b00",
+          "changed_samples": 4,
+          "maximum_absolute_pcm_delta": 2,
+          "rms_pcm_delta": 0.05175636106571935,
+          "native_rms": 2953.371385853094,
+          "error_db_relative_to_native_rms": -95.12708657775511
+        }
+      ]
+    }
+  },
+  "not_tested": [
+    "Actual Windows/NVDA responsiveness on the user device",
+    "Android installation/service discovery and Pixel/TalkBack playback",
+    "Android sustained 48 kHz playback"
+  ],
+  "remaining": [
+    "Occasional NVDA response delays",
+    "Further CPU and package-size work",
+    "Android optional dictionary management",
+    "Windows SAPI5 integration"
+  ]
+}
