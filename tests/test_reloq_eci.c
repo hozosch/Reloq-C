@@ -112,7 +112,7 @@ int main(void)
 {
     char version[20] = {0};
     eciVersion(version);
-    CHECK(!strcmp(version, "0.2.189.0"));
+    CHECK(!strcmp(version, "0.2.190.0"));
     int languages = 0;
     CHECK(eciGetAvailableLanguages(NULL, &languages) == 0 &&
           languages == 0);

@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import zipfile
+from verify_apk import verify_apk
 
 ROOT=Path(__file__).resolve().parents[1]
 HERE=ROOT/"android"
@@ -28,7 +29,7 @@ def main():
     parser.add_argument("--build-tools",type=Path)
     parser.add_argument("--android-jar",type=Path)
     parser.add_argument("--jobs",type=int,default=4)
-    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-0.2.189-preview1.apk")
+    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-0.2.190-preview2.apk")
     parser.add_argument("--keystore",type=Path,default=HERE/"preview-debug.p12")
     args=parser.parse_args()
     if not args.sdk or not args.ndk or not args.java_home:
@@ -69,7 +70,10 @@ def main():
     run(host/"llvm-strip","--strip-unneeded",native)
     with zipfile.ZipFile(build/"resources.apk") as resources, zipfile.ZipFile(
             build/"unsigned.apk","w",compression=zipfile.ZIP_DEFLATED) as apk:
-        for entry in resources.infolist(): apk.writestr(entry.filename,resources.read(entry))
+        # Keep aapt2's storage method, especially uncompressed resources.arsc.
+        # Using only the name here silently applied ZIP_DEFLATED to it and
+        # made target-30+ APKs uninstallable despite valid signatures.
+        for entry in resources.infolist(): apk.writestr(entry,resources.read(entry))
         apk.write(dex/"classes.dex","classes.dex")
         apk.write(native,"lib/arm64-v8a/libreloq_android.so")
     run(tools/"zipalign","-P","16","-f","4",build/"unsigned.apk",build/"aligned.apk")
@@ -78,6 +82,7 @@ def main():
         "--ks-pass","pass:android","--key-pass","pass:android","--out",output,build/"aligned.apk",env=environment)
     run(tools/"apksigner","verify","--verbose",output,env=environment)
     run(tools/"zipalign","-c","-P","16","4",output)
+    verify_apk(output)
     print(output)
 
 

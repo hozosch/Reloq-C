@@ -888,6 +888,20 @@ int reloq61_dictionary_attach(void *set,delta_state *d)
     return s->home?0:-1;
 }
 
+/* Keep the parsed volumes while an interrupted native machine is discarded.
+ * The previous home may already belong to a reset machine. Inspect only the
+ * current machine supplied by the owner, then forget both transient links.
+ * Undo text belongs to that discarded input graph, never to the next one. */
+void reloq61_dictionary_detach(void *set,delta_state *d)
+{
+    DictionarySet *s=set;if(!s)return;
+    if(d&&d->dlang&&DL_CURRENT(DT_LANG(d))==s)DL_CURRENT(DT_LANG(d))=NULL;
+    s->home=NULL;s->machine=NULL;
+    for(int i=0;i<UD_VOLUMES;++i)if(s->vol[i])s->vol[i]->last[0]=0;
+    if(s->words)s->words->last[0]=0;
+    if(s->main_words)s->main_words->last[0]=0;
+}
+
 static int lexical_order(const void *a,const void *b)
 {
     const struct reloq_lexicon_override *left=a,*right=b;

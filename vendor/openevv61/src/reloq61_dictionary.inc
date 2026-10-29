@@ -14,6 +14,15 @@ extern int32_t STDCALL es_engsynDictFindFirst(void *,int32_t,const char **,const
 extern int32_t STDCALL es_engsynDictFindNext(void *,int32_t,const char **,const char **);
 extern int reloq61_dictionary_read(void *,int,FILE *,size_t);
 extern int reloq61_dictionary_attach(void *,delta_state *);
+extern void reloq61_dictionary_detach(void *,delta_state *);
+static void dictionary_detach(struct provider_worker *w,OldInst *handle)
+{
+    if(!w->dictionary)return;
+    ECIinstance *instance=handle?(void *)handle->fresh:NULL;
+    delta_state *d=instance&&instance->thread&&instance->thread->engine?
+        ew_machine(instance->thread->engine):NULL;
+    reloq61_dictionary_detach(w->dictionary,d);
+}
 static void dictionary_clear(struct provider_worker *w)
 {
     for(size_t i=0;i<w->dictionary_key_count;++i)free(w->dictionary_keys[i]);
@@ -21,8 +30,7 @@ static void dictionary_clear(struct provider_worker *w)
     memset(w->dictionary_lengths,0,sizeof w->dictionary_lengths);
     memset(w->dictionary_starts,0,sizeof w->dictionary_starts);w->dictionary_checked=0;
     if(w->dictionary) {
-        delta_state *d=w->handle?ew_machine(((ECIinstance *)w->handle->fresh)->thread->engine):NULL;
-        reloq61_dictionary_attach(w->dictionary,d);es_engsynDeleteDict(w->dictionary);
+        dictionary_detach(w,w->handle);es_engsynDeleteDict(w->dictionary);
     }
     w->dictionary=NULL;
 }

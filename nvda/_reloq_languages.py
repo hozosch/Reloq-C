@@ -233,6 +233,12 @@ class LanguageEngine:
 
     def set_dictionary_path(self, path):
         self._assert_owner()
+        # NVDA passes immutable, content-addressed dictionary snapshots.
+        # Repeated settings/update notifications for the same snapshot do
+        # not replace every already initialized language and its tables.
+        path = str(path) if path is not None else None
+        if path == self._dictionary_path:
+            return
         changed = []
         try:
             for engine in self._engines.values():

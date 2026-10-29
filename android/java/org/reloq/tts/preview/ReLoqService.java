@@ -72,7 +72,7 @@ public final class ReLoqService extends TextToSpeechService {
             if(destroyed) return 0;
             if(context!=0) return context;
         }
-        File target=new File(getFilesDir(),"german-0.2.189.rlex");
+        File target=new File(getFilesDir(),"german-0.2.190.rlex");
         if(!target.isFile()) {
             File temporary=new File(getFilesDir(),"german.rlex.tmp");
             try(InputStream input=getAssets().open("german.rlex");

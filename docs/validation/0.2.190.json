@@ -1,0 +1,283 @@
+{
+  "version": "0.2.190",
+  "android_version": "0.2.190-preview2",
+  "no_audio_files": true,
+  "artifacts": {
+    "eci/eci.dll": {
+      "bytes": 61278720,
+      "sha256": "498d077c1aa94d379675fa0eb07953758eff0a52e8232b706855c1be401827ca"
+    },
+    "eci/libreloq_eci.so": {
+      "bytes": 63450912,
+      "sha256": "56722618d415ca1b25fbaf48f9c910693c09c65b51c9fd384cc9023437293a01"
+    },
+    "eci/libreloq_android.so": {
+      "bytes": 55492856,
+      "sha256": "7707090f42b0bc54bbcf414c83227cfddeea7b905406c7db5bd61b6bf8acf991"
+    },
+    "dist/reloq-c-synth-experimental-x64-0.2.190.nvda-addon": {
+      "bytes": 23273223,
+      "sha256": "18ad5c9b6894e328fe6f64a3f2f4b0b7e2173f4698e73a02a761cf0950069009"
+    },
+    "dist/reloq-c-android-arm64-0.2.190-preview2.apk": {
+      "bytes": 17658757,
+      "sha256": "c4a74a2369262d804ebcdead623662d4d33bd49c9dfbdc2df3fd59175ec97cb1"
+    }
+  },
+  "community_dictionaries": {
+    "master_commit": "cdaad7808ee4c017d69eeac7151e4defb899604f",
+    "freshly_resolved_via_connected_github_api": true,
+    "all_packaged_blobs_validated": true,
+    "ordinary_urllib_fetch_timed_out": true
+  },
+  "cancel_recovery_comparison": {
+    "baseline": {
+      "native_version": "0.2.189.0",
+      "rate": 1,
+      "load_seconds": 0.20022002600308042,
+      "pcm_bytes": 59466,
+      "sha256": "8ddd0af42733283e5b0663d8d7e733b16f7063b08bac895af7d6e56869357178",
+      "indices": [
+        [
+          7,
+          59466
+        ]
+      ],
+      "rows": [
+        {
+          "cancel_seconds": 0.032441940005810466,
+          "recovery_seconds": 0.23238171899720328,
+          "recovery_first_pcm_seconds": 0.2237322189976112
+        },
+        {
+          "cancel_seconds": 0.030601215999922715,
+          "recovery_seconds": 0.21742615499533713,
+          "recovery_first_pcm_seconds": 0.20887895999476314
+        },
+        {
+          "cancel_seconds": 0.042380890998174436,
+          "recovery_seconds": 0.21056880099786213,
+          "recovery_first_pcm_seconds": 0.20415734199923463
+        },
+        {
+          "cancel_seconds": 0.028189533994009253,
+          "recovery_seconds": 0.22511406600096961,
+          "recovery_first_pcm_seconds": 0.21657992000109516
+        },
+        {
+          "cancel_seconds": 0.04588264600170078,
+          "recovery_seconds": 0.16622103600093396,
+          "recovery_first_pcm_seconds": 0.16090650099795312
+        },
+        {
+          "cancel_seconds": 0.03299864899599925,
+          "recovery_seconds": 0.141447251997306,
+          "recovery_first_pcm_seconds": 0.13539033800043399
+        }
+      ],
+      "pcm_and_indices_identical": true,
+      "no_audio_files": true
+    },
+    "current": {
+      "native_version": "0.2.190.0",
+      "rate": 1,
+      "load_seconds": 0.1838893599997391,
+      "pcm_bytes": 59466,
+      "sha256": "8ddd0af42733283e5b0663d8d7e733b16f7063b08bac895af7d6e56869357178",
+      "indices": [
+        [
+          7,
+          59466
+        ]
+      ],
+      "rows": [
+        {
+          "cancel_seconds": 0.00737152300280286,
+          "recovery_seconds": 0.030693038999743294,
+          "recovery_first_pcm_seconds": 0.02309971200156724
+        },
+        {
+          "cancel_seconds": 0.005681938004272524,
+          "recovery_seconds": 0.033565465004357975,
+          "recovery_first_pcm_seconds": 0.025493257002381142
+        },
+        {
+          "cancel_seconds": 0.0054021059986553155,
+          "recovery_seconds": 0.03236410700628767,
+          "recovery_first_pcm_seconds": 0.02370549500483321
+        },
+        {
+          "cancel_seconds": 0.005338149996532593,
+          "recovery_seconds": 0.04966573599813273,
+          "recovery_first_pcm_seconds": 0.042408343993884046
+        },
+        {
+          "cancel_seconds": 0.0047508259958704,
+          "recovery_seconds": 0.02654945799440611,
+          "recovery_first_pcm_seconds": 0.01957901899731951
+        },
+        {
+          "cancel_seconds": 0.003943769996112678,
+          "recovery_seconds": 0.03419874899554998,
+          "recovery_first_pcm_seconds": 0.024923087999923155
+        }
+      ],
+      "pcm_and_indices_identical": true,
+      "no_audio_files": true
+    },
+    "current_48khz": {
+      "native_version": "0.2.190.0",
+      "rate": 6,
+      "load_seconds": 0.198827057996823,
+      "pcm_bytes": 259488,
+      "sha256": "957c95c326d8b76abaf75978c1ebdf51bd62332f1b7a1f0a0a622a3241ee26b0",
+      "indices": [
+        [
+          7,
+          259488
+        ]
+      ],
+      "rows": [
+        {
+          "cancel_seconds": 0.007317481002246495,
+          "recovery_seconds": 0.08925368200289086,
+          "recovery_first_pcm_seconds": 0.02663682999991579
+        },
+        {
+          "cancel_seconds": 0.007111631995940115,
+          "recovery_seconds": 0.10216813399892999,
+          "recovery_first_pcm_seconds": 0.02796823499375023
+        },
+        {
+          "cancel_seconds": 0.005932945998210926,
+          "recovery_seconds": 0.09827038300136337,
+          "recovery_first_pcm_seconds": 0.0271156310045626
+        },
+        {
+          "cancel_seconds": 0.010909912001807243,
+          "recovery_seconds": 0.08074692899390357,
+          "recovery_first_pcm_seconds": 0.024550186994019896
+        },
+        {
+          "cancel_seconds": 0.005605612997896969,
+          "recovery_seconds": 0.0838434329998563,
+          "recovery_first_pcm_seconds": 0.024823718995321542
+        },
+        {
+          "cancel_seconds": 0.009792689997993875,
+          "recovery_seconds": 0.09300416100450093,
+          "recovery_first_pcm_seconds": 0.02295769900229061
+        }
+      ],
+      "pcm_and_indices_identical": true,
+      "no_audio_files": true
+    },
+    "median_first_pcm_ms": {
+      "baseline_11025": 206.51815099699888,
+      "current_11025": 24.314291502378182,
+      "current_48000": 25.730274497618666
+    },
+    "cross_version_pcm_and_indices_identical": true,
+    "limits": "Local host core measurements, not real Windows/NVDA device timings; initial dictionary load still has a cost."
+  },
+  "validation": {
+    "native_eci_unit_suite": "passed",
+    "eci_public_exports": 21,
+    "native_eci_diagnostics": "passed",
+    "dictionary_retention_checks": 18,
+    "retention_source_files_absent": true,
+    "previous_release_fails_first_retention_case": true,
+    "private_arena_instrumented_address_sanitizer": "passed on modified provider in existing development build",
+    "leak_sanitizer_enabled": false,
+    "native_dictionary_context_case_compound_checks": 25,
+    "native_language_pcm_index_comparisons": 40,
+    "dictionary_manager_tests": 18,
+    "dictionary_tests": 7,
+    "nvda_ui_package_tests": [
+      "en",
+      "de"
+    ],
+    "native_dictionary_queue_reload_cancel_cycles": 12,
+    "native_dictionary_queue_recovery_hz": 48000,
+    "playback_queue": "passed",
+    "player_watchdog": "passed",
+    "android_host_jni_pcm_comparisons": 26,
+    "android_host_jni_cancel_stale_stop_recovery": "passed",
+    "android_install_packaging": {
+      "resources_arsc_stored": true,
+      "resource_data_offset": 1504,
+      "resource_alignment_bytes": 4,
+      "arm64_elf_alignment_bytes": 16384,
+      "actual_previous_apk_rejected_by_new_gate": true,
+      "apksigner_v2_v3": "verified",
+      "signing_certificate_sha256": "e4af6db7bf1fd6ecf1670d48dac195d56cafc96daceec1238211a0ff1ba1091f"
+    },
+    "windows_release_pe": {
+      "actual_dll_executed_under_cpu_emulation": true,
+      "windows_nvda_execution": false,
+      "patched_speech_code": false,
+      "cross_platform_strict_pcm_tolerance": true,
+      "cases": [
+        {
+          "language": 65536,
+          "text": "cancellationtoken.",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "pitch": 50,
+          "inflection": 30,
+          "dictionaries": true,
+          "samples": 4059,
+          "sha256": "ed24c30b7d4e9c3f782a3cdb1fefd275542e67ebf5d78adc02005f8034cd7d92",
+          "native_sha256": "edd34f30b20e0a2ccd693b6c364ea1f6fb2f25695d23423dc701ce259ff87ba5",
+          "changed_samples": 1,
+          "maximum_absolute_pcm_delta": 2,
+          "rms_pcm_delta": 0.03139210728986741,
+          "native_rms": 1678.0394439529532,
+          "error_db_relative_to_native_rms": -94.55963390244982
+        },
+        {
+          "language": 655360,
+          "text": "café.",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "pitch": 50,
+          "inflection": 30,
+          "dictionaries": false,
+          "samples": 4752,
+          "sha256": "f77bfb6ea18ef7c51c0cee049f6c8ae43c8111f70016e000d54a711df35e7bc1",
+          "native_sha256": "f443a18259a668211eb40b64a77f1c7b8c90a58ec947383bafd54743109c538b",
+          "changed_samples": 5,
+          "maximum_absolute_pcm_delta": 2,
+          "rms_pcm_delta": 0.06487491201346025,
+          "native_rms": 2145.4264550508337,
+          "error_db_relative_to_native_rms": -90.38873699436385
+        },
+        {
+          "language": 393216,
+          "text": "Müller café.",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "pitch": 50,
+          "inflection": 30,
+          "dictionaries": false,
+          "samples": 5973,
+          "sha256": "1e74041c38bd2ae39d6a812630343e6bf07dba25096d8e0b9a5b21af99dc7063",
+          "native_sha256": "6ce12b1767ac4baa05ced0f445ef45375ee402e90e1a6b87dd0e025767141b00",
+          "changed_samples": 4,
+          "maximum_absolute_pcm_delta": 2,
+          "rms_pcm_delta": 0.05175636106571935,
+          "native_rms": 2953.371385853094,
+          "error_db_relative_to_native_rms": -95.12708657775511
+        }
+      ]
+    }
+  },
+  "open_checks": [
+    "Actual Pixel installation and TalkBack playback",
+    "Actual Windows/NVDA responsiveness on the user devices",
+    "Android sustained high-rate playback"
+  ]
+}

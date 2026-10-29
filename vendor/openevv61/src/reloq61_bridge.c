@@ -60,15 +60,19 @@ void *reloq61_worker_new(int language)
     return p;
 }
 static void dictionary_clear(struct provider_worker *);
+static void dictionary_detach(struct provider_worker *,OldInst *);
 static void release_handle(struct provider_worker *worker,OldInst *h)
 {
-    if(worker){dictionary_clear(worker);worker->handle=NULL;worker->prepared=0;}
+    /* An interrupted utterance invalidates its machine, not its immutable
+     * dictionary data. Rebind that data when a new machine is needed. */
+    if(worker){dictionary_detach(worker,h);worker->handle=NULL;worker->prepared=0;}
     if(h)es_delete(h);
 }
 void reloq61_worker_free(void *context)
 {
     struct provider_worker *p=context;
     if(p){
+        dictionary_clear(p);
         release_handle(p,p->handle);
         free(p->dictionary_path);
         reloq61_worker_free(p->english);
@@ -120,7 +124,9 @@ static int prepare_next(struct provider_worker *worker,const struct reloq61_requ
 {
     OldInst *h=worker->handle;
     if(api_reset(h->fresh,q->language))return 0;
-    if(dictionary_bind(worker,ew_machine(((ECIinstance *)h->fresh)->thread->engine)))return 0;
+    if(dictionary_bind(worker,ew_machine(((ECIinstance *)h->fresh)->thread->engine))) {
+        dictionary_clear(worker);return 0;
+    }
     restore_controller(worker);
     /* Finish the complete reset and setup after this request's controls have
        been delivered. The next utterance can start from a fresh prepared
@@ -555,6 +561,7 @@ static int generate_core(const struct reloq61_request *q,struct reloq61_result *
     if(!d){r->error=101;release_handle(worker,h);reloq61_inline_scope(previous_inline);return -1;}
     reloq61_inline_scope(&((ECIinstance *)h->fresh)->queue);
     if(worker&&dictionary_bind(worker,d)) {
+        dictionary_clear(worker);
         r->error=103;release_handle(worker,h);reloq61_inline_scope(previous_inline);return -1;
     }
     dl=EVV_AT(DeltaLang *,d->dlang);

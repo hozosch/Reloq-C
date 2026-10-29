@@ -1,12 +1,12 @@
 # Android ARM64 preview
 
 ReLoq C Preview uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `0.2.189-preview1` targets ARM64 (`arm64-v8a`), Android 8/API 26
+add-on. Version `0.2.190-preview2` targets ARM64 (`arm64-v8a`), Android 8/API 26
 or later. It runs offline and requests no network permission.
 
 ## Try it
 
-Install `reloq-c-android-arm64-0.2.189-preview1.apk`, then open **ReLoq C Preview**.
+Install `reloq-c-android-arm64-0.2.190-preview2.apk`, then open **ReLoq C Preview**.
 Choose a test language, voice, sample rate and pause policy, and press **Read test
 text**. The screen uses ordinary labelled Android controls; English and German
 UI text are included. **Stop** interrupts the current test.
@@ -25,6 +25,11 @@ use the single Mandarin Chinese module. Japanese retains its existing analysis.
 The optional community/custom dictionary manager is currently NVDA-only.
 The built-in German lexicon is bundled in the APK. No additional voice-data
 download or original DLL/SYN module is needed.
+
+Preview 1 had a packaging error: its resource table was compressed, preventing
+installation on current Android versions. Preview 2 preserves aapt2's storage
+methods and checks the final resource-table alignment in addition to signature
+and ELF checks. The package identity and signing certificate are unchanged.
 
 ## Build on Linux x86-64
 
@@ -90,6 +95,14 @@ python3 android/test_arm64_landing.py \
 ```
 
 The APK's manifest, DEX, native architecture, dependencies, 16 KiB segment
-alignment and signature have been inspected. Actual installation, service
+alignment and signature have been inspected. The stored resource table and
+its four-byte offset alignment are now a required build check; the checker
+rejects the actual old preview APK. Run it separately with:
+
+```sh
+python3 android/verify_apk.py dist/reloq-c-android-arm64-0.2.190-preview2.apk
+```
+
+Actual installation, service
 discovery, TalkBack navigation, sustained playback and 48 kHz performance on a
 Pixel have **not yet been tested**. Those are the next practical checks.

@@ -12,6 +12,7 @@ python3 eci/test_public_abi.py eci/libreloq_eci.so --header include/reloq_eci.h
 python3 eci/test_diagnostics.py eci/libreloq_eci.so
 python3 nvda/test_dictionary_manager.py
 python3 nvda/test_eci_dictionary_semantics.py
+python3 nvda/test_eci_dictionary_retention.py
 python3 addon/test_synth.py
 python3 addon/test_synth.py de
 python3 nvda/test_eci_transport.py
@@ -46,7 +47,7 @@ python3 addon/build_synth.py --dll eci/eci.dll
 
 Der Paketbau prüft das x64-PE-Format, übernimmt Treiber und Daten und fragt die aktuelle Master-Version von `eigencrow/ibmttsdictionaries` ab. Dafür wird Netzwerkzugriff benötigt. Das Paket landet unter `dist/`; Versionsangaben und Ausgabe-Pfad stehen in `addon/synth/manifest.ini` und `addon/build_synth.py` und müssen für eine neue Veröffentlichung gemeinsam aktualisiert werden.
 
-Der aktuelle Paketstand ist 0.2.189. Änderungen stehen in [den Versionsnotizen](changes/0.2.189.md), bekannte Fehler und die Grenzen der bisherigen Prüfungen im [technischen Arbeitsstand](CURRENT-WORK.md). Die C-Kernversion wird beim Laden im NVDA-Protokoll ausgegeben; damit lässt sich prüfen, welche DLL tatsächlich aktiv ist.
+Der aktuelle Paketstand ist 0.2.190. Änderungen stehen in [den Versionsnotizen](changes/0.2.190.md), bekannte Fehler und die Grenzen der bisherigen Prüfungen im [technischen Arbeitsstand](CURRENT-WORK.md). Die C-Kernversion wird beim Laden im NVDA-Protokoll ausgegeben; damit lässt sich prüfen, welche DLL tatsächlich aktiv ist.
 
 ## Android-ARM64-Vorschau
 

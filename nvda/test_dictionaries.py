@@ -104,9 +104,11 @@ class LanguagePersistence(unittest.TestCase):
                 self.language = options["dialect"]
                 self.path = None
                 self.closed = False
+                self.dictionary_calls = []
                 self.instances.append(self)
             def set_parameter(self, key, value):pass
             def set_dictionary_path(self, path):
+                self.dictionary_calls.append(path)
                 if path == "broken" and self.language == US_ENGLISH.id:
                     raise RuntimeError("failed native set")
                 self.path = path
@@ -117,6 +119,10 @@ class LanguagePersistence(unittest.TestCase):
         e.select_voice(US_ENGLISH.id, "1")
         e.select_voice(GERMAN.id, "2")
         self.assertEqual([x.path for x in Engine.instances], ["one"] * 2)
+        before = [list(x.dictionary_calls) for x in Engine.instances]
+        e.set_dictionary_path(Path("one"))
+        e.set_dictionary_path("one")
+        self.assertEqual([x.dictionary_calls for x in Engine.instances], before)
         e.set_dictionary_path("two")
         with self.assertRaises(RuntimeError):e.set_dictionary_path("broken")
         self.assertEqual([x.path for x in Engine.instances], ["two"] * 2)
