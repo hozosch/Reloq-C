@@ -149,7 +149,7 @@ def main():
     assert seen
     assert run(['Hello again.',EciIndex(8)])[1][-1][0]==8
     e.close()
-    # Use the actual language catalog with real independent ECI handles.
+    # Real language owners share their handle between voice presets.
     sys.path.insert(0,str(ROOT/'addon'))
     from build_synth import merged_german_lexicon
     with tempfile.TemporaryDirectory() as folder:
@@ -165,8 +165,9 @@ def main():
         engine.select_voice(GERMAN.id,'2')
         assert engine.speak([EciLanguage(US_ENGLISH.id,'1'),'Hello.',
                             EciLanguage(GERMAN.id,'2'),'Hallo.'],chunks.append,indices.append)
-        english = engine._engines[(US_ENGLISH.id,'1')]
-        german = engine._engines[(GERMAN.id,'2')]
+        english = engine._engines[US_ENGLISH.id]
+        german = engine._engines[GERMAN.id]
+        assert len(engine._engines)==2
         assert english._dll.eciGetParam(english._handle,GENDER)==1
         assert german._dll.eciGetParam(german._handle,GENDER)==1
         engine.close()

@@ -1,6 +1,26 @@
-# Technischer Arbeitsstand: 0.2.190
+# Technischer Arbeitsstand: 0.2.191
 
 Die Projektbeschreibung und Bedienungsanleitungen stehen jetzt getrennt von diesen Entwicklungsnotizen. Ausgangspunkt für die Änderungen ist der unveränderte GitHub-Import von 0.2.186. Der eigene deutsche Akustikplaner, Chinesisch und die Entscheidungen in [GEWUENSCHTE-ABWEICHUNGEN-DE.md](../GEWUENSCHTE-ABWEICHUNGEN-DE.md) bleiben erhalten.
+
+## Android: Stimmparameter, Tempo, Wörterbücher und Updates
+
+Der Nutzer bestätigt, dass die Installation und das verzögerte US-Reagieren mit 0.2.190 behoben sind. Die folgende Arbeit richtet sich auf die gewünschte Android-Einstellungsoberfläche und weitere kleine Einsparungen; der deutsche Akustikplaner und die übrigen Sprachregeln bleiben erhalten.
+
+`0.2.191-preview3` enthält Sprache/Stimme, Schnellsprechmodus, Tonhöhe, Satzmelodie, Lautstärke, männliches/weibliches Modell, Kopfgröße, Rauheit, Behauchtheit, alle Abtastraten, Pausenmodi und ECI-Tags. Stimmwerte werden je Profil gespeichert. Geschwindigkeit und Tonhöhe haben getrennte Schalter „über Android steuern“; bei ausgeschaltetem Schalter gilt der eigene Regler. Sprache und Stimme können ebenfalls auf die gespeicherte Auswahl festgelegt werden.
+
+Die Android-Anfrage liefert für Tempo und Tonhöhe relative Werte mit 100 als Normalwert. Der eigene Temporegler zeigt nominelle Wörter pro Minute an, zunächst 190. Die Geschwindigkeitskurve wird beim Build direkt aus der C-Dauertabelle erzeugt und invers ausgewertet. Normal entspricht nativ 55 statt des früheren 98. Drei unterschiedlich zusammengesetzte englische Texte ergeben zusammen rund 174 WPM bei normal und 353 WPM bei 2×; das Dauerverhältnis ist 2,03. Die tatsächliche Wortzahlrate hängt stark von Wortlänge, Sprache und Satzpausen ab. Tonhöhenänderungen skalieren die physische Grundfrequenz statt den nativen Parameter einfach proportional zu setzen.
+
+Die Android-Wörterbuchverwaltung aktiviert die gebündelten Gemeinschaftsdaten, aktualisiert sie ausdrücklich aus aktuellem Master und bindet eigene Quelldateien über dauerhaften Dateizugriff ein. Quellen können sortiert, entfernt und neu geladen werden. Windows-1252-Bytes und native Main-/Root-/Abkürzungsstufen bleiben erhalten; Ersetzungen finden im C-Kern statt. Downloads, Zusammenführen und Änderungsprüfung laufen auf einem getrennten Worker. Ohne eigene Quellen läuft kein Dateimonitor; der Wörterbuch-Worker beendet sich nach 15 Sekunden ohne Arbeit. Unveränderliche Snapshots bleiben bis zum Ende ihrer aktiven Anfrage erhalten. Automatisches Erkennen von Editoränderungen benötigt Änderungsdatum oder Größe vom Android-Dateianbieter; manuelles Neuladen liest immer erneut.
+
+Der JNI-Transport teilt weiterhin einen Kern je Sprache. Er setzt nur geänderte Steuerwerte und lädt Wörterbücher erst bei Benutzung der Sprache oder einem geänderten Snapshot. Die PCM-Puffer werden jetzt ebenfalls erst je verwendeter Sprache angelegt: anfangs 2.200 statt 30.800 Byte. Das deutsche Zusatzlexikon wird erst bei deutscher Ausgabe entpackt und anhand seines Inhalts benannt. Unveränderte 712.343 Byte können über App-Updates hinweg weiterverwendet werden. Alte ausschließlich generierte Versionskopien werden anschließend entfernt. Wiederholungscaches gibt es weiterhin nicht.
+
+DEFLATE-Stufe 9 spart bei identischem Paketinhalt gegenüber Stufe 6 im NVDA-Paket 177.919 Byte. Der Android-Build nutzt dieselbe stärkere Kompression; wegen der neu enthaltenen optionalen Gemeinschaftswörterbücher wächst seine Gesamtgröße dennoch gegenüber der vorigen APK. Hieraus wird kein großer CPU-Gewinn abgeleitet.
+
+Die fertigen signierten APKs werden zusätzlich auf Aktualisierbarkeit verglichen: Paketkennung `org.reloq.tts.preview`, gleiches Zertifikat und versionCode 20190 → 20191 sind bestätigt. Die APK aktualisiert damit die bisherige Vorschau und erhält deren Einstellungen. Eine Deinstallation ist nicht nötig.
+
+Die Host-Prüfungen umfassen 865 Einstellungs-/Wörterbuchdatenprüfungen, 112 Stimmkennungen und Warteschlangensteuerung. 33 JNI-PCM-/Längenpaare stimmen mit direkten C-Aufrufen überein, einschließlich weiblicher Kopfgröße 22, 48 kHz, ECI-Tags und Wörterbuchwechseln. Die bisherigen 40 Sprachvergleiche, 25 Wörterbuch-Kontextprüfungen, 18 Retentionsprüfungen und zwölf Reload-/Abbruchzyklen mit Folgeausgabe bei 48 kHz bestehen weiter. Die neue Android-Oberfläche und Dateianbieterüberwachung wurden hier nicht auf einem echten Gerät ausgeführt. PCM bleibt ausschließlich im RAM.
+
+Die folgenden Abschnitte dokumentieren die früheren Ursachen und Schritte; Angaben zu damals noch offenen Android-Tests sind historisch. Aktuelle Bedienung und Grenzen stehen in [android/README.md](../android/README.md).
 
 ## US-Wörterbuch nach Abbruch und Android-Paketierung
 
@@ -71,7 +91,7 @@ Zusätzlich hält `LanguageEngine.close()` die Abbruch-Sperre nicht mehr währen
 
 Die Hash-Besitzprüfungen laufen mit normalen und großen Tabellen, Zeichenketten- und Zahlenschlüsseln, geliehenen Daten und benachbarten unbeteiligten Blöcken. Zusätzliche AddressSanitizer-Prüfungen instrumentieren auch den privaten Arena-Speicher. Diese Entwicklungsinstrumentierung gehört nicht zum Add-on. LeakSanitizer ist in dieser Prüfungsumgebung deaktiviert; die Speicherzugriffsprüfung und expliziten Besitzprüfungen bleiben aktiv.
 
-Die frühere breit angelegte Corpus-Prüfung hat keinen Absturz nachgewiesen. Die lange Blockade wurde in 0.2.188 beseitigt; der Nutzer bestätigt inzwischen den Übergang vom Einfrieren zu vereinzeltem langsamem Reagieren. Beim Laden protokolliert der Treiber die tatsächliche C-Kernversion (`0.2.190.0`), DLL-Pfad und Sprache.
+Die frühere breit angelegte Corpus-Prüfung hat keinen Absturz nachgewiesen. Die lange Blockade wurde in 0.2.188 beseitigt; der Nutzer bestätigt inzwischen den Übergang vom Einfrieren zu vereinzeltem langsamem Reagieren. Beim Laden protokolliert der Treiber die tatsächliche C-Kernversion (`0.2.191.0`), DLL-Pfad und Sprache.
 
 ## Griechische Buchstaben in Finnisch und Koreanisch: geklärt
 

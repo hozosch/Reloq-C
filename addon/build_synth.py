@@ -19,7 +19,7 @@ from build_translations import translation_entries
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "addon" / "synth"
-DEFAULT_OUTPUT = ROOT / "dist" / "reloq-c-synth-experimental-x64-0.2.190.nvda-addon"
+DEFAULT_OUTPUT = ROOT / "dist" / "reloq-c-synth-experimental-x64-0.2.191.nvda-addon"
 RLEX_HEADER = b"RELOQ-DE-SPR-1\n"
 HEX = re.compile(rb"[0-9A-F]+\Z")
 
@@ -90,32 +90,37 @@ def make_entries(dll_path: Path) -> dict[str, bytes]:
     return entries
 
 
+def refresh_community_dictionaries() -> None:
+    """Resolve master for each platform build, reusing verified blob data."""
+    with tempfile.TemporaryDirectory(prefix="reloq-dictionary-build-") as temporary:
+        cache = Path(temporary)
+        destination = ROOT / "data/community"
+        # Existing verified Git blobs can be reused, but the master head
+        # is always resolved anew. A different head downloads a new set.
+        try:
+            manifest = validate_snapshot(destination)
+        except (OSError, ValueError, KeyError, TypeError):
+            manifest = None
+        if manifest:
+            cached = cache / manifest["commit"]
+            cached.mkdir()
+            for name in (*DICTIONARY_FILES, "manifest.json"):
+                shutil.copyfile(destination / name, cached / name)
+        snapshot = fetch_master(cache)
+        destination.mkdir(parents=True, exist_ok=True)
+        for name in (*DICTIONARY_FILES, "manifest.json"):
+            shutil.copyfile(snapshot / name, destination / name)
+
+
 def build(output: Path, dll_path: Path, *, refresh_dictionaries: bool = True) -> Path:
     if refresh_dictionaries:
-        with tempfile.TemporaryDirectory(prefix="reloq-dictionary-build-") as temporary:
-            cache = Path(temporary)
-            destination = ROOT / "data/community"
-            # Existing verified Git blobs can be reused, but the master head
-            # is always resolved anew. A different head downloads a new set.
-            try:
-                manifest = validate_snapshot(destination)
-            except (OSError, ValueError, KeyError, TypeError):
-                manifest = None
-            if manifest:
-                cached = cache / manifest["commit"]
-                cached.mkdir()
-                for name in (*DICTIONARY_FILES, "manifest.json"):
-                    shutil.copyfile(destination / name, cached / name)
-            snapshot = fetch_master(cache)
-            destination.mkdir(parents=True, exist_ok=True)
-            for name in (*DICTIONARY_FILES, "manifest.json"):
-                shutil.copyfile(snapshot / name, destination / name)
+        refresh_community_dictionaries()
     output.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+    with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for name, data in sorted(make_entries(dll_path).items()):
             info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
             info.compress_type = zipfile.ZIP_DEFLATED
-            archive.writestr(info, data)
+            archive.writestr(info, data, compresslevel=9)
     return output
 
 

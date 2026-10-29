@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="preview_help">Offline-Sprachausgabe zum Testen, Version 0.2.190. Wähle eine Sprache und Stimme für die Sprachprobe oder ReLoq C Preview in den Android-Einstellungen zur Text-in-Sprache-Ausgabe.</string>
-    <string name="language">Testsprache</string>
+    <string name="preview_help">Offline-Sprachausgabe zum Testen, Version 0.2.191. Wähle eine Sprache und Stimme für die Sprachprobe oder ReLoq C Preview in den Android-Einstellungen zur Text-in-Sprache-Ausgabe.</string>
+    <string name="language">Sprache</string>
     <string name="profile">Stimme</string>
     <string name="sample_rate">Abtastrate</string>
     <string name="pause_mode">Pausen verkürzen</string>
@@ -14,5 +14,57 @@
     <string name="initializing">Sprachausgabe wird initialisiert</string>
     <string name="ready">Sprachausgabe bereit</string>
     <string name="unavailable">Sprachausgabe nicht verfügbar. Öffne die Android-Spracheinstellungen und wähle ReLoq C Preview.</string>
-    <string-array name="pause_modes"><item>Nie</item><item>Am Ende</item><item>Immer</item></string-array>
+    <string-array name="pause_modes">
+        <item>Nie</item>
+        <item>Am Ende</item>
+        <item>Immer</item>
+    </string-array>
+    <string name="voice_settings">Sprache und Stimme</string>
+    <string name="android_voice">Sprache und Stimme über Android steuern</string>
+    <string name="android_rate">Geschwindigkeit über Android steuern</string>
+    <string name="android_pitch">Tonhöhe über Android steuern</string>
+    <string name="speed">Eigene Geschwindigkeit, Wörter pro Minute</string>
+    <string name="pitch">Eigene Tonhöhe</string>
+    <string name="rate_boost">Schnellsprechmodus</string>
+    <string name="inflection">Satzmelodie</string>
+    <string name="volume">Stimmenlautstärke</string>
+    <string name="anatomy">Stimmenmodell</string>
+    <string name="model">Modell</string>
+    <string name="head_size">Kopfgröße</string>
+    <string name="roughness">Rauheit</string>
+    <string name="breathiness">Behauchtheit</string>
+    <string name="reset_profile">Gewähltes Stimmenprofil zurücksetzen</string>
+    <string name="output_settings">Sprachausgabe</string>
+    <string name="eci_tags">ECI-Tags verarbeiten</string>
+    <string name="dictionaries">Aussprachewörterbücher</string>
+    <string name="community_dictionaries">Gemeinschaftswörterbücher verwenden</string>
+    <string name="update_dictionaries">Gemeinschaftswörterbücher aus aktuellem Master aktualisieren</string>
+    <string name="own_dictionaries">Eigene Wörterbuchdateien, spätere Dateien haben Vorrang</string>
+    <string name="dictionary_language">Sprache für neue Wörterbuchdateien</string>
+    <string name="dictionary_volume">Wörterbuchtyp für neue Dateien</string>
+    <string name="add_dictionary">Wörterbuchdatei hinzufügen</string>
+    <string name="remove_dictionary">Gewählte Datei entfernen</string>
+    <string name="move_dictionary_up">Gewählte Datei nach vorne verschieben</string>
+    <string name="move_dictionary_down">Gewählte Datei nach hinten verschieben</string>
+    <string name="reload_dictionaries">Gewählte Dateien neu laden</string>
+    <string name="dictionary_help">Einträge aus Gemeinschafts- und eigenen Dic-Dateien nutzen die nativen Wörterbuchstufen. Wähle Sprache und Typ vor dem Hinzufügen einer Datei. Die Dateien verwenden Windows-1252. Spätere Dateien überschreiben frühere Einträge. Änderungen werden erkannt, wenn der Dateianbieter Änderungsdaten liefert; Neu laden liest die Quellen immer erneut. Netzwerkzugriff erfolgt nur über die Aktualisierungsschaltfläche.</string>
+    <string name="dictionary_working">Wörterbücher werden vorbereitet</string>
+    <string name="dictionary_ready">Wörterbücher bereit</string>
+    <string name="dictionary_error">Wörterbuchaktualisierung fehlgeschlagen: %1$s</string>
+    <string name="dictionary_unavailable">Wörterbuch nicht verfügbar</string>
+    <string name="dictionary_permission">Wähle eine Datei, die dauerhaften Lesezugriff erlaubt</string>
+    <string name="back">Zurück zu den Spracheinstellungen</string>
+    <string name="test_speech">Sprachprobe</string>
+    <string name="parameter_value">%1$s: %2$d</string>
+    <string-array name="models">
+        <item>Männlich</item>
+        <item>Weiblich</item>
+    </string-array>
+    <string-array name="dictionary_volumes">
+        <item>Main</item>
+        <item>Root</item>
+        <item>Abkürzungen</item>
+    </string-array>
+    <string name="wpm_value">%1$d Wörter pro Minute</string>
+    <string name="speed_help">Wörter pro Minute sind ein Richtwert; die tatsächliche Rate hängt von Sprache, Wortlängen und Pausen ab. Die normale Android-Geschwindigkeit nutzt einen Zielwert von 190 Wörtern pro Minute.</string>
 </resources>

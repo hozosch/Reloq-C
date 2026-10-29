@@ -12,17 +12,22 @@
 typedef struct {
     int dialect;
     ECIHand handle;
-    short pcm[PCM_SAMPLES];
+    short *pcm;
+    char *dictionary;
+    int controls[11],configured;
 } language_engine;
 typedef struct {
     JavaVM *vm;
     pthread_mutex_t guard;
     ECIHand active;
-    char *lexicon;
+    char *lexicon,*dictionary;
     language_engine engines[ENGINE_LIMIT];
     jobject sink;
     jmethodID write, cancelled;
 } android_engine;
+
+static int same_path(const char *a,const char *b)
+{return (!a&&!b)||(a&&b&&!strcmp(a,b));}
 
 static int is_cancelled(JNIEnv *env, android_engine *engine)
 {
@@ -98,7 +103,7 @@ Java_org_reloq_tts_preview_NativeEngine_synthesize(JNIEnv *env, jclass type,
 {
     (void)type;
     android_engine *engine = (android_engine *)(intptr_t)pointer;
-    if (!engine || (*env)->GetArrayLength(env, controls) != 10) return JNI_FALSE;
+    if (!engine || (*env)->GetArrayLength(env, controls) != 11) return JNI_FALSE;
     engine->sink = (*env)->NewGlobalRef(env, sink);
     if (!engine->sink) return JNI_FALSE;
     jclass sink_type = (*env)->GetObjectClass(env, sink);
@@ -118,10 +123,11 @@ Java_org_reloq_tts_preview_NativeEngine_synthesize(JNIEnv *env, jclass type,
         if (!slot) goto done;
         handle = eciNewEx(dialect);
         if (!handle) goto done;
+        slot->pcm=malloc(PCM_SAMPLES*sizeof *slot->pcm);
         eciSetParam(handle, RELOQ_ECI_VOICE_MODE, RELOQ_ECI_VOICE_GENERIC);
-        if ((dialect == RELOQ_ECI_GERMAN && !eciLoadLexicon(handle, engine->lexicon)) ||
+        if (!slot->pcm || (dialect == RELOQ_ECI_GERMAN && !eciLoadLexicon(handle, engine->lexicon)) ||
             eciSetOutputBuffer(handle, PCM_SAMPLES, slot->pcm) <= 0) {
-            eciDelete(handle); handle = NULL; goto done;
+            free(slot->pcm);slot->pcm=NULL;eciDelete(handle);handle=NULL;goto done;
         }
         slot->dialect = dialect;
         slot->handle = handle;
@@ -132,17 +138,32 @@ Java_org_reloq_tts_preview_NativeEngine_synthesize(JNIEnv *env, jclass type,
     engine->active = handle;
     pthread_mutex_unlock(&engine->guard);
     if (is_cancelled(env, engine)) goto done;
-    jint values[10];
-    static const int parameters[10] = {
+    if(!same_path(slot->dictionary,engine->dictionary)) {
+        char *copy=NULL;
+        if(engine->dictionary) {
+            size_t n=strlen(engine->dictionary)+1;copy=malloc(n);
+            if(!copy)goto done;
+            memcpy(copy,engine->dictionary,n);
+        }
+        if(!eciSetDictionaryPath(handle,engine->dictionary)){free(copy);goto done;}
+        free(slot->dictionary);slot->dictionary=copy;
+    }
+    jint values[11];
+    static const int parameters[11] = {
         RELOQ_ECI_GENDER, RELOQ_ECI_HEAD_SIZE, RELOQ_ECI_NATIVE_PITCH,
         RELOQ_ECI_NATIVE_INFLECTION, RELOQ_ECI_ROUGHNESS,
         RELOQ_ECI_BREATHINESS, RELOQ_ECI_NATIVE_VOLUME,
-        RELOQ_ECI_NATIVE_SPEED, RELOQ_ECI_SAMPLE_RATE, RELOQ_ECI_PAUSE_MODE
+        RELOQ_ECI_NATIVE_SPEED, RELOQ_ECI_SAMPLE_RATE, RELOQ_ECI_PAUSE_MODE,
+        RELOQ_ECI_PROCESS_TAGS
     };
-    (*env)->GetIntArrayRegion(env, controls, 0, 10, values);
+    (*env)->GetIntArrayRegion(env, controls, 0, 11, values);
     if ((*env)->ExceptionCheck(env)) goto done;
-    for (size_t i = 0; i < 10; ++i)
-        if (eciSetParam(handle, parameters[i], values[i]) < 0) goto done;
+    for (size_t i = 0; i < 11; ++i)
+        if(!slot->configured||slot->controls[i]!=values[i]) {
+            if(eciSetParam(handle,parameters[i],values[i])<0)goto done;
+            slot->controls[i]=values[i];
+        }
+    slot->configured=1;
     eciClearInput(handle);
     jsize length = (*env)->GetArrayLength(env, text);
     jbyte *bytes = (*env)->GetByteArrayElements(env, text, NULL);
@@ -159,6 +180,40 @@ done:
     (*env)->DeleteGlobalRef(env, engine->sink);
     engine->sink = NULL;
     return ok ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT void JNICALL
+Java_org_reloq_tts_preview_NativeEngine_dictionary(JNIEnv *env,jclass type,jlong pointer,jstring path)
+{
+    (void)type;
+    android_engine *engine=(android_engine *)(intptr_t)pointer;if(!engine)return;
+    const char *text=path?(*env)->GetStringUTFChars(env,path,NULL):NULL;
+    if(path&&!text)return;
+    if(same_path(text,engine->dictionary)) {
+        if(text)(*env)->ReleaseStringUTFChars(env,path,text);
+        return;
+    }
+    char *copy=NULL;
+    if(text) {
+        size_t n=strlen(text)+1;copy=malloc(n);
+        if(copy)memcpy(copy,text,n);
+        (*env)->ReleaseStringUTFChars(env,path,text);
+        if(!copy) {
+            jclass cls=(*env)->FindClass(env,"java/lang/OutOfMemoryError");
+            if(cls)(*env)->ThrowNew(env,cls,"dictionary path");
+            return;
+        }
+    }
+    if(same_path(copy,engine->dictionary)){free(copy);return;}
+    free(engine->dictionary);engine->dictionary=copy;
+    /* Explicit disable releases unused language tables as well. New data
+     * loads lazily when a particular language is actually used again. */
+    if(!copy)for(size_t i=0;i<ENGINE_LIMIT;++i) {
+        language_engine *slot=engine->engines+i;
+        if(slot->handle&&slot->dictionary&&eciSetDictionaryPath(slot->handle,NULL)) {
+            free(slot->dictionary);slot->dictionary=NULL;
+        }
+    }
 }
 
 JNIEXPORT void JNICALL
@@ -179,8 +234,10 @@ Java_org_reloq_tts_preview_NativeEngine_destroy(JNIEnv *env, jclass type, jlong 
     (void)env; (void)type;
     android_engine *engine = (android_engine *)(intptr_t)pointer;
     if (!engine) return;
-    for (size_t i = 0; i < ENGINE_LIMIT; ++i)
-        if (engine->engines[i].handle) eciDelete(engine->engines[i].handle);
+    for (size_t i = 0; i < ENGINE_LIMIT; ++i) {
+        if(engine->engines[i].handle)eciDelete(engine->engines[i].handle);
+        free(engine->engines[i].pcm);free(engine->engines[i].dictionary);
+    }
     pthread_mutex_destroy(&engine->guard);
-    free(engine->lexicon); free(engine);
+    free(engine->lexicon);free(engine->dictionary);free(engine);
 }

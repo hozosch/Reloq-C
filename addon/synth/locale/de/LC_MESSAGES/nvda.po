@@ -2,7 +2,7 @@
 # The source language of the interface is English.
 msgid ""
 msgstr ""
-"Project-Id-Version: Eloquence C 0.2.190\n"
+"Project-Id-Version: Eloquence C 0.2.191\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-10-12 22:55+0300\n"
 "PO-Revision-Date: 2026-10-12 00:00+0000\n"

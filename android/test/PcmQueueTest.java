@@ -52,7 +52,7 @@ public final class PcmQueueTest {
             require(Catalog.profile(language.voice(p),0)==p);
         }
         require(Catalog.controls(2,100,100,1,0)[2]==93);
-        require(Catalog.controls(0,100,100,6,2)[7]==98);
+        require(Catalog.controls(0,100,100,6,2)[7]==55);
         require(Catalog.controls(0,100,100,6,2)[8]==6);
         System.out.println("PCM queue: bounded streaming/cancel/finish passed; 112 voice names and locale routing passed");
     }

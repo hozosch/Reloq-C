@@ -8,8 +8,6 @@ import android.speech.tts.TextToSpeechService;
 import android.speech.tts.Voice;
 import android.util.Log;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,6 +24,8 @@ public final class ReLoqService extends TextToSpeechService {
     private boolean destroyed;
     private volatile PcmQueue active;
     private volatile Catalog.Language selected = Catalog.LANGUAGES[3];
+
+    @Override public void onCreate(){super.onCreate();DictionaryStore.start(this);}
 
     @Override protected String[] onGetLanguage() {
         Catalog.Language item = selected;
@@ -72,18 +72,7 @@ public final class ReLoqService extends TextToSpeechService {
             if(destroyed) return 0;
             if(context!=0) return context;
         }
-        File target=new File(getFilesDir(),"german-0.2.190.rlex");
-        if(!target.isFile()) {
-            File temporary=new File(getFilesDir(),"german.rlex.tmp");
-            try(InputStream input=getAssets().open("german.rlex");
-                FileOutputStream output=new FileOutputStream(temporary)) {
-                byte[] buffer=new byte[16384];
-                int n;
-                while((n=input.read(buffer))!=-1) output.write(buffer,0,n);
-                output.getFD().sync();
-            }
-            if(!temporary.renameTo(target)) throw new IllegalStateException("Lexicon installation failed");
-        }
+        File target=LexiconInstaller.path(this);
         long created=NativeEngine.create(target.getAbsolutePath());
         if(created==0) throw new IllegalStateException("Native engine initialization failed");
         synchronized(contextGuard) {
@@ -93,19 +82,25 @@ public final class ReLoqService extends TextToSpeechService {
         return 0;
     }
     @Override protected void onSynthesizeText(SynthesisRequest request,SynthesisCallback callback) {
+        android.content.SharedPreferences preferences=getSharedPreferences("settings",MODE_PRIVATE);
         Catalog.Language item=Catalog.forVoice(request.getVoiceName());
         if(item==null) item=Catalog.find(request.getLanguage(),request.getCountry());
+        boolean androidVoice=preferences.getBoolean("androidVoice",true);
+        if(!androidVoice)
+            item=Catalog.LANGUAGES[VoiceSettings.bounded(preferences.getInt("language",3),0,Catalog.LANGUAGES.length-1)];
         if(item==null) { callback.error(TextToSpeech.ERROR_INVALID_REQUEST); callback.done(); return; }
         selected=item;
-        android.content.SharedPreferences preferences=getSharedPreferences("settings",MODE_PRIVATE);
-        int rate=Math.max(0,Math.min(Catalog.RATES.length-1,preferences.getInt("rate",1)));
-        int profile=Catalog.profile(request.getVoiceName(),preferences.getInt("profile",0));
-        int[] controls=Catalog.controls(profile,request.getSpeechRate(),request.getPitch(),rate,
-            preferences.getInt("pauses",0));
+        int profile=Catalog.profile(androidVoice?request.getVoiceName():null,
+            preferences.getInt("profile",0));
+        VoiceSettings settings=Preferences.read(preferences,profile);
+        int rate=VoiceSettings.bounded(settings.rate,0,Catalog.RATES.length-1);
+        int[] controls=settings.controls(request.getSpeechRate(),request.getPitch());
         byte[] utf8=request.getCharSequenceText().toString().getBytes(StandardCharsets.UTF_8);
         PcmQueue queue=new PcmQueue(16);
         active=queue;
         final int dialect=item.id;
+        final DictionaryStore.Lease dictionaries=DictionaryStore.acquire(this);
+        boolean submitted=false;
         try {
             if(callback.start(Catalog.RATES[rate],AudioFormat.ENCODING_PCM_16BIT,1)!=TextToSpeech.SUCCESS)
                 { queue.cancel(); return; }
@@ -114,12 +109,16 @@ public final class ReLoqService extends TextToSpeechService {
                 try {
                     if(!queue.isCancelled()) {
                         long handle=ensureContext();
-                        if(handle!=0 && !queue.isCancelled())
+                        if(dialect==0x40000)LexiconInstaller.ensure(this);
+                        if(handle!=0 && !queue.isCancelled()) {
+                            NativeEngine.dictionary(handle,dictionaries.path);
                             success=NativeEngine.synthesize(handle,dialect,controls,utf8,queue);
+                        }
                     }
                 } catch(Throwable error) { Log.e("ReLoq","Synthesis failed",error); }
-                finally { queue.finish(success); }
+                finally {dictionaries.close();queue.finish(success);}
             });
+            submitted=true;
             byte[] block;
             while((block=queue.read())!=null) {
                 for(int offset=0;offset<block.length;) {
@@ -137,6 +136,7 @@ public final class ReLoqService extends TextToSpeechService {
         } catch(RejectedExecutionException error) {
             queue.cancel(); callback.error(TextToSpeech.ERROR_SERVICE);
         } finally {
+            if(!submitted)dictionaries.close();
             if(queue.isCancelled()) stopNative(queue);
             if(active==queue) active=null;
             callback.done();
@@ -152,6 +152,7 @@ public final class ReLoqService extends TextToSpeechService {
     }
     @Override public void onDestroy() {
         onStop();
+        DictionaryStore.stop();
         final long detached;
         synchronized(contextGuard) { destroyed=true; detached=context; context=0; }
         worker.execute(() -> { if(detached!=0) NativeEngine.destroy(detached); });

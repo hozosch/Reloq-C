@@ -1,108 +1,169 @@
 # Android ARM64 preview
 
 ReLoq C Preview uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `0.2.190-preview2` targets ARM64 (`arm64-v8a`), Android 8/API 26
-or later. It runs offline and requests no network permission.
+add-on. Version `0.2.191-preview3` targets ARM64 (`arm64-v8a`), Android 8/API 26
+or later. Speech runs offline. Network access is used only when you explicitly
+update the optional community pronunciation dictionaries.
 
-## Try it
+## Install or update
 
-Install `reloq-c-android-arm64-0.2.190-preview2.apk`, then open **ReLoq C Preview**.
-Choose a test language, voice, sample rate and pause policy, and press **Read test
-text**. The screen uses ordinary labelled Android controls; English and German
-UI text are included. **Stop** interrupts the current test.
+Install `reloq-c-android-arm64-0.2.191-preview3.apk` over the existing preview.
+The package remains `org.reloq.tts.preview`, the preview signing certificate is
+unchanged, and versionCode increases from 20190 to 20191. Android can therefore
+update the existing app and retain its settings. Do not uninstall it first.
 
-To use the engine with TalkBack or another client, open **Android speech
-settings** from the app and select **ReLoq C Preview** as the preferred engine.
-The engine exposes 14 language variants with all eight named presets. The
-client's voice selection takes precedence over the preview's saved default.
-Speech rate and pitch come from Android's normal TTS request settings.
+Open **ReLoq C Preview** to adjust its settings or read a test text. To use it
+with TalkBack or another client, open **Android speech settings** and choose
+**ReLoq C Preview** as the preferred text-to-speech engine. All 14 language
+variants and eight named voice presets are available. Both Chinese scripts
+use the single Mandarin Chinese module; Japanese retains its existing analysis.
 
-The initial sample rate is 11,025 Hz. The app supports the same seven rates
-from 8 to 48 kHz as NVDA. Its test language selection affects the test screen;
-each Android client supplies its own language or voice. Both Chinese scripts
-use the single Mandarin Chinese module. Japanese retains its existing analysis.
+The user has confirmed installation and basic speech with preview 2. The new
+settings and dictionary screens in preview 3 still need a real-device check.
 
-The optional community/custom dictionary manager is currently NVDA-only.
-The built-in German lexicon is bundled in the APK. No additional voice-data
-download or original DLL/SYN module is needed.
+## Voice and output settings
 
-Preview 1 had a packaging error: its resource table was compressed, preventing
-installation on current Android versions. Preview 2 preserves aapt2's storage
-methods and checks the final resource-table alignment in addition to signature
-and ELF checks. The package identity and signing certificate are unchanged.
+The screen uses labelled standard Android checkboxes, sliders and lists, with
+English and German UI text. Press **Save settings** to apply changes. **Read
+test text** also saves them, and **Stop** interrupts the current test.
+
+- **Control language and voice through Android** lets clients choose a voice.
+  Turn it off to use the saved language and voice for all requests.
+- **Control speed through Android** and **Control pitch through Android** work
+  independently. Turning either off enables its manual slider and overrides
+  the corresponding value supplied by Android or the client.
+- Manual speed is expressed as an approximate **140–1400 words per minute**,
+  initially 190. Android's TTS request supplies a percentage with 100 meaning
+  normal, rather than an absolute WPM count. Normal is mapped to native speed
+  55; the inverse C duration curve makes 2× approximately twice as fast. Actual
+  WPM depends on language, word lengths and pauses. Rate boost multiplies the
+  requested speed by 1.6, within the native limits.
+- Manual pitch, inflection, voice volume, male/female model, head size,
+  roughness and breathiness are available. Voice values are stored separately
+  for each of the eight presets. **Reset selected voice profile** restores that
+  preset's anatomy and voice values; speed and output settings stay global.
+- All seven sample rates from 8 to 48 kHz, the three native pause policies and
+  optional ECI command processing are available. Initial output is 11,025 Hz.
+  Android's media volume continues to control playback independently of the
+  engine's voice-volume setting.
+
+## Pronunciation dictionaries
+
+**Pronunciation dictionaries** opens the manager. Community dictionaries are
+optional and initially disabled. Enabling them installs the verified bundled
+snapshot for German and American English. **Update community dictionaries from
+current master** resolves the current `eigencrow/IBMTTSDictionaries` master,
+verifies the downloaded Git blobs and activates a complete new snapshot.
+Synthesis does not access the network.
+
+Select a language and Main, Root or Abbreviations before adding your own Dic
+file through Android's file picker. Files use Windows-1252 and tab-separated
+entries. You can reorder or remove sources; later own files override earlier
+ones and community entries. Main preserves case; German Root retains its native
+case folding. Replacements and phonetic entries go through the C core's normal
+dictionary stages, including compound/context handling, rather than a Java
+text substitution.
+
+Selected sources remain linked using persistent file permissions. While the
+speech service is running, the monitor checks modification metadata every two
+seconds and reloads a stable change in the background. Changes made while the
+app is closed are also detected after the service restarts. Automatic detection
+depends on the document provider reporting modification time or size. **Reload
+selected files** always reads them again, including with providers that do not
+report those fields. A failed merge leaves the previous active snapshot intact.
+
+Downloads, merges and source checks run outside the speech worker. With no own
+files selected there is no polling thread; the dictionary worker also exits
+after 15 seconds of inactivity. A request
+holds its immutable snapshot until native synthesis finishes. Native tables
+load once per used language and remain resident across ordinary requests and
+cancellation; selecting a changed snapshot reloads that language when next used.
 
 ## Build on Linux x86-64
 
 Requirements: Python 3, GNU Make, JDK 17, Android SDK platform 35, SDK build
-tools 35.0.1, and Android NDK r30. These are build-time dependencies; the app
-does not contain Python, a JVM implementation, Gradle or an emulator.
+tools 35.0.1, and Android NDK r30. The app contains no Python, JVM implementation,
+Gradle, emulator or original DLL/SYN module. Each normal build resolves the
+latest dictionary master and reuses existing verified data when possible.
 
 ```sh
 export ANDROID_SDK_ROOT=/path/to/android-sdk
 export ANDROID_NDK_HOME=/path/to/android-ndk-r30
 export JAVA_HOME=/path/to/jdk-17
-python3 android/build.py
+python3 android/build.py --upgrade-from dist/reloq-c-android-arm64-0.2.190-preview2.apk
 ```
 
 Explicit `--sdk`, `--ndk`, `--java-home`, `--build-tools` and `--android-jar`
-paths are also accepted. The APK is written under `dist/`. The native build
-uses separate object/archive directories and preserves Windows/Linux outputs.
-Rebuild those Android directories after changing compiler flags.
+paths are also accepted. Omit `--upgrade-from` when there is no previous APK.
+When given, it compares both signed artifacts' package names, versionCodes
+and certificates and rejects an incompatible update. `--verified-dictionaries`
+is reserved for a build where the current master commit has already been
+resolved independently and the local snapshot has been verified. Output goes
+under `dist/`. Android uses separate object directories and preserves the
+Windows/Linux outputs. Rebuild the Android objects after changing compiler flags.
 
 The checked-in `preview-debug.p12` is an intentionally public **test signing
-identity**, alias `androiddebugkey`, password `android`. It keeps local preview
-updates installable over earlier previews. It is not a production credential;
-production distribution must use a separate private signing identity.
+identity**, alias `androiddebugkey`, password `android`. It keeps preview updates
+installable over earlier previews. Production distribution needs a separate
+private signing identity and a deliberate migration plan.
 
-## Transport and resource use
+## Transport and resources
 
-One persistent worker owns one native handle per used language. Voice changes
-apply anatomy/source controls to that language's existing handle. No speech
-result is cached. A bounded queue carries at most 16 blocks of 1,100 mono
-16-bit samples between the native producer and Android's synthesis thread.
-Only the latter calls `SynthesisCallback`; callbacks do not outlive the request.
-Cancellation wakes both sides, and a delayed stop is scoped to its own queue.
-Engine destruction is queued on the owner worker rather than blocking the UI.
+One persistent worker owns one native handle per used language. Profiles share
+that handle, applying only changed controls. PCM buffers are allocated only for
+used languages: 2,200 bytes for the first instead of eagerly reserving 30,800
+bytes for all fourteen. No speech results are cached. A bounded queue carries
+at most 16 blocks of 1,100 mono 16-bit samples. Only Android's synthesis thread
+calls `SynthesisCallback`; callbacks do not outlive the request. Cancellation
+wakes both sides, and delayed stops are scoped to their own requests.
 
-Spoken text enters C as standard UTF-8 bytes, including supplementary Unicode
-characters. The JNI modified-UTF-8 string representation is not used for text.
+The German supplemental lexicon is installed only when German is first used.
+Its filename identifies its content, so an unchanged 712,343-byte lexicon is
+reused across updates. Old version-named generated copies are removed after
+the new one is installed. Dictionary snapshots are also reused by content and
+unused old snapshots are removed after their last active request finishes.
+
+Packaging uses DEFLATE level 9 while preserving aapt2's uncompressed resource
+table. The APK additionally includes the optional community data, so its total
+size is larger than preview 2 despite the stronger compression. All language
+and acoustic data remain included.
+
+Text enters C as standard UTF-8, including supplementary Unicode characters.
 The ARM64 backtracking boundary saves the AAPCS64 preserved registers, Android's
 platform register, stack/link registers and floating-point state. Native `char`
-is explicitly signed to match the established Windows/Linux core semantics.
-ELF segments use 16 KiB alignment; the APK is alignment-checked and signed.
+is explicitly signed. ELF segments use 16 KiB alignment; final resource-table
+storage/alignment, signatures and ZIP alignment are checked during the build.
 
-## Validation and remaining work
+## Validation
 
-The host JNI test exercises actual native synthesis for all 14 language
-variants, all eight US presets, accented/mixed UTF-8, bounded streaming,
-cancellation, stale-stop isolation and speech after cancellation. Its 26 PCM
-hash/length pairs match direct C calls. PCM stays in RAM. This is a transport
-test on the host, not Android execution or a real-device acoustic comparison.
+Host tests exercise 112 voice identifiers, locale routing, streaming order,
+backpressure and cancellation. The settings test covers speed inversion,
+physical pitch scaling, manual overrides, preset separation, preference
+migration and dictionary byte/case/priority handling. A three-passage native
+duration comparison measures about 174 WPM at normal and 353 WPM at 2×, a 2.03×
+duration ratio. These figures illustrate why the slider's WPM label is nominal.
 
 ```sh
-javac -d android/build/test-classes android/java/org/reloq/tts/preview/PcmQueue.java \
-  android/java/org/reloq/tts/preview/Catalog.java android/test/PcmQueueTest.java
-java -cp android/build/test-classes org.reloq.tts.preview.PcmQueueTest
+python3 android/test_settings.py --java-home "$JAVA_HOME" \
+  --android-jar "$ANDROID_SDK_ROOT/platforms/android-35/android.jar"
 python3 android/test_native_transport.py --java-home "$JAVA_HOME"
 ```
 
-The ARM64 register/stack test executes the NDK-compiled instructions using
-Unicorn and pyelftools:
+The JNI test compares 33 actual native PCM hashes/lengths with direct C calls:
+all language variants, all US presets, mixed UTF-8, cancellation, stale-stop
+isolation, customized female anatomy, 48 kHz, tags and dictionary switches.
+PCM remains in RAM; no audio files are written. These are host transport tests,
+not Android execution or real-device acoustic measurements.
+
+The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 
 ```sh
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
+python3 android/verify_apk.py dist/reloq-c-android-arm64-0.2.191-preview3.apk
 ```
 
-The APK's manifest, DEX, native architecture, dependencies, 16 KiB segment
-alignment and signature have been inspected. The stored resource table and
-its four-byte offset alignment are now a required build check; the checker
-rejects the actual old preview APK. Run it separately with:
-
-```sh
-python3 android/verify_apk.py dist/reloq-c-android-arm64-0.2.190-preview2.apk
-```
-
-Actual installation, service
-discovery, TalkBack navigation, sustained playback and 48 kHz performance on a
-Pixel have **not yet been tested**. Those are the next practical checks.
+The final APK passes signature, install-critical resource-table and 16-KiB ELF
+checks, and the upgrade comparison against preview 2. Preview 3's expanded
+screens, file-provider monitoring and sustained playback at all sample rates
+still need device/TalkBack validation.

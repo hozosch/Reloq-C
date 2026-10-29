@@ -4,7 +4,7 @@ import hashlib,json,sys,unicodedata
 from _reloq_eci_direct import (DirectEciEngine,EciText,EciIndex,EciLanguage,
     SAMPLE_RATE,SAMPLE_RATES,PAUSE_MODE,NATIVE_SPEED,PROCESS_TAGS,GENDER,HEAD_SIZE,BREATHINESS)
 from _reloq_languages import LANGUAGES,LANGUAGE_ALIASES,LanguageEngine,language_for
-R=Path(__file__).resolve().parents[1];H=R/'reference-apple/behavior-0.2.150'
+R=Path(__file__).resolve().parents[1]
 CASES={0x80000:['こんにちは。Windowsとcomputerを使います。','503と4004です。'],
 0xa0000:['한국어를 사용합니다. 한자 漢字.','503과 4004입니다.'],
 0x60000:['我是中国人，今天很好。重庆银行欢迎你。','503和4004，还有10004。'],
@@ -73,6 +73,7 @@ def main():
     finally:engine.close()
     report=dict(cases=len(rows),pause_cases=len(pause_rows),no_audio_files=True,
         eci_so_sha256=hashlib.sha256((R/'eci/libreloq_eci.so').read_bytes()).hexdigest(),rows=rows,pauses=pause_rows)
-    (H/'asian-greek-native150.json').write_text(json.dumps(report,ensure_ascii=False,separators=(',',':'))+'\n')
+    if len(sys.argv)>1:
+        Path(sys.argv[1]).write_text(json.dumps(report,ensure_ascii=False,separators=(',',':'))+'\n')
     print(len(rows),'Asian/Greek renders and',len(pause_rows),'pause comparisons passed',flush=True)
 if __name__=='__main__':main()

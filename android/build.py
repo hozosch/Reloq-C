@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Build the offline ARM64 preview with official SDK/NDK tools and JDK 17.
 
-No Gradle, network access, original modules or audio files are involved.
+No Gradle, original modules or audio files are involved. Builds resolve the
+current community dictionary master; synthesis itself is offline.
 The checked-in signing identity is PUBLIC and for preview builds only.
 """
 from pathlib import Path
@@ -11,7 +12,8 @@ import shutil
 import subprocess
 import sys
 import zipfile
-from verify_apk import verify_apk
+from verify_apk import verify_apk,verify_upgrade
+from codegen import generate
 
 ROOT=Path(__file__).resolve().parents[1]
 HERE=ROOT/"android"
@@ -29,8 +31,11 @@ def main():
     parser.add_argument("--build-tools",type=Path)
     parser.add_argument("--android-jar",type=Path)
     parser.add_argument("--jobs",type=int,default=4)
-    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-0.2.190-preview2.apk")
+    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-0.2.191-preview3.apk")
     parser.add_argument("--keystore",type=Path,default=HERE/"preview-debug.p12")
+    parser.add_argument("--verified-dictionaries",action="store_true",
+        help="use locally verified data after separately resolving its current master commit")
+    parser.add_argument("--upgrade-from",type=Path,help="require an in-place update over this signed preview APK")
     args=parser.parse_args()
     if not args.sdk or not args.ndk or not args.java_home:
         parser.error("set --sdk, --ndk and --java-home (or their environment variables)")
@@ -48,8 +53,15 @@ def main():
     generated=build/"generated";generated.mkdir(exist_ok=True)
     assets=build/"assets";assets.mkdir(exist_ok=True)
     sys.path.insert(0,str(ROOT/"addon"))
-    from build_synth import merged_german_lexicon
-    (assets/"german.rlex").write_bytes(merged_german_lexicon())
+    from build_synth import merged_german_lexicon,refresh_community_dictionaries
+    if not args.verified_dictionaries:refresh_community_dictionaries()
+    lexicon=merged_german_lexicon()
+    (assets/"german.rlex").write_bytes(lexicon)
+    generate(generated,lexicon)
+    from _reloq_dictionaries import FILES,validate_snapshot
+    validate_snapshot(ROOT/"data/community")
+    community=assets/"community";community.mkdir(exist_ok=True)
+    for name in (*FILES,"manifest.json"):shutil.copyfile(ROOT/"data/community"/name,community/name)
     licenses={"OpenEVV-LICENSE.txt":ROOT/"vendor/openevv61/LICENSE",
               "OpenEVV-NOTICE.txt":ROOT/"vendor/openevv61/NOTICE",
               "Unicode-LICENSE.txt":ROOT/"reference-apple/behavior-0.2.82/unicode-input/LICENSE.txt",
@@ -69,11 +81,11 @@ def main():
     native=build/"libreloq_android.so";shutil.copyfile(ROOT/"eci/libreloq_android.so",native)
     run(host/"llvm-strip","--strip-unneeded",native)
     with zipfile.ZipFile(build/"resources.apk") as resources, zipfile.ZipFile(
-            build/"unsigned.apk","w",compression=zipfile.ZIP_DEFLATED) as apk:
+            build/"unsigned.apk","w",compression=zipfile.ZIP_DEFLATED,compresslevel=9) as apk:
         # Keep aapt2's storage method, especially uncompressed resources.arsc.
         # Using only the name here silently applied ZIP_DEFLATED to it and
         # made target-30+ APKs uninstallable despite valid signatures.
-        for entry in resources.infolist(): apk.writestr(entry,resources.read(entry))
+        for entry in resources.infolist(): apk.writestr(entry,resources.read(entry),compresslevel=9)
         apk.write(dex/"classes.dex","classes.dex")
         apk.write(native,"lib/arm64-v8a/libreloq_android.so")
     run(tools/"zipalign","-P","16","-f","4",build/"unsigned.apk",build/"aligned.apk")
@@ -83,6 +95,7 @@ def main():
     run(tools/"apksigner","verify","--verbose",output,env=environment)
     run(tools/"zipalign","-c","-P","16","4",output)
     verify_apk(output)
+    if args.upgrade_from:verify_upgrade(output,args.upgrade_from.resolve(),tools/"aapt2",tools/"apksigner",environment)
     print(output)
 
 

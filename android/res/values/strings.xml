@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ReLoq C Preview</string>
-    <string name="preview_help">Offline speech preview, version 0.2.190. Choose a language and voice to test, or select ReLoq C Preview in Android text-to-speech settings.</string>
-    <string name="language">Test language</string>
+    <string name="preview_help">Offline speech preview, version 0.2.191. Choose a language and voice to test, or select ReLoq C Preview in Android text-to-speech settings.</string>
+    <string name="language">Language</string>
     <string name="profile">Voice</string>
     <string name="sample_rate">Sample rate</string>
     <string name="pause_mode">Shorten pauses</string>
@@ -15,5 +15,57 @@
     <string name="initializing">Initializing speech engine</string>
     <string name="ready">Speech engine ready</string>
     <string name="unavailable">Speech engine unavailable. Open Android speech settings and select ReLoq C Preview.</string>
-    <string-array name="pause_modes"><item>Never</item><item>At the end</item><item>Always</item></string-array>
+    <string-array name="pause_modes">
+        <item>Never</item>
+        <item>At the end</item>
+        <item>Always</item>
+    </string-array>
+    <string name="voice_settings">Language and voice</string>
+    <string name="android_voice">Control language and voice through Android</string>
+    <string name="android_rate">Control speed through Android</string>
+    <string name="android_pitch">Control pitch through Android</string>
+    <string name="speed">Manual speed, words per minute</string>
+    <string name="pitch">Manual pitch</string>
+    <string name="rate_boost">Rate boost</string>
+    <string name="inflection">Inflection</string>
+    <string name="volume">Voice volume</string>
+    <string name="anatomy">Voice model</string>
+    <string name="model">Model</string>
+    <string name="head_size">Head size</string>
+    <string name="roughness">Roughness</string>
+    <string name="breathiness">Breathiness</string>
+    <string name="reset_profile">Reset selected voice profile</string>
+    <string name="output_settings">Speech output</string>
+    <string name="eci_tags">Process ECI tags</string>
+    <string name="dictionaries">Pronunciation dictionaries</string>
+    <string name="community_dictionaries">Use community dictionaries</string>
+    <string name="update_dictionaries">Update community dictionaries from current master</string>
+    <string name="own_dictionaries">Own dictionary files, later files take priority</string>
+    <string name="dictionary_language">Language for new dictionary files</string>
+    <string name="dictionary_volume">Volume for new dictionary files</string>
+    <string name="add_dictionary">Add dictionary file</string>
+    <string name="remove_dictionary">Remove selected file</string>
+    <string name="move_dictionary_up">Move selected file earlier</string>
+    <string name="move_dictionary_down">Move selected file later</string>
+    <string name="reload_dictionaries">Reload selected files</string>
+    <string name="dictionary_help">Community and own Dic entries use the native dictionary stages. Choose the language and volume before adding a file. Files use Windows-1252 encoding. Later files override earlier entries. Changes are monitored when the document provider supplies change metadata; Reload selected files always rereads the sources. Network access is used only by the update button.</string>
+    <string name="dictionary_working">Preparing dictionaries</string>
+    <string name="dictionary_ready">Dictionaries ready</string>
+    <string name="dictionary_error">Dictionary update failed: %1$s</string>
+    <string name="dictionary_unavailable">Dictionary unavailable</string>
+    <string name="dictionary_permission">Choose a file that allows permanent read access</string>
+    <string name="back">Back to speech settings</string>
+    <string name="test_speech">Speech test</string>
+    <string name="parameter_value">%1$s: %2$d</string>
+    <string-array name="models">
+        <item>Male</item>
+        <item>Female</item>
+    </string-array>
+    <string-array name="dictionary_volumes">
+        <item>Main</item>
+        <item>Root</item>
+        <item>Abbreviations</item>
+    </string-array>
+    <string name="wpm_value">%1$d words per minute</string>
+    <string name="speed_help">Words per minute are approximate; the actual rate depends on the language, word lengths and pauses. Android normal speed uses a target of 190 words per minute.</string>
 </resources>

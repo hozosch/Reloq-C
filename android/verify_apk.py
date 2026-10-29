@@ -5,7 +5,9 @@ failure that a valid signature and an ordinary zipalign check do not reject.
 """
 from pathlib import Path
 import argparse
+import re
 import struct
+import subprocess
 import zipfile
 
 
@@ -45,6 +47,24 @@ def verify_apk(path):
                     raise ValueError("ARM64 LOAD segment is not 16-KiB aligned")
         if not loads:raise ValueError("no native LOAD segments")
     print(f"APK install rules: stored resources.arsc at {offset}, 4-byte alignment and ARM64 16-KiB segments passed")
+
+
+def verify_upgrade(new,old,aapt2,apksigner,environment=None):
+    """Compare actual signed artifacts, not just the source manifest/key path."""
+    def inspect(path):
+        badging=subprocess.run([str(aapt2),"dump","badging",str(path)],check=True,capture_output=True,text=True).stdout
+        package=re.search(r"package: name='([^']+)' versionCode='(\d+)'",badging)
+        certificates=subprocess.run([str(apksigner),"verify","--print-certs",str(path)],
+            check=True,capture_output=True,text=True,env=environment).stdout
+        digests=re.findall(r"Signer #\d+ certificate SHA-256 digest: ([a-f0-9]+)",certificates)
+        if not package or not digests:raise ValueError("APK identity or signing certificate missing")
+        return dict(package=package[1],version_code=int(package[2]),certificates=sorted(digests))
+    before,after=inspect(old),inspect(new)
+    if before["package"]!=after["package"]:raise ValueError("Package name changed: installs a second app")
+    if before["certificates"]!=after["certificates"]:raise ValueError("Signing certificate changed: existing app cannot update")
+    if after["version_code"]<=before["version_code"]:raise ValueError("Update versionCode must increase")
+    print(f"APK upgrade: {after['package']}, same certificate, versionCode {before['version_code']} -> {after['version_code']} passed")
+    return dict(before=before,after=after)
 
 
 if __name__=="__main__":

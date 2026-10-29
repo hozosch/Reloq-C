@@ -66,12 +66,8 @@ final class Catalog {
         return Math.max(0,Math.min(PROFILES.length-1,fallback));
     }
     static int[] controls(int profile, int speechRate, int pitch, int rate, int pauses) {
-        int[] result = new int[10];
-        System.arraycopy(PARAMETERS[profile],0,result,0,7);
-        result[2]=Math.max(0,Math.min(100,(result[2]*pitch+50)/100));
-        result[7]=Math.max(40,Math.min(250,(speechRate*98+50)/100));
-        result[8]=RATE_IDS[Math.max(0,Math.min(RATE_IDS.length-1,rate))];
-        result[9]=Math.max(0,Math.min(2,pauses));
-        return result;
+        VoiceSettings settings=new VoiceSettings(profile);
+        settings.rate=rate;settings.pauses=pauses;
+        return settings.controls(speechRate,pitch);
     }
 }

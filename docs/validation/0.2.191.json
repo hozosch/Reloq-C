@@ -1,0 +1,163 @@
+{
+  "version": "0.2.191",
+  "android_version": "0.2.191-preview3",
+  "no_audio_files": true,
+  "artifacts": {
+    "eci/eci.dll": {
+      "bytes": 61278720,
+      "sha256": "8fbaec0df409e6936b034ef9ce957be02e8067c63e38efe66a34791daaf89912"
+    },
+    "eci/libreloq_eci.so": {
+      "bytes": 63450912,
+      "sha256": "23f54a946af78f27640910bc8c601db36d2bb890380a1ac04f635274bc76a24c"
+    },
+    "eci/libreloq_android.so": {
+      "bytes": 55494464,
+      "sha256": "45191ee2533c2c12fa90bd47d4e6f7f608243e0c8dfed822648e3419b0febb41"
+    },
+    "dist/reloq-c-synth-experimental-x64-0.2.191.nvda-addon": {
+      "bytes": 23095305,
+      "sha256": "ccd55dcaafa0745f3c519d5352e02273473ab025c30e30c12e81f840d7948ef4"
+    },
+    "dist/reloq-c-android-arm64-0.2.191-preview3.apk": {
+      "bytes": 18462166,
+      "sha256": "12156510bbea9391456d88542996034395068208ef1de5e8831f8f2affa88487"
+    }
+  },
+  "community_dictionaries": {
+    "master_commit": "cdaad7808ee4c017d69eeac7151e4defb899604f",
+    "freshly_resolved_via_connected_github_api": true,
+    "normal_build_network_refresh_succeeded": true,
+    "all_packaged_blobs_validated": true
+  },
+  "apk_upgrade": {
+    "before": {
+      "package": "org.reloq.tts.preview",
+      "version_code": 20190,
+      "certificates": [
+        "e4af6db7bf1fd6ecf1670d48dac195d56cafc96daceec1238211a0ff1ba1091f"
+      ]
+    },
+    "after": {
+      "package": "org.reloq.tts.preview",
+      "version_code": 20191,
+      "certificates": [
+        "e4af6db7bf1fd6ecf1670d48dac195d56cafc96daceec1238211a0ff1ba1091f"
+      ]
+    }
+  },
+  "settings": {
+    "host_checks": 865,
+    "voice_identifiers": 112,
+    "android_manual_wpm_default": 190,
+    "independent_speed_pitch_overrides": true,
+    "voice_values_saved_per_profile": true
+  },
+  "speed_measurement": {
+    "normal_target_wpm": 190,
+    "measurements": [
+      {
+        "android_percent": 100,
+        "native_speed": 55,
+        "seconds": 51.47102040816327,
+        "wpm": 173.68997018334073,
+        "passages": [
+          {
+            "words": 43,
+            "seconds": 10.515102040816327,
+            "wpm": 245.36138498563776
+          },
+          {
+            "words": 59,
+            "seconds": 24.61106575963719,
+            "wpm": 143.8377368364801
+          },
+          {
+            "words": 47,
+            "seconds": 16.34485260770975,
+            "wpm": 172.53138144970643
+          }
+        ]
+      },
+      {
+        "android_percent": 200,
+        "native_speed": 91,
+        "seconds": 25.344399092970523,
+        "wpm": 352.7406575001252,
+        "passages": [
+          {
+            "words": 43,
+            "seconds": 5.186213151927437,
+            "wpm": 497.47280422540143
+          },
+          {
+            "words": 59,
+            "seconds": 12.109478458049887,
+            "wpm": 292.3329862853633
+          },
+          {
+            "words": 47,
+            "seconds": 8.048707482993198,
+            "wpm": 350.36681429392473
+          }
+        ]
+      }
+    ],
+    "duration_ratio": 2.030863711518778,
+    "no_audio_files": true
+  },
+  "resources": {
+    "compression_same_payload": [
+      {
+        "package": "reloq-c-synth-experimental-x64-0.2.191.nvda-addon",
+        "deflated_entries": 26,
+        "level6_bytes": 23269204,
+        "level9_bytes": 23091285,
+        "saved_bytes": 177919,
+        "saved_percent": 0.7646114581315286,
+        "artifact_bytes": 23095305
+      },
+      {
+        "package": "reloq-c-android-arm64-0.2.191-preview3.apk",
+        "deflated_entries": 20,
+        "level6_bytes": 18499531,
+        "level9_bytes": 18443183,
+        "saved_bytes": 56348,
+        "saved_percent": 0.30459150559006065,
+        "artifact_bytes": 18462166
+      }
+    ],
+    "german_lexicon_bytes": 712343,
+    "native_pcm_buffers": {
+      "old_eager_14_languages_bytes": 30800,
+      "new_first_language_bytes": 2200
+    },
+    "dictionary_master": "cdaad7808ee4c017d69eeac7151e4defb899604f",
+    "dictionary_worker_idle_exit_seconds": 15,
+    "monitor_only_with_own_dictionary_sources": true
+  },
+  "validation": {
+    "jni_pcm_matches": 33,
+    "language_pcm_index_matches": 40,
+    "dictionary_context_checks": 25,
+    "dictionary_retention_checks": 18,
+    "queued_reload_cancel_cycles": 12,
+    "queued_recovery_sample_rate": 48000,
+    "linux_public_abi_symbols": 21,
+    "windows_public_abi_symbols": 21,
+    "apk_install_alignment_signature": true,
+    "arm64_landing_registers_stack_bounds": true,
+    "nvda_english_ui": true,
+    "nvda_german_ui": true,
+    "make_eci_test_complete": true,
+    "asian_greek_native_renders": 1680,
+    "asian_greek_native_pause_comparisons": 105
+  },
+  "limitations": [
+    "Host JNI and settings tests do not execute Android framework UI or a document provider.",
+    "Preview 3 expanded controls, TalkBack and dictionary monitoring require a real-device check.",
+    "WPM labels are nominal; passage, word lengths, language and pauses affect measured WPM.",
+    "Automatic own-file reload requires provider modification metadata; manual reload always reads source bytes.",
+    "Package compression and lazy allocations do not establish a measured DSP CPU improvement."
+  ]
+}
