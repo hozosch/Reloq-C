@@ -72,7 +72,7 @@ class EloquenceSettingsPanel(SettingsPanel):
 
     def on_folder(self, event):
         if self.current_synth():
-            os.startfile(str(self.synth.dictionary_manager().local_directory))
+            os.startfile(str(self.synth.dictionary_manager().bundled))
 
     def current_synth(self):
         return self.synth is not None and synthDriverHandler.getSynth() is self.synth

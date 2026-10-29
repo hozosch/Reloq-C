@@ -293,6 +293,8 @@ class LanguageEngine:
         with self._guard:
             self._active = None
             self._closed = True
-            for engine in self._engines.values():
-                engine.close()
-            self._engines.clear()
+            engines, self._engines = tuple(self._engines.values()), {}
+        # Closing a native dictionary can be expensive. Cancel needs this
+        # guard on NVDA's UI thread and must see the detached state at once.
+        for engine in engines:
+            engine.close()

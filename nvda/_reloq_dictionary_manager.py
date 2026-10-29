@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 import tempfile
 import threading
 from urllib.request import urlopen
@@ -75,9 +76,10 @@ def _atomic_json(path, value):
         temporary.unlink(missing_ok=True)
 
 
-def load_sources(cache):
+def load_sources(cache, *, settings_path=None):
     try:
-        data = json.loads((Path(cache) / "sources.json").read_text(encoding="utf8"))
+        path = Path(settings_path) if settings_path is not None else Path(cache) / "sources.json"
+        data = json.loads(path.read_text(encoding="utf8"))
     except FileNotFoundError:
         return ()
     if not isinstance(data, dict) or data.get("version") != 1 or not isinstance(data.get("sources"), list):
@@ -205,10 +207,10 @@ def merge_sources(community, sources, cache, *, replacements=None):
 
 
 class DictionaryManager:
-    def __init__(self, bundled, cache, deliver, on_error, *, fetch=urlopen, watch_interval=0.5):
+    def __init__(self, bundled, cache, deliver, on_error, *, fetch=urlopen, watch_interval=0.5,
+                 settings_path=None, legacy_settings=None):
         self.bundled, self.cache = Path(bundled), Path(cache)
-        self.local_directory = self.cache / "dictionaries"
-        self.local_directory.mkdir(parents=True, exist_ok=True)
+        self.settings_path = Path(settings_path) if settings_path is not None else self.cache / "sources.json"
         self.deliver, self.on_error, self.fetch = deliver, on_error, fetch
         self._lock = threading.Lock()
         self._revision, self._closed, self._enabled = 0, False, False
@@ -219,7 +221,11 @@ class DictionaryManager:
         self._watch_thread = None
         self._watched_state = None
         try:
-            self._sources = load_sources(self.cache)
+            if not self.settings_path.exists() and legacy_settings is not None and Path(legacy_settings).is_file():
+                self._sources = load_sources(self.cache, settings_path=legacy_settings)
+                _atomic_json(self.settings_path, {"version": 1, "sources": [s.record() for s in self._sources]})
+            else:
+                self._sources = load_sources(self.cache, settings_path=self.settings_path)
         except (OSError, ValueError, TypeError, KeyError) as error:
             self._sources = ()
             self.on_error(error)
@@ -244,19 +250,52 @@ class DictionaryManager:
             return path
         except (OSError, ValueError, KeyError, TypeError):
             try:
-                validate_snapshot(self.bundled)
-                return self.bundled
+                manifest = validate_snapshot(self.bundled)
+                target = self.cache / manifest["commit"]
+                if not target.exists():
+                    self.cache.mkdir(parents=True, exist_ok=True)
+                    with tempfile.TemporaryDirectory(prefix="installed-", dir=self.cache) as temporary:
+                        stage = Path(temporary) / "snapshot"
+                        stage.mkdir()
+                        for name in (*FILES, "manifest.json"):
+                            shutil.copyfile(self.bundled / name, stage / name)
+                        validate_snapshot(stage)
+                        try:stage.rename(target)
+                        except OSError:
+                            if not target.is_dir():raise
+                validate_snapshot(target)
+                return target
             except (OSError, ValueError, KeyError, TypeError):
                 # The installed dictionary folder is also user editable.
                 # Treat those bytes as local data, never as a verified
                 # download or as a reason to discard all other volumes.
                 return None
 
+    def _install_latest(self, snapshot):
+        """Refresh the editable installed files, retaining locally edited volumes."""
+        latest = validate_snapshot(snapshot)
+        previous = json.loads((self.bundled / "manifest.json").read_text(encoding="utf8"))
+        for name in FILES:
+            path = self.bundled / name
+            if path.exists():
+                current = _read(path)
+                # A local change, including a new file, keeps precedence.
+                if name not in previous["files"] or _blob(current) != previous["files"][name]["sha"]:
+                    continue
+                if _blob(current) == latest["files"][name]["sha"]:
+                    continue
+            elif name in previous["files"]:
+                continue  # A locally removed volume stays removed.
+            with tempfile.NamedTemporaryFile(dir=self.bundled, prefix="update-", delete=False) as stream:
+                temporary = Path(stream.name)
+                stream.write(_read(Path(snapshot) / name))
+            try:os.replace(temporary, path)
+            finally:temporary.unlink(missing_ok=True)
+        _atomic_json(self.bundled / "manifest.json", latest)
+
     def _state(self, enabled, sources):
         paths = [Path(s.path) for s in sources]
-        folders = [self.local_directory]
-        if enabled:
-            folders.append(self.bundled)
+        folders = [self.bundled] if enabled else []
         for folder in folders:
             paths.extend(folder / name for name in sorted(NAMES))
         result = []
@@ -336,8 +375,7 @@ class DictionaryManager:
                     name="Eloquence dictionary file monitor", daemon=True)
                 self._watch_thread.start()
         self._watch_event.set()
-        local = directory_sources(self.local_directory)
-        if not enabled and not sources and not local:
+        if not enabled and not sources:
             self._emit(revision, None)
         # File verification and merging belong to the background worker.
         # In particular, do not emit an older cached set before applying a
@@ -371,10 +409,8 @@ class DictionaryManager:
 
     def _build(self, community, sources, enabled):
         replacements = self._bundle_changes() if enabled else {}
-        local = directory_sources(self.local_directory)
         if enabled and community is None:
             replacements = {s.name: _read(s.path) for s in directory_sources(self.bundled)}
-        sources = local + sources
         if not sources and not replacements:
             if community:
                 manifest = validate_snapshot(community)
@@ -395,18 +431,26 @@ class DictionaryManager:
                 if self._closed or self._revision != revision:
                     return
                 if save:
-                    _atomic_json(self.cache / "sources.json", {"version": 1, "sources": [s.record() for s in sources]})
+                    _atomic_json(self.settings_path, {"version": 1, "sources": [s.record() for s in sources]})
                 self._committed_sources = sources
                 self._watched_state = state
                 committed = True
             self._emit(revision, path)
             if update:
                 latest = fetch_master(self.cache, fetch=self.fetch, publish=False)
-                if enabled and (community is None or latest.name != validate_snapshot(community)["commit"]):
+                if not self.current(revision):
+                    return
+                self._install_latest(latest)
+                installed_state = self._state(enabled, sources)
+                if enabled and (community is None or installed_state != state or
+                                latest.name != validate_snapshot(community)["commit"]):
                     path, details = self._build(latest, sources, enabled)
+                if self._state(enabled, sources) != installed_state:
+                    raise OSError("dictionary source changed while it was being read")
                 with self._lock:
                     if not self._closed and self._revision == revision:
                         _atomic_json(self.cache / "current.json", {"commit": latest.name})
+                        self._watched_state = installed_state
             if not self.current(revision):
                 return
             self._emit(revision, path)

@@ -1,6 +1,6 @@
 # Eloquence C – Bedienungsanleitung
 
-Eloquence C ist die NVDA-Erweiterung des Projekts [ReLoq C](https://github.com/hozosch/Reloq-C). Sie entwickelt den Eloquence-Klang mit gezielten Aussprachekorrekturen, Unicode-Unterstützung und zusätzlichen Klangmöglichkeiten weiter.
+Eloquence C ist die NVDA-Erweiterung des Projekts [ReLoq C](https://github.com/hozosch/Reloq-C). Sie entwickelt den Eloquence-Klang mit gezielten Aussprachekorrekturen, Unicode-Unterstützung und zusätzlichen Klangmöglichkeiten weiter. NVDA ist die erste Anbindung und dient derzeit zum Prüfen der Sprachausgabe. SAPI5 und Android sind weitere geplante Ziele.
 
 ## Installieren und auswählen
 
@@ -58,7 +58,7 @@ Mit **Gemeinschaftswörterbücher für die Aussprache verwenden** ergänzt du De
 
 Mit **Datei hinzufügen** kannst du eigene Dic-Dateien auswählen und ihnen Sprache und Wörterbuchtyp zuordnen. Die Dateien dürfen beliebig heißen und bleiben an ihrem bisherigen Ort. Spätere Dateien in der Liste haben Vorrang. **OK** oder **Übernehmen** speichert die Auswahl.
 
-Mit **Wörterbuchordner öffnen** erreichst du zusätzlich einen Ordner für automatisch erkannte Dateien. Verwende dort das Präfix aus der Sprachtabelle und einen dieser Namen:
+Mit **Wörterbuchordner öffnen** erreichst du den vorhandenen Ordner `synthDrivers/reloqC/communityDictionaries` im Add-on. Dort liegen die mitgelieferten Dateien; dort werden auch Änderungen in einem Editor erkannt. Bei aktivierten Gemeinschaftswörterbüchern kannst du weitere Dateien mit dem Präfix aus der Sprachtabelle und einem dieser Namen ergänzen:
 
 - `main.dic` für das Hauptwörterbuch, zum Beispiel `DEUmain.dic` oder `ENUmain.dic`.
 - `Root.dic` für das Stammwörterbuch, zum Beispiel `DEURoot.dic`.
@@ -66,12 +66,12 @@ Mit **Wörterbuchordner öffnen** erreichst du zusätzlich einen Ordner für aut
 
 Die Dateien verwenden das native Dic-Format: Windows-1252, ein Eintrag pro Zeile und ein Tabulator zwischen Suchwort und Ersetzung. Main unterscheidet Groß- und Kleinschreibung; gewöhnliche Textersetzungen durchlaufen anschließend die normale Textanalyse. Stamm- und Ausspracheangaben werden an der jeweiligen Wörterbuchstelle verarbeitet.
 
-Änderungen an eingebundenen Dateien und Dateien im Wörterbuchordner werden im Hintergrund erkannt. Das gilt auch für neu angelegte Dateien und für Editoren, die eine Datei beim Speichern ersetzen. Bei ungültigen Daten bleibt der letzte gültige Stand aktiv. Eigene Dateien werden durch Gemeinschaftswörterbuch-Updates nicht überschrieben. Bei aktivierten Gemeinschaftswörterbüchern werden auch lokale Änderungen an den mitgelieferten Dic-Dateien berücksichtigt.
+Änderungen an eingebundenen Dateien und Dateien im Wörterbuchordner werden im Hintergrund erkannt. Das gilt auch für neu angelegte Dateien und für Editoren, die eine Datei beim Speichern ersetzen. Bei ungültigen Daten bleibt der letzte gültige Stand aktiv. Gemeinschaftswörterbuch-Updates aktualisieren die Dateien in diesem Add-on-Ordner. Eigene eingebundene Dateien und lokal bearbeitete oder entfernte Wörterbuchdateien werden dabei erhalten. Ein lokal bearbeitetes Volume hat Vorrang vor der heruntergeladenen Fassung. Es wird kein zusätzlicher Bearbeitungsordner im NVDA-Hauptverzeichnis angelegt.
 
 Der Aktualisierungsschalter aktualisiert die **Wörterbücher**. Eine automatische Aktualisierung des **Add-ons** ist noch nicht eingerichtet; ein neues Add-on-Paket wird wieder als `.nvda-addon` installiert.
 
 ## Fehler melden
 
-Das Projekt ist noch experimentell. Der gemeldete US-Englisch-Absturz mit Wörterbüchern und Unterschiede bei griechischen Buchstaben in finnischen und koreanischen NVDA-Sätzen werden weiter untersucht. Technische Details stehen im [Arbeitsstand](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md).
+Das Projekt ist noch experimentell. Das gemeldete Einfrieren von NVDA bei US-Englisch mit Wörterbüchern wird weiter geprüft. Das Überspringen griechischer Buchstaben in finnischen und koreanischen Sätzen wurde inzwischen auf die Symbolverarbeitung von NVDA vor der Übergabe an den Synthesekern zurückgeführt. Technische Details stehen im [Arbeitsstand](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md).
 
 Für eine [Fehlermeldung](https://github.com/hozosch/Reloq-C/issues) helfen ein kurzer Beispieltext, Sprache, Stimme, Version, Abtastrate und die Angabe, ob Wörterbücher eingeschaltet sind. Beschreibe auch, ob die Ausgabe abbricht, ein Wort falsch klingt oder NVDA selbst beendet wird.

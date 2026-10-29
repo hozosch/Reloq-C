@@ -4,7 +4,7 @@
 <body>
 <!-- Generated from docs/USER-GUIDE.en.md; keep both copies in sync. -->
 <h1>Eloquence C – user guide</h1>
-<p>Eloquence C is the NVDA add-on from <a href="https://github.com/hozosch/Reloq-C">ReLoq C</a>. It develops the familiar Eloquence sound with pronunciation corrections, Unicode support and additional voice controls.</p>
+<p>Eloquence C is the NVDA add-on from <a href="https://github.com/hozosch/Reloq-C">ReLoq C</a>. It develops the familiar Eloquence sound with pronunciation corrections, Unicode support and additional voice controls. NVDA is the first integration and current speech testing platform. SAPI5 and Android are planned targets.</p>
 <h2>Install and select</h2>
 <p>You need NVDA 2026.1 or later in a 64-bit process. The package contains a Windows x64 DLL.</p>
 <ol>
@@ -96,17 +96,17 @@
 <p>Select Eloquence C first, then open <strong>NVDA Settings → Eloquence C</strong>.</p>
 <p><strong>Use community pronunciation dictionaries</strong> adds German and American English entries from <a href="https://github.com/eigencrow/IBMTTSDictionaries">eigencrow/IBMTTSDictionaries</a>. It is off by default. <strong>Update dictionaries now</strong> checks the current <code>master</code> branch and applies a complete update in the background. Updating requires internet access.</p>
 <p>Use <strong>Add file</strong> to select your own Dic files and assign a language and dictionary type. Filenames can be arbitrary; files stay at their original locations. Later files in the list take priority. Choose <strong>OK</strong> or <strong>Apply</strong> to save the selection.</p>
-<p><strong>Open dictionary folder</strong> opens an additional folder whose files are discovered automatically. Combine a prefix from the language table with one of these suffixes:</p>
+<p><strong>Open dictionary folder</strong> opens the existing <code>synthDrivers/reloqC/communityDictionaries</code> folder inside the add-on. This is where the bundled files live and editor changes are detected. With community dictionaries enabled, you can add files using a prefix from the language table and one of these suffixes:</p>
 <ul>
 <li><code>main.dic</code> for Main words, such as <code>DEUmain.dic</code> or <code>ENUmain.dic</code>.</li>
 <li><code>Root.dic</code> for word roots, such as <code>DEURoot.dic</code>.</li>
 <li><code>abbr.dic</code> for abbreviations, such as <code>DEUabbr.dic</code>.</li>
 </ul>
 <p>Files use the native Dic format: Windows-1252 encoding, one entry per line and a tab between the lookup word and replacement. Main keys are case-sensitive, and ordinary text replacements subsequently undergo normal text analysis. Root and pronunciation entries are handled at their respective dictionary stages.</p>
-<p>Edits to selected files and files in the dictionary folder are detected in the background, including newly created files and editor-style file replacements. Invalid data leaves the last valid set active. Community updates do not overwrite your own files. Local changes to bundled Dic files are also taken into account when community dictionaries are enabled.</p>
+<p>Edits to selected files and files in the dictionary folder are detected in the background, including newly created files and editor-style file replacements. Invalid data leaves the last valid set active. Community updates refresh the files in this add-on folder. Selected own files and locally edited or removed dictionary files are preserved. A locally edited volume takes priority over the downloaded volume. No additional editing folder is created in NVDA’s main directory.</p>
 <p>The update button updates <strong>dictionaries</strong>. Automatic <strong>add-on</strong> updates are not yet implemented; install a new <code>.nvda-addon</code> package to update the add-on.</p>
 <h2>Reporting problems</h2>
-<p>The project is still experimental. The reported American English crash with dictionaries, and Greek-letter differences in Finnish and Korean NVDA sentences, remain under investigation. See the <a href="https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md">technical work status</a> for details.</p>
+<p>The project is still experimental. The reported NVDA freeze with American English dictionaries remains under investigation. Skipped Greek letters in Finnish and Korean sentences have been traced to NVDA symbol processing before the characters reach the synthesis core. See the <a href="https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md">technical work status</a> for details.</p>
 <p>When <a href="https://github.com/hozosch/Reloq-C/issues">reporting an issue</a>, include a short example, language, voice, version, sample rate and whether dictionaries are enabled. Explain whether speech stops, pronunciation is wrong or NVDA itself exits.</p>
 </body>
 </html>

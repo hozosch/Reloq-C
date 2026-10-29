@@ -228,7 +228,7 @@ class SynthDriver(BaseSynthDriver):
         self._transport.set_parameter(ROUGHNESS, self._roughness)
         self._transport.set_parameter(BREATHINESS, self._breathiness)
         manager = self.dictionary_manager()
-        # Observe canonical folder files even before any own file is added.
+        # Start monitoring the installed dictionaries and selected own files.
         manager.set_enabled(False)
 
     @staticmethod
@@ -316,11 +316,14 @@ class SynthDriver(BaseSynthDriver):
                 raise RuntimeError("synthesizer is terminating")
             if self._dictionary_updater is None:
                 import globalVars
+                profile = Path(globalVars.appArgs.configPath)
+                dictionaries = DLL.with_name("communityDictionaries")
                 self._dictionary_updater = CommunityDictionaries(
-                    DLL.with_name("communityDictionaries"),
-                    Path(globalVars.appArgs.configPath) / "reloqCommunityDictionaries",
+                    dictionaries, dictionaries / ".cache",
                     self._apply_dictionary_snapshot,
-                    lambda error: log.warning("Community dictionary refresh failed: %s", error))
+                    lambda error: log.warning("Community dictionary refresh failed: %s", error),
+                    settings_path=profile / "reloqCDictionaries.json",
+                    legacy_settings=profile / "reloqCommunityDictionaries" / "sources.json")
             return self._dictionary_updater
 
     def refresh_dictionaries(self, completed=None):
@@ -542,15 +545,6 @@ class SynthDriver(BaseSynthDriver):
             if (self._pitch, self._voiceTags, self._selectedLanguage, self._voice) != (pitch, tags, language, voice):
                 pitch, tags, language, voice = self._pitch, self._voiceTags, self._selectedLanguage, self._voice
                 parts = make_parts()
-            if getattr(log, "isEnabledFor", lambda level: False)(10):
-                # Metadata only: identify script and language routing without
-                # writing spoken text into the diagnostic log.
-                greek = sorted({ord(c) for part in parts if isinstance(part, EciText)
-                    for c in part.text if ord(c) == 0xb5 or 0x370 <= ord(c) <= 0x3ff
-                    or 0x1f00 <= ord(c) <= 0x1fff or 0x1d6a8 <= ord(c) <= 0x1d7cb})
-                scopes = [part.language for part in parts if isinstance(part, EciLanguage)]
-                log.debug("Eloquence C routing: home=%#x voice=%s scopes=%s Greek=%s",
-                          language, voice, scopes, [f"U+{cp:04X}" for cp in greek])
             self._transport.submit(parts)
 
     def cancel(self):

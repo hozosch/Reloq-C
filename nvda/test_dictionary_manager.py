@@ -17,9 +17,11 @@ class ManagerTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.cache = self.root / 'cache'
+        self.bundle = self.root / 'installed'
+        shutil.copytree(R / 'data/community', self.bundle)
         self.deliveries, self.errors = [], []
         self.server = Server()
-        self.manager = DictionaryManager(R / 'data/community', self.cache,
+        self.manager = DictionaryManager(self.bundle, self.cache,
             lambda revision, path: self.deliveries.append((revision, path)), self.errors.append,
             fetch=self.server, watch_interval=0.02)
         self.addCleanup(self.manager.close)
@@ -106,12 +108,54 @@ class ManagerTests(unittest.TestCase):
         self.assertEqual((old/'DEUmain.dic').read_bytes(),b'Own\tone\n')
         self.assertEqual((self.deliveries[-1][1]/'DEUmain.dic').read_bytes(),b'Own\ttwo\n')
 
-    def test_discover_edit_replace_and_remove_folder_files(self):
-        self.wait(lambda done: self.manager.configure([], False, done))
-        self.assertIsNone(self.deliveries[-1][1])
-        path = self.manager.local_directory / 'FINmain.dic'
+    def test_installed_files_follow_master_and_keep_editor_changes(self):
+        edited = self.bundle / 'DEUmain.dic'
+        edited.write_bytes(b'Own\tlocal version\n')
+        latest = b'Word\tlatest value\n'
+        self.server.data['ENUmain.dic'] = latest
+        self.manager.set_enabled(True)
+        error, _ = self.wait(self.manager.refresh)
+        self.assertIsNone(error)
+        self.assertEqual((self.bundle / 'ENUmain.dic').read_bytes(), latest)
+        self.assertEqual(edited.read_bytes(), b'Own\tlocal version\n')
+        active = self.deliveries[-1][1]
+        self.assertEqual((active / 'ENUmain.dic').read_bytes(), latest)
+        self.assertEqual((active / 'DEUmain.dic').read_bytes(), edited.read_bytes())
+
+    def test_editor_cannot_change_an_already_delivered_snapshot(self):
+        self.wait(lambda done:self.manager.configure([], True, done))
+        active = self.deliveries[-1][1]
+        self.assertNotEqual(active, self.bundle)
+        before = (active / 'DEUmain.dic').read_bytes()
+        (self.bundle / 'DEUmain.dic').write_bytes(b'Own\tchanged\n')
+        self.until(lambda:self.deliveries[-1][1] != active)
+        self.assertEqual((active / 'DEUmain.dic').read_bytes(), before)
+        self.assertEqual((self.deliveries[-1][1] / 'DEUmain.dic').read_bytes(), b'Own\tchanged\n')
+
+    def test_source_settings_survive_outside_the_addon_cache(self):
+        own = self.source('own.dic', b'Own\tvalue\n')
+        legacy = self.root / 'legacy-sources.json'
+        legacy.write_text(json.dumps({'version':1,'sources':[own.record()]}))
+        settings = self.root / 'reloqCDictionaries.json'
+        cache = self.bundle / '.cache'
+        manager = DictionaryManager(self.bundle, cache, lambda r,p:None, self.errors.append,
+            settings_path=settings, legacy_settings=legacy)
+        self.addCleanup(manager.close)
+        self.assertEqual(manager.sources, (own,))
+        self.assertEqual(load_sources(cache, settings_path=settings), (own,))
+        self.assertFalse(cache.exists())
+        self.assertTrue(legacy.is_file())
+
+    def test_discover_edit_replace_and_remove_installed_folder_files(self):
+        bundle = self.root / 'bundled'
+        shutil.copytree(R / 'data/community', bundle)
+        self.manager.bundled = bundle
+        self.wait(lambda done: self.manager.configure([], True, done))
+        initial = self.deliveries[-1][1]
+        self.assertFalse((self.cache / 'dictionaries').exists())
+        path = bundle / 'FINmain.dic'
         path.write_bytes(b'Own\tone\n')
-        self.until(lambda: self.deliveries[-1][1] is not None)
+        self.until(lambda: self.deliveries[-1][1] != initial)
         first = self.deliveries[-1][1]
         self.assertEqual((first / path.name).read_bytes(), path.read_bytes())
         replacement = path.with_suffix('.new')
@@ -120,7 +164,8 @@ class ManagerTests(unittest.TestCase):
         self.until(lambda: self.deliveries[-1][1] != first)
         self.assertEqual((self.deliveries[-1][1] / path.name).read_bytes(), b'Own\ttwo\n')
         path.unlink()
-        self.until(lambda: self.deliveries[-1][1] is None)
+        self.until(lambda: self.deliveries[-1][1] != first and
+                   not (self.deliveries[-1][1] / path.name).exists())
         self.assertFalse(self.server.calls)
         self.assertFalse(self.errors)
 
@@ -129,9 +174,10 @@ class ManagerTests(unittest.TestCase):
         shutil.copytree(R / 'data/community', bundle)
         self.manager.bundled = bundle
         self.wait(lambda done: self.manager.configure([], True, done))
+        initial = self.deliveries[-1][1]
         original_root = (bundle / 'DEURoot.dic').read_bytes()
         (bundle / 'DEUmain.dic').write_bytes(b'Own\tlocal version\n')
-        self.until(lambda: self.deliveries[-1][1] != bundle)
+        self.until(lambda: self.deliveries[-1][1] != initial)
         current = self.deliveries[-1][1]
         self.assertEqual((current / 'DEUmain.dic').read_bytes(), b'Own\tlocal version\n')
         self.assertEqual(sorted((current / 'DEURoot.dic').read_bytes().splitlines()),

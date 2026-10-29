@@ -1,45 +1,45 @@
 # ReLoq C
 
-[English](README.en.md)
+ReLoq C is a speech synthesis project that preserves the familiar character of Eloquence while improving pronunciation, responsiveness and control over the voice. Apple Eloquence serves as the reference for language behaviour and sound.
 
-ReLoq C entwickelt eine Sprachausgabe für NVDA, die den vertrauten Klangcharakter von Eloquence bewahrt und ihn gezielt verbessert. Im Mittelpunkt stehen verständliche Aussprache, schnelles Lesen und eine direkte Reaktion beim Navigieren mit dem Screenreader.
+The shared synthesis engine is written in C. **NVDA is the first integration and the current testing platform. Windows SAPI5 and Android are planned next.** Work on those integrations will follow the remaining language and stability fixes, and reductions in the core's size and resource use.
 
-Die Sprachverarbeitung orientiert sich an Apple Eloquence. Wo das Original Aussprachefehler oder Einschränkungen hat, soll ReLoq C bessere Ergebnisse liefern. Dazu kommen eine breitere Unicode-Unterstützung, höhere Abtastraten und mehr Möglichkeiten, die Stimme anzupassen.
+## Current features
 
-## Was ReLoq C bietet
+- **14 language variants**, including German, American and British English, Chinese, Japanese, Korean and Greek.
+- **Eight voice presets:** Reed, Shelly, Bobby, Rocko, Glen, Sandy, Grandma and Grandpa, with adjustable head size, pitch, roughness and breathiness.
+- **Seven sample rates from 8 to 48 kHz**, covering the classic sound and an extended frequency range.
+- **Unicode and language-specific character names**, extending the handling of letters, accents and symbols.
+- **Optional pronunciation dictionaries:** community data for German and American English, plus your own Dic files managed through NVDA settings.
+- **Pause shortening and optional ECI commands.**
 
-- **14 Sprachvarianten**, darunter Deutsch, amerikanisches und britisches Englisch sowie Chinesisch, Japanisch, Koreanisch und Griechisch.
-- **Acht Stimmprofile:** Reed, Shelly, Bobby, Rocko, Glen, Sandy, Grandma und Grandpa. Kopfgröße, Tonhöhe, Rauigkeit und Behauchtheit lassen sich anpassen.
-- **Sieben Abtastraten von 8 bis 48 kHz** für den klassischen Klang und eine erweiterte Klangbandbreite.
-- **Unicode und sprachbezogene Zeichennamen:** zusätzliche Buchstaben, Akzente und Symbole werden in die Sprachverarbeitung einbezogen.
-- **Optionale Aussprachewörterbücher:** Gemeinschaftswörterbücher für Deutsch und US-Englisch sowie eigene Dic-Dateien mit Verwaltung in den NVDA-Einstellungen.
-- **Verkürzbare Pausen und ECI-Steuerbefehle** als zusätzliche Optionen.
+## Goals and platform roadmap
 
-## Unsere Ziele
+First, make the supported languages and everyday speech reliable. This includes word analysis, compounds, sentence melody and transitions between sounds. Accepted sound improvements, such as the German consonantal r and adjusted nasal vowels, are retained. Speech behaviour is currently evaluated in NVDA.
 
-ReLoq C soll im Alltag mit NVDA schnell, verständlich und zuverlässig sprechen. Dafür verbessern wir Wortanalyse, Zusammensetzungen, Satzmelodie und Lautübergänge. Bewährte Klangentscheidungen bleiben erhalten, etwa das konsonantische deutsche r und die abgestimmten Nasalvokale.
+Next, reduce binary size, memory use and CPU demand, and keep navigation responsive even at high sample rates. These improvements belong in the shared C core so that every platform can benefit. The project aims for compact, independently expressed C rules without runtime bytecode or original DLL/SYN modules.
 
-Ein weiteres Ziel ist ein kompakter, sparsamer C-Kern: kurze Reaktionszeiten auch bei längeren Texten und geringe CPU-Last bei hohen Abtastraten. Verbesserungen sollen allen unterstützten Sprachen zugutekommen.
+Then add a **SAPI5 integration for Windows** and an **Android speech engine** using the same core. These are planned targets, not currently available packages.
 
-## Mit NVDA verwenden
+## Using the NVDA add-on
 
-Die Erweiterung erscheint in NVDA als **Eloquence C (experimentell)**. Sie benötigt NVDA ab 2026.1 mit einem 64-Bit-Prozess; die DLL wird derzeit für Windows x64 gebaut.
+The synthesizer is listed as **Eloquence C (experimental)**. It requires NVDA 2026.1 or later in a 64-bit process. The DLL is currently built for Windows x64.
 
-Fertige Pakete gehören in den Bereich [Releases und Downloads](https://github.com/hozosch/Reloq-C/releases). Solange dort keine Datei mit der Endung `.nvda-addon` angeboten wird, steht über GitHub noch kein installierbares Paket bereit. Der Quellcode-Download ist zum Selbstbauen gedacht.
+Installable packages belong under [Releases and downloads](https://github.com/hozosch/Reloq-C/releases). If no `.nvda-addon` file is listed there, GitHub does not yet provide an installable package. The source download is intended for building the project yourself.
 
-Wenn ein Paket bereitsteht, installiere die `.nvda-addon`-Datei mit NVDA, starte NVDA neu und wähle mit **NVDA+Strg+S** die Sprachausgabe **Eloquence C (experimentell)** aus. Sprache und Stimme stellst du in den Sprachausgaben-Einstellungen ein.
+Once a package is available, install the `.nvda-addon` file with NVDA, restart NVDA and press **NVDA+Control+S** to select **Eloquence C (experimental)**. Choose your language and voice in NVDA's Speech settings.
 
-Die [Bedienungsanleitung](docs/USER-GUIDE.de.md) erklärt Sprachen, Einstellungen und Wörterbücher. ReLoq C ist noch in Entwicklung; [Änderungen und bekannte Einschränkungen in 0.2.187](docs/changes/0.2.187.md) sind separat dokumentiert.
+The [English user guide](docs/USER-GUIDE.en.md) and [German user guide](docs/USER-GUIDE.de.md) cover languages, settings and dictionaries. [Changes and known limitations in 0.2.188](docs/changes/0.2.188.md) are documented separately.
 
-## Rückmeldungen und Mitarbeit
+## Feedback and contributions
 
-Aussprachefehler, abgebrochene Ausgaben und Probleme im Alltag kannst du unter [Issues](https://github.com/hozosch/Reloq-C/issues) melden. Hilfreich sind ein kurzer Beispieltext, Sprache, Stimmprofil, Version, Abtastrate und die Beschreibung, was du erwartest und was du hörst.
+Please report pronunciation errors, incomplete speech, freezes and everyday usability problems through [Issues](https://github.com/hozosch/Reloq-C/issues). Include a short example, language, voice preset, version, sample rate, and the expected and actual behaviour. Mention whether pronunciation dictionaries are enabled.
 
-Für die Entwicklung:
+Developer information:
 
-- [Build und Paketbau](docs/BUILD.md)
-- [Technischer Arbeitsstand und offene Fehler](docs/CURRENT-WORK.md)
-- [Gewünschte Aussprache- und Klangentscheidungen](GEWUENSCHTE-ABWEICHUNGEN-DE.md)
-- [Frühere Versionsnotizen](docs/history/README.md)
+- [Build and packaging instructions, in German](docs/BUILD.md)
+- [Technical work status and open faults, in German](docs/CURRENT-WORK.md)
+- [Agreed pronunciation and sound choices, in German](GEWUENSCHTE-ABWEICHUNGEN-DE.md)
+- [Earlier version notes](docs/history/README.md)
 
-Der Synthesekern wird in C gebaut, die NVDA-Anbindung ist in Python geschrieben. Die weitere Vereinfachung und Optimierung des Kerns ist Teil des Projekts. Hinweise zu verwendeten Daten und Komponenten stehen bei den jeweiligen Quellen, unter anderem in [OpenEVV-Lizenz](vendor/openevv61/LICENSE), [OpenEVV-Hinweisen](vendor/openevv61/NOTICE) und [Wörterbuch-Lizenz](data/community/LICENSE.md).
+The NVDA adapter is written in Python. Component and data notices are retained with their sources, including the [OpenEVV license](vendor/openevv61/LICENSE), [OpenEVV notices](vendor/openevv61/NOTICE) and [dictionary license](data/community/LICENSE.md).

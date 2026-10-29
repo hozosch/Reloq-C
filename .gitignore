@@ -11,3 +11,7 @@
 *.wav
 *.pcm
 *.s16
+
+/eci/test_reloq_hash_delete
+
+/eci/test_reloq_eci

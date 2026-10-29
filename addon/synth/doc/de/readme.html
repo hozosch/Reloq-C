@@ -4,7 +4,7 @@
 <body>
 <!-- Generated from docs/USER-GUIDE.de.md; keep both copies in sync. -->
 <h1>Eloquence C – Bedienungsanleitung</h1>
-<p>Eloquence C ist die NVDA-Erweiterung des Projekts <a href="https://github.com/hozosch/Reloq-C">ReLoq C</a>. Sie entwickelt den Eloquence-Klang mit gezielten Aussprachekorrekturen, Unicode-Unterstützung und zusätzlichen Klangmöglichkeiten weiter.</p>
+<p>Eloquence C ist die NVDA-Erweiterung des Projekts <a href="https://github.com/hozosch/Reloq-C">ReLoq C</a>. Sie entwickelt den Eloquence-Klang mit gezielten Aussprachekorrekturen, Unicode-Unterstützung und zusätzlichen Klangmöglichkeiten weiter. NVDA ist die erste Anbindung und dient derzeit zum Prüfen der Sprachausgabe. SAPI5 und Android sind weitere geplante Ziele.</p>
 <h2>Installieren und auswählen</h2>
 <p>Benötigt wird NVDA ab 2026.1 mit einem 64-Bit-Prozess. Das Paket enthält eine Windows-x64-DLL.</p>
 <ol>
@@ -96,17 +96,17 @@
 <p>Wähle zuerst Eloquence C als aktive Sprachausgabe. Öffne dann <strong>NVDA-Einstellungen → Eloquence C</strong>.</p>
 <p>Mit <strong>Gemeinschaftswörterbücher für die Aussprache verwenden</strong> ergänzt du Deutsch und US-Englisch um Einträge aus <a href="https://github.com/eigencrow/IBMTTSDictionaries">eigencrow/IBMTTSDictionaries</a>. Die Option ist zunächst ausgeschaltet. <strong>Wörterbücher jetzt aktualisieren</strong> prüft den aktuellen Zweig <code>master</code>; eine neue vollständige Version wird im Hintergrund übernommen. Für diese Aktualisierung wird Internet benötigt.</p>
 <p>Mit <strong>Datei hinzufügen</strong> kannst du eigene Dic-Dateien auswählen und ihnen Sprache und Wörterbuchtyp zuordnen. Die Dateien dürfen beliebig heißen und bleiben an ihrem bisherigen Ort. Spätere Dateien in der Liste haben Vorrang. <strong>OK</strong> oder <strong>Übernehmen</strong> speichert die Auswahl.</p>
-<p>Mit <strong>Wörterbuchordner öffnen</strong> erreichst du zusätzlich einen Ordner für automatisch erkannte Dateien. Verwende dort das Präfix aus der Sprachtabelle und einen dieser Namen:</p>
+<p>Mit <strong>Wörterbuchordner öffnen</strong> erreichst du den vorhandenen Ordner <code>synthDrivers/reloqC/communityDictionaries</code> im Add-on. Dort liegen die mitgelieferten Dateien; dort werden auch Änderungen in einem Editor erkannt. Bei aktivierten Gemeinschaftswörterbüchern kannst du weitere Dateien mit dem Präfix aus der Sprachtabelle und einem dieser Namen ergänzen:</p>
 <ul>
 <li><code>main.dic</code> für das Hauptwörterbuch, zum Beispiel <code>DEUmain.dic</code> oder <code>ENUmain.dic</code>.</li>
 <li><code>Root.dic</code> für das Stammwörterbuch, zum Beispiel <code>DEURoot.dic</code>.</li>
 <li><code>abbr.dic</code> für Abkürzungen, zum Beispiel <code>DEUabbr.dic</code>.</li>
 </ul>
 <p>Die Dateien verwenden das native Dic-Format: Windows-1252, ein Eintrag pro Zeile und ein Tabulator zwischen Suchwort und Ersetzung. Main unterscheidet Groß- und Kleinschreibung; gewöhnliche Textersetzungen durchlaufen anschließend die normale Textanalyse. Stamm- und Ausspracheangaben werden an der jeweiligen Wörterbuchstelle verarbeitet.</p>
-<p>Änderungen an eingebundenen Dateien und Dateien im Wörterbuchordner werden im Hintergrund erkannt. Das gilt auch für neu angelegte Dateien und für Editoren, die eine Datei beim Speichern ersetzen. Bei ungültigen Daten bleibt der letzte gültige Stand aktiv. Eigene Dateien werden durch Gemeinschaftswörterbuch-Updates nicht überschrieben. Bei aktivierten Gemeinschaftswörterbüchern werden auch lokale Änderungen an den mitgelieferten Dic-Dateien berücksichtigt.</p>
+<p>Änderungen an eingebundenen Dateien und Dateien im Wörterbuchordner werden im Hintergrund erkannt. Das gilt auch für neu angelegte Dateien und für Editoren, die eine Datei beim Speichern ersetzen. Bei ungültigen Daten bleibt der letzte gültige Stand aktiv. Gemeinschaftswörterbuch-Updates aktualisieren die Dateien in diesem Add-on-Ordner. Eigene eingebundene Dateien und lokal bearbeitete oder entfernte Wörterbuchdateien werden dabei erhalten. Ein lokal bearbeitetes Volume hat Vorrang vor der heruntergeladenen Fassung. Es wird kein zusätzlicher Bearbeitungsordner im NVDA-Hauptverzeichnis angelegt.</p>
 <p>Der Aktualisierungsschalter aktualisiert die <strong>Wörterbücher</strong>. Eine automatische Aktualisierung des <strong>Add-ons</strong> ist noch nicht eingerichtet; ein neues Add-on-Paket wird wieder als <code>.nvda-addon</code> installiert.</p>
 <h2>Fehler melden</h2>
-<p>Das Projekt ist noch experimentell. Der gemeldete US-Englisch-Absturz mit Wörterbüchern und Unterschiede bei griechischen Buchstaben in finnischen und koreanischen NVDA-Sätzen werden weiter untersucht. Technische Details stehen im <a href="https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md">Arbeitsstand</a>.</p>
+<p>Das Projekt ist noch experimentell. Das gemeldete Einfrieren von NVDA bei US-Englisch mit Wörterbüchern wird weiter geprüft. Das Überspringen griechischer Buchstaben in finnischen und koreanischen Sätzen wurde inzwischen auf die Symbolverarbeitung von NVDA vor der Übergabe an den Synthesekern zurückgeführt. Technische Details stehen im <a href="https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md">Arbeitsstand</a>.</p>
 <p>Für eine <a href="https://github.com/hozosch/Reloq-C/issues">Fehlermeldung</a> helfen ein kurzer Beispieltext, Sprache, Stimme, Version, Abtastrate und die Angabe, ob Wörterbücher eingeschaltet sind. Beschreibe auch, ob die Ausgabe abbricht, ein Wort falsch klingt oder NVDA selbst beendet wird.</p>
 </body>
 </html>

@@ -129,6 +129,47 @@ void *hashNew(int32_t want, int32_t ownsKeys, int32_t wantPrime)
 
 /* The whole table. Keys go back only if the table owned them and the caller
    asks; values only if the caller asks and there is one. */
+#if defined(EVV_ARENA) && EVV_ARENA
+static int address_order(const void *left, const void *right)
+{
+    uintptr_t a = (uintptr_t)*(void *const *)left;
+    uintptr_t b = (uintptr_t)*(void *const *)right;
+    return (a > b) - (a < b);
+}
+
+/* A large dictionary owns three arena allocations per row. Bucket order
+ * scatters the frees throughout the arena, making insertion into its ordered
+ * free list quadratic. Collect ownership before releasing anything, then
+ * free in address order so adjacent blocks immediately coalesce. The scratch
+ * array is temporary; a failed allocation retains ordinary deletion. */
+static int delete_in_address_order(Hash *h, int freeKeys, int freeValues)
+{
+    size_t count = 2;
+    for (int32_t i = 0; i < h->buckets; ++i)
+        for (HashEntry *e = h->at[i]; e; e = e->next) {
+            if (count > SIZE_MAX - 3) return 0;
+            count += 1 + !!(freeKeys && h->ownsKeys && e->key) +
+                         !!(freeValues && e->value);
+        }
+    if (count < 256 || count > SIZE_MAX / sizeof(void *)) return 0;
+    void **blocks = malloc(count * sizeof *blocks);
+    if (!blocks) return 0;
+    size_t at = 0;
+    blocks[at++] = h;
+    blocks[at++] = h->at;
+    for (int32_t i = 0; i < h->buckets; ++i)
+        for (HashEntry *e = h->at[i]; e; e = e->next) {
+            if (freeKeys && h->ownsKeys && e->key) blocks[at++] = e->key;
+            if (freeValues && e->value) blocks[at++] = e->value;
+            blocks[at++] = e;
+        }
+    qsort(blocks, count, sizeof *blocks, address_order);
+    for (size_t i = 0; i < count; ++i) free(blocks[i]);
+    free(blocks);
+    return 1;
+}
+#endif
+
 int32_t hashDelete(void *table, int32_t freeKeys, int32_t freeValues)
 {
     Hash   *h = (Hash *)table;
@@ -138,6 +179,9 @@ int32_t hashDelete(void *table, int32_t freeKeys, int32_t freeValues)
         return 0;
 
     if (h->at) {
+#if defined(EVV_ARENA) && EVV_ARENA
+        if (delete_in_address_order(h, freeKeys, freeValues)) return 0;
+#endif
         for (i = 0; i < h->buckets; i++) {
             HashEntry *e = h->at[i];
 

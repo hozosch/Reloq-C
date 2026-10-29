@@ -327,7 +327,12 @@ def main(inspect_adapter=None):
                     driver.communityDictionaries = True
                     until(lambda: any(instance.dictionary_paths and instance.dictionary_paths[-1] is not None for instance in Engine.instances))
                     worker = next(instance for instance in Engine.instances if instance.dictionary_paths and instance.dictionary_paths[-1] is not None)
-                    assert Path(worker.dictionary_paths[-1]).name == "communityDictionaries"
+                    manager = driver.dictionary_manager()
+                    assert manager.bundled == driver_module.DLL.with_name("communityDictionaries")
+                    assert manager.cache == manager.bundled / ".cache"
+                    assert Path(worker.dictionary_paths[-1]).parent == manager.cache
+                    assert manager.settings_path == path / "profile" / "reloqCDictionaries.json"
+                    assert not (path / "profile" / "reloqCommunityDictionaries").exists()
                     until(lambda: any(item[0] == "warning" and item[1][0].startswith("Community dictionary refresh failed") for item in notifications))
                     notifications[:] = [item for item in notifications if not (
                         item[0] == "warning" and item[1][0].startswith("Community dictionary refresh failed"))]

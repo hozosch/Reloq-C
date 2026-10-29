@@ -69,6 +69,33 @@ class Dictionaries(unittest.TestCase):
             u=CommunityDictionaries(R/'data/community',p,lambda r,d:paths.append(d),lambda e:ready.set(),fetch=offline)
             u.set_enabled(True);self.assertEqual(paths,[R/'data/community']);self.assertTrue(ready.wait(2));u.close()
 class LanguagePersistence(unittest.TestCase):
+    def test_cancel_does_not_wait_for_native_close(self):
+        from _reloq_languages import LanguageEngine
+        closing, release, cancelled = threading.Event(), threading.Event(), threading.Event()
+        holder, errors = [], []
+        class Engine:
+            def __init__(self, *args, **kwargs):pass
+            def set_parameter(self, *args):pass
+            def cancel(self):pass
+            def close(self):
+                closing.set()
+                if not release.wait(5):raise AssertionError('close was never released')
+        def owner():
+            try:
+                engine = LanguageEngine('eci.dll', engine_factory=Engine)
+                holder.append(engine)
+                engine.close()
+            except BaseException as error:errors.append(error)
+        worker = threading.Thread(target=owner)
+        worker.start()
+        self.assertTrue(closing.wait(2))
+        caller = threading.Thread(target=lambda: (holder[0].cancel(), cancelled.set()))
+        caller.start()
+        try:self.assertTrue(cancelled.wait(1), 'cancel waited for native destruction')
+        finally:
+            release.set();caller.join(5);worker.join(5)
+        self.assertFalse(errors)
+
     def test_existing_future_voices_and_atomic_rollback(self):
         from _reloq_languages import LanguageEngine, GERMAN, US_ENGLISH
         class Engine:

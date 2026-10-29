@@ -1,6 +1,6 @@
 # Eloquence C – user guide
 
-Eloquence C is the NVDA add-on from [ReLoq C](https://github.com/hozosch/Reloq-C). It develops the familiar Eloquence sound with pronunciation corrections, Unicode support and additional voice controls.
+Eloquence C is the NVDA add-on from [ReLoq C](https://github.com/hozosch/Reloq-C). It develops the familiar Eloquence sound with pronunciation corrections, Unicode support and additional voice controls. NVDA is the first integration and current speech testing platform. SAPI5 and Android are planned targets.
 
 ## Install and select
 
@@ -58,7 +58,7 @@ Select Eloquence C first, then open **NVDA Settings → Eloquence C**.
 
 Use **Add file** to select your own Dic files and assign a language and dictionary type. Filenames can be arbitrary; files stay at their original locations. Later files in the list take priority. Choose **OK** or **Apply** to save the selection.
 
-**Open dictionary folder** opens an additional folder whose files are discovered automatically. Combine a prefix from the language table with one of these suffixes:
+**Open dictionary folder** opens the existing `synthDrivers/reloqC/communityDictionaries` folder inside the add-on. This is where the bundled files live and editor changes are detected. With community dictionaries enabled, you can add files using a prefix from the language table and one of these suffixes:
 
 - `main.dic` for Main words, such as `DEUmain.dic` or `ENUmain.dic`.
 - `Root.dic` for word roots, such as `DEURoot.dic`.
@@ -66,12 +66,12 @@ Use **Add file** to select your own Dic files and assign a language and dictiona
 
 Files use the native Dic format: Windows-1252 encoding, one entry per line and a tab between the lookup word and replacement. Main keys are case-sensitive, and ordinary text replacements subsequently undergo normal text analysis. Root and pronunciation entries are handled at their respective dictionary stages.
 
-Edits to selected files and files in the dictionary folder are detected in the background, including newly created files and editor-style file replacements. Invalid data leaves the last valid set active. Community updates do not overwrite your own files. Local changes to bundled Dic files are also taken into account when community dictionaries are enabled.
+Edits to selected files and files in the dictionary folder are detected in the background, including newly created files and editor-style file replacements. Invalid data leaves the last valid set active. Community updates refresh the files in this add-on folder. Selected own files and locally edited or removed dictionary files are preserved. A locally edited volume takes priority over the downloaded volume. No additional editing folder is created in NVDA’s main directory.
 
 The update button updates **dictionaries**. Automatic **add-on** updates are not yet implemented; install a new `.nvda-addon` package to update the add-on.
 
 ## Reporting problems
 
-The project is still experimental. The reported American English crash with dictionaries, and Greek-letter differences in Finnish and Korean NVDA sentences, remain under investigation. See the [technical work status](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md) for details.
+The project is still experimental. The reported NVDA freeze with American English dictionaries remains under investigation. Skipped Greek letters in Finnish and Korean sentences have been traced to NVDA symbol processing before the characters reach the synthesis core. See the [technical work status](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md) for details.
 
 When [reporting an issue](https://github.com/hozosch/Reloq-C/issues), include a short example, language, voice, version, sample rate and whether dictionaries are enabled. Explain whether speech stops, pronunciation is wrong or NVDA itself exits.

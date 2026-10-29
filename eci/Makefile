@@ -84,8 +84,12 @@ test_reloq_eci: ../tests/test_reloq_eci.c $(SOURCE) $(HEADERS) ../src/reloq_glot
 
 test_reloq_eci: $(OBJECTS)
 
-test: test_reloq_eci libreloq_eci.so
+test_reloq_hash_delete: ../tests/test_reloq_hash_delete.c $(RULES61)
+	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -DEVV_ARENA=1 -I../vendor/openevv61/src/port $< $(RULES61) -pthread -lm -o $@
+
+test: test_reloq_eci test_reloq_hash_delete libreloq_eci.so
 	./test_reloq_eci
+	./test_reloq_hash_delete
 	python3 test_public_abi.py libreloq_eci.so --header ../include/reloq_eci.h
 	python3 test_diagnostics.py libreloq_eci.so
 	python3 -B ../tools/german_generic_eci_regression.py --native-eci libreloq_eci.so --quiet
@@ -98,6 +102,7 @@ test: test_reloq_eci libreloq_eci.so
 	python3 -B ../nvda/test_eci_sample_rates_native.py
 	python3 -B ../nvda/test_eci_sample_rates_transport.py
 	python3 -B ../nvda/test_eci_transport.py
+	python3 -B ../nvda/test_eci_dictionary_transport.py
 	python3 -B ../nvda/test_eci_playback_queue.py
 	python3 -B ../nvda/test_eci_player_watchdog.py
 	python3 -B ../nvda/test_eci_english_native.py
@@ -125,5 +130,5 @@ windows-x64: eci.dll eci_windows_x64_abi_probe.exe eci_windows_x64_runtime_smoke
 	python3 verify_pe_exports.py eci.dll --objdump $(WINDOWS_OBJDUMP) --header ../include/reloq_eci.h
 
 clean:
-	rm -f libreloq_eci.so test_reloq_eci eci.dll libeci.dll.a eci_windows_x64_abi_probe.exe eci_windows_x64_runtime_smoke.exe
+	rm -f libreloq_eci.so test_reloq_eci test_reloq_hash_delete eci.dll libeci.dll.a eci_windows_x64_abi_probe.exe eci_windows_x64_runtime_smoke.exe
 	rm -rf build
