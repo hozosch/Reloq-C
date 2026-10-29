@@ -1,43 +1,45 @@
 # ReLoq C
 
-Native C speech synthesis and an experimental NVDA add-on. This repository starts from the verified **0.2.186** release; the import does not change its runtime behaviour.
+[English](README.en.md)
 
-## Build
+ReLoq C entwickelt eine Sprachausgabe für NVDA, die den vertrauten Klangcharakter von Eloquence bewahrt und ihn gezielt verbessert. Im Mittelpunkt stehen verständliche Aussprache, schnelles Lesen und eine direkte Reaktion beim Navigieren mit dem Screenreader.
 
-A Linux build needs Python 3, GNU Make, GCC and binutils. From the repository root:
+Die Sprachverarbeitung orientiert sich an Apple Eloquence. Wo das Original Aussprachefehler oder Einschränkungen hat, soll ReLoq C bessere Ergebnisse liefern. Dazu kommen eine breitere Unicode-Unterstützung, höhere Abtastraten und mehr Möglichkeiten, die Stimme anzupassen.
 
-```sh
-make -C eci -j4 all
-python3 eci/test_public_abi.py eci/libreloq_eci.so --header include/reloq_eci.h
-python3 eci/test_diagnostics.py eci/libreloq_eci.so
-python3 nvda/test_dictionary_manager.py
-```
+## Was ReLoq C bietet
 
-The first command produces `eci/libreloq_eci.so`. The native provider is compiled as C with `EVV_NO_BYTECODE`; there is no runtime rule interpreter. The first optimized build can take several minutes.
+- **14 Sprachvarianten**, darunter Deutsch, amerikanisches und britisches Englisch sowie Chinesisch, Japanisch, Koreanisch und Griechisch.
+- **Acht Stimmprofile:** Reed, Shelly, Bobby, Rocko, Glen, Sandy, Grandma und Grandpa. Kopfgröße, Tonhöhe, Rauigkeit und Behauchtheit lassen sich anpassen.
+- **Sieben Abtastraten von 8 bis 48 kHz** für den klassischen Klang und eine erweiterte Klangbandbreite.
+- **Unicode und sprachbezogene Zeichennamen:** zusätzliche Buchstaben, Akzente und Symbole werden in die Sprachverarbeitung einbezogen.
+- **Optionale Aussprachewörterbücher:** Gemeinschaftswörterbücher für Deutsch und US-Englisch sowie eigene Dic-Dateien mit Verwaltung in den NVDA-Einstellungen.
+- **Verkürzbare Pausen und ECI-Steuerbefehle** als zusätzliche Optionen.
 
-For the Windows x64 DLL, install the MinGW-w64 x64 compiler and run:
+## Unsere Ziele
 
-```sh
-make -C eci -j4 windows-x64
-```
+ReLoq C soll im Alltag mit NVDA schnell, verständlich und zuverlässig sprechen. Dafür verbessern wir Wortanalyse, Zusammensetzungen, Satzmelodie und Lautübergänge. Bewährte Klangentscheidungen bleiben erhalten, etwa das konsonantische deutsche r und die abgestimmten Nasalvokale.
 
-See `docs/BUILD.md` for the Windows environment and add-on packaging. The NVDA adapter and dictionary settings are in `nvda/`; packaging tools and tests are in `addon/`. A release must be packaged and tested separately; the imported source alone is not a new add-on release.
+Ein weiteres Ziel ist ein kompakter, sparsamer C-Kern: kurze Reaktionszeiten auch bei längeren Texten und geringe CPU-Last bei hohen Abtastraten. Verbesserungen sollen allen unterstützten Sprachen zugutekommen.
 
-## Current work
+## Mit NVDA verwenden
 
-The following user-reported problems remain open:
+Die Erweiterung erscheint in NVDA als **Eloquence C (experimentell)**. Sie benötigt NVDA ab 2026.1 mit einem 64-Bit-Prozess; die DLL wird derzeit für Windows x64 gebaut.
 
-- American English can crash with pronunciation dictionaries enabled.
-- Greek letters still fail in ordinary Finnish and Korean sentence reading in the user's NVDA setup.
-- Main text replacements must use ordinary contextual analysis and preserve case-sensitive matching.
-- Changes in the intended dictionary folder do not reliably become active.
+Fertige Pakete gehören in den Bereich [Releases und Downloads](https://github.com/hozosch/Reloq-C/releases). Solange dort keine Datei mit der Endung `.nvda-addon` angeboten wird, steht über GitHub noch kein installierbares Paket bereit. Der Quellcode-Download ist zum Selbstbauen gedacht.
 
-Passing an isolated pronunciation test does not establish that these runtime problems are fixed. Their latest user report takes precedence over previous test results.
+Wenn ein Paket bereitsteht, installiere die `.nvda-addon`-Datei mit NVDA, starte NVDA neu und wähle mit **NVDA+Strg+S** die Sprachausgabe **Eloquence C (experimentell)** aus. Sprache und Stimme stellst du in den Sprachausgaben-Einstellungen ein.
 
-The concrete source findings and verification scope are recorded in `docs/CURRENT-WORK.md`.
+Die [Bedienungsanleitung](docs/USER-GUIDE.de.md) erklärt Sprachen, Einstellungen und Wörterbücher. ReLoq C ist noch in Entwicklung; [Änderungen und bekannte Einschränkungen in 0.2.187](docs/changes/0.2.187.md) sind separat dokumentiert.
 
-The German acoustic planner and agreed pronunciation departures are retained; see `GEWUENSCHTE-ABWEICHUNGEN-DE.md`. The native C migration is ongoing. No speech-result cache, original runtime DLL/SYN or runtime bytecode belongs in the add-on. Verification PCM stays in memory; tests must not write audio files.
+## Rückmeldungen und Mitarbeit
 
-## Source provenance
+Aussprachefehler, abgebrochene Ausgaben und Probleme im Alltag kannst du unter [Issues](https://github.com/hozosch/Reloq-C/issues) melden. Hilfreich sind ein kurzer Beispieltext, Sprache, Stimmprofil, Version, Abtastrate und die Beschreibung, was du erwartest und was du hörst.
 
-`docs/source-0.2.186.json` records the verified source archive hash and the hashes of unchanged active production files. The full historical source archive remains preserved separately. This repository contains the active implementation, data, driver and checks; it omits old build products, historical snapshots and raw rule inputs that the native build does not use. Third-party notices and license files are retained at their source locations.
+Für die Entwicklung:
+
+- [Build und Paketbau](docs/BUILD.md)
+- [Technischer Arbeitsstand und offene Fehler](docs/CURRENT-WORK.md)
+- [Gewünschte Aussprache- und Klangentscheidungen](GEWUENSCHTE-ABWEICHUNGEN-DE.md)
+- [Frühere Versionsnotizen](docs/history/README.md)
+
+Der Synthesekern wird in C gebaut, die NVDA-Anbindung ist in Python geschrieben. Die weitere Vereinfachung und Optimierung des Kerns ist Teil des Projekts. Hinweise zu verwendeten Daten und Komponenten stehen bei den jeweiligen Quellen, unter anderem in [OpenEVV-Lizenz](vendor/openevv61/LICENSE), [OpenEVV-Hinweisen](vendor/openevv61/NOTICE) und [Wörterbuch-Lizenz](data/community/LICENSE.md).

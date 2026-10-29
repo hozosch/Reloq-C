@@ -1720,6 +1720,8 @@ static int contextual_features(struct annotation_builder *b,
 invalid:free(next.features);return -1;
 }
 
+#include "reloq_german_dictionary_text.inc"
+
 static int plan_tags_checked(int native_first,
     const unsigned char *utf8, size_t utf8_length,
     const struct reloq_lexicon *lexicon, int process_tags,
@@ -1752,8 +1754,29 @@ static int plan_tags_checked(int native_first,
         free(original_scalars);free(encoded);
         return state == 1 ? 2 : state == -3 ? -2 : -1;
     }
+    for(size_t i=0;i<boundary_count;++i)if(boundaries[i].encoded_offset>encoded_length||
+       (i&&boundaries[i].encoded_offset<boundaries[i-1].encoded_offset)) {
+        free(original_scalars);free(encoded);return -1;
+    }
+    size_t *main_map=NULL,main_source_length=encoded_length;
+    state=normalize_main_text(&encoded,&original_scalars,&encoded_length,
+        process_tags,&main_map,cancelled,cancel_context);
+    if(state){free(original_scalars);free(encoded);return state;}
+    size_t normalized_error=SIZE_MAX;
+    size_t *source_error_offset=encoded_error_offset;
+    if(main_map&&encoded_error_offset)encoded_error_offset=&normalized_error;
+    struct reloq_german_best_effort_boundary *source_boundaries=boundaries;
+    if(main_map&&boundary_count) {
+        boundaries=malloc(boundary_count*sizeof *boundaries);
+        if(!boundaries){free(main_map);free(original_scalars);free(encoded);return -2;}
+        for(size_t i=0;i<boundary_count;++i)boundaries[i]=(struct reloq_german_best_effort_boundary){
+            main_map[source_boundaries[i].encoded_offset],0};
+    }
     unsigned char *original_encoded=malloc(encoded_length+1);
-    if (!original_encoded) {free(original_scalars);free(encoded);return -2;}
+    if (!original_encoded) {
+        if(boundaries!=source_boundaries)free(boundaries);
+        free(main_map);free(original_scalars);free(encoded);return -2;
+    }
     memcpy(original_encoded,encoded,encoded_length+1);
     for (size_t i = 0; i < encoded_length; ++i)
         encoded[i] = loan_letter(encoded[i]);
@@ -1761,7 +1784,8 @@ static int plan_tags_checked(int native_first,
         if (boundaries[i].encoded_offset > encoded_length ||
             (i && boundaries[i].encoded_offset <
                       boundaries[i - 1].encoded_offset)) {
-            free(original_scalars);free(original_encoded);
+            if(boundaries!=source_boundaries)free(boundaries);
+            free(main_map);free(original_scalars);free(original_encoded);
             free(encoded);
             return -1;
         }
@@ -1769,7 +1793,10 @@ static int plan_tags_checked(int native_first,
      * disappear from the analyzed word. Unit pointers remain valid through
      * the later sentence-accent pass. */
     unsigned char *word_storage=malloc(encoded_length+1);
-    if (!word_storage) {free(original_scalars);free(original_encoded);free(encoded);return -2;}
+    if (!word_storage) {
+        if(boundaries!=source_boundaries)free(boundaries);
+        free(main_map);free(original_scalars);free(original_encoded);free(encoded);return -2;
+    }
     memcpy(word_storage,encoded,encoded_length+1);
     struct annotation_builder b = {0};
     b.native_first=native_first;
@@ -1781,6 +1808,10 @@ static int plan_tags_checked(int native_first,
     b.cancel_context = cancel_context;
     b.retain_features=features!=NULL;
     b.input_length=encoded_length;
+    /* Main has already normalized the complete text. Its replacement words
+     * enter grammar once; a native sub-analysis must not reapply text aliases.
+     * Literal Main pronunciations and Root lookup keep their own stages. */
+    int previous_text_scope=reloq61_dictionary_text_scope(1);
     size_t at = 0, next_boundary = 0, phrase_word_start = 0, url_end = 0, url_weak_dots_end = 0;
     int result = 0, spelling = 0,retry=0;
     while (at < encoded_length) {
@@ -2166,6 +2197,20 @@ static int plan_tags_checked(int native_first,
     *approximate_words = b.approximate;
     if (features) {*features=b.features;*feature_count=b.feature_count;}
 done:
+    reloq61_dictionary_text_scope(previous_text_scope);
+    if(main_map&&encoded_error_offset&&result&&normalized_error!=SIZE_MAX) {
+        size_t original=0;
+        while(original<main_source_length&&main_map[original]<normalized_error)++original;
+        *source_error_offset=original;
+    }
+    if(boundaries!=source_boundaries) {
+        if(!result&&!retry)for(size_t i=0;i<boundary_count;++i)
+            source_boundaries[i].annotation_offset=boundaries[i].annotation_offset;
+        free(boundaries);
+        boundaries=source_boundaries;
+    }
+    free(main_map);
+    encoded_error_offset=source_error_offset;
     free(word_storage);
     free(original_scalars);free(original_encoded);
     free(encoded);

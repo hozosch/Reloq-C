@@ -53,4 +53,8 @@ void reloq61_worker_free(void *);
 void *reloq61_worker_scope(void *);
 int reloq61_labiodental_gain(void *state);
 int reloq61_language_supported(int language);
+/* Exact Main text lookup for the German grammar's normalization stage.
+ * The data belongs to the scoped worker; no pronunciation is cached. */
+const char *reloq61_dictionary_main_text(const unsigned char *,size_t);
+int reloq61_dictionary_text_scope(int);
 #endif

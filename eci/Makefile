@@ -75,7 +75,7 @@ build/windows/%.o: ../src/%.c $(HEADERS) | check-windows-toolchain
 all: libreloq_eci.so
 
 libreloq_eci.so: $(SOURCE) $(HEADERS) ../src/reloq_glottal_profiles.inc ../src/reloq_german_root_roles.inc ../src/reloq_german_weak_verb_roles.inc ../src/reloq_german_inflection_roles.inc ../src/reloq_german_glottal_lexicon.inc ../src/reloq_german_number_names.inc ../src/reloq_german_date_names.inc ../src/reloq_german_ie_roles.inc ../src/reloq_german_root_stress_roles.inc ../src/reloq_german_phrase_metadata.inc
-	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -shared $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections -lm -o $@
+	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -shared $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections,--no-undefined -lm -o $@
 
 libreloq_eci.so: $(OBJECTS)
 

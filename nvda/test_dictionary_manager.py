@@ -1,6 +1,7 @@
 """Runtime updates, independent source merging, rollback and selection races."""
 from pathlib import Path
 import json
+import shutil
 import tempfile
 import threading
 import time
@@ -53,12 +54,16 @@ class ManagerTests(unittest.TestCase):
         self.assertEqual(validate_merged(directory)['files'],details['files'])
         self.assertEqual(merge_sources(R/'data/community',[a,b,root,english],self.cache)[0],directory)
 
-    def test_german_lexical_case_identity_and_english_case_preservation(self):
+    def test_main_preserves_case_and_root_uses_native_case_identity(self):
         own=self.source('own.dic',b'word\town value\nARMIN\town armin\n')
         directory,_=merge_sources(R/'data/community',[own],self.cache)
         rows=dict(line.split(b'\t',1)for line in (directory/'DEUmain.dic').read_bytes().splitlines())
-        self.assertEqual(rows[b'word'],b'own value');self.assertNotIn(b'Word',rows)
-        self.assertEqual(rows[b'ARMIN'],b'own armin');self.assertNotIn(b'Armin',rows)
+        self.assertEqual(rows[b'word'],b'own value');self.assertIn(b'Word',rows)
+        self.assertEqual(rows[b'ARMIN'],b'own armin');self.assertIn(b'Armin',rows)
+        root=self.source('root.dic',b'ELOQUENCE\town root\n',volume=1)
+        directory,_=merge_sources(R/'data/community',[root],self.cache)
+        rows=dict(line.split(b'\t',1)for line in (directory/'DEURoot.dic').read_bytes().splitlines())
+        self.assertEqual(rows[b'ELOQUENCE'],b'own root');self.assertNotIn(b'eloquence',rows)
         en=self.source('english.dic',b'IFA\tletters\nifa\tname\n',0x10000)
         directory,_=merge_sources(None,[en],self.cache)
         rows=dict(line.split(b'\t',1)for line in (directory/'ENUmain.dic').read_bytes().splitlines())
@@ -100,6 +105,46 @@ class ManagerTests(unittest.TestCase):
         self.assertIsNone(error);self.assertNotEqual(self.deliveries[-1][1],old)
         self.assertEqual((old/'DEUmain.dic').read_bytes(),b'Own\tone\n')
         self.assertEqual((self.deliveries[-1][1]/'DEUmain.dic').read_bytes(),b'Own\ttwo\n')
+
+    def test_discover_edit_replace_and_remove_folder_files(self):
+        self.wait(lambda done: self.manager.configure([], False, done))
+        self.assertIsNone(self.deliveries[-1][1])
+        path = self.manager.local_directory / 'FINmain.dic'
+        path.write_bytes(b'Own\tone\n')
+        self.until(lambda: self.deliveries[-1][1] is not None)
+        first = self.deliveries[-1][1]
+        self.assertEqual((first / path.name).read_bytes(), path.read_bytes())
+        replacement = path.with_suffix('.new')
+        replacement.write_bytes(b'Own\ttwo\n')
+        replacement.replace(path)
+        self.until(lambda: self.deliveries[-1][1] != first)
+        self.assertEqual((self.deliveries[-1][1] / path.name).read_bytes(), b'Own\ttwo\n')
+        path.unlink()
+        self.until(lambda: self.deliveries[-1][1] is None)
+        self.assertFalse(self.server.calls)
+        self.assertFalse(self.errors)
+
+    def test_edit_bundled_volume_with_and_without_verified_cached_update(self):
+        bundle = self.root / 'bundled'
+        shutil.copytree(R / 'data/community', bundle)
+        self.manager.bundled = bundle
+        self.wait(lambda done: self.manager.configure([], True, done))
+        original_root = (bundle / 'DEURoot.dic').read_bytes()
+        (bundle / 'DEUmain.dic').write_bytes(b'Own\tlocal version\n')
+        self.until(lambda: self.deliveries[-1][1] != bundle)
+        current = self.deliveries[-1][1]
+        self.assertEqual((current / 'DEUmain.dic').read_bytes(), b'Own\tlocal version\n')
+        self.assertEqual(sorted((current / 'DEURoot.dic').read_bytes().splitlines()),
+                         sorted(original_root.splitlines()))
+        self.wait(self.manager.refresh)
+        current = self.deliveries[-1][1]
+        self.assertEqual((current / 'DEUmain.dic').read_bytes(), b'Own\tlocal version\n')
+        self.assertTrue((current / 'ENURoot.dic').is_file())
+        second = bundle / 'DEUmain.dic'
+        second.write_bytes(b'Own\tnext local version\n')
+        self.until(lambda: self.deliveries[-1][1] != current)
+        self.assertEqual((self.deliveries[-1][1] / second.name).read_bytes(), b'Own\tnext local version\n')
+        self.assertFalse(self.errors)
 
     def until(self, predicate):
         deadline = time.monotonic() + 5
@@ -208,7 +253,7 @@ class ManagerTests(unittest.TestCase):
         with self.assertRaises(ValueError):DictionarySource('relative.dic',0x40000,0)
         with self.assertRaises(ValueError):DictionarySource(str(self.root/'x'),0,0)
         with self.assertRaises(ValueError):DictionarySource(str(self.root/'x'),0x40000,3)
-        self.cache.mkdir();(self.cache/'sources.json').write_text('{bad')
+        self.cache.mkdir(exist_ok=True);(self.cache/'sources.json').write_text('{bad')
         manager=DictionaryManager(R/'data/community',self.cache,lambda r,p:None,self.errors.append)
         self.assertEqual(manager.sources,());self.assertTrue(self.errors)
         manager.close();self.assertEqual((self.cache/'sources.json').read_text(),'{bad')

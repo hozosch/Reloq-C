@@ -6,7 +6,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Eloquence C 0.2.186\n"
+"Project-Id-Version: Eloquence C 0.2.187\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-10-28 14:11+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -118,13 +118,13 @@ msgstr ""
 
 #. Translators: Add-on name shown in NVDA's add-on manager.
 #: addon/build_translations.py:30
-msgid "Eloquence C: fifteen language variants"
+msgid "Eloquence C: fourteen language variants"
 msgstr ""
 
 #. Translators: Add-on description; this refers to the spoken language.
 #: addon/build_translations.py:32
 msgid ""
-"Native C synthesizer with fifteen language variants at 8 to 48 kHz, "
+"Native C synthesizer with fourteen language variants at 8 to 48 kHz, "
 "including Japanese, Korean, Chinese and Greek."
 msgstr ""
 
@@ -233,4 +233,8 @@ msgstr ""
 
 #: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:150
 msgid "Wait for the dictionary update to finish."
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py
+msgid "Open dictionary &folder"
 msgstr ""

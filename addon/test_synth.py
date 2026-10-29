@@ -174,7 +174,7 @@ def main(inspect_adapter=None):
             assert not any("openevv" in name.lower() for name in names if name not in licenses)
             assert "locale/de/LC_MESSAGES/nvda.mo" in names
             assert "locale/de/manifest.ini" in names
-            assert b"fifteen language variants" in archive.read("manifest.ini")
+            assert b"fourteen language variants" in archive.read("manifest.ini")
             assert "Japanisch" in archive.read("locale/de/manifest.ini").decode("utf-8")
             assert "Griechisch" in archive.read("locale/de/manifest.ini").decode("utf-8")
             assert "globalPlugins/reloqCDictionaries/__init__.py" in names

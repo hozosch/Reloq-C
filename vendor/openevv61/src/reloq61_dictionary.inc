@@ -118,7 +118,7 @@ next_key:
     if(w->dictionary_key_count)qsort(w->dictionary_keys,w->dictionary_key_count,sizeof *w->dictionary_keys,dictionary_compare);
     return 0;
 }
-extern int reloq61_dictionary_compile_words(void *,void *,int (*)(void *,const char *,char *,size_t),int);
+extern int reloq61_dictionary_compile_words(void *,void *,int (*)(void *,const char *,char *,size_t,int),int);
 static void dictionary_single_primary(char *spr)
 {
     int primary=0;
@@ -126,7 +126,7 @@ static void dictionary_single_primary(char *spr)
         if(primary)p[1]='2';else primary=1;
     }
 }
-static int dictionary_compile_alias(void *context,const char *value,char *spr,size_t capacity)
+static int dictionary_compile_alias(void *context,const char *value,char *spr,size_t capacity,int volume)
 {
     /* Dictionary SPR uses the native parser's syllabification and phone
      * aliases even when its bytes also pass the compact syntax validator.
@@ -134,6 +134,7 @@ static int dictionary_compile_alias(void *context,const char *value,char *spr,si
      * otherwise an apparently valid raw entry can lose syllables or create
      * a word shape that the acoustic planner cannot render. */
     int literal=value[0]=='`'&&value[1]=='[';
+    if(!volume&&!literal)return 0;
     if(literal) {
         size_t n=strlen(value);
         if(n>=capacity||n<3||value[n-1]!=']'||strchr(value+2,'['))return 0;
@@ -253,4 +254,14 @@ const struct reloq_lexicon_resolver *reloq61_dictionary_resolver(void)
     struct provider_worker *w=owner_worker;
     return w&&w->language==0x40000&&w->dictionary?
         reloq61_dictionary_resolver_data(w->dictionary):NULL;
+}
+
+extern const char *STDCALL es_engsynDictLookup(void *,int32_t,const char *);
+const char *reloq61_dictionary_main_text(const unsigned char *key,size_t length)
+{
+    struct provider_worker *w=owner_worker;
+    if(!w||w->language!=0x40000||!w->dictionary||!length||length>128)return NULL;
+    char word[129];memcpy(word,key,length);word[length]=0;
+    const char *value=es_engsynDictLookup(w->dictionary,0,word);
+    return value&&!strchr(value,'`')?value:NULL;
 }

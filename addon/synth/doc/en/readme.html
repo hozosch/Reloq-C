@@ -1,470 +1,112 @@
 <!doctype html>
-<html lang="en"><meta charset="utf-8"><title>Eloquence C 0.2.186</title>
-<h1>Eloquence C 0.2.186</h1>
-<p>Experimental speech synthesizer with an independent C Klatt renderer and fourteen language selections. Install in 64-bit NVDA, restart NVDA and select “Eloquence C (experimental)”.</p>
-<h2>0.2.186: dictionaries and sentence reading</h2>
-<p>Dictionary management is now under <strong>NVDA Settings → Eloquence C</strong>. Enable community data, select own files with their language and volume, and arrange priority. Later own sources take priority. OK and Apply save the selection; Cancel discards unapplied changes. The previous community setting is migrated.</p>
-<p>“Update dictionaries now” checks current <code>master</code> of eigencrow/IBMTTSDictionaries and reloads the applied own sources, leaving unapplied dialog edits alone. Edits to selected <code>.dic</code> files are also loaded automatically in the background, including editor-style file replacements, normally within about one second. Invalid or missing files leave the last complete valid data active; a subsequent corrected save is detected. Source files are never overwritten.</p>
-<p>German lexical constituents are checked against the actual complete hyphen pronunciation, rather than their isolated native reading. ETI-Eloquence and longer combinations are covered by the general rule. Foreign Greek letters share their alphabet-name route in ordinary sentences and spelling, including µ. All 611 recorded characters are checked inside complete Finnish and Korean sentences with dictionaries enabled.</p>
-<p>The category can later host add-on updates. No add-on updater is configured until the intended project repository is available.</p>
-<h2>0.2.185</h2>
-<p>The optional “Use community pronunciation dictionaries” setting adds main, root and abbreviation volumes from <a href="https://github.com/eigencrow/IBMTTSDictionaries">eigencrow/IBMTTSDictionaries</a> to German and American English. It defaults to off. Entries use the native C dictionary stages; the own German acoustic planner remains active.</p>
-<p>Enabling the option, including restoration at startup, checks the current <code>master</code> branch in the background. Speech uses the bundled or last complete verified snapshot until an update is ready. Toggle the option off and on to refresh again. Disabling it restores the previous pronunciation. Normal add-on builds also fetch current master.</p>
-<p>Lowercase g uses the G letter name in Chinese character mode, retaining its ordinary text behavior. Foreign Greek letters also retain their word names inside explicit ECI spelling commands, avoiding repeated spelling of the inserted name. Native Greek Tonos and polytonic accent rules remain in use. Existing ECI controls and documented German departures are retained. No additional CPU gain or completion of the entire compact-rule rewrite is claimed.</p>
-<h2>Changes in 0.2.183</h2>
-<p>The existing German acoustic planner is retained. Further alignment concerns sentence analysis, character handling and ECI controls.</p>
-<p>Explicit German emphasis survives sentence analysis. Controls `00 and `0 through `4 cover reduction, normal emphasis and focus; `5 through `9 are consumed without changing emphasis, as observed in the reference. Voice controls retain full sentence analysis. Presets `v1 through `v9 apply the existing model, rate and volume values.</p>
-<p>The C engine handles inline language controls such as `l1 for US English, `l1.1 for British English, `l4 for German and `l18 for Greek. Commands split across input fragments retain index and cancellation handling. The configured language and voice settings are restored after the utterance.</p>
-<p>Greek spelling uses the running-text phoneme mapping for Latin letters. Chinese spelling processes contiguous Latin letters and digits individually instead of treating them as English words or Pinyin. Ordinary Chinese text retains its existing rules.</p>
-<h2>Changes in 0.2.182</h2>
-<p>The C character table adds local descriptions for all 40,532 explicitly named Unicode characters in the English inventory, plus the supported algorithmic CJK, Tangut and Hangul ranges. Existing native names and accent readings take priority. Rare descriptions are meaningful local labels, not claimed official translations; phonetic names and technical identifiers remain identifiers.</p>
-<p>All language variants name the existing 611-character Greek inventory outside their own script path. Greek spelling distinguishes modern Tonos from genuine polytonic Oxia in ts1 and ts2, including composed and decomposed input.</p>
-<p>ECI vg, vh, vr and vy tags control gender, head size, roughness and breathiness. German also applies them within an utterance without resetting pulse or filter histories. Leading model tags in other languages use the same settings as the sliders. Configured slider values persist.</p>
-<p>The user has closed Chinese; its pronunciation and acoustics receive no changes. The complete German acoustic-path migration and remaining ECI tags are still open. Documented German departures, existing profiles, high-rate filtering and the NVDA queue are preserved. No new general latency improvement is claimed.</p>
-<h2>Changes in 0.2.181</h2>
-<p>Greek: both spelling modes ts1 and ts2 retain Greek letter names. Accented Greek characters retain Greek accent names. Accented western letters reach the existing character table instead of disappearing. Ordinary words, numbers and punctuation retain their previous path.</p>
-<p>Chinese: pitch planning now receives the existing contextual classification of weak English words. Their tone class and following contour move closer to the Original. English phones, all other acoustic controls, word durations and pauses are retained. Some contour differences, including camera, remain open.</p>
-<p>The source package consolidates intended departures and retained fixes in GEWUENSCHTE-ABWEICHUNGEN-DE.md. The complete German acoustic switch remains a research implementation pending preservation checks and is not active. German, wideband filters, female models and the NVDA driver retain their previous implementation. Further ECI tags are not fully verified. No new general latency improvement is claimed.</p>
-<h2>Changes in 0.2.180</h2>
-<p>The German C acoustic planner now separates closure, contact with the next consonant and vowel entrance in stop clusters such as kt and tb. Existing R pronunciation and consonant levels are retained.</p>
-<p>The existing C character and accent tables now cover all language variants. Native character readings take priority. Added Latin accents use native letter names and local accent labels; emoji and other scripts gain localized descriptions. Unicode handling stays inside the C engine.</p>
-<p>Composed and decomposed accents remain equivalent across input fragments. Ordinary Asian and Greek writing keeps its language path. Chinese changes from 177 through 179 and the existing NVDA driver are retained. Further weak-English-word pitch matching remains open.</p>
-<h2>Changes in 0.2.179</h2>
-<p>Chinese: words assigned to the internal English bank now bypass Chinese token-dictionary Pinyin substitutions. For example, “Ok” reaches English analysis unchanged. Original language selection is preserved: isolated “OK” is still read in Chinese. Dotted initials such as “O.K.” retain their English assignment through the last letter.</p>
-<p>The correction uses general C rules within the Chinese core. Chinese pitch planning from 0.2.178 and continuous English flow are retained. Some other Original analysis differences remain; complete equivalence is not claimed.</p>
-<h2>Changes in 0.2.178</h2>
-<p>Chinese: Embedded English retains Mandarin syllable pitch and phrase declination while its local intonation range remains zero. Acoustic transitions and phrase boundaries follow the existing time grid. Word durations and pauses from 0.2.177 are preserved. Some lexical analyses and fine details of the Original contour still differ.</p>
-
-<h2>Changes in 0.2.177</h2>
-<p>Consecutive English words inside the Chinese engine are now analysed and spoken in their shared word context. Short words receive contextual reductions and transitions. Duration rules receive the punctuation that actually follows the run instead of treating every segment as an isolated sentence.</p>
-<p>These embedded English runs now use inflection 0. Model, head size, pitch and speed still follow the selected voice. Chinese words and numbers retain their native prosody planning. This does not yet reproduce the Chinese original's special English pitch contour.</p>
-<p>The previously silent 48-word comparison with embedded numbers is now spoken completely. Plans are fitted to their existing capacity before changing the word graph. No repetition caches are used.</p>
-<p>Korean is considered complete for now at the user's request. This release focuses on Chinese. The Windows DLL is checked in a CPU/API model, which does not replace an NVDA listening test.</p>
-
-<h2>Changes in 0.2.176</h2>
-<p>The Chinese foreign-word path commits its completed acoustic clock to the Mandarin core. Following Mandarin words and numbers are no longer scheduled behind targets already emitted. New sentences reset their local array clock. A compound foreign token containing digits is finalized once.</p>
-<p>English acoustics are generated after Mandarin phrase analysis. Continuing words supply the host boundary flags to the existing duration rules instead of every word receiving isolated phrase-final lengthening. Complete original duration and contour equivalence remains unfinished.</p>
-<p>Korean adaptation closes g after short i before k without an extra support vowel, distinguishes sh from ch before r, and preserves affricate traits on both ch components except the original support-vowel-plus-w context. Full original inputs and typed phone features supply the comparison evidence.</p>
-<p>The shared renderer, female models and NVDA driver are retained. Original modules and emulation are development-only; the addon uses native C without speech-result caches. CPU/API-model Windows DLL checks do not establish an actual NVDA listening test or a new general performance gain.</p>
-
-<p>English word-bank mappings now end at the native sentence boundary. Recycled graph positions no longer select an already emitted earlier bank. Repeated mixed sentences retain their later English words, and completed sentence data no longer accumulates across the entire utterance.</p>
-
-<p>Known remaining case: very long uninterrupted sequences of English words containing digits can still produce silence in the Chinese path. A 48-word comparison sequence is spoken by the Original and remains silent in the current C path. Embedded English integration is therefore still incomplete.</p>
-
-<h2>Changes in 0.2.175</h2>
-<p>The Chinese foreign-word bank now synchronizes its read and write clocks. Voiced speech remains present after the first English word. Bank ownership uses its own storage instead of overwriting a word stress field.</p>
-<p>English acoustics supply tract colour, energy and durations. Mandarin now plans F0 on the actual acoustic syllable grid. Complete Original contour and timing equivalence remains unfinished.</p>
-<p>Korean group rules cover additional support vowels, codas and reduced vowels before endings. The corpus matches 3,153 of 3,535 normalized sequences, previously 3,115, without losing a previously matching case. Counts ignore stress marks and phonetic group boundaries and do not prove complete acoustic equality.</p>
-<p>Later words are separately checked for voiced segments. All 555 retained profile comparisons are sample-exact. The shared renderer and confirmed female voice correction remain intact. No runtime Original modules, bytecode or result caches; no new measured performance claim.</p>
-
-<h2>Changes in 0.2.174</h2>
-<p>Korean now passes further source-phone features, vowel lengths and retained consonant stress into acoustic synthesis. The closure and frication components of English ch keep their distinct features. Across 376 words compared directly with the Original, source-feature mismatches fall from 890 to 70 and length mismatches from 206 to 58. Remaining phonetic and prosodic differences are not fully resolved.</p>
-<p>Chinese now uses an internal English C acoustic bank for marked foreign words, including mixed texts. The existing g9/foreign-word property selects it inside the Chinese core. English phones, syllables and acoustic targets enter the same host timeline and output. Whole utterances are not switched to a different language. Hyphens before numbers and inside compounds follow newly checked Original boundaries.</p>
-<p>The Chinese corpus now has 331 of 388 matching normalized phone sequences, previously 43, without losing a previous match. All 13 additional boundary cases match. Normalization ignores stress marks and phonetic-text groups. These counts do not establish complete acoustic or prosodic equivalence: the Original Chinese English-bank pitch policy and release duration remain unfinished.</p>
-<p>The 3,535 Korean phone-sequence checks retain all prior matches. All 555 existing profile comparisons remain sample-exact. Female models, seven sample rates, pause modes and state changes are rechecked. The NVDA driver and shared renderer remain unchanged. Independent C rules run without runtime bytecode, Original modules, emulation or result caches. No general speed improvement is claimed.</p>
-
-<h2>Changes in 0.2.173</h2>
-<p>Korean adaptation preserves existing L sequences, restores English glides and handles further stop and affricate contexts. The original word-final th rule for with runs inside phone adaptation. Two older internal dictionaries no longer rewrite Latin words before English analysis. The captured original tables and native Hangul processing remain active.</p>
-<p>3,535 complete-input comparisons yield 3,115 matching normalized phone sequences, previously 2,969, with no previously matching case lost. Counts include overlaps, spelling and context variants and ignore stress signs and phonetic-text group punctuation. Remaining Korean rules are unfinished.</p>
-<p>A broader development check also observes the original English bank in 388 Chinese texts. The C transfer preserves the compared phone features and directly read syllable values. Word metadata and subsequent Chinese pitch/acoustic planning remain under development; this is not yet a new Chinese runtime output. The addon continues to use independent C rules without runtime bytecode, original modules or result caches.</p>
-
-<h2>Changes in 0.2.172</h2>
-<p>Korean foreign-word adaptation now receives source letters and morphological and syllabic boundaries directly from English C analysis. These features guide reduced vowels, diphthongs, nasal-to-r transitions and closed codas. Rules operate on the existing phone and word graph, without replacing the NVDA input text.</p>
-<p>The existing corpus gains 113 matching normalized phone sequences. An independent lattice of 1,190 systematically formed inputs gains another 370 matching comparisons. Neither corpus loses a previously matching case. Counts include spelling and context variants, ignore stress and phonetic-text group punctuation, and do not establish complete acoustic or prosodic equivalence.</p>
-<p>A new development method probes the original conversion functions with typed phone contexts and records their complete features. Its 16,159 contexts supplement full-input checks. This is development-only work. The addon runs independent C rules without original modules, runtime bytecode, emulation or result caches. Remaining Korean rules and the Chinese Latin path are unfinished.</p>
-
-<p>All 555 existing profile comparisons remain sample-exact; state, pause, model and driver checks pass. The Windows DLL comparison uses a CPU/API model and does not replace an NVDA listening test. No general runtime speed improvement is established for this build.</p>
-
-<h2>Changes in 0.2.171</h2>
-<p>The Korean foreign-word path evaluates eleven additional original spelling classes with 34 entries in independent C. Selection uses the analysed source stem including compound roots, so detached endings do not accidentally select a class for an identically spelled whole word. Associated phone features continue into the Korean core. No input preprocessor or runtime bytecode is added.</p>
-<p>English lexical analysis can pass its structured phone data directly and omit the additional phonetic-text output. Cases still requiring that output retain it. Every utterance is analysed again, with no result cache. Conversion of all seven Korean contextual rules and the original Chinese Latin path remains unfinished.</p>
-
-<p>All 1,457 existing Korean outputs are retained. In 284 additional spelling and word-formation cases, 74 more normalized phone sequences match the Original, with no previously matching case lost. This count ignores stress signs and phonetic-text group boundaries and does not establish complete prosodic equivalence. All 555 profile comparisons remain sample-exact, and the new rules pass pause and state tests. The Windows DLL is checked in a CPU/API model. Host timings establish no substantial general speed improvement; an actual NVDA listening test is still needed.</p>
-
-<h2>Changes in 0.2.170</h2>
-<p>Korean adds two complete Original tables: 72 fixed abbreviations and 19 alphanumeric forms. Expansions run inside native C word analysis. Letter components retain their identity, and Korean number forms continue through existing Korean morphology and prosody. Unicode handling and the NVDA input text remain intact.</p>
-<p>The tables match 90 of 91 normalized phone sequences, previously 5. A further 450 spelling, boundary and sentence contexts match 362, previously 192. The existing 916 cases are exactly unchanged, with no previously matching case lost. Normalization ignores stress markers and SPR group boundaries. One vowel in the MB expansion remains different in the general loanword adaptation; complete prosody or PCM identity is not claimed.</p>
-<p>The Chinese development adapter splices English subwords, phones, syllables and typed features into the Chinese host graph while retaining initial word stress and consistent word numbering. It checks 23 splices in 22 contexts on disposable process copies. Eight direct Original comparisons match 13 word boundaries, 54 typed phones, 23 syllables and initial word stress. Some grammatical traits still differ. Grammar, Chinese phrase prosody and acoustic scheduling remain incomplete. This experiment is not enabled in the addon; Chinese runtime output is unchanged.</p>
-<p>All 555 existing public profile comparisons remain sample-identical. Additional checks exercise instance reuse and pause shortening after lexical expansion. Four actual Windows DLL cases use a CPU/API model; Windows/NVDA and ARM listening tests were not run here. The shared renderer, female pulse fix, filter, romanizers, NVDA driver and queue are retained. No result caches, runtime bytecode or new measured performance claim.</p>
-
-<h2>Changes in 0.2.169</h2>
-<p>Korean retains the English w glide in its acoustic graph before u-like vowels. Compact phonetic spelling omits that glide as in the original. Shared rules add support vowels in sw/dw clusters and adjust rounded vowels after w while retaining kw/gw behavior.</p>
-<p>Request-local C plans preserve letter-name identity across case and alphanumeric expansions, including r, v, w and z. Contextually voiced Z retains its fully voiced closure separately from lexical English j.</p>
-<p>The corpus matches 876 of 916 normalized phone sequences, previously 842, with no previously matching case lost. All 156 single-letter cases match; 35 of 39 additional letter contexts and 71 of 75 w contexts match. Cases overlap, and normalization ignores stress marks and SPR group boundaries. These counts do not prove complete acoustic or prosody equality.</p>
-<p>The Chinese development adapter retains the previously discarded foreign-word property. A scoped C experiment transfers English phones and syllables into the Chinese graph, verifies them, then restores the host graph. Existing Chinese phone IDs and record sizes stay stable; eight Chinese control cases are identical. English word subdivision, prosody and acoustic scheduling remain incomplete. The experiment is not enabled in the addon; Chinese runtime output is unchanged.</p>
-<p>The shared renderer, confirmed female crackle fix, romanizers, NVDA driver and queue are retained. No result caches, bytecode or new measured performance claim.</p>
-
-<h2>Changes in 0.2.168</h2>
-<p>Korean loanwords now represent English ch and j with the original closure and frication components, keeping both in one syllable with shared place, aspiration and diaphone features. Voiced j is retained word-initially. The same rule covers letter names and mixed text without word-specific exceptions.</p>
-<p>The enlarged corpus matches 614 of 646 normalized phone sequences, previously 603, with no regression in matching cases. Structured affricate features are checked separately; matching phone spellings do not prove identical sound. Some vowel and number-adjacency cases remain open.</p>
-<p>A development C adapter checks finalized English phones with word and syllable ownership for the embedded Chinese path. Its acoustic and prosody integration remains incomplete; Chinese runtime speech is not declared improved or complete in this build.</p>
-<p>The shared renderer, fixed female impulse phase, romanizers and NVDA driver are unchanged. No bytecode, result caches or new measured speed claim.</p>
-
-<h2>Changes in 0.2.167</h2>
-<p>Korean loanwords and attached numbers use a shared word-scoped C phone plan. It captures all parts of English analysis while retaining vowel origins, stops, affricates and word boundaries. Korean numeral expansions no longer inherit a preceding Latin property during word construction. The original complete unit classifier and romanizer handling for 64-bit are included.</p>
-<p>Normalized phone sequences match all 287 original cases (285 previously), 61 of 63 additional cases (58 previously), and 167 of 175 mixed cases (101 previously). Another 49 holdouts yield 37 matches. No previously matching case regresses. These checks do not establish identical word boundaries, stress or prosody. Some vowels, counter boundaries and decimal cases remain incomplete.</p>
-<p>The embedded English branch in the Chinese original is identified: a foreign-word field selects English analysis. 25 of 29 dictionaries are identical to the English original. For hello and voice, all 69 and 68 overlapping control frames have identical values in fields 2 through 61; F0 and release duration differ. This supports reuse of the English C acoustic bank but does not prove general equivalence. Chinese runtime behavior is unchanged here: the mixed phone graph, F0 and release still require integration.</p>
-<p>The confirmed crackling fix, shared synthesis core and NVDA driver are unchanged. No bytecode or result caches are added; no new speed improvement is claimed.</p>
-
-<h2>Changes in 0.2.166</h2>
-<p>Korean loanword adaptation reads lexical English segments before reduction and splitting, preserving underlying vowels, affricates and stops. Shared phonetic rules improve Microsoft, button, pocket, electric, American and other words. Normalized phone sequences match 285 of 287 previous cases (262 previously), with no regressions, and 58 of 63 additional cases. This does not establish complete acoustic or prosodic equivalence.</p>
-<p>The Chinese romanizer classifies connected Latin phrases more accurately; Pinyin and bare numbers terminate each phrase. Matches increase from 404 to 407 in the previous 421 cases and from 15 to 53 in 64 additional contexts, with no regressions. The embedded English acoustic and prosodic path remains incomplete.</p>
-<p>The user has confirmed the crackling fix, including breathiness at small female head sizes. The shared pulse filter, accepted acoustic tuning and NVDA driver are unchanged. No result caches or bytecode are added; no new measured speed improvement is claimed.</p>
-
-<h2>Changes in 0.2.165</h2>
-<p>The pulse filter now preserves its history across empty frame remainders. The finer 1-ms speech path previously overwrote part of that history when a block belonged entirely to an ongoing glottal period. This applies to every language and is especially relevant to small female head sizes. Thirty-six tests now produce identical samples for constant parameters split into 1-ms or 5-ms frames. Comparisons with original 5-ms output at 8 and 11 kHz differ by at most three PCM counts. The measurable state error is fixed; an audible cure for the reported roughness still needs an NVDA listening test.</p>
-<p>Korean adaptation retains the underlying d/t origin of an English flap directly from its structured phone graph. Audio, video, president and other words keep their d. Display phonetic spelling had discarded that distinction. The existing corpus improves to 248 of 271 normalized phone-sequence matches with no lost matches. Full pronunciation and prosody equivalence remain incomplete.</p>
-<p>Chinese recognizes Pinyin inside parentheses and quotation marks instead of incorrectly classifying it as English. Sixteen cases improve in a 421-case romanizer corpus without regression. The integrated English acoustic and prosody path remains incomplete. The rejected whole-utterance US handoff remains removed.</p>
-<p>The NVDA driver, playback queue, presence and formant tuning are unchanged. There are no result caches or newly proven speed gains.</p>
-
-<h2>Changes in 0.2.164</h2>
-<p>Korean foreign words use the complete built-in 29-entry original dictionary and additional general rules for reduced vowels, support vowels, glides and consonant connections. Normalized phone sequences match the original in 245 of 271 comparison cases, including spelling and context variants. This is not a claim of complete prosody equivalence; audio, Microsoft and Z still have unresolved differences.</p>
-<p>Pulse-phase carry now retains higher intermediate precision at each period boundary. All 94,500 tested interval allocations match the observed original calculation. This precision correction applies to every language. An audible fix for female voice roughness is not yet confirmed.</p>
-<p>The complete Chinese-to-US-English utterance handoff introduced in 0.2.159 has been removed. Chinese temporarily uses its previous native path again. English phone and prosody rules inside the Chinese core are still incomplete; Latin words may sound wrong or incomplete. Chinese is not considered finished.</p>
-<p>The NVDA driver and playback queue are unchanged. There are no synthesis-result caches or newly proven speed gains. The wider C architecture migration remains incomplete. Package and interface verification do not replace listening tests on Windows.</p>
-
-<h2>Changes in 0.2.159</h2>
-<p>The Chinese kernel can hand complete English-marked texts to the native US analysis and acoustics. Selection follows the existing romanizer g9 property. Pinyin, Chinese letter names, numbers and mixed texts keep their previous path. Mixed Chinese/English acoustic spans remain incomplete.</p>
-<p>Korean letter names retain their original support vowels and liquid codas. V inside an initialism retains its context. Original word and phrase records remain authoritative.</p>
-<p>No unverified female-source adjustment is introduced. Accepted German, Greek and Japanese rules are preserved.</p>
-
-<h2>Changes in 0.2.158</h2>
-<p>The language selector follows the Eloquence_64 module order, with Greek last. Automatic language priority and stored IDs retain their behavior.</p>
-<p>German sentence analysis now carries native glottal-onset facts omitted by public phoneme spelling. Unstressed compound heads such as Ergebnis in Suchergebnis retain their vowel onset. Explicit phonetics and requested numeric departures take precedence. Nasal vowels release their resonance toward an oral fricative without a held boundary pole; the requested nasal vowel color, consonantal R and rising questions remain.</p>
-<p>Korean initialisms adapt each English letter name independently within the original lexical word. Native word and phrase planning remain intact. Chinese romanization restores additional original property boundaries for width changes, operators, brackets and attached numbers. The complete internal English acoustic path in Chinese, remaining Korean adaptations and complete German sentence-stress parity remain open. Greek and Japanese rules are unchanged.</p>
-<h2>Changes in 0.2.157</h2>
-<p>Greek character reading now uses the same phones for 2, 7 and 8 as ordinary numeric reading, including the Greek fricative onset of 2. The English diphthong in voice, boy and related words uses the sound from Spanish soy.</p>
-<p>Korean copular words retain their complete phone chain. Native word-edge properties for adjacent Latin, Hangul and Hanja, including full-width Latin input, have been checked against the original. Chinese keeps short initials such as AI and PC in the original Chinese character path and separates explicit Pinyin syllables after an apostrophe. Complete English phone identity inside Chinese and additional Korean foreign-word cases remain open.</p>
-<p>Language and voice labels now match Eloquence_64: Reed, Shelly, Bobby, Rocko, Glen, Sandy, Grandma and Grandpa. Saved selections and profiles remain compatible.</p>
-<h2>Changes in 0.2.156</h2>
-<p>Japanese encoded input remains owned until it has been processed. This fixes a buffer lifetime error that could lose or misread the end of an utterance depending on allocator traffic. The intermittent NVDA settings-dialog symptom still needs confirmation on a Windows device.</p>
-<p>Greek character names now follow the Spanish decisions for naming versus punctuation, with Greek names. Internal phoneme words retain their lexical context around periods, colons, hyphens and angle brackets. The accepted parenthetical contour is preserved.</p>
-<p>Korean foreign words receive English analysis after morphological analysis, preventing it from being overwritten. Loanword adaptation and voicing across word boundaries have been extended. Dictionary-root replacement also preserves the new phone-duration boundaries, allowing cases such as three, blue and use to render completely. Chinese gains further original numeric properties before Chinese words and correct digit separation after full-width Latin letters. The complete internal English switch for Chinese foreign words and further Korean special cases remain open. No new speed improvement is claimed.</p>
-<h2>Changes in 0.2.155</h2>
-<p>Japanese text now uses word data from the Apple Japanese module through native C lookup, with updated connection, accent and sentence boundary rules. Latin words retain the OpenEVV reading rules and are read as words. Text output matches the actual Apple module for a corpus of 55 Japanese cases covering questions, numbers and sentence boundaries. This corpus does not establish equivalence for every possible input.</p>
-<p>The Greek native character rule names isolated punctuation in Greek, including full stop and colon. Additional names cover the shared language basis's Western symbol inventory. Colon and middle dot have separate names, and adjacent spoken symbols retain word boundaries. Existing sentence and parenthetical contours are preserved.</p>
-<p>Korean Latin words now enter native English word analysis and whole loanword adaptation. Adaptation remains incomplete, particularly context dependent voicing. The Chinese foreign word path with actual US phone identity and its inflection control remain open. The NVDA driver and queue are unchanged; pronunciation and audio replay caches are not used.</p>
-<h2>Changes in 0.2.154</h2>
-<p>Back chi in words such as Χρήση and Castilian j receive 4 dB less gain in their two low frication branches. The 153 source level, formants and relative branch balance are retained. Front chi and the p burst retain their 153 settings.</p>
-<p>The Greek phoneme reader accepts valid words directly before symbols such as @, brackets and apostrophes. Generated phoneme tags are no longer read aloud. Existing context rules determine character names and prosody: the apostrophe is silent in απ'όλα and named in απ ' όλα. Input adjacency and the existing parenthetical contour are retained. Literal backslashes no longer accidentally escape generated phoneme input.</p>
-<p>The original comparison now also observes the downstream Korean loanword conversion. Chinese and Korean foreign-word rules and remaining Japanese analysis differences are still open; their runtime rules are unchanged in this release. The intended Japanese split remains OpenEVV behavior for Latin characters and Eloquence rules for Japanese text.</p>
-<h2>Changes in 0.2.153</h2>
-<p>Greek back chi and Castilian j use 2 dB less source energy. The p burst uses 2 dB more source energy in Greek and both Spanish variants. Front chi retains its previous values.</p>
-<p>Greek word conversion preserves input spacing around brackets and punctuation, allowing the native rule to lower parenthetical clauses again. Typographic quotes, Greek punctuation, dashes and full-width brackets reach the native character/prosody rules. Spelling mode retains Greek character names.</p>
-<p>New direct Chinese and Korean original-module comparisons locate the missing foreign-word rules after romanization. Asian runtime rules are unchanged in this release; the complete foreign-word port and remaining Japanese differences are still open.</p>
-<h2>Changes in 0.2.152</h2>
-<p>Profile migration no longer calls pop() on NVDA's AggregatedSection, fixing the settings-load failure. An old engineLanguage entry remains as compatibility data; NVDA's standard language setting takes precedence. Regression tests now execute the unchanged upstream configuration class and cover inherited profiles. The C core and language rules are identical to 0.2.151.</p>
-<h2>Changes in 0.2.151</h2>
-<p>Language selection now uses NVDA’s standard language setting and language descriptions. Saved profiles using the former custom selector are migrated. German n before the voiced affricate, as in “angeles”, retains its source through the nasal release.</p>
-<p>Greek restores more earlier rules for syllable boundaries, double consonants, nasal groups, English vowels and voiced v acoustics. The complete Chinese/Korean foreign-word rules and remaining Japanese differences are still open.</p>
-<h2>Changes in 0.2.150</h2>
-<p>Further melody overflows are repaired directly in C. Greek converts English secondary stress into valid phoneme groups and uses the earlier Mexican J rule for front chi. NVDA has one Chinese selection; saved Taiwan settings and automatic script variants remain compatible.</p>
-<p>Direct Windows SYN comparisons confirm real English word pronunciation in the Chinese kernel and connected Korean foreign-word readings missing from the current Apple path. Porting those SYN rules remains open. This release does not claim a complete Chinese/Korean Latin or Pinyin fix, add a language-switch preprocessor, or make a new performance claim.</p>
-<h2>Changes in 0.2.149</h2>
-<p>Greek now has its own language identity over the shared Castilian acoustic base. Character and letter names are replaced directly in its native character rule. Palatal “για” no longer produces an extra unstressed syllable; consonant-only initialisms use letter names instead of invalid phoneme groups.</p>
-<p>Chinese Pinyin with tone digits follows the original grammar. Chinese and Korean Latin words retain internal digits and punctuation in their native word property, including Windows11, Wi-Fi and email addresses. The two Chinese locales share 597 identical C rule functions while retaining their language selection and profiles.</p>
-<p>554 ratio operations across 13 language modules use shorter, overflow-safe arithmetic. Valid release targets with a fully closed voice source no longer abort synthesis. The supplied desktop ViaVoice Japanese DLL provides updated word data and its matching search index; direct comparison still finds differences in word boundaries and intonation. Full Chinese contextual analysis, zero inflection for internal English passages, user dictionaries and the remaining compact C rewrite are open.</p>
-<h2>Changes in 0.2.148</h2>
-<p>Japanese, Korean, Mandarin for China and Taiwan, and a Greek prototype are available with the shared profiles, clocks and pause policies. Japanese uses the OpenEVV romanizer to pronounce Latin words. Greek follows the earlier prototype’s Castilian acoustic base with native Greek text analysis.</p>
-<p>High Chinese tone targets and narrow Korean pitch values are corrected in C. Chinese foreign-word handling follows the reference without an added language-switch shim. Zero inflection for internal English passages remains pending reliable scoping within the original romanizer path. The complete compact-rule rewrite and user dictionaries remain open. No speech-result cache is used.</p>
-<h2>Changes in 0.2.147</h2>
-<p>Added British English, Spanish for Spain and Mexico, French for France and Canada, and Italian. All eight voice profiles and seven sample rates use the shared native C renderer. Pause shortening also applies to Portuguese, Finnish and the new variants; explicit pause durations are preserved.</p>
-<p>The existing Finnish language rules read ü and Ü within words like y and Y. Character spelling uses “saksalainen y”. Composed and decomposed Unicode forms agree. Native character spelling also works with user ECI tags disabled.</p>
-<p>Japanese, Korean, and simplified and traditional Chinese remain unavailable pending native C romanizers. User dictionaries and the complete compact-rule rewrite remain open. This version adds no new DSP gain or utterance-result cache.</p>
-<h2>Changes in 0.2.146</h2>
-<p>Brazilian Portuguese and Finnish now have their own native C language and acoustic rules. All eight voice presets and seven sample rates use the shared C renderer and playback queue. Language data is prepared on first use. Extended Unicode character names beyond the native western character set are currently available for German and US English.</p>
-<p>German and US English F/V frication increases by 2 dB at 22,050 Hz and 3 dB from 32,000 Hz, at the existing phonetic endpoints. This includes German W, which uses /v/. The voiced source, spectral filters and duration retain their settings; other fricatives and stop bursts retain their source level. English /w/ retains its voiced-glide source.</p>
-<p>The common wideband calculation retains the known spectral magnitude, avoiding its reconstruction by 257 exponentials per new filter. The isolated arithmetic change retains 43,193,840 exact native PCM samples in the full comparison. The F/V source level is an intentional separate change. Speech and audio result caches remain absent.</p>
-<p>Final-build paired Linux measurements show about 5.6–6.7 percent less process CPU than 145 at 48 kHz across both languages and three text classes. Some 11-kHz groups use slightly more CPU. A general earlier onset is not established; actual Windows playback remains a device check.</p>
-<h2>Changes in 0.2.145</h2>
-<p>Shared spectral fitting uses the symmetry of the filter data for a smaller first transform. The inverse transform computes the same required filter values directly. Filter lengths, presence, source levels and playback queues retain their settings. Complete output comparisons and CPU measurements are in the source snapshot. The full language-rule conversion, additional languages and shared user-dictionary support remain open.</p>
-<h2>Changes in 0.2.144</h2>
-<p>Continuous wideband filter fitting evaluates two phases together in double precision. Identical local pole/zero responses are calculated once while retaining both multiplication and division, filter lengths and transition timing. The user has confirmed the 143 numeric fix in NVDA. Measurements and output comparisons are in the full source snapshot. Actual Dell playback still needs device evaluation. The complete language-rule conversion, additional languages and cross-language user dictionaries remain open.</p>
-<h2>Changes in 0.2.143</h2>
-<p>US-English numbers with empty middle groups retain their final unit: x0x, x00x and x000x. The compiled Windows path had confused the start and end of the remaining group, making 503 and 504 sound like 500. The C handoff now keeps both boundaries as separate values. Existing numeric rules still determine the expansion. Tests execute the actual old and new DLL instructions with modeled Windows APIs; this does not replace listening in NVDA. Numeric regressions include every leading and final digit, sentence contexts, sample rates and pause policies.</p>
-<h2>Changes in 0.2.142</h2>
-<p>The 4-dB S/Z source adjustment now reaches the active US-English output path. The previous change affected an older test planner. Consumed English control spans immediately reuse their buffer: the long comparison reduces it from about 32 MB to 16 KB with identical output. German balance and presence are retained. A fresh original-module lift matches all 54 audited numeric rules; 189 cases match the original phonemes and acoustic controls within one rounding unit. The reported missing final unit has not been reproduced and is not claimed fixed. No early number-to-word substitution is added. The complete C architecture conversion remains open.</p>
-<h2>Changes in 0.2.141</h2>
-<p>English /s,z/ gains the same four source dB of frication as German; periodic voicing is preserved. German word-medial /ts/ is reduced by one source dB in both parts, preserving the existing initial and final levels. The 3.5–4 kHz presence band remains at about 2.5 dB. Computation measurements and checks are documented in the complete source. Full language-rule conversion and Dell-device listening evaluation remain open.</p>
-<h2>Changes in 0.2.140</h2>
-<p>Other consonants gain 1 dB of source level, excluding S and Z. German Z connections use the accepted initial level in medial, final and connected positions as well. Pre-presence bass level is restored by removing the broad master reduction and lowering the added presence band to about 2.5 dB. Its actual level is about 1.5 dB below 139, leaving more room for signal peaks after restoring the bass; accepted S/Z noise level is compensated independently. Native C filtering keeps coefficient vectors in registers and advances inactive ramp taps in parallel with identical arithmetic results. Measurements and the historical pre-presence comparison are in the complete source. Speech-result caches remain absent; full language-rule conversion and Dell listening evaluation remain open.</p>
-<h2>Changes in 0.2.139</h2>
-<p>The additional 3 dB consonant boost is removed. The complete German S source is raised in all word positions, preserving the Z affricate, durations and spectral colour. Flat 3.5–4 kHz presence and the quieter master level remain. Spectral fitting uses real symmetries and half-size complex transforms with the same frequency grid and filter length. Four coefficient ramps advance in parallel. A few very small coefficients may round differently in their last digit; output comparisons and timings are documented in the complete source. Speech-result caches remain absent. Full language-rule conversion and Dell-device evaluation remain open.</p>
-<h2>Changes in 0.2.138</h2>
-<p>The additional periodic presence is now a flat 3.5–4 kHz band at just under 5 dB, replacing the narrow 7 dB peak. Frication gains another 3 dB relative to voicing at extended rates; wideband master gain is lowered by 1 dB. Numeric rendering avoids slow subnormal filter tails and restores caller floating-point control before delivery. Native C fitting combines consecutive Fourier stages and calculates only required tract poles. Pure computation changes retain exact output values. Speech-result caches remain absent. The full language-rule conversion and actual Dell-device assessment remain open.</p>
-<h2>Changes in 0.2.137</h2>
-<p>The additional presence peak moves to 3.6 kHz, retaining Q=5 and +7 dB. A continuous 3.5–4 kHz boost remains a later listening comparison. Native numeric sessions now update their own filter state in place, removing both complete state copies per frame. The public core interface retains failure atomicity. Sessions still require a reset after rendering failure. There are no speech-result caches. The full language-rule conversion remains open; actual Dell playback is evaluated on the target device.</p>
-<h2>Changes in 0.2.136</h2>
-<p>The additional presence peak moves to 3.5 kHz, retaining Q=5 and +7 dB. Native C filter preparation checks unchanged settings without reserving the large fitting workspaces. In the Windows build this checking path uses 912 stack bytes instead of about 40 KB. Shared mathematical clock grids save 92,400 bytes compared with 135. The calculation changes retain the tested output values exactly; the full language-rule conversion remains open. Actual Dell playback is evaluated on the target device.</p>
-<h2>Changes in 0.2.135</h2>
-<p>The additional presence peak moves to 3.8 kHz, restoring Q=5 and retaining +7 dB. The high-rate C filter calculation evaluates independent frequency points in parallel. Fixed Fourier permutations and the output-clock-dependent source curve are prepared once. Filter length, speech rules and delivery timing are preserved. Speech-result caches remain absent. The complete language-rule architecture conversion is still open; Dell playback is evaluated on the target device.</p>
-<h2>Changes in 0.2.134</h2>
-<p>The additional +7 dB peak at 4 kHz widens slightly from Q=5 to Q=4, staying below 1.10 dB at 3 kHz and 0.20 dB at 2 kHz. Both languages use fixed C field positions: 117 reader callbacks and their function-pointer tables are removed. Dictionary extraction, scans and record analysis share the direct C path. Speech-result caches remain absent and complete architecture conversion remains open. Dell/NVDA assessment is still pending with the user.</p>
-<h2>Changes in 0.2.133</h2>
-<p>At 16–48 kHz, periodic excitation receives an additional narrow +7 dB bell at 4 kHz, Q=5. Its added gain stays below 0.75 dB at 3 kHz and 0.13 dB at 2 kHz. Aspiration and frication retain their previous colour; 8 and 11.025 kHz remain bit-identical. The causal filter adds no lookahead or queue buffering. Listening assessment remains in NVDA. The C conversion from 132 is included.</p>
-<h2>Changes in 0.2.132</h2>
-<p>1,131 private intermediate values in 223 language functions use ordinary C local variables; 18,899 accesses move out of packed workspaces. Addressable records and error paths retain their semantics. Output remains bit-identical and speech-result caches remain absent. Current Linux measurements do not establish a general additional onset improvement; the full architecture conversion remains open.</p>
-<h2>Changes in 0.2.131</h2>
-<p>1,742 rule functions share the checked start of their allocated C workspace. At 20,360 local reference sites, ordinary addition replaces repeated address conversions inside statically proven bounds. Stored and external references retain their checks. Speech-result caches remain absent; acoustic rules and the NVDA queue are unchanged. The full architecture conversion remains open.</p>
-<h2>Changes in 0.2.130</h2>
-<p>Shared scan, dictionary, comparison and record operations use native C arguments at 9,760 more call sites. Their C adapters stay in a separately compiled unit. General argument lists are removed while shared scan, record and checked memory operations remain compact.</p>
-<p>31,811 known local address arguments remain native C pointers. Encoding and immediately decoding the same address is removed; stored and external references keep their checks.</p>
-<p>Wideband filtering processes four consecutive output samples in parallel, preserving each sample's summation order, rounding and coefficient transitions. Full conversion and pre-lifter response remain open. Speech-result caches remain absent. Measurements compare 128 with 130 on Linux; Windows/NVDA is not executed here.</p>
-<h2>Changes in 0.2.128</h2>
-<p>Fourteen more duration, speed and acoustic-target rules use shared authored C. This block no longer creates temporary rule states or registered local cells. Arithmetic order, language-specific fields and target submission retain their behavior. Common dictionary lookups also avoid helper calls and general copies for each input byte.</p>
-<p>The full conversion remains open: 112 former bodies are removed and 1,742 transitional bodies remain. Speech-result caches remain absent. Output equivalence, work and onset timing are checked separately; Windows/NVDA is not executed here.</p>
-<h2>Changes in 0.2.127</h2>
-<p>German speech no longer rejects “Videoanrufen ohne” or the reported WhatsApp paragraph at slower speeds. A vowel hold now follows the end of a long incoming transition. The correction is general and needs no word exception; existing Unicode handling is retained.</p>
-<p>German acoustic planning writes directly to the final point storage, avoiding a second large allocation and the final point copy. Source-point sorting also does less repeated work. Six more complete syllable-membership and accent-query rules share authored C between German and US English. Speech-result caches remain absent.</p>
-<p>The full language-rule conversion remains open: 98 former bodies have been removed, with 1,756 transitional bodies remaining. The full source contains measurements and checks. Actual NVDA response and Windows audio playback need assessment on the target device.</p>
-<h2>Changes in 0.2.126</h2>
-<p>German glottal and vowel-quantity metadata uses fixed search indexes over the existing language data, avoiding repeated full scans and number formatting for each word. Speech results are not cached. The full architecture conversion remains open.</p>
-<p>Joined compounds recover missing constituent glottal onsets only when all component phones match the complete word analysis. Docx uses the appropriate transition between its repeated velar stops without changing the phone sequence.</p>
-<p>The work notes separately report original numeric controls, accepted R and timbre behavior, queue checks and timing measurements. Actual NVDA device latency and Windows underruns remain to be assessed there.</p>
-<h2>Changes in 0.2.125</h2>
-<p>High-rate C filter design keeps real and imaginary components separate. This removes repeated packing shuffles in SSE2 butterflies while preserving operation order and rounding. Speech-result caches remain absent. Full language-rule conversion remains open.</p>
-<p>German short U receives its s/z energy boost only within the same syllable. Before a new syllable, as in “beeinflussen”, its ordinary energy is retained. Tract transitions, accepted R pronunciation and requested timbre adjustments are preserved.</p>
-<p id="timing125">Complete work notes contain separate native CPU, audio-readiness and Python-transport measurements. These have no audio device; actual NVDA response and Windows underruns remain device checks.</p>
-<h2>Changes in 0.2.124</h2>
-<p>The common C control reader prepares constant values once and evaluates only moving curves each millisecond. High-rate filter calculations process independent values with SSE2 while preserving rounding and summation order. Both languages use these paths. Speech-result caches remain absent. German R, acoustic rules and the NVDA queue retain their existing behavior. Full language-rule conversion remains in progress.</p>
-<p>Native English acoustic spans also prepare constant controls. The persistent player watchdog uses a separate condition: ordinary queue signals and completed player calls no longer wake it. Earlier deadlines and shutdown still wake it promptly; cancellation and stalled-player recovery remain tested.</p>
-<p id="timing124">Paired whole-computation gains including transport range from -1.5–16.7 percent in the six tested 11-kHz text cohorts and -4.4–7.7 percent at 48 kHz. Positive values mean less time. 1 of twelve exploratory first-feed intervals are wholly above zero. This does not establish an onset improvement for every text. Linux uses an immediate fake player without a device; actual NVDA response and the reported Windows underruns remain device checks.</p>
-<h2>Changes in 0.2.123</h2>
-<p>Ten more word/token counting, space, original-input boundary and uppercase-marking rules share independently authored C. Their complete former bodies, totaling 786 lines, are removed. Full architecture conversion remains in progress.</p>
-<p>The NVDA queue continues to overlap synthesis and playback. One persistent watchdog replaces the timer thread started for each player feed and drain. The 120-job comparison starts three threads instead of 282. Shortened-pause handoffs and the 40-ms startup reserve retain their timing. Paused output, stalls, cancellation and sample-rate switches are tested. Speech-result caches remain absent.</p>
-<p id="timing123">All twelve exploratory Linux first-feed intervals include zero; a general earlier onset is not established. Actual response is assessed in NVDA.</p>
-<h2>Changes in 0.2.122</h2>
-<p>Sixteen more rules for source positions, input lengths, syllable counts and token limits now share one compact C implementation. Their complete previous bodies, totaling 1,266 lines, are removed. The tested frontend examples use about eight percent fewer rule frames in US English and nine percent fewer in German. Speech-result caches remain absent; the complete architecture rewrite remains open.</p>
-<p id="timing122">The Linux measurements still establish no general earlier speech start. Some long-text measurements take slightly more total computation time. Complete audio and index positions remain identical; actual response is assessed in NVDA.</p>
-<h2>Changes in 0.2.121</h2>
-<p>Three frequently called German acoustic routines now use direct C values: endpoint filtering, interval submission and formant interpolation. Their complete previous rule bodies are removed. Speech-result caches remain absent. Full architecture conversion remains open.</p>
-<p>Parentheses retain their context through sentence analysis. Joined hyphens and phrase dashes again follow their distinct rules. Connected slash spellings such as Frankfurt/Main, Frankfurt/Oder and km/h use native token analysis. Desired Unicode names and authored pronunciations retain their paths. Listening assessment remains in NVDA.</p>
-<p>Linux measurements still do not establish a generally earlier speech onset.</p>
-<h2>Changes in 0.2.120</h2>
-<p>Two further large language rules for case normalization now use direct C passes. Their former complete bodies, totaling 2,138 lines, are removed. German character handling preserves native character identity and context, including character sequences, bracketed punctuation and address forms. Requested Unicode names and short German U in plus remain. Single navigation characters retain the fast immutable table path. Speech-result caches remain absent.</p>
-<p>Linux transport measurements show a slightly earlier first feed only for long German test texts, by about 0.85–0.99 ms. An earlier start for short text or US English is not established. At 48 kHz whole computation falls about 2.5–4.9 percent in the measured cases; short German 11-kHz requests instead take about 0.44 ms longer overall. Full architecture conversion and a general response improvement remain open. All 864 new-text and 288 single-character outputs retain identical PCM hashes. Actual response is assessed in NVDA.</p>
-<h2>Changes in 0.2.119</h2>
-<p>The C engine now batches short German audio pieces before handing them to Python. The first 40 milliseconds retain the existing immediate callbacks; later blocks follow a 20-ms grid. US English already produces larger blocks and retains its existing callback boundaries. Index boundaries and synthesis completion flush partial blocks immediately; small caller buffers remain authoritative. Driver playback buffering remains unchanged. No speech results are cached.</p>
-<p>German full-request computation takes about 30–37 percent less time at 11 kHz and 4–7 percent less at 48 kHz in the Linux comparison. Earlier speech onset is not established. US English has no consistent gain and some full-request cases are about four percent slower. The immediate C writer is retained verbatim from 118, with a separate German batching path. Compared output samples and index positions are identical. Actual response remains to be assessed in NVDA; the full architecture conversion remains open.</p>
-<h2>Changes in 0.2.118</h2>
-<p>Already ordered German acoustic targets now merge directly, eliminating two complete sorts. Single target points bypass general batch bookkeeping. English formant submission and focus duration in both languages now use authored C; three further old rule bodies are removed. Speech-result caches remain absent.</p>
-<p>Direct C measurements against 0.2.117 show about 8–15 percent earlier first German PCM, including at 48 kHz: approximately 0.2–4.6 milliseconds in absolute terms. US English still has no reliable response-time gain. All 2,688 complete outputs retain identical PCM digests. Linux measurements exclude NVDA/audio-device latency; full architecture conversion remains open.</p>
-<h2>Changes in 0.2.117</h2>
-<p>Combined-phone spelling and per-token control resets now use direct C. US English submits filtered acoustic values to the ordered queue after decoding the operands once. Seven additional complete rule bodies are removed while retaining the existing phone values and timing. Speech results are still never cached.</p>
-<p>A direct C measurement with 144 new texts per case shows about 2–3 percent earlier first output in two German long-text cases. US English has no reliable response-time gain yet. All 2,016 complete outputs retain identical PCM digests. Measurements use Linux without an audio device; actual NVDA response still requires assessment.</p>
-<h2>Changes in 0.2.116</h2>
-<p>Spotify now receives the same general source-ownership correction as Century. A preceding stop no longer leaves an aspiration endpoint inside an already voiced j or w gesture. The rule follows phonetic context, without a word-exception list.</p>
-<p>The Homepage j moves a little closer to its original timbre: its resonances now travel one third of the way toward the unstressed i in Germanistik. Original bandwidths, source, timing and melody remain. Listening assessment is in NVDA.</p>
-<p>Three complete English consonant-group checks for word classification and syllabification now use independently authored compact C rules. Their former generated bodies and backtracking paths are removed. Speech-result caches remain absent. The overall architecture conversion and restoration of the former response time remain incomplete.</p>
-<p>Both languages also submit acoustic intervals through one shared direct C path to the existing ordered queue, eliminating the per-endpoint rule frames and backtracking tests. The large native corpus uses about 17 percent fewer rule frames. First output improves modestly for longer new texts, but not consistently for short inputs.</p>
-<h2>Changes in 0.2.115</h2>
-<p>German Download and its tested inflections/compounds lose the unwanted glottal onset. Secondary stress alone no longer proves a lexical boundary. Days retains its independently observed onset for the exact spelling/SPR reading; Schnellaktionen and earlier inflection controls remain checked.</p>
-<p>Century removes a stale stop-release target which pulled down its already voiced w source. Related stop+w contacts share the fix. Homepage now starts from its original j and moves its resonances halfway toward unstressed I in Germanistik, with the original bandwidths. Listening assessment remains in NVDA.</p>
-<p>Forty-six complete scalar functions move to authored compact C modules. Their previous generated bodies and fallbacks are removed. Result caches stay absent. Full conversion remains open; timing does not yet improve consistently. The NVDA driver is unchanged.</p>
-<h2>Changes in 0.2.114</h2>
-<p>All 1,854 language functions use bounded workspaces sized for their actual needs. Forty-six scalar helpers use C locals without rule frames or landing machinery on the normal path. Speech-result caches remain removed. Saved Linux measurements show about 1–8 percent lower isolated rule time; first-PCM latency does not improve consistently. Full architecture conversion and pre-lifter response remain open.</p>
-<p>German dj in accordion and connected tw onsets were checked and corrected against the original. Audacity and Community use the original melody ranges. Neueste and related endings lose the unwanted glottal onset; Days and Schnellaktionen retain theirs. Homepage keeps its forward j placement and broadens only the second resonance to reduce sharpness. Listening assessment remains in NVDA.</p>
-<h2>Changes in 0.2.113</h2>
-<p>1,854 complete language functions now receive ordinary scalar C parameters. 3,617 internal calls bypass general entry dispatch and its argument stack. Speech-result caches remain removed. Compact records, rule frames and backtracking remain to be converted; pre-lifter response time is not generally restored.</p>
-<p>German j/w transitions now use dedicated voiced source and timing gestures, including before another consonant. Cases include Audacity, Community, Century, utopia/utopuia and visual/visuell; Dj, Django and Djamila are checked too. Homepage moves only its second resonance forward while retaining the rest of its existing palette. Final listening assessment remains in NVDA.</p>
-<h2>Changes in 0.2.112</h2>
-<p>All repetition/result caches for phonetic analysis, acoustic plans, word analyses and German word features are removed. Every repeated utterance is analyzed and generated again. The ordered queue and reusable worker remain; the NVDA driver is unchanged. Repeated text can take longer than with the previous caches, exposing the actual analysis cost.</p>
-<p>At 106,490 shared primitive call sites, arguments now use ordinary explicitly typed C parameters. This removes 249,145 argument-stack wrappers. Record references, rule frames and some generated linguistic C remain. The shipped runtime has no rule bytecode; restoration of the earlier architecture is still incomplete.</p>
-<p>German Audacity and community retain the original broad j timbre after consonants. The j in homepage uses the short i colour of final -stik in Germanistik. These tract changes preserve phone choice, duration, excitation and melody. Schnellaktionen restores its original internal compound vowel onset. Question contours, z. B., characters, shortened pause durations and accepted sample-rate profiles retain their regression checks. Listening assessment remains in NVDA.</p>
-<h2>Changes in 0.2.111</h2>
-<p>Both language modules use ordinary C arithmetic and comparisons instead of simulated arithmetic flags. 1,800 alternative-selection chains become C switches. Transitional record references and rule frames remain; the complete pre-lifter architecture is still being restored.</p>
-<p>German question gestures were checked again against the original. Earlier lexical accents remain; only the falling return after the final prenuclear accent is omitted. Explicit earlier focus and its weak continuation retain their native gesture. Original falling questions are excluded as templates. Existing phone timing is retained.</p>
-<p>US English uses rising endings for all recognized question classes, including WH and alternative questions, without a list of selected words. The change affects pitch only. The final rise is retained at extreme rates. Statements, zero inflection, pronunciation and pause timing are preserved in the comparisons. Listening assessment remains an NVDA task.</p>
-<p>Fresh sentence and paragraph inputs reach the first PCM callback about 16–24 percent sooner in US English and 7–14 percent sooner in German than 0.2.110 in the saved Linux measurements. The Windows DLL is 1,655,296 bytes smaller. Measurements exclude audio-device latency; actual NVDA response requires target-system assessment.</p>
-<h2>Changes in 0.2.110</h2>
-<p>Common record and scan operations in both languages now use shared, explicitly typed C functions. At 106,490 call sites, these replace general signature lookup and indirect primitive dispatch. Rules retain a checked immutable machine reference locally. New sentences and paragraphs reach their first audio callback about 15–23 percent sooner than 0.2.109 in the saved Linux measurements, while the Windows DLL is 176,640 bytes smaller. Actual NVDA response needs assessment on the target system.</p>
-<p>German questions start their final rise near the end. Ordinary earlier lexical accents remain intact. A long weak continuation after the last accent holds its low tone until the final word. The requested always-rising question ending, zero inflection and other terminal contours are retained. Phone durations and all non-pitch acoustic controls remain identical in the comparison cases.</p>
-<p>Full rule conversion and pre-lifter response remain open. The release runtime contains no rule bytecode; remaining generated C and its provenance stay documented. The NVDA driver and additional result reuse are retained.</p>
-<h2>Changes in 0.2.109</h2>
-<p>Five German word-formation predicates now use independently authored, compact C: consonant onsets, root codas and three ending classes. Ordinary spelling, small fixed buffers and direct conditions replace the generated implementations. This block needs no bytecode, rule frames or backtracking stack. Complete frontend comparisons preserve 0.2.108 pronunciation.</p>
-<p>The complete rule conversion and desired response time remain open. This step mainly benefits unknown words and compounds. Additional languages remain deferred.</p>
-<h2>Changes in 0.2.108</h2>
-<p>The productive German konzentrier- stem now has a full E in zen and stress on trier. Inflections and derivations share the correction while prefixed words retain the prefix accent. Explicit phonetic input takes precedence.</p>
-<p>German letter normalization is now an independently formulated compact C pass. It plans accented-letter substitutions, apostrophe endings and consonantal u after q without the former chain of general rule tests. Unchanged words require no rule frame or backtracking stack. The remaining word and acoustic rule analysis still uses the existing backend; full architectural conversion remains open.</p>
-<p>Additional languages are deferred. Extra result reuse stays in place until the requested responsiveness has been restored and measured. Fresh text and repeated text are measured separately.</p>
-<h2>Changes in 0.2.107</h2>
-<p>US English now exposes the same eight voice presets as German, including female and child voices. Rate and sample rate survive preset changes. At 8 kHz the acoustic planner now selects the narrow-band formant, damping and source rules; it previously planned with the 11-kHz model. The shared C output stage retains German's source and filter profiles.</p>
-<p>Head-size, female-model and narrow-band endpoint filters are now a compact scalar C function. General word and acoustic rule management is still present; the full return to the pre-lifter architecture and response time remains unfinished. Compared English PCM above 8 kHz and German phonetic output are unchanged.</p>
-<p>German ASCII and Unicode ellipses retain their suspended phrase boundary across word analysis. Windows rule returns also preserve the required XMM registers and floating-point control state. The reported head-size silence was already absent in the user's newer build; the ABI regression does not establish a reproduction of that particular NVDA failure. Breathiness aliasing remains unresolved.</p>
-<h2>Changes in 0.2.106</h2>
-<p>German character announcements now work inside ordinary text and retain the prose following a leading character announcement. With ECI tags disabled, the backtick is spoken as a character again. UTF-8 processing and character names remain native C.</p>
-<p>Hyphenated German words resolve their constituents before composition, preventing provisional a alignment tokens from becoming pronunciation. Final German “…, z. B.” gains the observed low lexical-stress fall and the corresponding higher main accent before the addition.</p>
-<p>English pause modes shorten the actual default pause bodies after native punctuation analysis, including fast speech. No p1 tags are inserted. Explicit pauses remain separate; abbreviations, numbers, phone durations and melody do not depend on rewritten input.</p>
-<p>Each ECI owner can reuse four complete short control plans and four text analyses with matching source and settings. New text still receives full analysis. A head-size scaling overflow is fixed for small male and female models. Accepted German acoustics and high-rate filters remain intact. Audible breathiness aliasing is not yet proven resolved.</p>
-<p>Inlining arithmetic and reference helpers was rejected because it enlarged the add-on and barely improved short fresh requests. The compact 0.2.105 helpers are retained. Measurements separate fresh lexical inputs from repeated requests; pre-lifter speed is not generally restored. This release does not change the NVDA driver.</p>
-<h2>Changes in 0.2.105</h2>
-<p>Character navigation now uses original German and US English readings for digits, punctuation and accented letters. A small static C table supplies complete phonetic groups without another language-analysis pass. German spelling distinguishes the original ts1 and ts2 modes. Extended Unicode names and the requested short German U in plus remain available.</p>
-<p>A wholly deaccented continuation after a comma no longer receives an invented nuclear accent, correcting final German “…, z.B.” and “…, z. B.”. Compared durations and non-F0 controls are unchanged. Question and exclamation contours, reporting clauses and zero-inflection behavior remain intact.</p>
-<p>The private rule provider runs its existing C message bodies and callbacks directly on the host output worker. After initial context creation it avoids the extra inner queue and blocking handoffs, including tagged input and setting changes. Ordinary German words are analyzed in their sentence first, with a complete legacy retry if alignment fails. Accepted phone acoustics, German R and high-rate filters are retained. Linux startup improvements are limited; pre-lifter speed has not generally been restored. Windows/NVDA listening is still required on the target system.</p>
-<h2>Changes in 0.2.104</h2>
-<p>The corrected offline Apple lifter has been rerun against both original modules. Missing word-boundary fences caused the wrong final vowel colour in “three”. English now uses the complete native text frontend; superseded English dictionaries, fitted G2P and acoustics are excluded from the add-on build. Internal phonetic tags and original character readings remain atomic. Source indices no longer split numbers or addresses during normalization.</p>
-<p>German reapplies authored nominal Unter-/Über- stress, intact ch boundaries in “Sprachauswahl” and “Suchauswahl”, short U in “plus” and final stress in the existing -os adjective class after sentence analysis. Voiced “samt”, sentence stress, final reporting clauses, consonantal R and accepted high-rate acoustics are retained.</p>
-<p>Each ECI instance reuses its own native worker. After plain text it prepares a fully reset context with the current settings; the next matching request starts from that fresh state. Tags or changed settings take the complete reset path before input. Removing old English paths reduces the DLL; rule C uses speed optimization. Apple language rules remain distinct from the OpenEVV shared C runtime. Some C is generated; the release contains no rule bytecode or bytecode interpreter. Actual Windows/NVDA listening remains a target-system check. The response speed from before the lifter is not yet fully restored; measurements also compare against 0.2.101.</p>
-<h2>Changes in 0.2.103</h2>
-<p>German now applies native 6.1 sentence-context analysis before its existing acoustic composer. Phrase accents, syllabification and word-formation analyses are no longer bypassed by a successful broad G2P reading. Explicit pronunciation overrides remain authoritative. A final reporting/thought clause such as German “denke ich” continues in a lower pitch register; medial clauses retain their phrase accent. German consonantal R remains in the existing renderer.</p>
-<p>US English uses the same native C acoustic rules as 0.2.102, but starts PCM while following words are still being planned. Small C output batches reduce callback overhead. Its level reference is corrected to native volume 100, lowering output by approximately 2.5 dB. Source indices now share one clock across internal text stretches.</p>
-<p>High-rate formant bandwidths and presence filtering remain at 0.2.102. The private provider still uses OpenEVV as its C codebase, with only the Apple-6.1-derived enus61/dede61 language modules enabled. No rule bytecode or bytecode interpreter is included in the release runtime. NVDA listening remains to be checked.</p>
-<h2>Changes in 0.2.102</h2>
-<p>US English uses the complete 6.1 acoustic rules as compiled C for timing, transitions, excitation and intonation. ReLoq's C Klatt renderer still produces PCM. The release build contains neither rule bytecode arrays nor a bytecode interpreter. Existing Unicode and numeric input handling is retained. Incomplete English word-analysis branches are rejected; the established frontend then supplies phonetic input to the same new C acoustic path.</p>
-<p>German gains native 6.1 word analysis outside the confirmed lexicon, while keeping its established acoustic implementation, including consonantal R.</p>
-<p>From 16 kHz, the added upper cascade formants have broader bandwidths. The periodic presence lift around 4.6 kHz is broader and flatter while retaining energy. Auditory evaluation remains an NVDA listening task.</p>
-<h2>Changes in 0.2.101</h2>
-<p>The US voice determines b/d/g closure voicing from neighboring phones, replacing incompatible voiced levels selected from another consonant context. Aspirated vowels retain their own voicing onset in longer words as well. Vowels and closing R/L/W/Y members are protected from premature voicing shutdown; valid closing levels and explicit pause fences are retained.</p>
-<p>This version focuses on English phone acoustics. Duration, consonant-cluster and pronunciation differences remain. US English is still experimental; audible results require listening in NVDA.</p>
-<h2>Changes in 0.2.100</h2>
-<p>German restores voiced S before the -isch derivation, including Französisch and chinesisch, while retaining voiceless ss and consonant clusters.</p>
-<p>745 more script characters and presentation forms have fixed German and English readings: Hebrew, Arabic, Armenian, hiragana, katakana, Devanagari and modern basic hangul letters. The complete Unicode name catalogue is still incomplete.</p>
-<p>US English corrects sentence-initial article A, selected weak forms, imperative read and cross-word H deletion. An independent C rule now supplies nominal nasal transitions while preserving shortened and multipart nucleus allocations. Phonetic sequences match the original for 50 of 60 additional natural sentences, previously 29. Broad acoustic and pronunciation gaps remain. Evaluate the sound in NVDA.</p>
-<h2>Changes in 0.2.99</h2>
-<p>US consonants now retain their own formant transitions instead of receiving unrelated nucleus profiles. An independent C target contract handles very short formant segments. On six additional long English passages at three speeds, the measured formant error for normal text is about 37 percent lower. All 858 previously sample-exact acoustic cases remain exact. Listening evaluation takes place in NVDA.</p>
-<p>German character announcements use fixed complete German labels and CLDR. The German catalogue is still incomplete: characters without a German name now announce their codepoint instead of an English name. Georgian and Cyrillic characters also use fixed script and sound-value labels in English, such as “Georgian sha”. Existing accent readings such as è remain on the shared original character path.</p>
-<p>Questions keep their rising ending. Accepted sample-rate profiles and click correction are retained.</p>
-<h2>Changes in 0.2.98</h2>
-<p>US English now jointly plans complete accented monosyllabic nuclei before consonants, inside sentences and at phrase endings in independent C. Voicing lengthening, split vowel word boundaries and the native speed clock are covered. Longer words and broader pronunciation remain incomplete. Every question keeps its rising ending.</p>
-<p>Original Latin accents such as è and canonical extensions share one terminal character reader. Extensions start from the longest existing original reading, such as umlaut plus acute. Reviewed German script/sound descriptions replace generated Georgian/Cyrillic letter names. Without a fixed German or CLDR label, the formal English Unicode identifier remains available. Accepted sample-rate profiles are unchanged. Listening assessment remains an NVDA task.</p>
-<h2>Changes in 0.2.97</h2>
-<p>Every question now has a rising ending, including wh and alternative questions. US English uses new independent C rules for nuclear accents, phrase endings and weak H deletion before T/D flapping. Larger connected disassembly blocks inform these rules; English pronunciation and acoustics remain incomplete.</p>
-<p>German preserves voiced S in Gesamt compounds and corrects the acoustic join in Zeitabschnitt and vowel-to-diphthong transitions such as zueinander and beieinander. All accepted sample-rate profiles retain 0.2.96 behavior. Listening validation is through NVDA.</p>
-<h2>Changes in 0.2.96</h2>
-<p>The accepted German S weighting is retained. Bounded inverse gain and 3-ms filter transitions restore the transient correction lost in 0.2.95. The US S profile remains unchanged.</p>
-<p>US English jointly schedules source envelopes across vowel/liquid/glide nuclei, voiced consonants and unaspirated word-final P/T/K boundaries. The investigation covers 26 complete source functions. Eight new longer English passages at three speeds show about 15 percent lower mean source error; pronunciation and sentence melody remain approximate. All 858 previously PCM-exact controls remain exact. Listening assessment takes place in NVDA.</p>
-<h2>Changes in 0.2.95</h2>
-<p>At 16 kHz and above, German restores the 0.2.84 S/Z/T noise profile. US English retains its current S profile.</p>
-<p>The US voice jointly plans stressed terminal vowel/glide/liquid nuclei in independently authored C, following a connected disassembly study of 58 duration functions. Incoming transitions and nucleus durations match the original in 995 controlled phone sequences, up from 326. Medial/unstressed nuclei and combined public diphthong tokens retain their previous timing planner. US English remains a preview; listening assessment remains an NVDA task.</p>
-<h2>Changes in 0.2.94</h2>
-<p>German morphology re-enters complete inner compounds after prefixes, including Verschlusslaut, Verschlusslaute and Abschlusslaut. Constituent readings and stress are composed without new whole-word entries.</p>
-<p>US English plans phone clocks before emitting acoustic targets and shares connected transition boundaries. The S+P/T/K rule family coordinates closure duration, aspiration and the following vowel, including word boundaries, correcting falsely aspirated or delayed voicing in these contexts. Pronunciation, duration and tract planning remain incomplete; US English is still a preview. Listening should be checked in NVDA.</p>
-<p>The accepted sample-rate filters retain their previous behavior.</p>
-<h2>Changes in 0.2.93</h2>
-<p>US English improves source planning in uncommon consonant groups, checked against the original US voice reading German, mixed and English text. Changes cover wrongly devoiced glides, context-dependent aspiration of W after P/T/K, late source zeros after S+stop and some nasal-to-closure handoffs.</p>
-<p>The accepted sample-rate filters and spectra retain their 0.2.92 behavior. Pronunciation rules, phrase melody and the German voice retain their previous state. US English remains an experimental preview with further pronunciation and transition differences. Listening assessment remains an NVDA task.</p>
-<h2>Changes in 0.2.92</h2>
-<p>US English corrects source dropouts caused by incompatible aspiration and release profiles, including vowels in “was”, “account”, “lights” and “smaller”. Stop/diphthong and unaspirated s+stop voicing boundaries are more accurately separated. Source corrections preserve phone clocks, tract targets and F0 in the checked prose. Acoustic differences remain.</p>
-<p>Native analysis extends productive derivation/inflection, final T/D flapping before stressed vowels, numbers, money, times, dates and punctuation classes. The implementation follows original SO rule-stage/output observations, without OpenEVV pronunciation rules. Character processing and source-text index ownership remain inside C.</p>
-<p>German linking-s compounds such as “Aspirationsabsenkung” and the excessive s/ts duration in the spoken name of ß are corrected. At 16 kHz and above, the periodic-only harmonic lift around 4.6 kHz is stronger with level compensation. Aspiration and accepted consonant-noise profiles are retained. Actual listening in Windows/NVDA remains to be done.</p>
-<h2>Changes in 0.2.91</h2>
-<p>At 16 kHz and above, periodic harmonics receive a small lift around 4.2 kHz with level compensation. Breath noise during voicing is reduced smoothly by 2 dB; unvoiced aspiration keeps its steady level. Accepted S/Z/T and other consonant-noise profiles remain unchanged.</p>
-<p>German fixes zweiten, erforderlich, Passwort and related forms through original-observed inflection, derivation and compound precedence. No complete-word correction entries are added.</p>
-<p>US English corrects vowel-to-consonant source handoff and voicing onset after P/T/K. Four continuous prose passages are compared with the original. F0 curves, tract targets and phone clocks remain unchanged from 0.2.90. Pronunciation and acoustic gaps remain; listening validation is through NVDA.</p>
-<h2>Changes in 0.2.90</h2>
-<p>At 16 kHz and above, periodic voicing gains a gently rising upper shelf with a small level compensation. This replaces its narrow 4-kHz presence peak while retaining aspiration, consonant noise and the accepted S/Z/T spectra.</p>
-<p>US English improves h connections, weak vowel onsets and complex-cluster source envelopes. Comparison includes two continuous prose passages and independent observations from the original SO. Connected speech and sentence melody remain approximate.</p>
-<p>German final long-oe/vocalic-r attenuation now settles through the short r core, preserving its timbre, settled level and release. The 0.2.89 language-switch parameter restore and Language setting in the synth settings ring remain included. Actual Windows/NVDA listening was not available here.</p>
-<h2>Changes in 0.2.87</h2>
-<p>The lower noise-channel weighting for S/Z/T has been removed. At 16 kHz and above, upper noise energy is reduced and total energy is compensated, following the recovered principle of the earlier OpenEVV listening trials. The blend remains 75:25 at 16 kHz and 50:50 above it. The click correction is retained; SCH and other high-rate profiles remain at 0.2.80. Listening validation in NVDA is still needed.</p>
-<p>German corrects L colour before nasal vowels, including “Balance”, and related R transitions. More original observations extend the lexical roles used for final stress, adding 70 exact full plans without losing previously exact cases in the expanded comparison.</p>
-<p>US English adds native tract targets selected by phone and syllable context and contextual readings for 324 more words. Across 852 held-out original inputs, time-aligned tract error falls from 8.87 to 4.02 Hz. Timing, melody and pronunciation remain incomplete; the high-inflection correction from 0.2.86 is retained. Unicode, accents and Greek remain inside the C engine.</p>
-<h2>Changes in 0.2.86</h2>
-<p>The broadened S spectrum has been reverted. At 16 kHz and above, more energy is assigned to the existing lower noise channel instead. Level compensation and the 0.2.85 click correction remain. This applies to S/Z/T; other high-rate profiles retain 0.2.80 behavior.</p>
-<p>US English gains native intonation decisions derived from 5,830 original observations, contextual readings, weak final forms and cross-word t/d flaps. Measured pitch and connected-speech errors decrease, including at higher inflection settings. Pronunciation and acoustics are still approximate.</p>
-<p>Further German lexical classes and phrase rules improve final-word prominence, with 71 additional exact plans and no previously exact cases lost across 20,142 comparisons. Unicode, accents and Greek remain native. This build still needs an actual NVDA listening test.</p>
-<h2>Changes in 0.2.85</h2>
-<p>Higher US-English inflection settings now use corrected scaling and a pitch floor measured from the original. Standard pitch tracks and rising-question direction are retained. Vowel handoffs to L/R/W/Y and tract transitions before R and syllable-initial L are improved. Connected speech remains approximate.</p>
-<p>At 16 kHz and above, S/Z/T spectra gain a lower shoulder while retaining the compensated 75:25 starting blend at 16 kHz and 50:50 above. Smoother filter transitions and capped notch amplification aim to reduce clicks; an actual listening check is still needed. SH and all other high-rate profiles retain 0.2.80.</p>
-<p>German adds 47 measured readings in the Verschluss/verursachen families and corrects final prominence in further object/verb contexts. The newly reported email-related utterance block was not reproduced with synthetic addresses and remains unresolved.</p>
-<h2>Changes in 0.2.84</h2>
-<p>At 16 kHz, S/Z/T use 75% of the native spectrum and 25% of the selected wideband reference. Higher rates retain the 50:50 blend. Other high-rate profiles retain 0.2.80.</p>
-<p>US English corrects H excitation, stop timing and release, anticipatory nasalization, sentence accents and question contours. Measured native context rules improve multi-syllable and reduced-phone timing. Connected acoustics remain approximate; actual NVDA listening has not been tested here.</p>
-<h2>Changes in 0.2.83</h2>
-<p>At 16 kHz and above, only /s/, /z/ and /t/ use the level-compensated midpoint spectrum. /sh/ and all other sounds retain the 0.2.80 profiles and its 2 dB increase.</p>
-<p>US English adds 60,239 original word observations, native rules for unknown words and acoustic word-boundary transitions. Secondary stress no longer displaces primary prominence. Malformed and unknown tags, including backticks in addresses, no longer abort English utterances. Unknown-word pronunciation and acoustics remain approximate.</p>
-<p>Greek letters may be named in running text. Other symbol names stay in character mode. German names use CLDR and additional German descriptive rules. Unicode, accents and Greek processing remain in the C core.</p>
-<h2>Changes in 0.2.82</h2>
-<p>Rebased on 0.2.80. The OpenEVV pronunciation rules from 0.2.81 are removed. Language comparisons use only the original German and US-English Eloquence modules.</p>
-<p>Unicode, Greek, accents and character names are handled inside the C core. NVDA passes unchanged text and character-mode flags. Localized CLDR names are used only in character mode; existing native accent readings are retained. Canonical Unicode names cover named characters without a localized label; hexadecimal fallback is reserved for unnamed characters.</p>
-<p>At 16 kHz and above, s/t blend the energy-normalized previous and fastfinge/eloquence_64 wideband spectral shapes. Sh uses the fitted reference shape. The previous additional 2 dB is retained; f, p and other profiles keep their existing behavior.</p>
-<p>German adds native personally/context root readings, separable infinitives with zu, and wider email syntax. A saved 18,024-case comparison gains 160 complete phonetic matches without losing previous matches.</p>
-<p>US English adds 6,983 original-observed readings, especially character-name vocabulary, productive -ness and corrected -ly/rhotic endings and primary-stress selection. General G2P, connected melody and acoustic coverage remain incomplete. Unknown words can still be spelled. Technical tests do not replace an actual Windows/NVDA listening test.</p>
-<h2>Changes in 0.2.80</h2>
-<p>Consonant noise receives an additional 2 dB at sample rates of 16 kHz and above. Existing spectral shaping and the confirmed audio queue are retained.</p>
-<p>The US English preview gains phrase-level intonation, better weak final vowels and corrected stop-release envelopes. Its continuous production path now reproduces the original PCM in 354 of 885 saved reference cases. Longer sentences and all word transitions are not yet equivalent to the original.</p>
-<p>Known English stems support further forms in -s, -ed, -ing, -er, -est and -ly. Whole numbers up to twelve digits are composed from English number names unless a specific known reading exists. Leading zeros retain digit reading. General English grapheme rules remain incomplete; other unknown words are spelled.</p>
-<p>German superlatives reuse known stems and eligible -ig derivations. The new comparison gains 146 complete phone sequences, and the existing corpus gains 25, without losing a previously matching phone sequence. Actual listening in NVDA remains to be done.</p>
-<h2>Changes in 0.2.79</h2>
-<p>The confirmed audio queue is retained. From 16 kHz, the 4-kHz presence filter is narrower (Q=2 instead of 1), with +3 instead of +2 dB at its centre and less effect below it. Other noise profiles and buffer sizes are unchanged.</p>
-<p>General German rules preserve the nasal during g restoration and recognize further verb-deaccenting contexts. No German whole-word entries were added. The comparison suites gain complete readings without losing previously matching cases.</p>
-<p>Select “English (United States, preview)” in the synthesizer's Language setting, initially with Male 1. Connected English speech is available, but productive word analysis and sentence melody remain incomplete. Unknown English words, including some common words, are spelled using English letter names. The preview does not use German pronunciation rules.</p>
-<p>Native output and NVDA API integration were checked; actual Windows/NVDA listening was unavailable here. The reported small-female-head breathiness issue and remaining German analysis/melody gaps remain open.</p>
-<h2>Changes in 0.2.78</h2>
-<p>Playback now has a separate bounded worker queue based on the OpenEVV flow. ECI can continue generating while WavePlayer waits for room. The first feed needs 40 rather than effectively 120 ms of generated audio. Cancellation, indices and chunk handoff retain their ordering.</p>
-<p>At 16 kHz and above, the voiced tract gains broad 4-kHz presence (+2 dB). From 22.05 kHz, the upper broad f-like noise component is less attenuated. This component also occurs in p/b releases. The common +3.5-dB consonant gain remains.</p>
-<p>The complete kn onset plan now works within words and after further sound classes. Weak word endings retain their stem under outer s inflection. Negative determiners recover their phrase-edge and post-preposition accent. The broad word comparison gains 160 complete matches without losing a previous match; remaining gaps are documented.</p>
-<p>US English adds voiced/unvoiced th and aspirated vowel/diphthong onsets, reaching 850 exact control/PCM development cases. English is not yet selectable in NVDA.</p>
-<h2>Changes in 0.2.77</h2>
-<p>Higher-rate filter preparation reuses immutable calculations without changing timbre, consonant gain or buffering. The native benchmark uses about 9–19 percent less CPU at 16–44.1 kHz; total CPU at 48 kHz did not improve. This does not establish physical NVDA latency.</p>
-<p>Weak endings with an onset-free schwa syllable now reuse the existing stem analysis. Across 17,156 selected inputs, 278 additional readings match the reference, with no previously matching reading lost. No whole-word entries were added.</p>
-<p>Retained voiced b/d/g before final n use their own phone phases. Final m/n/ng after obstruents receive their reference source handoff and release. Closing German diphthongs account for more following consonant classes.</p>
-<p>English development adds fricative and nasal codas. There are 418 new exact VC/CVC cases and 805 exact development cases in total. English is still not selectable in NVDA. German analysis, sentence melody and some transitions remain incomplete, and small-female-head breathiness remains unresolved.</p>
-<h2>Changes in 0.2.76</h2>
-<p>Consonant noise now has +3.5 dB total gain at 16 kHz and above. At 32 kHz and above, an additional upper noise branch extends bandwidth while retaining the accepted main spectral weighting. Voiced excitation, aspiration and breathiness remain unchanged.</p>
-<p>Particle analysis re-enters complete weak-prefix heads, including infixed infinitival zu. No whole-word pronunciations were added. Across 13,639 selected inputs, complete reference readings improve from 11,839 to 12,266 with no loss of an already exact reading.</p>
-<p>Final devoicing now examines the complete coda group. Final m/n/ng after obstruents use separate reference durations instead of a shared estimated duration. An unattached utterance-final h no longer creates an extra noise segment.</p>
-<p>English development adds closed syllables with p/t/k/b/d/g: 174 new VC/CVC cases match all controls and PCM, bringing the total to 387. Connected English text and sentence planning remain incomplete, so English is not selectable in NVDA yet. German fallback removal and small-female-head breathiness also remain incomplete.</p>
-<h2>Changes in 0.2.75</h2>
-<p>At 32, 44.1 and 48 kHz, consonant resonance frequencies and widths now retain the accepted 22.05-kHz profile. Filter coefficients use the actual sample rate. Frication at 16 kHz and above is 1.5 dB louder; the voiced and aspiration paths are retained.</p>
-<p>Word-initial s before m/n uses ordinary s excitation, including the separate cluster planner. This is the requested departure from the original.</p>
-<p>Shared German rules now analyse pronominal particles and their following verbs, phrase-dependent deictic stress, and feminine -in/-innen forms with the original protected-root class. Sentence prominence now handles further adverb/predicate and nominal-complement contexts. No new whole-word pronunciations were added.</p>
-<p>In 11,323 distinct comparison inputs, complete reference readings increase from 10,073 to 10,533 without loss of an already exact reading. Word prominence matches in a 1,388-sentence matrix and 322 separate controls. These counts do not claim complete German or acoustic equivalence.</p>
-<p>English development coverage increases from 129 to 213 exact control/PCM cases, adding f/v/s/z/S/Z before vowels. US English is not yet an NVDA language. The reported breathiness/aliasing problem at female head sizes of 29 and below remains unresolved.</p>
-<h2>Changes in 0.2.74</h2>
-<p>Shared German analysis now covers weak prefixes before h, original French-g classes, further loan-root endings and marked-compound accent. No whole-word pronunciations were added. Across 7588 distinct inputs, complete reference matches improve from 6848 to 7006 with no loss of an already exact reading. Coverage remains incomplete.</p>
-<p>Phonetic input uses reference syllable-final b/d/g/v/z handling and terminal Z timing. All 56 isolated final-consonant checks match every control and PCM sample; arbitrary connected phonetic input is not fully covered.</p>
-<p>At 16 kHz and above, consonant noise uses selected OpenEVV spectral profiles without its P/K gain boosts. The voiced path is retained. At 48 kHz, the 44.1-kHz profile is continued with coefficients recalculated for the new clock.</p>
-<p>In both shortened pause modes, NVDA receives completion once the last audio buffer has been fed, allowing the next chunk to start while the old tail plays. Original pause mode continues to await playback completion.</p>
-<p>The English development renderer adds 42 b/d/g-vowel cases, bringing exact control/PCM coverage to 129 cases. US English is still not an NVDA language. Reported aliasing at small female head sizes with breathiness remains unresolved.</p>
-<h2>Changes in 0.2.73</h2>
-<p>Shared V rules now distinguish root domains, weak endings and prefixes using observed reference classes. The requested nominal stress correction covers further Über-/Unter- forms. No whole-word pronunciations were added.</p>
-<p>At 16 kHz and above, consonant noise uses an independent 16-kHz reference. S and T retain their own original filters. F, P and B receive a gentle upper-band reduction in the broadband noise branch. The previous voiced tract remains in use.</p>
-<p>A Windows SYN numeric comparison at female head size 29 and breathiness 50 differed by one count in only three of 7370 samples with identical controls. The reported aliasing remains unresolved; the complete Windows control-generation pipeline has not been compared.</p>
-<p>The English development renderer adds 42 P/T/K-vowel sequences. All 87 checked English cases match every control and PCM sample. US English is still unavailable as an NVDA language.</p>
-<h2>Changes in 0.2.72</h2>
-<p>Shared prefix, ng and oi analysis and additional grammatical/deaccenting classes now follow observed reference behavior. Multisyllabic phonetic groups may remain entirely unaccented.</p>
-<p>Improved r+j, short i before a following onset r, o-to-a motion, the au glide, j source onset and nasal releases. Breathiness 50 was examined particularly with female head sizes 22/29. Specific model differences are corrected; continuous raspiness is not yet fully explained.</p>
-<p>At 16 kHz and above, s/t noise resonances use the spectral energy distribution of voiced s. The requested j after e/E now lies between long i and e. The English development renderer adds 28 nasal-vowel combinations; US English is not yet available as an NVDA language.</p>
-<h2>Changes in 0.2.71</h2>
-<p>Email addresses now have separate local-part, “at” and hostname reading stages. Dots, hyphens, underscores and digits follow observed reference behavior. The legacy recognizer accepts final domain labels of two or three letters; longer endings retain ordinary text reading. Some general pronunciation and prominence differences remain.</p>
-<p>Shared compound, prefix, weak -el inflection and loan-root paths cover additional word families, including Eingabemethoden, einblenden, ruckeln, Dictionary, Irroadium and Gettext. German pronunciation dictionaries are unchanged. N before D now distinguishes primary/secondary stress and following schwa; nasals before H also receive the observed timing. This shortens the excessive N in hundert.</p>
-<p>At 16 kHz and above, s/t noise retains its physical resonance positions instead of relocating one original pole to the highest added channel. The upper filters remain active. Voiced s in Pausen and the 8-/11.025-kHz filters are unchanged by this correction.</p>
-<p>The English development planner adds three isolated diphthongs; English is still unavailable as an NVDA voice. Continuous small-female-head roughness remains unresolved. Technical checks and the Windows x64 build pass; actual listening must be checked in NVDA.</p>
-<h2>Changes in 0.2.70</h2>
-<p>Shared suffix paths preserve stem quantity under superlative inflection and schwa before -lich. Phrase prominence now distinguishes later verb forms from nominal/adverbial complements, with additional observed grammatical classes.</p>
-<p>Fast glottal recovery is no longer speed-scaled twice. The extra s/t noise pole at 16 kHz and above is broader and energy-normalized. The continuous roughness of small female heads remains unresolved.</p>
-<p>US-English now has an independent C lexical foundation and initial reference-exact isolated vowel nuclei. Connected English speech is unfinished; German remains the only selectable add-on language. Actual NVDA listening was not available here.</p>
-<h2>Changes in 0.2.69</h2>
-<p>The interface now uses English source strings and gettext translations selected by NVDA's UI language. German is included; missing translations fall back to English. This covers settings, voice names, language selection, pause options, sample rates and add-on metadata. Saved identifiers and the spoken language remain independent of the UI language.</p>
-<p>Shared prefix, inflection and loan-root paths correct cases including behält, gegenüberstellt, Eingrenzung, Manager and Infos. Final prominence preserves internal compound accents. Famos retains the user's requested final stress despite the reference error.</p>
-<p>Additional vowel-j/w nuclei share the original timing and tract rules. Closing j after e/E moves slightly toward short i by request. Vorherig returns to the reference e; the i.e.r context in Barriere/Karriere keeps the previous native vorherig color.</p>
-<p>Speed tags map unrounded timing; constant tags and slider settings use the same planner. The physical pitch baseline uses the observed continuous calculation instead of interpolated sentence-level anchors. Early indices preserve the initial 120 ms audio reserve, and short outputs flush at completion. High-rate s/t noise uses the added upper filters, with less filter computation.</p>
-<p>All 54 tested connected outputs at female head sizes 22/29/30, breathiness 50 and varied pitch/inflection match the reference PCM. Resolution of the reported continuous roughness still needs listening confirmation in NVDA. Further US-English observations are supplied in the source; an English runtime voice is not yet included.</p>
-<h2>Changes in 0.2.68</h2>
-<p>Preserve resolved inner compounds after weak prefixes; extend -ol loan roots, -ieren inflections, -haft derivation with weak inflections and zer- prefix analysis. The requested standalone samt correction uses voiced s.</p>
-<p>The filters used at 16 kHz and above now use a causal minimum-phase fit. This removes the previous fixed half-kernel delay and reduces measured spectral error against the 11.025-kHz reference. Breathiness no longer attenuates the dental burst inside ts and tsch.</p>
-<p>The continuous roughness reported for female head sizes at or below 29 remains unresolved. Additional changing-formant comparisons do not yet explain it. No actual Windows/NVDA listening test or complete original-sound claim is made.</p>
-<h2>Changes in 0.2.67</h2>
-<p>Additional letter and syllable paths retain sh/ph/wh digraphs while respecting doubled consonants and established boundaries. Prefix analysis reuses more licensed stems; capitalized verb forms retain verbal stress. There are no new whole-word dictionary entries.</p>
-<p>Stressed pf frication contracts after consonants. Cross-syllable t/w groups retain the original closure, noise and tract targets. Rounded vocalic-r contacts preserve their incoming t/ts tract. Fricative-to-liquid aspiration and anticipated frication now use the correct voice-model source.</p>
-<p>The first audio batch is 40 ms and following batches are 80 ms, avoiding the previous long collection interval after a tiny first feed. Higher-rate filters avoid redundant calculations. High-rate timbre and remaining small-female-head breathiness problems are not fully resolved.</p>
-<p>ay/ey share their original nucleus paths, including weak final variants and be-/ge- boundaries. In female heads below 30, closing l/j/w after a vowel retain the original wider first-formant damping. This corrects a tract parameter, without claiming that the reported overall roughness is fully resolved.</p>
-<p>The reported continuous voiced roughness at female head sizes up to and including 29 remains unresolved. The closing-sonorant correction does not explain that symptom.</p>
-<h2>Sample rate</h2>
-<p>8, 11.025, 16, 22.05, 32, 44.1 and 48 kHz are available, with six oral/noise filters from 16 kHz, seven from 32 kHz and eight from 44.1 kHz. Higher rates are an engineering extension, not original Eloquence profiles: the available original supports only 8 and 11.025 kHz.</p>
-<p>Full word, prosody and acoustic equivalence remains unfinished. Technical comparisons and driver tests do not replace listening in NVDA. All voice presets, parameters and existing options remain available.</p>
-<h2>Shorten pauses</h2>
-<ul><li><strong>Never</strong> (default): automatic pauses unchanged.</li>
-<li><strong>Only at text end</strong>: shorten the final automatic pause of the whole NVDA synthesis request.</li>
-<li><strong>Always</strong>: also shorten automatic pauses within the request.</li></ul>
-<p>The native planner applies the policy before synthesis. Phone releases and sentence melody are retained. Text fragments and index marks do not create separate text endings. Explicit pause tags retain their duration.</p>
-<h2>Process ECI tags</h2>
-<p>Disabled by default; backticks and commands are then spoken literally. When enabled, supported commands are mixed SPR <code>`[.1ha]</code>, spelling <code>`ts0</code>/<code>`ts1</code>/<code>`ts2</code>, prominence <code>`0</code>/<code>`1</code>/<code>`2</code>/<code>`00</code>, pitch <code>`vb0…100</code>, speed <code>`vs40…250</code>, volume <code>`vv0…100</code>, inflection <code>`vf0…100</code>, and pause <code>`p0…60000</code>.</p>
-<p><code>`p0</code> adds no pause; <code>`p1</code> through <code>`p3</code> use the original minimum pause. Durations scale with speaking speed as in the reference. Tag settings are scoped to one request and do not change NVDA sliders. Unknown or invalid commands remain text. Voice and language changes and other ECI commands are not implemented; this is not complete ECI emulation.</p>
-<h2>Unicode</h2>
-<p>Unknown characters are omitted in running text. Spelling announces their hexadecimal code, with a script label when recognized. Greek letters use names in the selected language in both modes; Greek and Cyrillic are not transliterated into Latin. Backticks are always literal in spelling mode.</p>
-<h2>Limitations</h2>
-<p>Historical and additional word, sentence and acoustic contexts have been checked. Reproducible observations, tests and remaining mismatches are supplied in the source package. Generated test counts are not German-language coverage estimates.</p>
-<p>German analysis, melody and some acoustic contexts remain incomplete. Requested sound differences are preserved, including the final A policy in both input modes. Driver tests were run; Windows/NVDA listening was not available. German and an experimental US English voice are available.</p>
+<html lang="en">
+<head><meta charset="utf-8"><title>Eloquence C – User guide</title></head>
+<body>
+<!-- Generated from docs/USER-GUIDE.en.md; keep both copies in sync. -->
+<h1>Eloquence C – user guide</h1>
+<p>Eloquence C is the NVDA add-on from <a href="https://github.com/hozosch/Reloq-C">ReLoq C</a>. It develops the familiar Eloquence sound with pronunciation corrections, Unicode support and additional voice controls.</p>
+<h2>Install and select</h2>
+<p>You need NVDA 2026.1 or later in a 64-bit process. The package contains a Windows x64 DLL.</p>
+<ol>
+<li>Download a <code>.nvda-addon</code> file from <a href="https://github.com/hozosch/Reloq-C/releases">Releases</a> when a package is available there.</li>
+<li>Open it with NVDA, confirm installation and restart NVDA.</li>
+<li>Press <strong>NVDA+Control+S</strong>, choose <strong>Eloquence C (experimental)</strong> and confirm.</li>
+<li>Choose a language and voice in NVDA&#39;s <strong>Speech</strong> settings.</li>
+</ol>
+<p>The repository source ZIP is not an installable add-on. See the <a href="https://download.nvaccess.org/documentation/en/userGuide.html">NVDA user guide</a> for general NVDA instructions.</p>
+<h2>Languages and voices</h2>
+<p>There are 14 language choices. Both Chinese writing systems share one choice.</p>
+<table>
+<thead>
+<tr>
+<th>Language</th>
+<th>Dictionary prefix</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Mandarin Chinese</td>
+<td>CHS</td>
+</tr>
+<tr>
+<td>German</td>
+<td>DEU</td>
+</tr>
+<tr>
+<td>British English</td>
+<td>ENG</td>
+</tr>
+<tr>
+<td>American English</td>
+<td>ENU</td>
+</tr>
+<tr>
+<td>Latin American Spanish</td>
+<td>ESM</td>
+</tr>
+<tr>
+<td>Castilian Spanish</td>
+<td>ESP</td>
+</tr>
+<tr>
+<td>Finnish</td>
+<td>FIN</td>
+</tr>
+<tr>
+<td>French</td>
+<td>FRA</td>
+</tr>
+<tr>
+<td>Canadian French</td>
+<td>FRC</td>
+</tr>
+<tr>
+<td>Italian</td>
+<td>ITA</td>
+</tr>
+<tr>
+<td>Japanese</td>
+<td>JPN</td>
+</tr>
+<tr>
+<td>Korean</td>
+<td>KOR</td>
+</tr>
+<tr>
+<td>Brazilian Portuguese</td>
+<td>PTB</td>
+</tr>
+<tr>
+<td>Greek</td>
+<td>ELL</td>
+</tr>
+</tbody></table>
+<p>The voice presets are <strong>Reed, Shelly, Bobby, Rocko, Glen, Sandy, Grandma and Grandpa</strong>. Language selects pronunciation; voice selects a sound profile. NVDA can automatically switch between supported languages in appropriately marked text when its automatic language switching option is enabled.</p>
+<h2>Voice settings</h2>
+<p>These controls are in NVDA&#39;s Speech settings:</p>
+<ul>
+<li><strong>Rate and rate boost:</strong> reading speed and its extended range.</li>
+<li><strong>Pitch, inflection and volume:</strong> base pitch, sentence melody range and output level.</li>
+<li><strong>Head size:</strong> resonance and voice character.</li>
+<li><strong>Roughness and breathiness:</strong> additional voice-source characteristics.</li>
+<li><strong>Sample rate:</strong> 8, 11.025, 16, 22.05, 32, 44.1 or 48 kHz; the default is 11.025 kHz. Higher rates extend the frequency range and use more CPU. If speech stutters, compare with 11.025 or 22.05 kHz to help identify the cause.</li>
+</ul>
+<p><strong>Shorten pauses</strong> offers <strong>Never</strong>, <strong>Only at text end</strong> and <strong>Always</strong>. It changes automatically generated pauses. Explicitly requested pauses retain their duration.</p>
+<p><strong>Process ECI tags</strong> is off by default. When enabled, supported backtick commands in text can control pronunciation, spelling, emphasis, voice parameters, voices and languages. This option is not needed for ordinary reading. Pronunciation dictionaries can contain pronunciation annotations independently of this setting.</p>
+<h2>Pronunciation dictionaries</h2>
+<p>Select Eloquence C first, then open <strong>NVDA Settings → Eloquence C</strong>.</p>
+<p><strong>Use community pronunciation dictionaries</strong> adds German and American English entries from <a href="https://github.com/eigencrow/IBMTTSDictionaries">eigencrow/IBMTTSDictionaries</a>. It is off by default. <strong>Update dictionaries now</strong> checks the current <code>master</code> branch and applies a complete update in the background. Updating requires internet access.</p>
+<p>Use <strong>Add file</strong> to select your own Dic files and assign a language and dictionary type. Filenames can be arbitrary; files stay at their original locations. Later files in the list take priority. Choose <strong>OK</strong> or <strong>Apply</strong> to save the selection.</p>
+<p><strong>Open dictionary folder</strong> opens an additional folder whose files are discovered automatically. Combine a prefix from the language table with one of these suffixes:</p>
+<ul>
+<li><code>main.dic</code> for Main words, such as <code>DEUmain.dic</code> or <code>ENUmain.dic</code>.</li>
+<li><code>Root.dic</code> for word roots, such as <code>DEURoot.dic</code>.</li>
+<li><code>abbr.dic</code> for abbreviations, such as <code>DEUabbr.dic</code>.</li>
+</ul>
+<p>Files use the native Dic format: Windows-1252 encoding, one entry per line and a tab between the lookup word and replacement. Main keys are case-sensitive, and ordinary text replacements subsequently undergo normal text analysis. Root and pronunciation entries are handled at their respective dictionary stages.</p>
+<p>Edits to selected files and files in the dictionary folder are detected in the background, including newly created files and editor-style file replacements. Invalid data leaves the last valid set active. Community updates do not overwrite your own files. Local changes to bundled Dic files are also taken into account when community dictionaries are enabled.</p>
+<p>The update button updates <strong>dictionaries</strong>. Automatic <strong>add-on</strong> updates are not yet implemented; install a new <code>.nvda-addon</code> package to update the add-on.</p>
+<h2>Reporting problems</h2>
+<p>The project is still experimental. The reported American English crash with dictionaries, and Greek-letter differences in Finnish and Korean NVDA sentences, remain under investigation. See the <a href="https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md">technical work status</a> for details.</p>
+<p>When <a href="https://github.com/hozosch/Reloq-C/issues">reporting an issue</a>, include a short example, language, voice, version, sample rate and whether dictionaries are enabled. Explain whether speech stops, pronunciation is wrong or NVDA itself exits.</p>
+</body>
 </html>

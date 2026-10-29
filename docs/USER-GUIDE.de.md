@@ -1,0 +1,77 @@
+# Eloquence C – Bedienungsanleitung
+
+Eloquence C ist die NVDA-Erweiterung des Projekts [ReLoq C](https://github.com/hozosch/Reloq-C). Sie entwickelt den Eloquence-Klang mit gezielten Aussprachekorrekturen, Unicode-Unterstützung und zusätzlichen Klangmöglichkeiten weiter.
+
+## Installieren und auswählen
+
+Benötigt wird NVDA ab 2026.1 mit einem 64-Bit-Prozess. Das Paket enthält eine Windows-x64-DLL.
+
+1. Lade eine `.nvda-addon`-Datei aus den [Releases](https://github.com/hozosch/Reloq-C/releases), sobald dort ein Paket angeboten wird.
+2. Öffne die Datei mit NVDA, bestätige die Installation und starte NVDA neu.
+3. Drücke **NVDA+Strg+S**, wähle **Eloquence C (experimentell)** und bestätige.
+4. Wähle in den NVDA-Einstellungen unter **Sprachausgabe** die gewünschte Sprache und Stimme.
+
+Die ZIP-Datei des Repository-Quellcodes ist kein installierbares Add-on. Weitere Bedienungshinweise bietet das [NVDA-Benutzerhandbuch](https://download.nvaccess.org/documentation/de/userGuide.html).
+
+## Sprachen und Stimmen
+
+Es gibt 14 Sprachauswahlen. Die beiden chinesischen Schriftvarianten teilen sich eine Auswahl.
+
+| Sprache | Wörterbuch-Präfix |
+| --- | --- |
+| Chinesisch (Mandarin) | CHS |
+| Deutsch | DEU |
+| Britisches Englisch | ENG |
+| Amerikanisches Englisch | ENU |
+| Lateinamerikanisches Spanisch | ESM |
+| Spanisch aus Spanien | ESP |
+| Finnisch | FIN |
+| Französisch | FRA |
+| Kanadisches Französisch | FRC |
+| Italienisch | ITA |
+| Japanisch | JPN |
+| Koreanisch | KOR |
+| Brasilianisches Portugiesisch | PTB |
+| Griechisch | ELL |
+
+Die Stimmprofile heißen **Reed, Shelly, Bobby, Rocko, Glen, Sandy, Grandma und Grandpa**. Die Sprachwahl legt die Aussprache fest, die Stimmwahl ein Klangprofil. NVDA kann bei entsprechend ausgezeichneten Texten automatisch zwischen unterstützten Sprachen wechseln, wenn diese NVDA-Option aktiviert ist.
+
+## Die Stimme einstellen
+
+Die folgenden Optionen befinden sich in den Sprachausgaben-Einstellungen:
+
+- **Geschwindigkeit und Sprachgeschwindigkeit anheben:** Lesetempo und erweiterter Geschwindigkeitsbereich.
+- **Stimmhöhe, Betonung und Lautstärke:** Grundtonhöhe, Umfang der Sprachmelodie und Wiedergabepegel.
+- **Kopfgröße:** verändert die Resonanzen und damit den Stimmcharakter.
+- **Rauigkeit und Behauchtheit:** zusätzliche Eigenschaften der Stimmquelle.
+- **Abtastrate:** 8, 11,025, 16, 22,05, 32, 44,1 oder 48 kHz. Voreingestellt sind 11,025 kHz. Höhere Raten erweitern die Klangbandbreite und benötigen mehr Rechenleistung. Bei Aussetzern hilft zum Eingrenzen ein Vergleich mit 11,025 oder 22,05 kHz.
+
+**Pausen verkürzen** hat drei Werte: **Nie**, **Nur am Textende** und **Immer**. Die Kürzung betrifft automatisch erzeugte Pausen. Ausdrücklich angegebene Pausen behalten ihre Dauer.
+
+**ECI-Tags verarbeiten** ist zunächst ausgeschaltet. Eingeschaltet können unterstützte Backtick-Befehle im Text Aussprache, Buchstabierung, Betonung, Stimmparameter, Stimmen und Sprachen steuern. Für gewöhnliches Lesen ist die Option nicht erforderlich. Eigene Aussprachewörterbücher können Ausspracheangaben unabhängig von dieser Einstellung enthalten.
+
+## Aussprachewörterbücher
+
+Wähle zuerst Eloquence C als aktive Sprachausgabe. Öffne dann **NVDA-Einstellungen → Eloquence C**.
+
+Mit **Gemeinschaftswörterbücher für die Aussprache verwenden** ergänzt du Deutsch und US-Englisch um Einträge aus [eigencrow/IBMTTSDictionaries](https://github.com/eigencrow/IBMTTSDictionaries). Die Option ist zunächst ausgeschaltet. **Wörterbücher jetzt aktualisieren** prüft den aktuellen Zweig `master`; eine neue vollständige Version wird im Hintergrund übernommen. Für diese Aktualisierung wird Internet benötigt.
+
+Mit **Datei hinzufügen** kannst du eigene Dic-Dateien auswählen und ihnen Sprache und Wörterbuchtyp zuordnen. Die Dateien dürfen beliebig heißen und bleiben an ihrem bisherigen Ort. Spätere Dateien in der Liste haben Vorrang. **OK** oder **Übernehmen** speichert die Auswahl.
+
+Mit **Wörterbuchordner öffnen** erreichst du zusätzlich einen Ordner für automatisch erkannte Dateien. Verwende dort das Präfix aus der Sprachtabelle und einen dieser Namen:
+
+- `main.dic` für das Hauptwörterbuch, zum Beispiel `DEUmain.dic` oder `ENUmain.dic`.
+- `Root.dic` für das Stammwörterbuch, zum Beispiel `DEURoot.dic`.
+- `abbr.dic` für Abkürzungen, zum Beispiel `DEUabbr.dic`.
+
+Die Dateien verwenden das native Dic-Format: Windows-1252, ein Eintrag pro Zeile und ein Tabulator zwischen Suchwort und Ersetzung. Main unterscheidet Groß- und Kleinschreibung; gewöhnliche Textersetzungen durchlaufen anschließend die normale Textanalyse. Stamm- und Ausspracheangaben werden an der jeweiligen Wörterbuchstelle verarbeitet.
+
+Änderungen an eingebundenen Dateien und Dateien im Wörterbuchordner werden im Hintergrund erkannt. Das gilt auch für neu angelegte Dateien und für Editoren, die eine Datei beim Speichern ersetzen. Bei ungültigen Daten bleibt der letzte gültige Stand aktiv. Eigene Dateien werden durch Gemeinschaftswörterbuch-Updates nicht überschrieben. Bei aktivierten Gemeinschaftswörterbüchern werden auch lokale Änderungen an den mitgelieferten Dic-Dateien berücksichtigt.
+
+Der Aktualisierungsschalter aktualisiert die **Wörterbücher**. Eine automatische Aktualisierung des **Add-ons** ist noch nicht eingerichtet; ein neues Add-on-Paket wird wieder als `.nvda-addon` installiert.
+
+## Fehler melden
+
+Das Projekt ist noch experimentell. Der gemeldete US-Englisch-Absturz mit Wörterbüchern und Unterschiede bei griechischen Buchstaben in finnischen und koreanischen NVDA-Sätzen werden weiter untersucht. Technische Details stehen im [Arbeitsstand](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md).
+
+Für eine [Fehlermeldung](https://github.com/hozosch/Reloq-C/issues) helfen ein kurzer Beispieltext, Sprache, Stimme, Version, Abtastrate und die Angabe, ob Wörterbücher eingeschaltet sind. Beschreibe auch, ob die Ausgabe abbricht, ein Wort falsch klingt oder NVDA selbst beendet wird.

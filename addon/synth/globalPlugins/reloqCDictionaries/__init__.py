@@ -1,5 +1,6 @@
 """Accessible runtime management of native pronunciation dictionary data."""
 import weakref
+import os
 
 import addonHandler
 import globalPluginHandler
@@ -56,6 +57,10 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.update = wx.Button(self, label=_("&Update dictionaries now"))
         self.update.Bind(wx.EVT_BUTTON, self.on_update)
         row.Add(self.update, 0, wx.RIGHT, 8)
+        folder = wx.Button(self, label=_("Open dictionary &folder"))
+        folder.Bind(wx.EVT_BUTTON, self.on_folder)
+        row.Add(folder, 0, wx.RIGHT, 8)
+        self.edits.append(folder)
         content.Add(row, 0, wx.ALL, 10)
         self.Bind(wx.EVT_WINDOW_DESTROY, self.on_destroy)
         self.redraw()
@@ -64,6 +69,10 @@ class EloquenceSettingsPanel(SettingsPanel):
     def enable_controls(self, enabled):
         for control in (*self.edits, self.files, self.update, self.community):
             control.Enable(enabled)
+
+    def on_folder(self, event):
+        if self.current_synth():
+            os.startfile(str(self.synth.dictionary_manager().local_directory))
 
     def current_synth(self):
         return self.synth is not None and synthDriverHandler.getSynth() is self.synth

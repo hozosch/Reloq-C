@@ -2,7 +2,7 @@
 # The source language of the interface is English.
 msgid ""
 msgstr ""
-"Project-Id-Version: Eloquence C 0.2.186\n"
+"Project-Id-Version: Eloquence C 0.2.187\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-10-12 22:55+0300\n"
 "PO-Revision-Date: 2026-10-12 00:00+0000\n"
@@ -127,13 +127,13 @@ msgstr "Männlich 4"
 
 #. Translators: Add-on name shown in NVDA's add-on manager.
 #: addon/build_translations.py:30
-msgid "Eloquence C: fifteen language variants"
-msgstr "Eloquence C: fünfzehn Sprachvarianten"
+msgid "Eloquence C: fourteen language variants"
+msgstr "Eloquence C: vierzehn Sprachvarianten"
 
 #. Translators: Add-on description; this refers to the spoken language.
 #: addon/build_translations.py:32
-msgid "Native C synthesizer with fifteen language variants at 8 to 48 kHz, including Japanese, Korean, Chinese and Greek."
-msgstr "Nativer C-Synthesizer mit fünfzehn Sprachvarianten bei 8 bis 48 kHz, einschließlich Japanisch, Koreanisch, Chinesisch und Griechisch."
+msgid "Native C synthesizer with fourteen language variants at 8 to 48 kHz, including Japanese, Korean, Chinese and Greek."
+msgstr "Nativer C-Synthesizer mit vierzehn Sprachvarianten bei 8 bis 48 kHz, einschließlich Japanisch, Koreanisch, Chinesisch und Griechisch."
 
 msgid "English (United States)"
 msgstr "Englisch (USA)"
@@ -267,3 +267,7 @@ msgstr "Wörterbücher &jetzt aktualisieren"
 
 msgid "Wait for the dictionary update to finish."
 msgstr "Bitte warten, bis die Wörterbuchaktualisierung abgeschlossen ist."
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py
+msgid "Open dictionary &folder"
+msgstr "Wörterbuch&ordner öffnen"

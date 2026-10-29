@@ -1,28 +1,64 @@
-# Arbeitsstand nach dem GitHub-Import
+# Technischer Arbeitsstand: 0.2.187
 
-Ausgangspunkt ist 0.2.186. Der Import ändert das Laufzeitverhalten nicht und ist kein neues Add-on. Chinesisch und der eigene deutsche Akustikplaner bleiben im angenommenen Stand. Die verbindlichen Ausspracheentscheidungen stehen in `GEWUENSCHTE-ABWEICHUNGEN-DE.md`.
+Die Projektbeschreibung und Bedienungsanleitungen stehen jetzt getrennt von diesen Entwicklungsnotizen. Ausgangspunkt für die Änderungen ist der unveränderte GitHub-Import von 0.2.186. Der eigene deutsche Akustikplaner, Chinesisch und die Entscheidungen in [GEWUENSCHTE-ABWEICHUNGEN-DE.md](../GEWUENSCHTE-ABWEICHUNGEN-DE.md) bleiben erhalten.
 
-## Offene Fehler aus dem letzten Nutzertest
+## Korrigiert: Main-Textersetzungen
 
-1. US-Englisch stürzt mit aktivierten Wörterbüchern weiterhin in NVDA ab. Der Fehler ist mit dem bisherigen isolierten Linux-Test nicht reproduziert. Vor einer Erfolgsmeldung müssen insbesondere Aktualisierung, Abbruch, Sprachwechsel und die Lebensdauer der nativen Wörterbuchdaten im tatsächlichen Treiberpfad geprüft werden.
-2. Finnisch und Koreanisch behandeln griechische Buchstaben beim normalen Satzlesen weiterhin falsch. Gemeint ist ausdrücklich nicht die einzelne Zeichenlesung. Frühere isolierte C- und Adaptertests reichen als Nachweis nicht aus; der tatsächliche Ablauf mit NVDA-Sprachbefehlen muss geprüft werden.
-3. Main-Textersetzungen müssen Groß-/Kleinschreibung beachten und die normale kontextbezogene Analyse durchlaufen. In `nvda/_reloq_dictionary_manager.py` werden deutsche Main-Schlüssel derzeit beim Zusammenführen kleingeschrieben. `vendor/openevv61/src/reloq61_dictionary.inc` kompiliert einfache Textersetzungen bereits beim Laden zu festen Lautfolgen. Der deutsche Lexikon-Resolver in `vendor/openevv61/src/eci/dict/eci_usrdct.c` faltet Main und Root ebenfalls zusammen. Diese Stufen müssen passend zu den jeweiligen Wörterbuchvolumes getrennt werden. Ein einzelner Sonderfall für ETI-Eloquence genügt nicht.
-4. Änderungen von Dic-Dateien im vorgesehenen Ordner werden beim Nutzer nicht übernommen. Der bestehende Monitor beobachtet nur ausdrücklich registrierte eigene Quelldateien. Er beobachtet weder den gesamten mitgelieferten/aktiven Wörterbuchordner noch neu angelegte Dateien darin. Die Herkunftsprüfung eines heruntergeladenen Community-Snapshots muss erhalten bleiben; lokale Bearbeitung braucht einen klaren, verlässlich beobachteten Weg.
+Deutsche Main-Schlüssel werden beim Zusammenführen und im C-Lexikon nicht mehr mit Root-Schlüsseln zusammengefaltet. Main unterscheidet die Schreibweise; das deutsche Root-Wörterbuch behält seine bisherige Suche ohne Unterscheidung der Groß- und Kleinschreibung.
 
-Diese Punkte sind weiterhin offen. Insbesondere ist eine bestandene Linux-Prüfung keine Bestätigung, dass ein NVDA-Absturz behoben wurde.
+Gewöhnliche deutsche Main-Ersetzungen werden nicht mehr beim Laden als isolierte Wörter zu festen Lautfolgen kompiliert. Sie werden innerhalb des C-Textplaners einmal aufgelöst und durchlaufen anschließend die gewöhnliche Wort- und Satzanalyse. Dadurch behält etwa eine Ersetzung durch ein schwaches Wort wie „bei“ ihre Rolle im Satz. Bindestrichglieder werden bei derselben Wörterbuchsuche berücksichtigt. Das ist keine Sonderregel für ETI-Eloquence. Explizite Ausspracheangaben und Root-Einträge behalten ihre eigenen Lexikonstufen.
 
-## Geprüfter Import
+NVDA-Indizes werden von der ursprünglichen Eingabe auf den analysierten Text abgebildet. Bei einem erneuten Analyseversuch bleiben die ursprünglichen Grenzen gültig. Ersetzungen werden innerhalb eines Analyseversuchs nicht rekursiv wieder auf sich selbst angewendet.
 
-- Die vollständige historische Quelle wurde mit ihrem dokumentierten SHA-256 geprüft. `docs/source-0.2.186.json` enthält die Herkunft und Prüfsummen der unveränderten aktiven Dateien.
-- Die große Unicode-Namentabelle wurde lediglich an Zeilengrenzen auf mehrere C-Includes verteilt. Zusammengesetzt ergeben sie exakt die ursprünglichen Bytes; Präprozessor-Ausgabe und erzeugte Objektdatei waren vor und nach der Aufteilung bytegleich.
-- Der veröffentlichte Git-Dateibaum wurde vor dem Commit mit dem lokalen Git-Dateibaum abgeglichen.
-- Frisch gebauter nativer Kern: öffentliche ABI mit 21 ECI-Symbolen, Diagnostikprüfung und 13 Tests der Wörterbuchverwaltung bestanden.
-- Eine zusätzliche Linux-Serie mit 180 Äußerungen, wiederholtem Wörterbuchwechsel und Neuerzeugen/Freigeben des US-Englisch-Kerns lief durch. Sie reproduzierte den gemeldeten NVDA-Absturz nicht. PCM wurde ausschließlich im RAM verarbeitet.
+`nvda/test_eci_dictionary_semantics.py` vergleicht die tatsächliche native PCM-Ausgabe und Indexpositionen von Ersetzungen mit der normalen Texteingabe. Die 25 Prüfungen umfassen schwache Wörter, verschiedene Schreibweisen, Zahlen, Umlaute, Mehrwort-Ersetzungen, Bindestriche, explizite Ausspracheangaben und zyklische Ersetzungen. PCM bleibt im RAM. Die bereits vorher nicht unterstützte Eingabe `Test-504` gehört nicht zu den behaupteten Korrekturen.
 
-Der wiederholbare Lebensdauertest liegt unter `tools/check_dictionary_lifetime.py`; zum kurzen Prüfen nach dem nativen Build:
+## Korrigiert: geänderte Dic-Dateien übernehmen
+
+Die Wörterbuchverwaltung beobachtet neben ausdrücklich ausgewählten Dateien jetzt einen eigenen Wörterbuchordner. In der NVDA-Einstellungskategorie **Eloquence C** öffnet **Wörterbuchordner öffnen** diesen Ordner. Dort werden die kanonischen Dateinamen aus der Bedienungsanleitung automatisch erkannt, einschließlich neu angelegter, entfernter und beim Speichern ersetzter Dateien.
+
+Bei aktivierten Gemeinschaftswörterbüchern werden auch lokale Änderungen an den mitgelieferten Dic-Dateien berücksichtigt. Ein bearbeitetes Volume ersetzt dieses mitgelieferte Volume, sodass auch entfernte Einträge verschwinden. Ausdrücklich ausgewählte eigene Dateien haben weiterhin Vorrang. Die Herkunftsprüfung heruntergeladener GitHub-Snapshots bleibt bestehen; bearbeitete Dateien werden als lokale Daten behandelt. Erzeugte Cache-Snapshots sind keine Bearbeitungsordner.
+
+Die Prüfung und das Zusammenführen laufen im Hintergrund. Der Sprach-Worker erhält vollständige Datenverzeichnisse. Die 15 Prüfungen in `nvda/test_dictionary_manager.py` decken unter anderem Änderungen, neue Dateien, atomisches Ersetzen, Entfernen, Fehlerbehandlung und das Zusammenwirken mit Community-Updates ab.
+
+## Weiter offen: US-Englisch mit Wörterbüchern
+
+Der gemeldete Absturz in echtem NVDA ist bislang nicht reproduziert. Diese Version enthält deshalb **keine nachgewiesene Korrektur dieses Absturzes**.
+
+Bei der Ursachensuche auf dem Stand 0.2.186 wurden die 70.900 Schlüssel der damaligen US-Main- und Root-Dateien in Satzkontexten geprüft. 859 zunächst mit falscher Eingabekodierung übergebene Schlüssel wurden erneut als korrektes UTF-8 geprüft und vollständig gesprochen. Dabei wurde kein Absturz nachgewiesen. Zusätzliche AddressSanitizer-Prüfungen erfassten Wörterbuchwechsel, Erzeugen/Freigeben, lange verbundene Texte und Abbruch; für einen Teil dieser Läufe wurde auch der private Arena-Allokator instrumentiert. Diese Entwicklungsinstrumentierung gehört nicht zum Add-on.
+
+Der tatsächliche neue Windows-PE-Kern wurde außerdem für zwei Wörterbuchfälle in einem CPU-Test mit modellierten Windows-APIs ausgeführt und mit dem nativen Kern verglichen. Das prüft Maschinenkode und Schnittstellen, ersetzt aber weder echtes Windows noch NVDA und dessen zeitliche Abläufe. Die Linux-Tests und dieser PE-Test bestätigen keine Behebung des Nutzerfehlers.
+
+## Weiter offen: griechische Buchstaben in finnischen und koreanischen Sätzen
+
+Gemeint ist normales Satzlesen. Kurze native Beispiele mit α, β, γ und μ ergeben die Ausgabe der jeweiligen lokalen Buchstabennamen. Damit wurde die gemeldete Abweichung nicht reproduziert; derselbe Befund bestand bereits vor 0.2.187. Eine erneute identische Erfolgsmeldung wäre deshalb kein Nachweis einer Korrektur.
+
+Bei sehr langen Wiederholungen können auch zwei Ausgaben derselben Eingabe geringfügig voneinander abweichen. Ein alleiniger PCM-Hashunterschied solcher langen Läufe wurde deshalb nicht als Beleg für eine falsche Buchstabenlesung gewertet. In dieser Version wurde keine neue griechische Aussprachekorrektur vorgenommen.
+
+## Diagnose beim nächsten NVDA-Test
+
+Beim Laden protokolliert der Treiber die tatsächliche C-Kernversion, den DLL-Pfad und die Sprache. Für diesen Stand muss die Kernversion `0.2.187.0` erscheinen. Auf Debug-Protokollstufe werden zusätzlich die Sprachbereiche und die Unicode-Codepunkte enthaltener griechischer Buchstaben erfasst. Der gesprochene Text wird durch diese neue Diagnose nicht protokolliert.
+
+Für die beiden verbleibenden Fehler fehlen ein kurzer auslösender NVDA-Text und der tatsächliche Ablauf: ausgewählte Sprache, Stimme, Wörterbücher, automatische Sprachumschaltung sowie die Unterscheidung zwischen abgebrochener Sprachausgabe und beendetem NVDA-Prozess. Diese Angaben sind nötig, um den bisher geprüften Pfad mit dem betroffenen Pfad abzugleichen.
+
+## Wiederholbare Prüfungen
+
+Die Build-Schritte stehen in [BUILD.md](BUILD.md). Nach dem nativen Build sind insbesondere diese Prüfungen verfügbar:
 
 ```sh
+python3 nvda/test_dictionary_manager.py
+python3 nvda/test_eci_dictionary_semantics.py
+python3 addon/test_synth.py
+python3 addon/test_synth.py de
+python3 nvda/test_eci_transport.py
 python3 -X faulthandler tools/check_dictionary_lifetime.py --cycles 1
 ```
 
-Für die nächste Version gelten weiterhin: kein Laufzeit-Bytecode, keine Original-DLL/SYN im Add-on, keine Wiederholungscaches und keine Audiodateien bei Prüfungen. Historische Quellarchive bleiben vollständig erhalten; das Größenlimit für ein vollständiges Quellpaket beträgt 512 MiB.
+Der Lebensdauertest kann zusätzlich Schlüssel einer nativen Windows-1252-Dic-Datei als korrektes UTF-8 in Satzkontexten sprechen:
+
+```sh
+python3 -X faulthandler tools/check_dictionary_lifetime.py --corpus data/community/ENUmain.dic
+```
+
+Alle hier beschriebenen Laufzeitprüfungen verarbeiten PCM ausschließlich im RAM. Die öffentliche ABI behält 21 ECI-Symbole. Die Linux-Verknüpfung weist jetzt wie der Windows-Build unaufgelöste Symbole zurück.
+
+Es gelten weiterhin: kein Laufzeit-Bytecode, keine Original-DLL/SYN im Add-on, keine Wiederholungscaches und keine Audiodateien bei Prüfungen. Die historischen Quellarchive bleiben vollständig erhalten; das Größenlimit für ein vollständiges Quellpaket beträgt 512 MiB. Herkunft und Prüfsummen des unveränderten Imports sind in `docs/source-0.2.186.json` dokumentiert. Die früheren Add-on-Prüfnotizen stehen unverändert unter [history](history/README.md).

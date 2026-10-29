@@ -16,9 +16,9 @@ import threading
 from urllib.request import urlopen
 
 if __package__:
-    from ._reloq_dictionaries import FILES, LIMIT, SHA, fetch_master, validate_snapshot
+    from ._reloq_dictionaries import FILES, LIMIT, SHA, _blob, fetch_master, validate_snapshot
 else:
-    from _reloq_dictionaries import FILES, LIMIT, SHA, fetch_master, validate_snapshot
+    from _reloq_dictionaries import FILES, LIMIT, SHA, _blob, fetch_master, validate_snapshot
 
 PREFIXES = {0x10000: "ENU", 0x10001: "ENG", 0x20000: "ESP", 0x20001: "ESM",
             0x30000: "FRA", 0x30001: "FRC", 0x40000: "DEU", 0x50000: "ITA",
@@ -27,6 +27,17 @@ PREFIXES = {0x10000: "ENU", 0x10001: "ENG", 0x20000: "ESP", 0x20001: "ESM",
 SUFFIXES = ("main", "Root", "abbr")
 _LOWER = bytes(c + 32 if 65 <= c <= 90 or 0xc0 <= c <= 0xde and c != 0xd7 else c for c in range(256))
 NAMES = frozenset(prefix + suffix + ".dic" for prefix in PREFIXES.values() for suffix in SUFFIXES)
+
+
+def directory_sources(directory):
+    """Discover canonical volume filenames, including newly created files."""
+    found = {}
+    for language, prefix in PREFIXES.items():
+        for volume, suffix in enumerate(SUFFIXES):
+            path = Path(directory) / (prefix + suffix + ".dic")
+            if path.is_file():
+                found.setdefault(path.name, DictionarySource(str(path.resolve()), language, volume))
+    return tuple(found[name] for name in sorted(found))
 
 
 @dataclass(frozen=True)
@@ -133,7 +144,7 @@ def validate_merged(directory):
     return manifest
 
 
-def merge_sources(community, sources, cache):
+def merge_sources(community, sources, cache, *, replacements=None):
     tables = {}
     conflicts = 0
     commit = validate_snapshot(community)["commit"] if community else None
@@ -142,9 +153,9 @@ def merge_sources(community, sources, cache):
         nonlocal conflicts
         table = tables.setdefault(name, {})
         for key, value in _entries(data, name):
-            # German lexical keys use the same case folding as the native
-            # word table. Preserve the winning source's actual key/value bytes.
-            identity = key.translate(_LOWER) if name in ("DEUmain.dic", "DEURoot.dic") else key
+            # Root lookup folds German keys; Main is a case-sensitive text
+            # normalization stage and must retain distinct spelling variants.
+            identity = key.translate(_LOWER) if name == "DEURoot.dic" else key
             if identity in table:
                 conflicts += 1
             table[identity] = (key, value)
@@ -153,6 +164,11 @@ def merge_sources(community, sources, cache):
         for name in FILES:
             if name.endswith(".dic"):
                 add(name, _read(Path(community) / name))
+    for name, data in (replacements or {}).items():
+        if name not in NAMES:
+            raise ValueError("invalid local dictionary filename")
+        tables[name] = {}
+        add(name, data)
     for source in sources:
         add(source.name, _read(source.path))
     encoded = {name: b"".join(key + b"\t" + value + b"\n" for key, value in sorted(table.values()))
@@ -191,6 +207,8 @@ def merge_sources(community, sources, cache):
 class DictionaryManager:
     def __init__(self, bundled, cache, deliver, on_error, *, fetch=urlopen, watch_interval=0.5):
         self.bundled, self.cache = Path(bundled), Path(cache)
+        self.local_directory = self.cache / "dictionaries"
+        self.local_directory.mkdir(parents=True, exist_ok=True)
         self.deliver, self.on_error, self.fetch = deliver, on_error, fetch
         self._lock = threading.Lock()
         self._revision, self._closed, self._enabled = 0, False, False
@@ -225,8 +243,46 @@ class DictionaryManager:
             validate_snapshot(path)
             return path
         except (OSError, ValueError, KeyError, TypeError):
-            validate_snapshot(self.bundled)
-            return self.bundled
+            try:
+                validate_snapshot(self.bundled)
+                return self.bundled
+            except (OSError, ValueError, KeyError, TypeError):
+                # The installed dictionary folder is also user editable.
+                # Treat those bytes as local data, never as a verified
+                # download or as a reason to discard all other volumes.
+                return None
+
+    def _state(self, enabled, sources):
+        paths = [Path(s.path) for s in sources]
+        folders = [self.local_directory]
+        if enabled:
+            folders.append(self.bundled)
+        for folder in folders:
+            paths.extend(folder / name for name in sorted(NAMES))
+        result = []
+        for path in paths:
+            try:
+                st = path.stat()
+                value = (st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns)
+            except OSError as error:
+                value = (error.errno,)
+            result.append((str(path), value))
+        return tuple(result)
+
+    def _bundle_changes(self):
+        manifest = json.loads((self.bundled / "manifest.json").read_text(encoding="utf8"))
+        expected = manifest["files"]
+        changes = {}
+        for name in NAMES:
+            path = self.bundled / name
+            if not path.exists():
+                if name in expected:
+                    changes[name] = b""
+                continue
+            data = _read(path)
+            if name not in expected or _blob(data) != expected[name]["sha"]:
+                changes[name] = data
+        return changes
 
     def _emit(self, revision, path):
         with self._lock:
@@ -275,15 +331,17 @@ class DictionaryManager:
             self._revision += 1
             revision, enabled, sources = self._revision, self._enabled, self._sources
             self._working_revision = revision
-            if sources and self._watch_thread is None:
+            if self._watch_thread is None:
                 self._watch_thread = threading.Thread(target=self._watch,
                     name="Eloquence dictionary file monitor", daemon=True)
                 self._watch_thread.start()
         self._watch_event.set()
-        if not enabled and not sources:
+        local = directory_sources(self.local_directory)
+        if not enabled and not sources and not local:
             self._emit(revision, None)
-        elif enabled and not sources:
-            self._emit(revision, self._community())
+        # File verification and merging belong to the background worker.
+        # In particular, do not emit an older cached set before applying a
+        # locally edited bundled volume, or read a large root file on the UI.
         threading.Thread(target=self._work, args=(revision, enabled, sources, update, completed, save),
                          name="Eloquence dictionary update", daemon=True).start()
         return revision
@@ -298,34 +356,40 @@ class DictionaryManager:
                 if self._closed:
                     return
                 sources = self._committed_sources
+                enabled = self._enabled
                 busy, accepted = self._working_revision is not None, self._watched_state
                 revision = self._revision
-            if sources and not busy:
-                state = _source_state(sources)
+            if not busy:
+                state = self._state(enabled, sources)
                 if state != accepted and state == candidate:
                     candidate = None
                     self._request(update=False, watch_revision=revision)
                 else:
                     candidate = state if state != accepted else None
-            self._watch_event.wait(self._watch_interval if sources else None)
+            self._watch_event.wait(self._watch_interval)
             self._watch_event.clear()
 
-    def _build(self, community, sources):
-        if not sources:
+    def _build(self, community, sources, enabled):
+        replacements = self._bundle_changes() if enabled else {}
+        local = directory_sources(self.local_directory)
+        if enabled and community is None:
+            replacements = {s.name: _read(s.path) for s in directory_sources(self.bundled)}
+        sources = local + sources
+        if not sources and not replacements:
             if community:
                 manifest = validate_snapshot(community)
                 return community, {"community_commit": manifest["commit"], "own_sources": 0,
                                    "files": {n: {} for n in FILES if n.endswith(".dic")}}
             return None, {"community_commit": None, "own_sources": 0, "files": {}}
-        return merge_sources(community, sources, self.cache)
+        return merge_sources(community, sources, self.cache, replacements=replacements)
 
     def _work(self, revision, enabled, sources, update, completed, save):
-        state = _source_state(sources)
+        state = self._state(enabled, sources)
         committed = False
         try:
             community = self._community() if enabled else None
-            path, details = self._build(community, sources)
-            if _source_state(sources) != state:
+            path, details = self._build(community, sources, enabled)
+            if self._state(enabled, sources) != state:
                 raise OSError("dictionary source changed while it was being read")
             with self._lock:
                 if self._closed or self._revision != revision:
@@ -339,7 +403,7 @@ class DictionaryManager:
             if update:
                 latest = fetch_master(self.cache, fetch=self.fetch, publish=False)
                 if enabled and (community is None or latest.name != validate_snapshot(community)["commit"]):
-                    path, details = self._build(latest, sources)
+                    path, details = self._build(latest, sources, enabled)
                 with self._lock:
                     if not self._closed and self._revision == revision:
                         _atomic_json(self.cache / "current.json", {"commit": latest.name})

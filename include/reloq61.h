@@ -53,6 +53,8 @@ void reloq61_worker_free(void *);
 void *reloq61_worker_scope(void *);
 int reloq61_worker_dictionary(void *,const char *);
 size_t reloq61_dictionary_match(const unsigned char *,size_t);
+const char *reloq61_dictionary_main_text(const unsigned char *,size_t);
+int reloq61_dictionary_text_scope(int);
 uint64_t reloq61_dictionary_hits(void);
 int reloq61_labiodental_gain(void *state);
 int reloq61_language_supported(int language);

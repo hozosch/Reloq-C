@@ -91,6 +91,7 @@ typedef struct LexicalView {
     struct reloq_lexicon_override *records;
     char *strings;
     size_t count;
+    size_t main_count;
     unsigned references;
 } LexicalView;
 static void lexical_view_release(LexicalView *view)
@@ -108,9 +109,16 @@ typedef struct DictionarySet {
                                                is recorded */
     delta_state          *machine;          /* +0x10 */
     int32_t               status;           /* +0x14 */
-    UserDict             *words;           /* complete lexical main entries */
+    UserDict             *words;           /* case-folded lexical Root entries */
+    UserDict             *main_words;      /* exact-case Main pronunciations */
     LexicalView *lexical_view;
 } DictionarySet;
+
+static _Thread_local int main_text_analyzed;
+int reloq61_dictionary_text_scope(int normalized)
+{
+    int previous=main_text_analyzed;main_text_analyzed=normalized;return previous;
+}
 
 /* What a caller has to allocate for one. Only this file knows what is in it. */
 const uint32_t ds_bytes = sizeof(DictionarySet);
@@ -522,6 +530,10 @@ THIS int32_t ud_lookupAndTranslate(UserDict *u, delta_state *d,
     xlat = hashLookupString(u->hash, u->last);
     if (xlat == 0)
         return UD_NOT_FOUND;
+    if(main_text_analyzed&&!strchr(xlat,'`')) {
+        DictionarySet *set=DL_CURRENT(DT_LANG(d));
+        if(set&&u==set->vol[0])return UD_NOT_FOUND;
+    }
 
     del_two_point(d, stream, l, r);
     OWNER_MOVED(d) = 1;
@@ -558,6 +570,7 @@ THIS int32_t ud_lookupUndo(UserDict *u, delta_state *d, int32_t l, int32_t r)
    instead of asking a volume. */
 static void ds_finish(DictionarySet *s)
 {
+    s->main_words=NULL;
     s->lexical_view=NULL;
     if (s->vol[0] != 0 && s->vol[1] != 0 && s->vol[2] != 0)
         s->status = UD_OK;
@@ -639,6 +652,7 @@ THIS void ds_dtor(DictionarySet *s)
 
     lexical_view_release(s->lexical_view);s->lexical_view=NULL;
     if(s->words){ud_dtor(s->words);cpp_delete(s->words);s->words=NULL;}
+    if(s->main_words){ud_dtor(s->main_words);cpp_delete(s->main_words);s->main_words=NULL;}
     if (s->home && *s->home == s)
         *s->home = 0;
 }
@@ -777,15 +791,8 @@ int32_t callUserDictLookup(delta_state *d, const void *volume,
 
     int v=*(const int16_t *)((const char *)volume+2);
     if(v<0||v>=UD_VOLUMES)return 1;
-    /* Entries compiled into lexical data must not first change tokenization. */
-    if(v==0&&s->words) {
-        char key[UD_WORD_MAX+1];int8_t stream=DL_STREAM(DT_LANG(d));
-        if(extract_string(d,stream,l->value,r->value,key,sizeof key)) {
-            for(unsigned char *p=(unsigned char *)key;*p;++p)
-                if((*p>='A'&&*p<='Z')||(*p>=0xc0&&*p<=0xde&&*p!=0xd7))*p+=32;
-            if(ud_lookup(s->words,key))return 1;
-        }
-    }
+    /* Main owns its native, exact-case normalization stage. Root lexical
+     * records must never suppress a Main entry with the same spelling. */
     return ud_lookupAndTranslate(active_volume(s,v),d,l->value,r->value)!=0;
 }
 
@@ -886,25 +893,31 @@ static int lexical_order(const void *a,const void *b)
     const struct reloq_lexicon_override *left=a,*right=b;
     return strcmp((const char *)left->key,(const char *)right->key);
 }
-static const struct reloq_lexicon_override *lexical_find(void *context,
-    const unsigned char *key,size_t length)
+static const struct reloq_lexicon_override *lexical_search(const LexicalView *view,
+    const unsigned char *key,size_t low,size_t high)
 {
-    const LexicalView *view=context;if(!length||length>UD_WORD_MAX)return NULL;
-    unsigned char folded[UD_WORD_MAX+1];
-    for(size_t i=0;i<length;++i) {
-        unsigned char c=key[i];
-        if((c>='A'&&c<='Z')||(c>=0xc0&&c<=0xde&&c!=0xd7))c+=32;
-        folded[i]=c;
-    }
-    folded[length]=0;size_t low=0,high=view->count;
     while(low<high) {
         size_t middle=low+(high-low)/2;
-        int order=strcmp((const char *)folded,(const char *)view->records[middle].key);
+        int order=strcmp((const char *)key,(const char *)view->records[middle].key);
         if(!order)return view->records+middle;
         if(order<0)high=middle;else low=middle+1;
     }
     return NULL;
 }
+static const struct reloq_lexicon_override *lexical_find(void *context,
+    const unsigned char *key,size_t length)
+{
+    const LexicalView *view=context;if(!length||length>UD_WORD_MAX)return NULL;
+    unsigned char copy[UD_WORD_MAX+1];memcpy(copy,key,length);copy[length]=0;
+    const struct reloq_lexicon_override *main=lexical_search(view,copy,0,view->main_count);
+    if(main)return main;
+    for(size_t i=0;i<length;++i) {
+        unsigned char c=copy[i];
+        if((c>='A'&&c<='Z')||(c>=0xc0&&c<=0xde&&c!=0xd7))copy[i]=(unsigned char)(c+32);
+    }
+    return lexical_search(view,copy,view->main_count,view->count);
+}
+
 int reloq61_dictionary_contains_lexical(void *set,const unsigned char *key,size_t length)
 {
     DictionarySet *s=set;
@@ -917,54 +930,61 @@ const struct reloq_lexicon_resolver *reloq61_dictionary_resolver_data(void *set)
     ++view->references;return &view->resolver;
 }
 
-/* Compile pronunciation data once when loading a data snapshot. Literal SPR
- * values pass through unchanged. Text aliases are analyzed by an isolated,
- * dictionary-free native word analyzer, never by rewriting an utterance. */
+/* Root pronunciation records share standard lexical lookup. Main literal
+ * pronunciations retain exact keys. Main text belongs to the text analysis
+ * stage; compiling it into an isolated SPR would discard its sentence role. */
 int reloq61_dictionary_compile_words(void *set,void *context,
-                                    int (*compile)(void *,const char *,char *,size_t),int include_roots)
+    int (*compile)(void *,const char *,char *,size_t,int),int include_roots)
 {
     DictionarySet *s=set;const char *key,*value;
-    if(!s||!compile||s->words)return -1;
-    void *memory=cpp_new(sizeof(UserDict));
-    UserDict *words=memory?ud_ctor(memory):NULL;
-    if(!words||!ud_buildHashTable(words,UD_DEFAULT_BUCKETS)) {
-        if(words){ud_dtor(words);cpp_delete(words);}return -1;
-    }
-    int status;
-    for(int volume=include_roots?1:0;volume>=0;--volume) {
-    status=ud_findFirst(s->vol[volume],&key,&value);
-    while(!status) {
-        char folded[UD_WORD_MAX+1],spr[UD_XLAT_MAX+1];size_t n=strlen(key);
-        /* Native hash iteration includes superseded duplicate rows. Compile the
-         * effective last value, just as an ordinary native lookup would. */
-        const char *effective=ud_lookup(s->vol[volume],key);
-        if(n<=UD_WORD_MAX&&effective&&compile(context,effective,spr,sizeof spr)) {
-            for(size_t i=0;i<=n;++i) {
-                unsigned char c=(unsigned char)key[i];
-                if((c>='A'&&c<='Z')||(c>=0xc0&&c<=0xde&&c!=0xd7))c+=32;
-                folded[i]=(char)c;
-            }
-            if(ud_update(words,folded,spr)!=UD_OK){ud_dtor(words);cpp_delete(words);return -1;}
+    if(!s||!compile||s->words||s->main_words)return -1;
+    UserDict *tables[2]={NULL,NULL};
+    for(int volume=0;volume<2;++volume) {
+        void *memory=cpp_new(sizeof(UserDict));
+        tables[volume]=memory?ud_ctor(memory):NULL;
+        if(!tables[volume]||!ud_buildHashTable(tables[volume],UD_DEFAULT_BUCKETS)) {
+            for(int j=0;j<=volume;++j)if(tables[j]){ud_dtor(tables[j]);cpp_delete(tables[j]);}
+            return -1;
         }
-        status=ud_findNext(s->vol[volume],&key,&value);
     }
+    s->main_words=tables[0];s->words=tables[1];
+    size_t counts[2]={0,0},bytes=0;
+    for(int volume=0;volume<(include_roots?2:1);++volume) {
+        int status=ud_findFirst(s->vol[volume],&key,&value);
+        while(!status) {
+            char normalized[UD_WORD_MAX+1],spr[UD_XLAT_MAX+1];size_t n=strlen(key);
+            const char *effective=ud_lookup(s->vol[volume],key);
+            if(n<=UD_WORD_MAX&&effective&&compile(context,effective,spr,sizeof spr,volume)) {
+                for(size_t i=0;i<=n;++i) {
+                    unsigned char c=(unsigned char)key[i];
+                    if(volume&&((c>='A'&&c<='Z')||(c>=0xc0&&c<=0xde&&c!=0xd7)))c+=32;
+                    normalized[i]=(char)c;
+                }
+                if(ud_update(tables[volume],normalized,spr)!=UD_OK)return -1;
+            }
+            status=ud_findNext(s->vol[volume],&key,&value);
+        }
+        status=ud_findFirst(tables[volume],&key,&value);
+        while(!status){++counts[volume];bytes+=strlen(key)+strlen(value)+2;
+            status=ud_findNext(tables[volume],&key,&value);}
     }
-    s->words=words;
-    size_t count=0,bytes=0;status=ud_findFirst(words,&key,&value);
-    while(!status){++count;bytes+=strlen(key)+strlen(value)+2;status=ud_findNext(words,&key,&value);}
-    if(!count)return 0;
+    size_t count=counts[0]+counts[1];if(!count)return 0;
     LexicalView *view=calloc(1,sizeof *view);if(!view)return -1;
-    view->references=1;view->count=count;s->lexical_view=view;
+    view->references=1;view->count=count;view->main_count=counts[0];s->lexical_view=view;
     view->records=calloc(count,sizeof *view->records);view->strings=malloc(bytes);
     if(!view->records||!view->strings)return -1;
-    size_t at=0,offset=0;status=ud_findFirst(words,&key,&value);
-    while(!status) {
-        size_t kn=strlen(key),vn=strlen(value);
-        memcpy(view->strings+offset,key,kn+1);const unsigned char *k=(const unsigned char *)view->strings+offset;offset+=kn+1;
-        memcpy(view->strings+offset,value,vn+1);const unsigned char *v=(const unsigned char *)view->strings+offset;offset+=vn+1;
-        view->records[at++]=(struct reloq_lexicon_override){k,kn,v,vn};
-        status=ud_findNext(words,&key,&value);
+    size_t at=0,offset=0;
+    for(int volume=0;volume<2;++volume) {
+        int status=ud_findFirst(tables[volume],&key,&value);
+        while(!status) {
+            size_t kn=strlen(key),vn=strlen(value);
+            memcpy(view->strings+offset,key,kn+1);const unsigned char *k=(const unsigned char *)view->strings+offset;offset+=kn+1;
+            memcpy(view->strings+offset,value,vn+1);const unsigned char *v=(const unsigned char *)view->strings+offset;offset+=vn+1;
+            view->records[at++]=(struct reloq_lexicon_override){k,kn,v,vn};
+            status=ud_findNext(tables[volume],&key,&value);
+        }
     }
-    qsort(view->records,count,sizeof *view->records,lexical_order);
+    qsort(view->records,counts[0],sizeof *view->records,lexical_order);
+    qsort(view->records+counts[0],counts[1],sizeof *view->records,lexical_order);
     view->resolver=(struct reloq_lexicon_resolver){view,lexical_find};return 0;
 }

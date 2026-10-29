@@ -128,6 +128,15 @@ class DirectEciEngine:
         loader = _loader or (ctypes.WinDLL if sys.platform == "win32" else ctypes.CDLL)
         self._dll = loader(str(Path(dll_path).resolve()))
         self._bind()
+        self.native_version = "unknown"
+        version = getattr(self._dll, "eciVersion", None)
+        if version is not None:
+            version.argtypes, version.restype = (ctypes.c_void_p,), None
+            label = ctypes.create_string_buffer(20)
+            version(label)
+            self.native_version = label.value.decode("ascii", errors="replace")
+        _log.info("Eloquence C native version %s, dialect %#x, DLL %s",
+                  self.native_version, dialect, Path(dll_path).resolve())
         self._handle = self._dll.eciNewEx(dialect)
         if not self._handle:
             raise RuntimeError(f"eciNewEx failed for dialect 0x{dialect:x}")
