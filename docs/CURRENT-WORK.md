@@ -1,6 +1,20 @@
-# Technischer Arbeitsstand: 0.2.191
+# Technischer Arbeitsstand: 0.2.192
 
 Die Projektbeschreibung und Bedienungsanleitungen stehen jetzt getrennt von diesen Entwicklungsnotizen. Ausgangspunkt für die Änderungen ist der unveränderte GitHub-Import von 0.2.186. Der eigene deutsche Akustikplaner, Chinesisch und die Entscheidungen in [GEWUENSCHTE-ABWEICHUNGEN-DE.md](../GEWUENSCHTE-ABWEICHUNGEN-DE.md) bleiben erhalten.
+
+## Sofortige Android-Einstellungen und Schriftidentitäten
+
+Der Nutzer bestätigt die Android-Oberfläche aus 0.2.191. In 0.2.192-preview4 übernehmen und speichern Checkboxen, Listen und Regler Änderungen sofort. Der Speichern-Button entfällt. Die nächste Syntheseanfrage liest die neuen Werte; eine bereits übergebene Äußerung behält ihren Parametersatz. Beim Laden oder Zurücksetzen eines Profils werden Zwischenstände nicht gespeichert.
+
+Im griechischen Englischpfad bleiben Umlaute und weitere lateinische Akzente Teil des vollständigen Wortes. Der US-Analyzer erhält die vorhandenen CP1252-Identitäten; die schriftbezogene Vokalausrichtung nutzt dieselben Basiszeichen wie die gemeinsame Unicode-Tabelle. Die griechische Zeichennamen- und Prosodieverarbeitung wird dabei nicht ersetzt.
+
+Ein isoliertes kleines g im chinesischen Textpfad nutzt jetzt dieselbe Alphabetidentität wie im Buchstabiermodus. Der bisher nur dort aktive Zugriff wird gemeinsam verwendet; g als Einheit nach einer Zahl und englische Fremdwörter behalten ihre Pfade.
+
+Die chinesische Suche prüft zuerst die originale Han-Schreibweise. Bei einer vereinfachten Ersatzform bleiben die Lesungen von 38 Zeichen aus mehrdeutigen Vereinfachungsfamilien als Bedingungen erhalten. Die kleine C-Tabelle wird aus Unicode 17.0 Unihan erzeugt. Damit wird beispielsweise 髮 nicht mehr zu 發/fa1, und 隻 bleibt von 只 unterschieden. Mehrwortlesungen wie 頭髮 mit neutraler Endsilbe sowie alternative kontextuelle Lesungen wie 甲殼 bleiben gültig. Unverwandte regionale Ausspracheunterschiede werden nicht pauschal übernommen. Es gibt keine Laufzeit-Datenbank und keine vorgeschaltete Textersetzung.
+
+147 Komponentenprüfungen mit dem früheren Romanizer und 246 tatsächliche PCM-/Indexvergleiche prüfen die neuen Fälle. 366 vorhandene CJK-Latein-/Unicodeprüfungen und 40 Sprachvergleiche bestehen weiterhin. Die Tests verwenden PCM ausschließlich im RAM. Die gebündelten Gemeinschaftswörterbücher wurden auf Master 8e4561171d7561477023896b06593485146b86d8 aktualisiert und gegen alle sieben Git-Blobs geprüft. Der Vergleich der signierten APKs bestätigt dieselbe Paketkennung und Signatur sowie versionCode 20191 → 20192.
+
+Die neue Android-Bedienung benötigt noch den praktischen TalkBack-Test. Der deutsche Akustikplaner, die Stimmprofile und die DSP-Pfade bleiben erhalten.
 
 ## Android: Stimmparameter, Tempo, Wörterbücher und Updates
 

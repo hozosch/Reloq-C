@@ -21,6 +21,9 @@ public final class SettingsActivity extends Activity {
     private TextView status;
     private SharedPreferences preferences;
     private int loadedProfile;
+    private boolean initializing=true;
+
+    private void changed() {if(!initializing)save();}
 
     private Spinner select(int label,Object[] values,int selected) {
         TextView caption=new TextView(this);caption.setText(label);
@@ -29,10 +32,15 @@ public final class SettingsActivity extends Activity {
         ArrayAdapter<Object> adapter=new ArrayAdapter<>(this,android.R.layout.simple_spinner_item,values);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         control.setAdapter(adapter);control.setSelection(VoiceSettings.bounded(selected,0,values.length-1));
+        control.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            public void onNothingSelected(AdapterView<?> parent) {}
+            public void onItemSelected(AdapterView<?> parent,View view,int position,long id) {changed();}
+        });
         content.addView(control);return control;
     }
     private CheckBox check(int label,boolean value) {
         CheckBox control=new CheckBox(this);control.setText(label);control.setChecked(value);
+        control.setOnCheckedChangeListener((button,checked) -> changed());
         content.addView(control);return control;
     }
     private void heading(int label) {
@@ -58,7 +66,7 @@ public final class SettingsActivity extends Activity {
             control.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 public void onStartTrackingTouch(SeekBar bar) {}
                 public void onStopTrackingTouch(SeekBar bar) {}
-                public void onProgressChanged(SeekBar bar,int progress,boolean user) { describe(); }
+                public void onProgressChanged(SeekBar bar,int progress,boolean user) {describe();if(user)changed();}
             });set(value);
         }
         void describe() {
@@ -93,11 +101,11 @@ public final class SettingsActivity extends Activity {
         androidRate=check(R.string.android_rate,settings.androidRate);
         speed=new Numeric(R.string.speed,settings.manualWpm,140,1400);speed.enabled(!settings.androidRate);
         TextView tempoHelp=new TextView(this);tempoHelp.setText(R.string.speed_help);content.addView(tempoHelp);
-        androidRate.setOnCheckedChangeListener((button,checked) -> speed.enabled(!checked));
+        androidRate.setOnCheckedChangeListener((button,checked) -> {speed.enabled(!checked);changed();});
         boost=check(R.string.rate_boost,settings.rateBoost);
         androidPitch=check(R.string.android_pitch,settings.androidPitch);
         pitch=new Numeric(R.string.pitch,settings.manualPitch);pitch.enabled(!settings.androidPitch);
-        androidPitch.setOnCheckedChangeListener((button,checked) -> pitch.enabled(!checked));
+        androidPitch.setOnCheckedChangeListener((button,checked) -> {pitch.enabled(!checked);changed();});
         inflection=new Numeric(R.string.inflection,settings.inflection);
         volume=new Numeric(R.string.volume,settings.volume);
         heading(R.string.anatomy);
@@ -106,12 +114,12 @@ public final class SettingsActivity extends Activity {
         roughness=new Numeric(R.string.roughness,settings.roughness);
         breathiness=new Numeric(R.string.breathiness,settings.breathiness);
         Button reset=new Button(this);reset.setText(R.string.reset_profile);content.addView(reset);
-        reset.setOnClickListener(v -> loadVoice(new VoiceSettings(loadedProfile)));
+        reset.setOnClickListener(v -> {loadVoice(new VoiceSettings(loadedProfile));changed();});
         profiles.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             public void onNothingSelected(AdapterView<?> parent) {}
             public void onItemSelected(AdapterView<?> parent,View view,int position,long id) {
                 if(position==loadedProfile)return;
-                saveVoice();loadedProfile=position;loadVoice(Preferences.read(preferences,position));
+                saveVoice();loadedProfile=position;loadVoice(Preferences.read(preferences,position));changed();
             }
         });
         heading(R.string.output_settings);
@@ -120,7 +128,7 @@ public final class SettingsActivity extends Activity {
         pauses=select(R.string.pause_mode,getResources().getStringArray(R.array.pause_modes),settings.pauses);
         tags=check(R.string.eci_tags,settings.tags);
         Button dictionaries=new Button(this);dictionaries.setText(R.string.dictionaries);content.addView(dictionaries);
-        dictionaries.setOnClickListener(v -> {save();startActivity(new Intent(this,DictionaryActivity.class));});
+        dictionaries.setOnClickListener(v -> startActivity(new Intent(this,DictionaryActivity.class)));
         heading(R.string.test_speech);
         TextView caption=new TextView(this);caption.setText(R.string.sample_text);
         text=new EditText(this);text.setId(View.generateViewId());caption.setLabelFor(text.getId());
@@ -129,10 +137,8 @@ public final class SettingsActivity extends Activity {
         content.addView(caption);content.addView(text);
         languages.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             public void onNothingSelected(AdapterView<?> parent) {}
-            public void onItemSelected(AdapterView<?> parent,View view,int position,long id) {text.setText(Catalog.LANGUAGES[position].sample);}
+            public void onItemSelected(AdapterView<?> parent,View view,int position,long id) {text.setText(Catalog.LANGUAGES[position].sample);changed();}
         });
-        Button save=new Button(this);save.setText(R.string.save);content.addView(save);
-        save.setOnClickListener(v -> {save();status.setText(R.string.saved);});
         Button speak=new Button(this);speak.setText(R.string.speak);content.addView(speak);
         speak.setOnClickListener(v -> {
             save();if(!ready){status.setText(R.string.initializing);return;}
@@ -154,11 +160,15 @@ public final class SettingsActivity extends Activity {
         tts=new TextToSpeech(this,result -> runOnUiThread(() -> {
             ready=result==TextToSpeech.SUCCESS;status.setText(ready?R.string.ready:R.string.unavailable);
         }),getPackageName());
+        initializing=false;
     }
     private void loadVoice(VoiceSettings s) {
-        pitch.set(s.manualPitch);inflection.set(s.inflection);volume.set(s.volume);
-        models.setSelection(VoiceSettings.bounded(s.gender,0,1));head.set(s.head);
-        roughness.set(s.roughness);breathiness.set(s.breathiness);
+        boolean previous=initializing;initializing=true;
+        try {
+            pitch.set(s.manualPitch);inflection.set(s.inflection);volume.set(s.volume);
+            models.setSelection(VoiceSettings.bounded(s.gender,0,1));head.set(s.head);
+            roughness.set(s.roughness);breathiness.set(s.breathiness);
+        } finally {initializing=previous;}
     }
     private void saveVoice() {
         VoiceSettings s=new VoiceSettings(loadedProfile);

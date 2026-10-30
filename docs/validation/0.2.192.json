@@ -1,0 +1,77 @@
+{
+  "version": "0.2.192",
+  "android_version": "0.2.192-preview4",
+  "no_audio_files": true,
+  "artifacts": {
+    "eci/libreloq_eci.so": {
+      "bytes": 63455152,
+      "sha256": "bd4a8d1eaf1510dc63e6dbff6dc828de80c2d738889548ac6364853faf839aae"
+    },
+    "eci/eci.dll": {
+      "bytes": 61282816,
+      "sha256": "d67690c4d79be9779f0c08f3bd820f0ecfaaf6e3c7e5dbc4e07d035ee85ac6ff"
+    },
+    "eci/libreloq_android.so": {
+      "bytes": 55499392,
+      "sha256": "944bf7df895b794a527d804eafb22fcebfa5acc118cd2fa49d824ee668a98a57"
+    },
+    "dist/reloq-c-synth-experimental-x64-0.2.192.nvda-addon": {
+      "bytes": 23097142,
+      "sha256": "8c96d397074b823d43068d4cc1cb6e8132e18aada20c09e663a9a97e904dbe04"
+    },
+    "dist/reloq-c-android-arm64-0.2.192-preview4.apk": {
+      "bytes": 18466262,
+      "sha256": "92fd90ffe49fe9b3b0799e6f49b8d61e3a15979d5a32d56fe68fa734d688604e"
+    }
+  },
+  "community_dictionaries": {
+    "master_commit": "8e4561171d7561477023896b06593485146b86d8",
+    "fresh_head_resolved_via_connected_api": true,
+    "all_seven_blobs_verified": true,
+    "raw_bytes_retrieved_with_git_after_urllib_timeout": true
+  },
+  "traditional_chinese": {
+    "unicode_version": "17.0.0",
+    "source_identity_entries": 38,
+    "source_spelling_lookup_first": true,
+    "neutral_tones_and_contextual_polyphony_retained": true,
+    "one_to_one_regional_reading_changes_excluded": true
+  },
+  "validation": {
+    "component_checks_with_old_romanizer": 147,
+    "native_text_pcm_index_checks_with_0191": 246,
+    "cjk_latin_unicode_fragment_checks": 366,
+    "language_pcm_index_matches": 40,
+    "settings_dictionary_data_checks": 865,
+    "jni_pcm_hash_length_matches": 33,
+    "dictionary_retention_checks": 18,
+    "dictionary_context_checks": 25,
+    "nvda_english_ui": true,
+    "nvda_german_ui": true,
+    "make_eci_test_complete": true,
+    "asian_greek_native_renders": 1680,
+    "asian_greek_pause_comparisons": 105,
+    "windows_public_abi_exports": 21
+  },
+  "apk_upgrade": {
+    "before": {
+      "package": "org.reloq.tts.preview",
+      "version_code": 20191,
+      "certificates": [
+        "e4af6db7bf1fd6ecf1670d48dac195d56cafc96daceec1238211a0ff1ba1091f"
+      ]
+    },
+    "after": {
+      "package": "org.reloq.tts.preview",
+      "version_code": 20192,
+      "certificates": [
+        "e4af6db7bf1fd6ecf1670d48dac195d56cafc96daceec1238211a0ff1ba1091f"
+      ]
+    }
+  },
+  "limitations": [
+    "Android UI changes are checked by package compilation and preference tests; live TalkBack interaction needs a device check.",
+    "Settings changes take effect on the next synthesis request; already submitted speech keeps its settings.",
+    "Traditional-character constraints cover the projected 38 ambiguous identities and the existing native word dictionary; this is not an exhaustive Mandarin polyphone dictionary."
+  ]
+}

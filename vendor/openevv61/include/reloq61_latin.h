@@ -5,4 +5,6 @@
  * their native identity; additional Latin letters use the shared base entry. */
 int reloq61_latin_byte(uint32_t scalar);
 int reloq61_latin_letter_byte(unsigned byte);
+/* ASCII spelling identity for a native CP1252 letter, preserving case. */
+int reloq61_latin_base_byte(unsigned byte);
 #endif

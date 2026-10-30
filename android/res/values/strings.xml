@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ReLoq C Preview</string>
-    <string name="preview_help">Offline speech preview, version 0.2.191. Choose a language and voice to test, or select ReLoq C Preview in Android text-to-speech settings.</string>
+    <string name="preview_help">Offline speech preview, version 0.2.192. Choose a language and voice to test, or select ReLoq C Preview in Android text-to-speech settings.</string>
     <string name="language">Language</string>
     <string name="profile">Voice</string>
     <string name="sample_rate">Sample rate</string>
     <string name="pause_mode">Shorten pauses</string>
     <string name="sample_text">Text to read</string>
-    <string name="save">Save settings</string>
-    <string name="saved">Settings saved</string>
     <string name="speak">Read test text</string>
     <string name="stop">Stop</string>
     <string name="system_settings">Android speech settings</string>

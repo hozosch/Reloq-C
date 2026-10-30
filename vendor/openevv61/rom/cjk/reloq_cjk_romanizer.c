@@ -12,6 +12,7 @@
 extern void *cpp_new(uint32_t);
 extern void cpp_delete(void *);
 #include "reloq_cjk_data.inc"
+#include "reloq_chinese_traditional.inc"
 #include "reloq_korean_extra.inc"
 #define COUNT(a) (sizeof(a)/sizeof *(a))
 struct text_buffer {char *data;size_t length,capacity;};
@@ -65,6 +66,38 @@ static const struct chinese_word *find_word(const char *key)
     size_t lo=0,hi=COUNT(chinese_words);
     while(lo<hi){size_t m=lo+(hi-lo)/2;if(strcmp((const char *)chinese_strings+chinese_words[m].word,key)<0)lo=m+1;else hi=m;}
     return lo<COUNT(chinese_words)&&!strcmp((const char *)chinese_strings+chinese_words[lo].word,key)?chinese_words+lo:NULL;
+}
+static const struct traditional_reading *traditional_identity(uint32_t cp)
+{
+    size_t lo=0,hi=COUNT(traditional_readings);
+    while(lo<hi){size_t m=lo+(hi-lo)/2;if(traditional_readings[m].scalar<cp)lo=m+1;else hi=m;}
+    return lo<COUNT(traditional_readings)&&traditional_readings[lo].scalar==cp?traditional_readings+lo:NULL;
+}
+static int traditional_word(const char *reading,
+    const struct traditional_reading *const identities[8],unsigned count)
+{
+    int restricted=0;
+    for(unsigned i=0;i<count;++i)restricted|=identities[i]!=NULL;
+    if(!restricted)return 1;
+    const char *syllables[8],*p=reading;size_t lengths[8];
+    for(unsigned i=0;i<count;++i) {
+        syllables[i]=p;while(*p>='a'&&*p<='z')++p;
+        /* Special lexical controls are left to their existing grammar. */
+        if(p==syllables[i]||*p<'0'||*p>'5')return 1;
+        lengths[i]=(size_t)(++p-syllables[i]);
+    }
+    if(*p)return 1;
+    for(unsigned i=0;i<count;++i)if(identities[i]) {
+        const char *option=identities[i]->readings;int found=0;
+        while(*option) {
+            const char *end=strchr(option,' ');size_t n=end?(size_t)(end-option):strlen(option);
+            if(n==lengths[i]&&!memcmp(option,syllables[i],n-1)&&
+               (option[n-1]==syllables[i][n-1]||syllables[i][n-1]=='0'||syllables[i][n-1]=='5')){found=1;break;}
+            if(!end)break;option=end+1;
+        }
+        if(!found)return 0;
+    }
+    return 1;
 }
 static int ideograph(uint32_t c)
 {return (c>=0x3400&&c<=0x9fff)||(c>=0xf900&&c<=0xfaff);}
@@ -153,7 +186,7 @@ static int chinese_symbol(struct cjk_romanizer *r,unsigned cp,int *previous)
     *previous=1;return 0;
 }
 static int chinese_latin(struct cjk_romanizer *r,const unsigned char *text,
-    size_t length,int foreign,int *previous)
+    size_t length,int foreign,int characters,int *previous)
 {
     int active=0,last_width=-1;
     for(size_t i=0;i<length;) {
@@ -177,7 +210,13 @@ static int chinese_latin(struct cjk_romanizer *r,const unsigned char *text,
         else if(!(cp>='0'&&cp<='9'))last_width=-1;
         if(cp=='\\'&&foreign) {
             if(say(&r->output,"\\\\\\\\"))return -1;
-        } else {int letter=reloq61_latin_byte(cp);char c=(char)(letter?letter:cp);if(append(&r->output,&c,1))return -1;}
+        } else {
+            int letter=reloq61_latin_byte(cp);
+            /* Both character navigation and an isolated letter use the
+               same alphabet entry. Numeric g units retain their grammar. */
+            if(characters&&letter=='g')letter='G';
+            char c=(char)(letter?letter:cp);if(append(&r->output,&c,1))return -1;
+        }
         i+=z;
     }
     return 0;
@@ -243,9 +282,11 @@ static size_t chinese_latin_phrase(const unsigned char *text,size_t n,unsigned *
 }
 static int chinese(struct cjk_romanizer *r,const unsigned char *text,size_t n)
 {
-    int previous_word=0,phrase_english=0,spelling=0;size_t phrase_end=0;
+    int previous_word=0,previous_number=0,phrase_english=0,spelling=0;size_t phrase_end=0;
     for(size_t i=0;i<n;) {
         uint32_t cp;size_t used=decode(text+i,n-i,&cp);if(!used)return -1;
+        int after_number=previous_number;
+        if(cp>32&&cp!=0x3000)previous_number=0;
         if(cp=='`') {
             struct reloq_inline_tag tag=reloq_inline_tag_read(text+i,n-i,0);
             if(tag.kind==RELOQ_TAG_SPELL){spelling=tag.value;phrase_end=0;phrase_english=0;}
@@ -260,12 +301,7 @@ static int chinese(struct cjk_romanizer *r,const unsigned char *text,size_t n)
             /* A character run is not a foreign lexical word or a Pinyin
                token. Reuse the isolated-letter property, one scalar at a
                time, while the native character grammar supplies its name. */
-            /* Lowercase g has the unit reading for gram in the Chinese
-               text grammar. Character navigation needs the letter-name
-               entry shared with G; ordinary measurements keep their unit. */
-            static const unsigned char letter_g='G';
-            const unsigned char *character=width_fold(cp)=='g'?&letter_g:text+i;
-            if(chinese_latin(r,character,width_fold(cp)=='g'?1:used,0,&previous_word))return -1;
+            if(chinese_latin(r,text+i,used,0,1,&previous_word))return -1;
             i+=used;continue;
         }
         if(ideograph(cp)) {
@@ -273,17 +309,34 @@ static int chinese(struct cjk_romanizer *r,const unsigned char *text,size_t n)
                forty milliseconds; this is independent of pause policy. */
             if(previous_word==2&&say(&r->output," `p40 "))return -1;
             previous_word=1;
-            char key[8*4+1];size_t at=0,p=i,end=i+used,best_end=end;
-            const struct chinese_word *best=NULL;
+            char key[8*4+1],original[8*4+1];size_t at=0,original_at=0,p=i,end=i+used,best_end=end;
+            const struct traditional_reading *identities[8]={0};
+            const char *best_reading=NULL;size_t best_size=0;char best_category='N';int changed=0;
             for(unsigned count=0;count<8&&p<n;++count) {
                 uint32_t next;size_t z=decode(text+p,n-p,&next);if(!z||!ideograph(next))break;
-                at+=encode(key+at,chinese_form(next));key[at]=0;p+=z;
-                const struct chinese_word *word=find_word(key);
-                if(word){best=word;best_end=p;}
+                uint32_t folded=chinese_form(next);changed|=folded!=next;
+                identities[count]=folded!=next?traditional_identity(next):NULL;
+                original_at+=encode(original+original_at,next);original[original_at]=0;
+                at+=encode(key+at,folded);key[at]=0;p+=z;
+                /* Search the source spelling before its compatibility
+                   form. A folded candidate must retain every constrained
+                   source identity, including lexical neutral tones. */
+                const struct chinese_word *word=find_word(original);
+                if(!word&&changed) {
+                    word=find_word(key);
+                    if(word&&!traditional_word((const char *)chinese_strings+word->reading,identities,count+1))word=NULL;
+                }
+                if(word){best_reading=(const char *)chinese_strings+word->reading;best_size=strlen(best_reading);best_category=(char)word->category;best_end=p;}
+                else if(!count&&identities[0]) {
+                    const struct chinese_word *base=find_word(key);
+                    best_reading=identities[0]->readings;
+                    best_size=strcspn(best_reading," ");
+                    best_category=base?(char)base->category:'N';best_end=p;
+                }
             }
-            if(best) {
-                char tag[8];snprintf(tag,sizeof tag," `g%c_",best->category);
-                if(say(&r->output,tag)||say(&r->output,(const char *)chinese_strings+best->reading))return -1;
+            if(best_reading) {
+                char tag[8];snprintf(tag,sizeof tag," `g%c_",best_category);
+                if(say(&r->output,tag)||append(&r->output,best_reading,best_size))return -1;
             } else if(say(&r->output," "))return -1;
             i=best_end;continue;
         }
@@ -302,7 +355,8 @@ static int chinese(struct cjk_romanizer *r,const unsigned char *text,size_t n)
             int full=0;size_t z=latin_token(r,text+i,n-i,0,&full);if(!z)return -1;
             if(i>=phrase_end) {unsigned words=0;phrase_end=i+chinese_latin_phrase(text+i,n-i,&words);phrase_english=words>1;}
             int literal=!phrase_english&&chinese_literal_letters(&r->wide);
-            if(chinese_latin(r,text+i,z,!literal,&previous_word))return -1;
+            int characters=literal&&!after_number&&!strpbrk(r->wide.data,"0123456789");
+            if(chinese_latin(r,text+i,z,!literal,characters,&previous_word))return -1;
             i+=z;continue;
         }
         if(cp=='\''&&previous_word==1&&i+used<n&&
@@ -319,7 +373,7 @@ static int chinese(struct cjk_romanizer *r,const unsigned char *text,size_t n)
         }
         if(cp>='0'&&cp<='9') {
             size_t end;if(chinese_number(r,text,n,i,&end,previous_word))return -1;
-            previous_word=1;i=end;continue;
+            previous_word=1;previous_number=1;i=end;continue;
         } else if(chinese_operator(cp)){
             if(chinese_symbol(r,cp,&previous_word))return -1;
             i+=used;continue;

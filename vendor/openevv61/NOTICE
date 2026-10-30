@@ -246,3 +246,13 @@ Greek follows the earlier prototype's Castilian acoustic-base choice; it is
 not represented as an official Greek Eloquence module. Detailed identities,
 comparison scripts and remaining limits are retained under
 reference-apple/behavior-0.2.148.
+
+Traditional Chinese pronunciation identities
+-------------------------------------------
+
+The compact ambiguous-Han reading table uses Unicode 17.0 Unihan kMandarin,
+kHanyuPinyin and kTraditionalVariant data under the Unicode-3.0 license.
+Source URL, input hashes and the selected families are recorded in
+`data/chinese_traditional_readings.json`. The generated C table retains
+original character distinctions during native lexical lookup. The Unicode
+license is included with both platform packages.

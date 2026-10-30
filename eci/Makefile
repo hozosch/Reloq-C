@@ -109,6 +109,9 @@ test: test_reloq_eci test_reloq_hash_delete libreloq_eci.so
 	./test_reloq_hash_delete
 	python3 test_public_abi.py libreloq_eci.so --header ../include/reloq_eci.h
 	python3 test_diagnostics.py libreloq_eci.so
+	python3 -B ../tools/update_chinese_traditional.py --check
+	python3 -B ../tools/test_native_text_input.py
+	python3 -B ../nvda/test_eci_text_input_native.py
 	python3 -B ../tools/german_generic_eci_regression.py --native-eci libreloq_eci.so --quiet
 	python3 -B ../nvda/test_eci_numeric_native.py
 	python3 -B ../nvda/test_eci_email_native.py

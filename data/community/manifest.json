@@ -1,8 +1,12 @@
 {
   "repository": "eigencrow/IBMTTSDictionaries",
   "branch": "master",
-  "commit": "cdaad7808ee4c017d69eeac7151e4defb899604f",
+  "commit": "8e4561171d7561477023896b06593485146b86d8",
   "files": {
+    "DEUmain.dic": {
+      "sha": "fb8c156bbd28f1dceeed53e2527ed5e0370c6fa7",
+      "size": 917
+    },
     "DEURoot.dic": {
       "sha": "ef6e83c370e49c9432b2a40d51f74488ca264a7c",
       "size": 3546
@@ -11,21 +15,17 @@
       "sha": "e6bf1e8cd1a40845c0bf6866d1fe03ed6596be8b",
       "size": 254
     },
-    "DEUmain.dic": {
-      "sha": "fb8c156bbd28f1dceeed53e2527ed5e0370c6fa7",
-      "size": 917
+    "ENUmain.dic": {
+      "sha": "105b4a7d0595e296febf4edfa8974c7eaad0355f",
+      "size": 27988
     },
     "ENURoot.dic": {
-      "sha": "c183b20005b4d485cd87d19a4f8f2562959325e0",
-      "size": 2255592
+      "sha": "3aef1240c4b46d63a1a7939ef08a3497e6d59515",
+      "size": 2255774
     },
     "ENUabbr.dic": {
       "sha": "edfdaa94d633a08fe57d63dbd12294a1f40f6450",
       "size": 1489
-    },
-    "ENUmain.dic": {
-      "sha": "105b4a7d0595e296febf4edfa8974c7eaad0355f",
-      "size": 27988
     },
     "LICENSE.md": {
       "sha": "0e259d42c996742e9e3cba14c677129b2c1b6311",

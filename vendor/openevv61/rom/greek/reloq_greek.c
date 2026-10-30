@@ -8,6 +8,7 @@
 #include "reloq_greek_letters.inc"
 #include "reloq_greek_character_accents.inc"
 #include "reloq_inline_tags.h"
+#include "reloq61_latin.h"
 #define COUNT(a) (sizeof(a)/sizeof *(a))
 struct buffer {char *data;size_t length,capacity;};
 static int add(struct buffer *b,const char *s,size_t n)
@@ -172,7 +173,12 @@ static int cardinal(struct buffer *out,uint64_t n)
     return -1;
 }
 static int latin_vowel(char c){return c=='a'||c=='e'||c=='i'||c=='o'||c=='u'||c=='y';}
-static char lower_ascii(char c){return c>='A'&&c<='Z'?(char)(c+32):c;}
+static char lower_ascii(char c)
+{
+    int base=reloq61_latin_base_byte((unsigned char)c);
+    if(base)c=(char)base;
+    return c>='A'&&c<='Z'?(char)(c+32):c;
+}
 /* A flap retains the spelling's first eligible dental stop. This cursor
    is independent of the vowel alignment: an earlier written d can supply
    the later spoken flap even when a stressed syllable has intervened. */
@@ -358,9 +364,21 @@ int reloq_greek_text(const char *text,int annotations,reloq_greek_english englis
         else if(cp>='0'&&cp<='9'){
             uint64_t number=0;size_t end=i;int overflow=0;while(text[end]>='0'&&text[end]<='9'){unsigned digit=text[end]-'0';if(number>(UINT64_MAX-digit)/10)overflow=1;else number=number*10+digit;++end;}
             if(overflow){for(size_t j=i;j<end&&!failed;++j)failed=cardinal(&b,text[j]-'0');}else failed=cardinal(&b,number);i=end;previous=0;expanded=1;
-        } else if((cp>='A'&&cp<='Z')||(cp>='a'&&cp<='z')){
-            size_t end=i+1;while((text[end]>='A'&&text[end]<='Z')||(text[end]>='a'&&text[end]<='z')||text[end]=='\'')++end;
-            char *word=malloc(end-i+1);if(!word){failed=1;break;}memcpy(word,text+i,end-i);word[end-i]=0;failed=latin(&b,word,english,context);free(word);i=end;previous=0;expanded=1;
+        } else if(reloq61_latin_byte(cp)){
+            /* Keep accented letters in their complete native English word.
+               The spelling alignment uses the shared base identities; the
+               analyzer itself retains its existing CP1252 accent entries. */
+            size_t end=i,bytes=0;struct buffer word={0};
+            while(text[end]) {
+                uint32_t next;size_t k=decode(text+end,&next);if(!k)break;
+                int value=reloq61_latin_byte(next);
+                if(!value&&next!='\'')break;
+                char byte=(char)(value?value:next);
+                if(add(&word,&byte,1)){failed=1;break;}
+                end+=k;++bytes;
+            }
+            if(!failed&&bytes)failed=latin(&b,word.data,english,context);
+            free(word.data);i=end;previous=0;expanded=1;
         } else if(cp=='\\') {
             /* Internal SPR must not become an escaped literal after a
                caller's backslash. Preserve explicit caller annotations;
@@ -368,7 +386,7 @@ int reloq_greek_text(const char *text,int annotations,reloq_greek_english englis
             size_t end=i+1;while(text[end]=='\\')++end;
             uint32_t next=0;if(text[end])decode(text+end,&next);
             int generated=letter(next).base || (next>='0'&&next<='9') ||
-                (next>='A'&&next<='Z') || (next>='a'&&next<='z');
+                reloq61_latin_byte(next);
             size_t count=end-i;
             if(!annotations)count*=2;
             else if((generated||!text[end])&&(count&1))++count;

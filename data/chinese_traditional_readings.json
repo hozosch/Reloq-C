@@ -1,0 +1,7491 @@
+{
+  "unicode_version": "17.0.0",
+  "source": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+  "license": "Unicode-3.0",
+  "source_sha256": {
+    "Unihan_Readings.txt": "575e69c9ad85a4737a889a4f94cbd987042a90a1a6cc16dd3f4ed995c715b17c",
+    "Unihan_Variants.txt": "3f23cd71872633f3350875d25bd388e83b60fa71807634c9a600ec26f38a68ab"
+  },
+  "families": [
+    {
+      "simplified": 15613,
+      "traditional": [
+        {
+          "scalar": 15613,
+          "mandarin": "mǐ",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 28720,
+          "mandarin": "mí",
+          "hanyu_pinyin": "31791.030:mǐ,mí,nǐ"
+        }
+      ]
+    },
+    {
+      "simplified": 19736,
+      "traditional": [
+        {
+          "scalar": 40392,
+          "mandarin": "tī",
+          "hanyu_pinyin": "74651.070:tī"
+        },
+        {
+          "scalar": 40393,
+          "mandarin": "tī",
+          "hanyu_pinyin": "74651.080:tī,sī"
+        }
+      ]
+    },
+    {
+      "simplified": 19975,
+      "traditional": [
+        {
+          "scalar": 19975,
+          "mandarin": "wàn mò",
+          "hanyu_pinyin": "10009.030:wàn,mò"
+        },
+        {
+          "scalar": 33836,
+          "mandarin": "wàn",
+          "hanyu_pinyin": "53247.080:wàn"
+        }
+      ]
+    },
+    {
+      "simplified": 19985,
+      "traditional": [
+        {
+          "scalar": 19985,
+          "mandarin": "chǒu",
+          "hanyu_pinyin": "10012.070:chǒu"
+        },
+        {
+          "scalar": 37276,
+          "mandarin": "chǒu",
+          "hanyu_pinyin": "63590.060:chǒu"
+        }
+      ]
+    },
+    {
+      "simplified": 20002,
+      "traditional": [
+        {
+          "scalar": 19999,
+          "mandarin": "diū",
+          "hanyu_pinyin": "10385.050:diū"
+        },
+        {
+          "scalar": 20002,
+          "mandarin": "diū",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 20004,
+      "traditional": [
+        {
+          "scalar": 20004,
+          "mandarin": "liǎng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 20841,
+          "mandarin": "liǎng",
+          "hanyu_pinyin": "10024.020:liǎng,liàng"
+        }
+      ]
+    },
+    {
+      "simplified": 20010,
+      "traditional": [
+        {
+          "scalar": 20010,
+          "mandarin": "gè",
+          "hanyu_pinyin": "10103.010:gè,gàn"
+        },
+        {
+          "scalar": 20491,
+          "mandarin": "gè",
+          "hanyu_pinyin": "10178.030:gè,gě"
+        }
+      ]
+    },
+    {
+      "simplified": 20016,
+      "traditional": [
+        {
+          "scalar": 20016,
+          "mandarin": "fēng",
+          "hanyu_pinyin": "10028.070:fēng"
+        },
+        {
+          "scalar": 35920,
+          "mandarin": "fēng",
+          "hanyu_pinyin": "63569.020:fēng"
+        }
+      ]
+    },
+    {
+      "simplified": 20026,
+      "traditional": [
+        {
+          "scalar": 28858,
+          "mandarin": "wèi",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 29234,
+          "mandarin": "wèi",
+          "hanyu_pinyin": "32033.210:wéi,wèi"
+        }
+      ]
+    },
+    {
+      "simplified": 20040,
+      "traditional": [
+        {
+          "scalar": 20040,
+          "mandarin": "me",
+          "hanyu_pinyin": "10033.020:yāo,mó,ma,me"
+        },
+        {
+          "scalar": 24186,
+          "mandarin": "yāo",
+          "hanyu_pinyin": "21092.140:yāo,mì"
+        },
+        {
+          "scalar": 40636,
+          "mandarin": "me",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 40637,
+          "mandarin": "mó",
+          "hanyu_pinyin": "74724.010:mó,má,ma,me"
+        }
+      ]
+    },
+    {
+      "simplified": 20041,
+      "traditional": [
+        {
+          "scalar": 20041,
+          "mandarin": "yì",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 32681,
+          "mandarin": "yì",
+          "hanyu_pinyin": "53133.020:yí,yì,xī"
+        }
+      ]
+    },
+    {
+      "simplified": 20048,
+      "traditional": [
+        {
+          "scalar": 20048,
+          "mandarin": "lè",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 27138,
+          "mandarin": "lè",
+          "hanyu_pinyin": "21280.160:yuè,lè,yào,luò,liáo"
+        }
+      ]
+    },
+    {
+      "simplified": 20052,
+      "traditional": [
+        {
+          "scalar": 20052,
+          "mandarin": "qiáo",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 21932,
+          "mandarin": "qiáo",
+          "hanyu_pinyin": "10656.120:qiáo,jiǎo"
+        }
+      ]
+    },
+    {
+      "simplified": 20081,
+      "traditional": [
+        {
+          "scalar": 20081,
+          "mandarin": "luàn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 20098,
+          "mandarin": "luàn",
+          "hanyu_pinyin": "10057.100:luàn"
+        }
+      ]
+    },
+    {
+      "simplified": 20102,
+      "traditional": [
+        {
+          "scalar": 20102,
+          "mandarin": "le",
+          "hanyu_pinyin": "10048.060:liǎo,le,liào"
+        },
+        {
+          "scalar": 30637,
+          "mandarin": "liào liǎo",
+          "hanyu_pinyin": "42512.170:liǎo,liào"
+        }
+      ]
+    },
+    {
+      "simplified": 20105,
+      "traditional": [
+        {
+          "scalar": 20105,
+          "mandarin": "zhēng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 29229,
+          "mandarin": "zhēng",
+          "hanyu_pinyin": "32031.030:zhēng,zhèng"
+        }
+      ]
+    },
+    {
+      "simplified": 20110,
+      "traditional": [
+        {
+          "scalar": 20110,
+          "mandarin": "yú",
+          "hanyu_pinyin": "10004.050:yú,wéi,yū,xū"
+        },
+        {
+          "scalar": 26044,
+          "mandarin": "yú",
+          "hanyu_pinyin": "32175.020:wū,yú"
+        }
+      ]
+    },
+    {
+      "simplified": 20111,
+      "traditional": [
+        {
+          "scalar": 20111,
+          "mandarin": "kuī",
+          "hanyu_pinyin": "10005.010:yú,kuī"
+        },
+        {
+          "scalar": 34407,
+          "mandarin": "kuī",
+          "hanyu_pinyin": "42830.140:kuī"
+        }
+      ]
+    },
+    {
+      "simplified": 20113,
+      "traditional": [
+        {
+          "scalar": 20113,
+          "mandarin": "yún",
+          "hanyu_pinyin": "10384.020:yún"
+        },
+        {
+          "scalar": 38642,
+          "mandarin": "yún",
+          "hanyu_pinyin": "64058.090:yún"
+        }
+      ]
+    },
+    {
+      "simplified": 20135,
+      "traditional": [
+        {
+          "scalar": 29986,
+          "mandarin": "chǎn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 29987,
+          "mandarin": "chǎn",
+          "hanyu_pinyin": "42577.150:chǎn"
+        }
+      ]
+    },
+    {
+      "simplified": 20165,
+      "traditional": [
+        {
+          "scalar": 20165,
+          "mandarin": "jǐn",
+          "hanyu_pinyin": "10110.040:fù,nú,jǐn"
+        },
+        {
+          "scalar": 20677,
+          "mandarin": "jǐn",
+          "hanyu_pinyin": "10208.020:jǐn,jìn"
+        }
+      ]
+    },
+    {
+      "simplified": 20166,
+      "traditional": [
+        {
+          "scalar": 20166,
+          "mandarin": "pū",
+          "hanyu_pinyin": "10108.030:pū,pú"
+        },
+        {
+          "scalar": 20693,
+          "mandarin": "pú",
+          "hanyu_pinyin": "10218.090:pú,pū,bú"
+        }
+      ]
+    },
+    {
+      "simplified": 20174,
+      "traditional": [
+        {
+          "scalar": 20174,
+          "mandarin": "cóng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 24478,
+          "mandarin": "cóng",
+          "hanyu_pinyin": "20829.120:cóng,zòng,zōng,cōng,zǒng"
+        }
+      ]
+    },
+    {
+      "simplified": 20202,
+      "traditional": [
+        {
+          "scalar": 20202,
+          "mandarin": "yí",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 20736,
+          "mandarin": "yí",
+          "hanyu_pinyin": "10228.020:yí"
+        }
+      ]
+    },
+    {
+      "simplified": 20215,
+      "traditional": [
+        {
+          "scalar": 20215,
+          "mandarin": "jià",
+          "hanyu_pinyin": "10124.070:jiè,jià,jie"
+        },
+        {
+          "scalar": 20729,
+          "mandarin": "jià",
+          "hanyu_pinyin": "10224.050:jià,qiǎ,jie"
+        }
+      ]
+    },
+    {
+      "simplified": 20247,
+      "traditional": [
+        {
+          "scalar": 20247,
+          "mandarin": "zhòng",
+          "hanyu_pinyin": "10117.070:yín,zhòng"
+        },
+        {
+          "scalar": 30526,
+          "mandarin": "zhòng",
+          "hanyu_pinyin": "42917.040:zhòng"
+        },
+        {
+          "scalar": 34886,
+          "mandarin": "zhòng",
+          "hanyu_pinyin": "53051.140:zhòng,zhōng"
+        }
+      ]
+    },
+    {
+      "simplified": 20248,
+      "traditional": [
+        {
+          "scalar": 20248,
+          "mandarin": "yōu",
+          "hanyu_pinyin": "10120.020:yóu,yōu"
+        },
+        {
+          "scalar": 20778,
+          "mandarin": "yōu",
+          "hanyu_pinyin": "10233.040:yōu"
+        }
+      ]
+    },
+    {
+      "simplified": 20249,
+      "traditional": [
+        {
+          "scalar": 20249,
+          "mandarin": "huǒ",
+          "hanyu_pinyin": "10126.030:huǒ,huo"
+        },
+        {
+          "scalar": 22821,
+          "mandarin": "huǒ",
+          "hanyu_pinyin": "20865.080:huǒ"
+        }
+      ]
+    },
+    {
+      "simplified": 20250,
+      "traditional": [
+        {
+          "scalar": 20250,
+          "mandarin": "huì",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 26371,
+          "mandarin": "huì",
+          "hanyu_pinyin": "21524.050:huì,kuài,kuò"
+        }
+      ]
+    },
+    {
+      "simplified": 20260,
+      "traditional": [
+        {
+          "scalar": 20260,
+          "mandarin": "shāng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 20663,
+          "mandarin": "shāng",
+          "hanyu_pinyin": "10211.090:shāng"
+        }
+      ]
+    },
+    {
+      "simplified": 20266,
+      "traditional": [
+        {
+          "scalar": 20605,
+          "mandarin": "wěi",
+          "hanyu_pinyin": "10195.040:wěi,wéi,é,guì"
+        },
+        {
+          "scalar": 20702,
+          "mandarin": "wěi",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 20307,
+      "traditional": [
+        {
+          "scalar": 20307,
+          "mandarin": "tǐ",
+          "hanyu_pinyin": "10130.010:bèn,cuì,tǐ"
+        },
+        {
+          "scalar": 39636,
+          "mandarin": "tǐ",
+          "hanyu_pinyin": "74419.030:tǐ,tī"
+        }
+      ]
+    },
+    {
+      "simplified": 20313,
+      "traditional": [
+        {
+          "scalar": 20313,
+          "mandarin": "yú",
+          "hanyu_pinyin": "10128.040:yú,tú,xú,yù"
+        },
+        {
+          "scalar": 39192,
+          "mandarin": "yú",
+          "hanyu_pinyin": "74456.090:yú,yé"
+        }
+      ]
+    },
+    {
+      "simplified": 20323,
+      "traditional": [
+        {
+          "scalar": 20323,
+          "mandarin": "yōng",
+          "hanyu_pinyin": "10137.030:yòng,yōng"
+        },
+        {
+          "scalar": 20653,
+          "mandarin": "yōng",
+          "hanyu_pinyin": "10214.060:chōng,yōng,yòng"
+        }
+      ]
+    },
+    {
+      "simplified": 20384,
+      "traditional": [
+        {
+          "scalar": 20384,
+          "mandarin": "xiá",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 20448,
+          "mandarin": "xiá",
+          "hanyu_pinyin": "10158.070:xiá"
+        }
+      ]
+    },
+    {
+      "simplified": 20393,
+      "traditional": [
+        {
+          "scalar": 20393,
+          "mandarin": "kuài",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 20744,
+          "mandarin": "kuài",
+          "hanyu_pinyin": "10226.070:kuài"
+        }
+      ]
+    },
+    {
+      "simplified": 20454,
+      "traditional": [
+        {
+          "scalar": 20454,
+          "mandarin": "chóu",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 20756,
+          "mandarin": "chóu",
+          "hanyu_pinyin": "10229.070:dào,chóu"
+        }
+      ]
+    },
+    {
+      "simplified": 20511,
+      "traditional": [
+        {
+          "scalar": 20511,
+          "mandarin": "jiè",
+          "hanyu_pinyin": "10171.050:jiè"
+        },
+        {
+          "scalar": 34249,
+          "mandarin": "jí",
+          "hanyu_pinyin": "53309.120:jiè"
+        }
+      ]
+    },
+    {
+      "simplified": 20588,
+      "traditional": [
+        {
+          "scalar": 20588,
+          "mandarin": "zǒng",
+          "hanyu_pinyin": "10194.030:zǒng,cōng"
+        },
+        {
+          "scalar": 20655,
+          "mandarin": "zǒng",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 20603,
+      "traditional": [
+        {
+          "scalar": 20603,
+          "mandarin": "lóu",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 20674,
+          "mandarin": "lóu",
+          "hanyu_pinyin": "10210.180:lóu,liǔ"
+        }
+      ]
+    },
+    {
+      "simplified": 20799,
+      "traditional": [
+        {
+          "scalar": 20799,
+          "mandarin": "ér",
+          "hanyu_pinyin": "10264.040:rén,ér"
+        },
+        {
+          "scalar": 20818,
+          "mandarin": "ér",
+          "hanyu_pinyin": "10272.050:ní,ér"
+        }
+      ]
+    },
+    {
+      "simplified": 20811,
+      "traditional": [
+        {
+          "scalar": 20811,
+          "mandarin": "kè",
+          "hanyu_pinyin": "10269.040:kè"
+        },
+        {
+          "scalar": 21067,
+          "mandarin": "kēi kè",
+          "hanyu_pinyin": "10339.030:kè,kēi"
+        }
+      ]
+    },
+    {
+      "simplified": 20817,
+      "traditional": [
+        {
+          "scalar": 20812,
+          "mandarin": "duì",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 20817,
+          "mandarin": "duì",
+          "hanyu_pinyin": "10271.010:duì,ruì,duó"
+        }
+      ]
+    },
+    {
+      "simplified": 20826,
+      "traditional": [
+        {
+          "scalar": 20826,
+          "mandarin": "dǎng",
+          "hanyu_pinyin": "10273.110:dǎng"
+        },
+        {
+          "scalar": 40680,
+          "mandarin": "dǎng",
+          "hanyu_pinyin": "74750.050:dǎng,tǎng,chèng"
+        }
+      ]
+    },
+    {
+      "simplified": 20869,
+      "traditional": [
+        {
+          "scalar": 20839,
+          "mandarin": "nèi",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 20869,
+          "mandarin": "nèi",
+          "hanyu_pinyin": "10097.020:nà,nèi,ruì"
+        }
+      ]
+    },
+    {
+      "simplified": 20876,
+      "traditional": [
+        {
+          "scalar": 20874,
+          "mandarin": "cè",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 20876,
+          "mandarin": "cè",
+          "hanyu_pinyin": "10099.080:cè,zhà"
+        }
+      ]
+    },
+    {
+      "simplified": 20908,
+      "traditional": [
+        {
+          "scalar": 20908,
+          "mandarin": "dōng",
+          "hanyu_pinyin": "20867.190:dōng"
+        },
+        {
+          "scalar": 40725,
+          "mandarin": "dōng",
+          "hanyu_pinyin": "74764.120:dōng,tóng"
+        }
+      ]
+    },
+    {
+      "simplified": 20914,
+      "traditional": [
+        {
+          "scalar": 20914,
+          "mandarin": "chōng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 27798,
+          "mandarin": "chōng",
+          "hanyu_pinyin": "31565.030:chōng"
+        },
+        {
+          "scalar": 34909,
+          "mandarin": "chōng",
+          "hanyu_pinyin": "20843.020:chōng,chǒng,chòng"
+        }
+      ]
+    },
+    {
+      "simplified": 20917,
+      "traditional": [
+        {
+          "scalar": 20917,
+          "mandarin": "kuàng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 27841,
+          "mandarin": "kuàng",
+          "hanyu_pinyin": "31586.020:kuàng"
+        }
+      ]
+    },
+    {
+      "simplified": 20934,
+      "traditional": [
+        {
+          "scalar": 20934,
+          "mandarin": "zhǔn",
+          "hanyu_pinyin": "10299.040:zhǔn"
+        },
+        {
+          "scalar": 28310,
+          "mandarin": "zhǔn",
+          "hanyu_pinyin": "31700.050:zhǔn,zhuó"
+        }
+      ]
+    },
+    {
+      "simplified": 20937,
+      "traditional": [
+        {
+          "scalar": 20937,
+          "mandarin": "liáng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 28092,
+          "mandarin": "liáng",
+          "hanyu_pinyin": "31657.060:liáng,liàng"
+        }
+      ]
+    },
+    {
+      "simplified": 20943,
+      "traditional": [
+        {
+          "scalar": 20943,
+          "mandarin": "jiǎn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 28187,
+          "mandarin": "jiǎn",
+          "hanyu_pinyin": "31671.070:jiǎn"
+        }
+      ]
+    },
+    {
+      "simplified": 20945,
+      "traditional": [
+        {
+          "scalar": 20945,
+          "mandarin": "còu",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 28234,
+          "mandarin": "còu",
+          "hanyu_pinyin": "31666.090:còu"
+        }
+      ]
+    },
+    {
+      "simplified": 20960,
+      "traditional": [
+        {
+          "scalar": 20960,
+          "mandarin": "jǐ",
+          "hanyu_pinyin": "10275.190:jī,jǐ"
+        },
+        {
+          "scalar": 24190,
+          "mandarin": "jǐ",
+          "hanyu_pinyin": "21095.080:jī,jǐ,jì,qí"
+        }
+      ]
+    },
+    {
+      "simplified": 20964,
+      "traditional": [
+        {
+          "scalar": 20964,
+          "mandarin": "fèng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 40179,
+          "mandarin": "fèng",
+          "hanyu_pinyin": "74616.050:fèng"
+        }
+      ]
+    },
+    {
+      "simplified": 20971,
+      "traditional": [
+        {
+          "scalar": 40167,
+          "mandarin": "fú",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 40172,
+          "mandarin": "fǔ",
+          "hanyu_pinyin": "10278.010:fǔ"
+        }
+      ]
+    },
+    {
+      "simplified": 20973,
+      "traditional": [
+        {
+          "scalar": 20973,
+          "mandarin": "píng",
+          "hanyu_pinyin": "10277.220:píng"
+        },
+        {
+          "scalar": 24977,
+          "mandarin": "píng",
+          "hanyu_pinyin": "42351.020:píng"
+        }
+      ]
+    },
+    {
+      "simplified": 20986,
+      "traditional": [
+        {
+          "scalar": 20986,
+          "mandarin": "chū",
+          "hanyu_pinyin": "10307.080:chū"
+        },
+        {
+          "scalar": 40803,
+          "mandarin": "chū",
+          "hanyu_pinyin": "74791.090:chū,chǐ"
+        }
+      ]
+    },
+    {
+      "simplified": 21010,
+      "traditional": [
+        {
+          "scalar": 21010,
+          "mandarin": "huà",
+          "hanyu_pinyin": "10326.020:guò,guǒ,huá,huà"
+        },
+        {
+          "scalar": 21123,
+          "mandarin": "huà",
+          "hanyu_pinyin": "10356.080:huá,huà,huai"
+        }
+      ]
+    },
+    {
+      "simplified": 21016,
+      "traditional": [
+        {
+          "scalar": 21016,
+          "mandarin": "liú",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 21129,
+          "mandarin": "liú",
+          "hanyu_pinyin": "10359.040:liú"
+        }
+      ]
+    },
+    {
+      "simplified": 21024,
+      "traditional": [
+        {
+          "scalar": 21024,
+          "mandarin": "shān",
+          "hanyu_pinyin": "10330.070:shān"
+        },
+        {
+          "scalar": 21034,
+          "mandarin": "shān",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 21035,
+      "traditional": [
+        {
+          "scalar": 21029,
+          "mandarin": "bié",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 21035,
+          "mandarin": "bié",
+          "hanyu_pinyin": "10328.130:bié,biè"
+        },
+        {
+          "scalar": 24390,
+          "mandarin": "biè",
+          "hanyu_pinyin": "21002.070:biè"
+        }
+      ]
+    },
+    {
+      "simplified": 21038,
+      "traditional": [
+        {
+          "scalar": 21038,
+          "mandarin": "guā",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 39091,
+          "mandarin": "guā",
+          "hanyu_pinyin": "74484.170:guā,jǐ"
+        }
+      ]
+    },
+    {
+      "simplified": 21046,
+      "traditional": [
+        {
+          "scalar": 21046,
+          "mandarin": "zhì",
+          "hanyu_pinyin": "10335.010:zhì"
+        },
+        {
+          "scalar": 35069,
+          "mandarin": "zhì",
+          "hanyu_pinyin": "53095.120:zhì"
+        }
+      ]
+    },
+    {
+      "simplified": 21049,
+      "traditional": [
+        {
+          "scalar": 21049,
+          "mandarin": "shā",
+          "hanyu_pinyin": "10336.070:chà,shā"
+        },
+        {
+          "scalar": 21070,
+          "mandarin": "shā",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 21054,
+      "traditional": [
+        {
+          "scalar": 13544,
+          "mandarin": "cí",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 21054,
+          "mandarin": "cì",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 21095,
+      "traditional": [
+        {
+          "scalar": 21095,
+          "mandarin": "jù",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 21127,
+          "mandarin": "jù",
+          "hanyu_pinyin": "10358.030:jù"
+        }
+      ]
+    },
+    {
+      "simplified": 21149,
+      "traditional": [
+        {
+          "scalar": 21149,
+          "mandarin": "quàn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 21240,
+          "mandarin": "quàn",
+          "hanyu_pinyin": "10382.180:quàn"
+        }
+      ]
+    },
+    {
+      "simplified": 21150,
+      "traditional": [
+        {
+          "scalar": 21150,
+          "mandarin": "bàn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 36774,
+          "mandarin": "bàn",
+          "hanyu_pinyin": "64042.050:bàn"
+        }
+      ]
+    },
+    {
+      "simplified": 21160,
+      "traditional": [
+        {
+          "scalar": 21160,
+          "mandarin": "dòng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 21205,
+          "mandarin": "dòng",
+          "hanyu_pinyin": "10375.060:dòng"
+        }
+      ]
+    },
+    {
+      "simplified": 21169,
+      "traditional": [
+        {
+          "scalar": 21169,
+          "mandarin": "lì",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 21237,
+          "mandarin": "lì",
+          "hanyu_pinyin": "10381.170:lì"
+        }
+      ]
+    },
+    {
+      "simplified": 21171,
+      "traditional": [
+        {
+          "scalar": 21171,
+          "mandarin": "láo",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 21214,
+          "mandarin": "láo",
+          "hanyu_pinyin": "10376.170:láo,lào,liáo"
+        }
+      ]
+    },
+    {
+      "simplified": 21183,
+      "traditional": [
+        {
+          "scalar": 21183,
+          "mandarin": "shì",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 21218,
+          "mandarin": "shì",
+          "hanyu_pinyin": "10377.030:shì"
+        }
+      ]
+    },
+    {
+      "simplified": 21248,
+      "traditional": [
+        {
+          "scalar": 21243,
+          "mandarin": "yún",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 21248,
+          "mandarin": "yún",
+          "hanyu_pinyin": "10255.010:yún,jūn,yùn"
+        }
+      ]
+    },
+    {
+      "simplified": 21306,
+      "traditional": [
+        {
+          "scalar": 21306,
+          "mandarin": "qū",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 21312,
+          "mandarin": "qū",
+          "hanyu_pinyin": "10087.100:qū,ōu,gōu,qiū,kòu"
+        }
+      ]
+    },
+    {
+      "simplified": 21307,
+      "traditional": [
+        {
+          "scalar": 21307,
+          "mandarin": "yī",
+          "hanyu_pinyin": "10085.030:yì,yī"
+        },
+        {
+          "scalar": 37291,
+          "mandarin": "yī",
+          "hanyu_pinyin": "63595.090:yī,yǐ"
+        }
+      ]
+    },
+    {
+      "simplified": 21315,
+      "traditional": [
+        {
+          "scalar": 21315,
+          "mandarin": "qiān",
+          "hanyu_pinyin": "10059.010:qiān"
+        },
+        {
+          "scalar": 38854,
+          "mandarin": "qiān",
+          "hanyu_pinyin": "74352.190:qiān"
+        }
+      ]
+    },
+    {
+      "simplified": 21333,
+      "traditional": [
+        {
+          "scalar": 21333,
+          "mandarin": "dān",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 21934,
+          "mandarin": "dān",
+          "hanyu_pinyin": "10654.060:dān,dǎn,chán,shàn,chǎn,dàn,zhàn,tán"
+        }
+      ]
+    },
+    {
+      "simplified": 21340,
+      "traditional": [
+        {
+          "scalar": 21340,
+          "mandarin": "bo bǔ",
+          "hanyu_pinyin": "10091.110:bǔ,pū,bo"
+        },
+        {
+          "scalar": 34068,
+          "mandarin": "bó",
+          "hanyu_pinyin": "53282.040:bo"
+        }
+      ]
+    },
+    {
+      "simplified": 21348,
+      "traditional": [
+        {
+          "scalar": 28407,
+          "mandarin": "lǔ",
+          "hanyu_pinyin": "31721.020:lǔ"
+        },
+        {
+          "scalar": 40565,
+          "mandarin": "lǔ",
+          "hanyu_pinyin": "74609.010:lǔ,lú"
+        }
+      ]
+    },
+    {
+      "simplified": 21364,
+      "traditional": [
+        {
+          "scalar": 21364,
+          "mandarin": "què",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 21371,
+          "mandarin": "què",
+          "hanyu_pinyin": "10317.020:què,jiǎo,xì"
+        }
+      ]
+    },
+    {
+      "simplified": 21367,
+      "traditional": [
+        {
+          "scalar": 21367,
+          "mandarin": "juǎn",
+          "hanyu_pinyin": "10315.030:juǎn,juàn,quán,quān,gǔn,jùn"
+        },
+        {
+          "scalar": 25458,
+          "mandarin": "juǎn",
+          "hanyu_pinyin": "31906.030:quán,juǎn,juàn"
+        }
+      ]
+    },
+    {
+      "simplified": 21378,
+      "traditional": [
+        {
+          "scalar": 21378,
+          "mandarin": "chǎng",
+          "hanyu_pinyin": "10067.160:hǎn,chǎng,yán,ān"
+        },
+        {
+          "scalar": 24288,
+          "mandarin": "chǎng",
+          "hanyu_pinyin": "20901.040:chǎng"
+        }
+      ]
+    },
+    {
+      "simplified": 21382,
+      "traditional": [
+        {
+          "scalar": 21382,
+          "mandarin": "lì",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 26310,
+          "mandarin": "lì",
+          "hanyu_pinyin": "21536.020:lì"
+        },
+        {
+          "scalar": 27511,
+          "mandarin": "lì",
+          "hanyu_pinyin": "21445.090:lì"
+        }
+      ]
+    },
+    {
+      "simplified": 21385,
+      "traditional": [
+        {
+          "scalar": 21385,
+          "mandarin": "lì",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 21426,
+          "mandarin": "lì",
+          "hanyu_pinyin": "10077.170:lì,lài"
+        }
+      ]
+    },
+    {
+      "simplified": 21387,
+      "traditional": [
+        {
+          "scalar": 21387,
+          "mandarin": "yā",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 22739,
+          "mandarin": "yā",
+          "hanyu_pinyin": "10495.060:yā,yà"
+        }
+      ]
+    },
+    {
+      "simplified": 21397,
+      "traditional": [
+        {
+          "scalar": 21408,
+          "mandarin": "cè",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 24257,
+          "mandarin": "cè",
+          "hanyu_pinyin": "20893.030:cè,cì,zè,si"
+        }
+      ]
+    },
+    {
+      "simplified": 21400,
+      "traditional": [
+        {
+          "scalar": 21400,
+          "mandarin": "lí",
+          "hanyu_pinyin": "10072.030:chán,lí"
+        },
+        {
+          "scalar": 37328,
+          "mandarin": "xī lí",
+          "hanyu_pinyin": "63684.070:lí,xī,lái,tāi,lài"
+        }
+      ]
+    },
+    {
+      "simplified": 21414,
+      "traditional": [
+        {
+          "scalar": 21414,
+          "mandarin": "shà",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 24264,
+          "mandarin": "shà",
+          "hanyu_pinyin": "20894.180:shà,xià"
+        }
+      ]
+    },
+    {
+      "simplified": 21416,
+      "traditional": [
+        {
+          "scalar": 21416,
+          "mandarin": "chú",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 24282,
+          "mandarin": "chú",
+          "hanyu_pinyin": "20900.100:chú"
+        }
+      ]
+    },
+    {
+      "simplified": 21417,
+      "traditional": [
+        {
+          "scalar": 21417,
+          "mandarin": "jiù",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 24260,
+          "mandarin": "jiù",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 21422,
+      "traditional": [
+        {
+          "scalar": 21422,
+          "mandarin": "sī",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 24285,
+          "mandarin": "sī",
+          "hanyu_pinyin": "20900.120:sī"
+        }
+      ]
+    },
+    {
+      "simplified": 21442,
+      "traditional": [
+        {
+          "scalar": 21442,
+          "mandarin": "cān",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 21443,
+          "mandarin": "cān",
+          "hanyu_pinyin": "10387.230:shēn,sān,cān,cēn,càn,sǎn"
+        }
+      ]
+    },
+    {
+      "simplified": 21452,
+      "traditional": [
+        {
+          "scalar": 21452,
+          "mandarin": "shuāng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 38617,
+          "mandarin": "shuāng",
+          "hanyu_pinyin": "64104.100:shuāng"
+        }
+      ]
+    },
+    {
+      "simplified": 21457,
+      "traditional": [
+        {
+          "scalar": 30332,
+          "mandarin": "fā",
+          "hanyu_pinyin": "42761.040:fā,bō"
+        },
+        {
+          "scalar": 39662,
+          "mandarin": "fà fǎ",
+          "hanyu_pinyin": "74521.120:fà"
+        }
+      ]
+    },
+    {
+      "simplified": 21465,
+      "traditional": [
+        {
+          "scalar": 21465,
+          "mandarin": "xù",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 25944,
+          "mandarin": "xù",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 21472,
+      "traditional": [
+        {
+          "scalar": 21472,
+          "mandarin": "dié",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 30090,
+          "mandarin": "dié",
+          "hanyu_pinyin": "42555.140:dié"
+        }
+      ]
+    },
+    {
+      "simplified": 21482,
+      "traditional": [
+        {
+          "scalar": 21482,
+          "mandarin": "zhǐ",
+          "hanyu_pinyin": "10570.030:zhǐ,zhī"
+        },
+        {
+          "scalar": 25120,
+          "mandarin": "zhī",
+          "hanyu_pinyin": "21409.040:zhī,zhí"
+        },
+        {
+          "scalar": 34937,
+          "mandarin": "zhǐ",
+          "hanyu_pinyin": "53079.080:tǐ,zhī,qí"
+        },
+        {
+          "scalar": 38587,
+          "mandarin": "zhī",
+          "hanyu_pinyin": "64090.100:huò,zhī"
+        }
+      ]
+    },
+    {
+      "simplified": 21488,
+      "traditional": [
+        {
+          "scalar": 21488,
+          "mandarin": "tái",
+          "hanyu_pinyin": "10575.020:yí,tái,sì"
+        },
+        {
+          "scalar": 27311,
+          "mandarin": "tái",
+          "hanyu_pinyin": "21306.060:tái"
+        },
+        {
+          "scalar": 33274,
+          "mandarin": "tái",
+          "hanyu_pinyin": "42817.060:tái"
+        },
+        {
+          "scalar": 39089,
+          "mandarin": "tái",
+          "hanyu_pinyin": "74484.090:tái"
+        }
+      ]
+    },
+    {
+      "simplified": 21494,
+      "traditional": [
+        {
+          "scalar": 21494,
+          "mandarin": "yè",
+          "hanyu_pinyin": "10568.020:xié,yè"
+        },
+        {
+          "scalar": 33865,
+          "mandarin": "yè",
+          "hanyu_pinyin": "53243.150:yè,shè"
+        }
+      ]
+    },
+    {
+      "simplified": 21495,
+      "traditional": [
+        {
+          "scalar": 21495,
+          "mandarin": "hào",
+          "hanyu_pinyin": "10570.010:háo,hào,xiāo"
+        },
+        {
+          "scalar": 34399,
+          "mandarin": "hào",
+          "hanyu_pinyin": "42824.040:háo,hào"
+        }
+      ]
+    },
+    {
+      "simplified": 21505,
+      "traditional": [
+        {
+          "scalar": 21505,
+          "mandarin": "xū",
+          "hanyu_pinyin": "10575.070:xū,yù"
+        },
+        {
+          "scalar": 31858,
+          "mandarin": "yù",
+          "hanyu_pinyin": "80034.070:yù"
+        }
+      ]
+    },
+    {
+      "simplified": 21512,
+      "traditional": [
+        {
+          "scalar": 21512,
+          "mandarin": "hé",
+          "hanyu_pinyin": "10581.010:hé,gě"
+        },
+        {
+          "scalar": 38308,
+          "mandarin": "gé",
+          "hanyu_pinyin": "74297.070:gē"
+        }
+      ]
+    },
+    {
+      "simplified": 21516,
+      "traditional": [
+        {
+          "scalar": 21516,
+          "mandarin": "tóng",
+          "hanyu_pinyin": "10578.010:tóng,tòng"
+        },
+        {
+          "scalar": 34901,
+          "mandarin": "tòng",
+          "hanyu_pinyin": "20832.130:tóng,dòng"
+        }
+      ]
+    },
+    {
+      "simplified": 21518,
+      "traditional": [
+        {
+          "scalar": 21518,
+          "mandarin": "hòu",
+          "hanyu_pinyin": "10580.010:hòu"
+        },
+        {
+          "scalar": 24460,
+          "mandarin": "hòu",
+          "hanyu_pinyin": "20822.030:hòu"
+        }
+      ]
+    },
+    {
+      "simplified": 21521,
+      "traditional": [
+        {
+          "scalar": 21521,
+          "mandarin": "xiàng",
+          "hanyu_pinyin": "10579.080:xiàng"
+        },
+        {
+          "scalar": 22190,
+          "mandarin": "xiàng",
+          "hanyu_pinyin": "10698.080:xiàng,xiǎng"
+        },
+        {
+          "scalar": 26319,
+          "mandarin": "xiǎng",
+          "hanyu_pinyin": "21534.210:xiàng,shǎng"
+        }
+      ]
+    },
+    {
+      "simplified": 21523,
+      "traditional": [
+        {
+          "scalar": 21523,
+          "mandarin": "xià",
+          "hanyu_pinyin": "10577.020:hà,xià"
+        },
+        {
+          "scalar": 22151,
+          "mandarin": "xià",
+          "hanyu_pinyin": "10695.100:hè,xià"
+        }
+      ]
+    },
+    {
+      "simplified": 21548,
+      "traditional": [
+        {
+          "scalar": 21548,
+          "mandarin": "tīng",
+          "hanyu_pinyin": "10591.020:yǐn,yí,tīng"
+        },
+        {
+          "scalar": 32893,
+          "mandarin": "tīng",
+          "hanyu_pinyin": "42799.140:tīng"
+        }
+      ]
+    },
+    {
+      "simplified": 21551,
+      "traditional": [
+        {
+          "scalar": 21843,
+          "mandarin": "qǐ",
+          "hanyu_pinyin": "10646.120:qǐ"
+        },
+        {
+          "scalar": 21855,
+          "mandarin": "qǐ",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 21556,
+      "traditional": [
+        {
+          "scalar": 21555,
+          "mandarin": "wú",
+          "hanyu_pinyin": "10595.080:wú,yú"
+        },
+        {
+          "scalar": 21556,
+          "mandarin": "wú",
+          "hanyu_pinyin": "10585.030:wú,tūn"
+        }
+      ]
+    },
+    {
+      "simplified": 21647,
+      "traditional": [
+        {
+          "scalar": 21647,
+          "mandarin": "yǒng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 35424,
+          "mandarin": "yǒng",
+          "hanyu_pinyin": "63957.080:yǒng"
+        }
+      ]
+    },
+    {
+      "simplified": 21668,
+      "traditional": [
+        {
+          "scalar": 21522,
+          "mandarin": "zhā",
+          "hanyu_pinyin": "10579.060:zhà,zhā"
+        },
+        {
+          "scalar": 21668,
+          "mandarin": "zhà",
+          "hanyu_pinyin": "10623.020:zhà"
+        }
+      ]
+    },
+    {
+      "simplified": 21688,
+      "traditional": [
+        {
+          "scalar": 21688,
+          "mandarin": "xián",
+          "hanyu_pinyin": "21404.020:xián,jiǎn,jiān"
+        },
+        {
+          "scalar": 40569,
+          "mandarin": "xián",
+          "hanyu_pinyin": "74610.190:xián,jiǎn"
+        }
+      ]
+    },
+    {
+      "simplified": 21709,
+      "traditional": [
+        {
+          "scalar": 21709,
+          "mandarin": "xiǎng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 38911,
+          "mandarin": "xiǎng",
+          "hanyu_pinyin": "74498.100:xiǎng"
+        }
+      ]
+    },
+    {
+      "simplified": 21872,
+      "traditional": [
+        {
+          "scalar": 21872,
+          "mandarin": "luō",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 22217,
+          "mandarin": "luō",
+          "hanyu_pinyin": "10708.040:luó,luō,luo"
+        }
+      ]
+    },
+    {
+      "simplified": 21949,
+      "traditional": [
+        {
+          "scalar": 21949,
+          "mandarin": "lóu",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 22029,
+          "mandarin": "lóu",
+          "hanyu_pinyin": "10676.060:lǒu,lóu,lou"
+        }
+      ]
+    },
+    {
+      "simplified": 22065,
+      "traditional": [
+        {
+          "scalar": 22065,
+          "mandarin": "zhǔ",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 22225,
+          "mandarin": "zhǔ",
+          "hanyu_pinyin": "10709.140:zhǔ"
+        }
+      ]
+    },
+    {
+      "simplified": 22238,
+      "traditional": [
+        {
+          "scalar": 22238,
+          "mandarin": "huí",
+          "hanyu_pinyin": "10712.020:huí"
+        },
+        {
+          "scalar": 36852,
+          "mandarin": "huí",
+          "hanyu_pinyin": "63828.130:huí"
+        }
+      ]
+    },
+    {
+      "simplified": 22242,
+      "traditional": [
+        {
+          "scalar": 22296,
+          "mandarin": "tuán",
+          "hanyu_pinyin": "10725.020:tuán,chuán"
+        },
+        {
+          "scalar": 31984,
+          "mandarin": "tuán",
+          "hanyu_pinyin": "53163.010:tuán"
+        }
+      ]
+    },
+    {
+      "simplified": 22253,
+      "traditional": [
+        {
+          "scalar": 22253,
+          "mandarin": "yuán",
+          "hanyu_pinyin": "10714.020:wán,yuán"
+        },
+        {
+          "scalar": 22290,
+          "mandarin": "yuán",
+          "hanyu_pinyin": "10723.040:yuán"
+        }
+      ]
+    },
+    {
+      "simplified": 22256,
+      "traditional": [
+        {
+          "scalar": 22256,
+          "mandarin": "kùn",
+          "hanyu_pinyin": "10714.070:kùn"
+        },
+        {
+          "scalar": 30543,
+          "mandarin": "kùn",
+          "hanyu_pinyin": "42491.050:kùn"
+        }
+      ]
+    },
+    {
+      "simplified": 22270,
+      "traditional": [
+        {
+          "scalar": 22270,
+          "mandarin": "tú",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 22294,
+          "mandarin": "tú",
+          "hanyu_pinyin": "10725.060:tú"
+        }
+      ]
+    },
+    {
+      "simplified": 22338,
+      "traditional": [
+        {
+          "scalar": 22338,
+          "mandarin": "bǎn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 38442,
+          "mandarin": "bǎn",
+          "hanyu_pinyin": "64117.120:bǎn"
+        }
+      ]
+    },
+    {
+      "simplified": 22351,
+      "traditional": [
+        {
+          "scalar": 22351,
+          "mandarin": "huài",
+          "hanyu_pinyin": "10421.110:pī,péi,huài"
+        },
+        {
+          "scalar": 22750,
+          "mandarin": "huài",
+          "hanyu_pinyin": "10500.020:huài,huì,huái"
+        }
+      ]
+    },
+    {
+      "simplified": 22359,
+      "traditional": [
+        {
+          "scalar": 22359,
+          "mandarin": "kuài",
+          "hanyu_pinyin": "10428.050:kuài,yué"
+        },
+        {
+          "scalar": 22602,
+          "mandarin": "kuài",
+          "hanyu_pinyin": "10464.170:kuài"
+        }
+      ]
+    },
+    {
+      "simplified": 22363,
+      "traditional": [
+        {
+          "scalar": 22363,
+          "mandarin": "tán",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 22727,
+          "mandarin": "tán",
+          "hanyu_pinyin": "10492.120:tán,shàn,dàn,tǎn"
+        },
+        {
+          "scalar": 32584,
+          "mandarin": "tán",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 32590,
+          "mandarin": "tán",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 22365,
+      "traditional": [
+        {
+          "scalar": 22459,
+          "mandarin": "bà",
+          "hanyu_pinyin": "10444.020:bà,bèi"
+        },
+        {
+          "scalar": 22761,
+          "mandarin": "bà",
+          "hanyu_pinyin": "10502.250:bà"
+        }
+      ]
+    },
+    {
+      "simplified": 22549,
+      "traditional": [
+        {
+          "scalar": 22549,
+          "mandarin": "duò",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 22702,
+          "mandarin": "duò",
+          "hanyu_pinyin": "10484.030:huī,huì,duò"
+        }
+      ]
+    },
+    {
+      "simplified": 22681,
+      "traditional": [
+        {
+          "scalar": 22715,
+          "mandarin": "qiáng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 29254,
+          "mandarin": "qiáng",
+          "hanyu_pinyin": "42378.220:qiáng"
+        }
+      ]
+    },
+    {
+      "simplified": 22766,
+      "traditional": [
+        {
+          "scalar": 22766,
+          "mandarin": "zhuàng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 22767,
+          "mandarin": "zhuàng",
+          "hanyu_pinyin": "10428.070:zhuàng,zhuāng"
+        }
+      ]
+    },
+    {
+      "simplified": 22768,
+      "traditional": [
+        {
+          "scalar": 22768,
+          "mandarin": "shēng",
+          "hanyu_pinyin": "10429.010:shēng,qìng"
+        },
+        {
+          "scalar": 32882,
+          "mandarin": "shēng",
+          "hanyu_pinyin": "42794.040:shēng"
+        }
+      ]
+    },
+    {
+      "simplified": 22771,
+      "traditional": [
+        {
+          "scalar": 22771,
+          "mandarin": "ké",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 27579,
+          "mandarin": "qiào",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 27580,
+          "mandarin": "ké",
+          "hanyu_pinyin": "32160.070:qiào,ké"
+        }
+      ]
+    },
+    {
+      "simplified": 22797,
+      "traditional": [
+        {
+          "scalar": 22797,
+          "mandarin": "fù",
+          "hanyu_pinyin": "20869.060:fù"
+        },
+        {
+          "scalar": 24489,
+          "mandarin": "fù",
+          "hanyu_pinyin": "20834.020:fù"
+        },
+        {
+          "scalar": 35079,
+          "mandarin": "fù",
+          "hanyu_pinyin": "53103.080:fú"
+        },
+        {
+          "scalar": 35206,
+          "mandarin": "fù",
+          "hanyu_pinyin": "42808.090:fù"
+        }
+      ]
+    },
+    {
+      "simplified": 22815,
+      "traditional": [
+        {
+          "scalar": 22815,
+          "mandarin": "gòu",
+          "hanyu_pinyin": "20863.190:gòu"
+        },
+        {
+          "scalar": 22816,
+          "mandarin": "gòu",
+          "hanyu_pinyin": "20864.050:gòu"
+        }
+      ]
+    },
+    {
+      "simplified": 22836,
+      "traditional": [
+        {
+          "scalar": 22836,
+          "mandarin": "tóu",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 38957,
+          "mandarin": "tóu",
+          "hanyu_pinyin": "74372.050:tóu,tou"
+        }
+      ]
+    },
+    {
+      "simplified": 22840,
+      "traditional": [
+        {
+          "scalar": 22840,
+          "mandarin": "kuā",
+          "hanyu_pinyin": "10526.050:kuā,kuà,kuǎ"
+        },
+        {
+          "scalar": 35463,
+          "mandarin": "kuā",
+          "hanyu_pinyin": "63962.140:kuā,qù"
+        }
+      ]
+    },
+    {
+      "simplified": 22870,
+      "traditional": [
+        {
+          "scalar": 22892,
+          "mandarin": "jiǎng",
+          "hanyu_pinyin": "10548.030:jiǎng"
+        },
+        {
+          "scalar": 29518,
+          "mandarin": "jiǎng",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 22904,
+      "traditional": [
+        {
+          "scalar": 22904,
+          "mandarin": "jiān",
+          "hanyu_pinyin": "21025.010:gān,jiān"
+        },
+        {
+          "scalar": 23014,
+          "mandarin": "jiān",
+          "hanyu_pinyin": "21048.100:jiān"
+        }
+      ]
+    },
+    {
+      "simplified": 22955,
+      "traditional": [
+        {
+          "scalar": 23215,
+          "mandarin": "guī",
+          "hanyu_pinyin": "21068.180:guī,guì"
+        },
+        {
+          "scalar": 23296,
+          "mandarin": "guī",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 22999,
+      "traditional": [
+        {
+          "scalar": 22989,
+          "mandarin": "shān",
+          "hanyu_pinyin": "21037.100:shān,xiān,pān"
+        },
+        {
+          "scalar": 22999,
+          "mandarin": "shān",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 23004,
+      "traditional": [
+        {
+          "scalar": 23004,
+          "mandarin": "jiāng",
+          "hanyu_pinyin": "21047.110:jiāng"
+        },
+        {
+          "scalar": 34193,
+          "mandarin": "jiāng",
+          "hanyu_pinyin": "53300.090:jiāng"
+        }
+      ]
+    },
+    {
+      "simplified": 23033,
+      "traditional": [
+        {
+          "scalar": 22908,
+          "mandarin": "chà",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 23033,
+          "mandarin": "chà",
+          "hanyu_pinyin": "21048.040:chà"
+        }
+      ]
+    },
+    {
+      "simplified": 23044,
+      "traditional": [
+        {
+          "scalar": 23044,
+          "mandarin": "lóu",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 23105,
+          "mandarin": "lóu",
+          "hanyu_pinyin": "21058.030:lóu,lǚ,lǘ,léi"
+        }
+      ]
+    },
+    {
+      "simplified": 23047,
+      "traditional": [
+        {
+          "scalar": 23047,
+          "mandarin": "jiāo",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 23308,
+          "mandarin": "jiāo",
+          "hanyu_pinyin": "21081.060:jiāo"
+        }
+      ]
+    },
+    {
+      "simplified": 23048,
+      "traditional": [
+        {
+          "scalar": 23048,
+          "mandarin": "luán",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 23372,
+          "mandarin": "luán",
+          "hanyu_pinyin": "21091.080:liàn,luǎn,luán"
+        }
+      ]
+    },
+    {
+      "simplified": 23089,
+      "traditional": [
+        {
+          "scalar": 23067,
+          "mandarin": "yú",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 23089,
+          "mandarin": "yú",
+          "hanyu_pinyin": "21051.080:yú"
+        }
+      ]
+    },
+    {
+      "simplified": 23385,
+      "traditional": [
+        {
+          "scalar": 23385,
+          "mandarin": "sūn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 23403,
+          "mandarin": "sūn",
+          "hanyu_pinyin": "21016.050:sūn,xùn"
+        }
+      ]
+    },
+    {
+      "simplified": 23402,
+      "traditional": [
+        {
+          "scalar": 23402,
+          "mandarin": "luán",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 23423,
+          "mandarin": "luán",
+          "hanyu_pinyin": "21020.130:luán"
+        }
+      ]
+    },
+    {
+      "simplified": 23425,
+      "traditional": [
+        {
+          "scalar": 23425,
+          "mandarin": "níng",
+          "hanyu_pinyin": "20910.010:zhù,níng,nìng"
+        },
+        {
+          "scalar": 23527,
+          "mandarin": "níng",
+          "hanyu_pinyin": "20949.050:níng,nìng"
+        }
+      ]
+    },
+    {
+      "simplified": 23453,
+      "traditional": [
+        {
+          "scalar": 23453,
+          "mandarin": "bǎo",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 23542,
+          "mandarin": "bǎo",
+          "hanyu_pinyin": "20958.030:bǎo"
+        }
+      ]
+    },
+    {
+      "simplified": 23454,
+      "traditional": [
+        {
+          "scalar": 23454,
+          "mandarin": "shí",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 23526,
+          "mandarin": "shí",
+          "hanyu_pinyin": "20952.030:shí,zhì"
+        }
+      ]
+    },
+    {
+      "simplified": 23478,
+      "traditional": [
+        {
+          "scalar": 20642,
+          "mandarin": "jiā",
+          "hanyu_pinyin": "10206.020:xiàng,jiā"
+        },
+        {
+          "scalar": 23478,
+          "mandarin": "jiā",
+          "hanyu_pinyin": "20930.150:jiā,jià,jia,jie,gū"
+        }
+      ]
+    },
+    {
+      "simplified": 23486,
+      "traditional": [
+        {
+          "scalar": 23486,
+          "mandarin": "bīn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 36051,
+          "mandarin": "bīn",
+          "hanyu_pinyin": "63643.080:bīn"
+        }
+      ]
+    },
+    {
+      "simplified": 23545,
+      "traditional": [
+        {
+          "scalar": 23545,
+          "mandarin": "duì",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 23565,
+          "mandarin": "duì",
+          "hanyu_pinyin": "10511.090:duì"
+        }
+      ]
+    },
+    {
+      "simplified": 23551,
+      "traditional": [
+        {
+          "scalar": 22781,
+          "mandarin": "shòu",
+          "hanyu_pinyin": "10483.100:shòu"
+        },
+        {
+          "scalar": 23551,
+          "mandarin": "shòu",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 23572,
+      "traditional": [
+        {
+          "scalar": 23572,
+          "mandarin": "ěr",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 29246,
+          "mandarin": "ěr",
+          "hanyu_pinyin": "10027.010:ěr,mǐ,nǐ"
+        }
+      ]
+    },
+    {
+      "simplified": 23581,
+      "traditional": [
+        {
+          "scalar": 22039,
+          "mandarin": "cháng",
+          "hanyu_pinyin": "21529.090:cháng"
+        },
+        {
+          "scalar": 23581,
+          "mandarin": "cháng",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 23608,
+      "traditional": [
+        {
+          "scalar": 23608,
+          "mandarin": "shī",
+          "hanyu_pinyin": "20963.140:shī"
+        },
+        {
+          "scalar": 23629,
+          "mandarin": "shī",
+          "hanyu_pinyin": "20971.090:shī,shì"
+        }
+      ]
+    },
+    {
+      "simplified": 23613,
+      "traditional": [
+        {
+          "scalar": 20760,
+          "mandarin": "jǐn",
+          "hanyu_pinyin": "10232.060:jìn"
+        },
+        {
+          "scalar": 23613,
+          "mandarin": "jǐn",
+          "hanyu_pinyin": "20966.020:jìn,jǐn"
+        },
+        {
+          "scalar": 30433,
+          "mandarin": "jǐn",
+          "hanyu_pinyin": "42567.050:jìn,jǐn"
+        }
+      ]
+    },
+    {
+      "simplified": 23626,
+      "traditional": [
+        {
+          "scalar": 23622,
+          "mandarin": "jiè",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 23626,
+          "mandarin": "jiè",
+          "hanyu_pinyin": "20969.050:jiè"
+        }
+      ]
+    },
+    {
+      "simplified": 23646,
+      "traditional": [
+        {
+          "scalar": 23646,
+          "mandarin": "shǔ",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 23660,
+          "mandarin": "shǔ",
+          "hanyu_pinyin": "20982.080:zhǔ,shǔ"
+        }
+      ]
+    },
+    {
+      "simplified": 23649,
+      "traditional": [
+        {
+          "scalar": 23649,
+          "mandarin": "lǚ",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 23650,
+          "mandarin": "lǚ",
+          "hanyu_pinyin": "20979.140:lǚ"
+        }
+      ]
+    },
+    {
+      "simplified": 23681,
+      "traditional": [
+        {
+          "scalar": 23681,
+          "mandarin": "suì",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 27506,
+          "mandarin": "suì",
+          "hanyu_pinyin": "21443.200:suì,suò"
+        }
+      ]
+    },
+    {
+      "simplified": 23782,
+      "traditional": [
+        {
+          "scalar": 23782,
+          "mandarin": "luán",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 24018,
+          "mandarin": "luán",
+          "hanyu_pinyin": "10808.120:luán"
+        }
+      ]
+    },
+    {
+      "simplified": 24072,
+      "traditional": [
+        {
+          "scalar": 24072,
+          "mandarin": "shī",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 24107,
+          "mandarin": "shī",
+          "hanyu_pinyin": "10740.020:shī"
+        }
+      ]
+    },
+    {
+      "simplified": 24088,
+      "traditional": [
+        {
+          "scalar": 24088,
+          "mandarin": "lián",
+          "hanyu_pinyin": "10735.080:lián,chén"
+        },
+        {
+          "scalar": 31806,
+          "mandarin": "lián",
+          "hanyu_pinyin": "53022.120:lián"
+        }
+      ]
+    },
+    {
+      "simplified": 24110,
+      "traditional": [
+        {
+          "scalar": 24110,
+          "mandarin": "bāng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 24171,
+          "mandarin": "bāng",
+          "hanyu_pinyin": "10756.150:bāng"
+        }
+      ]
+    },
+    {
+      "simplified": 24130,
+      "traditional": [
+        {
+          "scalar": 20906,
+          "mandarin": "mì",
+          "hanyu_pinyin": "10306.050:mì"
+        },
+        {
+          "scalar": 24130,
+          "mandarin": "mì",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 24178,
+      "traditional": [
+        {
+          "scalar": 20094,
+          "mandarin": "qián gān",
+          "hanyu_pinyin": "10056.100:qián,gān"
+        },
+        {
+          "scalar": 24178,
+          "mandarin": "gàn",
+          "hanyu_pinyin": "10405.050:gān,gàn,àn"
+        },
+        {
+          "scalar": 24185,
+          "mandarin": "gàn",
+          "hanyu_pinyin": "10409.090:gàn,gān,hán,guǎn"
+        }
+      ]
+    },
+    {
+      "simplified": 24182,
+      "traditional": [
+        {
+          "scalar": 20006,
+          "mandarin": "bìng",
+          "hanyu_pinyin": "10246.020:bìng,bàn,bàng"
+        },
+        {
+          "scalar": 20341,
+          "mandarin": "bìng",
+          "hanyu_pinyin": "10153.030:bìng"
+        },
+        {
+          "scalar": 24182,
+          "mandarin": "bìng",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 24191,
+      "traditional": [
+        {
+          "scalar": 24191,
+          "mandarin": "guǎng",
+          "hanyu_pinyin": "20872.060:yǎn,ān,guǎng"
+        },
+        {
+          "scalar": 24291,
+          "mandarin": "guǎng",
+          "hanyu_pinyin": "20897.040:guǎng,guàng,kuàng,guāng"
+        }
+      ]
+    },
+    {
+      "simplified": 24196,
+      "traditional": [
+        {
+          "scalar": 24196,
+          "mandarin": "zhuāng",
+          "hanyu_pinyin": "20873.050:péng,zhuāng"
+        },
+        {
+          "scalar": 33674,
+          "mandarin": "zhuāng",
+          "hanyu_pinyin": "53226.050:zhuāng"
+        }
+      ]
+    },
+    {
+      "simplified": 24208,
+      "traditional": [
+        {
+          "scalar": 24208,
+          "mandarin": "lú",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 24300,
+          "mandarin": "lú",
+          "hanyu_pinyin": "20907.190:lú,lǘ"
+        }
+      ]
+    },
+    {
+      "simplified": 24212,
+      "traditional": [
+        {
+          "scalar": 24212,
+          "mandarin": "yīng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 25033,
+          "mandarin": "yīng",
+          "hanyu_pinyin": "42359.030:yīng,yìng"
+        }
+      ]
+    },
+    {
+      "simplified": 24217,
+      "traditional": [
+        {
+          "scalar": 24217,
+          "mandarin": "miào",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 24287,
+          "mandarin": "miào",
+          "hanyu_pinyin": "20901.020:miào"
+        }
+      ]
+    },
+    {
+      "simplified": 24320,
+      "traditional": [
+        {
+          "scalar": 24320,
+          "mandarin": "kāi",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 38283,
+          "mandarin": "kāi",
+          "hanyu_pinyin": "74286.020:kāi,qiān"
+        }
+      ]
+    },
+    {
+      "simplified": 24323,
+      "traditional": [
+        {
+          "scalar": 24323,
+          "mandarin": "qì",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 26820,
+          "mandarin": "qì",
+          "hanyu_pinyin": "21237.070:qì"
+        }
+      ]
+    },
+    {
+      "simplified": 24357,
+      "traditional": [
+        {
+          "scalar": 24396,
+          "mandarin": "mí",
+          "hanyu_pinyin": "21004.030:mí,mǐ,ní"
+        },
+        {
+          "scalar": 28720,
+          "mandarin": "mí",
+          "hanyu_pinyin": "31791.030:mǐ,mí,nǐ"
+        }
+      ]
+    },
+    {
+      "simplified": 24367,
+      "traditional": [
+        {
+          "scalar": 24367,
+          "mandarin": "wān",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 24398,
+          "mandarin": "wān",
+          "hanyu_pinyin": "21005.220:wān"
+        }
+      ]
+    },
+    {
+      "simplified": 24377,
+      "traditional": [
+        {
+          "scalar": 24377,
+          "mandarin": "dàn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 24392,
+          "mandarin": "dàn",
+          "hanyu_pinyin": "21002.080:dàn,tán"
+        }
+      ]
+    },
+    {
+      "simplified": 24378,
+      "traditional": [
+        {
+          "scalar": 24375,
+          "mandarin": "qiáng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 24378,
+          "mandarin": "qiáng",
+          "hanyu_pinyin": "20999.150:qiáng,qiǎng,jiàng"
+        }
+      ]
+    },
+    {
+      "simplified": 24402,
+      "traditional": [
+        {
+          "scalar": 24402,
+          "mandarin": "guī",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 27512,
+          "mandarin": "guī",
+          "hanyu_pinyin": "21446.150:guī,kuì,kuí"
+        }
+      ]
+    },
+    {
+      "simplified": 24403,
+      "traditional": [
+        {
+          "scalar": 22137,
+          "mandarin": "dāng",
+          "hanyu_pinyin": "10690.060:dāng"
+        },
+        {
+          "scalar": 24403,
+          "mandarin": "dāng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 30070,
+          "mandarin": "dāng",
+          "hanyu_pinyin": "42546.060:dāng,dàng,dang"
+        }
+      ]
+    },
+    {
+      "simplified": 24405,
+      "traditional": [
+        {
+          "scalar": 37636,
+          "mandarin": "lù",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 37682,
+          "mandarin": "lù",
+          "hanyu_pinyin": "64225.100:lù,lǜ"
+        }
+      ]
+    },
+    {
+      "simplified": 24422,
+      "traditional": [
+        {
+          "scalar": 24421,
+          "mandarin": "yàn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 24422,
+          "mandarin": "yàn",
+          "hanyu_pinyin": "20854.090:yàn,pán"
+        }
+      ]
+    },
+    {
+      "simplified": 24449,
+      "traditional": [
+        {
+          "scalar": 24449,
+          "mandarin": "zhēng",
+          "hanyu_pinyin": "20815.020:zhēng"
+        },
+        {
+          "scalar": 24501,
+          "mandarin": "zhǐ zhēng",
+          "hanyu_pinyin": "20842.070:zhēng,zhǐ,chéng"
+        }
+      ]
+    },
+    {
+      "simplified": 24481,
+      "traditional": [
+        {
+          "scalar": 24481,
+          "mandarin": "yù",
+          "hanyu_pinyin": "20832.160:yù,yà"
+        },
+        {
+          "scalar": 31142,
+          "mandarin": "yù",
+          "hanyu_pinyin": "42408.030:yù"
+        }
+      ]
+    },
+    {
+      "simplified": 24535,
+      "traditional": [
+        {
+          "scalar": 24535,
+          "mandarin": "zhì",
+          "hanyu_pinyin": "42269.040:zhì"
+        },
+        {
+          "scalar": 35468,
+          "mandarin": "zhì",
+          "hanyu_pinyin": "63973.080:zhì"
+        }
+      ]
+    },
+    {
+      "simplified": 24576,
+      "traditional": [
+        {
+          "scalar": 24576,
+          "mandarin": "huái",
+          "hanyu_pinyin": "42276.020:fù,huái"
+        },
+        {
+          "scalar": 25079,
+          "mandarin": "huái",
+          "hanyu_pinyin": "42369.100:huái"
+        }
+      ]
+    },
+    {
+      "simplified": 24604,
+      "traditional": [
+        {
+          "scalar": 24604,
+          "mandarin": "lián",
+          "hanyu_pinyin": "42287.040:líng,lián,lǐng"
+        },
+        {
+          "scalar": 24976,
+          "mandarin": "lián",
+          "hanyu_pinyin": "42356.070:lián"
+        }
+      ]
+    },
+    {
+      "simplified": 24651,
+      "traditional": [
+        {
+          "scalar": 24651,
+          "mandarin": "liàn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 25088,
+          "mandarin": "liàn",
+          "hanyu_pinyin": "42372.080:liàn"
+        }
+      ]
+    },
+    {
+      "simplified": 24658,
+      "traditional": [
+        {
+          "scalar": 24646,
+          "mandarin": "héng",
+          "hanyu_pinyin": "42294.160:héng,gèng"
+        },
+        {
+          "scalar": 24658,
+          "mandarin": "héng",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 24694,
+      "traditional": [
+        {
+          "scalar": 22081,
+          "mandarin": "ě",
+          "hanyu_pinyin": "10681.050:wù,wò,ě"
+        },
+        {
+          "scalar": 24801,
+          "mandarin": "è",
+          "hanyu_pinyin": "42307.120:è,wù,wū,ě,hū"
+        }
+      ]
+    },
+    {
+      "simplified": 24700,
+      "traditional": [
+        {
+          "scalar": 24700,
+          "mandarin": "nǎo",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 24817,
+          "mandarin": "nǎo",
+          "hanyu_pinyin": "42332.160:nǎo"
+        }
+      ]
+    },
+    {
+      "simplified": 24747,
+      "traditional": [
+        {
+          "scalar": 24872,
+          "mandarin": "què",
+          "hanyu_pinyin": "42333.030:què"
+        },
+        {
+          "scalar": 24932,
+          "mandarin": "què",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 24807,
+      "traditional": [
+        {
+          "scalar": 24807,
+          "mandarin": "jù",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 25084,
+          "mandarin": "jù",
+          "hanyu_pinyin": "42371.070:jù"
+        }
+      ]
+    },
+    {
+      "simplified": 24809,
+      "traditional": [
+        {
+          "scalar": 24809,
+          "mandarin": "chéng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 25074,
+          "mandarin": "chéng",
+          "hanyu_pinyin": "42366.060:chéng"
+        }
+      ]
+    },
+    {
+      "simplified": 24864,
+      "traditional": [
+        {
+          "scalar": 24864,
+          "mandarin": "yùn",
+          "hanyu_pinyin": "42327.150:yùn,yǔn,wěn"
+        },
+        {
+          "scalar": 24909,
+          "mandarin": "yùn",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 24895,
+      "traditional": [
+        {
+          "scalar": 24895,
+          "mandarin": "yuàn",
+          "hanyu_pinyin": "42333.100:yuàn"
+        },
+        {
+          "scalar": 39000,
+          "mandarin": "yuàn",
+          "hanyu_pinyin": "74385.070:yuàn,yuǎn"
+        }
+      ]
+    },
+    {
+      "simplified": 25103,
+      "traditional": [
+        {
+          "scalar": 25103,
+          "mandarin": "xì",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 25138,
+          "mandarin": "xì",
+          "hanyu_pinyin": "21413.130:xì,hū,xī,huī,suō,yī"
+        }
+      ]
+    },
+    {
+      "simplified": 25112,
+      "traditional": [
+        {
+          "scalar": 25112,
+          "mandarin": "zhàn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 25136,
+          "mandarin": "zhàn",
+          "hanyu_pinyin": "21412.120:zhàn"
+        }
+      ]
+    },
+    {
+      "simplified": 25143,
+      "traditional": [
+        {
+          "scalar": 25142,
+          "mandarin": "hù",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 25143,
+          "mandarin": "hù",
+          "hanyu_pinyin": "32257.010:hù"
+        }
+      ]
+    },
+    {
+      "simplified": 25165,
+      "traditional": [
+        {
+          "scalar": 25165,
+          "mandarin": "cái",
+          "hanyu_pinyin": "31824.020:cái,zāi"
+        },
+        {
+          "scalar": 32404,
+          "mandarin": "cái",
+          "hanyu_pinyin": "53469.050:shān,cái"
+        }
+      ]
+    },
+    {
+      "simplified": 25169,
+      "traditional": [
+        {
+          "scalar": 25169,
+          "mandarin": "pū",
+          "hanyu_pinyin": "31827.020:pū,pì"
+        },
+        {
+          "scalar": 25778,
+          "mandarin": "pū",
+          "hanyu_pinyin": "31956.040:pū,bǔ"
+        }
+      ]
+    },
+    {
+      "simplified": 25191,
+      "traditional": [
+        {
+          "scalar": 22519,
+          "mandarin": "zhí",
+          "hanyu_pinyin": "10457.050:zhí"
+        },
+        {
+          "scalar": 25191,
+          "mandarin": "zhí",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 25240,
+      "traditional": [
+        {
+          "scalar": 25240,
+          "mandarin": "zhé",
+          "hanyu_pinyin": "31838.070:zhé,shé,tí,zhē"
+        },
+        {
+          "scalar": 25722,
+          "mandarin": "zhé",
+          "hanyu_pinyin": "31950.130:zhé,lā,xié"
+        }
+      ]
+    },
+    {
+      "simplified": 25243,
+      "traditional": [
+        {
+          "scalar": 25243,
+          "mandarin": "pāo",
+          "hanyu_pinyin": "31842.020:pāo"
+        },
+        {
+          "scalar": 25291,
+          "mandarin": "pāo",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 25253,
+      "traditional": [
+        {
+          "scalar": 22577,
+          "mandarin": "bào",
+          "hanyu_pinyin": "10466.040:bào,fù"
+        },
+        {
+          "scalar": 25253,
+          "mandarin": "bào",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 25285,
+      "traditional": [
+        {
+          "scalar": 25285,
+          "mandarin": "dān",
+          "hanyu_pinyin": "31851.040:dǎn,jiē,dān,dàn"
+        },
+        {
+          "scalar": 25812,
+          "mandarin": "dān",
+          "hanyu_pinyin": "31971.030:dān,dàn,shàn"
+        }
+      ]
+    },
+    {
+      "simplified": 25346,
+      "traditional": [
+        {
+          "scalar": 25346,
+          "mandarin": "guà",
+          "hanyu_pinyin": "31865.050:guà"
+        },
+        {
+          "scalar": 25499,
+          "mandarin": "guà",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 25371,
+      "traditional": [
+        {
+          "scalar": 25371,
+          "mandarin": "luán",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 25891,
+          "mandarin": "luán",
+          "hanyu_pinyin": "31989.030:luán,liàn"
+        }
+      ]
+    },
+    {
+      "simplified": 25375,
+      "traditional": [
+        {
+          "scalar": 25375,
+          "mandarin": "xié",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 25406,
+          "mandarin": "xié",
+          "hanyu_pinyin": "31880.020:xié,jiā"
+        }
+      ]
+    },
+    {
+      "simplified": 25377,
+      "traditional": [
+        {
+          "scalar": 25377,
+          "mandarin": "dǎng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 25803,
+          "mandarin": "dǎng",
+          "hanyu_pinyin": "31968.030:dàng,dǎng"
+        }
+      ]
+    },
+    {
+      "simplified": 25405,
+      "traditional": [
+        {
+          "scalar": 25405,
+          "mandarin": "wǎn",
+          "hanyu_pinyin": "31886.050:wǎn"
+        },
+        {
+          "scalar": 36627,
+          "mandarin": "wǎn",
+          "hanyu_pinyin": "53535.120:wǎn"
+        }
+      ]
+    },
+    {
+      "simplified": 25454,
+      "traditional": [
+        {
+          "scalar": 25454,
+          "mandarin": "jù",
+          "hanyu_pinyin": "31909.010:jū,jù"
+        },
+        {
+          "scalar": 25818,
+          "mandarin": "jù",
+          "hanyu_pinyin": "31967.150:jù"
+        }
+      ]
+    },
+    {
+      "simplified": 25527,
+      "traditional": [
+        {
+          "scalar": 25527,
+          "mandarin": "zhì",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 25842,
+          "mandarin": "zhì",
+          "hanyu_pinyin": "31976.030:zhì"
+        }
+      ]
+    },
+    {
+      "simplified": 25598,
+      "traditional": [
+        {
+          "scalar": 25598,
+          "mandarin": "wèn",
+          "hanyu_pinyin": "31916.030:wèn,wù"
+        },
+        {
+          "scalar": 25653,
+          "mandarin": "wèn",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 25658,
+      "traditional": [
+        {
+          "scalar": 25658,
+          "mandarin": "xié",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 25884,
+          "mandarin": "xié",
+          "hanyu_pinyin": "31987.050:xié"
+        }
+      ]
+    },
+    {
+      "simplified": 25670,
+      "traditional": [
+        {
+          "scalar": 25670,
+          "mandarin": "bǎi",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 25850,
+          "mandarin": "bǎi",
+          "hanyu_pinyin": "31980.090:bǎi"
+        },
+        {
+          "scalar": 35180,
+          "mandarin": "bǎi",
+          "hanyu_pinyin": "53120.200:bēi,bǎi"
+        }
+      ]
+    },
+    {
+      "simplified": 25672,
+      "traditional": [
+        {
+          "scalar": 25672,
+          "mandarin": "bìn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 25839,
+          "mandarin": "bìn",
+          "hanyu_pinyin": "31977.020:bìn"
+        }
+      ]
+    },
+    {
+      "simplified": 25674,
+      "traditional": [
+        {
+          "scalar": 25674,
+          "mandarin": "tān",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 25892,
+          "mandarin": "tān",
+          "hanyu_pinyin": "31989.040:tān,nàn"
+        }
+      ]
+    },
+    {
+      "simplified": 25745,
+      "traditional": [
+        {
+          "scalar": 25744,
+          "mandarin": "chēng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 25745,
+          "mandarin": "chēng",
+          "hanyu_pinyin": "31957.010:chēng"
+        }
+      ]
+    },
+    {
+      "simplified": 25968,
+      "traditional": [
+        {
+          "scalar": 25968,
+          "mandarin": "shù",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 25976,
+          "mandarin": "shù",
+          "hanyu_pinyin": "21474.010:shǔ,shù,shuò"
+        }
+      ]
+    },
+    {
+      "simplified": 25995,
+      "traditional": [
+        {
+          "scalar": 25995,
+          "mandarin": "zhāi",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 40779,
+          "mandarin": "zhāi",
+          "hanyu_pinyin": "74785.030:zhāi"
+        }
+      ]
+    },
+    {
+      "simplified": 26007,
+      "traditional": [
+        {
+          "scalar": 26007,
+          "mandarin": "dòu dǒu",
+          "hanyu_pinyin": "32252.010:dǒu,zhǔ,dòu"
+        },
+        {
+          "scalar": 39717,
+          "mandarin": "dòu",
+          "hanyu_pinyin": "74515.010:dòu"
+        }
+      ]
+    },
+    {
+      "simplified": 26029,
+      "traditional": [
+        {
+          "scalar": 26029,
+          "mandarin": "duàn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 26039,
+          "mandarin": "duàn",
+          "hanyu_pinyin": "32028.130:duàn"
+        }
+      ]
+    },
+    {
+      "simplified": 26059,
+      "traditional": [
+        {
+          "scalar": 26059,
+          "mandarin": "xuán",
+          "hanyu_pinyin": "32181.040:xuán,xuàn"
+        },
+        {
+          "scalar": 37831,
+          "mandarin": "xuàn",
+          "hanyu_pinyin": "64251.070:xuàn,xuán"
+        }
+      ]
+    },
+    {
+      "simplified": 26080,
+      "traditional": [
+        {
+          "scalar": 26080,
+          "mandarin": "wú",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 28961,
+          "mandarin": "wú",
+          "hanyu_pinyin": "32211.150:wú,mó"
+        }
+      ]
+    },
+    {
+      "simplified": 26102,
+      "traditional": [
+        {
+          "scalar": 26102,
+          "mandarin": "shí",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 26178,
+          "mandarin": "shí",
+          "hanyu_pinyin": "21505.050:shí"
+        }
+      ]
+    },
+    {
+      "simplified": 26103,
+      "traditional": [
+        {
+          "scalar": 26103,
+          "mandarin": "kuàng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 26336,
+          "mandarin": "kuàng",
+          "hanyu_pinyin": "21539.170:kuàng"
+        }
+      ]
+    },
+    {
+      "simplified": 26172,
+      "traditional": [
+        {
+          "scalar": 26172,
+          "mandarin": "zhòu",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 26205,
+          "mandarin": "zhòu",
+          "hanyu_pinyin": "21515.020:zhòu"
+        }
+      ]
+    },
+    {
+      "simplified": 26187,
+      "traditional": [
+        {
+          "scalar": 26185,
+          "mandarin": "jìn",
+          "hanyu_pinyin": "21507.030:jìn"
+        },
+        {
+          "scalar": 26187,
+          "mandarin": "jìn",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 26194,
+      "traditional": [
+        {
+          "scalar": 26194,
+          "mandarin": "shài",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 26348,
+          "mandarin": "shài",
+          "hanyu_pinyin": "21542.140:shài"
+        }
+      ]
+    },
+    {
+      "simplified": 26354,
+      "traditional": [
+        {
+          "scalar": 26354,
+          "mandarin": "qū",
+          "hanyu_pinyin": "21484.020:qū,qǔ"
+        },
+        {
+          "scalar": 40623,
+          "mandarin": "qū",
+          "hanyu_pinyin": "74602.220:qū"
+        }
+      ]
+    },
+    {
+      "simplified": 26415,
+      "traditional": [
+        {
+          "scalar": 26415,
+          "mandarin": "shù",
+          "hanyu_pinyin": "21152.020:shú,zhú,shù"
+        },
+        {
+          "scalar": 34899,
+          "mandarin": "shù",
+          "hanyu_pinyin": "20826.130:shù"
+        }
+      ]
+    },
+    {
+      "simplified": 26417,
+      "traditional": [
+        {
+          "scalar": 26417,
+          "mandarin": "zhū",
+          "hanyu_pinyin": "21154.030:zhū,shū"
+        },
+        {
+          "scalar": 30787,
+          "mandarin": "zhū",
+          "hanyu_pinyin": "42429.040:zhū"
+        }
+      ]
+    },
+    {
+      "simplified": 26420,
+      "traditional": [
+        {
+          "scalar": 26420,
+          "mandarin": "pǔ",
+          "hanyu_pinyin": "21154.020:pò,pǔ,pū,pō,piáo"
+        },
+        {
+          "scalar": 27192,
+          "mandarin": "pǔ",
+          "hanyu_pinyin": "21291.040:pǔ,pú"
+        }
+      ]
+    },
+    {
+      "simplified": 26426,
+      "traditional": [
+        {
+          "scalar": 26426,
+          "mandarin": "jī",
+          "hanyu_pinyin": "21155.040:jī,wèi"
+        },
+        {
+          "scalar": 27231,
+          "mandarin": "jī",
+          "hanyu_pinyin": "21298.040:jī"
+        }
+      ]
+    },
+    {
+      "simplified": 26435,
+      "traditional": [
+        {
+          "scalar": 26435,
+          "mandarin": "quán",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 27402,
+          "mandarin": "quán",
+          "hanyu_pinyin": "21319.060:quán,guàn"
+        }
+      ]
+    },
+    {
+      "simplified": 26438,
+      "traditional": [
+        {
+          "scalar": 26438,
+          "mandarin": "gān",
+          "hanyu_pinyin": "21156.120:gàn,gān,gǎn"
+        },
+        {
+          "scalar": 26751,
+          "mandarin": "gǎn",
+          "hanyu_pinyin": "21213.020:hàn,gǎn"
+        }
+      ]
+    },
+    {
+      "simplified": 26480,
+      "traditional": [
+        {
+          "scalar": 20625,
+          "mandarin": "jié",
+          "hanyu_pinyin": "10204.050:jié"
+        },
+        {
+          "scalar": 26480,
+          "mandarin": "jié",
+          "hanyu_pinyin": "21175.010:jié"
+        }
+      ]
+    },
+    {
+      "simplified": 26494,
+      "traditional": [
+        {
+          "scalar": 26494,
+          "mandarin": "sōng",
+          "hanyu_pinyin": "21173.050:sōng"
+        },
+        {
+          "scalar": 39686,
+          "mandarin": "sōng",
+          "hanyu_pinyin": "74527.090:sōng,sòng,sóng"
+        }
+      ]
+    },
+    {
+      "simplified": 26495,
+      "traditional": [
+        {
+          "scalar": 26495,
+          "mandarin": "bǎn",
+          "hanyu_pinyin": "21172.030:bǎn"
+        },
+        {
+          "scalar": 38342,
+          "mandarin": "bǎn",
+          "hanyu_pinyin": "74308.120:pǎn,bǎn"
+        }
+      ]
+    },
+    {
+      "simplified": 26497,
+      "traditional": [
+        {
+          "scalar": 26497,
+          "mandarin": "jí",
+          "hanyu_pinyin": "21161.090:jí"
+        },
+        {
+          "scalar": 26997,
+          "mandarin": "jí",
+          "hanyu_pinyin": "21240.100:jí,jǐ"
+        }
+      ]
+    },
+    {
+      "simplified": 26500,
+      "traditional": [
+        {
+          "scalar": 26500,
+          "mandarin": "gòu",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 27083,
+          "mandarin": "gòu",
+          "hanyu_pinyin": "21259.070:gòu,jué"
+        }
+      ]
+    },
+    {
+      "simplified": 26588,
+      "traditional": [
+        {
+          "scalar": 26588,
+          "mandarin": "guì",
+          "hanyu_pinyin": "21167.050:jǔ,guì"
+        },
+        {
+          "scalar": 27331,
+          "mandarin": "guì",
+          "hanyu_pinyin": "21307.070:guì"
+        }
+      ]
+    },
+    {
+      "simplified": 26624,
+      "traditional": [
+        {
+          "scalar": 26624,
+          "mandarin": "zhī",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 26772,
+          "mandarin": "zhī",
+          "hanyu_pinyin": "21216.060:zhī"
+        }
+      ]
+    },
+    {
+      "simplified": 26629,
+      "traditional": [
+        {
+          "scalar": 26613,
+          "mandarin": "shān",
+          "hanyu_pinyin": "21183.030:zhà,shān"
+        },
+        {
+          "scalar": 26629,
+          "mandarin": "zhà",
+          "hanyu_pinyin": "21187.010:zhà,shān,cè"
+        }
+      ]
+    },
+    {
+      "simplified": 26631,
+      "traditional": [
+        {
+          "scalar": 26631,
+          "mandarin": "biāo",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 27161,
+          "mandarin": "biāo",
+          "hanyu_pinyin": "21277.010:biāo,biào"
+        }
+      ]
+    },
+    {
+      "simplified": 26646,
+      "traditional": [
+        {
+          "scalar": 26646,
+          "mandarin": "qī",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 26866,
+          "mandarin": "qī",
+          "hanyu_pinyin": "21229.060:qī,xī"
+        }
+      ]
+    },
+    {
+      "simplified": 26647,
+      "traditional": [
+        {
+          "scalar": 24900,
+          "mandarin": "lì",
+          "hanyu_pinyin": "42336.040:lì"
+        },
+        {
+          "scalar": 26647,
+          "mandarin": "lì",
+          "hanyu_pinyin": "21195.090:lì,liè"
+        }
+      ]
+    },
+    {
+      "simplified": 26686,
+      "traditional": [
+        {
+          "scalar": 26686,
+          "mandarin": "luán",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 27410,
+          "mandarin": "luán",
+          "hanyu_pinyin": "21324.150:luán"
+        }
+      ]
+    },
+    {
+      "simplified": 26790,
+      "traditional": [
+        {
+          "scalar": 22818,
+          "mandarin": "mèng",
+          "hanyu_pinyin": "20864.190:méng,mèng"
+        },
+        {
+          "scalar": 26790,
+          "mandarin": "mèng",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 27004,
+      "traditional": [
+        {
+          "scalar": 27004,
+          "mandarin": "lóu",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 27155,
+          "mandarin": "lóu",
+          "hanyu_pinyin": "21279.040:lóu,lǘ"
+        }
+      ]
+    },
+    {
+      "simplified": 27426,
+      "traditional": [
+        {
+          "scalar": 27489,
+          "mandarin": "huān",
+          "hanyu_pinyin": "32153.170:huān"
+        },
+        {
+          "scalar": 27426,
+          "mandarin": "huān",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 27428,
+      "traditional": [
+        {
+          "scalar": 27428,
+          "mandarin": "yú",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 27487,
+          "mandarin": "yú",
+          "hanyu_pinyin": "32152.100:yú"
+        }
+      ]
+    },
+    {
+      "simplified": 27553,
+      "traditional": [
+        {
+          "scalar": 27553,
+          "mandarin": "bìn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 27567,
+          "mandarin": "bìn",
+          "hanyu_pinyin": "21395.170:bìn"
+        }
+      ]
+    },
+    {
+      "simplified": 27617,
+      "traditional": [
+        {
+          "scalar": 27617,
+          "mandarin": "zhān",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 27656,
+          "mandarin": "zhān",
+          "hanyu_pinyin": "32007.110:zhān"
+        }
+      ]
+    },
+    {
+      "simplified": 27668,
+      "traditional": [
+        {
+          "scalar": 27668,
+          "mandarin": "qì",
+          "hanyu_pinyin": "32010.010:qì,qǐ"
+        },
+        {
+          "scalar": 27683,
+          "mandarin": "qì",
+          "hanyu_pinyin": "32011.140:xì,qì"
+        }
+      ]
+    },
+    {
+      "simplified": 27719,
+      "traditional": [
+        {
+          "scalar": 21295,
+          "mandarin": "huì",
+          "hanyu_pinyin": "10089.100:huì"
+        },
+        {
+          "scalar": 24409,
+          "mandarin": "huì",
+          "hanyu_pinyin": "20962.040:huì"
+        }
+      ]
+    },
+    {
+      "simplified": 27769,
+      "traditional": [
+        {
+          "scalar": 27769,
+          "mandarin": "xiōng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 27958,
+          "mandarin": "xiōng",
+          "hanyu_pinyin": "31614.010:xiōng"
+        }
+      ]
+    },
+    {
+      "simplified": 27780,
+      "traditional": [
+        {
+          "scalar": 27780,
+          "mandarin": "yún",
+          "hanyu_pinyin": "31558.040:yún"
+        },
+        {
+          "scalar": 28560,
+          "mandarin": "yún",
+          "hanyu_pinyin": "31739.010:yún"
+        }
+      ]
+    },
+    {
+      "simplified": 27784,
+      "traditional": [
+        {
+          "scalar": 27784,
+          "mandarin": "shěn chén",
+          "hanyu_pinyin": "31572.070:chén,shěn,tán"
+        },
+        {
+          "scalar": 28683,
+          "mandarin": "shěn",
+          "hanyu_pinyin": "31781.010:shěn,chèn,pán"
+        }
+      ]
+    },
+    {
+      "simplified": 27809,
+      "traditional": [
+        {
+          "scalar": 27794,
+          "mandarin": "méi",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 27809,
+          "mandarin": "méi",
+          "hanyu_pinyin": "31570.070:mò,me,méi"
+        }
+      ]
+    },
+    {
+      "simplified": 27817,
+      "traditional": [
+        {
+          "scalar": 28296,
+          "mandarin": "wéi",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 28505,
+          "mandarin": "wéi",
+          "hanyu_pinyin": "31745.050:wéi,guī"
+        }
+      ]
+    },
+    {
+      "simplified": 27818,
+      "traditional": [
+        {
+          "scalar": 27818,
+          "mandarin": "hù",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 28396,
+          "mandarin": "hù",
+          "hanyu_pinyin": "31731.060:hù"
+        }
+      ]
+    },
+    {
+      "simplified": 27880,
+      "traditional": [
+        {
+          "scalar": 27880,
+          "mandarin": "zhù",
+          "hanyu_pinyin": "31592.010:zhù,zhòu"
+        },
+        {
+          "scalar": 35387,
+          "mandarin": "zhù",
+          "hanyu_pinyin": "63957.010:zhù"
+        }
+      ]
+    },
+    {
+      "simplified": 27882,
+      "traditional": [
+        {
+          "scalar": 27882,
+          "mandarin": "lèi",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 28122,
+          "mandarin": "lèi",
+          "hanyu_pinyin": "31662.070:lèi,lì"
+        }
+      ]
+    },
+    {
+      "simplified": 27922,
+      "traditional": [
+        {
+          "scalar": 27922,
+          "mandarin": "sǎ",
+          "hanyu_pinyin": "31603.050:xǐ,sǎ,xiǎn,sěn,cuǐ,xùn"
+        },
+        {
+          "scalar": 28753,
+          "mandarin": "sǎ",
+          "hanyu_pinyin": "31794.070:sǎ,xiǎn,xǐ,lí,shī"
+        }
+      ]
+    },
+    {
+      "simplified": 27964,
+      "traditional": [
+        {
+          "scalar": 27964,
+          "mandarin": "wā",
+          "hanyu_pinyin": "31601.070:wā,guī"
+        },
+        {
+          "scalar": 31402,
+          "mandarin": "wā",
+          "hanyu_pinyin": "42736.040:wā"
+        }
+      ]
+    },
+    {
+      "simplified": 27973,
+      "traditional": [
+        {
+          "scalar": 27973,
+          "mandarin": "qiǎn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 28154,
+          "mandarin": "qiǎn",
+          "hanyu_pinyin": "31646.020:qiǎn,jiān,jiàn,cán,zàn"
+        }
+      ]
+    },
+    {
+      "simplified": 28034,
+      "traditional": [
+        {
+          "scalar": 22615,
+          "mandarin": "tú",
+          "hanyu_pinyin": "10474.080:tú,dù"
+        },
+        {
+          "scalar": 28034,
+          "mandarin": "tú",
+          "hanyu_pinyin": "31628.120:tú,chú,yé"
+        }
+      ]
+    },
+    {
+      "simplified": 28059,
+      "traditional": [
+        {
+          "scalar": 28059,
+          "mandarin": "tāo",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 28644,
+          "mandarin": "tāo",
+          "hanyu_pinyin": "31765.160:tāo,cháo,shòu,dào"
+        }
+      ]
+    },
+    {
+      "simplified": 28096,
+      "traditional": [
+        {
+          "scalar": 28096,
+          "mandarin": "diàn",
+          "hanyu_pinyin": "31661.020:diàn"
+        },
+        {
+          "scalar": 28593,
+          "mandarin": "diàn",
+          "hanyu_pinyin": "31764.160:diàn"
+        }
+      ]
+    },
+    {
+      "simplified": 28170,
+      "traditional": [
+        {
+          "scalar": 28149,
+          "mandarin": "yuān",
+          "hanyu_pinyin": "31681.010:yuān"
+        },
+        {
+          "scalar": 28170,
+          "mandarin": "yuān",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 28201,
+      "traditional": [
+        {
+          "scalar": 28201,
+          "mandarin": "wēn",
+          "hanyu_pinyin": "31675.040:wēn,yùn"
+        },
+        {
+          "scalar": 28331,
+          "mandarin": "wēn",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 28286,
+      "traditional": [
+        {
+          "scalar": 28286,
+          "mandarin": "wān",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 28771,
+          "mandarin": "wān",
+          "hanyu_pinyin": "31798.090:wān"
+        }
+      ]
+    },
+    {
+      "simplified": 28378,
+      "traditional": [
+        {
+          "scalar": 28378,
+          "mandarin": "gǔn",
+          "hanyu_pinyin": "31705.040:gǔn"
+        },
+        {
+          "scalar": 28414,
+          "mandarin": "gǔn",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 28390,
+      "traditional": [
+        {
+          "scalar": 28390,
+          "mandarin": "luán",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 28772,
+          "mandarin": "luán",
+          "hanyu_pinyin": "31799.010:luán"
+        }
+      ]
+    },
+    {
+      "simplified": 28392,
+      "traditional": [
+        {
+          "scalar": 28392,
+          "mandarin": "bīn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 28657,
+          "mandarin": "bīn",
+          "hanyu_pinyin": "31773.070:bīn"
+        }
+      ]
+    },
+    {
+      "simplified": 28393,
+      "traditional": [
+        {
+          "scalar": 28393,
+          "mandarin": "tān",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 28760,
+          "mandarin": "tān",
+          "hanyu_pinyin": "31794.040:hàn,tān,nàn"
+        }
+      ]
+    },
+    {
+      "simplified": 28435,
+      "traditional": [
+        {
+          "scalar": 28435,
+          "mandarin": "lí",
+          "hanyu_pinyin": "31705.030:lí"
+        },
+        {
+          "scalar": 28757,
+          "mandarin": "lí",
+          "hanyu_pinyin": "31793.100:lí"
+        }
+      ]
+    },
+    {
+      "simplified": 28783,
+      "traditional": [
+        {
+          "scalar": 28783,
+          "mandarin": "dēng",
+          "hanyu_pinyin": "32188.030:dīng,dēng"
+        },
+        {
+          "scalar": 29128,
+          "mandarin": "dēng",
+          "hanyu_pinyin": "32238.110:dēng"
+        }
+      ]
+    },
+    {
+      "simplified": 28790,
+      "traditional": [
+        {
+          "scalar": 28790,
+          "mandarin": "zào",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 31432,
+          "mandarin": "zào",
+          "hanyu_pinyin": "42746.110:zào"
+        }
+      ]
+    },
+    {
+      "simplified": 28798,
+      "traditional": [
+        {
+          "scalar": 28797,
+          "mandarin": "zāi",
+          "hanyu_pinyin": "32190.060,32191.130:zāi"
+        },
+        {
+          "scalar": 28798,
+          "mandarin": "zāi",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 28809,
+      "traditional": [
+        {
+          "scalar": 28809,
+          "mandarin": "lú",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 29200,
+          "mandarin": "lú",
+          "hanyu_pinyin": "32246.250:lú"
+        }
+      ]
+    },
+    {
+      "simplified": 28857,
+      "traditional": [
+        {
+          "scalar": 28857,
+          "mandarin": "diǎn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 40670,
+          "mandarin": "diǎn",
+          "hanyu_pinyin": "74745.110:diǎn,zhān,duò"
+        }
+      ]
+    },
+    {
+      "simplified": 28891,
+      "traditional": [
+        {
+          "scalar": 28891,
+          "mandarin": "zhú",
+          "hanyu_pinyin": "32199.100:chóng,zhú"
+        },
+        {
+          "scalar": 29165,
+          "mandarin": "zhú",
+          "hanyu_pinyin": "32241.020:zhú,kuò"
+        }
+      ]
+    },
+    {
+      "simplified": 28895,
+      "traditional": [
+        {
+          "scalar": 28895,
+          "mandarin": "yān",
+          "hanyu_pinyin": "32199.120:yān,yīn"
+        },
+        {
+          "scalar": 29017,
+          "mandarin": "yān",
+          "hanyu_pinyin": "32215.090:yān"
+        }
+      ]
+    },
+    {
+      "simplified": 28905,
+      "traditional": [
+        {
+          "scalar": 28905,
+          "mandarin": "huì",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 29172,
+          "mandarin": "huì",
+          "hanyu_pinyin": "32241.070:huì"
+        }
+      ]
+    },
+    {
+      "simplified": 28908,
+      "traditional": [
+        {
+          "scalar": 28908,
+          "mandarin": "jìn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 29180,
+          "mandarin": "jìn",
+          "hanyu_pinyin": "32244.010:jìn"
+        }
+      ]
+    },
+    {
+      "simplified": 28909,
+      "traditional": [
+        {
+          "scalar": 28909,
+          "mandarin": "rè",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 29105,
+          "mandarin": "rè",
+          "hanyu_pinyin": "32230.100:rè"
+        }
+      ]
+    },
+    {
+      "simplified": 29369,
+      "traditional": [
+        {
+          "scalar": 29369,
+          "mandarin": "yóu",
+          "hanyu_pinyin": "21335.070:yòu,yóu"
+        },
+        {
+          "scalar": 29494,
+          "mandarin": "yóu",
+          "hanyu_pinyin": "21359.090:yóu,yáo"
+        }
+      ]
+    },
+    {
+      "simplified": 29420,
+      "traditional": [
+        {
+          "scalar": 29420,
+          "mandarin": "dú",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 29544,
+          "mandarin": "dú",
+          "hanyu_pinyin": "21372.030:dú"
+        }
+      ]
+    },
+    {
+      "simplified": 29423,
+      "traditional": [
+        {
+          "scalar": 29423,
+          "mandarin": "kuài",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 29546,
+          "mandarin": "kuài",
+          "hanyu_pinyin": "21373.060:kuài,huá"
+        }
+      ]
+    },
+    {
+      "simplified": 29461,
+      "traditional": [
+        {
+          "scalar": 29461,
+          "mandarin": "mí",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 29564,
+          "mandarin": "mí",
+          "hanyu_pinyin": "21378.100:mí"
+        }
+      ]
+    },
+    {
+      "simplified": 29482,
+      "traditional": [
+        {
+          "scalar": 29482,
+          "mandarin": "zhū",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 35948,
+          "mandarin": "zhū",
+          "hanyu_pinyin": "63616.040:zhū"
+        }
+      ]
+    },
+    {
+      "simplified": 29483,
+      "traditional": [
+        {
+          "scalar": 29483,
+          "mandarin": "māo",
+          "hanyu_pinyin": "21352.010:māo,miáo,máo"
+        },
+        {
+          "scalar": 35987,
+          "mandarin": "māo",
+          "hanyu_pinyin": "63914.040:māo"
+        }
+      ]
+    },
+    {
+      "simplified": 29484,
+      "traditional": [
+        {
+          "scalar": 29484,
+          "mandarin": "wèi",
+          "hanyu_pinyin": "21358.020:wèi"
+        },
+        {
+          "scalar": 34655,
+          "mandarin": "wèi",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 29486,
+      "traditional": [
+        {
+          "scalar": 29486,
+          "mandarin": "xiàn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 29563,
+          "mandarin": "xiàn",
+          "hanyu_pinyin": "21376.090:xiàn,suō,xī"
+        }
+      ]
+    },
+    {
+      "simplified": 29615,
+      "traditional": [
+        {
+          "scalar": 29615,
+          "mandarin": "huán",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 29872,
+          "mandarin": "huán",
+          "hanyu_pinyin": "21140.050:huán,huàn"
+        }
+      ]
+    },
+    {
+      "simplified": 29648,
+      "traditional": [
+        {
+          "scalar": 29648,
+          "mandarin": "fà",
+          "hanyu_pinyin": "80018.170:fà"
+        },
+        {
+          "scalar": 29754,
+          "mandarin": "fà",
+          "hanyu_pinyin": "21123.090:fà"
+        }
+      ]
+    },
+    {
+      "simplified": 29756,
+      "traditional": [
+        {
+          "scalar": 29756,
+          "mandarin": "qióng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 29898,
+          "mandarin": "qióng",
+          "hanyu_pinyin": "21143.060:qióng,xuán"
+        }
+      ]
+    },
+    {
+      "simplified": 30005,
+      "traditional": [
+        {
+          "scalar": 30005,
+          "mandarin": "diàn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 38651,
+          "mandarin": "diàn",
+          "hanyu_pinyin": "64060.010:diàn"
+        }
+      ]
+    },
+    {
+      "simplified": 30011,
+      "traditional": [
+        {
+          "scalar": 30011,
+          "mandarin": "huà",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 30059,
+          "mandarin": "huà",
+          "hanyu_pinyin": "42544.020:huà"
+        }
+      ]
+    },
+    {
+      "simplified": 30129,
+      "traditional": [
+        {
+          "scalar": 30129,
+          "mandarin": "pào",
+          "hanyu_pinyin": "42668.150:pào"
+        },
+        {
+          "scalar": 30384,
+          "mandarin": "pào",
+          "hanyu_pinyin": "42755.020:pào"
+        }
+      ]
+    },
+    {
+      "simplified": 30132,
+      "traditional": [
+        {
+          "scalar": 30132,
+          "mandarin": "kē",
+          "hanyu_pinyin": "42664.120:kē,ē,qià"
+        },
+        {
+          "scalar": 30206,
+          "mandarin": "ē",
+          "hanyu_pinyin": "42677.060:kē,ē"
+        }
+      ]
+    },
+    {
+      "simplified": 30151,
+      "traditional": [
+        {
+          "scalar": 30151,
+          "mandarin": "zhèng",
+          "hanyu_pinyin": "42664.050:zhèng,zhēng"
+        },
+        {
+          "scalar": 30309,
+          "mandarin": "zhēng",
+          "hanyu_pinyin": "42703.020:zhēng"
+        }
+      ]
+    },
+    {
+      "simplified": 30162,
+      "traditional": [
+        {
+          "scalar": 30162,
+          "mandarin": "yǎng",
+          "hanyu_pinyin": "42673.010:yáng,yǎng"
+        },
+        {
+          "scalar": 30306,
+          "mandarin": "yǎng",
+          "hanyu_pinyin": "42702.070:yǎng"
+        }
+      ]
+    },
+    {
+      "simplified": 30232,
+      "traditional": [
+        {
+          "scalar": 30232,
+          "mandarin": "lòu",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 30266,
+          "mandarin": "lòu",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 30267,
+          "mandarin": "lòu",
+          "hanyu_pinyin": "42693.050:lòu,lǘ"
+        }
+      ]
+    },
+    {
+      "simplified": 30385,
+      "traditional": [
+        {
+          "scalar": 30385,
+          "mandarin": "zhòu",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 30394,
+          "mandarin": "zhòu",
+          "hanyu_pinyin": "42757.170:zhòu,zhōu"
+        }
+      ]
+    },
+    {
+      "simplified": 30422,
+      "traditional": [
+        {
+          "scalar": 30422,
+          "mandarin": "gài",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 33995,
+          "mandarin": "gài",
+          "hanyu_pinyin": "53260.130:gài,gě"
+        }
+      ]
+    },
+    {
+      "simplified": 30502,
+      "traditional": [
+        {
+          "scalar": 30501,
+          "mandarin": "zì",
+          "hanyu_pinyin": "42485.100:zì"
+        },
+        {
+          "scalar": 30502,
+          "mandarin": "zì",
+          "hanyu_pinyin": "42485.090:zì"
+        }
+      ]
+    },
+    {
+      "simplified": 30528,
+      "traditional": [
+        {
+          "scalar": 30528,
+          "mandarin": "zhe",
+          "hanyu_pinyin": "53129.090:zhuó,zhāo,zháo,zhe"
+        },
+        {
+          "scalar": 33879,
+          "mandarin": "zhù zhe",
+          "hanyu_pinyin": "53228.020:zhù,chú,zhuó,zhāo,zháo,zhe"
+        }
+      ]
+    },
+    {
+      "simplified": 30699,
+      "traditional": [
+        {
+          "scalar": 30699,
+          "mandarin": "jiǎo",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 30703,
+          "mandarin": "jiǎo",
+          "hanyu_pinyin": "42586.130:jiǎo,jiāo"
+        }
+      ]
+    },
+    {
+      "simplified": 30830,
+      "traditional": [
+        {
+          "scalar": 30830,
+          "mandarin": "què",
+          "hanyu_pinyin": "42434.110:què"
+        },
+        {
+          "scalar": 30906,
+          "mandarin": "què",
+          "hanyu_pinyin": "42450.040:què"
+        }
+      ]
+    },
+    {
+      "simplified": 30839,
+      "traditional": [
+        {
+          "scalar": 30982,
+          "mandarin": "jiǎn",
+          "hanyu_pinyin": "42460.030:xiǎn,jiǎn"
+        },
+        {
+          "scalar": 40572,
+          "mandarin": "jiǎn",
+          "hanyu_pinyin": "74611.210:jiǎn"
+        }
+      ]
+    },
+    {
+      "simplified": 30861,
+      "traditional": [
+        {
+          "scalar": 30861,
+          "mandarin": "ài",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 31001,
+          "mandarin": "ài",
+          "hanyu_pinyin": "42461.110:ài,yí"
+        }
+      ]
+    },
+    {
+      "simplified": 31036,
+      "traditional": [
+        {
+          "scalar": 31036,
+          "mandarin": "lǐ",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 31150,
+          "mandarin": "lǐ",
+          "hanyu_pinyin": "42409.140:lǐ"
+        }
+      ]
+    },
+    {
+      "simplified": 31074,
+      "traditional": [
+        {
+          "scalar": 31074,
+          "mandarin": "mí",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 31152,
+          "mandarin": "mí",
+          "hanyu_pinyin": "42411.010:nǐ,mí,nǐ,xiǎn"
+        }
+      ]
+    },
+    {
+      "simplified": 31095,
+      "traditional": [
+        {
+          "scalar": 31095,
+          "mandarin": "dǎo",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 31153,
+          "mandarin": "dǎo",
+          "hanyu_pinyin": "42410.100:dǎo"
+        }
+      ]
+    },
+    {
+      "simplified": 31104,
+      "traditional": [
+        {
+          "scalar": 31104,
+          "mandarin": "bǐng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 31263,
+          "mandarin": "bǐng",
+          "hanyu_pinyin": "42615.080:lǐn,bǐng"
+        }
+      ]
+    },
+    {
+      "simplified": 31171,
+      "traditional": [
+        {
+          "scalar": 31167,
+          "mandarin": "tū",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 31171,
+          "mandarin": "tū",
+          "hanyu_pinyin": "42588.070:tū"
+        }
+      ]
+    },
+    {
+      "simplified": 31174,
+      "traditional": [
+        {
+          "scalar": 31174,
+          "mandarin": "gǎn",
+          "hanyu_pinyin": "42591.010:gǎn"
+        },
+        {
+          "scalar": 31240,
+          "mandarin": "gǎn",
+          "hanyu_pinyin": "42607.010:gǎn"
+        }
+      ]
+    },
+    {
+      "simplified": 31179,
+      "traditional": [
+        {
+          "scalar": 31179,
+          "mandarin": "qiū",
+          "hanyu_pinyin": "42595.050:qiū"
+        },
+        {
+          "scalar": 38822,
+          "mandarin": "qiū",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 31181,
+      "traditional": [
+        {
+          "scalar": 31181,
+          "mandarin": "zhǒng",
+          "hanyu_pinyin": "42593.130:chóng,zhǒng,zhòng"
+        },
+        {
+          "scalar": 31278,
+          "mandarin": "zhǒng",
+          "hanyu_pinyin": "42617.170:chóng,zhǒng,zhòng"
+        }
+      ]
+    },
+    {
+      "simplified": 31216,
+      "traditional": [
+        {
+          "scalar": 31216,
+          "mandarin": "chēng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 31281,
+          "mandarin": "chēng",
+          "hanyu_pinyin": "42619.020:chēng,chèn,chèng"
+        }
+      ]
+    },
+    {
+      "simplified": 31283,
+      "traditional": [
+        {
+          "scalar": 31283,
+          "mandarin": "wěn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 31337,
+          "mandarin": "wěn",
+          "hanyu_pinyin": "42636.190:wěn"
+        }
+      ]
+    },
+    {
+      "simplified": 31351,
+      "traditional": [
+        {
+          "scalar": 31351,
+          "mandarin": "qióng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 31406,
+          "mandarin": "qióng",
+          "hanyu_pinyin": "42737.120:qióng"
+        }
+      ]
+    },
+    {
+      "simplified": 31363,
+      "traditional": [
+        {
+          "scalar": 31363,
+          "mandarin": "qiè",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 31434,
+          "mandarin": "qiè",
+          "hanyu_pinyin": "42747.070:qiè"
+        }
+      ]
+    },
+    {
+      "simplified": 31446,
+      "traditional": [
+        {
+          "scalar": 31466,
+          "mandarin": "shù",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 35918,
+          "mandarin": "shù",
+          "hanyu_pinyin": "63567.140:shù"
+        }
+      ]
+    },
+    {
+      "simplified": 31499,
+      "traditional": [
+        {
+          "scalar": 31499,
+          "mandarin": "sǔn",
+          "hanyu_pinyin": "52952.110:sǔn"
+        },
+        {
+          "scalar": 31565,
+          "mandarin": "sǔn",
+          "hanyu_pinyin": "52969.020:sǔn,yún,xùn"
+        }
+      ]
+    },
+    {
+      "simplified": 31508,
+      "traditional": [
+        {
+          "scalar": 31508,
+          "mandarin": "bǐ",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 31558,
+          "mandarin": "bǐ",
+          "hanyu_pinyin": "52970.090:bǐ"
+        }
+      ]
+    },
+    {
+      "simplified": 31569,
+      "traditional": [
+        {
+          "scalar": 31569,
+          "mandarin": "zhù",
+          "hanyu_pinyin": "52963.050:zhú,zhù"
+        },
+        {
+          "scalar": 31689,
+          "mandarin": "zhú",
+          "hanyu_pinyin": "52998.040:zhù"
+        }
+      ]
+    },
+    {
+      "simplified": 31614,
+      "traditional": [
+        {
+          "scalar": 31805,
+          "mandarin": "qiān",
+          "hanyu_pinyin": "53022.040:qiān"
+        },
+        {
+          "scalar": 31844,
+          "mandarin": "qiān",
+          "hanyu_pinyin": "53032.150:qiān"
+        }
+      ]
+    },
+    {
+      "simplified": 31657,
+      "traditional": [
+        {
+          "scalar": 31657,
+          "mandarin": "luó",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 31854,
+          "mandarin": "luó",
+          "hanyu_pinyin": "53034.120:luó"
+        }
+      ]
+    },
+    {
+      "simplified": 31699,
+      "traditional": [
+        {
+          "scalar": 31699,
+          "mandarin": "lǒu",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 31757,
+          "mandarin": "lǒu",
+          "hanyu_pinyin": "53008.090:lǒu,lǚ,jù"
+        }
+      ]
+    },
+    {
+      "simplified": 31729,
+      "traditional": [
+        {
+          "scalar": 31729,
+          "mandarin": "lí",
+          "hanyu_pinyin": "53004.030:lí"
+        },
+        {
+          "scalar": 31852,
+          "mandarin": "lí",
+          "hanyu_pinyin": "53034.030:lí"
+        }
+      ]
+    },
+    {
+      "simplified": 31860,
+      "traditional": [
+        {
+          "scalar": 31860,
+          "mandarin": "dí",
+          "hanyu_pinyin": "53141.050:dí,zá"
+        },
+        {
+          "scalar": 31988,
+          "mandarin": "dí",
+          "hanyu_pinyin": "53163.180:dí"
+        }
+      ]
+    },
+    {
+      "simplified": 31900,
+      "traditional": [
+        {
+          "scalar": 31900,
+          "mandarin": "tiào",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 31990,
+          "mandarin": "tiào",
+          "hanyu_pinyin": "53164.160:tiào,diào"
+        }
+      ]
+    },
+    {
+      "simplified": 31918,
+      "traditional": [
+        {
+          "scalar": 31918,
+          "mandarin": "liáng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 31975,
+          "mandarin": "liáng",
+          "hanyu_pinyin": "53160.120:liáng"
+        }
+      ]
+    },
+    {
+      "simplified": 31943,
+      "traditional": [
+        {
+          "scalar": 31943,
+          "mandarin": "hóu",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 39217,
+          "mandarin": "hóu",
+          "hanyu_pinyin": "74465.080:hóu"
+        }
+      ]
+    },
+    {
+      "simplified": 31995,
+      "traditional": [
+        {
+          "scalar": 20418,
+          "mandarin": "xì",
+          "hanyu_pinyin": "10164.080:xì"
+        },
+        {
+          "scalar": 31995,
+          "mandarin": "xì",
+          "hanyu_pinyin": "53361.020:xì,jì"
+        },
+        {
+          "scalar": 32363,
+          "mandarin": "xì",
+          "hanyu_pinyin": "53456.150:jì,xì"
+        }
+      ]
+    },
+    {
+      "simplified": 32047,
+      "traditional": [
+        {
+          "scalar": 32047,
+          "mandarin": "lèi",
+          "hanyu_pinyin": "53381.040:lěi,léi,lèi,lǜ,liè"
+        },
+        {
+          "scalar": 32397,
+          "mandarin": "léi",
+          "hanyu_pinyin": "53466.080:léi,lěi,lèi"
+        }
+      ]
+    },
+    {
+      "simplified": 32420,
+      "traditional": [
+        {
+          "scalar": 32308,
+          "mandarin": "qiàn",
+          "hanyu_pinyin": "53448.040:qiān,qiàn"
+        },
+        {
+          "scalar": 32406,
+          "mandarin": "xiān",
+          "hanyu_pinyin": "53469.040:xiān,jiān"
+        }
+      ]
+    },
+    {
+      "simplified": 32447,
+      "traditional": [
+        {
+          "scalar": 32171,
+          "mandarin": "xiàn",
+          "hanyu_pinyin": "53412.070:xiàn"
+        },
+        {
+          "scalar": 32218,
+          "mandarin": "xiàn",
+          "hanyu_pinyin": "53428.050:xiàn"
+        }
+      ]
+    },
+    {
+      "simplified": 32477,
+      "traditional": [
+        {
+          "scalar": 32085,
+          "mandarin": "jué",
+          "hanyu_pinyin": "53396.040:jué"
+        },
+        {
+          "scalar": 32118,
+          "mandarin": "jué",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 32483,
+      "traditional": [
+        {
+          "scalar": 32137,
+          "mandarin": "tòu",
+          "hanyu_pinyin": "53405.030:tòu,xiù"
+        },
+        {
+          "scalar": 32353,
+          "mandarin": "xiù",
+          "hanyu_pinyin": "53462.060:xiù"
+        }
+      ]
+    },
+    {
+      "simplified": 32486,
+      "traditional": [
+        {
+          "scalar": 32091,
+          "mandarin": "tāo",
+          "hanyu_pinyin": "10202.150:tāo"
+        },
+        {
+          "scalar": 32295,
+          "mandarin": "tāo",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 32497,
+      "traditional": [
+        {
+          "scalar": 32212,
+          "mandarin": "shàng",
+          "hanyu_pinyin": "53413.030:shàng"
+        },
+        {
+          "scalar": 38813,
+          "mandarin": "shàng",
+          "hanyu_pinyin": "74339.050:zhǎng,shàng"
+        }
+      ]
+    },
+    {
+      "simplified": 32503,
+      "traditional": [
+        {
+          "scalar": 32179,
+          "mandarin": "bēng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 32323,
+          "mandarin": "běng bēng",
+          "hanyu_pinyin": "53443.090:bēng,běng,bèng"
+        }
+      ]
+    },
+    {
+      "simplified": 32511,
+      "traditional": [
+        {
+          "scalar": 32160,
+          "mandarin": "lǜ",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 32209,
+          "mandarin": "lǜ",
+          "hanyu_pinyin": "53421.040:lǜ,lù"
+        }
+      ]
+    },
+    {
+      "simplified": 32522,
+      "traditional": [
+        {
+          "scalar": 32252,
+          "mandarin": "yùn",
+          "hanyu_pinyin": "53426.070:yùn,wēn"
+        },
+        {
+          "scalar": 32277,
+          "mandarin": "yùn",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 32560,
+      "traditional": [
+        {
+          "scalar": 32366,
+          "mandarin": "jiāng",
+          "hanyu_pinyin": "53456.130:jiāng"
+        },
+        {
+          "scalar": 38849,
+          "mandarin": "jiāng",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 32593,
+      "traditional": [
+        {
+          "scalar": 32178,
+          "mandarin": "wǎng",
+          "hanyu_pinyin": "53414.060:wǎng"
+        },
+        {
+          "scalar": 32593,
+          "mandarin": "wǎng",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 32599,
+      "traditional": [
+        {
+          "scalar": 32599,
+          "mandarin": "luó",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 32645,
+          "mandarin": "luó",
+          "hanyu_pinyin": "42928.050:luó,luō,luo"
+        }
+      ]
+    },
+    {
+      "simplified": 32610,
+      "traditional": [
+        {
+          "scalar": 32610,
+          "mandarin": "bà",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 32631,
+          "mandarin": "bà",
+          "hanyu_pinyin": "42924.120:bà,pí,pì,bǐ,ba,bǎi"
+        }
+      ]
+    },
+    {
+      "simplified": 32827,
+      "traditional": [
+        {
+          "scalar": 24677,
+          "mandarin": "chǐ",
+          "hanyu_pinyin": "42290.010:chǐ"
+        },
+        {
+          "scalar": 32827,
+          "mandarin": "chǐ",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 32844,
+      "traditional": [
+        {
+          "scalar": 32844,
+          "mandarin": "zhí",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 32887,
+          "mandarin": "zhí",
+          "hanyu_pinyin": "42797.140:zhí,tè"
+        }
+      ]
+    },
+    {
+      "simplified": 32852,
+      "traditional": [
+        {
+          "scalar": 32852,
+          "mandarin": "lián",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 32879,
+          "mandarin": "lián",
+          "hanyu_pinyin": "42796.030:lián"
+        }
+      ]
+    },
+    {
+      "simplified": 32942,
+      "traditional": [
+        {
+          "scalar": 32942,
+          "mandarin": "āng",
+          "hanyu_pinyin": "32052.030:háng,gāng,āng"
+        },
+        {
+          "scalar": 39599,
+          "mandarin": "āng",
+          "hanyu_pinyin": "74408.120:kǎng,āng"
+        }
+      ]
+    },
+    {
+      "simplified": 32948,
+      "traditional": [
+        {
+          "scalar": 32948,
+          "mandarin": "yáo",
+          "hanyu_pinyin": "32049.170:yáo"
+        },
+        {
+          "scalar": 39194,
+          "mandarin": "yáo",
+          "hanyu_pinyin": "74460.100:yáo"
+        }
+      ]
+    },
+    {
+      "simplified": 32966,
+      "traditional": [
+        {
+          "scalar": 32966,
+          "mandarin": "dǎn",
+          "hanyu_pinyin": "32059.040:tán,tǎn,dá,dǎn"
+        },
+        {
+          "scalar": 33213,
+          "mandarin": "dǎn",
+          "hanyu_pinyin": "32117.070:dǎn"
+        }
+      ]
+    },
+    {
+      "simplified": 32988,
+      "traditional": [
+        {
+          "scalar": 21213,
+          "mandarin": "shèng",
+          "hanyu_pinyin": "32090.130:shèng"
+        },
+        {
+          "scalar": 32988,
+          "mandarin": "shèng",
+          "hanyu_pinyin": "32060.070:xīng,qìng,shēng,shèng"
+        }
+      ]
+    },
+    {
+      "simplified": 32993,
+      "traditional": [
+        {
+          "scalar": 32993,
+          "mandarin": "hú",
+          "hanyu_pinyin": "32056.080:hú"
+        },
+        {
+          "scalar": 34906,
+          "mandarin": "hú",
+          "hanyu_pinyin": "20842.010:hú"
+        },
+        {
+          "scalar": 39693,
+          "mandarin": "hú",
+          "hanyu_pinyin": "74529.110:hú"
+        }
+      ]
+    },
+    {
+      "simplified": 33033,
+      "traditional": [
+        {
+          "scalar": 33032,
+          "mandarin": "mài",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 33033,
+          "mandarin": "mài",
+          "hanyu_pinyin": "32064.030:mài"
+        }
+      ]
+    },
+    {
+      "simplified": 33037,
+      "traditional": [
+        {
+          "scalar": 33037,
+          "mandarin": "kuài",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 33214,
+          "mandarin": "kuài",
+          "hanyu_pinyin": "32117.050:kuài"
+        }
+      ]
+    },
+    {
+      "simplified": 33039,
+      "traditional": [
+        {
+          "scalar": 33247,
+          "mandarin": "zàng",
+          "hanyu_pinyin": "32126.020:zàng"
+        },
+        {
+          "scalar": 39634,
+          "mandarin": "zāng",
+          "hanyu_pinyin": "74418.020:zǎng,zāng"
+        }
+      ]
+    },
+    {
+      "simplified": 33044,
+      "traditional": [
+        {
+          "scalar": 33044,
+          "mandarin": "luán",
+          "hanyu_pinyin": "52932.110:jī,luán"
+        },
+        {
+          "scalar": 33248,
+          "mandarin": "luán",
+          "hanyu_pinyin": "52934.090:luán"
+        }
+      ]
+    },
+    {
+      "simplified": 33050,
+      "traditional": [
+        {
+          "scalar": 33050,
+          "mandarin": "jiǎo",
+          "hanyu_pinyin": "32075.070:jiǎo,jué"
+        },
+        {
+          "scalar": 33139,
+          "mandarin": "jiǎo",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 33098,
+      "traditional": [
+        {
+          "scalar": 33098,
+          "mandarin": "là",
+          "hanyu_pinyin": "32084.050:xī,là"
+        },
+        {
+          "scalar": 33240,
+          "mandarin": "là",
+          "hanyu_pinyin": "32123.060:là,liè"
+        }
+      ]
+    },
+    {
+      "simplified": 33133,
+      "traditional": [
+        {
+          "scalar": 33133,
+          "mandarin": "è",
+          "hanyu_pinyin": "32096.050:è"
+        },
+        {
+          "scalar": 40822,
+          "mandarin": "è",
+          "hanyu_pinyin": "74797.170:è"
+        }
+      ]
+    },
+    {
+      "simplified": 33169,
+      "traditional": [
+        {
+          "scalar": 33169,
+          "mandarin": "bìn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 33231,
+          "mandarin": "bìn",
+          "hanyu_pinyin": "32121.110:bìn"
+        }
+      ]
+    },
+    {
+      "simplified": 33268,
+      "traditional": [
+        {
+          "scalar": 32251,
+          "mandarin": "zhì",
+          "hanyu_pinyin": "53435.070:zhì"
+        },
+        {
+          "scalar": 33268,
+          "mandarin": "zhì",
+          "hanyu_pinyin": "42815.060:zhì,zhuì"
+        }
+      ]
+    },
+    {
+      "simplified": 33293,
+      "traditional": [
+        {
+          "scalar": 25448,
+          "mandarin": "shě",
+          "hanyu_pinyin": "31900.040:shě"
+        },
+        {
+          "scalar": 33293,
+          "mandarin": "shě shè",
+          "hanyu_pinyin": "52941.020:shè,shě,shì"
+        }
+      ]
+    },
+    {
+      "simplified": 33395,
+      "traditional": [
+        {
+          "scalar": 33395,
+          "mandarin": "yàn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 33399,
+          "mandarin": "yàn",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 33446,
+      "traditional": [
+        {
+          "scalar": 33446,
+          "mandarin": "lú",
+          "hanyu_pinyin": "53184.080:hù,lú"
+        },
+        {
+          "scalar": 34310,
+          "mandarin": "lú",
+          "hanyu_pinyin": "53325.070:lú"
+        }
+      ]
+    },
+    {
+      "simplified": 33464,
+      "traditional": [
+        {
+          "scalar": 33464,
+          "mandarin": "yún",
+          "hanyu_pinyin": "53178.040:yún,yùn"
+        },
+        {
+          "scalar": 34131,
+          "mandarin": "yún",
+          "hanyu_pinyin": "53290.020:yún"
+        }
+      ]
+    },
+    {
+      "simplified": 33487,
+      "traditional": [
+        {
+          "scalar": 22220,
+          "mandarin": "sū",
+          "hanyu_pinyin": "10707.090:sū"
+        },
+        {
+          "scalar": 33487,
+          "mandarin": "sū",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 34311,
+          "mandarin": "sū",
+          "hanyu_pinyin": "53327.070:sū"
+        }
+      ]
+    },
+    {
+      "simplified": 33529,
+      "traditional": [
+        {
+          "scalar": 33529,
+          "mandarin": "píng",
+          "hanyu_pinyin": "53189.040:píng,pēng"
+        },
+        {
+          "scalar": 34315,
+          "mandarin": "píng",
+          "hanyu_pinyin": "53325.040:pín,píng"
+        }
+      ]
+    },
+    {
+      "simplified": 33539,
+      "traditional": [
+        {
+          "scalar": 31684,
+          "mandarin": "fàn",
+          "hanyu_pinyin": "52989.090:fàn"
+        },
+        {
+          "scalar": 33539,
+          "mandarin": "fàn",
+          "hanyu_pinyin": "53196.030:fàn"
+        }
+      ]
+    },
+    {
+      "simplified": 33606,
+      "traditional": [
+        {
+          "scalar": 33606,
+          "mandarin": "jīng",
+          "hanyu_pinyin": "10339.020,10349.160:jīng"
+        },
+        {
+          "scalar": 33610,
+          "mandarin": "jīng",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 33616,
+      "traditional": [
+        {
+          "scalar": 33616,
+          "mandarin": "jiàn",
+          "hanyu_pinyin": "53201.040:jiàn"
+        },
+        {
+          "scalar": 34214,
+          "mandarin": "jiàn",
+          "hanyu_pinyin": "53305.110:jiàn"
+        }
+      ]
+    },
+    {
+      "simplified": 33633,
+      "traditional": [
+        {
+          "scalar": 30442,
+          "mandarin": "dàng",
+          "hanyu_pinyin": "42571.170:dàng"
+        },
+        {
+          "scalar": 34153,
+          "mandarin": "dàng",
+          "hanyu_pinyin": "53295.160:tāng,dàng,tàng"
+        }
+      ]
+    },
+    {
+      "simplified": 33635,
+      "traditional": [
+        {
+          "scalar": 27054,
+          "mandarin": "róng",
+          "hanyu_pinyin": "21269.080:róng"
+        },
+        {
+          "scalar": 33635,
+          "mandarin": "róng",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 33647,
+      "traditional": [
+        {
+          "scalar": 33903,
+          "mandarin": "yào",
+          "hanyu_pinyin": "53259.090:yào"
+        },
+        {
+          "scalar": 34277,
+          "mandarin": "yào",
+          "hanyu_pinyin": "53320.110:yào,shuò,lüè"
+        }
+      ]
+    },
+    {
+      "simplified": 33669,
+      "traditional": [
+        {
+          "scalar": 33669,
+          "mandarin": "lì",
+          "hanyu_pinyin": "53221.040:lì"
+        },
+        {
+          "scalar": 33950,
+          "mandarin": "lì",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 33719,
+      "traditional": [
+        {
+          "scalar": 29554,
+          "mandarin": "huò",
+          "hanyu_pinyin": "21370.060:huò"
+        },
+        {
+          "scalar": 31339,
+          "mandarin": "huò",
+          "hanyu_pinyin": "42634.030:huò,hù"
+        }
+      ]
+    },
+    {
+      "simplified": 33724,
+      "traditional": [
+        {
+          "scalar": 33939,
+          "mandarin": "chún",
+          "hanyu_pinyin": "53274.120:chún"
+        },
+        {
+          "scalar": 34036,
+          "mandarin": "chún",
+          "hanyu_pinyin": "53276.040:tuán,chún"
+        }
+      ]
+    },
+    {
+      "simplified": 33821,
+      "traditional": [
+        {
+          "scalar": 33821,
+          "mandarin": "luó",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 34367,
+          "mandarin": "luó",
+          "hanyu_pinyin": "53336.110:luó"
+        }
+      ]
+    },
+    {
+      "simplified": 33905,
+      "traditional": [
+        {
+          "scalar": 33905,
+          "mandarin": "cōng",
+          "hanyu_pinyin": "53253.110:cōng,chuāng"
+        },
+        {
+          "scalar": 34085,
+          "mandarin": "cōng",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 33945,
+      "traditional": [
+        {
+          "scalar": 25054,
+          "mandarin": "méng",
+          "hanyu_pinyin": "42360.040:méng,měng"
+        },
+        {
+          "scalar": 28635,
+          "mandarin": "méng",
+          "hanyu_pinyin": "31753.010:méng"
+        },
+        {
+          "scalar": 30663,
+          "mandarin": "méng",
+          "hanyu_pinyin": "42516.070:méng,měng"
+        },
+        {
+          "scalar": 33945,
+          "mandarin": "méng",
+          "hanyu_pinyin": "53271.040:méng,měng,mēng"
+        }
+      ]
+    },
+    {
+      "simplified": 34050,
+      "traditional": [
+        {
+          "scalar": 34050,
+          "mandarin": "léi",
+          "hanyu_pinyin": "53279.050:léi"
+        },
+        {
+          "scalar": 34374,
+          "mandarin": "léi",
+          "hanyu_pinyin": "53338.190:léi"
+        }
+      ]
+    },
+    {
+      "simplified": 34065,
+      "traditional": [
+        {
+          "scalar": 34065,
+          "mandarin": "miè",
+          "hanyu_pinyin": "53279.080:miè"
+        },
+        {
+          "scalar": 34890,
+          "mandarin": "miè",
+          "hanyu_pinyin": "53054.020:miè"
+        }
+      ]
+    },
+    {
+      "simplified": 34164,
+      "traditional": [
+        {
+          "scalar": 34292,
+          "mandarin": "yùn",
+          "hanyu_pinyin": "53323.130:yùn,wēn"
+        },
+        {
+          "scalar": 34314,
+          "mandarin": "yùn",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 34326,
+      "traditional": [
+        {
+          "scalar": 27377,
+          "mandarin": "niè",
+          "hanyu_pinyin": "21318.110:niè"
+        },
+        {
+          "scalar": 34326,
+          "mandarin": "niè",
+          "hanyu_pinyin": "53331.150:niè,bò"
+        }
+      ]
+    },
+    {
+      "simplified": 34411,
+      "traditional": [
+        {
+          "scalar": 34411,
+          "mandarin": "chóng",
+          "hanyu_pinyin": "42833.010:huǐ,chóng"
+        },
+        {
+          "scalar": 34802,
+          "mandarin": "chóng",
+          "hanyu_pinyin": "42891.060:chóng,zhòng,tóng"
+        }
+      ]
+    },
+    {
+      "simplified": 34412,
+      "traditional": [
+        {
+          "scalar": 34412,
+          "mandarin": "qiú",
+          "hanyu_pinyin": "42833.030:qiú"
+        },
+        {
+          "scalar": 34415,
+          "mandarin": "qiú",
+          "hanyu_pinyin": "42833.100:qiú"
+        }
+      ]
+    },
+    {
+      "simplified": 34430,
+      "traditional": [
+        {
+          "scalar": 34430,
+          "mandarin": "xiā",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 34662,
+          "mandarin": "xiā",
+          "hanyu_pinyin": "42874.030:há,xiā,jiǎ"
+        }
+      ]
+    },
+    {
+      "simplified": 34433,
+      "traditional": [
+        {
+          "scalar": 34433,
+          "mandarin": "yǐ",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 34811,
+          "mandarin": "yǐ",
+          "hanyu_pinyin": "42898.110:yǐ,jǐ"
+        }
+      ]
+    },
+    {
+      "simplified": 34453,
+      "traditional": [
+        {
+          "scalar": 34453,
+          "mandarin": "cán",
+          "hanyu_pinyin": "42837.020:cán,tiǎn"
+        },
+        {
+          "scalar": 34870,
+          "mandarin": "cán",
+          "hanyu_pinyin": "42908.110:cán"
+        }
+      ]
+    },
+    {
+      "simplified": 34542,
+      "traditional": [
+        {
+          "scalar": 34542,
+          "mandarin": "mán",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 34875,
+          "mandarin": "mán",
+          "hanyu_pinyin": "42909.210:mán"
+        }
+      ]
+    },
+    {
+      "simplified": 34544,
+      "traditional": [
+        {
+          "scalar": 34544,
+          "mandarin": "zhé",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 34756,
+          "mandarin": "zhé",
+          "hanyu_pinyin": "42883.010:zhé"
+        }
+      ]
+    },
+    {
+      "simplified": 34593,
+      "traditional": [
+        {
+          "scalar": 34593,
+          "mandarin": "là",
+          "hanyu_pinyin": "42859.100:qù,zhà,jí,là"
+        },
+        {
+          "scalar": 34847,
+          "mandarin": "là",
+          "hanyu_pinyin": "42903.060:là"
+        }
+      ]
+    },
+    {
+      "simplified": 34684,
+      "traditional": [
+        {
+          "scalar": 34684,
+          "mandarin": "lóu",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 34747,
+          "mandarin": "lóu",
+          "hanyu_pinyin": "42885.010:lóu"
+        }
+      ]
+    },
+    {
+      "simplified": 34885,
+      "traditional": [
+        {
+          "scalar": 34885,
+          "mandarin": "xìn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 37313,
+          "mandarin": "xìn",
+          "hanyu_pinyin": "10363.130:xìn"
+        }
+      ]
+    },
+    {
+      "simplified": 34917,
+      "traditional": [
+        {
+          "scalar": 34917,
+          "mandarin": "bǔ",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 35036,
+          "mandarin": "bǔ",
+          "hanyu_pinyin": "53093.050:bǔ"
+        }
+      ]
+    },
+    {
+      "simplified": 34920,
+      "traditional": [
+        {
+          "scalar": 34920,
+          "mandarin": "biǎo",
+          "hanyu_pinyin": "10021.120:biǎo"
+        },
+        {
+          "scalar": 37686,
+          "mandarin": "biǎo",
+          "hanyu_pinyin": "64214.050:biǎo"
+        }
+      ]
+    },
+    {
+      "simplified": 34926,
+      "traditional": [
+        {
+          "scalar": 34926,
+          "mandarin": "gǔn",
+          "hanyu_pinyin": "53077.050:gǔn"
+        },
+        {
+          "scalar": 34974,
+          "mandarin": "gǔn",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 34948,
+      "traditional": [
+        {
+          "scalar": 34948,
+          "mandarin": "ǎo",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 35158,
+          "mandarin": "ǎo",
+          "hanyu_pinyin": "53115.010:ǎo"
+        }
+      ]
+    },
+    {
+      "simplified": 34972,
+      "traditional": [
+        {
+          "scalar": 34972,
+          "mandarin": "wà",
+          "hanyu_pinyin": "53081.090:mò,wà"
+        },
+        {
+          "scalar": 35178,
+          "mandarin": "wà",
+          "hanyu_pinyin": "53119.100:wà"
+        }
+      ]
+    },
+    {
+      "simplified": 35465,
+      "traditional": [
+        {
+          "scalar": 35465,
+          "mandarin": "yù",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 35709,
+          "mandarin": "yù",
+          "hanyu_pinyin": "64024.120:yù"
+        }
+      ]
+    },
+    {
+      "simplified": 35828,
+      "traditional": [
+        {
+          "scalar": 35498,
+          "mandarin": "shuō",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 35500,
+          "mandarin": "shuō",
+          "hanyu_pinyin": "63979.030:shuō,shuì,yuè,tuō"
+        }
+      ]
+    },
+    {
+      "simplified": 35875,
+      "traditional": [
+        {
+          "scalar": 35616,
+          "mandarin": "yáo",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 35617,
+          "mandarin": "yáo",
+          "hanyu_pinyin": "64007.040:yáo"
+        }
+      ]
+    },
+    {
+      "simplified": 35883,
+      "traditional": [
+        {
+          "scalar": 35629,
+          "mandarin": "jiǎn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 35710,
+          "mandarin": "jiǎn",
+          "hanyu_pinyin": "64030.110:jiǎn"
+        }
+      ]
+    },
+    {
+      "simplified": 35895,
+      "traditional": [
+        {
+          "scalar": 31296,
+          "mandarin": "gǔ",
+          "hanyu_pinyin": "32164.110:gǔ"
+        },
+        {
+          "scalar": 35895,
+          "mandarin": "gǔ",
+          "hanyu_pinyin": "63902.010:gǔ,lù,yù"
+        }
+      ]
+    },
+    {
+      "simplified": 36163,
+      "traditional": [
+        {
+          "scalar": 36115,
+          "mandarin": "zāng",
+          "hanyu_pinyin": "63660.010:zāng"
+        },
+        {
+          "scalar": 36124,
+          "mandarin": "zāng",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 36173,
+      "traditional": [
+        {
+          "scalar": 36075,
+          "mandarin": "jī",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 40782,
+          "mandarin": "jī",
+          "hanyu_pinyin": "74787.010:jī"
+        }
+      ]
+    },
+    {
+      "simplified": 36189,
+      "traditional": [
+        {
+          "scalar": 36107,
+          "mandarin": "yàn",
+          "hanyu_pinyin": "63657.140:yàn"
+        },
+        {
+          "scalar": 36119,
+          "mandarin": "yàn",
+          "hanyu_pinyin": "63661.010:yàn,yán"
+        }
+      ]
+    },
+    {
+      "simplified": 36214,
+      "traditional": [
+        {
+          "scalar": 36214,
+          "mandarin": "gǎn",
+          "hanyu_pinyin": "53475.050:qián,gǎn"
+        },
+        {
+          "scalar": 36245,
+          "mandarin": "gǎn",
+          "hanyu_pinyin": "53488.020:gǎn"
+        }
+      ]
+    },
+    {
+      "simplified": 36235,
+      "traditional": [
+        {
+          "scalar": 36235,
+          "mandarin": "qū",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 36264,
+          "mandarin": "qū",
+          "hanyu_pinyin": "53497.030:qū,cù,qù,cǒu"
+        }
+      ]
+    },
+    {
+      "simplified": 36362,
+      "traditional": [
+        {
+          "scalar": 36362,
+          "mandarin": "yǒng",
+          "hanyu_pinyin": "63711.040:yǒng"
+        },
+        {
+          "scalar": 36404,
+          "mandarin": "yǒng",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 36394,
+      "traditional": [
+        {
+          "scalar": 36394,
+          "mandarin": "zōng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 36452,
+          "mandarin": "zōng",
+          "hanyu_pinyin": "63735.060:zōng"
+        }
+      ]
+    },
+    {
+      "simplified": 36464,
+      "traditional": [
+        {
+          "scalar": 36464,
+          "mandarin": "chú",
+          "hanyu_pinyin": "63738.060:chú"
+        },
+        {
+          "scalar": 36501,
+          "mandarin": "chú",
+          "hanyu_pinyin": "63748.040:chú"
+        }
+      ]
+    },
+    {
+      "simplified": 36527,
+      "traditional": [
+        {
+          "scalar": 36527,
+          "mandarin": "qū",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 36544,
+          "mandarin": "qū",
+          "hanyu_pinyin": "63812.220:qū"
+        }
+      ]
+    },
+    {
+      "simplified": 36754,
+      "traditional": [
+        {
+          "scalar": 36668,
+          "mandarin": "wēn",
+          "hanyu_pinyin": "53544.070:wēn,yūn"
+        },
+        {
+          "scalar": 36672,
+          "mandarin": "wēn",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 36766,
+      "traditional": [
+        {
+          "scalar": 36766,
+          "mandarin": "cí",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 36781,
+          "mandarin": "cí",
+          "hanyu_pinyin": "64043.130:cí"
+        }
+      ]
+    },
+    {
+      "simplified": 36767,
+      "traditional": [
+        {
+          "scalar": 36767,
+          "mandarin": "pì",
+          "hanyu_pinyin": "64037.080:bì,pì,mǐ"
+        },
+        {
+          "scalar": 38370,
+          "mandarin": "pì",
+          "hanyu_pinyin": "74320.120:pì"
+        }
+      ]
+    },
+    {
+      "simplified": 36793,
+      "traditional": [
+        {
+          "scalar": 36793,
+          "mandarin": "biān",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 37002,
+          "mandarin": "biān",
+          "hanyu_pinyin": "63894.030:biān"
+        }
+      ]
+    },
+    {
+      "simplified": 36801,
+      "traditional": [
+        {
+          "scalar": 36801,
+          "mandarin": "qiān",
+          "hanyu_pinyin": "63816.100:qiān"
+        },
+        {
+          "scalar": 36983,
+          "mandarin": "qiān",
+          "hanyu_pinyin": "63881.020:qiān"
+        }
+      ]
+    },
+    {
+      "simplified": 36807,
+      "traditional": [
+        {
+          "scalar": 36807,
+          "mandarin": "guò",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 36942,
+          "mandarin": "guò",
+          "hanyu_pinyin": "63849.080:guò,guō,guo,huò"
+        }
+      ]
+    },
+    {
+      "simplified": 36824,
+      "traditional": [
+        {
+          "scalar": 36824,
+          "mandarin": "hái",
+          "hanyu_pinyin": "63818.140:fú,huán,hái"
+        },
+        {
+          "scalar": 36996,
+          "mandarin": "hái",
+          "hanyu_pinyin": "63888.020:huán,xuán,hái,huán"
+        }
+      ]
+    },
+    {
+      "simplified": 36825,
+      "traditional": [
+        {
+          "scalar": 36825,
+          "mandarin": "zhè",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 36889,
+          "mandarin": "zhè",
+          "hanyu_pinyin": "63844.050:yàn,zhè,zhèi"
+        }
+      ]
+    },
+    {
+      "simplified": 36828,
+      "traditional": [
+        {
+          "scalar": 36828,
+          "mandarin": "yuǎn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 36960,
+          "mandarin": "yuǎn",
+          "hanyu_pinyin": "63869.070:yuǎn,yuàn"
+        }
+      ]
+    },
+    {
+      "simplified": 36841,
+      "traditional": [
+        {
+          "scalar": 36841,
+          "mandarin": "ěr",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 36999,
+          "mandarin": "ěr",
+          "hanyu_pinyin": "63891.110:ěr"
+        }
+      ]
+    },
+    {
+      "simplified": 36857,
+      "traditional": [
+        {
+          "scalar": 36321,
+          "mandarin": "jī",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 36857,
+          "mandarin": "jì",
+          "hanyu_pinyin": "63831.040:jī"
+        }
+      ]
+    },
+    {
+      "simplified": 36866,
+      "traditional": [
+        {
+          "scalar": 36866,
+          "mandarin": "shì kuò",
+          "hanyu_pinyin": "63829.030:kuò,shì"
+        },
+        {
+          "scalar": 36969,
+          "mandarin": "shì",
+          "hanyu_pinyin": "63877.080:shì,dí,tì,zhé"
+        }
+      ]
+    },
+    {
+      "simplified": 36873,
+      "traditional": [
+        {
+          "scalar": 36873,
+          "mandarin": "xuǎn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 36984,
+          "mandarin": "xuǎn",
+          "hanyu_pinyin": "63886.010:xuǎn,xuàn,suàn,shuā"
+        }
+      ]
+    },
+    {
+      "simplified": 36874,
+      "traditional": [
+        {
+          "scalar": 36874,
+          "mandarin": "xùn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 36956,
+          "mandarin": "xùn",
+          "hanyu_pinyin": "63874.030:xùn"
+        }
+      ]
+    },
+    {
+      "simplified": 36882,
+      "traditional": [
+        {
+          "scalar": 36882,
+          "mandarin": "dì",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 36958,
+          "mandarin": "dì",
+          "hanyu_pinyin": "63872.080:dì,shì,dài"
+        }
+      ]
+    },
+    {
+      "simplified": 36923,
+      "traditional": [
+        {
+          "scalar": 36923,
+          "mandarin": "luó",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 37007,
+          "mandarin": "luó",
+          "hanyu_pinyin": "63896.130:luó,luò"
+        }
+      ]
+    },
+    {
+      "simplified": 37057,
+      "traditional": [
+        {
+          "scalar": 37057,
+          "mandarin": "yù",
+          "hanyu_pinyin": "63766.050:yù"
+        },
+        {
+          "scalar": 39729,
+          "mandarin": "yù",
+          "hanyu_pinyin": "20858.120:yù"
+        }
+      ]
+    },
+    {
+      "simplified": 37073,
+      "traditional": [
+        {
+          "scalar": 37073,
+          "mandarin": "zhèng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 37165,
+          "mandarin": "zhèng",
+          "hanyu_pinyin": "63798.010:zhèng"
+        }
+      ]
+    },
+    {
+      "simplified": 37213,
+      "traditional": [
+        {
+          "scalar": 37270,
+          "mandarin": "yùn",
+          "hanyu_pinyin": "63589.110:yùn"
+        },
+        {
+          "scalar": 37278,
+          "mandarin": "yùn",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 37319,
+      "traditional": [
+        {
+          "scalar": 22512,
+          "mandarin": "cài",
+          "hanyu_pinyin": "10455.060:cǎi,cài"
+        },
+        {
+          "scalar": 25505,
+          "mandarin": "cǎi",
+          "hanyu_pinyin": "31901.010:cǎi"
+        },
+        {
+          "scalar": 37319,
+          "mandarin": "cǎi",
+          "hanyu_pinyin": "63898.020:cǎi,cài"
+        }
+      ]
+    },
+    {
+      "simplified": 37324,
+      "traditional": [
+        {
+          "scalar": 35023,
+          "mandarin": "lǐ",
+          "hanyu_pinyin": "53091.060:lǐ"
+        },
+        {
+          "scalar": 35041,
+          "mandarin": "lǐ",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 37324,
+          "mandarin": "lǐ",
+          "hanyu_pinyin": "63680.010:lǐ"
+        }
+      ]
+    },
+    {
+      "simplified": 37550,
+      "traditional": [
+        {
+          "scalar": 37550,
+          "mandarin": "luán",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 38014,
+          "mandarin": "luán",
+          "hanyu_pinyin": "64277.010:luán"
+        }
+      ]
+    },
+    {
+      "simplified": 38047,
+      "traditional": [
+        {
+          "scalar": 37758,
+          "mandarin": "zhōng",
+          "hanyu_pinyin": "64232.030:zhōng"
+        },
+        {
+          "scalar": 37912,
+          "mandarin": "zhōng",
+          "hanyu_pinyin": "64258.060:zhōng"
+        }
+      ]
+    },
+    {
+      "simplified": 38057,
+      "traditional": [
+        {
+          "scalar": 37390,
+          "mandarin": "gōu",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 37476,
+          "mandarin": "gōu",
+          "hanyu_pinyin": "64188.060:gōu,gòu,qú"
+        }
+      ]
+    },
+    {
+      "simplified": 38069,
+      "traditional": [
+        {
+          "scalar": 32573,
+          "mandarin": "bō",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 37474,
+          "mandarin": "bō",
+          "hanyu_pinyin": "64183.050:bō"
+        }
+      ]
+    },
+    {
+      "simplified": 38152,
+      "traditional": [
+        {
+          "scalar": 37561,
+          "mandarin": "xiù",
+          "hanyu_pinyin": "64208.160:xiù,yòu"
+        },
+        {
+          "scalar": 37885,
+          "mandarin": "xiù",
+          "hanyu_pinyin": "64266.010:xiù"
+        }
+      ]
+    },
+    {
+      "simplified": 38160,
+      "traditional": [
+        {
+          "scalar": 37555,
+          "mandarin": "ruì",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 37613,
+          "mandarin": "ruì",
+          "hanyu_pinyin": "64211.120:ruì,duì,yuè"
+        }
+      ]
+    },
+    {
+      "simplified": 38219,
+      "traditional": [
+        {
+          "scalar": 37810,
+          "mandarin": "tǎng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 38018,
+          "mandarin": "tǎng",
+          "hanyu_pinyin": "64278.010:tǎng"
+        }
+      ]
+    },
+    {
+      "simplified": 38220,
+      "traditional": [
+        {
+          "scalar": 37816,
+          "mandarin": "juān",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 37931,
+          "mandarin": "juān",
+          "hanyu_pinyin": "64256.170:juān"
+        }
+      ]
+    },
+    {
+      "simplified": 38386,
+      "traditional": [
+        {
+          "scalar": 38289,
+          "mandarin": "xián",
+          "hanyu_pinyin": "74287.030:xián"
+        },
+        {
+          "scalar": 38290,
+          "mandarin": "xián",
+          "hanyu_pinyin": "74289.060:jiàn,jiān,jiǎn,xián"
+        }
+      ]
+    },
+    {
+      "simplified": 38405,
+      "traditional": [
+        {
+          "scalar": 38321,
+          "mandarin": "yuè",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 38322,
+          "mandarin": "yuè",
+          "hanyu_pinyin": "74301.070:yuè"
+        }
+      ]
+    },
+    {
+      "simplified": 38469,
+      "traditional": [
+        {
+          "scalar": 38469,
+          "mandarin": "jì",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 38555,
+          "mandarin": "jì",
+          "hanyu_pinyin": "64154.150:jì"
+        }
+      ]
+    },
+    {
+      "simplified": 38543,
+      "traditional": [
+        {
+          "scalar": 38543,
+          "mandarin": "suí",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 38568,
+          "mandarin": "suí",
+          "hanyu_pinyin": "64156.170:suí"
+        }
+      ]
+    },
+    {
+      "simplified": 38544,
+      "traditional": [
+        {
+          "scalar": 38544,
+          "mandarin": "yǐn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 38577,
+          "mandarin": "yǐn",
+          "hanyu_pinyin": "64162.090:yǐn,yìn"
+        }
+      ]
+    },
+    {
+      "simplified": 38582,
+      "traditional": [
+        {
+          "scalar": 38582,
+          "mandarin": "lì",
+          "hanyu_pinyin": "74323.010:dài,yì,dì,lì"
+        },
+        {
+          "scalar": 38584,
+          "mandarin": "lì",
+          "hanyu_pinyin": "74323.100:lì"
+        }
+      ]
+    },
+    {
+      "simplified": 38589,
+      "traditional": [
+        {
+          "scalar": 38589,
+          "mandarin": "juàn",
+          "hanyu_pinyin": "64090.080:juàn,jùn"
+        },
+        {
+          "scalar": 38603,
+          "mandarin": "juàn",
+          "hanyu_pinyin": "64095.030:juàn,jùn,zuì"
+        }
+      ]
+    },
+    {
+      "simplified": 38590,
+      "traditional": [
+        {
+          "scalar": 38590,
+          "mandarin": "nán",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 38627,
+          "mandarin": "nán",
+          "hanyu_pinyin": "64108.050:nán,nàn,nuó"
+        }
+      ]
+    },
+    {
+      "simplified": 38665,
+      "traditional": [
+        {
+          "scalar": 38665,
+          "mandarin": "méi",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 40692,
+          "mandarin": "méi",
+          "hanyu_pinyin": "20851.250:méi,mèi"
+        }
+      ]
+    },
+    {
+      "simplified": 38689,
+      "traditional": [
+        {
+          "scalar": 38689,
+          "mandarin": "mài",
+          "hanyu_pinyin": "64071.060:mài"
+        },
+        {
+          "scalar": 38690,
+          "mandarin": "mài",
+          "hanyu_pinyin": "64073.060:mài"
+        }
+      ]
+    },
+    {
+      "simplified": 38745,
+      "traditional": [
+        {
+          "scalar": 38745,
+          "mandarin": "jìng",
+          "hanyu_pinyin": "64047.030:jìng"
+        },
+        {
+          "scalar": 38748,
+          "mandarin": "jìng",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 38754,
+      "traditional": [
+        {
+          "scalar": 38754,
+          "mandarin": "miàn",
+          "hanyu_pinyin": "74398.010:miàn"
+        },
+        {
+          "scalar": 40629,
+          "mandarin": "miàn",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 38901,
+      "traditional": [
+        {
+          "scalar": 38901,
+          "mandarin": "yùn",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 38907,
+          "mandarin": "yùn",
+          "hanyu_pinyin": "74497.120:yùn"
+        }
+      ]
+    },
+    {
+      "simplified": 39035,
+      "traditional": [
+        {
+          "scalar": 38920,
+          "mandarin": "xū",
+          "hanyu_pinyin": "74358.010:xū"
+        },
+        {
+          "scalar": 39706,
+          "mandarin": "xū",
+          "hanyu_pinyin": "74535.110:xū"
+        }
+      ]
+    },
+    {
+      "simplified": 39059,
+      "traditional": [
+        {
+          "scalar": 38969,
+          "mandarin": "tuí",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 38973,
+          "mandarin": "tuí",
+          "hanyu_pinyin": "74374.120:tuí"
+        }
+      ]
+    },
+    {
+      "simplified": 39068,
+      "traditional": [
+        {
+          "scalar": 38991,
+          "mandarin": "yán",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 38996,
+          "mandarin": "yán",
+          "hanyu_pinyin": "74383.090:yán,yá"
+        }
+      ]
+    },
+    {
+      "simplified": 39118,
+      "traditional": [
+        {
+          "scalar": 39080,
+          "mandarin": "fēng",
+          "hanyu_pinyin": "74480.010:fēng,fèng,fěng,fèng"
+        },
+        {
+          "scalar": 39118,
+          "mandarin": "fēng",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 39269,
+      "traditional": [
+        {
+          "scalar": 39138,
+          "mandarin": "jī",
+          "hanyu_pinyin": "74441.050,74441.070:jī"
+        },
+        {
+          "scalar": 39249,
+          "mandarin": "jī",
+          "hanyu_pinyin": "74475.050:jī,qí"
+        }
+      ]
+    },
+    {
+      "simplified": 39554,
+      "traditional": [
+        {
+          "scalar": 32629,
+          "mandarin": "mà",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 39393,
+          "mandarin": "mà",
+          "hanyu_pinyin": "74553.070:mà"
+        }
+      ]
+    },
+    {
+      "simplified": 40094,
+      "traditional": [
+        {
+          "scalar": 39837,
+          "mandarin": "xiǎng",
+          "hanyu_pinyin": "74689.050:xiǎng,zhèn"
+        },
+        {
+          "scalar": 39895,
+          "mandarin": "xiǎng",
+          "hanyu_pinyin": "74698.120:xiǎng"
+        }
+      ]
+    },
+    {
+      "simplified": 40129,
+      "traditional": [
+        {
+          "scalar": 39963,
+          "mandarin": "wēn",
+          "hanyu_pinyin": "74701.070:wēn"
+        },
+        {
+          "scalar": 39982,
+          "mandarin": "wēn",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 40132,
+      "traditional": [
+        {
+          "scalar": 39952,
+          "mandarin": "è",
+          "hanyu_pinyin": "74701.180:è"
+        },
+        {
+          "scalar": 40055,
+          "mandarin": "è",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 40481,
+      "traditional": [
+        {
+          "scalar": 38622,
+          "mandarin": "jī",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 40388,
+          "mandarin": "jī",
+          "hanyu_pinyin": "74651.170:jī"
+        }
+      ]
+    },
+    {
+      "simplified": 40614,
+      "traditional": [
+        {
+          "scalar": 40613,
+          "mandarin": "mài",
+          "hanyu_pinyin": "74600.010:mài"
+        },
+        {
+          "scalar": 40614,
+          "mandarin": "mài",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 40644,
+      "traditional": [
+        {
+          "scalar": 40643,
+          "mandarin": "huáng",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 40644,
+          "mandarin": "huáng",
+          "hanyu_pinyin": "74596.010:huáng"
+        }
+      ]
+    },
+    {
+      "simplified": 40702,
+      "traditional": [
+        {
+          "scalar": 40701,
+          "mandarin": "miǎn",
+          "hanyu_pinyin": "74768.010:měng,mǐn,miǎn,méng"
+        },
+        {
+          "scalar": 40702,
+          "mandarin": "mǐn",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 40727,
+      "traditional": [
+        {
+          "scalar": 38784,
+          "mandarin": "táo",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 40727,
+          "mandarin": "táo",
+          "hanyu_pinyin": "74765.060:táo"
+        }
+      ]
+    },
+    {
+      "simplified": 40761,
+      "traditional": [
+        {
+          "scalar": 40756,
+          "mandarin": "yǎn",
+          "hanyu_pinyin": "74776.100:yǎn"
+        },
+        {
+          "scalar": 40761,
+          "mandarin": "yǎn",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 40863,
+      "traditional": [
+        {
+          "scalar": 40860,
+          "mandarin": "guī",
+          "hanyu_pinyin": "74809.010:guī,qiū,jūn"
+        },
+        {
+          "scalar": 40863,
+          "mandarin": "guī",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 40941,
+      "traditional": [
+        {
+          "scalar": 37480,
+          "mandarin": "xǐ",
+          "hanyu_pinyin": "64188.040:nǐ,niě,xǐ"
+        },
+        {
+          "scalar": 37960,
+          "mandarin": "niè",
+          "hanyu_pinyin": "64266.120:niè,nǐ"
+        }
+      ]
+    },
+    {
+      "simplified": 169575,
+      "traditional": [
+        {
+          "scalar": 19230,
+          "mandarin": "táo",
+          "hanyu_pinyin": "74493.030:táo"
+        },
+        {
+          "scalar": 169441,
+          "mandarin": "chóu",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 176621,
+      "traditional": [
+        {
+          "scalar": 33933,
+          "mandarin": "wěi",
+          "hanyu_pinyin": "53254.190:wěi,huā,kuī,é"
+        },
+        {
+          "scalar": 34111,
+          "mandarin": "wěi",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 191672,
+      "traditional": [
+        {
+          "scalar": 145249,
+          "mandarin": "",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 145340,
+          "mandarin": "",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 191991,
+      "traditional": [
+        {
+          "scalar": 166936,
+          "mandarin": "",
+          "hanyu_pinyin": ""
+        },
+        {
+          "scalar": 177290,
+          "mandarin": "",
+          "hanyu_pinyin": ""
+        }
+      ]
+    },
+    {
+      "simplified": 200173,
+      "traditional": [
+        {
+          "scalar": 36115,
+          "mandarin": "zāng",
+          "hanyu_pinyin": "63660.010:zāng"
+        },
+        {
+          "scalar": 36124,
+          "mandarin": "zāng",
+          "hanyu_pinyin": ""
+        }
+      ]
+    }
+  ]
+}

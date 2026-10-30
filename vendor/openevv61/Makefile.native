@@ -49,7 +49,7 @@ $(BUILD)/reloq_english_word_edges.o: ../../src/reloq_english_word_edges.c ../../
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS_NATIVE) -c $< -o $@
 $(BUILD)/src/reloq61_english_word_edges.o: src/reloq61_english_alphabet.inc ../../include/reloq_english_word_edges.h
-$(BUILD)/rom/cjk/reloq_cjk_romanizer.o: rom/cjk/reloq_cjk_data.inc rom/cjk/reloq_korean_extra.inc
+$(BUILD)/rom/cjk/reloq_cjk_romanizer.o: rom/cjk/reloq_cjk_data.inc rom/cjk/reloq_korean_extra.inc rom/cjk/reloq_chinese_traditional.inc
 $(BUILD)/rom/greek/reloq_greek.o: rom/greek/reloq_greek_letters.inc rom/greek/reloq_greek_character_accents.inc ../../include/reloq_inline_tags.h
 $(BUILD)/lang/elgr61/character_rules_elgr61.o: lang/elgr61/greek_character_names.inc
 $(BUILD)/libreloq61.a: $(OBJECTS)

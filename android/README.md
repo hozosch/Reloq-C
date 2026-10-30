@@ -1,15 +1,15 @@
 # Android ARM64 preview
 
 ReLoq C Preview uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `0.2.191-preview3` targets ARM64 (`arm64-v8a`), Android 8/API 26
+add-on. Version `0.2.192-preview4` targets ARM64 (`arm64-v8a`), Android 8/API 26
 or later. Speech runs offline. Network access is used only when you explicitly
 update the optional community pronunciation dictionaries.
 
 ## Install or update
 
-Install `reloq-c-android-arm64-0.2.191-preview3.apk` over the existing preview.
+Install `reloq-c-android-arm64-0.2.192-preview4.apk` over the existing preview.
 The package remains `org.reloq.tts.preview`, the preview signing certificate is
-unchanged, and versionCode increases from 20190 to 20191. Android can therefore
+unchanged, and versionCode increases from 20191 to 20192. Android can therefore
 update the existing app and retain its settings. Do not uninstall it first.
 
 Open **ReLoq C Preview** to adjust its settings or read a test text. To use it
@@ -18,14 +18,16 @@ with TalkBack or another client, open **Android speech settings** and choose
 variants and eight named voice presets are available. Both Chinese scripts
 use the single Mandarin Chinese module; Japanese retains its existing analysis.
 
-The user has confirmed installation and basic speech with preview 2. The new
-settings and dictionary screens in preview 3 still need a real-device check.
+The user confirmed installation/basic speech and the preview 3 settings layout.
+Preview 4 applies settings immediately; its new behavior still needs a device check.
 
 ## Voice and output settings
 
 The screen uses labelled standard Android checkboxes, sliders and lists, with
-English and German UI text. Press **Save settings** to apply changes. **Read
-test text** also saves them, and **Stop** interrupts the current test.
+English and German UI text. Checkboxes, lists and sliders apply and save changes
+immediately; there is no Save settings button. The next synthesis request uses
+the new values. Speech already submitted keeps its request settings. **Read test
+text** starts a speech sample, and **Stop** interrupts it.
 
 - **Control language and voice through Android** lets clients choose a voice.
   Turn it off to use the saved language and voice for all requests.
@@ -90,7 +92,7 @@ latest dictionary master and reuses existing verified data when possible.
 export ANDROID_SDK_ROOT=/path/to/android-sdk
 export ANDROID_NDK_HOME=/path/to/android-ndk-r30
 export JAVA_HOME=/path/to/jdk-17
-python3 android/build.py --upgrade-from dist/reloq-c-android-arm64-0.2.190-preview2.apk
+python3 android/build.py --upgrade-from dist/reloq-c-android-arm64-0.2.191-preview3.apk
 ```
 
 Explicit `--sdk`, `--ndk`, `--java-home`, `--build-tools` and `--android-jar`
@@ -160,10 +162,10 @@ The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 ```sh
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
-python3 android/verify_apk.py dist/reloq-c-android-arm64-0.2.191-preview3.apk
+python3 android/verify_apk.py dist/reloq-c-android-arm64-0.2.192-preview4.apk
 ```
 
 The final APK passes signature, install-critical resource-table and 16-KiB ELF
-checks, and the upgrade comparison against preview 2. Preview 3's expanded
-screens, file-provider monitoring and sustained playback at all sample rates
+checks, and the upgrade comparison against preview 3. Preview 4's live
+settings, file-provider monitoring and sustained playback at all sample rates
 still need device/TalkBack validation.
