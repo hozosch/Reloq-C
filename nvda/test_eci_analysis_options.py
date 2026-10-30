@@ -7,8 +7,6 @@ import argparse,hashlib,sys,tempfile
 from _reloq_eci_direct import DirectEciEngine,EciText,EciIndex,DICTIONARY,PHRASE_PREDICTION,PROCESS_TAGS,NATIVE_SPEED,SAMPLE_RATE
 from _reloq_languages import LANGUAGES
 ROOT=Path(__file__).resolve().parents[1]
-sys.path.insert(0,str(ROOT/'addon'))
-from build_synth import merged_german_lexicon
 
 GERMAN=("Das ist ein Test der eine längere Wortgruppe ohne Satzzeichen enthält und danach "
         "noch viel mehr Wörter hinzufügt damit die automatische Satzvorhersage Grenzen finden kann.")
@@ -29,10 +27,9 @@ def main():
     p.add_argument('--baseline',type=Path)
     a=p.parse_args();checks=0
     with tempfile.TemporaryDirectory() as folder:
-        lexicon=Path(folder)/'german.rlex';lexicon.write_bytes(merged_german_lexicon())
         def engine(language,library=None):
             return DirectEciEngine((library or a.library).resolve(),dialect=language,encoding='utf8',
-                experimental_generic=True,lexicon_path=lexicon if language==0x40000 else None)
+                experimental_generic=True,lexicon_path=None)
         for language in LANGUAGES.values():
             e=engine(language.id)
             try:
@@ -59,7 +56,7 @@ def main():
                     for cut in (1,3,len(sentence)//2):
                         text='`pp1 '+sentence
                         assert capture(e,[text[:cut],text[cut:]])==expected,(language.name,cut);checks+=1
-                if a.baseline:
+                if a.baseline and language.id!=0x40000:
                     old=engine(language.id,a.baseline)
                     try:
                         old.set_parameter(PROCESS_TAGS,1)
@@ -67,8 +64,18 @@ def main():
                             assert capture(e,[text])==capture(old,[text]),(language.name,'unchanged default',text);checks+=1
                     finally:old.close()
             finally:e.close()
+        # Exercise the packaged path: no supplemental German RLEX file.
         e=engine(0x40000)
         try:
+            for tags in (0,1):
+                e.set_parameter(PROCESS_TAGS,tags)
+                for abbreviation in ('Dr.','z. B.','d. h.','u. s. w.','z. Z.','usw.','km','kg','min','cm','bzw.'):
+                    text='Das ist '+abbreviation+' gut.'
+                    e.set_parameter(DICTIONARY,0);enabled=capture(e,[text])
+                    e.set_parameter(DICTIONARY,1);disabled=capture(e,[text])
+                    assert enabled!=disabled,(tags,abbreviation,'dictionary must affect actual speech');checks+=1
+                    e.set_parameter(DICTIONARY,0)
+                    assert capture(e,[text])==enabled;checks+=1
             e.set_parameter(PROCESS_TAGS,1)
             for rate in (1,6):
                 e.set_parameter(SAMPLE_RATE,rate)
@@ -86,7 +93,8 @@ def main():
                         old=engine(0x40000,a.baseline)
                         try:
                             old.set_parameter(SAMPLE_RATE,rate)
-                            assert capture(e,[symbol+'.'])!=capture(old,[symbol+'.']);checks+=1
+                            if old.native_version.startswith('0.2.192.'):
+                                assert capture(e,[symbol+'.'])!=capture(old,[symbol+'.']);checks+=1
                         finally:old.close()
         finally:e.close()
         # Main/Root volumes are independent of abbreviation expansion.

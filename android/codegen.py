@@ -1,10 +1,9 @@
-"""Share the C speed curve and immutable lexical identity with Android Java."""
+"""Share the C speed curve and rate controls with Android Java."""
 from pathlib import Path
-import hashlib
 import re
 
 
-def generate(destination, lexicon):
+def generate(destination):
     root=Path(__file__).resolve().parents[1]
     target=Path(destination)/"org/reloq/tts/preview"
     target.mkdir(parents=True,exist_ok=True)
@@ -21,9 +20,4 @@ def generate(destination, lexicon):
         'final class RateCurve {\n'
         ' static final int[] SPEEDS={'+','.join(map(str,speeds))+'};\n'
         ' static final double[] TIMES={'+','.join(repr(v) for v in times)+'};\n}\n')
-    digest=hashlib.sha256(lexicon).hexdigest()
-    (target/"BuildData.java").write_text(
-        'package org.reloq.tts.preview;\nfinal class BuildData {\n'
-        f' static final String LEXICON_NAME="german-{digest}.rlex";\n'
-        f' static final String LEXICON_SHA256="{digest}";\n'
-        f' static final int LEXICON_BYTES={len(lexicon)};\n'+'}\n')
+    (target/"BuildData.java").unlink(missing_ok=True)

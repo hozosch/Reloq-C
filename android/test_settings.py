@@ -25,7 +25,7 @@ def main():
     a=p.parse_args()
     if not a.java_home:p.error("--java-home required")
     with tempfile.TemporaryDirectory() as temporary:
-        build=Path(temporary);generate(build/"generated",b"test")
+        build=Path(temporary);generate(build/"generated")
         folder=ROOT/"android/java/org/reloq/tts/preview"
         sources=[folder/(n+".java") for n in ("PcmQueue","Catalog","VoiceSettings","Preferences","DictionaryData")]
         sources.extend((build/"generated").rglob("RateCurve.java"))

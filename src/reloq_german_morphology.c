@@ -2681,8 +2681,9 @@ void reloq_german_morphology_nominal_stress(const struct reloq_lexicon *lexicon,
   if(spr[i]=='.'&&spr[i+1]=='1')spr[i+1]='2';
 }
 
-int reloq_german_morphology_user_compound(const struct reloq_lexicon *lexicon,
- const unsigned char *word,size_t length,unsigned char *out,size_t capacity,size_t *written)
+int reloq_german_morphology_user_compound_resolved(const struct reloq_lexicon *lexicon,
+ const unsigned char *word,size_t length,unsigned char *out,size_t capacity,size_t *written,
+ int (*read_word)(const unsigned char *,size_t,unsigned char *,size_t,size_t *))
 {
  if(!lexicon||!word||!written||length>=WORD_LIMIT||length<7)return 0;
  unsigned char key[WORD_LIMIT];
@@ -2691,7 +2692,8 @@ int reloq_german_morphology_user_compound(const struct reloq_lexicon *lexicon,
  for(size_t split=length-3;split>=3;--split) {
   if(key[split-2]!='c'||key[split-1]!='h'||!vowel(key[split]))continue;
   const struct reloq_lexicon_override *left=NULL;
-  if(!(component(lexicon,key,split,&left)&ROOT_LEFT))continue;
+  int supplied=!!(component(lexicon,key,split,&left)&ROOT_LEFT);
+  if(!supplied&&(!read_word||!(spelling_roles(key,split)&ROOT_LEFT)))continue;
   /* A measured noun head establishes this requested boundary directly.
      Re-running the full ambiguous whole-word morphology here would repeat
      its expensive competing splits before arriving at the same compound. */
@@ -2701,12 +2703,27 @@ int reloq_german_morphology_user_compound(const struct reloq_lexicon *lexicon,
   if(!admitted && hn>4 && !memcmp(key+length-2,"en",2))
    admitted=(compound_class(key+split,hn-2)&16u) &&
      (roles_for(inflections,sizeof inflections/sizeof *inflections,
-         lexicon,key+split,hn-2,&noun)&8u);
-  if(!admitted || reloq_german_lexicon_word(lexicon,key+split,hn,head,sizeof head,&head_n)!=1 ||
-     !join(left->spr,left->spr_length,head,head_n,2,"",joined,&n))continue;
+         lexicon,key+split,hn-2,&noun)&8u || read_word);
+  if(!admitted)continue;
+  unsigned char native_left[SPR_LIMIT];size_t left_n=0;
+  struct reloq_lexicon_override resolved={0};
+  if(!supplied) {
+   if(read_word(key,split,native_left,sizeof native_left,&left_n)!=1 || left_n<5 ||
+      (native_left[left_n-2]!='x'&&native_left[left_n-2]!='X'))continue;
+   resolved.spr=native_left;resolved.spr_length=left_n;left=&resolved;
+  }
+  int found=read_word?read_word(key+split,hn,head,sizeof head,&head_n):
+      reloq_german_lexicon_word(lexicon,key+split,hn,head,sizeof head,&head_n);
+  if(found!=1 || !join(left->spr,left->spr_length,head,head_n,2,"",joined,&n))continue;
   *written=n;
   if(!out||capacity<=n)return -2;
   memcpy(out,joined,n+1);return 1;
  }
  return 0;
+}
+
+int reloq_german_morphology_user_compound(const struct reloq_lexicon *lexicon,
+ const unsigned char *word,size_t length,unsigned char *out,size_t capacity,size_t *written)
+{
+ return reloq_german_morphology_user_compound_resolved(lexicon,word,length,out,capacity,written,NULL);
 }

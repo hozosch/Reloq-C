@@ -33,7 +33,21 @@ def measure(library):
                     rows.append(dict(language=language.name,dialect=language.id,speed=speed,
                         pause_mode=pauses,sample_rate=11025,samples=samples[0],seconds=samples[0]/11025))
         finally:engine.close()
-    return dict(method='Six separate native /ma/ syllables; inflection 0; 11025 Hz; PCM in memory',measurements=rows)
+    reference=[]
+    for dialect,percent in ((0x40000,38),(0x20000,18),(0x120000,18)):
+        engine=DirectEciEngine(library,dialect=dialect,encoding='utf8',experimental_generic=True)
+        try:
+            speed=40+(116*percent+50)//100
+            for parameter,value in ((PROCESS_TAGS,1),(NATIVE_INFLECTION,0),(NATIVE_SPEED,speed),(PAUSE_MODE,2)):
+                engine.set_parameter(parameter,value)
+            samples=[0]
+            def count(data):samples[0]+=len(data)//2
+            assert engine.speak([' '.join(['`[.1ma]']*6)+'.'],count,lambda _:None)
+            reference.append(dict(language=LANGUAGES[dialect].name,nvda_rate=percent,rate_boost=False,
+                native_speed=speed,samples=samples[0],sample_rate=11025,seconds=samples[0]/11025))
+        finally:engine.close()
+    return dict(method='Six separate native /ma/ syllables; inflection 0; 11025 Hz; PCM in memory',
+        measurements=rows,user_reference_38_18=reference,normalization_applied=False)
 
 
 def main():

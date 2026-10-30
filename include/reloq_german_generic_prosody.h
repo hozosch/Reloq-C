@@ -75,7 +75,8 @@ int reloq_german_generic_prosody_reaccent(
 enum reloq_german_fixed_source {
     RELOQ_DE_SOURCE_WORD=0, RELOQ_DE_SOURCE_SPR=1,
     RELOQ_DE_SOURCE_SYMBOL=2, RELOQ_DE_SOURCE_CHARACTER=3,
-    RELOQ_DE_SOURCE_NATIVE_TOKEN=4, RELOQ_DE_SOURCE_DICTIONARY=5
+    RELOQ_DE_SOURCE_NATIVE_TOKEN=4, RELOQ_DE_SOURCE_DICTIONARY=5,
+    RELOQ_DE_SOURCE_NUMBER=6 /* Native syntax, authored numeric phones. */
 };
 struct reloq_german_prosody_unit {
     const unsigned char *text;

@@ -20,7 +20,7 @@ typedef struct {
     JavaVM *vm;
     pthread_mutex_t guard;
     ECIHand active;
-    char *lexicon,*dictionary;
+    char *dictionary;
     language_engine engines[ENGINE_LIMIT];
     jobject sink;
     jmethodID write, cancelled;
@@ -77,23 +77,13 @@ static int ECICALL receive(ECIHand handle, int message, int samples, void *opaqu
 }
 
 JNIEXPORT jlong JNICALL
-Java_org_reloq_tts_preview_NativeEngine_create(JNIEnv *env, jclass type, jstring lexicon)
+Java_org_reloq_tts_preview_NativeEngine_create(JNIEnv *env, jclass type)
 {
     (void)type;
     android_engine *engine = calloc(1, sizeof *engine);
     if (!engine) return 0;
     if ((*env)->GetJavaVM(env, &engine->vm) != JNI_OK ||
         pthread_mutex_init(&engine->guard, NULL)) { free(engine); return 0; }
-    const char *path = (*env)->GetStringUTFChars(env, lexicon, NULL);
-    if (path) {
-        size_t n = strlen(path) + 1;
-        engine->lexicon = malloc(n);
-        if (engine->lexicon) memcpy(engine->lexicon, path, n);
-        (*env)->ReleaseStringUTFChars(env, lexicon, path);
-    }
-    if (!engine->lexicon) {
-        pthread_mutex_destroy(&engine->guard); free(engine); return 0;
-    }
     return (jlong)(intptr_t)engine;
 }
 
@@ -125,8 +115,7 @@ Java_org_reloq_tts_preview_NativeEngine_synthesize(JNIEnv *env, jclass type,
         if (!handle) goto done;
         slot->pcm=malloc(PCM_SAMPLES*sizeof *slot->pcm);
         eciSetParam(handle, RELOQ_ECI_VOICE_MODE, RELOQ_ECI_VOICE_GENERIC);
-        if (!slot->pcm || (dialect == RELOQ_ECI_GERMAN && !eciLoadLexicon(handle, engine->lexicon)) ||
-            eciSetOutputBuffer(handle, PCM_SAMPLES, slot->pcm) <= 0) {
+        if (!slot->pcm || eciSetOutputBuffer(handle, PCM_SAMPLES, slot->pcm) <= 0) {
             free(slot->pcm);slot->pcm=NULL;eciDelete(handle);handle=NULL;goto done;
         }
         slot->dialect = dialect;
@@ -239,5 +228,5 @@ Java_org_reloq_tts_preview_NativeEngine_destroy(JNIEnv *env, jclass type, jlong 
         free(engine->engines[i].pcm);free(engine->engines[i].dictionary);
     }
     pthread_mutex_destroy(&engine->guard);
-    free(engine->lexicon);free(engine->dictionary);free(engine);
+    free(engine->dictionary);free(engine);
 }

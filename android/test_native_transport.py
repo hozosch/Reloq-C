@@ -26,11 +26,8 @@ def main():
     java=a.java_home.resolve()
     with tempfile.TemporaryDirectory() as temporary:
         build=Path(temporary)
-        sys.path.insert(0,str(ROOT/"addon"))
-        from build_synth import merged_german_lexicon
-        lexicon=build/"german.rlex";lexicon.write_bytes(merged_german_lexicon())
         from codegen import generate
-        generate(build/"generated",lexicon.read_bytes())
+        generate(build/"generated")
         library=a.library.resolve()
         folders=[]
         for name,value in [('one',b'banana'),('two',b'orange')]:
@@ -48,13 +45,13 @@ def main():
                  *sorted((build/"generated").rglob("RateCurve.java")),ROOT/"android/test/NativeTransportTest.java"]
         subprocess.run([str(java/"bin/javac"),"-encoding","UTF-8","-d",str(build),*map(str,sources)],check=True)
         result=subprocess.run([str(java/"bin/java"),"-Djava.library.path="+str(build),"-cp",str(build),
-            "org.reloq.tts.preview.NativeTransportTest",str(lexicon),*map(str,folders)],check=True,stdout=subprocess.PIPE,text=True,timeout=180)
+            "org.reloq.tts.preview.NativeTransportTest",*map(str,folders)],check=True,stdout=subprocess.PIPE,text=True,timeout=180)
         checks=0
         for row in result.stdout.splitlines():
             dialect,controls,length,expected,dictionaries,text=row.split("\t",5)
             language=LANGUAGES[int(dialect)]
             with_engine=DirectEciEngine(library,dialect=language.id,encoding="utf8",
-                experimental_generic=True,lexicon_path=lexicon if language.lexicon else None)
+                experimental_generic=True)
             try:
                 if dictionaries!="-":with_engine.set_dictionary_path(dictionaries)
                 keys=(0x1010,0x100d,0x1008,0x1009,0x100e,0x100f,0x100a,0x1007,5,0x100c,0x100b,3,11)

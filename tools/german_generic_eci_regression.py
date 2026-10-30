@@ -421,16 +421,19 @@ def run(dll: Path) -> dict:
         after_external_stop = eci.speak(("Packte. Packten. Tippte. Kippte.",))
         assert after_external_stop["status"] == "pcm" and pcm == eci.pcm
 
-        # A companion text lexicon changes a longer sentence's acoustic
-        # choices. Load failures are transactional, including malformed
-        # content; a UTF-8 filename works and NULL restores the original.
+        # Explicit caller pronunciations still change a selected word.
+        # A distinct fixture avoids depending on historical observations
+        # differing from the now complete built-in dictionary. Load failures
+        # are transactional; a UTF-8 filename works and NULL restores it.
         lex_text = "Dr. Schmidt zahlte 1.234,56 Euro am 3. Mai 2026 um 19:45 Uhr. Die Sprachausgabe ist klar."
         without_lex = eci.speak((lex_text,))
         assert without_lex["status"] == "pcm"
         plain_pcm = bytes(eci.pcm)
         with tempfile.TemporaryDirectory(prefix="reloq-ä-") as temp:
             companion = Path(temp) / "deutsch-ä.rlex"
-            shutil.copyfile(ROOT / "data/german_apple_observed.rlex", companion)
+            key=b"Sprachausgabe";spr=b"`[.1tEst]"
+            companion.write_bytes(b"RELOQ-DE-SPR-1\n"+key.hex().upper().encode()+b"\t"+
+                spr.hex().upper().encode()+b"\n")
             assert eci.dll.eciLoadLexicon(eci.handle, str(companion).encode("utf-8")) == 1
             with_lex = eci.speak((lex_text,))
             assert with_lex["status"] == "pcm" and bytes(eci.pcm) != plain_pcm

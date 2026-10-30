@@ -8,13 +8,10 @@ from _reloq_languages import GERMAN,LanguageEngine
 ROOT=Path(__file__).resolve().parents[1]
 
 def main():
- sys.path.insert(0,str(ROOT/'addon'))
- from build_synth import merged_german_lexicon
  reports=[]
  with tempfile.TemporaryDirectory() as folder:
   folder=Path(folder);(folder/'eci.dll').symlink_to(ROOT/'eci/libreloq_eci.so')
-  lex=folder/GERMAN.lexicon;lex.write_bytes(merged_german_lexicon())
-  e=DirectEciEngine(folder/'eci.dll',experimental_generic=True,lexicon_path=lex)
+  e=DirectEciEngine(folder/'eci.dll',experimental_generic=True,lexicon_path=None)
   e.set_parameter(NATIVE_SPEED,98)
   text='Sechs schnelle Fische. Wortanalyse.'
   def capture(parts):

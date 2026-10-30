@@ -1,0 +1,514 @@
+{
+  "method": "0.2.193 with bundled legacy lexicon vs 0.2.194 without it; SPR comparison, no audio files",
+  "words": [
+    {
+      "word": "Raten",
+      "old": [
+        "`[.1ra.0t@n]"
+      ],
+      "new": [
+        "`[.1ra.0t@n]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Rot",
+      "old": [
+        "`[.1rot]"
+      ],
+      "new": [
+        "`[.1rot]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Richtig",
+      "old": [
+        "`[.1rIX.0tIX]"
+      ],
+      "new": [
+        "`[.1rIX.0tIX]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Amerika",
+      "old": [
+        "`[.0A.1me.0ri.0kA]"
+      ],
+      "new": [
+        "`[.0A.1me.0ri.0kA]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Restaurant",
+      "old": [
+        "`[.2rE.0sto.1r'a~']"
+      ],
+      "new": [
+        "`[.2rE.0sto.1r'a~']"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Restaurants",
+      "old": [
+        "`[.2rE.0sto.1r'a~'s]"
+      ],
+      "new": [
+        "`[.2rE.0sto.1r'a~'s]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Chance",
+      "old": [
+        "`[.1S'a~'.0s@]"
+      ],
+      "new": [
+        "`[.1S'a~'.0s@]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "hören",
+      "old": [
+        "`[.1h'oe'.0r@n]"
+      ],
+      "new": [
+        "`[.1h'oe'.0r@n]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Hörbücher",
+      "old": [
+        "`[.1h'oe'r.2by.0XR]"
+      ],
+      "new": [
+        "`[.1h'oe'r.2by.0XR]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Barriere",
+      "old": [
+        "`[.2bA.0ri.1e.0r@]"
+      ],
+      "new": [
+        "`[.2bA.0ri.1e.0r@]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Karriere",
+      "old": [
+        "`[.2kA.0ri.1e.0r@]"
+      ],
+      "new": [
+        "`[.2kA.0ri.1e.0r@]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "vorherig",
+      "old": [
+        "`[.1for.2he.0rIX]"
+      ],
+      "new": [
+        "`[.1for.2he.0rIX]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Homepage",
+      "old": [
+        "`[.1hom.0pEjC]"
+      ],
+      "new": [
+        "`[.1hom.0pEjC]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Germanistik",
+      "old": [
+        "`[.2gEr.0mA.1nI.0stIk]"
+      ],
+      "new": [
+        "`[.2gEr.0mA.1nI.0stIk]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Smile",
+      "old": [
+        "`[.1smi.0l@]"
+      ],
+      "new": [
+        "`[.1smi.0l@]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Snob",
+      "old": [
+        "`[.1snop]"
+      ],
+      "new": [
+        "`[.1snop]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Sonne",
+      "old": [
+        "`[.1zO.0n@]"
+      ],
+      "new": [
+        "`[.1zO.0n@]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Wasser",
+      "old": [
+        "`[.1vA.0sR]"
+      ],
+      "new": [
+        "`[.1vA.0sR]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Reise",
+      "old": [
+        "`[.1r'aj'.0z@]"
+      ],
+      "new": [
+        "`[.1r'aj'.0z@]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Zeit",
+      "old": [
+        "`[.1T'aj't]"
+      ],
+      "new": [
+        "`[.1T'aj't]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Katze",
+      "old": [
+        "`[.1kA.0T@]"
+      ],
+      "new": [
+        "`[.1kA.0T@]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Satz",
+      "old": [
+        "`[.1zAT]"
+      ],
+      "new": [
+        "`[.1zAT]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Paket",
+      "old": [
+        "`[.0pA.1ket]"
+      ],
+      "new": [
+        "`[.0pA.1ket]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Faden",
+      "old": [
+        "`[.1fa.0d@n]"
+      ],
+      "new": [
+        "`[.1fa.0d@n]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Laden",
+      "old": [
+        "`[.1la.0d@n]"
+      ],
+      "new": [
+        "`[.1la.0d@n]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "plus",
+      "old": [
+        "`[.1plUs]"
+      ],
+      "new": [
+        "`[.1plUs]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "samt",
+      "old": [
+        "`[.1zAmt]"
+      ],
+      "new": [
+        "`[.1zAmt]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Samt",
+      "old": [
+        "`[.1zAmt]"
+      ],
+      "new": [
+        "`[.1zAmt]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Unterricht",
+      "old": [
+        "`[.1Un.0tR.2rIXt]"
+      ],
+      "new": [
+        "`[.1Un.0tR.2rIXt]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Überschrift",
+      "old": [
+        "`[.1y.0bR.2SrIft]"
+      ],
+      "new": [
+        "`[.1y.0bR.2SrIft]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Übersicht",
+      "old": [
+        "`[.0y.0bR.1zIXt]"
+      ],
+      "new": [
+        "`[.1y.0bR.2zIXt]"
+      ],
+      "same": false,
+      "same_phones": true
+    },
+    {
+      "word": "Übergabe",
+      "old": [
+        "`[.1y.0bR.2ga.0b@]"
+      ],
+      "new": [
+        "`[.1y.0bR.2ga.0b@]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Übernehmen",
+      "old": [
+        "`[.0y.0bR.1ne.0m@n]"
+      ],
+      "new": [
+        "`[.0y.0bR.1ne.0m@n]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "überzeugt",
+      "old": [
+        "`[.0y.0bR.1T'oj'kt]"
+      ],
+      "new": [
+        "`[.0y.0bR.1T'oj'kt]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "konzentrieren",
+      "old": [
+        "`[.0kOn.0TEn.1tri.0r@n]"
+      ],
+      "new": [
+        "`[.0kOn.0TEn.1tri.0r@n]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "konzentriert",
+      "old": [
+        "`[.0kOn.0TEn.1trirt]"
+      ],
+      "new": [
+        "`[.0kOn.0TEn.1trirt]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "unkonzentriert",
+      "old": [
+        "`[.1Un.0kOn.0TEn.2trirt]"
+      ],
+      "new": [
+        "`[.1Un.0kOn.0TEn.2trirt]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "famos",
+      "old": [
+        "`[.0fA.1mos]"
+      ],
+      "new": [
+        "`[.0fA.1mos]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "famose",
+      "old": [
+        "`[.0fA.1mo.0z@]"
+      ],
+      "new": [
+        "`[.0fA.1mo.0z@]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "rigoros",
+      "old": [
+        "`[.2ri.0go.1ros]"
+      ],
+      "new": [
+        "`[.2ri.0go.1ros]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "rigorosen",
+      "old": [
+        "`[.2ri.0go.1ro.0z@n]"
+      ],
+      "new": [
+        "`[.2ri.0go.1ro.0z@n]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Infos",
+      "old": [
+        "`[.1In.0fos]"
+      ],
+      "new": [
+        "`[.1In.0fos]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Sprachauswahl",
+      "old": [
+        "`[.1Sprax.2'aw's.2val]"
+      ],
+      "new": [
+        "`[.1Sprax.2'aw's.2val]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Suchauswahl",
+      "old": [
+        "`[.1zux.2'aw's.2val]"
+      ],
+      "new": [
+        "`[.1zux.2'aw's.2val]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Sprachauswahlen",
+      "old": [
+        "`[.1Sprax.2'aw's.2va.0l@n]"
+      ],
+      "new": [
+        "`[.1Sprax.2'aw's.2va.0l@n]"
+      ],
+      "same": true,
+      "same_phones": true
+    },
+    {
+      "word": "Suchauswahlen",
+      "old": [
+        "`[.1zux.2'aw's.2va.0l@n]"
+      ],
+      "new": [
+        "`[.1zux.2'aw's.2va.0l@n]"
+      ],
+      "same": true,
+      "same_phones": true
+    }
+  ],
+  "phone_matches": 46,
+  "exact_spr_matches": 45,
+  "stress_change": "Übersicht uses the native initial prefix stress after removal of the historical morphology/lexicon path; all 46 word phone sequences are retained."
+}

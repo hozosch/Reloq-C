@@ -72,8 +72,12 @@ public final class ReLoqService extends TextToSpeechService {
             if(destroyed) return 0;
             if(context!=0) return context;
         }
-        File target=LexiconInstaller.path(this);
-        long created=NativeEngine.create(target.getAbsolutePath());
+        // Remove only generated lexicons from earlier previews, never user .dic files.
+        File[] oldData=getFilesDir().listFiles();
+        if(oldData!=null)for(File old:oldData)
+            if(old.getName().matches("german-(?:[0-9a-f]{64}|0\\.2\\.(?:189|190))\\.rlex") ||
+               old.getName().equals("german.rlex.tmp"))old.delete();
+        long created=NativeEngine.create();
         if(created==0) throw new IllegalStateException("Native engine initialization failed");
         synchronized(contextGuard) {
             if(!destroyed) { context=created; return created; }
@@ -109,7 +113,6 @@ public final class ReLoqService extends TextToSpeechService {
                 try {
                     if(!queue.isCancelled()) {
                         long handle=ensureContext();
-                        if(dialect==0x40000)LexiconInstaller.ensure(this);
                         if(handle!=0 && !queue.isCancelled()) {
                             NativeEngine.dictionary(handle,dictionaries.path);
                             success=NativeEngine.synthesize(handle,dialect,controls,utf8,queue);

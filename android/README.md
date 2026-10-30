@@ -1,15 +1,15 @@
 # Android ARM64 preview
 
 ReLoq C Preview uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `0.2.193-preview5` targets ARM64 (`arm64-v8a`), Android 8/API 26
+add-on. Version `0.2.194-preview6` targets ARM64 (`arm64-v8a`), Android 8/API 26
 or later. Speech runs offline. Network access is used only when you explicitly
 update the optional community pronunciation dictionaries.
 
 ## Install or update
 
-Install `reloq-c-android-arm64-0.2.193-preview5.apk` over the existing preview.
+Install `reloq-c-android-arm64-0.2.194-preview6.apk` over the existing preview.
 The package remains `org.reloq.tts.preview`, the preview signing certificate is
-unchanged, and versionCode increases from 20192 to 20193. Android can therefore
+unchanged, and versionCode increases from 20193 to 20194. Android can therefore
 update the existing app and retain its settings. Do not uninstall it first.
 
 Open **ReLoq C Preview** to adjust its settings or read a test text. To use it
@@ -19,7 +19,7 @@ variants and eight named voice presets are available. Both Chinese scripts
 use the single Mandarin Chinese module; Japanese retains its existing analysis.
 
 The user confirmed Android 0.2.192, including live settings, as stable.
-0.2.193 adds the shared engine corrections and two analysis controls; those
+0.2.194 fixes German abbreviation/quantity analysis and removes its supplemental lexicon; these
 new controls still need their ordinary TalkBack check.
 
 ## Voice and output settings
@@ -123,10 +123,10 @@ at most 16 blocks of 1,100 mono 16-bit samples. Only Android's synthesis thread
 calls `SynthesisCallback`; callbacks do not outlive the request. Cancellation
 wakes both sides, and delayed stops are scoped to their own requests.
 
-The German supplemental lexicon is installed only when German is first used.
-Its filename identifies its content, so an unchanged 712,343-byte lexicon is
-reused across updates. Old version-named generated copies are removed after
-the new one is installed. Dictionary snapshots are also reused by content and
+German uses the built-in native C dictionary, just like the other languages.
+The former 712,343-byte supplemental lexicon is neither packaged nor installed.
+Updates remove only its generated content-named and old preview-named copies;
+user `.dic` files are retained. Dictionary snapshots are reused by content and
 unused old snapshots are removed after their last active request finishes.
 
 Packaging uses DEFLATE level 9 while preserving aapt2's uncompressed resource
@@ -166,10 +166,12 @@ The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 ```sh
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
-python3 android/verify_apk.py dist/reloq-c-android-arm64-0.2.193-preview5.apk
+python3 android/verify_apk.py dist/reloq-c-android-arm64-0.2.194-preview6.apk
 ```
 
 The final APK passes signature, install-critical resource-table and 16-KiB ELF
 checks, and the upgrade comparison against preview 3. Preview 4's live
 settings, file-provider monitoring and sustained playback at all sample rates
 still need device/TalkBack validation.
+
+For an isolated build, pass `--build-dir /absolute/fresh/build-directory`; the output APK path remains controlled by `--output`.

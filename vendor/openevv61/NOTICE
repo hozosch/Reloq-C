@@ -265,3 +265,11 @@ relations into the retained independent acoustic planner. German degree and
 underscore names are replaced within the native character rule and admitted
 character table. Ring accents retain their original names. No runtime bytecode,
 original DLL/SYN dependency or speech-result cache is added.
+
+ReLoq C 0.2.194 changes
+
+The German sentence frontend retains native source whitespace and numeric
+identity for abbreviation and phrase analysis. Its runtime supplemental RLEX
+file is removed from NVDA/Android packages. Licensed compound corrections
+resolve built-in constituents on demand without retaining pronunciations.
+No runtime bytecode, original-module dependency or speech-result cache is added.

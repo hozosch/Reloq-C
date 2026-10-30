@@ -19,7 +19,7 @@ from build_translations import translation_entries
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "addon" / "synth"
-DEFAULT_OUTPUT = ROOT / "dist" / "reloq-c-synth-experimental-x64-0.2.193.nvda-addon"
+DEFAULT_OUTPUT = ROOT / "dist" / "reloq-c-synth-experimental-x64-0.2.194.nvda-addon"
 RLEX_HEADER = b"RELOQ-DE-SPR-1\n"
 HEX = re.compile(rb"[0-9A-F]+\Z")
 
@@ -46,6 +46,7 @@ def lexicon_rows(source: bytes) -> list[tuple[bytes, bytes]]:
 
 
 def merged_german_lexicon() -> bytes:
+    """Historical regression fixture; never included in current packages."""
     combined = sorted(
         (row for name in ("german_apple_observed.rlex",
                           "german_apple_hunspell_context.rlex",
@@ -83,7 +84,6 @@ def make_entries(dll_path: Path) -> dict[str, bytes]:
     for name in (*DICTIONARY_FILES, "manifest.json"):
         entries[prefix + "communityDictionaries/" + name] = (ROOT / "data/community" / name).read_bytes()
     entries[prefix + "eci.dll"] = dll
-    entries[prefix + "german_apple_observed.rlex"] = merged_german_lexicon()
     entries.update(translation_entries())
     if any(name.endswith((".so", ".syn", ".dylib")) for name in entries):
         raise ValueError("unexpected binary or language module")

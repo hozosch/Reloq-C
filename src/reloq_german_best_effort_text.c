@@ -112,7 +112,6 @@ struct annotation_builder {
     size_t feature_count,feature_capacity,word_count;
     int retain_features;
     int numeric_output;
-    int abbreviation_seen;
     int prediction_seen;
     int native_first;
     size_t deferred_words;
@@ -383,6 +382,9 @@ static int append_letters(struct annotation_builder *b,
 
 
 static int append_observed(void *context,const char *body,int weak);
+/* Grammar normalization owns abbreviation spelling and its da option. */
+enum {NATIVE_TOKEN_ABBREVIATION=2};
+static int append_native_token(struct annotation_builder *,const unsigned char *,size_t,int);
 
 static int append_word_token(struct annotation_builder *b,
     const unsigned char *word,size_t length)
@@ -392,14 +394,18 @@ static int append_word_token(struct annotation_builder *b,
     const int overridden=b->lexicon &&
         reloq_lexicon_find_override(b->lexicon,word,length,&exact)==1;
     if (!overridden) {
-        b->ctx_text=word;b->ctx_length=length;b->ctx_fixed=0;
+        b->ctx_text=word;b->ctx_length=length;b->ctx_fixed=RELOQ_DE_SOURCE_NUMBER;
         b->numeric_output=1;
         result=reloq_german_number_word(word,length,append_observed,b);
         b->numeric_output=0;b->ctx_text=NULL;
         if (result!=1) return result;
     }
     const int word_class=reloq_german_word_class(word,length);
-    if (!overridden && (length==1 || word_class==1))
+    if (!overridden && length>1 && word_class==1) {
+        result=append_native_token(b,word,length,NATIVE_TOKEN_ABBREVIATION);
+        if(result!=1)return result;
+    }
+    if (!overridden && (length==1||word_class==1))
         result = append_letters(b, word, length);
     else if (!overridden && word_class==0) {
         /* Word-class capitals use the same lexical/morphological
@@ -849,7 +855,7 @@ static int append_native_token(struct annotation_builder *b,
     uint64_t hits=reloq61_dictionary_hits();
     if(reloq61_generate(&q,&result)||result.error||result.unsupported||
         result.phonemes_length>=sizeof phonemes)return 1;
-    if(dictionary&&reloq61_dictionary_hits()==hits)return 1;
+    if(dictionary==1&&reloq61_dictionary_hits()==hits)return 1;
     for(size_t i=0;i<result.phonemes_length;++i)if(!phonemes[i])phonemes[i]=' ';
     phonemes[result.phonemes_length]=0;
     /* Authored constituent corrections and caller pronunciations outrank
@@ -875,7 +881,7 @@ static int append_native_token(struct annotation_builder *b,
     char *first=strstr(phonemes,"`["),*last=strrchr(phonemes,']');
     if(!first||!last||last<first+2)return 1;
     for(char *p=phonemes;p<first;++p)if(append_literal(b,(unsigned char)*p))return -2;
-    *last=0;b->ctx_text=source;b->ctx_length=length;b->ctx_fixed=dictionary?RELOQ_DE_SOURCE_DICTIONARY:RELOQ_DE_SOURCE_NATIVE_TOKEN;
+    *last=0;b->ctx_text=source;b->ctx_length=length;b->ctx_fixed=dictionary==1?RELOQ_DE_SOURCE_DICTIONARY:RELOQ_DE_SOURCE_NATIVE_TOKEN;
     int status=append_observed(b,first+2,0);b->ctx_text=NULL;
     return status;
 }
@@ -1012,7 +1018,7 @@ static int append_ordinal(struct annotation_builder *b,const unsigned char *text
 static int append_number(struct annotation_builder *b,
     const unsigned char *text,size_t length,size_t *at)
 {
-    size_t consumed=0;
+    size_t consumed=0,first_unit=b->unit_count;
     b->ctx_text=text+*at;b->ctx_length=1;b->ctx_fixed=1;
     struct reloq_german_number_context number_context={date_day_suffix(text,*at)};
     b->numeric_output=1;
@@ -1020,6 +1026,12 @@ static int append_number(struct annotation_builder *b,
     b->numeric_output=0;
     b->ctx_text=NULL;
     if (result) return result;
+    size_t digits=0;while(digits<consumed&&digit(text[*at+digits]))++digits;
+    if(digits==consumed && (digits==1||text[*at]!='0'))
+        for(size_t i=first_unit;i<b->unit_count;++i) {
+            b->units[i].text=text+*at;b->units[i].length=consumed;
+            b->units[i].fixed_phrase=RELOQ_DE_SOURCE_NUMBER;
+        }
     *at+=consumed;
     ++b->approximate;
     return 0;
@@ -1147,189 +1159,57 @@ static int append_symbol_inner(struct annotation_builder *b, unsigned char symbo
     return result;
 }
 
-/* Public-reference phoneme readings for common abbreviation grammars.
- * Patterns are matched as whole CP1252 tokens before punctuation. The
- * context spelling lets the ordinary phrase-stress model see each spoken
- * word rather than the printed initials. Unobserved abbreviations retain
- * the old behavior; no broad speculation about dotted initials occurs. */
-struct observed_abbreviation {
-    const char *written, *context;
-    const char *const *groups;
-    size_t count;
-    const char *const *words;
-};
-static const char *const ab_zb[]={".0TUm", ".1b'aj'.2Spil"};
-static const char *const ab_zz[]={".0Tur", ".1T'aj't"};
-static const char *const ab_dh[]={".0dAs", ".1h'aj'st"};
-static const char *const ab_usw[]={".0Unt", ".0zo", ".1v'aj'.0tR"};
-static const char *const ab_mow[]={".1mer", ".1o.0dR", ".1ve.0nI.0gR"};
-static const char *const ab_dr[]={".1dOk.0tor.2In.0Ze.2nj'oe'r"};
-static const char *const aw_zb[]={"zum","beispiel"};
-static const char *const aw_zz[]={"zur","zeit"};
-static const char *const aw_dh[]={"das","hei\337t"};
-static const char *const aw_usw[]={"und","so","weiter"};
-static const char *const aw_mow[]={"mehr","oder","weniger"};
-static const char *const aw_dr[]={"doktoringenieur"};
-static const struct observed_abbreviation observed_abbreviations[]={
-    {"z. B.","zum beispiel",ab_zb,2,aw_zb},
-    {"z.B.", "zum beispiel",ab_zb,2,aw_zb},
-    {"z.B",  "zum beispiel",ab_zb,2,aw_zb},
-    {"z.Z",  "zur zeit",ab_zz,2,aw_zz},
-    {"d.h",  "das hei\337t",ab_dh,2,aw_dh},
-    {"u.s.w","und so weiter",ab_usw,3,aw_usw},
-    {"usw",  "und so weiter",ab_usw,3,aw_usw},
-    {"m.o.w","mehr oder weniger",ab_mow,3,aw_mow},
-    {"Dr.-Ing","Doktoringenieur",ab_dr,1,aw_dr}
-};
-static int ascii_equal(unsigned char a, unsigned char b)
-{
-    if (a >= 'A' && a <= 'Z') a = (unsigned char)(a + 'a' - 'A');
-    if (b >= 'A' && b <= 'Z') b = (unsigned char)(b + 'a' - 'A');
-    return a == b;
-}
+/* Only spelling recognition lives here. The native C normalization owns
+ * readings, group counts, punctuation and the current abbreviation option.
+ * These keys identify the native abbreviations formerly frozen in RLEX. */
 static int abbrev_word_edge(unsigned char c)
+{return !letter(c) && !digit(c) && c!='_';}
+static int append_abbreviation(struct annotation_builder *b,
+    const unsigned char *text,size_t length,size_t *at)
 {
-    return !letter(c) && !digit(c) && c != '_';
-}
-static int more_text_follows(const unsigned char *t,size_t n,size_t at);
-static const struct observed_abbreviation *abbrev_at(
-    const unsigned char *input, size_t length, size_t at,
-    size_t *consumed)
-{
-    if (at && !abbrev_word_edge(input[at-1])) return NULL;
-    for (size_t r=0;
-         r<sizeof observed_abbreviations/sizeof observed_abbreviations[0];++r) {
-        const struct observed_abbreviation *rule=observed_abbreviations+r;
-        size_t n=strlen(rule->written);
-        if (length-at<n ||
-            (at+n<length && !abbrev_word_edge(input[at+n]))) continue;
-        size_t j=0;
-        while (j<n && ascii_equal(input[at+j],(unsigned char)rule->written[j])) ++j;
-        if (j!=n) continue;
-        /* At the very end, the final dot is also sentence punctuation.
-         * Leave it to the normal punctuation scanner. */
-        if (rule->written[n-1]=='.') {
-            size_t tail=at+n;
-            while (tail<length && (input[tail]==' '||input[tail]=='\t')) ++tail;
-            if (tail==length) --n;
+    size_t start=*at,end=start;
+    if(start&&!abbrev_word_edge(text[start-1]))return 1;
+    while(end<length&&letter(text[end]))++end;
+    if(end==start)return 1;
+    size_t first=end-start;
+    if(first==1 && end<length && text[end]=='.') {
+        size_t next=end+1,letters=1;
+        while(letters<8) {
+            while(next<length&&(text[next]==' '||text[next]=='\t'))++next;
+            if(next>=length||!letter(text[next])||
+               (next+1<length&&letter(text[next+1])))break;
+            end=++next;++letters;
+            if(next==length||text[next]!='.')break;
+            end=++next;
         }
-        if (rule->written[n-1]!='.' && at+n<length && input[at+n]=='.' &&
-            rule->count==3 && more_text_follows(input,length,at+n+1)) ++n;
-        *consumed=n;
-        return rule;
-    }
-    return NULL;
-}
-
-/* Abbreviations the reference expands to full words. Matching is exact-case.
- * "with_dot" entries are only expanded when written with a period (without
- * it the plain word keeps its own reading). The reading, including the
- * swallowed period, was measured through the public German interface. */
-struct dictionary_abbreviation {
-    const char *token;
-    const char *spr;
-    int needs_dot;
-};
-static const struct dictionary_abbreviation dictionary_abbreviations[]={
-    {"ca",".1TIr.0kA",0},{"Dr",".1dOk.0tor",0},{"Nr",".1nU.0mR",0},
-    {"Str",".1Stra.0s@",0},{"Tel",".2te.0le.1fon",0},
-    {"bzw",".0b@.1Ti.0UGs.2v'aj'.0z@",0},{"vgl",".0fEr.1gl'aj'.0X@",0},
-    {"etc",".0Et.1Te.0te.0rA",0},{"evtl",".2e.0vEn.1twEl",0},
-    {"inkl",".2IG.0klu.1zi.0v@",0},{"min",".0mi.1nu.0t@",0},
-    {"Mio",".0mI.1ljo.0n@n",0},{"Mrd",".0mI.1ljAr.0d@n",0},
-    {"Fr",".1fr'aj'.2tak",0},{"Mo",".1mon.0tak",0},{"Mi",".1mIt.2vOx",0},
-    {"Do",".1dO.0nRs.2tak",0},{"Sa",".1zAms.2tak",0},
-    {"Feb",".1fe.0bru.0ar",0},{"Apr",".0A.1prIl",0},{"Jun",".1ju.0ni",0},
-    {"Jul",".1ju.0li",0},{"Aug",".0'aw'.1gUst",0},
-    {"Sep",".0zEp.1tEm.0bR",0},{"Sept",".0zEp.1tEm.0bR",0},
-    {"Okt",".0Ok.1to.0bR",0},{"Nov",".0no.1vEm.0bR",0},
-    {"Dez",".0de.1TEm.0bR",0},{"derz",".1der.2T'aj't",0},
-    {"t\344gl",".1t'E:'k.0lIX",0},
-    {"Prof",".0pro.1fE.0sor",1},{"geb",".0g@.1bo.0r@n",1},
-    {"Di",".1dins.2tak",1},{"So",".1zOn.2tak",1},{"Jan",".1jA.0nwar",1}
-};
-
-/* Initialism sequences such as "u. a." or "i.D.R.": any case, with or
- * without blanks; each letter except the last needs its period. */
-struct initialism {const char *key;const char *groups[3];int count;};
-static const struct initialism initialisms[]={
-    {"ua",{".1u",".1a"},2},{"o\344",{".1o",".1'E:'"},2},
-    {"idr",{".1i",".1de",".1Er"},3},{"so",{".1Es",".1o"},2},
-    {"su",{".1Es",".1u"},2},{"uu",{".1u",".1u"},2},
-    {"va",{".1f'aw'",".1a"},2},{"zt",{".1TEt",".1te"},2}
-};
-
-/* True when more of the same sentence follows after `at`. */
-static int more_text_follows(const unsigned char *t,size_t n,size_t at)
-{
-    while (at<n && (t[at]==' ' || t[at]=='\t')) ++at;
-    return at<n && !strchr(".?!:;",t[at]);
-}
-
-static int append_dictionary_abbreviation(struct annotation_builder *b,
-    const unsigned char *t,size_t n,size_t *at)
-{
-    if(reloq61_text_options_current().dictionary_disabled)return 1;
-    const size_t start=*at;
-    if (start && !abbrev_word_edge(t[start-1])) return 1;
-    size_t end=start;
-    while (end<n && letter(t[end])) ++end;
-    const size_t length=end-start;
-    if (!length || length>8) return 1;
-    const int dot=end<n && t[end]=='.';
-    if (!dot && end<n && !abbrev_word_edge(t[end])) return 1;
-    for (size_t i=0;i<sizeof dictionary_abbreviations/sizeof dictionary_abbreviations[0];++i) {
-        const struct dictionary_abbreviation *a=dictionary_abbreviations+i;
-        if (strlen(a->token)!=length || memcmp(a->token,t+start,length)) continue;
-        if (a->needs_dot && !dot) return 1;
-        b->ctx_text=t+start;b->ctx_length=length;b->ctx_fixed=1;
-        int status=append_observed(b,a->spr,0);
-        b->ctx_text=NULL;
-        if (status) return status;
-        *at=end;
-        if (dot && more_text_follows(t,n,end+1)) *at=end+1;
-        return 0;
-    }
-    return 1;
-}
-
-static int append_initialism(struct annotation_builder *b,
-    const unsigned char *t,size_t n,size_t *at)
-{
-    size_t i=*at;
-    if (i && !abbrev_word_edge(t[i-1])) return 1;
-    char key[8];size_t letters=0;size_t last_end=i;
-    for (;;) {
-        if (i>=n || !letter(t[i]) || letters>=sizeof key-1) break;
-        if (i+1<n && letter(t[i+1])) break;       /* single letters only */
-        key[letters++]=(char)fold_lower(t[i]);
-        last_end=i+1;
-        if (i+1<n && t[i+1]=='.') {
-            last_end=i+2;i+=2;
-            while (i<n && t[i]==' ') ++i;
-        } else {
-            break;
+        if(letters<2)return 1;
+    } else {
+        static const char *const keys[]={
+        "Apr","Aug","DM","Dez","Do","Dr","Feb","Febr",
+        "Fr","Jul","Jun","Mi","Mio","Mo","Mrd","Mrz",
+        "Nov","Nr","Nrn","Okt","Sa","Sep","Sept","Str",
+        "Tel","Unauff","bds","bzw","ca","cm","derz","dl",
+        "dz","dzt","dztg","etc","evtl","inkl","kg","km",
+        "li","mg","min","mm","re","schriftl","sep","t\344gl",
+        "unauff","vgbl","vgl","usw","Dr.-Ing","Prof","geb","Di",
+        "So","Jan"
+        };
+        int matched=0;
+        for(size_t i=0;i<sizeof keys/sizeof *keys;++i) {
+            size_t n=strlen(keys[i]);
+            if(n>length-start||memcmp(text+start,keys[i],n)||
+               (start+n<length&&!abbrev_word_edge(text[start+n])))continue;
+            if(i>=sizeof keys/sizeof *keys-5 &&
+               (start+n==length||text[start+n]!='.'))continue;
+            if(start+n>end)end=start+n;
+            matched=1;
         }
+        if(!matched)return 1;
+        if(end<length&&text[end]=='.')++end;
     }
-    if (letters<2) return 1;
-    key[letters]=0;
-    /* the final letter may lack its period; every earlier one has it */
-    if (last_end<n && !abbrev_word_edge(t[last_end])) return 1;
-    for (size_t k=0;k<sizeof initialisms/sizeof initialisms[0];++k) {
-        if (strcmp(initialisms[k].key,key)) continue;
-        for (int g=0;g<initialisms[k].count;++g) {
-            b->ctx_text=(const unsigned char *)"x";b->ctx_length=1;b->ctx_fixed=0;
-            int status=append_observed(b,initialisms[k].groups[g],0);
-            b->ctx_text=NULL;
-            if (status) return status;
-        }
-        size_t stop=last_end;
-        /* A final period ends the sentence when nothing follows. */
-        if (stop && t[stop-1]=='.' && !more_text_follows(t,n,stop)) --stop;
-        *at=stop;
-        return 0;
-    }
-    return 1;
+    int status=append_native_token(b,text+start,end-start,NATIVE_TOKEN_ABBREVIATION);
+    if(!status)*at=end;
+    return status;
 }
 
 /* The original single_chars -> char_name terminal path serves original
@@ -1370,53 +1250,6 @@ static int append_native_character(struct annotation_builder *b,uint32_t scalar,
         }
         at+=count;
     }
-    return 0;
-}
-
-static int append_abbreviation(struct annotation_builder *b,
-    const unsigned char *input, size_t length, size_t *at)
-{
-    size_t consumed=0;
-    if(reloq61_text_options_current().dictionary_disabled)return 1;
-    const struct observed_abbreviation *rule=abbrev_at(input,length,*at,&consumed);
-    if (!rule) return 1;
-    b->ctx_words=rule->words;b->ctx_word_count=rule->count;b->ctx_word_at=0;
-    for (size_t k=0;k<rule->count;++k) {
-        int status=append_observed(b,rule->groups[k],0);
-        if (status) {b->ctx_words=NULL;return status;}
-    }
-    b->ctx_words=NULL;
-    *at+=consumed;
-    b->abbreviation_seen=1;
-    return 0;
-}
-/* Only the prosody look-ahead sees expanded *spelling*: the synthesizer
- * still consumes the exact observed SPR above and the original source
- * character-to-index mapping stays unchanged. */
-static int expand_abbreviation_context(const unsigned char *input,size_t length,
-    unsigned char **normalized,size_t *normalized_length)
-{
-    unsigned char *buffer=NULL;
-    size_t used=0,cap=0;
-    for (size_t at=0;at<length;) {
-        size_t consumed=0;
-        const struct observed_abbreviation *rule=
-            abbrev_at(input,length,at,&consumed);
-        if (rule) {
-            size_t n=strlen(rule->context);
-            if (n>SIZE_MAX-used-1 || reserve(&buffer,&cap,used+n+1)) {
-                free(buffer);return -1;
-            }
-            memcpy(buffer+used,rule->context,n);used+=n;
-            at+=consumed;
-        } else {
-            if (reserve(&buffer,&cap,used+2)) {free(buffer);return -1;}
-            buffer[used++]=input[at++];
-        }
-    }
-    if (reserve(&buffer,&cap,used+1)) {free(buffer);return -1;}
-    buffer[used]=0;
-    *normalized=buffer;*normalized_length=used;
     return 0;
 }
 
@@ -1813,7 +1646,7 @@ static int plan_tags_checked(int native_first,
     struct reloq_lexicon empty_lexicon={0};
     const struct reloq_lexicon_resolver *resolver=reloq61_dictionary_resolver();
     const struct reloq_lexicon_resolver *previous_resolver=reloq_lexicon_resolver_scope(resolver);
-    b.lexicon = lexicon?lexicon:(resolver||b.prediction_seen)?&empty_lexicon:NULL;
+    b.lexicon = lexicon?lexicon:&empty_lexicon;
     b.cancelled = cancelled;
     b.cancel_context = cancel_context;
     b.retain_features=features!=NULL;
@@ -1985,20 +1818,6 @@ static int plan_tags_checked(int native_first,
                 continue;
             }
             at=start;
-            result=append_initialism(&b,encoded,encoded_length,&at);
-            if (result!=1) {
-                if (result) goto done;
-                map_boundaries(boundaries,boundary_count,&next_boundary,at,b.used);
-                continue;
-            }
-            at=start;
-            result=append_dictionary_abbreviation(&b,encoded,encoded_length,&at);
-            if (result!=1) {
-                if (result) goto done;
-                map_boundaries(boundaries,boundary_count,&next_boundary,at,b.used);
-                continue;
-            }
-            at=start;
         }
         if (letter(encoded[at]) && at>=url_end) {
             size_t end=at;
@@ -2153,30 +1972,23 @@ static int plan_tags_checked(int native_first,
      * one-to-one aligned grammatical classes and preserves explicit SPR. */
     unsigned char *accented = NULL;
     size_t accented_length = 0;
-    unsigned char *prosody_text=NULL;
-    size_t prosody_text_length=encoded_length;
     reloq61_text_options_scope(initial_options);
-    if (b.abbreviation_seen &&
-        expand_abbreviation_context(encoded,encoded_length,
-                                    &prosody_text,&prosody_text_length)) {
-        result=-2;
-        goto done;
-    }
     int contextual=0;
     struct reloq61_german_word_facts *native_facts=NULL;
     if((b.retain_features||b.prediction_seen)&&b.unit_count) {
         native_facts=calloc(b.unit_count,sizeof *native_facts);
-        if(!native_facts){free(prosody_text);result=-2;goto done;}
+        if(!native_facts){result=-2;goto done;}
     }
     if(b.lexicon && b.unit_count && b.unit_count==b.word_count) {
+        struct reloq_german_context_source source={encoded,original_encoded,word_storage,encoded_length};
         contextual=reloq_rules61_german_context_features(b.units,b.unit_count,b.lexicon,b.output,b.used,
-            &accented,&accented_length,native_facts,cancelled,cancel_context);
+            &accented,&accented_length,native_facts,cancelled,cancel_context,&source);
         if(contextual<0 || contextual==2) {
-            free(native_facts);free(prosody_text);result=contextual==2?2:-2;goto done;
+            free(native_facts);result=contextual==2?2:-2;goto done;
         }
     }
     if(contextual!=1&&b.deferred_words) {
-        free(native_facts);free(prosody_text);retry=1;goto done;
+        free(native_facts);retry=1;goto done;
     }
     if(contextual==1)state=0;
     else if (b.unit_count && b.unit_count==b.word_count)
@@ -2185,10 +1997,9 @@ static int plan_tags_checked(int native_first,
             &accented, &accented_length, cancelled, cancel_context);
     else
         state = reloq_german_generic_prosody_reaccent(
-            prosody_text?prosody_text:encoded, prosody_text_length,
+            encoded, encoded_length,
             b.output, b.used,
             &accented, &accented_length, cancelled, cancel_context);
-    free(prosody_text);
     if (state) {
         free(native_facts);
         result = state == 1 ? 2 : -2;

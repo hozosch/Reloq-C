@@ -11,13 +11,10 @@ from _reloq_languages import GERMAN, LanguageEngine
 ROOT=Path(__file__).resolve().parents[1]
 
 def main():
-    sys.path.insert(0,str(ROOT/'addon'))
-    from build_synth import merged_german_lexicon
     with tempfile.TemporaryDirectory() as directory:
         folder=Path(directory)
         (folder/'eci.dll').symlink_to(ROOT/'eci/libreloq_eci.so')
-        lex=folder/GERMAN.lexicon;lex.write_bytes(merged_german_lexicon())
-        direct=DirectEciEngine(folder/'eci.dll',experimental_generic=True,lexicon_path=lex)
+        direct=DirectEciEngine(folder/'eci.dll',experimental_generic=True,lexicon_path=None)
         routed=LanguageEngine(folder/'eci.dll')
         def render(engine,parts):
             chunks=[];indices=[]
@@ -50,7 +47,7 @@ def main():
         # A used session must converge to a fresh one regardless of which
         # head size was active when its rate/model defaults were created.
         for code,g,h in itertools.product((0,1,3,6),(0,1),(22,29,30,40,50)):
-            fresh=DirectEciEngine(folder/'eci.dll',experimental_generic=True,lexicon_path=lex)
+            fresh=DirectEciEngine(folder/'eci.dll',experimental_generic=True,lexicon_path=None)
             try:
                 fresh.set_parameter(HEAD_SIZE,h)
                 for engine in (fresh,direct):

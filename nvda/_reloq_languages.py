@@ -41,7 +41,6 @@ class Language:
     name: str
     locale: str
     encoding: str
-    lexicon: str | None
     voices: tuple[Voice, ...]
 
     def voice(self, value: str | None) -> Voice:
@@ -67,7 +66,7 @@ def _preset(ident, name, gender, head, pitch, inflection, roughness, breathiness
 
 
 GERMAN = Language(
-    GERMAN_DIALECT, N_("German"), "de_DE", "utf-8", "german_apple_observed.rlex",
+    GERMAN_DIALECT, N_("German"), "de_DE", "utf-8",
     (
         # Eloquence_64's preset names; IDs and anatomy settings are stable.
         _preset(1, "Reed", 0, 50, 65, 30, 0, 0, 92),
@@ -83,30 +82,30 @@ GERMAN = Language(
 # Anatomy presets are shared. Pronunciation and acoustic rules belong to
 # the selected language; choosing a preset never switches language modules.
 US_ENGLISH = Language(
-    ENGLISH_DIALECT, "American English", "en_US", "utf-8", None,
+    ENGLISH_DIALECT, "American English", "en_US", "utf-8",
     tuple(Voice(v.id, v.name, v.parameters) for v in GERMAN.voices),
 )
 BRAZILIAN_PORTUGUESE = Language(
-    0x70000, "Brazilian Portuguese", "pt_BR", "utf-8", None,
+    0x70000, "Brazilian Portuguese", "pt_BR", "utf-8",
     tuple(Voice(v.id, v.name, v.parameters) for v in GERMAN.voices),
 )
 FINNISH = Language(
-    0x90000, N_("Finnish"), "fi_FI", "utf-8", None,
+    0x90000, N_("Finnish"), "fi_FI", "utf-8",
     tuple(Voice(v.id, v.name, v.parameters) for v in GERMAN.voices),
 )
-BRITISH_ENGLISH = Language(0x10001, "British English", "en_GB", "utf-8", None, US_ENGLISH.voices)
-SPANISH_SPAIN = Language(0x20000, "Castilian Spanish", "es_ES", "utf-8", None, US_ENGLISH.voices)
-SPANISH_MEXICO = Language(0x20001, "Latin American Spanish", "es_MX", "utf-8", None, US_ENGLISH.voices)
-FRENCH_FRANCE = Language(0x30000, "French", "fr_FR", "utf-8", None, US_ENGLISH.voices)
-FRENCH_CANADA = Language(0x30001, "French Canadian", "fr_CA", "utf-8", None, US_ENGLISH.voices)
-ITALIAN = Language(0x50000, N_("Italian"), "it_IT", "utf-8", None, US_ENGLISH.voices)
-CHINESE_CHINA = Language(0x60000, "Mandarin Chinese", "zh_CN", "utf-8", None, US_ENGLISH.voices)
+BRITISH_ENGLISH = Language(0x10001, "British English", "en_GB", "utf-8", US_ENGLISH.voices)
+SPANISH_SPAIN = Language(0x20000, "Castilian Spanish", "es_ES", "utf-8", US_ENGLISH.voices)
+SPANISH_MEXICO = Language(0x20001, "Latin American Spanish", "es_MX", "utf-8", US_ENGLISH.voices)
+FRENCH_FRANCE = Language(0x30000, "French", "fr_FR", "utf-8", US_ENGLISH.voices)
+FRENCH_CANADA = Language(0x30001, "French Canadian", "fr_CA", "utf-8", US_ENGLISH.voices)
+ITALIAN = Language(0x50000, N_("Italian"), "it_IT", "utf-8", US_ENGLISH.voices)
+CHINESE_CHINA = Language(0x60000, "Mandarin Chinese", "zh_CN", "utf-8", US_ENGLISH.voices)
 # Both scripts use this native module. Accept saved Taiwan IDs without
 # presenting a second language choice or opening a second worker.
 LANGUAGE_ALIASES = {0x60001: 0x60000}
-JAPANESE = Language(0x80000, N_("Japanese"), "ja_JP", "utf-8", None, US_ENGLISH.voices)
-KOREAN = Language(0xa0000, N_("Korean"), "ko_KR", "utf-8", None, US_ENGLISH.voices)
-GREEK = Language(0x120000, N_("Greek"), "el_GR", "utf-8", None, US_ENGLISH.voices)
+JAPANESE = Language(0x80000, N_("Japanese"), "ja_JP", "utf-8", US_ENGLISH.voices)
+KOREAN = Language(0xa0000, N_("Korean"), "ko_KR", "utf-8", US_ENGLISH.voices)
+GREEK = Language(0x120000, N_("Greek"), "el_GR", "utf-8", US_ENGLISH.voices)
 LANGUAGES = {p.id: p for p in (GERMAN, US_ENGLISH, BRITISH_ENGLISH,
     SPANISH_SPAIN, SPANISH_MEXICO, FRENCH_FRANCE, FRENCH_CANADA, ITALIAN,
     BRAZILIAN_PORTUGUESE, FINNISH, CHINESE_CHINA, JAPANESE, KOREAN, GREEK)}
@@ -194,7 +193,6 @@ class LanguageEngine:
             engine = self._factory(
                 self._dll, dialect=profile.id, encoding=profile.encoding,
                 experimental_generic=True,
-                lexicon_path=self._dll.with_name(profile.lexicon) if profile.lexicon else None,
             )
             self._engines[language] = engine
             self._engine_parameters[language] = {}

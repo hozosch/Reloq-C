@@ -172,10 +172,28 @@ static size_t final_tail(const struct reloq_german_prosody_unit *u,size_t count,
         if(u[i].preserve||u[i].fixed_phrase||u[i].force_weak||u[i].force_deaccent||u[i].source_emphasis)return count;
     return candidate;
 }
+static size_t source_offset(const struct reloq_german_context_source *source,
+    const struct reloq_german_prosody_unit *unit)
+{
+    if(!source)return SIZE_MAX;
+    const unsigned char *buffers[]={source->encoded,source->original,source->words};
+    uintptr_t at=(uintptr_t)unit->text;
+    for(size_t i=0;i<sizeof buffers/sizeof *buffers;++i) {
+        uintptr_t base=(uintptr_t)buffers[i];
+        if(base&&at>=base&&at-base<=source->length&&unit->length<=source->length-(at-base))
+            return (size_t)(at-base);
+    }
+    return SIZE_MAX;
+}
+static int native_german_word(const unsigned char *word,size_t length,
+    unsigned char *spr,size_t capacity,size_t *written)
+{return reloq_rules61_word(0x40000,word,length,spr,capacity,written);}
+
 int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit *units,size_t count,
     const struct reloq_lexicon *lexicon,
     const unsigned char *annotation,size_t length,unsigned char **out,size_t *written,
-    struct reloq61_german_word_facts *facts,int (*cancelled)(void *),void *context)
+    struct reloq61_german_word_facts *facts,int (*cancelled)(void *),void *context,
+    const struct reloq_german_context_source *source)
 {
     if(facts&&count>SIZE_MAX/sizeof *facts)return -1;
     if(facts)memset(facts,0,count*sizeof *facts);
@@ -230,16 +248,28 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
             at+=t.length;
         } else ++at;
     }
-    size_t before=0;
+    size_t before=0,inserted_space=SIZE_MAX;
     for(size_t i=0;i<count;++i) {
         if(cancelled&&cancelled(context)){result=2;goto done;}
         int joined=i&&(same_character(units+i-1,units+i)||adjacent_characters(units+i-1,units+i));
-        for(size_t at=before;at<old[i].open;) {
+        size_t gap_begin=SIZE_MAX,gap_end=SIZE_MAX;
+        if(i&&source) {
+            gap_begin=source_offset(source,units+i-1);gap_end=source_offset(source,units+i);
+            if(gap_begin!=SIZE_MAX)gap_begin+=units[i-1].length;
+            if(gap_begin>gap_end || gap_end==SIZE_MAX)gap_begin=SIZE_MAX;
+            if(gap_begin!=SIZE_MAX)for(size_t k=gap_begin;k<gap_end;++k)
+                if(!strchr(" \t\r\n",source->encoded[k])&&source->encoded[k]!=0xa0){gap_begin=SIZE_MAX;break;}
+        }
+        if(gap_begin!=SIZE_MAX) {
+            if(inserted_space!=SIZE_MAX&&inserted_space+1==input.n)input.p[--input.n]=0;
+            if(put(&input,source->encoded+gap_begin,gap_end-gap_begin))goto memory;
+        } else for(size_t at=before;at<old[i].open;) {
             struct reloq_inline_tag t=reloq_inline_tag_read(annotation+at,old[i].open-at,1);
             if(t.kind==RELOQ_TAG_PROMINENCE || voice_control(t.kind)) {at+=t.length;continue;}
             if(!(joined&&annotation[at]==' ')&&put(&input,annotation+at,1))goto memory;
             ++at;
         }
+        inserted_space=SIZE_MAX;
         if(units[i].source_emphasis) {
             static const char *const controls[]={"","`00 ","`0 ","`1 ","`2 ","`3 ","`4 "};
             int value=units[i].source_emphasis;
@@ -261,7 +291,10 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
         } else if(put(&input,units[i].text,units[i].length))goto memory;
         unsigned char following=old[i].end<length?annotation[old[i].end]:0;
         int attached=following=='('||following==')'||following=='-'||following==0x96||following==0x97;
-        if(units[i].fixed_phrase<RELOQ_DE_SOURCE_SYMBOL&&!attached&&put(&input,(const unsigned char *)" ",1))goto memory;
+        if(units[i].fixed_phrase<RELOQ_DE_SOURCE_SYMBOL&&!attached) {
+            inserted_space=input.n;
+            if(put(&input,(const unsigned char *)" ",1))goto memory;
+        }
         before=old[i].end;
     }
     for(size_t at=before;at<length;) {
@@ -336,7 +369,8 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
         const struct reloq_lexicon_override *entry=NULL;
         int explicit_entry=units[i].fixed_phrase!=RELOQ_DE_SOURCE_DICTIONARY && lexicon && reloq_lexicon_find_override(lexicon,
             units[i].text,units[i].length,&entry)==1;
-        int preserve=units[i].preserve||units[i].fixed_phrase==RELOQ_DE_SOURCE_SPR||samt ||
+        int preserve=units[i].preserve||units[i].fixed_phrase==RELOQ_DE_SOURCE_SPR||
+            units[i].fixed_phrase==RELOQ_DE_SOURCE_NUMBER||samt ||
             (explicit_entry && !same_phones(annotation+old[i].open,old[i].end-old[i].open,
                                            phonemes+native[i].open,native[i].end-native[i].open));
         if(preserve&&units[i].unresolved)goto done;
@@ -347,8 +381,8 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
          * admission. Keep their native whole-word pronunciation and stress. */
         if(!units[i].preserve && !units[i].fixed_phrase && !explicit_entry &&
            !memchr(units[i].text,'-',units[i].length) &&
-           reloq_german_morphology_user_compound(lexicon,units[i].text,units[i].length,
-               compound,sizeof compound,&compound_n)==1) {word=compound;n=compound_n;}
+           reloq_german_morphology_user_compound_resolved(lexicon,units[i].text,units[i].length,
+               compound,sizeof compound,&compound_n,native_german_word)==1) {word=compound;n=compound_n;}
         if(!units[i].preserve && !units[i].fixed_phrase && !explicit_entry &&
            reloq_german_root_plan_os_adjective(units[i].text,units[i].length) &&
            reloq_german_root_plan_word(lexicon,units[i].text,units[i].length,
@@ -405,5 +439,5 @@ int reloq_rules61_german_context(const struct reloq_german_prosody_unit *units,s
     unsigned char **out,size_t *written,int (*cancelled)(void *),void *context)
 {
     return reloq_rules61_german_context_features(units,count,lexicon,annotation,length,
-        out,written,NULL,cancelled,context);
+        out,written,NULL,cancelled,context,NULL);
 }

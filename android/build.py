@@ -31,7 +31,8 @@ def main():
     parser.add_argument("--build-tools",type=Path)
     parser.add_argument("--android-jar",type=Path)
     parser.add_argument("--jobs",type=int,default=4)
-    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-0.2.193-preview5.apk")
+    parser.add_argument("--build-dir",type=Path,help="isolated Android build directory")
+    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-0.2.194-preview6.apk")
     parser.add_argument("--keystore",type=Path,default=HERE/"preview-debug.p12")
     parser.add_argument("--verified-dictionaries",action="store_true",
         help="use locally verified data after separately resolving its current master commit")
@@ -46,18 +47,17 @@ def main():
     compiler=host/"aarch64-linux-android26-clang"
     for path in (compiler,host/"llvm-ar",android_jar,tools/"aapt2",tools/"d8",tools/"apksigner",java/"bin/javac",args.keystore):
         if not path.is_file(): parser.error(f"missing build input: {path}")
-    build=HERE/"build";build.mkdir(exist_ok=True)
+    build=(args.build_dir or HERE/"build").resolve();build.mkdir(parents=True,exist_ok=True)
     environment={**os.environ,"JAVA_HOME":str(java),"PATH":str(java/"bin")+os.pathsep+os.environ["PATH"]}
     run("make","-C",ROOT/"eci",f"-j{args.jobs}","libreloq_android.so",
         f"ANDROID_CC={compiler}",f"ANDROID_AR={host/'llvm-ar'}")
     generated=build/"generated";generated.mkdir(exist_ok=True)
     assets=build/"assets";assets.mkdir(exist_ok=True)
     sys.path.insert(0,str(ROOT/"addon"))
-    from build_synth import merged_german_lexicon,refresh_community_dictionaries
+    from build_synth import refresh_community_dictionaries
     if not args.verified_dictionaries:refresh_community_dictionaries()
-    lexicon=merged_german_lexicon()
-    (assets/"german.rlex").write_bytes(lexicon)
-    generate(generated,lexicon)
+    (assets/"german.rlex").unlink(missing_ok=True)
+    generate(generated)
     from _reloq_dictionaries import FILES,validate_snapshot
     validate_snapshot(ROOT/"data/community")
     community=assets/"community";community.mkdir(exist_ok=True)

@@ -52,6 +52,8 @@ These controls are in NVDA's Speech settings:
 
 **Use abbreviation dictionary** controls native abbreviation expansion and starts enabled. Main and Root pronunciation dictionaries remain active independently. **Phrase prediction** starts disabled; enabled, it uses the language core to infer phrase boundaries in text without punctuation. Both settings also appear on Android and apply to the next synthesis request. Equal speed values retain each language’s own duration model; they do not promise equal words or syllables per minute.
 
+German uses the built-in C dictionary, as do the other languages. The supplemental German lexicon from earlier versions is no longer required. Optional pronunciation dictionaries remain available.
+
 ## Pronunciation dictionaries
 
 Select Eloquence C first, then open **NVDA Settings → Eloquence C**.

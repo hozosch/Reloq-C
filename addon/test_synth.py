@@ -17,7 +17,7 @@ from unittest import mock
 import zipfile
 
 from build_preview import assert_x64_pe
-from build_synth import build, lexicon_rows, merged_german_lexicon
+from build_synth import build
 from nvda_test_api import (
     configuration_manager, install as install_nvda_contract, load as load_nvda_api,
 )
@@ -92,7 +92,7 @@ class Engine:
         assert Path(path).name == "eci.dll"
         assert experimental_generic
         assert dialect in (0x40000, 0x10000, 0x10001, 0x20000, 0x20001, 0x30000, 0x30001, 0x50000, 0x70000, 0x90000, 0x60000, 0x60001, 0x80000, 0xa0000, 0x120000) and encoding == "utf-8"
-        assert lexicon_path is None or Path(lexicon_path).name == "german_apple_observed.rlex"
+        assert lexicon_path is None
         self.dialect = dialect
         self.parts = []
         self.closed = False
@@ -124,30 +124,6 @@ class Engine:
 
 
 def main(inspect_adapter=None):
-    original = (ROOT / "data/german_apple_observed.rlex").read_bytes()
-    supplement = (ROOT / "data/german_apple_hunspell_context.rlex").read_bytes()
-    original_rows = dict(lexicon_rows(original))
-    supplement_rows = dict(lexicon_rows(supplement))
-    dictionary_rows = dict(lexicon_rows(
-        (ROOT / "data/german_apple_dictionary.rlex").read_bytes()))
-    verb_rows = dict(lexicon_rows(
-        (ROOT / "data/german_apple_verb_paradigms.rlex").read_bytes()))
-    assert len(original_rows) == 1598
-    assert len(supplement_rows) == 1337
-    assert len(dictionary_rows) == 13379
-    assert len(verb_rows) == 184
-    assert not verb_rows.keys() & (original_rows.keys() | supplement_rows.keys() | dictionary_rows.keys())
-    assert not original_rows.keys() & supplement_rows.keys()
-    assert not dictionary_rows.keys() & (original_rows.keys() | supplement_rows.keys())
-    merged = dict(lexicon_rows(merged_german_lexicon()))
-    root_rows = dict(lexicon_rows((ROOT / "data/german_apple_roots82.rlex").read_bytes()))
-    assert len(root_rows) == 2
-    assert all(merged[key] == line for key, line in root_rows.items())
-    assert len(merged) == len(root_rows) + len(original_rows) + len(supplement_rows) + len(dictionary_rows) + len(verb_rows)
-    assert all(merged[key] == line for key, line in original_rows.items())
-    assert all(merged[key] == line for key, line in supplement_rows.items())
-    assert all(merged[key] == line for key, line in dictionary_rows.items())
-    assert all(merged[key] == line for key, line in verb_rows.items())
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory)
         package = path / "synth.nvda-addon"
@@ -166,7 +142,7 @@ def main(inspect_adapter=None):
             names = set(archive.namelist())
             assert "synthDrivers/reloqC/__init__.py" in names
             assert "synthDrivers/reloqC/eci.dll" in names
-            assert "synthDrivers/reloqC/german_apple_observed.rlex" in names
+            assert not any(name.endswith(".rlex") for name in names)
             assert "synthDrivers/reloqC/_reloq_unicode.py" not in names
             assert "doc/licenses/Unicode-LICENSE.txt" in names
             licenses={"doc/licenses/OpenEVV-LICENSE.txt","doc/licenses/OpenEVV-NOTICE.txt"}
@@ -181,9 +157,6 @@ def main(inspect_adapter=None):
             assert not any("__pycache__" in name or name.endswith(".pyc")
                            for name in names)
             assert_x64_pe(archive.read("synthDrivers/reloqC/eci.dll"))
-            assert archive.read(
-                "synthDrivers/reloqC/german_apple_observed.rlex"
-            ) == merged_german_lexicon()
             archive.extractall(path)
 
         ui_language = sys.argv[1] if len(sys.argv) > 1 else "en"
@@ -630,7 +603,7 @@ def main(inspect_adapter=None):
                 # A test-only second module proves profile restoration selects
                 # language before validating a voice unavailable in German.
                 language_api = importlib.import_module("synthDrivers.reloqC._reloq_languages")
-                english = replace(english, lexicon=None, voices=(language_api.Voice("9", "Test voice"),))
+                english = replace(english, voices=(language_api.Voice("9", "Test voice"),))
                 with mock.patch.object(driver_module, "LANGUAGES", {german.id: german, english.id: english}):
                     engines_before_profile = len(Engine.instances)
                     speech_config[driver.name] = {"engineLanguage": str(english.id),

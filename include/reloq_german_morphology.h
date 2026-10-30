@@ -37,4 +37,9 @@ void reloq_german_morphology_repair_stem(const unsigned char *,size_t,
  * Uses the same measured component classes as the ordinary morphology. */
 int reloq_german_morphology_user_compound(const struct reloq_lexicon *,
     const unsigned char *,size_t,unsigned char *,size_t,size_t *);
+/* The native sentence frontend can resolve the same licensed components
+ * from its built-in dictionary when no external override table is present. */
+int reloq_german_morphology_user_compound_resolved(const struct reloq_lexicon *,
+    const unsigned char *,size_t,unsigned char *,size_t,size_t *,
+    int (*read_word)(const unsigned char *,size_t,unsigned char *,size_t,size_t *));
 #endif

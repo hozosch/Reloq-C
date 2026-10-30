@@ -1,0 +1,129 @@
+{
+  "version": "0.2.194",
+  "android_version": "0.2.194-preview6",
+  "no_audio_files": true,
+  "artifacts": {
+    "eci/libreloq_eci.so": {
+      "bytes": 63454992,
+      "sha256": "798ef54dafa755fdde3f8be1855e371fd922c6d90fab034eaaa06a679d02720b"
+    },
+    "eci/eci.dll": {
+      "bytes": 61280256,
+      "sha256": "835fe46b327e9c0b336d573bd46007c36a68862d04cf6ff0bc2b6ce2839be094"
+    },
+    "eci/libreloq_android.so": {
+      "bytes": 55495872,
+      "sha256": "828af86c7e917703696a5b09df9a89e139cfa370c0cb3c06b79513783dfe88ae"
+    },
+    "dist/reloq-c-synth-experimental-x64-0.2.194.nvda-addon": {
+      "bytes": 22951231,
+      "sha256": "d2dfade4228d22316e9ac82a5688d0fb755c6af04316c7c6365e601cd29fb2f2"
+    },
+    "dist/reloq-c-android-arm64-0.2.194-preview6.apk": {
+      "bytes": 18318742,
+      "sha256": "e5786b0d7ba17dcc23e407232aeb72f1205f426f23cfaf1b4843049bcef02dda"
+    }
+  },
+  "package_byte_reductions_from_0193": {
+    "dist/reloq-c-synth-experimental-x64-0.2.194.nvda-addon": 147620,
+    "dist/reloq-c-android-arm64-0.2.194-preview6.apk": 151616
+  },
+  "german_dictionary": {
+    "standard_path": "built-in native C dictionary; same driver path as the other languages",
+    "supplemental_runtime_records_removed": 16500,
+    "supplemental_file_bytes_removed": 712343,
+    "nvda_language_specific_lexicon_field_removed": true,
+    "android_installer_and_BuildData_removed": true,
+    "historical_rlex_retained_as_source_test_fixtures": true,
+    "optional_caller_and_main_root_pronunciations_retained": true
+  },
+  "analysis": {
+    "native_quantity_and_abbreviation_word_accent_comparisons": 84,
+    "intact_ch_compound_cases_without_rlex": 4,
+    "original_aligned_whitespace_retained": true,
+    "numeric_phones_retained": true,
+    "native_parameter_controls_retained": true,
+    "new_runtime_dependencies": false,
+    "no_original_module_or_bytecode_required": true,
+    "no_speech_result_cache": true
+  },
+  "validation": {
+    "make_eci_test_complete": true,
+    "analysis_options_without_baseline": 197,
+    "analysis_options_with_0193": 227,
+    "native_text_input_component_checks": 137,
+    "native_text_pcm_index_checks": 224,
+    "android_jni_direct_c_matches": 35,
+    "android_settings_dictionary_checks": 866,
+    "voice_catalog_names": 112,
+    "dictionary_semantics_cases": 25,
+    "dictionary_retention_cases": 18,
+    "dictionary_manager_tests": 18,
+    "asian_greek_renders": 1680,
+    "asian_greek_pause_comparisons": 105,
+    "nvda_english_ui": true,
+    "nvda_german_ui": true,
+    "windows_abi_exports": 21,
+    "artifact_current_native_bytes_and_dictionary_git_blobs_verified": true,
+    "apk_crc_dex_size_sha1_adler32_verified": true,
+    "apk_has_no_rlex_or_obsolete_installer_classes": true
+  },
+  "community_master_commit": "f93ccc82158386f7607ed3868473b6914121d2d7",
+  "native_dependencies": {
+    "linux": [
+      "libm.so.6",
+      "libc.so.6",
+      "ld-linux-x86-64.so.2"
+    ],
+    "android": [
+      "libm.so",
+      "libdl.so",
+      "libc.so"
+    ],
+    "windows": [
+      "kernel32.dll",
+      "msvcrt.dll",
+      "user32.dll"
+    ]
+  },
+  "apk_upgrade": {
+    "package": "org.reloq.tts.preview",
+    "before_version_code": 20193,
+    "after_version_code": 20194,
+    "same_certificate": true,
+    "certificate_sha256": "e4af6db7bf1fd6ecf1670d48dac195d56cafc96daceec1238211a0ff1ba1091f"
+  },
+  "language_rates": "0.2.194-language-rates.json",
+  "desired_german_word_phone_check": "0.2.194-german-departures.json",
+  "exploratory_linux_resource_measurements": {
+    "method": "Separate Python processes; existing 712343-byte historical file vs no file; one voice, five texts, five repetitions, last four warm repetitions; PCM discarded in RAM. Not a Windows/Android device benchmark.",
+    "results": [
+      {
+        "build": "0.2.193 legacy lexicon",
+        "initialization_ms": 6.458881000071415,
+        "steady_synthesis_ms_median": 2.7218220002396265,
+        "first_pcm_ms_median": 1.5891255006863503,
+        "peak_rss_kib": 29308,
+        "warm_requests": 20,
+        "no_audio_files": true
+      },
+      {
+        "build": "0.2.194 builtin native lexicon",
+        "initialization_ms": 2.0797389988729265,
+        "steady_synthesis_ms_median": 3.0811069991614204,
+        "first_pcm_ms_median": 1.8224139994345023,
+        "peak_rss_kib": 28552,
+        "warm_requests": 20,
+        "no_audio_files": true
+      }
+    ],
+    "interpretation": "Initialization and peak RSS decreased in this sample; warm synthesis and first-PCM medians are slightly higher. This is not evidence of a general CPU/steady-latency speedup."
+  },
+  "limitations": [
+    "The new analysis and lexicon removal require the ordinary Windows/TalkBack listening check.",
+    "Historical developer-only eciLoadLexicon remains supported for explicit caller overrides; no runtime package requires an RLEX file.",
+    "The curated 46-word comparison retains all phone sequences; Übersicht now uses native initial prefix stress.",
+    "Automatic cross-language rate normalization remains inactive; German 38 versus Spanish/Greek 18 is recorded and measured as a user reference.",
+    "SAPI5 remains planned."
+  ]
+}

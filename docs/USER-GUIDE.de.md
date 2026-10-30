@@ -52,6 +52,8 @@ Die folgenden Optionen befinden sich in den Sprachausgaben-Einstellungen:
 
 **Abkürzungswörterbuch verwenden** schaltet die native Abkürzungsauflösung und ist zunächst eingeschaltet. Haupt- und Stammwörterbücher für die Aussprache bleiben davon unabhängig aktiv. **Satzvorhersage** ist zunächst ausgeschaltet; eingeschaltet ermittelt der Sprachkern Phrasengrenzen in Text ohne Satzzeichen. Beide Einstellungen stehen auch unter Android zur Verfügung und gelten ab der nächsten Syntheseanfrage. Gleiche Geschwindigkeitswerte behalten das Dauermodell der jeweiligen Sprache bei; sie garantieren keine gleiche Anzahl Wörter oder Silben pro Minute.
 
+Deutsch verwendet wie die übrigen Sprachen das eingebaute C-Wörterbuch. Die zusätzliche deutsche Lexikondatei früherer Versionen wird nicht mehr benötigt; die optionalen Aussprachewörterbücher bleiben verfügbar.
+
 ## Aussprachewörterbücher
 
 Wähle zuerst Eloquence C als aktive Sprachausgabe. Öffne dann **NVDA-Einstellungen → Eloquence C**.

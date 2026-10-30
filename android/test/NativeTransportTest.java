@@ -34,7 +34,7 @@ public final class NativeTransportTest {
     }
     public static void main(String[] arguments) throws Exception {
         try {
-            context=worker.submit(() -> NativeEngine.create(arguments[0])).get(10,TimeUnit.SECONDS);
+            context=worker.submit(() -> NativeEngine.create()).get(10,TimeUnit.SECONDS);
             if(context==0) throw new AssertionError("Context creation failed");
             for(Catalog.Language language:Catalog.LANGUAGES) render(language.id,0,language.sample);
             for(int profile=0;profile<8;++profile) render(0x10000,profile,"This is Eloquence and NVDA, with 504 and 4004.");
@@ -63,9 +63,9 @@ public final class NativeTransportTest {
             custom.abbreviations=false;custom.prediction=true;
             render(0x10000,custom,"Dr. Smith works at St. James with Mrs. Jones.");
             render(0x40000,custom,"Der Doktor sagt dass wir heute mit dem Zug nach Berlin fahren.");
-            dictionary(arguments[1]);render(0x10000,0,"This is cancellationtoken.");
+            dictionary(arguments[0]);render(0x10000,0,"This is cancellationtoken.");
             render(0x40000,0,"Ich bin TokenX dir.");
-            dictionary(arguments[2]);render(0x10000,0,"This is cancellationtoken.");
+            dictionary(arguments[1]);render(0x10000,0,"This is cancellationtoken.");
             dictionary(null);render(0x10000,0,"This is cancellationtoken.");
         } finally {
             worker.submit(() -> NativeEngine.destroy(context)).get(10,TimeUnit.SECONDS);

@@ -4,7 +4,9 @@
 #include "reloq_character.h"
 #include "reloq_german_best_effort_text.h"
 #include "reloq61.h"
+#include "reloq_inline_tags.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 #include <stdint.h>
 #include <string.h>
@@ -112,6 +114,76 @@ static void defaults(float frame[62])
     frame[43] = 35.5f;
 }
 
+static size_t accent_signature(const unsigned char *text,size_t length,unsigned char out[128])
+{
+    size_t words=0;unsigned char pending=0;
+    for(size_t at=0;at<length;) {
+        struct reloq_inline_tag tag=reloq_inline_tag_read(text+at,length-at,1);
+        if(tag.kind==RELOQ_TAG_PROMINENCE)
+            pending=(unsigned char)(tag.value+1+(tag.length==3&&text[at+1]=='0'?10:0));
+        if(tag.kind==RELOQ_TAG_SPR) {
+            if(words==128)return SIZE_MAX;
+            out[words++]=pending;pending=0;
+        }
+        at+=tag.length?tag.length:1;
+    }
+    return words;
+}
+static int native_german_analysis(void)
+{
+    static const char *const texts[]={
+        "Das dauert 2 Minuten und 24 Sekunden.",
+        "Das dauert zwei Minuten und vierundzwanzig Sekunden.",
+        "Nach 24 Sekunden geht es weiter.",
+        "Das dauert 3 Stunden und 12 Minuten.",
+        "Das dauert 2 Tage und 3 Stunden.",
+        "Der Weg dauert 5 Minuten und 30 Sekunden.",
+        "Die Zeit liegt bei 12 Minuten und 48 Sekunden.",
+        "Wir warten 2 Wochen und 3 Tage.",
+        "Die Zeit ist 24 Sekunden und dann geht es weiter.",
+        "Das ist u. s. w. gut.","Das ist d. h. gut.","Das ist z. Z. gut.",
+        "Das ist z. B. gut.","Das ist d.h. gut.","Das ist usw. gut.",
+        "Das ist 2 km gut.","Das ist 2 kg gut.","Das ist 2 min gut.",
+        "Das ist Dr. Meier.","Das ist Prof. Meier.","Das ist Nr. 2."
+    };
+    for(int dictionary=0;dictionary<2;++dictionary)for(int prediction=0;prediction<2;++prediction)
+        for(size_t i=0;i<sizeof texts/sizeof *texts;++i) {
+            struct reloq61_text_options previous=reloq61_text_options_scope(
+                (struct reloq61_text_options){dictionary,prediction});
+            unsigned char *own=NULL;size_t length=0,approximate=0;
+            char native[4096];struct reloq61_result result;
+            struct reloq61_request request={.language=0x40000,.annotations=1,.phonemes_only=1,
+                .voice={0,50,65,30,0,0,50,92},.text=texts[i],.phonemes=native,.phonemes_capacity=sizeof native};
+            int observed=reloq61_generate(&request,&result);
+            int status=reloq_german_best_effort_annotate((const unsigned char *)texts[i],strlen(texts[i]),
+                NULL,&own,&length,&approximate,NULL);
+            reloq61_text_options_scope(previous);
+            CHECK(!observed&&!status&&own);
+            unsigned char a[128],b[128];
+            size_t an=accent_signature(own,length,a),bn=accent_signature((unsigned char *)native,result.phonemes_length,b);
+            if(an!=bn || an>=128 || memcmp(a,b,an)) {
+                fprintf(stderr,"Native German alignment differs: da=%d pp=%d %s\nOwn: %.*s\nNative: %.*s\n",
+                    dictionary,prediction,texts[i],(int)length,own,(int)result.phonemes_length,native);
+                free(own);return __LINE__;
+            }
+            if(i==0)CHECK(strstr((char *)own,"`[.1fi.0rUnt.2TvAn.0TIX]"));
+            free(own);
+        }
+    static const struct {const char *word,*spr;} compounds[]={
+        {"Sprachauswahl.","`[.1Sprax.2'aw's.2val]"},
+        {"Suchauswahl.","`[.1zux.2'aw's.2val]"},
+        {"Sprachauswahlen.","`[.1Sprax.2'aw's.2va.0l@n]"},
+        {"Suchauswahlen.","`[.1zux.2'aw's.2va.0l@n]"}
+    };
+    for(size_t i=0;i<sizeof compounds/sizeof *compounds;++i) {
+        unsigned char *own=NULL;size_t length=0,approximate=0;
+        CHECK(!reloq_german_best_effort_annotate((const unsigned char *)compounds[i].word,
+            strlen(compounds[i].word),NULL,&own,&length,&approximate,NULL));
+        CHECK(own&&strstr((char *)own,compounds[i].spr));free(own);
+    }
+    return 0;
+}
+
 static int phrase_prediction_frontend(void)
 {
     static const unsigned char text[]="Das ist ein Test der eine l\303\244ngere Wortgruppe ohne Satzzeichen enth\303\244lt und danach noch viel mehr W\303\266rter hinzuf\303\274gt damit die automatische Satzvorhersage Grenzen finden kann.";
@@ -137,9 +209,10 @@ static int phrase_prediction_frontend(void)
 int main(void)
 {
     int prediction=phrase_prediction_frontend();if(prediction)return prediction;
+    int native=native_german_analysis();if(native)return native;
     char version[20] = {0};
     eciVersion(version);
-    CHECK(!strcmp(version, "0.2.193.0"));
+    CHECK(!strcmp(version, "0.2.194.0"));
     int languages = 0;
     CHECK(eciGetAvailableLanguages(NULL, &languages) == 0 &&
           languages == 0);

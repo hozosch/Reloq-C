@@ -154,7 +154,6 @@ def main():
     from build_synth import merged_german_lexicon
     with tempfile.TemporaryDirectory() as folder:
         folder=Path(folder);(folder/'eci.dll').symlink_to(ROOT/'eci/libreloq_eci.so')
-        (folder/GERMAN.lexicon).write_bytes(merged_german_lexicon())
         engine=LanguageEngine(folder/'eci.dll');engine.set_parameter(NATIVE_SPEED,98)
         chunks=[];indices=[]
         assert engine.speak(['Hallo.',EciLanguage(US_ENGLISH.id,'1'),'Hello.',EciIndex(4),

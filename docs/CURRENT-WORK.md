@@ -1,4 +1,16 @@
-# Technischer Arbeitsstand: 0.2.193
+# Technischer Arbeitsstand: 0.2.194
+
+## 0.2.194: Einheitlicher Wörterbuchpfad
+
+Deutsch nutzt regulär das eingebaute native C-Wörterbuch. Die zusätzliche Datei mit 16.500 Einträgen und 712.343 Bytes entfällt aus beiden Paketen und den regulären Treibern. Historische RLEX-Dateien bleiben Quell-Testdaten. Native Abkürzungsauflösung ersetzt die doppelten SPR-Tabellen. Haupt-/Stamm-Benutzerwörterbücher bleiben aktiv.
+
+Für die Satzanalyse bleiben einfache Kardinalzahlen als ursprüngliche Ziffern erhalten, während die eigene Zahlenlautung weiter verwendet wird. Dadurch greifen native Betonung und Phrasengrenzen auch bei Mengen-/Zeitangaben. Die Analyse erhält die tatsächlichen Leerzeichen zwischen zugeordneten Quellwörtern; künstliche SPR-Formatierungsabstände werden dort nicht zurückgeführt. Die zugelassenen ch-Komposita lesen ihre Bestandteile bei Bedarf aus dem eingebauten Wörterbuch, ohne Ausspracheergebnisse aufzubewahren. Der eigene Akustikplaner bleibt erhalten.
+
+Als Nutzerreferenz für spätere Geschwindigkeitsangleichung sind Deutsch 38 sowie Spanisch/Griechisch 18 in NVDA erfasst. Es gibt noch keine automatische sprachübergreifende Umrechnung. Die bisherige native Skala bleibt erhalten.
+
+Die vollständige ECI-Prüfung, 227 gezielte Steuerungs-/Fragmentvergleiche, 35 JNI-/C-Paare, 866 Android-Einstellungs-/Datenprüfungen, beide NVDA-Oberflächen und die Wörterbuchprüfungen bestehen. Die Pakete sind um 147.620 bzw. 151.616 Bytes kleiner. Im kleinen Linux-Vergleich sinken Initialisierungszeit und Spitzen-RSS; die Mediane laufender Synthese/erster PCM liegen geringfügig höher. Ein allgemeiner CPU-Gewinn ist daraus nicht belegt. Der Hörtest auf Windows/Android für diesen Umbau steht aus. Hashes und Grenzen: `docs/validation/0.2.194.json`.
+
+Die folgenden älteren Abschnitte beschreiben jeweils den damaligen Stand.
 
 Die Projektbeschreibung und Bedienungsanleitungen stehen jetzt getrennt von diesen Entwicklungsnotizen. Ausgangspunkt für die Änderungen ist der unveränderte GitHub-Import von 0.2.186. Der eigene deutsche Akustikplaner, Chinesisch und die Entscheidungen in [GEWUENSCHTE-ABWEICHUNGEN-DE.md](../GEWUENSCHTE-ABWEICHUNGEN-DE.md) bleiben erhalten.
 

@@ -14,7 +14,7 @@ from _reloq_languages import GERMAN, LanguageEngine, language_for
 from _reloq_eci_transport import EciTextTransport
 
 ROOT = Path(__file__).resolve().parents[1]
-ENGLISH = replace(GERMAN, id=0x10000, name="Test only", locale="en_GB", lexicon=None)
+ENGLISH = replace(GERMAN, id=0x10000, name="Test only", locale="en_GB")
 CATALOG = {GERMAN.id: GERMAN, ENGLISH.id: ENGLISH}
 
 
@@ -158,8 +158,6 @@ def voice_presets():
 
 
 def native_regression():
-    sys.path.insert(0, str(ROOT / "addon"))
-    from build_synth import merged_german_lexicon
     lib = ROOT / "eci/libreloq_eci.so"
     texts = ["Ausführen Dialogfeld.", "Administratorberechtigungen",
              "des Lesens", "Eingeklappt. Silbengrenze.", "NVDA-Menü",
@@ -169,9 +167,7 @@ def native_regression():
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory)
         (path / "eci.dll").symlink_to(lib)
-        lexicon = path / "german_apple_observed.rlex"
-        lexicon.write_bytes(merged_german_lexicon())
-        previous = DirectEciEngine(lib, experimental_generic=True, lexicon_path=lexicon)
+        previous = DirectEciEngine(lib, experimental_generic=True)
         current = LanguageEngine(path / "eci.dll")
         for engine in (previous, current):
             for parameter, value in ((NATIVE_SPEED, 98), (NATIVE_PITCH, 50),
