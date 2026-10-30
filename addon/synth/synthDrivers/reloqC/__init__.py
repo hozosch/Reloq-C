@@ -30,7 +30,8 @@ from synthDriverHandler import (SynthDriver as BaseSynthDriver, VoiceInfo, Langu
 
 from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciLanguage, EciText, NATIVE_VOLUME,
                                 NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION, PROCESS_TAGS,
-                                PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATES)
+                                PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATES,
+                                DICTIONARY, PHRASE_PREDICTION)
 from ._reloq_eci_transport import EciTextTransport
 from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries
 from ._reloq_languages import GERMAN, LANGUAGES, LANGUAGE_ALIASES, LANGUAGE_DISPLAY_ORDER, LanguageEngine, language_for
@@ -165,6 +166,8 @@ class SynthDriver(BaseSynthDriver):
         NumericDriverSetting("headSize", _("&Head size"), False, defaultVal=50),
         NumericDriverSetting("roughness", _("Rou&ghness"), False, defaultVal=0),
         NumericDriverSetting("breathiness", _("&Breathiness"), False, defaultVal=0),
+        BooleanDriverSetting("abbreviationDictionary", _("Use &abbreviation dictionary"), defaultVal=True),
+        BooleanDriverSetting("phrasePrediction", _("Phrase &prediction"), defaultVal=False),
         BooleanDriverSetting("voiceTags", _("Process &ECI tags"), defaultVal=False),
         BooleanDriverSetting("_dictionaryCommunity", _("Use &community pronunciation dictionaries"), defaultVal=False),
         DriverSetting("pauseMode", _("Shorten pa&uses"), defaultVal="0"),
@@ -197,6 +200,8 @@ class SynthDriver(BaseSynthDriver):
         self._headSize = 50
         self._roughness = 0
         self._breathiness = 0
+        self._abbreviationDictionary = True
+        self._phrasePrediction = False
         self._voiceTags = False
         self._communityDictionaries = False
         self._dictionary_updater = None
@@ -347,6 +352,30 @@ class SynthDriver(BaseSynthDriver):
             self.dictionary_manager().set_enabled(enable)
             self._communityDictionaries = enable
 
+    def _get_abbreviationDictionary(self):
+        return self._abbreviationDictionary
+
+    def _set_abbreviationDictionary(self, enable):
+        if not isinstance(enable, bool):
+            raise ValueError("abbreviationDictionary must be boolean")
+        with self._submit_lock:
+            if self._terminating or self._abbreviationDictionary == enable:
+                return
+            self._transport.set_parameter(DICTIONARY, int(not enable))
+            self._abbreviationDictionary = enable
+
+    def _get_phrasePrediction(self):
+        return self._phrasePrediction
+
+    def _set_phrasePrediction(self, enable):
+        if not isinstance(enable, bool):
+            raise ValueError("phrasePrediction must be boolean")
+        with self._submit_lock:
+            if self._terminating or self._phrasePrediction == enable:
+                return
+            self._transport.set_parameter(PHRASE_PREDICTION, int(enable))
+            self._phrasePrediction = enable
+
     def _get_voiceTags(self):
         return self._voiceTags
 
@@ -417,6 +446,8 @@ class SynthDriver(BaseSynthDriver):
                 (NATIVE_VOLUME, self._volume), (HEAD_SIZE, self._headSize),
                 (ROUGHNESS, self._roughness), (BREATHINESS, self._breathiness),
                 (PROCESS_TAGS, int(self._voiceTags)), (PAUSE_MODE, int(self._pauseMode)),
+                (DICTIONARY, int(not self._abbreviationDictionary)),
+                (PHRASE_PREDICTION, int(self._phrasePrediction)),
             ))
             self._selectedLanguage, self._voice = selected, voice
 

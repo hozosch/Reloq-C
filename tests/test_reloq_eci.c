@@ -1,6 +1,10 @@
 #include "reloq_eci.h"
 #include "reloq_frame_adapter.h"
 #include "reloq_session.h"
+#include "reloq_character.h"
+#include "reloq_german_best_effort_text.h"
+#include "reloq61.h"
+#include <stdlib.h>
 
 #include <stdint.h>
 #include <string.h>
@@ -108,11 +112,34 @@ static void defaults(float frame[62])
     frame[43] = 35.5f;
 }
 
+static int phrase_prediction_frontend(void)
+{
+    static const unsigned char text[]="Das ist ein Test der eine l\303\244ngere Wortgruppe ohne Satzzeichen enth\303\244lt und danach noch viel mehr W\303\266rter hinzuf\303\274gt damit die automatische Satzvorhersage Grenzen finden kann.";
+    struct reloq61_text_options previous=reloq61_text_options_scope((struct reloq61_text_options){0,1});
+    unsigned char *annotation=NULL;size_t length=0,approximate=0;
+    int status=reloq_german_best_effort_annotate(text,sizeof text-1,NULL,&annotation,&length,&approximate,NULL);
+    reloq61_text_options_scope(previous);
+    CHECK(!status&&annotation);
+    size_t words=0,boundaries=0;
+    for(size_t i=0;i<length;++i) {
+        if(annotation[i]=='`'&&i+1<length&&annotation[i+1]=='[')++words;
+        if(annotation[i]==','){CHECK(words==11);++boundaries;}
+    }
+    free(annotation);
+    CHECK(words==25&&boundaries==1);
+    struct reloq_character_reading name;
+    CHECK(reloq_character_read_native(0xb0,0,&name)==1&&!strcmp(name.original_spr,"`[.1grat]"));
+    CHECK(reloq_character_read_native('_',0,&name)==1&&!strcmp(name.original_spr,"`[.1Un.0tR.2StrIX]"));
+    CHECK(reloq_character_read_native(0xc5,0,&name)==1&&strstr(name.original_spr,".1rIG.0@l"));
+    return 0;
+}
+
 int main(void)
 {
+    int prediction=phrase_prediction_frontend();if(prediction)return prediction;
     char version[20] = {0};
     eciVersion(version);
-    CHECK(!strcmp(version, "0.2.192.0"));
+    CHECK(!strcmp(version, "0.2.193.0"));
     int languages = 0;
     CHECK(eciGetAvailableLanguages(NULL, &languages) == 0 &&
           languages == 0);
@@ -137,6 +164,14 @@ int main(void)
     CHECK(eciNewEx(0xb0000) == NULL);
     ECIHand e = eciNewEx(RELOQ_ECI_GERMAN);
     CHECK(e && eciGetParam(e, RELOQ_ECI_SAMPLE_RATE) == 1);
+    CHECK(eciGetParam(e, RELOQ_ECI_DICTIONARY) == 0);
+    CHECK(eciGetParam(e, RELOQ_ECI_PHRASE_PREDICTION) == 0);
+    CHECK(eciSetParam(e, RELOQ_ECI_DICTIONARY, 1) == 0);
+    CHECK(eciSetParam(e, RELOQ_ECI_DICTIONARY, 2) == -1);
+    CHECK(eciSetParam(e, RELOQ_ECI_DICTIONARY, 0) == 1);
+    CHECK(eciSetParam(e, RELOQ_ECI_PHRASE_PREDICTION, 1) == 0);
+    CHECK(eciSetParam(e, RELOQ_ECI_PHRASE_PREDICTION, -1) == -1);
+    CHECK(eciSetParam(e, RELOQ_ECI_PHRASE_PREDICTION, 0) == 1);
     CHECK(eciSetParam(e, RELOQ_ECI_SYNTH_MODE, 1) == 0 &&
           eciGetParam(e, RELOQ_ECI_SYNTH_MODE) == 1);
     CHECK(eciSetParam(e, RELOQ_ECI_INPUT_TYPE, 1) == -1 &&

@@ -1,4 +1,5 @@
-/* Native ts2/char_name readings; all 432 outputs checked against Apple. */
+/* Native ts2/char_name readings; German degree/underscore names deliberately
+ * replaced in 0.2.193. The remaining readings retain the observed originals. */
 static const struct original_character native_characters[] = {
 {33,{"`[.1'aw's.2ru.0f@.2T'aj'.0X@n]","`2 `[.2Ek.0sklx.1me.0SXn] `0 `[.1pOnt]"}},
 {34,{"`[.1An.2fy.0rUGs.2T'aj'.0X@n]","`[.1kwot]"}},
@@ -62,7 +63,7 @@ static const struct original_character native_characters[] = {
 {92,{"`[.0In.1vEr.0zR] `2 `[.1Sr'E:'k.2StrIX]","`[.1bAk.2slAS]"}},
 {93,{"`[.1E.0kI.0g@] `2 `[.1klA.0mR] `0 `[.1Tu]","`[.1rYt] `2 `[.1brA.0kXt]"}},
 {94,{"`[.0kOn.1trOl.2T'aj'.0X@n]","`[.1ker.0Xt]"}},
-{95,{"`[.0Un.0tR.1Str'aj'.0XUG]","`[.1Hn.0dR.2skcr]"}},
+{95,{"`[.1Un.0tR.2StrIX]","`[.1Hn.0dR.2skcr]"}},
 {96,{"`[.1gra.0vIs]","`[.1bAk.2kwot]"}},
 {97,{"`[.1a]","`[.1e]"}},
 {98,{"`[.1be]","`[.1bi]"}},
@@ -108,7 +109,7 @@ static const struct original_character native_characters[] = {
 {172,{"`[.1nIXt] `2 `[.0zOr.1tir.2T'aj'.0X@n]","`[.1ap.0Sx.0nxl] `2 `[.1hY.0fXn]"}},
 {174,{"`[.1'aj'n.0g@.2tra.0g@.0n@s] `2 `[.1va.0r@n.2T'aj'.0X@n]","`[.1rE.0JX.0stRd]"}},
 {175,{"`[.1bAl.0k@n]","`[.1mA.0krXn]"}},
-{176,{"`[.1rIG.0@l]","`[.0dX.1griz]"}},
+{176,{"`[.1grat]","`[.0dX.1griz]"}},
 {177,{"`[.1plus] `2 `[.1mi.0nUs]","`[.1plHs] `00 `[.0R] `2 `[.1mY.0nxs]"}},
 {178,{"`[.1hox.0g@.2StEl.0t@] `2 `[.1Tv'aj']","`[.1su.0pR.2skrIpt] `2 `[.1tu]"}},
 {179,{"`[.1hox.0g@.2StEl.0t@] `2 `[.1dr'aj']","`[.1su.0pR.2skrIpt] `2 `[.1Tri]"}},

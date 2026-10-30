@@ -301,7 +301,7 @@ def main(inspect_adapter=None):
                 assert PitchCommand in driver.supportedCommands
                 assert CharacterModeCommand in driver.supportedCommands
                 assert [setting.id for setting in driver.supportedSettings] == [
-                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate"]
+                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate"]
                 assert driver.supportedSettings[0].availableInSettingsRing
                 driver.initSettings()
                 panel = SettingsPanel(driver)
@@ -512,6 +512,15 @@ def main(inspect_adapter=None):
                 assert driver._get_voiceTags() is True
                 driver._set_voiceTags(False)
                 until(lambda: Engine.instances[0].parameters[-1] == (0x100b, 0))
+                assert driver.abbreviationDictionary is True and driver.phrasePrediction is False
+                driver.abbreviationDictionary = False
+                until(lambda: Engine.instances[0].parameters[-1] == (3, 1))
+                driver.phrasePrediction = True
+                until(lambda: Engine.instances[0].parameters[-1] == (11, 1))
+                driver.abbreviationDictionary = True
+                until(lambda: Engine.instances[0].parameters[-1] == (3, 0))
+                driver.phrasePrediction = False
+                until(lambda: Engine.instances[0].parameters[-1] == (11, 0))
                 assert list(driver.availablePausemodes) == ["0", "1", "2"]
                 assert list(driver.availablePauseModes) == ["0", "1", "2"]
                 assert driver.pauseMode == "0"

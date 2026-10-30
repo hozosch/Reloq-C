@@ -1,0 +1,401 @@
+{
+  "method": "Six separate native /ma/ syllables; inflection 0; 11025 Hz; PCM in memory",
+  "measurements": [
+    {
+      "language": "German",
+      "dialect": 262144,
+      "speed": 55,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 21527,
+      "seconds": 1.952562358276644
+    },
+    {
+      "language": "German",
+      "dialect": 262144,
+      "speed": 55,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 17578,
+      "seconds": 1.5943764172335602
+    },
+    {
+      "language": "German",
+      "dialect": 262144,
+      "speed": 98,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 9064,
+      "seconds": 0.8221315192743764
+    },
+    {
+      "language": "German",
+      "dialect": 262144,
+      "speed": 98,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 7392,
+      "seconds": 0.6704761904761904
+    },
+    {
+      "language": "American English",
+      "dialect": 65536,
+      "speed": 55,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 19569,
+      "seconds": 1.7749659863945577
+    },
+    {
+      "language": "American English",
+      "dialect": 65536,
+      "speed": 55,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 15554,
+      "seconds": 1.4107936507936507
+    },
+    {
+      "language": "American English",
+      "dialect": 65536,
+      "speed": 98,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 8041,
+      "seconds": 0.7293424036281179
+    },
+    {
+      "language": "American English",
+      "dialect": 65536,
+      "speed": 98,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 6402,
+      "seconds": 0.5806802721088435
+    },
+    {
+      "language": "British English",
+      "dialect": 65537,
+      "speed": 55,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 19569,
+      "seconds": 1.7749659863945577
+    },
+    {
+      "language": "British English",
+      "dialect": 65537,
+      "speed": 55,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 15554,
+      "seconds": 1.4107936507936507
+    },
+    {
+      "language": "British English",
+      "dialect": 65537,
+      "speed": 98,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 8041,
+      "seconds": 0.7293424036281179
+    },
+    {
+      "language": "British English",
+      "dialect": 65537,
+      "speed": 98,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 6402,
+      "seconds": 0.5806802721088435
+    },
+    {
+      "language": "Castilian Spanish",
+      "dialect": 131072,
+      "speed": 55,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 14641,
+      "seconds": 1.327981859410431
+    },
+    {
+      "language": "Castilian Spanish",
+      "dialect": 131072,
+      "speed": 55,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 10626,
+      "seconds": 0.9638095238095238
+    },
+    {
+      "language": "Castilian Spanish",
+      "dialect": 131072,
+      "speed": 98,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 6017,
+      "seconds": 0.5457596371882086
+    },
+    {
+      "language": "Castilian Spanish",
+      "dialect": 131072,
+      "speed": 98,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 4378,
+      "seconds": 0.39709750566893426
+    },
+    {
+      "language": "Latin American Spanish",
+      "dialect": 131073,
+      "speed": 55,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 14289,
+      "seconds": 1.2960544217687076
+    },
+    {
+      "language": "Latin American Spanish",
+      "dialect": 131073,
+      "speed": 55,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 10274,
+      "seconds": 0.9318820861678004
+    },
+    {
+      "language": "Latin American Spanish",
+      "dialect": 131073,
+      "speed": 98,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 5863,
+      "seconds": 0.5317913832199547
+    },
+    {
+      "language": "Latin American Spanish",
+      "dialect": 131073,
+      "speed": 98,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 4224,
+      "seconds": 0.3831292517006803
+    },
+    {
+      "language": "French",
+      "dialect": 196608,
+      "speed": 55,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 15224,
+      "seconds": 1.380861678004535
+    },
+    {
+      "language": "French",
+      "dialect": 196608,
+      "speed": 55,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 11209,
+      "seconds": 1.016689342403628
+    },
+    {
+      "language": "French",
+      "dialect": 196608,
+      "speed": 98,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 6292,
+      "seconds": 0.570702947845805
+    },
+    {
+      "language": "French",
+      "dialect": 196608,
+      "speed": 98,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 4653,
+      "seconds": 0.4220408163265306
+    },
+    {
+      "language": "French Canadian",
+      "dialect": 196609,
+      "speed": 55,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 14993,
+      "seconds": 1.3599092970521542
+    },
+    {
+      "language": "French Canadian",
+      "dialect": 196609,
+      "speed": 55,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 10978,
+      "seconds": 0.9957369614512471
+    },
+    {
+      "language": "French Canadian",
+      "dialect": 196609,
+      "speed": 98,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 6182,
+      "seconds": 0.5607256235827665
+    },
+    {
+      "language": "French Canadian",
+      "dialect": 196609,
+      "speed": 98,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 4543,
+      "seconds": 0.4120634920634921
+    },
+    {
+      "language": "Italian",
+      "dialect": 327680,
+      "speed": 55,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 12859,
+      "seconds": 1.1663492063492062
+    },
+    {
+      "language": "Italian",
+      "dialect": 327680,
+      "speed": 55,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 8844,
+      "seconds": 0.8021768707482994
+    },
+    {
+      "language": "Italian",
+      "dialect": 327680,
+      "speed": 98,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 5280,
+      "seconds": 0.47891156462585033
+    },
+    {
+      "language": "Italian",
+      "dialect": 327680,
+      "speed": 98,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 3641,
+      "seconds": 0.33024943310657595
+    },
+    {
+      "language": "Brazilian Portuguese",
+      "dialect": 458752,
+      "speed": 55,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 21164,
+      "seconds": 1.9196371882086167
+    },
+    {
+      "language": "Brazilian Portuguese",
+      "dialect": 458752,
+      "speed": 55,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 17149,
+      "seconds": 1.5554648526077097
+    },
+    {
+      "language": "Brazilian Portuguese",
+      "dialect": 458752,
+      "speed": 98,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 8734,
+      "seconds": 0.7921995464852608
+    },
+    {
+      "language": "Brazilian Portuguese",
+      "dialect": 458752,
+      "speed": 98,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 7095,
+      "seconds": 0.6435374149659864
+    },
+    {
+      "language": "Finnish",
+      "dialect": 589824,
+      "speed": 55,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 14432,
+      "seconds": 1.3090249433106576
+    },
+    {
+      "language": "Finnish",
+      "dialect": 589824,
+      "speed": 55,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 10417,
+      "seconds": 0.9448526077097505
+    },
+    {
+      "language": "Finnish",
+      "dialect": 589824,
+      "speed": 98,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 5907,
+      "seconds": 0.5357823129251701
+    },
+    {
+      "language": "Finnish",
+      "dialect": 589824,
+      "speed": 98,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 4268,
+      "seconds": 0.3871201814058957
+    },
+    {
+      "language": "Greek",
+      "dialect": 1179648,
+      "speed": 55,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 14641,
+      "seconds": 1.327981859410431
+    },
+    {
+      "language": "Greek",
+      "dialect": 1179648,
+      "speed": 55,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 10626,
+      "seconds": 0.9638095238095238
+    },
+    {
+      "language": "Greek",
+      "dialect": 1179648,
+      "speed": 98,
+      "pause_mode": 0,
+      "sample_rate": 11025,
+      "samples": 6017,
+      "seconds": 0.5457596371882086
+    },
+    {
+      "language": "Greek",
+      "dialect": 1179648,
+      "speed": 98,
+      "pause_mode": 2,
+      "sample_rate": 11025,
+      "samples": 4378,
+      "seconds": 0.39709750566893426
+    }
+  ]
+}

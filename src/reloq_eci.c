@@ -144,6 +144,7 @@ struct reloq_eci_engine {
     int native_volume_active;
     int input_type;
     int process_tags;
+    int dictionary_disabled,phrase_prediction;
     int pause_mode;
     int head_size,roughness,breathiness,gender;
     int language;
@@ -770,7 +771,7 @@ int ECICALL eciReset(ECIHand handle)
 void ECICALL eciVersion(char *buffer)
 {
     /* The public ECI convention promises at least twenty writable bytes. */
-    if (buffer) memcpy(buffer, "0.2.192.0", sizeof "0.2.192.0");
+    if (buffer) memcpy(buffer, "0.2.193.0", sizeof "0.2.193.0");
 }
 
 int ECICALL eciGetAvailableLanguages(unsigned int *languages, int *count)
@@ -890,6 +891,8 @@ int ECICALL eciSynthesize(ECIHand handle)
     if (!e) return 0;
     unsigned int before = epoch_get(&e->stop_epoch);
     if (!busy_begin(&e->busy)) return 0;
+    struct reloq61_text_options previous_options=reloq61_text_options_scope(
+        (struct reloq61_text_options){e->dictionary_disabled,e->phrase_prediction});
     e->failure_stage = RELOQ_ECI_STAGE_NONE;
     e->failure_utf8_offset = -1;
     int result = RELOQ_ECI_OK;
@@ -1231,6 +1234,7 @@ done:
     clear_queue(e);
     e->error = result;
     e->last_synthesis_error = result;
+    reloq61_text_options_scope(previous_options);
     busy_end(&e->busy);
     return result == RELOQ_ECI_OK;
 }
@@ -1286,6 +1290,8 @@ int ECICALL eciGetParam(ECIHand handle, int parameter)
     case RELOQ_ECI_NATIVE_VOLUME: return e->native_volume;
     case RELOQ_ECI_INPUT_TYPE: return e->input_type;
     case RELOQ_ECI_PROCESS_TAGS: return e->process_tags;
+    case RELOQ_ECI_DICTIONARY: return e->dictionary_disabled;
+    case RELOQ_ECI_PHRASE_PREDICTION: return e->phrase_prediction;
     case RELOQ_ECI_PAUSE_MODE: return e->pause_mode;
     case RELOQ_ECI_HEAD_SIZE: return e->head_size;
     case RELOQ_ECI_ROUGHNESS: return e->roughness;
@@ -1384,6 +1390,12 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
             reloq_session_destroy(previous);e->gender=value;
         }
         break;
+    case RELOQ_ECI_DICTIONARY:
+        if(value!=0 && value!=1)return -1;
+        e->dictionary_disabled=value;break;
+    case RELOQ_ECI_PHRASE_PREDICTION:
+        if(value!=0 && value!=1)return -1;
+        e->phrase_prediction=value;break;
     case RELOQ_ECI_PROCESS_TAGS:
         if(value!=0 && value!=1)return -1;
         e->process_tags=value;break;

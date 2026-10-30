@@ -32,15 +32,25 @@ struct reloq61_request {
 };
 /* Lossless German onset facts collected during the existing phoneme pass.
  * The caller owns this scoped sink; no word or synthesis result is retained. */
-struct reloq61_german_word_facts { uint64_t glottal_syllables; unsigned syllables; };
+struct reloq61_german_word_facts { uint64_t glottal_syllables; unsigned syllables; unsigned char phrase_before; };
+struct reloq61_german_phrase {int32_t next_word;unsigned char type;};
 struct reloq61_german_capture {
     struct reloq61_german_word_facts *words;
     size_t count,capacity;
     int overflow;
+    struct reloq61_german_phrase *phrases;
+    size_t phrase_count,phrase_capacity;
+    int phrases_sorted;
 };
 struct reloq61_german_capture *reloq61_german_capture_scope(struct reloq61_german_capture *);
-void reloq61_german_word_begin(void);
+void reloq61_german_word_begin(void *,int32_t);
+void reloq61_german_predicted_phrase(void *,int32_t,unsigned);
 void reloq61_german_syllable_begin(void);
+/* Owner-thread analysis controls, inherited by nested language analyzers.
+ * Scope/restore brackets one transaction; no utterance result is retained. */
+struct reloq61_text_options {int dictionary_disabled, phrase_prediction;};
+struct reloq61_text_options reloq61_text_options_current(void);
+struct reloq61_text_options reloq61_text_options_scope(struct reloq61_text_options);
 struct reloq61_result { int unsupported, error; size_t frames, phonemes_length; int64_t ticks; };
 /* CP1252 input; synchronous and independent of the host audio device.
  * 0 success, 1 unsupported plan (discard all results), -1 failure. */

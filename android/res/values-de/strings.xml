@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="preview_help">Offline-Sprachausgabe zum Testen, Version 0.2.192. Wähle eine Sprache und Stimme für die Sprachprobe oder ReLoq C Preview in den Android-Einstellungen zur Text-in-Sprache-Ausgabe.</string>
+    <string name="preview_help">Offline-Sprachausgabe zum Testen, Version 0.2.193. Wähle eine Sprache und Stimme für die Sprachprobe oder ReLoq C Preview in den Android-Einstellungen zur Text-in-Sprache-Ausgabe.</string>
     <string name="language">Sprache</string>
     <string name="profile">Stimme</string>
     <string name="sample_rate">Abtastrate</string>
@@ -65,4 +65,6 @@
     </string-array>
     <string name="wpm_value">%1$d Wörter pro Minute</string>
     <string name="speed_help">Wörter pro Minute sind ein Richtwert; die tatsächliche Rate hängt von Sprache, Wortlängen und Pausen ab. Die normale Android-Geschwindigkeit nutzt einen Zielwert von 190 Wörtern pro Minute.</string>
+    <string name="abbreviation_dictionary">Abkürzungswörterbuch verwenden</string>
+    <string name="phrase_prediction">Satzvorhersage</string>
 </resources>

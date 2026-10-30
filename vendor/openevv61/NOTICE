@@ -256,3 +256,12 @@ Source URL, input hashes and the selected families are recorded in
 `data/chinese_traditional_readings.json`. The generated C table retains
 original character distinctions during native lexical lookup. The Unicode
 license is included with both platform packages.
+
+ReLoq C 0.2.193 changes
+----------------------
+Per-request abbreviation and phrase-prediction controls use the existing
+native environment. German SPR metadata additionally projects native phrase
+relations into the retained independent acoustic planner. German degree and
+underscore names are replaced within the native character rule and admitted
+character table. Ring accents retain their original names. No runtime bytecode,
+original DLL/SYN dependency or speech-result cache is added.

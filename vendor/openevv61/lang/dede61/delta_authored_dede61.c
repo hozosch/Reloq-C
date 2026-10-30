@@ -2341,8 +2341,8 @@ uint8_t dede61_evv_authored_data[] = {
     20,3,21,5,25,
     /* eti_s_13d349, 11 bytes at 4869 */
     32,3,21,13,2,25,26,24,3,12,16,
-    /* eti_s_13d354, 15 bytes at 4880 */
-    10,21,26,2,24,25,26,24,2,3,12,16,5,21,15,
+    /* Unterstrich: 11 letters, four padding bytes retain later offsets. */
+    10,21,26,2,24,25,26,24,3,12,16,0,0,0,0,
     /* eti_s_13d363, 4 bytes at 4895 */
     22,19,5,25,
     /* eti_s_13d367, 9 bytes at 4899 */

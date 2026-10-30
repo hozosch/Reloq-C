@@ -1,3 +1,4 @@
+#include <stdlib.h>
 /* German phonetic spelling, directly from segment features. The native
  * phone stream remains authoritative; no word result is retained. */
 #include "reloq61_spr_output.h"
@@ -10,11 +11,46 @@ struct reloq61_german_capture *reloq61_german_capture_scope(struct reloq61_germa
     struct reloq61_german_capture *previous=german_capture;
     german_capture=next;return previous;
 }
-void reloq61_german_word_begin(void)
+/* The native phrase-insertion rule supplies its selected phrase-boundary point.
+ * Compare it with the same word locations used by the native SPR writer. No
+ * speculative projection, stream mutation or text heuristic is needed. */
+void reloq61_german_predicted_phrase(void *state,int32_t next_word,unsigned type)
+{
+    if(!german_capture||!german_capture->phrases||!next_word||type>=9)return;
+    /* Resolve the native insertion boundary once, before SPR traversal.
+     * Its right word point is then identical to the writer's next word. */
+    int32_t key=vgetsc(state,0,0,next_word,4);
+    if(key)next_word=key;
+    if(german_capture->phrase_count==german_capture->phrase_capacity){german_capture->overflow=1;return;}
+    german_capture->phrases_sorted=0;
+    german_capture->phrases[german_capture->phrase_count++]=(struct reloq61_german_phrase){next_word,(unsigned char)type};
+}
+static int phrase_order(const void *left,const void *right)
+{
+    const struct reloq61_german_phrase *a=left,*b=right;
+    return (a->next_word>b->next_word)-(a->next_word<b->next_word);
+}
+void reloq61_german_word_begin(void *state,int32_t location)
 {
     if(!german_capture)return;
     if(german_capture->count>=german_capture->capacity){german_capture->overflow=1;return;}
-    german_capture->words[german_capture->count++]=(struct reloq61_german_word_facts){0};
+    struct reloq61_german_word_facts *word=german_capture->words+german_capture->count++;
+    *word=(struct reloq61_german_word_facts){0};
+    int32_t at=location?EVV_AT(delta_loc *,location)->value:0;
+    (void)state;
+    if(!german_capture->phrases_sorted) {
+        if(german_capture->phrase_count>1)
+            qsort(german_capture->phrases,german_capture->phrase_count,
+                sizeof *german_capture->phrases,phrase_order);
+        german_capture->phrases_sorted=1;
+    }
+    size_t lo=0,hi=german_capture->phrase_count;
+    while(lo<hi) {
+        size_t mid=lo+(hi-lo)/2;
+        if(german_capture->phrases[mid].next_word<at)lo=mid+1;else hi=mid;
+    }
+    if(lo<german_capture->phrase_count && german_capture->phrases[lo].next_word==at)
+        word->phrase_before=(unsigned char)(german_capture->phrases[lo].type+1);
 }
 void reloq61_german_syllable_begin(void)
 {

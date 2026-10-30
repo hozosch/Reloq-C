@@ -19,6 +19,7 @@ Die Festlegungen wurden aus dem aktuellen Code, den Versionshinweisen und den fr
 | labiodental_gain | f/v/w-Pfad behält angenommene Anhebung bei hohen Raten | Faden, Wasser, Vase |
 | wideband | Präsenz 3,5–4 kHz ca. 2,5 dB, Bass, s-Bandbreite und alle sieben Raten behalten | Stimme bei 8 bis 48 kHz |
 | question_contour | Alle deutschen Fragen steigen spät an; frühere Wortakzente bleiben erhalten | Wie geht es dir?, Wer?, Kommst du morgen? |
+| german_symbol_names | Grad-Zeichen als Grad und Unterstrich als Unterstrich, direkt in der Zeichennamenregel; Ringakzente bleiben Ringel | °, _, Å, å |
 | short_u_plus | plus und Pluszeichen mit kurzem U | plus, +, ± |
 | voiced_samt | samt mit stimmhaftem s | samt, Samt |
 | nominal_prefix | Gewünschte Unter-/Über-Substantivbetonung, keine pauschale Verbänderung | Unterricht, Überschrift, Übersicht, Übergabe, Übernehmen, überzeugt |

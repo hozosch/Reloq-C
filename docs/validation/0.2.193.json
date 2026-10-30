@@ -1,0 +1,111 @@
+{
+  "version": "0.2.193",
+  "android_version": "0.2.193-preview5",
+  "no_audio_files": true,
+  "artifacts": {
+    "eci/libreloq_eci.so": {
+      "bytes": 63455392,
+      "sha256": "93e79a01227f24112a120a63d5d41b90c60eb108bab7164b2fdd88d51b68c22e"
+    },
+    "eci/eci.dll": {
+      "bytes": 61283328,
+      "sha256": "09fcc0574616c91e29716cf6e8fa59be61f80286440e558808a619ec873a50db"
+    },
+    "eci/libreloq_android.so": {
+      "bytes": 55502912,
+      "sha256": "6011b0b1cc750ec5f484ddb8399b8b4ac4d2d326998eff7eaad8de478801a285"
+    },
+    "dist/reloq-c-synth-experimental-x64-0.2.193.nvda-addon": {
+      "bytes": 23098851,
+      "sha256": "89be274b2661024d6b58b8f2dc523a70c7cb5c3307d0523cdfc69f7f003b5a25"
+    },
+    "dist/reloq-c-android-arm64-0.2.193-preview5.apk": {
+      "bytes": 18470358,
+      "sha256": "f66d6d61c3cf2c20596b293cd500c0830d77e5d7ca9c2e087af1d7bd6c62f10f"
+    }
+  },
+  "community_dictionaries": {
+    "master_commit": "f93ccc82158386f7607ed3868473b6914121d2d7",
+    "fresh_head_resolved_via_connected_api": true,
+    "all_seven_blobs_verified": true,
+    "packaged_bytes_verified": true
+  },
+  "analysis_options": {
+    "abbreviation_eci_parameter": 3,
+    "abbreviation_default": 0,
+    "abbreviation_polarity": "0 enabled, 1 disabled; Main/Root retained",
+    "phrase_prediction_eci_parameter": 11,
+    "phrase_prediction_default": 0,
+    "invalid_values_rejected": true,
+    "instance_and_request_scoped": true,
+    "inline_commands": [
+      "da0/1",
+      "pp0/1"
+    ],
+    "native_german_predicted_boundary": {
+      "fixture_words": 25,
+      "inferred_commas": 1,
+      "before_word_1_based": 12
+    },
+    "character_replacements": {
+      "U+00B0": "Grad",
+      "U+005F": "Unterstrich"
+    },
+    "ring_accent_name_retained": true
+  },
+  "language_rate_report": "0.2.193-language-rates.json",
+  "traditional_chinese": {
+    "changed_in_this_version": false,
+    "unicode_version": "17.0.0",
+    "source_identity_entries": 38,
+    "source_spelling_lookup_first": true,
+    "neutral_tones_and_contextual_polyphony_retained": true,
+    "one_to_one_regional_reading_changes_excluded": true
+  },
+  "validation": {
+    "analysis_options_with_0192": 189,
+    "analysis_options_without_baseline_in_full_target": 153,
+    "native_text_input_component_checks": 137,
+    "native_text_pcm_index_checks_without_baseline": 224,
+    "cjk_latin_unicode_fragment_checks_with_0192": 366,
+    "language_pcm_index_matches": 40,
+    "settings_dictionary_data_checks": 866,
+    "jni_pcm_hash_length_matches": 35,
+    "dictionary_retention_checks": 18,
+    "dictionary_context_checks": 25,
+    "nvda_english_ui": true,
+    "nvda_german_ui": true,
+    "make_eci_test_complete": true,
+    "asian_greek_native_renders": 1680,
+    "asian_greek_pause_comparisons": 105,
+    "western_pause_comparisons": 189,
+    "finnish_umlaut_equivalence_checks": 48,
+    "windows_public_abi_exports": 21,
+    "packaged_dll_matches_current_build": true,
+    "apk_zip_crc_and_dex_checksums": true,
+    "apk_resources_match_compiled_java_ids": true
+  },
+  "apk_upgrade": {
+    "before": {
+      "package": "org.reloq.tts.preview",
+      "version_code": 20192,
+      "certificates": [
+        "e4af6db7bf1fd6ecf1670d48dac195d56cafc96daceec1238211a0ff1ba1091f"
+      ]
+    },
+    "after": {
+      "package": "org.reloq.tts.preview",
+      "version_code": 20193,
+      "certificates": [
+        "e4af6db7bf1fd6ecf1670d48dac195d56cafc96daceec1238211a0ff1ba1091f"
+      ]
+    }
+  },
+  "limitations": [
+    "Android 0.2.192 is user-confirmed stable; the new analysis controls in 0.2.193 still need the device listening check.",
+    "Native parameter/inline-command equality is checked in Western grammars; Asian/Greek romanizers retain their original analysis order and are checked separately.",
+    "Equal speed controls retain native language duration models; measurements are not CPU timings or exact WPM normalization.",
+    "Traditional-character coverage is the projected 38 ambiguous identities and existing native dictionary, not an exhaustive Mandarin polyphone dictionary.",
+    "SAPI5 remains planned and is not implemented in this version."
+  ]
+}

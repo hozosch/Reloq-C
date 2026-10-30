@@ -38,7 +38,7 @@ extern Index *sti_getIndex(void *,uint32_t);
 extern void *reloq61_inline_scope(void *);
 static atomic_int initialized;
 struct provider_worker {
-    OldInst *handle;int language,prepared,last_voice[8],last_phonemes,last_annotations,last_sample_rate;int16_t pcm[4096];
+    OldInst *handle;int language,prepared,last_voice[8],last_phonemes,last_annotations,last_sample_rate;struct reloq61_text_options last_text_options;int16_t pcm[4096];
     struct provider_worker *english;
     char *dictionary_path;void *dictionary;
     char **dictionary_keys;size_t dictionary_key_count;uint64_t dictionary_lengths[4];unsigned char dictionary_starts[256];int dictionary_checked;
@@ -47,6 +47,10 @@ struct provider_worker {
     int32_t ready,ready2,wideband,wideband_sent,pauses,pauses_sent;
 };
 static _Thread_local struct provider_worker *owner_worker;
+static _Thread_local struct reloq61_text_options text_options;
+struct reloq61_text_options reloq61_text_options_current(void) {return text_options;}
+struct reloq61_text_options reloq61_text_options_scope(struct reloq61_text_options next)
+{struct reloq61_text_options previous=text_options;text_options=next;return previous;}
 typedef void (*pause_sink)(void *,int64_t,int64_t,int64_t);
 static _Thread_local struct {int policy;pause_sink sink;void *context;} pause_request;
 /* The host selects a policy on its serialized provider worker. Explicit
@@ -109,7 +113,10 @@ static int configure(OldInst *h,const struct reloq61_request *q,int16_t *pcm)
     ok=ok && ev_setParam(h,0,1)>=0;
     ok=ok && ev_setParam(h,1,q->annotations)!=-1;
     ok=ok && ev_setParam(h,2,0)>=0;
-    ok=ok && ev_setParam(h,3,0)>=0;
+    ok=ok && ev_setParam(h,3,text_options.dictionary_disabled)>=0;
+    /* The older public setter excludes slot 11, but the native environment
+       sends it as parameter 13, exactly as its existing pp annotation does. */
+    h->env[11]=text_options.phrase_prediction;
     ok=ok && ev_setParam(h,5,q->sample_rate==8000?0:1)>=0;
     ok=ok && ev_setParam(h,33,0)>=0;
     ok=ok && ev_setParam(h,7,q->phonemes_only?1:0)>=0;
@@ -138,7 +145,7 @@ static int prepare_next(struct provider_worker *worker,const struct reloq61_requ
     if(!ok)return 0;
     worker->prepared=1;worker->last_phonemes=q->phonemes_only;
     worker->last_annotations=q->annotations;
-    worker->last_sample_rate=q->sample_rate;
+    worker->last_sample_rate=q->sample_rate;worker->last_text_options=text_options;
     memcpy(worker->last_voice,q->voice,sizeof worker->last_voice);
     return 1;
 }
@@ -515,6 +522,8 @@ static int generate_core(const struct reloq61_request *q,struct reloq61_result *
     int annotated=strchr(q->text,'`')!=NULL;
     int reset=worker&&(!worker->prepared||annotated||worker->last_phonemes!=q->phonemes_only||
         worker->last_annotations!=q->annotations||worker->last_sample_rate!=q->sample_rate||
+        worker->last_text_options.dictionary_disabled!=text_options.dictionary_disabled||
+        worker->last_text_options.phrase_prediction!=text_options.phrase_prediction||
         memcmp(worker->last_voice,q->voice,sizeof worker->last_voice));
     int prepared=worker&&worker->handle&&!reset;
     initialize();h=worker?worker->handle:NULL;

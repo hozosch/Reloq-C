@@ -49,7 +49,7 @@ public final class SettingsTest {
             s.androidRate=false;s.manualWpm=280;s.androidPitch=false;s.manualPitch=43;
             s.gender=1;s.head=22;s.inflection=65;s.roughness=12;s.breathiness=60;
             s.volume=80;s.rate=6;s.pauses=2;s.tags=true;
-            int[] expected={1,22,43,65,12,60,80,VoiceSettings.targetSpeed(280.0/190),6,2,1};
+            int[] expected={1,22,43,65,12,60,80,VoiceSettings.targetSpeed(280.0/190),6,2,1,0,0};
             require(Arrays.equals(s.controls(20,20),expected));
             require(Arrays.equals(s.controls(400,400),expected));
             Map<String,Object> values=new HashMap<>();SharedPreferences p=memory(values);
@@ -60,6 +60,10 @@ public final class SettingsTest {
             s.androidRate=true;s.androidPitch=true;s.rateBoost=true;
             require(s.controls(100,200)[7]>55);
         }
+        VoiceSettings options=new VoiceSettings(0);options.abbreviations=false;options.prediction=true;
+        Map<String,Object> stored=new HashMap<>();Preferences.save(memory(stored),0,options);
+        VoiceSettings restored=Preferences.read(memory(stored),0);
+        require(!restored.abbreviations&&restored.prediction&&restored.controls(100,100)[11]==1&&restored.controls(100,100)[12]==1);
         double f0=VoiceSettings.pitchHz(65),f2=VoiceSettings.pitchHz(VoiceSettings.androidPitch(65,200));
         require(Math.abs(f2/f0-2)<.04);
         require(VoiceSettings.androidPitch(65,1000)==100&&VoiceSettings.androidPitch(65,1)==0);

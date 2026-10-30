@@ -15,7 +15,7 @@ public final class SettingsActivity extends Activity {
     private boolean ready;
     private LinearLayout content;
     private Spinner languages,profiles,rates,pauses,models;
-    private CheckBox androidVoice,androidRate,androidPitch,boost,tags;
+    private CheckBox androidVoice,androidRate,androidPitch,boost,tags,abbreviations,prediction;
     private Numeric speed,pitch,inflection,volume,head,roughness,breathiness;
     private EditText text;
     private TextView status;
@@ -126,6 +126,8 @@ public final class SettingsActivity extends Activity {
         rates=select(R.string.sample_rate,new String[]{"8 kHz","11.025 kHz","16 kHz","22.05 kHz",
             "32 kHz","44.1 kHz","48 kHz"},settings.rate);
         pauses=select(R.string.pause_mode,getResources().getStringArray(R.array.pause_modes),settings.pauses);
+        abbreviations=check(R.string.abbreviation_dictionary,settings.abbreviations);
+        prediction=check(R.string.phrase_prediction,settings.prediction);
         tags=check(R.string.eci_tags,settings.tags);
         Button dictionaries=new Button(this);dictionaries.setText(R.string.dictionaries);content.addView(dictionaries);
         dictionaries.setOnClickListener(v -> startActivity(new Intent(this,DictionaryActivity.class)));
@@ -178,6 +180,8 @@ public final class SettingsActivity extends Activity {
         s.head=head.get();s.roughness=roughness.get();s.breathiness=breathiness.get();
         s.rate=rates==null?preferences.getInt("rate",1):rates.getSelectedItemPosition();
         s.pauses=pauses==null?preferences.getInt("pauses",0):pauses.getSelectedItemPosition();
+        s.abbreviations=abbreviations==null?preferences.getBoolean("abbreviations",true):abbreviations.isChecked();
+        s.prediction=prediction==null?preferences.getBoolean("prediction",false):prediction.isChecked();
         s.tags=tags==null?preferences.getBoolean("tags",false):tags.isChecked();
         Preferences.save(preferences,loadedProfile,s);
     }

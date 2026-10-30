@@ -2,7 +2,7 @@ package org.reloq.tts.preview;
 
 /** Settings copied for one request; usable in host tests without Android. */
 final class VoiceSettings {
-    boolean androidRate=true,androidPitch=true,rateBoost=false,tags=false;
+    boolean androidRate=true,androidPitch=true,rateBoost=false,tags=false,abbreviations=true,prediction=false;
     int manualWpm=190,manualPitch,gender,head,pitch,inflection,roughness,breathiness,volume;
     int rate=1,pauses=0;
 
@@ -42,6 +42,6 @@ final class VoiceSettings {
         return new int[]{bounded(gender,0,1),bounded(head,0,100),
             androidPitch?androidPitch(pitch,requestedPitch):bounded(manualPitch,0,100),
             bounded(inflection,0,100),bounded(roughness,0,100),bounded(breathiness,0,100),
-            bounded(volume,0,100),speed,Catalog.RATE_IDS[bounded(rate,0,6)],bounded(pauses,0,2),tags?1:0};
+            bounded(volume,0,100),speed,Catalog.RATE_IDS[bounded(rate,0,6)],bounded(pauses,0,2),tags?1:0,abbreviations?0:1,prediction?1:0};
     }
 }

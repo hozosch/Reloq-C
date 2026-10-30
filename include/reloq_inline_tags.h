@@ -9,7 +9,8 @@ enum reloq_inline_kind { RELOQ_TAG_NONE, RELOQ_TAG_SPR, RELOQ_TAG_SPELL,
     RELOQ_TAG_PROMINENCE, RELOQ_TAG_PITCH, RELOQ_TAG_SPEED,
     RELOQ_TAG_VOLUME, RELOQ_TAG_INFLECTION, RELOQ_TAG_PAUSE,
     RELOQ_TAG_GENDER, RELOQ_TAG_HEAD_SIZE, RELOQ_TAG_ROUGHNESS,
-    RELOQ_TAG_BREATHINESS, RELOQ_TAG_PRESET, RELOQ_TAG_LANGUAGE };
+    RELOQ_TAG_BREATHINESS, RELOQ_TAG_PRESET, RELOQ_TAG_LANGUAGE,
+    RELOQ_TAG_DICTIONARY, RELOQ_TAG_PREDICTION };
 struct reloq_inline_tag { enum reloq_inline_kind kind; size_t length; int value; };
 struct reloq_inline_word {
     int pitch,speed,volume,inflection,pause,explicit_pause;
@@ -34,6 +35,8 @@ static inline struct reloq_inline_tag reloq_inline_tag_read(
     else if(n>2 && s[1]=='v' && s[2]>='1' && s[2]<='9')
         {t.kind=RELOQ_TAG_PRESET;at=2;limit=9;}
     else if(n>3 && s[1]=='t' && s[2]=='s') {t.kind=RELOQ_TAG_SPELL;at=3;limit=2;}
+    else if(n>3 && s[1]=='d' && s[2]=='a') {t.kind=RELOQ_TAG_DICTIONARY;at=3;limit=1;}
+    else if(n>3 && s[1]=='p' && s[2]=='p') {t.kind=RELOQ_TAG_PREDICTION;at=3;limit=1;}
     else if(s[1]=='p') {t.kind=RELOQ_TAG_PAUSE;at=2;limit=60000;}
     else if(n>3 && s[1]=='v') {
         at=3;

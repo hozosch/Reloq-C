@@ -113,6 +113,7 @@ struct annotation_builder {
     int retain_features;
     int numeric_output;
     int abbreviation_seen;
+    int prediction_seen;
     int native_first;
     size_t deferred_words;
     size_t input_length;
@@ -1091,10 +1092,10 @@ static int append_symbol_inner(struct annotation_builder *b, unsigned char symbo
     if (named!=1) return named;
     const char *observed=symbol=='@'?".1klA.0mR.2A.0f@":
         symbol=='#'?".1nU.0mRn.2T'aj'.0X@n":
-        symbol=='_'?".0Un.0tR.1Str'aj'.0XUG":
+        symbol=='_'?".1Un.0tR.2StrIX":
         symbol=='-'?".1bIn.0d@.2StrIX":
         symbol=='+'?".1plUs":symbol==0xa7?".2pA.0rA.1graf":
-        symbol=='='?".1gl'aj'Xt":symbol==0xb0?".1rIG.0@l":
+        symbol=='='?".1gl'aj'Xt":symbol==0xb0?".1grat":
         symbol=='^'?".0kOn.1trOl.2T'aj'.0X@n":symbol=='~'?".1tIl.0d@":
         symbol=='|'?".1zEGk.2rEX.0tR] `[.1StrIX":
         symbol==0xa9?".2ko.0py.1rikt":symbol==0xae?".1'aj'n.0g@.2tra.0g@.0n@s] `[.1va.0r@n.2T'aj'.0X@n":
@@ -1268,6 +1269,7 @@ static int more_text_follows(const unsigned char *t,size_t n,size_t at)
 static int append_dictionary_abbreviation(struct annotation_builder *b,
     const unsigned char *t,size_t n,size_t *at)
 {
+    if(reloq61_text_options_current().dictionary_disabled)return 1;
     const size_t start=*at;
     if (start && !abbrev_word_edge(t[start-1])) return 1;
     size_t end=start;
@@ -1375,6 +1377,7 @@ static int append_abbreviation(struct annotation_builder *b,
     const unsigned char *input, size_t length, size_t *at)
 {
     size_t consumed=0;
+    if(reloq61_text_options_current().dictionary_disabled)return 1;
     const struct observed_abbreviation *rule=abbrev_at(input,length,*at,&consumed);
     if (!rule) return 1;
     b->ctx_words=rule->words;b->ctx_word_count=rule->count;b->ctx_word_at=0;
@@ -1798,12 +1801,19 @@ static int plan_tags_checked(int native_first,
         free(main_map);free(original_scalars);free(original_encoded);free(encoded);return -2;
     }
     memcpy(word_storage,encoded,encoded_length+1);
+    struct reloq61_text_options initial_options=reloq61_text_options_current();
     struct annotation_builder b = {0};
     b.native_first=native_first;
+    b.prediction_seen=initial_options.phrase_prediction;
+    if(process_tags==1)for(size_t i=0;i<encoded_length;) {
+        struct reloq_inline_tag t=reloq_inline_tag_read(encoded+i,encoded_length-i,0);
+        if(t.kind==RELOQ_TAG_PREDICTION && t.value)b.prediction_seen=1;
+        i+=t.length?t.length:1;
+    }
     struct reloq_lexicon empty_lexicon={0};
     const struct reloq_lexicon_resolver *resolver=reloq61_dictionary_resolver();
     const struct reloq_lexicon_resolver *previous_resolver=reloq_lexicon_resolver_scope(resolver);
-    b.lexicon = lexicon?lexicon:resolver?&empty_lexicon:NULL;
+    b.lexicon = lexicon?lexicon:(resolver||b.prediction_seen)?&empty_lexicon:NULL;
     b.cancelled = cancelled;
     b.cancel_context = cancel_context;
     b.retain_features=features!=NULL;
@@ -1829,6 +1839,12 @@ static int plan_tags_checked(int native_first,
                ordinary source text has already had controls neutralized. */
             if(process_tags==2 && tag.kind!=RELOQ_TAG_SPR &&
                tag.kind!=RELOQ_TAG_PROMINENCE && tag.kind!=RELOQ_TAG_SPELL)tag=(struct reloq_inline_tag){0};
+            if(tag.kind==RELOQ_TAG_DICTIONARY || tag.kind==RELOQ_TAG_PREDICTION) {
+                struct reloq61_text_options next=reloq61_text_options_current();
+                if(tag.kind==RELOQ_TAG_DICTIONARY)next.dictionary_disabled=!tag.value;
+                else next.phrase_prediction=tag.value;
+                reloq61_text_options_scope(next);
+            }
             if(tag.kind==RELOQ_TAG_SPELL) spelling=tag.value;
             if(tag.kind==RELOQ_TAG_PROMINENCE) {
                 /* The original consumes 5..9 without changing emphasis. */
@@ -2139,6 +2155,7 @@ static int plan_tags_checked(int native_first,
     size_t accented_length = 0;
     unsigned char *prosody_text=NULL;
     size_t prosody_text_length=encoded_length;
+    reloq61_text_options_scope(initial_options);
     if (b.abbreviation_seen &&
         expand_abbreviation_context(encoded,encoded_length,
                                     &prosody_text,&prosody_text_length)) {
@@ -2147,7 +2164,7 @@ static int plan_tags_checked(int native_first,
     }
     int contextual=0;
     struct reloq61_german_word_facts *native_facts=NULL;
-    if(b.retain_features&&b.unit_count) {
+    if((b.retain_features||b.prediction_seen)&&b.unit_count) {
         native_facts=calloc(b.unit_count,sizeof *native_facts);
         if(!native_facts){free(prosody_text);result=-2;goto done;}
     }
@@ -2192,11 +2209,20 @@ static int plan_tags_checked(int native_first,
     free(b.output);
     b.output = accented;
     b.used = accented_length;
+    /* Analysis commands have already acted on grammar. Retire them without
+       moving source/index offsets before the acoustic annotation is parsed. */
+    for(size_t i=0;i<b.used;) {
+        struct reloq_inline_tag t=reloq_inline_tag_read(b.output+i,b.used-i,1);
+        if(t.kind==RELOQ_TAG_DICTIONARY || t.kind==RELOQ_TAG_PREDICTION)
+            memset(b.output+i,' ',t.length);
+        i+=t.length?t.length:1;
+    }
     *annotation = b.output;
     *annotation_length = b.used;
     *approximate_words = b.approximate;
     if (features) {*features=b.features;*feature_count=b.feature_count;}
 done:
+    reloq61_text_options_scope(initial_options);
     reloq61_dictionary_text_scope(previous_text_scope);
     if(main_map&&encoded_error_offset&&result&&normalized_error!=SIZE_MAX) {
         size_t original=0;

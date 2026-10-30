@@ -54,6 +54,12 @@ enum {
     RELOQ_ECI_INDEX_REPLY = 2,
     RELOQ_ECI_SYNTH_MODE = 0,
     RELOQ_ECI_INPUT_TYPE = 1,
+    /* ECI dictionary polarity: 0 enables abbreviations, 1 disables them.
+     * Main/Root pronunciation volumes stay active independently. */
+    RELOQ_ECI_DICTIONARY = 3,
+    /* Per-instance counterpart of the native phrase-prediction setting
+     * and inline pp control. 0 off, 1 on; default remains off. */
+    RELOQ_ECI_PHRASE_PREDICTION = 11,
     RELOQ_ECI_SAMPLE_RATE = 5,
     RELOQ_ECI_LANGUAGE_DIALECT = 9,
     /* Read-only development diagnostics, queried with eciGetParam after

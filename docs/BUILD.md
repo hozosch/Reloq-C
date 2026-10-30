@@ -11,6 +11,8 @@ make -C eci -j4 all
 python3 eci/test_public_abi.py eci/libreloq_eci.so --header include/reloq_eci.h
 python3 eci/test_diagnostics.py eci/libreloq_eci.so
 python3 nvda/test_dictionary_manager.py
+python3 nvda/test_eci_analysis_options.py
+python3 tools/check_language_rates.py
 python3 nvda/test_eci_dictionary_semantics.py
 python3 nvda/test_eci_dictionary_retention.py
 python3 addon/test_synth.py
@@ -47,8 +49,8 @@ python3 addon/build_synth.py --dll eci/eci.dll
 
 Der Paketbau prüft das x64-PE-Format, übernimmt Treiber und Daten und fragt die aktuelle Master-Version von `eigencrow/ibmttsdictionaries` ab. Dafür wird Netzwerkzugriff benötigt. Das Paket landet unter `dist/`; Versionsangaben und Ausgabe-Pfad stehen in `addon/synth/manifest.ini` und `addon/build_synth.py` und müssen für eine neue Veröffentlichung gemeinsam aktualisiert werden.
 
-Der aktuelle Paketstand ist 0.2.192. Änderungen stehen in [den Versionsnotizen](changes/0.2.192.md), bekannte Fehler und die Grenzen der bisherigen Prüfungen im [technischen Arbeitsstand](CURRENT-WORK.md). Die C-Kernversion wird beim Laden im NVDA-Protokoll ausgegeben; damit lässt sich prüfen, welche DLL tatsächlich aktiv ist.
+Der aktuelle Paketstand ist 0.2.193. Änderungen stehen in [den Versionsnotizen](changes/0.2.193.md), bekannte Fehler und die Grenzen der bisherigen Prüfungen im [technischen Arbeitsstand](CURRENT-WORK.md). Die C-Kernversion wird beim Laden im NVDA-Protokoll ausgegeben; damit lässt sich prüfen, welche DLL tatsächlich aktiv ist.
 
 ## Android-ARM64-Vorschau
 
-Die [Android-Anleitung](../android/README.md) beschreibt den ersten APK-Build mit demselben C-Kern, JDK 17, SDK 35 und NDK r30. `python3 android/build.py` erzeugt die signierte ARM64-Vorschau unter `dist/`, wenn die dort beschriebenen SDK-/NDK-/Java-Pfade gesetzt sind. Android verwendet getrennte Build-Verzeichnisse. Der JNI-Transport, die Warteschlange und die ARM64-Rücksprünge haben eigene Prüfungen ohne Audiodateien; Installation und grundlegende Ausgabe der vorigen Vorschau sind vom Nutzer bestätigt. Die erweiterten Einstellungs- und Wörterbuchdialoge der aktuellen Vorschau müssen noch auf dem Gerät geprüft werden.
+Die [Android-Anleitung](../android/README.md) beschreibt den ersten APK-Build mit demselben C-Kern, JDK 17, SDK 35 und NDK r30. `python3 android/build.py` erzeugt die signierte ARM64-Vorschau unter `dist/`, wenn die dort beschriebenen SDK-/NDK-/Java-Pfade gesetzt sind. Android verwendet getrennte Build-Verzeichnisse. Der JNI-Transport, die Warteschlange und die ARM64-Rücksprünge haben eigene Prüfungen ohne Audiodateien; Installation und grundlegende Ausgabe der vorigen Vorschau sind vom Nutzer bestätigt. Der Nutzer bestätigt 0.2.192 einschließlich sofortiger Einstellungen als stabil. Die beiden neuen Analyse-Schalter aus 0.2.193 benötigen noch ihren praktischen Hörtest.

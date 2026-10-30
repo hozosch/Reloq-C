@@ -1,15 +1,15 @@
 # Android ARM64 preview
 
 ReLoq C Preview uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `0.2.192-preview4` targets ARM64 (`arm64-v8a`), Android 8/API 26
+add-on. Version `0.2.193-preview5` targets ARM64 (`arm64-v8a`), Android 8/API 26
 or later. Speech runs offline. Network access is used only when you explicitly
 update the optional community pronunciation dictionaries.
 
 ## Install or update
 
-Install `reloq-c-android-arm64-0.2.192-preview4.apk` over the existing preview.
+Install `reloq-c-android-arm64-0.2.193-preview5.apk` over the existing preview.
 The package remains `org.reloq.tts.preview`, the preview signing certificate is
-unchanged, and versionCode increases from 20191 to 20192. Android can therefore
+unchanged, and versionCode increases from 20192 to 20193. Android can therefore
 update the existing app and retain its settings. Do not uninstall it first.
 
 Open **ReLoq C Preview** to adjust its settings or read a test text. To use it
@@ -18,8 +18,9 @@ with TalkBack or another client, open **Android speech settings** and choose
 variants and eight named voice presets are available. Both Chinese scripts
 use the single Mandarin Chinese module; Japanese retains its existing analysis.
 
-The user confirmed installation/basic speech and the preview 3 settings layout.
-Preview 4 applies settings immediately; its new behavior still needs a device check.
+The user confirmed Android 0.2.192, including live settings, as stable.
+0.2.193 adds the shared engine corrections and two analysis controls; those
+new controls still need their ordinary TalkBack check.
 
 ## Voice and output settings
 
@@ -45,7 +46,10 @@ text** starts a speech sample, and **Stop** interrupts it.
   for each of the eight presets. **Reset selected voice profile** restores that
   preset's anatomy and voice values; speed and output settings stay global.
 - All seven sample rates from 8 to 48 kHz, the three native pause policies and
-  optional ECI command processing are available. Initial output is 11,025 Hz.
+  optional ECI command processing are available. **Use abbreviation dictionary**
+  starts enabled; **Phrase prediction** starts disabled. Prediction uses the
+  language core to infer phrase boundaries in unpunctuated text. Main and Root
+  pronunciation volumes remain separate from abbreviation expansion. Initial output is 11,025 Hz.
   Android's media volume continues to control playback independently of the
   engine's voice-volume setting.
 
@@ -162,7 +166,7 @@ The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 ```sh
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
-python3 android/verify_apk.py dist/reloq-c-android-arm64-0.2.192-preview4.apk
+python3 android/verify_apk.py dist/reloq-c-android-arm64-0.2.193-preview5.apk
 ```
 
 The final APK passes signature, install-critical resource-table and 16-KiB ELF

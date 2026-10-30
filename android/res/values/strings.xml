@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ReLoq C Preview</string>
-    <string name="preview_help">Offline speech preview, version 0.2.192. Choose a language and voice to test, or select ReLoq C Preview in Android text-to-speech settings.</string>
+    <string name="preview_help">Offline speech preview, version 0.2.193. Choose a language and voice to test, or select ReLoq C Preview in Android text-to-speech settings.</string>
     <string name="language">Language</string>
     <string name="profile">Voice</string>
     <string name="sample_rate">Sample rate</string>
@@ -66,4 +66,6 @@
     </string-array>
     <string name="wpm_value">%1$d words per minute</string>
     <string name="speed_help">Words per minute are approximate; the actual rate depends on the language, word lengths and pauses. Android normal speed uses a target of 190 words per minute.</string>
+    <string name="abbreviation_dictionary">Use abbreviation dictionary</string>
+    <string name="phrase_prediction">Phrase prediction</string>
 </resources>

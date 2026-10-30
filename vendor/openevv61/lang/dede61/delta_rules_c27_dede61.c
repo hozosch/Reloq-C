@@ -1638,7 +1638,7 @@ L1112:;
     AT(int32_t, -24) = (STATE_AT(w60, -4));
     r0 = reloq_call_dede61_print_word_stress(state, (int32_t)(FIELD(0)), (int32_t)((int32_t)AT(int32_t, -24)));
 L1143:;
-    reloq61_german_word_begin();
+    reloq61_german_word_begin(state,STATE_AT(w60, -4));
     AT(int32_t, -32) = ((int32_t)AT(int32_t, -4));
     AT(int32_t, -24) = (8);
     r0 = reloq61_typed_print_lit(DELTA_ENTRY_print_lit, state, (int32_t)((int32_t)AT(int32_t, -24)), EVV_AT(const char *, delta_sym_ref[263]));

@@ -60,6 +60,9 @@ public final class NativeTransportTest {
             render(0x10000,custom,"This is `vb70 a test `vb43 with 504 and 4004.");
             render(0x40000,custom,"Dies ist eine Sprachprobe mit Eloquence.");
             render(0x10000,0,"Defaults after customized speech.");
+            custom.abbreviations=false;custom.prediction=true;
+            render(0x10000,custom,"Dr. Smith works at St. James with Mrs. Jones.");
+            render(0x40000,custom,"Der Doktor sagt dass wir heute mit dem Zug nach Berlin fahren.");
             dictionary(arguments[1]);render(0x10000,0,"This is cancellationtoken.");
             render(0x40000,0,"Ich bin TokenX dir.");
             dictionary(arguments[2]);render(0x10000,0,"This is cancellationtoken.");

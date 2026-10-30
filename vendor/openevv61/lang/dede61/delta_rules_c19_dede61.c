@@ -2921,7 +2921,8 @@ L939:;
     AT(int32_t, -20) = (delta_sym_ref[1161]);
     AT(int32_t, -16) = (delta_sym_ref[1162]);
 L979:;
-    AT(int32_t, -32) = (15);
+    /* Native underscore name: Unterstrich. */
+    AT(int32_t, -32) = (11);
     AT(int32_t, -40) = (delta_sym_ref[1164]);
     goto L13708;
     goto L1045;
@@ -4029,7 +4030,10 @@ L7969:;
     AT(int32_t, -20) = (delta_sym_ref[1161]);
     AT(int32_t, -16) = (delta_sym_ref[1162]);
 L8009:;
-    AT(int32_t, -40) = (delta_sym_ref[1252]);
+    /* Native degree name: existing Grad entry. Ring accents retain Ringel. */
+    AT(int32_t, -40) = (delta_sym_ref[2184]);
+    AT(int32_t, -32) = (4);
+    goto L13708;
 L8017:;
     AT(int32_t, -32) = (6);
     goto L13708;

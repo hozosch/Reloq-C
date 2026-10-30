@@ -271,3 +271,9 @@ msgstr "Bitte warten, bis die Wörterbuchaktualisierung abgeschlossen ist."
 #: addon/synth/globalPlugins/reloqCDictionaries/__init__.py
 msgid "Open dictionary &folder"
 msgstr "Wörterbuch&ordner öffnen"
+
+msgid "Use &abbreviation dictionary"
+msgstr "&Abkürzungswörterbuch verwenden"
+
+msgid "Phrase &prediction"
+msgstr "Satz&vorhersage"

@@ -1,6 +1,24 @@
-# Technischer Arbeitsstand: 0.2.192
+# Technischer Arbeitsstand: 0.2.193
 
 Die Projektbeschreibung und Bedienungsanleitungen stehen jetzt getrennt von diesen Entwicklungsnotizen. Ausgangspunkt für die Änderungen ist der unveränderte GitHub-Import von 0.2.186. Der eigene deutsche Akustikplaner, Chinesisch und die Entscheidungen in [GEWUENSCHTE-ABWEICHUNGEN-DE.md](../GEWUENSCHTE-ABWEICHUNGEN-DE.md) bleiben erhalten.
+
+## ECI-Analyse, deutsche Zeichennamen und gemessene Sprechdauer
+
+Der Nutzer bestätigt Android 0.2.192 einschließlich der sofortigen Einstellungen als stabil. Die weitere Arbeit betrifft den gemeinsamen Eloquence-Kern vor dem ersten öffentlichen Release; SAPI5 ist weiterhin geplant und noch nicht implementiert.
+
+0.2.193 ergänzt zwei unabhängige Einstellungen in NVDA und Android: Abkürzungswörterbuch verwenden (weiterhin zunächst ein) und Satzvorhersage (weiterhin zunächst aus). Die öffentliche ECI-Anbindung übernimmt Parameter 3 mit der ECI-Polarität 0=ein/1=aus sowie die instanzbezogene Satzvorhersage unter Parameter 11. Die Einstellungen wirken über die vorhandene native Umgebung; ECI-Tags müssen dafür nicht eingeschaltet sein. Haupt- und Stammwörterbücher bleiben unabhängig aktiv. Die native Maschine wird bei Bedarf neu vorbereitet; die Wörterbuchdaten bleiben geladen.
+
+Bei Deutsch übermittelte die native Lautschrift bisher veränderte Akzente, aber keine vorhergesagten Phrasengrenzen. Die vorhandene native Einfügeregel meldet jetzt ihren gewählten Übergang und dessen Typ an die laufende Analyse. Der SPR-Schreiber ordnet ihn dem folgenden Wort zu. Diese kurzlebigen Fakten werden im eigenen Planer verwendet; es gibt keine aus der Wortzahl erratenen Grenzen. Der feste Prüfsatz mit 25 Wörtern erhält genau die native Grenze vor Wort 12. Bei ausgeschalteter Satzvorhersage bleiben die bisherigen Pläne erhalten. Die zusätzliche Grenzliste wird nur bei aktiver Vorhersage angelegt und während der Analyse sortiert durchsucht; keine Sprachergebnisse werden gespeichert.
+
+Grad-Zeichen und Unterstrich heißen direkt in der deutschen nativen Zeichenregel und der Unicode-Zeichentabelle Grad und Unterstrich. Die Ringel-Bezeichnung von Å/å bleibt erhalten. Es werden keine Bezeichnungen vor den Text gesetzt.
+
+Die gleichen Geschwindigkeitswerte führen messbar zu verschiedenen Sprachdauern. Bei sechs nativen ma-Silben, Tempo 55, Melodie 0, 11.025 Hz und verkürzten Pausen ergeben sich 1,594 Sekunden auf Deutsch, 1,411 auf US-Englisch und 0,964 auf kastilischem Spanisch. Das sind Dauermodelle mit den eigenen Sprachregeln, keine CPU-Zeiten oder exakte WPM-Angleichung. Der wiederholbare Vergleich steht unter `tools/check_language_rates.py`, die vollständigen Werte unter `docs/validation/0.2.193-language-rates.json`.
+
+189 gezielte native Vergleiche, 40 Sprachvergleiche, 366 CJK-Lateinvergleiche, 35 JNI-/C-PCM-Paare, 866 Android-Einstellungs-/Datenprüfungen, die Wörterbuchprüfungen und das vollständige ECI-Testziel bestehen. Darin sind 1.680 asiatische/griechische Renderfälle und 105 Pausenvergleiche enthalten. Beide NVDA-Oberflächensprachen und die 21 Windows-Exporte sind geprüft. Der signierte APK-Vergleich bestätigt dieselbe Paketkennung und dasselbe Zertifikat sowie 20192 → 20193. Die beiden neuen Android-Schalter brauchen noch ihren praktischen Hörtest. PCM bleibt ausschließlich im RAM.
+
+Die gebündelten Wörterbücher stammen aus dem neu aufgelösten Master f93ccc82158386f7607ed3868473b6914121d2d7. Alle sieben Dateien stimmen mit ihren Git-Blobs überein. Chinesisch bleibt in der normalen Ausgabe unverändert; die 38 traditionellen Identitäten aus 0.2.192 gelten weiterhin. Der eigene deutsche Akustikplaner und die gewünschten Klangabweichungen bleiben erhalten.
+
+Die folgenden Abschnitte beschreiben die vorigen Entwicklungsschritte. Frühere Angaben zu noch offenen Android-Tests sind historisch; der aktuelle bestätigte Plattformstand steht oben.
 
 ## Sofortige Android-Einstellungen und Schriftidentitäten
 

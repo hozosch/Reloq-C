@@ -3,7 +3,7 @@
  * new native language plan. Indices, pitch marks and cancellation retain
  * their source positions. No text result survives this request. */
 struct language_run {size_t begin,end;int language;};
-struct language_controls {struct reloq_inline_word voice;unsigned mask;int spelling,emphasis;};
+struct language_controls {struct reloq_inline_word voice;unsigned mask;int spelling,emphasis,dictionary,prediction;};
 static struct reloq_inline_tag source_tag(const unsigned char *text,size_t n,
     const unsigned char *modes,size_t at)
 {
@@ -31,6 +31,8 @@ static void language_control(struct language_controls *c,struct reloq_inline_tag
 {
     struct reloq_inline_word *v=&c->voice;
     switch(tag.kind) {
+    case RELOQ_TAG_DICTIONARY:c->dictionary=tag.value+1;break;
+    case RELOQ_TAG_PREDICTION:c->prediction=tag.value+1;break;
     case RELOQ_TAG_PRESET:reloq_inline_preset(v,tag.value);c->mask=255;break;
     case RELOQ_TAG_GENDER:v->gender=tag.value;c->mask|=1;break;
     case RELOQ_TAG_HEAD_SIZE:v->head_size=tag.value;c->mask|=2;break;
@@ -61,6 +63,8 @@ static size_t language_prefix(const struct language_controls *c,char prefix[192]
         static const char *const emphasis[]={"","`00 ","`0 ","`1 ","`2 ","`3 ","`4 "};
         n+=(size_t)snprintf(prefix+n,192-n,"%s",emphasis[c->emphasis]);
     }
+    if(c->dictionary)n+=(size_t)snprintf(prefix+n,192-n,"`da%d ",c->dictionary-1);
+    if(c->prediction)n+=(size_t)snprintf(prefix+n,192-n,"`pp%d ",c->prediction-1);
     prefix[n]=0;return n;
 }
 static void language_advance(struct language_controls *controls,

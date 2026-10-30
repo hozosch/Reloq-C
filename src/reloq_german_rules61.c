@@ -181,6 +181,12 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
     if(facts)memset(facts,0,count*sizeof *facts);
     if(!units||!count||!annotation||!out||!written)return 0;
     if(cancelled&&cancelled(context))return 2;
+    int prediction=reloq61_text_options_current().phrase_prediction;
+    for(size_t at=0;at<length;) {
+        struct reloq_inline_tag t=reloq_inline_tag_read(annotation+at,length-at,1);
+        if(t.kind==RELOQ_TAG_PREDICTION && t.value)prediction=1;
+        at+=t.length?t.length:1;
+    }
     int supplied=1;
     for(size_t i=0;i<count;++i) {
         /* Composition needs real phones before it can become a fixed
@@ -210,6 +216,7 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
     if(count>SIZE_MAX/sizeof(struct group))return -1;
     struct group *old=calloc(count,sizeof *old),*native=calloc(count,sizeof *native);
     struct bytes input={0},output={0};unsigned char *phonemes=NULL;int result=0;
+    struct reloq61_german_phrase *phrases=NULL;
     if(!old||!native){result=-1;goto done;}
     if(!groups(annotation,length,old,count))goto done;
     /* Acoustic controls retain their exact word boundary. They do not
@@ -217,7 +224,8 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
     for(size_t at=0;at<length;) {
         if(annotation[at]=='`') {
             struct reloq_inline_tag t=reloq_inline_tag_read(annotation+at,length-at,1);
-            if(t.kind!=RELOQ_TAG_SPR && t.kind!=RELOQ_TAG_PROMINENCE && !voice_control(t.kind))goto done;
+            if(t.kind!=RELOQ_TAG_SPR && t.kind!=RELOQ_TAG_PROMINENCE && t.kind!=RELOQ_TAG_DICTIONARY &&
+               t.kind!=RELOQ_TAG_PREDICTION && !voice_control(t.kind))goto done;
             if(!t.length)goto done;
             at+=t.length;
         } else ++at;
@@ -270,7 +278,12 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
         .voice={0,50,65,30,0,0,50,92},.text=(char *)input.p,
         .phonemes=(char *)phonemes,.phonemes_capacity=capacity};
     struct reloq61_result r;
-    struct reloq61_german_capture capture={.words=facts,.capacity=count};
+    if(prediction&&facts) {
+        if(count>SIZE_MAX/sizeof *phrases)goto memory;
+        phrases=calloc(count,sizeof *phrases);if(!phrases)goto memory;
+    }
+    struct reloq61_german_capture capture={.words=facts,.capacity=count,
+        .phrases=phrases,.phrase_capacity=prediction?count:0};
     struct reloq61_german_capture *previous=reloq61_german_capture_scope(facts?&capture:NULL);
     int generated=reloq61_generate(&q,&r);
     reloq61_german_capture_scope(previous);
@@ -288,6 +301,27 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
         size_t original_before=i?old[i-1].end:0;
         if(i&&boundary(&output,annotation+original_before,old[i].open-original_before,
             phonemes+before,native[i].open-before))goto memory;
+        /* The native SPR callback omits inferred intonation boundaries.
+         * Project the original phrase relation alongside each word, rather
+         * than guessing breaks from word counts or editing the input text. */
+        if(i && prediction && facts && facts[i].phrase_before) {
+            int explicit_boundary=0;
+            for(size_t at=original_before;at<old[i].open;) {
+                struct reloq_inline_tag t=reloq_inline_tag_read(annotation+at,old[i].open-at,1);
+                if(!t.length && (strchr(",.?!:;()",annotation[at])||annotation[at]==0x85))explicit_boundary=1;
+                at+=t.length?t.length:1;
+            }
+            for(size_t at=before;at<native[i].open;) {
+                struct reloq_inline_tag t=reloq_inline_tag_read(phonemes+at,native[i].open-at,1);
+                if(!t.length && strchr(",.?!:;()",phonemes[at]))explicit_boundary=1;
+                at+=t.length?t.length:1;
+            }
+            if(!explicit_boundary) {
+                static const unsigned char marks[]={'.',',',';','?','?','!','!','?','?'};
+                unsigned kind=facts[i].phrase_before-1;
+                if(kind<sizeof marks && put(&output,marks+kind,1))goto memory;
+            }
+        }
         if(retain_voice_controls(&output,annotation+original_before,old[i].open-original_before))goto memory;
         if(named_pair&&i>=count-2&&!units[i].source_emphasis) {
             if(count>2&&i==count-2&&put(&output,(const unsigned char *)"`2 ",3))goto memory;
@@ -363,7 +397,7 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
     memmove(output.p,output.p+leading,output.n-leading+1);output.n-=leading;
     *out=output.p;*written=output.n;output.p=NULL;result=1;goto done;
 memory:result=-1;
-done:free(old);free(native);free(input.p);free(output.p);free(phonemes);return result;
+done:free(phrases);free(old);free(native);free(input.p);free(output.p);free(phonemes);return result;
 }
 
 int reloq_rules61_german_context(const struct reloq_german_prosody_unit *units,size_t count,

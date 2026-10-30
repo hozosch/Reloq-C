@@ -238,3 +238,9 @@ msgstr ""
 #: addon/synth/globalPlugins/reloqCDictionaries/__init__.py
 msgid "Open dictionary &folder"
 msgstr ""
+
+msgid "Use &abbreviation dictionary"
+msgstr ""
+
+msgid "Phrase &prediction"
+msgstr ""

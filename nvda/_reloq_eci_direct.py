@@ -33,6 +33,8 @@ NATIVE_SPEED = 0x1007
 NATIVE_PITCH = 0x1008
 NATIVE_INFLECTION = 0x1009
 NATIVE_VOLUME = 0x100a
+DICTIONARY = 3  # ECI: 0 enabled, 1 disabled
+PHRASE_PREDICTION = 11
 PROCESS_TAGS = 0x100b
 PAUSE_MODE = 0x100c
 HEAD_SIZE = 0x100d
@@ -210,10 +212,10 @@ class DirectEciEngine:
             raise RuntimeError("ECI engine has been closed")
         if parameter not in (GENERIC_RATE, GENERIC_PITCH, GENERIC_VOLUME,
                              NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION,
-                             NATIVE_VOLUME, PROCESS_TAGS, PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATE):
+                             NATIVE_VOLUME, PROCESS_TAGS, DICTIONARY, PHRASE_PREDICTION, PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATE):
             raise ValueError("unsupported generic voice parameter")
         low, high = ((40, 250) if parameter == NATIVE_SPEED else
-                     (0, 1) if parameter in (PROCESS_TAGS, GENDER) else
+                     (0, 1) if parameter in (PROCESS_TAGS, GENDER, DICTIONARY, PHRASE_PREDICTION) else
                      (0, 6) if parameter == SAMPLE_RATE else
                      (0, 2) if parameter == PAUSE_MODE else (0, 100))
         if not isinstance(value, int) or isinstance(value, bool) or not low <= value <= high:
@@ -369,4 +371,4 @@ class DirectEciEngine:
 __all__ = ["EciText", "DirectEciEngine", "EciIndex", "EciPitch", "EciLanguage", "EciSynthesisError",
            "GERMAN_DIALECT", "EXPERIMENTAL_GENERIC_VOICE", "GENERIC_RATE",
            "GENERIC_PITCH", "GENERIC_VOLUME", "NATIVE_SPEED", "NATIVE_PITCH",
-           "NATIVE_INFLECTION", "NATIVE_VOLUME", "PROCESS_TAGS", "PAUSE_MODE", "HEAD_SIZE", "ROUGHNESS", "BREATHINESS", "GENDER", "SAMPLE_RATE", "SAMPLE_RATES"]
+           "NATIVE_INFLECTION", "NATIVE_VOLUME", "DICTIONARY", "PHRASE_PREDICTION", "PROCESS_TAGS", "PAUSE_MODE", "HEAD_SIZE", "ROUGHNESS", "BREATHINESS", "GENDER", "SAMPLE_RATE", "SAMPLE_RATES"]
