@@ -5,19 +5,16 @@ import android.content.*;
 import android.content.pm.*;
 import android.net.Uri;
 import android.os.*;
-import android.provider.Settings;
 import android.widget.*;
 import org.json.*;
 import java.io.*;
 import java.net.*;
-import java.util.*;
 
-/** User-requested releases, streamed download, then Android's installer. */
+/** User-requested release checks; the browser owns downloads and installation. */
 public final class UpdateActivity extends Activity {
     private TextView status;
     private Button action;
     private UpdateData.Package available;
-    private boolean downloaded;
     private long installed;
     private volatile boolean closed;
     private Thread worker;
@@ -41,7 +38,7 @@ public final class UpdateActivity extends Activity {
             PackageInfo info=getPackageManager().getPackageInfo(getPackageName(),0);installed=code(info);
             status.setText(getString(R.string.installed_version,info.versionName));
         } catch(Exception e) {status.setText(e.toString());action.setEnabled(false);}
-        action.setOnClickListener(v -> {if(downloaded)install();else work();});
+        action.setOnClickListener(v -> {if(available==null)work();else openDownload();});
     }
     private static long code(PackageInfo info) {return Build.VERSION.SDK_INT>=28?info.getLongVersionCode():info.versionCode;}
     private URLConnection connection(String address) throws IOException {
@@ -67,52 +64,24 @@ public final class UpdateActivity extends Activity {
         }
         return best;
     }
-    private void verifyPackage(File file,UpdateData.Package data) throws Exception {
-        int flags=Build.VERSION.SDK_INT>=28?PackageManager.GET_SIGNING_CERTIFICATES:PackageManager.GET_SIGNATURES;
-        PackageManager pm=getPackageManager();PackageInfo next=pm.getPackageArchiveInfo(file.getPath(),flags);
-        PackageInfo current=pm.getPackageInfo(getPackageName(),flags);
-        if(next==null||!getPackageName().equals(next.packageName)||code(next)!=data.code||
-           code(next)<=installed||!data.version.equals(next.versionName)||!signers(next).equals(signers(current)))
-            throw new IOException("Update package identity, version or signing certificate mismatch");
-    }
-    private Set<String> signers(PackageInfo info) throws Exception {
-        Signature[] signatures=Build.VERSION.SDK_INT>=28?info.signingInfo.getApkContentsSigners():info.signatures;
-        if(signatures==null||signatures.length==0)throw new IOException("Missing signing certificate");
-        Set<String> result=new HashSet<>();
-        for(Signature signature:signatures)result.add(signature.toCharsString());return result;
-    }
     private void work() {
-        action.setEnabled(false);status.setText(available==null?R.string.checking_updates:R.string.downloading_update);
-        final UpdateData.Package selected=available;
+        action.setEnabled(false);status.setText(R.string.checking_updates);
         worker=new Thread(() -> {
             try {
-                UpdateData.Package found=selected==null?check():selected;
-                if(selected!=null) {
-                    File file=UpdateProvider.packageFile(this);File folder=file.getParentFile();
-                    if(!folder.isDirectory()&&!folder.mkdirs())throw new IOException("Cannot create update folder");
-                    try(InputStream input=connection(found.url).getInputStream()) {UpdateData.copyVerified(input,file,found);}
-                    try {verifyPackage(file,found);}catch(Exception e){file.delete();throw e;}
-                }
+                UpdateData.Package found=check();
                 runOnUiThread(() -> {
-                    if(closed)return;available=found;downloaded=selected!=null;action.setEnabled(true);
-                    action.setText(downloaded?R.string.install_update:found==null?R.string.check_updates:R.string.download_update);
-                    status.setText(downloaded?getString(R.string.update_ready):found==null?
-                        getString(R.string.no_published_update):getString(R.string.version_available,found.version));
+                    if(closed)return;available=found;action.setEnabled(true);
+                    action.setText(found==null?R.string.check_updates:R.string.download_update);
+                    status.setText(found==null?getString(R.string.no_published_update):getString(R.string.version_available,found.version));
                 });
             } catch(Exception e) {runOnUiThread(() -> {if(!closed){action.setEnabled(true);status.setText(getString(R.string.update_failed,e.getMessage()));}});}
         },"ReLoq package update");worker.start();
     }
-    private void install() {
-        if(!getPackageManager().canRequestPackageInstalls()) {
-            status.setText(R.string.allow_updates);
-            startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,Uri.parse("package:"+getPackageName())));return;
-        }
+    private void openDownload() {
         try {
-            verifyPackage(UpdateProvider.packageFile(this),available);
-            Uri uri=UpdateProvider.uri(this);
-            Intent intent=new Intent(Intent.ACTION_INSTALL_PACKAGE).setDataAndType(uri,"application/vnd.android.package-archive");
-            intent.setClipData(ClipData.newRawUri("ReLoq update",uri));
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);startActivity(intent);
+            Intent intent=new Intent(Intent.ACTION_VIEW,Uri.parse(available.url));
+            intent.addCategory(Intent.CATEGORY_BROWSABLE);startActivity(intent);
+            status.setText(R.string.browser_update);
         } catch(Exception e) {status.setText(getString(R.string.update_failed,e.getMessage()));}
     }
     @Override public void onDestroy() {closed=true;if(worker!=null)worker.interrupt();super.onDestroy();}

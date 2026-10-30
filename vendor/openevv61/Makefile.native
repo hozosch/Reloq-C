@@ -7,6 +7,7 @@ OPT ?= -O2
 # Rule functions walk records once per utterance. Avoid duplicating their
 # large decision trees for speed; the per-sample DSP keeps OPT unchanged.
 RULE_OPT ?= -Os
+RULE_DIAGNOSTICS ?= 0
 BUILD ?= build/native
 PORT ?= posix
 DIRS := rom/jajp rom/cjk rom/greek src $(patsubst %/,%,$(wildcard src/*/ src/*/*/))
@@ -24,6 +25,7 @@ HEADERS := $(foreach d,$(DIRS),$(wildcard $(d)/*.h)) $(wildcard include/*.h) $(f
 HEADERS += ../../include/reloq_voice_filter.h
 HEADERS += ../../include/reloq_voice_controls.h
 CFLAGS_NATIVE := $(OPT) $(if $(filter posix,$(PORT)),-fPIC) -std=gnu11 -fno-strict-aliasing -ffp-contract=off -fvisibility=hidden -ffunction-sections -fdata-sections -MMD -MP -DEVV_ARENA=1 -DEVV_NO_BYTECODE -DEVV_ROM_JAJP $(INCLUDES)
+CFLAGS_NATIVE += $(if $(filter 1,$(RULE_DIAGNOSTICS)),-DEVV_RULE_DIAGNOSTICS=1)
 .PHONY: all clean
 all: $(BUILD)/libreloq61.a
 probe: $(BUILD)/reloq61-probe

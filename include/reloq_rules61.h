@@ -27,8 +27,8 @@ int reloq_rules61_german_context(const struct reloq_german_prosody_unit *,size_t
     const unsigned char *,size_t,unsigned char **,size_t *,
     int (*cancelled)(void *),void *);
 struct reloq61_german_word_facts;
-/* Immutable admitted source buffers share offsets. Retaining actual source
- * whitespace avoids feeding annotation-formatting blanks into the grammar. */
+/* Immutable admitted source buffers share offsets. The grammar retains real
+ * separators and punctuation instead of replaying acoustic annotation marks. */
 struct reloq_german_context_source {
     const unsigned char *encoded,*original,*words;
     size_t length;

@@ -1,4 +1,16 @@
-# Technischer Arbeitsstand: 0.2.196
+# Technischer Arbeitsstand: 0.2.197
+
+## 0.2.197: Analysegrenzen, Regelaufrufe und Android-Updates
+
+Weitere Fälle wurden ohne wortbezogene Korrekturen reproduziert: Zahlen nach Bindestrichen (etwa NVDA-2026) wurden als ausgesetzte Wortbestandteile behandelt; bei der Kontextrekonstruktion gingen echte Satzzeichen verloren oder wurden durch interne Akustikmarkierungen ersetzt. Die native Satzanalyse erhält nun zulässige ursprüngliche Trennzeichen einschließlich Anfang und Ende. Eingeklammerte Auslassungspunkte bleiben Prosodie. Die Referenz ist der bereits vorliegende vollständige native C-Regelkern; ein Apple-Originalmodul wurde hier nicht ausgeführt. Der vom Nutzer noch nicht konkret benannte Restfall ist damit nicht direkt geprüft.
+
+Die Prüfung auf Regelprotokollierung und das dazugehörige Argument-Umpacken entfallen zur Übersetzungszeit aus den Release-Sprachaufrufen. Veränderlicher Diagnosezustand und die laufende Pflege des aktuellen Diagnoseregelzeigers entfallen ebenfalls. Entwicklungstracing bleibt mit `make -f Makefile.native BUILD=build/rule-diagnostics RULE_DIAGNOSTICS=1` in einem separaten Bauordner verfügbar. Ausspracheergebnisse werden weiterhin nicht zwischengespeichert.
+
+Der Nutzer hat eine ausdrückliche Schädlich-Einstufung durch Play Protect für 0.2.196 bestätigt. Die neu eingeführte Android-Installationsberechtigung und der APK-Provider werden entfernt. Die Updateansicht öffnet auf Nutzeraktion einen geprüften GitHub-Downloadlink im Browser; Android übernimmt seine normale Installation. Ein ursächlicher Zusammenhang mit der Warnung oder eine Freigabe durch Google ist nicht belegt. Paketkennung und Signatur bleiben erhalten. Automatische Updateprüfungen gibt es nicht. Die Abhängigkeiten, tatsächlichen APK-Berechtigungen, Größen, Regressionstests und Grenzen stehen in `docs/validation/0.2.197.json` und den zugehörigen Detailberichten.
+
+Die Windows-DLL sinkt von 55.982.592 auf 55.212.544 Bytes. Das Add-on spart 369.223 Bytes, die APK 503.808 Bytes; die ungestrippte ARM64-Bibliothek spart 1.601.416 Bytes. Die Binär-/Archivprüfung bestätigt ausschließlich Systemimporte und keine Regel-Tracing-Symbole. 196 PCM-Vergleiche über alle 14 Sprachen, sieben Abtastraten und zwei Modelle bleiben bitgleich. Die 132 vollständigen Gruppen-/Akzentvergleiche sowie 1.664 gezielte Akzentvergleiche rund um variable Quellspannen bestehen. 46 eigene deutsche Wortlautungen bleiben erhalten.
+
+Der erste Linux-CPU-Vergleich liegt im Median bei 0,971, mit gemischten Einzelfällen. Nach Ende der übrigen Builds/Tests liegt der gezielte Nachtest für Spanisch bei 11 kHz bei 0,945, für Deutsch bei 48 kHz bei 0,996. Das belegt keinen wesentlichen Gewinn im DSP der hohen Raten. Der angeforderte Heap-Spitzenwert für 4.000 Wörter bleibt bei 100.477.682 Bytes. Die vollständigen ECI-Prüfungen, 1.680 asiatische/griechische Ausgaben, 105 Pausenvergleiche, 366 CJK-Mischtextprüfungen und die direkten APK-Upgradeprüfungen von 20192 und 20196 bestehen.
 
 ## 0.2.196: URLs, Lautpuffer und Paketupdates
 

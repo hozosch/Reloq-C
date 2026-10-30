@@ -12,7 +12,7 @@ import shutil
 import subprocess
 import sys
 import zipfile
-from verify_apk import verify_apk,verify_upgrade
+from verify_apk import verify_apk,verify_upgrade,verify_permissions
 from codegen import generate
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -32,7 +32,7 @@ def main():
     parser.add_argument("--android-jar",type=Path)
     parser.add_argument("--jobs",type=int,default=4)
     parser.add_argument("--build-dir",type=Path,help="isolated Android build directory")
-    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-0.2.196-preview8.apk")
+    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-0.2.197-preview9.apk")
     parser.add_argument("--keystore",type=Path,default=HERE/"preview-debug.p12")
     parser.add_argument("--verified-dictionaries",action="store_true",
         help="use locally verified data after separately resolving its current master commit")
@@ -102,6 +102,7 @@ def main():
     run(tools/"apksigner","verify","--verbose",output,env=environment)
     run(tools/"zipalign","-c","-P","16","4",output)
     verify_apk(output)
+    verify_permissions(output,tools/"aapt2")
     if args.upgrade_from:verify_upgrade(output,args.upgrade_from.resolve(),tools/"aapt2",tools/"apksigner",environment)
     print(output)
 

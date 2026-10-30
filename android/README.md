@@ -1,12 +1,12 @@
 # Android ARM64 preview
 
 ReLoq C Preview uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `0.2.196-preview8` targets ARM64 (`arm64-v8a`), Android 8/API 26
-or later. Speech runs offline. Network access is used only when you explicitly update pronunciation dictionaries or check/download an app update.
+add-on. Version `0.2.197-preview9` targets ARM64 (`arm64-v8a`), Android 8/API 26
+or later. Speech runs offline. Network access is used only when you explicitly update pronunciation dictionaries or check for an app update. Package downloads open in the browser.
 
 ## Install or update
 
-Install `reloq-c-android-arm64-0.2.196-preview8.apk` over the existing preview.
+Install `reloq-c-android-arm64-0.2.197-preview9.apk` over the existing preview.
 The package remains `org.reloq.tts.preview`, the preview signing certificate is
 unchanged, and versionCode increases from 20193 to 20194. Android can therefore
 update the existing app and retain its settings. Do not uninstall it first.
@@ -131,7 +131,10 @@ unused old snapshots are removed after their last active request finishes.
 Packaging uses DEFLATE level 9 while preserving aapt2's uncompressed resource
 table. The APK additionally includes the optional community data, so its total
 size is larger than preview 2 despite the stronger compression. All language
-and acoustic data remain included.
+and acoustic data remain included. Release rule tracing is compiled out. In
+0.2.197 the native ARM64 library is 1,601,416 bytes smaller before stripping;
+the final APK is 503,808 bytes smaller than 0.2.196. The German 48-kHz CPU
+follow-up and requested heap peak are essentially unchanged on the Linux host.
 
 Text enters C as standard UTF-8, including supplementary Unicode characters.
 The ARM64 backtracking boundary saves the AAPCS64 preserved registers, Android's
@@ -154,7 +157,7 @@ python3 android/test_settings.py --java-home "$JAVA_HOME" \
 python3 android/test_native_transport.py --java-home "$JAVA_HOME"
 ```
 
-The JNI test compares 33 actual native PCM hashes/lengths with direct C calls:
+The JNI test compares 35 actual native PCM hashes/lengths with direct C calls:
 all language variants, all US presets, mixed UTF-8, cancellation, stale-stop
 isolation, customized female anatomy, 48 kHz, tags and dictionary switches.
 PCM remains in RAM; no audio files are written. These are host transport tests,
@@ -165,15 +168,15 @@ The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 ```sh
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
-python3 android/verify_apk.py dist/reloq-c-android-arm64-0.2.196-preview8.apk
+python3 android/verify_apk.py dist/reloq-c-android-arm64-0.2.197-preview9.apk
 ```
 
-The final APK passes signature, install-critical resource-table and 16-KiB ELF checks. The package/signature comparison supports an in-place update directly from 0.2.192-preview4. The user confirmed that version as stable. The new update screen and installer handoff still need their ordinary device/TalkBack check once a release package is published.
+The final APK passes signature, install-critical resource-table and 16-KiB ELF checks. The package/signature comparison supports an in-place update directly from 0.2.192-preview4. The user confirmed that version as stable. The browser download handoff still needs its ordinary device/TalkBack check once a release package is published. Play Protect classified the preceding 0.2.196 package as harmful on the user’s device; a new classification has not been verified.
 
 For an isolated build, pass `--build-dir /absolute/fresh/build-directory`; the output APK path remains controlled by `--output`.
 
 ## App updates
 
-Choose **App updates** on the settings screen, then **Check for updates**. The app checks published GitHub Releases on request. If a newer ARM64 package is available, choose **Download update**, then **Install update**. The download must match the published size and SHA-256 checksum, the current package name and signing certificate, and its stated version. Android presents its normal installation flow. If Android asks for permission to install apps from ReLoq, allow it, return to this screen and select **Install update** again.
+Choose **App updates** on the settings screen, then **Check for updates**. The app checks published GitHub Releases on request. If a newer ARM64 package is available, choose **Open download in browser**. The release link must name this project’s newer ARM64 APK on GitHub, with valid size and SHA-256 metadata. The browser downloads the file and Android handles installation and signature checks. ReLoq does not request package-install permission or provide an APK installation service. Keep Play Protect enabled; a warning is not a successful security check.
 
 The repository currently has no published package release. Until packages are published, the screen reports that no newer published app package is available. There is no background polling and the speech service does not perform update downloads. Package updates and dictionary updates are separate actions.

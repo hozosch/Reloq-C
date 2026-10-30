@@ -3,7 +3,7 @@
 #ifndef RELOQ61_SCALAR_BLOCKS_H
 #define RELOQ61_SCALAR_BLOCKS_H
 #include "delta.h"
-extern int delta_rule_trace;
+#include "reloq61_rule_trace.h"
 static inline int reloq61_scalar_ready(void *state)
 {
     delta_state *d=state;

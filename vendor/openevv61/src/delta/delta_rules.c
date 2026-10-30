@@ -71,13 +71,13 @@ enum { M_MOVL, M_MOVW, M_MOVB, M_MOVSWL, M_MOVZWL, M_MOVSBL, M_MOVZBL };
 
 #define NREG 8
 
-extern int delta_rule_trace;
-
+#if EVV_RULE_TRACE_ENABLED
 /* Which rule is running, so that a run can be told about in the same terms
    as a run of the original: only the calls that leave the object they were
    compiled in can be seen there, because the others were renamed along with
    the definitions they reach. */
 static const delta_rule *delta_rule_here;
+#endif
 
 typedef struct {
     int32_t        reg[NREG];
@@ -1180,6 +1180,7 @@ void evv_arg_over(const char *who, int argn, int room)
 
 /* A running count of what the interpreter has been asked to do, for
    finding out where a run stops rather than for the port itself. */
+#if EVV_RULE_TRACE_ENABLED
 long delta_rule_calls;
 long delta_rule_steps;
 /* Which rule is running, so that a run can be told about in the same terms
@@ -1188,7 +1189,7 @@ long delta_rule_steps;
    the definitions they reach. */
 
 int delta_rule_trace = -1;
-static long delta_rule_limit;
+#endif
 
 /* Every call a rule makes, from the interpreter and from a rule written as C
    alike, so that a run says the same thing about itself either way. */
@@ -1202,11 +1203,13 @@ int32_t delta_rule_called(int which, const int32_t *stack, int argn, int want)
     for (i = 0; i < want && i < MAXARG; i++)
         a[i] = (argn - 1 - i >= 0) ? stack[argn - 1 - i] : 0;
 
+#if EVV_RULE_TRACE_ENABLED
     if (delta_rule_trace && delta_rule_here != 0
         && strcmp(delta_rule_entry_name[which], "backtrack_function") == 0) {
         fprintf(stderr, "# %s dispatches\n", delta_rule_here->name);
         fflush(stderr);
     }
+#endif
     if (delta_rule_trace > 1) {
         int j;
 
@@ -1244,12 +1247,14 @@ int32_t delta_rule_direct(int which, const int32_t *a, int n)
                       delta_rule_argmask[which], a, n);
 }
 
+#if EVV_RULE_TRACE_ENABLED
 static void delta_rule_report(void)
 {
     if (delta_rule_trace > 0)
         fprintf(stderr, "rules run: %ld, steps: %ld\n",
                 delta_rule_calls, delta_rule_steps);
 }
+#endif
 
 /* The machine itself, kept apart from what runs a rule so that a rule written
    as C does not pay for a frame and an interpreter it will never use. The
@@ -1382,7 +1387,9 @@ static __thread int delta_rule_depth;
 int32_t delta_run_rule(void *state, const delta_rule *r, const int32_t *args,
                        int nargs)
 {
+#if EVV_RULE_TRACE_ENABLED
     const delta_rule *was;
+#endif
     delta_rule_cfn     fn;
     delta_rule_cfn    *by_number;
     int32_t answer;
@@ -1410,11 +1417,11 @@ int32_t delta_run_rule(void *state, const delta_rule *r, const int32_t *args,
 
     n = (int)(r - lang->rules);
 
+#if EVV_RULE_TRACE_ENABLED
     if (delta_rule_trace < 0) {
         const char *e = getenv("DELTA_RULE_TRACE");
 
         delta_rule_trace = (e != 0) ? (atoi(e) > 100000 ? 2 : 1) : 0;
-        delta_rule_limit = (e != 0 && *e) ? atol(e) : 0;
         if (delta_rule_trace)
             atexit(delta_rule_report);
     }
@@ -1436,6 +1443,7 @@ int32_t delta_run_rule(void *state, const delta_rule *r, const int32_t *args,
 
     was = delta_rule_here;
     delta_rule_here = r;
+#endif
 
     /* A rule written as C runs as C, and only from here, where everything a
        run says about itself has already been said. The two are then
@@ -1475,7 +1483,9 @@ int32_t delta_run_rule(void *state, const delta_rule *r, const int32_t *args,
             evv_land_no_outermost();
             evv_land_release(mark);
             delta_rule_depth = 0;
+#if EVV_RULE_TRACE_ENABLED
             delta_rule_here = was;
+#endif
             if (was_lang != lang)
                 delta_lang_set(was_lang);
             return 0;
@@ -1494,11 +1504,13 @@ int32_t delta_run_rule(void *state, const delta_rule *r, const int32_t *args,
     }
     evv_land_release(mark);
 
+#if EVV_RULE_TRACE_ENABLED
     delta_rule_here = was;
     if (delta_rule_trace) {
         fprintf(stderr, "# %s left with %08x\n", r->name, (unsigned)answer);
         fflush(stderr);
     }
+#endif
     if (was_lang != lang)
         delta_lang_set(was_lang);
     return answer;

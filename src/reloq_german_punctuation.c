@@ -86,7 +86,7 @@ int reloq_german_punctuation_read(const unsigned char *text,size_t length,size_t
   if(c=='.')while(end<length&&text[end]=='.')++end;
   else if(c=='?'||c=='!')while(end<length&&(text[end]=='?'||text[end]=='!'))++end;
   p.consumed=end-at;p.mark=c;
-  if(enclosed(text,length,at)||(!have_word&&c=='.'&&p.consumed==1&&
+  if((enclosed(text,length,at)&&!(c=='.'&&p.consumed>=3))||(!have_word&&c=='.'&&p.consumed==1&&
       ((next>='0'&&next<='9')||(letter(next)&&!((next>='A'&&next<='Z')||next==0xc4||next==0xd6||next==0xdc))))) {
    p.action=RELOQ_DE_PUNCT_SPOKEN;p.consumed=1;
    p.spoken=c=='.'?".1pUGkt":c==','?".1kO.0mA":c==':'?".1dO.0p@l.2pUGkt":

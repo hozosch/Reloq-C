@@ -155,3 +155,4 @@ windows-x64: eci.dll eci_windows_x64_abi_probe.exe eci_windows_x64_runtime_smoke
 clean:
 	rm -f libreloq_eci.so test_reloq_eci test_reloq_hash_delete eci.dll libeci.dll.a eci_windows_x64_abi_probe.exe eci_windows_x64_runtime_smoke.exe
 	rm -rf build
+.DELETE_ON_ERROR:

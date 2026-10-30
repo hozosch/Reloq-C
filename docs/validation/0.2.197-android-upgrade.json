@@ -1,0 +1,21 @@
+{
+  "before": {
+    "package": "org.reloq.tts.preview",
+    "version_code": 20196,
+    "certificates": [
+      "e4af6db7bf1fd6ecf1670d48dac195d56cafc96daceec1238211a0ff1ba1091f"
+    ]
+  },
+  "after": {
+    "package": "org.reloq.tts.preview",
+    "version_code": 20197,
+    "certificates": [
+      "e4af6db7bf1fd6ecf1670d48dac195d56cafc96daceec1238211a0ff1ba1091f"
+    ]
+  },
+  "permissions": [
+    "android.permission.INTERNET"
+  ],
+  "installer_dex_absent": true,
+  "play_protect_verdict_verified": false
+}

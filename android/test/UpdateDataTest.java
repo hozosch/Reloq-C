@@ -1,38 +1,40 @@
 package org.reloq.tts.preview;
-import java.io.*;
-import java.nio.file.*;
-import java.security.*;
-import java.util.*;
 
 public final class UpdateDataTest {
     private static int checks;
     private static void require(boolean value) {checks++;if(!value)throw new AssertionError(checks);}
-    public static void main(String[] args) throws Exception {
-        byte[] bytes=new byte[90000];new Random(12).nextBytes(bytes);
-        StringBuilder hex=new StringBuilder();
-        for(byte b:MessageDigest.getInstance("SHA-256").digest(bytes))hex.append(String.format("%02x",b&255));
+    private static void reject(Runnable action) {
+        try {action.run();throw new AssertionError("Invalid metadata accepted");}
+        catch(IllegalArgumentException expected) {checks++;}
+    }
+    public static void main(String[] args) {
+        String hash="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        String digest="sha256:"+hash.toUpperCase(java.util.Locale.ROOT);
         String name="reloq-c-android-arm64-0.2.197-preview9.apk";
         String url="https://github.com/hozosch/Reloq-C/releases/download/v0.2.197/"+name;
-        UpdateData.Package data=UpdateData.candidate(name,url,bytes.length,"sha256:"+hex,20196);
+        UpdateData.Package data=UpdateData.candidate(name,url,18000000,digest,20196);
         require(data!=null&&data.code==20197&&data.version.equals("0.2.197-preview9"));
-        require(UpdateData.candidate(name,url,bytes.length,"sha256:"+hex,20197)==null);
-        require(UpdateData.candidate("other.apk",url,bytes.length,"sha256:"+hex,0)==null);
-        for(String bad:new String[]{url.replace("github.com","example.net"),url.replace("/hozosch/","/other/"),url+"?x=1"}) {
-            try {UpdateData.candidate(name,bad,bytes.length,"sha256:"+hex,0);throw new AssertionError();}
-            catch(IllegalArgumentException expected) {checks++;}
-        }
-        Path dir=Files.createTempDirectory("reloq-update-test-");File target=dir.resolve("update.apk").toFile();
-        try {
-            UpdateData.copyVerified(new ByteArrayInputStream(bytes),target,data);
-            require(Arrays.equals(bytes,Files.readAllBytes(target.toPath())));
-            for(int size:new int[]{bytes.length-1,bytes.length+1,bytes.length}) {
-                byte[] bad=Arrays.copyOf(bytes,size);if(size==bytes.length)bad[0]^=1;
-                try {UpdateData.copyVerified(new ByteArrayInputStream(bad),target,data);throw new AssertionError();}
-                catch(IOException expected) {checks++;}
-                require(Arrays.equals(bytes,Files.readAllBytes(target.toPath())));
-                require(!Files.exists(dir.resolve("update.apk.part")));
-            }
-        } finally {Files.deleteIfExists(target.toPath());Files.deleteIfExists(dir);}
-        System.out.println("Android package updates: "+checks+" version/source/integrity/recovery checks passed");
+        require(data.name.equals(name)&&data.url.equals(url)&&data.size==18000000&&data.sha256.equals(hash));
+        require(UpdateData.candidate(name,url,18000000,digest,20197)==null);
+        require(UpdateData.candidate(name,url,18000000,digest,20198)==null);
+        require(UpdateData.candidate("other.apk",url,18000000,digest,0)==null);
+        require(UpdateData.candidate("reloq-c-android-x86-0.2.198.apk",url,18000000,digest,0)==null);
+        for(String bad:new String[]{url.replace("github.com","example.net"),
+            url.replace("/hozosch/","/other/"),url+"?x=1",url+"#file",
+            url.replace("https:","http:"),url.replace("github.com","github.com:443"),
+            url.replace("github.com","user@github.com"),
+            url.replace("v0.2.197/","../../other/"),url.replace("v0.2.197/","%2e%2e/"),
+            url.replace("v0.2.197/","v0.2.197/extra/"),url.replace(".apk",".zip")})
+            reject(() -> UpdateData.candidate(name,bad,18000000,digest,0));
+        for(long size:new long[]{-1,0,UpdateData.LIMIT+1,Long.MAX_VALUE})
+            reject(() -> UpdateData.candidate(name,url,size,digest,0));
+        for(String invalid:new String[]{null,"",hash,"sha256:"+hash.substring(1),"sha256:"+hash+"0","sha256:"+hash.replace('a','z')})
+            reject(() -> UpdateData.candidate(name,url,18000000,invalid,0));
+        require(UpdateData.candidate(name,url,1,digest,0)!=null);
+        require(UpdateData.candidate(name,url,UpdateData.LIMIT,digest,0)!=null);
+        reject(() -> UpdateData.candidate("reloq-c-android-arm64-2001.0.0.apk",url,1,digest,0));
+        reject(() -> UpdateData.candidate("reloq-c-android-arm64-0.100.0.apk",url,1,digest,0));
+        reject(() -> UpdateData.candidate("reloq-c-android-arm64-0.2.10000.apk",url,1,digest,0));
+        System.out.println("Android release links: "+checks+" version/source/metadata checks passed");
     }
 }

@@ -2,8 +2,8 @@
  * confined to the optional trace path; ordinary calls use the C ABI. */
 #include "delta.h"
 #include "reloq61_native_calls.h"
+#include "reloq61_rule_trace.h"
 extern int32_t delta_rule_called(int,const int32_t *,int,int);
-extern int delta_rule_trace;
 extern int32_t backtrack_function(delta_state *,int32_t *);
 extern void inline61_lnode(delta_state *,int32_t);
 extern void inline61_loffset(delta_state *,int32_t);

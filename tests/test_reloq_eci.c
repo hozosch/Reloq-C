@@ -251,6 +251,152 @@ static int native_german_analysis(void)
     return 0;
 }
 
+static int native_german_gap_analysis(void)
+{
+    /* Test function-word accents around varied source spans. Pronunciation and
+       group counts inside the span may intentionally differ from native. */
+    static const char *const payloads[]={
+        "5-10",
+        "1980-2026",
+        "17.10.2026",
+        "6,10",
+        "6.10.2026",
+        "30%",
+        "C++",
+        "C#",
+        "C:\\Ordner\\Datei.txt",
+        "NVDA-Einstellungen",
+        "Datei—Name",
+        "Frankfurt/Main",
+        "Frankfurt/Oder",
+        "(Test)",
+        "[Test]",
+        "\"Test\"",
+        "»Test«",
+        "„Test“",
+        "https://example.org/Test-42.html",
+        "\"https://example.org/Test-42.html\"",
+        "(https://example.org/Test-42.html)",
+        "https://example.org/ä-50.html",
+        "https://example.org/Test?x=2&y=3",
+        "www.example.org",
+        "z.B.",
+        "z. B.",
+        "usw.",
+        "u.a.",
+        "Art. 3",
+        "Dr.-Ing.",
+        "z. B. ...",
+        "e.V.",
+        "z. Z.",
+        "Version2.5",
+        "Quad9",
+        "Windows11",
+        "503",
+        "4004",
+        "@x",
+        "A/B",
+        "A+B",
+        "|",
+        "(10 x 10)",
+        "(x:y)",
+        "Ein- und Ausgang",
+        "USB-C",
+        "NVDA-2026",
+        "10:30",
+        "2 Minuten",
+        "24 Sekunden",
+        "N. N.",
+        "Nr. 2",
+        "Punkt 1.2",
+        "3.14",
+        "1.000.000",
+        "Röder",
+        "foo@example.org",
+        "Name <foo@example.org>",
+        "mailto:foo@example.org",
+        "a@b.de",
+        "hello_world",
+        "20 °C",
+        "§ 5",
+        "€ 20,50",
+        "© 2026",
+        "...",
+        "a / b",
+        "a & b",
+        "™",
+        "¼",
+        "½",
+        "±",
+        "×",
+        "÷",
+        "?!",
+        "!!!",
+        "Hallo\nWelt",
+        "foo-bar-123",
+        "EN-503-2026",
+        "1. Kapitel",
+        "PDF-Datei (Standard-Konfiguration)",
+        "Datei.txt",
+        "Datei.docx",
+        "1 week ago",
+        "-5",
+        "+5",
+        "3/4",
+        "v1.0.0",
+        "www.example.org/Test-503.htm,",
+        "(info@example.org)",
+        "[1]",
+        "[2–4]",
+        "[ABC-123]",
+        "\"DNS-Dienst\":",
+        "(„Text“)",
+        "„Text“ – Text",
+        "http://127.0.0.1:8080/path",
+        "127.0.0.1",
+        "A. B. C.",
+        "Version 2.0 (Build 503)",
+        "13:05 Uhr",
+        "25. Dezember 2026",
+        "2 kg",
+        "3 m²"
+    };
+    static const char *const formats[]={
+        "Das ist %s und das ist gut.","Das ist ein Test. %s Das ist gut.",
+        "Das ist gut: %s, und das ist gut.","Das ist (%s) und das ist gut."
+    };
+    for(int dictionary=0;dictionary<2;++dictionary)for(int prediction=0;prediction<2;++prediction)
+        for(size_t i=0;i<sizeof payloads/sizeof *payloads;++i)
+            for(size_t j=0;j<sizeof formats/sizeof *formats;++j) {
+                char text[4096],native[32768];unsigned char encoded[4096];
+                int used=snprintf(text,sizeof text,formats[j],payloads[i]);
+                CHECK(used>0&&(size_t)used<sizeof text);
+                size_t encoded_length=0,length=0,approximate=0;unsigned char *own=NULL;
+                CHECK(!reloq_character_encode_text((unsigned char *)text,(size_t)used,
+                    encoded,NULL,sizeof encoded,&encoded_length,NULL,NULL));
+                struct reloq61_text_options previous=reloq61_text_options_scope(
+                    (struct reloq61_text_options){dictionary,prediction});
+                struct reloq61_result result;
+                struct reloq61_request request={.language=0x40000,.annotations=1,.phonemes_only=1,
+                    .voice={0,50,65,30,0,0,50,92},.text=(char *)encoded,
+                    .phonemes=native,.phonemes_capacity=sizeof native};
+                int observed=reloq61_generate(&request,&result);
+                int status=reloq_german_best_effort_annotate((unsigned char *)text,(size_t)used,
+                    NULL,&own,&length,&approximate,NULL);
+                reloq61_text_options_scope(previous);
+                CHECK(!observed&&!status&&own);
+                unsigned char a[128],b[128];
+                size_t an=accent_signature(own,length,a),bn=accent_signature((unsigned char *)native,result.phonemes_length,b);
+                if(an<2||an==SIZE_MAX||bn<2||bn==SIZE_MAX||memcmp(a,b,2)) {
+                    fprintf(stderr,"German gap accents differ: da=%d pp=%d %s\nOwn: %.*s\nNative: %.*s\n",
+                        dictionary,prediction,text,(int)length,own,(int)result.phonemes_length,native);
+                    free(own);return __LINE__;
+                }
+                free(own);
+            }
+    return 0;
+}
+
 static int phrase_prediction_frontend(void)
 {
     static const unsigned char text[]="Das ist ein Test der eine l\303\244ngere Wortgruppe ohne Satzzeichen enth\303\244lt und danach noch viel mehr W\303\266rter hinzuf\303\274gt damit die automatische Satzvorhersage Grenzen finden kann.";
@@ -277,10 +423,11 @@ int main(void)
 {
     int prediction=phrase_prediction_frontend();if(prediction)return prediction;
     int native=native_german_analysis();if(native)return native;
+    native=native_german_gap_analysis();if(native)return native;
     int stream=native_phoneme_stream();if(stream)return stream;
     char version[20] = {0};
     eciVersion(version);
-    CHECK(!strcmp(version, "0.2.196.0"));
+    CHECK(!strcmp(version, "0.2.197.0"));
     int languages = 0;
     CHECK(eciGetAvailableLanguages(NULL, &languages) == 0 &&
           languages == 0);

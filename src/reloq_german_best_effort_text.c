@@ -2013,7 +2013,7 @@ static int plan_tags_checked(int native_first,
          * including one here would also submit it in the following group. */
         if (!result && at>=url_end && at<encoded_length && encoded[at]=='-' &&
             b.unit_count && length>1 &&
-            (at+1==encoded_length || !letter(encoded[at+1]))) {
+            (at+1==encoded_length || reloq_german_silent_separator(encoded[at+1]))) {
             b.units[b.unit_count-1].text=word_storage+start;
             b.units[b.unit_count-1].length=at-start+1;
         }

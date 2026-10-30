@@ -2,7 +2,6 @@
 #ifndef RELOQ61_RULE_CALLS_ESES61_H
 #define RELOQ61_RULE_CALLS_ESES61_H
 #include "delta_rules_c.h"
-extern int delta_rule_trace;
 #ifndef RELOQ_RULE_RETURN
 #define RELOQ_RULE_RETURN(x) do { int32_t out_=(x); evv_frame_pop(frame); \
     evv_land_release(reloq_landing_mark); return out_; } while (0)

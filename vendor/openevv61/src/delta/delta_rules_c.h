@@ -13,6 +13,7 @@
 
 #include "evv_land.h"
 #include "delta_lang.h"
+#include "reloq61_rule_trace.h"
 
 /* For delta_rule_block, which is the shape of what the machine writes into a
    rule's frame. The rules name that block rather than its offsets, so they

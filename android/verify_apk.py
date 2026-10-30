@@ -67,6 +67,23 @@ def verify_upgrade(new,old,aapt2,apksigner,environment=None):
     return dict(before=before,after=after)
 
 
+def verify_permissions(path,aapt2):
+    """Inspect the compiled manifest, including permissions merged at build time."""
+    listing=subprocess.run([str(aapt2),"dump","permissions",str(path)],
+        check=True,capture_output=True,text=True).stdout
+    permissions=re.findall(r"uses-permission: name='([^']+)'",listing)
+    if permissions!=["android.permission.INTERNET"]:
+        raise ValueError("Unexpected APK permissions: "+repr(permissions))
+    with zipfile.ZipFile(path) as apk:
+        dex=apk.read("classes.dex")
+        for removed in (b"Lorg/reloq/tts/preview/UpdateProvider;",
+                        b"android.settings.MANAGE_UNKNOWN_APP_SOURCES",
+                        b"android.intent.action.INSTALL_PACKAGE"):
+            if removed in dex:raise ValueError("Removed APK installer code remains in DEX")
+    print("APK permissions: INTERNET only; removed APK installer code absent from DEX")
+    return permissions
+
+
 if __name__=="__main__":
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("apk",type=Path)

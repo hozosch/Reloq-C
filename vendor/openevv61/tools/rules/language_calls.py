@@ -35,7 +35,6 @@ def header(tag,specs):
     guard='RELOQ61_RULE_CALLS_'+tag.upper()+'_H'
     rows=['/* Direct C language calls; record values remain compact until their own port. */',
         '#ifndef '+guard,'#define '+guard,'#include "delta_rules_c.h"',
-        'extern int delta_rule_trace;',
         '#ifndef RELOQ_RULE_RETURN',
         '#define RELOQ_RULE_RETURN(x) do { int32_t out_=(x); evv_frame_pop(frame); \\',
         '    evv_land_release(reloq_landing_mark); return out_; } while (0)',

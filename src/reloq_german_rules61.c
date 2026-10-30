@@ -187,6 +187,18 @@ static size_t source_offset(const struct reloq_german_context_source *source,
     }
     return SIZE_MAX;
 }
+static int grammar_gap(const struct reloq_german_context_source *source,size_t begin,size_t end)
+{
+    if(!source||begin>end||end>source->length)return 0;
+    for(size_t i=begin;i<end;++i) {
+        unsigned char c=source->original[i];
+        if(c&&strchr(" \t\r\n.,:;?!()[]{}\"'-",c))continue;
+        if(c==0xa0||c==0x82||c==0x84||c==0x85||c==0x8b||c==0x91||c==0x92||
+           c==0x93||c==0x94||c==0x96||c==0x97||c==0x9b||c==0xab||c==0xbb)continue;
+        return 0;
+    }
+    return 1;
+}
 static int native_german_word(const unsigned char *word,size_t length,
     unsigned char *spr,size_t capacity,size_t *written)
 {return reloq_rules61_word(0x40000,word,length,spr,capacity,written);}
@@ -257,16 +269,15 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
         int repeated=i&&same_character(units+i-1,units+i);
         int joined=repeated||(i&&adjacent_characters(units+i-1,units+i));
         size_t gap_begin=SIZE_MAX,gap_end=SIZE_MAX;
-        if(i&&source) {
-            gap_begin=source_offset(source,units+i-1);gap_end=source_offset(source,units+i);
-            if(gap_begin!=SIZE_MAX)gap_begin+=units[i-1].length;
+        if(!repeated&&source) {
+            gap_begin=i?source_offset(source,units+i-1):0;gap_end=source_offset(source,units+i);
+            if(i&&gap_begin!=SIZE_MAX)gap_begin+=units[i-1].length;
             if(gap_begin>gap_end || gap_end==SIZE_MAX)gap_begin=SIZE_MAX;
-            if(gap_begin!=SIZE_MAX)for(size_t k=gap_begin;k<gap_end;++k)
-                if(!strchr(" \t\r\n",source->encoded[k])&&source->encoded[k]!=0xa0){gap_begin=SIZE_MAX;break;}
+            if(gap_begin!=SIZE_MAX&&!grammar_gap(source,gap_begin,gap_end))gap_begin=SIZE_MAX;
         }
         if(gap_begin!=SIZE_MAX) {
             if(inserted_space!=SIZE_MAX&&inserted_space+1==input.n)input.p[--input.n]=0;
-            if(put(&input,source->encoded+gap_begin,gap_end-gap_begin))goto memory;
+            if(put(&input,source->original+gap_begin,gap_end-gap_begin))goto memory;
         } else if(!repeated)for(size_t at=before;at<old[i].open;) {
             struct reloq_inline_tag t=reloq_inline_tag_read(annotation+at,old[i].open-at,1);
             if(t.kind==RELOQ_TAG_PROMINENCE || voice_control(t.kind)) {at+=t.length;continue;}
@@ -300,7 +311,12 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
         }
         before=old[i].end;
     }
-    for(size_t at=before;at<length;) {
+    size_t tail_source=source_offset(source,units+count-1);
+    if(tail_source!=SIZE_MAX)tail_source+=units[count-1].length;
+    if(tail_source!=SIZE_MAX&&grammar_gap(source,tail_source,source->length)) {
+        if(inserted_space!=SIZE_MAX&&inserted_space+1==input.n)input.p[--input.n]=0;
+        if(put(&input,source->original+tail_source,source->length-tail_source))goto memory;
+    } else for(size_t at=before;at<length;) {
         struct reloq_inline_tag t=reloq_inline_tag_read(annotation+at,length-at,1);
         if(voice_control(t.kind)){at+=t.length;continue;}
         if(put(&input,annotation+at,1))goto memory;
