@@ -1,13 +1,12 @@
 # Android ARM64 preview
 
 ReLoq C Preview uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `0.2.194-preview6` targets ARM64 (`arm64-v8a`), Android 8/API 26
-or later. Speech runs offline. Network access is used only when you explicitly
-update the optional community pronunciation dictionaries.
+add-on. Version `0.2.196-preview8` targets ARM64 (`arm64-v8a`), Android 8/API 26
+or later. Speech runs offline. Network access is used only when you explicitly update pronunciation dictionaries or check/download an app update.
 
 ## Install or update
 
-Install `reloq-c-android-arm64-0.2.194-preview6.apk` over the existing preview.
+Install `reloq-c-android-arm64-0.2.196-preview8.apk` over the existing preview.
 The package remains `org.reloq.tts.preview`, the preview signing certificate is
 unchanged, and versionCode increases from 20193 to 20194. Android can therefore
 update the existing app and retain its settings. Do not uninstall it first.
@@ -166,12 +165,15 @@ The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 ```sh
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
-python3 android/verify_apk.py dist/reloq-c-android-arm64-0.2.194-preview6.apk
+python3 android/verify_apk.py dist/reloq-c-android-arm64-0.2.196-preview8.apk
 ```
 
-The final APK passes signature, install-critical resource-table and 16-KiB ELF
-checks, and the upgrade comparison against preview 3. Preview 4's live
-settings, file-provider monitoring and sustained playback at all sample rates
-still need device/TalkBack validation.
+The final APK passes signature, install-critical resource-table and 16-KiB ELF checks. The package/signature comparison supports an in-place update directly from 0.2.192-preview4. The user confirmed that version as stable. The new update screen and installer handoff still need their ordinary device/TalkBack check once a release package is published.
 
 For an isolated build, pass `--build-dir /absolute/fresh/build-directory`; the output APK path remains controlled by `--output`.
+
+## App updates
+
+Choose **App updates** on the settings screen, then **Check for updates**. The app checks published GitHub Releases on request. If a newer ARM64 package is available, choose **Download update**, then **Install update**. The download must match the published size and SHA-256 checksum, the current package name and signing certificate, and its stated version. Android presents its normal installation flow. If Android asks for permission to install apps from ReLoq, allow it, return to this screen and select **Install update** again.
+
+The repository currently has no published package release. Until packages are published, the screen reports that no newer published app package is available. There is no background polling and the speech service does not perform update downloads. Package updates and dictionary updates are separate actions.

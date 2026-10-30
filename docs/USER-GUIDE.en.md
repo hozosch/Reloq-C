@@ -72,7 +72,7 @@ Files use the native Dic format: Windows-1252 encoding, one entry per line and a
 
 Edits to selected files and files in the dictionary folder are detected in the background, including newly created files and editor-style file replacements. Invalid data leaves the last valid set active. Community updates refresh the files in this add-on folder. Selected own files and locally edited or removed dictionary files are preserved. A locally edited volume takes priority over the downloaded volume. No additional editing folder is created in NVDA’s main directory.
 
-The update button updates **dictionaries**. Automatic **add-on** updates are not yet implemented; install a new `.nvda-addon` package to update the add-on.
+Under **Add-on updates**, choose **Check for add-on updates** to check published GitHub Releases. If a newer package is available, **Download and install update** checks the download and opens NVDA’s normal installation and confirmation flow. Checks run only when requested. If no package has been published, the panel says so. **Update dictionaries now** remains independent of package updates.
 
 ## Reporting problems
 

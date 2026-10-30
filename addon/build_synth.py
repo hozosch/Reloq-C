@@ -19,7 +19,7 @@ from build_translations import translation_entries
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "addon" / "synth"
-DEFAULT_OUTPUT = ROOT / "dist" / "reloq-c-synth-experimental-x64-0.2.195.nvda-addon"
+DEFAULT_OUTPUT = ROOT / "dist" / "reloq-c-synth-experimental-x64-0.2.196.nvda-addon"
 RLEX_HEADER = b"RELOQ-DE-SPR-1\n"
 HEX = re.compile(rb"[0-9A-F]+\Z")
 
@@ -74,7 +74,8 @@ def make_entries(dll_path: Path) -> dict[str, bytes]:
         entries[name] = (SOURCE / name).read_bytes()
     prefix = "synthDrivers/reloqC/"
     for module in ("_reloq_eci_direct.py", "_reloq_eci_transport.py",
-                   "_reloq_languages.py", "_reloq_dictionaries.py", "_reloq_dictionary_manager.py"):
+                   "_reloq_languages.py", "_reloq_dictionaries.py", "_reloq_dictionary_manager.py",
+                   "_reloq_updates.py"):
         entries[prefix + module] = (ROOT / "nvda" / module).read_bytes()
     entries["doc/licenses/Unicode-LICENSE.txt"] = (ROOT / "reference-apple/behavior-0.2.82/unicode-input/LICENSE.txt").read_bytes()
     entries["doc/licenses/SCOWL-Copyright.txt"] = (ROOT / "reference-apple/behavior-0.2.83/input/SCOWL-Copyright.txt").read_bytes()

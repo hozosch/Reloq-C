@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="preview_help">Offline-Sprachausgabe zum Testen, Version 0.2.195. Wähle eine Sprache und Stimme für die Sprachprobe oder ReLoq C Preview in den Android-Einstellungen zur Text-in-Sprache-Ausgabe.</string>
+    <string name="app_updates">App-Updates</string>
+    <string name="check_updates">Nach Updates suchen</string>
+    <string name="checking_updates">Updates werden gesucht…</string>
+    <string name="downloading_update">Update wird heruntergeladen…</string>
+    <string name="installed_version">Installierte Version: %1$s</string>
+    <string name="version_available">Version %1$s ist verfügbar.</string>
+    <string name="no_published_update">Es ist kein neueres veröffentlichtes App-Paket verfügbar.</string>
+    <string name="download_update">Update herunterladen</string>
+    <string name="install_update">Update installieren</string>
+    <string name="update_ready">Update geprüft und zur Installation bereit.</string>
+    <string name="update_failed">Update fehlgeschlagen: %1$s</string>
+    <string name="allow_updates">Erlaube App-Installationen durch ReLoq, kehre hierher zurück und wähle erneut Update installieren.</string>
+    <string name="preview_help">Offline-Sprachausgabe zum Testen, Version 0.2.196. Wähle eine Sprache und Stimme für die Sprachprobe oder ReLoq C Preview in den Android-Einstellungen zur Text-in-Sprache-Ausgabe.</string>
     <string name="language">Sprache</string>
     <string name="profile">Stimme</string>
     <string name="sample_rate">Abtastrate</string>

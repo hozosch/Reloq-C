@@ -200,16 +200,25 @@ static int native_german_analysis(void)
         "NVDA-Einstellungen: Sprachausgabe", "Sprachausgabe (Standard-Konfiguration)",
         "USB-Einstellungen: Sprachausgabe (Standard-Konfiguration)",
         "MIDI-Ausgabe: Sprachausgabe (Standard-Konfiguration)",
-        "PDF-Vorschau: Sprachausgabe (Standard-Konfiguration)"
+        "PDF-Vorschau: Sprachausgabe (Standard-Konfiguration)",
+        "Eric Röder, \"„Sagt Euren Abgeordneten, dass das Nachschlagen von Namen keine Straftat ist”, ruft Quad9 Franzosen auf, zu handeln. „Das Internet muss offen und für jedermann frei zugänglich bleiben\" Zensur-Urteil: DNS-Dienst Quad9 verlässt Frankreich | heise online https://www.heise.de/news/Zensur-Urteil-DNS-Dienst-Quad9-verlaesst-Frankreich-11497622.html, 1 week ago",
+        "Das ist https://example.org/Datei-42.html, bitte lesen.",
+        "Bitte https://example.org/Frankreich-11497622.html lesen.",
+        "www.example.org/Text-503.htm, danach lesen.",
+        "http://example.net/DNS-Dienst-Quad9-123abc.html.",
+        "Ein- und Ausgang sind hier."
     };
     for(int dictionary=0;dictionary<2;++dictionary)for(int prediction=0;prediction<2;++prediction)
         for(size_t i=0;i<sizeof texts/sizeof *texts;++i) {
             struct reloq61_text_options previous=reloq61_text_options_scope(
                 (struct reloq61_text_options){dictionary,prediction});
             unsigned char *own=NULL;size_t length=0,approximate=0;
-            char native[4096];struct reloq61_result result;
+            char native[16384];unsigned char encoded[2048];size_t encoded_length=0;
+            CHECK(!reloq_character_encode_text((const unsigned char *)texts[i],strlen(texts[i]),
+                encoded,NULL,sizeof encoded,&encoded_length,NULL,NULL));
+            struct reloq61_result result;
             struct reloq61_request request={.language=0x40000,.annotations=1,.phonemes_only=1,
-                .voice={0,50,65,30,0,0,50,92},.text=texts[i],.phonemes=native,.phonemes_capacity=sizeof native};
+                .voice={0,50,65,30,0,0,50,92},.text=(char *)encoded,.phonemes=native,.phonemes_capacity=sizeof native};
             int observed=reloq61_generate(&request,&result);
             int status=reloq_german_best_effort_annotate((const unsigned char *)texts[i],strlen(texts[i]),
                 NULL,&own,&length,&approximate,NULL);
@@ -271,7 +280,7 @@ int main(void)
     int stream=native_phoneme_stream();if(stream)return stream;
     char version[20] = {0};
     eciVersion(version);
-    CHECK(!strcmp(version, "0.2.195.0"));
+    CHECK(!strcmp(version, "0.2.196.0"));
     int languages = 0;
     CHECK(eciGetAvailableLanguages(NULL, &languages) == 0 &&
           languages == 0);

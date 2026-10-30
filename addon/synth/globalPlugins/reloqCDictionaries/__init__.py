@@ -1,6 +1,8 @@
 """Accessible runtime management of native pronunciation dictionary data."""
 import weakref
 import os
+import tempfile
+import threading
 
 import addonHandler
 import globalPluginHandler
@@ -65,6 +67,74 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.Bind(wx.EVT_WINDOW_DESTROY, self.on_destroy)
         self.redraw()
         self.enable_controls(bool(self.synth))
+        self.package_update = None
+        self.package_pending = False
+        package_manifest = addonHandler.getCodeAddon().manifest
+        self.installed_version = package_manifest['version']
+        self.installed_name = package_manifest['name']
+        content.Add(wx.StaticText(self, label=_("Add-on updates")), 0, wx.ALL, 10)
+        self.package_status = wx.StaticText(self, label=_("Installed version: %s") % self.installed_version)
+        content.Add(self.package_status, 0, wx.LEFT | wx.RIGHT, 10)
+        self.package_button = wx.Button(self, label=_("Check for add-on updates"))
+        self.package_button.Bind(wx.EVT_BUTTON, self.on_package_update)
+        content.Add(self.package_button, 0, wx.ALL, 10)
+
+    def on_package_update(self, event):
+        if self.package_pending:
+            return
+        from synthDrivers.reloqC import _reloq_updates
+        candidate, installed = self.package_update, self.installed_version
+        self.package_pending = True
+        self.package_button.Enable(False)
+        self.package_status.SetLabel(_("Downloading update…") if candidate else _("Checking for updates…"))
+        panel_ref = weakref.ref(self)
+        def report(error, update, temporary, path):
+            panel = panel_ref()
+            try:
+                if panel is None or panel.closing:
+                    return
+                panel.package_pending = False
+                panel.package_button.Enable(True)
+                if error:
+                    message = _("Update failed: %s") % str(error)
+                elif path:
+                    # Use NVDA's ordinary compatibility, confirmation and
+                    # replacement flow; do not overwrite a running add-on.
+                    try:
+                        manifest = addonHandler.AddonBundle(str(path)).manifest
+                        if manifest['name'] != panel.installed_name or manifest['version'] != update.version:
+                            raise ValueError('Update package name or version mismatch')
+                        from gui.addonGui import installAddon
+                        installed_ok = installAddon(panel, str(path))
+                        message = _("Update handed to NVDA.") if installed_ok else _("Update installation cancelled.")
+                        if installed_ok and not panel.closing:
+                            panel.package_button.Enable(False)
+                    except Exception as install_error:
+                        message = _("Update failed: %s") % str(install_error)
+                elif update:
+                    panel.package_update = update
+                    panel.package_button.SetLabel(_("Download and install update"))
+                    message = _("Version %s is available.") % update.version
+                else:
+                    message = _("No newer published add-on package is available.")
+                if not panel.closing:
+                    panel.package_status.SetLabel(message)
+                    ui.message(message)
+            finally:
+                if temporary is not None:
+                    temporary.cleanup()
+        def work():
+            temporary = None
+            try:
+                if candidate:
+                    temporary = tempfile.TemporaryDirectory(prefix='reloq-update-')
+                    path = _reloq_updates.download(candidate, temporary.name)
+                    wx.CallAfter(report, None, candidate, temporary, path)
+                else:
+                    wx.CallAfter(report, None, _reloq_updates.check(installed), None, None)
+            except Exception as error:
+                wx.CallAfter(report, error, None, temporary, None)
+        threading.Thread(target=work, name='ReLoq package update', daemon=True).start()
 
     def enable_controls(self, enabled):
         for control in (*self.edits, self.files, self.update, self.community):

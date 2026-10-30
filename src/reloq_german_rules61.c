@@ -254,7 +254,8 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
     size_t before=0,inserted_space=SIZE_MAX;
     for(size_t i=0;i<count;++i) {
         if(cancelled&&cancelled(context)){result=2;goto done;}
-        int joined=i&&(same_character(units+i-1,units+i)||adjacent_characters(units+i-1,units+i));
+        int repeated=i&&same_character(units+i-1,units+i);
+        int joined=repeated||(i&&adjacent_characters(units+i-1,units+i));
         size_t gap_begin=SIZE_MAX,gap_end=SIZE_MAX;
         if(i&&source) {
             gap_begin=source_offset(source,units+i-1);gap_end=source_offset(source,units+i);
@@ -266,7 +267,7 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
         if(gap_begin!=SIZE_MAX) {
             if(inserted_space!=SIZE_MAX&&inserted_space+1==input.n)input.p[--input.n]=0;
             if(put(&input,source->encoded+gap_begin,gap_end-gap_begin))goto memory;
-        } else for(size_t at=before;at<old[i].open;) {
+        } else if(!repeated)for(size_t at=before;at<old[i].open;) {
             struct reloq_inline_tag t=reloq_inline_tag_read(annotation+at,old[i].open-at,1);
             if(t.kind==RELOQ_TAG_PROMINENCE || voice_control(t.kind)) {at+=t.length;continue;}
             if(!(joined&&annotation[at]==' ')&&put(&input,annotation+at,1))goto memory;
@@ -280,7 +281,6 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
             if(put(&input,(const unsigned char *)controls[value],strlen(controls[value])))goto memory;
         }
         if(units[i].fixed_phrase>=RELOQ_DE_SOURCE_SYMBOL) {
-            int repeated=i&&same_character(units+i-1,units+i);
             if(!repeated) {
                 size_t next=i+1;
                 while(next<count&&same_character(units+i,units+next))++next;

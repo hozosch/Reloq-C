@@ -131,6 +131,8 @@ public final class SettingsActivity extends Activity {
         tags=check(R.string.eci_tags,settings.tags);
         Button dictionaries=new Button(this);dictionaries.setText(R.string.dictionaries);content.addView(dictionaries);
         dictionaries.setOnClickListener(v -> startActivity(new Intent(this,DictionaryActivity.class)));
+        Button updates=new Button(this);updates.setText(R.string.app_updates);content.addView(updates);
+        updates.setOnClickListener(v -> startActivity(new Intent(this,UpdateActivity.class)));
         heading(R.string.test_speech);
         TextView caption=new TextView(this);caption.setText(R.string.sample_text);
         text=new EditText(this);text.setId(View.generateViewId());caption.setLabelFor(text.getId());

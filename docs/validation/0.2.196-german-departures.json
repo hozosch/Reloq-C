@@ -1,0 +1,465 @@
+{
+  "method": "0.2.195 versus 0.2.196; native built-in dictionary in both builds; exact word SPR comparison; no audio files",
+  "words": [
+    {
+      "word": "Raten",
+      "old": [
+        "`[.1ra.0t@n]"
+      ],
+      "new": [
+        "`[.1ra.0t@n]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Rot",
+      "old": [
+        "`[.1rot]"
+      ],
+      "new": [
+        "`[.1rot]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Richtig",
+      "old": [
+        "`[.1rIX.0tIX]"
+      ],
+      "new": [
+        "`[.1rIX.0tIX]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Amerika",
+      "old": [
+        "`[.0A.1me.0ri.0kA]"
+      ],
+      "new": [
+        "`[.0A.1me.0ri.0kA]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Restaurant",
+      "old": [
+        "`[.2rE.0sto.1r'a~']"
+      ],
+      "new": [
+        "`[.2rE.0sto.1r'a~']"
+      ],
+      "same": true
+    },
+    {
+      "word": "Restaurants",
+      "old": [
+        "`[.2rE.0sto.1r'a~'s]"
+      ],
+      "new": [
+        "`[.2rE.0sto.1r'a~'s]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Chance",
+      "old": [
+        "`[.1S'a~'.0s@]"
+      ],
+      "new": [
+        "`[.1S'a~'.0s@]"
+      ],
+      "same": true
+    },
+    {
+      "word": "hören",
+      "old": [
+        "`[.1h'oe'.0r@n]"
+      ],
+      "new": [
+        "`[.1h'oe'.0r@n]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Hörbücher",
+      "old": [
+        "`[.1h'oe'r.2by.0XR]"
+      ],
+      "new": [
+        "`[.1h'oe'r.2by.0XR]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Barriere",
+      "old": [
+        "`[.2bA.0ri.1e.0r@]"
+      ],
+      "new": [
+        "`[.2bA.0ri.1e.0r@]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Karriere",
+      "old": [
+        "`[.2kA.0ri.1e.0r@]"
+      ],
+      "new": [
+        "`[.2kA.0ri.1e.0r@]"
+      ],
+      "same": true
+    },
+    {
+      "word": "vorherig",
+      "old": [
+        "`[.1for.2he.0rIX]"
+      ],
+      "new": [
+        "`[.1for.2he.0rIX]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Homepage",
+      "old": [
+        "`[.1hom.0pEjC]"
+      ],
+      "new": [
+        "`[.1hom.0pEjC]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Germanistik",
+      "old": [
+        "`[.2gEr.0mA.1nI.0stIk]"
+      ],
+      "new": [
+        "`[.2gEr.0mA.1nI.0stIk]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Smile",
+      "old": [
+        "`[.1smi.0l@]"
+      ],
+      "new": [
+        "`[.1smi.0l@]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Snob",
+      "old": [
+        "`[.1snop]"
+      ],
+      "new": [
+        "`[.1snop]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Sonne",
+      "old": [
+        "`[.1zO.0n@]"
+      ],
+      "new": [
+        "`[.1zO.0n@]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Wasser",
+      "old": [
+        "`[.1vA.0sR]"
+      ],
+      "new": [
+        "`[.1vA.0sR]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Reise",
+      "old": [
+        "`[.1r'aj'.0z@]"
+      ],
+      "new": [
+        "`[.1r'aj'.0z@]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Zeit",
+      "old": [
+        "`[.1T'aj't]"
+      ],
+      "new": [
+        "`[.1T'aj't]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Katze",
+      "old": [
+        "`[.1kA.0T@]"
+      ],
+      "new": [
+        "`[.1kA.0T@]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Satz",
+      "old": [
+        "`[.1zAT]"
+      ],
+      "new": [
+        "`[.1zAT]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Paket",
+      "old": [
+        "`[.0pA.1ket]"
+      ],
+      "new": [
+        "`[.0pA.1ket]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Faden",
+      "old": [
+        "`[.1fa.0d@n]"
+      ],
+      "new": [
+        "`[.1fa.0d@n]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Laden",
+      "old": [
+        "`[.1la.0d@n]"
+      ],
+      "new": [
+        "`[.1la.0d@n]"
+      ],
+      "same": true
+    },
+    {
+      "word": "plus",
+      "old": [
+        "`[.1plUs]"
+      ],
+      "new": [
+        "`[.1plUs]"
+      ],
+      "same": true
+    },
+    {
+      "word": "samt",
+      "old": [
+        "`[.1zAmt]"
+      ],
+      "new": [
+        "`[.1zAmt]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Samt",
+      "old": [
+        "`[.1zAmt]"
+      ],
+      "new": [
+        "`[.1zAmt]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Unterricht",
+      "old": [
+        "`[.1Un.0tR.2rIXt]"
+      ],
+      "new": [
+        "`[.1Un.0tR.2rIXt]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Überschrift",
+      "old": [
+        "`[.1y.0bR.2SrIft]"
+      ],
+      "new": [
+        "`[.1y.0bR.2SrIft]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Übersicht",
+      "old": [
+        "`[.1y.0bR.2zIXt]"
+      ],
+      "new": [
+        "`[.1y.0bR.2zIXt]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Übergabe",
+      "old": [
+        "`[.1y.0bR.2ga.0b@]"
+      ],
+      "new": [
+        "`[.1y.0bR.2ga.0b@]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Übernehmen",
+      "old": [
+        "`[.0y.0bR.1ne.0m@n]"
+      ],
+      "new": [
+        "`[.0y.0bR.1ne.0m@n]"
+      ],
+      "same": true
+    },
+    {
+      "word": "überzeugt",
+      "old": [
+        "`[.0y.0bR.1T'oj'kt]"
+      ],
+      "new": [
+        "`[.0y.0bR.1T'oj'kt]"
+      ],
+      "same": true
+    },
+    {
+      "word": "konzentrieren",
+      "old": [
+        "`[.0kOn.0TEn.1tri.0r@n]"
+      ],
+      "new": [
+        "`[.0kOn.0TEn.1tri.0r@n]"
+      ],
+      "same": true
+    },
+    {
+      "word": "konzentriert",
+      "old": [
+        "`[.0kOn.0TEn.1trirt]"
+      ],
+      "new": [
+        "`[.0kOn.0TEn.1trirt]"
+      ],
+      "same": true
+    },
+    {
+      "word": "unkonzentriert",
+      "old": [
+        "`[.1Un.0kOn.0TEn.2trirt]"
+      ],
+      "new": [
+        "`[.1Un.0kOn.0TEn.2trirt]"
+      ],
+      "same": true
+    },
+    {
+      "word": "famos",
+      "old": [
+        "`[.0fA.1mos]"
+      ],
+      "new": [
+        "`[.0fA.1mos]"
+      ],
+      "same": true
+    },
+    {
+      "word": "famose",
+      "old": [
+        "`[.0fA.1mo.0z@]"
+      ],
+      "new": [
+        "`[.0fA.1mo.0z@]"
+      ],
+      "same": true
+    },
+    {
+      "word": "rigoros",
+      "old": [
+        "`[.2ri.0go.1ros]"
+      ],
+      "new": [
+        "`[.2ri.0go.1ros]"
+      ],
+      "same": true
+    },
+    {
+      "word": "rigorosen",
+      "old": [
+        "`[.2ri.0go.1ro.0z@n]"
+      ],
+      "new": [
+        "`[.2ri.0go.1ro.0z@n]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Infos",
+      "old": [
+        "`[.1In.0fos]"
+      ],
+      "new": [
+        "`[.1In.0fos]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Sprachauswahl",
+      "old": [
+        "`[.1Sprax.2'aw's.2val]"
+      ],
+      "new": [
+        "`[.1Sprax.2'aw's.2val]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Suchauswahl",
+      "old": [
+        "`[.1zux.2'aw's.2val]"
+      ],
+      "new": [
+        "`[.1zux.2'aw's.2val]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Sprachauswahlen",
+      "old": [
+        "`[.1Sprax.2'aw's.2va.0l@n]"
+      ],
+      "new": [
+        "`[.1Sprax.2'aw's.2va.0l@n]"
+      ],
+      "same": true
+    },
+    {
+      "word": "Suchauswahlen",
+      "old": [
+        "`[.1zux.2'aw's.2va.0l@n]"
+      ],
+      "new": [
+        "`[.1zux.2'aw's.2va.0l@n]"
+      ],
+      "same": true
+    }
+  ]
+}

@@ -77,4 +77,14 @@ int reloq_german_phone_sequence_build_checked(
     struct reloq_german_phone_sequence_info *info,
     reloq_german_cancel_check cancelled, void *cancel_context);
 
+/* Allocate from the validated phone count, reserving twice that count for
+ * in-place affricate expansion. Parse directly into private owned storage;
+ * no second transactional node array is needed. Caller frees *nodes after
+ * success. On failure nodes, capacity and info remain unchanged. */
+int reloq_german_phone_sequence_allocate_checked(
+    const unsigned char *input, size_t input_length, uint32_t max_pause_ms,
+    struct reloq_german_phone_node **nodes, size_t *capacity,
+    struct reloq_german_phone_sequence_info *info,
+    reloq_german_cancel_check cancelled, void *cancel_context);
+
 #endif

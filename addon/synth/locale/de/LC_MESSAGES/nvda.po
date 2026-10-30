@@ -277,3 +277,39 @@ msgstr "&Abkürzungswörterbuch verwenden"
 
 msgid "Phrase &prediction"
 msgstr "Satz&vorhersage"
+
+msgid "Add-on updates"
+msgstr "Add-on-Updates"
+
+#, python-format
+msgid "Installed version: %s"
+msgstr "Installierte Version: %s"
+
+msgid "Check for add-on updates"
+msgstr "Nach Add-on-Updates suchen"
+
+msgid "Downloading update…"
+msgstr "Update wird heruntergeladen…"
+
+msgid "Checking for updates…"
+msgstr "Updates werden gesucht…"
+
+#, python-format
+msgid "Update failed: %s"
+msgstr "Update fehlgeschlagen: %s"
+
+msgid "Update handed to NVDA."
+msgstr "Update an NVDA übergeben."
+
+msgid "Update installation cancelled."
+msgstr "Update-Installation abgebrochen."
+
+msgid "Download and install update"
+msgstr "Update herunterladen und installieren"
+
+#, python-format
+msgid "Version %s is available."
+msgstr "Version %s ist verfügbar."
+
+msgid "No newer published add-on package is available."
+msgstr "Es ist kein neueres veröffentlichtes Add-on-Paket verfügbar."

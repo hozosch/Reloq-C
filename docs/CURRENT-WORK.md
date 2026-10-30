@@ -1,4 +1,16 @@
-# Technischer Arbeitsstand: 0.2.194
+# Technischer Arbeitsstand: 0.2.196
+
+## 0.2.196: URLs, Lautpuffer und Paketupdates
+
+Der Nutzer bestätigt die verbesserte deutsche Analyse aus 0.2.195. Beim neuen vollständigen Heise-Beispiel führte die URL bisher wieder zum Verlust der nativen Satzbetonung: Ein URL-Bindestrich wurde zusätzlich als ausgesetzter Wortbestandteil geführt. ASCII-URLs durchlaufen nun die vorhandenen nativen Regeln als vollständiges Quelltoken. Bei mehrgliedriger nativer Ausgabe wird interne Zeichensetzung bei der Rekonstruktion nicht erneut eingespeist. Die Unicode-Erweiterung behält ihre Zeichentabellen. 132 Gruppen-/Akzentvergleiche einschließlich des vollständigen Texts und weiterer URLs bestehen; die bisherigen 46 deutschen Wortlautungen bleiben unverändert.
+
+Der deutsche Lautpuffer wird aus der validierten Lautzahl statt aus der Zahl aller Lautschriftbytes angelegt. Der bestehende Parser schreibt direkt in diesen privaten Puffer. Die zusätzliche Kopie zur atomaren Übergabe entfällt, während Abbruch und Fehler die Aufruferausgaben unverändert lassen. Im 4.000-Wörter-Vergleich gegen 0.2.195 sinkt die Spitze der angeforderten Heap-Bytes von 106.957.538 auf 100.477.682 (rund 6,06 Prozent). PCM bleibt bitgleich. Das sind erfasste Heap-Zuweisungen, keine RSS- oder Gerätemessung. Der große Akustik-Zielpuffer bleibt ein nächster Optimierungsansatz.
+
+NVDA erhält in der Einstellungskategorie Eloquence C eine Paketupdate-Prüfung; Android erhält App-Updates. Beide prüfen veröffentlichte GitHub-Releases nur auf Anforderung, streamen Downloads und prüfen Größe/SHA-256. Die Installation geht an den jeweiligen normalen Installationsdialog. NVDA prüft Add-on-Name und Version, Android zusätzlich Paketkennung und Signatur. Der direkte signierte APK-Vergleich 20192 → 20196 besteht. Im Repository sind noch keine Download-Releases veröffentlicht; der neue Bereich meldet dies korrekt. Der eigentliche Installer-Dialog bleibt ein Geräte-/NVDA-Oberflächentest für die erste veröffentlichte Aktualisierung. Die Test-Pakete werden weiterhin unmittelbar bereitgestellt.
+
+## 0.2.195: Kompakter Regelcode
+
+Der Nutzer bestätigt bessere Satzanalyse und teilweise stärkere Übereinstimmung zum Original. Die DLL wurde durch größenorientiertes Übersetzen der Sprachregeln von 61.280.256 auf 55.981.568 Bytes verkleinert. Der DSP behält seine Optimierungseinstellungen. Die eigenen Klangabweichungen bleiben erhalten.
 
 ## 0.2.194: Einheitlicher Wörterbuchpfad
 

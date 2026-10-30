@@ -205,9 +205,41 @@ static int validation_before_write(void)
     return 0;
 }
 
+static int allocated_sequence(void)
+{
+    const unsigned char text[]="`[.1kva.0t@] `00 `[.0Unt] `[.1tS'aw']";
+    struct reloq_german_phone_node fixed[32],*owned=NULL;
+    struct reloq_german_phone_sequence_info a={0},b={0};size_t capacity=99;
+    struct interrupt measure={0,UINT_MAX};
+    CHECK(!reloq_german_phone_sequence_build_checked(text,sizeof text-1,0,
+        fixed,32,&a,cancelled,&measure));
+    CHECK(!reloq_german_phone_sequence_allocate_checked(text,sizeof text-1,0,
+        &owned,&capacity,&b,NULL,NULL));
+    CHECK(capacity==2*a.phone_count&&b.phone_count==a.phone_count&&
+        a.word_count==b.word_count&&a.syllable_count==b.syllable_count);
+    for(size_t i=0;i<a.phone_count;++i) {
+        CHECK(owned[i].phone==fixed[i].phone&&owned[i].source_offset==fixed[i].source_offset&&
+            owned[i].word_index==fixed[i].word_index&&owned[i].syllable_index==fixed[i].syllable_index&&
+            owned[i].stress==fixed[i].stress&&owned[i].left_phone==fixed[i].left_phone&&
+            owned[i].right_phone==fixed[i].right_phone&&owned[i].primary_ahead==fixed[i].primary_ahead);
+    }
+    free(owned);owned=NULL;capacity=99;b=(struct reloq_german_phone_sequence_info){99,88,77};
+    struct interrupt stop={0,measure.calls*3/4};
+    CHECK(reloq_german_phone_sequence_allocate_checked(text,sizeof text-1,0,
+        &owned,&capacity,&b,cancelled,&stop)==1);
+    CHECK(!owned&&capacity==99&&b.phone_count==99&&b.word_count==88);
+    CHECK(reloq_german_phone_sequence_allocate_checked((const unsigned char *)"`[bad",5,0,
+        &owned,&capacity,&b,NULL,NULL)==-1&&!owned&&capacity==99);
+    CHECK(!reloq_german_phone_sequence_allocate_checked((const unsigned char *)".",1,0,
+        &owned,&capacity,&b,NULL,NULL)&&!b.phone_count&&capacity==1);
+    free(owned);return 0;
+}
+
 int main(void)
 {
-    int result = cancelled_in_second_pass();
+    int result = allocated_sequence();
+    if (result) return result;
+    result = cancelled_in_second_pass();
     if (result) return result;
     result = reference_with_controls();
     if (result) return result;

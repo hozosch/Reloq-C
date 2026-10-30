@@ -27,13 +27,14 @@ def main():
     with tempfile.TemporaryDirectory() as temporary:
         build=Path(temporary);generate(build/"generated")
         folder=ROOT/"android/java/org/reloq/tts/preview"
-        sources=[folder/(n+".java") for n in ("PcmQueue","Catalog","VoiceSettings","Preferences","DictionaryData")]
+        sources=[folder/(n+".java") for n in ("PcmQueue","Catalog","VoiceSettings","Preferences","DictionaryData","UpdateData")]
         sources.extend((build/"generated").rglob("RateCurve.java"))
-        sources.extend(ROOT/"android/test"/(n+".java") for n in ("PcmQueueTest","SettingsTest"))
+        sources.extend(ROOT/"android/test"/(n+".java") for n in ("PcmQueueTest","SettingsTest","UpdateDataTest"))
         subprocess.run([str(a.java_home/"bin/javac"),"-encoding","UTF-8","-cp",str(a.android_jar),"-d",str(build),*map(str,sources)],check=True)
         classpath=str(build)+os.pathsep+str(a.android_jar)
         base=[str(a.java_home/"bin/java"),"-cp",classpath]
         subprocess.run([*base,"org.reloq.tts.preview.PcmQueueTest"],check=True,timeout=30)
+        subprocess.run([*base,"org.reloq.tts.preview.UpdateDataTest"],check=True,timeout=30)
         result=subprocess.run([*base,"org.reloq.tts.preview.SettingsTest"],check=True,capture_output=True,text=True,timeout=30)
         print(result.stdout,end="")
         controls=list(map(int,result.stdout.splitlines()[-1].split("\t")[1:]))

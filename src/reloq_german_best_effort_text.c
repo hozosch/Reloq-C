@@ -878,6 +878,35 @@ static int append_native_reading(struct annotation_builder *b,
     *last=0;b->ctx_text=source;b->ctx_length=length;b->ctx_fixed=kind;
     int status=append_observed(b,first+2,0);b->ctx_text=NULL;return status;
 }
+static int collect_native_text(void *context,const char *data,size_t length)
+{
+    struct annotation_builder *out=context;
+    if(length>SIZE_MAX-out->used-1 ||
+       reserve(&out->output,&out->capacity,out->used+length+1))return -1;
+    memcpy(out->output+out->used,data,length);out->used+=length;
+    out->output[out->used]=0;return 0;
+}
+static int append_native_url(struct annotation_builder *b,
+    const unsigned char *source,size_t length)
+{
+    if(!length||length==SIZE_MAX)return 1;
+    /* Extended Unicode names retain their character-table admission. */
+    for(size_t i=0;i<length;++i)if(source[i]<32||source[i]>=127||source[i]=='`')return 1;
+    char *text=malloc(length+1);if(!text)return -2;
+    memcpy(text,source,length);text[length]=0;
+    struct annotation_builder out={0};
+    struct reloq61_request q={.language=0x40000,.annotations=1,.phonemes_only=1,
+        .voice={0,50,65,30,0,0,50,92},.text=text};
+    struct reloq61_result r={0};
+    int generated=reloq61_generate_phonemes(&q,&r,collect_native_text,&out);
+    free(text);
+    int status=generated?(r.error==1?-2:1):1;
+    if(!generated&&out.output) {
+        for(size_t i=0;i<out.used;++i)if(!out.output[i])out.output[i]=' ';
+        status=append_native_reading(b,source,length,(char *)out.output,RELOQ_DE_SOURCE_NATIVE_TOKEN);
+    }
+    free(out.output);return status;
+}
 static int append_native_token(struct annotation_builder *b,
     const unsigned char *source,size_t length,int dictionary)
 {
@@ -1793,6 +1822,17 @@ static int plan_tags_checked(int native_first,
             (encoded_length-at>=4&&!memcmp(encoded+at,"www.",4)))) {
             url_end=at;
             while(url_end<encoded_length&&!reloq_german_silent_separator(encoded[url_end]))++url_end;
+            size_t end=url_end;
+            /* Sentence punctuation is admitted after the complete URL so
+             * its original boundary is submitted exactly once as well. */
+            while(end>at&&strchr(".,;:!?\"",encoded[end-1]))--end;
+            result=append_native_url(&b,original_encoded+at,end-at);
+            if(result!=1) {
+                if(result)goto done;
+                at=end;url_end=end;
+                map_boundaries(boundaries,boundary_count,&next_boundary,at,b.used);
+                continue;
+            }
             size_t host=at;
             const int bare=encoded[at]=='w';
             if(!bare)host+=encoded[at+4]=='s'?8:7;
@@ -1969,8 +2009,9 @@ static int plan_tags_checked(int native_first,
         const unsigned char *word=word_storage+start;
         result=append_word_token(&b,word,length);
         /* A suspended constituent (Ein- und Ausgang) keeps lexical stress.
-         * Its written hyphen distinguishes it from the function word ein. */
-        if (!result && at<encoded_length && encoded[at]=='-' &&
+         * URL hyphens are separate named symbols, not suspended word heads;
+         * including one here would also submit it in the following group. */
+        if (!result && at>=url_end && at<encoded_length && encoded[at]=='-' &&
             b.unit_count && length>1 &&
             (at+1==encoded_length || !letter(encoded[at+1]))) {
             b.units[b.unit_count-1].text=word_storage+start;

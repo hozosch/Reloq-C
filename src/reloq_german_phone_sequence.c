@@ -23,11 +23,12 @@ static unsigned vowel_quantity(enum reloq_german_phone p)
     }
 }
 
-int reloq_german_phone_sequence_build_checked(
+static int build_sequence(
     const unsigned char *input, size_t input_length, uint32_t max_pause_ms,
     struct reloq_german_phone_node *nodes, size_t capacity,
     struct reloq_german_phone_sequence_info *info,
-    reloq_german_cancel_check cancelled, void *cancel_context)
+    reloq_german_cancel_check cancelled, void *cancel_context,
+    struct reloq_german_phone_node **allocated, size_t *allocated_capacity)
 {
     if (!input || !info || (capacity && !nodes)) return -1;
 
@@ -56,13 +57,19 @@ int reloq_german_phone_sequence_build_checked(
             ++*counter;
         }
     }
-    if (state != 0 || counts.phone_count > capacity) return -1;
+    if (state != 0 || (!allocated && counts.phone_count > capacity)) return -1;
 
     /* A cancelled second pass must never leave half-written caller nodes.
      * The original NULL-predicate path avoids this extra allocation. */
     struct reloq_german_phone_node *staged = NULL;
     struct reloq_german_phone_node *target = nodes;
-    if (cancelled && counts.phone_count) {
+    if (allocated) {
+        if (counts.phone_count > SIZE_MAX / 2 / sizeof *staged) return -2;
+        capacity = counts.phone_count ? 2 * counts.phone_count : 1;
+        staged = malloc(capacity * sizeof *staged);
+        if (!staged) return -2;
+        target = staged;
+    } else if (cancelled && counts.phone_count) {
         if (counts.phone_count > SIZE_MAX / sizeof *staged) return -1;
         staged = malloc(counts.phone_count * sizeof *staged);
         if (!staged) return -2;
@@ -208,12 +215,36 @@ int reloq_german_phone_sequence_build_checked(
     }
     /* The second pass is deterministic for immutable input; all errors and
      * capacity failures were checked before writing. */
-    if (staged) {
+    if (allocated) {
+        *allocated = staged;
+        *allocated_capacity = capacity;
+    } else if (staged) {
         memcpy(nodes, staged, count * sizeof *staged);
         free(staged);
     }
     *info = counts;
     return 0;
+}
+
+int reloq_german_phone_sequence_build_checked(
+    const unsigned char *input, size_t input_length, uint32_t max_pause_ms,
+    struct reloq_german_phone_node *nodes, size_t capacity,
+    struct reloq_german_phone_sequence_info *info,
+    reloq_german_cancel_check cancelled, void *cancel_context)
+{
+    return build_sequence(input,input_length,max_pause_ms,nodes,capacity,info,
+        cancelled,cancel_context,NULL,NULL);
+}
+
+int reloq_german_phone_sequence_allocate_checked(
+    const unsigned char *input, size_t input_length, uint32_t max_pause_ms,
+    struct reloq_german_phone_node **nodes, size_t *capacity,
+    struct reloq_german_phone_sequence_info *info,
+    reloq_german_cancel_check cancelled, void *cancel_context)
+{
+    if (!nodes || !capacity) return -1;
+    return build_sequence(input,input_length,max_pause_ms,NULL,0,info,
+        cancelled,cancel_context,nodes,capacity);
 }
 
 int reloq_german_phone_sequence_build(

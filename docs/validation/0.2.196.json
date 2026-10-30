@@ -1,0 +1,158 @@
+{
+  "version": "0.2.196",
+  "android_version": "0.2.196-preview8",
+  "no_audio_files": true,
+  "artifacts": {
+    "eci/libreloq_eci.so": {
+      "bytes": 57363632,
+      "sha256": "18a09041b8612bda7978090188b23e4960606ad61fc32a14d7cbfa2b7232c801"
+    },
+    "eci/eci.dll": {
+      "bytes": 55982592,
+      "sha256": "4e8bbc4069afed4d1e06d71be534aa91bf37dc3948b7f5128555efb83ceb2297"
+    },
+    "eci/libreloq_android.so": {
+      "bytes": 55224096,
+      "sha256": "5f41d6f31997be3485fb762bc87a5b3c93c4e175d652e5145a4683c181dff4b4"
+    },
+    "dist/reloq-c-synth-experimental-x64-0.2.196.nvda-addon": {
+      "bytes": 20223875,
+      "sha256": "748bc3767d0279f6bc9aa8a851eb757f8519de46cf870b2416e6cc03abadf5ec"
+    },
+    "dist/reloq-c-android-arm64-0.2.196-preview8.apk": {
+      "bytes": 18212246,
+      "sha256": "e5fad36bd505cbcb252dbe350d71eba8a1db153cb4b79363a659b351278d2e49"
+    }
+  },
+  "changes_from_0195": {
+    "eci/libreloq_eci.so": {
+      "before_bytes": 57363552,
+      "after_bytes": 57363632,
+      "saved_bytes": -80
+    },
+    "eci/eci.dll": {
+      "before_bytes": 55981568,
+      "after_bytes": 55982592,
+      "saved_bytes": -1024
+    },
+    "eci/libreloq_android.so": {
+      "before_bytes": 55222752,
+      "after_bytes": 55224096,
+      "saved_bytes": -1344
+    },
+    "dist/reloq-c-synth-experimental-x64-0.2.196.nvda-addon": {
+      "before_bytes": 20222016,
+      "after_bytes": 20223875,
+      "saved_bytes": -1859
+    },
+    "dist/reloq-c-android-arm64-0.2.196-preview8.apk": {
+      "before_bytes": 18204054,
+      "after_bytes": 18212246,
+      "saved_bytes": -8192
+    }
+  },
+  "german_analysis": {
+    "reported_complete_text_in_c_tests": true,
+    "native_reference": "Current complete native C German rule provider; no original Apple binary was executed in this workspace",
+    "cause": "URL hyphens were also carried as suspended constituents; punctuation inside multi-group source tokens was then replayed during context reconstruction.",
+    "fix": "Intact native ASCII URL tokens; source punctuation is submitted once; extended Unicode retains its character-table path.",
+    "native_group_accent_comparisons": 132,
+    "public_utf8_url_tag_rate_fragment_index_checks": 96,
+    "desired_word_spr_unchanged": 46,
+    "own_acoustic_planner_retained": true
+  },
+  "resources": {
+    "method": "Requested live malloc/calloc/realloc sizes during warmed public German ECI synthesis; Linux/glibc; not RSS or a timing benchmark",
+    "words": 4000,
+    "requested_peak_before_bytes": 106957538,
+    "requested_peak_after_bytes": 100477682,
+    "requested_peak_saved_bytes": 6479856,
+    "requested_peak_saved_percent": 6.058344387096868,
+    "pcm_identical": true,
+    "phone_allocation": "Validated phone count with twofold affricate capacity; direct private parsing avoids an annotation-sized node buffer and an extra transactional copy.",
+    "cpu_paired_median_ratio": 0.9979518002594528,
+    "cpu_ratio_range": [
+      0.8944066414892796,
+      1.1556443451640988
+    ],
+    "interpretation": "Measured heap peak decreased by about 6.06%; no general CPU speedup is established; file sizes remain close to 0.2.195."
+  },
+  "updates": {
+    "on_request_only": true,
+    "source": "Published GitHub Releases in hozosch/Reloq-C",
+    "published_releases_at_validation": 0,
+    "release_creation_or_assets_published_by_this_change": false,
+    "nvda": "Eloquence C settings: Check for add-on updates; download verifies size/SHA-256 and manifest identity/version, then uses gui.addonGui.installAddon for normal compatibility/confirmation/restart handling.",
+    "android": "App updates: verifies size/SHA-256, package ID, version and current signing certificate; private read-only content URI goes to Android package installer after user action.",
+    "python_backend_and_settings_flow_tests": 4,
+    "java_metadata_transfer_recovery_checks": 16,
+    "no_periodic_polling": true,
+    "no_speech_worker_downloads": true,
+    "system_installer_device_flow_pending_first_published_release": true
+  },
+  "validation": {
+    "make_eci_test_complete": true,
+    "phone_parser_owned_fixed_cancellation_invalid_empty_component_test": true,
+    "baseline_pcm_model_rate_pairs": 196,
+    "analysis_options_with_0195": 227,
+    "cjk_latin_checks": 366,
+    "native_text_component_checks": 137,
+    "native_text_pcm_index_checks": 224,
+    "android_jni_direct_c_matches": 35,
+    "android_settings_dictionary_checks": 866,
+    "voice_catalog_names": 112,
+    "dictionary_semantics_cases": 25,
+    "dictionary_retention_cases": 18,
+    "asian_greek_renders": 1680,
+    "asian_greek_pause_comparisons": 105,
+    "nvda_english_ui": true,
+    "nvda_german_ui": true,
+    "windows_abi_exports": 21,
+    "current_native_driver_updates_docs_dictionaries_dex_bytes_verified": true,
+    "apk_crc_dex_size_sha1_adler32_verified": true,
+    "apk_has_no_rlex_or_obsolete_installer_classes": true,
+    "fresh_android_archive_bridge_matches_object": true,
+    "arm64_landing_gpr_simd_stack_fp_bounds_emulation": true
+  },
+  "android_build": {
+    "isolated_c_objects_and_archive_under_build_dir": true,
+    "bridge_object_byte_postcondition": true,
+    "reason": "A stale intermediate archive exposed an older bridge despite a current object; the final package was rebuilt from a fully isolated native build and its archive verified."
+  },
+  "community_master_commit": "f93ccc82158386f7607ed3868473b6914121d2d7",
+  "native_dependencies": {
+    "linux": [
+      "libm.so.6",
+      "libc.so.6",
+      "ld-linux-x86-64.so.2"
+    ],
+    "android": [
+      "libm.so",
+      "libdl.so",
+      "libc.so"
+    ],
+    "windows": [
+      "kernel32.dll",
+      "msvcrt.dll",
+      "user32.dll"
+    ]
+  },
+  "apk_upgrade": {
+    "package": "org.reloq.tts.preview",
+    "before_version_code": 20192,
+    "after_version_code": 20196,
+    "same_certificate": true,
+    "certificate_sha256": "e4af6db7bf1fd6ecf1670d48dac195d56cafc96daceec1238211a0ff1ba1091f"
+  },
+  "detailed_reports": {
+    "german_departures": "0.2.196-german-departures.json",
+    "heap": "0.2.196-heap.json",
+    "pcm_and_cpu": "0.2.196-build-comparison.json"
+  },
+  "limitations": [
+    "Heap/process-CPU comparisons are Linux host observations, not device RSS or latency measurements.",
+    "The large German acoustic target reservation remains a future optimization target.",
+    "The new update screens and installer handoffs need their ordinary NVDA/TalkBack check after a package release is published.",
+    "SAPI5 and automatic cross-language rate normalization remain pending."
+  ]
+}

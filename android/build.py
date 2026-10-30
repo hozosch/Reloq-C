@@ -32,7 +32,7 @@ def main():
     parser.add_argument("--android-jar",type=Path)
     parser.add_argument("--jobs",type=int,default=4)
     parser.add_argument("--build-dir",type=Path,help="isolated Android build directory")
-    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-0.2.195-preview7.apk")
+    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-0.2.196-preview8.apk")
     parser.add_argument("--keystore",type=Path,default=HERE/"preview-debug.p12")
     parser.add_argument("--verified-dictionaries",action="store_true",
         help="use locally verified data after separately resolving its current master commit")
@@ -50,7 +50,14 @@ def main():
     build=(args.build_dir or HERE/"build").resolve();build.mkdir(parents=True,exist_ok=True)
     environment={**os.environ,"JAVA_HOME":str(java),"PATH":str(java/"bin")+os.pathsep+os.environ["PATH"]}
     run("make","-C",ROOT/"eci",f"-j{args.jobs}","libreloq_android.so",
-        f"ANDROID_CC={compiler}",f"ANDROID_AR={host/'llvm-ar'}")
+        f"ANDROID_CC={compiler}",f"ANDROID_AR={host/'llvm-ar'}",
+        f"ANDROID_BUILD={build/'native-eci'}",
+        f"RULES61_ANDROID={build/'native-rules/libreloq61.a'}")
+    # An isolated build includes its C objects and archive, not just Java.
+    # Refuse a stale archive whose bridge differs from the current object.
+    archived=subprocess.check_output([str(host/'llvm-ar'),"p",str(build/'native-rules/libreloq61.a'),"reloq61_bridge.o"])
+    if archived!=(build/'native-rules/src/reloq61_bridge.o').read_bytes():
+        raise RuntimeError("Native archive contains a stale bridge object")
     generated=build/"generated";generated.mkdir(exist_ok=True)
     assets=build/"assets";assets.mkdir(exist_ok=True)
     sys.path.insert(0,str(ROOT/"addon"))

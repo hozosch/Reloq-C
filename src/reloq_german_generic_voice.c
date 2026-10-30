@@ -3482,15 +3482,10 @@ static int render(
     if(inline_volume>=0 && inline_words(annotation,annotation_bytes,settings,
         inline_volume,&controls,&control_words)) {status=RELOQ_DE_UTTERANCE_MEMORY;goto done;}
     progress.annotation_bytes = annotation_bytes;
-    if (annotation_bytes > SIZE_MAX / (2*sizeof *phones)) {
-        status = RELOQ_DE_UTTERANCE_MEMORY;
-        goto done;
-    }
-    phones = malloc((annotation_bytes ? 2*annotation_bytes : 1) * sizeof *phones);
-    if (!phones) { status = RELOQ_DE_UTTERANCE_MEMORY; goto done; }
+    size_t phone_capacity = 0;
     struct reloq_german_phone_sequence_info sequence = {0};
-    int parsed = reloq_german_phone_sequence_build_checked(
-        annotation, annotation_bytes, 0, phones, annotation_bytes,
+    int parsed = reloq_german_phone_sequence_allocate_checked(
+        annotation, annotation_bytes, 0, &phones, &phone_capacity,
         &sequence, session_cancelled, session);
     if (parsed) {
         status = parsed == 1 ? RELOQ_DE_UTTERANCE_CANCELLED :
@@ -3541,7 +3536,7 @@ static int render(
         phones[retained++]=phones[i];
     }
     sequence.phone_count=retained;
-    if (reloq_german_affricate_expand(phones,&sequence.phone_count,2*annotation_bytes)) {
+    if (reloq_german_affricate_expand(phones,&sequence.phone_count,phone_capacity)) {
         status=RELOQ_DE_UTTERANCE_MODEL;goto done;
     }
     progress.phone_count = sequence.phone_count;
