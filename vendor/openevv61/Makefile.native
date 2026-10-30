@@ -1,9 +1,12 @@
 .DELETE_ON_ERROR:
+.DEFAULT_GOAL := all
 # ReLoq private native-C rule provider. No bytecode or interpreter build.
 CC ?= cc
 AR ?= ar
 OPT ?= -O2
-RULE_OPT ?= -O2
+# Rule functions walk records once per utterance. Avoid duplicating their
+# large decision trees for speed; the per-sample DSP keeps OPT unchanged.
+RULE_OPT ?= -Os
 BUILD ?= build/native
 PORT ?= posix
 DIRS := rom/jajp rom/cjk rom/greek src $(patsubst %/,%,$(wildcard src/*/ src/*/*/))
@@ -16,6 +19,7 @@ OBJECTS += $(BUILD)/reloq_voice_filter.o
 OBJECTS += $(BUILD)/reloq_orthography.o
 OBJECTS += $(BUILD)/reloq_german_word_edges.o
 OBJECTS += $(BUILD)/reloq_english_word_edges.o
+$(filter $(BUILD)/lang/%,$(OBJECTS)): Makefile.native
 HEADERS := $(foreach d,$(DIRS),$(wildcard $(d)/*.h)) $(wildcard include/*.h) $(foreach lang,$(LANGUAGES),$(wildcard lang/$(lang)/*.h))
 HEADERS += ../../include/reloq_voice_filter.h
 HEADERS += ../../include/reloq_voice_controls.h

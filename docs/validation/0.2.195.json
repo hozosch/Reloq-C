@@ -1,0 +1,153 @@
+{
+  "version": "0.2.195",
+  "android_version": "0.2.195-preview7",
+  "no_audio_files": true,
+  "artifacts": {
+    "eci/libreloq_eci.so": {
+      "bytes": 57363552,
+      "sha256": "18fcc1462e38d18746373bcf3870c54178fc685ee582ee4e538ae76e11713db9"
+    },
+    "eci/eci.dll": {
+      "bytes": 55981568,
+      "sha256": "ee70c05871f86d8d518172015ca28286886be8fde92023de400bbf1c687bbc8f"
+    },
+    "eci/libreloq_android.so": {
+      "bytes": 55222752,
+      "sha256": "ecbbde5776d11d7c3bff70e527743406c24e6bce6bb9012da7b290d347532185"
+    },
+    "dist/reloq-c-synth-experimental-x64-0.2.195.nvda-addon": {
+      "bytes": 20222016,
+      "sha256": "32273741cc267593ab49fbe5bbcc1aba28b91a0876cb5f2dfc9c44864c0c932f"
+    },
+    "dist/reloq-c-android-arm64-0.2.195-preview7.apk": {
+      "bytes": 18204054,
+      "sha256": "538fdb9672936e6de5769120caea2ba026f0dccc93c85fec540beded52a08dff"
+    }
+  },
+  "reductions_from_0194": {
+    "eci/libreloq_eci.so": {
+      "before_bytes": 63454992,
+      "after_bytes": 57363552,
+      "saved_bytes": 6091440,
+      "saved_percent": 9.599622989472602
+    },
+    "eci/eci.dll": {
+      "before_bytes": 61280256,
+      "after_bytes": 55981568,
+      "saved_bytes": 5298688,
+      "saved_percent": 8.646647951340151
+    },
+    "eci/libreloq_android.so": {
+      "before_bytes": 55495872,
+      "after_bytes": 55222752,
+      "saved_bytes": 273120,
+      "saved_percent": 0.49214471303379104
+    },
+    "dist/reloq-c-synth-experimental-x64-0.2.195.nvda-addon": {
+      "before_bytes": 22951231,
+      "after_bytes": 20222016,
+      "saved_bytes": 2729215,
+      "saved_percent": 11.891366524087532
+    },
+    "dist/reloq-c-android-arm64-0.2.195-preview7.apk": {
+      "before_bytes": 18318742,
+      "after_bytes": 18204054,
+      "saved_bytes": 114688,
+      "saved_percent": 0.6260691918691796
+    }
+  },
+  "german_context": {
+    "reproduced_text": "NVDA-Einstellungen: Sprachausgabe (Standard-Konfiguration)",
+    "cause": "The last letter of a hyphenated initialism was duplicated in reconstructed native input; mismatched group counts forced repeated spelling fallback.",
+    "fix": "Carry the complete native token once across all its phonetic groups.",
+    "expected_sprachausgabe_spr": "`[.1Sprax.2'aw's.2ga.0b@]",
+    "native_group_accent_comparisons": 108,
+    "desired_word_spr_unchanged": 46,
+    "own_acoustic_planner_retained": true
+  },
+  "footprint": {
+    "language_rule_option": "-Os",
+    "host_audio_options_unchanged": true,
+    "all_languages_and_voices_retained": true,
+    "windows_text_before_bytes": 37334360,
+    "windows_text_after_bytes": 32152376,
+    "runtime_dependencies_added": false,
+    "original_module_or_bytecode_required": false,
+    "speech_result_cache": false
+  },
+  "validation": {
+    "make_eci_test_complete": true,
+    "native_stream_languages": 14,
+    "native_stream_multichunk_long_text_bytes": 10240,
+    "stream_abort_and_following_request_recovery": true,
+    "baseline_pcm_model_rate_pairs": 196,
+    "analysis_options_with_0194": 227,
+    "cjk_latin_unicode_fragment_index_checks": 366,
+    "native_text_component_checks": 137,
+    "native_text_pcm_index_checks": 224,
+    "android_jni_direct_c_matches": 35,
+    "android_settings_dictionary_checks": 866,
+    "voice_catalog_names": 112,
+    "dictionary_semantics_cases": 25,
+    "dictionary_retention_cases": 18,
+    "asian_greek_renders": 1680,
+    "asian_greek_pause_comparisons": 105,
+    "nvda_english_ui": true,
+    "nvda_german_ui": true,
+    "windows_abi_exports": 21,
+    "package_zip_native_dex_and_dictionary_bytes_verified": true,
+    "apk_crc_dex_size_sha1_adler32_verified": true,
+    "apk_has_no_rlex_or_obsolete_installer_classes": true
+  },
+  "community_master_commit": "f93ccc82158386f7607ed3868473b6914121d2d7",
+  "native_dependencies": {
+    "linux": [
+      "libm.so.6",
+      "libc.so.6",
+      "ld-linux-x86-64.so.2"
+    ],
+    "android": [
+      "libm.so",
+      "libdl.so",
+      "libc.so"
+    ],
+    "windows": [
+      "kernel32.dll",
+      "msvcrt.dll",
+      "user32.dll"
+    ]
+  },
+  "apk_upgrade": {
+    "package": "org.reloq.tts.preview",
+    "before_version_code": 20194,
+    "after_version_code": 20195,
+    "same_certificate": true,
+    "certificate_sha256": "e4af6db7bf1fd6ecf1670d48dac195d56cafc96daceec1238211a0ff1ba1091f"
+  },
+  "detailed_reports": {
+    "german_departures": "0.2.195-german-departures.json",
+    "heap": "0.2.195-heap.json",
+    "pcm_and_cpu": "0.2.195-build-comparison.json"
+  },
+  "exploratory_resources": {
+    "heap_method": "Requested live malloc/calloc/realloc sizes during warmed public German ECI synthesis; Linux/glibc; not RSS or a timing benchmark",
+    "requested_peak_reduced": false,
+    "largest_case_words": 4000,
+    "largest_case_peak_bytes": 106957538,
+    "largest_case_total_requested_bytes_saved": 805120,
+    "cpu_method": "Twelve warmed paired calls per language and rate, alternating baseline/candidate order in the same process, after other test processes completed; process CPU time includes PCM hashing.",
+    "cpu_median_ratio": 1.0049049989005137,
+    "cpu_ratio_range": [
+      0.9680441530899662,
+      1.0960873292224715
+    ],
+    "interpretation": "DLL/download size decreased. No general CPU speedup is established: paired median CPU ratio is about 1.005; individual pairs vary about -3.2% to +9.6%. Requested heap peak is unchanged. An earlier sequential-process CPU sample was rejected as confounded by run-order/load drift; the final report uses paired measurements."
+  },
+  "limitations": [
+    "Windows/TalkBack listening checks remain necessary for the analysis fix and compact build.",
+    "Linux process CPU time and requested heap sizes are not device latency or RSS measurements.",
+    "The largest German acoustic target allocation remains a future resource optimization target.",
+    "Automatic cross-language rate normalization remains inactive.",
+    "SAPI5 remains planned."
+  ]
+}

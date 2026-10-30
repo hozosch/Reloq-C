@@ -160,6 +160,7 @@ struct capture {
     size_t next_mark,consumed,setup_pending;
     int metadata,source_started,pause_policy;
     pause_sink pause;void *pause_context;
+    reloq61_phoneme_sink phoneme_sink;void *phoneme_context;
 };
 int reloq61_labiodental_gain(void *state)
 {
@@ -201,13 +202,19 @@ static int32_t STDCALL message(void *h,int32_t kind,int32_t value,void *context)
     struct capture *c=context;(void)h;
     if(kind==1 && value>0) {
         size_t n=(size_t)value;
-        if(n>sizeof c->phon || !c->q->phonemes ||
-           c->r->phonemes_length+n>=c->q->phonemes_capacity) {
+        if(n>sizeof c->phon || n>SIZE_MAX-c->r->phonemes_length) {
             c->r->error=1;return 2;
         }
-        memcpy(c->q->phonemes+c->r->phonemes_length,c->phon,n);
+        if(c->phoneme_sink) {
+            if(c->phoneme_sink(c->phoneme_context,c->phon,n)) {c->r->error=1;return 2;}
+        } else {
+            if(!c->q->phonemes || c->r->phonemes_length+n>=c->q->phonemes_capacity) {
+                c->r->error=1;return 2;
+            }
+            memcpy(c->q->phonemes+c->r->phonemes_length,c->phon,n);
+            c->q->phonemes[c->r->phonemes_length+n]=0;
+        }
         c->r->phonemes_length+=n;
-        c->q->phonemes[c->r->phonemes_length]=0;
     }
     return 1;
 }
@@ -491,8 +498,9 @@ int reloq61_english_bank_emit(void*state,const struct reloq61_english_bank*p,int
  if(!p->trim_pause&&p->pause_to>p->pause_from&&c->pause)c->pause(c->pause_context,c->clock_base+from+p->pause_from,c->clock_base+from+p->pause_to,c->clock_base+from+p->pause_to);
  return 0;
 }
-static int generate_core(const struct reloq61_request *,struct reloq61_result *);
-static int greek_generate(const struct reloq61_request *q,struct reloq61_result *r)
+static int generate_core(const struct reloq61_request *,struct reloq61_result *,reloq61_phoneme_sink,void *);
+static int greek_generate(const struct reloq61_request *q,struct reloq61_result *r,
+    reloq61_phoneme_sink sink,void *context)
 {
     char *text=NULL;size_t *map=NULL;
     if(reloq_greek_text(q->text,q->annotations,greek_english,(void *)q,&text,&map))return -1;
@@ -501,21 +509,33 @@ static int greek_generate(const struct reloq61_request *q,struct reloq61_result 
     size_t length=strlen(q->text);
     for(size_t i=0;i<q->mark_count;++i){if(q->marks[i].offset>length){free(text);free(map);free(marks);return -1;}marks[i]=q->marks[i];marks[i].offset=map[marks[i].offset];}
     struct reloq61_request request=*q;request.language=0x120000;request.text=text;request.marks=marks;request.annotations=1;
-    int result=generate_core(&request,r);
+    int result=generate_core(&request,r,sink,context);
     free(text);free(map);free(marks);return result;
 }
 int reloq61_generate(const struct reloq61_request *q,struct reloq61_result *r)
 {
-    if(q&&r&&q->language==0x120000){initialize();memset(r,0,sizeof *r);return greek_generate(q,r);}
-    return generate_core(q,r);
+    if(q&&r&&q->language==0x120000){initialize();memset(r,0,sizeof *r);return greek_generate(q,r,NULL,NULL);}
+    return generate_core(q,r,NULL,NULL);
 }
-static int generate_core(const struct reloq61_request *q,struct reloq61_result *r)
+int reloq61_generate_phonemes(const struct reloq61_request *q,struct reloq61_result *r,
+    reloq61_phoneme_sink sink,void *context)
+{
+    if(!q||!r||!q->phonemes_only||!sink)return -1;
+    struct reloq61_request request=*q;request.phonemes=NULL;request.phonemes_capacity=0;
+    if(request.language==0x120000) {
+        initialize();memset(r,0,sizeof *r);return greek_generate(&request,r,sink,context);
+    }
+    return generate_core(&request,r,sink,context);
+}
+static int generate_core(const struct reloq61_request *q,struct reloq61_result *r,
+    reloq61_phoneme_sink sink,void *context)
 {
     struct capture c;OldInst *h;delta_state *d;DeltaLang *dl;
     int16_t pcm[4096];size_t begin=0,n;int ok=1;
     if(!q||!r||!q->text||(q->mark_count&&!q->marks)||
        (q->sample_rate && q->sample_rate!=8000 && q->sample_rate!=11025))return -1;
     memset(r,0,sizeof *r);memset(&c,0,sizeof c);c.q=q;c.r=r;
+    c.phoneme_sink=sink;c.phoneme_context=context;
     c.pause_policy=pause_request.policy;c.pause=pause_request.sink;c.pause_context=pause_request.context;
     if(q->phonemes && q->phonemes_capacity)q->phonemes[0]=0;
     struct provider_worker *worker=owner_worker&&owner_worker->language==q->language?owner_worker:NULL;

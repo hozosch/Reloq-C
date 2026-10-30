@@ -55,6 +55,12 @@ struct reloq61_result { int unsupported, error; size_t frames, phonemes_length; 
 /* CP1252 input; synchronous and independent of the host audio device.
  * 0 success, 1 unsupported plan (discard all results), -1 failure. */
 int reloq61_generate(const struct reloq61_request *, struct reloq61_result *);
+/* Phoneme-only output in native callback chunks, including embedded NUL
+ * separators. The fixed output buffer is unused. A nonzero sink result
+ * aborts the request; no output is retained after the call. */
+typedef int (*reloq61_phoneme_sink)(void *,const char *,size_t);
+int reloq61_generate_phonemes(const struct reloq61_request *,struct reloq61_result *,
+    reloq61_phoneme_sink,void *);
 /* Optional owner-scoped worker state; no speech-result reuse. The ECI owner serializes requests,
  * restores the preceding scope after each utterance, and destroys the worker
  * after all callbacks and cancellation have joined. No process-global engine. */

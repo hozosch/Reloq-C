@@ -46,6 +46,8 @@ static int put(struct bytes *b,const unsigned char *p,size_t n)
     }
     memcpy(b->p+b->n,p,n);b->n+=n;b->p[b->n]=0;return 0;
 }
+static int append_phonemes(void *context,const char *data,size_t length)
+{return put(context,(const unsigned char *)data,length);}
 static int groups(const unsigned char *s,size_t n,struct group *g,size_t count)
 {
     struct reloq_german_annotation_cursor c={0};
@@ -231,9 +233,10 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
         memcpy(copy,annotation+begin,end-begin);copy[end-begin]=0;
         *out=copy;*written=end-begin;return 1;
     }
-    if(count>SIZE_MAX/sizeof(struct group))return -1;
-    struct group *old=calloc(count,sizeof *old),*native=calloc(count,sizeof *native);
-    struct bytes input={0},output={0};unsigned char *phonemes=NULL;int result=0;
+    if(count>SIZE_MAX/(2*sizeof(struct group)))return -1;
+    /* groups() initializes each admitted record before any field is read. */
+    struct group *old=malloc(2*count*sizeof *old),*native=old?old+count:NULL;
+    struct bytes input={0},output={0},spoken={0};unsigned char *phonemes=NULL;int result=0;
     struct reloq61_german_phrase *phrases=NULL;
     if(!old||!native){result=-1;goto done;}
     if(!groups(annotation,length,old,count))goto done;
@@ -303,13 +306,8 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
         if(put(&input,annotation+at,1))goto memory;
         ++at;
     }
-    size_t estimate=length>input.n?length:input.n;
-    if(estimate>(SIZE_MAX-4096)/32)goto memory;
-    size_t capacity=estimate*32+4096;
-    phonemes=malloc(capacity);if(!phonemes)goto memory;
     struct reloq61_request q={.language=0x40000,.annotations=1,.phonemes_only=1,
-        .voice={0,50,65,30,0,0,50,92},.text=(char *)input.p,
-        .phonemes=(char *)phonemes,.phonemes_capacity=capacity};
+        .voice={0,50,65,30,0,0,50,92},.text=(char *)input.p};
     struct reloq61_result r;
     if(prediction&&facts) {
         if(count>SIZE_MAX/sizeof *phrases)goto memory;
@@ -318,9 +316,12 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
     struct reloq61_german_capture capture={.words=facts,.capacity=count,
         .phrases=phrases,.phrase_capacity=prediction?count:0};
     struct reloq61_german_capture *previous=reloq61_german_capture_scope(facts?&capture:NULL);
-    int generated=reloq61_generate(&q,&r);
+    int generated=reloq61_generate_phonemes(&q,&r,append_phonemes,&spoken);
     reloq61_german_capture_scope(previous);
-    if(generated)goto done;
+    /* Native input is no longer needed while the final annotation grows. */
+    free(input.p);input=(struct bytes){0};
+    phonemes=spoken.p;
+    if(generated){if(r.error==1)goto memory;goto done;}
     if(facts&&(capture.overflow||capture.count!=count))memset(facts,0,count*sizeof *facts);
     if(cancelled&&cancelled(context)){result=2;goto done;}
     if(!groups(phonemes,r.phonemes_length,native,count))goto done;
@@ -431,7 +432,7 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
     memmove(output.p,output.p+leading,output.n-leading+1);output.n-=leading;
     *out=output.p;*written=output.n;output.p=NULL;result=1;goto done;
 memory:result=-1;
-done:free(phrases);free(old);free(native);free(input.p);free(output.p);free(phonemes);return result;
+done:free(phrases);free(old);free(input.p);free(output.p);free(spoken.p);return result;
 }
 
 int reloq_rules61_german_context(const struct reloq_german_prosody_unit *units,size_t count,

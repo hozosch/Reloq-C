@@ -385,6 +385,8 @@ static int append_observed(void *context,const char *body,int weak);
 /* Grammar normalization owns abbreviation spelling and its da option. */
 enum {NATIVE_TOKEN_ABBREVIATION=2};
 static int append_native_token(struct annotation_builder *,const unsigned char *,size_t,int);
+static int read_native_token(const unsigned char *,size_t,char [4096],size_t *);
+static int append_native_reading(struct annotation_builder *,const unsigned char *,size_t,char *,int);
 
 static int append_word_token(struct annotation_builder *b,
     const unsigned char *word,size_t length)
@@ -663,19 +665,32 @@ static int remember_compound_onsets(struct annotation_builder *b,
 static int append_native_compound(struct annotation_builder *b,
     const unsigned char *word,size_t length)
 {
-    unsigned char spr[4096];size_t n=0;
-    if(reloq_rules61_word(0x40000,word,length,spr,sizeof spr,&n)!=1)return 1;
+    char phonemes[4096];size_t phonemes_length=0;
+    if(read_native_token(word,length,phonemes,&phonemes_length))return 1;
+    char *first=strstr(phonemes,"`["),*close=first?strchr(first,']'):NULL;
+    if(!first||!close)return 1;
+    int multiple=strstr(close+1,"`[")!=NULL;
+    unsigned char spr[4096];size_t n=(size_t)(close+1-first);
+    memcpy(spr,first,n);spr[n]=0;
     /* Compare the constituent entries with this complete pronunciation.
      * An isolated native lookup can itself use the optional dictionary and
      * says nothing about whether the whole compound used that entry. */
     struct reloq_german_spr_cursor position={0};
-    int lexical=0,matched=1;
+    int lexical=0,matched=1,native_entries=1;
     if(b->lexicon)for(size_t at=0;at<length;) {
         size_t end=at;while(end<length&&word[end]!='-')++end;
         const struct reloq_lexicon_override *entry=NULL;
-        if(reloq_lexicon_find_override(b->lexicon,word+at,end-at,&entry)==1) {lexical=1;break;}
+        if(reloq_lexicon_find_override(b->lexicon,word+at,end-at,&entry)==1) {
+            lexical=1;
+            if(!reloq_lexicon_override_from_resolver(entry))native_entries=0;
+        }
         at=end+1;
     }
+    /* An initialism can occupy several native words, with its last letter
+     * joined to the following constituent. Carry that complete source token
+     * once: reconstructing NVDA plus a supplied A-Einstellungen duplicates A. */
+    if(multiple)return native_entries?
+        append_native_reading(b,word,length,phonemes,RELOQ_DE_SOURCE_NATIVE_TOKEN):1;
     /* The default native path needs no additional constituent analyses
      * when there is no lexical pronunciation to protect. */
     if(lexical) {
@@ -840,6 +855,29 @@ static int append_observed(void *context,const char *body,int weak)
 /* A connected spelling can normalize to several native words (place names,
  * choices, and units). Keep the complete written token and its group count
  * together so the sentence pass sees its original delimiter and context. */
+static int read_native_token(const unsigned char *source,size_t length,
+    char phonemes[4096],size_t *written)
+{
+    if(!length||length>=256)return 1;
+    char text[256];memcpy(text,source,length);text[length]=0;
+    struct reloq61_request q={.language=0x40000,.annotations=1,.phonemes_only=1,
+        .voice={0,50,65,30,0,0,50,92},.text=text,.phonemes=phonemes,
+        .phonemes_capacity=4096};
+    struct reloq61_result result;
+    if(reloq61_generate(&q,&result)||result.error||result.unsupported||
+        result.phonemes_length>=4096)return 1;
+    for(size_t i=0;i<result.phonemes_length;++i)if(!phonemes[i])phonemes[i]=' ';
+    phonemes[result.phonemes_length]=0;*written=result.phonemes_length;return 0;
+}
+static int append_native_reading(struct annotation_builder *b,
+    const unsigned char *source,size_t length,char *phonemes,int kind)
+{
+    char *first=strstr(phonemes,"`["),*last=strrchr(phonemes,']');
+    if(!first||!last||last<first+2)return 1;
+    for(char *p=phonemes;p<first;++p)if(append_literal(b,(unsigned char)*p))return -2;
+    *last=0;b->ctx_text=source;b->ctx_length=length;b->ctx_fixed=kind;
+    int status=append_observed(b,first+2,0);b->ctx_text=NULL;return status;
+}
 static int append_native_token(struct annotation_builder *b,
     const unsigned char *source,size_t length,int dictionary)
 {
@@ -847,17 +885,10 @@ static int append_native_token(struct annotation_builder *b,
     const struct reloq_lexicon_override *entry=NULL;
     if(!dictionary&&b->lexicon&&reloq_lexicon_find_override(b->lexicon,source,length,&entry)==1)
         return append_explicit_token(b,source,length,entry);
-    char text[256],phonemes[4096];memcpy(text,source,length);text[length]=0;
-    struct reloq61_request q={.language=0x40000,.annotations=1,.phonemes_only=1,
-        .voice={0,50,65,30,0,0,50,92},.text=text,.phonemes=phonemes,
-        .phonemes_capacity=sizeof phonemes};
-    struct reloq61_result result;
+    char phonemes[4096];size_t n=0;
     uint64_t hits=reloq61_dictionary_hits();
-    if(reloq61_generate(&q,&result)||result.error||result.unsupported||
-        result.phonemes_length>=sizeof phonemes)return 1;
+    if(read_native_token(source,length,phonemes,&n))return 1;
     if(dictionary==1&&reloq61_dictionary_hits()==hits)return 1;
-    for(size_t i=0;i<result.phonemes_length;++i)if(!phonemes[i])phonemes[i]=' ';
-    phonemes[result.phonemes_length]=0;
     /* Authored constituent corrections and caller pronunciations outrank
      * token normalization. Keep those tokens on the existing word path. */
     for(size_t at=0;!dictionary&&at<length;) {
@@ -878,12 +909,8 @@ static int append_native_token(struct annotation_builder *b,
         }
         at=end+1;
     }
-    char *first=strstr(phonemes,"`["),*last=strrchr(phonemes,']');
-    if(!first||!last||last<first+2)return 1;
-    for(char *p=phonemes;p<first;++p)if(append_literal(b,(unsigned char)*p))return -2;
-    *last=0;b->ctx_text=source;b->ctx_length=length;b->ctx_fixed=dictionary==1?RELOQ_DE_SOURCE_DICTIONARY:RELOQ_DE_SOURCE_NATIVE_TOKEN;
-    int status=append_observed(b,first+2,0);b->ctx_text=NULL;
-    return status;
+    return append_native_reading(b,source,length,phonemes,
+        dictionary==1?RELOQ_DE_SOURCE_DICTIONARY:RELOQ_DE_SOURCE_NATIVE_TOKEN);
 }
 
 #include "reloq_german_ordinal_context.inc"

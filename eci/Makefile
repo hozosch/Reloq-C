@@ -15,6 +15,7 @@ ANDROID_CFLAGS := $(CFLAGS) -fsigned-char -Wno-c2y-extensions
 # Keep component-test archives inexpensive; optimize the shipped provider
 # across translation units, including its many small C rule primitives.
 PROVIDER_OPT ?= -O3
+PROVIDER_RULE_OPT ?= -Os
 PROVIDER_LTO ?= -flto=4
 # Our objects enforce -Werror at compilation. Keep upstream LTO diagnostics
 # visible without turning its existing backtrack-flow warnings into errors.
@@ -36,11 +37,11 @@ RULES61_SOURCES += ../vendor/openevv61/src/reloq61_text_case.inc
 RULES61_SOURCES += ../vendor/openevv61/src/reloq61_dictionary.inc
 RULES61_SOURCES += ../vendor/openevv61/lang/kokr61/foreign_words_lexicon_kokr61.inc ../vendor/openevv61/lang/kokr61/foreign_units_kokr61.inc ../vendor/openevv61/lang/kokr61/foreign_expansions_kokr61.inc ../vendor/openevv61/lang/kokr61/foreign_vowels_kokr61.inc
 $(RULES61): $(RULES61_SOURCES)
-	$(MAKE) -C ../vendor/openevv61 -f Makefile.native BUILD=build/release OPT='$(PROVIDER_OPT) $(PROVIDER_LTO)' RULE_OPT='$(PROVIDER_OPT)'
+	$(MAKE) -C ../vendor/openevv61 -f Makefile.native BUILD=build/release OPT='$(PROVIDER_OPT) $(PROVIDER_LTO)' RULE_OPT='$(PROVIDER_RULE_OPT)'
 $(RULES61_WIN): $(RULES61_SOURCES)
-	$(MAKE) -C ../vendor/openevv61 -f Makefile.native BUILD=build/windows-release OPT='$(PROVIDER_OPT) $(PROVIDER_LTO)' RULE_OPT='$(PROVIDER_OPT)' PORT=win32 CC=$(WINDOWS_CC) AR=$(patsubst %gcc-posix,%gcc-ar-posix,$(patsubst %gcc,%gcc-ar,$(WINDOWS_CC)))
+	$(MAKE) -C ../vendor/openevv61 -f Makefile.native BUILD=build/windows-release OPT='$(PROVIDER_OPT) $(PROVIDER_LTO)' RULE_OPT='$(PROVIDER_RULE_OPT)' PORT=win32 CC=$(WINDOWS_CC) AR=$(patsubst %gcc-posix,%gcc-ar-posix,$(patsubst %gcc,%gcc-ar,$(WINDOWS_CC)))
 $(RULES61_ANDROID): $(RULES61_SOURCES)
-	$(MAKE) -C ../vendor/openevv61 -f Makefile.native BUILD=build/android-arm64 OPT='-O2 -fsigned-char' RULE_OPT=-O2 PORT=posix CC=$(ANDROID_CC) AR=$(ANDROID_AR)
+	$(MAKE) -C ../vendor/openevv61 -f Makefile.native BUILD=build/android-arm64 OPT='-O2 -fsigned-char' RULE_OPT='$(PROVIDER_RULE_OPT)' PORT=posix CC=$(ANDROID_CC) AR=$(ANDROID_AR)
 libreloq_eci.so test_reloq_eci: $(RULES61)
 eci.dll: $(RULES61_WIN)
 libreloq_eci.so test_reloq_eci eci.dll: Makefile

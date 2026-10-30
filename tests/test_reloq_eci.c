@@ -129,6 +129,57 @@ static size_t accent_signature(const unsigned char *text,size_t length,unsigned 
     }
     return words;
 }
+struct phoneme_output {char *data;size_t length,capacity,calls;};
+static int collect_phonemes(void *context,const char *data,size_t length)
+{
+    struct phoneme_output *out=context;
+    if(length>SIZE_MAX-out->length-1)return -1;
+    size_t need=out->length+length+1;
+    if(need>out->capacity) {
+        size_t capacity=out->capacity?out->capacity:256;
+        while(capacity<need){if(capacity>SIZE_MAX/2)return -1;capacity*=2;}
+        void *next=realloc(out->data,capacity);if(!next)return -1;
+        out->data=next;out->capacity=capacity;
+    }
+    memcpy(out->data+out->length,data,length);out->length+=length;
+    out->data[out->length]=0;++out->calls;return 0;
+}
+static int reject_phonemes(void *context,const char *data,size_t length)
+{(void)context;(void)data;(void)length;return 1;}
+static int native_phoneme_stream(void)
+{
+    static const int languages[]={0x40000,0x10000,0x10001,0x20000,0x20001,
+        0x30000,0x30001,0x50000,0x70000,0x90000,0x60000,0x80000,0xa0000,0x120000};
+    char *fixed=malloc(1048576);CHECK(fixed);
+    for(size_t i=0;i<sizeof languages/sizeof *languages;++i) {
+        struct reloq61_request q={.language=languages[i],.annotations=1,.phonemes_only=1,
+            .voice={0,50,65,30,0,0,50,92},.text="NVDA 504. test, 2 abc?",
+            .phonemes=fixed,.phonemes_capacity=1048576};
+        struct reloq61_result old,result;CHECK(!reloq61_generate(&q,&old));
+        struct phoneme_output out={0};char untouched[8]="keep";
+        q.phonemes=untouched;q.phonemes_capacity=sizeof untouched;
+        CHECK(!reloq61_generate_phonemes(&q,&result,collect_phonemes,&out));
+        CHECK(!strcmp(untouched,"keep")&&out.calls&&result.phonemes_length==old.phonemes_length);
+        CHECK(out.length==old.phonemes_length&&!memcmp(out.data,fixed,out.length));
+        free(out.data);
+        CHECK(reloq61_generate_phonemes(&q,&result,reject_phonemes,NULL)==-1&&result.error==1);
+        q.phonemes=fixed;q.phonemes_capacity=1048576;
+        CHECK(!reloq61_generate(&q,&result)&&result.phonemes_length==old.phonemes_length);
+    }
+    char long_text[10241];
+    for(size_t i=0;i<2048;++i)memcpy(long_text+5*i,"Wort ",5);
+    long_text[10240]=0;
+    struct reloq61_request q={.language=0x40000,.annotations=1,.phonemes_only=1,
+        .voice={0,50,65,30,0,0,50,92},.text=long_text,
+        .phonemes=fixed,.phonemes_capacity=1048576};
+    struct reloq61_result old,result;CHECK(!reloq61_generate(&q,&old));
+    struct phoneme_output out={0};
+    CHECK(!reloq61_generate_phonemes(&q,&result,collect_phonemes,&out));
+    CHECK(out.calls>1&&out.length==old.phonemes_length&&!memcmp(out.data,fixed,out.length));
+    CHECK(out.capacity<strlen(long_text)*4);
+    free(out.data);free(fixed);return 0;
+}
+
 static int native_german_analysis(void)
 {
     static const char *const texts[]={
@@ -144,7 +195,12 @@ static int native_german_analysis(void)
         "Das ist u. s. w. gut.","Das ist d. h. gut.","Das ist z. Z. gut.",
         "Das ist z. B. gut.","Das ist d.h. gut.","Das ist usw. gut.",
         "Das ist 2 km gut.","Das ist 2 kg gut.","Das ist 2 min gut.",
-        "Das ist Dr. Meier.","Das ist Prof. Meier.","Das ist Nr. 2."
+        "Das ist Dr. Meier.","Das ist Prof. Meier.","Das ist Nr. 2.",
+        "NVDA-Einstellungen: Sprachausgabe (Standard-Konfiguration)",
+        "NVDA-Einstellungen: Sprachausgabe", "Sprachausgabe (Standard-Konfiguration)",
+        "USB-Einstellungen: Sprachausgabe (Standard-Konfiguration)",
+        "MIDI-Ausgabe: Sprachausgabe (Standard-Konfiguration)",
+        "PDF-Vorschau: Sprachausgabe (Standard-Konfiguration)"
     };
     for(int dictionary=0;dictionary<2;++dictionary)for(int prediction=0;prediction<2;++prediction)
         for(size_t i=0;i<sizeof texts/sizeof *texts;++i) {
@@ -167,6 +223,8 @@ static int native_german_analysis(void)
                 free(own);return __LINE__;
             }
             if(i==0)CHECK(strstr((char *)own,"`[.1fi.0rUnt.2TvAn.0TIX]"));
+            if(strstr(texts[i],"Sprachausgabe"))
+                CHECK(strstr((char *)own,"`[.1Sprax.2'aw's.2ga.0b@]"));
             free(own);
         }
     static const struct {const char *word,*spr;} compounds[]={
@@ -210,9 +268,10 @@ int main(void)
 {
     int prediction=phrase_prediction_frontend();if(prediction)return prediction;
     int native=native_german_analysis();if(native)return native;
+    int stream=native_phoneme_stream();if(stream)return stream;
     char version[20] = {0};
     eciVersion(version);
-    CHECK(!strcmp(version, "0.2.194.0"));
+    CHECK(!strcmp(version, "0.2.195.0"));
     int languages = 0;
     CHECK(eciGetAvailableLanguages(NULL, &languages) == 0 &&
           languages == 0);

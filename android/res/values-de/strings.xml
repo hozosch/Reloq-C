@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="preview_help">Offline-Sprachausgabe zum Testen, Version 0.2.194. Wähle eine Sprache und Stimme für die Sprachprobe oder ReLoq C Preview in den Android-Einstellungen zur Text-in-Sprache-Ausgabe.</string>
+    <string name="preview_help">Offline-Sprachausgabe zum Testen, Version 0.2.195. Wähle eine Sprache und Stimme für die Sprachprobe oder ReLoq C Preview in den Android-Einstellungen zur Text-in-Sprache-Ausgabe.</string>
     <string name="language">Sprache</string>
     <string name="profile">Stimme</string>
     <string name="sample_rate">Abtastrate</string>
