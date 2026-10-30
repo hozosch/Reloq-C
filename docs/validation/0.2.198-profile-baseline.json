@@ -1,0 +1,2191 @@
+{
+  "method": "Linux x86-64 SIGPROF leaf-PC sampling mapped with ELF symbols and dladdr; requested 1-ms interval, actual timer resolution is kernel dependent; 400 warmed ECI passages at 48 kHz per language. This diagnostic sampler is not included in installable packages.",
+  "baseline_version": "0.2.197",
+  "baseline_sha256": "c7ab557d619061c1b1b1276ea49a55ff9cf2c64263f3de5af2a99c1bc771be10",
+  "no_audio_files": true,
+  "measurements": [
+    {
+      "language": "0x40000",
+      "rate": 48000,
+      "iterations": 400,
+      "cpu_seconds": 9.548947468,
+      "samples": 2382,
+      "functions": [
+        {
+          "function": "reloq_rate_transfer_process",
+          "samples": 547,
+          "percent": 22.963895885810242
+        },
+        {
+          "function": "causal_kernel",
+          "samples": 395,
+          "percent": 16.582703610411418
+        },
+        {
+          "function": "fit_tract",
+          "samples": 240,
+          "percent": 10.075566750629722
+        },
+        {
+          "function": "inverse_half",
+          "samples": 219,
+          "percent": 9.193954659949622
+        },
+        {
+          "function": "reloq_core_resonator_process",
+          "samples": 154,
+          "percent": 6.465155331654072
+        },
+        {
+          "function": "reloq_rate_transfer_process_voice",
+          "samples": 85,
+          "percent": 3.568429890848027
+        },
+        {
+          "function": "libm.so.6:?",
+          "samples": 69,
+          "percent": 2.8967254408060454
+        },
+        {
+          "function": "real_transform",
+          "samples": 57,
+          "percent": 2.392947103274559
+        },
+        {
+          "function": "reloq_noise_profile_process",
+          "samples": 33,
+          "percent": 1.385390428211587
+        },
+        {
+          "function": "python3:?",
+          "samples": 33,
+          "percent": 1.385390428211587
+        },
+        {
+          "function": "reloq_curve_pipeline_render_models",
+          "samples": 30,
+          "percent": 1.2594458438287153
+        },
+        {
+          "function": "reloq_rate_transfer_process_aspiration",
+          "samples": 21,
+          "percent": 0.8816120906801007
+        },
+        {
+          "function": "libm.so.6:logf64",
+          "samples": 21,
+          "percent": 0.8816120906801007
+        },
+        {
+          "function": "output_pcm",
+          "samples": 20,
+          "percent": 0.8396305625524769
+        },
+        {
+          "function": "reloq_core_aspiration_mix",
+          "samples": 19,
+          "percent": 0.797649034424853
+        },
+        {
+          "function": "reloq_core_serial_frame_begin",
+          "samples": 17,
+          "percent": 0.7136859781696053
+        },
+        {
+          "function": "reloq_frame_adapter_map",
+          "samples": 17,
+          "percent": 0.7136859781696053
+        },
+        {
+          "function": "bank_power",
+          "samples": 16,
+          "percent": 0.6717044500419815
+        },
+        {
+          "function": "reloq_core_voiced_frame_render_owned",
+          "samples": 15,
+          "percent": 0.6297229219143576
+        },
+        {
+          "function": "fit_noise_mix",
+          "samples": 14,
+          "percent": 0.5877413937867338
+        },
+        {
+          "function": "reloq_core_serial_frame_end",
+          "samples": 11,
+          "percent": 0.4617968094038623
+        },
+        {
+          "function": "reloq_core_frication_fill_with_mask",
+          "samples": 10,
+          "percent": 0.41981528127623846
+        },
+        {
+          "function": "reloq_acoustic_value",
+          "samples": 10,
+          "percent": 0.41981528127623846
+        },
+        {
+          "function": "reloq_core_scale_output",
+          "samples": 10,
+          "percent": 0.41981528127623846
+        },
+        {
+          "function": "prepare_ramp",
+          "samples": 8,
+          "percent": 0.33585222502099077
+        },
+        {
+          "function": "reloq_core_frication_bank_configure",
+          "samples": 8,
+          "percent": 0.33585222502099077
+        },
+        {
+          "function": "python3:_PyEval_EvalFrameDefault",
+          "samples": 8,
+          "percent": 0.33585222502099077
+        },
+        {
+          "function": "libc.so.6:?",
+          "samples": 8,
+          "percent": 0.33585222502099077
+        },
+        {
+          "function": "vback",
+          "samples": 7,
+          "percent": 0.2938706968933669
+        },
+        {
+          "function": "testFldeq",
+          "samples": 6,
+          "percent": 0.2518891687657431
+        },
+        {
+          "function": "test_string_s",
+          "samples": 6,
+          "percent": 0.2518891687657431
+        },
+        {
+          "function": "reloq_core_pcm16_from_i64",
+          "samples": 6,
+          "percent": 0.2518891687657431
+        },
+        {
+          "function": "ld-linux-x86-64.so.2:__tls_get_addr",
+          "samples": 6,
+          "percent": 0.2518891687657431
+        },
+        {
+          "function": "reloq_target_stage_router_append_at",
+          "samples": 5,
+          "percent": 0.20990764063811923
+        },
+        {
+          "function": "libm.so.6:exp",
+          "samples": 5,
+          "percent": 0.20990764063811923
+        },
+        {
+          "function": "libm.so.6:hypotf64",
+          "samples": 5,
+          "percent": 0.20990764063811923
+        },
+        {
+          "function": "model_append",
+          "samples": 5,
+          "percent": 0.20990764063811923
+        },
+        {
+          "function": "reloq_core_resonator_set_coefficients",
+          "samples": 5,
+          "percent": 0.20990764063811923
+        },
+        {
+          "function": "vpush_var.isra.0",
+          "samples": 5,
+          "percent": 0.20990764063811923
+        },
+        {
+          "function": "generic_plan",
+          "samples": 4,
+          "percent": 0.16792611251049538
+        },
+        {
+          "function": "evv_ref_checked",
+          "samples": 4,
+          "percent": 0.16792611251049538
+        },
+        {
+          "function": "reloq_rate_transfer_prepare_noise_mix_profile",
+          "samples": 4,
+          "percent": 0.16792611251049538
+        },
+        {
+          "function": "vretproc",
+          "samples": 4,
+          "percent": 0.16792611251049538
+        },
+        {
+          "function": "evv_at.lto_priv.99.lto_priv.0",
+          "samples": 4,
+          "percent": 0.16792611251049538
+        },
+        {
+          "function": "reloq_noise_profile_prepare",
+          "samples": 4,
+          "percent": 0.16792611251049538
+        },
+        {
+          "function": "setdlookup",
+          "samples": 3,
+          "percent": 0.12594458438287154
+        },
+        {
+          "function": "reloq_session_render_frames",
+          "samples": 3,
+          "percent": 0.12594458438287154
+        },
+        {
+          "function": "reloq_core_frication_envelope_begin",
+          "samples": 3,
+          "percent": 0.12594458438287154
+        },
+        {
+          "function": "reloq_german_generic_index_stream_pcm",
+          "samples": 3,
+          "percent": 0.12594458438287154
+        },
+        {
+          "function": "reloq_core_frication_bank_mix",
+          "samples": 3,
+          "percent": 0.12594458438287154
+        },
+        {
+          "function": "reloq_german_spr_next",
+          "samples": 3,
+          "percent": 0.12594458438287154
+        },
+        {
+          "function": "reloq_core_voiced_fill_with_mask",
+          "samples": 3,
+          "percent": 0.12594458438287154
+        },
+        {
+          "function": "baseline0197.so:?",
+          "samples": 3,
+          "percent": 0.12594458438287154
+        },
+        {
+          "function": "source_point_order",
+          "samples": 3,
+          "percent": 0.12594458438287154
+        },
+        {
+          "function": "clearDeltaStackBack",
+          "samples": 3,
+          "percent": 0.12594458438287154
+        },
+        {
+          "function": "emit_selected",
+          "samples": 3,
+          "percent": 0.12594458438287154
+        },
+        {
+          "function": "savescptr",
+          "samples": 3,
+          "percent": 0.12594458438287154
+        },
+        {
+          "function": "scan_fenced.lto_priv.0",
+          "samples": 3,
+          "percent": 0.12594458438287154
+        },
+        {
+          "function": "noise_power",
+          "samples": 3,
+          "percent": 0.12594458438287154
+        },
+        {
+          "function": "ventproc",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "emit_nasal_tract",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "savetok",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "reloq_german_stop_phase_plan",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "evv_land_place",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "vscanadvOverToken.constprop.0",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "ral_bind",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "starttest",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "reloq_german_voice_model_target",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "libm.so.6:fmaxf32x",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "reloq_dede61_make_ger_phon_adjustments",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "reloq_dede61_compound_stress_adjustment",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "reloq_dede61_strip_stressed_particle",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "reloq_core_voiced_bank_process",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "reloq_core_voiced_begin_modulated_frame",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "scale_tick",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "reloq_dede61_gettok",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "reloq_dede61_SPR_anno",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "send_batched_pcm",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "arena_free.part.0",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "reloq_core_frication_envelope_end.part.0",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "push_ptr_init",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "libc.so.6:__pthread_mutex_unlock",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "reloq_german_onset_cluster_plan",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "reloq_core_voiced_end_modulated_frame",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "delta_lang_now.lto_priv.99.lto_priv.0",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "setscan_r",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "reloq_acoustic_begin",
+          "samples": 2,
+          "percent": 0.08396305625524769
+        },
+        {
+          "function": "reloq_dede61_assign_default_compound_stress",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "advanc",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_destress_zwanziger_words",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq61_input_space",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "runThroughFilters",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_german_number_word",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "allocDeltaHeapObject",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "actd_lookup",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_letter_sequence",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "backtrack_function",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "initStreamArray",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "ini_stringSearch",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "bspush_boa",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq61_typed_inline61_loffset",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "libc.so.6:malloc",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "freeDeltaHeapObject.isra.0",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "get_parm",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "vmark",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_german_morphology_repair_stem",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "bypass_sample",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_copy_stress_to_phones",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "fm_getAvailableFilters",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_german_stop_vowel_boundary",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "vassign",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "vf_puts",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_ger_compound_abbr",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_reset_sent_vars",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_apply_ger_s_rules",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "testeq",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "inline61_lflags",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "evv_frame_push",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_user_rootdict",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_print_between_word_chars",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "libc.so.6:__libc_free",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "read_tvar",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_separate_tokens",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "actdlookup",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "configure",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "synthesize_generic",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "es_engsynProcessRemaining",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_target_builder_begin",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_abbreviation",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_ger_roots",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "bspush_ca",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "dede61_set_dict_new",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_phr_final_anno",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "vrange_2pt",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "python3:_PyTime_GetMonotonicClock",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_one_ger_syllable",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_ger_funct_words",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "build_sequence",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_skip_punct_and_delimiters",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "python3:_PyObject_GetMethod",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "emit_source_point",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_generate_ger_diaphons",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "run_addText",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "scan",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "project_rl.isra.0",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "groups",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "python3:PyObject_GenericGetAttr",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "source",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_apply_ger_n_rules",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_is_number",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq61_typed_lpta_ctxtl",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_german_voice_model_frame",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "libm.so.6:cabsf64",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_german_nucleus_schedule_build_with_features",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_destress_determiners",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_core_resonator_set_from_hz",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "ini_getString",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_german_affricate_context_ticks",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "fence",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_compound_con_cluster",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "vins_tok",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "select_stop_phase",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "vinitloc_new.constprop.0",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_unicode_compose",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "python3:_PyObject_LookupSpecial",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "test_ptr",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_german_nasal_tract_plan",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "print_var",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_german_nucleus_acoustics_plan",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "eciSynthesize",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "python3:PyUnicode_AsUTF8AndSize",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_process_annotation",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_german_stop_word_edge.part.0",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "vins_sync",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "fdeldel.isra.0",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "insert_l",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "advance_tok",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_german_punctuation_read",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_german_annotation_next",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_strip_foreign_prefix",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "initGlobalVars",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_text_index",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "due",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "libc.so.6:pthread_mutex_lock",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_initial_compound_word",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq61_text_lowercase.lto_priv.1",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "libm.so.6:lroundf32x",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_german_generic_nasal_coda_plan",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_dede61_destress_pro2",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq61_typed_startloop",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        },
+        {
+          "function": "reloq_german_generic_melody_append_controls",
+          "samples": 1,
+          "percent": 0.041981528127623846
+        }
+      ]
+    },
+    {
+      "language": "0x10000",
+      "rate": 48000,
+      "iterations": 400,
+      "cpu_seconds": 11.470729582999999,
+      "samples": 2867,
+      "functions": [
+        {
+          "function": "reloq_rate_transfer_process",
+          "samples": 522,
+          "percent": 18.207185211021976
+        },
+        {
+          "function": "causal_kernel",
+          "samples": 484,
+          "percent": 16.881757935123822
+        },
+        {
+          "function": "fit_tract",
+          "samples": 303,
+          "percent": 10.568538542029996
+        },
+        {
+          "function": "inverse_half",
+          "samples": 281,
+          "percent": 9.801185908615277
+        },
+        {
+          "function": "reloq_core_resonator_process",
+          "samples": 160,
+          "percent": 5.580746424834322
+        },
+        {
+          "function": "real_transform",
+          "samples": 98,
+          "percent": 3.418207185211022
+        },
+        {
+          "function": "libm.so.6:?",
+          "samples": 72,
+          "percent": 2.511335891175445
+        },
+        {
+          "function": "fit_noise_mix",
+          "samples": 65,
+          "percent": 2.2671782350889433
+        },
+        {
+          "function": "reloq_rate_transfer_process_voice",
+          "samples": 59,
+          "percent": 2.057900244157656
+        },
+        {
+          "function": "bank_power",
+          "samples": 54,
+          "percent": 1.8835019183815835
+        },
+        {
+          "function": "libm.so.6:logf64",
+          "samples": 38,
+          "percent": 1.3254272758981513
+        },
+        {
+          "function": "reloq_noise_profile_process",
+          "samples": 35,
+          "percent": 1.2207882804325079
+        },
+        {
+          "function": "python3:?",
+          "samples": 25,
+          "percent": 0.8719916288803627
+        },
+        {
+          "function": "output_pcm",
+          "samples": 21,
+          "percent": 0.7324729682595047
+        },
+        {
+          "function": "libm.so.6:lroundf32x",
+          "samples": 21,
+          "percent": 0.7324729682595047
+        },
+        {
+          "function": "reloq_core_serial_frame_end",
+          "samples": 18,
+          "percent": 0.6278339727938612
+        },
+        {
+          "function": "vback",
+          "samples": 18,
+          "percent": 0.6278339727938612
+        },
+        {
+          "function": "reloq_core_voiced_frame_render_owned",
+          "samples": 18,
+          "percent": 0.6278339727938612
+        },
+        {
+          "function": "reloq_core_aspiration_mix",
+          "samples": 18,
+          "percent": 0.6278339727938612
+        },
+        {
+          "function": "libc.so.6:?",
+          "samples": 16,
+          "percent": 0.5580746424834322
+        },
+        {
+          "function": "libm.so.6:hypotf64",
+          "samples": 16,
+          "percent": 0.5580746424834322
+        },
+        {
+          "function": "reloq_rate_transfer_process_aspiration",
+          "samples": 16,
+          "percent": 0.5580746424834322
+        },
+        {
+          "function": "prepare_ramp",
+          "samples": 13,
+          "percent": 0.45343564701778866
+        },
+        {
+          "function": "reloq_frame_adapter_map",
+          "samples": 13,
+          "percent": 0.45343564701778866
+        },
+        {
+          "function": "render_until",
+          "samples": 13,
+          "percent": 0.45343564701778866
+        },
+        {
+          "function": "ld-linux-x86-64.so.2:__tls_get_addr",
+          "samples": 13,
+          "percent": 0.45343564701778866
+        },
+        {
+          "function": "rule_pcm",
+          "samples": 11,
+          "percent": 0.38367631670735963
+        },
+        {
+          "function": "libm.so.6:fminf32x",
+          "samples": 10,
+          "percent": 0.3487966515521451
+        },
+        {
+          "function": "baseline0197.so:?",
+          "samples": 10,
+          "percent": 0.3487966515521451
+        },
+        {
+          "function": "__divdc3",
+          "samples": 9,
+          "percent": 0.3139169863969306
+        },
+        {
+          "function": "python3:_PyEval_EvalFrameDefault",
+          "samples": 9,
+          "percent": 0.3139169863969306
+        },
+        {
+          "function": "evv_ref_checked",
+          "samples": 9,
+          "percent": 0.3139169863969306
+        },
+        {
+          "function": "reloq_core_serial_frame_begin",
+          "samples": 9,
+          "percent": 0.3139169863969306
+        },
+        {
+          "function": "reloq_core_frication_fill_with_mask",
+          "samples": 9,
+          "percent": 0.3139169863969306
+        },
+        {
+          "function": "setdlookup",
+          "samples": 9,
+          "percent": 0.3139169863969306
+        },
+        {
+          "function": "test_string_s",
+          "samples": 9,
+          "percent": 0.3139169863969306
+        },
+        {
+          "function": "reloq_core_frication_bank_configure",
+          "samples": 8,
+          "percent": 0.2790373212417161
+        },
+        {
+          "function": "libm.so.6:fmaxf32x",
+          "samples": 8,
+          "percent": 0.2790373212417161
+        },
+        {
+          "function": "vretproc",
+          "samples": 7,
+          "percent": 0.24415765608650156
+        },
+        {
+          "function": "get_parm",
+          "samples": 6,
+          "percent": 0.20927799093128707
+        },
+        {
+          "function": "evv_at.lto_priv.99.lto_priv.0",
+          "samples": 6,
+          "percent": 0.20927799093128707
+        },
+        {
+          "function": "evv_land_release",
+          "samples": 6,
+          "percent": 0.20927799093128707
+        },
+        {
+          "function": "fence",
+          "samples": 6,
+          "percent": 0.20927799093128707
+        },
+        {
+          "function": "noise_response",
+          "samples": 6,
+          "percent": 0.20927799093128707
+        },
+        {
+          "function": "reloq_session_render_frames",
+          "samples": 6,
+          "percent": 0.20927799093128707
+        },
+        {
+          "function": "starttest",
+          "samples": 6,
+          "percent": 0.20927799093128707
+        },
+        {
+          "function": "reloq_core_scale_output",
+          "samples": 6,
+          "percent": 0.20927799093128707
+        },
+        {
+          "function": "test_ptr",
+          "samples": 5,
+          "percent": 0.17439832577607256
+        },
+        {
+          "function": "reloq_core_voiced_fill_with_mask",
+          "samples": 5,
+          "percent": 0.17439832577607256
+        },
+        {
+          "function": "vscanadv.constprop.0",
+          "samples": 5,
+          "percent": 0.17439832577607256
+        },
+        {
+          "function": "reloq_core_frication_bank_mix",
+          "samples": 5,
+          "percent": 0.17439832577607256
+        },
+        {
+          "function": "vscanadv.constprop.1",
+          "samples": 5,
+          "percent": 0.17439832577607256
+        },
+        {
+          "function": "testFldeq",
+          "samples": 5,
+          "percent": 0.17439832577607256
+        },
+        {
+          "function": "libm.so.6:exp",
+          "samples": 4,
+          "percent": 0.13951866062085805
+        },
+        {
+          "function": "vpush_var.isra.0",
+          "samples": 4,
+          "percent": 0.13951866062085805
+        },
+        {
+          "function": "vscanadvOverToken.constprop.0",
+          "samples": 4,
+          "percent": 0.13951866062085805
+        },
+        {
+          "function": "bspush_ca_scan",
+          "samples": 4,
+          "percent": 0.13951866062085805
+        },
+        {
+          "function": "evv_land_place",
+          "samples": 4,
+          "percent": 0.13951866062085805
+        },
+        {
+          "function": "clearDeltaStackBack",
+          "samples": 4,
+          "percent": 0.13951866062085805
+        },
+        {
+          "function": "vinitloc_new.constprop.0",
+          "samples": 3,
+          "percent": 0.10463899546564354
+        },
+        {
+          "function": "savescptr",
+          "samples": 3,
+          "percent": 0.10463899546564354
+        },
+        {
+          "function": "reloq_enus61_get_eng_son_trans_dur",
+          "samples": 3,
+          "percent": 0.10463899546564354
+        },
+        {
+          "function": "lpta_mover",
+          "samples": 3,
+          "percent": 0.10463899546564354
+        },
+        {
+          "function": "valueSetValue",
+          "samples": 3,
+          "percent": 0.10463899546564354
+        },
+        {
+          "function": "reloq_core_voiced_begin_modulated_frame",
+          "samples": 3,
+          "percent": 0.10463899546564354
+        },
+        {
+          "function": "reloq_core_pcm16_from_i64",
+          "samples": 3,
+          "percent": 0.10463899546564354
+        },
+        {
+          "function": "ventproc",
+          "samples": 3,
+          "percent": 0.10463899546564354
+        },
+        {
+          "function": "backtrack_function",
+          "samples": 3,
+          "percent": 0.10463899546564354
+        },
+        {
+          "function": "evv_frame_push",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_enus61_callInternalSynthesizer",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_rate_transfer_prepare_noise_mix_profile",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_core_voiced_schedule",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "evv_arena_alloc",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "move_i",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_enus61_assign_eng_syll_init_con",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_enus61_gettok",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_enus61_user_abbr_dict",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "insert_2ptv",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "fdeldel.isra.0",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_enus61_get_eng_vow_trans_dur",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_enus61_u_rules",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "dur2",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "vins_sync",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_enus61_do_son_amps",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_enus61_do_FTZ_FTP",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq61_typed_lpta_loadp",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_noise_profile_prepare",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "libm.so.6:cabsf64",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_enus61_nucleus_vals",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_enus61_i_rules",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_german_voice_model_frame",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_rate_transfer_prepare",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_core_aspiration_configure",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "bs2",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "forto_adv_upto_r",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "sendArrayParameters",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_enus61_handle_dem",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "delta_lang_now.lto_priv.99.lto_priv.0",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_enus61_get_indices",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_enus61_special_compounds",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "test_synch",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "scan_fenced.lto_priv.0",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_core_resonator_set_coefficients",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "vgetsc.part.0",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_enus61_break_into_eng_syllables",
+          "samples": 2,
+          "percent": 0.06975933031042902
+        },
+        {
+          "function": "reloq_enus61_merge_adjacent_spaces",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_eng_ret_Fv",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "python3:_PyCodec_Lookup",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_eng_phrase_level_rules",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "dur_expr",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_phrase_level_rules",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "npush_v",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_shift_tone",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_strip_pname_suffixes",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "addStreamArraySsValC",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_process_final_apostrophe",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_suffixes",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_single_letter",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "python3:_PyObject_GetMethod",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "delta_run_rule",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_two_stress_ending",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_eng_ph_n_dur",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq61_submit_interval",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_user_rootdict",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "enus61_link_delete",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq61_typed_testFldeq",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_phr_final_anno",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_forced_synthesis",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_insert_acoustic_vals",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_word_level_rules",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_insert_burst_dur",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_generate_acoustic_vals",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "libc.so.6:malloc",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_one_eng_syllable",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "vscanadvUptoTokenOrMarker.constprop.0.isra.0",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "ralRecMutexSemaphoreTest",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_eng_ph_m",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_assign_eng_stress",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq61_typed_rpta_loadpn",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_strip_inner_prefix",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "extract.constprop.0",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "deltaHeapCleanup",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq61_typed_forto_adv_upto_r",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "et_processManualQueue",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "read_tvar",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "send_pcm",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_final_one",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "copyvar",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_phone_based_rules",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_eng_ph_D_dur",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_copy_stress_to_phones",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_core_voiced_end_modulated_frame",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "vinitrun",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_eng_gramm_cat_dict",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq61_array_span",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq61_typed_test_string_s",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_is_proper_name",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "noise_power",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_find_eng_enclitic_to_left",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "python3:_PyObject_LookupAttr",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "vf_gets",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "libc.so.6:__pthread_getspecific",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "vassign",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_strip_clitics",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_core_frication_configure",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_do_release",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_assign_acoustic_vals",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_word_final_flap",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_eng_ph_z_dur",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_handle_short_verbs",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "mark_s",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "libc.so.6:pthread_mutex_lock",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "arrayStreamNextVal",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_eng_intd_Fv",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "ralStrIcmp",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq61_typed_ventproc",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq61_typed_backtrack_function",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_environment_anno",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "test_string_i",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_mark_noun_by_ending",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_process_annotation",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_disambiguate_functword",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "delta_call_2.constprop.0",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_noun_cmpnd2",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_core_frame_sample_count",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq61_typed_startloop",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_mark_function_word",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "tvq_pop",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "evv_land_mark",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_reduce_accent_for_selected_words",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "bspush_ca",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "stb_wordCallback",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "delta_call_25.constprop.0",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_mark_adverb_by_ending",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "tvq_push",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_email_address",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_adjust_eng_word_stress",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_set_klattparms",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_adjust_plur_poss_pronunc",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_core_voiced_bank_process",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_start_dur",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_except_stress2",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_normalize_letters",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_set_f0_range_ptrs",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_eng_alv_Fv",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_init_eng_symbolic_vars",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq61_segment_voicing",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_get_nuclear_accent",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "delta_new",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_eng_tok_dict",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "p_vfp0056",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "count_range",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_core_antiresonator_process",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "setscan_l",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "libm.so.6:fmaxf",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "ini_getString",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_filter_endpoint",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_realize_prenucl_tone",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq61_typed_lpta_loadpn",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_o_rules",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_PhonemeIndex",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_distribute_nucdur",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "callSynthesizeArray",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_GA_vals",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_apply_strong_alternation",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_core_frication_envelope_begin",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq61_append_acoustic_interval",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_analyze_morphs1",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "bypass_sample",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_core_resonator_set_from_hz",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "vtimept_tv",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "ins_tokens_run.constprop.0.isra.0",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_is_noun_from_context",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq61_segment_nasal_pole",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "ini_stringSearch",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "visleft",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_eng_high_tone",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_s_rules",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "allocDeltaHeapObject",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_letter_sequence",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "reloq_enus61_get_eng_stop_trans_dur",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        },
+        {
+          "function": "delta_call_4.constprop.0",
+          "samples": 1,
+          "percent": 0.03487966515521451
+        }
+      ]
+    }
+  ]
+}

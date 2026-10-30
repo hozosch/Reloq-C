@@ -17,3 +17,5 @@
 /eci/test_reloq_hash_delete
 
 /eci/test_reloq_eci
+
+/eci/test_reloq_rate_dispatch

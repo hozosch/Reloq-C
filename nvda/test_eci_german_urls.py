@@ -1,4 +1,4 @@
-"""German prose with intact URLs, native word boundaries and played indices.
+"""German prose with intact URLs/identifiers, native word boundaries and played indices.
 
 PCM is hashed in RAM. Native reference accent/group comparisons are in the
 C ECI tests; these checks exercise the public UTF-8/tag/fragment transport.
@@ -21,7 +21,10 @@ def capture(engine,parts):
     return size[0],digest.hexdigest(),indices
 
 def main():
-    cases=[HEISE,'Das ist https://example.org/Datei-42.html, bitte lesen.',
+    cases=['reloq-c-android-arm64-0.2.197-preview9.apk',
+           'Das ist reloq-c-android-arm64-0.2.197-preview9.apk und das ist gut.',
+           'SAPI5 berücksichtige ich bei der Vorbereitung des ersten Releases.',
+           'USB3-Gerät: Windows11 und OpenGL4.6.',HEISE,'Das ist https://example.org/Datei-42.html, bitte lesen.',
            'Bitte http://example.net/DNS-Dienst-Quad9-123abc.html lesen.',
            'Ein- und Ausgang: www.example.org/Text-503.htm, danach lesen.',
            'Unicode: https://example.org/α-42.html und https://example.org/ä-50.html.',
@@ -40,6 +43,6 @@ def main():
                         assert capture(engine,[text[:cut],text[cut:]])==expected,(rate,tags,cut,text)
                         checks+=1
     finally:engine.close()
-    print(f'German URLs: {checks} full-text/tag/rate/fragment/index checks passed; no audio files')
+    print(f'German URLs/identifiers: {checks} full-text/tag/rate/fragment/index checks passed; no audio files')
 
 if __name__=='__main__':main()

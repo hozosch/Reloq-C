@@ -1,0 +1,6967 @@
+{
+  "method": "Compare native build size, unchanged speech and exploratory CPU cost.\n\nPCM is hashed in separate processes. CPU timings alternate both libraries\nin one process after warming both engines; they are Linux host observations,\nnot a Windows/Android device latency guarantee.",
+  "no_audio_files": true,
+  "identical_pcm_cases": 196,
+  "builds": [
+    {
+      "version": "0.2.197.0",
+      "bytes": 55966256,
+      "speech": [
+        {
+          "language": "de_DE",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 15768,
+          "pcm_sha256": "27b19bcad4d335a6de29b2df224e14880c5130423cdf95a2ef58debee4323775",
+          "indices": [
+            [
+              7,
+              15768
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 15768,
+          "pcm_sha256": "87c75cc4efd4ea0a6a7bfca0505abbd32b3e263e980d24c082e1cdc7c03ec594",
+          "indices": [
+            [
+              7,
+              15768
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 21681,
+          "pcm_sha256": "256f033bee5eb6f50f2ad3a65dc022de5c0798c3ab47cd42173f70baa5dd07cd",
+          "indices": [
+            [
+              7,
+              21681
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 21681,
+          "pcm_sha256": "da31d9beba2942447649d2df35a29a0cdac40e4a72fc0500291c3ec53f9d38e5",
+          "indices": [
+            [
+              7,
+              21681
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 31536,
+          "pcm_sha256": "9fddf7334cb0ef1351a31caab66c1eaa5b0b63bd0f74f8d512d4030f13313d05",
+          "indices": [
+            [
+              7,
+              31536
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 31536,
+          "pcm_sha256": "b9d2c431214a07bffb1c88a49b69ef88e9e75ddea3706720574d0ef5c36c0ee2",
+          "indices": [
+            [
+              7,
+              31536
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 43362,
+          "pcm_sha256": "eec32b12ab939923b5e1e4df777bb32c9c6b6e9934ce38cef4020d6593626a9d",
+          "indices": [
+            [
+              7,
+              43362
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 43362,
+          "pcm_sha256": "cb68bcf232ccdf32e2671c545891ba722e228303b0ba7b7e95e0e452a5cc8fe9",
+          "indices": [
+            [
+              7,
+              43362
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 63072,
+          "pcm_sha256": "ab8fab6d165e15e66744560cc0362826b1c9d99e408c69bdc0987e9345698859",
+          "indices": [
+            [
+              7,
+              63072
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 63072,
+          "pcm_sha256": "c98542f13a4f52b05dca82362069955e411986904c2c2114e9a1fce360142b7f",
+          "indices": [
+            [
+              7,
+              63072
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 86724,
+          "pcm_sha256": "5d2fab34cf338042a358f4442efeb2463bd7a5b5fce752209698470f6bb05ee4",
+          "indices": [
+            [
+              7,
+              86724
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 86724,
+          "pcm_sha256": "7408ddffcc13677af25bc09f0c0be1b3987cb827f1cf22ae54766474e01a8653",
+          "indices": [
+            [
+              7,
+              86724
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 94608,
+          "pcm_sha256": "f27d00efdd8e0a55c395d6baf0f906858d5e00a32725325f284e74835e55c40b",
+          "indices": [
+            [
+              7,
+              94608
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 94608,
+          "pcm_sha256": "4d4f8af9496cdb2904da25817d4ea54afc067e5b3c3d821c19e155397b1ab661",
+          "indices": [
+            [
+              7,
+              94608
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 12976,
+          "pcm_sha256": "15a25858dd3ddd44cdee6303ef618be9bcf1ab0c49dc01cec161b53fc6870a9d",
+          "indices": [
+            [
+              7,
+              12976
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 12976,
+          "pcm_sha256": "702fcbed7e08819af19c8d6e538f0bad6720c6a2d8d5b25ddd2bb0fa1cd0a5b5",
+          "indices": [
+            [
+              7,
+              12976
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 17842,
+          "pcm_sha256": "f80d00503de6d42973d9e16ca3bb46f46d3f7a3ade44fcec5d07b085344c3f38",
+          "indices": [
+            [
+              7,
+              17842
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 17842,
+          "pcm_sha256": "31518a3d4dcb123fa735df5782162d0884e9ae005f1e24326eba7e1a76de0c95",
+          "indices": [
+            [
+              7,
+              17842
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 25952,
+          "pcm_sha256": "3e33a3e945c2cd1645ae93346d5e6fbb572e23b1e4264f4b6a7874c8c1722762",
+          "indices": [
+            [
+              7,
+              25952
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 25952,
+          "pcm_sha256": "fa68f4f496e7faea1113b2968778c799ee9256635beec9c7fdac7a167e13e9ab",
+          "indices": [
+            [
+              7,
+              25952
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 35684,
+          "pcm_sha256": "c10afea248244ed5e953fee4efc964d9b56a1742fdce452443b4647345cd0ebd",
+          "indices": [
+            [
+              7,
+              35684
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 35684,
+          "pcm_sha256": "ea6af61f199bec363b459e40121c6ad02354c440e438d4711b977348855fe7e3",
+          "indices": [
+            [
+              7,
+              35684
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 51904,
+          "pcm_sha256": "e1d5b8a0961e898fc635bcff3f58ff1ce9ac050be290b8d3a7e4af433d3c8e2b",
+          "indices": [
+            [
+              7,
+              51904
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 51904,
+          "pcm_sha256": "7d01ae194363b28d47cd0f54f105c9ef7b333989015613172ab07b6be238f19b",
+          "indices": [
+            [
+              7,
+              51904
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 71368,
+          "pcm_sha256": "efb0ba2921a8261d4593a80d2b04f06de58e3590be4410dcd4301d9b68a96ca7",
+          "indices": [
+            [
+              7,
+              71368
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 71368,
+          "pcm_sha256": "257c8f9f05b30fd511763fc091bfb0ad9c7da29c1ced91a115b6dbc0f8d46b86",
+          "indices": [
+            [
+              7,
+              71368
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 77856,
+          "pcm_sha256": "7c44ce5ccadc344f84629b0578e81d35a7ed7500d1328a4a393e2261a779c37c",
+          "indices": [
+            [
+              7,
+              77856
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 77856,
+          "pcm_sha256": "e1087cf1286ac38b6c837d7bb8189ec7916b020ea18289312034f9bd362bd821",
+          "indices": [
+            [
+              7,
+              77856
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 13296,
+          "pcm_sha256": "2f3903df929dd19522d23d4af8bc1d3ce6dcfdb057b2b282a039a8dd0b6c582d",
+          "indices": [
+            [
+              7,
+              13296
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 13296,
+          "pcm_sha256": "13557a3134c308884e94038828e7a0e690726b26467c9fc6d67cf6c6d0592b93",
+          "indices": [
+            [
+              7,
+              13296
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 18282,
+          "pcm_sha256": "14ad85c99036f0c3e34c72b721ea83ae534cdb993f813b53090416ac2aa670c0",
+          "indices": [
+            [
+              7,
+              18282
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 18282,
+          "pcm_sha256": "c04d38c47b1a1610b253a1b39f5bc25a94ef85514cffc826668909dc5433d5e0",
+          "indices": [
+            [
+              7,
+              18282
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 26592,
+          "pcm_sha256": "853d924f3c6a30bdeb148d4292baacd7dcad19e970a57ad0dba78a5817717229",
+          "indices": [
+            [
+              7,
+              26592
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 26592,
+          "pcm_sha256": "4774dc96f4cfddf8766a62d2d5898c3982e6cedf80f1c48b4829657043366800",
+          "indices": [
+            [
+              7,
+              26592
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 36564,
+          "pcm_sha256": "9bbbbee8cd228a9dcbebe64b40478183b7febcd3842211f846ca635913ab08d2",
+          "indices": [
+            [
+              7,
+              36564
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 36564,
+          "pcm_sha256": "929778849ead59d73cccda8036917f0b61471297c76cb05bc069c6d4fd5426b7",
+          "indices": [
+            [
+              7,
+              36564
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 53184,
+          "pcm_sha256": "77bedb5b90d5ac1e3644271cf3febc9b3da19d8e2bd707a205d178947008ed77",
+          "indices": [
+            [
+              7,
+              53184
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 53184,
+          "pcm_sha256": "e019b3376b149fffb199b82df29246652b37b890816b3a27544e296db075591a",
+          "indices": [
+            [
+              7,
+              53184
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 73128,
+          "pcm_sha256": "00294305438e66e95b76ec28fe7f27f2d4a00300f786a30640b2e80d74587fd2",
+          "indices": [
+            [
+              7,
+              73128
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 73128,
+          "pcm_sha256": "ef27c97284102a4186b3078ea7dabb8a2c0ebff9842241db6e5ffec8010f4bd3",
+          "indices": [
+            [
+              7,
+              73128
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 79776,
+          "pcm_sha256": "774ce0cff74cf729067f13c75450cc9cb68b6436644c167e81f092c3df895032",
+          "indices": [
+            [
+              7,
+              79776
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 79776,
+          "pcm_sha256": "dd8b8f091c441ec3c5470e129879672a172bf652de1d2ca0c33f23334be66207",
+          "indices": [
+            [
+              7,
+              79776
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 9864,
+          "pcm_sha256": "c9cdd97e1d4eca3dfe6c59a1b3393758b8da29c37e468ffa9f8cad92d07eb9eb",
+          "indices": [
+            [
+              7,
+              9864
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 9864,
+          "pcm_sha256": "bd3225a3a4c2f3129f7e66dc44d69148538e57ecef2394e86fca38f57f5b7ea4",
+          "indices": [
+            [
+              7,
+              9864
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 13563,
+          "pcm_sha256": "8f74f37bc75fd3f746d554853329439adf540e2fd840947523b24aabcafa6ec2",
+          "indices": [
+            [
+              7,
+              13563
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 13563,
+          "pcm_sha256": "71c5a68f7547b0936586902e595921b603921ac8eccd6bbcbaa0f5d6a3863092",
+          "indices": [
+            [
+              7,
+              13563
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 19728,
+          "pcm_sha256": "a86a3c783e03aa1b4123af87d630f6d55f55d5ba494301ce439d457478fcae81",
+          "indices": [
+            [
+              7,
+              19728
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 19728,
+          "pcm_sha256": "0ca921012b91edc33f08cc9646b882dba7a1d717c4727df8dd9f078c686e0f76",
+          "indices": [
+            [
+              7,
+              19728
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 27126,
+          "pcm_sha256": "40966bcda6e8bc727ae6b19dc00b0b7acb928edf71eaa37d6feda952d9e2a0f3",
+          "indices": [
+            [
+              7,
+              27126
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 27126,
+          "pcm_sha256": "ccc1ec9d5844d4745a4b1c923a6c9eaf73936b058674ca572c7e7e5a28f8931d",
+          "indices": [
+            [
+              7,
+              27126
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 39456,
+          "pcm_sha256": "2e298e78effb6863d1495b38f108b4530547f68bc228473c66189e0a3f6c410c",
+          "indices": [
+            [
+              7,
+              39456
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 39456,
+          "pcm_sha256": "c08e2367af16342b245e109ee4be8fb9b53378681bc3b49dd4860a391c3f97c3",
+          "indices": [
+            [
+              7,
+              39456
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 54252,
+          "pcm_sha256": "55d920bae8a2e5ef765bf467435ac582edff6acd0a07596a81e5512e54fb036a",
+          "indices": [
+            [
+              7,
+              54252
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 54252,
+          "pcm_sha256": "216f61105fa9a3e0909106acab3d1ccc982279cb38c52e053670458885baa3f0",
+          "indices": [
+            [
+              7,
+              54252
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 59184,
+          "pcm_sha256": "0c8826cc5e9fdca1f2db4fa8f41aa3b012850e3cabb3f817c14f8cddb9378f61",
+          "indices": [
+            [
+              7,
+              59184
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 59184,
+          "pcm_sha256": "5de8154567b882001e9c765fe84bfe56e1cfe1212876fa44864e6e1746a6adc9",
+          "indices": [
+            [
+              7,
+              59184
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 9784,
+          "pcm_sha256": "9ac94aeba13eee0df3b071643df6c137e22bd542841c12f8f379b63e769916e7",
+          "indices": [
+            [
+              7,
+              9784
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 9784,
+          "pcm_sha256": "e6043b6225d015120e29d98d7aeb1af825cfba25f805cdcdc10474af50b525e2",
+          "indices": [
+            [
+              7,
+              9784
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 13453,
+          "pcm_sha256": "6375896813c38cc26bebe2b3ae0a258691d1eb65e18715d99f9de0517783f6cd",
+          "indices": [
+            [
+              7,
+              13453
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 13453,
+          "pcm_sha256": "536ff360488ba94b91c7f7b83ec775ba50512d4b33caea5fd570acea9c6596b9",
+          "indices": [
+            [
+              7,
+              13453
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 19568,
+          "pcm_sha256": "bc5dda32e2f5fa4050e3334f7262fc182e0654b8bb4b415967967f8ea1e44fe0",
+          "indices": [
+            [
+              7,
+              19568
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 19568,
+          "pcm_sha256": "d14768a2690e197539e6566d4c28cb8cfd650939db7caadc917ff803dfb43418",
+          "indices": [
+            [
+              7,
+              19568
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 26906,
+          "pcm_sha256": "7466105fd69128b0adfa2b8adcafbe66ba5905a22d0c04d49310b2e15021fa7f",
+          "indices": [
+            [
+              7,
+              26906
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 26906,
+          "pcm_sha256": "61e714f019ac0865a955ff69458908a8dbc808e02be16d307eeef8eec4fa56ae",
+          "indices": [
+            [
+              7,
+              26906
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 39136,
+          "pcm_sha256": "f52f3cc10c411a4f3d6e1f7dc3123a0818eae632544e9269c46006048ba01b3e",
+          "indices": [
+            [
+              7,
+              39136
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 39136,
+          "pcm_sha256": "9fde192d0db31fda0cf3da38609a999d4b91c5dc52dbbf862841b69d89317dd7",
+          "indices": [
+            [
+              7,
+              39136
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 53812,
+          "pcm_sha256": "3b7b67acdf9635847fcb37f84db099afa879693381f6a710b3faf0c89f212900",
+          "indices": [
+            [
+              7,
+              53812
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 53812,
+          "pcm_sha256": "ab400382f8358082c95859f03b71bacf64b0303d24f350d64399bb24976f4ceb",
+          "indices": [
+            [
+              7,
+              53812
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 58704,
+          "pcm_sha256": "c72fb9105728005393657d1c444a1fb7bd2f4f6d3cf52e6a458ef066b32d8c39",
+          "indices": [
+            [
+              7,
+              58704
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 58704,
+          "pcm_sha256": "d252d41bda2cb765690af786d26522071cfb4d97528bf9b9f31f032688c4e4a8",
+          "indices": [
+            [
+              7,
+              58704
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 9984,
+          "pcm_sha256": "861b2071a359ac4b6c2468fbbeae7e2296ff0781a4107c17f34907f6c3bea499",
+          "indices": [
+            [
+              7,
+              9984
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 9984,
+          "pcm_sha256": "75ae884ebc93ad7de5597265035df81ebada419bdb359fe525047f86099cd44d",
+          "indices": [
+            [
+              7,
+              9984
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 13728,
+          "pcm_sha256": "066a8dce090ca1363cda821f455088b6514de78ff374de30e554649b13fa6665",
+          "indices": [
+            [
+              7,
+              13728
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 13728,
+          "pcm_sha256": "fd83a9e46a7f694fa0797014f50acbe7ae075f82586e8a1b215d77b3947212a1",
+          "indices": [
+            [
+              7,
+              13728
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 19968,
+          "pcm_sha256": "b9f28272d37c3dc076aa1a026a9fe4144b2d2a609516f8804afa9495f9bfefe6",
+          "indices": [
+            [
+              7,
+              19968
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 19968,
+          "pcm_sha256": "061b7872efc44c85db0793239e57e2257e211c854060095a7dcef52342dad92a",
+          "indices": [
+            [
+              7,
+              19968
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 27456,
+          "pcm_sha256": "52fbfceddfaa9b018da3880cac5e4b7673c307260dd0ed809d82d6af260de60b",
+          "indices": [
+            [
+              7,
+              27456
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 27456,
+          "pcm_sha256": "c7d996b2349269f6a7eb6c4fde41d08bec199fc4c7ca2e87ebd53c819405cb85",
+          "indices": [
+            [
+              7,
+              27456
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 39936,
+          "pcm_sha256": "8b71e09f99054a6fceb9b599f2af8426efbcf9c8c0328054b08163cbfe2b2a0c",
+          "indices": [
+            [
+              7,
+              39936
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 39936,
+          "pcm_sha256": "a57e16df178865be89ffcd1a880e58878c00cf64c88dd34348d76af53228eef9",
+          "indices": [
+            [
+              7,
+              39936
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 54912,
+          "pcm_sha256": "4cb3a397107e4cdd67626bfb9f1500fff71fee7411eedb9fcfa57ed0a43e7180",
+          "indices": [
+            [
+              7,
+              54912
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 54912,
+          "pcm_sha256": "5e98e4547246f6d06638184718bedb4db3e27732d15710d7330094784379d58e",
+          "indices": [
+            [
+              7,
+              54912
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 59904,
+          "pcm_sha256": "7143d87f6f2f558fb96f5830741235ff644655b6103bd51b0ee022fcb46337fa",
+          "indices": [
+            [
+              7,
+              59904
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 59904,
+          "pcm_sha256": "fd77c33f0e69fd4cc18b6618cf5c09e885145d78c2cc8dba53962674727b5ab1",
+          "indices": [
+            [
+              7,
+              59904
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 10344,
+          "pcm_sha256": "a17a4caf46b5b2c7c97e1f0d1ab238e2d8f8ac9b85a97ff018f1bba60af39e3a",
+          "indices": [
+            [
+              7,
+              10344
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 10344,
+          "pcm_sha256": "fc1de4f5c5a08e1ffa21873b2d9429de622aaf754108ed171fe22aaf4e298492",
+          "indices": [
+            [
+              7,
+              10344
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 14223,
+          "pcm_sha256": "0ce0bd54c93ca6f210a15b299a0621a123686d703856e9678d4dc3bb11e90a17",
+          "indices": [
+            [
+              7,
+              14223
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 14223,
+          "pcm_sha256": "1b190b3523f3ba4e80afb49d5f5ab92c6e9e1dd6b146f0d622ebb6393b86783b",
+          "indices": [
+            [
+              7,
+              14223
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 20688,
+          "pcm_sha256": "f87d5a1a0cb64f7e18a6a1e1c60b50b42eb78b8a5fd1c83614bc786125620f9d",
+          "indices": [
+            [
+              7,
+              20688
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 20688,
+          "pcm_sha256": "537f5cb757e8ade129639b8dc723e82b6738c6c8f365a9099dc02363ed5a6eda",
+          "indices": [
+            [
+              7,
+              20688
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 28446,
+          "pcm_sha256": "937a9e4ecf64fa6c52bea6542fd54ade7e94e22db347ccfe48d9210b6ae90111",
+          "indices": [
+            [
+              7,
+              28446
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 28446,
+          "pcm_sha256": "a39d88013cbf8da82dfb915a7dc75085b4bddaf5c36314aeae9c07ca19933c97",
+          "indices": [
+            [
+              7,
+              28446
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 41376,
+          "pcm_sha256": "e3af2ff17bd63d9186835d60175f5e7fadb73f17b4c64c800b1aa344abcb37d8",
+          "indices": [
+            [
+              7,
+              41376
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 41376,
+          "pcm_sha256": "19ee0ba2c0a00e5fb054bbe9b4ad80673183295b1ed53d39887d352399942518",
+          "indices": [
+            [
+              7,
+              41376
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 56892,
+          "pcm_sha256": "a18eaede13c1a3fda6035e35807dd627740e959e3fd9b8a3919ffc382042e2c4",
+          "indices": [
+            [
+              7,
+              56892
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 56892,
+          "pcm_sha256": "3588a0c8ca139c8527256387b7c001fc49ae6f779d95c14e7de6f21a5d6a6f3b",
+          "indices": [
+            [
+              7,
+              56892
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 62064,
+          "pcm_sha256": "b4d0b602b53a5d5dfbbd48125480d51463caaac7d994a3688cc0c71dbc991d8e",
+          "indices": [
+            [
+              7,
+              62064
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 62064,
+          "pcm_sha256": "eebacf65abde982cb7dafe97a930b2370fdae51a6fdba61c0148c67a45a78b6d",
+          "indices": [
+            [
+              7,
+              62064
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 9328,
+          "pcm_sha256": "f90e5a137cc49fba89cd9e57fc61d0198c3c160352805d71c72f5bbe377dc7d6",
+          "indices": [
+            [
+              7,
+              9328
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 9328,
+          "pcm_sha256": "e3e56978bd158d9a782a1d7c8c7980fda57af3c62f461b7a4233564042fb4404",
+          "indices": [
+            [
+              7,
+              9328
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 12826,
+          "pcm_sha256": "7abc4f06e24da6885aa0853923fe033f3e65db0a03feedfa3824022be339f0fd",
+          "indices": [
+            [
+              7,
+              12826
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 12826,
+          "pcm_sha256": "b23b0efdff4468ef24795c370b52ab7e5612e8449db87fe455075fd46d890a30",
+          "indices": [
+            [
+              7,
+              12826
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 18656,
+          "pcm_sha256": "91efec421eb59ee732778e2273bc0328d1fdf7e9b351b0bcd8f8c6ef522781a7",
+          "indices": [
+            [
+              7,
+              18656
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 18656,
+          "pcm_sha256": "d0722cba6277edcd0da7eebdf0632691d928adc9b491392e75e8bcdaea68a25c",
+          "indices": [
+            [
+              7,
+              18656
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 25652,
+          "pcm_sha256": "6bb4385e0bff498f2a79e6ed8516c9534e9fdfdab1b2065dbcccc87e890a20e6",
+          "indices": [
+            [
+              7,
+              25652
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 25652,
+          "pcm_sha256": "2b8815ec970e02d5d1b325912d476eb65cc1067cf616fee5d32076cb7bf7e51b",
+          "indices": [
+            [
+              7,
+              25652
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 37312,
+          "pcm_sha256": "b2b5e1850530fc0d3d9d757672be14c8b021026c8f35aaefc02496e1310e8830",
+          "indices": [
+            [
+              7,
+              37312
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 37312,
+          "pcm_sha256": "09e18da6b41c0ffe80eefd2e6441da2f891224e389b0d1d9b4a0cd79d1a3aeaa",
+          "indices": [
+            [
+              7,
+              37312
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 51304,
+          "pcm_sha256": "ad4038ce4c5dad3a854d0227e1a1c75faf29b6ab7268624570a885c2a526528b",
+          "indices": [
+            [
+              7,
+              51304
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 51304,
+          "pcm_sha256": "907a35d11738bc15777d940a49c50b8373594dae755c6517cdefe4f2635a20a7",
+          "indices": [
+            [
+              7,
+              51304
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 55968,
+          "pcm_sha256": "2ef0571efa0e9e94807306d0069e8c8ee33f6a6b913f55a73bda8ec4849ad4e6",
+          "indices": [
+            [
+              7,
+              55968
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 55968,
+          "pcm_sha256": "6c4c1431ab0269a6de9cd5b3009090b7c3157fa219de2fea46c8b1dd87f10732",
+          "indices": [
+            [
+              7,
+              55968
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 12704,
+          "pcm_sha256": "e80e1361c982688da64876dd257a193db36f77dd910bb458100aab264f396679",
+          "indices": [
+            [
+              7,
+              12704
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 12704,
+          "pcm_sha256": "241b4afc5f1250ea5bf3610b9d719fbda9b3741c650902d6c124b52c0dca768f",
+          "indices": [
+            [
+              7,
+              12704
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 17468,
+          "pcm_sha256": "458744c2af51f6de481cfbcc7a90fa08277c246f530a56891e7e645a40925c8d",
+          "indices": [
+            [
+              7,
+              17468
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 17468,
+          "pcm_sha256": "e1a60b2b1f0aeaa0781586a6d64bdbf8284139489f365e39cc3baf52ba5e2bc8",
+          "indices": [
+            [
+              7,
+              17468
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 25408,
+          "pcm_sha256": "899c2374f67889e9bdedcf2f2bf82ad5554491785a286c4ba048844d4116f01d",
+          "indices": [
+            [
+              7,
+              25408
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 25408,
+          "pcm_sha256": "69b545442fd149849777a7677b74b34a5c89eda0c14971632a22a39d04d1b4a3",
+          "indices": [
+            [
+              7,
+              25408
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 34936,
+          "pcm_sha256": "551c49f1c2ebfaa0aebb7a49b3217497ae7d303bda1826d75c1dcb00be5269b8",
+          "indices": [
+            [
+              7,
+              34936
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 34936,
+          "pcm_sha256": "7980927726d7db858ed47e6d1954e9160e6a06d7467fdb6bb967f4f3a2ce628e",
+          "indices": [
+            [
+              7,
+              34936
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 50816,
+          "pcm_sha256": "55379e7e84f139a905603a2aaf62d6e60a9e0765c4d4fea9c04f9124942ac3b5",
+          "indices": [
+            [
+              7,
+              50816
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 50816,
+          "pcm_sha256": "aa722eeee1b221bd46e56243a2d8d2525206c2c1416560b71ba433d7763522a0",
+          "indices": [
+            [
+              7,
+              50816
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 69872,
+          "pcm_sha256": "59d375bfd23d52c21c686475790b3ab30ef5ad8e2944086ce433b12b4c3349b8",
+          "indices": [
+            [
+              7,
+              69872
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 69872,
+          "pcm_sha256": "e02854539032e431aab3201704889248387e08c591667c98ee2c96daa8a68eb3",
+          "indices": [
+            [
+              7,
+              69872
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 76224,
+          "pcm_sha256": "3c69d077db8cea1e893b1382e6679657ad13fbadd332e28f87d1a2991165e9bf",
+          "indices": [
+            [
+              7,
+              76224
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 76224,
+          "pcm_sha256": "2f10bd90947ada0835e2d2030c4f0302cc044c9e9f40fc2d5d6512b38d1c460a",
+          "indices": [
+            [
+              7,
+              76224
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 9848,
+          "pcm_sha256": "9b15acb848c82206a3312a05a93572ad6c14cc45319f27a71b64234a8b4d8266",
+          "indices": [
+            [
+              7,
+              9848
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 9848,
+          "pcm_sha256": "3de31f5dbbceedf366671ff12a64b98f5354ea21a44d425a0ca4864c3cdc1dff",
+          "indices": [
+            [
+              7,
+              9848
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 13541,
+          "pcm_sha256": "b82535e9295371c0a03f3553432e607f83a2d8084edab2335e1b16ad2ec81cf1",
+          "indices": [
+            [
+              7,
+              13541
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 13541,
+          "pcm_sha256": "63a0bf6e218f2afc69ddd8443bed4c4bb1913326a5223ae06405bb78f85fbc7a",
+          "indices": [
+            [
+              7,
+              13541
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 19696,
+          "pcm_sha256": "ad504c581843dcbf5ef089be3b69323129d2f4c4270965b45e5969fea43b9281",
+          "indices": [
+            [
+              7,
+              19696
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 19696,
+          "pcm_sha256": "6db91f80f4a6a1c85c1fdafbf1909739c908a15974454e323b550d95657ffd4f",
+          "indices": [
+            [
+              7,
+              19696
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 27082,
+          "pcm_sha256": "90f4eed79af3633bbc8614de0eb7ad9aa4062387ec6402178c006834898cce04",
+          "indices": [
+            [
+              7,
+              27082
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 27082,
+          "pcm_sha256": "8bfae1905322549797ef549ad3a79e3d591f2746c35d06769463be1e038f652a",
+          "indices": [
+            [
+              7,
+              27082
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 39392,
+          "pcm_sha256": "68803f824c6bcdef941b485c44cf93e11b624c3aa2dfc1d0dc51c5818095e5eb",
+          "indices": [
+            [
+              7,
+              39392
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 39392,
+          "pcm_sha256": "c9728dd5e153fa83261b9eae332d6a2b5481f8636d3ba135fc59872c527810a7",
+          "indices": [
+            [
+              7,
+              39392
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 54164,
+          "pcm_sha256": "07f33f24f16908527bd76bbd2abaf2aba369e05cfd46b41f85a3141f25f825c8",
+          "indices": [
+            [
+              7,
+              54164
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 54164,
+          "pcm_sha256": "ea11036d99a0486171b38b34202c11912637671ad7b6d67ac961e98e87cc679f",
+          "indices": [
+            [
+              7,
+              54164
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 59088,
+          "pcm_sha256": "001cacded56214364e922428dc5778195ac8c6b475827c329a048ef0fcf82b84",
+          "indices": [
+            [
+              7,
+              59088
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 59088,
+          "pcm_sha256": "c8f4cb42487152b3443005f228ce2877ad5c8d4128b128f33c857fd09b845948",
+          "indices": [
+            [
+              7,
+              59088
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 20312,
+          "pcm_sha256": "441941d95413b992c45b8645a893a99c6e346a8e6d7990439b6e6d1a49098436",
+          "indices": [
+            [
+              7,
+              20312
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 20272,
+          "pcm_sha256": "c793c180f049030bf3bd5cbd36fb9cc7a062b391f4d6337514e88c326154c585",
+          "indices": [
+            [
+              7,
+              20272
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 27929,
+          "pcm_sha256": "547bad8c53c8efc8c3d2f1c6ce2bef0b4b723032cf2e42ecb35ce1dc387c9f8b",
+          "indices": [
+            [
+              7,
+              27929
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 27874,
+          "pcm_sha256": "bad5f7b4ba4697bf801359bb278fc4db28560178fb8b41ff795adde613da4ce0",
+          "indices": [
+            [
+              7,
+              27874
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 40624,
+          "pcm_sha256": "3104433de68ab1871eedb82540d16fba05699056e5a7482e938f7300db683c62",
+          "indices": [
+            [
+              7,
+              40624
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 40544,
+          "pcm_sha256": "306bba86057096890a4a2f7e463f5a2d0a65619ddd3652e4d36d8e1e5765c506",
+          "indices": [
+            [
+              7,
+              40544
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 55858,
+          "pcm_sha256": "cd72fdd3237cfb2e0189752cffa60627957a3c8254fc34dd6175bb9d65b90e7b",
+          "indices": [
+            [
+              7,
+              55858
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 55748,
+          "pcm_sha256": "760cf41629153cd429dcf96353e25848bbfc641c3bc7ace01c2823dfd5c890d0",
+          "indices": [
+            [
+              7,
+              55748
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 81248,
+          "pcm_sha256": "3413adc159d7a4de017fcc4b8b688dcf1f59e8ee7ac0a4f2ab5969693eb25faa",
+          "indices": [
+            [
+              7,
+              81248
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 81088,
+          "pcm_sha256": "7bd5047e5e8a9a6396d9696880800cef4ba97c588d79825fffe7b99e842778b1",
+          "indices": [
+            [
+              7,
+              81088
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 111716,
+          "pcm_sha256": "dea64fc4b48997d2bd2bb321987f6cba7923556742a2e0c5d0ab721a40c884cb",
+          "indices": [
+            [
+              7,
+              111716
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 111496,
+          "pcm_sha256": "5ef8d36d594ed4298c324ec26d93b9fcca826a8cd2d6336c192f9f50966df18b",
+          "indices": [
+            [
+              7,
+              111496
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 121872,
+          "pcm_sha256": "323fad4782138b122bd859d90c5e2171c8311ea3e709b75ce571f62a8e410513",
+          "indices": [
+            [
+              7,
+              121872
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 121632,
+          "pcm_sha256": "1537f67ce87b790f487f3c6c75f6acda388ce7f52c1ab8ecb0948d2126a0441a",
+          "indices": [
+            [
+              7,
+              121632
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 13368,
+          "pcm_sha256": "3c3d23357bc12336314cfd2e35bde525f2221d8b667a94e59b8dbfca7261deab",
+          "indices": [
+            [
+              7,
+              13368
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 13368,
+          "pcm_sha256": "f3fd03e1191632f05451d9648dfa8b3281068bbc5e2902557dc28f6d1b9fedb1",
+          "indices": [
+            [
+              7,
+              13368
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 18381,
+          "pcm_sha256": "ec0926e59114bc335c44360b0eae538c1a800914b8f5af83860a23d66e56fb75",
+          "indices": [
+            [
+              7,
+              18381
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 18381,
+          "pcm_sha256": "d43451382b1f226bfa14bdbc1b91a12de9d99b8f3a7f00f0118fac306e13685e",
+          "indices": [
+            [
+              7,
+              18381
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 26736,
+          "pcm_sha256": "efab99eb2d6d409897766fd54fb6b33f5a221f65d38ca979c27baee106bbdfd7",
+          "indices": [
+            [
+              7,
+              26736
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 26736,
+          "pcm_sha256": "6b9dc5b08c0c5c56b19317f1e96e753a8888cc55e40674dddd04c17342880eb1",
+          "indices": [
+            [
+              7,
+              26736
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 36762,
+          "pcm_sha256": "0cf21bf89b9f23d330a7a494a2255a23874d2128738886aec91345126e091661",
+          "indices": [
+            [
+              7,
+              36762
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 36762,
+          "pcm_sha256": "f9d76d60e8dbdae243a1e209c33d10aa617ef87215ddcd8c0d039d4ee4eaf3e9",
+          "indices": [
+            [
+              7,
+              36762
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 53472,
+          "pcm_sha256": "e13455800e6ed04cf121601d4db5c2a25aaba0900d939d729820742966d5b063",
+          "indices": [
+            [
+              7,
+              53472
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 53472,
+          "pcm_sha256": "772307be0f38e9c72d414472f64c5d0351d685a660b3f4f8331ced0189f425fe",
+          "indices": [
+            [
+              7,
+              53472
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 73524,
+          "pcm_sha256": "36b1bae36526fe43ee5b6fb7ac8c3095904259f36d71d4cf018d57959a387824",
+          "indices": [
+            [
+              7,
+              73524
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 73524,
+          "pcm_sha256": "a2e9481ecc7d4839bb532576c06b4735e2355f2f14a04745b0ef9413104ce957",
+          "indices": [
+            [
+              7,
+              73524
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 80208,
+          "pcm_sha256": "560f9f710eda91b0bf3c4782e6bca208b00dfd9c53e28248a9cf92e0c23504b8",
+          "indices": [
+            [
+              7,
+              80208
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 80208,
+          "pcm_sha256": "a39ba608e0dc3d43bd853cdf9a86a27edc0ea17ff0845cceaee7505dd50893f7",
+          "indices": [
+            [
+              7,
+              80208
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 15432,
+          "pcm_sha256": "c9126a933498432e2b07fff217fb6439b0c2b18db0a583c6218a7b4fd83cc0b1",
+          "indices": [
+            [
+              7,
+              15432
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 15432,
+          "pcm_sha256": "ef3773a467e9f59c73d2d25bc4a8c49294bb15100f1b3efb7fa8cad453450839",
+          "indices": [
+            [
+              7,
+              15432
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 21219,
+          "pcm_sha256": "455db0f62ec8ff11be5603e069f53984b1581c497080718556e275fb59c82615",
+          "indices": [
+            [
+              7,
+              21219
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 21219,
+          "pcm_sha256": "b4d2fe3dd57fc0c861b42bda4150502c2ca8e518b455a56c364f0e01b6924edd",
+          "indices": [
+            [
+              7,
+              21219
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 30864,
+          "pcm_sha256": "7bce7a09f3abde3bf4b7cc6b3ff95d2a5ddc4971ba6b98fb4f8eba154319d120",
+          "indices": [
+            [
+              7,
+              30864
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 30864,
+          "pcm_sha256": "11d6cc868a7f8cf8a79167e5bd324bddc29750c584ed151d02956c04c6360d34",
+          "indices": [
+            [
+              7,
+              30864
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 42438,
+          "pcm_sha256": "c6d98fac5d1cc255bea08e0918490aa7a987e8e241562bc14c1f95b860595be3",
+          "indices": [
+            [
+              7,
+              42438
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 42438,
+          "pcm_sha256": "efe955a1de7b772e81f8741bb05df14b927d45878e93e8bef5127f4183f25780",
+          "indices": [
+            [
+              7,
+              42438
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 61728,
+          "pcm_sha256": "a34d4c44dac5e189bcba739f04983e6cedcf01239f998f6eaed2dc57290fbef3",
+          "indices": [
+            [
+              7,
+              61728
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 61728,
+          "pcm_sha256": "b702c3d39ef2f0b069706f67f447b335db3c7d902afbbb7789cadd30fd3d239b",
+          "indices": [
+            [
+              7,
+              61728
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 84876,
+          "pcm_sha256": "15c106da1cc880b1100711277dd08395a9513cf890aa83cb7128d41964a41235",
+          "indices": [
+            [
+              7,
+              84876
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 84876,
+          "pcm_sha256": "b802e4286e43381a462605fd42dbfb7b73e00dddd6adb79309871996ee1c2ddb",
+          "indices": [
+            [
+              7,
+              84876
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 92592,
+          "pcm_sha256": "6bbf3dd195a4c722d2a40e5e742aea1df881084e3fd9c4d5004ece0a90fb5418",
+          "indices": [
+            [
+              7,
+              92592
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 92592,
+          "pcm_sha256": "a9f93ccb4aeb353202e10179c2938b7eab91bb446d244ece02e5110f946d515a",
+          "indices": [
+            [
+              7,
+              92592
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 9320,
+          "pcm_sha256": "57f0ec46b3560c03974fde7ce322b708857a6e10b585545db8f9fe7a62ef6ea7",
+          "indices": [
+            [
+              7,
+              9320
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 9320,
+          "pcm_sha256": "cbd7bb4576675d6f2f47cbc432fa42e9aa9f98bc4f5d4d78cf1e2da5be8fa83b",
+          "indices": [
+            [
+              7,
+              9320
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 12815,
+          "pcm_sha256": "ff1bf3cf2d5b5e7c66afd2b7ef57916f4a96d39942dc5c2ef6065a11de5b9689",
+          "indices": [
+            [
+              7,
+              12815
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 12815,
+          "pcm_sha256": "c8433adb9d1d22a433892d3ca84b7cf8b642d8c8c22a7f1547ddfd1a8b7e7a8a",
+          "indices": [
+            [
+              7,
+              12815
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 18640,
+          "pcm_sha256": "bb5fe6197d065851a21360a08320f2b1efea8bce3ab531686eb77f60d9aa208c",
+          "indices": [
+            [
+              7,
+              18640
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 18640,
+          "pcm_sha256": "211176be1f4982fba57425968b21261a1347ac53e33e125683d61fa8df0e31b9",
+          "indices": [
+            [
+              7,
+              18640
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 25630,
+          "pcm_sha256": "f3a016146aefe374792ddcfe4c78d386836a43002c69e2aad23398e77c4cc1b7",
+          "indices": [
+            [
+              7,
+              25630
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 25630,
+          "pcm_sha256": "799560593ecd7f3753b8ae6e4e7cf86a93828e7ca2048c049ccbf0519933c1aa",
+          "indices": [
+            [
+              7,
+              25630
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 37280,
+          "pcm_sha256": "2ca036f98d2f9ab08e02cff3c8ebfa540fdcc79c99904cf7e86c8dbfb2fb6607",
+          "indices": [
+            [
+              7,
+              37280
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 37280,
+          "pcm_sha256": "ae49cb6065cd52631abf4db4db824f8dbb7a6ec7a394e7c41ae8ca2f7e8383f5",
+          "indices": [
+            [
+              7,
+              37280
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 51260,
+          "pcm_sha256": "719d7f977299abb03b5aefb23a1cccd4244422c30c94937698700942d8d67b64",
+          "indices": [
+            [
+              7,
+              51260
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 51260,
+          "pcm_sha256": "c4910cc17dfc69d3df8ed64c334e6a4a446a1be3620e54a6c8b5f56c61f7e5dd",
+          "indices": [
+            [
+              7,
+              51260
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 55920,
+          "pcm_sha256": "a0a65145fe25a11f413fdda71ce98f345c52cb2627a376b64ac914fd7eaf91d4",
+          "indices": [
+            [
+              7,
+              55920
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 55920,
+          "pcm_sha256": "2a4ca1fc4a751bb992b075c38891ead29f4176be2411bc4a87d5c66055355bfd",
+          "indices": [
+            [
+              7,
+              55920
+            ]
+          ]
+        }
+      ],
+      "timings": [
+        {
+          "language": "de_DE",
+          "rate": 1,
+          "median_cpu_ms": 3.3137635000000003,
+          "samples_ms": [
+            3.572126,
+            3.264731,
+            3.055561,
+            3.293423,
+            3.081169,
+            4.132677,
+            3.290739,
+            3.485278,
+            2.956985,
+            3.334104,
+            3.368344,
+            3.355785
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 6,
+          "median_cpu_ms": 22.8883815,
+          "samples_ms": [
+            21.91289,
+            24.062067,
+            23.330283,
+            22.35747,
+            22.564406,
+            23.749994,
+            23.478451,
+            22.500371,
+            23.212357,
+            22.49335,
+            24.790036,
+            22.272643
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 1,
+          "median_cpu_ms": 4.5675419999999995,
+          "samples_ms": [
+            4.423318,
+            4.548544,
+            4.558559,
+            5.269654,
+            4.771495,
+            5.519805,
+            7.106677,
+            4.475656,
+            4.021012,
+            4.576525,
+            3.850259,
+            8.215491
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 6,
+          "median_cpu_ms": 29.191361999999998,
+          "samples_ms": [
+            33.237791,
+            29.040238,
+            28.269425,
+            27.114934,
+            26.888257,
+            30.641142,
+            30.17454,
+            26.871873,
+            29.342486,
+            32.947851,
+            28.532355,
+            29.463856
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 1,
+          "median_cpu_ms": 4.849740499999999,
+          "samples_ms": [
+            4.715903,
+            5.081164,
+            4.339294,
+            5.588927,
+            4.627471,
+            4.958983,
+            4.845414,
+            5.097087,
+            4.309339,
+            4.814118,
+            7.175019,
+            4.854067
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 6,
+          "median_cpu_ms": 30.717149499999998,
+          "samples_ms": [
+            30.265174,
+            29.874214,
+            31.169125,
+            33.588211,
+            28.767233,
+            36.286011,
+            32.915624,
+            29.389796,
+            29.357548,
+            29.265822,
+            33.811252,
+            32.454821
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 1,
+          "median_cpu_ms": 3.7299805,
+          "samples_ms": [
+            4.116944,
+            3.762088,
+            3.636482,
+            4.180228,
+            3.807986,
+            3.45964,
+            3.697873,
+            3.861015,
+            3.215327,
+            4.241609,
+            3.384728,
+            3.608941
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 6,
+          "median_cpu_ms": 17.582379500000002,
+          "samples_ms": [
+            16.974969,
+            17.646274,
+            16.396762,
+            16.525883,
+            17.749557,
+            18.180726,
+            17.644041,
+            18.644374,
+            16.171287,
+            18.969996,
+            16.809032,
+            17.520718
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 1,
+          "median_cpu_ms": 3.4581625,
+          "samples_ms": [
+            4.146618,
+            3.618175,
+            3.210971,
+            3.308496,
+            3.387643,
+            3.469905,
+            3.874585,
+            3.397487,
+            3.597574,
+            3.658384,
+            3.345561,
+            3.44642
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 6,
+          "median_cpu_ms": 18.347744,
+          "samples_ms": [
+            18.26396,
+            20.333678,
+            18.053698,
+            18.431528,
+            18.539949,
+            17.822135,
+            18.723311,
+            17.250067,
+            17.175847,
+            19.056034,
+            18.543875,
+            17.975953
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 1,
+          "median_cpu_ms": 3.6555805,
+          "samples_ms": [
+            4.142652,
+            4.034863,
+            3.730632,
+            3.435153,
+            3.165564,
+            3.479209,
+            5.009658,
+            3.580529,
+            3.862827,
+            3.389827,
+            3.212623,
+            4.246927
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 6,
+          "median_cpu_ms": 19.7524165,
+          "samples_ms": [
+            19.332164,
+            21.819592,
+            21.781095,
+            20.099892,
+            19.390501,
+            19.846756,
+            18.518187,
+            20.689887,
+            19.55907,
+            22.040499,
+            19.00632,
+            19.658077
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 1,
+          "median_cpu_ms": 3.8596475000000003,
+          "samples_ms": [
+            4.389688,
+            3.71531,
+            3.700546,
+            3.832532,
+            4.119578,
+            3.624644,
+            4.280207,
+            3.677483,
+            3.886763,
+            4.8559,
+            4.023766,
+            3.714107
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 6,
+          "median_cpu_ms": 21.206212,
+          "samples_ms": [
+            21.700625,
+            23.455848,
+            20.056888,
+            22.248828,
+            23.030668,
+            20.819619,
+            20.767943,
+            20.625732,
+            21.597112,
+            21.428211,
+            20.984213,
+            20.966186
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 1,
+          "median_cpu_ms": 5.696600999999999,
+          "samples_ms": [
+            7.339402,
+            6.141015,
+            5.63838,
+            5.426366,
+            5.644669,
+            5.65162,
+            5.37528,
+            6.772141,
+            5.718179,
+            5.699991,
+            5.693211,
+            6.815896
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 6,
+          "median_cpu_ms": 20.47336,
+          "samples_ms": [
+            20.168083,
+            20.523429,
+            19.92328,
+            20.423291,
+            20.599362,
+            21.839291,
+            20.268782,
+            20.547676,
+            19.977861,
+            20.662525,
+            19.555344,
+            20.920478
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 1,
+          "median_cpu_ms": 3.7557635,
+          "samples_ms": [
+            4.874848,
+            4.836811,
+            3.65548,
+            3.737822,
+            3.847285,
+            3.699675,
+            4.322358,
+            3.773705,
+            3.643252,
+            3.645966,
+            4.240727,
+            3.591295
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 6,
+          "median_cpu_ms": 24.3798375,
+          "samples_ms": [
+            24.366698,
+            24.045713,
+            24.784237,
+            23.492452,
+            23.952755,
+            24.352307,
+            29.779374,
+            24.392977,
+            24.601777,
+            24.781133,
+            24.215524,
+            24.477573
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 1,
+          "median_cpu_ms": 3.043803,
+          "samples_ms": [
+            3.197201,
+            3.131923,
+            2.926789,
+            3.583163,
+            2.86623,
+            2.972327,
+            3.122409,
+            2.983964,
+            2.863536,
+            3.14937,
+            3.059997,
+            3.027609
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 6,
+          "median_cpu_ms": 16.072631,
+          "samples_ms": [
+            15.986383,
+            15.754419,
+            17.357135,
+            15.501764,
+            15.55971,
+            18.002181,
+            15.685206,
+            16.660823,
+            22.096923,
+            16.158879,
+            16.628355,
+            15.461945
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 1,
+          "median_cpu_ms": 10.4480715,
+          "samples_ms": [
+            9.625892,
+            13.848243,
+            9.110378,
+            10.098433,
+            10.788176,
+            11.265253,
+            10.172542,
+            11.006679,
+            10.703,
+            11.574742,
+            10.193143,
+            8.982929
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 6,
+          "median_cpu_ms": 42.3712475,
+          "samples_ms": [
+            45.650175,
+            44.838281,
+            44.750491,
+            43.126302,
+            41.758085,
+            40.006477,
+            40.519878,
+            48.246976,
+            41.876319,
+            40.889105,
+            40.477256,
+            42.866176
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 1,
+          "median_cpu_ms": 3.5667785,
+          "samples_ms": [
+            3.912561,
+            3.636702,
+            3.543454,
+            3.538837,
+            3.887504,
+            3.369015,
+            3.206534,
+            3.534862,
+            3.602221,
+            3.590103,
+            3.420391,
+            3.984998
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 6,
+          "median_cpu_ms": 20.054769999999998,
+          "samples_ms": [
+            20.393437,
+            22.43213,
+            19.508395,
+            19.447545,
+            21.002,
+            19.66025,
+            19.716103,
+            19.694841,
+            20.946307,
+            19.580391,
+            20.43558,
+            21.151872
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 1,
+          "median_cpu_ms": 6.316821,
+          "samples_ms": [
+            6.7712,
+            6.450764,
+            6.076459,
+            6.217098,
+            6.309275,
+            6.121787,
+            6.262165,
+            6.512916,
+            5.91522,
+            6.500869,
+            6.324367,
+            6.55588
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 6,
+          "median_cpu_ms": 29.851986,
+          "samples_ms": [
+            30.023205,
+            29.153356,
+            27.871245,
+            29.753535,
+            30.690555,
+            31.561266,
+            27.799548,
+            29.958759,
+            27.728313,
+            30.765797,
+            28.169527,
+            29.950437
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 1,
+          "median_cpu_ms": 6.4241150000000005,
+          "samples_ms": [
+            7.234246,
+            6.463774,
+            5.920769,
+            7.047089,
+            5.853959,
+            6.975222,
+            6.417145,
+            6.192632,
+            6.431085,
+            6.365138,
+            6.325839,
+            8.204004
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 6,
+          "median_cpu_ms": 19.2019605,
+          "samples_ms": [
+            17.949464,
+            19.122242,
+            18.292021,
+            18.334765,
+            18.153516,
+            18.277059,
+            19.281679,
+            19.691136,
+            19.856861,
+            19.346244,
+            19.907186,
+            20.475869
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.2.198.0",
+      "bytes": 55979000,
+      "speech": [
+        {
+          "language": "de_DE",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 15768,
+          "pcm_sha256": "27b19bcad4d335a6de29b2df224e14880c5130423cdf95a2ef58debee4323775",
+          "indices": [
+            [
+              7,
+              15768
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 15768,
+          "pcm_sha256": "87c75cc4efd4ea0a6a7bfca0505abbd32b3e263e980d24c082e1cdc7c03ec594",
+          "indices": [
+            [
+              7,
+              15768
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 21681,
+          "pcm_sha256": "256f033bee5eb6f50f2ad3a65dc022de5c0798c3ab47cd42173f70baa5dd07cd",
+          "indices": [
+            [
+              7,
+              21681
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 21681,
+          "pcm_sha256": "da31d9beba2942447649d2df35a29a0cdac40e4a72fc0500291c3ec53f9d38e5",
+          "indices": [
+            [
+              7,
+              21681
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 31536,
+          "pcm_sha256": "9fddf7334cb0ef1351a31caab66c1eaa5b0b63bd0f74f8d512d4030f13313d05",
+          "indices": [
+            [
+              7,
+              31536
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 31536,
+          "pcm_sha256": "b9d2c431214a07bffb1c88a49b69ef88e9e75ddea3706720574d0ef5c36c0ee2",
+          "indices": [
+            [
+              7,
+              31536
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 43362,
+          "pcm_sha256": "eec32b12ab939923b5e1e4df777bb32c9c6b6e9934ce38cef4020d6593626a9d",
+          "indices": [
+            [
+              7,
+              43362
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 43362,
+          "pcm_sha256": "cb68bcf232ccdf32e2671c545891ba722e228303b0ba7b7e95e0e452a5cc8fe9",
+          "indices": [
+            [
+              7,
+              43362
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 63072,
+          "pcm_sha256": "ab8fab6d165e15e66744560cc0362826b1c9d99e408c69bdc0987e9345698859",
+          "indices": [
+            [
+              7,
+              63072
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 63072,
+          "pcm_sha256": "c98542f13a4f52b05dca82362069955e411986904c2c2114e9a1fce360142b7f",
+          "indices": [
+            [
+              7,
+              63072
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 86724,
+          "pcm_sha256": "5d2fab34cf338042a358f4442efeb2463bd7a5b5fce752209698470f6bb05ee4",
+          "indices": [
+            [
+              7,
+              86724
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 86724,
+          "pcm_sha256": "7408ddffcc13677af25bc09f0c0be1b3987cb827f1cf22ae54766474e01a8653",
+          "indices": [
+            [
+              7,
+              86724
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 94608,
+          "pcm_sha256": "f27d00efdd8e0a55c395d6baf0f906858d5e00a32725325f284e74835e55c40b",
+          "indices": [
+            [
+              7,
+              94608
+            ]
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 94608,
+          "pcm_sha256": "4d4f8af9496cdb2904da25817d4ea54afc067e5b3c3d821c19e155397b1ab661",
+          "indices": [
+            [
+              7,
+              94608
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 12976,
+          "pcm_sha256": "15a25858dd3ddd44cdee6303ef618be9bcf1ab0c49dc01cec161b53fc6870a9d",
+          "indices": [
+            [
+              7,
+              12976
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 12976,
+          "pcm_sha256": "702fcbed7e08819af19c8d6e538f0bad6720c6a2d8d5b25ddd2bb0fa1cd0a5b5",
+          "indices": [
+            [
+              7,
+              12976
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 17842,
+          "pcm_sha256": "f80d00503de6d42973d9e16ca3bb46f46d3f7a3ade44fcec5d07b085344c3f38",
+          "indices": [
+            [
+              7,
+              17842
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 17842,
+          "pcm_sha256": "31518a3d4dcb123fa735df5782162d0884e9ae005f1e24326eba7e1a76de0c95",
+          "indices": [
+            [
+              7,
+              17842
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 25952,
+          "pcm_sha256": "3e33a3e945c2cd1645ae93346d5e6fbb572e23b1e4264f4b6a7874c8c1722762",
+          "indices": [
+            [
+              7,
+              25952
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 25952,
+          "pcm_sha256": "fa68f4f496e7faea1113b2968778c799ee9256635beec9c7fdac7a167e13e9ab",
+          "indices": [
+            [
+              7,
+              25952
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 35684,
+          "pcm_sha256": "c10afea248244ed5e953fee4efc964d9b56a1742fdce452443b4647345cd0ebd",
+          "indices": [
+            [
+              7,
+              35684
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 35684,
+          "pcm_sha256": "ea6af61f199bec363b459e40121c6ad02354c440e438d4711b977348855fe7e3",
+          "indices": [
+            [
+              7,
+              35684
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 51904,
+          "pcm_sha256": "e1d5b8a0961e898fc635bcff3f58ff1ce9ac050be290b8d3a7e4af433d3c8e2b",
+          "indices": [
+            [
+              7,
+              51904
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 51904,
+          "pcm_sha256": "7d01ae194363b28d47cd0f54f105c9ef7b333989015613172ab07b6be238f19b",
+          "indices": [
+            [
+              7,
+              51904
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 71368,
+          "pcm_sha256": "efb0ba2921a8261d4593a80d2b04f06de58e3590be4410dcd4301d9b68a96ca7",
+          "indices": [
+            [
+              7,
+              71368
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 71368,
+          "pcm_sha256": "257c8f9f05b30fd511763fc091bfb0ad9c7da29c1ced91a115b6dbc0f8d46b86",
+          "indices": [
+            [
+              7,
+              71368
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 77856,
+          "pcm_sha256": "7c44ce5ccadc344f84629b0578e81d35a7ed7500d1328a4a393e2261a779c37c",
+          "indices": [
+            [
+              7,
+              77856
+            ]
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 77856,
+          "pcm_sha256": "e1087cf1286ac38b6c837d7bb8189ec7916b020ea18289312034f9bd362bd821",
+          "indices": [
+            [
+              7,
+              77856
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 13296,
+          "pcm_sha256": "2f3903df929dd19522d23d4af8bc1d3ce6dcfdb057b2b282a039a8dd0b6c582d",
+          "indices": [
+            [
+              7,
+              13296
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 13296,
+          "pcm_sha256": "13557a3134c308884e94038828e7a0e690726b26467c9fc6d67cf6c6d0592b93",
+          "indices": [
+            [
+              7,
+              13296
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 18282,
+          "pcm_sha256": "14ad85c99036f0c3e34c72b721ea83ae534cdb993f813b53090416ac2aa670c0",
+          "indices": [
+            [
+              7,
+              18282
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 18282,
+          "pcm_sha256": "c04d38c47b1a1610b253a1b39f5bc25a94ef85514cffc826668909dc5433d5e0",
+          "indices": [
+            [
+              7,
+              18282
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 26592,
+          "pcm_sha256": "853d924f3c6a30bdeb148d4292baacd7dcad19e970a57ad0dba78a5817717229",
+          "indices": [
+            [
+              7,
+              26592
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 26592,
+          "pcm_sha256": "4774dc96f4cfddf8766a62d2d5898c3982e6cedf80f1c48b4829657043366800",
+          "indices": [
+            [
+              7,
+              26592
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 36564,
+          "pcm_sha256": "9bbbbee8cd228a9dcbebe64b40478183b7febcd3842211f846ca635913ab08d2",
+          "indices": [
+            [
+              7,
+              36564
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 36564,
+          "pcm_sha256": "929778849ead59d73cccda8036917f0b61471297c76cb05bc069c6d4fd5426b7",
+          "indices": [
+            [
+              7,
+              36564
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 53184,
+          "pcm_sha256": "77bedb5b90d5ac1e3644271cf3febc9b3da19d8e2bd707a205d178947008ed77",
+          "indices": [
+            [
+              7,
+              53184
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 53184,
+          "pcm_sha256": "e019b3376b149fffb199b82df29246652b37b890816b3a27544e296db075591a",
+          "indices": [
+            [
+              7,
+              53184
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 73128,
+          "pcm_sha256": "00294305438e66e95b76ec28fe7f27f2d4a00300f786a30640b2e80d74587fd2",
+          "indices": [
+            [
+              7,
+              73128
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 73128,
+          "pcm_sha256": "ef27c97284102a4186b3078ea7dabb8a2c0ebff9842241db6e5ffec8010f4bd3",
+          "indices": [
+            [
+              7,
+              73128
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 79776,
+          "pcm_sha256": "774ce0cff74cf729067f13c75450cc9cb68b6436644c167e81f092c3df895032",
+          "indices": [
+            [
+              7,
+              79776
+            ]
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 79776,
+          "pcm_sha256": "dd8b8f091c441ec3c5470e129879672a172bf652de1d2ca0c33f23334be66207",
+          "indices": [
+            [
+              7,
+              79776
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 9864,
+          "pcm_sha256": "c9cdd97e1d4eca3dfe6c59a1b3393758b8da29c37e468ffa9f8cad92d07eb9eb",
+          "indices": [
+            [
+              7,
+              9864
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 9864,
+          "pcm_sha256": "bd3225a3a4c2f3129f7e66dc44d69148538e57ecef2394e86fca38f57f5b7ea4",
+          "indices": [
+            [
+              7,
+              9864
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 13563,
+          "pcm_sha256": "8f74f37bc75fd3f746d554853329439adf540e2fd840947523b24aabcafa6ec2",
+          "indices": [
+            [
+              7,
+              13563
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 13563,
+          "pcm_sha256": "71c5a68f7547b0936586902e595921b603921ac8eccd6bbcbaa0f5d6a3863092",
+          "indices": [
+            [
+              7,
+              13563
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 19728,
+          "pcm_sha256": "a86a3c783e03aa1b4123af87d630f6d55f55d5ba494301ce439d457478fcae81",
+          "indices": [
+            [
+              7,
+              19728
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 19728,
+          "pcm_sha256": "0ca921012b91edc33f08cc9646b882dba7a1d717c4727df8dd9f078c686e0f76",
+          "indices": [
+            [
+              7,
+              19728
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 27126,
+          "pcm_sha256": "40966bcda6e8bc727ae6b19dc00b0b7acb928edf71eaa37d6feda952d9e2a0f3",
+          "indices": [
+            [
+              7,
+              27126
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 27126,
+          "pcm_sha256": "ccc1ec9d5844d4745a4b1c923a6c9eaf73936b058674ca572c7e7e5a28f8931d",
+          "indices": [
+            [
+              7,
+              27126
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 39456,
+          "pcm_sha256": "2e298e78effb6863d1495b38f108b4530547f68bc228473c66189e0a3f6c410c",
+          "indices": [
+            [
+              7,
+              39456
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 39456,
+          "pcm_sha256": "c08e2367af16342b245e109ee4be8fb9b53378681bc3b49dd4860a391c3f97c3",
+          "indices": [
+            [
+              7,
+              39456
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 54252,
+          "pcm_sha256": "55d920bae8a2e5ef765bf467435ac582edff6acd0a07596a81e5512e54fb036a",
+          "indices": [
+            [
+              7,
+              54252
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 54252,
+          "pcm_sha256": "216f61105fa9a3e0909106acab3d1ccc982279cb38c52e053670458885baa3f0",
+          "indices": [
+            [
+              7,
+              54252
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 59184,
+          "pcm_sha256": "0c8826cc5e9fdca1f2db4fa8f41aa3b012850e3cabb3f817c14f8cddb9378f61",
+          "indices": [
+            [
+              7,
+              59184
+            ]
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 59184,
+          "pcm_sha256": "5de8154567b882001e9c765fe84bfe56e1cfe1212876fa44864e6e1746a6adc9",
+          "indices": [
+            [
+              7,
+              59184
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 9784,
+          "pcm_sha256": "9ac94aeba13eee0df3b071643df6c137e22bd542841c12f8f379b63e769916e7",
+          "indices": [
+            [
+              7,
+              9784
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 9784,
+          "pcm_sha256": "e6043b6225d015120e29d98d7aeb1af825cfba25f805cdcdc10474af50b525e2",
+          "indices": [
+            [
+              7,
+              9784
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 13453,
+          "pcm_sha256": "6375896813c38cc26bebe2b3ae0a258691d1eb65e18715d99f9de0517783f6cd",
+          "indices": [
+            [
+              7,
+              13453
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 13453,
+          "pcm_sha256": "536ff360488ba94b91c7f7b83ec775ba50512d4b33caea5fd570acea9c6596b9",
+          "indices": [
+            [
+              7,
+              13453
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 19568,
+          "pcm_sha256": "bc5dda32e2f5fa4050e3334f7262fc182e0654b8bb4b415967967f8ea1e44fe0",
+          "indices": [
+            [
+              7,
+              19568
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 19568,
+          "pcm_sha256": "d14768a2690e197539e6566d4c28cb8cfd650939db7caadc917ff803dfb43418",
+          "indices": [
+            [
+              7,
+              19568
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 26906,
+          "pcm_sha256": "7466105fd69128b0adfa2b8adcafbe66ba5905a22d0c04d49310b2e15021fa7f",
+          "indices": [
+            [
+              7,
+              26906
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 26906,
+          "pcm_sha256": "61e714f019ac0865a955ff69458908a8dbc808e02be16d307eeef8eec4fa56ae",
+          "indices": [
+            [
+              7,
+              26906
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 39136,
+          "pcm_sha256": "f52f3cc10c411a4f3d6e1f7dc3123a0818eae632544e9269c46006048ba01b3e",
+          "indices": [
+            [
+              7,
+              39136
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 39136,
+          "pcm_sha256": "9fde192d0db31fda0cf3da38609a999d4b91c5dc52dbbf862841b69d89317dd7",
+          "indices": [
+            [
+              7,
+              39136
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 53812,
+          "pcm_sha256": "3b7b67acdf9635847fcb37f84db099afa879693381f6a710b3faf0c89f212900",
+          "indices": [
+            [
+              7,
+              53812
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 53812,
+          "pcm_sha256": "ab400382f8358082c95859f03b71bacf64b0303d24f350d64399bb24976f4ceb",
+          "indices": [
+            [
+              7,
+              53812
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 58704,
+          "pcm_sha256": "c72fb9105728005393657d1c444a1fb7bd2f4f6d3cf52e6a458ef066b32d8c39",
+          "indices": [
+            [
+              7,
+              58704
+            ]
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 58704,
+          "pcm_sha256": "d252d41bda2cb765690af786d26522071cfb4d97528bf9b9f31f032688c4e4a8",
+          "indices": [
+            [
+              7,
+              58704
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 9984,
+          "pcm_sha256": "861b2071a359ac4b6c2468fbbeae7e2296ff0781a4107c17f34907f6c3bea499",
+          "indices": [
+            [
+              7,
+              9984
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 9984,
+          "pcm_sha256": "75ae884ebc93ad7de5597265035df81ebada419bdb359fe525047f86099cd44d",
+          "indices": [
+            [
+              7,
+              9984
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 13728,
+          "pcm_sha256": "066a8dce090ca1363cda821f455088b6514de78ff374de30e554649b13fa6665",
+          "indices": [
+            [
+              7,
+              13728
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 13728,
+          "pcm_sha256": "fd83a9e46a7f694fa0797014f50acbe7ae075f82586e8a1b215d77b3947212a1",
+          "indices": [
+            [
+              7,
+              13728
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 19968,
+          "pcm_sha256": "b9f28272d37c3dc076aa1a026a9fe4144b2d2a609516f8804afa9495f9bfefe6",
+          "indices": [
+            [
+              7,
+              19968
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 19968,
+          "pcm_sha256": "061b7872efc44c85db0793239e57e2257e211c854060095a7dcef52342dad92a",
+          "indices": [
+            [
+              7,
+              19968
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 27456,
+          "pcm_sha256": "52fbfceddfaa9b018da3880cac5e4b7673c307260dd0ed809d82d6af260de60b",
+          "indices": [
+            [
+              7,
+              27456
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 27456,
+          "pcm_sha256": "c7d996b2349269f6a7eb6c4fde41d08bec199fc4c7ca2e87ebd53c819405cb85",
+          "indices": [
+            [
+              7,
+              27456
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 39936,
+          "pcm_sha256": "8b71e09f99054a6fceb9b599f2af8426efbcf9c8c0328054b08163cbfe2b2a0c",
+          "indices": [
+            [
+              7,
+              39936
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 39936,
+          "pcm_sha256": "a57e16df178865be89ffcd1a880e58878c00cf64c88dd34348d76af53228eef9",
+          "indices": [
+            [
+              7,
+              39936
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 54912,
+          "pcm_sha256": "4cb3a397107e4cdd67626bfb9f1500fff71fee7411eedb9fcfa57ed0a43e7180",
+          "indices": [
+            [
+              7,
+              54912
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 54912,
+          "pcm_sha256": "5e98e4547246f6d06638184718bedb4db3e27732d15710d7330094784379d58e",
+          "indices": [
+            [
+              7,
+              54912
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 59904,
+          "pcm_sha256": "7143d87f6f2f558fb96f5830741235ff644655b6103bd51b0ee022fcb46337fa",
+          "indices": [
+            [
+              7,
+              59904
+            ]
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 59904,
+          "pcm_sha256": "fd77c33f0e69fd4cc18b6618cf5c09e885145d78c2cc8dba53962674727b5ab1",
+          "indices": [
+            [
+              7,
+              59904
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 10344,
+          "pcm_sha256": "a17a4caf46b5b2c7c97e1f0d1ab238e2d8f8ac9b85a97ff018f1bba60af39e3a",
+          "indices": [
+            [
+              7,
+              10344
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 10344,
+          "pcm_sha256": "fc1de4f5c5a08e1ffa21873b2d9429de622aaf754108ed171fe22aaf4e298492",
+          "indices": [
+            [
+              7,
+              10344
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 14223,
+          "pcm_sha256": "0ce0bd54c93ca6f210a15b299a0621a123686d703856e9678d4dc3bb11e90a17",
+          "indices": [
+            [
+              7,
+              14223
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 14223,
+          "pcm_sha256": "1b190b3523f3ba4e80afb49d5f5ab92c6e9e1dd6b146f0d622ebb6393b86783b",
+          "indices": [
+            [
+              7,
+              14223
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 20688,
+          "pcm_sha256": "f87d5a1a0cb64f7e18a6a1e1c60b50b42eb78b8a5fd1c83614bc786125620f9d",
+          "indices": [
+            [
+              7,
+              20688
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 20688,
+          "pcm_sha256": "537f5cb757e8ade129639b8dc723e82b6738c6c8f365a9099dc02363ed5a6eda",
+          "indices": [
+            [
+              7,
+              20688
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 28446,
+          "pcm_sha256": "937a9e4ecf64fa6c52bea6542fd54ade7e94e22db347ccfe48d9210b6ae90111",
+          "indices": [
+            [
+              7,
+              28446
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 28446,
+          "pcm_sha256": "a39d88013cbf8da82dfb915a7dc75085b4bddaf5c36314aeae9c07ca19933c97",
+          "indices": [
+            [
+              7,
+              28446
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 41376,
+          "pcm_sha256": "e3af2ff17bd63d9186835d60175f5e7fadb73f17b4c64c800b1aa344abcb37d8",
+          "indices": [
+            [
+              7,
+              41376
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 41376,
+          "pcm_sha256": "19ee0ba2c0a00e5fb054bbe9b4ad80673183295b1ed53d39887d352399942518",
+          "indices": [
+            [
+              7,
+              41376
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 56892,
+          "pcm_sha256": "a18eaede13c1a3fda6035e35807dd627740e959e3fd9b8a3919ffc382042e2c4",
+          "indices": [
+            [
+              7,
+              56892
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 56892,
+          "pcm_sha256": "3588a0c8ca139c8527256387b7c001fc49ae6f779d95c14e7de6f21a5d6a6f3b",
+          "indices": [
+            [
+              7,
+              56892
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 62064,
+          "pcm_sha256": "b4d0b602b53a5d5dfbbd48125480d51463caaac7d994a3688cc0c71dbc991d8e",
+          "indices": [
+            [
+              7,
+              62064
+            ]
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 62064,
+          "pcm_sha256": "eebacf65abde982cb7dafe97a930b2370fdae51a6fdba61c0148c67a45a78b6d",
+          "indices": [
+            [
+              7,
+              62064
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 9328,
+          "pcm_sha256": "f90e5a137cc49fba89cd9e57fc61d0198c3c160352805d71c72f5bbe377dc7d6",
+          "indices": [
+            [
+              7,
+              9328
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 9328,
+          "pcm_sha256": "e3e56978bd158d9a782a1d7c8c7980fda57af3c62f461b7a4233564042fb4404",
+          "indices": [
+            [
+              7,
+              9328
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 12826,
+          "pcm_sha256": "7abc4f06e24da6885aa0853923fe033f3e65db0a03feedfa3824022be339f0fd",
+          "indices": [
+            [
+              7,
+              12826
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 12826,
+          "pcm_sha256": "b23b0efdff4468ef24795c370b52ab7e5612e8449db87fe455075fd46d890a30",
+          "indices": [
+            [
+              7,
+              12826
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 18656,
+          "pcm_sha256": "91efec421eb59ee732778e2273bc0328d1fdf7e9b351b0bcd8f8c6ef522781a7",
+          "indices": [
+            [
+              7,
+              18656
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 18656,
+          "pcm_sha256": "d0722cba6277edcd0da7eebdf0632691d928adc9b491392e75e8bcdaea68a25c",
+          "indices": [
+            [
+              7,
+              18656
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 25652,
+          "pcm_sha256": "6bb4385e0bff498f2a79e6ed8516c9534e9fdfdab1b2065dbcccc87e890a20e6",
+          "indices": [
+            [
+              7,
+              25652
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 25652,
+          "pcm_sha256": "2b8815ec970e02d5d1b325912d476eb65cc1067cf616fee5d32076cb7bf7e51b",
+          "indices": [
+            [
+              7,
+              25652
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 37312,
+          "pcm_sha256": "b2b5e1850530fc0d3d9d757672be14c8b021026c8f35aaefc02496e1310e8830",
+          "indices": [
+            [
+              7,
+              37312
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 37312,
+          "pcm_sha256": "09e18da6b41c0ffe80eefd2e6441da2f891224e389b0d1d9b4a0cd79d1a3aeaa",
+          "indices": [
+            [
+              7,
+              37312
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 51304,
+          "pcm_sha256": "ad4038ce4c5dad3a854d0227e1a1c75faf29b6ab7268624570a885c2a526528b",
+          "indices": [
+            [
+              7,
+              51304
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 51304,
+          "pcm_sha256": "907a35d11738bc15777d940a49c50b8373594dae755c6517cdefe4f2635a20a7",
+          "indices": [
+            [
+              7,
+              51304
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 55968,
+          "pcm_sha256": "2ef0571efa0e9e94807306d0069e8c8ee33f6a6b913f55a73bda8ec4849ad4e6",
+          "indices": [
+            [
+              7,
+              55968
+            ]
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 55968,
+          "pcm_sha256": "6c4c1431ab0269a6de9cd5b3009090b7c3157fa219de2fea46c8b1dd87f10732",
+          "indices": [
+            [
+              7,
+              55968
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 12704,
+          "pcm_sha256": "e80e1361c982688da64876dd257a193db36f77dd910bb458100aab264f396679",
+          "indices": [
+            [
+              7,
+              12704
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 12704,
+          "pcm_sha256": "241b4afc5f1250ea5bf3610b9d719fbda9b3741c650902d6c124b52c0dca768f",
+          "indices": [
+            [
+              7,
+              12704
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 17468,
+          "pcm_sha256": "458744c2af51f6de481cfbcc7a90fa08277c246f530a56891e7e645a40925c8d",
+          "indices": [
+            [
+              7,
+              17468
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 17468,
+          "pcm_sha256": "e1a60b2b1f0aeaa0781586a6d64bdbf8284139489f365e39cc3baf52ba5e2bc8",
+          "indices": [
+            [
+              7,
+              17468
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 25408,
+          "pcm_sha256": "899c2374f67889e9bdedcf2f2bf82ad5554491785a286c4ba048844d4116f01d",
+          "indices": [
+            [
+              7,
+              25408
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 25408,
+          "pcm_sha256": "69b545442fd149849777a7677b74b34a5c89eda0c14971632a22a39d04d1b4a3",
+          "indices": [
+            [
+              7,
+              25408
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 34936,
+          "pcm_sha256": "551c49f1c2ebfaa0aebb7a49b3217497ae7d303bda1826d75c1dcb00be5269b8",
+          "indices": [
+            [
+              7,
+              34936
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 34936,
+          "pcm_sha256": "7980927726d7db858ed47e6d1954e9160e6a06d7467fdb6bb967f4f3a2ce628e",
+          "indices": [
+            [
+              7,
+              34936
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 50816,
+          "pcm_sha256": "55379e7e84f139a905603a2aaf62d6e60a9e0765c4d4fea9c04f9124942ac3b5",
+          "indices": [
+            [
+              7,
+              50816
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 50816,
+          "pcm_sha256": "aa722eeee1b221bd46e56243a2d8d2525206c2c1416560b71ba433d7763522a0",
+          "indices": [
+            [
+              7,
+              50816
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 69872,
+          "pcm_sha256": "59d375bfd23d52c21c686475790b3ab30ef5ad8e2944086ce433b12b4c3349b8",
+          "indices": [
+            [
+              7,
+              69872
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 69872,
+          "pcm_sha256": "e02854539032e431aab3201704889248387e08c591667c98ee2c96daa8a68eb3",
+          "indices": [
+            [
+              7,
+              69872
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 76224,
+          "pcm_sha256": "3c69d077db8cea1e893b1382e6679657ad13fbadd332e28f87d1a2991165e9bf",
+          "indices": [
+            [
+              7,
+              76224
+            ]
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 76224,
+          "pcm_sha256": "2f10bd90947ada0835e2d2030c4f0302cc044c9e9f40fc2d5d6512b38d1c460a",
+          "indices": [
+            [
+              7,
+              76224
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 9848,
+          "pcm_sha256": "9b15acb848c82206a3312a05a93572ad6c14cc45319f27a71b64234a8b4d8266",
+          "indices": [
+            [
+              7,
+              9848
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 9848,
+          "pcm_sha256": "3de31f5dbbceedf366671ff12a64b98f5354ea21a44d425a0ca4864c3cdc1dff",
+          "indices": [
+            [
+              7,
+              9848
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 13541,
+          "pcm_sha256": "b82535e9295371c0a03f3553432e607f83a2d8084edab2335e1b16ad2ec81cf1",
+          "indices": [
+            [
+              7,
+              13541
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 13541,
+          "pcm_sha256": "63a0bf6e218f2afc69ddd8443bed4c4bb1913326a5223ae06405bb78f85fbc7a",
+          "indices": [
+            [
+              7,
+              13541
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 19696,
+          "pcm_sha256": "ad504c581843dcbf5ef089be3b69323129d2f4c4270965b45e5969fea43b9281",
+          "indices": [
+            [
+              7,
+              19696
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 19696,
+          "pcm_sha256": "6db91f80f4a6a1c85c1fdafbf1909739c908a15974454e323b550d95657ffd4f",
+          "indices": [
+            [
+              7,
+              19696
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 27082,
+          "pcm_sha256": "90f4eed79af3633bbc8614de0eb7ad9aa4062387ec6402178c006834898cce04",
+          "indices": [
+            [
+              7,
+              27082
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 27082,
+          "pcm_sha256": "8bfae1905322549797ef549ad3a79e3d591f2746c35d06769463be1e038f652a",
+          "indices": [
+            [
+              7,
+              27082
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 39392,
+          "pcm_sha256": "68803f824c6bcdef941b485c44cf93e11b624c3aa2dfc1d0dc51c5818095e5eb",
+          "indices": [
+            [
+              7,
+              39392
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 39392,
+          "pcm_sha256": "c9728dd5e153fa83261b9eae332d6a2b5481f8636d3ba135fc59872c527810a7",
+          "indices": [
+            [
+              7,
+              39392
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 54164,
+          "pcm_sha256": "07f33f24f16908527bd76bbd2abaf2aba369e05cfd46b41f85a3141f25f825c8",
+          "indices": [
+            [
+              7,
+              54164
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 54164,
+          "pcm_sha256": "ea11036d99a0486171b38b34202c11912637671ad7b6d67ac961e98e87cc679f",
+          "indices": [
+            [
+              7,
+              54164
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 59088,
+          "pcm_sha256": "001cacded56214364e922428dc5778195ac8c6b475827c329a048ef0fcf82b84",
+          "indices": [
+            [
+              7,
+              59088
+            ]
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 59088,
+          "pcm_sha256": "c8f4cb42487152b3443005f228ce2877ad5c8d4128b128f33c857fd09b845948",
+          "indices": [
+            [
+              7,
+              59088
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 20312,
+          "pcm_sha256": "441941d95413b992c45b8645a893a99c6e346a8e6d7990439b6e6d1a49098436",
+          "indices": [
+            [
+              7,
+              20312
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 20272,
+          "pcm_sha256": "c793c180f049030bf3bd5cbd36fb9cc7a062b391f4d6337514e88c326154c585",
+          "indices": [
+            [
+              7,
+              20272
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 27929,
+          "pcm_sha256": "547bad8c53c8efc8c3d2f1c6ce2bef0b4b723032cf2e42ecb35ce1dc387c9f8b",
+          "indices": [
+            [
+              7,
+              27929
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 27874,
+          "pcm_sha256": "bad5f7b4ba4697bf801359bb278fc4db28560178fb8b41ff795adde613da4ce0",
+          "indices": [
+            [
+              7,
+              27874
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 40624,
+          "pcm_sha256": "3104433de68ab1871eedb82540d16fba05699056e5a7482e938f7300db683c62",
+          "indices": [
+            [
+              7,
+              40624
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 40544,
+          "pcm_sha256": "306bba86057096890a4a2f7e463f5a2d0a65619ddd3652e4d36d8e1e5765c506",
+          "indices": [
+            [
+              7,
+              40544
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 55858,
+          "pcm_sha256": "cd72fdd3237cfb2e0189752cffa60627957a3c8254fc34dd6175bb9d65b90e7b",
+          "indices": [
+            [
+              7,
+              55858
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 55748,
+          "pcm_sha256": "760cf41629153cd429dcf96353e25848bbfc641c3bc7ace01c2823dfd5c890d0",
+          "indices": [
+            [
+              7,
+              55748
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 81248,
+          "pcm_sha256": "3413adc159d7a4de017fcc4b8b688dcf1f59e8ee7ac0a4f2ab5969693eb25faa",
+          "indices": [
+            [
+              7,
+              81248
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 81088,
+          "pcm_sha256": "7bd5047e5e8a9a6396d9696880800cef4ba97c588d79825fffe7b99e842778b1",
+          "indices": [
+            [
+              7,
+              81088
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 111716,
+          "pcm_sha256": "dea64fc4b48997d2bd2bb321987f6cba7923556742a2e0c5d0ab721a40c884cb",
+          "indices": [
+            [
+              7,
+              111716
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 111496,
+          "pcm_sha256": "5ef8d36d594ed4298c324ec26d93b9fcca826a8cd2d6336c192f9f50966df18b",
+          "indices": [
+            [
+              7,
+              111496
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 121872,
+          "pcm_sha256": "323fad4782138b122bd859d90c5e2171c8311ea3e709b75ce571f62a8e410513",
+          "indices": [
+            [
+              7,
+              121872
+            ]
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 121632,
+          "pcm_sha256": "1537f67ce87b790f487f3c6c75f6acda388ce7f52c1ab8ecb0948d2126a0441a",
+          "indices": [
+            [
+              7,
+              121632
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 13368,
+          "pcm_sha256": "3c3d23357bc12336314cfd2e35bde525f2221d8b667a94e59b8dbfca7261deab",
+          "indices": [
+            [
+              7,
+              13368
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 13368,
+          "pcm_sha256": "f3fd03e1191632f05451d9648dfa8b3281068bbc5e2902557dc28f6d1b9fedb1",
+          "indices": [
+            [
+              7,
+              13368
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 18381,
+          "pcm_sha256": "ec0926e59114bc335c44360b0eae538c1a800914b8f5af83860a23d66e56fb75",
+          "indices": [
+            [
+              7,
+              18381
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 18381,
+          "pcm_sha256": "d43451382b1f226bfa14bdbc1b91a12de9d99b8f3a7f00f0118fac306e13685e",
+          "indices": [
+            [
+              7,
+              18381
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 26736,
+          "pcm_sha256": "efab99eb2d6d409897766fd54fb6b33f5a221f65d38ca979c27baee106bbdfd7",
+          "indices": [
+            [
+              7,
+              26736
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 26736,
+          "pcm_sha256": "6b9dc5b08c0c5c56b19317f1e96e753a8888cc55e40674dddd04c17342880eb1",
+          "indices": [
+            [
+              7,
+              26736
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 36762,
+          "pcm_sha256": "0cf21bf89b9f23d330a7a494a2255a23874d2128738886aec91345126e091661",
+          "indices": [
+            [
+              7,
+              36762
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 36762,
+          "pcm_sha256": "f9d76d60e8dbdae243a1e209c33d10aa617ef87215ddcd8c0d039d4ee4eaf3e9",
+          "indices": [
+            [
+              7,
+              36762
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 53472,
+          "pcm_sha256": "e13455800e6ed04cf121601d4db5c2a25aaba0900d939d729820742966d5b063",
+          "indices": [
+            [
+              7,
+              53472
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 53472,
+          "pcm_sha256": "772307be0f38e9c72d414472f64c5d0351d685a660b3f4f8331ced0189f425fe",
+          "indices": [
+            [
+              7,
+              53472
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 73524,
+          "pcm_sha256": "36b1bae36526fe43ee5b6fb7ac8c3095904259f36d71d4cf018d57959a387824",
+          "indices": [
+            [
+              7,
+              73524
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 73524,
+          "pcm_sha256": "a2e9481ecc7d4839bb532576c06b4735e2355f2f14a04745b0ef9413104ce957",
+          "indices": [
+            [
+              7,
+              73524
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 80208,
+          "pcm_sha256": "560f9f710eda91b0bf3c4782e6bca208b00dfd9c53e28248a9cf92e0c23504b8",
+          "indices": [
+            [
+              7,
+              80208
+            ]
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 80208,
+          "pcm_sha256": "a39ba608e0dc3d43bd853cdf9a86a27edc0ea17ff0845cceaee7505dd50893f7",
+          "indices": [
+            [
+              7,
+              80208
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 15432,
+          "pcm_sha256": "c9126a933498432e2b07fff217fb6439b0c2b18db0a583c6218a7b4fd83cc0b1",
+          "indices": [
+            [
+              7,
+              15432
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 15432,
+          "pcm_sha256": "ef3773a467e9f59c73d2d25bc4a8c49294bb15100f1b3efb7fa8cad453450839",
+          "indices": [
+            [
+              7,
+              15432
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 21219,
+          "pcm_sha256": "455db0f62ec8ff11be5603e069f53984b1581c497080718556e275fb59c82615",
+          "indices": [
+            [
+              7,
+              21219
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 21219,
+          "pcm_sha256": "b4d2fe3dd57fc0c861b42bda4150502c2ca8e518b455a56c364f0e01b6924edd",
+          "indices": [
+            [
+              7,
+              21219
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 30864,
+          "pcm_sha256": "7bce7a09f3abde3bf4b7cc6b3ff95d2a5ddc4971ba6b98fb4f8eba154319d120",
+          "indices": [
+            [
+              7,
+              30864
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 30864,
+          "pcm_sha256": "11d6cc868a7f8cf8a79167e5bd324bddc29750c584ed151d02956c04c6360d34",
+          "indices": [
+            [
+              7,
+              30864
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 42438,
+          "pcm_sha256": "c6d98fac5d1cc255bea08e0918490aa7a987e8e241562bc14c1f95b860595be3",
+          "indices": [
+            [
+              7,
+              42438
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 42438,
+          "pcm_sha256": "efe955a1de7b772e81f8741bb05df14b927d45878e93e8bef5127f4183f25780",
+          "indices": [
+            [
+              7,
+              42438
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 61728,
+          "pcm_sha256": "a34d4c44dac5e189bcba739f04983e6cedcf01239f998f6eaed2dc57290fbef3",
+          "indices": [
+            [
+              7,
+              61728
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 61728,
+          "pcm_sha256": "b702c3d39ef2f0b069706f67f447b335db3c7d902afbbb7789cadd30fd3d239b",
+          "indices": [
+            [
+              7,
+              61728
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 84876,
+          "pcm_sha256": "15c106da1cc880b1100711277dd08395a9513cf890aa83cb7128d41964a41235",
+          "indices": [
+            [
+              7,
+              84876
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 84876,
+          "pcm_sha256": "b802e4286e43381a462605fd42dbfb7b73e00dddd6adb79309871996ee1c2ddb",
+          "indices": [
+            [
+              7,
+              84876
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 92592,
+          "pcm_sha256": "6bbf3dd195a4c722d2a40e5e742aea1df881084e3fd9c4d5004ece0a90fb5418",
+          "indices": [
+            [
+              7,
+              92592
+            ]
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 92592,
+          "pcm_sha256": "a9f93ccb4aeb353202e10179c2938b7eab91bb446d244ece02e5110f946d515a",
+          "indices": [
+            [
+              7,
+              92592
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 0,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 9320,
+          "pcm_sha256": "57f0ec46b3560c03974fde7ce322b708857a6e10b585545db8f9fe7a62ef6ea7",
+          "indices": [
+            [
+              7,
+              9320
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 0,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 9320,
+          "pcm_sha256": "cbd7bb4576675d6f2f47cbc432fa42e9aa9f98bc4f5d4d78cf1e2da5be8fa83b",
+          "indices": [
+            [
+              7,
+              9320
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 1,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 12815,
+          "pcm_sha256": "ff1bf3cf2d5b5e7c66afd2b7ef57916f4a96d39942dc5c2ef6065a11de5b9689",
+          "indices": [
+            [
+              7,
+              12815
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 1,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 12815,
+          "pcm_sha256": "c8433adb9d1d22a433892d3ca84b7cf8b642d8c8c22a7f1547ddfd1a8b7e7a8a",
+          "indices": [
+            [
+              7,
+              12815
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 3,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 18640,
+          "pcm_sha256": "bb5fe6197d065851a21360a08320f2b1efea8bce3ab531686eb77f60d9aa208c",
+          "indices": [
+            [
+              7,
+              18640
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 3,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 18640,
+          "pcm_sha256": "211176be1f4982fba57425968b21261a1347ac53e33e125683d61fa8df0e31b9",
+          "indices": [
+            [
+              7,
+              18640
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 2,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 25630,
+          "pcm_sha256": "f3a016146aefe374792ddcfe4c78d386836a43002c69e2aad23398e77c4cc1b7",
+          "indices": [
+            [
+              7,
+              25630
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 2,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 25630,
+          "pcm_sha256": "799560593ecd7f3753b8ae6e4e7cf86a93828e7ca2048c049ccbf0519933c1aa",
+          "indices": [
+            [
+              7,
+              25630
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 4,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 37280,
+          "pcm_sha256": "2ca036f98d2f9ab08e02cff3c8ebfa540fdcc79c99904cf7e86c8dbfb2fb6607",
+          "indices": [
+            [
+              7,
+              37280
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 4,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 37280,
+          "pcm_sha256": "ae49cb6065cd52631abf4db4db824f8dbb7a6ec7a394e7c41ae8ca2f7e8383f5",
+          "indices": [
+            [
+              7,
+              37280
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 5,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 51260,
+          "pcm_sha256": "719d7f977299abb03b5aefb23a1cccd4244422c30c94937698700942d8d67b64",
+          "indices": [
+            [
+              7,
+              51260
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 5,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 51260,
+          "pcm_sha256": "c4910cc17dfc69d3df8ed64c334e6a4a446a1be3620e54a6c8b5f56c61f7e5dd",
+          "indices": [
+            [
+              7,
+              51260
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 6,
+          "gender": 0,
+          "head": 50,
+          "breath": 0,
+          "samples": 55920,
+          "pcm_sha256": "a0a65145fe25a11f413fdda71ce98f345c52cb2627a376b64ac914fd7eaf91d4",
+          "indices": [
+            [
+              7,
+              55920
+            ]
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 6,
+          "gender": 1,
+          "head": 29,
+          "breath": 60,
+          "samples": 55920,
+          "pcm_sha256": "2a4ca1fc4a751bb992b075c38891ead29f4176be2411bc4a87d5c66055355bfd",
+          "indices": [
+            [
+              7,
+              55920
+            ]
+          ]
+        }
+      ],
+      "timings": [
+        {
+          "language": "de_DE",
+          "rate": 1,
+          "median_cpu_ms": 3.3103575000000003,
+          "samples_ms": [
+            3.467411,
+            3.354504,
+            3.288125,
+            3.442435,
+            3.175879,
+            3.737051,
+            3.283118,
+            3.315375,
+            3.4463,
+            2.970695,
+            3.30534,
+            3.244341
+          ]
+        },
+        {
+          "language": "de_DE",
+          "rate": 6,
+          "median_cpu_ms": 21.412883,
+          "samples_ms": [
+            21.34001,
+            20.564521,
+            20.94142,
+            20.95521,
+            21.882094,
+            21.485756,
+            21.53492,
+            20.181272,
+            21.786313,
+            21.756618,
+            20.56398,
+            22.824152
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 1,
+          "median_cpu_ms": 4.5908065,
+          "samples_ms": [
+            4.391932,
+            4.506381,
+            5.435238,
+            4.675232,
+            4.844734,
+            4.899274,
+            7.314495,
+            4.166909,
+            4.434455,
+            4.15466,
+            4.359374,
+            6.277378
+          ]
+        },
+        {
+          "language": "en_US",
+          "rate": 6,
+          "median_cpu_ms": 26.089353000000003,
+          "samples_ms": [
+            23.843522,
+            31.578341,
+            32.700545,
+            31.412975,
+            31.598921,
+            27.80036,
+            24.378346,
+            24.365907,
+            24.236415,
+            31.043387,
+            23.518561,
+            23.135202
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 1,
+          "median_cpu_ms": 4.6569695,
+          "samples_ms": [
+            4.5051,
+            4.481965,
+            5.576469,
+            4.720008,
+            4.725647,
+            4.614031,
+            4.981095,
+            4.377851,
+            4.699908,
+            4.347196,
+            5.300188,
+            4.556576
+          ]
+        },
+        {
+          "language": "en_GB",
+          "rate": 6,
+          "median_cpu_ms": 26.9600035,
+          "samples_ms": [
+            32.269366,
+            26.851643,
+            28.440959,
+            26.884541,
+            27.035466,
+            28.162657,
+            26.690564,
+            25.570073,
+            24.935401,
+            24.620144,
+            27.101624,
+            27.693742
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 1,
+          "median_cpu_ms": 3.6015705000000002,
+          "samples_ms": [
+            3.571266,
+            3.469113,
+            3.73022,
+            3.964628,
+            3.631875,
+            3.261145,
+            4.165436,
+            3.652966,
+            3.441313,
+            3.522222,
+            3.710051,
+            3.438088
+          ]
+        },
+        {
+          "language": "es_ES",
+          "rate": 6,
+          "median_cpu_ms": 15.664410499999999,
+          "samples_ms": [
+            15.741569,
+            15.587252,
+            15.378942,
+            14.985299,
+            15.303711,
+            16.93536,
+            14.913192,
+            17.366138,
+            16.346527,
+            15.40458,
+            20.177607,
+            17.889975
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 1,
+          "median_cpu_ms": 3.5108805,
+          "samples_ms": [
+            3.924619,
+            3.452769,
+            3.95883,
+            3.298701,
+            3.621109,
+            3.712354,
+            3.497656,
+            3.303438,
+            3.660527,
+            3.44012,
+            3.481302,
+            3.524105
+          ]
+        },
+        {
+          "language": "es_MX",
+          "rate": 6,
+          "median_cpu_ms": 16.612436000000002,
+          "samples_ms": [
+            16.588366,
+            17.054366,
+            16.991783,
+            16.332717,
+            16.072441,
+            16.695093,
+            16.874409,
+            16.416952,
+            16.577699,
+            17.32644,
+            16.636506,
+            16.114443
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 1,
+          "median_cpu_ms": 3.650373,
+          "samples_ms": [
+            3.529363,
+            3.744893,
+            3.426851,
+            3.246113,
+            3.888215,
+            3.555853,
+            4.164705,
+            3.5341,
+            3.784892,
+            3.852021,
+            3.550835,
+            4.122433
+          ]
+        },
+        {
+          "language": "fr_FR",
+          "rate": 6,
+          "median_cpu_ms": 17.8606525,
+          "samples_ms": [
+            17.589781,
+            16.466485,
+            17.89941,
+            18.069882,
+            19.713339,
+            17.5219,
+            17.707515,
+            18.044385,
+            17.821895,
+            17.452046,
+            18.925571,
+            18.366021
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 1,
+          "median_cpu_ms": 3.7075519999999997,
+          "samples_ms": [
+            3.591515,
+            3.703772,
+            4.64075,
+            3.711332,
+            3.687427,
+            3.498798,
+            3.902806,
+            3.477356,
+            4.206266,
+            4.547242,
+            4.193027,
+            3.614429
+          ]
+        },
+        {
+          "language": "fr_CA",
+          "rate": 6,
+          "median_cpu_ms": 19.316806,
+          "samples_ms": [
+            18.258261,
+            18.894334,
+            18.75636,
+            18.48008,
+            19.756492,
+            19.594172,
+            20.227241,
+            19.568434,
+            19.650065,
+            19.664336,
+            18.748408,
+            19.065178
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 1,
+          "median_cpu_ms": 5.8797985,
+          "samples_ms": [
+            6.651933,
+            5.710897,
+            5.394718,
+            5.865357,
+            5.86727,
+            5.683346,
+            6.153212,
+            7.644494,
+            7.133968,
+            5.795533,
+            6.342373,
+            5.892327
+          ]
+        },
+        {
+          "language": "it_IT",
+          "rate": 6,
+          "median_cpu_ms": 19.0624385,
+          "samples_ms": [
+            19.890692,
+            19.365553,
+            18.622952,
+            18.216729,
+            19.409619,
+            17.790427,
+            19.497369,
+            19.247097,
+            19.582495,
+            18.771983,
+            18.872623,
+            18.87778
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 1,
+          "median_cpu_ms": 3.702169,
+          "samples_ms": [
+            6.023135,
+            4.31346,
+            4.073439,
+            3.474271,
+            3.658945,
+            3.474752,
+            3.679315,
+            3.452219,
+            3.94611,
+            3.813034,
+            3.725023,
+            3.550785
+          ]
+        },
+        {
+          "language": "pt_BR",
+          "rate": 6,
+          "median_cpu_ms": 22.0976785,
+          "samples_ms": [
+            22.595662,
+            23.263803,
+            22.031827,
+            20.977864,
+            22.637364,
+            21.594438,
+            22.722831,
+            22.766186,
+            21.813052,
+            22.093998,
+            22.101359,
+            21.988973
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 1,
+          "median_cpu_ms": 3.0759309999999997,
+          "samples_ms": [
+            3.164653,
+            3.208417,
+            3.061319,
+            3.514131,
+            3.273563,
+            3.013878,
+            3.317399,
+            3.090543,
+            3.036161,
+            3.020378,
+            2.988341,
+            2.921041
+          ]
+        },
+        {
+          "language": "fi_FI",
+          "rate": 6,
+          "median_cpu_ms": 14.5129235,
+          "samples_ms": [
+            14.166244,
+            13.845518,
+            15.061071,
+            14.955825,
+            15.338231,
+            15.672878,
+            14.323837,
+            14.022841,
+            21.815586,
+            14.535452,
+            14.490395,
+            13.875523
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 1,
+          "median_cpu_ms": 10.610922500000001,
+          "samples_ms": [
+            10.464155,
+            13.868462,
+            12.873508,
+            9.281531,
+            10.880402,
+            10.27216,
+            10.702078,
+            11.016575,
+            9.824707,
+            11.221849,
+            10.519767,
+            9.158099
+          ]
+        },
+        {
+          "language": "zh_CN",
+          "rate": 6,
+          "median_cpu_ms": 37.4466365,
+          "samples_ms": [
+            39.783286,
+            39.39425,
+            38.702814,
+            37.726977,
+            38.94297,
+            37.166296,
+            35.935411,
+            35.690268,
+            37.025508,
+            37.080008,
+            37.09472,
+            38.375449
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 1,
+          "median_cpu_ms": 3.647128,
+          "samples_ms": [
+            3.593999,
+            3.716651,
+            3.613348,
+            3.680908,
+            3.700778,
+            3.426901,
+            3.717632,
+            3.459399,
+            3.423566,
+            3.539208,
+            3.761276,
+            3.858551
+          ]
+        },
+        {
+          "language": "ja_JP",
+          "rate": 6,
+          "median_cpu_ms": 18.6849685,
+          "samples_ms": [
+            17.350996,
+            19.118316,
+            19.799847,
+            17.649319,
+            19.659228,
+            18.673386,
+            18.460832,
+            18.168678,
+            18.696551,
+            18.549373,
+            18.745504,
+            18.723821
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 1,
+          "median_cpu_ms": 6.3100505,
+          "samples_ms": [
+            7.235257,
+            6.54241,
+            6.308774,
+            6.223027,
+            6.448641,
+            6.035919,
+            6.307101,
+            6.175747,
+            6.222587,
+            6.311558,
+            6.311327,
+            6.394231
+          ]
+        },
+        {
+          "language": "ko_KR",
+          "rate": 6,
+          "median_cpu_ms": 26.414354,
+          "samples_ms": [
+            26.940374,
+            26.081341,
+            25.497434,
+            29.441413,
+            26.596784,
+            26.975907,
+            27.263364,
+            27.249412,
+            26.027831,
+            26.231924,
+            25.941193,
+            26.060089
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 1,
+          "median_cpu_ms": 6.3733395,
+          "samples_ms": [
+            6.631983,
+            6.33285,
+            6.369244,
+            6.389474,
+            6.140705,
+            6.016551,
+            6.545285,
+            5.920028,
+            6.142348,
+            6.958538,
+            6.8726,
+            6.377435
+          ]
+        },
+        {
+          "language": "el_GR",
+          "rate": 6,
+          "median_cpu_ms": 17.266901500000003,
+          "samples_ms": [
+            17.194063,
+            17.054317,
+            17.73793,
+            17.034407,
+            18.518096,
+            17.339559,
+            18.784291,
+            17.194244,
+            19.234289,
+            17.088246,
+            17.836606,
+            17.168856
+          ]
+        }
+      ]
+    }
+  ]
+}

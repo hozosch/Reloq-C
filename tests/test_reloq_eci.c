@@ -206,7 +206,15 @@ static int native_german_analysis(void)
         "Bitte https://example.org/Frankreich-11497622.html lesen.",
         "www.example.org/Text-503.htm, danach lesen.",
         "http://example.net/DNS-Dienst-Quad9-123abc.html.",
-        "Ein- und Ausgang sind hier."
+        "Ein- und Ausgang sind hier.",
+        "reloq-c-android-arm64-0.2.197-preview9.apk",
+        "Das ist reloq-c-android-arm64-0.2.197-preview9.apk und das ist gut.",
+        "SAPI5 berücksichtige ich bei der Vorbereitung des ersten Releases.",
+        "SAPI5 berücksichtige ich bei der Vorbereitung.",
+        "Bei der Vorbereitung.","Vorbereitung des ersten Releases.",
+        "Die Vorbereitungen.","USB3-Gerät: Windows11 und OpenGL4.6.",
+        "nvda_2026.3-beta2.exe und lib-test-x86-64-1.2.3.dll",
+        "Datei-1.2.3.apk", "v1.0.0", "ISO-8859-1"
     };
     for(int dictionary=0;dictionary<2;++dictionary)for(int prediction=0;prediction<2;++prediction)
         for(size_t i=0;i<sizeof texts/sizeof *texts;++i) {
@@ -231,6 +239,8 @@ static int native_german_analysis(void)
                     dictionary,prediction,texts[i],(int)length,own,(int)result.phonemes_length,native);
                 free(own);return __LINE__;
             }
+            if(strstr(texts[i],"SAPI5 berücksichtige ich bei der Vorbereitung"))
+                CHECK(strstr((char *)own,"`[.1for.0b@.2r'aj'.0tUG]"));
             if(i==0)CHECK(strstr((char *)own,"`[.1fi.0rUnt.2TvAn.0TIX]"));
             if(strstr(texts[i],"Sprachausgabe"))
                 CHECK(strstr((char *)own,"`[.1Sprax.2'aw's.2ga.0b@]"));
@@ -427,7 +437,7 @@ int main(void)
     int stream=native_phoneme_stream();if(stream)return stream;
     char version[20] = {0};
     eciVersion(version);
-    CHECK(!strcmp(version, "0.2.197.0"));
+    CHECK(!strcmp(version, "0.2.198.0"));
     int languages = 0;
     CHECK(eciGetAvailableLanguages(NULL, &languages) == 0 &&
           languages == 0);

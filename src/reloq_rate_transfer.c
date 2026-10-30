@@ -10,6 +10,13 @@
 #include <emmintrin.h>
 #define RATE_PAIRS 1
 #endif
+#if defined(RATE_PAIRS) && defined(__GNUC__) && !defined(RELOQ_RATE_TRANSFER_NO_AVX2)
+#include <immintrin.h>
+#define RATE_AVX2 1
+#ifdef _WIN32
+#include <windows.h>
+#endif
+#endif
 
 #define FFT_SIZE 512
 #if defined(__GNUC__) || defined(__clang__)
@@ -49,7 +56,7 @@ struct transform_constants {
     unsigned short small_from[FFT_SIZE/8],small_to[FFT_SIZE/8];
     double rotation_real[FFT_SIZE-1],rotation_imag[FFT_SIZE-1];
     double fold_sine[FFT_SIZE/4],fold_cosine[FFT_SIZE/4];
-    double window[RELOQ_RATE_TAPS];
+    double window[RELOQ_RATE_TAPS],noise_window[RELOQ_RATE_TAPS];
 };
 static struct transform_constants transform;
 static void prepare_transform(void)
@@ -89,6 +96,8 @@ static void prepare_transform(void)
     const unsigned fade=RELOQ_RATE_TAPS*3/4;
     for(unsigned i=0;i<RELOQ_RATE_TAPS;++i)
         transform.window[i]=i<=fade?1:.5*(1+cos(pi*(i-fade)/(RELOQ_RATE_TAPS-1-fade)));
+    for(unsigned i=0;i<RELOQ_RATE_TAPS;++i)
+        transform.noise_window[i]=i<48?1:i<65?.5*(1+cos(pi*(i-48)/16)):0;
     for(unsigned i=0;i<FFT_SIZE/4;++i) {
         transform.fold_sine[i]=sin(2*pi*i/FFT_SIZE);
         transform.fold_cosine[i]=cos(2*pi*i/FFT_SIZE);
@@ -431,6 +440,62 @@ static void exponentiate_pair(double real[2],double imag[2],const double *magnit
     _mm_storeu_pd(real,_mm_mul_pd(amplitude,cosine));
     _mm_storeu_pd(imag,_mm_mul_pd(amplitude,sine));
 }
+#ifdef RATE_AVX2
+static int avx2_enabled(void);
+/* The same phase reduction and Horner operations in four independent lanes.
+ * Exceptional lanes retain the original pair-wise fallback decisions. */
+__attribute__((target("avx2")))
+static void exponentiate_four(double real[4],double imag[4],const double magnitude[4])
+{
+    double x0=-imag[0],x1=-imag[1],x2=-imag[2],x3=-imag[3];
+    if(!(fabs(x0)<=64&&fabs(x1)<=64&&fabs(x2)<=64&&fabs(x3)<=64)) {
+        exponentiate_pair(real,imag,magnitude);
+        exponentiate_pair(real+2,imag+2,magnitude+2);return;
+    }
+    __m256d x=_mm256_set_pd(x3,x2,x1,x0);
+    __m256d quadrant=_mm256_mul_pd(x,_mm256_set1_pd(0.63661977236758134308));
+    __m256d half=_mm256_or_pd(_mm256_set1_pd(.5),_mm256_and_pd(x,_mm256_set1_pd(-0.0)));
+    __m128i q32=_mm256_cvttpd_epi32(_mm256_add_pd(quadrant,half));
+    __m256d n=_mm256_cvtepi32_pd(q32);
+    __m256d r=_mm256_sub_pd(x,_mm256_mul_pd(n,_mm256_set1_pd(0x1.921fb54400000p0)));
+    r=_mm256_sub_pd(r,_mm256_mul_pd(n,_mm256_set1_pd(0x1.0b4611a626331p-34)));
+    __m256d z=_mm256_mul_pd(r,r);
+    __m256d sp=_mm256_set1_pd(1.0/355687428096000.0);
+    sp=_mm256_add_pd(_mm256_set1_pd(-1.0/1307674368000.0),_mm256_mul_pd(z,sp));
+    sp=_mm256_add_pd(_mm256_set1_pd(1.0/6227020800.0),_mm256_mul_pd(z,sp));
+    sp=_mm256_add_pd(_mm256_set1_pd(-1.0/39916800.0),_mm256_mul_pd(z,sp));
+    sp=_mm256_add_pd(_mm256_set1_pd(1.0/362880.0),_mm256_mul_pd(z,sp));
+    sp=_mm256_add_pd(_mm256_set1_pd(-1.0/5040.0),_mm256_mul_pd(z,sp));
+    sp=_mm256_add_pd(_mm256_set1_pd(1.0/120.0),_mm256_mul_pd(z,sp));
+    sp=_mm256_add_pd(_mm256_set1_pd(-1.0/6.0),_mm256_mul_pd(z,sp));
+    sp=_mm256_add_pd(r,_mm256_mul_pd(_mm256_mul_pd(r,z),sp));
+    __m256d cp=_mm256_set1_pd(1.0/20922789888000.0);
+    cp=_mm256_add_pd(_mm256_set1_pd(-1.0/87178291200.0),_mm256_mul_pd(z,cp));
+    cp=_mm256_add_pd(_mm256_set1_pd(1.0/479001600.0),_mm256_mul_pd(z,cp));
+    cp=_mm256_add_pd(_mm256_set1_pd(-1.0/3628800.0),_mm256_mul_pd(z,cp));
+    cp=_mm256_add_pd(_mm256_set1_pd(1.0/40320.0),_mm256_mul_pd(z,cp));
+    cp=_mm256_add_pd(_mm256_set1_pd(-1.0/720.0),_mm256_mul_pd(z,cp));
+    cp=_mm256_add_pd(_mm256_set1_pd(1.0/24.0),_mm256_mul_pd(z,cp));
+    cp=_mm256_add_pd(_mm256_set1_pd(-.5),_mm256_mul_pd(z,cp));
+    cp=_mm256_add_pd(_mm256_set1_pd(1),_mm256_mul_pd(z,cp));
+    /* One signed quadrant per double lane; only its low two bits select
+     * the same sine/cosine swap and signs as the two-lane reference. */
+    __m256i q=_mm256_cvtepi32_epi64(q32);
+    const __m256i one=_mm256_set1_epi64x(1),two=_mm256_set1_epi64x(2);
+    __m256d odd=_mm256_castsi256_pd(_mm256_cmpeq_epi64(_mm256_and_si256(q,one),one));
+    __m256d sine=_mm256_or_pd(_mm256_and_pd(odd,cp),_mm256_andnot_pd(odd,sp));
+    __m256d cosine=_mm256_or_pd(_mm256_and_pd(odd,sp),_mm256_andnot_pd(odd,cp));
+    sine=_mm256_xor_pd(sine,_mm256_castsi256_pd(_mm256_slli_epi64(_mm256_and_si256(q,two),62)));
+    cosine=_mm256_xor_pd(cosine,_mm256_castsi256_pd(_mm256_slli_epi64(
+        _mm256_and_si256(_mm256_add_epi64(q,one),two),62)));
+    __m256d iszero=_mm256_cmp_pd(x,_mm256_setzero_pd(),_CMP_EQ_OQ);
+    sine=_mm256_or_pd(_mm256_and_pd(iszero,x),_mm256_andnot_pd(iszero,sine));
+    __m256d amplitude=_mm256_loadu_pd(magnitude);
+    _mm256_storeu_pd(real,_mm256_mul_pd(amplitude,cosine));
+    _mm256_storeu_pd(imag,_mm256_mul_pd(amplitude,sine));
+}
+#endif
+
 #endif
 static void causal_kernel(struct reloq_rate_transfer *s,
     double spectrum[FFT_SIZE],int unit_dc)
@@ -440,7 +505,7 @@ static void causal_kernel(struct reloq_rate_transfer *s,
         /* The fixed positive floor also covers NaN. A comparison has the
          * same value as fmax here and needs no out-of-line math call. */
         magnitude[i]=spectrum[i]>1e-12?spectrum[i]:1e-12;
-        spectrum[i]=log(magnitude[i]);
+        spectrum[i]=magnitude[i]==1?0:log(magnitude[i]);
         if(i && i<FFT_SIZE/2)spectrum[FFT_SIZE-i]=spectrum[i];
     }
     even_transform(spectrum);
@@ -456,6 +521,10 @@ static void causal_kernel(struct reloq_rate_transfer *s,
     real_transform(spectrum,imag);
     unsigned at=0;
 #ifdef RATE_PAIRS
+#ifdef RATE_AVX2
+    if(avx2_enabled())
+        for(;at<FFT_SIZE/2;at+=4)exponentiate_four(spectrum+at,imag+at,magnitude+at);
+#endif
     for(;at<FFT_SIZE/2;at+=2)exponentiate_pair(spectrum+at,imag+at,magnitude+at);
 #endif
     for(unsigned i=at;i<=FFT_SIZE/2;++i) {
@@ -466,7 +535,7 @@ static void causal_kernel(struct reloq_rate_transfer *s,
     double dc=0;
     unsigned taps=s->taps?s->taps:RELOQ_RATE_TAPS;
     for(unsigned i=0;i<RELOQ_RATE_TAPS;++i) {
-        double window=taps==RELOQ_RATE_TAPS?transform.window[i]:
+        double window=taps==RELOQ_RATE_TAPS?transform.window[i]:taps==65?transform.noise_window[i]:
             i<taps*3/4?1:i<taps?.5*(1+cos(pi*(i-taps*3/4)/(taps-1-taps*3/4))):0;
         s->target[i]=(float)(spectrum[i]/FFT_SIZE*window);
         dc+=s->target[i];
@@ -743,7 +812,7 @@ static inline void accumulate_four(__m128 k,const float *history,
         _mm_cvtps_pd(_mm_movehl_ps(h,h))));
 }
 #endif
-void reloq_rate_transfer_process(struct reloq_rate_transfer *s,float *samples,size_t count)
+static void process_baseline(struct reloq_rate_transfer *s,float *samples,size_t count)
 {
     if(!s->ready)return;
     unsigned taps=s->taps?s->taps:RELOQ_RATE_TAPS;
@@ -880,6 +949,111 @@ void reloq_rate_transfer_process(struct reloq_rate_transfer *s,float *samples,si
         s->cursor=(s->cursor+1)%RELOQ_RATE_TAPS;
         ++j;
     }
+}
+
+#ifdef RATE_AVX2
+static int avx2_enabled(void)
+{
+    static atomic_int selected;
+    int choice=atomic_load_explicit(&selected,memory_order_relaxed);
+    if(!choice) {
+        int supported=!!__builtin_cpu_supports("avx2");
+#ifdef _WIN32
+        /* Windows on ARM can advertise emulated AVX2. Keep its established
+         * x64 path until that wider emulated path is measured on a device.
+         * Resolve the query dynamically to retain older Windows loaders. */
+        typedef BOOL (WINAPI *machine_query)(HANDLE,USHORT *,USHORT *);
+        FARPROC address=GetProcAddress(GetModuleHandleW(L"kernel32.dll"),"IsWow64Process2");
+        machine_query query=NULL;
+        _Static_assert(sizeof query==sizeof address,"Windows function pointers");
+        memcpy(&query,&address,sizeof query);
+        USHORT process=0,native=0;
+        if(query&&query(GetCurrentProcess(),&process,&native)&&native==IMAGE_FILE_MACHINE_ARM64)
+            supported=0;
+#endif
+        choice=supported?2:1;
+        atomic_store_explicit(&selected,choice,memory_order_relaxed);
+    }
+    return choice==2;
+}
+/* Four output samples follow their original tap sums in four double lanes.
+ * Runtime dispatch retains the baseline on older CPUs and emulated x64.
+ * There is no horizontal sum, fused operation or approximate reciprocal. */
+__attribute__((target("avx2")))
+static void process_avx2(struct reloq_rate_transfer *s,float *samples,size_t count)
+{
+    unsigned taps=s->taps?s->taps:RELOQ_RATE_TAPS;
+    for(size_t j=0;j<count;) {
+        if(count-j<4 || s->cursor+4>RELOQ_RATE_TAPS ||
+           (s->remaining && s->remaining<=4)) {
+            process_baseline(s,samples+j,1);++j;continue;
+        }
+        unsigned at=s->cursor+RELOQ_RATE_TAPS;
+        memcpy(s->history+at,samples+j,4*sizeof *samples);
+        if(s->key[0]==-1 && !s->remaining) {
+            memcpy(s->history+s->cursor,s->history+at,4*sizeof *samples);
+            s->cursor+=4;if(s->cursor==RELOQ_RATE_TAPS)s->cursor=0;
+            j+=4;continue;
+        }
+        __m256d sum=_mm256_setzero_pd();
+        if(s->remaining) {
+            unsigned i=0;
+            for(;i+3<taps;i+=4) {
+                __m128 step=_mm_loadu_ps(s->step+i);
+                __m128 k0=_mm_add_ps(_mm_loadu_ps(s->kernel+i),step);
+                __m128 k1=_mm_add_ps(k0,step),k2=_mm_add_ps(k1,step);
+                __m128 k3=_mm_add_ps(k2,step);
+                _mm_storeu_ps(s->kernel+i,k3);
+                _MM_TRANSPOSE4_PS(k0,k1,k2,k3);
+                sum=_mm256_add_pd(sum,_mm256_mul_pd(_mm256_cvtps_pd(k0),_mm256_cvtps_pd(_mm_loadu_ps(s->history+at-i))));
+                sum=_mm256_add_pd(sum,_mm256_mul_pd(_mm256_cvtps_pd(k1),_mm256_cvtps_pd(_mm_loadu_ps(s->history+at-i-1))));
+                sum=_mm256_add_pd(sum,_mm256_mul_pd(_mm256_cvtps_pd(k2),_mm256_cvtps_pd(_mm_loadu_ps(s->history+at-i-2))));
+                sum=_mm256_add_pd(sum,_mm256_mul_pd(_mm256_cvtps_pd(k3),_mm256_cvtps_pd(_mm_loadu_ps(s->history+at-i-3))));
+            }
+            for(;i<taps;++i) {
+                float step=s->step[i],k0=s->kernel[i]+step,k1=k0+step;
+                float k2=k1+step,k3=k2+step;s->kernel[i]=k3;
+                __m128 k=_mm_set_ps(k3,k2,k1,k0);
+                sum=_mm256_add_pd(sum,_mm256_mul_pd(_mm256_cvtps_pd(k),_mm256_cvtps_pd(_mm_loadu_ps(s->history+at-i))));
+            }
+            for(;i+7<RELOQ_RATE_TAPS;i+=8) {
+                __m256 step=_mm256_loadu_ps(s->step+i),k=_mm256_loadu_ps(s->kernel+i);
+                k=_mm256_add_ps(k,step);k=_mm256_add_ps(k,step);
+                k=_mm256_add_ps(k,step);k=_mm256_add_ps(k,step);
+                _mm256_storeu_ps(s->kernel+i,k);
+            }
+            for(;i<RELOQ_RATE_TAPS;++i) {
+                float step=s->step[i],k=s->kernel[i];
+                k+=step;k+=step;k+=step;k+=step;s->kernel[i]=k;
+            }
+            s->remaining-=4;
+        } else for(unsigned i=0;i<taps;++i) {
+            __m256d k=_mm256_set1_pd((double)s->kernel[i]);
+            sum=_mm256_add_pd(sum,_mm256_mul_pd(k,_mm256_cvtps_pd(_mm_loadu_ps(s->history+at-i))));
+        }
+        double values[4];_mm256_storeu_pd(values,sum);
+        memcpy(s->history+s->cursor,s->history+at,4*sizeof *samples);
+        for(unsigned n=0;n<4;++n) {
+            double y=values[n];
+            if(s->presence_rate>0) {
+                const double *c=s->presence;double *d=s->presence_delay;
+                double x=y;y=c[0]*x+d[0];
+                d[0]=c[1]*x-c[3]*y+d[1];d[1]=c[2]*x-c[4]*y;
+            }
+            samples[j+n]=(float)y;
+        }
+        s->cursor+=4;if(s->cursor==RELOQ_RATE_TAPS)s->cursor=0;
+        j+=4;
+    }
+}
+#endif
+void reloq_rate_transfer_process(struct reloq_rate_transfer *s,float *samples,size_t count)
+{
+    if(!s->ready)return;
+#ifdef RATE_AVX2
+    if(avx2_enabled()){process_avx2(s,samples,count);return;}
+#endif
+    process_baseline(s,samples,count);
 }
 
 static double complex noise_response(const struct reloq_core_frication_bank *b,

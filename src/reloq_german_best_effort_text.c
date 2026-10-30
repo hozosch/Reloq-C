@@ -886,14 +886,15 @@ static int collect_native_text(void *context,const char *data,size_t length)
     memcpy(out->output+out->used,data,length);out->used+=length;
     out->output[out->used]=0;return 0;
 }
-static int append_native_url(struct annotation_builder *b,
-    const unsigned char *source,size_t length)
+static int append_native_source(struct annotation_builder *b,
+    const unsigned char *source,size_t length,size_t query_length,int native_letters)
 {
-    if(!length||length==SIZE_MAX)return 1;
+    if(!length||query_length<length||query_length==SIZE_MAX)return 1;
     /* Extended Unicode names retain their character-table admission. */
-    for(size_t i=0;i<length;++i)if(source[i]<32||source[i]>=127||source[i]=='`')return 1;
-    char *text=malloc(length+1);if(!text)return -2;
-    memcpy(text,source,length);text[length]=0;
+    for(size_t i=0;i<query_length;++i)
+        if(source[i]<32||(source[i]>=127&&(!native_letters||!letter(source[i])))||source[i]=='`')return 1;
+    char *text=malloc(query_length+1);if(!text)return -2;
+    memcpy(text,source,query_length);text[query_length]=0;
     struct annotation_builder out={0};
     struct reloq61_request q={.language=0x40000,.annotations=1,.phonemes_only=1,
         .voice={0,50,65,30,0,0,50,92},.text=text};
@@ -906,6 +907,24 @@ static int append_native_url(struct annotation_builder *b,
         status=append_native_reading(b,source,length,(char *)out.output,RELOQ_DE_SOURCE_NATIVE_TOKEN);
     }
     free(out.output);return status;
+}
+/* Mixed identifiers are a single lexical source token. Splitting their
+ * alphabetic head before digits changes acronym selection and can change
+ * syllable analysis of later words. The native frontend owns the complete
+ * token, including internal dots/hyphens; sentence-final dots stay outside. */
+static int identifier_byte(unsigned char c)
+{return letter(c)||digit(c)||c=='-'||c=='_'||c=='.';}
+static size_t mixed_identifier_end(const unsigned char *text,size_t length,size_t at)
+{
+    if(at>=length||(at&&identifier_byte(text[at-1])))return at;
+    size_t end=at;int letters=0,numbers=0;
+    while(end<length&&identifier_byte(text[end])) {
+        unsigned char c=text[end++];
+        letters|=letter(c);numbers|=digit(c);
+    }
+    if(end<length&&text[end]>=127)return at;
+    while(end>at&&text[end-1]=='.')--end;
+    return letters&&numbers?end:at;
 }
 static int append_native_token(struct annotation_builder *b,
     const unsigned char *source,size_t length,int dictionary)
@@ -1826,7 +1845,7 @@ static int plan_tags_checked(int native_first,
             /* Sentence punctuation is admitted after the complete URL so
              * its original boundary is submitted exactly once as well. */
             while(end>at&&strchr(".,;:!?\"",encoded[end-1]))--end;
-            result=append_native_url(&b,original_encoded+at,end-at);
+            result=append_native_source(&b,original_encoded+at,end-at,end-at,0);
             if(result!=1) {
                 if(result)goto done;
                 at=end;url_end=end;
@@ -1841,6 +1860,20 @@ static int plan_tags_checked(int native_first,
             /* The observed domain-reading path deaccents dots in bare www
              * addresses. A scheme with a path uses ordinary symbol stress. */
             url_weak_dots_end=(bare||path==url_end)?path:0;
+        }
+        size_t identifier_end=at>=url_end?mixed_identifier_end(original_encoded,encoded_length,at):at;
+        if(identifier_end>at) {
+            size_t query_end=identifier_end;
+            /* Native number analysis distinguishes a version component
+             * from an ordinal/date using its real terminal punctuation. */
+            while(query_end<encoded_length&&strchr(".?!",original_encoded[query_end]))++query_end;
+            result=append_native_source(&b,original_encoded+at,identifier_end-at,query_end-at,1);
+            if(result!=1) {
+                if(result)goto done;
+                at=identifier_end;
+                map_boundaries(boundaries,boundary_count,&next_boundary,at,b.used);
+                continue;
+            }
         }
         if(at<url_end&&encoded[at]=='.'&&at&&letter(encoded[at-1])&&
            (at<2||!letter(encoded[at-2]))) {

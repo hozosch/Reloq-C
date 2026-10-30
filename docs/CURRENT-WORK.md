@@ -1,4 +1,18 @@
-# Technischer Arbeitsstand: 0.2.197
+# Technischer Arbeitsstand: 0.2.198
+
+## 0.2.198: Ganze Quellkennungen und messbare DSP-/Heap-Entlastung
+
+Der Nutzer bestätigt, dass Play Protect die APK 0.2.197 akzeptiert und die deutsche Analyse besser ist. Der neue Dateiname und der Satz „SAPI5 berücksichtige ich bei der Vorbereitung des ersten Releases.“ zeigen dieselbe verbliebene Ursache: Das vorzeitige Trennen von Buchstaben und Ziffern verändert die native Akronym-/Zahlenanalyse und sogar die Silbengrenze im späteren Wort Vorbereitung. Isoliert wird Vorbereitung bereits richtig aus dem normalen Kern gelesen. Gemischte Kennungen gehen jetzt vollständig samt echten numerisch relevanten Satzzeichen in die native Analyse. Deutsche Buchstaben in Kennungen bleiben erhalten. Eine zusätzliche Lexikondatei oder ein Ausspracheeintrag für das Beispiel wird nicht eingeführt. 184 vollständige native Gruppen-/Akzentvergleiche und 1.664 Akzentvergleiche um variable Quellspannen bestehen; 160 öffentliche UTF-8-/Tag-/Fragment-/Indexprüfungen umfassen jetzt auch die neuen Beispiele.
+
+Ein Linux-Samplingprofil bei 48 kHz weist auf Filterkorrektur und deren Phasenberechnung. Beide bekommen auf unterstützten nativen x64-Prozessoren einen AVX2-Zweig mit vier unabhängigen Double-Lanes. Die Reihenfolge jedes Summenpfads, Float-Rampen und die Horner-Rechnung bleiben erhalten; es gibt keine neue Näherung oder FMA-Zusammenziehung. 19.404 Filterzustandsvergleiche, 20.000 Phasenvergleiche und der ausdrücklich kompilierte bisherige Pfad bestehen bitgleich. Unter Windows auf ARM deaktiviert eine echte Hostarchitektur-Abfrage den neuen Zweig; native ARM64-Ziele behalten ihren bisherigen Rechenpfad. Feste 65-Tap-Fenster werden einmal wie die bisherigen Transformationskonstanten vorbereitet, log(1) entfällt. Die Pakete erhalten keine zusätzliche Laufzeitbibliothek.
+
+Die vollständige Gegenüberstellung zu 0.2.197 hält alle 196 PCM-Ausgaben (14 Sprachen, sieben Abtastraten, zwei Modelle) bitgleich. Bei 48 kHz liegt der Median der CPU-Zeitverhältnisse auf dem AVX2-Linux-Host bei 0,9036; alle 14 Sprachen verbessern sich um etwa 6,4 bis 12,2 Prozent. Deutsch liegt bei 0,9355, US-Englisch bei 0,8937. Bei 11 kHz liegt der Median bei 0,9990, also praktisch unverändert. Gemessen werden Prozess-CPU-Zeiten, keine Reaktionszeit auf Dell/ARM/Android.
+
+Der deutsche Quellpuffer wächst aus tatsächlichen Stützpunkten statt aus sechs maximalen Zielpuffern. Im 4.000-Wörter-Test sinkt die Spitze angeforderter Heap-Bytes von 100.477.682 auf 91.652.850 (minus 8.824.832 bzw. 8,78 Prozent), bei identischem PCM. Die große getrennte Zielpunktreservierung bleibt bestehen. Die Windows-DLL wächst für den zusätzlichen Code um 10.752 Bytes auf 55.223.296 Bytes; das Add-on wird 1.721 Bytes kleiner, die APK-Größe bleibt mit 17.708.438 Bytes gleich. Es wird kein Sprach-/Audioergebnis zwischengespeichert.
+
+Vollständige ECI-Prüfung, 1.680 asiatische/griechische Ausgaben, 105 Pausenvergleiche, 366 CJK-Mischtextprüfungen, 35 JNI-/C-Paare sowie die NVDA-Verträge auf Deutsch und Englisch bestehen. Die APK aktualisiert 20197 → 20198 mit derselben Signatur, INTERNET bleibt die einzige Berechtigung. Der Browser-Updateweg bleibt bestehen. Die 46 geprüften eigenen deutschen Wortlautungen bleiben erhalten. Details: `docs/validation/0.2.198.json`.
+
+Der neue englische `docs/RELEASE-PLAN.md` beschreibt überprüfbare Kriterien für das erste öffentliche Release und den nächsten SAPI5-Adapter. COM-Aktivierung, Fragment-/Steuerungsabbildung, PCM-Streaming und automatische Quellpositionsereignisse sind dort ausdrücklich noch als Implementierungsarbeit erfasst; SAPI5 ist in diesem Paket nicht enthalten.
 
 ## 0.2.197: Analysegrenzen, Regelaufrufe und Android-Updates
 

@@ -1,0 +1,343 @@
+{
+  "version": "0.2.198",
+  "android_version": "0.2.198-preview10",
+  "no_audio_files": true,
+  "artifacts": {
+    "eci/libreloq_eci.so": {
+      "bytes": 55979000,
+      "sha256": "ff086e8d6200f7ec75eac8f92cb9d85f5681ec6ecbae18f81f13574aa39cafa3"
+    },
+    "eci/eci.dll": {
+      "bytes": 55223296,
+      "sha256": "0012a83d9bfb7ba6f01bb0d6df9c5b566186bfa04d2509fa63a3a9a889ae7f93"
+    },
+    "eci/libreloq_android.so": {
+      "bytes": 53624352,
+      "sha256": "074b72d305d75ab2fc3c9b4d2c77ff9d2ed9b23d2f060f3e093a15aa8b7bd52a"
+    },
+    "dist/reloq-c-synth-experimental-x64-0.2.198.nvda-addon": {
+      "bytes": 19852931,
+      "sha256": "7808a327130fcc93513a13eb834c0181ba7398f05da325f376acfc66e1dbd57f"
+    },
+    "dist/reloq-c-android-arm64-0.2.198-preview10.apk": {
+      "bytes": 17708438,
+      "sha256": "7955fc0a12ef29bcacf3e79f7dbe60167da96dcf6a51f524ed0aa7eddad402bf"
+    }
+  },
+  "changes_from_0197": {
+    "eci/libreloq_eci.so": {
+      "before_bytes": 55966256,
+      "after_bytes": 55979000,
+      "change_bytes": 12744,
+      "change_percent": 0.02277086392915045
+    },
+    "eci/eci.dll": {
+      "before_bytes": 55212544,
+      "after_bytes": 55223296,
+      "change_bytes": 10752,
+      "change_percent": 0.019473835511002718
+    },
+    "eci/libreloq_android.so": {
+      "before_bytes": 53622680,
+      "after_bytes": 53624352,
+      "change_bytes": 1672,
+      "change_percent": 0.003118083616857643
+    },
+    "dist/reloq-c-synth-experimental-x64-0.2.198.nvda-addon": {
+      "before_bytes": 19854652,
+      "after_bytes": 19852931,
+      "change_bytes": -1721,
+      "change_percent": -0.008667993777982106
+    },
+    "dist/reloq-c-android-arm64-0.2.198-preview10.apk": {
+      "before_bytes": 17708438,
+      "after_bytes": 17708438,
+      "change_bytes": 0,
+      "change_percent": 0.0
+    }
+  },
+  "german_analysis": {
+    "reference": "Existing complete native C German rule provider; no original Apple module was executed here.",
+    "reported_cases": [
+      "reloq-c-android-arm64-0.2.197-preview9.apk",
+      "SAPI5 berücksichtige ich bei der Vorbereitung des ersten Releases."
+    ],
+    "cause": "Splitting mixed alphanumeric source tokens changed acronym grouping and later contextual syllable analysis. Vorbereitung matched the reference in isolation but acquired a different final syllable after the rewritten SAPI5.",
+    "fix": "Admit whole mixed identifiers with native German letters, preserving real terminal punctuation for version/ordinal/date decisions. Source identity is retained across all generated groups; no word-specific pronunciation entry or supplemental lexicon was added.",
+    "complete_native_word_group_accent_comparisons": 184,
+    "source_gap_anchor_accent_comparisons": 1664,
+    "public_utf8_tag_fragment_index_checks": 160,
+    "desired_german_word_spr_unchanged": 46,
+    "own_acoustic_planner_retained": true
+  },
+  "resources": {
+    "requested_heap_peak_before_bytes": 100477682,
+    "requested_heap_peak_after_bytes": 91652850,
+    "requested_heap_saved_bytes": 8824832,
+    "requested_heap_saved_percent": 8.782877773792592,
+    "heap_method": "Requested live malloc/calloc/realloc sizes during warmed public German ECI synthesis; Linux/glibc; not RSS or a timing benchmark",
+    "heap_words": 4000,
+    "heap_pcm_identical": true,
+    "source_storage": "Geometrically grown private source knots replace the sum of six maximum target-stream reservations. Serial knot ordering and failure cleanup are retained. The separate large target-point reservation remains.",
+    "cpu_method": "Linux x86-64 AVX2 host; 12 balanced warmed pairs per language/rate, after builds and other tests completed. Process CPU time, not device latency or CPU utilization. No speech-result caching.",
+    "timings_by_rate": {
+      "1": {
+        "sample_rate_hz": 11025,
+        "median_ratio": 0.9989501724288175,
+        "range": [
+          0.9602512753001939,
+          1.0321590892533987
+        ],
+        "lower_cpu_cases": 8,
+        "languages": [
+          {
+            "language": "de_DE",
+            "before_cpu_ms": 3.3137635000000003,
+            "after_cpu_ms": 3.3103575000000003,
+            "ratio": 0.9989721656358397
+          },
+          {
+            "language": "en_US",
+            "before_cpu_ms": 4.5675419999999995,
+            "after_cpu_ms": 4.5908065,
+            "ratio": 1.005093439753811
+          },
+          {
+            "language": "en_GB",
+            "before_cpu_ms": 4.849740499999999,
+            "after_cpu_ms": 4.6569695,
+            "ratio": 0.9602512753001939
+          },
+          {
+            "language": "es_ES",
+            "before_cpu_ms": 3.7299805,
+            "after_cpu_ms": 3.6015705000000002,
+            "ratio": 0.9655735465641175
+          },
+          {
+            "language": "es_MX",
+            "before_cpu_ms": 3.4581625,
+            "after_cpu_ms": 3.5108805,
+            "ratio": 1.0152445120783076
+          },
+          {
+            "language": "fr_FR",
+            "before_cpu_ms": 3.6555805,
+            "after_cpu_ms": 3.650373,
+            "ratio": 0.9985754656476584
+          },
+          {
+            "language": "fr_CA",
+            "before_cpu_ms": 3.8596475000000003,
+            "after_cpu_ms": 3.7075519999999997,
+            "ratio": 0.9605934220676887
+          },
+          {
+            "language": "it_IT",
+            "before_cpu_ms": 5.696600999999999,
+            "after_cpu_ms": 5.8797985,
+            "ratio": 1.0321590892533987
+          },
+          {
+            "language": "pt_BR",
+            "before_cpu_ms": 3.7557635,
+            "after_cpu_ms": 3.702169,
+            "ratio": 0.9857300652716818
+          },
+          {
+            "language": "fi_FI",
+            "before_cpu_ms": 3.043803,
+            "after_cpu_ms": 3.0759309999999997,
+            "ratio": 1.0105552166155298
+          },
+          {
+            "language": "zh_CN",
+            "before_cpu_ms": 10.4480715,
+            "after_cpu_ms": 10.610922500000001,
+            "ratio": 1.015586704206609
+          },
+          {
+            "language": "ja_JP",
+            "before_cpu_ms": 3.5667785,
+            "after_cpu_ms": 3.647128,
+            "ratio": 1.0225271908530345
+          },
+          {
+            "language": "ko_KR",
+            "before_cpu_ms": 6.316821,
+            "after_cpu_ms": 6.3100505,
+            "ratio": 0.9989281792217952
+          },
+          {
+            "language": "el_GR",
+            "before_cpu_ms": 6.4241150000000005,
+            "after_cpu_ms": 6.3733395,
+            "ratio": 0.9920961097365162
+          }
+        ]
+      },
+      "6": {
+        "sample_rate_hz": 48000,
+        "median_ratio": 0.9035924965511095,
+        "range": [
+          0.8776857208055715,
+          0.9355350442756295
+        ],
+        "lower_cpu_cases": 14,
+        "languages": [
+          {
+            "language": "de_DE",
+            "before_cpu_ms": 22.8883815,
+            "after_cpu_ms": 21.412883,
+            "ratio": 0.9355350442756295
+          },
+          {
+            "language": "en_US",
+            "before_cpu_ms": 29.191361999999998,
+            "after_cpu_ms": 26.089353000000003,
+            "ratio": 0.8937353796647105
+          },
+          {
+            "language": "en_GB",
+            "before_cpu_ms": 30.717149499999998,
+            "after_cpu_ms": 26.9600035,
+            "ratio": 0.8776857208055715
+          },
+          {
+            "language": "es_ES",
+            "before_cpu_ms": 17.582379500000002,
+            "after_cpu_ms": 15.664410499999999,
+            "ratio": 0.8909152768543073
+          },
+          {
+            "language": "es_MX",
+            "before_cpu_ms": 18.347744,
+            "after_cpu_ms": 16.612436000000002,
+            "ratio": 0.905421178756364
+          },
+          {
+            "language": "fr_FR",
+            "before_cpu_ms": 19.7524165,
+            "after_cpu_ms": 17.8606525,
+            "ratio": 0.9042261993614807
+          },
+          {
+            "language": "fr_CA",
+            "before_cpu_ms": 21.206212,
+            "after_cpu_ms": 19.316806,
+            "ratio": 0.9109031825202917
+          },
+          {
+            "language": "it_IT",
+            "before_cpu_ms": 20.47336,
+            "after_cpu_ms": 19.0624385,
+            "ratio": 0.9310850050993095
+          },
+          {
+            "language": "pt_BR",
+            "before_cpu_ms": 24.3798375,
+            "after_cpu_ms": 22.0976785,
+            "ratio": 0.9063915417811952
+          },
+          {
+            "language": "fi_FI",
+            "before_cpu_ms": 16.072631,
+            "after_cpu_ms": 14.5129235,
+            "ratio": 0.9029587937407384
+          },
+          {
+            "language": "zh_CN",
+            "before_cpu_ms": 42.3712475,
+            "after_cpu_ms": 37.4466365,
+            "ratio": 0.8837746988686136
+          },
+          {
+            "language": "ja_JP",
+            "before_cpu_ms": 20.054769999999998,
+            "after_cpu_ms": 18.6849685,
+            "ratio": 0.9316969728398781
+          },
+          {
+            "language": "ko_KR",
+            "before_cpu_ms": 29.851986,
+            "after_cpu_ms": 26.414354,
+            "ratio": 0.8848441105392452
+          },
+          {
+            "language": "el_GR",
+            "before_cpu_ms": 19.2019605,
+            "after_cpu_ms": 17.266901500000003,
+            "ratio": 0.8992259670568536
+          }
+        ]
+      }
+    },
+    "identical_pcm_cases": 196,
+    "pcm_scope": "14 languages, seven sample rates and two models (male and female head 29/breath 60); exact PCM/sample/index comparison with 0.2.197.",
+    "dsp_change": "Four independent double lanes for FIR output and spectral phase. Tap sums, float ramps, Horner arithmetic, fallback decisions and precision are preserved; no fused multiply-add or approximate reciprocal. Fixed 65-tap windows are prepared once and exact unity magnitudes bypass log(1).",
+    "dispatch": "GNU/Clang x86 runtime AVX2 feature check; Windows IsWow64Process2 additionally disables the new variant on ARM64 hosts. Unsupported targets retain the baseline. CPU selection and immutable mathematical constants are not speech-result caches.",
+    "extra_runtime_libraries": false,
+    "native_audit": "0.2.198-native-audit.json",
+    "size_tradeoff": "A small extra x64 code variant increases DLL size; this iteration reduces CPU and requested heap rather than claiming a smaller DLL. Language code/data remain the main binary-size targets.",
+    "limits": "No real Windows/Dell, Windows/ARM or Android speech device latency/CPU/RSS was measured. The 11-kHz CPU median is essentially unchanged. Further optimization remains possible."
+  },
+  "tests": {
+    "complete_make_C_eci_test_passed": true,
+    "rate_dispatch_bitwise_state_cases": 19404,
+    "spectral_phase_bitwise_cases": 20000,
+    "forced_baseline_state_cases": 19404,
+    "native_cjk_unicode_fragment_index_comparisons": 366,
+    "native_analysis_options_baseline_checks": 227,
+    "dictionary_semantics_checks": 25,
+    "dictionary_retention_checks": 18,
+    "jni_direct_native_pcm_pairs": 35,
+    "android_settings_dictionary_checks": 866,
+    "android_voice_names_locales": 112,
+    "android_release_metadata_checks": 33,
+    "arm64_landing_emulation_passed": true,
+    "nvda_package_en_de_contracts_passed": true,
+    "windows_21_public_exports_system_imports_passed": true,
+    "asian_greek_renders": 1680,
+    "asian_greek_pause_comparisons": 105
+  },
+  "android": {
+    "package": "org.reloq.tts.preview",
+    "version_code": 20198,
+    "signed_upgrade_from_20197_passed": true,
+    "signing_certificate_sha256": "e4af6db7bf1fd6ecf1670d48dac195d56cafc96daceec1238211a0ff1ba1091f",
+    "compiled_permissions": [
+      "android.permission.INTERNET"
+    ],
+    "browser_update_handoff_retained": true,
+    "removed_installer_dex_absent": true,
+    "native_and_dex_match_isolated_build": true,
+    "fresh_native_archive_bridge_matches_object": true,
+    "signature_resource_alignment_16k_elf_checks_passed": true,
+    "play_protect": "User confirmed 0.2.197 is accepted on the device. This is not an independent security verdict for 0.2.198."
+  },
+  "community_dictionaries": {
+    "repository": "eigencrow/IBMTTSDictionaries",
+    "branch": "master",
+    "freshly_resolved_commit": "f93ccc82158386f7607ed3868473b6914121d2d7",
+    "verified_snapshot_reused": true
+  },
+  "release_and_sapi5": {
+    "plan": "../RELEASE-PLAN.md",
+    "sapi5_implemented": false,
+    "next_adapter_boundaries": [
+      "COM activation and stable voice tokens",
+      "UTF-16 fragments and controls into the shared C core",
+      "Output format negotiation and bounded PCM streaming",
+      "Abort/rate/volume/skip handling",
+      "Word/sentence/bookmark source-position events",
+      "Architecture-specific activation and real SAPI client tests"
+    ],
+    "core_duplicated_for_adapter": false
+  },
+  "primary_references": {
+    "runtime_cpu_features": "https://gcc.gnu.org/onlinedocs/gcc/x86-Built-in-Functions.html",
+    "windows_host_architecture": "https://learn.microsoft.com/en-us/windows/win32/api/wow64apiset/nf-wow64apiset-iswow64process2",
+    "windows_emulation": "https://learn.microsoft.com/en-ca/windows/arm/apps-on-arm-x86-emulation",
+    "sapi5_porting": "https://learn.microsoft.com/en-us/previous-versions/windows/desktop/ee431802(v=vs.85)"
+  }
+}

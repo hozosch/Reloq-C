@@ -1,0 +1,59 @@
+{
+  "host": {
+    "bytes": 55979000,
+    "dependencies": [
+      "libm.so.6",
+      "libc.so.6",
+      "ld-linux-x86-64.so.2"
+    ],
+    "rule_diagnostic_symbols": {},
+    "bytecode_arrays": [],
+    "symbol_audit_source": "unstripped library",
+    "text_section_bytes": null,
+    "defined_text_bytes": 29889524,
+    "language_call_glue_text_bytes": 18
+  },
+  "windows": {
+    "bytes": 55223296,
+    "dependencies": [
+      "KERNEL32.dll",
+      "msvcrt.dll",
+      "USER32.dll"
+    ],
+    "rule_diagnostic_symbols": {},
+    "bytecode_arrays": [],
+    "symbol_audit_source": "native input archive including GCC LTO symbols; DLL symbol table is stripped",
+    "text_section_bytes": 31447760,
+    "defined_text_bytes": null,
+    "language_call_glue_text_bytes": null
+  },
+  "android": {
+    "bytes": 53624352,
+    "dependencies": [
+      "libm.so",
+      "libdl.so",
+      "libc.so"
+    ],
+    "rule_diagnostic_symbols": {},
+    "bytecode_arrays": [],
+    "symbol_audit_source": "unstripped library",
+    "text_section_bytes": null,
+    "defined_text_bytes": 25949588,
+    "language_call_glue_text_bytes": 8
+  },
+  "baseline_host": {
+    "bytes": 55966256,
+    "dependencies": [
+      "libm.so.6",
+      "libc.so.6",
+      "ld-linux-x86-64.so.2"
+    ],
+    "rule_diagnostic_symbols": {},
+    "bytecode_arrays": [],
+    "symbol_audit_source": "unstripped library",
+    "text_section_bytes": null,
+    "defined_text_bytes": 29882016,
+    "language_call_glue_text_bytes": 18
+  },
+  "scope": "Static native dependency/symbol inspection only; no malware classification or device performance claim."
+}

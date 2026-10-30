@@ -185,15 +185,23 @@ static struct reloq_german_voice_model inline_model(
 /* Voice anatomy acts on sparse targets before interpolation. Keeping the
  * owning phone here preserves nasal and consonant resonance decisions. */
 static const struct vowel_shape *vowel(enum reloq_german_phone phone);
+static int source_points_reserve(struct source_points *out,size_t needed)
+{
+    if(needed<=out->capacity)return 0;
+    const size_t limit=SIZE_MAX/sizeof *out->points;
+    if(needed>limit)return -1;
+    size_t n=out->capacity?out->capacity:64;
+    while(n<needed) {
+        if(n>limit/2){n=needed;break;}
+        n*=2;
+    }
+    void *p=realloc(out->points,n*sizeof *out->points);if(!p)return -1;
+    out->points=p;out->capacity=n;return 0;
+}
 static int colour_point(struct source_points *out,int64_t tick,int value,size_t owner)
 {
     if(!out)return 0;
-    if(out->count==out->capacity) {
-        size_t n=out->capacity?out->capacity*2:64;
-        if(n<=out->capacity || n>SIZE_MAX/sizeof *out->points)return -1;
-        void *p=realloc(out->points,n*sizeof *out->points);if(!p)return -1;
-        out->points=p;out->capacity=n;
-    }
+    if(out->count==SIZE_MAX||source_points_reserve(out,out->count+1))return -1;
     out->points[out->count]=(struct source_point){tick,value,RELOQ_TARGET_AB,owner,out->count};
     ++out->count;return 0;
 }
@@ -728,7 +736,8 @@ static int emit_stop_plateau(
 static int source_point_add(struct source_points *out,
     enum reloq_target_stream stream,int64_t tick,int32_t value,size_t phone)
 {
-    if (!out || out->count>=out->capacity) return -1;
+    if (!out || out->count==SIZE_MAX ||
+        source_points_reserve(out,out->count+1)) return -1;
     out->points[out->count]=(struct source_point){tick,value,stream,phone,out->count};
     ++out->count;return 0;
 }
@@ -1339,16 +1348,12 @@ static int generic_plan(
     output.phones=phones;output.phone_count=phone_count;
     struct reloq_german_glottal_segment *glottal=calloc(phone_count,sizeof *glottal);
     struct reloq_german_source_segment *source_segments=calloc(phone_count,sizeof *source_segments);
-    const size_t source_capacity=builder->stream[RELOQ_TARGET_AV].capacity+
-                                 builder->stream[RELOQ_TARGET_AH].capacity+
-                                 builder->stream[RELOQ_TARGET_FNZ].capacity+
-                                 builder->stream[RELOQ_TARGET_TL].capacity+
-                                 builder->stream[RELOQ_TARGET_OQ].capacity+
-                                 builder->stream[RELOQ_TARGET_DI].capacity;
-    struct source_points source_points={NULL,0,source_capacity};
-    if (source_capacity<=SIZE_MAX/sizeof *source_points.points)
-        source_points.points=malloc(source_capacity*sizeof *source_points.points);
-    if (!glottal || !source_segments || !source_points.points) {
+    /* Source knots are sparse. Reserving the sum of six worst-case target
+     * capacities multiplied the phrase's memory footprint even when most
+     * streams contributed only a few landmarks. Grow private storage from
+     * actual knots; sorting and their serial tie order stay unchanged. */
+    struct source_points source_points={0};
+    if (!glottal || !source_segments || source_points_reserve(&source_points,64)) {
         free(glottal);free(source_segments);free(source_points.points);
         reloq_target_stage_router_dispose(&stages);free(timings);free(melody);return -1;
     }

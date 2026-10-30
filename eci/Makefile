@@ -106,9 +106,13 @@ test_reloq_eci: $(OBJECTS)
 test_reloq_hash_delete: ../tests/test_reloq_hash_delete.c $(RULES61)
 	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -DEVV_ARENA=1 -I../vendor/openevv61/src/port $< $(RULES61) -pthread -lm -o $@
 
-test: test_reloq_eci test_reloq_hash_delete libreloq_eci.so
+test_reloq_rate_dispatch: ../tests/test_reloq_rate_dispatch.c ../src/reloq_rate_transfer.c $(HEADERS)
+	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< -Wl,--gc-sections -lm -o $@
+
+test: test_reloq_eci test_reloq_hash_delete test_reloq_rate_dispatch libreloq_eci.so
 	./test_reloq_eci
 	./test_reloq_hash_delete
+	./test_reloq_rate_dispatch
 	python3 test_public_abi.py libreloq_eci.so --header ../include/reloq_eci.h
 	python3 test_diagnostics.py libreloq_eci.so
 	python3 -B ../tools/update_chinese_traditional.py --check
@@ -153,6 +157,6 @@ windows-x64: eci.dll eci_windows_x64_abi_probe.exe eci_windows_x64_runtime_smoke
 	python3 verify_pe_exports.py eci.dll --objdump $(WINDOWS_OBJDUMP) --header ../include/reloq_eci.h
 
 clean:
-	rm -f libreloq_eci.so test_reloq_eci test_reloq_hash_delete eci.dll libeci.dll.a eci_windows_x64_abi_probe.exe eci_windows_x64_runtime_smoke.exe
+	rm -f libreloq_eci.so test_reloq_eci test_reloq_hash_delete test_reloq_rate_dispatch eci.dll libeci.dll.a eci_windows_x64_abi_probe.exe eci_windows_x64_runtime_smoke.exe
 	rm -rf build
 .DELETE_ON_ERROR:
