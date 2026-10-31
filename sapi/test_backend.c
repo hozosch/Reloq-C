@@ -1,4 +1,4 @@
-/* Exercise the production queue, owner-thread ECI calls and SAPI delivery
+/* Exercise production ECI calls and direct SAPI delivery
  * against the real C core. PCM stays in memory and is never written. */
 #include "settings.h"
 #include "format.h"
@@ -36,7 +36,8 @@ static HRESULT write_pcm(ISpTTSEngineSite *p,const void *data,ULONG bytes,ULONG 
     if(s->nested&&!s->nested_done){s->nested_done=1;struct site child=site_new();
         SPVTEXTFRAG f=text(L"This priority message must not deadlock.",0);WAVEFORMATEX out=format(11025);
         assert(SUCCEEDED(sapi_backend_speak(s->nested,s->settings,0,&out,&f,&child.iface)));assert(child.count>0);free(child.pcm);}
-    if(s->fail_after&&++s->writes>=s->fail_after){*written=0;return E_FAIL;}
+    ++s->writes;
+    if(s->fail_after&&s->writes>=s->fail_after){*written=0;return E_FAIL;}
     if(s->partial&&bytes>s->partial)bytes=s->partial;*written=bytes;
     size_t count=bytes/2;if(s->count+count>s->capacity){s->capacity=(s->count+count)*2;
         void *mem=realloc(s->pcm,s->capacity*sizeof *s->pcm);assert(mem);s->pcm=mem;}
@@ -93,7 +94,11 @@ int main(int argc,char **argv)
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&a,&fragmented.iface)));same(&base,&fragmented);free(fragmented.pcm);++cases;
     struct site uninterested=site_new();uninterested.interest=0;
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&uninterested.iface)));
-    assert(!uninterested.event_count);same(&base,&uninterested);free(uninterested.pcm);++cases;
+    assert(!uninterested.event_count);same(&base,&uninterested);
+    /* A plain stream is delivered in large blocks after its immediate start,
+     * rather than one small Write per native callback. */
+    assert(uninterested.writes>1&&uninterested.writes<=(int)(uninterested.count/4096)+2);
+    free(uninterested.pcm);++cases;
     struct site half=site_new();half.volume=50;
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&half.iface)));assert(half.count==base.count);
     for(size_t i=0;i<base.count;++i)assert(half.pcm[i]==base.pcm[i]/2);free(half.pcm);++cases;

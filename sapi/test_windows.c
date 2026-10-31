@@ -18,13 +18,26 @@ static HRESULT native_format(ISpObjectToken *token,DWORD target,DWORD *rate)
     if(SUCCEEDED(hr))*rate=output->nSamplesPerSec;
     CoTaskMemFree(output);if(bound)ISpObjectWithToken_Release(bound);if(engine)engine->lpVtbl->Release(engine);return hr;
 }
-int wmain(void)
+int wmain(int argc,wchar_t **argv)
 {
     HRESULT hr=CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);if(FAILED(hr))return 1;
     static const DWORD rates[]={8000,48000,11025,44100,16000,32000,22050,11025};
-    unsigned passed=0;ISpVoice *voice=NULL;
+    const int all_rates=argc==2&&!wcscmp(argv[1],L"--all-native-rates");
+    HKEY settings=NULL;DWORD saved=0,saved_bytes=sizeof saved,saved_type=0;
+    LSTATUS had_saved=ERROR_FILE_NOT_FOUND;
+    if(all_rates){
+        LSTATUS rc=RegCreateKeyExW(HKEY_CURRENT_USER,L"Software\\ReLoq C\\SAPI5",0,NULL,0,
+            KEY_QUERY_VALUE|KEY_SET_VALUE,NULL,&settings,NULL);
+        if(rc!=ERROR_SUCCESS){CoUninitialize();return 1;}
+        had_saved=RegQueryValueExW(settings,L"OutputRate",NULL,&saved_type,(BYTE *)&saved,&saved_bytes);
+        if(had_saved!=ERROR_FILE_NOT_FOUND&&(had_saved!=ERROR_SUCCESS||saved_type!=REG_DWORD||saved_bytes!=sizeof saved)){
+            RegCloseKey(settings);CoUninitialize();return 1;}
+    }
+    unsigned passed=0,expected=112*(all_rates?7:1);ISpVoice *voice=NULL;
+    for(unsigned native=0;native<(all_rates?7u:1u);++native){
+    if(all_rates&&RegSetValueExW(settings,L"OutputRate",0,REG_DWORD,(const BYTE *)&native,sizeof native)!=ERROR_SUCCESS){hr=E_FAIL;break;}
     hr=CoCreateInstance(&CLSID_SpVoice,NULL,CLSCTX_INPROC_SERVER,&IID_ISpVoice,(void **)&voice);
-    if(FAILED(hr))goto done;
+    if(FAILED(hr))break;
     for(size_t i=0;i<sizeof sapi_languages/sizeof *sapi_languages;++i){
         ISpObjectToken *token=NULL;
         WCHAR key[512];swprintf(key,512,L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Speech\\Voices\\Tokens\\ReLoqC_%02u_%08X",
@@ -33,6 +46,7 @@ int wmain(void)
         if(SUCCEEDED(hr))hr=ISpObjectToken_SetId(token,NULL,key,FALSE);
         if(SUCCEEDED(hr))hr=ISpVoice_SetVoice(voice,token);
         DWORD selected=0;if(SUCCEEDED(hr))hr=native_format(token,0,&selected);
+        if(all_rates&&SUCCEEDED(hr)&&selected!=(DWORD)sapi_rates[native])hr=E_FAIL;
         if(FAILED(hr)){if(token)ISpObjectToken_Release(token);break;}
         ULONGLONG reference_us=0;
         for(unsigned r=0;r<sizeof rates/sizeof *rates;++r){
@@ -64,8 +78,14 @@ int wmain(void)
         }
         if(token)ISpObjectToken_Release(token);if(FAILED(hr))break;
     }
-done:
-    if(voice)ISpVoice_Release(voice);CoUninitialize();
-    wprintf(L"SAPI activation: %u/112 language/format cases passed (HRESULT=%08lX).\n",passed,(unsigned long)hr);
-    (void)sapi_rates;(void)sapi_profiles;(void)sapi_anatomy;return passed==112?0:1;
+    if(voice){ISpVoice_Release(voice);voice=NULL;}if(FAILED(hr))break;
+    }
+    if(settings){
+        if(had_saved==ERROR_SUCCESS)RegSetValueExW(settings,L"OutputRate",0,REG_DWORD,(const BYTE *)&saved,sizeof saved);
+        else RegDeleteValueW(settings,L"OutputRate");
+        RegCloseKey(settings);
+    }
+    CoUninitialize();
+    wprintf(L"SAPI activation: %u/%u language/format cases passed (HRESULT=%08lX).\n",passed,expected,(unsigned long)hr);
+    (void)sapi_rates;(void)sapi_profiles;(void)sapi_anatomy;return passed==expected?0:1;
 }

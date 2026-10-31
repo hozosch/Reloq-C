@@ -58,7 +58,7 @@ must survive the bridge. Existing explicit ECI index callbacks are useful,
 but do not by themselves implement automatic SAPI word/sentence events.
 Pronunciation/phoneme fragments also need a defined mapping and tests.
 
-x64 and x86 have separate native packages and registry views. Native ARM64
+Version 0.2.204 combines the x64 and x86 builds in one localized Inno Setup installer. Both retain separate COM registry views and share dictionaries and user settings. The installer workflow checks installation, in-memory SAPI conversion and removal on Windows; physical-device response and UI accessibility still require user tests. Native ARM64
 still requires its own build and activation tests; an x64 package is not a
 claim of native ARM64 support. Validate registration, settings persistence, interruption and
 real SAPI clients before including that adapter in the first public release.

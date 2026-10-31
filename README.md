@@ -19,7 +19,7 @@ First, make the supported languages and everyday speech reliable. This includes 
 
 Next, reduce binary size, memory use and CPU demand, and keep navigation responsive even at high sample rates. These improvements belong in the shared C core so that every platform can benefit. The project aims for compact, independently expressed C rules without runtime bytecode or original DLL/SYN modules.
 
-Develop the **Android speech engine** and add a **SAPI5 integration for Windows** using the same core. The Android offline TTS service, live voice controls and optional pronunciation dictionaries have been confirmed in practical use through 0.2.192. Engine corrections remain under active testing before the first public release. SAPI5 previews provide one voice per language and a native dialog with live settings, optional shared parameters and a common output rate. Basic x64 operation is confirmed in user testing; x86 installation and further client tests remain before release. See the [SAPI preview guide](sapi/README.txt). The [release plan](docs/RELEASE-PLAN.md) records the acceptance criteria and adapter work.
+Develop the **Android speech engine** and add a **SAPI5 integration for Windows** using the same core. The Android offline TTS service, live voice controls and optional pronunciation dictionaries have been confirmed in practical use through 0.2.192. Engine corrections remain under active testing before the first public release. SAPI5 previews provide one voice per language and a native dialog with live settings, optional shared parameters and a common output rate. Basic x64 operation is confirmed in user testing; The unified Inno Setup installer supplies both architectures; device and client listening tests remain before release. See the [SAPI preview guide](sapi/README.txt). The [release plan](docs/RELEASE-PLAN.md) records the acceptance criteria and adapter work.
 
 ## Using the NVDA add-on
 
@@ -29,7 +29,7 @@ Installable packages belong under [Releases and downloads](https://github.com/ho
 
 Once a package is available, install the `.nvda-addon` file with NVDA, restart NVDA and press **NVDA+Control+S** to select **Eloquence C (experimental)**. Choose your language and voice in NVDA's Speech settings.
 
-The [English user guide](docs/USER-GUIDE.en.md) and [German user guide](docs/USER-GUIDE.de.md) cover languages, settings and dictionaries. [Changes and known limitations in 0.2.203](docs/changes/0.2.203.md) are documented separately.
+The [English user guide](docs/USER-GUIDE.en.md) and [German user guide](docs/USER-GUIDE.de.md) cover languages, settings and dictionaries. [Changes and known limitations in 0.2.204](docs/changes/0.2.204.md) are documented separately.
 
 ## Android preview
 

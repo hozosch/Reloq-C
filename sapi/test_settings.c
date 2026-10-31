@@ -32,13 +32,23 @@ LSTATUS RegSetValueExW(HKEY key,LPCWSTR name,DWORD reserved,DWORD type,const BYT
     assert(bytes<=sizeof values[i].data);values[i].type=type;values[i].bytes=bytes;memcpy(values[i].data,data,bytes);return 0;
 }
 LSTATUS RegCloseKey(HKEY key){(void)key;return 0;}
+static const WCHAR *module_path=L"";static int adjacent_dictionary;
 DWORD GetModuleFileNameW(HMODULE m,WCHAR *p,DWORD cap)
-{(void)m;(void)p;(void)cap;return 0;}
+{(void)m;size_t n=wcslen(module_path);if(!n||n>=cap)return 0;wcscpy(p,module_path);return (DWORD)n;}
+BOOL GetFileAttributesExW(LPCWSTR path,int kind,WIN32_FILE_ATTRIBUTE_DATA *out)
+{(void)kind;memset(out,0,sizeof *out);
+ if(!wcscmp(path,L"C:\\ReLoq\\dictionaries")||(adjacent_dictionary&&!wcscmp(path,L"C:\\ReLoq\\x86\\dictionaries"))){out->dwFileAttributes=16;return TRUE;}return FALSE;}
 static void same_parameters(const struct sapi_settings *a,const struct sapi_settings *b)
 {assert(!memcmp(a,b,sizeof *a));}
 int main(void)
 {
     unsigned checks=0;struct sapi_settings de,en,s;BOOL shared;
+    WCHAR path[2048];module_path=L"C:\\ReLoq\\x86\\ReLoqSapi.dll";
+    assert(sapi_module_path(path,2048,L"eci.dll")&&!wcscmp(path,L"C:\\ReLoq\\x86\\eci.dll"));++checks;
+    assert(sapi_module_path(path,2048,L"dictionaries")&&!wcscmp(path,L"C:\\ReLoq\\dictionaries"));++checks;
+    adjacent_dictionary=1;
+    assert(sapi_module_path(path,2048,L"dictionaries")&&!wcscmp(path,L"C:\\ReLoq\\x86\\dictionaries"));++checks;
+    module_path=L"";
     assert(sapi_settings_read(0x40000,&de)==S_OK&&de.rate==1);++checks;
     assert(sapi_settings_shared(&shared)==S_OK&&!shared);++checks;
     de.pitch=72;de.rate=6;wcscpy(de.directory,L"C:\\My dictionaries");de.dictionaries=1;

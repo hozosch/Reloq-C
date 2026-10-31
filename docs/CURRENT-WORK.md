@@ -1,5 +1,21 @@
 # Technischer Arbeitsstand: 0.2.201
 
+## 0.2.204: SAPI-Transport, Inno Setup und deutsche Pausen
+
+SAPI rendert direkt auf seinem Ausgabethread. Der erste Audioblock kommt sofort;
+weitere werden in einem begrenzten 4096-Sample-Puffer gesammelt. Ereignisse und
+Parameterwechsel leeren den Puffer. Die zusätzliche Thread-/Semaphore-Übergabe
+entfällt; die gewählte native Rate bleibt bestehen und SAPI konvertiert zum
+Anwendungsformat. Ein gemeinsamer Inno-Installer enthält beide Architekturen,
+zwölf Oberflächensprachen und die gemeinsame Deinstallation. Wörterbücher
+werden nur einmal installiert, Benutzereinstellungen bleiben erhalten.
+
+Deutsch überspringt bei kurzen Pausen die geplanten stillen Parameterframes
+vor dem DSP. Die vollständigen ursprünglichen Steuerkurven bleiben bestehen;
+damit wandern spätere Formanten nicht rückwärts in den Ausklang. Indizes und
+Wortparameter werden auf den verkürzten Ausgabezeitstrahl abgebildet.
+Explizite Pausen bleiben erhalten. Der Hörtest auf den Nutzergeräten steht aus.
+
 ## 0.2.201: Deutscher Pausenausklang, gemeinsame S-Pegel und SAPI5-Vorschau
 
 Alle acht sichtbaren Stimmprofile und die neun öffentlichen ECI-Stimmenvorgaben verwenden Lautstärke 100. Die explizite Nutzerlautstärke bleibt steuerbar. Die festen, stummen deutschen Analyseabfragen behalten ihre bisherigen neutralen Parameter; deren Lautstärke ist kein Ausgabepegel.

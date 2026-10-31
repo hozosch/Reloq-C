@@ -84,19 +84,16 @@ When [reporting an issue](https://github.com/hozosch/Reloq-C/issues), include a 
 
 ## SAPI5 x64 and x86 previews
 
-Extract the SAPI ZIP and run `Install-SAPI.exe`, then choose **Install / update**.
+Run the single SAPI5 `setup.exe`. Its Inno Setup language chooser offers the supported interface languages. It installs x64 and x86 voices together on compatible Windows, and x86 on 32-bit Windows.
 After restarting existing SAPI applications, choose a **ReLoq C** language voice.
 There is one registered voice per language. Open `ReLoqSettings.exe` or the
 voice's SAPI properties to select a profile and additional language parameters.
 Changes are saved immediately for the next utterance. The dialog follows the
-supported Windows display language, as does the installer. Its checkbox shares
+supported Windows display language; the installer also offers an explicit language chooser. Its checkbox shares
 all parameters across languages; turning it off restores separate language
 settings. The synthesis sample rate is common to every language. SAPI or the
 application converts this signal to its own output format; requesting a higher
 output rate does not change Eloquence's synthesis rate or bandwidth. Speed
 and volume belong to SAPI. Without speed boost, SAPI 0 maps to native ECI 60,
-with ten native units per SAPI step. All profile volumes default to 100. Install both
-packages for both client architectures, each from a separate extracted folder.
-Basic x64 use is confirmed; x86 Windows activation and further screen-reader
-UI testing remain pending.
+with ten native units per SAPI step. All profile volumes default to 100. Updates use the same installer. Windows Installed apps or the Start menu uninstall shortcut removes both architectures, retaining user dictionary files and settings. Basic x64 use is confirmed; further device and screen-reader UI testing remains necessary.
 See [the SAPI guide](../sapi/README.txt) for controls, installation and limitations.

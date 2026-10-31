@@ -24,7 +24,22 @@ int sapi_module_path(WCHAR *path,size_t capacity,const WCHAR *name)
     if(!n||n>=capacity)return 0;
     WCHAR *p=wcsrchr(path,L'\\');if(!p)return 0;
     size_t left=capacity-(size_t)(p-path)-1;if(wcslen(name)>=left)return 0;
-    wcscpy(p+1,name);return 1;
+    wcscpy(p+1,name);
+    if(!wcscmp(name,L"dictionaries")) {
+        WIN32_FILE_ATTRIBUTE_DATA attributes;
+        if(!GetFileAttributesExW(path,GetFileExInfoStandard,&attributes)||!(attributes.dwFileAttributes&16)) {
+            /* The unified installer keeps one dictionary folder beside
+             * x64 and above x86. Legacy adjacent folders retain priority. */
+            *p=0;WCHAR *parent=wcsrchr(path,L'\\');
+            if(parent&&wcslen(name)<capacity-(size_t)(parent-path)-1) {
+                WCHAR saved[2048];if(wcslen(path)<2048){wcscpy(saved,path);wcscpy(parent+1,name);
+                    if(GetFileAttributesExW(path,GetFileExInfoStandard,&attributes)&&(attributes.dwFileAttributes&16))return 1;
+                    wcscpy(path,saved);}
+            }
+            wcscpy(p+1,name);
+        }
+    }
+    return 1;
 }
 static void key_name(int dialect,WCHAR key[128])
 {swprintf(key,128,L"Software\\ReLoq C\\SAPI5\\Voices\\%08X",(unsigned)dialect);}

@@ -10,15 +10,13 @@ ifeq ($(ARCH),x86)
 CFLAGS += -msse2 -mfpmath=sse
 LDFLAGS += -Wl,--kill-at
 endif
-all: $(BUILD)/ReLoqSapi.dll $(BUILD)/ReLoqSettings.exe $(BUILD)/Install-SAPI.exe $(BUILD)/Test-SAPI.exe
+all: $(BUILD)/ReLoqSapi.dll $(BUILD)/ReLoqSettings.exe $(BUILD)/Test-SAPI.exe
 $(BUILD):
 	mkdir -p $@
 $(BUILD)/ReLoqSapi.dll: $(SOURCES) sapi_ddk.h settings.h speed.h format.h catalogue.inc ui.inc | $(BUILD)
 	$(CC) $(CFLAGS) -shared $(SOURCES) $(LDFLAGS) $(LIBS) -o $@
 $(BUILD)/ReLoqSettings.exe: settings_main.c | $(BUILD)
 	$(CC) $(CFLAGS) -municode -mwindows $< $(LDFLAGS) -luser32 -o $@
-$(BUILD)/Install-SAPI.exe: install.c ui.inc | $(BUILD)
-	$(CC) $(CFLAGS) -municode -mwindows $< $(LDFLAGS) $(LIBS) -o $@
 $(BUILD)/Test-SAPI.exe: test_windows.c guids.c sapi_ddk.h catalogue.inc | $(BUILD)
 	$(CC) $(CFLAGS) -municode test_windows.c guids.c $(LDFLAGS) $(LIBS) -o $@
 

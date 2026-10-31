@@ -1,10 +1,10 @@
-"""Short German pauses must preserve every nonzero sample of the long mode."""
+"""Short German pauses retain the original release and skip only planned quiet frames."""
 from pathlib import Path
 import argparse
 import array
 import json
 from _reloq_eci_direct import (DirectEciEngine, EciIndex, SAMPLE_RATE, PAUSE_MODE,
-                              NATIVE_SPEED, GENDER, HEAD_SIZE, BREATHINESS)
+                              NATIVE_SPEED, GENDER, HEAD_SIZE, BREATHINESS, PROCESS_TAGS)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -38,26 +38,44 @@ def main():
                         streams.append(array.array('h', pcm))
                         marks.append(positions)
                     original, final, always = streams
-                    # A late residual sample can follow a long exact-zero
-                    # run inside the planned quiet body. Shortening that
-                    # run changes positions, while retaining every audible
-                    # sample on the original acoustic clock.
-                    audible = [v for v in original if v]
-                    for stream, positions in zip(streams[1:], marks[1:]):
-                        assert [v for v in stream if v] == audible, (first, rate, head)
-                        before = [v for v in original[:marks[0][0][1]] if v]
-                        assert [v for v in stream[:positions[0][1]] if v] == before
+                    # Final-only mode is an exact original prefix. Internal
+                    # pauses and the preceding release cannot be re-planned.
+                    assert original[:len(final)] == final, (first, rate, head, 'final release')
+                    if more:
+                        assert marks[0][0] == marks[1][0]
+                    # Before the first omitted quiet body, every sample must
+                    # still match. This detects a future formant knot moving
+                    # backwards into the release when its clock is shortened.
+                    boundary = marks[2][0][1]
+                    assert original[:boundary] == always[:boundary], (first, rate, head, 'internal release')
+                    if not more:
+                        assert final == always
                     assert 0 < len(always) <= len(final) < len(original)
                     records.append({'text': first + more, 'rate': rate, 'gender': gender,
                                     'head': head, 'breath': breath,
                                     'samples': list(map(len, streams)), 'indices': marks})
+        engine.set_parameter(PROCESS_TAGS, 1)
+        explicit_cases = 0
+        for rate in range(7):
+            engine.set_parameter(SAMPLE_RATE, rate)
+            for text in ('Haus`p250', 'Haus`p250 neu`p100', '`p250 Haus`p100',
+                         'Haus`p250 `vh22 neu`p100'):
+                streams = []
+                for mode in range(3):
+                    engine.set_parameter(PAUSE_MODE, mode)
+                    pcm = bytearray()
+                    assert engine.speak([text], pcm.extend, lambda n: None)
+                    streams.append(pcm)
+                assert streams[0] == streams[1] == streams[2], (rate, text)
+                explicit_cases += 1
     finally:
         engine.close()
-    report = {'cases': len(records), 'modes': 3, 'preserved_nonzero_pcm_and_source_boundaries': True,
+    report = {'cases': len(records), 'modes': 3, 'exact_original_release_and_compacted_indices': True,
+              'explicit_pause_cases': explicit_cases,
               'no_audio_files': True, 'records': records}
     if args.report:
         args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
-    print(f'German release: {len(records)} rate/model/text triplets preserve all nonzero PCM samples')
+    print(f'German release: {len(records)} rate/model/text triplets retain original release curves; explicit durations unchanged')
 
 
 if __name__ == '__main__':

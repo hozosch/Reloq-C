@@ -44,7 +44,7 @@ Name: "el"; MessagesFile: "languages\Greek.isl"
 Name: "ja"; MessagesFile: "compiler:Languages\Japanese.isl"
 Name: "ko"; MessagesFile: "compiler:Languages\Korean.isl"
 Name: "zh"; MessagesFile: "languages\ChineseSimplified.isl"
-Name: "zh-Hant"; MessagesFile: "languages\ChineseTraditional.isl"
+Name: "zh_tw"; MessagesFile: "languages\ChineseTraditional.isl"
 
 [CustomMessages]
 en.VoiceSettings=Voice settings
@@ -58,7 +58,7 @@ el.VoiceSettings=Ρυθμίσεις φωνής
 ja.VoiceSettings=音声設定
 ko.VoiceSettings=음성 설정
 zh.VoiceSettings=语音设置
-zh-Hant.VoiceSettings=語音設定
+zh_tw.VoiceSettings=語音設定
 
 [Files]
 ; Both COM registry views use the same settings and dictionary folder.

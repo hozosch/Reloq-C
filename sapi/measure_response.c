@@ -21,8 +21,8 @@ int main(int argc,char **argv)
             SPVTEXTFRAG f=text(words,0);struct site result=site_new();result.iface.lpVtbl=&timing_vtable;
             first=0;start=now();HRESULT hr=sapi_backend_speak(b,&s,0,&out,&f,&result.iface);double total=now()-start;
             assert(SUCCEEDED(hr)&&result.count>0&&first>0);
-            printf("%s{\"language\":%d,\"dictionaries\":%d,\"hz\":%u,\"iteration\":%d,\"first_write_ms\":%.6f,\"total_ms\":%.6f,\"samples\":%zu,\"hash\":\"%016llx\"}",
-                record++?",\n":"",lang?0x40000:0x10000,enabled,(unsigned)out.nSamplesPerSec,i,first*1000,total*1000,result.count,(unsigned long long)hash(result.pcm,result.count));free(result.pcm);
+            printf("%s{\"language\":%d,\"dictionaries\":%d,\"hz\":%u,\"iteration\":%d,\"first_write_ms\":%.6f,\"total_ms\":%.6f,\"writes\":%d,\"samples\":%zu,\"hash\":\"%016llx\"}",
+                record++?",\n":"",lang?0x40000:0x10000,enabled,(unsigned)out.nSamplesPerSec,i,first*1000,total*1000,result.writes,result.count,(unsigned long long)hash(result.pcm,result.count));free(result.pcm);
         }
         sapi_backend_delete(b);
     }

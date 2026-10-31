@@ -60,7 +60,7 @@ German uses the same built-in native dictionary path as the other languages. His
 ## Windows x64 SAPI5 preview
 
 Build the existing `eci.dll` target first. Then compile the C COM adapter and
-native settings/installer programs, and package a single copy of that DLL:
+native settings/test programs, and package one internal architecture payload:
 
 ```sh
 python3 sapi/generate_catalogue.py --check
@@ -74,9 +74,15 @@ compiler are build tools. The package includes the same required third-party
 notices as the other integrations.
 
 `make -C sapi test` runs the production streaming backend against the host
-ECI library using a test-only POSIX implementation of the small Win32 thread,
-semaphore and UTF conversion boundary. This covers real core synthesis,
+ECI library using a test-only POSIX implementation of the small Win32 loading, atomic and UTF conversion boundary. This covers real core synthesis,
 fragments, source events, partial writes, abort, priority reentrancy and model
 changes. It does not test Windows COM activation or UI accessibility.
-`Test-SAPI.exe`, included in the ZIP, tests all installed language tokens via
+`Test-SAPI.exe`, included in the installation, tests all installed language tokens via
 real Windows SAPI and an in-memory stream. See [the preview guide](../sapi/README.txt).
+
+To build the single x86/x64 installer, build both payloads with `sapi/build.py
+--arch x64` and `--arch x86`. On Windows, run `python sapi/build_installer.py
+--iscc "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"` with Inno Setup 6.7 or
+later. The GitHub installer workflow performs this build, installs both COM
+views, checks all 49 native/application rate pairs in every language, and
+uninstalls both views. All synthesis diagnostics use memory streams only.

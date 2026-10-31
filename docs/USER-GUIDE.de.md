@@ -82,23 +82,23 @@ Das Projekt ist noch experimentell. Der Nutzer hat das frühere Einfrieren und d
 
 Für eine [Fehlermeldung](https://github.com/hozosch/Reloq-C/issues) helfen ein kurzer Beispieltext, Sprache, Stimme, Version, Abtastrate und die Angabe, ob Wörterbücher eingeschaltet sind. Beschreibe auch, ob die Ausgabe abbricht, ein Wort falsch klingt oder NVDA selbst beendet wird.
 
-## SAPI5-Vorschau für x64 und x86
+## SAPI5 für x64 und x86
 
-Das SAPI-ZIP entpacken, `Install-SAPI.exe` starten und **Install / update** wählen.
-Bereits geöffnete SAPI-Anwendungen anschließend neu starten und eine
-**ReLoq C**-Sprachstimme auswählen. Jede Sprache hat genau einen Stimmeintrag.
-`ReLoqSettings.exe` oder die SAPI-Eigenschaftenseite öffnen den Zusatzdialog
-für Stimmprofil und Sprachparameter. Änderungen werden sofort für die nächste
-Äußerung gespeichert. Dialog und Installation verwenden die unterstützte Windows-Anzeigesprache.
-Über das Kontrollfeld lassen sich alle Parameter gemeinsam für alle Sprachen
-verwenden; beim Ausschalten werden die getrennten Einstellungen wieder aktiv.
-Die Synthese-Abtastrate gilt für alle Sprachen. SAPI oder die Anwendung passt
-dieses Signal an das eigene Ausgabeformat an. Eine höhere Ausgabe-Abtastrate
-ändert die Syntheserate und Klangbandbreite von Eloquence nicht.
-Tempo und Lautstärke steuert SAPI. Ohne Geschwindigkeitsanhebung entspricht
-SAPI 0 dem nativen ECI-Wert 60, mit zehn nativen Einheiten je SAPI-Stufe.
-Profil-Lautstärken sind 100.
-Für beide Anwendungsarchitekturen beide Pakete aus getrennten Ordnern installieren.
-Die grundlegende x64-Funktion ist bestätigt; x86-Aktivierung und weitere
-Bildschirmleser-Tests auf Windows stehen noch aus. Einzelheiten stehen
-in der [SAPI-Anleitung](../sapi/README.txt).
+Die gemeinsame `setup.exe` installiert auf kompatiblem 64-Bit-Windows beide
+Architekturen, auf 32-Bit-Windows die x86-Stimmen. Der Inno-Setup-Dialog bietet
+die unterstützten Oberflächensprachen zur Auswahl und wählt zunächst die
+Windows-Anzeigesprache. Nach der Installation bereits geöffnete
+Sprachanwendungen neu starten und eine **ReLoq C**-Sprachstimme auswählen.
+Updates erfolgen mit demselben Installer. Über Windows „Installierte Apps“
+oder die Verknüpfung im Startmenü werden beide Architekturen deinstalliert;
+eigene Wörterbücher und Benutzereinstellungen bleiben erhalten.
+
+`ReLoqSettings.exe` oder die Stimmeigenschaften öffnen die sofort wirksamen
+Sprachparameter. Das Kontrollfeld für gemeinsame Einstellungen übernimmt die
+Parameter für alle Sprachen; beim Ausschalten kehren die getrennten Werte
+zurück. Die Eloquence-Abtastrate gilt immer sprachübergreifend. SAPI oder die
+Anwendung wandelt das Signal in ihre Ausgabe-Abtastrate um. Die angeforderte
+Ausgaberate verändert weder Eloquences Syntheserate noch deren Klangprofil.
+Geschwindigkeit und Lautstärke steuert SAPI. Ohne Geschwindigkeitsschub entspricht
+SAPI 0 dem ECI-Wert 60, jeder Schritt zehn ECI-Einheiten. Alle Profile starten
+bei Lautstärke 100. Weitere Hinweise stehen im [SAPI-Leitfaden](../sapi/README.txt).

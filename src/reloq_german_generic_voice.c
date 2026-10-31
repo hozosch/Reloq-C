@@ -1,4 +1,3 @@
-#include "reloq_silence_cut.h"
 #include "reloq_inline_tags.h"
 #include "reloq_voice_controls.h"
 #include "reloq_german_generic_voice.h"
@@ -117,8 +116,9 @@ struct inline_timing {
 static int inline_time_value(int64_t tick,const int64_t *starts,const int64_t *mapped,
     const double *scale,size_t count,int64_t *out);
 
+struct quiet_region { size_t begin,end,minimum; };
 struct quiet_regions {
-    struct reloq_silence_span *spans;
+    struct quiet_region *spans;
     size_t count,capacity;
 };
 static int quiet_append(struct quiet_regions *q,size_t begin,size_t end,size_t minimum)
@@ -131,18 +131,8 @@ static int quiet_append(struct quiet_regions *q,size_t begin,size_t end,size_t m
         if(!memory)return -1;
         q->spans=memory;q->capacity=capacity;
     }
-    q->spans[q->count++]=(struct reloq_silence_span){begin,end,minimum};return 0;
+    q->spans[q->count++]=(struct quiet_region){begin,end,minimum};return 0;
 }
-struct quiet_audio {
-    struct reloq_silence_cut cut;
-    reloq_german_generic_index_sink index;
-    void *context;
-};
-static int quiet_pcm(void *context,const int16_t *pcm,size_t samples)
-{return reloq_silence_cut_pcm(&((struct quiet_audio *)context)->cut,pcm,samples);}
-static int quiet_index(void *context,size_t ordinal)
-{struct quiet_audio *q=context;return q->index(q->context,ordinal);}
-
 struct output_settings {
     int rate_factor; /* Percent of the default target time axis. */
     int pitch_factor; /* Two hundredths of the default F0. */
@@ -3397,6 +3387,38 @@ static int session_cancelled(void *context)
 
 #include "reloq_german_inline_controls.inc"
 
+/* Render disjoint intervals of the original control timeline into the
+ * same live session. This is the same pre-DSP shortening used by the other
+ * language planners: no PCM is discarded and filter/oscillator state is
+ * carried across the omitted quiet body. */
+static int render_quiet_regions(const struct reloq_curve_schedule *original,
+    const struct quiet_regions *quiet,long formants,struct reloq_session *session,
+    reloq_session_pcm_sink sink,void *context,size_t *frames_completed,
+    reloq_frame_profile profile,void *profile_context,reloq_frame_formants models)
+{
+    struct reloq_curve_schedule part=*original;
+    size_t total=0;*frames_completed=0;
+    for(size_t i=0;i<=quiet->count;++i) {
+        int64_t next=original->end_tick;
+        if(i<quiet->count) {
+            const struct quiet_region *q=quiet->spans+i;
+            if(q->begin>q->end||q->minimum>q->end-q->begin||
+               q->end>(uint64_t)original->end_tick||
+               q->begin+q->minimum<(uint64_t)part.first_tick)
+                return RELOQ_SESSION_INVALID;
+            next=(int64_t)(q->begin+q->minimum);
+        }
+        part.end_tick=next;
+        size_t done=0;
+        int status=reloq_curve_pipeline_render_models(&part,formants,session,
+            sink,context,&done,profile,profile_context,models);
+        total+=done;*frames_completed=total;
+        if(status!=RELOQ_SESSION_OK)return status;
+        if(i<quiet->count)part.first_tick=(int64_t)quiet->spans[i].end;
+    }
+    return RELOQ_SESSION_OK;
+}
+
 static int render(
     const unsigned char *utf8, size_t length,
     const struct reloq_lexicon *lexicon,
@@ -3831,20 +3853,20 @@ static int render(
     if(colour.count)schedule.bypass_attenuation=&colour_curve;
     if(sibilants.count)schedule.s_frication=&sibilant_curve;
     schedule.s_frication_profile=1;
-    struct quiet_audio quiet_output={.index=index_sink,.context=context};
-    if(quiet.count) {
-        long per_tick=reloq_core_frame_sample_count((float)schedule.frame_ticks,
-            config.duration_scale,config.sample_rate*0.001f);
-        if(per_tick<1) {status=RELOQ_DE_UTTERANCE_MODEL;goto done;}
+    /* Curves retain their original source clock. Only silent frames are
+     * omitted from DSP, so a following target cannot move backwards into
+     * the preceding release. Word-scoped controls and indices use the
+     * compact output clock. Explicit ECI pauses never enter this list. */
+    if(word_ticks)for(size_t w=0;w<sequence.word_count;++w) {
+        size_t removed=0;
         for(size_t i=0;i<quiet.count;++i) {
-            struct reloq_silence_span *q=quiet.spans+i;
-            if(q->end>SIZE_MAX/(size_t)per_tick) {status=RELOQ_DE_UTTERANCE_MODEL;goto done;}
-            q->begin*=(size_t)per_tick;q->end*=(size_t)per_tick;q->minimum*=(size_t)per_tick;
+            const struct quiet_region *q=quiet.spans+i;
+            size_t from=q->begin+q->minimum;
+            if(word_ticks[w]<=(int64_t)from)break;
+            size_t until=word_ticks[w]<(int64_t)q->end?(size_t)word_ticks[w]:q->end;
+            removed+=until-from;
         }
-        if(reloq_silence_cut_begin(&quiet_output.cut,quiet.spans,quiet.count,sink,context)) {
-            status=RELOQ_DE_UTTERANCE_MODEL;goto done;
-        }
-        sink=quiet_pcm;index_sink=index_sink?quiet_index:NULL;context=&quiet_output;
+        word_ticks[w]-=(int64_t)removed;
     }
     struct inline_audio controlled={sink,index_sink,context,controls,word_ticks,
         sequence.word_count,0,0,11};
@@ -3884,19 +3906,14 @@ static int render(
         model_cursor.fixed[k]=schedule.tracks[inline_model_defaults[k]].point_count==0;
         model_cursor.neutral[k]=neutral_model_defaults[k];
     }
-    int rendered = changing_model ? reloq_curve_pipeline_render_models(
-        &schedule,reloq_german_voice_model_formants(&output.model),session,
+    int rendered=render_quiet_regions(&schedule,&quiet,
+        reloq_german_voice_model_formants(&output.model),session,
         index_count?reloq_german_generic_index_stream_pcm:sink,
         index_count?(void *)&index_stream:context,&progress.frames_completed,
-        inline_model_frame,&model_cursor,inline_model_formants) : output.model.sample_rate==11025 ? reloq_curve_pipeline_render(
-        &schedule, reloq_german_voice_model_formants(&output.model), session,
-        index_count ? reloq_german_generic_index_stream_pcm : sink,
-        index_count ? (void *)&index_stream : context,
-        &progress.frames_completed) : reloq_curve_pipeline_render_profile(
-        &schedule,reloq_german_voice_model_formants(&output.model),session,
-        index_count?reloq_german_generic_index_stream_pcm:sink,
-        index_count?(void *)&index_stream:context,&progress.frames_completed,
-        reloq_german_voice_model_frame,&output.model);
+        changing_model?inline_model_frame:
+            output.model.sample_rate==11025?NULL:reloq_german_voice_model_frame,
+        changing_model?(void *)&model_cursor:(void *)&output.model,
+        changing_model?inline_model_formants:NULL);
     if (rendered == RELOQ_SESSION_OK && index_count &&
         reloq_german_generic_index_stream_end(&index_stream))
         rendered = RELOQ_SESSION_SINK;
