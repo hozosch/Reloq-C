@@ -56,3 +56,27 @@ Der aktuelle Paketstand ist 0.2.194. Änderungen stehen in [den Versionsnotizen]
 Die [Android-Anleitung](../android/README.md) beschreibt den ersten APK-Build mit demselben C-Kern, JDK 17, SDK 35 und NDK r30. `python3 android/build.py` erzeugt die signierte ARM64-Vorschau unter `dist/`, wenn die dort beschriebenen SDK-/NDK-/Java-Pfade gesetzt sind. Android verwendet getrennte Build-Verzeichnisse. Der JNI-Transport, die Warteschlange und die ARM64-Rücksprünge haben eigene Prüfungen ohne Audiodateien; Installation und grundlegende Ausgabe der vorigen Vorschau sind vom Nutzer bestätigt. Der Nutzer bestätigt 0.2.192 einschließlich sofortiger Einstellungen als stabil. Die beiden neuen Analyse-Schalter aus 0.2.194 benötigen noch ihren praktischen Hörtest.
 
 German uses the same built-in native dictionary path as the other languages. Historical `.rlex` files remain test/reference fixtures and are not required by either installation package.
+
+## Windows x64 SAPI5 preview
+
+Build the existing `eci.dll` target first. Then compile the C COM adapter and
+native settings/installer programs, and package a single copy of that DLL:
+
+```sh
+python3 sapi/generate_catalogue.py --check
+python3 sapi/build.py --cc x86_64-w64-mingw32-gcc --objdump x86_64-w64-mingw32-objdump
+```
+
+The generated catalogue reuses NVDA's names, language ordering and anatomy
+profiles, plus the existing Android sample sentences. The adapter and native
+programs require only ordinary Windows system DLLs at runtime. Python and the
+compiler are build tools. The package includes the same required third-party
+notices as the other integrations.
+
+`make -C sapi test` runs the production streaming backend against the host
+ECI library using a test-only POSIX implementation of the small Win32 thread,
+semaphore and UTF conversion boundary. This covers real core synthesis,
+fragments, source events, partial writes, abort, priority reentrancy and model
+changes. It does not test Windows COM activation or UI accessibility.
+`Test-SAPI.exe`, included in the ZIP, tests all installed language tokens via
+real Windows SAPI and an in-memory stream. See [the preview guide](../sapi/README.txt).

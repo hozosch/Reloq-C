@@ -93,11 +93,11 @@ static inline struct reloq_inline_tag reloq_inline_tag_read(
 static inline void reloq_inline_preset(struct reloq_inline_word *word,int voice)
 {
     static const unsigned char presets[9][8]={
-        {0,50,65,30,0,0,50,92}, {1,50,81,30,0,50,50,100},
-        {1,22,93,35,0,0,50,90}, {0,86,56,47,0,0,50,93},
-        {0,50,69,34,0,0,70,92}, {1,56,89,35,0,40,70,95},
-        {1,45,68,30,3,40,50,90}, {0,30,61,44,18,20,50,90},
-        {0,50,69,34,0,0,50,92}};
+        {0,50,65,30,0,0,50,100}, {1,50,81,30,0,50,50,100},
+        {1,22,93,35,0,0,50,100}, {0,86,56,47,0,0,50,100},
+        {0,50,69,34,0,0,70,100}, {1,56,89,35,0,40,70,100},
+        {1,45,68,30,3,40,50,100}, {0,30,61,44,18,20,50,100},
+        {0,50,69,34,0,0,50,100}};
     if(voice<1 || voice>9)return;
     const unsigned char *v=presets[voice-1];
     word->gender=v[0];word->head_size=v[1];word->pitch=v[2];

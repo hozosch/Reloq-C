@@ -1,0 +1,119 @@
+{
+  "version": "0.2.201",
+  "no_audio_files": true,
+  "source_parent": "f6b5f1810905f1356f4d7eca669e5fccccd2bd44",
+  "files": {
+    "reloq-c-synth-experimental-x64-0.2.201.nvda-addon": {
+      "bytes": 19509897,
+      "sha256": "50006e225b22a51e72731e58048f11f98be60ea70f7ef0755eb0f48ed9ddfd0b"
+    },
+    "reloq-c-android-arm64-0.2.201-preview13.apk": {
+      "bytes": 17446294,
+      "sha256": "8813041e6f428d0a670820a668bb939a40cf954fdbdfc83c05f258ab6d1704f1"
+    },
+    "reloq-c-sapi5-x64-0.2.201-preview1.zip": {
+      "bytes": 19547910,
+      "sha256": "63aa03eaa791830616950256c8d102b09d98c6753de7f8b64dacd8a9cfcb876b"
+    },
+    "eci.dll": {
+      "bytes": 54552576,
+      "sha256": "732b14fb8dc261ebe792048784a00c013ca73d4787c4765c138c742e6d969c91"
+    },
+    "libreloq_android.so": {
+      "bytes": 52899744,
+      "sha256": "4e877a894152f6b502c8dcf13cfcef455f57fa3e00055c4d4c78893d055bd9fd"
+    },
+    "candidate0201-complete.so": {
+      "bytes": 55236448,
+      "sha256": "1bca6696675102aaf43b985f42abcfaad8bd46adbc5cc22b5161c827d77ba131"
+    },
+    "ReLoqSapi.dll": {
+      "bytes": 64000,
+      "sha256": "c0d339643439e6ed2f35344f30295fd7796ee46724fe23e91e76b17c42fb3aef"
+    }
+  },
+  "checks": {
+    "eci_c_regression": "passed",
+    "eci_extra_recipes": 28,
+    "final_western_language_cases": 5376,
+    "german_release_triplets": 105,
+    "german_release_modes": 3,
+    "sibilant_languages": 9,
+    "sibilant_rate_comparisons": 63,
+    "unchanged_vowel_controls": 63,
+    "all_language_rate_model_duration_index_pairs": 196,
+    "unchanged_pcm_pairs": 85,
+    "intentional_source_level_pcm_changes": 111,
+    "sapi_backend_cases": 113,
+    "sapi_direct_eci_pcm_pairs": 98,
+    "sapi_windows_abi_layout_checks": 17,
+    "android_settings_checks": 866,
+    "android_catalogue_voices": 112,
+    "android_update_metadata_checks": 36,
+    "jni_direct_pcm_pairs": 63,
+    "nvda_ui_locales": [
+      "en",
+      "de"
+    ],
+    "windows_eci_exports": 21,
+    "android_in_place_upgrade": "same package and certificate, versionCode 20200 -> 20201",
+    "sapi_package": "14 language tokens, one shared ECI DLL, exact package hashes verified",
+    "sapi_asan_ubsan_backend_cases": 113
+  },
+  "dictionary_snapshot": {
+    "repository": "eigencrow/IBMTTSDictionaries",
+    "branch": "master",
+    "commit": "a23b0f9d9e64dc3156fb8c1795a7521bf173a285",
+    "files": {
+      "DEUmain.dic": {
+        "sha": "fb8c156bbd28f1dceeed53e2527ed5e0370c6fa7",
+        "size": 917
+      },
+      "DEURoot.dic": {
+        "sha": "a3dd101862ff7c70376ba6a617b8103a6ef2a75f",
+        "size": 3533
+      },
+      "DEUabbr.dic": {
+        "sha": "e6bf1e8cd1a40845c0bf6866d1fe03ed6596be8b",
+        "size": 254
+      },
+      "ENUmain.dic": {
+        "sha": "105b4a7d0595e296febf4edfa8974c7eaad0355f",
+        "size": 27988
+      },
+      "ENURoot.dic": {
+        "sha": "753db65257956d19e670093daed26276c76351f4",
+        "size": 2256511
+      },
+      "ENUabbr.dic": {
+        "sha": "edfdaa94d633a08fe57d63dbd12294a1f40f6450",
+        "size": 1489
+      },
+      "LICENSE.md": {
+        "sha": "0e259d42c996742e9e3cba14c677129b2c1b6311",
+        "size": 7048
+      }
+    }
+  },
+  "resource_observations": {
+    "windows_dll_delta_bytes": 8192,
+    "nvda_package_delta_bytes": 1159,
+    "android_package_delta_bytes": 0,
+    "warm_german_requested_heap_peak_4000_words": [
+      58628850,
+      58628850
+    ],
+    "warmed_median_language_cpu_ratio_after_before": {
+      "1": 0.9833199605008063,
+      "6": 1.0289468655749494
+    },
+    "interpretation": "No general CPU or package-size improvement is established; Linux process CPU is not Dell/ARM device responsiveness. Full acoustic state is retained through German shortened pauses."
+  },
+  "limits": [
+    "Windows COM activation, installer and screen-reader dialog navigation require real-device testing.",
+    "The SAPI preview is x64; it is not a native ARM64 or 32-bit build.",
+    "SAPI phoneme IDs, system lexicons, visemes and implemented sentence skipping remain outside this preview.",
+    "SAPI parameter edits apply on the next utterance; rate changes during rendering also apply on the next utterance. Host volume and abort are live.",
+    "The first public binary GitHub release remains pending Windows SAPI testing and Android production signing decisions."
+  ]
+}

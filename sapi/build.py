@@ -1,0 +1,61 @@
+"""Build and package the small x64 SAPI adapter around the existing ECI DLL."""
+from pathlib import Path
+import argparse
+import hashlib
+import json
+import re
+import subprocess
+import sys
+import zipfile
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'nvda'))
+from _reloq_dictionaries import FILES, validate_snapshot
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--cc', default='x86_64-w64-mingw32-gcc')
+    parser.add_argument('--objdump', default='x86_64-w64-mingw32-objdump')
+    parser.add_argument('--core', type=Path, default=ROOT / 'eci/eci.dll')
+    parser.add_argument('--output', type=Path, default=ROOT / 'dist/reloq-c-sapi5-x64-0.2.201-preview1.zip')
+    args = parser.parse_args()
+    subprocess.run([sys.executable, str(ROOT / 'sapi/generate_catalogue.py'), '--check'], check=True)
+    subprocess.run(['make', '-C', str(ROOT / 'sapi'), '-j2', 'CC=' + args.cc], check=True)
+    dictionary = validate_snapshot(ROOT / 'data/community')
+    names = ['ReLoqSapi.dll', 'ReLoqSettings.exe', 'Install-SAPI.exe', 'Test-SAPI.exe']
+    entries = {name: (ROOT / 'sapi/build' / name).read_bytes() for name in names}
+    entries.update({'eci.dll': args.core.read_bytes(), 'README.txt': (ROOT / 'sapi/README.txt').read_bytes(),
+                    'LICENSE': (ROOT / 'vendor/openevv61/LICENSE').read_bytes()})
+    for name, source in {
+        'OpenEVV-NOTICE.txt': 'vendor/openevv61/NOTICE',
+        'Unicode-LICENSE.txt': 'reference-apple/behavior-0.2.82/unicode-input/LICENSE.txt',
+        'SCOWL-Copyright.txt': 'reference-apple/behavior-0.2.83/input/SCOWL-Copyright.txt',
+    }.items():
+        entries['licenses/' + name] = (ROOT / source).read_bytes()
+    for name in (*FILES, 'manifest.json'):
+        entries['dictionaries/' + name] = (ROOT / 'data/community' / name).read_bytes()
+    assert len(entries['eci.dll']) > 1000000
+    pe = subprocess.check_output([args.objdump, '-p', str(ROOT / 'sapi/build/ReLoqSapi.dll')], text=True)
+    names = pe.split('[Ordinal/Name Pointer] Table\n', 1)[1].split('\n\n', 1)[0]
+    exports = re.findall(r'\[\s*\d+\]\s+(\w+)', names)
+    required = {'DllCanUnloadNow', 'DllGetClassObject', 'DllRegisterServer', 'DllUnregisterServer', 'ReLoqSettings'}
+    assert set(exports) == required, exports
+    hashes = {name: {'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()} for name, data in entries.items()}
+    entries['package.json'] = (json.dumps({'version': '0.2.201-preview1', 'architecture': 'x64',
+        'voices': 14, 'core_copies': 1, 'dictionary_commit': dictionary['commit'], 'files': hashes}, indent=2) + '\n').encode()
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(args.output, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+        for name, data in sorted(entries.items()):
+            info = zipfile.ZipInfo(name, (2026, 10, 31, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            archive.writestr(info, data, compresslevel=9)
+    with zipfile.ZipFile(args.output) as archive:
+        assert archive.testzip() is None
+        for name, data in entries.items():
+            assert archive.read(name) == data
+    print(args.output)
+
+
+if __name__ == '__main__':
+    main()

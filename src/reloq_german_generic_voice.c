@@ -1,3 +1,4 @@
+#include "reloq_silence_cut.h"
 #include "reloq_inline_tags.h"
 #include "reloq_voice_controls.h"
 #include "reloq_german_generic_voice.h"
@@ -116,6 +117,32 @@ struct inline_timing {
 static int inline_time_value(int64_t tick,const int64_t *starts,const int64_t *mapped,
     const double *scale,size_t count,int64_t *out);
 
+struct quiet_regions {
+    struct reloq_silence_span *spans;
+    size_t count,capacity;
+};
+static int quiet_append(struct quiet_regions *q,size_t begin,size_t end,size_t minimum)
+{
+    if(!q)return 0;
+    if(q->count==q->capacity) {
+        size_t capacity=q->capacity?q->capacity*2:16;
+        if(capacity<q->capacity||capacity>SIZE_MAX/sizeof *q->spans)return -1;
+        void *memory=realloc(q->spans,capacity*sizeof *q->spans);
+        if(!memory)return -1;
+        q->spans=memory;q->capacity=capacity;
+    }
+    q->spans[q->count++]=(struct reloq_silence_span){begin,end,minimum};return 0;
+}
+struct quiet_audio {
+    struct reloq_silence_cut cut;
+    reloq_german_generic_index_sink index;
+    void *context;
+};
+static int quiet_pcm(void *context,const int16_t *pcm,size_t samples)
+{return reloq_silence_cut_pcm(&((struct quiet_audio *)context)->cut,pcm,samples);}
+static int quiet_index(void *context,size_t ordinal)
+{struct quiet_audio *q=context;return q->index(q->context,ordinal);}
+
 struct output_settings {
     int rate_factor; /* Percent of the default target time axis. */
     int pitch_factor; /* Two hundredths of the default F0. */
@@ -140,6 +167,7 @@ struct output_settings {
     struct source_points *colour,*sibilants;
     const struct reloq_inline_word *models;
     size_t model_count;
+    struct quiet_regions *quiet;
 };
 
 static int output_settings_init(
@@ -170,7 +198,7 @@ static int output_settings_init(
         s->volume ? (int)lround(20.0 * log10(100.0 / s->volume)) : 0,
         s->volume == 0, 0, 0, 0, 0, NULL, 0, 0, 0,
         {s->head_size_plus_one?s->head_size_plus_one-1:50,s->roughness,s->breathiness,s->gender,11025},
-        NULL,0,0,NULL,NULL,NULL,NULL,NULL,0
+        NULL,0,0,NULL,NULL,NULL,NULL,NULL,0,NULL
     };
     return 0;
 }
@@ -949,11 +977,9 @@ static int emit_pause(struct reloq_target_stage_router *router, int64_t tick,
     if (reloq_german_pause_plan(node,source->kind==RELOQ_SOURCE_CARRY,
                               mark,continuing,&pause)) return -1;
     if(quiet_override>=0)pause.quiet_ticks=quiet_override;
-    /* Apply the policy before any targets or PCM exist. The preceding
-     * phone's release, clause-final duration and melody remain intact.
-     * Reference p1/p2/p3 all have the same three-tick quiet body. */
-    if(!explicit_pause && (pause_mode==2 || (pause_mode==1 && !continuing)))
-        pause.quiet_ticks=3;
+    /* Keep the full acoustic clock. Compressing these knots shortened the
+     * audible resonator decay and pulled later contours into comma tails.
+     * The streaming sink removes only trailing exact zeros in this region. */
     *window=pause.release_ticks+pause.quiet_ticks;
 #ifdef RELOQ_GENERIC_PHONE_TRACE
     fprintf(stderr,"RELOQ_PAUSE %zu %d %lld %d %d %d %d %d\n",index,
@@ -994,6 +1020,16 @@ static int emit_pause(struct reloq_target_stage_router *router, int64_t tick,
      * tick quiet anchors hide the first nasal resonance/source target. */
     int64_t quiet_end;
     if (scale_tick(tick+*window,&tail,&quiet_end)) return -1;
+    if(output->quiet&&!explicit_pause&&
+       (pause_mode==2||(pause_mode==1&&!continuing))) {
+        int64_t begin,minimum;
+        int32_t keep=pause.quiet_ticks<3?pause.quiet_ticks:3;
+        if(scale_tick(tick+pause.release_ticks,&tail,&begin)||
+           scale_tick(tick+pause.release_ticks+keep,&tail,&minimum)||
+           begin<0||quiet_end<begin||minimum<begin||
+           (uint64_t)quiet_end>SIZE_MAX||
+           quiet_append(output->quiet,(size_t)begin,(size_t)quiet_end,(size_t)(minimum-begin)))return -1;
+    }
     if (continuing && !reloq_german_terminal_continues(mark) && quiet_end>0) --quiet_end;
     struct output_settings direct=tail;
     direct.native_time_scale=0.0;direct.rate_factor=100;direct.timing=NULL;
@@ -1285,7 +1321,7 @@ static int generic_plan(
     const struct reloq_german_word_features *features,size_t feature_count,
     struct reloq_target_builder *builder, int64_t *end_tick,
     reloq_german_cancel_check cancelled, void *cancel_context,float sample_rate,
-    const struct inline_timing *timing_map,struct source_points *colour,struct source_points *sibilants)
+    const struct inline_timing *timing_map,struct source_points *colour,struct source_points *sibilants,struct quiet_regions *quiet)
 {
     struct output_settings output;
     if ((!phones && phone_count) || (!syllables && syllable_count) ||
@@ -1302,7 +1338,7 @@ static int generic_plan(
     output.model.sample_rate=sample_rate;
     output.models=controls;output.model_count=controls?word_count:0;
     output.timing=timing_map;
-    output.colour=colour;output.sibilants=sibilants;
+    output.colour=colour;output.sibilants=sibilants;output.quiet=quiet;
     if(timing_map)output.native_time_scale=1.0;
     if (cancelled && cancelled(cancel_context)) return 1;
     size_t cursor = 0;
@@ -3199,7 +3235,7 @@ int reloq_german_generic_plan_with_settings(
 {
     return generic_plan(phones, phone_count, syllables, syllable_count,
                         settings, NULL, 0, NULL, 0, NULL, NULL, 0, builder, end_tick, cancelled,
-                        cancel_context,11025,NULL,NULL,NULL);
+                        cancel_context,11025,NULL,NULL,NULL,NULL);
 }
 
 int reloq_german_generic_plan(
@@ -3377,6 +3413,7 @@ static int render(
     struct reloq_inline_word *controls=NULL;size_t control_words=0;
     struct inline_timing speed_map={0};
     struct source_points colour={0},sibilants={0};
+    struct quiet_regions quiet={0};
     struct reloq_acoustic_point *sibilant_points=NULL;
     struct reloq_acoustic_curve sibilant_curve={0};
     struct reloq_acoustic_point *colour_points=NULL;
@@ -3677,7 +3714,7 @@ static int render(
         planned=generic_plan(phones,sequence.phone_count,syllables,syllable_count,
             plan_settings,marks,sequence.word_count,word_ticks,sequence.word_count,
             controls,features,feature_count,&builder,&end_tick,
-            session_cancelled,session,output.model.sample_rate,NULL,NULL,NULL);
+            session_cancelled,session,output.model.sample_rate,NULL,NULL,NULL,NULL);
         if(planned || inline_timing_begin(&speed_map,word_ticks,control_words,controls,
             output.native_time_scale>0?output.native_time_scale:output.rate_factor/100.0)) {
             status=planned==1?RELOQ_DE_UTTERANCE_CANCELLED:RELOQ_DE_UTTERANCE_MODEL;goto done;
@@ -3707,7 +3744,7 @@ static int render(
         features,feature_count,
         &builder, &end_tick, session_cancelled, session,output.model.sample_rate,
         speed_map.count?&speed_map:NULL,output.model.sample_rate>=16000?&colour:NULL,
-        output.model.sample_rate>=16000?&sibilants:NULL);
+        output.model.sample_rate>=16000?&sibilants:NULL,&quiet);
     if (planned) {
         status = planned == 1 ? RELOQ_DE_UTTERANCE_CANCELLED :
                  RELOQ_DE_UTTERANCE_MODEL;
@@ -3795,6 +3832,21 @@ static int render(
     if(colour.count)schedule.bypass_attenuation=&colour_curve;
     if(sibilants.count)schedule.s_frication=&sibilant_curve;
     schedule.s_frication_profile=1;
+    struct quiet_audio quiet_output={.index=index_sink,.context=context};
+    if(quiet.count) {
+        long per_tick=reloq_core_frame_sample_count((float)schedule.frame_ticks,
+            config.duration_scale,config.sample_rate*0.001f);
+        if(per_tick<1) {status=RELOQ_DE_UTTERANCE_MODEL;goto done;}
+        for(size_t i=0;i<quiet.count;++i) {
+            struct reloq_silence_span *q=quiet.spans+i;
+            if(q->end>SIZE_MAX/(size_t)per_tick) {status=RELOQ_DE_UTTERANCE_MODEL;goto done;}
+            q->begin*=(size_t)per_tick;q->end*=(size_t)per_tick;q->minimum*=(size_t)per_tick;
+        }
+        if(reloq_silence_cut_begin(&quiet_output.cut,quiet.spans,quiet.count,sink,context)) {
+            status=RELOQ_DE_UTTERANCE_MODEL;goto done;
+        }
+        sink=quiet_pcm;index_sink=index_sink?quiet_index:NULL;context=&quiet_output;
+    }
     struct inline_audio controlled={sink,index_sink,context,controls,word_ticks,
         sequence.word_count,0,0,11};
     if(controls) {
@@ -3855,6 +3907,7 @@ static int render(
              rendered == RELOQ_SESSION_SINK ? RELOQ_DE_UTTERANCE_SINK :
              RELOQ_DE_UTTERANCE_RENDER;
 done:
+    free(quiet.spans);
     free(colour.points);free(colour_points);
     free(sibilants.points);free(sibilant_points);
     free(resolved_features);

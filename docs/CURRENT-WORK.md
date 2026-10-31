@@ -1,4 +1,17 @@
-# Technischer Arbeitsstand: 0.2.200
+# Technischer Arbeitsstand: 0.2.201
+
+## 0.2.201: Deutscher Pausenausklang, gemeinsame S-Pegel und SAPI5-Vorschau
+
+Alle acht sichtbaren Stimmprofile und die neun öffentlichen ECI-Stimmenvorgaben verwenden Lautstärke 100. Die explizite Nutzerlautstärke bleibt steuerbar. Die festen, stummen deutschen Analyseabfragen behalten ihre bisherigen neutralen Parameter; deren Lautstärke ist kein Ausgabepegel.
+
+Deutsche kurze Pausen werden nach vollständiger akustischer Planung beim Streamen verkürzt. Innerhalb der geplanten Ruheintervalle entfällt ausschließlich die abschließende Folge exakter Nullsamples. Nichtnull-Samples des Resonatorausklangs, innere Nulldurchgänge, die ursprüngliche DSP-Fortschreibung und explizite Pausen bleiben erhalten. 105 Text-/Raten-/Modell-Dreiervergleiche prüfen alle sieben Raten und auch kleine weibliche Kopfgrößen mit Behauchtheit.
+
+Die S-Quellen der zusätzlichen Sprachen verwenden dieselbe Anhebung gegenüber ihren nativen ts-Referenzpegeln wie Deutsch/US-Englisch. Japanisch, kastilisches Spanisch und Griechisch behalten ihre bisherigen Vorgaben. Neun frühere doAF-Regelrahmen werden durch gemeinsame C-Entscheidungen ohne temporäre Arbeitsrahmen ersetzt. Bei lateinamerikanischem Spanisch und Portugiesisch liegen die Lautdatensätze in Slot 4, während Slot 2 Wörter enthält. Ihre C-Quellen lesen deshalb ausdrücklich die tatsächlichen Lautdatensätze.
+
+Die erste SAPI5-x64-Vorschau registriert 14 Sprachstimmen. Ein nativer, per Tastatur bedienbarer Dialog bietet die acht Modelle und zusätzliche Sprachparameter ohne Speichern-Schaltfläche; gültige Änderungen werden sofort pro Sprache und Windows-Nutzer gespeichert und bei der nächsten Äußerung gelesen. Ein fauler ECI-Besitzer-Thread je aktivem COM-Objekt hält die initialisierte Sprache. Acht begrenzte 512-Sample-Pakete reichen PCM und Quellereignisse an den SAPI-Aufrufer zurück. Wortfragmentierung erzeugt keine einzelnen Synthesejobs. Text-/Ereignismetadaten werden nach jeder Äußerung freigegeben. Es gibt keinen Ergebnis-/Wiederholungscache und keine Audiodateien.
+
+Der produktive Backend-Code wird mit einer kleinen reinen Test-Implementierung der Windows-Synchronisationsgrenze gegen den tatsächlichen C-Kern geprüft. Diese Prüfung ersetzt keine Windows-COM-Aktivierung. Die COM-DLL, Installation, SAPI-Eigenschaftenseite und praktische Bildschirmleser-Bedienung müssen auf Windows getestet werden. Die Vorschau enthält dafür zusätzlich einen nativen SAPI-Aktivierungstest mit einem RAM-Ausgabestrom. Einzelheiten und Grenzen stehen unter sapi/README.txt. Öffentliche GitHub-Binärreleases bleiben bis zu den Gerätetests ausstehend.
+
 
 ## 0.2.200: Kompakte C-Einstiege, entfernter Zweit-Renderer und Emoji-Lesungen
 

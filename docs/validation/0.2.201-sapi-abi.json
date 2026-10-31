@@ -1,0 +1,33 @@
+{
+  "reference": "microsoft/win32metadata: WinSDK/RecompiledIdlHeaders/um/sapiddk.h",
+  "comparison": "Windows x64 SDK and authored C declarations, compiled separately",
+  "checks": 17,
+  "identical": true,
+  "layout_words": [
+    96,
+    8,
+    80,
+    88,
+    92,
+    72,
+    88,
+    40,
+    48,
+    56,
+    64,
+    40,
+    24,
+    32,
+    40,
+    24,
+    32,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "reference_build_adaptation": "SDK supplied C alternative for unrelated SPRECORESULTINFOEX; RPC version macro 475; TTS declarations unchanged"
+}

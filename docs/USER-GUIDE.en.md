@@ -81,3 +81,14 @@ Under **Add-on updates**, choose **Check for add-on updates** to check published
 The project is still experimental. The user confirmed the earlier American English dictionary freeze and subsequent initialization delay as resolved in 0.2.190. Skipped Greek letters in Finnish and Korean sentences have been traced to NVDA symbol processing before the characters reach the synthesis core. See the [technical work status](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md) for details.
 
 When [reporting an issue](https://github.com/hozosch/Reloq-C/issues), include a short example, language, voice, version, sample rate and whether dictionaries are enabled. Explain whether speech stops, pronunciation is wrong or NVDA itself exits.
+
+## SAPI5 x64 preview
+
+Extract the SAPI ZIP and run `Install-SAPI.exe`, then choose **Install / update**.
+After restarting existing SAPI applications, choose a **ReLoq C** language voice.
+There is one registered voice per language. Open `ReLoqSettings.exe` or the
+voice's SAPI properties to select a profile and additional language parameters.
+Changes are saved immediately for the next utterance. Speed and volume belong
+to the SAPI application. All profile volumes default to 100. Practical Windows
+activation and screen-reader UI testing is still pending for this first preview.
+See [the SAPI guide](../sapi/README.txt) for controls, installation and limitations.

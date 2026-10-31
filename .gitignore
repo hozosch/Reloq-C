@@ -12,6 +12,7 @@
 /vendor/openevv61/build/
 /dist/
 /android/build/
+/sapi/build/
 *.apk
 *.wav
 *.pcm
@@ -22,3 +23,4 @@
 /eci/test_reloq_eci
 
 /eci/test_reloq_rate_dispatch
+/eci/test_reloq_silence_cut

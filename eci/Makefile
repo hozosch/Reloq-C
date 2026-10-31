@@ -97,6 +97,9 @@ build/windows/%.o: ../src/%.c $(HEADERS) | check-windows-toolchain
 .PHONY: all test windows-x64 check-windows-toolchain clean
 all: libreloq_eci.so
 
+test_reloq_silence_cut: ../tests/test_reloq_silence_cut.c ../src/reloq_silence_cut.c ../include/reloq_silence_cut.h
+	$(CC) $(CFLAGS) -I../include ../tests/test_reloq_silence_cut.c ../src/reloq_silence_cut.c -o $@
+
 libreloq_eci.so: $(SOURCE) $(HEADERS) ../src/reloq_glottal_profiles.inc ../src/reloq_german_root_roles.inc ../src/reloq_german_weak_verb_roles.inc ../src/reloq_german_inflection_roles.inc ../src/reloq_german_glottal_lexicon.inc ../src/reloq_german_number_names.inc ../src/reloq_german_date_names.inc ../src/reloq_german_ie_roles.inc ../src/reloq_german_root_stress_roles.inc ../src/reloq_german_phrase_metadata.inc
 	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -shared $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections,--no-undefined -lm -o $@
 
@@ -113,10 +116,11 @@ test_reloq_hash_delete: ../tests/test_reloq_hash_delete.c $(RULES61)
 test_reloq_rate_dispatch: ../tests/test_reloq_rate_dispatch.c ../src/reloq_rate_transfer.c $(HEADERS)
 	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< -Wl,--gc-sections -lm -o $@
 
-test: test_reloq_eci test_reloq_hash_delete test_reloq_rate_dispatch libreloq_eci.so
+test: test_reloq_eci test_reloq_hash_delete test_reloq_rate_dispatch test_reloq_silence_cut libreloq_eci.so
 	./test_reloq_eci
 	./test_reloq_hash_delete
 	./test_reloq_rate_dispatch
+	./test_reloq_silence_cut
 	python3 test_public_abi.py libreloq_eci.so --header ../include/reloq_eci.h
 	python3 test_diagnostics.py libreloq_eci.so
 	python3 -B ../tools/update_chinese_traditional.py --check
@@ -129,6 +133,7 @@ test: test_reloq_eci test_reloq_hash_delete test_reloq_rate_dispatch libreloq_ec
 	python3 -B ../nvda/test_eci_letters_native.py
 	python3 -B ../nvda/test_eci_tags_native.py
 	python3 -B ../nvda/test_eci_pause_modes_native.py
+	python3 -B ../nvda/test_eci_pause_release_native.py
 	python3 -B ../nvda/test_eci_voice_models_native.py
 	python3 -B ../nvda/test_eci_sample_rates_native.py
 	python3 -B ../nvda/test_eci_sample_rates_transport.py
@@ -161,6 +166,6 @@ windows-x64: eci.dll eci_windows_x64_abi_probe.exe eci_windows_x64_runtime_smoke
 	python3 verify_pe_exports.py eci.dll --objdump $(WINDOWS_OBJDUMP) --header ../include/reloq_eci.h
 
 clean:
-	rm -f libreloq_eci.so test_reloq_eci test_reloq_hash_delete test_reloq_rate_dispatch eci.dll libeci.dll.a eci_windows_x64_abi_probe.exe eci_windows_x64_runtime_smoke.exe
+	rm -f libreloq_eci.so test_reloq_eci test_reloq_hash_delete test_reloq_rate_dispatch test_reloq_silence_cut eci.dll libeci.dll.a eci_windows_x64_abi_probe.exe eci_windows_x64_runtime_smoke.exe
 	rm -rf build
 .DELETE_ON_ERROR:

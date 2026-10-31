@@ -81,3 +81,15 @@ Unter **Add-on-Updates** prüft **Nach Add-on-Updates suchen** die veröffentlic
 Das Projekt ist noch experimentell. Der Nutzer hat das frühere Einfrieren und die spätere Initialisierungsverzögerung bei US-Englisch mit Wörterbüchern mit 0.2.190 als behoben bestätigt. Das Überspringen griechischer Buchstaben in finnischen und koreanischen Sätzen wurde inzwischen auf die Symbolverarbeitung von NVDA vor der Übergabe an den Synthesekern zurückgeführt. Technische Details stehen im [Arbeitsstand](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md).
 
 Für eine [Fehlermeldung](https://github.com/hozosch/Reloq-C/issues) helfen ein kurzer Beispieltext, Sprache, Stimme, Version, Abtastrate und die Angabe, ob Wörterbücher eingeschaltet sind. Beschreibe auch, ob die Ausgabe abbricht, ein Wort falsch klingt oder NVDA selbst beendet wird.
+
+## SAPI5-x64-Vorschau
+
+Das SAPI-ZIP entpacken, `Install-SAPI.exe` starten und **Install / update** wählen.
+Bereits geöffnete SAPI-Anwendungen anschließend neu starten und eine
+**ReLoq C**-Sprachstimme auswählen. Jede Sprache hat genau einen Stimmeintrag.
+`ReLoqSettings.exe` oder die SAPI-Eigenschaftenseite öffnen den Zusatzdialog
+für Stimmprofil und Sprachparameter. Änderungen werden sofort für die nächste
+Äußerung gespeichert. Tempo und Lautstärke steuert die SAPI-Anwendung; die
+Profil-Lautstärken sind 100. Windows-Aktivierung und praktische Bedienung mit
+Bildschirmlesern stehen für diese erste Vorschau noch aus. Einzelheiten stehen
+in der [SAPI-Anleitung](../sapi/README.txt).

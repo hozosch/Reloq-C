@@ -1,4 +1,4 @@
-"""Pause policy is applied to generated boundaries, before synthesis."""
+"""Pause policy preserves the acoustic release and shortens only silence."""
 from pathlib import Path
 from _reloq_eci_direct import (
     DirectEciEngine, EciIndex, PROCESS_TAGS, PAUSE_MODE, NATIVE_SPEED,

@@ -31,10 +31,14 @@ no further speed or size improvement is possible.
 
 ## SAPI5 integration
 
-SAPI5 is not implemented yet. Build a small C COM adapter around the same
-private ECI core DLL; do not copy the synthesizer, depend on NVDA/Python or add
-another pronunciation frontend. Generate voice registration data from the
-existing catalogue so names, profiles and language ordering remain consistent.
+0.2.201 supplies the first small C COM adapter around the same private ECI
+core DLL. It registers one voice per language and provides a native settings
+dialog with immediate persistence for subsequent utterances. Token metadata
+is generated from the existing catalogue. The adapter has no NVDA/Python
+runtime or separate pronunciation frontend. The production streaming backend
+is tested on the host; real Windows COM activation, installation and UI testing
+are still required. See [the preview guide](../sapi/README.txt) for supported
+controls and the explicit preview limitations.
 
 | Boundary | Required implementation |
 | --- | --- |

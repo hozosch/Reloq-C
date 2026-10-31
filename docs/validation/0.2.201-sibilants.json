@@ -1,0 +1,827 @@
+{
+  "languages": 9,
+  "s_comparisons": 63,
+  "unchanged_vowel_controls": 63,
+  "no_audio_files": true,
+  "records": [
+    {
+      "language": "0x10001",
+      "rate": 0,
+      "text": "Sister says seventy six.",
+      "before": {
+        "samples": 17240,
+        "sha256": "5009320cc8ba8cf6cb7b5b4260c75820e396dd8101bca28395fa450f35fa8cb5"
+      },
+      "after": {
+        "samples": 17240,
+        "sha256": "c33d5a25000a72cd585245f1037ac72ac3543f9df89a55a36cfd1678dd8e5177"
+      }
+    },
+    {
+      "language": "0x10001",
+      "rate": 1,
+      "text": "Sister says seventy six.",
+      "before": {
+        "samples": 23705,
+        "sha256": "536ac321131efaec1c000d48db2e259a6af57131ab192499bd2416f274767400"
+      },
+      "after": {
+        "samples": 23705,
+        "sha256": "b520670b04eb215c89a8df7bf4b72cf7c0b80f2526acaef4c5f9a0a8672332c1"
+      }
+    },
+    {
+      "language": "0x10001",
+      "rate": 2,
+      "text": "Sister says seventy six.",
+      "before": {
+        "samples": 47410,
+        "sha256": "afc0a293b0880db8bdb6b4ffc872c0c4d41ac8119e387843fb10a66862d9e4cf"
+      },
+      "after": {
+        "samples": 47410,
+        "sha256": "18e4b0cf0d02c79d533b22d396ef6359f491f347f1cd67fbf148bf3d567c49f0"
+      }
+    },
+    {
+      "language": "0x10001",
+      "rate": 3,
+      "text": "Sister says seventy six.",
+      "before": {
+        "samples": 34480,
+        "sha256": "525f836986e89946f5e473998dbf8d1fd2bbb23484bba1b867f1c92bcea8193a"
+      },
+      "after": {
+        "samples": 34480,
+        "sha256": "a19be7c04f2d02e58bd498ea2e1db9a36758ab3c78247ded2dfcf6e651350dfd"
+      }
+    },
+    {
+      "language": "0x10001",
+      "rate": 4,
+      "text": "Sister says seventy six.",
+      "before": {
+        "samples": 68960,
+        "sha256": "e299e72683bdfce292db4c290fdfba5480288fa2338de8fc182c0f43b0386ad0"
+      },
+      "after": {
+        "samples": 68960,
+        "sha256": "e0c47b6c3ff531328d123cc90b7aa2c8662929bdbff584f75d8debb7d9415b61"
+      }
+    },
+    {
+      "language": "0x10001",
+      "rate": 5,
+      "text": "Sister says seventy six.",
+      "before": {
+        "samples": 94820,
+        "sha256": "e520b7b60a95604608b2c1d27da9bf4450d328f8f0d90149df73a5b786cfef92"
+      },
+      "after": {
+        "samples": 94820,
+        "sha256": "e388fb45c616d6547d750ad1cdca61b21c9500d4ecb48a7e417d32b213c17183"
+      }
+    },
+    {
+      "language": "0x10001",
+      "rate": 6,
+      "text": "Sister says seventy six.",
+      "before": {
+        "samples": 103440,
+        "sha256": "1d7fde436da3e29d0fb1a03ef3c5cf2862cbd9acc0f5a1c16ccd20078a4fe042"
+      },
+      "after": {
+        "samples": 103440,
+        "sha256": "f0203a9e706721a2604bfe86df0d19a9e4a12164fc925774146266399c458fcc"
+      }
+    },
+    {
+      "language": "0x20001",
+      "rate": 0,
+      "text": "Susana usa seis vasos.",
+      "before": {
+        "samples": 14112,
+        "sha256": "998c28ce1fa436efbbf4de7be6368a185c5dec5342ca83227d0757a7df81f146"
+      },
+      "after": {
+        "samples": 14112,
+        "sha256": "1b549f94222caf0e1a2ffa1da08f0a7f03aaba24fb7d8714ea558dd72779cf55"
+      }
+    },
+    {
+      "language": "0x20001",
+      "rate": 1,
+      "text": "Susana usa seis vasos.",
+      "before": {
+        "samples": 19404,
+        "sha256": "f6c4147afa90f8d8f6a697787a7b57988ad66d94dc6384dac2671b27ccd29b2b"
+      },
+      "after": {
+        "samples": 19404,
+        "sha256": "24db8d835ffb21e4119092d524b1fcc19005d61632f549c187ead709554b25f3"
+      }
+    },
+    {
+      "language": "0x20001",
+      "rate": 2,
+      "text": "Susana usa seis vasos.",
+      "before": {
+        "samples": 38808,
+        "sha256": "b3582e87c4e1aface528d3b2dc1a39d2229de75ba26880b5e9bd98c4d6af2ff2"
+      },
+      "after": {
+        "samples": 38808,
+        "sha256": "e0c5f74968cbad4686d600699a42c70c8466bf44bfd69b9f4f05bf5b4a50c7b9"
+      }
+    },
+    {
+      "language": "0x20001",
+      "rate": 3,
+      "text": "Susana usa seis vasos.",
+      "before": {
+        "samples": 28224,
+        "sha256": "3818a8eb38b97e9d46180f1199e2f7ac21f223a851455441c2aff4c40fc751a6"
+      },
+      "after": {
+        "samples": 28224,
+        "sha256": "4027ae5dd1fc2ad46c18e3387f9a116f8b1b17a080060de115bd7ec82d5767aa"
+      }
+    },
+    {
+      "language": "0x20001",
+      "rate": 4,
+      "text": "Susana usa seis vasos.",
+      "before": {
+        "samples": 56448,
+        "sha256": "6f64ab92d15396a4272b89c5e19aed9ca40ca7c639790e64338f851d02d493d1"
+      },
+      "after": {
+        "samples": 56448,
+        "sha256": "b2e8a85af3297f9efe4a61fb73d4143d212c23ed7c314105953e9ff8c26925d1"
+      }
+    },
+    {
+      "language": "0x20001",
+      "rate": 5,
+      "text": "Susana usa seis vasos.",
+      "before": {
+        "samples": 77616,
+        "sha256": "c0451879b4a40b7eb8b64db906f1001b57ddb911b630c9ecd51ae1f5875f2669"
+      },
+      "after": {
+        "samples": 77616,
+        "sha256": "2ce92e96afeb6963b8f181c3669fe0b5e95d6d349cb9006f9f8c4cf5766fc8bf"
+      }
+    },
+    {
+      "language": "0x20001",
+      "rate": 6,
+      "text": "Susana usa seis vasos.",
+      "before": {
+        "samples": 84672,
+        "sha256": "9cbd4cf76878f20d305ac5cff8cedf0fa28b5ca3899ae334d7250da74aaa83e7"
+      },
+      "after": {
+        "samples": 84672,
+        "sha256": "1b76f67bb5e6523fcecc816de048f08f93172d91ac3077467131ef6f39d9f451"
+      }
+    },
+    {
+      "language": "0x30000",
+      "rate": 0,
+      "text": "Ceci est aussi un son.",
+      "before": {
+        "samples": 12928,
+        "sha256": "cc1057ef3784c9982cc2041af7488f4a3a26d3c927d7ab251b30cfd92cab628c"
+      },
+      "after": {
+        "samples": 12928,
+        "sha256": "3a395c06d2177632a3bf12a03dc5819aa43a0c060b600cbaeb299c1297b3d3ce"
+      }
+    },
+    {
+      "language": "0x30000",
+      "rate": 1,
+      "text": "Ceci est aussi un son.",
+      "before": {
+        "samples": 17776,
+        "sha256": "549bada1320d84e0561e1c9814b25aa1aacdeb4b3af61d674330358a80844495"
+      },
+      "after": {
+        "samples": 17776,
+        "sha256": "b4774400d202626d892ff172332bd8de1a1d0cc57460ff712164a75c73e920be"
+      }
+    },
+    {
+      "language": "0x30000",
+      "rate": 2,
+      "text": "Ceci est aussi un son.",
+      "before": {
+        "samples": 35552,
+        "sha256": "e5b34d418410252ba475452eabb297282642217410539c7055956ec1c18f26b6"
+      },
+      "after": {
+        "samples": 35552,
+        "sha256": "c36273f5b2e8c3dfa4696cbf308304ba65168b9908f4ef7269b774f8aa94b3d8"
+      }
+    },
+    {
+      "language": "0x30000",
+      "rate": 3,
+      "text": "Ceci est aussi un son.",
+      "before": {
+        "samples": 25856,
+        "sha256": "30d41383106a893b4ec05a0f353ccdea03f6840f5fc94080d4e18788201ef900"
+      },
+      "after": {
+        "samples": 25856,
+        "sha256": "5caf61ff4603368261369e271af6387a7bfd5841fc41d81924ca2763303a4048"
+      }
+    },
+    {
+      "language": "0x30000",
+      "rate": 4,
+      "text": "Ceci est aussi un son.",
+      "before": {
+        "samples": 51712,
+        "sha256": "3ba9c46a2a278dbfaee50604c5c7fd25c12c2e39869c7189addddf05930d7737"
+      },
+      "after": {
+        "samples": 51712,
+        "sha256": "c77b023a8793649b4399166a532948bda8fb722cbe5b0354b2767695ab8852db"
+      }
+    },
+    {
+      "language": "0x30000",
+      "rate": 5,
+      "text": "Ceci est aussi un son.",
+      "before": {
+        "samples": 71104,
+        "sha256": "d4f5e574a93779f2e2f58af1eafffd5dcfbf13e9686a6dc99da71d2b1ef2e797"
+      },
+      "after": {
+        "samples": 71104,
+        "sha256": "8a8144a678cdbc2bf1cd26b3717748f68811a71852c529e5e31894c8a6f7437c"
+      }
+    },
+    {
+      "language": "0x30000",
+      "rate": 6,
+      "text": "Ceci est aussi un son.",
+      "before": {
+        "samples": 77568,
+        "sha256": "ef421c52334497e7f73c84d6e2010215053ed818c9625b0d6564560abd28b82d"
+      },
+      "after": {
+        "samples": 77568,
+        "sha256": "2d50202e31673a5f866ba0a83bc6ad1ed2a990e262372a70c818917f53b55f10"
+      }
+    },
+    {
+      "language": "0x30001",
+      "rate": 0,
+      "text": "Ceci est aussi un son.",
+      "before": {
+        "samples": 13112,
+        "sha256": "e2a04378f228884049d997468a7265d5cad983a23e8f5de6cb34b46e24d8a9c5"
+      },
+      "after": {
+        "samples": 13112,
+        "sha256": "610e0672ac2e4b328e0996c7d9c7bf1dcc69a7d2eeefea2d68299a2b5ede4cb4"
+      }
+    },
+    {
+      "language": "0x30001",
+      "rate": 1,
+      "text": "Ceci est aussi un son.",
+      "before": {
+        "samples": 18029,
+        "sha256": "d725be2e854c720f20d6ef591e1df5102cb845555c8db682cba7703b161d702e"
+      },
+      "after": {
+        "samples": 18029,
+        "sha256": "0ba1827eb544d9742477768afdde526de4bbce5fcda56272de207447b97f277b"
+      }
+    },
+    {
+      "language": "0x30001",
+      "rate": 2,
+      "text": "Ceci est aussi un son.",
+      "before": {
+        "samples": 36058,
+        "sha256": "62086ea9221d85f42391a3e93e1e99ecb996dd8979560f1cafb638879cf83620"
+      },
+      "after": {
+        "samples": 36058,
+        "sha256": "5ad44dffbd4f48dda990e40632da72f60dcef6037d995c8b9b8f97f1756d2862"
+      }
+    },
+    {
+      "language": "0x30001",
+      "rate": 3,
+      "text": "Ceci est aussi un son.",
+      "before": {
+        "samples": 26224,
+        "sha256": "f2769abf9e72527edb4b7fdbe2587bd7065d46c744db06ada7a9cdf08c48f996"
+      },
+      "after": {
+        "samples": 26224,
+        "sha256": "0e0bcebf6e4ce01974f6f6ef199960365924661535786d51126f1a3169f90655"
+      }
+    },
+    {
+      "language": "0x30001",
+      "rate": 4,
+      "text": "Ceci est aussi un son.",
+      "before": {
+        "samples": 52448,
+        "sha256": "dc8e5ed6f122942af668f6292400e89eb77361c79a7732923ee53f447c452461"
+      },
+      "after": {
+        "samples": 52448,
+        "sha256": "eeac6d3e44a73270fd64002c124a63750f11f3ae39b86655c5796173b4d0c328"
+      }
+    },
+    {
+      "language": "0x30001",
+      "rate": 5,
+      "text": "Ceci est aussi un son.",
+      "before": {
+        "samples": 72116,
+        "sha256": "5a64f974752a0fec437b17b9e2c791e1813b0d86d9730e73778969663cb3b4ee"
+      },
+      "after": {
+        "samples": 72116,
+        "sha256": "b679f8f975af30114cdc648b066459749b3098490565d20e58761968aa86dd05"
+      }
+    },
+    {
+      "language": "0x30001",
+      "rate": 6,
+      "text": "Ceci est aussi un son.",
+      "before": {
+        "samples": 78672,
+        "sha256": "6505a880a392da4f4acba4e815721f77c306161f6d2e74b6ec43cae3a3929397"
+      },
+      "after": {
+        "samples": 78672,
+        "sha256": "1cbd1d6431c9145ec2c9cbd909ea7115ca90ecd557b4b07d6b86afc5153e7b0d"
+      }
+    },
+    {
+      "language": "0x50000",
+      "rate": 0,
+      "text": "Sassi, pasta, stazione.",
+      "before": {
+        "samples": 18104,
+        "sha256": "68d5f1c7f64c5fda2358bad3e46057f662e39fd245ebe6cc05dcc20c27bb6088"
+      },
+      "after": {
+        "samples": 18104,
+        "sha256": "6190c6900584d53eba6bac3b10a39a7f593b3af2e5b37579afd4c3f5c981a463"
+      }
+    },
+    {
+      "language": "0x50000",
+      "rate": 1,
+      "text": "Sassi, pasta, stazione.",
+      "before": {
+        "samples": 24893,
+        "sha256": "e9fcdf2c87c41ed31e128b181e31cc1e39ea36fc0754aba64873b71328677451"
+      },
+      "after": {
+        "samples": 24893,
+        "sha256": "bff1e19765629d902246c0d55ac62aa466137f25c2d08e624ce43ee898c4007f"
+      }
+    },
+    {
+      "language": "0x50000",
+      "rate": 2,
+      "text": "Sassi, pasta, stazione.",
+      "before": {
+        "samples": 49786,
+        "sha256": "2d3ec3b7d46914e8235e9f7d4ac5e85e66f0ae96c01be505a6eb3a190ba211e1"
+      },
+      "after": {
+        "samples": 49786,
+        "sha256": "9c676d712e69416d412d80bd8ce4808adc58f4b4c5f47cc42fe1eb1c14be47f8"
+      }
+    },
+    {
+      "language": "0x50000",
+      "rate": 3,
+      "text": "Sassi, pasta, stazione.",
+      "before": {
+        "samples": 36208,
+        "sha256": "488fd83f1fd331c3e60e8aa6dcd30565b6e948815b56426a05eb2f89f47f7650"
+      },
+      "after": {
+        "samples": 36208,
+        "sha256": "6bec8229a9586f2878cb83d85249e1c7d0e1c884b3d4b7316b12f22659dd0284"
+      }
+    },
+    {
+      "language": "0x50000",
+      "rate": 4,
+      "text": "Sassi, pasta, stazione.",
+      "before": {
+        "samples": 72416,
+        "sha256": "1682a471fa56e51265da0492ace6219c6b69e70a6e58dca8b896b39c195aaf55"
+      },
+      "after": {
+        "samples": 72416,
+        "sha256": "5ee6fc855892e6dfb557a952b3389c4dc090ae6e560a8bf691a7582860b37727"
+      }
+    },
+    {
+      "language": "0x50000",
+      "rate": 5,
+      "text": "Sassi, pasta, stazione.",
+      "before": {
+        "samples": 99572,
+        "sha256": "99161be39b670f82bc91bd251fe65a100115d2557e94dfbfe940c981437e9cae"
+      },
+      "after": {
+        "samples": 99572,
+        "sha256": "c217bd05c20ab96f2d180188307b6859a6c15d4b9783fd4400f03c35c8c5534f"
+      }
+    },
+    {
+      "language": "0x50000",
+      "rate": 6,
+      "text": "Sassi, pasta, stazione.",
+      "before": {
+        "samples": 108624,
+        "sha256": "ed6510b3e670d6fc222bb4c2ac3383752f90cce7ec6915cd58c8dbc646ec29d5"
+      },
+      "after": {
+        "samples": 108624,
+        "sha256": "b3ab85021d12b38706003e26ebb2e780d0a2bffd69544da0750100a426212e65"
+      }
+    },
+    {
+      "language": "0x70000",
+      "rate": 0,
+      "text": "Seis sapatos são seus.",
+      "before": {
+        "samples": 17456,
+        "sha256": "be6bf818ddea23bcdb5498175041d16f87259d856526743ca2384dccbd4ca61c"
+      },
+      "after": {
+        "samples": 17456,
+        "sha256": "495c574ea00451454d428679de89aef6390c6569eb07c3ebf14342949917dfde"
+      }
+    },
+    {
+      "language": "0x70000",
+      "rate": 1,
+      "text": "Seis sapatos são seus.",
+      "before": {
+        "samples": 24002,
+        "sha256": "ea3e1cf6287134cfea4ad781296ac54bdc0d77ef1be62908dc4a99ea9244ae4e"
+      },
+      "after": {
+        "samples": 24002,
+        "sha256": "da62d5e4bafc80d984731a0521abe05914d643f257a37db5bfebcae3b13a5ce9"
+      }
+    },
+    {
+      "language": "0x70000",
+      "rate": 2,
+      "text": "Seis sapatos são seus.",
+      "before": {
+        "samples": 48004,
+        "sha256": "f543f0ab48b74dd5cb4da635ece74e1cbf9e818fde43e70a52794c60119e99e0"
+      },
+      "after": {
+        "samples": 48004,
+        "sha256": "0e897128f9abf21c5c823c55bb5ee164d7a5140b9208b0faff9c5c4b0826e982"
+      }
+    },
+    {
+      "language": "0x70000",
+      "rate": 3,
+      "text": "Seis sapatos são seus.",
+      "before": {
+        "samples": 34912,
+        "sha256": "863ae163aeff25c73771048558e4bec3cab2a3ffedafb2dfb6b58783f1fd47a2"
+      },
+      "after": {
+        "samples": 34912,
+        "sha256": "eafeb87c6e04f6a4b12e71e5fb3c9613d9ef5effc01351df3266af241180ac65"
+      }
+    },
+    {
+      "language": "0x70000",
+      "rate": 4,
+      "text": "Seis sapatos são seus.",
+      "before": {
+        "samples": 69824,
+        "sha256": "596784173a6466979dca4fac31e72561b8980e3c441d6fc40e6eb0b38f80fad5"
+      },
+      "after": {
+        "samples": 69824,
+        "sha256": "f40cd501b50cddfbd6f50fc74dbeead8a25a046ec7d03158ce9f3844b446064c"
+      }
+    },
+    {
+      "language": "0x70000",
+      "rate": 5,
+      "text": "Seis sapatos são seus.",
+      "before": {
+        "samples": 96008,
+        "sha256": "58ad5931074b74f4fb9d858d524cb8e96c56bd25fd7ee469d3c32f5222dfe4fc"
+      },
+      "after": {
+        "samples": 96008,
+        "sha256": "327ee7e2e48dd39d4c989601e3f635d69bee6dccef1b4299dc4b18930457547d"
+      }
+    },
+    {
+      "language": "0x70000",
+      "rate": 6,
+      "text": "Seis sapatos são seus.",
+      "before": {
+        "samples": 104736,
+        "sha256": "bcaf208ce152e721b53da885745250730c17085bdb78bd35a6af6b5d70544c29"
+      },
+      "after": {
+        "samples": 104736,
+        "sha256": "32ddb50a4ec7e59f4ab104f13bdaff7f24a99ce32754d2eb6dc1d8b0cdb3b2be"
+      }
+    },
+    {
+      "language": "0x90000",
+      "rate": 0,
+      "text": "Susi saa sisua.",
+      "before": {
+        "samples": 10896,
+        "sha256": "b546e4df31a60a1be832f9258ac9a3de5e8d3a8025a1a666e63c58b3d112c6b5"
+      },
+      "after": {
+        "samples": 10896,
+        "sha256": "bbe1a58d176540420e797dc3de1bfa2e55d44f40970356450e33a2580f3edd16"
+      }
+    },
+    {
+      "language": "0x90000",
+      "rate": 1,
+      "text": "Susi saa sisua.",
+      "before": {
+        "samples": 14982,
+        "sha256": "27788daba737509e85bad1ad8dfd8808012a68daaff3e87873ac69205518d713"
+      },
+      "after": {
+        "samples": 14982,
+        "sha256": "5b8a8000a72b614d4376db932a53722de711f494790c1f96a493802efb32db5a"
+      }
+    },
+    {
+      "language": "0x90000",
+      "rate": 2,
+      "text": "Susi saa sisua.",
+      "before": {
+        "samples": 29964,
+        "sha256": "da26b828373b303a5d3fe06ce0f8e9390855a09d3ccc107837b04d98931ff31e"
+      },
+      "after": {
+        "samples": 29964,
+        "sha256": "d2ba55ee5bbca2ed60815d9499c67f70f256f823d4b580325459887484ce1a0d"
+      }
+    },
+    {
+      "language": "0x90000",
+      "rate": 3,
+      "text": "Susi saa sisua.",
+      "before": {
+        "samples": 21792,
+        "sha256": "3d5e798e173b1a0d7dd332de6470ee2512643ac9894c23f977430d9b3eeab7b1"
+      },
+      "after": {
+        "samples": 21792,
+        "sha256": "ba40ae54a9155c80ff4594cdf832913603f589a5530e373779d85786112fb4ff"
+      }
+    },
+    {
+      "language": "0x90000",
+      "rate": 4,
+      "text": "Susi saa sisua.",
+      "before": {
+        "samples": 43584,
+        "sha256": "986ee966b011e35c7c4432325cd5b94b56db0ec79817333c09592c84593d97af"
+      },
+      "after": {
+        "samples": 43584,
+        "sha256": "81212a115ad11d87667fb3433f98aa5d236f14f73d978a0f214a1f913ca04757"
+      }
+    },
+    {
+      "language": "0x90000",
+      "rate": 5,
+      "text": "Susi saa sisua.",
+      "before": {
+        "samples": 59928,
+        "sha256": "b3cd06080a496b30b797e1e911b8aad44602b5a54a0de1c554768e798985a5ab"
+      },
+      "after": {
+        "samples": 59928,
+        "sha256": "af4e9243ab2ca0aec85fde4fb5fb6a5e55acc256c589b2c27c937fc9873ca25c"
+      }
+    },
+    {
+      "language": "0x90000",
+      "rate": 6,
+      "text": "Susi saa sisua.",
+      "before": {
+        "samples": 65376,
+        "sha256": "80d53646cae3566971bc42a3e94b524b3fdecc417888eca5703aaae02f439e12"
+      },
+      "after": {
+        "samples": 65376,
+        "sha256": "28e0b9a59219824193be403221abe4e79e41c00bc576063d80e3acc8ef008ce0"
+      }
+    },
+    {
+      "language": "0x60000",
+      "rate": 0,
+      "text": "si4 si4 si4.",
+      "before": {
+        "samples": 9152,
+        "sha256": "cf3dd2a157da9a29185f05e40306f1848ed3b3b3344a8c3c419ad82334ff1b2a"
+      },
+      "after": {
+        "samples": 9152,
+        "sha256": "81974d41c2e80a8c41eaeee0580550e7b8778d3899f9270a1b917b376dd8869d"
+      }
+    },
+    {
+      "language": "0x60000",
+      "rate": 1,
+      "text": "si4 si4 si4.",
+      "before": {
+        "samples": 12584,
+        "sha256": "c0a6c101b3a93d2f18770ab3fe990bc2cb8957423cb4e8501e0dbc9dc42e3c04"
+      },
+      "after": {
+        "samples": 12584,
+        "sha256": "3c2d7493991c95ca4fc2d778ee876e6233a0eccc7ef0b15715b8de36d5478c34"
+      }
+    },
+    {
+      "language": "0x60000",
+      "rate": 2,
+      "text": "si4 si4 si4.",
+      "before": {
+        "samples": 25168,
+        "sha256": "d35722cb2888a2d72d68a7d603a9d330bfedeacfafee55b4232a1107e172eb03"
+      },
+      "after": {
+        "samples": 25168,
+        "sha256": "f6cb87c1889ca896812290bf2a29d20a85f1e859896a83874112db968b8192be"
+      }
+    },
+    {
+      "language": "0x60000",
+      "rate": 3,
+      "text": "si4 si4 si4.",
+      "before": {
+        "samples": 18304,
+        "sha256": "1cfe4267e12fac300a6a7a23d3b3423d8412d21f58a6eb626719df720e2d7dac"
+      },
+      "after": {
+        "samples": 18304,
+        "sha256": "712549d958f246bd87f944611c378a1349e683d6312cd4feaf628f6e6ddeb49f"
+      }
+    },
+    {
+      "language": "0x60000",
+      "rate": 4,
+      "text": "si4 si4 si4.",
+      "before": {
+        "samples": 36608,
+        "sha256": "2c32a927b86689eb794fddaf729f282430fbaeffcb3dea7a127265060f0b1183"
+      },
+      "after": {
+        "samples": 36608,
+        "sha256": "d492770df86166c41ec3ac7e45cfc782670aa4df59b8e122b99d4f2fab2f0d03"
+      }
+    },
+    {
+      "language": "0x60000",
+      "rate": 5,
+      "text": "si4 si4 si4.",
+      "before": {
+        "samples": 50336,
+        "sha256": "b1d0ec016340f2145baf96a4c3fe71cb8992fedc916194dcdaf3f9dabaec9b88"
+      },
+      "after": {
+        "samples": 50336,
+        "sha256": "3d0be4c663de7d6f80326f9025f7e68f819e724f80fc56abfbd9bb3b340fd363"
+      }
+    },
+    {
+      "language": "0x60000",
+      "rate": 6,
+      "text": "si4 si4 si4.",
+      "before": {
+        "samples": 54912,
+        "sha256": "d1203a035865925e8ef9338f9f88ed36d385fb33040cdeaebc13076b3d7113d6"
+      },
+      "after": {
+        "samples": 54912,
+        "sha256": "7964836eb6c8396638c40ffabf160ca4fc6e9d1f37acd66f2ca8b75724edbf3f"
+      }
+    },
+    {
+      "language": "0xa0000",
+      "rate": 0,
+      "text": "사시사사 쌍.",
+      "before": {
+        "samples": 14056,
+        "sha256": "dce4145893fddc1aedbad5a2e01f4cf6e9065bee46ba7e5db2a9199502aa790c"
+      },
+      "after": {
+        "samples": 14056,
+        "sha256": "7b54161a9687433355037baa0cef3ccc6a5babc9614d6bd1d1506f804c8dc06a"
+      }
+    },
+    {
+      "language": "0xa0000",
+      "rate": 1,
+      "text": "사시사사 쌍.",
+      "before": {
+        "samples": 19327,
+        "sha256": "15c67656c3412e6bd9eecbdc646b4bd1279d7e4d551aacd7985cda8a7e2febf6"
+      },
+      "after": {
+        "samples": 19327,
+        "sha256": "099e0a550d6aa20cee966c334f83bf779f9fcca946d0941587314a6081822956"
+      }
+    },
+    {
+      "language": "0xa0000",
+      "rate": 2,
+      "text": "사시사사 쌍.",
+      "before": {
+        "samples": 38654,
+        "sha256": "fa284a2bc6d6c992dd78ce85ac1c5db923dd15d095b504f047d413c4b0733d86"
+      },
+      "after": {
+        "samples": 38654,
+        "sha256": "84131e7f24cd0f5b4c9082e48e3c695ff55a46ad39e0a6fa12aed101f536fe75"
+      }
+    },
+    {
+      "language": "0xa0000",
+      "rate": 3,
+      "text": "사시사사 쌍.",
+      "before": {
+        "samples": 28112,
+        "sha256": "ef4458b42baef26c6140c6326870806c527a87eb58411134d6915bf8f786c892"
+      },
+      "after": {
+        "samples": 28112,
+        "sha256": "988da0b61adb10aff7165eca3394e67d31660d3fa9c3ac8684aece42a309d19b"
+      }
+    },
+    {
+      "language": "0xa0000",
+      "rate": 4,
+      "text": "사시사사 쌍.",
+      "before": {
+        "samples": 56224,
+        "sha256": "14af3e80296c2b3c9b28a3432307e27c3e2e9d932d6895902be097fd844cf773"
+      },
+      "after": {
+        "samples": 56224,
+        "sha256": "135522217bbe7184d2b493dd173919f17925abf05399496697684d43e7d08d3b"
+      }
+    },
+    {
+      "language": "0xa0000",
+      "rate": 5,
+      "text": "사시사사 쌍.",
+      "before": {
+        "samples": 77308,
+        "sha256": "060c2758571614615d6a594d6eb25b4096de15ede90a72a02fda87d2337badb1"
+      },
+      "after": {
+        "samples": 77308,
+        "sha256": "8d1ab7fb5955e4ac8559fb6ccbda17bc396d7bfbc7fdd62a9b7c8a068afdd844"
+      }
+    },
+    {
+      "language": "0xa0000",
+      "rate": 6,
+      "text": "사시사사 쌍.",
+      "before": {
+        "samples": 84336,
+        "sha256": "061612a846b27b9d7adfe2874ccf6079ca811a720b09f898acfc3c1adc6554e8"
+      },
+      "after": {
+        "samples": 84336,
+        "sha256": "34afc1cc6c810d805709040b03a1c6d8df790ea969f5765359c5aab567beaf1d"
+      }
+    }
+  ]
+}

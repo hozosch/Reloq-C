@@ -1,0 +1,24 @@
+{
+  "cases": 196,
+  "same_duration_and_indexes": 196,
+  "unchanged_pcm_cases": 85,
+  "changed_pcm_cases": 111,
+  "changed_languages": [
+    "en_GB",
+    "es_MX",
+    "fr_CA",
+    "fr_FR",
+    "it_IT",
+    "ko_KR",
+    "pt_BR",
+    "zh_CN"
+  ],
+  "unchanged_reference_languages": [
+    "de_DE",
+    "el_GR",
+    "en_US",
+    "es_ES",
+    "ja_JP"
+  ],
+  "no_audio_files": true
+}

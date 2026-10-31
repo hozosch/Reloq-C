@@ -69,14 +69,14 @@ GERMAN = Language(
     GERMAN_DIALECT, N_("German"), "de_DE", "utf-8",
     (
         # Eloquence_64's preset names; IDs and anatomy settings are stable.
-        _preset(1, "Reed", 0, 50, 65, 30, 0, 0, 92),
+        _preset(1, "Reed", 0, 50, 65, 30, 0, 0, 100),
         _preset(2, "Shelly", 1, 50, 81, 30, 0, 50, 100),
-        _preset(3, "Bobby", 1, 22, 93, 35, 0, 0, 90),
-        _preset(4, "Rocko", 0, 86, 56, 47, 0, 0, 93),
-        _preset(5, "Glen", 0, 50, 69, 34, 0, 0, 92),
-        _preset(6, "Sandy", 1, 56, 89, 35, 0, 40, 95),
-        _preset(7, "Grandma", 1, 45, 68, 30, 3, 40, 90),
-        _preset(8, "Grandpa", 0, 30, 61, 44, 18, 20, 90),
+        _preset(3, "Bobby", 1, 22, 93, 35, 0, 0, 100),
+        _preset(4, "Rocko", 0, 86, 56, 47, 0, 0, 100),
+        _preset(5, "Glen", 0, 50, 69, 34, 0, 0, 100),
+        _preset(6, "Sandy", 1, 56, 89, 35, 0, 40, 100),
+        _preset(7, "Grandma", 1, 45, 68, 30, 3, 40, 100),
+        _preset(8, "Grandpa", 0, 30, 61, 44, 18, 20, 100),
     ),
 )
 # Anatomy presets are shared. Pronunciation and acoustic rules belong to
