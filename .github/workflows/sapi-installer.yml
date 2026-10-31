@@ -1,0 +1,93 @@
+name: SAPI5 installer and Windows validation
+on:
+  push:
+    branches: [main, codex/sapi204]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, x86]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install cross compiler
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y gcc-mingw-w64-x86-64-posix gcc-mingw-w64-i686-posix
+      - uses: actions/cache@v4
+        id: rules
+        with:
+          path: vendor/openevv61/build
+          key: sapi-rules-ubuntu24-gcc13-v1-${{ matrix.arch }}-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c') }}
+      - name: Restore unchanged rule timestamps
+        if: steps.rules.outputs.cache-hit == 'true'
+        run: find vendor/openevv61/build -type f -exec touch {} +
+      - name: Build native core and SAPI adapter
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ '${{ matrix.arch }}' = x64 ]; then prefix=x86_64; else prefix=i686; fi
+          make -C eci -j2 windows-${{ matrix.arch }} PROVIDER_LTO=-flto=2 WINDOWS_CC=$prefix-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=$prefix-w64-mingw32-objdump
+          python3 sapi/build.py --arch ${{ matrix.arch }} --cc $prefix-w64-mingw32-gcc-posix --objdump $prefix-w64-mingw32-objdump
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sapi-native-${{ matrix.arch }}
+          path: dist/reloq-c-sapi5-${{ matrix.arch }}-*.zip
+          compression-level: 0
+          retention-days: 7
+  installer:
+    needs: native
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sapi-native-*
+          path: dist
+          merge-multiple: true
+      - name: Compile unified Inno Setup installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (!(Test-Path $iscc)) { throw 'Inno Setup 6 compiler not installed on runner' }
+          python sapi/build_installer.py --iscc $iscc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Install, test SAPI in RAM, and uninstall
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist/validation | Out-Null
+          $setup = (Get-ChildItem dist/reloq-c-sapi5-*-setup.exe | Sort-Object LastWriteTime | Select-Object -Last 1).FullName
+          $install = Join-Path $env:ProgramFiles 'ReLoq C\SAPI5'
+          $p = Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-',"/LOG=$pwd\dist\validation\install.log" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Install failed: $($p.ExitCode)" }
+          foreach ($arch in @('x64','x86')) {
+            $test = if ($arch -eq 'x64') { Join-Path $install 'Test-SAPI.exe' } else { Join-Path $install 'x86\Test-SAPI.exe' }
+            & $test *> "dist/validation/sapi-$arch.txt"
+            if ($LASTEXITCODE -ne 0) { throw "SAPI $arch validation failed" }
+          }
+          $p = Start-Process (Join-Path $install 'unins000.exe') -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=$pwd\dist\validation\uninstall.log" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Uninstall failed: $($p.ExitCode)" }
+          foreach ($view in @([Microsoft.Win32.RegistryView]::Registry32,[Microsoft.Win32.RegistryView]::Registry64)) {
+            $h = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,$view)
+            $k = $h.OpenSubKey('SOFTWARE\Microsoft\Speech\Voices\Tokens')
+            if ($k -and @($k.GetSubKeyNames() | Where-Object { $_ -like 'ReLoqC_*' }).Count) { throw "Voice tokens remain: $view" }
+            if ($k) { $k.Dispose() }; $h.Dispose()
+          }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sapi-installer
+          path: |
+            dist/reloq-c-sapi5-*-setup.exe
+            dist/*installer*.json
+            dist/validation/
+          compression-level: 0
+          retention-days: 14

@@ -1,0 +1,20 @@
+{
+  "upstream": "https://github.com/jrsoftware/issrc",
+  "tag": "is-6_7_1",
+  "license": "Inno-Setup-LICENSE.txt",
+  "files": {
+    "ChineseSimplified.isl": {
+      "source": "Files/Languages/Unofficial/ChineseSimplified.isl",
+      "sha256": "7d544b9bb1d142cfa11f2e5d3cc8abe2e55f8e066c5124e3772675aa236e1278"
+    },
+    "Greek.isl": {
+      "source": "Files/Languages/Unofficial/Greek.isl",
+      "sha256": "39c11b8056209edee6baf8f2e9c72ba5dede63e631391b1d73f7acdd56a899b4"
+    },
+    "ChineseTraditional.isl": {
+      "source": "Files/Languages/Unofficial/ChineseTraditional.isl",
+      "sha256": "09bc320c32182cc34d65363c0589bec739afb7c07e21bf2ba639e5250826341f"
+    }
+  },
+  "local_changes": "ChineseTraditional.isl completes missing 6.7 messages; other translations unchanged."
+}
