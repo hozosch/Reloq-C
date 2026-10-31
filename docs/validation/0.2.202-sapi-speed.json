@@ -1,0 +1,475 @@
+{
+  "no_audio_files": true,
+  "cases": [
+    {
+      "language": 65536,
+      "sapi_rate": -10,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 0,
+      "samples": 39919,
+      "hash": "06252fd4bfa23939"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": -9,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 0,
+      "samples": 39919,
+      "hash": "06252fd4bfa23939"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": -8,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 0,
+      "samples": 39919,
+      "hash": "06252fd4bfa23939"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": -7,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 0,
+      "samples": 39919,
+      "hash": "06252fd4bfa23939"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": -6,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 0,
+      "samples": 39919,
+      "hash": "06252fd4bfa23939"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": -5,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 10,
+      "samples": 32747,
+      "hash": "a7cc19bb6b00cfb3"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": -4,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 20,
+      "samples": 26708,
+      "hash": "d9d816d895a0e9ce"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": -3,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 30,
+      "samples": 21857,
+      "hash": "ef61c958ac8dfdcd"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": -2,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 40,
+      "samples": 17886,
+      "hash": "7b505d96f4de4ac0"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": -1,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 50,
+      "samples": 14663,
+      "hash": "4ec9969c7db0bc7b"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": 0,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 60,
+      "samples": 12012,
+      "hash": "0295134361a2f7a5"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": 1,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 70,
+      "samples": 9823,
+      "hash": "b2c9cf26e2f93501"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": 2,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 80,
+      "samples": 8096,
+      "hash": "16269b3d351b3b90"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": 3,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 90,
+      "samples": 6644,
+      "hash": "22d0e1971cfd75dc"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": 4,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 100,
+      "samples": 5423,
+      "hash": "443cc243f2ca951e"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": 5,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 110,
+      "samples": 4411,
+      "hash": "fcb33bbeb56b3a03"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": 6,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 120,
+      "samples": 3707,
+      "hash": "daf555e7d833de74"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": 7,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 130,
+      "samples": 2959,
+      "hash": "1e67f8d584444a3c"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": 8,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 140,
+      "samples": 2519,
+      "hash": "61f6ef242b327636"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": 9,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 150,
+      "samples": 2090,
+      "hash": "432d70199d5985d9"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": 10,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 160,
+      "samples": 1694,
+      "hash": "5e56631da523704b"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": 10,
+      "xml_adjustment": 5,
+      "boost": 0,
+      "native_speed": 210,
+      "samples": 748,
+      "hash": "f1d1e9eab4541e96"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": 0,
+      "xml_adjustment": 2147483647,
+      "boost": 0,
+      "native_speed": 250,
+      "samples": 561,
+      "hash": "94afea5b234c4964"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": 0,
+      "xml_adjustment": -2147483648,
+      "boost": 0,
+      "native_speed": 0,
+      "samples": 39919,
+      "hash": "06252fd4bfa23939"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": 0,
+      "xml_adjustment": 0,
+      "boost": 1,
+      "native_speed": 96,
+      "samples": 5885,
+      "hash": "832133790bd3e0ac"
+    },
+    {
+      "language": 65536,
+      "sapi_rate": 10,
+      "xml_adjustment": 0,
+      "boost": 1,
+      "native_speed": 250,
+      "samples": 561,
+      "hash": "94afea5b234c4964"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": -10,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 0,
+      "samples": 44869,
+      "hash": "bb713b50bef157f1"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": -9,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 0,
+      "samples": 44869,
+      "hash": "bb713b50bef157f1"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": -8,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 0,
+      "samples": 44869,
+      "hash": "bb713b50bef157f1"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": -7,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 0,
+      "samples": 44869,
+      "hash": "bb713b50bef157f1"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": -6,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 0,
+      "samples": 44869,
+      "hash": "bb713b50bef157f1"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": -5,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 10,
+      "samples": 36784,
+      "hash": "e52fcb020f154910"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": -4,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 20,
+      "samples": 30030,
+      "hash": "3d34f485fec5bb2c"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": -3,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 30,
+      "samples": 24585,
+      "hash": "47dfee04d4c7e068"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": -2,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 40,
+      "samples": 20130,
+      "hash": "86fcced237920ba7"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": -1,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 50,
+      "samples": 16511,
+      "hash": "c9597aaa14ad4952"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": 0,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 60,
+      "samples": 13563,
+      "hash": "024e523ca880eca0"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": 1,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 70,
+      "samples": 11330,
+      "hash": "467419b4b67017f8"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": 2,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 80,
+      "samples": 9306,
+      "hash": "1d5ce6ceaca6576b"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": 3,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 90,
+      "samples": 7568,
+      "hash": "dcb011705e084e32"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": 4,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 100,
+      "samples": 6094,
+      "hash": "dbce702ea98c9551"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": 5,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 110,
+      "samples": 4994,
+      "hash": "f27c9d2d6b9daef5"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": 6,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 120,
+      "samples": 4169,
+      "hash": "affb7ca0bf2e65c0"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": 7,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 130,
+      "samples": 3465,
+      "hash": "134c3fb6041deb21"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": 8,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 140,
+      "samples": 2871,
+      "hash": "2baec3df6f7ea980"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": 9,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 150,
+      "samples": 2365,
+      "hash": "c6667e555a8077a3"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": 10,
+      "xml_adjustment": 0,
+      "boost": 0,
+      "native_speed": 160,
+      "samples": 1969,
+      "hash": "9f57d86cbd7d7a11"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": 10,
+      "xml_adjustment": 5,
+      "boost": 0,
+      "native_speed": 210,
+      "samples": 1012,
+      "hash": "0abfccf225c07aa9"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": 0,
+      "xml_adjustment": 2147483647,
+      "boost": 0,
+      "native_speed": 250,
+      "samples": 803,
+      "hash": "15cbf82edbb94ef4"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": 0,
+      "xml_adjustment": -2147483648,
+      "boost": 0,
+      "native_speed": 0,
+      "samples": 44869,
+      "hash": "bb713b50bef157f1"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": 0,
+      "xml_adjustment": 0,
+      "boost": 1,
+      "native_speed": 96,
+      "samples": 6589,
+      "hash": "a584bb1e1b6f1701"
+    },
+    {
+      "language": 262144,
+      "sapi_rate": 10,
+      "xml_adjustment": 0,
+      "boost": 1,
+      "native_speed": 250,
+      "samples": 803,
+      "hash": "15cbf82edbb94ef4"
+    }
+  ],
+  "case_count": 52,
+  "direct_native_pcm_matches": 52
+}

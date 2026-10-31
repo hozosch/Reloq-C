@@ -1,10 +1,24 @@
 #include "settings.h"
 #include <stdio.h>
 #include <wchar.h>
+#ifdef _WIN64
+#define REGISTRY_VIEW KEY_WOW64_64KEY
+#else
+#define REGISTRY_VIEW KEY_WOW64_32KEY
+#endif
 static LSTATUS string(HKEY base,const WCHAR *path,const WCHAR *name,const WCHAR *value)
 {
-    HKEY key;LSTATUS rc=RegCreateKeyExW(base,path,0,NULL,0,KEY_SET_VALUE|KEY_WOW64_64KEY,NULL,&key,NULL);
+    HKEY key;LSTATUS rc=RegCreateKeyExW(base,path,0,NULL,0,KEY_SET_VALUE|REGISTRY_VIEW,NULL,&key,NULL);
     if(rc==ERROR_SUCCESS){rc=RegSetValueExW(key,name,0,REG_SZ,(const BYTE *)value,(DWORD)((wcslen(value)+1)*2));RegCloseKey(key);}return rc;
+}
+static LSTATUS remove_tree(HKEY base,const WCHAR *path)
+{
+    /* Open the selected view first: deletion must never unregister the
+     * other architecture's tokens or COM classes. */
+    HKEY key;LSTATUS rc=RegOpenKeyExW(base,path,0,DELETE|KEY_ENUMERATE_SUB_KEYS|KEY_QUERY_VALUE|KEY_SET_VALUE|REGISTRY_VIEW,&key);
+    if(rc==ERROR_SUCCESS){rc=RegDeleteTreeW(key,NULL);RegCloseKey(key);
+        if(rc==ERROR_SUCCESS)rc=RegDeleteKeyExW(base,path,REGISTRY_VIEW,0);}
+    return rc;
 }
 HRESULT sapi_register(BOOL install,BOOL machine)
 {
@@ -13,17 +27,17 @@ HRESULT sapi_register(BOOL install,BOOL machine)
     if(install&&!GetModuleFileNameW(sapi_module,path,2048))return HRESULT_FROM_WIN32(GetLastError());
     const WCHAR *classes[]={RELOQ_ENGINE_CLSID,RELOQ_SETTINGS_CLSID};
     for(unsigned i=0;i<2;++i){swprintf(key,512,L"Software\\Classes\\CLSID\\%ls",classes[i]);
-        if(!install){rc=RegDeleteTreeW(base,key);if(rc!=ERROR_SUCCESS&&rc!=ERROR_FILE_NOT_FOUND)return HRESULT_FROM_WIN32(rc);continue;}
+        if(!install){rc=remove_tree(base,key);if(rc!=ERROR_SUCCESS&&rc!=ERROR_FILE_NOT_FOUND)return HRESULT_FROM_WIN32(rc);continue;}
         rc=string(base,key,NULL,i?L"ReLoq C voice settings":L"ReLoq C SAPI5 engine");if(rc)return HRESULT_FROM_WIN32(rc);
         wcscat(key,L"\\InprocServer32");rc=string(base,key,NULL,path);if(rc)return HRESULT_FROM_WIN32(rc);
         rc=string(base,key,L"ThreadingModel",L"Both");if(rc)return HRESULT_FROM_WIN32(rc);
     }
     for(size_t i=0;i<sapi_language_count();++i){const struct sapi_language *v=sapi_language_at(i);
         swprintf(key,512,L"Software\\Microsoft\\Speech\\Voices\\Tokens\\ReLoqC_%02u_%08X",(unsigned)i,(unsigned)v->dialect);
-        if(!install){rc=RegDeleteTreeW(base,key);if(rc!=ERROR_SUCCESS&&rc!=ERROR_FILE_NOT_FOUND)return HRESULT_FROM_WIN32(rc);continue;}
+        if(!install){rc=remove_tree(base,key);if(rc!=ERROR_SUCCESS&&rc!=ERROR_FILE_NOT_FOUND)return HRESULT_FROM_WIN32(rc);continue;}
         swprintf(name,256,L"ReLoq C - %ls",v->name);rc=string(base,key,NULL,name);if(rc)return HRESULT_FROM_WIN32(rc);
         rc=string(base,key,L"CLSID",RELOQ_ENGINE_CLSID);if(rc)return HRESULT_FROM_WIN32(rc);
-        HKEY token;rc=RegOpenKeyExW(base,key,0,KEY_SET_VALUE|KEY_WOW64_64KEY,&token);if(rc)return HRESULT_FROM_WIN32(rc);
+        HKEY token;rc=RegOpenKeyExW(base,key,0,KEY_SET_VALUE|REGISTRY_VIEW,&token);if(rc)return HRESULT_FROM_WIN32(rc);
         DWORD dialect=(DWORD)v->dialect;rc=RegSetValueExW(token,L"ReLoqDialect",0,REG_DWORD,(BYTE *)&dialect,sizeof dialect);RegCloseKey(token);if(rc)return HRESULT_FROM_WIN32(rc);
         size_t root=wcslen(key);wcscat(key,L"\\Attributes");
         swprintf(lcid,16,L"%X",(unsigned)v->lcid);

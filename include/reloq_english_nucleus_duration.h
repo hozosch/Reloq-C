@@ -20,7 +20,7 @@ struct reloq_english_nucleus {
     int32_t closing_ticks[2]; /* member steady parts; transitions are separate */
     int32_t transition_ticks[2]; /* internal vowel/glide/liquid transitions */
 };
-/* Public native speed 40..250 -> duration-stage integer percent. */
+/* Public native speed 0..250 -> duration-stage integer percent. */
 int reloq_english_nucleus_rate_percent(int native_speed);
 /* Locate a vowel, optionally its closing y/w/r/l, then one closing r/l. Return
  * 1 on success, 0 for no described nucleus, -1 for invalid input. No output

@@ -6,7 +6,12 @@
 #include <string.h>
 #include <time.h>
 #include <errno.h>
+#include <sys/stat.h>
 const char *sapi_test_library;
+unsigned sapi_test_dictionary_calls;
+static int (*dictionary_api)(void *,const char *);
+static int dictionary_reload(void *handle,const char *path)
+{++sapi_test_dictionary_calls;return dictionary_api(handle,path);}
 HMODULE sapi_module;volatile LONG sapi_objects,sapi_locks;
 LONG InterlockedIncrement(volatile LONG *p){return __atomic_add_fetch(p,1,__ATOMIC_SEQ_CST);}
 LONG InterlockedExchange(volatile LONG *p,LONG n){return __atomic_exchange_n(p,n,__ATOMIC_SEQ_CST);}
@@ -19,7 +24,20 @@ BOOL InitOnceExecuteOnce(PINIT_ONCE once,BOOL (*fn)(PINIT_ONCE,PVOID,PVOID *),PV
 {static pthread_mutex_t lock=PTHREAD_MUTEX_INITIALIZER;pthread_mutex_lock(&lock);
     if(!once->state&&fn(once,arg,out))once->state=1;BOOL ok=once->state;pthread_mutex_unlock(&lock);return ok;}
 HMODULE LoadLibraryExW(LPCWSTR p,HANDLE h,DWORD flags){(void)p;(void)h;(void)flags;return dlopen(sapi_test_library,RTLD_NOW|RTLD_LOCAL);}
-FARPROC GetProcAddress(HMODULE h,const char *name){void *p=dlsym(h,name);FARPROC fn;memcpy(&fn,&p,sizeof fn);return fn;}
+FARPROC GetProcAddress(HMODULE h,const char *name){void *p=dlsym(h,name);FARPROC fn;memcpy(&fn,&p,sizeof fn);
+ if(!strcmp(name,"eciSetDictionaryPath")){memcpy(&dictionary_api,&p,sizeof p);int (*wrap)(void *,const char *)=dictionary_reload;memcpy(&fn,&wrap,sizeof fn);}return fn;}
+static _Thread_local DWORD last_error;
+DWORD GetLastError(void){return last_error;}
+BOOL GetFileAttributesExW(LPCWSTR path,int kind,WIN32_FILE_ATTRIBUTE_DATA *out)
+{
+ (void)kind;char name[8192];if(!WideCharToMultiByte(CP_UTF8,0,path,-1,name,sizeof name,NULL,NULL)){last_error=87;return FALSE;}
+ for(char *p=name;*p;++p)if(*p=='\\')*p='/';struct stat st;
+ if(stat(name,&st)){last_error=errno==ENOENT?ERROR_FILE_NOT_FOUND:5;return FALSE;}
+ memset(out,0,sizeof *out);out->dwFileAttributes=S_ISDIR(st.st_mode)?16:128;
+ out->nFileSizeHigh=(DWORD)((uint64_t)st.st_size>>32);out->nFileSizeLow=(DWORD)st.st_size;
+ uint64_t time=(uint64_t)st.st_mtim.tv_sec*10000000+(unsigned long)st.st_mtim.tv_nsec/100;
+ out->ftLastWriteTime=(FILETIME){(DWORD)time,(DWORD)(time>>32)};return TRUE;
+}
 BOOL FreeLibrary(HMODULE h){return dlclose(h)==0;}
 BOOL GetModuleHandleExW(DWORD flags,LPCWSTR address,HMODULE *out){(void)flags;(void)address;*out=(HMODULE)1;return TRUE;}
 int sapi_module_path(WCHAR *p,size_t cap,const WCHAR *name){if(wcslen(name)>=cap)return 0;wcscpy(p,name);return 1;}

@@ -2,6 +2,7 @@
 
 #include <math.h>
 #include <stddef.h>
+#include "reloq_voice_slow_rates.inc"
 
 struct anchor { int setting; double value; };
 
@@ -66,6 +67,10 @@ int reloq_voice_speed_from_nvda(int percent, int boost)
 
 double reloq_voice_speed_time_scale(int native_speed)
 {
+    /* Extend the native clock below the NVDA slider's historical minimum.
+     * Preserve every existing 40..250 anchor and join at the 122% clock. */
+    if(native_speed>=0&&native_speed<40)
+        return time_scale[0].value*native_slow_percent[native_speed]/122.0;
     return interpolate(time_scale, sizeof time_scale / sizeof time_scale[0],
                        native_speed);
 }

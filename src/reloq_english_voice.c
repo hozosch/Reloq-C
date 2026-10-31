@@ -276,7 +276,7 @@ static int parse(const unsigned char *s,size_t n,const size_t *map,int tags,
     if(n>SIZE_MAX/sizeof **result)return -2;
     struct unit *out=calloc(n?n:1,sizeof *out);if(!out)return -2;
     size_t used=0,word=0,syllable=0;int weak=0,accent=1;
-    int speed=settings->native_speed?settings->native_speed:50;
+    int speed=settings->native_speed?(settings->native_speed<0?0:settings->native_speed):50;
     int pitch=settings->native_pitch_plus_one?settings->native_pitch_plus_one-1:65;
     int volume=native_volume;
     for(size_t i=0;i<n;) {
@@ -768,7 +768,7 @@ int reloq_english_render_text(const unsigned char *text,size_t length,int tags,i
     if(!text||!settings||!session||!sink||(index_count&&!indices)||(pitch_count&&!pitches)||native_volume<0||native_volume>100)return RELOQ_DE_UTTERANCE_INVALID;
     if(settings->rate<0||settings->rate>100||settings->pitch<0||settings->pitch>100||
        settings->volume<0||settings->volume>100||settings->pause_mode<0||settings->pause_mode>2||
-       (settings->native_speed&&(settings->native_speed<40||settings->native_speed>250))||
+       (settings->native_speed< -1||settings->native_speed>250)||
        settings->native_pitch_plus_one<0||settings->native_pitch_plus_one>101||
        settings->native_inflection_plus_one<0||settings->native_inflection_plus_one>101||
        settings->head_size_plus_one<0||settings->head_size_plus_one>101||

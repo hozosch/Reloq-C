@@ -1,0 +1,116 @@
+{
+  "compared_cases": 126,
+  "changed_cases": 13,
+  "every_nonzero_sample_preserved": true,
+  "default_pause_pcm_identical": true,
+  "largest_removed_quiet_ms": 0.6576,
+  "reported_audible_lengthening_reproduced": false,
+  "limitation": "The measured corrections are below one millisecond and do not establish a fix for the reported audible extension. No phone, source-release duration, amplitude or fade was changed.",
+  "no_audio_files": true,
+  "records": [
+    {
+      "text": "Kamm.",
+      "rate": 0,
+      "mode": 1,
+      "old_samples": 1054,
+      "new_samples": 1050,
+      "removed_silence_ms": 0.5
+    },
+    {
+      "text": "Kamm.",
+      "rate": 0,
+      "mode": 2,
+      "old_samples": 1054,
+      "new_samples": 1050,
+      "removed_silence_ms": 0.5
+    },
+    {
+      "text": "Kamm.",
+      "rate": 1,
+      "mode": 1,
+      "old_samples": 1477,
+      "new_samples": 1474,
+      "removed_silence_ms": 0.2721
+    },
+    {
+      "text": "Kamm.",
+      "rate": 1,
+      "mode": 2,
+      "old_samples": 1477,
+      "new_samples": 1474,
+      "removed_silence_ms": 0.2721
+    },
+    {
+      "text": "Kamm.",
+      "rate": 2,
+      "mode": 1,
+      "old_samples": 2907,
+      "new_samples": 2903,
+      "removed_silence_ms": 0.1814
+    },
+    {
+      "text": "Kamm.",
+      "rate": 2,
+      "mode": 2,
+      "old_samples": 2907,
+      "new_samples": 2903,
+      "removed_silence_ms": 0.1814
+    },
+    {
+      "text": "Kamm.",
+      "rate": 3,
+      "mode": 1,
+      "old_samples": 2141,
+      "new_samples": 2131,
+      "removed_silence_ms": 0.625
+    },
+    {
+      "text": "Kamm.",
+      "rate": 3,
+      "mode": 2,
+      "old_samples": 2141,
+      "new_samples": 2131,
+      "removed_silence_ms": 0.625
+    },
+    {
+      "text": "Das ist schön. Nun weiter.",
+      "rate": 4,
+      "mode": 2,
+      "old_samples": 19544,
+      "new_samples": 19535,
+      "removed_silence_ms": 0.2812
+    },
+    {
+      "text": "Kamm.",
+      "rate": 5,
+      "mode": 1,
+      "old_samples": 5904,
+      "new_samples": 5875,
+      "removed_silence_ms": 0.6576
+    },
+    {
+      "text": "Kamm.",
+      "rate": 5,
+      "mode": 2,
+      "old_samples": 5904,
+      "new_samples": 5875,
+      "removed_silence_ms": 0.6576
+    },
+    {
+      "text": "Kamm.",
+      "rate": 6,
+      "mode": 1,
+      "old_samples": 6443,
+      "new_samples": 6421,
+      "removed_silence_ms": 0.4583
+    },
+    {
+      "text": "Kamm.",
+      "rate": 6,
+      "mode": 2,
+      "old_samples": 6443,
+      "new_samples": 6421,
+      "removed_silence_ms": 0.4583
+    }
+  ]
+}

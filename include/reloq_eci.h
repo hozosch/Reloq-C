@@ -81,7 +81,7 @@ enum {
     RELOQ_ECI_GENERIC_PITCH = 0x1005,
     RELOQ_ECI_GENERIC_VOLUME = 0x1006,
     /* Independent C voice extensions for the OpenEVV/NVDA percentage
-     * semantics. Speed uses native ECI 40..250 (NVDA 0..100 -> 40..156,
+     * semantics. Speed uses native ECI 0..250 (NVDA 0..100 -> 40..156,
      * optional boost to 250). Pitch uses the native 0..100 voice scale.
      * The last setter for rate or pitch selects that control route; merely
      * getting either parameter does not alter the legacy developmental path.

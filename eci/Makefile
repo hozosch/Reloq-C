@@ -4,10 +4,14 @@ CC ?= cc
 CFLAGS ?= -O2 -std=c11 -Wall -Wextra -Werror -pedantic
 SECTIONS := -ffunction-sections -fdata-sections
 CPPFLAGS ?=
-WINDOWS_CC ?= x86_64-w64-mingw32-gcc
-WINDOWS_OBJDUMP ?= x86_64-w64-mingw32-objdump
+WINDOWS_ARCH ?= x64
+WINDOWS_CC ?= $(if $(filter x86,$(WINDOWS_ARCH)),i686,x86_64)-w64-mingw32-gcc
+WINDOWS_OBJDUMP ?= $(if $(filter x86,$(WINDOWS_ARCH)),i686,x86_64)-w64-mingw32-objdump
 WINDOWS_CFLAGS ?= -O2 -std=c11 -Wall -Wextra -Werror -pedantic
 WINDOWS_LDFLAGS ?= -static -Wl,--strip-all,--no-insert-timestamp
+WINDOWS_BUILD ?= build/windows
+WINDOWS_OUTPUT ?= eci.dll
+WINDOWS_RULE_BUILD ?= build/windows-release
 ANDROID_CC ?= aarch64-linux-android26-clang
 ANDROID_AR ?= llvm-ar
 ANDROID_BUILD ?= build/android-arm64
@@ -22,12 +26,13 @@ PROVIDER_LTO ?= -flto=4
 # visible without turning its existing backtrack-flow warnings into errors.
 PROVIDER_LINK := $(PROVIDER_OPT) $(PROVIDER_LTO) -fno-strict-aliasing -ffp-contract=off
 RULES61 := ../vendor/openevv61/build/release/libreloq61.a
-RULES61_WIN := ../vendor/openevv61/build/windows-release/libreloq61.a
+RULES61_WIN := ../vendor/openevv61/$(WINDOWS_RULE_BUILD)/libreloq61.a
 RULES61_ANDROID := ../vendor/openevv61/build/android-arm64/libreloq61.a
 RULES61_SOURCES := $(wildcard ../vendor/openevv61/src/*.c ../vendor/openevv61/src/*/*.c ../vendor/openevv61/src/*/*/*.c ../vendor/openevv61/src/*/*.h ../vendor/openevv61/src/*/*/*.h ../vendor/openevv61/include/*.h ../vendor/openevv61/lang/*/*.c ../vendor/openevv61/lang/*/*.h) ../vendor/openevv61/Makefile.native
 RULES61_SOURCES += $(wildcard ../vendor/openevv61/rom/*/*.c ../vendor/openevv61/rom/*/*.h ../vendor/openevv61/rom/*/*.inc)
 RULES61_SOURCES += ../src/reloq_voice_filter.c ../include/reloq_voice_filter.h
 RULES61_SOURCES += ../include/reloq_voice_controls.h
+RULES61_SOURCES += ../include/reloq_inline_tags.h
 RULES61_SOURCES += ../src/reloq_orthography.c ../include/reloq_orthography.h
 RULES61_SOURCES += ../src/reloq_german_word_edges.c ../include/reloq_german_word_edges.h
 RULES61_SOURCES += ../vendor/openevv61/src/reloq61_german_alphabet.inc
@@ -40,12 +45,12 @@ RULES61_SOURCES += ../vendor/openevv61/lang/kokr61/foreign_words_lexicon_kokr61.
 $(RULES61): $(RULES61_SOURCES)
 	$(MAKE) -C ../vendor/openevv61 -f Makefile.native BUILD=build/release OPT='$(PROVIDER_OPT) $(PROVIDER_LTO)' RULE_OPT='$(PROVIDER_RULE_OPT)'
 $(RULES61_WIN): $(RULES61_SOURCES)
-	$(MAKE) -C ../vendor/openevv61 -f Makefile.native BUILD=build/windows-release OPT='$(PROVIDER_OPT) $(PROVIDER_LTO)' RULE_OPT='$(PROVIDER_RULE_OPT)' PORT=win32 CC=$(WINDOWS_CC) AR=$(patsubst %gcc-posix,%gcc-ar-posix,$(patsubst %gcc,%gcc-ar,$(WINDOWS_CC)))
+	$(MAKE) -C ../vendor/openevv61 -f Makefile.native BUILD=$(WINDOWS_RULE_BUILD) OPT='$(PROVIDER_OPT) $(PROVIDER_LTO)' RULE_OPT='$(PROVIDER_RULE_OPT)' PORT=win32 CC=$(WINDOWS_CC) AR=$(patsubst %gcc-posix,%gcc-ar-posix,$(patsubst %gcc,%gcc-ar,$(WINDOWS_CC)))
 $(RULES61_ANDROID): $(RULES61_SOURCES)
 	$(MAKE) -C ../vendor/openevv61 -f Makefile.native BUILD='$(abspath $(dir $(RULES61_ANDROID)))' OPT='-O2 -fsigned-char' RULE_OPT='$(PROVIDER_RULE_OPT)' PORT=posix CC=$(ANDROID_CC) AR=$(ANDROID_AR)
 libreloq_eci.so test_reloq_eci: $(RULES61)
-eci.dll: $(RULES61_WIN)
-libreloq_eci.so test_reloq_eci eci.dll: Makefile
+$(WINDOWS_OUTPUT): $(RULES61_WIN)
+libreloq_eci.so test_reloq_eci $(WINDOWS_OUTPUT): Makefile
 
 # The ECI interface is compiled directly into the DLL with the independent
 # numeric C engine. Neither the development host ABI nor an external helper
@@ -73,9 +78,9 @@ HEADERS += ../src/reloq_german_feminine_protected75.inc ../src/reloq_german_pred
 # Compile the public host separately. LTO belongs to the private language
 # rules and Delta primitives, not to the acoustic composer or legacy ECI ABI.
 OBJECTS := $(patsubst ../src/%.c,build/posix/%.o,$(SOURCE))
-WINDOWS_OBJECTS := $(patsubst ../src/%.c,build/windows/%.o,$(SOURCE))
-WINDOWS_OBJECTS += build/windows/reloq_eci_fixed_math.o
-build/windows/reloq_eci_fixed_math.o: reloq_eci_fixed_math.c
+WINDOWS_OBJECTS := $(patsubst ../src/%.c,$(WINDOWS_BUILD)/%.o,$(SOURCE))
+WINDOWS_OBJECTS += $(WINDOWS_BUILD)/reloq_eci_fixed_math.o
+$(WINDOWS_BUILD)/reloq_eci_fixed_math.o: reloq_eci_fixed_math.c
 	@mkdir -p $(dir $@)
 	$(WINDOWS_CC) $(CPPFLAGS) $(WINDOWS_CFLAGS) $(SECTIONS) -c $< -o $@
 ANDROID_OBJECTS := $(patsubst ../src/%.c,$(ANDROID_BUILD)/%.o,$(SOURCE))
@@ -90,7 +95,7 @@ libreloq_android.so: $(ANDROID_OBJECTS) $(ANDROID_BUILD)/reloq_jni.o $(RULES61_A
 build/posix/%.o: ../src/%.c $(HEADERS)
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SECTIONS) -ffp-contract=off -fPIC -fvisibility=hidden -I../include -c $< -o $@
-build/windows/%.o: ../src/%.c $(HEADERS) | check-windows-toolchain
+$(WINDOWS_BUILD)/%.o: ../src/%.c $(HEADERS) | check-windows-toolchain
 	@mkdir -p $(dir $@)
 	$(WINDOWS_CC) $(CPPFLAGS) $(WINDOWS_CFLAGS) $(SECTIONS) -ffp-contract=off -fvisibility=hidden -I../include -c $< -o $@
 
@@ -148,13 +153,14 @@ test: test_reloq_eci test_reloq_hash_delete test_reloq_rate_dispatch test_reloq_
 	python3 -B ../nvda/test_eci_asian_greek_native.py
 
 check-windows-toolchain:
-	@command -v $(WINDOWS_CC) >/dev/null 2>&1 || { echo "missing Windows x64 compiler: $(WINDOWS_CC)" >&2; exit 1; }
+	@command -v $(WINDOWS_CC) >/dev/null 2>&1 || { echo "missing Windows compiler: $(WINDOWS_CC)" >&2; exit 1; }
 	@command -v $(WINDOWS_OBJDUMP) >/dev/null 2>&1 || { echo "missing PE inspection tool: $(WINDOWS_OBJDUMP)" >&2; exit 1; }
 
-eci.dll: $(SOURCE) $(HEADERS) ../src/reloq_glottal_profiles.inc ../src/reloq_german_root_roles.inc ../src/reloq_german_weak_verb_roles.inc ../src/reloq_german_inflection_roles.inc ../src/reloq_german_glottal_lexicon.inc ../src/reloq_german_number_names.inc ../src/reloq_german_date_names.inc ../src/reloq_german_ie_roles.inc ../src/reloq_german_root_stress_roles.inc ../src/reloq_german_phrase_metadata.inc | check-windows-toolchain
-	$(WINDOWS_CC) $(filter-out -Werror,$(WINDOWS_CFLAGS)) $(PROVIDER_LINK) -shared $(WINDOWS_OBJECTS) $(RULES61_WIN) -static-libgcc -lm $(WINDOWS_LDFLAGS) -Wl,--gc-sections -Wl,--no-undefined -Wl,--out-implib,libeci.dll.a -o $@
+$(WINDOWS_OUTPUT): $(SOURCE) $(HEADERS) ../src/reloq_glottal_profiles.inc ../src/reloq_german_root_roles.inc ../src/reloq_german_weak_verb_roles.inc ../src/reloq_german_inflection_roles.inc ../src/reloq_german_glottal_lexicon.inc ../src/reloq_german_number_names.inc ../src/reloq_german_date_names.inc ../src/reloq_german_ie_roles.inc ../src/reloq_german_root_stress_roles.inc ../src/reloq_german_phrase_metadata.inc | check-windows-toolchain
+	$(WINDOWS_CC) $(filter-out -Werror,$(WINDOWS_CFLAGS)) $(PROVIDER_LINK) -shared $(WINDOWS_OBJECTS) $(RULES61_WIN) -static-libgcc -lm $(WINDOWS_LDFLAGS) $(if $(filter x86,$(WINDOWS_ARCH)),-Wl$(comma)--kill-at) -Wl,--gc-sections -Wl,--no-undefined -Wl,--out-implib,$(WINDOWS_BUILD)/libeci.dll.a -o $@
 
-eci.dll: $(WINDOWS_OBJECTS)
+comma := ,
+$(WINDOWS_OUTPUT): $(WINDOWS_OBJECTS)
 
 eci_windows_x64_abi_probe.exe: ../reference-apple/eci_windows_x64_abi_probe.c | check-windows-toolchain
 	$(WINDOWS_CC) $(CPPFLAGS) $(WINDOWS_CFLAGS) $< -static-libgcc -o $@
@@ -164,6 +170,14 @@ eci_windows_x64_runtime_smoke.exe: eci_windows_x64_runtime_smoke.c ../include/re
 
 windows-x64: eci.dll eci_windows_x64_abi_probe.exe eci_windows_x64_runtime_smoke.exe
 	python3 verify_pe_exports.py eci.dll --objdump $(WINDOWS_OBJDUMP) --header ../include/reloq_eci.h
+
+# Use a separate object/archive/output tree with the i686 toolchain. SSE2
+# keeps scalar arithmetic at the same precision as x64 and Android.
+.PHONY: windows-x86 windows-abi
+windows-x86:
+	$(MAKE) $(MFLAGS) WINDOWS_ARCH=x86 WINDOWS_BUILD=build/windows-x86 WINDOWS_OUTPUT=eci-x86.dll WINDOWS_RULE_BUILD=build/windows-x86-release WINDOWS_CFLAGS='$(WINDOWS_CFLAGS) -msse2 -mfpmath=sse' PROVIDER_OPT='$(PROVIDER_OPT) -msse2 -mfpmath=sse' PROVIDER_RULE_OPT='$(PROVIDER_RULE_OPT) -msse2 -mfpmath=sse' windows-abi
+windows-abi: $(WINDOWS_OUTPUT)
+	python3 verify_pe_exports.py $(WINDOWS_OUTPUT) --arch $(WINDOWS_ARCH) --objdump $(WINDOWS_OBJDUMP) --header ../include/reloq_eci.h
 
 clean:
 	rm -f libreloq_eci.so test_reloq_eci test_reloq_hash_delete test_reloq_rate_dispatch test_reloq_silence_cut eci.dll libeci.dll.a eci_windows_x64_abi_probe.exe eci_windows_x64_runtime_smoke.exe

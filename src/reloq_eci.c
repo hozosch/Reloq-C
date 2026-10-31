@@ -401,7 +401,7 @@ static int synthesize_generic(struct reloq_eci_engine *e,
         unlock_session(&e->session_lock);
         struct pcm_bridge bridge={.engine=e,.session=e->text_session,.marks=marks,.mark_count=mark_count,.inline_volume=1};
         struct reloq_german_generic_settings settings={e->generic_rate,e->generic_pitch,
-            e->native_volume_active?100:e->generic_volume,e->native_speed_active?e->native_speed:0,
+            e->native_volume_active?100:e->generic_volume,e->native_speed_active?(e->native_speed?e->native_speed:-1):0,
             e->native_pitch_active?e->native_pitch+1:0,e->native_inflection_active?e->native_inflection+1:0,
             e->pause_mode,e->head_size+1,e->roughness,e->breathiness,e->gender};
         if(e->process_tags)leading_models(phrase,length,&settings);
@@ -562,7 +562,7 @@ static int synthesize_generic(struct reloq_eci_engine *e,
         const struct reloq_german_generic_settings settings = {
             e->generic_rate, e->generic_pitch,
             (e->native_volume_active || e->process_tags) ? 100 : e->generic_volume,
-            e->native_speed_active ? e->native_speed : 0,
+            e->native_speed_active ? (e->native_speed?e->native_speed:-1) : 0,
             e->native_pitch_active ? e->native_pitch + 1 : 0,
             e->native_inflection_active ? e->native_inflection + 1 : 0,
             e->pause_mode,e->head_size+1,e->roughness,e->breathiness,e->gender};
@@ -1338,7 +1338,7 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
         e->native_volume_active = 0;
         break;
     case RELOQ_ECI_NATIVE_SPEED:
-        if (value < 40 || value > 250) return -1;
+        if (value < 0 || value > 250) return -1;
         e->native_speed = value;
         e->native_speed_active = 1;
         break;

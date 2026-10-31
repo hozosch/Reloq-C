@@ -42,12 +42,22 @@ int reloq_silence_cut_pcm(void *context,const int16_t *pcm,size_t samples)
             if(send(cut,pcm,n))return -1;
         } else {
             if(n>span->end-cut->input_samples)n=span->end-cut->input_samples;
-            size_t audible=n;while(audible&&pcm[audible-1]==0)--audible;
-            if(audible) {
-                if(zeros(cut,cut->pending_zeros)||send(cut,pcm,audible))return -1;
-                cut->pending_zeros=0;
+            size_t at=0;
+            while(at<n){
+                size_t end=at;
+                if(!pcm[at]){
+                    do{++end;}while(end<n&&!pcm[end]);
+                    cut->pending_zeros+=end-at;
+                }else{
+                    size_t keep=cut->pending_zeros<span->minimum?cut->pending_zeros:span->minimum;
+                    if(zeros(cut,keep))return -1;
+                    cut->pending_zeros=0;
+                    /* Nonzero samples retain their original values. */
+                    do{++end;}while(end<n&&pcm[end]);
+                    if(send(cut,pcm+at,end-at))return -1;
+                }
+                at=end;
             }
-            cut->pending_zeros+=n-audible;
         }
         cut->input_samples+=n;pcm+=n;samples-=n;
     }

@@ -50,7 +50,9 @@ static HRESULT STDMETHODCALLTYPE format(ISpTTSEngine *p,const GUID *target,const
     if(FAILED(sapi_settings_read(e->dialect,&settings)))sapi_settings_default(&settings);
     static const DWORD rates[]={8000,11025,22050,16000,32000,44100,48000};
     DWORD rate=rates[settings.rate];
-    if(target&&IsEqualGUID(target,&SPDFID_WaveFormatEx)&&input&&rate_supported(input->nSamplesPerSec))rate=input->nSamplesPerSec;
+    /* SAPI converts to the client format. The engine's selected rate is
+     * common to all voice tokens, independent of a client's target rate. */
+    (void)target;(void)input;
     WAVEFORMATEX *f=CoTaskMemAlloc(sizeof *f);if(!f)return E_OUTOFMEMORY;
     *f=(WAVEFORMATEX){WAVE_FORMAT_PCM,1,rate,rate*2,2,16,0};
     *id=SPDFID_WaveFormatEx;*out=f;return S_OK;

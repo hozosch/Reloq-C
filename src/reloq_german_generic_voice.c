@@ -180,8 +180,7 @@ static int output_settings_init(
     if (s->rate < 0 || s->rate > 100 ||
         s->pitch < 0 || s->pitch > 100 ||
         s->volume < 0 || s->volume > 100 ||
-        (s->native_speed &&
-         (s->native_speed < 40 || s->native_speed > 250)) ||
+        (s->native_speed < -1 || s->native_speed > 250) ||
         s->native_pitch_plus_one < 0 || s->native_pitch_plus_one > 101 ||
         s->native_inflection_plus_one < 0 ||
         s->native_inflection_plus_one > 101 || s->pause_mode<0 || s->pause_mode>2 ||
@@ -192,7 +191,7 @@ static int output_settings_init(
     *out = (struct output_settings){
         150 - s->rate, 150 + s->pitch,
         s->native_speed ?
-            reloq_voice_speed_time_scale(s->native_speed) : 0.0,
+            reloq_voice_speed_time_scale(s->native_speed<0?0:s->native_speed) : 0.0,
         s->native_pitch_plus_one ?
             reloq_voice_pitch_f0_scale(s->native_pitch_plus_one - 1) : 0.0,
         s->volume ? (int)lround(20.0 * log10(100.0 / s->volume)) : 0,
@@ -979,7 +978,7 @@ static int emit_pause(struct reloq_target_stage_router *router, int64_t tick,
     if(quiet_override>=0)pause.quiet_ticks=quiet_override;
     /* Keep the full acoustic clock. Compressing these knots shortened the
      * audible resonator decay and pulled later contours into comma tails.
-     * The streaming sink removes only trailing exact zeros in this region. */
+     * The streaming sink compresses only exact zero runs in this region. */
     *window=pause.release_ticks+pause.quiet_ticks;
 #ifdef RELOQ_GENERIC_PHONE_TRACE
     fprintf(stderr,"RELOQ_PAUSE %zu %d %lld %d %d %d %d %d\n",index,
@@ -3705,7 +3704,7 @@ static int render(
     }
     if(tagged_speed && uniform_speed>=0) {
         /* Identical controls enter exactly the slider's planning path. */
-        speed_settings.native_speed=uniform_speed;plan_settings=&speed_settings;
+        speed_settings.native_speed=uniform_speed?uniform_speed:-1;plan_settings=&speed_settings;
     } else if(tagged_speed) {
         /* Establish unrounded word boundaries, then generate every source
          * and tract knot with its final clock. Never stretch an already

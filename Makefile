@@ -17,6 +17,7 @@ CFLAGS += -pthread
 RULES61 := vendor/openevv61/build/native/libreloq61.a
 RULES61_SOURCES := $(wildcard vendor/openevv61/src/*.c vendor/openevv61/src/*/*.c vendor/openevv61/src/*/*/*.c vendor/openevv61/src/*/*.h vendor/openevv61/src/*/*/*.h vendor/openevv61/include/*.h vendor/openevv61/lang/*/*.c vendor/openevv61/lang/*/*.h) vendor/openevv61/Makefile.native
 RULES61_SOURCES += src/reloq_voice_filter.c include/reloq_voice_filter.h
+RULES61_SOURCES += include/reloq_inline_tags.h
 RULES61_SOURCES += src/reloq_orthography.c include/reloq_orthography.h
 RULES61_SOURCES += src/reloq_german_word_edges.c include/reloq_german_word_edges.h
 RULES61_SOURCES += vendor/openevv61/src/reloq61_german_alphabet.inc
@@ -1080,3 +1081,6 @@ test_reloq_rate_transform: tests/test_reloq_rate_transform.c src/reloq_rate_tran
 test-rate-transform: test_reloq_rate_transform
 	./test_reloq_rate_transform
 test: test-rate-transform
+
+# Shared native slow-speed clock data (ECI 0..39).
+reloq_voice_controls.o reloq_english_nucleus_duration.o: src/reloq_voice_slow_rates.inc

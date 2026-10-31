@@ -4,8 +4,10 @@
 #define RELOQ_ECI_STATIC
 #include "reloq_eci.h"
 #include "reloq_voice_controls.h"
+#include "speed.h"
 #include <math.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
@@ -63,6 +65,8 @@ struct sapi_backend {
     int dialect;ULONG fragment_volume;ECIHand handle;short pcm[512];
     SPEVENT *events;size_t event_count,event_capacity;
     struct bookmark *bookmarks;
+    int dictionary_ready;WCHAR dictionary_path[2048];
+    WIN32_FILE_ATTRIBUTE_DATA dictionary_files[6];
 };
 static void cancel_backend(struct sapi_backend *b)
 {
@@ -131,11 +135,55 @@ static int add_wide(struct sapi_backend *b,const WCHAR *text,size_t length,int s
 }
 static int native_pitch(int base,LONG adjustment)
 {
+    if(!adjustment)return base;
     double target=reloq_voice_pitch_f0_scale(base)*pow(2.0,adjustment/10.0);
     int best=0;double error=HUGE_VAL;
     for(int i=0;i<=100;++i){double d=fabs(log(reloq_voice_pitch_f0_scale(i)/target));
         if(d<error){error=d;best=i;}}
     return best;
+}
+/* eciSetDictionaryPath explicitly reloads the language as well as its .dic
+ * files. Preserve initialized linguistic state while file metadata stays
+ * unchanged. This retains no text, pronunciation or audio result. */
+static HRESULT dictionary(struct sapi_backend *b,const struct sapi_settings *s)
+{
+    WCHAR path[2048]=L"";WIN32_FILE_ATTRIBUTE_DATA files[6]={0};
+    if(s->dictionaries){
+        if(s->directory[0])wcscpy(path,s->directory);
+        else if(!sapi_module_path(path,2048,L"dictionaries"))return E_FAIL;
+        const WCHAR *prefix=NULL;
+        switch(b->dialect){
+        case 0x10000:prefix=L"ENU";break;case 0x10001:prefix=L"ENG";break;
+        case 0x20000:prefix=L"ESP";break;case 0x20001:prefix=L"ESM";break;
+        case 0x30000:prefix=L"FRA";break;case 0x30001:prefix=L"FRC";break;
+        case 0x40000:prefix=L"DEU";break;case 0x50000:prefix=L"ITA";break;
+        case 0x60000:prefix=L"CHS";break;case 0x70000:prefix=L"PTB";break;
+        case 0x80000:prefix=L"JPN";break;case 0x90000:prefix=L"FIN";break;
+        case 0xa0000:prefix=L"KOR";break;case 0x120000:prefix=L"ELL";break;
+        default:return E_INVALIDARG;}
+        static const WCHAR *suffix[]={L"main.dic",L"Root.dic",L"abbr.dic"};
+        for(unsigned i=0;i<6;++i){WCHAR file[2112];
+            if(i>=3&&b->dialect!=0x60000&&b->dialect!=0xa0000&&b->dialect!=0x120000)break;
+            swprintf(file,2112,L"%ls\\%ls%ls",path,i<3?prefix:L"ENU",suffix[i%3]);
+            if(!GetFileAttributesExW(file,GetFileExInfoStandard,files+i)){
+                DWORD error=GetLastError();
+                if(error!=ERROR_FILE_NOT_FOUND&&error!=ERROR_PATH_NOT_FOUND)return HRESULT_FROM_WIN32(error);
+                memset(files+i,0,sizeof files[i]);
+            }
+            files[i].ftLastAccessTime=(FILETIME){0,0};
+        }
+    }
+    if(b->dictionary_ready&&!wcscmp(path,b->dictionary_path)&&
+       !memcmp(files,b->dictionary_files,sizeof files))return S_OK;
+    char utf8[8192];const char *directory=NULL;
+    if(path[0]){
+        if(!WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,path,-1,utf8,sizeof utf8,NULL,NULL))return E_INVALIDARG;
+        directory=utf8;
+    }
+    /* A new handle already has an empty native dictionary. */
+    if((b->dictionary_ready||directory)&&!core.dictionary(b->handle,directory))return E_FAIL;
+    wcscpy(b->dictionary_path,path);memcpy(b->dictionary_files,files,sizeof files);
+    b->dictionary_ready=1;return S_OK;
 }
 static HRESULT configure(struct sapi_backend *b)
 {
@@ -149,7 +197,7 @@ static HRESULT configure(struct sapi_backend *b)
     if(!core.clear(b->handle))return E_FAIL;
     struct {int key,value;} parameters[]={
         {RELOQ_ECI_VOICE_MODE,1},{RELOQ_ECI_SYNTH_MODE,1},{RELOQ_ECI_SAMPLE_RATE,rate},
-        {RELOQ_ECI_NATIVE_SPEED,reloq_voice_speed_from_nvda((int)(j->speed+10)*5,s->boost)},
+        {RELOQ_ECI_NATIVE_SPEED,sapi_native_speed(j->speed,0,s->boost)},
         {RELOQ_ECI_NATIVE_PITCH,(int)s->pitch},{RELOQ_ECI_NATIVE_VOLUME,100},
         {RELOQ_ECI_NATIVE_INFLECTION,(int)s->inflection},{RELOQ_ECI_HEAD_SIZE,(int)s->head},
         {RELOQ_ECI_ROUGHNESS,(int)s->roughness},{RELOQ_ECI_BREATHINESS,(int)s->breathiness},
@@ -158,14 +206,7 @@ static HRESULT configure(struct sapi_backend *b)
         {RELOQ_ECI_PHRASE_PREDICTION,(int)s->prediction}};
     for(size_t i=0;i<sizeof parameters/sizeof *parameters;++i)
         if(core.set(b->handle,parameters[i].key,parameters[i].value)==-1)return E_FAIL;
-    WCHAR path[2048];char utf8[8192];const char *directory=NULL;
-    if(s->dictionaries){
-        if(s->directory[0])wcscpy(path,s->directory);
-        else if(!sapi_module_path(path,2048,L"dictionaries"))return E_FAIL;
-        if(!WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,path,-1,utf8,sizeof utf8,NULL,NULL))return E_INVALIDARG;
-        directory=utf8;
-    }
-    return core.dictionary(b->handle,directory)?S_OK:E_FAIL;
+    return dictionary(b,s);
 }
 static int sentence_end(WCHAR c)
 {return c==L'.'||c==L'!'||c==L'?'||c==0x3002||c==0xff01||c==0xff1f;}
@@ -183,7 +224,7 @@ static HRESULT synthesize(struct sapi_backend *b)
 {
     HRESULT hr=configure(b);if(FAILED(hr))return hr;
     int sentence=1,has_text=0,last_pitch=(int)b->job.settings.pitch;
-    int last_rate=(int)b->job.speed,last_range=0,last_emphasis=0;
+    int last_rate=sapi_native_speed(b->job.speed,0,b->job.settings.boost),last_range=0,last_emphasis=0;
     size_t delivered_events=0;b->fragment_volume=100;
     b->event_count=0;
     for(const SPVTEXTFRAG *f=b->job.fragments;f;f=f->pNext){
@@ -206,8 +247,7 @@ static HRESULT synthesize(struct sapi_backend *b)
         if(f->State.eAction!=SPVA_Speak&&f->State.eAction!=SPVA_SpellOut&&f->State.eAction!=SPVA_Pronounce)return E_NOTIMPL;
         if(f->State.eAction==SPVA_Pronounce&&f->State.pPhoneIds)return E_NOTIMPL;
         if(!f->pTextStart&&f->ulTextLen)return E_INVALIDARG;
-        int speed=(int)b->job.speed+(int)f->State.RateAdj;
-        if(speed< -10)speed=-10;if(speed>10)speed=10;
+        int speed=sapi_native_speed(b->job.speed,f->State.RateAdj,b->job.settings.boost);
         ULONG fragment_volume=f->State.Volume>100?100:f->State.Volume;
         if(speed!=last_rate||f->State.PitchAdj.RangeAdj!=last_range||f->State.EmphAdj!=last_emphasis||
            fragment_volume!=b->fragment_volume){
@@ -215,7 +255,7 @@ static HRESULT synthesize(struct sapi_backend *b)
                 has_text=0;delivered_events=b->event_count;}
             int inflection=(int)lround(b->job.settings.inflection*pow(2.0,f->State.PitchAdj.RangeAdj/10.0))+f->State.EmphAdj*3;
             if(inflection<0)inflection=0;if(inflection>100)inflection=100;
-            if(core.set(b->handle,RELOQ_ECI_NATIVE_SPEED,reloq_voice_speed_from_nvda((speed+10)*5,b->job.settings.boost))==-1||
+            if(core.set(b->handle,RELOQ_ECI_NATIVE_SPEED,speed)==-1||
                core.set(b->handle,RELOQ_ECI_NATIVE_INFLECTION,inflection)==-1)return E_FAIL;
             last_rate=speed;last_range=f->State.PitchAdj.RangeAdj;last_emphasis=f->State.EmphAdj;
             b->fragment_volume=fragment_volume;

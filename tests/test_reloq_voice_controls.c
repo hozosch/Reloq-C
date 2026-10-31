@@ -28,7 +28,11 @@ int main(void)
         close_relative(reloq_voice_speed_time_scale(speeds[i]) * 26840,
                        actual[i], .04);
     assert(reloq_voice_speed_time_scale(50) == 1.0);
-    assert(reloq_voice_speed_time_scale(0) < 0);
+    assert(reloq_voice_speed_time_scale(0)>reloq_voice_speed_time_scale(10));
+    assert(reloq_voice_speed_time_scale(10)>reloq_voice_speed_time_scale(30));
+    assert(reloq_voice_speed_time_scale(30)>reloq_voice_speed_time_scale(40));
+    assert(reloq_voice_speed_time_scale(0)==reloq_voice_speed_time_scale(1));
+    assert(reloq_voice_speed_time_scale(-1) < 0);
     assert(reloq_voice_speed_time_scale(251) < 0);
 
     /* Public physical-Hz readback. Sentence mean F0 also contains phrase

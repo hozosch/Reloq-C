@@ -9,7 +9,9 @@ int main(void)
     assert(reloq_english_nucleus_rate_percent(40)==122);
     assert(reloq_english_nucleus_rate_percent(50)==100);
     assert(reloq_english_nucleus_rate_percent(75)==62);
-    assert(reloq_english_nucleus_rate_percent(39)==-1);
+    assert(reloq_english_nucleus_rate_percent(39)==127);
+    assert(reloq_english_nucleus_rate_percent(0)==272);
+    assert(reloq_english_nucleus_rate_percent(-1)==-1);
     struct reloq_english_nucleus result,before;
     memset(&result,0x5a,sizeof result);before=result;
     assert(reloq_english_nucleus_find(NULL,0,&result)==0);

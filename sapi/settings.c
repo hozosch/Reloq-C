@@ -35,22 +35,67 @@ static int valid(const struct sapi_settings *s)
         s->tags<2&&s->abbreviations<2&&s->prediction<2&&s->dictionaries<2&&s->boost<2&&
         wmemchr(s->directory,0,sizeof s->directory/sizeof *s->directory)!=NULL;
 }
+static const WCHAR root[]=L"Software\\ReLoq C\\SAPI5";
+static HRESULT read_binary(const WCHAR *key,const WCHAR *name,struct sapi_settings *out)
+{
+    struct sapi_settings input;DWORD size=sizeof input,type=0;
+    LSTATUS rc=RegGetValueW(HKEY_CURRENT_USER,key,name,RRF_RT_REG_BINARY,&type,&input,&size);
+    if(rc==ERROR_FILE_NOT_FOUND)return S_FALSE;
+    if(rc!=ERROR_SUCCESS)return HRESULT_FROM_WIN32(rc);
+    if(size!=sizeof input||!valid(&input))return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+    *out=input;return S_OK;
+}
+static HRESULT write_value(const WCHAR *key,const WCHAR *name,DWORD type,const void *data,DWORD bytes)
+{
+    HKEY handle;
+    LSTATUS rc=RegCreateKeyExW(HKEY_CURRENT_USER,key,0,NULL,0,KEY_SET_VALUE,NULL,&handle,NULL);
+    if(rc==ERROR_SUCCESS){rc=RegSetValueExW(handle,name,0,type,data,bytes);RegCloseKey(handle);}
+    return rc==ERROR_SUCCESS?S_OK:HRESULT_FROM_WIN32(rc);
+}
+HRESULT sapi_settings_shared(BOOL *enabled)
+{
+    if(!enabled)return E_POINTER;
+    DWORD value=0,bytes=sizeof value;
+    LSTATUS rc=RegGetValueW(HKEY_CURRENT_USER,root,L"SharedEnabled",RRF_RT_REG_DWORD,NULL,&value,&bytes);
+    if(rc!=ERROR_SUCCESS&&rc!=ERROR_FILE_NOT_FOUND)return HRESULT_FROM_WIN32(rc);
+    if(value>1)return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+    *enabled=value!=0;return S_OK;
+}
+static DWORD output_rate(void)
+{
+    DWORD rate=1,bytes=sizeof rate;
+    if(RegGetValueW(HKEY_CURRENT_USER,root,L"OutputRate",RRF_RT_REG_DWORD,NULL,&rate,&bytes)==ERROR_SUCCESS&&rate<7)return rate;
+    /* Preview-1 migration: German, US English, then catalogue order. */
+    for(size_t i=0;i<sapi_language_count()+2;++i){
+        int dialect=i==0?0x40000:i==1?0x10000:sapi_language_at(i-2)->dialect;
+        WCHAR key[128];key_name(dialect,key);struct sapi_settings old;
+        if(read_binary(key,L"Settings",&old)==S_OK)return old.rate;
+    }
+    return 1;
+}
 HRESULT sapi_settings_read(int dialect,struct sapi_settings *settings)
 {
     if(!settings||sapi_language_index(dialect)<0)return E_INVALIDARG;
-    sapi_settings_default(settings);WCHAR key[128];key_name(dialect,key);
-    struct sapi_settings input;DWORD size=sizeof input,type=0;
-    LSTATUS rc=RegGetValueW(HKEY_CURRENT_USER,key,L"Settings",RRF_RT_REG_BINARY,&type,&input,&size);
-    if(rc==ERROR_FILE_NOT_FOUND)return S_OK;
-    if(rc!=ERROR_SUCCESS)return HRESULT_FROM_WIN32(rc);
-    if(size!=sizeof input||!valid(&input))return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
-    *settings=input;return S_OK;
+    sapi_settings_default(settings);BOOL shared;HRESULT hr=sapi_settings_shared(&shared);if(FAILED(hr))return hr;
+    WCHAR key[128];key_name(dialect,key);
+    hr=read_binary(shared?root:key,shared?L"SharedSettings":L"Settings",settings);
+    if(FAILED(hr))return hr;
+    settings->rate=output_rate();return S_OK;
 }
 HRESULT sapi_settings_write(int dialect,const struct sapi_settings *settings)
 {
     if(sapi_language_index(dialect)<0||!settings||!valid(settings))return E_INVALIDARG;
-    WCHAR key[128];HKEY handle;key_name(dialect,key);
-    LSTATUS rc=RegCreateKeyExW(HKEY_CURRENT_USER,key,0,NULL,0,KEY_SET_VALUE,NULL,&handle,NULL);
-    if(rc==ERROR_SUCCESS){rc=RegSetValueExW(handle,L"Settings",0,REG_BINARY,(const BYTE *)settings,sizeof *settings);RegCloseKey(handle);}
-    return rc==ERROR_SUCCESS?S_OK:HRESULT_FROM_WIN32(rc);
+    BOOL shared;HRESULT hr=sapi_settings_shared(&shared);if(FAILED(hr))return hr;
+    WCHAR key[128];key_name(dialect,key);
+    hr=write_value(shared?root:key,shared?L"SharedSettings":L"Settings",REG_BINARY,settings,sizeof *settings);
+    if(FAILED(hr))return hr;
+    return write_value(root,L"OutputRate",REG_DWORD,&settings->rate,sizeof settings->rate);
+}
+HRESULT sapi_settings_set_shared(int dialect,BOOL enabled)
+{
+    if(enabled!=FALSE&&enabled!=TRUE)return E_INVALIDARG;
+    struct sapi_settings current;HRESULT hr=sapi_settings_read(dialect,&current);if(FAILED(hr))return hr;
+    if(enabled){hr=write_value(root,L"SharedSettings",REG_BINARY,&current,sizeof current);if(FAILED(hr))return hr;}
+    DWORD value=enabled;
+    return write_value(root,L"SharedEnabled",REG_DWORD,&value,sizeof value);
 }

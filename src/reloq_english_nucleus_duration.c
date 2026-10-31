@@ -4,10 +4,12 @@
 #include <math.h>
 #include <string.h>
 #include "reloq_english_nucleus_rates.inc"
+#include "reloq_voice_slow_rates.inc"
 
 int reloq_english_nucleus_rate_percent(int speed)
 {
-    if(speed<40||speed>250)return -1;
+    if(speed<0||speed>250)return -1;
+    if(speed<40)return native_slow_percent[speed];
     return nucleus_rate_percent98[speed-40];
 }
 

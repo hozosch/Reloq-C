@@ -12,6 +12,9 @@ struct sapi_settings {
     DWORD rate,pauses,tags,abbreviations,prediction,dictionaries,boost;
     WCHAR directory[1024];
 };
+#ifndef RELOQ_SAPI_TEST_HOST
+_Static_assert(sizeof(struct sapi_settings)==2108,"SAPI settings must be compatible across x86/x64");
+#endif
 extern HMODULE sapi_module;
 extern volatile LONG sapi_objects,sapi_locks;
 const struct sapi_language *sapi_language_at(size_t);
@@ -21,6 +24,8 @@ void sapi_settings_default(struct sapi_settings *);
 void sapi_settings_profile(struct sapi_settings *,unsigned);
 HRESULT sapi_settings_read(int,struct sapi_settings *);
 HRESULT sapi_settings_write(int,const struct sapi_settings *);
+HRESULT sapi_settings_shared(BOOL *);
+HRESULT sapi_settings_set_shared(int,BOOL);
 HRESULT sapi_settings_dialog(HWND,int);
 int sapi_module_path(WCHAR *,size_t,const WCHAR *);
 HRESULT sapi_register(BOOL,BOOL);

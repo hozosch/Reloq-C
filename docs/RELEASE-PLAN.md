@@ -35,9 +35,10 @@ no further speed or size improvement is possible.
 core DLL. It registers one voice per language and provides a native settings
 dialog with immediate persistence for subsequent utterances. Token metadata
 is generated from the existing catalogue. The adapter has no NVDA/Python
-runtime or separate pronunciation frontend. The production streaming backend
-is tested on the host; real Windows COM activation, installation and UI testing
-are still required. See [the preview guide](../sapi/README.txt) for supported
+runtime or separate pronunciation frontend. Basic x64 operation is confirmed by the user. Version 0.2.202 also supplies a
+native x86 build and localized shared/per-language settings. The production
+streaming backend is tested on the host; x86 Windows activation and further
+installation and UI testing are still required. See [the preview guide](../sapi/README.txt) for supported
 controls and the explicit preview limitations.
 
 | Boundary | Required implementation |
@@ -55,9 +56,9 @@ must survive the bridge. Existing explicit ECI index callbacks are useful,
 but do not by themselves implement automatic SAPI word/sentence events.
 Pronunciation/phoneme fragments also need a defined mapping and tests.
 
-Start with a Windows x64 preview. Native ARM64 and 32-bit hosts require their
-own builds and activation tests; an x64 package is not a claim of native
-ARM64 support. Validate registration, settings persistence, interruption and
+x64 and x86 have separate native packages and registry views. Native ARM64
+still requires its own build and activation tests; an x64 package is not a
+claim of native ARM64 support. Validate registration, settings persistence, interruption and
 real SAPI clients before including that adapter in the first public release.
 
 Microsoft's primary interface references:

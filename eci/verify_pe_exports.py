@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify that the direct ECI DLL is PE32+ with precisely its declared ABI."""
+"""Verify a direct x86/x64 ECI DLL and precisely its declared ABI."""
 
 from __future__ import annotations
 
@@ -50,6 +50,7 @@ def main() -> None:
     parser.add_argument("dll", type=Path)
     parser.add_argument("--header", type=Path, required=True)
     parser.add_argument("--objdump", default="x86_64-w64-mingw32-objdump")
+    parser.add_argument("--arch", choices=("x64", "x86"), default="x64")
     args = parser.parse_args()
     header_dump = subprocess.check_output(
         [args.objdump, "-f", str(args.dll)], text=True
@@ -57,9 +58,9 @@ def main() -> None:
     pe_dump = subprocess.check_output(
         [args.objdump, "-p", str(args.dll)], text=True
     )
-    if ("file format pei-x86-64" not in header_dump or
-            "architecture: i386:x86-64" not in header_dump):
-        raise ValueError("expected Windows x64 PE DLL")
+    expected_format = "pei-x86-64" if args.arch == "x64" else "pei-i386"
+    if f"file format {expected_format}" not in header_dump:
+        raise ValueError(f"expected Windows {args.arch} PE DLL")
     expected = declared_exports(args.header.read_text(encoding="utf-8"))
     actual = pe_exports(pe_dump)
     if expected != actual:
@@ -74,7 +75,7 @@ def main() -> None:
                 and not name.startswith("api-ms-win-")}
     if external:
         raise ValueError(f"unbundled native dependencies: {sorted(external)}")
-    print(f"Windows x64 ECI ABI: {len(actual)} exports; "
+    print(f"Windows {args.arch} ECI ABI: {len(actual)} exports; "
           f"imports {', '.join(sorted(imports))}")
 
 

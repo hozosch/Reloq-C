@@ -1,6 +1,6 @@
 # Eloquence C – Bedienungsanleitung
 
-Eloquence C ist die NVDA-Erweiterung des Projekts [ReLoq C](https://github.com/hozosch/Reloq-C). Sie entwickelt den Eloquence-Klang mit gezielten Aussprachekorrekturen, Unicode-Unterstützung und zusätzlichen Klangmöglichkeiten weiter. NVDA ist die erste Anbindung und dient derzeit zum Prüfen der Sprachausgabe. Für Android gibt es eine erste ARM64-Testversion; SAPI5 ist geplant.
+Eloquence C ist die NVDA-Erweiterung des Projekts [ReLoq C](https://github.com/hozosch/Reloq-C). Sie entwickelt den Eloquence-Klang mit gezielten Aussprachekorrekturen, Unicode-Unterstützung und zusätzlichen Klangmöglichkeiten weiter. NVDA ist die erste Anbindung und dient derzeit zum Prüfen der Sprachausgabe. Für Android ARM64 und Windows SAPI5 gibt es Testversionen.
 
 ## Installieren und auswählen
 
@@ -82,14 +82,21 @@ Das Projekt ist noch experimentell. Der Nutzer hat das frühere Einfrieren und d
 
 Für eine [Fehlermeldung](https://github.com/hozosch/Reloq-C/issues) helfen ein kurzer Beispieltext, Sprache, Stimme, Version, Abtastrate und die Angabe, ob Wörterbücher eingeschaltet sind. Beschreibe auch, ob die Ausgabe abbricht, ein Wort falsch klingt oder NVDA selbst beendet wird.
 
-## SAPI5-x64-Vorschau
+## SAPI5-Vorschau für x64 und x86
 
 Das SAPI-ZIP entpacken, `Install-SAPI.exe` starten und **Install / update** wählen.
 Bereits geöffnete SAPI-Anwendungen anschließend neu starten und eine
 **ReLoq C**-Sprachstimme auswählen. Jede Sprache hat genau einen Stimmeintrag.
 `ReLoqSettings.exe` oder die SAPI-Eigenschaftenseite öffnen den Zusatzdialog
 für Stimmprofil und Sprachparameter. Änderungen werden sofort für die nächste
-Äußerung gespeichert. Tempo und Lautstärke steuert die SAPI-Anwendung; die
-Profil-Lautstärken sind 100. Windows-Aktivierung und praktische Bedienung mit
-Bildschirmlesern stehen für diese erste Vorschau noch aus. Einzelheiten stehen
+Äußerung gespeichert. Der Dialog verwendet die unterstützte Windows-Anzeigesprache.
+Über das Kontrollfeld lassen sich alle Parameter gemeinsam für alle Sprachen
+verwenden; beim Ausschalten werden die getrennten Einstellungen wieder aktiv.
+Die Abtastrate gilt immer für alle Sprachen und ändert sich bei erneuter
+Formatverhandlung. Tempo und Lautstärke steuert SAPI. Ohne Geschwindigkeitsanhebung entspricht
+SAPI 0 dem nativen ECI-Wert 60, mit zehn nativen Einheiten je SAPI-Stufe.
+Profil-Lautstärken sind 100.
+Für beide Anwendungsarchitekturen beide Pakete aus getrennten Ordnern installieren.
+Die grundlegende x64-Funktion ist bestätigt; x86-Aktivierung und weitere
+Bildschirmleser-Tests auf Windows stehen noch aus. Einzelheiten stehen
 in der [SAPI-Anleitung](../sapi/README.txt).

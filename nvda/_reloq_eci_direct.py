@@ -214,7 +214,7 @@ class DirectEciEngine:
                              NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION,
                              NATIVE_VOLUME, PROCESS_TAGS, DICTIONARY, PHRASE_PREDICTION, PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATE):
             raise ValueError("unsupported generic voice parameter")
-        low, high = ((40, 250) if parameter == NATIVE_SPEED else
+        low, high = ((0, 250) if parameter == NATIVE_SPEED else
                      (0, 1) if parameter in (PROCESS_TAGS, GENDER, DICTIONARY, PHRASE_PREDICTION) else
                      (0, 6) if parameter == SAMPLE_RATE else
                      (0, 2) if parameter == PAUSE_MODE else (0, 100))

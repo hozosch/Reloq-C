@@ -10,6 +10,33 @@ typedef uint32_t DWORD,ULONG;typedef int32_t LONG,HRESULT;typedef uint16_t WORD,
 typedef wchar_t WCHAR;typedef const WCHAR *LPCWSTR;typedef int BOOL;typedef void *PVOID,*HMODULE,*HWND;
 typedef uintptr_t WPARAM;typedef intptr_t LPARAM;typedef uint64_t ULONGLONG;
 typedef uint8_t BYTE;typedef void (*FARPROC)(void);typedef void *HANDLE;
+typedef struct {DWORD dwLowDateTime,dwHighDateTime;} FILETIME;
+typedef struct {DWORD dwFileAttributes;FILETIME ftCreationTime,ftLastAccessTime,ftLastWriteTime;
+    DWORD nFileSizeHigh,nFileSizeLow;} WIN32_FILE_ATTRIBUTE_DATA;
+#define GetFileExInfoStandard 0
+#define ERROR_FILE_NOT_FOUND 2
+#define ERROR_PATH_NOT_FOUND 3
+BOOL GetFileAttributesExW(LPCWSTR,int,WIN32_FILE_ATTRIBUTE_DATA *);
+DWORD GetLastError(void);
+extern unsigned sapi_test_dictionary_calls;
+#ifdef RELOQ_SAPI_SETTINGS_TEST
+typedef void *HKEY;typedef LONG LSTATUS;
+#define HKEY_CURRENT_USER ((HKEY)(uintptr_t)1)
+#define ERROR_SUCCESS 0
+#define ERROR_INVALID_DATA 13
+#define REG_BINARY 3
+#define REG_DWORD 4
+#define RRF_RT_REG_BINARY 8
+#define RRF_RT_REG_DWORD 16
+#define KEY_SET_VALUE 2
+#define S_FALSE ((HRESULT)1)
+#define E_POINTER ((HRESULT)0x80004003)
+DWORD GetModuleFileNameW(HMODULE,WCHAR *,DWORD);
+LSTATUS RegGetValueW(HKEY,LPCWSTR,LPCWSTR,DWORD,DWORD *,void *,DWORD *);
+LSTATUS RegCreateKeyExW(HKEY,LPCWSTR,DWORD,void *,DWORD,DWORD,void *,HKEY *,DWORD *);
+LSTATUS RegSetValueExW(HKEY,LPCWSTR,DWORD,DWORD,const BYTE *,DWORD);
+LSTATUS RegCloseKey(HKEY);
+#endif
 typedef struct {int state;} INIT_ONCE,*PINIT_ONCE;
 #define INIT_ONCE_STATIC_INIT {0}
 #define WINAPI

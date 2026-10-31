@@ -1,0 +1,1968 @@
+{
+  "cases": 280,
+  "inline_pcm_matches": 8,
+  "all_duration_curves_monotonic": true,
+  "no_audio_files": true,
+  "records": [
+    {
+      "language": "de_DE",
+      "rate": 1,
+      "native_speed": 0,
+      "samples": 154473,
+      "sha256": "8f40d43d2e90f8ff42ae84c7333836dff8cf0be77d97053ee190df84b9096f64"
+    },
+    {
+      "language": "de_DE",
+      "rate": 1,
+      "native_speed": 1,
+      "samples": 154473,
+      "sha256": "8f40d43d2e90f8ff42ae84c7333836dff8cf0be77d97053ee190df84b9096f64"
+    },
+    {
+      "language": "de_DE",
+      "rate": 1,
+      "native_speed": 10,
+      "samples": 126643,
+      "sha256": "a5b75b6ada2eca1b49138f09c22f6bc42e3acb4bcab51b19a4ebe4c8c4b85f99"
+    },
+    {
+      "language": "de_DE",
+      "rate": 1,
+      "native_speed": 20,
+      "samples": 103356,
+      "sha256": "e138f28ffb1c43c9c94880a07bfc14d53a73bbae486765ce9e8cc156fa469c66"
+    },
+    {
+      "language": "de_DE",
+      "rate": 1,
+      "native_speed": 30,
+      "samples": 84612,
+      "sha256": "b4226973c38a1c3b8157eb0391b98052781ed42dd7842d32a7f8b6a75c0fd253"
+    },
+    {
+      "language": "de_DE",
+      "rate": 1,
+      "native_speed": 39,
+      "samples": 72127,
+      "sha256": "134ebbe1d05dda7c3d02158a74e8876a3a03d957e6e052e06ca60912dfd1f165"
+    },
+    {
+      "language": "de_DE",
+      "rate": 1,
+      "native_speed": 40,
+      "samples": 69289,
+      "sha256": "6141689fd28b0f9b2f4f717e6242390f131580ec7b9b9b60732d9526d1a51a7c"
+    },
+    {
+      "language": "de_DE",
+      "rate": 1,
+      "native_speed": 60,
+      "samples": 46673,
+      "sha256": "0bc2df58a42c28e3628c2b7996d29a5b5c44269bf4a5b165394c62912b1ec614"
+    },
+    {
+      "language": "de_DE",
+      "rate": 1,
+      "native_speed": 160,
+      "samples": 6776,
+      "sha256": "33416a77b5c6550b7906d04d92b29bf69a38902d6b585e91c8472b3b56cb8e54"
+    },
+    {
+      "language": "de_DE",
+      "rate": 1,
+      "native_speed": 250,
+      "samples": 2772,
+      "sha256": "6d11b9548679888c98bd09cfeec9c29b1ba3afc31fbefa22dbc192c25503bab1"
+    },
+    {
+      "language": "de_DE",
+      "rate": 6,
+      "native_speed": 0,
+      "samples": 674064,
+      "sha256": "fb455edd72ac3510cb96ec39c96b084416c2a0ac03dcb621be73b93f46ca8078"
+    },
+    {
+      "language": "de_DE",
+      "rate": 6,
+      "native_speed": 1,
+      "samples": 674064,
+      "sha256": "fb455edd72ac3510cb96ec39c96b084416c2a0ac03dcb621be73b93f46ca8078"
+    },
+    {
+      "language": "de_DE",
+      "rate": 6,
+      "native_speed": 10,
+      "samples": 552624,
+      "sha256": "7c257ee9bc2e40160e41ad94122b7253795bd6f938663cc8aa0d1213508d9316"
+    },
+    {
+      "language": "de_DE",
+      "rate": 6,
+      "native_speed": 20,
+      "samples": 451008,
+      "sha256": "930911a9f22eab6b36791be90b895701d18718edb9ec6b6dfbd45c283b11236c"
+    },
+    {
+      "language": "de_DE",
+      "rate": 6,
+      "native_speed": 30,
+      "samples": 369216,
+      "sha256": "a8bf8ee2fa611ffbb01b158064d2c67623df0b3cbee7a89fb4f4f3656c3c7c52"
+    },
+    {
+      "language": "de_DE",
+      "rate": 6,
+      "native_speed": 39,
+      "samples": 314736,
+      "sha256": "576e05ab75dcd4bbe3aa4292dcefcca085e7b83441edf70e30dffe7d6e5f0a18"
+    },
+    {
+      "language": "de_DE",
+      "rate": 6,
+      "native_speed": 40,
+      "samples": 302352,
+      "sha256": "dc1a7d0b7dbdea114e0de952e36ee94673740c8f35f54e32c0f03cb8f90bdc82"
+    },
+    {
+      "language": "de_DE",
+      "rate": 6,
+      "native_speed": 60,
+      "samples": 203664,
+      "sha256": "dc11dcef7147494b4a874db0f80c2242781ee3b45b8fdf439c920167f6778de8"
+    },
+    {
+      "language": "de_DE",
+      "rate": 6,
+      "native_speed": 160,
+      "samples": 29568,
+      "sha256": "101b8415a33b36ce7f3f637a6cd8a7abf07990b163539c95b42fe414557c5c99"
+    },
+    {
+      "language": "de_DE",
+      "rate": 6,
+      "native_speed": 250,
+      "samples": 12096,
+      "sha256": "064cc0bcf1e48637772ec6acdf06e8515deb296698c26d31b48ee28256162e1b"
+    },
+    {
+      "language": "en_US",
+      "rate": 1,
+      "native_speed": 0,
+      "samples": 127710,
+      "sha256": "8a014ad489a3b6cd78e296cc0e4b3ce91c3a020f844360694862f8bbd018172d"
+    },
+    {
+      "language": "en_US",
+      "rate": 1,
+      "native_speed": 1,
+      "samples": 127710,
+      "sha256": "8a014ad489a3b6cd78e296cc0e4b3ce91c3a020f844360694862f8bbd018172d"
+    },
+    {
+      "language": "en_US",
+      "rate": 1,
+      "native_speed": 10,
+      "samples": 104698,
+      "sha256": "8358491d051a9053c0b44cb4e6cd20fcd7a20aa8ce5eded102772345b8432eae"
+    },
+    {
+      "language": "en_US",
+      "rate": 1,
+      "native_speed": 20,
+      "samples": 85459,
+      "sha256": "3375626252823556d751895d7e97098e01e48c31fea1f5331e7e453766049209"
+    },
+    {
+      "language": "en_US",
+      "rate": 1,
+      "native_speed": 30,
+      "samples": 69905,
+      "sha256": "fabb6c568406461de436c635e5c0fc0753b75088b4a9225e24b11da471fe17b4"
+    },
+    {
+      "language": "en_US",
+      "rate": 1,
+      "native_speed": 39,
+      "samples": 59609,
+      "sha256": "40f0d10002bac9039c39c658f49c5d07448896edb60b196c2749f6771d55b916"
+    },
+    {
+      "language": "en_US",
+      "rate": 1,
+      "native_speed": 40,
+      "samples": 57244,
+      "sha256": "da80e5e7b648cdea60af6916a3c709bff739be97971d3c6bec9a268de7e8695b"
+    },
+    {
+      "language": "en_US",
+      "rate": 1,
+      "native_speed": 60,
+      "samples": 38412,
+      "sha256": "a2dc5f171a7018b85bcbd7322f58f1811b49b1dd334f64969ee4bc7c1d91be43"
+    },
+    {
+      "language": "en_US",
+      "rate": 1,
+      "native_speed": 160,
+      "samples": 5489,
+      "sha256": "d805fee347f18c9891afae1c2026f352de266e6a3e297c52de57e10998e810ff"
+    },
+    {
+      "language": "en_US",
+      "rate": 1,
+      "native_speed": 250,
+      "samples": 2244,
+      "sha256": "a6516ea8d7df6d217e1fcafb20a21a0017305ae306771f028a42da1b258b24be"
+    },
+    {
+      "language": "en_US",
+      "rate": 6,
+      "native_speed": 0,
+      "samples": 557280,
+      "sha256": "8cfc3a745d16ab77adff95ba4f484de59d4bba6f94e349475a45a92ea5139df5"
+    },
+    {
+      "language": "en_US",
+      "rate": 6,
+      "native_speed": 1,
+      "samples": 557280,
+      "sha256": "8cfc3a745d16ab77adff95ba4f484de59d4bba6f94e349475a45a92ea5139df5"
+    },
+    {
+      "language": "en_US",
+      "rate": 6,
+      "native_speed": 10,
+      "samples": 456864,
+      "sha256": "611c437cc5a9a96a6bc50b09d8574c8fdb3282ef7d8cf08d2d8bab3469ea0e5e"
+    },
+    {
+      "language": "en_US",
+      "rate": 6,
+      "native_speed": 20,
+      "samples": 372912,
+      "sha256": "419c570f40105a5499ce4ed5647383a267e28f449ab3c0dfc8e374ac4a5f3acb"
+    },
+    {
+      "language": "en_US",
+      "rate": 6,
+      "native_speed": 30,
+      "samples": 305040,
+      "sha256": "f4df888ed5e1ed994f923d3d5abba977b0ce97af40fa6320a2d3a261acde8053"
+    },
+    {
+      "language": "en_US",
+      "rate": 6,
+      "native_speed": 39,
+      "samples": 260112,
+      "sha256": "ec620ac16d491b1f663830b4807f1b32defec32f33a0ca7a6d1f1c34df4cc03d"
+    },
+    {
+      "language": "en_US",
+      "rate": 6,
+      "native_speed": 40,
+      "samples": 249792,
+      "sha256": "e285a8d010c16215d1b49ae017dd2ec927618ae26ecd05e07391cc493fb97427"
+    },
+    {
+      "language": "en_US",
+      "rate": 6,
+      "native_speed": 60,
+      "samples": 167616,
+      "sha256": "f5b0afdd1f32f37bd7e0e5eb57c3e7cfe97ae95a6a9d7c86fc59dca80854a553"
+    },
+    {
+      "language": "en_US",
+      "rate": 6,
+      "native_speed": 160,
+      "samples": 23952,
+      "sha256": "4fc2c1c484aafccd081225d7503df0d2e8898225a90b0e8705adaa9af4caf0a0"
+    },
+    {
+      "language": "en_US",
+      "rate": 6,
+      "native_speed": 250,
+      "samples": 9792,
+      "sha256": "454520afa9b503a878bc3a97849cc85f20f4c758ff14d52f93b8f46c5bb8b3fa"
+    },
+    {
+      "language": "en_GB",
+      "rate": 1,
+      "native_speed": 0,
+      "samples": 131087,
+      "sha256": "029240a93549f95ffb6abc9efbe2f2c6d5a92e7db2b651484cf33de3c0362d0f"
+    },
+    {
+      "language": "en_GB",
+      "rate": 1,
+      "native_speed": 1,
+      "samples": 131087,
+      "sha256": "029240a93549f95ffb6abc9efbe2f2c6d5a92e7db2b651484cf33de3c0362d0f"
+    },
+    {
+      "language": "en_GB",
+      "rate": 1,
+      "native_speed": 10,
+      "samples": 107492,
+      "sha256": "e586bcfb4189275c0bcc3beb41e8607138cd4825c367af131adf3c91db123b0b"
+    },
+    {
+      "language": "en_GB",
+      "rate": 1,
+      "native_speed": 20,
+      "samples": 87725,
+      "sha256": "596f5cd79b06a9f3e045a8e97dea6b06d494a77148356b78b0e1e41efaf2bde2"
+    },
+    {
+      "language": "en_GB",
+      "rate": 1,
+      "native_speed": 30,
+      "samples": 71797,
+      "sha256": "4a664432feb54eb06f52eaea55866e07e1b665b1e6734136ca77f9b773f774fc"
+    },
+    {
+      "language": "en_GB",
+      "rate": 1,
+      "native_speed": 39,
+      "samples": 61237,
+      "sha256": "bafd86e06fd8d627b07f54398a7da2b192039a10ce93efe57b18231a9ec332f9"
+    },
+    {
+      "language": "en_GB",
+      "rate": 1,
+      "native_speed": 40,
+      "samples": 58762,
+      "sha256": "76ed01d4a4d2f8eea52e5bc4f90d52fc8f2fa599764280e7fe9d0570a9d34f01"
+    },
+    {
+      "language": "en_GB",
+      "rate": 1,
+      "native_speed": 60,
+      "samples": 39435,
+      "sha256": "fd10525b97055d8fdf55c7c9c0703075268d3b9437be47544c5498c35b4b686b"
+    },
+    {
+      "language": "en_GB",
+      "rate": 1,
+      "native_speed": 160,
+      "samples": 5599,
+      "sha256": "813e3aaee3a96590c8e7d1d1c0a5c88fbe25e38e06d43b1fead8b30d76b2779e"
+    },
+    {
+      "language": "en_GB",
+      "rate": 1,
+      "native_speed": 250,
+      "samples": 2244,
+      "sha256": "dc59760f023ffea62e52d75bd44bfa3e71b24f6d4234b573cea6d615050adef5"
+    },
+    {
+      "language": "en_GB",
+      "rate": 6,
+      "native_speed": 0,
+      "samples": 572016,
+      "sha256": "652c8c498b7ee47a29469d1b8ee74131e227f9bc0b14d90b2e0dbfe18470b62d"
+    },
+    {
+      "language": "en_GB",
+      "rate": 6,
+      "native_speed": 1,
+      "samples": 572016,
+      "sha256": "652c8c498b7ee47a29469d1b8ee74131e227f9bc0b14d90b2e0dbfe18470b62d"
+    },
+    {
+      "language": "en_GB",
+      "rate": 6,
+      "native_speed": 10,
+      "samples": 469056,
+      "sha256": "459d85bb443b92215a8b57cc75458a48e484f3a57edc37a89a7679cb5a009026"
+    },
+    {
+      "language": "en_GB",
+      "rate": 6,
+      "native_speed": 20,
+      "samples": 382800,
+      "sha256": "e4e0209fa9918def9057e9b5dbde0fba7065cbe2cf9edc7094db75145d7cc26f"
+    },
+    {
+      "language": "en_GB",
+      "rate": 6,
+      "native_speed": 30,
+      "samples": 313296,
+      "sha256": "eaa724f651a99cc1b7147ceb948c8117f83b7d915dbe5846021fdc7ed3bcc85d"
+    },
+    {
+      "language": "en_GB",
+      "rate": 6,
+      "native_speed": 39,
+      "samples": 267216,
+      "sha256": "b8ff4817054374bf09eba2bb17f37815caf6f075329fbe882bb14e73b8a5c72b"
+    },
+    {
+      "language": "en_GB",
+      "rate": 6,
+      "native_speed": 40,
+      "samples": 256416,
+      "sha256": "f44b2817055fb2850607077f2332081228f78ef940f8fccd0ecea404da21b42d"
+    },
+    {
+      "language": "en_GB",
+      "rate": 6,
+      "native_speed": 60,
+      "samples": 172080,
+      "sha256": "396edbe25d1d68d01c31b173e655b23b4d068f3a4735d7e1e5d6d1a99036b94c"
+    },
+    {
+      "language": "en_GB",
+      "rate": 6,
+      "native_speed": 160,
+      "samples": 24432,
+      "sha256": "ebc7ce5b8198cf57b4f852bc5583923a019bba69bbcd4e0c2c6aa2080074ece2"
+    },
+    {
+      "language": "en_GB",
+      "rate": 6,
+      "native_speed": 250,
+      "samples": 9792,
+      "sha256": "5af00e2d9e4237e3e44453b7a5d09b4f690a645cb7984021fe336d72b0a8515b"
+    },
+    {
+      "language": "es_ES",
+      "rate": 1,
+      "native_speed": 0,
+      "samples": 97119,
+      "sha256": "e25a36f1230f838e7acb3e2ce1eccbec96def8c722fd95a57b7c8dfdbbd36e26"
+    },
+    {
+      "language": "es_ES",
+      "rate": 1,
+      "native_speed": 1,
+      "samples": 97119,
+      "sha256": "e25a36f1230f838e7acb3e2ce1eccbec96def8c722fd95a57b7c8dfdbbd36e26"
+    },
+    {
+      "language": "es_ES",
+      "rate": 1,
+      "native_speed": 10,
+      "samples": 79640,
+      "sha256": "ba68f31aa071471d364a22bd3a80f9511ea47fbf70c9ca6a3026fb1be9668817"
+    },
+    {
+      "language": "es_ES",
+      "rate": 1,
+      "native_speed": 20,
+      "samples": 64999,
+      "sha256": "8734d40db7e846416a29b91a18de6dfd9e0f1d59ed3eddfe086764b12188d552"
+    },
+    {
+      "language": "es_ES",
+      "rate": 1,
+      "native_speed": 30,
+      "samples": 53207,
+      "sha256": "bbdd4a0eb7a381f5593d792129c2c8849dc7fab4a9d75a1389470b0fc0aad22e"
+    },
+    {
+      "language": "es_ES",
+      "rate": 1,
+      "native_speed": 39,
+      "samples": 45298,
+      "sha256": "c43fa44b68bef40aad5ec74ce0c2d919c95434165d7eaad87d2d2fc00f146143"
+    },
+    {
+      "language": "es_ES",
+      "rate": 1,
+      "native_speed": 40,
+      "samples": 43494,
+      "sha256": "763d639d88c30c635fd2e8f2113f30ea65bd39584877e6f21fb9486959a8b5d3"
+    },
+    {
+      "language": "es_ES",
+      "rate": 1,
+      "native_speed": 60,
+      "samples": 29227,
+      "sha256": "4cff0f207cd6cafa5d0ead36ba07773ba17a09eecdf3b4bd517f5206de3e83a1"
+    },
+    {
+      "language": "es_ES",
+      "rate": 1,
+      "native_speed": 160,
+      "samples": 4235,
+      "sha256": "64880882a3a279709351f6fde8c3b097902a18f9ea18dae23d308fd8d76dc191"
+    },
+    {
+      "language": "es_ES",
+      "rate": 1,
+      "native_speed": 250,
+      "samples": 2013,
+      "sha256": "396748a2ef1fd168be7b8e13ee62010cffdcacdcb18f2fbf396a3f8845510d22"
+    },
+    {
+      "language": "es_ES",
+      "rate": 6,
+      "native_speed": 0,
+      "samples": 423792,
+      "sha256": "4db2a92ebdeaaab7045a1ff520e63c1c9b5d3e4c59efebad6dee7c3724eb3e51"
+    },
+    {
+      "language": "es_ES",
+      "rate": 6,
+      "native_speed": 1,
+      "samples": 423792,
+      "sha256": "4db2a92ebdeaaab7045a1ff520e63c1c9b5d3e4c59efebad6dee7c3724eb3e51"
+    },
+    {
+      "language": "es_ES",
+      "rate": 6,
+      "native_speed": 10,
+      "samples": 347520,
+      "sha256": "e0dde40aed6c0ca6940fea6f861af4daccb652ff84afd1abbddf2534ae50ffb8"
+    },
+    {
+      "language": "es_ES",
+      "rate": 6,
+      "native_speed": 20,
+      "samples": 283632,
+      "sha256": "99574447a0338479e7a4cccb6e37f6198231ee242a097938f91fee2de76a8aa6"
+    },
+    {
+      "language": "es_ES",
+      "rate": 6,
+      "native_speed": 30,
+      "samples": 232176,
+      "sha256": "c9af1014c45c44097cdd98c86f48e65ce575015ce35826f8b7ab2c5477dda4b6"
+    },
+    {
+      "language": "es_ES",
+      "rate": 6,
+      "native_speed": 39,
+      "samples": 197664,
+      "sha256": "206813f4b56eae7f6592d21a71fd6a6a3184ce0f351ce33eb6f501d733cf9217"
+    },
+    {
+      "language": "es_ES",
+      "rate": 6,
+      "native_speed": 40,
+      "samples": 189792,
+      "sha256": "8f838f10b69931024cb26dca54a7bbb554132e03ec4900239c27622fb73b4160"
+    },
+    {
+      "language": "es_ES",
+      "rate": 6,
+      "native_speed": 60,
+      "samples": 127536,
+      "sha256": "83a0c77ace3b8125aaa7490eabd282f5e8a12d1a88667c4bf7fa57c9c7ce6eca"
+    },
+    {
+      "language": "es_ES",
+      "rate": 6,
+      "native_speed": 160,
+      "samples": 18480,
+      "sha256": "e99e88aa88126f4ea466f6016be9c2d5bcf82bdae15b6768146e9f715db41aad"
+    },
+    {
+      "language": "es_ES",
+      "rate": 6,
+      "native_speed": 250,
+      "samples": 8784,
+      "sha256": "46e583f8c323149563f70c19a6172af141b0a2eb64bebd3c5cc21ef6b17901bb"
+    },
+    {
+      "language": "es_MX",
+      "rate": 1,
+      "native_speed": 0,
+      "samples": 96492,
+      "sha256": "b49a30cf0af6a4c2a581fa066586d3dba9c37226cdf19e4429aaef14cf518b71"
+    },
+    {
+      "language": "es_MX",
+      "rate": 1,
+      "native_speed": 1,
+      "samples": 96492,
+      "sha256": "b49a30cf0af6a4c2a581fa066586d3dba9c37226cdf19e4429aaef14cf518b71"
+    },
+    {
+      "language": "es_MX",
+      "rate": 1,
+      "native_speed": 10,
+      "samples": 79090,
+      "sha256": "7fd4ee3d7283bac9a5e06c4b936019eb467f9b26035ce8af2633b127d832e35b"
+    },
+    {
+      "language": "es_MX",
+      "rate": 1,
+      "native_speed": 20,
+      "samples": 64526,
+      "sha256": "e27fdee2ec4a82b95d48d563fabb7a9a5a185ae6cdc638e62ad72510a0a3325e"
+    },
+    {
+      "language": "es_MX",
+      "rate": 1,
+      "native_speed": 30,
+      "samples": 52844,
+      "sha256": "6f18dc1a6b8a5cd57fc25c7d9ae4e6f13e083698445fa1d49a4144e4700d74b2"
+    },
+    {
+      "language": "es_MX",
+      "rate": 1,
+      "native_speed": 39,
+      "samples": 45045,
+      "sha256": "d5d1b32be419d7420b26d1a5c741df955040c95a7803cc8e361e1c10d0692fe0"
+    },
+    {
+      "language": "es_MX",
+      "rate": 1,
+      "native_speed": 40,
+      "samples": 43252,
+      "sha256": "a7c6ac1456bb93ff8b290b332a506ffc4b02657d1160be3ed3c7b66e621e8f08"
+    },
+    {
+      "language": "es_MX",
+      "rate": 1,
+      "native_speed": 60,
+      "samples": 29062,
+      "sha256": "83be8ae2efc5c088e94b9da80d5cd3b55ea58c8944cf10ad9a70493ae487426b"
+    },
+    {
+      "language": "es_MX",
+      "rate": 1,
+      "native_speed": 160,
+      "samples": 4169,
+      "sha256": "7cf76823b045c37ccc7ea7674fd792a8d3900867284c9d0ff933c6c88f67f626"
+    },
+    {
+      "language": "es_MX",
+      "rate": 1,
+      "native_speed": 250,
+      "samples": 1980,
+      "sha256": "4ac6d2495db0a777604ceaad152e3cc5b2ea368bfec0f1525f07c9e4c20ba38b"
+    },
+    {
+      "language": "es_MX",
+      "rate": 6,
+      "native_speed": 0,
+      "samples": 421056,
+      "sha256": "91d8d8a349e84e0c326431a1eba310efdf0095feb681ed73ce82601c391b6695"
+    },
+    {
+      "language": "es_MX",
+      "rate": 6,
+      "native_speed": 1,
+      "samples": 421056,
+      "sha256": "91d8d8a349e84e0c326431a1eba310efdf0095feb681ed73ce82601c391b6695"
+    },
+    {
+      "language": "es_MX",
+      "rate": 6,
+      "native_speed": 10,
+      "samples": 345120,
+      "sha256": "bd1a70e1e41a48eeedab6b01edd7508d68a2f39ee51ffcb7a02579ffa661a057"
+    },
+    {
+      "language": "es_MX",
+      "rate": 6,
+      "native_speed": 20,
+      "samples": 281568,
+      "sha256": "63f39f132aa9e52d301cfb73c3a2c8a521cb7c813106330359662c27ff73306d"
+    },
+    {
+      "language": "es_MX",
+      "rate": 6,
+      "native_speed": 30,
+      "samples": 230592,
+      "sha256": "93111660a366788b0c5804ce5c6728f67bd9dfc10838cf641c6fc4a713ef95bc"
+    },
+    {
+      "language": "es_MX",
+      "rate": 6,
+      "native_speed": 39,
+      "samples": 196560,
+      "sha256": "b6e78797b3e5b1b808db43b605fc90e81b6cb948d964f681db403616b84e8206"
+    },
+    {
+      "language": "es_MX",
+      "rate": 6,
+      "native_speed": 40,
+      "samples": 188736,
+      "sha256": "69f8f2d3c5d571b02e5c4078e75266804f5551f28e538d45386d9ba6628d673f"
+    },
+    {
+      "language": "es_MX",
+      "rate": 6,
+      "native_speed": 60,
+      "samples": 126816,
+      "sha256": "c570d7bfc5f84d8cc265c5d6759be964732436dab3d178d126dad7885fb2c7a7"
+    },
+    {
+      "language": "es_MX",
+      "rate": 6,
+      "native_speed": 160,
+      "samples": 18192,
+      "sha256": "f186989849aeed489b7737fcddcc9ac7adff6a4944ae42829fdf94d30411d873"
+    },
+    {
+      "language": "es_MX",
+      "rate": 6,
+      "native_speed": 250,
+      "samples": 8640,
+      "sha256": "e6364cba37a7aceb4a27721297ad7715f0f4170bc16180f3222bc530cbc1774c"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 1,
+      "native_speed": 0,
+      "samples": 98879,
+      "sha256": "b879666a288fbbdb95b75eb74d93445f5ac0665463384f82cfaf4067e5afa686"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 1,
+      "native_speed": 1,
+      "samples": 98879,
+      "sha256": "b879666a288fbbdb95b75eb74d93445f5ac0665463384f82cfaf4067e5afa686"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 1,
+      "native_speed": 10,
+      "samples": 81026,
+      "sha256": "dae242d15f5bc36cf7763034e55b0231e92825130a1e097622649309125ba670"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 1,
+      "native_speed": 20,
+      "samples": 66176,
+      "sha256": "7161df7aa86f2e086dc934375ef078f0a230568ab19792b8dac6a6c57ba1ea60"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 1,
+      "native_speed": 30,
+      "samples": 54142,
+      "sha256": "9ef57c51e76270522b1f30125891ffc3060746824a2ad9620449df64474ce289"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 1,
+      "native_speed": 39,
+      "samples": 46178,
+      "sha256": "af14bb4cde13416d267c9773860715d51b88776d3190bedd7c5dd2de9d351197"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 1,
+      "native_speed": 40,
+      "samples": 44341,
+      "sha256": "6e82473fbe90f810d0d411ba15df81a5cf1c87409ba9625062bf829c3401e795"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 1,
+      "native_speed": 60,
+      "samples": 29788,
+      "sha256": "79a1d3f60a8d5d713537eedafb56675c8f510778c691fd9f532f614c469e7ef4"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 1,
+      "native_speed": 160,
+      "samples": 3993,
+      "sha256": "5446a388e8d31856540bb513134453583252a6459d769782c6661b45003c0dac"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 1,
+      "native_speed": 250,
+      "samples": 1727,
+      "sha256": "0bf45e5668ee3b3679a60819933f2f7a998cea3ad0719155d433e687050ec13b"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 6,
+      "native_speed": 0,
+      "samples": 431472,
+      "sha256": "2ceec8fde06513680ae71374d2bd3ea0924296a1d54ab7885e3ba5cf31ccb374"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 6,
+      "native_speed": 1,
+      "samples": 431472,
+      "sha256": "2ceec8fde06513680ae71374d2bd3ea0924296a1d54ab7885e3ba5cf31ccb374"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 6,
+      "native_speed": 10,
+      "samples": 353568,
+      "sha256": "8b7a9dbdf1fe044d25b7bb4998eb0b52c6803f83d2d354576a1f395306b7c9f9"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 6,
+      "native_speed": 20,
+      "samples": 288768,
+      "sha256": "11e1511acda8db26f75ab6e79797c261f9fae98fad55d7fe354149c8e0f04d0d"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 6,
+      "native_speed": 30,
+      "samples": 236256,
+      "sha256": "5a58acd6fed77d3d057b42262d417ddc722724b740db8e569f362b9d07c174aa"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 6,
+      "native_speed": 39,
+      "samples": 201504,
+      "sha256": "d0d54ef77410bdb1deaa61b7a72a6e44db5afa738673157e8f96f19336edcc01"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 6,
+      "native_speed": 40,
+      "samples": 193488,
+      "sha256": "aa64148d44c7fdddee49cea690d739d740f7ace4f8728e2fe116aaccddc6b098"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 6,
+      "native_speed": 60,
+      "samples": 129984,
+      "sha256": "37869b7023412f6ef890e0060116e6169f70891075a4940c5c2c24688fb6f42b"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 6,
+      "native_speed": 160,
+      "samples": 17424,
+      "sha256": "d8dd5766c8fd3855f369baabec5d311ba27bfdbd082d079d9a521953092b0a4e"
+    },
+    {
+      "language": "fr_FR",
+      "rate": 6,
+      "native_speed": 250,
+      "samples": 7536,
+      "sha256": "fbc37d5385e441fc784ae777f031827de38d1e4e559a8f89388c71c94ed696b4"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 1,
+      "native_speed": 0,
+      "samples": 102179,
+      "sha256": "464bdafa2e2523c14da9386c73fcc3b9a6322a0d91443ba45cf67717dbc70cb7"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 1,
+      "native_speed": 1,
+      "samples": 102179,
+      "sha256": "464bdafa2e2523c14da9386c73fcc3b9a6322a0d91443ba45cf67717dbc70cb7"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 1,
+      "native_speed": 10,
+      "samples": 83732,
+      "sha256": "6327d511b89a38f93c85481b0c8e250a0609450410d33c0a151e515bd37cdd89"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 1,
+      "native_speed": 20,
+      "samples": 68365,
+      "sha256": "2ebc386c95500e54049009078736f8b78d3e2a589a74eac4a322902e854070c4"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 1,
+      "native_speed": 30,
+      "samples": 55924,
+      "sha256": "88354b79a8540b89766da2a255b19887179822fb378a2f9e4997adbbd3f54955"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 1,
+      "native_speed": 39,
+      "samples": 47685,
+      "sha256": "61b069968405e48d5e49bda10a625292a2ba58ababb5fd396a4a2a2336d3795f"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 1,
+      "native_speed": 40,
+      "samples": 45804,
+      "sha256": "67aafba49435c744e2592f3940eb749579ea9805268797354771db74f9c39505"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 1,
+      "native_speed": 60,
+      "samples": 30778,
+      "sha256": "849ce07090961013e101adb446d048531cda0a1dc4c4df1d40da63fdb0b7087d"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 1,
+      "native_speed": 160,
+      "samples": 4235,
+      "sha256": "ea565cb32fde0cdc4af0f3fe763af23d665ffcf5d28356fbab7f5172106a85eb"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 1,
+      "native_speed": 250,
+      "samples": 1771,
+      "sha256": "aa46387661427e9bdea2edff0c1ebb8ee6b8249df5d37bc0382dbcae733b7337"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 6,
+      "native_speed": 0,
+      "samples": 445872,
+      "sha256": "718cd9baf40091eba69465c85319580f116a0cccf922c53fa4369b64fbe1d330"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 6,
+      "native_speed": 1,
+      "samples": 445872,
+      "sha256": "718cd9baf40091eba69465c85319580f116a0cccf922c53fa4369b64fbe1d330"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 6,
+      "native_speed": 10,
+      "samples": 365376,
+      "sha256": "d6bb1d9443a739e3091be7420997717e3eaf4235c4f56d851d7b33a97929485d"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 6,
+      "native_speed": 20,
+      "samples": 298320,
+      "sha256": "fe5bc609c76a23a412f06e0e891428783723e08b32d1c4632f334e9a9ee8c9ea"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 6,
+      "native_speed": 30,
+      "samples": 244032,
+      "sha256": "aed782d482f69d75c573968b293b801e62c2328b0b3a3d93b4316a77e80f0080"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 6,
+      "native_speed": 39,
+      "samples": 208080,
+      "sha256": "b603ab44a7b74145a7b013d88aef7d29d9aadb16a3b5e900c35c9415b33c2d12"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 6,
+      "native_speed": 40,
+      "samples": 199872,
+      "sha256": "2cefee6d3ab6125b77d65d173443ad9b10664e25591838a368f41bf078a602e0"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 6,
+      "native_speed": 60,
+      "samples": 134304,
+      "sha256": "18b7132a7f4efdabd4be605d8aa1d75917e9ff7b0f5b741662a5d6db40888178"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 6,
+      "native_speed": 160,
+      "samples": 18480,
+      "sha256": "4366f07fb77c79c4c3c44686b0e0ede00acff51c55141f25751d74ccd9cff76b"
+    },
+    {
+      "language": "fr_CA",
+      "rate": 6,
+      "native_speed": 250,
+      "samples": 7728,
+      "sha256": "983746a37e60e00772b2a50d0866815f5c3dacf7eb1b14af23e1a1c464d9351e"
+    },
+    {
+      "language": "it_IT",
+      "rate": 1,
+      "native_speed": 0,
+      "samples": 91542,
+      "sha256": "5f4ca7a7ce345dc731fd81ebe84ba9d73366edd1576bd79158f5ecd03e4ba64f"
+    },
+    {
+      "language": "it_IT",
+      "rate": 1,
+      "native_speed": 1,
+      "samples": 91542,
+      "sha256": "5f4ca7a7ce345dc731fd81ebe84ba9d73366edd1576bd79158f5ecd03e4ba64f"
+    },
+    {
+      "language": "it_IT",
+      "rate": 1,
+      "native_speed": 10,
+      "samples": 75031,
+      "sha256": "20779c576e85a3e4f12bba4c660ff78d1969a3bdd3ab5d38e03dcd10671a76a2"
+    },
+    {
+      "language": "it_IT",
+      "rate": 1,
+      "native_speed": 20,
+      "samples": 61226,
+      "sha256": "2f5cda080bc4f5ea31b527d4643b8329299d16d0578cbdf5e27279b353fcd061"
+    },
+    {
+      "language": "it_IT",
+      "rate": 1,
+      "native_speed": 30,
+      "samples": 50105,
+      "sha256": "574f42633d85df54534e485b259b5199ba73fad7ed0003ce79606f52662720d0"
+    },
+    {
+      "language": "it_IT",
+      "rate": 1,
+      "native_speed": 39,
+      "samples": 42669,
+      "sha256": "e3a47afc4d088c5e2d71a60e5fffa90287fff83d4a9358a29f489286ebe3ac8f"
+    },
+    {
+      "language": "it_IT",
+      "rate": 1,
+      "native_speed": 40,
+      "samples": 40997,
+      "sha256": "38264278cd248446c5eb301b793c5293ec6231357545e582f87a22134b0dec23"
+    },
+    {
+      "language": "it_IT",
+      "rate": 1,
+      "native_speed": 60,
+      "samples": 27588,
+      "sha256": "bf079b8adbf26235ed13ede6ea888b9fdf3608e81e64b40b3f2d9783dbfa8995"
+    },
+    {
+      "language": "it_IT",
+      "rate": 1,
+      "native_speed": 160,
+      "samples": 3960,
+      "sha256": "bff8f0e0f1fc7acd29ae87e72928119fe54a1ff6ac6ec4ead15bc1c2985d4024"
+    },
+    {
+      "language": "it_IT",
+      "rate": 1,
+      "native_speed": 250,
+      "samples": 1793,
+      "sha256": "0abacdf060a69e47293b044c267071a6965fe7d7c40f877ed67899e325dd2679"
+    },
+    {
+      "language": "it_IT",
+      "rate": 6,
+      "native_speed": 0,
+      "samples": 399456,
+      "sha256": "2a8134e7b9d734242df549f43bb9279c9620d0f3f2ffc52157c4b5420aa51cba"
+    },
+    {
+      "language": "it_IT",
+      "rate": 6,
+      "native_speed": 1,
+      "samples": 399456,
+      "sha256": "2a8134e7b9d734242df549f43bb9279c9620d0f3f2ffc52157c4b5420aa51cba"
+    },
+    {
+      "language": "it_IT",
+      "rate": 6,
+      "native_speed": 10,
+      "samples": 327408,
+      "sha256": "e2709d05eed2ff7a5ddcae9126c9de24910cca9dd67a2a64228340fc3e1278ac"
+    },
+    {
+      "language": "it_IT",
+      "rate": 6,
+      "native_speed": 20,
+      "samples": 267168,
+      "sha256": "7c7e1d0efad99a6be4d62df89763e87d9f989c4dcd42fbca223dc0bbb8470f19"
+    },
+    {
+      "language": "it_IT",
+      "rate": 6,
+      "native_speed": 30,
+      "samples": 218640,
+      "sha256": "2f52768c9eb724968f9e444132c33f078e5c40ed61ccd289ba0ea89272436c5c"
+    },
+    {
+      "language": "it_IT",
+      "rate": 6,
+      "native_speed": 39,
+      "samples": 186192,
+      "sha256": "e163aef86dc9672bb55eddd658e363879ca5bc757a18a319698b362ec3bd49a3"
+    },
+    {
+      "language": "it_IT",
+      "rate": 6,
+      "native_speed": 40,
+      "samples": 178896,
+      "sha256": "d4ec7e1cb7ab42cd70c1385e4df48340d5d0069e2917c9eef96fe44d19f61988"
+    },
+    {
+      "language": "it_IT",
+      "rate": 6,
+      "native_speed": 60,
+      "samples": 120384,
+      "sha256": "b6f0bc3a99cc41a98ec2b007a231a97ec26d9eec302663c56ea612ae248c7485"
+    },
+    {
+      "language": "it_IT",
+      "rate": 6,
+      "native_speed": 160,
+      "samples": 17280,
+      "sha256": "5adcc2fc1f6715777cba77a3c8e530848d9418e599a84f1b9d06287279265d81"
+    },
+    {
+      "language": "it_IT",
+      "rate": 6,
+      "native_speed": 250,
+      "samples": 7824,
+      "sha256": "8fe99f2934c2e70882bf6308a56e8f596c32fc8a0689646bb8d3a3f8bf363629"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 1,
+      "native_speed": 0,
+      "samples": 125169,
+      "sha256": "155e4f75ef81229da6ee1b636d0342850dff7389a596f0923977a16dc5acbd8c"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 1,
+      "native_speed": 1,
+      "samples": 125169,
+      "sha256": "155e4f75ef81229da6ee1b636d0342850dff7389a596f0923977a16dc5acbd8c"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 1,
+      "native_speed": 10,
+      "samples": 102586,
+      "sha256": "9ba94bd9e6fc64fba4883cd28b48d0c048af59d76bd59895c36ecceae33d0204"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 1,
+      "native_speed": 20,
+      "samples": 83754,
+      "sha256": "d4ceececa819cf1d9a4bf0c95a276d8a4d85780cb6d9e4942f65b2c88bc79dfc"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 1,
+      "native_speed": 30,
+      "samples": 68530,
+      "sha256": "4d243194ab9694f5f4b052201d2af8b2ebc820ca9cb3a153856c737244b27e25"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 1,
+      "native_speed": 39,
+      "samples": 58388,
+      "sha256": "33b8b5af05bec6ae982c6dbd2f1d77f27a272735995a44e10060f327100ce259"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 1,
+      "native_speed": 40,
+      "samples": 56111,
+      "sha256": "745581372e25cace40b794d4826135dcc0812ba470b6a6636f88896a4777ffd7"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 1,
+      "native_speed": 60,
+      "samples": 37675,
+      "sha256": "a795807fd0547bd6f8b0b3274d3e14c366b1e84dac731bcf9bea68317c3f6960"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 1,
+      "native_speed": 160,
+      "samples": 5236,
+      "sha256": "53fc6e1eedce572a0cd785d69d5657c265124d3b43af411d547cf8fe1936a812"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 1,
+      "native_speed": 250,
+      "samples": 1980,
+      "sha256": "ce35ab295ab6e8a07d5423ec61a123cef6ded7dbcdb6e802783dc1e221fa15dd"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 6,
+      "native_speed": 0,
+      "samples": 546192,
+      "sha256": "5fd5a5c84503a5dd92f4be27412e2c5d0265bf58ed056feae2e1a8780a85e32d"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 6,
+      "native_speed": 1,
+      "samples": 546192,
+      "sha256": "5fd5a5c84503a5dd92f4be27412e2c5d0265bf58ed056feae2e1a8780a85e32d"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 6,
+      "native_speed": 10,
+      "samples": 447648,
+      "sha256": "8a841b3c2f177b63da3d469805c47aec31ba39ebf45fd48362ed3b2f249b11de"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 6,
+      "native_speed": 20,
+      "samples": 365472,
+      "sha256": "c9f9b3ed1f44a93b4e79360bcd3e363e8e17110b148d1c6750b0a09fb1ab6b01"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 6,
+      "native_speed": 30,
+      "samples": 299040,
+      "sha256": "5e6c2bbd14f34f8b79a378835ee9e0956c8321b96145d390fca7ddb06c065192"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 6,
+      "native_speed": 39,
+      "samples": 254784,
+      "sha256": "a37df4b7e97f9dfa4a696d2f6e0f016355f075daf5c0b9e547c089943111b853"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 6,
+      "native_speed": 40,
+      "samples": 244848,
+      "sha256": "149281a36876ce55db6d0a247bbba97fec8b455993806daa19482f6c4c40ebd6"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 6,
+      "native_speed": 60,
+      "samples": 164400,
+      "sha256": "dff1f21be6df04efe7388509684bc5a70f5537a77e9cc58f1b01d95970d0d49e"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 6,
+      "native_speed": 160,
+      "samples": 22848,
+      "sha256": "a4d09571731c76879d7aaf5f438e20214b1d4b27d8f550fe1ef5448b664c1334"
+    },
+    {
+      "language": "pt_BR",
+      "rate": 6,
+      "native_speed": 250,
+      "samples": 8640,
+      "sha256": "b198b12b8b94ee7ccdb4c994fab5d02824bcb4808727a5b28b59a8ab8c2d6605"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 1,
+      "native_speed": 0,
+      "samples": 97207,
+      "sha256": "a319fb145ae658a096f9bfd03e5b7fac61d7332e3f62e4a7d9955e4d3f92c1f9"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 1,
+      "native_speed": 1,
+      "samples": 97207,
+      "sha256": "a319fb145ae658a096f9bfd03e5b7fac61d7332e3f62e4a7d9955e4d3f92c1f9"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 1,
+      "native_speed": 10,
+      "samples": 79662,
+      "sha256": "44c8dabd14ef0c00989b9837c08df56e584a3c905ee38502c7041796d1a1012c"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 1,
+      "native_speed": 20,
+      "samples": 65032,
+      "sha256": "fe75cae7ccd4dfbd6d17db85f1a8b7e6b8dd9cb07c9835e6093166be47498d72"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 1,
+      "native_speed": 30,
+      "samples": 53218,
+      "sha256": "ae8dee55d0073e5e87ac08d1989f973cdf22d3a576005ae6ff5c75aa14ee6a4d"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 1,
+      "native_speed": 39,
+      "samples": 45353,
+      "sha256": "1d98bcd0528e9ceaa04c26af9d332c0ab2ccef2c0bac44a5e66dfa5fd2914245"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 1,
+      "native_speed": 40,
+      "samples": 43582,
+      "sha256": "c013547ba3ee4538b16a7237264bc89ae31bf2000ff1c5a53808bdf8af4205af"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 1,
+      "native_speed": 60,
+      "samples": 29282,
+      "sha256": "e59ef65046aba8e286211f4b71f981d8d02b3704581bd25d60c3f27c1ac96622"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 1,
+      "native_speed": 160,
+      "samples": 4037,
+      "sha256": "94cbdeedba984caa690baf7769bf9d49bf21217476d24d7c34a037b495ad56bd"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 1,
+      "native_speed": 250,
+      "samples": 1441,
+      "sha256": "221df33ef1cafecc5b8dfd4f9f1ad77c6ae97e50adf3f1f04720181d9d2b8458"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 6,
+      "native_speed": 0,
+      "samples": 424176,
+      "sha256": "21c0ca220d90e4bfd97f2c3303bc818764c5f6e27be5b150b7b6ccbdd8f00aba"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 6,
+      "native_speed": 1,
+      "samples": 424176,
+      "sha256": "21c0ca220d90e4bfd97f2c3303bc818764c5f6e27be5b150b7b6ccbdd8f00aba"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 6,
+      "native_speed": 10,
+      "samples": 347616,
+      "sha256": "4c24f62997bd5cbf795c1c2e01a0d3992e4e07c0026ba652f01f9cbb4042cc14"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 6,
+      "native_speed": 20,
+      "samples": 283776,
+      "sha256": "919eab37aecdb52429f8e6e205f1c18763f3f498cb5b6e884eae0e622fbe0ec8"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 6,
+      "native_speed": 30,
+      "samples": 232224,
+      "sha256": "b36ea2c6d156f820a07068f3f3fe492a2ebcd68c5e00955e7111bf2be94ae38a"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 6,
+      "native_speed": 39,
+      "samples": 197904,
+      "sha256": "5213c1aa1e2322a1d4a5b1166732594c1acfde66c3917795793b2f028557f09e"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 6,
+      "native_speed": 40,
+      "samples": 190176,
+      "sha256": "8bfd4df2b418c2b457150e675c82e13367fae03c35957b7d516968f7f435c212"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 6,
+      "native_speed": 60,
+      "samples": 127776,
+      "sha256": "4668b046089127e619bcffcc6a381260e536353aff5d5b4c74b099d92869bd04"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 6,
+      "native_speed": 160,
+      "samples": 17616,
+      "sha256": "e1922d7559045b110c1baaa468b00db75c2034eb7a6bff1fce650ea275fa8705"
+    },
+    {
+      "language": "fi_FI",
+      "rate": 6,
+      "native_speed": 250,
+      "samples": 6288,
+      "sha256": "c0dd5945b45f494a243058ab31f0c0bf3797e185c48c064d234d1373108aac10"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 1,
+      "native_speed": 0,
+      "samples": 199485,
+      "sha256": "d0f7458676ba7227022974b58db66fa499643453d700e99a704644cc90ce7f63"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 1,
+      "native_speed": 1,
+      "samples": 199485,
+      "sha256": "d0f7458676ba7227022974b58db66fa499643453d700e99a704644cc90ce7f63"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 1,
+      "native_speed": 10,
+      "samples": 163493,
+      "sha256": "1609b3ad3d1c344d347c077f92522a1211e42df096a081ff5e078646febc3c34"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 1,
+      "native_speed": 20,
+      "samples": 133496,
+      "sha256": "3a174a8afaa355c59634dbd3d33c3f7802bf75e8143746cc3441eb63c72bb9b8"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 1,
+      "native_speed": 30,
+      "samples": 109263,
+      "sha256": "a16b7139841c4567358075451f2f75caae69f647262f770bb94b2a9198bc7919"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 1,
+      "native_speed": 39,
+      "samples": 93247,
+      "sha256": "f0704c4d52756c46ff1cc33bc114c7b3e39f835896ba04cd117a313d21bd54db"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 1,
+      "native_speed": 40,
+      "samples": 89452,
+      "sha256": "71f7aa133d959b025a508cc0a6beac5699ade17fc40714c3420147a7471a20f6"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 1,
+      "native_speed": 60,
+      "samples": 60115,
+      "sha256": "a19eeada5d7b27dc4196655406c1944d2ddaa7e748d083277de509f5fbd32fe3"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 1,
+      "native_speed": 160,
+      "samples": 8382,
+      "sha256": "e0997ad0e355a4f53a8625e8b061093adc5fd9288c6f0f851b014214adc87ad3"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 1,
+      "native_speed": 250,
+      "samples": 3190,
+      "sha256": "7f4bb0d64a4c70fd835ce7e2eff5cbacbaf238af80bba98fe861f64a76a8daae"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 6,
+      "native_speed": 0,
+      "samples": 870480,
+      "sha256": "f7f914811d9eca0f5733e8f6efb47c62c1ae4827d2c38db5283c11ee358f6a07"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 6,
+      "native_speed": 1,
+      "samples": 870480,
+      "sha256": "f7f914811d9eca0f5733e8f6efb47c62c1ae4827d2c38db5283c11ee358f6a07"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 6,
+      "native_speed": 10,
+      "samples": 713424,
+      "sha256": "6d1d8577e8f51f1a7c38377d5235e6e53d3db3a18b4614a5303f1c7cafd444e6"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 6,
+      "native_speed": 20,
+      "samples": 582528,
+      "sha256": "fa2d3a275de60a762d569970c3f805f97c07d57ce17ed070578d1b10a7876111"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 6,
+      "native_speed": 30,
+      "samples": 476784,
+      "sha256": "f935b783ec2e44ddb842b0c3e0d25f443b0ac55b7c0a4505ded3459674862e41"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 6,
+      "native_speed": 39,
+      "samples": 406896,
+      "sha256": "3f4606d90e79efb31e376ca7e334f1c88aa34743c5be0825826882a091a74d8b"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 6,
+      "native_speed": 40,
+      "samples": 390336,
+      "sha256": "39b7fc87db6ea342abb637afba90a30f4a9583f9d1636cf96fbd647f80bb4ad6"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 6,
+      "native_speed": 60,
+      "samples": 262320,
+      "sha256": "8b55d661f190b2dcb1f0c97db70be4e33dfec60d1845c1fcc392baf546b8da87"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 6,
+      "native_speed": 160,
+      "samples": 36576,
+      "sha256": "da0c03910bee967d959d3358e008c95e56b5b214f26c88ca63301339f91a3a06"
+    },
+    {
+      "language": "zh_CN",
+      "rate": 6,
+      "native_speed": 250,
+      "samples": 13920,
+      "sha256": "532e46ea225ba897942b1835ed3811994ff10edcaf3067c0f1bd8463279dddbe"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 1,
+      "native_speed": 0,
+      "samples": 130955,
+      "sha256": "c614013bd55310ca3d34f25bd6c7ce8883cac613a47f3e7fdf97580388cf4860"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 1,
+      "native_speed": 1,
+      "samples": 130955,
+      "sha256": "c614013bd55310ca3d34f25bd6c7ce8883cac613a47f3e7fdf97580388cf4860"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 1,
+      "native_speed": 10,
+      "samples": 107338,
+      "sha256": "849aed33da47fe51f4929863e5eee1f163a5105bbf3d973d627ba515045b516a"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 1,
+      "native_speed": 20,
+      "samples": 87604,
+      "sha256": "4ee1e6bed49c4db4a4a088690a30e8536585eb449b08c4bdab18f1670ba65e24"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 1,
+      "native_speed": 30,
+      "samples": 71720,
+      "sha256": "65b2c8260ec2daf85a6685987314edb24d457dd1b89bc2c51f454a695038ee6b"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 1,
+      "native_speed": 39,
+      "samples": 61105,
+      "sha256": "d2a7e1179d948f7ab32d0d6d450fa4e0e763aa63a72c25714a703121858d784c"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 1,
+      "native_speed": 40,
+      "samples": 58685,
+      "sha256": "d660045b8e685587443ead0da618a5048d98944600943f03e41063d5bd94553e"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 1,
+      "native_speed": 60,
+      "samples": 39424,
+      "sha256": "638840d983281c08d69f374a537b0bc520f2cc5118b329ecd93528b3c8defcf9"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 1,
+      "native_speed": 160,
+      "samples": 5676,
+      "sha256": "29da1754001a34b52ff839a7c608a4fcc1ab1999dd6a9492e285f6bffbbbe4ae"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 1,
+      "native_speed": 250,
+      "samples": 2321,
+      "sha256": "9c454be631ecb66f2002652091929c1c861e27a5f76cb1688bff103716dc5200"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 6,
+      "native_speed": 0,
+      "samples": 571440,
+      "sha256": "8c3eec1031e0da924b74b23536395873f76a6c16902b8fbec32f17ddaaa726bd"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 6,
+      "native_speed": 1,
+      "samples": 571440,
+      "sha256": "8c3eec1031e0da924b74b23536395873f76a6c16902b8fbec32f17ddaaa726bd"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 6,
+      "native_speed": 10,
+      "samples": 468384,
+      "sha256": "abde2c9bc5abe22efeabd367dea0b00e5e98337323a4e4ad483f1540ea5d670a"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 6,
+      "native_speed": 20,
+      "samples": 382272,
+      "sha256": "61dc9bf0995526a5805371dcbcd33b0dee9129f721509c5ee0d75f5e598337ba"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 6,
+      "native_speed": 30,
+      "samples": 312960,
+      "sha256": "87df6eb62835da0ce551380bcca4c669d48efe1409fe2bd8c8ffbd4f3034164f"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 6,
+      "native_speed": 39,
+      "samples": 266640,
+      "sha256": "f1e79aeccda42d042a330507f001f62a7cb3cfbfcd14d7efa9ab1a820b3dc1e8"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 6,
+      "native_speed": 40,
+      "samples": 256080,
+      "sha256": "8cebc63552a5317cc2081c13ce799c95a0552d51b14a3d7c152ced282956e3b2"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 6,
+      "native_speed": 60,
+      "samples": 172032,
+      "sha256": "8d407d42219913570dba19c3eedf3cdb0d128be81d67fc1c57811fc01e2993a0"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 6,
+      "native_speed": 160,
+      "samples": 24768,
+      "sha256": "314efcd7a6231e0da9e88b7fa1cf5d8d72659fb6e56a6131f4d520f075e57c6f"
+    },
+    {
+      "language": "ja_JP",
+      "rate": 6,
+      "native_speed": 250,
+      "samples": 10128,
+      "sha256": "6e7dc62b44f2c622d87692551e9945e451fb85c8285da43c2ee58177639a01fe"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 1,
+      "native_speed": 0,
+      "samples": 151646,
+      "sha256": "d5eaedfb403ee13f90b153c1475276c2de4d68cabfaa92d3a18190fed0d927ba"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 1,
+      "native_speed": 1,
+      "samples": 151646,
+      "sha256": "d5eaedfb403ee13f90b153c1475276c2de4d68cabfaa92d3a18190fed0d927ba"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 1,
+      "native_speed": 10,
+      "samples": 124201,
+      "sha256": "d0bb37f02b4e4bd8bc43e59dd0e7267ac8833dc6cea4cf48a57b2c7c24738dab"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 1,
+      "native_speed": 20,
+      "samples": 101387,
+      "sha256": "a0ffeb83d598f357b9a965a8186055a8825b1f5052d21ef46aa4d94dfe117ba8"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 1,
+      "native_speed": 30,
+      "samples": 82940,
+      "sha256": "c6d8b8d5b68d51a46cd0798fbaa403415dcb939c28933f526359a8208686417f"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 1,
+      "native_speed": 39,
+      "samples": 70675,
+      "sha256": "65d7d5ce3969090876e92db11ebc1f2c45ea8c6b27aa247e4e03ac3045a86e4e"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 1,
+      "native_speed": 40,
+      "samples": 67936,
+      "sha256": "8b31fb2ba69b5fa577370dcb67df386e081d299d78b232266e18496c5d2e9020"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 1,
+      "native_speed": 60,
+      "samples": 45606,
+      "sha256": "e908c44456e5ef255f9fc75928ca3bf051d8f3f2f13b0527611033348d47a83a"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 1,
+      "native_speed": 160,
+      "samples": 6413,
+      "sha256": "5f71c82f8bb048e2e980ea126ee49360f6a57ba957f9dbdca6eb5f1983c626f3"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 1,
+      "native_speed": 250,
+      "samples": 2607,
+      "sha256": "c37105c9d19b3537dd1ffbeda3b58ee2999b75ef46de9b5c0ac32083cfaf1d0a"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 6,
+      "native_speed": 0,
+      "samples": 661728,
+      "sha256": "5e42745c3ddea4d71dafae839aa7d0582737539045f724a588e039e5cebbb23e"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 6,
+      "native_speed": 1,
+      "samples": 661728,
+      "sha256": "5e42745c3ddea4d71dafae839aa7d0582737539045f724a588e039e5cebbb23e"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 6,
+      "native_speed": 10,
+      "samples": 541968,
+      "sha256": "0651f52ed622370d34d78463777dada10031d5785f5f1d8e905a4897966c9e6b"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 6,
+      "native_speed": 20,
+      "samples": 442416,
+      "sha256": "6efc62869df59758bf1f62e411ad9d33d33a96362d7d20e0f7a72c97b2291647"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 6,
+      "native_speed": 30,
+      "samples": 361920,
+      "sha256": "31e84a18a6ce5e5db35750af997a2245cfae586bd8bb40dfb160cdfa4518a5ba"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 6,
+      "native_speed": 39,
+      "samples": 308400,
+      "sha256": "ed115978fad209cb41f7894272893e6022b400a57094a775fb3f142bbf8c48c7"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 6,
+      "native_speed": 40,
+      "samples": 296448,
+      "sha256": "e39f0a352e8166f9509a1ec543a3be66410f17ccac94447f379721ca1a05b433"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 6,
+      "native_speed": 60,
+      "samples": 199008,
+      "sha256": "2e477d8dcfe256f8f547e960e8e3f7374411d5f5edec180d84ba42e3b9b5e62d"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 6,
+      "native_speed": 160,
+      "samples": 27984,
+      "sha256": "7779ad0f0ab0d9d4415bded71b099cb6ba963c398fc492ff9ba6f885d31a6364"
+    },
+    {
+      "language": "ko_KR",
+      "rate": 6,
+      "native_speed": 250,
+      "samples": 11376,
+      "sha256": "b5f27f6765b7be4076eac478447be07f44f9a1fb92a4b62413727aa3b12260fe"
+    },
+    {
+      "language": "el_GR",
+      "rate": 1,
+      "native_speed": 0,
+      "samples": 91553,
+      "sha256": "5dda62ba23528596f3ee84643da1d91925f984c609c8792b4778c1801449810c"
+    },
+    {
+      "language": "el_GR",
+      "rate": 1,
+      "native_speed": 1,
+      "samples": 91553,
+      "sha256": "5dda62ba23528596f3ee84643da1d91925f984c609c8792b4778c1801449810c"
+    },
+    {
+      "language": "el_GR",
+      "rate": 1,
+      "native_speed": 10,
+      "samples": 75064,
+      "sha256": "c82bc3f16985bdf6bbb01b1160517d4b914e7a8d614d773cff77275791ffc54d"
+    },
+    {
+      "language": "el_GR",
+      "rate": 1,
+      "native_speed": 20,
+      "samples": 61281,
+      "sha256": "cec1b4c478907d5a08a86f22c15dc29ccedc9af7c9a9bb5a65061a081b33b9bb"
+    },
+    {
+      "language": "el_GR",
+      "rate": 1,
+      "native_speed": 30,
+      "samples": 50127,
+      "sha256": "895c40c67b192bf0287956abb62cdbf2a89fcc4a1b3ff5c706d25f88bfd11182"
+    },
+    {
+      "language": "el_GR",
+      "rate": 1,
+      "native_speed": 39,
+      "samples": 42702,
+      "sha256": "21be3fe9475bac1135eca347bc3de5ef1df6508101db05d5258765bb6da439c8"
+    },
+    {
+      "language": "el_GR",
+      "rate": 1,
+      "native_speed": 40,
+      "samples": 41030,
+      "sha256": "c0436e818035e3b5207bf543aa8ee1d6e21178a054b951598e7b2b8bddfa44d6"
+    },
+    {
+      "language": "el_GR",
+      "rate": 1,
+      "native_speed": 60,
+      "samples": 27566,
+      "sha256": "f1563d398d1e07d23d288ef3a02e838e8bac31e139ff219813f7a41caf550ba1"
+    },
+    {
+      "language": "el_GR",
+      "rate": 1,
+      "native_speed": 160,
+      "samples": 4081,
+      "sha256": "33f737fafbecbccb50d37489b51716b38fc5c712a067003779017942124a781e"
+    },
+    {
+      "language": "el_GR",
+      "rate": 1,
+      "native_speed": 250,
+      "samples": 1958,
+      "sha256": "f1c8ac1973cf816b26d478469bbb7984537394cfc28532d2fc2844dd5f80ebc0"
+    },
+    {
+      "language": "el_GR",
+      "rate": 6,
+      "native_speed": 0,
+      "samples": 399504,
+      "sha256": "e8b3175b4ddd3fa1deea03ccaea1033e3959f518b0bf5d8cafd78c63fb75b455"
+    },
+    {
+      "language": "el_GR",
+      "rate": 6,
+      "native_speed": 1,
+      "samples": 399504,
+      "sha256": "e8b3175b4ddd3fa1deea03ccaea1033e3959f518b0bf5d8cafd78c63fb75b455"
+    },
+    {
+      "language": "el_GR",
+      "rate": 6,
+      "native_speed": 10,
+      "samples": 327552,
+      "sha256": "69b364c46a5f8c4a0f0274d94b7d8e5ff3414f5719f12b8da85a2d0a1e5437d7"
+    },
+    {
+      "language": "el_GR",
+      "rate": 6,
+      "native_speed": 20,
+      "samples": 267408,
+      "sha256": "e55c1e7c48b3dfc73bd404bad5b9bf360d84dbd17c623241267c7ff4bd135472"
+    },
+    {
+      "language": "el_GR",
+      "rate": 6,
+      "native_speed": 30,
+      "samples": 218736,
+      "sha256": "021ff6dd06bfeda665cc69248f454711900f1274282e8f67d17efc7e70160eaf"
+    },
+    {
+      "language": "el_GR",
+      "rate": 6,
+      "native_speed": 39,
+      "samples": 186336,
+      "sha256": "f9296738ddd181c95e17a397c863e11f2d1ff2201e4961b404df62320ba0c238"
+    },
+    {
+      "language": "el_GR",
+      "rate": 6,
+      "native_speed": 40,
+      "samples": 179040,
+      "sha256": "0ecf6801f92c110eaeebf3ebbad306e3cedb729e3f0e393f110711ab8811918e"
+    },
+    {
+      "language": "el_GR",
+      "rate": 6,
+      "native_speed": 60,
+      "samples": 120288,
+      "sha256": "e3e24840ce5de15f88958288cb4be2849e2ab30832d64a9dd168eece4f67530a"
+    },
+    {
+      "language": "el_GR",
+      "rate": 6,
+      "native_speed": 160,
+      "samples": 17808,
+      "sha256": "9dbc4900860f42d5f88df2af39811ca85ab5d78a24ecc2725e04fb24e61b73f3"
+    },
+    {
+      "language": "el_GR",
+      "rate": 6,
+      "native_speed": 250,
+      "samples": 8544,
+      "sha256": "861718db348aeb9244ec95b5d63b0047502701dc12786764c866a78f2b12f434"
+    }
+  ]
+}

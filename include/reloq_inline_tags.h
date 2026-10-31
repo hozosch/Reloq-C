@@ -62,7 +62,6 @@ static inline struct reloq_inline_tag reloq_inline_tag_read(
     }
     if(t.kind==RELOQ_TAG_PROMINENCE && at-start>1 && !(at-start==2 && !value))
         return (struct reloq_inline_tag){0};
-    if(t.kind==RELOQ_TAG_SPEED && value<40)return (struct reloq_inline_tag){0};
     if(t.kind==RELOQ_TAG_LANGUAGE) {
         unsigned dialect=0;
         if(at+1<n && s[at]=='.' && s[at+1]>='0' && s[at+1]<='9') {

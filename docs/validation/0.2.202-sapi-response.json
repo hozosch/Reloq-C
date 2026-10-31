@@ -1,0 +1,4272 @@
+{
+  "measurement": "Host SAPI transport to first Write; not Windows/device audio latency",
+  "native_speed": 60,
+  "same_reference_rate_mapping_in_both_transports": true,
+  "reference_core": "0.2.201-complete",
+  "runs": 2,
+  "order": [
+    "before",
+    "after",
+    "after",
+    "before"
+  ],
+  "warm_samples_per_group": 24,
+  "matching_pcm_pairs": 208,
+  "dictionary_reload_calls_per_run": {
+    "before": 104,
+    "after": 4
+  },
+  "records": [
+    {
+      "language": 65536,
+      "dictionaries": 0,
+      "hz": 11025,
+      "before_median_first_write_ms": 49.826915,
+      "after_median_first_write_ms": 2.2098005
+    },
+    {
+      "language": 65536,
+      "dictionaries": 0,
+      "hz": 48000,
+      "before_median_first_write_ms": 42.561943,
+      "after_median_first_write_ms": 2.858824
+    },
+    {
+      "language": 65536,
+      "dictionaries": 1,
+      "hz": 11025,
+      "before_median_first_write_ms": 418.8732325,
+      "after_median_first_write_ms": 2.476224
+    },
+    {
+      "language": 65536,
+      "dictionaries": 1,
+      "hz": 48000,
+      "before_median_first_write_ms": 376.9232045,
+      "after_median_first_write_ms": 3.7418225
+    },
+    {
+      "language": 262144,
+      "dictionaries": 0,
+      "hz": 11025,
+      "before_median_first_write_ms": 59.970579,
+      "after_median_first_write_ms": 3.8377334999999997
+    },
+    {
+      "language": 262144,
+      "dictionaries": 0,
+      "hz": 48000,
+      "before_median_first_write_ms": 44.6687085,
+      "after_median_first_write_ms": 3.576728
+    },
+    {
+      "language": 262144,
+      "dictionaries": 1,
+      "hz": 11025,
+      "before_median_first_write_ms": 422.52491050000003,
+      "after_median_first_write_ms": 6.000705
+    },
+    {
+      "language": 262144,
+      "dictionaries": 1,
+      "hz": 48000,
+      "before_median_first_write_ms": 252.3605305,
+      "after_median_first_write_ms": 8.852655500000001
+    }
+  ],
+  "raw": {
+    "before": [
+      {
+        "host_transport_only": true,
+        "no_audio_files": true,
+        "records": [
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 0,
+            "first_write_ms": 53.995864,
+            "total_ms": 70.940286,
+            "samples": 21208,
+            "hash": "2eb5dd0215b2747b"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 1,
+            "first_write_ms": 38.835795,
+            "total_ms": 45.339353,
+            "samples": 20515,
+            "hash": "a19270c425c3c38a"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 2,
+            "first_write_ms": 47.435147,
+            "total_ms": 76.393807,
+            "samples": 20801,
+            "hash": "8dfeab04dd7a14f0"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 3,
+            "first_write_ms": 37.425288,
+            "total_ms": 42.390043,
+            "samples": 20768,
+            "hash": "2910245b72e93ed1"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 4,
+            "first_write_ms": 55.212794,
+            "total_ms": 61.903973,
+            "samples": 22429,
+            "hash": "4263a5c412c0d599"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 5,
+            "first_write_ms": 42.105985,
+            "total_ms": 47.523267,
+            "samples": 21626,
+            "hash": "2f1770aa1a663ec2"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 6,
+            "first_write_ms": 42.743772,
+            "total_ms": 53.02409,
+            "samples": 22154,
+            "hash": "7d8137aed149d13e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 7,
+            "first_write_ms": 63.730584,
+            "total_ms": 69.915454,
+            "samples": 20185,
+            "hash": "cd8a57dcc00cd3e3"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 8,
+            "first_write_ms": 43.055925,
+            "total_ms": 48.903224,
+            "samples": 21923,
+            "hash": "7dedfce09bffc57e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 9,
+            "first_write_ms": 53.990893,
+            "total_ms": 59.469009,
+            "samples": 21703,
+            "hash": "1c1d15d7ae76f3eb"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 10,
+            "first_write_ms": 50.851959,
+            "total_ms": 59.98878,
+            "samples": 22176,
+            "hash": "51c84769d22745e3"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 11,
+            "first_write_ms": 58.646546,
+            "total_ms": 66.623629,
+            "samples": 22429,
+            "hash": "182f0d3eb57bfa30"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 12,
+            "first_write_ms": 44.385204,
+            "total_ms": 58.106868,
+            "samples": 24134,
+            "hash": "cea778999714a54f"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 0,
+            "first_write_ms": 45.18664,
+            "total_ms": 106.157719,
+            "samples": 92544,
+            "hash": "e8726afc74348123"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 1,
+            "first_write_ms": 41.833425,
+            "total_ms": 92.774578,
+            "samples": 89520,
+            "hash": "54c6e502a14a8298"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 2,
+            "first_write_ms": 38.900253,
+            "total_ms": 88.013683,
+            "samples": 90768,
+            "hash": "652040b9a8dc8066"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 3,
+            "first_write_ms": 42.339162,
+            "total_ms": 92.760774,
+            "samples": 90624,
+            "hash": "058f35c6694064ad"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 4,
+            "first_write_ms": 36.650784,
+            "total_ms": 89.817103,
+            "samples": 97872,
+            "hash": "08193668d09b0b5e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 5,
+            "first_write_ms": 33.669257,
+            "total_ms": 91.500488,
+            "samples": 94368,
+            "hash": "e4e51be27e99b0c4"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 6,
+            "first_write_ms": 33.532876,
+            "total_ms": 98.050623,
+            "samples": 96672,
+            "hash": "91b60a382de47d18"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 7,
+            "first_write_ms": 34.614341,
+            "total_ms": 85.429033,
+            "samples": 88080,
+            "hash": "4707ec9b0b6c5114"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 8,
+            "first_write_ms": 40.427594,
+            "total_ms": 94.202075,
+            "samples": 95664,
+            "hash": "00dc8ab993f841cb"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 9,
+            "first_write_ms": 37.556241,
+            "total_ms": 93.199592,
+            "samples": 94704,
+            "hash": "1a5cdf130e84aef4"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 10,
+            "first_write_ms": 36.782361,
+            "total_ms": 89.397552,
+            "samples": 96768,
+            "hash": "a8629117319c8813"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 11,
+            "first_write_ms": 42.784724,
+            "total_ms": 95.719082,
+            "samples": 97872,
+            "hash": "e5a6e8c33a514b07"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 12,
+            "first_write_ms": 53.265161,
+            "total_ms": 119.952722,
+            "samples": 105312,
+            "hash": "17e13a16692f61b5"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 0,
+            "first_write_ms": 285.008865,
+            "total_ms": 287.930009,
+            "samples": 21208,
+            "hash": "2eb5dd0215b2747b"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 1,
+            "first_write_ms": 216.79062,
+            "total_ms": 220.641283,
+            "samples": 20515,
+            "hash": "a19270c425c3c38a"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 2,
+            "first_write_ms": 229.424911,
+            "total_ms": 253.570668,
+            "samples": 20801,
+            "hash": "8dfeab04dd7a14f0"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 3,
+            "first_write_ms": 382.388089,
+            "total_ms": 386.792762,
+            "samples": 20768,
+            "hash": "2910245b72e93ed1"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 4,
+            "first_write_ms": 423.779096,
+            "total_ms": 427.25153,
+            "samples": 22429,
+            "hash": "4263a5c412c0d599"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 5,
+            "first_write_ms": 228.109407,
+            "total_ms": 231.233832,
+            "samples": 21626,
+            "hash": "2f1770aa1a663ec2"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 6,
+            "first_write_ms": 203.858449,
+            "total_ms": 207.66276,
+            "samples": 22154,
+            "hash": "7d8137aed149d13e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 7,
+            "first_write_ms": 195.099064,
+            "total_ms": 198.131074,
+            "samples": 20185,
+            "hash": "cd8a57dcc00cd3e3"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 8,
+            "first_write_ms": 206.922299,
+            "total_ms": 210.232253,
+            "samples": 21923,
+            "hash": "7dedfce09bffc57e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 9,
+            "first_write_ms": 208.437127,
+            "total_ms": 212.71036,
+            "samples": 21703,
+            "hash": "1c1d15d7ae76f3eb"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 10,
+            "first_write_ms": 204.550684,
+            "total_ms": 210.928628,
+            "samples": 22176,
+            "hash": "51c84769d22745e3"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 11,
+            "first_write_ms": 200.01813,
+            "total_ms": 203.866181,
+            "samples": 22429,
+            "hash": "182f0d3eb57bfa30"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 12,
+            "first_write_ms": 216.48141,
+            "total_ms": 220.465191,
+            "samples": 24134,
+            "hash": "cea778999714a54f"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 0,
+            "first_write_ms": 351.574329,
+            "total_ms": 403.582614,
+            "samples": 92544,
+            "hash": "e8726afc74348123"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 1,
+            "first_write_ms": 327.316244,
+            "total_ms": 380.399283,
+            "samples": 89520,
+            "hash": "54c6e502a14a8298"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 2,
+            "first_write_ms": 321.772427,
+            "total_ms": 382.046279,
+            "samples": 90768,
+            "hash": "652040b9a8dc8066"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 3,
+            "first_write_ms": 327.318488,
+            "total_ms": 356.854829,
+            "samples": 90624,
+            "hash": "058f35c6694064ad"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 4,
+            "first_write_ms": 282.313434,
+            "total_ms": 316.93751,
+            "samples": 97872,
+            "hash": "08193668d09b0b5e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 5,
+            "first_write_ms": 279.59964,
+            "total_ms": 352.602683,
+            "samples": 94368,
+            "hash": "e4e51be27e99b0c4"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 6,
+            "first_write_ms": 346.026153,
+            "total_ms": 405.579604,
+            "samples": 96672,
+            "hash": "91b60a382de47d18"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 7,
+            "first_write_ms": 348.516026,
+            "total_ms": 389.227698,
+            "samples": 88080,
+            "hash": "4707ec9b0b6c5114"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 8,
+            "first_write_ms": 253.463091,
+            "total_ms": 291.514097,
+            "samples": 95664,
+            "hash": "00dc8ab993f841cb"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 9,
+            "first_write_ms": 294.640512,
+            "total_ms": 346.70772,
+            "samples": 94704,
+            "hash": "1a5cdf130e84aef4"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 10,
+            "first_write_ms": 295.881265,
+            "total_ms": 361.450892,
+            "samples": 96768,
+            "hash": "a8629117319c8813"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 11,
+            "first_write_ms": 361.469342,
+            "total_ms": 414.108304,
+            "samples": 97872,
+            "hash": "e5a6e8c33a514b07"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 12,
+            "first_write_ms": 357.841884,
+            "total_ms": 416.199257,
+            "samples": 105312,
+            "hash": "17e13a16692f61b5"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 0,
+            "first_write_ms": 46.66512,
+            "total_ms": 51.482963,
+            "samples": 26015,
+            "hash": "12dab8c2df9fa6bb"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 1,
+            "first_write_ms": 44.357372,
+            "total_ms": 49.811331,
+            "samples": 25718,
+            "hash": "83a0ae7e71663e8d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 2,
+            "first_write_ms": 39.417114,
+            "total_ms": 43.976142,
+            "samples": 25201,
+            "hash": "efd5764aa56c2672"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 3,
+            "first_write_ms": 37.583489,
+            "total_ms": 44.394535,
+            "samples": 25256,
+            "hash": "01de736276e6c393"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 4,
+            "first_write_ms": 38.481108,
+            "total_ms": 43.557783,
+            "samples": 25740,
+            "hash": "b62ca87dbe568f21"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 5,
+            "first_write_ms": 39.300287,
+            "total_ms": 45.126342,
+            "samples": 25421,
+            "hash": "6e9e8f116cff4ac9"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 6,
+            "first_write_ms": 39.749873,
+            "total_ms": 44.55132,
+            "samples": 26180,
+            "hash": "8ce87e89641764a2"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 7,
+            "first_write_ms": 40.014114,
+            "total_ms": 44.196573,
+            "samples": 24695,
+            "hash": "fce32f76843c8477"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 8,
+            "first_write_ms": 36.950784,
+            "total_ms": 41.477005,
+            "samples": 25377,
+            "hash": "20feeb02bd65192a"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 9,
+            "first_write_ms": 38.095155,
+            "total_ms": 42.853243,
+            "samples": 26202,
+            "hash": "d6a60d81c586bc6d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 10,
+            "first_write_ms": 42.608931,
+            "total_ms": 47.767664,
+            "samples": 25707,
+            "hash": "08302acb2f178411"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 11,
+            "first_write_ms": 39.264911,
+            "total_ms": 44.638469,
+            "samples": 26917,
+            "hash": "e6ef94d12a4e789b"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 12,
+            "first_write_ms": 40.70206,
+            "total_ms": 45.777339,
+            "samples": 28534,
+            "hash": "2bb69e5af1aa3d49"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 0,
+            "first_write_ms": 31.385701,
+            "total_ms": 70.194059,
+            "samples": 113520,
+            "hash": "948c282286c51093"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 1,
+            "first_write_ms": 43.01855,
+            "total_ms": 90.050252,
+            "samples": 112224,
+            "hash": "603021a82d06fbc1"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 2,
+            "first_write_ms": 40.529018,
+            "total_ms": 96.711877,
+            "samples": 109968,
+            "hash": "449f2c17e4e8e814"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 3,
+            "first_write_ms": 37.230345,
+            "total_ms": 94.635192,
+            "samples": 110208,
+            "hash": "8acb4e87b1d80d9e"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 4,
+            "first_write_ms": 41.724398,
+            "total_ms": 95.445315,
+            "samples": 112320,
+            "hash": "2d8b41a6f391a283"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 5,
+            "first_write_ms": 42.127216,
+            "total_ms": 100.031105,
+            "samples": 110928,
+            "hash": "1f0171829389854a"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 6,
+            "first_write_ms": 42.485211,
+            "total_ms": 108.460248,
+            "samples": 114240,
+            "hash": "10b18e5c6a27bcbb"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 7,
+            "first_write_ms": 44.973933,
+            "total_ms": 106.047376,
+            "samples": 107760,
+            "hash": "b507f6b56359703d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 8,
+            "first_write_ms": 41.735527,
+            "total_ms": 95.77327,
+            "samples": 110736,
+            "hash": "4ca8154a8cfe83d5"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 9,
+            "first_write_ms": 37.964905,
+            "total_ms": 99.322743,
+            "samples": 114336,
+            "hash": "f2841e2177a410f8"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 10,
+            "first_write_ms": 38.654583,
+            "total_ms": 97.67006,
+            "samples": 112176,
+            "hash": "2f947144cbbd2d37"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 11,
+            "first_write_ms": 38.514171,
+            "total_ms": 116.739864,
+            "samples": 117456,
+            "hash": "1636260eea265dcf"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 12,
+            "first_write_ms": 46.549707,
+            "total_ms": 138.290656,
+            "samples": 124512,
+            "hash": "192adcd943db1452"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 0,
+            "first_write_ms": 260.856666,
+            "total_ms": 266.832528,
+            "samples": 26015,
+            "hash": "12dab8c2df9fa6bb"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 1,
+            "first_write_ms": 259.795613,
+            "total_ms": 266.549241,
+            "samples": 25718,
+            "hash": "83a0ae7e71663e8d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 2,
+            "first_write_ms": 262.191265,
+            "total_ms": 267.364636,
+            "samples": 25201,
+            "hash": "efd5764aa56c2672"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 3,
+            "first_write_ms": 266.737021,
+            "total_ms": 271.768858,
+            "samples": 25256,
+            "hash": "01de736276e6c393"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 4,
+            "first_write_ms": 226.54366,
+            "total_ms": 233.185364,
+            "samples": 25740,
+            "hash": "b62ca87dbe568f21"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 5,
+            "first_write_ms": 259.499385,
+            "total_ms": 266.545509,
+            "samples": 25421,
+            "hash": "6e9e8f116cff4ac9"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 6,
+            "first_write_ms": 231.100955,
+            "total_ms": 235.61221,
+            "samples": 26180,
+            "hash": "8ce87e89641764a2"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 7,
+            "first_write_ms": 284.484352,
+            "total_ms": 292.580084,
+            "samples": 24695,
+            "hash": "fce32f76843c8477"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 8,
+            "first_write_ms": 298.621057,
+            "total_ms": 303.923098,
+            "samples": 25377,
+            "hash": "20feeb02bd65192a"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 9,
+            "first_write_ms": 307.034411,
+            "total_ms": 313.993203,
+            "samples": 26202,
+            "hash": "d6a60d81c586bc6d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 10,
+            "first_write_ms": 289.710561,
+            "total_ms": 294.345519,
+            "samples": 25707,
+            "hash": "08302acb2f178411"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 11,
+            "first_write_ms": 339.821572,
+            "total_ms": 347.158415,
+            "samples": 26917,
+            "hash": "e6ef94d12a4e789b"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 12,
+            "first_write_ms": 300.864104,
+            "total_ms": 307.747961,
+            "samples": 28534,
+            "hash": "2bb69e5af1aa3d49"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 0,
+            "first_write_ms": 228.841268,
+            "total_ms": 286.816329,
+            "samples": 113520,
+            "hash": "948c282286c51093"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 1,
+            "first_write_ms": 228.412983,
+            "total_ms": 282.007014,
+            "samples": 112224,
+            "hash": "603021a82d06fbc1"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 2,
+            "first_write_ms": 237.248438,
+            "total_ms": 294.503316,
+            "samples": 109968,
+            "hash": "449f2c17e4e8e814"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 3,
+            "first_write_ms": 194.046962,
+            "total_ms": 230.203287,
+            "samples": 110208,
+            "hash": "8acb4e87b1d80d9e"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 4,
+            "first_write_ms": 183.704394,
+            "total_ms": 242.833241,
+            "samples": 112320,
+            "hash": "2d8b41a6f391a283"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 5,
+            "first_write_ms": 217.307562,
+            "total_ms": 270.015929,
+            "samples": 110928,
+            "hash": "1f0171829389854a"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 6,
+            "first_write_ms": 241.067307,
+            "total_ms": 406.263928,
+            "samples": 114240,
+            "hash": "10b18e5c6a27bcbb"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 7,
+            "first_write_ms": 221.727746,
+            "total_ms": 278.824172,
+            "samples": 107760,
+            "hash": "b507f6b56359703d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 8,
+            "first_write_ms": 242.154076,
+            "total_ms": 293.682252,
+            "samples": 110736,
+            "hash": "4ca8154a8cfe83d5"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 9,
+            "first_write_ms": 288.192813,
+            "total_ms": 408.854766,
+            "samples": 114336,
+            "hash": "f2841e2177a410f8"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 10,
+            "first_write_ms": 294.971797,
+            "total_ms": 350.943335,
+            "samples": 112176,
+            "hash": "2f947144cbbd2d37"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 11,
+            "first_write_ms": 218.322143,
+            "total_ms": 268.296964,
+            "samples": 117456,
+            "hash": "1636260eea265dcf"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 12,
+            "first_write_ms": 239.551869,
+            "total_ms": 307.267916,
+            "samples": 124512,
+            "hash": "192adcd943db1452"
+          }
+        ],
+        "dictionary_reload_calls": 104
+      },
+      {
+        "host_transport_only": true,
+        "no_audio_files": true,
+        "records": [
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 0,
+            "first_write_ms": 55.005623,
+            "total_ms": 81.341364,
+            "samples": 21208,
+            "hash": "2eb5dd0215b2747b"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 1,
+            "first_write_ms": 45.812138,
+            "total_ms": 50.904332,
+            "samples": 20515,
+            "hash": "a19270c425c3c38a"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 2,
+            "first_write_ms": 58.728767,
+            "total_ms": 65.888195,
+            "samples": 20801,
+            "hash": "8dfeab04dd7a14f0"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 3,
+            "first_write_ms": 48.313331,
+            "total_ms": 72.731355,
+            "samples": 20768,
+            "hash": "2910245b72e93ed1"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 4,
+            "first_write_ms": 51.838981,
+            "total_ms": 60.227584,
+            "samples": 22429,
+            "hash": "4263a5c412c0d599"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 5,
+            "first_write_ms": 66.588723,
+            "total_ms": 74.086799,
+            "samples": 21626,
+            "hash": "2f1770aa1a663ec2"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 6,
+            "first_write_ms": 48.801871,
+            "total_ms": 72.329472,
+            "samples": 22154,
+            "hash": "7d8137aed149d13e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 7,
+            "first_write_ms": 47.916381,
+            "total_ms": 55.539479,
+            "samples": 20185,
+            "hash": "cd8a57dcc00cd3e3"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 8,
+            "first_write_ms": 52.880992,
+            "total_ms": 62.574273,
+            "samples": 21923,
+            "hash": "7dedfce09bffc57e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 9,
+            "first_write_ms": 76.286773,
+            "total_ms": 89.453414,
+            "samples": 21703,
+            "hash": "1c1d15d7ae76f3eb"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 10,
+            "first_write_ms": 44.478344,
+            "total_ms": 55.575033,
+            "samples": 22176,
+            "hash": "51c84769d22745e3"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 11,
+            "first_write_ms": 52.719769,
+            "total_ms": 65.035611,
+            "samples": 22429,
+            "hash": "182f0d3eb57bfa30"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 12,
+            "first_write_ms": 63.893753,
+            "total_ms": 74.136532,
+            "samples": 24134,
+            "hash": "cea778999714a54f"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 0,
+            "first_write_ms": 94.817446,
+            "total_ms": 224.662755,
+            "samples": 92544,
+            "hash": "e8726afc74348123"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 1,
+            "first_write_ms": 96.143581,
+            "total_ms": 223.232146,
+            "samples": 89520,
+            "hash": "54c6e502a14a8298"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 2,
+            "first_write_ms": 86.201662,
+            "total_ms": 204.628218,
+            "samples": 90768,
+            "hash": "652040b9a8dc8066"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 3,
+            "first_write_ms": 87.261588,
+            "total_ms": 153.205687,
+            "samples": 90624,
+            "hash": "058f35c6694064ad"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 4,
+            "first_write_ms": 43.781813,
+            "total_ms": 125.889282,
+            "samples": 97872,
+            "hash": "08193668d09b0b5e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 5,
+            "first_write_ms": 69.993441,
+            "total_ms": 133.431568,
+            "samples": 94368,
+            "hash": "e4e51be27e99b0c4"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 6,
+            "first_write_ms": 53.650258,
+            "total_ms": 127.089218,
+            "samples": 96672,
+            "hash": "91b60a382de47d18"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 7,
+            "first_write_ms": 49.246878,
+            "total_ms": 120.814268,
+            "samples": 88080,
+            "hash": "4707ec9b0b6c5114"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 8,
+            "first_write_ms": 37.893704,
+            "total_ms": 114.642853,
+            "samples": 95664,
+            "hash": "00dc8ab993f841cb"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 9,
+            "first_write_ms": 41.221463,
+            "total_ms": 118.353229,
+            "samples": 94704,
+            "hash": "1a5cdf130e84aef4"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 10,
+            "first_write_ms": 67.728471,
+            "total_ms": 128.13793,
+            "samples": 96768,
+            "hash": "a8629117319c8813"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 11,
+            "first_write_ms": 58.775324,
+            "total_ms": 140.941662,
+            "samples": 97872,
+            "hash": "e5a6e8c33a514b07"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 12,
+            "first_write_ms": 44.759596,
+            "total_ms": 121.148031,
+            "samples": 105312,
+            "hash": "17e13a16692f61b5"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 0,
+            "first_write_ms": 411.738559,
+            "total_ms": 416.664395,
+            "samples": 21208,
+            "hash": "2eb5dd0215b2747b"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 1,
+            "first_write_ms": 532.534333,
+            "total_ms": 537.594884,
+            "samples": 20515,
+            "hash": "a19270c425c3c38a"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 2,
+            "first_write_ms": 413.967369,
+            "total_ms": 419.199672,
+            "samples": 20801,
+            "hash": "8dfeab04dd7a14f0"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 3,
+            "first_write_ms": 435.89979,
+            "total_ms": 442.487215,
+            "samples": 20768,
+            "hash": "2910245b72e93ed1"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 4,
+            "first_write_ms": 433.973903,
+            "total_ms": 444.43547,
+            "samples": 22429,
+            "hash": "4263a5c412c0d599"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 5,
+            "first_write_ms": 615.981114,
+            "total_ms": 625.018214,
+            "samples": 21626,
+            "hash": "2f1770aa1a663ec2"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 6,
+            "first_write_ms": 933.162344,
+            "total_ms": 949.162314,
+            "samples": 22154,
+            "hash": "7d8137aed149d13e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 7,
+            "first_write_ms": 1343.051972,
+            "total_ms": 1356.971172,
+            "samples": 20185,
+            "hash": "cd8a57dcc00cd3e3"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 8,
+            "first_write_ms": 986.992373,
+            "total_ms": 997.467492,
+            "samples": 21923,
+            "hash": "7dedfce09bffc57e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 9,
+            "first_write_ms": 1364.883173,
+            "total_ms": 1372.937804,
+            "samples": 21703,
+            "hash": "1c1d15d7ae76f3eb"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 10,
+            "first_write_ms": 964.560533,
+            "total_ms": 991.298384,
+            "samples": 22176,
+            "hash": "51c84769d22745e3"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 11,
+            "first_write_ms": 844.744119,
+            "total_ms": 859.852287,
+            "samples": 22429,
+            "hash": "182f0d3eb57bfa30"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 12,
+            "first_write_ms": 902.851715,
+            "total_ms": 912.292005,
+            "samples": 24134,
+            "hash": "cea778999714a54f"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 0,
+            "first_write_ms": 713.737197,
+            "total_ms": 857.635246,
+            "samples": 92544,
+            "hash": "e8726afc74348123"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 1,
+            "first_write_ms": 1342.013755,
+            "total_ms": 1469.770846,
+            "samples": 89520,
+            "hash": "54c6e502a14a8298"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 2,
+            "first_write_ms": 769.114905,
+            "total_ms": 886.639479,
+            "samples": 90768,
+            "hash": "652040b9a8dc8066"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 3,
+            "first_write_ms": 830.343368,
+            "total_ms": 948.121929,
+            "samples": 90624,
+            "hash": "058f35c6694064ad"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 4,
+            "first_write_ms": 883.630954,
+            "total_ms": 1023.559826,
+            "samples": 97872,
+            "hash": "08193668d09b0b5e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 5,
+            "first_write_ms": 748.645223,
+            "total_ms": 883.239858,
+            "samples": 94368,
+            "hash": "e4e51be27e99b0c4"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 6,
+            "first_write_ms": 790.491199,
+            "total_ms": 917.747052,
+            "samples": 96672,
+            "hash": "91b60a382de47d18"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 7,
+            "first_write_ms": 947.365355,
+            "total_ms": 1099.122184,
+            "samples": 88080,
+            "hash": "4707ec9b0b6c5114"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 8,
+            "first_write_ms": 794.560062,
+            "total_ms": 879.977184,
+            "samples": 95664,
+            "hash": "00dc8ab993f841cb"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 9,
+            "first_write_ms": 515.917718,
+            "total_ms": 567.65179,
+            "samples": 94704,
+            "hash": "1a5cdf130e84aef4"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 10,
+            "first_write_ms": 392.377067,
+            "total_ms": 443.894723,
+            "samples": 96768,
+            "hash": "a8629117319c8813"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 11,
+            "first_write_ms": 532.691687,
+            "total_ms": 590.64658,
+            "samples": 97872,
+            "hash": "e5a6e8c33a514b07"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 12,
+            "first_write_ms": 502.990486,
+            "total_ms": 583.759156,
+            "samples": 105312,
+            "hash": "17e13a16692f61b5"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 0,
+            "first_write_ms": 90.76089,
+            "total_ms": 99.985728,
+            "samples": 26015,
+            "hash": "12dab8c2df9fa6bb"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 1,
+            "first_write_ms": 91.536904,
+            "total_ms": 93.995341,
+            "samples": 25718,
+            "hash": "83a0ae7e71663e8d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 2,
+            "first_write_ms": 88.575931,
+            "total_ms": 96.929364,
+            "samples": 25201,
+            "hash": "efd5764aa56c2672"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 3,
+            "first_write_ms": 77.726299,
+            "total_ms": 92.012152,
+            "samples": 25256,
+            "hash": "01de736276e6c393"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 4,
+            "first_write_ms": 82.069892,
+            "total_ms": 106.275516,
+            "samples": 25740,
+            "hash": "b62ca87dbe568f21"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 5,
+            "first_write_ms": 75.583786,
+            "total_ms": 80.702972,
+            "samples": 25421,
+            "hash": "6e9e8f116cff4ac9"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 6,
+            "first_write_ms": 119.031911,
+            "total_ms": 128.444138,
+            "samples": 26180,
+            "hash": "8ce87e89641764a2"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 7,
+            "first_write_ms": 102.479786,
+            "total_ms": 106.895357,
+            "samples": 24695,
+            "hash": "fce32f76843c8477"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 8,
+            "first_write_ms": 95.509317,
+            "total_ms": 107.641911,
+            "samples": 25377,
+            "hash": "20feeb02bd65192a"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 9,
+            "first_write_ms": 92.333548,
+            "total_ms": 104.420889,
+            "samples": 26202,
+            "hash": "d6a60d81c586bc6d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 10,
+            "first_write_ms": 98.326201,
+            "total_ms": 107.194524,
+            "samples": 25707,
+            "hash": "08302acb2f178411"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 11,
+            "first_write_ms": 96.063049,
+            "total_ms": 100.908533,
+            "samples": 26917,
+            "hash": "e6ef94d12a4e789b"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 12,
+            "first_write_ms": 87.125807,
+            "total_ms": 98.170608,
+            "samples": 28534,
+            "hash": "2bb69e5af1aa3d49"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 0,
+            "first_write_ms": 88.242056,
+            "total_ms": 328.359331,
+            "samples": 113520,
+            "hash": "948c282286c51093"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 1,
+            "first_write_ms": 261.502114,
+            "total_ms": 1092.234706,
+            "samples": 112224,
+            "hash": "603021a82d06fbc1"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 2,
+            "first_write_ms": 277.097396,
+            "total_ms": 472.498614,
+            "samples": 109968,
+            "hash": "449f2c17e4e8e814"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 3,
+            "first_write_ms": 86.160997,
+            "total_ms": 211.458127,
+            "samples": 110208,
+            "hash": "8acb4e87b1d80d9e"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 4,
+            "first_write_ms": 288.82644,
+            "total_ms": 673.071505,
+            "samples": 112320,
+            "hash": "2d8b41a6f391a283"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 5,
+            "first_write_ms": 44.363484,
+            "total_ms": 113.298694,
+            "samples": 110928,
+            "hash": "1f0171829389854a"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 6,
+            "first_write_ms": 39.348796,
+            "total_ms": 96.263558,
+            "samples": 114240,
+            "hash": "10b18e5c6a27bcbb"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 7,
+            "first_write_ms": 78.370171,
+            "total_ms": 139.539161,
+            "samples": 107760,
+            "hash": "b507f6b56359703d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 8,
+            "first_write_ms": 58.22693,
+            "total_ms": 156.176082,
+            "samples": 110736,
+            "hash": "4ca8154a8cfe83d5"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 9,
+            "first_write_ms": 83.416422,
+            "total_ms": 206.555312,
+            "samples": 114336,
+            "hash": "f2841e2177a410f8"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 10,
+            "first_write_ms": 89.175731,
+            "total_ms": 215.87956,
+            "samples": 112176,
+            "hash": "2f947144cbbd2d37"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 11,
+            "first_write_ms": 116.807301,
+            "total_ms": 247.546177,
+            "samples": 117456,
+            "hash": "1636260eea265dcf"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 12,
+            "first_write_ms": 61.485804,
+            "total_ms": 142.27143,
+            "samples": 124512,
+            "hash": "192adcd943db1452"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 0,
+            "first_write_ms": 570.865488,
+            "total_ms": 584.849724,
+            "samples": 26015,
+            "hash": "12dab8c2df9fa6bb"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 1,
+            "first_write_ms": 505.228249,
+            "total_ms": 515.899179,
+            "samples": 25718,
+            "hash": "83a0ae7e71663e8d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 2,
+            "first_write_ms": 520.827539,
+            "total_ms": 553.548293,
+            "samples": 25201,
+            "hash": "efd5764aa56c2672"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 3,
+            "first_write_ms": 549.325651,
+            "total_ms": 558.025591,
+            "samples": 25256,
+            "hash": "01de736276e6c393"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 4,
+            "first_write_ms": 523.41628,
+            "total_ms": 545.588599,
+            "samples": 25740,
+            "hash": "b62ca87dbe568f21"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 5,
+            "first_write_ms": 557.075725,
+            "total_ms": 567.057175,
+            "samples": 25421,
+            "hash": "6e9e8f116cff4ac9"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 6,
+            "first_write_ms": 566.381466,
+            "total_ms": 579.310524,
+            "samples": 26180,
+            "hash": "8ce87e89641764a2"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 7,
+            "first_write_ms": 549.536438,
+            "total_ms": 562.647033,
+            "samples": 24695,
+            "hash": "fce32f76843c8477"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 8,
+            "first_write_ms": 603.563582,
+            "total_ms": 608.734582,
+            "samples": 25377,
+            "hash": "20feeb02bd65192a"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 9,
+            "first_write_ms": 542.547936,
+            "total_ms": 550.914552,
+            "samples": 26202,
+            "hash": "d6a60d81c586bc6d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 10,
+            "first_write_ms": 606.239024,
+            "total_ms": 629.181236,
+            "samples": 25707,
+            "hash": "08302acb2f178411"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 11,
+            "first_write_ms": 566.287401,
+            "total_ms": 578.482038,
+            "samples": 26917,
+            "hash": "e6ef94d12a4e789b"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 12,
+            "first_write_ms": 629.530998,
+            "total_ms": 640.174512,
+            "samples": 28534,
+            "hash": "2bb69e5af1aa3d49"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 0,
+            "first_write_ms": 532.953122,
+            "total_ms": 687.700213,
+            "samples": 113520,
+            "hash": "948c282286c51093"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 1,
+            "first_write_ms": 565.539759,
+            "total_ms": 700.247977,
+            "samples": 112224,
+            "hash": "603021a82d06fbc1"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 2,
+            "first_write_ms": 602.433192,
+            "total_ms": 739.180145,
+            "samples": 109968,
+            "hash": "449f2c17e4e8e814"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 3,
+            "first_write_ms": 501.147598,
+            "total_ms": 630.74775,
+            "samples": 110208,
+            "hash": "8acb4e87b1d80d9e"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 4,
+            "first_write_ms": 528.135464,
+            "total_ms": 644.079486,
+            "samples": 112320,
+            "hash": "2d8b41a6f391a283"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 5,
+            "first_write_ms": 279.854766,
+            "total_ms": 336.962527,
+            "samples": 110928,
+            "hash": "1f0171829389854a"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 6,
+            "first_write_ms": 271.314912,
+            "total_ms": 347.149468,
+            "samples": 114240,
+            "hash": "10b18e5c6a27bcbb"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 7,
+            "first_write_ms": 253.00076,
+            "total_ms": 311.476679,
+            "samples": 107760,
+            "hash": "b507f6b56359703d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 8,
+            "first_write_ms": 253.556544,
+            "total_ms": 319.951095,
+            "samples": 110736,
+            "hash": "4ca8154a8cfe83d5"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 9,
+            "first_write_ms": 257.80679,
+            "total_ms": 317.906338,
+            "samples": 114336,
+            "hash": "f2841e2177a410f8"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 10,
+            "first_write_ms": 264.810133,
+            "total_ms": 314.568799,
+            "samples": 112176,
+            "hash": "2f947144cbbd2d37"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 11,
+            "first_write_ms": 248.740474,
+            "total_ms": 299.033085,
+            "samples": 117456,
+            "hash": "1636260eea265dcf"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 12,
+            "first_write_ms": 251.720301,
+            "total_ms": 314.282885,
+            "samples": 124512,
+            "hash": "192adcd943db1452"
+          }
+        ],
+        "dictionary_reload_calls": 104
+      }
+    ],
+    "after": [
+      {
+        "host_transport_only": true,
+        "no_audio_files": true,
+        "records": [
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 0,
+            "first_write_ms": 39.248598,
+            "total_ms": 44.426385,
+            "samples": 21208,
+            "hash": "2eb5dd0215b2747b"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 1,
+            "first_write_ms": 1.892205,
+            "total_ms": 6.869337,
+            "samples": 20515,
+            "hash": "a19270c425c3c38a"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 2,
+            "first_write_ms": 2.048196,
+            "total_ms": 8.081365,
+            "samples": 20801,
+            "hash": "8dfeab04dd7a14f0"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 3,
+            "first_write_ms": 1.992253,
+            "total_ms": 12.273251,
+            "samples": 20768,
+            "hash": "2910245b72e93ed1"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 4,
+            "first_write_ms": 4.957948,
+            "total_ms": 17.361314,
+            "samples": 22429,
+            "hash": "4263a5c412c0d599"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 5,
+            "first_write_ms": 2.091876,
+            "total_ms": 10.199018,
+            "samples": 21626,
+            "hash": "2f1770aa1a663ec2"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 6,
+            "first_write_ms": 2.0111,
+            "total_ms": 8.204216,
+            "samples": 22154,
+            "hash": "7d8137aed149d13e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 7,
+            "first_write_ms": 2.1233,
+            "total_ms": 9.634942,
+            "samples": 20185,
+            "hash": "cd8a57dcc00cd3e3"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 8,
+            "first_write_ms": 2.231643,
+            "total_ms": 8.996053,
+            "samples": 21923,
+            "hash": "7dedfce09bffc57e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 9,
+            "first_write_ms": 2.289171,
+            "total_ms": 8.828713,
+            "samples": 21703,
+            "hash": "1c1d15d7ae76f3eb"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 10,
+            "first_write_ms": 2.041845,
+            "total_ms": 7.573927,
+            "samples": 22176,
+            "hash": "51c84769d22745e3"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 11,
+            "first_write_ms": 2.067979,
+            "total_ms": 7.59627,
+            "samples": 22429,
+            "hash": "182f0d3eb57bfa30"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 12,
+            "first_write_ms": 2.344502,
+            "total_ms": 9.402883,
+            "samples": 24134,
+            "hash": "cea778999714a54f"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 0,
+            "first_write_ms": 36.543837,
+            "total_ms": 100.798753,
+            "samples": 92544,
+            "hash": "e8726afc74348123"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 1,
+            "first_write_ms": 4.156246,
+            "total_ms": 57.732363,
+            "samples": 89520,
+            "hash": "54c6e502a14a8298"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 2,
+            "first_write_ms": 2.724201,
+            "total_ms": 65.311833,
+            "samples": 90768,
+            "hash": "652040b9a8dc8066"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 3,
+            "first_write_ms": 2.338837,
+            "total_ms": 52.736641,
+            "samples": 90624,
+            "hash": "058f35c6694064ad"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 4,
+            "first_write_ms": 2.352771,
+            "total_ms": 70.611855,
+            "samples": 97872,
+            "hash": "08193668d09b0b5e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 5,
+            "first_write_ms": 2.430901,
+            "total_ms": 82.308631,
+            "samples": 94368,
+            "hash": "e4e51be27e99b0c4"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 6,
+            "first_write_ms": 2.148747,
+            "total_ms": 74.149747,
+            "samples": 96672,
+            "hash": "91b60a382de47d18"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 7,
+            "first_write_ms": 3.346415,
+            "total_ms": 56.220942,
+            "samples": 88080,
+            "hash": "4707ec9b0b6c5114"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 8,
+            "first_write_ms": 2.247797,
+            "total_ms": 74.911042,
+            "samples": 95664,
+            "hash": "00dc8ab993f841cb"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 9,
+            "first_write_ms": 2.148841,
+            "total_ms": 77.141269,
+            "samples": 94704,
+            "hash": "1a5cdf130e84aef4"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 10,
+            "first_write_ms": 2.918096,
+            "total_ms": 54.342483,
+            "samples": 96768,
+            "hash": "a8629117319c8813"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 11,
+            "first_write_ms": 2.122742,
+            "total_ms": 71.404997,
+            "samples": 97872,
+            "hash": "e5a6e8c33a514b07"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 12,
+            "first_write_ms": 2.099585,
+            "total_ms": 72.094351,
+            "samples": 105312,
+            "hash": "17e13a16692f61b5"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 0,
+            "first_write_ms": 350.996155,
+            "total_ms": 356.920524,
+            "samples": 21208,
+            "hash": "2eb5dd0215b2747b"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 1,
+            "first_write_ms": 2.196485,
+            "total_ms": 7.625737,
+            "samples": 20515,
+            "hash": "a19270c425c3c38a"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 2,
+            "first_write_ms": 2.203857,
+            "total_ms": 7.046731,
+            "samples": 20801,
+            "hash": "8dfeab04dd7a14f0"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 3,
+            "first_write_ms": 16.985333,
+            "total_ms": 23.605501,
+            "samples": 20768,
+            "hash": "2910245b72e93ed1"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 4,
+            "first_write_ms": 2.99203,
+            "total_ms": 8.792436,
+            "samples": 22429,
+            "hash": "4263a5c412c0d599"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 5,
+            "first_write_ms": 1.92083,
+            "total_ms": 7.320135,
+            "samples": 21626,
+            "hash": "2f1770aa1a663ec2"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 6,
+            "first_write_ms": 2.160383,
+            "total_ms": 7.913278,
+            "samples": 22154,
+            "hash": "7d8137aed149d13e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 7,
+            "first_write_ms": 2.223036,
+            "total_ms": 6.857324,
+            "samples": 20185,
+            "hash": "cd8a57dcc00cd3e3"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 8,
+            "first_write_ms": 1.877598,
+            "total_ms": 7.001488,
+            "samples": 21923,
+            "hash": "7dedfce09bffc57e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 9,
+            "first_write_ms": 2.050793,
+            "total_ms": 7.482776,
+            "samples": 21703,
+            "hash": "1c1d15d7ae76f3eb"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 10,
+            "first_write_ms": 1.984402,
+            "total_ms": 7.728182,
+            "samples": 22176,
+            "hash": "51c84769d22745e3"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 11,
+            "first_write_ms": 2.135628,
+            "total_ms": 8.355123,
+            "samples": 22429,
+            "hash": "182f0d3eb57bfa30"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 12,
+            "first_write_ms": 1.973144,
+            "total_ms": 7.886713,
+            "samples": 24134,
+            "hash": "cea778999714a54f"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 0,
+            "first_write_ms": 393.570977,
+            "total_ms": 444.724856,
+            "samples": 92544,
+            "hash": "e8726afc74348123"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 1,
+            "first_write_ms": 2.772887,
+            "total_ms": 73.091173,
+            "samples": 89520,
+            "hash": "54c6e502a14a8298"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 2,
+            "first_write_ms": 2.459398,
+            "total_ms": 61.324883,
+            "samples": 90768,
+            "hash": "652040b9a8dc8066"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 3,
+            "first_write_ms": 4.029584,
+            "total_ms": 55.157607,
+            "samples": 90624,
+            "hash": "058f35c6694064ad"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 4,
+            "first_write_ms": 6.144917,
+            "total_ms": 68.417781,
+            "samples": 97872,
+            "hash": "08193668d09b0b5e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 5,
+            "first_write_ms": 3.081869,
+            "total_ms": 90.5353,
+            "samples": 94368,
+            "hash": "e4e51be27e99b0c4"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 6,
+            "first_write_ms": 6.356778,
+            "total_ms": 97.379176,
+            "samples": 96672,
+            "hash": "91b60a382de47d18"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 7,
+            "first_write_ms": 3.478516,
+            "total_ms": 54.977615,
+            "samples": 88080,
+            "hash": "4707ec9b0b6c5114"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 8,
+            "first_write_ms": 3.291569,
+            "total_ms": 86.593147,
+            "samples": 95664,
+            "hash": "00dc8ab993f841cb"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 9,
+            "first_write_ms": 2.698251,
+            "total_ms": 77.63571,
+            "samples": 94704,
+            "hash": "1a5cdf130e84aef4"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 10,
+            "first_write_ms": 2.607342,
+            "total_ms": 78.505817,
+            "samples": 96768,
+            "hash": "a8629117319c8813"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 11,
+            "first_write_ms": 4.005129,
+            "total_ms": 79.267437,
+            "samples": 97872,
+            "hash": "e5a6e8c33a514b07"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 12,
+            "first_write_ms": 2.907492,
+            "total_ms": 71.88156,
+            "samples": 105312,
+            "hash": "17e13a16692f61b5"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 0,
+            "first_write_ms": 40.85719,
+            "total_ms": 47.124048,
+            "samples": 26015,
+            "hash": "12dab8c2df9fa6bb"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 1,
+            "first_write_ms": 2.942444,
+            "total_ms": 8.647392,
+            "samples": 25718,
+            "hash": "83a0ae7e71663e8d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 2,
+            "first_write_ms": 3.007166,
+            "total_ms": 34.938833,
+            "samples": 25201,
+            "hash": "efd5764aa56c2672"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 3,
+            "first_write_ms": 2.648745,
+            "total_ms": 8.21352,
+            "samples": 25256,
+            "hash": "01de736276e6c393"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 4,
+            "first_write_ms": 3.404239,
+            "total_ms": 9.494133,
+            "samples": 25740,
+            "hash": "b62ca87dbe568f21"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 5,
+            "first_write_ms": 4.982238,
+            "total_ms": 13.04859,
+            "samples": 25421,
+            "hash": "6e9e8f116cff4ac9"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 6,
+            "first_write_ms": 3.195126,
+            "total_ms": 10.10167,
+            "samples": 26180,
+            "hash": "8ce87e89641764a2"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 7,
+            "first_write_ms": 2.891443,
+            "total_ms": 11.867625,
+            "samples": 24695,
+            "hash": "fce32f76843c8477"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 8,
+            "first_write_ms": 2.591228,
+            "total_ms": 7.484319,
+            "samples": 25377,
+            "hash": "20feeb02bd65192a"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 9,
+            "first_write_ms": 2.821263,
+            "total_ms": 8.546223,
+            "samples": 26202,
+            "hash": "d6a60d81c586bc6d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 10,
+            "first_write_ms": 2.812228,
+            "total_ms": 25.904325,
+            "samples": 25707,
+            "hash": "08302acb2f178411"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 11,
+            "first_write_ms": 4.271228,
+            "total_ms": 9.675438,
+            "samples": 26917,
+            "hash": "e6ef94d12a4e789b"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 12,
+            "first_write_ms": 2.762102,
+            "total_ms": 8.899937,
+            "samples": 28534,
+            "hash": "2bb69e5af1aa3d49"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 0,
+            "first_write_ms": 40.922401,
+            "total_ms": 110.791169,
+            "samples": 113520,
+            "hash": "948c282286c51093"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 1,
+            "first_write_ms": 5.282578,
+            "total_ms": 83.836265,
+            "samples": 112224,
+            "hash": "603021a82d06fbc1"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 2,
+            "first_write_ms": 2.932631,
+            "total_ms": 78.560776,
+            "samples": 109968,
+            "hash": "449f2c17e4e8e814"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 3,
+            "first_write_ms": 3.266469,
+            "total_ms": 66.377554,
+            "samples": 110208,
+            "hash": "8acb4e87b1d80d9e"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 4,
+            "first_write_ms": 3.238272,
+            "total_ms": 69.749524,
+            "samples": 112320,
+            "hash": "2d8b41a6f391a283"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 5,
+            "first_write_ms": 3.26037,
+            "total_ms": 81.248448,
+            "samples": 110928,
+            "hash": "1f0171829389854a"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 6,
+            "first_write_ms": 2.720368,
+            "total_ms": 82.946718,
+            "samples": 114240,
+            "hash": "10b18e5c6a27bcbb"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 7,
+            "first_write_ms": 3.849943,
+            "total_ms": 68.622508,
+            "samples": 107760,
+            "hash": "b507f6b56359703d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 8,
+            "first_write_ms": 3.578153,
+            "total_ms": 91.034231,
+            "samples": 110736,
+            "hash": "4ca8154a8cfe83d5"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 9,
+            "first_write_ms": 4.111086,
+            "total_ms": 78.375214,
+            "samples": 114336,
+            "hash": "f2841e2177a410f8"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 10,
+            "first_write_ms": 3.489422,
+            "total_ms": 82.131821,
+            "samples": 112176,
+            "hash": "2f947144cbbd2d37"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 11,
+            "first_write_ms": 3.840799,
+            "total_ms": 73.427484,
+            "samples": 117456,
+            "hash": "1636260eea265dcf"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 12,
+            "first_write_ms": 3.285012,
+            "total_ms": 67.734577,
+            "samples": 124512,
+            "hash": "192adcd943db1452"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 0,
+            "first_write_ms": 283.846746,
+            "total_ms": 288.745321,
+            "samples": 26015,
+            "hash": "12dab8c2df9fa6bb"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 1,
+            "first_write_ms": 3.756275,
+            "total_ms": 8.657136,
+            "samples": 25718,
+            "hash": "83a0ae7e71663e8d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 2,
+            "first_write_ms": 4.21299,
+            "total_ms": 9.050254,
+            "samples": 25201,
+            "hash": "efd5764aa56c2672"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 3,
+            "first_write_ms": 6.683028,
+            "total_ms": 12.991029,
+            "samples": 25256,
+            "hash": "01de736276e6c393"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 4,
+            "first_write_ms": 2.699061,
+            "total_ms": 17.577595,
+            "samples": 25740,
+            "hash": "b62ca87dbe568f21"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 5,
+            "first_write_ms": 6.686947,
+            "total_ms": 13.652412,
+            "samples": 25421,
+            "hash": "6e9e8f116cff4ac9"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 6,
+            "first_write_ms": 4.063545,
+            "total_ms": 10.225463,
+            "samples": 26180,
+            "hash": "8ce87e89641764a2"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 7,
+            "first_write_ms": 5.017387,
+            "total_ms": 10.867855,
+            "samples": 24695,
+            "hash": "fce32f76843c8477"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 8,
+            "first_write_ms": 4.434025,
+            "total_ms": 10.72539,
+            "samples": 25377,
+            "hash": "20feeb02bd65192a"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 9,
+            "first_write_ms": 5.694335,
+            "total_ms": 13.338909,
+            "samples": 26202,
+            "hash": "d6a60d81c586bc6d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 10,
+            "first_write_ms": 5.308429,
+            "total_ms": 11.03839,
+            "samples": 25707,
+            "hash": "08302acb2f178411"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 11,
+            "first_write_ms": 5.277579,
+            "total_ms": 11.558156,
+            "samples": 26917,
+            "hash": "e6ef94d12a4e789b"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 12,
+            "first_write_ms": 11.323821,
+            "total_ms": 16.897515,
+            "samples": 28534,
+            "hash": "2bb69e5af1aa3d49"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 0,
+            "first_write_ms": 314.636388,
+            "total_ms": 364.877548,
+            "samples": 113520,
+            "hash": "948c282286c51093"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 1,
+            "first_write_ms": 6.511789,
+            "total_ms": 81.079485,
+            "samples": 112224,
+            "hash": "603021a82d06fbc1"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 2,
+            "first_write_ms": 9.065802,
+            "total_ms": 69.643699,
+            "samples": 109968,
+            "hash": "449f2c17e4e8e814"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 3,
+            "first_write_ms": 5.270246,
+            "total_ms": 60.572723,
+            "samples": 110208,
+            "hash": "8acb4e87b1d80d9e"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 4,
+            "first_write_ms": 34.48013,
+            "total_ms": 91.064622,
+            "samples": 112320,
+            "hash": "2d8b41a6f391a283"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 5,
+            "first_write_ms": 4.462705,
+            "total_ms": 76.457761,
+            "samples": 110928,
+            "hash": "1f0171829389854a"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 6,
+            "first_write_ms": 4.401799,
+            "total_ms": 79.548439,
+            "samples": 114240,
+            "hash": "10b18e5c6a27bcbb"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 7,
+            "first_write_ms": 4.02478,
+            "total_ms": 76.996434,
+            "samples": 107760,
+            "hash": "b507f6b56359703d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 8,
+            "first_write_ms": 6.102784,
+            "total_ms": 142.749126,
+            "samples": 110736,
+            "hash": "4ca8154a8cfe83d5"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 9,
+            "first_write_ms": 13.720405,
+            "total_ms": 169.077488,
+            "samples": 114336,
+            "hash": "f2841e2177a410f8"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 10,
+            "first_write_ms": 12.949065,
+            "total_ms": 123.841707,
+            "samples": 112176,
+            "hash": "2f947144cbbd2d37"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 11,
+            "first_write_ms": 5.500564,
+            "total_ms": 140.094969,
+            "samples": 117456,
+            "hash": "1636260eea265dcf"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 12,
+            "first_write_ms": 14.988504,
+            "total_ms": 165.316944,
+            "samples": 124512,
+            "hash": "192adcd943db1452"
+          }
+        ],
+        "dictionary_reload_calls": 4
+      },
+      {
+        "host_transport_only": true,
+        "no_audio_files": true,
+        "records": [
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 0,
+            "first_write_ms": 124.334241,
+            "total_ms": 140.892953,
+            "samples": 21208,
+            "hash": "2eb5dd0215b2747b"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 1,
+            "first_write_ms": 2.20782,
+            "total_ms": 19.555216,
+            "samples": 20515,
+            "hash": "a19270c425c3c38a"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 2,
+            "first_write_ms": 3.07893,
+            "total_ms": 22.319061,
+            "samples": 20801,
+            "hash": "8dfeab04dd7a14f0"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 3,
+            "first_write_ms": 2.211781,
+            "total_ms": 14.27012,
+            "samples": 20768,
+            "hash": "2910245b72e93ed1"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 4,
+            "first_write_ms": 26.023249,
+            "total_ms": 42.288895,
+            "samples": 22429,
+            "hash": "4263a5c412c0d599"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 5,
+            "first_write_ms": 2.381787,
+            "total_ms": 21.941725,
+            "samples": 21626,
+            "hash": "2f1770aa1a663ec2"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 6,
+            "first_write_ms": 4.065634,
+            "total_ms": 25.406842,
+            "samples": 22154,
+            "hash": "7d8137aed149d13e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 7,
+            "first_write_ms": 3.030096,
+            "total_ms": 7.018322,
+            "samples": 20185,
+            "hash": "cd8a57dcc00cd3e3"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 8,
+            "first_write_ms": 1.721071,
+            "total_ms": 10.693,
+            "samples": 21923,
+            "hash": "7dedfce09bffc57e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 9,
+            "first_write_ms": 1.439134,
+            "total_ms": 18.198308,
+            "samples": 21703,
+            "hash": "1c1d15d7ae76f3eb"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 10,
+            "first_write_ms": 4.949513,
+            "total_ms": 13.27888,
+            "samples": 22176,
+            "hash": "51c84769d22745e3"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 11,
+            "first_write_ms": 8.192656,
+            "total_ms": 12.116131,
+            "samples": 22429,
+            "hash": "182f0d3eb57bfa30"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 12,
+            "first_write_ms": 1.448191,
+            "total_ms": 9.288225,
+            "samples": 24134,
+            "hash": "cea778999714a54f"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 0,
+            "first_write_ms": 99.990594,
+            "total_ms": 257.97384,
+            "samples": 92544,
+            "hash": "e8726afc74348123"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 1,
+            "first_write_ms": 2.624849,
+            "total_ms": 136.164819,
+            "samples": 89520,
+            "hash": "54c6e502a14a8298"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 2,
+            "first_write_ms": 2.799552,
+            "total_ms": 148.695916,
+            "samples": 90768,
+            "hash": "652040b9a8dc8066"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 3,
+            "first_write_ms": 14.761319,
+            "total_ms": 148.506905,
+            "samples": 90624,
+            "hash": "058f35c6694064ad"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 4,
+            "first_write_ms": 7.595469,
+            "total_ms": 138.604495,
+            "samples": 97872,
+            "hash": "08193668d09b0b5e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 5,
+            "first_write_ms": 9.219268,
+            "total_ms": 148.835819,
+            "samples": 94368,
+            "hash": "e4e51be27e99b0c4"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 6,
+            "first_write_ms": 6.359976,
+            "total_ms": 148.546569,
+            "samples": 96672,
+            "hash": "91b60a382de47d18"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 7,
+            "first_write_ms": 9.53323,
+            "total_ms": 160.2481,
+            "samples": 88080,
+            "hash": "4707ec9b0b6c5114"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 8,
+            "first_write_ms": 9.21966,
+            "total_ms": 136.93943,
+            "samples": 95664,
+            "hash": "00dc8ab993f841cb"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 9,
+            "first_write_ms": 2.676719,
+            "total_ms": 158.737034,
+            "samples": 94704,
+            "hash": "1a5cdf130e84aef4"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 10,
+            "first_write_ms": 4.105403,
+            "total_ms": 145.281187,
+            "samples": 96768,
+            "hash": "a8629117319c8813"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 11,
+            "first_write_ms": 35.893972,
+            "total_ms": 189.151021,
+            "samples": 97872,
+            "hash": "e5a6e8c33a514b07"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 12,
+            "first_write_ms": 8.040051,
+            "total_ms": 167.864684,
+            "samples": 105312,
+            "hash": "17e13a16692f61b5"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 0,
+            "first_write_ms": 797.293804,
+            "total_ms": 821.390597,
+            "samples": 21208,
+            "hash": "2eb5dd0215b2747b"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 1,
+            "first_write_ms": 8.297329,
+            "total_ms": 23.508615,
+            "samples": 20515,
+            "hash": "a19270c425c3c38a"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 2,
+            "first_write_ms": 2.292597,
+            "total_ms": 40.159336,
+            "samples": 20801,
+            "hash": "8dfeab04dd7a14f0"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 3,
+            "first_write_ms": 2.514618,
+            "total_ms": 17.191841,
+            "samples": 20768,
+            "hash": "2910245b72e93ed1"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 4,
+            "first_write_ms": 6.594567,
+            "total_ms": 28.80589,
+            "samples": 22429,
+            "hash": "4263a5c412c0d599"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 5,
+            "first_write_ms": 5.924232,
+            "total_ms": 20.803865,
+            "samples": 21626,
+            "hash": "2f1770aa1a663ec2"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 6,
+            "first_write_ms": 19.805665,
+            "total_ms": 34.592075,
+            "samples": 22154,
+            "hash": "7d8137aed149d13e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 7,
+            "first_write_ms": 6.585565,
+            "total_ms": 21.838502,
+            "samples": 20185,
+            "hash": "cd8a57dcc00cd3e3"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 8,
+            "first_write_ms": 6.631896,
+            "total_ms": 21.92554,
+            "samples": 21923,
+            "hash": "7dedfce09bffc57e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 9,
+            "first_write_ms": 2.468188,
+            "total_ms": 23.913707,
+            "samples": 21703,
+            "hash": "1c1d15d7ae76f3eb"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 10,
+            "first_write_ms": 2.48426,
+            "total_ms": 27.476041,
+            "samples": 22176,
+            "hash": "51c84769d22745e3"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 11,
+            "first_write_ms": 8.002211,
+            "total_ms": 33.940846,
+            "samples": 22429,
+            "hash": "182f0d3eb57bfa30"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 12,
+            "first_write_ms": 10.342982,
+            "total_ms": 28.347199,
+            "samples": 24134,
+            "hash": "cea778999714a54f"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 0,
+            "first_write_ms": 723.780207,
+            "total_ms": 871.306711,
+            "samples": 92544,
+            "hash": "e8726afc74348123"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 1,
+            "first_write_ms": 5.674914,
+            "total_ms": 151.284692,
+            "samples": 89520,
+            "hash": "54c6e502a14a8298"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 2,
+            "first_write_ms": 3.079144,
+            "total_ms": 130.056503,
+            "samples": 90768,
+            "hash": "652040b9a8dc8066"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 3,
+            "first_write_ms": 7.617344,
+            "total_ms": 128.268803,
+            "samples": 90624,
+            "hash": "058f35c6694064ad"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 4,
+            "first_write_ms": 27.175325,
+            "total_ms": 168.981612,
+            "samples": 97872,
+            "hash": "08193668d09b0b5e"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 5,
+            "first_write_ms": 7.360508,
+            "total_ms": 155.170835,
+            "samples": 94368,
+            "hash": "e4e51be27e99b0c4"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 6,
+            "first_write_ms": 2.274284,
+            "total_ms": 115.948937,
+            "samples": 96672,
+            "hash": "91b60a382de47d18"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 7,
+            "first_write_ms": 2.490763,
+            "total_ms": 58.329359,
+            "samples": 88080,
+            "hash": "4707ec9b0b6c5114"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 8,
+            "first_write_ms": 4.023133,
+            "total_ms": 133.22833,
+            "samples": 95664,
+            "hash": "00dc8ab993f841cb"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 9,
+            "first_write_ms": 3.223026,
+            "total_ms": 113.255381,
+            "samples": 94704,
+            "hash": "1a5cdf130e84aef4"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 10,
+            "first_write_ms": 12.961098,
+            "total_ms": 139.011389,
+            "samples": 96768,
+            "hash": "a8629117319c8813"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 11,
+            "first_write_ms": 6.740224,
+            "total_ms": 161.708362,
+            "samples": 97872,
+            "hash": "e5a6e8c33a514b07"
+          },
+          {
+            "language": 65536,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 12,
+            "first_write_ms": 12.442432,
+            "total_ms": 125.142499,
+            "samples": 105312,
+            "hash": "17e13a16692f61b5"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 0,
+            "first_write_ms": 161.658754,
+            "total_ms": 169.47605,
+            "samples": 26015,
+            "hash": "12dab8c2df9fa6bb"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 1,
+            "first_write_ms": 14.847777,
+            "total_ms": 36.542197,
+            "samples": 25718,
+            "hash": "83a0ae7e71663e8d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 2,
+            "first_write_ms": 10.02903,
+            "total_ms": 19.3544,
+            "samples": 25201,
+            "hash": "efd5764aa56c2672"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 3,
+            "first_write_ms": 7.256354,
+            "total_ms": 15.617521,
+            "samples": 25256,
+            "hash": "01de736276e6c393"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 4,
+            "first_write_ms": 7.074889,
+            "total_ms": 16.003508,
+            "samples": 25740,
+            "hash": "b62ca87dbe568f21"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 5,
+            "first_write_ms": 6.823267,
+            "total_ms": 23.083149,
+            "samples": 25421,
+            "hash": "6e9e8f116cff4ac9"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 6,
+            "first_write_ms": 14.624672,
+            "total_ms": 28.868716,
+            "samples": 26180,
+            "hash": "8ce87e89641764a2"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 7,
+            "first_write_ms": 6.735981,
+            "total_ms": 16.280598,
+            "samples": 24695,
+            "hash": "fce32f76843c8477"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 8,
+            "first_write_ms": 2.852128,
+            "total_ms": 15.344388,
+            "samples": 25377,
+            "hash": "20feeb02bd65192a"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 9,
+            "first_write_ms": 2.608891,
+            "total_ms": 16.496089,
+            "samples": 26202,
+            "hash": "d6a60d81c586bc6d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 10,
+            "first_write_ms": 6.774542,
+            "total_ms": 40.9709,
+            "samples": 25707,
+            "hash": "08302acb2f178411"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 11,
+            "first_write_ms": 58.417582,
+            "total_ms": 66.358425,
+            "samples": 26917,
+            "hash": "e6ef94d12a4e789b"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 11025,
+            "iteration": 12,
+            "first_write_ms": 7.18589,
+            "total_ms": 17.966837,
+            "samples": 28534,
+            "hash": "2bb69e5af1aa3d49"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 0,
+            "first_write_ms": 89.747168,
+            "total_ms": 234.750494,
+            "samples": 113520,
+            "hash": "948c282286c51093"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 1,
+            "first_write_ms": 3.575303,
+            "total_ms": 67.953969,
+            "samples": 112224,
+            "hash": "603021a82d06fbc1"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 2,
+            "first_write_ms": 8.176227,
+            "total_ms": 77.595481,
+            "samples": 109968,
+            "hash": "449f2c17e4e8e814"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 3,
+            "first_write_ms": 4.536901,
+            "total_ms": 73.936119,
+            "samples": 110208,
+            "hash": "8acb4e87b1d80d9e"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 4,
+            "first_write_ms": 5.753548,
+            "total_ms": 83.186271,
+            "samples": 112320,
+            "hash": "2d8b41a6f391a283"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 5,
+            "first_write_ms": 3.967381,
+            "total_ms": 70.410389,
+            "samples": 110928,
+            "hash": "1f0171829389854a"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 6,
+            "first_write_ms": 3.182435,
+            "total_ms": 79.473406,
+            "samples": 114240,
+            "hash": "10b18e5c6a27bcbb"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 7,
+            "first_write_ms": 5.586267,
+            "total_ms": 83.698795,
+            "samples": 107760,
+            "hash": "b507f6b56359703d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 8,
+            "first_write_ms": 3.378195,
+            "total_ms": 88.271617,
+            "samples": 110736,
+            "hash": "4ca8154a8cfe83d5"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 9,
+            "first_write_ms": 4.173338,
+            "total_ms": 83.927049,
+            "samples": 114336,
+            "hash": "f2841e2177a410f8"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 10,
+            "first_write_ms": 2.929634,
+            "total_ms": 73.30818,
+            "samples": 112176,
+            "hash": "2f947144cbbd2d37"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 11,
+            "first_write_ms": 3.403298,
+            "total_ms": 67.922887,
+            "samples": 117456,
+            "hash": "1636260eea265dcf"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 0,
+            "hz": 48000,
+            "iteration": 12,
+            "first_write_ms": 5.073855,
+            "total_ms": 124.922418,
+            "samples": 124512,
+            "hash": "192adcd943db1452"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 0,
+            "first_write_ms": 274.498591,
+            "total_ms": 280.91899,
+            "samples": 26015,
+            "hash": "12dab8c2df9fa6bb"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 1,
+            "first_write_ms": 18.786031,
+            "total_ms": 32.286964,
+            "samples": 25718,
+            "hash": "83a0ae7e71663e8d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 2,
+            "first_write_ms": 6.510025,
+            "total_ms": 12.471953,
+            "samples": 25201,
+            "hash": "efd5764aa56c2672"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 3,
+            "first_write_ms": 6.462043,
+            "total_ms": 16.889811,
+            "samples": 25256,
+            "hash": "01de736276e6c393"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 4,
+            "first_write_ms": 11.745826,
+            "total_ms": 17.7679,
+            "samples": 25740,
+            "hash": "b62ca87dbe568f21"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 5,
+            "first_write_ms": 10.617572,
+            "total_ms": 22.974001,
+            "samples": 25421,
+            "hash": "6e9e8f116cff4ac9"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 6,
+            "first_write_ms": 14.312168,
+            "total_ms": 21.395163,
+            "samples": 26180,
+            "hash": "8ce87e89641764a2"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 7,
+            "first_write_ms": 6.307075,
+            "total_ms": 16.234407,
+            "samples": 24695,
+            "hash": "fce32f76843c8477"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 8,
+            "first_write_ms": 4.883198,
+            "total_ms": 10.154675,
+            "samples": 25377,
+            "hash": "20feeb02bd65192a"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 9,
+            "first_write_ms": 9.584266,
+            "total_ms": 21.296782,
+            "samples": 26202,
+            "hash": "d6a60d81c586bc6d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 10,
+            "first_write_ms": 4.717073,
+            "total_ms": 15.109133,
+            "samples": 25707,
+            "hash": "08302acb2f178411"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 11,
+            "first_write_ms": 3.972035,
+            "total_ms": 15.779194,
+            "samples": 26917,
+            "hash": "e6ef94d12a4e789b"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 11025,
+            "iteration": 12,
+            "first_write_ms": 15.328125,
+            "total_ms": 34.260244,
+            "samples": 28534,
+            "hash": "2bb69e5af1aa3d49"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 0,
+            "first_write_ms": 731.592325,
+            "total_ms": 835.003251,
+            "samples": 113520,
+            "hash": "948c282286c51093"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 1,
+            "first_write_ms": 4.175241,
+            "total_ms": 110.729734,
+            "samples": 112224,
+            "hash": "603021a82d06fbc1"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 2,
+            "first_write_ms": 6.359448,
+            "total_ms": 76.407403,
+            "samples": 109968,
+            "hash": "449f2c17e4e8e814"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 3,
+            "first_write_ms": 6.630515,
+            "total_ms": 95.302217,
+            "samples": 110208,
+            "hash": "8acb4e87b1d80d9e"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 4,
+            "first_write_ms": 16.429654,
+            "total_ms": 107.785618,
+            "samples": 112320,
+            "hash": "2d8b41a6f391a283"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 5,
+            "first_write_ms": 5.524732,
+            "total_ms": 130.453682,
+            "samples": 110928,
+            "hash": "1f0171829389854a"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 6,
+            "first_write_ms": 25.405292,
+            "total_ms": 184.858367,
+            "samples": 114240,
+            "hash": "10b18e5c6a27bcbb"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 7,
+            "first_write_ms": 10.608407,
+            "total_ms": 164.379583,
+            "samples": 107760,
+            "hash": "b507f6b56359703d"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 8,
+            "first_write_ms": 10.850378,
+            "total_ms": 148.527386,
+            "samples": 110736,
+            "hash": "4ca8154a8cfe83d5"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 9,
+            "first_write_ms": 25.236074,
+            "total_ms": 156.352361,
+            "samples": 114336,
+            "hash": "f2841e2177a410f8"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 10,
+            "first_write_ms": 11.163644,
+            "total_ms": 124.617042,
+            "samples": 112176,
+            "hash": "2f947144cbbd2d37"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 11,
+            "first_write_ms": 8.639509,
+            "total_ms": 165.543984,
+            "samples": 117456,
+            "hash": "1636260eea265dcf"
+          },
+          {
+            "language": 262144,
+            "dictionaries": 1,
+            "hz": 48000,
+            "iteration": 12,
+            "first_write_ms": 13.481473,
+            "total_ms": 183.492388,
+            "samples": 124512,
+            "hash": "192adcd943db1452"
+          }
+        ],
+        "dictionary_reload_calls": 4
+      }
+    ]
+  },
+  "no_audio_files": true
+}

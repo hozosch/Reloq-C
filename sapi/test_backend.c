@@ -111,6 +111,7 @@ int main(int argc,char **argv)
     assert(bounded.event_count==1&&bounded.events[0].wParam==89);free(bounded.pcm);++cases;
     SPVTEXTFRAG spell=text(L"AB",5);spell.State.eAction=SPVA_SpellOut;struct site letters=site_new();
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&spell,&letters.iface)));assert(letters.count>0);free(letters.pcm);++cases;
+    assert(sapi_test_dictionary_calls==0);++cases;
     printf("{\"backend_cases\":%u,\"languages\":14,\"rates\":7,\"reference_samples\":%zu,\"reference_hash\":\"%016llx\",\"profile_names\":8,\"last_profile\":\"%ls\",\"comparisons\":[",
         cases,base.count,(unsigned long long)hash(base.pcm,base.count),sapi_profiles[7]);
     for(unsigned i=0;i<comparison_count;++i)printf("%s{\"language\":%d,\"rate\":%d,\"samples\":%zu,\"hash\":\"%016llx\"}",

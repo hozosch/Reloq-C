@@ -387,7 +387,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     q.voice[2]=settings->native_pitch_plus_one?settings->native_pitch_plus_one-1:settings->pitch;
     q.voice[3]=settings->native_inflection_plus_one?settings->native_inflection_plus_one-1:30;
     q.voice[4]=settings->roughness;q.voice[5]=settings->breathiness;
-    q.voice[6]=settings->native_speed?settings->native_speed:settings->rate;
+    q.voice[6]=settings->native_speed?(settings->native_speed<0?0:settings->native_speed):settings->rate;
     q.voice[7]=native_volume;
     /* Only an explicit trailing pause protects the final silence. A p0
        reset or an earlier pause must not disable the entire policy. */

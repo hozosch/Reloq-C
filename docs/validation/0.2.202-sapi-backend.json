@@ -1,0 +1,601 @@
+{
+  "backend_cases": 114,
+  "languages": 14,
+  "rates": 7,
+  "reference_samples": 29392,
+  "reference_hash": "cabd9b042a4fb2ee",
+  "profile_names": 8,
+  "last_profile": "Grandpa",
+  "comparisons": [
+    {
+      "language": 393216,
+      "rate": 0,
+      "samples": 14760,
+      "hash": "790ed63d9f45c617"
+    },
+    {
+      "language": 393216,
+      "rate": 1,
+      "samples": 20295,
+      "hash": "6533723ffffe1a18"
+    },
+    {
+      "language": 393216,
+      "rate": 2,
+      "samples": 40590,
+      "hash": "e896a765c0acfd21"
+    },
+    {
+      "language": 393216,
+      "rate": 3,
+      "samples": 29520,
+      "hash": "184b80bd9f6aa551"
+    },
+    {
+      "language": 393216,
+      "rate": 4,
+      "samples": 59040,
+      "hash": "e8e327ee6403d93c"
+    },
+    {
+      "language": 393216,
+      "rate": 5,
+      "samples": 81180,
+      "hash": "dfe6067023ac905b"
+    },
+    {
+      "language": 393216,
+      "rate": 6,
+      "samples": 88560,
+      "hash": "7aad35b26922fcaa"
+    },
+    {
+      "language": 262144,
+      "rate": 0,
+      "samples": 19720,
+      "hash": "1985d898a306d126"
+    },
+    {
+      "language": 262144,
+      "rate": 1,
+      "samples": 27115,
+      "hash": "ba49d0426de29258"
+    },
+    {
+      "language": 262144,
+      "rate": 2,
+      "samples": 54230,
+      "hash": "ca5d9119b22dcfb1"
+    },
+    {
+      "language": 262144,
+      "rate": 3,
+      "samples": 39440,
+      "hash": "d9ef009e445376e8"
+    },
+    {
+      "language": 262144,
+      "rate": 4,
+      "samples": 78880,
+      "hash": "58ed34a5b1467f60"
+    },
+    {
+      "language": 262144,
+      "rate": 5,
+      "samples": 108460,
+      "hash": "53d27ec9c3052575"
+    },
+    {
+      "language": 262144,
+      "rate": 6,
+      "samples": 118320,
+      "hash": "52e284b405cefc0b"
+    },
+    {
+      "language": 65537,
+      "rate": 0,
+      "samples": 15816,
+      "hash": "844f52fc4eaf39ab"
+    },
+    {
+      "language": 65537,
+      "rate": 1,
+      "samples": 21747,
+      "hash": "e5b2e88e811f90d8"
+    },
+    {
+      "language": 65537,
+      "rate": 2,
+      "samples": 43494,
+      "hash": "2f21e2ab2661c3b1"
+    },
+    {
+      "language": 65537,
+      "rate": 3,
+      "samples": 31632,
+      "hash": "836b4aa4ca8d4b15"
+    },
+    {
+      "language": 65537,
+      "rate": 4,
+      "samples": 63264,
+      "hash": "f52b2666acb0aae3"
+    },
+    {
+      "language": 65537,
+      "rate": 5,
+      "samples": 86988,
+      "hash": "2b9227eb6701f77e"
+    },
+    {
+      "language": 65537,
+      "rate": 6,
+      "samples": 94896,
+      "hash": "45a3a2c8ace3abbf"
+    },
+    {
+      "language": 65536,
+      "rate": 0,
+      "samples": 15928,
+      "hash": "130336ea3bdc8f57"
+    },
+    {
+      "language": 65536,
+      "rate": 1,
+      "samples": 21901,
+      "hash": "a21434c732d3bdbf"
+    },
+    {
+      "language": 65536,
+      "rate": 2,
+      "samples": 43802,
+      "hash": "50a072a39c2a7716"
+    },
+    {
+      "language": 65536,
+      "rate": 3,
+      "samples": 31856,
+      "hash": "55d8ed4ca5b0ba1d"
+    },
+    {
+      "language": 65536,
+      "rate": 4,
+      "samples": 63712,
+      "hash": "759c86ed0eda9cf6"
+    },
+    {
+      "language": 65536,
+      "rate": 5,
+      "samples": 87604,
+      "hash": "44ced408f0534e0a"
+    },
+    {
+      "language": 65536,
+      "rate": 6,
+      "samples": 95568,
+      "hash": "373b5b0df670e8ff"
+    },
+    {
+      "language": 131073,
+      "rate": 0,
+      "samples": 11008,
+      "hash": "b3b776431279585e"
+    },
+    {
+      "language": 131073,
+      "rate": 1,
+      "samples": 15136,
+      "hash": "35c9f92009d66b41"
+    },
+    {
+      "language": 131073,
+      "rate": 2,
+      "samples": 30272,
+      "hash": "b30e107be22d6755"
+    },
+    {
+      "language": 131073,
+      "rate": 3,
+      "samples": 22016,
+      "hash": "b27ef7b1a77996ac"
+    },
+    {
+      "language": 131073,
+      "rate": 4,
+      "samples": 44032,
+      "hash": "4732da6d2fe863bd"
+    },
+    {
+      "language": 131073,
+      "rate": 5,
+      "samples": 60544,
+      "hash": "2787411891db70d3"
+    },
+    {
+      "language": 131073,
+      "rate": 6,
+      "samples": 66048,
+      "hash": "cf222dd26ef847db"
+    },
+    {
+      "language": 131072,
+      "rate": 0,
+      "samples": 11336,
+      "hash": "df6bc8f27239e8c9"
+    },
+    {
+      "language": 131072,
+      "rate": 1,
+      "samples": 15587,
+      "hash": "ddb1241fd4b3d864"
+    },
+    {
+      "language": 131072,
+      "rate": 2,
+      "samples": 31174,
+      "hash": "0ffe7d085f9ffe1f"
+    },
+    {
+      "language": 131072,
+      "rate": 3,
+      "samples": 22672,
+      "hash": "8f4ebfdcd1df4a78"
+    },
+    {
+      "language": 131072,
+      "rate": 4,
+      "samples": 45344,
+      "hash": "7af93b57781a5c59"
+    },
+    {
+      "language": 131072,
+      "rate": 5,
+      "samples": 62348,
+      "hash": "ea9cef4a635266a7"
+    },
+    {
+      "language": 131072,
+      "rate": 6,
+      "samples": 68016,
+      "hash": "1232361cd6f7ca62"
+    },
+    {
+      "language": 589824,
+      "rate": 0,
+      "samples": 9888,
+      "hash": "dcbdcf316c11fec2"
+    },
+    {
+      "language": 589824,
+      "rate": 1,
+      "samples": 13596,
+      "hash": "1ad2e214ce76c472"
+    },
+    {
+      "language": 589824,
+      "rate": 2,
+      "samples": 27192,
+      "hash": "8e916488789e95be"
+    },
+    {
+      "language": 589824,
+      "rate": 3,
+      "samples": 19776,
+      "hash": "50b7e35d86227b78"
+    },
+    {
+      "language": 589824,
+      "rate": 4,
+      "samples": 39552,
+      "hash": "ed6671a099bf156b"
+    },
+    {
+      "language": 589824,
+      "rate": 5,
+      "samples": 54384,
+      "hash": "8ff6f59e2aa4c781"
+    },
+    {
+      "language": 589824,
+      "rate": 6,
+      "samples": 59328,
+      "hash": "dd0ba388a7b47a52"
+    },
+    {
+      "language": 196608,
+      "rate": 0,
+      "samples": 14584,
+      "hash": "f5a6513d68bccc50"
+    },
+    {
+      "language": 196608,
+      "rate": 1,
+      "samples": 20053,
+      "hash": "4254cfd68561f8d9"
+    },
+    {
+      "language": 196608,
+      "rate": 2,
+      "samples": 40106,
+      "hash": "979eba2f0efa0182"
+    },
+    {
+      "language": 196608,
+      "rate": 3,
+      "samples": 29168,
+      "hash": "8eedcc7fae43d4a6"
+    },
+    {
+      "language": 196608,
+      "rate": 4,
+      "samples": 58336,
+      "hash": "1162aa738a4ab57f"
+    },
+    {
+      "language": 196608,
+      "rate": 5,
+      "samples": 80212,
+      "hash": "e9431b9f1a84813b"
+    },
+    {
+      "language": 196608,
+      "rate": 6,
+      "samples": 87504,
+      "hash": "746ddcfe528934e7"
+    },
+    {
+      "language": 196609,
+      "rate": 0,
+      "samples": 15336,
+      "hash": "ea73b5048e5b896a"
+    },
+    {
+      "language": 196609,
+      "rate": 1,
+      "samples": 21087,
+      "hash": "03ce7caea415b4a3"
+    },
+    {
+      "language": 196609,
+      "rate": 2,
+      "samples": 42174,
+      "hash": "53045ca0e11c5df4"
+    },
+    {
+      "language": 196609,
+      "rate": 3,
+      "samples": 30672,
+      "hash": "904e18e14415e39c"
+    },
+    {
+      "language": 196609,
+      "rate": 4,
+      "samples": 61344,
+      "hash": "8f70db756ffdacc1"
+    },
+    {
+      "language": 196609,
+      "rate": 5,
+      "samples": 84348,
+      "hash": "a499c9866c3fc1bf"
+    },
+    {
+      "language": 196609,
+      "rate": 6,
+      "samples": 92016,
+      "hash": "85089903618ef912"
+    },
+    {
+      "language": 327680,
+      "rate": 0,
+      "samples": 11952,
+      "hash": "4f01ce1518065adb"
+    },
+    {
+      "language": 327680,
+      "rate": 1,
+      "samples": 16434,
+      "hash": "31a3059754165ead"
+    },
+    {
+      "language": 327680,
+      "rate": 2,
+      "samples": 32868,
+      "hash": "0357eabc883f65d3"
+    },
+    {
+      "language": 327680,
+      "rate": 3,
+      "samples": 23904,
+      "hash": "2dd5582fada23334"
+    },
+    {
+      "language": 327680,
+      "rate": 4,
+      "samples": 47808,
+      "hash": "4c57a9a88b672d6c"
+    },
+    {
+      "language": 327680,
+      "rate": 5,
+      "samples": 65736,
+      "hash": "b45b81bb299ce3cf"
+    },
+    {
+      "language": 327680,
+      "rate": 6,
+      "samples": 71712,
+      "hash": "c27f1f08b1644821"
+    },
+    {
+      "language": 524288,
+      "rate": 0,
+      "samples": 30560,
+      "hash": "dc27d6045ed929f9"
+    },
+    {
+      "language": 524288,
+      "rate": 1,
+      "samples": 42020,
+      "hash": "42282b256bc73ab6"
+    },
+    {
+      "language": 524288,
+      "rate": 2,
+      "samples": 84040,
+      "hash": "b7158b51198800b1"
+    },
+    {
+      "language": 524288,
+      "rate": 3,
+      "samples": 61120,
+      "hash": "4455cc957b8e1535"
+    },
+    {
+      "language": 524288,
+      "rate": 4,
+      "samples": 122240,
+      "hash": "fc9f72a5c50222b4"
+    },
+    {
+      "language": 524288,
+      "rate": 5,
+      "samples": 168080,
+      "hash": "e2edcf8cfef02ab5"
+    },
+    {
+      "language": 524288,
+      "rate": 6,
+      "samples": 183360,
+      "hash": "946640c711836bd1"
+    },
+    {
+      "language": 655360,
+      "rate": 0,
+      "samples": 29360,
+      "hash": "b6995a53df663337"
+    },
+    {
+      "language": 655360,
+      "rate": 1,
+      "samples": 40370,
+      "hash": "17c7aa4d7593d80a"
+    },
+    {
+      "language": 655360,
+      "rate": 2,
+      "samples": 80740,
+      "hash": "51187218f1d733b6"
+    },
+    {
+      "language": 655360,
+      "rate": 3,
+      "samples": 58720,
+      "hash": "bdf17ee059ee6e19"
+    },
+    {
+      "language": 655360,
+      "rate": 4,
+      "samples": 117440,
+      "hash": "eeb5e5e1cbc36a37"
+    },
+    {
+      "language": 655360,
+      "rate": 5,
+      "samples": 161480,
+      "hash": "a905cdfa57553e41"
+    },
+    {
+      "language": 655360,
+      "rate": 6,
+      "samples": 176160,
+      "hash": "604e2512b97273ca"
+    },
+    {
+      "language": 458752,
+      "rate": 0,
+      "samples": 13624,
+      "hash": "1cd8130f69297d6e"
+    },
+    {
+      "language": 458752,
+      "rate": 1,
+      "samples": 18733,
+      "hash": "d29cae9ad9eb71b3"
+    },
+    {
+      "language": 458752,
+      "rate": 2,
+      "samples": 37466,
+      "hash": "d7a2abc45169f7dd"
+    },
+    {
+      "language": 458752,
+      "rate": 3,
+      "samples": 27248,
+      "hash": "c04df150e73d5149"
+    },
+    {
+      "language": 458752,
+      "rate": 4,
+      "samples": 54496,
+      "hash": "d07ee8d283d2bc2c"
+    },
+    {
+      "language": 458752,
+      "rate": 5,
+      "samples": 74932,
+      "hash": "6fe313c3d725d840"
+    },
+    {
+      "language": 458752,
+      "rate": 6,
+      "samples": 81744,
+      "hash": "6b1eb97ebc14afdd"
+    },
+    {
+      "language": 1179648,
+      "rate": 0,
+      "samples": 13680,
+      "hash": "49452b8b21888d31"
+    },
+    {
+      "language": 1179648,
+      "rate": 1,
+      "samples": 18810,
+      "hash": "e85675c0955018c7"
+    },
+    {
+      "language": 1179648,
+      "rate": 2,
+      "samples": 37620,
+      "hash": "6731f4cee37beb27"
+    },
+    {
+      "language": 1179648,
+      "rate": 3,
+      "samples": 27360,
+      "hash": "21820cb4a8693f0e"
+    },
+    {
+      "language": 1179648,
+      "rate": 4,
+      "samples": 54720,
+      "hash": "7323b8f812bc8a58"
+    },
+    {
+      "language": 1179648,
+      "rate": 5,
+      "samples": 75240,
+      "hash": "436a13891c9db850"
+    },
+    {
+      "language": 1179648,
+      "rate": 6,
+      "samples": 82080,
+      "hash": "b6731461387b261b"
+    }
+  ],
+  "direct_eci_identical_pcm_cases": 98,
+  "no_audio_files": true
+}

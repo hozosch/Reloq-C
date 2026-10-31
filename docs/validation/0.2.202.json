@@ -1,0 +1,121 @@
+{
+  "version": "0.2.202",
+  "source_parent": "ce7802d7244dfb35e886492dacd20f7639d4af83",
+  "no_audio_files": true,
+  "files": {
+    "reloq-c-sapi5-x64-0.2.202-preview2.zip": {
+      "bytes": 19557131,
+      "sha256": "97aed52d086a6c6ee8b642a4637a4901d00754c86fcf9078443fe8cfc7e30c33",
+      "shipped_core_sha256": "3cdb9812206868341b0364b40be50d9683ce5316748e94a9d95f76aba72f3ca7",
+      "verified_dictionary_files": 8
+    },
+    "reloq-c-sapi5-x86-0.2.202-preview2.zip": {
+      "bytes": 19593273,
+      "sha256": "616fd62e4851dc9718d8042b11691eb58ba598382a00461df2d883b37fca433d",
+      "shipped_core_sha256": "26062111f044382321e22315c5cdc070a2484d1ec469013c063b5f51b93daf79",
+      "verified_dictionary_files": 8
+    },
+    "reloq-c-synth-experimental-x64-0.2.202.nvda-addon": {
+      "bytes": 19509906,
+      "sha256": "1613856df20409420d060c68e9abb95883b4fc6ed774523123c847df8753a9f7",
+      "shipped_core_sha256": "3cdb9812206868341b0364b40be50d9683ce5316748e94a9d95f76aba72f3ca7",
+      "verified_dictionary_files": 8
+    },
+    "reloq-c-android-arm64-0.2.202-preview14.apk": {
+      "bytes": 17446294,
+      "sha256": "82116cb2f1800e5c1d34b0c7b4585dbe2437617cc448bc3bc8f467d52a0d65cd",
+      "shipped_core_sha256": "74f2b56ce38bfbd7ac02e2d0de75e20de424b787cf645778e95515638cb1a73b",
+      "verified_dictionary_files": 8
+    },
+    "eci-x64.dll": {
+      "bytes": 54552576,
+      "sha256": "3cdb9812206868341b0364b40be50d9683ce5316748e94a9d95f76aba72f3ca7"
+    },
+    "eci-x86.dll": {
+      "bytes": 54701568,
+      "sha256": "26062111f044382321e22315c5cdc070a2484d1ec469013c063b5f51b93daf79"
+    },
+    "core-host-final.so": {
+      "bytes": 55240592,
+      "sha256": "f37c3a6451e435fb26e95b2aee892274d700c1281492ac46b8208f426eee164e"
+    },
+    "core-android-unstripped.so": {
+      "bytes": 52899840,
+      "sha256": "443a5489daf977747f3f7b72362547960d69e9e45f1a15482bfb3a1c138e55db"
+    },
+    "sapi-x64.dll": {
+      "bytes": 85504,
+      "sha256": "b2dd27d77e48a189e312e42e2313e64e2083eea038764f3f45a87a53141c4f68"
+    },
+    "sapi-x86.dll": {
+      "bytes": 91648,
+      "sha256": "f36f1fd4d83e261355adf15ec4b8ef7fad09f958cbd579d1fab2256a515a4669"
+    }
+  },
+  "checks": {
+    "full_c_eci_regression": "passed",
+    "default_mode_pcm_and_index_cases": 196,
+    "native_rate_arithmetic_values": 251,
+    "low_native_rate_cases": 280,
+    "low_rate_inline_api_pcm_matches": 8,
+    "sapi_backend_cases": 114,
+    "sapi_direct_eci_pcm_pairs": 98,
+    "sapi_speed_direct_eci_pcm_pairs": 52,
+    "sapi_rate_unit_checks": 27,
+    "sapi_reference_rate0": 60,
+    "sapi_adapter_speed_asan_ubsan_cases": 52,
+    "sapi_dictionary_checks": 12,
+    "sapi_dictionary_reload_calls": 5,
+    "sapi_settings_checks": 40,
+    "sapi_localized_strings": 372,
+    "sapi_ui_tables": 12,
+    "sapi_sdk_layout_fields_per_architecture": 17,
+    "windows_eci_exports_per_architecture": 21,
+    "german_release_triplets": 105,
+    "german_release_modes": 3,
+    "nvda_ui_languages": [
+      "en",
+      "de"
+    ],
+    "jni_direct_native_pairs": 63,
+    "android_settings": "passed",
+    "android_upgrade_from": "0.2.201-preview13",
+    "android_package_and_certificate_unchanged": true,
+    "android_version_code": 20202,
+    "android_native_alignment": 16384,
+    "zip_crc_checks": 4,
+    "dictionary_snapshot_files_verified_per_package": 8
+  },
+  "sapi_response": {
+    "measurement": "Host first Write callback, not audible Windows/device latency",
+    "native_speed": 60,
+    "paired_same_pcm_cases": 208,
+    "dictionary_reloads_before_per_run": 104,
+    "dictionary_reloads_after_per_run": 4,
+    "detail": "0.2.202-sapi-response.json"
+  },
+  "sapi_settings": {
+    "shared_sample_rate": true,
+    "shared_other_parameters_optional": true,
+    "prior_language_parameters_restored_when_disabled": true,
+    "x86_x64_user_settings_shared": true,
+    "settings_bytes_both_architectures": 2108,
+    "ui_follows_supported_windows_display_language": true,
+    "rate_changes_require_format_renegotiation": true
+  },
+  "german_pause": {
+    "all_nonzero_samples_preserved": true,
+    "largest_measured_removed_silence_ms": 0.6576,
+    "audible_extension_reproduced": false,
+    "status": "Small exact-zero compression fix; the perceptible extension remains unresolved."
+  },
+  "community_dictionary_commit": "a23b0f9d9e64dc3156fb8c1795a7521bf173a285",
+  "limits": [
+    "Basic Windows x64 operation was confirmed by the user for preview 1. Preview 2 and the new x86 installation still need Windows client/UI testing.",
+    "COM layout checks and host transport checks do not replace Windows device execution.",
+    "The ASan/UBSan speed test instruments the SAPI adapter; the separately loaded C core is the normal release build.",
+    "No global CPU or binary-size reduction is claimed; the established response improvement removes repeated language/dictionary initialization in SAPI.",
+    "German audible short-pause extension has not been reliably reproduced or established as fixed.",
+    "No public GitHub binary release assets are published by this source update."
+  ]
+}

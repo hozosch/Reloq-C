@@ -1,6 +1,6 @@
 # Eloquence C – user guide
 
-Eloquence C is the NVDA add-on from [ReLoq C](https://github.com/hozosch/Reloq-C). It develops the familiar Eloquence sound with pronunciation corrections, Unicode support and additional voice controls. NVDA is the first integration and current speech testing platform. An initial Android ARM64 preview is available for testing; SAPI5 is planned.
+Eloquence C is the NVDA add-on from [ReLoq C](https://github.com/hozosch/Reloq-C). It develops the familiar Eloquence sound with pronunciation corrections, Unicode support and additional voice controls. NVDA is the first integration and current speech testing platform. Android ARM64 and Windows SAPI5 previews are available for testing.
 
 ## Install and select
 
@@ -82,13 +82,19 @@ The project is still experimental. The user confirmed the earlier American Engli
 
 When [reporting an issue](https://github.com/hozosch/Reloq-C/issues), include a short example, language, voice, version, sample rate and whether dictionaries are enabled. Explain whether speech stops, pronunciation is wrong or NVDA itself exits.
 
-## SAPI5 x64 preview
+## SAPI5 x64 and x86 previews
 
 Extract the SAPI ZIP and run `Install-SAPI.exe`, then choose **Install / update**.
 After restarting existing SAPI applications, choose a **ReLoq C** language voice.
 There is one registered voice per language. Open `ReLoqSettings.exe` or the
 voice's SAPI properties to select a profile and additional language parameters.
-Changes are saved immediately for the next utterance. Speed and volume belong
-to the SAPI application. All profile volumes default to 100. Practical Windows
-activation and screen-reader UI testing is still pending for this first preview.
+Changes are saved immediately for the next utterance. The dialog follows the
+supported Windows display language. Its checkbox shares all parameters across
+languages; turning it off restores separate language settings. Sample rate
+always applies to every language and changes on format renegotiation. Speed
+and volume belong to SAPI. Without speed boost, SAPI 0 maps to native ECI 60,
+with ten native units per SAPI step. All profile volumes default to 100. Install both
+packages for both client architectures, each from a separate extracted folder.
+Basic x64 use is confirmed; x86 Windows activation and further screen-reader
+UI testing remain pending.
 See [the SAPI guide](../sapi/README.txt) for controls, installation and limitations.

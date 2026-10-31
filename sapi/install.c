@@ -8,6 +8,11 @@
 #include <wchar.h>
 #include <string.h>
 static HINSTANCE instance;
+#ifdef _WIN64
+#define ARCHITECTURE L"x64"
+#else
+#define ARCHITECTURE L"x86 (32-bit)"
+#endif
 static int directory(WCHAR path[2048])
 {
     DWORD n=GetModuleFileNameW(instance,path,2048);if(!n||n>=2048)return 0;
@@ -31,7 +36,13 @@ static HRESULT register_dll(const WCHAR *folder,BOOL install)
 static HRESULT action(BOOL install)
 {
     WCHAR source[2048],destination[2048];if(!directory(source))return E_FAIL;
-    WCHAR *programs=NULL;HRESULT hr=SHGetKnownFolderPath(&FOLDERID_ProgramFiles,KF_FLAG_DEFAULT,NULL,&programs);
+    WCHAR *programs=NULL;
+#ifdef _WIN64
+    HRESULT hr=SHGetKnownFolderPath(&FOLDERID_ProgramFiles,KF_FLAG_DEFAULT,NULL,&programs);
+#else
+    HRESULT hr=SHGetKnownFolderPath(&FOLDERID_ProgramFilesX86,KF_FLAG_DEFAULT,NULL,&programs);
+    if(FAILED(hr))hr=SHGetKnownFolderPath(&FOLDERID_ProgramFiles,KF_FLAG_DEFAULT,NULL,&programs);
+#endif
     if(FAILED(hr))return hr;
     int written=swprintf(destination,2048,L"%ls\\ReLoq C\\SAPI5",programs);CoTaskMemFree(programs);
     if(written<0||written>=2048)return E_FAIL;
@@ -83,7 +94,7 @@ static LRESULT CALLBACK window_proc(HWND window,UINT message,WPARAM wp,LPARAM lp
 {
     if(message==WM_CREATE){
         const WCHAR *text[]={L"&Install / update",L"&Uninstall voices",L"Voice &settings",L"&Close"};
-        CreateWindowW(L"STATIC",L"ReLoq C 0.2.201 — SAPI5 x64 preview\nOne voice for each of the 14 languages.",WS_CHILD|WS_VISIBLE,12,12,400,42,window,NULL,instance,NULL);
+        CreateWindowW(L"STATIC",L"ReLoq C 0.2.202 — SAPI5 " ARCHITECTURE L" preview\nOne voice for each of the 14 languages.",WS_CHILD|WS_VISIBLE,12,12,400,42,window,NULL,instance,NULL);
         for(int i=0;i<4;++i){HWND c=CreateWindowW(L"BUTTON",text[i],WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON,12,66+i*38,400,30,window,(HMENU)(INT_PTR)(100+i),instance,NULL);
             SendMessageW(c,WM_SETFONT,(WPARAM)GetStockObject(DEFAULT_GUI_FONT),TRUE);}return 0;
     }

@@ -1,0 +1,91 @@
+{
+  "layouts": [
+    {
+      "architecture": "x64",
+      "fields": 17,
+      "sdk": [
+        96,
+        8,
+        80,
+        88,
+        92,
+        72,
+        88,
+        40,
+        48,
+        56,
+        64,
+        40,
+        24,
+        32,
+        40,
+        24,
+        32
+      ],
+      "adapter": [
+        96,
+        8,
+        80,
+        88,
+        92,
+        72,
+        88,
+        40,
+        48,
+        56,
+        64,
+        40,
+        24,
+        32,
+        40,
+        24,
+        32
+      ]
+    },
+    {
+      "architecture": "x86",
+      "fields": 17,
+      "sdk": [
+        68,
+        4,
+        56,
+        60,
+        64,
+        52,
+        44,
+        20,
+        24,
+        28,
+        32,
+        20,
+        12,
+        16,
+        20,
+        12,
+        16
+      ],
+      "adapter": [
+        68,
+        4,
+        56,
+        60,
+        64,
+        52,
+        44,
+        20,
+        24,
+        28,
+        32,
+        20,
+        12,
+        16,
+        20,
+        12,
+        16
+      ]
+    }
+  ],
+  "source": "Microsoft win32metadata generation/WinSDK/RecompiledIdlHeaders/um/sapiddk.h; C branch for unrelated speech-recognition struct",
+  "x86_exports": "undecorated stdcall entry points",
+  "device_execution": false
+}

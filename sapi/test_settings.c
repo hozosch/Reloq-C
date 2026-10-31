@@ -1,0 +1,67 @@
+/* Exercise the production registry logic with a process-local registry.
+ * No installed user settings or speech files are touched. */
+#include "settings.h"
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
+#include <wchar.h>
+HMODULE sapi_module;
+struct key {WCHAR path[128];} keys[40];static size_t key_count;
+struct value {HKEY key;WCHAR name[32];DWORD type,bytes;BYTE data[sizeof(struct sapi_settings)];} values[80];
+static size_t value_count;
+static HKEY find(LPCWSTR path)
+{for(size_t i=0;i<key_count;++i)if(!wcscmp(path,keys[i].path))return keys+i;return NULL;}
+LSTATUS RegGetValueW(HKEY base,LPCWSTR path,LPCWSTR name,DWORD flags,DWORD *type,void *data,DWORD *bytes)
+{
+    assert(base==HKEY_CURRENT_USER);HKEY key=find(path);
+    for(size_t i=0;i<value_count;++i)if(values[i].key==key&&!wcscmp(name,values[i].name)){
+        struct value *v=values+i;
+        if((v->type==REG_BINARY&&flags!=RRF_RT_REG_BINARY)||(v->type==REG_DWORD&&flags!=RRF_RT_REG_DWORD))return ERROR_INVALID_DATA;
+        if(*bytes<v->bytes)return 234;memcpy(data,v->data,v->bytes);*bytes=v->bytes;if(type)*type=v->type;return 0;}
+    return ERROR_FILE_NOT_FOUND;
+}
+LSTATUS RegCreateKeyExW(HKEY base,LPCWSTR path,DWORD a,void *b,DWORD c,DWORD access,void *d,HKEY *out,DWORD *disp)
+{
+    (void)a;(void)b;(void)c;(void)d;(void)disp;assert(base==HKEY_CURRENT_USER&&access==KEY_SET_VALUE);
+    *out=find(path);if(!*out){assert(key_count<40&&wcslen(path)<128);wcscpy(keys[key_count].path,path);*out=keys+key_count++;}return 0;
+}
+LSTATUS RegSetValueExW(HKEY key,LPCWSTR name,DWORD reserved,DWORD type,const BYTE *data,DWORD bytes)
+{
+    (void)reserved;size_t i;for(i=0;i<value_count;++i)if(values[i].key==key&&!wcscmp(values[i].name,name))break;
+    if(i==value_count){assert(i<80&&wcslen(name)<32);++value_count;values[i].key=key;wcscpy(values[i].name,name);}
+    assert(bytes<=sizeof values[i].data);values[i].type=type;values[i].bytes=bytes;memcpy(values[i].data,data,bytes);return 0;
+}
+LSTATUS RegCloseKey(HKEY key){(void)key;return 0;}
+DWORD GetModuleFileNameW(HMODULE m,WCHAR *p,DWORD cap)
+{(void)m;(void)p;(void)cap;return 0;}
+static void same_parameters(const struct sapi_settings *a,const struct sapi_settings *b)
+{assert(!memcmp(a,b,sizeof *a));}
+int main(void)
+{
+    unsigned checks=0;struct sapi_settings de,en,s;BOOL shared;
+    assert(sapi_settings_read(0x40000,&de)==S_OK&&de.rate==1);++checks;
+    assert(sapi_settings_shared(&shared)==S_OK&&!shared);++checks;
+    de.pitch=72;de.rate=6;wcscpy(de.directory,L"C:\\My dictionaries");de.dictionaries=1;
+    assert(sapi_settings_write(0x40000,&de)==S_OK);
+    assert(sapi_settings_read(0x10000,&en)==S_OK&&en.rate==6&&en.pitch==65&&!en.dictionaries);++checks;
+    en.pitch=43;en.rate=4;assert(sapi_settings_write(0x10000,&en)==S_OK);
+    assert(sapi_settings_read(0x40000,&s)==S_OK&&s.rate==4&&s.pitch==72);++checks;
+    for(size_t i=0;i<sapi_language_count();++i){assert(sapi_settings_read(sapi_language_at(i)->dialect,&s)==S_OK&&s.rate==4);++checks;}
+    assert(sapi_settings_set_shared(0x40000,TRUE)==S_OK);assert(sapi_settings_shared(&shared)==S_OK&&shared);++checks;
+    de.rate=4;
+    for(size_t i=0;i<sapi_language_count();++i){assert(sapi_settings_read(sapi_language_at(i)->dialect,&s)==S_OK);same_parameters(&de,&s);++checks;}
+    s.head=22;s.gender=1;s.rate=2;assert(sapi_settings_write(0xa0000,&s)==S_OK);
+    assert(sapi_settings_read(0x40000,&de)==S_OK&&de.head==22&&de.gender==1&&de.rate==2);++checks;
+    assert(sapi_settings_set_shared(0x40000,FALSE)==S_OK);
+    assert(sapi_settings_read(0x10000,&s)==S_OK&&s.pitch==43&&s.rate==2&&s.head==50&&!s.dictionaries);++checks;
+    assert(sapi_settings_read(0x40000,&s)==S_OK&&s.pitch==72&&s.rate==2&&s.head==50&&s.dictionaries);++checks;
+    assert(sapi_settings_set_shared(0x10000,TRUE)==S_OK);
+    assert(sapi_settings_read(0x40000,&s)==S_OK&&s.pitch==43&&s.rate==2&&!s.dictionaries);++checks;
+    assert(sapi_settings_write(0xdead,&s)==E_INVALIDARG);s.rate=9;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);++checks;
+    /* Preview-1 migration works before any common OutputRate exists. */
+    value_count=key_count=0;HKEY key;assert(!RegCreateKeyExW(HKEY_CURRENT_USER,L"Software\\ReLoq C\\SAPI5\\Voices\\00040000",0,NULL,0,KEY_SET_VALUE,NULL,&key,NULL));
+    sapi_settings_default(&s);s.rate=5;assert(!RegSetValueExW(key,L"Settings",0,REG_BINARY,(const BYTE *)&s,sizeof s));
+    assert(sapi_settings_read(0x10000,&en)==S_OK&&en.rate==5);++checks;
+    values[0].bytes=8;assert(FAILED(sapi_settings_read(0x40000,&s)));++checks;
+    printf("{\"settings_checks\":%u,\"languages\":%zu,\"shared_rate\":true,\"language_settings_preserved\":true}\n",checks,sapi_language_count());return 0;
+}
