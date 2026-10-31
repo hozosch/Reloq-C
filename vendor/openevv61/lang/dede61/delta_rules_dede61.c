@@ -6925,6 +6925,7 @@ const void *const dede61_delta_rule_sym[] = {
 
 const int dede61_delta_rule_sym_count = 3106;
 
+#if !RELOQ61_NATIVE_ENTRIES
 const delta_rule dede61_delta_rules[] = {
     { "tok_dict", "f61_01.obj", 0, 363, 212, 8, 3 },
     { "char_name", "f61_01.obj", 363, 363, 212, 8, 3 },
@@ -7767,6 +7768,7 @@ const delta_rule dede61_delta_rules[] = {
     { "isit_ger_WH", "recovered102.obj", 2243830, 5773, 380, 8, 2 },
     { "set_phrase_defaults", "written102.obj", 2249603, 224, 204, 8, 2 },
 };
+#endif
 
 const int dede61_delta_rule_count = 840;
 

@@ -10980,6 +10980,7 @@ const void *const engb61_delta_rule_sym[] = {
 
 const int engb61_delta_rule_sym_count = 6349;
 
+#if !RELOQ61_NATIVE_ENTRIES
 const delta_rule engb61_delta_rules[] = {
     { "tok_dict", "f61_01.obj", 0, 363, 212, 8, 3 },
     { "find_enclitic_to_left", "f61_01.obj", 363, 480, 228, 8, 5 },
@@ -12015,6 +12016,7 @@ const delta_rule engb61_delta_rules[] = {
     { "init_platform", "written.obj", 3558311, 596, 232, 8, 1 },
     { "set_phrase_defaults", "written.obj", 3558907, 224, 204, 8, 2 },
 };
+#endif
 
 const int engb61_delta_rule_count = 1033;
 

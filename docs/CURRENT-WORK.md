@@ -1,4 +1,18 @@
-# Technischer Arbeitsstand: 0.2.199
+# Technischer Arbeitsstand: 0.2.200
+
+## 0.2.200: Kompakte C-Einstiege, entfernter Zweit-Renderer und Emoji-Lesungen
+
+Der gemeinsame C-Zeichenleser spricht CLDR-Emoji-Namen jetzt auch im Satz, einschließlich Android. Ein Index für 3.944 RGI-Zeichen und -Sequenzen aus Unicode 17 verwendet die bestehenden übersetzten Namen. Hautfarben, ZWJ-Verbindungen, Flaggen und Tastensymbole werden als vollständige Sequenzen erkannt. Gewöhnliche Zeichenregeln, explizite Textdarstellung und Quellpositionen bleiben berücksichtigt. Die einzige gefundene fehlende Übersetzung, Französisch für U+1FA8A, ist direkt im vorhandenen Namenspool aus CLDR 48.2 ergänzt. Es gibt keine zweite Emoji-Namenssammlung und keine Android-Textersetzung.
+
+Alle 10.896 C-Regeln erhalten statische Namens-/Funktionseinträge. Objektdateinamen, Interpreter-Offsets und Rahmenbeschreibungen entfallen aus den Release-Beschreibungen; deren Daten sinken von 435.840 auf 174.336 Bytes. Die bisherigen Stücktabellen und der beim ersten Sprachzugriff angelegte Nummernindex entfallen im ausgelieferten Binärprogramm. Die Sprachregel-Dateien selbst sind unverändert; die kompakte Bindung liegt in eigenen eingecheckten C-Dateien. Ihr Pflegegenerator liest nur vorhandene C-Schnittstellen. Die weiter vorhandenen generierten Regelabläufe und Datensatzformen sind damit noch nicht vollständig eigenständig umformuliert.
+
+Der private Provider liefert nur Sprach-/Akustikparameter. Der zweite Oszillator-/Filter-Renderer, seine Breitbandbegleitung und seine alten Klangtabellen werden nicht mehr gebaut. Kleine gemeinsam verwendete Rechenhilfen bleiben erhalten; Windows benötigt dazu eine 40-Byte-Tabelle fester Zweierpotenzen. Die eigene ReLoq-PCM-Synthese und die dokumentierten deutschen Abweichungen bleiben erhalten. Diagnose-Dateiausgaben für Akustikframes werden im Release-Pfad entfernt. Es werden keine Sprach- oder Wiederholungs-Caches ergänzt.
+
+Die 110.432 lokalisierten Satz-/Zeichen-/Quellpositionsprüfungen bestehen auch mit ASan/UBSan. 504 öffentliche Emoji-Prüfungen und alle 196 Sprach-/Raten-/Modell-PCM-Vergleiche mit 0.2.199 bestehen; die bisherigen Sprachfälle bleiben bitgleich. Weitere Details, Größen, Prüfungen und Messgrenzen stehen in `docs/changes/0.2.200.md` und `docs/validation/0.2.200.json`.
+
+Die DLL sinkt um 682.496 auf 54.544.384 Bytes, das Add-on um 347.354 auf 19.508.738 Bytes und die APK um 262.144 auf 17.446.294 Bytes. Der angeforderte Heap für 4.000 deutsche Wörter bleibt bei 58.628.850 Bytes. Host-CPU-Messungen belegen keinen allgemeinen Latenzgewinn auf Nutzergeräten.
+
+Die Gemeinschaftswörterbücher stammen vom aktuell aufgelösten Master `1ecd298e87880131dad201378ac39a80940b342e`; alle sieben Git-Blobs sind geprüft. Android behält Paketkennung, Vorschau-Zertifikat, Browser-Updateweg und INTERNET als einzige Berechtigung. Das Upgrade 20199 auf 20200 ist geprüft. SAPI5 bleibt im Releaseplan.
 
 ## 0.2.199: Zitierte Kennungen, gemeinsame Zahlenregeln und kleinere Akustikpuffer
 

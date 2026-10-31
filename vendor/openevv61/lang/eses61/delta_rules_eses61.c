@@ -5028,6 +5028,7 @@ const void *const eses61_delta_rule_sym[] = {
 
 const int eses61_delta_rule_sym_count = 1505;
 
+#if !RELOQ61_NATIVE_ENTRIES
 const delta_rule eses61_delta_rules[] = {
     { "tok_dict", "f61_01.obj", 0, 363, 212, 8, 3 },
     { "char_name", "f61_01.obj", 363, 363, 212, 8, 3 },
@@ -5798,6 +5799,7 @@ const delta_rule eses61_delta_rules[] = {
     { "init_platform", "written.obj", 1409146, 596, 232, 8, 1 },
     { "set_phrase_defaults", "written.obj", 1409742, 224, 204, 8, 2 },
 };
+#endif
 
 const int eses61_delta_rule_count = 768;
 

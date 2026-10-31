@@ -37,6 +37,10 @@ public final class NativeTransportTest {
             context=worker.submit(() -> NativeEngine.create()).get(10,TimeUnit.SECONDS);
             if(context==0) throw new AssertionError("Context creation failed");
             for(Catalog.Language language:Catalog.LANGUAGES) render(language.id,0,language.sample);
+            for(Catalog.Language language:Catalog.LANGUAGES)for(int rate:new int[]{1,6}) {
+                VoiceSettings emoji=new VoiceSettings(0);emoji.rate=rate;
+                render(language.id,emoji,"😀 👩🏽‍💻 🇩🇪 1️⃣");
+            }
             for(int profile=0;profile<8;++profile) render(0x10000,profile,"This is Eloquence and NVDA, with 504 and 4004.");
             for(int dialect:new int[]{0x60000,0xa0000,0x80000})
                 render(dialect,0,"Müller café naïve. 📞");

@@ -1,0 +1,85 @@
+{
+  "method": "Requested live malloc/calloc/realloc sizes during warmed public German ECI synthesis; Linux/glibc; not RSS or a timing benchmark",
+  "no_audio_files": true,
+  "pcm_equal_when_comparing": true,
+  "builds": [
+    {
+      "version": "0.2.199.0",
+      "library": "/workspace/scratch/46d15ce6ae84/candidate0199-final.so",
+      "measurements": [
+        {
+          "words": 80,
+          "utf8_bytes": 560,
+          "requested_peak_bytes": 1173574,
+          "requested_live_bytes": 1560,
+          "allocations": 238,
+          "reallocations": 185,
+          "total_requested_bytes": 2294132,
+          "samples": 189321,
+          "pcm_sha256": "e93bf55d30fc400db658dc6bdb674046750c898d7d815c003650f72a28afa013"
+        },
+        {
+          "words": 800,
+          "utf8_bytes": 5600,
+          "requested_peak_bytes": 11590226,
+          "requested_live_bytes": 0,
+          "allocations": 344,
+          "reallocations": 306,
+          "total_requested_bytes": 23135888,
+          "samples": 1893210,
+          "pcm_sha256": "68cff012f04e0b57d9d473775590dcf62ae658c4db7ebeca08019f88761500fd"
+        },
+        {
+          "words": 4000,
+          "utf8_bytes": 28000,
+          "requested_peak_bytes": 58628850,
+          "requested_live_bytes": 0,
+          "allocations": 417,
+          "reallocations": 379,
+          "total_requested_bytes": 113888688,
+          "samples": 9466039,
+          "pcm_sha256": "bd21e896e7939e3bc112b935ca369868e4dc96df025053bcc7daf97855f8864f"
+        }
+      ]
+    },
+    {
+      "version": "0.2.200.0",
+      "library": "/workspace/scratch/46d15ce6ae84/candidate0200-final.so",
+      "measurements": [
+        {
+          "words": 80,
+          "utf8_bytes": 560,
+          "requested_peak_bytes": 1173574,
+          "requested_live_bytes": 1560,
+          "allocations": 238,
+          "reallocations": 185,
+          "total_requested_bytes": 2294132,
+          "samples": 189321,
+          "pcm_sha256": "e93bf55d30fc400db658dc6bdb674046750c898d7d815c003650f72a28afa013"
+        },
+        {
+          "words": 800,
+          "utf8_bytes": 5600,
+          "requested_peak_bytes": 11590226,
+          "requested_live_bytes": 0,
+          "allocations": 344,
+          "reallocations": 306,
+          "total_requested_bytes": 23135888,
+          "samples": 1893210,
+          "pcm_sha256": "68cff012f04e0b57d9d473775590dcf62ae658c4db7ebeca08019f88761500fd"
+        },
+        {
+          "words": 4000,
+          "utf8_bytes": 28000,
+          "requested_peak_bytes": 58628850,
+          "requested_live_bytes": 0,
+          "allocations": 417,
+          "reallocations": 379,
+          "total_requested_bytes": 113888688,
+          "samples": 9466039,
+          "pcm_sha256": "bd21e896e7939e3bc112b935ca369868e4dc96df025053bcc7daf97855f8864f"
+        }
+      ]
+    }
+  ]
+}

@@ -4787,6 +4787,7 @@ const void *const fifi_delta_rule_sym[] = {
 
 const int fifi_delta_rule_sym_count = 1304;
 
+#if !RELOQ61_NATIVE_ENTRIES
 const delta_rule fifi_delta_rules[] = {
     { "tok_dict", "f61_01.obj", 0, 363, 212, 8, 3 },
     { "char_name", "f61_01.obj", 363, 363, 212, 8, 3 },
@@ -5547,6 +5548,7 @@ const delta_rule fifi_delta_rules[] = {
     { "init_fin_word_vars", "f61_42.obj", 1611911, 168, 196, 8, 1 },
     { "set_phrase_defaults", "written.obj", 1612079, 224, 204, 8, 2 },
 };
+#endif
 
 const int fifi_delta_rule_count = 758;
 

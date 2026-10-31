@@ -74,6 +74,10 @@ HEADERS += ../src/reloq_german_feminine_protected75.inc ../src/reloq_german_pred
 # rules and Delta primitives, not to the acoustic composer or legacy ECI ABI.
 OBJECTS := $(patsubst ../src/%.c,build/posix/%.o,$(SOURCE))
 WINDOWS_OBJECTS := $(patsubst ../src/%.c,build/windows/%.o,$(SOURCE))
+WINDOWS_OBJECTS += build/windows/reloq_eci_fixed_math.o
+build/windows/reloq_eci_fixed_math.o: reloq_eci_fixed_math.c
+	@mkdir -p $(dir $@)
+	$(WINDOWS_CC) $(CPPFLAGS) $(WINDOWS_CFLAGS) $(SECTIONS) -c $< -o $@
 ANDROID_OBJECTS := $(patsubst ../src/%.c,$(ANDROID_BUILD)/%.o,$(SOURCE))
 $(ANDROID_BUILD)/%.o: ../src/%.c $(HEADERS)
 	@mkdir -p $(dir $@)

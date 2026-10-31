@@ -470,7 +470,7 @@ int main(void)
     int stream=native_phoneme_stream();if(stream)return stream;
     char version[20] = {0};
     eciVersion(version);
-    CHECK(!strcmp(version, "0.2.199.0"));
+    CHECK(!strcmp(version, "0.2.200.0"));
     int languages = 0;
     CHECK(eciGetAvailableLanguages(NULL, &languages) == 0 &&
           languages == 0);

@@ -1,0 +1,19 @@
+{
+  "bytes": 52901432,
+  "dependencies": [
+    "libm.so",
+    "libdl.so",
+    "libc.so"
+  ],
+  "rule_diagnostic_symbols": {},
+  "duplicate_renderer_symbols": [],
+  "runtime_rule_indexes": [],
+  "compiler_object_descriptions": 0,
+  "file_tap_lookup": false,
+  "native_rule_descriptor_bytes": 174336,
+  "bytecode_arrays": [],
+  "symbol_audit_source": "unstripped library",
+  "text_section_bytes": null,
+  "defined_text_bytes": 25925936,
+  "language_call_glue_text_bytes": 8
+}

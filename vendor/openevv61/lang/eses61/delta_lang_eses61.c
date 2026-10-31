@@ -117,8 +117,12 @@ delta_language delta_lang_eses61 = {
     eses61_delta_rules,
     0, 0,                /* how many, and which one plants a landing place */
     DELTA_RULE_FRAME_MAX,
+#if RELOQ61_NATIVE_ENTRIES
+    0, 0,
+#else
     eses61_delta_rule_native,
     &eses61_delta_native_index,
+#endif
 
     eses61_delta_const_store,
     eses61_delta_authored_store,

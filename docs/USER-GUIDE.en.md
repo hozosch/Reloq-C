@@ -54,6 +54,8 @@ These controls are in NVDA's Speech settings:
 
 German uses the built-in C dictionary, as do the other languages. The supplemental German lexicon from earlier versions is no longer required. Optional pronunciation dictionaries remain available.
 
+Emoji names are read in the selected language during ordinary reading and character navigation, including skin tones, flags, keycaps and joined emoji. This works in the shared engine, including Android. Ordinary digits and punctuation retain their existing treatment; text presentation selectors are respected. NVDA may also apply its own symbol pronunciation settings before sending text to the engine.
+
 ## Pronunciation dictionaries
 
 Select Eloquence C first, then open **NVDA Settings → Eloquence C**.

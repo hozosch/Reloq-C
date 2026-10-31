@@ -1,0 +1,110 @@
+{
+  "version": "0.2.200",
+  "baseline": "0.2.199",
+  "artifacts": {
+    "host": {
+      "file": "libreloq_eci.so",
+      "bytes": 55231576,
+      "sha256": "6117f5b9d8e886e679652f4d6807f648ef1f071168db92938b8ff7484900c0c3",
+      "baseline_bytes": 55983384,
+      "bytes_saved": 751808
+    },
+    "windows": {
+      "file": "eci.dll",
+      "bytes": 54544384,
+      "sha256": "d3c4573f26805f798ebd317a33f680b5483434d15dd7d4e40d40f3798b3ffa85",
+      "baseline_bytes": 55226880,
+      "bytes_saved": 682496
+    },
+    "android": {
+      "file": "libreloq_android.so",
+      "bytes": 52901432,
+      "sha256": "610e479bf3831879ae5744a5abcf5c2d525df8a03e27daf34447593564d970b6",
+      "baseline_bytes": 53627040,
+      "bytes_saved": 725608
+    },
+    "addon": {
+      "file": "reloq-c-synth-experimental-x64-0.2.200.nvda-addon",
+      "bytes": 19508738,
+      "sha256": "92022bb2e36881986f66aa9a7e3e4c796bef9cad712314345b2ab2515970be9d",
+      "baseline_bytes": 19856092,
+      "bytes_saved": 347354
+    },
+    "apk": {
+      "file": "reloq-c-android-arm64-0.2.200-preview12.apk",
+      "bytes": 17446294,
+      "sha256": "cdb079f76c61d0a52d6897b78132f3e10312ef8bf8a80e6f20c3063567747dfd",
+      "baseline_bytes": 17708438,
+      "bytes_saved": 262144
+    }
+  },
+  "native_entries": 10896,
+  "release_descriptor_bytes_before": 435840,
+  "release_descriptor_bytes_after": 174336,
+  "native_language_rule_bodies_unchanged": true,
+  "runtime_bytecode": false,
+  "second_private_pcm_renderer": false,
+  "private_rule_number_index": false,
+  "speech_result_cache_added": false,
+  "emoji": {
+    "unicode": "17.0",
+    "cldr": "48; French U+1FA8A completed from release-48-2",
+    "rgi_sequences": 3944,
+    "new_label_catalogue": false,
+    "core_sentence_and_character_checks": 110432,
+    "public_api_checks": 504,
+    "languages": 14,
+    "asan_ubsan_passed": true
+  },
+  "validation": {
+    "main_c_eci_test": true,
+    "additional_eci_recipes": 26,
+    "unchanged_pcm_and_indexes": 196,
+    "cjk_latin_baseline_checks": 366,
+    "analysis_option_baseline_checks": 227,
+    "german_url_fragment_index_checks": 208,
+    "dictionary_semantics": 25,
+    "dictionary_retention": 18,
+    "nvda_en_de_contract_tests": true,
+    "jni_direct_pcm_checks": 63,
+    "android_settings_dictionary_checks": 866,
+    "android_voice_ids": 112,
+    "android_update_metadata_checks": 35,
+    "arm64_landing": true,
+    "windows_x64_exports": 21,
+    "native_dependency_and_metadata_audit": true,
+    "dictionary_git_blobs_verified": 7,
+    "package_native_and_dictionary_bytes_match": true
+  },
+  "cpu_ratios": {
+    "1": {
+      "median_ratio": 1.0141920142300502,
+      "min_ratio": 0.8140345152080586,
+      "max_ratio": 1.1696340496412267
+    },
+    "6": {
+      "median_ratio": 0.9971191854033044,
+      "min_ratio": 0.8003642157258687,
+      "max_ratio": 1.1006213983339301
+    }
+  },
+  "requested_german_heap_peak_4000_words_before": 58628850,
+  "requested_german_heap_peak_4000_words_after": 58628850,
+  "dictionary_commit": "1ecd298e87880131dad201378ac39a80940b342e",
+  "android": {
+    "package": "org.reloq.tts.preview",
+    "previous_version_code": 20199,
+    "version_code": 20200,
+    "same_preview_certificate": true,
+    "only_permission": "android.permission.INTERNET",
+    "elf_page_alignment": 16384
+  },
+  "no_audio_files": true,
+  "limits": [
+    "Native dependency/ABI checks and Linux host output comparisons are not an Android/Windows device listening test.",
+    "Warm German utterance heap is unchanged; this iteration primarily reduces linked code/data and removes rule-index initialization.",
+    "CPU timings are exploratory host observations, not a latency guarantee.",
+    "Linguistic generated C rule bodies and transitional record/frame layouts remain candidates for further authored C work.",
+    "No public GitHub binary release is published in this iteration; SAPI5 remains planned."
+  ]
+}

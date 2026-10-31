@@ -1,0 +1,10 @@
+{
+  "file": "reloq-c-synth-experimental-x64-0.2.200.nvda-addon",
+  "bytes": 19508738,
+  "sha256": "92022bb2e36881986f66aa9a7e3e4c796bef9cad712314345b2ab2515970be9d",
+  "dll_bytes": 54544384,
+  "baseline_addon_bytes": 19856092,
+  "bytes_saved": 347354,
+  "all_package_inputs_match": true,
+  "nvda_en_de_tests_passed": true
+}

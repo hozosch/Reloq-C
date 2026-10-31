@@ -1349,6 +1349,7 @@ static int32_t run_bytecode(void *state, const delta_rule *r,
    every call a walk over the whole of it. Out of line because the check that
    it has been done is on the path every rule entry takes and the doing of it
    is not. */
+#if !RELOQ61_NATIVE_ENTRIES
 static delta_rule_cfn *delta_native_index(const delta_language *lang)
 {
     delta_rule_cfn *by_number;
@@ -1380,6 +1381,7 @@ static delta_rule_cfn delta_native_walk(const delta_language *lang, int n)
                 return w->fn;
     return 0;
 }
+#endif
 
 /* How deep the rules are, so the outermost can be told from the rest. */
 static __thread int delta_rule_depth;
@@ -1391,9 +1393,13 @@ int32_t delta_run_rule(void *state, const delta_rule *r, const int32_t *args,
     const delta_rule *was;
 #endif
     delta_rule_cfn     fn;
+#if !RELOQ61_NATIVE_ENTRIES
     delta_rule_cfn    *by_number;
+#endif
     int32_t answer;
+#if !RELOQ61_NATIVE_ENTRIES
     int n;
+#endif
     int mark;
 
     /* Which language, before anything reads a table. The machine says: it
@@ -1415,7 +1421,9 @@ int32_t delta_run_rule(void *state, const delta_rule *r, const int32_t *args,
     if (was_lang != lang)
         delta_lang_set(lang);
 
+#if !RELOQ61_NATIVE_ENTRIES
     n = (int)(r - lang->rules);
+#endif
 
 #if EVV_RULE_TRACE_ENABLED
     if (delta_rule_trace < 0) {
@@ -1453,6 +1461,9 @@ int32_t delta_run_rule(void *state, const delta_rule *r, const int32_t *args,
        Which rules are written as C is settled at link time, so the table is
        read into an index by rule number once. Scanning it instead cost every
        call a walk over the whole of it. */
+#if RELOQ61_NATIVE_ENTRIES
+    fn = r->invoke;
+#else
     by_number = *lang->rule_native_by_number;
     if (by_number == 0)
         by_number = delta_native_index(lang);
@@ -1461,6 +1472,7 @@ int32_t delta_run_rule(void *state, const delta_rule *r, const int32_t *args,
         fn = (n >= 0 && n < lang->rule_count) ? by_number[n] : 0;
     else
         fn = delta_native_walk(lang, n);
+#endif
     /* A landing this rule plants stops being one when the rule returns, and
        this is the only place that can say so where the rules are C: the
        interpreter has evv_land_forget and a C rule has nothing. Without it a

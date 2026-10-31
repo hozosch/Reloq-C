@@ -1,0 +1,16 @@
+{
+  "version": "0.2.200",
+  "native_rule_entries": 10896,
+  "regenerated_binding_files": 29,
+  "source_rule_bodies_unchanged": true,
+  "emoji_version": "Unicode 17 / CLDR 48, French U+1FA8A from CLDR 48.2",
+  "emoji_sequences": 3944,
+  "presentation_ranges": 81,
+  "exhaustive_reading_and_map_checks": 110432,
+  "asan_ubsan": true,
+  "no_audio_files": true,
+  "generator_outputs_identical_without_rewriting_files": true,
+  "host_core_source_unchanged_after_validated_build_except_documentation": true,
+  "windows_fixed_math_table_bytes": 40,
+  "scope": "Runtime metadata/binding and parameter-only provider; existing generated linguistic rule bodies remain work for further authored C porting."
+}

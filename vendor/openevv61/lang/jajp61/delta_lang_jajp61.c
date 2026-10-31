@@ -117,8 +117,12 @@ delta_language delta_lang_jajp61 = {
     jajp61_delta_rules,
     0, 0,                /* how many, and which one plants a landing place */
     DELTA_RULE_FRAME_MAX,
+#if RELOQ61_NATIVE_ENTRIES
+    0, 0,
+#else
     jajp61_delta_rule_native,
     &jajp61_delta_native_index,
+#endif
 
     jajp61_delta_const_store,
     jajp61_delta_authored_store,

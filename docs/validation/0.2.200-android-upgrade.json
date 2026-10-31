@@ -1,0 +1,17 @@
+{
+  "file": "reloq-c-android-arm64-0.2.200-preview12.apk",
+  "bytes": 17446294,
+  "sha256": "cdb079f76c61d0a52d6897b78132f3e10312ef8bf8a80e6f20c3063567747dfd",
+  "baseline_bytes": 17708438,
+  "bytes_saved": 262144,
+  "native_and_dex_match": true,
+  "dictionary_snapshot_matches": true,
+  "package": "org.reloq.tts.preview",
+  "version_code_before": 20199,
+  "version_code": 20200,
+  "same_preview_certificate": true,
+  "permissions": [
+    "android.permission.INTERNET"
+  ],
+  "aligned_16KiB": true
+}

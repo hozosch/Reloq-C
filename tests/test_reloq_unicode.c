@@ -17,7 +17,7 @@ static void check(const char *input,int mode,int en,const char *wanted)
 }
 int main(void)
 {
-    check("Hallo😀Welt",0,0,"Hallo Welt");
+    check("Hallo😀Welt",0,0,"Hallo grinsendes Gesicht Welt");
     check("aαb",0,0,"a Alpha b");check("a\xee\x80\x80" "b",0,0,"a b");
     check("aΩb",0,1,"a omega b");
     check("∰",1,0," Volumenintegral ");
@@ -40,9 +40,9 @@ int main(void)
     check("⊖",1,0," eingekreistes Minuszeichen ");
     check("≪",1,0," sehr viel kleiner als ");
     check("\xe2\x81\xa7",1,0," Isolierung von rechts nach links ");
-    /* Missing German entries identify the codepoint. Formal English UCD
-     * names remain available only in English. */
-    check("\xf0\x93\x80\x80",1,0," Unicode U plus 1 3 0 0 0 ");
+    /* The complete translated name extension is already part of the shared
+     * character reader; retain its German and formal English readings. */
+    check("\xf0\x93\x80\x80",1,0," Ägyptische Hieroglyphen a001 ");
     check("\xf0\x93\x80\x80",1,1," egyptian hieroglyph a001 ");
     check("α",1,0," Alpha ");check("α",1,1," alpha ");
     check("μ",1,0," My ");check("μ",1,1," mu ");
@@ -51,11 +51,11 @@ int main(void)
     check("Sa\xcc\x83o, ac\xcc\xa7" "a\xcc\x83o",0,2,"São, ação");
     check("Helsinki/Turku - ääni",0,2,"Helsinki/Turku - ääni");
     check("ä+@",1,2," `ts2 ä+@ `ts0 ");
-    check("Olá😀mundo",0,2,"Olá mundo");
+    check("Olá😀mundo",0,2,"Olá grinning face mundo");
     check("a`ts2 b",0,2,"a ` ts2 b");
     check("üÜ",0,2,"üÜ"); /* Native Finnish rules own the reading. */
     check("u\xcc\x88",0,2,"ü");
-    check("x1️⃣y",0,0,"x y");
+    check("x1️⃣y",0,0,"x Taste: 1 y");
     check("１２３",0,0,"123");check("١٢٣",0,0,"123");
     check("é",1,0," `ts2 é `ts0 ");
     check("e\xcc\x81",1,0," `ts2 é `ts0 ");
@@ -64,6 +64,14 @@ int main(void)
     check("😀",1,0," grinsendes Gesicht ");
     check("😀",1,1," grinning face ");
     check("👩🏽‍💻",1,0," IT-Expertin: mittlere Hautfarbe ");
+    check("👩🏽‍💻",0,0," IT-Expertin: mittlere Hautfarbe ");
+    check("😀😃",0,1," grinning face  grinning face with big eyes ");
+    check("123 # *",0,1,"123 # *");
+    check("© ™ ↔",0,1,"© ™  ");
+    check("©️",0,1," copyright ");
+    check("⌚︎",0,1," ");
+    check("🇩🇪",0,0," Flagge: Deutschland ");
+    check("🏳️‍🌈",0,1," rainbow flag ");
     check("\xcd\xb8",1,0," Unicode U plus 0 3 7 8 ");
     check("\xee\x80\x80",1,0," Unicode U plus E 0 0 0 ");
     check("\xe3\x90\x80",1,0," CJK vereinheitlichtes Ideogramm 3400 ");

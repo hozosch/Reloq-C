@@ -5090,6 +5090,7 @@ const void *const ptbr_delta_rule_sym[] = {
 
 const int ptbr_delta_rule_sym_count = 1503;
 
+#if !RELOQ61_NATIVE_ENTRIES
 const delta_rule ptbr_delta_rules[] = {
     { "tok_dict", "f61_01.obj", 0, 363, 212, 8, 3 },
     { "char_name", "f61_01.obj", 363, 363, 212, 8, 3 },
@@ -5877,6 +5878,7 @@ const delta_rule ptbr_delta_rules[] = {
     { "init_por_word_vars", "f61_44.obj", 1454186, 208, 196, 8, 1 },
     { "set_phrase_defaults", "written.obj", 1454394, 224, 204, 8, 2 },
 };
+#endif
 
 const int ptbr_delta_rule_count = 785;
 

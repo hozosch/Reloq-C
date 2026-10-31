@@ -10360,6 +10360,7 @@ const void *const enus61_delta_rule_sym[] = {
 
 const int enus61_delta_rule_sym_count = 5749;
 
+#if !RELOQ61_NATIVE_ENTRIES
 const delta_rule enus61_delta_rules[] = {
     { "tok_dict", "f61_01.obj", 0, 363, 212, 8, 3 },
     { "find_enclitic_to_left", "f61_01.obj", 363, 480, 228, 8, 5 },
@@ -11383,6 +11384,7 @@ const delta_rule enus61_delta_rules[] = {
     { "delete_extra_syncs", "recovered102.obj", 3481201, 1662, 240, 8, 3 },
     { "set_phrase_defaults", "written102.obj", 3482863, 224, 204, 8, 2 },
 };
+#endif
 
 const int enus61_delta_rule_count = 1021;
 

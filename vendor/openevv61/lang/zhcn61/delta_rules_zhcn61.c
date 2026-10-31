@@ -3973,6 +3973,7 @@ const void *const zhcn61_delta_rule_sym[] = {
 
 const int zhcn61_delta_rule_sym_count = 1254;
 
+#if !RELOQ61_NATIVE_ENTRIES
 const delta_rule zhcn61_delta_rules[] = {
     { "lang_word_cat_anno", "f61_01.obj", 0, 222, 212, 8, 3 },
     { "tok_dict", "f61_01.obj", 222, 363, 212, 8, 3 },
@@ -4574,6 +4575,7 @@ const delta_rule zhcn61_delta_rules[] = {
     { "init_platform", "written.obj", 978041, 596, 232, 8, 1 },
     { "set_phrase_defaults", "written.obj", 978637, 224, 204, 8, 2 },
 };
+#endif
 
 const int zhcn61_delta_rule_count = 599;
 

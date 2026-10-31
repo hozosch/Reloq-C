@@ -63,7 +63,17 @@ typedef struct {
     uint32_t bytes;
 } delta_store;
 
-/* One rule, as the interpreter needs it. */
+/* Release rule entry: a name for statement binding and a native C call.
+ * Compiler offsets, source objects and interpreter frame descriptions are
+ * development metadata, not part of the pronunciation runtime. */
+#if defined(EVV_NO_BYTECODE) && !defined(EVV_RULE_DIAGNOSTICS)
+#define RELOQ61_NATIVE_ENTRIES 1
+typedef struct {
+    const char *name;
+    delta_rule_cfn invoke;
+} delta_rule;
+#else
+#define RELOQ61_NATIVE_ENTRIES 0
 typedef struct {
     const char *name;
     const char *object;   /* which one it was compiled in */
@@ -73,6 +83,7 @@ typedef struct {
     int32_t     pbase;    /* where its arguments start */
     int32_t     params;
 } delta_rule;
+#endif
 
 /* Everything one language is. Const, except that the symbol table has to be
    bound once the arena exists, so what is const is the address of the slot

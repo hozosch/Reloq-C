@@ -15,6 +15,11 @@ no further speed or size improvement is possible.
 - Record package/DLL sizes, requested heap peaks and paired CPU measurements.
   Compare high rates separately. Windows/Dell and Windows/ARM listening tests
   remain distinct from host benchmarks.
+- Read CLDR emoji names in the shared core, including Android sentence
+  reading, joined sequences and source indexes. Keep native punctuation and
+  accent rules. Audit actual linked code separately from source/archive size:
+  release rule entries must not retain interpreter descriptions or a second
+  PCM renderer.
 - Retain the current Android package identity, signing continuity and browser
   update handoff. The user reports that Play Protect accepts 0.2.197. This is
   a device observation for that package, not a general security certification.

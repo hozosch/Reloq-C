@@ -1045,14 +1045,20 @@ reloq_rate_transfer.o: src/reloq_rate_transfer.c include/reloq_rate_transfer.h i
 reloq_english_nucleus.o: src/reloq_english_continuant_targets.inc
 
 libreloq_core.a: reloq_unicode.o
-reloq_unicode.o: src/reloq_unicode.c src/reloq_unicode_data.inc include/reloq_unicode.h
+libreloq_core.a: reloq_unicode_names.o
+reloq_unicode_names.o: src/reloq_unicode_names.c $(wildcard src/reloq_unicode_names*.inc)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -c $< -o $@
+reloq_unicode.o: src/reloq_unicode.c src/reloq_unicode_data.inc src/reloq_unicode_multilingual.inc src/reloq_unicode_greek.inc src/reloq_unicode_emoji.inc include/reloq_unicode.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -c $< -o $@
 test_reloq_unicode: tests/test_reloq_unicode.c libreloq_core.a
 	$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude $< libreloq_core.a -lm -o $@
 test: test-unicode
 .PHONY: test-unicode
-test-unicode: test_reloq_unicode
+test-unicode: test_reloq_unicode test_reloq_unicode_emoji
 	./test_reloq_unicode
+	./test_reloq_unicode_emoji
+test_reloq_unicode_emoji: tests/test_reloq_unicode_emoji.c src/reloq_unicode_emoji.inc src/reloq_unicode_data.inc src/reloq_unicode_multilingual.inc libreloq_core.a
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude $< libreloq_core.a -lm -o $@
 
 libreloq_core.a: reloq_english_g2p.o
 reloq_english_g2p.o: src/reloq_english_g2p.c src/reloq_english_g2p83.inc

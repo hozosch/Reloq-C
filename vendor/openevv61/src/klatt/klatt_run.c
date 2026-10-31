@@ -136,9 +136,11 @@ void finishSynthesis(DeltaThis *d)
     DeltaLang *lang = DT_LANG(d);
     SynthDevice *dev = DL_DEVICE(lang);
 
+#ifndef RELOQ61_PARAMETERS_ONLY
     KlattClose(DL_KLATT(lang));
     if (DL_WIDE(lang))
         klatt_wide_close(DL_WIDE(lang));
+#endif
     SD_UNKNOWN_2C(dev) = 0;
     SD_LAST_CLOCK(dev) = clock();
     SD_PLAYING(dev) = 0;
@@ -397,8 +399,10 @@ void dlang_delete(DeltaThis *d)
 
     lang = DT_LANG(d);
     deleteOutputDevice(d);
+#ifndef RELOQ61_PARAMETERS_ONLY
     klatt_delete(DL_KLATT(lang));
     klatt_wide_delete(DL_WIDE(lang));
+#endif
     DL_WIDE(lang) = 0;
     stmarray_delete(d);
 
@@ -604,7 +608,9 @@ int dlang_new(DeltaThis *d)
         return DELTA_NO_ROOM;
     }
 
+#ifndef RELOQ61_PARAMETERS_ONLY
     DL_KLATT(lang) = klatt_new(d);
+#endif
     return 0;
 }
 
@@ -779,6 +785,7 @@ int assignParameters(DeltaThis *d, int32_t kind, ParmAssignments *pa)
 /* ---- samples coming back out ----------------------------------------- */
 
 /* What the synthesiser hands back: how many samples, and where they are. */
+#ifndef RELOQ61_PARAMETERS_ONLY
 typedef struct KlattSamples {
     int32_t  count;
     int32_t *samples;
@@ -842,6 +849,7 @@ int ourKlattCallback(void *user, KlattSamples *s)
     }
     return 1;
 }
+#endif
 
 /* ---- a rate the language cannot name --------------------------------- */
 
@@ -889,9 +897,15 @@ int klattSynthFrame(DeltaThis *d, const int32_t *frame)
     if (lang->reloq_frame)
         return lang->reloq_frame(lang->reloq_context, frame, lang->reloq_volume);
 
+#ifdef RELOQ61_PARAMETERS_ONLY
+    /* Constructor/reset setup can run without a host sink. It initializes
+     * language state and deliberately produces no samples. */
+    return 1;
+#else
     if (DL_WIDE(lang) && !klatt_wide_frame(DL_WIDE(lang), frame))
         return 0;
     return KlattSynth(DL_KLATT(lang), frame);
+#endif
 }
 
 /* Put the two resonator tables for this rate in front of the synthesiser.
@@ -905,6 +919,7 @@ int klattSynthFrame(DeltaThis *d, const int32_t *frame)
 
    Answers zero when there is no room, which the caller turns into silence
    rather than the null lookup it used to be. */
+#ifndef RELOQ61_PARAMETERS_ONLY
 static int ensureRateTables(DeltaLang *lang, int32_t rate)
 {
     if (rate == 8000 || rate == 11025)
@@ -938,6 +953,7 @@ static int ensureRateTables(DeltaLang *lang, int32_t rate)
     KlattSetRateTables(DL_KLATT(lang), DL_BUILT_EX(lang), DL_BUILT_CO(lang));
     return 1;
 }
+#endif
 
 /* ---- one utterance --------------------------------------------------- */
 
@@ -1032,7 +1048,9 @@ int synthesize(DeltaThis *d, void *buf, int32_t isArray, int32_t *streamA,
     cp.n_formants = 5;
     cp.unknown_10 = 8;
     cp.unknown_14 = 1;
+#ifndef RELOQ61_PARAMETERS_ONLY
     cp.error_fn = (klatt_error_fn)errorKlattIgnore;
+#endif
 
     /* The caller's rate stands in for the rules' where there is one. Only
        where the rules named a rate at all: a nought here means leave it
@@ -1060,7 +1078,9 @@ int synthesize(DeltaThis *d, void *buf, int32_t isArray, int32_t *streamA,
     cp.unknown_20 += addD;
     cp.error_fn = (klatt_error_fn)errorIgnore;
     cp.callback_mode = 2;
+#ifndef RELOQ61_PARAMETERS_ONLY
     cp.samples_fn = (klatt_samples_fn)ourKlattCallback;
+#endif
 
     if (!a7)
         a7 = 5;
@@ -1124,6 +1144,7 @@ int synthesize(DeltaThis *d, void *buf, int32_t isArray, int32_t *streamA,
     }
 
     if (changed) {
+#ifndef RELOQ61_PARAMETERS_ONLY
         /* Before the parameters, not after: KlattSetConstParms leaves these
            two pointers alone at a rate it does not know by name, which is
            the only reason a rate it does not know can work at all. */
@@ -1146,16 +1167,19 @@ int synthesize(DeltaThis *d, void *buf, int32_t isArray, int32_t *streamA,
                 return 0;
             }
         }
+#endif
         SD_OPEN(dev) = 0;
     }
 
     if (!SD_OPEN(dev)) {
+#ifndef RELOQ61_PARAMETERS_ONLY
         if (!KlattOpen(DL_KLATT(lang))
             || (DL_WIDE(lang) && !klatt_wide_open(DL_WIDE(lang)))) {
             SD_PLAYING(dev) = 0;
             SD_INTERRUPTED(dev) = 0;
             return 0;
         }
+#endif
         SD_OPEN(dev) = 1;
     }
 
@@ -1173,9 +1197,11 @@ int synthesize(DeltaThis *d, void *buf, int32_t isArray, int32_t *streamA,
         finish = 1;
     }
 
+#ifndef RELOQ61_PARAMETERS_ONLY
     klattSetVolumeMultiplier(DL_KLATT(lang), volume);
     if (DL_WIDE(lang))
         klatt_wide_volume(DL_WIDE(lang), volume);
+#endif
 
     if (isArray)
         rc = sendArrayParameters(d, from, to, SD_LAZY_WRITE(dev), wasIdle,
@@ -1234,6 +1260,8 @@ ALIAS("?sleepCycleCallback@@YAHPAUSoundDeviceInfo@@H@Z",
       "sleepCycleCallback");
 ALIAS("?assignParameters@@YAHPAUDelta_This_Struct@@HPAUParmAssignments@@@Z",
       "assignParameters");
+#ifndef RELOQ61_PARAMETERS_ONLY
 ALIAS("?ourKlattCallback@@YAHPAXPAUKlattSamplesStruct@@@Z",
       "ourKlattCallback");
+#endif
 ALIAS("??0SoundDeviceInfo@@QAE@XZ", "soundDeviceInfoCtor");

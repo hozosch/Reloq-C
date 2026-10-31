@@ -1,12 +1,12 @@
 # Android ARM64 preview
 
 ReLoq C Preview uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `0.2.199-preview11` targets ARM64 (`arm64-v8a`), Android 8/API 26
+add-on. Version `0.2.200-preview12` targets ARM64 (`arm64-v8a`), Android 8/API 26
 or later. Speech runs offline. Network access is used only when you explicitly update pronunciation dictionaries or check for an app update. Package downloads open in the browser.
 
 ## Install or update
 
-Install `reloq-c-android-arm64-0.2.199-preview11.apk` over the existing preview.
+Install `reloq-c-android-arm64-0.2.200-preview12.apk` over the existing preview.
 The package remains `org.reloq.tts.preview`, the preview signing certificate is
 unchanged, and versionCode increases from 20193 to 20194. Android can therefore
 update the existing app and retain its settings. Do not uninstall it first.
@@ -139,6 +139,10 @@ The new AVX2 variants apply to supported native x64 hosts; native ARM64 keeps
 its existing arithmetic path with shared constant-window/logarithm savings.
 
 Text enters C as standard UTF-8, including supplementary Unicode characters.
+CLDR emoji names are handled in the shared C character reader during ordinary
+speech as well as character reading. A compact Unicode 17 RGI index reuses
+the existing localized name pools for joined emoji, skin tones, flags and
+keycaps. The app does not replace emoji or carry a second naming catalogue.
 The ARM64 backtracking boundary saves the AAPCS64 preserved registers, Android's
 platform register, stack/link registers and floating-point state. Native `char`
 is explicitly signed. ELF segments use 16 KiB alignment; final resource-table
@@ -170,7 +174,7 @@ The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 ```sh
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
-python3 android/verify_apk.py dist/reloq-c-android-arm64-0.2.199-preview11.apk
+python3 android/verify_apk.py dist/reloq-c-android-arm64-0.2.200-preview12.apk
 ```
 
 The final APK passes signature, install-critical resource-table and 16-KiB ELF checks. The package/signature comparison supports an in-place update from 0.2.198-preview10. The user confirmed that version as stable. The browser download handoff still needs its ordinary device/TalkBack check once a release package is published. The user reports that Play Protect accepts 0.2.197. This build keeps its browser update flow and INTERNET-only permission profile.

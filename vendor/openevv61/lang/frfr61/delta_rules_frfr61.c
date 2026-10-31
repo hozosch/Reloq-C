@@ -7062,6 +7062,7 @@ const void *const frfr61_delta_rule_sym[] = {
 
 const int frfr61_delta_rule_sym_count = 3023;
 
+#if !RELOQ61_NATIVE_ENTRIES
 const delta_rule frfr61_delta_rules[] = {
     { "tok_dict", "f61_01.obj", 0, 363, 212, 8, 3 },
     { "proclitic", "f61_01.obj", 363, 384, 212, 8, 3 },
@@ -7956,6 +7957,7 @@ const delta_rule frfr61_delta_rules[] = {
     { "set_phrase_defaults", "written.obj", 2273090, 224, 204, 8, 2 },
     { "init_fren_syll_inton_vars", "written.obj", 2273314, 295, 196, 8, 1 },
 };
+#endif
 
 const int frfr61_delta_rule_count = 892;
 

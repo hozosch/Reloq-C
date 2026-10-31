@@ -54,6 +54,8 @@ Die folgenden Optionen befinden sich in den Sprachausgaben-Einstellungen:
 
 Deutsch verwendet wie die übrigen Sprachen das eingebaute C-Wörterbuch. Die zusätzliche deutsche Lexikondatei früherer Versionen wird nicht mehr benötigt; die optionalen Aussprachewörterbücher bleiben verfügbar.
 
+Emoji-Namen werden beim normalen Lesen und bei der Zeichennavigation in der gewählten Sprache gesprochen, einschließlich Hautfarben, Flaggen, Tastensymbolen und verbundenen Emojis. Das liegt im gemeinsamen Kern und funktioniert auch unter Android. Gewöhnliche Ziffern und Satzzeichen behalten ihre bisherige Behandlung; die Auswahl der Textdarstellung wird berücksichtigt. NVDA kann vor der Übergabe an die Sprachausgabe außerdem seine eigene Symbolaussprache anwenden.
+
 ## Aussprachewörterbücher
 
 Wähle zuerst Eloquence C als aktive Sprachausgabe. Öffne dann **NVDA-Einstellungen → Eloquence C**.

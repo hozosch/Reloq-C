@@ -27,7 +27,8 @@ extern int32_t arrayStreamFind(void*,const char*);
 #include "reloq61.h"
 #include "klatt_state.h"
 #include "klatt_lang.h"
-#include "evv_klatttap.h"
+#include "reloq61_parameter_names.h"
+#include "reloq61_rule_trace.h"
 
 /* How many parameters a frame carries. */
 #define FRAME_PARMS 0x3e
@@ -45,10 +46,11 @@ extern int32_t arrayStreamFind(void*,const char*);
  * A line a breakpoint: which parameter, where it starts, how wide, and the
  * two values. `map' lines say which stream each parameter reads, once a run.
  */
-static FILE *array_tap;
-static int   array_tap_tried;
 static const char *array_tap_name[FRAME_PARMS];
 
+#if EVV_RULE_TRACE_ENABLED
+static FILE *array_tap;
+static int   array_tap_tried;
 static FILE *arrayTap(void)
 {
     const char *name;
@@ -61,6 +63,9 @@ static FILE *arrayTap(void)
         array_tap = fopen(name, "w");
     return array_tap;
 }
+#else
+#define arrayTap() ((FILE *)0)
+#endif
 
 /* One cursor: the two points it is between, and the gap worked out from
    them. */
@@ -290,9 +295,9 @@ int32_t sendArrayParameters(delta_state *d, int32_t from, int32_t to,
             if (map[i + 1] == -1)
                 continue;
             if (map[i + 1] >= 0 && map[i + 1] < FRAME_PARMS && i < 62)
-                array_tap_name[map[i + 1]] = evv_klatt_parm_names[i];
+                array_tap_name[map[i + 1]] = reloq61_parameter_names[i];
             fprintf(arrayTap(), "map %s\tstream %d\tdefault %d\n",
-                    i < 62 ? evv_klatt_parm_names[i] : "?",
+                    i < 62 ? reloq61_parameter_names[i] : "?",
                     (int)map[i + 1], (int)defaults[i]);
         }
     }

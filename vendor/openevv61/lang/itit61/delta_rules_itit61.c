@@ -5161,6 +5161,7 @@ const void *const itit61_delta_rule_sym[] = {
 
 const int itit61_delta_rule_sym_count = 1898;
 
+#if !RELOQ61_NATIVE_ENTRIES
 const delta_rule itit61_delta_rules[] = {
     { "tok_dict", "f61_01.obj", 0, 363, 212, 8, 3 },
     { "find_proclitic", "f61_01.obj", 363, 432, 220, 8, 4 },
@@ -5872,6 +5873,7 @@ const delta_rule itit61_delta_rules[] = {
     { "init_platform", "written.obj", 1442503, 596, 232, 8, 1 },
     { "set_phrase_defaults", "written.obj", 1443099, 224, 204, 8, 2 },
 };
+#endif
 
 const int itit61_delta_rule_count = 709;
 

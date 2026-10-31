@@ -2717,6 +2717,7 @@ const void *const jajp61_delta_rule_sym[] = {
 
 const int jajp61_delta_rule_sym_count = 542;
 
+#if !RELOQ61_NATIVE_ENTRIES
 const delta_rule jajp61_delta_rules[] = {
     { "char_name", "f61_01.obj", 0, 363, 212, 8, 3 },
     { "normalize_letters", "f61_01.obj", 363, 182, 212, 8, 3 },
@@ -3184,6 +3185,7 @@ const delta_rule jajp61_delta_rules[] = {
     { "init_platform", "written.obj", 602439, 596, 232, 8, 1 },
     { "set_phrase_defaults", "written.obj", 603035, 224, 204, 8, 2 },
 };
+#endif
 
 const int jajp61_delta_rule_count = 465;
 

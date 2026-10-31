@@ -25,6 +25,9 @@ public final class UpdateDataTest {
         String latest="reloq-c-android-arm64-0.2.199-preview11.apk";
         require(UpdateData.candidate(latest,"https://github.com/hozosch/Reloq-C/releases/download/v0.2.199/"+latest,
             18000000,digest,20198).code==20199);
+        String compact="reloq-c-android-arm64-0.2.200-preview12.apk";
+        require(UpdateData.candidate(compact,"https://github.com/hozosch/Reloq-C/releases/download/v0.2.200/"+compact,
+            18000000,digest,20199).code==20200);
         for(String bad:new String[]{url.replace("github.com","example.net"),
             url.replace("/hozosch/","/other/"),url+"?x=1",url+"#file",
             url.replace("https:","http:"),url.replace("github.com","github.com:443"),

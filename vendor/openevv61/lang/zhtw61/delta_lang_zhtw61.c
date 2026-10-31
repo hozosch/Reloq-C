@@ -117,8 +117,12 @@ delta_language delta_lang_zhtw61 = {
     zhtw61_delta_rules,
     0, 0,                /* how many, and which one plants a landing place */
     DELTA_RULE_FRAME_MAX,
+#if RELOQ61_NATIVE_ENTRIES
+    0, 0,
+#else
     zhtw61_delta_rule_native,
     &zhtw61_delta_native_index,
+#endif
 
     zhtw61_delta_const_store,
     zhtw61_delta_authored_store,

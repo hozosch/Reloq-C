@@ -6,7 +6,7 @@
 #include "reloq61.h"
 #include "reloq61_english_plan.h"
 #include "reloq61_english_bank.h"
-#include "evv_klatttap.h"
+#include "reloq61_parameter_names.h"
 #include "reloq_voice_controls.h"
 #include "evv_abi.h"
 #include "evv_port.h"
@@ -449,7 +449,7 @@ int reloq61_english_bank_prepare(void *state,const struct reloq61_english_bank *
  if(!from)reloq61_array_reset(d);
  if(from<dl->at||!p->span_count)return -1;if(from==dl->at)return 0;
  int32_t map[63],defaults[62];map[0]=1;
- for(unsigned k=0;k<62;++k){map[k+1]=k?arrayStreamFind(d,evv_klatt_parm_names[k]):-1;defaults[k]=bank_value(p->spans[0].curve+k,0);}
+ for(unsigned k=0;k<62;++k){map[k+1]=k?arrayStreamFind(d,reloq61_parameter_names[k]):-1;defaults[k]=bank_value(p->spans[0].curve+k,0);}
  /* This window completes existing native targets. Keep their interpolation
   * cursors: resetting them discards a Chinese vowel's already-read F0 tail. */
  return sendArrayParameters(d,dl->at,from,1,0,1,0,1,map,defaults)?0:-1;
@@ -466,7 +466,7 @@ int reloq61_english_bank_emit(void*state,const struct reloq61_english_bank*p,int
  delta_state*d=state;DeltaLang*dl=EVV_AT(DeltaLang*,d->dlang);struct capture*c=dl->reloq_context;
  if(!dl->reloq_frame||!c||!p||!p->span_count)return -1;
  if(from<dl->at||to<from)return -1;
- int32_t map[63],defaults[62];map[0]=1;for(unsigned k=0;k<62;++k){map[k+1]=k?arrayStreamFind(d,evv_klatt_parm_names[k]):-1;defaults[k]=bank_value(p->spans[0].curve+k,0);}
+ int32_t map[63],defaults[62];map[0]=1;for(unsigned k=0;k<62;++k){map[k+1]=k?arrayStreamFind(d,reloq61_parameter_names[k]):-1;defaults[k]=bank_value(p->spans[0].curve+k,0);}
  /* The preceding Chinese word may retain a bounded acoustic tail. Emit
   * that tail in its own clock before replacing any future targets. */
  if(from>dl->at&&!sendArrayParameters(d,dl->at,from,1,0,1,0,1,map,defaults))return -1;

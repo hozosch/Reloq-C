@@ -1,0 +1,11 @@
+{
+  "checks": 504,
+  "languages": 14,
+  "rates": [
+    11025,
+    48000
+  ],
+  "no_audio_files": true,
+  "localized_name_pcm_equal": true,
+  "fragment_and_inside_sequence_indexes": true
+}

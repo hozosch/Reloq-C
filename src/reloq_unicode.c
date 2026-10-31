@@ -9,6 +9,7 @@
 #include "reloq_unicode_data.inc"
 #include "reloq_unicode_multilingual.inc"
 #include "reloq_unicode_greek.inc"
+#include "reloq_unicode_emoji.inc"
 #define COUNT(a) (sizeof(a)/sizeof *(a))
 #define STR(i) ((const char *)unicode_strings+(i))
 #define NAME_CAPACITY 1024
@@ -244,6 +245,53 @@ static const char *language_label(const char *key,int locale)
     uint32_t offset=multi_names[lo].label[locale];
     return offset?(const char *)multi_name_strings+offset:NULL;
 }
+static int emoji_presentation(uint32_t cp)
+{
+    size_t lo=0,hi=COUNT(unicode_emoji_presentation);
+    while(lo<hi){size_t m=lo+(hi-lo)/2;
+        if(unicode_emoji_presentation[m].last<cp)lo=m+1;else hi=m;}
+    return lo<COUNT(unicode_emoji_presentation)&&unicode_emoji_presentation[lo].first<=cp;
+}
+/* Longest RGI match. Names remain in the existing CLDR pools; this index
+ * only distinguishes emoji from ordinary punctuation, letters and digits.
+ * It uses bounded stack storage, never a decoded catalogue or speech cache. */
+static const char *emoji_label(const unsigned char *text,size_t length,
+    const unsigned char *modes,size_t begin,uint32_t first,int mode,
+    int language,int locale,int english,size_t *matched)
+{
+    size_t p=begin,used=0,points=0;char key[160];
+    const char *label=NULL;int presentation;
+    if(first<128) {
+        if(!strchr("0123456789#*",(int)first)||begin+1>=length)return NULL;
+        size_t n;uint32_t next;
+        if(decode(text+begin+1,length-begin-1,&n,&next)||
+            (next!=0xfe0f&&next!=0x20e3))return NULL;
+    } else if((first<0x203c&&first!=0xa9&&first!=0xae)||
+              (first>0x3299&&first<0x1f000)||first>0x1faff)return NULL;
+    presentation=emoji_presentation(first);
+    while(p<length&&used<sizeof key-5&&(!modes||modes[p]==mode)) {
+        size_t n;uint32_t cp;
+        if(decode(text+p,length-p,&n,&cp))break;
+        if(cp==0xfe0e)break;
+        if(cp==0xfe0f)presentation=1;
+        else {memcpy(key+used,text+p,n);used+=n;++points;}
+        key[used]=0;p+=n;
+        size_t lo=0,hi=COUNT(unicode_emoji_keys);
+        while(lo<hi){size_t m=lo+(hi-lo)/2;
+            if(strcmp(STR(unicode_emoji_keys[m]),key)<0)lo=m+1;else hi=m;}
+        if(lo==COUNT(unicode_emoji_keys)||strncmp(STR(unicode_emoji_keys[lo]),key,used))break;
+        if(!strcmp(STR(unicode_emoji_keys[lo]),key)&&(mode||presentation||points>1)) {
+            /* Text presentation suppresses an otherwise default emoji in
+             * prose. Character navigation still names that symbol. */
+            size_t z;uint32_t next;
+            if(!mode&&p<length&&(!modes||modes[p]==mode)&&
+               !decode(text+p,length-p,&z,&next)&&next==0xfe0e)continue;
+            const char *candidate=language?language_label(key,locale):cldr(key,english);
+            if(candidate){label=candidate;*matched=p;}
+        }
+    }
+    return label;
+}
 static int language_unknown(struct buffer *b,uint32_t c,int locale)
 {
     static const char *const prefix[]={"Unicode U más","Unicode U plus","Unicode U più","统一码 U 加","Unicode U mais","ユニコード U プラス","Unicode U plus","유니코드 U 플러스","Γιούνικοντ U συν"};
@@ -299,6 +347,20 @@ static int unicode_admit(const unsigned char *text,size_t length,
         while(end<length&&(!modes||modes[end]==mode)) {
             uint32_t mark;size_t z;if(decode(text+end,length-end,&z,&mark))goto fail;
             uint32_t merged=reloq_unicode_compose(c,mark);if(!merged)break;c=merged;end+=z;
+        }
+        {
+            size_t matched=0;
+            const char *label=emoji_label(text,length,modes,begin,c,mode,
+                language,locale,english,&matched);
+            if(label) {
+                old=b.n;
+                if((native_run||source_spelling)&&add(&b," `ts0 ",6)){rc=-2;goto fail;}
+                native_run=0;
+                if(say(&b,label)||(source_spelling&&add(&b,source_spelling==1?" `ts1 ":" `ts2 ",6))){rc=-2;goto fail;}
+                offsets[begin]=old;
+                for(size_t j=begin+1;j<matched;++j)offsets[j]=b.n;
+                offsets[matched]=b.n;i=matched;continue;
+            }
         }
         {
             /* Foreign Greek letters have one alphabet-name route in both

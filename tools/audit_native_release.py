@@ -40,6 +40,14 @@ def inspect(path,platform,objdump=None,release=True,archive=None,nm=None):
         "delta_rule_trace","delta_rule_here","delta_rule_report",
         "delta_rule_calls","delta_rule_steps"}}
     bytecode=[name for name,kind,size in rows if re.match(r"delta_rule_(code|imm|map)_",name)]
+    duplicate_renderer=[name for name,kind,size in rows if name in {
+        "KlattSynth","KlattOpen","KlattClose","klatt_new","klatt_delete",
+        "evv_klatt_tap","tap_open","tap_close"} or name.startswith("klatt_wide_")]
+    runtime_rule_indexes=[name for name,kind,size in rows if
+        re.fullmatch(r"\w+_delta_(?:native_index|rule_native(?:_p\d+)?)",name)]
+    binary=path.read_bytes()
+    source_object_descriptions=len(re.findall(rb"[A-Za-z0-9_]{2,80}\.obj\x00",binary))
+    file_tap_lookup=any(marker in binary for marker in (b"EVV_KLATT_TAP\x00",b"EVV_ARRAY_TAP\x00"))
     symbol_source="unstripped library"
     if platform=="windows":
         # The distributable DLL is stripped. Check the actual input archive,
@@ -49,11 +57,23 @@ def inspect(path,platform,objdump=None,release=True,archive=None,nm=None):
         diagnostic={name:None for name in names if name in {
             "delta_rule_trace","delta_rule_here","delta_rule_report","delta_rule_calls","delta_rule_steps"}}
         bytecode=[name for name in names if re.match(r"delta_rule_(code|imm|map)_",name)]
-        if b"DELTA_RULE_TRACE\0" in path.read_bytes():raise ValueError("Rule trace environment lookup remains in DLL")
+        duplicate_renderer=[name for name in names if name in {
+            "KlattSynth","KlattOpen","KlattClose","klatt_new","klatt_delete",
+            "evv_klatt_tap","tap_open","tap_close"} or name.startswith("klatt_wide_")]
+        # Archive members include unused per-piece arrays, so their presence
+        # does not establish what survives section GC in the stripped DLL.
+        # Do not represent an unavailable linked-symbol check as zero.
+        runtime_rule_indexes=None
+        if b"DELTA_RULE_TRACE\0" in binary:raise ValueError("Rule trace environment lookup remains in DLL")
         symbol_source="native input archive including GCC LTO symbols; DLL symbol table is stripped"
     if release and (diagnostic or bytecode):
         raise ValueError(f"Development rule state/data in release: {diagnostic}, {bytecode}")
+    if release and (duplicate_renderer or runtime_rule_indexes or source_object_descriptions or file_tap_lookup):
+        raise ValueError(f"Obsolete private renderer/metadata: {duplicate_renderer}, {runtime_rule_indexes}, {source_object_descriptions}, {file_tap_lookup}")
     return dict(bytes=path.stat().st_size,dependencies=deps,rule_diagnostic_symbols=diagnostic,
+        duplicate_renderer_symbols=duplicate_renderer,runtime_rule_indexes=runtime_rule_indexes,
+        compiler_object_descriptions=source_object_descriptions,file_tap_lookup=file_tap_lookup,
+        native_rule_descriptor_bytes=sum(size for name,kind,size in rows if re.fullmatch(r"\w+_delta_rules",name)) if rows else None,
         bytecode_arrays=bytecode,symbol_audit_source=symbol_source,text_section_bytes=text_section,
         defined_text_bytes=sum(size for name,kind,size in rows if kind in "tT") if rows else None,
         language_call_glue_text_bytes=sum(size for name,kind,size in rows if kind in "tT" and name.startswith("reloq_call_")) if rows else None)

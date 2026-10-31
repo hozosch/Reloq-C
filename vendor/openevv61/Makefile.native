@@ -8,6 +8,7 @@ OPT ?= -O2
 # large decision trees for speed; the per-sample DSP keeps OPT unchanged.
 RULE_OPT ?= -Os
 RULE_DIAGNOSTICS ?= 0
+PARAMETERS_ONLY ?= 1
 BUILD ?= build/native
 PORT ?= posix
 DIRS := rom/jajp rom/cjk rom/greek src $(patsubst %/,%,$(wildcard src/*/ src/*/*/))
@@ -15,6 +16,12 @@ LANGUAGES := enus61 dede61 ptbr fifi engb61 eses61 esmx61 frfr61 frca61 itit61 j
 INCLUDES := -Iinclude -I../../include $(addprefix -I,$(DIRS)) $(addprefix -Ilang/,$(LANGUAGES))
 SOURCES := $(filter-out src/port/port_$(if $(filter win32,$(PORT)),posix,win32).c,$(foreach d,$(DIRS),$(wildcard $(d)/*.c)))
 SOURCES += $(foreach lang,$(LANGUAGES),$(wildcard lang/$(lang)/*.c))
+ifeq ($(PARAMETERS_ONLY),1)
+# The shared ReLoq core renders PCM. The private language provider only
+# schedules parameters; a second oscillator/filter engine and file tap are
+# neither a fallback nor a release dependency.
+SOURCES := $(filter-out src/klatt/klatt_rates.c src/klatt/klatt_state.c src/klatt/klatt_synth.c src/klatt/klatt_tables.c src/klatt/klatt_wide.c src/port/evv_klatttap.c,$(SOURCES))
+endif
 OBJECTS := $(patsubst %.c,$(BUILD)/%.o,$(SOURCES))
 OBJECTS += $(BUILD)/reloq_voice_filter.o
 OBJECTS += $(BUILD)/reloq_orthography.o
@@ -26,6 +33,7 @@ HEADERS += ../../include/reloq_voice_filter.h
 HEADERS += ../../include/reloq_voice_controls.h
 CFLAGS_NATIVE := $(OPT) $(if $(filter posix,$(PORT)),-fPIC) -std=gnu11 -fno-strict-aliasing -ffp-contract=off -fvisibility=hidden -ffunction-sections -fdata-sections -MMD -MP -DEVV_ARENA=1 -DEVV_NO_BYTECODE -DEVV_ROM_JAJP $(INCLUDES)
 CFLAGS_NATIVE += $(if $(filter 1,$(RULE_DIAGNOSTICS)),-DEVV_RULE_DIAGNOSTICS=1)
+CFLAGS_NATIVE += $(if $(filter 1,$(PARAMETERS_ONLY)),-DRELOQ61_PARAMETERS_ONLY=1)
 .PHONY: all clean
 all: $(BUILD)/libreloq61.a
 probe: $(BUILD)/reloq61-probe
