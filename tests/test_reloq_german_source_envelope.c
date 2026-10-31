@@ -120,6 +120,21 @@ static void initial_gestures(void)
 int main(void)
 {
     sparse_bridges();coda_ownership();initial_gestures();
+    /* Long ö keeps its selected r tract, but its source now follows the
+     * same uninterrupted nucleus envelope as other vocalic-r contexts. */
+    struct reloq_german_phone_node p[2]={
+        {.phone=RELOQ_DE_PHONE_Q_oe,.right_phone=RELOQ_DE_PHONE_r},
+        {.phone=RELOQ_DE_PHONE_r,.left_phone=RELOQ_DE_PHONE_Q_oe,
+         .same_syllable_left=1,.same_word_left=1}};
+    struct reloq_german_source_segment s[2]={
+        {.begin=0,.end=120,.av=57,.av_end=47,.outgoing_ticks=30,.kind=RELOQ_SOURCE_NUCLEUS},
+        {.begin=120,.end=160,.kind=RELOQ_SOURCE_CARRY,.phrase_final=1}};
+    struct capture c={.limit=128};struct observation values[16];
+    assert(!reloq_german_source_envelope_append(p,s,2,emit,&c));
+    assert(selected(&c,RELOQ_TARGET_AV,0,values)==2);
+    assert(values[0].tick==1&&values[0].value==57&&values[1].tick==160&&values[1].value==47);
+    assert(selected(&c,RELOQ_TARGET_AH,0,values)==2);
+    assert(values[0].value==34&&values[1].value==34);
     puts("source envelopes: sparse voicing, shared coda, releases and nasal resonance passed");
     return 0;
 }

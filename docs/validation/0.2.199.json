@@ -1,0 +1,425 @@
+{
+  "version": "0.2.199",
+  "android_version": "0.2.199-preview11",
+  "no_audio_files": true,
+  "artifacts": {
+    "eci/libreloq_eci.so": {
+      "bytes": 55983384,
+      "sha256": "32b3ae5606c1718d2e4e56d3ee5f6e0079b82654f90a4d96c46035d648aa43c9"
+    },
+    "eci/eci.dll": {
+      "bytes": 55226880,
+      "sha256": "8a0bf46e809b68a8a4ae3b10ee000c734aac675ef17b64ff405b30bea6f65b6e"
+    },
+    "eci/libreloq_android.so": {
+      "bytes": 53627040,
+      "sha256": "7b834eeeece2c2dd5b327aeee68f4e88c80946a81fb3062be2f61799fa622e02"
+    },
+    "dist/reloq-c-synth-experimental-x64-0.2.199.nvda-addon": {
+      "bytes": 19856092,
+      "sha256": "8a577c60b641955a38aca0c3a1ebf0c04b314e78c7eb1c0865f0f1dfde16987c"
+    },
+    "dist/reloq-c-android-arm64-0.2.199-preview11.apk": {
+      "bytes": 17708438,
+      "sha256": "fcbfb4282e5c90ceebadea8d530ad909bac592da41df436ea55ebd6deee0eff3"
+    }
+  },
+  "changes_from_0198": {
+    "eci/libreloq_eci.so": {
+      "before_bytes": 55979000,
+      "after_bytes": 55983384,
+      "change_bytes": 4384
+    },
+    "eci/eci.dll": {
+      "before_bytes": 55223296,
+      "after_bytes": 55226880,
+      "change_bytes": 3584
+    },
+    "eci/libreloq_android.so": {
+      "before_bytes": 53624352,
+      "after_bytes": 53627040,
+      "change_bytes": 2688
+    },
+    "dist/reloq-c-synth-experimental-x64-0.2.199.nvda-addon": {
+      "before_bytes": 19852931,
+      "after_bytes": 19856092,
+      "change_bytes": 3161
+    },
+    "dist/reloq-c-android-arm64-0.2.199-preview11.apk": {
+      "before_bytes": 17708438,
+      "after_bytes": 17708438,
+      "change_bytes": 0
+    }
+  },
+  "german_analysis": {
+    "reported_text": "„Vorbereitung“ wurde isoliert richtig gelesen. Das zuvor zerlegte „SAPI5“ veränderte seine Analyse",
+    "cause": "An extended closing quotation mark rejected a mixed identifier and triggered the legacy fallback for the entire utterance.",
+    "fix": "Existing German punctuation classes admit quoted whole native source tokens; no Preparation word override or supplemental lexicon is added.",
+    "native_group_accent_checks": 220,
+    "variable_gap_accent_checks": 1664,
+    "public_fragment_tag_rate_index_checks": 208,
+    "native_number_policy_checks": 4,
+    "existing_number_grammar_corpus_passed": true,
+    "german_word_spr_unchanged": 46,
+    "own_acoustic_planner_retained": true
+  },
+  "numeric_rules": {
+    "cardinal_liaison": "Selected vier-und onset is expressed directly in cardinal grammar data and the shared native German phonetic projection; outer adapter repair removed.",
+    "decimal_conversion": "Ordinary comma digits use single-character conversion in the native numeric rule, with direct input-projection Euro context preserving existing currency grouping.",
+    "money_tests": [
+      "3,14 Euro",
+      "3,14 EUR",
+      "3,14€",
+      "3,14eur",
+      "0,50 EUR"
+    ],
+    "no_input_text_prefix": true
+  },
+  "long_oe_r": {
+    "extra_source_attenuation_removed_db": 8,
+    "selected_tract_colour_retained": true,
+    "rate_model_pairs": 21,
+    "same_sample_counts": true,
+    "clipped_samples_after_gain_restoration": 0
+  },
+  "resources": {
+    "requested_heap_peak_before_bytes": 91652850,
+    "requested_heap_peak_after_bytes": 58628850,
+    "requested_heap_saved_bytes": 33024000,
+    "requested_heap_saved_percent": 36.03161276490584,
+    "heap_words": 4000,
+    "heap_pcm_identical": true,
+    "heap_method": "Requested live malloc/calloc/realloc sizes during warmed public German ECI synthesis; Linux/glibc; not RSS or a timing benchmark",
+    "storage": "Private geometrically growing acoustic streams transfer to the renderer without a copy; failed plans retain private ownership until disposal; F0 keeps its bounded reserve.",
+    "no_speech_result_caches": true,
+    "cpu_primary_median_ratios": {
+      "1": 1.023834337813836,
+      "6": 0.9817007051694743
+    },
+    "cpu_pinned_followup_median_ratios": {
+      "1": 0.9766388437227156,
+      "6": 0.9861928278698928
+    },
+    "cpu_interpretation": "Mixed individual results and sign changes at 11 kHz do not establish a broad CPU reduction. The reported text avoids its former fallback and has a reproducible input-specific first-output reduction.",
+    "reported_text_first_pcm_cpu": [
+      {
+        "rate": 1,
+        "before_first_pcm_cpu_ms": 12.8041355,
+        "after_first_pcm_cpu_ms": 5.8936425,
+        "ratio": 0.4602921064057781,
+        "pairs": [
+          [
+            {
+              "first_pcm_cpu_ms": 12.233591,
+              "total_cpu_ms": 15.188611,
+              "samples": 32175
+            },
+            {
+              "first_pcm_cpu_ms": 13.458642,
+              "total_cpu_ms": 19.115812,
+              "samples": 32175
+            },
+            {
+              "first_pcm_cpu_ms": 17.124998,
+              "total_cpu_ms": 20.355867,
+              "samples": 32175
+            },
+            {
+              "first_pcm_cpu_ms": 12.503267,
+              "total_cpu_ms": 16.960772,
+              "samples": 32175
+            },
+            {
+              "first_pcm_cpu_ms": 11.888881,
+              "total_cpu_ms": 15.20507,
+              "samples": 32175
+            },
+            {
+              "first_pcm_cpu_ms": 13.761106,
+              "total_cpu_ms": 17.814478,
+              "samples": 32175
+            },
+            {
+              "first_pcm_cpu_ms": 14.243568,
+              "total_cpu_ms": 19.214581,
+              "samples": 32175
+            },
+            {
+              "first_pcm_cpu_ms": 11.948673,
+              "total_cpu_ms": 14.920833,
+              "samples": 32175
+            },
+            {
+              "first_pcm_cpu_ms": 16.19311,
+              "total_cpu_ms": 22.402558,
+              "samples": 32175
+            },
+            {
+              "first_pcm_cpu_ms": 13.105004,
+              "total_cpu_ms": 16.370433,
+              "samples": 32175
+            },
+            {
+              "first_pcm_cpu_ms": 11.811464,
+              "total_cpu_ms": 14.92303,
+              "samples": 32175
+            },
+            {
+              "first_pcm_cpu_ms": 12.11852,
+              "total_cpu_ms": 15.457253,
+              "samples": 32175
+            }
+          ],
+          [
+            {
+              "first_pcm_cpu_ms": 5.942418,
+              "total_cpu_ms": 9.742874,
+              "samples": 34650
+            },
+            {
+              "first_pcm_cpu_ms": 6.636592,
+              "total_cpu_ms": 10.048133,
+              "samples": 34650
+            },
+            {
+              "first_pcm_cpu_ms": 4.024091,
+              "total_cpu_ms": 6.752587,
+              "samples": 34650
+            },
+            {
+              "first_pcm_cpu_ms": 5.844867,
+              "total_cpu_ms": 9.113142,
+              "samples": 34650
+            },
+            {
+              "first_pcm_cpu_ms": 5.969424,
+              "total_cpu_ms": 9.356893,
+              "samples": 34650
+            },
+            {
+              "first_pcm_cpu_ms": 6.424966,
+              "total_cpu_ms": 10.018749,
+              "samples": 34650
+            },
+            {
+              "first_pcm_cpu_ms": 6.974006,
+              "total_cpu_ms": 11.081174,
+              "samples": 34650
+            },
+            {
+              "first_pcm_cpu_ms": 8.098426,
+              "total_cpu_ms": 11.415967,
+              "samples": 34650
+            },
+            {
+              "first_pcm_cpu_ms": 5.790777,
+              "total_cpu_ms": 9.003139,
+              "samples": 34650
+            },
+            {
+              "first_pcm_cpu_ms": 4.972081,
+              "total_cpu_ms": 8.052104,
+              "samples": 34650
+            },
+            {
+              "first_pcm_cpu_ms": 5.416749,
+              "total_cpu_ms": 9.28111,
+              "samples": 34650
+            },
+            {
+              "first_pcm_cpu_ms": 5.456077,
+              "total_cpu_ms": 9.26271,
+              "samples": 34650
+            }
+          ]
+        ]
+      },
+      {
+        "rate": 6,
+        "before_first_pcm_cpu_ms": 14.2858315,
+        "after_first_pcm_cpu_ms": 5.9102675,
+        "ratio": 0.4137153304657135,
+        "pairs": [
+          [
+            {
+              "first_pcm_cpu_ms": 16.33038,
+              "total_cpu_ms": 61.131404,
+              "samples": 140400
+            },
+            {
+              "first_pcm_cpu_ms": 15.779813,
+              "total_cpu_ms": 72.195709,
+              "samples": 140400
+            },
+            {
+              "first_pcm_cpu_ms": 11.660056,
+              "total_cpu_ms": 51.890464,
+              "samples": 140400
+            },
+            {
+              "first_pcm_cpu_ms": 13.477745,
+              "total_cpu_ms": 56.96742,
+              "samples": 140400
+            },
+            {
+              "first_pcm_cpu_ms": 15.763099,
+              "total_cpu_ms": 76.891674,
+              "samples": 140400
+            },
+            {
+              "first_pcm_cpu_ms": 11.592893,
+              "total_cpu_ms": 61.003949,
+              "samples": 140400
+            },
+            {
+              "first_pcm_cpu_ms": 16.13497,
+              "total_cpu_ms": 65.633909,
+              "samples": 140400
+            },
+            {
+              "first_pcm_cpu_ms": 13.466823,
+              "total_cpu_ms": 71.131292,
+              "samples": 140400
+            },
+            {
+              "first_pcm_cpu_ms": 13.866662,
+              "total_cpu_ms": 60.392299,
+              "samples": 140400
+            },
+            {
+              "first_pcm_cpu_ms": 11.021423,
+              "total_cpu_ms": 56.778698,
+              "samples": 140400
+            },
+            {
+              "first_pcm_cpu_ms": 14.871452,
+              "total_cpu_ms": 60.902578,
+              "samples": 140400
+            },
+            {
+              "first_pcm_cpu_ms": 14.705001,
+              "total_cpu_ms": 63.644489,
+              "samples": 140400
+            }
+          ],
+          [
+            {
+              "first_pcm_cpu_ms": 5.272738,
+              "total_cpu_ms": 64.050515,
+              "samples": 151200
+            },
+            {
+              "first_pcm_cpu_ms": 6.87795,
+              "total_cpu_ms": 52.359756,
+              "samples": 151200
+            },
+            {
+              "first_pcm_cpu_ms": 6.245508,
+              "total_cpu_ms": 58.706373,
+              "samples": 151200
+            },
+            {
+              "first_pcm_cpu_ms": 5.830531,
+              "total_cpu_ms": 53.809753,
+              "samples": 151200
+            },
+            {
+              "first_pcm_cpu_ms": 5.401994,
+              "total_cpu_ms": 50.296652,
+              "samples": 151200
+            },
+            {
+              "first_pcm_cpu_ms": 6.085894,
+              "total_cpu_ms": 64.692022,
+              "samples": 151200
+            },
+            {
+              "first_pcm_cpu_ms": 5.347964,
+              "total_cpu_ms": 57.618307,
+              "samples": 151200
+            },
+            {
+              "first_pcm_cpu_ms": 5.701418,
+              "total_cpu_ms": 49.368171,
+              "samples": 151200
+            },
+            {
+              "first_pcm_cpu_ms": 5.990004,
+              "total_cpu_ms": 65.999783,
+              "samples": 151200
+            },
+            {
+              "first_pcm_cpu_ms": 4.456637,
+              "total_cpu_ms": 57.363222,
+              "samples": 151200
+            },
+            {
+              "first_pcm_cpu_ms": 6.132523,
+              "total_cpu_ms": 59.731088,
+              "samples": 151200
+            },
+            {
+              "first_pcm_cpu_ms": 6.886621,
+              "total_cpu_ms": 57.627057,
+              "samples": 151200
+            }
+          ]
+        ]
+      }
+    ]
+  },
+  "tests": {
+    "c_eci_complete": true,
+    "remaining_makefile_eci_checks": 26,
+    "rate_state_and_phase_comparisons": 39404,
+    "english_zero_group_outputs": 549,
+    "asian_greek_renders": 1680,
+    "asian_greek_pause_comparisons": 105,
+    "cjk_latin_checks": 366,
+    "analysis_controls_with_baseline": 227,
+    "dictionary_semantics": 25,
+    "dictionary_retention": 18,
+    "jni_direct_pcm_pairs": 35,
+    "android_settings_dictionary_checks": 866,
+    "android_catalog_checks": 112,
+    "android_release_metadata_checks": 34,
+    "nvda_driver_contracts": [
+      "en",
+      "de"
+    ],
+    "windows_public_exports": 21,
+    "arm64_register_landing": true,
+    "source_envelope_unit": true,
+    "growing_stage_router_unit": true,
+    "stage_router_address_undefined_sanitizers": true,
+    "leak_sanitizer": "Unavailable with this environment proc/ptrace access; address/undefined checks ran with leak detection disabled. Long-run requested live heap returns to zero.",
+    "identical_pcm_cases": 196,
+    "pcm_matrix": "14 languages x 7 rates x 2 models; comparison corpus excludes the intentional long-ö/r gain change."
+  },
+  "community_dictionary": {
+    "repository": "eigencrow/IBMTTSDictionaries",
+    "branch": "master",
+    "commit": "80eeab8c14e869e8edce03ec4d6908b71d35be33",
+    "verified_git_blob_files": 7
+  },
+  "android_upgrade": {
+    "version": "0.2.199-preview11",
+    "package": "org.reloq.tts.preview",
+    "previous_version_code": 20198,
+    "version_code": 20199,
+    "same_certificate": true,
+    "permissions": [
+      "android.permission.INTERNET"
+    ],
+    "native_and_dex_equal_final_isolated_build": true,
+    "apk_bytes": 17708438,
+    "sha256": "fcbfb4282e5c90ceebadea8d530ad909bac592da41df436ea55ebd6deee0eff3",
+    "no_audio_files": true
+  },
+  "limitations": [
+    "Linux host CPU and first-output measurements do not establish Dell, Lenovo/Windows ARM or Android device latency.",
+    "Heap accounting excludes allocator overhead, untracked mmap arenas, stacks and RSS.",
+    "The comparison reference is the existing native C rule provider; no original Apple DLL/SYN was executed here.",
+    "SAPI5 remains unimplemented; first-release criteria and adapter scope are documented in docs/RELEASE-PLAN.md."
+  ]
+}

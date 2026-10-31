@@ -1,4 +1,18 @@
-# Technischer Arbeitsstand: 0.2.198
+# Technischer Arbeitsstand: 0.2.199
+
+## 0.2.199: Zitierte Kennungen, gemeinsame Zahlenregeln und kleinere Akustikpuffer
+
+Der vollständig ergänzte Vorbereitung-Text ist reproduziert. Ein typografisches Schlusszeichen wurde am Ende von SAPI5 als unbekannter Wortteil statt als native Zeichengrenze behandelt. Dadurch fiel der gesamte Absatz auf die ältere Ersatzanalyse zurück. Die Aufnahme gemischter Kennungen verwendet jetzt auch dort die vorhandene Zeichenklassifikation. Der Absatz bleibt in der nativen Analyse; es entsteht kein Vorbereitung-Wörterbucheintrag.
+
+Die eigene vier-und-Verbindung steht jetzt direkt in den Kardinaldaten. Ihre bisherige nachträgliche Adapterkorrektur ist entfernt. Auch die gemeinsame native Lautschriftprojektion liefert diese Verbindung für Zahlen in Dateinamen und anderen Kennungen. Ziffernweise gewöhnliche Kommanachkommastellen werden an der nativen Zahlenkonvertierung gewählt; die Euro-Kontextprüfung erhält die Betragslesung. Die zusätzliche 8-dB-Absenkung nach langem Ö samt eigenen Absenkungsrampen ist auf Nutzerwunsch entfernt; die R-Färbung bleibt erhalten.
+
+Die Akustikstufen reservieren Zielkurven nach wirklichem Bedarf. Erst ein erfolgreicher Plan übergibt seine Arrays ohne Kopie an den Renderer. Abbruch und Fehler geben private Arrays frei. F0 behält seine begrenzte Melodie-/Steuerreserve. Die bestehenden extern gebundenen Puffer bleiben unterstützt. Details und Messgrenzen stehen in `docs/changes/0.2.199.md` und `docs/validation/0.2.199.json`.
+
+Die Gemeinschaftswörterbücher stammen vom frisch aufgelösten Master `80eeab8c14e869e8edce03ec4d6908b71d35be33` mit sieben geprüften Git-Blobs. Die APK behält Kennung, Vorschau-Signatur und Browser-Updateweg. SAPI5 bleibt der im Releaseplan beschriebene nächste Plattformschritt.
+
+Im 4.000-Wörter-Test sinkt die Spitze angeforderter Heap-Zuweisungen von 91.652.850 auf 58.628.850 Bytes (minus 33.024.000, rund 36,0 Prozent) bei identischem PCM. Alle 196 Sprach-/Raten-/Modellvergleiche bleiben bitgleich; 46 eigene deutsche SPR-Lautungen bleiben erhalten. Die absichtliche Ö-R-Pegeländerung behält in 21 Raten-/Modellpaaren die Samplezahl und clippt dort nicht. 220 vollständige native Gruppen-/Akzentvergleiche, 1.664 variable Quellspannen und 208 öffentliche Fragment-/Tag-/Indexprüfungen bestehen. Der vollständige C-ECI-Test und die übrigen 26 ECI-Prüfschritte sowie NVDA/Android-Prüfungen bestehen.
+
+Beim gemeldeten Absatz sinkt die Host-CPU-Zeit bis zum ersten PCM-Block im Median von 12,80 auf 5,89 ms (11 kHz) bzw. 14,29 auf 5,91 ms (48 kHz). Das ist ein klar abgegrenzter Effekt des vermiedenen Analyse-Rückfalls. Die allgemeine CPU-Gegenüberstellung und der Nachlauf mit fester CPU-Zuordnung bleiben gemischt. Ein allgemeiner CPU-Gewinn wird daraus nicht abgeleitet. Die DLL wächst um 3.584 Bytes, das Add-on um 3.161 Bytes; die APK behält ihre Größe. Gerätemessungen bleiben ausstehend.
 
 ## 0.2.198: Ganze Quellkennungen und messbare DSP-/Heap-Entlastung
 

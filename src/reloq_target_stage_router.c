@@ -89,6 +89,44 @@ int reloq_target_stage_router_begin_borrowed(
     const struct reloq_target_builder *destination)
 {return begin(router,destination,1);}
 
+int reloq_target_stage_router_begin_growing(
+    struct reloq_target_stage_router *router,
+    const struct reloq_target_builder *destination)
+{
+    if(!router||!destination||router->ready)return -1;
+    for(size_t s=1;s<RELOQ_TARGET_STREAM_COUNT;++s)
+        if(destination->stream[s].points||destination->stream[s].count||
+           destination->stream[s].capacity)return -1;
+    struct reloq_target_stage_router next={0};
+    next.ready=next.growing=1;
+    for(size_t s=1;s<RELOQ_TARGET_STREAM_COUNT;++s)
+        next.mask[owner((enum reloq_target_stream)s)]|=UINT32_C(1)<<s;
+    *router=next;return 0;
+}
+
+static int grow(struct reloq_target_stage_router *router,
+    struct reloq_target_buffer *buffer,size_t additions)
+{
+    if(additions>SIZE_MAX-buffer->count)return -1;
+    size_t need=buffer->count+additions;
+    if(need<=buffer->capacity)return 0;
+    size_t capacity=buffer->capacity?buffer->capacity:64;
+    while(capacity<need) {
+        if(capacity>SIZE_MAX/2){capacity=need;break;}
+        capacity*=2;
+    }
+    if(capacity>SIZE_MAX/sizeof *buffer->points)return -1;
+    void *p=realloc(buffer->points,capacity*sizeof *buffer->points);
+    if(!p)return -1;
+    buffer->points=p;buffer->capacity=capacity;
+    uintptr_t start=(uintptr_t)p,end=start+capacity*sizeof *buffer->points;
+    /* A conservative envelope keeps ordinary stack batches on the same
+     * constant-time alias check as the contiguous-storage path. */
+    if(!router->allocation_begin||start<router->allocation_begin)router->allocation_begin=start;
+    if(end>router->allocation_end)router->allocation_end=end;
+    return 0;
+}
+
 int reloq_target_stage_router_append_at(
     struct reloq_target_stage_router *router,
     const int64_t origin_by_role[RELOQ_STAGE_ROLE_COUNT],
@@ -117,6 +155,13 @@ int reloq_target_stage_router_append_at(
                     own_start < event_start + bytes) ||
                    (event_start < router_start + sizeof *router &&
                     router_start < event_start + bytes)))) return -1;
+    if(router->growing && bytes && event_start<router->allocation_end &&
+       router->allocation_begin<event_start+bytes)
+        for(size_t s=1;s<RELOQ_TARGET_STREAM_COUNT;++s) {
+            const struct reloq_target_buffer *b=&router->stage[owner((enum reloq_target_stream)s)].stream[s];
+            uintptr_t start=(uintptr_t)b->points,end=start+b->capacity*sizeof *b->points;
+            if(b->capacity&&event_start<end&&start<event_start+bytes)return -1;
+        }
     /* Source envelopes submit single knots very frequently. Validate that
      * knot directly instead of clearing and traversing per-stream batch
      * bookkeeping. The same capacity, overflow and transition rules apply. */
@@ -127,7 +172,7 @@ int reloq_target_stage_router_append_at(
         enum reloq_target_stage_role role = owner(stream);
         struct reloq_target_buffer *buffer = &router->stage[role].stream[stream];
         int64_t origin = origins[role], offset = events[0].offset;
-        if (buffer->count == buffer->capacity ||
+        if ((!router->growing && buffer->count == buffer->capacity) ||
             (offset > 0 && origin > INT64_MAX - offset) ||
             (offset < 0 && origin < INT64_MIN - offset)) return -1;
         struct reloq_acoustic_point point = {origin + offset, events[0].value};
@@ -141,6 +186,7 @@ int reloq_target_stage_router_append_at(
                     difference > INT32_MAX) return -1;
             }
         }
+        if(router->growing&&grow(router,buffer,1))return -1;
         buffer->points[buffer->count++] = point;
         return 0;
     }
@@ -155,7 +201,8 @@ int reloq_target_stage_router_append_at(
         struct reloq_target_buffer *buffer =
             &router->stage[owner(stream)].stream[s];
         int64_t origin = origins[owner(stream)];
-        if (additions[s] >= buffer->capacity - buffer->count ||
+        if ((!router->growing && additions[s] >= buffer->capacity - buffer->count) ||
+            additions[s]==SIZE_MAX-buffer->count ||
             (events[i].offset > 0 && origin > INT64_MAX - events[i].offset) ||
             (events[i].offset < 0 && origin < INT64_MIN - events[i].offset))
             return -1;
@@ -177,6 +224,9 @@ first_point:
         has_last[s] = 1;
         ++additions[s];
     }
+    if(router->growing)
+        for(size_t s=1;s<RELOQ_TARGET_STREAM_COUNT;++s)
+            if(additions[s]&&grow(router,&router->stage[owner((enum reloq_target_stream)s)].stream[s],additions[s]))return -1;
     for (size_t i = 0; i < event_count; ++i) {
         enum reloq_target_stream stream = events[i].stream;
         struct reloq_target_buffer *buffer =
@@ -205,6 +255,19 @@ int reloq_target_stage_router_merge(
 {
     if (!router || !router->ready || router->merged || !destination)
         return -1;
+    if(router->growing) {
+        for(size_t s=1;s<RELOQ_TARGET_STREAM_COUNT;++s) {
+            const struct reloq_target_buffer *src=&router->stage[owner((enum reloq_target_stream)s)].stream[s],
+                *dest=&destination->stream[s];
+            if(dest->points||dest->count||dest->capacity||src->count>src->capacity||
+               (src->count&&src->points[0].tick<0))return -1;
+        }
+        for(size_t s=1;s<RELOQ_TARGET_STREAM_COUNT;++s) {
+            struct reloq_target_buffer *src=&router->stage[owner((enum reloq_target_stream)s)].stream[s];
+            destination->stream[s]=*src;*src=(struct reloq_target_buffer){0};
+        }
+        router->merged=1;return 0;
+    }
     if(router->borrowed) {
         /* Each stream has one owner. Its data is already in its final
          * buffer, and append validated every transition. Verify all
@@ -240,6 +303,9 @@ void reloq_target_stage_router_dispose(
     struct reloq_target_stage_router *router)
 {
     if (!router) return;
+    if(router->growing)
+        for(size_t s=1;s<RELOQ_TARGET_STREAM_COUNT;++s)
+            free(router->stage[owner((enum reloq_target_stream)s)].stream[s].points);
     if(!router->borrowed)free(router->storage);
     memset(router, 0, sizeof *router);
 }

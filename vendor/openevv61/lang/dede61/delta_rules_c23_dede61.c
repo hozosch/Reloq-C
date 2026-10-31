@@ -14,6 +14,7 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_dede61.h"
+extern int reloq_dede61_decimal_digits(void *,int32_t);
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -5716,6 +5717,11 @@ int32_t reloq_dede61_add_ger_point_digits(void *state, int32_t p0, int32_t p1, i
     AT(int32_t, -28) = (RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 192));
     AT(int32_t, -32) = (-6);
     r0 = reloq61_typed_get_parm(DELTA_ENTRY_get_parm, state, EVV_AT(delta_loc *, (int32_t)AT(int32_t, -28)), EVV_AT(delta_loc *, (int32_t)PARAM(int32_t, 2)), (int16_t)((int32_t)AT(int32_t, -32)));
+    /* Decimal spelling is a German numeric rule. Currency context is
+     * checked at the digit branch, before selecting its conversion. */
+    int32_t separator=vgetsc(state,0,0,((delta_loc *)(base-56))->value,1);
+    const int decimal_comma=separator &&
+        *(const uint8_t *)delta_record_field(&vstmtbl[1],0,TFLDS(EVV_AT(void *,separator)))==64;
     AT(int32_t, -28) = (RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 200));
     r0 = reloq61_typed_push_ptr_init(DELTA_ENTRY_push_ptr_init, state, EVV_AT(delta_loc *, (int32_t)AT(int32_t, -28)));
     AT(int32_t, -40) = (0);
@@ -5847,7 +5853,10 @@ L1204:;
     goto L1463;
 L1317:;
     AT(int32_t, -28) = (RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 200));
-    r0 = reloq_call_dede61_convert_ger_double(state, (int32_t)(FIELD(0)), (int32_t)((int32_t)AT(int32_t, -28)), (int32_t)(RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 192)));
+    if(decimal_comma&&reloq_dede61_decimal_digits(state,((delta_loc *)(base-72))->value))
+        r0 = reloq_call_dede61_single_chars(state, (int32_t)(FIELD(0)), (int32_t)((int32_t)AT(int32_t, -28)), (int32_t)(RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 192)));
+    else
+        r0 = reloq_call_dede61_convert_ger_double(state, (int32_t)(FIELD(0)), (int32_t)((int32_t)AT(int32_t, -28)), (int32_t)(RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 192)));
     goto L1384;
 L1349:;
     AT(int32_t, -36) = ((int32_t)AT(int32_t, -4));

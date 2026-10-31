@@ -9,7 +9,7 @@ Die Festlegungen wurden aus dem aktuellen Code, den Versionshinweisen und den fr
 | consonantal_r | Konsonantisches r mit bisherigem Anregungs- und Resonanzcharakter | Raten, Rot, Richtig |
 | final_a | Helleres unbetontes finales a nur am Ende der gesamten Äußerung, mit mittlerer Dauer | Amerika., Amerika ist weit., Amerika. Amerika ist weit. |
 | nasal_a | Angenommener Restaurant-Nasal: F1/F2/F3 624/960/2880, B1 180, FNP/FNZ 280/350 | Restaurant, Restaurants, Chance |
-| long_oe_r | Vokalisches r nach langem ö: angenommene Färbung und 8 dB Quellenabsenkung | hören, Hörbücher |
+| long_oe_r | Vokalisches r nach langem ö: angenommene Färbung, ohne zusätzliche Quellenabsenkung (ab 0.2.199) | hören, Hörbücher |
 | ier_colour | i.e.r wie Barriere/Karriere behält frühere eigene Färbung; vorherig folgt Original | Barriere, Karriere, vorherig |
 | post_e_j | Homepage-j: ein Drittel vom Original in Richtung unbetontes Germanistik-i, ohne schmalere Bandbreiten | Homepage, Germanistik |
 | s_before_m_n | Normales s statt lispelnder Originalvariante vor m/n | Smile, Snob |

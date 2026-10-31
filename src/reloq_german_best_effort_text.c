@@ -785,18 +785,6 @@ static int append_observed(void *context,const char *body,int weak)
         reserve(&b->output,&b->capacity,b->used+n+prefix_length+2)) return -2;
     memcpy(b->output+b->used,prefix,prefix_length);b->used+=prefix_length;
     memcpy(b->output+b->used,body,n);
-    if (b->numeric_output) {
-        /* Requested numeric liaison: vier-und uses a consonantal r.
-         * Assign it to the next onset, so the regular r-to-vowel gesture
-         * supplies its tract, source and contact duration consistently. */
-        unsigned char *written=b->output+b->used;
-        for (size_t k=0;k+8<=n;++k)
-            if (!memcmp(written+k,"fir.",4) &&
-                (written[k+4]=='0' || written[k+4]=='2') &&
-                !memcmp(written+k+5,"Unt",3)) {
-                written[k+2]='.';written[k+3]=written[k+4];written[k+4]='r';
-            }
-    }
     b->used+=n;b->output[b->used++]=']';
     size_t groups=1;
     for(size_t i=0;i<n;++i)if(body[i]=='[')++groups;
@@ -922,7 +910,15 @@ static size_t mixed_identifier_end(const unsigned char *text,size_t length,size_
         unsigned char c=text[end++];
         letters|=letter(c);numbers|=digit(c);
     }
-    if(end<length&&text[end]>=127)return at;
+    /* Extended punctuation is a token boundary, just like its ASCII form.
+     * Reject a partial accented/Unicode word, not a quoted identifier. */
+    if(end<length&&text[end]>=127&&!literal(text[end])&&
+       !reloq_german_silent_separator(text[end])) {
+        struct reloq_german_punctuation punctuation;
+        if(reloq_german_punctuation_read(text,length,end,1,&punctuation)||
+           (punctuation.action!=RELOQ_DE_PUNCT_SILENT&&
+            punctuation.action!=RELOQ_DE_PUNCT_BOUNDARY))return at;
+    }
     while(end>at&&text[end-1]=='.')--end;
     return letters&&numbers?end:at;
 }

@@ -5,8 +5,6 @@
 #include <limits.h>
 
 typedef enum reloq_german_phone Phone;
-/* User-selected long-oe+r level; the tract and other r contexts are retained. */
-enum { LONG_OE_R_ATTENUATION_DB = 8 };
 static int vowel(Phone p)
 {
     return (p>=RELOQ_DE_PHONE_a && p<=RELOQ_DE_PHONE_AT) ||
@@ -386,61 +384,7 @@ int reloq_german_source_envelope_append(
             while (last+1<count && s[last+1].kind==RELOQ_SOURCE_CARRY &&
                    p[last+1].same_syllable_left) ++last;
             if (pair(&out,a+1,s[i].av,34)) return -1;
-            if (last>=i+1 && ph==RELOQ_DE_PHONE_Q_oe &&
-                p[i+1].phone==RELOQ_DE_PHONE_r) {
-                /* Preserve the selected r colour and 8 dB target level.
-                 * Vocalic r shares the vowel's source: introduce its
-                 * attenuation over the existing vowel-to-r contact, not
-                 * as a second, eight-tick gesture after the r has arrived.
-                 * The original source continues through this contact. */
-                const size_t r=i+1;
-                int64_t begin=s[r].begin;
-                int64_t r_end=s[r].end-(last>r?s[r].outgoing_ticks:0);
-                int64_t total=s[last].end-a-1;
-                int64_t contact=begin-s[i].outgoing_ticks;
-                if (contact<a+1) contact=a+1;
-                if (contact>begin) contact=begin;
-                int64_t elapsed=contact-a-1;
-                int av=(int)((s[i].av*(total-elapsed)+s[i].av_end*elapsed+total/2)/total);
-                /* Unmeasured zero-contact inputs still need a continuous
-                 * one-tick entry rather than two different equal-tick
-                 * targets. Ordinary vocalic-r contacts end at begin. */
-                int64_t settled=begin>contact?begin:begin+1;
-                if (settled>r_end) settled=r_end;
-                elapsed=settled-a-1;
-                int settled_av=(int)((s[i].av*(total-elapsed)+s[i].av_end*elapsed+total/2)/total);
-                int end_av=s[i].av_end;
-                if (last>r) {
-                    elapsed=r_end-a-1;
-                    end_av=(int)((s[i].av*(total-elapsed)+s[i].av_end*elapsed)/total);
-                }
-                if (pair(&out,contact,av,34)) return -1;
-                if (last==r && s[r].phrase_final) {
-                    /* With no following consonant, the short vocalic-r
-                     * core remains part of the settling gesture. Ease
-                     * the selected attenuation across contact and core,
-                     * reaching its unchanged level at the release. */
-                    static const int attenuation[4]={1,4,7,8};
-                    for (unsigned step=1;step<=4;++step) {
-                        int64_t t=contact+(r_end-contact)*step/4;
-                        elapsed=t-a-1;
-                        int level=(int)((s[i].av*(total-elapsed)+s[i].av_end*elapsed+total/2)/total);
-                        if (pair(&out,t,level-attenuation[step-1],
-                                 34-attenuation[step-1])) return -1;
-                    }
-                } else if (pair(&out,settled,settled_av-LONG_OE_R_ATTENUATION_DB,
-                         34-LONG_OE_R_ATTENUATION_DB) ||
-                    pair(&out,r_end,end_av-LONG_OE_R_ATTENUATION_DB,
-                         34-LONG_OE_R_ATTENUATION_DB)) return -1;
-                if (last>r) {
-                    /* Restore the continuing nucleus through r-to-l,
-                     * keeping the user's attenuation confined to r. */
-                    elapsed=s[r+1].begin-a-1;
-                    av=(int)((s[i].av*(total-elapsed)+s[i].av_end*elapsed)/total);
-                    if (pair(&out,s[r+1].begin,av,34) ||
-                        pair(&out,s[last].end,s[i].av_end,34)) return -1;
-                }
-            } else if (pair(&out,s[last].end,s[i].av_end,34)) return -1;
+            if (pair(&out,s[last].end,s[i].av_end,34)) return -1;
             break;
         }
         case RELOQ_SOURCE_CARRY: break;
@@ -538,8 +482,6 @@ int reloq_german_source_envelope_append(
         }
         case RELOQ_SOURCE_R_MEDIAL: {
             const int64_t first=(b-a)*35/100;
-            const int attenuation=p[i].same_word_left &&
-                p[i].left_phone==RELOQ_DE_PHONE_Q_oe?LONG_OE_R_ATTENUATION_DB:0;
             if (p[i].right_phone==RELOQ_DE_PHONE_U &&
                        vowel(p[i].left_phone) &&
                        p[i].left_phone!=RELOQ_DE_PHONE_Q_aj &&
@@ -548,9 +490,9 @@ int reloq_german_source_envelope_append(
                 /* The short back nucleus selects continuous r voicing;
                  * its onset does not traverse the two constrictions used
                  * before other nuclei and after consonants/glides. */
-                if (plateau(&out,a,b,40-attenuation,52-attenuation)) return -1;
-            } else if (b-a<21 || plateau(&out,a,a+first,0,27-attenuation) ||
-                       plateau(&out,a+first+1,b,27-attenuation,52-attenuation)) return -1;
+                if (plateau(&out,a,b,40,52)) return -1;
+            } else if (b-a<21 || plateau(&out,a,a+first,0,27) ||
+                       plateau(&out,a+first+1,b,27,52)) return -1;
             break;
         }
         default: return -1;
@@ -560,10 +502,6 @@ int reloq_german_source_envelope_append(
         if (reloq_german_pause_plan(p+i,s[i].kind==RELOQ_SOURCE_CARRY,
                 s[i].continuing_comma?RELOQ_DE_TERMINAL_COMMA:RELOQ_DE_TERMINAL_PERIOD,
                 s[i].continuing_comma,&release)) return -1;
-        if (ph==RELOQ_DE_PHONE_r && p[i].same_word_left &&
-            p[i].left_phone==RELOQ_DE_PHONE_Q_oe && release.ah>0)
-            release.ah=release.ah>LONG_OE_R_ATTENUATION_DB?
-                release.ah-LONG_OE_R_ATTENUATION_DB:0;
         if (reloq_german_pause_release(&release,b,i,emit,context) ||
             pair(&out,b+release.release_ticks,0,0)) return -1;
     }

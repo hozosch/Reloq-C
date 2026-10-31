@@ -29,6 +29,7 @@ static int group(unsigned n,const char *suffix,int attributive,
     }
     if (suffix) {
         char *stress=strstr(body,".2Unt");
+        if(!stress)stress=strstr(body,".2rUnt");
         if (stress) stress[1]='0';
     }
     return emit(ctx,body,0);
@@ -58,6 +59,7 @@ int reloq_german_number_word(const unsigned char *word,size_t length,
         if (length<n+3 || memcmp(folded,units[i],n) || memcmp(folded+n,"und",3)) continue;
         const char *tail=folded+n+3;
         if (!*tail) {
+            if(i==3)return emit(ctx,".1fi.2rUnt",0);
             char body[64];
             const char *unit=i?names[i+1]:".1'aj'n";
             if (snprintf(body,sizeof body,"%s.2Unt",unit)>=(int)sizeof body) return -1;

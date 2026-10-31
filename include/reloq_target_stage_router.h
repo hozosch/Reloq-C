@@ -23,6 +23,8 @@ struct reloq_target_stage_router {
     int ready;
     int merged;
     int borrowed;
+    int growing;
+    uintptr_t allocation_begin,allocation_end;
 };
 
 /* Allocate staging point storage from the destination's remaining capacity.
@@ -38,6 +40,14 @@ int reloq_target_stage_router_begin(
  * All non-F0 buffers must be contiguous in stream order. This avoids a
  * second phrase-sized point allocation and the final point copy. */
 int reloq_target_stage_router_begin_borrowed(
+    struct reloq_target_stage_router *router,
+    const struct reloq_target_builder *destination);
+
+/* Grow private non-F0 streams from actual use. Those destination streams
+ * must initially be empty and unbound. A successful merge transfers their
+ * allocations to the caller, which frees each points array after rendering.
+ * Disposal before merge releases all private storage. */
+int reloq_target_stage_router_begin_growing(
     struct reloq_target_stage_router *router,
     const struct reloq_target_builder *destination);
 

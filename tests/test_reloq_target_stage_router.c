@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 struct fixture {
@@ -25,13 +26,54 @@ static void match(const struct fixture *left, const struct fixture *right)
         const struct reloq_target_buffer *a = &left->builder.stream[s];
         const struct reloq_target_buffer *b = &right->builder.stream[s];
         assert(a->count == b->count);
-        assert(memcmp(a->points, b->points,
-                      a->count * sizeof *a->points) == 0);
+        for(size_t i=0;i<a->count;++i)
+            assert(a->points[i].tick==b->points[i].tick&&a->points[i].value==b->points[i].value);
     }
+}
+
+static void growing_storage(void)
+{
+    struct reloq_target_builder direct={0},destination={0};
+    struct reloq_target_buffer buffers[RELOQ_TARGET_STREAM_COUNT]={{0}};
+    struct reloq_acoustic_point *memory=calloc(RELOQ_TARGET_STREAM_COUNT*512,sizeof *memory);
+    assert(memory);
+    for(size_t s=1;s<RELOQ_TARGET_STREAM_COUNT;++s)
+        buffers[s]=(struct reloq_target_buffer){memory+s*512,512,0};
+    assert(!reloq_target_builder_begin(&direct,buffers));
+    struct reloq_target_stage_router router={0};
+    assert(!reloq_target_stage_router_begin_growing(&router,&destination));
+    for(size_t i=0;i<384;++i) {
+        struct reloq_target_event events[RELOQ_TARGET_STREAM_COUNT-1];
+        for(size_t s=1;s<RELOQ_TARGET_STREAM_COUNT;++s)
+            events[s-1]=(struct reloq_target_event){(enum reloq_target_stream)s,0,(int)(s+i%9)};
+        assert(!reloq_target_builder_append(&direct,(int64_t)i/2,events,RELOQ_TARGET_STREAM_COUNT-1));
+        assert(!reloq_target_stage_router_append(&router,(int64_t)i/2,events,RELOQ_TARGET_STREAM_COUNT-1));
+    }
+    /* Reject an entire invalid batch before allocating or changing counts. */
+    struct reloq_target_stage_router before=router;
+    struct reloq_target_event invalid[]={{RELOQ_TARGET_F1,300,1},{RELOQ_TARGET_AV,-1,2}};
+    assert(reloq_target_stage_router_append(&router,0,invalid,2)==-1);
+    assert(!memcmp(&before,&router,sizeof router));
+    assert(!reloq_target_stage_router_merge(&router,&destination));
+    reloq_target_stage_router_dispose(&router);
+    for(size_t s=1;s<RELOQ_TARGET_STREAM_COUNT;++s) {
+        assert(destination.stream[s].count==direct.stream[s].count);
+        for(size_t i=0;i<direct.stream[s].count;++i)
+            assert(destination.stream[s].points[i].tick==direct.stream[s].points[i].tick&&
+                destination.stream[s].points[i].value==direct.stream[s].points[i].value);
+        free(destination.stream[s].points);destination.stream[s]=(struct reloq_target_buffer){0};
+    }
+    /* An abandoned plan keeps ownership private until disposal. */
+    assert(!reloq_target_stage_router_begin_growing(&router,&destination));
+    assert(!reloq_target_stage_router_append(&router,300,invalid,1));
+    reloq_target_stage_router_dispose(&router);
+    assert(!destination.stream[RELOQ_TARGET_F1].points);
+    free(memory);
 }
 
 int main(void)
 {
+    growing_storage();
     struct fixture direct, composed;
     begin(&direct);
     begin(&composed);

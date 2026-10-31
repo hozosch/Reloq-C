@@ -11,7 +11,9 @@
 #include <stdint.h>
 #include <string.h>
 
-#define CHECK(test) do { if (!(test)) return __LINE__; } while (0)
+#define CHECK(test) do { if (!(test)) { \
+    fprintf(stderr,"%s:%d: %s\n",__FILE__,__LINE__,#test); \
+    return __LINE__; } } while (0)
 
 struct capture {
     ECIHand engine;
@@ -213,6 +215,10 @@ static int native_german_analysis(void)
         "SAPI5 berücksichtige ich bei der Vorbereitung.",
         "Bei der Vorbereitung.","Vorbereitung des ersten Releases.",
         "Die Vorbereitungen.","USB3-Gerät: Windows11 und OpenGL4.6.",
+        "„Vorbereitung“ wurde isoliert richtig gelesen. Das zuvor zerlegte „SAPI5“ veränderte seine Analyse",
+        "„SAPI5“", "“SAPI5”", "‚SAPI5‘", "»SAPI5«", "«SAPI5»",
+        "„USB3-Gerät“: Sprachausgabe", "„OpenGL4.6“ und Vorbereitung.",
+        "„reloq-c-android-arm64-0.2.197-preview9.apk“ und Vorbereitung.",
         "nvda_2026.3-beta2.exe und lib-test-x86-64-1.2.3.dll",
         "Datei-1.2.3.apk", "v1.0.0", "ISO-8859-1"
     };
@@ -241,11 +247,38 @@ static int native_german_analysis(void)
             }
             if(strstr(texts[i],"SAPI5 berücksichtige ich bei der Vorbereitung"))
                 CHECK(strstr((char *)own,"`[.1for.0b@.2r'aj'.0tUG]"));
+            if(strstr(texts[i],"Das zuvor zerlegte")) {
+                CHECK(!approximate);
+                CHECK(strstr((char *)own,"`[.1for.0b@.2r'aj'.0tUG]"));
+                CHECK(strstr((char *)own,"`[.1Es] `[.1a] `[.1pe] `[.1i]"));
+            }
             if(i==0)CHECK(strstr((char *)own,"`[.1fi.0rUnt.2TvAn.0TIX]"));
             if(strstr(texts[i],"Sprachausgabe"))
                 CHECK(strstr((char *)own,"`[.1Sprax.2'aw's.2ga.0b@]"));
             free(own);
         }
+    /* These policies are part of the shared native German projection and
+     * number conversion, including the whole-token identifier path. */
+    static const struct {const char *text,*required,*forbidden;} numbers[]={
+        {"Datei64.apk","`[.1fi.0rUnt.2zEX.0TIX]","fir.0Unt"},
+        {"vierundzwanzig","`[.1fi.0rUnt.2TvAn.0TIX]","fir.0Unt"},
+        {"3,14","`[.1'aj'ns]","fIr.2Ten"},
+        {"3,14 Euro","`[.1fIr.2Ten]",NULL}
+    };
+    for(size_t i=0;i<sizeof numbers/sizeof *numbers;++i) {
+        char native[4096];struct reloq61_result result;
+        struct reloq61_request request={.language=0x40000,.annotations=1,.phonemes_only=1,
+            .voice={0,50,65,30,0,0,50,92},.text=numbers[i].text,
+            .phonemes=native,.phonemes_capacity=sizeof native};
+        CHECK(!reloq61_generate(&request,&result));
+        for(size_t k=0;k<result.phonemes_length;++k)if(!native[k])native[k]=' ';
+        native[result.phonemes_length]=0;
+        if(!strstr(native,numbers[i].required)||
+           (numbers[i].forbidden&&strstr(native,numbers[i].forbidden))) {
+            fprintf(stderr,"Native German numeric policy differs: %s\n%s\n",numbers[i].text,native);
+            return __LINE__;
+        }
+    }
     static const struct {const char *word,*spr;} compounds[]={
         {"Sprachauswahl.","`[.1Sprax.2'aw's.2val]"},
         {"Suchauswahl.","`[.1zux.2'aw's.2val]"},
@@ -437,7 +470,7 @@ int main(void)
     int stream=native_phoneme_stream();if(stream)return stream;
     char version[20] = {0};
     eciVersion(version);
-    CHECK(!strcmp(version, "0.2.198.0"));
+    CHECK(!strcmp(version, "0.2.199.0"));
     int languages = 0;
     CHECK(eciGetAvailableLanguages(NULL, &languages) == 0 &&
           languages == 0);

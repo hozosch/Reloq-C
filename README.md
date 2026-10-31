@@ -29,7 +29,7 @@ Installable packages belong under [Releases and downloads](https://github.com/ho
 
 Once a package is available, install the `.nvda-addon` file with NVDA, restart NVDA and press **NVDA+Control+S** to select **Eloquence C (experimental)**. Choose your language and voice in NVDA's Speech settings.
 
-The [English user guide](docs/USER-GUIDE.en.md) and [German user guide](docs/USER-GUIDE.de.md) cover languages, settings and dictionaries. [Changes and known limitations in 0.2.198](docs/changes/0.2.198.md) are documented separately.
+The [English user guide](docs/USER-GUIDE.en.md) and [German user guide](docs/USER-GUIDE.de.md) cover languages, settings and dictionaries. [Changes and known limitations in 0.2.199](docs/changes/0.2.199.md) are documented separately.
 
 ## Android preview
 

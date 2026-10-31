@@ -1,0 +1,428 @@
+{
+  "no_audio_files": true,
+  "scope": "RAM-only peak and sample-count check after removing selected long-ö/r source attenuation; no subjective timbre verdict",
+  "same_sample_counts": true,
+  "new_clipped_samples": 0,
+  "measurements": [
+    {
+      "library": "../baseline0198.so",
+      "gender": 0,
+      "head": 50,
+      "breath": 0,
+      "rate": 0,
+      "samples": 7080,
+      "peak": 20452,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 0,
+      "head": 50,
+      "breath": 0,
+      "rate": 1,
+      "samples": 9735,
+      "peak": 20036,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 0,
+      "head": 50,
+      "breath": 0,
+      "rate": 2,
+      "samples": 19470,
+      "peak": 17850,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 0,
+      "head": 50,
+      "breath": 0,
+      "rate": 3,
+      "samples": 14160,
+      "peak": 17883,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 0,
+      "head": 50,
+      "breath": 0,
+      "rate": 4,
+      "samples": 28320,
+      "peak": 17885,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 0,
+      "head": 50,
+      "breath": 0,
+      "rate": 5,
+      "samples": 38940,
+      "peak": 17994,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 0,
+      "head": 50,
+      "breath": 0,
+      "rate": 6,
+      "samples": 42480,
+      "peak": 17978,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 1,
+      "head": 29,
+      "breath": 60,
+      "rate": 0,
+      "samples": 7080,
+      "peak": 27338,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 1,
+      "head": 29,
+      "breath": 60,
+      "rate": 1,
+      "samples": 9735,
+      "peak": 30778,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 1,
+      "head": 29,
+      "breath": 60,
+      "rate": 2,
+      "samples": 19470,
+      "peak": 27108,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 1,
+      "head": 29,
+      "breath": 60,
+      "rate": 3,
+      "samples": 14160,
+      "peak": 26690,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 1,
+      "head": 29,
+      "breath": 60,
+      "rate": 4,
+      "samples": 28320,
+      "peak": 27350,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 1,
+      "head": 29,
+      "breath": 60,
+      "rate": 5,
+      "samples": 38940,
+      "peak": 27617,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 1,
+      "head": 29,
+      "breath": 60,
+      "rate": 6,
+      "samples": 42480,
+      "peak": 27302,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 1,
+      "head": 22,
+      "breath": 100,
+      "rate": 0,
+      "samples": 7080,
+      "peak": 1777,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 1,
+      "head": 22,
+      "breath": 100,
+      "rate": 1,
+      "samples": 9735,
+      "peak": 4728,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 1,
+      "head": 22,
+      "breath": 100,
+      "rate": 2,
+      "samples": 19470,
+      "peak": 5134,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 1,
+      "head": 22,
+      "breath": 100,
+      "rate": 3,
+      "samples": 14160,
+      "peak": 4575,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 1,
+      "head": 22,
+      "breath": 100,
+      "rate": 4,
+      "samples": 28320,
+      "peak": 7581,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 1,
+      "head": 22,
+      "breath": 100,
+      "rate": 5,
+      "samples": 38940,
+      "peak": 6094,
+      "clipped": 0
+    },
+    {
+      "library": "../baseline0198.so",
+      "gender": 1,
+      "head": 22,
+      "breath": 100,
+      "rate": 6,
+      "samples": 42480,
+      "peak": 7368,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 0,
+      "head": 50,
+      "breath": 0,
+      "rate": 0,
+      "samples": 7080,
+      "peak": 21189,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 0,
+      "head": 50,
+      "breath": 0,
+      "rate": 1,
+      "samples": 9735,
+      "peak": 21622,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 0,
+      "head": 50,
+      "breath": 0,
+      "rate": 2,
+      "samples": 19470,
+      "peak": 18685,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 0,
+      "head": 50,
+      "breath": 0,
+      "rate": 3,
+      "samples": 14160,
+      "peak": 18814,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 0,
+      "head": 50,
+      "breath": 0,
+      "rate": 4,
+      "samples": 28320,
+      "peak": 18741,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 0,
+      "head": 50,
+      "breath": 0,
+      "rate": 5,
+      "samples": 38940,
+      "peak": 18594,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 0,
+      "head": 50,
+      "breath": 0,
+      "rate": 6,
+      "samples": 42480,
+      "peak": 18670,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 1,
+      "head": 29,
+      "breath": 60,
+      "rate": 0,
+      "samples": 7080,
+      "peak": 27338,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 1,
+      "head": 29,
+      "breath": 60,
+      "rate": 1,
+      "samples": 9735,
+      "peak": 30778,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 1,
+      "head": 29,
+      "breath": 60,
+      "rate": 2,
+      "samples": 19470,
+      "peak": 27108,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 1,
+      "head": 29,
+      "breath": 60,
+      "rate": 3,
+      "samples": 14160,
+      "peak": 26690,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 1,
+      "head": 29,
+      "breath": 60,
+      "rate": 4,
+      "samples": 28320,
+      "peak": 27350,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 1,
+      "head": 29,
+      "breath": 60,
+      "rate": 5,
+      "samples": 38940,
+      "peak": 27617,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 1,
+      "head": 29,
+      "breath": 60,
+      "rate": 6,
+      "samples": 42480,
+      "peak": 27302,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 1,
+      "head": 22,
+      "breath": 100,
+      "rate": 0,
+      "samples": 7080,
+      "peak": 1777,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 1,
+      "head": 22,
+      "breath": 100,
+      "rate": 1,
+      "samples": 9735,
+      "peak": 4728,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 1,
+      "head": 22,
+      "breath": 100,
+      "rate": 2,
+      "samples": 19470,
+      "peak": 5134,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 1,
+      "head": 22,
+      "breath": 100,
+      "rate": 3,
+      "samples": 14160,
+      "peak": 4575,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 1,
+      "head": 22,
+      "breath": 100,
+      "rate": 4,
+      "samples": 28320,
+      "peak": 7581,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 1,
+      "head": 22,
+      "breath": 100,
+      "rate": 5,
+      "samples": 38940,
+      "peak": 6094,
+      "clipped": 0
+    },
+    {
+      "library": "../candidate0199-final.so",
+      "gender": 1,
+      "head": 22,
+      "breath": 100,
+      "rate": 6,
+      "samples": 42480,
+      "peak": 7368,
+      "clipped": 0
+    }
+  ]
+}

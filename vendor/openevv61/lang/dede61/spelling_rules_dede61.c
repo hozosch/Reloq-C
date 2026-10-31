@@ -6,6 +6,10 @@
 
 #include "reloq61.h"
 static _Thread_local struct reloq61_german_capture *german_capture;
+/* Current word traversal only; reset at every native word boundary. Number
+ * liaison belongs to this shared German phone projection, including numbers
+ * inside identifiers, rather than an outer text adapter. */
+static _Thread_local struct {unsigned previous,before;int32_t move_r;} number_liaison;
 struct reloq61_german_capture *reloq61_german_capture_scope(struct reloq61_german_capture *next)
 {
     struct reloq61_german_capture *previous=german_capture;
@@ -32,6 +36,7 @@ static int phrase_order(const void *left,const void *right)
 }
 void reloq61_german_word_begin(void *state,int32_t location)
 {
+    memset(&number_liaison,0,sizeof number_liaison);
     if(!german_capture)return;
     if(german_capture->count>=german_capture->capacity){german_capture->overflow=1;return;}
     struct reloq61_german_word_facts *word=german_capture->words+german_capture->count++;
@@ -95,6 +100,20 @@ int32_t reloq_dede61_print_ger_SPR(void *state,int32_t p0,int32_t p1,int32_t p2)
         case 50:spelling="'oe~'";break;
         case 25:if(reloq61_spr_feature(d,&first,1)==2)spelling="r";break;
         }
+        unsigned phone=reloq61_spr_feature(d,&first,0);
+        if(first.node==number_liaison.move_r) {
+            spelling="rU";number_liaison.move_r=0;
+        } else if((phone==15||phone==25) && number_liaison.before==7 &&
+                  number_liaison.previous==28) {
+            struct reloq61_spr_phone u,n,t;
+            if(reloq61_spr_phone_at(d,first.after,&u)&&reloq61_spr_feature(d,&u,0)==36&&
+               reloq61_spr_phone_at(d,u.after,&n)&&reloq61_spr_feature(d,&n,0)==22&&
+               reloq61_spr_phone_at(d,n.after,&t)&&reloq61_spr_feature(d,&t,0)==3) {
+                spelling="";number_liaison.move_r=u.node;
+            }
+        }
+        number_liaison.before=number_liaison.previous;
+        number_liaison.previous=phone;
     }
     return reloq61_spr_write(d,begin,p2,spelling,consumed);
 }

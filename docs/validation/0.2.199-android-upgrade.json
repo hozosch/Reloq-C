@@ -1,0 +1,14 @@
+{
+  "version": "0.2.199-preview11",
+  "package": "org.reloq.tts.preview",
+  "previous_version_code": 20198,
+  "version_code": 20199,
+  "same_certificate": true,
+  "permissions": [
+    "android.permission.INTERNET"
+  ],
+  "native_and_dex_equal_final_isolated_build": true,
+  "apk_bytes": 17708438,
+  "sha256": "fcbfb4282e5c90ceebadea8d530ad909bac592da41df436ea55ebd6deee0eff3",
+  "no_audio_files": true
+}

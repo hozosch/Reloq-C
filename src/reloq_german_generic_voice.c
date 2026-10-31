@@ -1339,8 +1339,12 @@ static int generic_plan(
         timings,cancelled,cancel_context);
     if (scheduled) {free(timings);free(melody);return scheduled;}
     struct reloq_target_stage_router stages = {0};
-    if (reloq_target_stage_router_begin_borrowed(&stages, builder) &&
-        reloq_target_stage_router_begin(&stages, builder)) {
+    int growing=1;
+    for(size_t s=1;s<RELOQ_TARGET_STREAM_COUNT;++s)
+        if(builder->stream[s].points||builder->stream[s].capacity||builder->stream[s].count)growing=0;
+    if (growing ? reloq_target_stage_router_begin_growing(&stages,builder) :
+        (reloq_target_stage_router_begin_borrowed(&stages, builder) &&
+         reloq_target_stage_router_begin(&stages, builder))) {
         free(melody);
         free(timings);
         return -1;
@@ -3382,6 +3386,7 @@ static int render(
     struct reloq_german_syllable *syllables = NULL;
     enum reloq_german_terminal_mark *marks = NULL;
     struct reloq_acoustic_point *points = NULL;
+    struct reloq_target_builder builder={0};
     int64_t *word_ticks = NULL;
     int *word_pitch = NULL;
     size_t *index_positions = NULL;
@@ -3641,16 +3646,13 @@ static int render(
         status = RELOQ_DE_UTTERANCE_MEMORY;
         goto done;
     }
-    points = malloc(budget.total_points * sizeof *points);
+    /* Only F0 needs its bounded phrase/inline-pitch reservation. Acoustic
+     * streams grow privately while planning, then transfer without a copy. */
+    points = malloc(budget.capacity[RELOQ_TARGET_F0] * sizeof *points);
     if (!points) { status = RELOQ_DE_UTTERANCE_MEMORY; goto done; }
     struct reloq_target_buffer buffers[RELOQ_TARGET_STREAM_COUNT] = {{0}};
-    size_t point_offset = 0;
-    for (size_t stream = 0; stream < RELOQ_TARGET_STREAM_COUNT; ++stream) {
-        buffers[stream] = (struct reloq_target_buffer){
-            points + point_offset, budget.capacity[stream], 0};
-        point_offset += budget.capacity[stream];
-    }
-    struct reloq_target_builder builder;
+    buffers[RELOQ_TARGET_F0]=(struct reloq_target_buffer){
+        points,budget.capacity[RELOQ_TARGET_F0],0};
     if (reloq_target_builder_begin(&builder, buffers)) {
         status = RELOQ_DE_UTTERANCE_MODEL;
         goto done;
@@ -3680,7 +3682,10 @@ static int render(
             output.native_time_scale>0?output.native_time_scale:output.rate_factor/100.0)) {
             status=planned==1?RELOQ_DE_UTTERANCE_CANCELLED:RELOQ_DE_UTTERANCE_MODEL;goto done;
         }
-        for(size_t i=0;i<RELOQ_TARGET_STREAM_COUNT;++i)buffers[i].count=0;
+        for(size_t i=1;i<RELOQ_TARGET_STREAM_COUNT;++i) {
+            free(builder.stream[i].points);
+            builder.stream[i]=(struct reloq_target_buffer){0};
+        }
         if(reloq_target_builder_begin(&builder,buffers)) {status=RELOQ_DE_UTTERANCE_MODEL;goto done;}
     }
     if((pitch_count || controls) && sequence.word_count) {
@@ -3858,6 +3863,7 @@ done:
     free(index_positions);
     free(word_ticks);
     free(speed_map.starts);free(speed_map.scales);
+    for(size_t i=1;i<RELOQ_TARGET_STREAM_COUNT;++i)free(builder.stream[i].points);
     free(points);
     free(syllables);
     free(marks);
