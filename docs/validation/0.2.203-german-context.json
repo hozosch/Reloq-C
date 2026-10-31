@@ -1,0 +1,130 @@
+{
+  "source_baseline": "8ab6fe5243b960e86f871ce22becd25234660555",
+  "reference": "complete native C German frontend; original Apple binary not executed",
+  "corpus_cases": 254,
+  "all_texts_accepted": true,
+  "corrected_whole_utterance_fallbacks": 11,
+  "unchanged_annotations": 243,
+  "punctuation_matrix_cases": 72,
+  "punctuation_phone_and_prominence_matches_before": 62,
+  "punctuation_phone_and_prominence_matches_after": 72,
+  "native_C_regression": {
+    "german_context_cases": 89,
+    "native_phone_and_prominence_signatures_equal": true,
+    "native_features_retained": true,
+    "no_audio_files": true
+  },
+  "no_audio_files": true,
+  "corrected_cases": [
+    {
+      "text": "Sie fragte: „Ist der Termin bestätigt?“",
+      "before": "`00 `[.0zi] `2 `[.1frak.0t@]:  `00 `[.0Ist] `00 `[.0der] `2 `[.0tEr.1min] `0 `[.0b@.1St'E:'.0tIXt]? ",
+      "after": "`00 `[.0zi] `2 `[.1frak.0t@]: `00 `[.0Ist] `00 `[.0der] `[.0tEr.1min] `[.0b@.1St'E:'.0tIXt] `2 `[.1fra.0g@.2T'aj'.0X@n]",
+      "native_reference": " `00 `[.0zi] `2 `[.1frak.0t@]: `00 `[.0Ist] `00 `[.0der] `[.0tEr.1min] `[.0b@.1St'E:'.0tIXt] `2 `[.1fra.0g@.2T'aj'.0X@n]",
+      "before_native_features": 0,
+      "after_native_features": 7,
+      "previous_context_result": 0,
+      "previous_context_attempts": 2
+    },
+    {
+      "text": "„NVDA-Einstellungen“ wurde isoliert richtig gelesen. Das Ergebnis bleibt unverändert.",
+      "before": "   `[.1En] `[.1f'aw'] `[.1de] `2 `[.1a.2'aj'n.2StE.0lUG.0@n]  `[.1vUr.0d@] `[.2i.0zo.1lirt] `[.1rIX.0tIX] `[.0g@.1le.0z@n]. `[.1dAs] `[.0Er.1gep.0nIs] `[.1bl'aj'pt] `[.1Un.0fEr.2En.0dRt].",
+      "after": "`[.1En] `[.1f'aw'] `[.1de] `[.1a] `[.1'aj'n.2StE.0lUG.0@n] `00 `[.1vUr.0d@] `[.2i.0zo.1lirt] `[.1rIX.0tIX] `2 `[.0g@.1le.0z@n]. `00 `[.0dAs] `[.0Er.1gep.0nIs] `0 `[.1bl'aj'pt] `2 `[.1Un.0fEr.2En.0dRt].",
+      "native_reference": " `[.1En] `[.1f'aw'] `[.1de] `[.1a] `[.1'aj'n.2StE.0lUG.0@n] `00 `[.1vUr.0d@] `[.2i.0zo.1lirt] `[.1rIX.0tIX] `2 `[.0g@.1le.0z@n]. `00 `[.0dAs] `[.0Er.1gep.0nIs] `0 `[.1bl'aj'pt] `2 `[.1Un.0fEr.2En.0dRt].",
+      "before_native_features": 0,
+      "after_native_features": 13,
+      "previous_context_result": 0,
+      "previous_context_attempts": 2
+    },
+    {
+      "text": "„12 kg“ wurde isoliert richtig gelesen. Das Ergebnis bleibt unverändert.",
+      "before": "  `[.1Tv'OE'lf]   `[.2ki.0lo.1grAm]  `00 `[.1vUr.0d@] `[.2i.0zo.1lirt] `[.1rIX.0tIX] `2 `[.0g@.1le.0z@n]. `00 `[.0dAs] `[.0Er.1gep.0nIs] `[.1bl'aj'pt] `2 `[.1Un.0fEr.2En.0dRt].",
+      "after": "`[.1Tv'OE'lf] `[.1ka] `[.1ge] `00 `[.1vUr.0d@] `[.2i.0zo.1lirt] `[.1rIX.0tIX] `2 `[.0g@.1le.0z@n]. `00 `[.0dAs] `[.0Er.1gep.0nIs] `0 `[.1bl'aj'pt] `2 `[.1Un.0fEr.2En.0dRt].",
+      "native_reference": " `[.1Tv'OE'lf] `[.1ka] `[.1ge] `00 `[.1vUr.0d@] `[.2i.0zo.1lirt] `[.1rIX.0tIX] `2 `[.0g@.1le.0z@n]. `00 `[.0dAs] `[.0Er.1gep.0nIs] `0 `[.1bl'aj'pt] `2 `[.1Un.0fEr.2En.0dRt].",
+      "before_native_features": 1,
+      "after_native_features": 11,
+      "previous_context_result": 0,
+      "previous_context_attempts": 2
+    },
+    {
+      "text": "Die abc@example.com wurde nach der Vorbereitung geprüft.",
+      "before": "`00 `[.0di] `[.1a] `[.1be] `2 `[.1Te] , `[.1Et] `[.0Ek.1sAm.0pl@]  `0 `[.1pUGkt]  `[.1kom]  `00 `[.1vUr.0d@] `00 `[.0nax] `00 `[.0der] `2 `[.1for.0b@.2r'aj't.2UG] `0 `[.0g@.1pryft].",
+      "after": "`00 `[.0di] `[.1a] `[.1be] `2 `[.1Te], `[.1Et] `[.0Ek.1sAm.0pl@] `0 `[.1pUGkt] `[.1kom] `00 `[.1vUr.0d@] `00 `[.0nax] `00 `[.0der] `2 `[.1for.0b@.2r'aj'.0tUG] `0 `[.0g@.1pryft].",
+      "native_reference": " `00 `[.0di] `[.1a] `[.1be] `2 `[.1Te], `[.1Et] `[.0Ek.1sAm.0pl@] `0 `[.1pUGkt] `[.1kom] `00 `[.1vUr.0d@] `00 `[.0nax] `00 `[.0der] `2 `[.1for.0b@.2r'aj'.0tUG] `0 `[.0g@.1pryft].",
+      "before_native_features": 0,
+      "after_native_features": 13,
+      "previous_context_result": 0,
+      "previous_context_attempts": 2
+    },
+    {
+      "text": "„abc@example.com“ wurde isoliert richtig gelesen. Das Ergebnis bleibt unverändert.",
+      "before": " `[.1a] `[.1be] `2 `[.1Te] , `[.1Et] `[.0Ek.1sAm.0pl@]  `0 `[.1pUGkt]  `[.1kom]   `00 `[.1vUr.0d@] `[.2i.0zo.1lirt] `[.1rIX.0tIX] `2 `[.0g@.1le.0z@n]. `00 `[.0dAs] `[.0Er.1gep.0nIs] `[.1bl'aj'pt] `2 `[.1Un.0fEr.2En.0dRt].",
+      "after": "`[.1Apk] `[.1klA.0mR.2A.0f@] `[.0Ek.1sAm.0pl@] `[.1pUGkt] `[.1kom] `00 `[.1vUr.0d@] `[.2i.0zo.1lirt] `[.1rIX.0tIX] `2 `[.0g@.1le.0z@n]. `00 `[.0dAs] `[.0Er.1gep.0nIs] `0 `[.1bl'aj'pt] `2 `[.1Un.0fEr.2En.0dRt].",
+      "native_reference": " `[.1Apk] `[.1klA.0mR.2A.0f@] `[.0Ek.1sAm.0pl@] `[.1pUGkt] `[.1kom] `00 `[.1vUr.0d@] `[.2i.0zo.1lirt] `[.1rIX.0tIX] `2 `[.0g@.1le.0z@n]. `00 `[.0dAs] `[.0Er.1gep.0nIs] `0 `[.1bl'aj'pt] `2 `[.1Un.0fEr.2En.0dRt].",
+      "before_native_features": 0,
+      "after_native_features": 13,
+      "previous_context_result": 0,
+      "previous_context_attempts": 2
+    },
+    {
+      "text": "Vor der Prüfung (abc@example.com) wurde die Sprachausgabe gestartet.",
+      "before": "`00 `[.0for] `00 `[.0der] `2 `[.1pry.0fUG] (`[.1a] `[.1be] `2 `[.1Te] , `[.1Et] `[.0Ek.1sAm.0pl@]  `0 `[.1pUGkt]  `2 `[.1kom] ) `00 `[.1vUr.0d@] `00 `[.0di] `2 `[.1Sprak.2h'aw's.2ga.0b@] `0 `[.0g@.1StAr.0t@t].",
+      "after": "`00 `[.0for] `00 `[.0der] `2 `[.1pry.0fUG]( `[.1a] `[.1be] `2 `[.1Te], `[.1Et] `[.0Ek.1sAm.0pl@] `0 `[.1pUGkt] `2 `[.1kom]) `00 `[.1vUr.0d@] `00 `[.0di] `2 `[.1Sprax.2'aw's.2ga.0b@] `0 `[.0g@.1StAr.0t@t].",
+      "native_reference": " `00 `[.0for] `00 `[.0der] `2 `[.1pry.0fUG] `[.1a] `[.1be] `2 `[.1Te], `[.1Et] `[.0Ek.1sAm.0pl@] `0 `[.1pUGkt] `2 `[.1kom] `00 `[.1vUr.0d@] `00 `[.0di] `2 `[.1Sprax.2'aw's.2ga.0b@] `0 `[.0g@.1StAr.0t@t].",
+      "before_native_features": 0,
+      "after_native_features": 14,
+      "previous_context_result": 0,
+      "previous_context_attempts": 2
+    },
+    {
+      "text": "Der neue Eintrag: abc@example.com. Danach wurde die Datei geöffnet.",
+      "before": "`00 `[.0der] `[.1n'oj'.0@] `2 `[.1'aj'n.2trak]: `[.1a] `[.1be] `2 `[.1Te] , `[.1Et] `[.0Ek.1sAm.0pl@]  `0 `[.1pUGkt]  `2 `[.1kom] . `[.0da.1nax] `00 `[.1vUr.0d@] `00 `[.0di] `2 `[.0dA.1t'aj'] `0 `[.0g@.1'OE'f.0n@t].",
+      "after": "`00 `[.0der] `[.1n'oj'.0@] `2 `[.1'aj'n.2trak]: `[.1a] `[.1be] `2 `[.1Te], `[.1Et] `[.0Ek.1sAm.0pl@] `0 `[.1pUGkt] `2 `[.1kom]. `[.0da.1nax] `00 `[.1vUr.0d@] `00 `[.0di] `2 `[.0dA.1t'aj'] `0 `[.0g@.1'OE'f.0n@t].",
+      "native_reference": " `00 `[.0der] `[.1n'oj'.0@] `2 `[.1'aj'n.2trak]: `[.1a] `[.1be] `2 `[.1Te], `[.1Et] `[.0Ek.1sAm.0pl@] `0 `[.1pUGkt] `2 `[.1kom]. `[.0da.1nax] `00 `[.1vUr.0d@] `00 `[.0di] `2 `[.0dA.1t'aj'] `0 `[.0g@.1'OE'f.0n@t].",
+      "before_native_features": 0,
+      "after_native_features": 15,
+      "previous_context_result": 0,
+      "previous_context_attempts": 2
+    },
+    {
+      "text": "Die file:///C:/Test wurde nach der Vorbereitung geprüft.",
+      "before": "`00 `[.0di] `2 `[.1fi.0l@]:`[.1Sr'E:'k.2StrIX]`[.1Sr'E:'k.2StrIX]`[.1Sr'E:'k.2StrIX]`2 `[.1Te]:`[.1Sr'E:'k.2StrIX]`[.1tEst] `00 `[.1vUr.0d@] `00 `[.0nax] `00 `[.0der] `2 `[.1for.0b@.2r'aj't.2UG] `0 `[.0g@.1pryft].",
+      "after": "`00 `[.0di] `2 `[.1fi.0l@]: `[.1Sr'E:'k.2StrIX] `[.1Sr'E:'k.2StrIX] `[.1Sr'E:'k.2StrIX] `[.1Te] `[.1dO.0p@l.2pUGkt] `[.1Sr'E:'k.2StrIX] `[.1tEst] `00 `[.1vUr.0d@] `00 `[.0nax] `00 `[.0der] `2 `[.1for.0b@.2r'aj'.0tUG] `0 `[.0g@.1pryft].",
+      "native_reference": " `00 `[.0di] `2 `[.1fi.0l@]: `[.1Sr'E:'k.2StrIX] `[.1Sr'E:'k.2StrIX] `[.1Sr'E:'k.2StrIX] `[.1Te] `[.1dO.0p@l.2pUGkt] `[.1Sr'E:'k.2StrIX] `[.1tEst] `00 `[.1vUr.0d@] `00 `[.0nax] `00 `[.0der] `2 `[.1for.0b@.2r'aj'.0tUG] `0 `[.0g@.1pryft].",
+      "before_native_features": 0,
+      "after_native_features": 14,
+      "previous_context_result": 0,
+      "previous_context_attempts": 2
+    },
+    {
+      "text": "„file:///C:/Test“ wurde isoliert richtig gelesen. Das Ergebnis bleibt unverändert.",
+      "before": " `[.1fi.0l@]:`[.1Sr'E:'k.2StrIX]`[.1Sr'E:'k.2StrIX]`[.1Sr'E:'k.2StrIX]`2 `[.1Te]:`[.1Sr'E:'k.2StrIX]`[.1tEst]  `00 `[.1vUr.0d@] `[.2i.0zo.1lirt] `[.1rIX.0tIX] `2 `[.0g@.1le.0z@n]. `00 `[.0dAs] `[.0Er.1gep.0nIs] `[.1bl'aj'pt] `2 `[.1Un.0fEr.2En.0dRt].",
+      "after": "`[.1fi.0l@]: `[.1Sr'E:'k.2StrIX] `[.1Sr'E:'k.2StrIX] `[.1Sr'E:'k.2StrIX] `[.1Te] `[.1dO.0p@l.2pUGkt] `[.1Sr'E:'k.2StrIX] `[.1tEst] `00 `[.1vUr.0d@] `[.2i.0zo.1lirt] `[.1rIX.0tIX] `2 `[.0g@.1le.0z@n]. `00 `[.0dAs] `[.0Er.1gep.0nIs] `0 `[.1bl'aj'pt] `2 `[.1Un.0fEr.2En.0dRt].",
+      "native_reference": " `[.1fi.0l@]: `[.1Sr'E:'k.2StrIX] `[.1Sr'E:'k.2StrIX] `[.1Sr'E:'k.2StrIX] `[.1Te] `[.1dO.0p@l.2pUGkt] `[.1Sr'E:'k.2StrIX] `[.1tEst] `00 `[.1vUr.0d@] `[.2i.0zo.1lirt] `[.1rIX.0tIX] `2 `[.0g@.1le.0z@n]. `00 `[.0dAs] `[.0Er.1gep.0nIs] `0 `[.1bl'aj'pt] `2 `[.1Un.0fEr.2En.0dRt].",
+      "before_native_features": 0,
+      "after_native_features": 16,
+      "previous_context_result": 0,
+      "previous_context_attempts": 2
+    },
+    {
+      "text": "Vor der Prüfung (file:///C:/Test) wurde die Sprachausgabe gestartet.",
+      "before": "`00 `[.0for] `00 `[.0der] `2 `[.1pry.0fUG] (`[.1fi.0l@]:`[.1Sr'E:'k.2StrIX]`[.1Sr'E:'k.2StrIX]`[.1Sr'E:'k.2StrIX]`2 `[.1Te]:`[.1Sr'E:'k.2StrIX]`2 `[.1tEst]) `00 `[.1vUr.0d@] `00 `[.0di] `2 `[.1Sprak.2h'aw's.2ga.0b@] `0 `[.0g@.1StAr.0t@t].",
+      "after": "`00 `[.0for] `00 `[.0der] `2 `[.1pry.0fUG]( `[.1fi.0l@]: `[.1Sr'E:'k.2StrIX] `[.1Sr'E:'k.2StrIX] `[.1Sr'E:'k.2StrIX] `[.1Te] `[.1dO.0p@l.2pUGkt] `[.1Sr'E:'k.2StrIX] `2 `[.1tEst]) `00 `[.1vUr.0d@] `00 `[.0di] `2 `[.1Sprax.2'aw's.2ga.0b@] `0 `[.0g@.1StAr.0t@t].",
+      "native_reference": " `00 `[.0for] `00 `[.0der] `2 `[.1pry.0fUG] `[.1fi.0l@]: `[.1Sr'E:'k.2StrIX] `[.1Sr'E:'k.2StrIX] `[.1Sr'E:'k.2StrIX] `[.1Te] `[.1dO.0p@l.2pUGkt] `[.1Sr'E:'k.2StrIX] `2 `[.1tEst] `00 `[.1vUr.0d@] `00 `[.0di] `2 `[.1Sprax.2'aw's.2ga.0b@] `0 `[.0g@.1StAr.0t@t].",
+      "before_native_features": 0,
+      "after_native_features": 15,
+      "previous_context_result": 0,
+      "previous_context_attempts": 2
+    },
+    {
+      "text": "Der neue Eintrag: file:///C:/Test. Danach wurde die Datei geöffnet.",
+      "before": "`00 `[.0der] `[.1n'oj'.0@] `2 `[.1'aj'n.2trak]: `[.1fi.0l@]:`[.1Sr'E:'k.2StrIX]`[.1Sr'E:'k.2StrIX]`[.1Sr'E:'k.2StrIX]`2 `[.1Te]:`[.1Sr'E:'k.2StrIX]`2 `[.1tEst]. `[.0da.1nax] `00 `[.1vUr.0d@] `00 `[.0di] `2 `[.0dA.1t'aj'] `0 `[.0g@.1'OE'f.0n@t].",
+      "after": "`00 `[.0der] `[.1n'oj'.0@] `2 `[.1'aj'n.2trak]: `[.1fi.0l@]: `[.1Sr'E:'k.2StrIX] `[.1Sr'E:'k.2StrIX] `[.1Sr'E:'k.2StrIX] `[.1Te] `[.1dO.0p@l.2pUGkt] `[.1Sr'E:'k.2StrIX] `2 `[.1tEst]. `[.0da.1nax] `00 `[.1vUr.0d@] `00 `[.0di] `2 `[.0dA.1t'aj'] `0 `[.0g@.1'OE'f.0n@t].",
+      "native_reference": " `00 `[.0der] `[.1n'oj'.0@] `2 `[.1'aj'n.2trak]: `[.1fi.0l@]: `[.1Sr'E:'k.2StrIX] `[.1Sr'E:'k.2StrIX] `[.1Sr'E:'k.2StrIX] `[.1Te] `[.1dO.0p@l.2pUGkt] `[.1Sr'E:'k.2StrIX] `2 `[.1tEst]. `[.0da.1nax] `00 `[.1vUr.0d@] `00 `[.0di] `2 `[.0dA.1t'aj'] `0 `[.0g@.1'OE'f.0n@t].",
+      "before_native_features": 0,
+      "after_native_features": 16,
+      "previous_context_result": 0,
+      "previous_context_attempts": 2
+    }
+  ]
+}

@@ -116,6 +116,7 @@ struct annotation_builder {
     int native_first;
     size_t deferred_words;
     size_t input_length;
+    const unsigned char *input,*original_input,*word_input;
     /* One entry per emitted SPR group, aligned with its written source. */
     struct reloq_german_prosody_unit *units;
     size_t unit_count,unit_capacity;
@@ -385,7 +386,7 @@ static int append_observed(void *context,const char *body,int weak);
 /* Grammar normalization owns abbreviation spelling and its da option. */
 enum {NATIVE_TOKEN_ABBREVIATION=2};
 static int append_native_token(struct annotation_builder *,const unsigned char *,size_t,int);
-static int read_native_token(const unsigned char *,size_t,char [4096],size_t *);
+static int read_native_token(const struct annotation_builder *,const unsigned char *,size_t,char [4096],size_t *);
 static int append_native_reading(struct annotation_builder *,const unsigned char *,size_t,char *,int);
 
 static int append_word_token(struct annotation_builder *b,
@@ -666,7 +667,7 @@ static int append_native_compound(struct annotation_builder *b,
     const unsigned char *word,size_t length)
 {
     char phonemes[4096];size_t phonemes_length=0;
-    if(read_native_token(word,length,phonemes,&phonemes_length))return 1;
+    if(read_native_token(b,word,length,phonemes,&phonemes_length))return 1;
     char *first=strstr(phonemes,"`["),*close=first?strchr(first,']'):NULL;
     if(!first||!close)return 1;
     int multiple=strstr(close+1,"`[")!=NULL;
@@ -843,11 +844,31 @@ static int append_observed(void *context,const char *body,int weak)
 /* A connected spelling can normalize to several native words (place names,
  * choices, and units). Keep the complete written token and its group count
  * together so the sentence pass sees its original delimiter and context. */
-static int read_native_token(const unsigned char *source,size_t length,
+static int source_quote(unsigned char c)
+{return c=='"'||c==0x82||c==0x84||c==0x8b||c==0x93||c==0x94||c==0x9b||c==0xab||c==0xbb;}
+/* A native token can change its normalization before a written quote.
+ * Include that real, silent lookahead during admission as well as during
+ * sentence analysis. The spoken groups still refer only to the token. */
+static size_t native_query_length(const struct annotation_builder *b,
+    const unsigned char *source,size_t length)
+{
+    const unsigned char *buffers[]={b->input,b->original_input,b->word_input};
+    uintptr_t at=(uintptr_t)source;
+    for(size_t i=0;i<sizeof buffers/sizeof *buffers;++i) {
+        uintptr_t base=(uintptr_t)buffers[i];
+        if(!base||at<base||at-base>b->input_length||length>b->input_length-(at-base))continue;
+        size_t end=(size_t)(at-base)+length;
+        while(end<b->input_length&&source_quote(b->original_input[end]))++end;
+        return end-(size_t)(at-base);
+    }
+    return length;
+}
+static int read_native_token(const struct annotation_builder *b,const unsigned char *source,size_t length,
     char phonemes[4096],size_t *written)
 {
-    if(!length||length>=256)return 1;
-    char text[256];memcpy(text,source,length);text[length]=0;
+    size_t query_length=native_query_length(b,source,length);
+    if(!length||query_length>=256)return 1;
+    char text[256];memcpy(text,source,query_length);text[query_length]=0;
     struct reloq61_request q={.language=0x40000,.annotations=1,.phonemes_only=1,
         .voice={0,50,65,30,0,0,50,92},.text=text,.phonemes=phonemes,
         .phonemes_capacity=4096};
@@ -877,10 +898,11 @@ static int collect_native_text(void *context,const char *data,size_t length)
 static int append_native_source(struct annotation_builder *b,
     const unsigned char *source,size_t length,size_t query_length,int native_letters)
 {
+    query_length=native_query_length(b,source,query_length);
     if(!length||query_length<length||query_length==SIZE_MAX)return 1;
     /* Extended Unicode names retain their character-table admission. */
     for(size_t i=0;i<query_length;++i)
-        if(source[i]<32||(source[i]>=127&&(!native_letters||!letter(source[i])))||source[i]=='`')return 1;
+        if(source[i]<32||(source[i]>=127&&!source_quote(source[i])&&(!native_letters||!letter(source[i])))||source[i]=='`')return 1;
     char *text=malloc(query_length+1);if(!text)return -2;
     memcpy(text,source,query_length);text[query_length]=0;
     struct annotation_builder out={0};
@@ -931,7 +953,7 @@ static int append_native_token(struct annotation_builder *b,
         return append_explicit_token(b,source,length,entry);
     char phonemes[4096];size_t n=0;
     uint64_t hits=reloq61_dictionary_hits();
-    if(read_native_token(source,length,phonemes,&n))return 1;
+    if(read_native_token(b,source,length,phonemes,&n))return 1;
     if(dictionary==1&&reloq61_dictionary_hits()==hits)return 1;
     /* Authored constituent corrections and caller pronunciations outrank
      * token normalization. Keep those tokens on the existing word path. */
@@ -1722,6 +1744,7 @@ static int plan_tags_checked(int native_first,
     b.cancel_context = cancel_context;
     b.retain_features=features!=NULL;
     b.input_length=encoded_length;
+    b.input=encoded;b.original_input=original_encoded;b.word_input=word_storage;
     /* Main has already normalized the complete text. Its replacement words
      * enter grammar once; a native sub-analysis must not reapply text aliases.
      * Literal Main pronunciations and Root lookup keep their own stages. */
@@ -1824,23 +1847,30 @@ static int plan_tags_checked(int native_first,
             encoded[at-1]!='.'&&encoded[at-1]!='_'&&encoded[at-1]!='-');
         size_t mail_end=mail_boundary?email_end(encoded,encoded_length,mail_start,&mail_at):0;
         if(mail_end) {
-            result=append_email(&b,encoded,mail_start,mail_at,mail_end);
+            result=append_native_source(&b,original_encoded+mail_start,mail_end-mail_start,mail_end-mail_start,1);
+            if(result==1)result=append_email(&b,encoded,mail_start,mail_at,mail_end);
             if(result)goto done;
             at=mail_end;
             if(mail_start && encoded[mail_start-1]=='<' && at<encoded_length && encoded[at]=='>')++at;
             map_boundaries(boundaries,boundary_count,&next_boundary,at,b.used);
             continue;
         }
-        if((at==0||reloq_german_silent_separator(encoded[at-1]))&&
-           ((encoded_length-at>=7&&!memcmp(encoded+at,"http://",7))||
-            (encoded_length-at>=8&&!memcmp(encoded+at,"https://",8))||
-            (encoded_length-at>=4&&!memcmp(encoded+at,"www.",4)))) {
+        size_t scheme=at;
+        if(letter(encoded[at])) {
+            while(scheme<encoded_length&&(letter(encoded[scheme])||digit(encoded[scheme])||
+                  encoded[scheme]=='+'||encoded[scheme]=='-'||encoded[scheme]=='.'))++scheme;
+        }
+        int uri=scheme>at&&encoded_length-scheme>=3&&!memcmp(encoded+scheme,"://",3);
+        if((at==0||reloq_german_silent_separator(encoded[at-1])||source_quote(encoded[at-1])||
+            strchr("([{",encoded[at-1]))&&
+           (uri||(encoded_length-at>=4&&!memcmp(encoded+at,"www.",4)))) {
             url_end=at;
             while(url_end<encoded_length&&!reloq_german_silent_separator(encoded[url_end]))++url_end;
             size_t end=url_end;
             /* Sentence punctuation is admitted after the complete URL so
              * its original boundary is submitted exactly once as well. */
-            while(end>at&&strchr(".,;:!?\"",encoded[end-1]))--end;
+            while(end>at&&(strchr(".,;:!?\"",encoded[end-1])||source_quote(encoded[end-1])||
+                  strchr(")]}",encoded[end-1])))--end;
             result=append_native_source(&b,original_encoded+at,end-at,end-at,0);
             if(result!=1) {
                 if(result)goto done;
@@ -1848,9 +1878,8 @@ static int plan_tags_checked(int native_first,
                 map_boundaries(boundaries,boundary_count,&next_boundary,at,b.used);
                 continue;
             }
-            size_t host=at;
-            const int bare=encoded[at]=='w';
-            if(!bare)host+=encoded[at+4]=='s'?8:7;
+            size_t host=uri?scheme+3:at;
+            const int bare=!uri;
             size_t path=host;
             while(path<url_end&&encoded[path]!='/')++path;
             /* The observed domain-reading path deaccents dots in bare www

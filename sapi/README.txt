@@ -1,4 +1,4 @@
-ReLoq C 0.2.202 — SAPI5 Windows x64 / x86 preview 2
+ReLoq C 0.2.203 — SAPI5 Windows x64 / x86 preview 3
 
 Installation
 ------------
@@ -6,6 +6,7 @@ Use the package matching your application's architecture. On 64-bit Windows,
 install both packages for both 32-bit and 64-bit speech applications. Extract
 each ZIP into its own folder and run Install-SAPI.exe, then Install / update.
 Do not mix architectures. Normal Windows administrator permission is requested.
+The installer uses the supported Windows display language, with English as fallback.
 Each installer registers 14 voices in its matching registry view. Restart
 applications already open. Select SAPI5, then e.g. “ReLoq C - German”.
 
@@ -30,10 +31,14 @@ languages” shares profiles, anatomy, analysis and dictionary settings. Enablin
 it takes the current language's parameters. Disabling it restores the separate
 language settings. The x86 and x64 versions share these user settings.
 
-Sample rate ALWAYS applies to all languages, independently of that checkbox.
-It is advertised during format negotiation; SAPI converts to the application's
-output format if necessary. Existing clients must renegotiate the format,
-reopen the voice or restart to adopt a changed rate. Preview-1 migration uses
+The synthesis sample rate applies to all languages, independently of that checkbox.
+It remains the selected Eloquence rate even if an application requests a different
+output rate. With Eloquence at 11,025 Hz and the application at 48,000 Hz, SAPI
+or the application upsamples the 11,025-Hz signal. ReLoq has no extra resampler.
+Only formats actually advertised by this voice are accepted by Speak; an
+application's target cannot silently select a wider acoustic profile.
+Existing clients must renegotiate, reopen the voice or restart to adopt a changed
+Eloquence synthesis rate. Preview-1 migration uses
 the saved German rate, then US English, then the first configured language.
 The default is 11,025 Hz. Reset preserves the common sample rate.
 
@@ -70,7 +75,10 @@ tests exercise the production backend with the real core: languages, rates,
 events, fragments, partial writes, abort/reuse, priority voices and .dic edits.
 Host first-Write timing is distinct from audible Windows/device latency.
 
-Test-SAPI.exe checks actual SAPI activation of the 14 installed languages.
+Test-SAPI.exe checks all 14 installed languages with eight successive format
+requests each, including reverse rate changes with a fixed application clock.
+It verifies that the native synthesis rate stays selected, the application's
+stream uses its requested clock and utterance duration remains consistent.
 Speech stays in memory: no audio file or audio device is used. Run:
     Test-SAPI.exe > sapi-diagnostics.txt
 

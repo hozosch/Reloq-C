@@ -13,11 +13,11 @@ endif
 all: $(BUILD)/ReLoqSapi.dll $(BUILD)/ReLoqSettings.exe $(BUILD)/Install-SAPI.exe $(BUILD)/Test-SAPI.exe
 $(BUILD):
 	mkdir -p $@
-$(BUILD)/ReLoqSapi.dll: $(SOURCES) sapi_ddk.h settings.h speed.h catalogue.inc ui.inc | $(BUILD)
+$(BUILD)/ReLoqSapi.dll: $(SOURCES) sapi_ddk.h settings.h speed.h format.h catalogue.inc ui.inc | $(BUILD)
 	$(CC) $(CFLAGS) -shared $(SOURCES) $(LDFLAGS) $(LIBS) -o $@
 $(BUILD)/ReLoqSettings.exe: settings_main.c | $(BUILD)
 	$(CC) $(CFLAGS) -municode -mwindows $< $(LDFLAGS) -luser32 -o $@
-$(BUILD)/Install-SAPI.exe: install.c | $(BUILD)
+$(BUILD)/Install-SAPI.exe: install.c ui.inc | $(BUILD)
 	$(CC) $(CFLAGS) -municode -mwindows $< $(LDFLAGS) $(LIBS) -o $@
 $(BUILD)/Test-SAPI.exe: test_windows.c guids.c sapi_ddk.h catalogue.inc | $(BUILD)
 	$(CC) $(CFLAGS) -municode test_windows.c guids.c $(LDFLAGS) $(LIBS) -o $@
@@ -25,6 +25,8 @@ $(BUILD)/Test-SAPI.exe: test_windows.c guids.c sapi_ddk.h catalogue.inc | $(BUIL
 .PHONY: test
 HOST_CC ?= cc
 test: | $(BUILD)
+	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -I. test_format.c -o $(BUILD)/test_format
+	$(BUILD)/test_format > $(BUILD)/format-results.json
 	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -I. test_speed.c -o $(BUILD)/test_speed
 	$(BUILD)/test_speed > $(BUILD)/speed-results.json
 	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -DRELOQ_SAPI_SETTINGS_TEST -I. settings.c test_settings.c -o $(BUILD)/test_settings

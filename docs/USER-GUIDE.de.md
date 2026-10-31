@@ -89,11 +89,13 @@ Bereits geöffnete SAPI-Anwendungen anschließend neu starten und eine
 **ReLoq C**-Sprachstimme auswählen. Jede Sprache hat genau einen Stimmeintrag.
 `ReLoqSettings.exe` oder die SAPI-Eigenschaftenseite öffnen den Zusatzdialog
 für Stimmprofil und Sprachparameter. Änderungen werden sofort für die nächste
-Äußerung gespeichert. Der Dialog verwendet die unterstützte Windows-Anzeigesprache.
+Äußerung gespeichert. Dialog und Installation verwenden die unterstützte Windows-Anzeigesprache.
 Über das Kontrollfeld lassen sich alle Parameter gemeinsam für alle Sprachen
 verwenden; beim Ausschalten werden die getrennten Einstellungen wieder aktiv.
-Die Abtastrate gilt immer für alle Sprachen und ändert sich bei erneuter
-Formatverhandlung. Tempo und Lautstärke steuert SAPI. Ohne Geschwindigkeitsanhebung entspricht
+Die Synthese-Abtastrate gilt für alle Sprachen. SAPI oder die Anwendung passt
+dieses Signal an das eigene Ausgabeformat an. Eine höhere Ausgabe-Abtastrate
+ändert die Syntheserate und Klangbandbreite von Eloquence nicht.
+Tempo und Lautstärke steuert SAPI. Ohne Geschwindigkeitsanhebung entspricht
 SAPI 0 dem nativen ECI-Wert 60, mit zehn nativen Einheiten je SAPI-Stufe.
 Profil-Lautstärken sind 100.
 Für beide Anwendungsarchitekturen beide Pakete aus getrennten Ordnern installieren.

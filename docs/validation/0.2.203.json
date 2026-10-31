@@ -1,0 +1,120 @@
+{
+  "version": "0.2.203",
+  "source_parent": "8ab6fe5243b960e86f871ce22becd25234660555",
+  "no_audio_files": true,
+  "files": {
+    "reloq-c-sapi5-x64-0.2.203-preview3.zip": {
+      "bytes": 19571265,
+      "sha256": "86872b75da3aef525b4bc0f90b64443aa3d981cfe7a937b644337d753744b738",
+      "shipped_core_sha256": "1fced6e78579819b568636c726b178970eca020fdf2c7183bd348566a672d5ad",
+      "verified_dictionary_files": 8,
+      "core_copies": 1
+    },
+    "reloq-c-sapi5-x86-0.2.203-preview3.zip": {
+      "bytes": 19606983,
+      "sha256": "1146332d0d2c036d0e34001f1f87fb16ecd1f4654e1583119ea05ee1d212acb6",
+      "shipped_core_sha256": "49029422efe80375e58718fba5c0f529d6c7cd74285778b870e44865addef987",
+      "verified_dictionary_files": 8,
+      "core_copies": 1
+    },
+    "reloq-c-synth-experimental-x64-0.2.203.nvda-addon": {
+      "bytes": 19510656,
+      "sha256": "6550668fde29da83a4cc4be1c52492a18c323e82e7170bc686c054534cb353cc",
+      "shipped_core_sha256": "1fced6e78579819b568636c726b178970eca020fdf2c7183bd348566a672d5ad",
+      "verified_dictionary_files": 8,
+      "core_copies": 1
+    },
+    "reloq-c-android-arm64-0.2.203-preview15.apk": {
+      "bytes": 17446294,
+      "sha256": "1689bdc7d3a985e1c3880cb7e6052341d00098450c5d446788e39e3fb44c1be2",
+      "shipped_core_sha256": "288afce34e97f360b20c92b5789a8a79c0d2a5f5bf0aa52d12484ff9ac66f3ef",
+      "verified_dictionary_files": 8,
+      "core_copies": 1
+    },
+    "eci-x64.dll": {
+      "bytes": 54553600,
+      "sha256": "1fced6e78579819b568636c726b178970eca020fdf2c7183bd348566a672d5ad"
+    },
+    "eci-x86.dll": {
+      "bytes": 54702592,
+      "sha256": "49029422efe80375e58718fba5c0f529d6c7cd74285778b870e44865addef987"
+    },
+    "core-host-final.so": {
+      "bytes": 55244768,
+      "sha256": "735acdc83b8e33c066bc1522b5993e2380b59fa1ee2040d80e7013b638b50131"
+    },
+    "core-android-unstripped.so": {
+      "bytes": 52899928,
+      "sha256": "6562e19cac366d75caa5bf3580663692ab2eb7b3de02c51433f9d61b101a0637"
+    },
+    "sapi-x64.dll": {
+      "bytes": 96768,
+      "sha256": "42b40705ffb56803e7c97fd875b44c9508c6129a11a936d3e735fd4bbd88bc82"
+    },
+    "sapi-x86.dll": {
+      "bytes": 101888,
+      "sha256": "f5a08e1fa6845d602886afaa84dfc853e87b32839ef86c96fd14bdf40974119e"
+    }
+  },
+  "checks": {
+    "default_mode_pcm_and_index_cases": 196,
+    "german_native_context_cases": 89,
+    "german_context_corpus_cases": 254,
+    "german_corrected_whole_utterance_fallbacks": 11,
+    "german_punctuation_phone_and_prominence_pairs": 72,
+    "analysis_option_tag_scope_fragment_checks": 197,
+    "german_url_identifier_fragment_index_checks": 208,
+    "sapi_backend_cases": 212,
+    "sapi_native_target_pcm_pairs": 98,
+    "sapi_format_policy_checks": 420,
+    "sapi_native_target_rate_pairs": 49,
+    "sapi_direct_eci_pcm_pairs": 98,
+    "sapi_speed_direct_eci_pcm_pairs": 52,
+    "sapi_dictionary_checks": 12,
+    "sapi_dictionary_reload_calls": 5,
+    "sapi_settings_checks": 40,
+    "sapi_localized_strings": 480,
+    "sapi_ui_tables": 12,
+    "sapi_ui_regional_fallbacks": 5,
+    "windows_eci_exports_per_architecture": 21,
+    "sapi_exports_per_architecture": 5,
+    "nvda_ui_languages": [
+      "en",
+      "de"
+    ],
+    "jni_direct_native_pairs": 63,
+    "android_settings_dictionary_checks": 866,
+    "apk_upgrade_same_package_and_certificate": true,
+    "apk_version_code_before": 20202,
+    "apk_version_code_after": 20203,
+    "archive_crc_checks": 4,
+    "full_c_eci_regression": "passed",
+    "native_release_dependency_audit": "passed",
+    "sapi_no_added_resampler_or_conversion_dependency": true
+  },
+  "sapi_formats": {
+    "selected_synthesis_rate_preserved": true,
+    "requests_do_not_select_acoustic_profiles": true,
+    "only_advertised_clocks_accepted_by_Speak": true,
+    "previously_advertised_clocks_remain_valid": true,
+    "resampling": "normal SAPI/application path only; no added engine converter",
+    "host_pcm_tests_do_not_execute_Windows_SAPI_conversion": true,
+    "Windows_diagnostic_language_format_cases": 112,
+    "Windows_diagnostic_status": "built for both architectures; not executed here",
+    "initialized_language_and_queue": "unchanged from 0.2.202"
+  },
+  "german_analysis": {
+    "reference": "complete native C frontend; original Apple binary not executed",
+    "details": "0.2.203-german-context.json",
+    "documented_acoustic_departures_preserved": true,
+    "additional_lexicon_reintroduced": false
+  },
+  "community_dictionary_commit": "a23b0f9d9e64dc3156fb8c1795a7521bf173a285",
+  "limits": [
+    "The reported Windows SAPI conversion issue has not been reproduced on this Linux host; actual conversion/client verification remains pending.",
+    "x86 Windows activation and further installer/screen-reader UI checks remain pending.",
+    "No new global CPU or binary-size reduction is claimed; the native core size changes by about one kilobyte on Windows.",
+    "German audible short-pause extension has not been reliably reproduced or established as fixed.",
+    "No public GitHub binary release assets are published by this source update."
+  ]
+}

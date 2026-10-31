@@ -1,11 +1,17 @@
 #include "settings.h"
+#include "format.h"
+#include <sperror.h>
+#ifndef SPERR_UNSUPPORTED_FORMAT
+/* Older MinGW headers provide MAKE_SAPI_ERROR but omit most SAPI codes. */
+#define SPERR_UNSUPPORTED_FORMAT MAKE_SAPI_ERROR(0x003)
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
 
 HMODULE sapi_module;
 volatile LONG sapi_objects,sapi_locks;
-struct engine {ISpTTSEngine speak;ISpObjectWithToken token_iface;LONG refs;ISpObjectToken *token;int dialect;struct sapi_backend *backend;};
+struct engine {ISpTTSEngine speak;ISpObjectWithToken token_iface;LONG refs;ISpObjectToken *token;int dialect;volatile LONG formats;struct sapi_backend *backend;};
 static struct engine *from_token(ISpObjectWithToken *p)
 {return CONTAINING_RECORD(p,struct engine,token_iface);}
 static HRESULT STDMETHODCALLTYPE engine_qi(ISpTTSEngine *p,REFIID iid,void **out)
@@ -41,20 +47,21 @@ static HRESULT STDMETHODCALLTYPE token_get(ISpObjectWithToken *p,ISpObjectToken 
     if(!*out)return CO_E_NOTINITIALIZED;ISpObjectToken_AddRef(*out);return S_OK;
 }
 static ISpObjectWithTokenVtbl token_vtable={token_qi,token_add,token_release,token_set,token_get};
-static int rate_supported(DWORD rate)
-{return rate==8000||rate==11025||rate==16000||rate==22050||rate==32000||rate==44100||rate==48000;}
 static HRESULT STDMETHODCALLTYPE format(ISpTTSEngine *p,const GUID *target,const WAVEFORMATEX *input,GUID *id,WAVEFORMATEX **out)
 {
     if(!id||!out)return E_POINTER;*out=NULL;
     struct engine *e=(struct engine *)p;struct sapi_settings settings;
     if(FAILED(sapi_settings_read(e->dialect,&settings)))sapi_settings_default(&settings);
     static const DWORD rates[]={8000,11025,22050,16000,32000,44100,48000};
-    DWORD rate=rates[settings.rate];
-    /* SAPI converts to the client format. The engine's selected rate is
-     * common to all voice tokens, independent of a client's target rate. */
+    DWORD requested=target&&IsEqualGUID(target,&SPDFID_WaveFormatEx)&&input?input->nSamplesPerSec:0;
+    unsigned offered=0;DWORD rate=sapi_format_offer(&offered,rates[settings.rate],requested);
+    /* The selected acoustic clock belongs to Eloquence. SAPI converts this
+     * stream to the application's target without selecting another voice
+     * bandwidth. Speak also handles an older, already negotiated clock. */
     (void)target;(void)input;
     WAVEFORMATEX *f=CoTaskMemAlloc(sizeof *f);if(!f)return E_OUTOFMEMORY;
     *f=(WAVEFORMATEX){WAVE_FORMAT_PCM,1,rate,rate*2,2,16,0};
+    InterlockedOr(&e->formats,(LONG)offered);
     *id=SPDFID_WaveFormatEx;*out=f;return S_OK;
 }
 static HRESULT STDMETHODCALLTYPE speak(ISpTTSEngine *p,DWORD flags,REFGUID id,const WAVEFORMATEX *f,
@@ -64,8 +71,8 @@ static HRESULT STDMETHODCALLTYPE speak(ISpTTSEngine *p,DWORD flags,REFGUID id,co
     if(!site||!f||!id)return E_POINTER;
     if(!e->token)return CO_E_NOTINITIALIZED;
     if(!IsEqualGUID(id,&SPDFID_WaveFormatEx)||f->wFormatTag!=WAVE_FORMAT_PCM||f->nChannels!=1||
-       f->wBitsPerSample!=16||f->nBlockAlign!=2||f->nAvgBytesPerSec!=2*f->nSamplesPerSec||!rate_supported(f->nSamplesPerSec))
-        return E_INVALIDARG;
+       f->wBitsPerSample!=16||f->nBlockAlign!=2||f->nAvgBytesPerSec!=2*f->nSamplesPerSec||
+       !sapi_format_accepts((unsigned)InterlockedCompareExchange(&e->formats,0,0),f->nSamplesPerSec))return SPERR_UNSUPPORTED_FORMAT;
     struct sapi_settings settings;HRESULT hr=sapi_settings_read(e->dialect,&settings);if(FAILED(hr))return hr;
     if(!e->backend){e->backend=sapi_backend_new(e->dialect);if(!e->backend)return E_OUTOFMEMORY;}
     return sapi_backend_speak(e->backend,&settings,flags,f,fragments,site);

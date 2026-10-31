@@ -36,7 +36,9 @@ core DLL. It registers one voice per language and provides a native settings
 dialog with immediate persistence for subsequent utterances. Token metadata
 is generated from the existing catalogue. The adapter has no NVDA/Python
 runtime or separate pronunciation frontend. Basic x64 operation is confirmed by the user. Version 0.2.202 also supplies a
-native x86 build and localized shared/per-language settings. The production
+native x86 build and localized shared/per-language settings. Version 0.2.203
+also localizes the installer and validates the native synthesis format
+separately from SAPI's application output. The production
 streaming backend is tested on the host; x86 Windows activation and further
 installation and UI testing are still required. See [the preview guide](../sapi/README.txt) for supported
 controls and the explicit preview limitations.

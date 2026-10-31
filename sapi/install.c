@@ -7,7 +7,9 @@
 #include <stdio.h>
 #include <wchar.h>
 #include <string.h>
+#include "ui.inc"
 static HINSTANCE instance;
+static const struct sapi_ui *ui;
 #ifdef _WIN64
 #define ARCHITECTURE L"x64"
 #else
@@ -86,32 +88,37 @@ static HRESULT action(BOOL install)
 static void run(HWND window,BOOL install)
 {
     HRESULT hr=action(install);if(hr==S_FALSE)return;WCHAR message[512];
-    if(FAILED(hr))swprintf(message,512,L"The operation failed (0x%08lX). Close applications using ReLoq and try again.",(unsigned long)hr);
-    else swprintf(message,512,L"ReLoq C SAPI5 voices %ls. Restart applications that were already open.",install?L"installed":L"unregistered");
+    if(FAILED(hr))swprintf(message,512,ui->text[UI_INSTALL_ERROR],(unsigned long)hr);
+    else swprintf(message,512,L"%ls",ui->text[install?UI_INSTALL_DONE:UI_UNINSTALL_DONE]);
     MessageBoxW(window,message,L"ReLoq C SAPI5",FAILED(hr)?MB_ICONERROR:MB_ICONINFORMATION);
 }
 static LRESULT CALLBACK window_proc(HWND window,UINT message,WPARAM wp,LPARAM lp)
 {
     if(message==WM_CREATE){
-        const WCHAR *text[]={L"&Install / update",L"&Uninstall voices",L"Voice &settings",L"&Close"};
-        CreateWindowW(L"STATIC",L"ReLoq C 0.2.202 — SAPI5 " ARCHITECTURE L" preview\nOne voice for each of the 14 languages.",WS_CHILD|WS_VISIBLE,12,12,400,42,window,NULL,instance,NULL);
+        const WCHAR *text[]={ui->text[UI_INSTALL_BUTTON],ui->text[UI_UNINSTALL_BUTTON],ui->text[UI_SETTINGS_BUTTON],ui->text[UI_CLOSE]};
+        WCHAR heading[512];swprintf(heading,512,ui->text[UI_INSTALL_HEADING],L"0.2.203",ARCHITECTURE);
+        HWND label=CreateWindowW(L"STATIC",heading,WS_CHILD|WS_VISIBLE,12,12,400,42,window,NULL,instance,NULL);
+        SendMessageW(label,WM_SETFONT,(WPARAM)GetStockObject(DEFAULT_GUI_FONT),TRUE);
         for(int i=0;i<4;++i){HWND c=CreateWindowW(L"BUTTON",text[i],WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON,12,66+i*38,400,30,window,(HMENU)(INT_PTR)(100+i),instance,NULL);
             SendMessageW(c,WM_SETFONT,(WPARAM)GetStockObject(DEFAULT_GUI_FONT),TRUE);}return 0;
     }
     if(message==WM_COMMAND){int id=LOWORD(wp);if(id==100||id==101)run(window,id==100);
-        else if(id==102){WCHAR folder[2048],path[2304];if(directory(folder)){swprintf(path,2304,L"%ls\\ReLoqSettings.exe",folder);ShellExecuteW(window,L"open",path,NULL,NULL,SW_SHOWNORMAL);}}
+        else if(id==102){WCHAR folder[2048],path[2304];if(directory(folder)){swprintf(path,2304,L"%ls\\ReLoqSettings.exe",folder);
+            HINSTANCE launched=ShellExecuteW(window,L"open",path,NULL,NULL,SW_SHOWNORMAL);
+            if((INT_PTR)launched<=32){WCHAR error[512];swprintf(error,512,ui->text[UI_LAUNCH_ERROR],(unsigned long)(INT_PTR)launched);
+                MessageBoxW(window,error,L"ReLoq C SAPI5",MB_ICONERROR);}}}
         else if(id==103)DestroyWindow(window);return 0;}
     if(message==WM_CLOSE){DestroyWindow(window);return 0;}if(message==WM_DESTROY){PostQuitMessage(0);return 0;}
     return DefWindowProcW(window,message,wp,lp);
 }
 int WINAPI wWinMain(HINSTANCE current,HINSTANCE previous,WCHAR *arguments,int show)
 {
-    (void)previous;instance=current;CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);
+    (void)previous;instance=current;ui=sapi_ui_for_language(GetUserDefaultUILanguage());CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);
     if(!wcscmp(arguments,L"/install")||!wcscmp(arguments,L"/uninstall")){
         run(NULL,!wcscmp(arguments,L"/install"));CoUninitialize();return 0;}
     WNDCLASSW cls={.lpfnWndProc=window_proc,.hInstance=instance,.hCursor=LoadCursorW(NULL,IDC_ARROW),
         .hbrBackground=(HBRUSH)(COLOR_BTNFACE+1),.lpszClassName=L"ReLoqSapiInstaller"};RegisterClassW(&cls);
-    HWND window=CreateWindowExW(WS_EX_CONTROLPARENT,cls.lpszClassName,L"ReLoq C SAPI5 installer",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU,
+    HWND window=CreateWindowExW(WS_EX_CONTROLPARENT,cls.lpszClassName,ui->text[UI_INSTALL_TITLE],WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU,
         CW_USEDEFAULT,CW_USEDEFAULT,440,270,NULL,NULL,instance,NULL);if(!window)return 1;
     ShowWindow(window,show);SetFocus(GetDlgItem(window,100));MSG message;
     while(GetMessageW(&message,NULL,0,0)>0){if(!IsDialogMessageW(window,&message)){TranslateMessage(&message);DispatchMessageW(&message);}}

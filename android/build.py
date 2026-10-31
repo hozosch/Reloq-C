@@ -32,7 +32,7 @@ def main():
     parser.add_argument("--android-jar",type=Path)
     parser.add_argument("--jobs",type=int,default=4)
     parser.add_argument("--build-dir",type=Path,help="isolated Android build directory")
-    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-0.2.202-preview14.apk")
+    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-0.2.203-preview15.apk")
     parser.add_argument("--keystore",type=Path,default=HERE/"preview-debug.p12")
     parser.add_argument("--verified-dictionaries",action="store_true",
         help="use locally verified data after separately resolving its current master commit")

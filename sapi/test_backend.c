@@ -1,6 +1,7 @@
 /* Exercise the production queue, owner-thread ECI calls and SAPI delivery
  * against the real C core. PCM stays in memory and is never written. */
 #include "settings.h"
+#include "format.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,7 +54,7 @@ static void same(const struct site *a,const struct site *b)
 int main(int argc,char **argv)
 {
     assert(argc==2);sapi_test_library=argv[1];struct sapi_settings s=settings();unsigned cases=0;
-    struct {int language,rate;size_t samples;uint64_t hash;} comparisons[98];unsigned comparison_count=0;
+    struct {int language,rate;size_t samples;uint64_t hash;} comparisons[98];unsigned comparison_count=0,format_changes=0;
     for(size_t i=0;i<sizeof sapi_languages/sizeof *sapi_languages;++i){
         struct sapi_backend *b=sapi_backend_new(sapi_languages[i].dialect);assert(b);
         for(unsigned r=0;r<7;++r){struct site output=site_new();SPVTEXTFRAG f=text(sapi_languages[i].sample,0);
@@ -66,7 +67,21 @@ int main(int argc,char **argv)
             comparisons[comparison_count++].hash=hash(output.pcm,output.count);
             free(output.pcm);++cases;
         }
-        sapi_backend_delete(b);
+        if(sapi_languages[i].dialect==0x10000||sapi_languages[i].dialect==0x40000)
+            for(unsigned preferred=0;preferred<7;++preferred)for(unsigned next=0;next<7;++next){
+                /* Requests go through the production format policy. The
+                 * engine supplies its selected native signal to SAPI;
+                 * Windows, not this backend, converts to the target. */
+                unsigned r=preferred&1?6-next:next,advertised=0;s.rate=preferred;
+                struct site output=site_new();SPVTEXTFRAG f=text(sapi_languages[i].sample,0);
+                WAVEFORMATEX actual=format(sapi_format_offer(&advertised,(unsigned)sapi_rates[preferred],(unsigned)sapi_rates[r]));
+                assert(sapi_format_accepts(advertised,actual.nSamplesPerSec));
+                assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&actual,&f,&output.iface)));
+                assert(output.count==comparisons[i*7+preferred].samples);
+                assert(hash(output.pcm,output.count)==comparisons[i*7+preferred].hash);
+                free(output.pcm);++cases;++format_changes;
+            }
+        s.rate=1;sapi_backend_delete(b);
     }
     struct sapi_backend *b=sapi_backend_new(0x10000);assert(b);WAVEFORMATEX out=format(11025);
     SPVTEXTFRAG f=text(L"One computer. The next sentence works.",0);struct site base=site_new();
@@ -112,8 +127,8 @@ int main(int argc,char **argv)
     SPVTEXTFRAG spell=text(L"AB",5);spell.State.eAction=SPVA_SpellOut;struct site letters=site_new();
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&spell,&letters.iface)));assert(letters.count>0);free(letters.pcm);++cases;
     assert(sapi_test_dictionary_calls==0);++cases;
-    printf("{\"backend_cases\":%u,\"languages\":14,\"rates\":7,\"reference_samples\":%zu,\"reference_hash\":\"%016llx\",\"profile_names\":8,\"last_profile\":\"%ls\",\"comparisons\":[",
-        cases,base.count,(unsigned long long)hash(base.pcm,base.count),sapi_profiles[7]);
+    printf("{\"backend_cases\":%u,\"format_negotiation_cases\":%u,\"host_tests_convert_audio\":false,\"languages\":14,\"rates\":7,\"reference_samples\":%zu,\"reference_hash\":\"%016llx\",\"profile_names\":8,\"last_profile\":\"%ls\",\"comparisons\":[",
+        cases,format_changes,base.count,(unsigned long long)hash(base.pcm,base.count),sapi_profiles[7]);
     for(unsigned i=0;i<comparison_count;++i)printf("%s{\"language\":%d,\"rate\":%d,\"samples\":%zu,\"hash\":\"%016llx\"}",
         i?",":"",comparisons[i].language,comparisons[i].rate,comparisons[i].samples,(unsigned long long)comparisons[i].hash);
     puts("]}");
