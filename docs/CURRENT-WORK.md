@@ -12,8 +12,9 @@ werden nur einmal installiert, Benutzereinstellungen bleiben erhalten.
 
 Deutsch überspringt bei kurzen Pausen die geplanten stillen Parameterframes
 vor dem DSP. Die vollständigen ursprünglichen Steuerkurven bleiben bestehen;
-damit wandern spätere Formanten nicht rückwärts in den Ausklang. Indizes und
-Wortparameter werden auf den verkürzten Ausgabezeitstrahl abgebildet.
+damit wandern spätere Formanten nicht rückwärts in den Ausklang. Drei vollständige stille Frames bestätigen vor dem Überspringen, dass die
+Filterfahne ausgeklungen ist. Indizes und Wortparameter werden auf den
+verkürzten Ausgabezeitstrahl abgebildet.
 Explizite Pausen bleiben erhalten. Der Hörtest auf den Nutzergeräten steht aus.
 
 ## 0.2.201: Deutscher Pausenausklang, gemeinsame S-Pegel und SAPI5-Vorschau

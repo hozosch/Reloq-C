@@ -38,6 +38,7 @@ def main():
                         streams.append(array.array('h', pcm))
                         marks.append(positions)
                     original, final, always = streams
+                    assert final[-1] == always[-1] == 0, (first, rate, head, "unsettled release")
                     # Final-only mode is an exact original prefix. Internal
                     # pauses and the preceding release cannot be re-planned.
                     assert original[:len(final)] == final, (first, rate, head, 'final release')

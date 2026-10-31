@@ -968,7 +968,7 @@ static int emit_pause(struct reloq_target_stage_router *router, int64_t tick,
     if(quiet_override>=0)pause.quiet_ticks=quiet_override;
     /* Keep the full acoustic clock. Compressing these knots shortened the
      * audible resonator decay and pulled later contours into comma tails.
-     * The streaming sink compresses only exact zero runs in this region. */
+     * Rendering omits the quiet body only after its filter tail settles. */
     *window=pause.release_ticks+pause.quiet_ticks;
 #ifdef RELOQ_GENERIC_PHONE_TRACE
     fprintf(stderr,"RELOQ_PAUSE %zu %d %lld %d %d %d %d %d\n",index,
@@ -3387,34 +3387,72 @@ static int session_cancelled(void *context)
 
 #include "reloq_german_inline_controls.inc"
 
-/* Render disjoint intervals of the original control timeline into the
- * same live session. This is the same pre-DSP shortening used by the other
- * language planners: no PCM is discarded and filter/oscillator state is
- * carried across the omitted quiet body. */
+/* No audio is cut or retained. Observe live quiet frames until the actual
+ * resonator decay has ended, then omit the rest of that source-silent body
+ * before DSP. Three complete silent frames exclude zero crossings. */
+struct quiet_delivery {
+    reloq_session_pcm_sink sink;void *context;unsigned zeros;
+};
+static int quiet_delivery_pcm(void *context,const int16_t *pcm,size_t count)
+{
+    struct quiet_delivery *q=context;
+    size_t i=0;while(i<count&&!pcm[i])++i;
+    q->zeros=i==count?q->zeros+1:0;
+    return q->sink(q->context,pcm,count);
+}
+static void compact_positions(int64_t *words,size_t word_count,
+    size_t *indices,size_t index_count,size_t at,size_t removed,size_t per_tick)
+{
+    for(size_t i=0;i<word_count;++i)if(words[i]>(int64_t)at) {
+        size_t n=(size_t)words[i]-at;
+        words[i]-=(int64_t)(n<removed?n:removed);
+    }
+    const size_t from=at*per_tick,samples=removed*per_tick;
+    for(size_t i=0;i<index_count;++i)if(indices[i]!=SIZE_MAX&&indices[i]>from) {
+        size_t n=indices[i]-from;indices[i]-=n<samples?n:samples;
+    }
+}
+/* Each interval reads the original curves, preserving their future targets.
+ * The same session carries oscillator/filter history across skipped frames.
+ * Word settings and index positions follow only the frames actually emitted. */
 static int render_quiet_regions(const struct reloq_curve_schedule *original,
     const struct quiet_regions *quiet,long formants,struct reloq_session *session,
     reloq_session_pcm_sink sink,void *context,size_t *frames_completed,
-    reloq_frame_profile profile,void *profile_context,reloq_frame_formants models)
+    reloq_frame_profile profile,void *profile_context,reloq_frame_formants models,
+    int64_t *words,size_t word_count,size_t *indices,size_t index_count,size_t per_tick)
 {
+    if(original->frame_ticks!=1||!per_tick)return RELOQ_SESSION_INVALID;
     struct reloq_curve_schedule part=*original;
     size_t total=0;*frames_completed=0;
     for(size_t i=0;i<=quiet->count;++i) {
-        int64_t next=original->end_tick;
-        if(i<quiet->count) {
-            const struct quiet_region *q=quiet->spans+i;
-            if(q->begin>q->end||q->minimum>q->end-q->begin||
-               q->end>(uint64_t)original->end_tick||
-               q->begin+q->minimum<(uint64_t)part.first_tick)
-                return RELOQ_SESSION_INVALID;
-            next=(int64_t)(q->begin+q->minimum);
-        }
-        part.end_tick=next;
+        const struct quiet_region *q=i<quiet->count?quiet->spans+i:NULL;
+        if(q&&(q->begin>q->end||q->minimum>q->end-q->begin||
+               q->end>(uint64_t)original->end_tick||q->begin<(uint64_t)part.first_tick))
+            return RELOQ_SESSION_INVALID;
+        part.end_tick=q?(int64_t)q->begin:original->end_tick;
         size_t done=0;
         int status=reloq_curve_pipeline_render_models(&part,formants,session,
             sink,context,&done,profile,profile_context,models);
         total+=done;*frames_completed=total;
         if(status!=RELOQ_SESSION_OK)return status;
-        if(i<quiet->count)part.first_tick=(int64_t)quiet->spans[i].end;
+        part.first_tick=part.end_tick;
+        if(!q)break;
+        struct quiet_delivery delivery={sink,context,0};
+        while(part.first_tick<(int64_t)q->end) {
+            part.end_tick=part.first_tick+1;
+            status=reloq_curve_pipeline_render_models(&part,formants,session,
+                quiet_delivery_pcm,&delivery,&done,profile,profile_context,models);
+            total+=done;*frames_completed=total;
+            if(status!=RELOQ_SESSION_OK)return status;
+            part.first_tick=part.end_tick;
+            if(delivery.zeros>=3&&(uint64_t)part.first_tick>=q->begin+q->minimum) {
+                size_t removed=q->end-(size_t)part.first_tick;
+                if(total>SIZE_MAX/per_tick||removed>SIZE_MAX/per_tick)
+                    return RELOQ_SESSION_INVALID;
+                compact_positions(words,word_count,indices,index_count,total,removed,per_tick);
+                part.first_tick=(int64_t)q->end;break;
+            }
+        }
     }
     return RELOQ_SESSION_OK;
 }
@@ -3853,21 +3891,9 @@ static int render(
     if(colour.count)schedule.bypass_attenuation=&colour_curve;
     if(sibilants.count)schedule.s_frication=&sibilant_curve;
     schedule.s_frication_profile=1;
-    /* Curves retain their original source clock. Only silent frames are
-     * omitted from DSP, so a following target cannot move backwards into
-     * the preceding release. Word-scoped controls and indices use the
-     * compact output clock. Explicit ECI pauses never enter this list. */
-    if(word_ticks)for(size_t w=0;w<sequence.word_count;++w) {
-        size_t removed=0;
-        for(size_t i=0;i<quiet.count;++i) {
-            const struct quiet_region *q=quiet.spans+i;
-            size_t from=q->begin+q->minimum;
-            if(word_ticks[w]<=(int64_t)from)break;
-            size_t until=word_ticks[w]<(int64_t)q->end?(size_t)word_ticks[w]:q->end;
-            removed+=until-from;
-        }
-        word_ticks[w]-=(int64_t)removed;
-    }
+    long samples_per_tick=reloq_core_frame_sample_count((float)schedule.frame_ticks,
+        config.duration_scale,config.sample_rate*0.001f);
+    if(samples_per_tick<1) {status=RELOQ_DE_UTTERANCE_MODEL;goto done;}
     struct inline_audio controlled={sink,index_sink,context,controls,word_ticks,
         sequence.word_count,0,0,11};
     if(controls) {
@@ -3913,7 +3939,8 @@ static int render(
         changing_model?inline_model_frame:
             output.model.sample_rate==11025?NULL:reloq_german_voice_model_frame,
         changing_model?(void *)&model_cursor:(void *)&output.model,
-        changing_model?inline_model_formants:NULL);
+        changing_model?inline_model_formants:NULL,word_ticks,word_ticks?sequence.word_count:0,
+        index_positions,index_count,(size_t)samples_per_tick);
     if (rendered == RELOQ_SESSION_OK && index_count &&
         reloq_german_generic_index_stream_end(&index_stream))
         rendered = RELOQ_SESSION_SINK;
