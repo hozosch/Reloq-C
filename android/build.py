@@ -97,13 +97,20 @@ def main():
         apk.write(native,"lib/arm64-v8a/libreloq_android.so")
     run(tools/"zipalign","-P","16","-f","4",build/"unsigned.apk",build/"aligned.apk")
     output=args.output.resolve();output.parent.mkdir(parents=True,exist_ok=True)
+    signed=build/"signed.apk"
     run(tools/"apksigner","sign","--ks",args.keystore.resolve(),"--ks-key-alias","androiddebugkey",
-        "--ks-pass","pass:android","--key-pass","pass:android","--out",output,build/"aligned.apk",env=environment)
-    run(tools/"apksigner","verify","--verbose",output,env=environment)
-    run(tools/"zipalign","-c","-P","16","4",output)
-    verify_apk(output)
-    verify_permissions(output,tools/"aapt2")
-    if args.upgrade_from:verify_upgrade(output,args.upgrade_from.resolve(),tools/"aapt2",tools/"apksigner",environment)
+        "--ks-pass","pass:android","--key-pass","pass:android","--out",signed,build/"aligned.apk",env=environment)
+    run(tools/"apksigner","verify","--verbose",signed,env=environment)
+    run(tools/"zipalign","-c","-P","16","4",signed)
+    verify_apk(signed)
+    verify_permissions(signed,tools/"aapt2")
+    if args.upgrade_from:verify_upgrade(signed,args.upgrade_from.resolve(),tools/"aapt2",tools/"apksigner",environment)
+    # Publish only a closed, fully verified APK. Readers never see a partly
+    # written signing output, and a failed rebuild leaves the old APK intact.
+    pending=output.with_suffix(output.suffix+".tmp")
+    with pending.open("wb") as target:
+        target.write(signed.read_bytes());target.flush();os.fsync(target.fileno())
+    os.replace(pending,output)
     print(output)
 
 

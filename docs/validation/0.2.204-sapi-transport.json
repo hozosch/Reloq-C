@@ -1,0 +1,40 @@
+{
+  "method": "Ordered Linux host transport comparison; same frozen 0.2.203 core isolates adapter delivery. Warm medians aggregate dictionary off/on. Background builds were active. Not a Windows audible latency or stutter measurement.",
+  "identical_pcm_cases": 104,
+  "shared_core": "/workspace/scratch/46d15ce6ae84/candidate0203-final.so",
+  "no_audio_files": true,
+  "records": [
+    {
+      "language": 65536,
+      "hz": 11025,
+      "before_writes": 101.5,
+      "after_writes": 10.0,
+      "before_first_write_ms": 1.6474894999999998,
+      "after_first_write_ms": 1.536786
+    },
+    {
+      "language": 65536,
+      "hz": 48000,
+      "before_writes": 201.0,
+      "after_writes": 27.0,
+      "before_first_write_ms": 1.9114605,
+      "after_first_write_ms": 1.5513835
+    },
+    {
+      "language": 262144,
+      "hz": 11025,
+      "before_writes": 162.0,
+      "after_writes": 11.0,
+      "before_first_write_ms": 2.4555545,
+      "after_first_write_ms": 2.163448
+    },
+    {
+      "language": 262144,
+      "hz": 48000,
+      "before_writes": 261.0,
+      "after_writes": 32.0,
+      "before_first_write_ms": 2.451548,
+      "after_first_write_ms": 2.277859
+    }
+  ]
+}

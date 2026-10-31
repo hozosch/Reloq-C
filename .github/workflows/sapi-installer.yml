@@ -2,12 +2,21 @@ name: SAPI5 installer and Windows validation
 on:
   push:
     branches: [main, codex/sapi204]
+    paths:
+      - .github/workflows/sapi-installer.yml
+      - sapi/**
+      - eci/**
+      - src/**
+      - include/**
+      - vendor/**
+      - data/community/**
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   native:
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -17,9 +26,13 @@ jobs:
         with:
           persist-credentials: false
       - name: Install cross compiler
+        timeout-minutes: 7
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y gcc-mingw-w64-x86-64-posix gcc-mingw-w64-i686-posix
+          set -euo pipefail
+          if [ '${{ matrix.arch }}' = x64 ]; then prefix=x86-64; compiler_prefix=x86_64; else prefix=i686; compiler_prefix=i686; fi
+          if command -v "$compiler_prefix-w64-mingw32-gcc-posix" >/dev/null; then exit 0; fi
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends gcc-mingw-w64-$prefix-posix
       - uses: actions/cache@v4
         id: rules
         with:
@@ -44,6 +57,7 @@ jobs:
   installer:
     needs: native
     runs-on: windows-2022
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:

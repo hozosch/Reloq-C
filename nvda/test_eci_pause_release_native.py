@@ -13,11 +13,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', type=Path, default=ROOT / 'eci/libreloq_eci.so')
     parser.add_argument('--report', type=Path)
+    parser.add_argument('--speed', type=int, default=98)
     args = parser.parse_args()
     engine = DirectEciEngine(args.library.resolve(), encoding='utf8', experimental_generic=True)
     records = []
     try:
-        engine.set_parameter(NATIVE_SPEED, 98)
+        engine.set_parameter(NATIVE_SPEED, args.speed)
         for gender, head, breath in ((0, 50, 0), (1, 22, 60), (1, 29, 0)):
             for key, value in ((GENDER, gender), (HEAD_SIZE, head), (BREATHINESS, breath)):
                 engine.set_parameter(key, value)
@@ -56,6 +57,27 @@ def main():
                                     'head': head, 'breath': breath,
                                     'samples': list(map(len, streams)), 'indices': marks})
         engine.set_parameter(PROCESS_TAGS, 1)
+        inline_cases = 0
+        for rate in range(7):
+            engine.set_parameter(SAMPLE_RATE, rate)
+            for mode in range(3):
+                engine.set_parameter(PAUSE_MODE, mode)
+                streams, positions = [], []
+                for first, more in (('Mann.', ' Danach geht es weiter.'),
+                                    ('Mann.', ' `vv0 Danach geht es weiter.'),
+                                    ('`vv0 Mann.', ' Danach geht es weiter.')):
+                    pcm = bytearray()
+                    marks = []
+                    assert engine.speak([first, EciIndex(7), more, EciIndex(9)], pcm.extend,
+                                        lambda n: marks.append((n, len(pcm) // 2)))
+                    streams.append(array.array('h', pcm))
+                    positions.append(marks)
+                assert positions[0] == positions[1] == positions[2]
+                at = positions[0][0][1]
+                assert streams[0][:at] == streams[1][:at]
+                assert streams[1][at:] == streams[2][at:], (rate, mode, 'inline volume clock')
+                assert streams[1][at:] != streams[0][at:]
+                inline_cases += 1
         explicit_cases = 0
         for rate in range(7):
             engine.set_parameter(SAMPLE_RATE, rate)
@@ -72,7 +94,8 @@ def main():
     finally:
         engine.close()
     report = {'cases': len(records), 'modes': 3, 'exact_original_release_and_compacted_indices': True,
-              'explicit_pause_cases': explicit_cases,
+              'explicit_pause_cases': explicit_cases, 'inline_control_cases': inline_cases,
+              'native_speed': args.speed,
               'no_audio_files': True, 'records': records}
     if args.report:
         args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
