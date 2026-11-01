@@ -498,14 +498,14 @@ int main(void)
     int british=native_british_dictionary();if(british)return british;
     char version[20] = {0};
     eciVersion(version);
-    CHECK(!strcmp(version, "1.0.0.0"));
+    CHECK(!strcmp(version, "1.0.2.6"));
     int languages = 0;
     CHECK(eciGetAvailableLanguages(NULL, &languages) == 0 &&
-          languages == 0);
+          languages == 15);
     unsigned int code = 123;
     languages = 1;
     CHECK(eciGetAvailableLanguages(&code, &languages) == 0 &&
-          languages == 0 && code == 123);
+          languages == 1 && code == 0x10000);
     ECIHand english = eciNewEx(RELOQ_ECI_ENGLISH);
     CHECK(english != NULL);
     eciDelete(english);
@@ -522,6 +522,7 @@ int main(void)
     }
     CHECK(eciNewEx(0xb0000) == NULL);
     ECIHand e = eciNewEx(RELOQ_ECI_GERMAN);
+    CHECK(eciSetParam(e, RELOQ_ECI_VOICE_MODE, RELOQ_ECI_VOICE_EXACT)==RELOQ_ECI_VOICE_GENERIC);
     CHECK(e && eciGetParam(e, RELOQ_ECI_SAMPLE_RATE) == 1);
     CHECK(eciGetParam(e, RELOQ_ECI_DICTIONARY) == 0);
     CHECK(eciGetParam(e, RELOQ_ECI_PHRASE_PREDICTION) == 0);
@@ -533,13 +534,15 @@ int main(void)
     CHECK(eciSetParam(e, RELOQ_ECI_PHRASE_PREDICTION, 0) == 1);
     CHECK(eciSetParam(e, RELOQ_ECI_SYNTH_MODE, 1) == 0 &&
           eciGetParam(e, RELOQ_ECI_SYNTH_MODE) == 1);
-    CHECK(eciSetParam(e, RELOQ_ECI_INPUT_TYPE, 1) == -1 &&
-          eciGetParam(e, RELOQ_ECI_INPUT_TYPE) == 0);
+    CHECK(eciSetParam(e, RELOQ_ECI_INPUT_TYPE, 1) == 0 &&
+          eciGetParam(e, RELOQ_ECI_INPUT_TYPE) == 1);
+    CHECK(eciSetParam(e, RELOQ_ECI_INPUT_TYPE, 0) == 1);
     CHECK(eciSetParam(e, RELOQ_ECI_SAMPLE_RATE, 3) == 1 &&
           eciGetParam(e, RELOQ_ECI_SAMPLE_RATE) == 3);
     CHECK(eciSetParam(e, RELOQ_ECI_SAMPLE_RATE, 123) == -1 &&
           eciGetParam(e, RELOQ_ECI_SAMPLE_RATE) == 3);
-    CHECK(eciSetParam(e, RELOQ_ECI_LANGUAGE_DIALECT, 0x10000) == -1);
+    CHECK(eciSetParam(e, RELOQ_ECI_LANGUAGE_DIALECT, 0x10000) == RELOQ_ECI_GERMAN);
+    CHECK(eciSetParam(e, RELOQ_ECI_LANGUAGE_DIALECT, RELOQ_ECI_GERMAN) == 0x10000);
     CHECK(eciAddText(e, "Maus") == 1 &&
           eciInsertIndex(e, 7) == 1);
     CHECK(eciClearInput(e) && eciSynthesize(e));

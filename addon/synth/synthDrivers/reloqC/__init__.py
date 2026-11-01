@@ -173,7 +173,7 @@ class SynthDriver(BaseSynthDriver):
         BooleanDriverSetting("_dictionaryCommunity", _("Use &community pronunciation dictionaries"), defaultVal=False),
         DriverSetting("pauseMode", _("Shorten pa&uses"), defaultVal="0"),
         DriverSetting("sampleRate", _("&Sample rate"), defaultVal="1"),
-        DriverSetting("highRateProfile", _("High-rate &tuning (16 kHz and above)"), defaultVal="0"),
+        DriverSetting("highRateProfile", _("High-rate &tuning (16 kHz and above)"), defaultVal="1"),
     )
 
     @classmethod
@@ -209,7 +209,7 @@ class SynthDriver(BaseSynthDriver):
         self._dictionary_updater = None
         self._pauseMode = "0"
         self._sampleRate = "1"
-        self._highRateProfile = "0"
+        self._highRateProfile = "1"
         self._sample_rate_revision = 0
         self._languages = dict(LANGUAGES)
         self._selectedLanguage = self._initial_language()
@@ -247,8 +247,7 @@ class SynthDriver(BaseSynthDriver):
 
     def _get_availableHighrateprofiles(self):
         labels = {"0": _("A: Current sound (control)"),
-                  "1": _("B: Classic Presence"),
-                  "2": _("C: Classic Presence and upper voice body")}
+                  "1": _("B: Classic Presence, complete voice")}
         return OrderedDict((key, StringParameterInfo(key, label)) for key, label in labels.items())
 
     def _get_availableHighRateProfiles(self):
@@ -258,7 +257,7 @@ class SynthDriver(BaseSynthDriver):
         return self._highRateProfile
 
     def _set_highRateProfile(self, value):
-        value = str(value)
+        value = "1" if str(value) == "2" else str(value)
         if value not in self._get_availableHighrateprofiles():
             raise ValueError("unsupported high-rate hearing profile")
         with self._submit_lock:

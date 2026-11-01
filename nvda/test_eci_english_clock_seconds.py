@@ -4,14 +4,19 @@ import argparse
 from _reloq_eci_direct import DirectEciEngine, EciIndex, NATIVE_SPEED, SAMPLE_RATE, SAMPLE_RATES
 
 
-def capture(engine, text):
-    samples = 0
+def render(engine, parts):
+    data = bytearray()
     indices = []
-    def pcm(data):
-        nonlocal samples
-        samples += len(data)//2
-    assert engine.speak([text, EciIndex(23)], pcm, lambda n: indices.append((n, samples)))
-    assert samples and indices == [(23, samples)]
+    assert engine.speak(parts, data.extend,
+                        lambda n: indices.append((n, len(data)//2)))
+    assert data
+    return bytes(data), indices
+
+
+def capture(engine, text):
+    data, indices = render(engine, [text, EciIndex(23)])
+    samples = len(data)//2
+    assert indices == [(23, samples)]
     return samples
 
 
@@ -34,9 +39,16 @@ def main():
                         before, after = capture(engine, short), capture(engine, full)
                         assert after > before + SAMPLE_RATES[rate]*.015, (language, rate, speed, full, before, after)
                         checks += 1
+            engine.set_parameter(SAMPLE_RATE, 1)
+            engine.set_parameter(NATIVE_SPEED, 75)
+            original = render(engine, ['13:28:', EciIndex(1), '25',
+                                      EciIndex(2), ' next.', EciIndex(3)])
+            expanded = render(engine, ['13:28', EciIndex(1), ' and 25 seconds',
+                                      EciIndex(2), ' next.', EciIndex(3)])
+            assert original == expanded, (language, 'fragment PCM/index mapping')
         finally:
             engine.close()
-    print(f'English seconds: {checks} actual PCM duration/end-index checks, both dialects, three rates and tempos; no audio files')
+    print(f'English seconds: {checks} actual PCM duration/end-index checks and two fragment PCM/index identities; both dialects, three rates and tempos; no audio files')
 
 
 if __name__ == '__main__':

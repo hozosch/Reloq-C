@@ -275,11 +275,11 @@ def main(inspect_adapter=None):
                 assert CharacterModeCommand in driver.supportedCommands
                 assert [setting.id for setting in driver.supportedSettings] == [
                     "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "highRateProfile"]
-                assert list(driver.availableHighrateprofiles) == ["0", "1", "2"]
-                assert driver.highRateProfile == "0"
-                assert driver.availableHighrateprofiles["2"].displayName == (
-                    "C: Classic Presence und oberer Stimmkörper" if german_ui else
-                    "C: Classic Presence and upper voice body")
+                assert list(driver.availableHighrateprofiles) == ["0", "1"]
+                assert driver.highRateProfile == "1"
+                assert driver.availableHighrateprofiles["1"].displayName == (
+                    "B: Classic Presence, gesamte Stimme" if german_ui else
+                    "B: Classic Presence, complete voice")
                 assert driver.supportedSettings[0].availableInSettingsRing
                 driver.initSettings()
                 panel = SettingsPanel(driver)
@@ -371,7 +371,7 @@ def main(inspect_adapter=None):
                 assert Engine.instances[0].parameters == list(german.voices[0].parameters) + [(0x1007, 98), (0x1008, 50),
                                                           (0x1009, 30),
                                                           (0x100a, 100), (0x100d, 50), (0x100e, 0), (0x100f, 0),
-                                                          (0x1011, 0)]
+                                                          (0x1011, 1)]
                 driver._set_rate(70)
                 driver._set_pitch(65)
                 driver._set_inflection(75)
@@ -387,7 +387,7 @@ def main(inspect_adapter=None):
                 assert worker.parameters == list(german.voices[0].parameters) + [(0x1007, 98), (0x1008, 50),
                                              (0x1009, 30), (0x100a, 100),
                                              (0x100d, 50), (0x100e, 0), (0x100f, 0),
-                                             (0x1011, 0),
+                                             (0x1011, 1),
                                              (0x1007, 121), (0x1008, 65),
                                              (0x1009, 75),
                                              (0x100a, 85)]
@@ -408,11 +408,13 @@ def main(inspect_adapter=None):
                 assert [(kind, data.get("index")) for kind, data in notifications] == [
                     ("index", 12), ("index", 13), ("done", None)]
 
+                driver.highRateProfile = "0"
+                until(lambda: worker.parameters[-1] == (0x1011, 0))
                 profile_start = len(worker.parameters)
                 driver.highRateProfile = "2"
-                assert driver.highRateProfile == "2"
+                assert driver.highRateProfile == "1"
                 until(lambda: len(worker.parameters) == profile_start + 1)
-                assert worker.parameters[-1] == (0x1011, 2)
+                assert worker.parameters[-1] == (0x1011, 1)
                 driver.highRateProfile = "0"
                 until(lambda: len(worker.parameters) == profile_start + 2)
                 assert worker.parameters[-1] == (0x1011, 0)

@@ -69,6 +69,8 @@ struct reloq61_cancel_check reloq61_cancel_scope(struct reloq61_cancel_check);
  * restores the preceding scope after each utterance, and destroys the worker
  * after all callbacks and cancellation have joined. No process-global engine. */
 void *reloq61_worker_new(int language);
+int reloq61_worker_dictionary_files(void *,const char *const files[4]);
+int reloq61_worker_dictionary_data(void *,const unsigned char *const data[4],const size_t sizes[4]);
 void reloq61_worker_free(void *);
 void *reloq61_worker_scope(void *);
 int reloq61_labiodental_gain(void *state);

@@ -144,12 +144,12 @@ class DirectEciEngine:
         if not self._handle:
             raise RuntimeError(f"eciNewEx failed for dialect 0x{dialect:x}")
         try:
+            if not experimental_generic:
+                self._dll.eciSetParam(self._handle, EXPERIMENTAL_GENERIC_VOICE, 0)
             if experimental_generic:
-                # Local extension: opt in per ECI handle. The exact preview
-                # retains the default voice and never sets this parameter.
                 previous = self._dll.eciSetParam(
                     self._handle, EXPERIMENTAL_GENERIC_VOICE, 1)
-                if previous != 0 or self._dll.eciGetParam(
+                if previous not in (0, 1) or self._dll.eciGetParam(
                         self._handle, EXPERIMENTAL_GENERIC_VOICE) != 1:
                     raise RuntimeError("eciSetParam rejected the experimental generic voice")
                 if lexicon_path is not None:

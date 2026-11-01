@@ -1,0 +1,214 @@
+{
+  "source": "reloq-c-source-0.2.186.zip / eloquence-c/reference-apple/behavior-0.2.39/observations/ts-context-reference.json.gz",
+  "source_sha256": "0ac19100b94679cce117ee207b0884f7a4f9a68dccc8cad7ca5d97a9ec9d642c",
+  "kind": "Previously captured original Apple numeric source controls; no original module executed in this task",
+  "selected": [
+    {
+      "text": "Zehn",
+      "observed": [
+        {
+          "phone": "ts-frication",
+          "AF": 65,
+          "A5F": 55,
+          "timing": [
+            10,
+            20,
+            95,
+            125
+          ]
+        }
+      ]
+    },
+    {
+      "text": "Zwei",
+      "observed": [
+        {
+          "phone": "ts-frication",
+          "AF": 65,
+          "A5F": 55,
+          "timing": [
+            10,
+            20,
+            95,
+            96
+          ],
+          "following_v": {
+            "AF": 65,
+            "AB": 60
+          }
+        }
+      ]
+    },
+    {
+      "text": "Zahl",
+      "observed": [
+        {
+          "phone": "ts-frication",
+          "AF": 65,
+          "A5F": 55,
+          "timing": [
+            10,
+            20,
+            95,
+            125
+          ]
+        }
+      ]
+    },
+    {
+      "text": "zu",
+      "observed": [
+        {
+          "phone": "ts-frication",
+          "AF": 65,
+          "A5F": 55,
+          "timing": [
+            10,
+            20,
+            95,
+            125
+          ]
+        }
+      ]
+    },
+    {
+      "text": "Zunge",
+      "observed": [
+        {
+          "phone": "ts-frication",
+          "AF": 65,
+          "A5F": 55,
+          "timing": [
+            10,
+            20,
+            95,
+            125
+          ]
+        }
+      ]
+    },
+    {
+      "text": "Zitronen",
+      "observed": [
+        {
+          "phone": "ts-frication",
+          "AF": 65,
+          "A5F": 55,
+          "timing": [
+            10,
+            20,
+            95,
+            120
+          ]
+        }
+      ]
+    },
+    {
+      "text": "zwanzig",
+      "observed": [
+        {
+          "phone": "ts-frication",
+          "AF": 65,
+          "A5F": 55,
+          "timing": [
+            10,
+            20,
+            95,
+            96
+          ],
+          "following_v": {
+            "AF": 65,
+            "AB": 60
+          }
+        },
+        {
+          "phone": "ts-frication",
+          "AF": 65,
+          "A5F": 50,
+          "timing": [
+            352,
+            362,
+            422,
+            452
+          ]
+        }
+      ]
+    },
+    {
+      "text": "Zwerge",
+      "observed": [
+        {
+          "phone": "ts-frication",
+          "AF": 65,
+          "A5F": 55,
+          "timing": [
+            10,
+            20,
+            95,
+            96
+          ],
+          "following_v": {
+            "AF": 65,
+            "AB": 60
+          }
+        }
+      ]
+    },
+    {
+      "text": "Ausführen Zehn",
+      "observed": [
+        {
+          "phone": "ts-frication",
+          "AF": 65,
+          "A5F": 50,
+          "timing": [
+            662,
+            672,
+            762,
+            792
+          ]
+        }
+      ]
+    },
+    {
+      "text": "Ausführen Zwei",
+      "observed": [
+        {
+          "phone": "ts-frication",
+          "AF": 65,
+          "A5F": 50,
+          "timing": [
+            662,
+            672,
+            732,
+            733
+          ],
+          "following_v": {
+            "AF": 65,
+            "AB": 60
+          }
+        }
+      ]
+    },
+    {
+      "text": "gut Zwei",
+      "observed": [
+        {
+          "phone": "ts-frication",
+          "AF": 65,
+          "A5F": 50,
+          "timing": [
+            291,
+            301,
+            361,
+            362
+          ],
+          "following_v": {
+            "AF": 65,
+            "AB": 60
+          }
+        }
+      ]
+    }
+  ]
+}

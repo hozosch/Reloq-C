@@ -1,0 +1,47 @@
+{
+  "version": "1.0.2-dev4",
+  "core_version": "1.0.2.4",
+  "implementation_commit": "265d5028d9ba671462984062a6f4a5adcb0f39f1",
+  "package": "reloq-c-synth-experimental-x64-1.0.2-dev4.nvda-addon",
+  "package_sha256": "3b7dc29870fa07b9da04e661c7ed40b3812563d9c61ad17c3f4f240ea6c1c32b",
+  "package_bytes": 19557473,
+  "dll_sha256": "141d426af34de5067277fa9d12295ea3a1b40c3118573affe8afe15b0e30740a",
+  "checks": {
+    "complete_classic_af_path_spectral_cases": 40,
+    "max_1_to_5_khz_residual_db": 0.6,
+    "german_z_pcm_timing_controls": 238,
+    "german_z_onset_level_checks": 20,
+    "german_z_onset_level_target_db": -2,
+    "german_z_onset_level_tolerance_db": 0.1,
+    "hearing_profile_pcm_volume_checks": 293,
+    "native_english_clock_phoneme_comparisons": 376,
+    "chinese_complete_f0_comparisons": 120,
+    "english_clock_pcm_end_index_checks": 72,
+    "clock_fragment_pcm_index_identities": 2,
+    "filter_chunk_state_comparisons": 19404,
+    "spectral_phase_comparisons": 20000,
+    "nvda_ui": [
+      "en",
+      "de"
+    ],
+    "startup_language_cases_per_ui": 24,
+    "public_eci_exports": 21,
+    "pe_export_verification": "passed",
+    "package_crc_manifest_dll_identity": "passed"
+  },
+  "seconds_fix_github": {
+    "commit": "6232296ce7c76acd0b3a8a67515c583d09a145fb",
+    "branch": "fix/english-clock-seconds",
+    "pull_request": 7,
+    "issue": 3,
+    "issue_state": "closed",
+    "merged": false,
+    "main_base_pcm_and_source_map_checks": "passed",
+    "github_projection_ci": "passed"
+  },
+  "limits": [
+    "Actual sound quality remains the NVDA listening test.",
+    "Windows DLL cross-built and PE-verified; Windows runtime CI not run for this DSP candidate.",
+    "Existing provider LTO maybe-uninitialized diagnostics remain visible as warnings."
+  ]
+}

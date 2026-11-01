@@ -102,6 +102,11 @@ $(WINDOWS_BUILD)/%.o: ../src/%.c $(HEADERS) | check-windows-toolchain
 .PHONY: all test windows-x64 check-windows-toolchain clean
 all: libreloq_eci.so
 
+test_reloq_english_clock: ../tests/test_reloq_english_clock.c ../vendor/openevv61/src/reloq61_english_clock.c ../vendor/openevv61/src/reloq61_english_clock.h ../include/reloq_inline_tags.h
+	$(CC) $(CFLAGS) -I../include -I../vendor/openevv61/src ../tests/test_reloq_english_clock.c ../vendor/openevv61/src/reloq61_english_clock.c -o $@
+test_reloq_english_clock_arena: ../tests/test_reloq_english_clock.c ../vendor/openevv61/src/reloq61_english_clock.c ../vendor/openevv61/src/reloq61_english_clock.h ../vendor/openevv61/src/port/evv_arena.c ../vendor/openevv61/src/port/evv_land.c ../vendor/openevv61/src/port/evv_arena.h ../include/reloq_inline_tags.h
+	$(CC) $(CFLAGS) -DEVV_ARENA=1 -I../include -I../vendor/openevv61/src -I../vendor/openevv61/src/port ../tests/test_reloq_english_clock.c ../vendor/openevv61/src/reloq61_english_clock.c ../vendor/openevv61/src/port/evv_arena.c ../vendor/openevv61/src/port/evv_land.c -pthread -lm -o $@
+
 test_reloq_silence_cut: ../tests/test_reloq_silence_cut.c ../src/reloq_silence_cut.c ../include/reloq_silence_cut.h
 	$(CC) $(CFLAGS) -I../include ../tests/test_reloq_silence_cut.c ../src/reloq_silence_cut.c -o $@
 
@@ -135,6 +140,15 @@ eci_rate_dispatch_probe.exe: ../tests/test_reloq_rate_dispatch.c ../src/reloq_ra
 
 test_reloq_rate_dispatch: ../tests/test_reloq_rate_dispatch.c ../src/reloq_rate_transfer.c $(HEADERS)
 	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< -Wl,--gc-sections -lm -o $@
+
+test_reloq_classic_voice: ../tests/test_reloq_classic_voice.c ../src/reloq_rate_transfer.c $(HEADERS)
+	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< -Wl,--gc-sections -lm -o $@
+
+test_reloq_classic_frame: ../tests/test_reloq_classic_frame.c build/posix/reloq_core.o build/posix/reloq_rate_transfer.o build/posix/reloq_noise_profile.o build/posix/reloq_frame_adapter.o build/posix/reloq_german_voice_defaults.o build/posix/reloq_voice_controls.o
+	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $^ -Wl,--gc-sections -lm -o $@
+
+test_reloq_classic_noise: ../tests/test_reloq_classic_noise.c ../src/reloq_rate_transfer.c $(HEADERS) build/posix/reloq_core.o build/posix/reloq_noise_profile.o
+	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< build/posix/reloq_core.o build/posix/reloq_noise_profile.o -Wl,--gc-sections -lm -o $@
 
 test: test_reloq_eci test_reloq_german_context test_reloq_german_cancel test_reloq_hash_delete test_reloq_rate_dispatch test_reloq_silence_cut libreloq_eci.so
 	./test_reloq_eci

@@ -1780,6 +1780,16 @@ int reloq_core_voiced_frame_render_owned(
         frame->noise.bypass_attenuation_db<0 || frame->noise.bypass_attenuation_db>12 ||
         state->noise.frames_rendered == SIZE_MAX)
         return -1;
+    /* Classic keeps the reference serial tract. Its additional upper
+     * spectrum enters through the native rate transfer, rather than extra
+     * serial poles changing the entire shared voice/aspiration band. */
+    struct reloq_core_voiced_frame classic_frame;
+    if(state->rate_transfer.trial_profile && state->glottal_reference_rate>0 &&
+       state->reference_formants>=1 && state->reference_formants<=5) {
+        classic_frame=*frame;
+        classic_frame.noise.tract.highest_formant=(long)state->reference_formants;
+        frame=&classic_frame;
+    }
     long voice_level = 0;
     if (frame->av_level > 0 &&
         (reloq_core_add_long(frame->av_level, state->av_trim,
@@ -1859,16 +1869,14 @@ int reloq_core_voiced_frame_render_owned(
 
     if(shaped && params->af_level) {
         int classic=0;
-        /* Keep the accepted broad p/f family and its direct AB branch. */
-        int broad=params->bypass_level && !params->af_levels[2] &&
-            !params->af_levels[3] && !params->af_levels[4];
-        if(state->noise_transfer.trial_profile && noise->sample_rate>=16000 && !broad) {
+        if(state->noise_transfer.trial_profile && noise->sample_rate>=16000) {
             float original_f[8];
             for(unsigned j=0;j<8;++j)original_f[j]=params->tract.oral[j].frequency_hz;
             struct reloq_core_clock reference_clock=reloq_core_clock_for_rate(11025);
             struct reloq_core_frication_bank reference={0};
             if(!reloq_core_frication_bank_configure(&reference,&reference_clock,original_f,
-                params->af_bandwidths,params->af_levels,5,params->af_level,0,0,0))
+                params->af_bandwidths,params->af_levels,state->reference_formants,
+                params->af_level,noise->source_offset,noise->af_trim,bypass))
                 classic=reloq_rate_transfer_prepare_classic(&state->noise_transfer,
                     &reference,&noise->fricatives,&state->noise_profile,noise->sample_rate);
         }

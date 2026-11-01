@@ -79,23 +79,27 @@ static void phones(int language,const char *text,char normalized[4096])
 static unsigned clocks(void)
 {
     unsigned checks=0;
-    const char *minutes[]={"28","02","20"};
+    const char *minutes[]={"28","02","20","00"};
     for(int lang=0x10000;lang<=0x10001;++lang)
         for(unsigned m=0;m<3;++m)for(unsigned s=0;s<60;++s) {
-            char clock[64],prefix[32],suffix[32],a[4096],b[4096],got[4096];
-            snprintf(prefix,sizeof prefix,"13:%s",minutes[m]);snprintf(suffix,sizeof suffix,"%02u",s);
-            snprintf(clock,sizeof clock,"%s:%s",prefix,suffix);
-            phones(lang,prefix,a);phones(lang,suffix,b);assert(strlen(a)+strlen(b)<sizeof a);strcat(a,b);
+            char clock[64],prefix[32],expected[96],a[4096],got[4096];
+            snprintf(prefix,sizeof prefix,"13:%s",minutes[m]);
+            snprintf(clock,sizeof clock,"%s:%02u",prefix,s);
+            snprintf(expected,sizeof expected,"%s and %u second%s",prefix,s,s==1?"":"s");
+            phones(lang,expected,a);
             phones(lang,clock,got);
             if(strcmp(a,got)){fprintf(stderr,"Missing or changed clock field: %s (%x)\n",clock,lang);abort();}
             ++checks;
         }
     const char *examples[][2]={
-        {"00:20:48.526","zero twenty forty eight point five two six"},
-        {"13:00:25","thirteen oh zero twenty five"},
-        {"1:00:03","one oh zero zero three"},
-        {"00:00:00","zero oh zero zero zero"},
-        {"12:00:30 pm","twelve oh zero thirty p m"},
+        {"13:28:01.","thirteen twenty eight and one second."},
+        {"13:28:00.","thirteen twenty eight and zero seconds."},
+        {"13:28:01.5","thirteen twenty eight and one point five seconds"},
+        {"00:20:48.526","zero twenty and forty eight point five two six seconds"},
+        {"13:00:25","13:00 and 25 seconds"},
+        {"1:00:03","1:00 and 3 seconds"},
+        {"00:00:00","00:00 and 0 seconds"},
+        {"12:00:30 pm","12:00 and 30 seconds pm"},
     };
     for(int lang=0x10000;lang<=0x10001;++lang)for(unsigned i=0;i<sizeof examples/sizeof *examples;++i) {
         char a[4096],b[4096];phones(lang,examples[i][0],a);phones(lang,examples[i][1],b);

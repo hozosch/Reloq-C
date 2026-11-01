@@ -322,3 +322,6 @@ msgstr "B: Classic Presence"
 
 msgid "C: Classic Presence and upper voice body"
 msgstr "C: Classic Presence und oberer Stimmkörper"
+
+msgid "B: Classic Presence, complete voice"
+msgstr "B: Classic Presence, gesamte Stimme"

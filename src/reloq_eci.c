@@ -26,6 +26,8 @@
 #if defined(_WIN32)
 #include <windows.h>
 #include <wchar.h>
+#elif !defined(__ANDROID__)
+#include <iconv.h>
 #endif
 
 #if defined(_MSC_VER)
@@ -115,6 +117,11 @@ struct connected_index_boundary {
     int used;
 };
 
+struct reloq_eci_dictionary {
+    struct reloq_eci_dictionary *next;
+    unsigned char *volumes[4];size_t sizes[4];
+};
+
 struct reloq_eci_engine {
     struct reloq_session *session;
     struct reloq_session *text_session;
@@ -147,7 +154,9 @@ struct reloq_eci_engine {
     int dictionary_disabled,phrase_prediction;
     int pause_mode;
     int head_size,roughness,breathiness,gender;
-    int language;
+    int language,language_dialect,text_mode;
+    int saved_voices[16][8];char voice_names[17][30];
+    struct reloq_eci_dictionary *dictionaries,*active_dictionary;
     int high_rate_profile;
     int error;
     int last_synthesis_error;
@@ -156,6 +165,11 @@ struct reloq_eci_engine {
     struct queued_item *queue;
     size_t queued, capacity;
 };
+
+static void initialize_eci_voices(struct reloq_eci_engine *);
+static void clear_eci_dictionaries(struct reloq_eci_engine *);
+static int switch_eci_language(struct reloq_eci_engine *,int);
+static unsigned char *decode_eci_text(struct reloq_eci_engine *,const void *,size_t *,int *);
 
 struct pcm_bridge {
     struct reloq_eci_engine *engine;
@@ -774,8 +788,10 @@ static struct reloq_session *make_text_session(int gender,int head,int rate)
 
 ECIHand ECICALL eciNewEx(int language)
 {
-    /* The narrow developmental voice is not a complete German module. */
-    if (!reloq61_language_supported(language)) return NULL;
+    /* Language words carry an optional Unicode code-set byte. */
+    int base=language&~0xff00;
+    if ((language&0xff00)!=0 && (language&0xff00)!=0x800)return NULL;
+    if (!reloq61_language_supported(base)) return NULL;
     struct reloq_eci_engine *e = calloc(1, sizeof *e);
     if (!e) return NULL;
     epoch_init(&e->busy);
@@ -798,7 +814,10 @@ ECIHand ECICALL eciNewEx(int language)
     e->native_pitch = 65;
     e->native_inflection = 30;
     e->native_volume = 100;
-    e->language = language;
+    e->native_speed_active=e->native_pitch_active=e->native_inflection_active=e->native_volume_active=1;
+    e->language = base;e->language_dialect=language;
+    e->voice_mode=RELOQ_ECI_VOICE_GENERIC;
+    initialize_eci_voices(e);
     e->error = RELOQ_ECI_OK;
     e->failure_utf8_offset = -1;
     return e;
@@ -806,7 +825,7 @@ ECIHand ECICALL eciNewEx(int language)
 
 ECIHand ECICALL eciNew(void)
 {
-    return eciNewEx(RELOQ_ECI_GERMAN);
+    return eciNewEx(RELOQ_ECI_ENGLISH);
 }
 
 ECIHand ECICALL eciDelete(ECIHand handle)
@@ -821,6 +840,7 @@ ECIHand ECICALL eciDelete(ECIHand handle)
     reloq_session_destroy(e->text_session);
     reloq61_worker_free(e->rule_worker);
     free(e->dictionary_path);
+    clear_eci_dictionaries(e);
     free(e);
     return NULL;
 }
@@ -847,14 +867,19 @@ int ECICALL eciReset(ECIHand handle)
 void ECICALL eciVersion(char *buffer)
 {
     /* The public ECI convention promises at least twenty writable bytes. */
-    if (buffer) memcpy(buffer, "1.0.2.0", sizeof "1.0.2.0");
+    if (buffer) memcpy(buffer, "1.0.2.6", sizeof "1.0.2.6");
 }
 
 int ECICALL eciGetAvailableLanguages(unsigned int *languages, int *count)
 {
-    if (!count || *count < 0 || (!languages && *count)) return -1;
-    *count = 0; /* No complete text-to-PCM voice yet. */
-    return 0;
+    static const unsigned int supported[]={0x10000,0x10001,0x20000,0x20001,
+        0x30000,0x30001,0x40000,0x50000,0x60000,0x60001,0x70000,0x80000,
+        0x90000,0xa0000,0x120000};
+    if(!count||*count<0||(!languages&&*count))return 0x80;
+    int total=(int)(sizeof supported/sizeof *supported);
+    if(!*count){*count=total;return 0;}
+    int n=*count<total?*count:total;
+    memcpy(languages,supported,(size_t)n*sizeof *languages);*count=n;return 0;
 }
 
 void ECICALL eciRegisterCallback(ECIHand handle, ECICallback callback,
@@ -881,21 +906,21 @@ int ECICALL eciAddText(ECIHand handle, const void *text)
 {
     struct reloq_eci_engine *e = handle;
     if (!e || epoch_get(&e->busy)) return 0;
-    if (!text || e->input_type != 0) {
+    if (!text) {
         clear_queue(e);
         e->error = RELOQ_ECI_INVALID;
         return 0;
     }
     size_t length = 0;
     int error = RELOQ_ECI_OK;
-    unsigned char *utf8 = decode_cp1252(text, &length, &error);
+    unsigned char *utf8 = decode_eci_text(e,text,&length,&error);
     if (!utf8) {
         clear_queue(e);
         e->error = error;
         return 0;
     }
     if (append_item(e, (struct queued_item){.utf8 = utf8,
-                       .length = length})) {
+                       .length = length,.unicode_input=e->text_mode||(e->language_dialect&0x800)||e->language==0x120000||e->language==0x60000||e->language==0x60001||e->language==0x80000||e->language==0xa0000,.character_mode=e->text_mode})) {
         free(utf8);
         clear_queue(e);
         e->error = RELOQ_ECI_MEMORY;
@@ -1376,7 +1401,8 @@ int ECICALL eciGetParam(ECIHand handle, int parameter)
     case RELOQ_ECI_GENDER: return e->gender;
     case RELOQ_ECI_HIGH_RATE_PROFILE: return e->high_rate_profile;
     case RELOQ_ECI_SAMPLE_RATE: return e->sample_rate_code;
-    case RELOQ_ECI_LANGUAGE_DIALECT: return e->language;
+    case RELOQ_ECI_LANGUAGE_DIALECT: return e->language_dialect;
+    case 2:return e->text_mode;
     case RELOQ_ECI_LAST_ERROR: return e->last_synthesis_error;
     case RELOQ_ECI_FAILURE_UTF8_OFFSET: return e->failure_utf8_offset;
     case RELOQ_ECI_FAILURE_STAGE: return e->failure_stage;
@@ -1485,9 +1511,8 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
         if(value<0 || value>2)return -1;
         e->pause_mode=value;break;
     case RELOQ_ECI_INPUT_TYPE:
-        /* UTF-16 and proprietary annotation flags are not implemented. */
-        if (value != 0) return -1;
-        e->input_type = value;
+        if (value != 0 && value != 1) return -1;
+        e->input_type = value;e->process_tags=value;
         break;
     case RELOQ_ECI_SAMPLE_RATE:
         if (!sample_hz(value)) return -1;
@@ -1507,8 +1532,11 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
         }
         break;
     case RELOQ_ECI_LANGUAGE_DIALECT:
-        if (value != e->language) return -1;
+        if(switch_eci_language(e,value))return -1;
         break;
+    case 2:
+        if(value<0||value>1)return -1;
+        e->text_mode=value;break;
     default: return -1;
     }
     e->error = RELOQ_ECI_OK;
@@ -1537,6 +1565,8 @@ static FILE *open_utf8_lexicon(const char *path)
 #endif
 }
 
+#include "reloq_eci_compat.inc"
+
 int ECICALL eciSetDictionaryPath(ECIHand handle,const char *utf8_directory)
 {
     struct reloq_eci_engine *e=handle;
@@ -1553,7 +1583,7 @@ int ECICALL eciSetDictionaryPath(ECIHand handle,const char *utf8_directory)
         reloq61_worker_free(worker);free(path);e->error=RELOQ_ECI_INVALID;return 0;
     }
     reloq61_worker_free(e->rule_worker);free(e->dictionary_path);
-    e->rule_worker=worker;e->dictionary_path=path;e->error=RELOQ_ECI_OK;return 1;
+    e->rule_worker=worker;e->dictionary_path=path;e->active_dictionary=NULL;e->error=RELOQ_ECI_OK;return 1;
 }
 
 int ECICALL eciLoadLexicon(ECIHand handle, const char *utf8_path)

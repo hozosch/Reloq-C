@@ -1,0 +1,44 @@
+{
+  "version": "1.0.2-dev5",
+  "core_version": "1.0.2.5",
+  "implementation_commit": "d08d8e1ed402377c478aede13a2d84dadd626b0c",
+  "package": "reloq-c-synth-experimental-x64-1.0.2-dev5.nvda-addon",
+  "package_sha256": "2e42f221ea9739c9e732453156968eb80d81eff11a5426b506eaf76558cd48bc",
+  "package_bytes": 19557740,
+  "dll_sha256": "73395e5d522a81f77a1e31c27781652a3e53f6bc5a0c8aefb1bc32a3fb8b3ee7",
+  "change": "Apply the extra 2-dB German ts/tsv attenuation only to the effective male model; retain the accepted female AF level.",
+  "checks": {
+    "german_z_pcm_timing_peak_controls": 357,
+    "male_onset_level_checks": 10,
+    "female_pcm_identities": 196,
+    "rates": [
+      8000,
+      11025,
+      16000,
+      22050,
+      32000,
+      44100,
+      48000
+    ],
+    "female_heads": [
+      29,
+      50
+    ],
+    "male_level_target_db": -2,
+    "male_level_tolerance_db": 0.1,
+    "hearing_profile_pcm_volume_checks": 293,
+    "pe_exports": 21,
+    "package_crc_manifest_dll_identity": "passed"
+  },
+  "unchanged_components_validated_in": "docs/validation/1.0.2-dev4.json",
+  "seconds_fix": {
+    "pull_request": "https://github.com/hozosch/Reloq-C/pull/7",
+    "merged": true,
+    "issue_3_state": "closed"
+  },
+  "limits": [
+    "Windows DLL cross-built and PE-verified; actual NVDA listening remains the user test.",
+    "The pre-existing female/head-50 8-kHz Zimmer baseline reaches the PCM rails twice; its output is retained byte-for-byte and no additional rail samples are permitted.",
+    "Existing provider LTO maybe-uninitialized diagnostics remain warnings."
+  ]
+}

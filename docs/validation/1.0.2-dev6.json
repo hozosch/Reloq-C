@@ -1,0 +1,80 @@
+{
+  "version": "1.0.2-dev6",
+  "core_version": "1.0.2.6",
+  "implementation_commit": "d805e3cd99df327e70778dd0eef53225bc0d6a02",
+  "artifacts": [
+    {
+      "file": "reloq-c-synth-experimental-x64-1.0.2-dev6.nvda-addon",
+      "bytes": 19563289,
+      "sha256": "f57388a79645cb9e6d06fb6dc51783d1b32b5fc7d81b031950b29d1ff86f2217"
+    },
+    {
+      "file": "reloq-c-eci-x64-1.0.2-dev6.zip",
+      "bytes": 18876405,
+      "sha256": "d8477e19b19151509d3881ab9455a3403d8234c8294c5467c053150146681b40"
+    }
+  ],
+  "dll_sha256": "525ba40ea12dd3e6d58768c683fa9f734a04f846e5e275961d5bcfebaa852d68",
+  "changes": [
+    "Complete Classic Presence reference for AV/AH/AF at 16 kHz, including reconstructed upper transition; native upper extension starts at 22.05 kHz.",
+    "Male German Z: extra -2 dB only at word onset and in /tsv/; medial/final controls and female PCM preserve dev3 levels.",
+    "Standard ECI voice slots, controls and names; same-handle language switching; byte codepages and UTF-16LE; owned dictionary handles; language enumeration."
+  ],
+  "checks": {
+    "standard_eci_api": 131,
+    "dictionary_context_case_compound": 50,
+    "dictionary_retention_cancellation_error": 18,
+    "classic_voice_model_rate_cases": 10,
+    "classic_voice_worst_main_band_residual_db": 0.3397,
+    "classic_voice_16khz_main_band_residual_db_approx": 0.013,
+    "classic_noise_model_kind_rate_cases": 40,
+    "classic_noise_worst_main_band_residual_db": 0.025,
+    "classic_core_frame_av_ah_cases": 20,
+    "rate_dispatch_chunk_ramp_state_comparisons": 19404,
+    "rate_dispatch_phase_comparisons": 20000,
+    "german_z_pcm_timing_peak_controls": 483,
+    "male_onset_level_checks": 10,
+    "female_pcm_identities": 196,
+    "male_level_target_db": -2,
+    "male_level_tolerance_db": 0.1,
+    "rates": [
+      8000,
+      11025,
+      16000,
+      22050,
+      32000,
+      44100,
+      48000
+    ],
+    "hearing_profile_pcm_volume_checks": 293,
+    "english_seconds_pcm": 72,
+    "english_seconds_fragment_identities": 2,
+    "nvda_driver_checks": [
+      "English UI/languages/settings/FIFO/index/cancel",
+      "German UI/languages/settings/FIFO/index/cancel",
+      "mock direct binding"
+    ],
+    "pe_exports": 31,
+    "package_crc_manifest_dll_identity": "passed",
+    "standalone_archive_crc_dll_identity": "passed",
+    "final_dictionary_reader": "Standard API and both dictionary suites passed after consolidation into the bounded memory reader."
+  },
+  "original_reference": {
+    "name": "ibmeci.dll",
+    "bytes": 344064,
+    "sha256": "8741d4aeccf3280ea644443146194ebb81d43dee65e2ee460031b9182475a83c",
+    "inspection": "Static exports and disassembly only; no original code or binary included."
+  },
+  "seconds_fix": {
+    "pull_request": "https://github.com/hozosch/Reloq-C/pull/7",
+    "merged": true,
+    "issue_3_state": "closed"
+  },
+  "limits": [
+    "Windows x64 DLL cross-built and PE-verified; no Windows runtime execution in this workspace. Native API/PCM tests use the Linux shared build of the same source.",
+    "Actual NVDA listening remains the user test. DSP transfer residuals do not establish subjective identity to the original.",
+    "Original ECI DLL was inspected statically. Other exports, MainDictExt volumes, Real-World-Units and complete old snapshot/thread behavior remain outside the proven compatibility scope.",
+    "The pre-existing female/head-50 8-kHz Zimmer baseline reaches PCM rails twice; output remains byte-for-byte identical and additional rail samples are rejected.",
+    "Existing provider LTO maybe-uninitialized diagnostics remain warnings."
+  ]
+}

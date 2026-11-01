@@ -317,6 +317,18 @@ static int model_append(struct reloq_target_stage_router *router,int64_t tick,
                      phone->phone==RELOQ_DE_PHONE_v) &&
            mapped[used].stream==RELOQ_TARGET_AF && mapped[used].value>0)
             mapped[used].value+=reloq_voice_labiodental_gain(settings->model.sample_rate);
+        /* Only word-initial /ts/ and /tsv/ need the male correction. */
+        int lower_ts=0;
+        if(phone && (phone->affricate_role==3 || phone->affricate_role==4)) {
+            size_t head=selected;
+            if(phone->affricate_role==4 && head && settings->phones[head-1].affricate_role==3)--head;
+            lower_ts=!settings->phones[head].same_word_left ||
+                (head+2<settings->phone_count && settings->phones[head+2].phone==RELOQ_DE_PHONE_v &&
+                 settings->phones[head+2].same_syllable_left);
+        } else if(phone && phone->phone==RELOQ_DE_PHONE_v && selected &&
+                  settings->phones[selected-1].affricate_role==4 && phone->same_syllable_left)lower_ts=1;
+        if(!model.gender && lower_ts && mapped[used].stream==RELOQ_TARGET_AF && mapped[used].value>0)
+            mapped[used].value=mapped[used].value>2?mapped[used].value-2:0;
         ++used;
     }
     return reloq_target_stage_router_append(router,tick,mapped,used);
@@ -2614,9 +2626,23 @@ static int generic_plan(
                 i + 1 < phone_count && phones[i + 1].same_word_left &&
                 vowel(phones[i + 1].phone);
             if (affricate_part==2) current.value[RELOQ_TARGET_AF]=60;
-            /* /ts/ retains its native stop burst and the contextual /s/
-             * frication profile. The old 65/55 override raised both the
-             * source and its upper pole after that profile was selected. */
+            /* The original affricate has its own /s/ excitation after
+             * the dental burst: AF=65, A5F=55 at a fresh phrase onset,
+             * A5F=50 in connected speech, including the /tsv/ cluster.
+             * Keep this accepted spectral balance. The 2-dB listening
+             * reduction is applied after anatomy mapping. */
+            if (affricate_part==4) {
+                current.value[RELOQ_TARGET_AF]=65;
+                current.value[RELOQ_TARGET_A5F]=affricate_head==phrase_start_phone?55:50;
+            }
+            /* The labiodental contact in /tsv/ carries AF=65 and AB=60
+             * in the measured original; an independent /v/ uses AF=60.
+             * Its 2-dB reduction likewise follows anatomy mapping. */
+            if (node->phone==RELOQ_DE_PHONE_v && i &&
+                phones[i-1].affricate_role==4 && node->same_syllable_left) {
+                current.value[RELOQ_TARGET_AF]=65;
+                current.value[RELOQ_TARGET_AB]=60;
+            }
             const int32_t initial_ticks=affricate_part==9?30:
                 affricate_part && !(affricate_part&1)?
                 (affricate_part==8?1:10):noisy_fricative(node->phone)?0:

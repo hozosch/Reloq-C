@@ -1,3 +1,78 @@
+# Teststand 1.0.2-dev6: vollständiges Classic und Standard-ECI
+
+Bei 16 kHz gilt das vollständige Classic-Presence-Ziel für AV, AH und AF.
+Die zuvor nur am Hauptband beobachtete Kurve enthält nun auch den stetigen
+Rekonstruktionsübergang und die Bildbandunterdrückung oberhalb 5,5125 kHz.
+Die native periodische/Aspirations-Anpassung teilt sich eine kausale
+Übertragungsfunktion; die bisherige A-Färbung und AH-Absenkung entfallen in B.
+Ein vorab ausgeklammerter, im Restfilter kompensierter Pegelverlauf hält die
+endliche FIR-Anpassung stabil. Die separate Erweiterung beginnt ab 22,05 kHz.
+Es gibt weiterhin kein PCM-Resampling. Z wird nur beim männlichen Modell
+am Wortanfang oder in /tsv/ um 2 dB abgesenkt.
+
+Die Standard-ECI-Erweiterungen und Referenzbeobachtungen beschreibt
+ECI-COMPATIBILITY.md. Die bisherigen ReLoq-Erweiterungen bleiben nutzbar.
+
+# Teststand 1.0.2-dev5: z-Absenkung nur beim männlichen Modell
+
+Die zusätzliche 2-dB-Absenkung für /ts/ und den Kontakt in zw wirkt nur
+beim männlichen Modell. Beim weiblichen Modell bleibt der vom Nutzer
+bestätigte Pegel aus dev3 erhalten. Entscheidend ist das jeweilige
+Lautmodell einschließlich einer im Text umgeschalteten Stimme.
+Die Classic-Presence-Abstimmung aus dev4 bleibt erhalten.
+
+# Teststand 1.0.2-dev4: vollständiges Classic-Presence-Hauptband
+
+B verwendet für alle AF-Konsonanten einschließlich P/F und direktem AB-Anteil
+den vollständigen Frequenzgang des 11,025-kHz-Classic-Presence-Hauptbands.
+Die vorherige Anpassung enthielt nur die EQ-Anteile; jetzt gehören der
+Abfall der Rekonstruktion an der oberen Bandgrenze und der Ausgangsfaktor
+0,80 zum Ziel. Die Referenz ist Classic Presence aus eloquence-contours,
+Commit 24b9cb121aa3c4f55a6aaacd640f1fe8f03e020a, nicht Presence Treble.
+Eigene native C-Filter passen den Rauschpfad an abgeleitete Magnitudenwerte
+an; es gibt kein PCM-Resampling und keine Übernahme des Rust-Prozessors.
+Die gemessene Referenzbank benutzt die tatsächlichen Quellpegel und die
+Formantzahl der Stimme. Der periodische Stimmkörper bleibt bei 16 kHz
+exakt A. Bei 16 kHz werden keine zusätzlichen oberen Konsonantenbänder
+beigemischt. Die separate native Erweiterung wächst ab 22,05 kHz über
+32 und 44,1 bis 48 kHz; das Referenzhauptband bleibt dabei verankert.
+
+Die vom Nutzer bestätigte /ts/-Lautform und der Kontakt nach /ts/ in zw
+bleiben erhalten. Ihr AF-Pegel und der /ts/-Burst sinken gegenüber dev3
+um 2 dB nach der Anatomie- und Atemanpassung. Die Grundwerte bleiben
+Reibung AF=65, Burst AF=66, Kontakt AF=65/AB=60; beim männlichen
+Standardmodell ergeben sich AF=63, AF=64 und AF=63. Die AiF-Werte,
+Frequenzen und Zeitverläufe ändern sich nicht. Die bereits bestätigte
+englische Sekundenlesung aus dev3 bleibt enthalten.
+
+# Teststand 1.0.2-dev3: A-Stimmkörper, Classic-Konsonanten und Sekunden
+
+B kombiniert den unveränderten periodischen Stimmkörper aus A mit dem
+Classic-Presence-Konsonantenpfad aus dev2. Die bisherige Classic-Färbung
+im periodischen Pfad entfällt. Bei 16 kHz ist der Stimmkörper exakt A;
+ab 22,05 kHz wächst eine getrennte obere Anreicherung von nominell
+0,375 über 0,75 und 1,2 bis 1,5 dB bei 48 kHz. Die nativen höheren
+Konsonantenbänder bleiben pro Rate erhalten. P/F behalten den bisherigen
+Rauschpfad. A bleibt als Vergleich auswählbar; die alte Auswahl C wird
+in NVDA auf B übernommen. Es gibt keine zusätzlichen Sprachresultat-Caches
+und kein PCM-Resampling.
+
+Die native englische Eingabeprojektion lässt HH:MM in der gewöhnlichen
+Uhrzeitregel und ergänzt den Sekundenbetrag als „and … seconds“. Sekunden werden als Betrag ohne
+führende Null gelesen; genau eine Sekunde erhält den Singular. Bruchteile
+bleiben in der gewöhnlichen Zahlenanalyse. Die Erweiterung liegt im nativen
+Sprachkern; eine monotone Abbildung der ursprünglichen Bytegrenzen erhält
+Quellindizes und Parameterpositionen. Ausgesprochene Lautschrift, Buchstabier-
+modus und fremdsprachige Inline-Bereiche werden nicht umgeschrieben.
+
+Die eigene /ts/-Reibung verwendet anhand der Originalbeobachtungen 0.2.39
+AF=65, mit A5F=55 am frischen Satzanfang und A5F=50 im verbundenen Sprechen. Der stimmhafte labiodentale
+Kontakt nach /ts/ verwendet AF=65/AB=60 statt des unabhängigen /v/-Pegels.
+Dies sind Lautklassen und Nachbarschaftsregeln, keine Wortausnahmen.
+Die gesicherten Originalwerte enthalten insbesondere Zehn, Zwei, Zahl, zu,
+Zunge, Zitronen, zwanzig und Zwerge. Die subjektive Übereinstimmung mit dem
+Original bleibt im NVDA-Hörtest zu beurteilen.
+
 # Teststand 1.0.2-dev2: Classic Presence und native Regeln
 
 Der neue Hörtest orientiert B an Classic Presence des 11-kHz-Pfads von

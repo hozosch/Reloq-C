@@ -26,3 +26,12 @@
 
 /eci/test_reloq_rate_dispatch
 /eci/test_reloq_silence_cut
+/eci/test_reloq_native_rules
+/eci/test_reloq_english_clock
+/eci/test_reloq_english_clock_arena
+
+eci/test_reloq_classic_noise
+
+eci/test_reloq_classic_voice
+
+eci/test_reloq_classic_frame

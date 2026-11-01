@@ -856,26 +856,29 @@ ALIAS("?setCurrentUserDict@@YAHPAUDelta_This_Struct@@PAVDictionarySet@@@Z",
 /* The host opens UTF-8 paths through the platform API. Parsing, hashing and
  * application use the same native dictionary implementation as ECI volumes.
  * Read a final unterminated line too, and never accept a split long record. */
-int reloq61_dictionary_read(void *set,int volume,FILE *file,size_t bytes)
+int reloq61_dictionary_read_data(void *set,int volume,const unsigned char *data,size_t bytes)
 {
     DictionarySet *s=set;
-    if(!s||!file||volume<0||volume>=UD_VOLUMES||bytes>8u*1024u*1024u)return UD_NO_FILE;
+    if(!s||(!data&&bytes)||volume<0||volume>=UD_VOLUMES||bytes>8u*1024u*1024u)return UD_NO_FILE;
     UserDict *u=s->vol[volume];
     if(!u->hash&&!ud_buildHashTable(u,(uint32_t)(bytes/UD_BYTES_PER_ENTRY+1)))return UD_NO_MEMORY;
     const delta_language *previous=delta_lang_set(delta_lang_of(s->machine));
-    char line[UD_LINE_ROOM],word[UD_WORD_MAX+1],xlat[UD_XLAT_MAX+1];
-    int status=UD_OK;
-    while(fgets(line,sizeof line,file)) {
-        size_t n=strlen(line);
-        if(n&&line[n-1]!='\n'&&!feof(file)) {
-            int c=fgetc(file);
-            if(c!=EOF) {while(c!=EOF&&c!='\n')c=fgetc(file);continue;}
-        }
+    char line[UD_LINE_ROOM],word[UD_WORD_MAX+1],xlat[UD_XLAT_MAX+1];int status=UD_OK;
+    for(size_t at=0;at<bytes;) {
+        size_t begin=at;while(at<bytes&&data[at]!='\n')++at;if(at<bytes)++at;
+        size_t n=at-begin;if(n>=sizeof line)continue;
+        memcpy(line,data+begin,n);line[n]=0;
         if(ud_parseNextLine(u,s->machine,line,word,xlat)&&
            ud_addOneEntry(u,word,xlat)!=UD_OK){status=UD_NO_MEMORY;break;}
     }
-    if(ferror(file))status=UD_NO_FILE;
     delta_lang_set(previous);return status;
+}
+int reloq61_dictionary_read(void *set,int volume,FILE *file,size_t bytes)
+{
+    if(!file||bytes>8u*1024u*1024u)return UD_NO_FILE;
+    unsigned char *data=malloc(bytes+1);if(!data)return UD_NO_MEMORY;
+    if(fread(data,1,bytes,file)!=bytes||ferror(file)){free(data);return UD_NO_FILE;}
+    int status=reloq61_dictionary_read_data(set,volume,data,bytes);free(data);return status;
 }
 
 /* A reset may replace the machine while retaining the language/worker.

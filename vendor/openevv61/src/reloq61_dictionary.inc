@@ -13,6 +13,7 @@ extern int32_t STDCALL es_engsynDeleteDict(void *);
 extern int32_t STDCALL es_engsynDictFindFirst(void *,int32_t,const char **,const char **);
 extern int32_t STDCALL es_engsynDictFindNext(void *,int32_t,const char **,const char **);
 extern int reloq61_dictionary_read(void *,int,FILE *,size_t);
+extern int reloq61_dictionary_read_data(void *,int,const unsigned char *,size_t);
 extern int reloq61_dictionary_attach(void *,delta_state *);
 extern void reloq61_dictionary_detach(void *,delta_state *);
 static void dictionary_detach(struct provider_worker *w,OldInst *handle)
@@ -195,16 +196,32 @@ static int dictionary_compile(struct provider_worker *w)
 static int dictionary_bind(struct provider_worker *w,delta_state *d)
 {
     const char *prefix=dictionary_prefix(w->language);
-    if(!w->dictionary_path||!prefix)return 0;
+    int explicit_files=0;
+    for(unsigned i=0;i<4;++i)explicit_files|=w->dictionary_files[i]!=NULL||w->dictionary_data[i]!=NULL;
+    if((!w->dictionary_path&&!explicit_files)||!prefix)return 0;
     if(w->dictionary_checked&&!w->dictionary)return 0;
     if(!w->dictionary) {
         static const char *const names[]={"main.dic","Root.dic","abbr.dic"};
         void *set=es_engsynNewDict(d);if(!set)return -1;
         unsigned opened=0;
-        for(int i=0;i<3;++i) {
-            char name[32];snprintf(name,sizeof name,"%s%s",prefix,names[i]);errno=0;
-            FILE *f=dictionary_open(w->dictionary_path,name);
-            if(!f) {if(errno==ENOENT)continue;es_engsynDeleteDict(set);return -1;}
+        for(int i=0;i<(explicit_files?4:3);++i) {
+            char name[32];if(!explicit_files)snprintf(name,sizeof name,"%s%s",prefix,names[i]);errno=0;
+            FILE *f=NULL;
+            if(explicit_files) {
+                if(w->dictionary_data[i]) {
+                    if(reloq61_dictionary_read_data(set,i,w->dictionary_data[i],w->dictionary_sizes[i])){es_engsynDeleteDict(set);return -1;}
+                    ++opened;continue;
+                } else {
+                if(!w->dictionary_files[i])continue;
+#ifdef _WIN32
+                wchar_t *wide=dictionary_wide(w->dictionary_files[i]);
+                if(wide)f=_wfopen(wide,L"rb");free(wide);
+#else
+                f=fopen(w->dictionary_files[i],"rb");
+#endif
+                }
+            } else f=dictionary_open(w->dictionary_path,name);
+            if(!f) {if(!explicit_files&&errno==ENOENT)continue;es_engsynDeleteDict(set);return -1;}
             ++opened;
             int status=fseek(f,0,SEEK_END);long bytes=status?-1:ftell(f);
             if(bytes>=0)status=fseek(f,0,SEEK_SET);
@@ -240,6 +257,35 @@ int reloq61_worker_dictionary(void *context,const char *path)
         int status=reloq61_generate(&q,&result);reloq61_worker_scope(previous);return status;
     }
     return 0;
+}
+/* Configure immutable explicit volumes on a fresh worker. */
+int reloq61_worker_dictionary_files(void *context,const char *const files[4])
+{
+    struct provider_worker *w=context;
+    if(!w||!files||w->handle||w->dictionary_path)return -1;
+    for(unsigned i=0;i<4;++i)if(files[i]) {
+        size_t n=strlen(files[i]);if(!n||n>=8192)return -1;
+        w->dictionary_files[i]=malloc(n+1);if(!w->dictionary_files[i])return -1;
+        memcpy(w->dictionary_files[i],files[i],n+1);
+    }
+    char phonemes[512];struct reloq61_request q={.language=w->language,
+        .annotations=1,.phonemes_only=1,.voice={0,50,65,30,0,0,50,92},
+        .text="",.phonemes=phonemes,.phonemes_capacity=sizeof phonemes};
+    struct reloq61_result result;void *previous=reloq61_worker_scope(w);
+    int status=reloq61_generate(&q,&result);reloq61_worker_scope(previous);return status;
+}
+/* The public owner retains these bounded immutable bytes until this worker
+ * is detached. Parsed records survive cancellation without reopening files. */
+int reloq61_worker_dictionary_data(void *context,const unsigned char *const data[4],const size_t sizes[4])
+{
+    struct provider_worker *w=context;
+    if(!w||!data||!sizes||w->handle||w->dictionary_path)return -1;
+    for(unsigned i=0;i<4;++i){w->dictionary_data[i]=data[i];w->dictionary_sizes[i]=sizes[i];}
+    char phonemes[512];struct reloq61_request q={.language=w->language,
+        .annotations=1,.phonemes_only=1,.voice={0,50,65,30,0,0,50,92},
+        .text="",.phonemes=phonemes,.phonemes_capacity=sizeof phonemes};
+    struct reloq61_result result;void *previous=reloq61_worker_scope(w);
+    int status=reloq61_generate(&q,&result);reloq61_worker_scope(previous);return status;
 }
 size_t reloq61_dictionary_match(const unsigned char *text,size_t length)
 {

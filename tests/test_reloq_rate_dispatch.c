@@ -12,23 +12,29 @@ static double response(const double c[5],double hz,double rate)
 }
 static void classic_response(void)
 {
- /* Independently evaluated Classic 11.025-kHz passband, normalized at
-  * 200 Hz. A broad response is required, without the old 4-kHz peak. */
- const double hz[]={200,1000,1400,2000,2500,3000,3500,4000,4500};
- const double db[]={0,.353,.670,1.449,2.645,3.843,4.577,4.885,4.976};
+ /* Classic Presence is the consonant reference only. Keep the accepted
+  * periodic A body bit-for-bit, with a separate gradual upper extension. */
+ const double hz[]={0,1000,2000,3000,4000,4250,4500,5000,5250,5512.5};
+ const double db[]={-1.93819978,-1.57232249,-.47737361,1.92730905,3.07599515,3.12060225,2.95364833,1.46825031,-.13629875,-2.67036249};
  const float rates[]={16000,22050,32000,44100,48000};
  for(unsigned r=0;r<5;++r) {
-  struct reloq_rate_transfer s={.trial_profile=1};prepare_colour(&s,rates[r]);
-  double base=0;
-  for(unsigned f=0;f<9;++f) {
-   double gain=response(s.presence,hz[f],rates[r]);
-   for(unsigned k=0;k<RELOQ_RATE_VOICE_COLOURS;++k)
-    gain*=response(s.voice_colour[k],hz[f],rates[r]);
-   gain=20*log10(gain);if(!f)base=gain;
-   assert(fabs(gain-base-db[f])<.17);
+  struct reloq_rate_transfer s={.trial_profile=1},a={0};
+  prepare_colour(&s,rates[r]);prepare_colour(&a,rates[r]);
+  assert(fabs(response(s.presence,0,rates[r])-1)<1e-9);
+  assert(response(a.presence,4000,rates[r])>1.3);
+  for(unsigned f=0;f<10;++f) {
+   double complex z=cexp(-I*2*pi*hz[f]/11025);
+   double gain=10*log10(classic_reference_power(&s,z));
+   assert(fabs(gain-db[f])<.0001);
   }
+  float x[1024],y[1024];
+  for(unsigned j=0;j<1024;++j)x[j]=y[j]=value();
+  reloq_rate_transfer_process_voice(&s,y,1024);
+  reloq_rate_transfer_process_aspiration(&s,y,1024,1);
+  assert(!memcmp(x,y,sizeof x));
+
  }
- puts("Classic Presence: 45 periodic passband targets within 0.17 dB, all five native rates");
+ puts("Full Classic Presence target: AV/AH share the reference contour; upper extension begins at 22.05 kHz");
 }
 int main(void) {
  classic_response();

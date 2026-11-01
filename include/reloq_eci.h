@@ -4,21 +4,12 @@
 #include <stdint.h>
 #include <stddef.h>
 
-/* A direct, native ECI ABI around the independent C renderer and a deliberately
- * narrow German developmental voice. German input is Windows-1252. Text
- * submitted through successive eciAddText calls is combined before phonetic
- * analysis; complete covered sentences are rendered in one continuing Klatt
- * session. Indices at sentence boundaries and at the measured word boundary
- * of a covered natural connected pair are delivered at their exact PCM
- * position. Other indices inside a sentence fail before output, as does
- * uncovered text. An explicitly selected experimental generic mode renders
- * natural German through a best-effort spelling frontend and independent C
- * Klatt approximation at 11,025 Hz. In that mode, indices can occur within
- * a phrase and are delivered after accepted PCM at the next acoustic word
- * boundary; indices inside a spelling token follow that token's word. No
- * index splits a phrase into separate synthesis jobs. Neither mode advertises
- * a complete language. The private numeric
- * entry below tests the same PCM callback without a host.
+/* Native ECI ABI for the built-in C speech languages. Instances use the
+ * ordinary text engine by default; the old narrow German numeric comparison
+ * path remains available through the explicit VOICE_MODE extension.
+ * eciAddText accepts the selected language's byte code page, or UTF-16LE
+ * when bit 0x800 is set in LANGUAGE_DIALECT. eciAddTextUtf8 remains available.
+ * Voice slots 1..8 are presets, 9..16 are editable copies, and 0 is active.
  */
 #if defined(_WIN32)
 #define ECICALL __stdcall
@@ -46,6 +37,7 @@ extern "C" {
 #endif
 
 typedef void *ECIHand;
+typedef void *ECIDictHand;
 typedef int (ECICALL *ECICallback)(ECIHand, int message, int param,
                                    void *data);
 
@@ -85,7 +77,7 @@ enum {
      * optional boost to 250). Pitch uses the native 0..100 voice scale.
      * The last setter for rate or pitch selects that control route; merely
      * getting either parameter does not alter the legacy developmental path.
-     * They do not pretend to implement the full eciSetVoiceParam ABI. */
+     * These aliases share state with standard eciSetVoiceParam on slot 0. */
     RELOQ_ECI_NATIVE_SPEED = 0x1007,
     RELOQ_ECI_NATIVE_PITCH = 0x1008,
     /* Native F0 contour span; 0 is flat, 30 is the Apple voice default. */
@@ -99,7 +91,7 @@ enum {
     RELOQ_ECI_ROUGHNESS = 0x100e,
     RELOQ_ECI_BREATHINESS = 0x100f,
     RELOQ_ECI_GENDER = 0x1010,
-    /* Hearing-trial build: 0 control, 1 native-16 consonants, 2 plus body. */
+    /* Hearing profiles: 0 previous A, 1 complete Classic Presence, 2 aliases 1. */
     RELOQ_ECI_HIGH_RATE_PROFILE = 0x1011,
     RELOQ_ECI_ENGLISH = 0x00010000,
     RELOQ_ECI_ENGLISH_BRITAIN = 0x00010001,
@@ -117,6 +109,15 @@ enum {
     RELOQ_ECI_KOREAN = 0x000a0000,
     RELOQ_ECI_GREEK = 0x00120000
 };
+
+/* Standard ECI voice/dictionary parameter numbers and return codes. */
+typedef enum {eciGender=0,eciHeadSize=1,eciPitchBaseline=2,eciPitchFluctuation=3,
+    eciRoughness=4,eciBreathiness=5,eciSpeed=6,eciVolume=7,eciNumVoiceParams=8} ECIVoiceParam;
+typedef enum {eciMainDict=0,eciRootDict=1,eciAbbvDict=2,eciMainDictExt=3} ECIDictVolume;
+typedef enum {eciDictNoError=0,eciDictFileNotFound=1,eciDictOutOfMemory=2,
+    eciDictInternalError=3,eciDictNoEntry=4,eciDictErrLookUpKey=5,
+    eciDictAccessError=6,eciDictInvalidVolume=7} ECIDictError;
+enum {eciUnicodeCodeSet=0x800,ECI_VOICE_NAME_LENGTH=30};
 
 enum reloq_eci_failure_stage {
     RELOQ_ECI_STAGE_NONE = 0,
@@ -176,6 +177,16 @@ ECIAPI int ECICALL eciSpeaking(ECIHand handle);
 ECIAPI int ECICALL eciClearInput(ECIHand handle);
 ECIAPI int ECICALL eciGetParam(ECIHand handle, int parameter);
 ECIAPI int ECICALL eciSetParam(ECIHand handle, int parameter, int value);
+ECIAPI int ECICALL eciGetVoiceParam(ECIHand handle,int voice,int parameter);
+ECIAPI int ECICALL eciSetVoiceParam(ECIHand handle,int voice,int parameter,int value);
+ECIAPI int ECICALL eciCopyVoice(ECIHand handle,int from,int to);
+ECIAPI int ECICALL eciGetVoiceName(ECIHand handle,int voice,void *name);
+ECIAPI int ECICALL eciSetVoiceName(ECIHand handle,int voice,const void *name);
+ECIAPI ECIDictHand ECICALL eciNewDict(ECIHand handle);
+ECIAPI ECIDictHand ECICALL eciGetDict(ECIHand handle);
+ECIAPI int ECICALL eciSetDict(ECIHand handle,ECIDictHand dictionary);
+ECIAPI ECIDictHand ECICALL eciDeleteDict(ECIHand handle,ECIDictHand dictionary);
+ECIAPI int ECICALL eciLoadDict(ECIHand handle,ECIDictHand dictionary,int volume,const void *filename);
 
 /* Optional RELOQ vendor extension. A UTF-8 path names a bounded, validated
  * RELOQ-DE-SPR-1 word-to-phonemes companion file. The engine owns its copy

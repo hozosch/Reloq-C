@@ -1,0 +1,39 @@
+{
+  "version": "1.0.2-dev3",
+  "core_version": "1.0.2.3",
+  "implementation_commit": "67cda0edda5fff3d2e800a66ec61dd54a4e92af7",
+  "package": "reloq-c-synth-experimental-x64-1.0.2-dev3.nvda-addon",
+  "package_sha256": "f89de9828790a5861bb8027f368b4b63be5f1829e9ba1d830d6d452e2c9b00ac",
+  "package_bytes": 19556772,
+  "dll_sha256": "403f309bedd732519741db2bc027796abcdbe1a5fad60d8ef3c86924c96c5b12",
+  "checks": {
+    "native_english_clock_phoneme_comparisons": 376,
+    "chinese_complete_f0_comparisons": 120,
+    "english_clock_pcm_end_index_checks": 72,
+    "german_z_pcm_timing_controls": 238,
+    "hearing_profile_pcm_volume_checks": 293,
+    "filter_chunk_state_comparisons": 19404,
+    "spectral_phase_comparisons": 20000,
+    "nvda_ui": [
+      "en",
+      "de"
+    ],
+    "native_clock_allocator_modes": [
+      "system",
+      "provider arena"
+    ],
+    "clock_fragment_pcm_and_index_identity_dialects": [
+      "en-US",
+      "en-GB"
+    ],
+    "public_eci_exports": 21,
+    "pe_export_verification": "passed",
+    "package_crc_manifest_dll_identity": "passed"
+  },
+  "limits": [
+    "Actual NVDA listening remains the user test.",
+    "Windows DLL cross-built and PE-verified; Windows runtime CI not run in this task.",
+    "Existing GCC 13.3 LTO maybe-uninitialized diagnostics in the provider were warnings at the host native-rule test link."
+  ],
+  "dictionary_commit": "c592561747722dd87cee87e3ac4a3b05e72278bc"
+}
