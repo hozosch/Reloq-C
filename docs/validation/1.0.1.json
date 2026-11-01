@@ -30,5 +30,18 @@
     "listening_wrappers": false,
     "uninterrupted_long_german_startup_still_length_dependent": true
   },
-  "platform_build_run": 41309269469
+  "platform_build_run": 41309269469,
+  "platform_build_conclusion": "success",
+  "final_packaging": {
+    "run_id": 41310199815,
+    "source_commit": "6636121be3e4b6405ffc08e8eeb02c1649c3e652",
+    "conclusion": "success",
+    "nvda_packaged_driver_tests": [
+      "en",
+      "de"
+    ],
+    "installables": 3,
+    "package_sizes_and_sha256_verified": true,
+    "artifact_zip_sha256": "6863c917a1132a0fe286c6d519fe4e58c40e75dec40ea696e356b214b81c2e49"
+  }
 }
