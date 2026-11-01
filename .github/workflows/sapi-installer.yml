@@ -1,7 +1,7 @@
 name: SAPI5 installer and Windows validation
 on:
   push:
-    branches: [main, codex/sapi204]
+    branches: [main]
     paths:
       - .github/workflows/sapi-installer.yml
       - sapi/**
@@ -74,7 +74,7 @@ jobs:
           if (!(Test-Path $iscc)) { throw 'Inno Setup 6 compiler not installed on runner' }
           python sapi/build_installer.py --iscc $iscc
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Install, test SAPI in RAM, and uninstall
+      - name: Install, upgrade, test SAPI in RAM, and uninstall
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist/validation | Out-Null
@@ -82,6 +82,12 @@ jobs:
           $install = Join-Path $env:ProgramFiles 'ReLoq C\SAPI5'
           $p = Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-',"/LOG=$pwd\dist\validation\install.log" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Install failed: $($p.ExitCode)" }
+          $dictionary = Join-Path $install 'dictionaries\ENUmain.dic'
+          [IO.File]::AppendAllText($dictionary, "`r`n", [Text.Encoding]::ASCII)
+          $edited = (Get-FileHash $dictionary -Algorithm SHA256).Hash
+          $p = Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-','/LANG=de',"/LOG=$pwd\dist\validation\upgrade.log" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Upgrade failed: $($p.ExitCode)" }
+          if ((Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'Dictionary edit lost during upgrade' }
           foreach ($arch in @('x64','x86')) {
             $test = if ($arch -eq 'x64') { Join-Path $install 'Test-SAPI.exe' } else { Join-Path $install 'x86\Test-SAPI.exe' }
             & $test --all-native-rates *> "dist/validation/sapi-$arch.txt"
@@ -89,6 +95,7 @@ jobs:
           }
           $p = Start-Process (Join-Path $install 'unins000.exe') -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=$pwd\dist\validation\uninstall.log" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Uninstall failed: $($p.ExitCode)" }
+          if (!(Test-Path $dictionary) -or (Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'User dictionary lost during uninstall' }
           foreach ($view in @([Microsoft.Win32.RegistryView]::Registry32,[Microsoft.Win32.RegistryView]::Registry64)) {
             $h = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,$view)
             $k = $h.OpenSubKey('SOFTWARE\Microsoft\Speech\Voices\Tokens')

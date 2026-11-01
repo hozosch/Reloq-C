@@ -1,7 +1,6 @@
 {
   "method": "Ordered Linux host transport comparison; same frozen 0.2.203 core isolates adapter delivery. Warm medians aggregate dictionary off/on. Background builds were active. Not a Windows audible latency or stutter measurement.",
   "identical_pcm_cases": 104,
-  "shared_core": "/workspace/scratch/46d15ce6ae84/candidate0203-final.so",
   "no_audio_files": true,
   "records": [
     {
@@ -36,5 +35,7 @@
       "before_first_write_ms": 2.451548,
       "after_first_write_ms": 2.277859
     }
-  ]
+  ],
+  "shared_core_version": "0.2.203",
+  "shared_core_sha256": "735acdc83b8e33c066bc1522b5993e2380b59fa1ee2040d80e7013b638b50131"
 }

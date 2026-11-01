@@ -31,17 +31,15 @@ no further speed or size improvement is possible.
 
 ## SAPI5 integration
 
-0.2.201 supplies the first small C COM adapter around the same private ECI
-core DLL. It registers one voice per language and provides a native settings
-dialog with immediate persistence for subsequent utterances. Token metadata
-is generated from the existing catalogue. The adapter has no NVDA/Python
-runtime or separate pronunciation frontend. Basic x64 operation is confirmed by the user. Version 0.2.202 also supplies a
-native x86 build and localized shared/per-language settings. Version 0.2.203
-also localizes the installer and validates the native synthesis format
-separately from SAPI's application output. The production
-streaming backend is tested on the host; x86 Windows activation and further
-installation and UI testing are still required. See [the preview guide](../sapi/README.txt) for supported
-controls and the explicit preview limitations.
+The small C COM adapter wraps the shared private ECI core and registers one
+voice per language. Native settings apply immediately to later utterances,
+with optional shared parameters and a common synthesis rate. Version 0.2.204
+uses SAPI's output thread directly and combines x64 and x86 in a localized
+Inno Setup installer. Automated Windows checks cover both COM views,
+all native/application rate combinations, and removal. Basic x64 use was
+also confirmed by the user. Physical-device responsiveness and screen-reader
+UI checks remain part of acceptance. See the [preview guide](../sapi/README.txt)
+for supported controls and the explicit limitations.
 
 | Boundary | Required implementation |
 | --- | --- |

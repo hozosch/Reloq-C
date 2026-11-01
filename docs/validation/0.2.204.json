@@ -1,0 +1,175 @@
+{
+  "version": "0.2.204",
+  "source_parent": "2bb99c67ab6a42c6133d5ae0664b9efbb9a881d9",
+  "native_source_commit": "7b798f508f5e1473d06c641c3f983fe5f56001c6",
+  "no_audio_files": true,
+  "files": {
+    "reloq-c-sapi5-0.2.204-setup.exe": {
+      "bytes": 19289721,
+      "sha256": "e7d335c063e309a20481513dc073abde8c704095d45ffa2c668654fc158aa144",
+      "cores": {
+        "x64": "9aeee05ac24ec56e3a3c859d900a338a288d25c8a1229d5ded4ad289a97038c8",
+        "x86": "0928e3544131e5298bef38cd220916f09c03d720ae075b9a36e42d5950d5178f"
+      }
+    },
+    "reloq-c-synth-experimental-x64-0.2.204.nvda-addon": {
+      "bytes": 19534009,
+      "sha256": "adaa55f7e583bf7547b66e8c5ecb3ff775548e208dd97bed649ae2c90465c1f3",
+      "shipped_core_sha256": "9aeee05ac24ec56e3a3c859d900a338a288d25c8a1229d5ded4ad289a97038c8"
+    },
+    "reloq-c-android-arm64-0.2.204-preview16.apk": {
+      "bytes": 17446294,
+      "sha256": "7926c31b8fe50394eeaa210dca886281447489f2c85a905468b87cdebdb948b7",
+      "shipped_core_sha256": "0bbcaa8a05fe2d0665aad327f3f77a37d5b382fb81e59dcd75d2b6e2a76ba04c"
+    },
+    "eci-x64.dll": {
+      "bytes": 54602240,
+      "sha256": "9aeee05ac24ec56e3a3c859d900a338a288d25c8a1229d5ded4ad289a97038c8"
+    },
+    "eci-x86.dll": {
+      "bytes": 54704640,
+      "sha256": "0928e3544131e5298bef38cd220916f09c03d720ae075b9a36e42d5950d5178f"
+    },
+    "core-host-final.so": {
+      "bytes": 55240432,
+      "sha256": "76de66c6d5a568fc30cf9af94e42f1550ed4b82c84c964b1d65263fd5af12c3e"
+    },
+    "core-android-unstripped.so": {
+      "bytes": 52898248,
+      "sha256": "82cc90f73c314a8b05e423cd188a0e1f6cf9fbe08a8c1b414c684e2c854d7e23"
+    }
+  },
+  "checks": {
+    "full_c_eci_regression": "passed",
+    "german_native_context_cases": 89,
+    "default_mode_pcm_and_index_cases": 196,
+    "german_pause_rate_model_text_cases": 315,
+    "german_pause_modes": 3,
+    "german_native_speeds": [
+      38,
+      98,
+      180
+    ],
+    "german_explicit_pause_comparisons": 84,
+    "german_inline_control_comparisons": 63,
+    "analysis_option_tag_scope_fragment_checks": 197,
+    "german_url_identifier_fragment_index_checks": 208,
+    "sapi_backend_cases": 212,
+    "sapi_native_target_pcm_pairs": 98,
+    "sapi_direct_eci_pcm_pairs": 98,
+    "sapi_speed_direct_eci_pcm_pairs": 52,
+    "sapi_format_policy_checks": 420,
+    "sapi_native_target_rate_pairs": 49,
+    "sapi_dictionary_checks": 12,
+    "sapi_dictionary_reload_calls": 5,
+    "sapi_settings_checks": 43,
+    "sapi_localized_strings": 372,
+    "sapi_ui_tables": 12,
+    "windows_eci_exports_per_architecture": 21,
+    "windows_language_format_cases": 1568,
+    "nvda_ui_languages": [
+      "en",
+      "de"
+    ],
+    "jni_direct_native_pairs": 63,
+    "android_settings_dictionary_checks": 866,
+    "apk_upgrade_same_package_and_certificate": true,
+    "apk_version_code_before": 20203,
+    "apk_version_code_after": 20204,
+    "native_release_dependency_audit": "passed",
+    "address_and_undefined_sanitizers": "212 backend cases passed",
+    "leak_sanitizer": "unavailable under container ptrace; not claimed"
+  },
+  "sapi_transport": {
+    "details": "0.2.204-sapi-transport.json",
+    "same_SAPI_output_thread": true,
+    "producer_thread_removed": true,
+    "immediate_first_native_callback": true,
+    "subsequent_live_buffer_samples": 4096,
+    "native_rate_preserved": true,
+    "resampling": "normal SAPI/application path; no added engine converter",
+    "speech_result_cache": false
+  },
+  "german_pauses": {
+    "details": "0.2.204-german-pauses.json",
+    "original_control_curves_retained": true,
+    "original_release_prefix_preserved": true,
+    "skip_only_after_three_fully_silent_frames": true,
+    "quiet_body_skipped_before_DSP": true,
+    "filter_and_oscillator_history_retained": true,
+    "indices_and_inline_controls_compacted": true,
+    "explicit_ECI_pauses_preserved": true,
+    "documented_acoustic_departures_preserved": true
+  },
+  "installer": {
+    "type": "Inno Setup 6.7.1",
+    "single_installer": true,
+    "architectures": [
+      "x64",
+      "x86"
+    ],
+    "UI_languages": 12,
+    "shared_dictionary_copies": 1,
+    "normal_Windows_uninstaller": true,
+    "payloads": {
+      "x64": {
+        "package": "reloq-c-sapi5-x64-0.2.204-payload.zip",
+        "sha256": "f294be931bf4358ac42f288e02b64962de9ba143767ba95c352dc1e3127f3b4c",
+        "core_sha256": "9aeee05ac24ec56e3a3c859d900a338a288d25c8a1229d5ded4ad289a97038c8"
+      },
+      "x86": {
+        "package": "reloq-c-sapi5-x86-0.2.204-payload.zip",
+        "sha256": "cb3e21d82b496fe7a506cb364e12857615673d82844a06d06812240535134008",
+        "core_sha256": "0928e3544131e5298bef38cd220916f09c03d720ae075b9a36e42d5950d5178f"
+      }
+    }
+  },
+  "windows_validation": {
+    "run": "https://github.com/hozosch/Reloq-C/actions/runs/41254442767",
+    "artifact_sha256": "7ea3da0e383b0b35e942f106e25d61d101d8e37cdab1df5e33d33d8b67fa3cf2",
+    "x64_payload_source": "7b798f508f5e1473d06c641c3f983fe5f56001c6",
+    "x86_payload_source": "372b67244928b1728cfb5226b0d368cb105fee68",
+    "runtime_sources_identical_between_payload_commits": true,
+    "cases_per_architecture": 784,
+    "architectures": [
+      "x64",
+      "x86"
+    ],
+    "real_SAPI_conversion_in_memory": true,
+    "installed_both_architectures": true,
+    "upgrade_with_German_language_option": true,
+    "edited_bundled_dictionary_preserved_on_upgrade": true,
+    "voice_tokens_removed_in_both_registry_views": true,
+    "user_dictionary_preserved_on_uninstall": true,
+    "logs": {
+      "install.log": {
+        "bytes": 11589,
+        "sha256": "71bd786f4786dda92b734664f5ab125239cb530be63458a636202c875ef1aa45"
+      },
+      "sapi-x64.txt": {
+        "bytes": 63558,
+        "sha256": "33639fd6ac3e1fd29a6727526c6f7541f16d35eac9804eada25a0826c9201c13"
+      },
+      "sapi-x86.txt": {
+        "bytes": 63558,
+        "sha256": "33639fd6ac3e1fd29a6727526c6f7541f16d35eac9804eada25a0826c9201c13"
+      },
+      "uninstall.log": {
+        "bytes": 6251,
+        "sha256": "3086228d35b263adc9241f6587aa8fc95cd353c1bd7841e0ef1ee2df8368a783"
+      },
+      "upgrade.log": {
+        "bytes": 13299,
+        "sha256": "ae5ed0484b996065a556ecabb7a283a5d971e008bf9b8ee6d0e47df15b9ec368"
+      }
+    }
+  },
+  "community_dictionary_commit": "a23b0f9d9e64dc3156fb8c1795a7521bf173a285",
+  "limits": [
+    "Perceived stutter and pause quality require device listening tests. Windows smoke tests use memory streams, not a physical audio device.",
+    "Installer and settings screen-reader interaction was not automated.",
+    "The Write-count reduction is measured on the Linux host with a shared frozen core; it is not an audible Windows latency guarantee.",
+    "No overall CPU reduction or smaller raw DLL is claimed. Native ARM64 SAPI remains separate from these x86/x64 builds.",
+    "No public GitHub binary release assets were published."
+  ]
+}
