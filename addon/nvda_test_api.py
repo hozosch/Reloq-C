@@ -100,14 +100,20 @@ def install():
             return cls._configSection
 
     module = sys.modules["synthDriverHandler"]
+    language_handler = sys.modules.get("languageHandler")
+    if language_handler is None:
+        language_handler = types.ModuleType("languageHandler")
+        language_handler.normalizeLanguage = lambda s: s.replace("-", "_")
+        language_handler.getLanguageDescription = lambda s: "NVDA " + s
+        language_handler.getLanguage = lambda: "de_DE"
+        sys.modules["languageHandler"] = language_handler
     vars(module).update(vars(settings))
     module.__name__ = "synthDriverHandler"
     vars(module).update(OrderedDict=OrderedDict, StringParameterInfo=utils.StringParameterInfo,
         abstractmethod=abstractmethod, driverHandler=types.SimpleNamespace(Driver=Driver),
         config=config, log=log, pgettext=lambda context, text: text,
         changeVoice=lambda synth, voice: setattr(synth, "voice", voice) if voice else None,
-        languageHandler=types.SimpleNamespace(normalizeLanguage=lambda s: s.replace("-", "_"),
-            getLanguageDescription=lambda s: "NVDA " + s))
+        languageHandler=language_handler)
     tree = ast.parse((SOURCE / "synthDriverHandler.py").read_text())
     classes = [node for node in tree.body if isinstance(node, ast.ClassDef)
                and node.name in ("LanguageInfo", "VoiceInfo", "SynthDriver")]

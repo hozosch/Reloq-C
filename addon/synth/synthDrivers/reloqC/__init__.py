@@ -21,6 +21,7 @@ from autoSettingsUtils.driverSetting import BooleanDriverSetting, DriverSetting,
 from autoSettingsUtils.utils import StringParameterInfo
 
 import config
+import languageHandler
 from logHandler import log
 import nvwave
 from speech.commands import (BreakCommand, CharacterModeCommand, IndexCommand, LangChangeCommand,
@@ -209,13 +210,13 @@ class SynthDriver(BaseSynthDriver):
         self._sampleRate = "1"
         self._sample_rate_revision = 0
         self._languages = dict(LANGUAGES)
-        self._selectedLanguage = next(iter(self._languages))
+        self._selectedLanguage = self._initial_language()
         self._voice = self._languages[self._selectedLanguage].voice(None).id
+        initial_language, initial_voice = self._selectedLanguage, self._voice
         player = self._make_player(11025)
         self._transport = EciTextTransport(
             lambda: LanguageEngine(DLL, languages=self._languages,
-                language=next(iter(self._languages)),
-                voice=self._languages[next(iter(self._languages))].voice(None).id,
+                language=initial_language, voice=initial_voice,
                 engine_factory=DirectEciEngine),
             player,
             self._on_index,
@@ -280,19 +281,35 @@ class SynthDriver(BaseSynthDriver):
             section[self.name].spec.update(self.getConfigSpec())
         super().initSettings()
 
+    def _initial_language(self):
+        # Schema defaults are not a saved choice. Use NVDA's resolved UI
+        # language (also when General is set to "Windows") only if neither
+        # the standard nor the legacy language selector has a valid value.
+        speech = config.conf[self._configSection]
+        if speech.isSet(self.name):
+            section = speech[self.name]
+            if section.isSet("language"):
+                value = section["language"]
+                selected = language_for(value, 0, self._languages) if isinstance(value, str) else None
+                if selected in self._languages:
+                    return selected
+            if section.isSet("engineLanguage"):
+                try:
+                    selected = int(str(section["engineLanguage"]), 0)
+                    selected = LANGUAGE_ALIASES.get(selected, selected)
+                    if selected in self._languages:
+                        return selected
+                except (TypeError, ValueError):
+                    pass
+        value = languageHandler.getLanguage()
+        selected = language_for(value, 0, self._languages) if isinstance(value, str) else None
+        return selected if selected in self._languages else next(iter(self._languages))
+
     def loadSettings(self, onlyChanged=False):
         # NVDA restores voice before other settings. Select the module first
         # so a voice belonging to a non-default language can be validated.
         section = config.conf[self._configSection][self.name]
-        selected = section.get("language")
-        if not selected:
-            try:
-                legacy = int(str(section.get("engineLanguage")), 0)
-                legacy = LANGUAGE_ALIASES.get(legacy, legacy)
-                selected = self._languages[legacy].locale
-            except (TypeError, ValueError, KeyError):
-                selected = self._get_language()
-        self._set_language(selected)
+        self._select_language(self._initial_language())
         section["language"] = self._get_language()
         if not section.isSet("_dictionaryCommunity") and section.isSet("communityDictionaries"):
             section["_dictionaryCommunity"] = section["communityDictionaries"]

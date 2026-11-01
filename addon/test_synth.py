@@ -621,7 +621,7 @@ def main(inspect_adapter=None):
                     assert speech_config[driver.name]["engineLanguage"] == str(german.id)
                     assert list(multilingual.availableVoices) == ["9"]
                     assert set(multilingual.availableLanguages) == {"de_DE", "en_GB"}
-                    until(lambda: len(Engine.instances) == engines_before_profile + 2 and
+                    until(lambda: len(Engine.instances) == engines_before_profile + 1 and
                         Engine.instances[-1].parameters[-1:] == [(0x100c, 2)])
                     assert Engine.instances[-1].dialect == english.id
                     multilingual.language = german.locale
@@ -657,6 +657,49 @@ def main(inspect_adapter=None):
                         config_api.conf = original_conf
                     multilingual.terminate()
                     assert all(instance.closed for instance in Engine.instances)
+                # First initialization uses NVDA's resolved language; saved
+                # selectors and inherited profiles remain authoritative.
+                config_api = sys.modules["config"]
+                original_conf = config_api.conf
+                first_language_cases = [(language.locale, {}, language.locale)
+                    for language in driver_module.LANGUAGES.values()]
+                first_language_cases += [
+                    ("en-AU", {}, "en_US"), ("zh-TW", {}, "zh_CN"),
+                    ("pt_PT", {}, "pt_BR"), ("ru_RU", {}, "de_DE"),
+                    (None, {}, "de_DE"),
+                    ("en_US", {"rate": 38}, "en_US"),
+                    ("de_DE", {"language": "en_GB"}, "en_GB"),
+                    ("en_US", {"language": "de_DE", "engineLanguage": "65536"}, "de_DE"),
+                    ("de_DE", {"engineLanguage": "0x60001"}, "zh_CN"),
+                    ("en_US", {"language": ""}, "en_US"),
+                ]
+                try:
+                    for nvda_language, saved, expected in first_language_cases:
+                        profile = {"speech": {}, "audio": {"outputDevice": "default"},
+                                   "general": {"language": "Windows"}}
+                        if saved:
+                            profile["speech"][driver.name] = dict(saved)
+                        manager = configuration_manager(profile)
+                        config_api.conf = manager.rootSection
+                        if saved == {"rate": 38}:
+                            section = config_api.conf["speech"][driver.name]
+                            section.spec["language"] = "string(default=de_DE)"
+                            assert section["language"] == "de_DE" and not section.isSet("language")
+                        before = len(Engine.instances)
+                        with mock.patch.object(driver_module.languageHandler, "getLanguage", return_value=nvda_language):
+                            fresh = driver_module.SynthDriver()
+                            try:
+                                assert fresh.language == expected, (nvda_language, saved, fresh.language)
+                                fresh.initSettings()
+                                assert fresh.language == expected
+                                assert config_api.conf["speech"][fresh.name]["language"] == expected
+                                until(lambda: len(Engine.instances) == before + 1)
+                                assert Engine.instances[-1].dialect == fresh._selectedLanguage
+                            finally:
+                                fresh.terminate()
+                    print(f"NVDA initial language: {len(first_language_cases)} fresh/saved/schema/region cases passed")
+                finally:
+                    config_api.conf = original_conf
                 if inspect_adapter is not None:
                     inspect_adapter(driver_module)
         finally:
@@ -664,7 +707,7 @@ def main(inspect_adapter=None):
             for name in tuple(sys.modules):
                 if name.startswith("synthDrivers") or name in (
                     "config", "logHandler", "nvwave", "speech", "addonHandler",
-                    "speech.commands", "synthDriverHandler"):
+                    "speech.commands", "synthDriverHandler", "languageHandler"):
                     del sys.modules[name]
             if original_translate is None:
                 del builtins._

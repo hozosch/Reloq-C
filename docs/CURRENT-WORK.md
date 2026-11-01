@@ -17,6 +17,11 @@ Textanalyse und Kurvenplanung abhängig. Die generelle Tastendrucklatenz
 ist deshalb weiter offen. Klangversuche für hohe Raten, S-Farbe und obere
 stimmhafte Anteile bleiben außerhalb dieses Releases.
 
+NVDA übernimmt beim ersten Start seine tatsächlich aktive Oberflächensprache,
+sofern keine Standard- oder frühere Sprachauswahl gespeichert ist. Geerbte
+Werte bleiben maßgeblich; reine Schemavorgaben zählen nicht als gespeicherte
+Auswahl. Der Worker startet gleich mit der gewählten Sprache.
+
 ## 1.0: Offizielle Version und britisches Englisch
 
 Das erste offizielle Release heißt 1.0. Die Paketversion 1.0.0 bleibt mit den

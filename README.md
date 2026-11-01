@@ -14,7 +14,7 @@ The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provide
 | Android | ARM64 `.apk` | Android 8 or later, ARM64 device |
 | Windows SAPI5 | `-setup.exe` | Installs x64 and x86 voices together on compatible Windows |
 
-Release **1.0.1** restores the original S/Z source levels and improves interruption of obsolete text analysis. Install packages over an existing installation to retain settings. Existing Android package and signing identities, and the NVDA installation identity, are retained for in-place updates. Source archives are for developers and are not installable packages. [Release notes](docs/releases/1.0.1.md) describe the update and its limits.
+Release **1.0.1** restores the original S/Z source levels and improves interruption of obsolete text analysis. New NVDA configurations use NVDA's language when supported. Install packages over an existing installation to retain settings. Existing Android package and signing identities, and the NVDA installation identity, are retained for in-place updates. Source archives are for developers and are not installable packages. [Release notes](docs/releases/1.0.1.md) describe the update and its limits.
 
 ## Current features
 

@@ -11,6 +11,9 @@ Benötigt wird NVDA ab 2026.1 mit einem 64-Bit-Prozess. Das Paket enthält eine 
 3. Drücke **NVDA+Strg+S**, wähle **Eloquence C** und bestätige.
 4. Wähle in den NVDA-Einstellungen unter **Sprachausgabe** die gewünschte Sprache und Stimme.
 
+Beim ersten Start übernimmt Eloquence C die NVDA-Sprache, sofern sie
+unterstützt wird. Eine gespeicherte Sprachwahl hat Vorrang.
+
 Die ZIP-Datei des Repository-Quellcodes ist kein installierbares Add-on. Weitere Bedienungshinweise bietet das [NVDA-Benutzerhandbuch](https://download.nvaccess.org/documentation/de/userGuide.html).
 
 ## Sprachen und Stimmen

@@ -21,7 +21,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           python3 - <<'PY'
-          import json, os, subprocess
+          import json, os, subprocess, sys
           request = json.load(open('.github/package-source.json'))
           run_id, commit = request['run_id'], request['source_commit']
           assert isinstance(run_id, int) and run_id > 0
@@ -35,13 +35,25 @@ jobs:
           changed = subprocess.check_output(['git', 'diff', '--name-only', commit, 'HEAD'], text=True).splitlines()
           allowed = {'.github/package-source.json', '.github/workflows/package-existing.yml', 'tools/release_packages.py',
                      '.github/workflows/packages.yml', '.github/workflows/release.yml',
-                     'tests/test_reloq_eci.c', 'vendor/openevv61/lang/engb61/rules/constants'}
-          # The last two paths are tests and maintenance-only phone constants;
-          # Makefile.native builds the checked-in C arrays, which must match.
+                     'tests/test_reloq_eci.c', 'vendor/openevv61/lang/engb61/rules/constants',
+                     'addon/synth/synthDrivers/reloqC/__init__.py', 'addon/test_synth.py', 'addon/nvda_test_api.py',
+                     'addon/synth/doc/en/readme.html', 'addon/synth/doc/de/readme.html',
+                     'README.md', 'docs/USER-GUIDE.en.md', 'docs/USER-GUIDE.de.md',
+                     'docs/CURRENT-WORK.md', 'docs/releases/1.0.1.md', 'docs/changes/1.0.1.md',
+                     'docs/validation/1.0.1.json'}
+          # The maintenance constants are not runtime input: Makefile.native
+          # builds the checked-in C arrays, which must still match.
+          # NVDA Python and packaged guides may change because this job
+          # rebuilds and tests the add-on below. Native Windows/Android
+          # sources, data, versions and build scripts remain protected.
           assert set(changed) <= allowed, 'Runtime, data or build-script inputs changed: rebuild platforms'
+          sys.path.insert(0, 'addon')
+          from build_synth import refresh_community_dictionaries
+          refresh_community_dictionaries()
+          subprocess.run(['git', 'diff', '--exit-code', '--', 'data/community'], check=True)
           with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
               out.write(f'run_id={run_id}\n')
-          print(f'Platform inputs identical to {commit}; Windows and Android checks passed in run {run_id}')
+          print(f'Windows/Android inputs identical to {commit}; platform checks passed in run {run_id}; NVDA is rebuilt and tested')
           PY
       - uses: actions/download-artifact@v4
         with:
@@ -72,6 +84,9 @@ jobs:
               assert archive.testzip() is None
               core = pathlib.Path('eci/eci.dll')
               core.write_bytes(archive.read('eci.dll'))
+          import subprocess
+          for ui in ('en', 'de'):
+              subprocess.run([sys.executable, '-B', 'addon/test_synth.py', ui], check=True)
           destination = pathlib.Path('artifacts/nvda') / DEFAULT_OUTPUT.name
           build(destination, core, refresh_dictionaries=False)
           PY

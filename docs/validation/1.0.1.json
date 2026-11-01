@@ -1,0 +1,34 @@
+{
+  "version": "1.0.1",
+  "native_source_commit": "c7eae7f55e926e1ae09d957549bb5940ebad84de",
+  "native_version": "1.0.1.0",
+  "host_eci_exports": 21,
+  "host_sha256": "a20c09bb49d785796cc245d78e346240318ba376e523cd15da0158fcb841cde3",
+  "native_checks": {
+    "s_rollback_rate_cases": 98,
+    "unchanged_phone_controls": 315,
+    "accepted_s_rollback_pcm_index_pairs": 196,
+    "dictionary_stop_recovery_cases": 32,
+    "maximum_observed_stop_return_ms": 0.506,
+    "audio_files": false
+  },
+  "nvda_first_language": {
+    "ui_locales": [
+      "en",
+      "de"
+    ],
+    "cases_per_ui": 24,
+    "driver_sha256": "1c38002d32d2efbb7ea75d431d6d286195fee4daaca587684348259f8c6a6360",
+    "fresh_and_saved_selections": true,
+    "inherited_profiles": true,
+    "schema_default_not_saved": true,
+    "regional_fallback": true,
+    "one_native_language_initialized": true
+  },
+  "scope": {
+    "high_rate_dsp_unchanged": true,
+    "listening_wrappers": false,
+    "uninterrupted_long_german_startup_still_length_dependent": true
+  },
+  "platform_build_run": 41309269469
+}
