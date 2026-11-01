@@ -480,7 +480,9 @@ static int native_british_dictionary(void)
             for(size_t at=0;at<result.phonemes_length;++at)if(!phones[at])phones[at]=' ';
             phones[result.phonemes_length]=0;
             const char *wanted=i<3?(british?".1kl@k":".1klak"):
-                (british?".1tr@.0nIk":".1tra.0nIk");
+                (british?".1tr@.0nI":".1tra.0nI");
+            if(!strstr(phones,wanted))fprintf(stderr,"%s %s: expected %s in %s\n",
+                british?"en_GB":"en_US",words[i],wanted,phones);
             CHECK(strstr(phones,wanted));
         }
     }

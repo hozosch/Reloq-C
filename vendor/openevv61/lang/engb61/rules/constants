@@ -1949,7 +1949,7 @@ bytes eti_s_1c414b   1d 04 04 1b 15
 bytes eti_s_1c4150   1d 04 04 1b 15 0a
 bytes eti_s_1c4156   1d 04 0a
 bytes eti_s_1c4159   1b 09 23 17
-bytes eti_s_1c415d   20 18 1e 07 04 17 2b 15 1c 07
+bytes eti_s_1c415d   20 18 1e 07 04 17 26 15 1c 07
 bytes eti_s_1c4167   20 18 1b 04 1c 0d 14
 bytes eti_s_1c416e   1b 18 27 16 08 1d 04
 bytes eti_s_1c4175   28 14 01 23 10 23 17
@@ -3291,7 +3291,7 @@ bytes eti_s_1c64d8   15 22 15 09 23 18 1e 0e
 bytes eti_s_1c64e0   15 2e 1a 22 15
 bytes eti_s_1c64e5   15 28 04 1a 1c 0a 0e 04 1f 15 03 1c 16
 bytes eti_s_1c64f2   15 31 23 03 1d 0d
-bytes eti_s_1c64f8   23 07 18 2b 07
+bytes eti_s_1c64f8   23 07 18 26 07
 bytes eti_s_1c64fd   1a 22 15 0e
 bytes eti_s_1c6501   31 04 23
 bytes eti_s_1c6504   02 17 1b
