@@ -1,0 +1,423 @@
+{
+  "url": "https://github.com/pumper42nickel/eloquence_threshold/releases/download/v0.20210417.01/eloquence.nvda-addon",
+  "archive_sha256": "10e4f2ad321afaf2f4edf41a114f881261ce3768d23ceaf647cc715a71e3a521",
+  "files": {
+    "ECI.DLL": "c1653e61e9fd599421d2f7faee21eda171d3a8ff4329343ddb24a2dd565fba5f",
+    "ENU.SYN": "1a5f225f2d7c6fe1deff7df57eb285600430ac98dc3509e613051d20715996e9",
+    "ENG.SYN": "4437a8b089b6205b21b255e21ddd62e8149400f5a0bc6dc696100ead5b0723ef",
+    "DEU.SYN": "97c2069b4c782b0f52d72bd9f5be7120945b1cec1eff0104e2b97ee8d56f448d"
+  },
+  "engine": "6.1.0.0",
+  "observations": [
+    {
+      "language": 65536,
+      "text": "13:28",
+      "pcm": {
+        "samples": 12144,
+        "sha256": "8c79551b1ced6c7d5f3a1c78a2d3f69b033bec74c82705bc6dc327a3557810af"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65536,
+      "text": "13:28:25",
+      "pcm": {
+        "samples": 12144,
+        "sha256": "8c79551b1ced6c7d5f3a1c78a2d3f69b033bec74c82705bc6dc327a3557810af"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65536,
+      "text": "00:20",
+      "pcm": {
+        "samples": 9669,
+        "sha256": "246d87e06e1026bb4a8dc15ef8079545053ffbccad4f8d217121b1acd3d7ab5a"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65536,
+      "text": "00:20:48",
+      "pcm": {
+        "samples": 9669,
+        "sha256": "246d87e06e1026bb4a8dc15ef8079545053ffbccad4f8d217121b1acd3d7ab5a"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65536,
+      "text": "00:20:48.526",
+      "pcm": {
+        "samples": 19316,
+        "sha256": "cd1ca0810580bf89f210c5c1803a4abd0977b42ff52f1b3fa12e29db9093d890"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65536,
+      "text": "1:00",
+      "pcm": {
+        "samples": 8525,
+        "sha256": "8d971d4f61c87f500af086a10c324d89cf4d18e981ec4a365ba289c809c94b53"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65536,
+      "text": "1:00:03",
+      "pcm": {
+        "samples": 8525,
+        "sha256": "8d971d4f61c87f500af086a10c324d89cf4d18e981ec4a365ba289c809c94b53"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65536,
+      "text": "13:00",
+      "pcm": {
+        "samples": 13376,
+        "sha256": "2ebac91f452d37666c7e2fe3e03f820451053e70c214e873c10f7853f3994f92"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65536,
+      "text": "13:00:25",
+      "pcm": {
+        "samples": 13376,
+        "sha256": "2ebac91f452d37666c7e2fe3e03f820451053e70c214e873c10f7853f3994f92"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65536,
+      "text": "00:00:00",
+      "pcm": {
+        "samples": 10054,
+        "sha256": "3a3e25e93ef7b48fa30e6387f833e33a40df29e1e9fefbd6b963cc046b183262"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65536,
+      "text": "12:00:30 pm",
+      "pcm": {
+        "samples": 9306,
+        "sha256": "754c2a29779005f3a7fdda8ba79591543b9bfe58d56e168d89b7cc115a6c4ce0"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65536,
+      "text": "1:02:03",
+      "pcm": {
+        "samples": 7931,
+        "sha256": "8ccfd84eeeded07f60129512a442224991f288dc9572a85ede445cbead6344e0"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65536,
+      "text": "13:28:00",
+      "pcm": {
+        "samples": 12144,
+        "sha256": "8c79551b1ced6c7d5f3a1c78a2d3f69b033bec74c82705bc6dc327a3557810af"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65536,
+      "text": "25",
+      "pcm": {
+        "samples": 9625,
+        "sha256": "c866df90e30b690962149e9a72e83c95903b795b107b045f3163e130d4f2c634"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65536,
+      "text": "48.526",
+      "pcm": {
+        "samples": 17259,
+        "sha256": "d4960b7b49364f912a3f3e2252f3cb4dbe4e708818bd822070cae3d02384b0e6"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65536,
+      "text": "thirteen twenty eight twenty five",
+      "pcm": {
+        "samples": 18051,
+        "sha256": "65f2718c077328eb79c606bf3503cbdd13952fd00ec42c06fdc9011b2b288830"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65536,
+      "text": "one zero zero zero three",
+      "pcm": {
+        "samples": 16478,
+        "sha256": "e1a0e95c66e6da39b2a3fc7bdfb196d79d5dc94d6d55e296d12d7155636dc254"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65537,
+      "text": "13:28",
+      "pcm": {
+        "samples": 11913,
+        "sha256": "a69c2e0bc8bdf7e17977df4040c562d6bc1d9615cd62976d5c3a6d620496d211"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65537,
+      "text": "13:28:25",
+      "pcm": {
+        "samples": 11913,
+        "sha256": "a69c2e0bc8bdf7e17977df4040c562d6bc1d9615cd62976d5c3a6d620496d211"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65537,
+      "text": "00:20",
+      "pcm": {
+        "samples": 9955,
+        "sha256": "53e0a668617344991735dda621708cecad75a222ffaf39fa78c30e00ecfee2ed"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65537,
+      "text": "00:20:48",
+      "pcm": {
+        "samples": 9955,
+        "sha256": "53e0a668617344991735dda621708cecad75a222ffaf39fa78c30e00ecfee2ed"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65537,
+      "text": "00:20:48.526",
+      "pcm": {
+        "samples": 19657,
+        "sha256": "42286067e44cce0011a057a14bd54592e6e6cb9738d53599d0071cf0e54ccc9b"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65537,
+      "text": "1:00",
+      "pcm": {
+        "samples": 8426,
+        "sha256": "72e8e77b31cb53c6653c15fe43931865a44c99a487a9228c3b346d2874da3f43"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65537,
+      "text": "1:00:03",
+      "pcm": {
+        "samples": 8426,
+        "sha256": "72e8e77b31cb53c6653c15fe43931865a44c99a487a9228c3b346d2874da3f43"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65537,
+      "text": "13:00",
+      "pcm": {
+        "samples": 13640,
+        "sha256": "27f4c9b7e1cb4ad760bf3854090359520f5bd13cad14cc3da4c0582bb3b5b9a0"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65537,
+      "text": "13:00:25",
+      "pcm": {
+        "samples": 13640,
+        "sha256": "27f4c9b7e1cb4ad760bf3854090359520f5bd13cad14cc3da4c0582bb3b5b9a0"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65537,
+      "text": "00:00:00",
+      "pcm": {
+        "samples": 10153,
+        "sha256": "f5a62765e7c011304c57f6627047be0447d0064f4f921695338f460b2afe66b9"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65537,
+      "text": "12:00:30 pm",
+      "pcm": {
+        "samples": 9306,
+        "sha256": "79c959583a8b4a03bf6afa570a15dc1472866ca526c84f9e32820a8481dc3af4"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65537,
+      "text": "1:02:03",
+      "pcm": {
+        "samples": 7843,
+        "sha256": "04e9937d79b46e5a6423db48c450f46e6253d074ad74e4fa6a204bab72dac4e4"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65537,
+      "text": "13:28:00",
+      "pcm": {
+        "samples": 11913,
+        "sha256": "a69c2e0bc8bdf7e17977df4040c562d6bc1d9615cd62976d5c3a6d620496d211"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65537,
+      "text": "25",
+      "pcm": {
+        "samples": 9768,
+        "sha256": "450d70db9e81353746bbf6c89bc977b06e958da627213cffa99602566ca3b9b8"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65537,
+      "text": "48.526",
+      "pcm": {
+        "samples": 17512,
+        "sha256": "a610c21b8778cf94f1c68efc58a5b055d89b37d60055451d731dfc26b2c833c2"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65537,
+      "text": "thirteen twenty eight twenty five",
+      "pcm": {
+        "samples": 18249,
+        "sha256": "5a27c783b96b1ca41aa30ba5378cc98e0ba431ff6a9e149a36dff1e3fa8e212d"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    },
+    {
+      "language": 65537,
+      "text": "one zero zero zero three",
+      "pcm": {
+        "samples": 17017,
+        "sha256": "c8d9e130a4326e748eda0fd33b7052d1c1d8fb920266d660aeebf6510521fce8"
+      },
+      "spr": {
+        "status": 0,
+        "phonemes": ""
+      }
+    }
+  ],
+  "observation_source_commit": "9c69683ec5d820e716b98603cd527f1e261cb139",
+  "workflow_run": "https://github.com/hozosch/Reloq-C/actions/runs/41328621802"
+}

@@ -4228,7 +4228,8 @@ int32_t reloq_zhcn61_get_tone_value(void *state, int32_t p0, int32_t p1, int32_t
     AT(int32_t, -44) = (r0);
     r0 = reloq61_typed_fence(DELTA_ENTRY_fence, state, (int8_t)(0), EVV_AT(const uint8_t *, delta_sym_ref[801]));
     STATE_D(int16_t, c14, 2) = (4);
-    r0 = reloq61_typed_if_testeq_v_i(DELTA_ENTRY_if_testeq_v_i, state, EVV_AT(delta_loc *, STATE_AT(c14, 0)), (int32_t)(1));
+    /* Model-independent Mandarin F0; anatomy keeps the selected model. */
+    r0 = 1;
     AT(int32_t, -24) = (r0);
     AT(int32_t, -44) = ((int32_t)AT(int32_t, -24));
     r1 = ((int32_t)AT(int16_t, -66));
@@ -4289,7 +4290,8 @@ L673:;
     AT(int32_t, -32) = (r1);
     AT(int32_t, -60) = ((int32_t)AT(int32_t, -32));
     STATE_D(int16_t, c14, 2) = (2);
-    r0 = reloq61_typed_if_testgt_v_i(DELTA_ENTRY_if_testgt_v_i, state, EVV_AT(delta_loc *, STATE_AT(c14, 0)), (int32_t)(100));
+    /* Evaluate this pitch calibration at the reference rate 75. */
+    r0 = 0;
     AT(int32_t, -44) = (r0);
     if (AT(int32_t, -44) != 0) goto L791;
     goto L804;
@@ -4298,19 +4300,22 @@ L791:;
     goto L1344;
 L804:;
     STATE_D(int16_t, c14, 2) = (2);
-    r0 = reloq61_typed_if_testgt_v_i(DELTA_ENTRY_if_testgt_v_i, state, EVV_AT(delta_loc *, STATE_AT(c14, 0)), (int32_t)(40));
+    /* Evaluate this pitch calibration at the reference rate 75. */
+    r0 = 1;
     AT(int32_t, -44) = (r0);
     if (AT(int32_t, -44) != 0) goto L857;
     goto L1051;
 L857:;
     STATE_D(int16_t, c14, 2) = (2);
-    r0 = reloq61_typed_if_testgt_v_i(DELTA_ENTRY_if_testgt_v_i, state, EVV_AT(delta_loc *, STATE_AT(c14, 0)), (int32_t)(60));
+    /* Evaluate this pitch calibration at the reference rate 75. */
+    r0 = 1;
     AT(int32_t, -44) = (r0);
     if (AT(int32_t, -44) != 0) goto L910;
     goto L1123;
 L910:;
     STATE_D(int16_t, c14, 2) = (2);
-    r0 = reloq61_typed_if_testgt_v_i(DELTA_ENTRY_if_testgt_v_i, state, EVV_AT(delta_loc *, STATE_AT(c14, 0)), (int32_t)(80));
+    /* Evaluate this pitch calibration at the reference rate 75. */
+    r0 = 0;
     AT(int32_t, -44) = (r0);
     if (AT(int32_t, -44) == 0) goto L963;
     goto L791;

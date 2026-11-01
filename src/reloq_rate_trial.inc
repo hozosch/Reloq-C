@@ -1,7 +1,7 @@
-/* Session-local hearing trial. Fit the native 16-kHz consonant magnitude
- * over the common band, retain the established extension above 8 kHz, and
+/* Session-local hearing trial. Fit the Classic Presence consonant magnitude
+ * over the common band, retain the native extension above 5.5 kHz, and
  * preserve total noise energy. This does not change the source level. */
-int reloq_rate_transfer_prepare_native16(struct reloq_rate_transfer *s,
+int reloq_rate_transfer_prepare_classic(struct reloq_rate_transfer *s,
     const struct reloq_core_frication_bank *reference,
     const struct reloq_core_frication_bank *current,
     const struct reloq_noise_profile *profile,float rate)
@@ -11,7 +11,7 @@ int reloq_rate_transfer_prepare_native16(struct reloq_rate_transfer *s,
     for(long j=0;j<current->active_formants;++j)norm+=fabs(current->stages[j].input_gain);
     for(long j=0;j<reference->active_formants;++j)ref_norm+=fabs(reference->stages[j].input_gain);
     if(norm<1e-20 || ref_norm<1e-20)return 0;
-    float key[144]={-16000,rate,(float)profile->kind};unsigned at=3;
+    float key[144]={-11025,rate,(float)profile->kind};unsigned at=3;
     const struct reloq_core_frication_bank *banks[]={reference,current};
     for(unsigned i=0;i<2;++i) {
         double n=i?norm:ref_norm;
@@ -33,17 +33,18 @@ int reloq_rate_transfer_prepare_native16(struct reloq_rate_transfer *s,
     for(unsigned k=0;k<=FFT_SIZE/2;++k) {
         double hz=(double)k*rate/FFT_SIZE,w=k&&k<FFT_SIZE/2?1:.5;
         ours[k]=bank_power(current,cexp(-I*2*pi*hz/rate))/(norm*norm)*profile_power(profile,hz);
-        native_power[k]=hz<=8000?bank_power(reference,cexp(-I*2*pi*hz/16000))/(ref_norm*ref_norm):0;
+        double complex z=cexp(-I*2*pi*hz/11025);
+        native_power[k]=hz<=5512.5?bank_power(reference,z)/(ref_norm*ref_norm)*classic_reference_power(s,z):0;
         /* Equal energy over the common lower passband; the physical pole
-         * locations and native 16-kHz notch structure remain unchanged. */
-        if(hz<=6500){sum_ours+=w*ours[k];sum_ref+=w*native_power[k];}
+         * locations and native high-rate extension remain unchanged. */
+        if(hz<=4600){sum_ours+=w*ours[k];sum_ref+=w*native_power[k];}
         if(ours[k]>peak)peak=ours[k];
     }
     if(sum_ref<=0 || sum_ours<=0)return 0;
     double scale=sum_ours/sum_ref,total=0,wanted=0;
     for(unsigned k=0;k<=FFT_SIZE/2;++k) {
         double hz=(double)k*rate/FFT_SIZE,w=k&&k<FFT_SIZE/2?1:.5;
-        double blend=rate==16000?0:hz<=6500?0:hz>=8000?1:.5-.5*cos(pi*(hz-6500)/1500);
+        double blend=hz<=4600?0:hz>=5512.5?1:.5-.5*cos(pi*(hz-4600)/912.5);
         target[k]=(1-blend)*native_power[k]*scale+blend*ours[k];
         total+=w*ours[k];wanted+=w*target[k];
     }

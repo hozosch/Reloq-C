@@ -5,7 +5,33 @@
 #include "../src/reloq_rate_transfer.c"
 static uint32_t random_state=917;
 static float value(void) {random_state=random_state*1664525u+1013904223u;return ((int32_t)(random_state>>8)-8388608)*0x1p-25f;}
+static double response(const double c[5],double hz,double rate)
+{
+ double complex z=cexp(-I*2*pi*hz/rate);
+ return cabs((c[0]+c[1]*z+c[2]*z*z)/(1+c[3]*z+c[4]*z*z));
+}
+static void classic_response(void)
+{
+ /* Independently evaluated Classic 11.025-kHz passband, normalized at
+  * 200 Hz. A broad response is required, without the old 4-kHz peak. */
+ const double hz[]={200,1000,1400,2000,2500,3000,3500,4000,4500};
+ const double db[]={0,.353,.670,1.449,2.645,3.843,4.577,4.885,4.976};
+ const float rates[]={16000,22050,32000,44100,48000};
+ for(unsigned r=0;r<5;++r) {
+  struct reloq_rate_transfer s={.trial_profile=1};prepare_colour(&s,rates[r]);
+  double base=0;
+  for(unsigned f=0;f<9;++f) {
+   double gain=response(s.presence,hz[f],rates[r]);
+   for(unsigned k=0;k<RELOQ_RATE_VOICE_COLOURS;++k)
+    gain*=response(s.voice_colour[k],hz[f],rates[r]);
+   gain=20*log10(gain);if(!f)base=gain;
+   assert(fabs(gain-base-db[f])<.17);
+  }
+ }
+ puts("Classic Presence: 45 periodic passband targets within 0.17 dB, all five native rates");
+}
 int main(void) {
+ classic_response();
  unsigned tests=0;
 #ifdef RATE_AVX2
  int avx2_available=avx2_enabled();

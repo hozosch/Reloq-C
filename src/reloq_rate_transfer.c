@@ -625,6 +625,8 @@ static void prepare_ramp(struct reloq_rate_transfer *s,float rate)
 }
 /* Large fit workspaces belong only to actual filter changes. Keep the
  * ordinary key check and clock bypass below out of their stack frames. */
+#include "reloq_classic_colour.inc"
+
 static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rate)
 {
     /* Keep the shared tract/aspiration response. Periodic excitation
@@ -683,6 +685,7 @@ static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rat
         c[1]=(-2+2*zz)/den;c[2]=(1+2*creal(z)+zz)/den;
         c[3]=(-2+2*pp)/den;c[4]=(1+2*creal(p)+pp)/den;
     }
+    if(s->trial_profile)prepare_classic_colour(s,rate);
     s->aspiration_step=1-exp(-1/(rate*.005));
 }
 static RATE_NOINLINE void fit_tract(struct reloq_rate_transfer *s,
@@ -770,9 +773,9 @@ void reloq_rate_transfer_prepare(struct reloq_rate_transfer *s,
 static void prepare_trial_source(struct reloq_rate_transfer *s)
 {
     double rate=s->presence_rate;
-    double weight=rate>=48000?1:rate>=44100?.8:rate>=32000?.6:rate>=22050?.4:.2;
-    /* Max 2 dB at 48 kHz, acting only on periodic excitation before AH/AF. */
-    double a=pow(10,2*weight/40),w=2*pi*1800/rate;
+    double weight=rate>=48000?1:rate>=44100?.8:rate>=32000?.5:rate>=22050?.25:0;
+    /* Optional upper harmonics grow above the common 16-kHz basis. */
+    double a=pow(10,1.5*weight/40),w=2*pi*5000/rate;
     double co=cos(w),z=sin(w)*sqrt(2*a),den=(a+1)-(a-1)*co+z;
     double *c=s->trial_source;
     c[0]=a*((a+1)+(a-1)*co+z)/den;
@@ -800,7 +803,7 @@ void reloq_rate_transfer_process_voice(struct reloq_rate_transfer *s,float *samp
         }
         samples[j]=(float)y;
     }
-    if(s->trial_profile==2 && s->presence_rate>=16000) {
+    if(s->trial_profile==2 && s->presence_rate>16000) {
         if(s->trial_source_rate!=s->presence_rate)prepare_trial_source(s);
         const double *c=s->trial_source;double *d=s->trial_source_delay;
         for(size_t j=0;j<count;++j) {

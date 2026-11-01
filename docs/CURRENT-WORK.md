@@ -1,23 +1,46 @@
-# Teststand 1.0.2-dev1: Hochraten-Hörtest
+# Teststand 1.0.2-dev2: Classic Presence und native Regeln
 
-Ein NVDA-Testpaket bietet drei direkt umschaltbare Abstimmungen ab 16 kHz.
-A erhält den bisherigen Klang, B gleicht die Konsonantenfarbe an die native
-16-kHz-Parallelbank an, C ergänzt einen oberen periodischen Shelf mit maximal
-2 dB bei 48 kHz. Die breite P/F-Familie bleibt auf ihrem bisherigen Pfad.
-Kein PCM-Resampling, keine Text-/Sprachresultat-Caches, eine gemeinsame DLL.
-Deutsch beginnt bei langen Texten an bereits abgeschlossenen Analysephrasen
-mit der Ausgabe; Stimm-, Filter- und Zeitachsen bleiben zusammenhängend.
-Der zusätzliche deutsche ts-Frikationspegel und die mediale Sonderabsenkung
-wurden entfernt. Die konfigurierte Lautstärke wirkt auch außerhalb Deutsch.
-Der private ECI-Adapter schließt bei Tempo-/Lautstärkebefehlen keinen Satz ab.
+Der neue Hörtest orientiert B an Classic Presence des 11-kHz-Pfads von
+Eloquence64RS: gemeinsame Grundfarbe für Stimmkörper und Konsonanten, ab
+16 kHz ein eigener erweiterter Rauschpfad je Abtastrate. Der gemeinsame
+Frequenzbereich bleibt am 11-kHz-Vorbild ausgerichtet; darüber kommen die
+höheren nativen Rauschbänder hinzu. P und F behalten ihren bisherigen
+Rauschpfad. C erweitert zusätzlich die oberen periodischen Anteile, von
+0 dB bei 16 kHz bis höchstens 1,5 dB bei 48 kHz. B und C sind bei 16 kHz
+gleich. A ist die bisherige Abstimmung. Es gibt kein PCM-Resampling, kein
+Erzeugen gespiegelter Frequenzbänder und keine Sprachresultat-Caches.
 
-Dies ist kein offizielles Release. Vor 1.0.2 bleiben die gemeldeten Issues
-und die neuen chinesischen Tonhöhenverläufe bei verschiedenen Geschwindigkeiten
-und Modellen als Prüfpunkte offen. Issue #2 ist im Testkern korrigiert, #4 hat
-GPL-3.0-or-later nach Auswahl des Projektinhabers; #5 hat eine korrigierte
-Pausenbehandlung. Die Sekundenlesung (#3) und positionsbezogene Steuerung (#6)
-werden separat weiterbearbeitet und sind nicht als fertige Korrekturen in
-diesem Hörpaket ausgewiesen. Der WIP-Zweig hält die zugehörigen Experimente.
+Der deutsche Laut T (/ts/, etwa Z und zw) hatte seine S-Familienmarkierung
+für die Hochratenfilterung nicht erhalten. Das ist korrigiert; die eingestellten
+Lautpegel ändern sich dadurch nicht. Eine allgemeine Übereinstimmung des
+Z-Klangs mit dem Original ist damit noch nicht durch einen Hörtest bestätigt.
+
+Chinesische Tonhöhenziele verwenden die männliche Referenzkalibrierung bei
+Tempo 75, unabhängig von Modell und tatsächlichem Tempo. Die zeitliche
+Verteilung bleibt an die tatsächliche Sprechdauer gebunden. Kopfgröße und
+weibliche Anatomie bleiben erhalten. 120 Vergleiche prüfen vollständige
+Tonhöhenziel-Folgen bei drei Tempi, zwei Modellen, zwei Kopfgrößen und zwei
+Tonhöheneinstellungen, einschließlich des englischen Pfads und gemischter Texte.
+
+Der englische Uhrzeitkonverter hatte eine vorhandene Sekundenstelle verbraucht,
+ohne sie zu analysieren. Er beendet nun die zweifeldrige Konvertierung vor
+den Sekunden; die normalen Zahlenregeln verarbeiten den Rest. Dreifeldrige
+Uhrzeiten behalten auch ihre Nullminuten. 370 Prüfungen erfassen US-/britisches
+Englisch, alle Sekunden von 00 bis 59, Nullfelder, Bruchteile und AM/PM.
+Die unveränderten originalen ENU.SYN und ENG.SYN wurden separat unter Windows
+beobachtet: HH:MM und HH:MM:SS erzeugen dort identische PCM-Daten. Der Fehler
+ist auch in diesen Originalmodulen vorhanden; es wird keine dort funktionierende
+Sekundenregel behauptet. Das Werkzeug speichert nur Messwerte und Hashes,
+keine Originalmodule oder Original-Audiodateien im Repository oder Produkt.
+
+Die C-Filter wurden unabhängig anhand des Frequenzgangs formuliert. Kein
+Rust-Modul und kein Code von Eloquence64RS wird eingebunden. Die schmale alte
+periodische Präsenzanhebung wird im Kandidaten ersetzt. Die beiden übrigen
+Quellen AF und AH bleiben von der zusätzlichen C-Stimmkörperanhebung getrennt.
+
+Dies ist kein offizielles Release. Die subjektive Klangbeurteilung erfolgt
+in NVDA. Die vollständige positionsbezogene Steuerung (#6) bleibt ein
+Release-Prüfpunkt. 1.0.1 auf main bleibt unverändert.
 
 # Technischer Arbeitsstand: 1.0.1
 

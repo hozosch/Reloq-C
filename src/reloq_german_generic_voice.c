@@ -235,7 +235,8 @@ static int model_append(struct reloq_target_stage_router *router,int64_t tick,
                (events[j].offset<0 && tick<INT64_MIN-events[j].offset))return -1;
             enum reloq_german_phone p=owner<settings->phone_count?settings->phones[owner].phone:RELOQ_DE_PHONE_NONE;
             if(colour_point(settings->sibilants,tick+events[j].offset,
-                p==RELOQ_DE_PHONE_s||p==RELOQ_DE_PHONE_z||p==RELOQ_DE_PHONE_t,owner))return -1;
+                p==RELOQ_DE_PHONE_s||p==RELOQ_DE_PHONE_z||p==RELOQ_DE_PHONE_t||
+                p==RELOQ_DE_PHONE_T,owner))return -1;
         }
         if(settings->colour && events[j].stream==RELOQ_TARGET_AB && events[j].value>0) {
             enum reloq_german_phone p=owner<settings->phone_count?

@@ -55,7 +55,7 @@ def main():
                         assert capture(other,text)==baseline,(language,rate,profile,'cross-engine leak');checks+=1
                         variants.append(actual)
                     if SAMPLE_RATES[rate]>=16000:
-                        assert variants[0]!=variants[1],(language,rate,'upper periodic shelf inactive');checks+=1
+                        assert (variants[0]!=variants[1])==(SAMPLE_RATES[rate]>16000),(language,rate,'upper periodic extension');checks+=1
                     engine.set_parameter(HIGH_RATE_PROFILE,0)
                     assert capture(engine,text)==baseline,(language,rate,'rollback mismatch');checks+=1
                 if SAMPLE_RATES[rate]>=16000 and language==0x40000:
@@ -65,7 +65,12 @@ def main():
                     for word in ('Papa.','Fifi.','Fee.'):
                         engine.set_parameter(HIGH_RATE_PROFILE,0);before=capture(engine,word)
                         engine.set_parameter(HIGH_RATE_PROFILE,1)
-                        assert capture(engine,word)==before,(rate,word,'p/f exception changed');checks+=1
+                        after=capture(engine,word)
+                        # The vowel now has Classic Presence too. Compare the
+                        # actual unvoiced onset, rather than the whole word.
+                        onset=int(SAMPLE_RATES[rate]*.008)*2
+                        assert after[1]==before[1] and len(after[0])==len(before[0])
+                        assert any(before[0][:onset]) and after[0][:onset]==before[0][:onset],(rate,word,'p/f noise changed');checks+=1
             for bad in (-1,3):
                 assert engine._dll.eciSetParam(engine._handle,HIGH_RATE_PROFILE,bad)==-1;checks+=1
         finally:engine.close();other.close()

@@ -1,7 +1,8 @@
 name: NVDA high-rate hearing preview
 on:
   push:
-    branches: [codex/german-stream102]
+    branches: [codex/followup102]
+    paths-ignore: [tools/observe_syn_times.py, .github/workflows/syn-reference.yml]
   workflow_dispatch:
 permissions:
   contents: read
@@ -27,7 +28,7 @@ jobs:
         if: steps.rules.outputs.cache-hit == 'true'
         run: find vendor/openevv61/build -type f -exec touch {} +
       - name: Build x64 native core
-        run: make -C eci -j2 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
+        run: make -C eci -j2 windows-x64 eci_native_rules_probe.exe eci_rate_dispatch_probe.exe PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
       - name: Package development add-on with current dictionary master
         run: |
           python3 nvda/test_updates.py
@@ -41,12 +42,12 @@ jobs:
           assert len(files)==1
           with zipfile.ZipFile(files[0]) as package:
               assert package.testzip() is None
-              assert '1.0.2-dev1' in package.read('manifest.ini').decode()
+              assert '1.0.2-dev2' in package.read('manifest.ini').decode()
               for name in ('ReLoq-C-LICENSE.txt','ReLoq-C-NOTICE.txt','OpenEVV-LICENSE.txt','Dictionaries-CC0.txt'):
                   assert package.read('doc/licenses/'+name)
           Path('dist/source.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],
               'package':files[0].name,'sha256':hashlib.sha256(files[0].read_bytes()).hexdigest(),
-              'version':'1.0.2-dev1','official_release':False,'experimental_listening_dsp':True,'profiles':['control','native16-consonants','native16-plus-gentle-body']},indent=2)+'\n')
+              'version':'1.0.2-dev2','official_release':False,'experimental_listening_dsp':True,'profiles':['control','classic-presence-full','classic-plus-upper-periodic-extension']},indent=2)+'\n')
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -55,6 +56,8 @@ jobs:
             dist/*.nvda-addon
             dist/source.json
             eci/eci.dll
+            eci/eci_native_rules_probe.exe
+            eci/eci_rate_dispatch_probe.exe
           compression-level: 0
           retention-days: 7
   windows:
@@ -73,6 +76,14 @@ jobs:
         shell: pwsh
         run: |
           $core = (Get-ChildItem candidate -Recurse -Filter eci.dll | Select-Object -First 1).FullName
+          $rules = (Get-ChildItem candidate -Recurse -Filter eci_native_rules_probe.exe | Select-Object -First 1).FullName
+          & $rules
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $dsp = (Get-ChildItem candidate -Recurse -Filter eci_rate_dispatch_probe.exe | Select-Object -First 1).FullName
+          & $dsp
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_english_clock_seconds.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_german_streaming.py --library $core --output streaming.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_analysis_cancel.py --library $core

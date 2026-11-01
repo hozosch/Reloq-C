@@ -52,7 +52,8 @@ int main(void)
         assert(a.count==b.count&&!memcmp(a.samples,b.samples,a.count*sizeof *a.samples));++checks;
         memset(&b,0,sizeof b);struct capture c={0};
         render(rates[r],1,1,0,0,&b);render(rates[r],2,1,0,0,&c);
-        assert(b.count==c.count&&memcmp(b.samples,c.samples,b.count*sizeof *b.samples));++checks;
+        assert(b.count==c.count);
+        assert((memcmp(b.samples,c.samples,b.count*sizeof *b.samples)!=0)==(rates[r]>16000));++checks;
     }
     printf("Hearing source separation: %u actual PCM comparisons, AF/AH unchanged by body, broad p/f retained\n",checks);
     return 0;

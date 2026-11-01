@@ -124,6 +124,15 @@ test_reloq_german_cancel: ../tests/test_reloq_german_cancel.c $(OBJECTS) $(RULES
 test_reloq_hash_delete: ../tests/test_reloq_hash_delete.c $(RULES61)
 	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -DEVV_ARENA=1 -I../vendor/openevv61/src/port $< $(RULES61) -pthread -lm -o $@
 
+test_reloq_native_rules: ../tests/test_reloq_native_rules.c $(OBJECTS) $(RULES61)
+	$(CC) $(CFLAGS) $(PROVIDER_LINK) -I../vendor/openevv61/include $< $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections -lm -o $@
+
+eci_native_rules_probe.exe: ../tests/test_reloq_native_rules.c ../src/reloq_german_lexicon.c ../src/reloq_german_spr.c $(RULES61_WIN)
+	$(WINDOWS_CC) $(filter-out -Werror,$(WINDOWS_CFLAGS)) $(PROVIDER_LINK) $(SECTIONS) -I../include -I../vendor/openevv61/include $^ $(WINDOWS_LDFLAGS) -Wl,--gc-sections -lm -o $@
+
+eci_rate_dispatch_probe.exe: ../tests/test_reloq_rate_dispatch.c ../src/reloq_rate_transfer.c $(HEADERS)
+	$(WINDOWS_CC) $(WINDOWS_CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< $(WINDOWS_LDFLAGS) -Wl,--gc-sections -lm -o $@
+
 test_reloq_rate_dispatch: ../tests/test_reloq_rate_dispatch.c ../src/reloq_rate_transfer.c $(HEADERS)
 	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< -Wl,--gc-sections -lm -o $@
 

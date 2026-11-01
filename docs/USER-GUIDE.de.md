@@ -1,8 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Hörtest 1.0.2-dev1
+## Hörtest 1.0.2-dev2
 
-Unter Sprachausgabe steht die neue Hochraten-Abstimmung zur Verfügung. A behält den bisherigen Klang mit korrigiertem deutschem Z/ts-Pegel, B stimmt die Konsonanten am 16-kHz-Vorbild ab, C ergänzt einen sanften oberen Stimmkörper. P und F behalten ihre Abstimmung. Unter 16 kHz wirken die drei Varianten gleich. Stimme, Geschwindigkeit und Lautstärke bleiben beim Umschalten erhalten. Dies ist ein Hörtest vor dem nächsten offiziellen Release.
+Unter Sprachausgabe bietet die Hochraten-Abstimmung drei Hörvarianten: A behält den bisherigen Klang, B orientiert sich an Classic Presence des 11-kHz-Pfads von Eloquence64RS, C erweitert darüber die oberen stimmhaften Anteile schrittweise. Bei 16 kHz sind B und C gleich. P/F behalten ihren bisherigen Rauschpfad; die neue Stimmfarbe gilt auch für ihre Vokale. Unter 16 kHz wirken alle Varianten gleich. Der deutsche Z/ts-Pfad erhält dieselbe Hochraten-Farbbehandlung wie S. Die Pegel bleiben erhalten. Dies ist ein Hörtest vor dem nächsten offiziellen Release.
 
 Eloquence C ist die NVDA-Erweiterung des Projekts [ReLoq C](https://github.com/hozosch/Reloq-C). Sie entwickelt den Eloquence-Klang mit gezielten Aussprachekorrekturen, Unicode-Unterstützung und zusätzlichen Klangmöglichkeiten weiter. NVDA ist die erste Anbindung und dient derzeit zum Prüfen der Sprachausgabe. Derselbe Kern ist auch für Android ARM64 und Windows SAPI5 verfügbar.
 
