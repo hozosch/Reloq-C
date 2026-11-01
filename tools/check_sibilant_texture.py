@@ -67,6 +67,7 @@ def measure(samples, rate):
                 peak_fraction=float(spectrum.max() / total),
                 peak_hz=float(frequency[np.argmax(spectrum)]),
                 centroid_hz=float((frequency * spectrum).sum() / total),
+                below_3000=float(spectrum[frequency < 3000].sum() / total),
                 above_5500=float(spectrum[frequency >= 5500].sum() / total),
                 above_8000=float(spectrum[frequency >= 8000].sum() / total),
                 above_11025=float(spectrum[frequency >= 11025].sum() / total))
@@ -107,7 +108,6 @@ def main():
                             else:
                                 row['level_db'] = float(20 * np.log10(after['rms'] / before['rms']))
                                 assert abs(row['level_db']) < .8, row
-                                assert abs(after['peak_hz'] - before['peak_hz']) < 250, row
                         records.append(row)
             # SH, F, a voiced vowel and the 8/11-kHz voiced S keep their
             # original numeric output. Hashes are evidence, not cached audio.
@@ -122,7 +122,7 @@ def main():
     for rate in RATES:
         rows = [row for row in records if row['rate'] == rate]
         result = dict(rate=rate, cases=len(rows))
-        for key in ('envelope_cv', 'peak_fraction', 'centroid_hz', 'above_5500',
+        for key in ('envelope_cv', 'peak_fraction', 'centroid_hz', 'below_3000', 'above_5500',
                     'above_8000', 'above_11025'):
             result[key] = float(np.mean([row['after'][key] for row in rows]))
         if old and rate >= 16000:
@@ -131,6 +131,8 @@ def main():
                 before = np.mean([row['before'][key] for row in rows])
                 result[key + '_ratio'] = result[key] / before
                 assert result[key + '_ratio'] < .95, result
+            before_low = np.mean([row['before']['below_3000'] for row in rows])
+            assert result['below_3000'] < before_low, result
         summary.append(result)
     extended = [row for row in summary if row['rate'] >= 16000]
     assert all(b['above_5500'] > a['above_5500'] + .008

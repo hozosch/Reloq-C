@@ -1329,9 +1329,17 @@ static RATE_NOINLINE void fit_noise_mix(struct reloq_rate_transfer *s,
      * the wide companion cannot bypass it. Retain integrated energy. */
     for(unsigned k=0;k<=FFT_SIZE/2;++k) {
         const double mag=historic84?1:clock->tilt[k];
-        wanted[k]=((1-mix)*ours[k]+mix*wanted[k]*a/b)*mag*mag;
+        double hz=(double)k*rate/FFT_SIZE,blend=mix;
         if(grid->sibilant) {
-            double hz=(double)k*rate/FFT_SIZE;
+            /* Keep the clear narrow-rate S's lower flank. Broadening a
+             * resonance symmetrically without this anchor also increases
+             * the low noise skirt, which can turn smoothing into a lisp. */
+            double clarity=fmax(0,fmin(1,(5000-hz)/1200));
+            clarity=clarity*clarity*(3-2*clarity);
+            blend+=(1-blend)*clarity;
+        }
+        wanted[k]=((1-blend)*ours[k]+blend*wanted[k]*a/b)*mag*mag;
+        if(grid->sibilant) {
             double t=fmax(0,fmin(1,(hz-4800)/4200));
             double upper=1+(extension*extension-1)*t*t*(3-2*t);
             wanted[k]*=power(broader_s,clock->z[0][k])/
