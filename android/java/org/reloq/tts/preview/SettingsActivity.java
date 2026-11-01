@@ -89,7 +89,7 @@ public final class SettingsActivity extends Activity {
                 padding+insets.getSystemWindowInsetRight(),padding+insets.getSystemWindowInsetBottom());
             return insets.consumeSystemWindowInsets();
         });scroll.requestApplyInsets();
-        TextView intro=new TextView(this);intro.setText(R.string.preview_help);content.addView(intro);
+        TextView intro=new TextView(this);intro.setText(R.string.engine_help);content.addView(intro);
         heading(R.string.voice_settings);
         androidVoice=check(R.string.android_voice,preferences.getBoolean("androidVoice",true));
         Catalog.Language system=Catalog.find(java.util.Locale.getDefault().getLanguage(),java.util.Locale.getDefault().getCountry());

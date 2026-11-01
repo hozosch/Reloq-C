@@ -31,6 +31,11 @@ public final class UpdateDataTest {
         String sapi="reloq-c-android-arm64-0.2.201-preview13.apk";
         require(UpdateData.candidate(sapi,"https://github.com/hozosch/Reloq-C/releases/download/v0.2.201/"+sapi,
             18000000,digest,20200).code==20201);
+        String official="reloq-c-android-arm64-1.0.0.apk";
+        String officialUrl="https://github.com/hozosch/Reloq-C/releases/download/v1.0/"+official;
+        UpdateData.Package release=UpdateData.candidate(official,officialUrl,18000000,digest,20205);
+        require(release!=null&&release.version.equals("1.0.0")&&release.code==1000000);
+        require(UpdateData.candidate(official,officialUrl,18000000,digest,1000000)==null);
         for(String bad:new String[]{url.replace("github.com","example.net"),
             url.replace("/hozosch/","/other/"),url+"?x=1",url+"#file",
             url.replace("https:","http:"),url.replace("github.com","github.com:443"),

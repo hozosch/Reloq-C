@@ -152,7 +152,7 @@ def _parts(speech_sequence, *, base_pitch=50, voice_tags=False,
 class SynthDriver(BaseSynthDriver):
     name = "reloqC"
     # Translators: Name in NVDA's synthesizer selection dialog.
-    description = _("Eloquence C (experimental)")
+    description = _("Eloquence C")
     supportedCommands = {IndexCommand, CharacterModeCommand, PitchCommand, LangChangeCommand}
     supportedNotifications = {synthIndexReached, synthDoneSpeaking}
     supportedSettings = (

@@ -3908,8 +3908,9 @@ uint8_t engb61_evv_authored_data[] = {
     29,4,10,
     /* eti_s_1c4159, 4 bytes at 8591 */
     27,9,35,23,
+    /* electronic root: British LOT vowel, also inherited by suffixes. */
     /* eti_s_1c415d, 10 bytes at 8595 */
-    32,24,30,7,4,23,43,21,28,7,
+    32,24,30,7,4,23,38,21,28,7,
     /* eti_s_1c4167, 7 bytes at 8605 */
     32,24,27,4,28,13,20,
     /* eti_s_1c416e, 7 bytes at 8612 */
@@ -6614,8 +6615,9 @@ uint8_t engb61_evv_authored_data[] = {
     21,40,4,26,28,10,14,4,31,21,3,28,22,
     /* eti_s_1c64f2, 6 bytes at 17704 */
     21,49,35,3,29,13,
+    /* o'clock: the same British LOT vowel as the native clock entry. */
     /* eti_s_1c64f8, 5 bytes at 17710 */
-    35,7,24,43,7,
+    35,7,24,38,7,
     /* eti_s_1c64fd, 4 bytes at 17715 */
     26,34,21,14,
     /* eti_s_1c6501, 3 bytes at 17719 */

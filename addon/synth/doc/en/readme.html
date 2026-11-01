@@ -10,7 +10,7 @@
 <ol>
 <li>Download a <code>.nvda-addon</code> file from <a href="https://github.com/hozosch/Reloq-C/releases">Releases</a> when a package is available there.</li>
 <li>Open it with NVDA, confirm installation and restart NVDA.</li>
-<li>Press <strong>NVDA+Control+S</strong>, choose <strong>Eloquence C (experimental)</strong> and confirm.</li>
+<li>Press <strong>NVDA+Control+S</strong>, choose <strong>Eloquence C</strong> and confirm.</li>
 <li>Choose a language and voice in NVDA&#39;s <strong>Speech</strong> settings.</li>
 </ol>
 <p>The repository source ZIP is not an installable add-on. See the <a href="https://download.nvaccess.org/documentation/en/userGuide.html">NVDA user guide</a> for general NVDA instructions.</p>
@@ -109,7 +109,7 @@
 <p>Edits to selected files and files in the dictionary folder are detected in the background, including newly created files and editor-style file replacements. Invalid data leaves the last valid set active. Community updates refresh the files in this add-on folder. Selected own files and locally edited or removed dictionary files are preserved. A locally edited volume takes priority over the downloaded volume. No additional editing folder is created in NVDA’s main directory.</p>
 <p>Under <strong>Add-on updates</strong>, choose <strong>Check for add-on updates</strong> to check published GitHub Releases. If a newer package is available, <strong>Download and install update</strong> checks the download and opens NVDA’s normal installation and confirmation flow. Checks run only when requested. If no package has been published, the panel says so. <strong>Update dictionaries now</strong> remains independent of package updates.</p>
 <h2>Reporting problems</h2>
-<p>The project is still experimental. The user confirmed the earlier American English dictionary freeze and subsequent initialization delay as resolved in 0.2.190. Skipped Greek letters in Finnish and Korean sentences have been traced to NVDA symbol processing before the characters reach the synthesis core. See the <a href="https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md">technical work status</a> for details.</p>
+<p>ReLoq C 1.0 is the first official release. NVDA can process symbols before sending text to the synthesizer; its symbol settings therefore also affect which characters reach ReLoq. See the <a href="https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md">technical work status</a> for details.</p>
 <p>When <a href="https://github.com/hozosch/Reloq-C/issues">reporting an issue</a>, include a short example, language, voice, version, sample rate and whether dictionaries are enabled. Explain whether speech stops, pronunciation is wrong or NVDA itself exits.</p>
 </body>
 </html>

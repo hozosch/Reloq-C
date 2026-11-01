@@ -1,4 +1,16 @@
-# Technischer Arbeitsstand: 0.2.205
+# Technischer Arbeitsstand: 1.0
+
+## 1.0: Offizielle Version und britisches Englisch
+
+Das erste offizielle Release heißt 1.0. Die Paketversion 1.0.0 bleibt mit den
+bisherigen Update-Prüfungen kompatibel. Produktnamen verlieren ihre sichtbaren
+Testzusätze; technische Installationskennungen und das Android-Zertifikat bleiben
+für Updates erhalten. Der bisher veröffentlichte Teststand wird nach erfolgreicher
+Veröffentlichung der vollständigen drei Pakete wieder als interner Entwurf geführt.
+
+Zwei britische Wörterbucheinträge verwenden nun den vorhandenen LOT-Laut
+statt des US-Vokals: o’clock und der Stamm electronic. Die normale Stamm-,
+Beugungs- und Kompositaverarbeitung bleibt erhalten.
 
 ## 0.2.205: Erstes Paketrelease, Wörterbuchstämme und Pausenkürzung
 

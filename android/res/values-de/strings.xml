@@ -9,7 +9,7 @@
     <string name="download_update">Download im Browser öffnen</string>
     <string name="update_failed">Update fehlgeschlagen: %1$s</string>
     <string name="browser_update">Download geöffnet. Nutze deinen Browser und die normale Android-Installation. Lass Play Protect eingeschaltet.</string>
-    <string name="preview_help">Offline-Sprachausgabe zum Testen, Version 0.2.201. Wähle eine Sprache und Stimme für die Sprachprobe oder ReLoq C Preview in den Android-Einstellungen zur Text-in-Sprache-Ausgabe.</string>
+    <string name="engine_help">Offline-Sprachausgabe. Wähle eine Sprache und Stimme für die Sprachprobe oder ReLoq C in den Android-Einstellungen zur Text-in-Sprache-Ausgabe.</string>
     <string name="language">Sprache</string>
     <string name="profile">Stimme</string>
     <string name="sample_rate">Abtastrate</string>
@@ -20,7 +20,7 @@
     <string name="system_settings">Android-Spracheinstellungen</string>
     <string name="initializing">Sprachausgabe wird initialisiert</string>
     <string name="ready">Sprachausgabe bereit</string>
-    <string name="unavailable">Sprachausgabe nicht verfügbar. Öffne die Android-Spracheinstellungen und wähle ReLoq C Preview.</string>
+    <string name="unavailable">Sprachausgabe nicht verfügbar. Öffne die Android-Spracheinstellungen und wähle ReLoq C.</string>
     <string-array name="pause_modes">
         <item>Nie</item>
         <item>Am Ende</item>

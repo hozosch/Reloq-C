@@ -258,7 +258,7 @@ def main(inspect_adapter=None):
                 assert driver.voice == "1"
                 assert list(driver.availableVoices) == list(map(str, range(1, 9)))
                 german_ui = ui_language.replace("-", "_").split("_", 1)[0] == "de"
-                assert driver.description == ("Eloquence C (experimentell)" if german_ui else "Eloquence C (experimental)")
+                assert driver.description == "Eloquence C"
                 assert driver.availableLanguages["de_DE"].displayName == "German"
                 assert isinstance(driver.availableLanguages["de_DE"], sys.modules["synthDriverHandler"].LanguageInfo)
                 assert [v.displayName for v in driver.availableVoices.values()] == [

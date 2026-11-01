@@ -42,6 +42,14 @@ class Updates(unittest.TestCase):
             with self.subTest(values=values), self.assertRaises(ValueError):
                 select([{'assets': [{**self.asset, **values}]}], '0.2.196')
 
+    def test_first_official_release_updates_existing_test_installations(self):
+        name = 'reloq-c-synth-experimental-x64-1.0.0.nvda-addon'
+        asset = {**self.asset, 'name': name, 'browser_download_url':
+                 'https://github.com/hozosch/Reloq-C/releases/download/v1.0/' + name}
+        for installed in ('0.2.192', '0.2.204', '0.2.205'):
+            self.assertEqual(select([{'assets': [asset]}], installed).version, '1.0.0')
+        self.assertIsNone(select([{'assets': [asset]}], '1.0.0'))
+
     def test_streamed_download_then_reject_corrupt_truncated_and_oversized(self):
         update = select(self.feed, '0.2.196')
         with tempfile.TemporaryDirectory() as folder:

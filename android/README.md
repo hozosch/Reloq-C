@@ -1,24 +1,24 @@
-# Android ARM64 preview
+# Android ARM64
 
-ReLoq C Preview uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `0.2.205-preview17` targets ARM64 (`arm64-v8a`), Android 8/API 26
+ReLoq C uses the same C pronunciation and acoustic core as the NVDA
+add-on. Version `1.0.0` targets ARM64 (`arm64-v8a`), Android 8/API 26
 or later. Speech runs offline. Network access is used only when you explicitly update pronunciation dictionaries or check for an app update. Package downloads open in the browser.
 
 ## Install or update
 
-Install `reloq-c-android-arm64-0.2.205-preview17.apk` over the existing preview.
+Release **1.0** is packaged as **1.0.0**. Install `reloq-c-android-arm64-1.0.0.apk` over the existing app.
 The package remains `org.reloq.tts.preview`, the preview signing certificate is
-unchanged, and versionCode increases to 20205. Android can therefore
+unchanged, and versionCode increases to 1000000. Android can therefore
 update the existing app and retain its settings. Do not uninstall it first.
 
-Open **ReLoq C Preview** to adjust its settings or read a test text. To use it
+Open **ReLoq C** to adjust its settings or read a test text. To use it
 with TalkBack or another client, open **Android speech settings** and choose
-**ReLoq C Preview** as the preferred text-to-speech engine. All 14 language
+**ReLoq C** as the preferred text-to-speech engine. All 14 language
 variants and eight named voice presets are available. Both Chinese scripts
 use the single Mandarin Chinese module; Japanese retains its existing analysis.
 
 The speech engine and live settings have been confirmed in practical use.
-This APK retains the preview identity so existing installations update in place.
+This APK retains its existing technical installation identity so test installations update in place.
 
 ## Voice and output settings
 
@@ -173,7 +173,7 @@ The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 ```sh
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
-python3 android/verify_apk.py dist/reloq-c-android-arm64-0.2.205-preview17.apk
+python3 android/verify_apk.py dist/reloq-c-android-arm64-1.0.0.apk
 ```
 
 Build verification checks signatures, the install-critical resource table,

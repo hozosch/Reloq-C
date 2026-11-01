@@ -462,15 +462,41 @@ static int phrase_prediction_frontend(void)
     return 0;
 }
 
+static int native_british_dictionary(void)
+{
+    /* Lexical data must use the existing British LOT phone, including
+     * inflection and compounds, while US pronunciations remain intact. */
+    static const char *const words[]={"o'clock","O'CLOCK","It is three o'clock.",
+        "electronic","ELECTRONIC","electronics","electronically",
+        "microelectronic","microelectronics","An electronic clock."};
+    for(int british=0;british<2;++british) {
+        for(size_t i=0;i<sizeof words/sizeof *words;++i) {
+            char phones[2048];struct reloq61_result result;
+            struct reloq61_request request={.language=british?0x10001:0x10000,
+                .annotations=1,.phonemes_only=1,.voice={0,50,65,30,0,0,98,100},
+                .text=words[i],.phonemes=phones,.phonemes_capacity=sizeof phones};
+            CHECK(!reloq61_generate(&request,&result));
+            CHECK(result.phonemes_length<sizeof phones);
+            for(size_t at=0;at<result.phonemes_length;++at)if(!phones[at])phones[at]=' ';
+            phones[result.phonemes_length]=0;
+            const char *wanted=i<3?(british?".1kl@k":".1klak"):
+                (british?".1tr@.0nIk":".1tra.0nIk");
+            CHECK(strstr(phones,wanted));
+        }
+    }
+    return 0;
+}
+
 int main(void)
 {
     int prediction=phrase_prediction_frontend();if(prediction)return prediction;
     int native=native_german_analysis();if(native)return native;
     native=native_german_gap_analysis();if(native)return native;
     int stream=native_phoneme_stream();if(stream)return stream;
+    int british=native_british_dictionary();if(british)return british;
     char version[20] = {0};
     eciVersion(version);
-    CHECK(!strcmp(version, "0.2.205.0"));
+    CHECK(!strcmp(version, "1.0.0.0"));
     int languages = 0;
     CHECK(eciGetAvailableLanguages(NULL, &languages) == 0 &&
           languages == 0);

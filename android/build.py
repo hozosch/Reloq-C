@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the offline ARM64 preview with official SDK/NDK tools and JDK 17.
+"""Build the offline ARM64 app with official SDK/NDK tools and JDK 17.
 
 No Gradle, original modules or audio files are involved. Builds resolve the
 current community dictionary master; synthesis itself is offline.
@@ -32,11 +32,11 @@ def main():
     parser.add_argument("--android-jar",type=Path)
     parser.add_argument("--jobs",type=int,default=4)
     parser.add_argument("--build-dir",type=Path,help="isolated Android build directory")
-    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-0.2.205-preview17.apk")
+    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-1.0.0.apk")
     parser.add_argument("--keystore",type=Path,default=HERE/"preview-debug.p12")
     parser.add_argument("--verified-dictionaries",action="store_true",
         help="use locally verified data after separately resolving its current master commit")
-    parser.add_argument("--upgrade-from",type=Path,help="require an in-place update over this signed preview APK")
+    parser.add_argument("--upgrade-from",type=Path,help="require an in-place update over this signed APK")
     args=parser.parse_args()
     if not args.sdk or not args.ndk or not args.java_home:
         parser.error("set --sdk, --ndk and --java-home (or their environment variables)")

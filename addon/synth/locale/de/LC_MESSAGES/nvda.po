@@ -2,7 +2,7 @@
 # The source language of the interface is English.
 msgid ""
 msgstr ""
-"Project-Id-Version: Eloquence C 0.2.192\n"
+"Project-Id-Version: Eloquence C 1.0.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-10-12 22:55+0300\n"
 "PO-Revision-Date: 2026-10-12 00:00+0000\n"
@@ -16,8 +16,8 @@ msgstr ""
 
 #. Translators: Name in NVDA's synthesizer selection dialog.
 #: addon/synth/synthDrivers/reloqC/__init__.py:161
-msgid "Eloquence C (experimental)"
-msgstr "Eloquence C (experimentell)"
+msgid "Eloquence C"
+msgstr "Eloquence C"
 
 #: addon/synth/synthDrivers/reloqC/__init__.py:165
 msgid "&Language"
@@ -255,9 +255,6 @@ msgstr "Bitte zuerst Eloquence C als Sprachausgabe auswählen."
 
 msgid "Pronunciation dictionaries"
 msgstr "Aussprachewörterbücher"
-
-msgid "Eloquence C"
-msgstr "Eloquence C"
 
 msgid "Use OK or Apply to save. Changes to selected .dic files are loaded automatically."
 msgstr "Mit OK oder Übernehmen speichern. Änderungen an eingebundenen .dic-Dateien werden automatisch geladen."

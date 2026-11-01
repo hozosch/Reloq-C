@@ -8,7 +8,7 @@ You need NVDA 2026.1 or later in a 64-bit process. The package contains a Window
 
 1. Download a `.nvda-addon` file from [Releases](https://github.com/hozosch/Reloq-C/releases) when a package is available there.
 2. Open it with NVDA, confirm installation and restart NVDA.
-3. Press **NVDA+Control+S**, choose **Eloquence C (experimental)** and confirm.
+3. Press **NVDA+Control+S**, choose **Eloquence C** and confirm.
 4. Choose a language and voice in NVDA's **Speech** settings.
 
 The repository source ZIP is not an installable add-on. See the [NVDA user guide](https://download.nvaccess.org/documentation/en/userGuide.html) for general NVDA instructions.
@@ -78,7 +78,7 @@ Under **Add-on updates**, choose **Check for add-on updates** to check published
 
 ## Reporting problems
 
-The project is still experimental. The user confirmed the earlier American English dictionary freeze and subsequent initialization delay as resolved in 0.2.190. Skipped Greek letters in Finnish and Korean sentences have been traced to NVDA symbol processing before the characters reach the synthesis core. See the [technical work status](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md) for details.
+ReLoq C 1.0 is the first official release. NVDA can process symbols before sending text to the synthesizer; its symbol settings therefore also affect which characters reach ReLoq. See the [technical work status](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md) for details.
 
 When [reporting an issue](https://github.com/hozosch/Reloq-C/issues), include a short example, language, voice, version, sample rate and whether dictionaries are enabled. Explain whether speech stops, pronunciation is wrong or NVDA itself exits.
 

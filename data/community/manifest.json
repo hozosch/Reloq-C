@@ -1,7 +1,7 @@
 {
   "repository": "eigencrow/IBMTTSDictionaries",
   "branch": "master",
-  "commit": "a23b0f9d9e64dc3156fb8c1795a7521bf173a285",
+  "commit": "c592561747722dd87cee87e3ac4a3b05e72278bc",
   "files": {
     "DEUmain.dic": {
       "sha": "fb8c156bbd28f1dceeed53e2527ed5e0370c6fa7",
@@ -20,8 +20,8 @@
       "size": 27988
     },
     "ENURoot.dic": {
-      "sha": "753db65257956d19e670093daed26276c76351f4",
-      "size": 2256511
+      "sha": "d40e47715fa87a6d17a66d3bd77c90116272a325",
+      "size": 2256666
     },
     "ENUabbr.dic": {
       "sha": "edfdaa94d633a08fe57d63dbd12294a1f40f6450",

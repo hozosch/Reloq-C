@@ -56,9 +56,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.verify.outputs.version }}
+          RELEASE_VERSION: ${{ steps.verify.outputs.release_version }}
         run: |
           set -euo pipefail
-          RELEASE_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.tag_name == \"v$VERSION\") | .id")
+          RELEASE_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.tag_name == \"v$RELEASE_VERSION\") | .id")
           if [ -n "$RELEASE_ID" ]; then
             gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" > /tmp/existing-release.json
             python3 - <<'PY'
@@ -75,11 +76,11 @@ jobs:
               open('/tmp/assets-already-verified', 'w').close()
           PY
           else
-            gh release create "v$VERSION" --target "$GITHUB_SHA" --title "ReLoq C $VERSION" --draft --notes-file "docs/releases/$VERSION.md"
-            RELEASE_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.tag_name == \"v$VERSION\") | .id")
+            gh release create "v$RELEASE_VERSION" --target "$GITHUB_SHA" --title "ReLoq C $RELEASE_VERSION" --draft --notes-file "docs/releases/$RELEASE_VERSION.md"
+            RELEASE_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.tag_name == \"v$RELEASE_VERSION\") | .id")
           fi
           if [ ! -f /tmp/assets-already-verified ]; then
-            gh release upload "v$VERSION" release-packages/*.exe release-packages/*.nvda-addon release-packages/*.apk --clobber
+            gh release upload "v$RELEASE_VERSION" release-packages/*.exe release-packages/*.nvda-addon release-packages/*.apk --clobber
           fi
           gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" > /tmp/release-assets.json
           python3 - <<'PY'
@@ -97,3 +98,24 @@ jobs:
                     open('/tmp/publish-release.json', 'w'))
           PY
           gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" --input /tmp/publish-release.json --jq .html_url
+      - name: Withdraw the superseded test release after official publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          request = json.load(open('.github/release.json'))
+          tag = request.get('supersedes_tag')
+          if not tag:
+              raise SystemExit(0)
+          repo = os.environ['GITHUB_REPOSITORY']
+          releases = json.loads(subprocess.check_output(['gh', 'api', f'repos/{repo}/releases?per_page=100']))
+          current = next(release for release in releases if release['tag_name'] == 'v' + request['release_version'])
+          assert not current['draft'] and len(current['assets']) == 3
+          previous = next((release for release in releases if release['tag_name'] == tag), None)
+          if previous and not previous['draft']:
+              subprocess.run(['gh', 'api', '--method', 'PATCH', f"repos/{repo}/releases/{previous['id']}",
+                              '--input', '-'], input=json.dumps({'draft': True}), text=True, check=True,
+                              stdout=subprocess.DEVNULL)
+              print(f'{tag} retained as an internal draft; official release is {current["tag_name"]}')
+          PY

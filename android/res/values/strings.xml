@@ -9,8 +9,8 @@
     <string name="download_update">Open download in browser</string>
     <string name="update_failed">Update failed: %1$s</string>
     <string name="browser_update">Download opened. Use your browser and Android’s normal installation flow. Keep Play Protect enabled.</string>
-    <string name="app_name">ReLoq C Preview</string>
-    <string name="preview_help">Offline speech preview, version 0.2.201. Choose a language and voice to test, or select ReLoq C Preview in Android text-to-speech settings.</string>
+    <string name="app_name">ReLoq C</string>
+    <string name="engine_help">Offline speech synthesis. Choose a language and voice to test, or select ReLoq C in Android text-to-speech settings.</string>
     <string name="language">Language</string>
     <string name="profile">Voice</string>
     <string name="sample_rate">Sample rate</string>
@@ -21,7 +21,7 @@
     <string name="system_settings">Android speech settings</string>
     <string name="initializing">Initializing speech engine</string>
     <string name="ready">Speech engine ready</string>
-    <string name="unavailable">Speech engine unavailable. Open Android speech settings and select ReLoq C Preview.</string>
+    <string name="unavailable">Speech engine unavailable. Open Android speech settings and select ReLoq C.</string>
     <string-array name="pause_modes">
         <item>Never</item>
         <item>At the end</item>
