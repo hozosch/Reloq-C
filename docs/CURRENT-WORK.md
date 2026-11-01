@@ -1,4 +1,21 @@
-# Technischer Arbeitsstand: 1.0
+# Technischer Arbeitsstand: 1.0.1
+
+## 1.0.1: Ursprünglicher S-Pegel und Textabbruch
+
+Die zusätzliche Anhebung von S und stimmhaftem S um 4 dB entfällt in den
+elf betroffenen Sprachpfaden. Andere Konsonanten und die drei Sprachen ohne
+diese Anhebung behalten ihre bisherigen Pegel.
+
+Überholte native Textanalyse reagiert früher auf Abbruch. Der native
+Rücksprung stellt auch bei verschachtelten Sprachaufrufen den Frame- und
+Workerzustand wieder her. Die folgende Ausgabe kann Sprache und geladene
+Wörterbücher weiterverwenden. Ein fehlgeschlagener Lautschriftabruf wird
+nicht mehr endlos wiederholt. Sprachergebnisse werden nicht zwischengespeichert.
+
+Der Erststart einer ununterbrochenen langen deutschen Anfrage bleibt von
+Textanalyse und Kurvenplanung abhängig. Die generelle Tastendrucklatenz
+ist deshalb weiter offen. Klangversuche für hohe Raten, S-Farbe und obere
+stimmhafte Anteile bleiben außerhalb dieses Releases.
 
 ## 1.0: Offizielle Version und britisches Englisch
 

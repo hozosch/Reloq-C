@@ -1,6 +1,6 @@
 # Eloquence C – Bedienungsanleitung
 
-Eloquence C ist die NVDA-Erweiterung des Projekts [ReLoq C](https://github.com/hozosch/Reloq-C). Sie entwickelt den Eloquence-Klang mit gezielten Aussprachekorrekturen, Unicode-Unterstützung und zusätzlichen Klangmöglichkeiten weiter. NVDA ist die erste Anbindung und dient derzeit zum Prüfen der Sprachausgabe. Für Android ARM64 und Windows SAPI5 gibt es Testversionen.
+Eloquence C ist die NVDA-Erweiterung des Projekts [ReLoq C](https://github.com/hozosch/Reloq-C). Sie entwickelt den Eloquence-Klang mit gezielten Aussprachekorrekturen, Unicode-Unterstützung und zusätzlichen Klangmöglichkeiten weiter. NVDA ist die erste Anbindung und dient derzeit zum Prüfen der Sprachausgabe. Derselbe Kern ist auch für Android ARM64 und Windows SAPI5 verfügbar.
 
 ## Installieren und auswählen
 
@@ -78,7 +78,7 @@ Unter **Add-on-Updates** prüft **Nach Add-on-Updates suchen** die veröffentlic
 
 ## Fehler melden
 
-ReLoq C 1.0 ist das erste offizielle Release. NVDA kann Symbole verarbeiten, bevor der Text die Sprachausgabe erreicht; seine Symbolaussprache beeinflusst daher, welche Zeichen bei ReLoq ankommen. Technische Details stehen im [Arbeitsstand](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md).
+ReLoq C 1.0.1 stellt die ursprünglichen S-Quellpegel wieder her und verbessert den Abbruch überholter Textanalyse. Weitere Klangabstimmungen für hohe Raten werden noch geprüft. NVDA kann Symbole verarbeiten, bevor der Text die Sprachausgabe erreicht; seine Symbolaussprache beeinflusst daher, welche Zeichen bei ReLoq ankommen. Technische Details stehen im [Arbeitsstand](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md).
 
 Für eine [Fehlermeldung](https://github.com/hozosch/Reloq-C/issues) helfen ein kurzer Beispieltext, Sprache, Stimme, Version, Abtastrate und die Angabe, ob Wörterbücher eingeschaltet sind. Beschreibe auch, ob die Ausgabe abbricht, ein Wort falsch klingt oder NVDA selbst beendet wird.
 

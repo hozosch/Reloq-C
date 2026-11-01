@@ -14,7 +14,7 @@ The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provide
 | Android | ARM64 `.apk` | Android 8 or later, ARM64 device |
 | Windows SAPI5 | `-setup.exe` | Installs x64 and x86 voices together on compatible Windows |
 
-Release **1.0** uses package version **1.0.0**. Install packages over an existing installation to retain settings. Existing Android package and signing identities, and the NVDA installation identity, are retained for in-place updates. Source archives are for developers and are not installable packages. [Release notes](docs/releases/1.0.md) describe the first public package release and its limits.
+Release **1.0.1** restores the original S/Z source levels and improves interruption of obsolete text analysis. Install packages over an existing installation to retain settings. Existing Android package and signing identities, and the NVDA installation identity, are retained for in-place updates. Source archives are for developers and are not installable packages. [Release notes](docs/releases/1.0.1.md) describe the update and its limits.
 
 ## Current features
 
@@ -39,7 +39,7 @@ The synthesizer is listed as **Eloquence C**. It requires NVDA 2026.1 or later i
 
 Install the `.nvda-addon` file from [Releases](https://github.com/hozosch/Reloq-C/releases) with NVDA, restart NVDA and press **NVDA+Control+S** to select **Eloquence C**. Choose your language and voice in NVDA's Speech settings. The ReLoq settings category manages dictionaries and checks for package updates on request.
 
-The [English user guide](docs/USER-GUIDE.en.md) and [German user guide](docs/USER-GUIDE.de.md) cover languages, settings and dictionaries. [Changes in 1.0](docs/changes/1.0.md) are documented separately.
+The [English user guide](docs/USER-GUIDE.en.md) and [German user guide](docs/USER-GUIDE.de.md) cover languages, settings and dictionaries. [Changes in 1.0.1](docs/changes/1.0.1.md) are documented separately.
 
 ## Android
 
