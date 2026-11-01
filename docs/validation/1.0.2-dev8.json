@@ -14,8 +14,8 @@
     },
     {
       "name": "reloq-c-eci-x64-1.0.2-dev8.zip",
-      "bytes": 18891196,
-      "sha256": "191a651ca7d915bfc0a2f79a47de50f9c360bc768c66bd8f5f7f519e5696f701"
+      "bytes": 18892484,
+      "sha256": "81b575fbfdf33bb7e317b9f1884a2ec39ff543630e9b2070e07a499ee16fdc6d"
     }
   ],
   "dll_sha256": "1c009da662c383a484b09868c00fc9483ff8a9a25c5d0425eb175cce0d8f0fb2",
@@ -65,7 +65,8 @@
     "nvda_driver_en": "24 language/schema cases; gettext, selectable, x64, FIFO, index/done, cancel/close passed",
     "nvda_driver_de": "24 language/schema cases; gettext, selectable, x64, FIFO, index/done, cancel/close passed",
     "windows_x64_PE_abi": "34 declared exports; private/host symbols hidden; cross-build passed",
-    "package_crc_manifest_docs_and_embedded_dll_identity": "passed"
+    "package_crc_manifest_docs_and_embedded_dll_identity": "passed",
+    "actual_eloquence64_profile_b_adapter_pcm_identities": 24
   },
   "voice_dsp_replay": {
     "native_frames": 46020,
@@ -101,7 +102,9 @@
     "v25_build_run": 41336133144,
     "v25_build_job": 124936238535,
     "v25_bundled_reloq_release": "1.0.1",
-    "development_fetch_mismatch": "Upstream dev fetch looks for packages.yml/nvda-addon; hearing previews use nvda-german-streaming.yml/nvda-german-streaming-test."
+    "development_fetch_mismatch": "Upstream dev fetch looks for packages.yml/nvda-addon; hearing previews use nvda-german-streaming.yml/nvda-german-streaming-test.",
+    "default_profile": "A: the upstream adapter does not select parameter 0x1011",
+    "profile_b_patch": "docs/integration/eloquence64-classic-profile.patch; optional per-language-handle selection; older DLL refusal is allowed; not sent upstream"
   },
   "limits": [
     "The user-reported 16-kHz voiced distortion has not been reliably reproduced as clipping. Its DSP tuning is deliberately unchanged; do not claim all perceived distortion is fixed.",
