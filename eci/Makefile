@@ -118,15 +118,19 @@ test_reloq_eci: $(OBJECTS)
 test_reloq_german_context: ../tests/test_reloq_german_context.c $(OBJECTS) $(RULES61)
 	$(CC) $(CPPFLAGS) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -I../include $< $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections -lm -o $@
 
+test_reloq_german_cancel: ../tests/test_reloq_german_cancel.c $(OBJECTS) $(RULES61)
+	$(CC) $(CPPFLAGS) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -I../include -I../vendor/openevv61/include -I../vendor/openevv61/src/port $< $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections,--wrap=reloq61_generate_phonemes -lm -o $@
+
 test_reloq_hash_delete: ../tests/test_reloq_hash_delete.c $(RULES61)
 	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -DEVV_ARENA=1 -I../vendor/openevv61/src/port $< $(RULES61) -pthread -lm -o $@
 
 test_reloq_rate_dispatch: ../tests/test_reloq_rate_dispatch.c ../src/reloq_rate_transfer.c $(HEADERS)
 	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< -Wl,--gc-sections -lm -o $@
 
-test: test_reloq_eci test_reloq_german_context test_reloq_hash_delete test_reloq_rate_dispatch test_reloq_silence_cut libreloq_eci.so
+test: test_reloq_eci test_reloq_german_context test_reloq_german_cancel test_reloq_hash_delete test_reloq_rate_dispatch test_reloq_silence_cut libreloq_eci.so
 	./test_reloq_eci
 	./test_reloq_german_context
+	./test_reloq_german_cancel
 	./test_reloq_hash_delete
 	./test_reloq_rate_dispatch
 	./test_reloq_silence_cut
@@ -148,6 +152,7 @@ test: test_reloq_eci test_reloq_german_context test_reloq_hash_delete test_reloq
 	python3 -B ../nvda/test_eci_sample_rates_transport.py
 	python3 -B ../nvda/test_eci_transport.py
 	python3 -B ../nvda/test_eci_dictionary_transport.py
+	python3 -B ../nvda/test_eci_analysis_cancel.py
 	python3 -B ../nvda/test_eci_playback_queue.py
 	python3 -B ../nvda/test_eci_player_watchdog.py
 	python3 -B ../nvda/test_eci_english_native.py
@@ -184,6 +189,6 @@ windows-abi: $(WINDOWS_OUTPUT)
 	python3 verify_pe_exports.py $(WINDOWS_OUTPUT) --arch $(WINDOWS_ARCH) --objdump $(WINDOWS_OBJDUMP) --header ../include/reloq_eci.h
 
 clean:
-	rm -f libreloq_eci.so test_reloq_eci test_reloq_german_context test_reloq_hash_delete test_reloq_rate_dispatch test_reloq_silence_cut eci.dll libeci.dll.a eci_windows_x64_abi_probe.exe eci_windows_x64_runtime_smoke.exe
+	rm -f libreloq_eci.so test_reloq_eci test_reloq_german_context test_reloq_german_cancel test_reloq_hash_delete test_reloq_rate_dispatch test_reloq_silence_cut eci.dll libeci.dll.a eci_windows_x64_abi_probe.exe eci_windows_x64_runtime_smoke.exe
 	rm -rf build
 .DELETE_ON_ERROR:

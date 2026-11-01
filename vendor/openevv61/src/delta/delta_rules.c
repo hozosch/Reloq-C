@@ -1385,6 +1385,7 @@ static delta_rule_cfn delta_native_walk(const delta_language *lang, int n)
 
 /* How deep the rules are, so the outermost can be told from the rest. */
 static __thread int delta_rule_depth;
+static __thread void *delta_rule_owner;
 
 int32_t delta_run_rule(void *state, const delta_rule *r, const int32_t *args,
                        int nargs)
@@ -1481,6 +1482,13 @@ int32_t delta_run_rule(void *state, const delta_rule *r, const int32_t *args,
        moment later, so an error in between names an empty buffer -- would
        fall back to a landing whose frame had already returned. */
     mark = evv_land_mark();
+    /* A provider may enter another machine while its parent is inside a
+     * rule callback (e.g. Chinese's US-English branch). Its forced unwind
+     * must land inside that request so its scoped callbacks and worker
+     * state can be restored before the parent resumes. */
+    void *const previous_owner=delta_rule_owner;
+    const int previous_depth=delta_rule_depth;
+    if(previous_owner!=state) {delta_rule_owner=state;delta_rule_depth=0;}
 
     /* The outermost rule of a run plants somewhere for a forced error
        backtrack to go when the rule that asks for one never planted its own.
@@ -1490,11 +1498,19 @@ int32_t delta_run_rule(void *state, const delta_rule *r, const int32_t *args,
        wrong place. See the note in src/port/evv_land.c. */
     if (delta_rule_depth == 0) {
         unsigned long long outer[EVV_LAND_WORDS];
+        const size_t frame_mark=evv_frame_mark();
+        const uintptr_t previous_outer=evv_land_current_outermost();
 
         if (EVV_LAND_SAVE(outer) != 0) {
-            evv_land_no_outermost();
+            if(previous_outer)evv_land_outermost(previous_outer);
+            else evv_land_no_outermost();
             evv_land_release(mark);
-            delta_rule_depth = 0;
+            /* A forced outer unwind skips the C rules' normal frame pops.
+             * Reuse their arena addresses on the next request instead of
+             * growing both the frame cursor and its cached landing table. */
+            evv_frame_restore(frame_mark);
+            delta_rule_owner=previous_owner;
+            delta_rule_depth=previous_depth;
 #if EVV_RULE_TRACE_ENABLED
             delta_rule_here = was;
 #endif
@@ -1507,7 +1523,8 @@ int32_t delta_run_rule(void *state, const delta_rule *r, const int32_t *args,
         answer = (fn != 0) ? fn(state, args, nargs)
                            : run_bytecode(state, r, args, nargs);
         delta_rule_depth--;
-        evv_land_no_outermost();
+        if(previous_outer)evv_land_outermost(previous_outer);
+        else evv_land_no_outermost();
     } else {
         delta_rule_depth++;
         answer = (fn != 0) ? fn(state, args, nargs)
@@ -1515,6 +1532,8 @@ int32_t delta_run_rule(void *state, const delta_rule *r, const int32_t *args,
         delta_rule_depth--;
     }
     evv_land_release(mark);
+    delta_rule_owner=previous_owner;
+    delta_rule_depth=previous_depth;
 
 #if EVV_RULE_TRACE_ENABLED
     delta_rule_here = was;

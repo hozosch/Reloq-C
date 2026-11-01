@@ -9,6 +9,7 @@
 #include "delta.h"
 #include "evv_arena.h"
 #include "eci_eloqc.h"
+#include "reloq61.h"
 
 #define AT(field, offset) \
     typedef char field##_at_##offset[offsetof(delta_state, field) == offset ? 1 : -1]
@@ -851,9 +852,25 @@ void remfence(delta_state *d, int8_t idx)
     UNSETFENCE(d, EVV_AT(int32_t *, d->lpta.node), idx);
 }
 
+static _Thread_local struct reloq61_cancel_check analysis_cancel;
+static _Thread_local unsigned analysis_cancel_polls;
+struct reloq61_cancel_check reloq61_cancel_scope(struct reloq61_cancel_check next)
+{
+    struct reloq61_cancel_check previous=analysis_cancel;
+    analysis_cancel=next;analysis_cancel_polls=0;
+    return previous;
+}
 int32_t deltaErrorThrown(delta_state *d)
 {
-    return EVV_AT(delta_vars *, d->vars)->error_thrown;
+    delta_vars *v=EVV_AT(delta_vars *, d->vars);
+    /* Native C rule entries already test the error latch while unwinding.
+     * Connect the owner's cancellation there, before phoneme/PCM output is
+     * available. Sampling the atomic owner flag every 64 entries keeps the
+     * normal grammar path inexpensive; no other thread touches this state. */
+    if(!v->error_thrown && analysis_cancel.check &&
+       !(++analysis_cancel_polls&63u) && analysis_cancel.check(analysis_cancel.context))
+        v->error_thrown=1;
+    return v->error_thrown;
 }
 
 /* Nothing is left once the record at the unwind point is the bottom marker. */

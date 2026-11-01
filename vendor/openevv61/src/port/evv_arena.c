@@ -1018,6 +1018,16 @@ void *evv_frame_push(size_t n)
     return p;
 }
 
+size_t evv_frame_mark(void)
+{
+    return fs_base ? (size_t)(fs_top-fs_base) : 0;
+}
+
+void evv_frame_restore(size_t mark)
+{
+    if(fs_base && mark<=(size_t)(fs_end-fs_base))fs_top=fs_base+mark;
+}
+
 void evv_frame_pop(void *p)
 {
     if (p != 0)

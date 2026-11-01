@@ -331,6 +331,9 @@ static int process_spans(struct rule_plan *s,int final)
     }
     return render_until(s,limit);
 }
+static int rule_cancelled(void *context)
+{return reloq_session_cancelled(context);}
+
 int reloq_language_rules_render(int language,const unsigned char *text,size_t length,int tags,int native_volume,
     const struct reloq_german_generic_settings *settings,
     const struct reloq_german_generic_index *indices,size_t index_count,
@@ -418,8 +421,14 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         .index_sink=index_sink,.context=context};
     plan.playback=&playback;
     struct reloq61_result r;
+    /* A refused PCM/span callback need not stop the frontend's remaining
+     * input. Let native text rules observe the same owner cancellation so
+     * a following NVDA utterance does not wait for the old text's EOF. */
+    struct reloq61_cancel_check previous_cancel=reloq61_cancel_scope(
+        (struct reloq61_cancel_check){rule_cancelled,session});
     int status=reloq61_generate_with_pauses(&q,&r,settings->pause_mode,
         playback.pause_mode?take_pause:NULL,&plan);
+    reloq61_cancel_scope(previous_cancel);
     if(reloq_session_cancelled(session)){result=RELOQ_DE_UTTERANCE_CANCELLED;goto done;}
     if(plan.memory)goto memory;
     if(playback.result){result=playback.result;goto done;}

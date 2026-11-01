@@ -46,8 +46,19 @@ static int put(struct bytes *b,const unsigned char *p,size_t n)
     }
     memcpy(b->p+b->n,p,n);b->n+=n;b->p[b->n]=0;return 0;
 }
+struct phoneme_output {
+    struct bytes *bytes;
+    int (*cancelled)(void *);
+    void *context;
+};
 static int append_phonemes(void *context,const char *data,size_t length)
-{return put(context,(const unsigned char *)data,length);}
+{
+    struct phoneme_output *out=context;
+    /* Keep output boundaries cancellable too: a stop after the last rule
+     * check must not append another phonetic chunk. */
+    if(out->cancelled&&out->cancelled(out->context))return 1;
+    return put(out->bytes,(const unsigned char *)data,length);
+}
 static int groups(const unsigned char *s,size_t n,struct group *g,size_t count)
 {
     struct reloq_german_annotation_cursor c={0};
@@ -332,14 +343,20 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
     struct reloq61_german_capture capture={.words=facts,.capacity=count,
         .phrases=phrases,.phrase_capacity=prediction?count:0};
     struct reloq61_german_capture *previous=reloq61_german_capture_scope(facts?&capture:NULL);
-    int generated=reloq61_generate_phonemes(&q,&r,append_phonemes,&spoken);
+    struct phoneme_output output_sink={&spoken,cancelled,context};
+    struct reloq61_cancel_check previous_cancel=reloq61_cancel_scope(
+        (struct reloq61_cancel_check){cancelled,context});
+    int generated=reloq61_generate_phonemes(&q,&r,append_phonemes,&output_sink);
+    reloq61_cancel_scope(previous_cancel);
     reloq61_german_capture_scope(previous);
     /* Native input is no longer needed while the final annotation grows. */
     free(input.p);input=(struct bytes){0};
     phonemes=spoken.p;
+    /* Cancellation is not a rejected grammar plan. In particular it must
+     * not trigger the whole-text fallback after the native rules unwind. */
+    if(cancelled&&cancelled(context)){result=2;goto done;}
     if(generated){if(r.error==1)goto memory;goto done;}
     if(facts&&(capture.overflow||capture.count!=count))memset(facts,0,count*sizeof *facts);
-    if(cancelled&&cancelled(context)){result=2;goto done;}
     if(!groups(phonemes,r.phonemes_length,native,count))goto done;
     size_t tail=final_tail(units,count,phonemes,native,r.phonemes_length);
     if(boundary(&output,annotation,old[0].open,NULL,0))goto memory;

@@ -166,6 +166,9 @@ void evv_arena_outstanding(const char *when);
 
 void *evv_frame_push(size_t n);
 void  evv_frame_pop(void *p);
+/* Outermost native rule calls restore this cursor after a forced unwind. */
+size_t evv_frame_mark(void);
+void evv_frame_restore(size_t mark);
 /* Called by whatever runs a thread, once its body has returned. */
 void  evv_frame_done(void);
 

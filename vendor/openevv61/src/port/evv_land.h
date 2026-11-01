@@ -77,6 +77,7 @@ int   evv_land_mark(void);
 void  evv_land_release(int mark);
 void  evv_land_outermost(uintptr_t name);
 void  evv_land_no_outermost(void);
+uintptr_t evv_land_current_outermost(void);
 /* Every place this thread made, given back once the thread is done. */
 void  evv_land_done(void);
 

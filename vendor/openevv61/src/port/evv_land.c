@@ -186,6 +186,11 @@ void evv_land_no_outermost(void)
     land_outer_set = 0;
 }
 
+uintptr_t evv_land_current_outermost(void)
+{
+    return land_outer_set ? land_outer : 0;
+}
+
 /* The table is kept for the life of the thread, as the comment over it says,
    and this is the end of that: called with the thread's frames given back,
    so none of these names can be planted again. */

@@ -321,7 +321,11 @@ THIS void stb_sendPhonemesToUser(SynthThread *t)
         if (fetch(ST_ENGINE(t), ST_ENGPHON(t) + ST_PHONHELD(t),
                   want - ST_PHONHELD(t), &got)) {
             stb_postEngineError(t);
-            continue;
+            /* A failed/aborted engine cannot produce another phoneme
+             * buffer. Retrying the same read spins forever; retaining the
+             * partial buffer would also replay stale output at final flush. */
+            ST_PHONHELD(t) = 0;
+            return;
         }
         ST_PHONHELD(t) += got;
         if (ST_PHONHELD(t) != want) {
