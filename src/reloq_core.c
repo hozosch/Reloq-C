@@ -1858,6 +1858,21 @@ int reloq_core_voiced_frame_render_owned(
         return -1;
 
     if(shaped && params->af_level) {
+        int native16=0;
+        /* Keep the accepted broad p/f family and its direct AB branch. */
+        int broad=params->bypass_level && !params->af_levels[2] &&
+            !params->af_levels[3] && !params->af_levels[4];
+        if(state->noise_transfer.trial_profile && noise->sample_rate>=16000 && !broad) {
+            float original_f[8];
+            for(unsigned j=0;j<8;++j)original_f[j]=params->tract.oral[j].frequency_hz;
+            struct reloq_core_clock clock16=reloq_core_clock_for_rate(16000);
+            struct reloq_core_frication_bank reference16={0};
+            if(!reloq_core_frication_bank_configure(&reference16,&clock16,original_f,
+                params->af_bandwidths,params->af_levels,5,params->af_level,0,0,0))
+                native16=reloq_rate_transfer_prepare_native16(&state->noise_transfer,
+                    &reference16,&noise->fricatives,&state->noise_profile,noise->sample_rate);
+        }
+        if(!native16) {
         float mix=params->s_frication?(noise->sample_rate==16000?.25f:.5f):0;
         struct reloq_core_frication_bank low={0},high={0};
         if(mix) {
@@ -1875,6 +1890,7 @@ int reloq_core_voiced_frame_render_owned(
         reloq_rate_transfer_prepare_noise_mix_profile(&state->noise_transfer,&low,&high,
             &noise->fricatives,&state->noise_profile,noise->sample_rate,mix,
             params->s_frication==2);
+        }
     }
     if(!shaped && state->frication_reference_rate>0 && noise->sample_rate>state->frication_reference_rate) {
         struct reloq_core_frication_bank original={0};

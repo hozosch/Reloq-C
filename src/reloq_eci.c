@@ -148,6 +148,7 @@ struct reloq_eci_engine {
     int pause_mode;
     int head_size,roughness,breathiness,gender;
     int language;
+    int high_rate_profile;
     int error;
     int last_synthesis_error;
     int failure_stage;
@@ -368,9 +369,50 @@ static void leading_models(const unsigned char *text,size_t length,
     }
 }
 
-/* The generic renderer keeps every AddText fragment, all indices and one
- * utterance-wide phrase plan in the same native ECI transaction. Its index
- * sink is invoked at actual PCM word boundaries, not during text preflight. */
+struct generic_stream_output {
+    struct reloq_eci_engine *engine;
+    const struct index_mark *marks;
+    size_t mark_count;
+    struct preflight_cancel *cancel;
+    struct pcm_bridge bridge;
+    struct reloq_german_generic_settings settings;
+    struct reloq_german_generic_continuation continuation;
+    int status,native_volume;
+};
+static int generic_stream_part(void *context,const unsigned char *annotation,size_t length,
+    const struct reloq_german_word_features *features,size_t feature_count,
+    const struct reloq_german_best_effort_boundary *boundaries,size_t count,
+    size_t first,int final)
+{
+    struct generic_stream_output *s=context;
+    struct reloq_german_generic_index *indices=NULL;
+    if(first>s->mark_count || count>s->mark_count-first || count>SIZE_MAX/sizeof *indices) {
+        s->status=RELOQ_ECI_INVALID;return 1;
+    }
+    if(count) {
+        indices=malloc(count*sizeof *indices);
+        if(!indices){s->status=RELOQ_ECI_MEMORY;return 1;}
+        for(size_t i=0;i<count;++i)indices[i].annotation_offset=boundaries[i].annotation_offset;
+    }
+    s->bridge.marks=count?s->marks+first:NULL;s->bridge.mark_count=count;
+    struct reloq_german_utterance_info info={0};
+    int rendered=reloq_german_generic_render_text_part(annotation,length,&s->settings,
+        features,feature_count,indices,count,s->engine->text_session,
+        send_batched_pcm,send_generic_index,&s->bridge,&info,s->native_volume,
+        &s->continuation,final);
+    free(indices);
+    s->status=rendered==RELOQ_DE_UTTERANCE_CANCELLED ||
+        reloq_session_cancelled(s->engine->text_session) || preflight_cancelled(s->cancel)?RELOQ_ECI_CANCELLED:
+        rendered==RELOQ_DE_UTTERANCE_OK?RELOQ_ECI_OK:
+        rendered==RELOQ_DE_UTTERANCE_MEMORY?RELOQ_ECI_MEMORY:
+        rendered==RELOQ_DE_UTTERANCE_UNCOVERED?RELOQ_ECI_UNSUPPORTED_TEXT:
+        rendered==RELOQ_DE_UTTERANCE_SINK && s->bridge.callback_refused?RELOQ_ECI_CALLBACK:RELOQ_ECI_RENDER;
+    return s->status!=RELOQ_ECI_OK;
+}
+
+/* All AddText fragments share one ECI transaction and one acoustic clock.
+ * Complete admitted German phrases can begin rendering during analysis;
+ * indices are delivered at PCM word boundaries, not during preflight. */
 static int synthesize_generic(struct reloq_eci_engine *e,
                               const unsigned char *phrase, size_t length,
                               size_t original_length,
@@ -399,7 +441,7 @@ static int synthesize_generic(struct reloq_eci_engine *e,
         int reset=reloq_session_reset(e->text_session);
         if(preflight_cancelled(&cancel_check))reloq_session_cancel(e->text_session);
         unlock_session(&e->session_lock);
-        struct pcm_bridge bridge={.engine=e,.session=e->text_session,.marks=marks,.mark_count=mark_count,.inline_volume=1};
+        struct pcm_bridge bridge={.engine=e,.session=e->text_session,.marks=marks,.mark_count=mark_count,.inline_volume=0};
         struct reloq_german_generic_settings settings={e->generic_rate,e->generic_pitch,
             e->native_volume_active?100:e->generic_volume,e->native_speed_active?(e->native_speed?e->native_speed:-1):0,
             e->native_pitch_active?e->native_pitch+1:0,e->native_inflection_active?e->native_inflection+1:0,
@@ -412,7 +454,7 @@ static int synthesize_generic(struct reloq_eci_engine *e,
             unsigned reference=sample_hz(e->sample_rate_code)>=16000?(head<=(gender?40:30)?4u:5u):0;
             if(reloq_session_source_levels(e->text_session,source,gender?-3:-5,6,gender?-7:0,reference))reset=1;
         }
-        int rendered=reset?RELOQ_DE_UTTERANCE_INVALID:reloq_language_rules_render(e->language,phrase,length,e->process_tags||admitted,e->native_volume_active?e->native_volume:100,
+        int rendered=reset?RELOQ_DE_UTTERANCE_INVALID:reloq_language_rules_render(e->language,phrase,length,e->process_tags||admitted,100,
             &settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
             send_pcm,send_generic_index,&bridge);
         free(english_indices);free(english_pitch);
@@ -474,6 +516,30 @@ static int synthesize_generic(struct reloq_eci_engine *e,
     phonetic_input = !admitted && !e->process_tags && first < length && length - first >= 2 &&
                      phrase[first] == '`' && phrase[first + 1] == '[';
     int result = RELOQ_ECI_OK;
+#ifndef RELOQ_GERMAN_STREAMING
+#define RELOQ_GERMAN_STREAMING 1
+#endif
+    const int can_stream=RELOQ_GERMAN_STREAMING && !phonetic_input && !pitch_count && length>=1024 &&
+        !e->lexicon.rows && !memchr(phrase,'`',length);
+    struct generic_stream_output streaming={.engine=e,.marks=marks,.mark_count=mark_count,
+        .cancel=&cancel_check,.status=RELOQ_ECI_OK,
+        .native_volume=e->process_tags?(e->native_volume_active?e->native_volume:e->generic_volume):-1,
+        .bridge={.engine=e,.session=e->text_session,.inline_volume=e->process_tags,
+            .pcm_period=pcm_batch_period(e),.pcm_early=pcm_startup_samples(e)},
+        .settings={e->generic_rate,e->generic_pitch,
+            (e->native_volume_active || e->process_tags)?100:e->generic_volume,
+            e->native_speed_active?(e->native_speed?e->native_speed:-1):0,
+            e->native_pitch_active?e->native_pitch+1:0,
+            e->native_inflection_active?e->native_inflection+1:0,
+            e->pause_mode,e->head_size+1,e->roughness,e->breathiness,e->gender}};
+    const struct reloq_german_text_stream stream={generic_stream_part,&streaming};
+    if(can_stream) {
+        lock_session(&e->session_lock);
+        int reset=reloq_session_reset(e->text_session);
+        if(preflight_cancelled(&cancel_check))reloq_session_cancel(e->text_session);
+        unlock_session(&e->session_lock);
+        if(reset!=RELOQ_SESSION_OK){result=RELOQ_ECI_RENDER;goto generic_done;}
+    }
     if (!phonetic_input && boundary_count &&
         generic_source_boundaries(phrase, length, source_marks, boundary_count,
                                   boundaries)) {
@@ -499,13 +565,23 @@ static int synthesize_generic(struct reloq_eci_engine *e,
             }
             input = ordinary_text;
         }
-        int converted = reloq_german_best_effort_plan_tags_checked(
+        int converted = reloq_german_best_effort_stream_tags_checked(
             input, length, e->lexicon.rows ? &e->lexicon.view : NULL,
             e->process_tags?1:admitted?2:0,
             &annotation, &annotation_length,
             &guessed, &bad_offset, boundaries, boundary_count,
-            &features,&feature_count,preflight_cancelled, &cancel_check);
+            &features,&feature_count,preflight_cancelled, &cancel_check,can_stream?&stream:NULL);
         free(ordinary_text);
+        if(converted==3 || streaming.status!=RELOQ_ECI_OK) {
+            result=streaming.status;
+            if(result==RELOQ_ECI_OK && flush_pcm(&streaming.bridge))
+                result=streaming.bridge.callback_refused?RELOQ_ECI_CALLBACK:RELOQ_ECI_CANCELLED;
+            if(preflight_cancelled(&cancel_check))result=RELOQ_ECI_CANCELLED;
+            if(result==RELOQ_ECI_UNSUPPORTED_TEXT) {
+                e->failure_stage=RELOQ_ECI_STAGE_ACOUSTIC;e->failure_utf8_offset=-1;
+            }
+            goto generic_done;
+        }
         if (converted) {
             if (preflight_cancelled(&cancel_check) || converted == 2)
                 result = RELOQ_ECI_CANCELLED;
@@ -771,7 +847,7 @@ int ECICALL eciReset(ECIHand handle)
 void ECICALL eciVersion(char *buffer)
 {
     /* The public ECI convention promises at least twenty writable bytes. */
-    if (buffer) memcpy(buffer, "1.0.1.0", sizeof "1.0.1.0");
+    if (buffer) memcpy(buffer, "1.0.2.0", sizeof "1.0.2.0");
 }
 
 int ECICALL eciGetAvailableLanguages(unsigned int *languages, int *count)
@@ -891,6 +967,7 @@ int ECICALL eciSynthesize(ECIHand handle)
     if (!e) return 0;
     unsigned int before = epoch_get(&e->stop_epoch);
     if (!busy_begin(&e->busy)) return 0;
+    (void)reloq_session_high_rate_profile(e->text_session,(unsigned)e->high_rate_profile);
     struct reloq61_text_options previous_options=reloq61_text_options_scope(
         (struct reloq61_text_options){e->dictionary_disabled,e->phrase_prediction});
     e->failure_stage = RELOQ_ECI_STAGE_NONE;
@@ -1297,6 +1374,7 @@ int ECICALL eciGetParam(ECIHand handle, int parameter)
     case RELOQ_ECI_ROUGHNESS: return e->roughness;
     case RELOQ_ECI_BREATHINESS: return e->breathiness;
     case RELOQ_ECI_GENDER: return e->gender;
+    case RELOQ_ECI_HIGH_RATE_PROFILE: return e->high_rate_profile;
     case RELOQ_ECI_SAMPLE_RATE: return e->sample_rate_code;
     case RELOQ_ECI_LANGUAGE_DIALECT: return e->language;
     case RELOQ_ECI_LAST_ERROR: return e->last_synthesis_error;
@@ -1313,6 +1391,10 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
     int old = eciGetParam(handle, parameter);
     if (old < 0) return -1;
     switch (parameter) {
+    case RELOQ_ECI_HIGH_RATE_PROFILE:
+        if(value<0 || value>2)return -1;
+        e->high_rate_profile=value;
+        break;
     case RELOQ_ECI_SYNTH_MODE:
         if (value < 0 || value > 1) return -1;
         e->synth_mode = value;

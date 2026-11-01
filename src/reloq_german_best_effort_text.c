@@ -1650,6 +1650,7 @@ invalid:free(next.features);return -1;
 }
 
 #include "reloq_german_dictionary_text.inc"
+#include "reloq_german_text_stream.inc"
 
 static int plan_tags_checked(int native_first,
     const unsigned char *utf8, size_t utf8_length,
@@ -1659,7 +1660,8 @@ static int plan_tags_checked(int native_first,
     struct reloq_german_best_effort_boundary *boundaries,
     size_t boundary_count,
     struct reloq_german_word_features **features,size_t *feature_count,
-    int (*cancelled)(void *), void *cancel_context)
+    int (*cancelled)(void *), void *cancel_context,
+    const struct reloq_german_text_stream *stream,int normalized)
 {
     if ((!utf8 && utf8_length) || !annotation || !annotation_length ||
         !approximate_words || (boundary_count && !boundaries) ||
@@ -1688,7 +1690,7 @@ static int plan_tags_checked(int native_first,
         free(original_scalars);free(encoded);return -1;
     }
     size_t *main_map=NULL,main_source_length=encoded_length;
-    state=normalize_main_text(&encoded,&original_scalars,&encoded_length,
+    state=normalized?0:normalize_main_text(&encoded,&original_scalars,&encoded_length,
         process_tags,&main_map,cancelled,cancel_context);
     if(state){free(original_scalars);free(encoded);return state;}
     size_t normalized_error=SIZE_MAX;
@@ -2093,6 +2095,12 @@ static int plan_tags_checked(int native_first,
     map_boundaries(boundaries, boundary_count, &next_boundary,
                    encoded_length, b.used);
     b.output[b.used] = 0;
+    if(stream) {
+        struct reloq_german_context_source source={encoded,original_encoded,word_storage,encoded_length};
+        result=stream_plan(&b,&source,original_scalars,process_tags,boundaries,boundary_count,
+            encoded_error_offset,stream);
+        if(result)goto done;
+    }
     /* Phrase stress belongs to the native language frontend, not to a
      * screen-reader text substitution. The rule only changes safe,
      * one-to-one aligned grammatical classes and preserves explicit SPR. */
@@ -2183,7 +2191,7 @@ done:
     reloq61_dictionary_resolver_release(resolver);
     if(retry)return plan_tags_checked(0,utf8,utf8_length,lexicon,process_tags,
         annotation,annotation_length,approximate_words,encoded_error_offset,
-        boundaries,boundary_count,features,feature_count,cancelled,cancel_context);
+        boundaries,boundary_count,features,feature_count,cancelled,cancel_context,NULL,normalized);
     return result;
 }
 
@@ -2197,7 +2205,7 @@ int reloq_german_best_effort_plan_tags_checked(
 {
     return plan_tags_checked(1,utf8,utf8_length,lexicon,process_tags,
         annotation,annotation_length,approximate_words,encoded_error_offset,
-        boundaries,boundary_count,features,feature_count,cancelled,cancel_context);
+        boundaries,boundary_count,features,feature_count,cancelled,cancel_context,NULL,0);
 }
 
 int reloq_german_best_effort_plan_indexed_checked(
@@ -2248,4 +2256,17 @@ int reloq_german_best_effort_annotate(
     return reloq_german_best_effort_annotate_checked(
         utf8, utf8_length, lexicon, annotation, annotation_length,
         approximate_words, encoded_error_offset, NULL, NULL);
+}
+
+int reloq_german_best_effort_stream_tags_checked(
+    const unsigned char *utf8,size_t utf8_length,const struct reloq_lexicon *lexicon,
+    int process_tags,unsigned char **annotation,size_t *annotation_length,
+    size_t *approximate_words,size_t *encoded_error_offset,
+    struct reloq_german_best_effort_boundary *boundaries,size_t boundary_count,
+    struct reloq_german_word_features **features,size_t *feature_count,
+    int (*cancelled)(void *),void *cancel_context,const struct reloq_german_text_stream *stream)
+{
+    return plan_tags_checked(1,utf8,utf8_length,lexicon,process_tags,
+        annotation,annotation_length,approximate_words,encoded_error_offset,
+        boundaries,boundary_count,features,feature_count,cancelled,cancel_context,stream,0);
 }

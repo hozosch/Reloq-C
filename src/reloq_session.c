@@ -72,10 +72,17 @@ struct reloq_session {
     struct reloq_session_buffers buffers;
     reloq_epoch_atomic cancel_epoch;
     reloq_epoch_atomic active_epoch;
+    unsigned high_rate_profile;
 };
 
 float reloq_session_sample_rate(const struct reloq_session *s)
 { return s ? s->config.sample_rate : 0; }
+
+int reloq_session_high_rate_profile(struct reloq_session *s,unsigned profile)
+{
+    if(!s||profile>2)return RELOQ_SESSION_INVALID;
+    s->high_rate_profile=profile;return RELOQ_SESSION_OK;
+}
 
 int reloq_session_source_levels(struct reloq_session *s,long source,
     long av,long ah,long af,unsigned reference_formants)
@@ -230,6 +237,8 @@ int reloq_session_reset(struct reloq_session *session)
     next.glottal_reference_rate=c->glottal_reference_rate;
     next.reference_formants=c->reference_formants;
     next.frication_reference_rate=c->frication_reference_rate;
+    next.rate_transfer.trial_profile=session->high_rate_profile;
+    next.noise_transfer.trial_profile=session->high_rate_profile;
     session->frame_state = next;
     epoch_store(&session->active_epoch, generation);
     return RELOQ_SESSION_OK;

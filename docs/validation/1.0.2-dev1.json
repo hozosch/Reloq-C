@@ -1,0 +1,54 @@
+{
+  "version": "1.0.2-dev1",
+  "official_release": false,
+  "scope": "NVDA hearing preview; pending issue experiments excluded",
+  "linux_host": {
+    "unchanged_multilingual_pcm_and_indices": 196,
+    "streaming_comparisons_per_profile": 40,
+    "profiles_tested": [
+      0,
+      1,
+      2
+    ],
+    "hearing_profile_checks": 293,
+    "source_isolation_pcm_checks": 20,
+    "public_eci_exports": 21,
+    "nvda_update_tests": 7,
+    "audio_saved_for_regressions": false
+  },
+  "windows_validation": "Required by nvda-german-streaming.yml before the validated artifact is uploaded",
+  "remaining_release_gates": [
+    "High-rate listening acceptance",
+    "Issue #3 seconds in English times/durations",
+    "Issue #6 positional parameters",
+    "Chinese speed/model pitch contours",
+    "Final review of all open issues"
+  ],
+  "core_startup_observation_ms": {
+    "characters_9472": {
+      "whole_text": [
+        181.697,
+        154.172
+      ],
+      "streaming": [
+        3.647,
+        3.598
+      ]
+    },
+    "characters_37888": {
+      "whole_text": [
+        623.49,
+        663.743
+      ],
+      "streaming": [
+        10.49,
+        9.71
+      ]
+    },
+    "rates_hz": [
+      11025,
+      48000
+    ],
+    "method": "Earlier controlled isolated core comparison on Linux; no playback device, no NVDA latency guarantee"
+  }
+}

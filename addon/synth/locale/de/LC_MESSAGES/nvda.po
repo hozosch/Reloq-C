@@ -310,3 +310,15 @@ msgstr "Version %s ist verfügbar."
 
 msgid "No newer published add-on package is available."
 msgstr "Es ist kein neueres veröffentlichtes Add-on-Paket verfügbar."
+
+msgid "High-rate &tuning (16 kHz and above)"
+msgstr "Hochraten-&Abstimmung (ab 16 kHz)"
+
+msgid "A: Current sound (control)"
+msgstr "A: Bisheriger Klang (Kontrolle)"
+
+msgid "B: Native-16 consonants"
+msgstr "B: Konsonanten am 16-kHz-Vorbild"
+
+msgid "C: Native-16 consonants and gentle voice body"
+msgstr "C: 16-kHz-Konsonanten und sanfter Stimmkörper"

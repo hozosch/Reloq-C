@@ -1,3 +1,24 @@
+# Teststand 1.0.2-dev1: Hochraten-Hörtest
+
+Ein NVDA-Testpaket bietet drei direkt umschaltbare Abstimmungen ab 16 kHz.
+A erhält den bisherigen Klang, B gleicht die Konsonantenfarbe an die native
+16-kHz-Parallelbank an, C ergänzt einen oberen periodischen Shelf mit maximal
+2 dB bei 48 kHz. Die breite P/F-Familie bleibt auf ihrem bisherigen Pfad.
+Kein PCM-Resampling, keine Text-/Sprachresultat-Caches, eine gemeinsame DLL.
+Deutsch beginnt bei langen Texten an bereits abgeschlossenen Analysephrasen
+mit der Ausgabe; Stimm-, Filter- und Zeitachsen bleiben zusammenhängend.
+Der zusätzliche deutsche ts-Frikationspegel und die mediale Sonderabsenkung
+wurden entfernt. Die konfigurierte Lautstärke wirkt auch außerhalb Deutsch.
+Der private ECI-Adapter schließt bei Tempo-/Lautstärkebefehlen keinen Satz ab.
+
+Dies ist kein offizielles Release. Vor 1.0.2 bleiben die gemeldeten Issues
+und die neuen chinesischen Tonhöhenverläufe bei verschiedenen Geschwindigkeiten
+und Modellen als Prüfpunkte offen. Issue #2 ist im Testkern korrigiert, #4 hat
+GPL-3.0-or-later nach Auswahl des Projektinhabers; #5 hat eine korrigierte
+Pausenbehandlung. Die Sekundenlesung (#3) und positionsbezogene Steuerung (#6)
+werden separat weiterbearbeitet und sind nicht als fertige Korrekturen in
+diesem Hörpaket ausgewiesen. Der WIP-Zweig hält die zugehörigen Experimente.
+
 # Technischer Arbeitsstand: 1.0.1
 
 ## 1.0.1: Ursprünglicher S-Pegel und Textabbruch

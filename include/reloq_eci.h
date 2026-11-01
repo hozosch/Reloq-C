@@ -99,6 +99,8 @@ enum {
     RELOQ_ECI_ROUGHNESS = 0x100e,
     RELOQ_ECI_BREATHINESS = 0x100f,
     RELOQ_ECI_GENDER = 0x1010,
+    /* Hearing-trial build: 0 control, 1 native-16 consonants, 2 plus body. */
+    RELOQ_ECI_HIGH_RATE_PROFILE = 0x1011,
     RELOQ_ECI_ENGLISH = 0x00010000,
     RELOQ_ECI_ENGLISH_BRITAIN = 0x00010001,
     RELOQ_ECI_SPANISH_SPAIN = 0x00020000,

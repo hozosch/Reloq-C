@@ -1,5 +1,9 @@
 # Eloquence C – user guide
 
+## Hearing preview 1.0.2-dev1
+
+Speech settings now offer high-rate tuning. A keeps the existing sound with corrected German Z/ts levels; B uses the native-16 consonant reference; C adds a gentle upper voice body. P and F retain their tuning. Below 16 kHz all three profiles sound the same. Switching preserves the selected voice, rate and volume. This is a hearing trial before the next official release.
+
 Eloquence C is the NVDA add-on from [ReLoq C](https://github.com/hozosch/Reloq-C). It develops the familiar Eloquence sound with pronunciation corrections, Unicode support and additional voice controls. NVDA is the first integration and current speech testing platform. The same engine is also available for Android ARM64 and Windows SAPI5.
 
 ## Install and select

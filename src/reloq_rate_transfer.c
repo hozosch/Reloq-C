@@ -767,6 +767,22 @@ void reloq_rate_transfer_prepare(struct reloq_rate_transfer *s,
     fit_tract(s,f,rate,reference,old_count);
 }
 
+static void prepare_trial_source(struct reloq_rate_transfer *s)
+{
+    double rate=s->presence_rate;
+    double weight=rate>=48000?1:rate>=44100?.8:rate>=32000?.6:rate>=22050?.4:.2;
+    /* Max 2 dB at 48 kHz, acting only on periodic excitation before AH/AF. */
+    double a=pow(10,2*weight/40),w=2*pi*1800/rate;
+    double co=cos(w),z=sin(w)*sqrt(2*a),den=(a+1)-(a-1)*co+z;
+    double *c=s->trial_source;
+    c[0]=a*((a+1)+(a-1)*co+z)/den;
+    c[1]=-2*a*((a-1)+(a+1)*co)/den;
+    c[2]=a*((a+1)+(a-1)*co-z)/den;
+    c[3]=2*((a-1)-(a+1)*co)/den;
+    c[4]=((a+1)-(a-1)*co-z)/den;
+    s->trial_source_rate=s->presence_rate;
+}
+
 void reloq_rate_transfer_process_voice(struct reloq_rate_transfer *s,float *samples,size_t count)
 {
     if(s->presence_rate<=0)return;
@@ -783,6 +799,15 @@ void reloq_rate_transfer_process_voice(struct reloq_rate_transfer *s,float *samp
             d[0]=c[1]*x-c[3]*y+d[1];d[1]=c[2]*x-c[4]*y;
         }
         samples[j]=(float)y;
+    }
+    if(s->trial_profile==2 && s->presence_rate>=16000) {
+        if(s->trial_source_rate!=s->presence_rate)prepare_trial_source(s);
+        const double *c=s->trial_source;double *d=s->trial_source_delay;
+        for(size_t j=0;j<count;++j) {
+            double x=samples[j],y=c[0]*x+d[0];
+            d[0]=c[1]*x-c[3]*y+d[1];d[1]=c[2]*x-c[4]*y;
+            samples[j]=(float)y;
+        }
     }
 }
 void reloq_rate_transfer_process_aspiration(struct reloq_rate_transfer *s,
@@ -1406,3 +1431,5 @@ void reloq_rate_transfer_prepare_noise_mix_profile(struct reloq_rate_transfer *s
         else fit_noise_profile(s,low,high,current,profile,clock,rate,mix,historic84,norm);
     } else fit_noise_clock(s,low,high,current,profile,rate,mix,historic84,norm);
 }
+
+#include "reloq_rate_trial.inc"

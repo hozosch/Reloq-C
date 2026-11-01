@@ -1,0 +1,102 @@
+name: NVDA high-rate hearing preview
+on:
+  push:
+    branches: [codex/german-stream102]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install native compiler and translation tools
+        run: |
+          set -euo pipefail
+          sudo apt-get -o Acquire::Retries=2 update -qq
+          sudo apt-get -o Acquire::Retries=2 install -y --no-install-recommends gcc-mingw-w64-x86-64-posix gettext
+      - uses: actions/cache@v4
+        id: rules
+        with:
+          path: vendor/openevv61/build
+          key: nvda-hearing-ubuntu24-v1-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c') }}
+      - name: Restore unchanged rule timestamps
+        if: steps.rules.outputs.cache-hit == 'true'
+        run: find vendor/openevv61/build -type f -exec touch {} +
+      - name: Build x64 native core
+        run: make -C eci -j2 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
+      - name: Package development add-on with current dictionary master
+        run: |
+          python3 nvda/test_updates.py
+          python3 addon/build_synth.py
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,os,zipfile
+          files=list(Path('dist').glob('*.nvda-addon'))
+          assert len(files)==1
+          with zipfile.ZipFile(files[0]) as package:
+              assert package.testzip() is None
+              assert '1.0.2-dev1' in package.read('manifest.ini').decode()
+              for name in ('ReLoq-C-LICENSE.txt','ReLoq-C-NOTICE.txt','OpenEVV-LICENSE.txt','Dictionaries-CC0.txt'):
+                  assert package.read('doc/licenses/'+name)
+          Path('dist/source.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],
+              'package':files[0].name,'sha256':hashlib.sha256(files[0].read_bytes()).hexdigest(),
+              'version':'1.0.2-dev1','official_release':False,'experimental_listening_dsp':True,'profiles':['control','native16-consonants','native16-plus-gentle-body']},indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nvda-candidate-unvalidated
+          path: |
+            dist/*.nvda-addon
+            dist/source.json
+            eci/eci.dll
+          compression-level: 0
+          retention-days: 7
+  windows:
+    needs: native
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-candidate-unvalidated
+          path: candidate
+      - name: Verify installed native behaviour without an audio device
+        shell: pwsh
+        run: |
+          $core = (Get-ChildItem candidate -Recurse -Filter eci.dll | Select-Object -First 1).FullName
+          python nvda/test_eci_german_streaming.py --library $core --output streaming.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_analysis_cancel.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_streaming.py --library $core --profile 1 --output streaming-b.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_streaming.py --library $core --profile 2 --output streaming-c.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_high_rate_profiles.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          New-Item -ItemType Directory -Force eci | Out-Null
+          Copy-Item $core eci/eci.dll
+          python addon/test_synth.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python addon/test_synth.py de
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Collect validated preview
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force validated | Out-Null
+          Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Copy-Item -Destination validated
+          Get-ChildItem candidate -Recurse -Filter source.json | Copy-Item -Destination validated
+          Copy-Item streaming*.json validated
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nvda-german-streaming-test
+          path: validated/
+          compression-level: 0
+          retention-days: 14

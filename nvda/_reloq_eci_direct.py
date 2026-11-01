@@ -41,6 +41,7 @@ HEAD_SIZE = 0x100d
 ROUGHNESS = 0x100e
 BREATHINESS = 0x100f
 GENDER = 0x1010
+HIGH_RATE_PROFILE = 0x1011
 _log = logging.getLogger(__name__)
 WAVEFORM_BUFFER = 0
 INDEX_REPLY = 2
@@ -212,12 +213,12 @@ class DirectEciEngine:
             raise RuntimeError("ECI engine has been closed")
         if parameter not in (GENERIC_RATE, GENERIC_PITCH, GENERIC_VOLUME,
                              NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION,
-                             NATIVE_VOLUME, PROCESS_TAGS, DICTIONARY, PHRASE_PREDICTION, PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATE):
+                             NATIVE_VOLUME, PROCESS_TAGS, DICTIONARY, PHRASE_PREDICTION, PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATE, HIGH_RATE_PROFILE):
             raise ValueError("unsupported generic voice parameter")
         low, high = ((0, 250) if parameter == NATIVE_SPEED else
                      (0, 1) if parameter in (PROCESS_TAGS, GENDER, DICTIONARY, PHRASE_PREDICTION) else
                      (0, 6) if parameter == SAMPLE_RATE else
-                     (0, 2) if parameter == PAUSE_MODE else (0, 100))
+                     (0, 2) if parameter in (PAUSE_MODE, HIGH_RATE_PROFILE) else (0, 100))
         if not isinstance(value, int) or isinstance(value, bool) or not low <= value <= high:
             raise ValueError(f"generic voice parameter must be {low}..{high}")
         previous = self._dll.eciSetParam(self._handle, parameter, value)
@@ -371,4 +372,4 @@ class DirectEciEngine:
 __all__ = ["EciText", "DirectEciEngine", "EciIndex", "EciPitch", "EciLanguage", "EciSynthesisError",
            "GERMAN_DIALECT", "EXPERIMENTAL_GENERIC_VOICE", "GENERIC_RATE",
            "GENERIC_PITCH", "GENERIC_VOLUME", "NATIVE_SPEED", "NATIVE_PITCH",
-           "NATIVE_INFLECTION", "NATIVE_VOLUME", "DICTIONARY", "PHRASE_PREDICTION", "PROCESS_TAGS", "PAUSE_MODE", "HEAD_SIZE", "ROUGHNESS", "BREATHINESS", "GENDER", "SAMPLE_RATE", "SAMPLE_RATES"]
+           "NATIVE_INFLECTION", "NATIVE_VOLUME", "DICTIONARY", "PHRASE_PREDICTION", "PROCESS_TAGS", "PAUSE_MODE", "HEAD_SIZE", "ROUGHNESS", "BREATHINESS", "GENDER", "HIGH_RATE_PROFILE", "SAMPLE_RATE", "SAMPLE_RATES"]

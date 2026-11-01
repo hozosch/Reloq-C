@@ -26,6 +26,11 @@ struct reloq_rate_transfer {
      * A zero first coefficient bypasses this section. These coefficients
      * and delays belong to the filter, never to a stored speech result. */
     double voice_band[5],voice_band_delay[2];
+    /* Session-owned hearing trial: accepted sound, native-16 consonants,
+     * or native-16 consonants plus a gentle upper periodic shelf. */
+    unsigned trial_profile;
+    double trial_source[5],trial_source_delay[2];
+    float trial_source_rate;
 };
 struct reloq_core_voiced_formants;
 void reloq_rate_transfer_prepare(struct reloq_rate_transfer *,
@@ -55,4 +60,7 @@ void reloq_rate_transfer_prepare_noise_mix_profile(struct reloq_rate_transfer *,
     const struct reloq_core_frication_bank *high,
     const struct reloq_core_frication_bank *current,
     const struct reloq_noise_profile *,float rate,float mix,int historic84);
+int reloq_rate_transfer_prepare_native16(struct reloq_rate_transfer *,
+    const struct reloq_core_frication_bank *,const struct reloq_core_frication_bank *,
+    const struct reloq_noise_profile *,float);
 #endif

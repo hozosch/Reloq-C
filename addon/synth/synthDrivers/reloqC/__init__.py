@@ -29,7 +29,7 @@ from speech.commands import (BreakCommand, CharacterModeCommand, IndexCommand, L
 from synthDriverHandler import (SynthDriver as BaseSynthDriver, VoiceInfo, LanguageInfo,
                                 synthDoneSpeaking, synthIndexReached)
 
-from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciLanguage, EciText, NATIVE_VOLUME,
+from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciLanguage, EciText, NATIVE_VOLUME, HIGH_RATE_PROFILE,
                                 NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION, PROCESS_TAGS,
                                 PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATES,
                                 DICTIONARY, PHRASE_PREDICTION)
@@ -173,6 +173,7 @@ class SynthDriver(BaseSynthDriver):
         BooleanDriverSetting("_dictionaryCommunity", _("Use &community pronunciation dictionaries"), defaultVal=False),
         DriverSetting("pauseMode", _("Shorten pa&uses"), defaultVal="0"),
         DriverSetting("sampleRate", _("&Sample rate"), defaultVal="1"),
+        DriverSetting("highRateProfile", _("High-rate &tuning (16 kHz and above)"), defaultVal="0"),
     )
 
     @classmethod
@@ -208,6 +209,7 @@ class SynthDriver(BaseSynthDriver):
         self._dictionary_updater = None
         self._pauseMode = "0"
         self._sampleRate = "1"
+        self._highRateProfile = "0"
         self._sample_rate_revision = 0
         self._languages = dict(LANGUAGES)
         self._selectedLanguage = self._initial_language()
@@ -233,6 +235,7 @@ class SynthDriver(BaseSynthDriver):
         self._transport.set_parameter(HEAD_SIZE, self._headSize)
         self._transport.set_parameter(ROUGHNESS, self._roughness)
         self._transport.set_parameter(BREATHINESS, self._breathiness)
+        self._transport.set_parameter(HIGH_RATE_PROFILE, int(self._highRateProfile))
         manager = self.dictionary_manager()
         # Start monitoring the installed dictionaries and selected own files.
         manager.set_enabled(False)
@@ -241,6 +244,30 @@ class SynthDriver(BaseSynthDriver):
     def _make_player(sample_rate):
         return nvwave.WavePlayer(channels=1, samplesPerSec=sample_rate,
             bitsPerSample=16, outputDevice=config.conf["audio"]["outputDevice"])
+
+    def _get_availableHighrateprofiles(self):
+        labels = {"0": _("A: Current sound (control)"),
+                  "1": _("B: Native-16 consonants"),
+                  "2": _("C: Native-16 consonants and gentle voice body")}
+        return OrderedDict((key, StringParameterInfo(key, label)) for key, label in labels.items())
+
+    def _get_availableHighRateProfiles(self):
+        return self._get_availableHighrateprofiles()
+
+    def _get_highRateProfile(self):
+        return self._highRateProfile
+
+    def _set_highRateProfile(self, value):
+        value = str(value)
+        if value not in self._get_availableHighrateprofiles():
+            raise ValueError("unsupported high-rate hearing profile")
+        with self._submit_lock:
+            if self._terminating or self._highRateProfile == value:
+                return
+            self._request_epoch += 1
+            self._transport.cancel()
+            self._transport.set_parameter(HIGH_RATE_PROFILE, int(value))
+            self._highRateProfile = value
 
     def _get_availableSamplerates(self):
         # Translators: Audio sample rates; localize the decimal separator.
