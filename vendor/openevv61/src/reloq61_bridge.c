@@ -16,6 +16,7 @@
 #include "eci_instance.h"
 #include "eci_eloqc.h"
 #include "reloq_greek.h"
+#include "reloq61_english_clock.h"
 extern void evvRunStaticInitialisers(void);
 extern OldInst *STDCALL eo_newEx(int32_t);
 extern int STDCALL es_delete(OldInst *);
@@ -499,6 +500,28 @@ int reloq61_english_bank_emit(void*state,const struct reloq61_english_bank*p,int
  return 0;
 }
 static int generate_core(const struct reloq61_request *,struct reloq61_result *,reloq61_phoneme_sink,void *);
+static int english_clock_generate(const struct reloq61_request *q,struct reloq61_result *r,
+    reloq61_phoneme_sink sink,void *context)
+{
+    initialize();
+    char *text=NULL;size_t *map=NULL;
+    int projected=reloq61_english_clock_text(q->text,q->annotations,q->language,&text,&map);
+    if(projected<0)return -1;
+    if(!projected)return generate_core(q,r,sink,context);
+    if(q->mark_count && (!q->marks||q->mark_count>SIZE_MAX/sizeof(struct reloq61_mark))) {
+        free(text);free(map);return -1;
+    }
+    struct reloq61_mark *marks=q->mark_count?malloc(q->mark_count*sizeof *marks):NULL;
+    if(q->mark_count&&!marks){free(text);free(map);return -1;}
+    size_t length=strlen(q->text);
+    for(size_t i=0;i<q->mark_count;++i) {
+        if(q->marks[i].offset>length){free(text);free(map);free(marks);return -1;}
+        marks[i]=q->marks[i];marks[i].offset=map[marks[i].offset];
+    }
+    struct reloq61_request request=*q;request.text=text;request.marks=marks;
+    int result=generate_core(&request,r,sink,context);
+    free(text);free(map);free(marks);return result;
+}
 static int greek_generate(const struct reloq61_request *q,struct reloq61_result *r,
     reloq61_phoneme_sink sink,void *context)
 {
@@ -515,6 +538,8 @@ static int greek_generate(const struct reloq61_request *q,struct reloq61_result 
 int reloq61_generate(const struct reloq61_request *q,struct reloq61_result *r)
 {
     if(q&&r&&q->language==0x120000){initialize();memset(r,0,sizeof *r);return greek_generate(q,r,NULL,NULL);}
+    if(q&&r&&q->text&&(q->language==0x10000||q->language==0x10001))
+        return english_clock_generate(q,r,NULL,NULL);
     return generate_core(q,r,NULL,NULL);
 }
 int reloq61_generate_phonemes(const struct reloq61_request *q,struct reloq61_result *r,
@@ -525,6 +550,8 @@ int reloq61_generate_phonemes(const struct reloq61_request *q,struct reloq61_res
     if(request.language==0x120000) {
         initialize();memset(r,0,sizeof *r);return greek_generate(&request,r,sink,context);
     }
+    if(request.text&&(request.language==0x10000||request.language==0x10001))
+        return english_clock_generate(&request,r,sink,context);
     return generate_core(&request,r,sink,context);
 }
 static int generate_core(const struct reloq61_request *q,struct reloq61_result *r,

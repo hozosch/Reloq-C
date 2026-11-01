@@ -1,5 +1,9 @@
 # Eloquence C – Bedienungsanleitung
 
+## Englische Uhrzeiten mit Sekunden
+
+Englische Uhrzeiten wie `13:28:25` behalten die normale Stunden-/Minutenlesung und ergänzen „and twenty five seconds“. Bei einer Sekunde steht der Singular; Sekundenbruchteile bleiben in der gewöhnlichen Zahlenlesung. Dies gilt für US- und britisches Englisch im nativen Kern, auch für NVDA und andere ECI-Programme. Quellindizes bleiben ihren ursprünglichen Textpositionen zugeordnet.
+
 Eloquence C ist die NVDA-Erweiterung des Projekts [ReLoq C](https://github.com/hozosch/Reloq-C). Sie entwickelt den Eloquence-Klang mit gezielten Aussprachekorrekturen, Unicode-Unterstützung und zusätzlichen Klangmöglichkeiten weiter. NVDA ist die erste Anbindung und dient derzeit zum Prüfen der Sprachausgabe. Derselbe Kern ist auch für Android ARM64 und Windows SAPI5 verfügbar.
 
 ## Installieren und auswählen

@@ -105,6 +105,12 @@ all: libreloq_eci.so
 test_reloq_silence_cut: ../tests/test_reloq_silence_cut.c ../src/reloq_silence_cut.c ../include/reloq_silence_cut.h
 	$(CC) $(CFLAGS) -I../include ../tests/test_reloq_silence_cut.c ../src/reloq_silence_cut.c -o $@
 
+test_reloq_english_clock: ../tests/test_reloq_english_clock.c ../vendor/openevv61/src/reloq61_english_clock.c ../vendor/openevv61/src/reloq61_english_clock.h ../include/reloq_inline_tags.h
+	$(CC) $(CFLAGS) -I../include -I../vendor/openevv61/src ../tests/test_reloq_english_clock.c ../vendor/openevv61/src/reloq61_english_clock.c -o $@
+test_reloq_english_clock_arena: ../tests/test_reloq_english_clock.c ../vendor/openevv61/src/reloq61_english_clock.c ../vendor/openevv61/src/reloq61_english_clock.h ../vendor/openevv61/src/port/evv_arena.c ../vendor/openevv61/src/port/evv_land.c ../vendor/openevv61/src/port/evv_arena.h ../include/reloq_inline_tags.h
+	$(CC) $(CFLAGS) -DEVV_ARENA=1 -I../include -I../vendor/openevv61/src -I../vendor/openevv61/src/port ../tests/test_reloq_english_clock.c ../vendor/openevv61/src/reloq61_english_clock.c ../vendor/openevv61/src/port/evv_arena.c ../vendor/openevv61/src/port/evv_land.c -pthread -lm -o $@
+
+
 libreloq_eci.so: $(SOURCE) $(HEADERS) ../src/reloq_glottal_profiles.inc ../src/reloq_german_root_roles.inc ../src/reloq_german_weak_verb_roles.inc ../src/reloq_german_inflection_roles.inc ../src/reloq_german_glottal_lexicon.inc ../src/reloq_german_number_names.inc ../src/reloq_german_date_names.inc ../src/reloq_german_ie_roles.inc ../src/reloq_german_root_stress_roles.inc ../src/reloq_german_phrase_metadata.inc
 	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -shared $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections,--no-undefined -lm -o $@
 
