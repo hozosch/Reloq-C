@@ -968,7 +968,8 @@ static int emit_pause(struct reloq_target_stage_router *router, int64_t tick,
     if(quiet_override>=0)pause.quiet_ticks=quiet_override;
     /* Keep the full acoustic clock. Compressing these knots shortened the
      * audible resonator decay and pulled later contours into comma tails.
-     * Rendering omits the quiet body only after its filter tail settles. */
+     * The shared pause policy omits quiet frames before DSP. Filter and
+     * oscillator histories continue into the following word. */
     *window=pause.release_ticks+pause.quiet_ticks;
 #ifdef RELOQ_GENERIC_PHONE_TRACE
     fprintf(stderr,"RELOQ_PAUSE %zu %d %lld %d %d %d %d %d\n",index,
@@ -1011,13 +1012,14 @@ static int emit_pause(struct reloq_target_stage_router *router, int64_t tick,
     if (scale_tick(tick+*window,&tail,&quiet_end)) return -1;
     if(output->quiet&&!explicit_pause&&
        (pause_mode==2||(pause_mode==1&&!continuing))) {
-        int64_t begin,minimum;
-        int32_t keep=pause.quiet_ticks<3?pause.quiet_ticks:3;
+        int64_t begin;
         if(scale_tick(tick+pause.release_ticks,&tail,&begin)||
-           scale_tick(tick+pause.release_ticks+keep,&tail,&minimum)||
-           begin<0||quiet_end<begin||minimum<begin||
-           (uint64_t)quiet_end>SIZE_MAX||
-           quiet_append(output->quiet,(size_t)begin,(size_t)quiet_end,(size_t)(minimum-begin)))return -1;
+           begin<0||quiet_end<begin||(uint64_t)quiet_end>SIZE_MAX)return -1;
+        /* Same source-silent budget as the native language planners. Do
+         * not wait for numerical PCM zero: resonator state remains live. */
+        size_t keep=pause_mode==2?1:3,available=(size_t)(quiet_end-begin);
+        if(keep>available)keep=available;
+        if(quiet_append(output->quiet,(size_t)begin,(size_t)quiet_end,keep))return -1;
     }
     if (continuing && !reloq_german_terminal_continues(mark) && quiet_end>0) --quiet_end;
     struct output_settings direct=tail;
@@ -3387,19 +3389,6 @@ static int session_cancelled(void *context)
 
 #include "reloq_german_inline_controls.inc"
 
-/* No audio is cut or retained. Observe live quiet frames until the actual
- * resonator decay has ended, then omit the rest of that source-silent body
- * before DSP. Three complete silent frames exclude zero crossings. */
-struct quiet_delivery {
-    reloq_session_pcm_sink sink;void *context;unsigned zeros;
-};
-static int quiet_delivery_pcm(void *context,const int16_t *pcm,size_t count)
-{
-    struct quiet_delivery *q=context;
-    size_t i=0;while(i<count&&!pcm[i])++i;
-    q->zeros=i==count?q->zeros+1:0;
-    return q->sink(q->context,pcm,count);
-}
 static void compact_positions(int64_t *words,size_t word_count,
     size_t *indices,size_t index_count,size_t at,size_t removed,size_t per_tick)
 {
@@ -3429,7 +3418,7 @@ static int render_quiet_regions(const struct reloq_curve_schedule *original,
         if(q&&(q->begin>q->end||q->minimum>q->end-q->begin||
                q->end>(uint64_t)original->end_tick||q->begin<(uint64_t)part.first_tick))
             return RELOQ_SESSION_INVALID;
-        part.end_tick=q?(int64_t)q->begin:original->end_tick;
+        part.end_tick=q?(int64_t)(q->begin+q->minimum):original->end_tick;
         size_t done=0;
         int status=reloq_curve_pipeline_render_models(&part,formants,session,
             sink,context,&done,profile,profile_context,models);
@@ -3437,22 +3426,11 @@ static int render_quiet_regions(const struct reloq_curve_schedule *original,
         if(status!=RELOQ_SESSION_OK)return status;
         part.first_tick=part.end_tick;
         if(!q)break;
-        struct quiet_delivery delivery={sink,context,0};
-        while(part.first_tick<(int64_t)q->end) {
-            part.end_tick=part.first_tick+1;
-            status=reloq_curve_pipeline_render_models(&part,formants,session,
-                quiet_delivery_pcm,&delivery,&done,profile,profile_context,models);
-            total+=done;*frames_completed=total;
-            if(status!=RELOQ_SESSION_OK)return status;
-            part.first_tick=part.end_tick;
-            if(delivery.zeros>=3&&(uint64_t)part.first_tick>=q->begin+q->minimum) {
-                size_t removed=q->end-(size_t)part.first_tick;
-                if(total>SIZE_MAX/per_tick||removed>SIZE_MAX/per_tick)
-                    return RELOQ_SESSION_INVALID;
-                compact_positions(words,word_count,indices,index_count,total,removed,per_tick);
-                part.first_tick=(int64_t)q->end;break;
-            }
-        }
+        size_t removed=q->end-(size_t)part.first_tick;
+        if(total>SIZE_MAX/per_tick||removed>SIZE_MAX/per_tick)
+            return RELOQ_SESSION_INVALID;
+        compact_positions(words,word_count,indices,index_count,total,removed,per_tick);
+        part.first_tick=(int64_t)q->end;
     }
     return RELOQ_SESSION_OK;
 }

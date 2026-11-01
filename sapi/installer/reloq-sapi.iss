@@ -1,5 +1,5 @@
 #ifndef AppVersion
-  #define AppVersion "0.2.204"
+  #define AppVersion "0.2.205"
 #endif
 #ifndef Payload
   #define Payload "payload"
@@ -17,6 +17,7 @@ AppSupportURL=https://github.com/hozosch/Reloq-C/issues
 DefaultDirName={autopf}\ReLoq C\SAPI5
 DefaultGroupName=ReLoq C SAPI5
 DisableProgramGroupPage=yes
+AllowNoIcons=no
 PrivilegesRequired=admin
 ArchitecturesInstallIn64BitMode=x64compatible
 ShowLanguageDialog=yes
@@ -48,17 +49,29 @@ Name: "zh_tw"; MessagesFile: "languages\ChineseTraditional.isl"
 
 [CustomMessages]
 en.VoiceSettings=Voice settings
+en.UserGuide=User guide
 de.VoiceSettings=Stimmeinstellungen
+de.UserGuide=Anleitung
 es.VoiceSettings=Ajustes de voz
+es.UserGuide=Guía del usuario
 fr.VoiceSettings=Paramètres de voix
+fr.UserGuide=Guide d’utilisation
 it.VoiceSettings=Impostazioni voce
+it.UserGuide=Guida all’uso
 pt.VoiceSettings=Configurações de voz
+pt.UserGuide=Guia do usuário
 fi.VoiceSettings=Ääniasetukset
+fi.UserGuide=Käyttöohje
 el.VoiceSettings=Ρυθμίσεις φωνής
+el.UserGuide=Οδηγίες χρήσης
 ja.VoiceSettings=音声設定
+ja.UserGuide=利用ガイド
 ko.VoiceSettings=음성 설정
+ko.UserGuide=사용 안내
 zh.VoiceSettings=语音设置
+zh.UserGuide=使用指南
 zh_tw.VoiceSettings=語音設定
+zh_tw.UserGuide=使用指南
 
 [Files]
 ; Both COM registry views use the same settings and dictionary folder.
@@ -82,10 +95,53 @@ Source: "Inno-Setup-LICENSE.txt"; DestDir: "{app}\licenses"; Flags: ignoreversio
 Type: files; Name: "{app}\Install-SAPI.exe"
 
 [Icons]
-Name: "{group}\{cm:VoiceSettings}"; Filename: "{app}\ReLoqSettings.exe"; Check: Is64BitInstallMode
-Name: "{group}\{cm:VoiceSettings}"; Filename: "{app}\x86\ReLoqSettings.exe"; Check: not Is64BitInstallMode
+Name: "{group}\ReLoq C - {cm:UserGuide}"; Filename: "{app}\README.txt"
+Name: "{group}\ReLoq C - {cm:VoiceSettings}"; Filename: "{app}\ReLoqSettings.exe"; Check: Is64BitInstallMode
+Name: "{group}\ReLoq C - {cm:VoiceSettings}"; Filename: "{app}\x86\ReLoqSettings.exe"; Check: not Is64BitInstallMode
 Name: "{group}\{cm:UninstallProgram,ReLoq C SAPI5}"; Filename: "{uninstallexe}"
 
 [Run]
 Filename: "{app}\ReLoqSettings.exe"; Description: "{cm:VoiceSettings}"; Flags: postinstall nowait skipifsilent runasoriginaluser; Check: Is64BitInstallMode
 Filename: "{app}\x86\ReLoqSettings.exe"; Description: "{cm:VoiceSettings}"; Flags: postinstall nowait skipifsilent runasoriginaluser; Check: not Is64BitInstallMode
+
+[Code]
+procedure RemovePreviousLinks;
+var
+  Search: TFindRec;
+  Shell, Link: Variant;
+  FileName, Target, AppDir, BaseName: String;
+begin
+  { Rebuild owned links when the selected installer language changes. Keep
+    unrelated user shortcuts in the group. Reading a link never saves it. }
+  if not FindFirst(ExpandConstant('{group}\*.lnk'), Search) then Exit;
+  try
+    try
+      Shell := CreateOleObject('WScript.Shell');
+      AppDir := ExpandConstant('{app}');
+      repeat
+        FileName := ExpandConstant('{group}\') + Search.Name;
+        try
+          Link := Shell.CreateShortcut(FileName);
+          Target := Link.TargetPath;
+          BaseName := Lowercase(ExtractFileName(Target));
+          if ((CompareText(ExtractFileDir(Target), AppDir) = 0) and
+              ((BaseName = 'reloqsettings.exe') or (BaseName = 'readme.txt') or
+               ((Pos('unins', BaseName) = 1) and (ExtractFileExt(BaseName) = '.exe')))) or
+             (CompareText(Target, AppDir + '\x86\ReLoqSettings.exe') = 0) then
+            DeleteFile(FileName);
+        except
+          Log('Previous shortcut retained: ' + GetExceptionMessage);
+        end;
+      until not FindNext(Search);
+    except
+      Log('Previous shortcut cleanup unavailable: ' + GetExceptionMessage);
+    end;
+  finally
+    FindClose(Search);
+  end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssInstall then RemovePreviousLinks;
+end;

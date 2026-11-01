@@ -1,14 +1,14 @@
 # Android ARM64 preview
 
 ReLoq C Preview uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `0.2.201-preview13` targets ARM64 (`arm64-v8a`), Android 8/API 26
+add-on. Version `0.2.205-preview17` targets ARM64 (`arm64-v8a`), Android 8/API 26
 or later. Speech runs offline. Network access is used only when you explicitly update pronunciation dictionaries or check for an app update. Package downloads open in the browser.
 
 ## Install or update
 
-Install `reloq-c-android-arm64-0.2.201-preview13.apk` over the existing preview.
+Install `reloq-c-android-arm64-0.2.205-preview17.apk` over the existing preview.
 The package remains `org.reloq.tts.preview`, the preview signing certificate is
-unchanged, and versionCode increases from 20193 to 20194. Android can therefore
+unchanged, and versionCode increases to 20205. Android can therefore
 update the existing app and retain its settings. Do not uninstall it first.
 
 Open **ReLoq C Preview** to adjust its settings or read a test text. To use it
@@ -17,9 +17,8 @@ with TalkBack or another client, open **Android speech settings** and choose
 variants and eight named voice presets are available. Both Chinese scripts
 use the single Mandarin Chinese module; Japanese retains its existing analysis.
 
-The user confirmed Android 0.2.192, including live settings, as stable.
-0.2.194 fixes German abbreviation/quantity analysis and removes its supplemental lexicon; these
-new controls still need their ordinary TalkBack check.
+The speech engine and live settings have been confirmed in practical use.
+This APK retains the preview identity so existing installations update in place.
 
 ## Voice and output settings
 
@@ -95,7 +94,7 @@ latest dictionary master and reuses existing verified data when possible.
 export ANDROID_SDK_ROOT=/path/to/android-sdk
 export ANDROID_NDK_HOME=/path/to/android-ndk-r30
 export JAVA_HOME=/path/to/jdk-17
-python3 android/build.py --upgrade-from dist/reloq-c-android-arm64-0.2.191-preview3.apk
+python3 android/build.py --upgrade-from dist/reloq-c-android-arm64-0.2.204-preview16.apk
 ```
 
 Explicit `--sdk`, `--ndk`, `--java-home`, `--build-tools` and `--android-jar`
@@ -174,10 +173,13 @@ The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 ```sh
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
-python3 android/verify_apk.py dist/reloq-c-android-arm64-0.2.201-preview13.apk
+python3 android/verify_apk.py dist/reloq-c-android-arm64-0.2.205-preview17.apk
 ```
 
-The final APK passes signature, install-critical resource-table and 16-KiB ELF checks. The package/signature comparison supports an in-place update from 0.2.198-preview10. The user confirmed that version as stable. The browser download handoff still needs its ordinary device/TalkBack check once a release package is published. The user reports that Play Protect accepts 0.2.197. This build keeps its browser update flow and INTERNET-only permission profile.
+Build verification checks signatures, the install-critical resource table,
+16-KiB ELF compatibility and package/certificate continuity with the previous
+preview. The app retains its browser update flow and INTERNET-only permission
+profile. Host checks do not replace device and TalkBack testing.
 
 For an isolated build, pass `--build-dir /absolute/fresh/build-directory`; the output APK path remains controlled by `--output`.
 
@@ -185,4 +187,6 @@ For an isolated build, pass `--build-dir /absolute/fresh/build-directory`; the o
 
 Choose **App updates** on the settings screen, then **Check for updates**. The app checks published GitHub Releases on request. If a newer ARM64 package is available, choose **Open download in browser**. The release link must name this project’s newer ARM64 APK on GitHub, with valid size and SHA-256 metadata. The browser downloads the file and Android handles installation and signature checks. ReLoq does not request package-install permission or provide an APK installation service. Keep Play Protect enabled; a warning is not a successful security check.
 
-The repository currently has no published package release. Until packages are published, the screen reports that no newer published app package is available. There is no background polling and the speech service does not perform update downloads. Package updates and dictionary updates are separate actions.
+Installable packages are available from [GitHub Releases](https://github.com/hozosch/Reloq-C/releases).
+There is no background polling and the speech service does not perform update
+downloads. Package updates and dictionary updates are separate actions.

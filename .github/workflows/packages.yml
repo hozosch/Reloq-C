@@ -1,0 +1,102 @@
+name: Build installable release packages
+on:
+  push:
+    branches: ['codex/release*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dictionaries:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Resolve current dictionary master and verify committed snapshot
+        run: |
+          python3 -c "import sys; sys.path.insert(0, 'addon'); from build_synth import refresh_community_dictionaries; refresh_community_dictionaries()"
+          git diff --exit-code -- data/community
+  sapi:
+    needs: dictionaries
+    uses: ./.github/workflows/sapi-installer.yml
+  android:
+    needs: dictionaries
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install official SDK and NDK tools
+        run: sdkmanager 'ndk;30.0.16248370' 'platforms;android-35' 'build-tools;35.0.1'
+      - name: Build and verify ARM64 preview APK
+        run: |
+          python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --jobs 2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: dist/reloq-c-android-arm64-*.apk
+          compression-level: 0
+          retention-days: 14
+  nvda:
+    needs: sapi
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: sapi-native-x64
+          path: dist
+      - name: Package the same verified x64 core for NVDA
+        run: |
+          python3 - <<'PY'
+          import pathlib, sys, zipfile
+          sys.path.insert(0, 'addon')
+          from build_synth import build, DEFAULT_OUTPUT
+          payload, = pathlib.Path('dist').glob('reloq-c-sapi5-x64-*-payload.zip')
+          with zipfile.ZipFile(payload) as archive:
+              assert archive.testzip() is None
+              core = pathlib.Path('eci/eci.dll')
+              core.write_bytes(archive.read('eci.dll'))
+          build(DEFAULT_OUTPUT, core, refresh_dictionaries=False)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nvda-addon
+          path: dist/*.nvda-addon
+          compression-level: 0
+          retention-days: 14
+  collect:
+    needs: [sapi, android, nvda]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sapi-installer
+          path: artifacts/sapi
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: artifacts/android
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-addon
+          path: artifacts/nvda
+      - name: Collect exactly the three installable packages
+        run: python3 tools/release_packages.py collect artifacts release-packages
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-packages
+          path: release-packages/
+          compression-level: 0
+          retention-days: 30

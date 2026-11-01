@@ -3,7 +3,7 @@ from pathlib import Path
 import argparse
 import array
 import json
-from _reloq_eci_direct import (DirectEciEngine, EciIndex, SAMPLE_RATE, PAUSE_MODE,
+from _reloq_eci_direct import (DirectEciEngine, EciIndex, SAMPLE_RATE, PAUSE_MODE, SAMPLE_RATES,
                               NATIVE_SPEED, GENDER, HEAD_SIZE, BREATHINESS, PROCESS_TAGS)
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -39,7 +39,6 @@ def main():
                         streams.append(array.array('h', pcm))
                         marks.append(positions)
                     original, final, always = streams
-                    assert final[-1] == always[-1] == 0, (first, rate, head, "unsettled release")
                     # Final-only mode is an exact original prefix. Internal
                     # pauses and the preceding release cannot be re-planned.
                     assert original[:len(final)] == final, (first, rate, head, 'final release')
@@ -48,10 +47,15 @@ def main():
                     # Before the first omitted quiet body, every sample must
                     # still match. This detects a future formant knot moving
                     # backwards into the release when its clock is shortened.
-                    boundary = marks[2][0][1]
+                    # Index callbacks are delivered after the enclosing 1 ms
+                    # PCM frame. With live resonator residue, the first frame
+                    # after the omitted quiet body can already differ.
+                    boundary = max(0, marks[2][0][1] - SAMPLE_RATES[rate] // 1000)
                     assert original[:boundary] == always[:boundary], (first, rate, head, 'internal release')
                     if not more:
-                        assert final == always
+                        # Native source-silent budgets are physical milliseconds,
+                        # independent of speed and a nonzero resonator residue.
+                        assert len(final) - len(always) == 2 * (SAMPLE_RATES[rate] // 1000)
                     assert 0 < len(always) <= len(final) < len(original)
                     records.append({'text': first + more, 'rate': rate, 'gender': gender,
                                     'head': head, 'breath': breath,

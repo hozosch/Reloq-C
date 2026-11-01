@@ -1,0 +1,73 @@
+name: Publish verified installable packages
+on:
+  push:
+    branches: [main]
+    paths: [.github/release.json]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Read candidate run
+        id: candidate
+        run: |
+          python3 - <<'PY'
+          import json, os
+          request = json.load(open('.github/release.json'))
+          run = request['run_id']
+          assert isinstance(run, int) and run > 0
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write(f'run_id={run}\n')
+          PY
+      - name: Verify successful candidate workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.candidate.outputs.run_id }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" > /tmp/candidate.json
+          python3 - <<'PY'
+          import json
+          run = json.load(open('/tmp/candidate.json'))
+          request = json.load(open('.github/release.json'))
+          assert run['conclusion'] == 'success'
+          assert run['path'] == '.github/workflows/packages.yml'
+          assert run['head_sha'] == request['source_commit']
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-packages
+          path: release-packages
+          run-id: ${{ steps.candidate.outputs.run_id }}
+          github-token: ${{ github.token }}
+      - name: Verify source, names, lengths and SHA-256 hashes
+        id: verify
+        run: python3 tools/release_packages.py verify release-packages .github/release.json
+      - name: Create draft, upload and publish complete release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.verify.outputs.version }}
+        run: |
+          set -euo pipefail
+          gh release create "v$VERSION" --target "$GITHUB_SHA" --title "ReLoq C $VERSION" --draft --notes-file "docs/releases/$VERSION.md"
+          gh release upload "v$VERSION" release-packages/*.exe release-packages/*.nvda-addon release-packages/*.apk
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/v$VERSION" > /tmp/release-assets.json
+          python3 - <<'PY'
+          import json
+          wanted = json.load(open('.github/release.json'))['assets']
+          actual = {asset['name']: asset for asset in json.load(open('/tmp/release-assets.json'))['assets']}
+          assert set(actual) == set(wanted)
+          for name, metadata in wanted.items():
+              assert actual[name]['size'] == metadata['size']
+              assert actual[name]['digest'] == 'sha256:' + metadata['sha256']
+          PY
+          gh release edit "v$VERSION" --draft=false --latest

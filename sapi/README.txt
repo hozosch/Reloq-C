@@ -1,8 +1,8 @@
-ReLoq C 0.2.204 — unified SAPI5 Windows installer
+ReLoq C 0.2.205 — unified SAPI5 Windows installer
 
 Installation
 ------------
-Run reloq-c-sapi5-0.2.204-setup.exe. Inno Setup offers the supported interface
+Run reloq-c-sapi5-0.2.205-setup.exe. Inno Setup offers the supported interface
 languages and initially selects the Windows display language. Administrator
 permission is requested. The single installer installs both x64 and x86 voices
 on compatible 64-bit Windows, and x86 voices on 32-bit Windows. Each installed
@@ -19,7 +19,10 @@ installation in place.
 
 Voice settings
 --------------
-Open ReLoqSettings.exe or the voice's Settings / Properties in a SAPI program.
+Open Start > ReLoq C SAPI5 > ReLoq C - Voice settings, ReLoqSettings.exe,
+or the voice's Settings / Properties in a SAPI program. The same Start menu
+group contains this guide and the uninstaller. Shortcut names follow the
+installer language and are refreshed when the installation language changes.
 The dialog follows the Windows display language for all supported languages,
 including both Chinese scripts, with English as fallback. Standard Windows
 controls support keyboard and screen readers. The standalone dialog initially

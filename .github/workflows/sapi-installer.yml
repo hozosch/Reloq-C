@@ -11,6 +11,7 @@ on:
       - vendor/**
       - data/community/**
   workflow_dispatch:
+  workflow_call:
 permissions:
   contents: read
 jobs:
@@ -80,13 +81,33 @@ jobs:
           New-Item -ItemType Directory -Force dist/validation | Out-Null
           $setup = (Get-ChildItem dist/reloq-c-sapi5-*-setup.exe | Sort-Object LastWriteTime | Select-Object -Last 1).FullName
           $install = Join-Path $env:ProgramFiles 'ReLoq C\SAPI5'
-          $p = Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-',"/LOG=$pwd\dist\validation\install.log" -Wait -PassThru
+          $group = Join-Path ([Environment]::GetFolderPath('CommonPrograms')) 'ReLoq C SAPI5'
+          function Test-StartLinks($settingsName, $guideName) {
+            $shell = New-Object -ComObject WScript.Shell
+            $links = @(Get-ChildItem $group -Filter *.lnk)
+            if ($links.Count -ne 3) { throw "Expected three Start menu entries, found $($links.Count)" }
+            $expected = @{}
+            $expected["ReLoq C - $settingsName.lnk"] = Join-Path $install 'ReLoqSettings.exe'
+            $expected["ReLoq C - $guideName.lnk"] = Join-Path $install 'README.txt'
+            foreach ($name in $expected.Keys) {
+              $shortcut = $shell.CreateShortcut((Join-Path $group $name))
+              if ($shortcut.TargetPath -ne $expected[$name] -or !(Test-Path $shortcut.TargetPath)) {
+                throw "Incorrect Start menu link: $name -> $($shortcut.TargetPath)"
+              }
+            }
+            $targets = @($links | ForEach-Object { $shell.CreateShortcut($_.FullName).TargetPath })
+            if ((Join-Path $install 'unins000.exe') -notin $targets) { throw 'Uninstall shortcut missing' }
+            $links.Name | Out-File -Append dist/validation/start-menu.txt
+          }
+          $p = Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-','/LANG=en',"/LOG=$pwd\dist\validation\install.log" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Install failed: $($p.ExitCode)" }
+          Test-StartLinks 'Voice settings' 'User guide'
           $dictionary = Join-Path $install 'dictionaries\ENUmain.dic'
           [IO.File]::AppendAllText($dictionary, "`r`n", [Text.Encoding]::ASCII)
           $edited = (Get-FileHash $dictionary -Algorithm SHA256).Hash
           $p = Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-','/LANG=de',"/LOG=$pwd\dist\validation\upgrade.log" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Upgrade failed: $($p.ExitCode)" }
+          Test-StartLinks 'Stimmeinstellungen' 'Anleitung'
           if ((Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'Dictionary edit lost during upgrade' }
           foreach ($arch in @('x64','x86')) {
             $test = if ($arch -eq 'x64') { Join-Path $install 'Test-SAPI.exe' } else { Join-Path $install 'x86\Test-SAPI.exe' }
@@ -95,6 +116,7 @@ jobs:
           }
           $p = Start-Process (Join-Path $install 'unins000.exe') -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=$pwd\dist\validation\uninstall.log" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Uninstall failed: $($p.ExitCode)" }
+          if (Test-Path $group) { throw 'Start menu group remains after uninstall' }
           if (!(Test-Path $dictionary) -or (Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'User dictionary lost during uninstall' }
           foreach ($view in @([Microsoft.Win32.RegistryView]::Registry32,[Microsoft.Win32.RegistryView]::Registry64)) {
             $h = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,$view)

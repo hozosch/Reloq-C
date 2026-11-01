@@ -13,7 +13,7 @@ no further speed or size improvement is possible.
   language fixes. Exercise cancellation, source indexes, dictionary edits and
   reloads, ECI controls and mixed Unicode through the public API.
 - Record package/DLL sizes, requested heap peaks and paired CPU measurements.
-  Compare high rates separately. Windows/Dell and Windows/ARM listening tests
+  Compare high rates separately. Host benchmarks and Windows/ARM listening tests
   remain distinct from host benchmarks.
 - Read CLDR emoji names in the shared core, including Android sentence
   reading, joined sequences and source indexes. Keep native punctuation and
@@ -23,8 +23,10 @@ no further speed or size improvement is possible.
 - Retain the current Android package identity, signing continuity and browser
   update handoff. The user reports that Play Protect accepts 0.2.197. This is
   a device observation for that package, not a general security certification.
-- Finalize production signing and the preview-to-release update path before
-  public Android distribution; this iteration keeps the preview identity.
+- The first public package release explicitly includes the existing Android
+  **preview**, retaining its package and public test-signing identity for
+  updates. A privately signed production APK needs a deliberate migration
+  path; it is not claimed for this release.
 - Publish actual versioned package assets with the first GitHub release so
   the existing user-requested update checks can offer them. A source commit
   alone is not an installable release.
@@ -33,12 +35,12 @@ no further speed or size improvement is possible.
 
 The small C COM adapter wraps the shared private ECI core and registers one
 voice per language. Native settings apply immediately to later utterances,
-with optional shared parameters and a common synthesis rate. Version 0.2.204
+with optional shared parameters and a common synthesis rate. Version 0.2.205
 uses SAPI's output thread directly and combines x64 and x86 in a localized
 Inno Setup installer. Automated Windows checks cover both COM views,
 all native/application rate combinations, and removal. Basic x64 use was
-also confirmed by the user. Physical-device responsiveness and screen-reader
-UI checks remain part of acceptance. See the [preview guide](../sapi/README.txt)
+also confirmed by the user. The user has confirmed SAPI response and sample-rate behaviour. Ongoing
+physical-device and screen-reader checks complement the automated coverage. See the [preview guide](../sapi/README.txt)
 for supported controls and the explicit limitations.
 
 | Boundary | Required implementation |
@@ -56,10 +58,11 @@ must survive the bridge. Existing explicit ECI index callbacks are useful,
 but do not by themselves implement automatic SAPI word/sentence events.
 Pronunciation/phoneme fragments also need a defined mapping and tests.
 
-Version 0.2.204 combines the x64 and x86 builds in one localized Inno Setup installer. Both retain separate COM registry views and share dictionaries and user settings. The installer workflow checks installation, in-memory SAPI conversion and removal on Windows; physical-device response and UI accessibility still require user tests. Native ARM64
+Version 0.2.205 combines the x64 and x86 builds in one localized Inno Setup installer. Both retain separate COM registry views and share dictionaries and user settings. The installer workflow checks installation, in-memory SAPI conversion and removal on Windows; physical-device response and UI accessibility still require user tests. Native ARM64
 still requires its own build and activation tests; an x64 package is not a
-claim of native ARM64 support. Validate registration, settings persistence, interruption and
-real SAPI clients before including that adapter in the first public release.
+claim of native ARM64 support. Registration, settings persistence, interruption and real SAPI clients have
+been exercised for the first release. Continue testing device-specific audio
+and UI accessibility after that milestone.
 
 Microsoft's primary interface references:
 

@@ -146,6 +146,14 @@ static int dictionary_compile_alias(void *context,const char *value,char *spr,si
     if(literal) {
         size_t n=strlen(value);
         if(n>=capacity||n<3||value[n-1]!=']'||strchr(value+2,'['))return 0;
+        /* Root is a lexical stem, not an already spoken standalone word.
+         * Preserve canonical authored phones until the native grammar has
+         * joined the ending and can apply its contextual allophones. An
+         * isolated synthesis here would irreversibly harden b/d/g/v/z. */
+        if(volume==1&&reloq_german_lexicon_validate_spr(
+                (const unsigned char *)value,n,NULL)==1) {
+            memcpy(spr,value,n+1);dictionary_single_primary(spr);return 1;
+        }
     }
     /* Control sequences and genuine multi-word expansions remain native
      * normalization entries. Spelling-only aliases can form a lexical word. */

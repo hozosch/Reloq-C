@@ -1,4 +1,24 @@
-# Technischer Arbeitsstand: 0.2.201
+# Technischer Arbeitsstand: 0.2.205
+
+## 0.2.205: Erstes Paketrelease, Wörterbuchstämme und Pausenkürzung
+
+Das erste GitHub-Release enthält die drei installierbaren Pakete für NVDA,
+Android ARM64 und SAPI5 x64/x86. Die Android-APK behält ausdrücklich ihre
+Vorschaukennung und bisherige öffentliche Testsignatur für bestehende Updates.
+Die SAPI-Startmenüeinträge nennen ReLoq C und umfassen Einstellungen, Anleitung
+und Deinstallation. Ein Wechsel der Installersprache erneuert eigene Links.
+
+Deutsche Root-Lautschrift bleibt bis zur Analyse des vollständigen Wortes
+lexikalisch erhalten. Die frühere isolierte Synthese beim Laden hat d bereits
+zu t verhärtet, bevor Reader gebildet wurde. Der allgemeine Stufenfehler ist
+behoben; die normale Auslautverhärtung bei Read allein bleibt erhalten.
+
+Die Pausenkürzung wartet nicht mehr auf exakt null gewordene PCM-Frames.
+Nach vollständigem geplantem Quellausklang bleiben wie in den anderen
+Sprachplanern kurze physische Ruhebudgets von 3 bzw. 1 ms. Originalkurven,
+laufender Filterzustand, explizite Pausen und verkürzte Indexuhren bleiben
+erhalten. Praktische Hörtests erfolgen jetzt auf dem Lenovo-ARM-Gerät; der
+Dell steht dem Nutzer nicht mehr zur Verfügung.
 
 ## 0.2.204: SAPI-Transport, Inno Setup und deutsche Pausen
 

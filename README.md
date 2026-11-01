@@ -2,7 +2,19 @@
 
 ReLoq C is a speech synthesis project that preserves the familiar character of Eloquence while improving pronunciation, responsiveness and control over the voice. Apple Eloquence serves as the reference for language behaviour and sound.
 
-The shared synthesis engine is written in C. **NVDA is the first integration and the current speech testing platform. The Android ARM64 port uses the same core and has been confirmed stable in user testing.** Windows x64 and x86 SAPI5 previews use the same core. Language reliability, responsiveness and lower resource use remain active priorities.
+The shared synthesis engine is written in C. NVDA, Android ARM64 and Windows SAPI5 use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
+
+## Download and install
+
+The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provides three installable packages:
+
+| Platform | Package | Requirements |
+| --- | --- | --- |
+| NVDA | `.nvda-addon` | NVDA 2026.1 or later, 64-bit process |
+| Android | ARM64 `.apk` | Android 8 or later, ARM64 device |
+| Windows SAPI5 | `-setup.exe` | Installs x64 and x86 voices together on compatible Windows |
+
+Install packages over an existing installation to retain settings. Android retains its preview package name and signing identity so existing previews can update in place; the APK remains a preview. Source archives are for developers and are not installable packages. [Release notes](docs/releases/0.2.205.md) describe the first public package release and its limits.
 
 ## Current features
 
@@ -19,23 +31,21 @@ First, make the supported languages and everyday speech reliable. This includes 
 
 Next, reduce binary size, memory use and CPU demand, and keep navigation responsive even at high sample rates. These improvements belong in the shared C core so that every platform can benefit. The project aims for compact, independently expressed C rules without runtime bytecode or original DLL/SYN modules.
 
-Develop the **Android speech engine** and add a **SAPI5 integration for Windows** using the same core. The Android offline TTS service, live voice controls and optional pronunciation dictionaries have been confirmed in practical use through 0.2.192. Engine corrections remain under active testing before the first public release. SAPI5 previews provide one voice per language and a native dialog with live settings, optional shared parameters and a common output rate. Basic x64 operation is confirmed in user testing; The unified Inno Setup installer supplies both architectures; device and client listening tests remain before release. See the [SAPI preview guide](sapi/README.txt). The [release plan](docs/RELEASE-PLAN.md) records the acceptance criteria and adapter work.
+All three integrations are available. Android offers an offline TTS service, live controls and pronunciation dictionaries. SAPI5 provides one voice per language and a native dialog with live settings, optional shared parameters and a common synthesis rate. Its unified installer supplies both architectures, localized installation and Start menu entries for settings, the guide and removal. See the [SAPI guide](sapi/README.txt). Native Windows ARM64 SAPI support remains future work; the current Windows components are x64 and x86.
 
 ## Using the NVDA add-on
 
 The synthesizer is listed as **Eloquence C (experimental)**. It requires NVDA 2026.1 or later in a 64-bit process. The DLL is currently built for Windows x64.
 
-Installable packages belong under [Releases and downloads](https://github.com/hozosch/Reloq-C/releases). If no `.nvda-addon` file is listed there, GitHub does not yet provide an installable package. The source download is intended for building the project yourself.
+Install the `.nvda-addon` file from [Releases](https://github.com/hozosch/Reloq-C/releases) with NVDA, restart NVDA and press **NVDA+Control+S** to select **Eloquence C (experimental)**. Choose your language and voice in NVDA's Speech settings. The ReLoq settings category manages dictionaries and checks for package updates on request.
 
-Once a package is available, install the `.nvda-addon` file with NVDA, restart NVDA and press **NVDA+Control+S** to select **Eloquence C (experimental)**. Choose your language and voice in NVDA's Speech settings.
-
-The [English user guide](docs/USER-GUIDE.en.md) and [German user guide](docs/USER-GUIDE.de.md) cover languages, settings and dictionaries. [Changes and known limitations in 0.2.204](docs/changes/0.2.204.md) are documented separately.
+The [English user guide](docs/USER-GUIDE.en.md) and [German user guide](docs/USER-GUIDE.de.md) cover languages, settings and dictionaries. [Changes in 0.2.205](docs/changes/0.2.205.md) are documented separately.
 
 ## Android preview
 
 The first preview targets **ARM64 devices running Android 8 or later**. It includes all 14 language variants and eight voice presets, runs offline, and appears as **ReLoq C Preview** in Android's text-to-speech settings. Its launcher screen provides all voice/output controls, independent Android speed and pitch overrides, and optional community/custom dictionaries.
 
-The [Android instructions](android/README.md) explain installation, building and validation limits. Native output and the JNI streaming bridge have been tested in memory on the host. The user confirmed Android 0.2.192 as stable, including its live settings. Newly added engine controls still need their ordinary device checks.
+The [Android instructions](android/README.md) explain installation, building and validation limits. Android's live settings and speech engine have been confirmed in practical use. Automated host tests complement device testing; they do not establish audible performance on every device.
 
 ## Feedback and contributions
 

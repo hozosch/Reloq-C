@@ -81,6 +81,31 @@ def main():
         finally:
             native.close()
             standard.close()
+
+        # A Root entry supplies underlying lexical phones, not a recording
+        # of the stem spoken alone. Final devoicing belongs after inflection:
+        # .rid -> .rit alone, but .ri.dR in Reader, also after a hyphen.
+        # The same rule must preserve every voiced obstruent, not just Read.
+        for voiced, unvoiced in (('b', 'p'), ('d', 't'), ('g', 'k'), ('v', 'f'), ('z', 's')):
+            streams = []
+            for phone in (voiced, unvoiced):
+                (directory / 'DEURoot.dic').write_text(
+                    f'read\t`[.1ri{phone}]\n', encoding='cp1252')
+                engine = DirectEciEngine(args.library, dialect=0x40000,
+                                         experimental_generic=True, encoding='utf8')
+                try:
+                    engine.set_dictionary_path(directory)
+                    streams.append([capture(engine, [word]) for word in (
+                        'Read.', 'Reader.', 'ETI-Reader.', 'Read-Ausgabe.', 'Reader lesen.')])
+                finally:
+                    engine.close()
+            lexical, hardened = streams
+            for i in (0, 3):
+                assert lexical[i] == hardened[i], (voiced, i, 'word-final devoicing')
+                count += 1
+            for i in (1, 2, 4):
+                assert lexical[i] != hardened[i], (voiced, i, 'voicing before suffix')
+                count += 1
     print(f'{count} native dictionary context/case/compound checks passed; no audio files written.')
 
 
