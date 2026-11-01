@@ -12,8 +12,8 @@ static double response(const double c[5],double hz,double rate)
 }
 static void classic_response(void)
 {
- /* Classic Presence is the consonant reference only. Keep the accepted
-  * periodic A body bit-for-bit, with a separate gradual upper extension. */
+ /* The shared Classic contour and AF reference stay fixed. The small
+  * upper-bass restoration belongs only to periodic excitation. */
  const double hz[]={0,1000,2000,3000,4000,4250,4500,5000,5250,5512.5};
  const double db[]={-1.93819978,-1.57232249,-.47737361,1.92730905,3.07599515,3.12060225,2.95364833,1.46825031,-.13629875,-2.67036249};
  const float rates[]={16000,22050,32000,44100,48000};
@@ -22,16 +22,25 @@ static void classic_response(void)
   prepare_colour(&s,rates[r]);prepare_colour(&a,rates[r]);
   assert(fabs(response(s.presence,0,rates[r])-1)<1e-9);
   assert(response(a.presence,4000,rates[r])>1.3);
+  assert(fabs(20*log10(response(s.voice_colour[0],300,rates[r]))-
+      (.6+.4*classic_rate_extension(rates[r])))<1e-7);
+  assert(fabs(response(s.voice_colour[0],0,rates[r])-1)<1e-9);
+  assert(20*log10(response(s.voice_colour[0],1500,rates[r]))<.1);
   for(unsigned f=0;f<10;++f) {
    double complex z=cexp(-I*2*pi*hz[f]/11025);
    double gain=10*log10(classic_reference_power(&s,z));
    assert(fabs(gain-db[f])<.0001);
   }
-  float x[1024],y[1024];
+  float x[1024],y[1024],whole[1024];
   for(unsigned j=0;j<1024;++j)x[j]=y[j]=value();
+  struct reloq_rate_transfer split=s;
   reloq_rate_transfer_process_voice(&s,y,1024);
-  reloq_rate_transfer_process_aspiration(&s,y,1024,1);
+  reloq_rate_transfer_process_voice(&split,x,19);
+  reloq_rate_transfer_process_voice(&split,x+19,1005);
   assert(!memcmp(x,y,sizeof x));
+  memcpy(whole,y,sizeof whole);
+  reloq_rate_transfer_process_aspiration(&s,y,1024,1);
+  assert(!memcmp(whole,y,sizeof whole));
 
  }
  puts("Full Classic Presence target: AV/AH share the reference contour; upper extension begins at 22.05 kHz");

@@ -26,8 +26,8 @@ struct reloq_rate_transfer {
      * A zero first coefficient bypasses this section. These coefficients
      * and delays belong to the filter, never to a stored speech result. */
     double voice_band[5],voice_band_delay[2];
-    /* Session-owned hearing trial: A body with Classic consonants and a
-     * gradual upper periodic extension from 22.05 kHz. Legacy C aliases B. */
+    /* Session-owned Classic hearing trial, with periodic upper-bass
+     * restoration and native expansion from 22.05 kHz. Legacy C aliases B. */
     unsigned trial_profile,colour_profile,colour_extension;
     double trial_source[5],trial_source_delay[2];
     float trial_source_rate;

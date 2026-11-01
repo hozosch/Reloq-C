@@ -1,7 +1,7 @@
 name: NVDA high-rate hearing preview
 on:
   push:
-    branches: [codex/followup102, codex/body-a-classic-consonants102, codex/classic-presence104, codex/eci-compat106]
+    branches: [codex/followup102, codex/body-a-classic-consonants102, codex/classic-presence104, codex/eci-compat106, codex/voice-stability107]
     paths-ignore: [tools/observe_syn_times.py, .github/workflows/syn-reference.yml]
   workflow_dispatch:
 permissions:
@@ -61,12 +61,12 @@ jobs:
           assert len(files)==1
           with zipfile.ZipFile(files[0]) as package:
               assert package.testzip() is None
-              assert '1.0.2-dev6' in package.read('manifest.ini').decode()
+              assert '1.0.2-dev7' in package.read('manifest.ini').decode()
               for name in ('ReLoq-C-LICENSE.txt','ReLoq-C-NOTICE.txt','OpenEVV-LICENSE.txt','Dictionaries-CC0.txt'):
                   assert package.read('doc/licenses/'+name)
           Path('dist/source.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],
               'package':files[0].name,'sha256':hashlib.sha256(files[0].read_bytes()).hexdigest(),
-              'version':'1.0.2-dev6','official_release':False,'experimental_listening_dsp':True,'profiles':['control','full-classic-presence-with-native-upper-extension','legacy-alias-of-b']},indent=2)+'\n')
+              'version':'1.0.2-dev7','official_release':False,'experimental_listening_dsp':True,'profiles':['control','full-classic-presence-with-native-upper-extension','legacy-alias-of-b']},indent=2)+'\n')
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -114,6 +114,8 @@ jobs:
           python nvda/test_eci_german_streaming.py --library $core --profile 2 --output streaming-c.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_high_rate_profiles.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_classic_voice_stability.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Collect validated preview
         shell: pwsh

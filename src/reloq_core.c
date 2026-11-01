@@ -1843,8 +1843,10 @@ int reloq_core_voiced_frame_render_owned(
      * extended rate. Its source density must therefore track the clock. */
     if(state->glottal_reference_rate>0) {
         ah.gain*=sqrtf(noise->sample_rate/state->glottal_reference_rate);
-        reloq_rate_transfer_prepare(&state->rate_transfer,&params->tract,
-            noise->sample_rate,state->glottal_reference_rate,state->reference_formants);
+        if(!state->rate_transfer.trial_profile || frame->av_level>0 ||
+           params->ah_level>0 || state->serial.remaining_ms>0)
+            reloq_rate_transfer_prepare(&state->rate_transfer,&params->tract,
+                noise->sample_rate,state->glottal_reference_rate,state->reference_formants);
     }
 
     float centers[RELOQ_CORE_FRICATIVE_FORMANTS];

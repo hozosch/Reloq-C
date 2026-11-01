@@ -1,8 +1,8 @@
 # Eloquence C – user guide
 
-## Hearing preview 1.0.2-dev6
+## Hearing preview 1.0.2-dev7
 
-At 16 kHz B shapes the entire voice after 11.025 kHz with Classic Presence: voice body, aspiration and consonants, including the reconstruction response. Additional native bands gradually enter from 22.05 kHz. A remains available for comparison. The extra 2-dB Z reduction applies only to the male model at word onset and in zw. Female voices and other Z positions retain the accepted level. The DLL now supports standard ECI voice parameters, voice copies and dictionary handles, language changes through parameter 9, and actual language enumeration. eciAddText uses the selected language code page, or UTF-16LE with the Unicode bit in the language word. English seconds readings remain included.
+B retains the complete Classic Presence sound as its 16-kHz basis. This preview fixes large peaks at higher rates and reduces computation. Periodic voicing gains a little body around 300 Hz: 0.6 dB at 16 kHz, gradually rising to 1 dB at 48 kHz. Aspiration and the accepted consonant lift do not receive this extra bass lift. The native upper extension still grows from 22.05 kHz. A remains available for comparison. The male Z reduction still applies only at word onset and in zw; female voices retain their accepted level. The ECI interface and English seconds reading from dev6 remain included.
 
 ## Install and select
 

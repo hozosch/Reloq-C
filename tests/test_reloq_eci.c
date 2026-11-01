@@ -498,7 +498,7 @@ int main(void)
     int british=native_british_dictionary();if(british)return british;
     char version[20] = {0};
     eciVersion(version);
-    CHECK(!strcmp(version, "1.0.2.6"));
+    CHECK(!strcmp(version, "1.0.2.7"));
     int languages = 0;
     CHECK(eciGetAvailableLanguages(NULL, &languages) == 0 &&
           languages == 15);

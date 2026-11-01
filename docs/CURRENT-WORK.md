@@ -1,3 +1,24 @@
+# Teststand 1.0.2-dev7: ruhiger Stimmkörper und geringere Rechenlast
+
+Der ECI-Umfang aus dev6 bleibt bestehen. Der Stimmabgleich wertet die
+11,025-kHz-Traktantwort jetzt nur bis zur nutzbaren Bandgrenze aus. Oberhalb
+davon läuft die Rekonstruktionshüllkurve weiter; die gespiegelte tiefe
+Traktantwort nahe 11,025 kHz wird nicht mehr invertiert. Ein gewöhnlicher
+englischer /w/-Vokal-Übergang erzeugte zuvor bei 48 kHz eine Kernel-L1-Norm
+über 600.000 und sehr große PCM-Spitzen. Der zugehörige Regressionstest
+prüft jetzt 410 Varianten über fünf Raten und zwei Traktgrößen.
+
+Der gemeinsame Classic-AV/AH-Hauptbandabgleich bleibt erhalten. Ein
+periodischer Bell-Filter um 300 Hz (Q=0,8) gibt dem Stimmkörper 0,6 dB bei
+16 kHz bis 1 dB bei 48 kHz zurück. AH und AF bekommen diese zusätzliche
+Bassanhebung nicht. Die AF-Implementierung und die z-Kontextregel ändern
+sich nicht.
+
+Die zweite, verworfene Trakt-Zielberechnung entfällt im Classic-Pfad.
+Unveränderliche Clock-/Rekonstruktions-/Faktorantworten werden atomar einmal
+pro Rate vorbereitet; stimmlose Frames ohne serielle Restenergie benötigen
+keinen neuen Stimmfit. Es werden keine Text- oder PCM-Ergebnisse gespeichert.
+
 # Teststand 1.0.2-dev6: vollständiges Classic und Standard-ECI
 
 Bei 16 kHz gilt das vollständige Classic-Presence-Ziel für AV, AH und AF.

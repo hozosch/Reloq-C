@@ -1,8 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Hörtest 1.0.2-dev6
+## Hörtest 1.0.2-dev7
 
-B formt bei 16 kHz den gesamten Klang nach 11,025 kHz mit Classic Presence: Stimmkörper, Aspiration und Konsonanten einschließlich der Rekonstruktionskurve. Ab 22,05 kHz kommen schrittweise zusätzliche native Bänder hinzu. A bleibt zum Vergleich verfügbar. Die zusätzliche z-Absenkung um 2 dB gilt nur beim männlichen Modell für Wortanfänge und zw. Bei weiblichen Stimmen und anderen z-Positionen bleibt der zuvor passende Pegel erhalten. Die DLL unterstützt jetzt die Standard-ECI-Aufrufe für Stimmparameter, Stimmkopien und Wörterbuch-Handles, den Sprachwechsel über Parameter 9 und eine tatsächliche Sprachenliste. eciAddText verwendet die jeweilige Sprachkodierung; mit dem Unicode-Bit im Sprachparameter nimmt es UTF-16LE an. Die englische Sekundenlesung bleibt enthalten.
+B behält bei 16 kHz den vollständigen Classic-Presence-Klang als Grundlage. Dieser Teststand korrigiert starke Pegelspitzen bei höheren Raten und verringert den Berechnungsaufwand. Die periodische Stimme erhält um 300 Hz etwas mehr Körper: 0,6 dB bei 16 kHz, langsam ansteigend bis 1 dB bei 48 kHz. Aspiration und die bestätigte Konsonantenanhebung erhalten diese zusätzliche Bassanhebung nicht. Ab 22,05 kHz wächst weiterhin die native obere Erweiterung. A bleibt zum Vergleich verfügbar. Die männliche z-Absenkung gilt weiterhin nur für Wortanfänge und zw; weibliche Stimmen behalten ihren passenden Pegel. Die ECI-Schnittstelle und die englische Sekundenlesung aus dev6 bleiben erhalten.
 
 ## Installieren und auswählen
 

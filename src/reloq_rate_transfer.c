@@ -626,6 +626,7 @@ static void prepare_ramp(struct reloq_rate_transfer *s,float rate)
 /* Large fit workspaces belong only to actual filter changes. Keep the
  * ordinary key check and clock bypass below out of their stack frames. */
 #include "reloq_classic_colour.inc"
+#include "reloq_classic_tract.inc"
 
 static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rate)
 {
@@ -634,11 +635,14 @@ static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rat
         /* Factor the smooth discretization tilt out of the finite FIR.
          * The fit divides by this section, so the final target remains the
          * measured Classic contour. Both AV and AH pass the combined fit. */
-        const double a=s->colour_extension?3.1622776601683795:10,w=2*pi*4000/rate,co=cos(w),z=sin(w)*sqrt(2*a);
-        double den=(a+1)-(a-1)*co+z,*c=s->presence;
-        c[0]=a*((a+1)+(a-1)*co+z)/den;
-        c[1]=-2*a*((a-1)+(a+1)*co)/den;c[2]=a*((a+1)+(a-1)*co-z)/den;
-        c[3]=2*((a-1)-(a+1)*co)/den;c[4]=((a+1)-(a-1)*co-z)/den;
+        classic_tract_shelf(s->presence,rate,s->colour_extension);
+        /* A small periodic-only lift restores the upper bass without
+         * changing the accepted AF level or adding aspiration energy. */
+        const double db=.6+.4*classic_rate_extension(rate),a=pow(10,db/40);
+        const double w=2*pi*300/rate,alpha=sin(w)/(2*.8),den=1+alpha/a;
+        double *c=s->voice_colour[0];
+        c[0]=(1+alpha*a)/den;c[1]=-2*cos(w)/den;c[2]=(1-alpha*a)/den;
+        c[3]=c[1];c[4]=(1-alpha/a)/den;
         s->presence_rate=rate;return;
     }
     /* Keep the shared tract/aspiration response. Periodic excitation
@@ -721,6 +725,10 @@ static RATE_NOINLINE void fit_tract(struct reloq_rate_transfer *s,
             after[i]=pole_at(special[i-8],rate);
         }
     }
+    if(s->trial_profile) {
+        fit_classic_tract(s,before,after,old_count,f->highest_formant,rate,reference);
+        return;
+    }
     const struct frequency_grid *grid=prepare_grid(rate,reference);
     /* Equal pole/zero coefficients have the same response at every bin.
      * Reuse that local value, but keep both the multiplication and division
@@ -734,7 +742,6 @@ static RATE_NOINLINE void fit_tract(struct reloq_rate_transfer *s,
     double spectrum[FFT_SIZE]={0};
     double width=fmax(f->oral[old_count-1].bandwidth_hz,reference/FFT_SIZE);
     double low=reference*.5-width,high=reference*.5+width;
-    if(s->trial_profile)low=high=5512.5;
 #ifdef RATE_PAIRS
     if(grid)spectrum_pairs(spectrum,grid,before,after,old_count,f->highest_formant,low,high,equal_special);
     else
@@ -765,28 +772,7 @@ static RATE_NOINLINE void fit_tract(struct reloq_rate_transfer *s,
         spectrum[k]=gain;
         if(k && k<FFT_SIZE/2)spectrum[FFT_SIZE-k]=gain;
     }
-    if(s->trial_profile)for(unsigned k=0;k<=FFT_SIZE/2;++k) {
-        double hz=(double)k*rate/FFT_SIZE,base=0;
-        if(hz<=11025) {
-            double complex z0=cexp(-I*2*pi*hz/reference),z1=cexp(-I*2*pi*hz/rate);
-            double before_power=1,after_power=1;
-            for(unsigned j=0;j<old_count;++j)before_power*=power(before[j],z0);
-            for(long j=0;j<f->highest_formant;++j)after_power*=power(after[j],z1);
-            for(unsigned j=8;j<12;j+=2) {
-                before_power*=power(before[j],z0)/fmax(1e-30,power(before[j+1],z0));
-                after_power*=power(after[j],z1)/fmax(1e-30,power(after[j+1],z1));
-            }
-            base=before_power/fmax(1e-30,after_power)*classic_colour_power(hz);
-        }
-        double extension=rate>=48000?1:rate>=44100?.8:rate>=32000?.5:rate>=22050?.25:0;
-        double upper=hz<=5512.5?0:hz>=6500?1:.5-.5*cos(pi*(hz-5512.5)/987.5);
-        double complex z=cexp(-I*2*pi*hz/rate);const double *c=s->presence;
-        double factored=cabs((c[0]+c[1]*z+c[2]*z*z)/(1+c[3]*z+c[4]*z*z));
-        spectrum[k]=fmax(.000001,sqrt(base+extension*upper)/factored);
-        if(k&&k<FFT_SIZE/2)spectrum[FFT_SIZE-k]=spectrum[k];
-    }
     causal_kernel(s,spectrum,1);
-    if(s->trial_profile)for(unsigned i=0;i<RELOQ_RATE_TAPS;++i)s->target[i]*=.8f;
     prepare_ramp(s,rate);
 }
 void reloq_rate_transfer_prepare(struct reloq_rate_transfer *s,
@@ -825,8 +811,16 @@ static void prepare_trial_source(struct reloq_rate_transfer *s)
 
 void reloq_rate_transfer_process_voice(struct reloq_rate_transfer *s,float *samples,size_t count)
 {
-    if(s->trial_profile)return;
     if(s->presence_rate<=0)return;
+    if(s->trial_profile) {
+        const double *c=s->voice_colour[0];double *d=s->voice_colour_delay[0];
+        for(size_t j=0;j<count;++j) {
+            double x=samples[j],y=c[0]*x+d[0];
+            d[0]=c[1]*x-c[3]*y+d[1];d[1]=c[2]*x-c[4]*y;
+            samples[j]=(float)y;
+        }
+        return;
+    }
     for(size_t j=0;j<count;++j) {
         double y=samples[j];
         for(unsigned k=0;k<RELOQ_RATE_VOICE_COLOURS;++k) {

@@ -1,0 +1,120 @@
+{
+  "version": "1.0.2-dev7",
+  "core_version": "1.0.2.7",
+  "local_implementation_commit": "37d416bf17ba8e36002adddf397a72a108a2379c",
+  "implementation_tree_sha": "3ce361aa6999368091cff66ffbb3ff52206aea45",
+  "github_base_commit": "cdbb9e26a1f514f0b728dde3c195f19f2b27b83e",
+  "development_branch": "codex/voice-stability107",
+  "package": "reloq-c-synth-experimental-x64-1.0.2-dev7.nvda-addon",
+  "package_bytes": 19567183,
+  "package_sha256": "41a887edfedddf72c5e7912e7470d5ced2b1874744599d365ebfa0e6a9eca836",
+  "dll_sha256": "ba41ec2a54bc2c8d99518a324b96bcba51c8d72140865e8cc5160b5a0fdaf676",
+  "changes": [
+    "Restrict reference/current tract pole matching to the original usable band; retain the reconstruction colour envelope above it without inverting a folded low-frequency image.",
+    "Periodic-only 300-Hz bell, Q 0.8: 0.6 dB at 16 kHz, 0.7 dB at 22.05 kHz, 0.8 dB at 32 kHz, 0.92 dB at 44.1 kHz and 1 dB at 48 kHz. AH and AF do not enter this bell.",
+    "Remove the overwritten legacy fit in Classic mode; reuse atomically published immutable clock curves; skip a new voice fit in silent voiced-tract frames.",
+    "ECI interface and German Z context rule unchanged."
+  ],
+  "checks": {
+    "classic_main_band_cases": 10,
+    "classic_main_band_worst_residual_db": 0.1787,
+    "classic_image_regression_cases": 410,
+    "classic_image_regression_maximum_kernel_l1": 15.3246,
+    "classic_image_regression_kernel_l1_bound": 32,
+    "old_failing_kernel_l1_approx": 600878,
+    "classic_noise_spectrum_cases": 40,
+    "classic_noise_worst_residual_db": 0.025,
+    "af_only_pcm_identities_to_dev6": 40,
+    "classic_core_frame_cases": 20,
+    "filter_dispatch_bit_identical_comparisons": 19404,
+    "spectral_phase_bit_identical_comparisons": 20000,
+    "actual_speech_peak_cases": 20,
+    "a_and_low_rate_pcm_identities_to_dev6": 36,
+    "actual_speech_maximum_pcm_peak": 32295,
+    "standard_eci_api": 131,
+    "hearing_profiles_pcm_index_rollback_volume": 293,
+    "german_z_controls": 483,
+    "male_z_onset_level_checks": 10,
+    "female_z_pcm_identities": 196,
+    "nvda_driver_en": "24 initial-language cases; selectable, x64, FIFO, indices/done, cancel/close passed",
+    "nvda_driver_de": "24 initial-language cases; selectable, x64, FIFO, indices/done, cancel/close passed",
+    "windows_pe_exports": 31,
+    "package_crc_manifest_docs_and_embedded_dll_identity": "passed"
+  },
+  "voice_dsp_replay": {
+    "native_frames": 46020,
+    "samples": 1357590,
+    "dataset": "Native EN-US and German example sentences from test_eci_classic_voice_stability.py; male model at 16/22.05/32/48 kHz. Captured from dev6 and replayed through each core.",
+    "measurement": "Three isolated replay processes per version; process user CPU time measured by resource.getrusage, median; same host and compiler options. No Windows/ARM measurement.",
+    "results": {
+      "dev6": {
+        "cpu_seconds": [
+          1.854944,
+          1.923939,
+          1.8544439999999995
+        ],
+        "median_cpu_seconds": 1.854944,
+        "replay": "frames=46020 samples=1357590 peak=346846 rails=0 maxdelta=371487"
+      },
+      "dev7": {
+        "cpu_seconds": [
+          1.0044050000000002,
+          1.0293450000000002,
+          1.0478069999999997
+        ],
+        "median_cpu_seconds": 1.0293450000000002,
+        "replay": "frames=46020 samples=1357590 peak=9822.99 rails=0 maxdelta=5426.2"
+      },
+      "cpu_reduction_fraction": 0.4450802827470801
+    },
+    "peak_measurement": "Raw float core samples before host gain and PCM conversion; do not interpret the raw value as a public PCM16 peak."
+  },
+  "af_only_pcm_fingerprints": [
+    "4 16000 0 640 963548a7b7b20725",
+    "4 16000 1 640 0a400dd3688fb41b",
+    "4 16000 2 640 5678fe1621df08aa",
+    "4 16000 3 640 4bfbc3b38b5c7700",
+    "4 22050 0 882 f91428ecada73e85",
+    "4 22050 1 882 27f9bab021491756",
+    "4 22050 2 882 a254f9f97ab0fb7b",
+    "4 22050 3 882 f900bb2dcb302979",
+    "4 32000 0 1280 778e405fd922b607",
+    "4 32000 1 1280 3e9a09abd1e9a442",
+    "4 32000 2 1280 c388b739cac1ad36",
+    "4 32000 3 1280 07e08d8aa2c49ed5",
+    "4 44100 0 1764 7e8ae82f34b93e48",
+    "4 44100 1 1764 a2cff2691f617bc6",
+    "4 44100 2 1764 fcaa744d17e3783b",
+    "4 44100 3 1764 39ef4dbf57373f33",
+    "4 48000 0 1920 383adc1d38f59853",
+    "4 48000 1 1920 fc006945dd4ce0ca",
+    "4 48000 2 1920 8c0ac87d7511a0b7",
+    "4 48000 3 1920 675f8d15c39a0a96",
+    "5 16000 0 640 5c1a0fbbde5e090c",
+    "5 16000 1 640 0a400dd3688fb41b",
+    "5 16000 2 640 70755540db3475ee",
+    "5 16000 3 640 92512385efcf1271",
+    "5 22050 0 882 c7d2bcab2c775e06",
+    "5 22050 1 882 27f9bab021491756",
+    "5 22050 2 882 ec4739bce5e33994",
+    "5 22050 3 882 34e4a2f9580d399b",
+    "5 32000 0 1280 11919d6233a2a31e",
+    "5 32000 1 1280 3e9a09abd1e9a442",
+    "5 32000 2 1280 1d476782a88af781",
+    "5 32000 3 1280 beaf5cdc6c143e19",
+    "5 44100 0 1764 5bed67822a889a25",
+    "5 44100 1 1764 a2cff2691f617bc6",
+    "5 44100 2 1764 3dc01b797050915b",
+    "5 44100 3 1764 c6809fefea9747de",
+    "5 48000 0 1920 b30ab764e5463e78",
+    "5 48000 1 1920 fc006945dd4ce0ca",
+    "5 48000 2 1920 ecabfe941a947527",
+    "5 48000 3 1920 77d91936f7e3f7bf"
+  ],
+  "limits": [
+    "Windows x64 DLL cross-built and PE-verified. Windows runtime checks run separately in GitHub Actions.",
+    "The 44.5% reduction concerns this native DSP replay, not total NVDA latency or Windows-on-ARM execution.",
+    "Actual listening and underruns on the user device still require the NVDA test. No claim of subjective identity or all-input clipping freedom.",
+    "Existing provider LTO maybe-uninitialized warnings remain visible."
+  ]
+}
