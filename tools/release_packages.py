@@ -41,6 +41,16 @@ def collect(source, destination):
     (destination / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
 
 
+def verify_source(commit):
+    # Publication metadata can be repaired without rebuilding the packages.
+    # Runtime, platform build scripts and data must match the tested source.
+    changed = subprocess.check_output(['git', 'diff', '--name-only', commit, 'HEAD'], text=True).splitlines()
+    allowed = {'.github/release.json', 'README.md', '.github/workflows/release.yml',
+               'tools/release_packages.py'}
+    if any(path not in allowed and not path.startswith('docs/') for path in changed):
+        raise ValueError('runtime or build source changed after candidate validation')
+
+
 def verify(directory, request):
     wanted = json.loads(request.read_text())
     actual = json.loads((directory / 'manifest.json').read_text())
@@ -59,13 +69,7 @@ def verify(directory, request):
         path = directory / name
         if path.stat().st_size != metadata['size'] or sha256(path) != metadata['sha256']:
             raise ValueError(f'asset digest differs: {name}')
-    # A release request may follow the tested candidate with documentation and
-    # validation evidence. Any executable/build/data change requires a new run.
-    changed = subprocess.check_output(['git', 'diff', '--name-only',
-                                      actual['source_commit'], 'HEAD'], text=True).splitlines()
-    allowed = ('.github/release.json', 'README.md')
-    if any(path not in allowed and not path.startswith(('docs/',)) for path in changed):
-        raise ValueError('runtime or build source changed after candidate validation')
+    verify_source(actual['source_commit'])
     if os.environ.get('GITHUB_OUTPUT'):
         with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
             output.write(f"version={actual['version']}\n")

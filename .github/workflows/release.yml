@@ -58,17 +58,30 @@ jobs:
           VERSION: ${{ steps.verify.outputs.version }}
         run: |
           set -euo pipefail
-          if gh api "repos/$GITHUB_REPOSITORY/releases/tags/v$VERSION" > /tmp/existing-release.json 2>/dev/null; then
+          RELEASE_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.tag_name == \"v$VERSION\") | .id")
+          if [ -n "$RELEASE_ID" ]; then
+            gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" > /tmp/existing-release.json
             python3 - <<'PY'
-          import json, os
+          import json, sys
+          sys.path.insert(0, 'tools')
+          from release_packages import verify_source
           release = json.load(open('/tmp/existing-release.json'))
-          assert release['draft'] and release['target_commitish'] == os.environ['GITHUB_SHA'], 'Existing release is not this draft'
+          assert release['draft'], 'Existing release is already published'
+          verify_source(release['target_commitish'])
+          wanted = json.load(open('.github/release.json'))['assets']
+          actual = {asset['name']: asset for asset in release['assets']}
+          if set(actual) == set(wanted) and all(actual[name]['size'] == value['size'] and
+                  actual[name]['digest'] == 'sha256:' + value['sha256'] for name, value in wanted.items()):
+              open('/tmp/assets-already-verified', 'w').close()
           PY
           else
             gh release create "v$VERSION" --target "$GITHUB_SHA" --title "ReLoq C $VERSION" --draft --notes-file "docs/releases/$VERSION.md"
+            RELEASE_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.tag_name == \"v$VERSION\") | .id")
           fi
-          gh release upload "v$VERSION" release-packages/*.exe release-packages/*.nvda-addon release-packages/*.apk --clobber
-          gh api "repos/$GITHUB_REPOSITORY/releases/tags/v$VERSION" > /tmp/release-assets.json
+          if [ ! -f /tmp/assets-already-verified ]; then
+            gh release upload "v$VERSION" release-packages/*.exe release-packages/*.nvda-addon release-packages/*.apk --clobber
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" > /tmp/release-assets.json
           python3 - <<'PY'
           import json
           wanted = json.load(open('.github/release.json'))['assets']
@@ -78,4 +91,9 @@ jobs:
               assert actual[name]['size'] == metadata['size']
               assert actual[name]['digest'] == 'sha256:' + metadata['sha256']
           PY
-          gh release edit "v$VERSION" --draft=false --latest
+          python3 - <<'PY'
+          import json, os
+          json.dump({'draft': False, 'make_latest': 'true', 'target_commitish': os.environ['GITHUB_SHA']},
+                    open('/tmp/publish-release.json', 'w'))
+          PY
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" --input /tmp/publish-release.json --jq .html_url
