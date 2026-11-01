@@ -1,0 +1,158 @@
+{
+  "version": "1.0",
+  "package_version": "1.0.0",
+  "date": "2026-11-01",
+  "native_source_commit": "cb6b5c4bd51d426366f7f2ba4c54faba4854fed0",
+  "packaging_source_commit": "28a9616608c98d2da7bb03562a0def869fa85fd3",
+  "native_and_windows_run": 41290874959,
+  "complete_packages_run": 41291841718,
+  "runtime_and_platform_build_inputs_identical_between_commits": true,
+  "maintenance_only_changes": "The canonical GB phone constants and C regression test were synchronized after the platform build; the compiled C arrays and all other runtime/build inputs are identical.",
+  "dictionary_master": "c592561747722dd87cee87e3ac4a3b05e72278bc",
+  "artifacts": {
+    "reloq-c-android-arm64-1.0.0.apk": {
+      "size": 17446294,
+      "sha256": "49026f568a4a807b8776d8b25709e42e02926a57b639c6b1a60e4937e73f3237"
+    },
+    "reloq-c-synth-experimental-x64-1.0.0.nvda-addon": {
+      "size": 19534021,
+      "sha256": "5118e9a96555be9130da9e9ba1d0d0a9afa9d27d05990c54803ba5a9d8b68f88"
+    },
+    "reloq-c-sapi5-1.0.0-setup.exe": {
+      "size": 19280258,
+      "sha256": "6a34243595dfdd8b4394c7f8e4a97f2e04e0848ff56e3a6fc61a9cadf7852f97"
+    }
+  },
+  "windows_cores": {
+    "x64": {
+      "bytes": 54602240,
+      "sha256": "7936faec80c1c67b731c3a4c23c14f647d9d53353ca5a993ad5d27ed548d8db4",
+      "package_sha256": "a89ae16674aaf4dd240f1fdc675b51aad10ac0895d6228b4f99058d335e05e91"
+    },
+    "x86": {
+      "bytes": 54704128,
+      "sha256": "8f0cee48a29a2891efd54306cf415bc9f642c55f197a7b8cf65f6a30aa0312ab",
+      "package_sha256": "de6a6237c31c1ca55192ab1be3a80dd5cfcd178ba0556b9b44f9611a3375b286"
+    }
+  },
+  "host_library": {
+    "bytes": 55290648,
+    "sha256": "035d70a5def83a5fb8081bbccdfc034ebbe3016773c86d5ace135fa6d0648691",
+    "eci_version": "1.0.0.0",
+    "unstripped": true
+  },
+  "android_packaged_library": {
+    "bytes": 49521440,
+    "sha256": "ab8238e4a7be9fbce7e710be4890b5343d4fe819c0ddf9547206aa0143885be7"
+  },
+  "validation": {
+    "c_eci_integration": {
+      "compile_exit": 0,
+      "test_exit": 0
+    },
+    "british_and_us_dictionary_pronunciation_cases": 20,
+    "british_word_family": [
+      "o'clock",
+      "electronic",
+      "electronics",
+      "electronically",
+      "microelectronic",
+      "microelectronics"
+    ],
+    "british_corrected_phone": "@ (the existing British LOT vowel)",
+    "default_pcm_and_index_comparisons_with_205": 196,
+    "dictionary_context_case_compound_and_voicing_checks": 50,
+    "analysis_options_setting_tag_scope_fragment_index_character_checks": 197,
+    "dictionary_transport_reload_cancel_cycles": 12,
+    "dictionary_retention_checks": 18,
+    "nvda_ui_languages": [
+      "en",
+      "de"
+    ],
+    "nvda_update_test_methods": 5,
+    "android_release_update_metadata_checks": 38,
+    "android_upgrade": {
+      "package": "org.reloq.tts.preview",
+      "same_certificate": true,
+      "old_version_code": 20205,
+      "new_version_code": 1000000
+    },
+    "android_permissions": [
+      "android.permission.INTERNET"
+    ],
+    "android_16kib_elf_and_resource_alignment": true,
+    "windows": {
+      "x64_sapi_format_cases": 784,
+      "x86_sapi_format_cases": 784,
+      "install_upgrade_uninstall": true,
+      "start_menu_targets_and_three_owned_links": true,
+      "installer_language_upgrade": [
+        "en",
+        "de"
+      ],
+      "compiled_installer_languages": 12,
+      "edited_dictionaries_retained": true,
+      "both_com_registry_views_removed": true
+    },
+    "all_pcm_remained_in_ram": true,
+    "sapi_format": {
+      "format_checks": 420,
+      "native_target_pairs": 49,
+      "target_does_not_change_native_rate": true,
+      "only_advertised_formats_accepted": true
+    },
+    "sapi_speed": {
+      "reference_rate_checks": 27,
+      "sapi_zero_native": 60,
+      "native_minimum": 0,
+      "native_maximum": 250
+    },
+    "sapi_settings": {
+      "settings_checks": 43,
+      "languages": 14,
+      "shared_rate": true,
+      "language_settings_preserved": true
+    },
+    "sapi_ui": {
+      "localized_strings": 372,
+      "ui_tables": 12,
+      "regional_fallbacks": 5
+    },
+    "sapi_backend": {
+      "backend_cases": 212,
+      "format_negotiation_cases": 98,
+      "host_tests_convert_audio": false,
+      "languages": 14,
+      "rates": 7,
+      "reference_samples": 29392,
+      "reference_hash": "cabd9b042a4fb2ee",
+      "profile_names": 8,
+      "last_profile": "Grandpa",
+      "direct_eci_identical_pcm_cases": 98,
+      "no_audio_files": true
+    },
+    "sapi_dictionary": {
+      "dictionary_checks": 12,
+      "reloads": 5,
+      "unchanged_language_retained": true,
+      "file_edit_create_delete": true,
+      "same_size_replacement": true,
+      "abort_reuse": true,
+      "no_audio_files": true
+    },
+    "sapi_speed_native": {
+      "no_audio_files": true,
+      "case_count": 52,
+      "direct_native_pcm_matches": 52
+    },
+    "final_nvda_entries_equal_to_source": 26,
+    "release_verification_rejects_modified_apk": true
+  },
+  "limits": [
+    "Automated host and Windows checks do not establish audible device latency, stutter or subjective pronunciation quality.",
+    "The Android APK was built, signature/upgrade checked and inspected in CI; no new physical-device test was performed for this release.",
+    "Windows SAPI binaries are x64/x86, not native ARM64.",
+    "The Android package retains its existing public signing identity to preserve upgrades.",
+    "No general CPU or heap improvement is claimed from this release."
+  ]
+}
