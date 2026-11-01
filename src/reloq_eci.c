@@ -152,6 +152,7 @@ struct reloq_eci_engine {
     reloq_eci_atomic stop_epoch;
     reloq_eci_atomic session_lock;
     reloq_eci_atomic last_index;
+    reloq_eci_atomic paused;
     reloq_eci_atomic program_status,sdk_error;
     ECICallback callback;
     void *callback_data;
@@ -215,6 +216,14 @@ static int notify_callback(struct reloq_eci_engine *e,int message,int value)
     unsigned before=epoch_get(&e->stop_epoch);
     for(;;) {
         if(epoch_get(&e->stop_epoch)!=before)return RELOQ_ECI_CANCELLED;
+        while(epoch_get(&e->paused)) {
+#ifdef _WIN32
+            Sleep(2);
+#else
+            struct timespec pause={0,2000000L};(void)nanosleep(&pause,NULL);
+#endif
+            if(epoch_get(&e->stop_epoch)!=before)return RELOQ_ECI_CANCELLED;
+        }
         int answer=e->callback(e,message,value,e->callback_data);
         /* The reference publishes an index after its callback, including
          * a not-processed response. Its retry therefore sees that index. */
@@ -862,6 +871,7 @@ ECIHand ECICALL eciNewEx(int language)
     epoch_init(&e->stop_epoch);
     epoch_init(&e->session_lock);
     epoch_init(&e->last_index);
+    epoch_init(&e->paused);
     epoch_init(&e->program_status);epoch_init(&e->sdk_error);
     int default_rate=eciGetDefaultParam(RELOQ_ECI_SAMPLE_RATE);
     e->session = make_session(default_rate);
@@ -950,7 +960,7 @@ int reloq_eci_reset_audio(ECIHand handle)
 void ECICALL eciVersion(char *buffer)
 {
     /* The public ECI convention promises at least twenty writable bytes. */
-    if (buffer) memcpy(buffer, "1.0.2.9", sizeof "1.0.2.9");
+    if (buffer) memcpy(buffer, "1.0.2.10", sizeof "1.0.2.10");
 }
 
 int ECICALL eciGetAvailableLanguages(unsigned int *languages, int *count)
@@ -1426,6 +1436,7 @@ int ECICALL eciStop(ECIHand handle)
     /* Increment before touching the session so a simultaneous render reset
      * cannot swallow a Stop received after it claimed the busy state. */
     epoch_inc(&e->stop_epoch);
+    epoch_exchange(&e->paused,0);
     lock_session(&e->session_lock);
     reloq_session_cancel(e->session);
     reloq_session_cancel(e->text_session);
@@ -1437,6 +1448,12 @@ int ECICALL eciSpeaking(ECIHand handle)
 {
     struct reloq_eci_engine *e = handle;
     return e && epoch_get(&e->busy) ? 1 : 0;
+}
+
+int ECICALL eciPause(ECIHand handle,int pause)
+{
+    struct reloq_eci_engine *e=handle;if(!e)return 0;
+    epoch_exchange(&e->paused,!!pause);return 1;
 }
 
 int ECICALL eciGetIndex(ECIHand handle)
@@ -1693,6 +1710,7 @@ static FILE *open_utf8_lexicon(const char *path)
 
 #include "reloq_eci_compat.inc"
 #include "reloq_eci_dictionary.inc"
+#include "reloq_eci_phonemes.inc"
 
 int ECICALL eciSetDictionaryPath(ECIHand handle,const char *utf8_directory)
 {

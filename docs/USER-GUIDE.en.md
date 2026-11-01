@@ -1,8 +1,8 @@
 # Eloquence C – user guide
 
-## Hearing preview 1.0.2-dev9
+## Hearing preview 1.0.2-dev10
 
-This preview expands the general ECI interface: callback retries, standard error queries, one reset contract and editable dictionaries. These changes apply to every DLL client. The dev8 acoustic tuning remains in place while crackling, Richness and occasional playback stutter await separate investigation.
+This preview adds general ECI phoneme output and pause/resume. A fractional glottal-closure correction reduces source aliasing. From 22.05 kHz, a progressively flatter native glottal tilt opens periodic harmonics; the earlier upper shelf is removed. The 16-kHz contour and accepted consonant shaping remain. Less frequent, smoother tract-filter fits aim to reduce processing cost and transition artifacts. Listening in NVDA must establish how much crackling and playback stutter improve.
 
 ## Install and select
 

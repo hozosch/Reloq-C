@@ -64,6 +64,34 @@ memory:free(bytes);free(map);return -2;
 invalid:free(bytes);free(map);return -1;
 }
 
+int reloq_rules61_phonemes(int language,const unsigned char *text,size_t length,
+    int tags,const int voice[8],const struct reloq61_mark *indices,size_t count,
+    reloq61_phoneme_sink sink,reloq61_index_sink index_sink,void *context)
+{
+    unsigned char *input=NULL;size_t *map=NULL,n=0;
+    int family=language>>16;
+    int status=english_input(text,length,tags,
+        family==6||family==8||family==10||family==18,&input,&map,&n);
+    if(status)return status;
+    struct reloq61_mark *marks=count?malloc(count*sizeof *marks):NULL;
+    if(count&&!marks){free(input);free(map);return -2;}
+    size_t at=0;
+    for(size_t i=0;i<count;++i) {
+        if(indices[i].offset>length||(i&&indices[i].offset<indices[i-1].offset)) {
+            free(input);free(map);free(marks);return -1;
+        }
+        while(at<n&&map[at]<indices[i].offset)++at;
+        marks[i]=indices[i];marks[i].offset=at;
+    }
+    struct reloq61_request q={.language=language,.annotations=1,.phonemes_only=1,
+        .text=(char *)input,.marks=marks,.mark_count=count,
+        .phoneme_indices=1,.index=index_sink,.context=context};
+    memcpy(q.voice,voice,sizeof q.voice);
+    struct reloq61_result result={0};
+    status=reloq61_generate_phonemes(&q,&result,sink,context);
+    free(input);free(map);free(marks);return status;
+}
+
 /* Each word is analyzed for this request. No word or pronunciation result
  * survives in thread-local storage. */
 int reloq_rules61_word(int language,const unsigned char *word,size_t length,

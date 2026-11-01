@@ -168,7 +168,7 @@ enum reloq_eci_failure_stage {
 
 /* ECI exports. SetParam returns the previous value or -1 on refusal.
  * Mutating calls run on the owner thread, outside a callback. eciStop may
- * run on another thread or from the callback; eciSpeaking and eciGetIndex
+ * run on another thread or from the callback, as may eciPause. eciSpeaking and eciGetIndex
  * read atomic state and may also be queried during synthesis. This
  * developmental eciSynthesize runs synchronously; eciSynchronize reports
  * its result. Delete requires that any concurrent Stop has completed. */
@@ -199,8 +199,12 @@ ECIAPI int ECICALL eciInsertIndex(ECIHand handle, int index);
  * This is not an emulation of the proprietary inline ECI syntax. */
 ECIAPI int ECICALL eciInsertPitch(ECIHand handle, int native_pitch);
 ECIAPI int ECICALL eciSynthesize(ECIHand handle);
+/* Native phoneme bytes arrive through message eciPhonemeBuffer. The caller
+ * owns room bytes; a callback and eciSynthMode=1 are required. */
+ECIAPI int ECICALL eciGeneratePhonemes(ECIHand handle,int room,void *buffer);
 ECIAPI int ECICALL eciSynchronize(ECIHand handle);
 ECIAPI int ECICALL eciStop(ECIHand handle);
+ECIAPI int ECICALL eciPause(ECIHand handle,int pause);
 ECIAPI int ECICALL eciSpeaking(ECIHand handle);
 ECIAPI int ECICALL eciGetIndex(ECIHand handle);
 ECIAPI int ECICALL eciProgStatus(ECIHand handle);

@@ -29,6 +29,8 @@ struct reloq61_request {
     /* Physical host clock for independently requested source balancing;
      * it does not select a different original acoustic-rule profile. */
     int output_rate;
+    /* Public phoneme output keeps native queue/index callbacks. */
+    int phoneme_indices;
 };
 /* Lossless German onset facts collected during the existing phoneme pass.
  * The caller owns this scoped sink; no word or synthesis result is retained. */

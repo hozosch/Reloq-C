@@ -1,4 +1,4 @@
-# Standard-ECI-Abgleich in 1.0.2-dev9
+# Standard-ECI-Abgleich in 1.0.2-dev10
 
 Die Referenz ist die vom Nutzer bereitgestellte `ibmeci.dll` (Windows x86,
 344064 Bytes), SHA-256
@@ -85,6 +85,25 @@ Die folgenden Regeln gelten in der DLL unabhängig vom aufrufenden Add-on:
   Rückgabe-, Sprach- und Dictionary-Namen. Die öffentliche ABI verwendet
   weiterhin 32-Bit-Integer und die originale Windows-Aufrufkonvention.
 
+## Allgemeine Erweiterungen in dev10
+
+`eciGeneratePhonemes(h, room, buffer)` benötigt wie die untersuchte Referenz
+einen Callback und `eciSynthMode=1`. Native Phonembytes erscheinen als
+`eciPhonemeBuffer` (Nachricht 1), nicht als PCM. Der Puffer gehört dem Client;
+der Callback erhält die tatsächlich belegte Bytezahl. Kleine Puffer,
+eingebettete NUL-Bytes, Callback-Wiederholung, Abbruch und Stop werden
+berücksichtigt. Die vorherige PCM-Ausgaberoute wird nicht ersetzt.
+Textfragmente werden gemeinsam zugeführt. Die ausgewählte Sprachkodierung,
+Unicode-Zulassung, aktiven Wörterbücher und nativen Sprachregeln gelten auch
+hier. Die zusätzliche ReLoq-Pitch-Marke ist in dieser Ausgabe nicht erlaubt.
+
+`eciPause(h, value)` hält weitere Callbacks an. 0 setzt fort, andere Werte
+aktivieren die Pause. Pause/Resume und Stop dürfen aus dem Callback oder von
+einem zweiten Thread kommen. Stop beendet eine angehaltene Ausgabe und
+entfernt den Pausenzustand. Diese Implementierung betrifft den vorhandenen
+Puffer-/Callback-Pfad; ein nativer Windows-Audiogerätetreiber ist weiterhin
+nicht implementiert. Synthese und Phonemausgabe laufen weiterhin synchron.
+
 ## Konkrete Referenzbeobachtungen
 
 `eciSetVoiceParam` liegt bei 0x100052f7. Die Prüfung ab 0x100053bf lässt
@@ -95,6 +114,10 @@ für die Unterscheidung von Codesätzen und erweiterten asiatischen Volumes.
 `eciGetAvailableLanguages` bei 0x10001b1b reicht Ausgabeadresse und Zähladresse
 an den installierten Sprachmanager weiter; die eigene Liste stammt deshalb
 aus den tatsächlich eingebauten C-Sprachmodulen.
+
+`eciGeneratePhonemes` beginnt bei 0x100076dc. Die Prüfungen bei 0x100077b3
+und 0x100077c0 verlangen Callback und SynthMode 1. Anschließend wird die
+Ausgabe auf die übergebene Phonemroute umgestellt und die Queue verarbeitet.
 
 ## Umfang der Prüfung
 
@@ -116,11 +139,11 @@ ist keine der aufgeführten Prüfungen.
 
 ## Noch offene Originalfunktionen
 
-Die Referenz exportiert 60 Funktionen. Dieser Wrapper exportiert 47, davon
-43 aus dieser Referenz und vier zusätzliche ReLoq-Funktionen. Die folgenden
+Die Referenz exportiert 60 Funktionen. Dieser Wrapper exportiert 49, davon
+45 aus dieser Referenz und vier zusätzliche ReLoq-Funktionen. Die folgenden
 Original-Exporte fehlen weiterhin:
 
-`eciActivateFilter`, `eciDeactivateFilter`, `eciDeleteFilter`, `eciGeneratePhonemes`, `eciGetFilteredText`, `eciNewFilter`, `eciPause`, `eciRegisterVoice`, `eciSetFilter`, `eciSetOutputDevice`, `eciSetOutputFilename`, `eciSpeakText`, `eciSpeakTextEx`, `eciSynthesizeFile`, `eciTestPhrase`, `eciUnregisterVoice`, `eciUpdateFilter`.
+`eciActivateFilter`, `eciDeactivateFilter`, `eciDeleteFilter`, `eciGetFilteredText`, `eciNewFilter`, `eciRegisterVoice`, `eciSetFilter`, `eciSetOutputDevice`, `eciSetOutputFilename`, `eciSpeakText`, `eciSpeakTextEx`, `eciSynthesizeFile`, `eciTestPhrase`, `eciUnregisterVoice`, `eciUpdateFilter`.
 
 Auch bei vorhandenen Exporten ist vollständige Parität nicht belegt:
 `eciSynthesize` läuft hier synchron; `eciSynthMode=1` speichert noch keine

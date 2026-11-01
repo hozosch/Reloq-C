@@ -407,6 +407,11 @@ struct reloq_core_voiced_state {
     int next_attenuated;
     int frame_period_configured;
     int modulated_frame_open;
+    /* Classic source only: fractional glottal closure, independent of
+     * source masks and the native period/frame clocks. */
+    int bandlimited_closure;
+    float closure_pre,closure_tail[2];
+    unsigned closure_cursor;
 };
 struct reloq_core_voiced_modulation_frame {
     float duration_ms;

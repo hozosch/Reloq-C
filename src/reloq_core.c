@@ -342,6 +342,27 @@ static int source_profile(struct reloq_core_resonator *filter,
     return status;
 }
 
+static int classic_source_profile(struct reloq_core_resonator *filter,
+    const struct reloq_core_clock *clock,long index,float reference,float rate)
+{
+    if(rate<22050 || !index)return source_profile(filter,clock,index,reference);
+    /* Open the physical glottal tilt gradually. This acts on the useful
+     * periodic harmonics before the tract, rather than amplifying its
+     * reconstruction stopband with a fixed upper shelf. */
+    float extension=rate>=48000?1:rate>=44100?.8f:rate>=32000?.5f:.25f;
+    float at=fmaxf(1,(float)index-.3f*extension);
+    long lower=(long)at,upper=lower<35?lower+1:35;
+    struct reloq_core_resonator original=*filter,a=*filter,b=*filter;
+    if(source_profile(&original,clock,index,reference)||
+       source_profile(&a,clock,lower,reference)||source_profile(&b,clock,upper,reference))return -1;
+    float mix=at-(float)lower;
+    filter->latest_gain=a.latest_gain+mix*(b.latest_gain-a.latest_gain);
+    filter->previous_gain=a.previous_gain+mix*(b.previous_gain-a.previous_gain);
+    double dc=original.input_gain/(1-(double)original.latest_gain-original.previous_gain);
+    filter->input_gain=(float)(dc*(1-(double)filter->latest_gain-filter->previous_gain));
+    filter->enabled=a.enabled;filter->ramp_remaining=0;return 0;
+}
+
 int reloq_core_antiresonator_coefficients(
     struct reloq_core_resonator *filter, float coefficients[3])
 {
@@ -1261,6 +1282,9 @@ int reloq_core_voiced_configure(struct reloq_core_voiced_state *voice,
     voice->next_attenuated = 0;
     voice->frame_period_configured = 0;
     voice->modulated_frame_open = 0;
+    voice->bandlimited_closure=0;
+    voice->closure_pre=voice->closure_tail[0]=voice->closure_tail[1]=0;
+    voice->closure_cursor=0;
     return 0;
 }
 
@@ -1558,6 +1582,32 @@ int reloq_core_voiced_fill_with_mask(struct reloq_core_voiced_state *voice,
                 voice->next_phase_ms *
                 voice->clock.samples_per_millisecond;
             voice->pulse.phase *= voice->pulse.increment;
+            voice->closure_pre=voice->closure_tail[0]=voice->closure_tail[1]=0;
+            if(voice->bandlimited_closure && lengths.first>0 &&
+               lengths.second-voice->pre_left>=2) {
+                /* The legacy mask rounds the open duration. Retain that
+                 * mask, while integrating the actual fractional closure
+                 * through a compact triangular reconstruction kernel.
+                 * Its correction straddles the edge and survives chunks. */
+                float exact=(voice->period_ms*voice->open_fraction-
+                    voice->next_phase_ms)*voice->clock.samples_per_millisecond;
+                float fraction=exact-(float)lengths.first;
+                if(fraction<-.5f)fraction=-.5f;
+                if(fraction>.5f)fraction=.5f;
+                float phase=voice->pulse.phase+exact*voice->pulse.increment;
+                float jump=-(phase-voice->pulse.curvature*phase*phase);
+                voice->closure_pre=fraction<0?.5f*jump*fraction*fraction:0;
+                if(fraction>0) {
+                    float last=voice->pulse.phase+(float)lengths.first*voice->pulse.increment;
+                    voice->closure_tail[0]=last-voice->pulse.curvature*last*last+
+                        .5f*jump*(1-fraction)*(1-fraction);
+                    voice->closure_tail[1]=-.5f*jump*fraction*fraction;
+                } else {
+                    voice->closure_tail[0]=-.5f*jump*(1+fraction)*(1+fraction);
+                    voice->closure_tail[1]=0;
+                }
+                voice->closure_cursor=0;
+            }
             voice->next_phase_ms = reloq_core_next_phase(
                 lengths.total, voice->clock.milliseconds_per_sample,
                 voice->next_phase_ms, voice->period_ms);
@@ -1578,6 +1628,8 @@ int reloq_core_voiced_fill_with_mask(struct reloq_core_voiced_state *voice,
                        available : (size_t)voice->open_left;
             if (reloq_core_pulse_fill(&voice->pulse, samples + offset, n))
                 return -1;
+            if(voice->bandlimited_closure && n==(size_t)voice->open_left && n)
+                samples[offset+n-1]+=voice->closure_pre;
             if (closed_mask)
                 memset(closed_mask + offset, 0, n);
             voice->open_left -= (long)n;
@@ -1586,6 +1638,10 @@ int reloq_core_voiced_fill_with_mask(struct reloq_core_voiced_state *voice,
             size_t n = available < (size_t)voice->closed_left ?
                        available : (size_t)voice->closed_left;
             reloq_core_clear(samples + offset, (long)n);
+            if(voice->bandlimited_closure) {
+                for(size_t j=0;j<n&&voice->closure_cursor<2;++j)
+                    samples[offset+j]+=voice->closure_tail[voice->closure_cursor++];
+            }
             if (closed_mask)
                 memset(closed_mask + offset, 1, n);
             voice->closed_left -= (long)n;
@@ -1784,6 +1840,8 @@ int reloq_core_voiced_frame_render_owned(
      * spectrum enters through the native rate transfer, rather than extra
      * serial poles changing the entire shared voice/aspiration band. */
     struct reloq_core_voiced_frame classic_frame;
+    const int classic_source=state->rate_transfer.trial_profile &&
+        state->glottal_reference_rate>0 && state->noise.sample_rate>=16000;
     if(state->rate_transfer.trial_profile && state->glottal_reference_rate>0 &&
        state->reference_formants>=1 && state->reference_formants<=5) {
         classic_frame=*frame;
@@ -1837,6 +1895,7 @@ int reloq_core_voiced_frame_render_owned(
             &af, noise->af_seed, params->af_level, params->bypass_level,
             noise->source_offset, noise->af_trim))
         return -1;
+    state->voice.bandlimited_closure=classic_source;
 
     /* A sampled white source has variance density proportional to 1/Fs.
      * Aspiration enters the same physical vocal-tract passband at every
@@ -1986,8 +2045,11 @@ int reloq_core_voiced_frame_render_owned(
             return -1;
         if (frame->av_level > 0 && carried < length &&
             frame->glottal_profile != state->active_glottal_profile) {
-            if (source_profile(&state->glottal,&noise->clock,
-                    frame->glottal_profile,state->glottal_reference_rate))
+            int error=classic_source?classic_source_profile(&state->glottal,&noise->clock,
+                    frame->glottal_profile,state->glottal_reference_rate,noise->sample_rate):
+                source_profile(&state->glottal,&noise->clock,
+                    frame->glottal_profile,state->glottal_reference_rate);
+            if (error)
                 return -1;
             state->active_glottal_profile = frame->glottal_profile;
         }

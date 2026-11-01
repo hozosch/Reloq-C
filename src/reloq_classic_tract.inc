@@ -13,10 +13,6 @@ static void classic_tract_shelf(double c[5],double rate,unsigned extension)
     c[3]=2*((a-1)-(a+1)*co)/den;
     c[4]=((a+1)-(a-1)*co-z)/den;
 }
-static double classic_rate_extension(double rate)
-{
-    return rate>=48000?1:rate>=44100?.8:rate>=32000?.5:rate>=22050?.25:0;
-}
 struct classic_tract_grid {
     atomic_int ready;
     double complex before[FFT_SIZE/2+1],after[FFT_SIZE/2+1];
@@ -89,7 +85,7 @@ static RATE_NOINLINE void fit_classic_tract(struct reloq_rate_transfer *s,
     long count,double rate,double reference)
 {
     const struct classic_tract_grid *g=classic_tract_grid(rate,reference);
-    /* Extra periodic harmonics enter through the source's Richness shelf.
+    /* Extra periodic harmonics enter through the source's glottal tilt.
      * Keep the shared AV/AH reconstruction envelope at every clock, rather
      * than adding a flat upper floor to aspiration and filter transients. */
     double spectrum[FFT_SIZE]={0};

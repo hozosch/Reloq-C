@@ -1,3 +1,33 @@
+# Teststand 1.0.2-dev10: ECI-Phoneme und stimmhafte Quelle
+
+`eciGeneratePhonemes` liefert native Phonembytes über den regulären
+ECI-Callback, mit begrenztem Aufruferpuffer, Indizes, Wiederholung und Abbruch.
+Die PCM-Route bleibt danach erhalten. `eciPause` hält die Callback-Ausgabe
+an; Resume oder Stop beendet die Pause. Beide Funktionen gelten für alle
+DLL-Clients. Synthese bleibt synchron; vollständige ECI-Parität ist offen.
+
+Die Classic-Stimmquelle berücksichtigt Sample-Bruchteile beim
+Glottisschluss. Perioden, Quellphasen und AH-/AF-Masken bleiben unverändert.
+Damit wird ein samplegerundeter Sprung an der Quelle geglättet, bevor er den
+Vokaltrakt anregt. Das ist eine Anti-Alias-Korrektur und kein Ausgangslimiter.
+Die bisherigen Konturen bei 16 kHz bleiben bestehen; die Quellkorrektur gilt
+auch dort. Ab 22,05 kHz öffnet eine zunehmend flachere native Glottisneigung
+die periodischen Obertöne. Der bisherige 4,5-kHz-Shelf entfällt. AH und die
+akzeptierte AF-Konsonantenformung bekommen diese Anhebung nicht.
+
+Langsame Traktbewegungen passen den aktuellen Classic-Filter höchstens alle
+2 ms neu an, große Sprünge sofort. Der Übergang des Restfilters dauert 3 ms.
+Das spart Spektralanpassungen und entschärft ihre Wechsel. Es gibt keinen
+Sprach- oder PCM-Ergebniscache. Ob Knistern, Stimmkörper und Ruckler im
+alltäglichen NVDA-Betrieb ausreichend verbessert sind, bleibt ein Hörtest.
+
+364 öffentliche ECI-API-Prüfungen und der vollständige native C-Test bestehen.
+45 Quellmodellfälle reduzieren den Fehler zur überabgetasteten Referenz um
+mindestens 12,8 dB. 136 reale Pegelfälle bleiben unter der PCM-Grenze; der
+AF-Pfad ist in 60 Sprach-/Modell-/Tonhöhen-/Ratenfällen bitgleich zu dev9.
+Die beiden DSP-Replays benötigen rund 29 bzw. 33 Prozent weniger Host-CPU.
+Details, Paket-Hashes und Messgrenzen stehen in `docs/validation/1.0.2-dev10.json`.
+
 # Teststand 1.0.2-dev9: allgemeiner ECI-Abgleich
 
 Der Schwerpunkt liegt auf dem öffentlichen DLL-Verhalten. Die Klangabstimmung

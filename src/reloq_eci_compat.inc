@@ -328,5 +328,6 @@ static int reset_eci_defaults(struct reloq_eci_engine *e)
     eci_error(e,RELOQ_ECI_OK);e->last_synthesis_error=RELOQ_ECI_OK;
     epoch_exchange(&e->program_status,0);epoch_exchange(&e->sdk_error,0);
     e->failure_stage=RELOQ_ECI_STAGE_NONE;e->failure_utf8_offset=-1;
+    epoch_exchange(&e->paused,0);
     eciDelete(n);busy_end(&e->busy);return 1;
 }

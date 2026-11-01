@@ -1,0 +1,368 @@
+{
+  "reference": "32x analytic polynomial pulse, anti-alias resample_poly; no tract/noise",
+  "cases": 45,
+  "minimum_error_reduction_db": 12.775719016942606,
+  "rows": [
+    {
+      "rate": 16000,
+      "f0_hz": 137,
+      "open_percent": 45,
+      "legacy_rms_error": 405.4213022753133,
+      "corrected_rms_error": 87.61020799019026,
+      "error_reduction_db": 13.30703705926167
+    },
+    {
+      "rate": 16000,
+      "f0_hz": 137,
+      "open_percent": 70,
+      "legacy_rms_error": 410.8860983177896,
+      "corrected_rms_error": 87.3974971478042,
+      "error_reduction_db": 13.444449043398716
+    },
+    {
+      "rate": 16000,
+      "f0_hz": 137,
+      "open_percent": 85,
+      "legacy_rms_error": 408.1976955972009,
+      "corrected_rms_error": 87.42565426241217,
+      "error_reduction_db": 13.384633151225437
+    },
+    {
+      "rate": 16000,
+      "f0_hz": 233,
+      "open_percent": 45,
+      "legacy_rms_error": 519.5565605192969,
+      "corrected_rms_error": 114.15734662938424,
+      "error_reduction_db": 13.162579344422339
+    },
+    {
+      "rate": 16000,
+      "f0_hz": 233,
+      "open_percent": 70,
+      "legacy_rms_error": 526.7272169287376,
+      "corrected_rms_error": 114.11418265917986,
+      "error_reduction_db": 13.284922714483558
+    },
+    {
+      "rate": 16000,
+      "f0_hz": 233,
+      "open_percent": 85,
+      "legacy_rms_error": 529.0713732366967,
+      "corrected_rms_error": 113.8990635904707,
+      "error_reduction_db": 13.339882199303643
+    },
+    {
+      "rate": 16000,
+      "f0_hz": 430,
+      "open_percent": 45,
+      "legacy_rms_error": 679.0352251943499,
+      "corrected_rms_error": 155.99344641800468,
+      "error_reduction_db": 12.775719016942606
+    },
+    {
+      "rate": 16000,
+      "f0_hz": 430,
+      "open_percent": 70,
+      "legacy_rms_error": 698.778669474561,
+      "corrected_rms_error": 155.4755238202217,
+      "error_reduction_db": 13.053552215855058
+    },
+    {
+      "rate": 16000,
+      "f0_hz": 430,
+      "open_percent": 85,
+      "legacy_rms_error": 704.9888109597434,
+      "corrected_rms_error": 154.98822544742825,
+      "error_reduction_db": 13.157670369167842
+    },
+    {
+      "rate": 22050,
+      "f0_hz": 137,
+      "open_percent": 45,
+      "legacy_rms_error": 351.35999198604605,
+      "corrected_rms_error": 74.05683830317066,
+      "error_reduction_db": 13.523742833690473
+    },
+    {
+      "rate": 22050,
+      "f0_hz": 137,
+      "open_percent": 70,
+      "legacy_rms_error": 345.77596764082296,
+      "corrected_rms_error": 74.33416175306334,
+      "error_reduction_db": 13.35212713974145
+    },
+    {
+      "rate": 22050,
+      "f0_hz": 137,
+      "open_percent": 85,
+      "legacy_rms_error": 346.0333515632589,
+      "corrected_rms_error": 74.70776333043662,
+      "error_reduction_db": 13.315044498112357
+    },
+    {
+      "rate": 22050,
+      "f0_hz": 233,
+      "open_percent": 45,
+      "legacy_rms_error": 450.2192082632123,
+      "corrected_rms_error": 97.22161142651018,
+      "error_reduction_db": 13.313224095485012
+    },
+    {
+      "rate": 22050,
+      "f0_hz": 233,
+      "open_percent": 70,
+      "legacy_rms_error": 451.2305855517737,
+      "corrected_rms_error": 97.19847269760494,
+      "error_reduction_db": 13.334781774878744
+    },
+    {
+      "rate": 22050,
+      "f0_hz": 233,
+      "open_percent": 85,
+      "legacy_rms_error": 454.5079848723169,
+      "corrected_rms_error": 97.04697757074297,
+      "error_reduction_db": 13.41119006214715
+    },
+    {
+      "rate": 22050,
+      "f0_hz": 430,
+      "open_percent": 45,
+      "legacy_rms_error": 595.6666804141681,
+      "corrected_rms_error": 132.37898566014084,
+      "error_reduction_db": 13.063685175587194
+    },
+    {
+      "rate": 22050,
+      "f0_hz": 430,
+      "open_percent": 70,
+      "legacy_rms_error": 613.8386882681676,
+      "corrected_rms_error": 131.71524148851995,
+      "error_reduction_db": 13.368364493687823
+    },
+    {
+      "rate": 22050,
+      "f0_hz": 430,
+      "open_percent": 85,
+      "legacy_rms_error": 612.1484033499021,
+      "corrected_rms_error": 131.8969791280034,
+      "error_reduction_db": 13.33243744349964
+    },
+    {
+      "rate": 32000,
+      "f0_hz": 137,
+      "open_percent": 45,
+      "legacy_rms_error": 290.3268748688861,
+      "corrected_rms_error": 61.87672760069899,
+      "error_reduction_db": 13.427198033409812
+    },
+    {
+      "rate": 32000,
+      "f0_hz": 137,
+      "open_percent": 70,
+      "legacy_rms_error": 292.1142151505537,
+      "corrected_rms_error": 61.85056585261961,
+      "error_reduction_db": 13.484180286785573
+    },
+    {
+      "rate": 32000,
+      "f0_hz": 137,
+      "open_percent": 85,
+      "legacy_rms_error": 292.0597101194022,
+      "corrected_rms_error": 61.74396240067135,
+      "error_reduction_db": 13.497543061164315
+    },
+    {
+      "rate": 32000,
+      "f0_hz": 233,
+      "open_percent": 45,
+      "legacy_rms_error": 374.3515194418469,
+      "corrected_rms_error": 80.60693640144011,
+      "error_reduction_db": 13.338143696319484
+    },
+    {
+      "rate": 32000,
+      "f0_hz": 233,
+      "open_percent": 70,
+      "legacy_rms_error": 377.28363867000996,
+      "corrected_rms_error": 80.6748826222242,
+      "error_reduction_db": 13.398592594790056
+    },
+    {
+      "rate": 32000,
+      "f0_hz": 233,
+      "open_percent": 85,
+      "legacy_rms_error": 378.6686440151503,
+      "corrected_rms_error": 80.4510467751861,
+      "error_reduction_db": 13.45455290516356
+    },
+    {
+      "rate": 32000,
+      "f0_hz": 430,
+      "open_percent": 45,
+      "legacy_rms_error": 499.7412120364462,
+      "corrected_rms_error": 109.80054704966216,
+      "error_reduction_db": 13.16281323819001
+    },
+    {
+      "rate": 32000,
+      "f0_hz": 430,
+      "open_percent": 70,
+      "legacy_rms_error": 506.8277423201481,
+      "corrected_rms_error": 109.73048473831251,
+      "error_reduction_db": 13.29066162401939
+    },
+    {
+      "rate": 32000,
+      "f0_hz": 430,
+      "open_percent": 85,
+      "legacy_rms_error": 509.08869901062656,
+      "corrected_rms_error": 109.71996095208411,
+      "error_reduction_db": 13.330156241986037
+    },
+    {
+      "rate": 44100,
+      "f0_hz": 137,
+      "open_percent": 45,
+      "legacy_rms_error": 248.82361625543427,
+      "corrected_rms_error": 52.66253306654374,
+      "error_reduction_db": 13.487797054932065
+    },
+    {
+      "rate": 44100,
+      "f0_hz": 137,
+      "open_percent": 70,
+      "legacy_rms_error": 247.58549091727892,
+      "corrected_rms_error": 52.700321806528464,
+      "error_reduction_db": 13.438238465160728
+    },
+    {
+      "rate": 44100,
+      "f0_hz": 137,
+      "open_percent": 85,
+      "legacy_rms_error": 248.02410390785437,
+      "corrected_rms_error": 52.533823480514044,
+      "error_reduction_db": 13.481097575210468
+    },
+    {
+      "rate": 44100,
+      "f0_hz": 233,
+      "open_percent": 45,
+      "legacy_rms_error": 321.9973911382718,
+      "corrected_rms_error": 68.72456583267726,
+      "error_reduction_db": 13.414806962684398
+    },
+    {
+      "rate": 44100,
+      "f0_hz": 233,
+      "open_percent": 70,
+      "legacy_rms_error": 324.2779041027623,
+      "corrected_rms_error": 68.64720896998485,
+      "error_reduction_db": 13.485889456491261
+    },
+    {
+      "rate": 44100,
+      "f0_hz": 233,
+      "open_percent": 85,
+      "legacy_rms_error": 323.9941400582766,
+      "corrected_rms_error": 68.53906174368619,
+      "error_reduction_db": 13.491980009261002
+    },
+    {
+      "rate": 44100,
+      "f0_hz": 430,
+      "open_percent": 45,
+      "legacy_rms_error": 437.6718618533323,
+      "corrected_rms_error": 93.0595332697431,
+      "error_reduction_db": 13.44775512905578
+    },
+    {
+      "rate": 44100,
+      "f0_hz": 430,
+      "open_percent": 70,
+      "legacy_rms_error": 434.7249696760718,
+      "corrected_rms_error": 93.43698521140982,
+      "error_reduction_db": 13.353915371596695
+    },
+    {
+      "rate": 44100,
+      "f0_hz": 430,
+      "open_percent": 85,
+      "legacy_rms_error": 443.66979428665996,
+      "corrected_rms_error": 93.05469291833447,
+      "error_reduction_db": 13.566431640223147
+    },
+    {
+      "rate": 48000,
+      "f0_hz": 137,
+      "open_percent": 45,
+      "legacy_rms_error": 238.26149234963904,
+      "corrected_rms_error": 50.55966068095308,
+      "error_reduction_db": 13.464994140730951
+    },
+    {
+      "rate": 48000,
+      "f0_hz": 137,
+      "open_percent": 70,
+      "legacy_rms_error": 238.66278151479844,
+      "corrected_rms_error": 50.51472380298893,
+      "error_reduction_db": 13.487334301557759
+    },
+    {
+      "rate": 48000,
+      "f0_hz": 137,
+      "open_percent": 85,
+      "legacy_rms_error": 237.138043505774,
+      "corrected_rms_error": 50.38568760500203,
+      "error_reduction_db": 13.453880854829182
+    },
+    {
+      "rate": 48000,
+      "f0_hz": 233,
+      "open_percent": 45,
+      "legacy_rms_error": 309.3911262704522,
+      "corrected_rms_error": 65.82103477850964,
+      "error_reduction_db": 13.442862956612156
+    },
+    {
+      "rate": 48000,
+      "f0_hz": 233,
+      "open_percent": 70,
+      "legacy_rms_error": 311.7858811659753,
+      "corrected_rms_error": 65.8256783254344,
+      "error_reduction_db": 13.509222033266887
+    },
+    {
+      "rate": 48000,
+      "f0_hz": 233,
+      "open_percent": 85,
+      "legacy_rms_error": 311.6443451006261,
+      "corrected_rms_error": 65.7585035986976,
+      "error_reduction_db": 13.514146580701576
+    },
+    {
+      "rate": 48000,
+      "f0_hz": 430,
+      "open_percent": 45,
+      "legacy_rms_error": 412.95867974827104,
+      "corrected_rms_error": 89.57593149712372,
+      "error_reduction_db": 13.274305313261682
+    },
+    {
+      "rate": 48000,
+      "f0_hz": 430,
+      "open_percent": 70,
+      "legacy_rms_error": 416.83945082851693,
+      "corrected_rms_error": 89.57059872336794,
+      "error_reduction_db": 13.356066756926104
+    },
+    {
+      "rate": 48000,
+      "f0_hz": 430,
+      "open_percent": 85,
+      "legacy_rms_error": 418.0755136557779,
+      "corrected_rms_error": 89.57101151759521,
+      "error_reduction_db": 13.381745066549671
+    }
+  ],
+  "limits": "Numerical source-model check only, not a recording of the original DLL or a listening result."
+}

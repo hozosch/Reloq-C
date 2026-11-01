@@ -46,10 +46,10 @@ def main():
                         identities+=1
                     for e in engines:e.set_parameter(HIGH_RATE_PROFILE,1)
                     actual=capture(engines[0],text)
-                    if hz<=16000:
+                    if hz<16000:
                         if len(engines)>1:
                             assert actual==capture(engines[1],text);identities+=1
-                        if hz<16000:continue
+                        continue
                     samples=array.array('h',actual[0]);peak=max(abs(x) for x in samples)
                     assert peak<32767,(hex(language),gender,hz,peak,'PCM limit reached')
                     maximum=max(maximum,peak);checked+=1

@@ -35,3 +35,4 @@ eci/test_reloq_classic_noise
 eci/test_reloq_classic_voice
 
 eci/test_reloq_classic_frame
+eci/test_reloq_classic_source

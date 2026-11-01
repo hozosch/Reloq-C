@@ -1,8 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Hörtest 1.0.2-dev9
+## Hörtest 1.0.2-dev10
 
-Dieser Teststand erweitert die allgemeine ECI-Schnittstelle: korrekte Callback-Wiederholungen, reguläre Fehlerabfragen, einheitlicher Reset und bearbeitbare Wörterbücher. Diese Änderungen gelten für jeden Client der DLL. Die Klangabstimmung aus dev8 bleibt vorerst bestehen; Knistern, Richness und die vereinzelten Ruckler werden anschließend getrennt weiter untersucht.
+Dieser Teststand ergänzt allgemeine ECI-Phonemausgabe und Pause/Resume. Die stimmhafte Quelle berücksichtigt Sample-Bruchteile beim Glottisschluss gegen Alias-Artefakte. Ab 22,05 kHz öffnet eine flachere native Glottisneigung die Obertöne; der bisherige obere Shelf entfällt. Die 16-kHz-Kontur und die akzeptierte Konsonantenformung bleiben erhalten. Weniger häufige, weichere Traktfilter-Anpassungen sollen Rechenlast und Übergangsartefakte verringern. Der Hörtest muss zeigen, wie weit Knistern und Ruckler damit zurückgehen.
 
 ## Installieren und auswählen
 

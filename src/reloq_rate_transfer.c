@@ -614,12 +614,14 @@ static void spectrum_pairs(double spectrum[FFT_SIZE],const struct frequency_grid
     }
 }
 #endif
-/* The same linear one-millisecond ramp is shared by every tap. Calculate
+/* The same linear ramp is shared by every tap: 3 ms for Classic AV/AH,
+ * the existing 1 ms otherwise. Calculate
  * its slope once per frame; division inside every sample/tap is unnecessary. */
 static void prepare_ramp(struct reloq_rate_transfer *s,float rate)
 {
     if(!s->ready){memcpy(s->kernel,s->target,sizeof s->kernel);s->ready=1;}
-    s->remaining=(unsigned)(rate*.001f);if(!s->remaining)s->remaining=1;
+    s->remaining=(unsigned)(rate*(s->trial_profile&&s->presence_rate>0?.003f:.001f));
+    if(!s->remaining)s->remaining=1;
     for(unsigned i=0;i<RELOQ_RATE_TAPS;++i)
         s->step[i]=(s->target[i]-s->kernel[i])/s->remaining;
 }
@@ -789,50 +791,36 @@ void reloq_rate_transfer_prepare(struct reloq_rate_transfer *s,
     for(unsigned i=0;i<8;++i){key[4+2*i]=f->oral[i].frequency_hz;key[5+2*i]=f->oral[i].bandwidth_hz;}
     for(unsigned i=0;i<4;++i){key[20+2*i]=special[i]->frequency_hz;key[21+2*i]=special[i]->bandwidth_hz;}
     if(s->ready && !memcmp(key,s->key,sizeof key))return;
+    if(s->trial_profile && s->ready && !memcmp(key,s->key,4*sizeof *key) &&
+       key[28]==s->key[28] && s->fit_samples<(unsigned)(rate*.002f)) {
+        /* Slowly moving formants need no new spectral fit every ms.
+         * Large transitions still take effect immediately. Only the
+         * current live filter is retained, never a speech result. */
+        int jump=0;
+        for(unsigned i=4;i<28;++i) {
+            float bound=(i&1)?fmaxf(10,.15f*fabsf(s->key[i])):
+                fmaxf(25,.04f*fabsf(s->key[i]));
+            if(fabsf(key[i]-s->key[i])>bound){jump=1;break;}
+        }
+        if(!jump)return;
+    }
     memcpy(s->key,key,sizeof key);
     fit_tract(s,f,rate,reference,old_count);
-}
-
-static void prepare_trial_source(struct reloq_rate_transfer *s)
-{
-    double rate=s->presence_rate;
-    double weight=classic_rate_extension(rate);
-    /* Richness acts on periodic source harmonics, without opening the
-     * aspiration path or shortening the glottal pulse. The accepted
-     * 16-kHz source stays unchanged. Keep the lower harmonics anchored:
-     * adding a shelf at 2.5 kHz stacked it over the Classic presence
-     * band and clipped ordinary female vowels. The 4.5-kHz knee expands
-     * upper harmonics with 1.75 to 7 dB of shelf gain and keeps headroom. */
-    double db=7*weight;
-    double a=pow(10,db/40),w=2*pi*4500/rate;
-    double co=cos(w),z=sin(w)*sqrt(2*a),den=(a+1)-(a-1)*co+z;
-    double *c=s->trial_source;
-    c[0]=a*((a+1)+(a-1)*co+z)/den;
-    c[1]=-2*a*((a-1)+(a+1)*co)/den;
-    c[2]=a*((a+1)+(a-1)*co-z)/den;
-    c[3]=2*((a-1)-(a+1)*co)/den;
-    c[4]=((a+1)-(a-1)*co-z)/den;
-    s->trial_source_rate=s->presence_rate;
+    s->fit_samples=0;
 }
 
 void reloq_rate_transfer_process_voice(struct reloq_rate_transfer *s,float *samples,size_t count)
 {
     if(s->presence_rate<=0)return;
     if(s->trial_profile) {
+        unsigned limit=(unsigned)s->presence_rate;
+        if(s->fit_samples<limit)
+            s->fit_samples+=count>limit-s->fit_samples?limit-s->fit_samples:(unsigned)count;
         const double *c=s->voice_colour[0];double *d=s->voice_colour_delay[0];
         for(size_t j=0;j<count;++j) {
             double x=samples[j],y=c[0]*x+d[0];
             d[0]=c[1]*x-c[3]*y+d[1];d[1]=c[2]*x-c[4]*y;
             samples[j]=(float)y;
-        }
-        if(s->presence_rate>=22050) {
-            if(s->trial_source_rate!=s->presence_rate)prepare_trial_source(s);
-            const double *richness=s->trial_source;double *history=s->trial_source_delay;
-            for(size_t j=0;j<count;++j) {
-                double x=samples[j],y=richness[0]*x+history[0];
-                history[0]=richness[1]*x-richness[3]*y+history[1];
-                history[1]=richness[2]*x-richness[4]*y;samples[j]=(float)y;
-            }
         }
         return;
     }

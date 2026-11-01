@@ -220,6 +220,8 @@ static int32_t STDCALL message(void *h,int32_t kind,int32_t value,void *context)
             c->q->phonemes[c->r->phonemes_length+n]=0;
         }
         c->r->phonemes_length+=n;
+    } else if(kind==2 && c->q->phonemes_only && c->q->phoneme_indices) {
+        report_index(c,value,(int64_t)c->r->phonemes_length);
     }
     return 1;
 }
@@ -262,6 +264,9 @@ static void index_at(int32_t value,void *context)
 void reloq61_index_at(void *context,int32_t value,int64_t tick)
 {
     struct capture *c=context;
+    /* Public phoneme output uses the native ECI index callback below.
+     * The acoustic timing hook would report those marks a second time. */
+    if(c->q->phonemes_only&&c->q->phoneme_indices)return;
     /* Device IDs belong to IndexManager. Its payload is the caller's
        index; reporting the internal ID would silently lose/reorder marks. */
     if(value>0 && c->q->index) {
@@ -636,7 +641,7 @@ static int generate_core(const struct reloq61_request *q,struct reloq61_result *
     eo_registerCallback(h,(void *)message,&c);
     ok=prepared?1:configure(h,q,worker?worker->pcm:pcm);
     n=strlen(q->text);
-    int metadata=1;
+    int metadata=!(q->phonemes_only&&q->phoneme_indices);
     for(size_t j=0;j<q->mark_count;++j) {
         if(q->marks[j].offset>n || (j&&q->marks[j].offset<q->marks[j-1].offset))ok=0;
         if(q->marks[j].pitch>=0)metadata=0;
