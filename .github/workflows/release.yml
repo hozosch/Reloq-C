@@ -40,7 +40,7 @@ jobs:
           run = json.load(open('/tmp/candidate.json'))
           request = json.load(open('.github/release.json'))
           assert run['conclusion'] == 'success'
-          assert run['path'] == '.github/workflows/packages.yml'
+          assert run['path'] in ('.github/workflows/packages.yml', '.github/workflows/package-existing.yml')
           assert run['head_sha'] == request['source_commit']
           PY
       - uses: actions/download-artifact@v4
@@ -58,8 +58,16 @@ jobs:
           VERSION: ${{ steps.verify.outputs.version }}
         run: |
           set -euo pipefail
-          gh release create "v$VERSION" --target "$GITHUB_SHA" --title "ReLoq C $VERSION" --draft --notes-file "docs/releases/$VERSION.md"
-          gh release upload "v$VERSION" release-packages/*.exe release-packages/*.nvda-addon release-packages/*.apk
+          if gh api "repos/$GITHUB_REPOSITORY/releases/tags/v$VERSION" > /tmp/existing-release.json 2>/dev/null; then
+            python3 - <<'PY'
+          import json, os
+          release = json.load(open('/tmp/existing-release.json'))
+          assert release['draft'] and release['target_commitish'] == os.environ['GITHUB_SHA'], 'Existing release is not this draft'
+          PY
+          else
+            gh release create "v$VERSION" --target "$GITHUB_SHA" --title "ReLoq C $VERSION" --draft --notes-file "docs/releases/$VERSION.md"
+          fi
+          gh release upload "v$VERSION" release-packages/*.exe release-packages/*.nvda-addon release-packages/*.apk --clobber
           gh api "repos/$GITHUB_REPOSITORY/releases/tags/v$VERSION" > /tmp/release-assets.json
           python3 - <<'PY'
           import json

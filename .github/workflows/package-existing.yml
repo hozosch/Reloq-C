@@ -1,0 +1,82 @@
+name: Complete packages from verified platform builds
+on:
+  push:
+    branches: ['codex/package*']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  packages:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify platform results and unchanged build inputs
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          request = json.load(open('.github/package-source.json'))
+          run_id, commit = request['run_id'], request['source_commit']
+          assert isinstance(run_id, int) and run_id > 0
+          repo = os.environ['GITHUB_REPOSITORY']
+          run = json.loads(subprocess.check_output(['gh', 'api', f'repos/{repo}/actions/runs/{run_id}']))
+          assert run['head_sha'] == commit and run['path'] == '.github/workflows/packages.yml'
+          jobs = json.loads(subprocess.check_output(['gh', 'api', f'repos/{repo}/actions/runs/{run_id}/jobs?per_page=100']))['jobs']
+          required = {'dictionaries', 'android', 'sapi / native (x64)', 'sapi / native (x86)', 'sapi / installer'}
+          good = {job['name'] for job in jobs if job['conclusion'] == 'success'}
+          assert required <= good, 'Platform validation did not pass'
+          changed = subprocess.check_output(['git', 'diff', '--name-only', commit, 'HEAD'], text=True).splitlines()
+          allowed = {'.github/package-source.json', '.github/workflows/package-existing.yml',
+                     '.github/workflows/packages.yml', '.github/workflows/release.yml'}
+          assert set(changed) <= allowed, 'Runtime, data or build-script inputs changed: rebuild platforms'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write(f'run_id={run_id}\n')
+          print(f'Platform inputs identical to {commit}; Windows and Android checks passed in run {run_id}')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sapi-*
+          path: artifacts/sapi
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: artifacts/android
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ github.token }}
+      - name: Install translation compiler
+        timeout-minutes: 6
+        run: |
+          if command -v msgfmt >/dev/null; then exit 0; fi
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends gettext
+      - name: Package NVDA using the verified SAPI x64 core
+        run: |
+          python3 - <<'PY'
+          import pathlib, sys, zipfile
+          sys.path.insert(0, 'addon')
+          from build_synth import build, DEFAULT_OUTPUT
+          payload, = pathlib.Path('artifacts/sapi/sapi-native-x64').glob('*.zip')
+          with zipfile.ZipFile(payload) as archive:
+              assert archive.testzip() is None
+              core = pathlib.Path('eci/eci.dll')
+              core.write_bytes(archive.read('eci.dll'))
+          destination = pathlib.Path('artifacts/nvda') / DEFAULT_OUTPUT.name
+          build(destination, core, refresh_dictionaries=False)
+          PY
+      - name: Collect exactly the three installable packages
+        run: python3 tools/release_packages.py collect artifacts release-packages
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-packages
+          path: release-packages/
+          compression-level: 0
+          retention-days: 30
