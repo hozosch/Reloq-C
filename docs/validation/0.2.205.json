@@ -1,0 +1,115 @@
+{
+  "version": "0.2.205",
+  "date": "2026-11-01",
+  "native_source_commit": "49e5312e2b94fe23c90df17826c36c8f42feb568",
+  "packaging_source_commit": "4ff9b4a1b7ea4aad190d86ebd3347a911ec40038",
+  "native_and_windows_run": 41258714412,
+  "complete_packages_run": 41259854472,
+  "runtime_and_build_inputs_identical_between_commits": true,
+  "dictionary_master": "a23b0f9d9e64dc3156fb8c1795a7521bf173a285",
+  "artifacts": {
+    "reloq-c-android-arm64-0.2.205-preview17.apk": {
+      "size": 17446294,
+      "sha256": "c3c0d1655b5a5877c06bcae750ee8556f6df70b8555fd6e9843aec7390c74396"
+    },
+    "reloq-c-synth-experimental-x64-0.2.205.nvda-addon": {
+      "size": 19534153,
+      "sha256": "237f5b2905b0f972cd867e047a038cd4346e4d438d6e476a16406e99d7625bfd"
+    },
+    "reloq-c-sapi5-0.2.205-setup.exe": {
+      "size": 19287032,
+      "sha256": "84de3a89275b583e913aa6822ac3de1a8e0f7a065dde09195bd761cc73d470d7"
+    }
+  },
+  "windows_cores": {
+    "x64": {
+      "bytes": 54602240,
+      "sha256": "5778ee7562bb5492ca518f5515afa27fbd71c1363e8023e8fc0ae256365b8639",
+      "package_sha256": "265c0a1eefcf058f293146327b206c695ea17141a939bab077f251eed6c9cb42"
+    },
+    "x86": {
+      "bytes": 54704128,
+      "sha256": "3e7836890bd0876feaa2be484b0f3882ca7735efe2104eb30732a96d0688922c",
+      "package_sha256": "3f987a66efe89d143a57dffaeb547fbb1bfe1a32e05887e1af5aa66d3d15feac"
+    }
+  },
+  "host_library": {
+    "bytes": 55240384,
+    "sha256": "56947b4f0c9fc4705a8b319685d12923884433d8b00d7edc9f6b482a8525aa98",
+    "eci_version": "0.2.205.0"
+  },
+  "android_packaged_library": {
+    "bytes": 49521472,
+    "sha256": "53fca079bf07e6d3b53529eeff75cc179276f3f3bc14a4af91fb09a9f27def9f"
+  },
+  "validation": {
+    "c_eci_integration": {
+      "compile_exit": 0,
+      "test_exit": 0
+    },
+    "default_pcm_and_index_comparisons_with_204": 196,
+    "german_context_signatures": 89,
+    "dictionary_context_case_compound_and_voicing_checks": 50,
+    "dictionary_voiced_root_phones": [
+      "b",
+      "d",
+      "g",
+      "v",
+      "z"
+    ],
+    "existing_community_roots_synthesized": 157,
+    "changed_standalone_community_roots": 0,
+    "german_pause_triplets": 315,
+    "pause_modes": 3,
+    "native_speeds": [
+      38,
+      98,
+      180
+    ],
+    "explicit_pause_comparisons": 84,
+    "inline_control_comparisons": 63,
+    "sapi_backend_cases": 212,
+    "sapi_direct_eci_matches": 98,
+    "sapi_speed_matches": 52,
+    "sapi_format_checks": 420,
+    "sapi_settings_checks": 43,
+    "sapi_dictionary_checks": 12,
+    "nvda_ui_languages": [
+      "en",
+      "de"
+    ],
+    "final_nvda_entries_equal_to_source": 26,
+    "android_settings_checks": 866,
+    "android_jni_native_pcm_matches": 63,
+    "android_upgrade": {
+      "package": "org.reloq.tts.preview",
+      "same_certificate": true,
+      "old_version_code": 20204,
+      "new_version_code": 20205
+    },
+    "android_permissions": [
+      "android.permission.INTERNET"
+    ],
+    "android_16kib_elf_and_resource_alignment": true,
+    "windows": {
+      "x64_sapi_format_cases": 784,
+      "x86_sapi_format_cases": 784,
+      "install_upgrade_uninstall": true,
+      "start_menu_targets_and_three_owned_links": true,
+      "installer_language_upgrade": [
+        "en",
+        "de"
+      ],
+      "edited_dictionaries_retained": true,
+      "both_com_registry_views_removed": true
+    },
+    "all_pcm_remained_in_ram": true,
+    "release_verification_rejects_modified_apk": true
+  },
+  "limits": [
+    "Host/Windows stream checks do not measure audible device latency, stutter or subjective pause quality.",
+    "Windows SAPI binaries are x64/x86, not native ARM64.",
+    "The Android package retains its public preview signing identity for existing updates.",
+    "No new general CPU or heap improvement is claimed from this release."
+  ]
+}

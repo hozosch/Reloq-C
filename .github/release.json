@@ -1,0 +1,19 @@
+{
+  "version": "0.2.205",
+  "source_commit": "4ff9b4a1b7ea4aad190d86ebd3347a911ec40038",
+  "run_id": 41259854472,
+  "assets": {
+    "reloq-c-android-arm64-0.2.205-preview17.apk": {
+      "size": 17446294,
+      "sha256": "c3c0d1655b5a5877c06bcae750ee8556f6df70b8555fd6e9843aec7390c74396"
+    },
+    "reloq-c-synth-experimental-x64-0.2.205.nvda-addon": {
+      "size": 19534153,
+      "sha256": "237f5b2905b0f972cd867e047a038cd4346e4d438d6e476a16406e99d7625bfd"
+    },
+    "reloq-c-sapi5-0.2.205-setup.exe": {
+      "size": 19287032,
+      "sha256": "84de3a89275b583e913aa6822ac3de1a8e0f7a065dde09195bd761cc73d470d7"
+    }
+  }
+}
