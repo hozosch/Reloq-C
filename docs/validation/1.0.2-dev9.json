@@ -1,0 +1,76 @@
+{
+  "version": "1.0.2-dev9",
+  "core_version": "1.0.2.9",
+  "local_implementation_commit": "e59f6918e31e1c902b4104ad02e39f6d9a35f56a",
+  "implementation_tree_sha": "59323ba3cf7debd4fd29e8201991c77ee3db54c6",
+  "github_base_commit": "6b212b88008d5858f3df589fc18d5434c8db6d3a",
+  "development_branch": "codex/eci-contract109",
+  "official_release": false,
+  "artifacts": [
+    {
+      "name": "reloq-c-synth-experimental-x64-1.0.2-dev9.nvda-addon",
+      "bytes": 19575211,
+      "sha256": "c6973e601740eb3e0918701cf56351724f3178bce5fb8c97beaa7f9b513be622"
+    },
+    {
+      "name": "reloq-c-eci-x64-1.0.2-dev9.zip",
+      "bytes": 18721856,
+      "sha256": "d7465abaa818dd40a39582cee79f54fb5d3f288c3193ceefd005bac5b698caa3"
+    }
+  ],
+  "dll_sha256": "1bb0269c34033afe1b95481020bab0e40f855c1de1bd233b814668a6bc11b52e",
+  "changes": [
+    "General ECI contract applies to every client, without detecting private controls or a specific add-on.",
+    "eci.h forwards to the public SDK header, with canonical ECI parameter, callback, language and dictionary names.",
+    "Callback 0 retries the same PCM or index after 30 ms; 2 aborts; Stop interrupts retry. Index is published after each callback attempt, matching static reference analysis.",
+    "Standard program/error state accumulates separately from the private last-synthesis diagnostic. Add four SDK error/reentry exports.",
+    "SDK Reset always restores global standard defaults, editable presets, input and renderer histories. Host routing, owned dictionary sets and the independent acoustic profile remain preserved.",
+    "Add nine dictionary search/enumeration/edit/save exports using the same native dictionary tables as speech; transactional updates, source-independent owned data, per-language activation and narrow/UTF-16 strings.",
+    "InsertIndex accepts every signed 32-bit payload; failed AddText preserves already accepted input. Reentrant Delete and Synchronize report ECI error without destroying the active handle.",
+    "DSP and acoustic source files unchanged from dev8; no claim to resolve audible crackling, missing brilliant voiced body or sporadic stuttering."
+  ],
+  "checks": {
+    "full_native_eci_C_regression": "passed, exit 0",
+    "standard_eci_api": 131,
+    "extended_standard_eci_api": 78,
+    "eci_contract_api": 86,
+    "linux_public_eci_exports": 47,
+    "windows_x64_public_eci_exports": 47,
+    "reference_exports": 60,
+    "implemented_original_export_names": 43,
+    "remaining_original_export_names": 17,
+    "canonical_sdk_header": "C11 Linux and Windows x64, C++17 Linux; -Wall -Wextra -Werror passed",
+    "dev8_dev9_pcm_and_indices_byte_identical": 56,
+    "pcm_identity_coverage": "German/US English, male/female, all seven rates, profiles A/B; normal processed callbacks; RAM only",
+    "classic_actual_speech_peak_cases": 136,
+    "classic_maximum_pcm_peak": 31748,
+    "classic_control_low_rate_pcm_identities_to_dev8": 40,
+    "hearing_profiles_pcm_index_rollback_two_engine_volume": 293,
+    "german_tag_context": 371,
+    "analysis_cancellation_and_recovery": 32,
+    "maximum_analysis_cancel_return_ms": 0.992,
+    "native_dictionary_semantics": 50,
+    "dictionary_retention": 18,
+    "inline_tags": "75 fragmentation/index plus 21 exact tag/slider speed cases and pause/voice/mode/malformed-input checks passed",
+    "native_error_recovery": "passed: rejected utterance does not discard later jobs",
+    "nvda_driver_en": "24 initial-language/schema cases plus selectable x64 FIFO/index/cancel/close passed",
+    "nvda_driver_de": "24 initial-language/schema cases plus selectable x64 FIFO/index/cancel/close passed",
+    "windows_x64_cross_build": "passed; PE ABI 47 exports, only kernel32/msvcrt/user32 imports",
+    "package_crc_manifest_docs_licenses_headers_and_dll_identity": "passed"
+  },
+  "reference": {
+    "file": "user-supplied ibmeci.dll, not redistributed",
+    "bytes": 344064,
+    "sha256": "8741d4aeccf3280ea644443146194ebb81d43dee65e2ee460031b9182475a83c",
+    "method": "static export and instruction inspection; no Windows runtime execution of original DLL"
+  },
+  "limits": [
+    "Windows runtime CI for dev9 is separate and must finish before claiming Windows runtime validation.",
+    "No NVDA/Windows-on-ARM listening, latency or stutter measurement on the user device.",
+    "Crackling, voiced-body/Richness quality and sporadic high-rate stuttering remain open; this build deliberately preserves dev8 DSP.",
+    "43 original export names do not establish full behavioral parity. 17 reference exports remain absent; synthesis is synchronous, fragment parameter snapshots, TextMode 2/3, NumberMode, phoneme indices and device/file/filter output remain incomplete.",
+    "MainDictExt and extra Asian legacy code-set modes are not implemented; plain dictionary volumes return part of speech 0.",
+    "Reset preserves host routing unlike the old device reset; this difference is explicit for every client.",
+    "Legacy UTF-16 dictionary conversion on Android is not validated; the existing JNI UTF-8 path remains unchanged."
+  ]
+}

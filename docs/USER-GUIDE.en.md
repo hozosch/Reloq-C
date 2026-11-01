@@ -1,8 +1,8 @@
 # Eloquence C – user guide
 
-## Hearing preview 1.0.2-dev8
+## Hearing preview 1.0.2-dev9
 
-B retains the previous 16-kHz tuning. From 22.05 kHz Richness expands periodic harmonics while preserving the accepted consonants. German sentence analysis now handles pause commands and repeated analysis prefixes from external clients without losing sentence context. Combinations such as “Ein- / Ausgabe” are corrected as well. A remains available for comparison. Male Z attenuation still applies only at word onset and in zw. English seconds reading remains included.
+This preview expands the general ECI interface: callback retries, standard error queries, one reset contract and editable dictionaries. These changes apply to every DLL client. The dev8 acoustic tuning remains in place while crackling, Richness and occasional playback stutter await separate investigation.
 
 ## Install and select
 

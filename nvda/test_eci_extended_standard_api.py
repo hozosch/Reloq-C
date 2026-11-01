@@ -95,7 +95,7 @@ def main():
         lib.eciRegisterCallback(h,callback,None)
         assert lib.eciInsertIndex(h,12) and lib.eciAddText(h,b'Hallo Welt.')
         assert lib.eciInsertIndex(h,23) and lib.eciSynthesize(h)
-        assert pcm and seen==[(12,12),(23,23)] and lib.eciGetIndex(h)==23;checks+=4
+        assert pcm and seen==[(12,0),(23,12)] and lib.eciGetIndex(h)==23;checks+=4
         assert lib.eciReset(h) and lib.eciGetIndex(h)==23;checks+=1
         assert lib.eciAddText(h,b'Hallo Welt.') and lib.eciSynthesize(h);checks+=1
     finally:

@@ -1,4 +1,4 @@
-# Standard-ECI-Abgleich in 1.0.2-dev8
+# Standard-ECI-Abgleich in 1.0.2-dev9
 
 Die Referenz ist die vom Nutzer bereitgestellte `ibmeci.dll` (Windows x86,
 344064 Bytes), SHA-256
@@ -27,24 +27,63 @@ unverändert; neue Handles übernehmen die aktuellen Werte. Ungültige Werte
 werden vor der Änderung abgelehnt. Die ReLoq-Ratencodes 3..6 bleiben eine
 bewusste Erweiterung gegenüber dem alten Windows-ECI.
 
-`eciReset` setzt bei Clients, die ausschließlich Standardaufrufe verwenden,
-Parameter, aktive Stimme und bearbeitbare Stimmenplätze auf diese Defaults
-zurück und verwirft Text sowie Synthesehistorien. Callback, Ausgabepuffer und
-eigene Wörterbuch-Handles bleiben beim Host. Clients mit ausdrücklich
-verwendeten ReLoq-Steuerparametern behalten den bisherigen Resetvertrag,
-damit vorhandene NVDA-/Android-/SAPI-Adapter ihre Einstellungen nicht verlieren.
-Diese beiden Ausnahmen (Ausgaberouting und ReLoq-Reset) sind dokumentierte
-Kompatibilitätsentscheidungen, keine behauptete 1:1-Nachbildung des Originals.
+`eciReset` setzt bei allen Clients Standardparameter, aktive Stimme,
+bearbeitbare Stimmenplätze, Eingabe und Synthesehistorien auf die globalen
+Defaults zurück. Ob vorher ReLoq-Parameter benutzt wurden, spielt seit dev9
+keine Rolle mehr. Callback, Ausgabepuffer, eigene Wörterbücher und die separat
+gewählte akustische Kontur bleiben erhalten. Insbesondere die erhaltene
+Ausgaberoute bleibt eine dokumentierte Abweichung vom alten Geräte-Reset.
+Interne numerische Tests benutzen für einen reinen Historienreset einen
+eigenen, nicht exportierten Aufruf.
 
-`eciGetIndex` liefert den zuletzt gemeldeten Index; er wird vor dem zugehörigen
-Callback atomar veröffentlicht und ist auch während der Ausgabe abfragbar.
-Ohne vorherigen Index ist der Wert 0. Reset verwirft diesen zuletzt gemeldeten
-Wert nicht, entsprechend dem beobachteten getrennten Zustand des Originals.
+`eciGetIndex` liefert den zuletzt gemeldeten Index. Die Referenz aktualisiert
+ihn nach dem Callback, auch bei einer Antwort von `eciDataNotProcessed`.
+Darum sieht der erste Index-Callback noch den vorherigen Wert, seine
+Wiederholung dagegen bereits den gemeldeten Index. Dev8 veröffentlichte den
+Wert irrtümlich vorher; dev9 korrigiert das. Reset verwirft ihn nicht.
 
 Bei Real-World-Units bleiben angeforderte Hz/WPM/Volume-Werte beim Zurücklesen
 und beim Kopieren zwischen Stimmenplätzen erhalten; der Renderer verwendet
 den nächstliegenden nativen Wert. Die privaten nativen ReLoq-Aliasse arbeiten
 weiter in ihren dokumentierten Rohwerten.
+
+## Allgemeine Erweiterungen in dev9
+
+Die folgenden Regeln gelten in der DLL unabhängig vom aufrufenden Add-on:
+
+- `eciDataNotProcessed` (0) bietet denselben PCM-Puffer oder Index nach einer
+  kurzen Wartezeit erneut an. PCM, Quellphase und spätere Indizes laufen erst
+  nach Verarbeitung weiter. `eciDataProcessed` (1) bestätigt; `eciDataAbort`
+  (2) bricht ab. `eciStop` beendet auch eine wiederholte Nichtverarbeitung.
+- `eciProgStatus`, `eciErrorMessage`, `eciClearErrors` und
+  `eciIsBeingReentered` sind reguläre Exporte. Fehlerbits bleiben über
+  erfolgreiche Aufrufe hinweg erhalten, bis ClearErrors oder Reset sie
+  löschen. Die zuletzt gemeldete Fehlerursache bestimmt den Text; Bit 0x80
+  kennzeichnet ungültige Parameter, 0x800 einen abgewiesenen Wiedereintritt.
+  Die private letzte Synthesediagnose bleibt davon getrennt.
+- `eciDictLookup`, `eciDictLookupA`, `eciDictFindFirst`, `eciDictFindNext`,
+  deren A-Formen, `eciUpdateDict`, `eciUpdateDictA` und `eciSaveDict` arbeiten
+  auf den nativen Wörterbuchtabellen. Änderungen eines aktiven Sets werden
+  beim nächsten Sprechen wirksam. Fehlgeschlagene Änderungen behalten den
+  bisherigen Satz. NULL als Übersetzung löscht einen Eintrag. Schlüssel und
+  Übersetzungen aus Lookup/Iteration gehören der Instanz. Aktive Sets werden
+  pro Sprache/Dialekt gespeichert: Sprachwechsel und Reset wählen das für die
+  aktuelle Sprache aktivierte Set; ein fremdsprachiges Set überschreibt nicht
+  die Zuordnung der gerade gesprochenen Sprache.
+- Die drei vorhandenen Volumes Main, Root und Abbreviation sowie schmale
+  Sprachcodesätze und UTF-16-Ein-/Ausgabe werden unterstützt. Die einfache
+  Lookup-Funktion lehnt wie die Referenz UTF-16 ab; LookupA übernimmt diesen
+  Fall. MainDictExt bleibt nicht implementiert und liefert einen Volume-Fehler.
+  Ungültige Ausgabezeiger werden geprüft; die alte Abhängigkeit von
+  uninitialisiertem Aufruferspeicher wird nicht nachgebildet.
+- `eciInsertIndex` nimmt alle 32 Bit als Nutzwert an, einschließlich negativer
+  Werte. Ein abgewiesenes AddText löscht bereits akzeptierte Eingaben nicht.
+  Delete und Synchronize während eines abgewiesenen Wiedereintritts melden
+  den regulären ECI-Fehler, ohne das aktive Handle zu zerstören.
+- Der Standard-Include `eci.h` und der erweiterte Header `reloq_eci.h`
+  enthalten die gebräuchlichen ECI-Parameter-, Nachrichten-,
+  Rückgabe-, Sprach- und Dictionary-Namen. Die öffentliche ABI verwendet
+  weiterhin 32-Bit-Integer und die originale Windows-Aufrufkonvention.
 
 ## Konkrete Referenzbeobachtungen
 
@@ -63,7 +102,10 @@ aus den tatsächlich eingebauten C-Sprachmodulen.
 Wörterbücher ausschließlich die Standardaufrufe. Es prüft reale PCM-Ausgabe
 und Indexpositionen, Stimmenplätze, Fehlversuche, Wechsel der Sprachkodierung
 und Gleichheit zwischen Byte- und UTF-16-Eingabe. `nvda/test_eci_extended_standard_api.py` prüft zusätzlich Einheiten, Defaults,
-Reset, lange Unicode-Namen und Live-Indizes. Die anderen nativen
+Reset, lange Unicode-Namen und Live-Indizes. `nvda/test_eci_contract_api.py` prüft
+zudem Wiederholungen desselben Puffers, Stop während einer Wiederholung,
+Fehlerakkumulation, Wiedereintritt, einheitlichen Reset und aktive
+Wörterbuchänderungen mit realer PCM-/Indexausgabe. Die anderen nativen
 ReLoq-Schnittstellen bleiben für vorhandene NVDA-/Android-/SAPI-Clients erhalten.
 
 Dieser Abgleich deckt die oben genannten Aufrufe ab. Weitere Original-Exporte,
@@ -74,12 +116,11 @@ ist keine der aufgeführten Prüfungen.
 
 ## Noch offene Originalfunktionen
 
-Die Referenz exportiert 60 Funktionen. Dieser Wrapper exportiert 34, davon
-30 aus dieser Referenz und vier zusätzliche ReLoq-Funktionen. Die folgenden
-Original-Exporte fehlen weiterhin; sie werden nicht durch Erfolg meldende
-Leerfunktionen vorgetäuscht:
+Die Referenz exportiert 60 Funktionen. Dieser Wrapper exportiert 47, davon
+43 aus dieser Referenz und vier zusätzliche ReLoq-Funktionen. Die folgenden
+Original-Exporte fehlen weiterhin:
 
-`eciActivateFilter`, `eciClearErrors`, `eciDeactivateFilter`, `eciDeleteFilter`, `eciDictFindFirst`, `eciDictFindFirstA`, `eciDictFindNext`, `eciDictFindNextA`, `eciDictLookup`, `eciDictLookupA`, `eciErrorMessage`, `eciGeneratePhonemes`, `eciGetFilteredText`, `eciIsBeingReentered`, `eciNewFilter`, `eciPause`, `eciProgStatus`, `eciRegisterVoice`, `eciSaveDict`, `eciSetFilter`, `eciSetOutputDevice`, `eciSetOutputFilename`, `eciSpeakText`, `eciSpeakTextEx`, `eciSynthesizeFile`, `eciTestPhrase`, `eciUnregisterVoice`, `eciUpdateDict`, `eciUpdateDictA`, `eciUpdateFilter`.
+`eciActivateFilter`, `eciDeactivateFilter`, `eciDeleteFilter`, `eciGeneratePhonemes`, `eciGetFilteredText`, `eciNewFilter`, `eciPause`, `eciRegisterVoice`, `eciSetFilter`, `eciSetOutputDevice`, `eciSetOutputFilename`, `eciSpeakText`, `eciSpeakTextEx`, `eciSynthesizeFile`, `eciTestPhrase`, `eciUnregisterVoice`, `eciUpdateFilter`.
 
 Auch bei vorhandenen Exporten ist vollständige Parität nicht belegt:
 `eciSynthesize` läuft hier synchron; `eciSynthMode=1` speichert noch keine
@@ -94,8 +135,9 @@ relevant, auch wenn der untersuchte Eloquence_64-ReLoq-Adapter sie umgeht.
 Das eigene NVDA-Add-on wählt Profil B ausdrücklich. Für bisherige direkte
 ECI-Clients bleibt der DLL-Standard Profil A (Parameter 0x1011 = 0).
 Eloquence_64 b24a6c8 wählt diesen zusätzlichen Parameter bisher nicht.
-Ein reiner DLL-Austausch behebt dort die Satzanalyse, aktiviert aber noch
-nicht die in diesem Hörtest geprüfte Classic-/Richness-Abstimmung.
+Ein reiner DLL-Austausch enthält dort die Kontextkorrekturen aus dev8,
+aktiviert aber noch nicht die in diesem Hörtest geprüfte
+Classic-/Richness-Abstimmung. Weitere gemeldete Analysefehler bleiben zu prüfen.
 
 `integration/eloquence64-classic-profile.patch` ergänzt beim Vorbereiten
 jedes ReLoq-Sprachhandles optional `eciSetParam(handle, 0x1011, 1)`.
@@ -104,3 +146,9 @@ Der Patch gilt für den untersuchten Upstream-Commit und wurde lokal mit
 dessen tatsächlichem Adapter bei 16, 22,05 und 48 kHz geprüft: 24 vollständige
 und fragmentierte Satzfälle liefern die gleiche PCM-Ausgabe wie unser
 Client mit Profil B. Der Patch ist nicht an Upstream gesendet worden.
+
+Die Unicode-Konvertierung der neuen Dictionary-API wird lokal unter Linux
+und über Windows-APIs implementiert; der JNI-UTF-8-Pfad bleibt erhalten.
+Die Legacy-UTF-16-Dictionary-Konvertierung auf Android ist damit noch nicht
+nachgewiesen. Der ursprüngliche C-Parser und die Sprachregeln werden hierfür
+nicht durch Ersatz-Wortregeln des Wrappers ersetzt.

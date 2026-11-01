@@ -1,8 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Hörtest 1.0.2-dev8
+## Hörtest 1.0.2-dev9
 
-B behält die bisherige 16-kHz-Abstimmung. Ab 22,05 kHz erweitert Richness die stimmhaften Obertöne; die bestätigten Konsonanten bleiben erhalten. Die deutsche Satzanalyse verarbeitet Pausenbefehle und wiederholte Analysepräfixe externer Clients jetzt ohne Verlust des Satzkontexts. Auch Kombinationen wie „Ein- / Ausgabe“ sind korrigiert. A bleibt zum Vergleich verfügbar. Die männliche z-Absenkung gilt weiterhin nur am Wortanfang und in zw. Die englische Sekundenlesung bleibt enthalten.
+Dieser Teststand erweitert die allgemeine ECI-Schnittstelle: korrekte Callback-Wiederholungen, reguläre Fehlerabfragen, einheitlicher Reset und bearbeitbare Wörterbücher. Diese Änderungen gelten für jeden Client der DLL. Die Klangabstimmung aus dev8 bleibt vorerst bestehen; Knistern, Richness und die vereinzelten Ruckler werden anschließend getrennt weiter untersucht.
 
 ## Installieren und auswählen
 

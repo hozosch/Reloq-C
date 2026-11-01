@@ -1,3 +1,24 @@
+# Teststand 1.0.2-dev9: allgemeiner ECI-Abgleich
+
+Der Schwerpunkt liegt auf dem öffentlichen DLL-Verhalten. Die Klangabstimmung
+und die Filter aus dev8 bleiben erhalten; das vom Nutzer weiterhin gehörte
+Knistern und die vereinzelten Ruckler sind damit noch nicht gelöst.
+
+13 weitere Original-Exporte ergänzen Fehlerabfragen und Wörterbuchbearbeitung.
+Callback-Antwort 0 wiederholt denselben Puffer oder Index; 2 bricht ab.
+Der Index wird entsprechend der Referenz erst nach dem Callback veröffentlicht.
+Standardfehler akkumulieren unabhängig von der privaten Synthesediagnose.
+Der ECI-Reset hängt nicht mehr von zuvor benutzten privaten Parametern ab.
+Das gilt für jeden Client. SDK-Namen im öffentlichen Header sind mit C11 und
+C++17 geprüft. Details, Referenzbeobachtungen und Grenzen beschreibt
+ECI-COMPATIBILITY.md.
+
+295 öffentliche ECI-API-Prüfungen, der vollständige native ECI-C-Test und die
+x64-Exportprüfung mit 47 Funktionen bestehen. 56 PCM-/Indexvergleiche mit
+dev8 bleiben über Deutsch/US-Englisch, beide Modelle, alle sieben Raten und
+Profil A/B bitgleich. Paket-Hashes und Prüfgrenzen stehen in
+`docs/validation/1.0.2-dev9.json`; die Klangprobleme sind weiterhin offen.
+
 # Teststand 1.0.2-dev8: deutscher Satzkontext und periodisches Richness
 
 Eloquence_64 fügt vor Textfragmenten wiederholt `pp0`/`da1` und vor

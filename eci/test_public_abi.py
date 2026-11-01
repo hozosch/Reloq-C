@@ -19,7 +19,7 @@ def main() -> None:
     library = ctypes.CDLL(str(args.library.resolve()))
     for name in sorted(public):
         getattr(library, name)
-    for private in ("reloq_eci_render_controls", "reloq_eci_last_error",
+    for private in ("reloq_eci_reset_audio", "reloq_eci_render_controls", "reloq_eci_last_error",
                     "reloq_host_render_controls", "reloq_host_create"):
         try:
             getattr(library, private)

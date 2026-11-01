@@ -49,6 +49,8 @@ struct provider_worker {
     int32_t ready,ready2,wideband,wideband_sent,pauses,pauses_sent;
 };
 static _Thread_local struct provider_worker *owner_worker;
+void *reloq61_worker_dictionary_handle(void *context)
+{struct provider_worker *w=context;return w?w->dictionary:NULL;}
 static _Thread_local struct reloq61_text_options text_options;
 struct reloq61_text_options reloq61_text_options_current(void) {return text_options;}
 struct reloq61_text_options reloq61_text_options_scope(struct reloq61_text_options next)

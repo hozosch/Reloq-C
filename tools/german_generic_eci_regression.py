@@ -310,6 +310,7 @@ def run(dll: Path) -> dict:
         assert muted["peak"] == 0
         assert eci.dll.eciSetParam(eci.handle, GENERIC_VOLUME, 100) == 0
         assert eci.dll.eciReset(eci.handle) > 0
+        assert eci.dll.eciSetParam(eci.handle, 9, GERMAN) >= 0
         restored = eci.speak(("Packte. Packten. Tippte. Kippte.",))
         assert restored["status"] == "pcm" and bytes(eci.pcm) == pcm
 
@@ -448,6 +449,7 @@ def run(dll: Path) -> dict:
             assert eci.dll.eciLoadLexicon(eci.handle, str(invalid).encode("utf-8")) == 0
             assert eci.speak((lex_text,))["status"] == "pcm" and bytes(eci.pcm) == observed_pcm
             assert eci.dll.eciReset(eci.handle) > 0
+            assert eci.dll.eciSetParam(eci.handle, 9, GERMAN) >= 0
             assert eci.speak((lex_text,))["status"] == "pcm" and bytes(eci.pcm) == observed_pcm
         assert eci.dll.eciLoadLexicon(eci.handle, None) == 1
         assert eci.speak((lex_text,))["status"] == "pcm" and bytes(eci.pcm) == plain_pcm

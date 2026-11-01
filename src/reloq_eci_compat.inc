@@ -48,7 +48,7 @@ static int voice_value_raw(struct reloq_eci_engine *e,int voice,int parameter)
 int ECICALL eciGetVoiceParam(ECIHand handle,int voice,int parameter)
 {
     struct reloq_eci_engine *e=handle;
-    if(!e||epoch_get(&e->busy)||!valid_voice(voice)||parameter<0||parameter>=8)return -1;
+    if(!e||epoch_get(&e->busy)||!valid_voice(voice)||parameter<0||parameter>=8)return eci_refuse(e,-1);
     if(e->real_world_units && (e->real_voice_flags[voice]&(1u<<parameter)))
         return e->real_voice_values[voice][parameter];
     int raw=voice_value_raw(e,voice,parameter);
@@ -58,20 +58,19 @@ int ECICALL eciSetVoiceParam(ECIHand handle,int voice,int parameter,int value)
 {
     struct reloq_eci_engine *e=handle;
     if(!e||epoch_get(&e->busy)||!valid_voice(voice)||(voice>0&&voice<9)||
-       parameter<0||parameter>=8)return -1;
+       parameter<0||parameter>=8)return eci_refuse(e,-1);
     int maximum=parameter==0?1:parameter==6?250:100,raw=value;
     if(e->real_world_units) {
-        if(parameter!=0 && value<1)return -1;
-        if(value<eci2RealWorld(1,parameter,0)||value>eci2RealWorld(1,parameter,maximum))return -1;
+        if(parameter!=0 && value<1)return eci_refuse(e,-1);
+        if(value<eci2RealWorld(1,parameter,0)||value>eci2RealWorld(1,parameter,maximum))return eci_refuse(e,-1);
         raw=realWorld2eci(1,parameter,value,0,maximum);
     }
-    if(raw<0||raw>maximum)return -1;
+    if(raw<0||raw>maximum)return eci_refuse(e,-1);
     int old=eciGetVoiceParam(e,voice,parameter);
     if(voice)e->saved_voices[voice-1][parameter]=raw;
     else {
-        int extended=e->extended_reset;
-        int result=eciSetParam(e,voice_parameters[parameter],raw);e->extended_reset=extended;
-        if(result<0)return -1;
+        int result=eciSetParam(e,voice_parameters[parameter],raw);
+        if(result<0)return eci_refuse(e,-1);
         e->voice_mode=RELOQ_ECI_VOICE_GENERIC;
     }
     if(e->real_world_units && (parameter==2||parameter==6||parameter==7)) {
@@ -82,12 +81,12 @@ int ECICALL eciSetVoiceParam(ECIHand handle,int voice,int parameter,int value)
 int ECICALL eciCopyVoice(ECIHand handle,int from,int to)
 {
     struct reloq_eci_engine *e=handle;
-    if(!e||epoch_get(&e->busy)||!valid_voice(from)||!valid_voice(to)||(to>0&&to<9))return 0;
+    if(!e||epoch_get(&e->busy)||!valid_voice(from)||!valid_voice(to)||(to>0&&to<9))return eci_refuse(e,0);
     int values[8];for(int i=0;i<8;++i)values[i]=voice_value_raw(e,from,i);
     if(to)memcpy(e->saved_voices[to-1],values,sizeof values);
     else {
         struct reloq_session *next=make_text_session(values[0],values[1],e->sample_rate_code);
-        if(!next)return 0;
+        if(!next)return eci_refuse(e,0);
         lock_session(&e->session_lock);struct reloq_session *old=e->text_session;e->text_session=next;unlock_session(&e->session_lock);
         reloq_session_destroy(old);e->gender=values[0];e->head_size=values[1];
         e->native_pitch=values[2];e->native_inflection=values[3];e->roughness=values[4];e->breathiness=values[5];
@@ -101,14 +100,14 @@ int ECICALL eciCopyVoice(ECIHand handle,int from,int to)
 int ECICALL eciGetVoiceName(ECIHand handle,int voice,void *name)
 {
     struct reloq_eci_engine *e=handle;
-    if(!e||epoch_get(&e->busy)||!valid_voice(voice)||!name)return 0;
+    if(!e||epoch_get(&e->busy)||!valid_voice(voice)||!name)return eci_refuse(e,0);
     int wide=!!(e->language_dialect&0x800),code=1252;
     switch(e->language){case 0x60000:code=936;break;case 0x60001:code=950;break;case 0x80000:code=932;break;case 0xa0000:code=949;break;case 0x120000:code=1253;break;default:break;}
 #ifdef _WIN32
     wchar_t units[30];int count=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,e->voice_names[voice],-1,units,30);
-    if(!count)return 0;
+    if(!count)return eci_refuse(e,0);
     if(wide)memcpy(name,units,(size_t)count*sizeof *units);
-    else if(!WideCharToMultiByte((unsigned)code,0,units,-1,name,30,NULL,NULL))return 0;
+    else if(!WideCharToMultiByte((unsigned)code,0,units,-1,name,30,NULL,NULL))return eci_refuse(e,0);
 #elif defined(__ANDROID__)
     /* The JNI transport uses UTF-8. Keep API-26 builds independent of
      * Android's later, UTF-only iconv; stock names are ASCII. */
@@ -124,15 +123,15 @@ int ECICALL eciGetVoiceName(ECIHand handle,int voice,void *name)
         }
         *out=0;
     } else {
-        for(const unsigned char *p=(const unsigned char *)e->voice_names[voice];*p;++p)if(*p>=128)return 0;
+        for(const unsigned char *p=(const unsigned char *)e->voice_names[voice];*p;++p)if(*p>=128)return eci_refuse(e,0);
         strcpy(name,e->voice_names[voice]);
     }
 #else
     char encoding[16];snprintf(encoding,sizeof encoding,"CP%d",code);
-    iconv_t converter=iconv_open(wide?"UTF-16LE":encoding,"UTF-8");if(converter==(iconv_t)-1)return 0;
+    iconv_t converter=iconv_open(wide?"UTF-16LE":encoding,"UTF-8");if(converter==(iconv_t)-1)return eci_refuse(e,0);
     char *from=e->voice_names[voice],*to=name;size_t left=strlen(from),room=wide?58:29;
     size_t status=iconv(converter,&from,&left,&to,&room);iconv_close(converter);
-    if(status==(size_t)-1||left)return 0;
+    if(status==(size_t)-1||left)return eci_refuse(e,0);
     *to=0;if(wide)to[1]=0;
 #endif
     return 1;
@@ -222,6 +221,7 @@ static struct reloq_eci_dictionary *find_eci_dictionary(struct reloq_eci_engine 
 static void clear_eci_dictionaries(struct reloq_eci_engine *e)
 {
     while(e->dictionaries) {struct reloq_eci_dictionary *d=e->dictionaries;e->dictionaries=d->next;
+        reloq61_worker_free(d->api_worker);
         for(unsigned i=0;i<4;++i){free(d->volumes[i]);}free(d);}
 }
 static void *dictionary_worker(struct reloq_eci_engine *e,int language,const struct reloq_eci_dictionary *set,int directory)
@@ -235,17 +235,19 @@ static void *dictionary_worker(struct reloq_eci_engine *e,int language,const str
 static int switch_eci_language(struct reloq_eci_engine *e,int language)
 {
     int base=language&~0xff00;
-    if(((language&0xff00)!=0&&(language&0xff00)!=0x800)||!reloq61_language_supported(base))return -1;
+    if(((language&0xff00)!=0&&(language&0xff00)!=0x800)||!reloq61_language_supported(base)||dictionary_language_slot(base)>=15)return -1;
     if(base==e->language){e->language_dialect=language;return 0;}
-    void *next=dictionary_worker(e,base,e->active_dictionary,1);if(!next)return -1;
+    struct reloq_eci_dictionary *set=e->language_dictionaries[dictionary_language_slot(base)];
+    void *next=dictionary_worker(e,base,set,1);if(!next)return -1;
     reloq61_worker_free(e->rule_worker);e->rule_worker=next;
+    e->active_dictionary=set;
     e->language=base;e->language_dialect=language;return 0;
 }
 ECIDictHand ECICALL eciNewDict(ECIHand handle)
 {
     struct reloq_eci_engine *e=handle;if(!e||epoch_get(&e->busy))return NULL;
     struct reloq_eci_dictionary *d=calloc(1,sizeof *d);if(!d)return NULL;
-    d->next=e->dictionaries;e->dictionaries=d;return d;
+    d->language=e->language;d->next=e->dictionaries;e->dictionaries=d;return d;
 }
 ECIDictHand ECICALL eciGetDict(ECIHand handle)
 {
@@ -255,8 +257,11 @@ int ECICALL eciSetDict(ECIHand handle,ECIDictHand dictionary)
 {
     struct reloq_eci_engine *e=handle;if(!e||epoch_get(&e->busy))return 0;
     struct reloq_eci_dictionary *d=find_eci_dictionary(e,dictionary);if(dictionary&&!d)return 0;
+    unsigned slot=dictionary_language_slot(d?d->language:e->language);
+    if(d&&d->language!=e->language){e->language_dictionaries[slot]=d;return 1;}
     void *w=dictionary_worker(e,e->language,d,0);
     if(!w)return 0;
+    e->language_dictionaries[slot]=d;
     reloq61_worker_free(e->rule_worker);e->rule_worker=w;e->active_dictionary=d;free(e->dictionary_path);e->dictionary_path=NULL;return 1;
 }
 ECIDictHand ECICALL eciDeleteDict(ECIHand handle,ECIDictHand dictionary)
@@ -264,7 +269,9 @@ ECIDictHand ECICALL eciDeleteDict(ECIHand handle,ECIDictHand dictionary)
     struct reloq_eci_engine *e=handle;if(!e||epoch_get(&e->busy))return dictionary;
     struct reloq_eci_dictionary *d=find_eci_dictionary(e,dictionary);if(!d)return dictionary;
     if(e->active_dictionary==d&&!eciSetDict(e,NULL))return dictionary;
+    for(unsigned i=0;i<15;++i)if(e->language_dictionaries[i]==d)e->language_dictionaries[i]=NULL;
     struct reloq_eci_dictionary **at=&e->dictionaries;while(*at!=d)at=&(*at)->next;*at=d->next;
+    reloq61_worker_free(d->api_worker);
     for(unsigned i=0;i<4;++i){free(d->volumes[i]);}free(d);return NULL;
 }
 int ECICALL eciLoadDict(ECIHand handle,ECIDictHand dictionary,int volume,const void *filename)
@@ -283,18 +290,20 @@ int ECICALL eciLoadDict(ECIHand handle,ECIDictHand dictionary,int volume,const v
     struct reloq_eci_dictionary candidate=*d;candidate.volumes[volume]=data;candidate.sizes[volume]=(size_t)bytes;
     void *w=dictionary_worker(e,e->language,&candidate,0);if(!w){free(data);return 6;}
     if(e->active_dictionary==d){reloq61_worker_free(e->rule_worker);e->rule_worker=w;}else reloq61_worker_free(w);
+    reloq61_worker_free(d->api_worker);d->api_worker=NULL;memset(d->walk_active,0,sizeof d->walk_active);
     free(d->volumes[volume]);d->volumes[volume]=data;d->sizes[volume]=(size_t)bytes;return 0;
 }
 
-/* SDK-only callers receive fresh defaults, presets and synthesis histories.
- * The explicit native extensions retain their historical reset contract.
- * Buffer/callback routing and owned dictionary handles stay with the host. */
+/* One reset contract for every client. Keep host routing, owned dictionary
+ * handles and the independent acoustic-profile choice; reset SDK settings,
+ * voice slots, input and renderer histories to their configured defaults. */
 static int reset_eci_defaults(struct reloq_eci_engine *e)
 {
     if(!busy_begin(&e->busy))return 0;
     struct reloq_eci_engine *n=eciNew();
     if(!n){busy_end(&e->busy);return 0;}
-    n->rule_worker=dictionary_worker(e,n->language,e->active_dictionary,1);
+    struct reloq_eci_dictionary *set=e->language_dictionaries[dictionary_language_slot(n->language)];
+    n->rule_worker=dictionary_worker(e,n->language,set,1);
     if(!n->rule_worker){eciDelete(n);busy_end(&e->busy);return 0;}
     lock_session(&e->session_lock);
     struct reloq_session *old=e->session;e->session=n->session;n->session=old;
@@ -309,12 +318,15 @@ static int reset_eci_defaults(struct reloq_eci_engine *e)
     e->native_speed_active=e->native_pitch_active=e->native_inflection_active=e->native_volume_active=1;
     e->input_type=n->input_type;e->process_tags=n->process_tags;e->text_mode=n->text_mode;
     e->dictionary_disabled=n->dictionary_disabled;e->real_world_units=n->real_world_units;
+    e->phrase_prediction=0;e->pause_mode=0;
     e->language=n->language;e->language_dialect=n->language_dialect;
+    e->active_dictionary=set;
     e->gender=n->gender;e->head_size=n->head_size;e->roughness=n->roughness;e->breathiness=n->breathiness;
     memcpy(e->saved_voices,n->saved_voices,sizeof e->saved_voices);
     memcpy(e->voice_names,n->voice_names,sizeof e->voice_names);
     memset(e->real_voice_flags,0,sizeof e->real_voice_flags);
-    e->error=e->last_synthesis_error=RELOQ_ECI_OK;
+    eci_error(e,RELOQ_ECI_OK);e->last_synthesis_error=RELOQ_ECI_OK;
+    epoch_exchange(&e->program_status,0);epoch_exchange(&e->sdk_error,0);
     e->failure_stage=RELOQ_ECI_STAGE_NONE;e->failure_utf8_offset=-1;
     eciDelete(n);busy_end(&e->busy);return 1;
 }
