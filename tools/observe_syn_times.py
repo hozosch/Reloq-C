@@ -12,6 +12,8 @@ import io
 import json
 import os
 import re
+import subprocess
+import sys
 import tempfile
 import urllib.request
 import zipfile
@@ -90,12 +92,31 @@ def observe(dll, language, text, phonemes=False):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--output', type=Path, required=True)
+    p.add_argument('--engine-dir', type=Path, help=argparse.SUPPRESS)
     args = p.parse_args()
     assert os.name == 'nt' and C.sizeof(C.c_void_p) == 4, 'Use Windows x86 Python'
     output = args.output.resolve()
+    if args.engine_dir:
+        # Syn modules stay loaded even after the last legacy ECI handle is
+        # deleted. A child process owns all those mappings, so the parent can
+        # remove the temporary binaries reliably when the child exits.
+        os.chdir(args.engine_dir)
+        dll = load(args.engine_dir/'ECI.DLL')
+        version = C.create_string_buffer(256)
+        dll.eciVersion(version)
+        rows = []
+        for language in (0x10000, 0x10001):
+            for text in TIMES:
+                row = dict(language=language, text=text,
+                           pcm=observe(dll, language, text),
+                           spr=observe(dll, language, text, phonemes=True))
+                rows.append(row)
+                print(json.dumps(row), flush=True)
+        output.write_text(json.dumps(dict(url=URL, archive_sha256=ARCHIVE_SHA256,
+            files=FILES, engine=version.value.decode('ascii'), observations=rows), indent=2)+'\n')
+        return
     archive = urllib.request.urlopen(URL, timeout=60).read()
     assert hashlib.sha256(archive).hexdigest() == ARCHIVE_SHA256
-    rows = []
     with tempfile.TemporaryDirectory(prefix='reloq-syn-reference-') as tmp:
         folder = Path(tmp)
         with zipfile.ZipFile(io.BytesIO(archive)) as z:
@@ -108,27 +129,9 @@ def main():
         ini = re.sub(r'(?im)^(\s*Path\s*=\s*).*?[\\/]?([^\\/\r\n]+\.syn)\s*$',
                      lambda m: m[1] + str(folder/m[2]), ini)
         (folder/'ECI.INI').write_bytes(ini.encode('ascii'))
-        old_cwd = Path.cwd()
-        os.chdir(folder)
-        try:
-            dll = load(folder/'ECI.DLL')
-            version = C.create_string_buffer(256)
-            dll.eciVersion(version)
-            for language in (0x10000, 0x10001):
-                for text in TIMES:
-                    row = dict(language=language, text=text,
-                               pcm=observe(dll, language, text),
-                               spr=observe(dll, language, text, phonemes=True))
-                    rows.append(row)
-                    print(json.dumps(row), flush=True)
-        finally:
-            os.chdir(old_cwd)
-            if 'dll' in locals():
-                free = C.WinDLL('kernel32').FreeLibrary
-                free.argtypes, free.restype = [C.c_void_p], C.c_int
-                assert free(dll._handle)
-    output.write_text(json.dumps(dict(url=URL, archive_sha256=ARCHIVE_SHA256,
-        files=FILES, engine=version.value.decode('ascii'), observations=rows), indent=2)+'\n')
+        subprocess.run([sys.executable, str(Path(__file__).resolve()),
+                        '--engine-dir', str(folder), '--output', str(output)],
+                       check=True, timeout=180)
 
 
 if __name__ == '__main__':
