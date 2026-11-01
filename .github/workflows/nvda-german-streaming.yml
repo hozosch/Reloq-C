@@ -19,7 +19,7 @@ jobs:
           set -euo pipefail
           sudo apt-get -o Acquire::Retries=2 update -qq
           sudo apt-get -o Acquire::Retries=2 install -y --no-install-recommends gcc-mingw-w64-x86-64-posix gettext
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
         id: rules
         with:
           path: vendor/openevv61/build
@@ -28,7 +28,14 @@ jobs:
         if: steps.rules.outputs.cache-hit == 'true'
         run: find vendor/openevv61/build -type f -exec touch {} +
       - name: Build x64 native core
-        run: make -C eci -j2 windows-x64 eci_native_rules_probe.exe eci_rate_dispatch_probe.exe PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
+        run: make -C eci -j2 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
+      - uses: actions/cache/save@v4
+        if: steps.rules.outputs.cache-hit != 'true'
+        with:
+          path: vendor/openevv61/build
+          key: ${{ steps.rules.outputs.cache-primary-key }}
+      - name: Build native rule and DSP probes
+        run: make -C eci -j2 eci_native_rules_probe.exe eci_rate_dispatch_probe.exe PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
       - name: Package development add-on with current dictionary master
         run: |
           python3 nvda/test_updates.py
