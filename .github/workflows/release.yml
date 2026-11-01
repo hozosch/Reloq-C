@@ -76,9 +76,20 @@ jobs:
               open('/tmp/assets-already-verified', 'w').close()
           PY
           else
-            gh release create "v$RELEASE_VERSION" --target "$GITHUB_SHA" --title "ReLoq C $RELEASE_VERSION" --draft --notes-file "docs/releases/$RELEASE_VERSION.md"
-            RELEASE_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.tag_name == \"v$RELEASE_VERSION\") | .id")
+            python3 - <<'PYDRAFT'
+          import json, os
+          from pathlib import Path
+          version = os.environ['RELEASE_VERSION']
+          json.dump({'tag_name': 'v' + version, 'target_commitish': os.environ['GITHUB_SHA'],
+                     'name': 'ReLoq C ' + version, 'draft': True,
+                     'body': Path(f'docs/releases/{version}.md').read_text()},
+                    open('/tmp/draft-release.json', 'w'))
+          PYDRAFT
+            # Capture the created ID directly: release collections can lag a
+            # newly created draft, and draft lookups by tag may return 404.
+            RELEASE_ID=$(gh api --method POST "repos/$GITHUB_REPOSITORY/releases" --input /tmp/draft-release.json --jq .id)
           fi
+          test -n "$RELEASE_ID"
           if [ ! -f /tmp/assets-already-verified ]; then
             gh release upload "v$RELEASE_VERSION" release-packages/*.exe release-packages/*.nvda-addon release-packages/*.apk --clobber
           fi
