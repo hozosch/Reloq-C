@@ -1,0 +1,61 @@
+{
+  "baseline_commit": "8cee7c3956358d03856b047198f0e2e57f3fa86b",
+  "public_runtime_modified": false,
+  "native_speed_previous": 98,
+  "nvda_rate_previous": 50,
+  "native_speed_current": 75,
+  "nvda_rate_current": 30,
+  "reference_host_sha256": "035d70a5def83a5fb8081bbccdfc034ebbe3016773c86d5ace135fa6d0648691",
+  "prototype_host_sha256": "dc1f1f794b8b2fd5b5e8baa66046454cc511cc3d244e8739473de92c4a52a307",
+  "reference_bit_exact_checks": 36,
+  "profile_checks": 180,
+  "identical_11025": true,
+  "no_noise_changes_in_body_clarity_profiles": true,
+  "max_matched_energy_error_db": 0.003079062242313279,
+  "packages": [
+    {
+      "language": "Deutsch",
+      "native_speed": 75,
+      "nvda_rate": 30,
+      "old_seconds": 1.601360544217687,
+      "new_seconds": 2.6110657596371882,
+      "checks": 90,
+      "max_level_error_db": 0.003079062242313279,
+      "changed_clips": {
+        "B": 15,
+        "C": 15,
+        "D": 15,
+        "E": 15,
+        "F": 15
+      },
+      "wav_files": 97,
+      "zip_bytes": 26646999,
+      "zip_sha256": "d6d54bae5a1362e33e5564f34fb3f9c5ee725653260d534132bff05f53a01712"
+    },
+    {
+      "language": "US_English",
+      "native_speed": 75,
+      "nvda_rate": 30,
+      "old_seconds": 1.6582312925170068,
+      "new_seconds": 2.6829024943310658,
+      "checks": 90,
+      "max_level_error_db": 0.0028547011780698417,
+      "changed_clips": {
+        "B": 15,
+        "C": 15,
+        "D": 15,
+        "E": 15,
+        "F": 15
+      },
+      "wav_files": 97,
+      "zip_bytes": 24134573,
+      "zip_sha256": "c17d4358076179eda0cbff80ff528404d82634fa15581edcecf1a4b3532bf8db"
+    }
+  ],
+  "limits": [
+    "Listening hypotheses only; no perceptual preference is established.",
+    "Prototype filters and selector exist only in the dedicated native listening host.",
+    "Guided WAV assembly resamples offline; individual WAVs retain native rates."
+  ],
+  "variant_durations_identical_at_fixed_rate": true
+}
