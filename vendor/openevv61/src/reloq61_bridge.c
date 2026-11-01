@@ -33,6 +33,7 @@ extern int ev_sendParameters(OldInst *);
 extern int STDCALL ev_generatePhonemes(OldInst *,int32_t,void *);
 extern delta_state *ew_machine(void *);
 extern void stb_staticWordCallback(int32_t,void *);
+extern void stb_staticUserIndexCallback(void *);
 extern void reloq61_array_reset(delta_state *);
 extern Index *sti_getIndex(void *,uint32_t);
 extern void *reloq61_inline_scope(void *);
@@ -608,7 +609,13 @@ static int generate_core(const struct reloq61_request *q,struct reloq61_result *
     int metadata=1;
     for(size_t j=0;j<q->mark_count;++j) {
         if(q->marks[j].offset>n || (j&&q->marks[j].offset<q->marks[j-1].offset))ok=0;
-        if(q->marks[j].pitch>=0)metadata=0;
+        if(q->marks[j].pitch!=-1)metadata=0;
+    }
+    if(!metadata && ((q->language>>16)==6||(q->language>>16)==8||(q->language>>16)==10)) {
+        /* CJK source expansion transports explicit gain edges through its
+         * own ui marks, rather than the Western consumed-byte counter. */
+        c.thread->flags|=STF_ROMANIZING;
+        ELOQ_CB(d,0x24)=(void *)stb_staticUserIndexCallback;ELOQ_CB(d,0x28)=c.thread;
     }
     if(metadata) {
         /* Source positions are metadata, not AddText boundaries. Splitting

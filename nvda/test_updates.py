@@ -34,6 +34,16 @@ class Updates(unittest.TestCase):
         self.assertEqual(check('0.2.196', fetch=lambda *a, **kw: io.BytesIO(json.dumps(self.feed).encode())),
                          select(self.feed, '0.2.196'))
 
+    def test_development_build_waits_for_matching_stable_release(self):
+        def feed(number):
+            name = f'reloq-c-synth-experimental-x64-{number}.nvda-addon'
+            return [{'assets': [{**self.asset, 'name': name, 'browser_download_url':
+                f'https://github.com/hozosch/Reloq-C/releases/download/v{number}/{name}'}]}]
+        self.assertIsNone(select(feed('1.0.1'), '1.0.2-dev1'))
+        self.assertIsNone(select(feed('1.0.2-dev2'), '1.0.2-dev1'))
+        self.assertEqual(select(feed('1.0.2'), '1.0.2-dev1').version, '1.0.2')
+        self.assertIsNone(select(feed('1.0.2'), '1.0.2'))
+
     def test_metadata_rejects_wrong_source_or_missing_integrity(self):
         for values in [dict(digest=None), dict(digest='sha1:' + '0'*40), dict(size=0),
                        dict(size=130*1024*1024), dict(size=True),

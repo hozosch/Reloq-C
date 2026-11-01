@@ -7,6 +7,8 @@
 struct reloq61_curve { int32_t at_l, val_l, at_r, val_r; };
 typedef int (*reloq61_span_sink)(void *,int32_t from,int32_t to,
     const struct reloq61_curve curves[62],int32_t volume);
+/* pitch -1: source-count metadata; -2: native queue clock without a pitch
+ * annotation (needed by source-expanding CJK romanizers); >=0: pitch. */
 struct reloq61_mark { size_t offset; int32_t index, pitch; };
 typedef int (*reloq61_frame_sink)(void *, const int32_t frame[62], int32_t volume);
 typedef void (*reloq61_index_sink)(void *, int32_t index, int64_t tick);

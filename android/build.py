@@ -69,7 +69,10 @@ def main():
     validate_snapshot(ROOT/"data/community")
     community=assets/"community";community.mkdir(exist_ok=True)
     for name in (*FILES,"manifest.json"):shutil.copyfile(ROOT/"data/community"/name,community/name)
-    licenses={"OpenEVV-LICENSE.txt":ROOT/"vendor/openevv61/LICENSE",
+    licenses={"ReLoq-C-LICENSE.txt":ROOT/"LICENSE",
+              "ReLoq-C-NOTICE.txt":ROOT/"NOTICE",
+              "Dictionaries-CC0.txt":ROOT/"data/community/LICENSE.md",
+              "OpenEVV-LICENSE.txt":ROOT/"vendor/openevv61/LICENSE",
               "OpenEVV-NOTICE.txt":ROOT/"vendor/openevv61/NOTICE",
               "Unicode-LICENSE.txt":ROOT/"reference-apple/behavior-0.2.82/unicode-input/LICENSE.txt",
               "SCOWL-Copyright.txt":ROOT/"reference-apple/behavior-0.2.83/input/SCOWL-Copyright.txt"}

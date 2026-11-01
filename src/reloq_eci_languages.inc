@@ -69,11 +69,16 @@ static size_t language_prefix(const struct language_controls *c,char prefix[192]
 }
 static void language_advance(struct language_controls *controls,
     const unsigned char *text,size_t length,const unsigned char *modes,
-    size_t begin,size_t end,const struct pitch_mark *pitches,size_t first,size_t last)
+    size_t begin,size_t end,const struct pitch_mark *pitches,size_t first,size_t last,
+    const struct reloq_parameter_mark *parameters,size_t parameter_first,size_t parameter_last)
 {
     for(size_t at=begin;at<end;) {
         while(first<last&&pitches[first].offset<=at)
             language_control(controls,(struct reloq_inline_tag){RELOQ_TAG_PITCH,0,pitches[first++].value});
+        while(parameter_first<parameter_last&&parameters[parameter_first].offset<=at) {
+            const struct reloq_parameter_mark *m=parameters+parameter_first++;
+            language_control(controls,(struct reloq_inline_tag){(enum reloq_inline_kind)m->kind,0,m->value});
+        }
         struct reloq_inline_tag t=source_tag(text,length,modes,at);
         language_control(controls,t);
         if(!t.kind && (text[at]>=0x80 || (text[at]>='0'&&text[at]<='9') ||
@@ -83,11 +88,16 @@ static void language_advance(struct language_controls *controls,
     }
     while(first<last)
         language_control(controls,(struct reloq_inline_tag){RELOQ_TAG_PITCH,0,pitches[first++].value});
+    while(parameter_first<parameter_last) {
+        const struct reloq_parameter_mark *m=parameters+parameter_first++;
+        language_control(controls,(struct reloq_inline_tag){(enum reloq_inline_kind)m->kind,0,m->value});
+    }
 }
 static int synthesize_languages(struct reloq_eci_engine *e,
     unsigned char *text,size_t length,const unsigned char *modes,int unicode,
     const struct index_mark *marks,size_t mark_count,
-    const struct pitch_mark *pitches,size_t pitch_count,unsigned epoch)
+    const struct pitch_mark *pitches,size_t pitch_count,
+    const struct reloq_parameter_mark *parameters,size_t parameter_count,unsigned epoch)
 {
     size_t count=1;
     for(size_t at=0;at<length;) {
@@ -99,8 +109,9 @@ static int synthesize_languages(struct reloq_eci_engine *e,
     struct language_run *runs=malloc(count*sizeof *runs);
     struct index_mark *local_marks=mark_count?malloc(mark_count*sizeof *local_marks):NULL;
     struct pitch_mark *local_pitch=pitch_count?malloc(pitch_count*sizeof *local_pitch):NULL;
-    if(!runs||(mark_count&&!local_marks)||(pitch_count&&!local_pitch)) {
-        free(runs);free(local_marks);free(local_pitch);return RELOQ_ECI_MEMORY;
+    struct reloq_parameter_mark *local_parameters=parameter_count?malloc(parameter_count*sizeof *local_parameters):NULL;
+    if(!runs||(mark_count&&!local_marks)||(pitch_count&&!local_pitch)||(parameter_count&&!local_parameters)) {
+        free(runs);free(local_marks);free(local_pitch);free(local_parameters);return RELOQ_ECI_MEMORY;
     }
     int language=e->language,configured_language=e->language,result=RELOQ_ECI_OK;
     void *configured_worker=e->rule_worker;
@@ -117,7 +128,7 @@ static int synthesize_languages(struct reloq_eci_engine *e,
         }
         at+=t.length?t.length:1;
     }
-    struct language_controls controls={0};size_t marker=0,pitch_marker=0;
+    struct language_controls controls={0};size_t marker=0,pitch_marker=0,parameter_marker=0;
     lock_session(&e->session_lock);
     int reset=reloq_session_reset(e->text_session);
     if(epoch_get(&e->stop_epoch)!=epoch)reloq_session_cancel(e->text_session);
@@ -140,7 +151,10 @@ static int synthesize_languages(struct reloq_eci_engine *e,
             if(result)break;
             size_t first=pitch_marker;
             while(pitch_marker<pitch_count && (pitches[pitch_marker].offset<r->end||run+1==count))++pitch_marker;
-            language_advance(&controls,text,length,modes,r->begin,r->end,pitches,first,pitch_marker);
+            size_t parameter_first=parameter_marker;
+            while(parameter_marker<parameter_count && (parameters[parameter_marker].offset<r->end||run+1==count))++parameter_marker;
+            language_advance(&controls,text,length,modes,r->begin,r->end,pitches,first,pitch_marker,
+                parameters,parameter_first,parameter_marker);
             continue;
         }
         unsigned char *normalized=NULL;size_t bytes=n,*map=NULL;
@@ -167,6 +181,12 @@ static int synthesize_languages(struct reloq_eci_engine *e,
             size_t at=pitches[pitch_marker].offset-r->begin;
             local_pitch[pc++]=(struct pitch_mark){prefix_n+(map?map[at]:at),pitches[pitch_marker++].value};
         }
+        size_t parameter_begin=parameter_marker,param_count=0;
+        while(parameter_marker<parameter_count && (parameters[parameter_marker].offset<r->end||run+1==count)) {
+            size_t at=parameters[parameter_marker].offset-r->begin;
+            local_parameters[param_count]=parameters[parameter_marker++];
+            local_parameters[param_count++].offset=prefix_n+(map?map[at]:at);
+        }
         if(run+1==count && ends_german_word(phrase,source_length)) {
             for(size_t i=0;i<mc;++i)if(local_marks[i].offset==source_length)++local_marks[i].offset;
             phrase[source_length++]='.';phrase[source_length]=0;
@@ -188,13 +208,14 @@ static int synthesize_languages(struct reloq_eci_engine *e,
         {
             void *previous=reloq61_worker_scope(e->rule_worker);
             result=synthesize_generic(e,phrase,source_length,prefix_n+bytes,
-                local_marks,mc,local_pitch,pc,epoch,unicode);
+                local_marks,mc,local_pitch,pc,local_parameters,param_count,epoch,unicode);
             reloq61_worker_scope(previous);
         }
         /* Controls before the next language command keep their normal ECI
            lifetime. The configured voice and selected NVDA language do not
            change when this transaction ends. */
-        language_advance(&controls,text,length,modes,r->begin,r->end,pitches,pitch_begin,pitch_marker);
+        language_advance(&controls,text,length,modes,r->begin,r->end,pitches,pitch_begin,pitch_marker,
+            parameters,parameter_begin,parameter_marker);
 run_done:
         if(result&&e->failure_utf8_offset>=0) {
             size_t offset=(size_t)e->failure_utf8_offset,at=0;
@@ -211,5 +232,5 @@ run_done:
 done:
     e->language=configured_language;e->rule_worker=configured_worker;
     for(size_t i=0;i<worker_count;++i)reloq61_worker_free(workers[i]);
-    free(runs);free(local_marks);free(local_pitch);return result;
+    free(runs);free(local_marks);free(local_pitch);free(local_parameters);return result;
 }

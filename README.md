@@ -58,4 +58,6 @@ Developer information:
 - [Agreed pronunciation and sound choices, in German](GEWUENSCHTE-ABWEICHUNGEN-DE.md)
 - [Earlier version notes](docs/history/README.md)
 
+The original ReLoq C code is licensed under [GPL version 3 or any later version](LICENSE). See [NOTICE](NOTICE) for its scope and the redistribution terms for `eci.dll`. Matching source and build scripts are available in this repository. Third-party components and data retain their own licenses.
+
 The NVDA adapter is written in Python. Component and data notices are retained with their sources, including the [OpenEVV license](vendor/openevv61/LICENSE), [OpenEVV notices](vendor/openevv61/NOTICE) and [dictionary license](data/community/LICENSE.md).

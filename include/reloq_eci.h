@@ -167,6 +167,12 @@ ECIAPI int ECICALL eciInsertIndex(ECIHand handle, int index);
  * eciClearInput to discard text, indices and pitch marks already queued.
  * This is not an emulation of the proprietary inline ECI syntax. */
 ECIAPI int ECICALL eciInsertPitch(ECIHand handle, int native_pitch);
+/* Local extensions: queue an absolute native speed (0..250) or volume
+ * (0..100), with the same lifetime and word-boundary semantics as pitch.
+ * They work independently of PROCESS_TAGS and do not change the configured
+ * baseline or add a phrase boundary. Invalid values leave the queue intact. */
+ECIAPI int ECICALL eciInsertRate(ECIHand handle, int native_speed);
+ECIAPI int ECICALL eciInsertVolume(ECIHand handle, int native_volume);
 ECIAPI int ECICALL eciSynthesize(ECIHand handle);
 ECIAPI int ECICALL eciSynchronize(ECIHand handle);
 ECIAPI int ECICALL eciStop(ECIHand handle);

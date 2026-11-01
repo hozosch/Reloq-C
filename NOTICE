@@ -1,0 +1,32 @@
+ReLoq C
+Copyright (C) 2026 Karl Eick and ReLoq C contributors
+
+The original ReLoq C code in this repository is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See LICENSE for the full terms.
+
+SPDX-License-Identifier: GPL-3.0-or-later
+
+Third-party files and separately licensed data retain their own notices and
+licenses. This project notice does not replace them. In particular:
+- vendor/openevv61: MIT; preserve its LICENSE and NOTICE.
+- data/community: CC0 1.0; see LICENSE.md and manifest.json.
+- Unicode data: the Unicode license retained with the source data.
+- SCOWL data: its retained copyright and permission notice.
+- addon/testdata/nvda: NVDA's own license, for development tests only.
+- sapi/installer: the retained Inno Setup notice for its included files.
+
+The installable binaries include the applicable component notices. Anyone
+redistributing eci.dll must also comply with GPL-3.0-or-later for the combined
+ReLoq C binary, including provision of its complete corresponding source and
+build scripts, and preserve the applicable third-party notices. The matching
+source is in https://github.com/hozosch/Reloq-C at the package's source commit.
+The GPL text is also available at https://www.gnu.org/licenses/gpl-3.0.html.
+
+This notice covers ReLoq C; it grants no rights to proprietary Eloquence,
+IBM, Apple or other third-party software, data or trademarks.

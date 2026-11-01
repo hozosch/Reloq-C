@@ -19,7 +19,7 @@ from build_translations import translation_entries
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "addon" / "synth"
-DEFAULT_OUTPUT = ROOT / "dist" / "reloq-c-synth-experimental-x64-1.0.1.nvda-addon"
+DEFAULT_OUTPUT = ROOT / "dist" / "reloq-c-synth-experimental-x64-1.0.2-dev1.nvda-addon"
 RLEX_HEADER = b"RELOQ-DE-SPR-1\n"
 HEX = re.compile(rb"[0-9A-F]+\Z")
 
@@ -77,6 +77,9 @@ def make_entries(dll_path: Path) -> dict[str, bytes]:
                    "_reloq_languages.py", "_reloq_dictionaries.py", "_reloq_dictionary_manager.py",
                    "_reloq_updates.py"):
         entries[prefix + module] = (ROOT / "nvda" / module).read_bytes()
+    entries["doc/licenses/ReLoq-C-LICENSE.txt"] = (ROOT / "LICENSE").read_bytes()
+    entries["doc/licenses/ReLoq-C-NOTICE.txt"] = (ROOT / "NOTICE").read_bytes()
+    entries["doc/licenses/Dictionaries-CC0.txt"] = (ROOT / "data/community/LICENSE.md").read_bytes()
     entries["doc/licenses/Unicode-LICENSE.txt"] = (ROOT / "reference-apple/behavior-0.2.82/unicode-input/LICENSE.txt").read_bytes()
     entries["doc/licenses/SCOWL-Copyright.txt"] = (ROOT / "reference-apple/behavior-0.2.83/input/SCOWL-Copyright.txt").read_bytes()
     entries["doc/licenses/OpenEVV-LICENSE.txt"] = (ROOT / "vendor/openevv61/LICENSE").read_bytes()

@@ -1,6 +1,7 @@
 #ifndef RELOQ_RULES61_H
 #define RELOQ_RULES61_H
 #include "reloq_english_voice.h"
+#include "reloq_parameter_marks.h"
 /* Complete native 6.1 acoustic rules, with the ReLoq PCM renderer. */
 int reloq_language_rules_render(int language,const unsigned char *,size_t,int,int,
     const struct reloq_german_generic_settings *,
@@ -8,6 +9,12 @@ int reloq_language_rules_render(int language,const unsigned char *,size_t,int,in
     const struct reloq_german_generic_pitch_mark *,size_t,
     struct reloq_session *,reloq_session_pcm_sink,
     reloq_german_generic_index_sink,void *);
+int reloq_language_rules_render_controlled(int language,const unsigned char *,size_t,int,int,
+    const struct reloq_german_generic_settings *,
+    const struct reloq_german_generic_index *,size_t,
+    const struct reloq_german_generic_pitch_mark *,size_t,
+    struct reloq_session *,reloq_session_pcm_sink,
+    reloq_german_generic_index_sink,void *,const struct reloq_parameter_mark *,size_t);
 int reloq_english_rules_render(const unsigned char *,size_t,int,int,
     const struct reloq_german_generic_settings *,
     const struct reloq_german_generic_index *,size_t,

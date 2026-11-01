@@ -225,13 +225,13 @@ static int emit_phrase(
     return 0;
 }
 
-int reloq_german_generic_melody_append_controls(
+int reloq_german_generic_melody_append_restarted(
     const struct reloq_german_generic_melody_syllable *syllables,
     size_t syllable_count,
     const enum reloq_german_terminal_mark *marks, size_t mark_count,
     int inflection, double pitch_scale, double time_scale,
     const struct reloq_inline_word *controls,
-    struct reloq_target_builder *builder)
+    struct reloq_target_builder *builder,int restart_first)
 {
     if (!syllables || !syllable_count || !builder || inflection < 0 ||
         inflection > 100 || !isfinite(pitch_scale) || pitch_scale <= 0 ||
@@ -275,8 +275,8 @@ int reloq_german_generic_melody_append_controls(
                 }
             }
             if (emit_phrase(syllables, first, i + 1, mark, inflection,
-                            pitch_scale, time_scale,first && marks &&
-                            !reloq_german_terminal_continues(marks[syllables[first-1].word_index]),
+                            pitch_scale, time_scale,(!first && restart_first) || (first && marks &&
+                            !reloq_german_terminal_continues(marks[syllables[first-1].word_index])),
                             first && marks && marks[syllables[first-1].word_index]==RELOQ_DE_TERMINAL_COMMA,
                             following_tail,
                             controls,builder)) return -1;
@@ -309,4 +309,14 @@ int reloq_german_generic_melody_append(
 {
     return reloq_german_generic_melody_append_controls(syllables,syllable_count,
         marks,mark_count,inflection,pitch_scale,time_scale,NULL,builder);
+}
+
+int reloq_german_generic_melody_append_controls(
+    const struct reloq_german_generic_melody_syllable *syllables,size_t syllable_count,
+    const enum reloq_german_terminal_mark *marks,size_t mark_count,
+    int inflection,double pitch_scale,double time_scale,
+    const struct reloq_inline_word *controls,struct reloq_target_builder *builder)
+{
+    return reloq_german_generic_melody_append_restarted(syllables,syllable_count,
+        marks,mark_count,inflection,pitch_scale,time_scale,controls,builder,0);
 }

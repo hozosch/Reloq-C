@@ -101,6 +101,12 @@ struct rule_span {
 struct quiet_cut { int64_t from,to,after; };
 extern int reloq61_generate_with_pauses(const struct reloq61_request *,struct reloq61_result *,
     int,void (*)(void *,int64_t,int64_t,int64_t),void *);
+struct volume_mark {size_t offset;int value;};
+static int rule_mark_compare(const void *a,const void *b)
+{
+    const struct reloq61_mark *x=a,*y=b;
+    return x->offset<y->offset?-1:x->offset>y->offset?1:x->index<y->index?-1:x->index>y->index;
+}
 struct rule_playback;
 struct rule_plan {
     struct rule_span *spans;size_t count,capacity;
@@ -193,7 +199,7 @@ static void take_pause(void *context,int64_t from,int64_t to,int64_t after)
 }
 /* Map original UTF-8 offsets to a complete SPR boundary. Inserting an
  * index inside a phoneme group would change the token stream. */
-static size_t annotation_boundary(const unsigned char *a,size_t n,const size_t *map,size_t offset)
+static size_t rule_boundary(const unsigned char *a,size_t n,const size_t *map,size_t offset,int trim)
 {
     if(!offset)return 0;
     size_t boundary=n;
@@ -207,7 +213,7 @@ static size_t annotation_boundary(const unsigned char *a,size_t n,const size_t *
      * at the preceding complete word edge, leaving punctuation and the
      * next text in one parser piece. This keeps the PCM independent of
      * source fragment/index positions. EOF is delivered after all audio. */
-    while(boundary&&strchr(".,!?;:\n() \t",a[boundary-1]))--boundary;
+    while(trim&&boundary&&strchr(".,!?;:\n() \t",a[boundary-1]))--boundary;
     /* A source index within ordinary text belongs to the complete token.
        Native SPR groups were already skipped atomically above. */
     if(boundary&&boundary<n) {
@@ -225,6 +231,8 @@ static size_t annotation_boundary(const unsigned char *a,size_t n,const size_t *
     }
     return boundary;
 }
+static size_t annotation_boundary(const unsigned char *a,size_t n,const size_t *map,size_t offset)
+{return rule_boundary(a,n,map,offset,1);}
 struct rule_delivery {
     reloq_session_pcm_sink sink;void *context;double gain;
     int16_t pending[1024];size_t used,limit,next_limit;
@@ -256,6 +264,9 @@ struct rule_playback {
     struct reloq_german_voice_model model;
     const struct reloq_german_generic_settings *settings;
     const struct reloq_german_generic_pitch_mark *pitches;
+    const struct volume_mark *volumes;
+    size_t volume_count,next_volume;
+    double volume_gain;
     size_t index_count,pitch_count,next,next_pitch,next_cut,read;
     int32_t at;
     int pause_mode,final,result;
@@ -296,6 +307,9 @@ static int render_until(struct rule_plan *s,int64_t limit)
         while(p->next_pitch<p->pitch_count && s->indices[p->index_count+p->next_pitch]>=0 &&
               s->indices[p->index_count+p->next_pitch]<=tick)
             p->pitch_scale=reloq_voice_pitch_f0_scale(p->pitches[p->next_pitch++].native_pitch)/p->base_pitch;
+        while(p->next_volume<p->volume_count && s->indices[p->index_count+p->pitch_count+p->next_volume]>=0 &&
+              s->indices[p->index_count+p->pitch_count+p->next_volume]<=tick)
+            p->volume_gain=reloq_voice_volume_gain(p->volumes[p->next_volume++].value);
         if(previous!=f){prepare_controls(f,&prepared);previous=f;}
         float controls[62];read_controls(&prepared,f,at,controls);
         if(p->pitch_scale!=1)controls[1]=(float)(controls[1]*p->pitch_scale);
@@ -306,7 +320,7 @@ static int render_until(struct rule_plan *s,int64_t limit)
         }
         frame.noise.s_frication=controls[8]>0&&(controls[38]>controls[37]+10||controls[39]>controls[37]+10);
         /* 2.70 is native volume 100; 2.02 belongs to preset volume 92. */
-        p->delivery.gain=p->settings->volume/100.0*f->volume/270.0;
+        p->delivery.gain=p->settings->volume/100.0*f->volume/270.0*p->volume_gain;
         size_t completed=0;
         int status=reloq_session_render_frames(s->session,&frame,1,rule_pcm,&p->delivery,&completed);
         if(status) {
@@ -334,22 +348,70 @@ static int process_spans(struct rule_plan *s,int final)
 static int rule_cancelled(void *context)
 {return reloq_session_cancelled(context);}
 
-int reloq_language_rules_render(int language,const unsigned char *text,size_t length,int tags,int native_volume,
+int reloq_language_rules_render_controlled(int language,const unsigned char *text,size_t length,int tags,int native_volume,
     const struct reloq_german_generic_settings *settings,
     const struct reloq_german_generic_index *indices,size_t index_count,
     const struct reloq_german_generic_pitch_mark *pitches,size_t pitch_count,
     struct reloq_session *session,reloq_session_pcm_sink sink,
-    reloq_german_generic_index_sink index_sink,void *context)
+    reloq_german_generic_index_sink index_sink,void *context,
+    const struct reloq_parameter_mark *parameters,size_t parameter_count)
 {
-    if(!text||!settings||!session||!sink||(index_count&&!indices)||(pitch_count&&!pitches)||
+    if(!text||!settings||!session||!sink||(index_count&&!indices)||(pitch_count&&!pitches)||(parameter_count&&!parameters)||
        index_count>INT32_MAX||pitch_count>(size_t)INT32_MAX-index_count)return RELOQ_DE_UTTERANCE_INVALID;
     unsigned char *a=NULL;size_t *map=NULL,n=0;
     struct rule_plan plan={.session=session,.index_count=index_count+pitch_count};
     struct reloq61_mark *marks=NULL;int result=RELOQ_DE_UTTERANCE_INVALID;
+    struct volume_mark *volumes=NULL;size_t volume_count=0,volume_capacity=0;
     int family=language>>16;
     int input_status=english_input(text,length,tags,family==6||family==8||family==10||family==18,&a,&map,&n);
     if(input_status==-2)goto memory;
     if(input_status)goto done;
+    if(parameter_count) {
+        if(parameter_count>SIZE_MAX/sizeof *parameters)goto memory;
+        struct reloq_parameter_mark *local=malloc(parameter_count*sizeof *local);
+        if(!local)goto memory;
+        for(size_t i=0;i<parameter_count;++i) {
+            local[i]=parameters[i];
+            if(local[i].offset>length){free(local);goto done;}
+            local[i].offset=rule_boundary(a,n,map,local[i].offset,0);
+        }
+        unsigned char *controlled=NULL;size_t controlled_n=0,*positions=NULL;
+        int status=reloq_parameter_marks_insert(a,n,local,parameter_count,&controlled,&controlled_n,&positions);
+        free(local);
+        if(status==-2)goto memory;
+        if(status)goto done;
+        for(size_t i=0;i<=controlled_n;++i)positions[i]=map[positions[i]];
+        free(a);free(map);a=controlled;map=positions;n=controlled_n;
+    }
+    /* Volume is a host PCM gain, independent of each module's hard-coded
+     * synthesis volume. Keep changes as word-clock metadata and retain the
+     * original source coordinates; neither analysis nor filters restart. */
+    int current_speed=settings->native_speed?(settings->native_speed<0?0:settings->native_speed):settings->rate;
+    for(size_t at=0;at<n;) {
+        struct reloq_inline_tag t=reloq_inline_tag_read(a+at,n-at,1);
+        size_t before=at;while(before&&a[before-1]=='\\')--before;
+        if(!((at-before)&1) && t.kind==RELOQ_TAG_PRESET) {
+            struct reloq_inline_word preset={0};reloq_inline_preset(&preset,t.value);
+            current_speed=preset.speed;
+        }
+        if(!((at-before)&1) && t.kind==RELOQ_TAG_SPEED) {
+            if(t.value==current_speed)memset(a+at,' ',t.length);
+            current_speed=t.value;
+        }
+        if(t.kind==RELOQ_TAG_VOLUME && !((at-before)&1)) {
+            if(volume_count==volume_capacity) {
+                size_t cap=volume_capacity?volume_capacity*2:8;
+                if(cap<volume_capacity||cap>SIZE_MAX/sizeof *volumes)goto memory;
+                void *next=realloc(volumes,cap*sizeof *volumes);if(!next)goto memory;
+                volumes=next;volume_capacity=cap;
+            }
+            volumes[volume_count++]=(struct volume_mark){at,t.value};
+            memset(a+at,' ',t.length);
+        }
+        at+=t.length?t.length:1;
+    }
+    if(volume_count>(size_t)INT32_MAX-plan.index_count)goto memory;
+    plan.index_count+=volume_count;
     /* Leading punctuation has no preceding spoken word to pause after. */
     for(size_t j=0;j<n;) {
         struct reloq_inline_tag t=reloq_inline_tag_read(a+j,n-j,1);
@@ -363,12 +425,12 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         plan.indices=malloc(plan.index_count*sizeof *plan.indices);if(!plan.indices)goto memory;
         for(size_t i=0;i<plan.index_count;++i)plan.indices[i]=-1;
     }
-    size_t mark_count=index_count+pitch_count;
+    size_t mark_count=plan.index_count;
     if(mark_count) {
         if(mark_count>SIZE_MAX/sizeof *marks)goto memory;
         marks=malloc(mark_count*sizeof *marks);if(!marks)goto memory;
         size_t i=0,p=0;
-        for(size_t j=0;j<mark_count;++j) {
+        for(size_t j=0;j<index_count+pitch_count;++j) {
             int is_index=p==pitch_count||(i<index_count&&indices[i].annotation_offset<=pitches[p].annotation_offset);
             size_t offset=is_index?indices[i].annotation_offset:pitches[p].annotation_offset;
             if(offset>length)goto done;
@@ -378,6 +440,13 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
             if(j&&marks[j].offset<marks[j-1].offset)goto done;
             if(is_index)++i;else ++p;
         }
+        for(size_t j=0;j<volume_count;++j)
+            /* CJK romanizers own source expansion and do not report Latin
+             * source counts. Let their native index queue transport gain
+             * edges; these offsets already follow complete source words. */
+            marks[index_count+pitch_count+j]=(struct reloq61_mark){volumes[j].offset,(int32_t)(index_count+pitch_count+j),
+                family==6||family==8||family==10?-2:-1};
+        if(mark_count>1)qsort(marks,mark_count,sizeof *marks,rule_mark_compare);
     }
     /* Preserve the existing frontend's Unicode, numeric and index ownership;
      * all connected phonetic timing and targets now come from native rules. */
@@ -391,7 +460,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     q.voice[3]=settings->native_inflection_plus_one?settings->native_inflection_plus_one-1:30;
     q.voice[4]=settings->roughness;q.voice[5]=settings->breathiness;
     q.voice[6]=settings->native_speed?(settings->native_speed<0?0:settings->native_speed):settings->rate;
-    q.voice[7]=native_volume;
+    q.voice[7]=100;
     /* Only an explicit trailing pause protects the final silence. A p0
        reset or an earlier pause must not disable the entire policy. */
     int explicit_pause=0;
@@ -415,6 +484,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         .settings=settings,.pitches=pitches,.index_count=index_count,.pitch_count=pitch_count,
         .pause_mode=!explicit_pause&&settings->pause_mode==1,
         .pitch_scale=1,.base_pitch=reloq_voice_pitch_f0_scale(q.voice[2]),
+        .volumes=volumes,.volume_count=volume_count,.volume_gain=reloq_voice_volume_gain(native_volume),
         .delivery={.sink=sink,.context=context,.gain=1,
             .limit=(size_t)reloq_session_sample_rate(session)/100,
             .next_limit=(size_t)reloq_session_sample_rate(session)/50},
@@ -451,7 +521,18 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     }
     result=RELOQ_DE_UTTERANCE_OK;goto done;
 memory:result=RELOQ_DE_UTTERANCE_MEMORY;
-done:free(a);free(map);free(marks);free(plan.spans);free(plan.cuts);free(plan.indices);return result;
+done:free(a);free(map);free(marks);free(volumes);free(plan.spans);free(plan.cuts);free(plan.indices);return result;
+}
+
+int reloq_language_rules_render(int language,const unsigned char *text,size_t length,int tags,int volume,
+    const struct reloq_german_generic_settings *settings,
+    const struct reloq_german_generic_index *indices,size_t index_count,
+    const struct reloq_german_generic_pitch_mark *pitches,size_t pitch_count,
+    struct reloq_session *session,reloq_session_pcm_sink sink,
+    reloq_german_generic_index_sink index_sink,void *context)
+{
+    return reloq_language_rules_render_controlled(language,text,length,tags,volume,settings,
+        indices,index_count,pitches,pitch_count,session,sink,index_sink,context,NULL,0);
 }
 
 int reloq_english_rules_render(const unsigned char *text,size_t length,int tags,int native_volume,

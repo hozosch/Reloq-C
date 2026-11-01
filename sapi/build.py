@@ -35,9 +35,11 @@ def main():
     names = ['ReLoqSapi.dll', 'ReLoqSettings.exe', 'Test-SAPI.exe']
     entries = {name: (build / name).read_bytes() for name in names}
     entries.update({'eci.dll': args.core.read_bytes(), 'README.txt': (ROOT / 'sapi/README.txt').read_bytes(),
-                    'LICENSE': (ROOT / 'vendor/openevv61/LICENSE').read_bytes()})
+                    'LICENSE': (ROOT / 'LICENSE').read_bytes(), 'NOTICE': (ROOT / 'NOTICE').read_bytes()})
     for name, source in {
+        'OpenEVV-LICENSE.txt': 'vendor/openevv61/LICENSE',
         'OpenEVV-NOTICE.txt': 'vendor/openevv61/NOTICE',
+        'Dictionaries-CC0.txt': 'data/community/LICENSE.md',
         'Unicode-LICENSE.txt': 'reference-apple/behavior-0.2.82/unicode-input/LICENSE.txt',
         'SCOWL-Copyright.txt': 'reference-apple/behavior-0.2.83/input/SCOWL-Copyright.txt',
     }.items():

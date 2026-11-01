@@ -299,18 +299,6 @@ static int model_append(struct reloq_target_stage_router *router,int64_t tick,
             mapped[used].stream,mapped[used].value);
         /* Keep native S/Z excitation levels after anatomy adjustments.
          * The former +4-dB balance against /ts/ is intentionally removed. */
-        /* A word-medial /ts/ carries one continuous stop/release source.
-         * Ease both halves by one dB after model/breath adjustments. Keep
-         * initial and final /ts/, its spectral targets and all clocks. */
-        if (mapped[used].stream==RELOQ_TARGET_AF && mapped[used].value>0 &&
-            phone && (phone->affricate_role==3 ||
-                      (phone->affricate_role==4 && selected))) {
-            size_t start=selected-(phone->affricate_role==4);
-            if (start+1<settings->phone_count &&
-                settings->phones[start].same_word_left &&
-                settings->phones[start+1].same_word_right)
-                --mapped[used].value;
-        }
         /* Raise the other consonants by one source dB, after anatomy and
          * breath controls. S and the two parts of /ts/ keep their own
          * balance. A vocalized rhotic still belongs to the vowel source.
@@ -1306,7 +1294,8 @@ static int generic_plan(
     const struct reloq_german_word_features *features,size_t feature_count,
     struct reloq_target_builder *builder, int64_t *end_tick,
     reloq_german_cancel_check cancelled, void *cancel_context,float sample_rate,
-    const struct inline_timing *timing_map,struct source_points *colour,struct source_points *sibilants,struct quiet_regions *quiet)
+    const struct inline_timing *timing_map,struct source_points *colour,struct source_points *sibilants,struct quiet_regions *quiet,
+    int64_t origin,int final,int64_t *native_end)
 {
     struct output_settings output;
     if ((!phones && phone_count) || (!syllables && syllable_count) ||
@@ -1389,7 +1378,7 @@ static int generic_plan(
     int result = -1;
     struct profile previous, current, burst;
     silence(&previous);
-    int64_t tick = controls && controls[0].pause>0?controls[0].pause+1:0;
+    int64_t tick = origin+(controls && controls[0].pause>0?controls[0].pause+1:0);
     int previous_source_owned=0,previous_tract_owned=0,previous_cluster=0;
     int previous_noise_contact=0;
     size_t feature_index=0,phrase_start_phone=0;
@@ -1926,7 +1915,7 @@ static int generic_plan(
          * utterance, never before another spoken word. The schedule
          * gives it a duration between contextual short and long a.
          * Only normal-text metadata selects this voice preference. */
-        if (node->phone==RELOQ_DE_PHONE_A && !node->stress &&
+        if (final && node->phone==RELOQ_DE_PHONE_A && !node->stress &&
             i+1==phone_count && feature_index<feature_count &&
             features[feature_index].word_index==node->word_index &&
             node->syllable_in_word<64 &&
@@ -2624,14 +2613,9 @@ static int generic_plan(
                 i + 1 < phone_count && phones[i + 1].same_word_left &&
                 vowel(phones[i + 1].phone);
             if (affricate_part==2) current.value[RELOQ_TARGET_AF]=60;
-            if (affricate_part==4) {
-                /* Use the accepted initial /ts/ release level in medial,
-                 * final and connected positions too. Keep their own clocks
-                 * and formant frequencies; reduced models still route this
-                 * single branch onto their active upper parallel pole. */
-                current.value[RELOQ_TARGET_AF]=65;
-                current.value[RELOQ_TARGET_A5F]=55;
-            }
+            /* /ts/ retains its native stop burst and the contextual /s/
+             * frication profile. The old 65/55 override raised both the
+             * source and its upper pole after that profile was selected. */
             const int32_t initial_ticks=affricate_part==9?30:
                 affricate_part && !(affricate_part&1)?
                 (affricate_part==8?1:10):noisy_fricative(node->phone)?0:
@@ -3099,7 +3083,7 @@ static int generic_plan(
         marks[mark_count-1]:RELOQ_DE_TERMINAL_IMPLICIT;
     int32_t terminal_send_ticks;
     if (emit_pause(&stages,tick,phones+phone_count-1,source_segments+phone_count-1,
-            phone_count-1,final_mark,0,&previous,&output,&terminal_send_ticks,
+            phone_count-1,final_mark,!final,&previous,&output,&terminal_send_ticks,
             controls?controls[mark_count].pause:-1,
             controls?controls[mark_count].explicit_pause:0,
             settings?settings->pause_mode:0)) goto cleanup;
@@ -3192,14 +3176,15 @@ static int generic_plan(
         if (model_append(&stages,p->tick,&event,1,&output,p->phone)) goto cleanup;
     }
     if (reloq_target_stage_router_merge(&stages, builder)) goto cleanup;
-    if (reloq_german_generic_melody_append_controls(
+    if (reloq_german_generic_melody_append_restarted(
             melody, syllable_count, marks, mark_count, inflection,
-            pitch_scale, timing_map?1.0:time_scale, controls, builder)) goto cleanup;
+            pitch_scale, timing_map?1.0:time_scale, controls, builder,origin!=0)) goto cleanup;
     if(timing_map) {
         struct reloq_target_buffer *f0=builder->stream+RELOQ_TARGET_F0;
         for(size_t i=0;i<f0->count;++i)
             if(scale_tick(f0->points[i].tick,&output,&f0->points[i].tick))goto cleanup;
     }
+    if(native_end)*native_end=tick+terminal_send_ticks;
     if (scale_tick(tick + terminal_send_ticks, &output, end_tick))
         goto cleanup;
     result = 0;
@@ -3220,7 +3205,7 @@ int reloq_german_generic_plan_with_settings(
 {
     return generic_plan(phones, phone_count, syllables, syllable_count,
                         settings, NULL, 0, NULL, 0, NULL, NULL, 0, builder, end_tick, cancelled,
-                        cancel_context,11025,NULL,NULL,NULL,NULL);
+                        cancel_context,11025,NULL,NULL,NULL,NULL,0,1,NULL);
 }
 
 int reloq_german_generic_plan(
@@ -3439,8 +3424,13 @@ static int render(
     reloq_german_generic_index_sink index_sink,
     const struct reloq_german_generic_pitch_mark *pitches, size_t pitch_count,
     struct reloq_session *session, reloq_session_pcm_sink sink, void *context,
-    struct reloq_german_utterance_info *info,int inline_volume)
+    struct reloq_german_utterance_info *info,int inline_volume,
+    struct reloq_german_generic_continuation *continuation,int final)
 {
+    const int64_t origin=continuation?continuation->next_tick:0;
+    int64_t native_end=origin;
+    int next_sibilant=continuation?continuation->sibilant:0;
+    int next_colour=continuation?continuation->colour:0;
     struct reloq_inline_word *controls=NULL;size_t control_words=0;
     struct inline_timing speed_map={0};
     struct source_points colour={0},sibilants={0};
@@ -3745,7 +3735,7 @@ static int render(
         planned=generic_plan(phones,sequence.phone_count,syllables,syllable_count,
             plan_settings,marks,sequence.word_count,word_ticks,sequence.word_count,
             controls,features,feature_count,&builder,&end_tick,
-            session_cancelled,session,output.model.sample_rate,NULL,NULL,NULL,NULL);
+            session_cancelled,session,output.model.sample_rate,NULL,NULL,NULL,NULL,origin,final,NULL);
         if(planned || inline_timing_begin(&speed_map,word_ticks,control_words,controls,
             output.native_time_scale>0?output.native_time_scale:output.rate_factor/100.0)) {
             status=planned==1?RELOQ_DE_UTTERANCE_CANCELLED:RELOQ_DE_UTTERANCE_MODEL;goto done;
@@ -3775,18 +3765,21 @@ static int render(
         features,feature_count,
         &builder, &end_tick, session_cancelled, session,output.model.sample_rate,
         speed_map.count?&speed_map:NULL,output.model.sample_rate>=16000?&colour:NULL,
-        output.model.sample_rate>=16000?&sibilants:NULL,&quiet);
+        output.model.sample_rate>=16000?&sibilants:NULL,&quiet,origin,final,&native_end);
     if (planned) {
         status = planned == 1 ? RELOQ_DE_UTTERANCE_CANCELLED :
                  RELOQ_DE_UTTERANCE_MODEL;
         goto done;
     }
-    if(sibilants.count) {
-        qsort(sibilants.points,sibilants.count,sizeof *sibilants.points,source_point_order);
-        if(sibilants.count>SIZE_MAX/2/sizeof *sibilant_points){status=RELOQ_DE_UTTERANCE_MEMORY;goto done;}
-        sibilant_points=malloc(2*sibilants.count*sizeof *sibilant_points);
+    int64_t first_tick=0;
+    if(origin && scale_tick(origin,&output,&first_tick)){status=RELOQ_DE_UTTERANCE_MODEL;goto done;}
+    if(sibilants.count || origin) {
+        if(sibilants.count>1)qsort(sibilants.points,sibilants.count,sizeof *sibilants.points,source_point_order);
+        if(sibilants.count>(SIZE_MAX/sizeof *sibilant_points-1)/2){status=RELOQ_DE_UTTERANCE_MEMORY;goto done;}
+        sibilant_points=malloc((2*sibilants.count+1)*sizeof *sibilant_points);
         if(!sibilant_points){status=RELOQ_DE_UTTERANCE_MEMORY;goto done;}
-        size_t used=0;int last=0;
+        size_t used=0;int last=next_sibilant;
+        if(!sibilants.count)sibilant_points[used++]=(struct reloq_acoustic_point){first_tick,(float)last};
         for(size_t i=0;i<sibilants.count;++i) {
             int64_t t=sibilants.points[i].tick;
             if(i+1<sibilants.count&&sibilants.points[i+1].tick==t)continue;
@@ -3795,15 +3788,21 @@ static int render(
             sibilant_points[used++]=(struct reloq_acoustic_point){t,(float)last};
         }
         sibilant_curve=(struct reloq_acoustic_curve){0,sibilant_points,used};
+        next_sibilant=last;
     }
-    if(colour.count) {
-        qsort(colour.points,colour.count,sizeof *colour.points,source_point_order);
-        if(colour.count>SIZE_MAX/sizeof *colour_points) {status=RELOQ_DE_UTTERANCE_MEMORY;goto done;}
-        colour_points=malloc(colour.count*sizeof *colour_points);
+    if(colour.count || origin) {
+        if(colour.count>1)qsort(colour.points,colour.count,sizeof *colour.points,source_point_order);
+        if(colour.count>SIZE_MAX/sizeof *colour_points-1) {status=RELOQ_DE_UTTERANCE_MEMORY;goto done;}
+        colour_points=malloc((colour.count+1)*sizeof *colour_points);
         if(!colour_points) {status=RELOQ_DE_UTTERANCE_MEMORY;goto done;}
-        for(size_t i=0;i<colour.count;++i)
-            colour_points[i]=(struct reloq_acoustic_point){colour.points[i].tick,colour.points[i].value};
-        colour_curve=(struct reloq_acoustic_curve){0,colour_points,colour.count};
+        size_t used=0;
+        if(origin && (!colour.count || colour.points[0].tick>first_tick))
+            colour_points[used++]=(struct reloq_acoustic_point){first_tick,(float)next_colour};
+        for(size_t i=0;i<colour.count;++i) {
+            next_colour=colour.points[i].value;
+            colour_points[used++]=(struct reloq_acoustic_point){colour.points[i].tick,(float)next_colour};
+        }
+        colour_curve=(struct reloq_acoustic_curve){0,colour_points,used};
     }
     if ((pitch_count || controls) && apply_pitch_words(
             &builder, word_ticks, sequence.word_count, word_pitch,
@@ -3860,8 +3859,9 @@ static int render(
         status = RELOQ_DE_UTTERANCE_MODEL;
         goto done;
     }
-    if(colour.count)schedule.bypass_attenuation=&colour_curve;
-    if(sibilants.count)schedule.s_frication=&sibilant_curve;
+    if(origin && scale_tick(origin,&output,&schedule.first_tick)) {status=RELOQ_DE_UTTERANCE_MODEL;goto done;}
+    if(colour_curve.point_count)schedule.bypass_attenuation=&colour_curve;
+    if(sibilant_curve.point_count)schedule.s_frication=&sibilant_curve;
     schedule.s_frication_profile=1;
     long samples_per_tick=reloq_core_frame_sample_count((float)schedule.frame_ticks,
         config.duration_scale,config.sample_rate*0.001f);
@@ -3885,6 +3885,14 @@ static int render(
                 index_positions)) {
             status = RELOQ_DE_UTTERANCE_MODEL;
             goto done;
+        }
+        if(origin) {
+            if((uint64_t)schedule.first_tick>SIZE_MAX/(uint64_t)per_tick){status=RELOQ_DE_UTTERANCE_MODEL;goto done;}
+            size_t first=(size_t)schedule.first_tick*(size_t)per_tick;
+            for(size_t i=0;i<index_count;++i)if(index_positions[i]!=SIZE_MAX) {
+                if(index_positions[i]<(size_t)first){status=RELOQ_DE_UTTERANCE_MODEL;goto done;}
+                index_positions[i]-=(size_t)first;
+            }
         }
         if (reloq_german_generic_index_stream_begin(
                 &index_stream, index_positions, index_count,
@@ -3937,6 +3945,10 @@ done:
     free(marks);
     free(phones);
     free(annotation);
+    if(status==RELOQ_DE_UTTERANCE_OK && continuation) {
+        continuation->next_tick=native_end;
+        continuation->sibilant=next_sibilant;continuation->colour=next_colour;
+    }
     *info = progress;
     return status;
 }
@@ -3948,7 +3960,7 @@ int reloq_german_generic_render(
     struct reloq_german_utterance_info *info)
 {
     return render(utf8, length, lexicon, NULL, 0, NULL, 0, NULL, 0, NULL, NULL, 0,
-                  session, sink, context, info,-1);
+                  session, sink, context, info,-1,NULL,1);
 }
 
 int reloq_german_generic_render_with_settings(
@@ -3959,7 +3971,7 @@ int reloq_german_generic_render_with_settings(
     struct reloq_german_utterance_info *info)
 {
     return render(utf8, length, lexicon, settings, 0, NULL, 0, NULL, 0, NULL, NULL, 0,
-                  session, sink, context, info,-1);
+                  session, sink, context, info,-1,NULL,1);
 }
 
 int reloq_german_generic_render_annotation(
@@ -3968,7 +3980,7 @@ int reloq_german_generic_render_annotation(
     struct reloq_german_utterance_info *info)
 {
     return render(annotation, length, NULL, NULL, 1, NULL, 0, NULL, 0, NULL, NULL, 0,
-                  session, sink, context, info,-1);
+                  session, sink, context, info,-1,NULL,1);
 }
 
 int reloq_german_generic_render_annotation_with_settings(
@@ -3978,7 +3990,7 @@ int reloq_german_generic_render_annotation_with_settings(
     struct reloq_german_utterance_info *info)
 {
     return render(annotation, length, NULL, settings, 1, NULL, 0, NULL, 0, NULL, NULL, 0,
-                  session, sink, context, info,-1);
+                  session, sink, context, info,-1,NULL,1);
 }
 
 int reloq_german_generic_render_annotation_indexed_with_settings(
@@ -3991,7 +4003,7 @@ int reloq_german_generic_render_annotation_indexed_with_settings(
 {
     return render(annotation, length, NULL, settings, 1, NULL, 0,
                   indices, index_count, index_sink, NULL, 0,
-                  session, pcm_sink, context, info,-1);
+                  session, pcm_sink, context, info,-1,NULL,1);
 }
 
 int reloq_german_generic_render_annotation_indexed_with_settings_and_pitch(
@@ -4005,7 +4017,7 @@ int reloq_german_generic_render_annotation_indexed_with_settings_and_pitch(
 {
     return render(annotation, length, NULL, settings, 1, NULL, 0,
                   indices, index_count, index_sink, pitches, pitch_count,
-                  session, pcm_sink, context, info,-1);
+                  session, pcm_sink, context, info,-1,NULL,1);
 }
 
 int reloq_german_generic_render_text_plan(
@@ -4020,7 +4032,7 @@ int reloq_german_generic_render_text_plan(
 {
     return render(annotation,length,NULL,settings,1,features,feature_count,
                   indices,index_count,index_sink,pitches,pitch_count,
-                  session,pcm_sink,context,info,-1);
+                  session,pcm_sink,context,info,-1,NULL,1);
 }
 
 int reloq_german_generic_render_tagged_text_plan(
@@ -4035,5 +4047,21 @@ int reloq_german_generic_render_tagged_text_plan(
 {
     return render(annotation,length,NULL,settings,1,features,feature_count,
                   indices,index_count,index_sink,pitches,pitch_count,
-                  session,pcm_sink,context,info,native_volume);
+                  session,pcm_sink,context,info,native_volume,NULL,1);
+}
+
+int reloq_german_generic_render_text_part(
+    const unsigned char *annotation,size_t length,
+    const struct reloq_german_generic_settings *settings,
+    const struct reloq_german_word_features *features,size_t feature_count,
+    const struct reloq_german_generic_index *indices,size_t index_count,
+    struct reloq_session *session,reloq_session_pcm_sink pcm_sink,
+    reloq_german_generic_index_sink index_sink,void *context,
+    struct reloq_german_utterance_info *info,int native_volume,
+    struct reloq_german_generic_continuation *continuation,int final)
+{
+    if(!continuation || continuation->next_tick<0 || (final!=0&&final!=1))return RELOQ_DE_UTTERANCE_INVALID;
+    return render(annotation,length,NULL,settings,1,features,feature_count,
+        indices,index_count,index_sink,NULL,0,session,pcm_sink,context,info,
+        native_volume,continuation,final);
 }

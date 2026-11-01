@@ -143,6 +143,23 @@ int reloq_german_generic_render_text_plan(
     reloq_german_generic_index_sink index_sink,void *context,
     struct reloq_german_utterance_info *info);
 
+/* One owner-thread transaction. Preserve the native clock and the session's
+ * oscillator, noise and filter histories across completed text stretches. */
+/* Zero-initialize once per utterance; keep the same session across parts. */
+struct reloq_german_generic_continuation {
+    int64_t next_tick;
+    int sibilant,colour;
+};
+int reloq_german_generic_render_text_part(
+    const unsigned char *annotation,size_t length,
+    const struct reloq_german_generic_settings *settings,
+    const struct reloq_german_word_features *features,size_t feature_count,
+    const struct reloq_german_generic_index *indices,size_t index_count,
+    struct reloq_session *session,reloq_session_pcm_sink pcm_sink,
+    reloq_german_generic_index_sink index_sink,void *context,
+    struct reloq_german_utterance_info *info,int native_volume,
+    struct reloq_german_generic_continuation *continuation,int final);
+
 int reloq_german_generic_render_tagged_text_plan(
     const unsigned char *annotation,size_t length,
     const struct reloq_german_generic_settings *settings,
