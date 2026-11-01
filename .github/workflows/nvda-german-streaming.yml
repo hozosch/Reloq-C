@@ -32,6 +32,8 @@ jobs:
         run: |
           python3 nvda/test_updates.py
           python3 addon/build_synth.py
+          python3 addon/test_synth.py
+          python3 addon/test_synth.py de
           python3 - <<'PY'
           from pathlib import Path
           import hashlib,json,os,zipfile
@@ -80,12 +82,6 @@ jobs:
           python nvda/test_eci_german_streaming.py --library $core --profile 2 --output streaming-c.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_high_rate_profiles.py --library $core
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          New-Item -ItemType Directory -Force eci | Out-Null
-          Copy-Item $core eci/eci.dll
-          python addon/test_synth.py
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python addon/test_synth.py de
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Collect validated preview
         shell: pwsh
