@@ -75,7 +75,11 @@ void reloq_noise_profile_prepare(struct reloq_noise_profile *s,float rate,
                  * quieter upper band in the newly available passband.
                  * The source contour still determines the main balance. */
                 *count=8;
-                f[7]=rate*.375f;b[7]=rate*.22f;
+                /* The S tail belongs to a physical band. Moving it from
+                 * 12 to 18 kHz with the clock made most added energy
+                 * remote from the useful sibilant spectrum. */
+                f[7]=kind==ALVEOLAR?11000:rate*.375f;
+                b[7]=kind==ALVEOLAR?4200:rate*.22f;
                 a[7]=af?level((kind==ALVEOLAR?a[4]-18:a[3]-28)-
                     ((av!=0 || (kind==ALVEOLAR && a[3]!=0))?6:0)):0;
             }
@@ -102,8 +106,9 @@ void reloq_noise_profile_prepare(struct reloq_noise_profile *s,float rate,
     /* A separate high band extends the noise excitation without moving
      * the lower contour or its first seven resonance targets. It is zero
      * below 32 kHz and has no DC contribution. */
-    highpass(s->target[3],rate,11025,.541196100146197);
-    highpass(s->target[4],rate,11025,1.306562964876377);
+    double upper_edge=kind==ALVEOLAR?9000:11025;
+    highpass(s->target[3],rate,upper_edge,.541196100146197);
+    highpass(s->target[4],rate,upper_edge,1.306562964876377);
     lowpass(s->target[5],rate,rate*.46,.707106781186548);
     s->upper_target=rate>=32000?(kind==ALVEOLAR?1.0:kind==POSTALVEOLAR?.25:0):0;
     if(!s->ready) {

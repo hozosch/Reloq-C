@@ -1206,6 +1206,7 @@ struct noise_clock_grid {
 };
 struct noise_grid {
     atomic_int ready;
+    int sibilant;
     double coefficients[6][5],upper,profile[FFT_SIZE/2+1];
     const struct noise_clock_grid *clock;
 };
@@ -1253,6 +1254,7 @@ static const struct noise_clock_grid *get_noise_clock(unsigned i,float rate)
 static void fill_noise_grid(struct noise_grid *g,const struct reloq_noise_profile *p,
     float rate,const struct noise_clock_grid *clock)
 {
+    g->sibilant=p->kind==1;
     memcpy(g->coefficients,p->target,sizeof g->coefficients);g->upper=p->upper_target;
     g->clock=clock;
     for(unsigned k=0;k<=FFT_SIZE/2;++k)
@@ -1291,6 +1293,25 @@ static RATE_NOINLINE void fit_noise_mix(struct reloq_rate_transfer *s,
 {
     double ours[FFT_SIZE/2+1],wanted[FFT_SIZE/2+1],a=0,b=0,peak=0;
     const struct noise_clock_grid *clock=grid->clock;
+    struct pole original_s={1,0,0},broader_s=original_s;
+    if(grid->sibilant) {
+        const struct reloq_core_resonator *p=current->stages+4;
+        if(p->input_gain && p->previous_gain<0 && p->previous_gain>-1) {
+            /* Widen the dominant S resonance by 50%, retaining its centre.
+             * With C=-r*r, multiplying B by sqrt(r) and C by r changes
+             * only the pole radius. The existing finite-kernel power
+             * normalization below retains the source's integrated level.
+             * This is a target change: no extra per-sample filter or delay. */
+            original_s=(struct pole){1-p->latest_gain-p->previous_gain,
+                p->latest_gain,p->previous_gain};
+            double scale=sqrt(sqrt(-original_s.c));
+            broader_s.b=original_s.b*scale;
+            broader_s.c=original_s.c*scale*scale;
+            broader_s.a=1-broader_s.b-broader_s.c;
+        }
+    }
+    const double extension=rate>=48000?2.0:rate>=44100?1.7:
+        rate>=32000?1.4:rate>=22050?1.15:1;
     for(unsigned k=0;k<=FFT_SIZE/2;++k) {
         ours[k]=bank_power(current,clock->z[0][k])/(norm*norm)*grid->profile[k];
         /* The measured sinc cutoff is .98 of the original Nyquist. Its
@@ -1309,6 +1330,13 @@ static RATE_NOINLINE void fit_noise_mix(struct reloq_rate_transfer *s,
     for(unsigned k=0;k<=FFT_SIZE/2;++k) {
         const double mag=historic84?1:clock->tilt[k];
         wanted[k]=((1-mix)*ours[k]+mix*wanted[k]*a/b)*mag*mag;
+        if(grid->sibilant) {
+            double hz=(double)k*rate/FFT_SIZE;
+            double t=fmax(0,fmin(1,(hz-4800)/4200));
+            double upper=1+(extension*extension-1)*t*t*(3-2*t);
+            wanted[k]*=power(broader_s,clock->z[0][k])/
+                power(original_s,clock->z[0][k])*upper;
+        }
     }
     double spectrum[FFT_SIZE]={0};
     for(unsigned k=0;k<=FFT_SIZE/2;++k) {

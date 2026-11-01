@@ -1,0 +1,102 @@
+{
+  "baseline_ref": "8cee7c3",
+  "no_audio_files": true,
+  "steady_s_cases": 84,
+  "exact_legacy_s_cases": 24,
+  "exact_other_controls": 23,
+  "summary": [
+    {
+      "rate": 8000,
+      "cases": 12,
+      "envelope_cv": 0.3736867680685292,
+      "peak_fraction": 0.04796415843115096,
+      "centroid_hz": 3351.131810390494,
+      "above_5500": 0.0,
+      "above_8000": 0.0,
+      "above_11025": 0.0
+    },
+    {
+      "rate": 11025,
+      "cases": 12,
+      "envelope_cv": 0.33588598688204163,
+      "peak_fraction": 0.041041247188858467,
+      "centroid_hz": 4264.801000208573,
+      "above_5500": 0.006594590444248771,
+      "above_8000": 0.0,
+      "above_11025": 0.0
+    },
+    {
+      "rate": 16000,
+      "cases": 12,
+      "envelope_cv": 0.26162665861931267,
+      "peak_fraction": 0.02483996113817423,
+      "centroid_hz": 4050.111475457023,
+      "above_5500": 0.06696658366076877,
+      "above_8000": 5.40258707238737e-14,
+      "above_11025": 0.0,
+      "largest_level_change_db": 0.044618697422172886,
+      "envelope_cv_ratio": 0.8572280877405178,
+      "peak_fraction_ratio": 0.7036694438342503
+    },
+    {
+      "rate": 22050,
+      "cases": 12,
+      "envelope_cv": 0.2531451047797495,
+      "peak_fraction": 0.02359881442113737,
+      "centroid_hz": 4454.39748964785,
+      "above_5500": 0.16877215701973203,
+      "above_8000": 0.0030684655251422117,
+      "above_11025": 4.1214135564393417e-16,
+      "largest_level_change_db": 0.030334480081901843,
+      "envelope_cv_ratio": 0.8487668523985404,
+      "peak_fraction_ratio": 0.6616223524816761
+    },
+    {
+      "rate": 32000,
+      "cases": 12,
+      "envelope_cv": 0.2392842210084518,
+      "peak_fraction": 0.01974638602322229,
+      "centroid_hz": 4638.236391947789,
+      "above_5500": 0.21423887465900102,
+      "above_8000": 0.016619746541528663,
+      "above_11025": 0.004571187082423207,
+      "largest_level_change_db": 0.3202940942110716,
+      "envelope_cv_ratio": 0.8179244506760176,
+      "peak_fraction_ratio": 0.6326916453377034
+    },
+    {
+      "rate": 44100,
+      "cases": 12,
+      "envelope_cv": 0.23173029437233625,
+      "peak_fraction": 0.01945642189681104,
+      "centroid_hz": 4795.381894139712,
+      "above_5500": 0.25876547077298445,
+      "above_8000": 0.02435240456778139,
+      "above_11025": 0.007221790184779933,
+      "largest_level_change_db": 0.3892029422841042,
+      "envelope_cv_ratio": 0.798006245112088,
+      "peak_fraction_ratio": 0.612006629122321
+    },
+    {
+      "rate": 48000,
+      "cases": 12,
+      "envelope_cv": 0.22221015941945188,
+      "peak_fraction": 0.01833577819868334,
+      "centroid_hz": 4938.047153405463,
+      "above_5500": 0.3029441436540135,
+      "above_8000": 0.032358187638617746,
+      "above_11025": 0.009384556618911293,
+      "largest_level_change_db": 0.38108103746621425,
+      "envelope_cv_ratio": 0.7676034057293262,
+      "peak_fraction_ratio": 0.5793917669585738
+    }
+  ],
+  "baseline_commit": "8cee7c3956358d03856b047198f0e2e57f3fa86b",
+  "kind": "Numeric production-renderer comparison; subjective listening remains required.",
+  "method": "Steady 1-second S, 3 resonance centres, 2 deterministic seeds, 2 S colour profiles, 7 sample clocks; discard first 20%; 40-ms Welch windows and 1-ms RMS envelopes.",
+  "commands": [
+    "python3 tools/check_sibilant_texture.py --baseline-ref 8cee7c3",
+    "make test-rate-math test-rate-transform"
+  ],
+  "audio_files_written": false
+}

@@ -771,7 +771,7 @@ int ECICALL eciReset(ECIHand handle)
 void ECICALL eciVersion(char *buffer)
 {
     /* The public ECI convention promises at least twenty writable bytes. */
-    if (buffer) memcpy(buffer, "1.0.0.0", sizeof "1.0.0.0");
+    if (buffer) memcpy(buffer, "1.0.1.0", sizeof "1.0.1.0");
 }
 
 int ECICALL eciGetAvailableLanguages(unsigned int *languages, int *count)
