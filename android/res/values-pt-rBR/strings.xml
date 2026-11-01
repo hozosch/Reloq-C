@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_updates">Atualizações do aplicativo</string>
+    <string name="check_updates">Verificar atualizações</string>
+    <string name="checking_updates">Verificando atualizações…</string>
+    <string name="installed_version">Versão instalada: %1$s</string>
+    <string name="version_available">A versão %1$s está disponível.</string>
+    <string name="no_published_update">Não há um pacote de aplicativo publicado mais novo.</string>
+    <string name="download_update">Abrir download no navegador</string>
+    <string name="update_failed">Falha na atualização: %1$s</string>
+    <string name="browser_update">Download aberto. Use o navegador e a instalação normal do Android. Mantenha o Google Play Protect ativado.</string>
+    <string name="engine_help">Síntese de voz offline. Escolha um idioma e uma voz para testar, ou selecione o ReLoq C nas configurações de conversão de texto em fala do Android.</string>
+    <string name="language">Idioma</string>
+    <string name="profile">Voz</string>
+    <string name="sample_rate">Taxa de amostragem</string>
+    <string name="pause_mode">Encurtar pausas</string>
+    <string name="sample_text">Texto para ler</string>
+    <string name="speak">Ler texto de teste</string>
+    <string name="stop">Parar</string>
+    <string name="system_settings">Configurações de fala do Android</string>
+    <string name="initializing">Inicializando o mecanismo de fala</string>
+    <string name="ready">Mecanismo de fala pronto</string>
+    <string name="unavailable">Mecanismo de fala indisponível. Abra as configurações de fala do Android e selecione o ReLoq C.</string>
+    <string-array name="pause_modes">
+        <item>Nunca</item>
+        <item>No final</item>
+        <item>Sempre</item>
+    </string-array>
+    <string name="voice_settings">Idioma e voz</string>
+    <string name="android_voice">Controlar idioma e voz pelo Android</string>
+    <string name="android_rate">Controlar velocidade pelo Android</string>
+    <string name="android_pitch">Controlar tom pelo Android</string>
+    <string name="speed">Velocidade manual, palavras por minuto</string>
+    <string name="pitch">Tom manual</string>
+    <string name="rate_boost">Aumento de velocidade</string>
+    <string name="inflection">Entonação</string>
+    <string name="volume">Volume da voz</string>
+    <string name="anatomy">Modelo de voz</string>
+    <string name="model">Modelo</string>
+    <string name="head_size">Tamanho da cabeça</string>
+    <string name="roughness">Rouquidão</string>
+    <string name="breathiness">Soprosidade</string>
+    <string name="reset_profile">Redefinir a voz selecionada</string>
+    <string name="output_settings">Saída de fala</string>
+    <string name="eci_tags">Processar comandos ECI</string>
+    <string name="dictionaries">Dicionários de pronúncia</string>
+    <string name="community_dictionaries">Usar dicionários da comunidade</string>
+    <string name="update_dictionaries">Atualizar dicionários da comunidade a partir do master atual</string>
+    <string name="own_dictionaries">Arquivos de dicionário próprios; os arquivos posteriores têm prioridade</string>
+    <string name="dictionary_language">Idioma dos novos arquivos de dicionário</string>
+    <string name="dictionary_volume">Volume dos novos arquivos de dicionário</string>
+    <string name="add_dictionary">Adicionar arquivo de dicionário</string>
+    <string name="remove_dictionary">Remover arquivo selecionado</string>
+    <string name="move_dictionary_up">Mover arquivo selecionado para antes</string>
+    <string name="move_dictionary_down">Mover arquivo selecionado para depois</string>
+    <string name="reload_dictionaries">Recarregar arquivos selecionados</string>
+    <string name="dictionary_help">Os dicionários da comunidade e as entradas Dic próprias usam as etapas de dicionário nativas. Escolha o idioma e o volume antes de adicionar um arquivo. Os arquivos usam a codificação Windows-1252. Os arquivos posteriores substituem as entradas dos anteriores. As alterações são monitoradas quando o provedor de documentos fornece metadados de modificação; Recarregar arquivos selecionados sempre lê as fontes de novo. O acesso à rede é usado apenas pelo botão de atualização.</string>
+    <string name="dictionary_working">Preparando os dicionários</string>
+    <string name="dictionary_ready">Dicionários prontos</string>
+    <string name="dictionary_error">Falha ao atualizar o dicionário: %1$s</string>
+    <string name="dictionary_unavailable">Dicionário indisponível</string>
+    <string name="dictionary_permission">Escolha um arquivo que permita acesso de leitura permanente</string>
+    <string name="back">Voltar às configurações de fala</string>
+    <string name="test_speech">Teste de fala</string>
+    <string name="parameter_value">%1$s: %2$d</string>
+    <string-array name="models">
+        <item>Masculino</item>
+        <item>Feminino</item>
+    </string-array>
+    <string-array name="dictionary_volumes">
+        <item>Principal</item>
+        <item>Raiz</item>
+        <item>Abreviações</item>
+    </string-array>
+    <string name="wpm_value">%1$d palavras por minuto</string>
+    <string name="speed_help">As palavras por minuto são aproximadas; a velocidade real depende do idioma, do tamanho das palavras e das pausas. A velocidade normal do Android usa como meta 190 palavras por minuto.</string>
+    <string name="abbreviation_dictionary">Usar dicionário de abreviações</string>
+    <string name="phrase_prediction">Previsão de frases</string>
+</resources>
