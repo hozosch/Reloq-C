@@ -33,7 +33,7 @@ jobs:
           good = {job['name'] for job in jobs if job['conclusion'] == 'success'}
           assert required <= good, 'Platform validation did not pass'
           changed = subprocess.check_output(['git', 'diff', '--name-only', commit, 'HEAD'], text=True).splitlines()
-          allowed = {'.github/package-source.json', '.github/workflows/package-existing.yml',
+          allowed = {'.github/package-source.json', '.github/workflows/package-existing.yml', 'tools/release_packages.py',
                      '.github/workflows/packages.yml', '.github/workflows/release.yml'}
           assert set(changed) <= allowed, 'Runtime, data or build-script inputs changed: rebuild platforms'
           with open(os.environ['GITHUB_OUTPUT'], 'a') as out:

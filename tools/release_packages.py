@@ -23,7 +23,7 @@ def names(version):
 
 
 def collect(source, destination):
-    version = re.search(r'^version\s*=\s*(\S+)', Path('addon/synth/manifest.ini').read_text(), re.M)[1]
+    version = re.search(r'^version\s*=\s*(\S+)', Path('addon/synth/manifest.ini').read_text(), re.M)[1].strip('"')
     required = names(version)
     files = [path for path in source.rglob('*') if path.is_file() and
              (path.name in required or re.fullmatch(
