@@ -3,6 +3,26 @@
 static const int voice_parameters[]={RELOQ_ECI_GENDER,RELOQ_ECI_HEAD_SIZE,
     RELOQ_ECI_NATIVE_PITCH,RELOQ_ECI_NATIVE_INFLECTION,RELOQ_ECI_ROUGHNESS,
     RELOQ_ECI_BREATHINESS,RELOQ_ECI_NATIVE_SPEED,RELOQ_ECI_NATIVE_VOLUME};
+static reloq_eci_atomic eci_defaults[10]={1,0,0,0,0,1,0,0,0,RELOQ_ECI_ENGLISH};
+static int default_parameter(int parameter)
+{
+    return parameter==0||parameter==1||parameter==2||parameter==3||
+        parameter==5||parameter==8||parameter==9;
+}
+int ECICALL eciGetDefaultParam(int parameter)
+{
+    return default_parameter(parameter)?(int)epoch_get(eci_defaults+parameter):-1;
+}
+int ECICALL eciSetDefaultParam(int parameter,int value)
+{
+    if(!default_parameter(parameter))return -1;
+    if(parameter==5){if(!sample_hz(value))return -1;}
+    else if(parameter==9) {
+        int code=value&0xff00;
+        if((code&&code!=0x800)||!reloq61_language_supported(value&~0xff00))return -1;
+    } else if(value<0||value>1)return -1;
+    return (int)epoch_exchange(eci_defaults+parameter,(unsigned)value);
+}
 static void initialize_eci_voices(struct reloq_eci_engine *e)
 {
     static const char *const names[]={"Adult Male 1","Adult Female 1","Child 1",
@@ -17,27 +37,53 @@ static void initialize_eci_voices(struct reloq_eci_engine *e)
     strcpy(e->voice_names[0],names[0]);
 }
 static int valid_voice(int voice) {return voice>=0&&voice<=16;}
+/* The already linked native frontend supplies the SDK's calibration, not
+ * another percentage/WPM curve or a second pitch table. */
+extern int eci2RealWorld(int32_t,int32_t,int32_t);
+extern int realWorld2eci(int32_t,int32_t,int32_t,int32_t,int32_t);
+static int voice_value_raw(struct reloq_eci_engine *e,int voice,int parameter)
+{
+    return voice?e->saved_voices[voice-1][parameter]:eciGetParam(e,voice_parameters[parameter]);
+}
 int ECICALL eciGetVoiceParam(ECIHand handle,int voice,int parameter)
 {
     struct reloq_eci_engine *e=handle;
     if(!e||epoch_get(&e->busy)||!valid_voice(voice)||parameter<0||parameter>=8)return -1;
-    return voice?e->saved_voices[voice-1][parameter]:eciGetParam(e,voice_parameters[parameter]);
+    if(e->real_world_units && (e->real_voice_flags[voice]&(1u<<parameter)))
+        return e->real_voice_values[voice][parameter];
+    int raw=voice_value_raw(e,voice,parameter);
+    return e->real_world_units?eci2RealWorld(1,parameter,raw):raw;
 }
 int ECICALL eciSetVoiceParam(ECIHand handle,int voice,int parameter,int value)
 {
     struct reloq_eci_engine *e=handle;
     if(!e||epoch_get(&e->busy)||!valid_voice(voice)||(voice>0&&voice<9)||
-       parameter<0||parameter>=8||value<0||value>(parameter==0?1:parameter==6?250:100))return -1;
-    if(voice) {int old=e->saved_voices[voice-1][parameter];e->saved_voices[voice-1][parameter]=value;return old;}
-    int old=eciSetParam(e,voice_parameters[parameter],value);
-    if(old>=0)e->voice_mode=RELOQ_ECI_VOICE_GENERIC;
+       parameter<0||parameter>=8)return -1;
+    int maximum=parameter==0?1:parameter==6?250:100,raw=value;
+    if(e->real_world_units) {
+        if(parameter!=0 && value<1)return -1;
+        if(value<eci2RealWorld(1,parameter,0)||value>eci2RealWorld(1,parameter,maximum))return -1;
+        raw=realWorld2eci(1,parameter,value,0,maximum);
+    }
+    if(raw<0||raw>maximum)return -1;
+    int old=eciGetVoiceParam(e,voice,parameter);
+    if(voice)e->saved_voices[voice-1][parameter]=raw;
+    else {
+        int extended=e->extended_reset;
+        int result=eciSetParam(e,voice_parameters[parameter],raw);e->extended_reset=extended;
+        if(result<0)return -1;
+        e->voice_mode=RELOQ_ECI_VOICE_GENERIC;
+    }
+    if(e->real_world_units && (parameter==2||parameter==6||parameter==7)) {
+        e->real_voice_values[voice][parameter]=value;e->real_voice_flags[voice]|=1u<<parameter;
+    } else e->real_voice_flags[voice]&=~(1u<<parameter);
     return old;
 }
 int ECICALL eciCopyVoice(ECIHand handle,int from,int to)
 {
     struct reloq_eci_engine *e=handle;
     if(!e||epoch_get(&e->busy)||!valid_voice(from)||!valid_voice(to)||(to>0&&to<9))return 0;
-    int values[8];for(int i=0;i<8;++i)values[i]=eciGetVoiceParam(e,from,i);
+    int values[8];for(int i=0;i<8;++i)values[i]=voice_value_raw(e,from,i);
     if(to)memcpy(e->saved_voices[to-1],values,sizeof values);
     else {
         struct reloq_session *next=make_text_session(values[0],values[1],e->sample_rate_code);
@@ -48,7 +94,9 @@ int ECICALL eciCopyVoice(ECIHand handle,int from,int to)
         e->native_speed=values[6];e->native_volume=values[7];e->native_pitch_active=e->native_inflection_active=1;
         e->native_speed_active=e->native_volume_active=1;e->voice_mode=RELOQ_ECI_VOICE_GENERIC;
     }
-    memmove(e->voice_names[to],e->voice_names[from],30);return 1;
+    memmove(e->voice_names[to],e->voice_names[from],sizeof e->voice_names[to]);
+    memmove(e->real_voice_values[to],e->real_voice_values[from],sizeof e->real_voice_values[to]);
+    e->real_voice_flags[to]=e->real_voice_flags[from];return 1;
 }
 int ECICALL eciGetVoiceName(ECIHand handle,int voice,void *name)
 {
@@ -154,8 +202,16 @@ int ECICALL eciSetVoiceName(ECIHand handle,int voice,const void *name)
 {
     struct reloq_eci_engine *e=handle;
     if(!e||epoch_get(&e->busy)||!valid_voice(voice)||(voice>0&&voice<9)||!name)return 0;
+    size_t input_units=0;
+    if(e->language_dialect&0x800) {
+        for(;input_units<30;++input_units) {
+            uint16_t value;memcpy(&value,(const unsigned char *)name+2*input_units,2);
+            if(!value)break;
+        }
+    } else while(input_units<30&&((const unsigned char *)name)[input_units])++input_units;
+    if(input_units>=30)return 0;
     size_t n=0;int error=0;unsigned char *text=decode_eci_text(e,name,&n,&error);
-    if(!text||n>=30){free(text);return 0;}
+    if(!text||n>=sizeof e->voice_names[voice]){free(text);return 0;}
     memcpy(e->voice_names[voice],text,n+1);free(text);return 1;
 }
 static struct reloq_eci_dictionary *find_eci_dictionary(struct reloq_eci_engine *e,void *handle)
@@ -228,4 +284,37 @@ int ECICALL eciLoadDict(ECIHand handle,ECIDictHand dictionary,int volume,const v
     void *w=dictionary_worker(e,e->language,&candidate,0);if(!w){free(data);return 6;}
     if(e->active_dictionary==d){reloq61_worker_free(e->rule_worker);e->rule_worker=w;}else reloq61_worker_free(w);
     free(d->volumes[volume]);d->volumes[volume]=data;d->sizes[volume]=(size_t)bytes;return 0;
+}
+
+/* SDK-only callers receive fresh defaults, presets and synthesis histories.
+ * The explicit native extensions retain their historical reset contract.
+ * Buffer/callback routing and owned dictionary handles stay with the host. */
+static int reset_eci_defaults(struct reloq_eci_engine *e)
+{
+    if(!busy_begin(&e->busy))return 0;
+    struct reloq_eci_engine *n=eciNew();
+    if(!n){busy_end(&e->busy);return 0;}
+    n->rule_worker=dictionary_worker(e,n->language,e->active_dictionary,1);
+    if(!n->rule_worker){eciDelete(n);busy_end(&e->busy);return 0;}
+    lock_session(&e->session_lock);
+    struct reloq_session *old=e->session;e->session=n->session;n->session=old;
+    old=e->text_session;e->text_session=n->text_session;n->text_session=old;
+    void *worker=e->rule_worker;e->rule_worker=n->rule_worker;n->rule_worker=worker;
+    unlock_session(&e->session_lock);
+    clear_queue(e);
+    e->sample_rate_code=n->sample_rate_code;e->synth_mode=n->synth_mode;e->voice_mode=n->voice_mode;
+    e->generic_rate=n->generic_rate;e->generic_pitch=n->generic_pitch;e->generic_volume=n->generic_volume;
+    e->native_speed=n->native_speed;e->native_pitch=n->native_pitch;
+    e->native_inflection=n->native_inflection;e->native_volume=n->native_volume;
+    e->native_speed_active=e->native_pitch_active=e->native_inflection_active=e->native_volume_active=1;
+    e->input_type=n->input_type;e->process_tags=n->process_tags;e->text_mode=n->text_mode;
+    e->dictionary_disabled=n->dictionary_disabled;e->real_world_units=n->real_world_units;
+    e->language=n->language;e->language_dialect=n->language_dialect;
+    e->gender=n->gender;e->head_size=n->head_size;e->roughness=n->roughness;e->breathiness=n->breathiness;
+    memcpy(e->saved_voices,n->saved_voices,sizeof e->saved_voices);
+    memcpy(e->voice_names,n->voice_names,sizeof e->voice_names);
+    memset(e->real_voice_flags,0,sizeof e->real_voice_flags);
+    e->error=e->last_synthesis_error=RELOQ_ECI_OK;
+    e->failure_stage=RELOQ_ECI_STAGE_NONE;e->failure_utf8_offset=-1;
+    eciDelete(n);busy_end(&e->busy);return 1;
 }

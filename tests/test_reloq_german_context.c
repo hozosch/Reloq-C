@@ -66,6 +66,24 @@ int main(void)
             checks+=check(text);
         }
     checks+=check("Sie fragte: „Ist der Termin bestätigt?“");
+    static const char *const separators[]={
+        "Frankfurt/Main","Frankfurt/Oder","E-Mail","NVDA-Erweiterung",
+        "Karl/wechseln","Stern/Neu starten","Sprach-/Satzanalyse","Ein-/Ausgabe",
+        "und/oder","Audio-/Video-Dateien","S-/U-Bahn","Bindestrich / Schrägstrich",
+        "Ein- und Ausgabe","Ein- / Ausgabe","Ein-/ Ausgabe","Ein- /Ausgabe",
+        "Audio- / Video-Dateien","E-Mail/Chat","Windows-11-Updates","NVDA-2026.1",
+        "16-kHz-Version","22/32-kHz-Version","Frankfurt / Main","Datei-/Ordnername",
+    };
+    static const char *const separator_patterns[]={
+        "Die %s wurde nach der Vorbereitung geprüft.",
+        "Heute wurde %s geprüft. Danach wurde das Ergebnis vorgelesen.",
+        "Bei %s kann die Satzanalyse fehlschlagen.",
+    };
+    for(size_t i=0;i<sizeof separators/sizeof *separators;++i)
+        for(size_t j=0;j<sizeof separator_patterns/sizeof *separator_patterns;++j) {
+            assert(snprintf(text,sizeof text,separator_patterns[j],separators[i])>0);
+            checks+=check(text);
+        }
     reloq61_worker_scope(previous);reloq61_worker_free(worker);
     printf("{\"german_context_cases\":%u,\"native_phone_and_prominence_signatures_equal\":true,\"native_features_retained\":true,\"no_audio_files\":true}\n",checks);
     return 0;

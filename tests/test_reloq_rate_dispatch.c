@@ -23,9 +23,16 @@ static void classic_response(void)
   assert(fabs(response(s.presence,0,rates[r])-1)<1e-9);
   assert(response(a.presence,4000,rates[r])>1.3);
   assert(fabs(20*log10(response(s.voice_colour[0],300,rates[r]))-
-      (.6+.4*classic_rate_extension(rates[r])))<1e-7);
+      .6)<1e-7);
   assert(fabs(response(s.voice_colour[0],0,rates[r])-1)<1e-9);
   assert(20*log10(response(s.voice_colour[0],1500,rates[r]))<.1);
+  if(r) {
+   prepare_trial_source(&s);
+   assert(fabs(response(s.trial_source,0,rates[r])-1)<1e-9);
+   assert(fabs(20*log10(response(s.trial_source,4500,rates[r]))-
+       3.5*classic_rate_extension(rates[r]))<1e-8);
+   assert(20*log10(response(s.trial_source,300,rates[r]))<.001);
+  }
   for(unsigned f=0;f<10;++f) {
    double complex z=cexp(-I*2*pi*hz[f]/11025);
    double gain=10*log10(classic_reference_power(&s,z));

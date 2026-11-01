@@ -498,7 +498,7 @@ int main(void)
     int british=native_british_dictionary();if(british)return british;
     char version[20] = {0};
     eciVersion(version);
-    CHECK(!strcmp(version, "1.0.2.7"));
+    CHECK(!strcmp(version, "1.0.2.8"));
     int languages = 0;
     CHECK(eciGetAvailableLanguages(NULL, &languages) == 0 &&
           languages == 15);
@@ -532,7 +532,7 @@ int main(void)
     CHECK(eciSetParam(e, RELOQ_ECI_PHRASE_PREDICTION, 1) == 0);
     CHECK(eciSetParam(e, RELOQ_ECI_PHRASE_PREDICTION, -1) == -1);
     CHECK(eciSetParam(e, RELOQ_ECI_PHRASE_PREDICTION, 0) == 1);
-    CHECK(eciSetParam(e, RELOQ_ECI_SYNTH_MODE, 1) == 0 &&
+    CHECK(eciSetParam(e, RELOQ_ECI_SYNTH_MODE, 1) == 1 &&
           eciGetParam(e, RELOQ_ECI_SYNTH_MODE) == 1);
     CHECK(eciSetParam(e, RELOQ_ECI_INPUT_TYPE, 1) == 0 &&
           eciGetParam(e, RELOQ_ECI_INPUT_TYPE) == 1);

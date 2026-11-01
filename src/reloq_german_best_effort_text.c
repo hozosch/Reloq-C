@@ -22,6 +22,7 @@ extern void reloq61_dictionary_resolver_release(const struct reloq_lexicon_resol
 #include "reloq_inline_tags.h"
 
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -1652,6 +1653,133 @@ invalid:free(next.features);return -1;
 #include "reloq_german_dictionary_text.inc"
 #include "reloq_german_text_stream.inc"
 
+/* Pauses are acoustic events, not separators in an ordinal, abbreviation
+ * or sentence-analysis input. Analyse a compact text view, then restore
+ * nonzero pauses at the same source boundaries. Caller indices use the
+ * same monotone map, including the spaces a client puts before punctuation. */
+struct input_pause {size_t source,slot,position,length;int milliseconds;};
+static int redundant_analysis_control(struct reloq61_text_options *options,
+    struct reloq_inline_tag tag)
+{
+    if(tag.kind==RELOQ_TAG_DICTIONARY) {
+        int next=!tag.value,same=options->dictionary_disabled==next;
+        options->dictionary_disabled=next;return same;
+    }
+    if(tag.kind==RELOQ_TAG_PREDICTION) {
+        int same=options->phrase_prediction==tag.value;
+        options->phrase_prediction=tag.value;return same;
+    }
+    return 0;
+}
+static int normalize_input_pauses(unsigned char *encoded,uint32_t *scalars,
+    size_t *length,int process_tags,size_t **mapping,
+    struct input_pause **pauses,size_t *pause_count,
+    int (*cancelled)(void *),void *context)
+{
+    if(process_tags!=1 || !memchr(encoded,'`',*length))return 0;
+    size_t n=*length,count=0;int found=0;
+    struct reloq61_text_options options=reloq61_text_options_current();
+    for(size_t at=0;at<n;) {
+        if((at&255u)==0 && cancelled&&cancelled(context))return 2;
+        struct reloq_inline_tag t=reloq_inline_tag_read(encoded+at,n-at,0);
+        if(t.kind==RELOQ_TAG_PAUSE){found=1;count+=t.value!=0;}
+        if(redundant_analysis_control(&options,t))found=1;
+        at+=t.length?t.length:1;
+    }
+    if(!found)return 0;
+    if(n==SIZE_MAX || n+1>SIZE_MAX/sizeof(size_t) || count>SIZE_MAX/sizeof(struct input_pause))return -2;
+    size_t *map=malloc((n+1)*sizeof *map);
+    struct input_pause *events=count?calloc(count,sizeof *events):NULL;
+    if(!map || (count&&!events)){free(map);free(events);return -2;}
+    size_t used=0,event=0;
+    options=reloq61_text_options_current();
+    for(size_t at=0;at<n;) {
+        if((at&255u)==0 && cancelled&&cancelled(context)){free(map);free(events);return 2;}
+        struct reloq_inline_tag t=reloq_inline_tag_read(encoded+at,n-at,0);
+        size_t span=t.length?t.length:1;
+        int redundant=redundant_analysis_control(&options,t);
+        /* A repeated client prefix includes its command separator. Leaving
+         * that extra space behind creates a false double-space boundary
+         * between an ordinal and its month in fragmented NVDA speech. */
+        if(redundant && at+span<n && encoded[at+span]==' ')++span;
+        if(t.kind==RELOQ_TAG_PAUSE || redundant) {
+            /* Eloquence_64 writes "1 `p0. November". Its presentation
+             * space belongs to the command, not to the written ordinal. */
+            if(at+span<n && strchr(",.:;?!)",encoded[at+span])) {
+                while(used && (encoded[used-1]==' '||encoded[used-1]=='\t'))--used;
+                size_t previous=at;
+                while(previous && map[previous-1]>used)map[--previous]=used;
+            }
+            if(t.kind==RELOQ_TAG_PAUSE && t.value)
+                events[event++]=(struct input_pause){.source=at,.milliseconds=t.value};
+            for(size_t i=0;i<span;++i)map[at+i]=used;
+        } else {
+            for(size_t i=0;i<span;++i)map[at+i]=used+i;
+            memmove(encoded+used,encoded+at,span);
+            memmove(scalars+used,scalars+at,span*sizeof *scalars);
+            used+=span;
+        }
+        at+=span;
+    }
+    map[n]=used;encoded[used]=0;scalars[used]=0;
+    *length=used;*mapping=map;*pauses=events;*pause_count=count;return 0;
+}
+static int merge_pause_boundaries(const struct reloq_german_best_effort_boundary *caller,
+    size_t count,struct input_pause *pauses,size_t pause_count,
+    struct reloq_german_best_effort_boundary **out,size_t **slots)
+{
+    if(count>SIZE_MAX-pause_count || count+pause_count>SIZE_MAX/sizeof **out ||
+       count>SIZE_MAX/sizeof **slots)return -2;
+    struct reloq_german_best_effort_boundary *merged=calloc(count+pause_count,sizeof *merged);
+    size_t *positions=count?malloc(count*sizeof *positions):NULL;
+    if(!merged || (count&&!positions)){free(merged);free(positions);return -2;}
+    size_t i=0,j=0,used=0;
+    while(i<count || j<pause_count) {
+        if(i<count && (j==pause_count || caller[i].encoded_offset<=pauses[j].source)) {
+            positions[i]=used;merged[used++]=caller[i++];
+        } else {
+            pauses[j].slot=used;
+            merged[used++].encoded_offset=pauses[j++].source;
+        }
+    }
+    *out=merged;*slots=positions;return 0;
+}
+static int restore_input_pauses(struct annotation_builder *b,
+    struct reloq_german_best_effort_boundary *boundaries,size_t count,
+    struct input_pause *pauses,size_t pause_count)
+{
+    if(!pause_count)return 0;
+    size_t extra=0;char command[32];
+    for(size_t i=0;i<pause_count;++i) {
+        struct input_pause *p=pauses+i;p->position=boundaries[p->slot].annotation_offset;
+        if(p->position>b->used || (i&&p->position<pauses[i-1].position))return -1;
+        int n=snprintf(command,sizeof command," `vp%d ",p->milliseconds);
+        if(n<0 || (size_t)n>=sizeof command || (size_t)n>SIZE_MAX-extra)return -2;
+        p->length=(size_t)n;extra+=p->length;
+    }
+    if(b->used==SIZE_MAX || extra>SIZE_MAX-b->used-1)return -2;
+    unsigned char *out=malloc(b->used+extra+1);if(!out)return -2;
+    size_t from=0,used=0;
+    for(size_t i=0;i<pause_count;++i) {
+        const struct input_pause *p=pauses+i;size_t n=p->position-from;
+        if(n)memcpy(out+used,b->output+from,n);
+        used+=n;from=p->position;
+        (void)snprintf(command,sizeof command," `vp%d ",p->milliseconds);
+        memcpy(out+used,command,p->length);used+=p->length;
+    }
+    if(b->used>from)memcpy(out+used,b->output+from,b->used-from);
+    used+=b->used-from;out[used]=0;
+    size_t next=0,delta=0;
+    for(size_t i=0;i<count;++i) {
+        size_t position=boundaries[i].annotation_offset;
+        while(next<pause_count && (pauses[next].position<position ||
+            (pauses[next].position==position&&pauses[next].slot<i)))
+            delta+=pauses[next++].length;
+        boundaries[i].annotation_offset=position+delta;
+    }
+    free(b->output);b->output=out;b->used=used;b->capacity=used+1;return 0;
+}
+
 static int plan_tags_checked(int native_first,
     const unsigned char *utf8, size_t utf8_length,
     const struct reloq_lexicon *lexicon, int process_tags,
@@ -1690,23 +1818,43 @@ static int plan_tags_checked(int native_first,
         free(original_scalars);free(encoded);return -1;
     }
     size_t *main_map=NULL,main_source_length=encoded_length;
-    state=normalized?0:normalize_main_text(&encoded,&original_scalars,&encoded_length,
-        process_tags,&main_map,cancelled,cancel_context);
+    struct input_pause *input_pauses=NULL;size_t input_pause_count=0;
+    state=normalize_input_pauses(encoded,original_scalars,&encoded_length,
+        process_tags,&main_map,&input_pauses,&input_pause_count,cancelled,cancel_context);
     if(state){free(original_scalars);free(encoded);return state;}
+    struct reloq_german_best_effort_boundary *caller_boundaries=boundaries;
+    size_t caller_count=boundary_count,*caller_slots=NULL;
+    struct reloq_german_best_effort_boundary *pause_boundaries=NULL;
+    if(input_pause_count) {
+        state=merge_pause_boundaries(boundaries,boundary_count,input_pauses,input_pause_count,
+            &pause_boundaries,&caller_slots);
+        if(state){free(main_map);free(input_pauses);free(original_scalars);free(encoded);return state;}
+        boundaries=pause_boundaries;boundary_count+=input_pause_count;stream=NULL;
+    }
+    size_t *dictionary_map=NULL;
+    state=normalized?0:normalize_main_text(&encoded,&original_scalars,&encoded_length,
+        process_tags,&dictionary_map,cancelled,cancel_context);
+    if(state){free(main_map);free(input_pauses);free(pause_boundaries);free(caller_slots);free(original_scalars);free(encoded);return state;}
+    if(dictionary_map) {
+        if(main_map) {
+            for(size_t i=0;i<=main_source_length;++i)main_map[i]=dictionary_map[main_map[i]];
+            free(dictionary_map);
+        } else main_map=dictionary_map;
+    }
     size_t normalized_error=SIZE_MAX;
     size_t *source_error_offset=encoded_error_offset;
     if(main_map&&encoded_error_offset)encoded_error_offset=&normalized_error;
     struct reloq_german_best_effort_boundary *source_boundaries=boundaries;
     if(main_map&&boundary_count) {
         boundaries=malloc(boundary_count*sizeof *boundaries);
-        if(!boundaries){free(main_map);free(original_scalars);free(encoded);return -2;}
+        if(!boundaries){free(main_map);free(input_pauses);free(pause_boundaries);free(caller_slots);free(original_scalars);free(encoded);return -2;}
         for(size_t i=0;i<boundary_count;++i)boundaries[i]=(struct reloq_german_best_effort_boundary){
             main_map[source_boundaries[i].encoded_offset],0};
     }
     unsigned char *original_encoded=malloc(encoded_length+1);
     if (!original_encoded) {
         if(boundaries!=source_boundaries)free(boundaries);
-        free(main_map);free(original_scalars);free(encoded);return -2;
+        free(main_map);free(input_pauses);free(pause_boundaries);free(caller_slots);free(original_scalars);free(encoded);return -2;
     }
     memcpy(original_encoded,encoded,encoded_length+1);
     for (size_t i = 0; i < encoded_length; ++i)
@@ -1716,7 +1864,7 @@ static int plan_tags_checked(int native_first,
             (i && boundaries[i].encoded_offset <
                       boundaries[i - 1].encoded_offset)) {
             if(boundaries!=source_boundaries)free(boundaries);
-            free(main_map);free(original_scalars);free(original_encoded);
+            free(main_map);free(input_pauses);free(pause_boundaries);free(caller_slots);free(original_scalars);free(original_encoded);
             free(encoded);
             return -1;
         }
@@ -1726,7 +1874,7 @@ static int plan_tags_checked(int native_first,
     unsigned char *word_storage=malloc(encoded_length+1);
     if (!word_storage) {
         if(boundaries!=source_boundaries)free(boundaries);
-        free(main_map);free(original_scalars);free(original_encoded);free(encoded);return -2;
+        free(main_map);free(input_pauses);free(pause_boundaries);free(caller_slots);free(original_scalars);free(original_encoded);free(encoded);return -2;
     }
     memcpy(word_storage,encoded,encoded_length+1);
     struct reloq61_text_options initial_options=reloq61_text_options_current();
@@ -2071,8 +2219,11 @@ static int plan_tags_checked(int native_first,
         /* A suspended constituent (Ein- und Ausgang) keeps lexical stress.
          * URL hyphens are separate named symbols, not suspended word heads;
          * including one here would also submit it in the following group. */
+        size_t after_hyphen=at+1;
+        while(after_hyphen<encoded_length&&reloq_german_silent_separator(encoded[after_hyphen]))++after_hyphen;
         if (!result && at>=url_end && at<encoded_length && encoded[at]=='-' &&
             b.unit_count && length>1 &&
+            !(after_hyphen<encoded_length&&encoded[after_hyphen]=='/') &&
             (at+1==encoded_length || reloq_german_silent_separator(encoded[at+1]))) {
             b.units[b.unit_count-1].text=word_storage+start;
             b.units[b.unit_count-1].length=at-start+1;
@@ -2162,6 +2313,8 @@ static int plan_tags_checked(int native_first,
             memset(b.output+i,' ',t.length);
         i+=t.length?t.length:1;
     }
+    state=restore_input_pauses(&b,boundaries,boundary_count,input_pauses,input_pause_count);
+    if(state){result=state;goto done;}
     *annotation = b.output;
     *annotation_length = b.used;
     *approximate_words = b.approximate;
@@ -2180,6 +2333,10 @@ done:
         free(boundaries);
         boundaries=source_boundaries;
     }
+    if(pause_boundaries && !result && !retry)
+        for(size_t i=0;i<caller_count;++i)
+            caller_boundaries[i].annotation_offset=pause_boundaries[caller_slots[i]].annotation_offset;
+    free(input_pauses);free(pause_boundaries);free(caller_slots);
     free(main_map);
     encoded_error_offset=source_error_offset;
     free(word_storage);
@@ -2191,7 +2348,7 @@ done:
     reloq61_dictionary_resolver_release(resolver);
     if(retry)return plan_tags_checked(0,utf8,utf8_length,lexicon,process_tags,
         annotation,annotation_length,approximate_words,encoded_error_offset,
-        boundaries,boundary_count,features,feature_count,cancelled,cancel_context,NULL,normalized);
+        caller_boundaries,caller_count,features,feature_count,cancelled,cancel_context,NULL,normalized);
     return result;
 }
 

@@ -1,4 +1,4 @@
-# Standard-ECI-Abgleich in 1.0.2-dev6
+# Standard-ECI-Abgleich in 1.0.2-dev8
 
 Die Referenz ist die vom Nutzer bereitgestellte `ibmeci.dll` (Windows x86,
 344064 Bytes), SHA-256
@@ -10,14 +10,41 @@ Die eigene Windows-x64-DLL wird gegen den deklarierten öffentlichen ABI geprüf
 | Aufruf | Verhalten |
 | --- | --- |
 | `eciGetAvailableLanguages` | Zählabfrage mit Kapazität 0; begrenztes Füllen mit positiver Kapazität; 15 vorhandene Sprach-/Dialektkennungen; Parameterfehler 0x80. |
-| `eciNew` / `eciNewEx` | Standardmäßig die normale C-Textausgabe; `eciNew` startet US-Englisch. Der alte exakte deutsche Vergleichspfad ist ausdrücklich über `VOICE_MODE=0` erreichbar. |
-| `eciGetVoiceParam` / `eciSetVoiceParam` | Acht Standardparameter; aktive Stimme 0 teilt Zustand mit den bestehenden nativen ReLoq-Parametern. Geschlecht 0..1, Tempo 0..250, übrige Parameter 0..100. Setter liefert den vorherigen Wert, -1 bei Ablehnung. |
+| `eciNew` / `eciNewEx` | Standardmäßig die normale C-Textausgabe; `eciNew` übernimmt den globalen Sprachstandard (anfangs US-Englisch), `eciNewEx` die ausdrücklich gewählte Sprache. Der alte exakte deutsche Vergleichspfad ist ausdrücklich über `VOICE_MODE=0` erreichbar. |
+| `eciGetVoiceParam` / `eciSetVoiceParam` | Acht Standardparameter; aktive Stimme 0 teilt Zustand mit den bestehenden nativen ReLoq-Parametern. Geschlecht 0..1, Tempo 0..250, übrige Parameter 0..100. Setter liefert den vorherigen Wert, -1 bei Ablehnung. Mit Parameter 8 werden Hz, Wörter pro Minute und der 16-Bit-Lautstärkebereich verwendet; die vorhandene native SDK-Kalibrierung wird wiederverwendet. |
 | `eciCopyVoice` | Plätze 1..8 sind die unveränderlichen Presets, 9..16 bearbeitbare Kopien; nach 0 wird die aktive Stimme atomar übernommen. |
-| `eciGetVoiceName` / `eciSetVoiceName` | Namen in der gewählten Sprachkodierung bzw. UTF-16LE. |
+| `eciGetVoiceName` / `eciSetVoiceName` | Namen in der gewählten Sprachkodierung bzw. UTF-16LE; maximal 29 Eingabecodeeinheiten, unabhängig von der internen UTF-8-Bytelänge. |
 | `eciSetParam(h,9,language)` | Wechsel der Sprache auf demselben Handle, einschließlich Prüfung und Austausch des Sprach-Workers. Ungültige Kennungen lassen die bisherige Auswahl bestehen. |
 | `eciAddText` | Windows-1252 für westliche Sprachen, Windows-1253 für Griechisch, CP932/936/949/950 für Japanisch/vereinfachtes Chinesisch/Koreanisch/traditionelles Chinesisch. Bit 0x800 im Sprachwort wählt UTF-16LE. `eciAddTextUtf8` bleibt eine zusätzliche Schnittstelle. |
 | `eciSetParam(h,1,1)` | Aktiviert die Annotationen, wie beim Standardparameter `eciInputType`. |
 | `eciNewDict`, `eciLoadDict`, `eciSetDict`, `eciGetDict`, `eciDeleteDict` | Eigene Wörterbuch-Handles mit einzelnen Main-/Root-/Abbreviation-Volumes. Beliebige Dateinamen; geladene Daten gehören dem Handle und überstehen das Entfernen der Quelldatei. Fehlgeschlagene Ladevorgänge behalten vorhandene Daten. Volumes werden mit dem vorhandenen nativen Parser verarbeitet. |
+
+## Ergänzungen in dev8
+
+`eciGetDefaultParam` und `eciSetDefaultParam` verwalten die implementierten
+Standardparameter 0, 1, 2, 3, 5, 8 und 9 atomar. Ein bestehendes Handle bleibt
+unverändert; neue Handles übernehmen die aktuellen Werte. Ungültige Werte
+werden vor der Änderung abgelehnt. Die ReLoq-Ratencodes 3..6 bleiben eine
+bewusste Erweiterung gegenüber dem alten Windows-ECI.
+
+`eciReset` setzt bei Clients, die ausschließlich Standardaufrufe verwenden,
+Parameter, aktive Stimme und bearbeitbare Stimmenplätze auf diese Defaults
+zurück und verwirft Text sowie Synthesehistorien. Callback, Ausgabepuffer und
+eigene Wörterbuch-Handles bleiben beim Host. Clients mit ausdrücklich
+verwendeten ReLoq-Steuerparametern behalten den bisherigen Resetvertrag,
+damit vorhandene NVDA-/Android-/SAPI-Adapter ihre Einstellungen nicht verlieren.
+Diese beiden Ausnahmen (Ausgaberouting und ReLoq-Reset) sind dokumentierte
+Kompatibilitätsentscheidungen, keine behauptete 1:1-Nachbildung des Originals.
+
+`eciGetIndex` liefert den zuletzt gemeldeten Index; er wird vor dem zugehörigen
+Callback atomar veröffentlicht und ist auch während der Ausgabe abfragbar.
+Ohne vorherigen Index ist der Wert 0. Reset verwirft diesen zuletzt gemeldeten
+Wert nicht, entsprechend dem beobachteten getrennten Zustand des Originals.
+
+Bei Real-World-Units bleiben angeforderte Hz/WPM/Volume-Werte beim Zurücklesen
+und beim Kopieren zwischen Stimmenplätzen erhalten; der Renderer verwendet
+den nächstliegenden nativen Wert. Die privaten nativen ReLoq-Aliasse arbeiten
+weiter in ihren dokumentierten Rohwerten.
 
 ## Konkrete Referenzbeobachtungen
 
@@ -35,11 +62,29 @@ aus den tatsächlich eingebauten C-Sprachmodulen.
 `nvda/test_eci_standard_api.py` benutzt für Stimme, Sprache, Text und
 Wörterbücher ausschließlich die Standardaufrufe. Es prüft reale PCM-Ausgabe
 und Indexpositionen, Stimmenplätze, Fehlversuche, Wechsel der Sprachkodierung
-und Gleichheit zwischen Byte- und UTF-16-Eingabe. Die anderen nativen
+und Gleichheit zwischen Byte- und UTF-16-Eingabe. `nvda/test_eci_extended_standard_api.py` prüft zusätzlich Einheiten, Defaults,
+Reset, lange Unicode-Namen und Live-Indizes. Die anderen nativen
 ReLoq-Schnittstellen bleiben für vorhandene NVDA-/Android-/SAPI-Clients erhalten.
 
 Dieser Abgleich deckt die oben genannten Aufrufe ab. Weitere Original-Exporte,
-asiatische MainDictExt-Volumes, Real-World-Units und das vollständige Snapshot-/Thread-Verhalten des alten ECI
+asiatische MainDictExt-Volumes und das vollständige Snapshot-/Thread-Verhalten des alten ECI
 sind damit noch nicht als vollständig kompatibel nachgewiesen. Die Referenz
 wurde hier statisch untersucht; ein Windows-Lauf des proprietären Originals
 ist keine der aufgeführten Prüfungen.
+
+## Noch offene Originalfunktionen
+
+Die Referenz exportiert 60 Funktionen. Dieser Wrapper exportiert 34, davon
+30 aus dieser Referenz und vier zusätzliche ReLoq-Funktionen. Die folgenden
+Original-Exporte fehlen weiterhin; sie werden nicht durch Erfolg meldende
+Leerfunktionen vorgetäuscht:
+
+`eciActivateFilter`, `eciClearErrors`, `eciDeactivateFilter`, `eciDeleteFilter`, `eciDictFindFirst`, `eciDictFindFirstA`, `eciDictFindNext`, `eciDictFindNextA`, `eciDictLookup`, `eciDictLookupA`, `eciErrorMessage`, `eciGeneratePhonemes`, `eciGetFilteredText`, `eciIsBeingReentered`, `eciNewFilter`, `eciPause`, `eciProgStatus`, `eciRegisterVoice`, `eciSaveDict`, `eciSetFilter`, `eciSetOutputDevice`, `eciSetOutputFilename`, `eciSpeakText`, `eciSpeakTextEx`, `eciSynthesizeFile`, `eciTestPhrase`, `eciUnregisterVoice`, `eciUpdateDict`, `eciUpdateDictA`, `eciUpdateFilter`.
+
+Auch bei vorhandenen Exporten ist vollständige Parität nicht belegt:
+`eciSynthesize` läuft hier synchron; `eciSynthMode=1` speichert noch keine
+unterschiedlichen Parameterzustände je AddText-Fragment. TextMode 2/3,
+NumberMode, Phonemindizes und zusätzliche asiatische Codesatzmodi werden nicht
+angeboten. Eine Audio-Geräte-/Dateiausgabe und das native Filter-ABI benötigen
+eigene Implementierungen. Diese Grenzen sind für einen beliebigen ECI-Client
+relevant, auch wenn der untersuchte Eloquence_64-ReLoq-Adapter sie umgeht.

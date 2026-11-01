@@ -1,3 +1,49 @@
+# Teststand 1.0.2-dev8: deutscher Satzkontext und periodisches Richness
+
+Eloquence_64 fügt vor Textfragmenten wiederholt `pp0`/`da1` und vor
+Satzzeichen Pausenbefehle ein. Bisher konnte ein einzelnes `p0` den deutschen
+Ganzsatzabgleich ausschalten. Das führte unbemerkt zur isolierten
+Wortanalyse. Ein Leerzeichen vor dem eingefügten Befehl trennte außerdem
+Ordinale vom Punkt; wiederholte Präfixe konnten zwischen Ordinal und Monat
+eine falsche Doppel-Leerraumgrenze erzeugen. Analysebefehle ohne
+Zustandsaenderung und akustische Pausen werden jetzt vor der lexikalischen
+Analyse normalisiert. Positive Pausen werden danach ueber dieselbe monotone
+Quellabbildung wie ECI-Indizes wieder eingesetzt. SPR und echte
+Zustandswechsel bleiben erhalten. Auch „Ein- / Ausgabe“ wird nicht mehr
+als falsches Auslassungskompositum zerlegt und behält den Satzkontext.
+
+Der Vergleich verwendet den tatsächlichen EciEngine-/Textbuilder-Code aus
+fastfinge/eloquence_64, Commit b24a6c88446581e50867abac23807233829b367f,
+mit Loader-/Callback-Aliassen unter Linux und CP1252 für den deutschen
+MBCS-Korpus. Ganze Saetze und wortweise Fragmente liefern dort die gleiche
+PCM-Ausgabe wie der eigene direkte Client. Das ist kein Windows-Lauf von
+NVDA. Der veröffentlichte Eloquence_64-v25-Build (Run 41336133144,
+Job 124936238535) lädt nachweislich ReLoq C 1.0.1 aus dem Release.
+Der bisherige Entwicklungsstand wurde darin also noch nicht mitgeliefert.
+
+Die 16-kHz-Abstimmung aus dev7 bleibt numerisch erhalten. Ab 22,05 kHz
+arbeitet Richness nur auf der periodischen Quelle: eine lineare High-Shelf
+mit 4,5-kHz-Knie und 1,75/3,5/5,6/7 dB Plateau bei 22,05/32/44,1/48 kHz.
+Die unteren Obertöne und die kleine 0,6-dB-Anhebung bei 300 Hz bleiben
+verankert. Das erste Shelf bei 2,5 kHz überlagerte den vorhandenen
+Classic-Presence-Bereich und übersteuerte weibliche Vokale; es ist nicht
+im Paket. Die gemeinsame AV/AH-Kurve erhält keine zusätzliche flache
+Oberband-Untergrenze mehr. Der Glottispuls wird nicht verkürzt; es gibt
+keinen neuen Limiter. Die bestätigte AF-Konsonantenstrecke bleibt gleich.
+
+Die Classic-Traktberechnung fuehrt unabhängige Frequenzen in zwei
+Double-SIMD-Lanes aus. Reihenfolge, Frequenzraster und Filterlänge bleiben
+erhalten; für den strikten Vergleich ist RELOQ_CLASSIC_TRACT_SCALAR
+verfügbar. Das senkt DSP-Arbeit, beweist aber keine ruckelfreie Wiedergabe
+auf dem Windows-ARM-Geraet.
+
+Der ECI-Abgleich ergänzt globale Defaults, Real-World-Units, SDK-Reset,
+Unicode-Stimmennamen bis 29 Eingabecodeeinheiten und eciGetIndex. Details
+und verbleibende Abweichungen stehen in ECI-COMPATIBILITY.md. Vollständige
+ECI-Parität und alle vom Nutzer gehörten Verzerrungen sind nicht
+nachgewiesen; insbesondere die 16-kHz-Meldung ließ sich mit den getesteten
+Einstellungen noch nicht als Übersteuerung reproduzieren.
+
 # Teststand 1.0.2-dev7: ruhiger Stimmkörper und geringere Rechenlast
 
 Der ECI-Umfang aus dev6 bleibt bestehen. Der Stimmabgleich wertet die

@@ -98,11 +98,15 @@ static int voice_control(enum reloq_inline_kind kind)
     return (kind>=RELOQ_TAG_PITCH&&kind<=RELOQ_TAG_INFLECTION)||
         (kind>=RELOQ_TAG_GENDER&&kind<=RELOQ_TAG_PRESET);
 }
-static int retain_voice_controls(struct bytes *out,const unsigned char *s,size_t n)
+static int acoustic_control(enum reloq_inline_kind kind)
+{
+    return voice_control(kind)||kind==RELOQ_TAG_PAUSE;
+}
+static int retain_acoustic_controls(struct bytes *out,const unsigned char *s,size_t n)
 {
     for(size_t at=0;at<n;) {
         struct reloq_inline_tag t=reloq_inline_tag_read(s+at,n-at,1);
-        if(voice_control(t.kind) &&
+        if(acoustic_control(t.kind) &&
            (put(out,s+at,t.length)||put(out,(const unsigned char *)" ",1)))return -1;
         at+=t.length?t.length:1;
     }
@@ -269,7 +273,7 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
         if(annotation[at]=='`') {
             struct reloq_inline_tag t=reloq_inline_tag_read(annotation+at,length-at,1);
             if(t.kind!=RELOQ_TAG_SPR && t.kind!=RELOQ_TAG_PROMINENCE && t.kind!=RELOQ_TAG_DICTIONARY &&
-               t.kind!=RELOQ_TAG_PREDICTION && !voice_control(t.kind))goto done;
+               t.kind!=RELOQ_TAG_PREDICTION && !acoustic_control(t.kind))goto done;
             if(!t.length)goto done;
             at+=t.length;
         } else ++at;
@@ -291,7 +295,7 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
             if(put(&input,source->original+gap_begin,gap_end-gap_begin))goto memory;
         } else if(!repeated)for(size_t at=before;at<old[i].open;) {
             struct reloq_inline_tag t=reloq_inline_tag_read(annotation+at,old[i].open-at,1);
-            if(t.kind==RELOQ_TAG_PROMINENCE || voice_control(t.kind)) {at+=t.length;continue;}
+            if(t.kind==RELOQ_TAG_PROMINENCE || acoustic_control(t.kind)) {at+=t.length;continue;}
             if(!(joined&&annotation[at]==' ')&&put(&input,annotation+at,1))goto memory;
             ++at;
         }
@@ -329,7 +333,7 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
         if(put(&input,source->original+tail_source,source->length-tail_source))goto memory;
     } else for(size_t at=before;at<length;) {
         struct reloq_inline_tag t=reloq_inline_tag_read(annotation+at,length-at,1);
-        if(voice_control(t.kind)){at+=t.length;continue;}
+        if(acoustic_control(t.kind)){at+=t.length;continue;}
         if(put(&input,annotation+at,1))goto memory;
         ++at;
     }
@@ -389,7 +393,7 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
                 if(kind<sizeof marks && put(&output,marks+kind,1))goto memory;
             }
         }
-        if(retain_voice_controls(&output,annotation+original_before,old[i].open-original_before))goto memory;
+        if(retain_acoustic_controls(&output,annotation+original_before,old[i].open-original_before))goto memory;
         if(named_pair&&i>=count-2&&!units[i].source_emphasis) {
             if(count>2&&i==count-2&&put(&output,(const unsigned char *)"`2 ",3))goto memory;
         } else if(prefix(&output,phonemes+before,native[i].open-before,force))goto memory;
@@ -457,7 +461,7 @@ int reloq_rules61_german_context_features(const struct reloq_german_prosody_unit
     if(boundary(&output,annotation+old[count-1].end,length-old[count-1].end,
         phonemes+before,r.phonemes_length-before))goto memory;
     if(prefix(&output,phonemes+before,r.phonemes_length-before,0))goto memory;
-    if(retain_voice_controls(&output,annotation+old[count-1].end,length-old[count-1].end))goto memory;
+    if(retain_acoustic_controls(&output,annotation+old[count-1].end,length-old[count-1].end))goto memory;
     /* A phoneme callback terminator is not part of ordinary text output. */
     while(output.n && output.p[output.n-1]==' ')--output.n;
     output.p[output.n]=0;

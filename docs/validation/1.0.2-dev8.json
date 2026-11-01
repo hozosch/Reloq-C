@@ -1,0 +1,114 @@
+{
+  "version": "1.0.2-dev8",
+  "core_version": "1.0.2.8",
+  "local_implementation_commit": "dbf3453feed87eb7959cf0cd1aa5b2cf8dd7cb7c",
+  "implementation_tree_sha": "6e5c4c9fea2466543a54102be2851ee49b9d61cb",
+  "github_base_commit": "a84074b52e15fea123b2af6f4774e8755b814809",
+  "development_branch": "codex/german-tag-context108",
+  "official_release": false,
+  "artifacts": [
+    {
+      "name": "reloq-c-synth-experimental-x64-1.0.2-dev8.nvda-addon",
+      "bytes": 19570329,
+      "sha256": "66a256d76abf5d7d9e66d06807d74c302aa3aae9c7d2b2eee27c8e5954ef8461"
+    },
+    {
+      "name": "reloq-c-eci-x64-1.0.2-dev8.zip",
+      "bytes": 18891196,
+      "sha256": "191a651ca7d915bfc0a2f79a47de50f9c360bc768c66bd8f5f7f519e5696f701"
+    }
+  ],
+  "dll_sha256": "1c009da662c383a484b09868c00fc9483ff8a9a25c5d0425eb175cce0d8f0fb2",
+  "changes": [
+    "Normalise redundant pp/da commands and acoustic pauses before German lexical and whole-sentence analysis, then restore nonzero pauses through the same source mapping as indices. Use a linear merge for pause/index restoration.",
+    "Correct suspended hyphen classification before a slash (including spaced variants), preserving subsequent German sentence context.",
+    "Preserve dev7 16-kHz DSP and accepted AF consonants; replace flat upper AV/AH floor with periodic-only Richness at 22.05 kHz and above. Retain a constant 0.6-dB, 300-Hz body bell; no pulse shortening or new limiter.",
+    "Richness uses a linear 4.5-kHz high shelf, plateau gain 1.75/3.5/5.6/7 dB at 22.05/32/44.1/48 kHz. The earlier 2.5-kHz prototype clipped female vowels and is excluded.",
+    "Run independent physical tract frequencies in two double SIMD lanes with unchanged scalar operation order.",
+    "Add standard global defaults, calibrated real-world voice units, SDK default reset, 29-code-unit Unicode voice names and live GetIndex, retaining explicit native-extension reset compatibility."
+  ],
+  "checks": {
+    "full_native_eci_C_regression": "passed (native German alignment/gap/stream, voice, queues, PCM, indices, pitch, cancellation and reset)",
+    "german_context_native_phone_prominence_and_features_cases": 161,
+    "german_client_zero_pause_prefix_date_fragment_index_and_positive_pause_cases": 371,
+    "actual_eloquence64_adapter_pcm_identities": 8,
+    "dictionary_alias_control_index_map_pcm_identities": 6,
+    "standard_eci_api": 131,
+    "extended_standard_eci_api": 78,
+    "public_eci_exports": 34,
+    "implemented_original_exports": 30,
+    "missing_original_exports": 30,
+    "classic_main_band_cases": 10,
+    "classic_main_band_worst_residual_db": 0.2433,
+    "classic_image_cases": 410,
+    "classic_image_maximum_kernel_l1": 15.5949,
+    "classic_noise_spectrum_cases": 40,
+    "classic_noise_worst_residual_db": 0.025,
+    "af_only_pcm_identities_to_dev7": 40,
+    "classic_core_frame_cases": 20,
+    "filter_dispatch_bit_identical_cases": 19404,
+    "spectral_phase_bit_identical_cases": 20000,
+    "actual_speech_peak_cases": 136,
+    "actual_speech_maximum_pcm_peak": 31748,
+    "a_low_rate_and_16khz_pcm_identities_to_dev7": 40,
+    "hearing_profile_pcm_index_rollback_two_engine_volume_cases": 293,
+    "scalar_vector_replay_frames": 96465,
+    "scalar_vector_replay_pcm_samples": 2992008,
+    "scalar_vector_replay_byte_identical": true,
+    "16khz_replay_frames": 21594,
+    "16khz_replay_pcm_samples_identical_to_dev7": 345504,
+    "analysis_cancellation_cases": 32,
+    "analysis_cancellation_maximum_return_ms": 0.381,
+    "english_seconds_pcm_end_index_cases": 72,
+    "english_seconds_fragment_pcm_index_identities": 2,
+    "inline_tags": "75 fragmentation/index and 21 tag/slider speed cases plus pause, voice, mode and malformed-input checks passed",
+    "nvda_driver_en": "24 language/schema cases; gettext, selectable, x64, FIFO, index/done, cancel/close passed",
+    "nvda_driver_de": "24 language/schema cases; gettext, selectable, x64, FIFO, index/done, cancel/close passed",
+    "windows_x64_PE_abi": "34 declared exports; private/host symbols hidden; cross-build passed",
+    "package_crc_manifest_docs_and_embedded_dll_identity": "passed"
+  },
+  "voice_dsp_replay": {
+    "native_frames": 46020,
+    "samples": 1357590,
+    "dataset": "Actual native male EN-US and German speech frames at 16/22.05/32/48 kHz, captured from dev6 and replayed through dev7 and dev8.",
+    "measurement": "Three separate replay processes per version, process user CPU time (resource.getrusage), same Linux host/compiler, median. Not NVDA or Windows-on-ARM latency.",
+    "results": {
+      "dev7": {
+        "cpu_seconds": [
+          1.121414,
+          1.036427,
+          0.971231
+        ],
+        "median_cpu_seconds": 1.036427,
+        "replay": "frames=46020 samples=1357590 peak=9822.99 rails=0 maxdelta=5426.2"
+      },
+      "dev8": {
+        "cpu_seconds": [
+          0.7729240000000002,
+          0.8187839999999995,
+          0.7533020000000006
+        ],
+        "median_cpu_seconds": 0.7729240000000002,
+        "replay": "frames=46020 samples=1357590 peak=9819.62 rails=0 maxdelta=5426.2"
+      },
+      "reduction": 0.2542417362727909
+    },
+    "additional_female_replay": "50445 actual female frames (head 50, native pitch 30/65/90, 16/22.05/32/44.1/48 kHz); raw float peak 15170.7 before host gain. Male raw peak 9819.62. No raw values interpreted as public PCM16 peaks."
+  },
+  "eloquence64_integration": {
+    "source_commit": "b24a6c88446581e50867abac23807233829b367f",
+    "client_comparison": "Actual upstream EciEngine and text builder, whole and word-fragmented German corpus; Linux loader/callback aliases and CP1252 substitution for MBCS normalization. Same native Linux C backend source. Not NVDA running on Windows.",
+    "v25_build_run": 41336133144,
+    "v25_build_job": 124936238535,
+    "v25_bundled_reloq_release": "1.0.1",
+    "development_fetch_mismatch": "Upstream dev fetch looks for packages.yml/nvda-addon; hearing previews use nvda-german-streaming.yml/nvda-german-streaming-test."
+  },
+  "limits": [
+    "The user-reported 16-kHz voiced distortion has not been reliably reproduced as clipping. Its DSP tuning is deliberately unchanged; do not claim all perceived distortion is fixed.",
+    "The tested waveforms do not hit PCM rails; this is not a proof of clipping freedom for all supported settings and all text.",
+    "CPU improvement is for this native DSP replay. Remaining playback stutter requires a real NVDA hearing/underrun test on the user device.",
+    "Windows x64 DLL was cross-built and ABI-verified locally. Windows runtime CI is a separate check and is not asserted by these Linux results.",
+    "Full ECI parity remains incomplete: 30 original exports, asynchronous/snapshot semantics and additional text/Asian modes remain open; see ECI-COMPATIBILITY.md.",
+    "Existing provider LTO maybe-uninitialized diagnostics remain visible in the Windows build."
+  ]
+}

@@ -1,8 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Hörtest 1.0.2-dev7
+## Hörtest 1.0.2-dev8
 
-B behält bei 16 kHz den vollständigen Classic-Presence-Klang als Grundlage. Dieser Teststand korrigiert starke Pegelspitzen bei höheren Raten und verringert den Berechnungsaufwand. Die periodische Stimme erhält um 300 Hz etwas mehr Körper: 0,6 dB bei 16 kHz, langsam ansteigend bis 1 dB bei 48 kHz. Aspiration und die bestätigte Konsonantenanhebung erhalten diese zusätzliche Bassanhebung nicht. Ab 22,05 kHz wächst weiterhin die native obere Erweiterung. A bleibt zum Vergleich verfügbar. Die männliche z-Absenkung gilt weiterhin nur für Wortanfänge und zw; weibliche Stimmen behalten ihren passenden Pegel. Die ECI-Schnittstelle und die englische Sekundenlesung aus dev6 bleiben erhalten.
+B behält die bisherige 16-kHz-Abstimmung. Ab 22,05 kHz erweitert Richness die stimmhaften Obertöne; die bestätigten Konsonanten bleiben erhalten. Die deutsche Satzanalyse verarbeitet Pausenbefehle und wiederholte Analysepräfixe externer Clients jetzt ohne Verlust des Satzkontexts. Auch Kombinationen wie „Ein- / Ausgabe“ sind korrigiert. A bleibt zum Vergleich verfügbar. Die männliche z-Absenkung gilt weiterhin nur am Wortanfang und in zw. Die englische Sekundenlesung bleibt enthalten.
 
 ## Installieren und auswählen
 

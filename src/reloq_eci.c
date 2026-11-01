@@ -3,6 +3,7 @@
 
 #include "reloq_cp1252.h"
 #include "reloq_unicode.h"
+#include "reloq_utf8.h"
 #include "reloq_inline_tags.h"
 #include "reloq_frame_adapter.h"
 #include "reloq_rules61.h"
@@ -39,6 +40,8 @@ static unsigned int epoch_get(const reloq_eci_atomic *p)
     return (unsigned int)_InterlockedCompareExchange((volatile long *)p, 0, 0);
 }
 static void epoch_inc(reloq_eci_atomic *p) { (void)_InterlockedIncrement(p); }
+static unsigned int epoch_exchange(reloq_eci_atomic *p,unsigned int value)
+{return (unsigned int)_InterlockedExchange(p,(long)value);}
 static int busy_begin(reloq_eci_atomic *p)
 {
     return _InterlockedCompareExchange(p, 1, 0) == 0;
@@ -64,6 +67,8 @@ static void epoch_inc(reloq_eci_atomic *p)
 {
     (void)atomic_fetch_add_explicit(p, 1, memory_order_release);
 }
+static unsigned int epoch_exchange(reloq_eci_atomic *p,unsigned int value)
+{return atomic_exchange_explicit(p,value,memory_order_acq_rel);}
 static int busy_begin(reloq_eci_atomic *p)
 {
     unsigned int expected = 0;
@@ -131,6 +136,7 @@ struct reloq_eci_engine {
     reloq_eci_atomic busy;
     reloq_eci_atomic stop_epoch;
     reloq_eci_atomic session_lock;
+    reloq_eci_atomic last_index;
     ECICallback callback;
     void *callback_data;
     short *output;
@@ -154,8 +160,9 @@ struct reloq_eci_engine {
     int dictionary_disabled,phrase_prediction;
     int pause_mode;
     int head_size,roughness,breathiness,gender;
-    int language,language_dialect,text_mode;
-    int saved_voices[16][8];char voice_names[17][30];
+    int language,language_dialect,text_mode,real_world_units,extended_reset;
+    int saved_voices[16][8];char voice_names[17][120];
+    int real_voice_values[17][8];unsigned real_voice_flags[17];
     struct reloq_eci_dictionary *dictionaries,*active_dictionary;
     int high_rate_profile;
     int error;
@@ -169,6 +176,7 @@ struct reloq_eci_engine {
 static void initialize_eci_voices(struct reloq_eci_engine *);
 static void clear_eci_dictionaries(struct reloq_eci_engine *);
 static int switch_eci_language(struct reloq_eci_engine *,int);
+static int reset_eci_defaults(struct reloq_eci_engine *);
 static unsigned char *decode_eci_text(struct reloq_eci_engine *,const void *,size_t *,int *);
 
 struct pcm_bridge {
@@ -311,6 +319,7 @@ static int send_index(struct reloq_eci_engine *e, int index)
 {
     if (reloq_session_cancelled(e->text_session))
         return RELOQ_ECI_CANCELLED;
+    epoch_exchange(&e->last_index,(unsigned)index);
     int accepted = e->callback(e, RELOQ_ECI_INDEX_REPLY, index,
                                e->callback_data);
     if (reloq_session_cancelled(e->text_session))
@@ -797,15 +806,22 @@ ECIHand ECICALL eciNewEx(int language)
     epoch_init(&e->busy);
     epoch_init(&e->stop_epoch);
     epoch_init(&e->session_lock);
-    e->session = make_session(1);
-    e->text_session = make_text_session(0,50,1);
+    epoch_init(&e->last_index);
+    int default_rate=eciGetDefaultParam(RELOQ_ECI_SAMPLE_RATE);
+    e->session = make_session(default_rate);
+    e->text_session = make_text_session(0,50,default_rate);
     if (!e->session || !e->text_session) {
         reloq_session_destroy(e->session);
         reloq_session_destroy(e->text_session);
         free(e);
         return NULL;
     }
-    e->sample_rate_code = 1;
+    e->sample_rate_code = default_rate;
+    e->synth_mode=eciGetDefaultParam(RELOQ_ECI_SYNTH_MODE);
+    e->input_type=e->process_tags=eciGetDefaultParam(RELOQ_ECI_INPUT_TYPE);
+    e->text_mode=eciGetDefaultParam(2);
+    e->dictionary_disabled=eciGetDefaultParam(RELOQ_ECI_DICTIONARY);
+    e->real_world_units=eciGetDefaultParam(RELOQ_ECI_REAL_WORLD_UNITS);
     e->head_size=50;
     e->generic_rate = 50;
     e->generic_pitch = 50;
@@ -825,7 +841,7 @@ ECIHand ECICALL eciNewEx(int language)
 
 ECIHand ECICALL eciNew(void)
 {
-    return eciNewEx(RELOQ_ECI_ENGLISH);
+    return eciNewEx(eciGetDefaultParam(RELOQ_ECI_LANGUAGE_DIALECT));
 }
 
 ECIHand ECICALL eciDelete(ECIHand handle)
@@ -849,6 +865,7 @@ int ECICALL eciReset(ECIHand handle)
 {
     struct reloq_eci_engine *e = handle;
     if (!e || epoch_get(&e->busy)) return 0;
+    if(!e->extended_reset)return reset_eci_defaults(e);
     lock_session(&e->session_lock);
     int result = reloq_session_reset(e->session);
     int text_result = reloq_session_reset(e->text_session);
@@ -867,7 +884,7 @@ int ECICALL eciReset(ECIHand handle)
 void ECICALL eciVersion(char *buffer)
 {
     /* The public ECI convention promises at least twenty writable bytes. */
-    if (buffer) memcpy(buffer, "1.0.2.7", sizeof "1.0.2.7");
+    if (buffer) memcpy(buffer, "1.0.2.8", sizeof "1.0.2.8");
 }
 
 int ECICALL eciGetAvailableLanguages(unsigned int *languages, int *count)
@@ -1367,6 +1384,12 @@ int ECICALL eciSpeaking(ECIHand handle)
     return e && epoch_get(&e->busy) ? 1 : 0;
 }
 
+int ECICALL eciGetIndex(ECIHand handle)
+{
+    struct reloq_eci_engine *e=handle;
+    return e?(int)epoch_get(&e->last_index):0;
+}
+
 int ECICALL eciClearInput(ECIHand handle)
 {
     struct reloq_eci_engine *e = handle;
@@ -1391,6 +1414,7 @@ int ECICALL eciGetParam(ECIHand handle, int parameter)
     case RELOQ_ECI_NATIVE_INFLECTION: return e->native_inflection;
     case RELOQ_ECI_NATIVE_VOLUME: return e->native_volume;
     case RELOQ_ECI_INPUT_TYPE: return e->input_type;
+    case RELOQ_ECI_REAL_WORLD_UNITS:return e->real_world_units;
     case RELOQ_ECI_PROCESS_TAGS: return e->process_tags;
     case RELOQ_ECI_DICTIONARY: return e->dictionary_disabled;
     case RELOQ_ECI_PHRASE_PREDICTION: return e->phrase_prediction;
@@ -1449,11 +1473,13 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
         if (value < 0 || value > 250) return -1;
         e->native_speed = value;
         e->native_speed_active = 1;
+        e->real_voice_flags[0]&=~(1u<<6);
         break;
     case RELOQ_ECI_NATIVE_PITCH:
         if (value < 0 || value > 100) return -1;
         e->native_pitch = value;
         e->native_pitch_active = 1;
+        e->real_voice_flags[0]&=~(1u<<2);
         break;
     case RELOQ_ECI_NATIVE_INFLECTION:
         if (value < 0 || value > 100) return -1;
@@ -1464,6 +1490,7 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
         if (value < 0 || value > 100) return -1;
         e->native_volume = value;
         e->native_volume_active = 1;
+        e->real_voice_flags[0]&=~(1u<<7);
         break;
     case RELOQ_ECI_HEAD_SIZE:
         if(value<0 || value>100)return -1;
@@ -1506,7 +1533,10 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
         e->phrase_prediction=value;break;
     case RELOQ_ECI_PROCESS_TAGS:
         if(value!=0 && value!=1)return -1;
-        e->process_tags=value;break;
+        e->process_tags=value;e->input_type=value;break;
+    case RELOQ_ECI_REAL_WORLD_UNITS:
+        if(value!=0 && value!=1)return -1;
+        e->real_world_units=value;break;
     case RELOQ_ECI_PAUSE_MODE:
         if(value<0 || value>2)return -1;
         e->pause_mode=value;break;
@@ -1540,6 +1570,7 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
     default: return -1;
     }
     e->error = RELOQ_ECI_OK;
+    if(parameter>=RELOQ_ECI_VOICE_MODE&&parameter<=RELOQ_ECI_HIGH_RATE_PROFILE)e->extended_reset=1;
     return old;
 }
 

@@ -53,6 +53,7 @@ enum {
      * and inline pp control. 0 off, 1 on; default remains off. */
     RELOQ_ECI_PHRASE_PREDICTION = 11,
     RELOQ_ECI_SAMPLE_RATE = 5,
+    RELOQ_ECI_REAL_WORLD_UNITS = 8,
     RELOQ_ECI_LANGUAGE_DIALECT = 9,
     /* Read-only development diagnostics, queried with eciGetParam after
      * eciSynthesize. They survive eciClearInput (the adapter calls it on a
@@ -140,8 +141,9 @@ enum reloq_eci_failure_stage {
  */
 
 /* ECI exports. SetParam returns the previous value or -1 on refusal.
- * All functions other than eciStop must run on the owner thread, outside a
- * callback. eciStop may run on another thread or from the callback. This
+ * Mutating calls run on the owner thread, outside a callback. eciStop may
+ * run on another thread or from the callback; eciSpeaking and eciGetIndex
+ * read atomic state and may also be queried during synthesis. This
  * developmental eciSynthesize runs synchronously; eciSynchronize reports
  * its result. Delete requires that any concurrent Stop has completed. */
 ECIAPI ECIHand ECICALL eciNew(void);
@@ -174,9 +176,12 @@ ECIAPI int ECICALL eciSynthesize(ECIHand handle);
 ECIAPI int ECICALL eciSynchronize(ECIHand handle);
 ECIAPI int ECICALL eciStop(ECIHand handle);
 ECIAPI int ECICALL eciSpeaking(ECIHand handle);
+ECIAPI int ECICALL eciGetIndex(ECIHand handle);
 ECIAPI int ECICALL eciClearInput(ECIHand handle);
 ECIAPI int ECICALL eciGetParam(ECIHand handle, int parameter);
 ECIAPI int ECICALL eciSetParam(ECIHand handle, int parameter, int value);
+ECIAPI int ECICALL eciGetDefaultParam(int parameter);
+ECIAPI int ECICALL eciSetDefaultParam(int parameter,int value);
 ECIAPI int ECICALL eciGetVoiceParam(ECIHand handle,int voice,int parameter);
 ECIAPI int ECICALL eciSetVoiceParam(ECIHand handle,int voice,int parameter,int value);
 ECIAPI int ECICALL eciCopyVoice(ECIHand handle,int from,int to);

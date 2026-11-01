@@ -638,7 +638,7 @@ static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rat
         classic_tract_shelf(s->presence,rate,s->colour_extension);
         /* A small periodic-only lift restores the upper bass without
          * changing the accepted AF level or adding aspiration energy. */
-        const double db=.6+.4*classic_rate_extension(rate),a=pow(10,db/40);
+        const double db=.6,a=pow(10,db/40);
         const double w=2*pi*300/rate,alpha=sin(w)/(2*.8),den=1+alpha/a;
         double *c=s->voice_colour[0];
         c[0]=(1+alpha*a)/den;c[1]=-2*cos(w)/den;c[2]=(1-alpha*a)/den;
@@ -796,9 +796,15 @@ void reloq_rate_transfer_prepare(struct reloq_rate_transfer *s,
 static void prepare_trial_source(struct reloq_rate_transfer *s)
 {
     double rate=s->presence_rate;
-    double weight=rate>=48000?1:rate>=44100?.8:rate>=32000?.5:rate>=22050?.25:0;
-    /* Optional upper harmonics grow above the common 16-kHz basis. */
-    double a=pow(10,1.5*weight/40),w=2*pi*5000/rate;
+    double weight=classic_rate_extension(rate);
+    /* Richness acts on periodic source harmonics, without opening the
+     * aspiration path or shortening the glottal pulse. The accepted
+     * 16-kHz source stays unchanged. Keep the lower harmonics anchored:
+     * adding a shelf at 2.5 kHz stacked it over the Classic presence
+     * band and clipped ordinary female vowels. The 4.5-kHz knee expands
+     * upper harmonics with 1.75 to 7 dB of shelf gain and keeps headroom. */
+    double db=7*weight;
+    double a=pow(10,db/40),w=2*pi*4500/rate;
     double co=cos(w),z=sin(w)*sqrt(2*a),den=(a+1)-(a-1)*co+z;
     double *c=s->trial_source;
     c[0]=a*((a+1)+(a-1)*co+z)/den;
@@ -819,6 +825,15 @@ void reloq_rate_transfer_process_voice(struct reloq_rate_transfer *s,float *samp
             d[0]=c[1]*x-c[3]*y+d[1];d[1]=c[2]*x-c[4]*y;
             samples[j]=(float)y;
         }
+        if(s->presence_rate>=22050) {
+            if(s->trial_source_rate!=s->presence_rate)prepare_trial_source(s);
+            const double *richness=s->trial_source;double *history=s->trial_source_delay;
+            for(size_t j=0;j<count;++j) {
+                double x=samples[j],y=richness[0]*x+history[0];
+                history[0]=richness[1]*x-richness[3]*y+history[1];
+                history[1]=richness[2]*x-richness[4]*y;samples[j]=(float)y;
+            }
+        }
         return;
     }
     for(size_t j=0;j<count;++j) {
@@ -834,15 +849,6 @@ void reloq_rate_transfer_process_voice(struct reloq_rate_transfer *s,float *samp
             d[0]=c[1]*x-c[3]*y+d[1];d[1]=c[2]*x-c[4]*y;
         }
         samples[j]=(float)y;
-    }
-    if(s->trial_profile && s->presence_rate>=22050) {
-        if(s->trial_source_rate!=s->presence_rate)prepare_trial_source(s);
-        const double *c=s->trial_source;double *d=s->trial_source_delay;
-        for(size_t j=0;j<count;++j) {
-            double x=samples[j],y=c[0]*x+d[0];
-            d[0]=c[1]*x-c[3]*y+d[1];d[1]=c[2]*x-c[4]*y;
-            samples[j]=(float)y;
-        }
     }
 }
 void reloq_rate_transfer_process_aspiration(struct reloq_rate_transfer *s,
