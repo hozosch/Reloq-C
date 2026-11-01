@@ -1,0 +1,53 @@
+{
+  "experiment": "wideband listening, no release changes",
+  "native_speed": 75,
+  "nvda_rate": 30,
+  "languages": [
+    {
+      "language": "Deutsch",
+      "package_sha256": "953ce9d8997c328f8420bf8ef22b931bf0f9439ab9c920d288db77b7d95c0818",
+      "package_bytes": 27722335,
+      "wavs": 82,
+      "entries": 85,
+      "durations_seconds": {
+        "00_Direktvergleich.wav": 104.11,
+        "01_Ratenfolge_A.wav": 97.35,
+        "01_Ratenfolge_E.wav": 97.329,
+        "02_Blindvergleich_S.wav": 120.434
+      },
+      "max_abs_pcm": 21534,
+      "profile_checks": 90,
+      "body_relative_to_fundamental_48000_db": 2.364099897886502,
+      "upper_S_fraction_48000": {
+        "A": 0.1312597688068229,
+        "C": 0.13984189257864443,
+        "D": 0.13938661270691158
+      },
+      "max_separation_peak_lsb": 6,
+      "max_separation_rms_lsb": 0.7099608982390143
+    },
+    {
+      "language": "US_English",
+      "package_sha256": "6c0fe23266c5ba44b4bba2822f65ff5b25f7ec0e3e64f7b8dbb821ed36eff010",
+      "package_bytes": 25199546,
+      "wavs": 82,
+      "entries": 85,
+      "durations_seconds": {
+        "00_Direktvergleich.wav": 92.227,
+        "01_Ratenfolge_A.wav": 87.824,
+        "01_Ratenfolge_E.wav": 87.393,
+        "02_Blindvergleich_S.wav": 108.791
+      },
+      "max_abs_pcm": 19816,
+      "profile_checks": 90,
+      "body_relative_to_fundamental_48000_db": 2.72644848414418,
+      "upper_S_fraction_48000": {
+        "A": 0.10227638664080985,
+        "C": 0.11011636159373352,
+        "D": 0.10943150693890168
+      },
+      "max_separation_peak_lsb": 6,
+      "max_separation_rms_lsb": 0.6804593903365401
+    }
+  ]
+}
