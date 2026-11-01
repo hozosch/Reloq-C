@@ -141,18 +141,18 @@ static int dictionary_compile_alias(void *context,const char *value,char *spr,si
      * Compile it once into the same complete lexical record as other data;
      * otherwise an apparently valid raw entry can lose syllables or create
      * a word shape that the acoustic planner cannot render. */
-    int literal=value[0]=='`'&&value[1]=='[';
+    int literal=value[0]=='`'&&value[1]=='[',root_final=-1;
     if(!volume&&!literal)return 0;
     if(literal) {
         size_t n=strlen(value);
         if(n>=capacity||n<3||value[n-1]!=']'||strchr(value+2,'['))return 0;
-        /* Root is a lexical stem, not an already spoken standalone word.
-         * Preserve canonical authored phones until the native grammar has
-         * joined the ending and can apply its contextual allophones. An
-         * isolated synthesis here would irreversibly harden b/d/g/v/z. */
+        /* Keep the underlying terminal obstruent of a canonical Root.
+         * The parser below must still normalize aliases/syllabification;
+         * its isolated-word final devoicing is not part of the stem. */
         if(volume==1&&reloq_german_lexicon_validate_spr(
                 (const unsigned char *)value,n,NULL)==1) {
-            memcpy(spr,value,n+1);dictionary_single_primary(spr);return 1;
+            const char *voiced="bdgvz",*ending=strchr(voiced,value[n-2]);
+            if(ending&&*ending)root_final=(int)(ending-voiced);
         }
     }
     /* Control sequences and genuine multi-word expansions remain native
@@ -179,6 +179,8 @@ static int dictionary_compile_alias(void *context,const char *value,char *spr,si
      * ordinary German compound representation. */
     spr[used]=0;dictionary_single_primary(spr);
     spr[used++]=']';spr[used]=0;
+    if(root_final>=0&&used>=4&&spr[used-2]=="ptkfs"[root_final])
+        spr[used-2]="bdgvz"[root_final];
     return reloq_german_lexicon_validate_spr((const unsigned char *)spr,used,NULL)==1;
 }
 static int dictionary_compile(struct provider_worker *w)
