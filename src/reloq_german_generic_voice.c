@@ -297,14 +297,8 @@ static int model_append(struct reloq_target_stage_router *router,int64_t tick,
         mapped[used].value=reloq_german_voice_model_target(&model,phone,
             phone && selected+1<settings->phone_count?settings->phones+selected+1:NULL,
             mapped[used].stream,mapped[used].value);
-        /* Balance the German S source against the stronger Z release in
-         * every position. Apply 4 dB after anatomy/source adjustments, so
-         * the level change is uniform across profiles. Preserve zero
-         * excitation and the complete ts affricate used as the reference. */
-        if (mapped[used].stream==RELOQ_TARGET_AF && mapped[used].value>0 &&
-            phone && !phone->affricate_role &&
-            (phone->phone==RELOQ_DE_PHONE_s || phone->phone==RELOQ_DE_PHONE_z))
-            mapped[used].value+=4;
+        /* Keep native S/Z excitation levels after anatomy adjustments.
+         * The former +4-dB balance against /ts/ is intentionally removed. */
         /* A word-medial /ts/ carries one continuous stop/release source.
          * Ease both halves by one dB after model/breath adjustments. Keep
          * initial and final /ts/, its spectral targets and all clocks. */

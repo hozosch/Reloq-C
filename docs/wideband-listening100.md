@@ -1,5 +1,10 @@
 # Wideband listening experiment after 1.0
 
+Historical experiment from `f344e3924928290da31afa9e3d37f0e97b865e2d`.
+The listener rejected it. Check out that commit to reproduce its exact
+reference comparisons; the later [S rollback and upper-source trials](changes/original-s-richness-feedback.md)
+use a different baseline.
+
 These files build audio comparisons, not an installable engine. Production
 acoustics, main and the 1.0 release are unchanged. The listener rejected the
 previous body/clarity experiment: its broad low shelf mostly disappeared

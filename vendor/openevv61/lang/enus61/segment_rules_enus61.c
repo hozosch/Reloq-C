@@ -41,15 +41,13 @@ int32_t reloq_enus61_doAF(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p
 {
     (void)p0;
     if(!reloq_scalar_begin(state))return 94;
-    /* Source ownership comes from the current phonetic segment, before
-     * endpoints enter the ordered queue. Match the German S gain without
-     * raising dental bursts, aspiration, voicing or parallel-pole levels. */
+    /* Keep the native S/Z endpoints. Only the separately accepted
+     * labiodental adjustment changes an active source level. */
     int32_t at;memcpy(&at,(const unsigned char *)state+DG_BASE+712,4);
     struct reloq61_spr_phone phone;int gain=0;
     if(reloq61_spr_phone_at(state,at,&phone)) {
         unsigned name=reloq61_spr_feature(state,&phone,0);
-        if(name==13 || name==14)gain=4; /* /z/, /s/ */
-        else if(name==11 || name==12)gain=reloq61_labiodental_gain(state); /* /v, f/ */
+        if(name==11 || name==12)gain=reloq61_labiodental_gain(state); /* /v, f/ */
     }
     return reloq61_segment_frication_gain(state,&layout,p1,p2,p3,p4,p5,gain);
 }

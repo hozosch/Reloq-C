@@ -1,0 +1,4103 @@
+{
+  "native_s_source_gain_db": 0,
+  "removed_source_gain_db": 4,
+  "changed_languages": 11,
+  "unchanged_languages": 3,
+  "rate_cases": 98,
+  "unchanged_controls": 315,
+  "no_audio_files": true,
+  "baseline_sha256": "035d70a5def83a5fb8081bbccdfc034ebbe3016773c86d5ace135fa6d0648691",
+  "library_sha256": "a3d728b7a2d21b276c593ea3c23c0fb52f9031f442f8e6dd91e62feacb19319a",
+  "cases": [
+    {
+      "language": "0x40000",
+      "rate": 0,
+      "text": "Susi sieht sieben weiße Segel.",
+      "level_db": -0.19634354468466977,
+      "before": {
+        "samples": 11704,
+        "sha256": "df7c7dc7f202b73eb04042af5b9b8b5d3ed13ec5b346cd0187f119d4574b6f22",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 11704,
+        "sha256": "5d6610cc086b1a99cd6aa2aeffc1c347b6a68ab192a6185eead19536f0c1d7ee",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x40000",
+      "rate": 1,
+      "text": "Susi sieht sieben weiße Segel.",
+      "level_db": -0.07442430580572179,
+      "before": {
+        "samples": 16093,
+        "sha256": "0b339b3665e52fb3d0e129399ad44c12751e2b79cfd837471f35f8b01fa89141",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 16093,
+        "sha256": "0ebca9a090163509527e1f4ba32ae40eb4f48dc7c2ef45a6179bbc890151a126",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x40000",
+      "rate": 2,
+      "text": "Susi sieht sieben weiße Segel.",
+      "level_db": -0.07305549542698493,
+      "before": {
+        "samples": 32186,
+        "sha256": "7b6cf92ebfdfd012f3e2cb24b247e56095827ec622163a372257c74b92867424",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 32186,
+        "sha256": "23812b088fa9f7dd698f59a70f73ead78cafa4618aee8a2d5055508edbeea97d",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x40000",
+      "rate": 3,
+      "text": "Susi sieht sieben weiße Segel.",
+      "level_db": -0.05436309656439675,
+      "before": {
+        "samples": 23408,
+        "sha256": "81a14b2f126b314b7f5a901426503a797398381fea1ad32f405242b2f783c781",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 23408,
+        "sha256": "aff177b6d2c5d67b2f225564ea497c6e5a200d0778370283e39584493cf40e53",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x40000",
+      "rate": 4,
+      "text": "Susi sieht sieben weiße Segel.",
+      "level_db": -0.05860506508378712,
+      "before": {
+        "samples": 46816,
+        "sha256": "87ccabbe77fd61520788718e61e62fddf645f6d956991656510fe3b8632462e9",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 46816,
+        "sha256": "0d3bc78f59103b003fa2e2252d028f17bb13b4b4b63b48dd346a76a8c4d033e0",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x40000",
+      "rate": 5,
+      "text": "Susi sieht sieben weiße Segel.",
+      "level_db": -0.06598569427711591,
+      "before": {
+        "samples": 64372,
+        "sha256": "c55a61e2bb21146758af98968e4f46d42f8497608d713b7f5fba249d5dcd8d50",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 64372,
+        "sha256": "b04d2c7ab08574c3ee524c5168a575b60c24b3fda0c4a71f4339edc2ab80d689",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x40000",
+      "rate": 6,
+      "text": "Susi sieht sieben weiße Segel.",
+      "level_db": -0.06914929355777998,
+      "before": {
+        "samples": 70224,
+        "sha256": "f60dd5dd2d652a5d8cc735327928ab267ae3c442c96f006267608e8e610ab00e",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 70224,
+        "sha256": "eae661e8b0bccd477eb00a852b78a11e3310cfde7d3ad77bac9ba5c30e29d6b6",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x10000",
+      "rate": 0,
+      "text": "Sue sees seven sisters. Lazy bees buzz.",
+      "level_db": -0.5624984561969586,
+      "before": {
+        "samples": 17648,
+        "sha256": "7f757c896dec6d3cd12c7836fcd816c7fb929934506eed0145dce64ce2787126",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 17648,
+        "sha256": "629f6f9238d997881b9036d3383f0f338b7e566964c5ff0cd812ae6384030bb5",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x10000",
+      "rate": 1,
+      "text": "Sue sees seven sisters. Lazy bees buzz.",
+      "level_db": -0.0911760083771797,
+      "before": {
+        "samples": 24266,
+        "sha256": "7cf90648e4b0413f26fcecf4dc52b71d11030bc7af2d67a64f82b62b78ae6bdb",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 24266,
+        "sha256": "b9e78c80f5abec66e9e1be57c5d70f281300aa8bbf7f359bbab3190d8c3d97d2",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x10000",
+      "rate": 2,
+      "text": "Sue sees seven sisters. Lazy bees buzz.",
+      "level_db": -0.06795940431071458,
+      "before": {
+        "samples": 48532,
+        "sha256": "a70b9cbf108d3322f390f4ab214c76135413da6d6795e96f05c4d12799ac63e9",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 48532,
+        "sha256": "e5dac8a382eb11c809f27658345474f21b8285ee9ab75b5eeff05eb8a93f30c7",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x10000",
+      "rate": 3,
+      "text": "Sue sees seven sisters. Lazy bees buzz.",
+      "level_db": -0.055111269722361446,
+      "before": {
+        "samples": 35296,
+        "sha256": "1b9e13948fec6f0fd4fa8f7d967b429a27dc6dd58deb91d984a2236686517a68",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 35296,
+        "sha256": "b100a530e41a41e12d161bf3bb4d6e8af8a644f5b2f8aec7a91983ba537caad6",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x10000",
+      "rate": 4,
+      "text": "Sue sees seven sisters. Lazy bees buzz.",
+      "level_db": -0.06451832261114801,
+      "before": {
+        "samples": 70592,
+        "sha256": "7558ea81f16a2793079b7109c693811bb4e1153059dc2740c294e1cbc433dfec",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 70592,
+        "sha256": "747f5f878da8dabfa76373a06c39b577ae5fb6348a9551118e920dcd1f1883a6",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x10000",
+      "rate": 5,
+      "text": "Sue sees seven sisters. Lazy bees buzz.",
+      "level_db": -0.06429673637126639,
+      "before": {
+        "samples": 97064,
+        "sha256": "c114076abbae94efd3716305586bd67f71403da5e7a2ee72bc1c5c289f9f2601",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 97064,
+        "sha256": "2168d7bedddbeef9d75719ef6ac42717e2bf69192f65bc6ee21056cafad8a8de",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x10000",
+      "rate": 6,
+      "text": "Sue sees seven sisters. Lazy bees buzz.",
+      "level_db": -0.06286652386653069,
+      "before": {
+        "samples": 105888,
+        "sha256": "53fb31dc5e83664c1ce665e09a6c7ba4f9429c2ca7e67e3471486845f8c53891",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 105888,
+        "sha256": "3a5d630ed0f5a10a965e31eaa39ad48e6ffa3290e133075dcd59376b68563d7d",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x10001",
+      "rate": 0,
+      "text": "Sister says seventy six.",
+      "level_db": -1.098868618779786,
+      "before": {
+        "samples": 10672,
+        "sha256": "f2eab066dbca150cff190388c4dd9d7cb789e1933b101ae1a5360b464ea9a5a6",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 10672,
+        "sha256": "4c62cb6cf2fb3d9acb2256aa20bd1e6f26c06f9884273a13b58ef5717fde040f",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x10001",
+      "rate": 1,
+      "text": "Sister says seventy six.",
+      "level_db": -0.2076299540670996,
+      "before": {
+        "samples": 14674,
+        "sha256": "2137dd0f71f90e24be795568a4e5ccfbe1379c63f15cb93877c0c5e503677c7f",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 14674,
+        "sha256": "1119d7badfccdcf42542d122e9d4b3830cf093113e7284da85cc257f95d9f00f",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x10001",
+      "rate": 2,
+      "text": "Sister says seventy six.",
+      "level_db": -0.17054771519963682,
+      "before": {
+        "samples": 29348,
+        "sha256": "a6fe4b09b1bbe2ac288091a704b2252a466ce741bfbf4bd67f63a0d00da7a540",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 29348,
+        "sha256": "16e6a635654d1140defa30af12583dda5331b9b2652ae190af698949f75fb2b3",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x10001",
+      "rate": 3,
+      "text": "Sister says seventy six.",
+      "level_db": -0.13419263913620738,
+      "before": {
+        "samples": 21344,
+        "sha256": "d6144372961d875c4fe2b4f71795a777cf3a0776304465f1cec1111c1b71ea48",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 21344,
+        "sha256": "34e29dcadf6bc6c0bdd7e0182afa2b463db25a953bf3adc9a2bedbac54692ab7",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x10001",
+      "rate": 4,
+      "text": "Sister says seventy six.",
+      "level_db": -0.15799272185138155,
+      "before": {
+        "samples": 42688,
+        "sha256": "87c7e4b162924d806719ddbdd828a958ac35ecf9270a90889afeee4ec33972f4",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 42688,
+        "sha256": "3147e8ab02e6259d429149c88d52c146ef6564b56d5590dde7b04d03dcffde59",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x10001",
+      "rate": 5,
+      "text": "Sister says seventy six.",
+      "level_db": -0.1623577953778762,
+      "before": {
+        "samples": 58696,
+        "sha256": "a45ce3f91f72f80d75113cf94e81551ba363afd5e56bb4a33dbabb5c5e7a85da",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 58696,
+        "sha256": "45e02fad0514a8c5d79aed00a469322c15ee97c00dea2a3cc28fdb43d8295eed",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x10001",
+      "rate": 6,
+      "text": "Sister says seventy six.",
+      "level_db": -0.16149895015912838,
+      "before": {
+        "samples": 64032,
+        "sha256": "920fe7442c4e83775392ef204efba553cd99e54e89ecd709618c178809e0f086",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 64032,
+        "sha256": "4f8585bcf4a9d7528d91be2b7633df187ceb2d1512a7960638992bad5b606281",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x20001",
+      "rate": 0,
+      "text": "Susana usa seis vasos.",
+      "level_db": -0.3828152068214979,
+      "before": {
+        "samples": 8712,
+        "sha256": "7190450589471c20a234109c09981cddf29dfd9bacfce6499d6b721a4829cc77",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 8712,
+        "sha256": "3d05a929b73f7694a48bed3b1770792e7a65355647122c2fe6acb5332d498ab2",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x20001",
+      "rate": 1,
+      "text": "Susana usa seis vasos.",
+      "level_db": -0.20054108914056118,
+      "before": {
+        "samples": 11979,
+        "sha256": "536ee706ebc07f9522d932206007093d2be49cae86539887434fe36ed66eeb34",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 11979,
+        "sha256": "481bbf60bc9067d972b15c2c303022fea39fdbe97bc0f9b2851d666e2aadb2f2",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x20001",
+      "rate": 2,
+      "text": "Susana usa seis vasos.",
+      "level_db": -0.11996906306756103,
+      "before": {
+        "samples": 23958,
+        "sha256": "13d2ea82afb23402ec45a65e1820c82be845df36f0da6358e7c996fc6f9dac77",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 23958,
+        "sha256": "9e95dd5459a0f7857318172d20f757d6508a28eb8ed36698887793376fe42198",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x20001",
+      "rate": 3,
+      "text": "Susana usa seis vasos.",
+      "level_db": -0.0970600488927325,
+      "before": {
+        "samples": 17424,
+        "sha256": "c28f810e9749140939b9cd6d5f090f3e48bbddfb88817708ab95b9eeb51e2e3a",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 17424,
+        "sha256": "5911a4b069189f7fc9732860964039a631f9b7318a29b97155e3870cbb6917e6",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x20001",
+      "rate": 4,
+      "text": "Susana usa seis vasos.",
+      "level_db": -0.10563387002856459,
+      "before": {
+        "samples": 34848,
+        "sha256": "4acda7ed980335fed08a907217508a225bf4fd2e6725a83ecf8481e71b783389",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 34848,
+        "sha256": "f44e1dbe0c49cf04aaf81782959dc1e9d6e263766ac91d8e3da4861565ef44bb",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x20001",
+      "rate": 5,
+      "text": "Susana usa seis vasos.",
+      "level_db": -0.10550145896027593,
+      "before": {
+        "samples": 47916,
+        "sha256": "0dbe67dfc5383406282ee3d0faf527764b7d99d654e56df1848d88d6b4074762",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 47916,
+        "sha256": "66f3669669d2ad9efc2a164c0f9cfbaa26a628c46d8cef1ef6e45bfc3485b7b6",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x20001",
+      "rate": 6,
+      "text": "Susana usa seis vasos.",
+      "level_db": -0.10684949454140646,
+      "before": {
+        "samples": 52272,
+        "sha256": "ea253639fdfaa2b1e4c01a158d5e669d05546d4eb00239e531707111b95edfe6",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 52272,
+        "sha256": "2f38764204b60d3a99566ee4c04f1d8bcbdc79f69fb86a3194cd2087c3ed1af5",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x30000",
+      "rate": 0,
+      "text": "Ceci est aussi un son.",
+      "level_db": -0.24779331885129713,
+      "before": {
+        "samples": 7992,
+        "sha256": "38d91a98d70e4769bb3d3835050750b23b5b7939898456737d974f72fdaedb95",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 7992,
+        "sha256": "53d6a6e810911214317483e6fb307fd28ef4f133b061f2a016c53c0f9cf22652",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x30000",
+      "rate": 1,
+      "text": "Ceci est aussi un son.",
+      "level_db": -0.08176226581881942,
+      "before": {
+        "samples": 10989,
+        "sha256": "ef8666fa3bf27a08fa7db50b8f7fd1483f199ce49715abb05b90b5aa5bb61139",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 10989,
+        "sha256": "b8308d6cec07209bfdceaddfa825eaf9d0f6de31db128d0b80cf79f9fa46bfc1",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x30000",
+      "rate": 2,
+      "text": "Ceci est aussi un son.",
+      "level_db": -0.04630597527068715,
+      "before": {
+        "samples": 21978,
+        "sha256": "726e0e1e5265263cd4cb04309de109475299af331b7d8504af8986153cfcd80a",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 21978,
+        "sha256": "f9947279cc2cf229fbf815d81b7efc7afc3c99497ad06b047dfc829bb7fd7a7e",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x30000",
+      "rate": 3,
+      "text": "Ceci est aussi un son.",
+      "level_db": -0.03940268885552911,
+      "before": {
+        "samples": 15984,
+        "sha256": "ae00c96b2951bf5e1d54426afc972db708b7a6cb64eaaf3b1ffd2aa43de5b7c4",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 15984,
+        "sha256": "d9977495720c61fd4e00783553289b263a86058917dcb5816849fc72badf5302",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x30000",
+      "rate": 4,
+      "text": "Ceci est aussi un son.",
+      "level_db": -0.04230554345301469,
+      "before": {
+        "samples": 31968,
+        "sha256": "60c8b5e6233a8a753fdd83d1a49c1047f7e535bbbd8ea92228bb14cc98b5a6c3",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 31968,
+        "sha256": "4818de4bd69c95e72ce58de1f6106327c3a9ff2a374b2752d5d0e3c82883afce",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x30000",
+      "rate": 5,
+      "text": "Ceci est aussi un son.",
+      "level_db": -0.04195346424851079,
+      "before": {
+        "samples": 43956,
+        "sha256": "6bf6575b5c59a6b42feaef2f0a7198a4de3f62c6a5b05a01b9a60919b8458523",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 43956,
+        "sha256": "aad0ea22c5c6594b0ff3c5eba337511d73a3a23bbd0c0d790d29266126c910d5",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x30000",
+      "rate": 6,
+      "text": "Ceci est aussi un son.",
+      "level_db": -0.04190650863819184,
+      "before": {
+        "samples": 47952,
+        "sha256": "7d2d9e4fab47842439b1ebbf68bf5c926a6ee19489274ed7c02be3a7972308fa",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 47952,
+        "sha256": "1c46d3e4f979c7e56d1be2bc78362a3da94f00fdddce918abc48a9ae7c262adc",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x30001",
+      "rate": 0,
+      "text": "Ceci est aussi un son.",
+      "level_db": -0.28801260367430825,
+      "before": {
+        "samples": 8112,
+        "sha256": "d1544cb244a13cb668f3c727d769f945e1e9a1b6bdf1226a2a4cd5d607b34402",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 8112,
+        "sha256": "5d1c69d41e2a9b8d3691fbbc52450a1123d19280d7d1921abe858012f8e0b46c",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x30001",
+      "rate": 1,
+      "text": "Ceci est aussi un son.",
+      "level_db": -0.0871857968804763,
+      "before": {
+        "samples": 11154,
+        "sha256": "ee13f604d79f59e7883ae3d7cdcf5e3fd72d978b69223a641e07bd8e62b11790",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 11154,
+        "sha256": "f752c125cc3b6c5e6da3421bf69394017cbb13a0eea87cab7152e3ac73b6ba58",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x30001",
+      "rate": 2,
+      "text": "Ceci est aussi un son.",
+      "level_db": -0.048804565939279385,
+      "before": {
+        "samples": 22308,
+        "sha256": "7f16f8dd7433cff4d79be9b6ebc7a40162a96708a568f93bd275a7546b737a29",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 22308,
+        "sha256": "25c325cfae46b06ccd8582bc2108aa4e63c9c8a4c000ea70f166e5a60088d1c2",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x30001",
+      "rate": 3,
+      "text": "Ceci est aussi un son.",
+      "level_db": -0.040832169497762826,
+      "before": {
+        "samples": 16224,
+        "sha256": "6947b05c0a57767e29ff1990015f19d8c6736507d526139bbf6b54d62fc0d894",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 16224,
+        "sha256": "873af2a5c809b058e81c861158ff2c634b2006c0bb0d156ff89021ccb4b37e5b",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x30001",
+      "rate": 4,
+      "text": "Ceci est aussi un son.",
+      "level_db": -0.04509301419626681,
+      "before": {
+        "samples": 32448,
+        "sha256": "156945980df080670832aa248f04cb682db0b52d659707fb1ba70692073e73af",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 32448,
+        "sha256": "ceb5e113e246eb762cdfa6e0ea8975450aba54af6f589e2199bde07ab4851556",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x30001",
+      "rate": 5,
+      "text": "Ceci est aussi un son.",
+      "level_db": -0.04709024582133213,
+      "before": {
+        "samples": 44616,
+        "sha256": "a9ab63cc4eebb305add56c7ad024ec7f6838b09bb42871268e648327f994d54d",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 44616,
+        "sha256": "9f42292ce46fd84800208c28029c77c8dade5719ef99fb8f3ffdfb825116de85",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x30001",
+      "rate": 6,
+      "text": "Ceci est aussi un son.",
+      "level_db": -0.045188128226071336,
+      "before": {
+        "samples": 48672,
+        "sha256": "3b2902f0c2edc88aef4b20ef613ad31eb82b27d53c07a81b3316ddec29541885",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 48672,
+        "sha256": "13a564adbe0dd2580a50d9337aa06092df0ecbf1c78d021ff5d99b10fa598b46",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x50000",
+      "rate": 0,
+      "text": "Sassi, pasta, stazione.",
+      "level_db": -0.43083859667009883,
+      "before": {
+        "samples": 11224,
+        "sha256": "b9bf5566f767e6b116ca15cfb43f6075f3103eb891265591a81a4d2212bbbbcf",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 11224,
+        "sha256": "54ce44879a8406d05d7b71403d6ea5f070e09915dd6fce1883fe93a3c3b8a822",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x50000",
+      "rate": 1,
+      "text": "Sassi, pasta, stazione.",
+      "level_db": -0.11036798095877932,
+      "before": {
+        "samples": 15433,
+        "sha256": "c7951600fb0e6017448a4348f2ce1b097462e0c1742aa536c02422d3d8d074d1",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 15433,
+        "sha256": "74e3e085e91a994b68bab68efdeb2df8af93c56f11465db6872787c6a094ddd6",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x50000",
+      "rate": 2,
+      "text": "Sassi, pasta, stazione.",
+      "level_db": -0.06263004707529425,
+      "before": {
+        "samples": 30866,
+        "sha256": "cfc2aa92de00e84030e757600f62b40230b6e448e621a41a496329bb54593891",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 30866,
+        "sha256": "dd57484d096d7de56400c13b9b539376d20afcd52f45359730880d6205dc9a25",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x50000",
+      "rate": 3,
+      "text": "Sassi, pasta, stazione.",
+      "level_db": -0.056559982571609206,
+      "before": {
+        "samples": 22448,
+        "sha256": "81a19461c32f123df4abe615862972bbd67a61075a40c2183d01ab65b79761a3",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 22448,
+        "sha256": "745ad8ac93e3be1f4f4244c867b7974d600b6edb17e6f8d1df5dbcb22753664e",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x50000",
+      "rate": 4,
+      "text": "Sassi, pasta, stazione.",
+      "level_db": -0.05919341732253939,
+      "before": {
+        "samples": 44896,
+        "sha256": "7e1e8b117cf15d8f4f66bb8ba0ac68d3e893c1d587eb9dde8e948c62ad8c3274",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 44896,
+        "sha256": "2c28d02d3ad8bd378815b7f5c58734fb9c4ce52f4aef99154b6ee980ed12744c",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x50000",
+      "rate": 5,
+      "text": "Sassi, pasta, stazione.",
+      "level_db": -0.05978923772617404,
+      "before": {
+        "samples": 61732,
+        "sha256": "ca64753d12bd0a55b6ab0b82ece358ed7159b4f5195929d8c4578c0db2daffad",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 61732,
+        "sha256": "a5de1eab8bc58a2266fe5d29c78b205c8c3087901a9471ee62a1a5c043b156dd",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x50000",
+      "rate": 6,
+      "text": "Sassi, pasta, stazione.",
+      "level_db": -0.06536917136849758,
+      "before": {
+        "samples": 67344,
+        "sha256": "5b376304ee0c243f5664374a2062d7b674c1fc45df7632117042675ab7dc5d70",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 67344,
+        "sha256": "f87fca839b6bf44301a382425f30d329df4b397ef69edbd21a0f00d5ea40682f",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x70000",
+      "rate": 0,
+      "text": "Seis sapatos são seus.",
+      "level_db": -0.33773114041022323,
+      "before": {
+        "samples": 10816,
+        "sha256": "f7b4441db48594d753ffb6761e8d94f6389051186ef13a109b3ca14698484f2e",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 10816,
+        "sha256": "8e9df2138f597dba6f87a4bcf58164c3e273497f6a03aa348e5b22d052e6cbab",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x70000",
+      "rate": 1,
+      "text": "Seis sapatos são seus.",
+      "level_db": -0.07521165937552868,
+      "before": {
+        "samples": 14872,
+        "sha256": "87be90bcc7a1590e3bafe9da0dd16d7ab7a7c6a5d2fb1aa31e6b6e827ee2bee3",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 14872,
+        "sha256": "1a048ee668daba3a27f41bb1b3cb9441afe0ce3161649cce79b6e7b59910a6aa",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x70000",
+      "rate": 2,
+      "text": "Seis sapatos são seus.",
+      "level_db": -0.08138496133175932,
+      "before": {
+        "samples": 29744,
+        "sha256": "7dc35757299fb3982ea3a252bcd44a2707a243eafa79553a9503f66ed3844f79",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 29744,
+        "sha256": "9695effd5ffb32878d754140efe614267e3d6b707338e90fccbf3958f2b5ef77",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x70000",
+      "rate": 3,
+      "text": "Seis sapatos são seus.",
+      "level_db": -0.07274025199754705,
+      "before": {
+        "samples": 21632,
+        "sha256": "362d11a033846cc18dcf7387d99726be0512a12a2bbcaa1923dc8d21b1433082",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 21632,
+        "sha256": "6229d871f5f0d714bd12d4f5d5c4a616ddee878aa93fec78c040a5606ee2d609",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x70000",
+      "rate": 4,
+      "text": "Seis sapatos são seus.",
+      "level_db": -0.07351554679191802,
+      "before": {
+        "samples": 43264,
+        "sha256": "81abdc619dd7574e03c3b9cd1a19ca080f76e078fff2cb48f5d1bb8d7bf27af5",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 43264,
+        "sha256": "8ef73549d97e53ac815b062d08ae62ad76dff83b3f6073c09b0b14bc4239b6b6",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x70000",
+      "rate": 5,
+      "text": "Seis sapatos são seus.",
+      "level_db": -0.07029838518087,
+      "before": {
+        "samples": 59488,
+        "sha256": "28e7f99208fecec1623d0ff4051d6308dab6ac74522fac8330274c1d995c0e95",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 59488,
+        "sha256": "b107dbe91b5fbc61c751086b92c2860841318c36461639c4d0f6d87bae58c182",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x70000",
+      "rate": 6,
+      "text": "Seis sapatos são seus.",
+      "level_db": -0.07564884018742479,
+      "before": {
+        "samples": 64896,
+        "sha256": "7502aef30bc62cb2eeb07066b31c6b733d0e1b6576c14938dfeb2451aabb54b1",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 64896,
+        "sha256": "162c928177d3fec5a119eb310b5d15e736719aff97d3b0de55108f6b9d3e1294",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x90000",
+      "rate": 0,
+      "text": "Susi saa sisua.",
+      "level_db": -0.021433862944578993,
+      "before": {
+        "samples": 6736,
+        "sha256": "2a31cf49ee51e0ece33078a3eacf9a19c67c32f01067379f6787696f439e702b",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 6736,
+        "sha256": "02964f56b3c08946c3e088c3e275b92cb0ed64336bf230246978372839c3eb31",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x90000",
+      "rate": 1,
+      "text": "Susi saa sisua.",
+      "level_db": -0.10617161413833856,
+      "before": {
+        "samples": 9262,
+        "sha256": "43e6239a3100151d7eccf4bb9bbe5fddce79cee5cf76df9b789437203ce58c00",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 9262,
+        "sha256": "198f2dda94f73e4d238945ee780e134deb44d5fd9cb2065824712b89d5b9c6f8",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x90000",
+      "rate": 2,
+      "text": "Susi saa sisua.",
+      "level_db": -0.08967257809642575,
+      "before": {
+        "samples": 18524,
+        "sha256": "6bf9840076fcb61eb48da723ab4cbd6cc4071283449b3bd707847eaf611922d3",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 18524,
+        "sha256": "8351378772ac7716c343bb83632028d4c7ce917d0ce417f8ac668001a9037a7b",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x90000",
+      "rate": 3,
+      "text": "Susi saa sisua.",
+      "level_db": -0.09204308843293936,
+      "before": {
+        "samples": 13472,
+        "sha256": "062583e954f111f8889ff2b877e407d0227d586fdedb43443ee12dec4a5c83b0",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 13472,
+        "sha256": "10f22ab03a22807c8794342912135e825362b604d6ff96db073975071c01433d",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x90000",
+      "rate": 4,
+      "text": "Susi saa sisua.",
+      "level_db": -0.0853951933045237,
+      "before": {
+        "samples": 26944,
+        "sha256": "fe3620bb3324872475840bc046d390462c3eb171d71c67f04f377b97d01b038e",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 26944,
+        "sha256": "a552b72fc9f8e819379ae90239bb06355454cdf4532cd10b3526d7c8633a072e",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x90000",
+      "rate": 5,
+      "text": "Susi saa sisua.",
+      "level_db": -0.0811193262671975,
+      "before": {
+        "samples": 37048,
+        "sha256": "227826de8e63a60f62678a527ab28de444e1464363084f00fafbdee6d849e533",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 37048,
+        "sha256": "dd799efd4566cc4b9d59a7b51e916a747cb1a57abf9b701a521d558c2781c9e2",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x90000",
+      "rate": 6,
+      "text": "Susi saa sisua.",
+      "level_db": -0.08419329582276548,
+      "before": {
+        "samples": 40416,
+        "sha256": "a8bf20abcbe00c65ccc71b1f21ffaee5926d11c44aa9bb93499f323ed6c122dd",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 40416,
+        "sha256": "ce859f478c0311945e96e9c23c2119ab250840cd54e222a5fd1d7641ae92d658",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x60000",
+      "rate": 0,
+      "text": "si4 si4 si4.",
+      "level_db": -0.027834836931809114,
+      "before": {
+        "samples": 5656,
+        "sha256": "04469f3a54e6b714b06c7b77e2a6c288b2969671cd5c92140ae492c1c87ceb81",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 5656,
+        "sha256": "a45ec59f09372c8194a139d94acb66dcc9d6737a6261a014a62d81a44caa6893",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x60000",
+      "rate": 1,
+      "text": "si4 si4 si4.",
+      "level_db": -0.022468446082047847,
+      "before": {
+        "samples": 7777,
+        "sha256": "24bb8e3732e2f77b5c2e2b6c5f817178f2cb0abff68123d62120f574589de3d1",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 7777,
+        "sha256": "7238ab288627b8253655befee3f460b2a94f495db0307d495bb1aeda06a0069b",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x60000",
+      "rate": 2,
+      "text": "si4 si4 si4.",
+      "level_db": -0.017091147412888485,
+      "before": {
+        "samples": 15554,
+        "sha256": "6f84e5e91e34d26a1372dac71360c802ea7c392db4f999a75e0acc6faa70d8f7",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 15554,
+        "sha256": "b3fdf3de4db1bb7f62a8a705ca60a4052a4becec18a0b258e122501f449cd358",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x60000",
+      "rate": 3,
+      "text": "si4 si4 si4.",
+      "level_db": -0.019992927754093066,
+      "before": {
+        "samples": 11312,
+        "sha256": "8478e054fe090e1087c8360f8b8c92eb89be327454d7fbb194db154252a9e874",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 11312,
+        "sha256": "2b8650aa85f3f90f351184e7b5426a0b52b15f83e97e0abab1fd414153d949d2",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x60000",
+      "rate": 4,
+      "text": "si4 si4 si4.",
+      "level_db": -0.01752926217662179,
+      "before": {
+        "samples": 22624,
+        "sha256": "759a8e6f1ec6e6ad7d814418a77dc5a64148f09989a58f6edb4b50f37ace7d13",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 22624,
+        "sha256": "eaeb994f5bf9d06025fb2a1db1c4aacd296118d15122f430149b086469b456c4",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x60000",
+      "rate": 5,
+      "text": "si4 si4 si4.",
+      "level_db": -0.01914022470706755,
+      "before": {
+        "samples": 31108,
+        "sha256": "4f6822bfd28114103498aaa0089bc2d45f9789a02e5ff1bc723f3d12b4cde90c",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 31108,
+        "sha256": "b3bc6b5b97d7fe5e7ebc99340715f84f9a3f17efa1ddd174128631e358e5940a",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x60000",
+      "rate": 6,
+      "text": "si4 si4 si4.",
+      "level_db": -0.01745686679425987,
+      "before": {
+        "samples": 33936,
+        "sha256": "1249242afa994f121708e0dc6bb1d257ba67f49e61dc044ba53c576abf118630",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 33936,
+        "sha256": "babceff1a34bf625d93acd076addd8cba507817ee428fd849a112e014820d39a",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0xa0000",
+      "rate": 0,
+      "text": "사시사사 쌍.",
+      "level_db": -2.7222950524839655,
+      "before": {
+        "samples": 8712,
+        "sha256": "9bc13415f08096158ecf0be83ce269818e6b50f8a9733c90fab6b0239cdc9e3f",
+        "clipped_samples": 1
+      },
+      "after": {
+        "samples": 8712,
+        "sha256": "5bdfe000ff7592c3d5ed7c1f3fd3874507de61552a9d16d52e56728a5d406efc",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0xa0000",
+      "rate": 1,
+      "text": "사시사사 쌍.",
+      "level_db": -0.3604823056808305,
+      "before": {
+        "samples": 11979,
+        "sha256": "df7c5271b7e1dc2269b0564c8b64b88bd60796fd32494e1cd527e44fed39a024",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 11979,
+        "sha256": "5b7a860a0a3f95cc39eb6b86dfd4cba741dadd4dbb305a467982a5a0d1d98799",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0xa0000",
+      "rate": 2,
+      "text": "사시사사 쌍.",
+      "level_db": -0.33230486088580613,
+      "before": {
+        "samples": 23958,
+        "sha256": "79ec8024785c7fc764948009c4ec77ecc08c6e966104c5cd2df6c76e2c1c105b",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 23958,
+        "sha256": "153e9d57d490e0cb48a5997bdf58d89456916f2fed9ef6e19b67b98e19bc55fa",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0xa0000",
+      "rate": 3,
+      "text": "사시사사 쌍.",
+      "level_db": -0.3163797261781151,
+      "before": {
+        "samples": 17424,
+        "sha256": "0faf73f7762f9632868976723a6651613a43a4752c39100e76f7079c9d936977",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 17424,
+        "sha256": "2b220d5759ba0fc4c07d1c7c0003f135e1eb621297c287b75aea88164316d36e",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0xa0000",
+      "rate": 4,
+      "text": "사시사사 쌍.",
+      "level_db": -0.347107519473452,
+      "before": {
+        "samples": 34848,
+        "sha256": "2d0fb048d6b64607dfa7f66ed9b96a3081aee9b9cbbef28271fdec0d88dce184",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 34848,
+        "sha256": "dc1317e7b93ae2fe41d60c91493348ad6006022973e102f2ec7c2e19efae6600",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0xa0000",
+      "rate": 5,
+      "text": "사시사사 쌍.",
+      "level_db": -0.29289208678451356,
+      "before": {
+        "samples": 47916,
+        "sha256": "970f3c3666dc215e45e116d97bbafcb4e26ca5f73b14085446054c29fc145948",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 47916,
+        "sha256": "854d89cd1326fa8bfe61e623167e3cf7ff38055d73b05642049ef657283e8196",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0xa0000",
+      "rate": 6,
+      "text": "사시사사 쌍.",
+      "level_db": -0.3388013648858448,
+      "before": {
+        "samples": 52272,
+        "sha256": "533cec2e9ba2210f5bc562ff893e44b26a75e631a053a61351fa2591a2df0994",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 52272,
+        "sha256": "ef19e80e95229c829e16832e143ca824659e6741addb65d33e4d832da2a51129",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x20000",
+      "rate": 0,
+      "text": "Susana usa seis vasos.",
+      "level_db": 0.0,
+      "before": {
+        "samples": 8584,
+        "sha256": "a4b9617cd20c2825496a158596cf36ef21d0652fc23cef77718a42e0915a46ab",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 8584,
+        "sha256": "a4b9617cd20c2825496a158596cf36ef21d0652fc23cef77718a42e0915a46ab",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x20000",
+      "rate": 1,
+      "text": "Susana usa seis vasos.",
+      "level_db": 0.0,
+      "before": {
+        "samples": 11803,
+        "sha256": "840e3211759a5f304faa4b63e7a91cc4a2d65e282a308929a1f8487ab5e9f295",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 11803,
+        "sha256": "840e3211759a5f304faa4b63e7a91cc4a2d65e282a308929a1f8487ab5e9f295",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x20000",
+      "rate": 2,
+      "text": "Susana usa seis vasos.",
+      "level_db": 0.0,
+      "before": {
+        "samples": 23606,
+        "sha256": "102eed12ed4e3b7ec8354fbbd53ef4f29d9655f1a56b948e49f28dff4c2396a4",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 23606,
+        "sha256": "102eed12ed4e3b7ec8354fbbd53ef4f29d9655f1a56b948e49f28dff4c2396a4",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x20000",
+      "rate": 3,
+      "text": "Susana usa seis vasos.",
+      "level_db": 0.0,
+      "before": {
+        "samples": 17168,
+        "sha256": "82f49dbd1a7a2fb85e6a03edc46f2420594aac2e4b122522bcfd1ff3723ef195",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 17168,
+        "sha256": "82f49dbd1a7a2fb85e6a03edc46f2420594aac2e4b122522bcfd1ff3723ef195",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x20000",
+      "rate": 4,
+      "text": "Susana usa seis vasos.",
+      "level_db": 0.0,
+      "before": {
+        "samples": 34336,
+        "sha256": "ec025b76157b628d48d5e9c4b3ccc9a7bca05886745a91bdcdf7bcafcba11cf1",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 34336,
+        "sha256": "ec025b76157b628d48d5e9c4b3ccc9a7bca05886745a91bdcdf7bcafcba11cf1",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x20000",
+      "rate": 5,
+      "text": "Susana usa seis vasos.",
+      "level_db": 0.0,
+      "before": {
+        "samples": 47212,
+        "sha256": "eeff9436df3bddc76d0c6d075c2307f3e1cdcc31e3ab19a67f330d18ce8f04a7",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 47212,
+        "sha256": "eeff9436df3bddc76d0c6d075c2307f3e1cdcc31e3ab19a67f330d18ce8f04a7",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x20000",
+      "rate": 6,
+      "text": "Susana usa seis vasos.",
+      "level_db": 0.0,
+      "before": {
+        "samples": 51504,
+        "sha256": "6a130e07c5b83841df60f133d34cc7c65f9214c53bc39b8c8c4a7b26702de9c4",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 51504,
+        "sha256": "6a130e07c5b83841df60f133d34cc7c65f9214c53bc39b8c8c4a7b26702de9c4",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x80000",
+      "rate": 0,
+      "text": "すしとさかな。",
+      "level_db": 0.0,
+      "before": {
+        "samples": 8136,
+        "sha256": "9ee4d0af0d83974bc3703294b9447278a43cfcfd961f91ed8a2e4f1ac316b801",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 8136,
+        "sha256": "9ee4d0af0d83974bc3703294b9447278a43cfcfd961f91ed8a2e4f1ac316b801",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x80000",
+      "rate": 1,
+      "text": "すしとさかな。",
+      "level_db": 0.0,
+      "before": {
+        "samples": 11187,
+        "sha256": "245f0176fe1a87ab87c49bd726f932f04a9d0978feae071db1d07896ab3ea528",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 11187,
+        "sha256": "245f0176fe1a87ab87c49bd726f932f04a9d0978feae071db1d07896ab3ea528",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x80000",
+      "rate": 2,
+      "text": "すしとさかな。",
+      "level_db": 0.0,
+      "before": {
+        "samples": 22374,
+        "sha256": "558a6a4108e2f66d4031cbeaa39708251179f152137038f956195c8e042671cb",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 22374,
+        "sha256": "558a6a4108e2f66d4031cbeaa39708251179f152137038f956195c8e042671cb",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x80000",
+      "rate": 3,
+      "text": "すしとさかな。",
+      "level_db": 0.0,
+      "before": {
+        "samples": 16272,
+        "sha256": "801a4e9bf86704d208616efb4577a4ed8258b721ffa6436eb7f5554b1142bae3",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 16272,
+        "sha256": "801a4e9bf86704d208616efb4577a4ed8258b721ffa6436eb7f5554b1142bae3",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x80000",
+      "rate": 4,
+      "text": "すしとさかな。",
+      "level_db": 0.0,
+      "before": {
+        "samples": 32544,
+        "sha256": "89e2cd2f3623fea48bd922169b3d283228ccda75ce2c40a32ab25429e09a7785",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 32544,
+        "sha256": "89e2cd2f3623fea48bd922169b3d283228ccda75ce2c40a32ab25429e09a7785",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x80000",
+      "rate": 5,
+      "text": "すしとさかな。",
+      "level_db": 0.0,
+      "before": {
+        "samples": 44748,
+        "sha256": "156a920ebf61e5562d25fd9b7b58a75e6417e1bcb31629f8e31cd2fc283afb9e",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 44748,
+        "sha256": "156a920ebf61e5562d25fd9b7b58a75e6417e1bcb31629f8e31cd2fc283afb9e",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x80000",
+      "rate": 6,
+      "text": "すしとさかな。",
+      "level_db": 0.0,
+      "before": {
+        "samples": 48816,
+        "sha256": "aaf073136830ede421796d68ff8a47ee7461550c6b796c16d725e4963cfb7522",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 48816,
+        "sha256": "aaf073136830ede421796d68ff8a47ee7461550c6b796c16d725e4963cfb7522",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x120000",
+      "rate": 0,
+      "text": "Σίσυφος.",
+      "level_db": 0.0,
+      "before": {
+        "samples": 4920,
+        "sha256": "5e7ce4ff480c4a9f280556d60dd1f3cf11353d0a164cd9b3e3abab0e9b570c34",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 4920,
+        "sha256": "5e7ce4ff480c4a9f280556d60dd1f3cf11353d0a164cd9b3e3abab0e9b570c34",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x120000",
+      "rate": 1,
+      "text": "Σίσυφος.",
+      "level_db": 0.0,
+      "before": {
+        "samples": 6765,
+        "sha256": "ee5d7b4b78a8fbfe96c41687b83bf60a50f37f0ffa4e6c58e1fe4208a953d2ee",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 6765,
+        "sha256": "ee5d7b4b78a8fbfe96c41687b83bf60a50f37f0ffa4e6c58e1fe4208a953d2ee",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x120000",
+      "rate": 2,
+      "text": "Σίσυφος.",
+      "level_db": 0.0,
+      "before": {
+        "samples": 13530,
+        "sha256": "7d69c97762829be9c8d2a94d473544f7471c486858deb5280f4252196109f134",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 13530,
+        "sha256": "7d69c97762829be9c8d2a94d473544f7471c486858deb5280f4252196109f134",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x120000",
+      "rate": 3,
+      "text": "Σίσυφος.",
+      "level_db": 0.0,
+      "before": {
+        "samples": 9840,
+        "sha256": "606256245efe754e6802a26a24747fe7deaec2c639a268a441f8aed7408b2e15",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 9840,
+        "sha256": "606256245efe754e6802a26a24747fe7deaec2c639a268a441f8aed7408b2e15",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x120000",
+      "rate": 4,
+      "text": "Σίσυφος.",
+      "level_db": 0.0,
+      "before": {
+        "samples": 19680,
+        "sha256": "8eb97e604eb76d2413b3b5d257101143d21254eaea7c6ed62cf048e28cff0c1a",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 19680,
+        "sha256": "8eb97e604eb76d2413b3b5d257101143d21254eaea7c6ed62cf048e28cff0c1a",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x120000",
+      "rate": 5,
+      "text": "Σίσυφος.",
+      "level_db": 0.0,
+      "before": {
+        "samples": 27060,
+        "sha256": "7c50d595e64858be17d2e5440e228757e40fd1eb321c528f691f57d388363da5",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 27060,
+        "sha256": "7c50d595e64858be17d2e5440e228757e40fd1eb321c528f691f57d388363da5",
+        "clipped_samples": 0
+      }
+    },
+    {
+      "language": "0x120000",
+      "rate": 6,
+      "text": "Σίσυφος.",
+      "level_db": 0.0,
+      "before": {
+        "samples": 29520,
+        "sha256": "18b99d5b979797e5ff85aece8a34b0aa54923dd850e3029e1d7bb7025d991579",
+        "clipped_samples": 0
+      },
+      "after": {
+        "samples": 29520,
+        "sha256": "18b99d5b979797e5ff85aece8a34b0aa54923dd850e3029e1d7bb7025d991579",
+        "clipped_samples": 0
+      }
+    }
+  ],
+  "controls": [
+    {
+      "language": "0x40000",
+      "rate": 0,
+      "text": "mama.",
+      "samples": 4416,
+      "sha256": "f7fbb1ae9c0a0eaa3369c5c4e19991511d7f74c71a82106b158af3277e453186",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 0,
+      "text": "papa.",
+      "samples": 4392,
+      "sha256": "fa4296a52ce653b4b35851a10ef00de9b009eb99259ad325802315991cb55ff9",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 0,
+      "text": "fava.",
+      "samples": 4664,
+      "sha256": "92afd39c9bec19514f68b8feea508a659b616afa071b3a8fa102f4900c587d1e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 0,
+      "text": "Zeit.",
+      "samples": 4024,
+      "sha256": "0dd0e5a5ed29393502d8af957679bd7778cddec13900e34f3cca8680ba0bf37a",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 0,
+      "text": "Katze.",
+      "samples": 4160,
+      "sha256": "5b3ecccc40041d2a2f3994d8d953e57e417521f59b4992bd00b5a1576835136f",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 0,
+      "text": "Platz.",
+      "samples": 4104,
+      "sha256": "bedad4f4c0c394b40773ff09b722890863324c7bcced36d4b0e6a42250583373",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 1,
+      "text": "mama.",
+      "samples": 6072,
+      "sha256": "5915ff49477ab3e91e79bbac193bc9e4b5011beabeff9aab5cd288cbe5ca8d3f",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 1,
+      "text": "papa.",
+      "samples": 6039,
+      "sha256": "9b33d9f94e74539bd7a597391875a08cef922d384d6695f6ae6354299f66f553",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 1,
+      "text": "fava.",
+      "samples": 6413,
+      "sha256": "53c2abaff59f1f0ef69de5d3c03fa1c398274f6e12c93c4bb27a00f917da9a53",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 1,
+      "text": "Zeit.",
+      "samples": 5533,
+      "sha256": "c596bbd2348dc38f726d2ddf4b769d8d42da76fdcb46ba536e60337081c5be2c",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 1,
+      "text": "Katze.",
+      "samples": 5720,
+      "sha256": "6a9381a404a37e5e86a81f76630906e4e38bd78e23df654c6934b609c189587a",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 1,
+      "text": "Platz.",
+      "samples": 5643,
+      "sha256": "664e75ae3fe29aede307f40831f214f1c1d7a668f73bf08b85b37a29cd6c2645",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 2,
+      "text": "mama.",
+      "samples": 12144,
+      "sha256": "d007ef7a1e530f4a0e162aa5d6d903075807a92a81592f34ec269c1fab66d6c7",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 2,
+      "text": "papa.",
+      "samples": 12078,
+      "sha256": "343b767bd2720bf5a379be8aaf43dc51b626995c8c84056057dd18370d66018a",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 2,
+      "text": "fava.",
+      "samples": 12826,
+      "sha256": "6b6a082d93402a55a551438788ff2712923bfd47ef1c4d9322c4d4299ee13e0f",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 2,
+      "text": "Zeit.",
+      "samples": 11066,
+      "sha256": "c3f64683bb2011ba970e3b9ea8b140541db781f766484c93a2e1e17c3d867195",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 2,
+      "text": "Katze.",
+      "samples": 11440,
+      "sha256": "83877761e6337ddb10ecb467e8ac40cb7aac1bb3351f607311d4ac9a537607c5",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 2,
+      "text": "Platz.",
+      "samples": 11286,
+      "sha256": "347d19834ac148489982ff56a112ac859910a9504529c46f56bae0d07e228209",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 3,
+      "text": "mama.",
+      "samples": 8832,
+      "sha256": "a4239bc86f209d0b71f315bc56c0238433faa305701eea1ee220932671cba439",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 3,
+      "text": "papa.",
+      "samples": 8784,
+      "sha256": "1430279570763f287d81b1d7517b94b0f8c3dbe47c494a88d750611a6f99ee6b",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 3,
+      "text": "fava.",
+      "samples": 9328,
+      "sha256": "92daf5d755023b4b611f5f519de3ceaa6f47cb86052159abe4286e3174b3c124",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 3,
+      "text": "Zeit.",
+      "samples": 8048,
+      "sha256": "c95b606a28c79ff188df37990a1b2bd748ee70a2b8a7ba2455c5ec63ffbb181e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 3,
+      "text": "Katze.",
+      "samples": 8320,
+      "sha256": "aee34320438e597573b9967af3f393094d91c4c965b9d31fd540372c9660d8fd",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 3,
+      "text": "Platz.",
+      "samples": 8208,
+      "sha256": "c6b9d960d2b4e75118ee81ed68581146139b63f3d27740f713ff86a07d1722da",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 4,
+      "text": "mama.",
+      "samples": 17664,
+      "sha256": "7108e783380b079c905812e80ae9c67296d2355d00f019e5d3581d968f5a1944",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 4,
+      "text": "papa.",
+      "samples": 17568,
+      "sha256": "48a68f626f040b14b9352f35cf311c7d8242ba1e942f4ff247ecd310e95d134e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 4,
+      "text": "fava.",
+      "samples": 18656,
+      "sha256": "af60b86c593eb274c472fe75e06c6ed5788c34c0ed0f1e73aa70dc2d53a94ce4",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 4,
+      "text": "Zeit.",
+      "samples": 16096,
+      "sha256": "4e03fd541c5b5739ea4d9043ba28f926b7f7e39c47b6840f176167cf272ba9fa",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 4,
+      "text": "Katze.",
+      "samples": 16640,
+      "sha256": "ceab7c05aa6fb889f041e460347694d70a598d2712ba857a96c641d3cd62fafb",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 4,
+      "text": "Platz.",
+      "samples": 16416,
+      "sha256": "5974cf30ca3b4288b72b68b6c87b2ea45d52251a1b49fde8946659877931bc1e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 5,
+      "text": "mama.",
+      "samples": 24288,
+      "sha256": "7af3ce475cd1d4ea3d70e5df4396ac6762df7c82c8875b6931042267205c3873",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 5,
+      "text": "papa.",
+      "samples": 24156,
+      "sha256": "699e4db45cf372f662208eacf87698814752741fa119f9fc72fdf1ac792c476e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 5,
+      "text": "fava.",
+      "samples": 25652,
+      "sha256": "58009a33c443940875962e4c4b7c7bdde72bae5c7544c7ab9227d9c6c31721a0",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 5,
+      "text": "Zeit.",
+      "samples": 22132,
+      "sha256": "4a6757c996e38fe2d9e409c4af36ecb83481726bf0f8f280c72de378babf9a28",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 5,
+      "text": "Katze.",
+      "samples": 22880,
+      "sha256": "6225bcdda4f9c704df8898df8cdad57e9043096a21a9dc8ebcd0c76174e13f3e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 5,
+      "text": "Platz.",
+      "samples": 22572,
+      "sha256": "3bfed0602dca21d36be32bdca787242bf5174252143bc46dab77e6b8e4d9a1d9",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 6,
+      "text": "mama.",
+      "samples": 26496,
+      "sha256": "8848c055da349dab36a894c722b40f2f076ca6d32237ab97e4d98895c276b11b",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 6,
+      "text": "papa.",
+      "samples": 26352,
+      "sha256": "5eadc8c64a716bd6d3428b96b789da737fd5030b433023f479231f6f43132383",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 6,
+      "text": "fava.",
+      "samples": 27984,
+      "sha256": "590e8b9a19abb6f13c6a18d8a0b00adcf8bfc26db6cfdfbe82283b2b2111df12",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 6,
+      "text": "Zeit.",
+      "samples": 24144,
+      "sha256": "ee90a0b192e46e1308f93f7f44a0456a65c99cf4d8637adee0c50303502c9531",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 6,
+      "text": "Katze.",
+      "samples": 24960,
+      "sha256": "55b0074619b8c150a79a1da3e306cbe01fd72fa7a41f380045b4be11426d0bab",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x40000",
+      "rate": 6,
+      "text": "Platz.",
+      "samples": 24624,
+      "sha256": "5d5144e734bc412158c17d8b1a39e76f6c192233bda7ea185d556e3bf6747f5d",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 0,
+      "text": "mama.",
+      "samples": 4400,
+      "sha256": "aab00b011339ff36a50320b4a4e800b27b76cc4d781cd836cb6506a3c0d9649e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 0,
+      "text": "papa.",
+      "samples": 4168,
+      "sha256": "115f24cda4736cfc0ae7b6a4331ff4e1830e463db8e833eefb3cf7aacc79ec87",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 0,
+      "text": "fava.",
+      "samples": 4448,
+      "sha256": "d1bf465d5f88ce3387beff90bc1d30008596444b47d05b5e1a9cd27666132b35",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 1,
+      "text": "mama.",
+      "samples": 6050,
+      "sha256": "8853ecc9997b5d8ffcfe7d4966aaa5b91c6fb63ad541121ab4cb272487940f3c",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 1,
+      "text": "papa.",
+      "samples": 5731,
+      "sha256": "11592bb334357882a525e70d90d3d6897074522be4dac30dbd854e765abd3941",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 1,
+      "text": "fava.",
+      "samples": 6116,
+      "sha256": "ee31b71aabf8796b4b1654826168a2589973f8a0bc3346db587a705be110a311",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 2,
+      "text": "mama.",
+      "samples": 12100,
+      "sha256": "394ef3a235d4e4c94d464c3818517eed92b3146730cc62572d746f54182b2680",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 2,
+      "text": "papa.",
+      "samples": 11462,
+      "sha256": "c354cb9a91af930757776e5f46aa7960a7976fc41138c9d7e0a7b08eb47988f3",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 2,
+      "text": "fava.",
+      "samples": 12232,
+      "sha256": "d8fa9da29df8ee7f94cc2f3d781d73d69a04ddb2bd2e754d11c5c0605870ff0d",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 3,
+      "text": "mama.",
+      "samples": 8800,
+      "sha256": "54f4d7e7899d1d264dd2ba0a761414072ad812e60195d628358d35564276a7cb",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 3,
+      "text": "papa.",
+      "samples": 8336,
+      "sha256": "915a85e9bfe20a724fc26ad73cd23de6f2d40a076c8de6a43a665d98e70aaf8d",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 3,
+      "text": "fava.",
+      "samples": 8896,
+      "sha256": "e82301489ad84cb3776ace21c24b2aab8f8bfe5ae0f85ea7d5897b3439f526a7",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 4,
+      "text": "mama.",
+      "samples": 17600,
+      "sha256": "24c36b6f32ffe1fa430139f092ceda653b5473778984b7811670565793e2a401",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 4,
+      "text": "papa.",
+      "samples": 16672,
+      "sha256": "c1ef5da5fa1f4771d664fc8fe99849cacd773f808c07673384a550d0447be31d",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 4,
+      "text": "fava.",
+      "samples": 17792,
+      "sha256": "c08d262edb9fd191d0c04e6dd9902763338feb7ad2438003620dcab8db468608",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 5,
+      "text": "mama.",
+      "samples": 24200,
+      "sha256": "9723d93635f132c488f595d794afe4373218398236ef1ebf3cbc51f6639b0d06",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 5,
+      "text": "papa.",
+      "samples": 22924,
+      "sha256": "851f40a3dde0e70c910026951356e4fd55c2b96f8fb67efbd184a56a051f3e1e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 5,
+      "text": "fava.",
+      "samples": 24464,
+      "sha256": "910bb47573b3ac1c8c3ba229092a14f17e0b10c36af9c7a17692ff52128d51db",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 6,
+      "text": "mama.",
+      "samples": 26400,
+      "sha256": "ac94d5d790e2764ff3cc2f27aded04c0894ca4d19dede19a24d6e4e0e313c8e5",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 6,
+      "text": "papa.",
+      "samples": 25008,
+      "sha256": "65ff275a9239f07a81598415d5fac1f347e37756239a99c26f084d62435fb4d1",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10000",
+      "rate": 6,
+      "text": "fava.",
+      "samples": 26688,
+      "sha256": "e3727b019343c85b4903fc24455e520c2c8db3271e81c0f35998c0f0af90ff2e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 0,
+      "text": "mama.",
+      "samples": 4616,
+      "sha256": "3265e96881cb2131fc51f7feff61438512fe554c2f786a08944ec8785c3027ea",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 0,
+      "text": "papa.",
+      "samples": 4688,
+      "sha256": "c872dea6fd1f8d44ca8175f2091a9c95c8a6969c3910e8bd664cd15e71c5e1ae",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 0,
+      "text": "fava.",
+      "samples": 4448,
+      "sha256": "f56f9935208a9544fcbafabf1492bb9ad6a5918de6477350794861e013907960",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 1,
+      "text": "mama.",
+      "samples": 6347,
+      "sha256": "30f8c0388d76cb30648d8b4970f0fa0c2be57a5a5ea773bcc4ad46dd162ad522",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 1,
+      "text": "papa.",
+      "samples": 6446,
+      "sha256": "eaed58294f1bc379ded7f86971c098769d734929610e04dd1370d28b514cbbd6",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 1,
+      "text": "fava.",
+      "samples": 6116,
+      "sha256": "6299429482d01d2c44804cc9da075d93c5cac156ea0713a267a9fe8353a2a46b",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 2,
+      "text": "mama.",
+      "samples": 12694,
+      "sha256": "6d96ffb3967f6b1338088c54f8786347df7027e3ac3b9a0f1fefb6b29c13dd0f",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 2,
+      "text": "papa.",
+      "samples": 12892,
+      "sha256": "7d590bedee398fc88cd0f61da873b2e855c5b12554f6b4d570c808f1ab328ff4",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 2,
+      "text": "fava.",
+      "samples": 12232,
+      "sha256": "2bc95dcf5ff18374e18c69c679e49eb8b7aad4aed59b96f73a9b08dd483c5ee6",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 3,
+      "text": "mama.",
+      "samples": 9232,
+      "sha256": "f5e849d6de65f97a3917fcd7c955f9c33e301162df2159f43a96a51c3476f676",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 3,
+      "text": "papa.",
+      "samples": 9376,
+      "sha256": "02e874676286cd8d8e9e741517ef155c6fad9e8392b94ec8e138683ac8b3f2be",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 3,
+      "text": "fava.",
+      "samples": 8896,
+      "sha256": "f6bae7c4317251971926c03c729de155afe19c94c6eb36472d7577a91e69a214",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 4,
+      "text": "mama.",
+      "samples": 18464,
+      "sha256": "249d67004962916eaaccc71280ea6ff1ca2abb2d90abbc0f081f6a67e4cc4967",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 4,
+      "text": "papa.",
+      "samples": 18752,
+      "sha256": "b4bbec4134736679fc57bb9db2e682649341b534cce8ab1677ee129e0e4e11d6",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 4,
+      "text": "fava.",
+      "samples": 17792,
+      "sha256": "244eee3e6d987a02c8587a6b1882c619fa09e9cd1ca33c678b0200550ef88906",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 5,
+      "text": "mama.",
+      "samples": 25388,
+      "sha256": "1263051d3bef6b785ca6ca03ba916c0e34f9f4a08f5ee525261ed557e2feb958",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 5,
+      "text": "papa.",
+      "samples": 25784,
+      "sha256": "d988b805eac03f0ac11251f32c647e7ed74928a50d9673c7494c16718d9abba9",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 5,
+      "text": "fava.",
+      "samples": 24464,
+      "sha256": "74740f92a395a66ed27cfc343f1340a7b33902bebd6fa79618d304c7d88a6b93",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 6,
+      "text": "mama.",
+      "samples": 27696,
+      "sha256": "42844348b8e9721005d0ba709fd277871b9e3d33dc2c8388f9b2c5c44bae113e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 6,
+      "text": "papa.",
+      "samples": 28128,
+      "sha256": "78630677828b725ca504aea4e0cd9cd11c2661fa048681bcea65b1f4fc8ecf71",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x10001",
+      "rate": 6,
+      "text": "fava.",
+      "samples": 26688,
+      "sha256": "0e3687b3474cccf1e2fdfe785e9f1f8ccd7da16446fb57f45d4725ef129bdd92",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 0,
+      "text": "mama.",
+      "samples": 3784,
+      "sha256": "3ad6cdce76059b5f5ed86d3a103ce49bf756e2e56b1bfffbce616eac787f2938",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 0,
+      "text": "papa.",
+      "samples": 3392,
+      "sha256": "a60af8c77350b0ecac8fbac58f5d1c47a92bc89a1362ea878c693e44cc49a180",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 0,
+      "text": "fava.",
+      "samples": 3968,
+      "sha256": "6d43362a7312f334b7ddc93b4486d7652c1b37dfc17badb2e9e817a3282a425b",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 1,
+      "text": "mama.",
+      "samples": 5203,
+      "sha256": "39a78c3b9dcf1d3fe8f861943daf3c0768717b3549c207d7af14ddb02116bdd8",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 1,
+      "text": "papa.",
+      "samples": 4664,
+      "sha256": "1903baf720cfa4e471af95e5dde2fa0dd8ec1954f8aaeb8599404da99bac00f4",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 1,
+      "text": "fava.",
+      "samples": 5456,
+      "sha256": "5883ca5959ad181cbf311dee56ad4b2740d52d58dca09b710ee6937bd1f3bf00",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 2,
+      "text": "mama.",
+      "samples": 10406,
+      "sha256": "a99a2533cfb3b3bc85aad37389b2a2f83cde3b416e88e44682f92ed2dee0a3b7",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 2,
+      "text": "papa.",
+      "samples": 9328,
+      "sha256": "4ac7ac5bb125934ad788d1be4b29cb35856729d892b6dfd152ddde4d9ee0292b",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 2,
+      "text": "fava.",
+      "samples": 10912,
+      "sha256": "3ab83a6ca84cfa75617615dd84643e6e9b7f2b6961d3573015ab7d5a5e1a87d2",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 3,
+      "text": "mama.",
+      "samples": 7568,
+      "sha256": "4fe2a34a130d83aaa274eda921aeb4e8b2510888712ccf2d10f209585f9f479d",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 3,
+      "text": "papa.",
+      "samples": 6784,
+      "sha256": "5d261394e3fe78dcb41d4c4c008a0fe000fc34771c171e96811e18b5eefd0154",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 3,
+      "text": "fava.",
+      "samples": 7936,
+      "sha256": "5ba3f34aa69019409795487c61c88f8caa02a047f8ae79db638d7ad3faf26d24",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 4,
+      "text": "mama.",
+      "samples": 15136,
+      "sha256": "6eff0154ffc01a57ce6471102e7b112ed4dd6d2e57aaca8cfa983e4f8b9d724e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 4,
+      "text": "papa.",
+      "samples": 13568,
+      "sha256": "4352da08dcd0324df0c3e6aaf04cf711a13cc21888b13be55c2947195996d487",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 4,
+      "text": "fava.",
+      "samples": 15872,
+      "sha256": "1430cdd25d8fbd12e1e19e9f1c4c471d4062fb50851dd96fc663305b810e2560",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 5,
+      "text": "mama.",
+      "samples": 20812,
+      "sha256": "1b797a5ddd60436852ac7e7e9b4c8e72b7c3884f60543321422bc31c6b705e74",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 5,
+      "text": "papa.",
+      "samples": 18656,
+      "sha256": "8f2932b4b34e559af3869cab15333a77bcc194270837035ba2596283103b1696",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 5,
+      "text": "fava.",
+      "samples": 21824,
+      "sha256": "28e0cf9c0b13d5b03dc31560dd6f2d291e8a51eba5536831206ac773e37c732b",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 6,
+      "text": "mama.",
+      "samples": 22704,
+      "sha256": "ebb642b87cc3c9c18e13e3c391d71bc468ca81371aaa41172c71b8a95f9e1da2",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 6,
+      "text": "papa.",
+      "samples": 20352,
+      "sha256": "d215ab1e54d1e5f40662ed01894e740d79bee880dd1621f0026730f4ead0e21e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20001",
+      "rate": 6,
+      "text": "fava.",
+      "samples": 23808,
+      "sha256": "d737cc1d65df9d4a08df0df9bc82bb52b00ef71966286acf819fc7c344a17215",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 0,
+      "text": "mama.",
+      "samples": 4128,
+      "sha256": "94cb6df735caef7ea467f5015349d887070d81f98a9982c2df5d82b0a62ad7e1",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 0,
+      "text": "papa.",
+      "samples": 3976,
+      "sha256": "89efed46a2caceb11087da74edf0729cc62d0958d7638d661e96b27d9352047e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 0,
+      "text": "fava.",
+      "samples": 4304,
+      "sha256": "8377626c829b4d6145e7c2349e541fb04a7b62996395539c105f1f61d5aed5df",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 1,
+      "text": "mama.",
+      "samples": 5676,
+      "sha256": "2e9e0a605f53291b3506526c3a9d9006c297e7bb8f378f376c3f6fba0d36c1f0",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 1,
+      "text": "papa.",
+      "samples": 5467,
+      "sha256": "db5ba504fd2545706771c568e96a397e9a5178017f83eb30ddd6ac7ce8931f2e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 1,
+      "text": "fava.",
+      "samples": 5918,
+      "sha256": "92112516bbcb946f3b3c186b0471328b8885ad4cbf1066e004f0538d0acf35e0",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 2,
+      "text": "mama.",
+      "samples": 11352,
+      "sha256": "c8b6241c7fa937201900306c4a61ead6e26779dfa48b4f9c80f07965aa260efa",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 2,
+      "text": "papa.",
+      "samples": 10934,
+      "sha256": "2efdbfcd687199ffaf13c9f8e678240490e2eeb956bfeeed53c514429a3d94d3",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 2,
+      "text": "fava.",
+      "samples": 11836,
+      "sha256": "3b8b6d9d64be721e5d700396ba7c65b9dc24560b697b36986648baef7de9d7ed",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 3,
+      "text": "mama.",
+      "samples": 8256,
+      "sha256": "589ca1c858680a0318d09435e0af8989563c2cb0123fb907879de60c1918191f",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 3,
+      "text": "papa.",
+      "samples": 7952,
+      "sha256": "2a7315a1db0eaadbb1cc2c8360260fb3d43069f0ceb16d465eae0f04944cbd0d",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 3,
+      "text": "fava.",
+      "samples": 8608,
+      "sha256": "c7a775a3772ffd81e2f1c15052b6adbcee9c5fe039348d854cee2fc17fd71022",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 4,
+      "text": "mama.",
+      "samples": 16512,
+      "sha256": "eba4ade0c729542b1dc366a8dcc8bb97ae7f5dc8478ac93a8d48ac2e825d9aa3",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 4,
+      "text": "papa.",
+      "samples": 15904,
+      "sha256": "f6c89bc2e97f067bffeab02c4967ba442c7f49b354a858b173d6aa5089019d63",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 4,
+      "text": "fava.",
+      "samples": 17216,
+      "sha256": "e73217e07fb41b4e12a60ebc9ce964f45ce1be6868568195185a92123a3115ed",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 5,
+      "text": "mama.",
+      "samples": 22704,
+      "sha256": "7d3021aa23fca340cdd2a5ad4c636c605b513cfb2e43de9798e26d80475fb85e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 5,
+      "text": "papa.",
+      "samples": 21868,
+      "sha256": "3ff16f762c4d4a87620be2c58f6ab9a14ed89dae2cf1793327a297d7b57a58b8",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 5,
+      "text": "fava.",
+      "samples": 23672,
+      "sha256": "33923f19b2f53f5bfdb383bec3b5beff85b71c86a8f0e2bee42c787e3d8603c1",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 6,
+      "text": "mama.",
+      "samples": 24768,
+      "sha256": "c1a36c4213d7d26e5654c19a1d77e1ecfaccfbc8990f57100591fde36f6e92e6",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 6,
+      "text": "papa.",
+      "samples": 23856,
+      "sha256": "0c16673a53b6709dcb64cbad73c624decbfbe7b5c6991935d48ce1c6330800c7",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30000",
+      "rate": 6,
+      "text": "fava.",
+      "samples": 25824,
+      "sha256": "ccb1cffe2689db2ea10d12b459a6d355cb63d0ab12d98f6f510de350906d74d2",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 0,
+      "text": "mama.",
+      "samples": 3776,
+      "sha256": "43eafea13fca771a944197b4e40caa61ec0f4c7ac56c44ac084f3187bbacdd57",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 0,
+      "text": "papa.",
+      "samples": 3712,
+      "sha256": "9d08871c5fc7ed5b90a437d3ad14e7aa3c91eabb2bca8ca5c425dbbbf10468da",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 0,
+      "text": "fava.",
+      "samples": 4048,
+      "sha256": "47e4a160a84c4abac869a2c8fc078d85896d5dd1200af3e2d004abd91c484091",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 1,
+      "text": "mama.",
+      "samples": 5192,
+      "sha256": "2f45126e1297a046354d3f97dea2f81cfaed99c95023393bf665d97f92c766f0",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 1,
+      "text": "papa.",
+      "samples": 5104,
+      "sha256": "2324a217ec310fc6ace9feafa88716e6e026e4bf43aa9401070a93373581faea",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 1,
+      "text": "fava.",
+      "samples": 5566,
+      "sha256": "f5d1cbf459217b138d003f6023dc99da9fa029c1252239f0d73325e6abfe0cc3",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 2,
+      "text": "mama.",
+      "samples": 10384,
+      "sha256": "be2b1d4914bc8856a55c7457b49cc8f80b1ddba5ca08028b6f409548225c29d1",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 2,
+      "text": "papa.",
+      "samples": 10208,
+      "sha256": "2a9bacc2de70229678c45cba0183be37cdd7906a9c5d981cbe1180db38374222",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 2,
+      "text": "fava.",
+      "samples": 11132,
+      "sha256": "5d7e041b065758adffa90f0dd7f833b6bdd1c0f6b3aefba1c8b38c894bf4bbd5",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 3,
+      "text": "mama.",
+      "samples": 7552,
+      "sha256": "07808224bf47fe3f14dea5431ade385c8dcadc1c5d5fa4cdaaa6bfe79540fe73",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 3,
+      "text": "papa.",
+      "samples": 7424,
+      "sha256": "25b35d3ee7566e87db7837ab656fb14328a49dfc1b232900bb83c3fa9e387a0d",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 3,
+      "text": "fava.",
+      "samples": 8096,
+      "sha256": "ec4305f39591638e2d62cb3fe087ffd4d6581b16964e33149466caa28ca9345f",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 4,
+      "text": "mama.",
+      "samples": 15104,
+      "sha256": "f3e94473ee7214b8627adeb29731113022e72bc2935de5c239b595cc69d87e2b",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 4,
+      "text": "papa.",
+      "samples": 14848,
+      "sha256": "550b90a69ffd9a58f90141a580508e40211aa5a2f1e59891d615de7560ebc694",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 4,
+      "text": "fava.",
+      "samples": 16192,
+      "sha256": "6b184724103aba09b225ef91cf6df0a79b44c519a27b4467d1757b507d328121",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 5,
+      "text": "mama.",
+      "samples": 20768,
+      "sha256": "8b30c580adaa2765519e5b5a1926b3720785af2c2890c2ccbf16c6beaca3ef05",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 5,
+      "text": "papa.",
+      "samples": 20416,
+      "sha256": "ca3488c2fbf345e5d3d5860d12e65e3451d85e320c4034804125f493f1cf0c2a",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 5,
+      "text": "fava.",
+      "samples": 22264,
+      "sha256": "9144f744ec0d56be8f22c93bbc8b8cfb2dbdf71d13dc297bbf08a05328ed7f47",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 6,
+      "text": "mama.",
+      "samples": 22656,
+      "sha256": "2652b4be930f53e3f024a789708211603f58a16b5b9ca6726c7ddd52aad7b5c1",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 6,
+      "text": "papa.",
+      "samples": 22272,
+      "sha256": "67a80db01f1be66a24e2fc14a20207a3067a3f7f783468282a02182b33b94d55",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x30001",
+      "rate": 6,
+      "text": "fava.",
+      "samples": 24288,
+      "sha256": "84e55ff5b2c9a484c4035ab8713021d81ac8b45ab098b533331b25c2de7e66f5",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 0,
+      "text": "mama.",
+      "samples": 4144,
+      "sha256": "9274655975db96819bad03edadc4ea36ea7b0057ee9776d0f99951cf30f8fa0b",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 0,
+      "text": "papa.",
+      "samples": 3768,
+      "sha256": "4cfe78335576e4361285440fabacecf6d0a86463836c4f743c04aa0d5f76c525",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 0,
+      "text": "fava.",
+      "samples": 4248,
+      "sha256": "c65b0e305b2fb3ab2490158248cda5046c46f410ac30c2a4abfeb6ea1cba2507",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 1,
+      "text": "mama.",
+      "samples": 5698,
+      "sha256": "03c3ce51c179bf1e6450fa0f5b0d173eace396a1b6be6930f0d37ccd2e77199e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 1,
+      "text": "papa.",
+      "samples": 5181,
+      "sha256": "25b2f42bd9c31791d66c62df39497b16ab9e1a8c1faf705ecb3d027a6a165f78",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 1,
+      "text": "fava.",
+      "samples": 5841,
+      "sha256": "40ac47cf568231c9cd4acf027c1c695ec9356a0eafcb7fc1e4b3f30a7ae5e594",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 2,
+      "text": "mama.",
+      "samples": 11396,
+      "sha256": "8fafd7a66d371704e64b10f6b1f6b2edde1118ae694c28de7df50efc0cceb572",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 2,
+      "text": "papa.",
+      "samples": 10362,
+      "sha256": "51f7d647c0dfe391fbfe7e43f852206903598072195b9cf2e462a31fbe6390ba",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 2,
+      "text": "fava.",
+      "samples": 11682,
+      "sha256": "8c0aee0b121424a8744de97ae769486c695539977432edac9f487d608ada73ef",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 3,
+      "text": "mama.",
+      "samples": 8288,
+      "sha256": "9e71a2ac53b2a00838ea33b6b61536d4f7c6a31e092b27ba90c20434793d8731",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 3,
+      "text": "papa.",
+      "samples": 7536,
+      "sha256": "f5dfdb9b57e51efd4859c5fb4fb30d55402d73b0786747896a13d94d18283a02",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 3,
+      "text": "fava.",
+      "samples": 8496,
+      "sha256": "c1b67d7139b48c8b7abb2a3321b5a719929b6407601e45e1a0291d2110e0146f",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 4,
+      "text": "mama.",
+      "samples": 16576,
+      "sha256": "3b0f15800a5234a44292cb53314c22d29899c0b8145b044b4a68fda735321bf3",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 4,
+      "text": "papa.",
+      "samples": 15072,
+      "sha256": "9f10a699957f1ebdac1cfec84a7de373c0753bf4a8713e6973f9d5c25d461f1b",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 4,
+      "text": "fava.",
+      "samples": 16992,
+      "sha256": "ed5fdd466416dd5e88587a82413cf5d0178992f24ee82de0791c4f4d8ce8154a",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 5,
+      "text": "mama.",
+      "samples": 22792,
+      "sha256": "b0f1dc358aea363f6866950dacbd5c50a3aef873e12afb1d2cb5865d54bc4e51",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 5,
+      "text": "papa.",
+      "samples": 20724,
+      "sha256": "0c8b6721ee2708bfed6b0a0efddf5858641ac9c1b313aabe250d010bb395f5ab",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 5,
+      "text": "fava.",
+      "samples": 23364,
+      "sha256": "bab73181195c282d3ccf9843928d68d9edd3f58b757ab9e45903752f267cafb5",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 6,
+      "text": "mama.",
+      "samples": 24864,
+      "sha256": "98257003a43ca15b21dba7fc14dc4188355f08ed114ffb0810cb32cf1e8b04c3",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 6,
+      "text": "papa.",
+      "samples": 22608,
+      "sha256": "3c0d66387e68a36a3529b355dae3b0b18e4dfdd3f740081dcdb3879d532080e4",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x50000",
+      "rate": 6,
+      "text": "fava.",
+      "samples": 25488,
+      "sha256": "211ea865aa7029627d8356e84d84365c759e9e0b8492a633fb19ed021dc4e747",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 0,
+      "text": "mama.",
+      "samples": 4272,
+      "sha256": "b1a6cfdf6697e5236ef64a72f1c6d654bf68445f49120b0cc4cf2162b912912a",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 0,
+      "text": "papa.",
+      "samples": 4184,
+      "sha256": "f1f15666a50ebb252615a24e44aec07f28ae669b65fc46c834914c8043fdbc05",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 0,
+      "text": "fava.",
+      "samples": 4688,
+      "sha256": "5ed876cb0d9a4fc7ad851ffbfad16f6a59af92bc94948e0a01f95bc0a5b578c9",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 1,
+      "text": "mama.",
+      "samples": 5874,
+      "sha256": "44a5b65255da936602a9cbb9abbda36243e47bd4e357505d930ea284ff046e56",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 1,
+      "text": "papa.",
+      "samples": 5753,
+      "sha256": "46b918ff07ee0280b757e612a476dad76c60e6aae0fc34bfac139a98dfc9132d",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 1,
+      "text": "fava.",
+      "samples": 6446,
+      "sha256": "6c5d3958c41b2762e2405b9a6a928d0c5c9112b2ecc546b661b9350a8dd9fab1",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 2,
+      "text": "mama.",
+      "samples": 11748,
+      "sha256": "c14732dc41b133018be2aa3d624f57e69d299fe77d922bf7b2e5ac6f5ba6474a",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 2,
+      "text": "papa.",
+      "samples": 11506,
+      "sha256": "5ac80f993043617f666f1e26ee34bffc2471fdf138dd50516bd7cc3f2a2ea3b2",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 2,
+      "text": "fava.",
+      "samples": 12892,
+      "sha256": "5f25323f50adec6898a8ef2387bbc3fc95d4f365e35d08c5e6186b9529e4655d",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 3,
+      "text": "mama.",
+      "samples": 8544,
+      "sha256": "b095ff659b73ace9f8a171e595654051f27d49c813f772f48e00393bee7f0c9a",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 3,
+      "text": "papa.",
+      "samples": 8368,
+      "sha256": "45057492f491599758869b2a27a02e580a0e0d8ce93a664e40b1e6f479c34305",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 3,
+      "text": "fava.",
+      "samples": 9376,
+      "sha256": "d0f401268cefca72ea04c4d369641a1f8547e822fa1a0b229ecbb25ef3c48a78",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 4,
+      "text": "mama.",
+      "samples": 17088,
+      "sha256": "5c8f6fd897957638fe80c84d8b1f87a66bf8b226c57aed19caa62af86ab67f3b",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 4,
+      "text": "papa.",
+      "samples": 16736,
+      "sha256": "73f1fe3afc643ab2075d0aeeac442a6214ba5a696dc9c27b2210bb9f2a43fa6b",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 4,
+      "text": "fava.",
+      "samples": 18752,
+      "sha256": "aa12a1eadbc118ecf47010023764078292206d0f51ec34e4018c6b36a1dc6ce8",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 5,
+      "text": "mama.",
+      "samples": 23496,
+      "sha256": "53190af0ef6f9472bd09deb8f13cf9e46dcc497ca4b9d08ae45b70129832545b",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 5,
+      "text": "papa.",
+      "samples": 23012,
+      "sha256": "972deca100e319720778e258084df8fbfbf627e48d475647bf5c053179635093",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 5,
+      "text": "fava.",
+      "samples": 25784,
+      "sha256": "4ff84ce0e6e2f077550e562d5f11bd78b220d76c9cc6c8cd196001fadf5ffaca",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 6,
+      "text": "mama.",
+      "samples": 25632,
+      "sha256": "ad6bb3612dab0dc90e0451a5f17df0293ac691c065124b9cc36aa37f3f618577",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 6,
+      "text": "papa.",
+      "samples": 25104,
+      "sha256": "9bed4e15e6ff372ef99a7297f363243d20a9e9505ab9c1d722c0b01d2915dc7d",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x70000",
+      "rate": 6,
+      "text": "fava.",
+      "samples": 28128,
+      "sha256": "d8499cf5a0091038863590f67fbe410aba08caad53626428ed6e95bc9097d164",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 0,
+      "text": "mama.",
+      "samples": 3552,
+      "sha256": "13e541b958483313b0d0303787b0c87cf8b536d76aa4b0cffb540e692f2031b0",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 0,
+      "text": "papa.",
+      "samples": 3408,
+      "sha256": "a7a82aa6c8c1467317cea1a18faa7141acaf8c263f51641f0c3012fedbd73499",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 0,
+      "text": "fava.",
+      "samples": 3728,
+      "sha256": "41bb2f9510bfaaca2ed5dd2f0b6d0e66ab5c117d1f1115a5de6b8070bb9fd647",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 1,
+      "text": "mama.",
+      "samples": 4884,
+      "sha256": "3966f619e6b50de30140bbb9b4b922286d399ed17d3650a476956c60db526797",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 1,
+      "text": "papa.",
+      "samples": 4686,
+      "sha256": "518e0be0e34913c5c6a6ece5851ca0b20561794534954a610403fe0b3435a6c1",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 1,
+      "text": "fava.",
+      "samples": 5126,
+      "sha256": "977a58ae54d78c28681f644b08b78a28e86cba2196dc61d740f8dc4b1faf6b26",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 2,
+      "text": "mama.",
+      "samples": 9768,
+      "sha256": "8854847d89c271d3319265629fb497af55f354320d91ce68374ea2ee75207dcf",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 2,
+      "text": "papa.",
+      "samples": 9372,
+      "sha256": "120fbfb59e34ee38c5637d59adc2474b5f6f0c74ca4a2d9a21f52ee9e27989bf",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 2,
+      "text": "fava.",
+      "samples": 10252,
+      "sha256": "70928b84eeeb2812cba0c968be0b0bf6fb5a6e30125823ed7c382f39439c766c",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 3,
+      "text": "mama.",
+      "samples": 7104,
+      "sha256": "a729e146cb1c77a02ba3f44c1ccc6c785ea84a5e2580703f728e452caed9b7e6",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 3,
+      "text": "papa.",
+      "samples": 6816,
+      "sha256": "3e3e01309e301102a8cb3b2e4a1ed80ec4b3d2fb2707a145181eb94b07a672b2",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 3,
+      "text": "fava.",
+      "samples": 7456,
+      "sha256": "5b74558bed2de199c7a753e7672bcf6d3fc6dcde86c469a8256426a0b5afcfc0",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 4,
+      "text": "mama.",
+      "samples": 14208,
+      "sha256": "1638bfe06108ec6314f4883c1fe272defcf3b1d6fefe03417620f0de5476f517",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 4,
+      "text": "papa.",
+      "samples": 13632,
+      "sha256": "6607e1ab4bd1cb23cf5596c1d5005986069bb60e3d409ead606036cfa3d19aac",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 4,
+      "text": "fava.",
+      "samples": 14912,
+      "sha256": "7c76ea5b1afeda4a27c9e7255321bccd35ab11718fe0ddd5092fe85b8b76ef34",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 5,
+      "text": "mama.",
+      "samples": 19536,
+      "sha256": "c3de4e334029883a4519eae182ba888fd74717876ffdafac57ba85979781df70",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 5,
+      "text": "papa.",
+      "samples": 18744,
+      "sha256": "a0257d938e5598971b87471f8275a9509091e4667c312324a300295d49ebfb49",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 5,
+      "text": "fava.",
+      "samples": 20504,
+      "sha256": "131ab3a30e36e4f706b49002501b8176294a70b667fec4703f666e68fdb2ba90",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 6,
+      "text": "mama.",
+      "samples": 21312,
+      "sha256": "78f03cc68492d8931fe4f5521be6d49ba40883b6608470ab15f07e0cf7d971c4",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 6,
+      "text": "papa.",
+      "samples": 20448,
+      "sha256": "1dd179e48e5ee56d99e34307bdec81de836fce1f2fb6cf061d669ce32b12efca",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x90000",
+      "rate": 6,
+      "text": "fava.",
+      "samples": 22368,
+      "sha256": "51ebb639435eed463ebe834d8f5a52fbe1ef99668fca80d89f8ea5368781e7d6",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 0,
+      "text": "mama.",
+      "samples": 4400,
+      "sha256": "abc124bdcd6dc018697d2f1699aa39791d209144eacfa785b58ce1a5a8ac42c1",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 0,
+      "text": "papa.",
+      "samples": 4168,
+      "sha256": "ff41773f13b1dc271060be93bf226e4284b43e6c0968beaeb08c4403cee10e90",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 0,
+      "text": "fava.",
+      "samples": 4448,
+      "sha256": "d26cf3abdf526614c31f5543676ec843ad48dbb0ca2e71cb86bd463fa1cdb5ad",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 1,
+      "text": "mama.",
+      "samples": 6050,
+      "sha256": "0a39f4c41e2ea30cc9b6924f61df359c08d51040d092d4b656751942c8ef6089",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 1,
+      "text": "papa.",
+      "samples": 5731,
+      "sha256": "02a4cdb474e9090498feeb938ffd2243b1251531aaa3803843083eadbfaa0a47",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 1,
+      "text": "fava.",
+      "samples": 6116,
+      "sha256": "c0a1f54ea4de102fb63aa111896b55b1686acfd610555f1582b68656cd04af51",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 2,
+      "text": "mama.",
+      "samples": 12100,
+      "sha256": "6cc12442988a5bb6410c4d5b67f01db3e5da42c069bc15b6b4893ce75c4aaa18",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 2,
+      "text": "papa.",
+      "samples": 11462,
+      "sha256": "ceaf82ac0ba69f71a7f64d6a85b741f7c706d28d3f037e90fcdfe7ca226427d7",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 2,
+      "text": "fava.",
+      "samples": 12232,
+      "sha256": "6c30fc612edbd8b491fe994b982a12d2413dab16791f29001a07cae965425566",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 3,
+      "text": "mama.",
+      "samples": 8800,
+      "sha256": "d22543e8a99196e6838f49ef924c8bafe0e5cc5a5416a2c0637aa9d7a82d4650",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 3,
+      "text": "papa.",
+      "samples": 8336,
+      "sha256": "2e2e08c2a2ebb337d00672a4e21b0b39256df951744844939ce155af47d06f56",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 3,
+      "text": "fava.",
+      "samples": 8896,
+      "sha256": "fcfacbd69f1f34aa3714086912f94bce76bc5e9ade8f55326301a003b8985011",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 4,
+      "text": "mama.",
+      "samples": 17600,
+      "sha256": "93a114d7bbbbb5842b5906c519533172fdf707be906df4d545b00ab6751b0b1f",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 4,
+      "text": "papa.",
+      "samples": 16672,
+      "sha256": "1176eeda679c708ca1b7777ec449c26cfe4f96a0616665784467a1cced78e28f",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 4,
+      "text": "fava.",
+      "samples": 17792,
+      "sha256": "769cb7f3dd2f52d907b2fe8ee15ded974524f5564357fe1b25bfffdadfd1207c",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 5,
+      "text": "mama.",
+      "samples": 24200,
+      "sha256": "ed10098e5d6ed514d3ffe15d72712a07c1a8a45bf8dbf6a5252d73bef4217cad",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 5,
+      "text": "papa.",
+      "samples": 22924,
+      "sha256": "5ec0764f79252e147b0c2d960d7a4ad0c1590a4460101e621bdbf8920bc99eec",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 5,
+      "text": "fava.",
+      "samples": 24464,
+      "sha256": "d76a5d9c7e6f9394f7d7d5c4c1eb1a15ee6d9bae3f6d4afd524d1454e33b2a27",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 6,
+      "text": "mama.",
+      "samples": 26400,
+      "sha256": "8367635ca7d1e87438452c5175601ff69f98c426d8c618b04834fd688e2f5661",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 6,
+      "text": "papa.",
+      "samples": 25008,
+      "sha256": "c78b2eae8d9d690306e9e364382c8183a58cca9f78a922ec60e5c58307ed4232",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x60000",
+      "rate": 6,
+      "text": "fava.",
+      "samples": 26688,
+      "sha256": "6cd9294ffd8d9e3a875a3bc8b45fe6e99a45e455e49659ed28d85fcd5d7c6cc4",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 0,
+      "text": "mama.",
+      "samples": 5480,
+      "sha256": "5a00878daf97511aa029b5e6c68aa06b2c5c42fe44e391ca03b2d5e649cb10d5",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 0,
+      "text": "papa.",
+      "samples": 5512,
+      "sha256": "bc6dd8607c316e31a97fd94e68fe1f8fa69caac1f2017fbea4b097dd4430093b",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 0,
+      "text": "fava.",
+      "samples": 5480,
+      "sha256": "5b1bc113e3d6dd3674ff2bf61a0104b6b56cb87b2a9e043bc18837395a919020",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 1,
+      "text": "mama.",
+      "samples": 7535,
+      "sha256": "05cb15b5b6b65825e2a2c8024208ca9a3ab48d1b875ca7ad7f4d38ef0ec3ff67",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 1,
+      "text": "papa.",
+      "samples": 7579,
+      "sha256": "485dede5e08b2cc5aa161df5da43af5a69e41fb606a20ef7a184c29443498b16",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 1,
+      "text": "fava.",
+      "samples": 7535,
+      "sha256": "c84976152b9914be29f13433d7b43029c862ef107ce4e7937eb15b3cd149e48e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 2,
+      "text": "mama.",
+      "samples": 15070,
+      "sha256": "cdc8eb1aa4a61faa51704607cf4c4d8021d56b84aaceab321f67a6f5426983d9",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 2,
+      "text": "papa.",
+      "samples": 15158,
+      "sha256": "369fa51d16b08218b8eb908e962ec327ac9afdebc7bcb7e873e52cbe7aa1d11f",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 2,
+      "text": "fava.",
+      "samples": 15070,
+      "sha256": "183f737d7c25e3619fedf229e9c34db039bdf7453aaed8ffeb07e9fb9300c373",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 3,
+      "text": "mama.",
+      "samples": 10960,
+      "sha256": "43e685e4ca7d46a2da53a925035e66c941d7d0abbb03bd3ac67b1f142a43db69",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 3,
+      "text": "papa.",
+      "samples": 11024,
+      "sha256": "c137099d221a814b1ef7d7e132fd8c9129d249304b2ca84f08051345d4fbbcd8",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 3,
+      "text": "fava.",
+      "samples": 10960,
+      "sha256": "bd43eaa653ec0c740047c37d610714b59dee768cb58cb77098c77f3a99215e91",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 4,
+      "text": "mama.",
+      "samples": 21920,
+      "sha256": "4a5a6a42000e3ba9d57a7f09589c85c25318bbc60e3100eae28aa1fa5aacd8ea",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 4,
+      "text": "papa.",
+      "samples": 22048,
+      "sha256": "51aabb815aebad32c456e97c34085f54e939b5a4e17ecd32563b3f21b326f572",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 4,
+      "text": "fava.",
+      "samples": 21920,
+      "sha256": "49afeb66b578b5f196ea080c1dec50cc85aea3c7f1535b3497a7402cf8c4684c",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 5,
+      "text": "mama.",
+      "samples": 30140,
+      "sha256": "a8f488c8aea57d1327184c1937133115d2a2238e7f3a3a4f6f4de27896d635f1",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 5,
+      "text": "papa.",
+      "samples": 30316,
+      "sha256": "2fc5c8beedb6e2359e80088db88a3ebdd04610e3f75f4b0093e7a656d9430d9e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 5,
+      "text": "fava.",
+      "samples": 30140,
+      "sha256": "6de73c9014f073e1d7984978998ae13a545f2741b30c56c34214702396ce07f2",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 6,
+      "text": "mama.",
+      "samples": 32880,
+      "sha256": "ddc7faac35ce297cc927749fb5ecffe6745ef9560be944874bc8f079297a4fcd",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 6,
+      "text": "papa.",
+      "samples": 33072,
+      "sha256": "ad36f709b43899150736b760a1463740244b109c34bf9f93f5af3d6f2a681704",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0xa0000",
+      "rate": 6,
+      "text": "fava.",
+      "samples": 32880,
+      "sha256": "fc617e5e6deda33f82856842eb3ee2411a8ebbb15d016054c18bb5ee04e3566b",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 0,
+      "text": "mama.",
+      "samples": 3712,
+      "sha256": "4d787b44c16f4f8526aa07199630dcc8e3f06585d6373480a7fc90fa50ed8a64",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 0,
+      "text": "papa.",
+      "samples": 3520,
+      "sha256": "c47ea9f64e22409ffc696cf075939882b42dfa42017a3f14722afeb6ab0290ef",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 0,
+      "text": "fava.",
+      "samples": 3960,
+      "sha256": "f024fba33cae6cd1103a96ed8d84b157cf06b21bb47ac8c61a9cece189e04bff",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 1,
+      "text": "mama.",
+      "samples": 5104,
+      "sha256": "2e67944d2b2e96b6bbe480c86d06f3974ad67242d9d68821b5c497fe59c528d0",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 1,
+      "text": "papa.",
+      "samples": 4840,
+      "sha256": "6d726c932ff7f4d0315d686adc86007ae1a01146465a7d273a507c62d5485d48",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 1,
+      "text": "fava.",
+      "samples": 5445,
+      "sha256": "5edb8e8eb147c68b37313712b4b7941caeac88affa0ac417e75967f712b031c6",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 2,
+      "text": "mama.",
+      "samples": 10208,
+      "sha256": "9b4a5777ab16e294703be0e31c1f3ca8acbc5c9c4d5561b4f17309a14b469a36",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 2,
+      "text": "papa.",
+      "samples": 9680,
+      "sha256": "ca87fad68f7123757b384f7cb40a5a406935316e78bcd1cb77b7f6aba0b39599",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 2,
+      "text": "fava.",
+      "samples": 10890,
+      "sha256": "5bb63e22fa095bbe2a1cc8e8cba144678692dcdd4db057bc071a57ab4a803812",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 3,
+      "text": "mama.",
+      "samples": 7424,
+      "sha256": "848acf14de5e2c0309bbc3d24e6fca528dc3034d4724ebac93ea59e74575838e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 3,
+      "text": "papa.",
+      "samples": 7040,
+      "sha256": "aa5dfaf51c26d433ffcd53fcf8fb742bc7c78ef8473ac0d198f677e4ab27d247",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 3,
+      "text": "fava.",
+      "samples": 7920,
+      "sha256": "43f01b9833a6944049d12f24b9ec74d8fe515d3ea09166c6617f08811cffd812",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 4,
+      "text": "mama.",
+      "samples": 14848,
+      "sha256": "e21a5c8bc0837535ea351e75431676e419257c1486dd818bf43d95afffd0afb8",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 4,
+      "text": "papa.",
+      "samples": 14080,
+      "sha256": "8bab8d25bc71d4c56dea522eeb3724da26fa365bbe3844ec69097ba4055efb58",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 4,
+      "text": "fava.",
+      "samples": 15840,
+      "sha256": "e0fe9ec7574f496edcc7db96d4c3d5197683a5ebede9a7c3dcbd813e4ce786ec",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 5,
+      "text": "mama.",
+      "samples": 20416,
+      "sha256": "f43ff83553bdb414b2caea6b72a2f03de2b26f8af08b4e9be9fb8c2dce94f1d8",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 5,
+      "text": "papa.",
+      "samples": 19360,
+      "sha256": "e82472c33985122aadc1a941024512e4446505e428b1638258646978a3adb805",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 5,
+      "text": "fava.",
+      "samples": 21780,
+      "sha256": "fc1347237884dca22e512086356eeef7d55e205ca6f9f8d75024aaf003948496",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 6,
+      "text": "mama.",
+      "samples": 22272,
+      "sha256": "a64b3d0a0783b2df903bf0e38b084684c604a78c02f897748e08abf309b541fc",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 6,
+      "text": "papa.",
+      "samples": 21120,
+      "sha256": "cf2889e3d15ba8e433cbd5d4cbc4dab5a2fb9f77145333c69530b89a02ac27c5",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x20000",
+      "rate": 6,
+      "text": "fava.",
+      "samples": 23760,
+      "sha256": "cdf4e05f0f933ff232bdccb5dff3c8557868da79a09d9a030314102b1a245e23",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 0,
+      "text": "mama.",
+      "samples": 5240,
+      "sha256": "5a7da4f24a1726d3536ec739361d47ed4edd43787f524d31948018d6fbbdb6c6",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 0,
+      "text": "papa.",
+      "samples": 5288,
+      "sha256": "42305ea7d42426798b57a232c8ba7e99edbefed60f11b12840954eb79de4d1de",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 0,
+      "text": "fava.",
+      "samples": 5216,
+      "sha256": "bce894f25174d0fa2b33376a4d9b9a553e1336abaf319cdf5ab174c983e3bd34",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 1,
+      "text": "mama.",
+      "samples": 7205,
+      "sha256": "ac5a75d4fed8ddd7efa54bdb3269c55d5caec5d4d2e1f8e501b95f7ff9bd0233",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 1,
+      "text": "papa.",
+      "samples": 7271,
+      "sha256": "eec9394858f8138a95d39c1933cabd41a2944578f2f183e0532124e6fcec6c92",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 1,
+      "text": "fava.",
+      "samples": 7172,
+      "sha256": "b29d159bad0d4b464d2db15f11b120774301ddf67b08d995e0d91a3611ef7f16",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 2,
+      "text": "mama.",
+      "samples": 14410,
+      "sha256": "114d2393f1501b795519f21844634d0f250ca6e7c73b809dad4f6856ce944639",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 2,
+      "text": "papa.",
+      "samples": 14542,
+      "sha256": "0f12314650a6d682ab1b655a532dbca22c1076afa0b99d7fbe948bbd8b8194f2",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 2,
+      "text": "fava.",
+      "samples": 14344,
+      "sha256": "a5a7289280094a185afe9498936f93990c406644b47e32f77d39535ef9b54162",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 3,
+      "text": "mama.",
+      "samples": 10480,
+      "sha256": "8ca744304ea8d5a1b2d77b9f1a2f8e9093d1b12334e050b56634dbf5ffd5b71c",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 3,
+      "text": "papa.",
+      "samples": 10576,
+      "sha256": "0f3a7edd09eefb084b38953bb2461971f1e32809af4653d907f7eda4536e5c8e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 3,
+      "text": "fava.",
+      "samples": 10432,
+      "sha256": "d00221edb3af58e072a033dcff7dfa1cb8ae883ed571b280149bfaecf7b387fe",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 4,
+      "text": "mama.",
+      "samples": 20960,
+      "sha256": "7185511604fab692348d78ebba20a4e886bc186238f635d7b141c739b25eb7f8",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 4,
+      "text": "papa.",
+      "samples": 21152,
+      "sha256": "e580191bbf6d2a29a6cb4f6e7f3ad25a7452420a7f1eaa51f6e9889926ef04ca",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 4,
+      "text": "fava.",
+      "samples": 20864,
+      "sha256": "8159bee2136ab1ddd5961dbc626fd48cac4444d53003195a7ed9ba88a261b230",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 5,
+      "text": "mama.",
+      "samples": 28820,
+      "sha256": "b3d8f531530c96fb5343ec18578377c3b04b9062f5fb53ceab1ed9ab26bdccc9",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 5,
+      "text": "papa.",
+      "samples": 29084,
+      "sha256": "32ebbf8f2c6ac6a10309f02561a7764f0f3cfb95135467109a22891ca69225b3",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 5,
+      "text": "fava.",
+      "samples": 28688,
+      "sha256": "17e879f6446238ab070b5c7eff02460defc9615c8c0938b763673dcac662be84",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 6,
+      "text": "mama.",
+      "samples": 31440,
+      "sha256": "eebf193848b2326585ffa4ecb8ab47b861ec7a3bda5e29f02d45a77a9c81dc86",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 6,
+      "text": "papa.",
+      "samples": 31728,
+      "sha256": "4fa916a2605c0ed291286faff4aed9121ae7921d80825436e17140223f814025",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x80000",
+      "rate": 6,
+      "text": "fava.",
+      "samples": 31296,
+      "sha256": "e3ec6ca9a368d7e081aea8099aac0c0c93a75abfdb24bab147be4508d34fd38e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 0,
+      "text": "mama.",
+      "samples": 3712,
+      "sha256": "4d787b44c16f4f8526aa07199630dcc8e3f06585d6373480a7fc90fa50ed8a64",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 0,
+      "text": "papa.",
+      "samples": 3520,
+      "sha256": "c47ea9f64e22409ffc696cf075939882b42dfa42017a3f14722afeb6ab0290ef",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 0,
+      "text": "fava.",
+      "samples": 4104,
+      "sha256": "81882bdb6beb30395e01256816e0d2dd6d4eea43905584bf1977c7b49918ae2a",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 1,
+      "text": "mama.",
+      "samples": 5104,
+      "sha256": "2e67944d2b2e96b6bbe480c86d06f3974ad67242d9d68821b5c497fe59c528d0",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 1,
+      "text": "papa.",
+      "samples": 4840,
+      "sha256": "6d726c932ff7f4d0315d686adc86007ae1a01146465a7d273a507c62d5485d48",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 1,
+      "text": "fava.",
+      "samples": 5643,
+      "sha256": "b12abf9110654b37e6485d57cbe34ae24363846a611fb46764e0179410716fd2",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 2,
+      "text": "mama.",
+      "samples": 10208,
+      "sha256": "9b4a5777ab16e294703be0e31c1f3ca8acbc5c9c4d5561b4f17309a14b469a36",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 2,
+      "text": "papa.",
+      "samples": 9680,
+      "sha256": "ca87fad68f7123757b384f7cb40a5a406935316e78bcd1cb77b7f6aba0b39599",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 2,
+      "text": "fava.",
+      "samples": 11286,
+      "sha256": "9fe5578ce823962fd0636bd320f23d204a53f9ba4925d0ed1a2b80c61ddf1ee3",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 3,
+      "text": "mama.",
+      "samples": 7424,
+      "sha256": "848acf14de5e2c0309bbc3d24e6fca528dc3034d4724ebac93ea59e74575838e",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 3,
+      "text": "papa.",
+      "samples": 7040,
+      "sha256": "aa5dfaf51c26d433ffcd53fcf8fb742bc7c78ef8473ac0d198f677e4ab27d247",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 3,
+      "text": "fava.",
+      "samples": 8208,
+      "sha256": "55aed1c63725c97056717f39afe6f12ea6dd4a2d264a0c1ff51b7d58d03f7769",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 4,
+      "text": "mama.",
+      "samples": 14848,
+      "sha256": "e21a5c8bc0837535ea351e75431676e419257c1486dd818bf43d95afffd0afb8",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 4,
+      "text": "papa.",
+      "samples": 14080,
+      "sha256": "8bab8d25bc71d4c56dea522eeb3724da26fa365bbe3844ec69097ba4055efb58",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 4,
+      "text": "fava.",
+      "samples": 16416,
+      "sha256": "2fe24671dda80301e8cf903d6a7bb77e03b41f4b9aacf91498e288a179ec87aa",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 5,
+      "text": "mama.",
+      "samples": 20416,
+      "sha256": "f43ff83553bdb414b2caea6b72a2f03de2b26f8af08b4e9be9fb8c2dce94f1d8",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 5,
+      "text": "papa.",
+      "samples": 19360,
+      "sha256": "e82472c33985122aadc1a941024512e4446505e428b1638258646978a3adb805",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 5,
+      "text": "fava.",
+      "samples": 22572,
+      "sha256": "1a4903334fb07d42e8a0c26054b677e2d424253be8f6d4a9c7dc8f764e1750c9",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 6,
+      "text": "mama.",
+      "samples": 22272,
+      "sha256": "a64b3d0a0783b2df903bf0e38b084684c604a78c02f897748e08abf309b541fc",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 6,
+      "text": "papa.",
+      "samples": 21120,
+      "sha256": "cf2889e3d15ba8e433cbd5d4cbc4dab5a2fb9f77145333c69530b89a02ac27c5",
+      "clipped_samples": 0
+    },
+    {
+      "language": "0x120000",
+      "rate": 6,
+      "text": "fava.",
+      "samples": 24624,
+      "sha256": "f7ff8705b14e4d4021efd38d381a56155c0e0d5c5617229f428857fe6f5528ab",
+      "clipped_samples": 0
+    }
+  ]
+}

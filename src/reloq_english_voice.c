@@ -1168,10 +1168,8 @@ int reloq_english_render_text(const unsigned char *text,size_t length,int tags,i
                     else last=middle;
                 }
                 unsigned char phone=u[first].phone;
-                /* Match the accepted German S balance after anatomy and
-                 * breath controls. Only frication gains four source dB;
-                 * voiced /z/ retains its existing periodic excitation. */
-                if(stream==RELOQ_TARGET_AF && (phone=='s' || phone=='z'))value+=4;
+                /* Keep native S/Z source levels in this component planner
+                 * as well as in the active ECI language provider. */
                 /* English encodes /h/ on its following nucleus. The same
                  * nucleus holds a stop's aspiration until contact. Boost
                  * that consonant-owned AH without raising vowel breath. */

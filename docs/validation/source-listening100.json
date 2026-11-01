@@ -1,0 +1,101 @@
+{
+  "experiment": "upper periodic harmonics and native S source levels",
+  "nvda_rate": 30,
+  "native_speed": 75,
+  "no_release": true,
+  "filter_unit_checks": 18,
+  "languages": [
+    {
+      "language": "Deutsch",
+      "package_bytes": 16214311,
+      "package_sha256": "b938eeb57abf32365c5cb8df04963f21472af3f0c815bbb7c161af0048119d1e",
+      "wavs": 71,
+      "entries": 74,
+      "max_abs_pcm": 21299,
+      "durations_seconds": {
+        "00_Direktvergleich.wav": 70.348,
+        "01_Ratenfolge_A.wav": 30.364,
+        "01_Ratenfolge_B.wav": 30.703,
+        "01_Ratenfolge_C.wav": 30.71,
+        "02_Blindvergleich_Stimmquelle.wav": 55.652
+      },
+      "source_48000": {
+        "rate": 48000,
+        "powers": {
+          "A": {
+            "lower": 257924.58442445096,
+            "upper": 11047.187388272605
+          },
+          "B": {
+            "lower": 211496.08596245572,
+            "upper": 46582.252642877844
+          },
+          "C": {
+            "lower": 171608.24257907187,
+            "upper": 82528.97361312562
+          }
+        },
+        "upper_relative_to_lower_db": {
+          "A": 0.0,
+          "B": 7.11159170606085,
+          "C": 10.50309318847636
+        },
+        "voice_gains": {
+          "A": 1.0,
+          "B": 0.8966605640072581,
+          "C": 0.7982696769349783
+        }
+      },
+      "absolute_upper_band_change_db": {
+        "B": 6.2496876568456745,
+        "C": 8.733547231539964
+      }
+    },
+    {
+      "language": "US_English",
+      "package_bytes": 14337915,
+      "package_sha256": "54b41c3d18fd8720fc89e9de111958cb6ed38fb515be8d216975e26984e462e1",
+      "wavs": 71,
+      "entries": 74,
+      "max_abs_pcm": 21299,
+      "durations_seconds": {
+        "00_Direktvergleich.wav": 62.207,
+        "01_Ratenfolge_A.wav": 27.511,
+        "01_Ratenfolge_B.wav": 27.721,
+        "01_Ratenfolge_C.wav": 27.775,
+        "02_Blindvergleich_Stimmquelle.wav": 49.831
+      },
+      "source_48000": {
+        "rate": 48000,
+        "powers": {
+          "A": {
+            "lower": 333950.19080347044,
+            "upper": 1844.0332837561161
+          },
+          "B": {
+            "lower": 316804.92566524225,
+            "upper": 9182.16629320669
+          },
+          "C": {
+            "lower": 298436.83806307183,
+            "upper": 19096.99742568402
+          }
+        },
+        "upper_relative_to_lower_db": {
+          "A": 0.0,
+          "B": 7.200661687941253,
+          "C": 10.640255999379713
+        },
+        "voice_gains": {
+          "A": 1.0,
+          "B": 0.965492106389685,
+          "C": 0.9258901980567434
+        }
+      },
+      "absolute_upper_band_change_db": {
+        "B": 6.9717639821404305,
+        "C": 10.151963339955527
+      }
+    }
+  ]
+}
