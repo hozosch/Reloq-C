@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_updates">アプリの更新</string>
+    <string name="check_updates">更新を確認</string>
+    <string name="checking_updates">更新を確認しています…</string>
+    <string name="installed_version">インストール済みのバージョン：%1$s</string>
+    <string name="version_available">バージョン %1$s が利用できます。</string>
+    <string name="no_published_update">公開済みの新しいアプリパッケージはありません。</string>
+    <string name="download_update">ブラウザーでダウンロードを開く</string>
+    <string name="update_failed">更新に失敗しました：%1$s</string>
+    <string name="browser_update">ダウンロードを開きました。ブラウザーと Android の通常のインストール手順を使用してください。Play プロテクトは有効にしておいてください。</string>
+    <string name="engine_help">オフラインの音声合成です。テストする言語と音声を選ぶか、Android のテキスト読み上げ設定で ReLoq C を選んでください。</string>
+    <string name="language">言語</string>
+    <string name="profile">音声</string>
+    <string name="sample_rate">サンプリング周波数</string>
+    <string name="pause_mode">間を短くする</string>
+    <string name="sample_text">読み上げるテキスト</string>
+    <string name="speak">テストテキストを読み上げ</string>
+    <string name="stop">停止</string>
+    <string name="system_settings">Android の読み上げ設定</string>
+    <string name="initializing">音声エンジンを初期化しています</string>
+    <string name="ready">音声エンジンの準備ができました</string>
+    <string name="unavailable">音声エンジンを利用できません。Android の読み上げ設定を開き、ReLoq C を選んでください。</string>
+    <string-array name="pause_modes">
+        <item>短くしない</item>
+        <item>末尾のみ</item>
+        <item>常に</item>
+    </string-array>
+    <string name="voice_settings">言語と音声</string>
+    <string name="android_voice">言語と音声を Android で制御</string>
+    <string name="android_rate">速度を Android で制御</string>
+    <string name="android_pitch">高さを Android で制御</string>
+    <string name="speed">手動の速度、1 分あたりの単語数</string>
+    <string name="pitch">手動の高さ</string>
+    <string name="rate_boost">速度ブースト</string>
+    <string name="inflection">抑揚</string>
+    <string name="volume">音声の音量</string>
+    <string name="anatomy">音声モデル</string>
+    <string name="model">モデル</string>
+    <string name="head_size">頭の大きさ</string>
+    <string name="roughness">声のかすれ</string>
+    <string name="breathiness">息の混ざり具合</string>
+    <string name="reset_profile">選択した音声プロファイルをリセット</string>
+    <string name="output_settings">音声出力</string>
+    <string name="eci_tags">ECI タグを処理</string>
+    <string name="dictionaries">発音辞書</string>
+    <string name="community_dictionaries">コミュニティ辞書を使用</string>
+    <string name="update_dictionaries">現在の master からコミュニティ辞書を更新</string>
+    <string name="own_dictionaries">自分の辞書ファイル。後のファイルが優先されます</string>
+    <string name="dictionary_language">新しい辞書ファイルの言語</string>
+    <string name="dictionary_volume">新しい辞書ファイルの種類</string>
+    <string name="add_dictionary">辞書ファイルを追加</string>
+    <string name="remove_dictionary">選択したファイルを削除</string>
+    <string name="move_dictionary_up">選択したファイルを前へ移動</string>
+    <string name="move_dictionary_down">選択したファイルを後へ移動</string>
+    <string name="reload_dictionaries">選択したファイルを再読み込み</string>
+    <string name="dictionary_help">コミュニティ辞書と自分の Dic エントリーは、エンジン本来の辞書処理を使用します。ファイルを追加する前に、言語と辞書の種類を選んでください。ファイルの文字コードは Windows-1252 です。後のファイルのエントリーが、前のファイルのエントリーを上書きします。ドキュメントプロバイダーが更新情報を提供する場合は、変更を監視します。選択したファイルを再読み込みすると、必ず元のファイルを読み直します。ネットワークは更新ボタンを押したときだけ使用します。</string>
+    <string name="dictionary_working">辞書を準備しています</string>
+    <string name="dictionary_ready">辞書の準備ができました</string>
+    <string name="dictionary_error">辞書の更新に失敗しました：%1$s</string>
+    <string name="dictionary_unavailable">辞書を利用できません</string>
+    <string name="dictionary_permission">永続的な読み取り権限を付与できるファイルを選んでください</string>
+    <string name="back">読み上げ設定に戻る</string>
+    <string name="test_speech">読み上げテスト</string>
+    <string name="parameter_value">%1$s：%2$d</string>
+    <string-array name="models">
+        <item>男性</item>
+        <item>女性</item>
+    </string-array>
+    <string-array name="dictionary_volumes">
+        <item>メイン</item>
+        <item>語根</item>
+        <item>略語</item>
+    </string-array>
+    <string name="wpm_value">1 分あたり %1$d 語</string>
+    <string name="speed_help">1 分あたりの単語数は目安です。実際の速度は言語、単語の長さ、間によって変わります。Android の通常の速度は 1 分あたり 190 語を目標とします。</string>
+    <string name="abbreviation_dictionary">略語辞書を使用</string>
+    <string name="phrase_prediction">句の予測</string>
+</resources>

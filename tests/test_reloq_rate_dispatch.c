@@ -26,8 +26,11 @@ static void classic_response(void)
       .6)<1e-7);
   assert(fabs(response(s.voice_colour[0],0,rates[r])-1)<1e-9);
   assert(20*log10(response(s.voice_colour[0],1500,rates[r]))<.1);
-  /* The old upper shelf is gone; glottal tilt is tested at the source. */
-  assert(s.voice_colour[1][0]==0);
+  /* The complete periodic source has a separate high-band correction;
+   * neither that shelf nor the sampled-source fit colours AF or AH. */
+  assert(fabs(20*log10(response(s.voice_colour[1],0,rates[r]))+2)<1e-7);
+  assert(response(s.voice_colour[1],5000,rates[r])>
+      response(s.voice_colour[1],1000,rates[r]));
   for(unsigned f=0;f<10;++f) {
    double complex z=cexp(-I*2*pi*hz[f]/11025);
    double gain=10*log10(classic_reference_power(&s,z));
@@ -42,7 +45,8 @@ static void classic_response(void)
   assert(!memcmp(x,y,sizeof x));
   memcpy(whole,y,sizeof whole);
   reloq_rate_transfer_process_aspiration(&s,y,1024,1);
-  assert(!memcmp(whole,y,sizeof whole));
+  assert(memcmp(whole,y,sizeof whole));
+  for(unsigned j=0;j<1024;++j)assert(fabs(y[j])<=fabs(whole[j]));
 
  }
  puts("Full Classic Presence target: AV/AH share the reference contour; upper extension begins at 22.05 kHz");

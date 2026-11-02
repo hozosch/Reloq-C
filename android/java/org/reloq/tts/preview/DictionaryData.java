@@ -16,6 +16,7 @@ final class DictionaryData {
         case 0x10000:return "ENU";case 0x10001:return "ENG";case 0x20000:return "ESP";
         case 0x20001:return "ESM";case 0x30000:return "FRA";case 0x30001:return "FRC";
         case 0x40000:return "DEU";case 0x50000:return "ITA";case 0x60000:return "CHS";
+        case 0x60001:return "CHT";
         case 0x70000:return "PTB";case 0x80000:return "JPN";case 0x90000:return "FIN";
         case 0xa0000:return "KOR";case 0x120000:return "ELL";default:throw new IllegalArgumentException("language");
         }

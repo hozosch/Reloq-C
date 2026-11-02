@@ -54,6 +54,11 @@ struct reloq_german_text_stream {
         const struct reloq_german_best_effort_boundary *,size_t,size_t,int);
     void *context;
 };
+struct reloq_german_generic_pitch_mark;
+/* Cheap control scope only, without word analysis. Pitch positions use the
+ * same encoded character offsets as best-effort admission boundaries. */
+int reloq_german_control_scope(const unsigned char *,size_t,int,int,
+    const struct reloq_german_generic_pitch_mark *,size_t,int *,int *);
 /* In addition to the ordinary result codes, 3 means all parts were
  * delivered through the callback; no returned allocations are published. */
 int reloq_german_best_effort_stream_tags_checked(

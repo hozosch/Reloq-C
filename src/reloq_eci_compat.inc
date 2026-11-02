@@ -255,20 +255,20 @@ ECIDictHand ECICALL eciGetDict(ECIHand handle)
 }
 int ECICALL eciSetDict(ECIHand handle,ECIDictHand dictionary)
 {
-    struct reloq_eci_engine *e=handle;if(!e||epoch_get(&e->busy))return 0;
-    struct reloq_eci_dictionary *d=find_eci_dictionary(e,dictionary);if(dictionary&&!d)return 0;
+    struct reloq_eci_engine *e=handle;if(!e||epoch_get(&e->busy))return eci_refuse(e,eciDictInternalError);
+    struct reloq_eci_dictionary *d=find_eci_dictionary(e,dictionary);if(dictionary&&!d)return eci_refuse(e,eciDictInternalError);
     unsigned slot=dictionary_language_slot(d?d->language:e->language);
-    if(d&&d->language!=e->language){e->language_dictionaries[slot]=d;return 1;}
+    if(d&&d->language!=e->language){e->language_dictionaries[slot]=d;return eciDictNoError;}
     void *w=dictionary_worker(e,e->language,d,0);
-    if(!w)return 0;
+    if(!w)return eciDictOutOfMemory;
     e->language_dictionaries[slot]=d;
-    reloq61_worker_free(e->rule_worker);e->rule_worker=w;e->active_dictionary=d;free(e->dictionary_path);e->dictionary_path=NULL;return 1;
+    reloq61_worker_free(e->rule_worker);e->rule_worker=w;e->active_dictionary=d;free(e->dictionary_path);e->dictionary_path=NULL;return eciDictNoError;
 }
 ECIDictHand ECICALL eciDeleteDict(ECIHand handle,ECIDictHand dictionary)
 {
     struct reloq_eci_engine *e=handle;if(!e||epoch_get(&e->busy))return dictionary;
     struct reloq_eci_dictionary *d=find_eci_dictionary(e,dictionary);if(!d)return dictionary;
-    if(e->active_dictionary==d&&!eciSetDict(e,NULL))return dictionary;
+    if(e->active_dictionary==d&&eciSetDict(e,NULL)!=eciDictNoError)return dictionary;
     for(unsigned i=0;i<15;++i)if(e->language_dictionaries[i]==d)e->language_dictionaries[i]=NULL;
     struct reloq_eci_dictionary **at=&e->dictionaries;while(*at!=d)at=&(*at)->next;*at=d->next;
     reloq61_worker_free(d->api_worker);

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_updates">앱 업데이트</string>
+    <string name="check_updates">업데이트 확인</string>
+    <string name="checking_updates">업데이트 확인 중…</string>
+    <string name="installed_version">설치된 버전: %1$s</string>
+    <string name="version_available">버전 %1$s을 사용할 수 있습니다.</string>
+    <string name="no_published_update">새로 게시된 앱 패키지가 없습니다.</string>
+    <string name="download_update">브라우저에서 다운로드 열기</string>
+    <string name="update_failed">업데이트 실패: %1$s</string>
+    <string name="browser_update">다운로드를 열었습니다. 브라우저와 Android의 일반적인 설치 절차를 사용하세요. Play 프로텍트를 켜 두세요.</string>
+    <string name="engine_help">오프라인 음성 합성입니다. 테스트할 언어와 음성을 선택하거나 Android의 텍스트 읽어주기 설정에서 ReLoq C를 선택하세요.</string>
+    <string name="language">언어</string>
+    <string name="profile">음성</string>
+    <string name="sample_rate">샘플링 주파수</string>
+    <string name="pause_mode">일시 정지 줄이기</string>
+    <string name="sample_text">읽을 텍스트</string>
+    <string name="speak">테스트 텍스트 읽기</string>
+    <string name="stop">중지</string>
+    <string name="system_settings">Android 음성 설정</string>
+    <string name="initializing">음성 엔진 초기화 중</string>
+    <string name="ready">음성 엔진이 준비되었습니다</string>
+    <string name="unavailable">음성 엔진을 사용할 수 없습니다. Android 음성 설정을 열고 ReLoq C를 선택하세요.</string>
+    <string-array name="pause_modes">
+        <item>줄이지 않음</item>
+        <item>끝에서만</item>
+        <item>항상</item>
+    </string-array>
+    <string name="voice_settings">언어 및 음성</string>
+    <string name="android_voice">Android에서 언어와 음성 제어</string>
+    <string name="android_rate">Android에서 속도 제어</string>
+    <string name="android_pitch">Android에서 음높이 제어</string>
+    <string name="speed">수동 속도, 분당 단어 수</string>
+    <string name="pitch">수동 음높이</string>
+    <string name="rate_boost">속도 향상</string>
+    <string name="inflection">억양</string>
+    <string name="volume">음성 볼륨</string>
+    <string name="anatomy">음성 모델</string>
+    <string name="model">모델</string>
+    <string name="head_size">머리 크기</string>
+    <string name="roughness">거친 정도</string>
+    <string name="breathiness">숨소리 정도</string>
+    <string name="reset_profile">선택한 음성 프로필 초기화</string>
+    <string name="output_settings">음성 출력</string>
+    <string name="eci_tags">ECI 태그 처리</string>
+    <string name="dictionaries">발음 사전</string>
+    <string name="community_dictionaries">커뮤니티 사전 사용</string>
+    <string name="update_dictionaries">현재 master에서 커뮤니티 사전 업데이트</string>
+    <string name="own_dictionaries">사용자 사전 파일, 뒤의 파일이 우선합니다</string>
+    <string name="dictionary_language">새 사전 파일의 언어</string>
+    <string name="dictionary_volume">새 사전 파일의 유형</string>
+    <string name="add_dictionary">사전 파일 추가</string>
+    <string name="remove_dictionary">선택한 파일 제거</string>
+    <string name="move_dictionary_up">선택한 파일을 앞으로 이동</string>
+    <string name="move_dictionary_down">선택한 파일을 뒤로 이동</string>
+    <string name="reload_dictionaries">선택한 파일 다시 불러오기</string>
+    <string name="dictionary_help">커뮤니티 사전과 사용자 Dic 항목은 엔진의 기본 사전 처리 단계를 사용합니다. 파일을 추가하기 전에 언어와 사전 유형을 선택하세요. 파일은 Windows-1252 인코딩을 사용합니다. 뒤의 파일이 앞의 파일 항목을 덮어씁니다. 문서 제공자가 수정 정보를 제공하면 변경 사항을 감시합니다. 선택한 파일 다시 불러오기는 항상 원본을 다시 읽습니다. 네트워크는 업데이트 버튼을 누를 때만 사용합니다.</string>
+    <string name="dictionary_working">사전 준비 중</string>
+    <string name="dictionary_ready">사전이 준비되었습니다</string>
+    <string name="dictionary_error">사전 업데이트 실패: %1$s</string>
+    <string name="dictionary_unavailable">사전을 사용할 수 없습니다</string>
+    <string name="dictionary_permission">영구 읽기 권한을 허용하는 파일을 선택하세요</string>
+    <string name="back">음성 설정으로 돌아가기</string>
+    <string name="test_speech">음성 테스트</string>
+    <string name="parameter_value">%1$s: %2$d</string>
+    <string-array name="models">
+        <item>남성</item>
+        <item>여성</item>
+    </string-array>
+    <string-array name="dictionary_volumes">
+        <item>기본</item>
+        <item>어근</item>
+        <item>약어</item>
+    </string-array>
+    <string name="wpm_value">분당 %1$d단어</string>
+    <string name="speed_help">분당 단어 수는 대략적인 값이며 실제 속도는 언어, 단어 길이, 일시 정지에 따라 달라집니다. Android의 기본 속도는 분당 190단어를 목표로 합니다.</string>
+    <string name="abbreviation_dictionary">약어 사전 사용</string>
+    <string name="phrase_prediction">구문 예측</string>
+</resources>

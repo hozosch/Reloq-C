@@ -93,7 +93,7 @@ def main():
    assert lib.eciLoadDict(h,d,0,filename)==0
    assert lib.eciSetParam(h,9,0x40000)==0x40800;checks+=2
    path.unlink() # Load owns the volume; attachment must not reopen it.
-   assert lib.eciSetDict(h,d) and lib.eciGetDict(h)==d
+   assert lib.eciSetDict(h,d)==0 and lib.eciGetDict(h)==d
    assert speak(b'TokenX.')==plain
    assert lib.eciLoadDict(h,d,0,b'/does/not/exist')==6
    assert speak(b'TokenX.')==plain

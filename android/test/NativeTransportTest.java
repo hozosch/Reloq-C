@@ -42,7 +42,7 @@ public final class NativeTransportTest {
                 render(language.id,emoji,"😀 👩🏽‍💻 🇩🇪 1️⃣");
             }
             for(int profile=0;profile<8;++profile) render(0x10000,profile,"This is Eloquence and NVDA, with 504 and 4004.");
-            for(int dialect:new int[]{0x60000,0xa0000,0x80000})
+            for(int dialect:new int[]{0x60000,0x60001,0xa0000,0x80000})
                 render(dialect,0,"Müller café naïve. 📞");
             PcmQueue cancelled=new PcmQueue(1);
             StringBuilder longText=new StringBuilder();

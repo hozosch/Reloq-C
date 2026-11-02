@@ -1,17 +1,17 @@
 """Compare incremental German with the whole-text path through public ECI.
 
-A matching leading speed control selects the existing whole-text path in
-one copy of the same library. Only this test inserts that control; runtime
-scheduling uses admitted source boundaries and no added text or pause tags.
+The diagnostic streaming opt-out selects the existing whole-text path in
+one copy of the same library. Speech input stays identical in both copies.
 PCM is hashed in RAM; equality includes every delivered index position.
 """
 from pathlib import Path
 import argparse
 import hashlib
 import json
+import os
 import tempfile
 
-from _reloq_eci_direct import (DirectEciEngine,EciIndex,NATIVE_SPEED,SAMPLE_RATE,
+from _reloq_eci_direct import (DirectEciEngine,EciIndex,EciPitch,NATIVE_SPEED,SAMPLE_RATE,
     PAUSE_MODE,PROCESS_TAGS,GENDER,HEAD_SIZE,BREATHINESS,PHRASE_PREDICTION,HIGH_RATE_PROFILE)
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -34,24 +34,32 @@ TEXTS=(
 )
 
 
-def capture(engine,text,speed,legacy):
+def capture(engine,text,speed,legacy,pitch_marks=False):
     end=text.find('. ')+2
     points=[0,0,3,len(text)//3,len(text)//2,len(text)-3,len(text),len(text)]
     if end>1:
         points += list(range(max(0,end-3),min(len(text),end+5)))
     combining=text.find('\u0308')
     if combining>=0:points += [combining,combining+1]
-    fragments=[f'`vs{speed} '] if legacy else []
+    fragments=[]
     previous=0
     for i,at in enumerate(sorted(points)):
         fragments += [text[previous:at],EciIndex(i+1)]
+        if pitch_marks and i%3==0:fragments.append(EciPitch(80 if i%2 else 65))
         previous=at
     fragments.append(text[previous:])
     digest=hashlib.sha256();size=0;marks=[]
     def take(data):
         nonlocal size
         digest.update(data);size+=len(data)
-    assert engine.speak(fragments,take,lambda n:marks.append((n,size))), 'Synthesis did not complete'
+    option=os.environ.get('RELOQ_GERMAN_STREAMING')
+    if legacy:os.environ['RELOQ_GERMAN_STREAMING']='0'
+    else:os.environ.pop('RELOQ_GERMAN_STREAMING',None)
+    try:
+        assert engine.speak(fragments,take,lambda n:marks.append((n,size))), 'Synthesis did not complete'
+    finally:
+        if option is None:os.environ.pop('RELOQ_GERMAN_STREAMING',None)
+        else:os.environ['RELOQ_GERMAN_STREAMING']=option
     assert size and len(marks)==len(points)
     return dict(sha256=digest.hexdigest(),bytes=size,indices=marks)
 
@@ -67,13 +75,13 @@ def main():
     engines=[DirectEciEngine(p.resolve(),dialect=0x40000,encoding='utf8',experimental_generic=True) for p in paths]
     for e in engines:e.set_parameter(HIGH_RATE_PROFILE,args.profile)
     rows=[]
-    def check(label,text,speed=120,rate=1,pause=0,gender=0,head=50,breath=0):
+    def check(label,text,speed=120,rate=1,pause=0,gender=0,head=50,breath=0,pitch_marks=False):
         for e in engines:
             for p,v in ((PROCESS_TAGS,1),(NATIVE_SPEED,speed),(SAMPLE_RATE,rate),(PAUSE_MODE,pause),
                         (GENDER,gender),(HEAD_SIZE,head),(BREATHINESS,breath),(PHRASE_PREDICTION,1)):
                 e.set_parameter(p,v)
-        before=capture(engines[0],text,speed,args.reference is None)
-        after=capture(engines[1],text,speed,False)
+        before=capture(engines[0],text,speed,args.reference is None,pitch_marks)
+        after=capture(engines[1],text,speed,False,pitch_marks)
         assert before==after,(label,speed,rate,pause,gender,head,before,after)
         rows.append(dict(case=label,speed=speed,rate=rate,pause=pause,gender=gender,head=head,breath=breath,**after))
     try:
@@ -83,6 +91,12 @@ def main():
             check('speed',TEXTS[0],speed=speed)
         for rate in (0,3,2,4,5,6):
             check('female',TEXTS[0],rate=rate,pause=1,gender=1,head=29,breath=60)
+        for tag in ('vv50','vb80','vs156','vf70','vg1','vh30','vr40','vy40','v2'):
+            check('tag-'+tag,TAIL*4+'`'+tag+' Das ist ein Test. '+TAIL*35,speed=75)
+            check('leading-'+tag,'`'+tag+' '+TAIL*40,speed=75)
+        check('mixed-inline','`vv70 '+TAIL*5+'`vb80 '+TAIL*5+'`vs156 '+TAIL*5+'`vb65 `vv100 '+TAIL*25,speed=75)
+        check('api-pitch',TEXTS[0],speed=75,pitch_marks=True)
+        check('api-pitch-inline','`vb70 '+TAIL*5+'`vb80 '+TAIL*35,speed=75,pitch_marks=True)
         # Keep loaded snapshots usable throughout later native sub-requests.
         # Nested plans must not apply Main replacement a second time.
         with tempfile.TemporaryDirectory() as temp:

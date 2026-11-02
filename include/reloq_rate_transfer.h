@@ -34,6 +34,10 @@ struct reloq_rate_transfer {
      * Standalone A retains its established sample-exact behaviour. */
     unsigned smooth_updates;
     double classic_reference[2][5];
+    /* Periodic glottal filter only. Moving physical poles to a new clock
+     * otherwise loses the reference's discrete source response. */
+    unsigned source_profile;
+    double source_mix;
 };
 struct reloq_core_voiced_formants;
 void reloq_rate_transfer_prepare(struct reloq_rate_transfer *,

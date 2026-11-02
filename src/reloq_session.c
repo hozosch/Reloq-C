@@ -76,8 +76,6 @@ struct reloq_session {
     unsigned high_rate_profile;
     struct reloq_core_voiced_frame_state *body_state;
     struct reloq_session_buffers body_buffers;
-    float *classic_body;
-    size_t body_capacity;
     struct reloq_body_extension body_extension;
 };
 
@@ -161,6 +159,18 @@ static int output_pcm(const struct reloq_session *session, size_t count)
                 scaled >= 0x1p63f) return RELOQ_SESSION_RENDER;
         }
         reloq_core_scale_output(block, (long)n, gain);
+        /* Restoring periodic high harmonics can align a few peaks above
+         * the PCM range even at the calibrated master level. Bend only
+         * those peaks through a continuous soft knee; ordinary body and
+         * consonant samples keep their exact linear gain. */
+        if(session->high_rate_profile && session->config.sample_rate>=16000)
+            for(size_t i=0;i<n;++i) {
+                double amplitude=fabs((double)block[i]);
+                if(amplitude>30000) {
+                    double bounded=30000-2600*expm1(-(amplitude-30000)/2600);
+                    block[i]=(int64_t)copysign(bounded,(double)block[i]);
+                }
+            }
         /* The sample sink has a finite range. A model/filter transient
          * must saturate there instead of wrapping across the sign bit;
          * retain the core's low-word conversion for numeric reference use. */
@@ -205,34 +215,26 @@ static int render_owned(struct reloq_session *session,
                 session->body_state->rate_transfer.trial_profile=0;
                 session->body_state->rate_transfer.smooth_updates=1;
                 session->body_state->noise_transfer.trial_profile=0;
+                reloq_body_extension_initialize(&session->body_extension,rate);
             }
         }
         if(!status && reserve_buffers(&session->body_buffers,b->capacity))status=-1;
-        if(!status && session->body_capacity<b->capacity) {
-            void *next=realloc(session->classic_body,b->capacity*sizeof(float));
-            if(!next)status=-1;
-            else {session->classic_body=next;session->body_capacity=b->capacity;}
-        }
-        if(!status)status=reloq_core_voiced_frame_render_body(
+        if(!status)status=reloq_core_voiced_frame_render_owned(
             &session->frame_state,frame,b->output,b->raw_af,b->scratch,
-            b->closed_mask,session->classic_body,b->capacity,written,0);
+            b->closed_mask,NULL,b->capacity,written);
         if(!status) {
-            /* Keep the Classic body as the foundation. The complementary
-             * high band supplies A's upper harmonics at increasing rates,
-             * while AF remains an independent Classic contribution. */
+            /* Add periodic richness; neither subtract the Classic body nor
+             * add another copy of aspiration or consonant noise. */
             struct reloq_core_voiced_frame body=*frame;
-            body.noise.af_level=0;body.noise.bypass_level=0;
+            body.noise.ah_level=0;body.noise.af_level=0;body.noise.bypass_level=0;
             struct reloq_session_buffers *a=&session->body_buffers;
             size_t n=0;
             status=reloq_core_voiced_frame_render_owned(session->body_state,&body,
                 a->output,a->raw_af,a->scratch,a->closed_mask,NULL,a->capacity,&n);
             if(!status&&n!=*written)status=-1;
-            float mix=rate>=48000?1:rate>=44100?.8f:rate>=32000?.5f:.25f;
-            double k=tan(3.14159265358979323846*2500/rate);
-            double gain=1/(1+k),pole=(1-k)/(1+k);
+            float mix=.25f*(rate>=48000?1:rate>=44100?.8f:rate>=32000?.5f:.25f);
             if(!status)for(size_t i=0;i<n;++i)
-                b->output[i]+=reloq_body_extension_sample(&session->body_extension,
-                    session->classic_body[i],a->output[i],mix,gain,pole);
+                b->output[i]+=mix*reloq_body_extension_sample(&session->body_extension,a->output[i]);
         }
     } else status = reloq_core_voiced_frame_render_owned(
         &session->frame_state,frame,b->output,b->raw_af,
@@ -274,7 +276,6 @@ void reloq_session_destroy(struct reloq_session *session)
     free_buffers(&session->buffers);
     free_buffers(&session->body_buffers);
     free(session->body_state);
-    free(session->classic_body);
     free(session);
 }
 
@@ -299,7 +300,6 @@ int reloq_session_reset(struct reloq_session *session)
     session->frame_state = next;
     /* A profile change/reset starts both bodies from the same source clock. */
     free(session->body_state);session->body_state=NULL;
-    memset(&session->body_extension,0,sizeof session->body_extension);
     epoch_store(&session->active_epoch, generation);
     return RELOQ_SESSION_OK;
 }

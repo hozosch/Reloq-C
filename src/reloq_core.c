@@ -1883,6 +1883,7 @@ static int voiced_frame_render_owned(
      * Aspiration enters the same physical vocal-tract passband at every
      * extended rate. Its source density must therefore track the clock. */
     if(state->glottal_reference_rate>0&&!suppress_body) {
+        state->rate_transfer.source_profile=(unsigned)frame->glottal_profile;
         ah.gain*=sqrtf(noise->sample_rate/state->glottal_reference_rate);
         if(!state->rate_transfer.trial_profile || frame->av_level>0 ||
            params->ah_level>0 || state->serial.remaining_ms>0)
@@ -1922,7 +1923,7 @@ static int voiced_frame_render_owned(
                 params->af_level,noise->source_offset,noise->af_trim,bypass))
                 classic=reloq_rate_transfer_prepare_classic_bandwidth(&state->noise_transfer,
                     &reference,&noise->fricatives,&state->noise_profile,noise->sample_rate,
-                    params->limit_frication_extension?0:1);
+                    params->limit_frication_extension?.25f:1);
         }
         if(!classic) {
         float mix=params->s_frication?(noise->sample_rate==16000?.25f:.5f):0;

@@ -82,7 +82,18 @@ def main():
    if language>>16 not in (6,8,10):
     assert actual==expected,(hex(language),'mid-word vv',len(actual),len(expected))
    assert expected!=plain;checks+=3
+   if language>>16 in (6,8,10):
+    spaced=e.speak(prefix+' '+word+suffix)
+    for tag in ('vv100','vb65','vs50','vf30','vg0','vh50','vr0','vy0','v1'):
+     assert e.speak(prefix+' `'+tag+' '+word+suffix)==spaced,(hex(language),tag,'redundant CJK command')
+     checks+=1
    if language>>16 not in (6,8,10):
+    for name,value in (('vv',50),('vb',80),('vs',120),('vf',70),('vg',1),('vh',30),('vr',40),('vy',40),('v',2)):
+     tag='`'+name+str(value)
+     expected=e.speak(prefix+tag+' '+word+suffix)
+     assert expected==e.speak(prefix+tag+word+suffix),(hex(language),tag,'delimiter')
+     assert expected==e.speak(prefix+word[:cut]+tag+word[cut:]+suffix),(hex(language),tag,'word scope')
+     checks+=2
     # A command delimited by spaces takes effect at the following word;
     # prefix PCM, lexical timing and public index offsets stay unchanged.
     if language==0x40000:prefix,word,suffix='Das ist ein ','test','.'

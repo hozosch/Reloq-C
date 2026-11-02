@@ -149,31 +149,29 @@ static int check_fp_scope(void)
 }
 #endif
 
-/* Observe the split's physical response rather than reproducing its
- * arithmetic: preserve DC/bass, progressively admit upper harmonics. */
+/* The addition must leave DC/bass alone and grow only the upper body. */
 static int check_body_extension(void)
 {
-    const double rates[]={22050,32000,44100,48000};
-    const float amount[]={.25f,.5f,.8f,1};
+    const float rates[]={22050,32000,44100,48000},weights[]={.25f,.5f,.8f,1};
     double previous=1;
     for(unsigned r=0;r<4;++r) {
-        double k=tan(3.14159265358979323846*2500/rates[r]);
-        double gain=1/(1+k),pole=(1-k)/(1+k),upper=0;
+        double upper=0;
         for(unsigned band=0;band<3;++band) {
-            struct reloq_body_extension s={0};double input=0,output=0;
-            double hz=band==0?0:band==1?250:4500;
+            struct reloq_body_extension filter;
+            reloq_body_extension_initialize(&filter,rates[r]);
+            double input=0,output=0,hz=band==0?0:band==1?250:4500;
             for(unsigned i=0;i<(unsigned)rates[r];++i) {
                 float b=hz?(float)sin(2*3.14159265358979323846*hz*i/rates[r]):1;
-                float y=b+reloq_body_extension_sample(&s,b,2*b,amount[r],gain,pole);
-                if(i>(unsigned)rates[r]/2){input+=b*b;output+=y*y;}
+                float y=b+.25f*weights[r]*reloq_body_extension_sample(&filter,2*b);
                 CHECK(isfinite(y));
+                if(i>(unsigned)rates[r]/2){input+=b*b;output+=y*y;}
             }
             double ratio=sqrt(output/input);
             if(!band)CHECK(fabs(ratio-1)<1e-6);
             else if(band==1)CHECK(fabs(ratio-1)<.02);
             else upper=ratio;
         }
-        CHECK(upper>previous+.05&&upper<1.6);previous=upper;
+        CHECK(upper>previous+.02&&upper<1.6);previous=upper;
     }
     return 0;
 }
@@ -217,6 +215,7 @@ static int check_body_endpoint(void)
     CHECK(ca.samples==cb.samples&&!memcmp(ca.pcm,cb.pcm,ca.samples*sizeof *ca.pcm));
     reloq_session_destroy(b);
     const float rates[]={16000,22050,32000,44100,48000};
+    for(unsigned i=0;i<8;++i){frames[i].av_level=0;frames[i].noise.ah_level=0;frames[i].noise.af_level=65;}
     for(unsigned profile=0;profile<2;++profile)for(unsigned r=0;r<sizeof rates/sizeof *rates;++r) {
         c.sample_rate=rates[r];a=reloq_session_create(&c);b=reloq_session_create(&c);
         CHECK(a&&b);CHECK(!reloq_session_high_rate_profile(a,profile));

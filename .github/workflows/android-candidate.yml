@@ -1,0 +1,48 @@
+name: Android multilingual candidate
+on:
+  push:
+    branches: [codex/release110]
+    paths: [android/**, include/**, src/**, vendor/openevv61/**, .github/workflows/android-candidate.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Install SDK and NDK
+        run: sdkmanager 'ndk;30.0.16248370' 'platforms;android-35' 'build-tools;35.0.1'
+      - name: Build host core for JNI and language checks
+        run: make -C eci -j2 all PROVIDER_LTO=-flto=2
+      - name: Check all UI locales and actual native language routes
+        run: |
+          python3 android/test_translations.py --library eci/libreloq_eci.so
+          python3 android/test_settings.py --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar"
+          python3 android/test_native_transport.py --java-home "$JAVA_HOME"
+      - name: Fetch preceding release for upgrade verification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-android-arm64-*.apk' --dir previous
+      - name: Build signed test APK
+        run: |
+          previous_apk=(previous/*.apk)
+          test "${#previous_apk[@]}" -eq 1
+          python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --upgrade-from "${previous_apk[0]}" --jobs 2 --output dist/reloq-c-android-arm64-1.1.0-rc3.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-1.1.0-rc3-candidate
+          path: dist/reloq-c-android-arm64-1.1.0-rc3.apk
+          compression-level: 0
+          retention-days: 14

@@ -35,7 +35,7 @@ int main(void) {
  assert(maxerr<.75);if(maxerr>worst)worst=maxerr;
  if(!r)assert(upper/sum<.01);
  else assert(upper/sum>0);
- /* The Castilian exception removes only the optional extra band. Its
+ /* The bandwidth control changes only the optional extra band. Its
   * complete Presence main band and the normal cache entry must survive. */
  float normal[RELOQ_RATE_TAPS];memcpy(normal,s.target,sizeof normal);
  assert(reloq_rate_transfer_prepare_classic_bandwidth(&s,&ref,&cur,&p,rates[r],0));
@@ -50,10 +50,22 @@ int main(void) {
  }
  assert(fabs(10*log10(limited_low/want))<.1);
  if(r)assert(limited_upper<upper);
+ assert(reloq_rate_transfer_prepare_classic_bandwidth(&s,&ref,&cur,&p,rates[r],.25));
+ double quarter_low=0,quarter_upper=0;
+ for(unsigned h=0;h<=(unsigned)(rates[r]/2);h+=25){
+  double complex z=cexp(-I*2*pi*h/rates[r]),fir=0,power=1;
+  for(unsigned i=0;i<s.taps;++i){fir+=s.target[i]*power;power*=z;}
+  double actual=bank_power(&cur,z)*profile_power(&p,h)*.7943282347242815*pow(cabs(fir),2);
+  if(h<=5000)quarter_low+=actual;
+  if(h>=6500)quarter_upper+=actual;
+ }
+ assert(fabs(10*log10(quarter_low/want))<.1);
+ if(r){assert(quarter_upper>limited_upper);assert(quarter_upper<upper);}
+ else assert(!memcmp(normal,s.target,sizeof normal));
  assert(reloq_rate_transfer_prepare_classic(&s,&ref,&cur,&p,rates[r]));
  assert(!memcmp(normal,s.target,sizeof normal));
  ++checks;
  }
- printf("Classic noise: %u full-path and %u limited-band/cache checks; worst 1–5 kHz residual %.3f dB\n",checks,checks,worst);
+ printf("Classic noise: %u full-path and %u limited/quarter-band/cache checks; worst 1–5 kHz residual %.3f dB\n",checks,checks,worst);
  return 0;
 }

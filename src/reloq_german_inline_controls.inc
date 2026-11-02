@@ -2,7 +2,8 @@
  * no AddText fragment is synthesized as a separate utterance. */
 static int inline_words(unsigned char *text,size_t n,
     const struct reloq_german_generic_settings *settings,int volume,
-    struct reloq_inline_word **out,size_t *count)
+    struct reloq_inline_word **out,size_t *count,
+    const struct reloq_inline_word *initial)
 {
     size_t groups=0;
     for(size_t i=0;i+1<n;++i) if(text[i]=='`' && text[i+1]=='[')++groups;
@@ -18,6 +19,11 @@ static int inline_words(unsigned char *text,size_t n,
         .head_size=settings && settings->head_size_plus_one?settings->head_size_plus_one-1:50,
         .roughness=settings?settings->roughness:0,
         .breathiness=settings?settings->breathiness:0};
+    if(initial) {
+        current=*initial;
+        if(current.pitch_offset!=SIZE_MAX)current.pitch_offset=0;
+        current.annotation_offset=0;
+    }
     size_t word=0;
     for(size_t i=0;i<n;) {
         struct reloq_inline_tag tag=reloq_inline_tag_read(text+i,n-i,1);
@@ -75,7 +81,8 @@ static void inline_model_frame(void *context,float c[62])
 {
     struct inline_models *m=context;
     while(m->word+1<m->count && m->starts[m->word+1]<=m->tick)++m->word;
-    m->model=inline_model(m->words+m->word,m->model.sample_rate);
+    if(m->tick>=m->starts[0])
+        m->model=inline_model(m->words+m->word,m->model.sample_rate);
     const int three=reloq_german_voice_model_formants(&m->model)==3;
     const int child=m->model.gender && m->model.head_size<30;
     for(unsigned i=0;i<5;++i)if(m->fixed[i])c[inline_model_defaults[i]]=m->neutral[i];
@@ -130,14 +137,14 @@ static int inline_time_value(int64_t tick,const int64_t *starts,const int64_t *m
 
 static int inline_timing_begin(struct inline_timing *m,
     const int64_t *word_ticks,size_t count,const struct reloq_inline_word *words,
-    double baseline)
+    double baseline,int64_t origin,int64_t output_origin)
 {
     if(!count || count>SIZE_MAX/(2*sizeof(int64_t)) || count>SIZE_MAX/sizeof(double))return -1;
     m->starts=malloc(2*count*sizeof *m->starts);m->scales=malloc(count*sizeof *m->scales);
     if(!m->starts || !m->scales)return -1;
     m->mapped=m->starts+count;m->count=count;
     memcpy(m->starts,word_ticks,count*sizeof *m->starts);
-    m->starts[0]=0;m->mapped[0]=0;
+    m->starts[0]=origin;m->mapped[0]=output_origin;
     for(size_t i=0;i<count;++i) {
         m->scales[i]=words[i].speed<0?baseline:reloq_voice_speed_time_scale(words[i].speed);
         if(!isfinite(m->scales[i])||m->scales[i]<=0)return -1;

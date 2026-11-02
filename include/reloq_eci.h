@@ -224,6 +224,7 @@ ECIAPI int ECICALL eciGetVoiceName(ECIHand handle,int voice,void *name);
 ECIAPI int ECICALL eciSetVoiceName(ECIHand handle,int voice,const void *name);
 ECIAPI ECIDictHand ECICALL eciNewDict(ECIHand handle);
 ECIAPI ECIDictHand ECICALL eciGetDict(ECIHand handle);
+/* Dictionary selection returns eciDictNoError (0), not a Boolean. */
 ECIAPI int ECICALL eciSetDict(ECIHand handle,ECIDictHand dictionary);
 ECIAPI ECIDictHand ECICALL eciDeleteDict(ECIHand handle,ECIDictHand dictionary);
 ECIAPI int ECICALL eciLoadDict(ECIHand handle,ECIDictHand dictionary,int volume,const void *filename);

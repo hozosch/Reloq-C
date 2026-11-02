@@ -7,6 +7,20 @@ static int plan_tags_checked(int,const unsigned char *,size_t,
     struct reloq_german_word_features **,size_t *,int (*)(void *),void *,
     const struct reloq_german_text_stream *,int,size_t *);
 
+/* Voice controls do not change lexical admission. Their running values
+ * travel with the acoustic continuation; spelling/language/explicit SPR
+ * and dictionary-policy switches retain the complete transaction path. */
+static int stream_voice_controls(const unsigned char *text,size_t n)
+{
+    for(size_t i=0;i<n;) {
+        if(text[i]!='`'){++i;continue;}
+        struct reloq_inline_tag t=reloq_inline_tag_read(text+i,n-i,0);
+        if(t.kind<RELOQ_TAG_PITCH||t.kind>RELOQ_TAG_PRESET||t.kind==RELOQ_TAG_PAUSE)return 0;
+        i+=t.length;
+    }
+    return 1;
+}
+
 static size_t stream_source_offset(const struct reloq_german_context_source *s,
     const struct reloq_german_prosody_unit *unit)
 {
@@ -87,7 +101,7 @@ static int stream_plan(struct annotation_builder *b,
 {
     if(!stream || !stream->part || source->length<1024 ||
        b->word_count!=b->unit_count || !b->unit_count ||
-       memchr(source->original,'`',source->length))return 0;
+       !stream_voice_controls(source->original,source->length))return 0;
     if(b->unit_count>SIZE_MAX/sizeof(enum reloq_german_terminal_mark) ||
        b->unit_count>SIZE_MAX/sizeof(size_t)-1)return -2;
     enum reloq_german_terminal_mark *marks=malloc(b->unit_count*sizeof *marks);
@@ -179,7 +193,7 @@ static int stream_windows(const unsigned char *text,size_t length,
     size_t *error,int (*cancelled)(void *),void *context,
     const struct reloq_german_text_stream *stream)
 {
-    if(!stream||!stream->part||length<1024||memchr(text,'`',length))return 0;
+    if(!stream||!stream->part||length<1024||!stream_voice_controls(text,length))return 0;
     size_t begin=0,scalar_begin=0,next_boundary=0,part=0;
     while(begin<length) {
         size_t window=512,bytes=length-begin,scalars=0;

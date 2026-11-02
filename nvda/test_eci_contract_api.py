@@ -155,7 +155,7 @@ def main():
             key=(b'TokenX',b'RootToken',b'AbbvToken')[volume]
             assert lib.eciUpdateDict(h,d,volume,key,b'bei')==0
             assert c.string_at(lib.eciDictLookup(h,d,volume,key))==b'bei';checks+=2
-        assert lib.eciSetDict(h,d) and lib.eciGetDict(h)==d
+        assert lib.eciSetDict(h,d)==0 and lib.eciGetDict(h)==d
         assert capture(b'TokenX.')==capture(b'bei.');checks+=2
         assert lib.eciUpdateDictA(h,d,0,b'TokenX',b'Haus',77)==0
         assert capture(b'TokenX.')==capture(b'Haus.');checks+=2
@@ -165,11 +165,11 @@ def main():
         assert lib.eciSetParam(h,9,0x10000)==0x40000 and not lib.eciGetDict(h)
         english=lib.eciNewDict(h);assert english
         assert lib.eciUpdateDict(h,english,0,b'TokenX',b'house')==0
-        assert lib.eciSetDict(h,english)
+        assert lib.eciSetDict(h,english)==0
         assert capture(b'TokenX.')==capture(b'house.');checks+=4
         assert lib.eciSetParam(h,9,0x40000)==0x10000 and lib.eciGetDict(h)==d
         assert capture(b'TokenX.')==german
-        assert lib.eciSetDict(h,english) and lib.eciGetDict(h)==d
+        assert lib.eciSetDict(h,english)==0 and lib.eciGetDict(h)==d
         assert capture(b'TokenX.')==german;checks+=4
         assert lib.eciReset(h) and lib.eciGetParam(h,9)==0x10000
         assert lib.eciGetDict(h)==english
@@ -201,7 +201,7 @@ def main():
             replacement=lib.eciNewDict(h);assert replacement
             assert lib.eciLoadDict(h,replacement,0,wide(str(path)))==0
             path.unlink()
-            assert lib.eciSetDict(h,replacement)
+            assert lib.eciSetDict(h,replacement)==0
             assert lib.eciDictLookupA(h,replacement,0,wide('Große'),c.byref(translated),None)==0
             assert read_wide(translated)=='klein';checks+=5
             assert lib.eciDictLookupA(h,replacement,3,wide('Große'),c.byref(translated),None)==7
@@ -213,7 +213,7 @@ def main():
             assert not lib.eciDeleteDict(h,replacement) and not lib.eciGetDict(h);checks+=1
         assert lib.eciUpdateDict(h,d,0,b'TokenX',None)==0
         assert lib.eciDictLookup(h,d,0,b'TokenX') is None
-        assert lib.eciSetDict(h,d) and capture(b'TokenX.')==original;checks+=3
+        assert lib.eciSetDict(h,d)==0 and capture(b'TokenX.')==original;checks+=3
         assert not lib.eciDeleteDict(h,d);checks+=1
     finally:
         if other:lib.eciDelete(other)

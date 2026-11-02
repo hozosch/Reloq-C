@@ -112,7 +112,7 @@ def main():
             assert capture(wide,indexed=False)==narrow;checks+=4
         assert lib.eciSetParam(h,9,0x40000)>=0
         d=lib.eciNewDict(h);assert d
-        assert lib.eciUpdateDict(h,d,0,b'TokenX',b'Haus')==0 and lib.eciSetDict(h,d)
+        assert lib.eciUpdateDict(h,d,0,b'TokenX',b'Haus')==0 and lib.eciSetDict(h,d)==0
         assert capture(b'TokenX.')==capture(b'Haus.');checks+=3
         assert not lib.eciSpeaking(h) and not lib.eciPause(None,1);checks+=2
     finally:lib.eciStop(h);lib.eciDelete(h)

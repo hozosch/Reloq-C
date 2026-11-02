@@ -3300,7 +3300,7 @@ static int scaled_pitch_value(int32_t value, double factor, int32_t *out)
  * timeline, source/formant target, index or pause is moved. */
 static int apply_pitch_words(struct reloq_target_builder *builder,
                              const int64_t *word_ticks, size_t word_count,
-                             const int *word_pitch, int baseline)
+                             const int *word_pitch, int baseline,int initial)
 {
     if (!builder || !word_ticks || !word_pitch || baseline < 0 || baseline > 100)
         return -1;
@@ -3318,7 +3318,7 @@ static int apply_pitch_words(struct reloq_target_builder *builder,
     struct reloq_acoustic_point *updated = malloc(limit * sizeof *updated);
     if (!updated) return -1;
     size_t source = 0, written = 0, word = 0;
-    int active = baseline, result = -1;
+    int active = initial, result = -1;
     while (word < word_count) {
         int64_t tick = word_ticks[word];
         if (tick < 0 || (word && tick < word_ticks[word - 1])) goto done;
@@ -3396,10 +3396,11 @@ static int session_cancelled(void *context)
 #include "reloq_german_inline_controls.inc"
 
 static void compact_positions(int64_t *words,size_t word_count,
-    size_t *indices,size_t index_count,size_t at,size_t removed,size_t per_tick)
+    size_t *indices,size_t index_count,int64_t word_at,size_t at,
+    size_t removed,size_t per_tick)
 {
-    for(size_t i=0;i<word_count;++i)if(words[i]>(int64_t)at) {
-        size_t n=(size_t)words[i]-at;
+    for(size_t i=0;i<word_count;++i)if(words[i]>word_at) {
+        size_t n=(size_t)(words[i]-word_at);
         words[i]-=(int64_t)(n<removed?n:removed);
     }
     const size_t from=at*per_tick,samples=removed*per_tick;
@@ -3433,9 +3434,11 @@ static int render_quiet_regions(const struct reloq_curve_schedule *original,
         part.first_tick=part.end_tick;
         if(!q)break;
         size_t removed=q->end-(size_t)part.first_tick;
-        if(total>SIZE_MAX/per_tick||removed>SIZE_MAX/per_tick)
+        if(total>SIZE_MAX/per_tick||removed>SIZE_MAX/per_tick ||
+           total>(uint64_t)(INT64_MAX-original->first_tick))
             return RELOQ_SESSION_INVALID;
-        compact_positions(words,word_count,indices,index_count,total,removed,per_tick);
+        compact_positions(words,word_count,indices,index_count,
+            original->first_tick+(int64_t)total,total,removed,per_tick);
         part.first_tick=(int64_t)q->end;
     }
     return RELOQ_SESSION_OK;
@@ -3456,6 +3459,7 @@ static int render(
 {
     const int64_t origin=continuation?continuation->next_tick:0;
     int64_t native_end=origin;
+    int64_t end_tick=continuation?continuation->next_output_tick:0;
     int next_sibilant=continuation?continuation->sibilant:0;
     int next_colour=continuation?continuation->colour:0;
     struct reloq_inline_word *controls=NULL;size_t control_words=0;
@@ -3575,7 +3579,8 @@ static int render(
     }
     features=resolved_features;
     if(inline_volume>=0 && inline_words(annotation,annotation_bytes,settings,
-        inline_volume,&controls,&control_words)) {status=RELOQ_DE_UTTERANCE_MEMORY;goto done;}
+        inline_volume,&controls,&control_words,
+        continuation&&continuation->have_voice?&continuation->voice:NULL)) {status=RELOQ_DE_UTTERANCE_MEMORY;goto done;}
     progress.annotation_bytes = annotation_bytes;
     size_t phone_capacity = 0;
     struct reloq_german_phone_sequence_info sequence = {0};
@@ -3689,6 +3694,7 @@ static int render(
     if ((pitch_count || controls) && pitch_words(
             annotation, annotation_bytes, pitches, pitch_count,
             sequence.word_count,
+            continuation&&continuation->pitch_plus_one?continuation->pitch_plus_one-1:
             settings && settings->native_pitch_plus_one ?
                 settings->native_pitch_plus_one - 1 : 65,
             word_pitch)) {
@@ -3742,7 +3748,7 @@ static int render(
         status = RELOQ_DE_UTTERANCE_MODEL;
         goto done;
     }
-    int64_t end_tick = 0;
+    end_tick = 0;
     struct reloq_german_generic_settings speed_settings={50,50,100,0,0,0,0,0,0,0,0};
     if(settings)speed_settings=*settings;
     const struct reloq_german_generic_settings *plan_settings=settings;
@@ -3751,7 +3757,8 @@ static int render(
         tagged_speed|=controls[i].speed>=0;
         if(controls[i].speed!=uniform_speed)uniform_speed=-1;
     }
-    if(tagged_speed && uniform_speed>=0) {
+    if(continuation&&continuation->mixed_speed)tagged_speed=1;
+    if(tagged_speed && uniform_speed>=0 && !(continuation&&continuation->mixed_speed)) {
         /* Identical controls enter exactly the slider's planning path. */
         speed_settings.native_speed=uniform_speed?uniform_speed:-1;plan_settings=&speed_settings;
     } else if(tagged_speed) {
@@ -3764,7 +3771,8 @@ static int render(
             controls,features,feature_count,&builder,&end_tick,
             session_cancelled,session,output.model.sample_rate,NULL,NULL,NULL,NULL,origin,final,NULL);
         if(planned || inline_timing_begin(&speed_map,word_ticks,control_words,controls,
-            output.native_time_scale>0?output.native_time_scale:output.rate_factor/100.0)) {
+            output.native_time_scale>0?output.native_time_scale:output.rate_factor/100.0,
+            origin,continuation?continuation->next_output_tick:0)) {
             status=planned==1?RELOQ_DE_UTTERANCE_CANCELLED:RELOQ_DE_UTTERANCE_MODEL;goto done;
         }
         for(size_t i=1;i<RELOQ_TARGET_STREAM_COUNT;++i) {
@@ -3777,7 +3785,7 @@ static int render(
         int uniform_pitch=word_pitch[0];
         for(size_t i=1;i<sequence.word_count;++i)
             if(word_pitch[i]!=uniform_pitch){uniform_pitch=-1;break;}
-        if(uniform_pitch>=0) {
+        if(uniform_pitch>=0 && !(continuation&&continuation->mixed_pitch)) {
             /* Constant inline pitch uses the same physical baseline and
              * absolute declination as the NVDA slider, before rounding. */
             speed_settings.native_pitch_plus_one=uniform_pitch+1;
@@ -3799,7 +3807,8 @@ static int render(
         goto done;
     }
     int64_t first_tick=0;
-    if(origin && scale_tick(origin,&output,&first_tick)){status=RELOQ_DE_UTTERANCE_MODEL;goto done;}
+    if(origin&&continuation)first_tick=continuation->next_output_tick;
+    else if(origin && scale_tick(origin,&output,&first_tick)){status=RELOQ_DE_UTTERANCE_MODEL;goto done;}
     if(sibilants.count || origin) {
         if(sibilants.count>1)qsort(sibilants.points,sibilants.count,sizeof *sibilants.points,source_point_order);
         if(sibilants.count>(SIZE_MAX/sizeof *sibilant_points-1)/2){status=RELOQ_DE_UTTERANCE_MEMORY;goto done;}
@@ -3834,7 +3843,9 @@ static int render(
     if ((pitch_count || controls) && apply_pitch_words(
             &builder, word_ticks, sequence.word_count, word_pitch,
             plan_settings && plan_settings->native_pitch_plus_one ?
-                plan_settings->native_pitch_plus_one - 1 : 65)) {
+                plan_settings->native_pitch_plus_one - 1 : 65,
+            continuation&&continuation->last_pitch_plus_one?continuation->last_pitch_plus_one-1:
+                plan_settings&&plan_settings->native_pitch_plus_one?plan_settings->native_pitch_plus_one-1:65)) {
         status = RELOQ_DE_UTTERANCE_MODEL;
         goto done;
     }
@@ -3886,7 +3897,7 @@ static int render(
         status = RELOQ_DE_UTTERANCE_MODEL;
         goto done;
     }
-    if(origin && scale_tick(origin,&output,&schedule.first_tick)) {status=RELOQ_DE_UTTERANCE_MODEL;goto done;}
+    schedule.first_tick=first_tick;
     if(colour_curve.point_count)schedule.bypass_attenuation=&colour_curve;
     if(sibilant_curve.point_count)schedule.s_frication=&sibilant_curve;
     schedule.s_frication_profile=1;
@@ -3899,6 +3910,10 @@ static int render(
         controlled.per_tick=(int)reloq_core_frame_sample_count((float)schedule.frame_ticks,
             config.duration_scale,config.sample_rate*0.001f);
         if(controlled.per_tick<1) {status=RELOQ_DE_UTTERANCE_MODEL;goto done;}
+        if((uint64_t)schedule.first_tick>SIZE_MAX/(unsigned)controlled.per_tick) {
+            status=RELOQ_DE_UTTERANCE_MODEL;goto done;
+        }
+        controlled.samples=(size_t)schedule.first_tick*(unsigned)controlled.per_tick;
         sink=inline_pcm;index_sink=inline_index;context=&controlled;
     }
     struct reloq_german_generic_index_stream index_stream;
@@ -3935,6 +3950,8 @@ static int render(
     struct inline_models model_cursor={.words=controls,.starts=word_ticks,
         .count=control_words,.tick=schedule.first_tick,.step=schedule.frame_ticks,
         .model=output.model,.session=session};
+    if(continuation && continuation->have_voice)
+        model_cursor.model=inline_model(&continuation->voice,output.model.sample_rate);
     for(unsigned k=0;k<5;++k) {
         model_cursor.fixed[k]=schedule.tracks[inline_model_defaults[k]].point_count==0;
         model_cursor.neutral[k]=neutral_model_defaults[k];
@@ -3957,6 +3974,23 @@ static int render(
              rendered == RELOQ_SESSION_SINK ? RELOQ_DE_UTTERANCE_SINK :
              RELOQ_DE_UTTERANCE_RENDER;
 done:
+    if(status==RELOQ_DE_UTTERANCE_OK && continuation) {
+        continuation->next_tick=native_end;
+        continuation->next_output_tick=end_tick;
+        if(word_pitch&&sequence.word_count)continuation->last_pitch_plus_one=word_pitch[sequence.word_count-1]+1;
+        continuation->sibilant=next_sibilant;continuation->colour=next_colour;
+        if(controls) {
+            continuation->voice=controls[control_words];
+            if(pitch_count&&(continuation->voice.pitch_offset==SIZE_MAX||
+                pitches[pitch_count-1].annotation_offset>continuation->voice.pitch_offset))
+                continuation->voice.pitch=pitches[pitch_count-1].native_pitch;
+            continuation->pitch_plus_one=continuation->voice.pitch+1;
+            continuation->voice.pitch_offset=SIZE_MAX;
+            continuation->have_voice=1;
+        } else if(pitch_count) {
+            continuation->pitch_plus_one=pitches[pitch_count-1].native_pitch+1;
+        }
+    }
     free(quiet.spans);
     free(colour.points);free(colour_points);
     free(sibilants.points);free(sibilant_points);
@@ -3972,10 +4006,6 @@ done:
     free(marks);
     free(phones);
     free(annotation);
-    if(status==RELOQ_DE_UTTERANCE_OK && continuation) {
-        continuation->next_tick=native_end;
-        continuation->sibilant=next_sibilant;continuation->colour=next_colour;
-    }
     *info = progress;
     return status;
 }
@@ -4082,6 +4112,7 @@ int reloq_german_generic_render_text_part(
     const struct reloq_german_generic_settings *settings,
     const struct reloq_german_word_features *features,size_t feature_count,
     const struct reloq_german_generic_index *indices,size_t index_count,
+    const struct reloq_german_generic_pitch_mark *pitches,size_t pitch_count,
     struct reloq_session *session,reloq_session_pcm_sink pcm_sink,
     reloq_german_generic_index_sink index_sink,void *context,
     struct reloq_german_utterance_info *info,int native_volume,
@@ -4089,6 +4120,6 @@ int reloq_german_generic_render_text_part(
 {
     if(!continuation || continuation->next_tick<0 || (final!=0&&final!=1))return RELOQ_DE_UTTERANCE_INVALID;
     return render(annotation,length,NULL,settings,1,features,feature_count,
-        indices,index_count,index_sink,NULL,0,session,pcm_sink,context,info,
+        indices,index_count,index_sink,pitches,pitch_count,session,pcm_sink,context,info,
         native_volume,continuation,final);
 }

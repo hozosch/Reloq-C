@@ -1,4 +1,4 @@
-# Standard-ECI-Abgleich in 1.1.0-rc2
+# Standard-ECI-Abgleich in 1.1.0-rc3
 
 Die Referenz ist die vom Nutzer bereitgestellte `ibmeci.dll` (Windows x86,
 344064 Bytes), SHA-256
@@ -6,6 +6,15 @@ Die Referenz ist die vom Nutzer bereitgestellte `ibmeci.dll` (Windows x86,
 Ihre Exporte und die Parameterprüfungen wurden statisch untersucht. Der neue
 Wrapper ist eigenständiges C; die Referenz-DLL wird nicht mitgeliefert.
 Die eigene Windows-x64-DLL wird gegen den deklarierten öffentlichen ABI geprüft.
+
+Zusätzlich wurde die originale **Host-ECI.DLL aus Eloquence_64 v25** unter
+Windows mit 32-Bit-Python tatsächlich ausgeführt: Version 6.1.0.0, 176128 Bytes,
+SHA-256 `c1653e61e9fd599421d2f7faee21eda171d3a8ff4329343ddb24a2dd565fba5f`.
+Der reproduzierbare Probeaufruf steht in `tools/observe_eci_contract.py`, die
+Beobachtungen in `docs/validation/eci-original-eloquence64-v25.json`.
+Diese Host-DLL exportiert **weder `EciSetVoice` noch `eciSetVoice`**.
+Stimmparameter werden über `eciSetVoiceParam`, Presets über `eciCopyVoice`
+gewählt. Beide Standardfunktionen sind in ReLoq vorhanden.
 
 | Aufruf | Verhalten |
 | --- | --- |
@@ -17,7 +26,7 @@ Die eigene Windows-x64-DLL wird gegen den deklarierten öffentlichen ABI geprüf
 | `eciSetParam(h,9,language)` | Wechsel der Sprache auf demselben Handle, einschließlich Prüfung und Austausch des Sprach-Workers. Ungültige Kennungen lassen die bisherige Auswahl bestehen. |
 | `eciAddText` | Windows-1252 für westliche Sprachen, Windows-1253 für Griechisch, CP932/936/949/950 für Japanisch/vereinfachtes Chinesisch/Koreanisch/traditionelles Chinesisch. Bit 0x800 im Sprachwort wählt UTF-16LE. `eciAddTextUtf8` bleibt eine zusätzliche Schnittstelle. |
 | `eciSetParam(h,1,1)` | Aktiviert die Annotationen, wie beim Standardparameter `eciInputType`. |
-| `eciNewDict`, `eciLoadDict`, `eciSetDict`, `eciGetDict`, `eciDeleteDict` | Eigene Wörterbuch-Handles mit einzelnen Main-/Root-/Abbreviation-Volumes. Beliebige Dateinamen; geladene Daten gehören dem Handle und überstehen das Entfernen der Quelldatei. Fehlgeschlagene Ladevorgänge behalten vorhandene Daten. Volumes werden mit dem vorhandenen nativen Parser verarbeitet. |
+| `eciNewDict`, `eciLoadDict`, `eciSetDict`, `eciGetDict`, `eciDeleteDict` | Eigene Wörterbuch-Handles mit einzelnen Main-/Root-/Abbreviation-Volumes. `eciSetDict` liefert wie das Original `eciDictNoError` (0) bei Erfolg, keinen booleschen Wert; rc3 korrigiert den zuvor falschen Erfolgswert 1. Beliebige Dateinamen; geladene Daten gehören dem Handle und überstehen das Entfernen der Quelldatei. Fehlgeschlagene Ladevorgänge behalten vorhandene Daten. Volumes werden mit dem vorhandenen nativen Parser verarbeitet. |
 
 ## Ergänzungen in dev8
 
@@ -127,6 +136,18 @@ noch keine vollständige fragmentbezogene Snapshot-Parität.
 
 ## Konkrete Referenzbeobachtungen
 
+Der Windows-Lauf der Host-DLL bestätigt Sprachaufzählung, Wechsel von Parameter
+9 auf demselben Handle, Rückgabe des vorherigen Stimmparameterwerts,
+Preset-Kopien und Wörterbuch-Handles. Preset 1 setzt auch das Tempo auf 50
+zurück; es bleibt nicht bei einem zuvor eingestellten Tempo. Die Parameter
+41/42 werden bereits vom Original mit -1 abgelehnt und erhalten daher keine
+erfundenen Standard-Aliasse. ReLoq hat 15 eingebaute Dialekte, diese konkrete
+Host-Installation meldet 13. Voreinstellungen für Lautstärke und private
+ReLoq-Parameter bleiben eigene Kalibrierungen.
+
+Die folgenden statischen Adressen beziehen sich auf die zuerst untersuchte
+344064-Byte-Referenz, nicht auf die kleinere Host-DLL aus v25.
+
 `eciSetVoiceParam` liegt bei 0x100052f7. Die Prüfung ab 0x100053bf lässt
 nur Platz 0 und die bearbeitbaren Plätze 9..16 zu; die Parameter werden in
 der Standardreihenfolge geprüft. `eciCopyVoice` bei 0x1000454d prüft die
@@ -154,9 +175,9 @@ ReLoq-Schnittstellen bleiben für vorhandene NVDA-/Android-/SAPI-Clients erhalte
 
 Dieser Abgleich deckt die oben genannten Aufrufe ab. Weitere Original-Exporte,
 asiatische MainDictExt-Volumes und das vollständige Snapshot-/Thread-Verhalten des alten ECI
-sind damit noch nicht als vollständig kompatibel nachgewiesen. Die Referenz
-wurde hier statisch untersucht; ein Windows-Lauf des proprietären Originals
-ist keine der aufgeführten Prüfungen.
+sind damit noch nicht als vollständig kompatibel nachgewiesen. Der zusätzliche
+Windows-Lauf der Host-DLL prüft die im Beobachtungsprotokoll aufgeführten
+Aufrufe; er ersetzt keine Prüfung aller historischen ECI-Funktionen.
 
 ## Noch offene Originalfunktionen
 

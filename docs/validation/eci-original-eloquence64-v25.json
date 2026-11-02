@@ -1,0 +1,316 @@
+{
+  "source": {
+    "repository": "https://github.com/fastfinge/eloquence_64",
+    "release": "v25",
+    "asset_sha256": "3b14eaa9923a006553b7ea6152abf2ca9cd8f11c1b3dcebe2a905658863ea409",
+    "dll_bytes": 176128,
+    "workflow_run": 41489123755,
+    "probe_commit": "eee51dd47a806fedbf7ca0f164d59783f3cd96a5",
+    "exports": [
+      "eciAddText",
+      "eciClearErrors",
+      "eciClearInput",
+      "eciCopyVoice",
+      "eciDelete",
+      "eciDeleteDict",
+      "eciDialogBox",
+      "eciDictFindFirst",
+      "eciDictFindFirstEx",
+      "eciDictFindNext",
+      "eciDictFindNextEx",
+      "eciDictLookup",
+      "eciDictLookupEx",
+      "eciErrorMessage",
+      "eciGeneratePhonemes",
+      "eciGeneratePinyins",
+      "eciGetAvailableLanguages",
+      "eciGetDict",
+      "eciGetIndex",
+      "eciGetIntLog",
+      "eciGetLog",
+      "eciGetParam",
+      "eciGetVoiceName",
+      "eciGetVoiceParam",
+      "eciInsertIndex",
+      "eciIsBeingReentered",
+      "eciLoadDict",
+      "eciNew",
+      "eciNewDict",
+      "eciNewEx",
+      "eciPause",
+      "eciProgStatus",
+      "eciRegisterCallback",
+      "eciRequestLicense",
+      "eciReset",
+      "eciSaveDict",
+      "eciSetDict",
+      "eciSetOutputBuffer",
+      "eciSetOutputDevice",
+      "eciSetOutputFilename",
+      "eciSetParam",
+      "eciSetVoiceName",
+      "eciSetVoiceParam",
+      "eciSpeakText",
+      "eciSpeakTextEx",
+      "eciSpeaking",
+      "eciStartLogging",
+      "eciStop",
+      "eciStopLogging",
+      "eciSyncWait",
+      "eciSynchronize",
+      "eciSynchronizeSynth",
+      "eciSynthesize",
+      "eciSynthesizeFile",
+      "eciTestPhrase",
+      "eciUpdateDict",
+      "eciUpdateDictEx",
+      "eciVersion"
+    ]
+  },
+  "observations": {
+    "version": "6.1.0.0",
+    "pointer_bits": 32,
+    "dll_sha256": "c1653e61e9fd599421d2f7faee21eda171d3a8ff4329343ddb24a2dd565fba5f",
+    "enumeration_result": 0,
+    "languages": [
+      458752,
+      196609,
+      131072,
+      196608,
+      589824,
+      262144,
+      327680,
+      131073,
+      65536,
+      65537,
+      393216,
+      524288,
+      655360
+    ],
+    "initial_parameters": {
+      "0": 0,
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 1,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "9": 65536,
+      "10": 1,
+      "11": 1,
+      "12": 0,
+      "13": 10,
+      "14": 2200,
+      "15": 0,
+      "16": 2200,
+      "17": -1,
+      "41": -1,
+      "42": -1
+    },
+    "voice_slots": [
+      [
+        0,
+        50,
+        65,
+        30,
+        0,
+        0,
+        50,
+        92
+      ],
+      [
+        0,
+        50,
+        65,
+        30,
+        0,
+        0,
+        50,
+        92
+      ],
+      [
+        1,
+        50,
+        81,
+        30,
+        0,
+        50,
+        50,
+        100
+      ],
+      [
+        1,
+        22,
+        93,
+        35,
+        0,
+        0,
+        50,
+        90
+      ],
+      [
+        0,
+        86,
+        56,
+        47,
+        0,
+        0,
+        50,
+        93
+      ],
+      [
+        0,
+        50,
+        69,
+        34,
+        0,
+        0,
+        70,
+        92
+      ],
+      [
+        1,
+        56,
+        89,
+        35,
+        0,
+        40,
+        70,
+        95
+      ],
+      [
+        1,
+        45,
+        68,
+        30,
+        3,
+        40,
+        50,
+        90
+      ],
+      [
+        0,
+        30,
+        61,
+        44,
+        18,
+        20,
+        50,
+        90
+      ]
+    ],
+    "voice_setters": [
+      [
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        1,
+        50,
+        50,
+        40
+      ],
+      [
+        2,
+        65,
+        65,
+        75
+      ],
+      [
+        3,
+        30,
+        30,
+        47
+      ],
+      [
+        4,
+        0,
+        0,
+        12
+      ],
+      [
+        5,
+        0,
+        0,
+        30
+      ],
+      [
+        6,
+        50,
+        50,
+        156
+      ],
+      [
+        7,
+        92,
+        92,
+        60
+      ]
+    ],
+    "copy_preset": {
+      "returned": 1,
+      "values": [
+        0,
+        50,
+        65,
+        30,
+        0,
+        0,
+        50,
+        92
+      ]
+    },
+    "parameter_aliases": {
+      "3": [
+        0,
+        0,
+        1
+      ],
+      "11": [
+        1,
+        1,
+        1
+      ],
+      "41": [
+        -1,
+        -1,
+        -1
+      ],
+      "42": [
+        -1,
+        -1,
+        -1
+      ]
+    },
+    "dictionary": {
+      "load_result": 0,
+      "set_result": 0,
+      "active": true,
+      "changes_pcm": true,
+      "retains_source": false,
+      "delete_result": 0
+    },
+    "language_switches": [
+      {
+        "before": 65536,
+        "returned": 65536,
+        "after": 262144,
+        "produces_pcm": true
+      },
+      {
+        "before": 262144,
+        "returned": 262144,
+        "after": 65536,
+        "produces_pcm": true
+      }
+    ]
+  },
+  "notes": [
+    "Voice preset volumes are read from the add-on's ECI.INI; differing calibrated ReLoq preset levels do not change the setter contract.",
+    "Repeated original PCM hashes are not a source-retention test by themselves; oscillator/noise history can differ between requests. ReLoq's explicit retention checks separately cover removed dictionary sources."
+  ]
+}

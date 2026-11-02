@@ -629,10 +629,12 @@ static void prepare_ramp(struct reloq_rate_transfer *s,float rate)
  * ordinary key check and clock bypass below out of their stack frames. */
 #include "reloq_classic_colour.inc"
 #include "reloq_classic_tract.inc"
+#include "reloq_classic_source_colour.inc"
 
 static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rate)
 {
     s->colour_profile=s->trial_profile;
+    s->aspiration_step=1-exp(-1/(rate*.005));
     if(s->trial_profile) {
         /* Factor the smooth discretization tilt out of the finite FIR.
          * The fit divides by this section, so the final target remains the
@@ -645,6 +647,21 @@ static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rat
         double *c=s->voice_colour[0];
         c[0]=(1+alpha*a)/den;c[1]=-2*cos(w)/den;c[2]=(1-alpha*a)/den;
         c[3]=c[1];c[4]=(1-alpha/a)/den;
+        /* Full-source comparisons against 11-kHz Classic Presence reveal
+         * a high-band loss which tract-only fits cannot observe. Correct
+         * the periodic source before AH joins it: +6 dB shelf at 4 kHz,
+         * with a fixed -2 dB low-band calibration, including 1 dB of
+         * headroom for the restored source harmonics. No AF/AH lift. */
+        const double shelf_gain=1.4125375446227544,trim=.7943282347242815;
+        double omega=2*pi*4000/rate,co=cos(omega),beta=sin(omega)*sqrt(2*shelf_gain);
+        double divisor=(shelf_gain+1)-(shelf_gain-1)*co+beta;
+        double *shelf=s->voice_colour[1];
+        shelf[0]=trim*shelf_gain*((shelf_gain+1)+(shelf_gain-1)*co+beta)/divisor;
+        shelf[1]=-2*trim*shelf_gain*((shelf_gain-1)+(shelf_gain+1)*co)/divisor;
+        shelf[2]=trim*shelf_gain*((shelf_gain+1)+(shelf_gain-1)*co-beta)/divisor;
+        shelf[3]=2*((shelf_gain-1)-(shelf_gain+1)*co)/divisor;
+        shelf[4]=((shelf_gain+1)-(shelf_gain-1)*co-beta)/divisor;
+        classic_source_colour(s->voice_colour[2],rate);
         s->presence_rate=rate;return;
     }
     /* Keep the shared tract/aspiration response. Periodic excitation
@@ -703,7 +720,6 @@ static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rat
         c[1]=(-2+2*zz)/den;c[2]=(1+2*creal(z)+zz)/den;
         c[3]=(-2+2*pp)/den;c[4]=(1+2*creal(p)+pp)/den;
     }
-    s->aspiration_step=1-exp(-1/(rate*.005));
 }
 static RATE_NOINLINE void fit_tract(struct reloq_rate_transfer *s,
     const struct reloq_core_voiced_formants *f,float rate,float reference,unsigned old_count)
@@ -818,10 +834,18 @@ void reloq_rate_transfer_process_voice(struct reloq_rate_transfer *s,float *samp
             s->fit_samples+=count>limit-s->fit_samples?limit-s->fit_samples:(unsigned)count;
     }
     if(s->trial_profile) {
-        const double *c=s->voice_colour[0];double *d=s->voice_colour_delay[0];
         for(size_t j=0;j<count;++j) {
-            double x=samples[j],y=c[0]*x+d[0];
-            d[0]=c[1]*x-c[3]*y+d[1];d[1]=c[2]*x-c[4]*y;
+            double y=samples[j];
+            for(unsigned k=0;k<2;++k) {
+                const double *c=s->voice_colour[k];double *d=s->voice_colour_delay[k];
+                double x=y;y=c[0]*x+d[0];
+                d[0]=c[1]*x-c[3]*y+d[1];d[1]=c[2]*x-c[4]*y;
+            }
+            const double *c=s->voice_colour[2];double *d=s->voice_colour_delay[2];
+            double corrected=c[0]*y+d[0];
+            d[0]=c[1]*y-c[3]*corrected+d[1];d[1]=c[2]*y-c[4]*corrected;
+            s->source_mix+=((s->source_profile!=0)-s->source_mix)*s->aspiration_step;
+            y+=s->source_mix*(corrected-y);
             samples[j]=(float)y;
         }
         return;
@@ -844,7 +868,6 @@ void reloq_rate_transfer_process_voice(struct reloq_rate_transfer *s,float *samp
 void reloq_rate_transfer_process_aspiration(struct reloq_rate_transfer *s,
     float *samples,size_t count,int voiced)
 {
-    if(s->trial_profile)return;
     if(s->presence_rate<=0)return;
     /* Reduce the breath component of voicing by 2 dB. Unvoiced h keeps
      * its level. A continuous 5-ms gain approach avoids a new step at

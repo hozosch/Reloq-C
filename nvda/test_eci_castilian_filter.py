@@ -1,7 +1,7 @@
-"""Castilian S/T retains Classic Presence without the optional upper band.
+"""Castilian S/T retains Classic Presence with a restrained optional upper band.
 
 Observe real words and both models. The 6.5--7.5 kHz / 1.2--5 kHz spectral
-ratio must remain below -27 dB, including the original 16-kHz foundation.
+ratio must remain below -20 dB; the 16-kHz foundation stays below -27 dB.
 A pre-exception baseline can additionally verify its exact consonant onsets.
 All audio remains in RAM; no analysis dependency beyond Python is required.
 """
@@ -59,6 +59,7 @@ def main():
                     encoding="utf8", experimental_generic=True) if args.baseline else None)
         try:
             for gender in (0, 1):
+                foundation_ratio = None
                 engine.set_parameter(GENDER, gender)
                 if baseline: baseline.set_parameter(GENDER, gender)
                 for rate in (3, 2, 4, 5, 6):
@@ -76,7 +77,18 @@ def main():
                                 _, frication = onset(b, hz, 60)
                                 ratio = (band_power(frication, hz, 6500, 7500) /
                                          band_power(frication, hz, 1200, 5000))
-                                assert 0 < ratio < .002, (gender, hz, ratio)
+                                assert 0 < ratio < .01, (gender, hz, ratio)
+                                if hz == 16000:
+                                    assert ratio < .002, (gender, hz, ratio)
+                                    foundation_ratio = ratio
+                                else:
+                                    assert ratio > foundation_ratio, (gender, hz, ratio)
+                                    if baseline:
+                                        _, normal = onset(capture(baseline, text, 1), hz, 60)
+                                        normal_ratio = (band_power(normal, hz, 6500, 7500) /
+                                                        band_power(normal, hz, 1200, 5000))
+                                        assert .1 < ratio / normal_ratio < .6, (
+                                            gender, hz, ratio, normal_ratio)
                                 worst_ratio = max(worst_ratio, ratio); spectra += 1
                         if baseline:
                             assert a == capture(baseline, text, 0), (

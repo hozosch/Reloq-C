@@ -20,6 +20,7 @@ extern void reloq61_dictionary_resolver_release(const struct reloq_lexicon_resol
 #include "reloq_german_punctuation.h"
 #include "reloq_german_root_plan.h"
 #include "reloq_inline_tags.h"
+#include "reloq_german_generic_voice.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -88,6 +89,67 @@ static int literal(unsigned char c)
     default:
         return 0;
     }
+}
+
+static int scope_character(unsigned char c)
+{
+    return !strchr(" \t\r\n.,!?;:-()/[]{}\"'",c)&&
+        c!=0x84&&c!=0x85&&c!=0x91&&c!=0x92&&c!=0x93&&c!=0x94&&c!=0x96&&c!=0x97;
+}
+static void scope_tag(struct reloq_inline_tag t,int *pitch,int *speed)
+{
+    if(t.kind==RELOQ_TAG_PITCH)*pitch=t.value;
+    else if(t.kind==RELOQ_TAG_SPEED)*speed=t.value;
+    else if(t.kind==RELOQ_TAG_PRESET) {
+        struct reloq_inline_word v={0};reloq_inline_preset(&v,t.value);*pitch=v.pitch;*speed=v.speed;
+    }
+}
+int reloq_german_control_scope(const unsigned char *text,size_t length,int pitch,int speed,
+    const struct reloq_german_generic_pitch_mark *marks,size_t count,int *mixed_pitch,int *mixed_speed)
+{
+    size_t n=0;
+    if(reloq_character_encode_text(text,length,NULL,NULL,0,&n,NULL,NULL)||n==SIZE_MAX)return -1;
+    unsigned char *a=malloc(n+1);if(!a)return -2;
+    if(reloq_character_encode_text(text,length,a,NULL,n+1,&n,NULL,NULL)){free(a);return -1;}
+    int first_pitch=-1,first_speed=-1,mp=0,ms=0;size_t next=0;
+    for(size_t at=0;at<n;) {
+        while(next<count&&marks[next].annotation_offset<=at)pitch=marks[next++].native_pitch;
+        struct reloq_inline_tag t=reloq_inline_tag_read(a+at,n-at,0);
+        if(t.length) {
+            if(t.kind<RELOQ_TAG_PITCH||t.kind>RELOQ_TAG_PRESET||t.kind==RELOQ_TAG_PAUSE){free(a);return 1;}
+            /* Anatomical changes need the adjacent phrase's tract knots.
+             * Keep that complete plan until its look-ahead can also travel
+             * across the streaming boundary. */
+            if(t.kind==RELOQ_TAG_GENDER||t.kind==RELOQ_TAG_HEAD_SIZE||
+               t.kind==RELOQ_TAG_PRESET){free(a);return 1;}
+            scope_tag(t,&pitch,&speed);at+=t.length;continue;
+        }
+        if(!scope_character(a[at])){++at;continue;}
+        size_t end=at;
+        while(end<n) {
+            t=reloq_inline_tag_read(a+end,n-end,0);
+            if(t.length) {
+                if(t.kind<RELOQ_TAG_PITCH||t.kind>RELOQ_TAG_PRESET||t.kind==RELOQ_TAG_PAUSE)break;
+                if(t.kind==RELOQ_TAG_GENDER||t.kind==RELOQ_TAG_HEAD_SIZE||
+                   t.kind==RELOQ_TAG_PRESET){free(a);return 1;}
+                size_t after=end+t.length;
+                while(after<n) {
+                    struct reloq_inline_tag following=reloq_inline_tag_read(a+after,n-after,0);
+                    if(following.kind<RELOQ_TAG_PITCH||following.kind>RELOQ_TAG_PRESET||following.kind==RELOQ_TAG_PAUSE)break;
+                    after+=following.length;
+                }
+                if(after==n||!scope_character(a[after]))break;
+                scope_tag(t,&pitch,&speed);end+=t.length;
+            } else if(scope_character(a[end]))++end;
+            else break;
+        }
+        if(first_pitch<0){first_pitch=pitch;first_speed=speed;}
+        else {mp|=pitch!=first_pitch;ms|=speed!=first_speed;}
+        /* A mark inside a lexical word takes effect at the next word. */
+        while(next<count&&marks[next].annotation_offset<end)pitch=marks[next++].native_pitch;
+        at=end;
+    }
+    free(a);*mixed_pitch=mp;*mixed_speed=ms;return ms?1:0;
 }
 
 static int digit(unsigned char c)
