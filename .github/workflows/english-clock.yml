@@ -1,0 +1,24 @@
+name: English clock source maps
+on:
+  push:
+    branches: [fix/english-clock-seconds]
+  pull_request:
+    paths:
+      - vendor/openevv61/src/reloq61_english_clock.*
+      - vendor/openevv61/src/reloq61_bridge.c
+      - tests/test_reloq_english_clock.c
+      - .github/workflows/english-clock.yml
+permissions:
+  contents: read
+jobs:
+  projection:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify seconds, fractions, singular, annotations and source maps
+        run: |
+          make -C eci test_reloq_english_clock test_reloq_english_clock_arena
+          ./eci/test_reloq_english_clock
+          ./eci/test_reloq_english_clock_arena

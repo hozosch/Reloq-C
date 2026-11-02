@@ -15,4 +15,10 @@ int reloq_core_voiced_frame_render_owned(
     float *output, float *raw_af, float *scratch, uint8_t *closed_mask,
     int16_t *pcm, size_t capacity, size_t *written);
 
+/* Capture the serial AV/AH body before the independently filtered AF branch
+ * is added. Used only by the session's gradual A-body blend. */
+int reloq_core_voiced_frame_render_body(
+    struct reloq_core_voiced_frame_state *,const struct reloq_core_voiced_frame *,
+    float *,float *,float *,uint8_t *,float *,size_t,size_t *,int);
+
 #endif

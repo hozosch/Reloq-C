@@ -33,6 +33,47 @@ static int letter(unsigned char c)
            c == 0xf6 || c == 0xfc || c == 0xdf || c==0x8c || c==0x9c;
 }
 
+/* A valid voice command embedded in a lexical word belongs to that
+ * complete word. Move only such commands ahead of it, retaining length and
+ * the documented source-index rule (interior marks follow the word). */
+static int hoist_word_controls(unsigned char *text,uint32_t *scalars,size_t n)
+{
+    if(n>SIZE_MAX/sizeof *scalars)return -2;
+    unsigned char *bytes=NULL;uint32_t *codes=NULL;int spelling=0;
+    for(size_t at=0;at<n;) {
+        struct reloq_inline_tag tag=reloq_inline_tag_read(text+at,n-at,0);
+        if(tag.length){if(tag.kind==RELOQ_TAG_SPELL)spelling=tag.value;at+=tag.length;continue;}
+        if(spelling||!letter(text[at])){++at;continue;}
+        size_t start=at,end=at,controls=0;
+        while(end<n) {
+            if(letter(text[end])){++end;continue;}
+            tag=reloq_inline_tag_read(text+end,n-end,0);
+            if(tag.kind<RELOQ_TAG_PITCH||tag.kind>RELOQ_TAG_PRESET||tag.kind==RELOQ_TAG_PAUSE)break;
+            size_t after=end+tag.length;
+            while(after<n) {
+                struct reloq_inline_tag next=reloq_inline_tag_read(text+after,n-after,0);
+                if(next.kind<RELOQ_TAG_PITCH||next.kind>RELOQ_TAG_PRESET||next.kind==RELOQ_TAG_PAUSE)break;
+                after+=next.length;
+            }
+            if(after>=n||!letter(text[after]))break;
+            controls+=after-end;end=after;
+        }
+        if(controls) {
+            if(!bytes){bytes=malloc(n);codes=malloc(n*sizeof *codes);if(!bytes||!codes){free(bytes);free(codes);return -2;}}
+            size_t c=0,w=controls;
+            for(size_t i=start;i<end;) {
+                tag=reloq_inline_tag_read(text+i,end-i,0);size_t count=tag.length?tag.length:1;
+                size_t out=tag.length?c:w;
+                memcpy(bytes+out,text+i,count);memcpy(codes+out,scalars+i,count*sizeof *codes);
+                if(tag.length)c+=count;else w+=count;i+=count;
+            }
+            memcpy(text+start,bytes,end-start);memcpy(scalars+start,codes,(end-start)*sizeof *codes);
+        }
+        at=end;
+    }
+    free(bytes);free(codes);return 0;
+}
+
 static int literal(unsigned char c)
 {
     switch (c) {
@@ -1789,7 +1830,7 @@ static int plan_tags_checked(int native_first,
     size_t boundary_count,
     struct reloq_german_word_features **features,size_t *feature_count,
     int (*cancelled)(void *), void *cancel_context,
-    const struct reloq_german_text_stream *stream,int normalized)
+    const struct reloq_german_text_stream *stream,int normalized,size_t *probe_cut)
 {
     if ((!utf8 && utf8_length) || !annotation || !annotation_length ||
         !approximate_words || (boundary_count && !boundaries) ||
@@ -1813,6 +1854,7 @@ static int plan_tags_checked(int native_first,
         free(original_scalars);free(encoded);
         return state == 1 ? 2 : state == -3 ? -2 : -1;
     }
+    if(process_tags==1&&hoist_word_controls(encoded,original_scalars,encoded_length)) {free(original_scalars);free(encoded);return -2;}
     for(size_t i=0;i<boundary_count;++i)if(boundaries[i].encoded_offset>encoded_length||
        (i&&boundaries[i].encoded_offset<boundaries[i-1].encoded_offset)) {
         free(original_scalars);free(encoded);return -1;
@@ -2246,6 +2288,15 @@ static int plan_tags_checked(int native_first,
     map_boundaries(boundaries, boundary_count, &next_boundary,
                    encoded_length, b.used);
     b.output[b.used] = 0;
+    if(probe_cut) {
+        struct reloq_german_context_source source={encoded,original_encoded,word_storage,encoded_length};
+        size_t cut=stream_first_cut(&b,&source,original_scalars);
+        if(cut!=SIZE_MAX) {
+            if(main_map) {size_t original=0;while(original<main_source_length&&main_map[original]<cut)++original;cut=original;}
+            *probe_cut=cut;result=4;
+        }
+        goto done;
+    }
     if(stream) {
         struct reloq_german_context_source source={encoded,original_encoded,word_storage,encoded_length};
         result=stream_plan(&b,&source,original_scalars,process_tags,boundaries,boundary_count,
@@ -2348,7 +2399,7 @@ done:
     reloq61_dictionary_resolver_release(resolver);
     if(retry)return plan_tags_checked(0,utf8,utf8_length,lexicon,process_tags,
         annotation,annotation_length,approximate_words,encoded_error_offset,
-        caller_boundaries,caller_count,features,feature_count,cancelled,cancel_context,NULL,normalized);
+        caller_boundaries,caller_count,features,feature_count,cancelled,cancel_context,NULL,normalized,probe_cut);
     return result;
 }
 
@@ -2362,7 +2413,7 @@ int reloq_german_best_effort_plan_tags_checked(
 {
     return plan_tags_checked(1,utf8,utf8_length,lexicon,process_tags,
         annotation,annotation_length,approximate_words,encoded_error_offset,
-        boundaries,boundary_count,features,feature_count,cancelled,cancel_context,NULL,0);
+        boundaries,boundary_count,features,feature_count,cancelled,cancel_context,NULL,0,NULL);
 }
 
 int reloq_german_best_effort_plan_indexed_checked(
@@ -2423,7 +2474,12 @@ int reloq_german_best_effort_stream_tags_checked(
     struct reloq_german_word_features **features,size_t *feature_count,
     int (*cancelled)(void *),void *cancel_context,const struct reloq_german_text_stream *stream)
 {
+    if(!utf8||!annotation||!annotation_length||!approximate_words||
+       (boundary_count&&!boundaries)||(!!features!=!!feature_count))return -1;
+    int scheduled=stream_windows(utf8,utf8_length,lexicon,process_tags,
+        boundaries,boundary_count,encoded_error_offset,cancelled,cancel_context,stream);
+    if(scheduled)return scheduled;
     return plan_tags_checked(1,utf8,utf8_length,lexicon,process_tags,
         annotation,annotation_length,approximate_words,encoded_error_offset,
-        boundaries,boundary_count,features,feature_count,cancelled,cancel_context,stream,0);
+        boundaries,boundary_count,features,feature_count,cancelled,cancel_context,stream,0,NULL);
 }

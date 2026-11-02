@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import json
+import os
 from pathlib import Path
 import re
 import zipfile
@@ -19,7 +21,7 @@ from build_translations import translation_entries
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "addon" / "synth"
-DEFAULT_OUTPUT = ROOT / "dist" / "reloq-c-synth-experimental-x64-1.0.2-dev10.nvda-addon"
+DEFAULT_OUTPUT = ROOT / "dist" / "reloq-c-synth-experimental-x64-1.1.0-rc1.nvda-addon"
 RLEX_HEADER = b"RELOQ-DE-SPR-1\n"
 HEX = re.compile(rb"[0-9A-F]+\Z")
 
@@ -64,6 +66,13 @@ def make_entries(dll_path: Path) -> dict[str, bytes]:
     dll = dll_path.read_bytes()
     assert_x64_pe(dll)
     entries = {}
+    revision = os.environ.get("GITHUB_SHA", "")
+    if re.fullmatch(r"[0-9a-f]{40}", revision):
+        entries["doc/source.json"] = (json.dumps({
+            "source_commit": revision,
+            "source_url": "https://github.com/hozosch/Reloq-C/tree/" + revision,
+            "build": "make -C eci windows-x64",
+        }, indent=2) + "\n").encode("utf-8")
     for name in (
         "manifest.ini",
         "doc/de/readme.html",

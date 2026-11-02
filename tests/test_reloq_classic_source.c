@@ -1,5 +1,6 @@
 /* Source anti-aliasing must preserve phase, masks and chunk boundaries.
- * Glottal tilt must open harmonics without moving the DC reference. */
+ * Source-filter expansion must preserve the physical poles and DC level;
+ * richness now belongs to the independently tested A-body blend. */
 #include "../src/reloq_core.c"
 #include <assert.h>
 #include <complex.h>
@@ -44,15 +45,21 @@ int main(void)
     for(unsigned r=0;r<5;++r)for(long profile=1;profile<=35;++profile) {
         struct reloq_core_clock clock=reloq_core_clock_for_rate(rates[r]);
         struct reloq_core_resonator a={0},b={0};
-        assert(!source_profile(&a,&clock,profile,11025));
-        assert(!classic_source_profile(&b,&clock,profile,11025,rates[r]));
-        assert(fabs(gain(&a,0,rates[r])-gain(&b,0,rates[r]))<2e-5);
+        struct reloq_core_clock reference=reloq_core_clock_for_rate(11025);
+        assert(!reloq_core_glottal_prefilter_configure(&a,&reference,profile));
+        assert(!source_profile(&b,&clock,profile,11025));
+        double dc=gain(&a,0,11025);
+        assert(fabs(gain(&b,0,rates[r])/dc-1)<2e-4);
+        double radius_a=sqrt(-a.previous_gain),radius_b=sqrt(-b.previous_gain);
+        double decay_a=log(radius_a)*11025,decay_b=log(radius_b)*rates[r];
+        assert(fabs(decay_a-decay_b)<.05);
+        double ca=fmax(-1,fmin(1,a.latest_gain/(2*radius_a)));
+        double cb=fmax(-1,fmin(1,b.latest_gain/(2*radius_b)));
+        assert(fabs(acos(ca)*11025-acos(cb)*rates[r])<3.2);
         assert(b.previous_gain>-1&&b.previous_gain<=0);
-        if(r==0)assert(!memcmp(&a,&b,sizeof a));
-        else if(profile>4)assert(gain(&b,3500,rates[r])>gain(&a,3500,rates[r]));
         ++tilt;
     }
     free(whole);free(split);free(legacy);free(mask);free(other);
-    printf("Classic source: %u phase/mask/chunk cases, %u DC/tilt/stability cases\n",partition,tilt);
+    printf("Classic source: %u phase/mask/chunk cases, %u DC/physical-pole/stability cases\n",partition,tilt);
     return 0;
 }

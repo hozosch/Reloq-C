@@ -1,4 +1,4 @@
-# Standard-ECI-Abgleich in 1.0.2-dev10
+# Standard-ECI-Abgleich in 1.1.0-rc1
 
 Die Referenz ist die vom Nutzer bereitgestellte `ibmeci.dll` (Windows x86,
 344064 Bytes), SHA-256
@@ -104,6 +104,27 @@ entfernt den Pausenzustand. Diese Implementierung betrifft den vorhandenen
 Puffer-/Callback-Pfad; ein nativer Windows-Audiogerätetreiber ist weiterhin
 nicht implementiert. Synthese und Phonemausgabe laufen weiterhin synchron.
 
+## Ergänzungen in 1.1.0-rc1
+
+Für die PCM-Synthese hält jeder nichtleere AddText-Aufruf die acht nativen
+Stimmwerte fest. `eciSetVoiceParam(h,0,...)` und die entsprechenden nativen
+ReLoq-Setter ändern bereits eingereihten Text nicht rückwirkend. Änderungen
+zwischen Textteilen werden als interne, wortbezogene Steuerungen in denselben
+Plan eingesetzt; sie benötigen keine weiteren InsertRate-/InsertVolume-
+Exporte. Der zuletzt konfigurierte Handle-Zustand bleibt nach der Synthese
+erhalten. Das gilt auch bei normalen Texten mit deaktivierten Annotationen.
+
+447 Prüfungen vergleichen reale Queue-Änderungen mit Inline-Steuerungen,
+Byte-/UTF-8-Eingabe, beide Setter-Routen, alle acht Parameter und aktivierte
+bzw. deaktivierte Tags. Weitere Fälle prüfen `vv` innerhalb westlicher Wörter
+und die Lautstärkesteuerung der CJK-Module. Diese verwenden ihre eigenen
+akustischen Wortgrenzen, keine vom Host erfundenen Leerzeichenwörter.
+`vb` nutzt bei den westlichen Modulen ohne zusätzliche ECI-Pitch-Marken die
+kontinuierliche Wort-F0-Steuerung. Die kombinierte Legacy-Route mit zusätzlichen
+Pitch-Marken bleibt erhalten und ist nicht vollständig mit allen Inline-
+Tagfolgen abgeglichen. Andere globale Parameter und die Phonem-Queue haben
+noch keine vollständige fragmentbezogene Snapshot-Parität.
+
 ## Konkrete Referenzbeobachtungen
 
 `eciSetVoiceParam` liegt bei 0x100052f7. Die Prüfung ab 0x100053bf lässt
@@ -146,8 +167,9 @@ Original-Exporte fehlen weiterhin:
 `eciActivateFilter`, `eciDeactivateFilter`, `eciDeleteFilter`, `eciGetFilteredText`, `eciNewFilter`, `eciRegisterVoice`, `eciSetFilter`, `eciSetOutputDevice`, `eciSetOutputFilename`, `eciSpeakText`, `eciSpeakTextEx`, `eciSynthesizeFile`, `eciTestPhrase`, `eciUnregisterVoice`, `eciUpdateFilter`.
 
 Auch bei vorhandenen Exporten ist vollständige Parität nicht belegt:
-`eciSynthesize` läuft hier synchron; `eciSynthMode=1` speichert noch keine
-unterschiedlichen Parameterzustände je AddText-Fragment. TextMode 2/3,
+`eciSynthesize` läuft hier synchron; der neue AddText-Snapshot deckt die acht
+nativen Stimmparameter der PCM-Route ab. Das vollständige Queue-/Thread-
+Verhalten aller Parameter ist weiterhin offen. TextMode 2/3,
 NumberMode, Phonemindizes und zusätzliche asiatische Codesatzmodi werden nicht
 angeboten. Eine Audio-Geräte-/Dateiausgabe und das native Filter-ABI benötigen
 eigene Implementierungen. Diese Grenzen sind für einen beliebigen ECI-Client

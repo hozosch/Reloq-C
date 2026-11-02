@@ -1,3 +1,61 @@
+# Testkandidat 1.1.0-rc1: A-Stimmkörper, Wortparameter und Startzeit
+
+Ab 22,05 kHz mischt Profil B den seriellen AV/AH-Stimmkörper aus Variante A
+mit 25/50/80/100 Prozent bei 22,05/32/44,1/48 kHz bei. A wird dabei fest mit
+0,8 kalibriert, damit die Summe mit den Classic-Konsonanten auch beim kleinen
+weiblichen Modell unter der PCM-Grenze bleibt. Die frühere zusätzliche
+Glottisneigung entfällt. Die 16-kHz-Stimmkontur bleibt unverändert. Bei
+48 kHz wird nur der benötigte A-Körper berechnet; langsam bewegte A-Filter
+werden wie Classic höchstens alle 2 ms neu angepasst und über 3 ms überführt.
+Es gibt keine dynamische Lautstärkeregelung und kein PCM-Resampling.
+
+Kastilisches S/T verwendet im bisherigen S/Z/T-Spektralbereich die vollständige
+A-Rauschbank und deren Filter. Andere Classic-Konsonanten bleiben erhalten.
+Die isolierte AF-Prüfung stimmt dabei über alle fünf erweiterten Raten exakt
+mit A überein; der reale Hörtest muss die passende Höhenbalance bestätigen.
+
+`vv` wird bei den westlichen Sprachmodulen vor der Lexikalanalyse entfernt
+und über die nativen Wortgrenzen angewendet. So bleibt das Wort zusammen
+und sein gesamter Klang bekommt denselben Pegel. CJK verwendet den eigenen
+nativen akustischen Wortplan mit dem ursprünglichen ECI-Lautstärkewert;
+redundantes `vv` verändert seine Segmentierung nicht mehr. Deutsche
+Stimmsteuerungen innerhalb eines Wortes werden vor diesem Wort zugelassen.
+Zusätzliche Abschlusspausen bei Stimmparametern und die deutsche künstliche
+50-ms-Pause entfallen. Nichtdeutsche Inline-Tonhöhe nutzt ohne zusätzliche
+ECI-Pitch-Marken den bestehenden kontinuierlichen F0-Skalierungsansatz.
+
+Alle acht nativen Stimmparameter werden beim AddText-Aufruf für die PCM-
+Synthese festgehalten. Spätere Setter gelten ab dem folgenden Textteil;
+Setter nach dem letzten Textteil gelten erst für die nächste Äußerung.
+Aufrufer-Annotationen werden vor internen Parameterwechseln zugelassen,
+auch bei ausgeschalteten öffentlichen Tags. Textteile bleiben eine Äußerung.
+
+Lange gewöhnliche deutsche Prosa wird zunächst in begrenzten Analysefenstern
+zugelassen. Nur tatsächlich erkannte vollständige Satzgrenzen mit
+abgeschlossenen Zitaten/Klammern werden ausgegeben. Abkürzungen, Zahlen und
+abhängige Satzenden behalten den vorhandenen Ganztextpfad. Tags, besondere
+Pitch-Marken und eigene Rlex-Ersetzungen nutzen weiterhin den sicheren
+bisherigen Plan. 40 Vergleiche liefern identische vollständige PCM- und
+Indexausgabe. Im Hosttest sank die Zeit bis zum ersten PCM-Puffer bei
+9.472 deutschen Zeichen von median 14,69 auf 3,58 ms (11,025 kHz, fünf Läufe).
+Das ist keine Messung der NVDA-Audiogerätelatenz auf Windows ARM.
+
+447 neue ECI-Queue-/Wort-/Tag-Prüfungen und die bisherigen 364 öffentlichen
+API-Prüfungen bestehen. 136 reale Pegelfälle bleiben unter der PCM-Grenze
+(Maximum 32.107), 36 A-/Niedrigraten-Vergleiche bleiben bitgleich zu dev10.
+293 Profilprüfungen, 371 deutsche Kontextfälle, 32 Abbruchfälle und 72
+Sekundenlesungsfälle bestehen ebenfalls. NVDA-Pakettests bestehen in beiden
+UI-Sprachen; die Windows-x64-DLL hat unverändert 49 öffentliche Exporte.
+Die vollständige ECI-Parität, die Klangbalance und ruckelfreie Wiedergabe auf
+dem Zielgerät sind damit nicht behauptet. Details: `validation/1.1.0-rc1.json`.
+
+Die Lizenztexte aus dem Entwicklungszweig werden mit dem zugehörigen
+Quellverweis in die Pakete übernommen. Vor der stabilen 1.1.0 stehen der
+Hörtest zu #1 und das Zusammenführen der Lizenz-/Backend-Änderungen nach
+main an. #2/#5/#6 werden anhand der bestandenen Regressionen abgeschlossen;
+#4 ist mit dem Lizenzstand vorbereitet. Es wird noch kein stabiles Release
+veröffentlicht.
+
 # Teststand 1.0.2-dev10: ECI-Phoneme und stimmhafte Quelle
 
 `eciGeneratePhonemes` liefert native Phonembytes über den regulären

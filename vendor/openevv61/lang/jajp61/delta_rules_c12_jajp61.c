@@ -1462,6 +1462,9 @@ L521:;
     AT(int32_t, -36) = ((int32_t)AT(int32_t, -16));
     AT(int32_t, -24) = (100);
 L642:;
+    /* Keep the private PCM host's raw, word-scoped ECI volume. */
+    extern int reloq61_volume_factor(void *,int,int);
+    AT(int32_t, -36)=reloq61_volume_factor(state,(int16_t)AT(int16_t, -46),AT(int32_t, -36));
     STATE(int16_t, s337) = ((int32_t)AT(int16_t, -24));
 L650:;
     STATE_D(int16_t, c11, 2) = (1);

@@ -156,7 +156,7 @@ extern int reloq61_inline_queue(const void *queue);
    from the state block rather than being told. */
 static void toldConcat(SynthThread *t, uint32_t which, int32_t value)
 {
-    stw_processRemaining(t);
+    if(!reloq61_inline_queue(ST_APP(t)))stw_processRemaining(t);
     if (ST_CONCAT(t))
         cm_setTorrentParam1(ST_CONCAT(t), which, value);
     finished(t);
@@ -168,7 +168,7 @@ static void toldConcat(SynthThread *t, uint32_t which, int32_t value)
    it leaks a little on a voice that is not concatenative. */
 static void toldConcatNamed(SynthThread *t, uint32_t which, int32_t name)
 {
-    stw_processRemaining(t);
+    if(!reloq61_inline_queue(ST_APP(t)))stw_processRemaining(t);
     if (ST_CONCAT(t)) {
         cm_setTorrentParam1(ST_CONCAT(t), which, name);
         free(EVV_AT(void *, name));
@@ -284,7 +284,7 @@ void setPausesRun(SynthThread *t, int32_t mode, int32_t seq)
 THIS void changeVoiceRun(SynthThread *t, int32_t voice, int32_t seq)
 {
     (void)seq;
-    stw_processRemaining(t);
+    if(!reloq61_inline_queue(ST_APP(t)))stw_processRemaining(t);
     es_paramFromEngine(ST_STATE(t), ECI_PARAM_VOICE, voice);
     stw_createAudioConverter(t, ST_FORMAT(t));
 

@@ -1,8 +1,14 @@
 # Eloquence C – Bedienungsanleitung
 
-## Hörtest 1.0.2-dev10
+## Hörtest 1.1.0-rc1
 
-Dieser Teststand ergänzt allgemeine ECI-Phonemausgabe und Pause/Resume. Die stimmhafte Quelle berücksichtigt Sample-Bruchteile beim Glottisschluss gegen Alias-Artefakte. Ab 22,05 kHz öffnet eine flachere native Glottisneigung die Obertöne; der bisherige obere Shelf entfällt. Die 16-kHz-Kontur und die akzeptierte Konsonantenformung bleiben erhalten. Weniger häufige, weichere Traktfilter-Anpassungen sollen Rechenlast und Übergangsartefakte verringern. Der Hörtest muss zeigen, wie weit Knistern und Ruckler damit zurückgehen.
+Ab 22,05 kHz wird der Stimmkörper aus Variante A schrittweise beigemischt. Die Konsonanten behalten ihre Classic-Abstimmung; kastilisches S/T verwendet die Filterung aus A. Die 16-kHz-Stimmkontur bleibt erhalten. Lange deutsche Texte können nach der ersten vollständig analysierten Phrase starten. Lautstärke- und Stimmparameterwechsel zwischen Textteilen gelten ab der zugehörigen Wortgrenze. Dieser Stand ist ein Testkandidat für 1.1.0; die Klangabstimmung und Wiedergabe auf dem eigenen Gerät müssen noch gehört werden.
+
+## Englische Uhrzeiten mit Sekunden
+
+Englische Uhrzeiten wie `13:28:25` behalten die normale Stunden-/Minutenlesung und ergänzen „and twenty five seconds“. Bei einer Sekunde steht der Singular; Sekundenbruchteile bleiben in der gewöhnlichen Zahlenlesung. Dies gilt für US- und britisches Englisch im nativen Kern, auch für NVDA und andere ECI-Programme. Quellindizes bleiben ihren ursprünglichen Textpositionen zugeordnet.
+
+Eloquence C ist die NVDA-Erweiterung des Projekts [ReLoq C](https://github.com/hozosch/Reloq-C). Sie entwickelt den Eloquence-Klang mit gezielten Aussprachekorrekturen, Unicode-Unterstützung und zusätzlichen Klangmöglichkeiten weiter. NVDA ist die erste Anbindung und dient derzeit zum Prüfen der Sprachausgabe. Derselbe Kern ist auch für Android ARM64 und Windows SAPI5 verfügbar.
 
 ## Installieren und auswählen
 

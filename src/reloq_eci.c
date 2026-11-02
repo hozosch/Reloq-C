@@ -109,6 +109,10 @@ static unsigned dictionary_language_slot(int language)
 }
 _Static_assert(sizeof(short) == sizeof(int16_t), "ECI output needs 16-bit short");
 
+struct queued_voice {
+    int values[8],generic[3];
+    unsigned active;
+};
 struct queued_item {
     unsigned char *utf8;
     size_t length;
@@ -117,6 +121,7 @@ struct queued_item {
     int pitch;
     int is_pitch;
     int unicode_input, character_mode;
+    struct queued_voice voice;
 };
 
 struct index_mark {
@@ -191,6 +196,64 @@ struct reloq_eci_engine {
     size_t queued, capacity;
     char *dictionary_key_result,*dictionary_value_result;
 };
+
+static struct queued_voice capture_voice(const struct reloq_eci_engine *e)
+{
+    return (struct queued_voice){
+        {e->gender,e->head_size,e->native_pitch,e->native_inflection,
+         e->roughness,e->breathiness,e->native_speed,e->native_volume},
+        {e->generic_rate,e->generic_pitch,e->generic_volume},
+        (unsigned)(e->native_speed_active|e->native_pitch_active<<1|
+            e->native_inflection_active<<2|e->native_volume_active<<3)};
+}
+static void apply_voice(struct reloq_eci_engine *e,const struct queued_voice *v)
+{
+    e->gender=v->values[0];e->head_size=v->values[1];
+    e->native_pitch=v->values[2];e->native_inflection=v->values[3];
+    e->roughness=v->values[4];e->breathiness=v->values[5];
+    e->native_speed=v->values[6];e->native_volume=v->values[7];
+    e->generic_rate=v->generic[0];e->generic_pitch=v->generic[1];e->generic_volume=v->generic[2];
+    e->native_speed_active=!!(v->active&1);e->native_pitch_active=!!(v->active&2);
+    e->native_inflection_active=!!(v->active&4);e->native_volume_active=!!(v->active&8);
+}
+
+struct queued_control {size_t offset;struct queued_voice voice;};
+/* Trusted parameter snapshots are inserted only after caller text admission.
+ * They stay in one rule stream, so SetVoiceParam/AddText never adds a phrase
+ * boundary or reinterprets a caller's disabled annotations. */
+static int insert_voice_controls(unsigned char **text,size_t *length,
+    struct queued_control *controls,size_t count,struct queued_voice initial,
+    const size_t *source_map,struct index_mark *marks,size_t mark_count,
+    struct pitch_mark *pitches,size_t pitch_count)
+{
+    static const char *const names[]={"vg","vh","vb","vf","vr","vy","vs","vv"};
+    if(!count)return 0;
+    if(count>(SIZE_MAX-*length-2)/80)return -1;
+    unsigned char *next=malloc(*length+count*80+2);
+    size_t *offsets=malloc((count+1)*sizeof *offsets),*added=malloc((count+1)*sizeof *added);
+    if(!next||!offsets||!added){free(next);free(offsets);free(added);return -1;}
+    size_t used=0,from=0;
+    for(size_t i=0;i<count;++i) {
+        size_t at=source_map?source_map[controls[i].offset]:controls[i].offset;
+        memcpy(next+used,*text+from,at-from);used+=at-from;from=at;
+        for(unsigned k=0;k<8;++k)if(initial.values[k]!=controls[i].voice.values[k]) {
+            int n=snprintf((char *)next+used,80,"`%s%d",names[k],controls[i].voice.values[k]);
+            if(n<0||n>=80){free(next);free(offsets);free(added);return -1;}
+            used+=(size_t)n;
+        }
+        initial=controls[i].voice;offsets[i]=at;added[i]=used-at;
+    }
+    memcpy(next+used,*text+from,*length-from);used+=*length-from;next[used]=0;
+    for(size_t i=0;i<mark_count;++i) {
+        size_t extra=0;for(size_t j=0;j<count&&offsets[j]<=marks[i].offset;++j)extra=added[j];
+        marks[i].offset+=extra;
+    }
+    for(size_t i=0;i<pitch_count;++i) {
+        size_t extra=0;for(size_t j=0;j<count&&offsets[j]<=pitches[i].offset;++j)extra=added[j];
+        pitches[i].offset+=extra;
+    }
+    free(*text);*text=next;*length=used;free(offsets);free(added);return 0;
+}
 
 static void eci_record_error(struct reloq_eci_engine *e,unsigned flag)
 {
@@ -446,6 +509,7 @@ static void leading_models(const unsigned char *text,size_t length,
         struct reloq_inline_tag tag=reloq_inline_tag_read(text+at,length-at,0);
         if(!tag.kind || tag.kind==RELOQ_TAG_SPR)break;
         switch(tag.kind) {
+        case RELOQ_TAG_PITCH:settings->native_pitch_plus_one=tag.value+1;break;
         case RELOQ_TAG_GENDER:settings->gender=tag.value;break;
         case RELOQ_TAG_HEAD_SIZE:settings->head_size_plus_one=tag.value+1;break;
         case RELOQ_TAG_ROUGHNESS:settings->roughness=tag.value;break;
@@ -528,9 +592,9 @@ static int synthesize_generic(struct reloq_eci_engine *e,
         int reset=reloq_session_reset(e->text_session);
         if(preflight_cancelled(&cancel_check))reloq_session_cancel(e->text_session);
         unlock_session(&e->session_lock);
-        struct pcm_bridge bridge={.engine=e,.session=e->text_session,.marks=marks,.mark_count=mark_count,.inline_volume=0};
+        struct pcm_bridge bridge={.engine=e,.session=e->text_session,.marks=marks,.mark_count=mark_count,.inline_volume=e->process_tags};
         struct reloq_german_generic_settings settings={e->generic_rate,e->generic_pitch,
-            e->native_volume_active?100:e->generic_volume,e->native_speed_active?(e->native_speed?e->native_speed:-1):0,
+            (e->native_volume_active||e->process_tags)?100:e->generic_volume,e->native_speed_active?(e->native_speed?e->native_speed:-1):0,
             e->native_pitch_active?e->native_pitch+1:0,e->native_inflection_active?e->native_inflection+1:0,
             e->pause_mode,e->head_size+1,e->roughness,e->breathiness,e->gender};
         if(e->process_tags)leading_models(phrase,length,&settings);
@@ -541,7 +605,8 @@ static int synthesize_generic(struct reloq_eci_engine *e,
             unsigned reference=sample_hz(e->sample_rate_code)>=16000?(head<=(gender?40:30)?4u:5u):0;
             if(reloq_session_source_levels(e->text_session,source,gender?-3:-5,6,gender?-7:0,reference))reset=1;
         }
-        int rendered=reset?RELOQ_DE_UTTERANCE_INVALID:reloq_language_rules_render(e->language,phrase,length,e->process_tags||admitted,100,
+        int rendered=reset?RELOQ_DE_UTTERANCE_INVALID:reloq_language_rules_render(e->language,phrase,length,e->process_tags||admitted,
+            e->process_tags?(e->native_volume_active?e->native_volume:e->generic_volume):100,
             &settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
             send_pcm,send_generic_index,&bridge);
         free(english_indices);free(english_pitch);
@@ -960,7 +1025,7 @@ int reloq_eci_reset_audio(ECIHand handle)
 void ECICALL eciVersion(char *buffer)
 {
     /* The public ECI convention promises at least twenty writable bytes. */
-    if (buffer) memcpy(buffer, "1.0.2.10", sizeof "1.0.2.10");
+    if (buffer) memcpy(buffer, "1.1.0.rc1", sizeof "1.1.0.rc1");
 }
 
 int ECICALL eciGetAvailableLanguages(unsigned int *languages, int *count)
@@ -1008,7 +1073,7 @@ int ECICALL eciAddText(ECIHand handle, const void *text)
         return 0;
     }
     if (append_item(e, (struct queued_item){.utf8 = utf8,
-                       .length = length,.unicode_input=e->text_mode||(e->language_dialect&0x800)||e->language==0x120000||e->language==0x60000||e->language==0x60001||e->language==0x80000||e->language==0xa0000,.character_mode=e->text_mode})) {
+                       .length = length,.voice=capture_voice(e),.unicode_input=e->text_mode||(e->language_dialect&0x800)||e->language==0x120000||e->language==0x60000||e->language==0x60001||e->language==0x80000||e->language==0xa0000,.character_mode=e->text_mode})) {
         free(utf8);
         eci_error(e,RELOQ_ECI_MEMORY);
         return 0;
@@ -1029,7 +1094,7 @@ int ECICALL eciAddTextUtf8(ECIHand handle,const void *text,size_t bytes,int mode
     if(bytes)memcpy(copy,text,bytes);
     copy[bytes]=0;
     if(append_item(e,(struct queued_item){.utf8=copy,.length=bytes,
-       .unicode_input=1,.character_mode=mode})) {
+       .voice=capture_voice(e),.unicode_input=1,.character_mode=mode})) {
         free(copy);eci_error(e,RELOQ_ECI_MEMORY);return 0;
     }
     eci_error(e,RELOQ_ECI_OK);return 1;
@@ -1079,6 +1144,10 @@ int ECICALL eciSynthesize(ECIHand handle)
     e->failure_stage = RELOQ_ECI_STAGE_NONE;
     e->failure_utf8_offset = -1;
     int result = RELOQ_ECI_OK;
+    struct queued_voice saved_voice=capture_voice(e),initial_voice=saved_voice,last_voice=saved_voice;
+    int saved_tags=e->process_tags,have_voice=0;
+    struct queued_control *controls=NULL;size_t control_count=0;
+    struct reloq_session *saved_text_session=NULL;
     size_t text_bytes = 0;
     size_t original_text_bytes = 0, source_bytes = 0;
     int unicode_input=0;
@@ -1091,6 +1160,11 @@ int ECICALL eciSynthesize(ECIHand handle)
     struct connected_index_boundary *boundaries = NULL;
     size_t span_count = 0;
     struct preflight_cancel cancel_check = {e, before};
+    if(e->queued) {
+        if(e->queued>SIZE_MAX/sizeof *controls){result=RELOQ_ECI_MEMORY;goto done;}
+        controls=malloc(e->queued*sizeof *controls);
+        if(!controls){result=RELOQ_ECI_MEMORY;goto done;}
+    }
     for (size_t i = 0; i < e->queued; ++i) {
         if (e->queue[i].is_index) {
             ++mark_count;
@@ -1104,8 +1178,24 @@ int ECICALL eciSynthesize(ECIHand handle)
             result = RELOQ_ECI_MEMORY;
             goto done;
         }
+        if(e->queue[i].length&&e->voice_mode==RELOQ_ECI_VOICE_GENERIC) {
+            if(!have_voice){initial_voice=last_voice=e->queue[i].voice;have_voice=1;}
+            else if(memcmp(last_voice.values,e->queue[i].voice.values,sizeof last_voice.values)) {
+                controls[control_count++]=(struct queued_control){text_bytes,e->queue[i].voice};
+                last_voice=e->queue[i].voice;
+            }
+        }
         text_bytes += e->queue[i].length;
         unicode_input|=e->queue[i].unicode_input;
+    }
+    if(have_voice) {
+        apply_voice(e,&initial_voice);
+        if(initial_voice.values[0]!=saved_voice.values[0]||initial_voice.values[1]!=saved_voice.values[1]) {
+            struct reloq_session *next=make_text_session(e->gender,e->head_size,e->sample_rate_code);
+            if(!next){result=RELOQ_ECI_MEMORY;goto done;}
+            (void)reloq_session_high_rate_profile(next,(unsigned)e->high_rate_profile);
+            lock_session(&e->session_lock);saved_text_session=e->text_session;e->text_session=next;unlock_session(&e->session_lock);
+        }
     }
     if ((text_bytes || mark_count) && !e->callback) {
         result = RELOQ_ECI_OUTPUT;
@@ -1184,13 +1274,13 @@ int ECICALL eciSynthesize(ECIHand handle)
             offset += item->length;
         }
     }
-    if(text_bytes && e->process_tags && e->voice_mode==RELOQ_ECI_VOICE_GENERIC &&
+    if(text_bytes && !control_count && e->process_tags && e->voice_mode==RELOQ_ECI_VOICE_GENERIC &&
        inline_language_commands(phrase,text_bytes,modes)) {
         result=synthesize_languages(e,phrase,text_bytes,modes,unicode_input,
             marks,mark_count,pitches,pitch_count,before);
         goto done;
     }
-    if(unicode_input&&text_bytes) {
+    if((unicode_input||control_count)&&text_bytes) {
         unsigned char *normalized=NULL;size_t count=0;source_bytes=text_bytes;
         int r=reloq_unicode_admit_language(phrase,text_bytes,modes,e->language,
             e->process_tags,&normalized,&count,&source_map);
@@ -1199,6 +1289,18 @@ int ECICALL eciSynthesize(ECIHand handle)
         for(size_t i=0;i<mark_count;++i)marks[i].offset=source_map[marks[i].offset];
         for(size_t i=0;i<pitch_count;++i)pitches[i].offset=source_map[pitches[i].offset];
         free(phrase);phrase=normalized;text_bytes=count;
+    }
+    if(control_count) {
+        if(insert_voice_controls(&phrase,&text_bytes,controls,control_count,initial_voice,
+            source_map,marks,mark_count,pitches,pitch_count)) {result=RELOQ_ECI_MEMORY;goto done;}
+        e->process_tags=1;
+        /* Diagnostics below refer to the admitted stream, not the temporary
+         * annotations. Public index/pitch positions have already moved. */
+        free(source_map);source_map=NULL;
+        if(inline_language_commands(phrase,text_bytes,NULL)) {
+            result=synthesize_languages(e,phrase,text_bytes,NULL,0,marks,mark_count,pitches,pitch_count,before);
+            goto done;
+        }
     }
     if (text_bytes) {
         original_text_bytes = text_bytes;
@@ -1415,6 +1517,11 @@ done:
     free(pitches);
     free(phrase);
     clear_queue(e);
+    free(controls);apply_voice(e,&saved_voice);e->process_tags=saved_tags;
+    if(saved_text_session) {
+        lock_session(&e->session_lock);struct reloq_session *temporary=e->text_session;e->text_session=saved_text_session;unlock_session(&e->session_lock);
+        reloq_session_destroy(temporary);
+    }
     eci_error(e,result);
     e->last_synthesis_error = result;
     reloq61_text_options_scope(previous_options);

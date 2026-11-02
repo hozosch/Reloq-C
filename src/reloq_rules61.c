@@ -123,7 +123,7 @@ int reloq_rules61_word(int language,const unsigned char *word,size_t length,
 
 struct rule_span {
     struct reloq61_curve curve[62];
-    int32_t from,to,volume,step;
+    int32_t from,to,volume,step,pitch,native_pitch;
     int64_t tick;
 };
 struct quiet_cut { int64_t from,to,after; };
@@ -135,7 +135,7 @@ struct rule_plan {
     struct quiet_cut *cuts;size_t cut_count,cut_capacity;
     int64_t ticks,*indices;size_t index_count;
     struct reloq_session *session;
-    int memory;
+    int memory,castilian,word_volume,cjk_volume,word_pitch,native_pitch;
     struct rule_playback *playback;
 };
 static int process_spans(struct rule_plan *,int final);
@@ -158,7 +158,8 @@ static int take_span(void *context,int32_t from,int32_t to,
     struct rule_plan *s=context;struct rule_span *f=new_span(s);
     if(!f)return 1;
     memcpy(f->curve,curves,sizeof f->curve);
-    f->from=from;f->to=to;f->volume=volume;f->step=1;f->tick=s->ticks;
+    f->from=from;f->to=to;f->volume=s->cjk_volume&&volume>=10000?
+        (volume-10000)/100:s->word_volume;f->step=1;f->tick=s->ticks;f->pitch=s->word_pitch;f->native_pitch=s->native_pitch;
     s->ticks+=to-from;return s->playback?process_spans(s,0):0;
 }
 /* General fallback for a provider window whose step is not one ms. */
@@ -167,7 +168,8 @@ static int take_frame(void *context,const int32_t p[62],int32_t volume)
     struct rule_plan *s=context;struct rule_span *f=new_span(s);
     if(!f)return 1;
     for(unsigned k=0;k<62;++k)f->curve[k]=(struct reloq61_curve){0,p[k],p[0],p[k]};
-    f->from=0;f->to=p[0];f->step=p[0];f->volume=volume;f->tick=s->ticks;
+    f->from=0;f->to=p[0];f->step=p[0];f->volume=s->cjk_volume&&volume>=10000?
+        (volume-10000)/100:s->word_volume;f->tick=s->ticks;f->pitch=s->word_pitch;f->native_pitch=s->native_pitch;
     s->ticks+=p[0];return s->playback?process_spans(s,0):0;
 }
 static void take_index(void *context,int32_t index,int64_t tick)
@@ -175,6 +177,13 @@ static void take_index(void *context,int32_t index,int64_t tick)
     struct rule_plan *s=context;
     if(index>=0&&(size_t)index<s->index_count && s->indices[index]!=INT64_MAX &&
        s->indices[index]!=0)s->indices[index]=tick;
+}
+static void take_control(void *context,int parameter,int value)
+{
+    struct rule_plan *s=context;
+    if(parameter==7)s->word_volume=value;
+    else if(parameter==2)s->word_pitch=value;
+    else if(parameter==8){s->native_pitch=value;s->word_pitch=-1;}
 }
 static int32_t curve_value(const struct reloq61_curve *c,int32_t at)
 {
@@ -327,14 +336,16 @@ static int render_until(struct rule_plan *s,int64_t limit)
         if(previous!=f){prepare_controls(f,&prepared);previous=f;}
         float controls[62];read_controls(&prepared,f,at,controls);
         if(p->pitch_scale!=1)controls[1]=(float)(controls[1]*p->pitch_scale);
+        if(f->pitch>=0)controls[1]=(float)(controls[1]*
+            reloq_voice_pitch_f0_scale(f->pitch)/reloq_voice_pitch_f0_scale(f->native_pitch));
         reloq_german_voice_model_frame(&p->model,controls);
         struct reloq_core_voiced_frame frame;
         if(reloq_frame_adapter_map(controls,reloq_german_voice_model_formants(&p->model),&frame)) {
             p->result=RELOQ_DE_UTTERANCE_INVALID;return 1;
         }
         frame.noise.s_frication=controls[8]>0&&(controls[38]>controls[37]+10||controls[39]>controls[37]+10);
-        /* 2.70 is native volume 100; 2.02 belongs to preset volume 92. */
-        p->delivery.gain=p->settings->volume/100.0*f->volume/270.0;
+        if(s->castilian&&frame.noise.s_frication)frame.noise.s_frication=3;
+        p->delivery.gain=p->settings->volume/100.0*reloq_voice_volume_gain(f->volume);
         size_t completed=0;
         int status=reloq_session_render_frames(s->session,&frame,1,rule_pcm,&p->delivery,&completed);
         if(status) {
@@ -372,12 +383,65 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     if(!text||!settings||!session||!sink||(index_count&&!indices)||(pitch_count&&!pitches)||
        index_count>INT32_MAX||pitch_count>(size_t)INT32_MAX-index_count)return RELOQ_DE_UTTERANCE_INVALID;
     unsigned char *a=NULL;size_t *map=NULL,n=0;
-    struct rule_plan plan={.session=session,.index_count=index_count+pitch_count};
+    struct rule_plan plan={.session=session,.index_count=index_count+pitch_count,
+        .castilian=language==0x20000,.word_volume=native_volume,.word_pitch=-1,
+        .native_pitch=settings->native_pitch_plus_one?settings->native_pitch_plus_one-1:settings->pitch};
     struct reloq61_mark *marks=NULL;int result=RELOQ_DE_UTTERANCE_INVALID;
+    struct reloq61_mark *volumes=NULL;size_t volume_count=0;
     int family=language>>16;
+    plan.cjk_volume=family==6||family==8||family==10;
     int input_status=english_input(text,length,tags,family==6||family==8||family==10||family==18,&a,&map,&n);
     if(input_status==-2)goto memory;
     if(input_status)goto done;
+    if(plan.cjk_volume) {
+        /* CJK lexers can treat even a redundant command as a token break.
+         * A no-op vv must leave that native segmentation untouched. Actual
+         * changes retain the module's acoustic-word parameter schedule. */
+        size_t out=0;int volume=native_volume;
+        for(size_t i=0;i<n;) {
+            struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
+            size_t count=t.length?t.length:1;
+            int omit=t.kind==RELOQ_TAG_VOLUME&&t.value==volume;
+            if(t.kind==RELOQ_TAG_VOLUME)volume=t.value;
+            if(t.kind==RELOQ_TAG_PRESET)volume=100;
+            if(!omit){memmove(a+out,a+i,count);memmove(map+out,map+i,count*sizeof *map);out+=count;}
+            i+=count;
+        }
+        n=out;a[n]=0;map[n]=length;
+    }
+    /* Removing vv preserves the lexical word (including CJK segmentation).
+     * The native word callback assigns its value before that word's audio. */
+    for(size_t i=0;i<n;) {
+        struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
+        if(!plan.cjk_volume) {
+            if(t.kind==RELOQ_TAG_VOLUME||(!pitch_count&&t.kind==RELOQ_TAG_PITCH))++volume_count;
+            else if(t.kind==RELOQ_TAG_PRESET)volume_count+=2;
+        }
+        i+=t.length?t.length:1;
+    }
+    if(volume_count) {
+        if(volume_count>SIZE_MAX/sizeof *volumes)goto memory;
+        volumes=malloc(volume_count*sizeof *volumes);if(!volumes)goto memory;
+        size_t out=0,control=0;
+        for(size_t i=0;i<n;) {
+            struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
+            size_t count=t.length?t.length:1;
+            if(t.kind==RELOQ_TAG_VOLUME||(!pitch_count&&t.kind==RELOQ_TAG_PITCH)) {
+                volumes[control++]=(struct reloq61_mark){out,t.value,t.kind==RELOQ_TAG_VOLUME?7:2};
+            } else {
+                if(t.kind==RELOQ_TAG_PRESET) {
+                    struct reloq_inline_word v={0};reloq_inline_preset(&v,t.value);
+                    volumes[control++]=(struct reloq61_mark){out,100,7};
+                    volumes[control++]=(struct reloq61_mark){out,v.pitch,8};
+                }
+                memmove(a+out,a+i,count);memmove(map+out,map+i,count*sizeof *map);out+=count;
+            }
+            i+=count;
+        }
+        n=out;a[n]=0;map[n]=length;
+        for(size_t i=0;i<volume_count;++i)
+            while(volumes[i].offset<n&&strchr(" \t\r\n",a[volumes[i].offset]))++volumes[i].offset;
+    }
     /* Leading punctuation has no preceding spoken word to pause after. */
     for(size_t j=0;j<n;) {
         struct reloq_inline_tag t=reloq_inline_tag_read(a+j,n-j,1);
@@ -413,13 +477,14 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         .marks=marks,.mark_count=mark_count,.frame=take_frame,.index=take_index,.context=&plan,
         .span=take_span,.sample_rate=reloq_session_sample_rate(session)==8000?8000:0,
         .output_rate=(int)reloq_session_sample_rate(session)};
+    q.controls=volumes;q.control_count=volume_count;q.control=take_control;
     q.voice[0]=settings->gender;
     q.voice[1]=settings->head_size_plus_one?settings->head_size_plus_one-1:50;
     q.voice[2]=settings->native_pitch_plus_one?settings->native_pitch_plus_one-1:settings->pitch;
     q.voice[3]=settings->native_inflection_plus_one?settings->native_inflection_plus_one-1:30;
     q.voice[4]=settings->roughness;q.voice[5]=settings->breathiness;
     q.voice[6]=settings->native_speed?(settings->native_speed<0?0:settings->native_speed):settings->rate;
-    q.voice[7]=native_volume;
+    q.voice[7]=plan.cjk_volume?native_volume:100;
     /* Only an explicit trailing pause protects the final silence. A p0
        reset or an earlier pause must not disable the entire policy. */
     int explicit_pause=0;
@@ -479,7 +544,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     }
     result=RELOQ_DE_UTTERANCE_OK;goto done;
 memory:result=RELOQ_DE_UTTERANCE_MEMORY;
-done:free(a);free(map);free(marks);free(plan.spans);free(plan.cuts);free(plan.indices);return result;
+done:free(a);free(map);free(marks);free(volumes);free(plan.spans);free(plan.cuts);free(plan.indices);return result;
 }
 
 int reloq_english_rules_render(const unsigned char *text,size_t length,int tags,int native_volume,

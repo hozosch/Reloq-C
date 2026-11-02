@@ -49,9 +49,6 @@ static int inline_words(unsigned char *text,size_t n,
                 break;
             default:break;
             }
-            if(word && (tag.kind==RELOQ_TAG_PITCH || tag.kind==RELOQ_TAG_INFLECTION ||
-               tag.kind==RELOQ_TAG_HEAD_SIZE || tag.kind==RELOQ_TAG_PRESET) &&
-                current.pause<0)current.pause=50;
             memset(text+i,' ',tag.length);
         }
         i+=tag.length?tag.length:1;

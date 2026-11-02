@@ -4,6 +4,11 @@ ReLoq C is a speech synthesis project that preserves the familiar character of E
 
 The shared synthesis engine is written in C. NVDA, Android ARM64 and Windows SAPI5 use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
 
+The development branch is preparing **1.1.0-rc1** with an A-body blend above
+22 kHz, the A filter for Castilian S/T, queued word-scoped voice controls and
+bounded German startup analysis. This is a listening candidate; see
+[the current work and verification limits](docs/CURRENT-WORK.md).
+
 ## Download and install
 
 The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provides three installable packages:

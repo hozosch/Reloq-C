@@ -30,6 +30,9 @@ struct reloq_rate_transfer {
      * restoration and native expansion from 22.05 kHz. Legacy C aliases B. */
     unsigned trial_profile,colour_profile,colour_extension;
     unsigned fit_samples;
+    /* Session-only continuous A body: bounded fit cadence and 3-ms ramps.
+     * Standalone A retains its established sample-exact behaviour. */
+    unsigned smooth_updates;
     double classic_reference[2][5];
 };
 struct reloq_core_voiced_formants;

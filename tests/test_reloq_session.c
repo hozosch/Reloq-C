@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #if defined(__SSE2__) || defined(_M_X64)
 #include <xmmintrin.h>
@@ -144,6 +145,59 @@ static int check_fp_scope(void)
     return 0;
 }
 #endif
+
+/* At 48 kHz the new body endpoint has A colour, while a pure consonant
+ * still follows Classic. Compare independent core/session routes, including
+ * resets, instead of duplicating the blend arithmetic in the test. */
+static int check_body_endpoint(void)
+{
+    struct reloq_session_config c={.sample_rate=48000,.duration_scale=1,
+        .output_gain=1,.initial_seed=100,.max_frame_samples=1024,
+        .glottal_reference_rate=11025,.reference_formants=5,.frication_reference_rate=16000};
+    struct reloq_session *a=reloq_session_create(&c),*b=reloq_session_create(&c);
+    CHECK(a&&b);CHECK(!reloq_session_high_rate_profile(b,1));
+    CHECK(!reloq_session_reset(b));
+    struct reloq_core_voiced_frame frames[8];
+    for(unsigned i=0;i<8;++i) {
+        frames[i]=frame_for_test();frames[i].noise.duration_ms=1;
+        frames[i].av_level=45;frames[i].noise.af_level=0;frames[i].noise.bypass_level=0;
+    }
+    struct capture ca={0},cb={0};
+    CHECK(!reloq_session_render_frames(a,frames,8,receive_pcm,&ca,NULL));
+    CHECK(!reloq_session_render_frames(b,frames,8,receive_pcm,&cb,NULL));
+    CHECK(ca.samples==cb.samples);
+    for(size_t i=0;i<ca.samples;++i)CHECK(abs((int)(.8f*ca.pcm[i])-cb.pcm[i])<=2);
+    CHECK(!reloq_session_reset(b));
+    cb=(struct capture){0};
+    for(unsigned i=0;i<8;++i){frames[i].av_level=0;frames[i].noise.ah_level=0;frames[i].noise.af_level=25;}
+    CHECK(!reloq_session_render_frames(b,frames,8,receive_pcm,&cb,NULL));
+    struct reloq_core_voiced_frame_state state;
+    CHECK(!reloq_core_voiced_frame_initialize(&state,48000,100,0,0,0));
+    state.glottal_reference_rate=11025;state.reference_formants=5;state.frication_reference_rate=16000;
+    state.rate_transfer.trial_profile=state.noise_transfer.trial_profile=1;
+    float output[1024],af[1024],scratch[1024];uint8_t mask[1024];size_t written=0,at=0;
+    for(unsigned f=0;f<8;++f) {
+        CHECK(!reloq_core_voiced_frame_render(&state,frames+f,output,af,scratch,mask,NULL,1024,&written));
+        for(size_t i=0;i<written;++i)CHECK((int)output[i]==cb.pcm[at+i]);
+        at+=written;
+    }
+    CHECK(at==cb.samples);
+    reloq_session_destroy(a);reloq_session_destroy(b);
+    /* The Castilian S/T path retains A's complete AF bank and filter at
+     * every extended rate, including 16 kHz's separate consonant choice. */
+    const float rates[]={16000,22050,32000,44100,48000};
+    for(unsigned r=0;r<sizeof rates/sizeof *rates;++r) {
+        c.sample_rate=rates[r];a=reloq_session_create(&c);b=reloq_session_create(&c);
+        CHECK(a&&b);CHECK(!reloq_session_high_rate_profile(b,1));CHECK(!reloq_session_reset(b));
+        ca=(struct capture){0};cb=(struct capture){0};
+        for(unsigned i=0;i<8;++i)frames[i].noise.s_frication=3;
+        CHECK(!reloq_session_render_frames(a,frames,8,receive_pcm,&ca,NULL));
+        CHECK(!reloq_session_render_frames(b,frames,8,receive_pcm,&cb,NULL));
+        CHECK(ca.samples==cb.samples&&memcmp(ca.pcm,cb.pcm,ca.samples*sizeof *ca.pcm)==0);
+        reloq_session_destroy(a);reloq_session_destroy(b);
+    }
+    return 0;
+}
 
 int main(void)
 {
@@ -310,5 +364,6 @@ int main(void)
     #if defined(__SSE2__) || defined(_M_X64)
     CHECK(check_fp_scope()==0);
     #endif
+    CHECK(check_body_endpoint()==0);
     return 0;
 }

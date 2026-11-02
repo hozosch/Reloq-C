@@ -620,7 +620,7 @@ static void spectrum_pairs(double spectrum[FFT_SIZE],const struct frequency_grid
 static void prepare_ramp(struct reloq_rate_transfer *s,float rate)
 {
     if(!s->ready){memcpy(s->kernel,s->target,sizeof s->kernel);s->ready=1;}
-    s->remaining=(unsigned)(rate*(s->trial_profile&&s->presence_rate>0?.003f:.001f));
+    s->remaining=(unsigned)(rate*((s->trial_profile||s->smooth_updates)&&s->presence_rate>0?.003f:.001f));
     if(!s->remaining)s->remaining=1;
     for(unsigned i=0;i<RELOQ_RATE_TAPS;++i)
         s->step[i]=(s->target[i]-s->kernel[i])/s->remaining;
@@ -791,7 +791,7 @@ void reloq_rate_transfer_prepare(struct reloq_rate_transfer *s,
     for(unsigned i=0;i<8;++i){key[4+2*i]=f->oral[i].frequency_hz;key[5+2*i]=f->oral[i].bandwidth_hz;}
     for(unsigned i=0;i<4;++i){key[20+2*i]=special[i]->frequency_hz;key[21+2*i]=special[i]->bandwidth_hz;}
     if(s->ready && !memcmp(key,s->key,sizeof key))return;
-    if(s->trial_profile && s->ready && !memcmp(key,s->key,4*sizeof *key) &&
+    if((s->trial_profile||s->smooth_updates) && s->ready && !memcmp(key,s->key,4*sizeof *key) &&
        key[28]==s->key[28] && s->fit_samples<(unsigned)(rate*.002f)) {
         /* Slowly moving formants need no new spectral fit every ms.
          * Large transitions still take effect immediately. Only the
@@ -812,10 +812,12 @@ void reloq_rate_transfer_prepare(struct reloq_rate_transfer *s,
 void reloq_rate_transfer_process_voice(struct reloq_rate_transfer *s,float *samples,size_t count)
 {
     if(s->presence_rate<=0)return;
-    if(s->trial_profile) {
+    if(s->trial_profile||s->smooth_updates) {
         unsigned limit=(unsigned)s->presence_rate;
         if(s->fit_samples<limit)
             s->fit_samples+=count>limit-s->fit_samples?limit-s->fit_samples:(unsigned)count;
+    }
+    if(s->trial_profile) {
         const double *c=s->voice_colour[0];double *d=s->voice_colour_delay[0];
         for(size_t j=0;j<count;++j) {
             double x=samples[j],y=c[0]*x+d[0];

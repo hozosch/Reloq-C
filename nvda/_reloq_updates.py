@@ -28,7 +28,7 @@ def version(value):
 
 
 def select(releases, installed):
-    development = re.fullmatch(r"(\d+\.\d+\.\d+)-dev\d+", installed)
+    development = re.fullmatch(r"(\d+\.\d+\.\d+)-(?:dev|rc)\d+", installed)
     current = version(development[1] if development else installed)
     if not isinstance(releases, list):
         raise ValueError("Invalid release list")

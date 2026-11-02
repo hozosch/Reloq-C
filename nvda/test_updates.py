@@ -43,6 +43,8 @@ class Updates(unittest.TestCase):
         self.assertIsNone(select(feed('1.0.2-dev2'), '1.0.2-dev1'))
         self.assertEqual(select(feed('1.0.2'), '1.0.2-dev1').version, '1.0.2')
         self.assertIsNone(select(feed('1.0.2'), '1.0.2'))
+        self.assertIsNone(select(feed('1.0.2'), '1.1.0-rc1'))
+        self.assertEqual(select(feed('1.1.0'), '1.1.0-rc1').version, '1.1.0')
 
     def test_metadata_rejects_wrong_source_or_missing_integrity(self):
         for values in [dict(digest=None), dict(digest='sha1:' + '0'*40), dict(size=0),

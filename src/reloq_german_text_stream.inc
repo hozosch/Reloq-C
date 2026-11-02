@@ -5,7 +5,7 @@ static int plan_tags_checked(int,const unsigned char *,size_t,
     const struct reloq_lexicon *,int,unsigned char **,size_t *,size_t *,size_t *,
     struct reloq_german_best_effort_boundary *,size_t,
     struct reloq_german_word_features **,size_t *,int (*)(void *),void *,
-    const struct reloq_german_text_stream *,int);
+    const struct reloq_german_text_stream *,int,size_t *);
 
 static size_t stream_source_offset(const struct reloq_german_context_source *s,
     const struct reloq_german_prosody_unit *unit)
@@ -18,6 +18,36 @@ static size_t stream_source_offset(const struct reloq_german_context_source *s,
             return (size_t)(at-base);
     }
     return SIZE_MAX;
+}
+/* Ask the admitted lexical/prosodic plan, rather than a punctuation regex.
+ * Abbreviations, decimals and open quotations cannot become new chunks. */
+static size_t stream_first_cut(struct annotation_builder *b,
+    const struct reloq_german_context_source *source,const uint32_t *scalars)
+{
+    if(b->word_count!=b->unit_count||b->unit_count<2)return SIZE_MAX;
+    enum reloq_german_terminal_mark *marks=malloc(b->unit_count*sizeof *marks);
+    if(!marks)return SIZE_MAX;
+    size_t cut=SIZE_MAX,scanned=0;unsigned depth=0,quote=0;
+    if(reloq_german_generic_prosody_marks(b->output,b->used,b->unit_count,marks,b->unit_count))goto done;
+    for(size_t i=0;i+1<b->unit_count;++i) {
+        if(marks[i]!=RELOQ_DE_TERMINAL_PERIOD&&marks[i]!=RELOQ_DE_TERMINAL_QUESTION&&
+           marks[i]!=RELOQ_DE_TERMINAL_EXCLAMATION)continue;
+        if(b->units[i].fixed_phrase||b->units[i+1].fixed_phrase)continue;
+        size_t end=stream_source_offset(source,b->units+i+1);
+        if(!end||end==SIZE_MAX||end>=source->length)continue;
+        for(;scanned<end;++scanned) {
+            uint32_t c=scalars[scanned];
+            if(c=='('||c=='['||c=='{')++depth;
+            else if((c==')'||c==']'||c=='}')&&depth)--depth;
+            else if(c=='"')quote=quote?0:'"';
+            else if(c==0x201e)quote=0x201e;
+            else if(c==0x201c)quote=quote==0x201e?0:0x201c;
+            else if(c==0x201d)quote=0;
+            else if(c==0xab||c==0xbb)quote=quote?0:c;
+        }
+        if(!depth&&!quote){cut=end;break;}
+    }
+done:free(marks);return cut;
 }
 static size_t stream_utf8(unsigned char *p,uint32_t c)
 {
@@ -118,7 +148,7 @@ retry_part: ;
         }
         result=plan_tags_checked(1,text,bytes,b->lexicon,process_tags,
             &annotation,&length,&guessed,&bad,local,index_count,&features,&features_count,
-            b->cancelled,b->cancel_context,NULL,1);
+            b->cancelled,b->cancel_context,NULL,1,NULL);
         free(text);
         if(!result && part+1<count && stream_needs_tail_context(annotation,length)) {
             free(annotation);free(features);free(local);next_boundary=first;
@@ -137,4 +167,84 @@ retry_part: ;
     }
     result=3; /* All parts were rendered; the whole-text output is unused. */
 done:free(marks);free(cuts);return result;
+}
+
+/* Geometric admission windows bound time to first audio for ordinary long
+ * prose. Each delivered part still uses the complete existing sentence
+ * planner, dictionary, prosody and continuation renderer. Unsupported
+ * contexts retain the whole-text path; no arbitrary word count is a cut. */
+static int stream_windows(const unsigned char *text,size_t length,
+    const struct reloq_lexicon *lexicon,int tags,
+    struct reloq_german_best_effort_boundary *boundaries,size_t boundary_count,
+    size_t *error,int (*cancelled)(void *),void *context,
+    const struct reloq_german_text_stream *stream)
+{
+    if(!stream||!stream->part||length<1024||memchr(text,'`',length))return 0;
+    size_t begin=0,scalar_begin=0,next_boundary=0,part=0;
+    while(begin<length) {
+        size_t window=512,bytes=length-begin,scalars=0;
+        unsigned char *annotation=NULL;struct reloq_german_word_features *features=NULL;
+        struct reloq_german_best_effort_boundary *local=NULL;
+        size_t annotation_length=0,features_count=0,guessed=0,bad=0,cut=SIZE_MAX;
+        int result=0;
+        for(;;) {
+            bytes=length-begin;
+            if(bytes>window) {
+                bytes=window;
+                while(bytes&&text[begin+bytes]!=' '&&text[begin+bytes]!='\n'&&text[begin+bytes]!='\t')--bytes;
+                if(bytes) {
+                    size_t probe=SIZE_MAX;
+                    result=plan_tags_checked(1,text+begin,bytes,lexicon,tags,
+                        &annotation,&annotation_length,&guessed,&bad,NULL,0,&features,&features_count,
+                        cancelled,context,NULL,0,&probe);
+                    free(annotation);free(features);annotation=NULL;features=NULL;
+                    if(result==4){cut=probe;break;}
+                    if(result)return result;
+                }
+                if(window>SIZE_MAX/2)window=length-begin;else window*=2;
+                continue;
+            }
+            break;
+        }
+        if(cut!=SIZE_MAX) {
+            size_t at=0;scalars=0;
+            while(scalars<cut&&at<bytes) {uint32_t c;if(reloq_utf8_next(text+begin,bytes,&at,&c)!=1)return -1;++scalars;}
+            if(scalars!=cut||!at)return -1;
+            bytes=at;
+        } else {
+            size_t at=0;scalars=0;
+            while(at<bytes){uint32_t c;if(reloq_utf8_next(text+begin,bytes,&at,&c)!=1)return -1;++scalars;}
+        }
+retry_remaining: ;
+        size_t first=next_boundary;
+        while(next_boundary<boundary_count&&
+            (boundaries[next_boundary].encoded_offset<scalar_begin+scalars||begin+bytes==length))++next_boundary;
+        size_t count=next_boundary-first;
+        if(count) {
+            local=malloc(count*sizeof *local);if(!local)return -2;
+            for(size_t i=0;i<count;++i) {
+                if(boundaries[first+i].encoded_offset<scalar_begin){free(local);return -1;}
+                local[i]=(struct reloq_german_best_effort_boundary){boundaries[first+i].encoded_offset-scalar_begin,0};
+            }
+        }
+        result=plan_tags_checked(1,text+begin,bytes,lexicon,tags,
+            &annotation,&annotation_length,&guessed,&bad,local,count,&features,&features_count,
+            cancelled,context,NULL,0,NULL);
+        if(!result&&begin+bytes<length&&stream_needs_tail_context(annotation,annotation_length)) {
+            /* This rare dependency needs whole remaining context. Re-plan
+             * that tail before delivering anything from the uncertain part. */
+            free(annotation);free(features);free(local);next_boundary=first;
+            annotation=NULL;features=NULL;local=NULL;
+            bytes=length-begin;scalars=0;size_t at=0;
+            while(at<bytes){uint32_t c;if(reloq_utf8_next(text+begin,bytes,&at,&c)!=1)return -1;++scalars;}
+            goto retry_remaining;
+        }
+        if(result){if(error)*error=scalar_begin+bad;}
+        else if(stream->part(stream->context,annotation,annotation_length,features,features_count,
+                    local,count,first,begin+bytes==length))result=cancelled&&cancelled(context)?2:-1;
+        free(annotation);free(features);free(local);
+        if(result)return result;
+        begin+=bytes;scalar_begin+=scalars;++part;
+    }
+    return 3;
 }

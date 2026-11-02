@@ -1,8 +1,14 @@
 # Eloquence C – user guide
 
-## Hearing preview 1.0.2-dev10
+## Hearing preview 1.1.0-rc1
 
-This preview adds general ECI phoneme output and pause/resume. A fractional glottal-closure correction reduces source aliasing. From 22.05 kHz, a progressively flatter native glottal tilt opens periodic harmonics; the earlier upper shelf is removed. The 16-kHz contour and accepted consonant shaping remain. Less frequent, smoother tract-filter fits aim to reduce processing cost and transition artifacts. Listening in NVDA must establish how much crackling and playback stutter improve.
+From 22.05 kHz, the voiced body from variant A is blended in progressively. Consonants retain their Classic shaping; Castilian S/T uses the A filter. The 16-kHz voice contour stays intact. Long German texts can start after the first fully analyzed phrase. Queued volume and voice changes take effect at their word boundary. This is a test candidate for 1.1.0; voice quality and playback still need listening on the target device.
+
+## English clock readings with seconds
+
+English clock times such as `13:28:25` keep the ordinary hours/minutes reading and append “and twenty five seconds”. One second uses the singular; fractional seconds remain in the normal number reader. This applies to US and British English in the native core, including NVDA and other ECI clients. Source indices remain attached to their original text positions.
+
+Eloquence C is the NVDA add-on from [ReLoq C](https://github.com/hozosch/Reloq-C). It develops the familiar Eloquence sound with pronunciation corrections, Unicode support and additional voice controls. NVDA is the first integration and current speech testing platform. The same engine is also available for Android ARM64 and Windows SAPI5.
 
 ## Install and select
 

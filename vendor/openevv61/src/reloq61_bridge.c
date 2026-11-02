@@ -162,7 +162,7 @@ struct capture {
     void *index_original, *index_data;
     struct SynthThread *thread;
     int64_t clock_base;
-    size_t next_mark,consumed,setup_pending;
+    size_t next_mark,next_control,consumed,setup_pending;
     int metadata,source_started,pause_policy;
     pause_sink pause;void *pause_context;
     reloq61_phoneme_sink phoneme_sink;void *phoneme_context;
@@ -172,6 +172,17 @@ int reloq61_labiodental_gain(void *state)
     delta_state *d=state;DeltaLang *dl=EVV_AT(DeltaLang *,d->dlang);
     const struct capture *c=dl->reloq_context;
     return dl->reloq_frame&&c?reloq_voice_labiodental_gain((float)c->q->output_rate):0;
+}
+/* CJK rules attach their volume factor to the acoustic word itself, rather
+ * than reporting consumed source characters. Preserve that scheduling and
+ * carry the original ECI value through the private factor slot. Its reserved
+ * range is decoded by the host; ordinary/phoneme providers are unchanged. */
+int reloq61_volume_factor(void *state,int raw,int factor)
+{
+    delta_state *d=state;DeltaLang *dl=EVV_AT(DeltaLang *,d->dlang);
+    const struct capture *c=dl->reloq_context;
+    return dl->reloq_frame&&c&&c->q->control&&raw>=0&&raw<=100?
+        1000000+raw*10000:factor;
 }
 static void report_index(struct capture *c,int32_t index,int64_t tick)
 {
@@ -294,7 +305,13 @@ void reloq61_word_at(void *context,int32_t characters)
                    its own lookahead watermark across normal utterances. */
                 if(c->q->index)report_index(c,m->index,c->r->ticks);
             }
-            c->consumed+=source_characters;
+            size_t end=c->consumed+source_characters;
+            while(c->next_control<c->q->control_count &&
+                  c->q->controls[c->next_control].offset<end) {
+                const struct reloq61_mark *v=c->q->controls+c->next_control++;
+                if(c->q->control)c->q->control(c->q->context,v->pitch,v->index);
+            }
+            c->consumed=end;
         }
         stb_staticWordCallback(characters,c->thread);
     }
@@ -321,6 +338,7 @@ static int greek_english(void *context,const char *text,char *phonemes,size_t ca
     q.language=0x10000;q.text=text;q.marks=NULL;q.mark_count=0;
     q.phonemes_only=1;q.phonemes=phonemes;q.phonemes_capacity=capacity;
     q.annotations=0;q.index=NULL;q.frame=NULL;q.span=NULL;
+    q.controls=NULL;q.control_count=0;q.control=NULL;
     struct provider_worker *worker=owner_worker;
     void *previous=reloq61_worker_scope(worker&&worker->language==0x120000?worker->english:NULL);
     int result=reloq61_generate(&q,&r);
@@ -338,6 +356,7 @@ int reloq61_english_word(void *state,const char *text,char *phonemes,size_t capa
     q.language=0x10000;q.text=text;q.marks=NULL;q.mark_count=0;
     q.phonemes_only=1;q.phonemes=phonemes;q.phonemes_capacity=capacity;
     q.annotations=0;q.index=NULL;q.frame=NULL;q.span=NULL;
+    q.controls=NULL;q.control_count=0;q.control=NULL;
     struct provider_worker *worker=owner_worker;
     void *previous=reloq61_worker_scope(worker?worker->english:NULL);
     int status=reloq61_generate(&q,&r);
@@ -420,6 +439,7 @@ static int bank_generate(void*state,struct reloq61_english_bank*p,int lexical)
  if(!dl->reloq_frame||!c)return -1;
  struct reloq61_request q=*c->q;struct reloq61_result result;
  q.language=0x10000;q.text=p->text;q.marks=NULL;q.mark_count=0;q.annotations=0;q.index=NULL;q.phonemes_only=lexical;
+ q.controls=NULL;q.control_count=0;q.control=NULL;
  /* Embedded English keeps the selected model, pitch and rate. Its neutral
   * inflection is local to this bank; the Mandarin request remains intact. */
  if(!lexical&&p->neutral_inflection)q.voice[3]=0;
@@ -509,6 +529,35 @@ int reloq61_english_bank_emit(void*state,const struct reloq61_english_bank*p,int
  return 0;
 }
 static int generate_core(const struct reloq61_request *,struct reloq61_result *,reloq61_phoneme_sink,void *);
+/* Text normalization projects both public indices and word-volume positions
+ * through the same source map, including English clocks and Greek names. */
+static struct reloq61_mark *project_marks(const struct reloq61_mark *input,
+    size_t count,const size_t *map,size_t length)
+{
+    if(!count)return NULL;
+    if(!input||count>SIZE_MAX/sizeof *input)return NULL;
+    struct reloq61_mark *out=malloc(count*sizeof *out);
+    if(!out)return NULL;
+    for(size_t i=0;i<count;++i) {
+        if(input[i].offset>length){free(out);return NULL;}
+        out[i]=input[i];out[i].offset=map[input[i].offset];
+    }
+    return out;
+}
+static int projected_generate(const struct reloq61_request *q,struct reloq61_result *r,
+    reloq61_phoneme_sink sink,void *context,char *text,size_t *map)
+{
+    size_t length=strlen(q->text);
+    struct reloq61_mark *marks=project_marks(q->marks,q->mark_count,map,length);
+    struct reloq61_mark *volumes=project_marks(q->controls,q->control_count,map,length);
+    int result=-1;
+    if((!q->mark_count||marks)&&(!q->control_count||volumes)) {
+        struct reloq61_request request=*q;
+        request.text=text;request.marks=marks;request.controls=volumes;
+        result=generate_core(&request,r,sink,context);
+    }
+    free(text);free(map);free(marks);free(volumes);return result;
+}
 static int english_clock_generate(const struct reloq61_request *q,struct reloq61_result *r,
     reloq61_phoneme_sink sink,void *context)
 {
@@ -517,33 +566,17 @@ static int english_clock_generate(const struct reloq61_request *q,struct reloq61
     int projected=reloq61_english_clock_text(q->text,q->annotations,q->language,&text,&map);
     if(projected<0)return -1;
     if(!projected)return generate_core(q,r,sink,context);
-    if(q->mark_count && (!q->marks||q->mark_count>SIZE_MAX/sizeof(struct reloq61_mark))) {
-        free(text);free(map);return -1;
-    }
-    struct reloq61_mark *marks=q->mark_count?malloc(q->mark_count*sizeof *marks):NULL;
-    if(q->mark_count&&!marks){free(text);free(map);return -1;}
-    size_t length=strlen(q->text);
-    for(size_t i=0;i<q->mark_count;++i) {
-        if(q->marks[i].offset>length){free(text);free(map);free(marks);return -1;}
-        marks[i]=q->marks[i];marks[i].offset=map[marks[i].offset];
-    }
-    struct reloq61_request request=*q;request.text=text;request.marks=marks;
-    int result=generate_core(&request,r,sink,context);
-    free(text);free(map);free(marks);return result;
+    return projected_generate(q,r,sink,context,text,map);
 }
 static int greek_generate(const struct reloq61_request *q,struct reloq61_result *r,
     reloq61_phoneme_sink sink,void *context)
 {
     char *text=NULL;size_t *map=NULL;
     if(reloq_greek_text(q->text,q->annotations,greek_english,(void *)q,&text,&map))return -1;
-    struct reloq61_mark *marks=NULL;
-    if(q->mark_count){marks=malloc(q->mark_count*sizeof *marks);if(!marks){free(text);free(map);return -1;}}
-    size_t length=strlen(q->text);
-    for(size_t i=0;i<q->mark_count;++i){if(q->marks[i].offset>length){free(text);free(map);free(marks);return -1;}marks[i]=q->marks[i];marks[i].offset=map[marks[i].offset];}
-    struct reloq61_request request=*q;request.language=0x120000;request.text=text;request.marks=marks;request.annotations=1;
-    int result=generate_core(&request,r,sink,context);
-    free(text);free(map);free(marks);return result;
+    struct reloq61_request request=*q;request.annotations=1;
+    return projected_generate(&request,r,sink,context,text,map);
 }
+
 int reloq61_generate(const struct reloq61_request *q,struct reloq61_result *r)
 {
     if(q&&r&&q->language==0x120000){initialize();memset(r,0,sizeof *r);return greek_generate(q,r,NULL,NULL);}
