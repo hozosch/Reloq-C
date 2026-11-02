@@ -39,10 +39,10 @@ jobs:
         run: |
           previous_apk=(previous/*.apk)
           test "${#previous_apk[@]}" -eq 1
-          python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --upgrade-from "${previous_apk[0]}" --jobs 2 --output dist/reloq-c-android-arm64-1.1.0-rc3.apk
+          python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --upgrade-from "${previous_apk[0]}" --jobs 2 --output dist/reloq-c-android-arm64-1.1.0-rc4.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: android-1.1.0-rc3-candidate
-          path: dist/reloq-c-android-arm64-1.1.0-rc3.apk
+          name: android-1.1.0-rc4-candidate
+          path: dist/reloq-c-android-arm64-1.1.0-rc4.apk
           compression-level: 0
           retention-days: 14

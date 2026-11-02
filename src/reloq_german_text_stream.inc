@@ -15,6 +15,7 @@ static int stream_voice_controls(const unsigned char *text,size_t n)
     for(size_t i=0;i<n;) {
         if(text[i]!='`'){++i;continue;}
         struct reloq_inline_tag t=reloq_inline_tag_read(text+i,n-i,0);
+        if(!t.length){++i;continue;}
         if(t.kind<RELOQ_TAG_PITCH||t.kind>RELOQ_TAG_PRESET||t.kind==RELOQ_TAG_PAUSE)return 0;
         i+=t.length;
     }
@@ -33,6 +34,19 @@ static size_t stream_source_offset(const struct reloq_german_context_source *s,
     }
     return SIZE_MAX;
 }
+/* Prosody also classifies a semicolon as PERIOD. It is not a sentence
+ * boundary: its following clause still shares the analysis/contour.
+ * Confirm a real stop in the admitted source before creating a new plan. */
+static int stream_sentence_stop(const uint32_t *scalars,size_t begin,size_t end)
+{
+    if(begin==SIZE_MAX||begin>=end)return 0;
+    int stop=0;
+    for(size_t i=begin;i<end;++i) {
+        if(scalars[i]=='.'||scalars[i]=='?'||scalars[i]=='!')stop=1;
+        else if(scalars[i]==';'||scalars[i]==':')stop=0;
+    }
+    return stop;
+}
 /* Ask the admitted lexical/prosodic plan, rather than a punctuation regex.
  * Abbreviations, decimals and open quotations cannot become new chunks. */
 static size_t stream_first_cut(struct annotation_builder *b,
@@ -49,6 +63,7 @@ static size_t stream_first_cut(struct annotation_builder *b,
         if(b->units[i].fixed_phrase||b->units[i+1].fixed_phrase)continue;
         size_t end=stream_source_offset(source,b->units+i+1);
         if(!end||end==SIZE_MAX||end>=source->length)continue;
+        if(!stream_sentence_stop(scalars,stream_source_offset(source,b->units+i),end))continue;
         for(;scanned<end;++scanned) {
             uint32_t c=scalars[scanned];
             if(c=='('||c=='['||c=='{')++depth;
@@ -120,6 +135,7 @@ static int stream_plan(struct annotation_builder *b,
         if(b->units[i].fixed_phrase || b->units[i+1].fixed_phrase)continue;
         size_t cut=stream_source_offset(source,b->units+i+1);
         if(cut==SIZE_MAX || !cut || cut>=source->length || (count && cut<=cuts[count-1]))continue;
+        if(!stream_sentence_stop(scalars,stream_source_offset(source,b->units+i),cut))continue;
         for(;scanned<cut;++scanned) {
             uint32_t cp=scalars[scanned];
             if(cp=='('||cp=='['||cp=='{')++depth;
@@ -196,7 +212,7 @@ static int stream_windows(const unsigned char *text,size_t length,
     if(!stream||!stream->part||length<1024||!stream_voice_controls(text,length))return 0;
     size_t begin=0,scalar_begin=0,next_boundary=0;
     while(begin<length) {
-        size_t window=512,bytes=length-begin,scalars=0;
+        size_t window=96,bytes=length-begin,scalars=0;
         unsigned char *annotation=NULL;struct reloq_german_word_features *features=NULL;
         struct reloq_german_best_effort_boundary *local=NULL;
         size_t annotation_length=0,features_count=0,guessed=0,bad=0,cut=SIZE_MAX;

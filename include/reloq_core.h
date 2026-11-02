@@ -70,6 +70,11 @@ struct reloq_core_resonator {
     float latest;
     long ramp_remaining; /* 0..3 */
     float enabled;
+    /* Coupled pole state for the extended-rate voice. The numeric ECI
+     * path keeps its original direct-form arithmetic when this is zero. */
+    int stable;
+    double coupled_real;
+    double coupled_imaginary;
 };
 
 /* Set coefficients for an enabled second-order resonator from its radius
@@ -138,6 +143,7 @@ struct reloq_core_voiced_bank {
     float nasal_zero_coefficients[3];
     float tracheal_zero_coefficients[3];
     long highest_formant; /* 0..8; F1 is always evaluated */
+    int stable;
 };
 struct reloq_core_formant {
     float frequency_hz;

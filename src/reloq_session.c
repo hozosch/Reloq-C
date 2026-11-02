@@ -159,10 +159,10 @@ static int output_pcm(const struct reloq_session *session, size_t count)
                 scaled >= 0x1p63f) return RELOQ_SESSION_RENDER;
         }
         reloq_core_scale_output(block, (long)n, gain);
-        /* Restoring periodic high harmonics can align a few peaks above
-         * the PCM range even at the calibrated master level. Bend only
-         * those peaks through a continuous soft knee; ordinary body and
-         * consonant samples keep their exact linear gain. */
+        /* Keep the existing final protection while the remaining model
+         * headroom cases are investigated. This is not evidence that the
+         * unbounded synthesis fits PCM: raw-source tests and observations
+         * must measure before this knee. */
         if(session->high_rate_profile && session->config.sample_rate>=16000)
             for(size_t i=0;i<n;++i) {
                 double amplitude=fabs((double)block[i]);

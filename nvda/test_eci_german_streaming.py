@@ -31,6 +31,9 @@ TEXTS=(
  'Eine Frage: Wie geht es dir? Bist du schon fertig? '+TAIL*30,
  'Der Brief ist scharf. Viele Vögel fliegen. Die Wiese ist weit. '*24,
  'Wir sehen sieben Segel. Es ist nass. Fünf Vögel fliegen vorbei. '*24,
+ 'Die Stimme erklärt das Backend. '+('Die Funktion `eciSetVoice` gibt es dort nicht. '
+ 'Stattdessen nutzen wir `eciSetVoiceParam` und das Wörterbuch `DEUmain`. '
+ 'Bei 16 kHz bleiben Körper und Konsonanten erhalten; ab 22 kHz wächst die Bandbreite. ')*16,
 )
 
 
@@ -75,9 +78,9 @@ def main():
     engines=[DirectEciEngine(p.resolve(),dialect=0x40000,encoding='utf8',experimental_generic=True) for p in paths]
     for e in engines:e.set_parameter(HIGH_RATE_PROFILE,args.profile)
     rows=[]
-    def check(label,text,speed=120,rate=1,pause=0,gender=0,head=50,breath=0,pitch_marks=False):
+    def check(label,text,speed=120,rate=1,pause=0,gender=0,head=50,breath=0,pitch_marks=False,tags=1):
         for e in engines:
-            for p,v in ((PROCESS_TAGS,1),(NATIVE_SPEED,speed),(SAMPLE_RATE,rate),(PAUSE_MODE,pause),
+            for p,v in ((PROCESS_TAGS,tags),(NATIVE_SPEED,speed),(SAMPLE_RATE,rate),(PAUSE_MODE,pause),
                         (GENDER,gender),(HEAD_SIZE,head),(BREATHINESS,breath),(PHRASE_PREDICTION,1)):
                 e.set_parameter(p,v)
         before=capture(engines[0],text,speed,args.reference is None,pitch_marks)
@@ -97,6 +100,7 @@ def main():
         check('mixed-inline','`vv70 '+TAIL*5+'`vb80 '+TAIL*5+'`vs156 '+TAIL*5+'`vb65 `vv100 '+TAIL*25,speed=75)
         check('api-pitch',TEXTS[0],speed=75,pitch_marks=True)
         check('api-pitch-inline','`vb70 '+TAIL*5+'`vb80 '+TAIL*35,speed=75,pitch_marks=True)
+        for rate in (1,6):check('technical-tags-off',TEXTS[-1],speed=75,rate=rate,tags=0)
         # Keep loaded snapshots usable throughout later native sub-requests.
         # Nested plans must not apply Main replacement a second time.
         with tempfile.TemporaryDirectory() as temp:

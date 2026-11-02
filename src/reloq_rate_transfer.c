@@ -629,7 +629,6 @@ static void prepare_ramp(struct reloq_rate_transfer *s,float rate)
  * ordinary key check and clock bypass below out of their stack frames. */
 #include "reloq_classic_colour.inc"
 #include "reloq_classic_tract.inc"
-#include "reloq_classic_source_colour.inc"
 
 static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rate)
 {
@@ -647,12 +646,10 @@ static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rat
         double *c=s->voice_colour[0];
         c[0]=(1+alpha*a)/den;c[1]=-2*cos(w)/den;c[2]=(1-alpha*a)/den;
         c[3]=c[1];c[4]=(1-alpha/a)/den;
-        /* Full-source comparisons against 11-kHz Classic Presence reveal
-         * a high-band loss which tract-only fits cannot observe. Correct
-         * the periodic source before AH joins it: +6 dB shelf at 4 kHz,
-         * with a fixed -2 dB low-band calibration, including 1 dB of
-         * headroom for the restored source harmonics. No AF/AH lift. */
-        const double shelf_gain=1.4125375446227544,trim=.7943282347242815;
+        /* Periodic presence has no broadband trim: the bass retains its
+         * 11-kHz level. Further bandwidth comes from the source poles,
+         * not an inverse sampling shelf that amplifies their aliases. */
+        const double shelf_gain=1.1885022274370185,trim=1;
         double omega=2*pi*4000/rate,co=cos(omega),beta=sin(omega)*sqrt(2*shelf_gain);
         double divisor=(shelf_gain+1)-(shelf_gain-1)*co+beta;
         double *shelf=s->voice_colour[1];
@@ -661,7 +658,6 @@ static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rat
         shelf[2]=trim*shelf_gain*((shelf_gain+1)+(shelf_gain-1)*co-beta)/divisor;
         shelf[3]=2*((shelf_gain-1)-(shelf_gain+1)*co)/divisor;
         shelf[4]=((shelf_gain+1)-(shelf_gain-1)*co-beta)/divisor;
-        classic_source_colour(s->voice_colour[2],rate);
         s->presence_rate=rate;return;
     }
     /* Keep the shared tract/aspiration response. Periodic excitation
@@ -841,11 +837,6 @@ void reloq_rate_transfer_process_voice(struct reloq_rate_transfer *s,float *samp
                 double x=y;y=c[0]*x+d[0];
                 d[0]=c[1]*x-c[3]*y+d[1];d[1]=c[2]*x-c[4]*y;
             }
-            const double *c=s->voice_colour[2];double *d=s->voice_colour_delay[2];
-            double corrected=c[0]*y+d[0];
-            d[0]=c[1]*y-c[3]*corrected+d[1];d[1]=c[2]*y-c[4]*corrected;
-            s->source_mix+=((s->source_profile!=0)-s->source_mix)*s->aspiration_step;
-            y+=s->source_mix*(corrected-y);
             samples[j]=(float)y;
         }
         return;

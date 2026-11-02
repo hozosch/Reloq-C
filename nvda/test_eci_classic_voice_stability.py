@@ -27,6 +27,7 @@ def main():
     texts={
         0x10000:'The warm morning voice should remain smooth. We are hearing more body in every vowel. Susan visits the zoo on Thursday.',
         0x40000:'Ohne obere Bässe wirkt die Stimme dünner. Am Morgen hören wir ruhige Musik. Karl und Werner wohnen neben dem Bahnhof. Zwölf Züge fahren zum Zentrum.',
+        0x20000:'La voz de Susana suena suave por la mañana. Todos los días trae un vaso de agua. Este texto tiene consonantes y vocales.',
     }
     for language,text in texts.items():
         for gender,head,breath in ((0,50,0),(1,29,60)):

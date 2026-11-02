@@ -1,0 +1,68 @@
+{
+  "candidate": "1.1.0-rc4",
+  "scope": "Extended-rate Classic profiles B/C, with original A and 8/11.025 kHz unchanged",
+  "source_reference": "Native 8/11.025-kHz glottal coefficient tables; independent physical angle/damping continuation above 16 kHz, DC level fixed at 11.025 kHz",
+  "component_observations": {
+    "source_phase_mask_partition_cases": 100,
+    "source_dc_pole_cases": 350,
+    "coupled_equivalence_and_unforced_decay_cases": 3012,
+    "full_source_vowel_rate_alias_cases": 30,
+    "largest_bass_error_db": 0.921,
+    "minimum_harmonic_to_noise_db": 48.61
+  },
+  "limits": [
+    "These are objective host tests, not an NVDA listening verdict.",
+    "All-tag causal word-boundary switching remains open; no claim of a tag fix in rc4.",
+    "Some unsupported-to-stream lexical/control contexts still require complete German analysis.",
+    "Raw Castilian female/child and low-pitch peaks remain above PCM range in some cases. The existing peak knee is retained; distortion is not declared resolved."
+  ],
+  "no_audio_files": true,
+  "raw_peak_observations": {
+    "method": "Internal diagnostic builds: final knee bypassed, gain scaled by 1/16 (German row) or 1/64 (Castilian rows) before PCM; values restored to original gain.",
+    "german_female_head50_pitch65_speed75": {
+      "11025": 25792,
+      "16000": 23904,
+      "22050": 26912,
+      "32000": 27264,
+      "44100": 26880,
+      "48000": 26112
+    },
+    "castilian_female_default_Seis_sacerdotes": {
+      "11025": 28032,
+      "16000": 37376,
+      "22050": 37248,
+      "32000": 38784,
+      "44100": 37760,
+      "48000": 35840
+    },
+    "castilian_preset3_speed75": {
+      "11025": 35008,
+      "16000": 27008,
+      "22050": 29568,
+      "32000": 31680,
+      "44100": 33600,
+      "48000": 33728
+    },
+    "peak_protection_still_required": true
+  },
+  "german_streaming": {
+    "whole_text_PCM_and_index_comparisons": 63,
+    "technical_text_with_backticks_and_semicolons_exact": true,
+    "additional_tags_disabled_comparisons_in_CI": 2
+  },
+  "startup_observations": {
+    "method": "Linux host, real NVDA EciTextTransport/LanguageEngine/DirectEciEngine, community dictionaries, API pitch/index, tags enabled; simulated player; 3 warm probes",
+    "technical_text_characters": 10496,
+    "rc3_first_feed_median_ms": 1353.349,
+    "rc4_first_feed_median_ms": 4.282,
+    "not_windows_device_latency": true
+  },
+  "protected_PCM_checks": {
+    "speech_model_rate_cases": 186,
+    "A_and_low_rate_baseline_identities": 54,
+    "maximum_PCM_peak": 31984,
+    "Castilian_ST_peak_checks": 30,
+    "Castilian_ST_maximum_PCM_peak": 32511,
+    "does_not_prove_unlimited_headroom": true
+  }
+}

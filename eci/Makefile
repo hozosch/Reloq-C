@@ -161,8 +161,8 @@ test_reloq_classic_noise: ../tests/test_reloq_classic_noise.c ../src/reloq_rate_
 test_reloq_session: ../tests/test_reloq_session.c build/posix/reloq_session.o build/posix/reloq_core.o build/posix/reloq_rate_transfer.o build/posix/reloq_noise_profile.o
 	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $^ -Wl,--gc-sections -lm -o $@
 
-test_reloq_classic_body: ../tests/test_reloq_classic_body.c $(HEADERS) build/posix/reloq_core.o build/posix/reloq_noise_profile.o build/posix/reloq_frame_adapter.o build/posix/reloq_german_voice_defaults.o build/posix/reloq_voice_controls.o
-	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< build/posix/reloq_core.o build/posix/reloq_noise_profile.o build/posix/reloq_frame_adapter.o build/posix/reloq_german_voice_defaults.o build/posix/reloq_voice_controls.o -Wl,--gc-sections -lm -o $@
+test_reloq_classic_body: ../tests/test_reloq_classic_body.c $(HEADERS) build/posix/reloq_core.o build/posix/reloq_rate_transfer.o build/posix/reloq_noise_profile.o build/posix/reloq_frame_adapter.o build/posix/reloq_german_voice_defaults.o build/posix/reloq_voice_controls.o
+	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< build/posix/reloq_core.o build/posix/reloq_rate_transfer.o build/posix/reloq_noise_profile.o build/posix/reloq_frame_adapter.o build/posix/reloq_german_voice_defaults.o build/posix/reloq_voice_controls.o -Wl,--gc-sections -lm -o $@
 
 test: test_reloq_eci test_reloq_german_context test_reloq_german_cancel test_reloq_hash_delete test_reloq_rate_dispatch test_reloq_silence_cut test_reloq_classic_source libreloq_eci.so
 	./test_reloq_eci

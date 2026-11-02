@@ -320,11 +320,14 @@ int reloq_core_glottal_prefilter_configure(
     return 0;
 }
 
-/* Preserve a sampled source filter's physical poles in extended speech
- * profiles. The legacy numeric API still uses its original rate classes. */
+/* Continue the measured 8 -> 11.025 kHz source-pole geometry in physical
+ * Hz, independently for angle and damping. 16 kHz keeps the 11-kHz body;
+ * only higher rates extend it. Retain the 11-kHz DC gain throughout.
+ * Numeric ECI and profile A retain their original reference mapping. */
 static int source_profile(struct reloq_core_resonator *filter,
-    const struct reloq_core_clock *clock,long index,float reference)
+    const struct reloq_core_clock *clock,long index,float reference,int extended)
 {
+    if(extended)reference=11025;
     if(reference<=0 || reference==clock->samples_per_millisecond*1000)
         return reloq_core_glottal_prefilter_configure(filter,clock,index);
     struct reloq_core_clock original=reloq_core_clock_for_rate(reference);
@@ -336,14 +339,27 @@ static int source_profile(struct reloq_core_resonator *filter,
     if(cosine>1)cosine=1;
     if(cosine< -1)cosine=-1;
     float ratio=original.samples_per_millisecond/clock->samples_per_millisecond;
-    int status=reloq_core_resonator_set_coefficients(filter,powf(radius,ratio),
-        cosf(acosf(cosine)*ratio),0);
+    float angle=acosf(cosine),radial_ratio=ratio,angular_ratio=ratio;
+    if(extended) {
+        struct reloq_core_resonator narrow={0};
+        struct reloq_core_clock eight=reloq_core_clock_for_rate(8000);
+        if(reloq_core_glottal_prefilter_configure(&narrow,&eight,index))return -1;
+        float r8=sqrtf(-narrow.previous_gain);
+        float c8=narrow.latest_gain/(2*r8);
+        if(c8>1)c8=1;
+        if(c8< -1)c8=-1;
+        float angle8=acosf(c8),anchor=11025.0f/8000;
+        float decay_exponent=logf(logf(radius)*anchor/logf(r8))/logf(anchor);
+        float angle_exponent=logf(angle*anchor/angle8)/logf(anchor);
+        float growth=fmaxf(1,clock->samples_per_millisecond/16);
+        radial_ratio*=powf(growth,decay_exponent);
+        angular_ratio*=powf(growth,angle_exponent);
+    }
+    int status=reloq_core_resonator_set_coefficients(filter,powf(radius,radial_ratio),
+        cosf(angle*angular_ratio),0);
     filter->input_gain*=source_gain;
     return status;
 }
-
-
-
 int reloq_core_antiresonator_coefficients(
     struct reloq_core_resonator *filter, float coefficients[3])
 {
@@ -371,6 +387,20 @@ int reloq_core_antiresonator_coefficients(
     return 0;
 }
 
+/* A/(1-2c z^-1+r^2 z^-2), with c=r cos(theta), s=r sin(theta).
+ * Its state rotates and contracts by r even while the poles move. The
+ * output projection [s,c] preserves the original all-pole numerator;
+ * using only the real state would introduce an unwanted zero. */
+static int coupled_coefficients(double a,double b,double negative_radius2,
+    double *cosine,double *sine,double *input)
+{
+    *cosine=.5*b;
+    *sine=sqrt(fmax(0,-negative_radius2-(*cosine)*(*cosine)));
+    if(*sine<1e-12)return -1;
+    *input=a/(*sine);
+    return 0;
+}
+
 int reloq_core_resonator_process(struct reloq_core_resonator *filter,
                                  float *samples, long count)
 {
@@ -383,6 +413,30 @@ int reloq_core_resonator_process(struct reloq_core_resonator *filter,
     long length = count > 0 ? count : 0;
     long ramp = filter->ramp_remaining;
     long ramp_count = ramp < length ? ramp : length;
+    if (filter->stable) {
+        double real=filter->coupled_real,imaginary=filter->coupled_imaginary;
+        double cosine,sine,input;
+        if(coupled_coefficients(filter->input_gain,filter->latest_gain,
+            filter->previous_gain,&cosine,&sine,&input))return -1;
+        float previous=filter->previous,latest=filter->latest;
+        for(long i=0;i<length;++i) {
+            double c=cosine,s=sine,a=input;
+            if(i<ramp_count) {
+                long row=3-ramp+i;
+                if(coupled_coefficients(filter->ramp_input[row],filter->ramp_latest[row],
+                    filter->ramp_previous[row],&c,&s,&a))return -1;
+            }
+            double next_real=c*real-s*imaginary+a*samples[i];
+            imaginary=s*real+c*imaginary;
+            real=next_real;
+            previous=latest;latest=(float)(s*real+c*imaginary);
+            samples[i]=latest;
+        }
+        filter->coupled_real=real;filter->coupled_imaginary=imaginary;
+        filter->previous=previous;filter->latest=latest;
+        filter->ramp_remaining-=ramp_count;
+        return 0;
+    }
     float previous = filter->previous;
     float latest = filter->latest;
     float old_latest = latest;
@@ -464,8 +518,9 @@ static int reloq_core_prepare_formant(
     struct reloq_core_resonator *filter,
     const struct reloq_core_clock *clock,
     const struct reloq_core_formant *specification,
-    int transition, int inverse, float coefficients[3], int enabled)
+    int transition, int inverse, float coefficients[3], int enabled, int stable)
 {
+    filter->stable=stable&&!inverse;
     if (reloq_core_resonator_set_from_hz(
             filter, clock, specification->frequency_hz,
             specification->bandwidth_hz, transition))
@@ -490,16 +545,16 @@ int reloq_core_voiced_bank_configure(
     next.highest_formant = frame->highest_formant;
     if (reloq_core_prepare_formant(&next.nasal_pole, clock,
                                    &frame->nasal_pole, transition, 0,
-                                   NULL, active) ||
+                                   NULL, active, next.stable) ||
         reloq_core_prepare_formant(&next.nasal_zero, clock,
                                    &frame->nasal_zero, transition, 1,
-                                   next.nasal_zero_coefficients, active) ||
+                                   next.nasal_zero_coefficients, active, next.stable) ||
         reloq_core_prepare_formant(&next.tracheal_pole, clock,
                                    &frame->tracheal_pole, transition, 0,
-                                   NULL, active) ||
+                                   NULL, active, next.stable) ||
         reloq_core_prepare_formant(&next.tracheal_zero, clock,
                                    &frame->tracheal_zero, transition, 1,
-                                   next.tracheal_zero_coefficients, active))
+                                   next.tracheal_zero_coefficients, active, next.stable))
         return -1;
     for (long f = 0; f < RELOQ_CORE_ORAL_FORMANTS; ++f) {
         if (f > 0 && f >= frame->highest_formant) {
@@ -508,7 +563,7 @@ int reloq_core_voiced_bank_configure(
         }
         if (reloq_core_prepare_formant(&next.oral[f], clock,
                                        &frame->oral[f], transition, 0,
-                                       NULL, active))
+                                       NULL, active, next.stable))
             return -1;
     }
     *bank = next;
@@ -644,7 +699,7 @@ int reloq_core_serial_frame_begin(
                                       NULL;
             if (reloq_core_prepare_formant(
                     stage, clock, spec, cache->frequency_hz != 0.0f,
-                    inverse != NULL, inverse, 1))
+                    inverse != NULL, inverse, 1, result.stable))
                 return -1;
         }
         stage->enabled = entry;
@@ -693,6 +748,7 @@ int reloq_core_serial_frame_end(
         if (stage->enabled == 0.0f) {
             stage->previous = 0.0f;
             stage->latest = 0.0f;
+            stage->coupled_real=stage->coupled_imaginary=0;
             cache->frequency_hz = 0.0f;
             cache->bandwidth_hz = 0.0f;
         } else {
@@ -1821,8 +1877,11 @@ static int voiced_frame_render_owned(
      * spectrum enters through the native rate transfer, rather than extra
      * serial poles changing the entire shared voice/aspiration band. */
     struct reloq_core_voiced_frame classic_frame;
-    const int classic_source=state->rate_transfer.trial_profile &&
+    const int classic_source=(state->rate_transfer.trial_profile ||
+        state->rate_transfer.smooth_updates) &&
         state->glottal_reference_rate>0 && state->noise.sample_rate>=16000;
+    state->noise.tract.stable=classic_source;
+    state->glottal.stable=classic_source;
     if(state->rate_transfer.trial_profile && state->glottal_reference_rate>0 &&
        state->reference_formants>=1 && state->reference_formants<=5) {
         classic_frame=*frame;
@@ -2033,7 +2092,7 @@ static int voiced_frame_render_owned(
         if (frame->av_level > 0 && carried < length &&
             frame->glottal_profile != state->active_glottal_profile) {
             int error=source_profile(&state->glottal,&noise->clock,
-                    frame->glottal_profile,state->glottal_reference_rate);
+                    frame->glottal_profile,state->glottal_reference_rate,classic_source);
             if (error)
                 return -1;
             state->active_glottal_profile = frame->glottal_profile;

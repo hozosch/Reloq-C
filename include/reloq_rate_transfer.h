@@ -37,7 +37,6 @@ struct reloq_rate_transfer {
     /* Periodic glottal filter only. Moving physical poles to a new clock
      * otherwise loses the reference's discrete source response. */
     unsigned source_profile;
-    double source_mix;
 };
 struct reloq_core_voiced_formants;
 void reloq_rate_transfer_prepare(struct reloq_rate_transfer *,
