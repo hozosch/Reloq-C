@@ -351,7 +351,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 legacy_module = importlib.util.module_from_spec(spec)
                 sys.modules[legacy_name] = legacy_module
                 spec.loader.exec_module(legacy_module)
-                exec((ROOT / "addon/testdata/reloq-0.2.54-driver.py").read_text(), legacy_namespace)
+                exec((ROOT / "addon/testdata/reloq-0.2.54-driver.py").read_text(encoding="utf-8"), legacy_namespace)
                 legacy = legacy_namespace["SynthDriver"].__new__(legacy_namespace["SynthDriver"])
                 legacy._pauseMode = "0"
                 setting = next(s for s in driver.supportedSettings if s.id == "pauseMode")

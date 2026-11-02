@@ -117,14 +117,14 @@ jobs:
         shell: pwsh
         run: |
           $core = (Get-ChildItem candidate -Recurse -Filter eci.dll | Select-Object -First 1).FullName
+          $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
+          python addon/test_synth_native.py --library $core --addon $addon --output packaged-driver-native.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $rules = (Get-ChildItem candidate -Recurse -Filter eci_native_rules_probe.exe | Select-Object -First 1).FullName
           & $rules
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $dsp = (Get-ChildItem candidate -Recurse -Filter eci_rate_dispatch_probe.exe | Select-Object -First 1).FullName
           & $dsp
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
-          python addon/test_synth_native.py --library $core --addon $addon --output packaged-driver-native.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_inline_queue.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
