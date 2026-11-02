@@ -124,7 +124,10 @@ class Engine:
 
 
 def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=None):
-    with tempfile.TemporaryDirectory() as directory:
+    # ctypes keeps a loaded Windows module mapped until process exit, even
+    # after all ECI handles/threads are closed. The native fixture must not
+    # turn that expected file lock into a failed behavioural test.
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=inspect_only and sys.platform == "win32") as directory:
         path = Path(directory)
         package = package_path or path / "synth.nvda-addon"
         if package_path is None:
