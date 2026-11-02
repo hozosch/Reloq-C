@@ -1,4 +1,4 @@
-# Standard-ECI-Abgleich in 1.1.0-rc1
+# Standard-ECI-Abgleich in 1.1.0-rc2
 
 Die Referenz ist die vom Nutzer bereitgestellte `ibmeci.dll` (Windows x86,
 344064 Bytes), SHA-256

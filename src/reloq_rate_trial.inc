@@ -1,17 +1,20 @@
 /* Match the complete Classic Presence main band of the 11-kHz source.
  * At 16 kHz this is the whole consonant target. Higher native bands enter
  * separately from 22.05 kHz, leaving the reference band anchored. */
-int reloq_rate_transfer_prepare_classic(struct reloq_rate_transfer *s,
+int reloq_rate_transfer_prepare_classic_bandwidth(struct reloq_rate_transfer *s,
     const struct reloq_core_frication_bank *reference,
     const struct reloq_core_frication_bank *current,
-    const struct reloq_noise_profile *profile,float rate)
+    const struct reloq_noise_profile *profile,float rate,float extension_scale)
 {
-    if(!s||!reference||!current||!profile||rate<16000)return 0;
+    if(!s||!reference||!current||!profile||rate<16000||
+       !isfinite(extension_scale)||extension_scale<0||extension_scale>1)return 0;
     double norm=fabs(current->bypass_gain),ref_norm=fabs(reference->bypass_gain);
     for(long j=0;j<current->active_formants;++j)norm+=fabs(current->stages[j].input_gain);
     for(long j=0;j<reference->active_formants;++j)ref_norm+=fabs(reference->stages[j].input_gain);
     if(norm<1e-20 || ref_norm<1e-20)return 0;
-    float key[144]={-11026,rate,(float)profile->kind};unsigned at=3;
+    const double extension=extension_scale*(rate>=48000?1:rate>=44100?.8:
+        rate>=32000?.5:rate>=22050?.25:0);
+    float key[144]={-11026,rate,(float)profile->kind,(float)extension};unsigned at=4;
     const struct reloq_core_frication_bank *banks[]={reference,current};
     for(unsigned i=0;i<2;++i) {
         key[at++]=(float)banks[i]->active_formants;
@@ -43,7 +46,6 @@ int reloq_rate_transfer_prepare_classic(struct reloq_rate_transfer *s,
         if(ours[k]>peak)peak=ours[k];
     }
     if(lower_ref<=0 || lower_ours<=0)return 0;
-    const double extension=rate>=48000?1:rate>=44100?.8:rate>=32000?.5:rate>=22050?.25:0;
     const double upper_scale=lower_ref/lower_ours;
     double wanted=0;
     for(unsigned k=0;k<=FFT_SIZE/2;++k) {
@@ -69,4 +71,13 @@ int reloq_rate_transfer_prepare_classic(struct reloq_rate_transfer *s,
     prepare_ramp(s,rate);s->remaining=(unsigned)(rate*.003f);
     for(unsigned j=0;j<RELOQ_RATE_TAPS;++j)s->step[j]=(s->target[j]-s->kernel[j])/s->remaining;
     return 1;
+}
+
+int reloq_rate_transfer_prepare_classic(struct reloq_rate_transfer *s,
+    const struct reloq_core_frication_bank *reference,
+    const struct reloq_core_frication_bank *current,
+    const struct reloq_noise_profile *profile,float rate)
+{
+    return reloq_rate_transfer_prepare_classic_bandwidth(s,reference,current,
+        profile,rate,1);
 }

@@ -1,0 +1,97 @@
+{
+  "version": "1.1.0-rc2",
+  "core_version": "1.1.0.rc2",
+  "official_release": false,
+  "source_base": "8f3f754a7b9ee67ae85ff6ceb81fcb3fa6671d23",
+  "dll": {
+    "bytes": 54735872,
+    "sha256": "ef7ed0dd5541693314f601f169b163e7bbcfa4923f42aeaf1d5b65aa64133984",
+    "architecture": "Windows x64",
+    "exports": 49
+  },
+  "linux_library": {
+    "bytes": 55360472,
+    "sha256": "98a168894dd9e66fe20421fca44d9eac7c36f785979950c3936a81feb31a7255"
+  },
+  "checks": {
+    "public_standard": 131,
+    "public_extended": 78,
+    "public_contract": 86,
+    "public_phonemes_pause": 69,
+    "inline_queue": 491,
+    "high_rate_profiles": 293,
+    "german_context": 371,
+    "german_whole_vs_streamed": 40,
+    "analysis_cancellation": 32,
+    "english_seconds": 72,
+    "real_speech_peak_cases": 136,
+    "maximum_peak": 32107,
+    "baseline_a_low_rate_pcm_identities": 36,
+    "accepted_16000_body_identities_en_de": 4,
+    "castilian_s_t_upper_band_bounds": 10,
+    "castilian_max_upper_main_density_ratio": 0.0008136065,
+    "original_classic_s_t_onset_identities": 24,
+    "unchanged_a_controls": 60,
+    "castilian_peak_cases": 30,
+    "castilian_maximum_peak": 32275,
+    "session_dc_bass_upper_band_reset_pure_af_checks": "passed",
+    "classic_noise_full_path_and_limited_band_cases": 80,
+    "classic_voice_main_band_and_image_cases": 420,
+    "classic_source_phase_dc_stability_cases": 275,
+    "classic_frame_cases": 20,
+    "filter_dispatch_cases": 19404,
+    "spectral_phase_cases": 20000,
+    "updater_tests": 7
+  },
+  "body": {
+    "foundation": "Classic Presence at 16 kHz; retain low Classic body at every higher rate",
+    "extension": "Complementary first-order 2.5 kHz high-pass of 0.8*A minus Classic body",
+    "rates_hz": [
+      22050,
+      32000,
+      44100,
+      48000
+    ],
+    "weights": [
+      0.25,
+      0.5,
+      0.8,
+      1
+    ],
+    "preserve_16000": true,
+    "resampling": false,
+    "dynamic_level_detector": false,
+    "extra_output_delay_samples": 0
+  },
+  "castilian_s_t": {
+    "filter": "Normal Classic Presence at all rates",
+    "extra_upper_band_scale": 0,
+    "flag_inert_at_16000": true,
+    "preserve_other_classic_af": true,
+    "a_filter_exception_removed": true,
+    "release_state_retained": true
+  },
+  "inline_tags": {
+    "space_delimited_vv50_languages_and_dialects": 11,
+    "checks": "Identical prefix PCM, index position, no-op tag PCM and tagged lexical input; quieter following word. No parser change required."
+  },
+  "issue_state": {
+    "closed": [
+      2,
+      3,
+      5,
+      6
+    ],
+    "open": {
+      "1": "Sound balance and target-device listening",
+      "4": "License files are prepared; merge corresponding source into main"
+    }
+  },
+  "limits": [
+    "Windows runtime checks run in the hearing-preview GitHub workflow; local tests use Linux plus a Windows x64 cross-build.",
+    "Sound balance and playback underruns still require listening on the target NVDA devices.",
+    "Retaining the Classic body at 48 kHz requires both serial tracts and adds computation compared with the A-only rc1 endpoint.",
+    "Full ECI parity is not implemented; mixed API pitch marks and inline pitch retain the native legacy path."
+  ],
+  "dictionary_commit": "a142cb841b4c70260cb2c37ac4ac96da88c33644"
+}

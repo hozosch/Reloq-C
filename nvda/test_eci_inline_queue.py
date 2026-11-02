@@ -3,6 +3,7 @@
 All speech remains in RAM; tests exercise the DLL directly, with no NVDA shim.
 """
 import argparse
+import array
 import ctypes as C
 from pathlib import Path
 
@@ -34,14 +35,15 @@ class Engine:
    ('eciSetParam',I,(H,I,I)),('eciGetParam',I,(H,I)),
    ('eciAddText',I,(H,C.c_char_p)),('eciAddTextUtf8',I,(H,C.c_char_p,C.c_size_t,I)),
    ('eciSetOutputBuffer',I,(H,I,C.POINTER(C.c_short))),
-   ('eciSynthesize',I,(H,)),('eciClearInput',I,(H,))):
+   ('eciSynthesize',I,(H,)),('eciClearInput',I,(H,)),('eciInsertIndex',I,(H,I))):
    f=getattr(self.lib,name);f.restype=result;f.argtypes=args
   self.h=self.lib.eciNewEx(language);assert self.h
-  self.buffer=(C.c_short*1100)();self.audio=bytearray()
+  self.buffer=(C.c_short*1100)();self.audio=bytearray();self.indices=[]
   CB=(C.WINFUNCTYPE if hasattr(C,'WINFUNCTYPE') else C.CFUNCTYPE)(I,H,I,I,H)
   @CB
   def take(h,msg,n,data):
    if msg==0:self.audio.extend(C.string_at(self.buffer,n*2))
+   elif msg==2:self.indices.append((n,len(self.audio)))
    return 1
   self.callback=take
   self.lib.eciRegisterCallback.argtypes=(H,CB,H)
@@ -59,7 +61,7 @@ class Engine:
   data=s.encode('cp1252' if legacy else 'utf8')
   assert (self.lib.eciAddText(self.h,data) if legacy else self.lib.eciAddTextUtf8(self.h,data,len(data),0))
  def finish(self):
-  self.audio.clear();assert self.lib.eciSynthesize(self.h),self.lib.eciGetParam(self.h,0x1002)
+  self.audio.clear();self.indices.clear();assert self.lib.eciSynthesize(self.h),self.lib.eciGetParam(self.h,0x1002)
   return bytes(self.audio)
  def speak(self,s):self.add(s);return self.finish()
 
@@ -80,6 +82,23 @@ def main():
    if language>>16 not in (6,8,10):
     assert actual==expected,(hex(language),'mid-word vv',len(actual),len(expected))
    assert expected!=plain;checks+=3
+   if language>>16 not in (6,8,10):
+    # A command delimited by spaces takes effect at the following word;
+    # prefix PCM, lexical timing and public index offsets stay unchanged.
+    if language==0x40000:prefix,word,suffix='Das ist ein ','test','.'
+    def indexed(tail):
+     e.add(prefix);assert e.lib.eciInsertIndex(e.h,17);e.add(tail)
+     data=e.finish();assert len(e.indices)==1 and e.indices[0][0]==17
+     return data,e.indices[0][1]
+    plain,at=indexed(word+suffix)
+    noop,noop_at=indexed('`vv100 '+word+suffix)
+    quiet,quiet_at=indexed('`vv50 '+word+suffix)
+    assert plain==noop and at==noop_at==quiet_at,hex(language)
+    assert plain[:at]==quiet[:at] and plain[at:]!=quiet[at:],hex(language)
+    assert quiet==indexed('`vv50'+word+suffix)[0],hex(language)
+    normal=array.array('h',plain[at:]);low=array.array('h',quiet[at:])
+    assert sum(x*x for x in low)<.03*sum(x*x for x in normal),hex(language)
+    checks+=4
   finally:e.close()
  for language in (0x10000,0x40000):
   e=Engine(a.library,language)

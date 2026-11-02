@@ -1,3 +1,29 @@
+# Testkandidat 1.1.0-rc2: Classic-Basis und kastilische Bandbreite
+
+Die 16-kHz-Abstimmung bleibt die Grundlage von Profil B. Ab 22,05 kHz
+wird nur die obere Differenz des mit 0,8 kalibrierten A-Stimmkörpers
+beigemischt: ein komplementärer Split bei 2,5 kHz erhält den unteren
+Classic-Anteil. Die Gewichte steigen weiterhin mit 25/50/80/100 Prozent
+bei 22,05/32/44,1/48 kHz. Auch bei 48 kHz bleibt der Classic-Körper aktiv;
+der bisherige vollständige Wechsel zu A entfällt. Der Split führt keine
+zusätzliche Ausgabeverzögerung ein und behält seinen Zustand über Frames.
+
+Kastilisches S/T verwendet wieder die normalen Classic-Presence-Konsonanten.
+Die Sprachmarkierung begrenzt ausschließlich die optionale obere AF-
+Erweiterung. Bei 16 kHz hat sie keine Wirkung; darüber bleibt für diese Laute
+das vollständige Classic-Zielspektrum ohne zusätzliches oberes Rauschband.
+Variante A, Mexikanisch und andere Konsonanten behalten ihren normalen Pfad.
+Die Erkennung mit A4F/A5F über A3F und ihr Halten über den AF-Ausklang bleibt
+erhalten. Die A-/OpenEVV-Filterausnahme aus rc1 ist damit abgelöst.
+
+Der direkte Tag-Test umfasst nun auch ein Leerzeichen nach `vv50`,
+unveränderte PCM-Ausgabe vor dem folgenden Wort und identische Indexpositionen
+in elf westlichen Sprachen/Dialekten, einschließlich „Das ist ein `vv50 test“.
+Dafür war keine weitere Änderung am Tag-Parser erforderlich. Die vollständige
+ECI-Parität bleibt ein separates, noch nicht abgeschlossenes Ziel.
+
+Die folgenden Abschnitte beschreiben historische Teststände.
+
 # Testkandidat 1.1.0-rc1: A-Stimmkörper, Wortparameter und Startzeit
 
 Ab 22,05 kHz mischt Profil B den seriellen AV/AH-Stimmkörper aus Variante A

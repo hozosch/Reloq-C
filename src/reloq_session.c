@@ -1,5 +1,6 @@
 #include "reloq_session.h"
 #include "reloq_core_internal.h"
+#include "reloq_body_extension.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -77,6 +78,7 @@ struct reloq_session {
     struct reloq_session_buffers body_buffers;
     float *classic_body;
     size_t body_capacity;
+    struct reloq_body_extension body_extension;
 };
 
 float reloq_session_sample_rate(const struct reloq_session *s)
@@ -213,13 +215,11 @@ static int render_owned(struct reloq_session *session,
         }
         if(!status)status=reloq_core_voiced_frame_render_body(
             &session->frame_state,frame,b->output,b->raw_af,b->scratch,
-            b->closed_mask,session->classic_body,b->capacity,written,rate>=48000);
+            b->closed_mask,session->classic_body,b->capacity,written,0);
         if(!status) {
-            /* The exact A serial tract supplies richness; keep the accepted
-             * Classic consonants as a separate, unchanged contribution.
-             * A fixed -1.94 dB body calibration leaves headroom for their
-             * sum, including the female five-formant voice. No limiter or
-             * time-varying level detector changes the volume envelope. */
+            /* Keep the Classic body as the foundation. The complementary
+             * high band supplies A's upper harmonics at increasing rates,
+             * while AF remains an independent Classic contribution. */
             struct reloq_core_voiced_frame body=*frame;
             body.noise.af_level=0;body.noise.bypass_level=0;
             struct reloq_session_buffers *a=&session->body_buffers;
@@ -228,8 +228,11 @@ static int render_owned(struct reloq_session *session,
                 a->output,a->raw_af,a->scratch,a->closed_mask,NULL,a->capacity,&n);
             if(!status&&n!=*written)status=-1;
             float mix=rate>=48000?1:rate>=44100?.8f:rate>=32000?.5f:.25f;
+            double k=tan(3.14159265358979323846*2500/rate);
+            double gain=1/(1+k),pole=(1-k)/(1+k);
             if(!status)for(size_t i=0;i<n;++i)
-                b->output[i]+=mix*(.8f*a->output[i]-session->classic_body[i]);
+                b->output[i]+=reloq_body_extension_sample(&session->body_extension,
+                    session->classic_body[i],a->output[i],mix,gain,pole);
         }
     } else status = reloq_core_voiced_frame_render_owned(
         &session->frame_state,frame,b->output,b->raw_af,
@@ -296,6 +299,7 @@ int reloq_session_reset(struct reloq_session *session)
     session->frame_state = next;
     /* A profile change/reset starts both bodies from the same source clock. */
     free(session->body_state);session->body_state=NULL;
+    memset(&session->body_extension,0,sizeof session->body_extension);
     epoch_store(&session->active_epoch, generation);
     return RELOQ_SESSION_OK;
 }

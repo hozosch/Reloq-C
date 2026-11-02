@@ -1025,7 +1025,7 @@ int reloq_eci_reset_audio(ECIHand handle)
 void ECICALL eciVersion(char *buffer)
 {
     /* The public ECI convention promises at least twenty writable bytes. */
-    if (buffer) memcpy(buffer, "1.1.0.rc1", sizeof "1.1.0.rc1");
+    if (buffer) memcpy(buffer, "1.1.0.rc2", sizeof "1.1.0.rc2");
 }
 
 int ECICALL eciGetAvailableLanguages(unsigned int *languages, int *count)

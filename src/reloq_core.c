@@ -1821,7 +1821,6 @@ static int voiced_frame_render_owned(
      * spectrum enters through the native rate transfer, rather than extra
      * serial poles changing the entire shared voice/aspiration band. */
     struct reloq_core_voiced_frame classic_frame;
-    const long af_formants=frame->noise.tract.highest_formant;
     const int classic_source=state->rate_transfer.trial_profile &&
         state->glottal_reference_rate>0 && state->noise.sample_rate>=16000;
     if(state->rate_transfer.trial_profile && state->glottal_reference_rate>0 &&
@@ -1894,7 +1893,7 @@ static int voiced_frame_render_owned(
     float centers[RELOQ_CORE_FRICATIVE_FORMANTS];
     float widths[RELOQ_CORE_FRICATIVE_FORMANTS];
     long levels[RELOQ_CORE_FRICATIVE_FORMANTS];
-    long noise_count=params->a_frication_filter?af_formants:params->tract.highest_formant;
+    long noise_count=params->tract.highest_formant;
     for (int i = 0; i < RELOQ_CORE_FRICATIVE_FORMANTS; ++i)
         centers[i] = params->tract.oral[i].frequency_hz;
     memcpy(widths,params->af_bandwidths,sizeof widths);
@@ -1913,8 +1912,7 @@ static int voiced_frame_render_owned(
 
     if(shaped && params->af_level) {
         int classic=0;
-        if(state->noise_transfer.trial_profile && noise->sample_rate>=16000 &&
-           !params->a_frication_filter) {
+        if(state->noise_transfer.trial_profile && noise->sample_rate>=16000) {
             float original_f[8];
             for(unsigned j=0;j<8;++j)original_f[j]=params->tract.oral[j].frequency_hz;
             struct reloq_core_clock reference_clock=reloq_core_clock_for_rate(11025);
@@ -1922,8 +1920,9 @@ static int voiced_frame_render_owned(
             if(!reloq_core_frication_bank_configure(&reference,&reference_clock,original_f,
                 params->af_bandwidths,params->af_levels,state->reference_formants,
                 params->af_level,noise->source_offset,noise->af_trim,bypass))
-                classic=reloq_rate_transfer_prepare_classic(&state->noise_transfer,
-                    &reference,&noise->fricatives,&state->noise_profile,noise->sample_rate);
+                classic=reloq_rate_transfer_prepare_classic_bandwidth(&state->noise_transfer,
+                    &reference,&noise->fricatives,&state->noise_profile,noise->sample_rate,
+                    params->limit_frication_extension?0:1);
         }
         if(!classic) {
         float mix=params->s_frication?(noise->sample_rate==16000?.25f:.5f):0;

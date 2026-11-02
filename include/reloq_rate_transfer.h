@@ -66,4 +66,9 @@ void reloq_rate_transfer_prepare_noise_mix_profile(struct reloq_rate_transfer *,
 int reloq_rate_transfer_prepare_classic(struct reloq_rate_transfer *,
     const struct reloq_core_frication_bank *,const struct reloq_core_frication_bank *,
     const struct reloq_noise_profile *,float);
+/* Scale only the extra band above the complete Classic Presence target.
+ * Zero retains the 16-kHz colour; one uses the normal rate progression. */
+int reloq_rate_transfer_prepare_classic_bandwidth(struct reloq_rate_transfer *,
+    const struct reloq_core_frication_bank *,const struct reloq_core_frication_bank *,
+    const struct reloq_noise_profile *,float,float);
 #endif

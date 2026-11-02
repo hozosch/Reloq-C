@@ -1,11 +1,13 @@
-"""Actual Castilian S/T onsets retain A's PCM before voicing begins.
+"""Castilian S/T retains Classic Presence without the optional upper band.
 
-Compare the independently selected hearing profiles, including both models,
-all extended clocks and real words. No inferred phoneme/SNR threshold is
-reimplemented here, and all audio remains in RAM.
+Observe real words and both models. The 6.5--7.5 kHz / 1.2--5 kHz spectral
+ratio must remain below -27 dB, including the original 16-kHz foundation.
+A pre-exception baseline can additionally verify its exact consonant onsets.
+All audio remains in RAM; no analysis dependency beyond Python is required.
 """
 import argparse
 import array
+import math
 from pathlib import Path
 
 from _reloq_eci_direct import (DirectEciEngine, GENDER, SAMPLE_RATE,
@@ -19,12 +21,36 @@ def capture(engine, text, profile):
     return b"".join(chunks)
 
 
+def onset(data, rate, milliseconds):
+    samples = array.array("h", data)
+    start = next(i for i, x in enumerate(samples) if abs(x) > 8)
+    end = start + int(rate * milliseconds / 1000)
+    assert len(samples) >= end
+    return samples[:end], samples[start:end]
+
+
+def band_power(samples, rate, low, high):
+    window = [x * (.5 - .5 * math.cos(2 * math.pi * i / (len(samples) - 1)))
+              for i, x in enumerate(samples)]
+    total = 0
+    for hz in range(low, high + 1, 100):
+        coefficient = 2 * math.cos(2 * math.pi * hz / rate)
+        previous = older = 0
+        for x in window:
+            current = x + coefficient * previous - older
+            older, previous = previous, current
+        total += previous * previous + older * older - coefficient * previous * older
+    return total / ((high - low) // 100 + 1)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--library", type=Path, required=True)
-    parser.add_argument("--baseline", type=Path)
+    parser.add_argument("--baseline", type=Path,
+                        help="Original Classic-Presence build before the rc1 A-filter exception")
     args = parser.parse_args()
-    prefixes = peaks = identities = maximum = 0
+    prefixes = spectra = peaks = identities = maximum = 0
+    worst_ratio = 0
     texts = ("seseo.", "teta.", "Seis sacerdotes están sentados en siete sitios.")
     for dialect in (0x20000, 0x20001) if args.baseline else (0x20000,):
         engine = DirectEciEngine(args.library.resolve(), dialect=dialect,
@@ -36,34 +62,38 @@ def main():
                 engine.set_parameter(GENDER, gender)
                 if baseline: baseline.set_parameter(GENDER, gender)
                 for rate in (3, 2, 4, 5, 6):
+                    hz = SAMPLE_RATES[rate]
                     engine.set_parameter(SAMPLE_RATE, rate)
                     if baseline: baseline.set_parameter(SAMPLE_RATE, rate)
                     for text in texts:
                         a = capture(engine, text, 0)
                         b = capture(engine, text, 1)
                         if dialect == 0x20000:
-                            samples = array.array("h", b)
-                            peak = max(abs(x) for x in samples)
+                            peak = max(abs(x) for x in array.array("h", b))
                             assert peak < 32767, (gender, rate, text, peak)
                             maximum = max(maximum, peak); peaks += 1
-                            if text in texts[:2]:
-                                reference = array.array("h", a)
-                                first = next(i for i, x in enumerate(reference) if abs(x) > 8)
-                                ms = 60 if text == texts[0] else 8
-                                end = first + ms * (SAMPLE_RATES[rate] // 1000)
-                                assert len(samples) >= end and len(reference) >= end
-                                assert samples[:end] == reference[:end], (gender, rate, text)
-                                prefixes += 1
+                            if text == texts[0]:
+                                _, frication = onset(b, hz, 60)
+                                ratio = (band_power(frication, hz, 6500, 7500) /
+                                         band_power(frication, hz, 1200, 5000))
+                                assert 0 < ratio < .002, (gender, hz, ratio)
+                                worst_ratio = max(worst_ratio, ratio); spectra += 1
                         if baseline:
-                            profile = 0 if dialect == 0x20000 else 1
-                            assert (a if not profile else b) == capture(baseline, text, profile), (
-                                hex(dialect), gender, rate, text, "control changed")
+                            assert a == capture(baseline, text, 0), (
+                                hex(dialect), gender, hz, text, "A control changed")
                             identities += 1
+                            if text in texts[:2] and (dialect == 0x20001 or hz == 16000):
+                                ms = 60 if text == texts[0] else 8
+                                assert onset(b, hz, ms)[0] == onset(
+                                    capture(baseline, text, 1), hz, ms)[0], (
+                                        hex(dialect), gender, hz, text, "Classic onset changed")
+                                prefixes += 1
         finally:
             engine.close()
             if baseline: baseline.close()
-    print(f"Castilian S/T: {prefixes} real A-onset identities, {peaks} peak checks "
-          f"(maximum {maximum}), {identities} unchanged A/Mexican controls; audio in RAM")
+    print(f"Castilian S/T: {spectra} upper-band bounds (worst {worst_ratio:.7f}), "
+          f"{prefixes} original Classic onset identities, {peaks} peak checks "
+          f"(maximum {maximum}), {identities} unchanged A controls; audio in RAM")
 
 
 if __name__ == "__main__": main()

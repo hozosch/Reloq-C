@@ -1,4 +1,5 @@
 #include "reloq_session.h"
+#include "../src/reloq_body_extension.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -9,7 +10,9 @@
 #include <xmmintrin.h>
 #endif
 
-#define CHECK(condition) do { if (!(condition)) return __LINE__; } while (0)
+#define CHECK(condition) do { if (!(condition)) { \
+    fprintf(stderr,"%s:%d: %s\n",__FILE__,__LINE__,#condition); \
+    return __LINE__; } } while (0)
 
 struct capture {
     int16_t pcm[1024];
@@ -146,30 +149,55 @@ static int check_fp_scope(void)
 }
 #endif
 
-/* At 48 kHz the new body endpoint has A colour, while a pure consonant
- * still follows Classic. Compare independent core/session routes, including
- * resets, instead of duplicating the blend arithmetic in the test. */
+/* Observe the split's physical response rather than reproducing its
+ * arithmetic: preserve DC/bass, progressively admit upper harmonics. */
+static int check_body_extension(void)
+{
+    const double rates[]={22050,32000,44100,48000};
+    const float amount[]={.25f,.5f,.8f,1};
+    double previous=1;
+    for(unsigned r=0;r<4;++r) {
+        double k=tan(3.14159265358979323846*2500/rates[r]);
+        double gain=1/(1+k),pole=(1-k)/(1+k),upper=0;
+        for(unsigned band=0;band<3;++band) {
+            struct reloq_body_extension s={0};double input=0,output=0;
+            double hz=band==0?0:band==1?250:4500;
+            for(unsigned i=0;i<(unsigned)rates[r];++i) {
+                float b=hz?(float)sin(2*3.14159265358979323846*hz*i/rates[r]):1;
+                float y=b+reloq_body_extension_sample(&s,b,2*b,amount[r],gain,pole);
+                if(i>(unsigned)rates[r]/2){input+=b*b;output+=y*y;}
+                CHECK(isfinite(y));
+            }
+            double ratio=sqrt(output/input);
+            if(!band)CHECK(fabs(ratio-1)<1e-6);
+            else if(band==1)CHECK(fabs(ratio-1)<.02);
+            else upper=ratio;
+        }
+        CHECK(upper>previous+.05&&upper<1.6);previous=upper;
+    }
+    return 0;
+}
+
+/* A pure consonant follows the independent Classic core at 48 kHz.
+ * The language bandwidth flag must be inert at 16 kHz and in profile A. */
 static int check_body_endpoint(void)
 {
     struct reloq_session_config c={.sample_rate=48000,.duration_scale=1,
         .output_gain=1,.initial_seed=100,.max_frame_samples=1024,
         .glottal_reference_rate=11025,.reference_formants=5,.frication_reference_rate=16000};
-    struct reloq_session *a=reloq_session_create(&c),*b=reloq_session_create(&c);
-    CHECK(a&&b);CHECK(!reloq_session_high_rate_profile(b,1));
+    struct reloq_session *a=NULL,*b=reloq_session_create(&c);
+    CHECK(b);CHECK(!reloq_session_high_rate_profile(b,1));
     CHECK(!reloq_session_reset(b));
     struct reloq_core_voiced_frame frames[8];
     for(unsigned i=0;i<8;++i) {
         frames[i]=frame_for_test();frames[i].noise.duration_ms=1;
-        frames[i].av_level=45;frames[i].noise.af_level=0;frames[i].noise.bypass_level=0;
+        frames[i].av_level=0;frames[i].noise.ah_level=0;frames[i].noise.af_level=65;
+        frames[i].noise.bypass_level=0;
+        memset(frames[i].noise.af_levels,0,sizeof frames[i].noise.af_levels);
+        frames[i].noise.af_levels[2]=55;frames[i].noise.af_levels[3]=65;
+        frames[i].noise.af_levels[4]=60;
     }
     struct capture ca={0},cb={0};
-    CHECK(!reloq_session_render_frames(a,frames,8,receive_pcm,&ca,NULL));
-    CHECK(!reloq_session_render_frames(b,frames,8,receive_pcm,&cb,NULL));
-    CHECK(ca.samples==cb.samples);
-    for(size_t i=0;i<ca.samples;++i)CHECK(abs((int)(.8f*ca.pcm[i])-cb.pcm[i])<=2);
-    CHECK(!reloq_session_reset(b));
-    cb=(struct capture){0};
-    for(unsigned i=0;i<8;++i){frames[i].av_level=0;frames[i].noise.ah_level=0;frames[i].noise.af_level=25;}
     CHECK(!reloq_session_render_frames(b,frames,8,receive_pcm,&cb,NULL));
     struct reloq_core_voiced_frame_state state;
     CHECK(!reloq_core_voiced_frame_initialize(&state,48000,100,0,0,0));
@@ -182,18 +210,27 @@ static int check_body_endpoint(void)
         at+=written;
     }
     CHECK(at==cb.samples);
-    reloq_session_destroy(a);reloq_session_destroy(b);
-    /* The Castilian S/T path retains A's complete AF bank and filter at
-     * every extended rate, including 16 kHz's separate consonant choice. */
+    int nonzero=0;for(size_t i=0;i<cb.samples;++i)if(cb.pcm[i])nonzero=1;
+    CHECK(nonzero);
+    CHECK(!reloq_session_reset(b));ca=(struct capture){0};
+    CHECK(!reloq_session_render_frames(b,frames,8,receive_pcm,&ca,NULL));
+    CHECK(ca.samples==cb.samples&&!memcmp(ca.pcm,cb.pcm,ca.samples*sizeof *ca.pcm));
+    reloq_session_destroy(b);
     const float rates[]={16000,22050,32000,44100,48000};
-    for(int mix=0;mix<=1;++mix)for(unsigned r=0;r<sizeof rates/sizeof *rates;++r) {
+    for(unsigned profile=0;profile<2;++profile)for(unsigned r=0;r<sizeof rates/sizeof *rates;++r) {
         c.sample_rate=rates[r];a=reloq_session_create(&c);b=reloq_session_create(&c);
-        CHECK(a&&b);CHECK(!reloq_session_high_rate_profile(b,1));CHECK(!reloq_session_reset(b));
+        CHECK(a&&b);CHECK(!reloq_session_high_rate_profile(a,profile));
+        CHECK(!reloq_session_high_rate_profile(b,profile));
+        CHECK(!reloq_session_reset(a));CHECK(!reloq_session_reset(b));
         ca=(struct capture){0};cb=(struct capture){0};
-        for(unsigned i=0;i<8;++i){frames[i].noise.a_frication_filter=1;frames[i].noise.s_frication=mix;}
+        for(unsigned i=0;i<8;++i)frames[i].noise.limit_frication_extension=0;
         CHECK(!reloq_session_render_frames(a,frames,8,receive_pcm,&ca,NULL));
+        for(unsigned i=0;i<8;++i)frames[i].noise.limit_frication_extension=1;
         CHECK(!reloq_session_render_frames(b,frames,8,receive_pcm,&cb,NULL));
-        CHECK(ca.samples==cb.samples&&memcmp(ca.pcm,cb.pcm,ca.samples*sizeof *ca.pcm)==0);
+        CHECK(ca.samples==cb.samples);
+        if(!profile||rates[r]==16000)
+            CHECK(!memcmp(ca.pcm,cb.pcm,ca.samples*sizeof *ca.pcm));
+        else CHECK(memcmp(ca.pcm,cb.pcm,ca.samples*sizeof *ca.pcm));
         reloq_session_destroy(a);reloq_session_destroy(b);
     }
     return 0;
@@ -364,6 +401,7 @@ int main(void)
     #if defined(__SSE2__) || defined(_M_X64)
     CHECK(check_fp_scope()==0);
     #endif
+    CHECK(check_body_extension()==0);
     CHECK(check_body_endpoint()==0);
     return 0;
 }

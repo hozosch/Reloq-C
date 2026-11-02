@@ -346,12 +346,12 @@ static int render_until(struct rule_plan *s,int64_t limit)
         frame.noise.s_frication=controls[8]>0&&(controls[38]>controls[37]+10||controls[39]>controls[37]+10);
         if(s->castilian) {
             /* Castilian /s/ has A4F-A3F == 10 dB, below the older generic
-             * classifier's strict >10 test. Hold its selected colour over
+             * classifier's strict >10 test. Hold its bandwidth limit over
              * the AF release, rather than switching at each rounded tail. */
             if(controls[8]<=0)s->castilian_st=0;
             else if(controls[38]>controls[37]+5||controls[39]>controls[37]+5)
                 s->castilian_st=1;
-            frame.noise.a_frication_filter=s->castilian_st;
+            frame.noise.limit_frication_extension=s->castilian_st;
         }
         p->delivery.gain=p->settings->volume/100.0*reloq_voice_volume_gain(f->volume);
         size_t completed=0;
