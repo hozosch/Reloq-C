@@ -194,7 +194,7 @@ static int stream_windows(const unsigned char *text,size_t length,
     const struct reloq_german_text_stream *stream)
 {
     if(!stream||!stream->part||length<1024||!stream_voice_controls(text,length))return 0;
-    size_t begin=0,scalar_begin=0,next_boundary=0,part=0;
+    size_t begin=0,scalar_begin=0,next_boundary=0;
     while(begin<length) {
         size_t window=512,bytes=length-begin,scalars=0;
         unsigned char *annotation=NULL;struct reloq_german_word_features *features=NULL;
@@ -258,7 +258,7 @@ retry_remaining: ;
                     local,count,first,begin+bytes==length))result=cancelled&&cancelled(context)?2:-1;
         free(annotation);free(features);free(local);
         if(result)return result;
-        begin+=bytes;scalar_begin+=scalars;++part;
+        begin+=bytes;scalar_begin+=scalars;
     }
     return 3;
 }
