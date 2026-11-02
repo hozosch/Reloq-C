@@ -1,0 +1,41 @@
+name: Eloquence_64 original ECI observations
+on:
+  push:
+    branches: [codex/release110]
+    paths: [tools/observe_eci_contract.py, .github/workflows/eci-reference.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original:
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          architecture: x86
+      - name: Fetch pinned Eloquence_64 v25 reference
+        run: |
+          python - <<'PY'
+          import hashlib, pathlib, urllib.request, zipfile
+          path = pathlib.Path('eloquence64-reference.nvda-addon')
+          urllib.request.urlretrieve('https://github.com/fastfinge/eloquence_64/releases/download/v25/Eloquence-v25.nvda-addon', path)
+          assert hashlib.sha256(path.read_bytes()).hexdigest() == '3b14eaa9923a006553b7ea6152abf2ca9cd8f11c1b3dcebe2a905658863ea409'
+          target = pathlib.Path('reference'); target.mkdir()
+          with zipfile.ZipFile(path) as z:
+              for name in z.namelist():
+                  if name.lower().startswith('synthdrivers/eloquence/') and name.lower().endswith(('.dll','.syn','.ini')):
+                      (target / pathlib.PurePosixPath(name).name).write_bytes(z.read(name))
+          PY
+        shell: bash
+      - name: Observe original public ECI behaviour in x86 Python
+        run: python tools/observe_eci_contract.py --library reference/ECI.DLL --output eci-original.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eloquence64-original-eci-observations
+          path: eci-original.json
+          retention-days: 14
