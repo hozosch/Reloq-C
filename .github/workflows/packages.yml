@@ -6,7 +6,31 @@ on:
 permissions:
   contents: read
 jobs:
+  version:
+    runs-on: ubuntu-24.04
+    outputs:
+      stable: ${{ steps.version.outputs.stable }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Select stable installable packaging
+        id: version
+        run: |
+          python3 - <<'PY'
+          import os, re
+          from pathlib import Path
+          text = Path('addon/synth/manifest.ini').read_text()
+          value = re.search(r'^version\s*=\s*"([^"]+)"', text, re.M)[1]
+          stable = bool(re.fullmatch(r'\d+\.\d+\.\d+', value))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('stable=' + str(stable).lower() + '\n')
+          if not stable:
+              print('Prerelease: use the NVDA hearing-preview workflow; stable multi-platform packaging waits for the final version.')
+          PY
   dictionaries:
+    needs: version
+    if: needs.version.outputs.stable == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
