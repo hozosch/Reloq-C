@@ -1,0 +1,943 @@
+{
+  "candidate": "1.1.0-rc5",
+  "base_commit": "e8473975fd45ddd7ab37ef2c5df4f09ce91b6d98",
+  "scope": "Development/listening candidate; public ECI compatibility unchanged",
+  "native_source_checks": {
+    "phase_mask_partition": 100,
+    "pole_geometry_dc": 350,
+    "coupled_state": 3012
+  },
+  "steady_physical_voice": {
+    "cases": 36,
+    "reference": "Classic B at 16000 Hz",
+    "bass_max_absolute_db": 0.338,
+    "minimum_harmonic_to_nonharmonic_db": 56.55,
+    "minimum_upper_band_power_ratio_guard": 0.7,
+    "includes_pcm_protection": false,
+    "proves_all_speech_distortion_absent": false
+  },
+  "real_speech_sanity": {
+    "model_rate_checks": 186,
+    "legacy_a_low_rate_pcm_identities": 54,
+    "protected_maximum_pcm": 31419,
+    "proves_raw_headroom": false
+  },
+  "tag_boundaries": {
+    "cases": 110,
+    "causal_word_cases": 90,
+    "api_inline_pitch_order": 20,
+    "failures": 0,
+    "languages": [
+      "0x10000",
+      "0x10001",
+      "0x120000",
+      "0x20000",
+      "0x20001",
+      "0x30000",
+      "0x30001",
+      "0x50000",
+      "0x70000",
+      "0x90000"
+    ],
+    "controls": [
+      "v2",
+      "vb80",
+      "vf70",
+      "vg1",
+      "vh30",
+      "vr40",
+      "vs120",
+      "vv50",
+      "vy40"
+    ],
+    "unchanged_prefix_pcm_and_index": true,
+    "changed_following_audio": true,
+    "limits": [
+      "CJK word/index path remains open",
+      "German causal pitch/inflection/model differences remain open",
+      "Zero initial inflection and mixed-model phonetic calibration need follow-up"
+    ]
+  },
+  "existing_queue_checks": 725,
+  "german_whole_stream_pcm_index_identities": 65,
+  "hearing_profile_checks": 293,
+  "castilian": {
+    "upper_band_checks": 10,
+    "worst_upper_band_ratio": 0.0079367,
+    "protected_peak_checks": 30,
+    "maximum_protected_pcm": 32447
+  },
+  "startup": {
+    "timing_scope": "Local Linux host, warmed add-on transport and simulated player, community dictionaries; not Windows/NVDA/device timing",
+    "baseline": {
+      "library": "libreloq-rc4-finalfast.so",
+      "simulated_player": true,
+      "dictionaries": "data/community",
+      "voice": "2",
+      "rows": [
+        {
+          "case": "sentence",
+          "language": "0x40000",
+          "characters": 5888,
+          "first_feed_ms": [
+            3.1574380045640282,
+            3.2132909982465208,
+            2.7627529998426326
+          ],
+          "median_ms": 3.1574380045640282
+        },
+        {
+          "case": "single_sentence",
+          "language": "0x40000",
+          "characters": 6085,
+          "first_feed_ms": [
+            289.8979810051969,
+            282.51191999879666,
+            285.5467420013156
+          ],
+          "median_ms": 285.5467420013156
+        },
+        {
+          "case": "quoted",
+          "language": "0x40000",
+          "characters": 5953,
+          "first_feed_ms": [
+            211.2602959969081,
+            214.8265369978617,
+            220.7639569969615
+          ],
+          "median_ms": 214.8265369978617
+        },
+        {
+          "case": "model",
+          "language": "0x40000",
+          "characters": 6272,
+          "first_feed_ms": [
+            151.31740699871443,
+            164.14083400013624,
+            154.52627999911783
+          ],
+          "median_ms": 154.52627999911783
+        },
+        {
+          "case": "speed",
+          "language": "0x40000",
+          "characters": 6720,
+          "first_feed_ms": [
+            177.15148799470626,
+            181.76901399419876,
+            174.66375000367407
+          ],
+          "median_ms": 177.15148799470626
+        },
+        {
+          "case": "sentence",
+          "language": "0x10000",
+          "characters": 6016,
+          "first_feed_ms": [
+            8.312691003084183,
+            8.034513004531618,
+            8.111369003017899
+          ],
+          "median_ms": 8.111369003017899
+        },
+        {
+          "case": "single_sentence",
+          "language": "0x10000",
+          "characters": 6216,
+          "first_feed_ms": [
+            16.504733001056593,
+            21.098728000652045,
+            19.40641900000628
+          ],
+          "median_ms": 19.40641900000628
+        },
+        {
+          "case": "quoted",
+          "language": "0x10000",
+          "characters": 6081,
+          "first_feed_ms": [
+            8.775162998063024,
+            8.158666001691017,
+            8.386752997466829
+          ],
+          "median_ms": 8.386752997466829
+        },
+        {
+          "case": "model",
+          "language": "0x10000",
+          "characters": 6400,
+          "first_feed_ms": [
+            9.511518001090735,
+            8.102790998236742,
+            8.204764999391045
+          ],
+          "median_ms": 8.204764999391045
+        },
+        {
+          "case": "speed",
+          "language": "0x10000",
+          "characters": 6848,
+          "first_feed_ms": [
+            10.486181003216188,
+            10.03217799734557,
+            8.5254280056688
+          ],
+          "median_ms": 10.03217799734557
+        },
+        {
+          "case": "leading_model",
+          "language": "0x40000",
+          "characters": 5894,
+          "first_feed_ms": [
+            164.97532700304873,
+            157.9237580008339,
+            172.21606799284928
+          ],
+          "median_ms": 164.97532700304873
+        },
+        {
+          "case": "leading_preset",
+          "language": "0x40000",
+          "characters": 5892,
+          "first_feed_ms": [
+            159.9820589981391,
+            155.14552799868397,
+            158.84394900058396
+          ],
+          "median_ms": 158.84394900058396
+        },
+        {
+          "case": "leading_model",
+          "language": "0x10000",
+          "characters": 6022,
+          "first_feed_ms": [
+            8.614902006229386,
+            8.209853003791068,
+            7.6238999972702
+          ],
+          "median_ms": 8.209853003791068
+        },
+        {
+          "case": "leading_preset",
+          "language": "0x10000",
+          "characters": 6020,
+          "first_feed_ms": [
+            8.366547997866292,
+            8.117138997477014,
+            9.007854001538362
+          ],
+          "median_ms": 8.366547997866292
+        }
+      ],
+      "no_audio_files": true
+    },
+    "candidate": {
+      "library": "libreloq-rc5-frozen-native.so",
+      "simulated_player": true,
+      "dictionaries": "data/community",
+      "voice": "2",
+      "rows": [
+        {
+          "case": "sentence",
+          "language": "0x40000",
+          "characters": 5888,
+          "first_feed_ms": [
+            3.0827129958197474,
+            2.612734999274835,
+            2.5853889965219423
+          ],
+          "median_ms": 2.612734999274835
+        },
+        {
+          "case": "single_sentence",
+          "language": "0x40000",
+          "characters": 6085,
+          "first_feed_ms": [
+            229.7447849996388,
+            196.70209399919258,
+            190.3639669981203
+          ],
+          "median_ms": 196.70209399919258
+        },
+        {
+          "case": "quoted",
+          "language": "0x40000",
+          "characters": 5953,
+          "first_feed_ms": [
+            146.97761199931847,
+            147.33358500234317,
+            151.68359999370296
+          ],
+          "median_ms": 147.33358500234317
+        },
+        {
+          "case": "model",
+          "language": "0x40000",
+          "characters": 6272,
+          "first_feed_ms": [
+            154.7491000019363,
+            163.2681670016609,
+            156.97876399644883
+          ],
+          "median_ms": 156.97876399644883
+        },
+        {
+          "case": "speed",
+          "language": "0x40000",
+          "characters": 6720,
+          "first_feed_ms": [
+            193.34091900236672,
+            166.97502900206018,
+            164.35469000134617
+          ],
+          "median_ms": 166.97502900206018
+        },
+        {
+          "case": "sentence",
+          "language": "0x10000",
+          "characters": 6016,
+          "first_feed_ms": [
+            8.168889995431527,
+            7.569381996290758,
+            7.35266599804163
+          ],
+          "median_ms": 7.569381996290758
+        },
+        {
+          "case": "single_sentence",
+          "language": "0x10000",
+          "characters": 6216,
+          "first_feed_ms": [
+            15.081550998729654,
+            15.210876998025924,
+            15.468179000890814
+          ],
+          "median_ms": 15.210876998025924
+        },
+        {
+          "case": "quoted",
+          "language": "0x10000",
+          "characters": 6081,
+          "first_feed_ms": [
+            7.904261001385748,
+            7.469405994925182,
+            7.50486999459099
+          ],
+          "median_ms": 7.50486999459099
+        },
+        {
+          "case": "model",
+          "language": "0x10000",
+          "characters": 6400,
+          "first_feed_ms": [
+            7.597299001645297,
+            7.828751993656624,
+            8.092700001725461
+          ],
+          "median_ms": 7.828751993656624
+        },
+        {
+          "case": "speed",
+          "language": "0x10000",
+          "characters": 6848,
+          "first_feed_ms": [
+            7.771131000481546,
+            7.343641002080403,
+            7.569856999907643
+          ],
+          "median_ms": 7.569856999907643
+        },
+        {
+          "case": "leading_model",
+          "language": "0x40000",
+          "characters": 5894,
+          "first_feed_ms": [
+            3.135145001579076,
+            2.7944020039285533,
+            3.154213998641353
+          ],
+          "median_ms": 3.135145001579076
+        },
+        {
+          "case": "leading_preset",
+          "language": "0x40000",
+          "characters": 5892,
+          "first_feed_ms": [
+            2.8046669976902194,
+            2.6944709970848635,
+            3.084779003984295
+          ],
+          "median_ms": 2.8046669976902194
+        },
+        {
+          "case": "leading_model",
+          "language": "0x10000",
+          "characters": 6022,
+          "first_feed_ms": [
+            8.014588005607948,
+            7.945432997075841,
+            8.498265997332055
+          ],
+          "median_ms": 8.014588005607948
+        },
+        {
+          "case": "leading_preset",
+          "language": "0x10000",
+          "characters": 6020,
+          "first_feed_ms": [
+            9.494618003373034,
+            8.268304998637177,
+            10.441619000630453
+          ],
+          "median_ms": 9.494618003373034
+        }
+      ],
+      "no_audio_files": true
+    }
+  },
+  "float_volume": {
+    "checks": 48,
+    "all_quiet_signals_linear": true,
+    "rows": [
+      {
+        "language": "0x10000",
+        "gender": 1,
+        "head": 50,
+        "pitch": 65,
+        "breathiness": 0,
+        "rate": 2,
+        "raw_peak_upper_bound": 19968,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x10000",
+        "gender": 1,
+        "head": 50,
+        "pitch": 65,
+        "breathiness": 0,
+        "rate": 3,
+        "raw_peak_upper_bound": 25984,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x10000",
+        "gender": 1,
+        "head": 50,
+        "pitch": 65,
+        "breathiness": 0,
+        "rate": 4,
+        "raw_peak_upper_bound": 19072,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.528527563153375
+      },
+      {
+        "language": "0x10000",
+        "gender": 1,
+        "head": 50,
+        "pitch": 65,
+        "breathiness": 0,
+        "rate": 6,
+        "raw_peak_upper_bound": 19648,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x10000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 90,
+        "breathiness": 60,
+        "rate": 2,
+        "raw_peak_upper_bound": 19392,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x10000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 90,
+        "breathiness": 60,
+        "rate": 3,
+        "raw_peak_upper_bound": 18880,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x10000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 90,
+        "breathiness": 60,
+        "rate": 4,
+        "raw_peak_upper_bound": 18880,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x10000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 90,
+        "breathiness": 60,
+        "rate": 6,
+        "raw_peak_upper_bound": 18816,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x10000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 50,
+        "breathiness": 60,
+        "rate": 2,
+        "raw_peak_upper_bound": 34688,
+        "samples_over_knee": 63,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x10000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 50,
+        "breathiness": 60,
+        "rate": 3,
+        "raw_peak_upper_bound": 34816,
+        "samples_over_knee": 46,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x10000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 50,
+        "breathiness": 60,
+        "rate": 4,
+        "raw_peak_upper_bound": 34752,
+        "samples_over_knee": 93,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x10000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 50,
+        "breathiness": 60,
+        "rate": 6,
+        "raw_peak_upper_bound": 34688,
+        "samples_over_knee": 140,
+        "maximum_quiet_error": 8.528527563153375
+      },
+      {
+        "language": "0x10000",
+        "gender": 0,
+        "head": 80,
+        "pitch": 30,
+        "breathiness": 0,
+        "rate": 2,
+        "raw_peak_upper_bound": 18112,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x10000",
+        "gender": 0,
+        "head": 80,
+        "pitch": 30,
+        "breathiness": 0,
+        "rate": 3,
+        "raw_peak_upper_bound": 18112,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x10000",
+        "gender": 0,
+        "head": 80,
+        "pitch": 30,
+        "breathiness": 0,
+        "rate": 4,
+        "raw_peak_upper_bound": 18176,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x10000",
+        "gender": 0,
+        "head": 80,
+        "pitch": 30,
+        "breathiness": 0,
+        "rate": 6,
+        "raw_peak_upper_bound": 18240,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x40000",
+        "gender": 1,
+        "head": 50,
+        "pitch": 65,
+        "breathiness": 0,
+        "rate": 2,
+        "raw_peak_upper_bound": 17728,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x40000",
+        "gender": 1,
+        "head": 50,
+        "pitch": 65,
+        "breathiness": 0,
+        "rate": 3,
+        "raw_peak_upper_bound": 21696,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x40000",
+        "gender": 1,
+        "head": 50,
+        "pitch": 65,
+        "breathiness": 0,
+        "rate": 4,
+        "raw_peak_upper_bound": 16896,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x40000",
+        "gender": 1,
+        "head": 50,
+        "pitch": 65,
+        "breathiness": 0,
+        "rate": 6,
+        "raw_peak_upper_bound": 17280,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x40000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 90,
+        "breathiness": 60,
+        "rate": 2,
+        "raw_peak_upper_bound": 19264,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x40000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 90,
+        "breathiness": 60,
+        "rate": 3,
+        "raw_peak_upper_bound": 19392,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x40000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 90,
+        "breathiness": 60,
+        "rate": 4,
+        "raw_peak_upper_bound": 19328,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x40000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 90,
+        "breathiness": 60,
+        "rate": 6,
+        "raw_peak_upper_bound": 19328,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x40000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 50,
+        "breathiness": 60,
+        "rate": 2,
+        "raw_peak_upper_bound": 30080,
+        "samples_over_knee": 2,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x40000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 50,
+        "breathiness": 60,
+        "rate": 3,
+        "raw_peak_upper_bound": 30016,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x40000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 50,
+        "breathiness": 60,
+        "rate": 4,
+        "raw_peak_upper_bound": 30080,
+        "samples_over_knee": 2,
+        "maximum_quiet_error": 8.528527563153375
+      },
+      {
+        "language": "0x40000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 50,
+        "breathiness": 60,
+        "rate": 6,
+        "raw_peak_upper_bound": 30080,
+        "samples_over_knee": 2,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x40000",
+        "gender": 0,
+        "head": 80,
+        "pitch": 30,
+        "breathiness": 0,
+        "rate": 2,
+        "raw_peak_upper_bound": 15104,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x40000",
+        "gender": 0,
+        "head": 80,
+        "pitch": 30,
+        "breathiness": 0,
+        "rate": 3,
+        "raw_peak_upper_bound": 15104,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x40000",
+        "gender": 0,
+        "head": 80,
+        "pitch": 30,
+        "breathiness": 0,
+        "rate": 4,
+        "raw_peak_upper_bound": 15040,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x40000",
+        "gender": 0,
+        "head": 80,
+        "pitch": 30,
+        "breathiness": 0,
+        "rate": 6,
+        "raw_peak_upper_bound": 15936,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x20000",
+        "gender": 1,
+        "head": 50,
+        "pitch": 65,
+        "breathiness": 0,
+        "rate": 2,
+        "raw_peak_upper_bound": 24256,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x20000",
+        "gender": 1,
+        "head": 50,
+        "pitch": 65,
+        "breathiness": 0,
+        "rate": 3,
+        "raw_peak_upper_bound": 29440,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.264263781576688
+      },
+      {
+        "language": "0x20000",
+        "gender": 1,
+        "head": 50,
+        "pitch": 65,
+        "breathiness": 0,
+        "rate": 4,
+        "raw_peak_upper_bound": 21440,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x20000",
+        "gender": 1,
+        "head": 50,
+        "pitch": 65,
+        "breathiness": 0,
+        "rate": 6,
+        "raw_peak_upper_bound": 22400,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x20000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 90,
+        "breathiness": 60,
+        "rate": 2,
+        "raw_peak_upper_bound": 25536,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x20000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 90,
+        "breathiness": 60,
+        "rate": 3,
+        "raw_peak_upper_bound": 25536,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x20000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 90,
+        "breathiness": 60,
+        "rate": 4,
+        "raw_peak_upper_bound": 25472,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.528527563153375
+      },
+      {
+        "language": "0x20000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 90,
+        "breathiness": 60,
+        "rate": 6,
+        "raw_peak_upper_bound": 25472,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x20000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 50,
+        "breathiness": 60,
+        "rate": 2,
+        "raw_peak_upper_bound": 24384,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x20000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 50,
+        "breathiness": 60,
+        "rate": 3,
+        "raw_peak_upper_bound": 25984,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x20000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 50,
+        "breathiness": 60,
+        "rate": 4,
+        "raw_peak_upper_bound": 25984,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x20000",
+        "gender": 1,
+        "head": 29,
+        "pitch": 50,
+        "breathiness": 60,
+        "rate": 6,
+        "raw_peak_upper_bound": 26048,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x20000",
+        "gender": 0,
+        "head": 80,
+        "pitch": 30,
+        "breathiness": 0,
+        "rate": 2,
+        "raw_peak_upper_bound": 14080,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x20000",
+        "gender": 0,
+        "head": 80,
+        "pitch": 30,
+        "breathiness": 0,
+        "rate": 3,
+        "raw_peak_upper_bound": 14528,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x20000",
+        "gender": 0,
+        "head": 80,
+        "pitch": 30,
+        "breathiness": 0,
+        "rate": 4,
+        "raw_peak_upper_bound": 15104,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      },
+      {
+        "language": "0x20000",
+        "gender": 0,
+        "head": 80,
+        "pitch": 30,
+        "breathiness": 0,
+        "rate": 6,
+        "raw_peak_upper_bound": 15296,
+        "samples_over_knee": 0,
+        "maximum_quiet_error": 8.50316972923926
+      }
+    ]
+  },
+  "reproduce_float_volume": [
+    "make -C eci libreloq_eci.so libreloq_eci_float_diagnostic.so",
+    "python nvda/test_eci_float_volume.py --library eci/libreloq_eci.so --raw-library eci/libreloq_eci_float_diagnostic.so"
+  ],
+  "remaining": [
+    "Listening confirmation of metallic rattle and body balance",
+    "Whole analysis remains for long individual German sentences, open quotes, real later anatomy changes and mixed speeds",
+    "Exceptional full-volume raw peaks still use final protection",
+    "CJK causal tag timing and German strict causal controls"
+  ]
+}

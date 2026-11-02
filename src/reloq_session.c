@@ -1,6 +1,5 @@
 #include "reloq_session.h"
 #include "reloq_core_internal.h"
-#include "reloq_body_extension.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -74,13 +73,18 @@ struct reloq_session {
     reloq_epoch_atomic cancel_epoch;
     reloq_epoch_atomic active_epoch;
     unsigned high_rate_profile;
-    struct reloq_core_voiced_frame_state *body_state;
-    struct reloq_session_buffers body_buffers;
-    struct reloq_body_extension body_extension;
+    float linear_gain;
 };
 
 float reloq_session_sample_rate(const struct reloq_session *s)
 { return s ? s->config.sample_rate : 0; }
+int reloq_session_float_volume(const struct reloq_session *s)
+{return s&&s->high_rate_profile&&s->config.sample_rate>=16000&&s->config.glottal_reference_rate>0;}
+int reloq_session_linear_gain(struct reloq_session *s,float gain)
+{
+    if(!s||!isfinite(gain)||gain<0||gain>16)return RELOQ_SESSION_INVALID;
+    s->linear_gain=gain;return RELOQ_SESSION_OK;
+}
 
 int reloq_session_high_rate_profile(struct reloq_session *s,unsigned profile)
 {
@@ -99,12 +103,6 @@ int reloq_session_source_levels(struct reloq_session *s,long source,
     s->frame_state.noise.af_trim=af;
     s->frame_state.av_trim=av;
     s->frame_state.reference_formants=reference_formants;
-    if(s->body_state) {
-        s->body_state->noise.source_offset=source;
-        s->body_state->noise.ah_trim=ah;
-        s->body_state->av_trim=av;
-        s->body_state->reference_formants=reference_formants;
-    }
     return RELOQ_SESSION_OK;
 }
 
@@ -145,12 +143,15 @@ static int output_pcm(const struct reloq_session *session, size_t count)
     const float *output = session->buffers.output;
     int16_t *pcm = session->buffers.pcm;
     float gain = session->config.output_gain;
+#ifdef RELOQ_SESSION_FLOAT_DIAGNOSTIC
+    gain*=.015625f;
+#endif
     int64_t block[RELOQ_PCM_CONVERSION_BLOCK];
     for (size_t at = 0; at < count; ) {
         size_t n = count - at;
         if (n > RELOQ_PCM_CONVERSION_BLOCK) n = RELOQ_PCM_CONVERSION_BLOCK;
         for (size_t i = 0; i < n; ++i) {
-            float sample = output[at + i];
+            float sample = output[at + i]*session->linear_gain;
             if (!isfinite(sample) || sample < -0x1p63f ||
                 sample >= 0x1p63f) return RELOQ_SESSION_RENDER;
             block[i] = (int64_t)sample;
@@ -163,6 +164,7 @@ static int output_pcm(const struct reloq_session *session, size_t count)
          * headroom cases are investigated. This is not evidence that the
          * unbounded synthesis fits PCM: raw-source tests and observations
          * must measure before this knee. */
+#ifndef RELOQ_SESSION_FLOAT_DIAGNOSTIC
         if(session->high_rate_profile && session->config.sample_rate>=16000)
             for(size_t i=0;i<n;++i) {
                 double amplitude=fabs((double)block[i]);
@@ -171,6 +173,7 @@ static int output_pcm(const struct reloq_session *session, size_t count)
                     block[i]=(int64_t)copysign(bounded,(double)block[i]);
                 }
             }
+#endif
         /* The sample sink has a finite range. A model/filter transient
          * must saturate there instead of wrapping across the sign bit;
          * retain the core's low-word conversion for numeric reference use. */
@@ -202,41 +205,7 @@ static int render_owned(struct reloq_session *session,
         if (change) _mm_setcsr(before | 0x8040u); /* FTZ and DAZ */
     }
 #endif
-    float rate=session->config.sample_rate;
-    int blend=session->high_rate_profile && rate>=22050 &&
-        session->config.glottal_reference_rate>0;
-    int status=0;
-    if(blend) {
-        if(!session->body_state) {
-            session->body_state=malloc(sizeof *session->body_state);
-            if(!session->body_state)status=-1;
-            else {
-                *session->body_state=session->frame_state;
-                session->body_state->rate_transfer.trial_profile=0;
-                session->body_state->rate_transfer.smooth_updates=1;
-                session->body_state->noise_transfer.trial_profile=0;
-                reloq_body_extension_initialize(&session->body_extension,rate);
-            }
-        }
-        if(!status && reserve_buffers(&session->body_buffers,b->capacity))status=-1;
-        if(!status)status=reloq_core_voiced_frame_render_owned(
-            &session->frame_state,frame,b->output,b->raw_af,b->scratch,
-            b->closed_mask,NULL,b->capacity,written);
-        if(!status) {
-            /* Add periodic richness; neither subtract the Classic body nor
-             * add another copy of aspiration or consonant noise. */
-            struct reloq_core_voiced_frame body=*frame;
-            body.noise.ah_level=0;body.noise.af_level=0;body.noise.bypass_level=0;
-            struct reloq_session_buffers *a=&session->body_buffers;
-            size_t n=0;
-            status=reloq_core_voiced_frame_render_owned(session->body_state,&body,
-                a->output,a->raw_af,a->scratch,a->closed_mask,NULL,a->capacity,&n);
-            if(!status&&n!=*written)status=-1;
-            float mix=.25f*(rate>=48000?1:rate>=44100?.8f:rate>=32000?.5f:.25f);
-            if(!status)for(size_t i=0;i<n;++i)
-                b->output[i]+=mix*reloq_body_extension_sample(&session->body_extension,a->output[i]);
-        }
-    } else status = reloq_core_voiced_frame_render_owned(
+    int status = reloq_core_voiced_frame_render_owned(
         &session->frame_state,frame,b->output,b->raw_af,
         b->scratch,b->closed_mask,NULL,b->capacity,written);
 #ifdef RELOQ_SESSION_SSE_CONTROL
@@ -274,8 +243,6 @@ void reloq_session_destroy(struct reloq_session *session)
 {
     if (!session) return;
     free_buffers(&session->buffers);
-    free_buffers(&session->body_buffers);
-    free(session->body_state);
     free(session);
 }
 
@@ -296,10 +263,10 @@ int reloq_session_reset(struct reloq_session *session)
     next.reference_formants=c->reference_formants;
     next.frication_reference_rate=c->frication_reference_rate;
     next.rate_transfer.trial_profile=session->high_rate_profile;
+    next.rate_transfer.physical_tract=session->high_rate_profile&&c->sample_rate>=22050&&c->glottal_reference_rate>0;
+    session->linear_gain=1;
     next.noise_transfer.trial_profile=session->high_rate_profile;
     session->frame_state = next;
-    /* A profile change/reset starts both bodies from the same source clock. */
-    free(session->body_state);session->body_state=NULL;
     epoch_store(&session->active_epoch, generation);
     return RELOQ_SESSION_OK;
 }

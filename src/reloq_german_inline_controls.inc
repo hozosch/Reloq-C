@@ -75,7 +75,7 @@ struct inline_models {
     float neutral[5];
     unsigned char fixed[5];
     struct reloq_session *session;
-    int error;
+    int error,float_volume;
 };
 static void inline_model_frame(void *context,float c[62])
 {
@@ -83,6 +83,8 @@ static void inline_model_frame(void *context,float c[62])
     while(m->word+1<m->count && m->starts[m->word+1]<=m->tick)++m->word;
     if(m->tick>=m->starts[0])
         m->model=inline_model(m->words+m->word,m->model.sample_rate);
+    if(m->float_volume&&reloq_session_linear_gain(m->session,
+        (float)reloq_voice_volume_gain(m->words[m->word].volume)))m->error=1;
     const int three=reloq_german_voice_model_formants(&m->model)==3;
     const int child=m->model.gender && m->model.head_size<30;
     for(unsigned i=0;i<5;++i)if(m->fixed[i])c[inline_model_defaults[i]]=m->neutral[i];
@@ -160,7 +162,7 @@ struct inline_audio {
     const struct reloq_inline_word *words;
     const int64_t *ticks;
     size_t count,word,samples;
-    int per_tick;
+    int per_tick,float_volume;
 };
 static int inline_leading_quiet(struct reloq_target_builder *builder,int64_t begin)
 {
@@ -179,6 +181,7 @@ static int inline_leading_quiet(struct reloq_target_builder *builder,int64_t beg
 static int inline_pcm(void *context,const int16_t *pcm,size_t count)
 {
     struct inline_audio *a=context;int16_t buffer[1024];size_t at=0;
+    if(a->float_volume)return a->pcm(a->context,pcm,count);
     while(at<count) {
         size_t n=count-at;if(n>1024)n=1024;
         double gain=reloq_voice_volume_gain(a->words[a->word].volume);

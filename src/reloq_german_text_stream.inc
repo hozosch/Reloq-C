@@ -203,6 +203,25 @@ done:free(marks);free(cuts);return result;
  * prose. Each delivered part still uses the complete existing sentence
  * planner, dictionary, prosody and continuation renderer. Unsupported
  * contexts retain the whole-text path; no arbitrary word count is a cut. */
+static int stream_candidate_stop(const unsigned char *text,size_t length)
+{
+    /* This only avoids hopeless lexical probes; admission still decides
+     * every actual cut. A long sentence or open quote must be analysed
+     * once, rather than once for every doubling of the search window. */
+    size_t at=0;unsigned depth=0,quote=0;
+    while(at<length) {
+        uint32_t c;if(reloq_utf8_next(text,length,&at,&c)!=1)return 1;
+        if(c=='('||c=='['||c=='{')++depth;
+        else if((c==')'||c==']'||c=='}')&&depth)--depth;
+        else if(c=='"')quote=quote?0:'"';
+        else if(c==0x201e)quote=0x201e;
+        else if(c==0x201c)quote=quote==0x201e?0:0x201c;
+        else if(c==0x201d)quote=0;
+        else if(c==0xab||c==0xbb)quote=quote?0:c;
+        else if(!depth&&!quote&&(c=='.'||c=='?'||c=='!'))return 1;
+    }
+    return 0;
+}
 static int stream_windows(const unsigned char *text,size_t length,
     const struct reloq_lexicon *lexicon,int tags,
     struct reloq_german_best_effort_boundary *boundaries,size_t boundary_count,
@@ -222,7 +241,7 @@ static int stream_windows(const unsigned char *text,size_t length,
             if(bytes>window) {
                 bytes=window;
                 while(bytes&&text[begin+bytes]!=' '&&text[begin+bytes]!='\n'&&text[begin+bytes]!='\t')--bytes;
-                if(bytes) {
+                if(bytes&&stream_candidate_stop(text+begin,bytes)) {
                     size_t probe=SIZE_MAX;
                     result=plan_tags_checked(1,text+begin,bytes,lexicon,tags,
                         &annotation,&annotation_length,&guessed,&bad,NULL,0,&features,&features_count,

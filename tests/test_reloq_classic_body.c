@@ -48,6 +48,12 @@ static struct observation body(float rate,unsigned profile,unsigned vowel,double
     s->glottal_reference_rate=11025;s->reference_formants=5;s->frication_reference_rate=16000;
     s->rate_transfer.trial_profile=s->noise_transfer.trial_profile=profile==1;
     s->rate_transfer.smooth_updates=profile==2;
+    if(profile==3&&rate>=22050) {
+        s->rate_transfer.trial_profile=1;s->rate_transfer.physical_tract=1;
+        frame.noise.tract.highest_formant=rate>=44100?8:rate>=32000?7:6;
+        for(unsigned i=5;i<8;++i)frame.noise.tract.oral[i]=(struct reloq_core_formant){
+            5000+1300*(i-5),1000+250*(i-5)};
+    }
     size_t capacity=(size_t)(2*rate)+16,count=0;
     float *work=calloc(3*capacity,sizeof *work);uint8_t *mask=calloc(capacity,1);assert(work&&mask);
     assert(!reloq_core_voiced_frame_render_owned(s,&frame,work,work+capacity,
@@ -79,5 +85,19 @@ int main(void)
         }
     }
     printf("Classic full source: %u vowel/rate/alias cases; bass error <=%.3f dB; harmonic/noise >=%.2f dB\n",checks,bass_error,minimum_hnr);
+    double physical_bass=0,physical_hnr=1000;
+    for(unsigned vowel=0;vowel<3;++vowel)for(unsigned pitch=0;pitch<3;++pitch) {
+        double f0=113+64*pitch;
+        struct observation base=body(16000,1,vowel,f0);
+        for(unsigned r=1;r<5;++r) {
+            struct observation o=body(rates[r],3,vowel,f0);
+            double bass=fabs(10*log10(o.bass/base.bass));
+            if(bass>physical_bass)physical_bass=bass;
+            if(o.hnr<physical_hnr)physical_hnr=o.hnr;
+            assert(bass<.75);assert(o.hnr>50);
+            assert(o.upper>.7*base.upper);
+        }
+    }
+    printf("Physical tract: 36 vowel/pitch/rate cases; bass error <=%.3f dB; harmonic/noise >=%.2f dB\n",physical_bass,physical_hnr);
     return 0;
 }

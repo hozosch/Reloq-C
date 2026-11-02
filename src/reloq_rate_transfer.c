@@ -638,7 +638,9 @@ static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rat
         /* Factor the smooth discretization tilt out of the finite FIR.
          * The fit divides by this section, so the final target remains the
          * measured Classic contour. Both AV and AH pass the combined fit. */
-        classic_tract_shelf(s->presence,rate,s->colour_extension);
+        if(s->physical_tract) {
+            memset(s->presence,0,sizeof s->presence);s->presence[0]=1;
+        } else classic_tract_shelf(s->presence,rate,s->colour_extension);
         /* A small periodic-only lift restores the upper bass without
          * changing the accepted AF level or adding aspiration energy. */
         const double db=.6,a=pow(10,db/40);
@@ -646,6 +648,7 @@ static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rat
         double *c=s->voice_colour[0];
         c[0]=(1+alpha*a)/den;c[1]=-2*cos(w)/den;c[2]=(1-alpha*a)/den;
         c[3]=c[1];c[4]=(1-alpha/a)/den;
+        if(s->physical_tract)for(unsigned k=0;k<3;++k)c[k]*=.8;
         /* Periodic presence has no broadband trim: the bass retains its
          * 11-kHz level. Further bandwidth comes from the source poles,
          * not an inverse sampling shelf that amplifies their aliases. */
@@ -658,6 +661,21 @@ static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rat
         shelf[2]=trim*shelf_gain*((shelf_gain+1)+(shelf_gain-1)*co-beta)/divisor;
         shelf[3]=2*((shelf_gain-1)-(shelf_gain+1)*co)/divisor;
         shelf[4]=((shelf_gain+1)-(shelf_gain-1)*co-beta)/divisor;
+        if(s->physical_tract) {
+            /* The native low clocks have a broad discretization rise.
+             * Continue that colour with a fixed periodic-only section,
+             * rather than moving an inverse tract fit with every phone.
+             * AH keeps its own density and AF its accepted bank. */
+            const double a=pow(10,(rate<32000?22.0:20.0)/40),w=2*pi*3000/rate;
+            const double co=cos(w),beta=sin(w)*sqrt(2*a);
+            const double d=(a+1)-(a-1)*co+beta;
+            double *c=s->voice_colour[2];
+            c[0]=a*((a+1)+(a-1)*co+beta)/d;
+            c[1]=-2*a*((a-1)+(a+1)*co)/d;
+            c[2]=a*((a+1)+(a-1)*co-beta)/d;
+            c[3]=2*((a-1)-(a+1)*co)/d;
+            c[4]=((a+1)-(a-1)*co-beta)/d;
+        }
         s->presence_rate=rate;return;
     }
     /* Keep the shared tract/aspiration response. Periodic excitation
@@ -796,6 +814,13 @@ void reloq_rate_transfer_prepare(struct reloq_rate_transfer *s,
     unsigned extension=f->highest_formant>(long)old_count;
     if(s->trial_profile && s->colour_extension!=extension){s->colour_extension=extension;s->presence_rate=0;}
     if(rate>=16000 && (s->presence_rate!=rate || s->colour_profile!=s->trial_profile))prepare_colour(s,rate);
+    if(s->physical_tract) {
+        /* The serial poles already run at their physical output clock.
+         * Inverting them with a changing finite impulse response also
+         * changes phase and stored energy at every phonetic transition. */
+        s->taps=1;s->kernel[0]=s->target[0]=1;s->remaining=0;s->ready=1;
+        return;
+    }
     if(old_count<1 || old_count>5)old_count=5;
     float key[29]={rate,reference,(float)old_count,(float)f->highest_formant};
     key[28]=(float)s->trial_profile;
@@ -832,7 +857,7 @@ void reloq_rate_transfer_process_voice(struct reloq_rate_transfer *s,float *samp
     if(s->trial_profile) {
         for(size_t j=0;j<count;++j) {
             double y=samples[j];
-            for(unsigned k=0;k<2;++k) {
+            for(unsigned k=0;k<(s->physical_tract?3u:2u);++k) {
                 const double *c=s->voice_colour[k];double *d=s->voice_colour_delay[k];
                 double x=y;y=c[0]*x+d[0];
                 d[0]=c[1]*x-c[3]*y+d[1];d[1]=c[2]*x-c[4]*y;

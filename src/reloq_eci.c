@@ -606,7 +606,8 @@ static int synthesize_generic(struct reloq_eci_engine *e,
         int reset=reloq_session_reset(e->text_session);
         if(preflight_cancelled(&cancel_check))reloq_session_cancel(e->text_session);
         unlock_session(&e->session_lock);
-        struct pcm_bridge bridge={.engine=e,.session=e->text_session,.marks=marks,.mark_count=mark_count,.inline_volume=e->process_tags};
+        int frame_volume=e->process_tags||(e->native_volume_active&&reloq_session_float_volume(e->text_session));
+        struct pcm_bridge bridge={.engine=e,.session=e->text_session,.marks=marks,.mark_count=mark_count,.inline_volume=frame_volume};
         struct reloq_german_generic_settings settings={e->generic_rate,e->generic_pitch,
             (e->native_volume_active||e->process_tags)?100:e->generic_volume,e->native_speed_active?(e->native_speed?e->native_speed:-1):0,
             e->native_pitch_active?e->native_pitch+1:0,e->native_inflection_active?e->native_inflection+1:0,
@@ -620,7 +621,7 @@ static int synthesize_generic(struct reloq_eci_engine *e,
             if(reloq_session_source_levels(e->text_session,source,gender?-3:-5,6,gender?-7:0,reference))reset=1;
         }
         int rendered=reset?RELOQ_DE_UTTERANCE_INVALID:reloq_language_rules_render(e->language,phrase,length,e->process_tags||admitted,
-            e->process_tags?(e->native_volume_active?e->native_volume:e->generic_volume):100,
+            frame_volume?(e->native_volume_active?e->native_volume:e->generic_volume):100,
             &settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
             send_pcm,send_generic_index,&bridge);
         free(english_indices);free(english_pitch);
@@ -693,8 +694,8 @@ static int synthesize_generic(struct reloq_eci_engine *e,
     struct generic_stream_output streaming={.engine=e,.marks=marks,.mark_count=mark_count,
         .pitches=pitches,.pitch_count=pitch_count,
         .cancel=&cancel_check,.status=RELOQ_ECI_OK,
-        .native_volume=e->process_tags?(e->native_volume_active?e->native_volume:e->generic_volume):-1,
-        .bridge={.engine=e,.session=e->text_session,.inline_volume=e->process_tags,
+        .native_volume=(e->process_tags||(e->native_volume_active&&reloq_session_float_volume(e->text_session)))?(e->native_volume_active?e->native_volume:e->generic_volume):-1,
+        .bridge={.engine=e,.session=e->text_session,.inline_volume=e->process_tags||(e->native_volume_active&&reloq_session_float_volume(e->text_session)),
             .pcm_period=pcm_batch_period(e),.pcm_early=pcm_startup_samples(e)},
         .settings={e->generic_rate,e->generic_pitch,
             (e->native_volume_active || e->process_tags)?100:e->generic_volume,
@@ -747,7 +748,7 @@ static int synthesize_generic(struct reloq_eci_engine *e,
             }
             int scoped=reloq_german_control_scope(input,length,
                 e->native_pitch_active?e->native_pitch:65,
-                e->native_speed_active?e->native_speed:50,pitch_indices,pitch_count,
+                e->native_speed_active?e->native_speed:50,e->head_size,e->gender,pitch_indices,pitch_count,
                 &streaming.continuation.mixed_pitch,&streaming.continuation.mixed_speed);
             if(scoped<0){free(ordinary_text);result=scoped==-2?RELOQ_ECI_MEMORY:RELOQ_ECI_INVALID;goto generic_done;}
             if(scoped)can_stream=0;
@@ -817,7 +818,7 @@ static int synthesize_generic(struct reloq_eci_engine *e,
         struct pcm_bridge bridge = {
             .engine = e, .session = e->text_session,
             .marks = marks, .mark_count = mark_count,
-            .inline_volume=e->process_tags,
+            .inline_volume=e->process_tags||(e->native_volume_active&&reloq_session_float_volume(e->text_session)),
             .pcm_period=pcm_batch_period(e),
             .pcm_early=pcm_startup_samples(e)
         };
@@ -835,7 +836,7 @@ static int synthesize_generic(struct reloq_eci_engine *e,
             &settings, features, feature_count, indices, mark_count,
             pitch_indices, pitch_count, e->text_session,
             send_batched_pcm, send_generic_index, &bridge, &info,
-            e->process_tags?(e->native_volume_active?e->native_volume:e->generic_volume):-1);
+            (e->process_tags||(e->native_volume_active&&reloq_session_float_volume(e->text_session)))?(e->native_volume_active?e->native_volume:e->generic_volume):-1);
         if (rendered == RELOQ_DE_UTTERANCE_OK && flush_pcm(&bridge))
             rendered = RELOQ_DE_UTTERANCE_SINK;
         result = rendered == RELOQ_DE_UTTERANCE_CANCELLED ||

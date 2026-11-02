@@ -1882,7 +1882,15 @@ static int voiced_frame_render_owned(
         state->glottal_reference_rate>0 && state->noise.sample_rate>=16000;
     state->noise.tract.stable=classic_source;
     state->glottal.stable=classic_source;
-    if(state->rate_transfer.trial_profile && state->glottal_reference_rate>0 &&
+    if(state->rate_transfer.physical_tract) {
+        classic_frame=*frame;
+        float rate=state->noise.sample_rate;
+        float spread=rate>=48000?1:rate>=44100?1.1f:rate>=32000?1.4f:2;
+        for(long i=state->reference_formants;i<classic_frame.noise.tract.highest_formant;++i)
+            classic_frame.noise.tract.oral[i].bandwidth_hz*=spread;
+        frame=&classic_frame;
+    }
+    if(state->rate_transfer.trial_profile && !state->rate_transfer.physical_tract && state->glottal_reference_rate>0 &&
        state->reference_formants>=1 && state->reference_formants<=5) {
         classic_frame=*frame;
         classic_frame.noise.tract.highest_formant=(long)state->reference_formants;
@@ -2092,7 +2100,8 @@ static int voiced_frame_render_owned(
         if (frame->av_level > 0 && carried < length &&
             frame->glottal_profile != state->active_glottal_profile) {
             int error=source_profile(&state->glottal,&noise->clock,
-                    frame->glottal_profile,state->glottal_reference_rate,classic_source);
+                    frame->glottal_profile,state->glottal_reference_rate,
+                    classic_source&&!state->rate_transfer.physical_tract);
             if (error)
                 return -1;
             state->active_glottal_profile = frame->glottal_profile;

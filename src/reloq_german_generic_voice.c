@@ -3905,7 +3905,7 @@ static int render(
         config.duration_scale,config.sample_rate*0.001f);
     if(samples_per_tick<1) {status=RELOQ_DE_UTTERANCE_MODEL;goto done;}
     struct inline_audio controlled={sink,index_sink,context,controls,word_ticks,
-        sequence.word_count,0,0,11};
+        sequence.word_count,0,0,11,controls&&reloq_session_float_volume(session)};
     if(controls) {
         controlled.per_tick=(int)reloq_core_frame_sample_count((float)schedule.frame_ticks,
             config.duration_scale,config.sample_rate*0.001f);
@@ -3944,12 +3944,14 @@ static int render(
         }
     }
     int changing_model=model_settings_changed;
+    changing_model|=controls&&reloq_session_float_volume(session);
     for(size_t w=1;w<control_words;++w)changing_model|=
         controls[w].gender!=controls[0].gender || controls[w].head_size!=controls[0].head_size ||
         controls[w].roughness!=controls[0].roughness || controls[w].breathiness!=controls[0].breathiness;
     struct inline_models model_cursor={.words=controls,.starts=word_ticks,
         .count=control_words,.tick=schedule.first_tick,.step=schedule.frame_ticks,
-        .model=output.model,.session=session};
+        .model=output.model,.session=session,
+        .float_volume=controls&&reloq_session_float_volume(session)};
     if(continuation && continuation->have_voice)
         model_cursor.model=inline_model(&continuation->voice,output.model.sample_rate);
     for(unsigned k=0;k<5;++k) {

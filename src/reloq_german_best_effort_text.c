@@ -104,7 +104,19 @@ static void scope_tag(struct reloq_inline_tag t,int *pitch,int *speed)
         struct reloq_inline_word v={0};reloq_inline_preset(&v,t.value);*pitch=v.pitch;*speed=v.speed;
     }
 }
-int reloq_german_control_scope(const unsigned char *text,size_t length,int pitch,int speed,
+static int scope_anatomy(struct reloq_inline_tag t,int *head,int *gender,int spoken)
+{
+    int h=*head,g=*gender;
+    if(t.kind==RELOQ_TAG_HEAD_SIZE)h=t.value;
+    else if(t.kind==RELOQ_TAG_GENDER)g=t.value;
+    else if(t.kind==RELOQ_TAG_PRESET) {
+        struct reloq_inline_word voice={0};reloq_inline_preset(&voice,t.value);
+        h=voice.head_size;g=voice.gender;
+    }
+    if(spoken&&(h!=*head||g!=*gender))return 1;
+    *head=h;*gender=g;return 0;
+}
+int reloq_german_control_scope(const unsigned char *text,size_t length,int pitch,int speed,int head,int gender,
     const struct reloq_german_generic_pitch_mark *marks,size_t count,int *mixed_pitch,int *mixed_speed)
 {
     size_t n=0;
@@ -117,11 +129,9 @@ int reloq_german_control_scope(const unsigned char *text,size_t length,int pitch
         struct reloq_inline_tag t=reloq_inline_tag_read(a+at,n-at,0);
         if(t.length) {
             if(t.kind<RELOQ_TAG_PITCH||t.kind>RELOQ_TAG_PRESET||t.kind==RELOQ_TAG_PAUSE){free(a);return 1;}
-            /* Anatomical changes need the adjacent phrase's tract knots.
-             * Keep that complete plan until its look-ahead can also travel
-             * across the streaming boundary. */
-            if(t.kind==RELOQ_TAG_GENDER||t.kind==RELOQ_TAG_HEAD_SIZE||
-               t.kind==RELOQ_TAG_PRESET){free(a);return 1;}
+            /* Initial anatomy and redundant setters have no preceding
+             * tract to replan. Real later changes still keep lookahead. */
+            if(scope_anatomy(t,&head,&gender,first_pitch>=0)){free(a);return 1;}
             scope_tag(t,&pitch,&speed);at+=t.length;continue;
         }
         if(!scope_character(a[at])){++at;continue;}
@@ -130,8 +140,7 @@ int reloq_german_control_scope(const unsigned char *text,size_t length,int pitch
             t=reloq_inline_tag_read(a+end,n-end,0);
             if(t.length) {
                 if(t.kind<RELOQ_TAG_PITCH||t.kind>RELOQ_TAG_PRESET||t.kind==RELOQ_TAG_PAUSE)break;
-                if(t.kind==RELOQ_TAG_GENDER||t.kind==RELOQ_TAG_HEAD_SIZE||
-                   t.kind==RELOQ_TAG_PRESET){free(a);return 1;}
+                if(scope_anatomy(t,&head,&gender,first_pitch>=0)){free(a);return 1;}
                 size_t after=end+t.length;
                 while(after<n) {
                     struct reloq_inline_tag following=reloq_inline_tag_read(a+after,n-after,0);

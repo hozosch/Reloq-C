@@ -158,6 +158,12 @@ test_reloq_classic_frame: ../tests/test_reloq_classic_frame.c build/posix/reloq_
 test_reloq_classic_noise: ../tests/test_reloq_classic_noise.c ../src/reloq_rate_transfer.c $(HEADERS) build/posix/reloq_core.o build/posix/reloq_noise_profile.o
 	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< build/posix/reloq_core.o build/posix/reloq_noise_profile.o -Wl,--gc-sections -lm -o $@
 
+build/posix/reloq_session_float_diagnostic.o: ../tools/reloq_session_float_diagnostic.c ../src/reloq_session.c $(HEADERS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -fvisibility=hidden -I../include -c $< -o $@
+
+libreloq_eci_float_diagnostic.so: $(OBJECTS) build/posix/reloq_session_float_diagnostic.o $(RULES61)
+	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -shared $(filter-out build/posix/reloq_session.o,$(OBJECTS)) build/posix/reloq_session_float_diagnostic.o $(RULES61) -pthread -Wl,--gc-sections,--no-undefined -lm -o $@
+
 test_reloq_session: ../tests/test_reloq_session.c build/posix/reloq_session.o build/posix/reloq_core.o build/posix/reloq_rate_transfer.o build/posix/reloq_noise_profile.o
 	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $^ -Wl,--gc-sections -lm -o $@
 
