@@ -130,6 +130,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_high_rate_profiles.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_castilian_filter.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_classic_voice_stability.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Collect validated preview

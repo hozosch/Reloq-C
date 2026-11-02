@@ -6,13 +6,13 @@
   "merged_main": "1ac17f3e5a6faebb8e46bf68bf13d8eb5c82ddbb",
   "dll": {
     "bytes": 54735360,
-    "sha256": "7037c50ffd869d199981b307ba4b06e285a466b5ac6a64fd75b4619233b45ad8",
+    "sha256": "a5a615337a0e7210c5341dd71d2f44965f0f2e7e22e3461bf709dc55595b511f",
     "architecture": "Windows x64",
     "exports": 49
   },
   "linux_library": {
     "bytes": 55360456,
-    "sha256": "6659cde8e2e97be2ed7e71d78caaea3c293b35ac3f11dca9adc7cbd63cdabf3c"
+    "sha256": "815bc7f585d2122d3f5726a272314d5747a8a7d8814f7f476e8ffebc084fd05d"
   },
   "checks": {
     "public_standard": 131,
@@ -32,7 +32,11 @@
     "session_a_body_and_castilian_af": "passed",
     "nvda_package_en": "passed",
     "nvda_package_de": "passed",
-    "updater_tests": 7
+    "updater_tests": 7,
+    "castilian_real_onset_a_identities": 20,
+    "castilian_peak_cases": 30,
+    "castilian_maximum_peak": 32275,
+    "unchanged_castilian_a_mexican_b_controls": 60
   },
   "body": {
     "rates_hz": [
@@ -50,7 +54,7 @@
     "a_body_calibration": 0.8,
     "preserve_16000_body": true,
     "preserve_other_classic_af": true,
-    "castilian_s_t_filter": "A bank and A transfer; five rate numeric identities",
+    "castilian_s_t_filter": "Independent A bank/filter selection for native upper-frication targets; preserve original A mix and hold colour through AF release. Five rate identities cover both source mixes.",
     "resampling": false,
     "dynamic_level_detector": false
   },
@@ -71,12 +75,13 @@
     "Mixed explicit ECI pitch marks and inline pitch keep the existing native route."
   ],
   "issue_plan": {
-    "2": "volume regressions passed; close after source publication",
-    "5": "inline flush and no-op gap regressions passed; close after publication",
-    "6": "native voice queue snapshot regressions passed; close after publication",
+    "2": "closed as completed; public source and regressions verified",
+    "5": "closed as completed; public source and regressions verified",
+    "6": "closed as completed; public source and regressions verified",
     "4": "GPL license/notices packaged; close with main PR merge",
     "1": "keep open for target-device listening before stable 1.1.0"
   },
   "dictionary_commit": "a142cb841b4c70260cb2c37ac4ac96da88c33644",
-  "packaging": "Prereleases use the NVDA hearing-preview workflow. Stable multi-platform packaging stays gated on a numeric final version."
+  "packaging": "Prereleases use the NVDA hearing-preview workflow. Stable multi-platform packaging stays gated on a numeric final version.",
+  "windows_eci_workflow_success_before_castilian_selector_refinement": 41421794969
 }

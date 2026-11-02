@@ -10,9 +10,15 @@ werden wie Classic höchstens alle 2 ms neu angepasst und über 3 ms überführt
 Es gibt keine dynamische Lautstärkeregelung und kein PCM-Resampling.
 
 Kastilisches S/T verwendet im bisherigen S/Z/T-Spektralbereich die vollständige
-A-Rauschbank und deren Filter. Andere Classic-Konsonanten bleiben erhalten.
+A-Rauschbank und deren Filter. Die Auswahl ist unabhängig von der bisherigen
+S-Mischung: Das reale spanische S/T liegt mit A4F-A3F = 10 dB genau an der
+alten, zuvor ausgeschlossenen Grenze. Der gewählte Filter bleibt im Ausklang
+aktiv. Andere Classic-Konsonanten bleiben erhalten.
 Die isolierte AF-Prüfung stimmt dabei über alle fünf erweiterten Raten exakt
-mit A überein; der reale Hörtest muss die passende Höhenbalance bestätigen.
+mit A überein. Zusätzlich stimmen 20 reale S-/T-Anlaute über beide Modelle
+und fünf Raten mit A überein. 30 spanische Pegelfälle bleiben unter der PCM-
+Grenze (Maximum 32.275); 60 A-/Mexiko-Kontrollen bleiben unverändert. Der
+Hörtest muss die passende Höhenbalance bestätigen.
 
 `vv` wird bei den westlichen Sprachmodulen vor der Lexikalanalyse entfernt
 und über die nativen Wortgrenzen angewendet. So bleibt das Wort zusammen
@@ -52,7 +58,7 @@ dem Zielgerät sind damit nicht behauptet. Details: `validation/1.1.0-rc1.json`.
 Die Lizenztexte aus dem Entwicklungszweig werden mit dem zugehörigen
 Quellverweis in die Pakete übernommen. Vor der stabilen 1.1.0 stehen der
 Hörtest zu #1 und das Zusammenführen der Lizenz-/Backend-Änderungen nach
-main an. #2/#5/#6 werden anhand der bestandenen Regressionen abgeschlossen;
+main an. #2/#5/#6 sind anhand der bestandenen Regressionen geschlossen;
 #4 ist mit dem Lizenzstand vorbereitet. Es wird noch kein stabiles Release
 veröffentlicht.
 

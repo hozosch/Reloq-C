@@ -1894,7 +1894,7 @@ static int voiced_frame_render_owned(
     float centers[RELOQ_CORE_FRICATIVE_FORMANTS];
     float widths[RELOQ_CORE_FRICATIVE_FORMANTS];
     long levels[RELOQ_CORE_FRICATIVE_FORMANTS];
-    long noise_count=params->s_frication==3?af_formants:params->tract.highest_formant;
+    long noise_count=params->a_frication_filter?af_formants:params->tract.highest_formant;
     for (int i = 0; i < RELOQ_CORE_FRICATIVE_FORMANTS; ++i)
         centers[i] = params->tract.oral[i].frequency_hz;
     memcpy(widths,params->af_bandwidths,sizeof widths);
@@ -1914,7 +1914,7 @@ static int voiced_frame_render_owned(
     if(shaped && params->af_level) {
         int classic=0;
         if(state->noise_transfer.trial_profile && noise->sample_rate>=16000 &&
-           params->s_frication!=3) {
+           !params->a_frication_filter) {
             float original_f[8];
             for(unsigned j=0;j<8;++j)original_f[j]=params->tract.oral[j].frequency_hz;
             struct reloq_core_clock reference_clock=reloq_core_clock_for_rate(11025);

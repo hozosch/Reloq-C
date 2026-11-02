@@ -186,11 +186,11 @@ static int check_body_endpoint(void)
     /* The Castilian S/T path retains A's complete AF bank and filter at
      * every extended rate, including 16 kHz's separate consonant choice. */
     const float rates[]={16000,22050,32000,44100,48000};
-    for(unsigned r=0;r<sizeof rates/sizeof *rates;++r) {
+    for(int mix=0;mix<=1;++mix)for(unsigned r=0;r<sizeof rates/sizeof *rates;++r) {
         c.sample_rate=rates[r];a=reloq_session_create(&c);b=reloq_session_create(&c);
         CHECK(a&&b);CHECK(!reloq_session_high_rate_profile(b,1));CHECK(!reloq_session_reset(b));
         ca=(struct capture){0};cb=(struct capture){0};
-        for(unsigned i=0;i<8;++i)frames[i].noise.s_frication=3;
+        for(unsigned i=0;i<8;++i){frames[i].noise.a_frication_filter=1;frames[i].noise.s_frication=mix;}
         CHECK(!reloq_session_render_frames(a,frames,8,receive_pcm,&ca,NULL));
         CHECK(!reloq_session_render_frames(b,frames,8,receive_pcm,&cb,NULL));
         CHECK(ca.samples==cb.samples&&memcmp(ca.pcm,cb.pcm,ca.samples*sizeof *ca.pcm)==0);

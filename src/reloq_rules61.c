@@ -135,7 +135,7 @@ struct rule_plan {
     struct quiet_cut *cuts;size_t cut_count,cut_capacity;
     int64_t ticks,*indices;size_t index_count;
     struct reloq_session *session;
-    int memory,castilian,word_volume,cjk_volume,word_pitch,native_pitch;
+    int memory,castilian,castilian_st,word_volume,cjk_volume,word_pitch,native_pitch;
     struct rule_playback *playback;
 };
 static int process_spans(struct rule_plan *,int final);
@@ -344,7 +344,15 @@ static int render_until(struct rule_plan *s,int64_t limit)
             p->result=RELOQ_DE_UTTERANCE_INVALID;return 1;
         }
         frame.noise.s_frication=controls[8]>0&&(controls[38]>controls[37]+10||controls[39]>controls[37]+10);
-        if(s->castilian&&frame.noise.s_frication)frame.noise.s_frication=3;
+        if(s->castilian) {
+            /* Castilian /s/ has A4F-A3F == 10 dB, below the older generic
+             * classifier's strict >10 test. Hold its selected colour over
+             * the AF release, rather than switching at each rounded tail. */
+            if(controls[8]<=0)s->castilian_st=0;
+            else if(controls[38]>controls[37]+5||controls[39]>controls[37]+5)
+                s->castilian_st=1;
+            frame.noise.a_frication_filter=s->castilian_st;
+        }
         p->delivery.gain=p->settings->volume/100.0*reloq_voice_volume_gain(f->volume);
         size_t completed=0;
         int status=reloq_session_render_frames(s->session,&frame,1,rule_pcm,&p->delivery,&completed);
