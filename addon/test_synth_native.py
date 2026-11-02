@@ -7,11 +7,13 @@ that extraction; Linux uses the same packaged Python code with a native .so.
 """
 import argparse
 import ctypes
+import hashlib
 import json
 from pathlib import Path
 import sys
 import threading
 import time
+import zipfile
 from unittest import mock
 
 from nvda_speech_test_api import speech_api
@@ -21,11 +23,16 @@ from test_synth import main as contract_test
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--library", type=Path, required=True)
+    parser.add_argument("--addon", type=Path, help="Test this exact existing package without rebuilding its translations")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     library = args.library.resolve()
     loader = ctypes.WinDLL if sys.platform == "win32" else ctypes.CDLL
     report = {"library": str(library), "checks": 0, "startup": []}
+    if args.addon:
+        with zipfile.ZipFile(args.addon) as package:
+            report["source_commit"] = json.loads(package.read("doc/source.json"))["source_commit"]
+        report["addon_sha256"] = hashlib.sha256(args.addon.read_bytes()).hexdigest()
 
     def inspect(module):
         native = sys.modules[module.__name__ + "._reloq_eci_direct"]
@@ -186,7 +193,8 @@ def main():
     previous_argv = sys.argv
     sys.argv = [sys.argv[0]]
     try:
-        contract_test(inspect, dll_path=library if sys.platform == "win32" else None, inspect_only=True)
+        contract_test(inspect, dll_path=library if sys.platform == "win32" else None,
+            inspect_only=True, package_path=args.addon.resolve() if args.addon else None)
     finally:
         sys.argv = previous_argv
     if args.output:

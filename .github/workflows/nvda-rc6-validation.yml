@@ -1,0 +1,19 @@
+name: Verify packaged rc6 on Windows
+on:
+  push:
+    branches: [codex/release110]
+    paths:
+      - .github/workflows/nvda-rc6-validation.yml
+      - addon/test_synth.py
+      - addon/test_synth_native.py
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    # Reuse the exact rc6 product compiled from 7d969e4. Only the test
+    # harness changes: exercise the delivered add-on, not a reconstruction.
+    uses: ./.github/workflows/nvda-german-streaming.yml
+    with:
+      native_run_id: '41539725996'

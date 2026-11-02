@@ -4,10 +4,24 @@ on:
     branches: [codex/followup102, codex/body-a-classic-consonants102, codex/classic-presence104, codex/eci-compat106, codex/voice-stability107, codex/german-tag-context108, codex/eci-contract109, codex/eci-voice110, codex/release110]
     paths-ignore: [tools/observe_syn_times.py, .github/workflows/syn-reference.yml]
   workflow_dispatch:
+    inputs:
+      native_run_id:
+        description: Existing native artifact run to verify without recompiling
+        required: false
+        default: ''
+        type: string
+  workflow_call:
+    inputs:
+      native_run_id:
+        required: false
+        default: ''
+        type: string
 permissions:
   contents: read
+  actions: read
 jobs:
   native:
+    if: ${{ inputs.native_run_id == '' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -86,6 +100,7 @@ jobs:
           retention-days: 7
   windows:
     needs: native
+    if: ${{ !cancelled() && (needs.native.result == 'success' || inputs.native_run_id != '') }}
     runs-on: windows-2022
     timeout-minutes: 20
     steps:
@@ -96,6 +111,8 @@ jobs:
         with:
           name: nvda-candidate-unvalidated
           path: candidate
+          run-id: ${{ inputs.native_run_id || github.run_id }}
+          github-token: ${{ github.token }}
       - name: Verify installed native behaviour without an audio device
         shell: pwsh
         run: |
@@ -106,7 +123,8 @@ jobs:
           $dsp = (Get-ChildItem candidate -Recurse -Filter eci_rate_dispatch_probe.exe | Select-Object -First 1).FullName
           & $dsp
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python addon/test_synth_native.py --library $core --output packaged-driver-native.json
+          $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
+          python addon/test_synth_native.py --library $core --addon $addon --output packaged-driver-native.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_inline_queue.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

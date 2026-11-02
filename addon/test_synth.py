@@ -123,21 +123,22 @@ class Engine:
         self.closed = True
 
 
-def main(inspect_adapter=None, dll_path=None, inspect_only=False):
+def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=None):
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory)
-        package = path / "synth.nvda-addon"
-        build(package, dll_path or ROOT / "eci" / "eci.dll", refresh_dictionaries=False)
-        # A normal build re-resolves master even when all verified Git blobs
-        # already match. Reuse avoids redundant downloads, never the head check.
-        import build_synth as builder
-        from test_dictionaries import Server
-        from _reloq_dictionaries import fetch_master, validate_snapshot
-        server = Server()
-        server.commit = validate_snapshot(ROOT / "data/community")["commit"]
-        with mock.patch.object(builder, "fetch_master", side_effect=lambda cache: fetch_master(cache, fetch=server)):
-            build(package, dll_path or ROOT / "eci" / "eci.dll")
-        assert len(server.calls) == 1 and server.calls[0].endswith("/branches/master")
+        package = package_path or path / "synth.nvda-addon"
+        if package_path is None:
+            build(package, dll_path or ROOT / "eci" / "eci.dll", refresh_dictionaries=False)
+            # A normal build re-resolves master even when all verified Git blobs
+            # already match. Reuse avoids redundant downloads, never the head check.
+            import build_synth as builder
+            from test_dictionaries import Server
+            from _reloq_dictionaries import fetch_master, validate_snapshot
+            server = Server()
+            server.commit = validate_snapshot(ROOT / "data/community")["commit"]
+            with mock.patch.object(builder, "fetch_master", side_effect=lambda cache: fetch_master(cache, fetch=server)):
+                build(package, dll_path or ROOT / "eci" / "eci.dll")
+            assert len(server.calls) == 1 and server.calls[0].endswith("/branches/master")
         with zipfile.ZipFile(package) as archive:
             names = set(archive.namelist())
             assert "synthDrivers/reloqC/__init__.py" in names
