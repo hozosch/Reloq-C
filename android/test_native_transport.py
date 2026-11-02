@@ -14,7 +14,6 @@ import tempfile
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"nvda"))
 from _reloq_eci_direct import DirectEciEngine
-from _reloq_languages import LANGUAGES
 
 
 def main():
@@ -49,8 +48,8 @@ def main():
         checks=0
         for row in result.stdout.splitlines():
             dialect,controls,length,expected,dictionaries,text=row.split("\t",5)
-            language=LANGUAGES[int(dialect)]
-            with_engine=DirectEciEngine(library,dialect=language.id,encoding="utf8",
+            language_id=int(dialect)
+            with_engine=DirectEciEngine(library,dialect=language_id,encoding="utf8",
                 experimental_generic=True)
             try:
                 if dictionaries!="-":with_engine.set_dictionary_path(dictionaries)
@@ -60,7 +59,7 @@ def main():
                 digest=hashlib.sha256();size=[0]
                 def take(data):digest.update(data);size[0]+=len(data)
                 assert with_engine.speak([text],take,lambda i:None)
-                assert (size[0],digest.hexdigest())==(int(length),expected),(language.name,controls,text)
+                assert (size[0],digest.hexdigest())==(int(length),expected),(hex(language_id),controls,text)
             finally:with_engine.close()
             checks+=1
         print(f"JNI integration: {checks} native PCM hashes identical; cancellation and subsequent output passed; no audio files")
