@@ -18,6 +18,7 @@ import logging
 from pathlib import Path
 import sys
 import threading
+import time
 from typing import Callable, Sequence
 
 
@@ -78,6 +79,14 @@ class EciPitch:
 
 
 @dataclass(frozen=True)
+class EciProsody:
+    """A standard ECI speed (6) or volume (7) change in queued text."""
+
+    parameter: int
+    value: int
+
+
+@dataclass(frozen=True)
 class EciLanguage:
     """A language boundary handled by LanguageEngine, not passed to a DLL."""
 
@@ -125,6 +134,7 @@ class DirectEciEngine:
         self._on_pcm: Callable[[bytes], None] | None = None
         self._on_index: Callable[[int], None] | None = None
         self._callback_error: BaseException | None = None
+        self._first_pcm_diagnostic = None
         self._buffer_samples = buffer_samples
         self._buffer = (ctypes.c_int16 * buffer_samples)()
         self._callback = _CallbackType(self._receive)
@@ -196,6 +206,8 @@ class DirectEciEngine:
         function("eciStop", (h,), i)
         function("eciGetParam", (h, i), i)
         function("eciSetParam", (h, i, i), i)
+        function("eciGetVoiceParam", (h, i, i), i)
+        function("eciSetVoiceParam", (h, i, i, i), i)
 
     def set_dictionary_path(self, path: str | Path | None) -> None:
         self._assert_owner()
@@ -224,6 +236,8 @@ class DirectEciEngine:
         previous = self._dll.eciSetParam(self._handle, parameter, value)
         if previous < 0 or self._dll.eciGetParam(self._handle, parameter) != value:
             raise RuntimeError(f"eciSetParam rejected generic parameter {parameter:#x}")
+        if parameter in (SAMPLE_RATE, HIGH_RATE_PROFILE, PROCESS_TAGS):
+            _log.info("Eloquence C native setting verified: parameter=%#x value=%d", parameter, value)
 
     def _assert_owner(self) -> None:
         if threading.get_ident() != self._owner:
@@ -238,6 +252,11 @@ class DirectEciEngine:
                 if not 0 <= value <= self._buffer_samples:
                     raise RuntimeError(f"ECI reported invalid PCM sample count {value}")
                 assert self._on_pcm is not None
+                if value and self._first_pcm_diagnostic is not None:
+                    started, characters = self._first_pcm_diagnostic
+                    self._first_pcm_diagnostic = None
+                    _log.info("Eloquence C first native PCM: %.1f ms, characters=%d",
+                        (time.perf_counter() - started) * 1000, characters)
                 self._on_pcm(ctypes.string_at(self._buffer, value * 2))
             elif message == INDEX_REPLY:
                 assert self._on_index is not None
@@ -272,8 +291,13 @@ class DirectEciEngine:
                 if isinstance(part.value, bool) or not isinstance(part.value, int) or not 0 <= part.value <= 100:
                     raise ValueError("pitch must be a native 0..100 value")
                 prepared.append(part)
+            elif isinstance(part, EciProsody):
+                if (type(part.parameter) is not int or part.parameter not in (6, 7)
+                    or type(part.value) is not int or not 0 <= part.value <= (250 if part.parameter == 6 else 100)):
+                    raise ValueError("invalid ECI speed/volume change")
+                prepared.append(part)
             else:
-                raise TypeError("ECI parts must be text, EciIndex or EciPitch")
+                raise TypeError("ECI parts must be text, EciIndex, EciPitch or EciProsody")
         return tuple(prepared)
 
     def _synthesis_error(self, parts: Sequence[str | EciIndex]) -> EciSynthesisError:
@@ -300,6 +324,7 @@ class DirectEciEngine:
         are re-raised on the caller thread. This does not wait for audio played
         by NVDA's WavePlayer.
         """
+        started_at = time.perf_counter()
         self._assert_owner()
         prepared = self._prepare(parts, self._encoding)  # Preflight before queue mutation.
         if not self._handle:
@@ -307,7 +332,10 @@ class DirectEciEngine:
         self._cancelled.clear()
         self._callback_error = None
         self._on_pcm, self._on_index = on_pcm, on_index
+        characters = sum(len(p.text) if isinstance(p, EciText) else len(p) if isinstance(p, str) else 0 for p in parts)
+        self._first_pcm_diagnostic = (started_at, characters) if characters >= 1024 else None
         completed_successfully = False
+        restore = {}
         try:
             for part in prepared:
                 if self._cancelled.is_set():
@@ -321,6 +349,15 @@ class DirectEciEngine:
                 elif isinstance(part, EciPitch):
                     ok = self._dll.eciInsertPitch(self._handle, part.value)
                     operation = "eciInsertPitch"
+                elif isinstance(part, EciProsody):
+                    if part.parameter not in restore:
+                        restore[part.parameter] = self._dll.eciGetVoiceParam(self._handle, 0, part.parameter)
+                        if restore[part.parameter] < 0:
+                            raise RuntimeError("eciGetVoiceParam failed")
+                    previous = self._dll.eciSetVoiceParam(self._handle, 0, part.parameter, part.value)
+                    ok = int(previous >= 0 and
+                        self._dll.eciGetVoiceParam(self._handle, 0, part.parameter) == part.value)
+                    operation = "eciSetVoiceParam"
                 else:
                     ok = self._dll.eciAddText(self._handle, part)
                     operation = "eciAddText"
@@ -350,7 +387,15 @@ class DirectEciEngine:
             # cannot accidentally join them to its own text.
             if not completed_successfully and self._handle:
                 self._dll.eciClearInput(self._handle)
+            # These are job-local NVDA commands, unlike the persistent user
+            # sliders. Restore after synthesis/cancellation, never from PCM
+            # callbacks while the native engine is busy.
+            if self._handle:
+                for parameter, value in restore.items():
+                    if self._dll.eciSetVoiceParam(self._handle, 0, parameter, value) < 0:
+                        _log.error("ECI could not restore voice parameter %s", parameter)
             self._on_pcm = self._on_index = None
+            self._first_pcm_diagnostic = None
 
     def cancel(self) -> None:
         """Cooperative ECI stop; may be called by a different thread."""
@@ -369,7 +414,7 @@ class DirectEciEngine:
             self._dll.eciDelete(handle)
 
 
-__all__ = ["EciText", "DirectEciEngine", "EciIndex", "EciPitch", "EciLanguage", "EciSynthesisError",
+__all__ = ["EciText", "DirectEciEngine", "EciIndex", "EciPitch", "EciProsody", "EciLanguage", "EciSynthesisError",
            "GERMAN_DIALECT", "EXPERIMENTAL_GENERIC_VOICE", "GENERIC_RATE",
            "GENERIC_PITCH", "GENERIC_VOLUME", "NATIVE_SPEED", "NATIVE_PITCH",
            "NATIVE_INFLECTION", "NATIVE_VOLUME", "DICTIONARY", "PHRASE_PREDICTION", "PROCESS_TAGS", "PAUSE_MODE", "HEAD_SIZE", "ROUGHNESS", "BREATHINESS", "GENDER", "HIGH_RATE_PROFILE", "SAMPLE_RATE", "SAMPLE_RATES"]

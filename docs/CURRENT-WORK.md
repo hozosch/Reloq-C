@@ -1,3 +1,58 @@
+# Testkandidat 1.1.0-rc6: NVDA-Transport und tatsächliche Wortgrenzen
+
+Die bisherigen DLL-Tests und der NVDA-Vertragstest waren getrennt: der
+Vertragstest verwendete eine Ersatz-Engine. Ein neuer Test führt die
+unveränderten NVDA-2026.3-Methoden für Sprache, Symbole und Befehlsverarbeitung
+mit dem verpackten Treiber, echter ECI-Engine und einem Audioplayer ohne Gerät
+zusammen. Er ersetzt weiterhin NVDAs Oberfläche, Prioritätsplanung und das
+Audiogerät; er ist kein Hörtest auf Windows ARM.
+
+NVDA entfernt das Gravis-Zeichen oder spricht seinen Symbolnamen, bevor Text
+den Synthesizertreiber erreicht. Ein nur für den aktiven ReLoq-Treiber und
+die eingeschaltete Tag-Einstellung registrierter Sprachfilter transportiert
+gültige Tags als Synthesizerbefehle. Gewöhnlicher Text behält NVDAs Wörterbuch-,
+Symbol- und Unicode-Verarbeitung. Ein Tag zwischen Buchstaben wird vor das
+ungeteilte westliche/griechische Wort gestellt. CJK behält seine Segmentierung.
+NVDA-Geschwindigkeit und -Lautstärke sind zusätzlich zur Tonhöhe angebunden;
+temporäre Werte werden auch nach Abbruch oder Fehlern zurückgesetzt.
+
+Die native Meldung `synthesizingWord` läuft der Audioausgabe voraus. Mehrere
+schwache Wörter können vor demselben Audioblock gemeldet werden. Dadurch
+konnte eine spätere Rücksetzung den vorherigen Parameterwechsel auslöschen.
+Steuerungen werden nun über private native Indizes mit akustischen Zeitmarken
+geplant und erst beim entsprechenden Audioframe angewendet. Öffentliche
+Wortgrenzen-Indizes und Tonhöhenmarken verwenden denselben Zeitbezug;
+Innenmarken und SPR-Gruppen werden nicht geteilt. Die öffentlichen ECI-Exporte
+werden dabei nicht erweitert oder umbenannt.
+
+16 kHz bleibt bitgleich zu rc5. Ab 22,05 kHz verwendet Profil B den tatsächlichen
+periodischen A-Trakt einschließlich seiner sechs, sieben bzw. acht Formanten.
+Kontinuierliche Filterzustände, bandbegrenzter Glottisschluss und geglättete
+Filterwechsel ersetzen die feste 20/22-dB-Anhebung aus rc5. Es bleibt eine
+Stimmquelle. Die unabhängige Classic-Konsonantenbank und die auf ein Viertel
+begrenzte zusätzliche kastilische S/T-Bandbreite bleiben erhalten. 36 stationäre
+Vokal-/Tonhöhen-/Ratenfälle liegen in drei Spektralbändern innerhalb 0,701 dB
+des A-Körpers; der Bass weicht höchstens 0,687 dB von 16 kHz ab. Das beweist
+keine subjektiv passende Klangfarbe oder Verzerrungsfreiheit bei laufender Sprache.
+
+110 kausale Tag-/Pitch-Reihenfolgetests und 725 Queue-/Wortkontrolltests
+bestehen. 48 Prüfungen gegen einen ungeschützten Float-Diagnosebuild bestätigen
+die lineare leise Ausgabe. Beim kleinen weiblichen Modell mit hoher Behauchung
+liegen einzelne rohe Spitzen weiter über der PCM-Grenze; der vorhandene
+Ausgangsschutz bleibt deshalb aktiv. Begrenzte fertige PCM-Spitzen allein
+gelten nicht als Nachweis eines unverzerrten Quellsignals.
+
+Die lange deutsche Einzelsatzanalyse ist weiterhin offen. Der durchgehende
+Hosttest mit rund 9.000 Zeichen benötigt ungefähr 0,2 Sekunden bis zum ersten
+Playerpuffer, gegenüber rund 0,015 Sekunden bei US-Englisch. Normale abgeschlossene
+deutsche Sätze starten im selben Test deutlich früher. Diese Zeiten enthalten
+die NVDA-Textverarbeitung und den Treiber, aber kein echtes Audiogerät. Das
+Paket protokolliert Quellrevision, geladene DLL und bestätigte Raten-/Profil-/
+Tag-Einstellungen sowie bei langen Texten erste native PCM-Ausgabe und erste
+WavePlayer-Übergabe. Damit kann die Verzögerung im echten NVDA eingegrenzt werden.
+
+Die folgenden Abschnitte beschreiben historische Teststände.
+
 # Testkandidat 1.1.0-rc2: Classic-Basis und kastilische Bandbreite
 
 Die 16-kHz-Abstimmung bleibt die Grundlage von Profil B. Ab 22,05 kHz

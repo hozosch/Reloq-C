@@ -21,7 +21,7 @@ from build_translations import translation_entries
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "addon" / "synth"
-DEFAULT_OUTPUT = ROOT / "dist" / "reloq-c-synth-experimental-x64-1.1.0-rc5.nvda-addon"
+DEFAULT_OUTPUT = ROOT / "dist" / "reloq-c-synth-experimental-x64-1.1.0-rc6.nvda-addon"
 RLEX_HEADER = b"RELOQ-DE-SPR-1\n"
 HEX = re.compile(rb"[0-9A-F]+\Z")
 
@@ -78,6 +78,7 @@ def make_entries(dll_path: Path) -> dict[str, bytes]:
         "doc/de/readme.html",
         "doc/en/readme.html",
         "synthDrivers/reloqC/__init__.py",
+        "synthDrivers/reloqC/_speech_tags.py",
         "globalPlugins/reloqCDictionaries/__init__.py",
     ):
         entries[name] = (SOURCE / name).read_bytes()

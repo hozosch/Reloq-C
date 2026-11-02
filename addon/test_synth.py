@@ -123,11 +123,11 @@ class Engine:
         self.closed = True
 
 
-def main(inspect_adapter=None):
+def main(inspect_adapter=None, dll_path=None, inspect_only=False):
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory)
         package = path / "synth.nvda-addon"
-        build(package, ROOT / "eci" / "eci.dll", refresh_dictionaries=False)
+        build(package, dll_path or ROOT / "eci" / "eci.dll", refresh_dictionaries=False)
         # A normal build re-resolves master even when all verified Git blobs
         # already match. Reuse avoids redundant downloads, never the head check.
         import build_synth as builder
@@ -136,7 +136,7 @@ def main(inspect_adapter=None):
         server = Server()
         server.commit = validate_snapshot(ROOT / "data/community")["commit"]
         with mock.patch.object(builder, "fetch_master", side_effect=lambda cache: fetch_master(cache, fetch=server)):
-            build(package, ROOT / "eci" / "eci.dll")
+            build(package, dll_path or ROOT / "eci" / "eci.dll")
         assert len(server.calls) == 1 and server.calls[0].endswith("/branches/master")
         with zipfile.ZipFile(package) as archive:
             names = set(archive.namelist())
@@ -203,10 +203,28 @@ def main(inspect_adapter=None):
                     StringParameterInfo=lambda id, label: types.SimpleNamespace(id=id, displayName=label))
         fake_module("config", conf={"audio": {"outputDevice": "default"}})
         fake_module("logHandler", log=types.SimpleNamespace(
+            info=lambda *args, **kw: None,
             error=lambda *args, **kw: notifications.append(("error", args)),
             warning=lambda *args, **kw: notifications.append(("warning", args))))
         fake_module("nvwave", WavePlayer=lambda **kw: players.append(Player(**kw)) or players[-1])
         fake_module("speech", __path__=[])
+        class Filter:
+            def __init__(self):
+                self.handlers = []
+
+            def register(self, handler):
+                assert handler not in self.handlers
+                self.handlers.append(handler)
+
+            def unregister(self, handler):
+                self.handlers.remove(handler)
+
+            def apply(self, value):
+                for handler in self.handlers[:]:
+                    value = handler(value)
+                return value
+
+        fake_module("speech.extensions", filter_speechSequence=Filter())
         fake_module("speech.commands", IndexCommand=IndexCommand,
                     BreakCommand=BreakCommand, PhonemeCommand=PhonemeCommand,
                     CharacterModeCommand=CharacterModeCommand,
@@ -251,6 +269,10 @@ def main(inspect_adapter=None):
                     assert not driver_module.SynthDriver.check()
 
                 fake_module("globalVars", appArgs=types.SimpleNamespace(configPath=str(path / "profile")))
+                if inspect_only:
+                    inspect_adapter(driver_module)
+                    assert not sys.modules["speech.extensions"].filter_speechSequence.handlers
+                    return
                 driver = driver_module.SynthDriver()
                 active_driver.append(driver)
                 assert driver.name == "reloqC"
@@ -720,12 +742,13 @@ def main(inspect_adapter=None):
                     config_api.conf = original_conf
                 if inspect_adapter is not None:
                     inspect_adapter(driver_module)
+                assert not sys.modules["speech.extensions"].filter_speechSequence.handlers
         finally:
             sys.path.remove(str(path))
             for name in tuple(sys.modules):
                 if name.startswith("synthDrivers") or name in (
                     "config", "logHandler", "nvwave", "speech", "addonHandler",
-                    "speech.commands", "synthDriverHandler", "languageHandler"):
+                    "speech.commands", "speech.extensions", "synthDriverHandler", "languageHandler"):
                     del sys.modules[name]
             if original_translate is None:
                 del builtins._

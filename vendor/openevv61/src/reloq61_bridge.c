@@ -162,11 +162,28 @@ struct capture {
     void *index_original, *index_data;
     struct SynthThread *thread;
     int64_t clock_base;
-    size_t next_mark,next_control,consumed,setup_pending;
+    size_t next_mark,consumed,setup_pending,source_length;
+    int acoustic_marks,source_has_spr;
     int metadata,source_started,pause_policy;
     pause_sink pause;void *pause_context;
     reloq61_phoneme_sink phoneme_sink;void *phoneme_context;
 };
+static int acoustic_mark(const struct capture *c,size_t mark)
+{
+    const struct reloq61_mark *m=c->q->marks+mark;
+    const char *text=c->q->text;size_t n=c->source_length,at=m->offset;
+    if(!c->acoustic_marks||at>n||m->pitch>=0||m->index<0)return 0;
+    if(at&&at!=n&&!strchr(" \t\r\n",text[at])&&!strchr(" \t\r\n",text[at-1]))return 0;
+    if(!c->source_has_spr)return 1;
+    /* Greek admission supplies SPR words. Mark the space between those
+     * groups, but never place a queue token inside a phonetic group. */
+    for(size_t i=at;i>0;) {
+        char ch=text[--i];
+        if(ch==']')break;
+        if(ch=='['&&i&&text[i-1]=='`')return 0;
+    }
+    return 1;
+}
 int reloq61_labiodental_gain(void *state)
 {
     delta_state *d=state;DeltaLang *dl=EVV_AT(DeltaLang *,d->dlang);
@@ -280,9 +297,16 @@ void reloq61_index_at(void *context,int32_t value,int64_t tick)
     if(c->q->phonemes_only&&c->q->phoneme_indices)return;
     /* Device IDs belong to IndexManager. Its payload is the caller's
        index; reporting the internal ID would silently lose/reorder marks. */
-    if(value>0 && c->q->index) {
+    if(value>0) {
         Index *ix=sti_getIndex(&c->thread->indexmgr,(uint32_t)value);
-        if(ix&&ix->kind==0)report_index(c,ix->payload,c->clock_base+tick);
+        if(ix&&ix->kind==0) {
+            int64_t control=(int64_t)INT32_MAX-ix->payload;
+            if(control>=0&&(uint64_t)control<c->q->control_count) {
+                const struct reloq61_mark *v=c->q->controls+(size_t)control;
+                if(c->q->control)c->q->control(c->q->context,v->pitch,v->index,
+                    c->clock_base+tick,(size_t)control);
+            } else if(c->q->index)report_index(c,ix->payload,c->clock_base+tick);
+        }
     }
 }
 void reloq61_word_at(void *context,int32_t characters)
@@ -298,7 +322,9 @@ void reloq61_word_at(void *context,int32_t characters)
         if(c->metadata&&c->source_started) {
             while(c->next_mark<c->q->mark_count &&
                   c->q->marks[c->next_mark].offset<=c->consumed) {
-                const struct reloq61_mark *m=c->q->marks+c->next_mark++;
+                size_t ordinal=c->next_mark++;
+                const struct reloq61_mark *m=c->q->marks+ordinal;
+                if(acoustic_mark(c,ordinal))continue;
                 if(m->index<0)continue;
                 /* Frames already emitted for preceding words are the host's
                    authoritative clock. The unused native PCM device keeps
@@ -306,11 +332,6 @@ void reloq61_word_at(void *context,int32_t characters)
                 if(c->q->index)report_index(c,m->index,c->r->ticks);
             }
             size_t end=c->consumed+source_characters;
-            while(c->next_control<c->q->control_count &&
-                  c->q->controls[c->next_control].offset<end) {
-                const struct reloq61_mark *v=c->q->controls+c->next_control++;
-                if(c->q->control)c->q->control(c->q->context,v->pitch,v->index);
-            }
             c->consumed=end;
         }
         stb_staticWordCallback(characters,c->thread);
@@ -680,12 +701,37 @@ static int generate_core(const struct reloq61_request *q,struct reloq61_result *
         if(q->marks[j].pitch>=0)metadata=0;
     }
     if(metadata) {
-        /* Source positions are metadata, not AddText boundaries. Splitting
-           raw input at an index changes native normalization of times,
-           addresses and abbreviations. Let the existing consumed-character
-           callbacks advance the mark queue while parsing the whole text. */
         c.metadata=1;
-        if(ok&&n)ok=et_addText(h,q->text);
+        c.acoustic_marks=q->span!=NULL;c.source_length=n;c.source_has_spr=strstr(q->text,"`[")!=NULL;
+        /* synthesizingWord is a lexical lookahead callback. Several weak
+         * words can be reported before the preceding acoustic word has
+         * emitted its arrays; applying a setter there lets a later reset
+         * erase it. Queue private ECI indices at the already admitted word
+         * boundaries instead. sendArrayParameters delivers those indices
+         * at the actual acoustic boundary, in the same native utterance.
+         * Word-boundary public indices use that same clock. Interior marks
+         * and explicit phonetic annotations retain source metadata so a
+         * token, number or SPR group is never split by an index.
+         */
+        if(q->control_count>(size_t)INT32_MAX)ok=0;
+        size_t mark=0,control=0;
+        while(ok) {
+            while(mark<q->mark_count&&!acoustic_mark(&c,mark))++mark;
+            if(mark==q->mark_count&&control==q->control_count)break;
+            int is_mark=control==q->control_count ||
+                (mark<q->mark_count&&q->marks[mark].offset<=q->controls[control].offset);
+            size_t at=is_mark?q->marks[mark].offset:q->controls[control].offset;
+            int32_t payload=is_mark?q->marks[mark++].index:INT32_MAX-(int32_t)control++;
+            if(at<begin||at>n){ok=0;break;}
+            char *part=malloc(at-begin+1);
+            if(!part){ok=0;break;}
+            memcpy(part,q->text+begin,at-begin);part[at-begin]=0;
+            if(*part)ok=et_addText(h,part);
+            free(part);
+            if(ok)ok=et_insertIndex(h,payload);
+            begin=at;
+        }
+        if(ok&&n>begin)ok=et_addText(h,q->text+begin);
     }
     /* Explicit provider pitch annotations are the legacy adapter route.
        Production ReLoq pitch changes use metadata and its own renderer. */
@@ -723,7 +769,9 @@ static int generate_core(const struct reloq61_request *q,struct reloq61_result *
     }
     if(ok&&c.metadata&&q->index)
         while(c.next_mark<q->mark_count) {
-            const struct reloq61_mark *m=q->marks+c.next_mark++;
+            size_t ordinal=c.next_mark++;
+            const struct reloq61_mark *m=q->marks+ordinal;
+            if(acoustic_mark(&c,ordinal))continue;
             if(m->index>=0)report_index(&c,m->index,r->ticks);
         }
     for(size_t i=0;i<c.bank_count;++i)reloq61_english_bank_free(c.banks[i]);

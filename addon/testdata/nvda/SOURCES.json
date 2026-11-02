@@ -42,6 +42,49 @@
       "url": "https://raw.githubusercontent.com/nvaccess/nvda/master/source/config/__init__.py",
       "retrieved": "2026-10-23",
       "sha256": "c78c32e886c28e51a4ae10cbd5929db8759f121c8aacc7644b1c124e4f3e2c6d"
+    },
+    {
+      "path": "speech/speech.py",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/release-2026.3/source/speech/speech.py",
+      "retrieved": "2026-11-02",
+      "sha256": "595a44b9a50ea2892320a4c1121d5c7a1c4d183260f51d4fe937baff06bf3dbc"
+    },
+    {
+      "path": "speech/manager.py",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/release-2026.3/source/speech/manager.py",
+      "retrieved": "2026-11-02",
+      "sha256": "1becf8407b96e893f41899a8fb81d38764cb13a0ade8c96fc5fb33be631f9cf3"
+    },
+    {
+      "path": "characterProcessing.py",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/release-2026.3/source/characterProcessing.py",
+      "retrieved": "2026-11-02",
+      "sha256": "e340dc4bd5cd8d4abf7af863ae2c93e04176602adcab64a41cfca85e78f4b814"
+    },
+    {
+      "path": "locale/en/symbols.dic",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/release-2026.3/source/locale/en/symbols.dic",
+      "retrieved": "2026-11-02",
+      "sha256": "6a60536d89f05a88345e7f2886061e5adb8d01f4f8381fa14302768e5c0dda96"
+    },
+    {
+      "path": "locale/de/symbols.dic",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/release-2026.3/source/locale/de/symbols.dic",
+      "retrieved": "2026-11-02",
+      "sha256": "c934ae00d8ba78fbf274d5391fb00c2984a6b8c0cac9af468d3695c6ba115079",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "locale/es/symbols.dic",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/release-2026.3/source/locale/es/symbols.dic",
+      "retrieved": "2026-11-02",
+      "sha256": "f8e8f1d4c35cf6f235ee6ef9ea37896f54e8d446c43ae0261d9e723e51a43f19"
+    },
+    {
+      "path": "locale/fr/symbols.dic",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/release-2026.3/source/locale/fr/symbols.dic",
+      "retrieved": "2026-11-02",
+      "sha256": "d79c0076231e3108ffd5df06b4cab63c27dee44deaa1977840522c23b936076a"
     }
   ]
 }

@@ -130,6 +130,7 @@ struct rule_span {
     struct reloq_german_voice_model model;
 };
 struct quiet_cut { int64_t from,to,after; };
+struct rule_control { int64_t tick;size_t ordinal;int parameter,value; };
 extern int reloq61_generate_with_pauses(const struct reloq61_request *,struct reloq61_result *,
     int,void (*)(void *,int64_t,int64_t,int64_t),void *);
 struct rule_playback;
@@ -138,7 +139,8 @@ struct rule_plan {
     struct quiet_cut *cuts;size_t cut_count,cut_capacity;
     int64_t ticks,*indices;size_t index_count;
     int64_t pitch_tick;
-    const size_t *control_sources;size_t next_control,pitch_source;
+    const size_t *control_sources;size_t pitch_source;
+    struct rule_control *controls;size_t control_count,control_capacity;
     struct reloq_session *session;
     int memory,castilian,castilian_st,word_volume,cjk_volume,word_pitch,native_pitch,word_speed,word_inflection;
     struct reloq_german_voice_model word_model;
@@ -181,26 +183,22 @@ static int take_frame(void *context,const int32_t p[62],int32_t volume)
     f->model=s->word_model;f->speed=s->word_speed;f->inflection=s->word_inflection;f->pitch_tick=s->pitch_tick;f->pitch_source=s->pitch_source;
     s->ticks+=p[0];return s->playback?process_spans(s,0):0;
 }
-static void take_control(void *,int,int);
 static void take_index(void *context,int32_t index,int64_t tick)
 {
     struct rule_plan *s=context;
     if(index>=0&&(size_t)index<s->index_count && s->indices[index]!=INT64_MAX &&
        s->indices[index]!=0)s->indices[index]=tick;
 }
-static void take_control(void *context,int parameter,int value)
+static void take_control(void *context,int parameter,int value,int64_t tick,size_t ordinal)
 {
     struct rule_plan *s=context;
-    size_t source=s->control_sources?s->control_sources[s->next_control++]:0;
-    if(parameter==7)s->word_volume=value;
-    else if(parameter==2){s->word_pitch=value;s->pitch_tick=s->ticks;s->pitch_source=source;}
-    else if(parameter==8){s->native_pitch=value;s->word_pitch=-1;}
-    else if(parameter==3)s->word_inflection=value;
-    else if(parameter==6)s->word_speed=value;
-    else if(parameter==0)s->word_model.gender=value;
-    else if(parameter==1)s->word_model.head_size=value;
-    else if(parameter==4)s->word_model.roughness=value;
-    else if(parameter==5)s->word_model.breathiness=value;
+    if(s->control_count>=s->control_capacity||ordinal>=s->control_capacity){s->memory=1;return;}
+    size_t at=s->control_count++;
+    while(at&&(s->controls[at-1].tick>tick ||
+        (s->controls[at-1].tick==tick&&s->controls[at-1].ordinal>ordinal))) {
+        s->controls[at]=s->controls[at-1];--at;
+    }
+    s->controls[at]=(struct rule_control){tick,ordinal,parameter,value};
 }
 static int32_t curve_value(const struct reloq61_curve *c,int32_t at)
 {
@@ -311,6 +309,8 @@ struct rule_playback {
     const struct reloq_german_generic_settings *settings;
     const struct reloq_german_generic_pitch_mark *pitches;
     size_t index_count,pitch_count,next,next_pitch,next_cut,read;
+    size_t next_control;
+    struct rule_span voice;
     int32_t at;
     int64_t last_pitch_tick;
     size_t last_pitch_source;
@@ -416,13 +416,30 @@ static int render_until(struct rule_plan *s,int64_t limit)
         }
         if(previous!=f){prepare_controls(f,&prepared);previous=f;}
         float controls[62];read_controls(&prepared,f,at,controls);
-        word_voice_frame(s,f,controls);
-        double pitch_scale=f->pitch>=0&&(f->pitch_tick>p->last_pitch_tick||
-            (f->pitch_tick==p->last_pitch_tick&&f->pitch_source>=p->last_pitch_source))?
-            reloq_voice_pitch_f0_scale(f->pitch)/reloq_voice_pitch_f0_scale(f->native_pitch):p->pitch_scale;
+        const struct rule_span *voice=f;
+        if(s->control_capacity) {
+            while(p->next_control<s->control_count&&s->controls[p->next_control].tick<=tick) {
+                const struct rule_control *change=s->controls+p->next_control++;
+                int parameter=change->parameter,value=change->value;
+                if(parameter==7)p->voice.volume=value;
+                else if(parameter==2){p->voice.pitch=value;p->voice.pitch_tick=change->tick;
+                    p->voice.pitch_source=s->control_sources[change->ordinal];}
+                else if(parameter==3)p->voice.inflection=value;
+                else if(parameter==6)p->voice.speed=value;
+                else if(parameter==0)p->voice.model.gender=value;
+                else if(parameter==1)p->voice.model.head_size=value;
+                else if(parameter==4)p->voice.model.roughness=value;
+                else if(parameter==5)p->voice.model.breathiness=value;
+            }
+            voice=&p->voice;
+        }
+        word_voice_frame(s,voice,controls);
+        double pitch_scale=voice->pitch>=0&&(voice->pitch_tick>p->last_pitch_tick||
+            (voice->pitch_tick==p->last_pitch_tick&&voice->pitch_source>=p->last_pitch_source))?
+            reloq_voice_pitch_f0_scale(voice->pitch)/reloq_voice_pitch_f0_scale(voice->native_pitch):p->pitch_scale;
         if(pitch_scale!=1)controls[1]=(float)(controls[1]*pitch_scale);
-        if(memcmp(&p->model,&f->model,sizeof p->model)) {
-            p->model=f->model;
+        if(memcmp(&p->model,&voice->model,sizeof p->model)) {
+            p->model=voice->model;
             int head=p->model.head_size,gender=p->model.gender;
             long source=gender?(head<30?5:3):4;
             if(p->model.sample_rate==8000&&head<=(gender?40:30)&&!(gender&&head<30))source=7;
@@ -446,15 +463,15 @@ static int render_until(struct rule_plan *s,int64_t limit)
                 s->castilian_st=1;
             frame.noise.limit_frication_extension=s->castilian_st;
         }
-        p->delivery.gain=p->settings->volume/100.0*reloq_voice_volume_gain(f->volume);
+        p->delivery.gain=p->settings->volume/100.0*reloq_voice_volume_gain(voice->volume);
         if(reloq_session_float_volume(s->session)) {
             if(reloq_session_linear_gain(s->session,(float)p->delivery.gain)) {
                 p->result=RELOQ_DE_UTTERANCE_INVALID;return 1;
             }
             p->delivery.gain=1;
         }
-        if(f->speed>=0&&f->speed!=s->base_voice[6]) {
-            double ratio=reloq_voice_speed_time_scale(f->speed)/reloq_voice_speed_time_scale(s->base_voice[6]);
+        if(voice->speed>=0&&voice->speed!=s->base_voice[6]) {
+            double ratio=reloq_voice_speed_time_scale(voice->speed)/reloq_voice_speed_time_scale(s->base_voice[6]);
             p->time_fraction+=f->step*ratio;
             int milliseconds=(int)p->time_fraction;p->time_fraction-=milliseconds;
             if(!milliseconds)continue;
@@ -568,6 +585,9 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         if(volume_count>SIZE_MAX/sizeof *volumes)goto memory;
         volumes=malloc(volume_count*sizeof *volumes);if(!volumes)goto memory;
         control_sources=malloc(volume_count*sizeof *control_sources);if(!control_sources)goto memory;
+        if(volume_count>SIZE_MAX/sizeof *plan.controls)goto memory;
+        plan.controls=malloc(volume_count*sizeof *plan.controls);if(!plan.controls)goto memory;
+        plan.control_capacity=volume_count;
         size_t out=0,control=0;
         for(size_t i=0;i<n;) {
             struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
@@ -657,6 +677,8 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         else if(pitches[i].annotation_offset>=length)plan.indices[index_count+i]=INT64_MAX;
     }
     struct rule_playback playback={
+        .voice={.volume=native_volume,.pitch=-1,.native_pitch=q.voice[2],.speed=-1,.inflection=-1,
+            .model={q.voice[1],q.voice[4],q.voice[5],q.voice[0],reloq_session_sample_rate(session)}},
         .model={q.voice[1],q.voice[4],q.voice[5],q.voice[0],reloq_session_sample_rate(session)},
         .settings=settings,.pitches=pitches,.index_count=index_count,.pitch_count=pitch_count,
         .pause_mode=!explicit_pause&&settings->pause_mode==1,
@@ -697,7 +719,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     }
     result=RELOQ_DE_UTTERANCE_OK;goto done;
 memory:result=RELOQ_DE_UTTERANCE_MEMORY;
-done:free(a);free(map);free(marks);free(volumes);free(control_sources);free(plan.spans);free(plan.cuts);free(plan.indices);return result;
+done:free(a);free(map);free(marks);free(volumes);free(control_sources);free(plan.controls);free(plan.spans);free(plan.cuts);free(plan.indices);return result;
 }
 
 int reloq_english_rules_render(const unsigned char *text,size_t length,int tags,int native_volume,

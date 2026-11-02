@@ -22,9 +22,9 @@ def N_(message: str) -> str:
     return message
 
 if __package__:
-    from ._reloq_eci_direct import DirectEciEngine, EciLanguage, EciPitch, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER
+    from ._reloq_eci_direct import DirectEciEngine, EciLanguage, EciPitch, EciProsody, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER
 else:
-    from _reloq_eci_direct import DirectEciEngine, EciLanguage, EciPitch, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER
+    from _reloq_eci_direct import DirectEciEngine, EciLanguage, EciPitch, EciProsody, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER
 
 
 @dataclass(frozen=True)
@@ -265,7 +265,7 @@ class LanguageEngine:
         self._cancelled.clear()
         key = self._home
         pending = []
-        pitch = None
+        prosody = {}
 
         def flush():
             if self._cancelled.is_set():
@@ -290,11 +290,13 @@ class LanguageEngine:
                     key = next_key
                     # Capital/spelling pitch remains active across a real
                     # language boundary until NVDA sends its reset command.
-                    if pitch is not None:
-                        pending.append(pitch)
+                    pending.extend(prosody.values())
                 else:
-                    if isinstance(part, EciPitch):
-                        pitch = part
+                    if isinstance(part, (EciPitch, EciProsody)):
+                        slot = "pitch" if isinstance(part, EciPitch) else part.parameter
+                        # Keep the last source order between different controls.
+                        prosody.pop(slot, None)
+                        prosody[slot] = part
                     pending.append(part)
             return flush()
         finally:

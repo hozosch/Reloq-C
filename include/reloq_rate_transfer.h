@@ -30,12 +30,9 @@ struct reloq_rate_transfer {
      * restoration and native expansion from 22.05 kHz. Legacy C aliases B. */
     unsigned trial_profile,colour_profile,colour_extension;
     unsigned fit_samples;
-    /* Optional continuous transfer for source/tract comparison probes.
-     * Production A retains its established sample-exact behaviour. */
+    /* Continuous A transfer in the high-rate hybrid and comparison probes.
+     * Production profile A retains its established sample-exact behaviour. */
     unsigned smooth_updates;
-    /* One physical AV/AH tract at extended clocks. Its fixed excitation
-     * colour replaces the moving inverse fit; AF has its separate bank. */
-    unsigned physical_tract;
     double classic_reference[2][5];
     /* Periodic glottal filter only. Moving physical poles to a new clock
      * otherwise loses the reference's discrete source response. */

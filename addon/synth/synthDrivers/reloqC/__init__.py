@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections import OrderedDict
 import ctypes
+import json
 import math
 from pathlib import Path
 import threading
@@ -25,17 +26,19 @@ import languageHandler
 from logHandler import log
 import nvwave
 from speech.commands import (BreakCommand, CharacterModeCommand, IndexCommand, LangChangeCommand,
-                             PhonemeCommand, PitchCommand)
+                             PhonemeCommand, PitchCommand, RateCommand, VolumeCommand)
+from speech.extensions import filter_speechSequence
 from synthDriverHandler import (SynthDriver as BaseSynthDriver, VoiceInfo, LanguageInfo,
                                 synthDoneSpeaking, synthIndexReached)
 
-from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciLanguage, EciText, NATIVE_VOLUME, HIGH_RATE_PROFILE,
+from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciProsody, EciLanguage, EciText, NATIVE_VOLUME, HIGH_RATE_PROFILE,
                                 NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION, PROCESS_TAGS,
                                 PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATES,
                                 DICTIONARY, PHRASE_PREDICTION)
 from ._reloq_eci_transport import EciTextTransport
 from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries
 from ._reloq_languages import GERMAN, LANGUAGES, LANGUAGE_ALIASES, LANGUAGE_DISPLAY_ORDER, LanguageEngine, language_for
+from ._speech_tags import EciTagCommand, protect_sequence
 
 
 DLL = Path(__file__).with_name("eci.dll")
@@ -69,7 +72,7 @@ def _command_pitch(command, base_pitch):
     return max(0, min(100, int(round(value))))
 
 
-def _parts(speech_sequence, *, base_pitch=50, voice_tags=False,
+def _parts(speech_sequence, *, base_pitch=50, base_rate=50, base_volume=100, rate_boost=False, voice_tags=False,
            language=GERMAN, voice="1", languages=LANGUAGES):
     """Keep NVDA's text and indices together in one native utterance.
 
@@ -120,6 +123,17 @@ def _parts(speech_sequence, *, base_pitch=50, voice_tags=False,
             value = _command_pitch(item, base_pitch)
             parts.append(EciPitch(value))
             raised = value != base_pitch
+        elif isinstance(item, (RateCommand, VolumeCommand)):
+            flush()
+            rate = isinstance(item, RateCommand)
+            value = _command_pitch(item, base_rate if rate else base_volume)
+            parts.append(EciProsody(6 if rate else 7,
+                _native_speed(value, rate_boost) if rate else value))
+        elif isinstance(item, EciTagCommand):
+            # A setting can change after the early NVDA filter. Keep its
+            # original text even then; native tag/character-mode admission
+            # decides whether it is a control or ordinary spoken text.
+            pieces.append((item.text, spelling))
         elif isinstance(item, CharacterModeCommand):
             next_spelling = bool(item.state)
             if next_spelling != spelling and last_text_alnum:
@@ -142,8 +156,6 @@ def _parts(speech_sequence, *, base_pitch=50, voice_tags=False,
         elif isinstance(item, PhonemeCommand) and item.text:
             # Preserve the plain-text fallback; IPA is not understood by ECI.
             pieces.append((item.text, spelling))
-        # Other unadvertised commands (rate/volume prosody)
-        # have no native representation yet. Never pass their repr to ECI.
     flush()
     if not parts:
         parts.append("")
@@ -154,7 +166,8 @@ class SynthDriver(BaseSynthDriver):
     name = "reloqC"
     # Translators: Name in NVDA's synthesizer selection dialog.
     description = _("Eloquence C")
-    supportedCommands = {IndexCommand, CharacterModeCommand, PitchCommand, LangChangeCommand}
+    supportedCommands = {IndexCommand, CharacterModeCommand, PitchCommand, RateCommand,
+                         VolumeCommand, LangChangeCommand, EciTagCommand}
     supportedNotifications = {synthIndexReached, synthDoneSpeaking}
     supportedSettings = (
         BaseSynthDriver.LanguageSetting(),
@@ -239,6 +252,24 @@ class SynthDriver(BaseSynthDriver):
         manager = self.dictionary_manager()
         # Start monitoring the installed dictionaries and selected own files.
         manager.set_enabled(False)
+        filter_speechSequence.register(self._protect_tags)
+        try:
+            source = json.loads((DLL.parents[2] / "doc/source.json").read_text(encoding="utf-8"))
+            revision = source["source_commit"]
+        except (OSError, ValueError, KeyError, TypeError):
+            revision = "local"
+        log.info("Eloquence C loaded driver %s, source %s, DLL %s", __file__, revision, DLL)
+
+    def _protect_tags(self, sequence):
+        # The extension runs before NVDA replaces the grave accent by its
+        # spoken symbol name (or a space). Keep this scoped to our active
+        # synthesizer and its explicit tag setting.
+        if self._terminating or not self._voiceTags:
+            return sequence
+        from synthDriverHandler import getSynth
+        if getSynth() is not self:
+            return sequence
+        return protect_sequence(sequence)
 
     @staticmethod
     def _make_player(sample_rate):
@@ -606,8 +637,10 @@ class SynthDriver(BaseSynthDriver):
             tags = self._voiceTags
             language = self._selectedLanguage
             voice = self._voice
+            rate, boost, volume = self._rate, self._rateBoost, self._volume
         def make_parts():
             return _parts(speechSequence, base_pitch=pitch, voice_tags=tags,
+                          base_rate=rate, rate_boost=boost, base_volume=volume,
                           language=self._languages[language], voice=voice, languages=self._languages)
         parts = make_parts()
         with self._submit_lock:
@@ -616,9 +649,16 @@ class SynthDriver(BaseSynthDriver):
             # A settings change can arrive while a long sequence is being
             # normalized. Keep its inline relative commands paired with the
             # base pitch which will precede this job in the native queue.
-            if (self._pitch, self._voiceTags, self._selectedLanguage, self._voice) != (pitch, tags, language, voice):
+            if (self._pitch, self._voiceTags, self._selectedLanguage, self._voice,
+                self._rate, self._rateBoost, self._volume) != (pitch, tags, language, voice, rate, boost, volume):
                 pitch, tags, language, voice = self._pitch, self._voiceTags, self._selectedLanguage, self._voice
+                rate, boost, volume = self._rate, self._rateBoost, self._volume
                 parts = make_parts()
+            characters = sum(len(p.text) if isinstance(p, EciText) else len(p) if isinstance(p, str) else 0 for p in parts)
+            protected_tags = sum(isinstance(p, EciTagCommand) for p in speechSequence)
+            if characters >= 1024 or protected_tags:
+                log.info("Eloquence C queued speech: characters=%d, protected_tags=%d, rate=%d Hz, profile=%s, tags=%s",
+                    characters, protected_tags, SAMPLE_RATES[int(self._sampleRate)], self._highRateProfile, tags)
             self._transport.submit(parts)
 
     def cancel(self):
@@ -632,6 +672,7 @@ class SynthDriver(BaseSynthDriver):
             self._transport.pause(switch)
 
     def terminate(self):
+        filter_speechSequence.unregister(self._protect_tags)
         with self._submit_lock:
             self._terminating = True
             if self._dictionary_updater is not None:

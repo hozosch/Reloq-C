@@ -31,11 +31,11 @@ struct reloq61_request {
     int output_rate;
     /* Public phoneme output keeps native queue/index callbacks. */
     int phoneme_indices;
-    /* Word-scoped raw ECI volume/pitch, independent of the provider's PCM gain.
-     * Positions refer to text with vv annotations removed, not new tokens. */
+    /* Word-scoped controls with their actual acoustic tick and source
+     * ordinal. Lexical lookahead callbacks are not playback boundaries. */
     const struct reloq61_mark *controls;
     size_t control_count;
-    void (*control)(void *,int,int);
+    void (*control)(void *,int,int,int64_t,size_t);
 };
 /* Lossless German onset facts collected during the existing phoneme pass.
  * The caller owns this scoped sink; no word or synthesis result is retained. */

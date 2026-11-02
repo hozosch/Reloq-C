@@ -48,8 +48,11 @@ static struct observation body(float rate,unsigned profile,unsigned vowel,double
     s->glottal_reference_rate=11025;s->reference_formants=5;s->frication_reference_rate=16000;
     s->rate_transfer.trial_profile=s->noise_transfer.trial_profile=profile==1;
     s->rate_transfer.smooth_updates=profile==2;
-    if(profile==3&&rate>=22050) {
-        s->rate_transfer.trial_profile=1;s->rate_transfer.physical_tract=1;
+    if(profile==3) {
+        s->rate_transfer.trial_profile=rate==16000;
+        s->rate_transfer.smooth_updates=rate>=22050;
+    }
+    if((profile==3||profile==4)&&rate>=22050) {
         frame.noise.tract.highest_formant=rate>=44100?8:rate>=32000?7:6;
         for(unsigned i=5;i<8;++i)frame.noise.tract.oral[i]=(struct reloq_core_formant){
             5000+1300*(i-5),1000+250*(i-5)};
@@ -85,19 +88,28 @@ int main(void)
         }
     }
     printf("Classic full source: %u vowel/rate/alias cases; bass error <=%.3f dB; harmonic/noise >=%.2f dB\n",checks,bass_error,minimum_hnr);
-    double physical_bass=0,physical_hnr=1000;
+    double a_bass=0,a_hnr=1000,a_match=0;
     for(unsigned vowel=0;vowel<3;++vowel)for(unsigned pitch=0;pitch<3;++pitch) {
         double f0=113+64*pitch;
         struct observation base=body(16000,1,vowel,f0);
         for(unsigned r=1;r<5;++r) {
             struct observation o=body(rates[r],3,vowel,f0);
+            struct observation a=body(rates[r],4,vowel,f0);
             double bass=fabs(10*log10(o.bass/base.bass));
-            if(bass>physical_bass)physical_bass=bass;
-            if(o.hnr<physical_hnr)physical_hnr=o.hnr;
+            if(bass>a_bass)a_bass=bass;
+            if(o.hnr<a_hnr)a_hnr=o.hnr;
             assert(bass<.75);assert(o.hnr>50);
             assert(o.upper>.7*base.upper);
+            /* Compare the actual A body at this clock, not protected PCM
+             * peaks. Stable state/closure retain its vowel spectrum. */
+            double bands[]={fabs(10*log10(o.bass/a.bass)),
+                fabs(10*log10(o.middle/a.middle)),fabs(10*log10(o.upper/a.upper))};
+            for(unsigned b=0;b<3;++b) {
+                assert(bands[b]<1);
+                if(bands[b]>a_match)a_match=bands[b];
+            }
         }
     }
-    printf("Physical tract: 36 vowel/pitch/rate cases; bass error <=%.3f dB; harmonic/noise >=%.2f dB\n",physical_bass,physical_hnr);
+    printf("A periodic body: 36 vowel/pitch/rate cases; bass vs 16 kHz <=%.3f dB; A spectral difference <=%.3f dB; harmonic/noise >=%.2f dB\n",a_bass,a_match,a_hnr);
     return 0;
 }
