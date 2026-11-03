@@ -326,13 +326,20 @@ size_t reloq61_dictionary_match(const unsigned char *text,size_t length)
  * Preserve explicit longer RLEX pronunciations before that split; normal
  * words continue through the native Root stage. Existing user dictionaries
  * keep their precedence over the supplemental overlay. */
+extern const struct reloq_lexicon_override *reloq61_dictionary_find_lexical(
+    void *,const unsigned char *,size_t);
 const struct reloq_lexicon_override *reloq61_dictionary_long_override(
-    const unsigned char *text,size_t length)
+    const unsigned char *text,size_t length,int native_dictionary_enabled)
 {
     struct provider_worker *w=owner_worker;
     const struct reloq_lexicon_override *found=NULL;
-    if(!w||w->language!=0x40000||!w->overlay||length<=100||
-       reloq61_dictionary_match(text,length))return NULL;
+    if(!w||w->language!=0x40000||length<=100)return NULL;
+    if(native_dictionary_enabled&&w->dictionary) {
+        found=reloq61_dictionary_find_lexical(w->dictionary,text,length);
+        if(found)return found;
+        if(reloq61_dictionary_match(text,length))return NULL;
+    }
+    if(!w->overlay)return NULL;
     return reloq_lexicon_find_override(w->overlay,text,length,&found)==1?found:NULL;
 }
 

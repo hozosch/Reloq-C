@@ -80,6 +80,31 @@ def main():
                         checks += 2
                 finally:
                     selected.close()
+            # A native Root entry wins over a separate RLEX pronunciation,
+            # including words the native lexer would otherwise split.
+            spelling='a'*101
+            root_dir=root/'native-root';root_dir.mkdir()
+            (root_dir/'DEURoot.dic').write_bytes(spelling.encode('cp1252')+b'\t`[.1hal.o]\n')
+            path=root/'root-collision.rlex';lexicon(path,((spelling,'`[.1tEst]'),))
+            both_long=DirectEciEngine(args.library.resolve(),dialect=0x40000,
+                encoding='utf8',experimental_generic=True,lexicon_path=path)
+            root_only=DirectEciEngine(args.library.resolve(),dialect=0x40000,
+                encoding='utf8',experimental_generic=True)
+            overlay_only=DirectEciEngine(args.library.resolve(),dialect=0x40000,
+                encoding='utf8',experimental_generic=True,lexicon_path=path)
+            try:
+                both_long.set_dictionary_path(root_dir);root_only.set_dictionary_path(root_dir)
+                parts=[spelling+'.',EciIndex(3)]
+                assert capture(both_long,parts)==capture(root_only,parts)
+                assert capture(root_only,parts)!=capture(overlay_only,parts)
+                for item in (both_long,root_only,overlay_only):item.set_parameter(DICTIONARY,1)
+                assert capture(both_long,parts)==capture(overlay_only,parts)
+                empty.set_parameter(DICTIONARY,1)
+                assert capture(root_only,parts)==capture(empty,parts)
+                empty.set_parameter(DICTIONARY,0)
+                checks+=4
+            finally:
+                both_long.close();root_only.close();overlay_only.close()
         finally:
             for engine in engines:
                 engine.close()

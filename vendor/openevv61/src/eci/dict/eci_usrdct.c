@@ -1029,6 +1029,12 @@ int reloq61_dictionary_contains_lexical(void *set,const unsigned char *key,size_
     DictionarySet *s=set;
     return s&&s->lexical_view&&lexical_find(s->lexical_view,key,length)!=NULL;
 }
+const struct reloq_lexicon_override *reloq61_dictionary_find_lexical(
+    void *set,const unsigned char *key,size_t length)
+{
+    DictionarySet *s=set;
+    return s&&s->lexical_view?lexical_find(s->lexical_view,key,length):NULL;
+}
 const struct reloq_lexicon_resolver *reloq61_dictionary_resolver_data(void *set)
 {
     DictionarySet *s=set;LexicalView *view=s?s->lexical_view:NULL;
