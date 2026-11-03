@@ -4,7 +4,7 @@ import argparse
 import hashlib
 import tempfile
 
-from _reloq_eci_direct import DirectEciEngine, EciIndex
+from _reloq_eci_direct import DirectEciEngine, EciIndex, DICTIONARY, PROCESS_TAGS
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -61,6 +61,25 @@ def main():
                             EciIndex(2), ' wurde gelesen.', EciIndex(3)]
                 assert capture(engine, source) == capture(engine, expected), word
                 count += 1
+            without = DirectEciEngine(args.library, dialect=0x40000,
+                experimental_generic=True, encoding='utf8',
+                lexicon_path=ROOT / 'data/german_apple_observed.rlex')
+            try:
+                engine.set_parameter(DICTIONARY,1)
+                without.set_parameter(DICTIONARY,1)
+                assert capture(engine,['TokenX.']) == capture(without,['TokenX.'])
+                engine.set_parameter(DICTIONARY,0)
+                assert capture(engine,['TokenX.']) != capture(without,['TokenX.'])
+                count += 2
+                without.set_parameter(DICTIONARY,0)
+                for item in (engine,without):item.set_parameter(PROCESS_TAGS,1)
+                assert capture(engine,['`da0 TokenX.']) == capture(without,['`da0 TokenX.'])
+                assert capture(engine,['`da1 TokenX.']) != capture(without,['`da1 TokenX.'])
+                count += 2
+            finally:
+                engine.set_parameter(DICTIONARY,0)
+                engine.set_parameter(PROCESS_TAGS,0)
+                without.close()
             lower = capture(engine, ['macro.'])
             upper = capture(engine, ['Macro.'])
             cycle = capture(engine, ['CycleA.'])

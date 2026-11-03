@@ -1,9 +1,9 @@
 """Check the German vocalic-r to /ts/ connection through the ECI API.
 
-Reference measurements from the original ECI showed the voiced part of
-"Der" ending later than the previous renderer. Inspect the natural,
-unindexed utterance and exercise indices, models and neighboring contexts.
-PCM remains in memory.
+Inspect the natural, unindexed utterance, indices, models and neighboring
+contexts. Measurements from the original ECI include both voiced energy and
+the relative 1.4/1.6-kHz band energy. This signal check does not replace a
+listening comparison of the vocalic-r colour. PCM remains in memory.
 """
 import argparse
 import array
@@ -40,7 +40,7 @@ def main():
                 engine.set_parameter(parameter, value)
         # 20-ms window from the unindexed natural utterance. At 11.025 kHz
         # the old renderer's corresponding RMS was about 266, while the
-        # original's was about 2771. This is a signal check, not listening QA.
+        # original's was about 2771. It does not measure the colour on its own.
         engines[0].set_parameter(SAMPLE_RATE, 1)
         engines[0].set_parameter(GENDER, 0)
         natural, _ = capture(engines[0], ['Der Zahn.', EciIndex(1)])
@@ -49,6 +49,19 @@ def main():
         window = samples[start:start+220]
         rms = math.sqrt(sum(value*value for value in window)/len(window))
         assert rms > 500, ('vocalic r ended too early before word-initial /ts/', rms)
+        checks += 1
+        # In the measured original, all six 20-ms windows starting at
+        # 90..115 ms have more energy at 1.6 than at 1.4 kHz. Allow two
+        # mismatches for frame/pitch variation; actual colour needs listening.
+        def band(window, hz):
+            re=sum(value*math.cos(2*math.pi*hz*i/11025) for i,value in enumerate(window))
+            im=sum(value*math.sin(2*math.pi*hz*i/11025) for i,value in enumerate(window))
+            return math.hypot(re,im)
+        matches=0
+        for ms in range(90,116,5):
+            start=round(ms*11025/1000);window=samples[start:start+220]
+            matches += band(window,1600)>band(window,1400)
+        assert matches>=4, ('vocalic r spectral profile', matches)
         checks += 1
         for rate in (0, 1, 3, 2, 4, 5, 6):
             for gender in (0, 1):
@@ -73,7 +86,7 @@ def main():
     finally:
         for engine in engines:
             engine.close()
-    print(f'German vocalic r: {checks} RMS, context, model, rate and index checks; audio in RAM')
+    print(f'German vocalic r: {checks} energy, spectral, context, model, rate and index checks; listening still needed')
 
 
 if __name__ == '__main__':

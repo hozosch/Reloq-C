@@ -16,6 +16,7 @@ extern int reloq61_dictionary_read(void *,int,FILE *,size_t);
 extern int reloq61_dictionary_read_data(void *,int,const unsigned char *,size_t);
 extern int reloq61_dictionary_attach(void *,delta_state *);
 extern void reloq61_dictionary_detach(void *,delta_state *);
+extern int reloq61_dictionary_set_overlay(void *,const struct reloq_lexicon *);
 static void dictionary_detach(struct provider_worker *w,OldInst *handle)
 {
     if(!w->dictionary)return;
@@ -198,13 +199,14 @@ static int dictionary_bind(struct provider_worker *w,delta_state *d)
     const char *prefix=dictionary_prefix(w->language);
     int explicit_files=0;
     for(unsigned i=0;i<4;++i)explicit_files|=w->dictionary_files[i]!=NULL||w->dictionary_data[i]!=NULL;
-    if((!w->dictionary_path&&!explicit_files)||!prefix)return 0;
-    if(w->dictionary_checked&&!w->dictionary)return 0;
+    int have_overlay=w->overlay&&w->overlay->override_count;
+    if((!w->dictionary_path&&!explicit_files&&!have_overlay)||!prefix)return 0;
+    if(w->dictionary_checked&&!w->dictionary&&!have_overlay)return 0;
     if(!w->dictionary) {
         static const char *const names[]={"main.dic","Root.dic","abbr.dic"};
         void *set=es_engsynNewDict(d);if(!set)return -1;
         unsigned opened=0;
-        for(int i=0;i<(explicit_files?4:3);++i) {
+        for(int i=0;(explicit_files||w->dictionary_path)&&i<(explicit_files?4:3);++i) {
             char name[32];if(!explicit_files)snprintf(name,sizeof name,"%s%s",prefix,names[i]);errno=0;
             FILE *f=NULL;
             if(explicit_files) {
@@ -231,12 +233,21 @@ static int dictionary_bind(struct provider_worker *w,delta_state *d)
             fclose(f);
         }
         w->dictionary_checked=1;
-        if(!opened){es_engsynDeleteDict(set);return 0;}
+        if(!opened&&!have_overlay){es_engsynDeleteDict(set);return 0;}
         w->dictionary=set;
         if(dictionary_compile(w))return -1;
+        if(have_overlay&&reloq61_dictionary_set_overlay(set,w->overlay))return -1;
         if(w->language==0x40000&&dictionary_index(w))return -1;
     }
     return reloq61_dictionary_attach(w->dictionary,d);
+}
+int reloq61_worker_lexicon_overlay(void *context,const struct reloq_lexicon *view,uint64_t version)
+{
+    struct provider_worker *w=context;
+    if(!w||w->language!=0x40000)return -1;
+    if(w->overlay==view&&w->overlay_version==version)return 0;
+    if(w->dictionary&&reloq61_dictionary_set_overlay(w->dictionary,view))return -1;
+    w->overlay=view;w->overlay_version=version;return 0;
 }
 int reloq61_worker_dictionary(void *context,const char *path)
 {
@@ -310,6 +321,19 @@ size_t reloq61_dictionary_match(const unsigned char *text,size_t length)
         }
     }
     return 0;
+}
+/* The native text lexer splits an uninterrupted token after 100 letters.
+ * Preserve explicit longer RLEX pronunciations before that split; normal
+ * words continue through the native Root stage. Existing user dictionaries
+ * keep their precedence over the supplemental overlay. */
+const struct reloq_lexicon_override *reloq61_dictionary_long_override(
+    const unsigned char *text,size_t length)
+{
+    struct provider_worker *w=owner_worker;
+    const struct reloq_lexicon_override *found=NULL;
+    if(!w||w->language!=0x40000||!w->overlay||length<=100||
+       reloq61_dictionary_match(text,length))return NULL;
+    return reloq_lexicon_find_override(w->overlay,text,length,&found)==1?found:NULL;
 }
 
 extern const struct reloq_lexicon_resolver *reloq61_dictionary_resolver_data(void *);

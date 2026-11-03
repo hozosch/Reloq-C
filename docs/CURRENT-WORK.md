@@ -1,3 +1,33 @@
+# Testkandidat 1.1.0-rc14: Gemeinsame deutsche Satzanalyse
+
+Deutsch nutzt standardmäßig die native Satzanalyse und Lautplanung wie die
+anderen Sprachen. Der bisherige deutsche Komponist ist ausschließlich über
+`RELOQ_DE_LEGACY=1` für Diagnosen erreichbar; eine fehlgeschlagene native
+Synthese wechselt nicht automatisch auf ihn. Der gemeinsame Pfad erhält die
+Nutzerwörterbücher einschließlich groß-/kleinschreibungssensitiver RLEX-Einträge
+und zusammengesetzter Wörter. Geldbeträge in gleichwertiger EUR-, Euro- und
+Eurozeichen-Schreibweise werden an die native Währungsregel übergeben.
+Pausenverkürzung und explizite Pausen bleiben getrennt.
+
+Der native Wortleser trennt sehr lange Einzelwörter nach 100 Buchstaben. Damit
+explizite RLEX-Ausspracheeinträge bis zur zulässigen Länge von 127 Zeichen
+erhalten bleiben, werden nur solche Einträge vor dieser Trennung an den
+nativen Satzpfad übergeben. Separat geladene RLEX-Einträge bleiben wie bisher
+auch dann aktiv, wenn der ECI-Wörterbuchschalter ausgeschaltet ist.
+
+Die bestätigte 2-dB-Absenkung der männlichen Stimme wird an den AF-Zielwerten
+für wortanfängliches /ts/ und /tsv/ angewandt. Weibliche Stimmen und interne
+/ts/ ohne folgendes /v/ bleiben dabei unverändert. Stimmwechsel-Tags wählen den
+Wert an der tatsächlichen Wortgrenze. Die C-Hochratenfilter und die
+kastilische/griechische S-/T-Begrenzung wurden nicht neu abgestimmt.
+
+Für „der Zahn“ stammt der Verlauf des vokalischen R aus der nativen
+Lautplanung. Im bisherigen Signalvergleich liegen die Energieverhältnisse bei
+1,4 und 1,6 kHz in mehreren Messfenstern näher an der originalen ECI-DLL als
+beim alten Komponisten. Das belegt keine passende subjektive Färbung: Der
+Hörvergleich in NVDA steht noch aus. Gleiches gilt für die übrige deutsche
+Aussprache und Satzmelodie nach dem Architekturwechsel.
+
 # Testkandidat 1.1.0-rc13: Fester C-Klang und deutsche Übergänge
 
 Die A-/B-/C-Auswahl im NVDA-Treiber ist entfernt; die bestätigte Abstimmung C

@@ -1,8 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Testversion 1.1.0-rc13
+## Testversion 1.1.0-rc14
 
-Der bestätigte C-Klang ist fest eingestellt; die Auswahl der Hochraten-Abstimmung ist entfallen. Ab 22,05 kHz formt C den vorhandenen periodischen Stimmanteil mit einer breiten, zurückhaltenden Anhebung um 3,75 kHz. Die getrennten Aspirations- und Konsonantenwege bleiben erhalten. Griechisch erhält bei hohen Raten dieselbe zurückhaltende S-/T-Erweiterung wie kastilisches Spanisch. Weitere Berechnungen der Hochratenfilter werden wiederverwendet. Bei deutschen Ausdrücken mit Schrägstrich und Bindestrich greift die native Satzanalyse häufiger. Der Übergang vom vokalischen R zum Z am nächsten Wortanfang wurde für Fälle wie „der Zahn“ angepasst. Bedingte Trennstriche innerhalb deutscher Wörter stören deren Wortanalyse nicht mehr. ECI-Tags bleiben vor NVDAs Symbolverarbeitung geschützt. Lange deutsche Einzelsätze und offene Zitate warten weiterhin auf ihre vollständige Analyse.
+Die deutsche Sprachausgabe nutzt jetzt dieselbe native Satz- und Lautplanung wie die anderen Sprachen. Lange Einzelsätze können dadurch früher beginnen; Bindestrich- und Schrägstrichfälle sowie ECI-Tags werden im gemeinsamen Pfad verarbeitet. Nutzerwörterbücher, Pausenverkürzung und die Absenkung des männlichen Z am Wortanfang und bei „zw“ bleiben erhalten. Bei „der Zahn“ übernimmt das vokalische R den nativen Formantverlauf; die Klangfärbung muss noch im Hörtest beurteilt werden. Die bestätigte C-Abstimmung und die S-/T-Begrenzung für Kastilisch und Griechisch bleiben bestehen.
 
 ## Englische Uhrzeiten mit Sekunden
 

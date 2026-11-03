@@ -1,8 +1,8 @@
-"""Compare incremental German with the whole-text path through public ECI.
+"""Compare German ECI requests with different text fragment boundaries.
 
-The diagnostic streaming opt-out selects the existing whole-text path in
-one copy of the same library. Speech input stays identical in both copies.
-PCM is hashed in RAM; equality includes every delivered index position.
+Both requests have the same characters, indices and pitch changes; the second
+splits each intervening text fragment again. PCM stays in RAM and equality
+includes every delivered index position.
 """
 from pathlib import Path
 import argparse
@@ -37,7 +37,7 @@ TEXTS=(
 )
 
 
-def capture(engine,text,speed,legacy,pitch_marks=False):
+def capture(engine,text,speed,split_fragments,pitch_marks=False):
     end=text.find('. ')+2
     points=[0,0,3,len(text)//3,len(text)//2,len(text)-3,len(text),len(text)]
     if end>1:
@@ -47,7 +47,12 @@ def capture(engine,text,speed,legacy,pitch_marks=False):
     fragments=[]
     previous=0
     for i,at in enumerate(sorted(points)):
-        fragments += [text[previous:at],EciIndex(i+1)]
+        segment=text[previous:at]
+        if split_fragments:
+            middle=len(segment)//2
+            fragments.extend((segment[:middle],segment[middle:]))
+        else:fragments.append(segment)
+        fragments.append(EciIndex(i+1))
         if pitch_marks and i%3==0:fragments.append(EciPitch(80 if i%2 else 65))
         previous=at
     fragments.append(text[previous:])
@@ -55,14 +60,7 @@ def capture(engine,text,speed,legacy,pitch_marks=False):
     def take(data):
         nonlocal size
         digest.update(data);size+=len(data)
-    option=os.environ.get('RELOQ_GERMAN_STREAMING')
-    if legacy:os.environ['RELOQ_GERMAN_STREAMING']='0'
-    else:os.environ.pop('RELOQ_GERMAN_STREAMING',None)
-    try:
-        assert engine.speak(fragments,take,lambda n:marks.append((n,size))), 'Synthesis did not complete'
-    finally:
-        if option is None:os.environ.pop('RELOQ_GERMAN_STREAMING',None)
-        else:os.environ['RELOQ_GERMAN_STREAMING']=option
+    assert engine.speak(fragments,take,lambda n:marks.append((n,size))), 'Synthesis did not complete'
     assert size and len(marks)==len(points)
     return dict(sha256=digest.hexdigest(),bytes=size,indices=marks)
 
@@ -70,7 +68,7 @@ def capture(engine,text,speed,legacy,pitch_marks=False):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library',type=Path,required=True)
-    parser.add_argument('--reference',type=Path,help='Optional build with RELOQ_GERMAN_STREAMING=0')
+    parser.add_argument('--reference',type=Path,help='Optional reference library')
     parser.add_argument('--output',type=Path)
     parser.add_argument('--profile',type=int,choices=(0,1,2,3),default=0)
     args=parser.parse_args()
@@ -83,8 +81,8 @@ def main():
             for p,v in ((PROCESS_TAGS,tags),(NATIVE_SPEED,speed),(SAMPLE_RATE,rate),(PAUSE_MODE,pause),
                         (GENDER,gender),(HEAD_SIZE,head),(BREATHINESS,breath),(PHRASE_PREDICTION,1)):
                 e.set_parameter(p,v)
-        before=capture(engines[0],text,speed,args.reference is None,pitch_marks)
-        after=capture(engines[1],text,speed,False,pitch_marks)
+        before=capture(engines[0],text,speed,False,pitch_marks)
+        after=capture(engines[1],text,speed,True,pitch_marks)
         assert before==after,(label,speed,rate,pause,gender,head,before,after)
         rows.append(dict(case=label,speed=speed,rate=rate,pause=pause,gender=gender,head=head,breath=breath,**after))
     try:
@@ -115,7 +113,7 @@ def main():
         for e in engines:e.close()
     report=dict(profile=args.profile,cases=len(rows),all_pcm_and_indices_exact=True,no_audio_files=True,rows=rows)
     if args.output:args.output.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
-    print(f'German streaming: {len(rows)} exact whole-text PCM/index comparisons; all rates, small female model, speeds, Unicode, fragment boundaries and retained Main dictionaries; no audio files')
+    print(f'German streaming: {len(rows)} exact PCM/index comparisons for alternate text fragments; all rates, small female model, speeds, Unicode and retained Main dictionaries; no audio files')
 
 
 if __name__=='__main__':main()

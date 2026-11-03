@@ -5,6 +5,11 @@
 /* Adjacent sparse endpoints. Evaluate val_l + (at-at_l)*(val_r-val_l) /
  * (at_r-at_l) in single precision, then truncate the complete value. */
 struct reloq61_curve { int32_t at_l, val_l, at_r, val_r; };
+/* Private German AF endpoint metadata. The ordinary value is recovered before
+ * interpolation; a male model uses the same curve with marked ends 2 dB down. */
+#define RELOQ61_DE_AF_MARK 1000
+#define RELOQ61_DE_AF_FRAME 10000
+#define RELOQ61_DE_AF_PACK 512
 typedef int (*reloq61_span_sink)(void *,int32_t from,int32_t to,
     const struct reloq61_curve curves[62],int32_t volume);
 struct reloq61_mark { size_t offset; int32_t index, pitch; };
@@ -36,6 +41,7 @@ struct reloq61_request {
     const struct reloq61_mark *controls;
     size_t control_count;
     void (*control)(void *,int,int,int64_t,size_t);
+    int german_affricate_markers;
 };
 /* Lossless German onset facts collected during the existing phoneme pass.
  * The caller owns this scoped sink; no word or synthesis result is retained. */

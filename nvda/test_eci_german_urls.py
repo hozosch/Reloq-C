@@ -4,6 +4,7 @@ PCM is hashed in RAM. Native reference accent/group comparisons are in the
 C ECI tests; these checks exercise the public UTF-8/tag/fragment transport.
 """
 from pathlib import Path
+import argparse
 import hashlib
 from _reloq_eci_direct import DirectEciEngine, EciIndex, SAMPLE_RATE, PROCESS_TAGS, NATIVE_SPEED
 
@@ -21,6 +22,9 @@ def capture(engine,parts):
     return size[0],digest.hexdigest(),indices
 
 def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--library',type=Path,default=ROOT/'eci/libreloq_eci.so')
+    args=parser.parse_args()
     cases=['reloq-c-android-arm64-0.2.197-preview9.apk',
            'Das ist reloq-c-android-arm64-0.2.197-preview9.apk und das ist gut.',
            'SAPI5 berücksichtige ich bei der Vorbereitung des ersten Releases.',
@@ -32,7 +36,7 @@ def main():
            'Ein- und Ausgang: www.example.org/Text-503.htm, danach lesen.',
            'Unicode: https://example.org/α-42.html und https://example.org/ä-50.html.',
            'Eine lange Adresse https://example.org/'+('segment-12/'*40)+'Seite-504.html, bitte lesen.']
-    engine=DirectEciEngine(ROOT/'eci/libreloq_eci.so',dialect=0x40000,encoding='utf8',experimental_generic=True)
+    engine=DirectEciEngine(args.library.resolve(),dialect=0x40000,encoding='utf8',experimental_generic=True)
     checks=0
     try:
         engine.set_parameter(NATIVE_SPEED,98)

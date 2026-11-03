@@ -153,6 +153,7 @@ struct reloq_eci_engine {
     void *rule_worker;
     char *dictionary_path;
     struct reloq_german_lexicon_file lexicon;
+    uint64_t lexicon_version;
     reloq_eci_atomic busy;
     reloq_eci_atomic stop_epoch;
     reloq_eci_atomic session_lock;
@@ -581,7 +582,7 @@ static int generic_stream_part(void *context,const unsigned char *annotation,siz
 /* All AddText fragments share one ECI transaction and one acoustic clock.
  * Complete admitted German phrases can begin rendering during analysis;
  * indices are delivered at PCM word boundaries, not during preflight. */
-extern const struct reloq_lexicon *reloq_rules61_lexicon_scope(const struct reloq_lexicon *);
+extern int reloq61_worker_lexicon_overlay(void *,const struct reloq_lexicon *,uint64_t);
 static int synthesize_generic(struct reloq_eci_engine *e,
                               const unsigned char *phrase, size_t length,
                               size_t original_length,
@@ -591,10 +592,16 @@ static int synthesize_generic(struct reloq_eci_engine *e,
                               size_t pitch_count, unsigned int epoch,int admitted)
 {
     struct preflight_cancel cancel_check = {e, epoch};
-    /* Diagnostic only: compare the shared native text path for German
-     * while its pronunciation, dictionaries and controls are validated. */
-    const char *native_german=getenv("RELOQ_DE_NATIVE_TRIAL");
-    if(e->language!=RELOQ_ECI_GERMAN || (native_german&&!strcmp(native_german,"1"))) {
+    /* The native sentence path is the default for German as for the other
+     * languages. The previous composer remains available only by an explicit
+     * diagnostic opt-in; failed native speech never falls back to it. */
+    const char *legacy_german=getenv("RELOQ_DE_LEGACY");
+    int native_german=e->language!=RELOQ_ECI_GERMAN||
+        !legacy_german||strcmp(legacy_german,"1");
+    if(e->language==RELOQ_ECI_GERMAN&&reloq61_worker_lexicon_overlay(e->rule_worker,
+        native_german&&e->lexicon.rows?&e->lexicon.view:NULL,
+        e->lexicon_version))return RELOQ_ECI_MEMORY;
+    if(native_german) {
         struct reloq_german_generic_index *english_indices=NULL;
         struct reloq_german_generic_pitch_mark *english_pitch=NULL;
         if(mark_count) {
@@ -627,13 +634,10 @@ static int synthesize_generic(struct reloq_eci_engine *e,
             unsigned reference=sample_hz(e->sample_rate_code)>=16000?(head<=(gender?40:30)?4u:5u):0;
             if(reloq_session_source_levels(e->text_session,source,gender?-3:-5,6,gender?-7:0,reference))reset=1;
         }
-        const struct reloq_lexicon *previous_lexicon=reloq_rules61_lexicon_scope(
-            e->language==RELOQ_ECI_GERMAN&&e->lexicon.rows?&e->lexicon.view:NULL);
         int rendered=reset?RELOQ_DE_UTTERANCE_INVALID:reloq_language_rules_render(e->language,phrase,length,e->process_tags||admitted,
             frame_volume?(e->native_volume_active?e->native_volume:e->generic_volume):100,
             &settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
             send_pcm,send_generic_index,&bridge);
-        reloq_rules61_lexicon_scope(previous_lexicon);
         free(english_indices);free(english_pitch);
         if(preflight_cancelled(&cancel_check)||reloq_session_cancelled(e->text_session))return RELOQ_ECI_CANCELLED;
         if(rendered==RELOQ_DE_UTTERANCE_OK)return RELOQ_ECI_OK;
@@ -1896,6 +1900,7 @@ int ECICALL eciLoadLexicon(ECIHand handle, const char *utf8_path)
     if (!e || epoch_get(&e->busy)) return eci_refuse(e,0);
     if (!utf8_path) {
         reloq_german_lexicon_file_clear(&e->lexicon);
+        ++e->lexicon_version;
         eci_error(e,RELOQ_ECI_OK);
         return 1;
     }
@@ -1914,6 +1919,7 @@ int ECICALL eciLoadLexicon(ECIHand handle, const char *utf8_path)
     }
     int loaded = reloq_german_lexicon_file_load_stream(&e->lexicon, stream);
     (void)fclose(stream);
+    if(!loaded)++e->lexicon_version;
     eci_error(e,loaded == 0 ? RELOQ_ECI_OK : RELOQ_ECI_INVALID);
     return loaded == 0;
 }

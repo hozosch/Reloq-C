@@ -1296,6 +1296,10 @@ L884:;
     AT(int32_t, -20) = (r1);
     AT(int32_t, -20) = ((int32_t)((uint32_t)((int32_t)AT(int32_t, -20)) + (uint32_t)((int32_t)STATE(int32_t, f11))));
     STATE(int32_t, f12) = ((int32_t)AT(int32_t, -20));
+    /* Reuse the shared native pause scheduler with German's own quiet
+     * body and release landmarks. Phoneme-only analysis is unchanged. */
+    { extern void reloq61_note_pause(void *,int32_t,int32_t,int32_t);
+      reloq61_note_pause(state,STATE(int32_t,f10),STATE(int32_t,f11),STATE(int32_t,f12)); }
     if ((int16_t)(STATE(int16_t, s110)) == 1) goto L1075;
     goto L1118;
 L1075:;

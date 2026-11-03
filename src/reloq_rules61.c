@@ -109,6 +109,8 @@ static void german_compact_input(unsigned char *a,size_t *map,size_t *length,int
 }
 
 struct german_shared_buffer {unsigned char *bytes;size_t *map,used,capacity;};
+extern const struct reloq_lexicon_override *reloq61_dictionary_long_override(
+    const unsigned char *,size_t);
 static int german_shared_append(struct german_shared_buffer *b,const unsigned char *bytes,
     const size_t *map,size_t count,size_t origin)
 {
@@ -128,21 +130,16 @@ static int german_shared_append(struct german_shared_buffer *b,const unsigned ch
 
 /* Main text aliases are resolved once before grammar, including components
  * of a hyphenated word. Root and phonetic Main entries remain native. */
-static _Thread_local const struct reloq_lexicon *german_shared_lexicon;
-const struct reloq_lexicon *reloq_rules61_lexicon_scope(const struct reloq_lexicon *next)
-{
-    const struct reloq_lexicon *previous=german_shared_lexicon;
-    german_shared_lexicon=next;return previous;
-}
-static int german_main_input(unsigned char **text,size_t **source,size_t *length,int tags,
-    const struct reloq_lexicon *lexicon,int main_aliases)
+static int german_main_input(unsigned char **text,size_t **source,size_t *length,int tags)
 {
     const unsigned char *a=*text;const size_t *map=*source,n=*length;
     struct german_shared_buffer b={0};int spelling=0,changed=0;
+    int dictionary_disabled=reloq61_text_options_current().dictionary_disabled;
     for(size_t i=0;i<n;) {
         struct reloq_inline_tag t=tags?reloq_inline_tag_read(a+i,n-i,0):(struct reloq_inline_tag){0};
         if(t.length) {
             if(t.kind==RELOQ_TAG_SPELL)spelling=t.value;
+            if(t.kind==RELOQ_TAG_DICTIONARY)dictionary_disabled=!t.value;
             if(t.kind==RELOQ_TAG_SPELL&&(!b.used||b.bytes[b.used-1]!=' ')) {
                 if(german_shared_append(&b,(const unsigned char *)" ",NULL,1,map[i]))goto fail;
                 changed=1;
@@ -162,25 +159,143 @@ static int german_main_input(unsigned char **text,size_t **source,size_t *length
         while(end<n&&(german_word_byte(a[end])||
             (a[end]=='-'&&end+1<n&&german_word_byte(a[end+1]))))++end;
         while(i<end) {
-            size_t stop=end;const char *value=main_aliases?reloq61_dictionary_main_text(a+i,stop-i):NULL;
+            size_t stop=end;const char *value=dictionary_disabled?NULL:reloq61_dictionary_main_text(a+i,stop-i);
             if(!value){stop=i;while(stop<end&&a[stop]!='-')++stop;
-                value=main_aliases?reloq61_dictionary_main_text(a+i,stop-i):NULL;}
+                value=dictionary_disabled?NULL:reloq61_dictionary_main_text(a+i,stop-i);}
             size_t value_length=value?strlen(value):0,utf8_length=0;
             unsigned char utf8[1537];
-            const struct reloq_lexicon_override *pronunciation=NULL;
-            if(!value&&lexicon&&!reloq61_dictionary_match(a+i,stop-i))
-                (void)reloq_lexicon_find_override(lexicon,a+i,stop-i,&pronunciation);
             if(value&&value_length<=512&&!reloq_cp1252_decode((const unsigned char *)value,
                     value_length,utf8,sizeof utf8,&utf8_length,NULL)) {
                 if(german_shared_append(&b,(const unsigned char *)value,NULL,value_length,map[i]))goto fail;
-                changed=1;
-            } else if(pronunciation) {
-                if(german_shared_append(&b,pronunciation->spr,NULL,pronunciation->spr_length,map[i]))goto fail;
                 changed=1;
             } else if(german_shared_append(&b,a+i,map+i,stop-i,0))goto fail;
             i=stop;
             if(i<end){if(german_shared_append(&b,a+i,map+i,1,0))goto fail;++i;}
         }
+    }
+    if(!changed){free(b.bytes);free(b.map);return 0;}
+    if(german_shared_append(&b,(const unsigned char *)"",NULL,0,n))goto fail;
+    b.bytes[b.used]=0;b.map[b.used]=map[n];
+    free(*text);free(*source);*text=b.bytes;*source=b.map;*length=b.used;return 0;
+fail:free(b.bytes);free(b.map);return -1;
+}
+
+/* Only an explicitly supplied pronunciation longer than the native lexer's
+ * 100-letter token limit is projected early. All other text, compound parts
+ * and sentence analysis still go through the ordinary native Root stage. */
+static int german_long_overlay_input(unsigned char **text,size_t **source,size_t *length,int tags)
+{
+    const unsigned char *a=*text;const size_t *map=*source,n=*length;
+    struct german_shared_buffer b={0};int spelling=0,changed=0;
+    for(size_t i=0;i<n;) {
+        struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,0);
+        if(t.length&&(tags||t.kind==RELOQ_TAG_SPR||t.kind==RELOQ_TAG_PROMINENCE)) {
+            if(tags&&t.kind==RELOQ_TAG_SPELL)spelling=t.value;
+            if(changed&&german_shared_append(&b,a+i,map+i,t.length,0))goto fail;
+            i+=t.length;continue;
+        }
+        size_t end=i;
+        if(!spelling&&german_word_byte(a[i])&&(!i||!german_word_byte(a[i-1])))
+            while(end<n&&german_word_byte(a[end]))++end;
+        const struct reloq_lexicon_override *entry=end>i+100?
+            reloq61_dictionary_long_override(a+i,end-i):NULL;
+        if(entry) {
+            if(!changed){if(german_shared_append(&b,a,map,i,0))goto fail;changed=1;}
+            if(german_shared_append(&b,entry->spr,NULL,entry->spr_length,map[i]))goto fail;
+            i=end;continue;
+        }
+        if(changed&&german_shared_append(&b,a+i,map+i,1,0))goto fail;
+        ++i;
+    }
+    if(!changed){free(b.bytes);free(b.map);return 0;}
+    if(german_shared_append(&b,(const unsigned char *)"",NULL,0,n))goto fail;
+    b.bytes[b.used]=0;b.map[b.used]=map[n];
+    free(*text);free(*source);*text=b.bytes;*source=b.map;*length=b.used;return 0;
+fail:free(b.bytes);free(b.map);return -1;
+}
+
+static int german_currency_amount(const unsigned char *a,size_t start,size_t end)
+{
+    while(start<end&&(a[start]==' '||a[start]=='\t'||a[start]==0xa0))++start;
+    if(start==end || (start&&german_word_byte(a[start-1])))return 0;
+    size_t digits=0,group=0,groups=0;
+    unsigned char first=a[start];
+    for(size_t i=start;i<end;++i) {
+        unsigned char ch=a[i];
+        if(ch>='0'&&ch<='9'){++digits;++group;continue;}
+        if(ch==',') {
+            if(i+3!=end||a[i+1]<'0'||a[i+1]>'9'||a[i+2]<'0'||a[i+2]>'9')return 0;
+            break;
+        }
+        if(ch!='.'&&ch!=' '&&ch!='\t'&&ch!=0xa0)return 0;
+        if(!group || (groups?group!=3:group>3))return 0;
+        ++groups;group=0;
+        while(i+1<end&&(a[i+1]==' '||a[i+1]=='\t'||a[i+1]==0xa0))++i;
+    }
+    if(!group||(groups&&group!=3)||digits>12||(digits>1&&first=='0'))return 0;
+    return 1;
+}
+
+/* Native German currency grammar recognizes a spaced euro sign as the
+ * monetary form, while equivalent EUR/Euro spellings otherwise take its
+ * ordinary decimal branch. Canonicalize only a unit directly following a
+ * numeric token, after caller Main aliases and outside character spelling.
+ * Keep source offsets for public index and word-control projection. */
+static int german_currency_input(unsigned char **text,size_t **source,size_t *length,int tags)
+{
+    const unsigned char *a=*text;const size_t *map=*source,n=*length;
+    struct german_shared_buffer b={0};int spelling=0,changed=0;
+    for(size_t i=0;i<n;) {
+        struct reloq_inline_tag t=tags?reloq_inline_tag_read(a+i,n-i,0):(struct reloq_inline_tag){0};
+        if(t.length) {
+            if(t.kind==RELOQ_TAG_SPELL)spelling=t.value;
+            if(changed&&german_shared_append(&b,a+i,map+i,t.length,0))goto fail;
+            i+=t.length;continue;
+        }
+        size_t unit=0;
+        if(!spelling && a[i]==0x80)unit=1;
+        else if(!spelling && n-i>=3 && (a[i]=='e'||a[i]=='E') &&
+                (a[i+1]=='u'||a[i+1]=='U') && (a[i+2]=='r'||a[i+2]=='R')) {
+            unit=3;
+            if(i+unit<n && (a[i+unit]=='o'||a[i+unit]=='O'))++unit;
+            if(i+unit<n && german_word_byte(a[i+unit]))unit=0;
+        }
+        size_t prior=i;
+        while(prior && (a[prior-1]==' '||a[prior-1]=='\t'||a[prior-1]==0xa0))--prior;
+        if(unit && prior && a[prior-1]>='0' && a[prior-1]<='9') {
+            size_t start=prior;
+            while(start && ((a[start-1]>='0'&&a[start-1]<='9')||
+                            a[start-1]=='.'||a[start-1]==','))--start;
+            while(start<prior&&a[start]=='.')++start;
+            /* A group of exactly three digits can have another numeric group
+             * before a space. Do not absorb an unrelated preceding number. */
+            for(;;) {
+                if(prior-start<3||a[start]<'0'||a[start]>'9'||
+                   a[start+1]<'0'||a[start+1]>'9'||a[start+2]<'0'||a[start+2]>'9'||
+                   (start+3<prior&&a[start+3]!=','&&a[start+3]!='.'))break;
+                size_t before=start;
+                while(before&&(a[before-1]==' '||a[before-1]=='\t'||a[before-1]==0xa0))--before;
+                if(before==start||!before||a[before-1]<'0'||a[before-1]>'9')break;
+                while(before&&((a[before-1]>='0'&&a[before-1]<='9')||a[before-1]=='.'))--before;
+                if(!german_currency_amount(a,before,prior))break;
+                start=before;
+            }
+            if(!german_currency_amount(a,start,prior))unit=0;
+        } else unit=0;
+        const int needs_space=unit && prior==i;
+        const int convert=unit && (a[i]!=0x80 || needs_space);
+        if(convert) {
+            if(!changed) {
+                if(german_shared_append(&b,a,map,i,0))goto fail;
+                changed=1;
+            }
+            if(needs_space && german_shared_append(&b,(const unsigned char *)" ",NULL,1,map[i]))goto fail;
+            const unsigned char euro=0x80;
+            if(german_shared_append(&b,&euro,NULL,1,map[i]))goto fail;
+            i+=unit;continue;
+        }
+        if(changed&&german_shared_append(&b,a+i,map+i,1,0))goto fail;
+        ++i;
     }
     if(!changed){free(b.bytes);free(b.map);return 0;}
     if(german_shared_append(&b,(const unsigned char *)"",NULL,0,n))goto fail;
@@ -198,6 +313,11 @@ int reloq_rules61_phonemes(int language,const unsigned char *text,size_t length,
     int status=english_input(text,length,tags,
         family==6||family==8||family==10||family==18,&input,&map,&n);
     if(status)return status;
+    if(language==0x40000) {
+        german_compact_input(input,map,&n,tags);
+        if(german_long_overlay_input(&input,&map,&n,tags)){free(input);free(map);return -2;}
+        if(german_currency_input(&input,&map,&n,tags)){free(input);free(map);return -2;}
+    }
     struct reloq61_mark *marks=count?malloc(count*sizeof *marks):NULL;
     if(count&&!marks){free(input);free(map);return -2;}
     size_t at=0;
@@ -248,6 +368,8 @@ int reloq_rules61_word(int language,const unsigned char *word,size_t length,
 
 struct rule_span {
     struct reloq61_curve curve[62];
+    struct reloq61_curve male_af;
+    int af_marked;
     int32_t from,to,volume,step,pitch,native_pitch,speed,inflection;
     int64_t tick,pitch_tick;size_t pitch_source;
     struct reloq_german_voice_model model;
@@ -265,7 +387,7 @@ struct rule_plan {
     const size_t *control_sources;size_t pitch_source;
     struct rule_control *controls;size_t control_count,control_capacity;
     struct reloq_session *session;
-    int memory,retracted_filter,retracted_st,word_volume,cjk_volume,word_pitch,native_pitch,word_speed,word_inflection;
+    int memory,retracted_filter,retracted_st,word_volume,cjk_volume,word_pitch,native_pitch,word_speed,word_inflection,german_af_markers;
     struct reloq_german_voice_model word_model;
     int base_voice[8];
     struct rule_playback *playback;
@@ -290,6 +412,12 @@ static int take_span(void *context,int32_t from,int32_t to,
     struct rule_plan *s=context;struct rule_span *f=new_span(s);
     if(!f)return 1;
     memcpy(f->curve,curves,sizeof f->curve);
+    f->af_marked=0;
+    if(s->german_af_markers) {
+        struct reloq61_curve *c=f->curve+8;f->male_af=*c;
+        if(c->val_l>=RELOQ61_DE_AF_MARK){c->val_l-=RELOQ61_DE_AF_MARK;f->male_af.val_l=c->val_l>2?c->val_l-2:0;f->af_marked=1;}
+        if(c->val_r>=RELOQ61_DE_AF_MARK){c->val_r-=RELOQ61_DE_AF_MARK;f->male_af.val_r=c->val_r>2?c->val_r-2:0;f->af_marked=1;}
+    }
     f->from=from;f->to=to;f->volume=s->cjk_volume&&volume>=10000?
         (volume-10000)/100:s->word_volume;f->step=1;f->tick=s->ticks;f->pitch=s->word_pitch;f->native_pitch=s->native_pitch;
     f->model=s->word_model;f->speed=s->word_speed;f->inflection=s->word_inflection;f->pitch_tick=s->pitch_tick;f->pitch_source=s->pitch_source;
@@ -301,6 +429,13 @@ static int take_frame(void *context,const int32_t p[62],int32_t volume)
     struct rule_plan *s=context;struct rule_span *f=new_span(s);
     if(!f)return 1;
     for(unsigned k=0;k<62;++k)f->curve[k]=(struct reloq61_curve){0,p[k],p[0],p[k]};
+    f->af_marked=0;
+    if(s->german_af_markers&&p[8]>=RELOQ61_DE_AF_FRAME) {
+        int packed=p[8]-RELOQ61_DE_AF_FRAME;
+        int ordinary=packed/RELOQ61_DE_AF_PACK,male=packed%RELOQ61_DE_AF_PACK;
+        f->curve[8]=(struct reloq61_curve){0,ordinary,p[0],ordinary};
+        f->male_af=(struct reloq61_curve){0,male,p[0],male};f->af_marked=1;
+    }
     f->from=0;f->to=p[0];f->step=p[0];f->volume=s->cjk_volume&&volume>=10000?
         (volume-10000)/100:s->word_volume;f->tick=s->ticks;f->pitch=s->word_pitch;f->native_pitch=s->native_pitch;
     f->model=s->word_model;f->speed=s->word_speed;f->inflection=s->word_inflection;f->pitch_tick=s->pitch_tick;f->pitch_source=s->pitch_source;
@@ -556,6 +691,7 @@ static int render_until(struct rule_plan *s,int64_t limit)
             }
             voice=&p->voice;
         }
+        if(f->af_marked&&!voice->model.gender)controls[8]=(float)curve_value(&f->male_af,at);
         word_voice_frame(s,voice,controls);
         double pitch_scale=voice->pitch>=0&&(voice->pitch_tick>p->last_pitch_tick||
             (voice->pitch_tick==p->last_pitch_tick&&voice->pitch_source>=p->last_pitch_source))?
@@ -655,9 +791,9 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     if(input_status)goto done;
     if(language==0x40000)german_compact_input(a,map,&n,tags);
     if(tags&&!plan.cjk_volume&&normalize_word_voice_controls(&a,&map,&n,family==18))goto memory;
-    if(language==0x40000&&german_main_input(&a,&map,&n,tags,NULL,1))goto memory;
-    if(language==0x40000&&german_shared_lexicon&&
-       german_main_input(&a,&map,&n,tags,german_shared_lexicon,0))goto memory;
+    if(language==0x40000&&german_main_input(&a,&map,&n,tags))goto memory;
+    if(language==0x40000&&german_long_overlay_input(&a,&map,&n,tags))goto memory;
+    if(language==0x40000&&german_currency_input(&a,&map,&n,tags))goto memory;
     if(plan.cjk_volume) {
         /* CJK lexers can treat even a redundant command as a token break.
          * No-op voice controls must leave native segmentation untouched. Actual
@@ -778,6 +914,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         .marks=marks,.mark_count=mark_count,.frame=take_frame,.index=take_index,.context=&plan,
         .span=take_span,.sample_rate=reloq_session_sample_rate(session)==8000?8000:0,
         .output_rate=(int)reloq_session_sample_rate(session)};
+    q.german_affricate_markers=plan.german_af_markers=language==0x40000;
     q.controls=volumes;q.control_count=volume_count;q.control=take_control;plan.control_sources=control_sources;
     q.voice[0]=settings->gender;
     q.voice[1]=settings->head_size_plus_one?settings->head_size_plus_one-1:50;

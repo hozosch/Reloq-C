@@ -86,6 +86,10 @@ int ECICALL eciGeneratePhonemes(ECIHand handle,int room,void *buffer)
     for(size_t i=0;i<count;++i){ordinals[i]=marks[i];ordinals[i].index=(int32_t)i;}
     if(!e->rule_worker)e->rule_worker=reloq61_worker_new(e->language);
     if(!e->rule_worker){free(ordinals);status=RELOQ_ECI_MEMORY;goto done;}
+    if(e->language==RELOQ_ECI_GERMAN&&reloq61_worker_lexicon_overlay(e->rule_worker,
+        e->lexicon.rows?&e->lexicon.view:NULL,e->lexicon_version)) {
+        free(ordinals);status=RELOQ_ECI_MEMORY;goto done;
+    }
     void *worker=reloq61_worker_scope(e->rule_worker);
     struct reloq61_text_options options=reloq61_text_options_scope(
         (struct reloq61_text_options){e->dictionary_disabled,e->phrase_prediction});

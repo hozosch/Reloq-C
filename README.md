@@ -4,16 +4,15 @@ ReLoq C is a speech synthesis project that preserves the familiar character of E
 
 The shared synthesis engine is written in C. NVDA, Android ARM64 and Windows SAPI5 use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
 
-The development branch is preparing **1.1.0-rc13**: the accepted C sound is
-fixed, Greek shares Castilian's restrained high-rate S/T filter, and the
-high-rate filters have further CPU optimizations.
-Android Direct Boot uses separate copies of voice settings and active dictionaries before first unlock.
-NVDA tag delivery and acoustic word controls remain included; German internal
-soft hyphens preserve the lexical word. Mixed slash-and-hyphen expressions use
-the native sentence analysis more often, and vocalic r carries into the next
-word's /ts/ onset. Long German single sentences remain a
-startup latency limitation. This is a listening candidate; see
-[the current work and verification limits](docs/CURRENT-WORK.md).
+The development branch is preparing **1.1.0-rc14**. German now uses the
+shared native sentence and acoustic path, including long sentences and
+expressions with hyphens or slashes. Native word boundaries carry voice tags,
+while caller dictionaries and the accepted male-only initial /ts/ adjustment
+remain available. The established C high-rate sound and Greek/Castilian filter
+are retained. The new German voice and vocalic-r colour need listening tests;
+see [the current work and verification limits](docs/CURRENT-WORK.md).
+Android Direct Boot retains separate copies of active settings and dictionaries
+before first unlock.
 
 ## Download and install
 

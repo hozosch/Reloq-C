@@ -1,6 +1,48 @@
 /* Direct language bindings for shared segment and duration decisions. */
 #include "reloq61_segment_rules.h"
+#include "reloq61_spr_output.h"
+#include "reloq61.h"
+#include <string.h>
 extern int16_t reloq_dede61_filter_endpoint(void *,int16_t,int16_t);
+extern int reloq61_german_affricate_markers(void *);
+
+static int prior_phone(delta_state *d,const struct reloq61_spr_phone *p,
+    struct reloq61_spr_phone *prior)
+{
+    int32_t at=*EVV_AT(const int32_t *,p->node)&~3;
+    int32_t node=vgetsc(d,1,0,at,2);
+    while(node&&(*EVV_AT(const int32_t *,node)&2))node=vgetsc(d,1,0,node,2);
+    if(!node)return 0;
+    *prior=(struct reloq61_spr_phone){node,EVV_AT(const int32_t *,node)[1]&~3};
+    return prior->after!=0;
+}
+static int phone_is(delta_state *d,const struct reloq61_spr_phone *p,unsigned name,unsigned combo)
+{return reloq61_spr_feature(d,p,0)==name&&reloq61_spr_feature(d,p,14)==combo;}
+static int begins_projection(delta_state *d,const struct reloq61_spr_phone *p,unsigned projection)
+{
+    int32_t left=*EVV_AT(const int32_t *,p->node)&~3;
+    delta_vars *v=EVV_AT(delta_vars *,d->vars);
+    return (*EVV_AT(const int32_t *,left+(v->fence_base+projection)*4)&1)!=0;
+}
+static int z_affricate(delta_state *d)
+{
+    int32_t at;memcpy(&at,(const char *)d+DG_BASE+712,sizeof at);
+    struct reloq61_spr_phone p,head,next,last;
+    if(!reloq61_spr_phone_at(d,at,&p))return 0;
+    if(phone_is(d,&p,3,2))head=p; /* t of /ts/ */
+    else if(phone_is(d,&p,9,2)) {
+        if(!prior_phone(d,&p,&head)||!phone_is(d,&head,3,2))return 0;
+    } else if(phone_is(d,&p,8,0)) {
+        if(begins_projection(d,&p,7)||!prior_phone(d,&p,&last)||
+           !phone_is(d,&last,9,2)||!prior_phone(d,&last,&head)||
+           !phone_is(d,&head,3,2))return 0;
+        return 1; /* /v/ in the same syllable as /ts/ */
+    } else return 0;
+    if(begins_projection(d,&head,4))return 1; /* word-initial /ts/ */
+    return reloq61_spr_phone_at(d,head.after,&next)&&phone_is(d,&next,9,2)&&
+        reloq61_spr_phone_at(d,next.after,&last)&&phone_is(d,&last,8,0)&&
+        !begins_projection(d,&last,7);
+}
 static const struct reloq61_segment_layout layout={
     .pause_class=8,.speed_field=15,
     .speed_before=464,
@@ -35,7 +77,8 @@ int32_t reloq_dede61_addStreamArrayPtVal(void *state,int32_t p0,int32_t p1,int32
 int32_t reloq_dede61_doAV(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
 {(void)p0;return reloq61_segment_voicing(state,&layout,p1,p2,p3,p4,p5);}
 int32_t reloq_dede61_doAF(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
-{(void)p0;return reloq61_segment_frication(state,&layout,p1,p2,p3,p4,p5);}
+{(void)p0;int mark=reloq61_german_affricate_markers(state)&&z_affricate(state);
+ return reloq61_segment_frication_gain(state,&layout,p1,p2,p3,p4,p5,mark?RELOQ61_DE_AF_MARK:0);}
 int32_t reloq_dede61_doFNZ(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
 {(void)p0;return reloq61_segment_nasal_zero(state,&layout,reloq_dede61_filter_endpoint,p1,p2,p3,p4,p5);}
 int32_t reloq_dede61_doFNP(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)

@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-          fetch-depth: 2
+          fetch-depth: 0
       - name: Install native compiler and translation tools
         run: |
           set -euo pipefail
@@ -40,17 +40,20 @@ jobs:
           path: vendor/openevv61/build
           key: nvda-hearing-ubuntu24-v1-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c') }}
           restore-keys: |
-            nvda-hearing-ubuntu24-v1-893a59a937d7ba73fb95008c1833b175c4d7957ecbaa47c841a95adfe1738e65
-      - name: Restore unchanged rule timestamps
+            nvda-hearing-ubuntu24-v1-29f09bca1854675a88eb0805b6d4b879d6568ba3e5aed2af03cf67209b98db0b
+      - name: Restore rule cache and rebuild changed dependencies
         if: steps.rules.outputs.cache-matched-key != ''
         run: |
           set -euo pipefail
-          if [[ '${{ steps.rules.outputs.cache-hit }}' != 'true' ]]; then
-            # The previous exact cache remains usable only when its provider
-            # inputs are unchanged; the excluded ECI header documents host ABI.
-            git diff --quiet b04ec1fee20d4b9a7fc76df6cd614f3f4ee96f29 HEAD -- vendor/openevv61 include ':!include/reloq_eci.h' src/reloq_voice_filter.c src/reloq_orthography.c src/reloq_german_word_edges.c src/reloq_english_word_edges.c
-          fi
           find vendor/openevv61/build -type f -exec touch {} +
+          if [[ '${{ steps.rules.outputs.cache-hit }}' != 'true' ]]; then
+            # This is the rc13 provider cache. Make its unchanged files newer
+            # than checkout, then mark every changed dependency newer still.
+            # The generated .d files rebuild all affected objects, including
+            # translation units that include a changed header or .inc file.
+            sleep 1
+            git diff --name-only -z 643ed62ff143e9b6dd78a8e763b69176b408a458 HEAD -- vendor/openevv61 include src/reloq_voice_filter.c src/reloq_orthography.c src/reloq_german_word_edges.c src/reloq_english_word_edges.c | xargs -0 -r touch --
+          fi
       - name: Build x64 native core
         run: make -C eci -j2 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
       - uses: actions/cache/save@v4
@@ -92,12 +95,12 @@ jobs:
           assert len(files)==1
           with zipfile.ZipFile(files[0]) as package:
               assert package.testzip() is None
-              assert '1.1.0-rc13' in package.read('manifest.ini').decode()
+              assert '1.1.0-rc14' in package.read('manifest.ini').decode()
               for name in ('ReLoq-C-LICENSE.txt','ReLoq-C-NOTICE.txt','OpenEVV-LICENSE.txt','Dictionaries-CC0.txt'):
                   assert package.read('doc/licenses/'+name)
           Path('dist/source.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],
               'package':files[0].name,'sha256':hashlib.sha256(files[0].read_bytes()).hexdigest(),
-              'version':'1.1.0-rc13','official_release':False,'high_rate_tuning':'C'},indent=2)+'\n')
+              'version':'1.1.0-rc14','official_release':False,'high_rate_tuning':'C'},indent=2)+'\n')
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -143,6 +146,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_tag_boundaries.py --library $core --output tag-boundaries.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_tag_boundaries.py --library $core --language 0x40000
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_standard_api.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_extended_standard_api.py --library $core
@@ -160,7 +165,17 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_german_word_joiners.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_urls.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_dictionary_semantics.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_overlay_case.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_overlay_lifecycle.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_numeric_native.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_pause_modes_native.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_english_clock_seconds.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

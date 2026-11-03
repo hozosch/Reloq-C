@@ -1,8 +1,8 @@
 # Eloquence C – user guide
 
-## Preview 1.1.0-rc13
+## Preview 1.1.0-rc14
 
-The accepted C sound is fixed, and the high-rate tuning selector has been removed. From 22.05 kHz upward C adds a broad, restrained contour around 3.75 kHz to the existing periodic voice energy. The separate aspiration and consonant paths are preserved. Greek uses the same restrained high-rate S/T extension as Castilian Spanish. Additional high-rate filter calculations are reused. German expressions containing both slashes and hyphens use the native sentence analysis more often. The transition from vocalic r to a word-initial z has been adjusted for phrases such as “der Zahn”. Discretionary hyphens inside German words do not disrupt lexical analysis, and ECI tags remain protected from NVDA's symbol processing. Long German single sentences and open quotations still wait for complete analysis.
+German speech now uses the same native sentence and acoustic planning path as the other languages. Long single sentences can start earlier, and hyphens, slashes and ECI tags use the shared path. User dictionaries, pause shortening and the male-only reduction for word-initial /ts/ and /tsv/ remain in place. The vocalic r in “der Zahn” follows the native formant trajectory; its colour still needs a listening test. The accepted C tuning and the Castilian/Greek S/T limit remain in place.
 
 ## English clock readings with seconds
 

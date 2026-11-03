@@ -4,6 +4,7 @@ import ctypes as c
 from pathlib import Path
 import threading
 import time
+import tempfile
 
 
 def main():
@@ -114,6 +115,27 @@ def main():
         d=lib.eciNewDict(h);assert d
         assert lib.eciUpdateDict(h,d,0,b'TokenX',b'Haus')==0 and lib.eciSetDict(h,d)==0
         assert capture(b'TokenX.')==capture(b'Haus.');checks+=3
+        # The speech and phoneme APIs must attach the same user lexicon even
+        # when phonemes are the first operation after loading or clearing it.
+        lib.eciLoadLexicon.argtypes=(H,c.c_char_p);lib.eciLoadLexicon.restype=I
+        with tempfile.TemporaryDirectory() as temporary:
+            lex=Path(temporary)/'spoken.rlex'
+            long_word=b'A'*127
+            rows=(long_word,b'Sonderstamm')
+            lex.write_bytes(b'RELOQ-DE-SPR-1\n'+b''.join(
+                key.hex().upper().encode()+b'\t'+b'`[.1tEst]'.hex().upper().encode()+b'\n'
+                for key in rows))
+            before=capture(b'Sonderstamm.',indexed=False)
+            long_before=capture(long_word+b'.',indexed=False)
+            assert lib.eciLoadLexicon(h,str(lex).encode('utf-8'))
+            assert capture(b'Sonderstamm.',indexed=False)!=before
+            assert capture(long_word+b'.',indexed=False)!=long_before
+            assert lib.eciLoadLexicon(h,None)
+            assert capture(b'Sonderstamm.',indexed=False)==before
+            assert capture(long_word+b'.',indexed=False)==long_before;checks+=6
+        money=[capture(text,indexed=False) for text in
+               (b'3,14 EUR.',b'3,14 Euro.',b'3,14 \x80.')]
+        assert money[0]==money[1]==money[2];checks+=3
         assert not lib.eciSpeaking(h) and not lib.eciPause(None,1);checks+=2
     finally:lib.eciStop(h);lib.eciDelete(h)
     print(f'ECI phonemes/pause: {checks} buffer/fragment/index/Unicode/dictionary/retry/abort/pause/stop/PCM-restoration checks; RAM only')

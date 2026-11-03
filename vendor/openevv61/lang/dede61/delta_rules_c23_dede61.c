@@ -1854,6 +1854,10 @@ L636:;
     r0 = reloq61_typed_settvar_s(DELTA_ENTRY_settvar_s, state, (delta_loc *)(base + (-44)), (int32_t)(51));
     AT(int16_t, -42) = (16);
     r0 = reloq61_typed_copyvar(DELTA_ENTRY_copyvar, state, (delta_loc *)(base + (-44)), EVV_AT(delta_loc *, STATE_AT(s331, -2)));
+    /* Only grammar-inserted phrase pauses are shortened. Explicit user
+     * pause tokens are excluded by the native checks above. */
+    { extern void reloq61_shorten_phrase_pause(void *,void *,int);
+      reloq61_shorten_phrase_pause(state,(delta_loc *)(base + (-44)),16); }
     r0 = reloq61_typed_insert_2ptv(DELTA_ENTRY_insert_2ptv, state, (uint8_t)(2), (delta_loc *)(base + (-44)), (uint8_t)(0));
     if (r0 == 0) goto L784;
     AT(int32_t, -4) = ((int32_t)AT(int32_t, -8));
