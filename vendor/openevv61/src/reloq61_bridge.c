@@ -38,10 +38,12 @@ extern void reloq61_array_reset(delta_state *);
 extern Index *sti_getIndex(void *,uint32_t);
 extern void *reloq61_inline_scope(void *);
 static atomic_int initialized;
+struct reloq_lexicon;
 struct provider_worker {
     OldInst *handle;int language,prepared,last_voice[8],last_phonemes,last_annotations,last_sample_rate;struct reloq61_text_options last_text_options;int16_t pcm[4096];
     struct provider_worker *english;
     char *dictionary_path,*dictionary_files[4];void *dictionary;
+    const struct reloq_lexicon *overlay;uint64_t overlay_version;
     const unsigned char *dictionary_data[4];size_t dictionary_sizes[4];
     char **dictionary_keys;size_t dictionary_key_count;uint64_t dictionary_lengths[4];unsigned char dictionary_starts[256];int dictionary_checked;
     int32_t env[OI_ENV_WORDS],env_saved[OI_ENV_WORDS];

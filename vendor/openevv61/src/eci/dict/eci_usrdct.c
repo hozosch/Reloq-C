@@ -111,6 +111,8 @@ typedef struct DictionarySet {
     int32_t               status;           /* +0x14 */
     UserDict             *words;           /* case-folded lexical Root entries */
     UserDict             *main_words;      /* exact-case Main pronunciations */
+    UserDict             *overlay_words;   /* owner-scoped supplemental Root entries */
+    UserDict             *last_lookup[UD_VOLUMES];
     LexicalView *lexical_view;
 } DictionarySet;
 
@@ -571,6 +573,8 @@ THIS int32_t ud_lookupUndo(UserDict *u, delta_state *d, int32_t l, int32_t r)
 static void ds_finish(DictionarySet *s)
 {
     s->main_words=NULL;
+    s->overlay_words=NULL;
+    memset(s->last_lookup,0,sizeof s->last_lookup);
     s->lexical_view=NULL;
     if (s->vol[0] != 0 && s->vol[1] != 0 && s->vol[2] != 0)
         s->status = UD_OK;
@@ -653,6 +657,7 @@ THIS void ds_dtor(DictionarySet *s)
     lexical_view_release(s->lexical_view);s->lexical_view=NULL;
     if(s->words){ud_dtor(s->words);cpp_delete(s->words);s->words=NULL;}
     if(s->main_words){ud_dtor(s->main_words);cpp_delete(s->main_words);s->main_words=NULL;}
+    if(s->overlay_words){ud_dtor(s->overlay_words);cpp_delete(s->overlay_words);s->overlay_words=NULL;}
     if (s->home && *s->home == s)
         *s->home = 0;
 }
@@ -793,7 +798,14 @@ int32_t callUserDictLookup(delta_state *d, const void *volume,
     if(v<0||v>=UD_VOLUMES)return 1;
     /* Main owns its native, exact-case normalization stage. Root lexical
      * records must never suppress a Main entry with the same spelling. */
-    return ud_lookupAndTranslate(active_volume(s,v),d,l->value,r->value)!=0;
+    UserDict *selected=active_volume(s,v);
+    int status=ud_lookupAndTranslate(selected,d,l->value,r->value);
+    if(status && v==1 && s->overlay_words) {
+        selected=s->overlay_words;
+        status=ud_lookupAndTranslate(selected,d,l->value,r->value);
+    }
+    s->last_lookup[v]=status?NULL:selected;
+    return status!=0;
 }
 
 int32_t callInsertLastDictString(delta_state *d, const void *volume,
@@ -806,7 +818,8 @@ int32_t callInsertLastDictString(delta_state *d, const void *volume,
 
     int v=*(const int16_t *)((const char *)volume+2);
     if(v<0||v>=UD_VOLUMES)return 1;
-    return ud_lookupUndo(active_volume(s,v),d,l->value,r->value)!=0;
+    UserDict *selected=s->last_lookup[v]?s->last_lookup[v]:active_volume(s,v);
+    return ud_lookupUndo(selected,d,l->value,r->value)!=0;
 }
 
 ALIAS("??0UserDict@@QAE@XZ", "ud_ctor");
@@ -903,6 +916,46 @@ void reloq61_dictionary_detach(void *set,delta_state *d)
     for(int i=0;i<UD_VOLUMES;++i)if(s->vol[i])s->vol[i]->last[0]=0;
     if(s->words)s->words->last[0]=0;
     if(s->main_words)s->main_words->last[0]=0;
+    if(s->overlay_words)s->overlay_words->last[0]=0;
+    memset(s->last_lookup,0,sizeof s->last_lookup);
+}
+
+/* Supplemental pronunciations belong to the native Root stage. The
+ * immutable input is copied into an independent table, leaving public
+ * dictionary volumes and their retained snapshots untouched. */
+int reloq61_dictionary_set_overlay(void *set,const struct reloq_lexicon *view)
+{
+    DictionarySet *s=set;if(!s)return -1;
+    UserDict *next=NULL;
+    if(view&&view->override_count) {
+        void *memory=cpp_new(sizeof(UserDict));
+        next=memory?ud_ctor(memory):NULL;
+        if(!next||!ud_buildHashTable(next,UD_DEFAULT_BUCKETS))goto fail;
+        for(size_t i=0;i<view->override_count;++i) {
+            const struct reloq_lexicon_override *e=view->overrides+i;
+            if(!e->key_length||e->key_length>UD_WORD_MAX||!e->spr_length||e->spr_length>4096)goto fail;
+            char key[UD_WORD_MAX+1];
+            for(size_t j=0;j<e->key_length;++j) {
+                unsigned char c=e->key[j];
+                if((c>='A'&&c<='Z')||(c>=0xc0&&c<=0xde&&c!=0xd7))c+=32;
+                key[j]=(char)c;
+            }
+            key[e->key_length]=0;
+            if(ud_lookup(next,key))continue;
+            char *owned_key=malloc(e->key_length+1),*owned_value=malloc(e->spr_length+1);
+            if(!owned_key||!owned_value){free(owned_key);free(owned_value);goto fail;}
+            memcpy(owned_key,key,e->key_length+1);memcpy(owned_value,e->spr,e->spr_length);
+            owned_value[e->spr_length]=0;
+            if(!hashInsertString(next->hash,owned_key,owned_value)) {
+                free(owned_key);free(owned_value);goto fail;
+            }
+        }
+    }
+    UserDict *old=s->overlay_words;s->overlay_words=next;
+    memset(s->last_lookup,0,sizeof s->last_lookup);
+    if(old){ud_dtor(old);cpp_delete(old);}return 0;
+fail:
+    if(next){ud_dtor(next);cpp_delete(next);}return -1;
 }
 
 static int lexical_order(const void *a,const void *b)

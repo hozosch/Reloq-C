@@ -128,14 +128,7 @@ static int german_shared_append(struct german_shared_buffer *b,const unsigned ch
 
 /* Main text aliases are resolved once before grammar, including components
  * of a hyphenated word. Root and phonetic Main entries remain native. */
-static _Thread_local const struct reloq_lexicon *german_shared_lexicon;
-const struct reloq_lexicon *reloq_rules61_lexicon_scope(const struct reloq_lexicon *next)
-{
-    const struct reloq_lexicon *previous=german_shared_lexicon;
-    german_shared_lexicon=next;return previous;
-}
-static int german_main_input(unsigned char **text,size_t **source,size_t *length,int tags,
-    const struct reloq_lexicon *lexicon,int main_aliases)
+static int german_main_input(unsigned char **text,size_t **source,size_t *length,int tags)
 {
     const unsigned char *a=*text;const size_t *map=*source,n=*length;
     struct german_shared_buffer b={0};int spelling=0,changed=0;
@@ -162,20 +155,14 @@ static int german_main_input(unsigned char **text,size_t **source,size_t *length
         while(end<n&&(german_word_byte(a[end])||
             (a[end]=='-'&&end+1<n&&german_word_byte(a[end+1]))))++end;
         while(i<end) {
-            size_t stop=end;const char *value=main_aliases?reloq61_dictionary_main_text(a+i,stop-i):NULL;
+            size_t stop=end;const char *value=reloq61_dictionary_main_text(a+i,stop-i);
             if(!value){stop=i;while(stop<end&&a[stop]!='-')++stop;
-                value=main_aliases?reloq61_dictionary_main_text(a+i,stop-i):NULL;}
+                value=reloq61_dictionary_main_text(a+i,stop-i);}
             size_t value_length=value?strlen(value):0,utf8_length=0;
             unsigned char utf8[1537];
-            const struct reloq_lexicon_override *pronunciation=NULL;
-            if(!value&&lexicon&&!reloq61_dictionary_match(a+i,stop-i))
-                (void)reloq_lexicon_find_override(lexicon,a+i,stop-i,&pronunciation);
             if(value&&value_length<=512&&!reloq_cp1252_decode((const unsigned char *)value,
                     value_length,utf8,sizeof utf8,&utf8_length,NULL)) {
                 if(german_shared_append(&b,(const unsigned char *)value,NULL,value_length,map[i]))goto fail;
-                changed=1;
-            } else if(pronunciation) {
-                if(german_shared_append(&b,pronunciation->spr,NULL,pronunciation->spr_length,map[i]))goto fail;
                 changed=1;
             } else if(german_shared_append(&b,a+i,map+i,stop-i,0))goto fail;
             i=stop;
@@ -655,9 +642,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     if(input_status)goto done;
     if(language==0x40000)german_compact_input(a,map,&n,tags);
     if(tags&&!plan.cjk_volume&&normalize_word_voice_controls(&a,&map,&n,family==18))goto memory;
-    if(language==0x40000&&german_main_input(&a,&map,&n,tags,NULL,1))goto memory;
-    if(language==0x40000&&german_shared_lexicon&&
-       german_main_input(&a,&map,&n,tags,german_shared_lexicon,0))goto memory;
+    if(language==0x40000&&german_main_input(&a,&map,&n,tags))goto memory;
     if(plan.cjk_volume) {
         /* CJK lexers can treat even a redundant command as a token break.
          * No-op voice controls must leave native segmentation untouched. Actual
