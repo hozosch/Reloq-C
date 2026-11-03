@@ -11,6 +11,7 @@ import hashlib
 import json
 from pathlib import Path
 import sys
+import tempfile
 import threading
 import time
 import zipfile
@@ -200,6 +201,28 @@ def main():
                             characters=len(text), **timings))
                         # Wait for cancellation and verify the next job works.
                         run([sentence + "."])
+                # Use the actual settings manager, queue and NVDA symbol
+                # processor with a user-selected Root file. A full hyphenated
+                # key must survive normal symbol levels and both settings of
+                # the independent abbreviation dictionary.
+                driver.language = "de_DE"
+                driver.voice = "1"
+                driver.voiceTags = False
+                source_class = sys.modules[module.__name__ + "._reloq_dictionary_manager"].DictionarySource
+                with tempfile.TemporaryDirectory() as folder:
+                    own = Path(folder) / "mein-woerterbuch.dic"
+                    own.write_bytes(b'eti-eloquence\t`[.1kIr.0S@]\n')
+                    ready, completed = threading.Event(), []
+                    driver.configure_dictionaries([source_class(str(own), 0x40000, 1)], False,
+                        lambda error, details: (completed.append((error, details)), ready.set()))
+                    assert ready.wait(20) and completed and completed[0][0] is None, completed
+                    for enabled in (True, False):
+                        driver.abbreviationDictionary = enabled
+                        for level in (0, 200):
+                            for source, target in (("Das ist ETI-Eloquence.", "Das ist Kirsche."),
+                                                   ("„ETI-Eloquence“", "„Kirsche“")):
+                                assert run([source], level=level) == run([target], level=level), (enabled, level, source)
+                                report["checks"] += 1
                 assert not errors
             finally:
                 driver.terminate()

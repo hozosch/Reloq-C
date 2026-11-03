@@ -123,12 +123,12 @@ def main():
                 assert whole == parts, (word, whole[1], parts[1])
                 checks += 1
             for word in ('ETI-Eloquence', 'Test-Eloquence'):
-                assert phonemes(e, '`da0 ' + word) == phonemes(plain, '`da0 ' + word), word
+                assert phonemes(e, '`da0 ' + word) != phonemes(plain, '`da0 ' + word), word
                 assert phonemes(e, '`da1 ' + word) != phonemes(plain, '`da1 ' + word), word
                 checks += 2
             e.set_parameter(DICTIONARY, 1)
             plain.set_parameter(DICTIONARY, 1)
-            assert render(e, ['ETI-Eloquence']) == render(plain, ['ETI-Eloquence']); checks += 1
+            assert render(e, ['ETI-Eloquence']) != render(plain, ['ETI-Eloquence']); checks += 1
         finally:
             e.close()
             plain.close()

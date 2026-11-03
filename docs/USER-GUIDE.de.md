@@ -1,6 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Testversion 1.1.0-rc18
+## Testversion 1.1.0-rc19
+
+Konsonantisches R erhält die Anregung des Wortanfangs auch innerhalb von Wörtern. Das finale A und die deutsche Fragekontur werden stärker am früheren Pfad ausgerichtet. Eigene vollständige Bindestricheinträge und Stammeinträge in Zusammensetzungen gelten auch bei abgeschaltetem Abkürzungswörterbuch. Bitte die Aussprache und Satzmelodie in NVDA prüfen.
 
 Die Testversion gleicht die Anregung des konsonantischen R und die Mischung des finalen A anhand des früheren deutschen Planers ab. Sie verkürzt das N in „neunund“ und berücksichtigt Wörterbuchaussprache in Bindestrich-Zusammensetzungen wie „ETI-Eloquence“, auch innerhalb von Anführungszeichen. Eine zusätzliche Tonhöhenanhebung bei schwachen Verben nach dem Satzakzent entfällt; deutsche Fragen erhalten eine ansteigende Schlusskontur. Die Klangwirkung muss in NVDA gehört werden.
 

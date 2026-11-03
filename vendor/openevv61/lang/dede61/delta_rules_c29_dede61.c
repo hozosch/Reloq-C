@@ -2269,6 +2269,7 @@ static int32_t evv_delete_inp_from_left(void *state, const int32_t *args, int na
     return reloq_dede61_delete_inp_from_left(state, nargs>0?args[0]:0, nargs>1?args[1]:0, nargs>2?args[2]:0);
 }
 
+extern int reloq61_german_is_question(void *, int32_t);
 /* eng_boundary_tone, from f61_27.obj */
 int32_t reloq_dede61_eng_boundary_tone(void *state, int32_t p0)
 {
@@ -2442,6 +2443,9 @@ L948:;
 L961:;
     AT(int32_t, -24) = (120);
 L969:;
+    /* The earlier German question has a 150-percent final target. */
+    if (reloq61_german_is_question(state, STATE(int32_t, w52)))
+        AT(int32_t, -24) = 150;
     AT(int16_t, -38) = ((int32_t)AT(int16_t, -24));
     goto L990;
 L982:;

@@ -178,8 +178,8 @@ static int german_main_input(unsigned char **text,size_t **source,size_t *length
     const unsigned char *a=*text;const size_t *map=*source,n=*length;
     struct german_shared_buffer b={0};int spelling=0,changed=0;
     for(size_t i=0;i<n;) {
-        struct reloq_inline_tag t=tags?reloq_inline_tag_read(a+i,n-i,0):(struct reloq_inline_tag){0};
-        if(t.length) {
+        struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,0);
+        if(t.length&&(tags||t.kind==RELOQ_TAG_SPR)) {
             if(t.kind==RELOQ_TAG_SPELL)spelling=t.value;
             if(t.kind==RELOQ_TAG_SPELL&&(!b.used||b.bytes[b.used-1]!=' ')) {
                 if(german_shared_append(&b,(const unsigned char *)" ",NULL,1,map[i]))goto fail;
@@ -254,9 +254,11 @@ static int german_dictionary_compound_input(unsigned char **text,size_t **source
         size_t end=i;while(end<n&&(german_word_byte(a[end])||
             (a[end]=='-'&&end+1<n&&german_word_byte(a[end+1]))))++end;
         int has_hyphen=memchr(a+i,'-',end-i)!=NULL,lexical=0;
-        const struct reloq_lexicon_override *entry=NULL;
-        if(has_hyphen&&!options.dictionary_disabled&&end-i<256&&
-           reloq_lexicon_find_override(overlay,a+i,end-i,&entry)!=1) {
+        const struct reloq_lexicon_override *entry=NULL,*whole=NULL;
+        /* The abbreviation switch does not disable Main/Root entries. */
+        if(has_hyphen&&end-i<256)
+            (void)reloq_lexicon_find_override(overlay,a+i,end-i,&whole);
+        if(has_hyphen&&!whole&&end-i<256) {
             for(size_t at=i;at<end;) {
                 size_t stop=at;while(stop<end&&a[stop]!='-')++stop;
                 if(reloq_lexicon_find_override(overlay,a+at,stop-at,&entry)==1)lexical=1;
@@ -272,7 +274,10 @@ static int german_dictionary_compound_input(unsigned char **text,size_t **source
             if(result==-2){free(preferred);status=-1;break;}
             if(result) {free(preferred);preferred=NULL;}
         }
-        const unsigned char *pron=NULL;size_t pron_n=0;
+        /* The native lexer splits at the hyphen before its Root lookup. A
+         * complete explicit entry must therefore win before composition. */
+        const unsigned char *pron=whole?whole->spr:NULL;
+        size_t pron_n=whole?whole->spr_length:0;
         if(preferred) {
             const unsigned char *open=(const unsigned char *)strstr((char *)preferred,"`[");
             const unsigned char *close=open?(const unsigned char *)strchr((char *)open,']'):NULL;
@@ -446,6 +451,7 @@ int reloq_rules61_phonemes(int language,const unsigned char *text,size_t length,
     if(status)return status;
     if(language==0x40000) {
         german_compact_input(input,map,&n,tags);
+        if(german_main_input(&input,&map,&n,tags)){free(input);free(map);return -2;}
         if(german_dictionary_compound_input(&input,&map,&n,tags)){free(input);free(map);return -2;}
         if(german_long_overlay_input(&input,&map,&n,tags)){free(input);free(map);return -2;}
         if(german_currency_input(&input,&map,&n,tags)){free(input);free(map);return -2;}

@@ -135,29 +135,28 @@ static const struct reloq61_segment_layout layout={
 int32_t reloq_dede61_addStreamArrayPtVal(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
 {(void)p0;return reloq61_segment_point(state,p1,p2,p3,p4,p5);}
 
-/* Early /r/ in the earlier German voice has four constriction phases. The
- * shared segment writer owns the AV/voice-mode decision; this callback only
- * replaces the two native onset holds with that measured four-phase source. */
-static int initial_r_voicing(void *state,int16_t stream,int16_t value,int32_t from,int32_t to)
+/* Apply the accepted word-initial R source to every consonantal R. */
+static int consonant_r_voicing(void *state,int16_t stream,int16_t value,int32_t from,int32_t to)
 {
-    if(!reloq_dede61_initial_r(state))return 0;
+    (void)value;
+    if(!reloq_dede61_consonant_r(state))return 0;
     int32_t first,last;memcpy(&first,(const unsigned char *)state+DG_BASE+1048,4);
     memcpy(&last,(const unsigned char *)state+DG_BASE+1056,4);
     if(last<=first||last-first<60000)return 0;
     int64_t span=(int64_t)last-first;
     int64_t third=(int64_t)first+span*7/10+10000;
     if(third+10000>=last)return 0;
-    if(from==first&&to<last&&value==0) {
+    if(from==first&&to<=last) {
         reloq61_submit_interval(state,stream,0,first,(int32_t)third);
         reloq61_submit_interval(state,stream,41,(int32_t)(third+10000),last);
         return 1;
     }
-    if(from>first&&to==last&&value==28)return 1;
+    if(from>first&&to==last)return 1;
     return 0;
 }
 int32_t reloq_dede61_doAV(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
 {(void)p0;return reloq61_segment_voicing_custom(state,&layout,p1,p2,p3,p4,p5,
-    reloq_dede61_consonant_r(state)-reloq_dede61_final_text_a(state),initial_r_voicing);}
+    reloq_dede61_consonant_r(state)-reloq_dede61_final_text_a(state),consonant_r_voicing);}
 int32_t reloq_dede61_doAF(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
 {
     (void)p0;

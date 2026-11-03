@@ -1,3 +1,18 @@
+# Testkandidat 1.1.0-rc19: Deutsches R, finales A, Fragekontur und Wörterbuch
+
+Die bestätigte Anregung am Wortanfang wird für konsonantisches R auch in
+anderen Wortpositionen verwendet. Das vokalische R behält seine Behandlung.
+Für finales A wird der Formantübergang an den früheren Planer angeglichen,
+unter anderem bei „Komma“. Die bewährte Auswahl am Satzende bleibt bestehen.
+Fragen verwenden einen tiefen Satzakzent und den Schlussanstieg des früheren
+deutschen Planers. Die Klangwirkung dieser Änderungen ist im NVDA-Hörtest zu
+beurteilen.
+
+Vollständige Bindestricheinträge im Stammwörterbuch haben vor Bestandteilen
+Vorrang. Ausspracheeinträge bleiben auch bei ausgeschaltetem
+Abkürzungswörterbuch und bei `da0` aktiv. Der Test durch den gepackten
+NVDA-Treiber verwendet eine ausgewählte eigene Dic-Datei.
+
 # Testkandidat 1.1.0-rc18: Deutsches R, finales A, Zahlwort, Wörterbuch und Satzmelodie
 
 Die Anregung des konsonantischen R wird mit dem früheren deutschen Planer

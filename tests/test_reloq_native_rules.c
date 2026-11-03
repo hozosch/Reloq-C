@@ -12,8 +12,8 @@ struct pitch_plan {
     int32_t pair[2048][2];size_t count;
     uint64_t acoustic_hash;int64_t ticks;
     int32_t max_diplophonia,max_aspiration;
-    int i_e_r_target,i_e_target,final_a_target,weak_verb_rise,direct_weak_verb_fall;
-    unsigned r_phase_mask;
+    int i_e_r_target,i_e_target,final_a_target,comma_a_transition,weak_verb_rise,direct_weak_verb_fall;
+    unsigned r_phase_mask,r_phase_anywhere;
 };
 static int span(void *context,int32_t from,int32_t to,
     const struct reloq61_curve c[62],int32_t volume)
@@ -34,9 +34,13 @@ static int span(void *context,int32_t from,int32_t to,
     if(c[7].val_l>p->max_aspiration)p->max_aspiration=c[7].val_l;
     if(c[7].val_r>p->max_aspiration)p->max_aspiration=c[7].val_r;
     if(c[9].val_l==775&&c[13].val_l==1205)p->final_a_target=1;
+    if(c[9].val_l==775&&c[13].val_l==1112&&c[13].val_r==1202)p->comma_a_transition=1;
     if(from<50&&c[7].val_l==28&&c[7].val_r==49)p->r_phase_mask|=1u;
     if(from<50&&c[7].val_l==49&&c[7].val_r==28)p->r_phase_mask|=2u;
     if(from<50&&c[7].val_l==28&&c[7].val_r==53)p->r_phase_mask|=4u;
+    if(c[7].val_l==28&&c[7].val_r==49)p->r_phase_anywhere|=1u;
+    if(c[7].val_l==49&&c[7].val_r==28)p->r_phase_anywhere|=2u;
+    if(c[7].val_l==28&&c[7].val_r==53)p->r_phase_anywhere|=4u;
     if(c[9].val_l==400&&c[13].val_l==2050)p->i_e_r_target=1;
     if(c[9].val_l==370&&c[13].val_l==2150)p->i_e_target=1;
     return 0;
@@ -118,14 +122,35 @@ static unsigned german_phone_targets(void)
     p=german_pitch("Rot",65,0,75);
     assert(p.max_aspiration==53&&p.r_phase_mask==7);
     p=german_pitch("vierund",65,0,75);
-    assert(p.max_diplophonia==0);
+    assert(p.max_diplophonia==1&&p.r_phase_anywhere==7);
+    p=german_pitch("brennen",65,0,75);
+    assert(p.max_diplophonia==1&&p.r_phase_anywhere==7);
     p=german_pitch("Pizza.",65,0,75);
     assert(p.final_a_target);
+    p=german_pitch("Komma.",65,0,75);
+    assert(p.comma_a_transition);
     p=german_pitch("Barriere",65,0,75);
     assert(p.i_e_r_target);
     p=german_pitch("wie eben",65,0,75);
     assert(p.i_e_target);
-    return 5;
+    return 7;
+}
+
+static int pitch_pair(const struct pitch_plan *p,int32_t left,int32_t right)
+{
+    for(size_t i=0;i<p->count;++i)
+        if(p->pair[i][0]==left&&p->pair[i][1]==right)return 1;
+    return 0;
+}
+static unsigned german_question_alignment(void)
+{
+    struct pitch_plan p={.acoustic_hash=UINT64_C(1469598103934665603)};
+    struct reloq61_request q=request(0x40000,"Wie geht das?");
+    struct reloq61_result result={0};q.context=&p;
+    assert(!reloq61_generate(&q,&result)&&!result.error&&!result.unsupported);
+    /* Actual old-composer targets: a low nucleus before the two-part rise. */
+    assert(pitch_pair(&p,1043,954)&&pitch_pair(&p,954,1218)&&pitch_pair(&p,1218,1397));
+    return 1;
 }
 static unsigned german_postfocus_melody(void)
 {
@@ -215,7 +240,7 @@ static unsigned clocks(void)
 }
 int main(void)
 {
-    unsigned c=clocks(),p=chinese(),g=german_high_pitch(),a=german_phone_targets(),m=german_postfocus_melody(),q=german_question_contours();
-    printf("Native rules: %u English seconds/zero/fraction cases, %u full Chinese F0 sequences, %u German high-pitch contours, %u rhotic/e/A targets, %u post-focus melodies and %u question contours; tempo, models, heads and pitch controls\n",c,p,g,a,m,q);
+    unsigned c=clocks(),p=chinese(),g=german_high_pitch(),a=german_phone_targets(),m=german_postfocus_melody(),q=german_question_contours(),qa=german_question_alignment();
+    printf("Native rules: %u English seconds/zero/fraction cases, %u full Chinese F0 sequences, %u German high-pitch contours, %u rhotic/e/A targets, %u post-focus melodies, %u question contours and %u old-path question alignment; tempo, models, heads and pitch controls\n",c,p,g,a,m,q,qa);
     return 0;
 }
