@@ -124,6 +124,12 @@ jobs:
             $testExit = $LASTEXITCODE
             if ($testExit -ne 0) {
               Get-Content "dist/validation/sapi-$arch.txt" -Tail 60
+              if ($arch -eq 'x86') {
+                $env:RAL_TRACE = '1'
+                & $test --first-case *> "dist/validation/sapi-x86-trace.txt"
+                Remove-Item Env:RAL_TRACE
+                Get-Content "dist/validation/sapi-x86-trace.txt" -Tail 120
+              }
               throw "SAPI $arch validation failed with exit code $testExit"
             }
           }
