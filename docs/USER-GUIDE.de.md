@@ -1,8 +1,10 @@
 # Eloquence C – Bedienungsanleitung
 
-## Testversion 1.1.0-rc14
+## Testversion 1.1.0-rc15
 
 Die deutsche Sprachausgabe nutzt jetzt dieselbe native Satz- und Lautplanung wie die anderen Sprachen. Lange Einzelsätze können dadurch früher beginnen; Bindestrich- und Schrägstrichfälle sowie ECI-Tags werden im gemeinsamen Pfad verarbeitet. Nutzerwörterbücher, Pausenverkürzung und die Absenkung des männlichen Z am Wortanfang und bei „zw“ bleiben erhalten. Bei „der Zahn“ übernimmt das vokalische R den nativen Formantverlauf; die Klangfärbung muss noch im Hörtest beurteilt werden. Die bestätigte C-Abstimmung und die S-/T-Begrenzung für Kastilisch und Griechisch bleiben bestehen.
+
+Die Testversion ergänzt die native deutsche Analyse um die korrigierte Betonung von „konzentrieren“, Uhrzeiten mit Sekunden und Tausendergruppen mit Leerzeichen. Der nasale Laut in „Chance“, betroffene R-Laute und die F-Energie ab 22 kHz wurden im nativen Lautpfad angepasst. Bei ausgewählten Wörtern stimmen Text und daraus erzeugte Lautschrift in den automatischen Signaltests überein. Andere Wörter und Glottalgrenzen können zwischen Text und Lautschrift noch abweichen. Die Klangfärbung bleibt im Hörtest zu prüfen.
 
 ## Englische Uhrzeiten mit Sekunden
 

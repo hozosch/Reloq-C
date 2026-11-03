@@ -43,6 +43,17 @@ static int z_affricate(delta_state *d)
         reloq61_spr_phone_at(d,next.after,&last)&&phone_is(d,&last,8,0)&&
         !begins_projection(d,&last,7);
 }
+int reloq_dede61_consonant_r(void *state)
+{
+    delta_state *d=state;int32_t at;
+    memcpy(&at,(const unsigned char *)state+DG_BASE+712,sizeof at);
+    struct reloq61_spr_phone p,previous;
+    if(!reloq61_spr_phone_at(d,at,&p)||reloq61_spr_feature(d,&p,0)!=15)return 0;
+    /* Postvocalic /r/ in the same syllable is the vowel source. */
+    if(!begins_projection(d,&p,7)&&prior_phone(d,&p,&previous)&&
+       reloq61_spr_feature(d,&previous,1)==1)return 0;
+    return 1;
+}
 static const struct reloq61_segment_layout layout={
     .pause_class=8,.speed_field=15,
     .speed_before=464,
@@ -75,10 +86,23 @@ static const struct reloq61_segment_layout layout={
 int32_t reloq_dede61_addStreamArrayPtVal(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
 {(void)p0;return reloq61_segment_point(state,p1,p2,p3,p4,p5);}
 int32_t reloq_dede61_doAV(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
-{(void)p0;return reloq61_segment_voicing(state,&layout,p1,p2,p3,p4,p5);}
+{(void)p0;return reloq61_segment_voicing_gain(state,&layout,p1,p2,p3,p4,p5,reloq_dede61_consonant_r(state));}
 int32_t reloq_dede61_doAF(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
-{(void)p0;int mark=reloq61_german_affricate_markers(state)&&z_affricate(state);
- return reloq61_segment_frication_gain(state,&layout,p1,p2,p3,p4,p5,mark?RELOQ61_DE_AF_MARK:0);}
+{
+    (void)p0;
+    int mark=reloq61_german_affricate_markers(state)&&z_affricate(state);
+    int gain=(mark?RELOQ61_DE_AF_MARK:0)+reloq_dede61_consonant_r(state);
+    int32_t at;memcpy(&at,(const unsigned char *)state+DG_BASE+712,sizeof at);
+    struct reloq61_spr_phone phone;
+    if(reloq61_spr_phone_at(state,at,&phone)) {
+        unsigned name=reloq61_spr_feature(state,&phone,0);
+        /* Apply the established high-rate source compensation to German
+         * /f/ and /v/ (orthographic W), for text and phonetic input alike.
+         * It is independent of the male /ts/ marker, including /tsv/. */
+        if(name==7 || name==8)gain+=reloq61_labiodental_gain(state);
+    }
+    return reloq61_segment_frication_gain(state,&layout,p1,p2,p3,p4,p5,gain);
+}
 int32_t reloq_dede61_doFNZ(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
 {(void)p0;return reloq61_segment_nasal_zero(state,&layout,reloq_dede61_filter_endpoint,p1,p2,p3,p4,p5);}
 int32_t reloq_dede61_doFNP(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)

@@ -40,19 +40,19 @@ jobs:
           path: vendor/openevv61/build
           key: nvda-hearing-ubuntu24-v1-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c') }}
           restore-keys: |
-            nvda-hearing-ubuntu24-v1-29f09bca1854675a88eb0805b6d4b879d6568ba3e5aed2af03cf67209b98db0b
+            nvda-hearing-ubuntu24-v1-d10e6b0a245bfd9ed638ff47616d33f14536debc6c19c4b25ea5734adafb5344
       - name: Restore rule cache and rebuild changed dependencies
         if: steps.rules.outputs.cache-matched-key != ''
         run: |
           set -euo pipefail
           find vendor/openevv61/build -type f -exec touch {} +
           if [[ '${{ steps.rules.outputs.cache-hit }}' != 'true' ]]; then
-            # This is the rc13 provider cache. Make its unchanged files newer
+            # This is the rc14 provider cache. Make its unchanged files newer
             # than checkout, then mark every changed dependency newer still.
             # The generated .d files rebuild all affected objects, including
             # translation units that include a changed header or .inc file.
             sleep 1
-            git diff --name-only -z 643ed62ff143e9b6dd78a8e763b69176b408a458 HEAD -- vendor/openevv61 include src/reloq_voice_filter.c src/reloq_orthography.c src/reloq_german_word_edges.c src/reloq_english_word_edges.c | xargs -0 -r touch --
+            git diff --name-only -z c27d0811170da3d50417d3c9c4aec2d7e33e7baa HEAD -- vendor/openevv61 include src/reloq_voice_filter.c src/reloq_orthography.c src/reloq_german_word_edges.c src/reloq_english_word_edges.c | xargs -0 -r touch --
           fi
       - name: Build x64 native core
         run: make -C eci -j2 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
@@ -81,6 +81,8 @@ jobs:
           make -C eci test_reloq_english_clock test_reloq_english_clock_arena
           ./eci/test_reloq_english_clock
           ./eci/test_reloq_english_clock_arena
+          cc -O2 -std=c11 -Wall -Wextra -Werror -pedantic -Iinclude -Ivendor/openevv61/src tests/test_reloq_german_clock.c vendor/openevv61/src/reloq61_german_clock.c -o /tmp/reloq-german-clock
+          /tmp/reloq-german-clock
       - name: Package development add-on with current dictionary master
         run: |
           python3 nvda/test_updates.py
@@ -95,12 +97,12 @@ jobs:
           assert len(files)==1
           with zipfile.ZipFile(files[0]) as package:
               assert package.testzip() is None
-              assert '1.1.0-rc14' in package.read('manifest.ini').decode()
+              assert '1.1.0-rc15' in package.read('manifest.ini').decode()
               for name in ('ReLoq-C-LICENSE.txt','ReLoq-C-NOTICE.txt','OpenEVV-LICENSE.txt','Dictionaries-CC0.txt'):
                   assert package.read('doc/licenses/'+name)
           Path('dist/source.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],
               'package':files[0].name,'sha256':hashlib.sha256(files[0].read_bytes()).hexdigest(),
-              'version':'1.1.0-rc14','official_release':False,'high_rate_tuning':'C'},indent=2)+'\n')
+              'version':'1.1.0-rc15','official_release':False,'high_rate_tuning':'C'},indent=2)+'\n')
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -174,6 +176,12 @@ jobs:
           python nvda/test_eci_german_overlay_lifecycle.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_numeric_native.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_clock_native.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_stem_native.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_phonetic_native.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_pause_modes_native.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

@@ -14,6 +14,7 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_dede61.h"
+extern void reloq_dede61_repair_stem(void *,int32_t,int32_t);
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -9929,6 +9930,7 @@ L1242:;
 L1260:;
     r0 = reloq_call_dede61_make_ger_phon_adjustments(state, (int32_t)(FIELD(0)));
     AT(int32_t, -16) = (r0);
+    reloq_dede61_repair_stem(state,STATE(int32_t,w64),STATE(int32_t,w65));
 L1278:;
     r0 = reloq61_typed_lpta_loadpn(DELTA_ENTRY_lpta_loadpn, state, EVV_AT(const delta_token *, STATE_AT(w45, -4)));
     AT(int32_t, -16) = (r0);

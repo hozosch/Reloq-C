@@ -1,3 +1,29 @@
+# Testkandidat 1.1.0-rc15: Deutsche Lautplanung und Zahlen
+
+Die native deutsche Satz- und Lautplanung bleibt der Produktpfad. Die
+französische Nasalfärbung in „Chance“ und „Restaurant“, die R-Quelle, der
+R-Übergang nach langem ö und das reduzierte R nach langem ü oder o verwenden
+gezielte Werte aus dem vorherigen Komponisten. Ab 22 kHz erhält der deutsche
+labiodentale Reibelaut /f/ beziehungsweise /v/ eine Quellenanhebung; die
+C-Hochratenfilter bleiben unverändert. Die subjektive Färbung und der F-Pegel
+müssen im Hörvergleich geprüft werden.
+
+Die native Analyse korrigiert die Betonung und den Vokal im Wortstamm
+„konzentrier“. Uhrzeiten einschließlich Sekunden sowie Tausendergruppen mit
+mehreren oder geschützten Leerzeichen werden auf die native Zahlenanalyse
+abgebildet, mit Quellenabbildung für Indizes und Steuerungen. Bei expliziter
+deutscher Lautschrift wird die Vokallänge anhand der nativen Silbenstruktur
+an die Textanalyse angeglichen; kurze Vokale bleiben kurz. Automatische
+Tests vergleichen unter anderem Text mit erzeugter Lautschrift, Wörterbuch-
+Vorrang, Indizes und Kontrollwörter. Die Ergebnisse gelten für die geprüften
+Fälle und ersetzen keinen Hörtest.
+
+Eine breitere Stichprobe zeigt weiterhin Unterschiede zwischen Text und daraus
+erzeugter Lautschrift, unter anderem bei „obenan“ und „Ruin“. Der native
+Textpfad besitzt Wort- und Glottalgrenzen, die in der ausgegebenen Lautschrift
+nicht immer gleichermaßen erhalten sind. Die Gleichheit ist daher für die
+geprüften Beispiele verbessert, aber nicht für alle Wörter nachgewiesen.
+
 # Testkandidat 1.1.0-rc14: Gemeinsame deutsche Satzanalyse
 
 Deutsch nutzt standardmäßig die native Satzanalyse und Lautplanung wie die

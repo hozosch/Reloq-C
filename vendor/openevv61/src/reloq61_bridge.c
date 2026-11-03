@@ -17,6 +17,7 @@
 #include "eci_eloqc.h"
 #include "reloq_greek.h"
 #include "reloq61_english_clock.h"
+#include "reloq61_german_clock.h"
 extern void evvRunStaticInitialisers(void);
 extern OldInst *STDCALL eo_newEx(int32_t);
 extern int STDCALL es_delete(OldInst *);
@@ -602,6 +603,16 @@ static int english_clock_generate(const struct reloq61_request *q,struct reloq61
     if(!projected)return generate_core(q,r,sink,context);
     return projected_generate(q,r,sink,context,text,map);
 }
+static int german_clock_generate(const struct reloq61_request *q,struct reloq61_result *r,
+    reloq61_phoneme_sink sink,void *context)
+{
+    initialize();
+    char *text=NULL;size_t *map=NULL;
+    int projected=reloq61_german_clock_text(q->text,q->annotations,q->language,&text,&map);
+    if(projected<0)return -1;
+    if(!projected)return generate_core(q,r,sink,context);
+    return projected_generate(q,r,sink,context,text,map);
+}
 static int greek_generate(const struct reloq61_request *q,struct reloq61_result *r,
     reloq61_phoneme_sink sink,void *context)
 {
@@ -616,6 +627,8 @@ int reloq61_generate(const struct reloq61_request *q,struct reloq61_result *r)
     if(q&&r&&q->language==0x120000){initialize();memset(r,0,sizeof *r);return greek_generate(q,r,NULL,NULL);}
     if(q&&r&&q->text&&(q->language==0x10000||q->language==0x10001))
         return english_clock_generate(q,r,NULL,NULL);
+    if(q&&r&&q->text&&q->language==0x40000)
+        return german_clock_generate(q,r,NULL,NULL);
     return generate_core(q,r,NULL,NULL);
 }
 int reloq61_generate_phonemes(const struct reloq61_request *q,struct reloq61_result *r,
@@ -628,6 +641,8 @@ int reloq61_generate_phonemes(const struct reloq61_request *q,struct reloq61_res
     }
     if(request.text&&(request.language==0x10000||request.language==0x10001))
         return english_clock_generate(&request,r,sink,context);
+    if(request.text&&request.language==0x40000)
+        return german_clock_generate(&request,r,sink,context);
     return generate_core(&request,r,sink,context);
 }
 static int generate_core(const struct reloq61_request *q,struct reloq61_result *r,

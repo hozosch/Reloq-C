@@ -4,8 +4,9 @@
 <body>
 <!-- Generated from docs/USER-GUIDE.en.md; keep both copies in sync. -->
 <h1>Eloquence C – user guide</h1>
-<h2>Preview 1.1.0-rc14</h2>
+<h2>Preview 1.1.0-rc15</h2>
 <p>German speech now uses the same native sentence and acoustic planning path as the other languages. Long single sentences can start earlier, and hyphens, slashes and ECI tags use the shared path. User dictionaries, pause shortening and the male-only reduction for word-initial /ts/ and /tsv/ remain in place. The vocalic r in “der Zahn” follows the native formant trajectory; its colour still needs a listening test. The accepted C tuning and the Castilian/Greek S/T limit remain in place.</p>
+<p>This preview adds corrected stress for German “konzentrieren”, clock times with seconds, and space-separated thousands to native analysis. It adjusts the nasal vowel in “Chance”, affected r sounds, and f energy from 22 kHz in the native acoustic path. Automated signal tests show matching text and generated phonetic input for selected words. Other words and glottal boundaries can still differ between text and phonetic input. The sound still needs a listening comparison.</p>
 <h2>English clock readings with seconds</h2>
 <p>English clock times such as <code>13:28:25</code> keep the ordinary hours/minutes reading and append “and twenty five seconds”. One second uses the singular; fractional seconds remain in the normal number reader. This applies to US and British English in the native core, including NVDA and other ECI clients. Source indices remain attached to their original text positions.</p>
 <p>Eloquence C is the NVDA add-on from <a href="https://github.com/hozosch/Reloq-C">ReLoq C</a>. It develops the familiar Eloquence sound with pronunciation corrections, Unicode support and additional voice controls. NVDA is the first integration and current speech testing platform. The same engine is also available for Android ARM64 and Windows SAPI5.</p>

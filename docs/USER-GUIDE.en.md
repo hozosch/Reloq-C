@@ -1,8 +1,10 @@
 # Eloquence C – user guide
 
-## Preview 1.1.0-rc14
+## Preview 1.1.0-rc15
 
 German speech now uses the same native sentence and acoustic planning path as the other languages. Long single sentences can start earlier, and hyphens, slashes and ECI tags use the shared path. User dictionaries, pause shortening and the male-only reduction for word-initial /ts/ and /tsv/ remain in place. The vocalic r in “der Zahn” follows the native formant trajectory; its colour still needs a listening test. The accepted C tuning and the Castilian/Greek S/T limit remain in place.
+
+This preview adds corrected stress for German “konzentrieren”, clock times with seconds, and space-separated thousands to native analysis. It adjusts the nasal vowel in “Chance”, affected r sounds, and f energy from 22 kHz in the native acoustic path. Automated signal tests show matching text and generated phonetic input for selected words. Other words and glottal boundaries can still differ between text and phonetic input. The sound still needs a listening comparison.
 
 ## English clock readings with seconds
 

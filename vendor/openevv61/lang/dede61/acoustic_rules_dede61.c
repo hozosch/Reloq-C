@@ -1,12 +1,62 @@
 /* Shared, direct C acoustic queue submission. */
 #include <stdint.h>
-extern int32_t reloq61_append_acoustic_interval(void *,int32_t,int32_t,int32_t,int32_t);
-int32_t reloq_dede61_addStreamArraySsVal(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4)
-{(void)p0;return reloq61_append_acoustic_interval(state,p1,p2,p3,p4);}
-
 #include "reloq61_scalar_state.h"
 #include "reloq61_acoustic_output.h"
+#include "reloq61_spr_output.h"
 #include "reloq_voice_filter.h"
+extern int reloq_dede61_consonant_r(void *);
+static int16_t consonant_r_source(void *state,int16_t stream,int16_t value)
+{
+    int16_t aspiration;memcpy(&aspiration,(const unsigned char *)state+DG_BASE+942,2);
+    return stream==aspiration&&value>0&&reloq_dede61_consonant_r(state)?(int16_t)(value+1):value;
+}
+int32_t reloq_dede61_addStreamArraySsVal(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4)
+{(void)p0;return reloq61_append_filtered_interval(state,p1,p2,p3,p4,consonant_r_source);}
+
+/* A syllable-final r after long /oe/ has its own approved vocalic colour.
+ * Use phone and syllable records, so the same rule applies to SPR input. */
+static int r_after_long_oe(delta_state *d)
+{
+    int32_t at;memcpy(&at,(const unsigned char *)d+DG_BASE+712,sizeof at);
+    struct reloq61_spr_phone current,previous;
+    if(!reloq61_spr_phone_at(d,at,&current))return 0;
+    unsigned name=reloq61_spr_feature(d,&current,0);
+    if(name!=15 && !(name==25&&reloq61_spr_feature(d,&current,1)==2))return 0;
+    int32_t left=*EVV_AT(const int32_t *,current.node)&~3;
+    delta_vars *v=EVV_AT(delta_vars *,d->vars);
+    if(*EVV_AT(const int32_t *,left+(v->fence_base+7)*4)&1)return 0;
+    int32_t node=vgetsc(d,1,0,left,2);
+    while(node&&(*EVV_AT(const int32_t *,node)&2))node=vgetsc(d,1,0,node,2);
+    if(!node)return 0;
+    previous=(struct reloq61_spr_phone){node,EVV_AT(const int32_t *,node)[1]&~3};
+    return previous.after&&reloq61_spr_feature(d,&previous,0)==41;
+}
+
+/* The reduced -er nucleus after /y/ or /o/, as in "früher" and
+ * "lower", keeps the previous voice's neutral oral targets. */
+static int reduced_r_after_y_o(delta_state *d)
+{
+    int32_t at;memcpy(&at,(const unsigned char *)d+DG_BASE+712,sizeof at);
+    struct reloq61_spr_phone current,previous,next;
+    if(!reloq61_spr_phone_at(d,at,&current)||
+       reloq61_spr_feature(d,&current,0)!=25||
+       reloq61_spr_feature(d,&current,1)!=1)return 0;
+    int32_t left=*EVV_AT(const int32_t *,current.node)&~3;
+    delta_vars *v=EVV_AT(delta_vars *,d->vars);
+    if(*EVV_AT(const int32_t *,left+(v->fence_base+4)*4)&1)return 0;
+    int32_t node=vgetsc(d,1,0,left,2);
+    while(node&&(*EVV_AT(const int32_t *,node)&2))node=vgetsc(d,1,0,node,2);
+    if(!node)return 0;
+    previous=(struct reloq61_spr_phone){node,EVV_AT(const int32_t *,node)[1]&~3};
+    unsigned prior=reloq61_spr_feature(d,&previous,0);
+    if(prior!=39&&prior!=37)return 0;
+    if(reloq61_spr_phone_at(d,current.after,&next)&&
+       reloq61_spr_feature(d,&next,0)!=51) {
+        int32_t edge=*EVV_AT(const int32_t *,next.node)&~3;
+        if(!(*EVV_AT(const int32_t *,edge+(v->fence_base+4)*4)&1))return 0;
+    }
+    return 1;
+}
 
 /* The active typed model can change through inline controls. Reading its
  * values for this endpoint preserves that behavior without retaining any
@@ -25,6 +75,7 @@ static int16_t tenths(int16_t value,int factor)
 }
 int16_t reloq_dede61_filter_endpoint(void *state,int16_t stream,int16_t value)
 {
+    if(stream==8&&value>0&&r_after_long_oe(state))value=200;
     const unsigned char *fields=(const unsigned char *)state+DG_BASE;
     int16_t rate=field16(fields,3114),gender=field16(fields,3116),head=field16(fields,3118);
     int range=field16(fields,2658)==field16(fields,2650);
@@ -91,6 +142,17 @@ int32_t reloq_dede61_doF(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3
         get_parm(d,&left,EVV_AT(delta_loc *,p2),DK_SHORT2)||
         get_parm(d,&right,EVV_AT(delta_loc *,p3),DK_SHORT2))
         return reloq_scalar_finish(state,94);
+    if(stream.field>=1&&stream.field<=3&&r_after_long_oe(d)) {
+        static const int16_t target[]={600,1320,2300};
+        if(left.field>0)left.field=target[stream.field-1];
+        if(right.field>0)right.field=target[stream.field-1];
+    }
+    if(stream.field>=1&&stream.field<=3&&reduced_r_after_y_o(d)) {
+        static const int16_t entrance[]={600,1360,2280};
+        static const int16_t departure[]={600,1300,2280};
+        if(left.field>0)left.field=entrance[stream.field-1];
+        if(right.field>0)right.field=departure[stream.field-1];
+    }
     const unsigned char *fields=(const unsigned char *)state+DG_BASE;
     int32_t duration,begin,end;
     memcpy(&duration,fields+2080,4);
