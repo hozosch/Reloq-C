@@ -371,7 +371,10 @@ static int german_dictionary_compound_input(unsigned char **text,size_t **source
              * supplied constituent phones, keep the original spelling for
              * sentence analysis. Replacing it with isolated SPR groups can
              * move the sentence focus onto an acronym in a longer compound. */
-            if(german_native_compound_matches(a+i,end-i,preferred,preferred_n)) {
+            struct reloq61_text_options previous_options=reloq61_text_options_scope(options);
+            int matches=german_native_compound_matches(a+i,end-i,preferred,preferred_n);
+            reloq61_text_options_scope(previous_options);
+            if(matches) {
                 free(preferred);preferred=NULL;
             }
         }

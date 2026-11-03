@@ -147,6 +147,14 @@ def main():
                     assert audio and marks == [(7, len(audio))], (text, marks)
                     checks += 1
             e.set_parameter(PROCESS_TAGS, 1)
+            for control in ('`da0 ', '`da1 '):
+                for text in ('Die NVDA-Eloquence-Einstellungen sind korrekt.',
+                             'Die NVDA-ETI-Eloquence liest den Text.'):
+                    p = phonemes(e, control + text)
+                    assert 'kvEns' in p and 'bIn.0d@.2StrIX' not in p, (control, text, p)
+                    assert p.rsplit('`2 ', 1)[-1].startswith(
+                        "`[.0kO.1rEkt]" if text.endswith('korrekt.') else "`[.1tEkst]"), (control, text, p)
+                    checks += 1
             e.set_parameter(DICTIONARY, 1)
             plain.set_parameter(DICTIONARY, 1)
             assert render(e, ['ETI-Eloquence']) != render(plain, ['ETI-Eloquence']); checks += 1
