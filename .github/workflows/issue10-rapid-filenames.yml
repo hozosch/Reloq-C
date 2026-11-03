@@ -1,0 +1,45 @@
+name: Experimental rapid filename cancellation check
+on:
+  push:
+    branches: [codex/issue10-rapid-filenames]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-german-streaming-test
+          path: candidate
+          run-id: 41641495099
+          github-token: ${{ github.token }}
+      - name: Extract the verified rc12 DLL
+        shell: pwsh
+        run: |
+          @'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import hashlib, json
+          root=Path('candidate')
+          metadata=json.loads((root/'source.json').read_text())
+          assert metadata['source_commit']=='b04ec1fee20d4b9a7fc76df6cd614f3f4ee96f29'
+          addon=root/metadata['package']
+          assert hashlib.sha256(addon.read_bytes()).hexdigest()==metadata['sha256']
+          with ZipFile(addon) as z:
+              dlls=[n for n in z.namelist() if n.endswith('/eci.dll')]
+              assert len(dlls)==1
+              (root/'eci.dll').write_bytes(z.read(dlls[0]))
+          '@ | python -
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Exercise rapid cancellations and recovery
+        shell: pwsh
+        run: |
+          python nvda/test_eci_rapid_filenames.py --library candidate/eci.dll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
