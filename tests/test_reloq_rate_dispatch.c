@@ -26,11 +26,12 @@ static void classic_response(void)
       .6)<1e-7);
   assert(fabs(response(s.voice_colour[0],0,rates[r])-1)<1e-9);
   assert(20*log10(response(s.voice_colour[0],1500,rates[r]))<.1);
-  /* The complete periodic source has a separate high-band correction;
-   * neither that shelf nor the sampled-source fit colours AF or AH. */
-        assert(fabs(20*log10(response(s.voice_colour[1],0,rates[r])))<1e-7);
-  assert(response(s.voice_colour[1],5000,rates[r])>
-      response(s.voice_colour[1],1000,rates[r]));
+  /* A fixed broad bell concentrates periodic presence at 3.5–4 kHz;
+   * unlike the old shelf it does not raise all the way to Nyquist. */
+  assert(fabs(20*log10(response(s.voice_colour[1],0,rates[r])))<1e-7);
+  assert(fabs(20*log10(response(s.voice_colour[1],3750,rates[r]))-1.3)<1e-7);
+  assert(response(s.voice_colour[1],3750,rates[r])>response(s.voice_colour[1],5000,rates[r]));
+  assert(20*log10(response(s.voice_colour[1],300,rates[r]))<.05);
   for(unsigned f=0;f<10;++f) {
    double complex z=cexp(-I*2*pi*hz[f]/11025);
    double gain=10*log10(classic_reference_power(&s,z));
@@ -54,6 +55,21 @@ static void classic_response(void)
 static void gradual_response(void)
 {
  const float rates[]={22050,32000,44100,48000};unsigned checks=0;
+ /* Check the actual production amounts, including the 16-kHz foundation.
+  * Gain is gradual in physical Hz and never lifts the bass wholesale. */
+ const float all_rates[]={16000,22050,32000,44100,48000};
+ const float amounts[]={0,.12f,.24f,.32f,.36f};double previous=0;
+ for(unsigned r=0;r<5;++r) {
+  struct reloq_core_voiced_formants f={0};
+  struct reloq_rate_transfer s={.trial_profile=1,.body_amount=amounts[r]};
+  prepare_colour(&s,all_rates[r]);reloq_rate_transfer_prepare_body(&s,&f,all_rates[r]);
+  double middle=response(s.voice_colour[1],3750,all_rates[r]);
+  double bass=response(s.voice_colour[1],300,all_rates[r]);
+  if(s.body_ready) {middle*=response(s.body_target[0],3750,all_rates[r]);bass*=response(s.body_target[0],300,all_rates[r]);}
+  double expected=1.3+3*amounts[r],db=20*log10(middle);
+  assert(fabs(db-expected)<.00001);assert(db>previous);previous=db;
+  assert(fabs(20*log10(bass))<.05);
+ }
  for(unsigned r=0;r<4;++r) {
   struct reloq_core_voiced_formants f={.highest_formant=8};
   for(unsigned j=5;j<8;++j)f.oral[j]=(struct reloq_core_formant){5000+1300*(j-5),1000+250*(j-5)};
@@ -61,7 +77,7 @@ static void gradual_response(void)
   prepare_colour(&a,rates[r]);reloq_rate_transfer_prepare_body(&a,&f,rates[r]);
   struct reloq_rate_transfer b=a;
   double fixed[3][5];memcpy(fixed,a.body_target,sizeof fixed);
-  assert(fabs(20*log10(response(fixed[0],1800,rates[r]))-1.38)<.00001);
+  assert(fabs(20*log10(response(fixed[0],3750,rates[r]))-1.38)<.00001);
   assert(20*log10(response(fixed[0],200,rates[r]))<.1);
   for(unsigned j=1;j<3;++j)assert(fixed[j][0]==1&&fixed[j][1]==0&&fixed[j][2]==0&&fixed[j][3]==0&&fixed[j][4]==0);
   float whole[1037],split[1037];

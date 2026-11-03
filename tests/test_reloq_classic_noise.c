@@ -56,6 +56,17 @@ int main(void) {
   else {assert(full.upper>anchor.upper);assert(reduction>-.05);}
   assert(reloq_rate_transfer_prepare_classic(&s,&ref,&cur,&p,rates[r]));
   assert(!memcmp(normal,s.target,sizeof normal));
+  if(rates[r]==32000) {
+   /* Scaling every FIR tap is pure level compensation, not another
+    * spectral contour. A new trim must also invalidate the filter cache. */
+   s.frication_trim_db=.6f;
+   assert(reloq_rate_transfer_prepare_classic(&s,&ref,&cur,&p,rates[r]));
+   double scale=pow(10,-.6/20);
+   for(unsigned i=0;i<RELOQ_RATE_TAPS;++i)assert(fabs(s.target[i]-normal[i]*scale)<2e-6);
+   s.frication_trim_db=0;
+   assert(reloq_rate_transfer_prepare_classic(&s,&ref,&cur,&p,rates[r]));
+   assert(!memcmp(normal,s.target,sizeof normal));
+  }
   if(kind==0&&r){
    for(unsigned rolled=0;rolled<2;++rolled) {
     s.sibilant_extension=rolled;

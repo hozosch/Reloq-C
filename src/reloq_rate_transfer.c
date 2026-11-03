@@ -646,18 +646,15 @@ static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rat
         double *c=s->voice_colour[0];
         c[0]=(1+alpha*a)/den;c[1]=-2*cos(w)/den;c[2]=(1-alpha*a)/den;
         c[3]=c[1];c[4]=(1-alpha/a)/den;
-        /* Periodic presence has no broadband trim: the bass retains its
-         * 11-kHz level. Further bandwidth comes from the source poles,
-         * not an inverse sampling shelf that amplifies their aliases. */
-        const double shelf_gain=1.1885022274370185,trim=1;
-        double omega=2*pi*4000/rate,co=cos(omega),beta=sin(omega)*sqrt(2*shelf_gain);
-        double divisor=(shelf_gain+1)-(shelf_gain-1)*co+beta;
-        double *shelf=s->voice_colour[1];
-        shelf[0]=trim*shelf_gain*((shelf_gain+1)+(shelf_gain-1)*co+beta)/divisor;
-        shelf[1]=-2*trim*shelf_gain*((shelf_gain-1)+(shelf_gain+1)*co)/divisor;
-        shelf[2]=trim*shelf_gain*((shelf_gain+1)+(shelf_gain-1)*co-beta)/divisor;
-        shelf[3]=2*((shelf_gain-1)-(shelf_gain+1)*co)/divisor;
-        shelf[4]=((shelf_gain+1)-(shelf_gain-1)*co-beta)/divisor;
+        /* Keep useful presence around 3.5–4 kHz, without a shelf that
+         * continues to raise everything towards Nyquist. This fixed broad
+         * EQ acts only on the existing periodic source and leaves bass and
+         * the fricative/aspiration paths independently controlled. */
+        const double bell_a=pow(10,1.3/40),omega=2*pi*3750/rate;
+        const double bell_alpha=sin(omega)/2,bell_den=1+bell_alpha/bell_a;
+        double *bell=s->voice_colour[1];
+        bell[0]=(1+bell_alpha*bell_a)/bell_den;bell[1]=-2*cos(omega)/bell_den;
+        bell[2]=(1-bell_alpha*bell_a)/bell_den;bell[3]=bell[1];bell[4]=(1-bell_alpha/bell_a)/bell_den;
         s->presence_rate=rate;return;
     }
     /* Keep the shared tract/aspiration response. Periodic excitation

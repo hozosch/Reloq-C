@@ -1,3 +1,30 @@
+# Testkandidat 1.1.0-rc9: Stimmkörper-EQ und Konsonantenpegel
+
+Dieser NVDA-Hörtest setzt bei den vom Nutzer auch bei 16 kHz gehörten
+Artefakten an. Der bisherige stimmhafte Hochton-Shelf, der bis zur
+Nyquist-Grenze anhebt, wird ab 16 kHz durch eine feste, breite und begrenzte
+Anhebung um 3,75 kHz ersetzt. Sie beträgt dort 1,3 dB bei 16 kHz und wächst
+bei 22,05/32/44,1/48 kHz auf 1,66/2,02/2,26/2,38 dB. Dies formt vorhandene
+periodische Energie, ohne zusätzliche Obertöne zu erzeugen. Der unabhängig
+behandelte Rauschpfad der Konsonanten bei 16/22 kHz und die Aspiration
+bleiben unverändert.
+Bei 32 kHz wird der gesamte AF-Weg um 0,25 dB abgesenkt, bei S-artigen
+Lauten und kastilischem S/T um 0,6 dB; seine relative Spektralform bleibt gleich.
+
+Ein Vergleich gegen rc8 erhält 20 untersuchte S-/F-Anfänge bei 16 und
+22 kHz bytegenau. Bei 32 kHz sind diese Anfänge je nach Laut um etwa
+0,25 beziehungsweise 0,6 dB leiser; andere untersuchte Raten bleiben
+gleich. In 36 stationären Vokal-/Tonhöhen-/Ratenfällen weicht der Bass
+um höchstens 0,096 dB von der 16-kHz-Basis ab; die Energie im Vergleichsband
+3,5–5 kHz steigt in jedem Schritt, mit maximal 2,58 dB gegenüber 16 kHz.
+Diese Messungen sagen nicht voraus, ob der Klang subjektiv artefaktfrei ist.
+
+Die Änderungen sind ein Hörtest, keine bestätigte Beseitigung der Artefakte.
+Android bleibt auf seinem bisherigen Paketstand, bis die Klangabstimmung
+bestätigt ist. Der lange deutsche Einzelsatz bleibt weiterhin offen.
+
+Die folgenden Abschnitte beschreiben frühere Teststände.
+
 # Testkandidat 1.1.0-rc8: Konsonanten und Android-Direktstart
 
 16 kHz bleibt unverändert. Ab 22,05 kHz werden die breiteren

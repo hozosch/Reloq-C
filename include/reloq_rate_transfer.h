@@ -40,6 +40,8 @@ struct reloq_rate_transfer {
     unsigned body_ready,body_remaining;
     /* Limit the optional Castilian S/T extension independently of other AF. */
     unsigned sibilant_extension;
+    /* Small whole-band AF level adjustment, leaving its spectrum intact. */
+    float frication_trim_db;
     double classic_reference[2][5];
     /* Periodic glottal filter only. Moving physical poles to a new clock
      * otherwise loses the reference's discrete source response. */

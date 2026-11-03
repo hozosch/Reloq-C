@@ -1,6 +1,6 @@
 /* A fixed, broad and modest periodic-only contour. Unlike the former moving
  * upper-formant filters it adds no poles following the speech formants and
- * produces no new harmonics. The 16-kHz contour and aspiration are untouched. */
+ * produces no new harmonics. Aspiration is untouched. */
 void reloq_rate_transfer_prepare_body(struct reloq_rate_transfer *s,
     const struct reloq_core_voiced_formants *f,float rate)
 {
@@ -13,7 +13,7 @@ void reloq_rate_transfer_prepare_body(struct reloq_rate_transfer *s,
         double *c=s->body_target[j];
         memset(c,0,5*sizeof *c);c[0]=1;
         if(!j) {
-            const double hz=1800, q=.65;
+            const double hz=3750, q=1;
             double w=2*pi*hz/rate,alpha=sin(w)/(2*q);
             double a=pow(10,3*s->body_amount/40),den=1+alpha/a;
             c[0]=(1+alpha*a)/den;c[1]=-2*cos(w)/den;

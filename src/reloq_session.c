@@ -266,9 +266,9 @@ int reloq_session_reset(struct reloq_session *session)
      * gently colours only the periodic excitation; aspiration remains intact. */
     next.rate_transfer.trial_profile=session->high_rate_profile;
     if(session->high_rate_profile&&c->glottal_reference_rate>0)
-        next.rate_transfer.body_amount=c->sample_rate>=48000?.46f:
-            c->sample_rate>=44100?.42f:c->sample_rate>=32000?.30f:
-            c->sample_rate>=22050?.15f:0;
+        next.rate_transfer.body_amount=c->sample_rate>=48000?.36f:
+            c->sample_rate>=44100?.32f:c->sample_rate>=32000?.24f:
+            c->sample_rate>=22050?.12f:0;
     session->linear_gain=1;
     next.noise_transfer.trial_profile=session->high_rate_profile;
     session->frame_state = next;

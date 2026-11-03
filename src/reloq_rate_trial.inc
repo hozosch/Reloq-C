@@ -17,7 +17,7 @@ int reloq_rate_transfer_prepare_classic_bandwidth(struct reloq_rate_transfer *s,
     if(s->sibilant_extension)extension*=rate>=48000?.35:rate>=44100?.4:
         rate>=32000?.5:.6;
     float key[144]={-11026,rate,(float)profile->kind,(float)extension,
-        (float)s->sibilant_extension};unsigned at=5;
+        (float)s->sibilant_extension,s->frication_trim_db};unsigned at=6;
     const struct reloq_core_frication_bank *banks[]={reference,current};
     for(unsigned i=0;i<2;++i) {
         key[at++]=(float)banks[i]->active_formants;
@@ -89,6 +89,7 @@ int reloq_rate_transfer_prepare_classic_bandwidth(struct reloq_rate_transfer *s,
      * Keep 16 kHz byte-identical to the established Classic foundation. */
     double compensated=rate>=22050?baseline:wanted;
     double compensation=rendered>0?sqrt(compensated/rendered):1;
+    if(s->frication_trim_db>0)compensation*=pow(10,-s->frication_trim_db/20.0);
     for(unsigned j=0;j<RELOQ_RATE_TAPS;++j)s->target[j]*=(float)compensation;
     prepare_ramp(s,rate);s->remaining=(unsigned)(rate*.003f);
     for(unsigned j=0;j<RELOQ_RATE_TAPS;++j)s->step[j]=(s->target[j]-s->kernel[j])/s->remaining;
