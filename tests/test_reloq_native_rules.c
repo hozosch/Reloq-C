@@ -14,6 +14,7 @@ struct pitch_plan {
     int32_t max_diplophonia,max_aspiration;
     int i_e_r_target,i_e_target,final_a_target,comma_a_transition,weak_verb_rise,direct_weak_verb_fall;
     unsigned r_phase_mask,r_phase_anywhere;
+    int r_continuous;
 };
 static int span(void *context,int32_t from,int32_t to,
     const struct reloq61_curve c[62],int32_t volume)
@@ -38,6 +39,8 @@ static int span(void *context,int32_t from,int32_t to,
     if(from<50&&c[7].val_l==28&&c[7].val_r==49)p->r_phase_mask|=1u;
     if(from<50&&c[7].val_l==49&&c[7].val_r==28)p->r_phase_mask|=2u;
     if(from<50&&c[7].val_l==28&&c[7].val_r==53)p->r_phase_mask|=4u;
+    if(from>0&&c[2].val_l==41&&c[2].val_r==41&&c[6].val_l==0&&c[6].val_r==0&&
+       c[7].val_l==53&&c[7].val_r==53)p->r_continuous=1;
     if(c[7].val_l==28&&c[7].val_r==49)p->r_phase_anywhere|=1u;
     if(c[7].val_l==49&&c[7].val_r==28)p->r_phase_anywhere|=2u;
     if(c[7].val_l==28&&c[7].val_r==53)p->r_phase_anywhere|=4u;
@@ -120,11 +123,17 @@ static unsigned german_phone_targets(void)
 {
     struct pitch_plan p;
     p=german_pitch("Rot",65,0,75);
-    assert(p.max_aspiration==53&&p.r_phase_mask==7);
+    assert(p.max_aspiration==53&&p.r_phase_mask==7&&p.max_diplophonia==0);
     p=german_pitch("vierund",65,0,75);
-    assert(p.max_diplophonia==1&&p.r_phase_anywhere==7);
+    assert(p.max_diplophonia==0&&p.r_continuous&&!p.r_phase_anywhere);
     p=german_pitch("brennen",65,0,75);
-    assert(p.max_diplophonia==1&&p.r_phase_anywhere==7);
+    assert(p.max_diplophonia==40&&!p.r_phase_anywhere);
+    p=german_pitch("Stra\337e",65,0,75);
+    assert(p.max_diplophonia==60&&!p.r_phase_anywhere);
+    p=german_pitch("B\374ro",65,0,75);
+    assert(p.max_diplophonia==0&&p.r_phase_anywhere==7);
+    p=german_pitch("Karriere",65,0,75);
+    assert(p.max_diplophonia==0&&p.r_phase_anywhere==7);
     p=german_pitch("Pizza.",65,0,75);
     assert(p.final_a_target);
     p=german_pitch("Komma.",65,0,75);
@@ -133,7 +142,7 @@ static unsigned german_phone_targets(void)
     assert(p.i_e_r_target);
     p=german_pitch("wie eben",65,0,75);
     assert(p.i_e_target);
-    return 7;
+    return 10;
 }
 
 static int pitch_pair(const struct pitch_plan *p,int32_t left,int32_t right)
@@ -191,6 +200,33 @@ static unsigned german_question_contours(void)
     for(size_t i=0;i<p.count;++i)assert(p.pair[i][0]==p.pair[i][1]);
     return checks+1;
 }
+static unsigned english_question_contours(void)
+{
+    const char *questions[]={"How does it work?", "Is this right?", "Where are we going?",
+        "Would you like coffee or tea?", "What?", "Are you ready?", "What is this?",
+        "This is a statement. Is that a question?"};
+    const int speeds[]={40,75,150,200},pitches[]={65,98};unsigned checks=0;
+    for(unsigned t=0;t<sizeof questions/sizeof *questions;++t)
+        for(unsigned s=0;s<sizeof speeds/sizeof *speeds;++s)
+            for(unsigned h=0;h<sizeof pitches/sizeof *pitches;++h)
+                for(int gender=0;gender<2;++gender) {
+                    struct pitch_plan p={.acoustic_hash=UINT64_C(1469598103934665603)};
+                    struct reloq61_request q=request(0x10000,questions[t]);struct reloq61_result result={0};
+                    q.context=&p;q.voice[0]=gender;q.voice[2]=pitches[h];q.voice[6]=speeds[s];
+                    assert(!reloq61_generate(&q,&result)&&!result.error&&!result.unsupported);
+                    size_t i=p.count;while(i&&p.pair[i-1][0]==p.pair[i-1][1])--i;
+                    if(!i||p.pair[i-1][1]<=p.pair[i-1][0]) {
+                        fprintf(stderr,"Question did not rise: %s, speed %d, pitch %d, gender %d\n",questions[t],speeds[s],pitches[h],gender);abort();
+                    }
+                    ++checks;
+                }
+    struct pitch_plan p={.acoustic_hash=UINT64_C(1469598103934665603)};
+    struct reloq61_request q=request(0x10000,"How does it work?");struct reloq61_result result={0};
+    q.context=&p;q.voice[3]=0;
+    assert(!reloq61_generate(&q,&result)&&!result.error&&!result.unsupported&&p.count);
+    for(size_t i=0;i<p.count;++i)assert(p.pair[i][0]==p.pair[i][1]);
+    return checks+1;
+}
 static void phones(int language,const char *text,char normalized[4096])
 {
     char raw[16384]={0};struct reloq61_request q=request(language,text);
@@ -240,7 +276,7 @@ static unsigned clocks(void)
 }
 int main(void)
 {
-    unsigned c=clocks(),p=chinese(),g=german_high_pitch(),a=german_phone_targets(),m=german_postfocus_melody(),q=german_question_contours(),qa=german_question_alignment();
-    printf("Native rules: %u English seconds/zero/fraction cases, %u full Chinese F0 sequences, %u German high-pitch contours, %u rhotic/e/A targets, %u post-focus melodies, %u question contours and %u old-path question alignment; tempo, models, heads and pitch controls\n",c,p,g,a,m,q,qa);
+    unsigned c=clocks(),p=chinese(),g=german_high_pitch(),a=german_phone_targets(),m=german_postfocus_melody(),q=german_question_contours(),qa=german_question_alignment(),enq=english_question_contours();
+    printf("Native rules: %u English seconds/zero/fraction cases, %u full Chinese F0 sequences, %u German high-pitch contours, %u rhotic/e/A targets, %u post-focus melodies, %u German question contours, %u old-path question alignment and %u US question contours; tempo, models, heads and pitch controls\n",c,p,g,a,m,q,qa,enq);
     return 0;
 }

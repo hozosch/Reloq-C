@@ -188,7 +188,11 @@ static HRESULT dictionary(struct sapi_backend *b,const struct sapi_settings *s)
     WCHAR path[2048]=L"";WIN32_FILE_ATTRIBUTE_DATA files[6]={0};
     if(s->dictionaries){
         if(s->directory[0])wcscpy(path,s->directory);
+#ifdef RELOQ_SAPI_TEST_HOST
         else if(!sapi_module_path(path,2048,L"dictionaries"))return E_FAIL;
+#else
+        else if(!sapi_default_dictionary_path(path,2048))return E_FAIL;
+#endif
         const WCHAR *prefix=NULL;
         switch(b->dialect){
         case 0x10000:prefix=L"ENU";break;case 0x10001:prefix=L"ENG";break;

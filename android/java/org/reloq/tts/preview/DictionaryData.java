@@ -10,6 +10,8 @@ final class DictionaryData {
     static final int LIMIT=8*1024*1024;
     static final String[] COMMUNITY={"DEUmain.dic","DEURoot.dic","DEUabbr.dic",
         "ENUmain.dic","ENURoot.dic","ENUabbr.dic","LICENSE.md"};
+    static final String[] ALTERNATIVE={"ENUmain.dic","ENURoot.dic","ESPmain.dic"};
+    static final String[] ALTERNATIVE_REMOTE={"enumain.dic","enuroot.dic","espmain.dic"};
     static final String[] SUFFIXES={"main","Root","abbr"};
     static String prefix(int language) {
         switch(language) {
@@ -42,6 +44,21 @@ final class DictionaryData {
     }
     static final class Merger {
         final TreeMap<String,TreeMap<String,String[]>> volumes=new TreeMap<>();
+        void addAlternative(String name,byte[] data) throws IOException {
+            // Alternative files can be UTF-8 or Windows-1252; the engine
+            // consumes the latter. Do not misdecode existing ANSI data.
+            String text;
+            try {text=StandardCharsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(data)).toString();}
+            catch(java.nio.charset.CharacterCodingException error) {add(name,data);return;}
+            if(text.startsWith("\uFEFF"))text=text.substring(1);
+            StringBuilder out=new StringBuilder();
+            for(String line:text.split("\\R")) {
+                if(!java.nio.charset.Charset.forName("windows-1252").newEncoder().canEncode(line))
+                    line=java.text.Normalizer.normalize(line,java.text.Normalizer.Form.NFD).replaceAll("\\p{M}","");
+                if(java.nio.charset.Charset.forName("windows-1252").newEncoder().canEncode(line))out.append(line).append('\n');
+            }
+            add(name,out.toString().getBytes(java.nio.charset.Charset.forName("windows-1252")));
+        }
         void add(String name,byte[] data) throws IOException {
             if(data.length>LIMIT)throw new IOException("Dictionary exceeds 8 MiB");
             for(byte b:data)if(b==0)throw new IOException("NUL in dictionary");

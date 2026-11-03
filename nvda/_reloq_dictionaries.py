@@ -18,6 +18,11 @@ from urllib.request import Request, urlopen
 REPOSITORY = "eigencrow/IBMTTSDictionaries"
 FILES = tuple(prefix + suffix + ".dic" for prefix in ("DEU", "ENU")
               for suffix in ("main", "Root", "abbr")) + ("LICENSE.md",)
+ALTERNATIVE_REPOSITORY = "Mohamed00/AltIBMTTSDictionaries"
+ALTERNATIVE_FILES = {"ENUmain.dic": "enumain.dic", "ENURoot.dic": "enuroot.dic",
+                     "ESPmain.dic": "espmain.dic"}
+SOURCES = {"community": (REPOSITORY, {name: name for name in FILES}),
+           "alternative": (ALTERNATIVE_REPOSITORY, ALTERNATIVE_FILES)}
 SHA = re.compile(r"[0-9a-f]{40}\Z")
 LIMIT = 8 * 1024 * 1024
 
@@ -39,11 +44,13 @@ def _blob(data):
 def validate_snapshot(directory):
     directory = Path(directory)
     manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
-    if (manifest.get("repository") != REPOSITORY or manifest.get("branch") != "master"
+    selected = next((mapping for repo, mapping in SOURCES.values()
+                     if repo.lower() == str(manifest.get("repository", "")).lower()), None)
+    if (selected is None or manifest.get("branch") != "master"
             or not SHA.fullmatch(manifest.get("commit", ""))
-            or set(manifest.get("files", {})) != set(FILES)):
+            or set(manifest.get("files", {})) != set(selected)):
         raise ValueError("invalid dictionary snapshot manifest")
-    for name in FILES:
+    for name in selected:
         data = (directory / name).read_bytes()
         record = manifest["files"][name]
         if len(data) > LIMIT or len(data) != record["size"] or _blob(data) != record["sha"]:
@@ -51,10 +58,13 @@ def validate_snapshot(directory):
     return manifest
 
 
-def fetch_master(cache, *, fetch=urlopen, publish=True):
+def fetch_master(cache, *, fetch=urlopen, publish=True, source="community"):
     """Resolve master afresh; never use a release tag or a pinned old commit."""
-    cache = Path(cache)
-    api = f"https://api.github.com/repos/{REPOSITORY}"
+    if source not in SOURCES:
+        raise ValueError("unknown dictionary source")
+    repository, names = SOURCES[source]
+    cache = Path(cache) if source == "community" else Path(cache) / source
+    api = f"https://api.github.com/repos/{repository}"
     head = json.loads(_get(api + "/branches/master", 1024 * 1024, fetch))
     commit = head["commit"]["sha"]
     if not isinstance(commit, str) or not SHA.fullmatch(commit):
@@ -62,24 +72,27 @@ def fetch_master(cache, *, fetch=urlopen, publish=True):
     cache.mkdir(parents=True, exist_ok=True)
     target = cache / commit
     if target.is_dir():
-        validate_snapshot(target)
+        manifest = validate_snapshot(target)
+        if manifest["repository"].lower() != repository.lower():
+            raise ValueError("cached dictionary source mismatch")
     else:
         tree = json.loads(_get(api + f"/git/trees/{commit}", 2 * 1024 * 1024, fetch))
         if tree.get("truncated"):
             raise ValueError("incomplete dictionary tree")
-        records = {r["path"]: {"sha": r["sha"], "size": r["size"]}
-                   for r in tree["tree"] if r.get("type") == "blob" and r["path"] in FILES}
-        if set(records) != set(FILES):
+        remote = {r["path"]: {"sha": r["sha"], "size": r["size"]}
+                  for r in tree["tree"] if r.get("type") == "blob" and r["path"] in names.values()}
+        records = {name: remote[path] for name, path in names.items() if path in remote}
+        if set(records) != set(names):
             raise ValueError("master is missing an ECI dictionary volume")
         with tempfile.TemporaryDirectory(prefix="download-", dir=cache) as temporary:
             stage = Path(temporary) / "snapshot"
             stage.mkdir()
             for name, record in records.items():
-                data = _get(f"https://raw.githubusercontent.com/{REPOSITORY}/{commit}/{name}", LIMIT, fetch)
+                data = _get(f"https://raw.githubusercontent.com/{repository}/{commit}/{names[name]}", LIMIT, fetch)
                 if len(data) != record["size"] or _blob(data) != record["sha"]:
                     raise ValueError(f"Git blob verification failed: {name}")
                 (stage / name).write_bytes(data)
-            manifest = {"repository": REPOSITORY, "branch": "master", "commit": commit,
+            manifest = {"repository": repository, "branch": "master", "commit": commit,
                         "files": records}
             (stage / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
             validate_snapshot(stage)

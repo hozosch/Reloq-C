@@ -16,10 +16,14 @@ static int is_question(void *state,int32_t phrase)
     return kind==3 || kind==4 || kind==7 || kind==8;
 }
 
+int reloq61_english_is_question(void *state,int32_t phrase)
+{return is_question(state,phrase);}
+
 void reloq61_english_question_tones(void *state,int32_t phrase,int16_t high,
-    int16_t *phrase_tone,int16_t *boundary_tone)
+    int16_t low_nucleus,int16_t *nucleus,int16_t *phrase_tone,int16_t *boundary_tone)
 {
     if(is_question(state,phrase)) {
+        *nucleus=low_nucleus;
         *phrase_tone=high;
         *boundary_tone=high;
     }

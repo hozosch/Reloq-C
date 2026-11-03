@@ -103,6 +103,36 @@ int reloq_dede61_initial_r(void *state)
     return reloq_dede61_consonant_r(state)&&reloq61_spr_phone_at(d,at,&r)&&
         begins_projection(d,&r,4);
 }
+/* Source modes measured in the previous German composer. Four-phase r
+ * occurs initially and after an unstressed vowel before a stressed syllable;
+ * stop/fricative clusters keep their own native source and diplophonia. */
+static int syllable_stress(delta_state *d,const struct reloq61_spr_phone *p)
+{
+    int32_t left=*EVV_AT(const int32_t *,p->node)&~3;
+    int32_t owner=vgetsc(d,1,1,left,7);
+    int32_t node=owner?vgetsc(d,0,0,owner,7):0;
+    while(node&&(*EVV_AT(const int32_t *,node)&2))node=vgetsc(d,0,0,node,7);
+    if(!node)return -1;
+    int16_t stress;memcpy(&stress,delta_record_field(&vstmtbl[7],0,TFLDS(EVV_AT(void *,node))),2);
+    return stress;
+}
+int reloq_dede61_old_r_source(void *state)
+{
+    delta_state *d=state;int32_t at;
+    memcpy(&at,(const unsigned char *)state+DG_BASE+712,sizeof at);
+    struct reloq61_spr_phone r,previous,next;
+    if(!reloq_dede61_consonant_r(state)||!reloq61_spr_phone_at(d,at,&r))return 0;
+    if(begins_projection(d,&r,4))return 1;
+    if(!prior_phone(d,&r,&previous)||reloq61_spr_feature(d,&previous,1)!=1||
+       !reloq61_spr_phone_at(d,r.after,&next))return 0;
+    if(reloq61_spr_feature(d,&next,0)==36)return 3; /* short /u/ */
+    int before=syllable_stress(d,&previous),after=syllable_stress(d,&r);
+    unsigned vowel=reloq61_spr_feature(d,&next,0);
+    if(before==1&&after==0)return 0;
+    if((before==0&&after==1)||(vowel>=27&&vowel<=32)||
+       vowel==39||vowel==40||vowel==41||vowel==42||vowel==48)return 1;
+    return 0;
+}
 static const struct reloq61_segment_layout layout={
     .pause_class=8,.speed_field=15,
     .speed_before=464,
@@ -135,23 +165,22 @@ static const struct reloq61_segment_layout layout={
 int32_t reloq_dede61_addStreamArrayPtVal(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
 {(void)p0;return reloq61_segment_point(state,p1,p2,p3,p4,p5);}
 
-/* Apply the accepted word-initial R source to every consonantal R. */
+/* Four-phase source is used only in the old composer's matching contexts. */
 static int consonant_r_voicing(void *state,int16_t stream,int16_t value,int32_t from,int32_t to)
 {
-    (void)value;
-    if(!reloq_dede61_consonant_r(state))return 0;
+    if(reloq_dede61_old_r_source(state)!=1)return 0;
     int32_t first,last;memcpy(&first,(const unsigned char *)state+DG_BASE+1048,4);
     memcpy(&last,(const unsigned char *)state+DG_BASE+1056,4);
     if(last<=first||last-first<60000)return 0;
     int64_t span=(int64_t)last-first;
     int64_t third=(int64_t)first+span*7/10+10000;
     if(third+10000>=last)return 0;
-    if(from==first&&to<=last) {
+    if(from==first&&to<last&&value==0) {
         reloq61_submit_interval(state,stream,0,first,(int32_t)third);
         reloq61_submit_interval(state,stream,41,(int32_t)(third+10000),last);
         return 1;
     }
-    if(from>first&&to==last)return 1;
+    if(from>first&&to==last&&value==28)return 1;
     return 0;
 }
 int32_t reloq_dede61_doAV(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)

@@ -1,7 +1,7 @@
 name: SAPI5 installer and Windows validation
 on:
   push:
-    branches: [main]
+    branches: [main, codex/release110]
     paths:
       - .github/workflows/sapi-installer.yml
       - sapi/**
@@ -68,6 +68,15 @@ jobs:
           pattern: sapi-native-*
           path: dist
           merge-multiple: true
+      - name: Download and verify the alternative dictionary through both adapters
+        shell: pwsh
+        run: |
+          foreach ($arch in @('x64', 'x86')) {
+            $zip = (Get-ChildItem dist/reloq-c-sapi5-$arch-*.zip | Select-Object -First 1).FullName
+            Expand-Archive -Path $zip -DestinationPath "test-$arch"
+            & "./test-$arch/Test-Dictionary.exe"
+            if ($LASTEXITCODE -ne 0) { throw "Dictionary source smoke test failed for $arch" }
+          }
       - name: Compile unified Inno Setup installer
         shell: pwsh
         run: |

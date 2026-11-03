@@ -2,7 +2,7 @@ ReLoq C 1.0 — unified SAPI5 Windows installer
 
 Installation
 ------------
-Run reloq-c-sapi5-1.0.0-setup.exe. Inno Setup offers the supported interface
+Run the supplied ReLoq C SAPI5 setup executable. Inno Setup offers the supported interface
 languages and initially selects the Windows display language. Administrator
 permission is requested. The single installer installs both x64 and x86 voices
 on compatible 64-bit Windows, and x86 voices on 32-bit Windows. Each installed
@@ -68,11 +68,12 @@ checks detect edits, replacement, creation and deletion of native .dic files
 between utterances. No text result or synthesized speech is cached. Abort is
 polled during rendering and delivery.
 
-Enable dictionaries for the bundled master snapshot from
-eigencrow/IBMTTSDictionaries. A writable custom folder may contain native .dic
-files; an empty path uses the bundled folder. Upgrades preserve edited files.
-SAPI's lexicon editor and a dictionary download/update UI are not implemented.
-NVDA and Android retain their existing dictionary managers.
+Enable dictionaries and choose either the bundled IBM TTS Dictionaries or
+Alternative IBM TTS Dictionaries in the settings window. The alternative is
+downloaded and verified in the background and can be updated there. The
+alternative source currently provides US English and Castilian Spanish files.
+A custom dictionary folder overrides the selected source and stays unchanged.
+SAPI's lexicon editor is not implemented.
 
 Validation and limits
 ---------------------

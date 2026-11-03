@@ -54,7 +54,7 @@
     <string name="move_dictionary_up">Déplacer le fichier sélectionné vers le haut</string>
     <string name="move_dictionary_down">Déplacer le fichier sélectionné vers le bas</string>
     <string name="reload_dictionaries">Recharger les fichiers sélectionnés</string>
-    <string name="dictionary_help">Les dictionnaires communautaires et les entrées Dic personnelles utilisent les étapes natives des dictionnaires. Choisissez la langue et la section avant d’ajouter un fichier. Les fichiers utilisent l’encodage Windows-1252. Les fichiers suivants remplacent les entrées des précédents. Les modifications sont surveillées lorsque le fournisseur de documents transmet des métadonnées de modification ; Recharger les fichiers sélectionnés relit toujours les sources. Seul le bouton de mise à jour utilise le réseau. Les dictionnaires activés sont copiés dans le stockage protégé de l’appareil pour être utilisables après un redémarrage et avant le premier déverrouillage.</string>
+    <string name="dictionary_help">Les dictionnaires communautaires et les entrées Dic personnelles utilisent les étapes natives des dictionnaires. Choisissez la langue et la section avant d’ajouter un fichier. Les fichiers utilisent l’encodage Windows-1252. Les fichiers suivants remplacent les entrées des précédents. Les modifications sont surveillées lorsque le fournisseur de documents transmet des métadonnées de modification ; Recharger les fichiers sélectionnés relit toujours les sources. La source choisie est téléchargée lors de sa première utilisation ou de sa mise à jour. Les dictionnaires activés sont copiés dans le stockage protégé de l’appareil pour être utilisables après un redémarrage et avant le premier déverrouillage.</string>
     <string name="dictionary_working">Préparation des dictionnaires</string>
     <string name="dictionary_ready">Dictionnaires prêts</string>
     <string name="dictionary_error">Échec de la mise à jour du dictionnaire : %1$s</string>
@@ -76,4 +76,6 @@
     <string name="speed_help">Le nombre de mots par minute est approximatif ; la vitesse réelle dépend de la langue, de la longueur des mots et des pauses. La vitesse normale d’Android vise 190 mots par minute.</string>
     <string name="abbreviation_dictionary">Utiliser le dictionnaire d’abréviations</string>
     <string name="phrase_prediction">Prédiction des phrases</string>
+    <string name="dictionary_repository">Source des dictionnaires</string>
+    <string-array name="dictionary_repositories"><item>Dictionnaires IBM TTS</item><item>Dictionnaires IBM TTS alternatifs</item></string-array>
 </resources>

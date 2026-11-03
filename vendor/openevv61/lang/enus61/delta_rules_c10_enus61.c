@@ -8969,6 +8969,7 @@ static int32_t evv_eng_first_postnucl_accent(void *state, const int32_t *args, i
     return reloq_enus61_eng_first_postnucl_accent(state, nargs>0?args[0]:0);
 }
 
+extern int reloq61_english_is_question(void *, int32_t);
 /* eng_boundary_tone, from f61_32.obj */
 int32_t reloq_enus61_eng_boundary_tone(void *state, int32_t p0)
 {
@@ -9142,6 +9143,8 @@ L948:;
 L961:;
     AT(int32_t, -24) = (120);
 L969:;
+    if (reloq61_english_is_question(state, STATE(int32_t, w52)))
+        AT(int32_t, -24) = 150;
     AT(int16_t, -38) = ((int32_t)AT(int16_t, -24));
     goto L990;
 L982:;

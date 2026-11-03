@@ -83,6 +83,39 @@ class ManagerTests(unittest.TestCase):
         restored=DictionaryManager(R/'data/community',self.cache,lambda r,p:None,self.errors.append)
         self.assertEqual(restored.sources,(own,));restored.close()
 
+    def test_alternative_download_mapping_utf8_and_own_precedence(self):
+        from _reloq_dictionaries import ALTERNATIVE_FILES, validate_snapshot
+        own=self.source('english-custom.dic',b'cafe\town\n',0x10000)
+        self.server.data={'enumain.dic':'cafe\tcommunity\ncafé\tcafé\n'.encode('utf8'),
+                          'enuroot.dic':b'root\treading\n',
+                          'espmain.dic':b'palabra\tpalabra\n'}
+        error,details=self.wait(lambda done:self.manager.configure([own],True,done,repository='alternative'))
+        self.assertIsNone(error)
+        self.assertEqual(self.manager.repository,'alternative')
+        folder=self.deliveries[-1][1]
+        self.assertIn(b'cafe\town\n',(folder/'ENUmain.dic').read_bytes())
+        self.assertIn('café\tcafé'.encode('cp1252'),(folder/'ENUmain.dic').read_bytes())
+        self.assertIn(b'root\treading',(folder/'ENURoot.dic').read_bytes())
+        self.assertIn(b'palabra\tpalabra',(folder/'ESPmain.dic').read_bytes())
+        self.assertFalse((folder/'DEUmain.dic').exists())
+        raw=self.cache/'alternative'/self.server.commit
+        self.assertEqual(set(validate_snapshot(raw)['files']),set(ALTERNATIVE_FILES))
+        self.assertEqual(json.loads((self.cache/'sources.json').read_text())['repository'],'alternative')
+        restored=DictionaryManager(self.bundle,self.cache,lambda r,p:None,self.errors.append)
+        self.assertEqual(restored.repository,'alternative');restored.close()
+        self.assertTrue(any('Mohamed00/AltIBMTTSDictionaries' in url for url in self.server.calls))
+
+    def test_alternative_failure_does_not_replace_previous_source(self):
+        error,_=self.wait(lambda done:self.manager.configure([],True,done))
+        self.assertIsNone(error);before=self.deliveries[-1][1]
+        self.server.data={'enumain.dic':b'x\ty\n','enuroot.dic':b'x\ty\n',
+                          'espmain.dic':b'x\ty\n'}
+        self.server.corrupt='enuroot.dic'
+        error,_=self.wait(lambda done:self.manager.configure([],True,done,repository='alternative'))
+        self.assertIsNotNone(error);self.assertEqual(self.manager.repository,'community')
+        self.assertEqual(self.deliveries[-1][1],before)
+        self.assertFalse((self.cache/'alternative'/'current.json').exists())
+
     def test_manual_update_resolves_master_again_and_preserves_own(self):
         own=self.source('user.dic',b'Own\tvalue\n')
         self.wait(lambda done:self.manager.set_sources([own],done))

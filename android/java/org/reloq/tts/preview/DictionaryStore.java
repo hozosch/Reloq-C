@@ -69,7 +69,9 @@ final class DictionaryStore {
             String active=prefs(c).getString("dictionarySnapshot",null);
             String commit=prefs(c).getString("communityCommit","");
             String community=new File(new File(root(c),"community"),commit).getAbsolutePath();
-            for(String path:published)if(!path.equals(active)&&!path.equals(community)&&!leases.containsKey(path))remove.add(path);
+            String altCommit=prefs(c).getString("alternativeCommit","");
+            String alternative=new File(new File(root(c),"alternative"),altCommit).getAbsolutePath();
+            for(String path:published)if(!path.equals(active)&&!path.equals(community)&&!path.equals(alternative)&&!leases.containsKey(path))remove.add(path);
             published.removeAll(remove);
         }
         for(String path:remove)erase(new File(path));
@@ -84,11 +86,21 @@ final class DictionaryStore {
         try(InputStream in=new FileInputStream(path)){return DictionaryData.read(in,DictionaryData.LIMIT);}
     }
     private static JSONObject json(File path) throws Exception {return new JSONObject(new String(bytes(path),StandardCharsets.UTF_8));}
+    static String repository(Context c) {
+        return "alternative".equals(prefs(c).getString("dictionaryRepository","community")) ? "alternative" : "community";
+    }
+    private static String commitKey(String repository) {return repository.equals("alternative") ? "alternativeCommit" : "communityCommit";}
     private static File community(Context c) throws Exception {
-        File base=new File(root(c),"community");base.mkdirs();
-        String active=prefs(c).getString("communityCommit",null);
+        String repository=repository(c);
+        File base=new File(root(c),repository);base.mkdirs();
+        String active=prefs(c).getString(commitKey(repository),null);
         if(active!=null&&active.matches("[a-f0-9]{40}")) {
             File cached=new File(base,active);if(new File(cached,"manifest.json").isFile())return cached;
+        }
+        if(repository.equals("alternative")) {
+            File downloaded=downloadCommunity(c,repository);
+            prefs(c).edit().putString(commitKey(repository),downloaded.getName()).apply();
+            return downloaded;
         }
         byte[] metadata;
         try(InputStream in=c.getAssets().open("community/manifest.json")){metadata=DictionaryData.read(in,1024*1024);}
@@ -118,11 +130,14 @@ final class DictionaryStore {
         File original=null;
         if(enabled) {
             File base=community(c);JSONObject manifest=json(new File(base,"manifest.json"));
-            for(String name:DictionaryData.COMMUNITY)if(name.endsWith(".dic")) {
+            boolean alternative=repository(c).equals("alternative");
+            String[] names=alternative?DictionaryData.ALTERNATIVE:DictionaryData.COMMUNITY;
+            for(String name:names)if(name.endsWith(".dic")) {
                 byte[] data=bytes(new File(base,name));verify(manifest,name,data);
-                if(own.length()!=0)merger.add(name,data);
+                if(alternative)merger.addAlternative(name,data);
+                else if(own.length()!=0)merger.add(name,data);
             }
-            if(own.length()==0)original=base;
+            if(!alternative&&own.length()==0)original=base;
         }
         for(int i=0;i<own.length();++i) {
             JSONObject source=own.getJSONObject(i);byte[] data;
@@ -174,39 +189,56 @@ final class DictionaryStore {
             try(InputStream in=connection.getInputStream()){return DictionaryData.read(in,limit);}
         }finally{connection.disconnect();}
     }
-    static void updateCommunity(Context c) throws Exception {
-        String api="https://api.github.com/repos/eigencrow/IBMTTSDictionaries";
+    private static File downloadCommunity(Context c,String repository) throws Exception {
+        boolean alternative=repository.equals("alternative");
+        String repo=alternative?"Mohamed00/AltIBMTTSDictionaries":"eigencrow/IBMTTSDictionaries";
+        String[] names=alternative?DictionaryData.ALTERNATIVE:DictionaryData.COMMUNITY;
+        String[] remote=alternative?DictionaryData.ALTERNATIVE_REMOTE:DictionaryData.COMMUNITY;
+        String api="https://api.github.com/repos/"+repo;
         String commit=new JSONObject(new String(download(api+"/branches/master",1024*1024),StandardCharsets.UTF_8))
             .getJSONObject("commit").getString("sha");
         if(!commit.matches("[a-f0-9]{40}"))throw new IOException("Invalid master identity");
-        File base=new File(root(c),"community");base.mkdirs();File target=new File(base,commit);
+        File base=new File(root(c),repository);base.mkdirs();File target=new File(base,commit);
         if(!new File(target,"manifest.json").isFile()) {
-            JSONArray tree=new JSONObject(new String(download(api+"/git/trees/"+commit,2*1024*1024),StandardCharsets.UTF_8)).getJSONArray("tree");
-            JSONObject records=new JSONObject();
+            JSONObject response=new JSONObject(new String(download(api+"/git/trees/"+commit,2*1024*1024),StandardCharsets.UTF_8));
+            if(response.optBoolean("truncated"))throw new IOException("Incomplete dictionary tree");
+            JSONArray tree=response.getJSONArray("tree");JSONObject records=new JSONObject();
             for(int i=0;i<tree.length();++i) {
-                JSONObject row=tree.getJSONObject(i);String name=row.getString("path");
-                if(Arrays.asList(DictionaryData.COMMUNITY).contains(name)&&row.optString("type").equals("blob"))
-                    records.put(name,new JSONObject().put("sha",row.getString("sha")).put("size",row.getInt("size")));
+                JSONObject row=tree.getJSONObject(i);String path=row.getString("path");
+                for(int n=0;n<remote.length;++n)if(remote[n].equals(path)&&row.optString("type").equals("blob"))
+                    records.put(names[n],new JSONObject().put("sha",row.getString("sha")).put("size",row.getInt("size")));
             }
-            JSONObject manifest=new JSONObject().put("repository","eigencrow/IBMTTSDictionaries").put("branch","master")
+            if(records.length()!=names.length)throw new IOException("Missing dictionary volume");
+            JSONObject manifest=new JSONObject().put("repository",repo).put("branch","master")
                 .put("commit",commit).put("files",records);
             File stage=new File(base,"download");erase(stage);stage.mkdirs();
             try {
-                for(String name:DictionaryData.COMMUNITY) {
-                    byte[] data=download("https://raw.githubusercontent.com/eigencrow/IBMTTSDictionaries/"+commit+"/"+name,DictionaryData.LIMIT);
-                    verify(manifest,name,data);write(new File(stage,name),data);
+                for(int n=0;n<names.length;++n) {
+                    byte[] data=download("https://raw.githubusercontent.com/"+repo+"/"+commit+"/"+remote[n],DictionaryData.LIMIT);
+                    verify(manifest,names[n],data);write(new File(stage,names[n]),data);
                 }
                 write(new File(stage,"manifest.json"),manifest.toString().getBytes(StandardCharsets.UTF_8));
                 if(!stage.renameTo(target))throw new IOException("Dictionary update failed");
             }finally{erase(stage);}
         }
-        String previous=prefs(c).getString("communityCommit",null);
-        prefs(c).edit().putString("communityCommit",commit).apply();
+        for(String name:names)verify(json(new File(target,"manifest.json")),name,bytes(new File(target,name)));
+        return target;
+    }
+    static void updateCommunity(Context c) throws Exception {
+        String source=repository(c),key=commitKey(source);File target=downloadCommunity(c,source);
+        String previous=prefs(c).getString(key,null);
+        prefs(c).edit().putString(key,target.getName()).apply();
         try{rebuild(c,prefs(c).getBoolean("communityDictionaries",false),sources(c));}
-        catch(Exception error){prefs(c).edit().putString("communityCommit",previous).apply();throw error;}
-        File[] old=base.listFiles();synchronized(GUARD){if(old!=null)for(File folder:old)
-            if(folder.getName().matches("[a-f0-9]{40}"))published.add(folder.getAbsolutePath());}
+        catch(Exception error){prefs(c).edit().putString(key,previous).apply();throw error;}
+        synchronized(GUARD){published.add(target.getAbsolutePath());}
         prune(c);
+    }
+    static void selectRepository(Context c,String selected) throws Exception {
+        if(!selected.equals("community")&&!selected.equals("alternative"))throw new IOException("Invalid dictionary source");
+        String previous=repository(c);if(selected.equals(previous))return;
+        prefs(c).edit().putString("dictionaryRepository",selected).apply();
+        try{rebuild(c,prefs(c).getBoolean("communityDictionaries",false),sources(c));}
+        catch(Exception error){prefs(c).edit().putString("dictionaryRepository",previous).apply();throw error;}
     }
     private static String state(Context c,JSONArray sources) {
         StringBuilder result=new StringBuilder(sources.toString());

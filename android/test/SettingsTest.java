@@ -106,6 +106,11 @@ public final class SettingsTest {
         require(Arrays.equals(result.get("ENUmain.dic"),data("Word\tbanana\naccent\t\u0080\u00fc\nphoneme\t`0h@l'oU\nword\tpear\n")));
         require(Arrays.equals(result.get("DEURoot.dic"),data("\u00e4pfel\tneu\n")));
         require(Arrays.equals(result.get("DEUmain.dic"),data("A\tein\na\tzwei\n")));
+        DictionaryData.Merger alternative=new DictionaryData.Merger();
+        alternative.addAlternative("ENUmain.dic","café\tcafé\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        alternative.add("ENUmain.dic",data("café\town\n"));
+        require(new String(alternative.finish().get("ENUmain.dic"),java.nio.charset.StandardCharsets.ISO_8859_1).contains("café\town"));
+        require(DictionaryData.ALTERNATIVE.length==3&&DictionaryData.ALTERNATIVE_REMOTE[0].equals("enumain.dic"));
         require(DictionaryData.name(0xa0000,1).equals("KORRoot.dic"));
         require(DictionaryData.blob(new byte[0]).equals("e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"));
         require(DictionaryData.hash("SHA-256",data("abc")).equals("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"));

@@ -385,9 +385,9 @@ class SynthDriver(BaseSynthDriver):
     def set_dictionary_sources(self, sources, completed=None):
         return self.dictionary_manager().set_sources(sources, completed)
 
-    def configure_dictionaries(self, sources, enabled, completed=None):
+    def configure_dictionaries(self, sources, enabled, completed=None, repository=None):
         with self._submit_lock:
-            revision = self.dictionary_manager().configure(sources, enabled, completed)
+            revision = self.dictionary_manager().configure(sources, enabled, completed, repository=repository)
             self._communityDictionaries = enabled
             return revision
 

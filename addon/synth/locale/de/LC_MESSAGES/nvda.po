@@ -310,3 +310,12 @@ msgstr "Version %s ist verfügbar."
 
 msgid "No newer published add-on package is available."
 msgstr "Es ist kein neueres veröffentlichtes Add-on-Paket verfügbar."
+
+msgid "Dictionary &source:"
+msgstr "Wörterbuch&quelle:"
+
+msgid "IBM TTS Dictionaries"
+msgstr "IBM-TTS-Wörterbücher"
+
+msgid "Alternative IBM TTS Dictionaries"
+msgstr "Alternative IBM-TTS-Wörterbücher"

@@ -790,8 +790,8 @@ static int32_t evv_close_platform(void *state, const int32_t *args, int nargs)
 }
 
 /* Question policy affects F0 only, after word analysis and timing. */
-extern void reloq61_english_question_tones(void *, int32_t, int16_t,
-    int16_t *, int16_t *);
+extern void reloq61_english_question_tones(void *, int32_t, int16_t, int16_t,
+    int16_t *, int16_t *, int16_t *);
 /* init_phrase_inton_vars, from f61_08.obj */
 int32_t reloq_enus61_init_phrase_inton_vars(void *state, int32_t p0)
 {
@@ -838,8 +838,8 @@ int32_t reloq_enus61_init_phrase_inton_vars(void *state, int32_t p0)
     r0 = reloq_call_enus61_init_voice_vars(state, (int32_t)(FIELD(0)));
     r0 = reloq_call_enus61_init_nuclwrd_vars(state, (int32_t)(FIELD(0)));
     reloq61_english_question_tones(state, STATE(int32_t, w52),
-        STATE(int16_t, s280), &STATE(int16_t, s272),
-        &STATE(int16_t, s273));
+        STATE(int16_t, s280), STATE(int16_t, s281), &STATE(int16_t, s271),
+        &STATE(int16_t, s272), &STATE(int16_t, s273));
     if ((int16_t)(STATE(int16_t, s113)) == (int16_t)(STATE(int16_t, s271))) goto L240;
     goto L287;
 L240:;

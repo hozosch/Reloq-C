@@ -1,3 +1,11 @@
+# Testkandidat 1.1.0-rc20: R-Anregung, US-Fragen und Wörterbuchquelle
+
+- Konsonantisches R verwendet wieder die zum Kontext passende Anregung des alten deutschen Pfades; vokalisches R bleibt unverändert.
+- US-amerikanische Fragen behalten eine ansteigende Endkontur, auch bei hoher Sprechgeschwindigkeit; null Betonung bleibt flach.
+- NVDA und Android bieten die alternative IBM-TTS-Wörterbuchquelle zusätzlich zur bisherigen Quelle an; eigene Einträge behalten Vorrang. Der erste Bezug erfolgt im Hintergrund.
+- SAPI5 bietet dieselbe Quelle mit Hintergrund-Download. Ein eigener SAPI-Wörterbuchordner hat Vorrang vor der ausgewählten Quelle.
+- Die alternative Quelle enthält derzeit US-englische und kastilisch-spanische Dateien, keine deutschen. Das ist ein unveröffentlichter Hörtestkandidat; es erfolgt keine automatische Veröffentlichung.
+
 # Testkandidat 1.1.0-rc19: Deutsches R, finales A, Fragekontur und Wörterbuch
 
 Die bestätigte Anregung am Wortanfang wird für konsonantisches R auch in
