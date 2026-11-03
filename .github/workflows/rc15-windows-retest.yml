@@ -1,0 +1,15 @@
+name: rc15 Windows retest
+on:
+  push:
+    branches: [codex/rc15-windows-retest-74a56f]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  validation:
+    uses: ./.github/workflows/nvda-german-streaming.yml
+    with:
+      native_run_id: '41670038582'
+    permissions:
+      contents: read
+      actions: read
