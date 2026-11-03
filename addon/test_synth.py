@@ -139,7 +139,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
             from _reloq_dictionaries import fetch_master, validate_snapshot
             server = Server()
             server.commit = validate_snapshot(ROOT / "data/community")["commit"]
-            with mock.patch.object(builder, "fetch_master", side_effect=lambda cache: fetch_master(cache, fetch=server)):
+            with mock.patch.object(builder, "fetch_master", side_effect=lambda cache, **kwargs: fetch_master(cache, fetch=server)):
                 build(package, dll_path or ROOT / "eci" / "eci.dll")
             assert len(server.calls) == 1 and server.calls[0].endswith("/branches/master")
         with zipfile.ZipFile(package) as archive:

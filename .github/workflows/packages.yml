@@ -37,6 +37,8 @@ jobs:
         with:
           persist-credentials: false
       - name: Resolve current dictionary master and verify committed snapshot
+        env:
+          RELOQ_BUILD_GITHUB_TOKEN: ${{ github.token }}
         run: |
           python3 -c "import sys; sys.path.insert(0, 'addon'); from build_synth import refresh_community_dictionaries; refresh_community_dictionaries()"
           git diff --exit-code -- data/community

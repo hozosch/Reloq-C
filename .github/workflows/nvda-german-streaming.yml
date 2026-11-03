@@ -29,6 +29,12 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: Verify dictionary master access before building
+        env:
+          RELOQ_BUILD_GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 addon/test_build_dictionary_auth.py
+          python3 -c "import sys; sys.path.insert(0, 'addon'); from build_synth import refresh_community_dictionaries; refresh_community_dictionaries()"
       - name: Install native compiler and translation tools
         run: |
           set -euo pipefail
@@ -84,7 +90,10 @@ jobs:
           cc -O2 -std=c11 -Wall -Wextra -Werror -pedantic -Iinclude -Ivendor/openevv61/src tests/test_reloq_german_clock.c vendor/openevv61/src/reloq61_german_clock.c -o /tmp/reloq-german-clock
           /tmp/reloq-german-clock
       - name: Package development add-on with current dictionary master
+        env:
+          RELOQ_BUILD_GITHUB_TOKEN: ${{ github.token }}
         run: |
+          python3 addon/test_build_dictionary_auth.py
           python3 nvda/test_updates.py
           python3 addon/build_synth.py
           python3 addon/test_synth.py

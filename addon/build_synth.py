@@ -12,6 +12,8 @@ import zipfile
 import shutil
 import tempfile
 import sys
+from urllib.parse import urlsplit
+from urllib.request import urlopen
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "nvda"))
 from _reloq_dictionaries import FILES as DICTIONARY_FILES, fetch_master, validate_snapshot
 
@@ -104,6 +106,20 @@ def make_entries(dll_path: Path) -> dict[str, bytes]:
     return entries
 
 
+def _build_dictionary_fetch(request, timeout):
+    """Authenticate only the build's GitHub API requests, not raw blobs.
+
+    Unredirected headers prevent a cross-host redirect from forwarding the
+    short-lived workflow token. Ordinary installed dictionary updates do not
+    use this build-only adapter.
+    """
+    token = os.environ.get("RELOQ_BUILD_GITHUB_TOKEN")
+    location = urlsplit(request.full_url)
+    if token and location.scheme == "https" and location.netloc == "api.github.com":
+        request.add_unredirected_header("Authorization", "Bearer " + token)
+    return urlopen(request, timeout=timeout)
+
+
 def refresh_community_dictionaries() -> None:
     """Resolve master for each platform build, reusing verified blob data."""
     with tempfile.TemporaryDirectory(prefix="reloq-dictionary-build-") as temporary:
@@ -120,7 +136,10 @@ def refresh_community_dictionaries() -> None:
             cached.mkdir()
             for name in (*DICTIONARY_FILES, "manifest.json"):
                 shutil.copyfile(destination / name, cached / name)
-        snapshot = fetch_master(cache)
+        if os.environ.get("RELOQ_BUILD_GITHUB_TOKEN"):
+            snapshot = fetch_master(cache, fetch=_build_dictionary_fetch)
+        else:
+            snapshot = fetch_master(cache)
         destination.mkdir(parents=True, exist_ok=True)
         for name in (*DICTIONARY_FILES, "manifest.json"):
             shutil.copyfile(snapshot / name, destination / name)
