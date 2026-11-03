@@ -126,6 +126,23 @@ def main():
                 assert phonemes(e, '`da0 ' + word) != phonemes(plain, '`da0 ' + word), word
                 assert phonemes(e, '`da1 ' + word) != phonemes(plain, '`da1 ' + word), word
                 checks += 2
+            # If the native compound already applies the user's constituent,
+            # replacing it with isolated SPR can incorrectly move the phrase
+            # focus from the final adjective or noun onto the acronym.
+            for tags in (0, 1):
+                e.set_parameter(PROCESS_TAGS, tags)
+                for text,ending in (
+                    ('Die NVDA-Eloquence-Einstellungen sind korrekt.', "`[.0kO.1rEkt]"),
+                    ('Die Eloquence-C-Variante liest den Text.', "`[.1tEkst]"),
+                    ('„Die NVDA-Eloquence-Einstellungen sind korrekt.“', "`[.0kO.1rEkt]"),
+                ):
+                    p = phonemes(e, text)
+                    assert 'kvEns' in p, (text, p)
+                    assert p.rsplit('`2 ', 1)[-1].startswith(ending), (text, p)
+                    audio, marks = render(e, [text, EciIndex(7)])
+                    assert audio and marks == [(7, len(audio))], (text, marks)
+                    checks += 1
+            e.set_parameter(PROCESS_TAGS, 1)
             e.set_parameter(DICTIONARY, 1)
             plain.set_parameter(DICTIONARY, 1)
             assert render(e, ['ETI-Eloquence']) != render(plain, ['ETI-Eloquence']); checks += 1

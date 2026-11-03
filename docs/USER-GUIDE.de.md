@@ -2,7 +2,7 @@
 
 ## Testversion 1.1.0-rc21
 
-Konsonantisches R folgt wieder der kontextabhängigen Anregung des früheren deutschen Pfades. Der J-Übergang in „Homepage“ orientiert sich am Ei-Laut in „drei“; US-englische Fragen erhalten eine ansteigende Schlusskontur. Die alternative IBM-Wörterbuchquelle ist auswählbar. Bitte Aussprache und Satzmelodie in NVDA prüfen.
+Konsonantisches R folgt wieder der kontextabhängigen Anregung des früheren deutschen Pfades. Der J-Übergang in „Homepage“ orientiert sich am Ei-Laut in „drei“; US-englische Fragen erhalten eine ansteigende Schlusskontur. Wenn die native Analyse einen Wörterbucheintrag in einer Bindestrichzusammensetzung bereits verwendet, bleibt die Satzplanung erhalten. Die alternative IBM-Wörterbuchquelle ist auswählbar. Bitte Aussprache und Satzmelodie in NVDA prüfen.
 
 Die Testversion gleicht die Anregung des konsonantischen R und die Mischung des finalen A anhand des früheren deutschen Planers ab. Sie verkürzt das N in „neunund“ und berücksichtigt Wörterbuchaussprache in Bindestrich-Zusammensetzungen wie „ETI-Eloquence“, auch innerhalb von Anführungszeichen. Eine zusätzliche Tonhöhenanhebung bei schwachen Verben nach dem Satzakzent entfällt; deutsche Fragen erhalten eine ansteigende Schlusskontur. Die Klangwirkung muss in NVDA gehört werden.
 

@@ -4,6 +4,7 @@
 #include "reloq_german_input.h"
 #include "reloq_german_voice_model.h"
 #include "reloq_german_lexicon.h"
+#include "reloq_german_spr.h"
 #include "reloq_german_best_effort_text.h"
 #include "reloq_inline_tags.h"
 #include "reloq_character.h"
@@ -225,6 +226,60 @@ extern const struct reloq_lexicon_resolver *reloq61_dictionary_resolver(void);
 extern void reloq61_dictionary_resolver_release(const struct reloq_lexicon_resolver *);
 extern const struct reloq_lexicon *reloq61_dictionary_overlay_current(void);
 
+/* Compare the complete native pronunciation with the resolved compound,
+ * even when an initialism makes it span several SPR groups. Compound stress
+ * is chosen by the native sentence planner, so compare phones rather than
+ * copying the isolated token's stress or its phrase marks into the sentence. */
+struct compound_phone_cursor {
+    const unsigned char *text;
+    size_t length,scan,begin,end;
+    struct reloq_german_spr_cursor group;
+    int inside;
+};
+static int compound_phone_next(struct compound_phone_cursor *c,enum reloq_german_phone *phone)
+{
+    for(;;) {
+        if(c->inside) {
+            struct reloq_german_spr_event event;
+            int rc=reloq_german_spr_next(c->text+c->begin,c->end-c->begin,&c->group,&event);
+            if(rc<0)return -1;
+            if(!rc){c->inside=0;c->scan=c->end;continue;}
+            if(event.kind==RELOQ_DE_SPR_PHONE){*phone=event.phone;return 1;}
+            continue;
+        }
+        while(c->scan+1<c->length&&!(c->text[c->scan]=='`'&&c->text[c->scan+1]=='['))++c->scan;
+        if(c->scan+1>=c->length)return 0;
+        c->begin=c->scan;
+        const unsigned char *close=memchr(c->text+c->begin+2,']',c->length-c->begin-2);
+        if(!close)return -1;
+        c->end=(size_t)(close-c->text)+1;
+        memset(&c->group,0,sizeof c->group);c->inside=1;
+    }
+}
+static int german_native_compound_matches(const unsigned char *word,size_t length,
+    const unsigned char *preferred,size_t preferred_length)
+{
+    if(!length||length>=256)return 0;
+    char input[256],native[8192]={0};memcpy(input,word,length);input[length]=0;
+    struct reloq61_request q={.language=0x40000,.annotations=1,.phonemes_only=1,
+        .voice={0,50,65,30,0,0,50,100},.text=input,
+        .phonemes=native,.phonemes_capacity=sizeof native};
+    struct reloq61_result result={0};
+    if(reloq61_generate(&q,&result)||result.error||result.unsupported||
+       result.phonemes_length>=sizeof native)return 0;
+    struct compound_phone_cursor a={.text=(const unsigned char *)native,.length=result.phonemes_length};
+    struct compound_phone_cursor b={.text=preferred,.length=preferred_length};
+    int count=0;
+    for(;;) {
+        enum reloq_german_phone x,y;
+        int ax=compound_phone_next(&a,&x),by=compound_phone_next(&b,&y);
+        if(ax<0||by<0||ax!=by)return 0;
+        if(!ax)return count>0;
+        if(x!=y)return 0;
+        ++count;
+    }
+}
+
 /* A native compound can split a final dictionary constituent as an inflected
  * stem before Root lookup. When a supplied entry is missing from the complete
  * pronunciation, resolve just that lexical token with the existing compound
@@ -278,6 +333,15 @@ static int german_dictionary_compound_input(unsigned char **text,size_t **source
          * complete explicit entry must therefore win before composition. */
         const unsigned char *pron=whole?whole->spr:NULL;
         size_t pron_n=whole?whole->spr_length:0;
+        if(preferred) {
+            /* If the real native pronunciation already contains the
+             * supplied constituent phones, keep the original spelling for
+             * sentence analysis. Replacing it with isolated SPR groups can
+             * move the sentence focus onto an acronym in a longer compound. */
+            if(german_native_compound_matches(a+i,end-i,preferred,preferred_n)) {
+                free(preferred);preferred=NULL;
+            }
+        }
         if(preferred) {
             const unsigned char *open=(const unsigned char *)strstr((char *)preferred,"`[");
             const unsigned char *close=open?(const unsigned char *)strchr((char *)open,']'):NULL;

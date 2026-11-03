@@ -2,7 +2,7 @@
 
 - Der J-Gleitlaut nach E in derselben Silbe, wie in „Homepage“, verwendet die Formantziele des Ei-Lautes in „drei“. Text und entsprechende Lautschrift werden zusammen geprüft; der Klangeindruck bleibt im Hörtest zu beurteilen.
 - Eine falsche Aufrufkonvention bei 32-Bit-Wortmarken wurde korrigiert. Die plattformübergreifende Validierung läuft.
-- Vereinzelte Fehler der deutschen Satzanalyse bei mehrfachen Bindestrichen sind noch in Untersuchung; ein konkreter fehlerhafter Satz ist zur genauen Nachstellung hilfreich.
+- Wenn ein Bestandteil einer Bindestrichzusammensetzung bereits nativ nach dem Nutzerwörterbuch ausgesprochen wird, bleibt die ursprüngliche Schreibweise für die Satzplanung erhalten. Dadurch wird ein unnötig vorgezogener Satzakzent vermieden. Weitere gemeldete Fälle können zur genauen Nachstellung noch ein konkretes Beispiel erfordern.
 
 # Testkandidat 1.1.0-rc20: R-Anregung, US-Fragen und Wörterbuchquelle
 
