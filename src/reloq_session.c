@@ -88,7 +88,7 @@ int reloq_session_linear_gain(struct reloq_session *s,float gain)
 
 int reloq_session_high_rate_profile(struct reloq_session *s,unsigned profile)
 {
-    if(!s||profile>2)return RELOQ_SESSION_INVALID;
+    if(!s||profile>3)return RELOQ_SESSION_INVALID;
     s->high_rate_profile=profile;return RELOQ_SESSION_OK;
 }
 
@@ -262,13 +262,17 @@ int reloq_session_reset(struct reloq_session *session)
     next.glottal_reference_rate=c->glottal_reference_rate;
     next.reference_formants=c->reference_formants;
     next.frication_reference_rate=c->frication_reference_rate;
-    /* From 16 kHz use the exact A voice path. The independently configured
-     * noise transfer below retains B's Classic consonants. No additional
-     * B body or B-only periodic EQ is layered on that voice. Keep the old
-     * narrow-rate configuration unchanged. */
-    next.rate_transfer.trial_profile=c->sample_rate<16000?session->high_rate_profile:0;
+    /* B preserves the accepted A voice and Classic consonants. Optional C
+     * applies a small fixed periodic contour on this same voice from 22 kHz;
+     * it does not change the glottal source, aspiration or AF noise. */
+    unsigned classic=session->high_rate_profile==3?1:session->high_rate_profile;
+    next.rate_transfer.trial_profile=c->sample_rate<16000?classic:0;
+    if(session->high_rate_profile==3&&c->glottal_reference_rate>0)
+        next.rate_transfer.body_amount=c->sample_rate>=48000?.41666667f:
+            c->sample_rate>=44100?.36666667f:c->sample_rate>=32000?.26666667f:
+            c->sample_rate>=22050?.15f:0;
     session->linear_gain=1;
-    next.noise_transfer.trial_profile=session->high_rate_profile;
+    next.noise_transfer.trial_profile=classic;
     session->frame_state = next;
     epoch_store(&session->active_epoch, generation);
     return RELOQ_SESSION_OK;

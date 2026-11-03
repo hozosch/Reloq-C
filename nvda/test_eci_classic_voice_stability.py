@@ -23,7 +23,10 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--library',type=Path,required=True)
     p.add_argument('--baseline',type=Path)
+    p.add_argument('--profile',type=int,choices=(1,3),default=1)
     args=p.parse_args();checked=identities=0;maximum=0
+    if args.baseline and args.profile != 1:
+        p.error('--baseline compares the preserved B profile')
     texts={
         0x10000:'The warm morning voice should remain smooth. We are hearing more body in every vowel. Susan visits the zoo on Thursday.',
         0x40000:'Ohne obere Bässe wirkt die Stimme dünner. Am Morgen hören wir ruhige Musik. Karl und Werner wohnen neben dem Bahnhof. Zwölf Züge fahren zum Zentrum.',
@@ -45,11 +48,11 @@ def main():
                         for e in engines:e.set_parameter(HIGH_RATE_PROFILE,0)
                         assert capture(engines[0],text)==capture(engines[1],text)
                         identities+=1
-                    for e in engines:e.set_parameter(HIGH_RATE_PROFILE,1)
+                    for e in engines:e.set_parameter(HIGH_RATE_PROFILE,args.profile)
                     actual=capture(engines[0],text)
+                    if len(engines)>1:
+                        assert actual==capture(engines[1],text),(hex(language),gender,head,breath,hz,'B PCM changed');identities+=1
                     if hz<16000:
-                        if len(engines)>1:
-                            assert actual==capture(engines[1],text),(hex(language),gender,head,breath,hz,'low-rate PCM changed');identities+=1
                         continue
                     samples=array.array('h',actual[0]);peak=max(abs(x) for x in samples)
                     assert peak<32767,(hex(language),gender,hz,peak,'PCM limit reached')
@@ -62,7 +65,7 @@ def main():
     for gender in (0,1):
         e=DirectEciEngine(args.library.resolve(),encoding='utf8',experimental_generic=True)
         try:
-            for param,value in ((NATIVE_SPEED,75),(HIGH_RATE_PROFILE,1),(GENDER,gender)):
+            for param,value in ((NATIVE_SPEED,75),(HIGH_RATE_PROFILE,args.profile),(GENDER,gender)):
                 e.set_parameter(param,value)
             for head in (29,50,80):
                 e.set_parameter(HEAD_SIZE,head)
@@ -81,7 +84,7 @@ def main():
         try:
             copy=e._dll.eciCopyVoice
             copy.argtypes=(ctypes.c_void_p,ctypes.c_int,ctypes.c_int);copy.restype=ctypes.c_int
-            e.set_parameter(HIGH_RATE_PROFILE,1)
+            e.set_parameter(HIGH_RATE_PROFILE,args.profile)
             for voice in range(1,9):
                 assert copy(e._handle,voice,0);e.set_parameter(NATIVE_SPEED,75)
                 for rate in (3,2,4,5,6):
@@ -91,7 +94,7 @@ def main():
                     maximum=max(maximum,peak);checked+=1
         finally:e.close()
     print(f'Classic voice stability: {checked} real speech/model/rate peak checks; '
-        f'{identities} A/low-rate baseline PCM identities; maximum peak {maximum}; audio in RAM only')
+        f'{identities} A/B baseline PCM identities; maximum peak {maximum}; audio in RAM only')
 
 
 if __name__=='__main__':main()

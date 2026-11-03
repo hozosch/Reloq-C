@@ -29,6 +29,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--library', type=Path, required=True)
     p.add_argument('--raw-library', type=Path, required=True)
+    p.add_argument('--profile', type=int, choices=(1, 3), default=1)
     p.add_argument('--output', type=Path)
     a = p.parse_args()
     rows = []
@@ -38,7 +39,7 @@ def main():
             experimental_generic=True) for path in (a.raw_library, a.library)]
         try:
             for e in engines:
-                for param, value in ((HIGH_RATE_PROFILE, 1), (NATIVE_SPEED, 75), (GENDER, 1)):
+                for param, value in ((HIGH_RATE_PROFILE, a.profile), (NATIVE_SPEED, 75), (GENDER, 1)):
                     e.set_parameter(param, value)
             engines[0].set_parameter(NATIVE_VOLUME, 100)
             engines[1].set_parameter(NATIVE_VOLUME, 50)

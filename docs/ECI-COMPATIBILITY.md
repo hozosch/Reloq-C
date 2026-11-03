@@ -200,6 +200,8 @@ relevant, auch wenn der untersuchte Eloquence_64-ReLoq-Adapter sie umgeht.
 
 Das eigene NVDA-Add-on wählt Profil B ausdrücklich. Für bisherige direkte
 ECI-Clients bleibt der DLL-Standard Profil A (Parameter 0x1011 = 0).
+Das experimentelle Profil C ist optional über Wert 3 erreichbar; Wert 2
+bleibt zur Kompatibilität eine Alias-Einstellung für B.
 Eloquence_64 b24a6c8 wählt diesen zusätzlichen Parameter bisher nicht.
 Ein reiner DLL-Austausch enthält dort die Kontextkorrekturen aus dev8,
 aktiviert aber noch nicht die in diesem Hörtest geprüfte

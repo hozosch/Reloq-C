@@ -52,7 +52,7 @@ jobs:
         run: make -C eci -j2 eci_native_rules_probe.exe eci_rate_dispatch_probe.exe eci_classic_source_probe.exe PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
       - name: Check complete Classic consonant transfer
         run: |
-          make -C eci test_reloq_rate_dispatch test_reloq_classic_noise test_reloq_classic_voice test_reloq_classic_frame test_reloq_classic_source test_reloq_session test_reloq_classic_body
+          make -C eci test_reloq_rate_dispatch test_reloq_classic_noise test_reloq_classic_voice test_reloq_classic_frame test_reloq_classic_source test_reloq_session test_reloq_classic_body test_reloq_hearing_profiles
           ./eci/test_reloq_rate_dispatch
           ./eci/test_reloq_classic_noise
           ./eci/test_reloq_classic_voice
@@ -60,6 +60,7 @@ jobs:
           ./eci/test_reloq_classic_source
           ./eci/test_reloq_session
           ./eci/test_reloq_classic_body
+          ./eci/test_reloq_hearing_profiles
       - name: Check native clock projection and source maps
         run: |
           make -C eci test_reloq_english_clock test_reloq_english_clock_arena
@@ -79,12 +80,12 @@ jobs:
           assert len(files)==1
           with zipfile.ZipFile(files[0]) as package:
               assert package.testzip() is None
-              assert '1.1.0-rc10' in package.read('manifest.ini').decode()
+              assert '1.1.0-rc11' in package.read('manifest.ini').decode()
               for name in ('ReLoq-C-LICENSE.txt','ReLoq-C-NOTICE.txt','OpenEVV-LICENSE.txt','Dictionaries-CC0.txt'):
                   assert package.read('doc/licenses/'+name)
           Path('dist/source.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],
               'package':files[0].name,'sha256':hashlib.sha256(files[0].read_bytes()).hexdigest(),
-              'version':'1.1.0-rc10','official_release':False,'experimental_listening_dsp':True,'profiles':['control','a-voice-classic-consonants-high-rate-s-ts-trim','legacy-alias-of-b']},indent=2)+'\n')
+              'version':'1.1.0-rc11','official_release':False,'experimental_listening_dsp':True,'profiles':['control','a-voice-classic-consonants','legacy-alias-of-b','gentle-richness-comparison']},indent=2)+'\n')
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -155,11 +156,17 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_german_streaming.py --library $core --profile 2 --output streaming-c.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_streaming.py --library $core --profile 3 --output streaming-richness.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_high_rate_profiles.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_castilian_filter.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_soft_richness.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_classic_voice_stability.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_classic_voice_stability.py --library $core --profile 3
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Collect validated preview
         shell: pwsh

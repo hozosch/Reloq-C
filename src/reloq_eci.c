@@ -1698,7 +1698,7 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
     if (old < 0) return eci_refuse(e,-1);
     switch (parameter) {
     case RELOQ_ECI_HIGH_RATE_PROFILE:
-        if(value<0 || value>2)return eci_refuse(e,-1);
+        if(value<0 || value>3)return eci_refuse(e,-1);
         e->high_rate_profile=value;
         break;
     case RELOQ_ECI_SYNTH_MODE:

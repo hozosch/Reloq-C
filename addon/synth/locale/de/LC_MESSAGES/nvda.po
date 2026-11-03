@@ -325,3 +325,6 @@ msgstr "C: Classic Presence und oberer Stimmkörper"
 
 msgid "B: A voice, Classic consonants"
 msgstr "B: A-Stimme, Classic-Konsonanten"
+
+msgid "C: B with gentle richness"
+msgstr "C: B mit behutsamer Richness"

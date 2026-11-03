@@ -102,9 +102,38 @@ static void gradual_response(void)
  }
  printf("Broad periodic contour: %u changing-formant/chunk/state comparisons identical; no moving upper resonances\n",checks);
 }
+static void gentle_a_response(void)
+{
+ const float rates[]={16000,22050,32000,44100,48000};
+ const float amounts[]={0,.15f,.26666667f,.36666667f,.41666667f};
+ const double expected[]={0,.45,.8,1.1,1.25};
+ for(unsigned r=0;r<5;++r) {
+  struct reloq_core_voiced_formants f={0};
+  struct reloq_rate_transfer original={0},c={.body_amount=amounts[r]};
+  prepare_colour(&original,rates[r]);prepare_colour(&c,rates[r]);
+  reloq_rate_transfer_prepare_body(&c,&f,rates[r]);
+  if(r) {
+   assert(c.body_ready);
+   assert(fabs(20*log10(response(c.body_target[0],3750,rates[r]))-expected[r])<.00001);
+   assert(fabs(20*log10(response(c.body_target[0],300,rates[r])))<.01);
+  } else assert(!c.body_ready);
+  struct reloq_rate_transfer split=c;
+  float base[1037],whole[1037],partial[1037];
+  for(unsigned i=0;i<1037;++i)base[i]=whole[i]=partial[i]=value();
+  reloq_rate_transfer_process_voice(&original,base,1037);
+  reloq_rate_transfer_process_voice(&c,whole,1037);
+  const unsigned points[]={0,1,17,211,599,1037};
+  for(unsigned i=1;i<6;++i)reloq_rate_transfer_process_voice(&split,partial+points[i-1],points[i]-points[i-1]);
+  assert(!memcmp(whole,partial,sizeof whole));
+  assert((memcmp(base,whole,sizeof base)!=0)==(r!=0));
+  for(unsigned i=0;i<1037;++i)assert(isfinite(whole[i]));
+ }
+ puts("Gentle A-voice contour: fixed 0/0.45/0.8/1.1/1.25 dB; bass and chunk boundaries checked");
+}
 int main(void) {
  classic_response();
  gradual_response();
+ gentle_a_response();
  unsigned tests=0;
 #ifdef RATE_AVX2
  int avx2_available=avx2_enabled();

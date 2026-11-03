@@ -1,3 +1,38 @@
+# Testkandidat 1.1.0-rc11: Sanfte Anreicherung als Vergleich C
+
+Der Nutzer bestätigt den A-Stimmweg von rc10 als sauber, hört aber keine
+stufenweise Erweiterung bei höheren Raten. B bleibt deshalb genau die
+rc10-Basis. Das neue, ausdrücklich auswählbare C formt diese Stimme ab
+22,05 kHz mit einer festen, breiten periodischen Glocke bei 3,75 kHz.
+Die zusätzliche Anhebung an der Mitte beträgt 0,45 / 0,8 / 1,1 / 1,25 dB
+bei 22,05 / 32 / 44,1 / 48 kHz. Das Filter bleibt linear und kausal und
+wird beim Start über 5 ms eingeblendet. Es verändert bestehende Energie,
+erzeugt aber keine zweite Stimme und verändert weder den Glottispuls noch
+Aspiration oder AF. 16 kHz und die niedrigen Raten bleiben gleich B.
+
+Das ist von DECtalks Richness-Ziel inspiriert, aber keine Umsetzung von
+DECtalks ri-Parameter: [Dessen Öffnungsphase](https://dectalk.github.io/dectalk/idh_sdk_3_nopen_fixed_nf.htm)
+bleibt hier unangetastet. Eine Filterung vorhandener Obertöne kann keine
+zusätzlichen harmonischen Frequenzen erzeugen. Die subjektive Wahrnehmung,
+auch das Verhältnis zwischen Stimmkörper und Helligkeit, bleibt offen.
+
+Im Modellvergleich liegen 36 Vokal-/Tonhöhen-/Ratenfälle im Band 3,5–5 kHz
+um 0,428 bis 1,231 dB über B und bei 5–8 kHz um 0,247 bis 0,860 dB;
+der Bass weicht um höchstens 0,042 dB ab. Die 36 benachbarten Ratenstufen
+haben in diesem Vergleich im Band 3,5–5 kHz mindestens 0,087 dB Zuwachs;
+das ist keine Aussage über die Hörbarkeit oder alle Sprachlaute.
+28 PCM-Vergleiche halten reine AF- und AH-Laute und die 16-kHz-Stimme
+zwischen B und C gleich. Dazu bleiben 80 tatsächliche S-, TS-, F- und
+T-Anfänge bei beiden Profilen bytegleich. In 48 verglichenen Sprach- und
+Stimmeinstellungen bleibt die leisere Ausgabe für B und C linear; bei voller
+Lautstärke überschreiten 9 B- und 10 C-Fälle die Schutzschwelle. Die Messungen
+belegen nicht, dass alle Einstellungen hörbar verzerrungsfrei sind. Der
+Hörtest in NVDA ist notwendig.
+Android bleibt auf seinem bisherigen Paketstand, und die lange deutsche
+Einzelsatzanalyse bleibt offen.
+
+Die folgenden Abschnitte beschreiben frühere Teststände.
+
 # Testkandidat 1.1.0-rc10: A-Stimmweg mit Classic-Konsonanten
 
 Der Nutzer hört bei B auch nach rc9 scheppernde Artefakte, bei A jedoch nicht.

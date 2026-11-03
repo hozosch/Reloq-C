@@ -301,11 +301,14 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert CharacterModeCommand in driver.supportedCommands
                 assert [setting.id for setting in driver.supportedSettings] == [
                     "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "highRateProfile"]
-                assert list(driver.availableHighrateprofiles) == ["0", "1"]
+                assert list(driver.availableHighrateprofiles) == ["0", "1", "3"]
                 assert driver.highRateProfile == "1"
                 assert driver.availableHighrateprofiles["1"].displayName == (
                     "B: A-Stimme, Classic-Konsonanten" if german_ui else
                     "B: A voice, Classic consonants")
+                assert driver.availableHighrateprofiles["3"].displayName == (
+                    "C: B mit behutsamer Richness" if german_ui else
+                    "C: B with gentle richness")
                 assert driver.supportedSettings[0].availableInSettingsRing
                 driver.initSettings()
                 panel = SettingsPanel(driver)
@@ -444,6 +447,11 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 driver.highRateProfile = "0"
                 until(lambda: len(worker.parameters) == profile_start + 2)
                 assert worker.parameters[-1] == (0x1011, 0)
+                driver.highRateProfile = "3"
+                until(lambda: len(worker.parameters) == profile_start + 3)
+                assert driver.highRateProfile == "3" and worker.parameters[-1] == (0x1011, 3)
+                driver.highRateProfile = "0"
+                until(lambda: len(worker.parameters) == profile_start + 4)
 
                 paragraph = "Dies ist ein längerer Absatz mit mehreren Wörtern."
                 driver.speak([paragraph])

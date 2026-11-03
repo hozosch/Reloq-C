@@ -38,3 +38,4 @@ eci/test_reloq_classic_frame
 eci/test_reloq_classic_source
 eci/test_reloq_classic_body
 eci/test_reloq_session
+eci/test_reloq_hearing_profiles

@@ -44,7 +44,7 @@ def main():
                             e.set_parameter(parameter,value)
                     engine.set_parameter(HIGH_RATE_PROFILE,0);baseline=capture(engine,text)
                     variants=[]
-                    for profile in (1,2):
+                    for profile in (1,2,3):
                         engine.set_parameter(HIGH_RATE_PROFILE,profile);actual=capture(engine,text)
                         assert len(actual[0])==len(baseline[0]) and actual[1]==baseline[1];checks+=1
                         if SAMPLE_RATES[rate]<16000:
@@ -54,8 +54,12 @@ def main():
                         # A second handle's voice and filter state stay independent.
                         assert capture(other,text)==baseline,(language,rate,profile,'cross-engine leak');checks+=1
                         variants.append(actual)
-                    if SAMPLE_RATES[rate]>=16000:
-                        assert variants[0]==variants[1],(language,rate,'legacy C must alias the accepted combination');checks+=1
+                    assert variants[0]==variants[1],(language,rate,'legacy C must alias the accepted combination');checks+=1
+                    if SAMPLE_RATES[rate]<=16000:
+                        assert variants[0]==variants[2],(language,rate,'richness changed the foundation');checks+=1
+                    else:
+                        assert variants[0][1]==variants[2][1] and len(variants[0][0])==len(variants[2][0]);checks+=1
+                        assert variants[0][0]!=variants[2][0],(language,rate,'richness did not reach speech');checks+=1
                     engine.set_parameter(HIGH_RATE_PROFILE,0)
                     assert capture(engine,text)==baseline,(language,rate,'rollback mismatch');checks+=1
                 if SAMPLE_RATES[rate]>=16000 and language==0x40000:
@@ -71,7 +75,7 @@ def main():
                         onset=int(SAMPLE_RATES[rate]*.008)*2
                         assert after[1]==before[1] and len(after[0])==len(before[0])
                         assert any(before[0][:onset]) and after[0][:onset]!=before[0][:onset],(rate,word,'p/f bypassed Classic target');checks+=1
-            for bad in (-1,3):
+            for bad in (-1,4):
                 assert engine._dll.eciSetParam(engine._handle,HIGH_RATE_PROFILE,bad)==-1;checks+=1
         finally:engine.close();other.close()
     # Configured volume must work in every module, including CJK, without

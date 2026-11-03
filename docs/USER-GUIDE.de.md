@@ -1,8 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Hörtest 1.1.0-rc10
+## Hörtest 1.1.0-rc11
 
-Ab 16 kHz verwendet Profil B den stimmhaften Weg von A einschließlich dessen vorhandener Präsenzformung. Der separate Classic-Rauschpfad bleibt für die Konsonanten erhalten. Bei 32, 44,1 und 48 kHz ist der S-/TS-artige Reibanteil um 1,35 dB abgesenkt; seine spektrale Form bleibt erhalten. Bei 16 und 22 kHz ist keine neue Pegelabsenkung vorgesehen. Dieser Stand dient dazu, die von B gemeldeten Artefakte gegen den A-Stimmweg zu prüfen. Bedingte Trennstriche innerhalb deutscher Wörter stören deren Wortanalyse nicht mehr. Der Schutz von ECI-Tags vor NVDAs Symbolverarbeitung und die Steuerung an akustischen Wortgrenzen bleiben enthalten. Lange deutsche Einzelsätze und offene Zitate warten weiterhin auf ihre vollständige Analyse. Dieser Stand braucht einen Hörvergleich auf dem eigenen Gerät.
+Profil B behält den sauberen Stimmweg und die Classic-Konsonanten aus rc10. Das zusätzliche Profil C formt ab 22,05 kHz ausschließlich den vorhandenen periodischen Stimmanteil mit einer breiten, zurückhaltenden Anhebung um 3,75 kHz. Ihr Maximalwert beträgt 0,45 / 0,8 / 1,1 / 1,25 dB bei 22,05 / 32 / 44,1 / 48 kHz. Bei 16 kHz ist C gleich B; die getrennten Aspirations- und Konsonantenwege bleiben unverändert. Die Glottis erhält keinen zusätzlichen Puls. Die beiden Profile können in den NVDA-Stimmeinstellungen unter Hochraten-Abstimmung verglichen werden. Ob die Stufen hörbar mehr Körper geben, ohne forsch zu wirken, muss auf dem eigenen Gerät beurteilt werden. Bedingte Trennstriche innerhalb deutscher Wörter stören deren Wortanalyse nicht mehr. Der Schutz von ECI-Tags vor NVDAs Symbolverarbeitung und die Steuerung an akustischen Wortgrenzen bleiben enthalten. Lange deutsche Einzelsätze und offene Zitate warten weiterhin auf ihre vollständige Analyse.
 
 ## Englische Uhrzeiten mit Sekunden
 

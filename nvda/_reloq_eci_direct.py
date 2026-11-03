@@ -230,7 +230,8 @@ class DirectEciEngine:
         low, high = ((0, 250) if parameter == NATIVE_SPEED else
                      (0, 1) if parameter in (PROCESS_TAGS, GENDER, DICTIONARY, PHRASE_PREDICTION) else
                      (0, 6) if parameter == SAMPLE_RATE else
-                     (0, 2) if parameter in (PAUSE_MODE, HIGH_RATE_PROFILE) else (0, 100))
+                     (0, 3) if parameter == HIGH_RATE_PROFILE else
+                     (0, 2) if parameter == PAUSE_MODE else (0, 100))
         if not isinstance(value, int) or isinstance(value, bool) or not low <= value <= high:
             raise ValueError(f"generic voice parameter must be {low}..{high}")
         previous = self._dll.eciSetParam(self._handle, parameter, value)

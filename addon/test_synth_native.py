@@ -39,6 +39,7 @@ def main():
         commands = sys.modules["speech.commands"]
         done, first = threading.Event(), threading.Event()
         errors, players, engines, received, first_times = [], [], [], [], []
+        spoken_engines = []
         submitted_times, native_times, native_pcm_times = [], [], []
 
         class NativeEngine(native.DirectEciEngine):
@@ -53,6 +54,7 @@ def main():
                 self.calls = []
 
             def speak(self, parts, on_pcm, on_index):
+                spoken_engines.append(self)
                 native_times.append(time.perf_counter())
                 have_pcm = False
                 def pcm(data):
@@ -163,11 +165,30 @@ def main():
                 for code, hz in native.SAMPLE_RATES.items():
                     driver.sampleRate = str(code)
                     run(["This is the sample rate test."])
-                    settings = engines[-1].calls[-1][1]
+                    settings = spoken_engines[-1].calls[-1][1]
                     assert settings[str(native.SAMPLE_RATE)] == code and players[-1].hz == hz
                     assert settings[str(native.HIGH_RATE_PROFILE)] == 1
                     assert settings[str(native.PROCESS_TAGS)] == 1
                     report["checks"] += 3
+                # Verify the selectable C profile through the packaged NVDA
+                # driver, real ECI DLL and player. B remains the foundation.
+                driver.language = "de_DE"
+                driver.voice = "1"
+                driver.voiceTags = False
+                for code, hz in ((3, 16000), (2, 22050), (6, 48000)):
+                    driver.sampleRate = str(code)
+                    driver.highRateProfile = "1"
+                    baseline = run(["Oma und Werner hören Musik."])
+                    driver.highRateProfile = "3"
+                    gentle = run(["Oma und Werner hören Musik."])
+                    settings = spoken_engines[-1].calls[-1][1]
+                    assert settings[str(native.HIGH_RATE_PROFILE)] == 3
+                    assert settings[str(native.SAMPLE_RATE)] == code and players[-1].hz == hz
+                    assert len(baseline) == len(gentle)
+                    assert (baseline == gentle) == (hz == 16000)
+                    report["checks"] += 4
+                driver.highRateProfile = "1"
+                driver.voiceTags = True
                 driver.sampleRate = "3"
                 for locale, sentence in (
                     ("de_DE", "Die Stimme liest diesen langen Text und bleibt dabei gut verständlich"),

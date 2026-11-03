@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 static const double pi=3.14159265358979323846;
-struct observation {double bass,middle,upper,hnr;};
+struct observation {double bass,middle,upper,air,hnr;};
 static struct observation observe(const float *x,size_t n,double rate,double f0)
 {
     double total=0,mean=0,harmonics=0;struct observation o={0};
@@ -25,6 +25,7 @@ static struct observation observe(const float *x,size_t n,double rate,double f0)
         if(hz>=100&&hz<800)o.bass+=power;
         if(hz>=800&&hz<2500)o.middle+=power;
         if(hz>=3500&&hz<5000)o.upper+=power;
+        if(hz>=5000&&hz<8000)o.air+=power;
     }
     o.hnr=10*log10(harmonics/fmax(1e-20,total-harmonics));return o;
 }
@@ -49,12 +50,12 @@ static struct observation body(float rate,unsigned profile,unsigned vowel,double
     s->glottal_reference_rate=11025;s->reference_formants=5;s->frication_reference_rate=16000;
     s->rate_transfer.trial_profile=s->noise_transfer.trial_profile=profile==1;
     s->rate_transfer.smooth_updates=profile==2;
-    if(profile==5) {
+    if(profile==5||profile==6) {
         config.sample_rate=rate;
         config.glottal_reference_rate=11025;config.reference_formants=5;
         config.frication_reference_rate=16000;
         struct reloq_session *session=reloq_session_create(&config);assert(session);
-        assert(!reloq_session_high_rate_profile(session,1));
+        assert(!reloq_session_high_rate_profile(session,profile==5?1:3));
         assert(!reloq_session_reset(session));
         *s=session->frame_state;
         reloq_session_destroy(session);
@@ -63,7 +64,7 @@ static struct observation body(float rate,unsigned profile,unsigned vowel,double
         s->rate_transfer.trial_profile=rate==16000;
         s->rate_transfer.smooth_updates=rate>=22050;
     }
-    if(((profile==4||profile==5)&&rate>=16000)||(profile==3&&rate>=22050)) {
+    if(((profile==4||profile==5||profile==6)&&rate>=16000)||(profile==3&&rate>=22050)) {
         frame.noise.tract.highest_formant=rate>=44100?8:rate>=32000?7:6;
         for(unsigned i=5;i<8;++i)frame.noise.tract.oral[i]=(struct reloq_core_formant){
             5000+1300*(i-5),1000+250*(i-5)};
@@ -184,5 +185,28 @@ int main(void)
         }
     }
     printf("Production A voice: 45 vowel/pitch/rate cases; A/B band difference <=%.6f dB; harmonic/noise >=%.2f dB\n",difference,production_hnr);
+    double min_lift=100,max_lift=-100,max_bass=0,min_air=100,max_air=-100,min_step=100;
+    for(unsigned vowel=0;vowel<3;++vowel)for(unsigned pitch=0;pitch<3;++pitch) {
+        double f0=113+64*pitch,previous=0;
+        for(unsigned r=0;r<5;++r) {
+            struct observation b=body(rates[r],5,vowel,f0),c=body(rates[r],6,vowel,f0);
+            double lift=10*log10(c.upper/b.upper),air=10*log10(c.air/b.air);
+            double bass=fabs(10*log10(c.bass/b.bass));
+            assert(bass<.05);if(bass>max_bass)max_bass=bass;
+            if(!r)assert(fabs(lift)<.0001);
+            else {
+                assert(lift>.1&&lift<1.3);
+                assert(air>0&&air<1.3);
+                if(lift<min_lift)min_lift=lift;
+                if(lift>max_lift)max_lift=lift;
+                if(air<min_air)min_air=air;
+                if(air>max_air)max_air=air;
+                double step=10*log10(c.upper/previous);if(step<min_step)min_step=step;
+            }
+            previous=c.upper;
+        }
+    }
+    printf("Gentle C vs B: 36 vowel/pitch/rate cases; upper lift %.3f..%.3f dB, 5–8 kHz lift %.3f..%.3f dB; bass difference <=%.3f dB\n",min_lift,max_lift,min_air,max_air,max_bass);
+    printf("C alone: smallest 3.5–5 kHz power change between adjacent rates %.3f dB\n",min_step);
     return 0;
 }

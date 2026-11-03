@@ -41,20 +41,20 @@ static void render(float rate,unsigned profile,int voiced,int aspiration,int bro
 }
 int main(void)
 {
-    const float rates[]={16000,22050,32000,44100,48000};unsigned checks=0;
-    for(unsigned r=0;r<5;++r) {
+    const float rates[]={8000,11025,16000,22050,32000,44100,48000};unsigned checks=0;
+    for(unsigned r=0;r<7;++r) {
         for(int aspiration=0;aspiration<2;++aspiration) {
             struct capture b={0},c={0};
-            render(rates[r],1,0,aspiration,0,&b);render(rates[r],2,0,aspiration,0,&c);
+            render(rates[r],1,0,aspiration,0,&b);render(rates[r],3,0,aspiration,0,&c);
             assert(b.count==c.count&&!memcmp(b.samples,c.samples,b.count*sizeof *b.samples));++checks;
         }
-        struct capture a={0},b={0};render(rates[r],0,0,0,1,&a);render(rates[r],1,0,0,1,&b);
-        assert(a.count==b.count&&!memcmp(a.samples,b.samples,a.count*sizeof *a.samples));++checks;
-        memset(&b,0,sizeof b);struct capture c={0};
-        render(rates[r],1,1,0,0,&b);render(rates[r],2,1,0,0,&c);
+        struct capture b={0},c={0};render(rates[r],1,0,0,1,&b);render(rates[r],3,0,0,1,&c);
+        assert(b.count==c.count&&!memcmp(b.samples,c.samples,b.count*sizeof *b.samples));++checks;
+        memset(&b,0,sizeof b);memset(&c,0,sizeof c);
+        render(rates[r],1,1,0,0,&b);render(rates[r],3,1,0,0,&c);
         assert(b.count==c.count);
         assert((memcmp(b.samples,c.samples,b.count*sizeof *b.samples)!=0)==(rates[r]>16000));++checks;
     }
-    printf("Hearing source separation: %u actual PCM comparisons, AF/AH unchanged by body, broad p/f retained\n",checks);
+    printf("Gentle richness separation: %u PCM comparisons, AF/AH unchanged and 16 kHz preserved\n",checks);
     return 0;
 }

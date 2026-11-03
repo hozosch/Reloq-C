@@ -853,6 +853,7 @@ void reloq_rate_transfer_process_voice(struct reloq_rate_transfer *s,float *samp
             double x=y;y=c[0]*x+d[0];
             d[0]=c[1]*x-c[3]*y+d[1];d[1]=c[2]*x-c[4]*y;
         }
+        if(s->body_ready)y=gradual_body_sample(s,y);
         samples[j]=(float)y;
     }
 }

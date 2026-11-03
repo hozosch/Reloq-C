@@ -72,7 +72,7 @@ def main():
     parser.add_argument('--library',type=Path,required=True)
     parser.add_argument('--reference',type=Path,help='Optional build with RELOQ_GERMAN_STREAMING=0')
     parser.add_argument('--output',type=Path)
-    parser.add_argument('--profile',type=int,choices=(0,1,2),default=0)
+    parser.add_argument('--profile',type=int,choices=(0,1,2,3),default=0)
     args=parser.parse_args()
     paths=(args.reference or args.library,args.library)
     engines=[DirectEciEngine(p.resolve(),dialect=0x40000,encoding='utf8',experimental_generic=True) for p in paths]
