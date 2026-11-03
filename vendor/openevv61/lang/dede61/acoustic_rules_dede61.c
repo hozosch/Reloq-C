@@ -107,6 +107,25 @@ static int e_after_i(delta_state *d)
     }
     return 1;
 }
+
+/* In an /Ej/ coda, as in Homepage, the j is the closing glide of the
+ * vowel. Give it the same tongue targets as the j in German /aj/ ("drei"),
+ * without changing the entering E or an onset j in the next syllable. */
+static int e_j_glide(delta_state *d)
+{
+    int32_t at;memcpy(&at,(const unsigned char *)d+DG_BASE+712,sizeof at);
+    struct reloq61_spr_phone j,previous;
+    if(!reloq61_spr_phone_at(d,at,&j)||reloq61_spr_feature(d,&j,0)!=26||
+       reloq61_spr_feature(d,&j,14)!=0)return 0;
+    int32_t left=*EVV_AT(const int32_t *,j.node)&~3;
+    delta_vars *v=EVV_AT(delta_vars *,d->vars);
+    if(*EVV_AT(const int32_t *,left+(v->fence_base+7)*4)&1)return 0;
+    int32_t node=vgetsc(d,1,0,left,2);
+    while(node&&(*EVV_AT(const int32_t *,node)&2))node=vgetsc(d,1,0,node,2);
+    if(!node)return 0;
+    previous=(struct reloq61_spr_phone){node,EVV_AT(const int32_t *,node)[1]&~3};
+    return previous.after&&reloq61_spr_feature(d,&previous,0)==31;
+}
 /* A syllable-final r after long /oe/ has its own approved vocalic colour.
  * Use phone and syllable records, so the same rule applies to SPR input. */
 static int r_after_long_oe(delta_state *d)
@@ -257,6 +276,11 @@ int32_t reloq_dede61_doF(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3
                 if(right.field>0)right.field=2050;
             }
         }
+    }
+    if(stream.field>=1&&stream.field<=3&&e_j_glide(d)) {
+        static const int16_t target[]={420,1900,2450};
+        if(left.field>0)left.field=target[stream.field-1];
+        if(right.field>0)right.field=target[stream.field-1];
     }
     if(stream.field>=1&&stream.field<=3&&r_after_long_oe(d)) {
         static const int16_t target[]={600,1320,2300};

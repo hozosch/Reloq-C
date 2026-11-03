@@ -12,7 +12,7 @@ struct pitch_plan {
     int32_t pair[2048][2];size_t count;
     uint64_t acoustic_hash;int64_t ticks;
     int32_t max_diplophonia,max_aspiration;
-    int i_e_r_target,i_e_target,final_a_target,comma_a_transition,weak_verb_rise,direct_weak_verb_fall;
+    int i_e_r_target,i_e_target,final_a_target,comma_a_transition,weak_verb_rise,direct_weak_verb_fall,j_glide_target,j_onset_target;
     unsigned r_phase_mask,r_phase_anywhere;
     int r_continuous;
 };
@@ -46,6 +46,8 @@ static int span(void *context,int32_t from,int32_t to,
     if(c[7].val_l==28&&c[7].val_r==53)p->r_phase_anywhere|=4u;
     if(c[9].val_l==400&&c[13].val_l==2050)p->i_e_r_target=1;
     if(c[9].val_l==370&&c[13].val_l==2150)p->i_e_target=1;
+    if(c[9].val_l==420&&c[13].val_l==1900&&c[15].val_l==2450)p->j_glide_target=1;
+    if(c[9].val_l==300&&c[13].val_l==2100&&c[15].val_l==2900)p->j_onset_target=1;
     return 0;
 }
 static int unexpected_frame(void *context,const int32_t frame[62],int32_t volume)
@@ -142,7 +144,17 @@ static unsigned german_phone_targets(void)
     assert(p.i_e_r_target);
     p=german_pitch("wie eben",65,0,75);
     assert(p.i_e_target);
-    return 10;
+    /* /Ej/ closes like the glide in German /aj/, for text and explicit
+     * phonemes. The native /aj/ remains a reference for the target. */
+    p=german_pitch("Homepage",65,0,75);
+    assert(p.j_glide_target);
+    p=german_pitch("`[.1pEjC]",65,0,75);
+    assert(p.j_glide_target);
+    p=german_pitch("drei",65,0,75);
+    assert(p.j_glide_target);
+    p=german_pitch("Projekt",65,0,75);
+    assert(p.j_onset_target);
+    return 14;
 }
 
 static int pitch_pair(const struct pitch_plan *p,int32_t left,int32_t right)
