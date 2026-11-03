@@ -196,23 +196,14 @@ angeboten. Eine Audio-Geräte-/Dateiausgabe und das native Filter-ABI benötigen
 eigene Implementierungen. Diese Grenzen sind für einen beliebigen ECI-Client
 relevant, auch wenn der untersuchte Eloquence_64-ReLoq-Adapter sie umgeht.
 
-## Klangprofil im Eloquence_64-Adapter
+## Klangabstimmung in ECI-Anwendungen
 
-Profil C ist jetzt der DLL-Standard (Parameter 0x1011 = 3) und wird auch im
-eigenen NVDA-Add-on als Vorgabe verwendet. Bereits gespeicherte Einstellungen
-der früheren Vorgabe B und des früheren C-Hörtests werden auf C übernommen;
-Profil A und B bleiben ausdrücklich auswählbar. Der native Wert 2 bleibt zur
-Kompatibilität ein Alias für B. Clients wie Eloquence_64, die den zusätzlichen
-Parameter nicht setzen, verwenden damit ebenfalls C.
-
-`integration/eloquence64-classic-profile.patch` zeigt weiterhin die frühere,
-ausdrückliche Auswahl von Profil B. Ein Client, der diese Einstellung setzt,
-überschreibt damit den neuen Standard. Frühere DLLs dürfen den unbekannten
-Parameter ablehnen und bleiben nutzbar.
-Der Patch gilt für den untersuchten Upstream-Commit und wurde lokal mit
-dessen tatsächlichem Adapter bei 16, 22,05 und 48 kHz geprüft: 24 vollständige
-und fragmentierte Satzfälle liefern die gleiche PCM-Ausgabe wie unser
-Client mit Profil B. Der Patch ist nicht an Upstream gesendet worden.
+Die bestätigte bisherige C-Abstimmung ist die einzige reguläre Abstimmung,
+auch in Eloquence_64 und anderen ECI-Anwendungen. Die experimentelle
+Hochraten-Auswahl wurde aus dem eigenen NVDA-Add-on entfernt. Der frühere
+ReLoq-Zusatzparameter 0x1011 nimmt zur Kompatibilität weiterhin die Werte
+0 bis 3 an und meldet den gesetzten Wert zurück; alle vier Werte erzeugen
+dieselbe C-Abstimmung. ECI-Sprach- und Stimmeinstellungen bleiben erhalten.
 
 Die Unicode-Konvertierung der neuen Dictionary-API wird lokal unter Linux
 und über Windows-APIs implementiert; der JNI-UTF-8-Pfad bleibt erhalten.

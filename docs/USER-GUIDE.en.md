@@ -1,8 +1,8 @@
 # Eloquence C – user guide
 
-## Preview 1.1.0-rc12
+## Preview 1.1.0-rc13
 
-Profile C is now the default. From 22.05 kHz upward it adds a broad, restrained contour around 3.75 kHz to the existing periodic voice energy. At 16 kHz it equals profile B; the separate aspiration and consonant paths are preserved. A and B remain available under High-rate tuning. Greek now uses the same restrained high-rate S/T extension as Castilian Spanish. The high-rate filters use less processing time. Discretionary hyphens inside German words do not disrupt lexical analysis, and ECI tags remain protected from NVDA's symbol processing. Long German single sentences and open quotations still wait for complete analysis.
+The accepted C sound is fixed, and the high-rate tuning selector has been removed. From 22.05 kHz upward C adds a broad, restrained contour around 3.75 kHz to the existing periodic voice energy. The separate aspiration and consonant paths are preserved. Greek uses the same restrained high-rate S/T extension as Castilian Spanish. Additional high-rate filter calculations are reused. German expressions containing both slashes and hyphens use the native sentence analysis more often. The transition from vocalic r to a word-initial z has been adjusted for phrases such as “der Zahn”. Discretionary hyphens inside German words do not disrupt lexical analysis, and ECI tags remain protected from NVDA's symbol processing. Long German single sentences and open quotations still wait for complete analysis.
 
 ## English clock readings with seconds
 

@@ -2296,7 +2296,22 @@ static int generic_plan(
                     burst.value[affricate_part==1?RELOQ_TARGET_AB:RELOQ_TARGET_A5F]=
                         affricate_part==1?67:affricate_part==7?55:affricate_part==5?50:53;
                 }
-                if (emit(&stages,tick,&closure,&output) ||
+                /* Original ECI keeps the vocalic-r source briefly into a
+                 * word-initial /ts/ closure ("der Zahn"). Preserve the
+                 * preceding vowel's AV for 15 unscaled ticks, then release
+                 * it over five ticks. Do not move the burst, the following
+                 * frication, a written pause, or the word/index boundary. */
+                const int carry_r=affricate_part==3 && i>=2 && !node->same_word_left &&
+                    !boundary_pause && phones[i-1].phone==RELOQ_DE_PHONE_r &&
+                    source_segments[i-1].kind==RELOQ_SOURCE_CARRY &&
+                    !source_segments[i-1].phrase_final && source_segments[i-1].end==tick &&
+                    source_segments[i-2].kind==RELOQ_SOURCE_NUCLEUS && span>=25;
+                struct output_settings closure_output=output;
+                if(carry_r)closure_output.nucleus_source=1;
+                if (emit(&stages,tick,&closure,&closure_output) ||
+                    (carry_r && (emit_source_point(&output,RELOQ_TARGET_AH,tick,0,i) ||
+                        emit_source_point(&output,RELOQ_TARGET_AV,tick+15,source_segments[i-2].av_end,i) ||
+                        emit_source_point(&output,RELOQ_TARGET_AV,tick+20,0,i))) ||
                     emit_stop_plateau(&stages,tick+span-burst_ticks,tick+span,
                                       &burst,&closure,&output)) goto cleanup;
                 if (affricate_part && affricate_part!=7 &&

@@ -109,7 +109,8 @@ enum {
     RELOQ_ECI_ROUGHNESS = 0x100e,
     RELOQ_ECI_BREATHINESS = 0x100f,
     RELOQ_ECI_GENDER = 0x1010,
-    /* Hearing profiles: 0 previous A, 1 complete Classic Presence, 2 aliases 1. */
+    /* Legacy ReLoq setting. Values 0..3 remain readable/writable; every
+     * value renders the accepted C tuning in ECI speech. */
     RELOQ_ECI_HIGH_RATE_PROFILE = 0x1011,
     RELOQ_ECI_ENGLISH = 0x00010000,
     RELOQ_ECI_ENGLISH_BRITAIN = 0x00010001,

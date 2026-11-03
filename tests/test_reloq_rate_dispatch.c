@@ -26,9 +26,17 @@ static void noise_grid_reuse(void)
    double direct=profile_power(&p,hz);
    double complex current=cexp(-I*2*pi*hz/rates[r]);
    double complex reference=cexp(-I*2*pi*hz/11025);
+   double classic=hz<=11025?classic_colour_power(hz):0;
+   double extension=hz<=5512.5?0:hz>=6500?1:
+       .5-.5*cos(pi*(hz-5512.5)/987.5);
+   double ratio=hz/8500,quadratic=ratio*ratio;
+   double retracted=1/(1+quadratic*quadratic);
    assert(!memcmp(&direct,grid->profile+k,sizeof direct));
    assert(!memcmp(&current,clock->z[0]+k,sizeof current));
-   assert(!memcmp(&reference,clock->z[1]+k,sizeof reference));++checks;
+   assert(!memcmp(&reference,clock->z[1]+k,sizeof reference));
+   assert(!memcmp(&classic,clock->classic+k,sizeof classic));
+   assert(!memcmp(&extension,clock->extension+k,sizeof extension));
+   assert(!memcmp(&retracted,clock->retracted+k,sizeof retracted));++checks;
   }
   p.target[0][0]+=.01;
   assert(!get_noise_grid(&p,r,rates[r],clock));

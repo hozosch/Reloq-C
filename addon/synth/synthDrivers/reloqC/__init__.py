@@ -31,7 +31,7 @@ from speech.extensions import filter_speechSequence
 from synthDriverHandler import (SynthDriver as BaseSynthDriver, VoiceInfo, LanguageInfo,
                                 synthDoneSpeaking, synthIndexReached)
 
-from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciProsody, EciLanguage, EciText, NATIVE_VOLUME, HIGH_RATE_PROFILE,
+from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciProsody, EciLanguage, EciText, NATIVE_VOLUME,
                                 NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION, PROCESS_TAGS,
                                 PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATES,
                                 DICTIONARY, PHRASE_PREDICTION)
@@ -186,7 +186,6 @@ class SynthDriver(BaseSynthDriver):
         BooleanDriverSetting("_dictionaryCommunity", _("Use &community pronunciation dictionaries"), defaultVal=False),
         DriverSetting("pauseMode", _("Shorten pa&uses"), defaultVal="0"),
         DriverSetting("sampleRate", _("&Sample rate"), defaultVal="1"),
-        DriverSetting("highRateProfile", _("High-rate &tuning (16 kHz and above)"), defaultVal="1"),
     )
 
     @classmethod
@@ -222,7 +221,6 @@ class SynthDriver(BaseSynthDriver):
         self._dictionary_updater = None
         self._pauseMode = "0"
         self._sampleRate = "1"
-        self._highRateProfile = "1"
         self._sample_rate_revision = 0
         self._languages = dict(LANGUAGES)
         self._selectedLanguage = self._initial_language()
@@ -248,7 +246,6 @@ class SynthDriver(BaseSynthDriver):
         self._transport.set_parameter(HEAD_SIZE, self._headSize)
         self._transport.set_parameter(ROUGHNESS, self._roughness)
         self._transport.set_parameter(BREATHINESS, self._breathiness)
-        self._transport.set_parameter(HIGH_RATE_PROFILE, 3)
         manager = self.dictionary_manager()
         # Start monitoring the installed dictionaries and selected own files.
         manager.set_enabled(False)
@@ -275,31 +272,6 @@ class SynthDriver(BaseSynthDriver):
     def _make_player(sample_rate):
         return nvwave.WavePlayer(channels=1, samplesPerSec=sample_rate,
             bitsPerSample=16, outputDevice=config.conf["audio"]["outputDevice"])
-
-    def _get_availableHighrateprofiles(self):
-        labels = {"0": _("A: Current sound (control)"),
-                  "1": _("C: B with gentle richness"),
-                  "2": _("B: A voice, Classic consonants")}
-        return OrderedDict((key, StringParameterInfo(key, label)) for key, label in labels.items())
-
-    def _get_availableHighRateProfiles(self):
-        return self._get_availableHighrateprofiles()
-
-    def _get_highRateProfile(self):
-        return self._highRateProfile
-
-    def _set_highRateProfile(self, value):
-        # rc11 used ID 3 for C; migrate it to the new standard ID 1.
-        value = "1" if str(value) == "3" else str(value)
-        if value not in self._get_availableHighrateprofiles():
-            raise ValueError("unsupported high-rate hearing profile")
-        with self._submit_lock:
-            if self._terminating or self._highRateProfile == value:
-                return
-            self._request_epoch += 1
-            self._transport.cancel()
-            self._transport.set_parameter(HIGH_RATE_PROFILE, {"0": 0, "1": 3, "2": 1}[value])
-            self._highRateProfile = value
 
     def _get_availableSamplerates(self):
         # Translators: Audio sample rates; localize the decimal separator.
@@ -659,8 +631,8 @@ class SynthDriver(BaseSynthDriver):
             characters = sum(len(p.text) if isinstance(p, EciText) else len(p) if isinstance(p, str) else 0 for p in parts)
             protected_tags = sum(isinstance(p, EciTagCommand) for p in speechSequence)
             if characters >= 1024 or protected_tags:
-                log.info("Eloquence C queued speech: characters=%d, protected_tags=%d, rate=%d Hz, profile=%s, tags=%s",
-                    characters, protected_tags, SAMPLE_RATES[int(self._sampleRate)], self._highRateProfile, tags)
+                log.info("Eloquence C queued speech: characters=%d, protected_tags=%d, rate=%d Hz, tags=%s",
+                    characters, protected_tags, SAMPLE_RATES[int(self._sampleRate)], tags)
             self._transport.submit(parts)
 
     def cancel(self):

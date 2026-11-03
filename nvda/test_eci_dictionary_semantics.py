@@ -52,6 +52,15 @@ def main():
                     expected = [prefix, EciIndex(1), value, EciIndex(2), suffix, EciIndex(3)]
                     assert capture(engine, source) == capture(engine, expected), (key, prefix, suffix)
                     count += 1
+            # Mixed slash/hyphen expressions are submitted to the native
+            # sentence analysis as a unit. Main replacements still apply
+            # at every constituent, including after both separators.
+            for word in ('A/B-TokenX', 'TokenX/B-Test', 'A/TokenX-Test', 'X/B-TokenX'):
+                source = ['Die ', EciIndex(1), word, EciIndex(2), ' wurde gelesen.', EciIndex(3)]
+                expected = ['Die ', EciIndex(1), word.replace('TokenX', 'bei'),
+                            EciIndex(2), ' wurde gelesen.', EciIndex(3)]
+                assert capture(engine, source) == capture(engine, expected), word
+                count += 1
             lower = capture(engine, ['macro.'])
             upper = capture(engine, ['Macro.'])
             cycle = capture(engine, ['CycleA.'])
@@ -62,6 +71,24 @@ def main():
             count += 3
         finally:
             engine.close()
+
+        # Explicit RLEX pronunciations take precedence over normalizing a
+        # mixed token; they must still be heard at each constituent position.
+        custom = directory / 'custom.rlex'
+        custom.write_bytes(b'RELOQ-DE-SPR-1\n' + b'Test'.hex().upper().encode()
+                           + b'\t' + b'`[.1ba.2na.0n@]'.hex().upper().encode() + b'\n')
+        plain = DirectEciEngine(args.library, dialect=0x40000,
+                                experimental_generic=True, encoding='utf8')
+        authored = DirectEciEngine(args.library, dialect=0x40000, experimental_generic=True,
+                                   encoding='utf8', lexicon_path=custom)
+        try:
+            for word in ('Test', 'A/B-Test', 'Test/A-B', 'A/Test-B'):
+                parts = ['Die ', EciIndex(1), word, EciIndex(2), ' wurde gelesen.', EciIndex(3)]
+                assert capture(plain, parts) != capture(authored, parts), word
+                count += 1
+        finally:
+            plain.close()
+            authored.close()
 
         (directory / 'DEUmain.dic').unlink()
         spr = b'`[.1tEst]'

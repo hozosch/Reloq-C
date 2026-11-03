@@ -51,24 +51,26 @@ int reloq_rate_transfer_prepare_classic_bandwidth(struct reloq_rate_transfer *s,
             (grid?grid->profile[k]:profile_power(profile,hz))*0.7943282347242815;
         double complex z=clock?clock->z[1][k]:cexp(-I*2*pi*hz/11025);
         native_power[k]=hz<=11025?bank_power(reference,z)/(norm*norm)*
-            classic_colour_power(hz)*(rate/11025.0):0;
+            (clock?clock->classic[k]:classic_colour_power(hz))*(rate/11025.0):0;
         if(hz<=4600){lower_ours+=w*ours[k];lower_ref+=w*native_power[k];}
         if(ours[k]>peak)peak=ours[k];
     }
     if(lower_ref<=0 || lower_ours<=0)return 0;
     const double upper_scale=lower_ref/lower_ours;
     double wanted=0,baseline=0,added=0,extra[FFT_SIZE/2+1];
-    for(unsigned k=0;k<=FFT_SIZE/2;++k) {
+    if(extension==0)memset(extra,0,sizeof extra);
+    else for(unsigned k=0;k<=FFT_SIZE/2;++k) {
         double hz=(double)k*rate/FFT_SIZE,w=k&&k<FFT_SIZE/2?1:.5;
-        double upper=hz<=5512.5?0:hz>=6500?1:
+        double upper=clock?clock->extension[k]:hz<=5512.5?0:hz>=6500?1:
             .5-.5*cos(pi*(hz-5512.5)/987.5);
         /* Preserve the complete recognizable S main band. Only its new
          * upper energy rolls off, in physical Hz rather than Nyquist.
          * Other AF keeps the established extension and source contour. */
         double roll=1;
         if(s->sibilant_extension) {
-            double ratio=hz/8500,quadratic=ratio*ratio;
-            roll=1/(1+quadratic*quadratic);
+            if(clock)roll=clock->retracted[k];
+            else {double ratio=hz/8500,quadratic=ratio*ratio;
+                roll=1/(1+quadratic*quadratic);}
         }
         extra[k]=extension*upper*upper_scale*ours[k]*roll;
         added+=w*extra[k];

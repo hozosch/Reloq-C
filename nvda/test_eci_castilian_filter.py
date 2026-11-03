@@ -47,9 +47,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--library", type=Path, required=True)
     parser.add_argument("--baseline", type=Path,
-                        help="Original Classic-Presence build before the rc1 A-filter exception")
+                        help="Previous build with accepted C as profile 3")
     args = parser.parse_args()
-    prefixes = spectra = peaks = identities = maximum = 0
+    spectra = peaks = identities = maximum = 0
     worst_ratio = 0
     texts = ("seseo.", "teta.", "Seis sacerdotes están sentados en siete sitios.")
     for dialect in (0x20000, 0x20001) if args.baseline else (0x20000,):
@@ -67,8 +67,7 @@ def main():
                     engine.set_parameter(SAMPLE_RATE, rate)
                     if baseline: baseline.set_parameter(SAMPLE_RATE, rate)
                     for text in texts:
-                        a = capture(engine, text, 0)
-                        b = capture(engine, text, 1)
+                        b = capture(engine, text, 3)
                         if dialect == 0x20000:
                             peak = max(abs(x) for x in array.array("h", b))
                             assert peak < 32767, (gender, rate, text, peak)
@@ -83,29 +82,17 @@ def main():
                                     foundation_ratio = ratio
                                 else:
                                     assert ratio > foundation_ratio, (gender, hz, ratio)
-                                    if baseline:
-                                        _, normal = onset(capture(baseline, text, 1), hz, 60)
-                                        normal_ratio = (band_power(normal, hz, 6500, 7500) /
-                                                        band_power(normal, hz, 1200, 5000))
-                                        assert .1 < ratio / normal_ratio < .6, (
-                                            gender, hz, ratio, normal_ratio)
                                 worst_ratio = max(worst_ratio, ratio); spectra += 1
                         if baseline:
-                            assert a == capture(baseline, text, 0), (
-                                hex(dialect), gender, hz, text, "A control changed")
+                            assert b == capture(baseline, text, 3), (
+                                hex(dialect), gender, hz, text, "accepted C changed")
                             identities += 1
-                            if text in texts[:2] and (dialect == 0x20001 or hz == 16000):
-                                ms = 60 if text == texts[0] else 8
-                                assert onset(b, hz, ms)[0] == onset(
-                                    capture(baseline, text, 1), hz, ms)[0], (
-                                        hex(dialect), gender, hz, text, "Classic onset changed")
-                                prefixes += 1
         finally:
             engine.close()
             if baseline: baseline.close()
     print(f"Castilian S/T: {spectra} upper-band bounds (worst {worst_ratio:.7f}), "
-          f"{prefixes} original Classic onset identities, {peaks} peak checks "
-          f"(maximum {maximum}), {identities} unchanged A controls; audio in RAM")
+          f"{peaks} peak checks "
+          f"(maximum {maximum}), {identities} accepted C identities; audio in RAM")
 
 
 if __name__ == "__main__": main()

@@ -1106,7 +1106,7 @@ static int append_native_token(struct annotation_builder *b,
     /* Authored constituent corrections and caller pronunciations outrank
      * token normalization. Keep those tokens on the existing word path. */
     for(size_t at=0;!dictionary&&at<length;) {
-        size_t end=at;while(end<length&&source[end]!='/')++end;
+        size_t end=at;while(end<length&&source[end]!='/'&&source[end]!='-')++end;
         size_t part=end-at;
         if(part==4&&((fold_lower(source[at])=='s'&&!memcmp(source+at+1,"amt",3))||
             (fold_lower(source[at])=='p'&&fold_lower(source[at+1])=='l'&&
@@ -2255,8 +2255,14 @@ static int plan_tags_checked(int native_first,
             size_t end=at;
             while(end<encoded_length&&letter(encoded[end]))++end;
             size_t connected=end;int slash=0;
-            while(connected+1<encoded_length&&encoded[connected]=='/'&&letter(encoded[connected+1])) {
-                slash=1;++connected;
+            /* A mixed separator token belongs to one native sentence input.
+             * In A/B-Test the native grammar joins B-Test as one phonetic
+             * word. Stopping at B creates two placeholder groups and forces
+             * a full fallback of the entire surrounding sentence. */
+            while(connected+1<encoded_length&&
+                  (encoded[connected]=='/'||encoded[connected]=='-')&&
+                  letter(encoded[connected+1])) {
+                slash|=encoded[connected]=='/';++connected;
                 while(connected<encoded_length&&letter(encoded[connected]))++connected;
             }
             if(slash) {

@@ -1,4 +1,37 @@
-# Testkandidat 1.1.0-rc12: C als Vorgabe, griechischer Filter und CPU
+# Testkandidat 1.1.0-rc13: Fester C-Klang und deutsche Übergänge
+
+Die A-/B-/C-Auswahl im NVDA-Treiber ist entfernt; die bestätigte Abstimmung C
+gilt auch für ECI-Programme, die noch einen früheren Profilwert setzen. Die
+acht Stimmprofile bleiben verfügbar. Frequenzabhängige Gewichte der
+Hochratenfilter werden jetzt einmal pro Abtastrate berechnet. Vergleiche mit
+rc12 zeigen identische PCM- und Indexdaten für 236 Fälle über alle Sprachen,
+Modelle und Raten. Zwei ruhige Linux-Prozessmessungen mit deutschen, englischen
+und griechischen Sätzen über 16 bis 48 kHz ergaben im Median ungefähr 3 %
+weniger CPU-Zeit; einzelne Fälle lagen innerhalb der Messschwankung oder waren
+langsamer. Das ist keine Windows-Messung.
+
+Die deutsche Satzanalyse übernimmt gemischte Schrägstrich-/Bindestrichwörter
+wie „A/B-Test“ als zusammengehörigen Ausdruck. Dadurch fällt der umgebende
+Satz in diesen Fällen nicht wegen unterschiedlicher Wortgruppen auf die alte
+Analyse zurück. 173 Vergleichsfälle mit der nativen Satzanalyse bestehen,
+einschließlich der Bindestrich-/Schrägstrichkombinationen; Main-Wörterbücher
+und explizite RLEX-Ausspracheeinträge bleiben in den geprüften Fällen wirksam.
+
+Bei „der Zahn“ und ähnlichen Wortübergängen trägt der Vokal das stimmhafte R
+etwas weiter in den Verschluss des folgenden Z. In der Signalmessung bleibt der
+stimmhafte Anteil damit länger erhalten und nähert sich dem Verlauf der
+originalen ECI-DLL an. Dauer und Indizes bleiben gleich. Andere getestete
+Kontexte wie „der Mann“, „der, Zahn“, „Herz“ und „Zehn“ bleiben bitgleich.
+Das ist ein technischer Vergleich; die Hörprüfung des neuen Übergangs steht aus.
+
+Die vollständige deutsche Umstellung auf denselben nativen Ausgabepfad wie
+Englisch ist noch nicht die Produktvorgabe. Der getrennte Versuchszweig zeigt
+kürzere Startzeiten bei langen Einzelsätzen, aber noch Abweichungen bei
+gemischt geschriebenen RLEX-Einträgen, Euro-Schreibweisen und der bereits
+bestätigten männlichen Z-Lautstärke. Lange deutsche Einzelsätze und offene
+Zitate behalten daher ihre bisherige Startverzögerung.
+
+## Testkandidat 1.1.0-rc12: C als Vorgabe, griechischer Filter und CPU
 
 Der bestätigte C-Klang ist jetzt die Vorgabe in der ECI-DLL und im NVDA-Treiber;
 gespeicherte B-Vorgaben sowie die frühere C-Auswahl wechseln auf C. A und B

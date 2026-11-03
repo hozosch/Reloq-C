@@ -1275,6 +1275,7 @@ static double bank_power(const struct reloq_core_frication_bank *b,double comple
 struct noise_clock_grid {
     atomic_int ready;
     double low_weight[FFT_SIZE/2+1],high_weight[FFT_SIZE/2+1],tilt[FFT_SIZE/2+1];
+    double classic[FFT_SIZE/2+1],extension[FFT_SIZE/2+1],retracted[FFT_SIZE/2+1];
     double complex z[3][FFT_SIZE/2+1];
 };
 struct noise_grid {
@@ -1309,6 +1310,13 @@ static void fill_noise_clock(struct noise_clock_grid *g,float rate)
         double blend=hz<=5300?0:hz>=5512.5?1:.5-.5*cos(pi*(hz-5300)/212.5);
         g->low_weight[k]=hz<5512.5?1-blend:0;
         g->high_weight[k]=hz<11025?blend*wide_noise_power(hz)*25.1188643150958*.5:0;
+        /* The Classic target, upper-band fade and S/T rolloff depend only
+         * on the clock. Preserve the same expressions as the direct path. */
+        g->classic[k]=hz<=11025?classic_colour_power(hz):0;
+        g->extension[k]=hz<=5512.5?0:hz>=6500?1:
+            .5-.5*cos(pi*(hz-5512.5)/987.5);
+        double ratio=hz/8500,quadratic=ratio*ratio;
+        g->retracted[k]=1/(1+quadratic*quadratic);
     }
 }
 static const struct noise_clock_grid *get_noise_clock(unsigned i,float rate)

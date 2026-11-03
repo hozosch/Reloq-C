@@ -300,15 +300,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert PitchCommand in driver.supportedCommands
                 assert CharacterModeCommand in driver.supportedCommands
                 assert [setting.id for setting in driver.supportedSettings] == [
-                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "highRateProfile"]
-                assert list(driver.availableHighrateprofiles) == ["0", "1", "2"]
-                assert driver.highRateProfile == "1"
-                assert driver.availableHighrateprofiles["2"].displayName == (
-                    "B: A-Stimme, Classic-Konsonanten" if german_ui else
-                    "B: A voice, Classic consonants")
-                assert driver.availableHighrateprofiles["1"].displayName == (
-                    "C: B mit behutsamer Richness" if german_ui else
-                    "C: B with gentle richness")
+                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate"]
                 assert driver.supportedSettings[0].availableInSettingsRing
                 driver.initSettings()
                 panel = SettingsPanel(driver)
@@ -396,11 +388,10 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         driver_module.EciText("Deutsch."), driver_module.EciLanguage(0x10000, "1"), driver_module.EciText("English."),
                         driver_module.EciLanguage(0x40000, "1"), driver_module.EciText("Wieder deutsch.")]
                 until(lambda: len(Engine.instances) == 1)
-                until(lambda: len(Engine.instances[0].parameters) == 15)
+                until(lambda: len(Engine.instances[0].parameters) == 14)
                 assert Engine.instances[0].parameters == list(german.voices[0].parameters) + [(0x1007, 98), (0x1008, 50),
                                                           (0x1009, 30),
-                                                          (0x100a, 100), (0x100d, 50), (0x100e, 0), (0x100f, 0),
-                                                          (0x1011, 3)]
+                                                          (0x100a, 100), (0x100d, 50), (0x100e, 0), (0x100f, 0)]
                 driver._set_rate(70)
                 driver._set_pitch(65)
                 driver._set_inflection(75)
@@ -416,7 +407,6 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert worker.parameters == list(german.voices[0].parameters) + [(0x1007, 98), (0x1008, 50),
                                              (0x1009, 30), (0x100a, 100),
                                              (0x100d, 50), (0x100e, 0), (0x100f, 0),
-                                             (0x1011, 3),
                                              (0x1007, 121), (0x1008, 65),
                                              (0x1009, 75),
                                              (0x100a, 85)]
@@ -436,22 +426,6 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 until(lambda: notifications and notifications[-1][0] == "done")
                 assert [(kind, data.get("index")) for kind, data in notifications] == [
                     ("index", 12), ("index", 13), ("done", None)]
-
-                driver.highRateProfile = "0"
-                until(lambda: worker.parameters[-1] == (0x1011, 0))
-                profile_start = len(worker.parameters)
-                driver.highRateProfile = "2"
-                assert driver.highRateProfile == "2"
-                until(lambda: len(worker.parameters) == profile_start + 1)
-                assert worker.parameters[-1] == (0x1011, 1)
-                driver.highRateProfile = "0"
-                until(lambda: len(worker.parameters) == profile_start + 2)
-                assert worker.parameters[-1] == (0x1011, 0)
-                driver.highRateProfile = "3"
-                until(lambda: len(worker.parameters) == profile_start + 3)
-                assert driver.highRateProfile == "1" and worker.parameters[-1] == (0x1011, 3)
-                driver.highRateProfile = "0"
-                until(lambda: len(worker.parameters) == profile_start + 4)
 
                 paragraph = "Dies ist ein längerer Absatz mit mehreren Wörtern."
                 driver.speak([paragraph])

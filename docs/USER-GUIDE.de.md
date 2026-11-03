@@ -1,8 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Testversion 1.1.0-rc12
+## Testversion 1.1.0-rc13
 
-Profil C ist die neue Vorgabe. Es formt ab 22,05 kHz den vorhandenen periodischen Stimmanteil mit einer breiten, zurückhaltenden Anhebung um 3,75 kHz. Bei 16 kHz entspricht es Profil B; die getrennten Aspirations- und Konsonantenwege bleiben erhalten. A und B können weiterhin unter Hochraten-Abstimmung ausgewählt werden. Griechisch erhält bei hohen Raten dieselbe zurückhaltende S-/T-Erweiterung wie kastilisches Spanisch. Die Hochratenfilter verwenden weniger Rechenzeit. Bedingte Trennstriche innerhalb deutscher Wörter stören deren Wortanalyse nicht mehr. ECI-Tags bleiben vor NVDAs Symbolverarbeitung geschützt. Lange deutsche Einzelsätze und offene Zitate warten weiterhin auf ihre vollständige Analyse.
+Der bestätigte C-Klang ist fest eingestellt; die Auswahl der Hochraten-Abstimmung ist entfallen. Ab 22,05 kHz formt C den vorhandenen periodischen Stimmanteil mit einer breiten, zurückhaltenden Anhebung um 3,75 kHz. Die getrennten Aspirations- und Konsonantenwege bleiben erhalten. Griechisch erhält bei hohen Raten dieselbe zurückhaltende S-/T-Erweiterung wie kastilisches Spanisch. Weitere Berechnungen der Hochratenfilter werden wiederverwendet. Bei deutschen Ausdrücken mit Schrägstrich und Bindestrich greift die native Satzanalyse häufiger. Der Übergang vom vokalischen R zum Z am nächsten Wortanfang wurde für Fälle wie „der Zahn“ angepasst. Bedingte Trennstriche innerhalb deutscher Wörter stören deren Wortanalyse nicht mehr. ECI-Tags bleiben vor NVDAs Symbolverarbeitung geschützt. Lange deutsche Einzelsätze und offene Zitate warten weiterhin auf ihre vollständige Analyse.
 
 ## Englische Uhrzeiten mit Sekunden
 

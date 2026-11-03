@@ -73,6 +73,7 @@ int main(void)
         "Ein- und Ausgabe","Ein- / Ausgabe","Ein-/ Ausgabe","Ein- /Ausgabe",
         "Audio- / Video-Dateien","E-Mail/Chat","Windows-11-Updates","NVDA-2026.1",
         "16-kHz-Version","22/32-kHz-Version","Frankfurt / Main","Datei-/Ordnername",
+        "A/B-Test","X/B-Test","Frankfurt/Main-Region","E-Mail/Chat-Verlauf",
     };
     static const char *const separator_patterns[]={
         "Die %s wurde nach der Vorbereitung geprüft.",

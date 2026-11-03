@@ -125,7 +125,6 @@ def main():
 
             try:
                 driver.sampleRate = "3"
-                driver.highRateProfile = "1"
                 driver.voiceTags = True
                 cases = {
                     "de_DE": ("Das ist eine ", "Nachricht", " mit einem Test."),
@@ -170,24 +169,20 @@ def main():
                     assert settings[str(native.HIGH_RATE_PROFILE)] == 3
                     assert settings[str(native.PROCESS_TAGS)] == 1
                     report["checks"] += 3
-                # Verify the selectable C profile through the packaged NVDA
-                # driver, real ECI DLL and player. B remains the foundation.
+                # The accepted tuning is fixed, independent of old stored
+                # choices. Check repeatable output at three actual rates.
                 driver.language = "de_DE"
                 driver.voice = "1"
                 driver.voiceTags = False
                 for code, hz in ((3, 16000), (2, 22050), (6, 48000)):
                     driver.sampleRate = str(code)
-                    driver.highRateProfile = "2"
                     baseline = run(["Oma und Werner hören Musik."])
-                    driver.highRateProfile = "1"
                     gentle = run(["Oma und Werner hören Musik."])
                     settings = spoken_engines[-1].calls[-1][1]
                     assert settings[str(native.HIGH_RATE_PROFILE)] == 3
                     assert settings[str(native.SAMPLE_RATE)] == code and players[-1].hz == hz
-                    assert len(baseline) == len(gentle)
-                    assert (baseline == gentle) == (hz == 16000)
+                    assert baseline == gentle
                     report["checks"] += 4
-                driver.highRateProfile = "1"
                 driver.voiceTags = True
                 driver.sampleRate = "3"
                 for locale, sentence in (

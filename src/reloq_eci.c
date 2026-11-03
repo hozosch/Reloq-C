@@ -1186,7 +1186,10 @@ int ECICALL eciSynthesize(ECIHand handle)
     if (!e) return 0;
     unsigned int before = epoch_get(&e->stop_epoch);
     if (!busy_begin(&e->busy)) return 0;
-    (void)reloq_session_high_rate_profile(e->text_session,(unsigned)e->high_rate_profile);
+    /* The accepted C sound is now the single production tuning. Keep the
+     * legacy parameter value for callers which still set/query it, but do
+     * not let stale saved A/B settings change speech in any ECI host. */
+    (void)reloq_session_high_rate_profile(e->text_session,3);
     struct reloq61_text_options previous_options=reloq61_text_options_scope(
         (struct reloq61_text_options){e->dictionary_disabled,e->phrase_prediction});
     e->failure_stage = RELOQ_ECI_STAGE_NONE;
@@ -1241,7 +1244,7 @@ int ECICALL eciSynthesize(ECIHand handle)
         if(initial_voice.values[0]!=saved_voice.values[0]||initial_voice.values[1]!=saved_voice.values[1]) {
             struct reloq_session *next=make_text_session(e->gender,e->head_size,e->sample_rate_code);
             if(!next){result=RELOQ_ECI_MEMORY;goto done;}
-            (void)reloq_session_high_rate_profile(next,(unsigned)e->high_rate_profile);
+            (void)reloq_session_high_rate_profile(next,3);
             lock_session(&e->session_lock);saved_text_session=e->text_session;e->text_session=next;unlock_session(&e->session_lock);
         }
     }

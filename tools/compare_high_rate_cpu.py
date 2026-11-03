@@ -52,15 +52,15 @@ def main():
                     checks += 1
         finally:
             for engine in engines: engine.close()
-    # The cached grid is also used by the older selectable profiles.
+    # Old profile selectors must all retain the accepted profile-3 sound.
     for dialect in (0x10000, 0x40000, 0x20000, 0x120000):
         engines = pair(paths, dialect)
         try:
             for rate in (3, 2, 4, 5, 6):
                 for profile in (0, 1):
-                    for engine in engines:
-                        engine.set_parameter(SAMPLE_RATE, rate)
-                        engine.set_parameter(HIGH_RATE_PROFILE, profile)
+                    for engine in engines: engine.set_parameter(SAMPLE_RATE, rate)
+                    engines[0].set_parameter(HIGH_RATE_PROFILE, 3)
+                    engines[1].set_parameter(HIGH_RATE_PROFILE, profile)
                     assert capture(engines[0], TEXTS[dialect]) == capture(engines[1], TEXTS[dialect]), (
                         hex(dialect), rate, profile, 'control PCM/index changed')
                     checks += 1
