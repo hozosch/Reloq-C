@@ -19,6 +19,19 @@ static int prior_phone(delta_state *d,const struct reloq61_spr_phone *p,
 }
 static int phone_is(delta_state *d,const struct reloq61_spr_phone *p,unsigned name,unsigned combo)
 {return reloq61_spr_feature(d,p,0)==name&&reloq61_spr_feature(d,p,14)==combo;}
+static int seven_und_n(delta_state *d,const struct reloq61_spr_phone *n,
+    const struct reloq61_spr_phone *u)
+{
+    struct reloq61_spr_phone schwa,b,i,z,next,t;
+    return reloq61_spr_feature(d,n,0)==22&&reloq61_spr_feature(d,u,0)==36&&
+        reloq61_spr_feature(d,u,15)==0&&prior_phone(d,n,&schwa)&&
+        reloq61_spr_feature(d,&schwa,0)==43&&prior_phone(d,&schwa,&b)&&
+        reloq61_spr_feature(d,&b,0)==2&&prior_phone(d,&b,&i)&&
+        reloq61_spr_feature(d,&i,0)==28&&prior_phone(d,&i,&z)&&
+        reloq61_spr_feature(d,&z,0)==10&&
+        reloq61_spr_phone_at(d,u->after,&next)&&reloq61_spr_feature(d,&next,0)==22&&
+        reloq61_spr_phone_at(d,next.after,&t)&&reloq61_spr_feature(d,&t,0)==3;
+}
 static int begins_projection(delta_state *d,const struct reloq61_spr_phone *p,unsigned projection)
 {
     int32_t left=*EVV_AT(const int32_t *,p->node)&~3;
@@ -134,7 +147,11 @@ static int32_t german_duration(void *state,int16_t kind,int32_t value)
        reloq61_spr_phone_at(d,pos,&current)&&reloq61_spr_phone_at(d,current.after,&next)) {
         unsigned id=reloq61_spr_feature(d,&current,0),following=reloq61_spr_feature(d,&next,0);
         int32_t replacement=0;
-        if(id==7&&reloq61_spr_feature(d,&current,14)==1&&following!=51&&
+        if(seven_und_n(d,&current,&next)&&value>300000) {
+            /* In the connected number word the preceding n is the short
+             * 30-ms nasal, rather than the standalone seven's longer coda. */
+            replacement=300000;
+        } else if(id==7&&reloq61_spr_feature(d,&current,14)==1&&following!=51&&
            reloq61_spr_feature(d,&next,1)!=1&&begins_projection(d,&next,7)) {
             int16_t stress;memcpy(&stress,(const unsigned char *)d+DG_BASE+374,2);
             int stop=following==1||following==3||following==5;

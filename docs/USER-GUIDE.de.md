@@ -1,6 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Testversion 1.1.0-rc16
+## Testversion 1.1.0-rc17
+
+Die Testversion stellt die vorherige Form des konsonantischen R wieder her und stimmt seine Schwingung weicher ab. Sie verkürzt das N in „siebenund“, gleicht das E nach I an den früheren Pfad an und verwendet eine gemischte A-Färbung am Satzende. Eine Überlaufkorrektur stabilisiert die deutsche Satzmelodie bei hohen Tonhöhen. Der Klang muss in NVDA gehört werden.
 
 Die deutsche Analyse und Lautplanung werden in dieser Testversion für „Sprachauswahl“, „Suchauswahl“, Zahlwörter mit „-und“, einzelne Über-/Unter-Formen sowie lange O-Laute und die Betonung von „famos“ und „rigoros“ angeglichen. R, S, PF und finales A sind für den Hörvergleich angepasst. Wörterbucheinträge behalten Vorrang. Die Aussprache und Klangfärbung müssen in NVDA gehört werden.
 

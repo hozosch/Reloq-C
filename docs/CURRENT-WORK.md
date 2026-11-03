@@ -1,3 +1,23 @@
+# Testkandidat 1.1.0-rc17: R, N, A und deutsche Tonhöhe
+
+Die in rc16 ergänzten zusätzlichen Formantziele für konsonantisches R sind
+zurückgenommen; seine Schwingungsquelle wird für den Hörvergleich weicher
+abgestimmt, einschließlich des R in „vierund“. Der N-Anschluss in „siebenund“
+wird verkürzt. Die E-Formanten nach I werden an den früheren Pfad angenähert,
+unter anderem bei „Barriere“ und „wie eben“.
+
+Das unbetonte finale Text-A verwendet eine Mischung aus den nativen kurzen
+und den früheren langen Formantzielen. Sie gilt auch vor einem folgenden Satz
+nach Punkt, Frage- oder Ausrufezeichen; vor dem nächsten Wort im selben Satz
+bleibt die kurze Textvariante erhalten. Explizite Lautschrift behält ihre
+Vorgaben. Die Wirksamkeit bei Sonderfällen und die subjektive Klangwirkung
+müssen weiter im Hörvergleich geprüft werden.
+
+Die deutsche F0-Zielberechnung verwendet die breiten Zwischenrechnungen des
+englischen Pfades. Zuvor konnten bei hoher Tonhöhe und großer Satzmelodie
+Zwischenwerte überlaufen und die Kontur einbrechen lassen. Die Korrektur und
+die neuen Lautziele werden direkt an der nativen Planung geprüft.
+
 # Testkandidat 1.1.0-rc16: Deutsche Zahl- und Lautübergänge
 
 Der native deutsche Pfad liest die Zahlbestandteile „zweiund“, „dreiund“,

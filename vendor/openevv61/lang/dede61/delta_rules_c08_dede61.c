@@ -1648,20 +1648,10 @@ L1085:;
     r1 = (delta_muldiv((int32_t)AT(int32_t, -36), 10000, (int32_t)AT(int32_t, -40), 1));
     AT(int32_t, -36) = (r1);
     STATE(int32_t, f37) = ((int32_t)AT(int32_t, -36));
-    r1 = ((int32_t)AT(int16_t, -106));
-    AT(int32_t, -52) = (r1);
-    AT(int32_t, -40) = ((int32_t)AT(int32_t, -52));
-    r1 = (delta_muldiv((int32_t)AT(int32_t, -40), 10000, 1, 0));
-    AT(int32_t, -40) = (r1);
-    r1 = (delta_muldiv((int32_t)AT(int32_t, -40), (int32_t)AT(int32_t, -36), 10000, 1));
-    AT(int32_t, -40) = (r1);
-    AT(int32_t, -36) = ((int32_t)STATE(int32_t, f42));
-    AT(int32_t, -12) = ((int32_t)AT(int32_t, -36));
-    r1 = (delta_muldiv((int32_t)AT(int32_t, -12), 10000, (int32_t)AT(int32_t, -60), 1));
-    AT(int32_t, -12) = (r1);
-    AT(int32_t, -8) = ((int32_t)AT(int32_t, -40));
-    r1 = (delta_muldiv((int32_t)AT(int32_t, -8), 10000, 1000000, 1));
-    AT(int32_t, -8) = (r1);
+    /* Match the wide-range English F0 calculation: the old intermediate
+     * overflowed before its compensating division at high pitch. */
+    AT(int32_t, -8) = delta_muldiv(AT(int16_t, -106), STATE(int32_t, f37), 100, 1);
+    AT(int32_t, -12) = delta_muldiv(STATE(int32_t, f42), 10000, AT(int32_t, -60), 1);
     AT(int32_t, -20) = ((int32_t)AT(int32_t, -12));
     AT(int32_t, -20) = ((int32_t)((uint32_t)((int32_t)AT(int32_t, -20)) + (uint32_t)((int32_t)AT(int32_t, -8))));
     AT(int32_t, -16) = ((int32_t)AT(int32_t, -12));
@@ -1707,9 +1697,8 @@ L1609:;
     r1 = (delta_muldiv((int32_t)AT(int32_t, -48), (int32_t)AT(int32_t, -52), 1, 0));
     AT(int32_t, -48) = (r1);
     AT(int32_t, -40) = ((int32_t)AT(int32_t, -48));
-    r1 = (delta_muldiv((int32_t)AT(int32_t, -40), 10000, 1, 0));
-    AT(int32_t, -40) = (r1);
-    r1 = (delta_muldiv((int32_t)AT(int32_t, -40), 10000, 1000000, 1));
+    /* Preserve the same ratio without an overflowing fixed-point product. */
+    r1 = (delta_muldiv((int32_t)AT(int32_t, -40), 100, 1, 0));
     AT(int32_t, -40) = (r1);
     AT(int32_t, -52) = ((int32_t)AT(int32_t, -40));
     AT(int32_t, -52) = ((int32_t)((uint32_t)((int32_t)AT(int32_t, -52)) + (uint32_t)(1)));

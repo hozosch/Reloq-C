@@ -127,6 +127,15 @@ static void note_final_a(delta_state *d,int32_t begin,int32_t end)
     for(unsigned i=0;i<4096&&scan;++i) {
         int c=input_at(d,&scan,0);
         if(c<0){scan=0;break;}
+        /* A full sentence boundary ends this vowel's immediate context,
+         * even when another sentence follows in the same request. */
+        if(c=='?'||c=='!') {scan=0;break;}
+        if(c=='.') {
+            int32_t following=scan;int next=input_at(d,&following,0);
+            /* Do not treat a dot inside a domain or decimal-like token as
+             * the end of a sentence merely because it follows an a. */
+            if(next<0||(!ascii_letter(next)&&!(next>='0'&&next<='9'))) {scan=0;break;}
+        }
         if(ascii_letter(c)||(c>='0'&&c<='9'))return;
     }
     if(scan)return;
@@ -292,6 +301,27 @@ static void repair_ch_compound(delta_state *d,int32_t begin,int32_t end,
         }
     }
 }
+/* Phonetic input can represent the same seven-and number sequence in a
+ * single SPR group. Retain its stress but match the text path's connected
+ * /n/-/U/ onset before applying the short-n timing. */
+static int phonetic_seven_onset(delta_state *d,const struct reloq61_spr_phone *u)
+{
+    if(reloq61_spr_feature(d,u,0)!=36||reloq61_spr_feature(d,u,15)!=2)return 0;
+    struct reloq61_spr_phone n,t;
+    if(!reloq61_spr_phone_at(d,u->after,&n)||reloq61_spr_feature(d,&n,0)!=22||
+       !reloq61_spr_phone_at(d,n.after,&t)||reloq61_spr_feature(d,&t,0)!=3)return 0;
+    static const unsigned reverse[]={22,43,2,28,10};
+    int32_t at=left_of(u);
+    for(size_t i=0;i<sizeof reverse/sizeof *reverse;++i) {
+        int32_t node=vgetsc(d,1,0,at,2);
+        while(node&&(*EVV_AT(const int32_t *,node)&2))node=vgetsc(d,1,0,node,2);
+        if(!node)return 0;
+        struct reloq61_spr_phone p={node,EVV_AT(const int32_t *,node)[1]&~3};
+        if(reloq61_spr_feature(d,&p,0)!=reverse[i])return 0;
+        at=left_of(&p);
+    }
+    return 1;
+}
 /* Preserve native text vowel quantity for equivalent explicit phonemes.
  * Stress belongs to the syllable onset, so propagate it to later phones. */
 static void phonetic_quantity(delta_state *d,int32_t begin,int32_t end)
@@ -329,6 +359,10 @@ static void phonetic_quantity(delta_state *d,int32_t begin,int32_t end)
         int hiatus=previous_vowel&&begins_syllable(d,p);
         int full=(current_stress==2&&(same_right||(primary_before&&!primary_after))) ||
                  (current_stress==0&&same_right&&!hiatus);
+        if(phonetic_seven_onset(d,p)) {
+            uint8_t no_onset=0;
+            vmark(d,2,15,left_of(p),p->after,&no_onset);
+        }
         if(id==34&&symbol=='a'&&!reloq61_spr_feature(d,p,14))
             put_phone(d,p,33);
         else if(full&&length==2&&(id==28||id==30||id==35||id==37||id==39||id==41)) {

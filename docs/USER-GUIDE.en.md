@@ -1,6 +1,8 @@
 # Eloquence C – user guide
 
-## Preview 1.1.0-rc16
+## Preview 1.1.0-rc17
+
+This preview restores the previous consonantal R form with a softer vibration, shortens the N in “siebenund”, aligns E after I with the earlier path, and uses a blended final-A colour at sentence boundaries. An overflow fix stabilizes German intonation at high pitches. Listening in NVDA is still needed.
 
 This preview aligns German analysis and speech planning for “Sprachauswahl”, “Suchauswahl”, number words with “-und”, selected Über-/Unter- forms, long o, and the stress of “famos” and “rigoros”. R, S, PF and final a have been adjusted for listening tests. Dictionary entries retain priority. Pronunciation and sound still need to be evaluated in NVDA.
 

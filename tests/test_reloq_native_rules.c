@@ -11,6 +11,8 @@
 struct pitch_plan {
     int32_t pair[2048][2];size_t count;
     uint64_t acoustic_hash;int64_t ticks;
+    int32_t max_diplophonia,max_aspiration;
+    int i_e_r_target,i_e_target;
 };
 static int span(void *context,int32_t from,int32_t to,
     const struct reloq61_curve c[62],int32_t volume)
@@ -24,6 +26,12 @@ static int span(void *context,int32_t from,int32_t to,
         p->acoustic_hash=(p->acoustic_hash^(uint32_t)c[j].val_l)*UINT64_C(1099511628211);
         p->acoustic_hash=(p->acoustic_hash^(uint32_t)c[j].val_r)*UINT64_C(1099511628211);
     }
+    if(c[6].val_l>p->max_diplophonia)p->max_diplophonia=c[6].val_l;
+    if(c[6].val_r>p->max_diplophonia)p->max_diplophonia=c[6].val_r;
+    if(c[7].val_l>p->max_aspiration)p->max_aspiration=c[7].val_l;
+    if(c[7].val_r>p->max_aspiration)p->max_aspiration=c[7].val_r;
+    if(c[9].val_l==400&&c[13].val_l==2050)p->i_e_r_target=1;
+    if(c[9].val_l==370&&c[13].val_l==2150)p->i_e_target=1;
     return 0;
 }
 static int unexpected_frame(void *context,const int32_t frame[62],int32_t volume)
@@ -59,6 +67,56 @@ static unsigned chinese(void)
             }
         }
     return checks;
+}
+
+/* German's F0 insertion used to overflow before its fixed-point division.
+ * At high pitch and large inflection its maxima could become lower when the
+ * pitch setting increased. Exercise both normal voice settings and the
+ * inline inflection command through the real sparse acoustic plans. */
+static int32_t max_pitch(const struct pitch_plan *p)
+{
+    int32_t value=0;
+    for(size_t i=0;i<p->count;++i)
+        for(unsigned side=0;side<2;++side)
+            if(p->pair[i][side]>value)value=p->pair[i][side];
+    return value;
+}
+static struct pitch_plan german_pitch(const char *text,int setting,int gender,int speed)
+{
+    struct pitch_plan p={.acoustic_hash=UINT64_C(1469598103934665603)};
+    struct reloq61_request q=request(0x40000,text);struct reloq61_result result={0};
+    q.context=&p;q.voice[0]=gender;q.voice[2]=setting;q.voice[3]=100;q.voice[6]=speed;
+    assert(!reloq61_generate(&q,&result)&&!result.error&&!result.unsupported);
+    assert(p.count&&result.ticks>0);p.ticks=result.ticks;return p;
+}
+static unsigned german_high_pitch(void)
+{
+    const char *texts[]={"Hallo! Wie geht das?", "Alle Texte enden unterschiedlich. Wirklich?",
+        "`vf100 Barriere wie eben. Eine Frage?"};
+    const int speeds[]={50,150};unsigned checks=0;
+    for(unsigned t=0;t<sizeof texts/sizeof *texts;++t)
+        for(unsigned s=0;s<sizeof speeds/sizeof *speeds;++s)
+            for(int gender=0;gender<2;++gender) {
+                struct pitch_plan lower=german_pitch(texts[t],90,gender,speeds[s]);
+                struct pitch_plan higher=german_pitch(texts[t],98,gender,speeds[s]);
+                const int32_t lo=max_pitch(&lower),hi=max_pitch(&higher);
+                assert(lo>0&&hi>0&&hi*10>lo*12);
+                ++checks;
+            }
+    return checks;
+}
+static unsigned german_phone_targets(void)
+{
+    struct pitch_plan p;
+    p=german_pitch("Rot",65,0,75);
+    assert(p.max_aspiration>0&&p.max_aspiration<=50);
+    p=german_pitch("vierund",65,0,75);
+    assert(p.max_diplophonia<=20);
+    p=german_pitch("Barriere",65,0,75);
+    assert(p.i_e_r_target);
+    p=german_pitch("wie eben",65,0,75);
+    assert(p.i_e_target);
+    return 4;
 }
 static void phones(int language,const char *text,char normalized[4096])
 {
@@ -109,7 +167,7 @@ static unsigned clocks(void)
 }
 int main(void)
 {
-    unsigned c=clocks(),p=chinese();
-    printf("Native rules: %u English seconds/zero/fraction cases, %u full Chinese F0 sequences; tempo, models, heads and pitch controls\n",c,p);
+    unsigned c=clocks(),p=chinese(),g=german_high_pitch(),a=german_phone_targets();
+    printf("Native rules: %u English seconds/zero/fraction cases, %u full Chinese F0 sequences, %u German high-pitch contours and %u rhotic/e targets; tempo, models, heads and pitch controls\n",c,p,g,a);
     return 0;
 }
