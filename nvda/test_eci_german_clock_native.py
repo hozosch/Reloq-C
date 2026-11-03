@@ -15,6 +15,7 @@ def phonemes(engine,text):
     dll=engine._dll;handle=engine._handle;chunks=[];buffer=c.create_string_buffer(8192)
     H,I=c.c_void_p,c.c_int
     dll.eciGeneratePhonemes.argtypes=(H,I,H);dll.eciGeneratePhonemes.restype=I
+    dll.eciAddTextUtf8.argtypes=(H,c.c_char_p,c.c_size_t,I);dll.eciAddTextUtf8.restype=I
     callback_type=(c.WINFUNCTYPE if hasattr(c,'WINFUNCTYPE') else c.CFUNCTYPE)(I,H,I,I,H)
     @callback_type
     def callback(_,message,count,data):
