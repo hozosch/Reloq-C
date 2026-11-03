@@ -63,6 +63,23 @@ def run(path):
             assert len(marks) == 1 and marks[0][0] == 71, (left, right, marks)
             samples = array.array('h'); samples.frombytes(marked)
             anchor = marks[0][1]
+            natural = array.array('h'); natural.frombytes(plain)
+            natural_windows = []
+            # Observe the unindexed sentence from its beginning: some
+            # original ECI implementations place a public index early and
+            # its insertion can change prosody. Values are analysis only.
+            for ms in range(0, 351, 5):
+                begin = round(ms * 11025 / 1000)
+                sample = natural[begin:begin+220]
+                if len(sample) != 220:
+                    natural_windows.append(None); continue
+                rms = math.sqrt(sum(v*v for v in sample) / len(sample))
+                bands=[]
+                for hz in range(400, 3401, 200):
+                    real = sum(v*math.cos(2*math.pi*hz*i/11025) for i,v in enumerate(sample))
+                    imag = sum(v*math.sin(2*math.pi*hz*i/11025) for i,v in enumerate(sample))
+                    bands.append(round(math.hypot(real,imag)/len(sample),2))
+                natural_windows.append([round(rms,2), bands])
             windows = []
             for offset in range(-150, 151, 5):
                 begin = anchor + round(offset * 11025 / 1000)
@@ -75,7 +92,8 @@ def run(path):
                                      for i in range(begin, end)) / len(window))
                 windows.append([round(rms, 2), round(high, 2)])
             result[left + right] = dict(samples=len(samples), mark=anchor,
-                indexed_identical=plain == marked, rms_and_difference=windows)
+                indexed_identical=plain == marked, rms_and_difference=windows,
+                unindexed_windows=natural_windows)
         return dict(dll_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
                     sample_rate=11025, windows_start_ms=-150, windows_step_ms=5,
                     voices=[0,50,65,30,0,0,75,100], examples=result)
