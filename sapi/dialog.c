@@ -90,10 +90,10 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
     struct dialog *d=(struct dialog *)GetWindowLongPtrW(w,DWLP_USER);
     if(message==WM_INITDIALOG){d=(struct dialog *)lp;SetWindowLongPtrW(w,DWLP_USER,(LONG_PTR)d);
         SetWindowTextW(w,T(TITLE));
-        RECT frame={0,0,620,778};AdjustWindowRectEx(&frame,(DWORD)GetWindowLongPtrW(w,GWL_STYLE),FALSE,0);
+        RECT frame={0,0,620,690};AdjustWindowRectEx(&frame,(DWORD)GetWindowLongPtrW(w,GWL_STYLE),FALSE,0);
         SetWindowPos(w,NULL,0,0,frame.right-frame.left,frame.bottom-frame.top,SWP_NOMOVE|SWP_NOZORDER);
-        combo(w,LANGUAGE,T(LANGUAGE),12);combo(w,PROFILE,T(PROFILE),44);
-        combo(w,GENDER,T(MODEL),76);combo(w,RATE,T(RATE),108);combo(w,PAUSES,T(PAUSES),140);
+        combo(w,LANGUAGE,T(LANGUAGE),8);combo(w,PROFILE,T(PROFILE),38);
+        combo(w,GENDER,T(MODEL),68);combo(w,RATE,T(RATE),98);combo(w,PAUSES,T(PAUSES),128);
         for(size_t i=0;i<sapi_language_count();++i){WCHAR name[128];const struct sapi_language *language=sapi_language_at(i);
             if(!GetLocaleInfoW(language->lcid,LOCALE_SLOCALIZEDDISPLAYNAME,name,128))wcscpy(name,language->name);
             add(w,LANGUAGE,name);}
@@ -101,23 +101,22 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         add(w,GENDER,T(MALE));add(w,GENDER,T(FEMALE));
         for(unsigned i=0;i<7;++i){WCHAR text[32];swprintf(text,32,L"%d Hz",sapi_sample_rate(i));add(w,RATE,text);}
         add(w,PAUSES,T(NEVER));add(w,PAUSES,T(FINAL));add(w,PAUSES,T(ALWAYS));
-        check(w,SHARED,T(SHARED),174);
-        number(w,PITCH,T(PITCH),212);number(w,INFLECTION,T(INFLECTION),244);
-        number(w,HEAD,T(HEAD),276);number(w,ROUGH,T(ROUGH),308);number(w,BREATH,T(BREATH),340);
-        check(w,TAGS,T(TAGS),376);check(w,ABBREVIATIONS,T(ABBREVIATIONS),400);
-        check(w,PREDICTION,T(PREDICTION),424);check(w,DICTIONARIES,T(DICTIONARIES),448);check(w,BOOST,T(BOOST),472);
-        combo(w,DICT_SOURCE,T(DICT_SOURCE),502);
+        check(w,SHARED,T(SHARED),160);
+        number(w,PITCH,T(PITCH),188);number(w,INFLECTION,T(INFLECTION),215);
+        number(w,HEAD,T(HEAD),242);number(w,ROUGH,T(ROUGH),269);number(w,BREATH,T(BREATH),296);
+        check(w,TAGS,T(TAGS),326);check(w,ABBREVIATIONS,T(ABBREVIATIONS),350);
+        check(w,PREDICTION,T(PREDICTION),374);check(w,DICTIONARIES,T(DICTIONARIES),398);check(w,BOOST,T(BOOST),422);
+        combo(w,DICT_SOURCE,T(DICT_SOURCE),449);
         add(w,DICT_SOURCE,T(DICT_COMMUNITY));add(w,DICT_SOURCE,T(DICT_ALTERNATIVE));
-        control(w,L"BUTTON",T(DICT_DOWNLOAD),WS_TABSTOP|BS_PUSHBUTTON,DICT_DOWNLOAD,210,532,398,24);
-        label(w,T(DIRECTORY),12,562,596);
-        control(w,L"EDIT",L"",WS_TABSTOP|ES_AUTOHSCROLL,DIRECTORY,12,588,440,24);
-        control(w,L"BUTTON",T(OPEN),WS_TABSTOP|BS_PUSHBUTTON,OPEN_FOLDER,462,588,146,24);
-        label(w,T(DICT_OVERRIDE),12,617,596);
-        label(w,T(HINT),12,641,596);
-        control(w,L"STATIC",T(RATE_HINT),0,-1,12,665,596,36);
-        control(w,L"STATIC",L"",0,STATUS,12,708,596,24);
-        control(w,L"BUTTON",T(RESET),WS_TABSTOP|BS_PUSHBUTTON,RESET,12,744,360,28);
-        control(w,L"BUTTON",T(CLOSE),WS_TABSTOP|BS_DEFPUSHBUTTON,IDOK,498,744,110,28);
+        control(w,L"BUTTON",T(DICT_DOWNLOAD),WS_TABSTOP|BS_PUSHBUTTON,DICT_DOWNLOAD,210,479,398,24);
+        label(w,T(DIRECTORY),12,507,596);
+        control(w,L"EDIT",L"",WS_TABSTOP|ES_AUTOHSCROLL,DIRECTORY,12,532,440,24);
+        control(w,L"BUTTON",T(OPEN),WS_TABSTOP|BS_PUSHBUTTON,OPEN_FOLDER,462,532,146,24);
+        label(w,T(DICT_OVERRIDE),12,559,596);
+        control(w,L"STATIC",T(RATE_HINT),0,-1,12,583,596,36);
+        control(w,L"STATIC",L"",0,STATUS,12,621,596,24);
+        control(w,L"BUTTON",T(RESET),WS_TABSTOP|BS_PUSHBUTTON,RESET,12,653,360,28);
+        control(w,L"BUTTON",T(CLOSE),WS_TABSTOP|BS_DEFPUSHBUTTON,IDOK,498,653,110,28);
         populate(w,d);SetDlgItemTextW(w,STATUS,T(ACTIVE));
         SetFocus(GetDlgItem(w,LANGUAGE));return FALSE;
     }
