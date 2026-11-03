@@ -121,7 +121,11 @@ jobs:
           foreach ($arch in @('x64','x86')) {
             $test = if ($arch -eq 'x64') { Join-Path $install 'Test-SAPI.exe' } else { Join-Path $install 'x86\Test-SAPI.exe' }
             & $test --all-native-rates *> "dist/validation/sapi-$arch.txt"
-            if ($LASTEXITCODE -ne 0) { throw "SAPI $arch validation failed" }
+            $testExit = $LASTEXITCODE
+            if ($testExit -ne 0) {
+              Get-Content "dist/validation/sapi-$arch.txt" -Tail 60
+              throw "SAPI $arch validation failed with exit code $testExit"
+            }
           }
           $p = Start-Process (Join-Path $install 'unins000.exe') -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=$pwd\dist\validation\uninstall.log" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Uninstall failed: $($p.ExitCode)" }

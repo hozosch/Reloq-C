@@ -20,6 +20,8 @@ static HRESULT native_format(ISpObjectToken *token,DWORD target,DWORD *rate)
 }
 int wmain(int argc,wchar_t **argv)
 {
+    /* Preserve the last completed case if a native adapter terminates. */
+    setvbuf(stdout,NULL,_IONBF,0);
     HRESULT hr=CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);if(FAILED(hr))return 1;
     static const DWORD rates[]={8000,48000,11025,44100,16000,32000,22050,11025};
     const int all_rates=argc==2&&!wcscmp(argv[1],L"--all-native-rates");
@@ -50,6 +52,8 @@ int wmain(int argc,wchar_t **argv)
         if(FAILED(hr)){if(token)ISpObjectToken_Release(token);break;}
         ULONGLONG reference_us=0;
         for(unsigned r=0;r<sizeof rates/sizeof *rates;++r){
+        fwprintf(stdout,L"Checking %ls, native=%lu Hz, output=%lu Hz\n",sapi_languages[i].name,
+            (unsigned long)selected,(unsigned long)rates[r]);
         DWORD offered=0;hr=native_format(token,rates[r],&offered);
         if(SUCCEEDED(hr)&&offered!=selected)hr=E_FAIL;
         ISpStream *speech=NULL;IStream *memory=NULL;
