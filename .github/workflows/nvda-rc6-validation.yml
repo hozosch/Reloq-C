@@ -1,13 +1,5 @@
-name: Verify packaged rc6 on Windows
+name: Verify archived rc6 package on Windows
 on:
-  push:
-    branches: [codex/release110]
-    paths:
-      - .github/workflows/nvda-rc6-validation.yml
-      - addon/test_synth.py
-      - addon/test_synth_native.py
-      - addon/nvda_test_api.py
-      - addon/nvda_speech_test_api.py
   workflow_dispatch:
 permissions:
   contents: read

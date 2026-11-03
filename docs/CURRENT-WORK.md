@@ -1,3 +1,53 @@
+# Testkandidat 1.1.0-rc7: Gestufter Stimmkörper und begrenzte S-Erweiterung
+
+Die vollständige Classic-Abstimmung von 16 kHz bleibt auch bei höheren
+Raten die Grundlage. Die zusätzliche periodische Färbung verwendet breite,
+schwach gewichtete Versionen der oberen A-Resonanzen. Ihre Stärke steigt
+ab 22,05/32/44,1/48 kHz mit 0,15/0,30/0,42/0,46; jede zusätzliche Resonanz
+erhält höchstens das Dreifache dieses Werts in dB. Koeffizienten werden über
+5 ms überführt. Die Quelle bleibt einzeln und periodisch; Aspiration und
+AF erhalten diese Resonanzen nicht. Die Glottis übernimmt oberhalb von
+16 kHz die stabile physikalische A-Zuordnung ohne die frühere Extrapolation.
+Es gibt keine zusätzliche Sättigung oder zweite Stimme.
+
+Das vollständige S-Hauptband bleibt am Classic-Ziel verankert. Nur die
+optionale Erweiterung oberhalb von 5,5125 kHz erhält einen sanften Abfall
+um 8,5 kHz und ein begrenztes Leistungsbudget. Das Budget steigt mit den
+Raten auf höchstens 8/14/18/20 Prozent der Referenzleistung bis 4,6 kHz.
+Kastilisches S/T erhält weiterhin nur ein Viertel der Erweiterung. Andere
+Konsonanten behalten ihre bisherige Übertragung. Die Unterscheidung
+zwischen Hauptresonanzen und schwächerem oberen Zusatz ist eigenständig
+umgesetzt; TGSpeechBox diente als öffentlich einsehbare Vergleichsreferenz.
+
+36 stationäre Vokal-/Tonhöhen-/Ratenfälle behalten den Bass innerhalb
+0,056 dB der 16-kHz-Basis, zeigen in jedem Schritt mehr Energie im oberen
+Vergleichsband (kleinster Schritt 0,030 dB, maximale Anhebung 2,394 dB)
+und erreichen mindestens 55,78 dB harmonischen zu nicht-harmonischem Anteil.
+180 reale Sprach-/Modell-/Ratenfälle bleiben unter der PCM-Grenze (Maximum
+31.411); 60 Vergleiche mit rc6 erhalten A und 8/11/16 kHz bytegenau.
+Das sind Messgrenzen für diese Fälle, keine Hörabnahme laufender Sprache.
+
+Ein interner bedingter Trennstrich U+00AD verändert in rc6 beispielsweise
+„Verschlusslaut“ und „Wortanalyse“. Er wird jetzt vor Main-Wörterbuch und
+Wortanalyse entfernt. Quellindizes werden über eine Skalarabbildung erhalten;
+ausdrückliche Buchstabierung und SPR bleiben unverändert. 452 Prüfungen
+vergleichen PCM, Indizes, geladene Main-Wörterbücher und explizite
+Buchstabierung. 48 bewegte Resonanzfolgen bleiben bei wechselnden
+Blockgrenzen bytegleich; ihr Gleichspannungsgewinn bleibt eins.
+
+Die Verzögerung bei langen deutschen Einzelsätzen ist weiter offen. Eine
+separate Diagnosefassung misst bei rund 9.000 Zeichen etwa 130 ms bis zum
+ersten nativen Phonemblock und rund 170 ms bis zum ersten PCM-Puffer.
+Der überwiegende Teil entsteht vor der Audioausgabe in der nativen deutschen
+Analyse. Englisch liefert im selben Hostvergleich nach etwa 25 ms PCM.
+Ein kleinerer Audiopuffer allein löst diese Abhängigkeit nicht. Vollständige
+deutsche Sätze lassen sich wie bisher nach wenigen Millisekunden beginnen.
+Beliebiges Aufteilen eines Einzelsatzes würde seine Grammatik-/Akzentanalyse
+verändern und wird durch diesen Teststand nicht eingeführt. Weitere konkrete
+Wortanalysefehler brauchen eigene reproduzierbare Beispiele.
+
+Die folgenden Abschnitte beschreiben historische Teststände.
+
 # Testkandidat 1.1.0-rc6: NVDA-Transport und tatsächliche Wortgrenzen
 
 Die bisherigen DLL-Tests und der NVDA-Vertragstest waren getrennt: der

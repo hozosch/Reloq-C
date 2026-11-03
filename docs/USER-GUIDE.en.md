@@ -1,8 +1,8 @@
 # Eloquence C – user guide
 
-## Hearing preview 1.1.0-rc1
+## Hearing preview 1.1.0-rc7
 
-From 22.05 kHz, the voiced body from variant A is blended in progressively. Consonants retain their Classic shaping; Castilian S/T uses the A filter. The 16-kHz voice contour stays intact. Long German texts can start after the first fully analyzed phrase. Queued volume and voice changes take effect at their word boundary. This is a test candidate for 1.1.0; voice quality and playback still need listening on the target device.
+The 16-kHz shaping remains the foundation. Above 22.05 kHz, gently weighted upper resonances from A progressively enrich periodic voicing; aspiration receives no added resonance shaping. S keeps its familiar main band while additional upper noise energy is bounded. Discretionary hyphens inside German words no longer disrupt lexical analysis. Protected NVDA ECI tags and acoustic word-boundary controls remain included. Long German single sentences and open quotations still wait for complete analysis. This candidate needs listening on the target device.
 
 ## English clock readings with seconds
 

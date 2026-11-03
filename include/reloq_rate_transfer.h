@@ -33,6 +33,13 @@ struct reloq_rate_transfer {
     /* Continuous A transfer in the high-rate hybrid and comparison probes.
      * Production profile A retains its established sample-exact behaviour. */
     unsigned smooth_updates;
+    /* Profile B retains the 16-kHz tract. Only periodic excitation gains
+     * broad A upper resonances, with a rate-dependent, bounded strength. */
+    float body_amount,body_key[7];
+    double body_coefficient[3][5],body_target[3][5],body_step[3][5],body_delay[3][2];
+    unsigned body_ready,body_remaining;
+    /* Limit the optional S/Z/T extension independently of other AF. */
+    unsigned sibilant_extension;
     double classic_reference[2][5];
     /* Periodic glottal filter only. Moving physical poles to a new clock
      * otherwise loses the reference's discrete source response. */
@@ -44,6 +51,8 @@ void reloq_rate_transfer_prepare(struct reloq_rate_transfer *,
     unsigned reference_formants);
 void reloq_rate_transfer_process(struct reloq_rate_transfer *,float *,size_t);
 void reloq_rate_transfer_process_voice(struct reloq_rate_transfer *,float *,size_t);
+void reloq_rate_transfer_prepare_body(struct reloq_rate_transfer *,
+    const struct reloq_core_voiced_formants *,float rate);
 void reloq_rate_transfer_process_aspiration(struct reloq_rate_transfer *,float *,size_t,int voiced);
 struct reloq_core_frication_bank;
 /* Fit the complete coherent AF sum, including the direct noise branch.

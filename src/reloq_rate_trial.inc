@@ -12,9 +12,12 @@ int reloq_rate_transfer_prepare_classic_bandwidth(struct reloq_rate_transfer *s,
     for(long j=0;j<current->active_formants;++j)norm+=fabs(current->stages[j].input_gain);
     for(long j=0;j<reference->active_formants;++j)ref_norm+=fabs(reference->stages[j].input_gain);
     if(norm<1e-20 || ref_norm<1e-20)return 0;
-    const double extension=extension_scale*(rate>=48000?1:rate>=44100?.8:
+    double extension=extension_scale*(rate>=48000?1:rate>=44100?.8:
         rate>=32000?.5:rate>=22050?.25:0);
-    float key[144]={-11026,rate,(float)profile->kind,(float)extension};unsigned at=4;
+    if(s->sibilant_extension)extension*=rate>=48000?.35:rate>=44100?.4:
+        rate>=32000?.5:.6;
+    float key[144]={-11026,rate,(float)profile->kind,(float)extension,
+        (float)s->sibilant_extension};unsigned at=5;
     const struct reloq_core_frication_bank *banks[]={reference,current};
     for(unsigned i=0;i<2;++i) {
         key[at++]=(float)banks[i]->active_formants;
@@ -47,12 +50,28 @@ int reloq_rate_transfer_prepare_classic_bandwidth(struct reloq_rate_transfer *s,
     }
     if(lower_ref<=0 || lower_ours<=0)return 0;
     const double upper_scale=lower_ref/lower_ours;
-    double wanted=0;
+    double wanted=0,added=0,extra[FFT_SIZE/2+1];
     for(unsigned k=0;k<=FFT_SIZE/2;++k) {
         double hz=(double)k*rate/FFT_SIZE,w=k&&k<FFT_SIZE/2?1:.5;
         double upper=hz<=5512.5?0:hz>=6500?1:
             .5-.5*cos(pi*(hz-5512.5)/987.5);
-        target[k]=native_power[k]+extension*upper*upper_scale*ours[k];
+        /* Preserve the complete recognizable S main band. Only its new
+         * upper energy rolls off, in physical Hz rather than Nyquist.
+         * Other AF keeps the established extension and source contour. */
+        double roll=1;
+        if(s->sibilant_extension) {
+            double ratio=hz/8500,quadratic=ratio*ratio;
+            roll=1/(1+quadratic*quadratic);
+        }
+        extra[k]=extension*upper*upper_scale*ours[k]*roll;
+        added+=w*extra[k];
+    }
+    double budget=extension_scale*lower_ref*(rate>=48000?.20:rate>=44100?.18:
+        rate>=32000?.14:rate>=22050?.08:0);
+    double scale=s->sibilant_extension&&added>budget?budget/added:1;
+    for(unsigned k=0;k<=FFT_SIZE/2;++k) {
+        double w=k&&k<FFT_SIZE/2?1:.5;
+        target[k]=native_power[k]+scale*extra[k];
         wanted+=w*target[k];
     }
     double spectrum[FFT_SIZE]={0};

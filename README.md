@@ -4,10 +4,11 @@ ReLoq C is a speech synthesis project that preserves the familiar character of E
 
 The shared synthesis engine is written in C. NVDA, Android ARM64 and Windows SAPI5 use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
 
-The development branch is preparing **1.1.0-rc6** with NVDA tag transport before
-symbol pronunciation, acoustic word-boundary controls and A's voiced body above
-22 kHz alongside Classic consonants. Long German sentences remain a startup
-latency limitation. This is a listening candidate; see
+The development branch is preparing **1.1.0-rc7** with the 16-kHz Classic
+foundation, gradual periodic upper resonances and bounded additional S energy.
+NVDA tag delivery and acoustic word controls remain included; German internal
+soft hyphens now preserve the lexical word. Long German single sentences remain
+a startup latency limitation. This is a listening candidate; see
 [the current work and verification limits](docs/CURRENT-WORK.md).
 
 ## Download and install

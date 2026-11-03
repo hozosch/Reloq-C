@@ -2,6 +2,7 @@
 #include "../src/reloq_core_internal.h"
 #include "reloq_frame_adapter.h"
 #include "reloq_german_voice_defaults.h"
+#include "../src/reloq_session.c"
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -48,11 +49,21 @@ static struct observation body(float rate,unsigned profile,unsigned vowel,double
     s->glottal_reference_rate=11025;s->reference_formants=5;s->frication_reference_rate=16000;
     s->rate_transfer.trial_profile=s->noise_transfer.trial_profile=profile==1;
     s->rate_transfer.smooth_updates=profile==2;
+    if(profile==5) {
+        config.sample_rate=rate;
+        config.glottal_reference_rate=11025;config.reference_formants=5;
+        config.frication_reference_rate=16000;
+        struct reloq_session *session=reloq_session_create(&config);assert(session);
+        assert(!reloq_session_high_rate_profile(session,1));
+        assert(!reloq_session_reset(session));
+        *s=session->frame_state;
+        reloq_session_destroy(session);
+    }
     if(profile==3) {
         s->rate_transfer.trial_profile=rate==16000;
         s->rate_transfer.smooth_updates=rate>=22050;
     }
-    if((profile==3||profile==4)&&rate>=22050) {
+    if((profile==3||profile==4||profile==5)&&rate>=22050) {
         frame.noise.tract.highest_formant=rate>=44100?8:rate>=32000?7:6;
         for(unsigned i=5;i<8;++i)frame.noise.tract.oral[i]=(struct reloq_core_formant){
             5000+1300*(i-5),1000+250*(i-5)};
@@ -111,5 +122,24 @@ int main(void)
         }
     }
     printf("A periodic body: 36 vowel/pitch/rate cases; bass vs 16 kHz <=%.3f dB; A spectral difference <=%.3f dB; harmonic/noise >=%.2f dB\n",a_bass,a_match,a_hnr);
+    double staged_bass=0,staged_hnr=1000,smallest_step=1000,max_upper=0;
+    for(unsigned vowel=0;vowel<3;++vowel)for(unsigned pitch=0;pitch<3;++pitch) {
+        double f0=113+64*pitch;
+        struct observation base=body(16000,5,vowel,f0),previous=base;
+        for(unsigned r=1;r<5;++r) {
+            struct observation o=body(rates[r],5,vowel,f0);
+            double bass=fabs(10*log10(o.bass/base.bass));
+            double step=10*log10(o.upper/previous.upper),upper=10*log10(o.upper/base.upper);
+            if(bass>staged_bass)staged_bass=bass;
+            if(o.hnr<staged_hnr)staged_hnr=o.hnr;
+            if(step<smallest_step)smallest_step=step;
+            if(upper>max_upper)max_upper=upper;
+            if(bass>=1||o.hnr<=48||step<=-.15||upper>=6)
+                fprintf(stderr,"gradual vowel=%u f0=%.0f rate=%.0f bass=%.3f hnr=%.3f step=%.3f upper=%.3f\n",vowel,f0,rates[r],bass,o.hnr,step,upper);
+            assert(bass<1);assert(o.hnr>48);assert(step>-.15);assert(upper<6);
+            previous=o;
+        }
+    }
+    printf("Gradual production body: 36 cases; bass <=%.3f dB; smallest upper-band step %.3f dB; upper gain <=%.3f dB; harmonic/noise >=%.2f dB\n",staged_bass,smallest_step,max_upper,staged_hnr);
     return 0;
 }

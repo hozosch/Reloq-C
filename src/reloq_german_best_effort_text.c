@@ -34,6 +34,41 @@ static int letter(unsigned char c)
            c == 0xf6 || c == 0xfc || c == 0xdf || c==0x8c || c==0x9c;
 }
 
+/* U+00AD is a discretionary layout break inside a word, not a lexical
+ * boundary. Compact only that context, retaining an original-scalar map
+ * for caller indices/errors. Explicit spelling and authored SPR stay intact. */
+static int normalize_discretionary_hyphens(unsigned char *text,uint32_t *scalars,
+    size_t *length,int tags,size_t **mapping)
+{
+    size_t n=*length;
+    if(!memchr(text,0xad,n))return 0;
+    if(n>=SIZE_MAX/sizeof(size_t))return -2;
+    size_t *map=malloc((n+1)*sizeof *map);if(!map)return -2;
+    size_t at=0,out=0;int spelling=0,changed=0;
+    while(at<n) {
+        struct reloq_inline_tag t=tags?reloq_inline_tag_read(text+at,n-at,0):(struct reloq_inline_tag){0};
+        if(t.length) {
+            if(t.kind==RELOQ_TAG_SPELL)spelling=t.value;
+            for(size_t j=0;j<t.length;++j) {
+                map[at]=out;text[out]=text[at];scalars[out++]=scalars[at++];
+            }
+            continue;
+        }
+        size_t end=at;
+        if(!spelling&&out&&letter(text[out-1])) {
+            while(end<n&&scalars[end]==0xad)++end;
+            if(end>at&&end<n&&letter(text[end])) {
+                while(at<end)map[at++]=out;
+                changed=1;continue;
+            }
+        }
+        map[at]=out;text[out]=text[at];scalars[out++]=scalars[at++];
+    }
+    map[n]=out;text[out]=0;scalars[out]=0;*length=out;
+    if(changed)*mapping=map;else free(map);
+    return 0;
+}
+
 /* A valid voice command embedded in a lexical word belongs to that
  * complete word. Move only such commands ahead of it, retaining length and
  * the documented source-index rule (interior marks follow the word). */
@@ -1943,6 +1978,15 @@ static int plan_tags_checked(int native_first,
             &pause_boundaries,&caller_slots);
         if(state){free(main_map);free(input_pauses);free(original_scalars);free(encoded);return state;}
         boundaries=pause_boundaries;boundary_count+=input_pause_count;stream=NULL;
+    }
+    size_t *joiner_map=NULL;
+    state=normalize_discretionary_hyphens(encoded,original_scalars,&encoded_length,process_tags,&joiner_map);
+    if(state){free(main_map);free(input_pauses);free(pause_boundaries);free(caller_slots);free(original_scalars);free(encoded);return state;}
+    if(joiner_map) {
+        if(main_map) {
+            for(size_t i=0;i<=main_source_length;++i)main_map[i]=joiner_map[main_map[i]];
+            free(joiner_map);
+        } else main_map=joiner_map;
     }
     size_t *dictionary_map=NULL;
     state=normalized?0:normalize_main_text(&encoded,&original_scalars,&encoded_length,

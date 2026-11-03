@@ -1,8 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Hörtest 1.1.0-rc1
+## Hörtest 1.1.0-rc7
 
-Ab 22,05 kHz wird der Stimmkörper aus Variante A schrittweise beigemischt. Die Konsonanten behalten ihre Classic-Abstimmung; kastilisches S/T verwendet die Filterung aus A. Die 16-kHz-Stimmkontur bleibt erhalten. Lange deutsche Texte können nach der ersten vollständig analysierten Phrase starten. Lautstärke- und Stimmparameterwechsel zwischen Textteilen gelten ab der zugehörigen Wortgrenze. Dieser Stand ist ein Testkandidat für 1.1.0; die Klangabstimmung und Wiedergabe auf dem eigenen Gerät müssen noch gehört werden.
+Die 16-kHz-Abstimmung bleibt die Basis. Ab 22,05 kHz ergänzen schwach gewichtete obere Resonanzen aus A schrittweise den stimmhaften Anteil; Aspiration erhält diese Erweiterung nicht. Beim S bleibt der vertraute Hauptbereich erhalten, während die zusätzliche obere Rauschenergie begrenzt wird. Bedingte Trennstriche innerhalb deutscher Wörter stören deren Wortanalyse nicht mehr. Der Schutz von ECI-Tags vor NVDAs Symbolverarbeitung und die Steuerung an akustischen Wortgrenzen bleiben enthalten. Lange deutsche Einzelsätze und offene Zitate warten weiterhin auf ihre vollständige Analyse. Dieser Stand braucht einen Hörvergleich auf dem eigenen Gerät.
 
 ## Englische Uhrzeiten mit Sekunden
 

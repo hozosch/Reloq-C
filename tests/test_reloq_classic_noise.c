@@ -64,6 +64,23 @@ int main(void) {
  else assert(!memcmp(normal,s.target,sizeof normal));
  assert(reloq_rate_transfer_prepare_classic(&s,&ref,&cur,&p,rates[r]));
  assert(!memcmp(normal,s.target,sizeof normal));
+ if(kind==0) {
+  s.sibilant_extension=1;
+  assert(reloq_rate_transfer_prepare_classic(&s,&ref,&cur,&p,rates[r]));
+  double main=0,top=0;
+  for(unsigned h=0;h<=(unsigned)(rates[r]/2);h+=25) {
+   double complex z=cexp(-I*2*pi*h/rates[r]),fir=0,power=1;
+   for(unsigned i=0;i<s.taps;++i){fir+=s.target[i]*power;power*=z;}
+   double actual=bank_power(&cur,z)*profile_power(&p,h)*.7943282347242815*pow(cabs(fir),2);
+   if(h<=5000)main+=actual;
+   if(h>=6500)top+=actual;
+  }
+  /* Main-band audibility is retained. Added S power has a bounded
+   * budget even when a higher clock makes much more noise available. */
+  assert(fabs(10*log10(main/want))<.1);
+  if(r){assert(top>limited_upper);assert(top<upper);assert((top-limited_upper)/want<.24);}
+  else assert(!memcmp(normal,s.target,sizeof normal));
+ }
  ++checks;
  }
  printf("Classic noise: %u full-path and %u limited/quarter-band/cache checks; worst 1–5 kHz residual %.3f dB\n",checks,checks,worst);

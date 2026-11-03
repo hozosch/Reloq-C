@@ -51,8 +51,39 @@ static void classic_response(void)
  }
  puts("Full Classic Presence target: AV/AH share the reference contour; upper extension begins at 22.05 kHz");
 }
+static void gradual_response(void)
+{
+ const float rates[]={22050,32000,44100,48000};unsigned checks=0;
+ for(unsigned r=0;r<4;++r) {
+  struct reloq_core_voiced_formants f={.highest_formant=8};
+  for(unsigned j=5;j<8;++j)f.oral[j]=(struct reloq_core_formant){5000+1300*(j-5),1000+250*(j-5)};
+  struct reloq_rate_transfer a={.trial_profile=1,.body_amount=.46f};
+  prepare_colour(&a,rates[r]);reloq_rate_transfer_prepare_body(&a,&f,rates[r]);
+  struct reloq_rate_transfer b=a;
+  float whole[1037],split[1037];
+  for(unsigned change=0;change<12;++change) {
+   if(change) {
+    f.oral[5].frequency_hz=4500+137*change;
+    f.oral[6].frequency_hz=6000+91*change;
+    reloq_rate_transfer_prepare_body(&a,&f,rates[r]);
+    reloq_rate_transfer_prepare_body(&b,&f,rates[r]);
+   }
+   for(unsigned j=0;j<1037;++j)whole[j]=split[j]=value();
+   reloq_rate_transfer_process_voice(&a,whole,1037);
+   const unsigned boundaries[]={0,1,17,211,599,1037};
+   for(unsigned k=1;k<6;++k)reloq_rate_transfer_process_voice(&b,
+       split+boundaries[k-1],boundaries[k]-boundaries[k-1]);
+   assert(!memcmp(whole,split,sizeof whole));
+   for(unsigned j=0;j<1037;++j)assert(isfinite(whole[j])&&fabs(whole[j])<16);
+   ++checks;
+  }
+  for(unsigned j=0;j<3;++j)assert(fabs(response(a.body_target[j],0,rates[r])-1)<1e-9);
+ }
+ printf("Gradual periodic resonances: %u moving-target/chunk/state comparisons identical; unity DC gain\n",checks);
+}
 int main(void) {
  classic_response();
+ gradual_response();
  unsigned tests=0;
 #ifdef RATE_AVX2
  int avx2_available=avx2_enabled();

@@ -262,13 +262,14 @@ int reloq_session_reset(struct reloq_session *session)
     next.glottal_reference_rate=c->glottal_reference_rate;
     next.reference_formants=c->reference_formants;
     next.frication_reference_rate=c->frication_reference_rate;
-    /* Keep the accepted complete Classic response at 16 kHz. Above it,
-     * use A's actual periodic tract/colour and additional oral formants,
-     * with continuous filter updates. AF retains its independent Classic
-     * bank. This is one voice source, not two overlapping synthesizers. */
-    const int a_body=session->high_rate_profile&&c->sample_rate>=22050&&c->glottal_reference_rate>0;
-    next.rate_transfer.trial_profile=session->high_rate_profile&&!a_body;
-    next.rate_transfer.smooth_updates=a_body;
+    /* Anchor the complete Classic body at every clock. A's extra oral
+     * resonances colour only the single periodic excitation, gently and
+     * progressively; aspiration and the lower tract keep their baseline. */
+    next.rate_transfer.trial_profile=session->high_rate_profile;
+    if(session->high_rate_profile&&c->glottal_reference_rate>0)
+        next.rate_transfer.body_amount=c->sample_rate>=48000?.46f:
+            c->sample_rate>=44100?.42f:c->sample_rate>=32000?.30f:
+            c->sample_rate>=22050?.15f:0;
     session->linear_gain=1;
     next.noise_transfer.trial_profile=session->high_rate_profile;
     session->frame_state = next;

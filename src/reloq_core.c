@@ -1882,6 +1882,9 @@ static int voiced_frame_render_owned(
         state->glottal_reference_rate>0 && state->noise.sample_rate>=16000;
     state->noise.tract.stable=classic_source;
     state->glottal.stable=classic_source;
+    if(state->rate_transfer.body_amount>0)
+        reloq_rate_transfer_prepare_body(&state->rate_transfer,&frame->noise.tract,
+            state->noise.sample_rate);
     if(state->rate_transfer.trial_profile && state->glottal_reference_rate>0 &&
        state->reference_formants>=1 && state->reference_formants<=5) {
         classic_frame=*frame;
@@ -1973,6 +1976,7 @@ static int voiced_frame_render_owned(
     if(shaped && params->af_level) {
         int classic=0;
         if(state->noise_transfer.trial_profile && noise->sample_rate>=16000) {
+            state->noise_transfer.sibilant_extension=noise->sample_rate>=22050&&params->s_frication!=0;
             float original_f[8];
             for(unsigned j=0;j<8;++j)original_f[j]=params->tract.oral[j].frequency_hz;
             struct reloq_core_clock reference_clock=reloq_core_clock_for_rate(11025);
@@ -2093,7 +2097,8 @@ static int voiced_frame_render_owned(
             frame->glottal_profile != state->active_glottal_profile) {
             int error=source_profile(&state->glottal,&noise->clock,
                     frame->glottal_profile,state->glottal_reference_rate,
-                    classic_source&&state->rate_transfer.trial_profile);
+                    classic_source&&state->rate_transfer.trial_profile&&
+                        state->rate_transfer.body_amount==0);
             if (error)
                 return -1;
             state->active_glottal_profile = frame->glottal_profile;
