@@ -1,4 +1,4 @@
-/* The full AV/AH renderer must use the reference tract in Classic mode. */
+/* The explicit Classic voice mode retains the reference tract. */
 #include "reloq_core.h"
 #include "../src/reloq_core_internal.h"
 #include "reloq_frame_adapter.h"

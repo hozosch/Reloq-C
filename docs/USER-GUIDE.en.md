@@ -1,8 +1,8 @@
 # Eloquence C – user guide
 
-## Hearing preview 1.1.0-rc9
+## Hearing preview 1.1.0-rc10
 
-From 16 kHz, a broad, bounded EQ around 3.5–4 kHz replaces the former upper shelf on periodic voicing. Its gain grows gently at higher rates; it shapes existing periodic energy without generating extra harmonics. At 32 kHz, fricatives are slightly quieter, with a little more attenuation for S; their spectral shape is preserved. The 16- and 22-kHz consonant noise path and aspiration remain unchanged. Discretionary hyphens inside German words no longer disrupt lexical analysis. Protected NVDA ECI tags and acoustic word-boundary controls remain included. Long German single sentences and open quotations still wait for complete analysis. This candidate needs listening on the target device.
+From 16 kHz, profile B uses the A voicing path, including its existing presence contour. Classic consonant noise remains on a separate path. At 32, 44.1 and 48 kHz, S/TS-like frication is reduced by 1.35 dB without changing its spectral shape. No new level reduction is applied at 16 or 22 kHz. This candidate tests whether the A voice path avoids the artefacts reported for B. Discretionary hyphens inside German words no longer disrupt lexical analysis. Protected NVDA ECI tags and acoustic word-boundary controls remain included. Long German single sentences and open quotations still wait for complete analysis. This candidate needs listening on the target device.
 
 ## English clock readings with seconds
 

@@ -63,7 +63,7 @@ static struct observation body(float rate,unsigned profile,unsigned vowel,double
         s->rate_transfer.trial_profile=rate==16000;
         s->rate_transfer.smooth_updates=rate>=22050;
     }
-    if((profile==3||profile==4||profile==5)&&rate>=22050) {
+    if(((profile==4||profile==5)&&rate>=16000)||(profile==3&&rate>=22050)) {
         frame.noise.tract.highest_formant=rate>=44100?8:rate>=32000?7:6;
         for(unsigned i=5;i<8;++i)frame.noise.tract.oral[i]=(struct reloq_core_formant){
             5000+1300*(i-5),1000+250*(i-5)};
@@ -75,8 +75,57 @@ static struct observation body(float rate,unsigned profile,unsigned vowel,double
     struct observation o=observe(work+count-(size_t)rate,(size_t)rate,rate,f0);
     free(work);free(mask);free(s);return o;
 }
+static void production_paths(void)
+{
+    const float rates[]={16000,22050,32000,44100,48000};
+    unsigned cases=0,noise_differences=0;
+    for(unsigned r=0;r<5;++r)for(unsigned reference=4;reference<=5;++reference) {
+        float controls[62];uint8_t fields[RELOQ_TARGET_STREAM_COUNT];
+        struct reloq_session_config c;
+        assert(!reloq_german_voice_defaults(controls,fields,&c));
+        c.sample_rate=rates[r];c.glottal_reference_rate=11025;
+        c.reference_formants=reference;c.frication_reference_rate=16000;
+        struct reloq_session *a=reloq_session_create(&c),*b=reloq_session_create(&c);assert(a&&b);
+        assert(!reloq_session_high_rate_profile(b,1));assert(!reloq_session_reset(a));assert(!reloq_session_reset(b));
+        assert(!a->frame_state.rate_transfer.trial_profile&&!b->frame_state.rate_transfer.trial_profile);
+        assert(!b->frame_state.rate_transfer.body_amount&&b->frame_state.noise_transfer.trial_profile==1);
+        long highest=rates[r]>=44100?8:rates[r]>=32000?7:6;
+        struct reloq_core_voiced_frame frame;assert(!reloq_frame_adapter_map(controls,highest,&frame));
+        frame.noise.tract.nasal_pole=frame.noise.tract.nasal_zero=(struct reloq_core_formant){200,90};
+        frame.noise.tract.tracheal_pole=frame.noise.tract.tracheal_zero=(struct reloq_core_formant){250,90};
+        for(unsigned j=0;j<8;++j) {
+            frame.noise.tract.oral[j]=(struct reloq_core_formant){500+700*j,100+20*j};
+            frame.noise.af_bandwidths[j]=500;frame.noise.af_levels[j]=j>=2&&j<=4?55:0;
+        }
+        frame.noise.duration_ms=2;
+        int different=0;
+        for(unsigned i=0;i<30;++i) {
+            frame.pitch_tenths=1000+37*i;frame.open_percent=50+(i%4)*5;
+            frame.av_level=i%7?55:0;frame.noise.ah_level=i%3?25:10;
+            frame.noise.af_level=i%4?55:0;frame.noise.s_frication=i%2;
+            frame.glottal_profile=4+(long)(i%3);
+            frame.noise.tract.oral[1].frequency_hz=1200+13*i;
+            float oa[256],ob[256],ra[256],rb[256],sa[256],sb[256],ba[256],bb[256];
+            uint8_t ma[256],mb[256];size_t na=0,nb=0;
+            assert(!reloq_core_voiced_frame_render_body(&a->frame_state,&frame,oa,ra,sa,ma,ba,256,&na,0));
+            assert(!reloq_core_voiced_frame_render_body(&b->frame_state,&frame,ob,rb,sb,mb,bb,256,&nb,0));
+            assert(na==nb&&!memcmp(ba,bb,na*sizeof *ba));
+            if(frame.noise.af_level) {
+                float trim=rates[r]>=32000?(frame.noise.s_frication?1.35f:
+                    rates[r]==32000?.25f:0):0;
+                assert(b->frame_state.noise_transfer.frication_trim_db==trim);
+            }
+            if(memcmp(oa,ob,na*sizeof *oa))different=1;
+            ++cases;
+        }
+        assert(different);++noise_differences;
+        reloq_session_destroy(a);reloq_session_destroy(b);
+    }
+    printf("A voice / Classic noise: %u evolving frame bodies bit-identical; %u independent noise paths differ\n",cases,noise_differences);
+}
 int main(void)
 {
+    production_paths();
     const float rates[]={16000,22050,32000,44100,48000};
     unsigned checks=0;double bass_error=0,minimum_hnr=1000;
     for(unsigned vowel=0;vowel<3;++vowel) {
@@ -122,24 +171,18 @@ int main(void)
         }
     }
     printf("A periodic body: 36 vowel/pitch/rate cases; bass vs 16 kHz <=%.3f dB; A spectral difference <=%.3f dB; harmonic/noise >=%.2f dB\n",a_bass,a_match,a_hnr);
-    double staged_bass=0,staged_hnr=1000,smallest_step=1000,max_upper=0;
+    double difference=0,production_hnr=1000;
     for(unsigned vowel=0;vowel<3;++vowel)for(unsigned pitch=0;pitch<3;++pitch) {
         double f0=113+64*pitch;
-        struct observation base=body(16000,5,vowel,f0),previous=base;
-        for(unsigned r=1;r<5;++r) {
+        for(unsigned r=0;r<5;++r) {
             struct observation o=body(rates[r],5,vowel,f0);
-            double bass=fabs(10*log10(o.bass/base.bass));
-            double step=10*log10(o.upper/previous.upper),upper=10*log10(o.upper/base.upper);
-            if(bass>staged_bass)staged_bass=bass;
-            if(o.hnr<staged_hnr)staged_hnr=o.hnr;
-            if(step<smallest_step)smallest_step=step;
-            if(upper>max_upper)max_upper=upper;
-            if(bass>=1||o.hnr<=48||step<=-.15||upper>=6)
-                fprintf(stderr,"gradual vowel=%u f0=%.0f rate=%.0f bass=%.3f hnr=%.3f step=%.3f upper=%.3f\n",vowel,f0,rates[r],bass,o.hnr,step,upper);
-            assert(bass<1);assert(o.hnr>48);assert(step>-.15);assert(upper<6);
-            previous=o;
+            struct observation a=body(rates[r],4,vowel,f0);
+            double bands[]={fabs(10*log10(o.bass/a.bass)),fabs(10*log10(o.middle/a.middle)),
+                fabs(10*log10(o.upper/a.upper))};
+            for(unsigned b=0;b<3;++b){assert(bands[b]<.0001);if(bands[b]>difference)difference=bands[b];}
+            if(o.hnr<production_hnr)production_hnr=o.hnr;
         }
     }
-    printf("Gradual production body: 36 cases; bass <=%.3f dB; smallest upper-band step %.3f dB; upper gain <=%.3f dB; harmonic/noise >=%.2f dB\n",staged_bass,smallest_step,max_upper,staged_hnr);
+    printf("Production A voice: 45 vowel/pitch/rate cases; A/B band difference <=%.6f dB; harmonic/noise >=%.2f dB\n",difference,production_hnr);
     return 0;
 }

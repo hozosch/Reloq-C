@@ -1,3 +1,35 @@
+# Testkandidat 1.1.0-rc10: A-Stimmweg mit Classic-Konsonanten
+
+Der Nutzer hört bei B auch nach rc9 scheppernde Artefakte, bei A jedoch nicht.
+rc9 mischte keine zweite Obertonquelle bei; B veränderte aber Glottis und
+Vokaltrakt im Klatt-Kern und formte die periodische Energie zusätzlich per EQ.
+Ab 16 kHz verwendet B nun den vollständigen A-Weg für Stimme und Aspiration,
+einschließlich der bisherigen A-Präsenzformung. Die Classic-Konsonanten bleiben
+auf einem getrennten Rauschpfad. Der B-spezifische Stimmkörper-EQ ist nicht
+aktiv. Die Ausgangsregelung und der Spitzenschutz von B bleiben bestehen.
+
+In 300 zeitlich veränderlichen Frames über fünf Raten und zwei Referenzmodelle
+sind Stimme und Aspiration vor dem Mischen mit dem Rauschen zwischen A und B
+bitgleich. 45 stationäre Vokal-/Tonhöhen-/Ratenfälle stimmen dort ebenfalls mit
+A überein. Das ist keine Aussage über die Gleichheit der fertigen PCM-Ausgabe
+oder über den Höreindruck. Die natürliche A-Abstimmung liefert nicht für jeden
+Vokal einen monoton mit der Rate ansteigenden Hochtonanteil. Ob sie den
+gewünschten Stimmkörper ohne das Scheppern liefert, bleibt ein Hörtest.
+
+Bei 32, 44,1 und 48 kHz wird S-/TS-artiges Reiben insgesamt um 1,35 dB
+abgesenkt; die Form des Konsonantenspektrums bleibt erhalten. Gegenüber rc9
+sind das bei 32 kHz zusätzliche 0,75 dB und bei 44,1/48 kHz 1,35 dB.
+In je zwei Stimmen geprüfte S-Anfänge im US-Englischen, kastilischen und
+lateinamerikanischen Spanisch sowie deutsche Z- und ZW-Anfänge bleiben bei
+16 und 22 kHz bytegleich und sinken bei den höheren Raten um die genannten
+Werte. Die geprüften englischen und deutschen F-Anfänge bleiben bytegleich.
+Die subjektive Lautstärke und weitere Lautumgebungen müssen gehört werden.
+
+Android bleibt auf seinem bisherigen Paketstand, bis die Klangabstimmung
+bestätigt ist. Der lange deutsche Einzelsatz bleibt weiterhin offen.
+
+Die folgenden Abschnitte beschreiben frühere Teststände.
+
 # Testkandidat 1.1.0-rc9: Stimmkörper-EQ und Konsonantenpegel
 
 Dieser NVDA-Hörtest setzt bei den vom Nutzer auch bei 16 kHz gehörten

@@ -1873,9 +1873,8 @@ static int voiced_frame_render_owned(
         frame->noise.bypass_attenuation_db<0 || frame->noise.bypass_attenuation_db>12 ||
         state->noise.frames_rendered == SIZE_MAX)
         return -1;
-    /* Classic keeps the reference serial tract. Its additional upper
-     * spectrum enters through the native rate transfer, rather than extra
-     * serial poles changing the entire shared voice/aspiration band. */
+    /* The explicit Classic voice mode can keep a reference serial tract.
+     * Sessions may instead use the complete A voice with Classic AF below. */
     struct reloq_core_voiced_frame classic_frame;
     const int classic_source=(state->rate_transfer.trial_profile ||
         state->rate_transfer.smooth_updates) &&
@@ -1957,6 +1956,11 @@ static int voiced_frame_render_owned(
     float widths[RELOQ_CORE_FRICATIVE_FORMANTS];
     long levels[RELOQ_CORE_FRICATIVE_FORMANTS];
     long noise_count=params->tract.highest_formant;
+    /* In the A-voice/B-noise combination the vocal tract stays complete,
+     * while the noise bank must retain B's accepted reference formants. */
+    if(state->noise_transfer.trial_profile && !state->rate_transfer.trial_profile &&
+       state->glottal_reference_rate>0 && state->reference_formants>=1 &&
+       state->reference_formants<=5)noise_count=(long)state->reference_formants;
     for (int i = 0; i < RELOQ_CORE_FRICATIVE_FORMANTS; ++i)
         centers[i] = params->tract.oral[i].frequency_hz;
     memcpy(widths,params->af_bandwidths,sizeof widths);
@@ -1980,11 +1984,11 @@ static int voiced_frame_render_owned(
              * other languages get the wider rc6 extension again. */
             state->noise_transfer.sibilant_extension=noise->sample_rate>=22050&&
                 params->limit_frication_extension!=0&&params->s_frication!=0;
-            /* At 32 kHz the wider S can sound louder although its raw RMS
-             * is already close to 22 kHz. Trim the whole AF band gently;
-             * do not change its accepted relative spectrum. */
-            state->noise_transfer.frication_trim_db=noise->sample_rate==32000?
-                ((params->s_frication||params->limit_frication_extension)? .6f:.25f):0;
+            /* Above 22 kHz reduce S/TS-like AF as a whole, without
+             * changing the accepted shape of its extended spectrum. */
+            state->noise_transfer.frication_trim_db=noise->sample_rate>=32000?
+                ((params->s_frication||params->limit_frication_extension)?1.35f:
+                    noise->sample_rate==32000?.25f:0):0;
             float original_f[8];
             for(unsigned j=0;j<8;++j)original_f[j]=params->tract.oral[j].frequency_hz;
             struct reloq_core_clock reference_clock=reloq_core_clock_for_rate(11025);

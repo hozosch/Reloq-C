@@ -1,8 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Hörtest 1.1.0-rc9
+## Hörtest 1.1.0-rc10
 
-Ab 16 kHz wird die bisherige Höhenanhebung im stimmhaften Anteil durch eine breite, begrenzte Anhebung um 3,5–4 kHz ersetzt. Ab 22,05 kHz wächst diese Anhebung vorsichtig mit der Rate; sie verändert vorhandene periodische Energie und erzeugt keine zusätzlichen Obertöne. Bei 32 kHz wird der Konsonantenpegel leicht abgesenkt, beim S etwas stärker; die spektrale Form bleibt erhalten. Der Rauschpfad der Konsonanten bei 16 und 22 kHz und die Aspiration bleiben unverändert. Bedingte Trennstriche innerhalb deutscher Wörter stören deren Wortanalyse nicht mehr. Der Schutz von ECI-Tags vor NVDAs Symbolverarbeitung und die Steuerung an akustischen Wortgrenzen bleiben enthalten. Lange deutsche Einzelsätze und offene Zitate warten weiterhin auf ihre vollständige Analyse. Dieser Stand braucht einen Hörvergleich auf dem eigenen Gerät.
+Ab 16 kHz verwendet Profil B den stimmhaften Weg von A einschließlich dessen vorhandener Präsenzformung. Der separate Classic-Rauschpfad bleibt für die Konsonanten erhalten. Bei 32, 44,1 und 48 kHz ist der S-/TS-artige Reibanteil um 1,35 dB abgesenkt; seine spektrale Form bleibt erhalten. Bei 16 und 22 kHz ist keine neue Pegelabsenkung vorgesehen. Dieser Stand dient dazu, die von B gemeldeten Artefakte gegen den A-Stimmweg zu prüfen. Bedingte Trennstriche innerhalb deutscher Wörter stören deren Wortanalyse nicht mehr. Der Schutz von ECI-Tags vor NVDAs Symbolverarbeitung und die Steuerung an akustischen Wortgrenzen bleiben enthalten. Lange deutsche Einzelsätze und offene Zitate warten weiterhin auf ihre vollständige Analyse. Dieser Stand braucht einen Hörvergleich auf dem eigenen Gerät.
 
 ## Englische Uhrzeiten mit Sekunden
 

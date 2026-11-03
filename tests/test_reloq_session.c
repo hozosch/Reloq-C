@@ -200,7 +200,7 @@ static int check_body_endpoint(void)
     struct reloq_core_voiced_frame_state state;
     CHECK(!reloq_core_voiced_frame_initialize(&state,48000,100,0,0,0));
     state.glottal_reference_rate=11025;state.reference_formants=5;state.frication_reference_rate=16000;
-    state.rate_transfer.trial_profile=state.noise_transfer.trial_profile=1;
+    state.rate_transfer.trial_profile=0;state.noise_transfer.trial_profile=1;
     float output[1024],af[1024],scratch[1024];uint8_t mask[1024];size_t written=0,at=0;
     for(unsigned f=0;f<8;++f) {
         CHECK(!reloq_core_voiced_frame_render(&state,frames+f,output,af,scratch,mask,NULL,1024,&written));
