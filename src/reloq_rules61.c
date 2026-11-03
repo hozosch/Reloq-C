@@ -6,6 +6,7 @@
 #include "reloq_german_lexicon.h"
 #include "reloq_inline_tags.h"
 #include "reloq_character.h"
+#include "reloq_cp1252.h"
 #include "reloq_utf8.h"
 #include "reloq_voice_controls.h"
 #include "reloq_voice_filter.h"
@@ -64,6 +65,128 @@ static int english_input(const unsigned char *text,size_t length,int tags,int un
     bytes[n]=0;map[n]=length;*out=bytes;*source=map;*written=n;return 0;
 memory:free(bytes);free(map);return -2;
 invalid:free(bytes);free(map);return -1;
+}
+
+/* The shared frontend consumes whole sentences. Remove only presentation
+ * controls and discretionary layout breaks before that sentence reaches
+ * the native German grammar. Source offsets remain attached to each byte. */
+static int german_letter(unsigned char c)
+{
+    return (c>='a'&&c<='z')||(c>='A'&&c<='Z')||
+        (c>=0xc0&&c!=0xd7&&c!=0xf7)||c==0x8c||c==0x9c;
+}
+static int german_word_byte(unsigned char c)
+{return german_letter(c)||(c>='0'&&c<='9')||c=='_'||c=='\'';}
+
+static void german_compact_input(unsigned char *a,size_t *map,size_t *length,int tags)
+{
+    const size_t n=*length;size_t out=0;int spelling=0;
+    struct reloq61_text_options options=reloq61_text_options_current();
+    for(size_t i=0;i<n;) {
+        struct reloq_inline_tag t=tags?reloq_inline_tag_read(a+i,n-i,0):(struct reloq_inline_tag){0};
+        size_t count=t.length?t.length:1;int omit=0;
+        if(t.kind==RELOQ_TAG_SPELL)spelling=t.value;
+        if(t.kind==RELOQ_TAG_DICTIONARY) {
+            int next=!t.value;omit=next==options.dictionary_disabled;options.dictionary_disabled=next;
+        } else if(t.kind==RELOQ_TAG_PREDICTION) {
+            omit=t.value==options.phrase_prediction;options.phrase_prediction=t.value;
+        } else if(t.kind==RELOQ_TAG_PAUSE && !t.value)omit=1;
+        if(omit) {
+            if((t.kind==RELOQ_TAG_DICTIONARY||t.kind==RELOQ_TAG_PREDICTION) &&
+               i+count<n && a[i+count]==' ')++count;
+            if(i+count<n && strchr(",.:;?!)",a[i+count]))
+                while(out&&(a[out-1]==' '||a[out-1]=='\t'))--out;
+        } else if(!spelling && !t.length && a[i]==0xad && out && german_letter(a[out-1])) {
+            size_t end=i;while(end<n&&a[end]==0xad)++end;
+            if(end<n&&german_letter(a[end])){i=end;continue;}
+            memmove(a+out,a+i,count);memmove(map+out,map+i,count*sizeof *map);out+=count;
+        } else {
+            memmove(a+out,a+i,count);memmove(map+out,map+i,count*sizeof *map);out+=count;
+        }
+        i+=count;
+    }
+    map[out]=map[n];a[out]=0;*length=out;
+}
+
+struct german_shared_buffer {unsigned char *bytes;size_t *map,used,capacity;};
+static int german_shared_append(struct german_shared_buffer *b,const unsigned char *bytes,
+    const size_t *map,size_t count,size_t origin)
+{
+    if(count>SIZE_MAX-b->used-1)return -1;
+    size_t needed=b->used+count+1;
+    if(needed>b->capacity) {
+        size_t cap=b->capacity?b->capacity:256;
+        while(cap<needed){if(cap>SIZE_MAX/2){cap=needed;break;}cap*=2;}
+        if(cap>SIZE_MAX/sizeof *b->map)return -1;
+        void *p=realloc(b->bytes,cap);if(!p)return -1;b->bytes=p;
+        p=realloc(b->map,cap*sizeof *b->map);if(!p)return -1;b->map=p;b->capacity=cap;
+    }
+    memcpy(b->bytes+b->used,bytes,count);
+    for(size_t j=0;j<count;++j)b->map[b->used+j]=map?map[j]:origin;
+    b->used+=count;return 0;
+}
+
+/* Main text aliases are resolved once before grammar, including components
+ * of a hyphenated word. Root and phonetic Main entries remain native. */
+static _Thread_local const struct reloq_lexicon *german_shared_lexicon;
+const struct reloq_lexicon *reloq_rules61_lexicon_scope(const struct reloq_lexicon *next)
+{
+    const struct reloq_lexicon *previous=german_shared_lexicon;
+    german_shared_lexicon=next;return previous;
+}
+static int german_main_input(unsigned char **text,size_t **source,size_t *length,int tags,
+    const struct reloq_lexicon *lexicon,int main_aliases)
+{
+    const unsigned char *a=*text;const size_t *map=*source,n=*length;
+    struct german_shared_buffer b={0};int spelling=0,changed=0;
+    for(size_t i=0;i<n;) {
+        struct reloq_inline_tag t=tags?reloq_inline_tag_read(a+i,n-i,0):(struct reloq_inline_tag){0};
+        if(t.length) {
+            if(t.kind==RELOQ_TAG_SPELL)spelling=t.value;
+            if(t.kind==RELOQ_TAG_SPELL&&(!b.used||b.bytes[b.used-1]!=' ')) {
+                if(german_shared_append(&b,(const unsigned char *)" ",NULL,1,map[i]))goto fail;
+                changed=1;
+            }
+            if(german_shared_append(&b,a+i,map+i,t.length,0))goto fail;
+            if(t.kind==RELOQ_TAG_SPELL&&(i+t.length==n||a[i+t.length]!=' ')) {
+                if(german_shared_append(&b,(const unsigned char *)" ",NULL,1,map[i+t.length]))goto fail;
+                changed=1;
+            }
+            i+=t.length;continue;
+        }
+        if(spelling||!german_word_byte(a[i])) {
+            if(german_shared_append(&b,a+i,map+i,1,0))goto fail;
+            ++i;continue;
+        }
+        size_t end=i;
+        while(end<n&&(german_word_byte(a[end])||
+            (a[end]=='-'&&end+1<n&&german_word_byte(a[end+1]))))++end;
+        while(i<end) {
+            size_t stop=end;const char *value=main_aliases?reloq61_dictionary_main_text(a+i,stop-i):NULL;
+            if(!value){stop=i;while(stop<end&&a[stop]!='-')++stop;
+                value=main_aliases?reloq61_dictionary_main_text(a+i,stop-i):NULL;}
+            size_t value_length=value?strlen(value):0,utf8_length=0;
+            unsigned char utf8[1537];
+            const struct reloq_lexicon_override *pronunciation=NULL;
+            if(!value&&lexicon&&!reloq61_dictionary_match(a+i,stop-i))
+                (void)reloq_lexicon_find_override(lexicon,a+i,stop-i,&pronunciation);
+            if(value&&value_length<=512&&!reloq_cp1252_decode((const unsigned char *)value,
+                    value_length,utf8,sizeof utf8,&utf8_length,NULL)) {
+                if(german_shared_append(&b,(const unsigned char *)value,NULL,value_length,map[i]))goto fail;
+                changed=1;
+            } else if(pronunciation) {
+                if(german_shared_append(&b,pronunciation->spr,NULL,pronunciation->spr_length,map[i]))goto fail;
+                changed=1;
+            } else if(german_shared_append(&b,a+i,map+i,stop-i,0))goto fail;
+            i=stop;
+            if(i<end){if(german_shared_append(&b,a+i,map+i,1,0))goto fail;++i;}
+        }
+    }
+    if(!changed){free(b.bytes);free(b.map);return 0;}
+    if(german_shared_append(&b,(const unsigned char *)"",NULL,0,n))goto fail;
+    b.bytes[b.used]=0;b.map[b.used]=map[n];
+    free(*text);free(*source);*text=b.bytes;*source=b.map;*length=b.used;return 0;
+fail:free(b.bytes);free(b.map);return -1;
 }
 
 int reloq_rules61_phonemes(int language,const unsigned char *text,size_t length,
@@ -142,7 +265,7 @@ struct rule_plan {
     const size_t *control_sources;size_t pitch_source;
     struct rule_control *controls;size_t control_count,control_capacity;
     struct reloq_session *session;
-    int memory,castilian,castilian_st,word_volume,cjk_volume,word_pitch,native_pitch,word_speed,word_inflection;
+    int memory,retracted_filter,retracted_st,word_volume,cjk_volume,word_pitch,native_pitch,word_speed,word_inflection;
     struct reloq_german_voice_model word_model;
     int base_voice[8];
     struct rule_playback *playback;
@@ -454,14 +577,15 @@ static int render_until(struct rule_plan *s,int64_t limit)
             p->result=RELOQ_DE_UTTERANCE_INVALID;return 1;
         }
         frame.noise.s_frication=controls[8]>0&&(controls[38]>controls[37]+10||controls[39]>controls[37]+10);
-        if(s->castilian) {
-            /* Castilian /s/ has A4F-A3F == 10 dB, below the older generic
+        if(s->retracted_filter) {
+            /* Castilian and Greek share an acoustic core. Their /s/ can have
+             * A4F-A3F == 10 dB, below the older generic
              * classifier's strict >10 test. Hold its bandwidth limit over
              * the AF release, rather than switching at each rounded tail. */
-            if(controls[8]<=0)s->castilian_st=0;
+            if(controls[8]<=0)s->retracted_st=0;
             else if(controls[38]>controls[37]+5||controls[39]>controls[37]+5)
-                s->castilian_st=1;
-            frame.noise.limit_frication_extension=s->castilian_st;
+                s->retracted_st=1;
+            frame.noise.limit_frication_extension=s->retracted_st;
         }
         p->delivery.gain=p->settings->volume/100.0*reloq_voice_volume_gain(voice->volume);
         if(reloq_session_float_volume(s->session)) {
@@ -515,8 +639,9 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
        index_count>INT32_MAX||pitch_count>(size_t)INT32_MAX-index_count)return RELOQ_DE_UTTERANCE_INVALID;
     unsigned char *a=NULL;size_t *map=NULL,n=0;
     struct rule_plan plan={.session=session,.index_count=index_count+pitch_count,
-        .castilian=language==0x20000,.word_volume=native_volume,.word_pitch=-1,
-        .native_pitch=settings->native_pitch_plus_one?settings->native_pitch_plus_one-1:settings->pitch,
+        .retracted_filter=language==0x20000||language==0x120000,.word_volume=native_volume,.word_pitch=-1,
+        .native_pitch=settings->native_pitch_plus_one?settings->native_pitch_plus_one-1:
+            language==0x40000?65:settings->pitch,
         .word_speed=-1,.word_inflection=-1};
     plan.word_model=(struct reloq_german_voice_model){
         settings->head_size_plus_one?settings->head_size_plus_one-1:50,
@@ -528,7 +653,11 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     int input_status=english_input(text,length,tags,family==6||family==8||family==10||family==18,&a,&map,&n);
     if(input_status==-2)goto memory;
     if(input_status)goto done;
+    if(language==0x40000)german_compact_input(a,map,&n,tags);
     if(tags&&!plan.cjk_volume&&normalize_word_voice_controls(&a,&map,&n,family==18))goto memory;
+    if(language==0x40000&&german_main_input(&a,&map,&n,tags,NULL,1))goto memory;
+    if(language==0x40000&&german_shared_lexicon&&
+       german_main_input(&a,&map,&n,tags,german_shared_lexicon,0))goto memory;
     if(plan.cjk_volume) {
         /* CJK lexers can treat even a redundant command as a token break.
          * No-op voice controls must leave native segmentation untouched. Actual
@@ -652,7 +781,8 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     q.controls=volumes;q.control_count=volume_count;q.control=take_control;plan.control_sources=control_sources;
     q.voice[0]=settings->gender;
     q.voice[1]=settings->head_size_plus_one?settings->head_size_plus_one-1:50;
-    q.voice[2]=settings->native_pitch_plus_one?settings->native_pitch_plus_one-1:settings->pitch;
+    q.voice[2]=settings->native_pitch_plus_one?settings->native_pitch_plus_one-1:
+        language==0x40000?65:settings->pitch;
     q.voice[3]=settings->native_inflection_plus_one?settings->native_inflection_plus_one-1:30;
     q.voice[4]=settings->roughness;q.voice[5]=settings->breathiness;
     q.voice[6]=settings->native_speed?(settings->native_speed<0?0:settings->native_speed):settings->rate;
@@ -682,7 +812,9 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         .model={q.voice[1],q.voice[4],q.voice[5],q.voice[0],reloq_session_sample_rate(session)},
         .settings=settings,.pitches=pitches,.index_count=index_count,.pitch_count=pitch_count,
         .pause_mode=!explicit_pause&&settings->pause_mode==1,
-        .pitch_scale=1,.base_pitch=reloq_voice_pitch_f0_scale(q.voice[2]),.last_pitch_tick=INT64_MIN,
+        .pitch_scale=language==0x40000&&!settings->native_pitch_plus_one?
+            (150.0+settings->pitch)/200.0:1,
+        .base_pitch=reloq_voice_pitch_f0_scale(q.voice[2]),.last_pitch_tick=INT64_MIN,
         .delivery={.sink=sink,.context=context,.gain=1,
             .limit=(size_t)reloq_session_sample_rate(session)/100,
             .next_limit=(size_t)reloq_session_sample_rate(session)/50},
@@ -694,8 +826,10 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
      * a following NVDA utterance does not wait for the old text's EOF. */
     struct reloq61_cancel_check previous_cancel=reloq61_cancel_scope(
         (struct reloq61_cancel_check){rule_cancelled,session});
+    int previous_dictionary_scope=language==0x40000?reloq61_dictionary_text_scope(1):0;
     int status=reloq61_generate_with_pauses(&q,&r,settings->pause_mode,
         playback.pause_mode?take_pause:NULL,&plan);
+    if(language==0x40000)reloq61_dictionary_text_scope(previous_dictionary_scope);
     reloq61_cancel_scope(previous_cancel);
     if(reloq_session_cancelled(session)){result=RELOQ_DE_UTTERANCE_CANCELLED;goto done;}
     if(plan.memory)goto memory;

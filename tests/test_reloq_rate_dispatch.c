@@ -10,6 +10,33 @@ static double response(const double c[5],double hz,double rate)
  double complex z=cexp(-I*2*pi*hz/rate);
  return cabs((c[0]+c[1]*z+c[2]*z*z)/(1+c[3]*z+c[4]*z*z));
 }
+static void noise_grid_reuse(void)
+{
+ const float rates[]={16000,22050,32000,44100,48000};unsigned checks=0;
+ for(unsigned r=0;r<5;++r)for(int kind=0;kind<4;++kind) {
+  struct reloq_noise_profile p={0};p.kind=kind;p.rate=rates[r];p.upper_target=kind*.125;
+  for(unsigned j=0;j<6;++j) {
+   p.target[j][0]=.8+(double)j*.01;
+   p.target[j][1]=-.12;p.target[j][2]=.04;p.target[j][3]=-.15;p.target[j][4]=.07;
+  }
+  const struct noise_clock_grid *clock=get_noise_clock(r,rates[r]);
+  const struct noise_grid *grid=get_noise_grid(&p,r,rates[r],clock);assert(grid);
+  for(unsigned k=0;k<=FFT_SIZE/2;++k) {
+   double hz=(double)k*rates[r]/FFT_SIZE;
+   double direct=profile_power(&p,hz);
+   double complex current=cexp(-I*2*pi*hz/rates[r]);
+   double complex reference=cexp(-I*2*pi*hz/11025);
+   assert(!memcmp(&direct,grid->profile+k,sizeof direct));
+   assert(!memcmp(&current,clock->z[0]+k,sizeof current));
+   assert(!memcmp(&reference,clock->z[1]+k,sizeof reference));++checks;
+  }
+  p.target[0][0]+=.01;
+  assert(!get_noise_grid(&p,r,rates[r],clock));
+  p.target[0][0]=.8;p.rate=rates[r]/2;
+  assert(!get_noise_grid(&p,r,rates[r],clock));
+ }
+ printf("Noise transfer: %u cached/direct frequency and response checks bit-identical; custom profile falls back\n",checks);
+}
 static void classic_response(void)
 {
  /* The shared Classic contour and AF reference stay fixed. The small
@@ -134,6 +161,7 @@ int main(void) {
  classic_response();
  gradual_response();
  gentle_a_response();
+ noise_grid_reuse();
  unsigned tests=0;
 #ifdef RATE_AVX2
  int avx2_available=avx2_enabled();

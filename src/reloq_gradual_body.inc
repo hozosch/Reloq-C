@@ -33,15 +33,15 @@ void reloq_rate_transfer_prepare_body(struct reloq_rate_transfer *s,
 static double gradual_body_sample(struct reloq_rate_transfer *s,double y)
 {
     if(s->body_remaining) {
-        for(unsigned j=0;j<3;++j)for(unsigned k=0;k<5;++k)
-            s->body_coefficient[j][k]+=s->body_step[j][k];
+        /* The other two reserved sections are immutable identity filters.
+         * They start at unity, have zero steps and hold no signal history. */
+        for(unsigned k=0;k<5;++k)
+            s->body_coefficient[0][k]+=s->body_step[0][k];
         if(!--s->body_remaining)
             memcpy(s->body_coefficient,s->body_target,sizeof s->body_target);
     }
-    for(unsigned j=0;j<3;++j) {
-        const double *c=s->body_coefficient[j];double *d=s->body_delay[j];
-        double x=y;y=c[0]*x+d[0];
-        d[0]=c[1]*x-c[3]*y+d[1];d[1]=c[2]*x-c[4]*y;
-    }
+    const double *c=s->body_coefficient[0];double *d=s->body_delay[0];
+    double x=y;y=c[0]*x+d[0];
+    d[0]=c[1]*x-c[3]*y+d[1];d[1]=c[2]*x-c[4]*y;
     return y;
 }

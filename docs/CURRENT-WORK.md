@@ -1,4 +1,41 @@
-# Testkandidat 1.1.0-rc11: Sanfte Anreicherung als Vergleich C
+# Testkandidat 1.1.0-rc12: C als Vorgabe, griechischer Filter und CPU
+
+Der bestätigte C-Klang ist jetzt die Vorgabe in der ECI-DLL und im NVDA-Treiber;
+gespeicherte B-Vorgaben sowie die frühere C-Auswahl wechseln auf C. A und B
+bleiben wählbar. Griechisch erhält dieselbe Begrenzung der zusätzlichen
+S-/T-Bandbreite wie Kastilisch. Bei 16 kHz stimmen sechs griechische
+Vergleichsausgaben mit rc11 überein; oberhalb von 16 kHz liegt das zusätzliche
+S-Spektrum im geprüften Bereich.
+
+Die Hochratenfilter nutzen dieselben unveränderlichen Frequenzrotationen und
+Quellfilterantworten wieder, statt sie für jeden veränderten Laut erneut zu
+berechnen; zwei identische Durchgangsstufen im C-Stimmfilter entfallen. 236
+PCM-/Index-Vergleiche über alle Sprachen, zwei Modelle und die auswählbaren
+Profile waren identisch. Im warmen Linux-Prozessvergleich sank die CPU-Zeit
+der getesteten deutschen, englischen und griechischen Sätze bei 16 bis 48 kHz
+um etwa 18–28 %. Das ist keine Messung auf einem Windows- oder Android-Gerät.
+Ein Frequenzrastertest vergleicht alle Werte bitweise mit der direkten
+Berechnung; ein separater Test initialisiert das Raster gleichzeitig aus zwölf
+Threads. Ergebnisse und Vergleichscode stehen unter `validation` und `tools`.
+
+Die Umstellung auf den gemeinsamen deutschen Satzpfad ist ausdrücklich noch
+nicht die Vorgabe. Mit `RELOQ_DE_NATIVE_TRIAL=1` läuft ein Diagnoseversuch
+über denselben Pfad wie Englisch. Lange Einzelsätze beginnen im lokalen
+NVDA-Treibertest wesentlich früher; Tags, Zeichenmodus, weiche Trennstriche
+und URLs haben eigene Vergleichstests bestanden. Es fehlen weiterhin der
+Wörterbuchabgleich in zusammengesetzten Wörtern und die Übernahme der bereits
+bestätigten männlichen Z-Absenkung: Bei „Zehn“ und „Zwei“ ist der Anfang im
+Versuch etwa 2 dB lauter als in rc11. Die Korrektur des vokalischen r vor /ts/
+ist ebenfalls noch nicht nachgewiesen. Deshalb behält rc12 den bisherigen
+deutschen Produktpfad; der Diagnosepfad ist kein fertiger Ersatz.
+
+Ein separater Linux-Stresstest mit acht gleichzeitig sprechenden ECI-Handles
+löste im gemeinsamen Sprach-Frontend einen Prozessabsturz aus. Derselbe Test
+bricht auch mit der unveränderten rc11-Bibliothek ab; der reine Filterrastertest mit
+zwölf Threads besteht dagegen. Mehrere gleichzeitig synthetisierende Handles
+sind daher weiterhin ein offener Fehler, unabhängig von dieser Optimierung.
+
+## Testkandidat 1.1.0-rc11: Sanfte Anreicherung als Vergleich C
 
 Der Nutzer bestätigt den A-Stimmweg von rc10 als sauber, hört aber keine
 stufenweise Erweiterung bei höheren Raten. B bleibt deshalb genau die

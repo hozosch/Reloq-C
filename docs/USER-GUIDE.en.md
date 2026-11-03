@@ -1,8 +1,8 @@
 # Eloquence C – user guide
 
-## Hearing preview 1.1.0-rc11
+## Preview 1.1.0-rc12
 
-Profile B retains the clean voicing and Classic consonants from rc10. Optional profile C adds a broad, restrained contour around 3.75 kHz to existing periodic voice energy from 22.05 kHz upward. Its peak is 0.45 / 0.8 / 1.1 / 1.25 dB at 22.05 / 32 / 44.1 / 48 kHz. At 16 kHz C equals B; the separate aspiration and consonant paths remain unchanged. No extra glottal pulse is introduced. Compare the profiles using High-rate tuning in NVDA voice settings. Listening on the target device is needed to judge whether the stages provide more body without sounding forceful. Discretionary hyphens inside German words no longer disrupt lexical analysis. Protected NVDA ECI tags and acoustic word-boundary controls remain included. Long German single sentences and open quotations still wait for complete analysis.
+Profile C is now the default. From 22.05 kHz upward it adds a broad, restrained contour around 3.75 kHz to the existing periodic voice energy. At 16 kHz it equals profile B; the separate aspiration and consonant paths are preserved. A and B remain available under High-rate tuning. Greek now uses the same restrained high-rate S/T extension as Castilian Spanish. The high-rate filters use less processing time. Discretionary hyphens inside German words do not disrupt lexical analysis, and ECI tags remain protected from NVDA's symbol processing. Long German single sentences and open quotations still wait for complete analysis.
 
 ## English clock readings with seconds
 

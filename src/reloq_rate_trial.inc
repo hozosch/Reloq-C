@@ -36,13 +36,20 @@ int reloq_rate_transfer_prepare_classic_bandwidth(struct reloq_rate_transfer *s,
     memcpy(s->key,key,sizeof key);s->taps=129;
     double ours[FFT_SIZE/2+1],native_power[FFT_SIZE/2+1],target[FFT_SIZE/2+1];
     double lower_ours=0,lower_ref=0,peak=0;
+    /* Coefficients and frequency rotations depend only on the immutable
+     * rate/profile pair. Reuse those exact values across changing speech
+     * frames; unusual clocks or custom profiles keep the direct path. */
+    unsigned clock_index=noise_clock_index(rate);
+    const struct noise_clock_grid *clock=clock_index<5?get_noise_clock(clock_index,rate):NULL;
+    const struct noise_grid *grid=clock?get_noise_grid(profile,clock_index,rate,clock):NULL;
     for(unsigned k=0;k<=FFT_SIZE/2;++k) {
         double hz=(double)k*rate/FFT_SIZE,w=k&&k<FFT_SIZE/2?1:.5;
         /* profile_power's historical reference includes an extra 1 dB;
          * use the actual production source gain for this absolute fit. */
-        ours[k]=bank_power(current,cexp(-I*2*pi*hz/rate))/(norm*norm)*
-            profile_power(profile,hz)*0.7943282347242815;
-        double complex z=cexp(-I*2*pi*hz/11025);
+        double complex current_z=clock?clock->z[0][k]:cexp(-I*2*pi*hz/rate);
+        ours[k]=bank_power(current,current_z)/(norm*norm)*
+            (grid?grid->profile[k]:profile_power(profile,hz))*0.7943282347242815;
+        double complex z=clock?clock->z[1][k]:cexp(-I*2*pi*hz/11025);
         native_power[k]=hz<=11025?bank_power(reference,z)/(norm*norm)*
             classic_colour_power(hz)*(rate/11025.0):0;
         if(hz<=4600){lower_ours+=w*ours[k];lower_ref+=w*native_power[k];}

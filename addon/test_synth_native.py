@@ -167,7 +167,7 @@ def main():
                     run(["This is the sample rate test."])
                     settings = spoken_engines[-1].calls[-1][1]
                     assert settings[str(native.SAMPLE_RATE)] == code and players[-1].hz == hz
-                    assert settings[str(native.HIGH_RATE_PROFILE)] == 1
+                    assert settings[str(native.HIGH_RATE_PROFILE)] == 3
                     assert settings[str(native.PROCESS_TAGS)] == 1
                     report["checks"] += 3
                 # Verify the selectable C profile through the packaged NVDA
@@ -177,9 +177,9 @@ def main():
                 driver.voiceTags = False
                 for code, hz in ((3, 16000), (2, 22050), (6, 48000)):
                     driver.sampleRate = str(code)
-                    driver.highRateProfile = "1"
+                    driver.highRateProfile = "2"
                     baseline = run(["Oma und Werner hören Musik."])
-                    driver.highRateProfile = "3"
+                    driver.highRateProfile = "1"
                     gentle = run(["Oma und Werner hören Musik."])
                     settings = spoken_engines[-1].calls[-1][1]
                     assert settings[str(native.HIGH_RATE_PROFILE)] == 3

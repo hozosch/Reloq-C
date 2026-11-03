@@ -34,7 +34,8 @@ def main():
         engine=DirectEciEngine(args.library.resolve(),dialect=language,encoding='utf8',experimental_generic=True)
         other=DirectEciEngine(args.library.resolve(),dialect=language,encoding='utf8',experimental_generic=True)
         try:
-            assert engine._dll.eciGetParam(engine._handle,HIGH_RATE_PROFILE)==0;checks+=1
+            assert engine._dll.eciGetParam(engine._handle,HIGH_RATE_PROFILE)==3;checks+=1
+            other.set_parameter(HIGH_RATE_PROFILE,0)
             for rate in SAMPLE_RATES:
                 for e in (engine,other):
                     e.set_parameter(SAMPLE_RATE,rate);e.set_parameter(NATIVE_SPEED,75)

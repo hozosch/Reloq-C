@@ -1980,7 +1980,7 @@ static int voiced_frame_render_owned(
     if(shaped && params->af_level) {
         int classic=0;
         if(state->noise_transfer.trial_profile && noise->sample_rate>=16000) {
-            /* The gentler rc7 S roll-off now applies only to Castilian S/T;
+            /* The gentler rc7 S roll-off applies to Castilian and Greek S/T;
              * other languages get the wider rc6 extension again. */
             state->noise_transfer.sibilant_extension=noise->sample_rate>=22050&&
                 params->limit_frication_extension!=0&&params->s_frication!=0;

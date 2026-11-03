@@ -502,7 +502,7 @@ static int send_generic_index(void *context, size_t ordinal)
 /* Leading model annotations share the native model setup, without
  * changing the configured NVDA parameters or splitting the request. */
 static void leading_models(const unsigned char *text,size_t length,
-    struct reloq_german_generic_settings *settings)
+    struct reloq_german_generic_settings *settings,int native_german)
 {
     for(size_t at=0;at<length;) {
         if(text[at]==' '||text[at]=='\t'||text[at]=='\r'||text[at]=='\n'){++at;continue;}
@@ -510,6 +510,9 @@ static void leading_models(const unsigned char *text,size_t length,
         if(!tag.kind || tag.kind==RELOQ_TAG_SPR)break;
         switch(tag.kind) {
         case RELOQ_TAG_PITCH:settings->native_pitch_plus_one=tag.value+1;break;
+        case RELOQ_TAG_SPEED:
+            if(native_german)settings->native_speed=tag.value?tag.value:-1;
+            break;
         case RELOQ_TAG_GENDER:settings->gender=tag.value;break;
         case RELOQ_TAG_HEAD_SIZE:settings->head_size_plus_one=tag.value+1;break;
         case RELOQ_TAG_ROUGHNESS:settings->roughness=tag.value;break;
@@ -578,6 +581,7 @@ static int generic_stream_part(void *context,const unsigned char *annotation,siz
 /* All AddText fragments share one ECI transaction and one acoustic clock.
  * Complete admitted German phrases can begin rendering during analysis;
  * indices are delivered at PCM word boundaries, not during preflight. */
+extern const struct reloq_lexicon *reloq_rules61_lexicon_scope(const struct reloq_lexicon *);
 static int synthesize_generic(struct reloq_eci_engine *e,
                               const unsigned char *phrase, size_t length,
                               size_t original_length,
@@ -587,7 +591,10 @@ static int synthesize_generic(struct reloq_eci_engine *e,
                               size_t pitch_count, unsigned int epoch,int admitted)
 {
     struct preflight_cancel cancel_check = {e, epoch};
-    if(e->language!=RELOQ_ECI_GERMAN) {
+    /* Diagnostic only: compare the shared native text path for German
+     * while its pronunciation, dictionaries and controls are validated. */
+    const char *native_german=getenv("RELOQ_DE_NATIVE_TRIAL");
+    if(e->language!=RELOQ_ECI_GERMAN || (native_german&&!strcmp(native_german,"1"))) {
         struct reloq_german_generic_index *english_indices=NULL;
         struct reloq_german_generic_pitch_mark *english_pitch=NULL;
         if(mark_count) {
@@ -612,7 +619,7 @@ static int synthesize_generic(struct reloq_eci_engine *e,
             (e->native_volume_active||e->process_tags)?100:e->generic_volume,e->native_speed_active?(e->native_speed?e->native_speed:-1):0,
             e->native_pitch_active?e->native_pitch+1:0,e->native_inflection_active?e->native_inflection+1:0,
             e->pause_mode,e->head_size+1,e->roughness,e->breathiness,e->gender};
-        if(e->process_tags)leading_models(phrase,length,&settings);
+        if(e->process_tags)leading_models(phrase,length,&settings,e->language==RELOQ_ECI_GERMAN);
         if(settings.gender!=e->gender || settings.head_size_plus_one!=e->head_size+1) {
             int head=settings.head_size_plus_one-1,gender=settings.gender;
             long source=gender?(head<30?5:3):4;
@@ -620,10 +627,13 @@ static int synthesize_generic(struct reloq_eci_engine *e,
             unsigned reference=sample_hz(e->sample_rate_code)>=16000?(head<=(gender?40:30)?4u:5u):0;
             if(reloq_session_source_levels(e->text_session,source,gender?-3:-5,6,gender?-7:0,reference))reset=1;
         }
+        const struct reloq_lexicon *previous_lexicon=reloq_rules61_lexicon_scope(
+            e->language==RELOQ_ECI_GERMAN&&e->lexicon.rows?&e->lexicon.view:NULL);
         int rendered=reset?RELOQ_DE_UTTERANCE_INVALID:reloq_language_rules_render(e->language,phrase,length,e->process_tags||admitted,
             frame_volume?(e->native_volume_active?e->native_volume:e->generic_volume):100,
             &settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
             send_pcm,send_generic_index,&bridge);
+        reloq_rules61_lexicon_scope(previous_lexicon);
         free(english_indices);free(english_pitch);
         if(preflight_cancelled(&cancel_check)||reloq_session_cancelled(e->text_session))return RELOQ_ECI_CANCELLED;
         if(rendered==RELOQ_DE_UTTERANCE_OK)return RELOQ_ECI_OK;
@@ -984,6 +994,8 @@ ECIHand ECICALL eciNewEx(int language)
         return NULL;
     }
     e->sample_rate_code = default_rate;
+    /* The accepted 1.1 listening profile is the common ECI default. */
+    e->high_rate_profile=3;
     e->synth_mode=eciGetDefaultParam(RELOQ_ECI_SYNTH_MODE);
     e->input_type=e->process_tags=eciGetDefaultParam(RELOQ_ECI_INPUT_TYPE);
     e->text_mode=eciGetDefaultParam(2);

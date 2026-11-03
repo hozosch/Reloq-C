@@ -142,7 +142,7 @@ def main():
         assert not lib.eciProgStatus(h) and not message.value;checks+=3
         # Reset works the same after standard controls and native aliases.
         assert lib.eciSetParam(h,0x1007,110)>=0
-        assert lib.eciSetParam(h,0x1011,1)==0
+        assert lib.eciSetParam(h,0x1011,1)==3
         assert lib.eciReset(h)
         assert lib.eciGetParam(h,9)==lib.eciGetDefaultParam(9)
         assert lib.eciGetVoiceParam(h,0,6)==50 and lib.eciGetVoiceParam(h,0,2)==65

@@ -1270,8 +1270,8 @@ static double bank_power(const struct reloq_core_frication_bank *b,double comple
     }
     return yr*yr+yi*yi;
 }
-/* Clock-only responses are shared by all noise profiles. The two
- * profile families retain only their own coefficients and power curve. */
+/* Clock-only responses are shared by all noise profiles. Each profile
+ * retains only its immutable coefficients and power curve. */
 struct noise_clock_grid {
     atomic_int ready;
     double low_weight[FFT_SIZE/2+1],high_weight[FFT_SIZE/2+1],tilt[FFT_SIZE/2+1];
@@ -1283,7 +1283,7 @@ struct noise_grid {
     const struct noise_clock_grid *clock;
 };
 static struct noise_clock_grid noise_clocks[5];
-static struct noise_grid noise_grids[5][2];
+static struct noise_grid noise_grids[5][4];
 static unsigned noise_clock_index(float rate)
 {
     static const float rates[]={16000,22050,32000,44100,48000};
@@ -1334,8 +1334,9 @@ static void fill_noise_grid(struct noise_grid *g,const struct reloq_noise_profil
 static const struct noise_grid *get_noise_grid(const struct reloq_noise_profile *p,
     unsigned i,float rate,const struct noise_clock_grid *clock)
 {
-    if(p->kind==1||p->kind==2) {
-        struct noise_grid *g=&noise_grids[i][p->kind-1];
+    if(p->rate!=rate)return NULL;
+    if(p->kind>=0&&p->kind<4) {
+        struct noise_grid *g=&noise_grids[i][p->kind];
         if(atomic_load_explicit(&g->ready,memory_order_acquire)!=2) {
             int expected=0;
             if(atomic_compare_exchange_strong(&g->ready,&expected,1)) {

@@ -198,18 +198,17 @@ relevant, auch wenn der untersuchte Eloquence_64-ReLoq-Adapter sie umgeht.
 
 ## Klangprofil im Eloquence_64-Adapter
 
-Das eigene NVDA-Add-on wählt Profil B ausdrücklich. Für bisherige direkte
-ECI-Clients bleibt der DLL-Standard Profil A (Parameter 0x1011 = 0).
-Das experimentelle Profil C ist optional über Wert 3 erreichbar; Wert 2
-bleibt zur Kompatibilität eine Alias-Einstellung für B.
-Eloquence_64 b24a6c8 wählt diesen zusätzlichen Parameter bisher nicht.
-Ein reiner DLL-Austausch enthält dort die Kontextkorrekturen aus dev8,
-aktiviert aber noch nicht die in diesem Hörtest geprüfte
-Classic-/Richness-Abstimmung. Weitere gemeldete Analysefehler bleiben zu prüfen.
+Profil C ist jetzt der DLL-Standard (Parameter 0x1011 = 3) und wird auch im
+eigenen NVDA-Add-on als Vorgabe verwendet. Bereits gespeicherte Einstellungen
+der früheren Vorgabe B und des früheren C-Hörtests werden auf C übernommen;
+Profil A und B bleiben ausdrücklich auswählbar. Der native Wert 2 bleibt zur
+Kompatibilität ein Alias für B. Clients wie Eloquence_64, die den zusätzlichen
+Parameter nicht setzen, verwenden damit ebenfalls C.
 
-`integration/eloquence64-classic-profile.patch` ergänzt beim Vorbereiten
-jedes ReLoq-Sprachhandles optional `eciSetParam(handle, 0x1011, 1)`.
-Frühere DLLs dürfen den unbekannten Parameter ablehnen und bleiben nutzbar.
+`integration/eloquence64-classic-profile.patch` zeigt weiterhin die frühere,
+ausdrückliche Auswahl von Profil B. Ein Client, der diese Einstellung setzt,
+überschreibt damit den neuen Standard. Frühere DLLs dürfen den unbekannten
+Parameter ablehnen und bleiben nutzbar.
 Der Patch gilt für den untersuchten Upstream-Commit und wurde lokal mit
 dessen tatsächlichem Adapter bei 16, 22,05 und 48 kHz geprüft: 24 vollständige
 und fragmentierte Satzfälle liefern die gleiche PCM-Ausgabe wie unser
