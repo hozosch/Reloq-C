@@ -11,6 +11,7 @@ import sys
 import tempfile
 import xml.etree.ElementTree as ET
 from codegen import generate
+from verify_apk import verify_direct_boot_manifest
 
 ROOT=Path(__file__).resolve().parents[1]
 STUBS={
@@ -150,6 +151,14 @@ def main():
     assert service is not None and service.get(a+"name")==".ReLoqService"
     assert service.get(a+"directBootAware")=="true" and service.get(a+"exported")=="true"
     assert [node.get(a+"name") for node in manifest.findall("uses-permission")]==["android.permission.INTERNET"]
+    for namespace,value in (("android","(type 0x12)0xffffffff"),
+                            ("http://schemas.android.com/apk/res/android","true")):
+        tree=(f"    E: service (line=9)\n      A: {namespace}:name=\".ReLoqService\"\n"
+              f"      A: {namespace}:directBootAware(0x01010505)={value}\n      E: intent-filter (line=10)\n")
+        verify_direct_boot_manifest(tree)
+    try:verify_direct_boot_manifest(tree.replace("=true","=false"))
+    except ValueError:pass
+    else:raise AssertionError("Disabled Direct Boot unexpectedly accepted")
     with tempfile.TemporaryDirectory() as temporary:
         build=Path(temporary);generate(build/"generated")
         for path,content in STUBS.items():
