@@ -340,7 +340,17 @@ const struct reloq_lexicon_override *reloq61_dictionary_long_override(
         if(reloq61_dictionary_match(text,length))return NULL;
     }
     if(!w->overlay)return NULL;
-    return reloq_lexicon_find_override(w->overlay,text,length,&found)==1?found:NULL;
+    size_t low=0,high=w->overlay->override_count;
+    while(low<high) {
+        size_t middle=low+(high-low)/2;
+        const struct reloq_lexicon_override *entry=w->overlay->overrides+middle;
+        size_t common=entry->key_length<length?entry->key_length:length;
+        int order=memcmp(entry->key,text,common);
+        if(!order)order=(entry->key_length>length)-(entry->key_length<length);
+        if(!order)return entry;
+        if(order<0)low=middle+1;else high=middle;
+    }
+    return NULL;
 }
 
 extern const struct reloq_lexicon_resolver *reloq61_dictionary_resolver_data(void *);
