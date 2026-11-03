@@ -137,8 +137,8 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         if(FAILED(hr))sapi_settings_default(&d->s);populate(w,d);return TRUE;}
     if(id==DICT_SOURCE&&notification==CBN_SELCHANGE){
         DWORD choice=(DWORD)SendDlgItemMessageW(w,id,CB_GETCURSEL,0,0);
-        if(choice==1)start_dictionary(w,d);
-        else {HRESULT result=sapi_dictionary_choose(0);populate(w,d);SetDlgItemTextW(w,STATUS,FAILED(result)?T(ERROR):T(ACTIVE));}
+        if(choice==1&&!sapi_alternative_dictionary_available())start_dictionary(w,d);
+        else {HRESULT result=sapi_dictionary_choose(choice);populate(w,d);SetDlgItemTextW(w,STATUS,FAILED(result)?T(ERROR):T(ACTIVE));}
         return TRUE;
     }
     if(id==DICT_DOWNLOAD&&notification==BN_CLICKED){start_dictionary(w,d);return TRUE;}

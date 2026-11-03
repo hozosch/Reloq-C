@@ -11,7 +11,7 @@ int main(void)
     HRESULT result=sapi_dictionary_download();
     if(FAILED(result)){fprintf(stderr,"Dictionary download failed: 0x%08lX\n",(unsigned long)result);return 1;}
     WCHAR path[2048],file[2048];
-    if(sapi_dictionary_source()!=1||!sapi_default_dictionary_path(path,2048))return 2;
+    if(sapi_dictionary_source()!=1||!sapi_alternative_dictionary_available()||!sapi_default_dictionary_path(path,2048))return 2;
     const WCHAR *names[]={L"ENUmain.dic",L"ENURoot.dic",L"ESPmain.dic"};
     for(unsigned i=0;i<3;++i){WIN32_FILE_ATTRIBUTE_DATA a;
         swprintf(file,2048,L"%ls\\%ls",path,names[i]);

@@ -52,7 +52,7 @@ final class DictionaryData {
             catch(java.nio.charset.CharacterCodingException error) {add(name,data);return;}
             if(text.startsWith("\uFEFF"))text=text.substring(1);
             StringBuilder out=new StringBuilder();
-            for(String line:text.split("\\R")) {
+            for(String line:text.split("\\r\\n|\\r|\\n")) {
                 if(!java.nio.charset.Charset.forName("windows-1252").newEncoder().canEncode(line))
                     line=java.text.Normalizer.normalize(line,java.text.Normalizer.Form.NFD).replaceAll("\\p{M}","");
                 if(java.nio.charset.Charset.forName("windows-1252").newEncoder().canEncode(line))out.append(line).append('\n');

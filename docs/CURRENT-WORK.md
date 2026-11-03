@@ -5,6 +5,7 @@
 - NVDA und Android bieten die alternative IBM-TTS-Wörterbuchquelle zusätzlich zur bisherigen Quelle an; eigene Einträge behalten Vorrang. Der erste Bezug erfolgt im Hintergrund.
 - SAPI5 bietet dieselbe Quelle mit Hintergrund-Download. Ein eigener SAPI-Wörterbuchordner hat Vorrang vor der ausgewählten Quelle.
 - Die alternative Quelle enthält derzeit US-englische und kastilisch-spanische Dateien, keine deutschen. Das ist ein unveröffentlichter Hörtestkandidat; es erfolgt keine automatische Veröffentlichung.
+- Der zusätzliche SAPI-/ECI-Vergleich meldet bei chinesisch-englischem Mischtext mit Wortmarken abweichendes Audio. Derselbe Befund besteht bereits mit RC19; die übrigen 13 verglichenen Sprachvarianten stimmten überein. Die Marke wird dort teilweise erst am Textende gemeldet. Das bleibt als eigener Fehler offen.
 
 # Testkandidat 1.1.0-rc19: Deutsches R, finales A, Fragekontur und Wörterbuch
 

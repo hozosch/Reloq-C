@@ -32,6 +32,7 @@ int sapi_module_path(WCHAR *,size_t,const WCHAR *);
 DWORD sapi_dictionary_source(void);
 HRESULT sapi_dictionary_choose(DWORD);
 HRESULT sapi_dictionary_download(void);
+int sapi_alternative_dictionary_available(void);
 int sapi_default_dictionary_path(WCHAR *,size_t);
 #endif
 HRESULT sapi_register(BOOL,BOOL);

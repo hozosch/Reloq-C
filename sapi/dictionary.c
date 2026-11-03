@@ -36,14 +36,24 @@ static int base_path(WCHAR *path,size_t cap)
     const WCHAR suffix[]=L"\\ReLoq C\\SAPI5\\Dictionaries\\Alternative";
     if(!n||n>=cap||n+wcslen(suffix)>=cap)return 0;wcscat(path,suffix);return 1;
 }
-int sapi_default_dictionary_path(WCHAR *path,size_t capacity)
+static int alternative_path(WCHAR *path,size_t capacity)
 {
-    if(!sapi_dictionary_source())return sapi_module_path(path,capacity,L"dictionaries");
     WCHAR sha[41]={0};DWORD bytes=sizeof sha;
     if(RegGetValueW(HKEY_CURRENT_USER,registry,L"AlternativeCommit",RRF_RT_REG_SZ,NULL,sha,&bytes)!=ERROR_SUCCESS||!is_sha_w(sha)||!base_path(path,capacity))return 0;
     if(wcslen(path)+1+40>=capacity)return 0;wcscat(path,L"\\");wcscat(path,sha);
     WIN32_FILE_ATTRIBUTE_DATA attr;
-    return GetFileAttributesExW(path,GetFileExInfoStandard,&attr)&&(attr.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY);
+    if(!GetFileAttributesExW(path,GetFileExInfoStandard,&attr)||!(attr.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY))return 0;
+    for(unsigned i=0;i<3;++i){WCHAR file[2048];
+        if(swprintf(file,2048,L"%ls\\%ls",path,local_names[i])<0||
+           !GetFileAttributesExW(file,GetFileExInfoStandard,&attr)||(attr.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY))return 0;
+    }
+    return 1;
+}
+int sapi_alternative_dictionary_available(void)
+{WCHAR path[2048];return alternative_path(path,2048);}
+int sapi_default_dictionary_path(WCHAR *path,size_t capacity)
+{
+    return sapi_dictionary_source()?alternative_path(path,capacity):sapi_module_path(path,capacity,L"dictionaries");
 }
 static int mkdirs(WCHAR *path)
 {
