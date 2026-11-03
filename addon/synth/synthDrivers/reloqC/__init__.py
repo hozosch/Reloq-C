@@ -278,7 +278,7 @@ class SynthDriver(BaseSynthDriver):
 
     def _get_availableHighrateprofiles(self):
         labels = {"0": _("A: Current sound (control)"),
-                  "1": _("B: Classic Presence, complete voice")}
+                  "1": _("B: A voice, Classic consonants")}
         return OrderedDict((key, StringParameterInfo(key, label)) for key, label in labels.items())
 
     def _get_availableHighRateProfiles(self):

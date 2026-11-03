@@ -304,8 +304,8 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert list(driver.availableHighrateprofiles) == ["0", "1"]
                 assert driver.highRateProfile == "1"
                 assert driver.availableHighrateprofiles["1"].displayName == (
-                    "B: Classic Presence, gesamte Stimme" if german_ui else
-                    "B: Classic Presence, complete voice")
+                    "B: A-Stimme, Classic-Konsonanten" if german_ui else
+                    "B: A voice, Classic consonants")
                 assert driver.supportedSettings[0].availableInSettingsRing
                 driver.initSettings()
                 panel = SettingsPanel(driver)
