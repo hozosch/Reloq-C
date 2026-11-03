@@ -1,0 +1,70 @@
+name: Observe German r across word boundaries
+on:
+  push:
+    branches: [codex/german-r-reference]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  reference:
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          architecture: x86
+      - name: Fetch pinned Eloquence_64 original
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, pathlib, re, urllib.request, zipfile
+          path=pathlib.Path('reference-addon.zip')
+          urllib.request.urlretrieve('https://github.com/fastfinge/eloquence_64/releases/download/v25/Eloquence-v25.nvda-addon',path)
+          assert hashlib.sha256(path.read_bytes()).hexdigest()=='3b14eaa9923a006553b7ea6152abf2ca9cd8f11c1b3dcebe2a905658863ea409'
+          dest=pathlib.Path('reference');dest.mkdir()
+          with zipfile.ZipFile(path) as z:
+              for name in z.namelist():
+                  if name.lower().startswith('synthdrivers/eloquence/') and name.lower().endswith(('.dll','.syn','.ini')):
+                      (dest/pathlib.PurePosixPath(name).name).write_bytes(z.read(name))
+          ini=dest/'ECI.INI';content=ini.read_text(encoding='latin1')
+          content=re.sub(r'(?im)^(\s*Path\s*=\s*).*?[\\/]?([^\\/\r\n]+\.syn)\s*$',lambda m:m[1]+str((dest/m[2]).resolve()),content)
+          ini.write_text(content,encoding='ascii')
+          PY
+      - name: Measure original German transitions
+        run: python tools/observe_german_r_join.py --library reference/ECI.DLL --output reference-r.json
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-german-streaming-test
+          path: candidate
+          run-id: 41641495099
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          architecture: x64
+      - name: Extract current test DLL
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,json,zipfile
+          root=Path('candidate');meta=json.loads((root/'source.json').read_text())
+          assert meta['source_commit']=='b04ec1fee20d4b9a7fc76df6cd614f3f4ee96f29'
+          addon=root/meta['package'];assert hashlib.sha256(addon.read_bytes()).hexdigest()==meta['sha256']
+          with zipfile.ZipFile(addon) as z:
+              names=[n for n in z.namelist() if n.endswith('/eci.dll')];assert len(names)==1
+              (root/'eci.dll').write_bytes(z.read(names[0]))
+          PY
+      - name: Measure rc12 German transitions
+        run: python tools/observe_german_r_join.py --library candidate/eci.dll --output candidate-r.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: german-r-observations
+          path: |
+            reference-r.json
+            candidate-r.json
+          retention-days: 14
