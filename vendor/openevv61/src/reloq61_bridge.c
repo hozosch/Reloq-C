@@ -37,7 +37,9 @@ extern int STDCALL ev_generatePhonemes(OldInst *,int32_t,void *);
 extern delta_state *ew_machine(void *);
 extern void stb_staticWordCallback(int32_t,void *);
 extern void reloq61_array_reset(delta_state *);
-extern Index *sti_getIndex(void *,uint32_t);
+/* IndexManager is an original C++-style object: on 32-bit builds its first
+ * argument is passed in ECX, just as in eci_synthidx.c. */
+extern THIS Index *sti_getIndex(void *,uint32_t);
 extern void *reloq61_inline_scope(void *);
 static atomic_int initialized;
 struct reloq_lexicon;
