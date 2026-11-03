@@ -19,11 +19,15 @@ public final class SettingsTest {
                     return Proxy.newProxyInstance(SettingsTest.class.getClassLoader(),
                         new Class<?>[]{SharedPreferences.Editor.class},(editor,operation,items) -> {
                             String op=operation.getName();
+                            if(op.equals("clear")){pending.clear();pending.put("__clear__",true);return editor;}
                             if(op.startsWith("put")){pending.put((String)items[0],items[1]);return editor;}
-                            if(op.equals("apply")||op.equals("commit")){values.putAll(pending);return op.equals("commit")?true:null;}
+                            if(op.equals("apply")||op.equals("commit")){
+                                if(pending.remove("__clear__")!=null)values.clear();
+                                values.putAll(pending);return op.equals("commit")?true:null;}
                             throw new AssertionError(op);
                         });
                 }
+                if(name.equals("getAll"))return new HashMap<>(values);
                 if(name.startsWith("get"))return values.getOrDefault((String)args[0],args[1]);
                 throw new AssertionError(name);
             });
@@ -71,6 +75,26 @@ public final class SettingsTest {
         VoiceSettings migrated=Preferences.read(memory(legacy),2);
         require(migrated.rate==6&&migrated.pauses==2&&migrated.androidRate&&migrated.androidPitch);
         require(migrated.controls(100,100)[2]==93&&migrated.manualWpm==190);
+
+        // A direct-boot copy includes every voice control but never private
+        // dictionary paths, imported text, or update credentials/metadata.
+        Map<String,Object> privateData=new HashMap<>();
+        privateData.put("profile",5);privateData.put("language",1);privateData.put("androidVoice",false);
+        privateData.put("voice.5.pitch",48);privateData.put("voice.5.volume",71);
+        privateData.put("dictionarySnapshot","/private/dictionary");
+        privateData.put("dictionarySources","content://private/words");
+        privateData.put("communityCommit","secret");privateData.put("voice.99.pitch",33);
+        privateData.put("voice.5.private",55);privateData.put("rate","wrong type");
+        Map<String,Object> bootData=new HashMap<>();bootData.put("stalePrivate", "remove");
+        BootPreferences.mirror(memory(privateData),memory(bootData));
+        require(bootData.equals(Map.of("profile",5,"language",1,"androidVoice",false,
+            "voice.5.pitch",48,"voice.5.volume",71)));
+        VoiceSettings bootVoice=Preferences.read(memory(bootData),5);
+        require(bootVoice.manualPitch==48&&bootVoice.volume==71&&bootVoice.rate==1);
+        privateData.put("voice.5.pitch",52);privateData.remove("voice.5.volume");
+        BootPreferences.mirror(memory(privateData),memory(bootData));
+        require(bootData.get("voice.5.pitch").equals(52)&&!bootData.containsKey("voice.5.volume"));
+        require(privateData.containsKey("dictionarySources"));
 
         DictionaryData.Merger merge=new DictionaryData.Merger();
         merge.add("ENUmain.dic",data("  Word\tapple  \r\nword\tpear\nignored\naccent\t\u0080\u00fc\nphoneme\t`0h@l'oU\n"));

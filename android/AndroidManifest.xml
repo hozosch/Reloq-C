@@ -1,16 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.reloq.tts.preview" android:versionCode="1090007" android:versionName="1.1.0-rc7">
+    package="org.reloq.tts.preview" android:versionCode="1090008" android:versionName="1.1.0-rc8">
     <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
     <uses-permission android:name="android.permission.INTERNET" />
     <queries><intent><action android:name="android.intent.action.TTS_SERVICE" /></intent></queries>
     <application android:label="@string/app_name" android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:allowBackup="false" android:extractNativeLibs="true" android:supportsRtl="true">
-        <service android:name=".ReLoqService" android:label="@string/app_name" android:exported="true">
+        <service android:name=".ReLoqService" android:label="@string/app_name" android:exported="true" android:directBootAware="true">
             <intent-filter><action android:name="android.intent.action.TTS_SERVICE" />
                 <category android:name="android.intent.category.DEFAULT" /></intent-filter>
             <meta-data android:name="android.speech.tts" android:resource="@xml/tts_engine" />
         </service>
+        <receiver android:name=".UpgradeReceiver" android:exported="false">
+            <intent-filter><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /></intent-filter>
+        </receiver>
         <activity android:name=".SettingsActivity" android:exported="true" android:label="@string/app_name">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" /></intent-filter>

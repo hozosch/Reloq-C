@@ -54,7 +54,7 @@
     <string name="move_dictionary_up">Mover arquivo selecionado para antes</string>
     <string name="move_dictionary_down">Mover arquivo selecionado para depois</string>
     <string name="reload_dictionaries">Recarregar arquivos selecionados</string>
-    <string name="dictionary_help">Os dicionários da comunidade e as entradas Dic próprias usam as etapas de dicionário nativas. Escolha o idioma e o volume antes de adicionar um arquivo. Os arquivos usam a codificação Windows-1252. Os arquivos posteriores substituem as entradas dos anteriores. As alterações são monitoradas quando o provedor de documentos fornece metadados de modificação; Recarregar arquivos selecionados sempre lê as fontes de novo. O acesso à rede é usado apenas pelo botão de atualização.</string>
+    <string name="dictionary_help">Os dicionários da comunidade e as entradas Dic próprias usam as etapas de dicionário nativas. Escolha o idioma e o volume antes de adicionar um arquivo. Os arquivos usam a codificação Windows-1252. Os arquivos posteriores substituem as entradas dos anteriores. As alterações são monitoradas quando o provedor de documentos fornece metadados de modificação; Recarregar arquivos selecionados sempre lê as fontes de novo. O acesso à rede é usado apenas pelo botão de atualização. Os dicionários ativados são copiados para o armazenamento protegido do dispositivo para que possam ser usados após a reinicialização, antes do primeiro desbloqueio.</string>
     <string name="dictionary_working">Preparando os dicionários</string>
     <string name="dictionary_ready">Dicionários prontos</string>
     <string name="dictionary_error">Falha ao atualizar o dicionário: %1$s</string>

@@ -27,7 +27,7 @@ def main():
     with tempfile.TemporaryDirectory() as temporary:
         build=Path(temporary);generate(build/"generated")
         folder=ROOT/"android/java/org/reloq/tts/preview"
-        sources=[folder/(n+".java") for n in ("PcmQueue","Catalog","VoiceSettings","Preferences","DictionaryData","UpdateData")]
+        sources=[folder/(n+".java") for n in ("PcmQueue","Catalog","VoiceSettings","Preferences","BootPreferences","DictionaryData","UpdateData")]
         sources.extend((build/"generated").rglob("RateCurve.java"))
         sources.extend(ROOT/"android/test"/(n+".java") for n in ("PcmQueueTest","SettingsTest","UpdateDataTest"))
         subprocess.run([str(a.java_home/"bin/javac"),"-encoding","UTF-8","-cp",str(a.android_jar),"-d",str(build),*map(str,sources)],check=True)

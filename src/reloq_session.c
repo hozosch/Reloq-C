@@ -262,9 +262,8 @@ int reloq_session_reset(struct reloq_session *session)
     next.glottal_reference_rate=c->glottal_reference_rate;
     next.reference_formants=c->reference_formants;
     next.frication_reference_rate=c->frication_reference_rate;
-    /* Anchor the complete Classic body at every clock. A's extra oral
-     * resonances colour only the single periodic excitation, gently and
-     * progressively; aspiration and the lower tract keep their baseline. */
+    /* Anchor the complete Classic body at every clock. A fixed broad contour
+     * gently colours only the periodic excitation; aspiration remains intact. */
     next.rate_transfer.trial_profile=session->high_rate_profile;
     if(session->high_rate_profile&&c->glottal_reference_rate>0)
         next.rate_transfer.body_amount=c->sample_rate>=48000?.46f:

@@ -1,6 +1,6 @@
-/* Match the complete Classic Presence main band of the 11-kHz source.
+/* Match the Classic Presence main-band shape of the 11-kHz source.
  * At 16 kHz this is the whole consonant target. Higher native bands enter
- * separately from 22.05 kHz, leaving the reference band anchored. */
+ * separately from 22.05 kHz with downward power compensation. */
 int reloq_rate_transfer_prepare_classic_bandwidth(struct reloq_rate_transfer *s,
     const struct reloq_core_frication_bank *reference,
     const struct reloq_core_frication_bank *current,
@@ -50,7 +50,7 @@ int reloq_rate_transfer_prepare_classic_bandwidth(struct reloq_rate_transfer *s,
     }
     if(lower_ref<=0 || lower_ours<=0)return 0;
     const double upper_scale=lower_ref/lower_ours;
-    double wanted=0,added=0,extra[FFT_SIZE/2+1];
+    double wanted=0,baseline=0,added=0,extra[FFT_SIZE/2+1];
     for(unsigned k=0;k<=FFT_SIZE/2;++k) {
         double hz=(double)k*rate/FFT_SIZE,w=k&&k<FFT_SIZE/2?1:.5;
         double upper=hz<=5512.5?0:hz>=6500?1:
@@ -73,6 +73,7 @@ int reloq_rate_transfer_prepare_classic_bandwidth(struct reloq_rate_transfer *s,
         double w=k&&k<FFT_SIZE/2?1:.5;
         target[k]=native_power[k]+scale*extra[k];
         wanted+=w*target[k];
+        baseline+=w*native_power[k];
     }
     double spectrum[FFT_SIZE]={0};
     for(unsigned k=0;k<=FFT_SIZE/2;++k)
@@ -83,9 +84,11 @@ int reloq_rate_transfer_prepare_classic_bandwidth(struct reloq_rate_transfer *s,
     real_transform(spectrum,imaginary);double rendered=0;
     for(unsigned k=0;k<=FFT_SIZE/2;++k)
         rendered+=(k&&k<FFT_SIZE/2?1:.5)*ours[k]*(spectrum[k]*spectrum[k]+imaginary[k]*imaginary[k]);
-    /* Compensate only truncation error against the requested reference,
-     * rather than restoring the former high-rate consonant energy. */
-    double compensation=rendered>0?sqrt(wanted/rendered):1;
+    /* At high rates compensate the extra noise power down to the reference
+     * power. This retains the wider spectral shape without a louder hiss.
+     * Keep 16 kHz byte-identical to the established Classic foundation. */
+    double compensated=rate>=22050?baseline:wanted;
+    double compensation=rendered>0?sqrt(compensated/rendered):1;
     for(unsigned j=0;j<RELOQ_RATE_TAPS;++j)s->target[j]*=(float)compensation;
     prepare_ramp(s,rate);s->remaining=(unsigned)(rate*.003f);
     for(unsigned j=0;j<RELOQ_RATE_TAPS;++j)s->step[j]=(s->target[j]-s->kernel[j])/s->remaining;

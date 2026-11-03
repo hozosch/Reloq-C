@@ -488,7 +488,7 @@ struct reloq_core_noise_frame {
     long af_levels[RELOQ_CORE_FRICATIVE_FORMANTS];
     float bypass_attenuation_db; /* requested wideband colour; default zero */
     int s_frication; /* 0: other phone, 1: current s/z/t, 2: German legacy */
-    int limit_frication_extension; /* Keep Presence, quarter the added upper AF power. */
+    int limit_frication_extension; /* Keep Presence, reduce the added upper AF power. */
 };
 struct reloq_core_noise_frame_state {
     struct reloq_core_clock clock;

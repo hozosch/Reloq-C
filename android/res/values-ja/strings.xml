@@ -54,7 +54,7 @@
     <string name="move_dictionary_up">選択したファイルを前へ移動</string>
     <string name="move_dictionary_down">選択したファイルを後へ移動</string>
     <string name="reload_dictionaries">選択したファイルを再読み込み</string>
-    <string name="dictionary_help">コミュニティ辞書と自分の Dic エントリーは、エンジン本来の辞書処理を使用します。ファイルを追加する前に、言語と辞書の種類を選んでください。ファイルの文字コードは Windows-1252 です。後のファイルのエントリーが、前のファイルのエントリーを上書きします。ドキュメントプロバイダーが更新情報を提供する場合は、変更を監視します。選択したファイルを再読み込みすると、必ず元のファイルを読み直します。ネットワークは更新ボタンを押したときだけ使用します。</string>
+    <string name="dictionary_help">コミュニティ辞書と自分の Dic エントリーは、エンジン本来の辞書処理を使用します。ファイルを追加する前に、言語と辞書の種類を選んでください。ファイルの文字コードは Windows-1252 です。後のファイルのエントリーが、前のファイルのエントリーを上書きします。ドキュメントプロバイダーが更新情報を提供する場合は、変更を監視します。選択したファイルを再読み込みすると、必ず元のファイルを読み直します。ネットワークは更新ボタンを押したときだけ使用します。 有効な辞書はデバイス保護ストレージにコピーされ、再起動後、最初のロック解除前から使用できます。</string>
     <string name="dictionary_working">辞書を準備しています</string>
     <string name="dictionary_ready">辞書の準備ができました</string>
     <string name="dictionary_error">辞書の更新に失敗しました：%1$s</string>

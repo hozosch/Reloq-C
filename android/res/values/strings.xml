@@ -55,7 +55,7 @@
     <string name="move_dictionary_up">Move selected file earlier</string>
     <string name="move_dictionary_down">Move selected file later</string>
     <string name="reload_dictionaries">Reload selected files</string>
-    <string name="dictionary_help">Community and own Dic entries use the native dictionary stages. Choose the language and volume before adding a file. Files use Windows-1252 encoding. Later files override earlier entries. Changes are monitored when the document provider supplies change metadata; Reload selected files always rereads the sources. Network access is used only by the update button.</string>
+    <string name="dictionary_help">Community and own Dic entries use the native dictionary stages. Choose the language and volume before adding a file. Files use Windows-1252 encoding. Later files override earlier entries. Changes are monitored when the document provider supplies change metadata; Reload selected files always rereads the sources. Network access is used only by the update button. Activated dictionaries are copied to device-protected storage so they can be used after a restart before the first unlock.</string>
     <string name="dictionary_working">Preparing dictionaries</string>
     <string name="dictionary_ready">Dictionaries ready</string>
     <string name="dictionary_error">Dictionary update failed: %1$s</string>

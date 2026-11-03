@@ -74,13 +74,19 @@ def verify_permissions(path,aapt2):
     permissions=re.findall(r"uses-permission: name='([^']+)'",listing)
     if permissions!=["android.permission.INTERNET"]:
         raise ValueError("Unexpected APK permissions: "+repr(permissions))
+    tree=subprocess.run([str(aapt2),"dump","xmltree",str(path),"--file","AndroidManifest.xml"],
+        check=True,capture_output=True,text=True).stdout
+    services=re.findall(r"E: service[^\n]*\n((?:[ \t]+A:[^\n]*\n)+)",tree)
+    service=next((attrs for attrs in services if ".ReLoqService" in attrs),None)
+    if service is None or not re.search(r"android:directBootAware[^\n]*=(?:true|\(type 0x12\)0xffffffff|0xffffffff)",service,re.I):
+        raise ValueError("Compiled TTS service is not Direct Boot aware")
     with zipfile.ZipFile(path) as apk:
         dex=apk.read("classes.dex")
         for removed in (b"Lorg/reloq/tts/preview/UpdateProvider;",
                         b"android.settings.MANAGE_UNKNOWN_APP_SOURCES",
                         b"android.intent.action.INSTALL_PACKAGE"):
             if removed in dex:raise ValueError("Removed APK installer code remains in DEX")
-    print("APK permissions: INTERNET only; removed APK installer code absent from DEX")
+    print("APK permissions: INTERNET only; TTS service Direct Boot aware; removed APK installer code absent from DEX")
     return permissions
 
 

@@ -1,14 +1,14 @@
 # Android ARM64
 
 ReLoq C uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `1.1.0-rc7` targets ARM64 (`arm64-v8a`), Android 8/API 26
+add-on. Version `1.1.0-rc8` targets ARM64 (`arm64-v8a`), Android 8/API 26
 or later. Speech runs offline. Network access is used only when you explicitly update pronunciation dictionaries or check for an app update. Package downloads open in the browser.
 
 ## Install or update
 
-Install the **1.1.0-rc7 test candidate**, `reloq-c-android-arm64-1.1.0-rc7.apk`, over the existing app.
+Install the **1.1.0-rc8 test candidate**, `reloq-c-android-arm64-1.1.0-rc8.apk`, over the existing app.
 The package remains `org.reloq.tts.preview`, the preview signing certificate is
-unchanged, and versionCode increases to 1090004. Android can therefore
+unchanged, and versionCode increases to 1090008. Android can therefore
 update the existing app and retain its settings. Do not uninstall it first.
 
 Open **ReLoq C** to adjust its settings or read a test text. To use it
@@ -20,6 +20,10 @@ their meaning; Taiwan Mandarin is appended to the catalogue.
 
 The speech engine and live settings have been confirmed in practical use.
 This APK retains its existing technical installation identity so test installations update in place.
+
+## Speech before the first unlock
+
+The TTS service is marked Direct Boot aware. While the device is locked after a reboot, it uses device-protected copies of speech settings and the active, merged dictionary volumes. The source files and their original paths remain in credential-protected storage. Dictionary changes, including removal, refresh the device-protected copy; in-progress speech retains its snapshot until finished. An update receiver migrates existing settings and dictionaries; opening the settings once while unlocked also refreshes the copies. No boot or other additional permission is requested. Real-device testing before first unlock is still required. Play Protect decisions cannot be predicted from the manifest or signing checks alone.
 
 ## Voice and output settings
 
@@ -176,7 +180,7 @@ The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 ```sh
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
-python3 android/verify_apk.py dist/reloq-c-android-arm64-1.1.0-rc7.apk
+python3 android/verify_apk.py dist/reloq-c-android-arm64-1.1.0-rc8.apk
 ```
 
 Build verification checks signatures, the install-critical resource table,

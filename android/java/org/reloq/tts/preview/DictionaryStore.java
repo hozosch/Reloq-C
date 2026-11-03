@@ -152,12 +152,17 @@ final class DictionaryStore {
         }
         String after=state(c,own);
         if(!before.equals(after))throw new IOException("Dictionary source changed during reload");
-        synchronized(GUARD) {
-            SharedPreferences.Editor editor=prefs(c).edit().putBoolean("communityDictionaries",enabled)
-                .putString("dictionarySources",own.toString()).putString("dictionarySourceState",after);
-            if(path==null)editor.remove("dictionarySnapshot");else {editor.putString("dictionarySnapshot",path);published.add(path);}
-            editor.apply();watched=after;candidate=null;
-        }
+        String bootSnapshot=BootDictionaries.prepare(c,path);
+        boolean bootPublished=false;
+        try {
+            synchronized(GUARD) {
+                BootDictionaries.publish(c,bootSnapshot);bootPublished=true;
+                SharedPreferences.Editor editor=prefs(c).edit().putBoolean("communityDictionaries",enabled)
+                    .putString("dictionarySources",own.toString()).putString("dictionarySourceState",after);
+                if(path==null)editor.remove("dictionarySnapshot");else {editor.putString("dictionarySnapshot",path);published.add(path);}
+                editor.apply();watched=after;candidate=null;
+            }
+        } finally {if(!bootPublished)BootDictionaries.discard(c,bootSnapshot);}
         prune(c);monitor(c);return path;
     }
     private static byte[] download(String url,int limit) throws Exception {
@@ -242,6 +247,26 @@ final class DictionaryStore {
         Context c=context.getApplicationContext();initialize(c);
         synchronized(GUARD){++users;}
         monitor(c);
+        queueSyncBoot(c);
+    }
+    static void queueSyncBoot(Context context) {
+        Context c=context.getApplicationContext();
+        WORK.execute(() -> {try{syncBoot(c);}catch(Exception error){android.util.Log.e("ReLoq","Direct Boot dictionary copy failed",error);}});
+    }
+    /** Copy an existing installation's active snapshot without changing it. */
+    static void syncBoot(Context c) throws Exception {
+        if(!BootPreferences.unlocked(c))return;
+        try(Lease lease=acquire(c)) {
+            String prepared=BootDictionaries.prepare(c,lease.path);
+            boolean bootPublished=false;
+            try {
+                synchronized(GUARD) {
+                    if(Objects.equals(lease.path,prefs(c).getString("dictionarySnapshot",null))) {
+                        BootDictionaries.publish(c,prepared);bootPublished=true;
+                    }
+                }
+            } finally {if(!bootPublished)BootDictionaries.discard(c,prepared);}
+        }
     }
     static void stop() {
         synchronized(GUARD){if(users>0&&--users==0&&watcher!=null){watcher.shutdownNow();watcher=null;}}

@@ -1976,7 +1976,10 @@ static int voiced_frame_render_owned(
     if(shaped && params->af_level) {
         int classic=0;
         if(state->noise_transfer.trial_profile && noise->sample_rate>=16000) {
-            state->noise_transfer.sibilant_extension=noise->sample_rate>=22050&&params->s_frication!=0;
+            /* The gentler rc7 S roll-off now applies only to Castilian S/T;
+             * other languages get the wider rc6 extension again. */
+            state->noise_transfer.sibilant_extension=noise->sample_rate>=22050&&
+                params->limit_frication_extension!=0&&params->s_frication!=0;
             float original_f[8];
             for(unsigned j=0;j<8;++j)original_f[j]=params->tract.oral[j].frequency_hz;
             struct reloq_core_clock reference_clock=reloq_core_clock_for_rate(11025);
@@ -1986,7 +1989,7 @@ static int voiced_frame_render_owned(
                 params->af_level,noise->source_offset,noise->af_trim,bypass))
                 classic=reloq_rate_transfer_prepare_classic_bandwidth(&state->noise_transfer,
                     &reference,&noise->fricatives,&state->noise_profile,noise->sample_rate,
-                    params->limit_frication_extension?.25f:1);
+                    params->limit_frication_extension?.18f:1);
         }
         if(!classic) {
         float mix=params->s_frication?(noise->sample_rate==16000?.25f:.5f):0;

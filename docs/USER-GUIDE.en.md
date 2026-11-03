@@ -1,8 +1,8 @@
 # Eloquence C – user guide
 
-## Hearing preview 1.1.0-rc7
+## Hearing preview 1.1.0-rc8
 
-The 16-kHz shaping remains the foundation. Above 22.05 kHz, gently weighted upper resonances from A progressively enrich periodic voicing; aspiration receives no added resonance shaping. S keeps its familiar main band while additional upper noise energy is bounded. Discretionary hyphens inside German words no longer disrupt lexical analysis. Protected NVDA ECI tags and acoustic word-boundary controls remain included. Long German single sentences and open quotations still wait for complete analysis. This candidate needs listening on the target device.
+The 16-kHz shaping remains the foundation. Above 22.05 kHz, a gentle fixed broad contour colours existing periodic voicing without adding upper resonances; aspiration is unchanged. Consonants regain the wider rc6 extension with downward power compensation, while Castilian S/T receives a more restrained extension. Discretionary hyphens inside German words no longer disrupt lexical analysis. Protected NVDA ECI tags and acoustic word-boundary controls remain included. Long German single sentences and open quotations still wait for complete analysis. This candidate needs listening on the target device.
 
 ## English clock readings with seconds
 

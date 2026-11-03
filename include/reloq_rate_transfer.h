@@ -34,11 +34,11 @@ struct reloq_rate_transfer {
      * Production profile A retains its established sample-exact behaviour. */
     unsigned smooth_updates;
     /* Profile B retains the 16-kHz tract. Only periodic excitation gains
-     * broad A upper resonances, with a rate-dependent, bounded strength. */
+     * fixed broad colour, with a rate-dependent, bounded strength. */
     float body_amount,body_key[7];
     double body_coefficient[3][5],body_target[3][5],body_step[3][5],body_delay[3][2];
     unsigned body_ready,body_remaining;
-    /* Limit the optional S/Z/T extension independently of other AF. */
+    /* Limit the optional Castilian S/T extension independently of other AF. */
     unsigned sibilant_extension;
     double classic_reference[2][5];
     /* Periodic glottal filter only. Moving physical poles to a new clock

@@ -54,7 +54,7 @@
     <string name="move_dictionary_up">将所选文件前移</string>
     <string name="move_dictionary_down">将所选文件后移</string>
     <string name="reload_dictionaries">重新加载所选文件</string>
-    <string name="dictionary_help">社区词典和自定义 Dic 条目均使用引擎原生的词典处理阶段。添加文件前请选择语言和分卷。文件使用 Windows-1252 编码。后面的文件会覆盖前面文件的条目。如果文档提供程序提供修改信息，就会监控文件变更；重新加载所选文件会始终重新读取源文件。只有更新按钮会使用网络。</string>
+    <string name="dictionary_help">社区词典和自定义 Dic 条目均使用引擎原生的词典处理阶段。添加文件前请选择语言和分卷。文件使用 Windows-1252 编码。后面的文件会覆盖前面文件的条目。如果文档提供程序提供修改信息，就会监控文件变更；重新加载所选文件会始终重新读取源文件。只有更新按钮会使用网络。 启用的词典会复制到设备保护存储空间，以便重启后在首次解锁前使用。</string>
     <string name="dictionary_working">正在准备词典</string>
     <string name="dictionary_ready">词典已就绪</string>
     <string name="dictionary_error">词典更新失败：%1$s</string>

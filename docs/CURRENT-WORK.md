@@ -1,3 +1,41 @@
+# Testkandidat 1.1.0-rc8: Konsonanten und Android-Direktstart
+
+16 kHz bleibt unverändert. Ab 22,05 kHz werden die breiteren
+Konsonanten aus rc6 mit nach unten ausgeglichener Gesamtleistung verwendet.
+Kastilisches S/T behält die Formung aus rc7 mit etwas schwächerer Erweiterung.
+Der zusätzliche stimmhafte Anteil nutzt keine bewegten oberen Resonanzen
+mehr: Ein fester, breiter Filter formt nur bereits vorhandene periodische
+Energie schrittweise und zurückhaltend. Aspiration bleibt unverändert.
+Der Klangeindruck und mögliche Artefakte müssen im Hörtest beurteilt werden.
+
+Im lokalen Vergleich realer S-Anfänge liegt die 6,5–7,5-kHz-Formung bei
+US-Englisch und lateinamerikanischem Spanisch wieder nahe rc6; beim
+kastilischen S liegt sie in diesen Beispielen etwa 1–1,5 dB unter rc7.
+40 Modellfälle prüfen die abgesenkte Gesamtleistung. 60 Vergleiche mit rc6
+bestätigen A und 8/11/16 kHz bytegenau. Diese Messungen ersetzen keinen
+Hörtest von laufender Sprache.
+
+Der Android-Sprachdienst ist für Direct Boot registriert. Vor dem ersten
+Entsperren werden Spracheinstellungen und Kopien der aktivierten Wörterbücher
+aus dem gerätegeschützten Speicher verwendet. Die Originaldateien und ihre
+Pfade bleiben im nutzergeschützten Speicher. Änderungen oder das Entfernen
+aktualisieren die Direktstart-Kopie. Nach dem Entsperren verwendet der nächste
+Sprachauftrag die normalen Wörterbücher und Einstellungen. Eine
+Paketaktualisierung oder das Öffnen der Einstellungen übernimmt vorhandene
+Stimmeinstellungen und Wörterbücher in die benötigten Kopien. Es gibt keine
+zusätzlichen Android-Berechtigungen. Ein Test auf einem echten Gerät vor dem
+ersten Entsperren steht aus; eine Play-Protect-Entscheidung lässt sich aus den
+Paketprüfungen nicht garantieren.
+
+Ein Hosttest durchläuft den Dienst vor und nach dem Entsperren mit gesperrtem
+Nutzerspeicher sowie Austausch und Entfernen der aktiven Wörterbücher. Der
+native Sprachkern liest dabei einen Eintrag aus der kopierten Direktstart-Datei;
+die Android-Geräteintegration ist damit noch nicht geprüft.
+
+Die lange Startzeit bei deutschen Einzelsätzen bleibt offen.
+
+Die folgenden Abschnitte beschreiben den vorherigen Teststand.
+
 # Testkandidat 1.1.0-rc7: Gestufter Stimmkörper und begrenzte S-Erweiterung
 
 Die vollständige Classic-Abstimmung von 16 kHz bleibt auch bei höheren

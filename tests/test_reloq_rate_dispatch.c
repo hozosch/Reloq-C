@@ -60,6 +60,10 @@ static void gradual_response(void)
   struct reloq_rate_transfer a={.trial_profile=1,.body_amount=.46f};
   prepare_colour(&a,rates[r]);reloq_rate_transfer_prepare_body(&a,&f,rates[r]);
   struct reloq_rate_transfer b=a;
+  double fixed[3][5];memcpy(fixed,a.body_target,sizeof fixed);
+  assert(fabs(20*log10(response(fixed[0],1800,rates[r]))-1.38)<.00001);
+  assert(20*log10(response(fixed[0],200,rates[r]))<.1);
+  for(unsigned j=1;j<3;++j)assert(fixed[j][0]==1&&fixed[j][1]==0&&fixed[j][2]==0&&fixed[j][3]==0&&fixed[j][4]==0);
   float whole[1037],split[1037];
   for(unsigned change=0;change<12;++change) {
    if(change) {
@@ -67,6 +71,7 @@ static void gradual_response(void)
     f.oral[6].frequency_hz=6000+91*change;
     reloq_rate_transfer_prepare_body(&a,&f,rates[r]);
     reloq_rate_transfer_prepare_body(&b,&f,rates[r]);
+    assert(!memcmp(fixed,a.body_target,sizeof fixed));
    }
    for(unsigned j=0;j<1037;++j)whole[j]=split[j]=value();
    reloq_rate_transfer_process_voice(&a,whole,1037);
@@ -79,7 +84,7 @@ static void gradual_response(void)
   }
   for(unsigned j=0;j<3;++j)assert(fabs(response(a.body_target[j],0,rates[r])-1)<1e-9);
  }
- printf("Gradual periodic resonances: %u moving-target/chunk/state comparisons identical; unity DC gain\n",checks);
+ printf("Broad periodic contour: %u changing-formant/chunk/state comparisons identical; no moving upper resonances\n",checks);
 }
 int main(void) {
  classic_response();
