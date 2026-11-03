@@ -361,6 +361,9 @@ const struct reloq_lexicon_resolver *reloq61_dictionary_resolver(void)
         reloq61_dictionary_resolver_data(w->dictionary):NULL;
 }
 
+const struct reloq_lexicon *reloq61_dictionary_overlay_current(void)
+{return owner_worker&&owner_worker->language==0x40000?owner_worker->overlay:NULL;}
+
 extern const char *STDCALL es_engsynDictLookup(void *,int32_t,const char *);
 const char *reloq61_dictionary_main_text(const unsigned char *key,size_t length)
 {

@@ -1,6 +1,8 @@
 # Eloquence C – user guide
 
-## Preview 1.1.0-rc17
+## Preview 1.1.0-rc18
+
+This preview compares consonantal R excitation and the final-A blend with the earlier German planner. It shortens N in connected nine-and forms and retains dictionary pronunciations in hyphenated compounds such as “ETI-Eloquence”, including inside quotation marks. A redundant post-focus pitch rise on weak verbs in statements is removed, and German questions receive a rising final contour. Listening feedback in NVDA is needed.
 
 This preview restores the previous consonantal R form with a softer vibration, shortens the N in “siebenund”, aligns E after I with the earlier path, and uses a blended final-A colour at sentence boundaries. An overflow fix stabilizes German intonation at high pitches. Listening in NVDA is still needed.
 

@@ -23,6 +23,11 @@ int reloq_german_best_effort_annotate(
     unsigned char **annotation, size_t *annotation_length,
     size_t *approximate_words, size_t *encoded_error_offset);
 
+/* Resolve a single previously normalized lexical token, preserving the
+ * dictionary's own compound reading. The caller frees the annotation. */
+int reloq_german_dictionary_compound(const unsigned char *,size_t,
+    const struct reloq_lexicon *,unsigned char **,size_t *);
+
 /* Same transaction, with cooperative cancellation across UTF-8 encoding,
  * text scanning and pronunciation lookup.  Output pointers and lengths are
  * untouched when cancellation is reported. */

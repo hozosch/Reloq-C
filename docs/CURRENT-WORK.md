@@ -1,3 +1,22 @@
+# Testkandidat 1.1.0-rc18: Deutsches R, finales A, Zahlwort, Wörterbuch und Satzmelodie
+
+Die Anregung des konsonantischen R wird mit dem früheren deutschen Planer
+abgeglichen: Das anlautende R erhält dessen mehrteilige Schwingung; „vierund“
+verwendet den dortigen kontinuierlichen Übergang. Am Satzende erhält das
+unbetonte Text-A die frühere Formantmischung, auch vor einem folgenden Satz;
+vor einem folgenden Wort bleibt die kurze Variante. Das N vor „und“ in
+„neunund“ wird an den früheren Zeitwert angeglichen.
+
+Wenn die native Analyse einen Wörterbucheintrag in einem Bindestrichwort nicht
+in der vollständigen Aussprache berücksichtigt, wird dieses einzelne
+Wort mit den vorhandenen Zusammensetzungsregeln aufgelöst. Der umgebende Satz
+bleibt in der nativen Analyse. Geklammerte Bindestrichwörter werden bei
+passenden typografischen Anführungszeichen wie bei geraden Anführungszeichen
+analysiert. Bei schwach betonten Verben nach dem Satzakzent entfällt in
+Aussagesätzen eine zusätzliche Anhebung der Satzmelodie. Verschiedene deutsche
+Fragetypen erhalten am Ende wieder eine steigende Kontur. Die Wirkung von R,
+A und Satzmelodie muss im NVDA-Hörvergleich beurteilt werden.
+
 # Testkandidat 1.1.0-rc17: R, N, A und deutsche Tonhöhe
 
 Die in rc16 ergänzten zusätzlichen Formantziele für konsonantisches R sind

@@ -32,6 +32,20 @@ static int seven_und_n(delta_state *d,const struct reloq61_spr_phone *n,
         reloq61_spr_phone_at(d,u->after,&next)&&reloq61_spr_feature(d,&next,0)==22&&
         reloq61_spr_phone_at(d,next.after,&t)&&reloq61_spr_feature(d,&t,0)==3;
 }
+/* The coda of neun contracts to the same 30-ms body before connected und;
+ * a standalone neun and an explicitly glottal next word are unaffected. */
+static int nine_und_n(delta_state *d,const struct reloq61_spr_phone *n,
+    const struct reloq61_spr_phone *u)
+{
+    struct reloq61_spr_phone j,o,onset,next,t;
+    return reloq61_spr_feature(d,n,0)==22&&reloq61_spr_feature(d,u,0)==36&&
+        reloq61_spr_feature(d,u,15)==0&&prior_phone(d,n,&j)&&
+        reloq61_spr_feature(d,&j,0)==26&&prior_phone(d,&j,&o)&&
+        reloq61_spr_feature(d,&o,0)==38&&prior_phone(d,&o,&onset)&&
+        reloq61_spr_feature(d,&onset,0)==22&&
+        reloq61_spr_phone_at(d,u->after,&next)&&reloq61_spr_feature(d,&next,0)==22&&
+        reloq61_spr_phone_at(d,next.after,&t)&&reloq61_spr_feature(d,&t,0)==3;
+}
 static int begins_projection(delta_state *d,const struct reloq61_spr_phone *p,unsigned projection)
 {
     int32_t left=*EVV_AT(const int32_t *,p->node)&~3;
@@ -81,6 +95,14 @@ int reloq_dede61_consonant_r(void *state)
        reloq61_spr_feature(d,&previous,1)==1&&!reloq_dede61_number_four_r(state))return 0;
     return 1;
 }
+int reloq_dede61_initial_r(void *state)
+{
+    delta_state *d=state;int32_t at;
+    memcpy(&at,(const unsigned char *)state+DG_BASE+712,sizeof at);
+    struct reloq61_spr_phone r;
+    return reloq_dede61_consonant_r(state)&&reloq61_spr_phone_at(d,at,&r)&&
+        begins_projection(d,&r,4);
+}
 static const struct reloq61_segment_layout layout={
     .pause_class=8,.speed_field=15,
     .speed_before=464,
@@ -112,9 +134,30 @@ static const struct reloq61_segment_layout layout={
 };
 int32_t reloq_dede61_addStreamArrayPtVal(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
 {(void)p0;return reloq61_segment_point(state,p1,p2,p3,p4,p5);}
+
+/* Early /r/ in the earlier German voice has four constriction phases. The
+ * shared segment writer owns the AV/voice-mode decision; this callback only
+ * replaces the two native onset holds with that measured four-phase source. */
+static int initial_r_voicing(void *state,int16_t stream,int16_t value,int32_t from,int32_t to)
+{
+    if(!reloq_dede61_initial_r(state))return 0;
+    int32_t first,last;memcpy(&first,(const unsigned char *)state+DG_BASE+1048,4);
+    memcpy(&last,(const unsigned char *)state+DG_BASE+1056,4);
+    if(last<=first||last-first<60000)return 0;
+    int64_t span=(int64_t)last-first;
+    int64_t third=(int64_t)first+span*7/10+10000;
+    if(third+10000>=last)return 0;
+    if(from==first&&to<last&&value==0) {
+        reloq61_submit_interval(state,stream,0,first,(int32_t)third);
+        reloq61_submit_interval(state,stream,41,(int32_t)(third+10000),last);
+        return 1;
+    }
+    if(from>first&&to==last&&value==28)return 1;
+    return 0;
+}
 int32_t reloq_dede61_doAV(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
-{(void)p0;return reloq61_segment_voicing_gain(state,&layout,p1,p2,p3,p4,p5,
-    reloq_dede61_consonant_r(state)-reloq_dede61_final_text_a(state));}
+{(void)p0;return reloq61_segment_voicing_custom(state,&layout,p1,p2,p3,p4,p5,
+    reloq_dede61_consonant_r(state)-reloq_dede61_final_text_a(state),initial_r_voicing);}
 int32_t reloq_dede61_doAF(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
 {
     (void)p0;
@@ -147,7 +190,7 @@ static int32_t german_duration(void *state,int16_t kind,int32_t value)
        reloq61_spr_phone_at(d,pos,&current)&&reloq61_spr_phone_at(d,current.after,&next)) {
         unsigned id=reloq61_spr_feature(d,&current,0),following=reloq61_spr_feature(d,&next,0);
         int32_t replacement=0;
-        if(seven_und_n(d,&current,&next)&&value>300000) {
+        if((seven_und_n(d,&current,&next)||nine_und_n(d,&current,&next))&&value>300000) {
             /* In the connected number word the preceding n is the short
              * 30-ms nasal, rather than the standalone seven's longer coda. */
             replacement=300000;

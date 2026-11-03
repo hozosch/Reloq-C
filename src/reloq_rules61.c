@@ -4,6 +4,7 @@
 #include "reloq_german_input.h"
 #include "reloq_german_voice_model.h"
 #include "reloq_german_lexicon.h"
+#include "reloq_german_best_effort_text.h"
 #include "reloq_inline_tags.h"
 #include "reloq_character.h"
 #include "reloq_cp1252.h"
@@ -78,12 +79,53 @@ static int german_letter(unsigned char c)
 static int german_word_byte(unsigned char c)
 {return german_letter(c)||(c>='0'&&c<='9')||c=='_'||c=='\'';}
 
+/* German low quotes and guillemets otherwise disrupt the native hyphen
+ * compound scanner. Normalize matched quoted passages containing a written
+ * hyphenated word; leave isolated and explicitly spelled symbols alone. */
+static int german_quote_close(unsigned char open,unsigned char close)
+{
+    switch(open) {
+    case 0x84: return close==0x93||close==0x94;
+    case 0x93: return close==0x94||close==0x93;
+    case 0xab: return close==0xbb;
+    case 0xbb: return close==0xab;
+    case 0x82: return close==0x91||close==0x92;
+    case 0x91: return close==0x92||close==0x91;
+    case '\'': return close=='\'';
+    default: return 0;
+    }
+}
+static int german_compound_alnum(unsigned char c)
+{return german_letter(c)||(c>='0'&&c<='9')||c=='_';}
+static void german_normalize_compound_quotes(unsigned char *a,size_t n,size_t i)
+{
+    unsigned char opening=a[i];
+    if(opening!=0x84&&opening!=0x93&&opening!=0xab&&opening!=0xbb&&
+       opening!=0x82&&opening!=0x91&&opening!='\'')return;
+    if(i+1>=n || (i&&(a[i-1]=='\\'||german_compound_alnum(a[i-1]))))return;
+    size_t end=i+1,limit=n-i>4096?i+4096:n;int hyphen=0;
+    while(end<limit) {
+        unsigned char c=a[end];
+        if(german_quote_close(opening,c)) {
+            if(hyphen)a[i]=a[end]='"';
+            return;
+        }
+        if(c=='\n'||c=='\r')return;
+        if(c=='-'&&end>i+1&&end+1<n&&
+           german_compound_alnum(a[end-1])&&german_compound_alnum(a[end+1]))hyphen=1;
+        ++end;
+    }
+}
+
 static void german_compact_input(unsigned char *a,size_t *map,size_t *length,int tags)
 {
-    const size_t n=*length;size_t out=0;int spelling=0;
+    const size_t n=*length;size_t out=0;int spelling=0,in_spr=0;
     struct reloq61_text_options options=reloq61_text_options_current();
     for(size_t i=0;i<n;) {
         struct reloq_inline_tag t=tags?reloq_inline_tag_read(a+i,n-i,0):(struct reloq_inline_tag){0};
+        if(!tags&&!in_spr&&a[i]=='`'&&i+1<n&&a[i+1]=='[')in_spr=1;
+        if(!spelling&&!in_spr&&!t.length)german_normalize_compound_quotes(a,n,i);
+        int end_spr=in_spr&&a[i]==']';
         size_t count=t.length?t.length:1;int omit=0;
         if(t.kind==RELOQ_TAG_SPELL)spelling=t.value;
         if(t.kind==RELOQ_TAG_DICTIONARY) {
@@ -103,7 +145,7 @@ static void german_compact_input(unsigned char *a,size_t *map,size_t *length,int
         } else {
             memmove(a+out,a+i,count);memmove(map+out,map+i,count*sizeof *map);out+=count;
         }
-        i+=count;
+        i+=count;if(end_spr)in_spr=0;
     }
     map[out]=map[n];a[out]=0;*length=out;
 }
@@ -176,6 +218,96 @@ static int german_main_input(unsigned char **text,size_t **source,size_t *length
     b.bytes[b.used]=0;b.map[b.used]=map[n];
     free(*text);free(*source);*text=b.bytes;*source=b.map;*length=b.used;return 0;
 fail:free(b.bytes);free(b.map);return -1;
+}
+
+extern const struct reloq_lexicon_resolver *reloq61_dictionary_resolver(void);
+extern void reloq61_dictionary_resolver_release(const struct reloq_lexicon_resolver *);
+extern const struct reloq_lexicon *reloq61_dictionary_overlay_current(void);
+
+/* A native compound can split a final dictionary constituent as an inflected
+ * stem before Root lookup. When a supplied entry is missing from the complete
+ * pronunciation, resolve just that lexical token with the existing compound
+ * rules. The surrounding sentence remains in the native sentence planner. */
+static int german_dictionary_compound_input(unsigned char **text,size_t **source,size_t *length,int tags)
+{
+    const struct reloq_lexicon_resolver *resolver=reloq61_dictionary_resolver();
+    const struct reloq_lexicon *overlay=reloq61_dictionary_overlay_current();
+    if(!resolver&&!overlay)return 0;
+    struct reloq_lexicon empty={0};if(!overlay)overlay=&empty;
+    const struct reloq_lexicon_resolver *previous=reloq_lexicon_resolver_scope(resolver);
+    const unsigned char *a=*text;const size_t *map=*source,n=*length;
+    struct german_shared_buffer b={0};int changed=0,spelling=0,status=0;
+    struct reloq61_text_options options=reloq61_text_options_current();
+    for(size_t i=0;i<n;) {
+        struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,0);
+        if(t.length&&(tags||t.kind==RELOQ_TAG_SPR||t.kind==RELOQ_TAG_PROMINENCE)) {
+            if(tags&&t.kind==RELOQ_TAG_SPELL)spelling=t.value;
+            if(tags&&t.kind==RELOQ_TAG_DICTIONARY)options.dictionary_disabled=!t.value;
+            if(changed&&german_shared_append(&b,a+i,map+i,t.length,0)){status=-1;break;}
+            i+=t.length;continue;
+        }
+        if(spelling||!german_word_byte(a[i])||(i&&german_word_byte(a[i-1]))) {
+            if(changed&&german_shared_append(&b,a+i,map+i,1,0)){status=-1;break;}
+            ++i;continue;
+        }
+        size_t end=i;while(end<n&&(german_word_byte(a[end])||
+            (a[end]=='-'&&end+1<n&&german_word_byte(a[end+1]))))++end;
+        int has_hyphen=memchr(a+i,'-',end-i)!=NULL,lexical=0;
+        const struct reloq_lexicon_override *entry=NULL;
+        if(has_hyphen&&!options.dictionary_disabled&&end-i<256&&
+           reloq_lexicon_find_override(overlay,a+i,end-i,&entry)!=1) {
+            for(size_t at=i;at<end;) {
+                size_t stop=at;while(stop<end&&a[stop]!='-')++stop;
+                if(reloq_lexicon_find_override(overlay,a+at,stop-at,&entry)==1)lexical=1;
+                at=stop<end?stop+1:end;
+            }
+        }
+        unsigned char *preferred=NULL;size_t preferred_n=0;
+        unsigned char utf8[1024],native[4096];size_t utf8_n=0,native_n=0;
+        if(lexical&&!reloq_cp1252_decode(a+i,end-i,utf8,sizeof utf8,&utf8_n,NULL)) {
+            struct reloq61_text_options previous_options=reloq61_text_options_scope(options);
+            int result=reloq_german_dictionary_compound(utf8,utf8_n,overlay,&preferred,&preferred_n);
+            reloq61_text_options_scope(previous_options);
+            if(result==-2){free(preferred);status=-1;break;}
+            if(result) {free(preferred);preferred=NULL;}
+        }
+        const unsigned char *pron=NULL;size_t pron_n=0;
+        if(preferred) {
+            const unsigned char *open=(const unsigned char *)strstr((char *)preferred,"`[");
+            const unsigned char *close=open?(const unsigned char *)strchr((char *)open,']'):NULL;
+            if(open&&close) {
+                if(!strstr((char *)close+1,"`[")) {
+                    pron=open;pron_n=(size_t)(close+1-open);
+                    if(reloq_rules61_word(0x40000,a+i,end-i,native,sizeof native,&native_n)==1&&
+                       native_n==pron_n&&!memcmp(native,pron,pron_n))pron=NULL;
+                } else {
+                    /* Acronym components may contain several native spoken
+                     * letters. Preserve the complete composed annotation. */
+                    pron=preferred;pron_n=preferred_n;
+                }
+            }
+        }
+        if(pron) {
+            if(!changed){if(german_shared_append(&b,a,map,i,0)){free(preferred);status=-1;break;}changed=1;}
+            for(size_t j=0;j<pron_n;++j) {
+                /* Separate adjacent generated annotations. Without this,
+                 * an initialism followed by another compound member can
+                 * be interpreted as literal annotation characters. */
+                if(j&&pron[j]=='`'&&pron[j-1]==']'&&
+                   german_shared_append(&b,(const unsigned char *)" ",NULL,1,map[i])) {status=-1;break;}
+                if(german_shared_append(&b,pron+j,NULL,1,map[i])) {status=-1;break;}
+            }
+            if(status){free(preferred);break;}
+        } else if(changed&&german_shared_append(&b,a+i,map+i,end-i,0)){free(preferred);status=-1;break;}
+        free(preferred);i=end;
+    }
+    reloq_lexicon_resolver_scope(previous);reloq61_dictionary_resolver_release(resolver);
+    if(status){free(b.bytes);free(b.map);return -1;}
+    if(!changed){free(b.bytes);free(b.map);return 0;}
+    if(german_shared_append(&b,(const unsigned char *)"",NULL,0,n))goto fail_compound;
+    b.bytes[b.used]=0;b.map[b.used]=map[n];free(*text);free(*source);
+    *text=b.bytes;*source=b.map;*length=b.used;return 0;
+fail_compound:free(b.bytes);free(b.map);return -1;
 }
 
 /* Only an explicitly supplied pronunciation longer than the native lexer's
@@ -313,6 +445,7 @@ int reloq_rules61_phonemes(int language,const unsigned char *text,size_t length,
     if(status)return status;
     if(language==0x40000) {
         german_compact_input(input,map,&n,tags);
+        if(german_dictionary_compound_input(&input,&map,&n,tags)){free(input);free(map);return -2;}
         if(german_long_overlay_input(&input,&map,&n,tags)){free(input);free(map);return -2;}
         if(german_currency_input(&input,&map,&n,tags)){free(input);free(map);return -2;}
     }
@@ -790,6 +923,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     if(language==0x40000)german_compact_input(a,map,&n,tags);
     if(tags&&!plan.cjk_volume&&normalize_word_voice_controls(&a,&map,&n,family==18))goto memory;
     if(language==0x40000&&german_main_input(&a,&map,&n,tags))goto memory;
+    if(language==0x40000&&german_dictionary_compound_input(&a,&map,&n,tags))goto memory;
     if(language==0x40000&&german_long_overlay_input(&a,&map,&n,tags))goto memory;
     if(language==0x40000&&german_currency_input(&a,&map,&n,tags))goto memory;
     if(plan.cjk_volume) {

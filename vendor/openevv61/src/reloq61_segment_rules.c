@@ -64,8 +64,9 @@ int32_t reloq61_segment_point(void *state,int32_t stream_arg,int32_t value_arg,
     submit(d,stream.field,value.field,time.value,time.value);
     return finish(d,&saved,0);
 }
-int32_t reloq61_segment_voicing_gain(void *state,const struct reloq61_segment_layout *layout,
-    int32_t value,int32_t begin,int32_t end,int32_t left,int32_t right,int gain)
+int32_t reloq61_segment_voicing_custom(void *state,const struct reloq61_segment_layout *layout,
+    int32_t value,int32_t begin,int32_t end,int32_t left,int32_t right,int gain,
+    reloq61_voicing_intercept intercept)
 {
     if(!reloq_scalar_begin(state))return 94;
     delta_state *d=state;struct cursor saved=save_cursor(d);struct target t={0};
@@ -75,10 +76,15 @@ int32_t reloq61_segment_voicing_gain(void *state,const struct reloq61_segment_la
     voice->field=6;
     if(if_testeq_v_i(d,voice,100)||short_at(d,layout->force_voicing)) {
         int32_t stop=long_at(d,layout->point_voicing)?t.begin.value:t.end.value;
-        submit(d,short_at(d,layout->av_stream),t.value.field,t.begin.value,stop);
+        int16_t stream=short_at(d,layout->av_stream);
+        if(!intercept||!intercept(d,stream,t.value.field,t.begin.value,stop))
+            submit(d,stream,t.value.field,t.begin.value,stop);
     }
     return finish(d,&saved,0);
 }
+int32_t reloq61_segment_voicing_gain(void *state,const struct reloq61_segment_layout *layout,
+    int32_t value,int32_t begin,int32_t end,int32_t left,int32_t right,int gain)
+{return reloq61_segment_voicing_custom(state,layout,value,begin,end,left,right,gain,NULL);}
 int32_t reloq61_segment_voicing(void *state,const struct reloq61_segment_layout *layout,
     int32_t value,int32_t begin,int32_t end,int32_t left,int32_t right)
 {return reloq61_segment_voicing_gain(state,layout,value,begin,end,left,right,0);}

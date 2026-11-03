@@ -1,6 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Testversion 1.1.0-rc17
+## Testversion 1.1.0-rc18
+
+Die Testversion gleicht die Anregung des konsonantischen R und die Mischung des finalen A anhand des früheren deutschen Planers ab. Sie verkürzt das N in „neunund“ und berücksichtigt Wörterbuchaussprache in Bindestrich-Zusammensetzungen wie „ETI-Eloquence“, auch innerhalb von Anführungszeichen. Eine zusätzliche Tonhöhenanhebung bei schwachen Verben nach dem Satzakzent entfällt; deutsche Fragen erhalten eine ansteigende Schlusskontur. Die Klangwirkung muss in NVDA gehört werden.
 
 Die Testversion stellt die vorherige Form des konsonantischen R wieder her und stimmt seine Schwingung weicher ab. Sie verkürzt das N in „siebenund“, gleicht das E nach I an den früheren Pfad an und verwendet eine gemischte A-Färbung am Satzende. Eine Überlaufkorrektur stabilisiert die deutsche Satzmelodie bei hohen Tonhöhen. Der Klang muss in NVDA gehört werden.
 

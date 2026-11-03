@@ -25,6 +25,13 @@ void reloq61_english_question_tones(void *state,int32_t phrase,int16_t high,
     }
 }
 
+/* German and English share the phrase record and tone conventions. */
+void reloq61_german_question_tones(void *state,int32_t phrase,int16_t high,
+    int16_t *phrase_tone,int16_t *boundary_tone)
+{
+    reloq61_english_question_tones(state,phrase,high,phrase_tone,boundary_tone);
+}
+
 int reloq61_english_question_time(void *state,int32_t phrase,
     int16_t position,int16_t tone,int32_t previous,int32_t *when)
 {
@@ -36,4 +43,10 @@ int reloq61_english_question_time(void *state,int32_t phrase,
         previous>INT32_MAX-10000 || !is_question(state,phrase))return 0;
     *when=previous+10000;
     return 1;
+}
+
+int reloq61_german_question_time(void *state,int32_t phrase,
+    int16_t position,int16_t tone,int32_t previous,int32_t *when)
+{
+    return reloq61_english_question_time(state,phrase,position,tone,previous,when);
 }

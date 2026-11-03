@@ -6,23 +6,56 @@
 #include "reloq_voice_filter.h"
 #include "reloq61_german_final.h"
 extern int reloq_dede61_consonant_r(void *);
+extern int reloq_dede61_initial_r(void *);
+extern int reloq_dede61_number_four_r(void *);
 static int16_t consonant_r_source(void *state,int16_t stream,int16_t value)
 {
     int16_t aspiration,diplophonia;
     memcpy(&aspiration,(const unsigned char *)state+DG_BASE+942,2);
     memcpy(&diplophonia,(const unsigned char *)state+DG_BASE+934,2);
-    if(value<=0||(stream!=aspiration&&stream!=diplophonia)||
-       !reloq_dede61_consonant_r(state))return value;
-    /* Soften the contrast of the rhotic constriction while retaining its
-     * existing timing and tract. A postvocalic consonantal r can also add
-     * its own diplophonic impulse; reduce that impulse rather than changing
-     * the global voice or the user's other phones. */
-    if(stream==aspiration)return value>=45?(int16_t)(value-3):value;
-    if(stream==diplophonia)return (int16_t)((value+1)/2);
+    if((stream!=aspiration&&stream!=diplophonia)||!reloq_dede61_consonant_r(state))return value;
+    /* Four-and retains continuous voiced r before the short U, just as in
+     * the preceding composer; its source did not use a diplophonic pulse. */
+    if(reloq_dede61_number_four_r(state)) {
+        if(stream==aspiration)return value==0?53:value;
+        return 0;
+    }
+    /* Other consonantal R keeps the ordinary +1 source compensation. */
+    if(stream==aspiration&&value>0)return (int16_t)(value+1);
     return value;
 }
 int32_t reloq_dede61_addStreamArraySsVal(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4)
-{(void)p0;return reloq61_append_filtered_interval(state,p1,p2,p3,p4,consonant_r_source);}
+{
+    (void)p0;
+    if(reloq_dede61_initial_r(state)) {
+        if(!reloq_scalar_begin(state))return 94;
+        delta_loc stream={0},value={0},from={0},to={0};
+        if(!p1||!p2||!p3||!p4||get_parm(state,&stream,EVV_AT(delta_loc *,p1),DK_SHORT2)||
+           get_parm(state,&value,EVV_AT(delta_loc *,p2),DK_SHORT2)||
+           get_parm(state,&from,EVV_AT(delta_loc *,p3),DK_FIXED)||
+           get_parm(state,&to,EVV_AT(delta_loc *,p4),DK_FIXED))return reloq_scalar_finish(state,94);
+        int16_t aspiration;int32_t begin,end;
+        memcpy(&aspiration,(const unsigned char *)state+DG_BASE+942,2);
+        memcpy(&begin,(const unsigned char *)state+DG_BASE+1048,4);
+        memcpy(&end,(const unsigned char *)state+DG_BASE+1056,4);
+        int64_t span=(int64_t)end-begin;
+        int64_t a=(int64_t)begin+span/5,b=(int64_t)begin+span/2;
+        int64_t c=(int64_t)begin+span*7/10+10000;
+        if(stream.field==aspiration && span>=60000 && c+10000<end) {
+            if(value.field==27 && from.value==begin && to.value<end) {
+                reloq61_submit_interval(state,stream.field,28,begin,(int32_t)a);
+                reloq61_submit_interval(state,stream.field,49,(int32_t)(a+10000),(int32_t)b);
+                reloq61_submit_interval(state,stream.field,28,(int32_t)(b+10000),(int32_t)c);
+                reloq61_submit_interval(state,stream.field,53,(int32_t)(c+10000),end);
+                return reloq_scalar_finish(state,0);
+            }
+            if(value.field==52 && from.value>begin && to.value==end)
+                return reloq_scalar_finish(state,0);
+        }
+        (void)reloq_scalar_finish(state,0);
+    }
+    return reloq61_append_filtered_interval(state,p1,p2,p3,p4,consonant_r_source);
+}
 
 /* The source-dependent terminal-a preference is identified while the
  * original spelling is still present, then consumed by acoustic planning. */
@@ -203,11 +236,11 @@ int32_t reloq_dede61_doF(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3
     if(stream.field>=1&&stream.field<=3&&reloq_dede61_final_text_a(d)) {
         static const int16_t target[]={800,1220,2500};
         const int16_t long_left=stream.field==2?final_a_f2(d):target[stream.field-1];
-        /* The preferred ending lies between the native short and long A.
-         * Keep the native context/transition and move only halfway towards
-         * the corresponding long-A resonance. */
-        if(left.field>0)left.field=(int16_t)((left.field+long_left+1)/2);
-        if(right.field>0)right.field=(int16_t)((right.field+target[stream.field-1]+1)/2);
+        /* Match the previous composer's contextual mixture: one part
+         * short A, three parts long A. The sentence boundary, not the
+         * presence of later sentences, selects this preference. */
+        if(left.field>0)left.field=(int16_t)((left.field+3*long_left)/4);
+        if(right.field>0)right.field=(int16_t)((right.field+3*target[stream.field-1])/4);
     }
     if(stream.field>=1&&stream.field<=2) {
         int context=e_after_i(d);

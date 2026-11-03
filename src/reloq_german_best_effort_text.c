@@ -811,6 +811,8 @@ static int remember_compound_onsets(struct annotation_builder *b,
     b->features[b->feature_count++]=facts;return 0;
 }
 
+/* Scoped to the native frontend's dictionary recovery of a single token. */
+static _Thread_local int require_compound_entries;
 static int append_native_compound(struct annotation_builder *b,
     const unsigned char *word,size_t length)
 {
@@ -838,7 +840,7 @@ static int append_native_compound(struct annotation_builder *b,
     /* An initialism can occupy several native words, with its last letter
      * joined to the following constituent. Carry that complete source token
      * once: reconstructing NVDA plus a supplied A-Einstellungen duplicates A. */
-    if(multiple)return native_entries?
+    if(multiple)return native_entries&&!(require_compound_entries&&lexical)?
         append_native_reading(b,word,length,phonemes,RELOQ_DE_SOURCE_NATIVE_TOKEN):1;
     /* The default native path needs no additional constituent analyses
      * when there is no lexical pronunciation to protect. */
@@ -2522,6 +2524,16 @@ done:
         annotation,annotation_length,approximate_words,encoded_error_offset,
         caller_boundaries,caller_count,features,feature_count,cancelled,cancel_context,NULL,normalized,probe_cut);
     return result;
+}
+
+int reloq_german_dictionary_compound(const unsigned char *utf8,size_t length,
+    const struct reloq_lexicon *lexicon,unsigned char **annotation,size_t *annotation_length)
+{
+    size_t approximate=0,error=0;int previous=require_compound_entries;
+    require_compound_entries=1;
+    int result=plan_tags_checked(1,utf8,length,lexicon,0,annotation,annotation_length,
+        &approximate,&error,NULL,0,NULL,NULL,NULL,NULL,NULL,1,NULL);
+    require_compound_entries=previous;return result;
 }
 
 int reloq_german_best_effort_plan_tags_checked(

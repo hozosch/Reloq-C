@@ -1457,6 +1457,8 @@ static int32_t evv_insert_target_t3(void *state, const int32_t *args, int nargs)
     return reloq_dede61_insert_target_t3(state, nargs>0?args[0]:0);
 }
 
+extern int reloq61_german_question_time(void *, int32_t, int16_t, int16_t,
+    int32_t, int32_t *);
 /* insert_f0, from f61_08.obj */
 int32_t reloq_dede61_insert_f0(void *state, int32_t p0, int32_t p1, int32_t p2, int32_t p3)
 {
@@ -1710,6 +1712,10 @@ L1814:;
     AT(int16_t, -122) = ((int32_t)AT(int16_t, -52));
     AT(int32_t, -44) = (RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 248));
     r0 = reloq_call_dede61_valid_f0_posn(state, (int32_t)(FIELD(0)), (int32_t)((int32_t)AT(int32_t, -44)), (int32_t)(RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 216)));
+    if (r0 && reloq61_german_question_time(state,
+        STATE(int32_t, w52), AT(int16_t, -146),
+        STATE(int16_t, s471), STATE(int32_t, f34),
+        &STATE(int32_t, f38))) r0=0;
     AT(int32_t, -52) = (r0);
     if (AT(int32_t, -52) == 0) goto L1894;
     goto L2168;
