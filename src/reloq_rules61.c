@@ -280,6 +280,39 @@ static int german_native_compound_matches(const unsigned char *word,size_t lengt
     }
 }
 
+/* An initialism may already consist of several native words. If its
+ * dictionary constituent still needs an explicit pronunciation, retain the
+ * original components and replace just that constituent. A written hyphen
+ * adjacent to an SPR group becomes a word separator, otherwise the lexer
+ * would speak the hyphen as a separate punctuation symbol. */
+static int german_append_compound_parts(struct german_shared_buffer *b,
+    const unsigned char *a,const size_t *map,size_t begin,size_t end,
+    const struct reloq_lexicon *overlay)
+{
+    struct part {size_t from,to;const struct reloq_lexicon_override *entry;} parts[128];
+    size_t count=0;
+    for(size_t at=begin;at<end;) {
+        if(count==sizeof parts/sizeof *parts)return -1;
+        size_t stop=at;while(stop<end&&a[stop]!='-')++stop;
+        const struct reloq_lexicon_override *entry=NULL;
+        (void)reloq_lexicon_find_override(overlay,a+at,stop-at,&entry);
+        parts[count++]=(struct part){at,stop,entry};
+        at=stop<end?stop+1:end;
+    }
+    for(size_t j=0;j<count;++j) {
+        if(j) {
+            unsigned char separator=parts[j-1].entry||parts[j].entry?' ':'-';
+            if(german_shared_append(b,&separator,NULL,1,map[parts[j].from-1]))return -1;
+        }
+        if(parts[j].entry) {
+            if(german_shared_append(b,parts[j].entry->spr,NULL,
+                parts[j].entry->spr_length,map[parts[j].from]))return -1;
+        } else if(german_shared_append(b,a+parts[j].from,map+parts[j].from,
+                    parts[j].to-parts[j].from,0))return -1;
+    }
+    return 0;
+}
+
 /* A native compound can split a final dictionary constituent as an inflected
  * stem before Root lookup. When a supplied entry is missing from the complete
  * pronunciation, resolve just that lexical token with the existing compound
@@ -351,9 +384,12 @@ static int german_dictionary_compound_input(unsigned char **text,size_t **source
                     if(reloq_rules61_word(0x40000,a+i,end-i,native,sizeof native,&native_n)==1&&
                        native_n==pron_n&&!memcmp(native,pron,pron_n))pron=NULL;
                 } else {
-                    /* Acronym components may contain several native spoken
-                     * letters. Preserve the complete composed annotation. */
-                    pron=preferred;pron_n=preferred_n;
+                    /* Keep the native letter/word structure visible to
+                     * sentence analysis, while retaining entries the native
+                     * compound did not itself use. */
+                    if(!changed){if(german_shared_append(&b,a,map,i,0)){free(preferred);status=-1;break;}changed=1;}
+                    if(german_append_compound_parts(&b,a,map,i,end,overlay)){free(preferred);status=-1;break;}
+                    free(preferred);i=end;continue;
                 }
             }
         }

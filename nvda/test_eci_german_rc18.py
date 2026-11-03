@@ -134,10 +134,14 @@ def main():
                 for text,ending in (
                     ('Die NVDA-Eloquence-Einstellungen sind korrekt.', "`[.0kO.1rEkt]"),
                     ('Die Eloquence-C-Variante liest den Text.', "`[.1tEkst]"),
+                    ('Die A-B-Eloquence liest den Text.', "`[.1tEkst]"),
+                    ('Die NVDA-ETI-Eloquence liest den Text.', "`[.1tEkst]"),
                     ('„Die NVDA-Eloquence-Einstellungen sind korrekt.“', "`[.0kO.1rEkt]"),
+                    ('„Die NVDA-ETI-Eloquence liest den Text.“', "`[.1tEkst]"),
                 ):
                     p = phonemes(e, text)
                     assert 'kvEns' in p, (text, p)
+                    assert 'bIn.0d@.2StrIX' not in p, (text, p)
                     assert p.rsplit('`2 ', 1)[-1].startswith(ending), (text, p)
                     audio, marks = render(e, [text, EciIndex(7)])
                     assert audio and marks == [(7, len(audio))], (text, marks)
