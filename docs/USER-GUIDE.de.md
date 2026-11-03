@@ -1,6 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Testversion 1.1.0-rc15
+## Testversion 1.1.0-rc16
+
+Die deutsche Analyse und Lautplanung werden in dieser Testversion für „Sprachauswahl“, „Suchauswahl“, Zahlwörter mit „-und“, einzelne Über-/Unter-Formen sowie lange O-Laute und die Betonung von „famos“ und „rigoros“ angeglichen. R, S, PF und finales A sind für den Hörvergleich angepasst. Wörterbucheinträge behalten Vorrang. Die Aussprache und Klangfärbung müssen in NVDA gehört werden.
 
 Die deutsche Sprachausgabe nutzt jetzt dieselbe native Satz- und Lautplanung wie die anderen Sprachen. Lange Einzelsätze können dadurch früher beginnen; Bindestrich- und Schrägstrichfälle sowie ECI-Tags werden im gemeinsamen Pfad verarbeitet. Nutzerwörterbücher, Pausenverkürzung und die Absenkung des männlichen Z am Wortanfang und bei „zw“ bleiben erhalten. Bei „der Zahn“ übernimmt das vokalische R den nativen Formantverlauf; die Klangfärbung muss noch im Hörtest beurteilt werden. Die bestätigte C-Abstimmung und die S-/T-Begrenzung für Kastilisch und Griechisch bleiben bestehen.
 

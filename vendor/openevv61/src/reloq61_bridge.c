@@ -18,6 +18,7 @@
 #include "reloq_greek.h"
 #include "reloq61_english_clock.h"
 #include "reloq61_german_clock.h"
+#include "reloq61_german_final.h"
 extern void evvRunStaticInitialisers(void);
 extern OldInst *STDCALL eo_newEx(int32_t);
 extern int STDCALL es_delete(OldInst *);
@@ -563,7 +564,15 @@ int reloq61_english_bank_emit(void*state,const struct reloq61_english_bank*p,int
  if(!p->trim_pause&&p->pause_to>p->pause_from&&c->pause)c->pause(c->pause_context,c->clock_base+from+p->pause_from,c->clock_base+from+p->pause_to,c->clock_base+from+p->pause_to);
  return 0;
 }
-static int generate_core(const struct reloq61_request *,struct reloq61_result *,reloq61_phoneme_sink,void *);
+static int generate_core_impl(const struct reloq61_request *,struct reloq61_result *,reloq61_phoneme_sink,void *);
+static int generate_core(const struct reloq61_request *q,struct reloq61_result *r,
+    reloq61_phoneme_sink sink,void *context)
+{
+    struct reloq61_german_final_a saved=reloq61_german_final_scope((struct reloq61_german_final_a){0});
+    int result=generate_core_impl(q,r,sink,context);
+    reloq61_german_final_scope(saved);
+    return result;
+}
 /* Text normalization projects both public indices and word-volume positions
  * through the same source map, including English clocks and Greek names. */
 static struct reloq61_mark *project_marks(const struct reloq61_mark *input,
@@ -645,7 +654,7 @@ int reloq61_generate_phonemes(const struct reloq61_request *q,struct reloq61_res
         return german_clock_generate(&request,r,sink,context);
     return generate_core(&request,r,sink,context);
 }
-static int generate_core(const struct reloq61_request *q,struct reloq61_result *r,
+static int generate_core_impl(const struct reloq61_request *q,struct reloq61_result *r,
     reloq61_phoneme_sink sink,void *context)
 {
     struct capture c;OldInst *h;delta_state *d;DeltaLang *dl;

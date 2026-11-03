@@ -1,3 +1,27 @@
+# Testkandidat 1.1.0-rc16: Deutsche Zahl- und Lautübergänge
+
+Der native deutsche Pfad liest die Zahlbestandteile „zweiund“, „dreiund“,
+„vierund“, „siebenund“ und „neunund“ ohne den zusätzlichen Glottisschlag;
+bei „vierund“ wird das R als Konsonant geformt. Die gewählte Behandlung bei
+„fünfund“, „sechsund“ und „achtund“ bleibt erhalten. Der Hörvergleich ist
+noch offen.
+
+Die Analyse korrigiert „Sprachauswahl“ und „Suchauswahl“ einschließlich ihrer
+geprüften Plurale. Eigene Main- und RLEX-Einträge behalten in den geprüften
+Fällen Vorrang. Lange O-Laute in geschlossenen -os-Silben behalten ihre Länge;
+„famos“ und „rigoros“ erhalten die Betonung des alten Pfades. Für erfasste
+Hauptwörter mit „Über-“ und „Unter-“ wird die bisherige Großschreibungs- und
+Betonungsregel wieder angewandt. Die Auswahl dieser Wortstämme deckt nicht
+notwendigerweise alle denkbaren Zusammensetzungen ab.
+
+Die native Lautplanung übernimmt weitere Formantziele für konsonantisches R,
+passt /pf/ vor einer folgenden Konsonantensilbe und /s/ nach /n/ vor /f/ an und
+verwendet für normales unbetontes A am Ende einer Äußerung den bisherigen
+helleren Vokalansatz. Die endgültige Klangwirkung kann nur ein Hörvergleich
+beurteilen. Der C-Klang und die Hochratenfilter wurden nicht neu abgestimmt.
+Ein ausdrücklich als kurzes A vorgegebener Lautschrifteintrag behält seine
+eigene Vorgabe; die End-A-Vorliebe gilt für normalen Text.
+
 # Testkandidat 1.1.0-rc15: Deutsche Lautplanung und Zahlen
 
 Die native deutsche Satz- und Lautplanung bleibt der Produktpfad. Die

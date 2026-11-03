@@ -1,6 +1,8 @@
 # Eloquence C – user guide
 
-## Preview 1.1.0-rc15
+## Preview 1.1.0-rc16
+
+This preview aligns German analysis and speech planning for “Sprachauswahl”, “Suchauswahl”, number words with “-und”, selected Über-/Unter- forms, long o, and the stress of “famos” and “rigoros”. R, S, PF and final a have been adjusted for listening tests. Dictionary entries retain priority. Pronunciation and sound still need to be evaluated in NVDA.
 
 German speech now uses the same native sentence and acoustic planning path as the other languages. Long single sentences can start earlier, and hyphens, slashes and ECI tags use the shared path. User dictionaries, pause shortening and the male-only reduction for word-initial /ts/ and /tsv/ remain in place. The vocalic r in “der Zahn” follows the native formant trajectory; its colour still needs a listening test. The accepted C tuning and the Castilian/Greek S/T limit remain in place.
 

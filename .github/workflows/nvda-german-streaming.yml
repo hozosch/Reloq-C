@@ -40,19 +40,19 @@ jobs:
           path: vendor/openevv61/build
           key: nvda-hearing-ubuntu24-v1-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c') }}
           restore-keys: |
-            nvda-hearing-ubuntu24-v1-d10e6b0a245bfd9ed638ff47616d33f14536debc6c19c4b25ea5734adafb5344
+            nvda-hearing-ubuntu24-v1-fbdff5bd5be417c09a34b4d23fd6eb4ef085db0259e97190ba89573cbf48ff90
       - name: Restore rule cache and rebuild changed dependencies
         if: steps.rules.outputs.cache-matched-key != ''
         run: |
           set -euo pipefail
           find vendor/openevv61/build -type f -exec touch {} +
           if [[ '${{ steps.rules.outputs.cache-hit }}' != 'true' ]]; then
-            # This is the rc14 provider cache. Make its unchanged files newer
+            # This is the rc15 provider cache. Make its unchanged files newer
             # than checkout, then mark every changed dependency newer still.
             # The generated .d files rebuild all affected objects, including
             # translation units that include a changed header or .inc file.
             sleep 1
-            git diff --name-only -z c27d0811170da3d50417d3c9c4aec2d7e33e7baa HEAD -- vendor/openevv61 include src/reloq_voice_filter.c src/reloq_orthography.c src/reloq_german_word_edges.c src/reloq_english_word_edges.c | xargs -0 -r touch --
+            git diff --name-only -z 74a56f546cba329480adbe4c23e0fb4523a18977 HEAD -- vendor/openevv61 include src/reloq_voice_filter.c src/reloq_orthography.c src/reloq_german_word_edges.c src/reloq_english_word_edges.c | xargs -0 -r touch --
           fi
       - name: Build x64 native core
         run: make -C eci -j2 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
@@ -182,6 +182,8 @@ jobs:
           python nvda/test_eci_german_stem_native.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_german_phonetic_native.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_rc16.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_pause_modes_native.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

@@ -21,4 +21,6 @@ int32_t reloq61_segment_nasal_zero(void *,const struct reloq61_segment_layout *,
 int32_t reloq61_segment_nasal_pole(void *,const struct reloq61_segment_layout *,reloq61_endpoint_filter,int32_t,int32_t,int32_t,int32_t,int32_t);
 int32_t reloq61_segment_speed(void *,const struct reloq61_segment_layout *,int32_t,int32_t);
 int32_t reloq61_segment_duration(void *,const struct reloq61_segment_layout *,int32_t,int32_t,int32_t,int32_t);
+int32_t reloq61_segment_duration_with(void *,const struct reloq61_segment_layout *,int32_t,int32_t,int32_t,int32_t,
+    int32_t (*)(void *,int16_t,int32_t));
 #endif

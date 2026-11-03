@@ -164,8 +164,9 @@ int32_t reloq61_segment_speed(void *state,const struct reloq61_segment_layout *l
     memcpy(EVV_AT(unsigned char *,duration_arg)+4,&value,4);
     return finish(d,&saved,0);
 }
-int32_t reloq61_segment_duration(void *state,const struct reloq61_segment_layout *layout,
-    int32_t duration_arg,int32_t left_arg,int32_t right_arg,int32_t phone_arg)
+int32_t reloq61_segment_duration_with(void *state,const struct reloq61_segment_layout *layout,
+    int32_t duration_arg,int32_t left_arg,int32_t right_arg,int32_t phone_arg,
+    int32_t (*filter)(void *,int16_t,int32_t))
 {
     if(!reloq_scalar_begin(state))return 94;
     delta_state *d=state;struct cursor saved=save_cursor(d);
@@ -173,6 +174,7 @@ int32_t reloq61_segment_duration(void *state,const struct reloq61_segment_layout
     if(read_cell(d,duration_arg,DK_FIXED,&duration)||read_position(left_arg,&left)||
        read_position(right_arg,&right)||read_cell(d,phone_arg,DK_SHORT2,&phone))
         return finish(d,&saved,94);
+    if(filter)duration.value=filter(state,phone.field,duration.value);
     int plain=short_at(d,layout->focus)==short_at(d,layout->neutral);
     int focused=short_at(d,layout->syllable_count)<short_at(d,layout->first_count)&&
         short_at(d,layout->stress)==short_at(d,layout->ordinary_stress)&&
@@ -211,3 +213,6 @@ int32_t reloq61_segment_duration(void *state,const struct reloq61_segment_layout
     }
     return finish(d,&saved,0);
 }
+int32_t reloq61_segment_duration(void *state,const struct reloq61_segment_layout *layout,
+    int32_t duration_arg,int32_t left_arg,int32_t right_arg,int32_t phone_arg)
+{return reloq61_segment_duration_with(state,layout,duration_arg,left_arg,right_arg,phone_arg,NULL);}

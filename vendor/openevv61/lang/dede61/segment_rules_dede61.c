@@ -4,6 +4,7 @@
 #include "reloq61.h"
 #include <string.h>
 extern int16_t reloq_dede61_filter_endpoint(void *,int16_t,int16_t);
+extern int reloq_dede61_final_text_a(void *);
 extern int reloq61_german_affricate_markers(void *);
 
 static int prior_phone(delta_state *d,const struct reloq61_spr_phone *p,
@@ -43,6 +44,19 @@ static int z_affricate(delta_state *d)
         reloq61_spr_phone_at(d,next.after,&last)&&phone_is(d,&last,8,0)&&
         !begins_projection(d,&last,7);
 }
+int reloq_dede61_number_four_r(void *state)
+{
+    delta_state *d=state;int32_t at;
+    memcpy(&at,(const unsigned char *)d+DG_BASE+712,sizeof at);
+    struct reloq61_spr_phone r,i,f,u,n,t;
+    return reloq61_spr_phone_at(d,at,&r)&&reloq61_spr_feature(d,&r,0)==15&&
+        prior_phone(d,&r,&i)&&reloq61_spr_feature(d,&i,0)==28&&
+        prior_phone(d,&i,&f)&&reloq61_spr_feature(d,&f,0)==7&&
+        reloq61_spr_phone_at(d,r.after,&u)&&reloq61_spr_feature(d,&u,0)==36&&
+        reloq61_spr_feature(d,&u,15)==0&&
+        reloq61_spr_phone_at(d,u.after,&n)&&reloq61_spr_feature(d,&n,0)==22&&
+        reloq61_spr_phone_at(d,n.after,&t)&&reloq61_spr_feature(d,&t,0)==3;
+}
 int reloq_dede61_consonant_r(void *state)
 {
     delta_state *d=state;int32_t at;
@@ -51,7 +65,7 @@ int reloq_dede61_consonant_r(void *state)
     if(!reloq61_spr_phone_at(d,at,&p)||reloq61_spr_feature(d,&p,0)!=15)return 0;
     /* Postvocalic /r/ in the same syllable is the vowel source. */
     if(!begins_projection(d,&p,7)&&prior_phone(d,&p,&previous)&&
-       reloq61_spr_feature(d,&previous,1)==1)return 0;
+       reloq61_spr_feature(d,&previous,1)==1&&!reloq_dede61_number_four_r(state))return 0;
     return 1;
 }
 static const struct reloq61_segment_layout layout={
@@ -86,7 +100,8 @@ static const struct reloq61_segment_layout layout={
 int32_t reloq_dede61_addStreamArrayPtVal(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
 {(void)p0;return reloq61_segment_point(state,p1,p2,p3,p4,p5);}
 int32_t reloq_dede61_doAV(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
-{(void)p0;return reloq61_segment_voicing_gain(state,&layout,p1,p2,p3,p4,p5,reloq_dede61_consonant_r(state));}
+{(void)p0;return reloq61_segment_voicing_gain(state,&layout,p1,p2,p3,p4,p5,
+    reloq_dede61_consonant_r(state)-reloq_dede61_final_text_a(state));}
 int32_t reloq_dede61_doAF(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
 {
     (void)p0;
@@ -109,5 +124,29 @@ int32_t reloq_dede61_doFNP(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t 
 {(void)p0;return reloq61_segment_nasal_pole(state,&layout,reloq_dede61_filter_endpoint,p1,p2,p3,p4,p5);}
 int32_t reloq_dede61_apply_speed_anno(void *state,int32_t p0,int32_t p1,int32_t p2)
 {(void)p0;return reloq61_segment_speed(state,&layout,p1,p2);}
+static int32_t german_duration(void *state,int16_t kind,int32_t value)
+{
+    delta_state *d=state;int32_t pos;
+    memcpy(&pos,(const unsigned char *)state+DG_BASE+712,sizeof pos);
+    struct reloq61_spr_phone current,next,prior;
+    if(kind==3&&reloq_dede61_final_text_a(state)&&value<=INT32_MAX-162500)value+=162500;
+    if(kind==0&&
+       reloq61_spr_phone_at(d,pos,&current)&&reloq61_spr_phone_at(d,current.after,&next)) {
+        unsigned id=reloq61_spr_feature(d,&current,0),following=reloq61_spr_feature(d,&next,0);
+        int32_t replacement=0;
+        if(id==7&&reloq61_spr_feature(d,&current,14)==1&&following!=51&&
+           reloq61_spr_feature(d,&next,1)!=1&&begins_projection(d,&next,7)) {
+            int16_t stress;memcpy(&stress,(const unsigned char *)d+DG_BASE+374,2);
+            int stop=following==1||following==3||following==5;
+            replacement=(stop?(stress?100:120):(stress?81:105))*10000;
+        } else if(id==9&&reloq61_spr_feature(d,&current,14)==0&&following==7&&
+                  begins_projection(d,&next,7)&&prior_phone(d,&current,&prior)&&
+                  reloq61_spr_feature(d,&prior,0)==22) {
+            replacement=650000;
+        }
+        if(replacement)value=replacement;
+    }
+    return value;
+}
 int32_t reloq_dede61_insert_dur(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4)
-{(void)p0;return reloq61_segment_duration(state,&layout,p1,p2,p3,p4);}
+{(void)p0;return reloq61_segment_duration_with(state,&layout,p1,p2,p3,p4,german_duration);}
