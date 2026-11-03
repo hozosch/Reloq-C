@@ -7,6 +7,31 @@ on:
 permissions:
   contents: read
 jobs:
+  host:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Install SDK platform
+        run: sdkmanager 'platforms;android-35'
+      - name: Build host core for JNI and language checks
+        run: make -C eci -j2 all PROVIDER_LTO=-flto=2
+      - name: Check all UI locales and actual native language routes
+        run: |
+          python3 android/test_translations.py --library eci/libreloq_eci.so
+          python3 android/test_settings.py --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar"
+          python3 android/test_direct_boot.py --java-home "$JAVA_HOME" --library eci/libreloq_eci.so
+          python3 android/test_native_transport.py --java-home "$JAVA_HOME"
   android:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
@@ -24,14 +49,10 @@ jobs:
           log-accepted-android-sdk-licenses: false
       - name: Install SDK and NDK
         run: sdkmanager 'ndk;30.0.16248370' 'platforms;android-35' 'build-tools;35.0.1'
-      - name: Build host core for JNI and language checks
-        run: make -C eci -j2 all PROVIDER_LTO=-flto=2
-      - name: Check all UI locales and actual native language routes
+      - name: Check resources and Direct Boot service lifecycle
         run: |
-          python3 android/test_translations.py --library eci/libreloq_eci.so
-          python3 android/test_settings.py --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar"
-          python3 android/test_direct_boot.py --java-home "$JAVA_HOME" --library eci/libreloq_eci.so
-          python3 android/test_native_transport.py --java-home "$JAVA_HOME"
+          python3 android/test_translations.py
+          python3 android/test_direct_boot.py --java-home "$JAVA_HOME"
       - name: Fetch preceding release for upgrade verification
         env:
           GH_TOKEN: ${{ github.token }}
