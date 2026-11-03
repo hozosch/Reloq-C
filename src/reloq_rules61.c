@@ -79,9 +79,9 @@ static int german_letter(unsigned char c)
 static int german_word_byte(unsigned char c)
 {return german_letter(c)||(c>='0'&&c<='9')||c=='_'||c=='\'';}
 
-/* German low quotes and guillemets otherwise disrupt the native hyphen
- * compound scanner. Normalize matched quoted passages containing a written
- * hyphenated word; leave isolated and explicitly spelled symbols alone. */
+/* German low quotes and guillemets can disrupt native compound and question
+ * analysis. Normalize matched quoted passages containing a written hyphenated
+ * word or a question mark; leave isolated and explicitly spelled symbols alone. */
 static int german_quote_close(unsigned char open,unsigned char close)
 {
     switch(open) {
@@ -97,20 +97,21 @@ static int german_quote_close(unsigned char open,unsigned char close)
 }
 static int german_compound_alnum(unsigned char c)
 {return german_letter(c)||(c>='0'&&c<='9')||c=='_';}
-static void german_normalize_compound_quotes(unsigned char *a,size_t n,size_t i)
+static void german_normalize_quoted_text(unsigned char *a,size_t n,size_t i)
 {
     unsigned char opening=a[i];
     if(opening!=0x84&&opening!=0x93&&opening!=0xab&&opening!=0xbb&&
        opening!=0x82&&opening!=0x91&&opening!='\'')return;
     if(i+1>=n || (i&&(a[i-1]=='\\'||german_compound_alnum(a[i-1]))))return;
-    size_t end=i+1,limit=n-i>4096?i+4096:n;int hyphen=0;
+    size_t end=i+1,limit=n-i>4096?i+4096:n;int hyphen=0,question=0;
     while(end<limit) {
         unsigned char c=a[end];
         if(german_quote_close(opening,c)) {
-            if(hyphen)a[i]=a[end]='"';
+            if(hyphen||question)a[i]=a[end]='"';
             return;
         }
         if(c=='\n'||c=='\r')return;
+        if(c=='?')question=1;
         if(c=='-'&&end>i+1&&end+1<n&&
            german_compound_alnum(a[end-1])&&german_compound_alnum(a[end+1]))hyphen=1;
         ++end;
@@ -124,7 +125,7 @@ static void german_compact_input(unsigned char *a,size_t *map,size_t *length,int
     for(size_t i=0;i<n;) {
         struct reloq_inline_tag t=tags?reloq_inline_tag_read(a+i,n-i,0):(struct reloq_inline_tag){0};
         if(!tags&&!in_spr&&a[i]=='`'&&i+1<n&&a[i+1]=='[')in_spr=1;
-        if(!spelling&&!in_spr&&!t.length)german_normalize_compound_quotes(a,n,i);
+        if(!spelling&&!in_spr&&!t.length)german_normalize_quoted_text(a,n,i);
         int end_spr=in_spr&&a[i]==']';
         size_t count=t.length?t.length:1;int omit=0;
         if(t.kind==RELOQ_TAG_SPELL)spelling=t.value;

@@ -14,7 +14,8 @@ bleibt in der nativen Analyse. Geklammerte Bindestrichwörter werden bei
 passenden typografischen Anführungszeichen wie bei geraden Anführungszeichen
 analysiert. Bei schwach betonten Verben nach dem Satzakzent entfällt in
 Aussagesätzen eine zusätzliche Anhebung der Satzmelodie. Verschiedene deutsche
-Fragetypen erhalten am Ende wieder eine steigende Kontur. Die Wirkung von R,
+Fragetypen erhalten am Ende wieder eine steigende Kontur, auch vor passenden
+schließenden typografischen Anführungszeichen. Die Wirkung von R,
 A und Satzmelodie muss im NVDA-Hörvergleich beurteilt werden.
 
 # Testkandidat 1.1.0-rc17: R, N, A und deutsche Tonhöhe

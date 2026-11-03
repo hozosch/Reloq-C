@@ -100,6 +100,16 @@ def main():
                 for left, right in (('„', '“'), ('“', '”'), ('«', '»'), ('‚', '‘')):
                     assert render(e, ['Er sagte: ' + left + passage + right + ' und ging.']) == expected, (passage, left)
                     checks += 1
+            # A question mark immediately before a typographic closing quote
+            # must retain sentence punctuation rather than become spoken text.
+            for question in ('Wie geht das?', 'Warum funktioniert das nicht?', 'Was?'):
+                expected = render(e, ['Er sagte: "' + question + '"'])
+                expected_phones = phonemes(e, '"' + question + '"')
+                for left, right in (('„', '“'), ('“', '”'), ('«', '»'), ('‚', '‘')):
+                    quoted = left + question + right
+                    assert phonemes(e, quoted) == expected_phones, quoted
+                    assert render(e, ['Er sagte: ' + quoted]) == expected, quoted
+                    checks += 1
             p = phonemes(e, 'Test-Solo')
             assert 'bIn.0d@' not in p and p.count('tEst') == 2, p
             checks += 1
