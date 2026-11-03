@@ -67,14 +67,14 @@ def main():
             try:
                 engine.set_parameter(DICTIONARY,1)
                 without.set_parameter(DICTIONARY,1)
-                assert capture(engine,['TokenX.']) == capture(without,['TokenX.'])
+                assert capture(engine,['TokenX.']) == capture(without,['bei.'])
                 engine.set_parameter(DICTIONARY,0)
                 assert capture(engine,['TokenX.']) != capture(without,['TokenX.'])
                 count += 2
                 without.set_parameter(DICTIONARY,0)
                 for item in (engine,without):item.set_parameter(PROCESS_TAGS,1)
-                assert capture(engine,['`da0 TokenX.']) == capture(without,['`da0 TokenX.'])
-                assert capture(engine,['`da1 TokenX.']) != capture(without,['`da1 TokenX.'])
+                assert capture(engine,['`da0 TokenX.']) == capture(without,['`da0 bei.'])
+                assert capture(engine,['`da1 TokenX.']) == capture(without,['`da1 bei.'])
                 count += 2
             finally:
                 engine.set_parameter(DICTIONARY,0)

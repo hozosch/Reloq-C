@@ -329,12 +329,12 @@ size_t reloq61_dictionary_match(const unsigned char *text,size_t length)
 extern const struct reloq_lexicon_override *reloq61_dictionary_find_lexical(
     void *,const unsigned char *,size_t);
 const struct reloq_lexicon_override *reloq61_dictionary_long_override(
-    const unsigned char *text,size_t length,int native_dictionary_enabled)
+    const unsigned char *text,size_t length)
 {
     struct provider_worker *w=owner_worker;
     const struct reloq_lexicon_override *found=NULL;
     if(!w||w->language!=0x40000||length<=100)return NULL;
-    if(native_dictionary_enabled&&w->dictionary) {
+    if(w->dictionary) {
         found=reloq61_dictionary_find_lexical(w->dictionary,text,length);
         if(found)return found;
         if(reloq61_dictionary_match(text,length))return NULL;

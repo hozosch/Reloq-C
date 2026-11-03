@@ -110,7 +110,7 @@ static void german_compact_input(unsigned char *a,size_t *map,size_t *length,int
 
 struct german_shared_buffer {unsigned char *bytes;size_t *map,used,capacity;};
 extern const struct reloq_lexicon_override *reloq61_dictionary_long_override(
-    const unsigned char *,size_t,int);
+    const unsigned char *,size_t);
 static int german_shared_append(struct german_shared_buffer *b,const unsigned char *bytes,
     const size_t *map,size_t count,size_t origin)
 {
@@ -134,12 +134,10 @@ static int german_main_input(unsigned char **text,size_t **source,size_t *length
 {
     const unsigned char *a=*text;const size_t *map=*source,n=*length;
     struct german_shared_buffer b={0};int spelling=0,changed=0;
-    int dictionary_disabled=reloq61_text_options_current().dictionary_disabled;
     for(size_t i=0;i<n;) {
         struct reloq_inline_tag t=tags?reloq_inline_tag_read(a+i,n-i,0):(struct reloq_inline_tag){0};
         if(t.length) {
             if(t.kind==RELOQ_TAG_SPELL)spelling=t.value;
-            if(t.kind==RELOQ_TAG_DICTIONARY)dictionary_disabled=!t.value;
             if(t.kind==RELOQ_TAG_SPELL&&(!b.used||b.bytes[b.used-1]!=' ')) {
                 if(german_shared_append(&b,(const unsigned char *)" ",NULL,1,map[i]))goto fail;
                 changed=1;
@@ -159,9 +157,9 @@ static int german_main_input(unsigned char **text,size_t **source,size_t *length
         while(end<n&&(german_word_byte(a[end])||
             (a[end]=='-'&&end+1<n&&german_word_byte(a[end+1]))))++end;
         while(i<end) {
-            size_t stop=end;const char *value=dictionary_disabled?NULL:reloq61_dictionary_main_text(a+i,stop-i);
+            size_t stop=end;const char *value=reloq61_dictionary_main_text(a+i,stop-i);
             if(!value){stop=i;while(stop<end&&a[stop]!='-')++stop;
-                value=dictionary_disabled?NULL:reloq61_dictionary_main_text(a+i,stop-i);}
+                value=reloq61_dictionary_main_text(a+i,stop-i);}
             size_t value_length=value?strlen(value):0,utf8_length=0;
             unsigned char utf8[1537];
             if(value&&value_length<=512&&!reloq_cp1252_decode((const unsigned char *)value,
@@ -187,12 +185,10 @@ static int german_long_overlay_input(unsigned char **text,size_t **source,size_t
 {
     const unsigned char *a=*text;const size_t *map=*source,n=*length;
     struct german_shared_buffer b={0};int spelling=0,changed=0;
-    int dictionary_disabled=reloq61_text_options_current().dictionary_disabled;
     for(size_t i=0;i<n;) {
         struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,0);
         if(t.length&&(tags||t.kind==RELOQ_TAG_SPR||t.kind==RELOQ_TAG_PROMINENCE)) {
             if(tags&&t.kind==RELOQ_TAG_SPELL)spelling=t.value;
-            if(tags&&t.kind==RELOQ_TAG_DICTIONARY)dictionary_disabled=!t.value;
             if(changed&&german_shared_append(&b,a+i,map+i,t.length,0))goto fail;
             i+=t.length;continue;
         }
@@ -200,7 +196,7 @@ static int german_long_overlay_input(unsigned char **text,size_t **source,size_t
         if(!spelling&&german_word_byte(a[i])&&(!i||!german_word_byte(a[i-1])))
             while(end<n&&german_word_byte(a[end]))++end;
         const struct reloq_lexicon_override *entry=end>i+100?
-            reloq61_dictionary_long_override(a+i,end-i,!dictionary_disabled):NULL;
+            reloq61_dictionary_long_override(a+i,end-i):NULL;
         if(entry) {
             if(!changed){if(german_shared_append(&b,a,map,i,0))goto fail;changed=1;}
             if(german_shared_append(&b,entry->spr,NULL,entry->spr_length,map[i]))goto fail;

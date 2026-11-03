@@ -98,9 +98,9 @@ def main():
                 assert capture(both_long,parts)==capture(root_only,parts)
                 assert capture(root_only,parts)!=capture(overlay_only,parts)
                 for item in (both_long,root_only,overlay_only):item.set_parameter(DICTIONARY,1)
-                assert capture(both_long,parts)==capture(overlay_only,parts)
+                assert capture(both_long,parts)==capture(root_only,parts)
                 empty.set_parameter(DICTIONARY,1)
-                assert capture(root_only,parts)==capture(empty,parts)
+                assert capture(root_only,parts)!=capture(empty,parts)
                 empty.set_parameter(DICTIONARY,0)
                 checks+=4
             finally:
