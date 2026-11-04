@@ -31,7 +31,7 @@ jobs:
           python3 - <<'PY'
           import re, statistics
           from pathlib import Path
-          rx = re.compile(r"language=(\\w+) hz=(\\d+) events=(\\d) words=(\\d+) iteration=(\\d) first_ms=([\\d.]+) playable_ms=([\\d.]+) total_ms=([\\d.]+) samples=(\\d+)")
+          rx = re.compile(r"language=(\w+) hz=(\d+) events=(\d) words=(\d+) iteration=(\d) first_ms=([\d.]+) playable_ms=([\d.]+) total_ms=([\d.]+) samples=(\d+)")
           def read(path):
               rows = []
               for line in Path(path).read_text().splitlines():
