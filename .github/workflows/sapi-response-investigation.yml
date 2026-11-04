@@ -63,3 +63,6 @@ jobs:
           assert android_name('1.1.0', 'reloq-c-android-arm64-1.1.0.apk')
           assert not android_name('1.1.0', 'reloq-c-android-arm64-1.1.0-preview1.apk')
           PY
+  windows:
+    needs: measure
+    uses: ./.github/workflows/sapi-installer.yml
