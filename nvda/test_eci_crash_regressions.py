@@ -160,6 +160,14 @@ def main():
                     ('daneben', ' `vv100 `[.1da.0ne.0b@n]'),
                     ('dagegen', ' `vv100 `[.0da.1ge.0g@n]'),
                     ('dagegen-Stimme', ' `vv100 `[.0da.1ge.0g@n.2StI.0m@]'),
+                    # The second constituent must begin at the hyphen, not
+                    # inside "en"; compare ordinary encoder compounds too.
+                    ('audio-encoder', ' `vv100 `[.2\'aw\'.0djo.0EG.1ko.0dR]'),
+                    ('video-encoder', ' `vv100 `[.2vi.0de.0o.0EG.1ko.0dR]'),
+                    ('macro-encoder', ' `vv100 `[.2mA.0kro.0EG.1ko.0dR]'),
+                    ('radio-encoder', ' `vv100 `[.1ra.0djo.0EG.2ko.0dR]'),
+                    ('„audio-encoder“', ' `vv100 `[.2\'aw\'.0djo.0EG.1ko.0dR]'),
+                    ('vorne-audio-encoder-hinten', ' `vv100 `[.1fOr.0n@.2\'aw\'.0djo.0EG.0ko.0dR.2hIn.0t@n]'),
                 ):
                     assert phonemes(engine, text) == expected, (text, phonemes(engine, text))
                     checks += 1

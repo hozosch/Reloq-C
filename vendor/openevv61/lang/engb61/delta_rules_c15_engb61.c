@@ -9714,7 +9714,7 @@ L7123:;
 L7139:;
     int32_t reloq_original_phone_end=0;
     if((int32_t)AT(int32_t, -168)==1 &&
-       (int32_t)AT(int32_t, -172)==delta_sym_ref[4496]) {
+       (int32_t)AT(int32_t, -172)==delta_sym_ref[4508]) {
         reloq_original_phone_end=reloq61_english_reserve_final_vowel(state);
         if(reloq_original_phone_end)
             ((delta_state *)state)->rpta.node=STATE(int32_t,w61);
