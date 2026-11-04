@@ -121,7 +121,11 @@ def main():
             assert render(e, ['A-Solo-Zup']) == render(e, [p])
             p = phonemes(e, 'AI-Solo')
             assert p.count('`[') == 3, p
-            checks += 7
+            for word in ('A-B-Solo', 'A-Solo-A'):
+                p = phonemes(e, word)
+                assert p.count('`[') == 3, (word, p)
+                assert render(e, [word]) == render(e, [p])
+            checks += 11
             for word, target in (('ETI-Zup', 'tEst'), ('ETI-zup', 'kAt')):
                 assert target in phonemes(e, word), word
                 checks += 1

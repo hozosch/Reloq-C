@@ -1,8 +1,9 @@
 # Shared German sentence path
 
 German uses the same native sentence and acoustic planning path as the other
-languages by default. `RELOQ_DE_LEGACY=1` selects the previous German composer
-only for diagnostics; native synthesis failures do not automatically fall back.
+languages. The previous diagnostic composer is no longer linked into the ECI
+library; its historical source remains available to developer comparison tests.
+Native synthesis failures do not automatically fall back to it.
 
 The caller's case-sensitive RLEX pronunciations are attached to the native
 Root stage after explicit native Root entries. Explicit RLEX words over 100
@@ -11,6 +12,8 @@ continues through the same native rules. Main aliases are normalized before
 the sentence rules, and already loaded dictionary snapshots survive source-file
 removal and overlay reload. Equivalent EUR/Euro/euro-sign amounts use the
 native German currency rule, and phoneme output follows the same normalization.
+User dictionary components in hyphenated compounds are resolved through the
+native grammar while retaining the compound's word and stress structure.
 Native pause boundaries support the existing final and internal silence policy.
 
 The male-only 2-dB /ts/ and /tsv/ correction is carried as acoustic endpoint

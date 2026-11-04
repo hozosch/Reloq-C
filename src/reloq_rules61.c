@@ -5,7 +5,6 @@
 #include "reloq_german_voice_model.h"
 #include "reloq_german_lexicon.h"
 #include "reloq_german_spr.h"
-#include "reloq_german_best_effort_text.h"
 #include "reloq_inline_tags.h"
 #include "reloq_character.h"
 #include "reloq_cp1252.h"
@@ -313,6 +312,105 @@ static int german_append_compound_parts(struct german_shared_buffer *b,
     return 0;
 }
 
+/* Ask the native grammar for the phones of the compound with the caller's
+ * explicit components substituted. This supplies only a comparison target:
+ * actual surrounding sentence analysis always stays in the native path. */
+static int german_native_compound_preferred(const unsigned char *text,const size_t *map,
+    size_t begin,size_t end,const struct reloq_lexicon *overlay,
+    unsigned char **out,size_t *out_length)
+{
+    struct german_shared_buffer input={0};
+    if(german_append_compound_parts(&input,text,map,begin,end,overlay)) {
+        free(input.bytes);free(input.map);return -2;
+    }
+    if(!input.bytes){free(input.map);return 1;}
+    input.bytes[input.used]=0;
+    unsigned char *phones=malloc(8192);
+    if(!phones){free(input.bytes);free(input.map);return -2;}
+    struct reloq61_request q={.language=0x40000,.annotations=1,.phonemes_only=1,
+        .voice={0,50,65,30,0,0,50,100},.text=(char *)input.bytes,
+        .phonemes=(char *)phones,.phonemes_capacity=8192};
+    struct reloq61_result result={0};
+    int failed=reloq61_generate(&q,&result)||result.error||result.unsupported||
+        result.phonemes_length>=8192;
+    free(input.bytes);free(input.map);
+    if(failed){free(phones);return 1;}
+    phones[result.phonemes_length]=0;
+    /* If the original compound is one native lexical word, preserve that
+     * shape when a component needed explicit replacement. Separate SPR
+     * groups can otherwise change the word focus and index positions. */
+    if(end-begin<256) {
+        char original[256],native[8192]={0};
+        memcpy(original,text+begin,end-begin);original[end-begin]=0;
+        q.text=original;q.phonemes=native;q.phonemes_capacity=sizeof native;
+        struct reloq61_result original_result={0};
+        if(!reloq61_generate(&q,&original_result)&&!original_result.error&&
+           !original_result.unsupported&&original_result.phonemes_length<sizeof native) {
+            const char *first=strstr(native,"`[");
+            const char *next=first?strstr(first+2,"`["):NULL;
+            size_t candidate_groups=0;
+            for(const char *p=(const char *)phones;(p=strstr(p,"`["))!=NULL;p+=2)
+                ++candidate_groups;
+            int merge=first&&(!next||candidate_groups==2);
+            if(first&&!merge&&candidate_groups>2) {
+                /* Main entries can make the raw grammar spell out the
+                 * hyphens, so its group count is not a word count. A
+                 * component that is itself a multiword initialism must
+                 * stay separate; otherwise retain one compound group. */
+                merge=1;
+                for(size_t at=begin;at<end&&merge;) {
+                    size_t stop=at;while(stop<end&&text[stop]!='-')++stop;
+                    /* A later isolated letter is an initialism boundary,
+                     * even though its own pronunciation has one group. */
+                    if(at>begin&&stop-at==1&&german_letter(text[at])){merge=0;break;}
+                    const struct reloq_lexicon_override *entry=NULL;
+                    (void)reloq_lexicon_find_override(overlay,text+at,stop-at,&entry);
+                    if(entry) {
+                        size_t groups=0;
+                        for(size_t k=0;k+1<entry->spr_length;++k)
+                            if(entry->spr[k]=='`'&&entry->spr[k+1]=='[')++groups;
+                        if(groups!=1)merge=0;
+                    } else {
+                        char part[256];size_t n=stop-at;
+                        if(!n||n>=sizeof part){merge=0;break;}
+                        memcpy(part,text+at,n);part[n]=0;
+                        memset(native,0,sizeof native);q.text=part;
+                        struct reloq61_result part_result={0};
+                        if(reloq61_generate(&q,&part_result)||part_result.error||
+                           part_result.unsupported||part_result.phonemes_length>=sizeof native) {
+                            merge=0;break;
+                        }
+                        const char *one=strstr(native,"`[");
+                        if(!one||strstr(one+2,"`["))merge=0;
+                    }
+                    at=stop<end?stop+1:end;
+                }
+            }
+            if(merge) {
+                unsigned char *merged=malloc(8192);size_t used=2,groups=0;
+                if(!merged){free(phones);return -2;}
+                merged[0]='`';merged[1]='[';
+                const char *scan=(const char *)phones,*open;
+                while((open=strstr(scan,"`["))!=NULL) {
+                    const char *close=strchr(open+2,']');
+                    if(!close||used+(size_t)(close-open)>=8192){groups=0;break;}
+                    for(const char *p=open+2;p<close;++p) {
+                        unsigned char c=(unsigned char)*p;
+                        if(groups&&c=='1'&&p>open+2&&p[-1]=='.')c='2';
+                        merged[used++]=c;
+                    }
+                    ++groups;scan=close+1;
+                }
+                if(groups>1) {
+                    merged[used++]=']';merged[used]=0;
+                    free(phones);phones=merged;result.phonemes_length=used;
+                } else free(merged);
+            }
+        }
+    }
+    *out=phones;*out_length=result.phonemes_length;return 0;
+}
+
 /* A native compound can split a final dictionary constituent as an inflected
  * stem before Root lookup. When a supplied entry is missing from the complete
  * pronunciation, resolve just that lexical token with the existing compound
@@ -354,10 +452,10 @@ static int german_dictionary_compound_input(unsigned char **text,size_t **source
             }
         }
         unsigned char *preferred=NULL;size_t preferred_n=0;
-        unsigned char utf8[1024],native[4096];size_t utf8_n=0,native_n=0;
-        if(lexical&&!reloq_cp1252_decode(a+i,end-i,utf8,sizeof utf8,&utf8_n,NULL)) {
+        unsigned char native[4096];size_t native_n=0;
+        if(lexical) {
             struct reloq61_text_options previous_options=reloq61_text_options_scope(options);
-            int result=reloq_german_dictionary_compound(utf8,utf8_n,overlay,&preferred,&preferred_n);
+            int result=german_native_compound_preferred(a,map,i,end,overlay,&preferred,&preferred_n);
             reloq61_text_options_scope(previous_options);
             if(result==-2){free(preferred);status=-1;break;}
             if(result) {free(preferred);preferred=NULL;}

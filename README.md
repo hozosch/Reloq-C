@@ -4,12 +4,13 @@ ReLoq C is a speech synthesis project that preserves the familiar character of E
 
 The shared synthesis engine is written in C. NVDA, Android ARM64 and Windows SAPI5 use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
 
-The development branch is preparing **1.1.0-rc17**. German now uses the
+The development branch is preparing **1.1.0-rc23**. German now uses the
 shared native sentence and acoustic path, including long sentences and
 expressions with hyphens or slashes. Native word boundaries carry voice tags,
 while caller dictionaries and the accepted male-only initial /ts/ adjustment
 remain available. The established C high-rate sound and Greek/Castilian filter
-are retained. The new German voice and vocalic-r colour need listening tests;
+are retained. German number transitions, “Homepage”, “veröffentlicht” and
+“samt” have further listening-test adjustments; the new voice needs feedback;
 see [the current work and verification limits](docs/CURRENT-WORK.md).
 Android Direct Boot retains separate copies of active settings and dictionaries
 before first unlock.

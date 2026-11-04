@@ -3,7 +3,7 @@
 - Bei 42 und 43 erhält der Übergang von „zwei“ beziehungsweise „drei“ zu „und“ wieder die Zeitpunkte des alten Planers; die verbindende Aussprache ohne Glottisschlag bleibt erhalten. Vor „achtzig“ wird der Glottisschlag in den zusammengesetzten Achtzigern wieder gesetzt.
 - Der J-Gleitlaut in „Homepage“ geht vom Ei-Gleitlaut aus und wird leicht in Richtung langes I verschoben. Die Klangwirkung benötigt einen Hörtest.
 - Die unbetonte Silbe in „veröffentlicht“ und seinen Beugungsformen entspricht „veröffentlichen“. Das unabhängige Wort „samt“ erhält stimmhaftes S; ausdrückliche Wörterbucheinträge haben weiterhin Vorrang.
-- Die Übernahme des Wörterbuch-Zusammensetzungswegs und die Entfernung des alten Diagnosepfads werden zusammen mit dem gepackten Treiber und den Plattformen geprüft.
+- Nutzerwörterbucheinträge in Bindestrichzusammensetzungen werden im nativen Pfad berücksichtigt. Der alte Satz- und Akustikplaner ist aus dem ausgelieferten ECI-Kern entfernt; sein Quelltext bleibt für Entwicklervergleiche erhalten.
 
 # Testkandidat 1.1.0-rc22: Deutsches R, finales A und Zahlübergänge
 
