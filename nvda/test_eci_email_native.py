@@ -26,7 +26,7 @@ def main():
         lex = Path(folder) / "german.rlex"
         lex.write_bytes(merged_german_lexicon())
         engine = DirectEciEngine(ROOT / "eci/libreloq_eci.so",
-                                experimental_generic=True, lexicon_path=lex)
+                                native_voice=True, lexicon_path=lex)
         try:
             engine.set_parameter(PROCESS_TAGS, 1)
             def render(parts):

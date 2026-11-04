@@ -12,8 +12,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', type=Path, required=True)
     library = parser.parse_args().library.resolve()
-    first = DirectEciEngine(library, dialect=0x40000, encoding='utf8', experimental_generic=True)
-    other = DirectEciEngine(library, dialect=0x40000, encoding='utf8', experimental_generic=True)
+    first = DirectEciEngine(library, dialect=0x40000, encoding='utf8', native_voice=True)
+    other = DirectEciEngine(library, dialect=0x40000, encoding='utf8', native_voice=True)
     checks = 0
     try:
         defaults = {GERMAN_GLIDE_OPENING: 85, GERMAN_GLIDE_BACKNESS: 45,

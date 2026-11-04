@@ -3,7 +3,7 @@
 
 No Gradle, original modules or audio files are involved. Builds resolve the
 current community dictionary master; synthesis itself is offline.
-The checked-in signing identity is PUBLIC and for preview builds only.
+The checked-in signing identity is public; keep it for continuity only.
 """
 from pathlib import Path
 import argparse
@@ -33,7 +33,7 @@ def main():
     parser.add_argument("--jobs",type=int,default=4)
     parser.add_argument("--build-dir",type=Path,help="isolated Android build directory")
     parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-1.1.0.apk")
-    parser.add_argument("--keystore",type=Path,default=HERE/"preview-debug.p12")
+    parser.add_argument("--keystore",type=Path,default=HERE/"release-signing.p12")
     parser.add_argument("--verified-dictionaries",action="store_true",
         help="use locally verified data after separately resolving its current master commit")
     parser.add_argument("--upgrade-from",type=Path,help="require an in-place update over this signed APK")

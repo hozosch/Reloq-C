@@ -28,7 +28,7 @@ def main():
             language = row['language']
             if language not in engines:
                 engine = engines[language] = DirectEciEngine(args.library.resolve(), dialect=language,
-                    encoding='utf8', experimental_generic=True)
+                    encoding='utf8', native_voice=True)
                 for key, value in ((NATIVE_SPEED, 60), (NATIVE_PITCH, 65), (NATIVE_INFLECTION, 30),
                     (HEAD_SIZE, 50), (NATIVE_VOLUME, 100), (GENDER, 0), (ROUGHNESS, 0), (BREATHINESS, 0),
                     (PAUSE_MODE, 0), (PROCESS_TAGS, 0)):

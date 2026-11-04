@@ -211,7 +211,7 @@ def main():
         '2006-2026 und 1 234 567.']
     with tempfile.TemporaryDirectory() as tmp:
         lex=Path(tmp)/'german.rlex';lex.write_bytes(merged_german_lexicon())
-        engine=DirectEciEngine(ROOT/'eci/libreloq_eci.so',experimental_generic=True,lexicon_path=lex)
+        engine=DirectEciEngine(ROOT/'eci/libreloq_eci.so',native_voice=True,lexicon_path=lex)
         try:
             for rate,volume in [(50,100),(80,100),(50,0)]:
                 engine.set_parameter(GENERIC_RATE,rate);engine.set_parameter(GENERIC_VOLUME,volume)

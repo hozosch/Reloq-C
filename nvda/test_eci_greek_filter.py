@@ -18,9 +18,9 @@ def main():
     parser.add_argument('--baseline', type=Path)
     args = parser.parse_args()
     engine = DirectEciEngine(args.library.resolve(), dialect=0x120000,
-                             encoding='utf8', experimental_generic=True)
+                             encoding='utf8', native_voice=True)
     old = (DirectEciEngine(args.baseline.resolve(), dialect=0x120000,
-                           encoding='utf8', experimental_generic=True)
+                           encoding='utf8', native_voice=True)
            if args.baseline else None)
     ratios = identities = 0
     try:

@@ -35,7 +35,7 @@ def phonemes(engine,text):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library',type=Path,required=True);args=parser.parse_args()
-    engine=DirectEciEngine(args.library.resolve(),dialect=0x40000,experimental_generic=True)
+    engine=DirectEciEngine(args.library.resolve(),dialect=0x40000,native_voice=True)
     checks=0
     try:
         engine.set_parameter(PROCESS_TAGS,1)

@@ -25,7 +25,7 @@ def main():
     p.add_argument('--baseline', type=Path, required=True)
     a = p.parse_args()
     engines = [DirectEciEngine(path.resolve(), dialect=0x40000, encoding='utf8',
-                               experimental_generic=True)
+                               native_voice=True)
                for path in (a.baseline, a.library)]
     onset = ('Zehn.', 'Zwei.', 'Zahn.', 'Zimmer.', 'zwanzig.', 'Der Zahn.',
              'Das ist Zeit.', 'dazwischen.')

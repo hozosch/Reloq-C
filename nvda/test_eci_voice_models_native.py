@@ -14,7 +14,7 @@ def main():
     with tempfile.TemporaryDirectory() as directory:
         folder=Path(directory)
         (folder/'eci.dll').symlink_to(ROOT/'eci/libreloq_eci.so')
-        direct=DirectEciEngine(folder/'eci.dll',experimental_generic=True,lexicon_path=None)
+        direct=DirectEciEngine(folder/'eci.dll',native_voice=True,lexicon_path=None)
         routed=LanguageEngine(folder/'eci.dll')
         def render(engine,parts):
             chunks=[];indices=[]
@@ -47,7 +47,7 @@ def main():
         # A used session must converge to a fresh one regardless of which
         # head size was active when its rate/model defaults were created.
         for code,g,h in itertools.product((0,1,3,6),(0,1),(22,29,30,40,50)):
-            fresh=DirectEciEngine(folder/'eci.dll',experimental_generic=True,lexicon_path=None)
+            fresh=DirectEciEngine(folder/'eci.dll',native_voice=True,lexicon_path=None)
             try:
                 fresh.set_parameter(HEAD_SIZE,h)
                 for engine in (fresh,direct):

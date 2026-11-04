@@ -37,7 +37,7 @@ EXCEPTIONS = {0x20000: 'Susana usa seis vasos.',
 
 def engine(path, dialect):
     e = DirectEciEngine(path, dialect=dialect, encoding='utf8',
-                        experimental_generic=True, lexicon_path=None)
+                        native_voice=True, lexicon_path=None)
     for p, v in ((NATIVE_SPEED, 75), (NATIVE_PITCH, 65),
                  (NATIVE_INFLECTION, 30), (NATIVE_VOLUME, 100),
                  (GENDER, 0), (HEAD_SIZE, 50)):

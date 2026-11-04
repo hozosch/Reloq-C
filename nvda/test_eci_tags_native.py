@@ -17,7 +17,7 @@ def main():
         lex = Path(folder) / "german.rlex"
         lex.write_bytes(merged_german_lexicon())
         engine = DirectEciEngine(ROOT / "eci/libreloq_eci.so",
-                                experimental_generic=True, lexicon_path=lex)
+                                native_voice=True, lexicon_path=lex)
         try:
             for parameter, value in [(NATIVE_SPEED, 50), (NATIVE_PITCH, 65),
                                      (NATIVE_INFLECTION, 30), (NATIVE_VOLUME, 100)]:

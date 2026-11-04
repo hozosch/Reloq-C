@@ -22,7 +22,7 @@ def main():
     args = parser.parse_args(); checks = 0
     for language in LANGUAGES.values():
         engines = [DirectEciEngine(path.resolve(), dialect=language.id,
-                                   encoding='utf8', experimental_generic=True)
+                                   encoding='utf8', native_voice=True)
                    for path in (args.baseline, args.library)]
         try:
             for engine in engines:

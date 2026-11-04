@@ -53,7 +53,7 @@ def main():
 
     transport = EciTextTransport(
         lambda: DirectEciEngine(
-            ROOT / "eci/libreloq_eci.so", experimental_generic=True,
+            ROOT / "eci/libreloq_eci.so", native_voice=True,
             lexicon_path=ROOT / "data/german_apple_observed.rlex"),
         player, lambda index: observed.append(("index", index)),
         done, errors.append, complete_on_error=True)

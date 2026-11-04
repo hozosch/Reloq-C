@@ -1,4 +1,4 @@
-package org.reloq.tts.preview;
+package org.reloq.tts;
 
 /** Settings copied for one request; usable in host tests without Android. */
 final class VoiceSettings {

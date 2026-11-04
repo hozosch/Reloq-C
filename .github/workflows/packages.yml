@@ -60,8 +60,8 @@ jobs:
       - name: Check official-release update selection
         run: |
           python3 android/test_versioning.py
-          javac -d /tmp/reloq-update-test android/java/org/reloq/tts/preview/UpdateData.java android/test/UpdateDataTest.java
-          java -cp /tmp/reloq-update-test org.reloq.tts.preview.UpdateDataTest
+          javac -d /tmp/reloq-update-test android/java/org/reloq/tts/UpdateData.java android/test/UpdateDataTest.java
+          java -cp /tmp/reloq-update-test org.reloq.tts.UpdateDataTest
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools

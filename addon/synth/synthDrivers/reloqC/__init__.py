@@ -2,7 +2,6 @@
 
 The packaged ECI DLL is loaded in-process on the transport's persistent
 worker. Speech and playback are queued without blocking NVDA's UI thread.
-The authored exact preview uses a separate ECI handle in its default mode.
 """
 
 from __future__ import annotations

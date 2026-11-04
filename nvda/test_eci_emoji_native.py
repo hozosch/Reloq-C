@@ -53,7 +53,7 @@ def main():
     locale = {2: 0, 3: 1, 5: 2, 6: 3, 7: 4, 8: 5, 9: 6, 10: 7, 18: 8}
     for language in LANGUAGES.values():
         engine = DirectEciEngine(args.library.resolve(), dialect=language.id,
-            encoding='utf8', experimental_generic=True)
+            encoding='utf8', native_voice=True)
         try:
             engine.set_parameter(NATIVE_SPEED, 98)
             for rate in (1, 6):

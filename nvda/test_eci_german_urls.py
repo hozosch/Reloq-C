@@ -36,7 +36,7 @@ def main():
            'Ein- und Ausgang: www.example.org/Text-503.htm, danach lesen.',
            'Unicode: https://example.org/α-42.html und https://example.org/ä-50.html.',
            'Eine lange Adresse https://example.org/'+('segment-12/'*40)+'Seite-504.html, bitte lesen.']
-    engine=DirectEciEngine(args.library.resolve(),dialect=0x40000,encoding='utf8',experimental_generic=True)
+    engine=DirectEciEngine(args.library.resolve(),dialect=0x40000,encoding='utf8',native_voice=True)
     checks=0
     try:
         engine.set_parameter(NATIVE_SPEED,98)

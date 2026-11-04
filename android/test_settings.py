@@ -26,16 +26,16 @@ def main():
     if not a.java_home:p.error("--java-home required")
     with tempfile.TemporaryDirectory() as temporary:
         build=Path(temporary);generate(build/"generated")
-        folder=ROOT/"android/java/org/reloq/tts/preview"
+        folder=ROOT/"android/java/org/reloq/tts"
         sources=[folder/(n+".java") for n in ("PcmQueue","Catalog","VoiceSettings","Preferences","BootPreferences","DictionaryData","UpdateData")]
         sources.extend((build/"generated").rglob("RateCurve.java"))
         sources.extend(ROOT/"android/test"/(n+".java") for n in ("PcmQueueTest","SettingsTest","UpdateDataTest"))
         subprocess.run([str(a.java_home/"bin/javac"),"-encoding","UTF-8","-cp",str(a.android_jar),"-d",str(build),*map(str,sources)],check=True)
         classpath=str(build)+os.pathsep+str(a.android_jar)
         base=[str(a.java_home/"bin/java"),"-cp",classpath]
-        subprocess.run([*base,"org.reloq.tts.preview.PcmQueueTest"],check=True,timeout=30)
-        subprocess.run([*base,"org.reloq.tts.preview.UpdateDataTest"],check=True,timeout=30)
-        result=subprocess.run([*base,"org.reloq.tts.preview.SettingsTest"],check=True,capture_output=True,text=True,timeout=30)
+        subprocess.run([*base,"org.reloq.tts.PcmQueueTest"],check=True,timeout=30)
+        subprocess.run([*base,"org.reloq.tts.UpdateDataTest"],check=True,timeout=30)
+        result=subprocess.run([*base,"org.reloq.tts.SettingsTest"],check=True,capture_output=True,text=True,timeout=30)
         print(result.stdout,end="")
         controls=list(map(int,result.stdout.splitlines()[-1].split("\t")[1:]))
     texts=[("The clear morning light was coming through the window while we talked about "
@@ -51,7 +51,7 @@ def main():
            "closing the window. You can use the keyboard to move between the available options "
            "and select the setting you prefer.")]
     rows=[]
-    engine=DirectEciEngine(a.library.resolve(),dialect=0x10000,encoding="utf8",experimental_generic=True)
+    engine=DirectEciEngine(a.library.resolve(),dialect=0x10000,encoding="utf8",native_voice=True)
     try:
         for percent,speed in zip((100,200),controls):
             engine.set_parameter(NATIVE_SPEED,speed);samples=[]

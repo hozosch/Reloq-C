@@ -28,7 +28,7 @@ def main():
     parser.add_argument('--library',type=Path,required=True)
     parser.add_argument('--baseline',type=Path,required=True)
     args=parser.parse_args()
-    old,new=[DirectEciEngine(p.resolve(),dialect=0x40000,experimental_generic=True)
+    old,new=[DirectEciEngine(p.resolve(),dialect=0x40000,native_voice=True)
              for p in (args.baseline,args.library)]
     checks=0
     try:

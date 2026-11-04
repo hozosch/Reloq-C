@@ -18,7 +18,7 @@ class Stats(ctypes.Structure):
 def worker(library,shim):
     watch=ctypes.CDLL(str(shim));watch.heap_watch_begin.argtypes=[]
     watch.heap_watch_end.argtypes=[ctypes.POINTER(Stats)]
-    engine=DirectEciEngine(library,dialect=0x40000,encoding='utf8',experimental_generic=True)
+    engine=DirectEciEngine(library,dialect=0x40000,encoding='utf8',native_voice=True)
     engine.set_parameter(NATIVE_SPEED,98)
     rows=[]
     try:

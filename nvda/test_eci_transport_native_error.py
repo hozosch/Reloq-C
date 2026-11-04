@@ -74,7 +74,7 @@ def main() -> None:
 
     def engine_factory():
         engine = DirectEciEngine(
-            path, experimental_generic=True,
+            path, native_voice=True,
             lexicon_path=root / "data/german_apple_observed.rlex")
         created.append(engine)
         return engine

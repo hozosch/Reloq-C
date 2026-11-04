@@ -37,7 +37,7 @@ def main():
             (key + '\t' + value + '\n').encode('cp1252') for key, value in aliases.items())
             + b'Macro\t`[.1tEst]\nCycleA\tCycleB\nCycleB\tCycleA\n')
         engine = DirectEciEngine(args.library, dialect=0x40000,
-                                 experimental_generic=True, encoding='utf8',
+                                 native_voice=True, encoding='utf8',
                                  lexicon_path=ROOT / 'data/german_apple_observed.rlex')
         try:
             engine.set_dictionary_path(directory)
@@ -62,7 +62,7 @@ def main():
                 assert capture(engine, source) == capture(engine, expected), word
                 count += 1
             without = DirectEciEngine(args.library, dialect=0x40000,
-                experimental_generic=True, encoding='utf8',
+                native_voice=True, encoding='utf8',
                 lexicon_path=ROOT / 'data/german_apple_observed.rlex')
             try:
                 engine.set_parameter(DICTIONARY,1)
@@ -97,8 +97,8 @@ def main():
         custom.write_bytes(b'RELOQ-DE-SPR-1\n' + b'Test'.hex().upper().encode()
                            + b'\t' + b'`[.1ba.2na.0n@]'.hex().upper().encode() + b'\n')
         plain = DirectEciEngine(args.library, dialect=0x40000,
-                                experimental_generic=True, encoding='utf8')
-        authored = DirectEciEngine(args.library, dialect=0x40000, experimental_generic=True,
+                                native_voice=True, encoding='utf8')
+        authored = DirectEciEngine(args.library, dialect=0x40000, native_voice=True,
                                    encoding='utf8', lexicon_path=custom)
         try:
             for word in ('Test', 'A/B-Test', 'Test/A-B', 'A/Test-B'):
@@ -116,9 +116,9 @@ def main():
         rlex.write_bytes(b'RELOQ-DE-SPR-1\n' + b'Sonderstamm'.hex().upper().encode()
                          + b'\t' + spr.hex().upper().encode() + b'\n')
         native = DirectEciEngine(args.library, dialect=0x40000,
-                                 experimental_generic=True, encoding='utf8')
+                                 native_voice=True, encoding='utf8')
         standard = DirectEciEngine(args.library, dialect=0x40000,
-                                   experimental_generic=True, encoding='utf8', lexicon_path=rlex)
+                                   native_voice=True, encoding='utf8', lexicon_path=rlex)
         try:
             native.set_dictionary_path(directory)
             for word in ('Sonderstamm', 'ETI-Sonderstamm', 'Sonderstamm-Ausgabe'):
@@ -138,7 +138,7 @@ def main():
                 (directory / 'DEURoot.dic').write_text(
                     f'read\t`[.1ri{phone}]\n', encoding='cp1252')
                 engine = DirectEciEngine(args.library, dialect=0x40000,
-                                         experimental_generic=True, encoding='utf8')
+                                         native_voice=True, encoding='utf8')
                 try:
                     engine.set_dictionary_path(directory)
                     streams.append([capture(engine, [word]) for word in (

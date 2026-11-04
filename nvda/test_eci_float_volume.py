@@ -36,7 +36,7 @@ def main():
     gain = 363.184 / 2768.533
     for language, text in TEXTS.items():
         engines = [DirectEciEngine(path.resolve(), dialect=language, encoding='utf8',
-            experimental_generic=True) for path in (a.raw_library, a.library)]
+            native_voice=True) for path in (a.raw_library, a.library)]
         try:
             for e in engines:
                 for param, value in ((HIGH_RATE_PROFILE, a.profile), (NATIVE_SPEED, 75), (GENDER, 1)):

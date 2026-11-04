@@ -8,7 +8,7 @@ from test_eci_german_clock_native import phonemes,render
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library',type=Path,required=True);args=parser.parse_args()
-    engine=DirectEciEngine(args.library.resolve(),dialect=0x40000,experimental_generic=True)
+    engine=DirectEciEngine(args.library.resolve(),dialect=0x40000,native_voice=True)
     words=('See','Sah','Tag','Miete','Höhle','früher','Chance','Restaurant',
            'lower','Auto','Kino','Radio','Foto','Eloquence','Thermometer',
            'Sonnenblume','Fahrrad','Hauptbahnhof','Landstraße','Wortbetonung',

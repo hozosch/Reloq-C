@@ -1,4 +1,4 @@
-package org.reloq.tts.preview;
+package org.reloq.tts;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -152,7 +152,7 @@ public final class SettingsActivity extends Activity {
             String name=item.voice(profiles.getSelectedItemPosition());
             java.util.Set<Voice> voices=tts.getVoices();
             if(voices!=null)for(Voice voice:voices)if(name.equals(voice.getName())){tts.setVoice(voice);break;}
-            tts.speak(text.getText(),TextToSpeech.QUEUE_FLUSH,null,"reloq-preview");
+            tts.speak(text.getText(),TextToSpeech.QUEUE_FLUSH,null,"reloq-test");
         });
         Button stop=new Button(this);stop.setText(R.string.stop);content.addView(stop);
         stop.setOnClickListener(v -> {if(tts!=null)tts.stop();});

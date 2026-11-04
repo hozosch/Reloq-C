@@ -114,7 +114,7 @@ def speak_one(engine: DirectEciEngine, text: str, final_index: int) -> dict:
 
 
 def worker(eci: Path, mode: str, phrase: str, lexicon: Path | None) -> dict:
-    engine = DirectEciEngine(eci, experimental_generic=(mode == "generic"),
+    engine = DirectEciEngine(eci, native_voice=(mode == "generic"),
                              lexicon_path=lexicon if mode == "generic" else None)
     try:
         result = speak_one(engine, phrase, 9101)

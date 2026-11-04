@@ -42,7 +42,7 @@ def main():
     count=0;different=set()
     for lang,texts in CASES.items():
         assert language_for(LANGUAGES[lang].locale,0x40000)==lang
-        engine=DirectEciEngine(DLL,dialect=lang,encoding='utf-8',experimental_generic=True)
+        engine=DirectEciEngine(DLL,dialect=lang,encoding='utf-8',native_voice=True)
         try:
             for code in SAMPLE_RATES:
                 engine.set_parameter(SAMPLE_RATE,code)

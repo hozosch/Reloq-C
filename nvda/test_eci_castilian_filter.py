@@ -54,9 +54,9 @@ def main():
     texts = ("seseo.", "teta.", "Seis sacerdotes están sentados en siete sitios.")
     for dialect in (0x20000, 0x20001) if args.baseline else (0x20000,):
         engine = DirectEciEngine(args.library.resolve(), dialect=dialect,
-                                 encoding="utf8", experimental_generic=True)
+                                 encoding="utf8", native_voice=True)
         baseline = (DirectEciEngine(args.baseline.resolve(), dialect=dialect,
-                    encoding="utf8", experimental_generic=True) if args.baseline else None)
+                    encoding="utf8", native_voice=True) if args.baseline else None)
         try:
             for gender in (0, 1):
                 foundation_ratio = None

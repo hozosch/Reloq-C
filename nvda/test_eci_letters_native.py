@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     engine = DirectEciEngine(ROOT / 'eci/libreloq_eci.so',
-                            experimental_generic=True,
+                            native_voice=True,
                             lexicon_path=ROOT / 'data/german_apple_observed.rlex')
     checks = 0
 

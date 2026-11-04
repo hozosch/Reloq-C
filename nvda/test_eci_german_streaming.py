@@ -73,7 +73,7 @@ def main():
     parser.add_argument('--profile',type=int,choices=(0,1,2,3),default=0)
     args=parser.parse_args()
     paths=(args.reference or args.library,args.library)
-    engines=[DirectEciEngine(p.resolve(),dialect=0x40000,encoding='utf8',experimental_generic=True) for p in paths]
+    engines=[DirectEciEngine(p.resolve(),dialect=0x40000,encoding='utf8',native_voice=True) for p in paths]
     for e in engines:e.set_parameter(HIGH_RATE_PROFILE,args.profile)
     rows=[]
     def check(label,text,speed=120,rate=1,pause=0,gender=0,head=50,breath=0,pitch_marks=False,tags=1):

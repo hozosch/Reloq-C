@@ -27,7 +27,7 @@ def main():
     p.add_argument('--report',type=Path,required=True)
     a=p.parse_args();records=[];inline=0
     for language in LANGUAGES.values():
-        e=DirectEciEngine(a.library.resolve(),dialect=language.id,encoding='utf8',experimental_generic=True)
+        e=DirectEciEngine(a.library.resolve(),dialect=language.id,encoding='utf8',native_voice=True)
         try:
             for rate in (1,6):
                 e.set_parameter(SAMPLE_RATE,rate);lengths=[]

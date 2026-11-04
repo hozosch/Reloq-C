@@ -5,7 +5,7 @@ import re
 
 def generate(destination):
     root=Path(__file__).resolve().parents[1]
-    target=Path(destination)/"org/reloq/tts/preview"
+    target=Path(destination)/"org/reloq/tts"
     target.mkdir(parents=True,exist_ok=True)
     source=(root/"src/reloq_voice_controls.c").read_text()
     block=source.split("time_scale[] = {",1)[1].split("};",1)[0]
@@ -15,7 +15,7 @@ def generate(destination):
     times=[float(b)/float(c or 1) for a,b,c in rows]
     assert all(a>b for a,b in zip(times,times[1:]))
     (target/"RateCurve.java").write_text(
-        'package org.reloq.tts.preview;\n'
+        'package org.reloq.tts;\n'
         '// Generated from src/reloq_voice_controls.c; no separate tempo model.\n'
         'final class RateCurve {\n'
         ' static final int[] SPEEDS={'+','.join(map(str,speeds))+'};\n'

@@ -88,7 +88,7 @@ def verify_permissions(path,aapt2):
     verify_direct_boot_manifest(tree)
     with zipfile.ZipFile(path) as apk:
         dex=apk.read("classes.dex")
-        for removed in (b"Lorg/reloq/tts/preview/UpdateProvider;",
+        for removed in (b"Lorg/reloq/tts/UpdateProvider;",
                         b"android.settings.MANAGE_UNKNOWN_APP_SOURCES",
                         b"android.intent.action.INSTALL_PACKAGE"):
             if removed in dex:raise ValueError("Removed APK installer code remains in DEX")

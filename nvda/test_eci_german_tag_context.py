@@ -43,7 +43,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library',type=Path,required=True)
     args=parser.parse_args();checks=0
-    e=DirectEciEngine(args.library.resolve(),encoding='utf8',experimental_generic=True)
+    e=DirectEciEngine(args.library.resolve(),encoding='utf8',native_voice=True)
     try:
         e.set_parameter(NATIVE_SPEED,75);e.set_parameter(HIGH_RATE_PROFILE,1)
         for rate,hz in SAMPLE_RATES.items():

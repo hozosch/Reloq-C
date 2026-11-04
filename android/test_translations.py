@@ -43,7 +43,7 @@ def main():
                 assert after.text and after.text.strip(), (path, key, "Empty translation")
                 assert Counter(FORMAT.findall(before.text or "")) == Counter(FORMAT.findall(after.text)), (path, key, "Format arguments changed")
                 checks += 1
-    catalog = (ROOT / "android/java/org/reloq/tts/preview/Catalog.java").read_text()
+    catalog = (ROOT / "android/java/org/reloq/tts/Catalog.java").read_text()
     identifiers = [int(value, 16) for value in re.findall(r"new Language\((0x[0-9a-f]+),", catalog)]
     assert len(identifiers) == len(set(identifiers)) == 15
     # Existing persisted indices must retain their language after an update.

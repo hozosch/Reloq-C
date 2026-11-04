@@ -80,7 +80,7 @@ def main():
     checks = 0
     for language, before, after, words in cases:
         engine = DirectEciEngine(args.library.resolve(), dialect=language,
-                                 encoding='utf8', experimental_generic=True)
+                                 encoding='utf8', native_voice=True)
         try:
             engine.set_parameter(PROCESS_TAGS, 1)
             for word in words:
@@ -189,7 +189,7 @@ def main():
     # pitch planner. It currently reports some interior indices at the end,
     # so check the final marker and the actual length of speech on each side.
     engine = DirectEciEngine(args.library.resolve(), dialect=0x60000,
-                             encoding='utf8', experimental_generic=True)
+                             encoding='utf8', native_voice=True)
     try:
         engine.set_parameter(PROCESS_TAGS, 1)
         check_vowelless_frication(engine, 0x60000)
@@ -207,7 +207,7 @@ def main():
     # Korean has its own handling of Latin words and likewise reports some
     # interior marks at the end. Verify the word and surrounding speech.
     engine = DirectEciEngine(args.library.resolve(), dialect=0xa0000,
-                             encoding='utf8', experimental_generic=True)
+                             encoding='utf8', native_voice=True)
     try:
         for word in ('caesure', "bad'hhesiron", 'recosp', 'uncosp', 'tzsche'):
             standalone, marks = render(engine, [word, EciIndex(7)])

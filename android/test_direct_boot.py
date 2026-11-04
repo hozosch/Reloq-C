@@ -80,18 +80,18 @@ public abstract class TextToSpeechService extends android.content.Context {
  public abstract List<Voice> onGetVoices(); public abstract int onIsValidVoiceName(String n); public abstract int onLoadVoice(String n);
  public abstract String onGetDefaultVoiceNameFor(String a,String b,String c); protected abstract void onSynthesizeText(SynthesisRequest r,SynthesisCallback c);
  protected abstract void onStop(); }""",
-"org/reloq/tts/preview/DictionaryStore.java": """package org.reloq.tts.preview; import android.content.Context;
+"org/reloq/tts/DictionaryStore.java": """package org.reloq.tts; import android.content.Context;
 final class DictionaryStore { static int starts,stops,acquires,closes;static java.util.concurrent.Executor WORK=Runnable::run;
  static void syncBoot(Context c) throws Exception {BootDictionaries.publish(c,BootDictionaries.prepare(c,Context.ce.getString("dictionarySnapshot",null)));}
  static void start(Context c){if(Context.locked)throw new AssertionError();++starts;try{syncBoot(c);}catch(Exception e){throw new RuntimeException(e);}}
  static void stop(){++stops;} static Lease acquire(Context c){if(Context.locked)throw new AssertionError();++acquires;return new Lease(Context.ce.getString("dictionarySnapshot",null));}
  static class Lease { final String path;Lease(String p){path=p;} void close(){++closes;} } }""",
-"org/reloq/tts/preview/NativeEngine.java": """package org.reloq.tts.preview;
+"org/reloq/tts/NativeEngine.java": """package org.reloq.tts;
 final class NativeEngine { static int created,synthesized;static int[] controls;static String path;
  static long create(){++created;return 42;} static void dictionary(long c,String p){path=p;}
  static boolean synthesize(long c,int d,int[] v,byte[] t,PcmQueue q){++synthesized;controls=v;return q.write(new byte[]{1,2,3,4});}
  static void stop(long c,PcmQueue q){} static void destroy(long c){} }""",
-"org/reloq/tts/preview/DirectBootTest.java": """package org.reloq.tts.preview;
+"org/reloq/tts/DirectBootTest.java": """package org.reloq.tts;
 import android.content.*;import android.speech.tts.*;import java.io.*;import java.nio.file.*;
 public class DirectBootTest {
  static void check(boolean b){if(!b)throw new AssertionError();}
@@ -163,20 +163,20 @@ def main():
         build=Path(temporary);generate(build/"generated")
         for path,content in STUBS.items():
             target=build/path;target.parent.mkdir(parents=True,exist_ok=True);target.write_text(content)
-        folder=ROOT/"android/java/org/reloq/tts/preview"
+        folder=ROOT/"android/java/org/reloq/tts"
         sources=[folder/(name+".java") for name in ("Catalog","VoiceSettings","Preferences","BootPreferences",
             "DictionaryData","BootDictionaries","UpgradeReceiver","PcmQueue","ReLoqService")]
         sources+=list(build.rglob("*.java"))
         subprocess.run([str(args.java_home/"bin/javac"),"-encoding","UTF-8","-d",str(build),*map(str,sources)],check=True)
         result=subprocess.run([str(args.java_home/"bin/java"),"-Djava.io.tmpdir="+str(build),"-cp",str(build),
-            "org.reloq.tts.preview.DirectBootTest"],check=True,timeout=30,capture_output=True,text=True)
+            "org.reloq.tts.DirectBootTest"],check=True,timeout=30,capture_output=True,text=True)
         lines=result.stdout.splitlines();print(lines[-1])
         snapshot=Path(next(line.split("\t",1)[1] for line in lines if line.startswith("BOOT_SNAPSHOT\t")))
         assert build in snapshot.parents and "de" in snapshot.parts
         if args.library:
             sys.path.insert(0,str(ROOT/"nvda"))
             from _reloq_eci_direct import DirectEciEngine
-            engine=DirectEciEngine(args.library.resolve(),dialect=0x40000,encoding="utf8",experimental_generic=True)
+            engine=DirectEciEngine(args.library.resolve(),dialect=0x40000,encoding="utf8",native_voice=True)
             try:
                 engine.set_dictionary_path(snapshot)
                 def capture(text):

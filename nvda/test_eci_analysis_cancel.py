@@ -49,7 +49,7 @@ def main():
             source = directory / filename
             source.write_bytes(("CancelWord\t" + replacement + "\n").encode("ascii"))
             engine = DirectEciEngine(args.library.resolve(), dialect=language,
-                encoding="utf8", experimental_generic=True)
+                encoding="utf8", native_voice=True)
             try:
                 engine.set_parameter(NATIVE_SPEED, 75)
                 engine.set_dictionary_path(directory)

@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     engine = DirectEciEngine(
-        ROOT / "eci" / "libreloq_eci.so", experimental_generic=True,
+        ROOT / "eci" / "libreloq_eci.so", native_voice=True,
         lexicon_path=ROOT / "data" / "german_apple_observed.rlex")
     try:
         lengths = []
@@ -143,7 +143,7 @@ def main():
 
     transport = EciTextTransport(
         lambda: Native(ROOT / "eci" / "libreloq_eci.so",
-                       experimental_generic=True,
+                       native_voice=True,
                        lexicon_path=ROOT / "data" / "german_apple_observed.rlex"),
         player,
         lambda index: observed.append(("index", index)),

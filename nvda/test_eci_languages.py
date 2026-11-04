@@ -175,7 +175,7 @@ def native_regression():
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory)
         (path / "eci.dll").symlink_to(lib)
-        previous = DirectEciEngine(lib, experimental_generic=True)
+        previous = DirectEciEngine(lib, native_voice=True)
         current = LanguageEngine(path / "eci.dll")
         for engine in (previous, current):
             for parameter, value in ((NATIVE_SPEED, 98), (NATIVE_PITCH, 50),

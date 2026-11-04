@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def main():
     e=DirectEciEngine(ROOT/'eci/libreloq_eci.so',dialect=0x90000,
-        encoding='utf-8',experimental_generic=True)
+        encoding='utf-8',native_voice=True)
     def render(text,characters=False):
         blocks=[];marks=[]
         assert e.speak([EciText(text,characters),EciIndex(7)],blocks.append,marks.append)

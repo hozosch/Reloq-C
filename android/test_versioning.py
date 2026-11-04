@@ -1,4 +1,4 @@
-"""Check that the release APK can replace the published 1.1 candidates."""
+"""Check Android release version ordering."""
 from pathlib import Path
 import re
 import xml.etree.ElementTree as ET
@@ -16,5 +16,5 @@ if match:
         expected += 10_000_000
     assert code == expected, (version, code, expected)
     if (major, minor, patch) >= (1, 1, 0):
-        assert code > 1_090_027, 'stable APK must upgrade the 1.1.0-rc27 candidate'
+        assert code > 1_090_027, 'stable version code must retain release ordering'
 print(f'Android version {version}: code {code}; release ordering checked')

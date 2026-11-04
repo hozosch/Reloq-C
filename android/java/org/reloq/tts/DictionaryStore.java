@@ -1,4 +1,4 @@
-package org.reloq.tts.preview;
+package org.reloq.tts;
 
 import android.content.Context;
 import android.content.SharedPreferences;
