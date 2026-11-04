@@ -34,11 +34,11 @@ def main():
         previous=(DirectEciEngine(args.reference.resolve(),dialect=language,encoding='utf8',native_voice=True)
                   if args.reference else None)
         try:
-            for engine in (e,previous):
-                if engine:engine.set_parameter(NATIVE_SPEED,60)
-            for rate,pause in ((1,0),(3,2),(6,1)):
+            for rate,pause,speed in ((1,0,60),(3,2,98),(6,1,156)):
                 for engine in (e,previous):
-                    if engine:engine.set_parameter(SAMPLE_RATE,rate);engine.set_parameter(PAUSE_MODE,pause)
+                    if engine:
+                        engine.set_parameter(SAMPLE_RATE,rate);engine.set_parameter(PAUSE_MODE,pause)
+                        engine.set_parameter(NATIVE_SPEED,speed)
                 for text in texts:
                     plain=render(e,[text])[0];audio,events=render(e,marked(text))
                     assert plain and audio==plain,(hex(language),rate,pause,text,'index changed speech')
@@ -53,6 +53,13 @@ def main():
                     parts=['Windows ',EciPitch(80),'11 ',EciPitch(65),'test.']
                     assert render(e,parts)==render(previous,parts),(hex(language),rate,pause,'pitch')
                     checks+=1
+                parts=['Windows ',EciPitch(80),'11 ',EciPitch(65),'test.']
+                plain=render(e,parts)[0]
+                mixed=[EciIndex(1),'Windows',EciIndex(2),' ',EciPitch(80),
+                       '11',EciIndex(3),' ',EciPitch(65),'test.',EciIndex(4)]
+                audio,events=render(e,mixed)
+                assert plain==audio and [value for value,_ in events]==[1,2,3,4],(hex(language),rate,pause,'pitch and indices')
+                checks+=1
         finally:
             e.close()
             if previous:previous.close()
