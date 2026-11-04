@@ -215,7 +215,7 @@ jobs:
           with zipfile.ZipFile(addon) as archive:
               assert archive.testzip() is None
               manifest=archive.read('manifest.ini').decode('utf-8')
-              assert 'name = "reloqC"' in manifest and 'version = 1.1.0' in manifest
+              assert 'name = "reloqC"' in manifest and 'version = "1.1.0"' in manifest
               for name in archive.namelist():
                   assert not re.search(r'experimental|preview',name,re.I),name
                   if name.endswith(('.py','.ini','.html')):
