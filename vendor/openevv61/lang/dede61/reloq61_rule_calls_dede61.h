@@ -1800,12 +1800,14 @@ static inline int32_t reloq_call_dede61_disambiguate_functword(void *state, int3
     return reloq_dede61_disambiguate_functword(state, p0, p1, p2);
 }
 int32_t reloq_dede61_distribute_nucdur(void *, int32_t);
+void reloq_dede61_adjust_connected_number_nucleus(void *);
 static inline int32_t reloq_call_dede61_distribute_nucdur(void *state, int32_t p0)
 {
     if(delta_rule_trace) {
         const int32_t args[]={p0};
         return delta_rule_called(DELTA_ENTRY_distribute_nucdur,args,1,1);
     }
+    reloq_dede61_adjust_connected_number_nucleus(state);
     return reloq_dede61_distribute_nucdur(state, p0);
 }
 int32_t reloq_dede61_divide_char_count_token(void *, int32_t, int32_t);

@@ -62,6 +62,20 @@ static int input_at(delta_state *d,int32_t *at,int back)
     *at=*EVV_AT(const int32_t *,node+(back?0:4))&~3;
     return name<sizeof alphabet?alphabet[name]:-1;
 }
+/* A phone's input projection can start before its own grapheme. For example,
+ * the final vowel in Kamera can share the span for "ra": inspecting only
+ * the first letter sees r, not the final a. Keep phonetic uppercase A
+ * distinct from a normal-text lowercase a. */
+static int last_input_symbol(delta_state *d,const struct reloq61_spr_phone *p)
+{
+    int32_t at=p->after,left=left_of(p);
+    for(unsigned i=0;i<128&&at&&at!=left;++i) {
+        int32_t previous=at;int c=input_at(d,&at,1);
+        if(c<0||at==previous)break;
+        if((c>='a'&&c<='z')||(c>='A'&&c<='Z'))return c;
+    }
+    return -1;
+}
 static size_t word_spelling(delta_state *d,int32_t word_begin,unsigned char spelling[128],int *initial)
 {
     int32_t start=word_begin,scan=start;
@@ -122,7 +136,7 @@ static void note_final_a(delta_state *d,int32_t begin,int32_t end)
         at=p.after;
     }
     if(at!=end||syllables<2||stress!=0||reloq61_spr_feature(d,&last,0)!=34||
-       input_symbol(d,&last)!='a')return;
+       (input_symbol(d,&last)!='a'&&last_input_symbol(d,&last)!='a'))return;
     int32_t scan=last.after;
     for(unsigned i=0;i<4096&&scan;++i) {
         int c=input_at(d,&scan,0);
@@ -301,15 +315,32 @@ static void repair_ch_compound(delta_state *d,int32_t begin,int32_t end,
         }
     }
 }
-/* Phonetic input can represent the same seven-and number sequence in a
- * single SPR group. Retain its stress but match the text path's connected
- * /n/-/U/ onset before applying the short-n timing. */
-static int phonetic_seven_onset(delta_state *d,const struct reloq61_spr_phone *u)
+static int previous_phone(delta_state *d,const struct reloq61_spr_phone *p,
+    struct reloq61_spr_phone *previous)
+{
+    int32_t node=vgetsc(d,1,0,left_of(p),2);
+    while(node&&(*EVV_AT(const int32_t *,node)&2))node=vgetsc(d,1,0,node,2);
+    if(!node)return 0;
+    *previous=(struct reloq61_spr_phone){node,EVV_AT(const int32_t *,node)[1]&~3};
+    return previous->after!=0;
+}
+
+/* Phonetic input can represent the same connected number sequence in a
+ * single SPR group. Keep its stress while matching the text path's onset. */
+static int phonetic_connected_number_onset(delta_state *d,const struct reloq61_spr_phone *u)
 {
     if(reloq61_spr_feature(d,u,0)!=36||reloq61_spr_feature(d,u,15)!=2)return 0;
     struct reloq61_spr_phone n,t;
     if(!reloq61_spr_phone_at(d,u->after,&n)||reloq61_spr_feature(d,&n,0)!=22||
        !reloq61_spr_phone_at(d,n.after,&t)||reloq61_spr_feature(d,&t,0)!=3)return 0;
+    struct reloq61_spr_phone glide,liquid,start;
+    /* At stem repair the diphthong is one /aj/ phone; the acoustic
+     * planner expands it into A and J only later. */
+    if(previous_phone(d,u,&glide)&&reloq61_spr_feature(d,&glide,0)==44&&
+       previous_phone(d,&glide,&liquid)&&previous_phone(d,&liquid,&start)) {
+        unsigned name=reloq61_spr_feature(d,&liquid,0),first=reloq61_spr_feature(d,&start,0);
+        if((name==15&&first==4)||(name==8&&first==17))return 1;
+    }
     static const unsigned reverse[]={22,43,2,28,10};
     int32_t at=left_of(u);
     for(size_t i=0;i<sizeof reverse/sizeof *reverse;++i) {
@@ -359,7 +390,7 @@ static void phonetic_quantity(delta_state *d,int32_t begin,int32_t end)
         int hiatus=previous_vowel&&begins_syllable(d,p);
         int full=(current_stress==2&&(same_right||(primary_before&&!primary_after))) ||
                  (current_stress==0&&same_right&&!hiatus);
-        if(phonetic_seven_onset(d,p)) {
+        if(phonetic_connected_number_onset(d,p)) {
             uint8_t no_onset=0;
             vmark(d,2,15,left_of(p),p->after,&no_onset);
         }

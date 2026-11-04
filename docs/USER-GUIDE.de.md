@@ -1,6 +1,6 @@
 # Eloquence C – Bedienungsanleitung
 
-## Testversion 1.1.0-rc21
+## Testversion 1.1.0-rc22
 
 Konsonantisches R folgt wieder der kontextabhängigen Anregung des früheren deutschen Pfades. Der J-Übergang in „Homepage“ orientiert sich am Ei-Laut in „drei“; US-englische Fragen erhalten eine ansteigende Schlusskontur. Wenn die native Analyse einen Wörterbucheintrag in einer Bindestrichzusammensetzung bereits verwendet, bleibt die Satzplanung erhalten. Die alternative IBM-Wörterbuchquelle ist auswählbar. Bitte Aussprache und Satzmelodie in NVDA prüfen.
 

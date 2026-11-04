@@ -12,9 +12,10 @@ struct pitch_plan {
     int32_t pair[2048][2];size_t count;
     uint64_t acoustic_hash;int64_t ticks;
     int32_t max_diplophonia,max_aspiration;
-    int i_e_r_target,i_e_target,final_a_target,comma_a_transition,weak_verb_rise,direct_weak_verb_fall,j_glide_target,j_onset_target;
+    int32_t aj_to_und_start;
+    int i_e_r_target,i_e_target,final_a_target,comma_a_transition,kamera_a_target,oe_er_target,oe_r_lowered,weak_verb_rise,direct_weak_verb_fall,j_glide_target,ei_glide_target,j_onset_target;
     unsigned r_phase_mask,r_phase_anywhere;
-    int r_continuous;
+    int r_continuous,r_medial;
 };
 static int span(void *context,int32_t from,int32_t to,
     const struct reloq61_curve c[62],int32_t volume)
@@ -36,6 +37,11 @@ static int span(void *context,int32_t from,int32_t to,
     if(c[7].val_r>p->max_aspiration)p->max_aspiration=c[7].val_r;
     if(c[9].val_l==775&&c[13].val_l==1205)p->final_a_target=1;
     if(c[9].val_l==775&&c[13].val_l==1112&&c[13].val_r==1202)p->comma_a_transition=1;
+    if(c[9].val_l==775&&c[13].val_l==1215&&c[15].val_l==2450)p->kamera_a_target=1;
+    if(c[9].val_l==600&&c[13].val_l==1360&&c[15].val_l==2280)p->oe_er_target=1;
+    if(c[2].val_l==57&&c[2].val_r==53)p->oe_r_lowered=1;
+    if(!p->aj_to_und_start&&c[9].val_l==420&&c[9].val_r==390&&
+       c[13].val_l==1900&&c[13].val_r==930)p->aj_to_und_start=from;
     if(from<50&&c[7].val_l==28&&c[7].val_r==49)p->r_phase_mask|=1u;
     if(from<50&&c[7].val_l==49&&c[7].val_r==28)p->r_phase_mask|=2u;
     if(from<50&&c[7].val_l==28&&c[7].val_r==53)p->r_phase_mask|=4u;
@@ -44,9 +50,11 @@ static int span(void *context,int32_t from,int32_t to,
     if(c[7].val_l==28&&c[7].val_r==49)p->r_phase_anywhere|=1u;
     if(c[7].val_l==49&&c[7].val_r==28)p->r_phase_anywhere|=2u;
     if(c[7].val_l==28&&c[7].val_r==53)p->r_phase_anywhere|=4u;
+    if(c[2].val_l==0&&c[2].val_r==28&&c[7].val_l==28&&c[7].val_r==53)p->r_medial=1;
     if(c[9].val_l==400&&c[13].val_l==2050)p->i_e_r_target=1;
     if(c[9].val_l==370&&c[13].val_l==2150)p->i_e_target=1;
-    if(c[9].val_l==420&&c[13].val_l==1900&&c[15].val_l==2450)p->j_glide_target=1;
+    if(c[9].val_l==345&&c[13].val_l==2025&&c[15].val_l==2675)p->j_glide_target=1;
+    if(c[9].val_l==420&&c[13].val_l==1900&&c[15].val_l==2450)p->ei_glide_target=1;
     if(c[9].val_l==300&&c[13].val_l==2100&&c[15].val_l==2900)p->j_onset_target=1;
     return 0;
 }
@@ -136,25 +144,57 @@ static unsigned german_phone_targets(void)
     assert(p.max_diplophonia==0&&p.r_phase_anywhere==7);
     p=german_pitch("Karriere",65,0,75);
     assert(p.max_diplophonia==0&&p.r_phase_anywhere==7);
+    /* The old composer treats a stressed R after unstressed E as a long
+     * four-phase onset even before short U; vierund stays continuous. */
+    p=german_pitch("herunter",65,0,75);
+    assert(p.max_diplophonia==0&&p.r_phase_anywhere==7);
+    p=german_pitch("Parade",65,0,75);
+    assert(p.max_diplophonia==0&&p.r_phase_anywhere==7);
+    p=german_pitch("die Rose",65,0,75);
+    assert(p.max_diplophonia==0&&p.r_phase_anywhere==7);
+    p=german_pitch("Wort Rose",65,0,75);
+    assert(p.r_medial&&!(p.r_phase_anywhere&3u));
+    p=german_pitch("Druck",65,0,75);
+    assert(p.max_diplophonia==40&&!p.r_phase_anywhere);
+    p=german_pitch("Grippe",65,0,75);
+    assert(p.max_diplophonia==60&&!p.r_phase_anywhere);
     p=german_pitch("Pizza.",65,0,75);
     assert(p.final_a_target);
     p=german_pitch("Komma.",65,0,75);
     assert(p.comma_a_transition);
+    p=german_pitch("Kamera.",65,0,75);
+    assert(p.kamera_a_target);
+    p=german_pitch("h\366her",65,0,75);
+    assert(p.oe_er_target&&!p.oe_r_lowered);
+    p=german_pitch("H\366rbuch",65,0,75);
+    assert(p.oe_r_lowered);
     p=german_pitch("Barriere",65,0,75);
     assert(p.i_e_r_target);
     p=german_pitch("wie eben",65,0,75);
     assert(p.i_e_target);
-    /* /Ej/ closes like the glide in German /aj/, for text and explicit
-     * phonemes. The native /aj/ remains a reference for the target. */
+    /* /Ej/ uses the intermediate glide for text and explicit phonemes;
+     * German /aj/ keeps its own established target. */
     p=german_pitch("Homepage",65,0,75);
     assert(p.j_glide_target);
     p=german_pitch("`[.1pEjC]",65,0,75);
     assert(p.j_glide_target);
     p=german_pitch("drei",65,0,75);
-    assert(p.j_glide_target);
+    assert(p.ei_glide_target&&!p.j_glide_target);
     p=german_pitch("Projekt",65,0,75);
     assert(p.j_onset_target);
-    return 14;
+    /* The standalone connected words and the same unit in a full number
+     * retain the old glide length, without a new glottal interruption. */
+    struct pitch_plan two=german_pitch("zweiund",65,0,75);
+    struct pitch_plan twentytwo=german_pitch("22",65,0,75);
+    struct pitch_plan three=german_pitch("dreiund",65,0,75);
+    struct pitch_plan twentythree=german_pitch("23",65,0,75);
+    assert(two.aj_to_und_start&&twentytwo.aj_to_und_start&&
+           abs(two.aj_to_und_start-twentytwo.aj_to_und_start)<=2);
+    assert(three.aj_to_und_start&&twentythree.aj_to_und_start&&
+           abs(three.aj_to_und_start-twentythree.aj_to_und_start)<=2);
+    assert(two.max_diplophonia<100&&three.max_diplophonia<100&&
+           twentytwo.max_diplophonia<100&&twentythree.max_diplophonia<100);
+    return 27;
 }
 
 static int pitch_pair(const struct pitch_plan *p,int32_t left,int32_t right)

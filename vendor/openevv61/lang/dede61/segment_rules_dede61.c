@@ -103,9 +103,9 @@ int reloq_dede61_initial_r(void *state)
     return reloq_dede61_consonant_r(state)&&reloq61_spr_phone_at(d,at,&r)&&
         begins_projection(d,&r,4);
 }
-/* Source modes measured in the previous German composer. Four-phase r
- * occurs initially and after an unstressed vowel before a stressed syllable;
- * stop/fricative clusters keep their own native source and diplophonia. */
+/* Source modes from the previous German composer: a four-phase long onset,
+ * a two-phase medial onset, or a continuously voiced medial onset. Cluster
+ * consonants keep their separate excitation and diplophonia. */
 static int syllable_stress(delta_state *d,const struct reloq61_spr_phone *p)
 {
     int32_t left=*EVV_AT(const int32_t *,p->node)&~3;
@@ -122,16 +122,27 @@ int reloq_dede61_old_r_source(void *state)
     memcpy(&at,(const unsigned char *)state+DG_BASE+712,sizeof at);
     struct reloq61_spr_phone r,previous,next;
     if(!reloq_dede61_consonant_r(state)||!reloq61_spr_phone_at(d,at,&r))return 0;
-    if(begins_projection(d,&r,4))return 1;
-    if(!prior_phone(d,&r,&previous)||reloq61_spr_feature(d,&previous,1)!=1||
-       !reloq61_spr_phone_at(d,r.after,&next))return 0;
-    if(reloq61_spr_feature(d,&next,0)==36)return 3; /* short /u/ */
-    int before=syllable_stress(d,&previous),after=syllable_stress(d,&r);
+    if(reloq_dede61_number_four_r(state))return 3;
+    if(!begins_projection(d,&r,7)||!reloq61_spr_phone_at(d,r.after,&next))return 0;
     unsigned vowel=reloq61_spr_feature(d,&next,0);
-    if(before==1&&after==0)return 0;
+    /* The former cluster planner uses a continuous R before an onset J. */
+    if(vowel==26) {
+        struct reloq61_spr_phone after_j;
+        return reloq61_spr_phone_at(d,next.after,&after_j)&&
+            !begins_projection(d,&next,7)&&
+            reloq61_spr_feature(d,&after_j,1)==1?3:0;
+    }
+    if(reloq61_spr_feature(d,&next,1)!=1)return 0;
+    if(!prior_phone(d,&r,&previous))return 1;
+    unsigned prior_name=reloq61_spr_feature(d,&previous,0);
+    if(prior_name==51)return 1; /* fresh utterance after a pause */
+    int before=syllable_stress(d,&previous),after=syllable_stress(d,&r);
+    int prior_vowel=reloq61_spr_feature(d,&previous,1)==1;
+    if(prior_vowel&&before==1&&after==0)return vowel==36?3:2;
     if((before==0&&after==1)||(vowel>=27&&vowel<=32)||
        vowel==39||vowel==40||vowel==41||vowel==42||vowel==48)return 1;
-    return 0;
+    if(vowel==36&&prior_vowel)return 3;
+    return 2;
 }
 static const struct reloq61_segment_layout layout={
     .pause_class=8,.speed_field=15,
@@ -165,9 +176,28 @@ static const struct reloq61_segment_layout layout={
 int32_t reloq_dede61_addStreamArrayPtVal(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
 {(void)p0;return reloq61_segment_point(state,p1,p2,p3,p4,p5);}
 
+/* A vocalized syllable-final r after long ö shares the vowel's AV curve.
+ * Lower its final target gently, so the existing interpolation spreads the
+ * adjustment over the connected vowel/r rather than creating a level step. */
+static int long_oe_before_coda_r(delta_state *d)
+{
+    int32_t at;memcpy(&at,(const unsigned char *)d+DG_BASE+712,sizeof at);
+    struct reloq61_spr_phone vowel,r;
+    if(!reloq61_spr_phone_at(d,at,&vowel)||
+       reloq61_spr_feature(d,&vowel,0)!=41||
+       !reloq61_spr_phone_at(d,vowel.after,&r)||begins_projection(d,&r,7))return 0;
+    unsigned name=reloq61_spr_feature(d,&r,0);
+    return name==15||(name==25&&reloq61_spr_feature(d,&r,1)==2);
+}
+
 /* Four-phase source is used only in the old composer's matching contexts. */
 static int consonant_r_voicing(void *state,int16_t stream,int16_t value,int32_t from,int32_t to)
 {
+    int32_t phone_end;memcpy(&phone_end,(const unsigned char *)state+DG_BASE+1056,4);
+    if(value>2&&from==to&&from>=phone_end&&long_oe_before_coda_r(state)) {
+        reloq61_submit_interval(state,stream,(int16_t)(value-2),from,to);
+        return 1;
+    }
     if(reloq_dede61_old_r_source(state)!=1)return 0;
     int32_t first,last;memcpy(&first,(const unsigned char *)state+DG_BASE+1048,4);
     memcpy(&last,(const unsigned char *)state+DG_BASE+1056,4);
@@ -208,6 +238,39 @@ int32_t reloq_dede61_doFNP(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t 
 {(void)p0;return reloq61_segment_nasal_pole(state,&layout,reloq_dede61_filter_endpoint,p1,p2,p3,p4,p5);}
 int32_t reloq_dede61_apply_speed_anno(void *state,int32_t p0,int32_t p1,int32_t p2)
 {(void)p0;return reloq61_segment_speed(state,&layout,p1,p2);}
+/* At the end of a word, the earlier composer retained a longer /aj/ glide
+ * in zweiund and dreiund. Complete number compounds already get the same
+ * duration from the native planner and do not need this adjustment. */
+static int terminal_number_aj(delta_state *d,const struct reloq61_spr_phone *j)
+{
+    struct reloq61_spr_phone a,liquid,start,u,n,t,after;
+    if(!phone_is(d,j,26,7)||!prior_phone(d,j,&a)||!phone_is(d,&a,34,7)||
+       !prior_phone(d,&a,&liquid)||!prior_phone(d,&liquid,&start))return 0;
+    unsigned name=reloq61_spr_feature(d,&liquid,0);
+    if(!((name==15&&reloq61_spr_feature(d,&start,0)==4)||
+         (name==8&&phone_is(d,&start,9,2))))return 0;
+    if(!reloq61_spr_phone_at(d,j->after,&u)||reloq61_spr_feature(d,&u,0)!=36||
+       reloq61_spr_feature(d,&u,15)!=0||!reloq61_spr_phone_at(d,u.after,&n)||
+       reloq61_spr_feature(d,&n,0)!=22||!reloq61_spr_phone_at(d,n.after,&t)||
+       reloq61_spr_feature(d,&t,0)!=3)return 0;
+    return !reloq61_spr_phone_at(d,t.after,&after)||
+        reloq61_spr_feature(d,&after,0)==51||begins_projection(d,&after,4);
+}
+/* The native nucleus distributor runs when the following U is current.
+ * Restore the earlier connected-word nucleus length before it distributes
+ * time across A and J; changing either segment alone only redistributes time. */
+void reloq_dede61_adjust_connected_number_nucleus(void *state)
+{
+    delta_state *d=state;int32_t at,duration;
+    memcpy(&at,(const unsigned char *)d+DG_BASE+712,sizeof at);
+    struct reloq61_spr_phone u,j;
+    if(!reloq61_spr_phone_at(d,at,&u)||reloq61_spr_feature(d,&u,0)!=36||
+       !prior_phone(d,&u,&j)||!terminal_number_aj(d,&j))return;
+    memcpy(&duration,(const unsigned char *)d+DG_BASE+2696,sizeof duration);
+    if(duration<=0||duration>INT32_MAX-230000)return;
+    duration+=230000;
+    memcpy((unsigned char *)d+DG_BASE+2696,&duration,sizeof duration);
+}
 static int32_t german_duration(void *state,int16_t kind,int32_t value)
 {
     delta_state *d=state;int32_t pos;

@@ -23,7 +23,7 @@ static int16_t consonant_r_source(void *state,int16_t stream,int16_t value)
         if(stream==aspiration)return value==0?53:value;
         return 0;
     }
-    if(stream==diplophonia&&mode==1)return 0;
+    if(stream==diplophonia&&(mode==1||mode==2))return 0;
     if(stream==aspiration&&value>0)return (int16_t)(value+1);
     return value;
 }
@@ -108,9 +108,9 @@ static int e_after_i(delta_state *d)
     return 1;
 }
 
-/* In an /Ej/ coda, as in Homepage, the j is the closing glide of the
- * vowel. Give it the same tongue targets as the j in German /aj/ ("drei"),
- * without changing the entering E or an onset j in the next syllable. */
+/* In an /Ej/ coda, as in Homepage, soften the original fronted j without
+ * moving it all the way to the /aj/ glide. Keep the entering E and onset j
+ * in the next syllable unchanged. */
 static int e_j_glide(delta_state *d)
 {
     int32_t at;memcpy(&at,(const unsigned char *)d+DG_BASE+712,sizeof at);
@@ -145,8 +145,8 @@ static int r_after_long_oe(delta_state *d)
     return previous.after&&reloq61_spr_feature(d,&previous,0)==41;
 }
 
-/* The reduced -er nucleus after /y/ or /o/, as in "früher" and
- * "lower", keeps the previous voice's neutral oral targets. */
+/* The reduced -er nucleus after /y/, /o/ or long /oe/, as in "früher",
+ * "lower" and "höher", keeps the previous voice's neutral oral targets. */
 static int reduced_r_after_y_o(delta_state *d)
 {
     int32_t at;memcpy(&at,(const unsigned char *)d+DG_BASE+712,sizeof at);
@@ -162,7 +162,7 @@ static int reduced_r_after_y_o(delta_state *d)
     if(!node)return 0;
     previous=(struct reloq61_spr_phone){node,EVV_AT(const int32_t *,node)[1]&~3};
     unsigned prior=reloq61_spr_feature(d,&previous,0);
-    if(prior!=39&&prior!=37)return 0;
+    if(prior!=39&&prior!=37&&prior!=41)return 0;
     if(reloq61_spr_phone_at(d,current.after,&next)&&
        reloq61_spr_feature(d,&next,0)!=51) {
         int32_t edge=*EVV_AT(const int32_t *,next.node)&~3;
@@ -278,7 +278,7 @@ int32_t reloq_dede61_doF(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3
         }
     }
     if(stream.field>=1&&stream.field<=3&&e_j_glide(d)) {
-        static const int16_t target[]={420,1900,2450};
+        static const int16_t target[]={345,2025,2675};
         if(left.field>0)left.field=target[stream.field-1];
         if(right.field>0)right.field=target[stream.field-1];
     }

@@ -1,3 +1,11 @@
+# Testkandidat 1.1.0-rc22: Deutsches R, finales A und Zahlübergänge
+
+- Die konsonantische R-Anregung folgt den unterschiedlichen Kontexten des alten Planers, unter anderem bei „herunter“ und an Wortgrenzen; „vierund“ behält den kontinuierlichen R-Verlauf. Die Wirkung benötigt einen Hörtest.
+- Das finale Text-A nach R wird auch bei „Kamera“ erkannt. Der J-Gleitlaut in „Homepage“ liegt als Hörtest zwischen dem Original und RC21.
+- Der Er-Laut nach langem Ö, wie in „höher“, erhält die Formanten des alten Planers. Bei vokalischem R nach langem Ö wird das Ende der gemeinsamen Stimmkurve behutsam abgesenkt.
+- „zweiund“ und „dreiund“ werden mit den alten Übergängen verglichen; Zahlwörter bleiben ohne den zuvor unerwünschten Glottisschlag. Lautschrift und Texteingabe sollen dieselbe Verbindung verwenden.
+- Der alte deutsche Satz- und Akustikplaner bleibt erhalten, bis die gewünschten Fälle vollständig übertragen und im Hörtest bestätigt sind. Android und SAPI5 werden vom Nutzer erst nach der deutschen Aussprache getestet.
+
 # Testkandidat 1.1.0-rc21: J-Gleitlaut und 32-Bit-Wortmarken
 
 - Der J-Gleitlaut nach E in derselben Silbe, wie in „Homepage“, verwendet die Formantziele des Ei-Lautes in „drei“. Text und entsprechende Lautschrift werden zusammen geprüft; der Klangeindruck bleibt im Hörtest zu beurteilen.

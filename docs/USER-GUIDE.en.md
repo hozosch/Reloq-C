@@ -1,6 +1,6 @@
 # Eloquence C – user guide
 
-## Preview 1.1.0-rc21
+## Preview 1.1.0-rc22
 
 German consonantal R follows the earlier planner’s context-sensitive excitation. The glide in German “Homepage” follows the one in “drei”, and US English questions use a rising final contour. When native compound analysis already applies a dictionary entry, it retains the sentence plan. The alternative IBM dictionary source can be selected. Pronunciation and intonation need listening feedback in NVDA.
 
