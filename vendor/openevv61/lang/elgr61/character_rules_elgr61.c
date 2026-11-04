@@ -9,9 +9,9 @@
 static int32_t input_record(delta_state *d,int32_t position,int backwards)
 {
     if(!position)return 0;
-    int32_t point=EVV_REF(backwards?
-        vmovel(d,EVV_AT(delta_node *,position),1):
-        vmover(d,EVV_AT(delta_node *,position),1));
+    int32_t point=backwards?
+        EVV_REF(vmovel(d,EVV_AT(delta_node *,position),1)):
+        EVV_REF(vmover(d,EVV_AT(int32_t *,position),1));
     int32_t node=vgetsc(d,(int8_t)backwards,0,point,1);
     return node&&!(*EVV_AT(int32_t *,node)&2)?node:0;
 }
@@ -29,7 +29,7 @@ static int32_t next_position(int32_t node)
 int reloq_elgr61_digit_two(void *state,const delta_token *left)
 {
     delta_state *d=state;
-    int32_t point=EVV_REF(vmover(d,EVV_AT(delta_node *,left->value),2));
+    int32_t point=EVV_REF(vmover(d,EVV_AT(int32_t *,left->value),2));
     int32_t word=vgetsc(d,0,0,point,2);
     if(!word||(*EVV_AT(const int32_t *,word)&2)||
        (*EVV_AT(const int32_t *,word)&~3)!=left->value)return 0;

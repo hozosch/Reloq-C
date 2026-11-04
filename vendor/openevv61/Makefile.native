@@ -68,7 +68,14 @@ $(BUILD)/rom/greek/reloq_greek.o: rom/greek/reloq_greek_letters.inc rom/greek/re
 $(BUILD)/lang/elgr61/character_rules_elgr61.o: lang/elgr61/greek_character_names.inc
 $(BUILD)/libreloq61.a: $(OBJECTS)
 	rm -f $@
+# Native Windows limits one command line to 32767 characters; the object list
+# is longer. A response file avoids that without changing other hosts' builds.
+ifeq ($(OS),Windows_NT)
+	$(file >$@.rsp,$(OBJECTS))
+	$(AR) rcs $@ @$@.rsp
+else
 	$(AR) rcs $@ $(OBJECTS)
+endif
 clean:
 	rm -rf $(BUILD)
 -include $(OBJECTS:.o=.d)
