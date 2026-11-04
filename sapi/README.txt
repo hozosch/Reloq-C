@@ -1,4 +1,4 @@
-ReLoq C 1.0 — unified SAPI5 Windows installer
+ReLoq C 1.1 — unified SAPI5 Windows installer
 
 Installation
 ------------
@@ -41,7 +41,7 @@ or the application upsamples the 11,025-Hz signal. ReLoq has no extra resampler.
 Only formats actually advertised by this voice are accepted by Speak; an
 application's target cannot silently select a wider acoustic profile.
 Existing clients must renegotiate, reopen the voice or restart to adopt a changed
-Eloquence synthesis rate. Preview-1 migration uses
+Eloquence synthesis rate. Legacy rate migration uses
 the saved German rate, then US English, then the first configured language.
 The default is 11,025 Hz. Reset preserves the common sample rate.
 

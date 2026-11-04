@@ -18,7 +18,7 @@ from _reloq_updates import check, download, select, Update, version
 class Updates(unittest.TestCase):
     def setUp(self):
         self.bytes = b'fixture package\0' * 5000
-        self.asset = dict(name='reloq-c-synth-experimental-x64-0.2.197.nvda-addon',
+        self.asset = dict(name='reloq-c-synth-x64-0.2.197.nvda-addon',
             size=len(self.bytes), digest='sha256:' + hashlib.sha256(self.bytes).hexdigest())
         self.asset['browser_download_url'] = 'https://github.com/hozosch/Reloq-C/releases/download/v0.2.197/' + self.asset['name']
         self.feed = [{'assets': [self.asset], 'draft': False}]
@@ -36,7 +36,7 @@ class Updates(unittest.TestCase):
 
     def test_development_build_waits_for_matching_stable_release(self):
         def feed(number):
-            name = f'reloq-c-synth-experimental-x64-{number}.nvda-addon'
+            name = f'reloq-c-synth-x64-{number}.nvda-addon'
             return [{'assets': [{**self.asset, 'name': name, 'browser_download_url':
                 f'https://github.com/hozosch/Reloq-C/releases/download/v{number}/{name}'}]}]
         self.assertIsNone(select(feed('1.0.1'), '1.0.2-dev1'))

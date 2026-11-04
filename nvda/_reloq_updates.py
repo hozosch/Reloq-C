@@ -9,7 +9,7 @@ from urllib.request import Request, urlopen
 
 RELEASES = "https://api.github.com/repos/hozosch/Reloq-C/releases?per_page=30"
 LIMIT = 128 * 1024 * 1024
-PACKAGE = re.compile(r"reloq-c-synth-experimental-x64-(\d+\.\d+\.\d+)\.nvda-addon\Z")
+PACKAGE = re.compile(r"reloq-c-synth-(?:experimental-)?x64-(\d+\.\d+\.\d+)\.nvda-addon\Z")
 
 
 @dataclass(frozen=True)

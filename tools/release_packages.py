@@ -19,7 +19,7 @@ def names(version):
     if not re.fullmatch(r'\d+\.\d+\.\d+', version):
         raise ValueError('invalid release version')
     return (f'reloq-c-sapi5-{version}-setup.exe',
-            f'reloq-c-synth-experimental-x64-{version}.nvda-addon')
+            f'reloq-c-synth-x64-{version}.nvda-addon')
 
 
 def release_version(version):
@@ -29,7 +29,7 @@ def release_version(version):
 
 
 def android_name(version, name):
-    return re.fullmatch(rf'reloq-c-android-arm64-{re.escape(version)}(?:-preview\d+)?\.apk', name)
+    return re.fullmatch(rf'reloq-c-android-arm64-{re.escape(version)}\.apk', name)
 
 
 def collect(source, destination):
