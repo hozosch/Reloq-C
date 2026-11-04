@@ -2,7 +2,7 @@ name: Issue 10 Windows cancellation diagnostic
 on:
   push:
     branches: [codex/release110]
-    paths: [addon/test_synth_native.py, .github/workflows/issue10-diagnostic.yml]
+    paths: [addon/test_synth_native.py, tools/issue10_trace_windows.py, .github/workflows/issue10-diagnostic.yml]
 permissions:
   contents: read
   actions: read
@@ -25,6 +25,6 @@ jobs:
           $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
           for ($i = 0; $i -lt 12; $i++) {
             Write-Output "Filename stress attempt $i"
-            python addon/test_synth_native.py --library $core --addon $addon --output issue10.json
+            python tools/issue10_trace_windows.py --library $core --addon $addon --output issue10.json
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
