@@ -36,20 +36,23 @@ class UpdateDialogTests(unittest.TestCase):
 
     def test_manual_update_uses_dialog_and_reports_unique_additions(self):
         done=self.panel.begin(show_result=True)
-        done(None,{'dictionary_update':{'compared':True,'added':3,'total':12},'remote_changed':True})
+        done(None,{'dictionary_update':{'compared':True,'added':3,'total':12,'added_files':1,'total_files':4},'remote_changed':True})
         self.assertEqual(len(self.dialogs),1)
         self.assertIn('New entries: 3',self.dialogs[0][0])
+        self.assertIn('New dictionary files: 1',self.dialogs[0][0])
         self.assertFalse(self.messages);self.assertFalse(self.panel.pending)
 
     def test_zero_first_and_unknown_counts(self):
         message=self.env['dictionary_update_message']
-        self.assertIn('New entries: 0',message({'dictionary_update':{'compared':True,'added':0,'total':12}}))
-        self.assertIn('first time',message({'dictionary_update':{'compared':False,'added':9,'total':9}}))
-        self.assertIn('could not be determined',message({'dictionary_update':None}))
+        unchanged=message({'dictionary_update':{'compared':True,'added':0,'total':12,'added_files':0,'total_files':3}})
+        self.assertIn('New entries: 0',unchanged);self.assertIn('New dictionary files: 0',unchanged)
+        first=message({'dictionary_update':{'compared':False,'added':9,'total':9,'added_files':2,'total_files':2}})
+        self.assertIn('first time',first);self.assertIn('Dictionary files in total: 2',first)
+        self.assertIn('files could not be determined',message({'dictionary_update':None}))
 
     def test_remote_update_after_settings_close_and_manual_error(self):
         done=self.panel.begin();self.panel.closing=True
-        done(None,{'dictionary_update':{'compared':True,'added':2,'total':5},'remote_changed':True})
+        done(None,{'dictionary_update':{'compared':True,'added':2,'total':5,'added_files':1,'total_files':2},'remote_changed':True})
         self.assertEqual(len(self.dialogs),1)
         self.assertIn('New entries: 2',self.dialogs[0][0])
         self.panel.closing=False
@@ -58,7 +61,7 @@ class UpdateDialogTests(unittest.TestCase):
 
     def test_stale_request_does_not_show_dialog(self):
         old=self.panel.begin(show_result=True);self.panel.begin(show_result=True)
-        old(None,{'dictionary_update':{'compared':True,'added':9,'total':9},'remote_changed':True})
+        old(None,{'dictionary_update':{'compared':True,'added':9,'total':9,'added_files':1,'total_files':1},'remote_changed':True})
         self.assertFalse(self.dialogs)
 
     def test_background_notice_runs_on_ui_thread_and_skips_stale_or_closed_driver(self):
@@ -72,7 +75,7 @@ class UpdateDialogTests(unittest.TestCase):
         wx=types.ModuleType('wx');wx.CallAfter=pending.append
         package=types.ModuleType('globalPlugins');package.__path__=[]
         plugin=types.ModuleType('globalPlugins.reloqCDictionaries');plugin.show_dictionary_update=shown.append
-        details={'dictionary_update':{'compared':True,'added':2,'total':8}}
+        details={'dictionary_update':{'compared':True,'added':2,'total':8,'added_files':1,'total_files':2}}
         with mock.patch.dict(sys.modules,{'wx':wx,'globalPlugins':package,
                                           'globalPlugins.reloqCDictionaries':plugin}):
             env['_dictionary_update_notice'](instance,5,details)

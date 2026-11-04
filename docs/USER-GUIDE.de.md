@@ -79,7 +79,7 @@ Mit **Gemeinschaftswörterbücher für die Aussprache verwenden** ergänzt du De
 
 Unter **Wörterbuchquelle** kannst du zusätzlich **Alternative IBM-TTS-Wörterbücher** auswählen. Diese Quelle enthält derzeit US-englische und kastilisch-spanische Einträge, aber kein deutsches Wörterbuch. Beim ersten Gebrauch wird sie im Hintergrund heruntergeladen; eigene Dateien behalten Vorrang.
 
-Nach einer Aktualisierung erscheint ein Dialog mit der Zahl neuer, unterschiedlicher Einträge. Geänderte oder entfernte Einträge zählen nicht als neue. Beim ersten Download wird die Gesamtzahl angezeigt; falls der vorherige Stand nicht vergleichbar ist, weist der Dialog darauf hin.
+Nach einer Aktualisierung erscheint ein Dialog mit der Zahl neuer, unterschiedlicher Einträge und neuer Wörterbuchdateien. Änderungen oder Entfernungen zählen nicht als Zugänge. Beim ersten Download werden die Gesamtzahlen angezeigt; falls der vorherige Stand nicht vergleichbar ist, weist der Dialog darauf hin. Online-Updates übernehmen derzeit einen festen Satz unterstützter Dateinamen; andere neu hinzugefügte Dateien werden nicht automatisch heruntergeladen.
 
 Mit **Datei hinzufügen** kannst du eigene Dic-Dateien auswählen und ihnen Sprache und Wörterbuchtyp zuordnen. Die Dateien dürfen beliebig heißen und bleiben an ihrem bisherigen Ort. Spätere Dateien in der Liste haben Vorrang. **OK** oder **Übernehmen** speichert die Auswahl.
 

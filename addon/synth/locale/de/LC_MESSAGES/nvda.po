@@ -328,3 +328,12 @@ msgstr "Wörterbuch erstmals geladen. Einträge insgesamt: %s"
 
 msgid "Dictionary update complete. New entries: %s"
 msgstr "Wörterbuchaktualisierung abgeschlossen. Neue Einträge: %s"
+
+msgid "The number of new dictionary files could not be determined."
+msgstr "Die Anzahl neuer Wörterbuchdateien konnte nicht ermittelt werden."
+
+msgid "Dictionary files in total: %s"
+msgstr "Wörterbuchdateien insgesamt: %s"
+
+msgid "New dictionary files: %s"
+msgstr "Neue Wörterbuchdateien: %s"

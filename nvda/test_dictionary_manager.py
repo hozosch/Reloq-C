@@ -92,7 +92,8 @@ class ManagerTests(unittest.TestCase):
                           'espmain.dic':b'palabra\tpalabra\n'}
         error,details=self.wait(lambda done:self.manager.configure([own],True,done,repository='alternative'))
         self.assertIsNone(error)
-        self.assertEqual(details['dictionary_update'],{'compared':False,'added':4,'total':4})
+        self.assertEqual(details['dictionary_update'],{'compared':False,'added':4,'total':4,
+                                                        'added_files':3,'total_files':3})
         self.assertEqual(details['update_source'],'alternative')
         self.assertEqual(self.manager.repository,'alternative')
         folder=self.deliveries[-1][1]
@@ -142,10 +143,20 @@ class ManagerTests(unittest.TestCase):
         Path(root.path).write_bytes(b'read\tchanged\nNEW\troot\n')
         after,_=merge_sources(None,[own,root],self.cache)
         self.assertEqual(dictionary_update_counts(before,after),
-                         {'compared':True,'added':2,'total':5})
+                         {'compared':True,'added':2,'total':5,'added_files':0,'total_files':2})
         self.assertEqual(dictionary_update_counts(None,after),
-                         {'compared':False,'added':5,'total':5})
+                         {'compared':False,'added':5,'total':5,'added_files':2,'total_files':2})
         self.assertEqual(dictionary_update_counts(after,after)['added'],0)
+
+    def test_update_counts_new_files_without_subtracting_removed_files(self):
+        german=self.source('german.dic',b'Keep\told\n')
+        old_english=self.source('old-english.dic',b'Old\treading\n',0x10000)
+        french=self.source('french.dic',b'New\treading\n',0x30000)
+        before,_=merge_sources(None,[german,old_english],self.cache)
+        after,_=merge_sources(None,[german,french],self.cache)
+        counts=dictionary_update_counts(before,after)
+        self.assertEqual((counts['added'],counts['added_files'],counts['total_files']),(1,1,2))
+        self.assertEqual(dictionary_update_counts(after,after)['added_files'],0)
 
     def test_manual_refresh_reports_source_additions_and_unchanged_revision(self):
         self.wait(lambda done:self.manager.configure([],True,done))

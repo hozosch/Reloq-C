@@ -82,4 +82,7 @@
     <string name="dictionary_update_new">Wörterbuchaktualisierung abgeschlossen. Neue Einträge: %1$d</string>
     <string name="dictionary_update_first">Wörterbuch erstmals geladen. Einträge insgesamt: %1$d</string>
     <string name="dictionary_update_unknown">Wörterbuchaktualisierung abgeschlossen. Die Anzahl neuer Einträge konnte nicht ermittelt werden.</string>
+    <string name="dictionary_update_files_new">Neue Wörterbuchdateien: %1$d</string>
+    <string name="dictionary_update_files_total">Wörterbuchdateien insgesamt: %1$d</string>
+    <string name="dictionary_update_files_unknown">Die Anzahl neuer Wörterbuchdateien konnte nicht ermittelt werden.</string>
 </resources>

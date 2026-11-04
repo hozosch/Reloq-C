@@ -20,6 +20,16 @@ int main(void)
     check("old\tone\n","",0,0,0);
     size_t added,total;const unsigned char invalid[]={ 'x','\t','y',0,'\n' };
     assert(!sapi_dictionary_diff(NULL,0,invalid,sizeof invalid,0,&added,&total));
+    int compared;size_t files;
+    assert(sapi_dictionary_unpack_counts(sapi_dictionary_pack_counts(0,0,1),&added,&files,&compared));
+    assert(added==0&&files==0&&compared);
+    assert(sapi_dictionary_unpack_counts(sapi_dictionary_pack_counts(3500,3,0),&added,&files,&compared));
+    assert(added==3500&&files==3&&!compared);
+    assert(sapi_dictionary_unpack_counts(sapi_dictionary_pack_counts(42,2,1),&added,&files,&compared));
+    assert(added==42&&files==2&&compared);
+    assert(!sapi_dictionary_pack_counts(0xffffffu,0,1));
+    assert(!sapi_dictionary_pack_counts(0,128,1));
+    assert(!sapi_dictionary_unpack_counts(0,&added,&files,&compared));
     puts("Dictionary update counts: additions, duplicate keys, removals, value edits and root case passed");
     return 0;
 }

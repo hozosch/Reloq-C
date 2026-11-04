@@ -156,6 +156,7 @@ static void count_update(const WCHAR *previous,const WCHAR *stage,int had_previo
         free(before);free(after);
         if(!ok){result->known=0;return;}
         result->added+=added;result->total+=total;
+        ++result->total_files;if(!had_previous)++result->added_files;
     }
 }
 HRESULT sapi_dictionary_download_report(struct sapi_dictionary_update *report)

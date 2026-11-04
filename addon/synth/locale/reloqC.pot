@@ -312,3 +312,12 @@ msgstr ""
 
 msgid "Dictionary update complete. New entries: %s"
 msgstr ""
+
+msgid "The number of new dictionary files could not be determined."
+msgstr ""
+
+msgid "Dictionary files in total: %s"
+msgstr ""
+
+msgid "New dictionary files: %s"
+msgstr ""

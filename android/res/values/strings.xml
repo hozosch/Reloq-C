@@ -83,4 +83,7 @@
     <string name="dictionary_update_new">Dictionary update complete. New entries: %1$d</string>
     <string name="dictionary_update_first">Dictionary loaded for the first time. Entries: %1$d</string>
     <string name="dictionary_update_unknown">Dictionary update complete. The number of new entries could not be determined.</string>
+    <string name="dictionary_update_files_new">New dictionary files: %1$d</string>
+    <string name="dictionary_update_files_total">Dictionary files in total: %1$d</string>
+    <string name="dictionary_update_files_unknown">The number of new dictionary files could not be determined.</string>
 </resources>

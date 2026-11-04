@@ -18,10 +18,13 @@ addonHandler.initTranslation()
 def dictionary_update_message(details):
     counts = details.get("dictionary_update") if details else None
     if counts is None:
-        return _("Dictionary update complete. The number of new entries could not be determined.")
-    if not counts["compared"] and counts["total"]:
-        return _("Dictionary loaded for the first time. Entries: %s") % counts["total"]
-    return _("Dictionary update complete. New entries: %s") % counts["added"]
+        return (_("Dictionary update complete. The number of new entries could not be determined.") +
+                "\n" + _("The number of new dictionary files could not be determined."))
+    if not counts["compared"] and (counts["total"] or counts["total_files"]):
+        return (_("Dictionary loaded for the first time. Entries: %s") % counts["total"] +
+                "\n" + _("Dictionary files in total: %s") % counts["total_files"])
+    return (_("Dictionary update complete. New entries: %s") % counts["added"] +
+            "\n" + _("New dictionary files: %s") % counts["added_files"])
 
 
 def show_dictionary_update(details, parent=None):

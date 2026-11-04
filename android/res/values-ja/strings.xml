@@ -82,4 +82,7 @@
     <string name="dictionary_update_new">辞書の更新が完了しました。新しい項目: %1$d</string>
     <string name="dictionary_update_first">辞書を初めて読み込みました。項目数: %1$d</string>
     <string name="dictionary_update_unknown">辞書の更新が完了しました。新しい項目数を確認できませんでした。</string>
+    <string name="dictionary_update_files_new">新しい辞書ファイル: %1$d</string>
+    <string name="dictionary_update_files_total">辞書ファイルの合計: %1$d</string>
+    <string name="dictionary_update_files_unknown">新しい辞書ファイル数を特定できませんでした。</string>
 </resources>

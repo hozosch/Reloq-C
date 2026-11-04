@@ -115,9 +115,13 @@ public final class DictionaryActivity extends Activity {
                 busy=false;for(View view:actions)view.setEnabled(true);reload();
                 status.setText(error==null?getString(R.string.dictionary_ready):getString(R.string.dictionary_error,error.getMessage()));
                 if(error==null&&summary!=null) {
+                    boolean first=summary.known&&!summary.compared&&(summary.total>0||summary.totalFiles>0);
                     String message=!summary.known?getString(R.string.dictionary_update_unknown):
-                        !summary.compared&&summary.total>0?getString(R.string.dictionary_update_first,summary.total):
+                        first?getString(R.string.dictionary_update_first,summary.total):
                         getString(R.string.dictionary_update_new,summary.added);
+                    message+="\n"+(!summary.known?getString(R.string.dictionary_update_files_unknown):
+                        first?getString(R.string.dictionary_update_files_total,summary.totalFiles):
+                        getString(R.string.dictionary_update_files_new,summary.addedFiles));
                     new AlertDialog.Builder(this).setTitle(R.string.dictionary_update_title).setMessage(message)
                         .setPositiveButton(android.R.string.ok,null).show();
                 }

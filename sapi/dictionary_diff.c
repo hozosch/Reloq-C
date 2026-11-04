@@ -58,3 +58,14 @@ int sapi_dictionary_diff(const unsigned char *before,size_t before_size,
     }
     free(old);free(current);return 1;
 }
+uint32_t sapi_dictionary_pack_counts(size_t entries,size_t files,int compared)
+{
+    if(entries>=0xffffffu||files>=128)return 0;
+    return (uint32_t)(entries+1)|((uint32_t)files<<24)|(compared?0:0x80000000u);
+}
+int sapi_dictionary_unpack_counts(uint32_t value,size_t *entries,size_t *files,int *compared)
+{
+    if(!value||!(value&0xffffffu)||!entries||!files||!compared)return 0;
+    *entries=(value&0xffffffu)-1;*files=(value>>24)&0x7fu;*compared=(value&0x80000000u)==0;
+    return 1;
+}

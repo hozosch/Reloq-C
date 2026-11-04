@@ -82,4 +82,7 @@
     <string name="dictionary_update_new">Η ενημέρωση ολοκληρώθηκε. Νέες καταχωρίσεις: %1$d</string>
     <string name="dictionary_update_first">Το λεξικό φορτώθηκε για πρώτη φορά. Καταχωρίσεις: %1$d</string>
     <string name="dictionary_update_unknown">Η ενημέρωση ολοκληρώθηκε. Δεν ήταν δυνατός ο υπολογισμός των νέων καταχωρίσεων.</string>
+    <string name="dictionary_update_files_new">Νέα αρχεία λεξικού: %1$d</string>
+    <string name="dictionary_update_files_total">Συνολικά αρχεία λεξικού: %1$d</string>
+    <string name="dictionary_update_files_unknown">Δεν ήταν δυνατό να προσδιοριστεί ο αριθμός νέων αρχείων λεξικού.</string>
 </resources>

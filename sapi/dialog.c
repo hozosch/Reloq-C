@@ -1,6 +1,7 @@
 /* Standard Windows controls provide keyboard and screen-reader semantics.
  * Every valid change commits immediately to this user's language settings. */
 #include "settings.h"
+#include "dictionary_diff.h"
 #include <commctrl.h>
 #include <shellapi.h>
 #include <stdio.h>
@@ -18,7 +19,9 @@ static DWORD WINAPI dictionary_worker(void *parameter)
     struct sapi_dictionary_update update={0};
     HRESULT result=sapi_dictionary_download_report(&update);LPARAM info=0;
     if(SUCCEEDED(result)&&update.known){size_t count=update.compared?update.added:update.total;
-        if(count<0x7fffffff)info=update.compared?(LPARAM)(count+1):-(LPARAM)(count+1);}
+        size_t files=update.compared?update.added_files:update.total_files;
+        /* Three 8-MiB volumes cannot contain 2^24 distinct entries. */
+        info=(LPARAM)(UINT_PTR)sapi_dictionary_pack_counts(count,files,update.compared);}
     PostMessageW(window,DICTIONARY_DONE,(WPARAM)result,info);
     InterlockedDecrement(&sapi_objects);FreeLibraryAndExitThread(module,0);
     return 0;
@@ -129,11 +132,15 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         EnableWindow(GetDlgItem(w,DICT_SOURCE),TRUE);EnableWindow(GetDlgItem(w,DICT_DOWNLOAD),TRUE);
         populate(w,d);SetDlgItemTextW(w,STATUS,FAILED((HRESULT)wp)?T(DICT_FAILED):T(ACTIVE));
         if(SUCCEEDED((HRESULT)wp)) {
-            WCHAR message[512],number[32];
-            if(!lp)wcscpy(message,T(DICT_COUNT_UNKNOWN));
-            else {unsigned long count=(unsigned long)(lp>0?lp-1:-(lp+1));
-                swprintf(number,32,L"%lu",count);
-                swprintf(message,512,lp>0?T(DICT_UPDATED_COUNT):T(DICT_FIRST_COUNT),number);}
+            WCHAR message[512],entry_text[256],file_text[256],number[32];size_t count,files;int compared;
+            if(!sapi_dictionary_unpack_counts((uint32_t)(UINT_PTR)lp,&count,&files,&compared))
+                swprintf(message,512,L"%ls\n%ls",T(DICT_COUNT_UNKNOWN),T(DICT_FILES_UNKNOWN));
+            else {
+                swprintf(number,32,L"%lu",(unsigned long)count);
+                swprintf(entry_text,256,compared?T(DICT_UPDATED_COUNT):T(DICT_FIRST_COUNT),number);
+                swprintf(number,32,L"%lu",(unsigned long)files);
+                swprintf(file_text,256,compared?T(DICT_FILES_NEW):T(DICT_FILES_TOTAL),number);
+                swprintf(message,512,L"%ls\n%ls",entry_text,file_text);}
             MessageBoxW(w,message,T(TITLE),MB_OK|MB_ICONINFORMATION);
         }
         return TRUE;

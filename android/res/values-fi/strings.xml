@@ -82,4 +82,7 @@
     <string name="dictionary_update_new">Sanaston päivitys valmis. Uusia merkintöjä: %1$d</string>
     <string name="dictionary_update_first">Sanasto ladattu ensimmäistä kertaa. Merkintöjä: %1$d</string>
     <string name="dictionary_update_unknown">Sanaston päivitys valmis. Uusien merkintöjen määrää ei voitu selvittää.</string>
+    <string name="dictionary_update_files_new">Uudet sanakirjatiedostot: %1$d</string>
+    <string name="dictionary_update_files_total">Sanakirjatiedostoja yhteensä: %1$d</string>
+    <string name="dictionary_update_files_unknown">Uusien sanakirjatiedostojen määrää ei voitu selvittää.</string>
 </resources>

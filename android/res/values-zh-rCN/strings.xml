@@ -82,4 +82,7 @@
     <string name="dictionary_update_new">词典更新完成。新增条目：%1$d</string>
     <string name="dictionary_update_first">首次加载词典。条目数：%1$d</string>
     <string name="dictionary_update_unknown">词典更新完成，但无法确定新增条目数。</string>
+    <string name="dictionary_update_files_new">新增词典文件: %1$d</string>
+    <string name="dictionary_update_files_total">词典文件总数: %1$d</string>
+    <string name="dictionary_update_files_unknown">无法确定新增词典文件数。</string>
 </resources>

@@ -194,7 +194,8 @@ def dictionary_update_counts(before, after):
     old, new = _snapshot_keys(before), _snapshot_keys(after)
     total = sum(len(keys) for keys in new.values())
     added = sum(len(keys - old.get(name, set())) for name, keys in new.items())
-    return {"compared": before is not None, "added": added, "total": total}
+    return {"compared": before is not None, "added": added, "total": total,
+            "added_files": len(new.keys() - old.keys()), "total_files": len(new)}
 
 
 def merge_sources(community, sources, cache, *, replacements=None):

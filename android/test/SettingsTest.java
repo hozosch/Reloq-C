@@ -111,10 +111,14 @@ public final class SettingsTest {
         Map<String,byte[]> after=Map.of("DEUmain.dic",data("Keep\tchanged\nDuplicate\tsecond\nAdded\tnew\nAdded\tnewer\n"),
             "DEURoot.dic",data("read\tchanged\nNEW\troot\n"));
         DictionaryData.UpdateSummary delta=DictionaryData.compare(before,after,false);
-        require(delta.known&&delta.compared&&delta.added==2&&delta.total==5);
+        require(delta.known&&delta.compared&&delta.added==2&&delta.total==5&&delta.addedFiles==0&&delta.totalFiles==2);
         delta=DictionaryData.compare(null,after,false);
-        require(delta.known&&!delta.compared&&delta.added==5&&delta.total==5);
-        require(DictionaryData.compare(after,after,false).added==0);
+        require(delta.known&&!delta.compared&&delta.added==5&&delta.total==5&&delta.addedFiles==2&&delta.totalFiles==2);
+        require(DictionaryData.compare(after,after,false).added==0&&DictionaryData.compare(after,after,false).addedFiles==0);
+        Map<String,byte[]> movedBefore=Map.of("DEUmain.dic",data("keep\tvalue\n"),"ENUmain.dic",data("old\tvalue\n"));
+        Map<String,byte[]> movedAfter=Map.of("DEUmain.dic",data("keep\tvalue\n"),"FRAmain.dic",data("new\tvalue\n"));
+        delta=DictionaryData.compare(movedBefore,movedAfter,false);
+        require(delta.added==1&&delta.addedFiles==1&&delta.totalFiles==2);
         Map<String,byte[]> utf8=Map.of("ENUmain.dic","café\tcoffee\nnew\tword\n".getBytes(StandardCharsets.UTF_8));
         Map<String,byte[]> ansi=Map.of("ENUmain.dic",data("café\told\n"));
         require(DictionaryData.compare(ansi,utf8,true).added==1);

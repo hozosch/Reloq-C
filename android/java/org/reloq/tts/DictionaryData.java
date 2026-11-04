@@ -44,11 +44,12 @@ final class DictionaryData {
     }
     static final class UpdateSummary {
         final boolean known,compared;
-        final int added,total;
-        UpdateSummary(boolean known,boolean compared,int added,int total) {
+        final int added,total,addedFiles,totalFiles;
+        UpdateSummary(boolean known,boolean compared,int added,int total,int addedFiles,int totalFiles) {
             this.known=known;this.compared=compared;this.added=added;this.total=total;
+            this.addedFiles=addedFiles;this.totalFiles=totalFiles;
         }
-        static UpdateSummary unknown(){return new UpdateSummary(false,false,0,0);}
+        static UpdateSummary unknown(){return new UpdateSummary(false,false,0,0,0,0);}
     }
     /** Count unique new native keys, independently per dictionary volume. */
     static UpdateSummary compare(Map<String,byte[]> before,Map<String,byte[]> after,boolean alternative) throws IOException {
@@ -59,14 +60,15 @@ final class DictionaryData {
         for(Map.Entry<String,byte[]> row:after.entrySet()) {
             if(alternative)latest.addAlternative(row.getKey(),row.getValue());else latest.add(row.getKey(),row.getValue());
         }
-        int added=0,total=0;
+        int added=0,total=0,addedFiles=0;
         for(Map.Entry<String,TreeMap<String,String[]>> row:latest.volumes.entrySet()) {
             TreeMap<String,String[]> previous=old.volumes.get(row.getKey());
+            if(previous==null)++addedFiles;
             for(String key:row.getValue().keySet()) {
                 ++total;if(previous==null||!previous.containsKey(key))++added;
             }
         }
-        return new UpdateSummary(true,before!=null,added,total);
+        return new UpdateSummary(true,before!=null,added,total,addedFiles,latest.volumes.size());
     }
     static final class Merger {
         final TreeMap<String,TreeMap<String,String[]>> volumes=new TreeMap<>();

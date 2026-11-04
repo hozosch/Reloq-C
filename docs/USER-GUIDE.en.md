@@ -79,7 +79,7 @@ Select Eloquence C first, then open **NVDA Settings → Eloquence C**.
 
 Under **Dictionary source**, you can also select **Alternative IBM TTS Dictionaries**. This source currently provides US English and Castilian Spanish, but no German dictionary. It is downloaded in the background the first time it is needed; own files take priority.
 
-After an update, a dialog reports the number of new distinct entries. Changed and removed entries do not count as additions. The first download reports the total; if the previous version cannot be compared, the dialog says so.
+After an update, a dialog reports the number of new distinct entries and new dictionary files. Changes and removals do not count as additions. The first download reports both totals; if the previous version cannot be compared, the dialog says so. Online updates currently retrieve a fixed set of supported filenames; other new files are not downloaded automatically.
 
 Use **Add file** to select your own Dic files and assign a language and dictionary type. Filenames can be arbitrary; files stay at their original locations. Later files in the list take priority. Choose **OK** or **Apply** to save the selection.
 
