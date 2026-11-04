@@ -21,6 +21,7 @@
 
 #include "delta_rules_frfr61.h"
 #include "delta_rules_c.h"
+#include "reloq61_french_qu.h"
 #include "evv_arena.h"
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
@@ -8065,6 +8066,8 @@ int32_t reloq_frfr61_l_rules(void *state, int32_t p0, int32_t p1, int32_t p2)
     r0 = reloq61_typed_fence(DELTA_ENTRY_fence, state, (int8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, delta_sym_ref[2668]));
     AT(int32_t, -64) = (1);
     r0 = reloq61_typed_fence(DELTA_ENTRY_fence, state, (int8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, delta_sym_ref[2676]));
+    if (reloq61_french_terminal_quil((delta_state *)state, EVV_AT(const delta_loc *, p1)->value, 1))
+        goto L781;
     AT(int32_t, -64) = (1);
     r0 = reloq61_typed_starttest(DELTA_ENTRY_starttest, state, (int16_t)((int32_t)AT(int32_t, -64)));
     AT(int32_t, -64) = (RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 200));

@@ -1,6 +1,8 @@
 # Eloquence C – user guide
 
-## Preview 1.1.0-rc24
+## Preview 1.1.0-rc25
+
+This preview fixes additional silent or incomplete cases in English, French, Spanish and Chinese-English mixed text. Spanish amounts retain their complete number reading.
 
 The glide in German “Homepage” starts from the unchanged native Eloquence path and is shifted slightly back. The unstressed E in “Kann er” follows the earlier ReLoq planner. Word-initial “sm” and “sn” use the earlier ReLoq planner’s S excitation. Several previously silent hyphenated words now speak. Listening feedback in NVDA is needed.
 

@@ -1,6 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Testversion 1.1.0-rc24
+## Testversion 1.1.0-rc25
+
+Die Testversion behebt weitere stumme oder unvollständige Fälle in Englisch, Französisch, Spanisch und chinesisch-englischem Mischtext. Spanische Beträge behalten dabei ihre vollständige Zahlenaussprache.
 
 Der J-Gleitlaut in „Homepage“ geht vom unveränderten nativen Eloquence-Pfad aus und wird leicht nach hinten verschoben; bei „Kann er“ ist das unbetonte E am früheren ReLoq-Planer orientiert. Wortanfängliches „sm“ und „sn“ übernehmen die S-Anregung des früheren ReLoq-Planers. Mehrere bisher stumme Bindestrichwörter sprechen wieder. Bitte den Klang in NVDA prüfen.
 

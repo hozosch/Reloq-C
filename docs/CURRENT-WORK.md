@@ -1,3 +1,10 @@
+# Testkandidat 1.1.0-rc25: Stumme und unvollständige Fälle
+
+- Die gemeinsame native Zeitplanung behandelt englische Silben ohne Vokalanker, unter anderem bei „tzsche“ und „recosp“, auch im chinesisch-englischen Pfad. Der nachfolgende Text wird mitgeprüft.
+- Französisches „quil“ erhält wie „kil“ einen Vokal und ein konsonantisches L; „quille“ behält seinen Gleitlaut. Die Regel gilt für beide französischen Varianten.
+- Spanische Beträge wie „€123 456.78“ lesen alle Tausendergruppen und Nachkommastellen. Sehr lange Zahlen mit „ª“ werden auch innerhalb eines Satzes wiedergegeben. Prüfungen vergleichen die vollständige Lautfolge mit äquivalenten Schreibweisen.
+- Die deutschen Anpassungen aus rc24 bleiben enthalten. Die Färbung von „Homepage“ und die S-Anregung bei „sm“/„sn“ benötigen weiterhin einen NVDA-Hörvergleich. Issue #10 zu schneller Dateinavigation bleibt offen, weil der gemeldete Fehler bisher nicht reproduziert wurde. Auch die verspäteten Wortmarken bei chinesisch-englischem und koreanischem Text sind weiter offen.
+
 # Testkandidat 1.1.0-rc24: Deutscher Gleitlaut und stille Wörter
 
 - Der J-Gleitlaut in „Homepage“ geht vom unveränderten nativen Eloquence-Pfad aus und wird behutsam nach hinten verschoben. Ein spektraler Vergleich mit der proprietären Original-DLL stützt den Ausgangspunkt; die neue Färbung bleibt ein Hörkandidat. Messbedingungen: [Originalvergleich](REFERENCE-ELOQUENCE-GLIDE.md).

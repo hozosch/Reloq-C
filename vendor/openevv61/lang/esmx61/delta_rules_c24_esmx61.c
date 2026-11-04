@@ -4159,7 +4159,16 @@ L2590:;
     r0 = reloq61_typed_bspush_ca_scan(DELTA_ENTRY_bspush_ca_scan, state, (int16_t)((int32_t)AT(int32_t, -12)));
     AT(int32_t, -16) = (r0);
     AT(int32_t, -12) = (1);
-    r0 = reloq61_typed_test_string_s(DELTA_ENTRY_test_string_s, state, (uint8_t)((int32_t)AT(int32_t, -12)), (uint8_t)(1), EVV_AT(const uint8_t *, delta_sym_ref[256]));
+    /* Do not treat the decimal separator after this integer range as
+       another thousands separator. */
+    {
+        const delta_state *d = (const delta_state *)state;
+        const int32_t end = EVV_AT(const delta_loc *, PARAM(int32_t, 2))->value;
+        if (end && EVV_AT(const delta_vars *, d->vars)->scan_ptr == end)
+            r0 = 1;
+        else
+            r0 = reloq61_typed_test_string_s(DELTA_ENTRY_test_string_s, state, (uint8_t)((int32_t)AT(int32_t, -12)), (uint8_t)(1), EVV_AT(const uint8_t *, delta_sym_ref[256]));
+    }
     AT(int32_t, -16) = (r0);
     AT(int32_t, -12) = ((int32_t)AT(int32_t, -20));
     if (AT(int32_t, -16) == 0) goto L2738;
