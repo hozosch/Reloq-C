@@ -10,7 +10,8 @@
 #include "catalogue.inc"
 struct site {
     ISpTTSEngineSite iface;short *pcm;size_t count,capacity,abort_after;
-    size_t playback_threshold,first_playable_samples;
+    size_t playback_threshold,first_playable_samples,batched_after;
+    int post_start_writes;
     SPEVENT events[4096];size_t event_count;ULONG partial;int fail_after,writes;
     LONG speed;USHORT volume;struct sapi_backend *nested;int nested_done;
     ULONGLONG interest;
@@ -38,6 +39,7 @@ static HRESULT write_pcm(ISpTTSEngineSite *p,const void *data,ULONG bytes,ULONG 
         SPVTEXTFRAG f=text(L"This priority message must not deadlock.",0);WAVEFORMATEX out=format(11025);
         assert(SUCCEEDED(sapi_backend_speak(s->nested,s->settings,0,&out,&f,&child.iface)));assert(child.count>0);free(child.pcm);}
     ++s->writes;
+    if(s->batched_after&&s->count>=s->batched_after)++s->post_start_writes;
     if(s->fail_after&&s->writes>=s->fail_after){*written=0;return E_FAIL;}
     if(s->partial&&bytes>s->partial)bytes=s->partial;*written=bytes;
     size_t count=bytes/2;if(s->count+count>s->capacity){s->capacity=(s->count+count)*2;
@@ -97,12 +99,14 @@ int main(int argc,char **argv)
     struct site fragmented=site_new();fragmented.partial=38;
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&a,&fragmented.iface)));same(&base,&fragmented);free(fragmented.pcm);++cases;
     struct site uninterested=site_new();uninterested.interest=0;
+    uninterested.batched_after=(out.nSamplesPerSec*120+999)/1000;
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&uninterested.iface)));
     assert(!uninterested.event_count);same(&base,&uninterested);
     /* Delivery stays batched after the short startup phase. */
-    int startup_writes=(int)((out.nSamplesPerSec*120/1000+511)/512);
-    assert(uninterested.writes>1&&
-           uninterested.writes<=(int)(uninterested.count/4096)+2+startup_writes);
+    assert(uninterested.writes>1);
+    size_t later=uninterested.count>uninterested.batched_after?
+        uninterested.count-uninterested.batched_after:0;
+    assert(uninterested.post_start_writes<=(int)(later/4096)+2);
     free(uninterested.pcm);++cases;
     /* Model a consumer that waits for 50 ms of samples before playback,
      * including NVDA's SAPI audio stream. Do not strand its startup behind
