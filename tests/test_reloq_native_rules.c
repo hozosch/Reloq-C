@@ -60,7 +60,8 @@ static int span(void *context,int32_t from,int32_t to,
     if(c[9].val_l==400&&c[13].val_l==2150&&c[15].val_l==2700)p->unstressed_er_target=1;
     if(c[8].val_l==62&&c[39].val_l==50&&c[9].val_l==300&&
        c[13].val_l==1500&&c[15].val_l==2600)p->initial_s_nasal_target=1;
-    if(c[9].val_l==285&&c[13].val_l==2100&&c[15].val_l==2850)p->j_glide_target=1;
+    /* Default softness lowers the /Ej/ third formant by 200 Hz. */
+    if(c[9].val_l==285&&c[13].val_l==2100&&c[15].val_l==2650)p->j_glide_target=1;
     if(c[9].val_l==420&&c[13].val_l==1900&&c[15].val_l==2450)p->ei_glide_target=1;
     if(c[9].val_l==300&&c[13].val_l==2100&&c[15].val_l==2900)p->j_onset_target=1;
     return 0;
