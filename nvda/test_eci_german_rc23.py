@@ -26,6 +26,9 @@ def main():
             assert '[.1zAmt]' in phonemes(engine, word), word
             assert render(engine, [word]) == render(engine, ['`[.1zAmt]']), word
             checks += 2
+        for phrase in ('Er kam samt seiner Familie.', '„samt“'):
+            assert '[.1zAmt]' in phonemes(engine, phrase), phrase
+            checks += 1
         assert '[.1sAmt]' in phonemes(engine, '`[.1sAmt]')
         assert render(engine, ['samt']) != render(engine, ['`[.1sAmt]'])
         checks += 2
@@ -71,6 +74,21 @@ def main():
                 checks += 3
             finally:
                 custom.close()
+            # The overlay is case-sensitive: an entry for one spelling must
+            # win for that spelling without disabling the built-in correction
+            # for a different spelling.
+            for spelling in ('samt', 'Samt', 'SAMT', 'sAmT'):
+                lexicon(path, ((spelling, '`[.1sAmt]'),))
+                custom = DirectEciEngine(args.library.resolve(), dialect=0x40000,
+                    encoding='utf8', experimental_generic=True, lexicon_path=path)
+                try:
+                    custom.set_parameter(PROCESS_TAGS, 1)
+                    assert '[.1sAmt]' in phonemes(custom, spelling), spelling
+                    other = 'Samt' if spelling == 'samt' else 'samt'
+                    assert '[.1zAmt]' in phonemes(custom, other), (spelling, other)
+                    checks += 2
+                finally:
+                    custom.close()
             (Path(temporary) / 'DEURoot.dic').write_bytes(b'samt\t`[.1sAmt]\n')
             root = DirectEciEngine(args.library.resolve(), dialect=0x40000,
                 encoding='utf8', experimental_generic=True)

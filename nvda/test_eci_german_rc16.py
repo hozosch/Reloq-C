@@ -57,7 +57,9 @@ def main():
                 checks += 1
             for number in ('25', '26', '28'):
                 spr = phonemes(engine, number)
-                assert len(render(engine, [number])[0]) > len(render(engine, [spr])[0]), (rate, number)
+                # The phonetic form now carries the same glottal onset as
+                # text for five-, six-, and eight-and compounds.
+                assert render(engine, [number, EciIndex(7)]) == render(engine, [spr, EciIndex(7)]), (rate, number)
                 checks += 1
             for word in ('Pizza', 'Mama', 'Oma'):
                 spr = phonemes(engine, word)
