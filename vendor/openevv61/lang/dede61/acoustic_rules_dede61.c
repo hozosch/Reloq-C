@@ -8,12 +8,16 @@
 extern int reloq_dede61_consonant_r(void *);
 extern int reloq_dede61_initial_r(void *);
 extern int reloq_dede61_number_four_r(void *);
+extern int reloq_dede61_number_four_und(void *);
 extern int reloq_dede61_old_r_source(void *);
 static int16_t consonant_r_source(void *state,int16_t stream,int16_t value)
 {
     int16_t aspiration,diplophonia;
     memcpy(&aspiration,(const unsigned char *)state+DG_BASE+942,2);
     memcpy(&diplophonia,(const unsigned char *)state+DG_BASE+934,2);
+    /* The same syllable-fence difference also leaves the second parallel
+     * frication level empty in SPR. Preserve the native text target. */
+    if(stream==23&&value==0&&reloq_dede61_number_four_r(state))return 50;
     if((stream!=aspiration&&stream!=diplophonia)||!reloq_dede61_consonant_r(state))return value;
     /* Retain the older source's contextual patterns. A short back vowel
      * after a vowel takes a continuously voiced r, whereas onset clusters
@@ -108,9 +112,8 @@ static int e_after_i(delta_state *d)
     return 1;
 }
 
-/* In an /Ej/ coda, as in Homepage, soften the original fronted j without
- * moving it all the way to the /aj/ glide. Keep the entering E and onset j
- * in the next syllable unchanged. */
+/* In an /Ej/ coda, as in Homepage, start with the /aj/ glide and move its
+ * formants a little towards long /i/. Keep onset j and /aj/ unchanged. */
 static int e_j_glide(delta_state *d)
 {
     int32_t at;memcpy(&at,(const unsigned char *)d+DG_BASE+712,sizeof at);
@@ -278,7 +281,18 @@ int32_t reloq_dede61_doF(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3
         }
     }
     if(stream.field>=1&&stream.field<=3&&e_j_glide(d)) {
-        static const int16_t target[]={345,2025,2675};
+        static const int16_t target[]={400,1940,2540};
+        if(left.field>0)left.field=target[stream.field-1];
+        if(right.field>0)right.field=target[stream.field-1];
+    }
+    /* The text and SPR parsers place four's consonantal R on opposite
+     * sides of the syllable fence. Use the existing text-path formants for
+     * both representations, without altering the approved source curve. */
+    if(stream.field>=1&&stream.field<=3&&
+       (reloq_dede61_number_four_r(d)||reloq_dede61_number_four_und(d))) {
+        static const int16_t r_target[]={400,1320,2000};
+        static const int16_t u_target[]={390,930,2400};
+        const int16_t *target=reloq_dede61_number_four_r(d)?r_target:u_target;
         if(left.field>0)left.field=target[stream.field-1];
         if(right.field>0)right.field=target[stream.field-1];
     }

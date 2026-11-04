@@ -201,6 +201,26 @@ def main():
                             characters=len(text), **timings))
                         # Wait for cancellation and verify the next job works.
                         run([sentence + "."])
+                # Issue #10: rapid navigation through long filenames used
+                # to leave the native input queue unusable until NVDA was
+                # restarted. Exercise the packaged driver's real queue and
+                # speech preprocessing, then require normal speech on the
+                # same worker without restarting it.
+                filename = ("20171111 - Can_A_Real_Meal_Easy_Bake_Oven_Cook_Raw_Meat_"
+                            "Macaroni_Cheese_-_Sloppy_Joe_Dinner.vtt  Extension: vtt, "
+                            "Size: 22.0 kB, Attributes: ---A--------, "
+                            "Modified: 11/2/2026 6:20:58 PM")
+                for locale in ("de_DE", "en_US"):
+                    driver.language = locale
+                    for number in range(30):
+                        first.clear()
+                        api.speak([filename + " " + str(number)])
+                        if number % 5 == 0:
+                            assert first.wait(20), (locale, number, errors)
+                        driver.cancel()
+                    assert run(["The following item is readable."])
+                    assert not errors, (locale, errors)
+                    report["checks"] += 31
                 # Use the actual settings manager, queue and NVDA symbol
                 # processor with a user-selected Root file. A full hyphenated
                 # key must survive normal symbol levels and both settings of

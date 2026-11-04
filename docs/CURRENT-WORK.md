@@ -1,3 +1,10 @@
+# Testkandidat 1.1.0-rc23: Zahlwörter und weitere deutsche Aussprache
+
+- Bei 42 und 43 erhält der Übergang von „zwei“ beziehungsweise „drei“ zu „und“ wieder die Zeitpunkte des alten Planers; die verbindende Aussprache ohne Glottisschlag bleibt erhalten. Vor „achtzig“ wird der Glottisschlag in den zusammengesetzten Achtzigern wieder gesetzt.
+- Der J-Gleitlaut in „Homepage“ geht vom Ei-Gleitlaut aus und wird leicht in Richtung langes I verschoben. Die Klangwirkung benötigt einen Hörtest.
+- Die unbetonte Silbe in „veröffentlicht“ und seinen Beugungsformen entspricht „veröffentlichen“. Das unabhängige Wort „samt“ erhält stimmhaftes S; ausdrückliche Wörterbucheinträge haben weiterhin Vorrang.
+- Die Übernahme des Wörterbuch-Zusammensetzungswegs und die Entfernung des alten Diagnosepfads werden zusammen mit dem gepackten Treiber und den Plattformen geprüft.
+
 # Testkandidat 1.1.0-rc22: Deutsches R, finales A und Zahlübergänge
 
 - Die konsonantische R-Anregung folgt den unterschiedlichen Kontexten des alten Planers, unter anderem bei „herunter“ und an Wortgrenzen; „vierund“ behält den kontinuierlichen R-Verlauf. Die Wirkung benötigt einen Hörtest.

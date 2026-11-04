@@ -88,12 +88,13 @@ int32_t reloq61_segment_voicing_gain(void *state,const struct reloq61_segment_la
 int32_t reloq61_segment_voicing(void *state,const struct reloq61_segment_layout *layout,
     int32_t value,int32_t begin,int32_t end,int32_t left,int32_t right)
 {return reloq61_segment_voicing_gain(state,layout,value,begin,end,left,right,0);}
-int32_t reloq61_segment_frication_gain(void *state,const struct reloq61_segment_layout *layout,
-    int32_t value,int32_t begin,int32_t end,int32_t left,int32_t right,int gain)
+int32_t reloq61_segment_frication_gain_default(void *state,const struct reloq61_segment_layout *layout,
+    int32_t value,int32_t begin,int32_t end,int32_t left,int32_t right,int gain,int default_value)
 {
     if(!reloq_scalar_begin(state))return 94;
     delta_state *d=state;struct cursor saved=save_cursor(d);struct target t={0};
     if(read_target(d,&t,value,begin,end,left,right))return finish(d,&saved,94);
+    if(t.value.field==0&&default_value>0)t.value.field=(int16_t)default_value;
     if(t.value.field>0)t.value.field=(int16_t)(t.value.field+gain);
     lpta_loadpn(d,&t.left);rpta_loadpn(d,&t.right);
     int at_boundary=0;
@@ -106,6 +107,9 @@ int32_t reloq61_segment_frication_gain(void *state,const struct reloq61_segment_
     submit(d,short_at(d,layout->af_stream),t.value.field,start,at_boundary?start:t.end.value);
     return finish(d,&saved,0);
 }
+int32_t reloq61_segment_frication_gain(void *state,const struct reloq61_segment_layout *layout,
+    int32_t value,int32_t begin,int32_t end,int32_t left,int32_t right,int gain)
+{return reloq61_segment_frication_gain_default(state,layout,value,begin,end,left,right,gain,0);}
 int32_t reloq61_segment_frication(void *state,const struct reloq61_segment_layout *layout,
     int32_t value,int32_t begin,int32_t end,int32_t left,int32_t right)
 {

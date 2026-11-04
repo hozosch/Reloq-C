@@ -1,6 +1,10 @@
 #include "reloq61_spr_output.h"
 #include "reloq61_german_final.h"
+#include "reloq_lexicon.h"
 #include <string.h>
+extern const struct reloq_lexicon *reloq61_dictionary_overlay_current(void);
+extern const struct reloq_lexicon_resolver *reloq61_dictionary_resolver(void);
+extern void reloq61_dictionary_resolver_release(const struct reloq_lexicon_resolver *);
 static const unsigned char alphabet[]={
 #include "reloq61_german_alphabet.inc"
 };
@@ -122,6 +126,74 @@ static void repair_konzentrier(delta_state *d,int32_t word_begin,int32_t word_en
         put_phone(d,p+i+4,31);
         set_syllable_stress(d,p+i,0);
         return;
+    }
+}
+
+/* Keep the voiced onset of the independent word consistent with its
+ * productive forms such as samtig. Explicit phonetic input is left alone. */
+static int samt_has_user_entry(int initial)
+{
+    unsigned char key[]="samt";
+    if(initial=='S')key[0]='S';
+    const struct reloq_lexicon *overlay=reloq61_dictionary_overlay_current();
+    const struct reloq_lexicon_override *entry=NULL;
+    if(overlay&&reloq_lexicon_find_override(overlay,key,4,&entry)==1)return 1;
+    const struct reloq_lexicon_resolver *resolver=reloq61_dictionary_resolver();
+    int found=resolver&&resolver->find&&resolver->find(resolver->context,key,4)!=NULL;
+    reloq61_dictionary_resolver_release(resolver);
+    return found;
+}
+static void repair_samt(delta_state *d,int32_t begin,int32_t end,
+    const unsigned char *spelling,int initial,int phonetic)
+{
+    struct reloq61_spr_phone s,a,m,t;
+    if(phonetic||strcmp((const char *)spelling,"samt")||
+       samt_has_user_entry(initial)||
+       !reloq61_spr_phone_at(d,begin,&s)||reloq61_spr_feature(d,&s,0)!=9||
+       !reloq61_spr_phone_at(d,s.after,&a)||reloq61_spr_feature(d,&a,0)!=34||
+       !reloq61_spr_phone_at(d,a.after,&m)||reloq61_spr_feature(d,&m,0)!=21||
+       !reloq61_spr_phone_at(d,m.after,&t)||reloq61_spr_feature(d,&t,0)!=3||t.after!=end)return;
+    put_phone(d,&s,10);
+}
+
+/* The participle and its inflections must use the same reduced vowel in
+ * öffentlich as veröffentlichen and Veröffentlichung. Match the native
+ * phone sequence as well as the written stem, leaving other E sounds alone. */
+static void repair_oeffentlich(delta_state *d,int32_t begin,int32_t end,
+    const unsigned char *spelling,int phonetic)
+{
+    if(phonetic||!strstr((const char *)spelling,"\366ffentlich"))return;
+    struct reloq61_spr_phone p[64];size_t count=0;int32_t at=begin;
+    while(at&&at!=end&&count<64&&reloq61_spr_phone_at(d,at,&p[count])) {
+        if(p[count].after==at)break;
+        at=p[count++].after;
+    }
+    if(at!=end)return;
+    static const unsigned char pattern[]={42,7,31,22,3,24,29,13};
+    for(size_t i=0;i+sizeof pattern<=count;++i) {
+        size_t j=0;while(j<sizeof pattern&&reloq61_spr_feature(d,p+i+j,0)==pattern[j])++j;
+        if(j==sizeof pattern&&input_symbol(d,p+i+2)=='e')put_phone(d,p+i+2,43);
+    }
+}
+
+/* In connected 81..89, the old planner adds a glottal onset to the A of
+ * achtzig, independently of the onset on und. The explicit SPR form already
+ * carries this onset. Restrict the repair to the complete /unt a x ts I x/
+ * sequence, which also handles written and embedded numeric forms. */
+static void repair_eighty_onset(delta_state *d,int32_t begin,int32_t end)
+{
+    struct reloq61_spr_phone p[64];size_t count=0;int32_t at=begin;
+    while(at&&at!=end&&count<64&&reloq61_spr_phone_at(d,at,&p[count])) {
+        if(p[count].after==at)break;
+        at=p[count++].after;
+    }
+    if(at!=end)return;
+    static const unsigned char pattern[]={36,22,3,34,14,17,29,13};
+    for(size_t i=0;i+sizeof pattern<=count;++i) {
+        size_t j=0;while(j<sizeof pattern&&reloq61_spr_feature(d,p+i+j,0)==pattern[j])++j;
+        if(j==sizeof pattern&&begins_syllable(d,p+i+3)) {
+            uint8_t onset=2;vmark(d,2,15,left_of(p+i+3),p[i+3].after,&onset);
+        }
     }
 }
 static void note_final_a(delta_state *d,int32_t begin,int32_t end)
@@ -353,6 +425,27 @@ static int phonetic_connected_number_onset(delta_state *d,const struct reloq61_s
     }
     return 1;
 }
+/* For five, six and eight the approved connected-number reading does have
+ * an onset on und. The generated SPR has no separate onset notation, so
+ * recover it from the exact preceding unit when that SPR is read back. */
+static int phonetic_number_und_glottal(delta_state *d,const struct reloq61_spr_phone *u)
+{
+    if(reloq61_spr_feature(d,u,0)!=36||reloq61_spr_feature(d,u,15)!=0)return 0;
+    int32_t left=left_of(u);delta_vars *v=EVV_AT(delta_vars *,d->vars);
+    if(*EVV_AT(const int32_t *,left+(v->fence_base+4)*4)&1)return 0;
+    struct reloq61_spr_phone n,t;
+    if(!reloq61_spr_phone_at(d,u->after,&n)||reloq61_spr_feature(d,&n,0)!=22||
+       !reloq61_spr_phone_at(d,n.after,&t)||reloq61_spr_feature(d,&t,0)!=3)return 0;
+    static const unsigned char paths[][4]={{7,22,40,7},{9,5,31,10},{3,14,34,0}};
+    static const size_t sizes[]={4,4,3};
+    for(size_t i=0;i<sizeof sizes/sizeof *sizes;++i) {
+        struct reloq61_spr_phone current=*u,previous;size_t j=0;
+        while(j<sizes[i]&&previous_phone(d,&current,&previous)&&
+              reloq61_spr_feature(d,&previous,0)==paths[i][j]) {current=previous;++j;}
+        if(j==sizes[i])return 1;
+    }
+    return 0;
+}
 /* Preserve native text vowel quantity for equivalent explicit phonemes.
  * Stress belongs to the syllable onset, so propagate it to later phones. */
 static void phonetic_quantity(delta_state *d,int32_t begin,int32_t end)
@@ -393,6 +486,9 @@ static void phonetic_quantity(delta_state *d,int32_t begin,int32_t end)
         if(phonetic_connected_number_onset(d,p)) {
             uint8_t no_onset=0;
             vmark(d,2,15,left_of(p),p->after,&no_onset);
+        } else if(phonetic_number_und_glottal(d,p)) {
+            uint8_t onset=2;
+            vmark(d,2,15,left_of(p),p->after,&onset);
         }
         if(id==34&&symbol=='a'&&!reloq61_spr_feature(d,p,14))
             put_phone(d,p,33);
@@ -408,6 +504,10 @@ static void phonetic_quantity(delta_state *d,int32_t begin,int32_t end)
 void reloq_dede61_repair_stem(void *state,int32_t begin,int32_t end)
 {
     delta_state *d=state;
+    int32_t first=vgetsc(d,0,0,begin,1);
+    while(first&&(*EVV_AT(const int32_t *,first)&2))first=vgetsc(d,0,0,first,1);
+    unsigned name=first?*(const unsigned char *)delta_record_field(&vstmtbl[1],0,TFLDS(EVV_AT(void *,first))):0;
+    int phonetic=name<sizeof alphabet&&alphabet[name]=='`';
     phonetic_quantity(d,begin,end);
     int32_t repair_begin,repair_end;
     memcpy(&repair_begin,(const unsigned char *)state+DG_BASE+584,4);
@@ -416,6 +516,9 @@ void reloq_dede61_repair_stem(void *state,int32_t begin,int32_t end)
     unsigned char spelling[128];int initial;
     word_spelling(d,repair_begin,spelling,&initial);
     repair_konzentrier(d,repair_begin,repair_end,spelling);
+    repair_samt(d,repair_begin,repair_end,spelling,initial,phonetic);
+    repair_oeffentlich(d,repair_begin,repair_end,spelling,phonetic);
+    repair_eighty_onset(d,repair_begin,repair_end);
     repair_os_adjective(d,repair_begin,repair_end,spelling);
     repair_nominal_prefix(d,repair_begin,repair_end,spelling,initial);
     repair_four_liaison(d,repair_begin,repair_end,spelling);

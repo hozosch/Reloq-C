@@ -12,7 +12,7 @@ struct pitch_plan {
     int32_t pair[2048][2];size_t count;
     uint64_t acoustic_hash;int64_t ticks;
     int32_t max_diplophonia,max_aspiration;
-    int32_t aj_to_und_start,continuous_until;
+    int32_t aj_to_und_start,aj_to_und_end,continuous_until;
     int i_e_r_target,i_e_target,final_a_target,comma_a_transition,kamera_a_target,oe_er_target,oe_r_lowered,weak_verb_rise,direct_weak_verb_fall,j_glide_target,ei_glide_target,j_onset_target;
     unsigned r_phase_mask,r_phase_anywhere;
     int r_continuous,r_medial;
@@ -41,7 +41,9 @@ static int span(void *context,int32_t from,int32_t to,
     if(c[9].val_l==600&&c[13].val_l==1360&&c[15].val_l==2280)p->oe_er_target=1;
     if(c[2].val_l==57&&c[2].val_r==53)p->oe_r_lowered=1;
     if(!p->aj_to_und_start&&c[9].val_l==420&&c[9].val_r==390&&
-       c[13].val_l==1900&&c[13].val_r==930)p->aj_to_und_start=from;
+       c[13].val_l==1900&&c[13].val_r==930) {
+        p->aj_to_und_start=from;p->aj_to_und_end=to;
+    }
     if(from<50&&c[7].val_l==28&&c[7].val_r==49)p->r_phase_mask|=1u;
     if(from<50&&c[7].val_l==49&&c[7].val_r==28)p->r_phase_mask|=2u;
     if(from<50&&c[7].val_l==28&&c[7].val_r==53)p->r_phase_mask|=4u;
@@ -55,7 +57,7 @@ static int span(void *context,int32_t from,int32_t to,
     if(c[2].val_l==0&&c[2].val_r==28&&c[7].val_l==28&&c[7].val_r==53)p->r_medial=1;
     if(c[9].val_l==400&&c[13].val_l==2050)p->i_e_r_target=1;
     if(c[9].val_l==370&&c[13].val_l==2150)p->i_e_target=1;
-    if(c[9].val_l==345&&c[13].val_l==2025&&c[15].val_l==2675)p->j_glide_target=1;
+    if(c[9].val_l==400&&c[13].val_l==1940&&c[15].val_l==2540)p->j_glide_target=1;
     if(c[9].val_l==420&&c[13].val_l==1900&&c[15].val_l==2450)p->ei_glide_target=1;
     if(c[9].val_l==300&&c[13].val_l==2100&&c[15].val_l==2900)p->j_onset_target=1;
     return 0;
@@ -179,8 +181,8 @@ static unsigned german_phone_targets(void)
     assert(p.i_e_r_target);
     p=german_pitch("wie eben",65,0,75);
     assert(p.i_e_target);
-    /* /Ej/ uses the intermediate glide for text and explicit phonemes;
-     * German /aj/ keeps its own established target. */
+    /* /Ej/ uses the /aj/ glide moved slightly towards long i, for text and
+     * explicit phonemes; German /aj/ keeps its established target. */
     p=german_pitch("Homepage",65,0,75);
     assert(p.j_glide_target);
     p=german_pitch("`[.1pEjC]",65,0,75);
@@ -201,7 +203,16 @@ static unsigned german_phone_targets(void)
            abs(three.aj_to_und_start-twentythree.aj_to_und_start)<=2);
     assert(two.max_diplophonia<100&&three.max_diplophonia<100&&
            twentytwo.max_diplophonia<100&&twentythree.max_diplophonia<100);
-    return 29;
+    /* The earlier planner retains secondary stress in 42/43, but starts
+     * and finishes the diphthong/und transition at these separate times. */
+    struct pitch_plan fortytwo=german_pitch("42",65,0,75);
+    struct pitch_plan fortythree=german_pitch("43",65,0,75);
+    assert(abs(fortytwo.aj_to_und_start-190)<=2&&abs(fortytwo.aj_to_und_end-209)<=2);
+    assert(abs(fortythree.aj_to_und_start-178)<=2&&abs(fortythree.aj_to_und_end-198)<=2);
+    assert(fortytwo.max_diplophonia<100&&fortythree.max_diplophonia<100);
+    p=german_pitch("82",65,0,75);
+    assert(p.max_diplophonia==100); /* Glottal onset of achtzig. */
+    return 32;
 }
 
 static int pitch_pair(const struct pitch_plan *p,int32_t left,int32_t right)

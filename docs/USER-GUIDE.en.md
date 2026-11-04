@@ -1,8 +1,8 @@
 # Eloquence C – user guide
 
-## Preview 1.1.0-rc22
+## Preview 1.1.0-rc23
 
-German consonantal R follows the earlier planner’s context-sensitive excitation. The glide in German “Homepage” follows the one in “drei”, and US English questions use a rising final contour. When native compound analysis already applies a dictionary entry, it retains the sentence plan. The alternative IBM dictionary source can be selected. Pronunciation and intonation need listening feedback in NVDA.
+German consonantal R follows the earlier planner’s context-sensitive excitation. The glide in German “Homepage” starts from the “drei” glide and moves slightly toward a long I, and US English questions use a rising final contour. When native compound analysis already applies a dictionary entry, it retains the sentence plan. The alternative IBM dictionary source can be selected. Pronunciation and intonation need listening feedback in NVDA.
 
 This preview compares consonantal R excitation and the final-A blend with the earlier German planner. It shortens N in connected nine-and forms and retains dictionary pronunciations in hyphenated compounds such as “ETI-Eloquence”, including inside quotation marks. A redundant post-focus pitch rise on weak verbs in statements is removed, and German questions receive a rising final contour. Listening feedback in NVDA is needed.
 

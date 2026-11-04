@@ -84,6 +84,19 @@ int reloq_dede61_number_four_r(void *state)
         reloq61_spr_phone_at(d,u.after,&n)&&reloq61_spr_feature(d,&n,0)==22&&
         reloq61_spr_phone_at(d,n.after,&t)&&reloq61_spr_feature(d,&t,0)==3;
 }
+int reloq_dede61_number_four_und(void *state)
+{
+    delta_state *d=state;int32_t at;
+    memcpy(&at,(const unsigned char *)state+DG_BASE+712,sizeof at);
+    struct reloq61_spr_phone u,r,i,f,n,t;
+    return reloq61_spr_phone_at(d,at,&u)&&reloq61_spr_feature(d,&u,0)==36&&
+        reloq61_spr_feature(d,&u,15)==0&&prior_phone(d,&u,&r)&&
+        reloq61_spr_feature(d,&r,0)==15&&prior_phone(d,&r,&i)&&
+        reloq61_spr_feature(d,&i,0)==28&&prior_phone(d,&i,&f)&&
+        reloq61_spr_feature(d,&f,0)==7&&
+        reloq61_spr_phone_at(d,u.after,&n)&&reloq61_spr_feature(d,&n,0)==22&&
+        reloq61_spr_phone_at(d,n.after,&t)&&reloq61_spr_feature(d,&t,0)==3;
+}
 int reloq_dede61_consonant_r(void *state)
 {
     delta_state *d=state;int32_t at;
@@ -242,7 +255,11 @@ int32_t reloq_dede61_doAF(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p
          * It is independent of the male /ts/ marker, including /tsv/. */
         if(name==7 || name==8)gain+=reloq61_labiodental_gain(state);
     }
-    return reloq61_segment_frication_gain(state,&layout,p1,p2,p3,p4,p5,gain);
+    /* Explicit SPR places four's R at the following syllable onset, where
+     * the native rule otherwise supplies zero frication. Restore the text
+     * path's source only for that recognised connected-number gesture. */
+    return reloq61_segment_frication_gain_default(state,&layout,p1,p2,p3,p4,p5,
+        gain,reloq_dede61_number_four_r(state)?45:0);
 }
 int32_t reloq_dede61_doFNZ(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3,int32_t p4,int32_t p5)
 {(void)p0;return reloq61_segment_nasal_zero(state,&layout,reloq_dede61_filter_endpoint,p1,p2,p3,p4,p5);}
@@ -250,12 +267,11 @@ int32_t reloq_dede61_doFNP(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t 
 {(void)p0;return reloq61_segment_nasal_pole(state,&layout,reloq_dede61_filter_endpoint,p1,p2,p3,p4,p5);}
 int32_t reloq_dede61_apply_speed_anno(void *state,int32_t p0,int32_t p1,int32_t p2)
 {(void)p0;return reloq61_segment_speed(state,&layout,p1,p2);}
-/* At the end of a word, the earlier composer retained a longer /aj/ glide
- * in zweiund and dreiund. Complete number compounds already get the same
- * duration from the native planner and do not need this adjustment. */
-static int terminal_number_aj(delta_state *d,const struct reloq61_spr_phone *j)
+/* The connected unit ends a word or precedes the stressed forty syllable.
+ * Other complete number compounds already have the intended timing. */
+static int connected_number_aj_context(delta_state *d,const struct reloq61_spr_phone *j)
 {
-    struct reloq61_spr_phone a,liquid,start,u,n,t,after;
+    struct reloq61_spr_phone a,liquid,start,u,n,t,after,i,r,ts;
     if(!phone_is(d,j,26,7)||!prior_phone(d,j,&a)||!phone_is(d,&a,34,7)||
        !prior_phone(d,&a,&liquid)||!prior_phone(d,&liquid,&start))return 0;
     unsigned name=reloq61_spr_feature(d,&liquid,0);
@@ -265,8 +281,16 @@ static int terminal_number_aj(delta_state *d,const struct reloq61_spr_phone *j)
        reloq61_spr_feature(d,&u,15)!=0||!reloq61_spr_phone_at(d,u.after,&n)||
        reloq61_spr_feature(d,&n,0)!=22||!reloq61_spr_phone_at(d,n.after,&t)||
        reloq61_spr_feature(d,&t,0)!=3)return 0;
-    return !reloq61_spr_phone_at(d,t.after,&after)||
-        reloq61_spr_feature(d,&after,0)==51||begins_projection(d,&after,4);
+    if(!reloq61_spr_phone_at(d,t.after,&after)||
+       reloq61_spr_feature(d,&after,0)==51||begins_projection(d,&after,4))return 1;
+    /* /f I r ts/ is the native forty root, for digits and written numbers.
+     * Its stressed und syllable otherwise shortens the preceding glide. */
+    if(reloq61_spr_feature(d,&after,0)==7&&
+       reloq61_spr_phone_at(d,after.after,&i)&&reloq61_spr_feature(d,&i,0)==29&&
+       reloq61_spr_phone_at(d,i.after,&r)&&reloq61_spr_feature(d,&r,0)==25&&
+       reloq61_spr_phone_at(d,r.after,&ts)&&reloq61_spr_feature(d,&ts,0)==3&&
+       reloq61_spr_feature(d,&ts,14)==2)return 2;
+    return 0;
 }
 /* The native nucleus distributor runs when the following U is current.
  * Restore the earlier connected-word nucleus length before it distributes
@@ -277,10 +301,13 @@ void reloq_dede61_adjust_connected_number_nucleus(void *state)
     memcpy(&at,(const unsigned char *)d+DG_BASE+712,sizeof at);
     struct reloq61_spr_phone u,j;
     if(!reloq61_spr_phone_at(d,at,&u)||reloq61_spr_feature(d,&u,0)!=36||
-       !prior_phone(d,&u,&j)||!terminal_number_aj(d,&j))return;
+       !prior_phone(d,&u,&j))return;
+    int context=connected_number_aj_context(d,&j);
+    int32_t bonus=context==1?230000:context==2?140000:0;
+    if(!bonus)return;
     memcpy(&duration,(const unsigned char *)d+DG_BASE+2696,sizeof duration);
-    if(duration<=0||duration>INT32_MAX-230000)return;
-    duration+=230000;
+    if(duration<=0||duration>INT32_MAX-bonus)return;
+    duration+=bonus;
     memcpy((unsigned char *)d+DG_BASE+2696,&duration,sizeof duration);
 }
 static int32_t german_duration(void *state,int16_t kind,int32_t value)
@@ -289,6 +316,9 @@ static int32_t german_duration(void *state,int16_t kind,int32_t value)
     memcpy(&pos,(const unsigned char *)state+DG_BASE+712,sizeof pos);
     struct reloq61_spr_phone current,next,prior;
     if(kind==3&&reloq_dede61_final_text_a(state)&&value<=INT32_MAX-162500)value+=162500;
+    if(kind==3&&reloq61_spr_phone_at(d,pos,&current)&&
+       phone_is(d,&current,26,7)&&connected_number_aj_context(d,&current)==2&&
+       value>=200000)value-=200000;
     if(kind==0&&
        reloq61_spr_phone_at(d,pos,&current)&&reloq61_spr_phone_at(d,current.after,&next)) {
         unsigned id=reloq61_spr_feature(d,&current,0),following=reloq61_spr_feature(d,&next,0);
