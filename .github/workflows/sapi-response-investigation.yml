@@ -54,3 +54,12 @@ jobs:
           PY
       - name: Verify SAPI transport, event positions and dictionaries
         run: make -C sapi test
+      - name: Verify stable package names and updater
+        run: |
+          PYTHONPATH=nvda python3 nvda/test_updates.py
+          python3 - <<'PY'
+          from tools.release_packages import names, android_name
+          assert names('1.1.0') == ('reloq-c-sapi5-1.1.0-setup.exe', 'reloq-c-synth-x64-1.1.0.nvda-addon')
+          assert android_name('1.1.0', 'reloq-c-android-arm64-1.1.0.apk')
+          assert not android_name('1.1.0', 'reloq-c-android-arm64-1.1.0-preview1.apk')
+          PY
