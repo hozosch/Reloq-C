@@ -95,7 +95,7 @@ NVDA can process symbols before sending text to the synthesizer; its symbol sett
 
 When [reporting an issue](https://github.com/hozosch/Reloq-C/issues), include a short example, language, voice, version, sample rate and whether dictionaries are enabled. Explain whether speech stops, pronunciation is wrong or NVDA itself exits.
 
-## SAPI5 x64 and x86 previews
+## SAPI5 x64 and x86
 
 Run the single SAPI5 `setup.exe`. Its Inno Setup language chooser offers the supported interface languages. It installs x64 and x86 voices together on compatible Windows, and x86 on 32-bit Windows.
 After restarting existing SAPI applications, choose a **ReLoq C** language voice.

@@ -1,5 +1,8 @@
 # First public release
 
+This is the historical plan for the first public release. For current packages,
+installation changes and known limitations, see [ReLoq C 1.1](releases/1.1.md).
+
 The release target is a reliable shared engine with measured resource use.
 Optimization continues after that milestone; it does not require proving that
 no further speed or size improvement is possible.

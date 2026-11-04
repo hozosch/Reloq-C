@@ -1,4 +1,4 @@
-"""English preview Unicode admission and English character names.
+"""English Unicode admission and English character names.
 
 The spelling readings are derived from the separately observed English
 lexicon. Unknown running-text characters are ignored; spelling names their
