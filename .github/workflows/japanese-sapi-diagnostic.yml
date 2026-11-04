@@ -1,0 +1,37 @@
+name: Investigate Japanese SAPI output
+on:
+  push:
+    branches: [codex/japanese-sapi-diagnostic]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  japanese:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: sapi-installer
+          path: diagnostic-installer
+          run-id: 41909131860
+          github-token: ${{ github.token }}
+      - name: Install the SAPI build previously tested in NVDA
+        shell: pwsh
+        run: |
+          $setup = (Get-ChildItem diagnostic-installer -Recurse -Filter *-setup.exe | Select-Object -First 1).FullName
+          if (!$setup) { throw 'Installer missing.' }
+          $process = Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Installer failed with $($process.ExitCode)" }
+      - name: Compare Japanese SAPI output for plain text and NVDA-like markup
+        shell: pwsh
+        run: ./.github/japanese-sapi-diagnostic.ps1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: japanese-sapi-diagnostic
+          path: japanese-results.json
+          if-no-files-found: warn
