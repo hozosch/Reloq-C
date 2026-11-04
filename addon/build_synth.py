@@ -17,7 +17,7 @@ from urllib.request import urlopen
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "nvda"))
 from _reloq_dictionaries import FILES as DICTIONARY_FILES, fetch_master, validate_snapshot
 
-from build_preview import assert_x64_pe
+from pe_format import assert_x64_pe
 from build_translations import translation_entries
 
 

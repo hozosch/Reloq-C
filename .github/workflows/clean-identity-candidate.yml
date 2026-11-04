@@ -27,6 +27,8 @@ jobs:
           python3 android/test_versioning.py
           python3 android/test_apk_identity.py
           python3 sapi/generate_catalogue.py --check
+          cc -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -DRELOQ_SAPI_SETTINGS_TEST -I sapi sapi/settings.c sapi/test_settings.c -o /tmp/test-sapi-settings
+          /tmp/test-sapi-settings
           python3 android/test_translations.py
           python3 android/test_direct_boot.py --java-home "$JAVA_HOME"
           javac -d /tmp/reloq-java android/java/org/reloq/tts/UpdateData.java android/test/UpdateDataTest.java

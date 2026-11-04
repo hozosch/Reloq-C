@@ -16,7 +16,7 @@ import types
 from unittest import mock
 import zipfile
 
-from build_preview import assert_x64_pe
+from pe_format import assert_x64_pe
 from build_synth import build
 from nvda_test_api import (
     configuration_manager, install as install_nvda_contract, load as load_nvda_api,

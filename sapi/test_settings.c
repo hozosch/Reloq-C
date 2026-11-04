@@ -8,16 +8,26 @@
 HMODULE sapi_module;
 struct key {WCHAR path[128];} keys[40];static size_t key_count;
 struct value {HKEY key;WCHAR name[32];DWORD type,bytes;BYTE data[sizeof(struct sapi_settings)];} values[80];
-static size_t value_count;
+static size_t value_count;static unsigned value_reads,key_opens;static LSTATUS open_error;
 static HKEY find(LPCWSTR path)
 {for(size_t i=0;i<key_count;++i)if(!wcscmp(path,keys[i].path))return keys+i;return NULL;}
 LSTATUS RegGetValueW(HKEY base,LPCWSTR path,LPCWSTR name,DWORD flags,DWORD *type,void *data,DWORD *bytes)
 {
-    assert(base==HKEY_CURRENT_USER);HKEY key=find(path);
+    ++value_reads;assert(base==HKEY_CURRENT_USER);HKEY key=find(path);
     for(size_t i=0;i<value_count;++i)if(values[i].key==key&&!wcscmp(name,values[i].name)){
         struct value *v=values+i;
         if((v->type==REG_BINARY&&flags!=RRF_RT_REG_BINARY)||(v->type==REG_DWORD&&flags!=RRF_RT_REG_DWORD))return ERROR_INVALID_DATA;
         if(*bytes<v->bytes)return 234;memcpy(data,v->data,v->bytes);*bytes=v->bytes;if(type)*type=v->type;return 0;}
+    return ERROR_FILE_NOT_FOUND;
+}
+LSTATUS RegOpenKeyExW(HKEY base,LPCWSTR path,DWORD options,DWORD access,HKEY *out)
+{
+    ++key_opens;assert(base==HKEY_CURRENT_USER&&!options&&access==KEY_READ);
+    if(open_error)return open_error;
+    size_t n=wcslen(path);
+    for(size_t i=0;i<key_count;++i)
+        if(!wcsncmp(path,keys[i].path,n)&&(keys[i].path[n]==0||keys[i].path[n]==L'\\')){
+            *out=keys+i;return ERROR_SUCCESS;}
     return ERROR_FILE_NOT_FOUND;
 }
 LSTATUS RegCreateKeyExW(HKEY base,LPCWSTR path,DWORD a,void *b,DWORD c,DWORD access,void *d,HKEY *out,DWORD *disp)
@@ -49,7 +59,8 @@ int main(void)
     adjacent_dictionary=1;
     assert(sapi_module_path(path,2048,L"dictionaries")&&!wcscmp(path,L"C:\\ReLoq\\x86\\dictionaries"));++checks;
     module_path=L"";
-    assert(sapi_settings_read(0x40000,&de)==S_OK&&de.rate==1);++checks;
+    assert(sapi_settings_read(0x40000,&de)==S_OK&&de.rate==1);
+    assert(value_reads==3&&key_opens==1);++checks;
     assert(sapi_settings_shared(&shared)==S_OK&&!shared);++checks;
     de.pitch=72;de.rate=6;wcscpy(de.directory,L"C:\\My dictionaries");de.dictionaries=1;
     assert(sapi_settings_write(0x40000,&de)==S_OK);
@@ -72,6 +83,7 @@ int main(void)
     value_count=key_count=0;HKEY key;assert(!RegCreateKeyExW(HKEY_CURRENT_USER,L"Software\\ReLoq C\\SAPI5\\Voices\\00040000",0,NULL,0,KEY_SET_VALUE,NULL,&key,NULL));
     sapi_settings_default(&s);s.rate=5;assert(!RegSetValueExW(key,L"Settings",0,REG_BINARY,(const BYTE *)&s,sizeof s));
     assert(sapi_settings_read(0x10000,&en)==S_OK&&en.rate==5);++checks;
+    open_error=5;assert(sapi_settings_read(0x10000,&en)==S_OK&&en.rate==5);open_error=0;++checks;
     values[0].bytes=8;assert(FAILED(sapi_settings_read(0x40000,&s)));++checks;
     printf("{\"settings_checks\":%u,\"languages\":%zu,\"shared_rate\":true,\"language_settings_preserved\":true}\n",checks,sapi_language_count());return 0;
 }
