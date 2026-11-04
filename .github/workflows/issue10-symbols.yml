@@ -1,0 +1,42 @@
+name: Issue 10 native symbols
+on:
+  push:
+    branches: [codex/release110]
+    paths: [.github/workflows/issue10-symbols.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  symbols:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-candidate-unvalidated
+          path: candidate
+          run-id: 41838143257
+          github-token: ${{ github.token }}
+      - name: Install x64 compiler
+        run: |
+          sudo apt-get -o Acquire::Retries=2 update -qq
+          sudo apt-get -o Acquire::Retries=2 install -y --no-install-recommends gcc-mingw-w64-x86-64-posix
+      - uses: actions/cache/restore@v4
+        with:
+          path: vendor/openevv61/build
+          key: nvda-hearing-ubuntu24-v1-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c') }}
+      - name: Rebuild matching DLL without stripping symbols
+        run: |
+          find vendor/openevv61/build -type f -exec touch {} +
+          make -C eci -j2 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump WINDOWS_LDFLAGS='-static -Wl,--no-insert-timestamp'
+          x86_64-w64-mingw32-nm -anS eci/eci.dll > issue10-symbols.txt
+          x86_64-w64-mingw32-objcopy -O binary -j .text candidate/eci/eci.dll candidate-text.bin
+          x86_64-w64-mingw32-objcopy -O binary -j .text eci/eci.dll symbolic-text.bin
+          sha256sum candidate-text.bin symbolic-text.bin
+          cmp candidate-text.bin symbolic-text.bin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue10-symbols
+          path: issue10-symbols.txt
+          retention-days: 3
