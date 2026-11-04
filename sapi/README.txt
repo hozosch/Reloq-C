@@ -57,11 +57,12 @@ spelling fragments use the shared C engine.
 Responsiveness and dictionaries
 -------------------------------
 The initialized language runs directly on SAPI's output thread, following the
-SAPI5IBMTTS transport approach. The first native audio callback is written
-immediately. Following callbacks are collected in one live 4,096-sample buffer
-and flushed at events and fragment boundaries. There is no second producer
-thread or semaphore queue. This reduces small writes to SAPI's normal format
-converter without changing samples or native synthesis rate.
+SAPI5IBMTTS transport approach. The initial callbacks are delivered promptly
+so that clients can reach their playback threshold. After approximately 120 ms
+of source audio, callbacks are collected in one live 4,096-sample buffer and
+flushed at events and fragment boundaries. There is no second producer thread
+or semaphore queue. This reduces small writes without changing samples or the
+native synthesis rate.
 
 Unchanged dictionary paths retain initialized language data. Small metadata
 checks detect edits, replacement, creation and deletion of native .dic files
