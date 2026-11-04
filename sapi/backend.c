@@ -107,11 +107,16 @@ static int flush_pcm(struct sapi_backend *b)
 }
 static int append_pcm(struct sapi_backend *b,const short *pcm,size_t samples)
 {
-    /* Preserve the first native callback's response time. Subsequent audio
-     * reaches SAPI in reference-sized blocks, or at the next event/flush.
-     * This is live delivery only: no resampling or speech-result cache. */
-    if(!b->started&&!b->pending_count){
-        memcpy(b->pending,pcm,samples*2);return write_pcm(b,b->pending,samples);}
+    /* Send the first 120 ms as native callbacks. Some SAPI consumers wait
+     * for an initial audio threshold before playback; sending just 512
+     * samples before switching to a 4096-sample batch can delay that
+     * threshold, especially at higher synthesis rates. Later callbacks
+     * remain batched and event flushes keep their exact stream offsets. */
+    uint64_t startup=((uint64_t)b->job.rate*120+999)/1000;
+    if(!b->started||b->audio_offset/sizeof(short)<startup){
+        memcpy(b->pending,pcm,samples*sizeof *pcm);
+        return write_pcm(b,b->pending,samples);
+    }
     while(samples){size_t n=4096-b->pending_count;if(n>samples)n=samples;
         memcpy(b->pending+b->pending_count,pcm,n*2);b->pending_count+=n;pcm+=n;samples-=n;
         if(b->pending_count==4096&&!flush_pcm(b))return 0;}
