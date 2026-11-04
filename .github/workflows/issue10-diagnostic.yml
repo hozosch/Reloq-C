@@ -23,5 +23,8 @@ jobs:
         run: |
           $core = (Get-ChildItem candidate -Recurse -Filter eci.dll | Select-Object -First 1).FullName
           $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
-          python addon/test_synth_native.py --library $core --addon $addon --output issue10.json
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          for ($i = 0; $i -lt 12; $i++) {
+            Write-Output "Filename stress attempt $i"
+            python addon/test_synth_native.py --library $core --addon $addon --output issue10.json
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
