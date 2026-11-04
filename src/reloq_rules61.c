@@ -842,15 +842,19 @@ static void take_pause(void *context,int64_t from,int64_t to,int64_t after)
 }
 /* Map original UTF-8 offsets to a complete SPR boundary. Inserting an
  * index inside a phoneme group would change the token stream. */
-static size_t annotation_boundary(const unsigned char *a,size_t n,const size_t *map,size_t offset)
+static size_t annotation_boundary(const unsigned char *a,size_t n,const size_t *map,size_t offset,size_t *cursor)
 {
-    if(!offset)return 0;
+    if(!offset){*cursor=0;return 0;}
     size_t boundary=n;
-    for(size_t j=0;j<n;) {
+    /* Source positions normally arrive in increasing order. Resume at the
+     * unadjusted match, so each annotation token is scanned only once while
+     * preserving the original punctuation and inside-word adjustments. */
+    for(size_t j=*cursor;j<n;) {
         if(map[j]>=offset){boundary=j;break;}
         struct reloq_inline_tag t=reloq_inline_tag_read(a+j,n-j,1);
         j+=t.length?t.length:1;
     }
+    *cursor=boundary;
     /* An AddText piece ending in punctuation lets the private ECI parser
      * finish a stretch before the following index arrives. Put the mark
      * at the preceding complete word edge, leaving punctuation and the
@@ -1236,14 +1240,17 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     if(mark_count) {
         if(mark_count>SIZE_MAX/sizeof *marks)goto memory;
         marks=malloc(mark_count*sizeof *marks);if(!marks)goto memory;
-        size_t i=0,p=0;
+        size_t i=0,p=0,cursor=0,previous_offset=0;
         for(size_t j=0;j<mark_count;++j) {
             int is_index=p==pitch_count||(i<index_count&&indices[i].annotation_offset<=pitches[p].annotation_offset);
             size_t offset=is_index?indices[i].annotation_offset:pitches[p].annotation_offset;
             if(offset>length)goto done;
             if(!is_index&&(pitches[p].native_pitch<0||pitches[p].native_pitch>100))goto done;
-            marks[j]=(struct reloq61_mark){annotation_boundary(a,n,map,offset),
+            /* Preserve behaviour for callers with out-of-order inputs. */
+            if(j&&offset<previous_offset)cursor=0;
+            marks[j]=(struct reloq61_mark){annotation_boundary(a,n,map,offset,&cursor),
                 (int32_t)(is_index?i:index_count+p),-1};
+            previous_offset=offset;
             if(j&&marks[j].offset<marks[j-1].offset)goto done;
             if(is_index)++i;else ++p;
         }
