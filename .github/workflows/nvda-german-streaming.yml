@@ -68,7 +68,7 @@ jobs:
           path: vendor/openevv61/build
           key: ${{ steps.rules.outputs.cache-primary-key }}
       - name: Build native rule and DSP probes
-        run: make -C eci -j2 eci_native_rules_probe.exe eci_rate_dispatch_probe.exe eci_classic_source_probe.exe PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
+        run: make -C eci -j2 eci_native_rules_probe.exe eci_rate_dispatch_probe.exe eci_classic_source_probe.exe eci_converter_failure_probe.exe PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
       - name: Check complete Classic consonant transfer
         run: |
           make -C eci test_reloq_rate_dispatch test_reloq_classic_noise test_reloq_classic_voice test_reloq_classic_frame test_reloq_classic_source test_reloq_session test_reloq_classic_body test_reloq_hearing_profiles
@@ -128,6 +128,7 @@ jobs:
             eci/eci_native_rules_probe.exe
             eci/eci_rate_dispatch_probe.exe
             eci/eci_classic_source_probe.exe
+            eci/eci_converter_failure_probe.exe
           compression-level: 0
           retention-days: 7
   windows:
@@ -154,6 +155,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $rules = (Get-ChildItem candidate -Recurse -Filter eci_native_rules_probe.exe | Select-Object -First 1).FullName
           & $rules
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $converter = (Get-ChildItem candidate -Recurse -Filter eci_converter_failure_probe.exe | Select-Object -First 1).FullName
+          & $converter
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $dsp = (Get-ChildItem candidate -Recurse -Filter eci_rate_dispatch_probe.exe | Select-Object -First 1).FullName
           & $dsp

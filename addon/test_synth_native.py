@@ -247,26 +247,27 @@ def main():
                     "followed_by_more_words_with_a_similar_name_but_a_different_extension.srt  "
                     "Extension: srt, Size: 22.0 kB, Attributes: ---A--------, Modified: 11/2/2026 6:20:58 PM")
                 driver.voiceTags = False
-                for rate in ("1", "6"):
-                    driver.sampleRate = rate
-                    for locale in ("de_DE", "en_US"):
-                        driver.language = locale
-                        recovery = "The following item is readable."
-                        reference = run([recovery])
-                        for number in range(80):
-                            first.clear()
-                            # Alternate entries like navigating down and back up.
-                            row = (number // 2 + number % 2) % len(names)
-                            api.speak([names[row] + " " + str(number)])
-                            if number % 11 == 0:
-                                assert first.wait(20), (rate, locale, number, errors)
-                            else:
-                                time.sleep((number % 4) * .004)
-                            driver.cancel()
-                            if number % 20 == 19:
-                                assert run([recovery]) == reference, (rate, locale, number, 'recovery changed')
-                                assert not errors, (rate, locale, errors)
-                        report["checks"] += 84
+                for repetition in range(4):
+                    for rate in ("1", "6"):
+                        driver.sampleRate = rate
+                        for locale in ("de_DE", "en_US"):
+                            driver.language = locale
+                            recovery = "The following item is readable."
+                            reference = run([recovery])
+                            for number in range(80):
+                                first.clear()
+                                # Alternate entries like navigating down and back up.
+                                row = (number // 2 + number % 2) % len(names)
+                                api.speak([names[row] + " " + str(number)])
+                                if number % 11 == 0:
+                                    assert first.wait(20), (repetition, rate, locale, number, errors)
+                                else:
+                                    time.sleep((number % 4) * .004)
+                                driver.cancel()
+                                if number % 20 == 19:
+                                    assert run([recovery]) == reference, (repetition, rate, locale, number, 'recovery changed')
+                                    assert not errors, (repetition, rate, locale, errors)
+                            report["checks"] += 84
                 # Use the actual settings manager, queue and NVDA symbol
                 # processor with a user-selected Root file. A full hyphenated
                 # key must survive normal symbol levels and both settings of

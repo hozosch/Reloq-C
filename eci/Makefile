@@ -128,6 +128,12 @@ test_reloq_german_context: ../tests/test_reloq_german_context.c $(OBJECTS) $(RUL
 test_reloq_german_cancel: ../tests/test_reloq_german_cancel.c $(OBJECTS) $(RULES61)
 	$(CC) $(CPPFLAGS) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -I../include -I../vendor/openevv61/include -I../vendor/openevv61/src/port $< $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections,--wrap=reloq61_generate_phonemes -lm -o $@
 
+test_reloq_converter_failure: ../tests/test_reloq_converter_failure.c $(OBJECTS) $(RULES61)
+	$(CC) $(CPPFLAGS) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -I../include $< $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections,--wrap=stw_createAudioConverter -lm -o $@
+
+eci_converter_failure_probe.exe: ../tests/test_reloq_converter_failure.c $(WINDOWS_OBJECTS) $(RULES61_WIN)
+	$(WINDOWS_CC) $(filter-out -Werror,$(WINDOWS_CFLAGS)) $(PROVIDER_LINK) $(SECTIONS) -I../include $< $(WINDOWS_OBJECTS) $(RULES61_WIN) $(WINDOWS_LDFLAGS) -Wl,--gc-sections,--wrap=stw_createAudioConverter -lm -o $@
+
 test_reloq_hash_delete: ../tests/test_reloq_hash_delete.c $(RULES61)
 	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -DEVV_ARENA=1 -I../vendor/openevv61/src/port $< $(RULES61) -pthread -lm -o $@
 
