@@ -95,8 +95,10 @@ def main():
                 try:
                     for engine in (old,new):
                         engine.set_parameter(NATIVE_SPEED,85);engine.set_parameter(SAMPLE_RATE,3)
-                    for text in ('2–4','2020 – 2024','und 24–32 Punkte','Das ist ein einfacher Satz.',
-                                 'Der Unterstrich ist lang.','Er unterstrich den Satz.'):
+                    texts=('2–4','2020 – 2024','2 – -4','2 – +4','und 24–32 Punkte',
+                           'Das ist ein einfacher Satz.','Der Unterstrich ist lang.','Er unterstrich den Satz.')
+                    if encoding=='utf8':texts+=('2 – +4',)
+                    for text in texts:
                         before=render(old,[text,EciIndex(3)]);after=render(new,[text,EciIndex(3)])
                         assert before==after,(dialect,encoding,text,len(before[0]),len(after[0]))
                         checks+=1

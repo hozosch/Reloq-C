@@ -50,6 +50,7 @@ int main(void)
     check("word—word",0,1,"word—word");
     check("word–word",0,1,"word–word");
     check("2–4",0,1,"2-4");check("2020 — 2024",0,1,"2020 - 2024");
+    check("2 – -4",0,1,"2 - -4");check("2 – +4",0,1,"2 - +4");
     check("a_b",0,0,"a_b");
     check("_",1,0," `[.1Un.0tR.2StrIX] ");
     check("café",0,0,"café");check("øł",0,0,"øł");

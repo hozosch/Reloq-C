@@ -55,9 +55,28 @@ static int scalar(struct buffer *b,uint32_t c)
 }
 static int ascii_number_range(const unsigned char *text,size_t length,size_t begin,size_t end)
 {
-    while(begin&&(text[begin-1]==' '||text[begin-1]=='\t'||text[begin-1]=='\r'||text[begin-1]=='\n'))--begin;
-    while(end<length&&(text[end]==' '||text[end]=='\t'||text[end]=='\r'||text[end]=='\n'))++end;
-    return begin&&end<length&&text[begin-1]>='0'&&text[begin-1]<='9'&&text[end]>='0'&&text[end]<='9';
+    uint32_t c;size_t used;
+    while(begin) {
+        size_t at=begin-1;
+        while(at&&(text[at]&0xc0)==0x80)--at;
+        if(decode(text+at,begin-at,&used,&c)||used!=begin-at)return 0;
+        if(!(c==' '||c=='\t'||c=='\r'||c=='\n'||c==0xa0||c==0x1680||
+             (c>=0x2000&&c<=0x200a)||c==0x2028||c==0x2029||c==0x202f||c==0x205f||c==0x3000))break;
+        begin=at;
+    }
+    if(!begin||c<'0'||c>'9')return 0;
+    while(end<length) {
+        if(decode(text+end,length-end,&used,&c))return 0;
+        if(!(c==' '||c=='\t'||c=='\r'||c=='\n'||c==0xa0||c==0x1680||
+             (c>=0x2000&&c<=0x200a)||c==0x2028||c==0x2029||c==0x202f||c==0x205f||c==0x3000))break;
+        end+=used;
+    }
+    if(end==length)return 0;
+    if(c=='+'||c=='-') {
+        end+=used;
+        if(end==length||decode(text+end,length-end,&used,&c))return 0;
+    }
+    return c>='0'&&c<='9';
 }
 uint32_t reloq_unicode_compose(uint32_t a,uint32_t b)
 {
