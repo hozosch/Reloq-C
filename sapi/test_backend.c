@@ -10,6 +10,7 @@
 #include "catalogue.inc"
 struct site {
     ISpTTSEngineSite iface;short *pcm;size_t count,capacity,abort_after;
+    size_t playback_threshold,first_playable_samples;
     SPEVENT events[4096];size_t event_count;ULONG partial;int fail_after,writes;
     LONG speed;USHORT volume;struct sapi_backend *nested;int nested_done;
     ULONGLONG interest;
@@ -41,7 +42,10 @@ static HRESULT write_pcm(ISpTTSEngineSite *p,const void *data,ULONG bytes,ULONG 
     if(s->partial&&bytes>s->partial)bytes=s->partial;*written=bytes;
     size_t count=bytes/2;if(s->count+count>s->capacity){s->capacity=(s->count+count)*2;
         void *mem=realloc(s->pcm,s->capacity*sizeof *s->pcm);assert(mem);s->pcm=mem;}
-    memcpy(s->pcm+s->count,data,bytes);s->count+=count;return S_OK;
+    memcpy(s->pcm+s->count,data,bytes);s->count+=count;
+    if(s->playback_threshold&&!s->first_playable_samples&&s->count>=s->playback_threshold)
+        s->first_playable_samples=s->count;
+    return S_OK;
 }
 static HRESULT skip(ISpTTSEngineSite *p,SPVSKIPTYPE *type,LONG *n){(void)p;*type=SPVST_SENTENCE;*n=1;return S_OK;}
 static HRESULT complete(ISpTTSEngineSite *p,LONG n){(void)p;(void)n;return S_OK;}
@@ -95,10 +99,25 @@ int main(int argc,char **argv)
     struct site uninterested=site_new();uninterested.interest=0;
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&uninterested.iface)));
     assert(!uninterested.event_count);same(&base,&uninterested);
-    /* A plain stream is delivered in large blocks after its immediate start,
-     * rather than one small Write per native callback. */
-    assert(uninterested.writes>1&&uninterested.writes<=(int)(uninterested.count/4096)+2);
+    /* Delivery stays batched after the short startup phase. */
+    int startup_writes=(int)((out.nSamplesPerSec*120/1000+511)/512);
+    assert(uninterested.writes>1&&
+           uninterested.writes<=(int)(uninterested.count/4096)+2+startup_writes);
     free(uninterested.pcm);++cases;
+    /* Model a consumer that waits for 50 ms of samples before playback,
+     * including NVDA's SAPI audio stream. Do not strand its startup behind
+     * the later 4096-sample batching threshold at any supported rate. */
+    static const unsigned startup_rates[]={8000,11025,16000,22050,32000,44100,48000};
+    for(size_t k=0;k<sizeof startup_rates/sizeof *startup_rates;++k){
+        WAVEFORMATEX early_format=format(startup_rates[k]);
+        struct site early=site_new();early.interest=0;
+        early.playback_threshold=(startup_rates[k]+19)/20;
+        SPVTEXTFRAG early_text=text(L"A clear sentence starts playing promptly.",0);
+        assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&early_format,&early_text,&early.iface)));
+        assert(early.first_playable_samples>=early.playback_threshold);
+        assert(early.first_playable_samples<early.playback_threshold+512);
+        free(early.pcm);++cases;
+    }
     /* SAPI commonly requests every word position. A long utterance must
      * retain the same PCM and ordered, in-range word events as ordinary
      * speech without those events. */
