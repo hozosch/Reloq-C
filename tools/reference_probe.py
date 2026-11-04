@@ -20,7 +20,7 @@ def fetch(url, path):
     with urllib.request.urlopen(req,timeout=90) as response:
         path.write_bytes(response.read())
 
-with tempfile.TemporaryDirectory() as td:
+with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
     base=Path(td)
     fetch(UPSTREAM,base/'upstream.zip')
     with zipfile.ZipFile(base/'upstream.zip') as package:
