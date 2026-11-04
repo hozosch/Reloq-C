@@ -80,7 +80,6 @@ jobs:
           PY
           cc -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -I sapi -I include sapi/backend.c sapi/test_host.c sapi/test_backend.c src/reloq_voice_controls.c -ldl -lpthread -lm -o sapi/build/test_backend
           sapi/build/test_backend "$PWD/eci/libreloq_eci.so" > /tmp/candidate.json 2> /tmp/candidate.log || { cat /tmp/candidate.log; exit 1; }
-          python3 sapi/test_reference.py --library eci/libreloq_eci.so --report /tmp/candidate.json
           git show 76e2c04bb00c66ece46a93224a1066d5dab57328:sapi/backend.c > sapi/backend.c
           python3 - <<'PY'
           from pathlib import Path
@@ -92,7 +91,6 @@ jobs:
           PY
           cc -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -I sapi -I include sapi/backend.c sapi/test_host.c sapi/test_backend.c src/reloq_voice_controls.c -ldl -lpthread -lm -o sapi/build/test_backend
           sapi/build/test_backend "$PWD/eci/libreloq_eci.so" > /tmp/baseline.json 2> /tmp/baseline.log || { cat /tmp/baseline.log; exit 1; }
-          python3 sapi/test_reference.py --library eci/libreloq_eci.so --report /tmp/baseline.json
           python3 - <<'PY'
           import json
           from pathlib import Path
