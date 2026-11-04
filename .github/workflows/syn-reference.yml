@@ -1,0 +1,26 @@
+name: Original Syn clock observations
+on:
+  push:
+    branches: [codex/followup102]
+    paths: [tools/observe_syn_times.py, .github/workflows/syn-reference.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          architecture: x86
+      - run: python tools/observe_syn_times.py --output syn-times.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-syn-clock-observations
+          path: syn-times.json
+          retention-days: 7

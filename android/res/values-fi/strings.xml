@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_updates">Sovelluksen päivitykset</string>
+    <string name="check_updates">Tarkista päivitykset</string>
+    <string name="checking_updates">Tarkistetaan päivityksiä…</string>
+    <string name="installed_version">Asennettu versio: %1$s</string>
+    <string name="version_available">Versio %1$s on saatavilla.</string>
+    <string name="no_published_update">Uudempaa julkaistua sovelluspakettia ei ole saatavilla.</string>
+    <string name="download_update">Avaa lataus selaimessa</string>
+    <string name="update_failed">Päivitys epäonnistui: %1$s</string>
+    <string name="browser_update">Lataus avattu. Käytä selainta ja Androidin tavallista asennustoimintoa. Pidä Play Protect käytössä.</string>
+    <string name="engine_help">Puheentuotto ilman verkkoyhteyttä. Valitse kokeiltava kieli ja ääni tai valitse ReLoq C Androidin tekstistä puheeksi -asetuksissa.</string>
+    <string name="language">Kieli</string>
+    <string name="profile">Ääni</string>
+    <string name="sample_rate">Näytteenottotaajuus</string>
+    <string name="pause_mode">Lyhennä taukoja</string>
+    <string name="sample_text">Luettava teksti</string>
+    <string name="speak">Lue testiteksti</string>
+    <string name="stop">Pysäytä</string>
+    <string name="system_settings">Androidin puheasetukset</string>
+    <string name="initializing">Puhemoottoria käynnistetään</string>
+    <string name="ready">Puhemoottori valmis</string>
+    <string name="unavailable">Puhemoottori ei ole käytettävissä. Avaa Androidin puheasetukset ja valitse ReLoq C.</string>
+    <string-array name="pause_modes">
+        <item>Ei koskaan</item>
+        <item>Lopussa</item>
+        <item>Aina</item>
+    </string-array>
+    <string name="voice_settings">Kieli ja ääni</string>
+    <string name="android_voice">Ohjaa kieltä ja ääntä Androidin kautta</string>
+    <string name="android_rate">Ohjaa nopeutta Androidin kautta</string>
+    <string name="android_pitch">Ohjaa äänenkorkeutta Androidin kautta</string>
+    <string name="speed">Manuaalinen nopeus, sanaa minuutissa</string>
+    <string name="pitch">Manuaalinen äänenkorkeus</string>
+    <string name="rate_boost">Nopeuden tehostus</string>
+    <string name="inflection">Intonaatio</string>
+    <string name="volume">Äänenvoimakkuus</string>
+    <string name="anatomy">Äänimalli</string>
+    <string name="model">Malli</string>
+    <string name="head_size">Pään koko</string>
+    <string name="roughness">Karheus</string>
+    <string name="breathiness">Henkäilevyys</string>
+    <string name="reset_profile">Palauta valittu ääniprofiili</string>
+    <string name="output_settings">Puheen ulostulo</string>
+    <string name="eci_tags">Käsittele ECI-komennot</string>
+    <string name="dictionaries">Ääntämissanastot</string>
+    <string name="community_dictionaries">Käytä yhteisön sanastoja</string>
+    <string name="update_dictionaries">Päivitä yhteisön sanastot nykyisestä master-haarasta</string>
+    <string name="own_dictionaries">Omat sanastotiedostot; myöhemmät ovat etusijalla</string>
+    <string name="dictionary_language">Uusien sanastotiedostojen kieli</string>
+    <string name="dictionary_volume">Uusien sanastotiedostojen tyyppi</string>
+    <string name="add_dictionary">Lisää sanastotiedosto</string>
+    <string name="remove_dictionary">Poista valittu tiedosto</string>
+    <string name="move_dictionary_up">Siirrä valittu tiedosto aiemmaksi</string>
+    <string name="move_dictionary_down">Siirrä valittu tiedosto myöhemmäksi</string>
+    <string name="reload_dictionaries">Lataa valitut tiedostot uudelleen</string>
+    <string name="dictionary_help">Yhteisön sanastot ja omat Dic-merkinnät käyttävät moottorin omia sanastovaiheita. Valitse kieli ja sanaston tyyppi ennen tiedoston lisäämistä. Tiedostot käyttävät Windows-1252-merkistöä. Myöhemmät tiedostot korvaavat aiempien merkinnät. Muutoksia seurataan, jos asiakirjapalvelu välittää muutostietoja; Lataa valitut tiedostot uudelleen lukee aina lähdetiedostot uudestaan. Valittu lähde ladataan ensimmäisellä käyttökerralla tai päivitettäessä. Käytössä olevat sanastot kopioidaan laitteen suojattuun tallennustilaan, jotta ne ovat käytettävissä uudelleenkäynnistyksen jälkeen ennen ensimmäistä lukituksen avaamista.</string>
+    <string name="dictionary_working">Valmistellaan sanastoja</string>
+    <string name="dictionary_ready">Sanastot valmiit</string>
+    <string name="dictionary_error">Sanaston päivitys epäonnistui: %1$s</string>
+    <string name="dictionary_unavailable">Sanasto ei ole käytettävissä</string>
+    <string name="dictionary_permission">Valitse tiedosto, johon voi myöntää pysyvän lukuoikeuden</string>
+    <string name="back">Takaisin puheasetuksiin</string>
+    <string name="test_speech">Puhetesti</string>
+    <string name="parameter_value">%1$s: %2$d</string>
+    <string-array name="models">
+        <item>Mies</item>
+        <item>Nainen</item>
+    </string-array>
+    <string-array name="dictionary_volumes">
+        <item>Pääsanasto</item>
+        <item>Juurisanasto</item>
+        <item>Lyhenteet</item>
+    </string-array>
+    <string name="wpm_value">%1$d sanaa minuutissa</string>
+    <string name="speed_help">Sanamäärä minuutissa on arvio; todellinen nopeus riippuu kielestä, sanojen pituudesta ja tauoista. Androidin normaalinopeuden tavoite on 190 sanaa minuutissa.</string>
+    <string name="abbreviation_dictionary">Käytä lyhennesanastoa</string>
+    <string name="phrase_prediction">Fraasien ennakointi</string>
+    <string name="dictionary_repository">Sanastojen lähde</string>
+    <string-array name="dictionary_repositories"><item>IBM TTS -sanastot</item><item>Vaihtoehtoiset IBM TTS -sanastot</item></string-array>
+</resources>

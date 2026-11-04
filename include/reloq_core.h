@@ -70,6 +70,11 @@ struct reloq_core_resonator {
     float latest;
     long ramp_remaining; /* 0..3 */
     float enabled;
+    /* Coupled pole state for the extended-rate voice. The numeric ECI
+     * path keeps its original direct-form arithmetic when this is zero. */
+    int stable;
+    double coupled_real;
+    double coupled_imaginary;
 };
 
 /* Set coefficients for an enabled second-order resonator from its radius
@@ -138,6 +143,7 @@ struct reloq_core_voiced_bank {
     float nasal_zero_coefficients[3];
     float tracheal_zero_coefficients[3];
     long highest_formant; /* 0..8; F1 is always evaluated */
+    int stable;
 };
 struct reloq_core_formant {
     float frequency_hz;
@@ -407,6 +413,11 @@ struct reloq_core_voiced_state {
     int next_attenuated;
     int frame_period_configured;
     int modulated_frame_open;
+    /* Classic source only: fractional glottal closure, independent of
+     * source masks and the native period/frame clocks. */
+    int bandlimited_closure;
+    float closure_pre,closure_tail[2];
+    unsigned closure_cursor;
 };
 struct reloq_core_voiced_modulation_frame {
     float duration_ms;
@@ -476,7 +487,8 @@ struct reloq_core_noise_frame {
     float af_bandwidths[RELOQ_CORE_FRICATIVE_FORMANTS];
     long af_levels[RELOQ_CORE_FRICATIVE_FORMANTS];
     float bypass_attenuation_db; /* requested wideband colour; default zero */
-    int s_frication; /* 0: other phone, 1: current s/z/t, 2: German 0.2.84 s/z/t */
+    int s_frication; /* 0: other phone, 1: current s/z/t, 2: German legacy */
+    int limit_frication_extension; /* Keep Presence, reduce the added upper AF power. */
 };
 struct reloq_core_noise_frame_state {
     struct reloq_core_clock clock;

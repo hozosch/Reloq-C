@@ -1,0 +1,779 @@
+﻿# A part of NonVisual Desktop Access (NVDA)
+# Copyright (c) 2011-2024 NVDA contributors.
+# This file is covered by the GNU General Public License.
+
+complexSymbols:
+# identifier	regexp
+# Sentence endings.
+. sentence ending	(?<=[^\s.])\s?\.(?=[\"'”’);\s]|$)
+! sentence ending	(?<=[^\s!])\s?\!(?=[\"'”’);!\s]|$)
+? sentence ending	(?<=[^\s?])\s?\?(?=[\"'”’);?\s]|$)
+... sentence ending	(?<=[^\s.])\s?\.\.\.(?=[\"'”’);\s]|$)
+… sentence ending	(?<=[^\s…])\s?\…(?=[\"'”’);\s]|$)
+# Phrase endings.
+; phrase ending	(?<=[^\s;])\s?;(?=[\"'”’);\s]|$)
+: phrase ending	(?<=[^\s:])\s?:(?=[\"'”’);\s]|$)
+# Series of dots used for visual presentation, e.g. in table of contents
+multiple .	\.{4,}
+# Others
+decimal point	(?<![^\d -])\,(?=\d)
+thousands separator	(?<![^\d -])\.(?=\d{3}(\D|$))
+between-words -	(?<=\s)[-](?=\s)
+in-word '	(?<=[^\W_])['’]
+in-word -	(?<=[^\W_])[-]
+dates .	\b(\d\d)\.(\d\d)\.(\d{2}|\d{4})\b
+dates /	\b(\d\d)\/(\d\d)\/(\d{2}|\d{4})\b
+negative number	(?<!\w)[-−]{1}(?=[$£€¥.]?\d)
+after-number %	(?<=\d)(\s?\%)(?=\W|$)
+n°	\b([nN])(°)
+
+
+symbols:
+# identifier	replacement[[	level][	preserve]][	# display name]
+
+# Complex symbols
+. sentence ending	point	# . fin de phrase
+! sentence ending	point d'exclamation	# ! fin de phrase
+? sentence ending	point d'interrogation	# ? fin de phrase
+... sentence ending	points de suspension	all	always	# ... fin de phrase
+… sentence ending	points de suspension	all	always	# … fin de phrase
+; phrase ending	point virgule	# ; fin de phrase
+: phrase ending	deux points	# : fin de phrase
+multiple .	points multiples
+
+decimal point		# virgule décimale
+thousands separator		# point des mille
+between-words -	tiret	all	norep	# - entre deux mots
+in-word '	apostrophe	all	norep	# ' dans un mot
+in-word -	tiret	all	norep	# - dans un mot
+dates .	\1 point \2 point \3	all	norep	# point de date
+dates /	\1 barre oblique \2 barre oblique \3	all	norep	# barre oblique de date
+negative number	moins	none	norep	# - devant un nombre
+after-number %	pour cent	none	norep	# % après un nombre
+n°	\1 \2 	most	norep	# numéro
+
+# Whitespace
+\0	nul
+\t	tab
+\n	nouvelle ligne
+\f	saut de page
+\r	retour chariot
+ 	espace
+ 	espace insécable	char	# espace insécable
+\v	tabulation verticale	char	never	# 
+
+# Standard punctuation/symbols
+!	point d'exclamation
+！	point d'exclamation pleine chasse
+"	guillemet
+\#	dièse	none
+$	dollar
+£	livre
+€	euro
+¢	Centimes
+¥	Yen
+₹	roupi	some	norep
+%	pour cent
+&	et commercial	some	norep
+'	apostrophe
+(	parenthèse gauche
+)	parenthèse droite
+*	astérisque
+,	virgule
+、	virgule idéographique	all	always
+،	virgule arabe	all	always
+-	tiret
+.	point
+．	point pleine chasse
+|	bar	most
+·	point médian	most
+/	barre oblique
+:	deux points
+：	deux points pleine chasse
+;	point virgule
+؛	point-virgule arabe	most
+；	point virgule pleine chasse
+<	inférieur
+=	égal
+?	point d'interrogation
+⸮	point d'interrogation réfléchi	some
+؟	point d’interrogation arabe
+？	point d'interrogation pleine chasse
+@	arobase	none
+[	crochet gauche
+]	crochet droit
+\\	barre oblique inversée
+^	accent circonflexe
+_	souligné
+‐	trait d'union
+`	accent grave
+{	accolade gauche
+}	accolade droite
+|	barre verticale
+¦	barre brisée	most
+~	tilde	none
+¿	point d'interrogation renversé	all
+¡	point d'exclamation renversé	all
+
+# Other characters
+•	puce
+…	points de suspension
+...	point point point
+	puce
+“	double guillemet ouvrant
+”	double guillemet fermant
+‘	apostrophe gauche
+’	apostrophe droite
+–	tiret demicadratin
+—	tiret cadratin
+⁃	puce tiret	none
+●	cercle
+○	cercle blanc	most
+¨	tréma
+¯	macron	most
+´	accent aigu	most
+‎	gauche à droite
+‏	droite à gauche
+■	carré noir
+▪	carré noir
+◾	carré noir
+□	carré blanc	some
+◦	puce blanche
+❖	losange noir avec croix	some
+♣	trèfle noir
+➔	flèche droite
+➢	pointe de flèche droite	some
+
+§	section
+°	degré	some	norep
+«	guillemet ouvert
+»	guillemet fermé
+µ	micro
+º	ordinal
+ª	puissance a	some
+⁰	puissance 0	some
+¹	puissance 1
+²	puissance 2
+³	puissance 3
+⁴	puissance 4	some
+⁵	puissance 5	some
+⁶	puissance 6	some
+⁷	puissance 7	some
+⁸	puissance 8	some
+⁹	puissance 9	some
+⁺	puissance plus	some
+⁻	puissance moins	some
+⁼	puissance égal	some
+⁽	puissance parenthèse gauche	some
+⁾	puissance parenthèse droite	some
+ⁿ	puissance n	some
+₀	indice 0	some
+₁	indice 1	some
+₂	indice 2	some
+₃	indice 3	some
+₄	indice 4	some
+₅	indice 5	some
+₆	indice 6	some
+₇	indice 7	some
+₈	indice 8	some
+₉	indice 9	some
+₊	indice plus	some
+₋	indice moins	some
+₌	indice égal	some
+₍	indice parenthèse gauche	some
+₎	indice parenthèse droite	some
+®	marque déposée
+™	marque de fabrique
+©	Copyright
+℠	marque de service
+←	flèche gauche
+→	flèche droite
+✓	coché
+✔	coché
+¶	paragraphe	all
+‰	pour-mille
+„	double guillemet vers le bas	most
+↔	flèche gauche droite	none
+∞	infini	none
+	flèche gauche	some
+	flèche droite	some
+↑	flèche haut	some
+↓	flèche bas	some
+⇨	flèche blanche droite	some
+⮚	pointe flèche droite	some
+🡺	flèche droite	some
+✗	puce en x	some
+
+#Opérateurs arithmétiques
++	pluss	some	norep
+−	moins	none	never
+×	fois
+⋅	fois
+⨯	produit vectoriel
+∕	divisé par
+⁄	divisé par
+÷	divisé par
+∓	moins ou plus
+±	plus ou Moins
+
+#operations sur les ensembles
+∖	différence d'ensembles
+⊍	multiplication de multiensemble
+𝒫	ensemble des parties de l'ensemble
+𝔓	ensemble des parties de l'ensemble
+℘	ensemble des parties de l'ensemble
+∁	complément
+
+#Définir les relations et définir les constructions
+∅	ensemble vide
+⊂	sous-ensemble de
+⊄	pas un sous-ensemble de
+⊃	sur-ensemble de
+⊅	pas un sur-ensemble de
+⊆	est inclus dans ou est égal à
+⊈	ni un sous-ensemble ni égal à
+⊇	contient ou est égal à
+⊉	ni un sur-ensemble ni égal à
+⊌	multiensemble
+
+#Signes d'égalité
+=	égal
+≃	asymptotiquement égal à
+≄	non asymptotiquement égal à
+≅	approximativement égal à
+≆	approximativement mais non strictement égal à
+≈	environ égal à
+≌	entièrement égal à
+≍	équivalent à
+≭	non équivalent à
+≎	géométriquement équivalent à
+≑	géométriquement égal à
+≚	équiangulaire à
+≬	entre
+≠	différent de
+≡	identique à
+≣	strictement identique à
+≢	non identique à
+∼	similaire à
+≙	estime
+≟	égalité en doute
+
+#signes de comparaison
+>	supérieur
+≦	inférieur ou égal
+≪	très inférieur
+≥	supérieur ou égal à
+≧	supérieur ou égal à
+≫	très supérieur
+≶	plus petit ou plus grand que
+≷	plus grand ou plus petit que
+≮	pas plus petit que
+≯	pas plus grand que
+
+#Fonctions
+∘	rond	none	never
+∂	différencielle partielle
+∇	NABLA
+
+#Géométrie et algèbre linéaire
+⃗	vecteur entre
+△	triangle
+▭	rectangle
+∟	angle droit
+∠	angle
+∥	parallèle à
+∦	non parallèle à
+⊥	perpendiculaire à
+⟂	ortogonal à
+‖	norme de vecteur
+̂	chapeau
+∿	sinusoïde
+∡	angle mesuré
+∢	angle sphérique
+
+#Opérateurs Mathématiques U+2200 to U+220F
+∀	pour tout 
+∃	il existe
+∄	il n'existe pas de
+⇏	n'implique pas
+∆	incrément
+∈	élément de
+∉	pas un élément de
+∊	petit élément de
+∋	contient comme membre
+∌	ne contient pas comme membre	none
+∍	petit contient comme membre
+∎	fin de preuve
+∑	somme n-aire
+∏	produit n-aire
+∐	coproduit de la famille
+
+# Opérateurs Mathématiques Divers et lettres grecques
+√	racine carrée
+∛	racine cubique
+∜	racine quatrième
+∝	proportionnel à
+∞	infini
+∧	et logique
+∨	ou logique
+¬	non logique
+∩	intersection
+∪	union
+∫	intégrale
+∴	ainsi
+∵	parce que
+∶	RATIO
+∷	PROPORTION
+≤	inférieur ou égal à
+⊃	sur ensemble de
+ƒ	florin
+‣	Puce triangulaire
+†	obel
+‡	double obel
+
+≠	différent de
+‑	trait d'union insécable
+­	Trait d'union conditionnel
+‚	Guillemet vers le bas	most
+‹	Simple Guillemet ouvrant	most
+›	Simple Guillemet fermant	most
+℅	Attention à
+―	Barre horizontale
+‾	Ligne au dessus
+‼	Double exclamation
+♦	Carreau noir
+◆	carreau noir
+Δ	delta	none	never	# Δ
+δ	delta	none	never	# Δ
+τ	tau	none	never
+Τ	tau	none	never
+λ	lambda	none	never
+Λ	lambda	none	never
+θ	thêta	none	never
+ϑ	thêta	none	never
+Θ	thêta	none	never
+Ι	iota	none	never
+ι	iota	none	never
+κ	kappa	none	never
+ϰ	kappa	none	never
+Κ	kappa	none	never
+π	pi	none	never
+ϖ	pi	none	never
+Π	pi	none	never
+α	alpha	none	never
+Α	alpha	none	never
+⊕	plus encerclé	none	never	# ⊕
+⊖	moins encerclé
+⨁	grand plus encerclé	none	never
+⋂	grande intersection	none	never
+⋃	grande union	none	never
+⋁	grand ou logique	none	never
+⋀	grand et logique	none	never
+ϕ	phi	none	never
+φ	phi	none	never
+Φ	phi	none	never
+σ	sigma	none	never
+ς	sigma	none	never
+ϲ	sigma lunaire	none	never
+Σ	sigma	none	never
+ÿ	igrec tréma	char	norep
+β	bêta	none	never
+ϐ	bêta	none	never
+Β	bêta	none	never
+μ	mu	none	never
+Μ	mu	none	never
+ν	nu	none	never
+Ν	nu	none	never
+Ο	omicron	none	never
+ο	omicron	none	never
+ω	oméga	none	never
+Ω	oméga	none	never
+¤	symbole monétaire	none	never
+¸	cédille	none	never
+↦	a pour image	none	never
+′	prime	none	never
+″	double prime	some
+‴	triple prime	some
+η	êta	none	never
+Η	êta	none	never
+ε	epsilon	none	never
+ϵ	epsilon lunaire	none	never
+Ε	epsilon	none	never
+γ	gamma	none	never
+Γ	gamma	none	never
+ζ	zêta	none	never
+Ζ	zêta	none	never
+Ξ	ksi	none	never
+ξ	ksi	none	never
+Ψ	psi	none	never
+ψ	psi	none	never
+ρ	rhô	none	never
+Ρ	rhô	none	never
+ϱ	rhô	none	never
+χ	khi	none	never
+Χ	khi	none	never
+υ	upsilon	none	never
+Υ	upsilon	none	never
+ϒ	upsilon crochet	none	never
+Ϛ	stigma	none	never
+ϛ	stigma	none	never
+Ϙ	koppa	none	never
+ϙ	koppa	none	never
+Ϟ	koppa	none	never
+ϟ	koppa	none	never
+Ͳ	sampi	none	never
+ͳ	sampi	none	never
+Ϡ	sampi	none	never
+ϡ	sampi	none	never
+Ϝ	Digamma	none	never
+ϝ	Digamma	none	never
+Ͷ	Digamma	none	never
+ͷ	Digamma	none	never
+Ͱ	hêta	none	never
+ͱ	hêta	none	never
+Ϻ	san	none	never
+ϻ	san	none	never
+Ϸ	sho	none	never
+ϸ	sho	none	never
+῀	accent circonflexe	none	never
+ὶ	iota accent grave	none	never
+ὖ	upsilon esprit doux circonflexe	none	never
+⟶	flèche droite	none	never
+⟵	flèche gauche	none	never
+⇒	implication droite	none	never
+⇐	implication gauche	none	never
+⇔	équivalence	none	never
+↗	croissant	none	never
+↘	décroissant	none	never
+∬	intégrale double
+∭	intégrale triple
+∮	intégrale de contour
+∯	Intégrale de surface
+∰	Intégrale de volume
+∱	Intégrale en sens négatif
+∲	intégrale de contour en sens négatif
+∳	intégrale de contour en sens positif
+∹	excès
+∺	proportion géométrique
+≀	produit couronne
+≏	différence entre
+≐	tend vers la limite
+∙	opérateur puce
+∣	est un diviseur de
+∤	n'est pas un diviseur de
+≔	deux-points égal
+≕	égal deux-points
+≺	précède
+≻	suit
+⊀	ne précède pas
+⊁	ne suit pas
+
+# Vulgar Fractions U+2150 to U+215E
+¼	un quart
+½	un demi
+¾	trois quarts
+⅐	un septième
+⅑	un neuvième
+⅒	un dixième
+⅓	un tiers
+⅔	deux tiers
+⅕	un cinquième
+⅖	deux cinquièmes
+⅗	trois cinquièmes
+⅘	quatre cinquièmes
+⅙	un sixième
+⅚	cinq sixièmes
+⅛	un huitième
+⅜	trois huitièmes
+⅝	cinq huitièmes
+⅞	sept huitièmes
+
+#Ensemble de nombres
+𝔸	nombres algébriques
+ℂ	nombres complexes
+ℑ	partie imaginaire d'un nombre complexe
+ℍ	quaternions
+ℕ	nombres naturels
+𝕁	nombres entiers non négatifs
+ℚ	nombres rationnels
+ℝ	nombres réels
+ℜ	partie réelle d'un nombre complexe
+ℤ	entiers
+ℵ	nombre aleph
+ℶ	nombre beth
+
+#Ajustements CLDR
+▾	Petit triangle plein pointant vers le bas	most
+
+
+# Miscellaneous Technical
+⌘	Touche Commande Mac
+⌥	Touche Option mac
+
+# Fixes for some synthesizers
+ô	o circonflexe	char	norep
+Ô	o circonflexe	char	norep
+y	igrèque	char	norep
+Y	igrèque	char	norep
+À	a accent grave	char	norep
+à	a accent grave	char	norep
+
+## 6-dot cell
+### note: the character on the next line is U+2800 (braille space), not U+0020 (ASCII space)
+⠀	cellule braille vide	none
+⠁	point braille 1	none
+⠂	point braille 2	none
+⠃	points braille 1 2	none
+⠄	point braille 3	none
+⠅	points braille 1 3	none
+⠆	points braille 2 3	none
+⠇	points braille 1 2 3	none
+⠈	point braille 4	none
+⠉	points braille 1 4	none
+⠊	points braille 2 4	none
+⠋	points braille 1 2 4	none
+⠌	points braille 3 4	none
+⠍	points braille 1 3 4	none
+⠎	points braille 2 3 4	none
+⠏	points braille 1 2 3 4	none
+⠐	point braille 5	none
+⠑	points braille 1 5	none
+⠒	points braille 2 5	none
+⠓	points braille 1 2 5	none
+⠔	points braille 3 5	none
+⠕	points braille 1 3 5	none
+⠖	points braille 2 3 5	none
+⠗	points braille 1 2 3 5	none
+⠘	points braille 4 5	none
+⠙	points braille 1 4 5	none
+⠚	points braille 2 4 5	none
+⠛	points braille 1 2 4 5	none
+⠜	points braille 3 4 5	none
+⠝	points braille 1 3 4 5	none
+⠞	points braille 2 3 4 5	none
+⠟	points braille 1 2 3 4 5	none
+⠠	point braille 6	none
+⠡	points braille 1 6	none
+⠢	points braille 2 6	none
+⠣	points braille 1 2 6	none
+⠤	points braille 3 6	none
+⠥	points braille 1 3 6	none
+⠦	points braille 2 3 6	none
+⠧	points braille 1 2 3 6	none
+⠨	points braille 4 6	none
+⠩	points braille 1 4 6	none
+⠪	points braille 2 4 6	none
+⠫	points braille 1 2 4 6	none
+⠬	points braille 3 4 6	none
+⠭	points braille 1 3 4 6	none
+⠮	points braille 2 3 4 6	none
+⠯	points braille 1 2 3 4 6	none
+⠰	points braille 5 6	none
+⠱	points braille 1 5 6	none
+⠲	points braille 2 5 6	none
+⠳	points braille 1 2 5 6	none
+⠴	points braille 3 5 6	none
+⠵	points braille 1 3 5 6	none
+⠶	points braille 2 3 5 6	none
+⠷	points braille 1 2 3 5 6	none
+⠸	points braille 4 5 6	none
+⠹	points braille 1 4 5 6	none
+⠺	points braille 2 4 5 6	none
+⠻	points braille 1 2 4 5 6	none
+⠼	points braille 3 4 5 6	none
+⠽	points braille 1 3 4 5 6	none
+⠾	points braille 2 3 4 5 6	none
+⠿	cellules braille avec les 6 points	none
+## 8-braille cell
+⡀	point braille 7	none
+⡁	points braille 1 7	none
+⡂	points braille 2 7	none
+⡃	points braille 1 2 7	none
+⡄	points braille 3 7	none
+⡅	points braille 1 3 7	none
+⡆	points braille 2 3 7	none
+⡇	points braille 1 2 3 7	none
+⡈	points braille 4 7	none
+⡉	points braille 1 4 7	none
+⡊	points braille 2 4 7	none
+⡋	points braille 1 2 4 7	none
+⡌	points braille 3 4 7	none
+⡍	points braille 1 3 4 7	none
+⡎	points braille 2 3 4 7	none
+⡏	points braille 1 2 3 4 7	none
+⡐	points braille 5 7	none
+⡑	points braille 1 5 7	none
+⡒	points braille 2 5 7	none
+⡓	points braille 1 2 5 7	none
+⡔	points braille 3 5 7	none
+⡕	points braille 1 3 5 7	none
+⡖	points braille 2 3 5 7	none
+⡗	points braille 1 2 3 5 7	none
+⡘	points braille 4 5 7	none
+⡙	points braille 1 4 5 7	none
+⡚	points braille 2 4 5 7	none
+⡛	points braille 1 2 4 5 7	none
+⡜	points braille 3 4 5 7	none
+⡝	points braille 1 3 4 5 7	none
+⡞	points braille 2 3 4 5 7	none
+⡟	points braille 1 2 3 4 5 7	none
+⡠	points braille 6 7	none
+⡡	points braille 1 6 7	none
+⡢	points braille 2 6 7	none
+⡣	points braille 1 2 6 7	none
+⡤	points braille 3 6 7	none
+⡥	points braille 1 3 6 7	none
+⡦	points braille 2 3 6 7	none
+⡧	points braille 1 2 3 6 7	none
+⡨	points braille 4 6 7	none
+⡩	points braille 1 4 6 7	none
+⡪	points braille 2 4 6 7	none
+⡫	points braille 1 2 4 6 7	none
+⡬	points braille 3 4 6 7	none
+⡭	points braille 1 3 4 6 7	none
+⡮	points braille 2 3 4 6 7	none
+⡯	points braille 1 2 3 4 6 7	none
+⡰	points braille 5 6 7	none
+⡱	points braille 1 5 6 7	none
+⡲	points braille 2 5 6 7	none
+⡳	points braille 1 2 5 6 7	none
+⡴	points braille 3 5 6 7	none
+⡵	points braille 1 3 5 6 7	none
+⡶	points braille 2 3 5 6 7	none
+⡷	points braille 1 2 3 5 6 7	none
+⡸	points braille 4 5 6 7	none
+⡹	points braille 1 4 5 6 7	none
+⡺	points braille 2 4 5 6 7	none
+⡻	points braille 1 2 4 5 6 7	none
+⡼	points braille 3 4 5 6 7	none
+⡽	points braille 1 3 4 5 6 7	none
+⡾	points braille 2 3 4 5 6 7	none
+⡿	points braille 1 2 3 4 5 6 7	none
+⢀	point braille 8	none
+⢁	points braille 1 8	none
+⢂	points braille 2 8	none
+⢃	points braille 1 2 8	none
+⢄	points braille 3 8	none
+⢅	points braille 1 3 8	none
+⢆	points braille 2 3 8	none
+⢇	points braille 1 2 3 8	none
+⢈	points braille 4 8	none
+⢉	points braille 1 4 8	none
+⢊	points braille 2 4 8	none
+⢋	points braille 1 2 4 8	none
+⢌	points braille 3 4 8	none
+⢍	points braille 1 3 4 8	none
+⢎	points braille 2 3 4 8	none
+⢏	points braille 1 2 3 4 8	none
+⢐	points braille 5 8	none
+⢑	points braille 1 5 8	none
+⢒	points braille 2 5 8	none
+⢓	points braille 1 2 5 8	none
+⢔	points braille 3 5 8	none
+⢕	points braille 1 3 5 8	none
+⢖	points braille 2 3 5 8	none
+⢗	points braille 1 2 3 5 8	none
+⢘	points braille 4 5 8	none
+⢙	points braille 1 4 5 8	none
+⢚	points braille 2 4 5 8	none
+⢛	points braille 1 2 4 5 8	none
+⢜	points braille 3 4 5 8	none
+⢝	points braille 1 3 4 5 8	none
+⢞	points braille 2 3 4 5 8	none
+⢟	points braille 1 2 3 4 5 8	none
+⢠	points braille 6 8	none
+⢡	points braille 1 6 8	none
+⢢	points braille 2 6 8	none
+⢣	points braille 1 2 6 8	none
+⢤	points braille 3 6 8	none
+⢥	points braille 1 3 6 8	none
+⢦	points braille 2 3 6 8	none
+⢧	points braille 1 2 3 6 8	none
+⢨	points braille 4 6 8	none
+⢩	points braille 1 4 6 8	none
+⢪	points braille 2 4 6 8	none
+⢫	points braille 1 2 4 6 8	none
+⢬	points braille 3 4 6 8	none
+⢭	points braille 1 3 4 6 8	none
+⢮	points braille 2 3 4 6 8	none
+⢯	points braille 1 2 3 4 6 8	none
+⢰	points braille 5 6 8	none
+⢱	points braille 1 5 6 8	none
+⢲	points braille 2 5 6 8	none
+⢳	points braille 1 2 5 6 8	none
+⢴	points braille 3 5 6 8	none
+⢵	points braille 1 3 5 6 8	none
+⢶	points braille 2 3 5 6 8	none
+⢷	points braille 1 2 3 5 6 8	none
+⢸	points braille 4 5 6 8	none
+⢹	points braille 1 4 5 6 8	none
+⢺	points braille 2 4 5 6 8	none
+⢻	points braille 1 2 4 5 6 8	none
+⢼	points braille 3 4 5 6 8	none
+⢽	points braille 1 3 4 5 6 8	none
+⢾	points braille 2 3 4 5 6 8	none
+⢿	points braille 1 2 3 4 5 6 8	none
+⣀	points braille 7 8	none
+⣁	points braille 1 7 8	none
+⣂	points braille 2 7 8	none
+⣃	points braille 1 2 7 8	none
+⣄	points braille 3 7 8	none
+⣅	points braille 1 3 7 8	none
+⣆	points braille 2 3 7 8	none
+⣇	points braille 1 2 3 7 8	none
+⣈	points braille 4 7 8	none
+⣉	points braille 1 4 7 8	none
+⣊	points braille 2 4 7 8	none
+⣋	points braille 1 2 4 7 8	none
+⣌	points braille 3 4 7 8	none
+⣍	points braille 1 3 4 7 8	none
+⣎	points braille 2 3 4 7 8	none
+⣏	points braille 1 2 3 4 7 8	none
+⣐	points braille 5 7 8	none
+⣑	points braille 1 5 7 8	none
+⣒	points braille 2 5 7 8	none
+⣓	points braille 1 2 5 7 8	none
+⣔	points braille 3 5 7 8	none
+⣕	points braille 1 3 5 7 8	none
+⣖	points braille 2 3 5 7 8	none
+⣗	points braille 1 2 3 5 7 8	none
+⣘	points braille 4 5 7 8	none
+⣙	points braille 1 4 5 7 8	none
+⣚	points braille 2 4 5 7 8	none
+⣛	points braille 1 2 4 5 7 8	none
+⣜	points braille 3 4 5 7 8	none
+⣝	points braille 1 3 4 5 7 8	none
+⣞	points braille 2 3 4 5 7 8	none
+⣟	points braille 1 2 3 4 5 7 8	none
+⣠	points braille 6 7 8	none
+⣡	points braille 1 6 7 8	none
+⣢	points braille 2 6 7 8	none
+⣣	points braille 1 2 6 7 8	none
+⣤	points braille 3 6 7 8	none
+⣥	points braille 1 3 6 7 8	none
+⣦	points braille 2 3 6 7 8	none
+⣧	points braille 1 2 3 6 7 8	none
+⣨	points braille 4 6 7 8	none
+⣩	points braille 1 4 6 7 8	none
+⣪	points braille 2 4 6 7 8	none
+⣫	points braille 1 2 4 6 7 8	none
+⣬	points braille 3 4 6 7 8	none
+⣭	points braille 1 3 4 6 7 8	none
+⣮	points braille 2 3 4 6 7 8	none
+⣯	points braille 1 2 3 4 6 7 8	none
+⣰	points braille 5 6 7 8	none
+⣱	points braille 1 5 6 7 8	none
+⣲	points braille 2 5 6 7 8	none
+⣳	points braille 1 2 5 6 7 8	none
+⣴	points braille 3 5 6 7 8	none
+⣵	points braille 1 3 5 6 7 8	none
+⣶	points braille 2 3 5 6 7 8	none
+⣷	points braille 1 2 3 5 6 7 8	none
+⣸	points braille 4 5 6 7 8	none
+⣹	points braille 1 4 5 6 7 8	none
+⣺	points braille 2 4 5 6 7 8	none
+⣻	points braille 1 2 4 5 6 7 8	none
+⣼	points braille 3 4 5 6 7 8	none
+⣽	points braille 1 3 4 5 6 7 8	none
+⣾	points braille 2 3 4 5 6 7 8	none
+⣿	cellule braille avec les 8 points	none

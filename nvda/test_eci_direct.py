@@ -8,7 +8,7 @@ from __future__ import annotations
 import ctypes
 import threading
 
-from _reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciSynthesisError,
+from _reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciProsody, EciSynthesisError,
                                GERMAN_DIALECT)
 
 
@@ -44,11 +44,13 @@ class FakeEci:
         self.failure = {}
         self.voice_mode = 0
         self.generic_parameters = {0x1004: 50, 0x1005: 50, 0x1006: 100}
+        self.voice_parameters = {6: 98, 7: 100}
         self.lexicon_paths = []
         for name in (
             "eciNewEx", "eciDelete", "eciRegisterCallback", "eciSetOutputBuffer",
             "eciAddText", "eciInsertIndex", "eciInsertPitch", "eciSynthesize", "eciSynchronize",
             "eciClearInput", "eciStop", "eciGetParam", "eciSetParam",
+            "eciGetVoiceParam", "eciSetVoiceParam",
             "eciLoadLexicon",
         ):
             setattr(self, name, Function(getattr(self, "_" + name)))
@@ -153,6 +155,17 @@ class FakeEci:
         self.lexicon_paths.append(path)
         return self.failure.get("eciLoadLexicon", 1)
 
+    def _eciGetVoiceParam(self, handle, voice, parameter):
+        assert handle == HIGH_HANDLE and voice == 0
+        return self.voice_parameters[parameter]
+
+    def _eciSetVoiceParam(self, handle, voice, parameter, value):
+        assert handle == HIGH_HANDLE and voice == 0
+        old = self.voice_parameters[parameter]
+        self.voice_parameters[parameter] = value
+        self.events.append(("prosody", parameter, value))
+        return old
+
 
 def main():
     fake = FakeEci()
@@ -177,10 +190,16 @@ def main():
             ("index", 42),
         ], "PCM callback length is samples, not bytes; index order changed"
         assert fake.returns == [1, 1]
+        assert engine.speak(["one ", EciProsody(6, 75), EciProsody(7, 40), "word"],
+            lambda pcm: None, lambda index: None)
+        assert fake.events[-5:] == [("prosody", 6, 75), ("prosody", 7, 40),
+            ("text", b"word"), ("prosody", 6, 98), ("prosody", 7, 100)]
+        assert fake.voice_parameters == {6: 98, 7: 100}
 
         previous = len(fake.events)
         for invalid in (["a", "\U0001f600"], ["a\0b"], [EciIndex(-1)],
-                        [EciPitch(-1)], [EciPitch(101)]):
+                        [EciPitch(-1)], [EciPitch(101)], [EciProsody(2, 50)],
+                        [EciProsody(6, 251)], [EciProsody(7, 101)], [EciProsody(True, 50)]):
             try:
                 engine.speak(invalid, lambda _pcm: None, lambda _index: None)
             except (UnicodeEncodeError, ValueError):
@@ -193,12 +212,13 @@ def main():
             raise LookupError("audio queue rejected buffer")
 
         try:
-            engine.speak(["Maus"], broken, lambda _index: None)
+            engine.speak([EciProsody(7, 40), "Maus"], broken, lambda _index: None)
         except LookupError as error:
             assert str(error) == "audio queue rejected buffer"
         else:
             raise AssertionError("ctypes callback swallowed an audio error")
         assert fake.returns[-1] == 2
+        assert fake.voice_parameters[7] == 100, "callback failure leaked temporary volume"
 
         fake.block_until_stop = True
         outcome = []
@@ -206,9 +226,10 @@ def main():
         def cancel_from_callback(_pcm):
             threading.Thread(target=engine.cancel).start()
 
-        assert engine.speak(["Maus"], cancel_from_callback,
+        assert engine.speak([EciProsody(6, 75), "Maus"], cancel_from_callback,
                             lambda index: outcome.append(index)) is False
         assert not outcome and fake.stopped
+        assert fake.voice_parameters[6] == 98, "cancellation leaked temporary speed"
         assert not fake.thread.is_alive()
 
         before = fake.clear_calls
@@ -218,6 +239,17 @@ def main():
                             lambda _index: None) is False
         assert fake.clear_calls == before + 1, "cancelled queue was not cleared"
         fake.on_add_text = None
+        # Preserve the input failure while reporting the reentry state that
+        # distinguishes a stuck native engine from an invalid input queue.
+        fake.eciIsBeingReentered = Function(lambda handle: 1)
+        fake.failure["eciAddText"] = 0
+        try:
+            engine.speak(["long filename"], lambda _pcm: None, lambda _index: None)
+        except RuntimeError as error:
+            assert "eciAddText rejected input (code 0; native busy=1)" in str(error)
+        else:
+            raise AssertionError("rejected input was not reported")
+        del fake.failure["eciAddText"]
     finally:
         engine.close()
     assert fake.deleted

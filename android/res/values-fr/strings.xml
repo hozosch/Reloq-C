@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_updates">Mises à jour de l’application</string>
+    <string name="check_updates">Rechercher des mises à jour</string>
+    <string name="checking_updates">Recherche de mises à jour…</string>
+    <string name="installed_version">Version installée : %1$s</string>
+    <string name="version_available">La version %1$s est disponible.</string>
+    <string name="no_published_update">Aucun paquet publié plus récent de l’application n’est disponible.</string>
+    <string name="download_update">Ouvrir le téléchargement dans le navigateur</string>
+    <string name="update_failed">Échec de la mise à jour : %1$s</string>
+    <string name="browser_update">Téléchargement ouvert. Utilisez le navigateur et la procédure d’installation habituelle d’Android. Gardez Play Protect activé.</string>
+    <string name="engine_help">Synthèse vocale hors connexion. Choisissez une langue et une voix à tester, ou sélectionnez ReLoq C dans les paramètres de synthèse vocale d’Android.</string>
+    <string name="language">Langue</string>
+    <string name="profile">Voix</string>
+    <string name="sample_rate">Fréquence d’échantillonnage</string>
+    <string name="pause_mode">Raccourcir les pauses</string>
+    <string name="sample_text">Texte à lire</string>
+    <string name="speak">Lire le texte d’essai</string>
+    <string name="stop">Arrêter</string>
+    <string name="system_settings">Paramètres de synthèse vocale d’Android</string>
+    <string name="initializing">Initialisation du moteur vocal</string>
+    <string name="ready">Moteur vocal prêt</string>
+    <string name="unavailable">Moteur vocal indisponible. Ouvrez les paramètres de synthèse vocale d’Android et sélectionnez ReLoq C.</string>
+    <string-array name="pause_modes">
+        <item>Jamais</item>
+        <item>À la fin</item>
+        <item>Toujours</item>
+    </string-array>
+    <string name="voice_settings">Langue et voix</string>
+    <string name="android_voice">Contrôler la langue et la voix via Android</string>
+    <string name="android_rate">Contrôler la vitesse via Android</string>
+    <string name="android_pitch">Contrôler la hauteur via Android</string>
+    <string name="speed">Vitesse manuelle, en mots par minute</string>
+    <string name="pitch">Hauteur manuelle</string>
+    <string name="rate_boost">Vitesse accélérée</string>
+    <string name="inflection">Intonation</string>
+    <string name="volume">Volume de la voix</string>
+    <string name="anatomy">Modèle vocal</string>
+    <string name="model">Modèle</string>
+    <string name="head_size">Taille de la tête</string>
+    <string name="roughness">Raucité</string>
+    <string name="breathiness">Souffle</string>
+    <string name="reset_profile">Réinitialiser le profil vocal sélectionné</string>
+    <string name="output_settings">Sortie vocale</string>
+    <string name="eci_tags">Interpréter les balises ECI</string>
+    <string name="dictionaries">Dictionnaires de prononciation</string>
+    <string name="community_dictionaries">Utiliser les dictionnaires communautaires</string>
+    <string name="update_dictionaries">Actualiser les dictionnaires communautaires depuis le master actuel</string>
+    <string name="own_dictionaries">Fichiers de dictionnaire personnels ; les derniers sont prioritaires</string>
+    <string name="dictionary_language">Langue des nouveaux fichiers de dictionnaire</string>
+    <string name="dictionary_volume">Section des nouveaux fichiers de dictionnaire</string>
+    <string name="add_dictionary">Ajouter un fichier de dictionnaire</string>
+    <string name="remove_dictionary">Retirer le fichier sélectionné</string>
+    <string name="move_dictionary_up">Déplacer le fichier sélectionné vers le haut</string>
+    <string name="move_dictionary_down">Déplacer le fichier sélectionné vers le bas</string>
+    <string name="reload_dictionaries">Recharger les fichiers sélectionnés</string>
+    <string name="dictionary_help">Les dictionnaires communautaires et les entrées Dic personnelles utilisent les étapes natives des dictionnaires. Choisissez la langue et la section avant d’ajouter un fichier. Les fichiers utilisent l’encodage Windows-1252. Les fichiers suivants remplacent les entrées des précédents. Les modifications sont surveillées lorsque le fournisseur de documents transmet des métadonnées de modification ; Recharger les fichiers sélectionnés relit toujours les sources. La source choisie est téléchargée lors de sa première utilisation ou de sa mise à jour. Les dictionnaires activés sont copiés dans le stockage protégé de l’appareil pour être utilisables après un redémarrage et avant le premier déverrouillage.</string>
+    <string name="dictionary_working">Préparation des dictionnaires</string>
+    <string name="dictionary_ready">Dictionnaires prêts</string>
+    <string name="dictionary_error">Échec de la mise à jour du dictionnaire : %1$s</string>
+    <string name="dictionary_unavailable">Dictionnaire indisponible</string>
+    <string name="dictionary_permission">Choisissez un fichier autorisant un accès permanent en lecture</string>
+    <string name="back">Retour aux paramètres vocaux</string>
+    <string name="test_speech">Essai de la voix</string>
+    <string name="parameter_value">%1$s : %2$d</string>
+    <string-array name="models">
+        <item>Masculin</item>
+        <item>Féminin</item>
+    </string-array>
+    <string-array name="dictionary_volumes">
+        <item>Principal</item>
+        <item>Racines</item>
+        <item>Abréviations</item>
+    </string-array>
+    <string name="wpm_value">%1$d mots par minute</string>
+    <string name="speed_help">Le nombre de mots par minute est approximatif ; la vitesse réelle dépend de la langue, de la longueur des mots et des pauses. La vitesse normale d’Android vise 190 mots par minute.</string>
+    <string name="abbreviation_dictionary">Utiliser le dictionnaire d’abréviations</string>
+    <string name="phrase_prediction">Prédiction des phrases</string>
+    <string name="dictionary_repository">Source des dictionnaires</string>
+    <string-array name="dictionary_repositories"><item>Dictionnaires IBM TTS</item><item>Dictionnaires IBM TTS alternatifs</item></string-array>
+</resources>

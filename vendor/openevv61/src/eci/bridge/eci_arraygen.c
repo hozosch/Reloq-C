@@ -232,6 +232,18 @@ static int32_t valueSetValue(delta_state *d, ValueSet *vs, int32_t stream,
     return (int32_t)((float)c->val_l+offset);
 }
 
+/* Frame fallback: decode the two alternative AF curves before interpolating.
+ * Packing is private to a German host request, never sent to native Klatt. */
+static int32_t germanAfValue(const Cursor *c,int32_t at,int male)
+{
+    int32_t left=c->val_l,right=c->val_r;
+    if(left>=RELOQ61_DE_AF_MARK){left-=RELOQ61_DE_AF_MARK;if(male)left=left>2?left-2:0;}
+    if(right>=RELOQ61_DE_AF_MARK){right-=RELOQ61_DE_AF_MARK;if(male)right=right>2?right-2:0;}
+    if(left==right||c->at_l==c->at_r)return left;
+    float offset=(float)(at-c->at_l);offset*=(float)(right-left);offset/=(float)(c->at_r-c->at_l);
+    return (int32_t)((float)left+offset);
+}
+
 /* How far the streams the map names actually go. Nothing is generated past
    the first one that runs out. */
 static int32_t definitionBoundary(delta_state *d, const int32_t *map,
@@ -374,6 +386,16 @@ int32_t sendArrayParameters(delta_state *d, int32_t from, int32_t to,
             if (map[i + 1] == -1)
                 continue;
             frame[i] = valueSetValue(d, GEN_SET(d), map[i + 1], at);
+        }
+
+        if(GEN(d)->reloq_frame&&map[9]!=-1) {
+            extern int reloq61_german_affricate_frames(void *);
+            const Cursor *c=GEN_SET(d)->cursors+map[9];
+            if(reloq61_german_affricate_frames(GEN(d)->reloq_context)&&
+               (c->val_l>=RELOQ61_DE_AF_MARK||c->val_r>=RELOQ61_DE_AF_MARK)) {
+                int32_t plain=germanAfValue(c,at,0),male=germanAfValue(c,at,1);
+                frame[8]=RELOQ61_DE_AF_FRAME+plain*RELOQ61_DE_AF_PACK+male;
+            }
         }
 
         /* The last frame is short, so the run stops where it was asked to. */

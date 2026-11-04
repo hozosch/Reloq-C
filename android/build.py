@@ -32,7 +32,7 @@ def main():
     parser.add_argument("--android-jar",type=Path)
     parser.add_argument("--jobs",type=int,default=4)
     parser.add_argument("--build-dir",type=Path,help="isolated Android build directory")
-    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-1.0.1.apk")
+    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-1.1.0.apk")
     parser.add_argument("--keystore",type=Path,default=HERE/"preview-debug.p12")
     parser.add_argument("--verified-dictionaries",action="store_true",
         help="use locally verified data after separately resolving its current master commit")
@@ -69,7 +69,10 @@ def main():
     validate_snapshot(ROOT/"data/community")
     community=assets/"community";community.mkdir(exist_ok=True)
     for name in (*FILES,"manifest.json"):shutil.copyfile(ROOT/"data/community"/name,community/name)
-    licenses={"OpenEVV-LICENSE.txt":ROOT/"vendor/openevv61/LICENSE",
+    licenses={"ReLoq-C-LICENSE.txt":ROOT/"LICENSE",
+              "ReLoq-C-NOTICE.txt":ROOT/"NOTICE",
+              "Dictionaries-CC0.txt":ROOT/"data/community/LICENSE.md",
+              "OpenEVV-LICENSE.txt":ROOT/"vendor/openevv61/LICENSE",
               "OpenEVV-NOTICE.txt":ROOT/"vendor/openevv61/NOTICE",
               "Unicode-LICENSE.txt":ROOT/"reference-apple/behavior-0.2.82/unicode-input/LICENSE.txt",
               "SCOWL-Copyright.txt":ROOT/"reference-apple/behavior-0.2.83/input/SCOWL-Copyright.txt"}

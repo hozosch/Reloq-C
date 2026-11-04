@@ -1,0 +1,151 @@
+{
+  "version": "1.0.2-dev10",
+  "core_version": "1.0.2.10",
+  "local_implementation_commit": "484aca295f00c00e80d1aeb5865a803d8e7e63a8",
+  "implementation_tree_sha": "7739d8b951652507bdd8aa54091f3a7f813901e5",
+  "github_base_commit": "b0b59384a1e8a5ec9358b07faba39dd74782eb63",
+  "development_branch": "codex/eci-voice110",
+  "official_release": false,
+  "artifacts": [
+    {
+      "name": "reloq-c-synth-experimental-x64-1.0.2-dev10.nvda-addon",
+      "bytes": 19577269,
+      "sha256": "7dc54dbbf7487d28a1ec477c8a129e888ff815b2ff5b34c60011c82838c7744d"
+    },
+    {
+      "name": "reloq-c-eci-x64-1.0.2-dev10.zip",
+      "bytes": 18726879,
+      "sha256": "c5424905c2378fc2d0852547bd49a0b5eb3680736681e37438d8a64fb3366d3a"
+    }
+  ],
+  "dll_sha256": "ecc2d9fa1e5518af1886a8caf828cae467a0b33573a116375b65b49feff0a756",
+  "changes": [
+    "Add standard eciGeneratePhonemes with native phoneme bytes, owned caller buffer bounds, native index callbacks, retry/abort/Stop, Unicode admission and active dictionaries. Preserve the PCM output route.",
+    "Add eciPause for callback output, resumable from another thread or the callback. Stop and public Reset clear the pause. Synthesis and phoneme output remain synchronous.",
+    "Correct fractional glottal closure for Classic profiles at 16 kHz and above, with a compact triangular reconstruction correction across the real closure time. Retain period phase, durations and AH/AF masks. Explicitly initialize all new state in the ordinary numeric source constructor.",
+    "Remove the prior 4.5-kHz periodic shelf. From 22.05 kHz open native glottal tilt by at most 0.3 native steps, weighted by rate. Preserve source DC gain and the 16-kHz contour; stronger prototypes exceeded female PCM headroom and are not shipped.",
+    "Fit gradual Classic tract motion at 2-ms intervals, retain immediate fits for large transitions, and use a 3-ms coefficient ramp. Only the live current filter state is retained; no speech/PCM results are cached.",
+    "Preserve the accepted AF consonant path and profile A. Keep SDK changes independent of any particular NVDA client."
+  ],
+  "checks": {
+    "full_native_eci_C_regression": "passed, final source build and executable exit 0",
+    "standard_eci_api": 131,
+    "extended_standard_eci_api": 78,
+    "eci_contract_api": 86,
+    "phonemes_pause_api": 69,
+    "public_eci_exports_linux": 49,
+    "public_eci_exports_windows_x64": 49,
+    "implemented_original_export_names": 45,
+    "remaining_original_export_names": 15,
+    "canonical_header": "C11 and C++17 compile passed",
+    "source_phase_mask_and_chunk_cases": 100,
+    "source_DC_tilt_and_stability_cases": 175,
+    "source_dirty_state_initialization": "passed",
+    "source_oversampled_reference_cases": 45,
+    "source_minimum_model_error_reduction_db": 12.775719016942606,
+    "source_reference_details": "1.0.2-dev10-source.json; raw source only, not a listening result",
+    "classic_main_band_cases": 10,
+    "classic_main_band_worst_residual_db": 0.2433,
+    "classic_image_cases": 410,
+    "classic_image_max_kernel_L1": 15.5949,
+    "classic_renderer_cases": 20,
+    "classic_consonant_spectrum_cases": 40,
+    "classic_consonant_worst_residual_db": 0.025,
+    "AF_stress_requests_bit_identical_to_dev8_dev9": 60,
+    "AF_stress_frames": 345150,
+    "AF_stress_samples": 11182860,
+    "AF_stress_pcm_sha256": "a66adb7bea340d00498706b80714867d86397f4b74a44771c782a9e993accc76",
+    "AF_stress_coverage": "German/US English, male/female, native pitch 30/65/90, 16/22.05/32/44.1/48 kHz; AV muted while retaining its original mask; AH disabled",
+    "actual_speech_peak_cases": 136,
+    "actual_speech_maximum_pcm_peak": 32683,
+    "A_and_8_11k_PCM_identities_to_dev9": 36,
+    "hearing_profile_pcm_index_rollback_two_engine_volume_cases": 293,
+    "filter_dispatch_bit_identical_cases": 19404,
+    "spectral_phase_bit_identical_cases": 20000,
+    "german_tag_context_cases": 371,
+    "analysis_cancel_and_recovery_cases": 32,
+    "maximum_analysis_cancel_return_ms": 4.155,
+    "inline_tags": "75 fragmentation/index and 21 tag/slider speed cases plus pause/voice/mode/malformed-input checks passed",
+    "nvda_UI_en": "24 language/schema cases plus selectable x64 FIFO/index/cancel/close passed",
+    "nvda_UI_de": "24 language/schema cases plus selectable x64 FIFO/index/cancel/close passed",
+    "windows_cross_build_and_PE_ABI": "passed; 49 exports; kernel32, msvcrt and user32 only",
+    "archive_CRC_manifest_docs_licenses_headers_and_DLL_identity": "passed"
+  },
+  "DSP_performance": {
+    "method": "Three interleaved baseline/new runs per dataset; process user CPU time; Linux x64 host. DSP frame replay only, excluding text analysis and NVDA playback.",
+    "baseline": "Retained dev8 replay; dev9 used identical DSP.",
+    "results": {
+      "dev6-voice-frames.bin": {
+        "dev8-replay-vector": {
+          "user_cpu_seconds": [
+            0.737166,
+            0.867572,
+            1.2095540000000002
+          ],
+          "output": [
+            "frames=46020 samples=1357590 peak=9819.62 rails=0 maxdelta=5426.2",
+            "frames=46020 samples=1357590 peak=9819.62 rails=0 maxdelta=5426.2",
+            "frames=46020 samples=1357590 peak=9819.62 rails=0 maxdelta=5426.2"
+          ],
+          "median": 0.867572
+        },
+        "voice-replay-dev10-delivery": {
+          "user_cpu_seconds": [
+            0.5947389999999999,
+            0.6155919999999999,
+            0.7671010000000003
+          ],
+          "output": [
+            "frames=46020 samples=1357590 peak=9703.5 rails=0 maxdelta=4752.56",
+            "frames=46020 samples=1357590 peak=9703.5 rails=0 maxdelta=4752.56",
+            "frames=46020 samples=1357590 peak=9703.5 rails=0 maxdelta=4752.56"
+          ],
+          "median": 0.6155919999999999
+        },
+        "reduction": 0.29044275287814736
+      },
+      "female-voice-frames.bin": {
+        "dev8-replay-vector": {
+          "user_cpu_seconds": [
+            0.9426649999999999,
+            0.79338,
+            0.7689050000000002
+          ],
+          "output": [
+            "frames=50445 samples=1634418 peak=15170.7 rails=0 maxdelta=17212.2",
+            "frames=50445 samples=1634418 peak=15170.7 rails=0 maxdelta=17212.2",
+            "frames=50445 samples=1634418 peak=15170.7 rails=0 maxdelta=17212.2"
+          ],
+          "median": 0.79338
+        },
+        "voice-replay-dev10-delivery": {
+          "user_cpu_seconds": [
+            0.4964789999999999,
+            0.5975950000000001,
+            0.5294329999999992
+          ],
+          "output": [
+            "frames=50445 samples=1634418 peak=14841.1 rails=0 maxdelta=16935.3",
+            "frames=50445 samples=1634418 peak=14841.1 rails=0 maxdelta=16935.3",
+            "frames=50445 samples=1634418 peak=14841.1 rails=0 maxdelta=16935.3"
+          ],
+          "median": 0.5294329999999992
+        },
+        "reduction": 0.3326867327132028
+      }
+    },
+    "limits": "Not Windows-on-ARM latency, not a measurement of player starvation or stuttering on the user device. Timings do not establish listening quality."
+  },
+  "reference": {
+    "sha256": "8741d4aeccf3280ea644443146194ebb81d43dee65e2ee460031b9182475a83c",
+    "description": "User-supplied original ibmeci.dll; static inspection only; not redistributed."
+  },
+  "limits": [
+    "No claim that audible crackling, voiced-body quality or occasional stuttering are fully resolved. NVDA listening on the user device remains necessary.",
+    "49 exports include 45 original names and four ReLoq extensions; this does not establish full behavioral ECI parity.",
+    "Windows runtime CI is configured separately and must finish before claiming Windows runtime validation.",
+    "15 original exports remain absent. Synthesis/phoneme output are synchronous; fragment snapshots, TextMode 2/3, NumberMode, phoneme indices, device/file/filter output and Asian MainDictExt remain incomplete.",
+    "The ordinary numerical source and profile A retain legacy behavior. The Classic 16-kHz contour remains, but its corrected source and smoother filter transitions intentionally change its PCM.",
+    "Peak checks cover the listed models/texts/control combinations, not every possible utterance and parameter combination."
+  ]
+}

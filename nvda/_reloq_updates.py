@@ -28,7 +28,8 @@ def version(value):
 
 
 def select(releases, installed):
-    current = version(installed)
+    development = re.fullmatch(r"(\d+\.\d+\.\d+)-(?:dev|rc)\d+", installed)
+    current = version(development[1] if development else installed)
     if not isinstance(releases, list):
         raise ValueError("Invalid release list")
     available = []
@@ -40,7 +41,10 @@ def select(releases, installed):
                 continue
             name = asset.get('name', '')
             match = PACKAGE.fullmatch(name) if isinstance(name, str) else None
-            if not match or version(match[1]) <= current:
+            if not match:
+                continue
+            candidate = version(match[1])
+            if candidate < current or (candidate == current and not development):
                 continue
             url, size, digest = (asset.get(k) for k in ('browser_download_url', 'size', 'digest'))
             if not isinstance(url, str) or not isinstance(digest, str):

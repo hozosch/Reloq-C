@@ -7,6 +7,7 @@
    Native entry metadata is collected from these translation units. */
 
 #include <string.h>
+#include "reloq61_english_word_edges.h"
 
 #include "delta_rules_enus61.h"
 #include "delta_rules_c.h"
@@ -8506,6 +8507,7 @@ static int32_t evv_handle_time_adverbials(void *state, const int32_t *args, int 
 /* convert_eng_time, from f61_41.obj */
 int32_t reloq_enus61_convert_eng_time(void *state, int32_t p0, int32_t p1, int32_t p2)
 {
+    const int32_t seconds_begin=reloq61_english_time_seconds_begin(state,p1);
     const int32_t reloq_machine_ref=
         EVV_AT(void *,p0)==state?p0:REG_REF(state);
     const int reloq_landing_mark=evv_land_mark();
@@ -9177,6 +9179,9 @@ L5330:;
     r0 = reloq_call_enus61_eng_char_name(state, (int32_t)(FIELD(0)), (int32_t)((int32_t)AT(int32_t, -20)), (int32_t)((int32_t)AT(int32_t, -24)));
     AT(int32_t, -32) = (r0);
 L5380:;
+    /* A three-field time keeps its explicit zero minutes; o'clock and
+     * hundred-hours are the existing two-field clock abbreviations. */
+    if(seconds_begin)goto L6642;
     AT(int32_t, -40) = ((int32_t)AT(int32_t, -4));
     r1 = ((int32_t)STATE(uint16_t, s184));
     AT(int32_t, -32) = (r1);
@@ -9351,7 +9356,9 @@ L6795:;
     AT(int32_t, -32) = (r0);
 L6845:;
     AT(int32_t, -40) = ((int32_t)AT(int32_t, -4));
-    AT(int32_t, -32) = ((int32_t)AT(int32_t, -100));
+    /* Do not consume a seconds field that the two-field clock shortcut
+     * has not converted. Keep it for the existing native number analysis. */
+    AT(int32_t, -32) = seconds_begin?seconds_begin:((int32_t)AT(int32_t, -100));
     AT(int32_t, -28) = ((int32_t)PARAM(int32_t, 2));
     r1 = ((int32_t)AT(int32_t, -32));
     r7 = ((int32_t)PARAM(int32_t, 2));

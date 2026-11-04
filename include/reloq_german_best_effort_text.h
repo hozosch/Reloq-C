@@ -23,6 +23,11 @@ int reloq_german_best_effort_annotate(
     unsigned char **annotation, size_t *annotation_length,
     size_t *approximate_words, size_t *encoded_error_offset);
 
+/* Resolve a single previously normalized lexical token, preserving the
+ * dictionary's own compound reading. The caller frees the annotation. */
+int reloq_german_dictionary_compound(const unsigned char *,size_t,
+    const struct reloq_lexicon *,unsigned char **,size_t *);
+
 /* Same transaction, with cooperative cancellation across UTF-8 encoding,
  * text scanning and pronunciation lookup.  Output pointers and lengths are
  * untouched when cancellation is reported. */
@@ -43,6 +48,30 @@ struct reloq_german_best_effort_boundary {
     size_t encoded_offset;
     size_t annotation_offset;
 };
+
+/* Completed source stretches only. Scheduling reuses admission's word and
+ * punctuation classification; it never divides raw text by character count.
+ * Callback spans and features are borrowed until it returns. first_boundary
+ * preserves the original transaction's stable index order. */
+struct reloq_german_text_stream {
+    int (*part)(void *,const unsigned char *,size_t,
+        const struct reloq_german_word_features *,size_t,
+        const struct reloq_german_best_effort_boundary *,size_t,size_t,int);
+    void *context;
+};
+struct reloq_german_generic_pitch_mark;
+/* Cheap control scope only, without word analysis. Pitch positions use the
+ * same encoded character offsets as best-effort admission boundaries. */
+int reloq_german_control_scope(const unsigned char *,size_t,int,int,int,int,
+    const struct reloq_german_generic_pitch_mark *,size_t,int *,int *);
+/* In addition to the ordinary result codes, 3 means all parts were
+ * delivered through the callback; no returned allocations are published. */
+int reloq_german_best_effort_stream_tags_checked(
+    const unsigned char *,size_t,const struct reloq_lexicon *,int,
+    unsigned char **,size_t *,size_t *,size_t *,
+    struct reloq_german_best_effort_boundary *,size_t,
+    struct reloq_german_word_features **,size_t *,int (*)(void *),void *,
+    const struct reloq_german_text_stream *);
 
 int reloq_german_best_effort_annotate_indexed_checked(
     const unsigned char *utf8, size_t utf8_length,

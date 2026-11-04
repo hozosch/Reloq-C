@@ -3866,7 +3866,8 @@ L11366:;
     STATE_D(int16_t, c14, 2) = (4);
     AT(int32_t, -44) = (STATE_AT(c14, 0));
     AT(int32_t, -48) = (1);
-    r0 = reloq61_typed_if_testeq_v_i(DELTA_ENTRY_if_testeq_v_i, state, EVV_AT(delta_loc *, (int32_t)AT(int32_t, -44)), (int32_t)((int32_t)AT(int32_t, -48)));
+    /* Model-independent Mandarin F0; anatomy keeps the selected model. */
+    r0 = 1;
     AT(int32_t, -56) = (r0);
     AT(int32_t, -44) = (31);
     if (AT(int32_t, -56) != 0) goto L11481;

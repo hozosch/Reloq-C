@@ -10,7 +10,7 @@ import subprocess
 
 
 DECLARATION = re.compile(
-    r"\bECIAPI\s+[A-Za-z_][A-Za-z_0-9\s*]*?\s+ECICALL\s+(eci[A-Za-z_0-9]+)\s*\("
+    r"\bECIAPI\s+[A-Za-z_][A-Za-z_0-9\s*]*?\bECICALL\s+(eci[A-Za-z_0-9]+)\s*\("
 )
 EXPORT_LINE = re.compile(
     r"^\s*\[\s*\d+\]\s+"

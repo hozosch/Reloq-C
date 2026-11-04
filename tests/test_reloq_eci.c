@@ -33,7 +33,7 @@ static int ECICALL callback(ECIHand engine, int message, int count, void *data)
         (size_t)count > 512 - c->samples) return 2;
     ++c->calls;
     if (eciSpeaking(engine)) c->saw_speaking = 1;
-    if (c->reject_on_call == c->calls) return 0;
+    if (c->reject_on_call == c->calls) return 2;
     /* The ECI buffer belongs to the caller and stays stable for this call. */
     extern short eci_test_output[7];
     memcpy(c->pcm + c->samples, eci_test_output,
@@ -498,14 +498,14 @@ int main(void)
     int british=native_british_dictionary();if(british)return british;
     char version[20] = {0};
     eciVersion(version);
-    CHECK(!strcmp(version, "1.0.0.0"));
+    CHECK(!strcmp(version, "1.1.0"));
     int languages = 0;
     CHECK(eciGetAvailableLanguages(NULL, &languages) == 0 &&
-          languages == 0);
+          languages == 15);
     unsigned int code = 123;
     languages = 1;
     CHECK(eciGetAvailableLanguages(&code, &languages) == 0 &&
-          languages == 0 && code == 123);
+          languages == 1 && code == 0x10000);
     ECIHand english = eciNewEx(RELOQ_ECI_ENGLISH);
     CHECK(english != NULL);
     eciDelete(english);
@@ -522,6 +522,7 @@ int main(void)
     }
     CHECK(eciNewEx(0xb0000) == NULL);
     ECIHand e = eciNewEx(RELOQ_ECI_GERMAN);
+    CHECK(eciSetParam(e, RELOQ_ECI_VOICE_MODE, RELOQ_ECI_VOICE_EXACT)==RELOQ_ECI_VOICE_GENERIC);
     CHECK(e && eciGetParam(e, RELOQ_ECI_SAMPLE_RATE) == 1);
     CHECK(eciGetParam(e, RELOQ_ECI_DICTIONARY) == 0);
     CHECK(eciGetParam(e, RELOQ_ECI_PHRASE_PREDICTION) == 0);
@@ -531,15 +532,17 @@ int main(void)
     CHECK(eciSetParam(e, RELOQ_ECI_PHRASE_PREDICTION, 1) == 0);
     CHECK(eciSetParam(e, RELOQ_ECI_PHRASE_PREDICTION, -1) == -1);
     CHECK(eciSetParam(e, RELOQ_ECI_PHRASE_PREDICTION, 0) == 1);
-    CHECK(eciSetParam(e, RELOQ_ECI_SYNTH_MODE, 1) == 0 &&
+    CHECK(eciSetParam(e, RELOQ_ECI_SYNTH_MODE, 1) == 1 &&
           eciGetParam(e, RELOQ_ECI_SYNTH_MODE) == 1);
-    CHECK(eciSetParam(e, RELOQ_ECI_INPUT_TYPE, 1) == -1 &&
-          eciGetParam(e, RELOQ_ECI_INPUT_TYPE) == 0);
+    CHECK(eciSetParam(e, RELOQ_ECI_INPUT_TYPE, 1) == 0 &&
+          eciGetParam(e, RELOQ_ECI_INPUT_TYPE) == 1);
+    CHECK(eciSetParam(e, RELOQ_ECI_INPUT_TYPE, 0) == 1);
     CHECK(eciSetParam(e, RELOQ_ECI_SAMPLE_RATE, 3) == 1 &&
           eciGetParam(e, RELOQ_ECI_SAMPLE_RATE) == 3);
     CHECK(eciSetParam(e, RELOQ_ECI_SAMPLE_RATE, 123) == -1 &&
           eciGetParam(e, RELOQ_ECI_SAMPLE_RATE) == 3);
-    CHECK(eciSetParam(e, RELOQ_ECI_LANGUAGE_DIALECT, 0x10000) == -1);
+    CHECK(eciSetParam(e, RELOQ_ECI_LANGUAGE_DIALECT, 0x10000) == RELOQ_ECI_GERMAN);
+    CHECK(eciSetParam(e, RELOQ_ECI_LANGUAGE_DIALECT, RELOQ_ECI_GERMAN) == 0x10000);
     CHECK(eciAddText(e, "Maus") == 1 &&
           eciInsertIndex(e, 7) == 1);
     CHECK(eciClearInput(e) && eciSynthesize(e));
@@ -592,14 +595,14 @@ int main(void)
     CHECK(reloq_eci_render_controls(e, controls[0], 1, 8, &completed) ==
           RELOQ_ECI_CALLBACK && !completed && !rejected.samples);
     CHECK(reloq_eci_last_error(e) == RELOQ_ECI_CALLBACK);
-    CHECK(eciReset(e));
+    CHECK(reloq_eci_reset_audio(e));
 
     struct capture stopped = {.engine = e, .stop_on_call = 1};
     eciRegisterCallback(e, callback, &stopped);
     CHECK(reloq_eci_render_controls(e, &controls[0][0], 3, 8,
                                      &completed) == RELOQ_ECI_CANCELLED);
     CHECK(completed == 0 && stopped.samples <= 7 && stopped.samples > 0);
-    CHECK(eciReset(e));
+    CHECK(reloq_eci_reset_audio(e));
     eciRegisterCallback(e, callback, &actual);
     CHECK(eciSetOutputBuffer(e, 0, NULL) &&
           reloq_eci_render_controls(e, controls[0], 1, 8, &completed) ==
@@ -901,7 +904,7 @@ int main(void)
     CHECK(reloq_eci_last_error(e) == RELOQ_ECI_CANCELLED &&
           voice.samples == 2179 && voice.index_count == 1 &&
           voice.index_positions[0] == 2179 && !eciSpeaking(e));
-    CHECK(eciReset(e));
+    CHECK(reloq_eci_reset_audio(e));
     memset(&voice, 0, sizeof voice);
     voice.engine = e;
     CHECK(eciAddText(e, "Pack ") && eciInsertIndex(e, 60) &&
@@ -1001,7 +1004,7 @@ int main(void)
           !eciSynthesize(e));
     CHECK(reloq_eci_last_error(e) == RELOQ_ECI_CANCELLED &&
           voice.calls == 1 && !voice.index_count && !eciSpeaking(e));
-    CHECK(eciReset(e));
+    CHECK(reloq_eci_reset_audio(e));
 
     memset(&voice, 0, sizeof voice);
     voice.engine = e;
@@ -1009,7 +1012,7 @@ int main(void)
     CHECK(eciInsertIndex(e, 44) && !eciSynthesize(e));
     CHECK(reloq_eci_last_error(e) == RELOQ_ECI_CALLBACK &&
           voice.index_count == 1);
-    CHECK(eciReset(e));
+    CHECK(reloq_eci_reset_audio(e));
 
     /* Numeric path retains rate agility while text remains 11,025 Hz only. */
     CHECK(eciSetParam(e, RELOQ_ECI_SAMPLE_RATE, 2) == 1);
@@ -1202,7 +1205,7 @@ int main(void)
     CHECK(eciAddText(e, "Hieb ") && eciInsertPitch(e, 90) &&
           eciAddText(e, "Hieb.") && !eciSynthesize(e) &&
           reloq_eci_last_error(e) == RELOQ_ECI_CANCELLED);
-    CHECK(eciReset(e));
+    CHECK(reloq_eci_reset_audio(e));
     CHECK(eciSetParam(e, RELOQ_ECI_NATIVE_PITCH, 50) == 50);
     memset(&voice, 0, sizeof voice);
     voice.engine = e;
@@ -1240,7 +1243,7 @@ int main(void)
     CHECK(reloq_eci_last_error(e) == RELOQ_ECI_CALLBACK &&
           voice.samples == generic_boundary && voice.index_count == 1 &&
           voice.index_positions[0] == generic_boundary);
-    CHECK(eciReset(e));
+    CHECK(reloq_eci_reset_audio(e));
     memset(&voice, 0, sizeof voice);
     voice.engine = e;
     voice.stop_on_index_value = 91;

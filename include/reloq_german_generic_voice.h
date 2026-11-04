@@ -2,6 +2,7 @@
 #define RELOQ_GERMAN_GENERIC_VOICE_H
 
 #include "reloq_german_word_features.h"
+#include "reloq_inline_tags.h"
 
 #include "reloq_german_utterance.h"
 #include "reloq_german_syllable_plan.h"
@@ -142,6 +143,27 @@ int reloq_german_generic_render_text_plan(
     struct reloq_session *session,reloq_session_pcm_sink pcm_sink,
     reloq_german_generic_index_sink index_sink,void *context,
     struct reloq_german_utterance_info *info);
+
+/* One owner-thread transaction. Preserve the native clock and the session's
+ * oscillator, noise and filter histories across completed text stretches. */
+/* Zero-initialize once per utterance; keep the same session across parts. */
+struct reloq_german_generic_continuation {
+    int64_t next_tick,next_output_tick;
+    int sibilant,colour;
+    struct reloq_inline_word voice;
+    int have_voice,pitch_plus_one,last_pitch_plus_one;
+    int mixed_pitch,mixed_speed;
+};
+int reloq_german_generic_render_text_part(
+    const unsigned char *annotation,size_t length,
+    const struct reloq_german_generic_settings *settings,
+    const struct reloq_german_word_features *features,size_t feature_count,
+    const struct reloq_german_generic_index *indices,size_t index_count,
+    const struct reloq_german_generic_pitch_mark *pitches,size_t pitch_count,
+    struct reloq_session *session,reloq_session_pcm_sink pcm_sink,
+    reloq_german_generic_index_sink index_sink,void *context,
+    struct reloq_german_utterance_info *info,int native_volume,
+    struct reloq_german_generic_continuation *continuation,int final);
 
 int reloq_german_generic_render_tagged_text_plan(
     const unsigned char *annotation,size_t length,

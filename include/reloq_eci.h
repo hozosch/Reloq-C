@@ -4,21 +4,16 @@
 #include <stdint.h>
 #include <stddef.h>
 
-/* A direct, native ECI ABI around the independent C renderer and a deliberately
- * narrow German developmental voice. German input is Windows-1252. Text
- * submitted through successive eciAddText calls is combined before phonetic
- * analysis; complete covered sentences are rendered in one continuing Klatt
- * session. Indices at sentence boundaries and at the measured word boundary
- * of a covered natural connected pair are delivered at their exact PCM
- * position. Other indices inside a sentence fail before output, as does
- * uncovered text. An explicitly selected experimental generic mode renders
- * natural German through a best-effort spelling frontend and independent C
- * Klatt approximation at 11,025 Hz. In that mode, indices can occur within
- * a phrase and are delivered after accepted PCM at the next acoustic word
- * boundary; indices inside a spelling token follow that token's word. No
- * index splits a phrase into separate synthesis jobs. Neither mode advertises
- * a complete language. The private numeric
- * entry below tests the same PCM callback without a host.
+#if defined(ECI_STATIC) && !defined(RELOQ_ECI_STATIC)
+#define RELOQ_ECI_STATIC
+#endif
+
+/* Native ECI ABI for the built-in C speech languages. Instances use the
+ * ordinary text engine by default; the old narrow German numeric comparison
+ * path remains available through the explicit VOICE_MODE extension.
+ * eciAddText accepts the selected language's byte code page, or UTF-16LE
+ * when bit 0x800 is set in LANGUAGE_DIALECT. eciAddTextUtf8 remains available.
+ * Voice slots 1..8 are presets, 9..16 are editable copies, and 0 is active.
  */
 #if defined(_WIN32)
 #define ECICALL __stdcall
@@ -46,6 +41,20 @@ extern "C" {
 #endif
 
 typedef void *ECIHand;
+typedef void *ECIDictHand;
+typedef void *ECIFilterHand;
+#define NULL_ECI_HAND ((ECIHand)0)
+#define NULL_DICT_HAND ((ECIDictHand)0)
+typedef int ECIMessage;
+typedef int ECICallbackReturn;
+enum {eciWaveformBuffer=0,eciPhonemeBuffer=1,eciIndexReply=2,
+    eciPhonemeIndexReply=3,eciWordIndexReply=4,eciStringIndexReply=5,eciAudioIndexReply=6};
+enum {eciDataNotProcessed=0,eciDataProcessed=1,eciDataAbort=2};
+typedef enum {eciSynthMode=0,eciInputType=1,eciTextMode=2,eciDictionary=3,
+    eciSampleRate=5,eciWantPhonemeIndices=7,eciRealWorldUnits=8,
+    eciLanguageDialect=9,eciNumberMode=10,eciRomanizer=12,
+    eciAudioFormatA=13,eciAudioFormatB=14,eciAudioFormatC=15,
+    eciAudioFormatD=16,eciNumParams=18} ECIParam;
 typedef int (ECICALL *ECICallback)(ECIHand, int message, int param,
                                    void *data);
 
@@ -61,6 +70,7 @@ enum {
      * and inline pp control. 0 off, 1 on; default remains off. */
     RELOQ_ECI_PHRASE_PREDICTION = 11,
     RELOQ_ECI_SAMPLE_RATE = 5,
+    RELOQ_ECI_REAL_WORLD_UNITS = 8,
     RELOQ_ECI_LANGUAGE_DIALECT = 9,
     /* Read-only development diagnostics, queried with eciGetParam after
      * eciSynthesize. They survive eciClearInput (the adapter calls it on a
@@ -85,7 +95,7 @@ enum {
      * optional boost to 250). Pitch uses the native 0..100 voice scale.
      * The last setter for rate or pitch selects that control route; merely
      * getting either parameter does not alter the legacy developmental path.
-     * They do not pretend to implement the full eciSetVoiceParam ABI. */
+     * These aliases share state with standard eciSetVoiceParam on slot 0. */
     RELOQ_ECI_NATIVE_SPEED = 0x1007,
     RELOQ_ECI_NATIVE_PITCH = 0x1008,
     /* Native F0 contour span; 0 is flat, 30 is the Apple voice default. */
@@ -99,6 +109,14 @@ enum {
     RELOQ_ECI_ROUGHNESS = 0x100e,
     RELOQ_ECI_BREATHINESS = 0x100f,
     RELOQ_ECI_GENDER = 0x1010,
+    /* Legacy ReLoq setting. Values 0..3 remain readable/writable; every
+     * value renders the accepted C tuning in ECI speech. */
+    RELOQ_ECI_HIGH_RATE_PROFILE = 0x1011,
+    /* German /Ej/ coda colour, 0..100; defaults 85, 45 and 45 respectively.
+     * Higher opening opens F1; backness lowers F2/F3; softness lowers F3. */
+    RELOQ_ECI_GERMAN_GLIDE_OPENING = 0x1012,
+    RELOQ_ECI_GERMAN_GLIDE_BACKNESS = 0x1013,
+    RELOQ_ECI_GERMAN_GLIDE_SOFTNESS = 0x1014,
     RELOQ_ECI_ENGLISH = 0x00010000,
     RELOQ_ECI_ENGLISH_BRITAIN = 0x00010001,
     RELOQ_ECI_SPANISH_SPAIN = 0x00020000,
@@ -115,6 +133,24 @@ enum {
     RELOQ_ECI_KOREAN = 0x000a0000,
     RELOQ_ECI_GREEK = 0x00120000
 };
+
+/* Standard ECI voice/dictionary parameter numbers and return codes. */
+typedef enum {eciGender=0,eciHeadSize=1,eciPitchBaseline=2,eciPitchFluctuation=3,
+    eciRoughness=4,eciBreathiness=5,eciSpeed=6,eciVolume=7,eciNumVoiceParams=8} ECIVoiceParam;
+typedef enum {eciMainDict=0,eciRootDict=1,eciAbbvDict=2,eciMainDictExt=3,eciNumDictVolumes=4} ECIDictVolume;
+typedef int ECIPartOfSpeech;
+typedef enum {eciDictNoError=0,eciDictFileNotFound=1,eciDictOutOfMemory=2,
+    eciDictInternalError=3,eciDictNoEntry=4,eciDictErrLookUpKey=5,
+    eciDictAccessError=6,eciDictInvalidVolume=7} ECIDictError;
+typedef enum {eciGeneralAmericanEnglish=0x10000,eciBritishEnglish=0x10001,
+    eciCastilianSpanish=0x20000,eciMexicanSpanish=0x20001,
+    eciStandardFrench=0x30000,eciCanadianFrench=0x30001,
+    eciStandardGerman=0x40000,eciStandardItalian=0x50000,
+    eciMandarinChinese=0x60000,eciTaiwaneseMandarin=0x60001,
+    eciBrazilianPortuguese=0x70000,eciStandardJapanese=0x80000,
+    eciStandardFinnish=0x90000,eciStandardKorean=0xa0000,
+    eciUnicodeCodeSet=0x800} ECILanguageDialect;
+enum {ECI_VOICE_NAME_LENGTH=30};
 
 enum reloq_eci_failure_stage {
     RELOQ_ECI_STAGE_NONE = 0,
@@ -137,8 +173,9 @@ enum reloq_eci_failure_stage {
  */
 
 /* ECI exports. SetParam returns the previous value or -1 on refusal.
- * All functions other than eciStop must run on the owner thread, outside a
- * callback. eciStop may run on another thread or from the callback. This
+ * Mutating calls run on the owner thread, outside a callback. eciStop may
+ * run on another thread or from the callback, as may eciPause. eciSpeaking and eciGetIndex
+ * read atomic state and may also be queried during synthesis. This
  * developmental eciSynthesize runs synchronously; eciSynchronize reports
  * its result. Delete requires that any concurrent Stop has completed. */
 ECIAPI ECIHand ECICALL eciNew(void);
@@ -168,12 +205,44 @@ ECIAPI int ECICALL eciInsertIndex(ECIHand handle, int index);
  * This is not an emulation of the proprietary inline ECI syntax. */
 ECIAPI int ECICALL eciInsertPitch(ECIHand handle, int native_pitch);
 ECIAPI int ECICALL eciSynthesize(ECIHand handle);
+/* Native phoneme bytes arrive through message eciPhonemeBuffer. The caller
+ * owns room bytes; a callback and eciSynthMode=1 are required. */
+ECIAPI int ECICALL eciGeneratePhonemes(ECIHand handle,int room,void *buffer);
 ECIAPI int ECICALL eciSynchronize(ECIHand handle);
 ECIAPI int ECICALL eciStop(ECIHand handle);
+ECIAPI int ECICALL eciPause(ECIHand handle,int pause);
 ECIAPI int ECICALL eciSpeaking(ECIHand handle);
+ECIAPI int ECICALL eciGetIndex(ECIHand handle);
+ECIAPI int ECICALL eciProgStatus(ECIHand handle);
+ECIAPI void ECICALL eciClearErrors(ECIHand handle);
+/* The SDK caller supplies at least 100 bytes, or 100 UTF-16 code units. */
+ECIAPI void ECICALL eciErrorMessage(ECIHand handle,void *buffer);
+ECIAPI int ECICALL eciIsBeingReentered(ECIHand handle);
 ECIAPI int ECICALL eciClearInput(ECIHand handle);
 ECIAPI int ECICALL eciGetParam(ECIHand handle, int parameter);
 ECIAPI int ECICALL eciSetParam(ECIHand handle, int parameter, int value);
+ECIAPI int ECICALL eciGetDefaultParam(int parameter);
+ECIAPI int ECICALL eciSetDefaultParam(int parameter,int value);
+ECIAPI int ECICALL eciGetVoiceParam(ECIHand handle,int voice,int parameter);
+ECIAPI int ECICALL eciSetVoiceParam(ECIHand handle,int voice,int parameter,int value);
+ECIAPI int ECICALL eciCopyVoice(ECIHand handle,int from,int to);
+ECIAPI int ECICALL eciGetVoiceName(ECIHand handle,int voice,void *name);
+ECIAPI int ECICALL eciSetVoiceName(ECIHand handle,int voice,const void *name);
+ECIAPI ECIDictHand ECICALL eciNewDict(ECIHand handle);
+ECIAPI ECIDictHand ECICALL eciGetDict(ECIHand handle);
+/* Dictionary selection returns eciDictNoError (0), not a Boolean. */
+ECIAPI int ECICALL eciSetDict(ECIHand handle,ECIDictHand dictionary);
+ECIAPI ECIDictHand ECICALL eciDeleteDict(ECIHand handle,ECIDictHand dictionary);
+ECIAPI int ECICALL eciLoadDict(ECIHand handle,ECIDictHand dictionary,int volume,const void *filename);
+ECIAPI int ECICALL eciSaveDict(ECIHand handle,ECIDictHand dictionary,int volume,const void *filename);
+ECIAPI const char *ECICALL eciDictLookup(ECIHand handle,ECIDictHand dictionary,int volume,const void *key);
+ECIAPI int ECICALL eciDictLookupA(ECIHand handle,ECIDictHand dictionary,int volume,const void *key,const char **translation,ECIPartOfSpeech *part);
+ECIAPI int ECICALL eciDictFindFirst(ECIHand handle,ECIDictHand dictionary,int volume,const char **key,const char **translation);
+ECIAPI int ECICALL eciDictFindNext(ECIHand handle,ECIDictHand dictionary,int volume,const char **key,const char **translation);
+ECIAPI int ECICALL eciDictFindFirstA(ECIHand handle,ECIDictHand dictionary,int volume,const char **key,const char **translation,ECIPartOfSpeech *part);
+ECIAPI int ECICALL eciDictFindNextA(ECIHand handle,ECIDictHand dictionary,int volume,const char **key,const char **translation,ECIPartOfSpeech *part);
+ECIAPI int ECICALL eciUpdateDict(ECIHand handle,ECIDictHand dictionary,int volume,const void *key,const void *translation);
+ECIAPI int ECICALL eciUpdateDictA(ECIHand handle,ECIDictHand dictionary,int volume,const void *key,const void *translation,ECIPartOfSpeech part);
 
 /* Optional RELOQ vendor extension. A UTF-8 path names a bounded, validated
  * RELOQ-DE-SPR-1 word-to-phonemes companion file. The engine owns its copy
@@ -194,8 +263,8 @@ ECIAPI int ECICALL eciSetDictionaryPath(ECIHand handle,const char *utf8_director
  * controls contains frame_count consecutive 62-float Klatt control frames.
  * Resets numeric state at the beginning of each call and synchronously
  * copies every PCM chunk into the caller-owned output buffer before invoking
- * message 0 with its sample count. The callback must return 1 to accept it;
- * 0 or 2 stops with RELOQ_ECI_CALLBACK. Already delivered PCM remains valid.
+ * message 0 with its sample count. Return 1 to accept it, 0 to retry the
+ * same buffer after a short wait, or 2 to abort. Stop cancels retry waits.
  * A concurrent eciStop (also permitted from the callback) cancels the call.
  */
 enum reloq_eci_result {
@@ -213,6 +282,8 @@ int reloq_eci_render_controls(ECIHand handle, const float *controls,
                                uint32_t frame_count, uint32_t highest_formant,
                                uint32_t *frames_completed);
 int reloq_eci_last_error(ECIHand handle);
+/* Numeric/reference tests only: keep settings, clear input and audio state. */
+int reloq_eci_reset_audio(ECIHand handle);
 
 #ifdef __cplusplus
 }

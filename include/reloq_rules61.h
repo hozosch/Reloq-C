@@ -1,6 +1,11 @@
 #ifndef RELOQ_RULES61_H
 #define RELOQ_RULES61_H
 #include "reloq_english_voice.h"
+#include "reloq61.h"
+/* Whole-text native phonemes, with source marks and caller-owned sinks. */
+int reloq_rules61_phonemes(int,const unsigned char *,size_t,int,const int[8],
+    const struct reloq61_mark *,size_t,reloq61_phoneme_sink,
+    reloq61_index_sink,void *);
 /* Complete native 6.1 acoustic rules, with the ReLoq PCM renderer. */
 int reloq_language_rules_render(int language,const unsigned char *,size_t,int,int,
     const struct reloq_german_generic_settings *,

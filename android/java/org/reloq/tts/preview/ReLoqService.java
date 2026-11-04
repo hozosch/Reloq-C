@@ -18,14 +18,35 @@ import java.util.concurrent.RejectedExecutionException;
 
 public final class ReLoqService extends TextToSpeechService {
     private final Object contextGuard = new Object();
+    private final Object dictionaryGuard = new Object();
     private final ExecutorService worker = Executors.newSingleThreadExecutor(r ->
         new Thread(r,"ReLoq C engine"));
     private long context;
-    private boolean destroyed;
+    private volatile boolean destroyed;
+    private boolean dictionariesStarted,legacyFilesCleaned;
     private volatile PcmQueue active;
     private volatile Catalog.Language selected = Catalog.LANGUAGES[3];
 
-    @Override public void onCreate(){super.onCreate();DictionaryStore.start(this);}
+    @Override public void onCreate(){super.onCreate();startDictionariesIfUnlocked();}
+
+    /** Never touch credential-protected files before the first unlock. */
+    private boolean startDictionariesIfUnlocked() {
+        if(!BootPreferences.unlocked(this))return false;
+        synchronized(dictionaryGuard) {
+            if(destroyed)return false;
+            if(!dictionariesStarted) {
+                BootPreferences.refresh(this);
+                DictionaryStore.start(this);
+                dictionariesStarted=true;
+            }
+            return true;
+        }
+    }
+    private DictionaryStore.Lease acquireDictionaries() {
+        synchronized(dictionaryGuard) {
+            return startDictionariesIfUnlocked()?DictionaryStore.acquire(this):null;
+        }
+    }
 
     @Override protected String[] onGetLanguage() {
         Catalog.Language item = selected;
@@ -62,21 +83,25 @@ public final class ReLoqService extends TextToSpeechService {
     }
     @Override public String onGetDefaultVoiceNameFor(String lang,String country,String variant) {
         Catalog.Language item=Catalog.find(lang,country);
-        int p=getSharedPreferences("settings",MODE_PRIVATE).getInt("profile",0);
+        int p=BootPreferences.forService(this,BootPreferences.unlocked(this)).getInt("profile",0);
         return item==null ? null : item.voice(Catalog.profile(null,p));
     }
 
     /** Disk I/O and core creation stay on the persistent engine worker. */
     private long ensureContext() throws Exception {
+        // Generated lexicons live in credential storage; defer cleanup until
+        // an unlocked request even if the native context was created earlier.
+        if(!legacyFilesCleaned&&BootPreferences.unlocked(this)) {
+            File[] oldData=getFilesDir().listFiles();
+            if(oldData!=null)for(File old:oldData)
+                if(old.getName().matches("german-(?:[0-9a-f]{64}|0\\.2\\.(?:189|190))\\.rlex") ||
+                   old.getName().equals("german.rlex.tmp"))old.delete();
+            legacyFilesCleaned=true;
+        }
         synchronized(contextGuard) {
             if(destroyed) return 0;
             if(context!=0) return context;
         }
-        // Remove only generated lexicons from earlier previews, never user .dic files.
-        File[] oldData=getFilesDir().listFiles();
-        if(oldData!=null)for(File old:oldData)
-            if(old.getName().matches("german-(?:[0-9a-f]{64}|0\\.2\\.(?:189|190))\\.rlex") ||
-               old.getName().equals("german.rlex.tmp"))old.delete();
         long created=NativeEngine.create();
         if(created==0) throw new IllegalStateException("Native engine initialization failed");
         synchronized(contextGuard) {
@@ -86,7 +111,7 @@ public final class ReLoqService extends TextToSpeechService {
         return 0;
     }
     @Override protected void onSynthesizeText(SynthesisRequest request,SynthesisCallback callback) {
-        android.content.SharedPreferences preferences=getSharedPreferences("settings",MODE_PRIVATE);
+        android.content.SharedPreferences preferences=BootPreferences.forService(this,BootPreferences.unlocked(this));
         Catalog.Language item=Catalog.forVoice(request.getVoiceName());
         if(item==null) item=Catalog.find(request.getLanguage(),request.getCountry());
         boolean androidVoice=preferences.getBoolean("androidVoice",true);
@@ -103,7 +128,10 @@ public final class ReLoqService extends TextToSpeechService {
         PcmQueue queue=new PcmQueue(16);
         active=queue;
         final int dialect=item.id;
-        final DictionaryStore.Lease dictionaries=DictionaryStore.acquire(this);
+        final DictionaryStore.Lease dictionaries=acquireDictionaries();
+        // If unlock races this request after the credential check, the
+        // device copy remains usable for this utterance.
+        final BootDictionaries.Lease bootDictionaries=dictionaries==null?BootDictionaries.acquire(this):null;
         boolean submitted=false;
         try {
             if(callback.start(Catalog.RATES[rate],AudioFormat.ENCODING_PCM_16BIT,1)!=TextToSpeech.SUCCESS)
@@ -114,12 +142,13 @@ public final class ReLoqService extends TextToSpeechService {
                     if(!queue.isCancelled()) {
                         long handle=ensureContext();
                         if(handle!=0 && !queue.isCancelled()) {
-                            NativeEngine.dictionary(handle,dictionaries.path);
+                            NativeEngine.dictionary(handle,dictionaries!=null?dictionaries.path:
+                                bootDictionaries!=null?bootDictionaries.path:null);
                             success=NativeEngine.synthesize(handle,dialect,controls,utf8,queue);
                         }
                     }
                 } catch(Throwable error) { Log.e("ReLoq","Synthesis failed",error); }
-                finally {dictionaries.close();queue.finish(success);}
+                finally {if(dictionaries!=null)dictionaries.close();if(bootDictionaries!=null)bootDictionaries.close();queue.finish(success);}
             });
             submitted=true;
             byte[] block;
@@ -139,7 +168,8 @@ public final class ReLoqService extends TextToSpeechService {
         } catch(RejectedExecutionException error) {
             queue.cancel(); callback.error(TextToSpeech.ERROR_SERVICE);
         } finally {
-            if(!submitted)dictionaries.close();
+            if(!submitted&&dictionaries!=null)dictionaries.close();
+            if(!submitted&&bootDictionaries!=null)bootDictionaries.close();
             if(queue.isCancelled()) stopNative(queue);
             if(active==queue) active=null;
             callback.done();
@@ -155,9 +185,9 @@ public final class ReLoqService extends TextToSpeechService {
     }
     @Override public void onDestroy() {
         onStop();
-        DictionaryStore.stop();
         final long detached;
         synchronized(contextGuard) { destroyed=true; detached=context; context=0; }
+        synchronized(dictionaryGuard) {if(dictionariesStarted){DictionaryStore.stop();dictionariesStarted=false;}}
         worker.execute(() -> { if(detached!=0) NativeEngine.destroy(detached); });
         worker.shutdown();
         super.onDestroy();

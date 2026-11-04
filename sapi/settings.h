@@ -28,6 +28,13 @@ HRESULT sapi_settings_shared(BOOL *);
 HRESULT sapi_settings_set_shared(int,BOOL);
 HRESULT sapi_settings_dialog(HWND,int);
 int sapi_module_path(WCHAR *,size_t,const WCHAR *);
+#ifndef RELOQ_SAPI_TEST_HOST
+DWORD sapi_dictionary_source(void);
+HRESULT sapi_dictionary_choose(DWORD);
+HRESULT sapi_dictionary_download(void);
+int sapi_alternative_dictionary_available(void);
+int sapi_default_dictionary_path(WCHAR *,size_t);
+#endif
 HRESULT sapi_register(BOOL,BOOL);
 const WCHAR *sapi_profile_name(unsigned);
 int sapi_sample_rate(unsigned);

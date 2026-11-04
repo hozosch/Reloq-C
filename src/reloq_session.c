@@ -72,10 +72,25 @@ struct reloq_session {
     struct reloq_session_buffers buffers;
     reloq_epoch_atomic cancel_epoch;
     reloq_epoch_atomic active_epoch;
+    unsigned high_rate_profile;
+    float linear_gain;
 };
 
 float reloq_session_sample_rate(const struct reloq_session *s)
 { return s ? s->config.sample_rate : 0; }
+int reloq_session_float_volume(const struct reloq_session *s)
+{return s&&s->high_rate_profile&&s->config.sample_rate>=16000&&s->config.glottal_reference_rate>0;}
+int reloq_session_linear_gain(struct reloq_session *s,float gain)
+{
+    if(!s||!isfinite(gain)||gain<0||gain>16)return RELOQ_SESSION_INVALID;
+    s->linear_gain=gain;return RELOQ_SESSION_OK;
+}
+
+int reloq_session_high_rate_profile(struct reloq_session *s,unsigned profile)
+{
+    if(!s||profile>3)return RELOQ_SESSION_INVALID;
+    s->high_rate_profile=profile;return RELOQ_SESSION_OK;
+}
 
 int reloq_session_source_levels(struct reloq_session *s,long source,
     long av,long ah,long af,unsigned reference_formants)
@@ -128,12 +143,15 @@ static int output_pcm(const struct reloq_session *session, size_t count)
     const float *output = session->buffers.output;
     int16_t *pcm = session->buffers.pcm;
     float gain = session->config.output_gain;
+#ifdef RELOQ_SESSION_FLOAT_DIAGNOSTIC
+    gain*=.015625f;
+#endif
     int64_t block[RELOQ_PCM_CONVERSION_BLOCK];
     for (size_t at = 0; at < count; ) {
         size_t n = count - at;
         if (n > RELOQ_PCM_CONVERSION_BLOCK) n = RELOQ_PCM_CONVERSION_BLOCK;
         for (size_t i = 0; i < n; ++i) {
-            float sample = output[at + i];
+            float sample = output[at + i]*session->linear_gain;
             if (!isfinite(sample) || sample < -0x1p63f ||
                 sample >= 0x1p63f) return RELOQ_SESSION_RENDER;
             block[i] = (int64_t)sample;
@@ -142,6 +160,20 @@ static int output_pcm(const struct reloq_session *session, size_t count)
                 scaled >= 0x1p63f) return RELOQ_SESSION_RENDER;
         }
         reloq_core_scale_output(block, (long)n, gain);
+        /* Keep the existing final protection while the remaining model
+         * headroom cases are investigated. This is not evidence that the
+         * unbounded synthesis fits PCM: raw-source tests and observations
+         * must measure before this knee. */
+#ifndef RELOQ_SESSION_FLOAT_DIAGNOSTIC
+        if(session->high_rate_profile && session->config.sample_rate>=16000)
+            for(size_t i=0;i<n;++i) {
+                double amplitude=fabs((double)block[i]);
+                if(amplitude>30000) {
+                    double bounded=30000-2600*expm1(-(amplitude-30000)/2600);
+                    block[i]=(int64_t)copysign(bounded,(double)block[i]);
+                }
+            }
+#endif
         /* The sample sink has a finite range. A model/filter transient
          * must saturate there instead of wrapping across the sign bit;
          * retain the core's low-word conversion for numeric reference use. */
@@ -174,8 +206,8 @@ static int render_owned(struct reloq_session *session,
     }
 #endif
     int status = reloq_core_voiced_frame_render_owned(
-        &session->frame_state, frame, b->output, b->raw_af,
-        b->scratch, b->closed_mask, NULL, b->capacity, written);
+        &session->frame_state,frame,b->output,b->raw_af,
+        b->scratch,b->closed_mask,NULL,b->capacity,written);
 #ifdef RELOQ_SESSION_SSE_CONTROL
     if (change) {
         unsigned raised = _mm_getcsr() & 0x3fu;
@@ -230,6 +262,17 @@ int reloq_session_reset(struct reloq_session *session)
     next.glottal_reference_rate=c->glottal_reference_rate;
     next.reference_formants=c->reference_formants;
     next.frication_reference_rate=c->frication_reference_rate;
+    /* B preserves the accepted A voice and Classic consonants. Optional C
+     * applies a small fixed periodic contour on this same voice from 22 kHz;
+     * it does not change the glottal source, aspiration or AF noise. */
+    unsigned classic=session->high_rate_profile==3?1:session->high_rate_profile;
+    next.rate_transfer.trial_profile=c->sample_rate<16000?classic:0;
+    if(session->high_rate_profile==3&&c->glottal_reference_rate>0)
+        next.rate_transfer.body_amount=c->sample_rate>=48000?.41666667f:
+            c->sample_rate>=44100?.36666667f:c->sample_rate>=32000?.26666667f:
+            c->sample_rate>=22050?.15f:0;
+    session->linear_gain=1;
+    next.noise_transfer.trial_profile=classic;
     session->frame_state = next;
     epoch_store(&session->active_epoch, generation);
     return RELOQ_SESSION_OK;

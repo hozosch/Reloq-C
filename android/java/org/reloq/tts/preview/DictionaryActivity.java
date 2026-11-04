@@ -14,7 +14,7 @@ import org.json.*;
 public final class DictionaryActivity extends Activity {
     private static final int OPEN=41;
     private CheckBox community;
-    private Spinner language,volume;
+    private Spinner language,volume,repository;
     private ListView list;
     private TextView status;
     private LinearLayout content;
@@ -48,6 +48,16 @@ public final class DictionaryActivity extends Activity {
         community.setOnCheckedChangeListener((view,enabled) -> {
             if(!loading&&!busy){JSONArray next=copy(sources);work(() -> DictionaryStore.rebuild(this,enabled,next));}
         });
+        repository=select(R.string.dictionary_repository,getResources().getStringArray(R.array.dictionary_repositories),
+            DictionaryStore.repository(this).equals("alternative")?1:0);
+        repository.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+            public void onItemSelected(android.widget.AdapterView<?> parent,View view,int position,long id) {
+                String selected=position==1?"alternative":"community";
+                if(!loading&&!busy&&!selected.equals(DictionaryStore.repository(DictionaryActivity.this)))
+                    work(() -> DictionaryStore.selectRepository(DictionaryActivity.this,selected));
+            }
+        });
         button(R.string.update_dictionaries,() -> work(() -> DictionaryStore.updateCommunity(this)));
         list=new ListView(this);list.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
         list.setContentDescription(getString(R.string.own_dictionaries));
@@ -77,6 +87,7 @@ public final class DictionaryActivity extends Activity {
     private void reload() {
         loading=true;sources=DictionaryStore.sources(this);
         community.setChecked(DictionaryStore.prefs(this).getBoolean("communityDictionaries",false));
+        repository.setSelection(DictionaryStore.repository(this).equals("alternative")?1:0);
         java.util.ArrayList<String> names=new java.util.ArrayList<>();
         for(int i=0;i<sources.length();++i)try {
             JSONObject row=sources.getJSONObject(i);Catalog.Language lang=null;

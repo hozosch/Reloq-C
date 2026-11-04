@@ -5383,12 +5383,38 @@ settle:
     return 0;
 }
 
+/* A projected range can have valid endpoint marks while the chosen field
+ * has no path between them. Deleting such a range walks past the end of
+ * the spine and used to abort the entire utterance. Check the field before
+ * editing it, so the language's ordinary failed-range alternative can run. */
+static int field_range_connected(delta_state *d,uint8_t f,int32_t left,int32_t right)
+{
+    if(!left||!right)return 0;
+    int32_t base=EVV_AT(delta_vars *,d->vars)->fence_base;
+    int32_t at=left;
+    for(int32_t steps=0;steps<EVV_WALK_MAX;++steps) {
+        int32_t bits=*EVV_AT(const int32_t *,at);
+        int32_t next=bits&2?*EVV_AT(const int32_t *,at+(base+f)*4)&~3:
+            *EVV_AT(const int32_t *,at+4)&~3;
+        if(next==right) {
+            /* An immediate neighbour also has to point back. */
+            if(at==left && (*EVV_AT(const int32_t *,right+0xc+f*4)&~3)!=left)return 0;
+            return 1;
+        }
+        if(!next||next==at)return 0;
+        at=next;
+    }
+    return 0;
+}
+
 /* The two-point spellings: open a range between the registers, then fill,
    empty or mark it. */
 int insert_2pt_s(delta_state *d, uint8_t f, uint8_t n, const uint8_t *str,
                  uint8_t mode)
 {
     if (vrange_2pt(d, &d->lpta, &d->rpta, (int8_t)f, mode))
+        return 1;
+    if (!field_range_connected(d,f,d->lpta.node,d->rpta.node))
         return 1;
 
     ins_tokens_s(d, f, str, n, 0);
@@ -5640,6 +5666,11 @@ int insert_2ptv(delta_state *d, uint8_t f, delta_loc *loc, uint8_t mode)
     delta_operand b;
 
     if (vrange_2pt(d, &d->lpta, &d->rpta, (int8_t)f, mode)) {
+        reset_field(loc);
+        return 1;
+    }
+
+    if (!field_range_connected(d,f,d->lpta.node,d->rpta.node)) {
         reset_field(loc);
         return 1;
     }

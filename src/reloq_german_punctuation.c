@@ -80,6 +80,12 @@ int reloq_german_punctuation_read(const unsigned char *text,size_t length,size_t
       !letter(next)&&!(next>='0'&&next<='9')&&!space(next)&&!quote(next)&&!strchr(".,:;?!",next)) {
    p.action=RELOQ_DE_PUNCT_SPOKEN;p.spoken=".1bIn.0d@.2StrIX";
   }
+  if(c=='-'&&end==at+1&&at&&letter(prev)) {
+   size_t following=end;while(following<length&&space(text[following]))++following;
+   if(following<length&&text[following]=='/') {
+    p.action=RELOQ_DE_PUNCT_SPOKEN;p.spoken=".1bIn.0d@.2StrIX";
+   }
+  }
  } else if(c==0x85) {p.action=have_word?RELOQ_DE_PUNCT_BOUNDARY:RELOQ_DE_PUNCT_SILENT;p.mark=0x85;}
  else if(c=='.'||c==','||c==':'||c==';'||c=='?'||c=='!') {
   size_t end=at+1;

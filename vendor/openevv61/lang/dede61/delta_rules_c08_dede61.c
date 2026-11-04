@@ -1457,6 +1457,8 @@ static int32_t evv_insert_target_t3(void *state, const int32_t *args, int nargs)
     return reloq_dede61_insert_target_t3(state, nargs>0?args[0]:0);
 }
 
+extern int reloq61_german_question_time(void *, int32_t, int16_t, int16_t,
+    int32_t, int32_t *);
 /* insert_f0, from f61_08.obj */
 int32_t reloq_dede61_insert_f0(void *state, int32_t p0, int32_t p1, int32_t p2, int32_t p3)
 {
@@ -1648,20 +1650,10 @@ L1085:;
     r1 = (delta_muldiv((int32_t)AT(int32_t, -36), 10000, (int32_t)AT(int32_t, -40), 1));
     AT(int32_t, -36) = (r1);
     STATE(int32_t, f37) = ((int32_t)AT(int32_t, -36));
-    r1 = ((int32_t)AT(int16_t, -106));
-    AT(int32_t, -52) = (r1);
-    AT(int32_t, -40) = ((int32_t)AT(int32_t, -52));
-    r1 = (delta_muldiv((int32_t)AT(int32_t, -40), 10000, 1, 0));
-    AT(int32_t, -40) = (r1);
-    r1 = (delta_muldiv((int32_t)AT(int32_t, -40), (int32_t)AT(int32_t, -36), 10000, 1));
-    AT(int32_t, -40) = (r1);
-    AT(int32_t, -36) = ((int32_t)STATE(int32_t, f42));
-    AT(int32_t, -12) = ((int32_t)AT(int32_t, -36));
-    r1 = (delta_muldiv((int32_t)AT(int32_t, -12), 10000, (int32_t)AT(int32_t, -60), 1));
-    AT(int32_t, -12) = (r1);
-    AT(int32_t, -8) = ((int32_t)AT(int32_t, -40));
-    r1 = (delta_muldiv((int32_t)AT(int32_t, -8), 10000, 1000000, 1));
-    AT(int32_t, -8) = (r1);
+    /* Match the wide-range English F0 calculation: the old intermediate
+     * overflowed before its compensating division at high pitch. */
+    AT(int32_t, -8) = delta_muldiv(AT(int16_t, -106), STATE(int32_t, f37), 100, 1);
+    AT(int32_t, -12) = delta_muldiv(STATE(int32_t, f42), 10000, AT(int32_t, -60), 1);
     AT(int32_t, -20) = ((int32_t)AT(int32_t, -12));
     AT(int32_t, -20) = ((int32_t)((uint32_t)((int32_t)AT(int32_t, -20)) + (uint32_t)((int32_t)AT(int32_t, -8))));
     AT(int32_t, -16) = ((int32_t)AT(int32_t, -12));
@@ -1707,9 +1699,8 @@ L1609:;
     r1 = (delta_muldiv((int32_t)AT(int32_t, -48), (int32_t)AT(int32_t, -52), 1, 0));
     AT(int32_t, -48) = (r1);
     AT(int32_t, -40) = ((int32_t)AT(int32_t, -48));
-    r1 = (delta_muldiv((int32_t)AT(int32_t, -40), 10000, 1, 0));
-    AT(int32_t, -40) = (r1);
-    r1 = (delta_muldiv((int32_t)AT(int32_t, -40), 10000, 1000000, 1));
+    /* Preserve the same ratio without an overflowing fixed-point product. */
+    r1 = (delta_muldiv((int32_t)AT(int32_t, -40), 100, 1, 0));
     AT(int32_t, -40) = (r1);
     AT(int32_t, -52) = ((int32_t)AT(int32_t, -40));
     AT(int32_t, -52) = ((int32_t)((uint32_t)((int32_t)AT(int32_t, -52)) + (uint32_t)(1)));
@@ -1721,6 +1712,10 @@ L1814:;
     AT(int16_t, -122) = ((int32_t)AT(int16_t, -52));
     AT(int32_t, -44) = (RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 248));
     r0 = reloq_call_dede61_valid_f0_posn(state, (int32_t)(FIELD(0)), (int32_t)((int32_t)AT(int32_t, -44)), (int32_t)(RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 216)));
+    if (r0 && reloq61_german_question_time(state,
+        STATE(int32_t, w52), AT(int16_t, -146),
+        STATE(int16_t, s471), STATE(int32_t, f34),
+        &STATE(int32_t, f38))) r0=0;
     AT(int32_t, -52) = (r0);
     if (AT(int32_t, -52) == 0) goto L1894;
     goto L2168;

@@ -1,5 +1,9 @@
 # Eloquence C – Bedienungsanleitung
 
+## Version 1.1.0
+
+Der deutsche E-I-Gleitlaut ist auf Öffnung 85, Rücklage 45 und Weichheit 45 abgestimmt. Die deutsche Satz- und Lautplanung verbessert unter anderem Bindestrichwörter, Zahlwörter und Fragemelodie. In englischer Analyse werden bei „recosp“ der vollständige Stamm und bei „tzsche“ der Schlussvokal erhalten.
+
 ## Englische Uhrzeiten mit Sekunden
 
 Englische Uhrzeiten wie `13:28:25` behalten die normale Stunden-/Minutenlesung und ergänzen „and twenty five seconds“. Bei einer Sekunde steht der Singular; Sekundenbruchteile bleiben in der gewöhnlichen Zahlenlesung. Dies gilt für US- und britisches Englisch im nativen Kern, auch für NVDA und andere ECI-Programme. Quellindizes bleiben ihren ursprünglichen Textpositionen zugeordnet.
@@ -69,6 +73,8 @@ Wähle zuerst Eloquence C als aktive Sprachausgabe. Öffne dann **NVDA-Einstellu
 
 Mit **Gemeinschaftswörterbücher für die Aussprache verwenden** ergänzt du Deutsch und US-Englisch um Einträge aus [eigencrow/IBMTTSDictionaries](https://github.com/eigencrow/IBMTTSDictionaries). Die Option ist zunächst ausgeschaltet. **Wörterbücher jetzt aktualisieren** prüft den aktuellen Zweig `master`; eine neue vollständige Version wird im Hintergrund übernommen. Für diese Aktualisierung wird Internet benötigt.
 
+Unter **Wörterbuchquelle** kannst du zusätzlich **Alternative IBM-TTS-Wörterbücher** auswählen. Diese Quelle enthält derzeit US-englische und kastilisch-spanische Einträge, aber kein deutsches Wörterbuch. Beim ersten Gebrauch wird sie im Hintergrund heruntergeladen; eigene Dateien behalten Vorrang.
+
 Mit **Datei hinzufügen** kannst du eigene Dic-Dateien auswählen und ihnen Sprache und Wörterbuchtyp zuordnen. Die Dateien dürfen beliebig heißen und bleiben an ihrem bisherigen Ort. Spätere Dateien in der Liste haben Vorrang. **OK** oder **Übernehmen** speichert die Auswahl.
 
 Mit **Wörterbuchordner öffnen** erreichst du den vorhandenen Ordner `synthDrivers/reloqC/communityDictionaries` im Add-on. Dort liegen die mitgelieferten Dateien; dort werden auch Änderungen in einem Editor erkannt. Bei aktivierten Gemeinschaftswörterbüchern kannst du weitere Dateien mit dem Präfix aus der Sprachtabelle und einem dieser Namen ergänzen:
@@ -85,7 +91,7 @@ Unter **Add-on-Updates** prüft **Nach Add-on-Updates suchen** die veröffentlic
 
 ## Fehler melden
 
-ReLoq C 1.0.1 stellt die ursprünglichen S-Quellpegel wieder her und verbessert den Abbruch überholter Textanalyse. Weitere Klangabstimmungen für hohe Raten werden noch geprüft. NVDA kann Symbole verarbeiten, bevor der Text die Sprachausgabe erreicht; seine Symbolaussprache beeinflusst daher, welche Zeichen bei ReLoq ankommen. Technische Details stehen im [Arbeitsstand](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md).
+NVDA kann Symbole verarbeiten, bevor der Text die Sprachausgabe erreicht; seine Symbolaussprache beeinflusst daher, welche Zeichen bei ReLoq ankommen. Technische Details stehen im [Arbeitsstand](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md).
 
 Für eine [Fehlermeldung](https://github.com/hozosch/Reloq-C/issues) helfen ein kurzer Beispieltext, Sprache, Stimme, Version, Abtastrate und die Angabe, ob Wörterbücher eingeschaltet sind. Beschreibe auch, ob die Ausgabe abbricht, ein Wort falsch klingt oder NVDA selbst beendet wird.
 

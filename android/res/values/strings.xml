@@ -55,7 +55,7 @@
     <string name="move_dictionary_up">Move selected file earlier</string>
     <string name="move_dictionary_down">Move selected file later</string>
     <string name="reload_dictionaries">Reload selected files</string>
-    <string name="dictionary_help">Community and own Dic entries use the native dictionary stages. Choose the language and volume before adding a file. Files use Windows-1252 encoding. Later files override earlier entries. Changes are monitored when the document provider supplies change metadata; Reload selected files always rereads the sources. Network access is used only by the update button.</string>
+    <string name="dictionary_help">Community and own Dic entries use the native dictionary stages. Choose the language and volume before adding a file. Files use Windows-1252 encoding. Later files override earlier entries. Changes are monitored when the document provider supplies change metadata; Reload selected files always rereads the sources. The selected online source is downloaded when first needed or when updated. Activated dictionaries are copied to device-protected storage so they can be used after a restart before the first unlock.</string>
     <string name="dictionary_working">Preparing dictionaries</string>
     <string name="dictionary_ready">Dictionaries ready</string>
     <string name="dictionary_error">Dictionary update failed: %1$s</string>
@@ -77,4 +77,6 @@
     <string name="speed_help">Words per minute are approximate; the actual rate depends on the language, word lengths and pauses. Android normal speed uses a target of 190 words per minute.</string>
     <string name="abbreviation_dictionary">Use abbreviation dictionary</string>
     <string name="phrase_prediction">Phrase prediction</string>
+    <string name="dictionary_repository">Dictionary source</string>
+    <string-array name="dictionary_repositories"><item>IBM TTS Dictionaries</item><item>Alternative IBM TTS Dictionaries</item></string-array>
 </resources>

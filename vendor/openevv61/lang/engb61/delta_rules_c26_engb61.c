@@ -24,6 +24,7 @@
 #include "evv_arena.h"
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
+#include "reloq61_english_prefix.h"
 #include "reloq61_rule_calls_engb61.h"
 
 /* Where each global the rules touch lands in the state,
@@ -13091,6 +13092,7 @@ static int32_t evv_strip_nonlex_prefixes(void *state, const int32_t *args, int n
 /* strip_medial_prefix, from f61_45.obj */
 int32_t reloq_engb61_strip_medial_prefix(void *state, int32_t p0)
 {
+    if(reloq61_english_medial_needs_vowel(state))return 94;
     const int32_t reloq_machine_ref=
         EVV_AT(void *,p0)==state?p0:REG_REF(state);
     const int reloq_landing_mark=evv_land_mark();

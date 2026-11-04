@@ -14,6 +14,7 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_dede61.h"
+extern int reloq_dede61_skip_weak_postnuclear(void *);
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -3331,7 +3332,8 @@ L2338:;
     AT(int32_t, -24) = (r0);
 L2364:;
     AT(int32_t, -28) = ((int32_t)AT(int32_t, -4));
-    r0 = reloq_call_dede61_postnucl_high_tone(state, (int32_t)(FIELD(0)));
+    r0 = reloq_dede61_skip_weak_postnuclear(state) ? 0 :
+        reloq_call_dede61_postnucl_high_tone(state, (int32_t)(FIELD(0)));
     AT(int32_t, -24) = (r0);
     goto L2582;
 L2395:;

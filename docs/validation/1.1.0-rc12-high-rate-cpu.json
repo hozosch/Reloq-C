@@ -1,0 +1,95 @@
+{
+  "method": "Compare unchanged PCM and warmed CPU cost of high-rate filters.\n\nThe two ECI libraries are warmed and measured in alternating order with the\nsame voice and profile. Linux process CPU time excludes NVDA/device latency;\naudio and indices are compared in RAM and no audio files are written.",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.39",
+  "profile": 3,
+  "pcm_and_index_checks": 236,
+  "no_audio_files": true,
+  "timings": [
+    {
+      "language": "0x40000",
+      "hz": 16000,
+      "baseline_cpu_ms": 37.387172,
+      "candidate_cpu_ms": 26.891633,
+      "ratio": 0.7192743275688249
+    },
+    {
+      "language": "0x40000",
+      "hz": 22050,
+      "baseline_cpu_ms": 33.562439,
+      "candidate_cpu_ms": 24.556318,
+      "ratio": 0.7316607115472151
+    },
+    {
+      "language": "0x40000",
+      "hz": 32000,
+      "baseline_cpu_ms": 35.600853,
+      "candidate_cpu_ms": 25.967812,
+      "ratio": 0.7294154440625341
+    },
+    {
+      "language": "0x40000",
+      "hz": 48000,
+      "baseline_cpu_ms": 36.264908,
+      "candidate_cpu_ms": 26.998442,
+      "ratio": 0.7444784362888774
+    },
+    {
+      "language": "0x10000",
+      "hz": 16000,
+      "baseline_cpu_ms": 37.953072,
+      "candidate_cpu_ms": 28.771562,
+      "ratio": 0.7580825604841684
+    },
+    {
+      "language": "0x10000",
+      "hz": 22050,
+      "baseline_cpu_ms": 39.50277,
+      "candidate_cpu_ms": 31.280303,
+      "ratio": 0.7918508752677345
+    },
+    {
+      "language": "0x10000",
+      "hz": 32000,
+      "baseline_cpu_ms": 39.399928,
+      "candidate_cpu_ms": 29.439412,
+      "ratio": 0.7471945634012326
+    },
+    {
+      "language": "0x10000",
+      "hz": 48000,
+      "baseline_cpu_ms": 41.85476,
+      "candidate_cpu_ms": 30.93395,
+      "ratio": 0.7390784226214653
+    },
+    {
+      "language": "0x120000",
+      "hz": 16000,
+      "baseline_cpu_ms": 30.114614,
+      "candidate_cpu_ms": 23.432051,
+      "ratio": 0.7780956780651415
+    },
+    {
+      "language": "0x120000",
+      "hz": 22050,
+      "baseline_cpu_ms": 29.555014,
+      "candidate_cpu_ms": 23.328837,
+      "ratio": 0.789336015878727
+    },
+    {
+      "language": "0x120000",
+      "hz": 32000,
+      "baseline_cpu_ms": 28.436365,
+      "candidate_cpu_ms": 23.284192,
+      "ratio": 0.8188174543405953
+    },
+    {
+      "language": "0x120000",
+      "hz": 48000,
+      "baseline_cpu_ms": 28.50712,
+      "candidate_cpu_ms": 23.034661,
+      "ratio": 0.8080318530949461
+    }
+  ],
+  "baseline_sha256": "584f06469a5fde06ced9a188a7c5ea58cbae51360c443c2447469f1a7235907b",
+  "candidate_sha256": "956a35a49b83d343ef8f913ebffaf677c7c49a1d90b29b520ed050bbd3a4dca6"
+}

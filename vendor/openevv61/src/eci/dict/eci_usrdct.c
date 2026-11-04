@@ -66,8 +66,9 @@
 #define UD_WORD_MAX  0x80
 #define UD_XLAT_MAX  0x200
 
-/* How much of a word is kept for the undo. */
-#define UD_LAST_ROOM 0x50
+/* The undo must retain every supported Root/RLEX key, including the NUL.
+ * A shorter buffer silently omitted valid keys of 80..127 bytes. */
+#define UD_LAST_ROOM (UD_WORD_MAX+1)
 
 /* How many volumes the holder makes. */
 #define UD_VOLUMES 3
@@ -80,7 +81,7 @@ typedef struct UserDict {
                                Sized by eci_objects.h rather than by IBM's
                                twelve bytes, which is short by half where a
                                pointer is eight and wrote over `last'. */
-    char     last[UD_LAST_ROOM];  /* +0x11c, the word a lookup took out */
+    char     last[UD_LAST_ROOM];  /* the word a lookup took out */
     int32_t  unknown_16c;
 } UserDict;
 
@@ -111,6 +112,8 @@ typedef struct DictionarySet {
     int32_t               status;           /* +0x14 */
     UserDict             *words;           /* case-folded lexical Root entries */
     UserDict             *main_words;      /* exact-case Main pronunciations */
+    UserDict             *overlay_words;   /* owner-scoped supplemental Root entries */
+    UserDict             *last_lookup[UD_VOLUMES];
     LexicalView *lexical_view;
 } DictionarySet;
 
@@ -152,6 +155,10 @@ extern int   sync_in_stm(delta_state *d, int8_t f, int32_t at);
 extern int   del_two_point(delta_state *d, int8_t f, int32_t l, int32_t r);
 extern char *extract_string(delta_state *d, int8_t f, int32_t l, int32_t r,
                             char *out, int32_t max);
+extern int syncmark_equ(int32_t l,int32_t r);
+extern int is_token_next(delta_state *d,int8_t f,int32_t at);
+extern int32_t next_token(delta_state *d,int8_t f,int32_t at);
+extern int32_t sync_to_right(delta_state *d,int8_t f,int32_t at);
 extern int   insert_string(delta_state *d, int8_t f, int32_t at,
                            const char *s);
 extern int   non_unique_value(delta_state *d, int8_t f, int32_t fld,
@@ -508,13 +515,44 @@ THIS int32_t ud_findNext(UserDict *u, const char **word, const char **xlat)
 static _Thread_local uint64_t dictionary_hits;
 uint64_t reloq61_dictionary_hits(void){return dictionary_hits;}
 
+/* German's native lowercase rule changes each letter's name while retaining
+ * its original case field. Reconstruct the case only for the explicitly
+ * case-sensitive RLEX overlay; ordinary ECI Root dictionaries keep their
+ * native case-folded semantics. A lexical key contains single letters only. */
+static int overlay_key(delta_state *d,int8_t stream,int32_t l,int32_t r,
+                       const char *normal,char out[UD_LAST_ROOM])
+{
+    if(stream!=1)return 0;
+    size_t count=0,n=strlen(normal);
+    while(!syncmark_equ(l,r)) {
+        if(is_token_next(d,stream,l)) {
+            int32_t tok=next_token(d,stream,l);
+            if(!tok||count>=n)return 0;
+            void *fields=(unsigned char *)EVV_AT(void *,tok)+8;
+            unsigned cls=*(const unsigned char *)delta_record_field(&vstmtbl[stream],3,fields);
+            unsigned upper=*(const unsigned char *)delta_record_field(&vstmtbl[stream],1,fields);
+            unsigned char c=(unsigned char)normal[count];
+            if(cls!=1 || !((c>='a'&&c<='z')||(c>='A'&&c<='Z')||
+                c==0xc4||c==0xd6||c==0xdc||c==0xe4||c==0xf6||c==0xfc||c==0xdf))return 0;
+            if(upper==2 && ((c>='a'&&c<='z')||c==0xe4||c==0xf6||c==0xfc))c-=32;
+            out[count++]=(char)c;
+        }
+        int32_t next=sync_to_right(d,stream,l);
+        if(!next||next==l)return 0;
+        l=next;
+    }
+    if(count!=n)return 0;
+    out[count]=0;return 1;
+}
+
 /* Take the word between the two marks, look it up, and if it is there put
    the replacement in its place. What came out is kept for the undo. */
-THIS int32_t ud_lookupAndTranslate(UserDict *u, delta_state *d,
-                                   int32_t l, int32_t r)
+static int32_t lookup_and_translate(UserDict *u,delta_state *d,
+                                    int32_t l,int32_t r,int exact_case)
 {
     int8_t      stream = DL_STREAM(DT_LANG(d));
     const char *xlat;
+    char         key[UD_LAST_ROOM];
 
     if (u->hash == 0)
         return UD_NO_MEMORY;
@@ -527,7 +565,8 @@ THIS int32_t ud_lookupAndTranslate(UserDict *u, delta_state *d,
     if (!extract_string(d, stream, l, r, u->last, UD_LAST_ROOM))
         return UD_NO_SPINE;
 
-    xlat = hashLookupString(u->hash, u->last);
+    if(exact_case && !overlay_key(d,stream,l,r,u->last,key))return UD_NOT_FOUND;
+    xlat = hashLookupString(u->hash, exact_case?key:u->last);
     if (xlat == 0)
         return UD_NOT_FOUND;
     if(main_text_analyzed&&!strchr(xlat,'`')) {
@@ -542,6 +581,12 @@ THIS int32_t ud_lookupAndTranslate(UserDict *u, delta_state *d,
         return UD_NO_SPINE;
     ++dictionary_hits;
     return UD_OK;
+}
+
+THIS int32_t ud_lookupAndTranslate(UserDict *u, delta_state *d,
+                                   int32_t l, int32_t r)
+{
+    return lookup_and_translate(u,d,l,r,0);
 }
 
 /* Put back what the last lookup replaced. */
@@ -571,6 +616,8 @@ THIS int32_t ud_lookupUndo(UserDict *u, delta_state *d, int32_t l, int32_t r)
 static void ds_finish(DictionarySet *s)
 {
     s->main_words=NULL;
+    s->overlay_words=NULL;
+    memset(s->last_lookup,0,sizeof s->last_lookup);
     s->lexical_view=NULL;
     if (s->vol[0] != 0 && s->vol[1] != 0 && s->vol[2] != 0)
         s->status = UD_OK;
@@ -653,6 +700,7 @@ THIS void ds_dtor(DictionarySet *s)
     lexical_view_release(s->lexical_view);s->lexical_view=NULL;
     if(s->words){ud_dtor(s->words);cpp_delete(s->words);s->words=NULL;}
     if(s->main_words){ud_dtor(s->main_words);cpp_delete(s->main_words);s->main_words=NULL;}
+    if(s->overlay_words){ud_dtor(s->overlay_words);cpp_delete(s->overlay_words);s->overlay_words=NULL;}
     if (s->home && *s->home == s)
         *s->home = 0;
 }
@@ -793,7 +841,14 @@ int32_t callUserDictLookup(delta_state *d, const void *volume,
     if(v<0||v>=UD_VOLUMES)return 1;
     /* Main owns its native, exact-case normalization stage. Root lexical
      * records must never suppress a Main entry with the same spelling. */
-    return ud_lookupAndTranslate(active_volume(s,v),d,l->value,r->value)!=0;
+    UserDict *selected=active_volume(s,v);
+    int status=ud_lookupAndTranslate(selected,d,l->value,r->value);
+    if(status && v==1 && s->overlay_words) {
+        selected=s->overlay_words;
+        status=lookup_and_translate(selected,d,l->value,r->value,1);
+    }
+    s->last_lookup[v]=status?NULL:selected;
+    return status!=0;
 }
 
 int32_t callInsertLastDictString(delta_state *d, const void *volume,
@@ -806,7 +861,8 @@ int32_t callInsertLastDictString(delta_state *d, const void *volume,
 
     int v=*(const int16_t *)((const char *)volume+2);
     if(v<0||v>=UD_VOLUMES)return 1;
-    return ud_lookupUndo(active_volume(s,v),d,l->value,r->value)!=0;
+    UserDict *selected=s->last_lookup[v]?s->last_lookup[v]:active_volume(s,v);
+    return ud_lookupUndo(selected,d,l->value,r->value)!=0;
 }
 
 ALIAS("??0UserDict@@QAE@XZ", "ud_ctor");
@@ -856,26 +912,29 @@ ALIAS("?setCurrentUserDict@@YAHPAUDelta_This_Struct@@PAVDictionarySet@@@Z",
 /* The host opens UTF-8 paths through the platform API. Parsing, hashing and
  * application use the same native dictionary implementation as ECI volumes.
  * Read a final unterminated line too, and never accept a split long record. */
-int reloq61_dictionary_read(void *set,int volume,FILE *file,size_t bytes)
+int reloq61_dictionary_read_data(void *set,int volume,const unsigned char *data,size_t bytes)
 {
     DictionarySet *s=set;
-    if(!s||!file||volume<0||volume>=UD_VOLUMES||bytes>8u*1024u*1024u)return UD_NO_FILE;
+    if(!s||(!data&&bytes)||volume<0||volume>=UD_VOLUMES||bytes>8u*1024u*1024u)return UD_NO_FILE;
     UserDict *u=s->vol[volume];
     if(!u->hash&&!ud_buildHashTable(u,(uint32_t)(bytes/UD_BYTES_PER_ENTRY+1)))return UD_NO_MEMORY;
     const delta_language *previous=delta_lang_set(delta_lang_of(s->machine));
-    char line[UD_LINE_ROOM],word[UD_WORD_MAX+1],xlat[UD_XLAT_MAX+1];
-    int status=UD_OK;
-    while(fgets(line,sizeof line,file)) {
-        size_t n=strlen(line);
-        if(n&&line[n-1]!='\n'&&!feof(file)) {
-            int c=fgetc(file);
-            if(c!=EOF) {while(c!=EOF&&c!='\n')c=fgetc(file);continue;}
-        }
+    char line[UD_LINE_ROOM],word[UD_WORD_MAX+1],xlat[UD_XLAT_MAX+1];int status=UD_OK;
+    for(size_t at=0;at<bytes;) {
+        size_t begin=at;while(at<bytes&&data[at]!='\n')++at;if(at<bytes)++at;
+        size_t n=at-begin;if(n>=sizeof line)continue;
+        memcpy(line,data+begin,n);line[n]=0;
         if(ud_parseNextLine(u,s->machine,line,word,xlat)&&
            ud_addOneEntry(u,word,xlat)!=UD_OK){status=UD_NO_MEMORY;break;}
     }
-    if(ferror(file))status=UD_NO_FILE;
     delta_lang_set(previous);return status;
+}
+int reloq61_dictionary_read(void *set,int volume,FILE *file,size_t bytes)
+{
+    if(!file||bytes>8u*1024u*1024u)return UD_NO_FILE;
+    unsigned char *data=malloc(bytes+1);if(!data)return UD_NO_MEMORY;
+    if(fread(data,1,bytes,file)!=bytes||ferror(file)){free(data);return UD_NO_FILE;}
+    int status=reloq61_dictionary_read_data(set,volume,data,bytes);free(data);return status;
 }
 
 /* A reset may replace the machine while retaining the language/worker.
@@ -900,6 +959,39 @@ void reloq61_dictionary_detach(void *set,delta_state *d)
     for(int i=0;i<UD_VOLUMES;++i)if(s->vol[i])s->vol[i]->last[0]=0;
     if(s->words)s->words->last[0]=0;
     if(s->main_words)s->main_words->last[0]=0;
+    if(s->overlay_words)s->overlay_words->last[0]=0;
+    memset(s->last_lookup,0,sizeof s->last_lookup);
+}
+
+/* Supplemental pronunciations belong to the native Root stage. The
+ * immutable input is copied into an independent table, leaving public
+ * dictionary volumes and their retained snapshots untouched. */
+int reloq61_dictionary_set_overlay(void *set,const struct reloq_lexicon *view)
+{
+    DictionarySet *s=set;if(!s)return -1;
+    UserDict *next=NULL;
+    if(view&&view->override_count) {
+        void *memory=cpp_new(sizeof(UserDict));
+        next=memory?ud_ctor(memory):NULL;
+        if(!next||!ud_buildHashTable(next,UD_DEFAULT_BUCKETS))goto fail;
+        for(size_t i=0;i<view->override_count;++i) {
+            const struct reloq_lexicon_override *e=view->overrides+i;
+            if(!e->key_length||e->key_length>UD_WORD_MAX||!e->spr_length||e->spr_length>4096)goto fail;
+            char *owned_key=malloc(e->key_length+1),*owned_value=malloc(e->spr_length+1);
+            if(!owned_key||!owned_value){free(owned_key);free(owned_value);goto fail;}
+            memcpy(owned_key,e->key,e->key_length);owned_key[e->key_length]=0;
+            memcpy(owned_value,e->spr,e->spr_length);
+            owned_value[e->spr_length]=0;
+            if(!hashInsertString(next->hash,owned_key,owned_value)) {
+                free(owned_key);free(owned_value);goto fail;
+            }
+        }
+    }
+    UserDict *old=s->overlay_words;s->overlay_words=next;
+    memset(s->last_lookup,0,sizeof s->last_lookup);
+    if(old){ud_dtor(old);cpp_delete(old);}return 0;
+fail:
+    if(next){ud_dtor(next);cpp_delete(next);}return -1;
 }
 
 static int lexical_order(const void *a,const void *b)
@@ -936,6 +1028,12 @@ int reloq61_dictionary_contains_lexical(void *set,const unsigned char *key,size_
 {
     DictionarySet *s=set;
     return s&&s->lexical_view&&lexical_find(s->lexical_view,key,length)!=NULL;
+}
+const struct reloq_lexicon_override *reloq61_dictionary_find_lexical(
+    void *set,const unsigned char *key,size_t length)
+{
+    DictionarySet *s=set;
+    return s&&s->lexical_view?lexical_find(s->lexical_view,key,length):NULL;
 }
 const struct reloq_lexicon_resolver *reloq61_dictionary_resolver_data(void *set)
 {

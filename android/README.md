@@ -1,29 +1,39 @@
 # Android ARM64
 
 ReLoq C uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `1.0.0` targets ARM64 (`arm64-v8a`), Android 8/API 26
+add-on. Version `1.1.0` targets ARM64 (`arm64-v8a`), Android 8/API 26
 or later. Speech runs offline. Network access is used only when you explicitly update pronunciation dictionaries or check for an app update. Package downloads open in the browser.
 
 ## Install or update
 
-Release **1.0** is packaged as **1.0.0**. Install `reloq-c-android-arm64-1.0.0.apk` over the existing app.
+Install `reloq-c-android-arm64-1.1.0.apk` over the existing app.
 The package remains `org.reloq.tts.preview`, the preview signing certificate is
-unchanged, and versionCode increases to 1000000. Android can therefore
+unchanged, and versionCode increases to 11010000. Android can therefore
 update the existing app and retain its settings. Do not uninstall it first.
+The update checker in earlier 1.1.0-rc previews may not offer 1.1.0 because
+their version codes were unusually high. Install the 1.1.0 APK from GitHub
+Releases manually once; later update checks use the corrected ordering.
 
 Open **ReLoq C** to adjust its settings or read a test text. To use it
 with TalkBack or another client, open **Android speech settings** and choose
-**ReLoq C** as the preferred text-to-speech engine. All 14 language
-variants and eight named voice presets are available. Both Chinese scripts
-use the single Mandarin Chinese module; Japanese retains its existing analysis.
+**ReLoq C** as the preferred text-to-speech engine. All 15 language
+variants and eight named voice presets are available, including separate
+mainland and Taiwan Mandarin routes. Existing saved language indices retain
+their meaning; Taiwan Mandarin is appended to the catalogue.
 
 The speech engine and live settings have been confirmed in practical use.
 This APK retains its existing technical installation identity so test installations update in place.
 
+## Speech before the first unlock
+
+The TTS service is marked Direct Boot aware. While the device is locked after a reboot, it uses device-protected copies of speech settings and the active, merged dictionary volumes. The source files and their original paths remain in credential-protected storage. Dictionary changes, including removal, refresh the device-protected copy; in-progress speech retains its snapshot until finished. An update receiver migrates existing settings and dictionaries; opening the settings once while unlocked also refreshes the copies. No boot or other additional permission is requested. Real-device testing before first unlock is still required. Play Protect decisions cannot be predicted from the manifest or signing checks alone.
+
 ## Voice and output settings
 
 The screen uses labelled standard Android checkboxes, sliders and lists, with
-English and German UI text. Checkboxes, lists and sliders apply and save changes
+UI text in English, German, Brazilian Portuguese, Spanish, French, Italian,
+Finnish, Greek, simplified and traditional Chinese, Japanese and Korean.
+Checkboxes, lists and sliders apply and save changes
 immediately; there is no Save settings button. The next synthesis request uses
 the new values. Speech already submitted keeps its request settings. **Read test
 text** starts a speech sample, and **Stop** interrupts it.
@@ -149,7 +159,7 @@ storage/alignment, signatures and ZIP alignment are checked during the build.
 
 ## Validation
 
-Host tests exercise 112 voice identifiers, locale routing, streaming order,
+Host tests exercise 120 voice identifiers, locale routing, streaming order,
 backpressure and cancellation. The settings test covers speed inversion,
 physical pitch scaling, manual overrides, preset separation, preference
 migration and dictionary byte/case/priority handling. A three-passage native
@@ -162,7 +172,7 @@ python3 android/test_settings.py --java-home "$JAVA_HOME" \
 python3 android/test_native_transport.py --java-home "$JAVA_HOME"
 ```
 
-The JNI test compares 35 actual native PCM hashes/lengths with direct C calls:
+The JNI test compares actual native PCM hashes/lengths with direct C calls:
 all language variants, all US presets, mixed UTF-8, cancellation, stale-stop
 isolation, customized female anatomy, 48 kHz, tags and dictionary switches.
 PCM remains in RAM; no audio files are written. These are host transport tests,
@@ -173,7 +183,7 @@ The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 ```sh
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
-python3 android/verify_apk.py dist/reloq-c-android-arm64-1.0.0.apk
+python3 android/verify_apk.py dist/reloq-c-android-arm64-1.1.0.apk
 ```
 
 Build verification checks signatures, the install-critical resource table,

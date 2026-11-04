@@ -1077,6 +1077,9 @@ static int32_t evv_eightkHz_filter(void *state, const int32_t *args, int nargs)
     return reloq_dede61_eightkHz_filter(state, nargs>0?args[0]:0, nargs>1?args[1]:0, nargs>2?args[2]:0);
 }
 
+/* Keep the native accent and timing; raise only question phrase endings. */
+extern void reloq61_german_question_tones(void *, int32_t, int16_t, int16_t,
+    int16_t *, int16_t *, int16_t *);
 /* init_phrase_inton_vars, from f61_08.obj */
 int32_t reloq_dede61_init_phrase_inton_vars(void *state, int32_t p0)
 {
@@ -1122,6 +1125,9 @@ int32_t reloq_dede61_init_phrase_inton_vars(void *state, int32_t p0)
     r0 = reloq_call_dede61_estimate_nsylls(state, (int32_t)(FIELD(0)), (int32_t)(STATE_AT(w52, -4)), (int32_t)(RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 192)), (int32_t)(STATE_AT(s492, -2)));
     r0 = reloq_call_dede61_init_voice_vars(state, (int32_t)(FIELD(0)));
     r0 = reloq_call_dede61_init_nuclwrd_vars(state, (int32_t)(FIELD(0)));
+    reloq61_german_question_tones(state, STATE(int32_t, w52),
+        STATE(int16_t, s281), STATE(int16_t, s282), &STATE(int16_t, s272), &STATE(int16_t, s273),
+        &STATE(int16_t, s274));
     if ((int16_t)(STATE(int16_t, s113)) == (int16_t)(STATE(int16_t, s272))) goto L240;
     goto L287;
 L240:;

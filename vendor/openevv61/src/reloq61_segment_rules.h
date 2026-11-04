@@ -14,10 +14,17 @@ struct reloq61_segment_layout {
 };
 int32_t reloq61_segment_point(void *,int32_t,int32_t,int32_t,int32_t,int32_t);
 int32_t reloq61_segment_voicing(void *,const struct reloq61_segment_layout *,int32_t,int32_t,int32_t,int32_t,int32_t);
+typedef int (*reloq61_voicing_intercept)(void *,int16_t,int16_t,int32_t,int32_t);
+int32_t reloq61_segment_voicing_custom(void *,const struct reloq61_segment_layout *,
+    int32_t,int32_t,int32_t,int32_t,int32_t,int,reloq61_voicing_intercept);
+int32_t reloq61_segment_voicing_gain(void *,const struct reloq61_segment_layout *,int32_t,int32_t,int32_t,int32_t,int32_t,int);
 int32_t reloq61_segment_frication(void *,const struct reloq61_segment_layout *,int32_t,int32_t,int32_t,int32_t,int32_t);
 int32_t reloq61_segment_frication_gain(void *,const struct reloq61_segment_layout *,int32_t,int32_t,int32_t,int32_t,int32_t,int);
+int32_t reloq61_segment_frication_gain_default(void *,const struct reloq61_segment_layout *,int32_t,int32_t,int32_t,int32_t,int32_t,int,int);
 int32_t reloq61_segment_nasal_zero(void *,const struct reloq61_segment_layout *,reloq61_endpoint_filter,int32_t,int32_t,int32_t,int32_t,int32_t);
 int32_t reloq61_segment_nasal_pole(void *,const struct reloq61_segment_layout *,reloq61_endpoint_filter,int32_t,int32_t,int32_t,int32_t,int32_t);
 int32_t reloq61_segment_speed(void *,const struct reloq61_segment_layout *,int32_t,int32_t);
 int32_t reloq61_segment_duration(void *,const struct reloq61_segment_layout *,int32_t,int32_t,int32_t,int32_t);
+int32_t reloq61_segment_duration_with(void *,const struct reloq61_segment_layout *,int32_t,int32_t,int32_t,int32_t,
+    int32_t (*)(void *,int16_t,int32_t));
 #endif

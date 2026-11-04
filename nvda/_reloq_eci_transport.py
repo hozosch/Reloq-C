@@ -16,9 +16,9 @@ import time
 from typing import Callable, Protocol, Sequence
 
 if __package__:
-    from ._reloq_eci_direct import EciIndex, EciPitch, EciLanguage, EciText, SAMPLE_RATE, SAMPLE_RATES, PAUSE_MODE
+    from ._reloq_eci_direct import EciIndex, EciPitch, EciProsody, EciLanguage, EciText, SAMPLE_RATE, SAMPLE_RATES, PAUSE_MODE
 else:  # Standalone development tests run from this directory.
-    from _reloq_eci_direct import EciIndex, EciPitch, EciLanguage, EciText, SAMPLE_RATE, SAMPLE_RATES, PAUSE_MODE
+    from _reloq_eci_direct import EciIndex, EciPitch, EciProsody, EciLanguage, EciText, SAMPLE_RATE, SAMPLE_RATES, PAUSE_MODE
 
 
 _log = logging.getLogger(__name__)
@@ -49,6 +49,7 @@ class _Job:
     generation: int
     parts: tuple[str | EciIndex | EciPitch | EciLanguage, ...]
     finish_sequence: bool
+    queued_at: float = field(default_factory=time.monotonic)
 
 
 @dataclass(frozen=True)
@@ -93,6 +94,8 @@ class _PlaybackBatch:
     generation: int
     pending: int = 0
     error: Exception | None = None
+    first_feed_started: float | None = None
+    characters: int = 0
 
 
 @dataclass(frozen=True)
@@ -261,8 +264,8 @@ class EciTextTransport:
     def submit(self, parts: Sequence[str | EciIndex | EciPitch | EciLanguage], *,
                finish_sequence: bool = True) -> int:
         snapshot = tuple(parts)
-        if not all(isinstance(item, (str, EciIndex, EciPitch, EciLanguage, EciText)) for item in snapshot):
-            raise TypeError("expected text, index, pitch or language parts")
+        if not all(isinstance(item, (str, EciIndex, EciPitch, EciProsody, EciLanguage, EciText)) for item in snapshot):
+            raise TypeError("expected text, index, prosody or language parts")
         with self._condition:
             if self._closed:
                 raise RuntimeError("transport has shut down")
@@ -527,6 +530,10 @@ class EciTextTransport:
             try:
                 self._player_call(generation, "feed", lambda: self._player.feed(
                     pcm, onDone=lambda: self._mark_played(generation, serial)))
+                if batch.first_feed_started is not None:
+                    _log.info("Eloquence C first WavePlayer feed: %.1f ms from submit, characters=%d",
+                        (time.monotonic() - batch.first_feed_started) * 1000, batch.characters)
+                    batch.first_feed_started = None
             except Exception:
                 self._discard_queued_audio(generation)
                 raise
@@ -541,6 +548,9 @@ class EciTextTransport:
             return
         pending = bytearray()
         batch = _PlaybackBatch(job.generation)
+        batch.characters = sum(len(p.text) if isinstance(p, EciText) else len(p) if isinstance(p, str) else 0 for p in job.parts)
+        if batch.characters >= 1024:
+            batch.first_feed_started = job.queued_at
         first_sent = False
         startup_indices = deque()
 

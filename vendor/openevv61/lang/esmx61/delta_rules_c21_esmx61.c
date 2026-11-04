@@ -2295,6 +2295,11 @@ static int32_t evv_end_of_word(void *state, const int32_t *args, int nargs)
 /* convert_numbers, from f61_19.obj */
 int32_t reloq_esmx61_convert_numbers(void *state, int32_t p0, int32_t p1, int32_t p2)
 {
+    /* A previous conversion can exhaust the range before the surrounding
+     * ordinal rule calls us again. Nothing remains to convert. */
+    if (p1 && p2 && EVV_AT(const delta_loc *, p1)->value ==
+                    EVV_AT(const delta_loc *, p2)->value)
+        return 0;
     const int32_t reloq_machine_ref=
         EVV_AT(void *,p0)==state?p0:REG_REF(state);
     const int reloq_landing_mark=evv_land_mark();

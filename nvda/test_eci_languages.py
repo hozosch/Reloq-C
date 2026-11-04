@@ -8,7 +8,7 @@ import tempfile
 import threading
 import time
 
-from _reloq_eci_direct import DirectEciEngine, EciIndex, EciPitch, EciLanguage
+from _reloq_eci_direct import DirectEciEngine, EciIndex, EciPitch, EciProsody, EciLanguage
 from _reloq_eci_direct import NATIVE_PITCH, NATIVE_SPEED, NATIVE_VOLUME, NATIVE_INFLECTION, PAUSE_MODE, PROCESS_TAGS, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER
 from _reloq_languages import GERMAN, LanguageEngine, language_for
 from _reloq_eci_transport import EciTextTransport
@@ -93,6 +93,14 @@ def routing():
     else:
         raise AssertionError("unsupported language accepted")
     assert len(Native.calls) == 4
+    temporary = (EciProsody(6, 75), EciProsody(7, 40))
+    assert engine.speak([*temporary, "eins", EciLanguage(ENGLISH.id, "1"),
+        "two", EciProsody(7, 100), EciLanguage(GERMAN.id, "1"), "drei"],
+        lambda b: None, indices.append)
+    assert Native.calls[-2][1] == (*temporary, "two", EciProsody(7, 100))
+    assert Native.calls[-1][1] == (temporary[0], EciProsody(7, 100), "drei")
+    assert engine.speak(["normal"], lambda b: None, indices.append)
+    assert Native.calls[-1][1] == ("normal",)
     engine.close()
     assert all(n.closed for n in Native.instances)
 

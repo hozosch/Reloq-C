@@ -19,11 +19,15 @@ public final class SettingsTest {
                     return Proxy.newProxyInstance(SettingsTest.class.getClassLoader(),
                         new Class<?>[]{SharedPreferences.Editor.class},(editor,operation,items) -> {
                             String op=operation.getName();
+                            if(op.equals("clear")){pending.clear();pending.put("__clear__",true);return editor;}
                             if(op.startsWith("put")){pending.put((String)items[0],items[1]);return editor;}
-                            if(op.equals("apply")||op.equals("commit")){values.putAll(pending);return op.equals("commit")?true:null;}
+                            if(op.equals("apply")||op.equals("commit")){
+                                if(pending.remove("__clear__")!=null)values.clear();
+                                values.putAll(pending);return op.equals("commit")?true:null;}
                             throw new AssertionError(op);
                         });
                 }
+                if(name.equals("getAll"))return new HashMap<>(values);
                 if(name.startsWith("get"))return values.getOrDefault((String)args[0],args[1]);
                 throw new AssertionError(name);
             });
@@ -72,6 +76,26 @@ public final class SettingsTest {
         require(migrated.rate==6&&migrated.pauses==2&&migrated.androidRate&&migrated.androidPitch);
         require(migrated.controls(100,100)[2]==93&&migrated.manualWpm==190);
 
+        // A direct-boot copy includes every voice control but never private
+        // dictionary paths, imported text, or update credentials/metadata.
+        Map<String,Object> privateData=new HashMap<>();
+        privateData.put("profile",5);privateData.put("language",1);privateData.put("androidVoice",false);
+        privateData.put("voice.5.pitch",48);privateData.put("voice.5.volume",71);
+        privateData.put("dictionarySnapshot","/private/dictionary");
+        privateData.put("dictionarySources","content://private/words");
+        privateData.put("communityCommit","secret");privateData.put("voice.99.pitch",33);
+        privateData.put("voice.5.private",55);privateData.put("rate","wrong type");
+        Map<String,Object> bootData=new HashMap<>();bootData.put("stalePrivate", "remove");
+        BootPreferences.mirror(memory(privateData),memory(bootData));
+        require(bootData.equals(Map.of("profile",5,"language",1,"androidVoice",false,
+            "voice.5.pitch",48,"voice.5.volume",71)));
+        VoiceSettings bootVoice=Preferences.read(memory(bootData),5);
+        require(bootVoice.manualPitch==48&&bootVoice.volume==71&&bootVoice.rate==1);
+        privateData.put("voice.5.pitch",52);privateData.remove("voice.5.volume");
+        BootPreferences.mirror(memory(privateData),memory(bootData));
+        require(bootData.get("voice.5.pitch").equals(52)&&!bootData.containsKey("voice.5.volume"));
+        require(privateData.containsKey("dictionarySources"));
+
         DictionaryData.Merger merge=new DictionaryData.Merger();
         merge.add("ENUmain.dic",data("  Word\tapple  \r\nword\tpear\nignored\naccent\t\u0080\u00fc\nphoneme\t`0h@l'oU\n"));
         merge.add("ENUmain.dic",data("Word\tbanana\n"));
@@ -82,6 +106,11 @@ public final class SettingsTest {
         require(Arrays.equals(result.get("ENUmain.dic"),data("Word\tbanana\naccent\t\u0080\u00fc\nphoneme\t`0h@l'oU\nword\tpear\n")));
         require(Arrays.equals(result.get("DEURoot.dic"),data("\u00e4pfel\tneu\n")));
         require(Arrays.equals(result.get("DEUmain.dic"),data("A\tein\na\tzwei\n")));
+        DictionaryData.Merger alternative=new DictionaryData.Merger();
+        alternative.addAlternative("ENUmain.dic","café\tcafé\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        alternative.add("ENUmain.dic",data("café\town\n"));
+        require(new String(alternative.finish().get("ENUmain.dic"),java.nio.charset.StandardCharsets.ISO_8859_1).contains("café\town"));
+        require(DictionaryData.ALTERNATIVE.length==3&&DictionaryData.ALTERNATIVE_REMOTE[0].equals("enumain.dic"));
         require(DictionaryData.name(0xa0000,1).equals("KORRoot.dic"));
         require(DictionaryData.blob(new byte[0]).equals("e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"));
         require(DictionaryData.hash("SHA-256",data("abc")).equals("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"));

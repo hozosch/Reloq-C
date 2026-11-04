@@ -4,12 +4,37 @@
 #include <commctrl.h>
 #include <shellapi.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <wchar.h>
 #include "ui.inc"
 enum {LANGUAGE=100,PROFILE,GENDER,RATE,PAUSES,PITCH,INFLECTION,HEAD,ROUGH,BREATH,
-      TAGS,ABBREVIATIONS,PREDICTION,DICTIONARIES,BOOST,DIRECTORY,OPEN_FOLDER,RESET,STATUS,SHARED};
+      TAGS,ABBREVIATIONS,PREDICTION,DICTIONARIES,BOOST,DIRECTORY,OPEN_FOLDER,RESET,STATUS,SHARED,
+      DICT_SOURCE,DICT_DOWNLOAD};
+#define DICTIONARY_DONE (WM_APP+31)
+struct dictionary_task {HWND window;HMODULE module;};
+static DWORD WINAPI dictionary_worker(void *parameter)
+{
+    struct dictionary_task *task=parameter;HWND window=task->window;HMODULE module=task->module;free(task);
+    HRESULT result=sapi_dictionary_download();
+    PostMessageW(window,DICTIONARY_DONE,(WPARAM)result,0);
+    InterlockedDecrement(&sapi_objects);FreeLibraryAndExitThread(module,0);
+    return 0;
+}
 struct dialog {struct sapi_settings s;int dialect,loading;BOOL shared;const struct sapi_ui *ui;};
 #define T(key) (d->ui->text[UI_##key])
+static void start_dictionary(HWND window,struct dialog *d)
+{
+    struct dictionary_task *task=malloc(sizeof *task);if(!task){SetDlgItemTextW(window,STATUS,T(DICT_FAILED));return;}
+    task->window=window;
+    if(!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,(LPCWSTR)(const void *)&dictionary_worker,&task->module)) {
+        free(task);SetDlgItemTextW(window,STATUS,T(DICT_FAILED));return;
+    }
+    InterlockedIncrement(&sapi_objects);
+    HANDLE thread=CreateThread(NULL,0,dictionary_worker,task,0,NULL);
+    if(!thread){InterlockedDecrement(&sapi_objects);FreeLibrary(task->module);free(task);SetDlgItemTextW(window,STATUS,T(DICT_FAILED));return;}
+    CloseHandle(thread);EnableWindow(GetDlgItem(window,DICT_SOURCE),FALSE);EnableWindow(GetDlgItem(window,DICT_DOWNLOAD),FALSE);
+    SetDlgItemTextW(window,STATUS,T(DICT_DOWNLOADING));
+}
 static int system_dialect(void)
 {
     WORD language=GetUserDefaultUILanguage();
@@ -46,6 +71,7 @@ static void populate(HWND window,struct dialog *d)
     SendDlgItemMessageW(window,GENDER,CB_SETCURSEL,d->s.gender,0);
     SendDlgItemMessageW(window,RATE,CB_SETCURSEL,d->s.rate,0);
     SendDlgItemMessageW(window,PAUSES,CB_SETCURSEL,d->s.pauses,0);
+    SendDlgItemMessageW(window,DICT_SOURCE,CB_SETCURSEL,sapi_dictionary_source(),0);
     const DWORD values[]={d->s.pitch,d->s.inflection,d->s.head,d->s.roughness,d->s.breathiness};
     for(int i=0;i<5;++i)SetDlgItemInt(window,PITCH+i,values[i],FALSE);
     const DWORD checks[]={d->s.tags,d->s.abbreviations,d->s.prediction,d->s.dictionaries,d->s.boost};
@@ -66,8 +92,8 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         SetWindowTextW(w,T(TITLE));
         RECT frame={0,0,620,690};AdjustWindowRectEx(&frame,(DWORD)GetWindowLongPtrW(w,GWL_STYLE),FALSE,0);
         SetWindowPos(w,NULL,0,0,frame.right-frame.left,frame.bottom-frame.top,SWP_NOMOVE|SWP_NOZORDER);
-        combo(w,LANGUAGE,T(LANGUAGE),12);combo(w,PROFILE,T(PROFILE),44);
-        combo(w,GENDER,T(MODEL),76);combo(w,RATE,T(RATE),108);combo(w,PAUSES,T(PAUSES),140);
+        combo(w,LANGUAGE,T(LANGUAGE),8);combo(w,PROFILE,T(PROFILE),38);
+        combo(w,GENDER,T(MODEL),68);combo(w,RATE,T(RATE),98);combo(w,PAUSES,T(PAUSES),128);
         for(size_t i=0;i<sapi_language_count();++i){WCHAR name[128];const struct sapi_language *language=sapi_language_at(i);
             if(!GetLocaleInfoW(language->lcid,LOCALE_SLOCALIZEDDISPLAYNAME,name,128))wcscpy(name,language->name);
             add(w,LANGUAGE,name);}
@@ -75,24 +101,31 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         add(w,GENDER,T(MALE));add(w,GENDER,T(FEMALE));
         for(unsigned i=0;i<7;++i){WCHAR text[32];swprintf(text,32,L"%d Hz",sapi_sample_rate(i));add(w,RATE,text);}
         add(w,PAUSES,T(NEVER));add(w,PAUSES,T(FINAL));add(w,PAUSES,T(ALWAYS));
-        check(w,SHARED,T(SHARED),174);
-        number(w,PITCH,T(PITCH),212);number(w,INFLECTION,T(INFLECTION),244);
-        number(w,HEAD,T(HEAD),276);number(w,ROUGH,T(ROUGH),308);number(w,BREATH,T(BREATH),340);
-        check(w,TAGS,T(TAGS),376);check(w,ABBREVIATIONS,T(ABBREVIATIONS),400);
-        check(w,PREDICTION,T(PREDICTION),424);check(w,DICTIONARIES,T(DICTIONARIES),448);check(w,BOOST,T(BOOST),472);
-        label(w,T(DIRECTORY),12,502,596);
-        control(w,L"EDIT",L"",WS_TABSTOP|ES_AUTOHSCROLL,DIRECTORY,12,528,440,24);
-        control(w,L"BUTTON",T(OPEN),WS_TABSTOP|BS_PUSHBUTTON,OPEN_FOLDER,462,528,146,24);
-        label(w,T(HINT),12,558,596);
-        control(w,L"STATIC",T(RATE_HINT),0,-1,12,582,596,36);
-        control(w,L"STATIC",L"",0,STATUS,12,620,596,24);
-        control(w,L"BUTTON",T(RESET),WS_TABSTOP|BS_PUSHBUTTON,RESET,12,650,360,28);
-        control(w,L"BUTTON",T(CLOSE),WS_TABSTOP|BS_DEFPUSHBUTTON,IDOK,498,650,110,28);
+        check(w,SHARED,T(SHARED),160);
+        number(w,PITCH,T(PITCH),188);number(w,INFLECTION,T(INFLECTION),215);
+        number(w,HEAD,T(HEAD),242);number(w,ROUGH,T(ROUGH),269);number(w,BREATH,T(BREATH),296);
+        check(w,TAGS,T(TAGS),326);check(w,ABBREVIATIONS,T(ABBREVIATIONS),350);
+        check(w,PREDICTION,T(PREDICTION),374);check(w,DICTIONARIES,T(DICTIONARIES),398);check(w,BOOST,T(BOOST),422);
+        combo(w,DICT_SOURCE,T(DICT_SOURCE),449);
+        add(w,DICT_SOURCE,T(DICT_COMMUNITY));add(w,DICT_SOURCE,T(DICT_ALTERNATIVE));
+        control(w,L"BUTTON",T(DICT_DOWNLOAD),WS_TABSTOP|BS_PUSHBUTTON,DICT_DOWNLOAD,210,479,398,24);
+        label(w,T(DIRECTORY),12,507,596);
+        control(w,L"EDIT",L"",WS_TABSTOP|ES_AUTOHSCROLL,DIRECTORY,12,532,440,24);
+        control(w,L"BUTTON",T(OPEN),WS_TABSTOP|BS_PUSHBUTTON,OPEN_FOLDER,462,532,146,24);
+        label(w,T(DICT_OVERRIDE),12,559,596);
+        control(w,L"STATIC",T(RATE_HINT),0,-1,12,583,596,36);
+        control(w,L"STATIC",L"",0,STATUS,12,621,596,24);
+        control(w,L"BUTTON",T(RESET),WS_TABSTOP|BS_PUSHBUTTON,RESET,12,653,360,28);
+        control(w,L"BUTTON",T(CLOSE),WS_TABSTOP|BS_DEFPUSHBUTTON,IDOK,498,653,110,28);
         populate(w,d);SetDlgItemTextW(w,STATUS,T(ACTIVE));
         SetFocus(GetDlgItem(w,LANGUAGE));return FALSE;
     }
     if(!d)return FALSE;
     if(message==WM_CLOSE){EndDialog(w,IDOK);return TRUE;}
+    if(message==DICTIONARY_DONE){
+        EnableWindow(GetDlgItem(w,DICT_SOURCE),TRUE);EnableWindow(GetDlgItem(w,DICT_DOWNLOAD),TRUE);
+        populate(w,d);SetDlgItemTextW(w,STATUS,FAILED((HRESULT)wp)?T(DICT_FAILED):T(ACTIVE));return TRUE;
+    }
     if(message!=WM_COMMAND)return FALSE;
     int id=LOWORD(wp),notification=HIWORD(wp);
     if(id==IDOK||id==IDCANCEL){EndDialog(w,id);return TRUE;}
@@ -101,8 +134,15 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         const struct sapi_language *language=sapi_language_at((size_t)i);if(!language)return TRUE;
         d->dialect=language->dialect;HRESULT hr=sapi_settings_read(d->dialect,&d->s);
         if(FAILED(hr))sapi_settings_default(&d->s);populate(w,d);return TRUE;}
+    if(id==DICT_SOURCE&&notification==CBN_SELCHANGE){
+        DWORD choice=(DWORD)SendDlgItemMessageW(w,id,CB_GETCURSEL,0,0);
+        if(choice==1&&!sapi_alternative_dictionary_available())start_dictionary(w,d);
+        else {HRESULT result=sapi_dictionary_choose(choice);populate(w,d);SetDlgItemTextW(w,STATUS,FAILED(result)?T(ERROR):T(ACTIVE));}
+        return TRUE;
+    }
+    if(id==DICT_DOWNLOAD&&notification==BN_CLICKED){start_dictionary(w,d);return TRUE;}
     if(id==OPEN_FOLDER){WCHAR path[2048];
-        if(d->s.directory[0])wcscpy(path,d->s.directory);else if(!sapi_module_path(path,2048,L"dictionaries"))return TRUE;
+        if(d->s.directory[0])wcscpy(path,d->s.directory);else if(!sapi_default_dictionary_path(path,2048))return TRUE;
         ShellExecuteW(w,L"open",path,NULL,NULL,SW_SHOWNORMAL);return TRUE;}
     if(id==SHARED&&notification==BN_CLICKED){
         HRESULT hr=sapi_settings_set_shared(d->dialect,IsDlgButtonChecked(w,SHARED)==BST_CHECKED);

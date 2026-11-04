@@ -908,8 +908,18 @@ int32_t reloq_engb61_generate_durations(void *state, int32_t p0)
     r0 = reloq_call_engb61_insert_transitions(state, (int32_t)(FIELD(0)));
     r0 = reloq_call_engb61_insert_pause_durs(state, (int32_t)(FIELD(0)));
     r0 = reloq_call_engb61_find_nucleus(state, (int32_t)(FIELD(0)));
+    /* Anchor pitch after the phones so acoustic planning keeps the entire
+     * vowel-free syllable in the consonant path. */
+    int no_nucleus = !STATE(int32_t, w26) || !STATE(int32_t, w27);
+    if (no_nucleus) {
+        STATE(int32_t, w26) = STATE(int32_t, w25);
+        STATE(int32_t, w27) = STATE(int32_t, w25);
+    }
     r0 = reloq_call_engb61_find_acoustic_nuc(state, (int32_t)(FIELD(0)));
-    r0 = reloq_call_engb61_assign_phone_durs(state, (int32_t)(FIELD(0)));
+    if (no_nucleus)
+        r0 = reloq_call_engb61_assign_cons_durs(state, (int32_t)(FIELD(0)), (int32_t)(STATE_AT(w24, -4)), (int32_t)(STATE_AT(w25, -4)));
+    else
+        r0 = reloq_call_engb61_assign_phone_durs(state, (int32_t)(FIELD(0)));
     r0 = reloq_call_engb61_set_syll_offset_vals(state, (int32_t)(FIELD(0)));
     goto L187;
 L168:;

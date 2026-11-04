@@ -1,0 +1,249 @@
+name: NVDA high-rate hearing preview
+on:
+  push:
+    branches: [codex/followup102, codex/body-a-classic-consonants102, codex/classic-presence104, codex/eci-compat106, codex/voice-stability107, codex/german-tag-context108, codex/eci-contract109, codex/eci-voice110, codex/release110]
+    paths-ignore: [tools/observe_syn_times.py, .github/workflows/syn-reference.yml]
+  workflow_dispatch:
+    inputs:
+      native_run_id:
+        description: Existing native artifact run to verify without recompiling
+        required: false
+        default: ''
+        type: string
+  workflow_call:
+    inputs:
+      native_run_id:
+        required: false
+        default: ''
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  native:
+    if: ${{ inputs.native_run_id == '' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify dictionary master access before building
+        env:
+          RELOQ_BUILD_GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 addon/test_build_dictionary_auth.py
+          python3 -c "import sys; sys.path.insert(0, 'addon'); from build_synth import refresh_community_dictionaries; refresh_community_dictionaries()"
+      - name: Install native compiler and translation tools
+        run: |
+          set -euo pipefail
+          sudo apt-get -o Acquire::Retries=2 update -qq
+          sudo apt-get -o Acquire::Retries=2 install -y --no-install-recommends gcc-mingw-w64-x86-64-posix gettext
+      - uses: actions/cache/restore@v4
+        id: rules
+        with:
+          path: vendor/openevv61/build
+          key: nvda-hearing-ubuntu24-v1-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c') }}
+          restore-keys: |
+            nvda-hearing-ubuntu24-v1-fbdff5bd5be417c09a34b4d23fd6eb4ef085db0259e97190ba89573cbf48ff90
+      - name: Restore rule cache and rebuild changed dependencies
+        if: steps.rules.outputs.cache-matched-key != ''
+        run: |
+          set -euo pipefail
+          find vendor/openevv61/build -type f -exec touch {} +
+          if [[ '${{ steps.rules.outputs.cache-hit }}' != 'true' ]]; then
+            # This is the rc15 provider cache. Make its unchanged files newer
+            # than checkout, then mark every changed dependency newer still.
+            # The generated .d files rebuild all affected objects, including
+            # translation units that include a changed header or .inc file.
+            sleep 1
+            git diff --name-only -z 74a56f546cba329480adbe4c23e0fb4523a18977 HEAD -- vendor/openevv61 include src/reloq_voice_filter.c src/reloq_orthography.c src/reloq_german_word_edges.c src/reloq_english_word_edges.c | xargs -0 -r touch --
+          fi
+      - name: Build x64 native core
+        run: make -C eci -j2 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
+      - uses: actions/cache/save@v4
+        if: steps.rules.outputs.cache-hit != 'true'
+        with:
+          path: vendor/openevv61/build
+          key: ${{ steps.rules.outputs.cache-primary-key }}
+      - name: Build native rule and DSP probes
+        run: make -C eci -j2 eci_native_rules_probe.exe eci_rate_dispatch_probe.exe eci_classic_source_probe.exe eci_converter_failure_probe.exe PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
+      - name: Check complete Classic consonant transfer
+        run: |
+          make -C eci test_reloq_rate_dispatch test_reloq_classic_noise test_reloq_classic_voice test_reloq_classic_frame test_reloq_classic_source test_reloq_session test_reloq_classic_body test_reloq_hearing_profiles
+          ./eci/test_reloq_rate_dispatch
+          ./eci/test_reloq_classic_noise
+          ./eci/test_reloq_classic_voice
+          ./eci/test_reloq_classic_frame
+          ./eci/test_reloq_classic_source
+          ./eci/test_reloq_session
+          ./eci/test_reloq_classic_body
+          ./eci/test_reloq_hearing_profiles
+          cc -O2 -std=c11 -Wall -Wextra -Werror -pedantic -ffp-contract=off -Iinclude tests/test_reloq_rate_cache_threads.c -pthread -lm -o /tmp/reloq-filter-cache-threads
+          /tmp/reloq-filter-cache-threads
+      - name: Check native clock projection and source maps
+        run: |
+          make -C eci test_reloq_english_clock test_reloq_english_clock_arena
+          ./eci/test_reloq_english_clock
+          ./eci/test_reloq_english_clock_arena
+          cc -O2 -std=c11 -Wall -Wextra -Werror -pedantic -Iinclude -Ivendor/openevv61/src tests/test_reloq_german_clock.c vendor/openevv61/src/reloq61_german_clock.c -o /tmp/reloq-german-clock
+          /tmp/reloq-german-clock
+      - name: Package development add-on with current dictionary master
+        env:
+          RELOQ_BUILD_GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 addon/test_build_dictionary_auth.py
+          python3 nvda/test_updates.py
+          python3 -m unittest discover -s nvda -p 'test_dictionar*.py'
+          python3 addon/build_synth.py
+          python3 addon/test_synth.py
+          python3 addon/test_synth.py de
+          python3 addon/test_speech_tags.py
+          python3 - <<'PY'
+          from pathlib import Path
+          import ast,configparser,hashlib,json,os,zipfile
+          files=list(Path('dist').glob('*.nvda-addon'))
+          assert len(files)==1
+          with zipfile.ZipFile(files[0]) as package:
+              assert package.testzip() is None
+              manifest=package.read('manifest.ini')
+              assert manifest == Path('addon/synth/manifest.ini').read_bytes()
+              config=configparser.ConfigParser(interpolation=None)
+              config.read_string('[addon]\n'+manifest.decode('utf-8'))
+              version=ast.literal_eval(config['addon']['version'])
+              for name in ('ReLoq-C-LICENSE.txt','ReLoq-C-NOTICE.txt','OpenEVV-LICENSE.txt','Dictionaries-CC0.txt'):
+                  assert package.read('doc/licenses/'+name)
+          Path('dist/source.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],
+              'package':files[0].name,'sha256':hashlib.sha256(files[0].read_bytes()).hexdigest(),
+              'version':version,'official_release':False,'high_rate_tuning':'C'},indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nvda-candidate-unvalidated
+          path: |
+            dist/*.nvda-addon
+            dist/source.json
+            eci/eci.dll
+            eci/eci_native_rules_probe.exe
+            eci/eci_rate_dispatch_probe.exe
+            eci/eci_classic_source_probe.exe
+            eci/eci_converter_failure_probe.exe
+          compression-level: 0
+          retention-days: 7
+  windows:
+    needs: native
+    if: ${{ !cancelled() && (needs.native.result == 'success' || inputs.native_run_id != '') }}
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-candidate-unvalidated
+          path: candidate
+          run-id: ${{ inputs.native_run_id || github.run_id }}
+          github-token: ${{ github.token }}
+      - name: Verify installed native behaviour without an audio device
+        shell: pwsh
+        run: |
+          $core = (Get-ChildItem candidate -Recurse -Filter eci.dll | Select-Object -First 1).FullName
+          $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
+          python addon/test_synth_native.py --library $core --addon $addon --output packaged-driver-native.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $rules = (Get-ChildItem candidate -Recurse -Filter eci_native_rules_probe.exe | Select-Object -First 1).FullName
+          & $rules
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $converter = (Get-ChildItem candidate -Recurse -Filter eci_converter_failure_probe.exe | Select-Object -First 1).FullName
+          & $converter
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $dsp = (Get-ChildItem candidate -Recurse -Filter eci_rate_dispatch_probe.exe | Select-Object -First 1).FullName
+          & $dsp
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_inline_queue.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_tag_boundaries.py --library $core --output tag-boundaries.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_tag_boundaries.py --library $core --language 0x40000
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_standard_api.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_crash_regressions.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_glide_tuning.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_extended_standard_api.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_contract_api.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_phonemes_pause.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $source = (Get-ChildItem candidate -Recurse -Filter eci_classic_source_probe.exe | Select-Object -First 1).FullName
+          & $source
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_tag_context.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_vocalic_r.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_word_joiners.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_urls.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_dictionary_semantics.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_overlay_case.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_overlay_lifecycle.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_numeric_native.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_clock_native.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_stem_native.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_phonetic_native.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_rc16.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_rc17.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_rc18.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_rc19.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_rc22.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_rc23.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_pause_modes_native.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_english_clock_seconds.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_streaming.py --library $core --output streaming.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_analysis_cancel.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_high_rate_profiles.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_castilian_filter.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_greek_filter.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_classic_voice_stability.py --library $core --profile 3
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Collect validated preview
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force validated | Out-Null
+          Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Copy-Item -Destination validated
+          Get-ChildItem candidate -Recurse -Filter source.json | Copy-Item -Destination validated
+          Copy-Item streaming*.json validated
+          Copy-Item packaged-driver-native.json validated
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nvda-german-streaming-test
+          path: validated/
+          compression-level: 0
+          retention-days: 14

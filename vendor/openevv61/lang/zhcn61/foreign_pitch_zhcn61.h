@@ -153,7 +153,12 @@ static int bank_host_pitch(delta_state *d,int32_t machine,struct reloq61_english
   }
   int32_t left=pitch_grid_point(&grid,sy->from),end=pitch_grid_point(&grid,sy->to);
   memcpy((char*)d+DG_BASE+248,&left,4);memcpy((char*)d+DG_BASE+256,&end,4);
-  if(reloq_zhcn61_init_syll_vars(d,machine)||reloq_zhcn61_find_nucleus(d,machine)||reloq_zhcn61_find_acoustic_nuc(d,machine)||reloq_zhcn61_set_syll_offset_vals(d,machine))goto done;
+  if(reloq_zhcn61_init_syll_vars(d,machine)||reloq_zhcn61_find_nucleus(d,machine))goto done;
+  /* English can supply a consonant-only syllable. Anchor its host tone to
+   * the syllable bounds as in the donor instead of dereferencing null. */
+  int32_t n1,n2;memcpy(&n1,(char*)d+DG_BASE+264,4);memcpy(&n2,(char*)d+DG_BASE+272,4);
+  if(!n1||!n2){memcpy((char*)d+DG_BASE+264,&left,4);memcpy((char*)d+DG_BASE+272,&end,4);}
+  if(reloq_zhcn61_find_acoustic_nuc(d,machine)||reloq_zhcn61_set_syll_offset_vals(d,machine))goto done;
   if(reloq_zhcn61_generate_tone(d,machine,EVV_REF((char*)d+DG_BASE+4020),EVV_REF((char*)d+DG_BASE+796)))goto done;
  }
  if(reloq61_english_bank_pitch(d,p,from,to)||pitch_keep_transitions(p))goto done;result=0;

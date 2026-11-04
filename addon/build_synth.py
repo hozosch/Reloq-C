@@ -4,12 +4,16 @@
 from __future__ import annotations
 
 import argparse
+import json
+import os
 from pathlib import Path
 import re
 import zipfile
 import shutil
 import tempfile
 import sys
+from urllib.parse import urlsplit
+from urllib.request import urlopen
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "nvda"))
 from _reloq_dictionaries import FILES as DICTIONARY_FILES, fetch_master, validate_snapshot
 
@@ -19,7 +23,7 @@ from build_translations import translation_entries
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "addon" / "synth"
-DEFAULT_OUTPUT = ROOT / "dist" / "reloq-c-synth-experimental-x64-1.0.1.nvda-addon"
+DEFAULT_OUTPUT = ROOT / "dist" / "reloq-c-synth-experimental-x64-1.1.0.nvda-addon"
 RLEX_HEADER = b"RELOQ-DE-SPR-1\n"
 HEX = re.compile(rb"[0-9A-F]+\Z")
 
@@ -64,11 +68,19 @@ def make_entries(dll_path: Path) -> dict[str, bytes]:
     dll = dll_path.read_bytes()
     assert_x64_pe(dll)
     entries = {}
+    revision = os.environ.get("GITHUB_SHA", "")
+    if re.fullmatch(r"[0-9a-f]{40}", revision):
+        entries["doc/source.json"] = (json.dumps({
+            "source_commit": revision,
+            "source_url": "https://github.com/hozosch/Reloq-C/tree/" + revision,
+            "build": "make -C eci windows-x64",
+        }, indent=2) + "\n").encode("utf-8")
     for name in (
         "manifest.ini",
         "doc/de/readme.html",
         "doc/en/readme.html",
         "synthDrivers/reloqC/__init__.py",
+        "synthDrivers/reloqC/_speech_tags.py",
         "globalPlugins/reloqCDictionaries/__init__.py",
     ):
         entries[name] = (SOURCE / name).read_bytes()
@@ -77,6 +89,9 @@ def make_entries(dll_path: Path) -> dict[str, bytes]:
                    "_reloq_languages.py", "_reloq_dictionaries.py", "_reloq_dictionary_manager.py",
                    "_reloq_updates.py"):
         entries[prefix + module] = (ROOT / "nvda" / module).read_bytes()
+    entries["doc/licenses/ReLoq-C-LICENSE.txt"] = (ROOT / "LICENSE").read_bytes()
+    entries["doc/licenses/ReLoq-C-NOTICE.txt"] = (ROOT / "NOTICE").read_bytes()
+    entries["doc/licenses/Dictionaries-CC0.txt"] = (ROOT / "data/community/LICENSE.md").read_bytes()
     entries["doc/licenses/Unicode-LICENSE.txt"] = (ROOT / "reference-apple/behavior-0.2.82/unicode-input/LICENSE.txt").read_bytes()
     entries["doc/licenses/SCOWL-Copyright.txt"] = (ROOT / "reference-apple/behavior-0.2.83/input/SCOWL-Copyright.txt").read_bytes()
     entries["doc/licenses/OpenEVV-LICENSE.txt"] = (ROOT / "vendor/openevv61/LICENSE").read_bytes()
@@ -89,6 +104,20 @@ def make_entries(dll_path: Path) -> dict[str, bytes]:
     if any(name.endswith((".so", ".syn", ".dylib")) for name in entries):
         raise ValueError("unexpected binary or language module")
     return entries
+
+
+def _build_dictionary_fetch(request, timeout):
+    """Authenticate only the build's GitHub API requests, not raw blobs.
+
+    Unredirected headers prevent a cross-host redirect from forwarding the
+    short-lived workflow token. Ordinary installed dictionary updates do not
+    use this build-only adapter.
+    """
+    token = os.environ.get("RELOQ_BUILD_GITHUB_TOKEN")
+    location = urlsplit(request.full_url)
+    if token and location.scheme == "https" and location.netloc == "api.github.com":
+        request.add_unredirected_header("Authorization", "Bearer " + token)
+    return urlopen(request, timeout=timeout)
 
 
 def refresh_community_dictionaries() -> None:
@@ -107,7 +136,10 @@ def refresh_community_dictionaries() -> None:
             cached.mkdir()
             for name in (*DICTIONARY_FILES, "manifest.json"):
                 shutil.copyfile(destination / name, cached / name)
-        snapshot = fetch_master(cache)
+        if os.environ.get("RELOQ_BUILD_GITHUB_TOKEN"):
+            snapshot = fetch_master(cache, fetch=_build_dictionary_fetch)
+        else:
+            snapshot = fetch_master(cache)
         destination.mkdir(parents=True, exist_ok=True)
         for name in (*DICTIONARY_FILES, "manifest.json"):
             shutil.copyfile(snapshot / name, destination / name)

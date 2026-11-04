@@ -23,7 +23,7 @@ final class Catalog {
             this.name=name; this.sample=sample;
         }
         String voice(int profile) { return locale.toLanguageTag()+"-"+PROFILES[profile]; }
-        @Override public String toString() { return name; }
+        @Override public String toString() { return locale.getDisplayName(Locale.getDefault()); }
     }
     static final Language[] LANGUAGES = {
         new Language(0x60000,"zh-CN","Mandarin Chinese","你好。This is a test."),
@@ -39,7 +39,9 @@ final class Catalog {
         new Language(0x80000,"ja-JP","Japanese","これは音声のテストです。Windowsとcomputer。"),
         new Language(0xa0000,"ko-KR","Korean","음성 테스트입니다. Windows computer."),
         new Language(0x70000,"pt-BR","Brazilian Portuguese","Este é um teste de voz."),
-        new Language(0x120000,"el-GR","Greek","Αυτή είναι μια δοκιμή ομιλίας.")
+        new Language(0x120000,"el-GR","Greek","Αυτή είναι μια δοκιμή ομιλίας."),
+        // Append to preserve the stored selection indices from earlier APKs.
+        new Language(0x60001,"zh-TW","Taiwanese Mandarin","你好。這是語音測試。This is a test.")
     };
     static Language find(String lang, String country) {
         if (lang == null || lang.isEmpty()) return null;

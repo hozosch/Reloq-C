@@ -1,3 +1,839 @@
+# Releasevorbereitung 1.1.0
+
+- Der bestätigte deutsche E-I-Gleitlaut verwendet Öffnung 85, Rücklage 45 und Weichheit 45. Die drei vorübergehenden NVDA-Regler sind entfernt; Einstellungen aus rc27 werden nicht mehr an den Sprachkern übertragen.
+- Die Android-Version verwendet einen größeren Versionscode, damit auch 1.1.0-rc27 ohne Deinstallation aktualisiert werden kann. Der Update-Prüfer älterer rc-Versionen zeigt 1.1.0 möglicherweise nicht an; die APK kann einmalig direkt von GitHub installiert werden.
+- Der Dateinamenfehler aus Issue #10 ist automatisch nachgestellt und korrigiert; die Bestätigung durch den ursprünglichen Melder nach Installation bleibt offen. Bei einem einzeln zitierten Wort können ECI-Positionsmarken weiterhin erst am Ende ausgegeben werden; das trat auch in rc26 auf.
+
+# Testkandidat 1.1.0-rc27: Weichheit des deutschen E-I-Gleitlauts
+
+- Der Gleitlaut in „drei“ verwendet im nativen Plan F3 2450 Hz, in „Homepage“ waren es bei den mittleren Reglern 2850 Hz. Ein neuer Weichheitsregler senkt F3 stufenweise um bis zu 400 Hz, unabhängig von Öffnung und F2. Er beginnt bei 50; mit 0 lässt sich der Klang von rc26 wiederherstellen. Ein Hörvergleich ist weiterhin nötig.
+- Die englische Morphologie darf bei einem bereits abgetrennten Präfix nicht den einzigen verbleibenden Vokal als weiteres Präfix verbrauchen: „recosp“, „uncosp“ und „noncosp“ behalten so den vollständigen Stamm. Eine T-Regel gibt einen alleinigen Schlussvokal wieder an die Lautplanung zurück, statt ihn mit einer Affrikate zu verschlucken, wie bei „tzsche“ und „ttzsche“. Ein Hörtest bleibt nötig.
+- Bei vorbereitenden Vergleichen mit 3013 englischen Wörtern mit möglichen Präfixen und 3016 Wörtern mit T änderte sich nur die Lautschrift der jeweils betroffenen Testformen. Das ist keine vollständige Sprachabdeckung.
+- Deutsche Bindestrichfälle: Bei „dane-ben“ und „dage-gen“ darf die da-Partikelregel nicht auf einen Bestandteil angewendet werden, dessen eigene Morphologie keinen da-Präfix enthält. So entsteht derselbe Betonungsablauf wie bei vergleichbaren Bindestrichwörtern. Ein vorläufiger Vergleich von 153 da-Zusammensetzungen änderte nur diese beiden Fälle.
+- Die Analyse darf einen inneren Schnitt nicht hinter das Ende des aktuellen Bestandteils setzen. Meldet die anschließende Zusammensetzungsanalyse Erfolg, ohne für den Bestandteil ein Morphem anzulegen, greift die gewöhnliche Stammbehandlung. Bei „audio-encoder“, „video-encoder“ und „macro-encoder“ werden dadurch beide Bestandteile mit derselben Betonungsstruktur wie bei „radio-encoder“ analysiert. Ein vorläufiger Vergleich von 1.667 Bindestrichwörtern änderte nur acht betroffene Formen. Klang und Betonung benötigen noch einen Hörvergleich.
+- PR 11 für den nativen Windows-Build ist gemergt und in den Teststand übernommen.
+
+# Testkandidat 1.1.0-rc26: Vokallose Silben und einstellbarer Gleitlaut
+
+- Die frühere Aussage für rc25 wird korrigiert: „tzsche“ erzeugte dort nur praktisch stumme Samples, und bei „recosp“ fehlte der S-Rauschanteil. Der Test hatte lediglich auf Daten ungleich Null geprüft. Ursache war die Einordnung der gesamten vokallosen Silbe als Vokalkern. Der gültige Tonhöhen-Anker liegt nun hinter der Silbe, damit die ursprüngliche Konsonantenplanung alle Laute behandelt. US- und britisches Englisch sowie der englische Pfad in Mandarin werden auf hörbaren Pegel und S-Rauschenergie geprüft; ein Hörtest bleibt notwendig.
+- Zwei NVDA-Regler im Einstellungsring erlauben die unabhängige Änderung der Öffnung und der Lage des deutschen E-I-Gleitlauts. 50/50 ist die rc25-Ausgangsstellung; andere Werte ändern nur diesen Kontext. Per-Instanz-ECI-Einstellungen werden während einer Synthese threadlokal gesetzt und anschließend wiederhergestellt. Deutsche Standardsignale wurden mit rc25 für beide Modelle und alle sieben Raten verglichen.
+- Für Issue #10 gibt es eine [Nachstellanleitung](ISSUE-10-REPRO.de.md) und ein Skript für lange Dateien. Ein Windows-Stresstest stellte den gemeldeten AddText-Fehler nach; zuvor schlug innerhalb von `eciSynthesize` ein Zugriff auf einen bereits freigegebenen Audioformat-Eintrag fehl. Ein erzwungener Konverterfehler reproduziert denselben Absturz. Die Formatverwaltung entfernt den Zeiger jetzt sofort und beendet die fehlgeschlagene Einrichtung, bevor erneut darauf zugegriffen wird. Tests erzwingen den Fehler und prüfen die Weiterarbeit zweier Handles; zusätzlich folgen 1.280 schnelle Dateinamenwechsel bei 11 und 48 kHz, Deutsch und US-Englisch. Die Bestätigung unter Windows steht noch aus.
+- Die rc25-Windows-DLL umfasst 54.848.512 Bytes. Ihr Code und die konstanten Sprachtabellen belegen den überwiegenden Teil; die alte deutsche Planerimplementierung wird in den produktiven Sprachpfad nicht mehr eingebunden. Ein experimenteller verlustfreier Blockkompressor für die lokalen Unicode-Namen spart nur etwa 1,37 MB Rohdaten und wurde wegen zusätzlicher Laufzeitkomplexität nicht für diesen Hörkandidaten übernommen. Ein deutlich kleineres Binärpaket ohne Funktionsverzicht ist bisher nicht nachgewiesen.
+
+# Testkandidat 1.1.0-rc25: Stumme und unvollständige Fälle
+
+- Die gemeinsame native Zeitplanung behandelt englische Silben ohne Vokalanker, unter anderem bei „tzsche“ und „recosp“, auch im chinesisch-englischen Pfad. Der nachfolgende Text wird mitgeprüft.
+- Französisches „quil“ erhält wie „kil“ einen Vokal und ein konsonantisches L; „quille“ behält seinen Gleitlaut. Die Regel gilt für beide französischen Varianten.
+- Spanische Beträge wie „€123 456.78“ lesen alle Tausendergruppen und Nachkommastellen. Sehr lange Zahlen mit „ª“ werden auch innerhalb eines Satzes wiedergegeben. Prüfungen vergleichen die vollständige Lautfolge mit äquivalenten Schreibweisen.
+- Die deutschen Anpassungen aus rc24 bleiben enthalten. Die Färbung von „Homepage“ und die S-Anregung bei „sm“/„sn“ benötigen weiterhin einen NVDA-Hörvergleich. Issue #10 zu schneller Dateinavigation bleibt offen, weil der gemeldete Fehler bisher nicht reproduziert wurde. Auch die verspäteten Wortmarken bei chinesisch-englischem und koreanischem Text sind weiter offen.
+
+# Testkandidat 1.1.0-rc24: Deutscher Gleitlaut und stille Wörter
+
+- Der J-Gleitlaut in „Homepage“ geht vom unveränderten nativen Eloquence-Pfad aus und wird behutsam nach hinten verschoben. Ein spektraler Vergleich mit der proprietären Original-DLL stützt den Ausgangspunkt; die neue Färbung bleibt ein Hörkandidat. Messbedingungen: [Originalvergleich](REFERENCE-ELOQUENCE-GLIDE.md).
+- Unbetontes E vor vokalischem R, wie in „Kann er“, verwendet die Formantfärbung des früheren ReLoq-Planers; die Regel berücksichtigt Text und Lautschrift.
+- Bei wortanfänglichem „sm“ und „sn“ soll das S wieder die Anregung des früheren ReLoq-Planers verwenden; Timing und Übergang bleiben im nativen Pfad. Die Klangwirkung benötigt einen Hörtest.
+- Die nativen Zeitmarken- und Bereichsprüfungen lassen mehrere bislang stumme Wörter sprechen, darunter „dane-ben“, „dage-gen“, „audio-encoder“, „video-encoder“, „macro-encoder“ und englisches „bad'hhesiron“. Regressionstests prüfen auch die Sprachausgabe nach diesen Wörtern.
+- Die Untersuchung der weiteren Fehlermuster aus Eloquence 64 ist noch nicht abgeschlossen: Französisches „quil.“, englisches „tzsche“, chinesisch-englisches „recosp“ und spanische Beträge wie „€123 456.78“ bleiben in diesen Sprachvarianten stumm oder unvollständig. Sie sind noch kein Release-fähiger Stand. Issue #10 zu schneller Dateinavigation ist bislang nicht reproduziert.
+
+# Testkandidat 1.1.0-rc23: Zahlwörter und weitere deutsche Aussprache
+
+- Bei 42 und 43 erhält der Übergang von „zwei“ beziehungsweise „drei“ zu „und“ wieder die Zeitpunkte des alten Planers; die verbindende Aussprache ohne Glottisschlag bleibt erhalten. Vor „achtzig“ wird der Glottisschlag in den zusammengesetzten Achtzigern wieder gesetzt.
+- Der J-Gleitlaut in „Homepage“ geht vom Ei-Gleitlaut aus und wird leicht in Richtung langes I verschoben. Die Klangwirkung benötigt einen Hörtest.
+- Die unbetonte Silbe in „veröffentlicht“ und seinen Beugungsformen entspricht „veröffentlichen“. Das unabhängige Wort „samt“ erhält stimmhaftes S; ausdrückliche Wörterbucheinträge haben weiterhin Vorrang.
+- Nutzerwörterbucheinträge in Bindestrichzusammensetzungen werden im nativen Pfad berücksichtigt. Der alte Satz- und Akustikplaner ist aus dem ausgelieferten ECI-Kern entfernt; sein Quelltext bleibt für Entwicklervergleiche erhalten.
+
+# Testkandidat 1.1.0-rc22: Deutsches R, finales A und Zahlübergänge
+
+- Die konsonantische R-Anregung folgt den unterschiedlichen Kontexten des alten Planers, unter anderem bei „herunter“ und an Wortgrenzen; „vierund“ behält den kontinuierlichen R-Verlauf. Die Wirkung benötigt einen Hörtest.
+- Das finale Text-A nach R wird auch bei „Kamera“ erkannt. Der J-Gleitlaut in „Homepage“ liegt als Hörtest zwischen dem Original und RC21.
+- Der Er-Laut nach langem Ö, wie in „höher“, erhält die Formanten des alten Planers. Bei vokalischem R nach langem Ö wird das Ende der gemeinsamen Stimmkurve behutsam abgesenkt.
+- „zweiund“ und „dreiund“ werden mit den alten Übergängen verglichen; Zahlwörter bleiben ohne den zuvor unerwünschten Glottisschlag. Lautschrift und Texteingabe sollen dieselbe Verbindung verwenden.
+- Der alte deutsche Satz- und Akustikplaner bleibt erhalten, bis die gewünschten Fälle vollständig übertragen und im Hörtest bestätigt sind. Android und SAPI5 werden vom Nutzer erst nach der deutschen Aussprache getestet.
+
+# Testkandidat 1.1.0-rc21: J-Gleitlaut und 32-Bit-Wortmarken
+
+- Der J-Gleitlaut nach E in derselben Silbe, wie in „Homepage“, verwendet die Formantziele des Ei-Lautes in „drei“. Text und entsprechende Lautschrift werden zusammen geprüft; der Klangeindruck bleibt im Hörtest zu beurteilen.
+- Eine falsche Aufrufkonvention bei 32-Bit-Wortmarken wurde korrigiert. Die plattformübergreifende Validierung läuft.
+- Bei Bindestrichzusammensetzungen bleibt die ursprüngliche Schreibweise für die Satzplanung erhalten, wenn die native Aussprache den Nutzerwörterbucheintrag bereits enthält. Muss ein Bestandteil nachträglich ersetzt werden und besteht die Zusammensetzung aus mehreren gesprochenen Teilen, wird nur dieser Bestandteil ersetzt. So bleiben in den geprüften Fällen der Eintrag und der Satzakzent erhalten, ohne den Bindestrich vorzulesen. Weitere gemeldete Fälle können zur genauen Nachstellung noch ein konkretes Beispiel erfordern.
+
+# Testkandidat 1.1.0-rc20: R-Anregung, US-Fragen und Wörterbuchquelle
+
+- Konsonantisches R verwendet wieder die zum Kontext passende Anregung des alten deutschen Pfades; vokalisches R bleibt unverändert.
+- US-amerikanische Fragen behalten eine ansteigende Endkontur, auch bei hoher Sprechgeschwindigkeit; null Betonung bleibt flach.
+- NVDA und Android bieten die alternative IBM-TTS-Wörterbuchquelle zusätzlich zur bisherigen Quelle an; eigene Einträge behalten Vorrang. Der erste Bezug erfolgt im Hintergrund.
+- SAPI5 bietet dieselbe Quelle mit Hintergrund-Download. Ein eigener SAPI-Wörterbuchordner hat Vorrang vor der ausgewählten Quelle.
+- Die alternative Quelle enthält derzeit US-englische und kastilisch-spanische Dateien, keine deutschen. Das ist ein unveröffentlichter Hörtestkandidat; es erfolgt keine automatische Veröffentlichung.
+- Der zusätzliche SAPI-/ECI-Vergleich meldet bei chinesisch-englischem Mischtext mit Wortmarken abweichendes Audio. Derselbe Befund besteht bereits mit RC19; die übrigen 13 verglichenen Sprachvarianten stimmten überein. Die Marke wird dort teilweise erst am Textende gemeldet. Das bleibt als eigener Fehler offen.
+
+# Testkandidat 1.1.0-rc19: Deutsches R, finales A, Fragekontur und Wörterbuch
+
+Die bestätigte Anregung am Wortanfang wird für konsonantisches R auch in
+anderen Wortpositionen verwendet. Das vokalische R behält seine Behandlung.
+Für finales A wird der Formantübergang an den früheren Planer angeglichen,
+unter anderem bei „Komma“. Die bewährte Auswahl am Satzende bleibt bestehen.
+Fragen verwenden einen tiefen Satzakzent und den Schlussanstieg des früheren
+deutschen Planers. Die Klangwirkung dieser Änderungen ist im NVDA-Hörtest zu
+beurteilen.
+
+Vollständige Bindestricheinträge im Stammwörterbuch haben vor Bestandteilen
+Vorrang. Ausspracheeinträge bleiben auch bei ausgeschaltetem
+Abkürzungswörterbuch und bei `da0` aktiv. Der Test durch den gepackten
+NVDA-Treiber verwendet eine ausgewählte eigene Dic-Datei.
+
+# Testkandidat 1.1.0-rc18: Deutsches R, finales A, Zahlwort, Wörterbuch und Satzmelodie
+
+Die Anregung des konsonantischen R wird mit dem früheren deutschen Planer
+abgeglichen: Das anlautende R erhält dessen mehrteilige Schwingung; „vierund“
+verwendet den dortigen kontinuierlichen Übergang. Am Satzende erhält das
+unbetonte Text-A die frühere Formantmischung, auch vor einem folgenden Satz;
+vor einem folgenden Wort bleibt die kurze Variante. Das N vor „und“ in
+„neunund“ wird an den früheren Zeitwert angeglichen.
+
+Wenn die native Analyse einen Wörterbucheintrag in einem Bindestrichwort nicht
+in der vollständigen Aussprache berücksichtigt, wird dieses einzelne
+Wort mit den vorhandenen Zusammensetzungsregeln aufgelöst. Der umgebende Satz
+bleibt in der nativen Analyse. Geklammerte Bindestrichwörter werden bei
+passenden typografischen Anführungszeichen wie bei geraden Anführungszeichen
+analysiert. Bei schwach betonten Verben nach dem Satzakzent entfällt in
+Aussagesätzen eine zusätzliche Anhebung der Satzmelodie. Verschiedene deutsche
+Fragetypen erhalten am Ende wieder eine steigende Kontur, auch vor passenden
+schließenden typografischen Anführungszeichen. Die Wirkung von R,
+A und Satzmelodie muss im NVDA-Hörvergleich beurteilt werden.
+
+# Testkandidat 1.1.0-rc17: R, N, A und deutsche Tonhöhe
+
+Die in rc16 ergänzten zusätzlichen Formantziele für konsonantisches R sind
+zurückgenommen; seine Schwingungsquelle wird für den Hörvergleich weicher
+abgestimmt, einschließlich des R in „vierund“. Der N-Anschluss in „siebenund“
+wird verkürzt. Die E-Formanten nach I werden an den früheren Pfad angenähert,
+unter anderem bei „Barriere“ und „wie eben“.
+
+Das unbetonte finale Text-A verwendet eine Mischung aus den nativen kurzen
+und den früheren langen Formantzielen. Sie gilt auch vor einem folgenden Satz
+nach Punkt, Frage- oder Ausrufezeichen; vor dem nächsten Wort im selben Satz
+bleibt die kurze Textvariante erhalten. Explizite Lautschrift behält ihre
+Vorgaben. Die Wirksamkeit bei Sonderfällen und die subjektive Klangwirkung
+müssen weiter im Hörvergleich geprüft werden.
+
+Die deutsche F0-Zielberechnung verwendet die breiten Zwischenrechnungen des
+englischen Pfades. Zuvor konnten bei hoher Tonhöhe und großer Satzmelodie
+Zwischenwerte überlaufen und die Kontur einbrechen lassen. Die Korrektur und
+die neuen Lautziele werden direkt an der nativen Planung geprüft.
+
+# Testkandidat 1.1.0-rc16: Deutsche Zahl- und Lautübergänge
+
+Der native deutsche Pfad liest die Zahlbestandteile „zweiund“, „dreiund“,
+„vierund“, „siebenund“ und „neunund“ ohne den zusätzlichen Glottisschlag;
+bei „vierund“ wird das R als Konsonant geformt. Die gewählte Behandlung bei
+„fünfund“, „sechsund“ und „achtund“ bleibt erhalten. Der Hörvergleich ist
+noch offen.
+
+Die Analyse korrigiert „Sprachauswahl“ und „Suchauswahl“ einschließlich ihrer
+geprüften Plurale. Eigene Main- und RLEX-Einträge behalten in den geprüften
+Fällen Vorrang. Lange O-Laute in geschlossenen -os-Silben behalten ihre Länge;
+„famos“ und „rigoros“ erhalten die Betonung des alten Pfades. Für erfasste
+Hauptwörter mit „Über-“ und „Unter-“ wird die bisherige Großschreibungs- und
+Betonungsregel wieder angewandt. Die Auswahl dieser Wortstämme deckt nicht
+notwendigerweise alle denkbaren Zusammensetzungen ab.
+
+Die native Lautplanung übernimmt weitere Formantziele für konsonantisches R,
+passt /pf/ vor einer folgenden Konsonantensilbe und /s/ nach /n/ vor /f/ an und
+verwendet für normales unbetontes A am Ende einer Äußerung den bisherigen
+helleren Vokalansatz. Die endgültige Klangwirkung kann nur ein Hörvergleich
+beurteilen. Der C-Klang und die Hochratenfilter wurden nicht neu abgestimmt.
+Ein ausdrücklich als kurzes A vorgegebener Lautschrifteintrag behält seine
+eigene Vorgabe; die End-A-Vorliebe gilt für normalen Text.
+
+# Testkandidat 1.1.0-rc15: Deutsche Lautplanung und Zahlen
+
+Die native deutsche Satz- und Lautplanung bleibt der Produktpfad. Die
+französische Nasalfärbung in „Chance“ und „Restaurant“, die R-Quelle, der
+R-Übergang nach langem ö und das reduzierte R nach langem ü oder o verwenden
+gezielte Werte aus dem vorherigen Komponisten. Ab 22 kHz erhält der deutsche
+labiodentale Reibelaut /f/ beziehungsweise /v/ eine Quellenanhebung; die
+C-Hochratenfilter bleiben unverändert. Die subjektive Färbung und der F-Pegel
+müssen im Hörvergleich geprüft werden.
+
+Die native Analyse korrigiert die Betonung und den Vokal im Wortstamm
+„konzentrier“. Uhrzeiten einschließlich Sekunden sowie Tausendergruppen mit
+mehreren oder geschützten Leerzeichen werden auf die native Zahlenanalyse
+abgebildet, mit Quellenabbildung für Indizes und Steuerungen. Bei expliziter
+deutscher Lautschrift wird die Vokallänge anhand der nativen Silbenstruktur
+an die Textanalyse angeglichen; kurze Vokale bleiben kurz. Automatische
+Tests vergleichen unter anderem Text mit erzeugter Lautschrift, Wörterbuch-
+Vorrang, Indizes und Kontrollwörter. Die Ergebnisse gelten für die geprüften
+Fälle und ersetzen keinen Hörtest.
+
+Eine breitere Stichprobe zeigt weiterhin Unterschiede zwischen Text und daraus
+erzeugter Lautschrift, unter anderem bei „obenan“ und „Ruin“. Der native
+Textpfad besitzt Wort- und Glottalgrenzen, die in der ausgegebenen Lautschrift
+nicht immer gleichermaßen erhalten sind. Die Gleichheit ist daher für die
+geprüften Beispiele verbessert, aber nicht für alle Wörter nachgewiesen.
+
+# Testkandidat 1.1.0-rc14: Gemeinsame deutsche Satzanalyse
+
+Deutsch nutzt standardmäßig die native Satzanalyse und Lautplanung wie die
+anderen Sprachen. Der bisherige deutsche Komponist ist ausschließlich über
+`RELOQ_DE_LEGACY=1` für Diagnosen erreichbar; eine fehlgeschlagene native
+Synthese wechselt nicht automatisch auf ihn. Der gemeinsame Pfad erhält die
+Nutzerwörterbücher einschließlich groß-/kleinschreibungssensitiver RLEX-Einträge
+und zusammengesetzter Wörter. Geldbeträge in gleichwertiger EUR-, Euro- und
+Eurozeichen-Schreibweise werden an die native Währungsregel übergeben.
+Pausenverkürzung und explizite Pausen bleiben getrennt.
+
+Der native Wortleser trennt sehr lange Einzelwörter nach 100 Buchstaben. Damit
+explizite RLEX-Ausspracheeinträge bis zur zulässigen Länge von 127 Zeichen
+erhalten bleiben, werden nur solche Einträge vor dieser Trennung an den
+nativen Satzpfad übergeben. Separat geladene RLEX-Einträge bleiben wie bisher
+auch dann aktiv, wenn der ECI-Wörterbuchschalter ausgeschaltet ist.
+
+Die bestätigte 2-dB-Absenkung der männlichen Stimme wird an den AF-Zielwerten
+für wortanfängliches /ts/ und /tsv/ angewandt. Weibliche Stimmen und interne
+/ts/ ohne folgendes /v/ bleiben dabei unverändert. Stimmwechsel-Tags wählen den
+Wert an der tatsächlichen Wortgrenze. Die C-Hochratenfilter und die
+kastilische/griechische S-/T-Begrenzung wurden nicht neu abgestimmt.
+
+Für „der Zahn“ stammt der Verlauf des vokalischen R aus der nativen
+Lautplanung. Im bisherigen Signalvergleich liegen die Energieverhältnisse bei
+1,4 und 1,6 kHz in mehreren Messfenstern näher an der originalen ECI-DLL als
+beim alten Komponisten. Das belegt keine passende subjektive Färbung: Der
+Hörvergleich in NVDA steht noch aus. Gleiches gilt für die übrige deutsche
+Aussprache und Satzmelodie nach dem Architekturwechsel.
+
+# Testkandidat 1.1.0-rc13: Fester C-Klang und deutsche Übergänge
+
+Die A-/B-/C-Auswahl im NVDA-Treiber ist entfernt; die bestätigte Abstimmung C
+gilt auch für ECI-Programme, die noch einen früheren Profilwert setzen. Die
+acht Stimmprofile bleiben verfügbar. Frequenzabhängige Gewichte der
+Hochratenfilter werden jetzt einmal pro Abtastrate berechnet. Vergleiche mit
+rc12 zeigen identische PCM- und Indexdaten für 236 Fälle über alle Sprachen,
+Modelle und Raten. Zwei ruhige Linux-Prozessmessungen mit deutschen, englischen
+und griechischen Sätzen über 16 bis 48 kHz ergaben im Median ungefähr 3 %
+weniger CPU-Zeit; einzelne Fälle lagen innerhalb der Messschwankung oder waren
+langsamer. Das ist keine Windows-Messung.
+
+Die deutsche Satzanalyse übernimmt gemischte Schrägstrich-/Bindestrichwörter
+wie „A/B-Test“ als zusammengehörigen Ausdruck. Dadurch fällt der umgebende
+Satz in diesen Fällen nicht wegen unterschiedlicher Wortgruppen auf die alte
+Analyse zurück. 173 Vergleichsfälle mit der nativen Satzanalyse bestehen,
+einschließlich der Bindestrich-/Schrägstrichkombinationen; Main-Wörterbücher
+und explizite RLEX-Ausspracheeinträge bleiben in den geprüften Fällen wirksam.
+
+Bei „der Zahn“ und ähnlichen Wortübergängen trägt der Vokal das stimmhafte R
+etwas weiter in den Verschluss des folgenden Z. In der Signalmessung bleibt der
+stimmhafte Anteil damit länger erhalten und nähert sich dem Verlauf der
+originalen ECI-DLL an. Dauer und Indizes bleiben gleich. Andere getestete
+Kontexte wie „der Mann“, „der, Zahn“, „Herz“ und „Zehn“ bleiben bitgleich.
+Das ist ein technischer Vergleich; die Hörprüfung des neuen Übergangs steht aus.
+
+Die vollständige deutsche Umstellung auf denselben nativen Ausgabepfad wie
+Englisch ist noch nicht die Produktvorgabe. Der getrennte Versuchszweig zeigt
+kürzere Startzeiten bei langen Einzelsätzen, aber noch Abweichungen bei
+gemischt geschriebenen RLEX-Einträgen, Euro-Schreibweisen und der bereits
+bestätigten männlichen Z-Lautstärke. Lange deutsche Einzelsätze und offene
+Zitate behalten daher ihre bisherige Startverzögerung.
+
+## Testkandidat 1.1.0-rc12: C als Vorgabe, griechischer Filter und CPU
+
+Der bestätigte C-Klang ist jetzt die Vorgabe in der ECI-DLL und im NVDA-Treiber;
+gespeicherte B-Vorgaben sowie die frühere C-Auswahl wechseln auf C. A und B
+bleiben wählbar. Griechisch erhält dieselbe Begrenzung der zusätzlichen
+S-/T-Bandbreite wie Kastilisch. Bei 16 kHz stimmen sechs griechische
+Vergleichsausgaben mit rc11 überein; oberhalb von 16 kHz liegt das zusätzliche
+S-Spektrum im geprüften Bereich.
+
+Die Hochratenfilter nutzen dieselben unveränderlichen Frequenzrotationen und
+Quellfilterantworten wieder, statt sie für jeden veränderten Laut erneut zu
+berechnen; zwei identische Durchgangsstufen im C-Stimmfilter entfallen. 236
+PCM-/Index-Vergleiche über alle Sprachen, zwei Modelle und die auswählbaren
+Profile waren identisch. Im warmen Linux-Prozessvergleich sank die CPU-Zeit
+der getesteten deutschen, englischen und griechischen Sätze bei 16 bis 48 kHz
+um etwa 18–28 %. Das ist keine Messung auf einem Windows- oder Android-Gerät.
+Ein Frequenzrastertest vergleicht alle Werte bitweise mit der direkten
+Berechnung; ein separater Test initialisiert das Raster gleichzeitig aus zwölf
+Threads. Ergebnisse und Vergleichscode stehen unter `validation` und `tools`.
+
+Die Umstellung auf den gemeinsamen deutschen Satzpfad ist ausdrücklich noch
+nicht die Vorgabe. Mit `RELOQ_DE_NATIVE_TRIAL=1` läuft ein Diagnoseversuch
+über denselben Pfad wie Englisch. Lange Einzelsätze beginnen im lokalen
+NVDA-Treibertest wesentlich früher; Tags, Zeichenmodus, weiche Trennstriche
+und URLs haben eigene Vergleichstests bestanden. Es fehlen weiterhin der
+Wörterbuchabgleich in zusammengesetzten Wörtern und die Übernahme der bereits
+bestätigten männlichen Z-Absenkung: Bei „Zehn“ und „Zwei“ ist der Anfang im
+Versuch etwa 2 dB lauter als in rc11. Die Korrektur des vokalischen r vor /ts/
+ist ebenfalls noch nicht nachgewiesen. Deshalb behält rc12 den bisherigen
+deutschen Produktpfad; der Diagnosepfad ist kein fertiger Ersatz.
+
+Ein separater Linux-Stresstest mit acht gleichzeitig sprechenden ECI-Handles
+löste im gemeinsamen Sprach-Frontend einen Prozessabsturz aus. Derselbe Test
+bricht auch mit der unveränderten rc11-Bibliothek ab; der reine Filterrastertest mit
+zwölf Threads besteht dagegen. Mehrere gleichzeitig synthetisierende Handles
+sind daher weiterhin ein offener Fehler, unabhängig von dieser Optimierung.
+
+## Testkandidat 1.1.0-rc11: Sanfte Anreicherung als Vergleich C
+
+Der Nutzer bestätigt den A-Stimmweg von rc10 als sauber, hört aber keine
+stufenweise Erweiterung bei höheren Raten. B bleibt deshalb genau die
+rc10-Basis. Das neue, ausdrücklich auswählbare C formt diese Stimme ab
+22,05 kHz mit einer festen, breiten periodischen Glocke bei 3,75 kHz.
+Die zusätzliche Anhebung an der Mitte beträgt 0,45 / 0,8 / 1,1 / 1,25 dB
+bei 22,05 / 32 / 44,1 / 48 kHz. Das Filter bleibt linear und kausal und
+wird beim Start über 5 ms eingeblendet. Es verändert bestehende Energie,
+erzeugt aber keine zweite Stimme und verändert weder den Glottispuls noch
+Aspiration oder AF. 16 kHz und die niedrigen Raten bleiben gleich B.
+
+Das ist von DECtalks Richness-Ziel inspiriert, aber keine Umsetzung von
+DECtalks ri-Parameter: [Dessen Öffnungsphase](https://dectalk.github.io/dectalk/idh_sdk_3_nopen_fixed_nf.htm)
+bleibt hier unangetastet. Eine Filterung vorhandener Obertöne kann keine
+zusätzlichen harmonischen Frequenzen erzeugen. Die subjektive Wahrnehmung,
+auch das Verhältnis zwischen Stimmkörper und Helligkeit, bleibt offen.
+
+Im Modellvergleich liegen 36 Vokal-/Tonhöhen-/Ratenfälle im Band 3,5–5 kHz
+um 0,428 bis 1,231 dB über B und bei 5–8 kHz um 0,247 bis 0,860 dB;
+der Bass weicht um höchstens 0,042 dB ab. Die 36 benachbarten Ratenstufen
+haben in diesem Vergleich im Band 3,5–5 kHz mindestens 0,087 dB Zuwachs;
+das ist keine Aussage über die Hörbarkeit oder alle Sprachlaute.
+28 PCM-Vergleiche halten reine AF- und AH-Laute und die 16-kHz-Stimme
+zwischen B und C gleich. Dazu bleiben 80 tatsächliche S-, TS-, F- und
+T-Anfänge bei beiden Profilen bytegleich. In 48 verglichenen Sprach- und
+Stimmeinstellungen bleibt die leisere Ausgabe für B und C linear; bei voller
+Lautstärke überschreiten 9 B- und 10 C-Fälle die Schutzschwelle. Die Messungen
+belegen nicht, dass alle Einstellungen hörbar verzerrungsfrei sind. Der
+Hörtest in NVDA ist notwendig.
+Android bleibt auf seinem bisherigen Paketstand, und die lange deutsche
+Einzelsatzanalyse bleibt offen.
+
+Die folgenden Abschnitte beschreiben frühere Teststände.
+
+# Testkandidat 1.1.0-rc10: A-Stimmweg mit Classic-Konsonanten
+
+Der Nutzer hört bei B auch nach rc9 scheppernde Artefakte, bei A jedoch nicht.
+rc9 mischte keine zweite Obertonquelle bei; B veränderte aber Glottis und
+Vokaltrakt im Klatt-Kern und formte die periodische Energie zusätzlich per EQ.
+Ab 16 kHz verwendet B nun den vollständigen A-Weg für Stimme und Aspiration,
+einschließlich der bisherigen A-Präsenzformung. Die Classic-Konsonanten bleiben
+auf einem getrennten Rauschpfad. Der B-spezifische Stimmkörper-EQ ist nicht
+aktiv. Die Ausgangsregelung und der Spitzenschutz von B bleiben bestehen.
+
+In 300 zeitlich veränderlichen Frames über fünf Raten und zwei Referenzmodelle
+sind Stimme und Aspiration vor dem Mischen mit dem Rauschen zwischen A und B
+bitgleich. 45 stationäre Vokal-/Tonhöhen-/Ratenfälle stimmen dort ebenfalls mit
+A überein. Das ist keine Aussage über die Gleichheit der fertigen PCM-Ausgabe
+oder über den Höreindruck. Die natürliche A-Abstimmung liefert nicht für jeden
+Vokal einen monoton mit der Rate ansteigenden Hochtonanteil. Ob sie den
+gewünschten Stimmkörper ohne das Scheppern liefert, bleibt ein Hörtest.
+
+Bei 32, 44,1 und 48 kHz wird S-/TS-artiges Reiben insgesamt um 1,35 dB
+abgesenkt; die Form des Konsonantenspektrums bleibt erhalten. Gegenüber rc9
+sind das bei 32 kHz zusätzliche 0,75 dB und bei 44,1/48 kHz 1,35 dB.
+In je zwei Stimmen geprüfte S-Anfänge im US-Englischen, kastilischen und
+lateinamerikanischen Spanisch sowie deutsche Z- und ZW-Anfänge bleiben bei
+16 und 22 kHz bytegleich und sinken bei den höheren Raten um die genannten
+Werte. Die geprüften englischen und deutschen F-Anfänge bleiben bytegleich.
+Die subjektive Lautstärke und weitere Lautumgebungen müssen gehört werden.
+
+Android bleibt auf seinem bisherigen Paketstand, bis die Klangabstimmung
+bestätigt ist. Der lange deutsche Einzelsatz bleibt weiterhin offen.
+
+Die folgenden Abschnitte beschreiben frühere Teststände.
+
+# Testkandidat 1.1.0-rc9: Stimmkörper-EQ und Konsonantenpegel
+
+Dieser NVDA-Hörtest setzt bei den vom Nutzer auch bei 16 kHz gehörten
+Artefakten an. Der bisherige stimmhafte Hochton-Shelf, der bis zur
+Nyquist-Grenze anhebt, wird ab 16 kHz durch eine feste, breite und begrenzte
+Anhebung um 3,75 kHz ersetzt. Sie beträgt dort 1,3 dB bei 16 kHz und wächst
+bei 22,05/32/44,1/48 kHz auf 1,66/2,02/2,26/2,38 dB. Dies formt vorhandene
+periodische Energie, ohne zusätzliche Obertöne zu erzeugen. Der unabhängig
+behandelte Rauschpfad der Konsonanten bei 16/22 kHz und die Aspiration
+bleiben unverändert.
+Bei 32 kHz wird der gesamte AF-Weg um 0,25 dB abgesenkt, bei S-artigen
+Lauten und kastilischem S/T um 0,6 dB; seine relative Spektralform bleibt gleich.
+
+Ein Vergleich gegen rc8 erhält 20 untersuchte S-/F-Anfänge bei 16 und
+22 kHz bytegenau. Bei 32 kHz sind diese Anfänge je nach Laut um etwa
+0,25 beziehungsweise 0,6 dB leiser; andere untersuchte Raten bleiben
+gleich. In 36 stationären Vokal-/Tonhöhen-/Ratenfällen weicht der Bass
+um höchstens 0,096 dB von der 16-kHz-Basis ab; die Energie im Vergleichsband
+3,5–5 kHz steigt in jedem Schritt, mit maximal 2,58 dB gegenüber 16 kHz.
+Diese Messungen sagen nicht voraus, ob der Klang subjektiv artefaktfrei ist.
+
+Die Änderungen sind ein Hörtest, keine bestätigte Beseitigung der Artefakte.
+Android bleibt auf seinem bisherigen Paketstand, bis die Klangabstimmung
+bestätigt ist. Der lange deutsche Einzelsatz bleibt weiterhin offen.
+
+Die folgenden Abschnitte beschreiben frühere Teststände.
+
+# Testkandidat 1.1.0-rc8: Konsonanten und Android-Direktstart
+
+16 kHz bleibt unverändert. Ab 22,05 kHz werden die breiteren
+Konsonanten aus rc6 mit nach unten ausgeglichener Gesamtleistung verwendet.
+Kastilisches S/T behält die Formung aus rc7 mit etwas schwächerer Erweiterung.
+Der zusätzliche stimmhafte Anteil nutzt keine bewegten oberen Resonanzen
+mehr: Ein fester, breiter Filter formt nur bereits vorhandene periodische
+Energie schrittweise und zurückhaltend. Aspiration bleibt unverändert.
+Der Klangeindruck und mögliche Artefakte müssen im Hörtest beurteilt werden.
+
+Im lokalen Vergleich realer S-Anfänge liegt die 6,5–7,5-kHz-Formung bei
+US-Englisch und lateinamerikanischem Spanisch wieder nahe rc6; beim
+kastilischen S liegt sie in diesen Beispielen etwa 1–1,5 dB unter rc7.
+40 Modellfälle prüfen die abgesenkte Gesamtleistung. 60 Vergleiche mit rc6
+bestätigen A und 8/11/16 kHz bytegenau. Diese Messungen ersetzen keinen
+Hörtest von laufender Sprache.
+
+Der Android-Sprachdienst ist für Direct Boot registriert. Vor dem ersten
+Entsperren werden Spracheinstellungen und Kopien der aktivierten Wörterbücher
+aus dem gerätegeschützten Speicher verwendet. Die Originaldateien und ihre
+Pfade bleiben im nutzergeschützten Speicher. Änderungen oder das Entfernen
+aktualisieren die Direktstart-Kopie. Nach dem Entsperren verwendet der nächste
+Sprachauftrag die normalen Wörterbücher und Einstellungen. Eine
+Paketaktualisierung oder das Öffnen der Einstellungen übernimmt vorhandene
+Stimmeinstellungen und Wörterbücher in die benötigten Kopien. Es gibt keine
+zusätzlichen Android-Berechtigungen. Ein Test auf einem echten Gerät vor dem
+ersten Entsperren steht aus; eine Play-Protect-Entscheidung lässt sich aus den
+Paketprüfungen nicht garantieren.
+
+Ein Hosttest durchläuft den Dienst vor und nach dem Entsperren mit gesperrtem
+Nutzerspeicher sowie Austausch und Entfernen der aktiven Wörterbücher. Der
+native Sprachkern liest dabei einen Eintrag aus der kopierten Direktstart-Datei;
+die Android-Geräteintegration ist damit noch nicht geprüft.
+
+Die lange Startzeit bei deutschen Einzelsätzen bleibt offen.
+
+Die folgenden Abschnitte beschreiben den vorherigen Teststand.
+
+# Testkandidat 1.1.0-rc7: Gestufter Stimmkörper und begrenzte S-Erweiterung
+
+Die vollständige Classic-Abstimmung von 16 kHz bleibt auch bei höheren
+Raten die Grundlage. Die zusätzliche periodische Färbung verwendet breite,
+schwach gewichtete Versionen der oberen A-Resonanzen. Ihre Stärke steigt
+ab 22,05/32/44,1/48 kHz mit 0,15/0,30/0,42/0,46; jede zusätzliche Resonanz
+erhält höchstens das Dreifache dieses Werts in dB. Koeffizienten werden über
+5 ms überführt. Die Quelle bleibt einzeln und periodisch; Aspiration und
+AF erhalten diese Resonanzen nicht. Die Glottis übernimmt oberhalb von
+16 kHz die stabile physikalische A-Zuordnung ohne die frühere Extrapolation.
+Es gibt keine zusätzliche Sättigung oder zweite Stimme.
+
+Das vollständige S-Hauptband bleibt am Classic-Ziel verankert. Nur die
+optionale Erweiterung oberhalb von 5,5125 kHz erhält einen sanften Abfall
+um 8,5 kHz und ein begrenztes Leistungsbudget. Das Budget steigt mit den
+Raten auf höchstens 8/14/18/20 Prozent der Referenzleistung bis 4,6 kHz.
+Kastilisches S/T erhält weiterhin nur ein Viertel der Erweiterung. Andere
+Konsonanten behalten ihre bisherige Übertragung. Die Unterscheidung
+zwischen Hauptresonanzen und schwächerem oberen Zusatz ist eigenständig
+umgesetzt; TGSpeechBox diente als öffentlich einsehbare Vergleichsreferenz.
+
+36 stationäre Vokal-/Tonhöhen-/Ratenfälle behalten den Bass innerhalb
+0,056 dB der 16-kHz-Basis, zeigen in jedem Schritt mehr Energie im oberen
+Vergleichsband (kleinster Schritt 0,030 dB, maximale Anhebung 2,394 dB)
+und erreichen mindestens 55,78 dB harmonischen zu nicht-harmonischem Anteil.
+180 reale Sprach-/Modell-/Ratenfälle bleiben unter der PCM-Grenze (Maximum
+31.411); 60 Vergleiche mit rc6 erhalten A und 8/11/16 kHz bytegenau.
+Das sind Messgrenzen für diese Fälle, keine Hörabnahme laufender Sprache.
+
+Ein interner bedingter Trennstrich U+00AD verändert in rc6 beispielsweise
+„Verschlusslaut“ und „Wortanalyse“. Er wird jetzt vor Main-Wörterbuch und
+Wortanalyse entfernt. Quellindizes werden über eine Skalarabbildung erhalten;
+ausdrückliche Buchstabierung und SPR bleiben unverändert. 452 Prüfungen
+vergleichen PCM, Indizes, geladene Main-Wörterbücher und explizite
+Buchstabierung. 48 bewegte Resonanzfolgen bleiben bei wechselnden
+Blockgrenzen bytegleich; ihr Gleichspannungsgewinn bleibt eins.
+
+Die Verzögerung bei langen deutschen Einzelsätzen ist weiter offen. Eine
+separate Diagnosefassung misst bei rund 9.000 Zeichen etwa 130 ms bis zum
+ersten nativen Phonemblock und rund 170 ms bis zum ersten PCM-Puffer.
+Der überwiegende Teil entsteht vor der Audioausgabe in der nativen deutschen
+Analyse. Englisch liefert im selben Hostvergleich nach etwa 25 ms PCM.
+Ein kleinerer Audiopuffer allein löst diese Abhängigkeit nicht. Vollständige
+deutsche Sätze lassen sich wie bisher nach wenigen Millisekunden beginnen.
+Beliebiges Aufteilen eines Einzelsatzes würde seine Grammatik-/Akzentanalyse
+verändern und wird durch diesen Teststand nicht eingeführt. Weitere konkrete
+Wortanalysefehler brauchen eigene reproduzierbare Beispiele.
+
+Die folgenden Abschnitte beschreiben historische Teststände.
+
+# Testkandidat 1.1.0-rc6: NVDA-Transport und tatsächliche Wortgrenzen
+
+Die bisherigen DLL-Tests und der NVDA-Vertragstest waren getrennt: der
+Vertragstest verwendete eine Ersatz-Engine. Ein neuer Test führt die
+unveränderten NVDA-2026.3-Methoden für Sprache, Symbole und Befehlsverarbeitung
+mit dem verpackten Treiber, echter ECI-Engine und einem Audioplayer ohne Gerät
+zusammen. Er ersetzt weiterhin NVDAs Oberfläche, Prioritätsplanung und das
+Audiogerät; er ist kein Hörtest auf Windows ARM.
+
+NVDA entfernt das Gravis-Zeichen oder spricht seinen Symbolnamen, bevor Text
+den Synthesizertreiber erreicht. Ein nur für den aktiven ReLoq-Treiber und
+die eingeschaltete Tag-Einstellung registrierter Sprachfilter transportiert
+gültige Tags als Synthesizerbefehle. Gewöhnlicher Text behält NVDAs Wörterbuch-,
+Symbol- und Unicode-Verarbeitung. Ein Tag zwischen Buchstaben wird vor das
+ungeteilte westliche/griechische Wort gestellt. CJK behält seine Segmentierung.
+NVDA-Geschwindigkeit und -Lautstärke sind zusätzlich zur Tonhöhe angebunden;
+temporäre Werte werden auch nach Abbruch oder Fehlern zurückgesetzt.
+
+Die native Meldung `synthesizingWord` läuft der Audioausgabe voraus. Mehrere
+schwache Wörter können vor demselben Audioblock gemeldet werden. Dadurch
+konnte eine spätere Rücksetzung den vorherigen Parameterwechsel auslöschen.
+Steuerungen werden nun über private native Indizes mit akustischen Zeitmarken
+geplant und erst beim entsprechenden Audioframe angewendet. Öffentliche
+Wortgrenzen-Indizes und Tonhöhenmarken verwenden denselben Zeitbezug;
+Innenmarken und SPR-Gruppen werden nicht geteilt. Die öffentlichen ECI-Exporte
+werden dabei nicht erweitert oder umbenannt.
+
+16 kHz bleibt bitgleich zu rc5. Ab 22,05 kHz verwendet Profil B den tatsächlichen
+periodischen A-Trakt einschließlich seiner sechs, sieben bzw. acht Formanten.
+Kontinuierliche Filterzustände, bandbegrenzter Glottisschluss und geglättete
+Filterwechsel ersetzen die feste 20/22-dB-Anhebung aus rc5. Es bleibt eine
+Stimmquelle. Die unabhängige Classic-Konsonantenbank und die auf ein Viertel
+begrenzte zusätzliche kastilische S/T-Bandbreite bleiben erhalten. 36 stationäre
+Vokal-/Tonhöhen-/Ratenfälle liegen in drei Spektralbändern innerhalb 0,701 dB
+des A-Körpers; der Bass weicht höchstens 0,687 dB von 16 kHz ab. Das beweist
+keine subjektiv passende Klangfarbe oder Verzerrungsfreiheit bei laufender Sprache.
+
+110 kausale Tag-/Pitch-Reihenfolgetests und 725 Queue-/Wortkontrolltests
+bestehen. 48 Prüfungen gegen einen ungeschützten Float-Diagnosebuild bestätigen
+die lineare leise Ausgabe. Beim kleinen weiblichen Modell mit hoher Behauchung
+liegen einzelne rohe Spitzen weiter über der PCM-Grenze; der vorhandene
+Ausgangsschutz bleibt deshalb aktiv. Begrenzte fertige PCM-Spitzen allein
+gelten nicht als Nachweis eines unverzerrten Quellsignals.
+
+Die lange deutsche Einzelsatzanalyse ist weiterhin offen. Der durchgehende
+Hosttest mit rund 9.000 Zeichen benötigt ungefähr 0,2 Sekunden bis zum ersten
+Playerpuffer, gegenüber rund 0,015 Sekunden bei US-Englisch. Normale abgeschlossene
+deutsche Sätze starten im selben Test deutlich früher. Diese Zeiten enthalten
+die NVDA-Textverarbeitung und den Treiber, aber kein echtes Audiogerät. Das
+Paket protokolliert Quellrevision, geladene DLL und bestätigte Raten-/Profil-/
+Tag-Einstellungen sowie bei langen Texten erste native PCM-Ausgabe und erste
+WavePlayer-Übergabe. Damit kann die Verzögerung im echten NVDA eingegrenzt werden.
+
+Die folgenden Abschnitte beschreiben historische Teststände.
+
+# Testkandidat 1.1.0-rc2: Classic-Basis und kastilische Bandbreite
+
+Die 16-kHz-Abstimmung bleibt die Grundlage von Profil B. Ab 22,05 kHz
+wird nur die obere Differenz des mit 0,8 kalibrierten A-Stimmkörpers
+beigemischt: ein komplementärer Split bei 2,5 kHz erhält den unteren
+Classic-Anteil. Die Gewichte steigen weiterhin mit 25/50/80/100 Prozent
+bei 22,05/32/44,1/48 kHz. Auch bei 48 kHz bleibt der Classic-Körper aktiv;
+der bisherige vollständige Wechsel zu A entfällt. Der Split führt keine
+zusätzliche Ausgabeverzögerung ein und behält seinen Zustand über Frames.
+
+Kastilisches S/T verwendet wieder die normalen Classic-Presence-Konsonanten.
+Die Sprachmarkierung begrenzt ausschließlich die optionale obere AF-
+Erweiterung. Bei 16 kHz hat sie keine Wirkung; darüber bleibt für diese Laute
+das vollständige Classic-Zielspektrum ohne zusätzliches oberes Rauschband.
+Variante A, Mexikanisch und andere Konsonanten behalten ihren normalen Pfad.
+Die Erkennung mit A4F/A5F über A3F und ihr Halten über den AF-Ausklang bleibt
+erhalten. Die A-/OpenEVV-Filterausnahme aus rc1 ist damit abgelöst.
+
+Der direkte Tag-Test umfasst nun auch ein Leerzeichen nach `vv50`,
+unveränderte PCM-Ausgabe vor dem folgenden Wort und identische Indexpositionen
+in elf westlichen Sprachen/Dialekten, einschließlich „Das ist ein `vv50 test“.
+Dafür war keine weitere Änderung am Tag-Parser erforderlich. Die vollständige
+ECI-Parität bleibt ein separates, noch nicht abgeschlossenes Ziel.
+
+Die folgenden Abschnitte beschreiben historische Teststände.
+
+# Testkandidat 1.1.0-rc1: A-Stimmkörper, Wortparameter und Startzeit
+
+Ab 22,05 kHz mischt Profil B den seriellen AV/AH-Stimmkörper aus Variante A
+mit 25/50/80/100 Prozent bei 22,05/32/44,1/48 kHz bei. A wird dabei fest mit
+0,8 kalibriert, damit die Summe mit den Classic-Konsonanten auch beim kleinen
+weiblichen Modell unter der PCM-Grenze bleibt. Die frühere zusätzliche
+Glottisneigung entfällt. Die 16-kHz-Stimmkontur bleibt unverändert. Bei
+48 kHz wird nur der benötigte A-Körper berechnet; langsam bewegte A-Filter
+werden wie Classic höchstens alle 2 ms neu angepasst und über 3 ms überführt.
+Es gibt keine dynamische Lautstärkeregelung und kein PCM-Resampling.
+
+Kastilisches S/T verwendet im bisherigen S/Z/T-Spektralbereich die vollständige
+A-Rauschbank und deren Filter. Die Auswahl ist unabhängig von der bisherigen
+S-Mischung: Das reale spanische S/T liegt mit A4F-A3F = 10 dB genau an der
+alten, zuvor ausgeschlossenen Grenze. Der gewählte Filter bleibt im Ausklang
+aktiv. Andere Classic-Konsonanten bleiben erhalten.
+Die isolierte AF-Prüfung stimmt dabei über alle fünf erweiterten Raten exakt
+mit A überein. Zusätzlich stimmen 20 reale S-/T-Anlaute über beide Modelle
+und fünf Raten mit A überein. 30 spanische Pegelfälle bleiben unter der PCM-
+Grenze (Maximum 32.275); 60 A-/Mexiko-Kontrollen bleiben unverändert. Der
+Hörtest muss die passende Höhenbalance bestätigen.
+
+`vv` wird bei den westlichen Sprachmodulen vor der Lexikalanalyse entfernt
+und über die nativen Wortgrenzen angewendet. So bleibt das Wort zusammen
+und sein gesamter Klang bekommt denselben Pegel. CJK verwendet den eigenen
+nativen akustischen Wortplan mit dem ursprünglichen ECI-Lautstärkewert;
+redundantes `vv` verändert seine Segmentierung nicht mehr. Deutsche
+Stimmsteuerungen innerhalb eines Wortes werden vor diesem Wort zugelassen.
+Zusätzliche Abschlusspausen bei Stimmparametern und die deutsche künstliche
+50-ms-Pause entfallen. Nichtdeutsche Inline-Tonhöhe nutzt ohne zusätzliche
+ECI-Pitch-Marken den bestehenden kontinuierlichen F0-Skalierungsansatz.
+
+Alle acht nativen Stimmparameter werden beim AddText-Aufruf für die PCM-
+Synthese festgehalten. Spätere Setter gelten ab dem folgenden Textteil;
+Setter nach dem letzten Textteil gelten erst für die nächste Äußerung.
+Aufrufer-Annotationen werden vor internen Parameterwechseln zugelassen,
+auch bei ausgeschalteten öffentlichen Tags. Textteile bleiben eine Äußerung.
+
+Lange gewöhnliche deutsche Prosa wird zunächst in begrenzten Analysefenstern
+zugelassen. Nur tatsächlich erkannte vollständige Satzgrenzen mit
+abgeschlossenen Zitaten/Klammern werden ausgegeben. Abkürzungen, Zahlen und
+abhängige Satzenden behalten den vorhandenen Ganztextpfad. Tags, besondere
+Pitch-Marken und eigene Rlex-Ersetzungen nutzen weiterhin den sicheren
+bisherigen Plan. 40 Vergleiche liefern identische vollständige PCM- und
+Indexausgabe. Im Hosttest sank die Zeit bis zum ersten PCM-Puffer bei
+9.472 deutschen Zeichen von median 14,69 auf 3,58 ms (11,025 kHz, fünf Läufe).
+Das ist keine Messung der NVDA-Audiogerätelatenz auf Windows ARM.
+
+447 neue ECI-Queue-/Wort-/Tag-Prüfungen und die bisherigen 364 öffentlichen
+API-Prüfungen bestehen. 136 reale Pegelfälle bleiben unter der PCM-Grenze
+(Maximum 32.107), 36 A-/Niedrigraten-Vergleiche bleiben bitgleich zu dev10.
+293 Profilprüfungen, 371 deutsche Kontextfälle, 32 Abbruchfälle und 72
+Sekundenlesungsfälle bestehen ebenfalls. NVDA-Pakettests bestehen in beiden
+UI-Sprachen; die Windows-x64-DLL hat unverändert 49 öffentliche Exporte.
+Die vollständige ECI-Parität, die Klangbalance und ruckelfreie Wiedergabe auf
+dem Zielgerät sind damit nicht behauptet. Details: `validation/1.1.0-rc1.json`.
+
+Die Lizenztexte aus dem Entwicklungszweig werden mit dem zugehörigen
+Quellverweis in die Pakete übernommen. Vor der stabilen 1.1.0 stehen der
+Hörtest zu #1 und das Zusammenführen der Lizenz-/Backend-Änderungen nach
+main an. #2/#5/#6 sind anhand der bestandenen Regressionen geschlossen;
+#4 ist mit dem Lizenzstand vorbereitet. Es wird noch kein stabiles Release
+veröffentlicht.
+
+# Teststand 1.0.2-dev10: ECI-Phoneme und stimmhafte Quelle
+
+`eciGeneratePhonemes` liefert native Phonembytes über den regulären
+ECI-Callback, mit begrenztem Aufruferpuffer, Indizes, Wiederholung und Abbruch.
+Die PCM-Route bleibt danach erhalten. `eciPause` hält die Callback-Ausgabe
+an; Resume oder Stop beendet die Pause. Beide Funktionen gelten für alle
+DLL-Clients. Synthese bleibt synchron; vollständige ECI-Parität ist offen.
+
+Die Classic-Stimmquelle berücksichtigt Sample-Bruchteile beim
+Glottisschluss. Perioden, Quellphasen und AH-/AF-Masken bleiben unverändert.
+Damit wird ein samplegerundeter Sprung an der Quelle geglättet, bevor er den
+Vokaltrakt anregt. Das ist eine Anti-Alias-Korrektur und kein Ausgangslimiter.
+Die bisherigen Konturen bei 16 kHz bleiben bestehen; die Quellkorrektur gilt
+auch dort. Ab 22,05 kHz öffnet eine zunehmend flachere native Glottisneigung
+die periodischen Obertöne. Der bisherige 4,5-kHz-Shelf entfällt. AH und die
+akzeptierte AF-Konsonantenformung bekommen diese Anhebung nicht.
+
+Langsame Traktbewegungen passen den aktuellen Classic-Filter höchstens alle
+2 ms neu an, große Sprünge sofort. Der Übergang des Restfilters dauert 3 ms.
+Das spart Spektralanpassungen und entschärft ihre Wechsel. Es gibt keinen
+Sprach- oder PCM-Ergebniscache. Ob Knistern, Stimmkörper und Ruckler im
+alltäglichen NVDA-Betrieb ausreichend verbessert sind, bleibt ein Hörtest.
+
+364 öffentliche ECI-API-Prüfungen und der vollständige native C-Test bestehen.
+45 Quellmodellfälle reduzieren den Fehler zur überabgetasteten Referenz um
+mindestens 12,8 dB. 136 reale Pegelfälle bleiben unter der PCM-Grenze; der
+AF-Pfad ist in 60 Sprach-/Modell-/Tonhöhen-/Ratenfällen bitgleich zu dev9.
+Die beiden DSP-Replays benötigen rund 29 bzw. 33 Prozent weniger Host-CPU.
+Details, Paket-Hashes und Messgrenzen stehen in `docs/validation/1.0.2-dev10.json`.
+
+# Teststand 1.0.2-dev9: allgemeiner ECI-Abgleich
+
+Der Schwerpunkt liegt auf dem öffentlichen DLL-Verhalten. Die Klangabstimmung
+und die Filter aus dev8 bleiben erhalten; das vom Nutzer weiterhin gehörte
+Knistern und die vereinzelten Ruckler sind damit noch nicht gelöst.
+
+13 weitere Original-Exporte ergänzen Fehlerabfragen und Wörterbuchbearbeitung.
+Callback-Antwort 0 wiederholt denselben Puffer oder Index; 2 bricht ab.
+Der Index wird entsprechend der Referenz erst nach dem Callback veröffentlicht.
+Standardfehler akkumulieren unabhängig von der privaten Synthesediagnose.
+Der ECI-Reset hängt nicht mehr von zuvor benutzten privaten Parametern ab.
+Das gilt für jeden Client. SDK-Namen im öffentlichen Header sind mit C11 und
+C++17 geprüft. Details, Referenzbeobachtungen und Grenzen beschreibt
+ECI-COMPATIBILITY.md.
+
+295 öffentliche ECI-API-Prüfungen, der vollständige native ECI-C-Test und die
+x64-Exportprüfung mit 47 Funktionen bestehen. 56 PCM-/Indexvergleiche mit
+dev8 bleiben über Deutsch/US-Englisch, beide Modelle, alle sieben Raten und
+Profil A/B bitgleich. Paket-Hashes und Prüfgrenzen stehen in
+`docs/validation/1.0.2-dev9.json`; die Klangprobleme sind weiterhin offen.
+
+# Teststand 1.0.2-dev8: deutscher Satzkontext und periodisches Richness
+
+Eloquence_64 fügt vor Textfragmenten wiederholt `pp0`/`da1` und vor
+Satzzeichen Pausenbefehle ein. Bisher konnte ein einzelnes `p0` den deutschen
+Ganzsatzabgleich ausschalten. Das führte unbemerkt zur isolierten
+Wortanalyse. Ein Leerzeichen vor dem eingefügten Befehl trennte außerdem
+Ordinale vom Punkt; wiederholte Präfixe konnten zwischen Ordinal und Monat
+eine falsche Doppel-Leerraumgrenze erzeugen. Analysebefehle ohne
+Zustandsaenderung und akustische Pausen werden jetzt vor der lexikalischen
+Analyse normalisiert. Positive Pausen werden danach ueber dieselbe monotone
+Quellabbildung wie ECI-Indizes wieder eingesetzt. SPR und echte
+Zustandswechsel bleiben erhalten. Auch „Ein- / Ausgabe“ wird nicht mehr
+als falsches Auslassungskompositum zerlegt und behält den Satzkontext.
+
+Der Vergleich verwendet den tatsächlichen EciEngine-/Textbuilder-Code aus
+fastfinge/eloquence_64, Commit b24a6c88446581e50867abac23807233829b367f,
+mit Loader-/Callback-Aliassen unter Linux und CP1252 für den deutschen
+MBCS-Korpus. Ganze Saetze und wortweise Fragmente liefern dort die gleiche
+PCM-Ausgabe wie der eigene direkte Client. Das ist kein Windows-Lauf von
+NVDA. Der veröffentlichte Eloquence_64-v25-Build (Run 41336133144,
+Job 124936238535) lädt nachweislich ReLoq C 1.0.1 aus dem Release.
+Der bisherige Entwicklungsstand wurde darin also noch nicht mitgeliefert.
+
+Die 16-kHz-Abstimmung aus dev7 bleibt numerisch erhalten. Ab 22,05 kHz
+arbeitet Richness nur auf der periodischen Quelle: eine lineare High-Shelf
+mit 4,5-kHz-Knie und 1,75/3,5/5,6/7 dB Plateau bei 22,05/32/44,1/48 kHz.
+Die unteren Obertöne und die kleine 0,6-dB-Anhebung bei 300 Hz bleiben
+verankert. Das erste Shelf bei 2,5 kHz überlagerte den vorhandenen
+Classic-Presence-Bereich und übersteuerte weibliche Vokale; es ist nicht
+im Paket. Die gemeinsame AV/AH-Kurve erhält keine zusätzliche flache
+Oberband-Untergrenze mehr. Der Glottispuls wird nicht verkürzt; es gibt
+keinen neuen Limiter. Die bestätigte AF-Konsonantenstrecke bleibt gleich.
+
+Die Classic-Traktberechnung fuehrt unabhängige Frequenzen in zwei
+Double-SIMD-Lanes aus. Reihenfolge, Frequenzraster und Filterlänge bleiben
+erhalten; für den strikten Vergleich ist RELOQ_CLASSIC_TRACT_SCALAR
+verfügbar. Das senkt DSP-Arbeit, beweist aber keine ruckelfreie Wiedergabe
+auf dem Windows-ARM-Geraet.
+
+Der ECI-Abgleich ergänzt globale Defaults, Real-World-Units, SDK-Reset,
+Unicode-Stimmennamen bis 29 Eingabecodeeinheiten und eciGetIndex. Details
+und verbleibende Abweichungen stehen in ECI-COMPATIBILITY.md. Vollständige
+ECI-Parität und alle vom Nutzer gehörten Verzerrungen sind nicht
+nachgewiesen; insbesondere die 16-kHz-Meldung ließ sich mit den getesteten
+Einstellungen noch nicht als Übersteuerung reproduzieren.
+
+# Teststand 1.0.2-dev7: ruhiger Stimmkörper und geringere Rechenlast
+
+Der ECI-Umfang aus dev6 bleibt bestehen. Der Stimmabgleich wertet die
+11,025-kHz-Traktantwort jetzt nur bis zur nutzbaren Bandgrenze aus. Oberhalb
+davon läuft die Rekonstruktionshüllkurve weiter; die gespiegelte tiefe
+Traktantwort nahe 11,025 kHz wird nicht mehr invertiert. Ein gewöhnlicher
+englischer /w/-Vokal-Übergang erzeugte zuvor bei 48 kHz eine Kernel-L1-Norm
+über 600.000 und sehr große PCM-Spitzen. Der zugehörige Regressionstest
+prüft jetzt 410 Varianten über fünf Raten und zwei Traktgrößen.
+
+Der gemeinsame Classic-AV/AH-Hauptbandabgleich bleibt erhalten. Ein
+periodischer Bell-Filter um 300 Hz (Q=0,8) gibt dem Stimmkörper 0,6 dB bei
+16 kHz bis 1 dB bei 48 kHz zurück. AH und AF bekommen diese zusätzliche
+Bassanhebung nicht. Die AF-Implementierung und die z-Kontextregel ändern
+sich nicht.
+
+Die zweite, verworfene Trakt-Zielberechnung entfällt im Classic-Pfad.
+Unveränderliche Clock-/Rekonstruktions-/Faktorantworten werden atomar einmal
+pro Rate vorbereitet; stimmlose Frames ohne serielle Restenergie benötigen
+keinen neuen Stimmfit. Es werden keine Text- oder PCM-Ergebnisse gespeichert.
+
+# Teststand 1.0.2-dev6: vollständiges Classic und Standard-ECI
+
+Bei 16 kHz gilt das vollständige Classic-Presence-Ziel für AV, AH und AF.
+Die zuvor nur am Hauptband beobachtete Kurve enthält nun auch den stetigen
+Rekonstruktionsübergang und die Bildbandunterdrückung oberhalb 5,5125 kHz.
+Die native periodische/Aspirations-Anpassung teilt sich eine kausale
+Übertragungsfunktion; die bisherige A-Färbung und AH-Absenkung entfallen in B.
+Ein vorab ausgeklammerter, im Restfilter kompensierter Pegelverlauf hält die
+endliche FIR-Anpassung stabil. Die separate Erweiterung beginnt ab 22,05 kHz.
+Es gibt weiterhin kein PCM-Resampling. Z wird nur beim männlichen Modell
+am Wortanfang oder in /tsv/ um 2 dB abgesenkt.
+
+Die Standard-ECI-Erweiterungen und Referenzbeobachtungen beschreibt
+ECI-COMPATIBILITY.md. Die bisherigen ReLoq-Erweiterungen bleiben nutzbar.
+
+# Teststand 1.0.2-dev5: z-Absenkung nur beim männlichen Modell
+
+Die zusätzliche 2-dB-Absenkung für /ts/ und den Kontakt in zw wirkt nur
+beim männlichen Modell. Beim weiblichen Modell bleibt der vom Nutzer
+bestätigte Pegel aus dev3 erhalten. Entscheidend ist das jeweilige
+Lautmodell einschließlich einer im Text umgeschalteten Stimme.
+Die Classic-Presence-Abstimmung aus dev4 bleibt erhalten.
+
+# Teststand 1.0.2-dev4: vollständiges Classic-Presence-Hauptband
+
+B verwendet für alle AF-Konsonanten einschließlich P/F und direktem AB-Anteil
+den vollständigen Frequenzgang des 11,025-kHz-Classic-Presence-Hauptbands.
+Die vorherige Anpassung enthielt nur die EQ-Anteile; jetzt gehören der
+Abfall der Rekonstruktion an der oberen Bandgrenze und der Ausgangsfaktor
+0,80 zum Ziel. Die Referenz ist Classic Presence aus eloquence-contours,
+Commit 24b9cb121aa3c4f55a6aaacd640f1fe8f03e020a, nicht Presence Treble.
+Eigene native C-Filter passen den Rauschpfad an abgeleitete Magnitudenwerte
+an; es gibt kein PCM-Resampling und keine Übernahme des Rust-Prozessors.
+Die gemessene Referenzbank benutzt die tatsächlichen Quellpegel und die
+Formantzahl der Stimme. Der periodische Stimmkörper bleibt bei 16 kHz
+exakt A. Bei 16 kHz werden keine zusätzlichen oberen Konsonantenbänder
+beigemischt. Die separate native Erweiterung wächst ab 22,05 kHz über
+32 und 44,1 bis 48 kHz; das Referenzhauptband bleibt dabei verankert.
+
+Die vom Nutzer bestätigte /ts/-Lautform und der Kontakt nach /ts/ in zw
+bleiben erhalten. Ihr AF-Pegel und der /ts/-Burst sinken gegenüber dev3
+um 2 dB nach der Anatomie- und Atemanpassung. Die Grundwerte bleiben
+Reibung AF=65, Burst AF=66, Kontakt AF=65/AB=60; beim männlichen
+Standardmodell ergeben sich AF=63, AF=64 und AF=63. Die AiF-Werte,
+Frequenzen und Zeitverläufe ändern sich nicht. Die bereits bestätigte
+englische Sekundenlesung aus dev3 bleibt enthalten.
+
+# Teststand 1.0.2-dev3: A-Stimmkörper, Classic-Konsonanten und Sekunden
+
+B kombiniert den unveränderten periodischen Stimmkörper aus A mit dem
+Classic-Presence-Konsonantenpfad aus dev2. Die bisherige Classic-Färbung
+im periodischen Pfad entfällt. Bei 16 kHz ist der Stimmkörper exakt A;
+ab 22,05 kHz wächst eine getrennte obere Anreicherung von nominell
+0,375 über 0,75 und 1,2 bis 1,5 dB bei 48 kHz. Die nativen höheren
+Konsonantenbänder bleiben pro Rate erhalten. P/F behalten den bisherigen
+Rauschpfad. A bleibt als Vergleich auswählbar; die alte Auswahl C wird
+in NVDA auf B übernommen. Es gibt keine zusätzlichen Sprachresultat-Caches
+und kein PCM-Resampling.
+
+Die native englische Eingabeprojektion lässt HH:MM in der gewöhnlichen
+Uhrzeitregel und ergänzt den Sekundenbetrag als „and … seconds“. Sekunden werden als Betrag ohne
+führende Null gelesen; genau eine Sekunde erhält den Singular. Bruchteile
+bleiben in der gewöhnlichen Zahlenanalyse. Die Erweiterung liegt im nativen
+Sprachkern; eine monotone Abbildung der ursprünglichen Bytegrenzen erhält
+Quellindizes und Parameterpositionen. Ausgesprochene Lautschrift, Buchstabier-
+modus und fremdsprachige Inline-Bereiche werden nicht umgeschrieben.
+
+Die eigene /ts/-Reibung verwendet anhand der Originalbeobachtungen 0.2.39
+AF=65, mit A5F=55 am frischen Satzanfang und A5F=50 im verbundenen Sprechen. Der stimmhafte labiodentale
+Kontakt nach /ts/ verwendet AF=65/AB=60 statt des unabhängigen /v/-Pegels.
+Dies sind Lautklassen und Nachbarschaftsregeln, keine Wortausnahmen.
+Die gesicherten Originalwerte enthalten insbesondere Zehn, Zwei, Zahl, zu,
+Zunge, Zitronen, zwanzig und Zwerge. Die subjektive Übereinstimmung mit dem
+Original bleibt im NVDA-Hörtest zu beurteilen.
+
+# Teststand 1.0.2-dev2: Classic Presence und native Regeln
+
+Der neue Hörtest orientiert B an Classic Presence des 11-kHz-Pfads von
+Eloquence64RS: gemeinsame Grundfarbe für Stimmkörper und Konsonanten, ab
+16 kHz ein eigener erweiterter Rauschpfad je Abtastrate. Der gemeinsame
+Frequenzbereich bleibt am 11-kHz-Vorbild ausgerichtet; darüber kommen die
+höheren nativen Rauschbänder hinzu. P und F behalten ihren bisherigen
+Rauschpfad. C erweitert zusätzlich die oberen periodischen Anteile, von
+0 dB bei 16 kHz bis höchstens 1,5 dB bei 48 kHz. B und C sind bei 16 kHz
+gleich. A ist die bisherige Abstimmung. Es gibt kein PCM-Resampling, kein
+Erzeugen gespiegelter Frequenzbänder und keine Sprachresultat-Caches.
+
+Der deutsche Laut T (/ts/, etwa Z und zw) hatte seine S-Familienmarkierung
+für die Hochratenfilterung nicht erhalten. Das ist korrigiert; die eingestellten
+Lautpegel ändern sich dadurch nicht. Eine allgemeine Übereinstimmung des
+Z-Klangs mit dem Original ist damit noch nicht durch einen Hörtest bestätigt.
+
+Chinesische Tonhöhenziele verwenden die männliche Referenzkalibrierung bei
+Tempo 75, unabhängig von Modell und tatsächlichem Tempo. Die zeitliche
+Verteilung bleibt an die tatsächliche Sprechdauer gebunden. Kopfgröße und
+weibliche Anatomie bleiben erhalten. 120 Vergleiche prüfen vollständige
+Tonhöhenziel-Folgen bei drei Tempi, zwei Modellen, zwei Kopfgrößen und zwei
+Tonhöheneinstellungen, einschließlich des englischen Pfads und gemischter Texte.
+
+Der englische Uhrzeitkonverter hatte eine vorhandene Sekundenstelle verbraucht,
+ohne sie zu analysieren. Er beendet nun die zweifeldrige Konvertierung vor
+den Sekunden; die normalen Zahlenregeln verarbeiten den Rest. Dreifeldrige
+Uhrzeiten behalten auch ihre Nullminuten. 370 Prüfungen erfassen US-/britisches
+Englisch, alle Sekunden von 00 bis 59, Nullfelder, Bruchteile und AM/PM.
+Die unveränderten originalen ENU.SYN und ENG.SYN wurden separat unter Windows
+beobachtet: HH:MM und HH:MM:SS erzeugen dort identische PCM-Daten. Der Fehler
+ist auch in diesen Originalmodulen vorhanden; es wird keine dort funktionierende
+Sekundenregel behauptet. Das Werkzeug speichert nur Messwerte und Hashes,
+keine Originalmodule oder Original-Audiodateien im Repository oder Produkt.
+
+Die C-Filter wurden unabhängig anhand des Frequenzgangs formuliert. Kein
+Rust-Modul und kein Code von Eloquence64RS wird eingebunden. Die schmale alte
+periodische Präsenzanhebung wird im Kandidaten ersetzt. Die beiden übrigen
+Quellen AF und AH bleiben von der zusätzlichen C-Stimmkörperanhebung getrennt.
+
+Dies ist kein offizielles Release. Die subjektive Klangbeurteilung erfolgt
+in NVDA. Die vollständige positionsbezogene Steuerung (#6) bleibt ein
+Release-Prüfpunkt. 1.0.1 auf main bleibt unverändert.
+
 # Technischer Arbeitsstand: 1.0.1
 
 ## 1.0.1: Ursprünglicher S-Pegel und Textabbruch

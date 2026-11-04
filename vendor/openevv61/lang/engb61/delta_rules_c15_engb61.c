@@ -24,6 +24,7 @@
 #include "evv_arena.h"
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
+#include "reloq61_english_prefix.h"
 #include "reloq61_rule_calls_engb61.h"
 
 /* Where each global the rules touch lands in the state,
@@ -9711,11 +9712,24 @@ L7123:;
     AT(int32_t, -168) = (1);
     AT(int32_t, -172) = (delta_sym_ref[4496]);
 L7139:;
+    int32_t reloq_original_phone_end=0;
+    if((int32_t)AT(int32_t, -168)==1 &&
+       (int32_t)AT(int32_t, -172)==delta_sym_ref[4508]) {
+        reloq_original_phone_end=reloq61_english_reserve_final_vowel(state);
+        if(reloq_original_phone_end)
+            ((delta_state *)state)->rpta.node=STATE(int32_t,w61);
+    }
     r0 = reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s, state, (uint8_t)((int32_t)AT(int32_t, -164)), (uint8_t)((int32_t)AT(int32_t, -168)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -172)), (uint8_t)(0));
     AT(int32_t, -68) = (r0);
     AT(int32_t, -176) = ((int32_t)AT(int32_t, -68));
     AT(int32_t, -172) = ((int32_t)AT(int32_t, -184));
-    if (AT(int32_t, -176) != 0) goto L7208;
+    if (AT(int32_t, -176) != 0) {
+        if(reloq_original_phone_end) {
+            STATE(int32_t,w61)=reloq_original_phone_end;
+            ((delta_state *)state)->rpta.node=reloq_original_phone_end;
+        }
+        goto L7208;
+    }
     goto L13038;
 L7208:;
     AT(int32_t, -164) = ((int32_t)AT(int32_t, -172));

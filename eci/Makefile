@@ -64,6 +64,8 @@ HEADERS += ../src/reloq_character_data.inc
 HEADERS += ../src/reloq_german_inline_controls.inc ../src/reloq_german_roots85.inc
 HEADERS += $(wildcard ../include/*.h) ../src/reloq_german_lexical_quantity.inc
 HEADERS += ../src/reloq_core_internal.h
+HEADERS += ../src/reloq_inline_word_controls.h
+HEADERS += ../src/reloq_body_extension.h
 HEADERS += $(wildcard ../src/*.inc)
 HEADERS += ../src/reloq_german_ung_roles.inc ../src/reloq_german_el_roles.inc
 HEADERS += ../src/reloq_german_t_quantity.inc ../src/reloq_german_stop_edges.inc
@@ -102,14 +104,13 @@ $(WINDOWS_BUILD)/%.o: ../src/%.c $(HEADERS) | check-windows-toolchain
 .PHONY: all test windows-x64 check-windows-toolchain clean
 all: libreloq_eci.so
 
-test_reloq_silence_cut: ../tests/test_reloq_silence_cut.c ../src/reloq_silence_cut.c ../include/reloq_silence_cut.h
-	$(CC) $(CFLAGS) -I../include ../tests/test_reloq_silence_cut.c ../src/reloq_silence_cut.c -o $@
-
 test_reloq_english_clock: ../tests/test_reloq_english_clock.c ../vendor/openevv61/src/reloq61_english_clock.c ../vendor/openevv61/src/reloq61_english_clock.h ../include/reloq_inline_tags.h
 	$(CC) $(CFLAGS) -I../include -I../vendor/openevv61/src ../tests/test_reloq_english_clock.c ../vendor/openevv61/src/reloq61_english_clock.c -o $@
 test_reloq_english_clock_arena: ../tests/test_reloq_english_clock.c ../vendor/openevv61/src/reloq61_english_clock.c ../vendor/openevv61/src/reloq61_english_clock.h ../vendor/openevv61/src/port/evv_arena.c ../vendor/openevv61/src/port/evv_land.c ../vendor/openevv61/src/port/evv_arena.h ../include/reloq_inline_tags.h
 	$(CC) $(CFLAGS) -DEVV_ARENA=1 -I../include -I../vendor/openevv61/src -I../vendor/openevv61/src/port ../tests/test_reloq_english_clock.c ../vendor/openevv61/src/reloq61_english_clock.c ../vendor/openevv61/src/port/evv_arena.c ../vendor/openevv61/src/port/evv_land.c -pthread -lm -o $@
 
+test_reloq_silence_cut: ../tests/test_reloq_silence_cut.c ../src/reloq_silence_cut.c ../include/reloq_silence_cut.h
+	$(CC) $(CFLAGS) -I../include ../tests/test_reloq_silence_cut.c ../src/reloq_silence_cut.c -o $@
 
 libreloq_eci.so: $(SOURCE) $(HEADERS) ../src/reloq_glottal_profiles.inc ../src/reloq_german_root_roles.inc ../src/reloq_german_weak_verb_roles.inc ../src/reloq_german_inflection_roles.inc ../src/reloq_german_glottal_lexicon.inc ../src/reloq_german_number_names.inc ../src/reloq_german_date_names.inc ../src/reloq_german_ie_roles.inc ../src/reloq_german_root_stress_roles.inc ../src/reloq_german_phrase_metadata.inc
 	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -shared $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections,--no-undefined -lm -o $@
@@ -127,20 +128,71 @@ test_reloq_german_context: ../tests/test_reloq_german_context.c $(OBJECTS) $(RUL
 test_reloq_german_cancel: ../tests/test_reloq_german_cancel.c $(OBJECTS) $(RULES61)
 	$(CC) $(CPPFLAGS) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -I../include -I../vendor/openevv61/include -I../vendor/openevv61/src/port $< $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections,--wrap=reloq61_generate_phonemes -lm -o $@
 
+test_reloq_converter_failure: ../tests/test_reloq_converter_failure.c $(OBJECTS) $(RULES61)
+	$(CC) $(CPPFLAGS) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -I../include $< $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections,--wrap=stw_createAudioConverter -lm -o $@
+
+eci_converter_failure_probe.exe: ../tests/test_reloq_converter_failure.c $(WINDOWS_OBJECTS) $(RULES61_WIN)
+	$(WINDOWS_CC) $(filter-out -Werror,$(WINDOWS_CFLAGS)) $(PROVIDER_LINK) $(SECTIONS) -I../include $< $(WINDOWS_OBJECTS) $(RULES61_WIN) $(WINDOWS_LDFLAGS) -Wl,--gc-sections,--wrap=stw_createAudioConverter -lm -o $@
+
 test_reloq_hash_delete: ../tests/test_reloq_hash_delete.c $(RULES61)
 	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -DEVV_ARENA=1 -I../vendor/openevv61/src/port $< $(RULES61) -pthread -lm -o $@
+
+test_reloq_native_rules: ../tests/test_reloq_native_rules.c $(OBJECTS) $(RULES61)
+	$(CC) $(CFLAGS) $(PROVIDER_LINK) -I../vendor/openevv61/include $< $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections -lm -o $@
+
+eci_native_rules_probe.exe: ../tests/test_reloq_native_rules.c ../src/reloq_german_lexicon.c ../src/reloq_german_spr.c reloq_eci_fixed_math.c $(RULES61_WIN)
+	$(WINDOWS_CC) $(filter-out -Werror,$(WINDOWS_CFLAGS)) $(PROVIDER_LINK) $(SECTIONS) -I../include -I../vendor/openevv61/include $^ $(WINDOWS_LDFLAGS) -Wl,--gc-sections -lm -o $@
+
+eci_rate_dispatch_probe.exe: ../tests/test_reloq_rate_dispatch.c ../src/reloq_rate_transfer.c $(HEADERS)
+	$(WINDOWS_CC) $(WINDOWS_CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< $(WINDOWS_LDFLAGS) -Wl,--gc-sections -lm -o $@
 
 test_reloq_rate_dispatch: ../tests/test_reloq_rate_dispatch.c ../src/reloq_rate_transfer.c $(HEADERS)
 	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< -Wl,--gc-sections -lm -o $@
 
-test: test_reloq_eci test_reloq_german_context test_reloq_german_cancel test_reloq_hash_delete test_reloq_rate_dispatch test_reloq_silence_cut libreloq_eci.so
+test_reloq_classic_voice: ../tests/test_reloq_classic_voice.c ../src/reloq_rate_transfer.c $(HEADERS)
+	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< -Wl,--gc-sections -lm -o $@
+
+test_reloq_classic_source: ../tests/test_reloq_classic_source.c ../src/reloq_core.c ../src/reloq_rate_transfer.c ../src/reloq_noise_profile.c $(HEADERS)
+	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< ../src/reloq_rate_transfer.c ../src/reloq_noise_profile.c -Wl,--gc-sections -lm -o $@
+
+eci_classic_source_probe.exe: ../tests/test_reloq_classic_source.c ../src/reloq_core.c ../src/reloq_rate_transfer.c ../src/reloq_noise_profile.c $(HEADERS)
+	$(WINDOWS_CC) $(WINDOWS_CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< ../src/reloq_rate_transfer.c ../src/reloq_noise_profile.c $(WINDOWS_LDFLAGS) -Wl,--gc-sections -lm -o $@
+
+test_reloq_classic_frame: ../tests/test_reloq_classic_frame.c build/posix/reloq_core.o build/posix/reloq_rate_transfer.o build/posix/reloq_noise_profile.o build/posix/reloq_frame_adapter.o build/posix/reloq_german_voice_defaults.o build/posix/reloq_voice_controls.o
+	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $^ -Wl,--gc-sections -lm -o $@
+
+test_reloq_classic_noise: ../tests/test_reloq_classic_noise.c ../src/reloq_rate_transfer.c $(HEADERS) build/posix/reloq_core.o build/posix/reloq_noise_profile.o
+	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< build/posix/reloq_core.o build/posix/reloq_noise_profile.o -Wl,--gc-sections -lm -o $@
+
+build/posix/reloq_session_float_diagnostic.o: ../tools/reloq_session_float_diagnostic.c ../src/reloq_session.c $(HEADERS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -fvisibility=hidden -I../include -c $< -o $@
+
+libreloq_eci_float_diagnostic.so: $(OBJECTS) build/posix/reloq_session_float_diagnostic.o $(RULES61)
+	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -shared $(filter-out build/posix/reloq_session.o,$(OBJECTS)) build/posix/reloq_session_float_diagnostic.o $(RULES61) -pthread -Wl,--gc-sections,--no-undefined -lm -o $@
+
+test_reloq_session: ../tests/test_reloq_session.c build/posix/reloq_session.o build/posix/reloq_core.o build/posix/reloq_rate_transfer.o build/posix/reloq_noise_profile.o
+	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $^ -Wl,--gc-sections -lm -o $@
+
+test_reloq_hearing_profiles: ../tests/test_reloq_hearing_profiles.c build/posix/reloq_session.o build/posix/reloq_core.o build/posix/reloq_rate_transfer.o build/posix/reloq_noise_profile.o
+	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $^ -Wl,--gc-sections -lm -o $@
+
+test_reloq_classic_body: ../tests/test_reloq_classic_body.c ../src/reloq_session.c $(HEADERS) build/posix/reloq_core.o build/posix/reloq_rate_transfer.o build/posix/reloq_noise_profile.o build/posix/reloq_frame_adapter.o build/posix/reloq_german_voice_defaults.o build/posix/reloq_voice_controls.o
+	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< build/posix/reloq_core.o build/posix/reloq_rate_transfer.o build/posix/reloq_noise_profile.o build/posix/reloq_frame_adapter.o build/posix/reloq_german_voice_defaults.o build/posix/reloq_voice_controls.o -Wl,--gc-sections -lm -o $@
+
+test: test_reloq_eci test_reloq_german_context test_reloq_german_cancel test_reloq_hash_delete test_reloq_rate_dispatch test_reloq_silence_cut test_reloq_classic_source libreloq_eci.so
 	./test_reloq_eci
 	./test_reloq_german_context
 	./test_reloq_german_cancel
 	./test_reloq_hash_delete
 	./test_reloq_rate_dispatch
 	./test_reloq_silence_cut
+	./test_reloq_classic_source
 	python3 test_public_abi.py libreloq_eci.so --header ../include/reloq_eci.h
+	python3 ../nvda/test_eci_standard_api.py --library libreloq_eci.so
+	python3 ../nvda/test_eci_extended_standard_api.py --library libreloq_eci.so
+	python3 ../nvda/test_eci_contract_api.py --library libreloq_eci.so
+	python3 ../nvda/test_eci_phonemes_pause.py --library libreloq_eci.so
+	python3 ../nvda/test_eci_german_tag_context.py --library libreloq_eci.so
 	python3 test_diagnostics.py libreloq_eci.so
 	python3 -B ../tools/update_chinese_traditional.py --check
 	python3 -B ../tools/test_native_text_input.py

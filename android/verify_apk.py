@@ -67,6 +67,15 @@ def verify_upgrade(new,old,aapt2,apksigner,environment=None):
     return dict(before=before,after=after)
 
 
+def verify_direct_boot_manifest(tree):
+    """Accept both aapt's namespace prefix and aapt2's namespace URI."""
+    services=re.findall(r"E: service[^\n]*\n((?:[ \t]+A:[^\n]*\n)+)",tree)
+    service=next((attrs for attrs in services if ".ReLoqService" in attrs),None)
+    namespace=r"(?:android|https?://schemas\.android\.com/apk/res/android)"
+    if service is None or not re.search(namespace+r":directBootAware[^\n]*=(?:true|\(type 0x12\)0xffffffff|0xffffffff)",service,re.I):
+        raise ValueError("Compiled TTS service is not Direct Boot aware")
+
+
 def verify_permissions(path,aapt2):
     """Inspect the compiled manifest, including permissions merged at build time."""
     listing=subprocess.run([str(aapt2),"dump","permissions",str(path)],
@@ -74,13 +83,16 @@ def verify_permissions(path,aapt2):
     permissions=re.findall(r"uses-permission: name='([^']+)'",listing)
     if permissions!=["android.permission.INTERNET"]:
         raise ValueError("Unexpected APK permissions: "+repr(permissions))
+    tree=subprocess.run([str(aapt2),"dump","xmltree",str(path),"--file","AndroidManifest.xml"],
+        check=True,capture_output=True,text=True).stdout
+    verify_direct_boot_manifest(tree)
     with zipfile.ZipFile(path) as apk:
         dex=apk.read("classes.dex")
         for removed in (b"Lorg/reloq/tts/preview/UpdateProvider;",
                         b"android.settings.MANAGE_UNKNOWN_APP_SOURCES",
                         b"android.intent.action.INSTALL_PACKAGE"):
             if removed in dex:raise ValueError("Removed APK installer code remains in DEX")
-    print("APK permissions: INTERNET only; removed APK installer code absent from DEX")
+    print("APK permissions: INTERNET only; TTS service Direct Boot aware; removed APK installer code absent from DEX")
     return permissions
 
 

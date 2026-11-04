@@ -1,0 +1,87 @@
+{
+  "version": "1.1.0-rc1",
+  "core_version": "1.1.0.rc1",
+  "official_release": false,
+  "source_base": "28933bea0bf082e47923362dd68cb3e4b32cdbdc",
+  "merged_main": "1ac17f3e5a6faebb8e46bf68bf13d8eb5c82ddbb",
+  "dll": {
+    "bytes": 54735360,
+    "sha256": "a5a615337a0e7210c5341dd71d2f44965f0f2e7e22e3461bf709dc55595b511f",
+    "architecture": "Windows x64",
+    "exports": 49
+  },
+  "linux_library": {
+    "bytes": 55360456,
+    "sha256": "815bc7f585d2122d3f5726a272314d5747a8a7d8814f7f476e8ffebc084fd05d"
+  },
+  "checks": {
+    "public_standard": 131,
+    "public_extended": 78,
+    "public_contract": 86,
+    "public_phonemes_pause": 69,
+    "inline_queue": 447,
+    "high_rate_profiles": 293,
+    "german_context": 371,
+    "german_whole_vs_streamed": 40,
+    "analysis_cancellation": 32,
+    "english_seconds": 72,
+    "real_speech_peak_cases": 136,
+    "baseline_a_low_rate_pcm_identities": 36,
+    "maximum_peak": 32107,
+    "native_c_eci": "passed",
+    "session_a_body_and_castilian_af": "passed",
+    "nvda_package_en": "passed",
+    "nvda_package_de": "passed",
+    "updater_tests": 7,
+    "castilian_real_onset_a_identities": 20,
+    "castilian_peak_cases": 30,
+    "castilian_maximum_peak": 32275,
+    "unchanged_castilian_a_mexican_b_controls": 60
+  },
+  "body": {
+    "rates_hz": [
+      22050,
+      32000,
+      44100,
+      48000
+    ],
+    "a_weights": [
+      0.25,
+      0.5,
+      0.8,
+      1
+    ],
+    "a_body_calibration": 0.8,
+    "preserve_16000_body": true,
+    "preserve_other_classic_af": true,
+    "castilian_s_t_filter": "Independent A bank/filter selection for native upper-frication targets; preserve original A mix and hold colour through AF release. Five rate identities cover both source mixes.",
+    "resampling": false,
+    "dynamic_level_detector": false
+  },
+  "startup": {
+    "method": "same host, first PCM callback, warm state, 5 repetitions; source in tools/measure_eci_startup.py; PCM stays in RAM",
+    "language": "German",
+    "sample_rate_hz": 11025,
+    "characters": 9472,
+    "baseline_ms": 14.684972,
+    "candidate_ms": 3.58315,
+    "first_pcm_identical": true
+  },
+  "limits": [
+    "Windows x64 cross-build and export/import verification are local; runtime validation is performed by the linked GitHub workflow for the candidate source.",
+    "No claim of perceptual quality or uninterrupted playback on Windows ARM/NVDA hardware.",
+    "Bounded German startup uses safe admitted phrase cuts; annotations, Rlex replacements, dependent tails and unclosed syntax retain existing planning.",
+    "Full original ECI snapshot/thread/phoneme/filter/device parity is not implemented.",
+    "Mixed explicit ECI pitch marks and inline pitch keep the existing native route."
+  ],
+  "issue_plan": {
+    "2": "closed as completed; public source and regressions verified",
+    "5": "closed as completed; public source and regressions verified",
+    "6": "closed as completed; public source and regressions verified",
+    "4": "GPL license/notices packaged; close with main PR merge",
+    "1": "keep open for target-device listening before stable 1.1.0"
+  },
+  "dictionary_commit": "a142cb841b4c70260cb2c37ac4ac96da88c33644",
+  "packaging": "Prereleases use the NVDA hearing-preview workflow. Stable multi-platform packaging stays gated on a numeric final version.",
+  "windows_eci_workflow_success_before_castilian_selector_refinement": 41421794969
+}

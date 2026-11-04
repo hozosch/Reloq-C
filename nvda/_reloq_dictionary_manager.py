@@ -14,12 +14,13 @@ from pathlib import Path
 import shutil
 import tempfile
 import threading
+import unicodedata
 from urllib.request import urlopen
 
 if __package__:
-    from ._reloq_dictionaries import FILES, LIMIT, SHA, _blob, fetch_master, validate_snapshot
+    from ._reloq_dictionaries import FILES, LIMIT, SHA, SOURCES, ALTERNATIVE_REPOSITORY, _blob, fetch_master, validate_snapshot
 else:
-    from _reloq_dictionaries import FILES, LIMIT, SHA, _blob, fetch_master, validate_snapshot
+    from _reloq_dictionaries import FILES, LIMIT, SHA, SOURCES, ALTERNATIVE_REPOSITORY, _blob, fetch_master, validate_snapshot
 
 PREFIXES = {0x10000: "ENU", 0x10001: "ENG", 0x20000: "ESP", 0x20001: "ESM",
             0x30000: "FRA", 0x30001: "FRC", 0x40000: "DEU", 0x50000: "ITA",
@@ -132,6 +133,24 @@ def _entries(data, name):
         yield key, value
 
 
+def _source_to_cp1252(data):
+    # The alternative repository publishes UTF-8 and ANSI files. Preserve
+    # existing ANSI bytes; map UTF-8 to the engine's native code page.
+    try:
+        text = data.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return data
+    rows = []
+    for line in text.splitlines():
+        try:
+            rows.append(line.encode("cp1252"))
+        except UnicodeEncodeError:
+            stripped = "".join(c for c in unicodedata.normalize("NFD", line)
+                               if unicodedata.category(c) != "Mn")
+            try: rows.append(stripped.encode("cp1252"))
+            except UnicodeEncodeError: continue
+    return b"\n".join(rows) + b"\n"
+
 def validate_merged(directory):
     directory = Path(directory)
     manifest = json.loads((directory / "manifest.json").read_text(encoding="utf8"))
@@ -149,7 +168,8 @@ def validate_merged(directory):
 def merge_sources(community, sources, cache, *, replacements=None):
     tables = {}
     conflicts = 0
-    commit = validate_snapshot(community)["commit"] if community else None
+    snapshot = validate_snapshot(community) if community else None
+    commit = snapshot["commit"] if snapshot else None
 
     def add(name, data):
         nonlocal conflicts
@@ -163,9 +183,12 @@ def merge_sources(community, sources, cache, *, replacements=None):
             table[identity] = (key, value)
 
     if community:
-        for name in FILES:
+        for name in snapshot["files"]:
             if name.endswith(".dic"):
-                add(name, _read(Path(community) / name))
+                data = _read(Path(community) / name)
+                if snapshot["repository"].lower() == ALTERNATIVE_REPOSITORY.lower():
+                    data = _source_to_cp1252(data)
+                add(name, data)
     for name, data in (replacements or {}).items():
         if name not in NAMES:
             raise ValueError("invalid local dictionary filename")
@@ -229,7 +252,19 @@ class DictionaryManager:
         except (OSError, ValueError, TypeError, KeyError) as error:
             self._sources = ()
             self.on_error(error)
+        try:
+            settings = json.loads(self.settings_path.read_text(encoding="utf8"))
+            self._repository = settings.get("repository", "community")
+            if self._repository not in SOURCES: raise ValueError("unknown dictionary source")
+        except (OSError, ValueError, TypeError):
+            self._repository = "community"
         self._committed_sources = self._sources
+        self._committed_repository = self._repository
+
+    @property
+    def repository(self):
+        with self._lock:
+            return self._repository
 
     @property
     def sources(self):
@@ -240,15 +275,19 @@ class DictionaryManager:
         with self._lock:
             return not self._closed and revision == self._revision
 
-    def _community(self):
+    def _community(self, repository):
+        folder = self.cache if repository == "community" else self.cache / repository
         try:
-            commit = json.loads((self.cache / "current.json").read_text(encoding="ascii"))["commit"]
+            commit = json.loads((folder / "current.json").read_text(encoding="ascii"))["commit"]
             if not isinstance(commit, str) or not SHA.fullmatch(commit):
                 raise ValueError("invalid cached master commit")
-            path = self.cache / commit
-            validate_snapshot(path)
+            path = folder / commit
+            manifest = validate_snapshot(path)
+            if manifest["repository"].lower() != SOURCES[repository][0].lower():
+                raise ValueError("dictionary source mismatch")
             return path
         except (OSError, ValueError, KeyError, TypeError):
+            if repository != "community": return None
             try:
                 manifest = validate_snapshot(self.bundled)
                 target = self.cache / manifest["commit"]
@@ -344,15 +383,18 @@ class DictionaryManager:
             self._sources = sources
         return self._request(update=False, completed=completed, save=True)
 
-    def configure(self, sources, enabled, completed=None):
+    def configure(self, sources, enabled, completed=None, repository=None):
         """Apply a settings panel's sources and switch as one revision."""
         if type(enabled) is not bool:
             raise ValueError("community dictionary setting must be boolean")
         sources = tuple(source if isinstance(source, DictionarySource) else DictionarySource(**source)
                         for source in sources)
         with self._lock:
-            self._sources, self._enabled = sources, enabled
-        return self._request(update=False, completed=completed, save=True)
+            repository = self._repository if repository is None else repository
+            if repository not in SOURCES: raise ValueError("unknown dictionary source")
+            changed = repository != self._repository
+            self._sources, self._enabled, self._repository = sources, enabled, repository
+        return self._request(update=enabled and changed, completed=completed, save=True)
 
     def refresh(self, completed=None):
         # Reload every selected local source too. The GitHub setting controls
@@ -368,7 +410,7 @@ class DictionaryManager:
             if watch_revision is not None and (self._revision != watch_revision or self._working_revision is not None):
                 return None
             self._revision += 1
-            revision, enabled, sources = self._revision, self._enabled, self._sources
+            revision, enabled, sources, repository = self._revision, self._enabled, self._sources, self._repository
             self._working_revision = revision
             if self._watch_thread is None:
                 self._watch_thread = threading.Thread(target=self._watch,
@@ -380,7 +422,7 @@ class DictionaryManager:
         # File verification and merging belong to the background worker.
         # In particular, do not emit an older cached set before applying a
         # locally edited bundled volume, or read a large root file on the UI.
-        threading.Thread(target=self._work, args=(revision, enabled, sources, update, completed, save),
+        threading.Thread(target=self._work, args=(revision, enabled, sources, repository, update, completed, save),
                          name="Eloquence dictionary update", daemon=True).start()
         return revision
 
@@ -407,11 +449,13 @@ class DictionaryManager:
             self._watch_event.wait(self._watch_interval)
             self._watch_event.clear()
 
-    def _build(self, community, sources, enabled):
+    def _build(self, community, sources, enabled, repository):
+        if not enabled and not sources:
+            return None, {"community_commit": None, "own_sources": 0, "files": {}}
         replacements = self._bundle_changes() if enabled else {}
-        if enabled and community is None:
+        if enabled and community is None and repository == "community":
             replacements = {s.name: _read(s.path) for s in directory_sources(self.bundled)}
-        if not sources and not replacements:
+        if not sources and not replacements and repository == "community":
             if community:
                 manifest = validate_snapshot(community)
                 return community, {"community_commit": manifest["commit"], "own_sources": 0,
@@ -419,37 +463,43 @@ class DictionaryManager:
             return None, {"community_commit": None, "own_sources": 0, "files": {}}
         return merge_sources(community, sources, self.cache, replacements=replacements)
 
-    def _work(self, revision, enabled, sources, update, completed, save):
+    def _work(self, revision, enabled, sources, repository, update, completed, save):
         state = self._state(enabled, sources)
         committed = False
         try:
-            community = self._community() if enabled else None
-            path, details = self._build(community, sources, enabled)
+            community = self._community(repository) if enabled else None
+            if enabled and repository != "community" and community is None:
+                community = fetch_master(self.cache, fetch=self.fetch, publish=False, source=repository)
+                update = False
+            path, details = self._build(community, sources, enabled, repository)
             if self._state(enabled, sources) != state:
                 raise OSError("dictionary source changed while it was being read")
             with self._lock:
                 if self._closed or self._revision != revision:
                     return
                 if save:
-                    _atomic_json(self.settings_path, {"version": 1, "sources": [s.record() for s in sources]})
+                    _atomic_json(self.settings_path, {"version": 1, "sources": [s.record() for s in sources], "repository": repository})
                 self._committed_sources = sources
+                self._committed_repository = repository
+                if enabled and community and repository != "community":
+                    _atomic_json(self.cache / repository / "current.json", {"commit": community.name})
                 self._watched_state = state
                 committed = True
             self._emit(revision, path)
             if update:
-                latest = fetch_master(self.cache, fetch=self.fetch, publish=False)
+                latest = fetch_master(self.cache, fetch=self.fetch, publish=False, source=repository)
                 if not self.current(revision):
                     return
-                self._install_latest(latest)
+                if repository == "community": self._install_latest(latest)
                 installed_state = self._state(enabled, sources)
                 if enabled and (community is None or installed_state != state or
                                 latest.name != validate_snapshot(community)["commit"]):
-                    path, details = self._build(latest, sources, enabled)
+                    path, details = self._build(latest, sources, enabled, repository)
                 if self._state(enabled, sources) != installed_state:
                     raise OSError("dictionary source changed while it was being read")
                 with self._lock:
                     if not self._closed and self._revision == revision:
-                        _atomic_json(self.cache / "current.json", {"commit": latest.name})
+                        _atomic_json((self.cache if repository == "community" else self.cache / repository) / "current.json", {"commit": latest.name})
                         self._watched_state = installed_state
             if not self.current(revision):
                 return
@@ -462,6 +512,7 @@ class DictionaryManager:
                 if active:
                     if not committed:
                         self._sources = self._committed_sources
+                        self._repository = self._committed_repository
                     # Report an invalid saved file once. Its next write,
                     # disappearance or return will be checked automatically.
                     self._watched_state = state

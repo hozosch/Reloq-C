@@ -5,6 +5,11 @@
 /* Adjacent sparse endpoints. Evaluate val_l + (at-at_l)*(val_r-val_l) /
  * (at_r-at_l) in single precision, then truncate the complete value. */
 struct reloq61_curve { int32_t at_l, val_l, at_r, val_r; };
+/* Private German AF endpoint metadata. The ordinary value is recovered before
+ * interpolation; a male model uses the same curve with marked ends 2 dB down. */
+#define RELOQ61_DE_AF_MARK 1000
+#define RELOQ61_DE_AF_FRAME 10000
+#define RELOQ61_DE_AF_PACK 512
 typedef int (*reloq61_span_sink)(void *,int32_t from,int32_t to,
     const struct reloq61_curve curves[62],int32_t volume);
 struct reloq61_mark { size_t offset; int32_t index, pitch; };
@@ -29,6 +34,14 @@ struct reloq61_request {
     /* Physical host clock for independently requested source balancing;
      * it does not select a different original acoustic-rule profile. */
     int output_rate;
+    /* Public phoneme output keeps native queue/index callbacks. */
+    int phoneme_indices;
+    /* Word-scoped controls with their actual acoustic tick and source
+     * ordinal. Lexical lookahead callbacks are not playback boundaries. */
+    const struct reloq61_mark *controls;
+    size_t control_count;
+    void (*control)(void *,int,int,int64_t,size_t);
+    int german_affricate_markers;
 };
 /* Lossless German onset facts collected during the existing phoneme pass.
  * The caller owns this scoped sink; no word or synthesis result is retained. */
@@ -51,6 +64,10 @@ void reloq61_german_syllable_begin(void);
 struct reloq61_text_options {int dictionary_disabled, phrase_prediction;};
 struct reloq61_text_options reloq61_text_options_current(void);
 struct reloq61_text_options reloq61_text_options_scope(struct reloq61_text_options);
+/* Per-synthesis German /Ej/ glide tuning; scope/restore protects nested engines. */
+struct reloq61_glide_options {int opening,backness,softness;};
+struct reloq61_glide_options reloq61_glide_options_current(void);
+struct reloq61_glide_options reloq61_glide_options_scope(struct reloq61_glide_options);
 struct reloq61_result { int unsupported, error; size_t frames, phonemes_length; int64_t ticks; };
 /* CP1252 input; synchronous and independent of the host audio device.
  * 0 success, 1 unsupported plan (discard all results), -1 failure. */
@@ -69,6 +86,8 @@ struct reloq61_cancel_check reloq61_cancel_scope(struct reloq61_cancel_check);
  * restores the preceding scope after each utterance, and destroys the worker
  * after all callbacks and cancellation have joined. No process-global engine. */
 void *reloq61_worker_new(int language);
+int reloq61_worker_dictionary_files(void *,const char *const files[4]);
+int reloq61_worker_dictionary_data(void *,const unsigned char *const data[4],const size_t sizes[4]);
 void reloq61_worker_free(void *);
 void *reloq61_worker_scope(void *);
 int reloq61_labiodental_gain(void *state);

@@ -614,19 +614,49 @@ static void spectrum_pairs(double spectrum[FFT_SIZE],const struct frequency_grid
     }
 }
 #endif
-/* The same linear one-millisecond ramp is shared by every tap. Calculate
+/* The same linear ramp is shared by every tap: 3 ms for Classic AV/AH,
+ * the existing 1 ms otherwise. Calculate
  * its slope once per frame; division inside every sample/tap is unnecessary. */
 static void prepare_ramp(struct reloq_rate_transfer *s,float rate)
 {
     if(!s->ready){memcpy(s->kernel,s->target,sizeof s->kernel);s->ready=1;}
-    s->remaining=(unsigned)(rate*.001f);if(!s->remaining)s->remaining=1;
+    s->remaining=(unsigned)(rate*((s->trial_profile||s->smooth_updates)&&s->presence_rate>0?.003f:.001f));
+    if(!s->remaining)s->remaining=1;
     for(unsigned i=0;i<RELOQ_RATE_TAPS;++i)
         s->step[i]=(s->target[i]-s->kernel[i])/s->remaining;
 }
 /* Large fit workspaces belong only to actual filter changes. Keep the
  * ordinary key check and clock bypass below out of their stack frames. */
+#include "reloq_classic_colour.inc"
+#include "reloq_classic_tract.inc"
+
 static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rate)
 {
+    s->colour_profile=s->trial_profile;
+    s->aspiration_step=1-exp(-1/(rate*.005));
+    if(s->trial_profile) {
+        /* Factor the smooth discretization tilt out of the finite FIR.
+         * The fit divides by this section, so the final target remains the
+         * measured Classic contour. Both AV and AH pass the combined fit. */
+        classic_tract_shelf(s->presence,rate,s->colour_extension);
+        /* A small periodic-only lift restores the upper bass without
+         * changing the accepted AF level or adding aspiration energy. */
+        const double db=.6,a=pow(10,db/40);
+        const double w=2*pi*300/rate,alpha=sin(w)/(2*.8),den=1+alpha/a;
+        double *c=s->voice_colour[0];
+        c[0]=(1+alpha*a)/den;c[1]=-2*cos(w)/den;c[2]=(1-alpha*a)/den;
+        c[3]=c[1];c[4]=(1-alpha/a)/den;
+        /* Keep useful presence around 3.5–4 kHz, without a shelf that
+         * continues to raise everything towards Nyquist. This fixed broad
+         * EQ acts only on the existing periodic source and leaves bass and
+         * the fricative/aspiration paths independently controlled. */
+        const double bell_a=pow(10,1.3/40),omega=2*pi*3750/rate;
+        const double bell_alpha=sin(omega)/2,bell_den=1+bell_alpha/bell_a;
+        double *bell=s->voice_colour[1];
+        bell[0]=(1+bell_alpha*bell_a)/bell_den;bell[1]=-2*cos(omega)/bell_den;
+        bell[2]=(1-bell_alpha*bell_a)/bell_den;bell[3]=bell[1];bell[4]=(1-bell_alpha/bell_a)/bell_den;
+        s->presence_rate=rate;return;
+    }
     /* Keep the shared tract/aspiration response. Periodic excitation
      * gets the inverse of this old peak followed by a monotonic
      * shelf, so the added brightness does not alter AH or AF noise. */
@@ -683,11 +713,11 @@ static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rat
         c[1]=(-2+2*zz)/den;c[2]=(1+2*creal(z)+zz)/den;
         c[3]=(-2+2*pp)/den;c[4]=(1+2*creal(p)+pp)/den;
     }
-    s->aspiration_step=1-exp(-1/(rate*.005));
 }
 static RATE_NOINLINE void fit_tract(struct reloq_rate_transfer *s,
     const struct reloq_core_voiced_formants *f,float rate,float reference,unsigned old_count)
 {
+    s->taps=129;
     const struct reloq_core_formant *special[4]={&f->nasal_pole,&f->nasal_zero,&f->tracheal_pole,&f->tracheal_zero};
     struct pole before[12],after[12];
     /* Only active oral poles are read by the magnitude calculation.
@@ -705,6 +735,10 @@ static RATE_NOINLINE void fit_tract(struct reloq_rate_transfer *s,
             before[i]=pole_at(special[i-8],reference);
             after[i]=pole_at(special[i-8],rate);
         }
+    }
+    if(s->trial_profile) {
+        fit_classic_tract(s,before,after,old_count,f->highest_formant,rate,reference);
+        return;
     }
     const struct frequency_grid *grid=prepare_grid(rate,reference);
     /* Equal pole/zero coefficients have the same response at every bin.
@@ -756,20 +790,57 @@ void reloq_rate_transfer_prepare(struct reloq_rate_transfer *s,
     const struct reloq_core_voiced_formants *f,float rate,float reference,unsigned old_count)
 {
     if(reference<=0 || rate<=reference)return;
-    if(rate>=16000 && s->presence_rate!=rate)prepare_colour(s,rate);
+    unsigned extension=f->highest_formant>(long)old_count;
+    if(s->trial_profile && s->colour_extension!=extension){s->colour_extension=extension;s->presence_rate=0;}
+    if(rate>=16000 && (s->presence_rate!=rate || s->colour_profile!=s->trial_profile))prepare_colour(s,rate);
     if(old_count<1 || old_count>5)old_count=5;
-    float key[28]={rate,reference,(float)old_count,(float)f->highest_formant};
+    float key[29]={rate,reference,(float)old_count,(float)f->highest_formant};
+    key[28]=(float)s->trial_profile;
     const struct reloq_core_formant *special[4]={&f->nasal_pole,&f->nasal_zero,&f->tracheal_pole,&f->tracheal_zero};
     for(unsigned i=0;i<8;++i){key[4+2*i]=f->oral[i].frequency_hz;key[5+2*i]=f->oral[i].bandwidth_hz;}
     for(unsigned i=0;i<4;++i){key[20+2*i]=special[i]->frequency_hz;key[21+2*i]=special[i]->bandwidth_hz;}
     if(s->ready && !memcmp(key,s->key,sizeof key))return;
+    if((s->trial_profile||s->smooth_updates) && s->ready && !memcmp(key,s->key,4*sizeof *key) &&
+       key[28]==s->key[28] && s->fit_samples<(unsigned)(rate*.002f)) {
+        /* Slowly moving formants need no new spectral fit every ms.
+         * Large transitions still take effect immediately. Only the
+         * current live filter is retained, never a speech result. */
+        int jump=0;
+        for(unsigned i=4;i<28;++i) {
+            float bound=(i&1)?fmaxf(10,.15f*fabsf(s->key[i])):
+                fmaxf(25,.04f*fabsf(s->key[i]));
+            if(fabsf(key[i]-s->key[i])>bound){jump=1;break;}
+        }
+        if(!jump)return;
+    }
     memcpy(s->key,key,sizeof key);
     fit_tract(s,f,rate,reference,old_count);
+    s->fit_samples=0;
 }
+
+#include "reloq_gradual_body.inc"
 
 void reloq_rate_transfer_process_voice(struct reloq_rate_transfer *s,float *samples,size_t count)
 {
     if(s->presence_rate<=0)return;
+    if(s->trial_profile||s->smooth_updates) {
+        unsigned limit=(unsigned)s->presence_rate;
+        if(s->fit_samples<limit)
+            s->fit_samples+=count>limit-s->fit_samples?limit-s->fit_samples:(unsigned)count;
+    }
+    if(s->trial_profile) {
+        for(size_t j=0;j<count;++j) {
+            double y=samples[j];
+            for(unsigned k=0;k<2;++k) {
+                const double *c=s->voice_colour[k];double *d=s->voice_colour_delay[k];
+                double x=y;y=c[0]*x+d[0];
+                d[0]=c[1]*x-c[3]*y+d[1];d[1]=c[2]*x-c[4]*y;
+            }
+            if(s->body_ready)y=gradual_body_sample(s,y);
+            samples[j]=(float)y;
+        }
+        return;
+    }
     for(size_t j=0;j<count;++j) {
         double y=samples[j];
         for(unsigned k=0;k<RELOQ_RATE_VOICE_COLOURS;++k) {
@@ -782,6 +853,7 @@ void reloq_rate_transfer_process_voice(struct reloq_rate_transfer *s,float *samp
             double x=y;y=c[0]*x+d[0];
             d[0]=c[1]*x-c[3]*y+d[1];d[1]=c[2]*x-c[4]*y;
         }
+        if(s->body_ready)y=gradual_body_sample(s,y);
         samples[j]=(float)y;
     }
 }
@@ -1079,6 +1151,7 @@ static RATE_NOINLINE void fit_noise(struct reloq_rate_transfer *s,
     const struct reloq_core_frication_bank *wide,float rate,float reference,
     float boundary_width,double norm)
 {
+    s->taps=129;
     const double width=fmax(boundary_width,reference/FFT_SIZE);
     const double low=reference*.5-width,high=reference*.5+width;
     double before[FFT_SIZE/2+1],after[FFT_SIZE/2+1],peak=0;
@@ -1197,11 +1270,12 @@ static double bank_power(const struct reloq_core_frication_bank *b,double comple
     }
     return yr*yr+yi*yi;
 }
-/* Clock-only responses are shared by all noise profiles. The two
- * profile families retain only their own coefficients and power curve. */
+/* Clock-only responses are shared by all noise profiles. Each profile
+ * retains only its immutable coefficients and power curve. */
 struct noise_clock_grid {
     atomic_int ready;
     double low_weight[FFT_SIZE/2+1],high_weight[FFT_SIZE/2+1],tilt[FFT_SIZE/2+1];
+    double classic[FFT_SIZE/2+1],extension[FFT_SIZE/2+1],retracted[FFT_SIZE/2+1];
     double complex z[3][FFT_SIZE/2+1];
 };
 struct noise_grid {
@@ -1210,7 +1284,7 @@ struct noise_grid {
     const struct noise_clock_grid *clock;
 };
 static struct noise_clock_grid noise_clocks[5];
-static struct noise_grid noise_grids[5][2];
+static struct noise_grid noise_grids[5][4];
 static unsigned noise_clock_index(float rate)
 {
     static const float rates[]={16000,22050,32000,44100,48000};
@@ -1236,6 +1310,13 @@ static void fill_noise_clock(struct noise_clock_grid *g,float rate)
         double blend=hz<=5300?0:hz>=5512.5?1:.5-.5*cos(pi*(hz-5300)/212.5);
         g->low_weight[k]=hz<5512.5?1-blend:0;
         g->high_weight[k]=hz<11025?blend*wide_noise_power(hz)*25.1188643150958*.5:0;
+        /* The Classic target, upper-band fade and S/T rolloff depend only
+         * on the clock. Preserve the same expressions as the direct path. */
+        g->classic[k]=hz<=11025?classic_colour_power(hz):0;
+        g->extension[k]=hz<=5512.5?0:hz>=6500?1:
+            .5-.5*cos(pi*(hz-5512.5)/987.5);
+        double ratio=hz/8500,quadratic=ratio*ratio;
+        g->retracted[k]=1/(1+quadratic*quadratic);
     }
 }
 static const struct noise_clock_grid *get_noise_clock(unsigned i,float rate)
@@ -1261,8 +1342,9 @@ static void fill_noise_grid(struct noise_grid *g,const struct reloq_noise_profil
 static const struct noise_grid *get_noise_grid(const struct reloq_noise_profile *p,
     unsigned i,float rate,const struct noise_clock_grid *clock)
 {
-    if(p->kind==1||p->kind==2) {
-        struct noise_grid *g=&noise_grids[i][p->kind-1];
+    if(p->rate!=rate)return NULL;
+    if(p->kind>=0&&p->kind<4) {
+        struct noise_grid *g=&noise_grids[i][p->kind];
         if(atomic_load_explicit(&g->ready,memory_order_acquire)!=2) {
             int expected=0;
             if(atomic_compare_exchange_strong(&g->ready,&expected,1)) {
@@ -1406,3 +1488,5 @@ void reloq_rate_transfer_prepare_noise_mix_profile(struct reloq_rate_transfer *s
         else fit_noise_profile(s,low,high,current,profile,clock,rate,mix,historic84,norm);
     } else fit_noise_clock(s,low,high,current,profile,rate,mix,historic84,norm);
 }
+
+#include "reloq_rate_trial.inc"

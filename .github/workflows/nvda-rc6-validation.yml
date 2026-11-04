@@ -1,0 +1,13 @@
+name: Verify archived rc6 package on Windows
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    # Reuse the exact rc6 product compiled from 7d969e4. Only the test
+    # harness changes: exercise the delivered add-on, not a reconstruction.
+    uses: ./.github/workflows/nvda-german-streaming.yml
+    with:
+      native_run_id: '41539725996'

@@ -53,6 +53,14 @@ int reloq_german_generic_melody_append(
     struct reloq_target_builder *builder);
 
 struct reloq_inline_word;
+int reloq_german_generic_melody_append_restarted(
+    const struct reloq_german_generic_melody_syllable *syllables,
+    size_t syllable_count,
+    const enum reloq_german_terminal_mark *marks, size_t mark_count,
+    int inflection, double pitch_scale, double time_scale,
+    const struct reloq_inline_word *controls,
+    struct reloq_target_builder *builder,int restart_first);
+
 int reloq_german_generic_melody_append_controls(
     const struct reloq_german_generic_melody_syllable *syllables,
     size_t syllable_count,

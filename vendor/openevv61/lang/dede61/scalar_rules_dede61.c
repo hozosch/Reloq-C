@@ -251,7 +251,11 @@ int32_t reloq_dede61_stanger_ph_nasal_a(void *state,int32_t p0)
 {
     (void)p0;
     if(!reloq_scalar_begin(state))return 94;
-    S(s449)=725; S(s451)=1025; S(s453)=3000; S(s398)=150; S(s407)=450; S(s408)=650;
+    /* The approved German a~ colour is shared by ordinary words and SPR
+     * input. Set it at the nucleus, before the native anatomy filters and
+     * the ordinary consonant-to-vowel transitions are applied. */
+    S(s449)=624; S(s451)=960; S(s453)=2880;
+    S(s398)=180; S(s407)=280; S(s408)=350;
     return reloq_scalar_finish(state,0);
 }
 

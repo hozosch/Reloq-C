@@ -64,26 +64,37 @@ int32_t reloq61_segment_point(void *state,int32_t stream_arg,int32_t value_arg,
     submit(d,stream.field,value.field,time.value,time.value);
     return finish(d,&saved,0);
 }
-int32_t reloq61_segment_voicing(void *state,const struct reloq61_segment_layout *layout,
-    int32_t value,int32_t begin,int32_t end,int32_t left,int32_t right)
+int32_t reloq61_segment_voicing_custom(void *state,const struct reloq61_segment_layout *layout,
+    int32_t value,int32_t begin,int32_t end,int32_t left,int32_t right,int gain,
+    reloq61_voicing_intercept intercept)
 {
     if(!reloq_scalar_begin(state))return 94;
     delta_state *d=state;struct cursor saved=save_cursor(d);struct target t={0};
     if(read_target(d,&t,value,begin,end,left,right))return finish(d,&saved,94);
+    if(t.value.field>0)t.value.field=(int16_t)(t.value.field+gain);
     delta_loc *voice=(delta_loc *)(fields(d)+layout->voice);
     voice->field=6;
     if(if_testeq_v_i(d,voice,100)||short_at(d,layout->force_voicing)) {
         int32_t stop=long_at(d,layout->point_voicing)?t.begin.value:t.end.value;
-        submit(d,short_at(d,layout->av_stream),t.value.field,t.begin.value,stop);
+        int16_t stream=short_at(d,layout->av_stream);
+        if(!intercept||!intercept(d,stream,t.value.field,t.begin.value,stop))
+            submit(d,stream,t.value.field,t.begin.value,stop);
     }
     return finish(d,&saved,0);
 }
-int32_t reloq61_segment_frication_gain(void *state,const struct reloq61_segment_layout *layout,
+int32_t reloq61_segment_voicing_gain(void *state,const struct reloq61_segment_layout *layout,
     int32_t value,int32_t begin,int32_t end,int32_t left,int32_t right,int gain)
+{return reloq61_segment_voicing_custom(state,layout,value,begin,end,left,right,gain,NULL);}
+int32_t reloq61_segment_voicing(void *state,const struct reloq61_segment_layout *layout,
+    int32_t value,int32_t begin,int32_t end,int32_t left,int32_t right)
+{return reloq61_segment_voicing_gain(state,layout,value,begin,end,left,right,0);}
+int32_t reloq61_segment_frication_gain_default(void *state,const struct reloq61_segment_layout *layout,
+    int32_t value,int32_t begin,int32_t end,int32_t left,int32_t right,int gain,int default_value)
 {
     if(!reloq_scalar_begin(state))return 94;
     delta_state *d=state;struct cursor saved=save_cursor(d);struct target t={0};
     if(read_target(d,&t,value,begin,end,left,right))return finish(d,&saved,94);
+    if(t.value.field==0&&default_value>0)t.value.field=(int16_t)default_value;
     if(t.value.field>0)t.value.field=(int16_t)(t.value.field+gain);
     lpta_loadpn(d,&t.left);rpta_loadpn(d,&t.right);
     int at_boundary=0;
@@ -96,6 +107,9 @@ int32_t reloq61_segment_frication_gain(void *state,const struct reloq61_segment_
     submit(d,short_at(d,layout->af_stream),t.value.field,start,at_boundary?start:t.end.value);
     return finish(d,&saved,0);
 }
+int32_t reloq61_segment_frication_gain(void *state,const struct reloq61_segment_layout *layout,
+    int32_t value,int32_t begin,int32_t end,int32_t left,int32_t right,int gain)
+{return reloq61_segment_frication_gain_default(state,layout,value,begin,end,left,right,gain,0);}
 int32_t reloq61_segment_frication(void *state,const struct reloq61_segment_layout *layout,
     int32_t value,int32_t begin,int32_t end,int32_t left,int32_t right)
 {
@@ -160,8 +174,9 @@ int32_t reloq61_segment_speed(void *state,const struct reloq61_segment_layout *l
     memcpy(EVV_AT(unsigned char *,duration_arg)+4,&value,4);
     return finish(d,&saved,0);
 }
-int32_t reloq61_segment_duration(void *state,const struct reloq61_segment_layout *layout,
-    int32_t duration_arg,int32_t left_arg,int32_t right_arg,int32_t phone_arg)
+int32_t reloq61_segment_duration_with(void *state,const struct reloq61_segment_layout *layout,
+    int32_t duration_arg,int32_t left_arg,int32_t right_arg,int32_t phone_arg,
+    int32_t (*filter)(void *,int16_t,int32_t))
 {
     if(!reloq_scalar_begin(state))return 94;
     delta_state *d=state;struct cursor saved=save_cursor(d);
@@ -169,6 +184,7 @@ int32_t reloq61_segment_duration(void *state,const struct reloq61_segment_layout
     if(read_cell(d,duration_arg,DK_FIXED,&duration)||read_position(left_arg,&left)||
        read_position(right_arg,&right)||read_cell(d,phone_arg,DK_SHORT2,&phone))
         return finish(d,&saved,94);
+    if(filter)duration.value=filter(state,phone.field,duration.value);
     int plain=short_at(d,layout->focus)==short_at(d,layout->neutral);
     int focused=short_at(d,layout->syllable_count)<short_at(d,layout->first_count)&&
         short_at(d,layout->stress)==short_at(d,layout->ordinary_stress)&&
@@ -207,3 +223,6 @@ int32_t reloq61_segment_duration(void *state,const struct reloq61_segment_layout
     }
     return finish(d,&saved,0);
 }
+int32_t reloq61_segment_duration(void *state,const struct reloq61_segment_layout *layout,
+    int32_t duration_arg,int32_t left_arg,int32_t right_arg,int32_t phone_arg)
+{return reloq61_segment_duration_with(state,layout,duration_arg,left_arg,right_arg,phone_arg,NULL);}

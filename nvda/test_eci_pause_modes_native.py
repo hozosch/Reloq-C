@@ -1,5 +1,6 @@
 """Pause policy preserves the acoustic release and shortens only silence."""
 from pathlib import Path
+import argparse
 from _reloq_eci_direct import (
     DirectEciEngine, EciIndex, PROCESS_TAGS, PAUSE_MODE, NATIVE_SPEED,
     NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME,
@@ -10,12 +11,15 @@ ROOT = Path(__file__).resolve().parents[1]
 def main():
     import sys
     import tempfile
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--library',type=Path,default=ROOT/'eci/libreloq_eci.so')
+    args=parser.parse_args()
     sys.path.insert(0, str(ROOT / 'addon'))
     from build_synth import merged_german_lexicon
     with tempfile.TemporaryDirectory() as folder:
         lex = Path(folder) / 'german.rlex'
         lex.write_bytes(merged_german_lexicon())
-        engine = DirectEciEngine(ROOT / 'eci/libreloq_eci.so',
+        engine = DirectEciEngine(args.library.resolve(),
                                 experimental_generic=True, lexicon_path=lex)
         try:
             for parameter, value in [(NATIVE_SPEED, 50), (NATIVE_PITCH, 65),

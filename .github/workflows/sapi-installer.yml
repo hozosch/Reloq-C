@@ -1,7 +1,7 @@
 name: SAPI5 installer and Windows validation
 on:
   push:
-    branches: [main]
+    branches: [main, codex/release110]
     paths:
       - .github/workflows/sapi-installer.yml
       - sapi/**
@@ -68,6 +68,15 @@ jobs:
           pattern: sapi-native-*
           path: dist
           merge-multiple: true
+      - name: Download and verify the alternative dictionary through both adapters
+        shell: pwsh
+        run: |
+          foreach ($arch in @('x64', 'x86')) {
+            $zip = (Get-ChildItem dist/reloq-c-sapi5-$arch-*.zip | Select-Object -First 1).FullName
+            Expand-Archive -Path $zip -DestinationPath "test-$arch"
+            & "./test-$arch/Test-Dictionary.exe"
+            if ($LASTEXITCODE -ne 0) { throw "Dictionary source smoke test failed for $arch" }
+          }
       - name: Compile unified Inno Setup installer
         shell: pwsh
         run: |
@@ -112,7 +121,17 @@ jobs:
           foreach ($arch in @('x64','x86')) {
             $test = if ($arch -eq 'x64') { Join-Path $install 'Test-SAPI.exe' } else { Join-Path $install 'x86\Test-SAPI.exe' }
             & $test --all-native-rates *> "dist/validation/sapi-$arch.txt"
-            if ($LASTEXITCODE -ne 0) { throw "SAPI $arch validation failed" }
+            $testExit = $LASTEXITCODE
+            if ($testExit -ne 0) {
+              Get-Content "dist/validation/sapi-$arch.txt" -Tail 60
+              if ($arch -eq 'x86') {
+                $env:RAL_TRACE = '1'
+                & $test --first-case *> "dist/validation/sapi-x86-trace.txt"
+                Remove-Item Env:RAL_TRACE
+                Get-Content "dist/validation/sapi-x86-trace.txt" -Tail 120
+              }
+              throw "SAPI $arch validation failed with exit code $testExit"
+            }
           }
           $p = Start-Process (Join-Path $install 'unins000.exe') -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=$pwd\dist\validation\uninstall.log" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Uninstall failed: $($p.ExitCode)" }

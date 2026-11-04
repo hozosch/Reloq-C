@@ -33,6 +33,12 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.community = wx.CheckBox(self, label=_("Use &community pronunciation dictionaries"))
         self.community.SetValue(self.synth.communityDictionaries if self.synth else False)
         content.Add(self.community, 0, wx.ALL, 10)
+        label = wx.StaticText(self, label=_("Dictionary &source:"))
+        content.Add(label, 0, wx.LEFT | wx.RIGHT, 10)
+        self.repository = wx.Choice(self, choices=[_("IBM TTS Dictionaries"), _("Alternative IBM TTS Dictionaries")])
+        self.repository.SetName(label.GetLabelText())
+        self.repository.SetSelection(1 if self.synth and self.synth.dictionary_manager().repository == "alternative" else 0)
+        content.Add(self.repository, 0, wx.EXPAND | wx.ALL, 10)
         label = wx.StaticText(self, label=_("&Own dictionary files (later files take priority):"))
         content.Add(label, 0, wx.LEFT | wx.RIGHT, 10)
         self.files = wx.ListBox(self, size=(-1, 180))
@@ -137,7 +143,7 @@ class EloquenceSettingsPanel(SettingsPanel):
         threading.Thread(target=work, name='ReLoq package update', daemon=True).start()
 
     def enable_controls(self, enabled):
-        for control in (*self.edits, self.files, self.update, self.community):
+        for control in (*self.edits, self.files, self.update, self.community, self.repository):
             control.Enable(enabled)
 
     def on_folder(self, event):
@@ -240,7 +246,8 @@ class EloquenceSettingsPanel(SettingsPanel):
         if self.current_synth():
             completed = self.begin()
             try:
-                self.synth.configure_dictionaries(self.sources, self.community.GetValue(), completed)
+                self.synth.configure_dictionaries(self.sources, self.community.GetValue(), completed,
+                    "alternative" if self.repository.GetSelection() == 1 else "community")
                 self.synth.saveSettings()
             except Exception as error:
                 completed(error, None)
@@ -261,6 +268,7 @@ class EloquenceSettingsPanel(SettingsPanel):
             self.synth = synth
             self.sources = list(synth.dictionary_manager().sources)
             self.community.SetValue(synth.communityDictionaries)
+            self.repository.SetSelection(1 if synth.dictionary_manager().repository == "alternative" else 0)
             self.redraw()
             self.status.SetLabel(_("Own entries override community entries. Original files are kept unchanged."))
         self.enable_controls(not self.pending and self.current_synth())

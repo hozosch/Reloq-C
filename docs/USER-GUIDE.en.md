@@ -1,5 +1,9 @@
 # Eloquence C – user guide
 
+## Version 1.1.0
+
+The German E-I glide defaults to opening 85, backness 45 and softness 45. German sentence and sound planning improve hyphenated words, number words and question contours. English analysis retains the whole stem in “recosp” and the final vowel in “tzsche”.
+
 ## English clock readings with seconds
 
 English clock times such as `13:28:25` keep the ordinary hours/minutes reading and append “and twenty five seconds”. One second uses the singular; fractional seconds remain in the normal number reader. This applies to US and British English in the native core, including NVDA and other ECI clients. Source indices remain attached to their original text positions.
@@ -69,6 +73,8 @@ Select Eloquence C first, then open **NVDA Settings → Eloquence C**.
 
 **Use community pronunciation dictionaries** adds German and American English entries from [eigencrow/IBMTTSDictionaries](https://github.com/eigencrow/IBMTTSDictionaries). It is off by default. **Update dictionaries now** checks the current `master` branch and applies a complete update in the background. Updating requires internet access.
 
+Under **Dictionary source**, you can also select **Alternative IBM TTS Dictionaries**. This source currently provides US English and Castilian Spanish, but no German dictionary. It is downloaded in the background the first time it is needed; own files take priority.
+
 Use **Add file** to select your own Dic files and assign a language and dictionary type. Filenames can be arbitrary; files stay at their original locations. Later files in the list take priority. Choose **OK** or **Apply** to save the selection.
 
 **Open dictionary folder** opens the existing `synthDrivers/reloqC/communityDictionaries` folder inside the add-on. This is where the bundled files live and editor changes are detected. With community dictionaries enabled, you can add files using a prefix from the language table and one of these suffixes:
@@ -85,7 +91,7 @@ Under **Add-on updates**, choose **Check for add-on updates** to check published
 
 ## Reporting problems
 
-ReLoq C 1.0.1 restores native S/Z source levels and improves stopping obsolete text analysis. Further high-rate sound tuning remains under evaluation. NVDA can process symbols before sending text to the synthesizer; its symbol settings therefore also affect which characters reach ReLoq. See the [technical work status](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md) for details.
+NVDA can process symbols before sending text to the synthesizer; its symbol settings therefore also affect which characters reach ReLoq. See the [technical work status](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md) for details.
 
 When [reporting an issue](https://github.com/hozosch/Reloq-C/issues), include a short example, language, voice, version, sample rate and whether dictionaries are enabled. Explain whether speech stops, pronunciation is wrong or NVDA itself exits.
 

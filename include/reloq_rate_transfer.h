@@ -26,6 +26,26 @@ struct reloq_rate_transfer {
      * A zero first coefficient bypasses this section. These coefficients
      * and delays belong to the filter, never to a stored speech result. */
     double voice_band[5],voice_band_delay[2];
+    /* Session-owned Classic hearing trial, with periodic upper-bass
+     * restoration and native expansion from 22.05 kHz. Legacy C aliases B. */
+    unsigned trial_profile,colour_profile,colour_extension;
+    unsigned fit_samples;
+    /* Continuous A transfer in the high-rate hybrid and comparison probes.
+     * Production profile A retains its established sample-exact behaviour. */
+    unsigned smooth_updates;
+    /* Profile B retains the 16-kHz tract. Only periodic excitation gains
+     * fixed broad colour, with a rate-dependent, bounded strength. */
+    float body_amount,body_key[7];
+    double body_coefficient[3][5],body_target[3][5],body_step[3][5],body_delay[3][2];
+    unsigned body_ready,body_remaining;
+    /* Limit the optional Castilian S/T extension independently of other AF. */
+    unsigned sibilant_extension;
+    /* Small whole-band AF level adjustment, leaving its spectrum intact. */
+    float frication_trim_db;
+    double classic_reference[2][5];
+    /* Periodic glottal filter only. Moving physical poles to a new clock
+     * otherwise loses the reference's discrete source response. */
+    unsigned source_profile;
 };
 struct reloq_core_voiced_formants;
 void reloq_rate_transfer_prepare(struct reloq_rate_transfer *,
@@ -33,6 +53,8 @@ void reloq_rate_transfer_prepare(struct reloq_rate_transfer *,
     unsigned reference_formants);
 void reloq_rate_transfer_process(struct reloq_rate_transfer *,float *,size_t);
 void reloq_rate_transfer_process_voice(struct reloq_rate_transfer *,float *,size_t);
+void reloq_rate_transfer_prepare_body(struct reloq_rate_transfer *,
+    const struct reloq_core_voiced_formants *,float rate);
 void reloq_rate_transfer_process_aspiration(struct reloq_rate_transfer *,float *,size_t,int voiced);
 struct reloq_core_frication_bank;
 /* Fit the complete coherent AF sum, including the direct noise branch.
@@ -55,4 +77,12 @@ void reloq_rate_transfer_prepare_noise_mix_profile(struct reloq_rate_transfer *,
     const struct reloq_core_frication_bank *high,
     const struct reloq_core_frication_bank *current,
     const struct reloq_noise_profile *,float rate,float mix,int historic84);
+int reloq_rate_transfer_prepare_classic(struct reloq_rate_transfer *,
+    const struct reloq_core_frication_bank *,const struct reloq_core_frication_bank *,
+    const struct reloq_noise_profile *,float);
+/* Scale only the extra band above the complete Classic Presence target.
+ * Zero retains the 16-kHz colour; one uses the normal rate progression. */
+int reloq_rate_transfer_prepare_classic_bandwidth(struct reloq_rate_transfer *,
+    const struct reloq_core_frication_bank *,const struct reloq_core_frication_bank *,
+    const struct reloq_noise_profile *,float,float);
 #endif

@@ -56,10 +56,16 @@ struct reloq_session *reloq_session_create(
 void reloq_session_destroy(struct reloq_session *session);
 /* Immutable output clock, available to text/index planners. */
 float reloq_session_sample_rate(const struct reloq_session *session);
+/* Hearing-trial profile for subsequent utterances, with no PCM resampling. */
+int reloq_session_high_rate_profile(struct reloq_session *,unsigned);
 /* Update absolute source levels for a word-scoped voice model. Histories,
  * phase and configured reset defaults stay intact. Serialized render only. */
 int reloq_session_source_levels(struct reloq_session *session,long source,
     long av,long ah,long af,unsigned reference_formants);
+/* Extended-rate volume belongs before finite PCM conversion/protection.
+ * Legacy A and narrow-band callers retain their exact post-PCM scaling. */
+int reloq_session_float_volume(const struct reloq_session *session);
+int reloq_session_linear_gain(struct reloq_session *session,float gain);
 
 /* Begin another numeric utterance with fresh synthesis histories and seeds.
  * Scratch buffers remain allocated for low-latency reuse. A reset is needed

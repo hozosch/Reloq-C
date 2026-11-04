@@ -6,13 +6,39 @@ on:
 permissions:
   contents: read
 jobs:
+  version:
+    runs-on: ubuntu-24.04
+    outputs:
+      stable: ${{ steps.version.outputs.stable }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Select stable installable packaging
+        id: version
+        run: |
+          python3 - <<'PY'
+          import os, re
+          from pathlib import Path
+          text = Path('addon/synth/manifest.ini').read_text()
+          value = re.search(r'^version\s*=\s*"([^"]+)"', text, re.M)[1]
+          stable = bool(re.fullmatch(r'\d+\.\d+\.\d+', value))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('stable=' + str(stable).lower() + '\n')
+          if not stable:
+              print('Prerelease: use the NVDA hearing-preview workflow; stable multi-platform packaging waits for the final version.')
+          PY
   dictionaries:
+    needs: version
+    if: needs.version.outputs.stable == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
       - name: Resolve current dictionary master and verify committed snapshot
+        env:
+          RELOQ_BUILD_GITHUB_TOKEN: ${{ github.token }}
         run: |
           python3 -c "import sys; sys.path.insert(0, 'addon'); from build_synth import refresh_community_dictionaries; refresh_community_dictionaries()"
           git diff --exit-code -- data/community
@@ -33,6 +59,7 @@ jobs:
           java-version: '17'
       - name: Check official-release update selection
         run: |
+          python3 android/test_versioning.py
           javac -d /tmp/reloq-update-test android/java/org/reloq/tts/preview/UpdateData.java android/test/UpdateDataTest.java
           java -cp /tmp/reloq-update-test org.reloq.tts.preview.UpdateDataTest
       - uses: android-actions/setup-android@v3

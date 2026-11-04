@@ -80,6 +80,8 @@ public final class SettingsActivity extends Activity {
     }
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);preferences=getSharedPreferences("settings",MODE_PRIVATE);
+        BootPreferences.refresh(this);
+        DictionaryStore.queueSyncBoot(this);
         ScrollView scroll=new ScrollView(this);
         content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);
         int padding=(int)(16*getResources().getDisplayMetrics().density);
@@ -190,6 +192,7 @@ public final class SettingsActivity extends Activity {
     private void save() {
         saveVoice();preferences.edit().putInt("language",languages.getSelectedItemPosition())
             .putInt("profile",profiles.getSelectedItemPosition()).putBoolean("androidVoice",androidVoice.isChecked()).apply();
+        BootPreferences.refresh(this);
     }
     @Override public void onDestroy(){if(tts!=null){tts.stop();tts.shutdown();}super.onDestroy();}
 }

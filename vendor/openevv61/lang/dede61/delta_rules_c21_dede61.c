@@ -14,6 +14,7 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_dede61.h"
+#include "reloq61_german_compound_bounds.h"
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -6992,6 +6993,9 @@ int32_t reloq_dede61_split_initial_compound(void *state, int32_t p0, int32_t p1,
     r0 = reloq61_typed_get_parm(DELTA_ENTRY_get_parm, state, (delta_loc *)(base + (-28)), EVV_AT(delta_loc *, (int32_t)PARAM(int32_t, 1)), (int16_t)(-6));
     r0 = reloq61_typed_get_parm(DELTA_ENTRY_get_parm, state, (delta_loc *)(base + (-12)), EVV_AT(delta_loc *, (int32_t)PARAM(int32_t, 2)), (int16_t)(-6));
     r0 = reloq61_typed_get_parm(DELTA_ENTRY_get_parm, state, (delta_loc *)(base + (-20)), EVV_AT(delta_loc *, (int32_t)PARAM(int32_t, 3)), (int16_t)(-6));
+    if (reloq61_german_split_past_end(state, AT(int32_t, -24),
+                                     AT(int32_t, -8), AT(int32_t, -16)))
+        goto L346;
     r0 = reloq61_typed_fence(DELTA_ENTRY_fence, state, (int8_t)(0), EVV_AT(const uint8_t *, delta_sym_ref[1600]));
     STATE(int16_t, s585) = ((int32_t)(uint16_t)((uint32_t)((int32_t)STATE(int16_t, s585)) + 1u));
     r0 = reloq61_typed_inline61_lflags(DELTA_ENTRY_inline61_lflags, state, (int32_t)(1));

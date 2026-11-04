@@ -54,7 +54,7 @@
     <string name="move_dictionary_up">Gewählte Datei nach vorne verschieben</string>
     <string name="move_dictionary_down">Gewählte Datei nach hinten verschieben</string>
     <string name="reload_dictionaries">Gewählte Dateien neu laden</string>
-    <string name="dictionary_help">Einträge aus Gemeinschafts- und eigenen Dic-Dateien nutzen die nativen Wörterbuchstufen. Wähle Sprache und Typ vor dem Hinzufügen einer Datei. Die Dateien verwenden Windows-1252. Spätere Dateien überschreiben frühere Einträge. Änderungen werden erkannt, wenn der Dateianbieter Änderungsdaten liefert; Neu laden liest die Quellen immer erneut. Netzwerkzugriff erfolgt nur über die Aktualisierungsschaltfläche.</string>
+    <string name="dictionary_help">Einträge aus Gemeinschafts- und eigenen Dic-Dateien nutzen die nativen Wörterbuchstufen. Wähle Sprache und Typ vor dem Hinzufügen einer Datei. Die Dateien verwenden Windows-1252. Spätere Dateien überschreiben frühere Einträge. Änderungen werden erkannt, wenn der Dateianbieter Änderungsdaten liefert; Neu laden liest die Quellen immer erneut. Die gewählte Onlinequelle wird bei der ersten Verwendung oder beim Aktualisieren heruntergeladen. Aktivierte Wörterbücher werden in den gerätegeschützten Speicher kopiert, damit sie nach einem Neustart schon vor dem ersten Entsperren verfügbar sind.</string>
     <string name="dictionary_working">Wörterbücher werden vorbereitet</string>
     <string name="dictionary_ready">Wörterbücher bereit</string>
     <string name="dictionary_error">Wörterbuchaktualisierung fehlgeschlagen: %1$s</string>
@@ -76,4 +76,6 @@
     <string name="speed_help">Wörter pro Minute sind ein Richtwert; die tatsächliche Rate hängt von Sprache, Wortlängen und Pausen ab. Die normale Android-Geschwindigkeit nutzt einen Zielwert von 190 Wörtern pro Minute.</string>
     <string name="abbreviation_dictionary">Abkürzungswörterbuch verwenden</string>
     <string name="phrase_prediction">Satzvorhersage</string>
+    <string name="dictionary_repository">Wörterbuchquelle</string>
+    <string-array name="dictionary_repositories"><item>IBM-TTS-Wörterbücher</item><item>Alternative IBM-TTS-Wörterbücher</item></string-array>
 </resources>

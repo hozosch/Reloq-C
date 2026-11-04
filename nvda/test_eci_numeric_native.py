@@ -1,9 +1,13 @@
 """Numeric normalization, index delivery and currency-equivalent PCM."""
 from pathlib import Path
+import argparse
 from _reloq_eci_direct import DirectEciEngine,EciIndex,GENERIC_RATE,GENERIC_VOLUME
 ROOT=Path(__file__).resolve().parents[1]
 def main():
-    engine=DirectEciEngine(ROOT/'eci/libreloq_eci.so',experimental_generic=True,
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--library',type=Path,default=ROOT/'eci/libreloq_eci.so')
+    args=parser.parse_args()
+    engine=DirectEciEngine(args.library.resolve(),experimental_generic=True,
         lexicon_path=ROOT/'data/german_apple_observed.rlex')
     checks=0
     try:
@@ -22,6 +26,16 @@ def main():
                 if text.startswith('3,14'):money.append(pcm)
                 checks+=1
             assert all(pcm==money[0] for pcm in money)
+        engine.set_parameter(GENERIC_RATE,50);engine.set_parameter(GENERIC_VOLUME,100)
+        for amount in ('3,14', '0,50', '1.234,56'):
+            variants=[]
+            for unit in (' EUR', ' Euro', ' €', '€'):
+                pcm=[];indices=[]
+                assert engine.speak(['Es kostet '+amount+unit+'.',EciIndex(91)],
+                                    pcm.append,indices.append)
+                assert indices==[91]
+                variants.append(b''.join(pcm));checks+=1
+            assert all(pcm==variants[0] for pcm in variants), amount
     finally:engine.close()
-    print(f'{checks} numeric ECI cases: identical indexed PCM; Euro spellings equal; speed and mute passed')
+    print(f'{checks} numeric ECI cases: identical indexed PCM; contextual Euro spellings equal; speed and mute passed')
 if __name__=='__main__':main()

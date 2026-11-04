@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_updates">应用更新</string>
+    <string name="check_updates">检查更新</string>
+    <string name="checking_updates">正在检查更新…</string>
+    <string name="installed_version">已安装版本：%1$s</string>
+    <string name="version_available">版本 %1$s 已可用。</string>
+    <string name="no_published_update">没有已发布的更新版本应用安装包。</string>
+    <string name="download_update">在浏览器中打开下载</string>
+    <string name="update_failed">更新失败：%1$s</string>
+    <string name="browser_update">已打开下载。请使用浏览器和 Android 的正常安装流程。请保持 Play 保护机制开启。</string>
+    <string name="engine_help">离线语音合成。选择一种语言和声音进行测试，或在 Android 的文字转语音设置中选择 ReLoq C。</string>
+    <string name="language">语言</string>
+    <string name="profile">声音</string>
+    <string name="sample_rate">采样率</string>
+    <string name="pause_mode">缩短停顿</string>
+    <string name="sample_text">要朗读的文本</string>
+    <string name="speak">朗读测试文本</string>
+    <string name="stop">停止</string>
+    <string name="system_settings">Android 语音设置</string>
+    <string name="initializing">正在初始化语音引擎</string>
+    <string name="ready">语音引擎已就绪</string>
+    <string name="unavailable">语音引擎不可用。请打开 Android 语音设置并选择 ReLoq C。</string>
+    <string-array name="pause_modes">
+        <item>从不</item>
+        <item>仅末尾</item>
+        <item>始终</item>
+    </string-array>
+    <string name="voice_settings">语言和声音</string>
+    <string name="android_voice">通过 Android 控制语言和声音</string>
+    <string name="android_rate">通过 Android 控制语速</string>
+    <string name="android_pitch">通过 Android 控制音高</string>
+    <string name="speed">手动语速，每分钟字词数</string>
+    <string name="pitch">手动音高</string>
+    <string name="rate_boost">语速增强</string>
+    <string name="inflection">语调变化</string>
+    <string name="volume">语音音量</string>
+    <string name="anatomy">声音模型</string>
+    <string name="model">模型</string>
+    <string name="head_size">头部大小</string>
+    <string name="roughness">沙哑度</string>
+    <string name="breathiness">气声程度</string>
+    <string name="reset_profile">重置所选声音配置</string>
+    <string name="output_settings">语音输出</string>
+    <string name="eci_tags">处理 ECI 标签</string>
+    <string name="dictionaries">发音词典</string>
+    <string name="community_dictionaries">使用社区词典</string>
+    <string name="update_dictionaries">从当前 master 分支更新社区词典</string>
+    <string name="own_dictionaries">自定义词典文件，后面的文件优先</string>
+    <string name="dictionary_language">新词典文件的语言</string>
+    <string name="dictionary_volume">新词典文件的分卷</string>
+    <string name="add_dictionary">添加词典文件</string>
+    <string name="remove_dictionary">移除所选文件</string>
+    <string name="move_dictionary_up">将所选文件前移</string>
+    <string name="move_dictionary_down">将所选文件后移</string>
+    <string name="reload_dictionaries">重新加载所选文件</string>
+    <string name="dictionary_help">社区词典和自定义 Dic 条目均使用引擎原生的词典处理阶段。添加文件前请选择语言和分卷。文件使用 Windows-1252 编码。后面的文件会覆盖前面文件的条目。如果文档提供程序提供修改信息，就会监控文件变更；重新加载所选文件会始终重新读取源文件。所选来源在首次使用或更新时下载。 启用的词典会复制到设备保护存储空间，以便重启后在首次解锁前使用。</string>
+    <string name="dictionary_working">正在准备词典</string>
+    <string name="dictionary_ready">词典已就绪</string>
+    <string name="dictionary_error">词典更新失败：%1$s</string>
+    <string name="dictionary_unavailable">词典不可用</string>
+    <string name="dictionary_permission">请选择允许永久读取访问权限的文件</string>
+    <string name="back">返回语音设置</string>
+    <string name="test_speech">语音测试</string>
+    <string name="parameter_value">%1$s：%2$d</string>
+    <string-array name="models">
+        <item>男声</item>
+        <item>女声</item>
+    </string-array>
+    <string-array name="dictionary_volumes">
+        <item>主词典</item>
+        <item>词根</item>
+        <item>缩写</item>
+    </string-array>
+    <string name="wpm_value">每分钟 %1$d 个字词</string>
+    <string name="speed_help">每分钟字词数仅为近似值；实际语速取决于语言、词长和停顿。Android 的正常语速以每分钟 190 个字词为目标。</string>
+    <string name="abbreviation_dictionary">使用缩写词典</string>
+    <string name="phrase_prediction">短语预测</string>
+    <string name="dictionary_repository">词典来源</string>
+    <string-array name="dictionary_repositories"><item>IBM TTS 词典</item><item>替代 IBM TTS 词典</item></string-array>
+</resources>

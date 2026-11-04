@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Eloquence C 1.0.0\n"
+"Project-Id-Version: Eloquence C 1.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-01 09:54+0100\n"
+"POT-Creation-Date: 2026-11-04 15:31+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,86 +18,86 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #. Translators: Name in NVDA's synthesizer selection dialog.
-#: addon/synth/synthDrivers/reloqC/__init__.py:155
+#: addon/synth/synthDrivers/reloqC/__init__.py:169
 #: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:19
 msgid "Eloquence C"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:166
+#: addon/synth/synthDrivers/reloqC/__init__.py:181
 msgid "&Head size"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:167
+#: addon/synth/synthDrivers/reloqC/__init__.py:182
 msgid "Rou&ghness"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:168
+#: addon/synth/synthDrivers/reloqC/__init__.py:183
 msgid "&Breathiness"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:169
+#: addon/synth/synthDrivers/reloqC/__init__.py:187
 msgid "Use &abbreviation dictionary"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:170
+#: addon/synth/synthDrivers/reloqC/__init__.py:188
 msgid "Phrase &prediction"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:171
+#: addon/synth/synthDrivers/reloqC/__init__.py:189
 msgid "Process &ECI tags"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:172
+#: addon/synth/synthDrivers/reloqC/__init__.py:190
 #: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:33
 msgid "Use &community pronunciation dictionaries"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:173
+#: addon/synth/synthDrivers/reloqC/__init__.py:191
 msgid "Shorten pa&uses"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:174
+#: addon/synth/synthDrivers/reloqC/__init__.py:192
 msgid "&Sample rate"
 msgstr ""
 
 #. Translators: Audio sample rates; localize the decimal separator.
-#: addon/synth/synthDrivers/reloqC/__init__.py:246
+#: addon/synth/synthDrivers/reloqC/__init__.py:288
 msgid "8 kHz"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:246
+#: addon/synth/synthDrivers/reloqC/__init__.py:288
 msgid "11.025 kHz"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:246
+#: addon/synth/synthDrivers/reloqC/__init__.py:288
 msgid "16 kHz"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:246
+#: addon/synth/synthDrivers/reloqC/__init__.py:288
 msgid "22.05 kHz"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:247
+#: addon/synth/synthDrivers/reloqC/__init__.py:289
 msgid "32 kHz"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:247
+#: addon/synth/synthDrivers/reloqC/__init__.py:289
 msgid "44.1 kHz"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:247
+#: addon/synth/synthDrivers/reloqC/__init__.py:289
 msgid "48 kHz"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:393
+#: addon/synth/synthDrivers/reloqC/__init__.py:451
 msgid "Never"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:393
+#: addon/synth/synthDrivers/reloqC/__init__.py:451
 msgid "Only at text end"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:393
+#: addon/synth/synthDrivers/reloqC/__init__.py:451
 msgid "Always"
 msgstr ""
 
@@ -154,140 +154,152 @@ msgid "Pronunciation dictionaries"
 msgstr ""
 
 #: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:36
+msgid "Dictionary &source:"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:38
+msgid "IBM TTS Dictionaries"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:38
+msgid "Alternative IBM TTS Dictionaries"
+msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:42
 msgid "&Own dictionary files (later files take priority):"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:43
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:49
 msgid "&Add file…"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:43
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:49
 msgid "&Remove"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:44
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:50
 msgid "Move &up"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:45
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:51
 msgid "Move &down"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:52
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:58
 msgid ""
 "Use OK or Apply to save. Changes to selected .dic files are loaded "
 "automatically."
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:55
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:265
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:61
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:273
 msgid ""
 "Own entries override community entries. Original files are kept unchanged."
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:56
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:62
 msgid "Select Eloquence C as the synthesizer first."
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:59
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:65
 msgid "&Update dictionaries now"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:62
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:68
 msgid "Open dictionary &folder"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:75
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:81
 msgid "Add-on updates"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:76
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:82
 #, python-format
 msgid "Installed version: %s"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:78
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:84
 msgid "Check for add-on updates"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:89
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:95
 msgid "Downloading update…"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:89
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:95
 msgid "Checking for updates…"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:99
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:113
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:105
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:119
 #, python-format
 msgid "Update failed: %s"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:109
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:115
 msgid "Update handed to NVDA."
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:109
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:115
 msgid "Update installation cancelled."
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:116
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:122
 msgid "Download and install update"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:117
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:123
 #, python-format
 msgid "Version %s is available."
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:119
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:125
 msgid "No newer published add-on package is available."
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:158
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:164
 msgid "Choose a pronunciation dictionary"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:159
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:165
 msgid "Dictionary files (*.dic)|*.dic|All files (*.*)|*.*"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:165
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:171
 msgid "Language of the dictionary:"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:166
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:172
 msgid "Dictionary language"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:170
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:176
 msgid "Dictionary type:"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:171
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:177
 msgid "Dictionary type"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:196
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:202
 msgid "Updating pronunciation dictionaries…"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:202
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:235
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:208
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:241
 #, python-format
 msgid "Dictionary update failed: %s"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:205
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:211
 #, python-format
 msgid "Dictionaries updated. Community revision: %s"
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:206
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:212
 msgid "Own dictionaries updated."
 msgstr ""
 
-#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:229
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:235
 msgid "Wait for the dictionary update to finish."
 msgstr ""

@@ -4,7 +4,7 @@ import argparse
 import hashlib
 import tempfile
 
-from _reloq_eci_direct import DirectEciEngine, EciIndex
+from _reloq_eci_direct import DirectEciEngine, EciIndex, DICTIONARY, PROCESS_TAGS
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -52,6 +52,34 @@ def main():
                     expected = [prefix, EciIndex(1), value, EciIndex(2), suffix, EciIndex(3)]
                     assert capture(engine, source) == capture(engine, expected), (key, prefix, suffix)
                     count += 1
+            # Mixed slash/hyphen expressions are submitted to the native
+            # sentence analysis as a unit. Main replacements still apply
+            # at every constituent, including after both separators.
+            for word in ('A/B-TokenX', 'TokenX/B-Test', 'A/TokenX-Test', 'X/B-TokenX'):
+                source = ['Die ', EciIndex(1), word, EciIndex(2), ' wurde gelesen.', EciIndex(3)]
+                expected = ['Die ', EciIndex(1), word.replace('TokenX', 'bei'),
+                            EciIndex(2), ' wurde gelesen.', EciIndex(3)]
+                assert capture(engine, source) == capture(engine, expected), word
+                count += 1
+            without = DirectEciEngine(args.library, dialect=0x40000,
+                experimental_generic=True, encoding='utf8',
+                lexicon_path=ROOT / 'data/german_apple_observed.rlex')
+            try:
+                engine.set_parameter(DICTIONARY,1)
+                without.set_parameter(DICTIONARY,1)
+                assert capture(engine,['TokenX.']) == capture(without,['bei.'])
+                engine.set_parameter(DICTIONARY,0)
+                assert capture(engine,['TokenX.']) != capture(without,['TokenX.'])
+                count += 2
+                without.set_parameter(DICTIONARY,0)
+                for item in (engine,without):item.set_parameter(PROCESS_TAGS,1)
+                assert capture(engine,['`da0 TokenX.']) == capture(without,['`da0 bei.'])
+                assert capture(engine,['`da1 TokenX.']) == capture(without,['`da1 bei.'])
+                count += 2
+            finally:
+                engine.set_parameter(DICTIONARY,0)
+                engine.set_parameter(PROCESS_TAGS,0)
+                without.close()
             lower = capture(engine, ['macro.'])
             upper = capture(engine, ['Macro.'])
             cycle = capture(engine, ['CycleA.'])
@@ -62,6 +90,24 @@ def main():
             count += 3
         finally:
             engine.close()
+
+        # Explicit RLEX pronunciations take precedence over normalizing a
+        # mixed token; they must still be heard at each constituent position.
+        custom = directory / 'custom.rlex'
+        custom.write_bytes(b'RELOQ-DE-SPR-1\n' + b'Test'.hex().upper().encode()
+                           + b'\t' + b'`[.1ba.2na.0n@]'.hex().upper().encode() + b'\n')
+        plain = DirectEciEngine(args.library, dialect=0x40000,
+                                experimental_generic=True, encoding='utf8')
+        authored = DirectEciEngine(args.library, dialect=0x40000, experimental_generic=True,
+                                   encoding='utf8', lexicon_path=custom)
+        try:
+            for word in ('Test', 'A/B-Test', 'Test/A-B', 'A/Test-B'):
+                parts = ['Die ', EciIndex(1), word, EciIndex(2), ' wurde gelesen.', EciIndex(3)]
+                assert capture(plain, parts) != capture(authored, parts), word
+                count += 1
+        finally:
+            plain.close()
+            authored.close()
 
         (directory / 'DEUmain.dic').unlink()
         spr = b'`[.1tEst]'

@@ -428,9 +428,8 @@ done:
    callback only goes to the concatenative side if the side says it knows
    this engine, rather than if it is the one speaking.
 
-   One fault kept as it stands and marked below: if the converter cannot be
-   made, the format is handed back to the manager but not forgotten, and the
-   device is then read out of it anyway. */
+   If converter setup fails, the new format must be returned and forgotten
+   before any retry: the sound manager may already have freed it. */
 THIS int32_t stf_newAudioFormat(SynthThread *t, AudioRequest *want)
 {
     void *lock = ST_LOCK(t);
@@ -492,9 +491,11 @@ THIS int32_t stf_newAudioFormat(SynthThread *t, AudioRequest *want)
     fmt.rate = want->b;
     fmt.width = want->c;
     if (stw_createAudioConverter(t, &fmt)) {
-        /* Marked: given back but not forgotten. */
         sm_removeAudioFormat(st_soundManager, (AudioFormat *)ST_OUTFMT(t));
+        ST_OUTFMT(t) = 0;
+        ST_SOUND(t) = 0;
         rc = ERR_ENGINE;
+        goto done;
     }
 
     rz_setParam(ST_ROMAN(t), ROM_CONCATENATIVE, ST_CONCAT(t) ? 1 : 0);

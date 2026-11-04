@@ -3205,7 +3205,8 @@ L1127:;
     AT(int32_t, -40) = (r0);
 L1145:;
     STATE_D(int16_t, c14, 2) = (4);
-    r0 = reloq61_typed_if_testeq_v_i(DELTA_ENTRY_if_testeq_v_i, state, EVV_AT(delta_loc *, STATE_AT(c14, 0)), (int32_t)(1));
+    /* Model-independent Mandarin F0; anatomy keeps the selected model. */
+    r0 = 1;
     AT(int32_t, -40) = (r0);
     AT(int32_t, -32) = (1500000);
     if (AT(int32_t, -40) != 0) goto L1206;

@@ -40,7 +40,7 @@ class Validator:
 def configuration_manager(*profiles):
     """Execute upstream AggregatedSection unchanged over in-memory profiles."""
     source = SOURCE / "config/__init__.py"
-    tree = ast.parse(source.read_text())
+    tree = ast.parse(source.read_text(encoding="utf-8"))
     section = next(node for node in tree.body if isinstance(node, ast.ClassDef)
                    and node.name == "AggregatedSection")
     namespace = dict(itertools=itertools, BACK_COMPAT_TO=(2027, 1, 0))
@@ -114,13 +114,13 @@ def install():
         config=config, log=log, pgettext=lambda context, text: text,
         changeVoice=lambda synth, voice: setattr(synth, "voice", voice) if voice else None,
         languageHandler=language_handler)
-    tree = ast.parse((SOURCE / "synthDriverHandler.py").read_text())
+    tree = ast.parse((SOURCE / "synthDriverHandler.py").read_text(encoding="utf-8"))
     classes = [node for node in tree.body if isinstance(node, ast.ClassDef)
                and node.name in ("LanguageInfo", "VoiceInfo", "SynthDriver")]
     exec(compile(ast.Module(body=classes, type_ignores=[]), str(SOURCE / "synthDriverHandler.py"), "exec"), vars(module))
 
     # Execute the actual GUI lookup and selection logic, with wx drawing stubbed.
-    tree = ast.parse((SOURCE / "gui/settingsDialogs.py").read_text())
+    tree = ast.parse((SOURCE / "gui/settingsDialogs.py").read_text(encoding="utf-8"))
     method = next(node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
                   and node.name == "_makeStringSettingControl")
 

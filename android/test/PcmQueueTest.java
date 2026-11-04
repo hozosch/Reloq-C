@@ -44,7 +44,9 @@ public final class PcmQueueTest {
         require(Catalog.find("eng","USA").id==0x10000);
         require(Catalog.find("eng","").id==0x10000);
         require(Catalog.find("eng","GBR").id==0x10001);
-        require(Catalog.find("zho","TWN").id==0x60000);
+        require(Catalog.find("zho","TWN").id==0x60001);
+        require(Catalog.find("zh","CN").id==0x60000);
+        require(Catalog.LANGUAGES.length==15);
         require(Catalog.find("kor","KOR").id==0xa0000);
         require(Catalog.find("xx","")==null);
         for(Catalog.Language language:Catalog.LANGUAGES) for(int p=0;p<8;++p) {
@@ -54,6 +56,6 @@ public final class PcmQueueTest {
         require(Catalog.controls(2,100,100,1,0)[2]==93);
         require(Catalog.controls(0,100,100,6,2)[7]==55);
         require(Catalog.controls(0,100,100,6,2)[8]==6);
-        System.out.println("PCM queue: bounded streaming/cancel/finish passed; 112 voice names and locale routing passed");
+        System.out.println("PCM queue: bounded streaming/cancel/finish passed; 120 voice names and locale routing passed");
     }
 }

@@ -320,11 +320,14 @@ int reloq_core_glottal_prefilter_configure(
     return 0;
 }
 
-/* Preserve a sampled source filter's physical poles in extended speech
- * profiles. The legacy numeric API still uses its original rate classes. */
+/* Continue the measured 8 -> 11.025 kHz source-pole geometry in physical
+ * Hz, independently for angle and damping. 16 kHz keeps the 11-kHz body;
+ * only higher rates extend it. Retain the 11-kHz DC gain throughout.
+ * Numeric ECI and profile A retain their original reference mapping. */
 static int source_profile(struct reloq_core_resonator *filter,
-    const struct reloq_core_clock *clock,long index,float reference)
+    const struct reloq_core_clock *clock,long index,float reference,int extended)
 {
+    if(extended)reference=11025;
     if(reference<=0 || reference==clock->samples_per_millisecond*1000)
         return reloq_core_glottal_prefilter_configure(filter,clock,index);
     struct reloq_core_clock original=reloq_core_clock_for_rate(reference);
@@ -336,12 +339,27 @@ static int source_profile(struct reloq_core_resonator *filter,
     if(cosine>1)cosine=1;
     if(cosine< -1)cosine=-1;
     float ratio=original.samples_per_millisecond/clock->samples_per_millisecond;
-    int status=reloq_core_resonator_set_coefficients(filter,powf(radius,ratio),
-        cosf(acosf(cosine)*ratio),0);
+    float angle=acosf(cosine),radial_ratio=ratio,angular_ratio=ratio;
+    if(extended) {
+        struct reloq_core_resonator narrow={0};
+        struct reloq_core_clock eight=reloq_core_clock_for_rate(8000);
+        if(reloq_core_glottal_prefilter_configure(&narrow,&eight,index))return -1;
+        float r8=sqrtf(-narrow.previous_gain);
+        float c8=narrow.latest_gain/(2*r8);
+        if(c8>1)c8=1;
+        if(c8< -1)c8=-1;
+        float angle8=acosf(c8),anchor=11025.0f/8000;
+        float decay_exponent=logf(logf(radius)*anchor/logf(r8))/logf(anchor);
+        float angle_exponent=logf(angle*anchor/angle8)/logf(anchor);
+        float growth=fmaxf(1,clock->samples_per_millisecond/16);
+        radial_ratio*=powf(growth,decay_exponent);
+        angular_ratio*=powf(growth,angle_exponent);
+    }
+    int status=reloq_core_resonator_set_coefficients(filter,powf(radius,radial_ratio),
+        cosf(angle*angular_ratio),0);
     filter->input_gain*=source_gain;
     return status;
 }
-
 int reloq_core_antiresonator_coefficients(
     struct reloq_core_resonator *filter, float coefficients[3])
 {
@@ -369,6 +387,20 @@ int reloq_core_antiresonator_coefficients(
     return 0;
 }
 
+/* A/(1-2c z^-1+r^2 z^-2), with c=r cos(theta), s=r sin(theta).
+ * Its state rotates and contracts by r even while the poles move. The
+ * output projection [s,c] preserves the original all-pole numerator;
+ * using only the real state would introduce an unwanted zero. */
+static int coupled_coefficients(double a,double b,double negative_radius2,
+    double *cosine,double *sine,double *input)
+{
+    *cosine=.5*b;
+    *sine=sqrt(fmax(0,-negative_radius2-(*cosine)*(*cosine)));
+    if(*sine<1e-12)return -1;
+    *input=a/(*sine);
+    return 0;
+}
+
 int reloq_core_resonator_process(struct reloq_core_resonator *filter,
                                  float *samples, long count)
 {
@@ -381,6 +413,30 @@ int reloq_core_resonator_process(struct reloq_core_resonator *filter,
     long length = count > 0 ? count : 0;
     long ramp = filter->ramp_remaining;
     long ramp_count = ramp < length ? ramp : length;
+    if (filter->stable) {
+        double real=filter->coupled_real,imaginary=filter->coupled_imaginary;
+        double cosine,sine,input;
+        if(coupled_coefficients(filter->input_gain,filter->latest_gain,
+            filter->previous_gain,&cosine,&sine,&input))return -1;
+        float previous=filter->previous,latest=filter->latest;
+        for(long i=0;i<length;++i) {
+            double c=cosine,s=sine,a=input;
+            if(i<ramp_count) {
+                long row=3-ramp+i;
+                if(coupled_coefficients(filter->ramp_input[row],filter->ramp_latest[row],
+                    filter->ramp_previous[row],&c,&s,&a))return -1;
+            }
+            double next_real=c*real-s*imaginary+a*samples[i];
+            imaginary=s*real+c*imaginary;
+            real=next_real;
+            previous=latest;latest=(float)(s*real+c*imaginary);
+            samples[i]=latest;
+        }
+        filter->coupled_real=real;filter->coupled_imaginary=imaginary;
+        filter->previous=previous;filter->latest=latest;
+        filter->ramp_remaining-=ramp_count;
+        return 0;
+    }
     float previous = filter->previous;
     float latest = filter->latest;
     float old_latest = latest;
@@ -462,8 +518,9 @@ static int reloq_core_prepare_formant(
     struct reloq_core_resonator *filter,
     const struct reloq_core_clock *clock,
     const struct reloq_core_formant *specification,
-    int transition, int inverse, float coefficients[3], int enabled)
+    int transition, int inverse, float coefficients[3], int enabled, int stable)
 {
+    filter->stable=stable&&!inverse;
     if (reloq_core_resonator_set_from_hz(
             filter, clock, specification->frequency_hz,
             specification->bandwidth_hz, transition))
@@ -488,16 +545,16 @@ int reloq_core_voiced_bank_configure(
     next.highest_formant = frame->highest_formant;
     if (reloq_core_prepare_formant(&next.nasal_pole, clock,
                                    &frame->nasal_pole, transition, 0,
-                                   NULL, active) ||
+                                   NULL, active, next.stable) ||
         reloq_core_prepare_formant(&next.nasal_zero, clock,
                                    &frame->nasal_zero, transition, 1,
-                                   next.nasal_zero_coefficients, active) ||
+                                   next.nasal_zero_coefficients, active, next.stable) ||
         reloq_core_prepare_formant(&next.tracheal_pole, clock,
                                    &frame->tracheal_pole, transition, 0,
-                                   NULL, active) ||
+                                   NULL, active, next.stable) ||
         reloq_core_prepare_formant(&next.tracheal_zero, clock,
                                    &frame->tracheal_zero, transition, 1,
-                                   next.tracheal_zero_coefficients, active))
+                                   next.tracheal_zero_coefficients, active, next.stable))
         return -1;
     for (long f = 0; f < RELOQ_CORE_ORAL_FORMANTS; ++f) {
         if (f > 0 && f >= frame->highest_formant) {
@@ -506,7 +563,7 @@ int reloq_core_voiced_bank_configure(
         }
         if (reloq_core_prepare_formant(&next.oral[f], clock,
                                        &frame->oral[f], transition, 0,
-                                       NULL, active))
+                                       NULL, active, next.stable))
             return -1;
     }
     *bank = next;
@@ -642,7 +699,7 @@ int reloq_core_serial_frame_begin(
                                       NULL;
             if (reloq_core_prepare_formant(
                     stage, clock, spec, cache->frequency_hz != 0.0f,
-                    inverse != NULL, inverse, 1))
+                    inverse != NULL, inverse, 1, result.stable))
                 return -1;
         }
         stage->enabled = entry;
@@ -691,6 +748,7 @@ int reloq_core_serial_frame_end(
         if (stage->enabled == 0.0f) {
             stage->previous = 0.0f;
             stage->latest = 0.0f;
+            stage->coupled_real=stage->coupled_imaginary=0;
             cache->frequency_hz = 0.0f;
             cache->bandwidth_hz = 0.0f;
         } else {
@@ -1261,6 +1319,9 @@ int reloq_core_voiced_configure(struct reloq_core_voiced_state *voice,
     voice->next_attenuated = 0;
     voice->frame_period_configured = 0;
     voice->modulated_frame_open = 0;
+    voice->bandlimited_closure=0;
+    voice->closure_pre=voice->closure_tail[0]=voice->closure_tail[1]=0;
+    voice->closure_cursor=0;
     return 0;
 }
 
@@ -1558,6 +1619,32 @@ int reloq_core_voiced_fill_with_mask(struct reloq_core_voiced_state *voice,
                 voice->next_phase_ms *
                 voice->clock.samples_per_millisecond;
             voice->pulse.phase *= voice->pulse.increment;
+            voice->closure_pre=voice->closure_tail[0]=voice->closure_tail[1]=0;
+            if(voice->bandlimited_closure && lengths.first>0 &&
+               lengths.second-voice->pre_left>=2) {
+                /* The legacy mask rounds the open duration. Retain that
+                 * mask, while integrating the actual fractional closure
+                 * through a compact triangular reconstruction kernel.
+                 * Its correction straddles the edge and survives chunks. */
+                float exact=(voice->period_ms*voice->open_fraction-
+                    voice->next_phase_ms)*voice->clock.samples_per_millisecond;
+                float fraction=exact-(float)lengths.first;
+                if(fraction<-.5f)fraction=-.5f;
+                if(fraction>.5f)fraction=.5f;
+                float phase=voice->pulse.phase+exact*voice->pulse.increment;
+                float jump=-(phase-voice->pulse.curvature*phase*phase);
+                voice->closure_pre=fraction<0?.5f*jump*fraction*fraction:0;
+                if(fraction>0) {
+                    float last=voice->pulse.phase+(float)lengths.first*voice->pulse.increment;
+                    voice->closure_tail[0]=last-voice->pulse.curvature*last*last+
+                        .5f*jump*(1-fraction)*(1-fraction);
+                    voice->closure_tail[1]=-.5f*jump*fraction*fraction;
+                } else {
+                    voice->closure_tail[0]=-.5f*jump*(1+fraction)*(1+fraction);
+                    voice->closure_tail[1]=0;
+                }
+                voice->closure_cursor=0;
+            }
             voice->next_phase_ms = reloq_core_next_phase(
                 lengths.total, voice->clock.milliseconds_per_sample,
                 voice->next_phase_ms, voice->period_ms);
@@ -1578,6 +1665,8 @@ int reloq_core_voiced_fill_with_mask(struct reloq_core_voiced_state *voice,
                        available : (size_t)voice->open_left;
             if (reloq_core_pulse_fill(&voice->pulse, samples + offset, n))
                 return -1;
+            if(voice->bandlimited_closure && n==(size_t)voice->open_left && n)
+                samples[offset+n-1]+=voice->closure_pre;
             if (closed_mask)
                 memset(closed_mask + offset, 0, n);
             voice->open_left -= (long)n;
@@ -1586,6 +1675,10 @@ int reloq_core_voiced_fill_with_mask(struct reloq_core_voiced_state *voice,
             size_t n = available < (size_t)voice->closed_left ?
                        available : (size_t)voice->closed_left;
             reloq_core_clear(samples + offset, (long)n);
+            if(voice->bandlimited_closure) {
+                for(size_t j=0;j<n&&voice->closure_cursor<2;++j)
+                    samples[offset+j]+=voice->closure_tail[voice->closure_cursor++];
+            }
             if (closed_mask)
                 memset(closed_mask + offset, 1, n);
             voice->closed_left -= (long)n;
@@ -1764,11 +1857,11 @@ int reloq_core_voiced_frame_set_av_trim(
     return 0;
 }
 
-int reloq_core_voiced_frame_render_owned(
+static int voiced_frame_render_owned(
     struct reloq_core_voiced_frame_state *state,
     const struct reloq_core_voiced_frame *frame,
     float *output, float *raw_af, float *scratch, uint8_t *closed_mask,
-    int16_t *pcm, size_t capacity, size_t *written)
+    int16_t *pcm, size_t capacity, size_t *written, float *body,int suppress_body)
 {
     if (!state || !frame || !output || !raw_af || !scratch ||
         !closed_mask || !written || output == raw_af ||
@@ -1780,6 +1873,23 @@ int reloq_core_voiced_frame_render_owned(
         frame->noise.bypass_attenuation_db<0 || frame->noise.bypass_attenuation_db>12 ||
         state->noise.frames_rendered == SIZE_MAX)
         return -1;
+    /* The explicit Classic voice mode can keep a reference serial tract.
+     * Sessions may instead use the complete A voice with Classic AF below. */
+    struct reloq_core_voiced_frame classic_frame;
+    const int classic_source=(state->rate_transfer.trial_profile ||
+        state->rate_transfer.smooth_updates) &&
+        state->glottal_reference_rate>0 && state->noise.sample_rate>=16000;
+    state->noise.tract.stable=classic_source;
+    state->glottal.stable=classic_source;
+    if(state->rate_transfer.body_amount>0)
+        reloq_rate_transfer_prepare_body(&state->rate_transfer,&frame->noise.tract,
+            state->noise.sample_rate);
+    if(state->rate_transfer.trial_profile && state->glottal_reference_rate>0 &&
+       state->reference_formants>=1 && state->reference_formants<=5) {
+        classic_frame=*frame;
+        classic_frame.noise.tract.highest_formant=(long)state->reference_formants;
+        frame=&classic_frame;
+    }
     long voice_level = 0;
     if (frame->av_level > 0 &&
         (reloq_core_add_long(frame->av_level, state->av_trim,
@@ -1791,6 +1901,7 @@ int reloq_core_voiced_frame_render_owned(
      * can be zero or negative; the reference then mutes new voiced pulses. */
     if (voice_level < 0)
         voice_level = 0;
+    if(suppress_body)voice_level=0;
     if (frame->av_level < 0)
         return -1;
     long count = reloq_core_frame_sample_count(
@@ -1821,26 +1932,35 @@ int reloq_core_voiced_frame_render_owned(
     };
     if (reloq_core_voiced_begin_modulated_frame(&state->voice, &modulation) ||
         reloq_core_aspiration_configure(
-            &ah, noise->ah_seed, params->ah_level,
+            &ah, noise->ah_seed, suppress_body?0:params->ah_level,
             noise->source_offset, noise->ah_trim) ||
         reloq_core_frication_configure(
             &af, noise->af_seed, params->af_level, params->bypass_level,
             noise->source_offset, noise->af_trim))
         return -1;
+    state->voice.bandlimited_closure=classic_source;
 
     /* A sampled white source has variance density proportional to 1/Fs.
      * Aspiration enters the same physical vocal-tract passband at every
      * extended rate. Its source density must therefore track the clock. */
-    if(state->glottal_reference_rate>0) {
+    if(state->glottal_reference_rate>0&&!suppress_body) {
+        state->rate_transfer.source_profile=(unsigned)frame->glottal_profile;
         ah.gain*=sqrtf(noise->sample_rate/state->glottal_reference_rate);
-        reloq_rate_transfer_prepare(&state->rate_transfer,&params->tract,
-            noise->sample_rate,state->glottal_reference_rate,state->reference_formants);
+        if(!state->rate_transfer.trial_profile || frame->av_level>0 ||
+           params->ah_level>0 || state->serial.remaining_ms>0)
+            reloq_rate_transfer_prepare(&state->rate_transfer,&params->tract,
+                noise->sample_rate,state->glottal_reference_rate,state->reference_formants);
     }
 
     float centers[RELOQ_CORE_FRICATIVE_FORMANTS];
     float widths[RELOQ_CORE_FRICATIVE_FORMANTS];
     long levels[RELOQ_CORE_FRICATIVE_FORMANTS];
     long noise_count=params->tract.highest_formant;
+    /* In the A-voice/B-noise combination the vocal tract stays complete,
+     * while the noise bank must retain B's accepted reference formants. */
+    if(state->noise_transfer.trial_profile && !state->rate_transfer.trial_profile &&
+       state->glottal_reference_rate>0 && state->reference_formants>=1 &&
+       state->reference_formants<=5)noise_count=(long)state->reference_formants;
     for (int i = 0; i < RELOQ_CORE_FRICATIVE_FORMANTS; ++i)
         centers[i] = params->tract.oral[i].frequency_hz;
     memcpy(widths,params->af_bandwidths,sizeof widths);
@@ -1858,6 +1978,29 @@ int reloq_core_voiced_frame_render_owned(
         return -1;
 
     if(shaped && params->af_level) {
+        int classic=0;
+        if(state->noise_transfer.trial_profile && noise->sample_rate>=16000) {
+            /* The gentler rc7 S roll-off applies to Castilian and Greek S/T;
+             * other languages get the wider rc6 extension again. */
+            state->noise_transfer.sibilant_extension=noise->sample_rate>=22050&&
+                params->limit_frication_extension!=0&&params->s_frication!=0;
+            /* Above 22 kHz reduce S/TS-like AF as a whole, without
+             * changing the accepted shape of its extended spectrum. */
+            state->noise_transfer.frication_trim_db=noise->sample_rate>=32000?
+                ((params->s_frication||params->limit_frication_extension)?1.35f:
+                    noise->sample_rate==32000?.25f:0):0;
+            float original_f[8];
+            for(unsigned j=0;j<8;++j)original_f[j]=params->tract.oral[j].frequency_hz;
+            struct reloq_core_clock reference_clock=reloq_core_clock_for_rate(11025);
+            struct reloq_core_frication_bank reference={0};
+            if(!reloq_core_frication_bank_configure(&reference,&reference_clock,original_f,
+                params->af_bandwidths,params->af_levels,state->reference_formants,
+                params->af_level,noise->source_offset,noise->af_trim,bypass))
+                classic=reloq_rate_transfer_prepare_classic_bandwidth(&state->noise_transfer,
+                    &reference,&noise->fricatives,&state->noise_profile,noise->sample_rate,
+                    params->limit_frication_extension?.18f:1);
+        }
+        if(!classic) {
         float mix=params->s_frication?(noise->sample_rate==16000?.25f:.5f):0;
         struct reloq_core_frication_bank low={0},high={0};
         if(mix) {
@@ -1875,6 +2018,7 @@ int reloq_core_voiced_frame_render_owned(
         reloq_rate_transfer_prepare_noise_mix_profile(&state->noise_transfer,&low,&high,
             &noise->fricatives,&state->noise_profile,noise->sample_rate,mix,
             params->s_frication==2);
+        }
     }
     if(!shaped && state->frication_reference_rate>0 && noise->sample_rate>state->frication_reference_rate) {
         struct reloq_core_frication_bank original={0};
@@ -1916,10 +2060,10 @@ int reloq_core_voiced_frame_render_owned(
                        (size_t)state->voice.closed_left : length - carried;
         }
         if (at == 0) {
-            if (reloq_core_serial_frame_begin(
+            if ((!suppress_body&&reloq_core_serial_frame_begin(
                     &state->serial, &noise->tract, &noise->clock,
                     &params->tract, frame->av_level, params->ah_level,
-                    length, noise->sample_rate) ||
+                    length, noise->sample_rate)) ||
                 reloq_core_frication_envelope_begin(
                     &noise->af_envelope, &noise->fricatives,
                     params->af_level, levels,
@@ -1946,6 +2090,7 @@ int reloq_core_voiced_frame_render_owned(
         if (fast_silence && at != 0) {
             reloq_core_clear(part, (long)length);
             reloq_core_clear(part_af, (long)length);
+            if(body)reloq_core_clear(body+at,(long)length);
             if (pcm) memset(pcm + at, 0, length * sizeof *pcm);
             state->serial.frame_open = 0;
             at += length;
@@ -1955,13 +2100,18 @@ int reloq_core_voiced_frame_render_owned(
         /* Carry the existing period with its active source filter. Empty
          * remainders are frame boundaries, not filter operations: the
          * legacy zero-length helper collapses its two history samples. */
+        if(suppress_body)reloq_core_clear(part,(long)length);
+        else {
         if (!fast_silence && carried && reloq_core_resonator_process(
                 &state->glottal, part, (long)carried))
             return -1;
         if (frame->av_level > 0 && carried < length &&
             frame->glottal_profile != state->active_glottal_profile) {
-            if (source_profile(&state->glottal,&noise->clock,
-                    frame->glottal_profile,state->glottal_reference_rate))
+            int error=source_profile(&state->glottal,&noise->clock,
+                    frame->glottal_profile,state->glottal_reference_rate,
+                    classic_source&&state->rate_transfer.trial_profile&&
+                        state->rate_transfer.body_amount==0);
+            if (error)
                 return -1;
             state->active_glottal_profile = frame->glottal_profile;
         }
@@ -1994,6 +2144,8 @@ int reloq_core_voiced_frame_render_owned(
                 &state->serial, &noise->tract, part, length))
             return -1;
         reloq_rate_transfer_process(&state->rate_transfer,part,length);
+        }
+        if(body)memcpy(body+at,part,length*sizeof *body);
         float extended_af[200]={0};
         int af_active=noise->af_envelope.global_ms > 0.0f;
         if (af_active) {
@@ -2019,7 +2171,7 @@ int reloq_core_voiced_frame_render_owned(
             else memset(state->noise_transfer.history,0,sizeof state->noise_transfer.history);
             for(size_t j=0;j<length;++j)part[j]+=extended_af[j];
         }
-        if (reloq_core_serial_frame_end(&state->serial, &noise->tract))
+        if (!suppress_body&&reloq_core_serial_frame_end(&state->serial, &noise->tract))
             return -1;
         if (pcm)
             for (size_t i = 0; i < length; ++i) {
@@ -2050,6 +2202,26 @@ int reloq_core_voiced_frame_render_owned(
     noise->frames_rendered++;
     *written = (size_t)count;
     return 0;
+}
+
+int reloq_core_voiced_frame_render_owned(
+    struct reloq_core_voiced_frame_state *state,
+    const struct reloq_core_voiced_frame *frame,
+    float *output,float *raw_af,float *scratch,uint8_t *closed_mask,
+    int16_t *pcm,size_t capacity,size_t *written)
+{
+    return voiced_frame_render_owned(state,frame,output,raw_af,scratch,
+        closed_mask,pcm,capacity,written,NULL,0);
+}
+
+int reloq_core_voiced_frame_render_body(
+    struct reloq_core_voiced_frame_state *state,
+    const struct reloq_core_voiced_frame *frame,
+    float *output,float *raw_af,float *scratch,uint8_t *closed_mask,
+    float *body,size_t capacity,size_t *written,int suppress_body)
+{
+    return voiced_frame_render_owned(state,frame,output,raw_af,scratch,
+        closed_mask,NULL,capacity,written,body,suppress_body);
 }
 
 /* Standalone callers retain failure atomicity. The continuous session

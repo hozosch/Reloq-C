@@ -10,12 +10,15 @@ final class DictionaryData {
     static final int LIMIT=8*1024*1024;
     static final String[] COMMUNITY={"DEUmain.dic","DEURoot.dic","DEUabbr.dic",
         "ENUmain.dic","ENURoot.dic","ENUabbr.dic","LICENSE.md"};
+    static final String[] ALTERNATIVE={"ENUmain.dic","ENURoot.dic","ESPmain.dic"};
+    static final String[] ALTERNATIVE_REMOTE={"enumain.dic","enuroot.dic","espmain.dic"};
     static final String[] SUFFIXES={"main","Root","abbr"};
     static String prefix(int language) {
         switch(language) {
         case 0x10000:return "ENU";case 0x10001:return "ENG";case 0x20000:return "ESP";
         case 0x20001:return "ESM";case 0x30000:return "FRA";case 0x30001:return "FRC";
         case 0x40000:return "DEU";case 0x50000:return "ITA";case 0x60000:return "CHS";
+        case 0x60001:return "CHT";
         case 0x70000:return "PTB";case 0x80000:return "JPN";case 0x90000:return "FIN";
         case 0xa0000:return "KOR";case 0x120000:return "ELL";default:throw new IllegalArgumentException("language");
         }
@@ -41,6 +44,21 @@ final class DictionaryData {
     }
     static final class Merger {
         final TreeMap<String,TreeMap<String,String[]>> volumes=new TreeMap<>();
+        void addAlternative(String name,byte[] data) throws IOException {
+            // Alternative files can be UTF-8 or Windows-1252; the engine
+            // consumes the latter. Do not misdecode existing ANSI data.
+            String text;
+            try {text=StandardCharsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(data)).toString();}
+            catch(java.nio.charset.CharacterCodingException error) {add(name,data);return;}
+            if(text.startsWith("\uFEFF"))text=text.substring(1);
+            StringBuilder out=new StringBuilder();
+            for(String line:text.split("\\r\\n|\\r|\\n")) {
+                if(!java.nio.charset.Charset.forName("windows-1252").newEncoder().canEncode(line))
+                    line=java.text.Normalizer.normalize(line,java.text.Normalizer.Form.NFD).replaceAll("\\p{M}","");
+                if(java.nio.charset.Charset.forName("windows-1252").newEncoder().canEncode(line))out.append(line).append('\n');
+            }
+            add(name,out.toString().getBytes(java.nio.charset.Charset.forName("windows-1252")));
+        }
         void add(String name,byte[] data) throws IOException {
             if(data.length>LIMIT)throw new IOException("Dictionary exceeds 8 MiB");
             for(byte b:data)if(b==0)throw new IOException("NUL in dictionary");

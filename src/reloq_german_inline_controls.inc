@@ -2,7 +2,8 @@
  * no AddText fragment is synthesized as a separate utterance. */
 static int inline_words(unsigned char *text,size_t n,
     const struct reloq_german_generic_settings *settings,int volume,
-    struct reloq_inline_word **out,size_t *count)
+    struct reloq_inline_word **out,size_t *count,
+    const struct reloq_inline_word *initial)
 {
     size_t groups=0;
     for(size_t i=0;i+1<n;++i) if(text[i]=='`' && text[i+1]=='[')++groups;
@@ -18,6 +19,11 @@ static int inline_words(unsigned char *text,size_t n,
         .head_size=settings && settings->head_size_plus_one?settings->head_size_plus_one-1:50,
         .roughness=settings?settings->roughness:0,
         .breathiness=settings?settings->breathiness:0};
+    if(initial) {
+        current=*initial;
+        if(current.pitch_offset!=SIZE_MAX)current.pitch_offset=0;
+        current.annotation_offset=0;
+    }
     size_t word=0;
     for(size_t i=0;i<n;) {
         struct reloq_inline_tag tag=reloq_inline_tag_read(text+i,n-i,1);
@@ -49,9 +55,6 @@ static int inline_words(unsigned char *text,size_t n,
                 break;
             default:break;
             }
-            if(word && (tag.kind==RELOQ_TAG_PITCH || tag.kind==RELOQ_TAG_INFLECTION ||
-               tag.kind==RELOQ_TAG_HEAD_SIZE || tag.kind==RELOQ_TAG_PRESET) &&
-                current.pause<0)current.pause=50;
             memset(text+i,' ',tag.length);
         }
         i+=tag.length?tag.length:1;
@@ -72,13 +75,16 @@ struct inline_models {
     float neutral[5];
     unsigned char fixed[5];
     struct reloq_session *session;
-    int error;
+    int error,float_volume;
 };
 static void inline_model_frame(void *context,float c[62])
 {
     struct inline_models *m=context;
     while(m->word+1<m->count && m->starts[m->word+1]<=m->tick)++m->word;
-    m->model=inline_model(m->words+m->word,m->model.sample_rate);
+    if(m->tick>=m->starts[0])
+        m->model=inline_model(m->words+m->word,m->model.sample_rate);
+    if(m->float_volume&&reloq_session_linear_gain(m->session,
+        (float)reloq_voice_volume_gain(m->words[m->word].volume)))m->error=1;
     const int three=reloq_german_voice_model_formants(&m->model)==3;
     const int child=m->model.gender && m->model.head_size<30;
     for(unsigned i=0;i<5;++i)if(m->fixed[i])c[inline_model_defaults[i]]=m->neutral[i];
@@ -133,14 +139,14 @@ static int inline_time_value(int64_t tick,const int64_t *starts,const int64_t *m
 
 static int inline_timing_begin(struct inline_timing *m,
     const int64_t *word_ticks,size_t count,const struct reloq_inline_word *words,
-    double baseline)
+    double baseline,int64_t origin,int64_t output_origin)
 {
     if(!count || count>SIZE_MAX/(2*sizeof(int64_t)) || count>SIZE_MAX/sizeof(double))return -1;
     m->starts=malloc(2*count*sizeof *m->starts);m->scales=malloc(count*sizeof *m->scales);
     if(!m->starts || !m->scales)return -1;
     m->mapped=m->starts+count;m->count=count;
     memcpy(m->starts,word_ticks,count*sizeof *m->starts);
-    m->starts[0]=0;m->mapped[0]=0;
+    m->starts[0]=origin;m->mapped[0]=output_origin;
     for(size_t i=0;i<count;++i) {
         m->scales[i]=words[i].speed<0?baseline:reloq_voice_speed_time_scale(words[i].speed);
         if(!isfinite(m->scales[i])||m->scales[i]<=0)return -1;
@@ -156,7 +162,7 @@ struct inline_audio {
     const struct reloq_inline_word *words;
     const int64_t *ticks;
     size_t count,word,samples;
-    int per_tick;
+    int per_tick,float_volume;
 };
 static int inline_leading_quiet(struct reloq_target_builder *builder,int64_t begin)
 {
@@ -175,6 +181,7 @@ static int inline_leading_quiet(struct reloq_target_builder *builder,int64_t beg
 static int inline_pcm(void *context,const int16_t *pcm,size_t count)
 {
     struct inline_audio *a=context;int16_t buffer[1024];size_t at=0;
+    if(a->float_volume)return a->pcm(a->context,pcm,count);
     while(at<count) {
         size_t n=count-at;if(n>1024)n=1024;
         double gain=reloq_voice_volume_gain(a->words[a->word].volume);

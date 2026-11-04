@@ -16,10 +16,30 @@ static int is_question(void *state,int32_t phrase)
     return kind==3 || kind==4 || kind==7 || kind==8;
 }
 
+int reloq61_english_is_question(void *state,int32_t phrase)
+{return is_question(state,phrase);}
+
 void reloq61_english_question_tones(void *state,int32_t phrase,int16_t high,
-    int16_t *phrase_tone,int16_t *boundary_tone)
+    int16_t low_nucleus,int16_t *nucleus,int16_t *phrase_tone,int16_t *boundary_tone)
 {
     if(is_question(state,phrase)) {
+        *nucleus=low_nucleus;
+        *phrase_tone=high;
+        *boundary_tone=high;
+    }
+}
+
+/* German and English share the phrase record and tone conventions. */
+int reloq61_german_is_question(void *state,int32_t phrase)
+{return is_question(state,phrase);}
+
+void reloq61_german_question_tones(void *state,int32_t phrase,int16_t high,
+    int16_t low_nucleus,int16_t *nucleus,int16_t *phrase_tone,int16_t *boundary_tone)
+{
+    if(is_question(state,phrase)) {
+        /* Lower the nuclear accent before the final rise, as in the earlier
+         * German contour, rather than retaining a preceding high peak. */
+        *nucleus=low_nucleus;
         *phrase_tone=high;
         *boundary_tone=high;
     }
@@ -36,4 +56,10 @@ int reloq61_english_question_time(void *state,int32_t phrase,
         previous>INT32_MAX-10000 || !is_question(state,phrase))return 0;
     *when=previous+10000;
     return 1;
+}
+
+int reloq61_german_question_time(void *state,int32_t phrase,
+    int16_t position,int16_t tone,int32_t previous,int32_t *when)
+{
+    return reloq61_english_question_time(state,phrase,position,tone,previous,when);
 }

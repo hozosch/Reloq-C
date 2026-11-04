@@ -20,9 +20,12 @@ static HRESULT native_format(ISpObjectToken *token,DWORD target,DWORD *rate)
 }
 int wmain(int argc,wchar_t **argv)
 {
+    /* Preserve the last completed case if a native adapter terminates. */
+    setvbuf(stdout,NULL,_IONBF,0);
     HRESULT hr=CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);if(FAILED(hr))return 1;
     static const DWORD rates[]={8000,48000,11025,44100,16000,32000,22050,11025};
-    const int all_rates=argc==2&&!wcscmp(argv[1],L"--all-native-rates");
+    const int first_case=argc==2&&!wcscmp(argv[1],L"--first-case");
+    const int all_rates=first_case||(argc==2&&!wcscmp(argv[1],L"--all-native-rates"));
     HKEY settings=NULL;DWORD saved=0,saved_bytes=sizeof saved,saved_type=0;
     LSTATUS had_saved=ERROR_FILE_NOT_FOUND;
     if(all_rates){
@@ -33,12 +36,12 @@ int wmain(int argc,wchar_t **argv)
         if(had_saved!=ERROR_FILE_NOT_FOUND&&(had_saved!=ERROR_SUCCESS||saved_type!=REG_DWORD||saved_bytes!=sizeof saved)){
             RegCloseKey(settings);CoUninitialize();return 1;}
     }
-    unsigned passed=0,expected=112*(all_rates?7:1);ISpVoice *voice=NULL;
-    for(unsigned native=0;native<(all_rates?7u:1u);++native){
+    unsigned passed=0,expected=first_case?1:112*(all_rates?7:1);ISpVoice *voice=NULL;
+    for(unsigned native=0;native<(first_case?1u:all_rates?7u:1u);++native){
     if(all_rates&&RegSetValueExW(settings,L"OutputRate",0,REG_DWORD,(const BYTE *)&native,sizeof native)!=ERROR_SUCCESS){hr=E_FAIL;break;}
     hr=CoCreateInstance(&CLSID_SpVoice,NULL,CLSCTX_INPROC_SERVER,&IID_ISpVoice,(void **)&voice);
     if(FAILED(hr))break;
-    for(size_t i=0;i<sizeof sapi_languages/sizeof *sapi_languages;++i){
+    for(size_t i=0;i<(first_case?1:sizeof sapi_languages/sizeof *sapi_languages);++i){
         ISpObjectToken *token=NULL;
         WCHAR key[512];swprintf(key,512,L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Speech\\Voices\\Tokens\\ReLoqC_%02u_%08X",
             (unsigned)i,(unsigned)sapi_languages[i].dialect);
@@ -49,7 +52,9 @@ int wmain(int argc,wchar_t **argv)
         if(all_rates&&SUCCEEDED(hr)&&selected!=(DWORD)sapi_rates[native])hr=E_FAIL;
         if(FAILED(hr)){if(token)ISpObjectToken_Release(token);break;}
         ULONGLONG reference_us=0;
-        for(unsigned r=0;r<sizeof rates/sizeof *rates;++r){
+        for(unsigned r=0;r<(first_case?1:sizeof rates/sizeof *rates);++r){
+        fwprintf(stdout,L"Checking %ls, native=%lu Hz, output=%lu Hz\n",sapi_languages[i].name,
+            (unsigned long)selected,(unsigned long)rates[r]);
         DWORD offered=0;hr=native_format(token,rates[r],&offered);
         if(SUCCEEDED(hr)&&offered!=selected)hr=E_FAIL;
         ISpStream *speech=NULL;IStream *memory=NULL;

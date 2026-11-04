@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_updates">Ενημερώσεις εφαρμογής</string>
+    <string name="check_updates">Έλεγχος για ενημερώσεις</string>
+    <string name="checking_updates">Γίνεται έλεγχος για ενημερώσεις…</string>
+    <string name="installed_version">Εγκατεστημένη έκδοση: %1$s</string>
+    <string name="version_available">Η έκδοση %1$s είναι διαθέσιμη.</string>
+    <string name="no_published_update">Δεν υπάρχει νεότερο δημοσιευμένο πακέτο της εφαρμογής.</string>
+    <string name="download_update">Άνοιγμα λήψης στο πρόγραμμα περιήγησης</string>
+    <string name="update_failed">Η ενημέρωση απέτυχε: %1$s</string>
+    <string name="browser_update">Η λήψη άνοιξε. Χρησιμοποιήστε το πρόγραμμα περιήγησης και την κανονική διαδικασία εγκατάστασης του Android. Διατηρήστε το Play Protect ενεργό.</string>
+    <string name="engine_help">Σύνθεση ομιλίας χωρίς σύνδεση. Επιλέξτε γλώσσα και φωνή για δοκιμή ή επιλέξτε το ReLoq C στις ρυθμίσεις μετατροπής κειμένου σε ομιλία του Android.</string>
+    <string name="language">Γλώσσα</string>
+    <string name="profile">Φωνή</string>
+    <string name="sample_rate">Ρυθμός δειγματοληψίας</string>
+    <string name="pause_mode">Συντόμευση παύσεων</string>
+    <string name="sample_text">Κείμενο προς ανάγνωση</string>
+    <string name="speak">Ανάγνωση δοκιμαστικού κειμένου</string>
+    <string name="stop">Διακοπή</string>
+    <string name="system_settings">Ρυθμίσεις ομιλίας Android</string>
+    <string name="initializing">Αρχικοποίηση μηχανής ομιλίας</string>
+    <string name="ready">Η μηχανή ομιλίας είναι έτοιμη</string>
+    <string name="unavailable">Η μηχανή ομιλίας δεν είναι διαθέσιμη. Ανοίξτε τις ρυθμίσεις ομιλίας του Android και επιλέξτε το ReLoq C.</string>
+    <string-array name="pause_modes">
+        <item>Ποτέ</item>
+        <item>Στο τέλος</item>
+        <item>Πάντα</item>
+    </string-array>
+    <string name="voice_settings">Γλώσσα και φωνή</string>
+    <string name="android_voice">Έλεγχος γλώσσας και φωνής μέσω Android</string>
+    <string name="android_rate">Έλεγχος ταχύτητας μέσω Android</string>
+    <string name="android_pitch">Έλεγχος ύψους φωνής μέσω Android</string>
+    <string name="speed">Χειροκίνητη ταχύτητα, λέξεις ανά λεπτό</string>
+    <string name="pitch">Χειροκίνητο ύψος φωνής</string>
+    <string name="rate_boost">Ενίσχυση ταχύτητας</string>
+    <string name="inflection">Επιτονισμός</string>
+    <string name="volume">Ένταση φωνής</string>
+    <string name="anatomy">Μοντέλο φωνής</string>
+    <string name="model">Μοντέλο</string>
+    <string name="head_size">Μέγεθος κεφαλής</string>
+    <string name="roughness">Βραχνάδα</string>
+    <string name="breathiness">Αναπνευστική χροιά</string>
+    <string name="reset_profile">Επαναφορά επιλεγμένου προφίλ φωνής</string>
+    <string name="output_settings">Έξοδος ομιλίας</string>
+    <string name="eci_tags">Επεξεργασία ετικετών ECI</string>
+    <string name="dictionaries">Λεξικά προφοράς</string>
+    <string name="community_dictionaries">Χρήση λεξικών κοινότητας</string>
+    <string name="update_dictionaries">Ενημέρωση λεξικών κοινότητας από τον τρέχοντα κλάδο master</string>
+    <string name="own_dictionaries">Προσωπικά αρχεία λεξικού· τα μεταγενέστερα έχουν προτεραιότητα</string>
+    <string name="dictionary_language">Γλώσσα για νέα αρχεία λεξικού</string>
+    <string name="dictionary_volume">Ενότητα για νέα αρχεία λεξικού</string>
+    <string name="add_dictionary">Προσθήκη αρχείου λεξικού</string>
+    <string name="remove_dictionary">Αφαίρεση επιλεγμένου αρχείου</string>
+    <string name="move_dictionary_up">Μετακίνηση επιλεγμένου αρχείου νωρίτερα</string>
+    <string name="move_dictionary_down">Μετακίνηση επιλεγμένου αρχείου αργότερα</string>
+    <string name="reload_dictionaries">Επαναφόρτωση επιλεγμένων αρχείων</string>
+    <string name="dictionary_help">Τα λεξικά κοινότητας και οι προσωπικές καταχωρίσεις Dic χρησιμοποιούν τα εγγενή στάδια λεξικού. Επιλέξτε γλώσσα και ενότητα πριν προσθέσετε αρχείο. Τα αρχεία χρησιμοποιούν κωδικοποίηση Windows-1252. Τα μεταγενέστερα αρχεία αντικαθιστούν τις καταχωρίσεις των προηγούμενων. Οι αλλαγές παρακολουθούνται όταν ο πάροχος εγγράφων παρέχει μεταδεδομένα τροποποίησης· η Επαναφόρτωση επιλεγμένων αρχείων διαβάζει πάντα ξανά τις πηγές. Η πηγή λαμβάνεται κατά την πρώτη χρήση ή την ενημέρωση. Τα ενεργά λεξικά αντιγράφονται στον χώρο αποθήκευσης που προστατεύεται από τη συσκευή, ώστε να είναι διαθέσιμα μετά την επανεκκίνηση και πριν από το πρώτο ξεκλείδωμα.</string>
+    <string name="dictionary_working">Προετοιμασία λεξικών</string>
+    <string name="dictionary_ready">Τα λεξικά είναι έτοιμα</string>
+    <string name="dictionary_error">Η ενημέρωση λεξικού απέτυχε: %1$s</string>
+    <string name="dictionary_unavailable">Το λεξικό δεν είναι διαθέσιμο</string>
+    <string name="dictionary_permission">Επιλέξτε αρχείο που επιτρέπει μόνιμη πρόσβαση ανάγνωσης</string>
+    <string name="back">Επιστροφή στις ρυθμίσεις ομιλίας</string>
+    <string name="test_speech">Δοκιμή ομιλίας</string>
+    <string name="parameter_value">%1$s: %2$d</string>
+    <string-array name="models">
+        <item>Ανδρικό</item>
+        <item>Γυναικείο</item>
+    </string-array>
+    <string-array name="dictionary_volumes">
+        <item>Κύριο</item>
+        <item>Ρίζες</item>
+        <item>Συντομογραφίες</item>
+    </string-array>
+    <string name="wpm_value">%1$d λέξεις ανά λεπτό</string>
+    <string name="speed_help">Οι λέξεις ανά λεπτό είναι κατά προσέγγιση· η πραγματική ταχύτητα εξαρτάται από τη γλώσσα, το μήκος των λέξεων και τις παύσεις. Η κανονική ταχύτητα του Android έχει στόχο τις 190 λέξεις ανά λεπτό.</string>
+    <string name="abbreviation_dictionary">Χρήση λεξικού συντομογραφιών</string>
+    <string name="phrase_prediction">Πρόβλεψη φράσεων</string>
+    <string name="dictionary_repository">Πηγή λεξικών</string>
+    <string-array name="dictionary_repositories"><item>Λεξικά IBM TTS</item><item>Εναλλακτικά λεξικά IBM TTS</item></string-array>
+</resources>

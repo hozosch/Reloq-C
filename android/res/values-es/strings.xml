@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_updates">Actualizaciones de la aplicación</string>
+    <string name="check_updates">Buscar actualizaciones</string>
+    <string name="checking_updates">Buscando actualizaciones…</string>
+    <string name="installed_version">Versión instalada: %1$s</string>
+    <string name="version_available">La versión %1$s está disponible.</string>
+    <string name="no_published_update">No hay ningún paquete publicado más reciente de la aplicación.</string>
+    <string name="download_update">Abrir descarga en el navegador</string>
+    <string name="update_failed">Error al actualizar: %1$s</string>
+    <string name="browser_update">Se ha abierto la descarga. Usa el navegador y el proceso de instalación habitual de Android. Mantén Play Protect activado.</string>
+    <string name="engine_help">Síntesis de voz sin conexión. Elige un idioma y una voz para probarlos, o selecciona ReLoq C en los ajustes de texto a voz de Android.</string>
+    <string name="language">Idioma</string>
+    <string name="profile">Voz</string>
+    <string name="sample_rate">Frecuencia de muestreo</string>
+    <string name="pause_mode">Acortar pausas</string>
+    <string name="sample_text">Texto para leer</string>
+    <string name="speak">Leer texto de prueba</string>
+    <string name="stop">Detener</string>
+    <string name="system_settings">Ajustes de voz de Android</string>
+    <string name="initializing">Iniciando el motor de voz</string>
+    <string name="ready">Motor de voz preparado</string>
+    <string name="unavailable">El motor de voz no está disponible. Abre los ajustes de voz de Android y selecciona ReLoq C.</string>
+    <string-array name="pause_modes">
+        <item>Nunca</item>
+        <item>Al final</item>
+        <item>Siempre</item>
+    </string-array>
+    <string name="voice_settings">Idioma y voz</string>
+    <string name="android_voice">Controlar el idioma y la voz mediante Android</string>
+    <string name="android_rate">Controlar la velocidad mediante Android</string>
+    <string name="android_pitch">Controlar el tono mediante Android</string>
+    <string name="speed">Velocidad manual, palabras por minuto</string>
+    <string name="pitch">Tono manual</string>
+    <string name="rate_boost">Aumento de velocidad</string>
+    <string name="inflection">Entonación</string>
+    <string name="volume">Volumen de la voz</string>
+    <string name="anatomy">Modelo de voz</string>
+    <string name="model">Modelo</string>
+    <string name="head_size">Tamaño de la cabeza</string>
+    <string name="roughness">Aspereza</string>
+    <string name="breathiness">Aire en la voz</string>
+    <string name="reset_profile">Restablecer el perfil de voz seleccionado</string>
+    <string name="output_settings">Salida de voz</string>
+    <string name="eci_tags">Procesar etiquetas ECI</string>
+    <string name="dictionaries">Diccionarios de pronunciación</string>
+    <string name="community_dictionaries">Usar diccionarios de la comunidad</string>
+    <string name="update_dictionaries">Actualizar los diccionarios de la comunidad desde el master actual</string>
+    <string name="own_dictionaries">Archivos de diccionario propios; los últimos tienen prioridad</string>
+    <string name="dictionary_language">Idioma para los nuevos archivos de diccionario</string>
+    <string name="dictionary_volume">Sección para los nuevos archivos de diccionario</string>
+    <string name="add_dictionary">Añadir archivo de diccionario</string>
+    <string name="remove_dictionary">Eliminar archivo seleccionado</string>
+    <string name="move_dictionary_up">Mover el archivo seleccionado hacia arriba</string>
+    <string name="move_dictionary_down">Mover el archivo seleccionado hacia abajo</string>
+    <string name="reload_dictionaries">Volver a cargar los archivos seleccionados</string>
+    <string name="dictionary_help">Los diccionarios de la comunidad y las entradas Dic propias utilizan las etapas nativas de diccionario. Elige el idioma y la sección antes de añadir un archivo. Los archivos usan la codificación Windows-1252. Los archivos posteriores sustituyen las entradas de los anteriores. Los cambios se supervisan cuando el proveedor de documentos facilita metadatos de modificación; Volver a cargar los archivos seleccionados siempre vuelve a leer los archivos de origen. La fuente elegida se descarga al usarla por primera vez o al actualizarla. Los diccionarios activados se copian al almacenamiento protegido del dispositivo para poder usarlos tras reiniciar y antes del primer desbloqueo.</string>
+    <string name="dictionary_working">Preparando diccionarios</string>
+    <string name="dictionary_ready">Diccionarios preparados</string>
+    <string name="dictionary_error">Error al actualizar el diccionario: %1$s</string>
+    <string name="dictionary_unavailable">Diccionario no disponible</string>
+    <string name="dictionary_permission">Elige un archivo que permita acceso de lectura permanente</string>
+    <string name="back">Volver a los ajustes de voz</string>
+    <string name="test_speech">Prueba de voz</string>
+    <string name="parameter_value">%1$s: %2$d</string>
+    <string-array name="models">
+        <item>Masculino</item>
+        <item>Femenino</item>
+    </string-array>
+    <string-array name="dictionary_volumes">
+        <item>Principal</item>
+        <item>Raíces</item>
+        <item>Abreviaturas</item>
+    </string-array>
+    <string name="wpm_value">%1$d palabras por minuto</string>
+    <string name="speed_help">Las palabras por minuto son aproximadas; la velocidad real depende del idioma, la longitud de las palabras y las pausas. La velocidad normal de Android utiliza un objetivo de 190 palabras por minuto.</string>
+    <string name="abbreviation_dictionary">Usar diccionario de abreviaturas</string>
+    <string name="phrase_prediction">Predicción de frases</string>
+    <string name="dictionary_repository">Fuente de diccionarios</string>
+    <string-array name="dictionary_repositories"><item>Diccionarios IBM TTS</item><item>Diccionarios alternativos IBM TTS</item></string-array>
+</resources>
