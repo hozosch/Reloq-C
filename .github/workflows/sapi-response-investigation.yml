@@ -3,7 +3,7 @@ on:
   push:
     branches: [codex/sapi-110-response]
 concurrency:
-  group: sapi-response-investigation
+  group: sapi-response-${{ github.sha }}
   cancel-in-progress: true
 permissions:
   contents: read
