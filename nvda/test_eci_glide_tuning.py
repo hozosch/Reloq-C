@@ -4,7 +4,7 @@ import ctypes
 from pathlib import Path
 
 from _reloq_eci_direct import (DirectEciEngine, EciIndex, GENDER,
-    GERMAN_GLIDE_BACKNESS, GERMAN_GLIDE_OPENING, PROCESS_TAGS, SAMPLE_RATE)
+    GERMAN_GLIDE_BACKNESS, GERMAN_GLIDE_OPENING, GERMAN_GLIDE_SOFTNESS, PROCESS_TAGS, SAMPLE_RATE)
 from test_eci_german_clock_native import phonemes, render
 
 
@@ -16,7 +16,7 @@ def main():
     other = DirectEciEngine(library, dialect=0x40000, encoding='utf8', experimental_generic=True)
     checks = 0
     try:
-        for param in (GERMAN_GLIDE_OPENING, GERMAN_GLIDE_BACKNESS):
+        for param in (GERMAN_GLIDE_OPENING, GERMAN_GLIDE_BACKNESS, GERMAN_GLIDE_SOFTNESS):
             assert first._dll.eciGetParam(first._handle, param) == 50
             assert first._dll.eciSetParam(first._handle, param, -1) < 0
             assert first._dll.eciSetParam(first._handle, param, 101) < 0
@@ -31,9 +31,9 @@ def main():
                 word = ['Homepage', EciIndex(7)]
                 base = render(first, word)
                 assert base == render(other, word)
-                unaffected = {text: render(first, [text]) for text in ('Bein', 'ja', 'Kamera')}
+                unaffected = {text: render(first, [text]) for text in ('Bein', 'drei', 'ja', 'Kamera')}
                 transcription = phonemes(first, 'Homepage')
-                for param in (GERMAN_GLIDE_OPENING, GERMAN_GLIDE_BACKNESS):
+                for param in (GERMAN_GLIDE_OPENING, GERMAN_GLIDE_BACKNESS, GERMAN_GLIDE_SOFTNESS):
                     for value in (0, 100):
                         first.set_parameter(param, value)
                         changed = render(first, word)
@@ -47,11 +47,13 @@ def main():
                     assert render(first, word) == base, (gender, rate, 'reset')
         first.set_parameter(GERMAN_GLIDE_OPENING, 73)
         first.set_parameter(GERMAN_GLIDE_BACKNESS, 82)
+        first.set_parameter(GERMAN_GLIDE_SOFTNESS, 33)
         first._dll.eciReset.argtypes = (ctypes.c_void_p,)
         first._dll.eciReset.restype = ctypes.c_int
         assert first._dll.eciReset(first._handle) == 1
         assert first._dll.eciGetParam(first._handle, GERMAN_GLIDE_OPENING) == 50
         assert first._dll.eciGetParam(first._handle, GERMAN_GLIDE_BACKNESS) == 50
+        assert first._dll.eciGetParam(first._handle, GERMAN_GLIDE_SOFTNESS) == 50
     finally:
         first.close()
         other.close()

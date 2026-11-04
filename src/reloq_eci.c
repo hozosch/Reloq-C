@@ -182,7 +182,7 @@ struct reloq_eci_engine {
     int dictionary_disabled,phrase_prediction;
     int pause_mode;
     int head_size,roughness,breathiness,gender;
-    int german_glide_opening,german_glide_backness;
+    int german_glide_opening,german_glide_backness,german_glide_softness;
     int language,language_dialect,text_mode,real_world_units;
     int saved_voices[16][8];char voice_names[17][120];
     int real_voice_values[17][8];unsigned real_voice_flags[17];
@@ -646,7 +646,7 @@ ECIHand ECICALL eciNewEx(int language)
     e->dictionary_disabled=eciGetDefaultParam(RELOQ_ECI_DICTIONARY);
     e->real_world_units=eciGetDefaultParam(RELOQ_ECI_REAL_WORLD_UNITS);
     e->head_size=50;
-    e->german_glide_opening=e->german_glide_backness=50;
+    e->german_glide_opening=e->german_glide_backness=e->german_glide_softness=50;
     e->generic_rate = 50;
     e->generic_pitch = 50;
     e->generic_volume = 100;
@@ -838,7 +838,7 @@ int ECICALL eciSynthesize(ECIHand handle)
     struct reloq61_text_options previous_options=reloq61_text_options_scope(
         (struct reloq61_text_options){e->dictionary_disabled,e->phrase_prediction});
     struct reloq61_glide_options previous_glide=reloq61_glide_options_scope(
-        (struct reloq61_glide_options){e->german_glide_opening,e->german_glide_backness});
+        (struct reloq61_glide_options){e->german_glide_opening,e->german_glide_backness,e->german_glide_softness});
     e->failure_stage = RELOQ_ECI_STAGE_NONE;
     e->failure_utf8_offset = -1;
     int result = RELOQ_ECI_OK;
@@ -1345,6 +1345,7 @@ int ECICALL eciGetParam(ECIHand handle, int parameter)
     case RELOQ_ECI_HIGH_RATE_PROFILE: return e->high_rate_profile;
     case RELOQ_ECI_GERMAN_GLIDE_OPENING: return e->german_glide_opening;
     case RELOQ_ECI_GERMAN_GLIDE_BACKNESS: return e->german_glide_backness;
+    case RELOQ_ECI_GERMAN_GLIDE_SOFTNESS: return e->german_glide_softness;
     case RELOQ_ECI_SAMPLE_RATE: return e->sample_rate_code;
     case RELOQ_ECI_LANGUAGE_DIALECT: return e->language_dialect;
     case 2:return e->text_mode;
@@ -1368,6 +1369,9 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
     case RELOQ_ECI_GERMAN_GLIDE_BACKNESS:
         if(value<0 || value>100)return eci_refuse(e,-1);
         e->german_glide_backness=value;break;
+    case RELOQ_ECI_GERMAN_GLIDE_SOFTNESS:
+        if(value<0 || value>100)return eci_refuse(e,-1);
+        e->german_glide_softness=value;break;
     case RELOQ_ECI_HIGH_RATE_PROFILE:
         if(value<0 || value>3)return eci_refuse(e,-1);
         e->high_rate_profile=value;

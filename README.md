@@ -4,7 +4,7 @@ ReLoq C is a speech synthesis project that preserves the familiar character of E
 
 The shared synthesis engine is written in C. NVDA, Android ARM64 and Windows SAPI5 use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
 
-The development branch is preparing **1.1.0-rc26**. German now uses the
+The development branch is preparing **1.1.0-rc27**. German now uses the
 shared native sentence and acoustic path, including long sentences and
 expressions with hyphens or slashes. Native word boundaries carry voice tags,
 while caller dictionaries and the accepted male-only initial /ts/ adjustment

@@ -41,6 +41,9 @@ msgstr "Deutscher E-I-Gleitlaut: Ö&ffnung"
 msgid "German E-I glide: farther &back"
 msgstr "Deutscher E-I-Gleitlaut: weiter &hinten"
 
+msgid "German E-I glide: &softness"
+msgstr "Deutscher E-I-Gleitlaut: &Weichheit"
+
 #: addon/synth/synthDrivers/reloqC/__init__.py:175
 msgid "Process &ECI tags"
 msgstr "ECI-&Tags verarbeiten"

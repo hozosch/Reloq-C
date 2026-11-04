@@ -35,7 +35,7 @@ from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciProsody,
                                 NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION, PROCESS_TAGS,
                                 PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATES,
                                 DICTIONARY, PHRASE_PREDICTION, GERMAN_GLIDE_OPENING,
-                                GERMAN_GLIDE_BACKNESS)
+                                GERMAN_GLIDE_BACKNESS, GERMAN_GLIDE_SOFTNESS)
 from ._reloq_eci_transport import EciTextTransport
 from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries
 from ._reloq_languages import GERMAN, LANGUAGES, LANGUAGE_ALIASES, LANGUAGE_DISPLAY_ORDER, LanguageEngine, language_for
@@ -183,6 +183,7 @@ class SynthDriver(BaseSynthDriver):
         NumericDriverSetting("breathiness", _("&Breathiness"), False, defaultVal=0),
         NumericDriverSetting("glideOpening", _("German E-I glide: &opening"), True, defaultVal=50),
         NumericDriverSetting("glideBackness", _("German E-I glide: farther &back"), True, defaultVal=50),
+        NumericDriverSetting("glideSoftness", _("German E-I glide: &softness"), True, defaultVal=50),
         BooleanDriverSetting("abbreviationDictionary", _("Use &abbreviation dictionary"), defaultVal=True),
         BooleanDriverSetting("phrasePrediction", _("Phrase &prediction"), defaultVal=False),
         BooleanDriverSetting("voiceTags", _("Process &ECI tags"), defaultVal=False),
@@ -219,6 +220,7 @@ class SynthDriver(BaseSynthDriver):
         self._breathiness = 0
         self._glideOpening = 50
         self._glideBackness = 50
+        self._glideSoftness = 50
         self._abbreviationDictionary = True
         self._phrasePrediction = False
         self._voiceTags = False
@@ -253,6 +255,7 @@ class SynthDriver(BaseSynthDriver):
         self._transport.set_parameter(BREATHINESS, self._breathiness)
         self._transport.set_parameter(GERMAN_GLIDE_OPENING, self._glideOpening)
         self._transport.set_parameter(GERMAN_GLIDE_BACKNESS, self._glideBackness)
+        self._transport.set_parameter(GERMAN_GLIDE_SOFTNESS, self._glideSoftness)
         manager = self.dictionary_manager()
         # Start monitoring the installed dictionaries and selected own files.
         manager.set_enabled(False)
@@ -502,6 +505,7 @@ class SynthDriver(BaseSynthDriver):
                 (ROUGHNESS, self._roughness), (BREATHINESS, self._breathiness),
                 (GERMAN_GLIDE_OPENING, self._glideOpening),
                 (GERMAN_GLIDE_BACKNESS, self._glideBackness),
+                (GERMAN_GLIDE_SOFTNESS, self._glideSoftness),
                 (PROCESS_TAGS, int(self._voiceTags)), (PAUSE_MODE, int(self._pauseMode)),
                 (DICTIONARY, int(not self._abbreviationDictionary)),
                 (PHRASE_PREDICTION, int(self._phrasePrediction)),
@@ -610,6 +614,12 @@ class SynthDriver(BaseSynthDriver):
 
     def _set_glideBackness(self, value):
         self._set_setting("glideBackness", GERMAN_GLIDE_BACKNESS, value)
+
+    def _get_glideSoftness(self):
+        return self._glideSoftness
+
+    def _set_glideSoftness(self, value):
+        self._set_setting("glideSoftness", GERMAN_GLIDE_SOFTNESS, value)
 
     def _on_index(self, value):
         if not self._terminating:

@@ -61,7 +61,7 @@ static _Thread_local struct reloq61_text_options text_options;
 struct reloq61_text_options reloq61_text_options_current(void) {return text_options;}
 struct reloq61_text_options reloq61_text_options_scope(struct reloq61_text_options next)
 {struct reloq61_text_options previous=text_options;text_options=next;return previous;}
-static _Thread_local struct reloq61_glide_options glide_options={50,50};
+static _Thread_local struct reloq61_glide_options glide_options={50,50,50};
 struct reloq61_glide_options reloq61_glide_options_current(void) {return glide_options;}
 struct reloq61_glide_options reloq61_glide_options_scope(struct reloq61_glide_options next)
 {struct reloq61_glide_options previous=glide_options;glide_options=next;return previous;}

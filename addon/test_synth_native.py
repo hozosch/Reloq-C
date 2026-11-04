@@ -170,15 +170,20 @@ def main():
                         assert run([prefix + word + suffix]) == baseline, (locale, "prosody leaked")
                         report["checks"] += 2
                     driver.voiceTags = True
-                # The two accessible settings must reach the packaged DLL in
+                # The accessible settings must reach the packaged DLL in
                 # queue order and survive changing language and voice.
                 driver.language = "de_DE"
                 driver.voice = "1"
                 driver.glideOpening = 50
                 driver.glideBackness = 50
+                driver.glideSoftness = 50
                 glide_reference = run(["Homepage"])
+                driver.glideSoftness = 100
+                assert run(["Homepage"]) != glide_reference, "softness did not reach the native planner"
+                driver.glideSoftness = 50
                 driver.glideOpening = 80
                 driver.glideBackness = 75
+                driver.glideSoftness = 80
                 glide_tuned = run(["Homepage"])
                 assert glide_tuned != glide_reference, "glide sliders did not reach the native planner"
                 driver.language = "en_US"
@@ -187,8 +192,9 @@ def main():
                 assert run(["Homepage"]) == glide_tuned, "language switch lost glide settings"
                 driver.glideOpening = 50
                 driver.glideBackness = 50
+                driver.glideSoftness = 50
                 assert run(["Homepage"]) == glide_reference, "glide reset did not restore the reference"
-                report["checks"] += 3
+                report["checks"] += 4
                 # The source profile and player clock must agree in the
                 # actual packaged driver for every native output rate.
                 for code, hz in native.SAMPLE_RATES.items():

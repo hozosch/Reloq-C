@@ -25,16 +25,16 @@ def rms(values):
 def check_vowelless_frication(engine, language):
     """Check sound, not only allocated PCM or an index at the end.
 
-    With the default 11-kHz voice the /s/ of recosp lies at 0.40–0.46 s.
-    Its successive-sample difference captures the noisy consonant energy;
-    the previous broken build's value here is below 15, despite loud vowels.
+    The earlier repair made a consonant-only suffix audible but still split
+    it away from its vowel. Check the complete word against an equivalent
+    native spelling as well as checking its frication energy.
     """
     engine.set_parameter(SAMPLE_RATE, 1)
     standalone, _ = render(engine, ['tzsche'])
-    assert rms(samples(standalone)) > 50, (language, 'tzsche is inaudible')
+    assert rms(samples(standalone)) > 500, (language, 'tzsche has no audible vowel')
     assert 's' in phonemes(engine, 'recosp').lower(), (language, 'missing S phone')
     pcm, _ = render(engine, ['recosp'])
-    segment = samples(pcm)[int(.40 * 11025):int(.46 * 11025)]
+    segment = samples(pcm)[int(.40 * 11025):int(.70 * 11025)]
     assert len(segment) > 1 and rms([b - a for a, b in zip(segment, segment[1:])]) > 200, (language, 'recosp has no S frication')
 
 
@@ -102,6 +102,26 @@ def main():
             if language in (0x10000, 0x10001):
                 check_vowelless_frication(engine, language)
                 checks += 2
+                # A medial prefix cannot consume the remaining stem's only
+                # vowel. The result retains C/K, the vowel and final /sp/.
+                # The respelled forms are comparisons, not input rewrites.
+                for word, reference in (('recosp', 'rekosp'), ('uncosp', 'unkosp'),
+                                        ('noncosp', 'nonkosp'), ('anticosp', 'antikosp')):
+                    assert phonemes(engine, word) == phonemes(engine, reference), (language, word)
+                    for prefix, suffix in (('', ''), ('Please ', ' continue.')):
+                        a = render(engine, [prefix, EciIndex(1), word, EciIndex(2), suffix, EciIndex(3)])
+                        b = render(engine, [prefix, EciIndex(1), reference, EciIndex(2), suffix, EciIndex(3)])
+                        assert a == b, (language, word, prefix)
+                        checks += 1
+                # T rules may otherwise consume the only written vowel into
+                # an affricate. Keep the vowel for ordinary phoneme planning.
+                for word, reference in (('tzsche', 'tsche'), ('ttzsche', 'ttsche')):
+                    assert phonemes(engine, word) == phonemes(engine, reference), (language, word)
+                    for prefix, suffix in (('', ''), ('Please ', ' continue.')):
+                        a = render(engine, [prefix, EciIndex(1), word, EciIndex(2), suffix, EciIndex(3)])
+                        b = render(engine, [prefix, EciIndex(1), reference, EciIndex(2), suffix, EciIndex(3)])
+                        assert a == b, (language, word, prefix)
+                        checks += 1
             if language in (0x30000, 0x30001):
                 # French qu has a silent u here: the i is the syllabic
                 # vowel and the single final l is not the glide in quille.
@@ -129,6 +149,20 @@ def main():
                         engine, [reference, EciIndex(7)]), (language, number)
                     checks += 2
             if language == 0x40000:
+                # A da-particle rule must not seize the first constituent of
+                # an unrelated hyphenated word. Genuine da words keep their
+                # original analysis, including as compound constituents.
+                for text, expected in (
+                    ('dane-ben', ' `vv100 `[.1da.0n@.2ben]'),
+                    ('Dane-Ben', ' `vv100 `[.1da.0n@.2ben]'),
+                    ('„dane-ben“', ' `vv100 `[.1da.0n@.2ben]'),
+                    ('dage-gen', ' `vv100 `[.1da.0g@.2gen]'),
+                    ('daneben', ' `vv100 `[.1da.0ne.0b@n]'),
+                    ('dagegen', ' `vv100 `[.0da.1ge.0g@n]'),
+                    ('dagegen-Stimme', ' `vv100 `[.0da.1ge.0g@n.2StI.0m@]'),
+                ):
+                    assert phonemes(engine, text) == expected, (text, phonemes(engine, text))
+                    checks += 1
                 # Both spellings of these acoustic targets must use the same
                 # native plan in each model and at every supported rate.
                 for gender in (0, 1):

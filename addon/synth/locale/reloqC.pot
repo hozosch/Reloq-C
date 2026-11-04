@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Eloquence C 1.1.0-rc26\n"
+"Project-Id-Version: Eloquence C 1.1.0-rc27\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-04 14:14+0100\n"
+"POT-Creation-Date: 2026-11-04 15:31+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -44,68 +44,72 @@ msgid "German E-I glide: farther &back"
 msgstr ""
 
 #: addon/synth/synthDrivers/reloqC/__init__.py:186
-msgid "Use &abbreviation dictionary"
+msgid "German E-I glide: &softness"
 msgstr ""
 
 #: addon/synth/synthDrivers/reloqC/__init__.py:187
-msgid "Phrase &prediction"
+msgid "Use &abbreviation dictionary"
 msgstr ""
 
 #: addon/synth/synthDrivers/reloqC/__init__.py:188
-msgid "Process &ECI tags"
+msgid "Phrase &prediction"
 msgstr ""
 
 #: addon/synth/synthDrivers/reloqC/__init__.py:189
+msgid "Process &ECI tags"
+msgstr ""
+
+#: addon/synth/synthDrivers/reloqC/__init__.py:190
 #: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:33
 msgid "Use &community pronunciation dictionaries"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:190
+#: addon/synth/synthDrivers/reloqC/__init__.py:191
 msgid "Shorten pa&uses"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:191
+#: addon/synth/synthDrivers/reloqC/__init__.py:192
 msgid "&Sample rate"
 msgstr ""
 
 #. Translators: Audio sample rates; localize the decimal separator.
-#: addon/synth/synthDrivers/reloqC/__init__.py:285
+#: addon/synth/synthDrivers/reloqC/__init__.py:288
 msgid "8 kHz"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:285
+#: addon/synth/synthDrivers/reloqC/__init__.py:288
 msgid "11.025 kHz"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:285
+#: addon/synth/synthDrivers/reloqC/__init__.py:288
 msgid "16 kHz"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:285
+#: addon/synth/synthDrivers/reloqC/__init__.py:288
 msgid "22.05 kHz"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:286
+#: addon/synth/synthDrivers/reloqC/__init__.py:289
 msgid "32 kHz"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:286
+#: addon/synth/synthDrivers/reloqC/__init__.py:289
 msgid "44.1 kHz"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:286
+#: addon/synth/synthDrivers/reloqC/__init__.py:289
 msgid "48 kHz"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:448
+#: addon/synth/synthDrivers/reloqC/__init__.py:451
 msgid "Never"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:448
+#: addon/synth/synthDrivers/reloqC/__init__.py:451
 msgid "Only at text end"
 msgstr ""
 
-#: addon/synth/synthDrivers/reloqC/__init__.py:448
+#: addon/synth/synthDrivers/reloqC/__init__.py:451
 msgid "Always"
 msgstr ""
 

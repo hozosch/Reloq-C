@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.reloq.tts.preview" android:versionCode="1090026" android:versionName="1.1.0-rc26">
+    package="org.reloq.tts.preview" android:versionCode="1090027" android:versionName="1.1.0-rc27">
     <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
     <uses-permission android:name="android.permission.INTERNET" />
     <queries><intent><action android:name="android.intent.action.TTS_SERVICE" /></intent></queries>

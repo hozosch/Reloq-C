@@ -64,9 +64,8 @@ void reloq61_german_syllable_begin(void);
 struct reloq61_text_options {int dictionary_disabled, phrase_prediction;};
 struct reloq61_text_options reloq61_text_options_current(void);
 struct reloq61_text_options reloq61_text_options_scope(struct reloq61_text_options);
-/* Per-synthesis experimental German /Ej/ glide tuning. The default 50/50
- * retains the established targets; scope/restore protects nested engines. */
-struct reloq61_glide_options {int opening,backness;};
+/* Per-synthesis German /Ej/ glide tuning; scope/restore protects nested engines. */
+struct reloq61_glide_options {int opening,backness,softness;};
 struct reloq61_glide_options reloq61_glide_options_current(void);
 struct reloq61_glide_options reloq61_glide_options_scope(struct reloq61_glide_options);
 struct reloq61_result { int unsupported, error; size_t frames, phonemes_length; int64_t ticks; };

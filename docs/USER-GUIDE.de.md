@@ -1,8 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Testversion 1.1.0-rc26
+## Testversion 1.1.0-rc27
 
-Die Testversion korrigiert die akustische Behandlung englischer Silben ohne Vokal: In „recosp“ wird das S angesteuert und „tzsche“ erzeugt einen hörbaren Konsonanten. Die Aussprache muss in NVDA gehört werden. Zwei neue Regler erlauben die persönliche Abstimmung des deutschen E-I-Gleitlauts.
+Ein zusätzlicher Regler für die Weichheit des deutschen E-I-Gleitlauts erlaubt eine weitere persönliche Klangabstimmung. In englischer Analyse werden bei „recosp“ der vollständige Stamm und bei „tzsche“ der Schlussvokal erhalten. Bei „dane-ben“ und „dage-gen“ ist die Betonung angepasst; „audio-encoder“ und verwandte Zusammensetzungen sind noch auffällig. Bitte die Aussprache in NVDA prüfen.
 
 Der J-Gleitlaut in „Homepage“ geht vom unveränderten nativen Eloquence-Pfad aus und wird leicht nach hinten verschoben; bei „Kann er“ ist das unbetonte E am früheren ReLoq-Planer orientiert. Wortanfängliches „sm“ und „sn“ übernehmen die S-Anregung des früheren ReLoq-Planers. Mehrere bisher stumme Bindestrichwörter sprechen wieder. Bitte den Klang in NVDA prüfen.
 
@@ -67,7 +67,7 @@ Die folgenden Optionen befinden sich in den Sprachausgaben-Einstellungen:
 - **Stimmhöhe, Betonung und Lautstärke:** Grundtonhöhe, Umfang der Sprachmelodie und Wiedergabepegel.
 - **Kopfgröße:** verändert die Resonanzen und damit den Stimmcharakter.
 - **Rauigkeit und Behauchtheit:** zusätzliche Eigenschaften der Stimmquelle.
-- **Deutscher E-I-Gleitlaut: Öffnung** und **weiter hinten:** experimentelle Regler für den Gleitlaut in Wörtern wie „Homepage“. Beide beginnen bei 50. Höhere Werte öffnen den Laut beziehungsweise verschieben ihn nach hinten. Du kannst sie auch im NVDA-Einstellungsring verändern und das Wort danach erneut lesen; 50 stellt die bisherige Einstellung wieder her.
+- **Deutscher E-I-Gleitlaut: Öffnung**, **weiter hinten** und **Weichheit:** experimentelle Regler für Wörter wie „Homepage“. Die Weichheit beginnt bei 50; höhere Werte verändern die dritte Resonanz in Richtung des Ei-Gleitlauts. Weichheit 0 stellt den Klang von rc26 wieder her. Alle drei Regler sind auch im NVDA-Einstellungsring verfügbar.
 - **Abtastrate:** 8, 11,025, 16, 22,05, 32, 44,1 oder 48 kHz. Voreingestellt sind 11,025 kHz. Höhere Raten erweitern die Klangbandbreite und benötigen mehr Rechenleistung. Bei Aussetzern hilft zum Eingrenzen ein Vergleich mit 11,025 oder 22,05 kHz.
 
 **Pausen verkürzen** hat drei Werte: **Nie**, **Nur am Textende** und **Immer**. Die Kürzung betrifft automatisch erzeugte Pausen. Ausdrücklich angegebene Pausen behalten ihre Dauer.

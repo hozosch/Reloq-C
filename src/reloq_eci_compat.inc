@@ -323,6 +323,7 @@ static int reset_eci_defaults(struct reloq_eci_engine *e)
     e->active_dictionary=set;
     e->gender=n->gender;e->head_size=n->head_size;e->roughness=n->roughness;e->breathiness=n->breathiness;
     e->german_glide_opening=n->german_glide_opening;e->german_glide_backness=n->german_glide_backness;
+    e->german_glide_softness=n->german_glide_softness;
     memcpy(e->saved_voices,n->saved_voices,sizeof e->saved_voices);
     memcpy(e->voice_names,n->voice_names,sizeof e->voice_names);
     memset(e->real_voice_flags,0,sizeof e->real_voice_flags);
