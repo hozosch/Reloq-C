@@ -29,4 +29,16 @@ static inline int reloq61_german_split_past_end(void *state, int32_t start,
     }
     return 0;
 }
+
+/* A successful compound search must actually cover the constituent. When
+ * the first projected item is already its end, no morpheme was created;
+ * the caller can use its ordinary whole-root fallback instead. */
+static inline int reloq61_german_compound_empty(void *state, int32_t start,
+                                                int32_t end)
+{
+    delta_state *d=state;
+    if(!d || !d->vars || !start || !end || start==end || deltaErrorThrown(d))
+        return 0;
+    return vgetsc(d,0,0,start,3)==end;
+}
 #endif

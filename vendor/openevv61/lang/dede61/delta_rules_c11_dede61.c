@@ -14,6 +14,7 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_dede61.h"
+#include "reloq61_german_compound_bounds.h"
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -8242,9 +8243,18 @@ L2080:;
     AT(int32_t, -36) = (22);
     r0 = reloq61_typed_starttest_e(DELTA_ENTRY_starttest_e, state, (int16_t)((int32_t)AT(int32_t, -36)));
     AT(int32_t, -44) = (r0);
+    int32_t reloq_root_start=STATE(int32_t,w64), reloq_root_end=STATE(int32_t,w65);
+    int reloq_whole_constituent=reloq_root_start==STATE(int32_t,w44) &&
+                               reloq_root_end==STATE(int32_t,w45);
     AT(int32_t, -36) = (STATE_AT(w64, -4));
     r0 = reloq_call_dede61_find_compound(state, (int32_t)(FIELD(0)), (int32_t)((int32_t)AT(int32_t, -36)), (int32_t)(STATE_AT(w65, -4)));
     AT(int32_t, -44) = (r0);
+    if (AT(int32_t, -44)==0 && reloq_whole_constituent &&
+        reloq61_german_compound_empty(state,reloq_root_start,reloq_root_end)) {
+        STATE(int32_t,w64)=reloq_root_start;
+        STATE(int32_t,w65)=reloq_root_end;
+        goto L2274;
+    }
     if (AT(int32_t, -44) == 0) goto L2163;
     goto L2274;
 L2163:;
