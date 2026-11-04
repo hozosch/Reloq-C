@@ -112,7 +112,7 @@ enum {
     /* Legacy ReLoq setting. Values 0..3 remain readable/writable; every
      * value renders the accepted C tuning in ECI speech. */
     RELOQ_ECI_HIGH_RATE_PROFILE = 0x1011,
-    /* Experimental German /Ej/ coda colour, 0..100, default 50 each.
+    /* German /Ej/ coda colour, 0..100; defaults 85, 45 and 45 respectively.
      * Higher opening opens F1; backness lowers F2/F3; softness lowers F3. */
     RELOQ_ECI_GERMAN_GLIDE_OPENING = 0x1012,
     RELOQ_ECI_GERMAN_GLIDE_BACKNESS = 0x1013,

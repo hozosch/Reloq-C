@@ -66,7 +66,9 @@ def main():
                         have_pcm = True
                     on_pcm(data)
                 settings = {str(p): self._dll.eciGetParam(self._handle, p)
-                            for p in (native.SAMPLE_RATE, native.HIGH_RATE_PROFILE, native.PROCESS_TAGS)}
+                            for p in (native.SAMPLE_RATE, native.HIGH_RATE_PROFILE, native.PROCESS_TAGS,
+                                      native.GERMAN_GLIDE_OPENING, native.GERMAN_GLIDE_BACKNESS,
+                                      native.GERMAN_GLIDE_SOFTNESS)}
                 self.calls.append((parts, settings))
                 try:
                     return super().speak(parts, pcm, on_index)
@@ -170,31 +172,19 @@ def main():
                         assert run([prefix + word + suffix]) == baseline, (locale, "prosody leaked")
                         report["checks"] += 2
                     driver.voiceTags = True
-                # The accessible settings must reach the packaged DLL in
-                # queue order and survive changing language and voice.
+                # The accepted fixed glide survives switching languages;
+                # old NVDA slider settings no longer reach the DLL.
                 driver.language = "de_DE"
                 driver.voice = "1"
-                driver.glideOpening = 50
-                driver.glideBackness = 50
-                driver.glideSoftness = 50
                 glide_reference = run(["Homepage"])
-                driver.glideSoftness = 100
-                assert run(["Homepage"]) != glide_reference, "softness did not reach the native planner"
-                driver.glideSoftness = 50
-                driver.glideOpening = 80
-                driver.glideBackness = 75
-                driver.glideSoftness = 80
-                glide_tuned = run(["Homepage"])
-                assert glide_tuned != glide_reference, "glide sliders did not reach the native planner"
+                settings = spoken_engines[-1].calls[-1][1]
+                assert [settings[str(p)] for p in (native.GERMAN_GLIDE_OPENING,
+                        native.GERMAN_GLIDE_BACKNESS, native.GERMAN_GLIDE_SOFTNESS)] == [85, 45, 45]
                 driver.language = "en_US"
                 run(["Hello."])
                 driver.language = "de_DE"
-                assert run(["Homepage"]) == glide_tuned, "language switch lost glide settings"
-                driver.glideOpening = 50
-                driver.glideBackness = 50
-                driver.glideSoftness = 50
-                assert run(["Homepage"]) == glide_reference, "glide reset did not restore the reference"
-                report["checks"] += 4
+                assert run(["Homepage"]) == glide_reference, "language switch changed the fixed glide"
+                report["checks"] += 2
                 # The source profile and player clock must agree in the
                 # actual packaged driver for every native output rate.
                 for code, hz in native.SAMPLE_RATES.items():

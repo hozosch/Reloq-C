@@ -1,20 +1,8 @@
 # Eloquence C – user guide
 
-## Preview 1.1.0-rc27
+## Version 1.1.0
 
-A new softness control offers further tuning of the German E-I glide. The English analysis retains the whole stem in “recosp” and the final vowel in “tzsche”. German hyphenated “dane-ben” and “dage-gen” have adjusted stress; “audio-encoder” and related compounds still need work. Please check the pronunciation in NVDA.
-
-The glide in German “Homepage” starts from the unchanged native Eloquence path and is shifted slightly back. The unstressed E in “Kann er” follows the earlier ReLoq planner. Word-initial “sm” and “sn” use the earlier ReLoq planner’s S excitation. Several previously silent hyphenated words now speak. Listening feedback in NVDA is needed.
-
-This preview compares consonantal R excitation and the final-A blend with the earlier German planner. It shortens N in connected nine-and forms and retains dictionary pronunciations in hyphenated compounds such as “ETI-Eloquence”, including inside quotation marks. A redundant post-focus pitch rise on weak verbs in statements is removed, and German questions receive a rising final contour. Listening feedback in NVDA is needed.
-
-This preview restores the previous consonantal R form with a softer vibration, shortens the N in “siebenund”, aligns E after I with the earlier path, and uses a blended final-A colour at sentence boundaries. An overflow fix stabilizes German intonation at high pitches. Listening in NVDA is still needed.
-
-This preview aligns German analysis and speech planning for “Sprachauswahl”, “Suchauswahl”, number words with “-und”, selected Über-/Unter- forms, long o, and the stress of “famos” and “rigoros”. R, S, PF and final a have been adjusted for listening tests. Dictionary entries retain priority. Pronunciation and sound still need to be evaluated in NVDA.
-
-German speech now uses the same native sentence and acoustic planning path as the other languages. Long single sentences can start earlier, and hyphens, slashes and ECI tags use the shared path. User dictionaries, pause shortening and the male-only reduction for word-initial /ts/ and /tsv/ remain in place. The vocalic r in “der Zahn” follows the native formant trajectory; its colour still needs a listening test. The accepted C tuning and the Castilian/Greek S/T limit remain in place.
-
-This preview adds corrected stress for German “konzentrieren”, clock times with seconds, and space-separated thousands to native analysis. It adjusts the nasal vowel in “Chance”, affected r sounds, and f energy from 22 kHz in the native acoustic path. Automated signal tests show matching text and generated phonetic input for selected words. Other words and glottal boundaries can still differ between text and phonetic input. The sound still needs a listening comparison.
+The German E-I glide defaults to opening 85, backness 45 and softness 45. German sentence and sound planning improve hyphenated words, number words and question contours. English analysis retains the whole stem in “recosp” and the final vowel in “tzsche”.
 
 ## English clock readings with seconds
 
@@ -67,7 +55,6 @@ These controls are in NVDA's Speech settings:
 - **Pitch, inflection and volume:** base pitch, sentence melody range and output level.
 - **Head size:** resonance and voice character.
 - **Roughness and breathiness:** additional voice-source characteristics.
-- **German E-I glide: opening**, **farther back**, and **softness:** experimental controls for words such as “Homepage”. Softness starts at 50; higher values move the third resonance toward the native German EI glide. Set softness to 0 to restore the rc26 sound. All three controls are available in the NVDA settings ring.
 - **Sample rate:** 8, 11.025, 16, 22.05, 32, 44.1 or 48 kHz; the default is 11.025 kHz. Higher rates extend the frequency range and use more CPU. If speech stutters, compare with 11.025 or 22.05 kHz to help identify the cause.
 
 **Shorten pauses** offers **Never**, **Only at text end** and **Always**. It changes automatically generated pauses. Explicitly requested pauses retain their duration.
@@ -104,7 +91,7 @@ Under **Add-on updates**, choose **Check for add-on updates** to check published
 
 ## Reporting problems
 
-ReLoq C 1.0.1 restores native S/Z source levels and improves stopping obsolete text analysis. Further high-rate sound tuning remains under evaluation. NVDA can process symbols before sending text to the synthesizer; its symbol settings therefore also affect which characters reach ReLoq. See the [technical work status](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md) for details.
+NVDA can process symbols before sending text to the synthesizer; its symbol settings therefore also affect which characters reach ReLoq. See the [technical work status](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md) for details.
 
 When [reporting an issue](https://github.com/hozosch/Reloq-C/issues), include a short example, language, voice, version, sample rate and whether dictionaries are enabled. Explain whether speech stops, pronunciation is wrong or NVDA itself exits.
 

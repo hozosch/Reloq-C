@@ -16,11 +16,13 @@ def main():
     other = DirectEciEngine(library, dialect=0x40000, encoding='utf8', experimental_generic=True)
     checks = 0
     try:
-        for param in (GERMAN_GLIDE_OPENING, GERMAN_GLIDE_BACKNESS, GERMAN_GLIDE_SOFTNESS):
-            assert first._dll.eciGetParam(first._handle, param) == 50
+        defaults = {GERMAN_GLIDE_OPENING: 85, GERMAN_GLIDE_BACKNESS: 45,
+                    GERMAN_GLIDE_SOFTNESS: 45}
+        for param, default in defaults.items():
+            assert first._dll.eciGetParam(first._handle, param) == default
             assert first._dll.eciSetParam(first._handle, param, -1) < 0
             assert first._dll.eciSetParam(first._handle, param, 101) < 0
-            assert first._dll.eciGetParam(first._handle, param) == 50
+            assert first._dll.eciGetParam(first._handle, param) == default
         for gender in (0, 1):
             for engine in (first, other):
                 engine.set_parameter(GENDER, gender)
@@ -33,7 +35,7 @@ def main():
                 assert base == render(other, word)
                 unaffected = {text: render(first, [text]) for text in ('Bein', 'drei', 'ja', 'Kamera')}
                 transcription = phonemes(first, 'Homepage')
-                for param in (GERMAN_GLIDE_OPENING, GERMAN_GLIDE_BACKNESS, GERMAN_GLIDE_SOFTNESS):
+                for param, default in defaults.items():
                     for value in (0, 100):
                         first.set_parameter(param, value)
                         changed = render(first, word)
@@ -43,7 +45,7 @@ def main():
                             assert render(first, [text]) == before, (gender, rate, param, value, text)
                         assert render(other, word) == base, (gender, rate, 'engine setting leaked')
                         checks += 1
-                    first.set_parameter(param, 50)
+                    first.set_parameter(param, default)
                     assert render(first, word) == base, (gender, rate, 'reset')
         first.set_parameter(GERMAN_GLIDE_OPENING, 73)
         first.set_parameter(GERMAN_GLIDE_BACKNESS, 82)
@@ -51,9 +53,8 @@ def main():
         first._dll.eciReset.argtypes = (ctypes.c_void_p,)
         first._dll.eciReset.restype = ctypes.c_int
         assert first._dll.eciReset(first._handle) == 1
-        assert first._dll.eciGetParam(first._handle, GERMAN_GLIDE_OPENING) == 50
-        assert first._dll.eciGetParam(first._handle, GERMAN_GLIDE_BACKNESS) == 50
-        assert first._dll.eciGetParam(first._handle, GERMAN_GLIDE_SOFTNESS) == 50
+        for param, default in defaults.items():
+            assert first._dll.eciGetParam(first._handle, param) == default
     finally:
         first.close()
         other.close()

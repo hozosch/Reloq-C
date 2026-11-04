@@ -1,15 +1,18 @@
 # Android ARM64
 
 ReLoq C uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `1.1.0-rc8` targets ARM64 (`arm64-v8a`), Android 8/API 26
+add-on. Version `1.1.0` targets ARM64 (`arm64-v8a`), Android 8/API 26
 or later. Speech runs offline. Network access is used only when you explicitly update pronunciation dictionaries or check for an app update. Package downloads open in the browser.
 
 ## Install or update
 
-Install the **1.1.0-rc8 test candidate**, `reloq-c-android-arm64-1.1.0-rc8.apk`, over the existing app.
+Install `reloq-c-android-arm64-1.1.0.apk` over the existing app.
 The package remains `org.reloq.tts.preview`, the preview signing certificate is
-unchanged, and versionCode increases to 1090008. Android can therefore
+unchanged, and versionCode increases to 11010000. Android can therefore
 update the existing app and retain its settings. Do not uninstall it first.
+The update checker in earlier 1.1.0-rc previews may not offer 1.1.0 because
+their version codes were unusually high. Install the 1.1.0 APK from GitHub
+Releases manually once; later update checks use the corrected ordering.
 
 Open **ReLoq C** to adjust its settings or read a test text. To use it
 with TalkBack or another client, open **Android speech settings** and choose
@@ -180,7 +183,7 @@ The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 ```sh
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
-python3 android/verify_apk.py dist/reloq-c-android-arm64-1.1.0-rc8.apk
+python3 android/verify_apk.py dist/reloq-c-android-arm64-1.1.0.apk
 ```
 
 Build verification checks signatures, the install-critical resource table,

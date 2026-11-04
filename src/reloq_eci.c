@@ -646,7 +646,9 @@ ECIHand ECICALL eciNewEx(int language)
     e->dictionary_disabled=eciGetDefaultParam(RELOQ_ECI_DICTIONARY);
     e->real_world_units=eciGetDefaultParam(RELOQ_ECI_REAL_WORLD_UNITS);
     e->head_size=50;
-    e->german_glide_opening=e->german_glide_backness=e->german_glide_softness=50;
+    e->german_glide_opening=85;
+    e->german_glide_backness=45;
+    e->german_glide_softness=45;
     e->generic_rate = 50;
     e->generic_pitch = 50;
     e->generic_volume = 100;
@@ -718,7 +720,7 @@ int reloq_eci_reset_audio(ECIHand handle)
 void ECICALL eciVersion(char *buffer)
 {
     /* The public ECI convention promises at least twenty writable bytes. */
-    if (buffer) memcpy(buffer, "1.1.0.rc4", sizeof "1.1.0.rc4");
+    if (buffer) memcpy(buffer, "1.1.0", sizeof "1.1.0");
 }
 
 int ECICALL eciGetAvailableLanguages(unsigned int *languages, int *count)

@@ -6,7 +6,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Eloquence C 1.1.0-rc27\n"
+"Project-Id-Version: Eloquence C 1.1.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-11-04 15:31+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -33,18 +33,6 @@ msgstr ""
 
 #: addon/synth/synthDrivers/reloqC/__init__.py:183
 msgid "&Breathiness"
-msgstr ""
-
-#: addon/synth/synthDrivers/reloqC/__init__.py:184
-msgid "German E-I glide: &opening"
-msgstr ""
-
-#: addon/synth/synthDrivers/reloqC/__init__.py:185
-msgid "German E-I glide: farther &back"
-msgstr ""
-
-#: addon/synth/synthDrivers/reloqC/__init__.py:186
-msgid "German E-I glide: &softness"
 msgstr ""
 
 #: addon/synth/synthDrivers/reloqC/__init__.py:187

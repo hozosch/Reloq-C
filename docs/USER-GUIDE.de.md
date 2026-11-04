@@ -1,20 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Testversion 1.1.0-rc27
+## Version 1.1.0
 
-Ein zusätzlicher Regler für die Weichheit des deutschen E-I-Gleitlauts erlaubt eine weitere persönliche Klangabstimmung. In englischer Analyse werden bei „recosp“ der vollständige Stamm und bei „tzsche“ der Schlussvokal erhalten. Bei „dane-ben“ und „dage-gen“ ist die Betonung angepasst; „audio-encoder“ und verwandte Zusammensetzungen sind noch auffällig. Bitte die Aussprache in NVDA prüfen.
-
-Der J-Gleitlaut in „Homepage“ geht vom unveränderten nativen Eloquence-Pfad aus und wird leicht nach hinten verschoben; bei „Kann er“ ist das unbetonte E am früheren ReLoq-Planer orientiert. Wortanfängliches „sm“ und „sn“ übernehmen die S-Anregung des früheren ReLoq-Planers. Mehrere bisher stumme Bindestrichwörter sprechen wieder. Bitte den Klang in NVDA prüfen.
-
-Die Testversion gleicht die Anregung des konsonantischen R und die Mischung des finalen A anhand des früheren deutschen Planers ab. Sie verkürzt das N in „neunund“ und berücksichtigt Wörterbuchaussprache in Bindestrich-Zusammensetzungen wie „ETI-Eloquence“, auch innerhalb von Anführungszeichen. Eine zusätzliche Tonhöhenanhebung bei schwachen Verben nach dem Satzakzent entfällt; deutsche Fragen erhalten eine ansteigende Schlusskontur. Die Klangwirkung muss in NVDA gehört werden.
-
-Die Testversion stellt die vorherige Form des konsonantischen R wieder her und stimmt seine Schwingung weicher ab. Sie verkürzt das N in „siebenund“, gleicht das E nach I an den früheren Pfad an und verwendet eine gemischte A-Färbung am Satzende. Eine Überlaufkorrektur stabilisiert die deutsche Satzmelodie bei hohen Tonhöhen. Der Klang muss in NVDA gehört werden.
-
-Die deutsche Analyse und Lautplanung werden in dieser Testversion für „Sprachauswahl“, „Suchauswahl“, Zahlwörter mit „-und“, einzelne Über-/Unter-Formen sowie lange O-Laute und die Betonung von „famos“ und „rigoros“ angeglichen. R, S, PF und finales A sind für den Hörvergleich angepasst. Wörterbucheinträge behalten Vorrang. Die Aussprache und Klangfärbung müssen in NVDA gehört werden.
-
-Die deutsche Sprachausgabe nutzt jetzt dieselbe native Satz- und Lautplanung wie die anderen Sprachen. Lange Einzelsätze können dadurch früher beginnen; Bindestrich- und Schrägstrichfälle sowie ECI-Tags werden im gemeinsamen Pfad verarbeitet. Nutzerwörterbücher, Pausenverkürzung und die Absenkung des männlichen Z am Wortanfang und bei „zw“ bleiben erhalten. Bei „der Zahn“ übernimmt das vokalische R den nativen Formantverlauf; die Klangfärbung muss noch im Hörtest beurteilt werden. Die bestätigte C-Abstimmung und die S-/T-Begrenzung für Kastilisch und Griechisch bleiben bestehen.
-
-Die Testversion ergänzt die native deutsche Analyse um die korrigierte Betonung von „konzentrieren“, Uhrzeiten mit Sekunden und Tausendergruppen mit Leerzeichen. Der nasale Laut in „Chance“, betroffene R-Laute und die F-Energie ab 22 kHz wurden im nativen Lautpfad angepasst. Bei ausgewählten Wörtern stimmen Text und daraus erzeugte Lautschrift in den automatischen Signaltests überein. Andere Wörter und Glottalgrenzen können zwischen Text und Lautschrift noch abweichen. Die Klangfärbung bleibt im Hörtest zu prüfen.
+Der deutsche E-I-Gleitlaut ist auf Öffnung 85, Rücklage 45 und Weichheit 45 abgestimmt. Die deutsche Satz- und Lautplanung verbessert unter anderem Bindestrichwörter, Zahlwörter und Fragemelodie. In englischer Analyse werden bei „recosp“ der vollständige Stamm und bei „tzsche“ der Schlussvokal erhalten.
 
 ## Englische Uhrzeiten mit Sekunden
 
@@ -67,7 +55,6 @@ Die folgenden Optionen befinden sich in den Sprachausgaben-Einstellungen:
 - **Stimmhöhe, Betonung und Lautstärke:** Grundtonhöhe, Umfang der Sprachmelodie und Wiedergabepegel.
 - **Kopfgröße:** verändert die Resonanzen und damit den Stimmcharakter.
 - **Rauigkeit und Behauchtheit:** zusätzliche Eigenschaften der Stimmquelle.
-- **Deutscher E-I-Gleitlaut: Öffnung**, **weiter hinten** und **Weichheit:** experimentelle Regler für Wörter wie „Homepage“. Die Weichheit beginnt bei 50; höhere Werte verändern die dritte Resonanz in Richtung des Ei-Gleitlauts. Weichheit 0 stellt den Klang von rc26 wieder her. Alle drei Regler sind auch im NVDA-Einstellungsring verfügbar.
 - **Abtastrate:** 8, 11,025, 16, 22,05, 32, 44,1 oder 48 kHz. Voreingestellt sind 11,025 kHz. Höhere Raten erweitern die Klangbandbreite und benötigen mehr Rechenleistung. Bei Aussetzern hilft zum Eingrenzen ein Vergleich mit 11,025 oder 22,05 kHz.
 
 **Pausen verkürzen** hat drei Werte: **Nie**, **Nur am Textende** und **Immer**. Die Kürzung betrifft automatisch erzeugte Pausen. Ausdrücklich angegebene Pausen behalten ihre Dauer.
@@ -104,7 +91,7 @@ Unter **Add-on-Updates** prüft **Nach Add-on-Updates suchen** die veröffentlic
 
 ## Fehler melden
 
-ReLoq C 1.0.1 stellt die ursprünglichen S-Quellpegel wieder her und verbessert den Abbruch überholter Textanalyse. Weitere Klangabstimmungen für hohe Raten werden noch geprüft. NVDA kann Symbole verarbeiten, bevor der Text die Sprachausgabe erreicht; seine Symbolaussprache beeinflusst daher, welche Zeichen bei ReLoq ankommen. Technische Details stehen im [Arbeitsstand](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md).
+NVDA kann Symbole verarbeiten, bevor der Text die Sprachausgabe erreicht; seine Symbolaussprache beeinflusst daher, welche Zeichen bei ReLoq ankommen. Technische Details stehen im [Arbeitsstand](https://github.com/hozosch/Reloq-C/blob/main/docs/CURRENT-WORK.md).
 
 Für eine [Fehlermeldung](https://github.com/hozosch/Reloq-C/issues) helfen ein kurzer Beispieltext, Sprache, Stimme, Version, Abtastrate und die Angabe, ob Wörterbücher eingeschaltet sind. Beschreibe auch, ob die Ausgabe abbricht, ein Wort falsch klingt oder NVDA selbst beendet wird.
 

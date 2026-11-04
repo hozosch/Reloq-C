@@ -41,6 +41,17 @@ public final class UpdateDataTest {
         UpdateData.Package update=UpdateData.candidate(patch,patchUrl,18000000,digest,1000000);
         require(update!=null&&update.version.equals("1.0.1")&&update.code==1000001);
         require(UpdateData.candidate(patch,patchUrl,18000000,digest,1000001)==null);
+        String stable="reloq-c-android-arm64-1.1.0.apk";
+        String stableUrl="https://github.com/hozosch/Reloq-C/releases/download/v1.1/"+stable;
+        UpdateData.Package upgrade=UpdateData.candidate(stable,stableUrl,18000000,digest,1090027);
+        require(upgrade!=null&&upgrade.code==11010000&&upgrade.version.equals("1.1.0"));
+        require(UpdateData.candidate(stable,stableUrl,18000000,digest,11010000)==null);
+        String following="reloq-c-android-arm64-1.1.1.apk";
+        String followingUrl="https://github.com/hozosch/Reloq-C/releases/download/v1.1.1/"+following;
+        require(UpdateData.candidate(following,followingUrl,18000000,digest,11010000).code==11010001);
+        String nextMajor="reloq-c-android-arm64-2.0.0.apk";
+        String nextMajorUrl="https://github.com/hozosch/Reloq-C/releases/download/v2.0/"+nextMajor;
+        require(UpdateData.candidate(nextMajor,nextMajorUrl,18000000,digest,11999999).code==12000000);
         for(String bad:new String[]{url.replace("github.com","example.net"),
             url.replace("/hozosch/","/other/"),url+"?x=1",url+"#file",
             url.replace("https:","http:"),url.replace("github.com","github.com:443"),

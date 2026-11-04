@@ -4,13 +4,13 @@ ReLoq C is a speech synthesis project that preserves the familiar character of E
 
 The shared synthesis engine is written in C. NVDA, Android ARM64 and Windows SAPI5 use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
 
-The development branch is preparing **1.1.0-rc27**. German now uses the
+**1.1.0** updates the shared speech engine. German now uses the
 shared native sentence and acoustic path, including long sentences and
 expressions with hyphens or slashes. Native word boundaries carry voice tags,
 while caller dictionaries and the accepted male-only initial /ts/ adjustment
 remain available. The established C high-rate sound and Greek/Castilian filter
 are retained. German number transitions, “Homepage”, “veröffentlicht” and
-“samt” have further listening-test adjustments; the new voice needs feedback;
+“samt” have further pronunciation adjustments;
 see [the current work and verification limits](docs/CURRENT-WORK.md).
 Android Direct Boot retains separate copies of active settings and dictionaries
 before first unlock.
@@ -25,7 +25,7 @@ The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provide
 | Android | ARM64 `.apk` | Android 8 or later, ARM64 device |
 | Windows SAPI5 | `-setup.exe` | Installs x64 and x86 voices together on compatible Windows |
 
-Release **1.0.1** restores the original S/Z source levels and improves interruption of obsolete text analysis. New NVDA configurations use NVDA's language when supported. Install packages over an existing installation to retain settings. Existing Android package and signing identities, and the NVDA installation identity, are retained for in-place updates. Source archives are for developers and are not installable packages. [Release notes](docs/releases/1.0.1.md) describe the update and its limits.
+Release **1.1** updates pronunciation, voice controls, dictionary selection and platform integration. Install packages over an existing installation to retain settings. Existing Android package and signing identities, and the NVDA installation identity, are retained for in-place updates. Source archives are for developers and are not installable packages. The [release notes](docs/releases/1.1.md) describe the update and its limits.
 
 ## Current features
 
@@ -50,7 +50,7 @@ The synthesizer is listed as **Eloquence C**. It requires NVDA 2026.1 or later i
 
 Install the `.nvda-addon` file from [Releases](https://github.com/hozosch/Reloq-C/releases) with NVDA, restart NVDA and press **NVDA+Control+S** to select **Eloquence C**. Choose your language and voice in NVDA's Speech settings. The ReLoq settings category manages dictionaries and checks for package updates on request.
 
-The [English user guide](docs/USER-GUIDE.en.md) and [German user guide](docs/USER-GUIDE.de.md) cover languages, settings and dictionaries. [Changes in 1.0.1](docs/changes/1.0.1.md) are documented separately.
+The [English user guide](docs/USER-GUIDE.en.md) and [German user guide](docs/USER-GUIDE.de.md) cover languages, settings and dictionaries.
 
 ## Android
 

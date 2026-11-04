@@ -1,3 +1,9 @@
+# Releasevorbereitung 1.1.0
+
+- Der bestätigte deutsche E-I-Gleitlaut verwendet Öffnung 85, Rücklage 45 und Weichheit 45. Die drei vorübergehenden NVDA-Regler sind entfernt; Einstellungen aus rc27 werden nicht mehr an den Sprachkern übertragen.
+- Die Android-Version verwendet einen größeren Versionscode, damit auch 1.1.0-rc27 ohne Deinstallation aktualisiert werden kann. Der Update-Prüfer älterer rc-Versionen zeigt 1.1.0 möglicherweise nicht an; die APK kann einmalig direkt von GitHub installiert werden.
+- Der Dateinamenfehler aus Issue #10 ist automatisch nachgestellt und korrigiert; die Bestätigung durch den ursprünglichen Melder nach Installation bleibt offen. Bei einem einzeln zitierten Wort können ECI-Positionsmarken weiterhin erst am Ende ausgegeben werden; das trat auch in rc26 auf.
+
 # Testkandidat 1.1.0-rc27: Weichheit des deutschen E-I-Gleitlauts
 
 - Der Gleitlaut in „drei“ verwendet im nativen Plan F3 2450 Hz, in „Homepage“ waren es bei den mittleren Reglern 2850 Hz. Ein neuer Weichheitsregler senkt F3 stufenweise um bis zu 400 Hz, unabhängig von Öffnung und F2. Er beginnt bei 50; mit 0 lässt sich der Klang von rc26 wiederherstellen. Ein Hörvergleich ist weiterhin nötig.
