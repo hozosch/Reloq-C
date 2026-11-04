@@ -37,7 +37,10 @@
     "DICT_DOWNLOAD",
     "DICT_DOWNLOADING",
     "DICT_FAILED",
-    "DICT_OVERRIDE"
+    "DICT_OVERRIDE",
+    "DICT_UPDATED_COUNT",
+    "DICT_FIRST_COUNT",
+    "DICT_COUNT_UNKNOWN"
   ],
   "en": [
     "ReLoq C voice settings",
@@ -77,7 +80,10 @@
     "&Update alternative dictionaries",
     "Downloading dictionaries…",
     "Dictionary download failed; the previous selection remains active.",
-    "A custom folder overrides the selected source."
+    "A custom folder overrides the selected source.",
+    "Dictionary update complete. New entries: %ls",
+    "Dictionary loaded for the first time. Entries: %ls",
+    "Dictionary update complete. The number of new entries could not be determined."
   ],
   "de": [
     "ReLoq C – Stimmeinstellungen",
@@ -117,7 +123,10 @@
     "Alternative Wörterbücher &aktualisieren",
     "Wörterbücher werden heruntergeladen…",
     "Der Download ist fehlgeschlagen; die bisherige Auswahl bleibt aktiv.",
-    "Ein eigener Ordner hat Vorrang vor der gewählten Quelle."
+    "Ein eigener Ordner hat Vorrang vor der gewählten Quelle.",
+    "Wörterbuchaktualisierung abgeschlossen. Neue Einträge: %ls",
+    "Wörterbuch erstmals geladen. Einträge insgesamt: %ls",
+    "Wörterbuchaktualisierung abgeschlossen. Die Anzahl neuer Einträge konnte nicht ermittelt werden."
   ],
   "es": [
     "ReLoq C – Ajustes de voz",
@@ -157,7 +166,10 @@
     "&Actualizar diccionarios alternativos",
     "Descargando diccionarios…",
     "Error de descarga; se mantiene la selección anterior.",
-    "Una carpeta personalizada tiene prioridad."
+    "Una carpeta personalizada tiene prioridad.",
+    "Actualización del diccionario completada. Entradas nuevas: %ls",
+    "Diccionario cargado por primera vez. Entradas: %ls",
+    "Actualización completada. No se pudo determinar el número de entradas nuevas."
   ],
   "fr": [
     "ReLoq C – Paramètres de voix",
@@ -197,7 +209,10 @@
     "&Actualiser les dictionnaires alternatifs",
     "Téléchargement des dictionnaires…",
     "Échec du téléchargement ; la sélection précédente reste active.",
-    "Un dossier personnalisé est prioritaire."
+    "Un dossier personnalisé est prioritaire.",
+    "Mise à jour terminée. Nouvelles entrées : %ls",
+    "Dictionnaire chargé pour la première fois. Entrées : %ls",
+    "Mise à jour terminée. Le nombre de nouvelles entrées n’a pas pu être déterminé."
   ],
   "it": [
     "ReLoq C – Impostazioni voce",
@@ -237,7 +252,10 @@
     "&Aggiorna dizionari alternativi",
     "Download dei dizionari…",
     "Download non riuscito; resta attiva la selezione precedente.",
-    "Una cartella personale ha la precedenza."
+    "Una cartella personale ha la precedenza.",
+    "Aggiornamento completato. Nuove voci: %ls",
+    "Dizionario caricato per la prima volta. Voci: %ls",
+    "Aggiornamento completato. Impossibile determinare il numero di nuove voci."
   ],
   "pt": [
     "ReLoq C – Configurações de voz",
@@ -277,7 +295,10 @@
     "&Atualizar dicionários alternativos",
     "Baixando dicionários…",
     "Falha no download; a seleção anterior permanece ativa.",
-    "Uma pasta personalizada tem prioridade."
+    "Uma pasta personalizada tem prioridade.",
+    "Atualização concluída. Novas entradas: %ls",
+    "Dicionário carregado pela primeira vez. Entradas: %ls",
+    "Atualização concluída. Não foi possível determinar o número de novas entradas."
   ],
   "fi": [
     "ReLoq C – Ääniasetukset",
@@ -317,7 +338,10 @@
     "&Päivitä vaihtoehtoiset sanastot",
     "Ladataan sanastoja…",
     "Lataus epäonnistui; edellinen valinta säilyy.",
-    "Oma kansio ohittaa valitun lähteen."
+    "Oma kansio ohittaa valitun lähteen.",
+    "Sanaston päivitys valmis. Uusia merkintöjä: %ls",
+    "Sanasto ladattu ensimmäistä kertaa. Merkintöjä: %ls",
+    "Sanaston päivitys valmis. Uusien merkintöjen määrää ei voitu selvittää."
   ],
   "el": [
     "ReLoq C – Ρυθμίσεις φωνής",
@@ -357,7 +381,10 @@
     "&Ενημέρωση εναλλακτικών λεξικών",
     "Λήψη λεξικών…",
     "Η λήψη απέτυχε· η προηγούμενη επιλογή παραμένει.",
-    "Ο προσαρμοσμένος φάκελος έχει προτεραιότητα."
+    "Ο προσαρμοσμένος φάκελος έχει προτεραιότητα.",
+    "Η ενημέρωση ολοκληρώθηκε. Νέες καταχωρίσεις: %ls",
+    "Το λεξικό φορτώθηκε για πρώτη φορά. Καταχωρίσεις: %ls",
+    "Η ενημέρωση ολοκληρώθηκε. Δεν ήταν δυνατός ο υπολογισμός των νέων καταχωρίσεων."
   ],
   "ja": [
     "ReLoq C 音声設定",
@@ -397,7 +424,10 @@
     "代替辞書を更新(&U)",
     "辞書をダウンロード中…",
     "ダウンロードに失敗しました。以前の選択が維持されます。",
-    "指定したフォルダーが優先されます。"
+    "指定したフォルダーが優先されます。",
+    "辞書の更新が完了しました。新しい項目: %ls",
+    "辞書を初めて読み込みました。項目数: %ls",
+    "辞書の更新が完了しました。新しい項目数を確認できませんでした。"
   ],
   "ko": [
     "ReLoq C 음성 설정",
@@ -437,7 +467,10 @@
     "대체 사전 업데이트(&U)",
     "사전 다운로드 중…",
     "다운로드에 실패하여 이전 선택이 유지됩니다.",
-    "사용자 지정 폴더가 우선합니다."
+    "사용자 지정 폴더가 우선합니다.",
+    "사전 업데이트 완료. 새 항목: %ls",
+    "사전을 처음 불러왔습니다. 항목 수: %ls",
+    "사전 업데이트를 완료했지만 새 항목 수를 확인할 수 없습니다."
   ],
   "zh": [
     "ReLoq C 语音设置",
@@ -477,7 +510,10 @@
     "更新替代词典(&U)",
     "正在下载词典…",
     "下载失败，保留先前选择。",
-    "自定义文件夹优先。"
+    "自定义文件夹优先。",
+    "词典更新完成。新增条目：%ls",
+    "首次加载词典。条目数：%ls",
+    "词典更新完成，但无法确定新增条目数。"
   ],
   "zh-Hant": [
     "ReLoq C 語音設定",
@@ -517,6 +553,9 @@
     "更新替代字典(&U)",
     "正在下載字典…",
     "下載失敗，保留先前選擇。",
-    "自訂資料夾優先。"
+    "自訂資料夾優先。",
+    "字典更新完成。新增項目：%ls",
+    "首次載入字典。項目數：%ls",
+    "字典更新完成，但無法確定新增項目數。"
   ]
 }

@@ -1,6 +1,7 @@
 package org.reloq.tts;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -46,7 +47,7 @@ public final class DictionaryActivity extends Activity {
         TextView info=new TextView(this);info.setText(R.string.dictionary_help);content.addView(info);
         community=new CheckBox(this);community.setText(R.string.community_dictionaries);content.addView(community);actions.add(community);
         community.setOnCheckedChangeListener((view,enabled) -> {
-            if(!loading&&!busy){JSONArray next=copy(sources);work(() -> DictionaryStore.rebuild(this,enabled,next));}
+            if(!loading&&!busy){JSONArray next=copy(sources);workWithResult(() -> DictionaryStore.rebuildWithFeedback(this,enabled,next));}
         });
         repository=select(R.string.dictionary_repository,getResources().getStringArray(R.array.dictionary_repositories),
             DictionaryStore.repository(this).equals("alternative")?1:0);
@@ -55,10 +56,10 @@ public final class DictionaryActivity extends Activity {
             public void onItemSelected(android.widget.AdapterView<?> parent,View view,int position,long id) {
                 String selected=position==1?"alternative":"community";
                 if(!loading&&!busy&&!selected.equals(DictionaryStore.repository(DictionaryActivity.this)))
-                    work(() -> DictionaryStore.selectRepository(DictionaryActivity.this,selected));
+                    workWithResult(() -> DictionaryStore.selectRepository(DictionaryActivity.this,selected));
             }
         });
-        button(R.string.update_dictionaries,() -> work(() -> DictionaryStore.updateCommunity(this)));
+        button(R.string.update_dictionaries,() -> workWithResult(() -> DictionaryStore.updateCommunity(this)));
         list=new ListView(this);list.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
         list.setContentDescription(getString(R.string.own_dictionaries));
         content.addView(list,new LinearLayout.LayoutParams(-1,(int)(200*getResources().getDisplayMetrics().density)));
@@ -75,7 +76,7 @@ public final class DictionaryActivity extends Activity {
         button(R.string.move_dictionary_down,() -> change(1));
         button(R.string.reload_dictionaries,() -> {
             boolean enabled=community.isChecked();JSONArray next=copy(sources);
-            work(() -> DictionaryStore.rebuild(this,enabled,next));
+            workWithResult(() -> DictionaryStore.reloadWithFeedback(this,enabled,next));
         });
         button(R.string.back,() -> finish());
         status=new TextView(this);status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);content.addView(status);
@@ -98,15 +99,28 @@ public final class DictionaryActivity extends Activity {
         list.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_list_item_single_choice,names));loading=false;
     }
     private interface Action {void run() throws Exception;}
+    private interface ResultAction {DictionaryData.UpdateSummary run() throws Exception;}
     private void work(Action action) {
+        workWithResult(() -> {action.run();return null;});
+    }
+    private void workWithResult(ResultAction action) {
         if(busy)return;busy=true;for(View view:actions)view.setEnabled(false);status.setText(R.string.dictionary_working);
         DictionaryStore.WORK.execute(() -> {
-            Exception failure=null;try{action.run();}catch(Exception e){failure=e;}
+            Exception failure=null;DictionaryData.UpdateSummary result=null;
+            try{result=action.run();}catch(Exception e){failure=e;}
             final Exception error=failure;
+            final DictionaryData.UpdateSummary summary=result;
             runOnUiThread(() -> {
                 if(isFinishing()||isDestroyed())return;
                 busy=false;for(View view:actions)view.setEnabled(true);reload();
                 status.setText(error==null?getString(R.string.dictionary_ready):getString(R.string.dictionary_error,error.getMessage()));
+                if(error==null&&summary!=null) {
+                    String message=!summary.known?getString(R.string.dictionary_update_unknown):
+                        !summary.compared&&summary.total>0?getString(R.string.dictionary_update_first,summary.total):
+                        getString(R.string.dictionary_update_new,summary.added);
+                    new AlertDialog.Builder(this).setTitle(R.string.dictionary_update_title).setMessage(message)
+                        .setPositiveButton(android.R.string.ok,null).show();
+                }
             });
         });
     }

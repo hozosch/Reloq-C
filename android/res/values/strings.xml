@@ -79,4 +79,8 @@
     <string name="phrase_prediction">Phrase prediction</string>
     <string name="dictionary_repository">Dictionary source</string>
     <string-array name="dictionary_repositories"><item>IBM TTS Dictionaries</item><item>Alternative IBM TTS Dictionaries</item></string-array>
+    <string name="dictionary_update_title">Pronunciation dictionaries</string>
+    <string name="dictionary_update_new">Dictionary update complete. New entries: %1$d</string>
+    <string name="dictionary_update_first">Dictionary loaded for the first time. Entries: %1$d</string>
+    <string name="dictionary_update_unknown">Dictionary update complete. The number of new entries could not be determined.</string>
 </resources>

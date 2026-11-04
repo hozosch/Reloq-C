@@ -7,7 +7,8 @@ import threading
 import time
 import unittest
 from urllib.error import URLError
-from _reloq_dictionary_manager import DictionaryManager, DictionarySource, merge_sources, validate_merged, load_sources
+from _reloq_dictionary_manager import (DictionaryManager, DictionarySource, dictionary_update_counts,
+    merge_sources, validate_merged, load_sources)
 from test_dictionaries import R, Server
 
 
@@ -91,6 +92,8 @@ class ManagerTests(unittest.TestCase):
                           'espmain.dic':b'palabra\tpalabra\n'}
         error,details=self.wait(lambda done:self.manager.configure([own],True,done,repository='alternative'))
         self.assertIsNone(error)
+        self.assertEqual(details['dictionary_update'],{'compared':False,'added':4,'total':4})
+        self.assertEqual(details['update_source'],'alternative')
         self.assertEqual(self.manager.repository,'alternative')
         folder=self.deliveries[-1][1]
         self.assertIn(b'cafe\town\n',(folder/'ENUmain.dic').read_bytes())
@@ -130,6 +133,48 @@ class ManagerTests(unittest.TestCase):
         self.assertIn(b'NewWord\tnew value',(directory/'DEUmain.dic').read_bytes())
         self.assertIn(b'Own\tvalue',(directory/'DEUmain.dic').read_bytes())
         self.assertEqual(json.loads((self.cache/'current.json').read_text())['commit'],'2'*40)
+
+    def test_update_counts_unique_new_keys_without_subtracting_removed_or_modified(self):
+        own=self.source('one.dic', b'Keep\told\nDelete\told\nDuplicate\tfirst\nDuplicate\tsecond\n')
+        root=self.source('root.dic', b'READ\told\n',volume=1)
+        before,_=merge_sources(None,[own,root],self.cache)
+        Path(own.path).write_bytes(b'Keep\tchanged\nDuplicate\tsecond\nAdded\tnew\nAdded\tnewer\n')
+        Path(root.path).write_bytes(b'read\tchanged\nNEW\troot\n')
+        after,_=merge_sources(None,[own,root],self.cache)
+        self.assertEqual(dictionary_update_counts(before,after),
+                         {'compared':True,'added':2,'total':5})
+        self.assertEqual(dictionary_update_counts(None,after),
+                         {'compared':False,'added':5,'total':5})
+        self.assertEqual(dictionary_update_counts(after,after)['added'],0)
+
+    def test_manual_refresh_reports_source_additions_and_unchanged_revision(self):
+        self.wait(lambda done:self.manager.configure([],True,done))
+        self.server.commit='2'*40
+        self.server.data['DEUmain.dic']+=b'UniqueNewWordHere\treading\nUniqueNewWordHere\tnew reading\n'
+        self.server.data['ENUmain.dic']+=b'UniqueEnglishNewWord\treading\n'
+        error,details=self.wait(self.manager.refresh)
+        self.assertIsNone(error)
+        self.assertEqual(details['dictionary_update']['added'],2)
+        self.assertTrue(details['dictionary_update']['compared'])
+        self.assertEqual(details['update_source'],'community')
+        self.assertTrue(details['remote_changed'])
+        error,details=self.wait(self.manager.refresh)
+        self.assertIsNone(error)
+        self.assertEqual(details['dictionary_update']['added'],0)
+        self.assertFalse(details['remote_changed'])
+
+    def test_background_update_reports_new_source_once(self):
+        notices=[]
+        self.manager.on_update=lambda revision,details:notices.append(details)
+        self.wait(lambda done:self.manager.configure([],True,done))
+        self.server.commit='3'*40
+        self.server.data['DEUmain.dic']+=b'BackgroundNewWord\treading\n'
+        self.manager.set_enabled(True)
+        self.until(lambda: len(notices)==1)
+        self.assertEqual(notices[0]['dictionary_update']['added'],1)
+        self.assertTrue(notices[0]['remote_changed'])
+        self.wait(self.manager.refresh)
+        self.assertEqual(len(notices),1)
 
     def test_reload_changed_local_file_without_network(self):
         own=self.source('user.dic',b'Own\tone\n')

@@ -224,21 +224,89 @@ final class DictionaryStore {
         for(String name:names)verify(json(new File(target,"manifest.json")),name,bytes(new File(target,name)));
         return target;
     }
-    static void updateCommunity(Context c) throws Exception {
-        String source=repository(c),key=commitKey(source);File target=downloadCommunity(c,source);
+    private static Map<String,byte[]> sourceVolumes(File folder,String source) throws Exception {
+        if(folder==null)throw new IOException("Invalid dictionary snapshot");
+        JSONObject manifest=json(new File(folder,"manifest.json"));
+        String expected=source.equals("alternative")?"Mohamed00/AltIBMTTSDictionaries":"eigencrow/IBMTTSDictionaries";
+        if(!expected.equalsIgnoreCase(manifest.getString("repository"))||
+           !"master".equals(manifest.getString("branch"))||!folder.getName().equals(manifest.getString("commit")))
+            throw new IOException("Invalid dictionary snapshot identity");
+        String[] names=source.equals("alternative")?DictionaryData.ALTERNATIVE:DictionaryData.COMMUNITY;
+        Map<String,byte[]> volumes=new TreeMap<>();
+        for(String name:names)if(name.endsWith(".dic")) {
+            byte[] data=bytes(new File(folder,name));verify(manifest,name,data);volumes.put(name,data);
+        }
+        return volumes;
+    }
+    private static File sourceRevision(Context c,String source,String commit) {
+        return commit!=null&&commit.matches("[a-f0-9]{40}")?
+            new File(new File(root(c),source),commit):null;
+    }
+    private static DictionaryData.UpdateSummary summarize(Context c,String source,String previous,File target) {
+        try {
+            File old=sourceRevision(c,source,previous);
+            if(previous!=null&&old==null)return DictionaryData.UpdateSummary.unknown();
+            Map<String,byte[]> before=old==null?null:sourceVolumes(old,source);
+            return DictionaryData.compare(before,sourceVolumes(target,source),source.equals("alternative"));
+        } catch(Exception ignored) { return DictionaryData.UpdateSummary.unknown(); }
+    }
+    static DictionaryData.UpdateSummary updateCommunity(Context c) throws Exception {
+        String source=repository(c),key=commitKey(source);
         String previous=prefs(c).getString(key,null);
+        if(previous==null&&source.equals("community"))previous=community(c).getName();
+        File target=downloadCommunity(c,source);
+        DictionaryData.UpdateSummary summary=summarize(c,source,previous,target);
         prefs(c).edit().putString(key,target.getName()).apply();
         try{rebuild(c,prefs(c).getBoolean("communityDictionaries",false),sources(c));}
         catch(Exception error){prefs(c).edit().putString(key,previous).apply();throw error;}
         synchronized(GUARD){published.add(target.getAbsolutePath());}
         prune(c);
+        return summary;
     }
-    static void selectRepository(Context c,String selected) throws Exception {
+    static DictionaryData.UpdateSummary selectRepository(Context c,String selected) throws Exception {
         if(!selected.equals("community")&&!selected.equals("alternative"))throw new IOException("Invalid dictionary source");
-        String previous=repository(c);if(selected.equals(previous))return;
+        String previous=repository(c);if(selected.equals(previous))return null;
+        String oldCommit=prefs(c).getString(commitKey(selected),null);
+        File old=sourceRevision(c,selected,oldCommit);
+        boolean missing=old==null||!new File(old,"manifest.json").isFile();
         prefs(c).edit().putString("dictionaryRepository",selected).apply();
         try{rebuild(c,prefs(c).getBoolean("communityDictionaries",false),sources(c));}
         catch(Exception error){prefs(c).edit().putString("dictionaryRepository",previous).apply();throw error;}
+        String current=prefs(c).getString(commitKey(selected),null);
+        if(selected.equals("alternative")&&current!=null&&(missing||!current.equals(oldCommit)))
+            return summarize(c,selected,oldCommit,sourceRevision(c,selected,current));
+        return null;
+    }
+    static DictionaryData.UpdateSummary rebuildWithFeedback(Context c,boolean enabled,JSONArray own) throws Exception {
+        String source=repository(c),old=prefs(c).getString(commitKey(source),null);
+        File oldFolder=sourceRevision(c,source,old);
+        boolean missing=oldFolder==null||!new File(oldFolder,"manifest.json").isFile();
+        rebuild(c,enabled,own);
+        String current=prefs(c).getString(commitKey(source),null);
+        if(enabled&&source.equals("alternative")&&current!=null&&(missing||!current.equals(old)))
+            return summarize(c,source,old,sourceRevision(c,source,current));
+        return null;
+    }
+    private static Map<String,byte[]> activeVolumes(String path) throws IOException {
+        if(path==null)return null;
+        File[] files=new File(path).listFiles();if(files==null)throw new IOException("Dictionary snapshot unavailable");
+        Map<String,byte[]> result=new TreeMap<>();
+        for(File file:files)if(file.isFile()&&file.getName().endsWith(".dic"))result.put(file.getName(),bytes(file));
+        return result;
+    }
+    static DictionaryData.UpdateSummary reloadWithFeedback(Context c,boolean enabled,JSONArray own) throws Exception {
+        Map<String,byte[]> before=null;boolean known=true;
+        try(Lease lease=acquire(c)) {
+            try{before=activeVolumes(lease.path);}catch(IOException error){known=false;}
+            rebuild(c,enabled,own);
+            try(Lease current=acquire(c)) {
+                if(!known)return DictionaryData.UpdateSummary.unknown();
+                try {
+                    Map<String,byte[]> after=activeVolumes(current.path);
+                    return DictionaryData.compare(before,after==null?Collections.emptyMap():after,false);
+                } catch(IOException error) {return DictionaryData.UpdateSummary.unknown();}
+            }
+        }
     }
     private static String state(Context c,JSONArray sources) {
         StringBuilder result=new StringBuilder(sources.toString());

@@ -78,4 +78,8 @@
     <string name="phrase_prediction">Satzvorhersage</string>
     <string name="dictionary_repository">Wörterbuchquelle</string>
     <string-array name="dictionary_repositories"><item>IBM-TTS-Wörterbücher</item><item>Alternative IBM-TTS-Wörterbücher</item></string-array>
+    <string name="dictionary_update_title">Aussprachewörterbücher</string>
+    <string name="dictionary_update_new">Wörterbuchaktualisierung abgeschlossen. Neue Einträge: %1$d</string>
+    <string name="dictionary_update_first">Wörterbuch erstmals geladen. Einträge insgesamt: %1$d</string>
+    <string name="dictionary_update_unknown">Wörterbuchaktualisierung abgeschlossen. Die Anzahl neuer Einträge konnte nicht ermittelt werden.</string>
 </resources>

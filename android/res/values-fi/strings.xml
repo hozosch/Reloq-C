@@ -78,4 +78,8 @@
     <string name="phrase_prediction">Fraasien ennakointi</string>
     <string name="dictionary_repository">Sanastojen lähde</string>
     <string-array name="dictionary_repositories"><item>IBM TTS -sanastot</item><item>Vaihtoehtoiset IBM TTS -sanastot</item></string-array>
+    <string name="dictionary_update_title">Ääntämissanastot</string>
+    <string name="dictionary_update_new">Sanaston päivitys valmis. Uusia merkintöjä: %1$d</string>
+    <string name="dictionary_update_first">Sanasto ladattu ensimmäistä kertaa. Merkintöjä: %1$d</string>
+    <string name="dictionary_update_unknown">Sanaston päivitys valmis. Uusien merkintöjen määrää ei voitu selvittää.</string>
 </resources>

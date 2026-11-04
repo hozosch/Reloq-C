@@ -8,8 +8,10 @@ int sapi_module_path(WCHAR *path,size_t cap,const WCHAR *name)
 int main(void)
 {
     DWORD previous=sapi_dictionary_source();
-    HRESULT result=sapi_dictionary_download();
+    struct sapi_dictionary_update first={0},second={0};
+    HRESULT result=sapi_dictionary_download_report(&first);
     if(FAILED(result)){fprintf(stderr,"Dictionary download failed: 0x%08lX\n",(unsigned long)result);return 1;}
+    if(!first.known||!first.total||(!first.compared&&first.added!=first.total))return 8;
     WCHAR path[2048],file[2048];
     if(sapi_dictionary_source()!=1||!sapi_alternative_dictionary_available()||!sapi_default_dictionary_path(path,2048))return 2;
     const WCHAR *names[]={L"ENUmain.dic",L"ENURoot.dic",L"ESPmain.dic"};
@@ -18,6 +20,9 @@ int main(void)
         if(!GetFileAttributesExW(file,GetFileExInfoStandard,&a)||!a.nFileSizeLow)return 3;
     }
     /* A repeated update of the same verified commit must be safe. */
-    if(FAILED(sapi_dictionary_download())||FAILED(sapi_dictionary_choose(previous)))return 4;
+    if(FAILED(sapi_dictionary_download_report(&second))||!second.known||!second.compared)return 4;
+    WCHAR after[2048];if(!sapi_default_dictionary_path(after,2048))return 5;
+    if(!wcscmp(path,after)&&second.added!=0)return 6;
+    if(FAILED(sapi_dictionary_choose(previous)))return 7;
     puts("Verified alternative dictionary download, conversion, atomic cache and source selection");return 0;
 }

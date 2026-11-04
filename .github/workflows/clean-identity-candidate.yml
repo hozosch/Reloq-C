@@ -23,6 +23,8 @@ jobs:
         run: |
           set -euo pipefail
           PYTHONPATH=nvda python3 nvda/test_updates.py
+          PYTHONPATH=nvda python3 nvda/test_dictionary_manager.py
+          PYTHONPATH=nvda python3 nvda/test_dictionary_update_ui.py
           PYTHONPATH=nvda python3 nvda/test_eci_direct.py
           python3 android/test_versioning.py
           python3 android/test_apk_identity.py

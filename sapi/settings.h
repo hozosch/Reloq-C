@@ -32,6 +32,8 @@ int sapi_module_path(WCHAR *,size_t,const WCHAR *);
 DWORD sapi_dictionary_source(void);
 HRESULT sapi_dictionary_choose(DWORD);
 HRESULT sapi_dictionary_download(void);
+struct sapi_dictionary_update {size_t added,total;int known,compared;};
+HRESULT sapi_dictionary_download_report(struct sapi_dictionary_update *);
 int sapi_alternative_dictionary_available(void);
 int sapi_default_dictionary_path(WCHAR *,size_t);
 #endif

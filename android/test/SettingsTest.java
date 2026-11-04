@@ -106,6 +106,18 @@ public final class SettingsTest {
         require(Arrays.equals(result.get("ENUmain.dic"),data("Word\tbanana\naccent\t\u0080\u00fc\nphoneme\t`0h@l'oU\nword\tpear\n")));
         require(Arrays.equals(result.get("DEURoot.dic"),data("\u00e4pfel\tneu\n")));
         require(Arrays.equals(result.get("DEUmain.dic"),data("A\tein\na\tzwei\n")));
+        Map<String,byte[]> before=Map.of("DEUmain.dic",data("Keep\told\nDelete\told\nDuplicate\tfirst\nDuplicate\tsecond\n"),
+            "DEURoot.dic",data("READ\told\n"));
+        Map<String,byte[]> after=Map.of("DEUmain.dic",data("Keep\tchanged\nDuplicate\tsecond\nAdded\tnew\nAdded\tnewer\n"),
+            "DEURoot.dic",data("read\tchanged\nNEW\troot\n"));
+        DictionaryData.UpdateSummary delta=DictionaryData.compare(before,after,false);
+        require(delta.known&&delta.compared&&delta.added==2&&delta.total==5);
+        delta=DictionaryData.compare(null,after,false);
+        require(delta.known&&!delta.compared&&delta.added==5&&delta.total==5);
+        require(DictionaryData.compare(after,after,false).added==0);
+        Map<String,byte[]> utf8=Map.of("ENUmain.dic","café\tcoffee\nnew\tword\n".getBytes(StandardCharsets.UTF_8));
+        Map<String,byte[]> ansi=Map.of("ENUmain.dic",data("café\told\n"));
+        require(DictionaryData.compare(ansi,utf8,true).added==1);
         DictionaryData.Merger alternative=new DictionaryData.Merger();
         alternative.addAlternative("ENUmain.dic","café\tcafé\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));
         alternative.add("ENUmain.dic",data("café\town\n"));

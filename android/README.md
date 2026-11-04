@@ -92,6 +92,11 @@ holds its immutable snapshot until native synthesis finishes. Native tables
 load once per used language and remain resident across ordinary requests and
 cancellation; selecting a changed snapshot reloads that language when next used.
 
+The dictionary update and reload actions display an accessible confirmation
+dialog showing new distinct entries. Replacements and deletions do not count
+as additions. The first download shows the total, and an unavailable comparison
+is reported instead of guessing a number.
+
 ## Build on Linux x86-64
 
 Requirements: Python 3, GNU Make, JDK 17, Android SDK platform 35, SDK build

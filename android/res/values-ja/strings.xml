@@ -78,4 +78,8 @@
     <string name="phrase_prediction">句の予測</string>
     <string name="dictionary_repository">辞書のソース</string>
     <string-array name="dictionary_repositories"><item>IBM TTS 辞書</item><item>代替 IBM TTS 辞書</item></string-array>
+    <string name="dictionary_update_title">発音辞書</string>
+    <string name="dictionary_update_new">辞書の更新が完了しました。新しい項目: %1$d</string>
+    <string name="dictionary_update_first">辞書を初めて読み込みました。項目数: %1$d</string>
+    <string name="dictionary_update_unknown">辞書の更新が完了しました。新しい項目数を確認できませんでした。</string>
 </resources>

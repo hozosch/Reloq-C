@@ -375,8 +375,20 @@ class SynthDriver(BaseSynthDriver):
                     self._apply_dictionary_snapshot,
                     lambda error: log.warning("Community dictionary refresh failed: %s", error),
                     settings_path=profile / "reloqCDictionaries.json",
-                    legacy_settings=profile / "reloqCommunityDictionaries" / "sources.json")
+                    legacy_settings=profile / "reloqCommunityDictionaries" / "sources.json",
+                    on_update=self._dictionary_update_notice)
             return self._dictionary_updater
+
+    def _dictionary_update_notice(self, revision, details):
+        import wx
+        def show():
+            with self._submit_lock:
+                if (self._terminating or self._dictionary_updater is None or
+                        not self._dictionary_updater.current(revision)):
+                    return
+            from globalPlugins.reloqCDictionaries import show_dictionary_update
+            show_dictionary_update(details)
+        wx.CallAfter(show)
 
     def refresh_dictionaries(self, completed=None):
         return self.dictionary_manager().refresh(completed)

@@ -78,4 +78,8 @@
     <string name="phrase_prediction">Previsão de frases</string>
     <string name="dictionary_repository">Fonte dos dicionários</string>
     <string-array name="dictionary_repositories"><item>Dicionários IBM TTS</item><item>Dicionários alternativos IBM TTS</item></string-array>
+    <string name="dictionary_update_title">Dicionários de pronúncia</string>
+    <string name="dictionary_update_new">Atualização concluída. Novas entradas: %1$d</string>
+    <string name="dictionary_update_first">Dicionário carregado pela primeira vez. Entradas: %1$d</string>
+    <string name="dictionary_update_unknown">Atualização concluída. Não foi possível determinar o número de novas entradas.</string>
 </resources>

@@ -303,3 +303,12 @@ msgstr ""
 #: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:235
 msgid "Wait for the dictionary update to finish."
 msgstr ""
+
+msgid "Dictionary update complete. The number of new entries could not be determined."
+msgstr ""
+
+msgid "Dictionary loaded for the first time. Entries: %s"
+msgstr ""
+
+msgid "Dictionary update complete. New entries: %s"
+msgstr ""

@@ -4,6 +4,7 @@
 - Gedankenstriche im Text werden in den geprüften europäischen Sprachen als Pausenzeichen ausgewertet; bei Zahlenbereichen bleibt die bisherige Behandlung erhalten.
 - Japanische und chinesische Wortmarkierungen unterbrechen die native Textanalyse nicht mehr und erzeugen keine zusätzlichen Pausen. Koreanisch verwendet denselben nicht eingreifenden Markierungsweg.
 - Bei ausdrücklicher Zeichenlesung wird der deutsche Unterstrich als Nomen betont. Die Satzanalyse unterscheidet Nomen und Verb weiterhin nach Kontext.
+- Nach Wörterbuchaktualisierungen zeigen NVDA, SAPI und Android einen Dialog mit der Anzahl neu hinzugekommener unterschiedlicher Einträge. Beim ersten Laden wird die Gesamtzahl angezeigt; bei fehlendem Vergleichsstand bleibt die Anzahl ausdrücklich unbekannt.
 
 # Releasevorbereitung 1.1.0
 

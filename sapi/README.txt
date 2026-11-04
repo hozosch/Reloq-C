@@ -73,6 +73,10 @@ Enable dictionaries and choose either the bundled IBM TTS Dictionaries or
 Alternative IBM TTS Dictionaries in the settings window. The alternative is
 downloaded and verified in the background and can be updated there. The
 alternative source currently provides US English and Castilian Spanish files.
+A successful alternative dictionary download displays a dialog with the
+number of new distinct entries. Modified and removed entries do not count as
+additions. The first download shows the total; if an earlier copy cannot be
+compared, the dialog reports that the count is unavailable.
 A custom dictionary folder overrides the selected source and stays unchanged.
 SAPI's lexicon editor is not implemented.
 

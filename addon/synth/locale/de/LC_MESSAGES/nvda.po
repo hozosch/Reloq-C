@@ -319,3 +319,12 @@ msgstr "IBM-TTS-Wörterbücher"
 
 msgid "Alternative IBM TTS Dictionaries"
 msgstr "Alternative IBM-TTS-Wörterbücher"
+
+msgid "Dictionary update complete. The number of new entries could not be determined."
+msgstr "Die Wörterbuchaktualisierung ist abgeschlossen. Die Anzahl neuer Einträge konnte nicht ermittelt werden."
+
+msgid "Dictionary loaded for the first time. Entries: %s"
+msgstr "Wörterbuch erstmals geladen. Einträge insgesamt: %s"
+
+msgid "Dictionary update complete. New entries: %s"
+msgstr "Wörterbuchaktualisierung abgeschlossen. Neue Einträge: %s"

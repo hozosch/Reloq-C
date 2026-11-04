@@ -15,6 +15,21 @@ import wx
 addonHandler.initTranslation()
 
 
+def dictionary_update_message(details):
+    counts = details.get("dictionary_update") if details else None
+    if counts is None:
+        return _("Dictionary update complete. The number of new entries could not be determined.")
+    if not counts["compared"] and counts["total"]:
+        return _("Dictionary loaded for the first time. Entries: %s") % counts["total"]
+    return _("Dictionary update complete. New entries: %s") % counts["added"]
+
+
+def show_dictionary_update(details, parent=None):
+    gui.messageBox(dictionary_update_message(details), _("Pronunciation dictionaries"),
+                   wx.OK | wx.ICON_INFORMATION,
+                   parent=parent if parent is not None else getattr(gui, "mainFrame", None))
+
+
 class EloquenceSettingsPanel(SettingsPanel):
     title = _("Eloquence C")
 
@@ -194,7 +209,7 @@ class EloquenceSettingsPanel(SettingsPanel):
             self.sources[selected], self.sources[target] = self.sources[target], self.sources[selected]
             self.redraw(target)
 
-    def begin(self):
+    def begin(self, show_result=False):
         self.pending = True
         self.operation += 1
         operation = self.operation
@@ -206,15 +221,26 @@ class EloquenceSettingsPanel(SettingsPanel):
                 instance = self_ref()
                 if error:
                     message = _("Dictionary update failed: %s") % str(error)
+                elif details and "dictionary_update" in details:
+                    message = dictionary_update_message(details)
                 else:
                     commit = details.get("community_commit")
                     message = (_("Dictionaries updated. Community revision: %s") % commit[:12]
                                if commit else _("Own dictionaries updated."))
-                if instance is not None and not instance.closing and instance.operation == operation:
+                active = instance is not None and not instance.closing and instance.operation == operation
+                if active:
                     instance.pending = False
                     instance.enable_controls(instance.current_synth())
                     instance.status.SetLabel(message)
-                ui.message(message)
+                if instance is not None and instance.operation != operation:
+                    return
+                if error and show_result:
+                    gui.messageBox(message, _("Pronunciation dictionaries"), wx.OK | wx.ICON_ERROR,
+                                   parent=instance if active else getattr(gui, "mainFrame", None))
+                elif not error and (show_result or details and details.get("remote_changed")):
+                    show_dictionary_update(details, parent=instance if active else None)
+                elif active:
+                    ui.message(message)
             wx.CallAfter(report)
         return completed
 
@@ -222,7 +248,7 @@ class EloquenceSettingsPanel(SettingsPanel):
         # Refresh the already applied configuration. Unapplied list edits and
         # the community checkbox still obey NVDA's OK / Apply / Cancel flow.
         if not self.pending and self.current_synth():
-            completed = self.begin()
+            completed = self.begin(show_result=True)
             try:
                 self.synth.refresh_dictionaries(completed)
             except Exception as error:

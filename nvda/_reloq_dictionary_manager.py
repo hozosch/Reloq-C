@@ -165,6 +165,38 @@ def validate_merged(directory):
     return manifest
 
 
+def _snapshot_keys(directory):
+    """Return unique native lookup keys per volume from a verified snapshot."""
+    if directory is None:
+        return {}
+    directory = Path(directory)
+    manifest = json.loads((directory / "manifest.json").read_text(encoding="utf8"))
+    if manifest.get("format") == "reloq-native-dictionaries-1":
+        manifest = validate_merged(directory)
+        alternative = False
+    else:
+        manifest = validate_snapshot(directory)
+        alternative = manifest["repository"].lower() == ALTERNATIVE_REPOSITORY.lower()
+    result = {}
+    for name in manifest["files"]:
+        if not name.endswith(".dic"):
+            continue
+        data = _read(directory / name)
+        if alternative:
+            data = _source_to_cp1252(data)
+        result[name] = {key.translate(_LOWER) if name == "DEURoot.dic" else key
+                        for key, _ in _entries(data, name)}
+    return result
+
+
+def dictionary_update_counts(before, after):
+    """Count distinct newly added lookup keys, not net growth or changed values."""
+    old, new = _snapshot_keys(before), _snapshot_keys(after)
+    total = sum(len(keys) for keys in new.values())
+    added = sum(len(keys - old.get(name, set())) for name, keys in new.items())
+    return {"compared": before is not None, "added": added, "total": total}
+
+
 def merge_sources(community, sources, cache, *, replacements=None):
     tables = {}
     conflicts = 0
@@ -231,10 +263,11 @@ def merge_sources(community, sources, cache, *, replacements=None):
 
 class DictionaryManager:
     def __init__(self, bundled, cache, deliver, on_error, *, fetch=urlopen, watch_interval=0.5,
-                 settings_path=None, legacy_settings=None):
+                 settings_path=None, legacy_settings=None, on_update=None):
         self.bundled, self.cache = Path(bundled), Path(cache)
         self.settings_path = Path(settings_path) if settings_path is not None else self.cache / "sources.json"
         self.deliver, self.on_error, self.fetch = deliver, on_error, fetch
+        self.on_update = on_update
         self._lock = threading.Lock()
         self._revision, self._closed, self._enabled = 0, False, False
         self._last_delivery = None
@@ -468,8 +501,13 @@ class DictionaryManager:
         committed = False
         try:
             community = self._community(repository) if enabled else None
+            previous_community = community
+            with self._lock:
+                previous_active = self._last_delivery[1] if self._last_delivery else None
+            latest = None
             if enabled and repository != "community" and community is None:
                 community = fetch_master(self.cache, fetch=self.fetch, publish=False, source=repository)
+                latest = community
                 update = False
             path, details = self._build(community, sources, enabled, repository)
             if self._state(enabled, sources) != state:
@@ -504,8 +542,30 @@ class DictionaryManager:
             if not self.current(revision):
                 return
             self._emit(revision, path)
+            remote_changed = bool(latest and (previous_community is None or
+                latest.name != validate_snapshot(previous_community)["commit"]))
+            # A manual refresh always gets a result, including a zero count.
+            # Background reloads only notify when an online source changed.
+            if latest is not None and (remote_changed or completed and not save):
+                before_count, after_count, source = previous_community, latest, repository
+            elif completed and not save:
+                before_count, after_count, source = previous_active, path, None
+            else:
+                before_count = after_count = source = None
+            if (latest is not None and remote_changed) or (completed is not None and not save):
+                try:
+                    counts = dictionary_update_counts(before_count, after_count)
+                except (OSError, ValueError, KeyError, TypeError):
+                    # Counting is informational; an already committed valid
+                    # update must not be reported as failed if an older
+                    # snapshot disappeared before it could be compared.
+                    counts = None
+                details = dict(details, dictionary_update=counts,
+                               update_source=source, remote_changed=remote_changed)
             if completed:
                 completed(None, details)
+            elif remote_changed and self.on_update and self.current(revision):
+                self.on_update(revision, details)
         except Exception as error:
             with self._lock:
                 active = not self._closed and self._revision == revision

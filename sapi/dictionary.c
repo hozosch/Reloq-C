@@ -1,6 +1,7 @@
 /* Download the chosen alternative dictionary outside the speech and UI
  * threads. A complete commit-addressed snapshot is published atomically. */
 #include "settings.h"
+#include "dictionary_diff.h"
 #include <winhttp.h>
 #include <wincrypt.h>
 #include <stdio.h>
@@ -134,8 +135,37 @@ static int same_file(const WCHAR *a,const WCHAR *b)
     }
     if(first)fclose(first);if(second)fclose(second);return ok;
 }
-HRESULT sapi_dictionary_download(void)
+static int read_volume(const WCHAR *path,unsigned char **out,size_t *size)
 {
+    FILE *f=_wfopen(path,L"rb");if(!f)return 0;
+    unsigned char *data=malloc(LIMIT+1);if(!data){fclose(f);return 0;}
+    size_t n=fread(data,1,LIMIT+1,f);int ok=!ferror(f)&&n<=LIMIT;
+    fclose(f);if(!ok){free(data);return 0;}*out=data;*size=n;return 1;
+}
+static void count_update(const WCHAR *previous,const WCHAR *stage,int had_previous,
+                         struct sapi_dictionary_update *result)
+{
+    if(!result)return;
+    result->known=1;result->compared=had_previous;
+    for(unsigned i=0;i<3;++i){WCHAR before_path[2048],after_path[2048];
+        unsigned char *before=NULL,*after=NULL;size_t n=0,m=0,added=0,total=0;
+        swprintf(after_path,2048,L"%ls\\%ls",stage,local_names[i]);
+        if(had_previous)swprintf(before_path,2048,L"%ls\\%ls",previous,local_names[i]);
+        int ok=read_volume(after_path,&after,&m)&&(!had_previous||read_volume(before_path,&before,&n))&&
+            sapi_dictionary_diff(before,n,after,m,0,&added,&total);
+        free(before);free(after);
+        if(!ok){result->known=0;return;}
+        result->added+=added;result->total+=total;
+    }
+}
+HRESULT sapi_dictionary_download_report(struct sapi_dictionary_update *report)
+{
+    if(report)memset(report,0,sizeof *report);
+    WCHAR previous[2048]={0},old_commit[41]={0};DWORD old_size=sizeof old_commit;
+    int had_previous=alternative_path(previous,2048);
+    LSTATUS prior_status=RegGetValueW(HKEY_CURRENT_USER,registry,L"AlternativeCommit",RRF_RT_REG_SZ,
+        NULL,old_commit,&old_size);
+    int prior_recorded=prior_status!=ERROR_FILE_NOT_FOUND&&prior_status!=ERROR_PATH_NOT_FOUND;
     HINTERNET session=WinHttpOpen(L"ReLoq-C-SAPI-dictionaries",WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,WINHTTP_NO_PROXY_NAME,WINHTTP_NO_PROXY_BYPASS,0);
     if(!session)return E_FAIL;WinHttpSetTimeouts(session,8000,8000,12000,12000);
     unsigned char *data=NULL,*tree=NULL;DWORD size=0,tree_size=0;char sha[41]={0},expected[3][41];WCHAR base[2048],stage[2048],target[2048],url[512],wsha[41];HRESULT result=E_FAIL;
@@ -159,6 +189,8 @@ HRESULT sapi_dictionary_download(void)
         swprintf(file,2048,L"%ls\\%ls",stage,local_names[i]);
         if(!save_converted(file,data,size))goto fail_stage;free(data);data=NULL;
     }
+    count_update(previous,stage,had_previous,report);
+    if(report&&prior_recorded&&!had_previous)report->known=0;
     if(!MoveFileExW(stage,target,MOVEFILE_WRITE_THROUGH)) {
         WIN32_FILE_ATTRIBUTE_DATA attr;
         if(!GetFileAttributesExW(target,GetFileExInfoStandard,&attr)||!(attr.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY))goto fail_stage;
@@ -174,3 +206,4 @@ HRESULT sapi_dictionary_download(void)
 fail_stage:remove_stage(stage);
 done:free(data);free(tree);WinHttpCloseHandle(session);return result;
 }
+HRESULT sapi_dictionary_download(void){return sapi_dictionary_download_report(NULL);}
