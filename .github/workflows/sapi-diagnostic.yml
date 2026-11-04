@@ -1,7 +1,6 @@
 name: Diagnose SAPI long-text parity
 on:
-  push:
-    branches: [codex/sapi-diagnostic]
+  workflow_dispatch:
 permissions:
   contents: read
   actions: write

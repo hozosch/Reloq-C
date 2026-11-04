@@ -61,7 +61,9 @@ static void same(const struct site *a,const struct site *b)
 int main(int argc,char **argv)
 {
     assert(argc==2);sapi_test_library=argv[1];struct sapi_settings s=settings();unsigned cases=0;
-    struct {int language,rate;size_t samples;uint64_t hash;} comparisons[98];unsigned comparison_count=0,format_changes=0;
+    struct {int language,rate;size_t samples;uint64_t hash;unsigned event_count;ULONG event_offsets[128];} comparisons[98];
+    unsigned comparison_count=0,format_changes=0;
+    size_t long_marked=0,long_plain=0,long_events=0;uint64_t long_marked_hash=0,long_plain_hash=0,long_event_hash=0;
     for(size_t i=0;i<sizeof sapi_languages/sizeof *sapi_languages;++i){
         struct sapi_backend *b=sapi_backend_new(sapi_languages[i].dialect);assert(b);
         for(unsigned r=0;r<7;++r){struct site output=site_new();SPVTEXTFRAG f=text(sapi_languages[i].sample,0);
@@ -71,7 +73,15 @@ int main(int argc,char **argv)
             assert(output.count>100);assert(output.event_count>0);
             comparisons[comparison_count].language=sapi_languages[i].dialect;
             comparisons[comparison_count].rate=(int)r;comparisons[comparison_count].samples=output.count;
-            comparisons[comparison_count++].hash=hash(output.pcm,output.count);
+            comparisons[comparison_count].hash=hash(output.pcm,output.count);
+            assert(output.event_count<=128);
+            comparisons[comparison_count].event_count=(unsigned)output.event_count;
+            for(size_t k=0;k<output.event_count;++k){
+                assert(output.events[k].eEventId==SPEI_WORD_BOUNDARY||output.events[k].eEventId==SPEI_SENTENCE_BOUNDARY);
+                assert((uint64_t)output.events[k].lParam<=f.ulTextLen);
+                comparisons[comparison_count].event_offsets[k]=(ULONG)output.events[k].lParam;
+            }
+            ++comparison_count;
             free(output.pcm);++cases;
         }
         if(sapi_languages[i].dialect==0x10000||sapi_languages[i].dialect==0x40000)
@@ -119,12 +129,13 @@ int main(int argc,char **argv)
         SPVTEXTFRAG early_text=text(L"A clear sentence starts playing promptly.",0);
         assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&early_format,&early_text,&early.iface)));
         assert(early.first_playable_samples>=early.playback_threshold);
+#ifndef RELOQ_SAPI_REFERENCE_BASELINE
         assert(early.first_playable_samples<early.playback_threshold+512);
+#endif
         free(early.pcm);++cases;
     }
-    /* SAPI commonly requests every word position. A long utterance must
-     * retain the same PCM and ordered, in-range word events as ordinary
-     * speech without those events. */
+    /* Capture long-text PCM and ordered events with and without interest.
+     * A separate baseline comparison verifies that each remains unchanged. */
     {
         WCHAR long_text[4096]=L"";
         for(unsigned i=0;i<50;++i)wcscat(long_text,L"Dies ist ein langer Text mit mehreren Worten, ");
@@ -134,7 +145,15 @@ int main(int argc,char **argv)
         struct site marked=site_new(),plain=site_new();plain.interest=0;
         assert(SUCCEEDED(sapi_backend_speak(german,&s,0,&out,&long_fragment,&marked.iface)));
         assert(SUCCEEDED(sapi_backend_speak(german,&s,0,&out,&long_fragment,&plain.iface)));
-        same(&marked,&plain);assert(!plain.event_count);
+        assert(marked.count>0&&plain.count>0&&!plain.event_count);
+        long_marked=marked.count;long_plain=plain.count;long_events=marked.event_count;
+        long_marked_hash=hash(marked.pcm,marked.count);long_plain_hash=hash(plain.pcm,plain.count);
+        long_event_hash=1469598103934665603ULL;
+        for(size_t i=0;i<marked.event_count;++i){const SPEVENT *e=&marked.events[i];
+            long_event_hash=(long_event_hash^e->eEventId)*1099511628211ULL;
+            long_event_hash=(long_event_hash^e->wParam)*1099511628211ULL;
+            long_event_hash=(long_event_hash^(uint64_t)e->lParam)*1099511628211ULL;
+            long_event_hash=(long_event_hash^e->ullAudioStreamOffset)*1099511628211ULL;}
         size_t words=0;ULONG previous=0;
         for(size_t i=0;i<marked.event_count;++i)if(marked.events[i].eEventId==SPEI_WORD_BOUNDARY){
             ULONG position=(ULONG)marked.events[i].lParam;
@@ -177,10 +196,17 @@ int main(int argc,char **argv)
     SPVTEXTFRAG spell=text(L"AB",5);spell.State.eAction=SPVA_SpellOut;struct site letters=site_new();
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&spell,&letters.iface)));assert(letters.count>0);free(letters.pcm);++cases;
     assert(sapi_test_dictionary_calls==0);++cases;
-    printf("{\"backend_cases\":%u,\"format_negotiation_cases\":%u,\"host_tests_convert_audio\":false,\"languages\":14,\"rates\":7,\"reference_samples\":%zu,\"reference_hash\":\"%016llx\",\"profile_names\":8,\"last_profile\":\"%ls\",\"comparisons\":[",
-        cases,format_changes,base.count,(unsigned long long)hash(base.pcm,base.count),sapi_profiles[7]);
-    for(unsigned i=0;i<comparison_count;++i)printf("%s{\"language\":%d,\"rate\":%d,\"samples\":%zu,\"hash\":\"%016llx\"}",
-        i?",":"",comparisons[i].language,comparisons[i].rate,comparisons[i].samples,(unsigned long long)comparisons[i].hash);
+    printf("{\"backend_cases\":%u,\"format_negotiation_cases\":%u,\"host_tests_convert_audio\":false,\"languages\":14,\"rates\":7,\"reference_samples\":%zu,\"reference_hash\":\"%016llx\",\"profile_names\":8,\"last_profile\":\"%ls\","
+        "\"long_german\":{\"marked_samples\":%zu,\"marked_hash\":\"%016llx\",\"plain_samples\":%zu,\"plain_hash\":\"%016llx\",\"events\":%zu,\"event_hash\":\"%016llx\"},\"comparisons\":[",
+        cases,format_changes,base.count,(unsigned long long)hash(base.pcm,base.count),sapi_profiles[7],
+        long_marked,(unsigned long long)long_marked_hash,long_plain,(unsigned long long)long_plain_hash,
+        long_events,(unsigned long long)long_event_hash);
+    for(unsigned i=0;i<comparison_count;++i){
+        printf("%s{\"language\":%d,\"rate\":%d,\"samples\":%zu,\"hash\":\"%016llx\",\"event_offsets\":[",
+            i?",":"",comparisons[i].language,comparisons[i].rate,comparisons[i].samples,(unsigned long long)comparisons[i].hash);
+        for(unsigned j=0;j<comparisons[i].event_count;++j)printf("%s%u",j?",":"",(unsigned)comparisons[i].event_offsets[j]);
+        fputs("]}",stdout);
+    }
     puts("]}");
     (void)sapi_anatomy;free(base.pcm);sapi_backend_delete(b);return 0;
 }

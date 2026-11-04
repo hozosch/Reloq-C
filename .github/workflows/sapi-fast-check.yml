@@ -1,0 +1,38 @@
+name: Verify SAPI PCM and event parity
+on:
+  push:
+    branches: [codex/sapi-diagnostic]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: host-native-library
+          path: eci
+          run-id: 41885284810
+          github-token: ${{ github.token }}
+      - name: Run SAPI host tests
+        run: make -C sapi test
+      - name: Compare against the previous SAPI adapter
+        run: |
+          git show 76e2c04bb00c66ece46a93224a1066d5dab57328:sapi/backend.c > /tmp/original-backend.c
+          cc -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -DRELOQ_SAPI_REFERENCE_BASELINE -I sapi -I include /tmp/original-backend.c sapi/test_host.c sapi/test_backend.c src/reloq_voice_controls.c -ldl -lpthread -lm -o /tmp/original-sapi-test
+          /tmp/original-sapi-test "$PWD/eci/libreloq_eci.so" > /tmp/original-sapi.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          original=json.loads(Path('/tmp/original-sapi.json').read_text())
+          candidate=json.loads(Path('sapi/build/backend-results.json').read_text())
+          assert original['long_german']==candidate['long_german'], 'long German PCM or events changed'
+          assert original['comparisons']==candidate['comparisons'], 'language/rate PCM or marks changed'
+          print('Previous and candidate SAPI: all language/rate PCM, events and long German output match.')
+          PY
