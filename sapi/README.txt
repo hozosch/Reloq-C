@@ -56,20 +56,18 @@ spelling fragments use the shared C engine.
 
 Responsiveness and dictionaries
 -------------------------------
-The initialized language runs directly on SAPI's output thread, following the
-SAPI5IBMTTS transport approach. For the first output, the adapter collects
-approximately 60 ms of source audio in one live buffer. This lets clients such
-as NVDA reach their initial playback threshold without a separate SAPI write for
-every tiny native callback. Additional short blocks during the first 500 ms of
-source audio help clients that apply speed-up; later blocks contain up to 4,096
-samples. Event and fragment boundaries are flushed at their exact positions.
-There is no second producer thread or semaphore queue. The samples and native
-synthesis rate are unchanged.
+The initialized language prepares speech on a worker while SAPI delivers it
+through a bounded queue. A short announcement can therefore finish rendering
+while it is being played, making interruptions more responsive. For the first
+output, the adapter collects approximately 60 ms of source audio in one block.
+Additional short blocks during the first 500 ms help clients that apply speed-up;
+later blocks contain up to 4,096 samples. Event and fragment boundaries are
+flushed at their exact positions. The samples and native synthesis rate are unchanged.
 
 Unchanged dictionary paths retain initialized language data. Small metadata
 checks detect edits, replacement, creation and deletion of native .dic files
-between utterances. No text result or synthesized speech is cached. Abort is
-polled during rendering and delivery.
+between utterances. No text result or synthesized speech is cached. Aborted
+audio is discarded, and the next announcement is generated afresh.
 
 Enable dictionaries and choose either the bundled IBM TTS Dictionaries or
 Alternative IBM TTS Dictionaries in the settings window. The alternative is

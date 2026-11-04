@@ -38,6 +38,10 @@ test: | $(BUILD)
 	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -I. -I../include backend.c test_host.c test_backend.c ../src/reloq_voice_controls.c -ldl -lpthread -lm -o $(BUILD)/test_backend
 	$(BUILD)/test_backend $(abspath ../eci/libreloq_eci.so) > $(BUILD)/backend-results.json
 	python3 test_reference.py --library $(abspath ../eci/libreloq_eci.so) --report $(BUILD)/backend-results.json
+	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -I. -I../include backend.c test_host.c test_buffered_cancel.c ../src/reloq_voice_controls.c -ldl -lpthread -lm -o $(BUILD)/test_buffered_cancel
+	$(BUILD)/test_buffered_cancel $(abspath ../eci/libreloq_eci.so) > $(BUILD)/buffered-cancel-results.json
+	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -I. -I../include backend.c test_host.c test_cancel_recovery.c ../src/reloq_voice_controls.c -ldl -lpthread -lm -o $(BUILD)/test_cancel_recovery
+	$(BUILD)/test_cancel_recovery $(abspath ../eci/libreloq_eci.so) > $(BUILD)/cancel-recovery-results.txt
 	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -I. -I../include backend.c test_host.c test_dictionary.c ../src/reloq_voice_controls.c -ldl -lpthread -lm -o $(BUILD)/test_dictionary
 	$(BUILD)/test_dictionary $(abspath ../eci/libreloq_eci.so) > $(BUILD)/dictionary-results.json
 	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -I. -I../include backend.c test_host.c test_speed_native.c ../src/reloq_voice_controls.c -ldl -lpthread -lm -o $(BUILD)/test_speed_native

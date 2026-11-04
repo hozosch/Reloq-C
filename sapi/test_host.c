@@ -9,9 +9,13 @@
 #include <sys/stat.h>
 const char *sapi_test_library;
 unsigned sapi_test_dictionary_calls;
+unsigned sapi_test_synth_complete;
 static int (*dictionary_api)(void *,const char *);
+static int (*synthesize_api)(void *);
 static int dictionary_reload(void *handle,const char *path)
 {++sapi_test_dictionary_calls;return dictionary_api(handle,path);}
+static int synthesize_counted(void *handle)
+{int result=synthesize_api(handle);__atomic_add_fetch(&sapi_test_synth_complete,1,__ATOMIC_SEQ_CST);return result;}
 HMODULE sapi_module;volatile LONG sapi_objects,sapi_locks;
 LONG InterlockedIncrement(volatile LONG *p){return __atomic_add_fetch(p,1,__ATOMIC_SEQ_CST);}
 LONG InterlockedExchange(volatile LONG *p,LONG n){return __atomic_exchange_n(p,n,__ATOMIC_SEQ_CST);}
@@ -25,7 +29,8 @@ BOOL InitOnceExecuteOnce(PINIT_ONCE once,BOOL (*fn)(PINIT_ONCE,PVOID,PVOID *),PV
     if(!once->state&&fn(once,arg,out))once->state=1;BOOL ok=once->state;pthread_mutex_unlock(&lock);return ok;}
 HMODULE LoadLibraryExW(LPCWSTR p,HANDLE h,DWORD flags){(void)p;(void)h;(void)flags;return dlopen(sapi_test_library,RTLD_NOW|RTLD_LOCAL);}
 FARPROC GetProcAddress(HMODULE h,const char *name){void *p=dlsym(h,name);FARPROC fn;memcpy(&fn,&p,sizeof fn);
- if(!strcmp(name,"eciSetDictionaryPath")){memcpy(&dictionary_api,&p,sizeof p);int (*wrap)(void *,const char *)=dictionary_reload;memcpy(&fn,&wrap,sizeof fn);}return fn;}
+ if(!strcmp(name,"eciSetDictionaryPath")){memcpy(&dictionary_api,&p,sizeof p);int (*wrap)(void *,const char *)=dictionary_reload;memcpy(&fn,&wrap,sizeof fn);}
+ if(!strcmp(name,"eciSynthesize")){memcpy(&synthesize_api,&p,sizeof p);int (*wrap)(void *)=synthesize_counted;memcpy(&fn,&wrap,sizeof fn);}return fn;}
 static _Thread_local DWORD last_error;
 DWORD GetLastError(void){return last_error;}
 BOOL GetFileAttributesExW(LPCWSTR path,int kind,WIN32_FILE_ATTRIBUTE_DATA *out)

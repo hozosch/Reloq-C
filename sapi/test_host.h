@@ -19,6 +19,7 @@ typedef struct {DWORD dwFileAttributes;FILETIME ftCreationTime,ftLastAccessTime,
 BOOL GetFileAttributesExW(LPCWSTR,int,WIN32_FILE_ATTRIBUTE_DATA *);
 DWORD GetLastError(void);
 extern unsigned sapi_test_dictionary_calls;
+extern unsigned sapi_test_synth_complete;
 #ifdef RELOQ_SAPI_SETTINGS_TEST
 typedef void *HKEY;typedef LONG LSTATUS;
 #define HKEY_CURRENT_USER ((HKEY)(uintptr_t)1)
