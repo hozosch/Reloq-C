@@ -43,3 +43,41 @@ jobs:
           assert original['comparisons']==candidate['comparisons'], 'language/rate PCM or marks changed'
           print('Previous and candidate SAPI: all language/rate PCM, events and long German output match.')
           PY
+  package-names:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-stable-identity
+          path: candidate/android
+          run-id: 41885284810
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-stable-identity
+          path: candidate/nvda
+          run-id: 41885284810
+          github-token: ${{ github.token }}
+      - name: Audit delivered package names and text
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,zipfile
+          apk,=Path('candidate/android').glob('*.apk')
+          with zipfile.ZipFile(apk) as archive:
+              assert archive.testzip() is None
+              assert all(not re.search(r'experimental|preview',n,re.I) for n in archive.namelist())
+              dex=archive.read('classes.dex')
+              assert b'org/reloq/tts/preview' not in dex and b'org.reloq.tts.preview' not in dex
+              assert b'Lorg/reloq/tts/ReLoqService;' in dex
+          addon,=Path('candidate/nvda').glob('*.nvda-addon')
+          with zipfile.ZipFile(addon) as archive:
+              assert archive.testzip() is None
+              manifest=archive.read('manifest.ini').decode('utf-8')
+              assert 'name = "reloqC"' in manifest and 'version = "1.1.0"' in manifest
+              for name in archive.namelist():
+                  assert not re.search(r'experimental|preview',name,re.I),name
+                  if name.endswith(('.py','.ini','.html')):
+                      assert not re.search(rb'experimental|preview',archive.read(name),re.I),name
+          print('Android and NVDA package names and authored text use stable names.')
+          PY
