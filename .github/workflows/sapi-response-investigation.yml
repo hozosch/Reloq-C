@@ -1,0 +1,23 @@
+name: Investigate SAPI first audio
+on:
+  push:
+    branches: [codex/sapi-110-response]
+    paths: [.github/workflows/sapi-response-investigation.yml, sapi/measure_startup.c]
+permissions:
+  contents: read
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build native host engine
+        run: make -C eci -j2 all PROVIDER_LTO=-flto=2
+      - name: Measure first SAPI audio with and without word events
+        run: |
+          cc -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation \
+            -DRELOQ_SAPI_TEST_HOST -I sapi -I include sapi/backend.c sapi/test_host.c \
+            sapi/measure_startup.c src/reloq_voice_controls.c -ldl -lpthread -lm -o /tmp/sapi-startup
+          /tmp/sapi-startup "$PWD/eci/libreloq_eci.so"
