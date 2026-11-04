@@ -80,7 +80,7 @@ static DWORD output_rate(void)
 {
     DWORD rate=1,bytes=sizeof rate;
     if(RegGetValueW(HKEY_CURRENT_USER,root,L"OutputRate",RRF_RT_REG_DWORD,NULL,&rate,&bytes)==ERROR_SUCCESS&&rate<7)return rate;
-    /* Preview-1 migration: German, US English, then catalogue order. */
+    /* Legacy settings migration: German, US English, then catalogue order. */
     for(size_t i=0;i<sapi_language_count()+2;++i){
         int dialect=i==0?0x40000:i==1?0x10000:sapi_language_at(i-2)->dialect;
         WCHAR key[128];key_name(dialect,key);struct sapi_settings old;

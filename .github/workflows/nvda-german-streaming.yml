@@ -1,4 +1,4 @@
-name: NVDA high-rate hearing preview
+name: NVDA high-rate audio verification
 on:
   push:
     branches: [codex/followup102, codex/body-a-classic-consonants102, codex/classic-presence104, codex/eci-compat106, codex/voice-stability107, codex/german-tag-context108, codex/eci-contract109, codex/eci-voice110, codex/release110]
@@ -233,7 +233,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_classic_voice_stability.py --library $core --profile 3
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Collect validated preview
+      - name: Collect validated add-on
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force validated | Out-Null

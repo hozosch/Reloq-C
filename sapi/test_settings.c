@@ -68,7 +68,7 @@ int main(void)
     assert(sapi_settings_set_shared(0x10000,TRUE)==S_OK);
     assert(sapi_settings_read(0x40000,&s)==S_OK&&s.pitch==43&&s.rate==2&&!s.dictionaries);++checks;
     assert(sapi_settings_write(0xdead,&s)==E_INVALIDARG);s.rate=9;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);++checks;
-    /* Preview-1 migration works before any common OutputRate exists. */
+    /* Legacy settings migration works before any common OutputRate exists. */
     value_count=key_count=0;HKEY key;assert(!RegCreateKeyExW(HKEY_CURRENT_USER,L"Software\\ReLoq C\\SAPI5\\Voices\\00040000",0,NULL,0,KEY_SET_VALUE,NULL,&key,NULL));
     sapi_settings_default(&s);s.rate=5;assert(!RegSetValueExW(key,L"Settings",0,REG_BINARY,(const BYTE *)&s,sizeof s));
     assert(sapi_settings_read(0x10000,&en)==S_OK&&en.rate==5);++checks;

@@ -26,6 +26,7 @@ jobs:
           PYTHONPATH=nvda python3 nvda/test_eci_direct.py
           python3 android/test_versioning.py
           python3 android/test_apk_identity.py
+          python3 sapi/generate_catalogue.py --check
           python3 android/test_translations.py
           python3 android/test_direct_boot.py --java-home "$JAVA_HOME"
           javac -d /tmp/reloq-java android/java/org/reloq/tts/UpdateData.java android/test/UpdateDataTest.java
@@ -54,6 +55,11 @@ jobs:
           persist-credentials: false
       - name: Build shared host engine
         run: make -C eci -j2 all PROVIDER_LTO=-flto=2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: host-native-library
+          path: eci/libreloq_eci.so
+          retention-days: 14
       - name: Verify SAPI, tags and pronunciation
         run: |
           make -C sapi test
@@ -61,6 +67,29 @@ jobs:
           PYTHONPATH=nvda python3 nvda/test_eci_crash_regressions.py --library eci/libreloq_eci.so
           PYTHONPATH=nvda python3 nvda/test_eci_glide_tuning.py --library eci/libreloq_eci.so
           PYTHONPATH=nvda python3 nvda/test_eci_german_streaming.py --library eci/libreloq_eci.so
+  android-settings:
+    needs: host
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - run: sdkmanager 'platforms;android-35'
+      - uses: actions/download-artifact@v4
+        with:
+          name: host-native-library
+          path: eci
+      - name: Exercise Android settings and speech configuration
+        run: python3 android/test_settings.py --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar"
   sapi:
     needs: fast
     uses: ./.github/workflows/sapi-installer.yml
@@ -82,8 +111,6 @@ jobs:
           log-accepted-android-sdk-licenses: false
       - name: Install Android SDK and NDK
         run: sdkmanager 'ndk;30.0.16248370' 'platforms;android-35' 'build-tools;35.0.1'
-      - name: Exercise Android settings
-        run: python3 android/test_settings.py --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar"
       - name: Fetch the existing release
         env:
           GH_TOKEN: ${{ github.token }}

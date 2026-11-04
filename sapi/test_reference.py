@@ -21,7 +21,7 @@ def main():
     report = json.loads(args.report.read_text())
     samples = {int(i, 16): json.loads('"' + sample + '"') for i, sample in
                re.findall(r'new Language\((0x[0-9a-f]+),"[^"]+","[^"]+","([^"]+)"\)',
-                          (ROOT / 'android/java/org/reloq/tts/preview/Catalog.java').read_text())}
+                          (ROOT / 'android/java/org/reloq/tts/Catalog.java').read_text())}
     engines = {}
     try:
         for row in report['comparisons']:

@@ -14,9 +14,9 @@ Keep the old app installed until you have copied any information you need
 and verified the replacement. App-private settings and file permissions do not
 transfer automatically between the two identities.
 
-Open **ReLoq C** to adjust its settings or read a test text. To use it
+Open **ReLoq C 1.1** to adjust its settings or read a test text. To use it
 with TalkBack or another client, open **Android speech settings** and choose
-**ReLoq C** as the preferred text-to-speech engine. All 15 language
+**ReLoq C 1.1** as the preferred text-to-speech engine. All 15 language
 variants and eight named voice presets are available, including separate
 mainland and Taiwan Mandarin routes. Existing saved language indices retain
 their meaning; Taiwan Mandarin is appended to the catalogue.
@@ -26,7 +26,7 @@ The APK keeps the existing signing certificate but uses a new app identity.
 
 ## Speech before the first unlock
 
-The TTS service is marked Direct Boot aware. While the device is locked after a reboot, it uses device-protected copies of speech settings and the active, merged dictionary volumes. The source files and their original paths remain in credential-protected storage. Dictionary changes, including removal, refresh the device-protected copy; in-progress speech retains its snapshot until finished. An update receiver migrates existing settings and dictionaries; opening the settings once while unlocked also refreshes the copies. No boot or other additional permission is requested. Real-device testing before first unlock is still required. Play Protect decisions cannot be predicted from the manifest or signing checks alone.
+The TTS service is marked Direct Boot aware. While the device is locked after a reboot, it uses device-protected copies of speech settings and the active, merged dictionary volumes. The source files and their original paths remain in credential-protected storage. Dictionary changes, including removal, refresh the device-protected copy; in-progress speech retains its snapshot until finished. For updates that retain the same app identity, an update receiver migrates existing settings and dictionaries; opening the settings once while unlocked also refreshes the copies. The change to a separate app identity does not transfer private data. No boot or other additional permission is requested. Real-device testing before first unlock is still required. Play Protect decisions cannot be predicted from the manifest or signing checks alone.
 
 ## Voice and output settings
 
@@ -132,13 +132,13 @@ wakes both sides, and delayed stops are scoped to their own requests.
 
 German uses the built-in native C dictionary, just like the other languages.
 The former 712,343-byte supplemental lexicon is neither packaged nor installed.
-Updates remove only its generated content-named and old preview-named copies;
+Updates remove only its generated content-named and obsolete generated copies;
 user `.dic` files are retained. Dictionary snapshots are reused by content and
 unused old snapshots are removed after their last active request finishes.
 
 Packaging uses DEFLATE level 9 while preserving aapt2's uncompressed resource
 table. The APK additionally includes the optional community data, so its total
-size is larger than preview 2 despite the stronger compression. All language
+size includes the optional community dictionaries. All language
 and acoustic data remain included. Release rule tracing is compiled out. German source knots now grow with
 actual use rather than reserving the sum of six worst-case target buffers.
 The 4,000-word host test requests 91,652,850 peak live heap bytes instead of
@@ -186,8 +186,7 @@ python3 android/verify_apk.py dist/reloq-c-android-arm64-1.1.0.apk
 ```
 
 Build verification checks signatures, the install-critical resource table,
-16-KiB ELF compatibility and package/certificate continuity with the previous
-preview. The app retains its browser update flow and INTERNET-only permission
+16-KiB ELF compatibility and the signing certificate and whether the package has a separate app identity. The app retains its browser update flow and INTERNET-only permission
 profile. Host checks do not replace device and TalkBack testing.
 
 For an isolated build, pass `--build-dir /absolute/fresh/build-directory`; the output APK path remains controlled by `--output`.
