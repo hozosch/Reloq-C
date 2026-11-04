@@ -1,3 +1,4 @@
+param([string]$ReportPath = "japanese-results.json")
 $ErrorActionPreference = 'Stop'
 $voice = New-Object -ComObject SAPI.SpVoice
 $token = $null
@@ -20,7 +21,8 @@ function Render([string]$value, [int]$flags) {
 $texts = @('これは音声のテストです。Windowsとcomputer。',
            'こんにちは、今日は良い天気です。次の文章です。',
            'NVDAの音声テストです。私は日本語を話します。',
-           'こんにちは 世界 こんにちは 世界。')
+           'こんにちは 世界 こんにちは 世界。',
+           'Windows 11 を使います。')
 $results = @()
 foreach ($value in $texts) {
     $segments = for ($i=0; $i -lt $value.Length; $i++) {
@@ -33,7 +35,7 @@ foreach ($value in $texts) {
         pitchEqualsPlain=($plain.sha256 -eq $basic.sha256);
         bookmarksEqualPlain=($plain.sha256 -eq $marked.sha256)}
 }
-$results | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 japanese-results.json
+$results | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 $ReportPath
 $results | Format-List | Out-String | Write-Output
 if (@($results | Where-Object { !$_.pitchEqualsPlain -or !$_.bookmarksEqualPlain }).Count -ne 0) {
     throw 'Japanese SAPI XML or bookmark handling changed the PCM.'
