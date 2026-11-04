@@ -2,6 +2,9 @@ name: Investigate SAPI first audio
 on:
   push:
     branches: [codex/sapi-110-response]
+concurrency:
+  group: sapi-response-investigation
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -20,3 +23,5 @@ jobs:
             -DRELOQ_SAPI_TEST_HOST -I sapi -I include sapi/backend.c sapi/test_host.c \
             sapi/measure_startup.c src/reloq_voice_controls.c -ldl -lpthread -lm -o /tmp/sapi-startup
           /tmp/sapi-startup "$PWD/eci/libreloq_eci.so"
+      - name: Verify SAPI transport, event positions and dictionaries
+        run: make -C sapi test
