@@ -5,7 +5,7 @@
 #undef main
 #include <time.h>
 
-static double started, first;
+static double started, first, playable;
 static double clock_s(void)
 {
     struct timespec t;
@@ -15,7 +15,10 @@ static double clock_s(void)
 static HRESULT timed_write(ISpTTSEngineSite *p,const void *data,ULONG bytes,ULONG *written)
 {
     if (!first) first = clock_s() - started;
-    return write_pcm(p,data,bytes,written);
+    HRESULT result = write_pcm(p,data,bytes,written);
+    const struct site *site = (const struct site *)p;
+    if (!playable && site->first_playable_samples) playable = clock_s() - started;
+    return result;
 }
 static const ISpTTSEngineSiteVtbl timing_vtable =
     {NULL,NULL,NULL,events,interest,actions,timed_write,rate,volume,skip,complete};
@@ -45,15 +48,16 @@ int main(int argc, char **argv)
                 struct site result = site_new();
                 result.iface.lpVtbl = &timing_vtable;
                 result.interest = events_enabled ? ~(ULONGLONG)0 : 0;
-                result.abort_after = 1;
-                first = 0;
+                result.playback_threshold = (output.nSamplesPerSec + 19) / 20;
+                result.abort_after = result.playback_threshold;
+                first = playable = 0;
                 started = clock_s();
                 HRESULT status = sapi_backend_speak(backend,&config,0,&output,&fragment,&result.iface);
                 double elapsed = clock_s() - started;
-                assert(SUCCEEDED(status) && result.count > 0 && first > 0);
-                printf("language=%s hz=%u events=%d words=%u iteration=%d first_ms=%.3f total_ms=%.3f samples=%zu\n",
+                assert(SUCCEEDED(status) && result.count > 0 && first > 0 && playable > 0);
+                printf("language=%s hz=%u events=%d words=%u iteration=%d first_ms=%.3f playable_ms=%.3f total_ms=%.3f samples=%zu\n",
                     language ? "de" : "en", output.nSamplesPerSec, events_enabled,
-                    counts[k], iteration, first*1000, elapsed*1000, result.count);
+                    counts[k], iteration, first*1000, playable*1000, elapsed*1000, result.count);
                 free(result.pcm);
             }
             free(message);
