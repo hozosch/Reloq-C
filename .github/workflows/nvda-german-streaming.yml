@@ -102,17 +102,21 @@ jobs:
           python3 addon/test_speech_tags.py
           python3 - <<'PY'
           from pathlib import Path
-          import hashlib,json,os,zipfile
+          import ast,configparser,hashlib,json,os,zipfile
           files=list(Path('dist').glob('*.nvda-addon'))
           assert len(files)==1
           with zipfile.ZipFile(files[0]) as package:
               assert package.testzip() is None
-              assert '1.1.0-rc25' in package.read('manifest.ini').decode()
+              manifest=package.read('manifest.ini')
+              assert manifest == Path('addon/synth/manifest.ini').read_bytes()
+              config=configparser.ConfigParser(interpolation=None)
+              config.read_string('[addon]\n'+manifest.decode('utf-8'))
+              version=ast.literal_eval(config['addon']['version'])
               for name in ('ReLoq-C-LICENSE.txt','ReLoq-C-NOTICE.txt','OpenEVV-LICENSE.txt','Dictionaries-CC0.txt'):
                   assert package.read('doc/licenses/'+name)
           Path('dist/source.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],
               'package':files[0].name,'sha256':hashlib.sha256(files[0].read_bytes()).hexdigest(),
-              'version':'1.1.0-rc25','official_release':False,'high_rate_tuning':'C'},indent=2)+'\n')
+              'version':version,'official_release':False,'high_rate_tuning':'C'},indent=2)+'\n')
           PY
       - uses: actions/upload-artifact@v4
         with:
