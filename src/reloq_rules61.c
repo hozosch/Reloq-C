@@ -1282,7 +1282,8 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
             /* Preserve behaviour for callers with out-of-order inputs. */
             if(j&&offset<previous_offset)cursor=0;
             marks[j]=(struct reloq61_mark){annotation_boundary(a,n,map,offset,&cursor),
-                (int32_t)(is_index?i:index_count+p),-1};
+                (int32_t)(is_index?i:index_count+p),
+                is_index&&plan.cjk_volume?RELOQ61_SOURCE_INDEX_ONLY:-1};
             previous_offset=offset;
             if(j&&marks[j].offset<marks[j-1].offset)goto done;
             if(is_index)++i;else ++p;

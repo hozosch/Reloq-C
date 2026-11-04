@@ -27,7 +27,7 @@ def N_(message: str) -> str:
 # Mark manifest messages for xgettext as well as validating the English base.
 MANIFEST_MESSAGES = {
     # Translators: Add-on name shown in NVDA's add-on manager.
-    "summary": N_("Eloquence C 1.1: fourteen language variants"),
+    "summary": N_("Eloquence C 1.1.1: fourteen language variants"),
     # Translators: Add-on description; this refers to the spoken language.
     "description": N_("Native C synthesizer with fourteen language variants at 8 to 48 kHz, including Japanese, Korean, Chinese and Greek."),
 }

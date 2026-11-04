@@ -2,6 +2,7 @@
 
 - SAPI bereitet Sprache parallel zur Wiedergabe vor und reagiert schneller auf Unterbrechungen.
 - Gedankenstriche im Text werden in den geprüften europäischen Sprachen als Pausenzeichen ausgewertet; bei Zahlenbereichen bleibt die bisherige Behandlung erhalten.
+- Japanische und chinesische Wortmarkierungen unterbrechen die native Textanalyse nicht mehr und erzeugen keine zusätzlichen Pausen. Koreanisch verwendet denselben nicht eingreifenden Markierungsweg.
 - Bei ausdrücklicher Zeichenlesung wird der deutsche Unterstrich als Nomen betont. Die Satzanalyse unterscheidet Nomen und Verb weiterhin nach Kontext.
 
 # Releasevorbereitung 1.1.0

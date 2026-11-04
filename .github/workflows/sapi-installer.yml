@@ -123,6 +123,7 @@ jobs:
           if ($p.ExitCode -ne 0) { throw "Upgrade failed: $($p.ExitCode)" }
           Test-StartLinks 'Stimmeinstellungen' 'Anleitung'
           if ((Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'Dictionary edit lost during upgrade' }
+          & ./sapi/test_japanese_sapi.ps1 -ReportPath dist/validation/japanese-results.json
           foreach ($arch in @('x64','x86')) {
             $test = if ($arch -eq 'x64') { Join-Path $install 'Test-SAPI.exe' } else { Join-Path $install 'x86\Test-SAPI.exe' }
             & $test --all-native-rates *> "dist/validation/sapi-$arch.txt"

@@ -3,6 +3,7 @@
 #include "settings.h"
 #include "format.h"
 #include <assert.h>
+#include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -111,6 +112,43 @@ int main(int argc,char **argv)
     SPVTEXTFRAG a=text(L"One comp",0),c=text(L"uter. The next sentence works.",8);a.pNext=&c;
     struct site fragmented=site_new();fragmented.partial=38;
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&a,&fragmented.iface)));same(&base,&fragmented);free(fragmented.pcm);++cases;
+#ifndef RELOQ_SAPI_REFERENCE_BASELINE
+    /* Japanese text must not gain pauses merely because a host requests
+     * events or divides the same input into many SAPI text fragments. */
+    {
+        static const WCHAR *const phrases[]={
+            L"これは音声のテストです。Windowsとcomputer。",
+            L"こんにちは、今日は良い天気です。次の文章です。",
+            L"NVDAの音声テストです。私は日本語を話します。",
+            L"こんにちは 世界 こんにちは 世界。",
+            L"Windows 11 を使います。"};
+        static const unsigned rates[]={11025,16000,48000};
+        char original_locale[128];const char *locale=setlocale(LC_CTYPE,NULL);
+        assert(locale&&strlen(locale)<sizeof original_locale);strcpy(original_locale,locale);
+        assert(setlocale(LC_CTYPE,"C.UTF-8"));
+        struct sapi_backend *ja=sapi_backend_new(0x80000);assert(ja);
+        for(unsigned pause=0;pause<3;++pause)for(unsigned r=0;r<3;++r){
+            s.pauses=pause;WAVEFORMATEX fmt=format(rates[r]);
+            for(size_t k=0;k<sizeof phrases/sizeof *phrases;++k){
+                const WCHAR *value=phrases[k];size_t length=wcslen(value);
+                SPVTEXTFRAG whole=text(value,0),*pieces=calloc(length,sizeof *pieces);assert(pieces);
+                for(size_t i=0;i<length;++i){pieces[i]=text(value+i,(ULONG)i);pieces[i].ulTextLen=1;
+                    pieces[i].pNext=i+1<length?pieces+i+1:NULL;}
+                struct site marked=site_new(),plain=site_new(),split=site_new();plain.interest=0;
+                assert(SUCCEEDED(sapi_backend_speak(ja,&s,0,&fmt,&whole,&marked.iface)));
+                assert(SUCCEEDED(sapi_backend_speak(ja,&s,0,&fmt,&whole,&plain.iface)));
+                assert(SUCCEEDED(sapi_backend_speak(ja,&s,0,&fmt,pieces,&split.iface)));
+                assert(marked.count&&marked.event_count&&!plain.event_count);
+                if(marked.count!=plain.count||marked.count!=split.count)
+                    fprintf(stderr,"Japanese pause=%u rate=%u text=%zu: marked=%zu plain=%zu split=%zu\n",
+                        pause,rates[r],k,marked.count,plain.count,split.count);
+                same(&marked,&plain);same(&marked,&split);
+                free(pieces);free(marked.pcm);free(plain.pcm);free(split.pcm);++cases;
+            }
+        }
+        sapi_backend_delete(ja);s.pauses=0;assert(setlocale(LC_CTYPE,original_locale));
+    }
+#endif
     struct site uninterested=site_new();uninterested.interest=0;
     uninterested.batched_after=(out.nSamplesPerSec*500+999)/1000;
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&uninterested.iface)));

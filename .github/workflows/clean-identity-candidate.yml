@@ -90,6 +90,7 @@ jobs:
           cc -O2 -std=c11 -Iinclude tests/test_reloq_unicode.c eci/build/posix/reloq_unicode.o eci/build/posix/reloq_unicode_names.o eci/build/posix/reloq_character.o eci/build/posix/reloq_german_input.o eci/build/posix/reloq_utf8.o -Wl,--gc-sections -lm -o /tmp/test-reloq-unicode
           /tmp/test-reloq-unicode
           PYTHONPATH=nvda python3 nvda/test_eci_dash_pause.py --library eci/libreloq_eci.so
+          PYTHONPATH=nvda python3 nvda/test_eci_cjk_index_parity.py --library eci/libreloq_eci.so
           make -C sapi test
           PYTHONPATH=nvda python3 nvda/test_eci_languages.py
           PYTHONPATH=nvda python3 nvda/test_eci_crash_regressions.py --library eci/libreloq_eci.so
@@ -262,4 +263,6 @@ jobs:
           python nvda/test_eci_german_streaming.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_dash_pause.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_cjk_index_parity.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
