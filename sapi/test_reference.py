@@ -8,9 +8,23 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'nvda'))
-from _reloq_eci_direct import (DirectEciEngine, SAMPLE_RATE, NATIVE_SPEED, NATIVE_PITCH,
+from _reloq_eci_direct import (DirectEciEngine, EciIndex, SAMPLE_RATE, NATIVE_SPEED, NATIVE_PITCH,
     NATIVE_INFLECTION, HEAD_SIZE, NATIVE_VOLUME, GENDER, ROUGHNESS, BREATHINESS,
     PAUSE_MODE, PROCESS_TAGS)
+
+
+def parts_with_events(text, offsets):
+    """Insert the same source-position marks supplied to the SAPI backend."""
+    parts, start = [], 0
+    for value, offset in enumerate(offsets, 1):
+        assert start <= offset <= len(text)
+        if offset > start:
+            parts.append(text[start:offset])
+        parts.append(EciIndex(value))
+        start = offset
+    if start < len(text):
+        parts.append(text[start:])
+    return parts
 
 
 def main():
@@ -36,7 +50,7 @@ def main():
             engine = engines[language]
             engine.set_parameter(SAMPLE_RATE, row['rate'])
             pcm = bytearray()
-            assert engine.speak([samples[language]], pcm.extend, None)
+            assert engine.speak(parts_with_events(samples[language], row['event_offsets']), pcm.extend, lambda _value: None)
             values = array.array('h', pcm)
             digest = 1469598103934665603
             for value in values:
@@ -48,7 +62,7 @@ def main():
     report['direct_eci_identical_pcm_cases'] = len(report['comparisons'])
     report['no_audio_files'] = True
     args.report.write_text(json.dumps(report, indent=2) + '\n')
-    print(f'SAPI / direct ECI: {len(report["comparisons"])} identical PCM cases')
+    print(f'SAPI / direct ECI: {len(report["comparisons"])} identical PCM cases with the same event marks')
 
 
 if __name__ == '__main__':

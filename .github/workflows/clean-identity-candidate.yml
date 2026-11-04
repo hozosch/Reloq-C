@@ -29,6 +29,24 @@ jobs:
           python3 sapi/generate_catalogue.py --check
           cc -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -DRELOQ_SAPI_SETTINGS_TEST -I sapi sapi/settings.c sapi/test_settings.c -o /tmp/test-sapi-settings
           /tmp/test-sapi-settings
+          python3 - <<'PY'
+          import struct,sys
+          sys.path.insert(0,'addon')
+          from pe_format import assert_x64_pe
+          valid=bytearray(256)
+          valid[:2]=b'MZ'
+          struct.pack_into('<I',valid,0x3c,0x80)
+          valid[0x80:0x84]=bytes((0x50,0x45,0,0))
+          struct.pack_into('<H',valid,0x84,0x8664)
+          struct.pack_into('<H',valid,0x98,0x20b)
+          assert_x64_pe(valid)
+          try:
+              assert_x64_pe(bytes(256))
+          except ValueError:
+              pass
+          else:
+              raise AssertionError('invalid PE was accepted')
+          PY
           python3 android/test_translations.py
           python3 android/test_direct_boot.py --java-home "$JAVA_HOME"
           javac -d /tmp/reloq-java android/java/org/reloq/tts/UpdateData.java android/test/UpdateDataTest.java
@@ -54,6 +72,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           persist-credentials: false
       - name: Build shared host engine
         run: make -C eci -j2 all PROVIDER_LTO=-flto=2
@@ -69,6 +88,20 @@ jobs:
           PYTHONPATH=nvda python3 nvda/test_eci_crash_regressions.py --library eci/libreloq_eci.so
           PYTHONPATH=nvda python3 nvda/test_eci_glide_tuning.py --library eci/libreloq_eci.so
           PYTHONPATH=nvda python3 nvda/test_eci_german_streaming.py --library eci/libreloq_eci.so
+      - name: Verify SAPI audio and event parity against 1.1
+        run: |
+          git show 76e2c04bb00c66ece46a93224a1066d5dab57328:sapi/backend.c > /tmp/original-backend.c
+          cc -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -DRELOQ_SAPI_REFERENCE_BASELINE -I sapi -I include /tmp/original-backend.c sapi/test_host.c sapi/test_backend.c src/reloq_voice_controls.c -ldl -lpthread -lm -o /tmp/original-sapi-test
+          /tmp/original-sapi-test "$PWD/eci/libreloq_eci.so" > /tmp/original-sapi.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          original=json.loads(Path('/tmp/original-sapi.json').read_text())
+          candidate=json.loads(Path('sapi/build/backend-results.json').read_text())
+          assert original['long_german']==candidate['long_german'], 'long German PCM or events changed'
+          assert original['comparisons']==candidate['comparisons'], 'language/rate PCM or marks changed'
+          print('All reference PCM, event marks and long German output match the previous SAPI adapter.')
+          PY
   android-settings:
     needs: host
     runs-on: ubuntu-24.04
@@ -120,6 +153,24 @@ jobs:
       - name: Build the new app and check its distinct identity
         run: |
           python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --previous-package previous/reloq-c-android-arm64-1.1.0.apk --jobs 2
+      - name: Check the delivered Android identity and label
+        run: |
+          "$ANDROID_HOME/build-tools/35.0.1/aapt2" dump badging dist/reloq-c-android-arm64-1.1.0.apk > /tmp/apk-badging.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,zipfile
+          badging=Path('/tmp/apk-badging.txt').read_text()
+          assert "package: name='org.reloq.tts'" in badging
+          assert "application-label:'ReLoq C 1.1'" in badging
+          with zipfile.ZipFile('dist/reloq-c-android-arm64-1.1.0.apk') as archive:
+              assert archive.testzip() is None
+              assert all(not re.search(r'experimental|preview',name,re.I) for name in archive.namelist())
+              dex=archive.read('classes.dex')
+              assert b'org/reloq/tts/preview' not in dex
+              assert b'org.reloq.tts.preview' not in dex
+              assert b'Lorg/reloq/tts/ReLoqService;' in dex
+          print('Android package, visible label and native service use the stable identity.')
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: android-stable-identity
@@ -154,6 +205,22 @@ jobs:
               assert archive.testzip() is None
               core=pathlib.Path('eci/eci.dll');core.write_bytes(archive.read('eci.dll'))
           build(DEFAULT_OUTPUT,core,refresh_dictionaries=False)
+          PY
+      - name: Check delivered add-on names and text
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,zipfile
+          addon,=Path('dist').glob('*.nvda-addon')
+          with zipfile.ZipFile(addon) as archive:
+              assert archive.testzip() is None
+              manifest=archive.read('manifest.ini').decode('utf-8')
+              assert 'name = "reloqC"' in manifest and 'version = 1.1.0' in manifest
+              for name in archive.namelist():
+                  assert not re.search(r'experimental|preview',name,re.I),name
+                  if name.endswith(('.py','.ini','.html')):
+                      assert not re.search(rb'experimental|preview',archive.read(name),re.I),name
+          print('The delivered add-on names, manifest and authored text use stable names.')
           PY
       - uses: actions/upload-artifact@v4
         with:
