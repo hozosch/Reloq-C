@@ -300,8 +300,12 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert PitchCommand in driver.supportedCommands
                 assert CharacterModeCommand in driver.supportedCommands
                 assert [setting.id for setting in driver.supportedSettings] == [
-                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate"]
+                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "glideOpening", "glideBackness", "abbreviationDictionary", "phrasePrediction", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate"]
                 assert driver.supportedSettings[0].availableInSettingsRing
+                for setting_id in ("glideOpening", "glideBackness"):
+                    setting = next(item for item in driver.supportedSettings if item.id == setting_id)
+                    assert setting.availableInSettingsRing and setting.defaultVal == 50
+                    assert getattr(driver, setting_id) == 50
                 driver.initSettings()
                 panel = SettingsPanel(driver)
                 for setting in driver.supportedSettings:
@@ -388,10 +392,10 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         driver_module.EciText("Deutsch."), driver_module.EciLanguage(0x10000, "1"), driver_module.EciText("English."),
                         driver_module.EciLanguage(0x40000, "1"), driver_module.EciText("Wieder deutsch.")]
                 until(lambda: len(Engine.instances) == 1)
-                until(lambda: len(Engine.instances[0].parameters) == 14)
+                until(lambda: len(Engine.instances[0].parameters) == 16)
                 assert Engine.instances[0].parameters == list(german.voices[0].parameters) + [(0x1007, 98), (0x1008, 50),
                                                           (0x1009, 30),
-                                                          (0x100a, 100), (0x100d, 50), (0x100e, 0), (0x100f, 0)]
+                                                          (0x100a, 100), (0x100d, 50), (0x100e, 0), (0x100f, 0), (0x1012, 50), (0x1013, 50)]
                 driver._set_rate(70)
                 driver._set_pitch(65)
                 driver._set_inflection(75)
@@ -407,6 +411,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert worker.parameters == list(german.voices[0].parameters) + [(0x1007, 98), (0x1008, 50),
                                              (0x1009, 30), (0x100a, 100),
                                              (0x100d, 50), (0x100e, 0), (0x100f, 0),
+                                             (0x1012, 50), (0x1013, 50),
                                              (0x1007, 121), (0x1008, 65),
                                              (0x1009, 75),
                                              (0x100a, 85)]

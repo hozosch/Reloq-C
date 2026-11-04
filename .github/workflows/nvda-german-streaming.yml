@@ -164,6 +164,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_crash_regressions.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_glide_tuning.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_extended_standard_api.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_contract_api.py --library $core

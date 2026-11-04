@@ -7,7 +7,7 @@ import subprocess
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '1.1.0-rc25'
+VERSION = '1.1.0-rc26'
 
 
 def stage(build, packages):

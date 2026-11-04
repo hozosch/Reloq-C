@@ -239,6 +239,17 @@ def main():
                             lambda _index: None) is False
         assert fake.clear_calls == before + 1, "cancelled queue was not cleared"
         fake.on_add_text = None
+        # Preserve the input failure while reporting the reentry state that
+        # distinguishes a stuck native engine from an invalid input queue.
+        fake.eciIsBeingReentered = Function(lambda handle: 1)
+        fake.failure["eciAddText"] = 0
+        try:
+            engine.speak(["long filename"], lambda _pcm: None, lambda _index: None)
+        except RuntimeError as error:
+            assert "eciAddText rejected input (code 0; native busy=1)" in str(error)
+        else:
+            raise AssertionError("rejected input was not reported")
+        del fake.failure["eciAddText"]
     finally:
         engine.close()
     assert fake.deleted

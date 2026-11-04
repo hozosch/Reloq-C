@@ -1,10 +1,41 @@
 """Words previously dropped by the native planner must remain audible."""
 import argparse
+from array import array
+import math
 from pathlib import Path
+import sys
 
 from _reloq_eci_direct import (DirectEciEngine, EciIndex, GENDER, PROCESS_TAGS,
                                SAMPLE_RATE, SAMPLE_RATES)
 from test_eci_german_clock_native import phonemes, render
+
+
+def samples(pcm):
+    result = array('h')
+    result.frombytes(pcm)
+    if sys.byteorder != 'little':
+        result.byteswap()
+    return result
+
+
+def rms(values):
+    return math.sqrt(sum(value * value for value in values) / max(1, len(values)))
+
+
+def check_vowelless_frication(engine, language):
+    """Check sound, not only allocated PCM or an index at the end.
+
+    With the default 11-kHz voice the /s/ of recosp lies at 0.40–0.46 s.
+    Its successive-sample difference captures the noisy consonant energy;
+    the previous broken build's value here is below 15, despite loud vowels.
+    """
+    engine.set_parameter(SAMPLE_RATE, 1)
+    standalone, _ = render(engine, ['tzsche'])
+    assert rms(samples(standalone)) > 50, (language, 'tzsche is inaudible')
+    assert 's' in phonemes(engine, 'recosp').lower(), (language, 'missing S phone')
+    pcm, _ = render(engine, ['recosp'])
+    segment = samples(pcm)[int(.40 * 11025):int(.46 * 11025)]
+    assert len(segment) > 1 and rms([b - a for a, b in zip(segment, segment[1:])]) > 200, (language, 'recosp has no S frication')
 
 
 def main():
@@ -68,6 +99,9 @@ def main():
             recovered, _ = render(engine, ['Test.'])
             assert recovered and any(recovered), (language, 'recovery')
             checks += 1
+            if language in (0x10000, 0x10001):
+                check_vowelless_frication(engine, language)
+                checks += 2
             if language in (0x30000, 0x30001):
                 # French qu has a silent u here: the i is the syllabic
                 # vowel and the single final l is not the glide in quille.
@@ -115,6 +149,9 @@ def main():
     engine = DirectEciEngine(args.library.resolve(), dialect=0x60000,
                              encoding='utf8', experimental_generic=True)
     try:
+        engine.set_parameter(PROCESS_TAGS, 1)
+        check_vowelless_frication(engine, 0x60000)
+        checks += 2
         for word in ('recosp', 'uncosp', 'noncosp', 'tzsche'):
             standalone, marks = render(engine, [word, EciIndex(7)])
             assert len(standalone) > 10000 and marks == [(7, len(standalone))], (word, marks)

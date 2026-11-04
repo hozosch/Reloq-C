@@ -35,6 +35,12 @@ msgstr "&Rauigkeit"
 msgid "&Breathiness"
 msgstr "&Behauchtheit"
 
+msgid "German E-I glide: &opening"
+msgstr "Deutscher E-I-Gleitlaut: Ö&ffnung"
+
+msgid "German E-I glide: farther &back"
+msgstr "Deutscher E-I-Gleitlaut: weiter &hinten"
+
 #: addon/synth/synthDrivers/reloqC/__init__.py:175
 msgid "Process &ECI tags"
 msgstr "ECI-&Tags verarbeiten"

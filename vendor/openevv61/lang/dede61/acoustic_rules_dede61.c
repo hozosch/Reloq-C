@@ -5,6 +5,7 @@
 #include "reloq61_spr_output.h"
 #include "reloq_voice_filter.h"
 #include "reloq61_german_final.h"
+#include "reloq61.h"
 extern int reloq_dede61_consonant_r(void *);
 extern int reloq_dede61_initial_r(void *);
 extern int reloq_dede61_number_four_r(void *);
@@ -303,7 +304,9 @@ int32_t reloq_dede61_doF(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3
         }
     }
     if(stream.field>=1&&stream.field<=3&&e_j_glide(d)) {
-        static const int16_t target[]={285,2100,2850};
+        const struct reloq61_glide_options tuning=reloq61_glide_options_current();
+        const int16_t target[]={285+(tuning.opening-50)*6/5,
+            2100-(tuning.backness-50)*6,2850-(tuning.backness-50)*4};
         if(left.field>0)left.field=target[stream.field-1];
         if(right.field>0)right.field=target[stream.field-1];
     }

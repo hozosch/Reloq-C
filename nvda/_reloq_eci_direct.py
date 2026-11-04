@@ -43,6 +43,8 @@ ROUGHNESS = 0x100e
 BREATHINESS = 0x100f
 GENDER = 0x1010
 HIGH_RATE_PROFILE = 0x1011
+GERMAN_GLIDE_OPENING = 0x1012
+GERMAN_GLIDE_BACKNESS = 0x1013
 _log = logging.getLogger(__name__)
 WAVEFORM_BUFFER = 0
 INDEX_REPLY = 2
@@ -225,7 +227,7 @@ class DirectEciEngine:
             raise RuntimeError("ECI engine has been closed")
         if parameter not in (GENERIC_RATE, GENERIC_PITCH, GENERIC_VOLUME,
                              NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION,
-                             NATIVE_VOLUME, PROCESS_TAGS, DICTIONARY, PHRASE_PREDICTION, PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATE, HIGH_RATE_PROFILE):
+                             NATIVE_VOLUME, PROCESS_TAGS, DICTIONARY, PHRASE_PREDICTION, PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATE, HIGH_RATE_PROFILE, GERMAN_GLIDE_OPENING, GERMAN_GLIDE_BACKNESS):
             raise ValueError("unsupported generic voice parameter")
         low, high = ((0, 250) if parameter == NATIVE_SPEED else
                      (0, 1) if parameter in (PROCESS_TAGS, GENDER, DICTIONARY, PHRASE_PREDICTION) else
@@ -316,6 +318,18 @@ class DirectEciEngine:
                 "utf-8", errors="ignore")) + 1
         return EciSynthesisError(status, stage, offset, position)
 
+    def _native_busy_diagnostic(self) -> str:
+        """Capture reentry state without modifying the queue or ECI status."""
+        query = getattr(self._dll, "eciIsBeingReentered", None)
+        if query is None or not self._handle:
+            return "unknown"
+        try:
+            query.argtypes = (ctypes.c_void_p,)
+            query.restype = ctypes.c_int
+            return str(query(self._handle))
+        except Exception:
+            return "unknown"
+
     def speak(self, parts: Sequence[str | EciIndex | EciPitch],
               on_pcm: Callable[[bytes], None],
               on_index: Callable[[int], None]) -> bool:
@@ -363,7 +377,8 @@ class DirectEciEngine:
                     ok = self._dll.eciAddText(self._handle, part)
                     operation = "eciAddText"
                 if ok <= 0:
-                    raise RuntimeError(f"{operation} rejected input (code {ok})")
+                    busy = self._native_busy_diagnostic()
+                    raise RuntimeError(f"{operation} rejected input (code {ok}; native busy={busy})")
             if self._cancelled.is_set():
                 return False
             started = self._dll.eciSynthesize(self._handle)
@@ -387,7 +402,9 @@ class DirectEciEngine:
             # eciSynthesize. Discard those fragments so the next utterance
             # cannot accidentally join them to its own text.
             if not completed_successfully and self._handle:
-                self._dll.eciClearInput(self._handle)
+                if not self._dll.eciClearInput(self._handle):
+                    _log.error("ECI could not clear cancelled input; native busy=%s",
+                               self._native_busy_diagnostic())
             # These are job-local NVDA commands, unlike the persistent user
             # sliders. Restore after synthesis/cancellation, never from PCM
             # callbacks while the native engine is busy.
@@ -418,4 +435,4 @@ class DirectEciEngine:
 __all__ = ["EciText", "DirectEciEngine", "EciIndex", "EciPitch", "EciProsody", "EciLanguage", "EciSynthesisError",
            "GERMAN_DIALECT", "EXPERIMENTAL_GENERIC_VOICE", "GENERIC_RATE",
            "GENERIC_PITCH", "GENERIC_VOLUME", "NATIVE_SPEED", "NATIVE_PITCH",
-           "NATIVE_INFLECTION", "NATIVE_VOLUME", "DICTIONARY", "PHRASE_PREDICTION", "PROCESS_TAGS", "PAUSE_MODE", "HEAD_SIZE", "ROUGHNESS", "BREATHINESS", "GENDER", "HIGH_RATE_PROFILE", "SAMPLE_RATE", "SAMPLE_RATES"]
+           "NATIVE_INFLECTION", "NATIVE_VOLUME", "DICTIONARY", "PHRASE_PREDICTION", "PROCESS_TAGS", "PAUSE_MODE", "HEAD_SIZE", "ROUGHNESS", "BREATHINESS", "GENDER", "HIGH_RATE_PROFILE", "GERMAN_GLIDE_OPENING", "GERMAN_GLIDE_BACKNESS", "SAMPLE_RATE", "SAMPLE_RATES"]

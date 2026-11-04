@@ -4,8 +4,8 @@
 <body>
 <!-- Generated from docs/USER-GUIDE.en.md; keep both copies in sync. -->
 <h1>Eloquence C – user guide</h1>
-<h2>Preview 1.1.0-rc25</h2>
-<p>This preview fixes additional silent or incomplete cases in English, French, Spanish and Chinese-English mixed text. Spanish amounts retain their complete number reading.</p>
+<h2>Preview 1.1.0-rc26</h2>
+<p>This preview corrects acoustic planning for English syllables without a vowel: the S in “recosp” receives frication and “tzsche” produces an audible consonant. Pronunciation still needs listening in NVDA. Two new controls let you tune the German E-I glide.</p>
 <p>The glide in German “Homepage” starts from the unchanged native Eloquence path and is shifted slightly back. The unstressed E in “Kann er” follows the earlier ReLoq planner. Word-initial “sm” and “sn” use the earlier ReLoq planner’s S excitation. Several previously silent hyphenated words now speak. Listening feedback in NVDA is needed.</p>
 <p>This preview compares consonantal R and final A with the earlier German path, shortens the N in connected nine-and forms, and retains dictionary entries in hyphenated compounds such as “ETI-Eloquence”, including inside quotation marks. A redundant post-focus pitch rise on weak verbs in statements is removed, and German questions receive a rising final contour. Listening in NVDA is needed.</p>
 <p>This preview restores the previous consonantal R form with a softer vibration, shortens the N in “siebenund”, aligns E after I with the earlier path, and uses a blended final-A colour at sentence boundaries. An overflow fix stabilizes German intonation at high pitches. Listening in NVDA is still needed.</p>
@@ -99,6 +99,7 @@
 <li><strong>Pitch, inflection and volume:</strong> base pitch, sentence melody range and output level.</li>
 <li><strong>Head size:</strong> resonance and voice character.</li>
 <li><strong>Roughness and breathiness:</strong> additional voice-source characteristics.</li>
+<li><strong>German E-I glide: opening</strong> and <strong>farther back</strong> are experimental controls for the glide in words such as “Homepage”. Both start at 50; higher values open the sound or move it farther back. They are also available in NVDA's synthesizer settings ring, so you can read the word again after each change. Set both to 50 to restore the previous setting.</li>
 <li><strong>Sample rate:</strong> 8, 11.025, 16, 22.05, 32, 44.1 or 48 kHz; the default is 11.025 kHz. Higher rates extend the frequency range and use more CPU. If speech stutters, compare with 11.025 or 22.05 kHz to help identify the cause.</li>
 </ul>
 <p><strong>Shorten pauses</strong> offers <strong>Never</strong>, <strong>Only at text end</strong> and <strong>Always</strong>. It changes automatically generated pauses. Explicitly requested pauses retain their duration.</p>

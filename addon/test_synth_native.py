@@ -160,6 +160,25 @@ def main():
                         assert run([prefix + word + suffix]) == baseline, (locale, "prosody leaked")
                         report["checks"] += 2
                     driver.voiceTags = True
+                # The two accessible settings must reach the packaged DLL in
+                # queue order and survive changing language and voice.
+                driver.language = "de_DE"
+                driver.voice = "1"
+                driver.glideOpening = 50
+                driver.glideBackness = 50
+                glide_reference = run(["Homepage"])
+                driver.glideOpening = 80
+                driver.glideBackness = 75
+                glide_tuned = run(["Homepage"])
+                assert glide_tuned != glide_reference, "glide sliders did not reach the native planner"
+                driver.language = "en_US"
+                run(["Hello."])
+                driver.language = "de_DE"
+                assert run(["Homepage"]) == glide_tuned, "language switch lost glide settings"
+                driver.glideOpening = 50
+                driver.glideBackness = 50
+                assert run(["Homepage"]) == glide_reference, "glide reset did not restore the reference"
+                report["checks"] += 3
                 # The source profile and player clock must agree in the
                 # actual packaged driver for every native output rate.
                 for code, hz in native.SAMPLE_RATES.items():
@@ -210,17 +229,34 @@ def main():
                             "Macaroni_Cheese_-_Sloppy_Joe_Dinner.vtt  Extension: vtt, "
                             "Size: 22.0 kB, Attributes: ---A--------, "
                             "Modified: 11/2/2026 6:20:58 PM")
-                for locale in ("de_DE", "en_US"):
-                    driver.language = locale
-                    for number in range(30):
-                        first.clear()
-                        api.speak([filename + " " + str(number)])
-                        if number % 5 == 0:
-                            assert first.wait(20), (locale, number, errors)
-                        driver.cancel()
-                    assert run(["The following item is readable."])
-                    assert not errors, (locale, errors)
-                    report["checks"] += 31
+                names = (filename,
+                    "20261102 - Ein_verschachtelter_Dateiname_mit_ä_ö_ü_und_Zahlen_"
+                    "1234567890_über_mehrere_Wörter_mit_Bindestrich-und_Unterstrich.txt  "
+                    "Extension: txt, Size: 22.0 kB, Attributes: ---A--------, Modified: 11/2/2026 6:20:58 PM",
+                    "20261031 - Different_long_video_title_part_one_part_two_and_part_three_"
+                    "followed_by_more_words_with_a_similar_name_but_a_different_extension.srt  "
+                    "Extension: srt, Size: 22.0 kB, Attributes: ---A--------, Modified: 11/2/2026 6:20:58 PM")
+                driver.voiceTags = False
+                for rate in ("1", "6"):
+                    driver.sampleRate = rate
+                    for locale in ("de_DE", "en_US"):
+                        driver.language = locale
+                        recovery = "The following item is readable."
+                        reference = run([recovery])
+                        for number in range(80):
+                            first.clear()
+                            # Alternate entries like navigating down and back up.
+                            row = (number // 2 + number % 2) % len(names)
+                            api.speak([names[row] + " " + str(number)])
+                            if number % 11 == 0:
+                                assert first.wait(20), (rate, locale, number, errors)
+                            else:
+                                time.sleep((number % 4) * .004)
+                            driver.cancel()
+                            if number % 20 == 19:
+                                assert run([recovery]) == reference, (rate, locale, number, 'recovery changed')
+                                assert not errors, (rate, locale, errors)
+                        report["checks"] += 84
                 # Use the actual settings manager, queue and NVDA symbol
                 # processor with a user-selected Root file. A full hyphenated
                 # key must survive normal symbol levels and both settings of

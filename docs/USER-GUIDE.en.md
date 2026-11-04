@@ -1,8 +1,8 @@
 # Eloquence C – user guide
 
-## Preview 1.1.0-rc25
+## Preview 1.1.0-rc26
 
-This preview fixes additional silent or incomplete cases in English, French, Spanish and Chinese-English mixed text. Spanish amounts retain their complete number reading.
+This preview corrects acoustic planning for English syllables without a vowel: the S in “recosp” receives frication and “tzsche” produces an audible consonant. Pronunciation still needs listening in NVDA. Two new controls let you tune the German E-I glide.
 
 The glide in German “Homepage” starts from the unchanged native Eloquence path and is shifted slightly back. The unstressed E in “Kann er” follows the earlier ReLoq planner. Word-initial “sm” and “sn” use the earlier ReLoq planner’s S excitation. Several previously silent hyphenated words now speak. Listening feedback in NVDA is needed.
 
@@ -67,6 +67,7 @@ These controls are in NVDA's Speech settings:
 - **Pitch, inflection and volume:** base pitch, sentence melody range and output level.
 - **Head size:** resonance and voice character.
 - **Roughness and breathiness:** additional voice-source characteristics.
+- **German E-I glide: opening** and **farther back:** experimental controls for the glide in words such as “Homepage”. Both start at 50; higher values open the sound or move it farther back. Use the NVDA settings ring to adjust them and read the word again. Set both to 50 to restore the previous setting.
 - **Sample rate:** 8, 11.025, 16, 22.05, 32, 44.1 or 48 kHz; the default is 11.025 kHz. Higher rates extend the frequency range and use more CPU. If speech stutters, compare with 11.025 or 22.05 kHz to help identify the cause.
 
 **Shorten pauses** offers **Never**, **Only at text end** and **Always**. It changes automatically generated pauses. Explicitly requested pauses retain their duration.

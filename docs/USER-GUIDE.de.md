@@ -1,8 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Testversion 1.1.0-rc25
+## Testversion 1.1.0-rc26
 
-Die Testversion behebt weitere stumme oder unvollständige Fälle in Englisch, Französisch, Spanisch und chinesisch-englischem Mischtext. Spanische Beträge behalten dabei ihre vollständige Zahlenaussprache.
+Die Testversion korrigiert die akustische Behandlung englischer Silben ohne Vokal: In „recosp“ wird das S angesteuert und „tzsche“ erzeugt einen hörbaren Konsonanten. Die Aussprache muss in NVDA gehört werden. Zwei neue Regler erlauben die persönliche Abstimmung des deutschen E-I-Gleitlauts.
 
 Der J-Gleitlaut in „Homepage“ geht vom unveränderten nativen Eloquence-Pfad aus und wird leicht nach hinten verschoben; bei „Kann er“ ist das unbetonte E am früheren ReLoq-Planer orientiert. Wortanfängliches „sm“ und „sn“ übernehmen die S-Anregung des früheren ReLoq-Planers. Mehrere bisher stumme Bindestrichwörter sprechen wieder. Bitte den Klang in NVDA prüfen.
 
@@ -67,6 +67,7 @@ Die folgenden Optionen befinden sich in den Sprachausgaben-Einstellungen:
 - **Stimmhöhe, Betonung und Lautstärke:** Grundtonhöhe, Umfang der Sprachmelodie und Wiedergabepegel.
 - **Kopfgröße:** verändert die Resonanzen und damit den Stimmcharakter.
 - **Rauigkeit und Behauchtheit:** zusätzliche Eigenschaften der Stimmquelle.
+- **Deutscher E-I-Gleitlaut: Öffnung** und **weiter hinten:** experimentelle Regler für den Gleitlaut in Wörtern wie „Homepage“. Beide beginnen bei 50. Höhere Werte öffnen den Laut beziehungsweise verschieben ihn nach hinten. Du kannst sie auch im NVDA-Einstellungsring verändern und das Wort danach erneut lesen; 50 stellt die bisherige Einstellung wieder her.
 - **Abtastrate:** 8, 11,025, 16, 22,05, 32, 44,1 oder 48 kHz. Voreingestellt sind 11,025 kHz. Höhere Raten erweitern die Klangbandbreite und benötigen mehr Rechenleistung. Bei Aussetzern hilft zum Eingrenzen ein Vergleich mit 11,025 oder 22,05 kHz.
 
 **Pausen verkürzen** hat drei Werte: **Nie**, **Nur am Textende** und **Immer**. Die Kürzung betrifft automatisch erzeugte Pausen. Ausdrücklich angegebene Pausen behalten ihre Dauer.
