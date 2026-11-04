@@ -77,7 +77,7 @@ static int ECICALL receive(ECIHand handle, int message, int samples, void *opaqu
 }
 
 JNIEXPORT jlong JNICALL
-Java_org_reloq_tts_preview_NativeEngine_create(JNIEnv *env, jclass type)
+Java_org_reloq_tts_NativeEngine_create(JNIEnv *env, jclass type)
 {
     (void)type;
     android_engine *engine = calloc(1, sizeof *engine);
@@ -88,7 +88,7 @@ Java_org_reloq_tts_preview_NativeEngine_create(JNIEnv *env, jclass type)
 }
 
 JNIEXPORT jboolean JNICALL
-Java_org_reloq_tts_preview_NativeEngine_synthesize(JNIEnv *env, jclass type,
+Java_org_reloq_tts_NativeEngine_synthesize(JNIEnv *env, jclass type,
     jlong pointer, jint dialect, jintArray controls, jbyteArray text, jobject sink)
 {
     (void)type;
@@ -172,7 +172,7 @@ done:
 }
 
 JNIEXPORT void JNICALL
-Java_org_reloq_tts_preview_NativeEngine_dictionary(JNIEnv *env,jclass type,jlong pointer,jstring path)
+Java_org_reloq_tts_NativeEngine_dictionary(JNIEnv *env,jclass type,jlong pointer,jstring path)
 {
     (void)type;
     android_engine *engine=(android_engine *)(intptr_t)pointer;if(!engine)return;
@@ -206,7 +206,7 @@ Java_org_reloq_tts_preview_NativeEngine_dictionary(JNIEnv *env,jclass type,jlong
 }
 
 JNIEXPORT void JNICALL
-Java_org_reloq_tts_preview_NativeEngine_stop(JNIEnv *env, jclass type, jlong pointer, jobject sink)
+Java_org_reloq_tts_NativeEngine_stop(JNIEnv *env, jclass type, jlong pointer, jobject sink)
 {
     (void)type;
     android_engine *engine = (android_engine *)(intptr_t)pointer;
@@ -218,7 +218,7 @@ Java_org_reloq_tts_preview_NativeEngine_stop(JNIEnv *env, jclass type, jlong poi
 }
 
 JNIEXPORT void JNICALL
-Java_org_reloq_tts_preview_NativeEngine_destroy(JNIEnv *env, jclass type, jlong pointer)
+Java_org_reloq_tts_NativeEngine_destroy(JNIEnv *env, jclass type, jlong pointer)
 {
     (void)env; (void)type;
     android_engine *engine = (android_engine *)(intptr_t)pointer;

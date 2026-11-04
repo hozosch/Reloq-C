@@ -1,8 +1,8 @@
-"""Direct, in-process ECI binding used by the preview and experimental NVDA driver.
+"""Direct, in-process ECI binding used by the NVDA driver.
 
 This adapter owns a native ECI handle and its PCM output buffer. It neither
 starts a helper executable nor imports NVDA. Exact mode covers a measured
-German subset; the opt-in generic mode makes a broader experimental voice.
+German subset; the native voice provides broader language coverage.
 
 German and US English pass unmodified UTF-8 and character-mode flags to
 eciAddTextUtf8. Unicode names, Greek and accent handling belong to the C core.
@@ -26,7 +26,7 @@ SAMPLE_RATE = 5
 SAMPLE_RATES = {0: 8000, 1: 11025, 3: 16000, 2: 22050, 4: 32000, 5: 44100, 6: 48000}
 ENGLISH_DIALECT = 0x00010000
 GERMAN_DIALECT = 0x00040000
-EXPERIMENTAL_GENERIC_VOICE = 0x1003
+NATIVE_VOICE_MODE = 0x1003
 GENERIC_RATE = 0x1004
 GENERIC_PITCH = 0x1005
 GENERIC_VOLUME = 0x1006
@@ -123,7 +123,7 @@ class DirectEciEngine:
     """
 
     def __init__(self, dll_path: str | Path, *, dialect: int = GERMAN_DIALECT,
-                 buffer_samples: int = 1100, experimental_generic: bool = False,
+                 buffer_samples: int = 1100, native_voice: bool = False,
                  lexicon_path: str | Path | None = None,
                  encoding: str = "cp1252",
                  _loader: Callable[[str], object] | None = None) -> None:
@@ -157,14 +157,14 @@ class DirectEciEngine:
         if not self._handle:
             raise RuntimeError(f"eciNewEx failed for dialect 0x{dialect:x}")
         try:
-            if not experimental_generic:
-                self._dll.eciSetParam(self._handle, EXPERIMENTAL_GENERIC_VOICE, 0)
-            if experimental_generic:
+            if not native_voice:
+                self._dll.eciSetParam(self._handle, NATIVE_VOICE_MODE, 0)
+            if native_voice:
                 previous = self._dll.eciSetParam(
-                    self._handle, EXPERIMENTAL_GENERIC_VOICE, 1)
+                    self._handle, NATIVE_VOICE_MODE, 1)
                 if previous not in (0, 1) or self._dll.eciGetParam(
-                        self._handle, EXPERIMENTAL_GENERIC_VOICE) != 1:
-                    raise RuntimeError("eciSetParam rejected the experimental generic voice")
+                        self._handle, NATIVE_VOICE_MODE) != 1:
+                    raise RuntimeError("eciSetParam rejected the native voice")
                 if lexicon_path is not None:
                     path = Path(lexicon_path)
                     if path.is_file():
@@ -434,6 +434,6 @@ class DirectEciEngine:
 
 
 __all__ = ["EciText", "DirectEciEngine", "EciIndex", "EciPitch", "EciProsody", "EciLanguage", "EciSynthesisError",
-           "GERMAN_DIALECT", "EXPERIMENTAL_GENERIC_VOICE", "GENERIC_RATE",
+           "GERMAN_DIALECT", "NATIVE_VOICE_MODE", "GENERIC_RATE",
            "GENERIC_PITCH", "GENERIC_VOLUME", "NATIVE_SPEED", "NATIVE_PITCH",
            "NATIVE_INFLECTION", "NATIVE_VOLUME", "DICTIONARY", "PHRASE_PREDICTION", "PROCESS_TAGS", "PAUSE_MODE", "HEAD_SIZE", "ROUGHNESS", "BREATHINESS", "GENDER", "HIGH_RATE_PROFILE", "GERMAN_GLIDE_OPENING", "GERMAN_GLIDE_BACKNESS", "GERMAN_GLIDE_SOFTNESS", "SAMPLE_RATE", "SAMPLE_RATES"]

@@ -7,7 +7,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library',type=Path,default=ROOT/'eci/libreloq_eci.so')
     args=parser.parse_args()
-    engine=DirectEciEngine(args.library.resolve(),experimental_generic=True,
+    engine=DirectEciEngine(args.library.resolve(),native_voice=True,
         lexicon_path=ROOT/'data/german_apple_observed.rlex')
     checks=0
     try:

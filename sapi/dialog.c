@@ -1,6 +1,7 @@
 /* Standard Windows controls provide keyboard and screen-reader semantics.
  * Every valid change commits immediately to this user's language settings. */
 #include "settings.h"
+#include "dictionary_diff.h"
 #include <commctrl.h>
 #include <shellapi.h>
 #include <stdio.h>
@@ -15,8 +16,13 @@ struct dictionary_task {HWND window;HMODULE module;};
 static DWORD WINAPI dictionary_worker(void *parameter)
 {
     struct dictionary_task *task=parameter;HWND window=task->window;HMODULE module=task->module;free(task);
-    HRESULT result=sapi_dictionary_download();
-    PostMessageW(window,DICTIONARY_DONE,(WPARAM)result,0);
+    struct sapi_dictionary_update update={0};
+    HRESULT result=sapi_dictionary_download_report(&update);LPARAM info=0;
+    if(SUCCEEDED(result)&&update.known){size_t count=update.compared?update.added:update.total;
+        size_t files=update.compared?update.added_files:update.total_files;
+        /* Three 8-MiB volumes cannot contain 2^24 distinct entries. */
+        info=(LPARAM)(UINT_PTR)sapi_dictionary_pack_counts(count,files,update.compared);}
+    PostMessageW(window,DICTIONARY_DONE,(WPARAM)result,info);
     InterlockedDecrement(&sapi_objects);FreeLibraryAndExitThread(module,0);
     return 0;
 }
@@ -124,7 +130,20 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
     if(message==WM_CLOSE){EndDialog(w,IDOK);return TRUE;}
     if(message==DICTIONARY_DONE){
         EnableWindow(GetDlgItem(w,DICT_SOURCE),TRUE);EnableWindow(GetDlgItem(w,DICT_DOWNLOAD),TRUE);
-        populate(w,d);SetDlgItemTextW(w,STATUS,FAILED((HRESULT)wp)?T(DICT_FAILED):T(ACTIVE));return TRUE;
+        populate(w,d);SetDlgItemTextW(w,STATUS,FAILED((HRESULT)wp)?T(DICT_FAILED):T(ACTIVE));
+        if(SUCCEEDED((HRESULT)wp)) {
+            WCHAR message[512],entry_text[256],file_text[256],number[32];size_t count,files;int compared;
+            if(!sapi_dictionary_unpack_counts((uint32_t)(UINT_PTR)lp,&count,&files,&compared))
+                swprintf(message,512,L"%ls\n%ls",T(DICT_COUNT_UNKNOWN),T(DICT_FILES_UNKNOWN));
+            else {
+                swprintf(number,32,L"%lu",(unsigned long)count);
+                swprintf(entry_text,256,compared?T(DICT_UPDATED_COUNT):T(DICT_FIRST_COUNT),number);
+                swprintf(number,32,L"%lu",(unsigned long)files);
+                swprintf(file_text,256,compared?T(DICT_FILES_NEW):T(DICT_FILES_TOTAL),number);
+                swprintf(message,512,L"%ls\n%ls",entry_text,file_text);}
+            MessageBoxW(w,message,T(TITLE),MB_OK|MB_ICONINFORMATION);
+        }
+        return TRUE;
     }
     if(message!=WM_COMMAND)return FALSE;
     int id=LOWORD(wp),notification=HIWORD(wp);

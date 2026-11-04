@@ -9,7 +9,7 @@ from test_eci_german_clock_native import phonemes, render
 
 def open_engine(path):
     e = DirectEciEngine(path.resolve(), dialect=0x40000, encoding='utf8',
-                        experimental_generic=True)
+                        native_voice=True)
     e.set_parameter(PROCESS_TAGS, 1)
     return e
 

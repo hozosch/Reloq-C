@@ -32,8 +32,8 @@ def main():
     parser.add_argument("--baseline",type=Path)
     args=parser.parse_args();checks=0
     for dialect in (0x60000,0xa0000,0x80000):
-        current=DirectEciEngine(ROOT/"eci/libreloq_eci.so",dialect=dialect,encoding="utf8",experimental_generic=True)
-        previous=DirectEciEngine(args.baseline,dialect=dialect,encoding="utf8",experimental_generic=True) if args.baseline else None
+        current=DirectEciEngine(ROOT/"eci/libreloq_eci.so",dialect=dialect,encoding="utf8",native_voice=True)
+        previous=DirectEciEngine(args.baseline,dialect=dialect,encoding="utf8",native_voice=True) if args.baseline else None
         try:
             for engine in (current,previous):
                 if engine:engine.set_parameter(NATIVE_SPEED,98)

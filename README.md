@@ -4,16 +4,10 @@ ReLoq C is a speech synthesis project that preserves the familiar character of E
 
 The shared synthesis engine is written in C. NVDA, Android ARM64 and Windows SAPI5 use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
 
-**1.1.0** updates the shared speech engine. German now uses the
-shared native sentence and acoustic path, including long sentences and
-expressions with hyphens or slashes. Native word boundaries carry voice tags,
-while caller dictionaries and the accepted male-only initial /ts/ adjustment
-remain available. The established C high-rate sound and Greek/Castilian filter
-are retained. German number transitions, “Homepage”, “veröffentlicht” and
-“samt” have further pronunciation adjustments;
-see [the current work and verification limits](docs/CURRENT-WORK.md).
-Android Direct Boot retains separate copies of active settings and dictionaries
-before first unlock.
+**1.1.1** improves SAPI responsiveness when speech is interrupted and
+restores natural pauses for dashes between words in English and other tested European languages. German character reading
+uses the noun stress for the underscore symbol. The shared engine continues
+to provide the pronunciation, sound and voice-control improvements of 1.1.
 
 ## Download and install
 
@@ -25,7 +19,7 @@ The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provide
 | Android | ARM64 `.apk` | Android 8 or later, ARM64 device |
 | Windows SAPI5 | `-setup.exe` | Installs x64 and x86 voices together on compatible Windows |
 
-Release **1.1** updates pronunciation, voice controls, dictionary selection and platform integration. Install packages over an existing installation to retain settings. Existing Android package and signing identities, and the NVDA installation identity, are retained for in-place updates. Source archives are for developers and are not installable packages. The [release notes](docs/releases/1.1.md) describe the update and its limits.
+Release **1.1.1** builds on the pronunciation, voice-control and platform changes in 1.1. SAPI can update in place. The published 1.1 NVDA and Android packages use earlier installation identities; moving from those packages requires a one-time manual transition. Subsequent packages with the new identities can update normally. Check the [release notes](docs/releases/1.1.1.md) before removing an earlier installation. Source archives are for developers and are not installable packages.
 
 ## Current features
 

@@ -47,6 +47,9 @@ class Language:
         # Old ReLoq profiles used a language-specific voice ID. OpenEVV also
         # used language:preset IDs; the language now has its own setting.
         value = str(value).rsplit(":", 1)[-1] if value is not None else None
+        # Older German profiles used a language-prefixed ID for the first preset.
+        if self.locale == "de_DE" and value is not None and value.startswith("deu_"):
+            value = "1"
         for voice in self.voices:
             if value == voice.id or value in voice.aliases:
                 return voice
@@ -61,8 +64,7 @@ def _preset(ident, name, gender, head, pitch, inflection, roughness, breathiness
     parameters = tuple(zip((GENDER, HEAD_SIZE, NATIVE_PITCH, NATIVE_INFLECTION,
                             ROUGHNESS, BREATHINESS, NATIVE_VOLUME),
                            (gender, head, pitch, inflection, roughness, breathiness, volume)))
-    return Voice(str(ident), name, parameters,
-                 ("deu_experimental",) if ident == 1 else ())
+    return Voice(str(ident), name, parameters)
 
 
 GERMAN = Language(
@@ -192,7 +194,7 @@ class LanguageEngine:
         if created:
             engine = self._factory(
                 self._dll, dialect=profile.id, encoding=profile.encoding,
-                experimental_generic=True,
+                native_voice=True,
             )
             self._engines[language] = engine
             self._engine_parameters[language] = {}

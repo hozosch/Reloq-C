@@ -1,5 +1,9 @@
 # Eloquence C – Bedienungsanleitung
 
+## Version 1.1.1
+
+Der Sprachkern berücksichtigt Gedankenstriche in den getesteten europäischen Sprachen auch ohne Leerzeichen. Bei der ausdrücklichen Zeichenlesung wird „Unterstrich“ als Nomen betont.
+
 ## Version 1.1.0
 
 Der deutsche E-I-Gleitlaut ist auf Öffnung 85, Rücklage 45 und Weichheit 45 abgestimmt. Die deutsche Satz- und Lautplanung verbessert unter anderem Bindestrichwörter, Zahlwörter und Fragemelodie. In englischer Analyse werden bei „recosp“ der vollständige Stamm und bei „tzsche“ der Schlussvokal erhalten.
@@ -74,6 +78,8 @@ Wähle zuerst Eloquence C als aktive Sprachausgabe. Öffne dann **NVDA-Einstellu
 Mit **Gemeinschaftswörterbücher für die Aussprache verwenden** ergänzt du Deutsch und US-Englisch um Einträge aus [eigencrow/IBMTTSDictionaries](https://github.com/eigencrow/IBMTTSDictionaries). Die Option ist zunächst ausgeschaltet. **Wörterbücher jetzt aktualisieren** prüft den aktuellen Zweig `master`; eine neue vollständige Version wird im Hintergrund übernommen. Für diese Aktualisierung wird Internet benötigt.
 
 Unter **Wörterbuchquelle** kannst du zusätzlich **Alternative IBM-TTS-Wörterbücher** auswählen. Diese Quelle enthält derzeit US-englische und kastilisch-spanische Einträge, aber kein deutsches Wörterbuch. Beim ersten Gebrauch wird sie im Hintergrund heruntergeladen; eigene Dateien behalten Vorrang.
+
+Nach einer Aktualisierung erscheint ein Dialog mit der Zahl neuer, unterschiedlicher Einträge und neuer Wörterbuchdateien. Änderungen oder Entfernungen zählen nicht als Zugänge. Beim ersten Download werden die Gesamtzahlen angezeigt; falls der vorherige Stand nicht vergleichbar ist, weist der Dialog darauf hin. Online-Updates übernehmen derzeit einen festen Satz unterstützter Dateinamen; andere neu hinzugefügte Dateien werden nicht automatisch heruntergeladen.
 
 Mit **Datei hinzufügen** kannst du eigene Dic-Dateien auswählen und ihnen Sprache und Wörterbuchtyp zuordnen. Die Dateien dürfen beliebig heißen und bleiben an ihrem bisherigen Ort. Spätere Dateien in der Liste haben Vorrang. **OK** oder **Übernehmen** speichert die Auswahl.
 

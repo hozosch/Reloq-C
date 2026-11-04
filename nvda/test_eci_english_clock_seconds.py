@@ -29,7 +29,7 @@ def main():
     checks = 0
     for language in (0x10000, 0x10001):
         engine = DirectEciEngine(args.library.resolve(), dialect=language,
-                                encoding='utf8', experimental_generic=True)
+                                encoding='utf8', native_voice=True)
         try:
             for rate in (1, 3, 6):
                 engine.set_parameter(SAMPLE_RATE, rate)

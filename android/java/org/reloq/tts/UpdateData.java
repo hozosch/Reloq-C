@@ -1,4 +1,4 @@
-package org.reloq.tts.preview;
+package org.reloq.tts;
 
 import java.net.URI;
 import java.util.regex.*;
@@ -7,7 +7,7 @@ import java.util.regex.*;
 final class UpdateData {
     static final String RELEASES="https://api.github.com/repos/hozosch/Reloq-C/releases?per_page=30";
     static final long LIMIT=128L*1024*1024;
-    private static final Pattern NAME=Pattern.compile("reloq-c-android-arm64-((\\d+)\\.(\\d+)\\.(\\d+)(?:-preview\\d+)?)\\.apk");
+    private static final Pattern NAME=Pattern.compile("reloq-c-android-arm64-((\\d+)\\.(\\d+)\\.(\\d+))\\.apk");
     static final class Package {
         final String name,version,url,sha256;
         final long code,size;
@@ -19,9 +19,9 @@ final class UpdateData {
         long major=Long.parseLong(m.group(2)),minor=Long.parseLong(m.group(3)),patch=Long.parseLong(m.group(4));
         if(major>2000||minor>=100||patch>=10000)throw new IllegalArgumentException("Invalid package version");
         long code=major*1000000+minor*10000+patch;
-        // 1.1 previews used codes up to 10900xx, higher than the original
+        // Earlier 1.1 builds used codes up to 10900xx, higher than the original
         // 1010000 formula for 1.1.0. Start a new code epoch for 1.1+ so the
-        // stable APK upgrades previews and future versions remain ordered.
+        // stable versions and future versions remain ordered.
         if(major>1 || (major==1 && minor>=1))code+=10000000;
         if(code<=installed)return null;
         URI uri=URI.create(url);

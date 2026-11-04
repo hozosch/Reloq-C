@@ -6,7 +6,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Eloquence C 1.1.0\n"
+"Project-Id-Version: Eloquence C 1.1.1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-11-04 15:31+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -127,7 +127,7 @@ msgstr ""
 
 #. Translators: Add-on name shown in NVDA's add-on manager.
 #: addon/build_translations.py:30
-msgid "Eloquence C: fourteen language variants"
+msgid "Eloquence C 1.1.1: fourteen language variants"
 msgstr ""
 
 #. Translators: Add-on description; this refers to the spoken language.
@@ -302,4 +302,22 @@ msgstr ""
 
 #: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:235
 msgid "Wait for the dictionary update to finish."
+msgstr ""
+
+msgid "Dictionary update complete. The number of new entries could not be determined."
+msgstr ""
+
+msgid "Dictionary loaded for the first time. Entries: %s"
+msgstr ""
+
+msgid "Dictionary update complete. New entries: %s"
+msgstr ""
+
+msgid "The number of new dictionary files could not be determined."
+msgstr ""
+
+msgid "Dictionary files in total: %s"
+msgstr ""
+
+msgid "New dictionary files: %s"
 msgstr ""

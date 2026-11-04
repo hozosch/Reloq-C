@@ -55,7 +55,7 @@ def worker(library):
     speech = []
     for language in LANGUAGES.values():
         engine = DirectEciEngine(library, dialect=language.id, encoding='utf8',
-                                 experimental_generic=True)
+                                 native_voice=True)
         try:
             engine.set_parameter(NATIVE_SPEED, 98)
             text = TEXTS[language.id]
@@ -78,7 +78,7 @@ def paired_timings(baseline, library):
     timings = [[], []]
     for language in LANGUAGES.values():
         engines = [DirectEciEngine(path, dialect=language.id, encoding='utf8',
-            experimental_generic=True) for path in (baseline, library)]
+            native_voice=True) for path in (baseline, library)]
         try:
             for engine in engines:
                 engine.set_parameter(NATIVE_SPEED, 98)

@@ -1,4 +1,4 @@
-ReLoq C 1.0 — unified SAPI5 Windows installer
+ReLoq C 1.1.1 — unified SAPI5 Windows installer
 
 Installation
 ------------
@@ -41,7 +41,7 @@ or the application upsamples the 11,025-Hz signal. ReLoq has no extra resampler.
 Only formats actually advertised by this voice are accepted by Speak; an
 application's target cannot silently select a wider acoustic profile.
 Existing clients must renegotiate, reopen the voice or restart to adopt a changed
-Eloquence synthesis rate. Preview-1 migration uses
+Eloquence synthesis rate. Legacy rate migration uses
 the saved German rate, then US English, then the first configured language.
 The default is 11,025 Hz. Reset preserves the common sample rate.
 
@@ -56,22 +56,28 @@ spelling fragments use the shared C engine.
 
 Responsiveness and dictionaries
 -------------------------------
-The initialized language runs directly on SAPI's output thread, following the
-SAPI5IBMTTS transport approach. The first native audio callback is written
-immediately. Following callbacks are collected in one live 4,096-sample buffer
-and flushed at events and fragment boundaries. There is no second producer
-thread or semaphore queue. This reduces small writes to SAPI's normal format
-converter without changing samples or native synthesis rate.
+The initialized language prepares speech on a worker while SAPI delivers it
+through a bounded queue. A short announcement can therefore finish rendering
+while it is being played, making interruptions more responsive. For the first
+output, the adapter collects approximately 60 ms of source audio in one block.
+Additional short blocks during the first 500 ms help clients that apply speed-up;
+later blocks contain up to 4,096 samples. Event and fragment boundaries are
+flushed at their exact positions. The samples and native synthesis rate are unchanged.
 
 Unchanged dictionary paths retain initialized language data. Small metadata
 checks detect edits, replacement, creation and deletion of native .dic files
-between utterances. No text result or synthesized speech is cached. Abort is
-polled during rendering and delivery.
+between utterances. No text result or synthesized speech is cached. Aborted
+audio is discarded, and the next announcement is generated afresh.
 
 Enable dictionaries and choose either the bundled IBM TTS Dictionaries or
 Alternative IBM TTS Dictionaries in the settings window. The alternative is
 downloaded and verified in the background and can be updated there. The
 alternative source currently provides US English and Castilian Spanish files.
+A successful alternative dictionary download displays a dialog with the
+numbers of new distinct entries and dictionary files. Changes and removals do
+not count as additions. The first download shows both totals; if an earlier
+copy cannot be compared, the dialog reports that the counts are unavailable.
+Online updates currently retrieve the three supported alternative filenames.
 A custom dictionary folder overrides the selected source and stays unchanged.
 SAPI's lexicon editor is not implemented.
 

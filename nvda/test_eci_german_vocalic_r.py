@@ -31,7 +31,7 @@ def main():
     args = parser.parse_args()
     paths = [args.library] + ([args.baseline] if args.baseline else [])
     engines = [DirectEciEngine(path.resolve(), dialect=0x40000,
-                encoding='utf8', experimental_generic=True) for path in paths]
+                encoding='utf8', native_voice=True) for path in paths]
     checks = 0
     try:
         for engine in engines:

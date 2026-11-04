@@ -1,4 +1,4 @@
-package org.reloq.tts.preview;
+package org.reloq.tts;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

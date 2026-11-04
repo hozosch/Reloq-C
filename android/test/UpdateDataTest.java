@@ -1,4 +1,4 @@
-package org.reloq.tts.preview;
+package org.reloq.tts;
 
 public final class UpdateDataTest {
     private static int checks;
@@ -10,25 +10,25 @@ public final class UpdateDataTest {
     public static void main(String[] args) {
         String hash="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
         String digest="sha256:"+hash.toUpperCase(java.util.Locale.ROOT);
-        String name="reloq-c-android-arm64-0.2.197-preview9.apk";
+        String name="reloq-c-android-arm64-0.2.197.apk";
         String url="https://github.com/hozosch/Reloq-C/releases/download/v0.2.197/"+name;
         UpdateData.Package data=UpdateData.candidate(name,url,18000000,digest,20196);
-        require(data!=null&&data.code==20197&&data.version.equals("0.2.197-preview9"));
+        require(data!=null&&data.code==20197&&data.version.equals("0.2.197"));
         require(data.name.equals(name)&&data.url.equals(url)&&data.size==18000000&&data.sha256.equals(hash));
         require(UpdateData.candidate(name,url,18000000,digest,20197)==null);
         require(UpdateData.candidate(name,url,18000000,digest,20198)==null);
         require(UpdateData.candidate("other.apk",url,18000000,digest,0)==null);
         require(UpdateData.candidate("reloq-c-android-x86-0.2.198.apk",url,18000000,digest,0)==null);
-        String next="reloq-c-android-arm64-0.2.198-preview10.apk";
+        String next="reloq-c-android-arm64-0.2.198.apk";
         require(UpdateData.candidate(next,"https://github.com/hozosch/Reloq-C/releases/download/v0.2.198/"+next,
             18000000,digest,20197).code==20198);
-        String latest="reloq-c-android-arm64-0.2.199-preview11.apk";
+        String latest="reloq-c-android-arm64-0.2.199.apk";
         require(UpdateData.candidate(latest,"https://github.com/hozosch/Reloq-C/releases/download/v0.2.199/"+latest,
             18000000,digest,20198).code==20199);
-        String compact="reloq-c-android-arm64-0.2.200-preview12.apk";
+        String compact="reloq-c-android-arm64-0.2.200.apk";
         require(UpdateData.candidate(compact,"https://github.com/hozosch/Reloq-C/releases/download/v0.2.200/"+compact,
             18000000,digest,20199).code==20200);
-        String sapi="reloq-c-android-arm64-0.2.201-preview13.apk";
+        String sapi="reloq-c-android-arm64-0.2.201.apk";
         require(UpdateData.candidate(sapi,"https://github.com/hozosch/Reloq-C/releases/download/v0.2.201/"+sapi,
             18000000,digest,20200).code==20201);
         String official="reloq-c-android-arm64-1.0.0.apk";

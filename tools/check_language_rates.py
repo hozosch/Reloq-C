@@ -17,7 +17,7 @@ def measure(library):
     rows=[]
     for language in LANGUAGES.values():
         if language.id in (0x60000,0x80000,0xa0000):continue
-        engine=DirectEciEngine(library,dialect=language.id,encoding='utf8',experimental_generic=True)
+        engine=DirectEciEngine(library,dialect=language.id,encoding='utf8',native_voice=True)
         try:
             engine.set_parameter(PROCESS_TAGS,1)
             engine.set_parameter(NATIVE_INFLECTION,0)
@@ -35,7 +35,7 @@ def measure(library):
         finally:engine.close()
     reference=[]
     for dialect,percent in ((0x40000,38),(0x20000,18),(0x120000,18)):
-        engine=DirectEciEngine(library,dialect=dialect,encoding='utf8',experimental_generic=True)
+        engine=DirectEciEngine(library,dialect=dialect,encoding='utf8',native_voice=True)
         try:
             speed=40+(116*percent+50)//100
             for parameter,value in ((PROCESS_TAGS,1),(NATIVE_INFLECTION,0),(NATIVE_SPEED,speed),(PAUSE_MODE,2)):

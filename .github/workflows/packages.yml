@@ -26,7 +26,7 @@ jobs:
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write('stable=' + str(stable).lower() + '\n')
           if not stable:
-              print('Prerelease: use the NVDA hearing-preview workflow; stable multi-platform packaging waits for the final version.')
+              print('For prerelease packages, use the NVDA audio-verification workflow; multi-platform packaging waits for the final version.')
           PY
   dictionaries:
     needs: version
@@ -60,8 +60,8 @@ jobs:
       - name: Check official-release update selection
         run: |
           python3 android/test_versioning.py
-          javac -d /tmp/reloq-update-test android/java/org/reloq/tts/preview/UpdateData.java android/test/UpdateDataTest.java
-          java -cp /tmp/reloq-update-test org.reloq.tts.preview.UpdateDataTest
+          javac -d /tmp/reloq-update-test android/java/org/reloq/tts/UpdateData.java android/test/UpdateDataTest.java
+          java -cp /tmp/reloq-update-test org.reloq.tts.UpdateDataTest
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
@@ -72,11 +72,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release download --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-android-arm64-*.apk' --dir previous
-      - name: Build and verify ARM64 preview APK
+      - name: Build and verify ARM64 APK
         run: |
           previous_apk=(previous/*.apk)
           test "${#previous_apk[@]}" -eq 1
-          python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --upgrade-from "${previous_apk[0]}" --jobs 2
+          python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --previous-package "${previous_apk[0]}" --jobs 2
       - uses: actions/upload-artifact@v4
         with:
           name: android-apk

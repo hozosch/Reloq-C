@@ -22,7 +22,7 @@ ROOT=Path(__file__).resolve().parents[1]
 def check_zero_groups():
     """A numeric final group must sound like its complete written words."""
     e=DirectEciEngine(ROOT/'eci/libreloq_eci.so',dialect=US_ENGLISH.id,
-        experimental_generic=True,encoding='utf-8')
+        native_voice=True,encoding='utf-8')
     e.set_parameter(NATIVE_SPEED,98)
     units=['','one','two','three','four','five','six','seven','eight','nine']
     tens=['','ten','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety']
@@ -64,7 +64,7 @@ def main():
     assert LANGUAGES[US_ENGLISH.id].locale=='en_US'
     assert normalize_generic_text('café ΩЖ')=='cafe  omega  '
     assert 'k' in normalize_spelling_text('Ж')
-    e=DirectEciEngine(ROOT/'eci/libreloq_eci.so', dialect=US_ENGLISH.id, experimental_generic=True)
+    e=DirectEciEngine(ROOT/'eci/libreloq_eci.so', dialect=US_ENGLISH.id, native_voice=True)
     for k,v in US_ENGLISH.voices[0].parameters:e.set_parameter(k,v)
     e.set_parameter(NATIVE_SPEED,98)
     def run(parts):

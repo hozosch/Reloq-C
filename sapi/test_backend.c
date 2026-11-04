@@ -3,6 +3,7 @@
 #include "settings.h"
 #include "format.h"
 #include <assert.h>
+#include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +11,8 @@
 #include "catalogue.inc"
 struct site {
     ISpTTSEngineSite iface;short *pcm;size_t count,capacity,abort_after;
+    size_t playback_threshold,first_playable_samples,first_write_samples,batched_after;
+    int post_start_writes;
     SPEVENT events[4096];size_t event_count;ULONG partial;int fail_after,writes;
     LONG speed;USHORT volume;struct sapi_backend *nested;int nested_done;
     ULONGLONG interest;
@@ -37,11 +40,16 @@ static HRESULT write_pcm(ISpTTSEngineSite *p,const void *data,ULONG bytes,ULONG 
         SPVTEXTFRAG f=text(L"This priority message must not deadlock.",0);WAVEFORMATEX out=format(11025);
         assert(SUCCEEDED(sapi_backend_speak(s->nested,s->settings,0,&out,&f,&child.iface)));assert(child.count>0);free(child.pcm);}
     ++s->writes;
+    if(s->batched_after&&s->count>=s->batched_after)++s->post_start_writes;
     if(s->fail_after&&s->writes>=s->fail_after){*written=0;return E_FAIL;}
     if(s->partial&&bytes>s->partial)bytes=s->partial;*written=bytes;
-    size_t count=bytes/2;if(s->count+count>s->capacity){s->capacity=(s->count+count)*2;
+    size_t count=bytes/2;if(!s->first_write_samples)s->first_write_samples=count;
+    if(s->count+count>s->capacity){s->capacity=(s->count+count)*2;
         void *mem=realloc(s->pcm,s->capacity*sizeof *s->pcm);assert(mem);s->pcm=mem;}
-    memcpy(s->pcm+s->count,data,bytes);s->count+=count;return S_OK;
+    memcpy(s->pcm+s->count,data,bytes);s->count+=count;
+    if(s->playback_threshold&&!s->first_playable_samples&&s->count>=s->playback_threshold)
+        s->first_playable_samples=s->count;
+    return S_OK;
 }
 static HRESULT skip(ISpTTSEngineSite *p,SPVSKIPTYPE *type,LONG *n){(void)p;*type=SPVST_SENTENCE;*n=1;return S_OK;}
 static HRESULT complete(ISpTTSEngineSite *p,LONG n){(void)p;(void)n;return S_OK;}
@@ -55,7 +63,10 @@ static void same(const struct site *a,const struct site *b)
 int main(int argc,char **argv)
 {
     assert(argc==2);sapi_test_library=argv[1];struct sapi_settings s=settings();unsigned cases=0;
-    struct {int language,rate;size_t samples;uint64_t hash;} comparisons[98];unsigned comparison_count=0,format_changes=0;
+    struct {int language,rate;size_t samples;uint64_t hash;unsigned event_count;
+        ULONG event_offsets[128];uint64_t event_audio_offsets[128];} comparisons[98];
+    unsigned comparison_count=0,format_changes=0;
+    size_t long_marked=0,long_plain=0,long_events=0;uint64_t long_marked_hash=0,long_plain_hash=0,long_event_hash=0;
     for(size_t i=0;i<sizeof sapi_languages/sizeof *sapi_languages;++i){
         struct sapi_backend *b=sapi_backend_new(sapi_languages[i].dialect);assert(b);
         for(unsigned r=0;r<7;++r){struct site output=site_new();SPVTEXTFRAG f=text(sapi_languages[i].sample,0);
@@ -65,7 +76,16 @@ int main(int argc,char **argv)
             assert(output.count>100);assert(output.event_count>0);
             comparisons[comparison_count].language=sapi_languages[i].dialect;
             comparisons[comparison_count].rate=(int)r;comparisons[comparison_count].samples=output.count;
-            comparisons[comparison_count++].hash=hash(output.pcm,output.count);
+            comparisons[comparison_count].hash=hash(output.pcm,output.count);
+            assert(output.event_count<=128);
+            comparisons[comparison_count].event_count=(unsigned)output.event_count;
+            for(size_t k=0;k<output.event_count;++k){
+                assert(output.events[k].eEventId==SPEI_WORD_BOUNDARY||output.events[k].eEventId==SPEI_SENTENCE_BOUNDARY);
+                assert((uint64_t)output.events[k].lParam<=f.ulTextLen);
+                comparisons[comparison_count].event_offsets[k]=(ULONG)output.events[k].lParam;
+                comparisons[comparison_count].event_audio_offsets[k]=output.events[k].ullAudioStreamOffset;
+            }
+            ++comparison_count;
             free(output.pcm);++cases;
         }
         if(sapi_languages[i].dialect==0x10000||sapi_languages[i].dialect==0x40000)
@@ -92,13 +112,107 @@ int main(int argc,char **argv)
     SPVTEXTFRAG a=text(L"One comp",0),c=text(L"uter. The next sentence works.",8);a.pNext=&c;
     struct site fragmented=site_new();fragmented.partial=38;
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&a,&fragmented.iface)));same(&base,&fragmented);free(fragmented.pcm);++cases;
+#ifndef RELOQ_SAPI_REFERENCE_BASELINE
+    /* Japanese text must not gain pauses merely because a host requests
+     * events or divides the same input into many SAPI text fragments. */
+    {
+        static const WCHAR *const phrases[]={
+            L"これは音声のテストです。Windowsとcomputer。",
+            L"こんにちは、今日は良い天気です。次の文章です。",
+            L"NVDAの音声テストです。私は日本語を話します。",
+            L"こんにちは 世界 こんにちは 世界。",
+            L"Windows 11 を使います。"};
+        static const unsigned rates[]={11025,16000,48000};
+        char original_locale[128];const char *locale=setlocale(LC_CTYPE,NULL);
+        assert(locale&&strlen(locale)<sizeof original_locale);strcpy(original_locale,locale);
+        assert(setlocale(LC_CTYPE,"C.UTF-8"));
+        struct sapi_backend *ja=sapi_backend_new(0x80000);assert(ja);
+        for(unsigned pause=0;pause<3;++pause)for(unsigned r=0;r<3;++r){
+            s.pauses=pause;WAVEFORMATEX fmt=format(rates[r]);
+            for(size_t k=0;k<sizeof phrases/sizeof *phrases;++k){
+                const WCHAR *value=phrases[k];size_t length=wcslen(value);
+                SPVTEXTFRAG whole=text(value,0),*pieces=calloc(length,sizeof *pieces);assert(pieces);
+                for(size_t i=0;i<length;++i){pieces[i]=text(value+i,(ULONG)i);pieces[i].ulTextLen=1;
+                    pieces[i].pNext=i+1<length?pieces+i+1:NULL;}
+                struct site marked=site_new(),plain=site_new(),split=site_new();plain.interest=0;
+                assert(SUCCEEDED(sapi_backend_speak(ja,&s,0,&fmt,&whole,&marked.iface)));
+                assert(SUCCEEDED(sapi_backend_speak(ja,&s,0,&fmt,&whole,&plain.iface)));
+                assert(SUCCEEDED(sapi_backend_speak(ja,&s,0,&fmt,pieces,&split.iface)));
+                assert(marked.count&&marked.event_count&&!plain.event_count);
+                if(marked.count!=plain.count||marked.count!=split.count)
+                    fprintf(stderr,"Japanese pause=%u rate=%u text=%zu: marked=%zu plain=%zu split=%zu\n",
+                        pause,rates[r],k,marked.count,plain.count,split.count);
+                same(&marked,&plain);same(&marked,&split);
+                free(pieces);free(marked.pcm);free(plain.pcm);free(split.pcm);++cases;
+            }
+        }
+        sapi_backend_delete(ja);s.pauses=0;assert(setlocale(LC_CTYPE,original_locale));
+    }
+#endif
     struct site uninterested=site_new();uninterested.interest=0;
+    uninterested.batched_after=(out.nSamplesPerSec*500+999)/1000;
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&uninterested.iface)));
     assert(!uninterested.event_count);same(&base,&uninterested);
-    /* A plain stream is delivered in large blocks after its immediate start,
-     * rather than one small Write per native callback. */
-    assert(uninterested.writes>1&&uninterested.writes<=(int)(uninterested.count/4096)+2);
+    /* Delivery stays batched after the short startup phase. */
+    assert(uninterested.writes>1);
+    size_t later=uninterested.count>uninterested.batched_after?
+        uninterested.count-uninterested.batched_after:0;
+    assert(uninterested.post_start_writes<=(int)(later/4096)+2);
     free(uninterested.pcm);++cases;
+    /* Model a consumer that waits for 50 ms of samples before playback,
+     * including NVDA's SAPI audio stream. With no intervening events, one
+     * short first write should cross that threshold at every native rate. */
+    static const unsigned startup_rates[]={8000,11025,16000,22050,32000,44100,48000};
+    for(size_t k=0;k<sizeof startup_rates/sizeof *startup_rates;++k){
+        WAVEFORMATEX early_format=format(startup_rates[k]);
+        struct site early=site_new();early.interest=0;
+        early.playback_threshold=(startup_rates[k]+19)/20;
+        SPVTEXTFRAG early_text=text(L"A clear sentence starts playing promptly.",0);
+        assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&early_format,&early_text,&early.iface)));
+        assert(early.first_playable_samples>=early.playback_threshold);
+#ifndef RELOQ_SAPI_REFERENCE_BASELINE
+        size_t first_block=(startup_rates[k]*60+999)/1000;
+        assert(early.first_write_samples==first_block);
+        assert(early.first_playable_samples==first_block);
+        struct site boosted=site_new();boosted.interest=0;
+        boosted.playback_threshold=(startup_rates[k]*300+999)/1000;
+        assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&early_format,&early_text,&boosted.iface)));
+        size_t early_block=(startup_rates[k]*80+999)/1000;
+        assert(boosted.first_playable_samples>=boosted.playback_threshold);
+        assert(boosted.first_playable_samples<boosted.playback_threshold+early_block);
+        free(boosted.pcm);++cases;
+#endif
+        free(early.pcm);++cases;
+    }
+    /* Capture long-text PCM and ordered events with and without interest.
+     * A separate baseline comparison verifies that each remains unchanged. */
+    {
+        WCHAR long_text[4096]=L"";
+        for(unsigned i=0;i<50;++i)wcscat(long_text,L"Dies ist ein langer Text mit mehreren Worten, ");
+        wcscat(long_text,L"Ende.");
+        SPVTEXTFRAG long_fragment=text(long_text,0);
+        struct sapi_backend *german=sapi_backend_new(0x40000);assert(german);
+        struct site marked=site_new(),plain=site_new();plain.interest=0;
+        assert(SUCCEEDED(sapi_backend_speak(german,&s,0,&out,&long_fragment,&marked.iface)));
+        assert(SUCCEEDED(sapi_backend_speak(german,&s,0,&out,&long_fragment,&plain.iface)));
+        assert(marked.count>0&&plain.count>0&&!plain.event_count);
+        long_marked=marked.count;long_plain=plain.count;long_events=marked.event_count;
+        long_marked_hash=hash(marked.pcm,marked.count);long_plain_hash=hash(plain.pcm,plain.count);
+        long_event_hash=1469598103934665603ULL;
+        for(size_t i=0;i<marked.event_count;++i){const SPEVENT *e=&marked.events[i];
+            long_event_hash=(long_event_hash^e->eEventId)*1099511628211ULL;
+            long_event_hash=(long_event_hash^e->wParam)*1099511628211ULL;
+            long_event_hash=(long_event_hash^(uint64_t)e->lParam)*1099511628211ULL;
+            long_event_hash=(long_event_hash^e->ullAudioStreamOffset)*1099511628211ULL;}
+        size_t words=0;ULONG previous=0;
+        for(size_t i=0;i<marked.event_count;++i)if(marked.events[i].eEventId==SPEI_WORD_BOUNDARY){
+            ULONG position=(ULONG)marked.events[i].lParam;
+            assert(marked.events[i].wParam>0&&position<long_fragment.ulTextLen);
+            assert(!words||position>=previous);previous=position;++words;
+        }
+        assert(words>300);
+        free(marked.pcm);free(plain.pcm);sapi_backend_delete(german);++cases;
+    }
     struct site half=site_new();half.volume=50;
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&half.iface)));assert(half.count==base.count);
     for(size_t i=0;i<base.count;++i)assert(half.pcm[i]==base.pcm[i]/2);free(half.pcm);++cases;
@@ -132,10 +246,20 @@ int main(int argc,char **argv)
     SPVTEXTFRAG spell=text(L"AB",5);spell.State.eAction=SPVA_SpellOut;struct site letters=site_new();
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&spell,&letters.iface)));assert(letters.count>0);free(letters.pcm);++cases;
     assert(sapi_test_dictionary_calls==0);++cases;
-    printf("{\"backend_cases\":%u,\"format_negotiation_cases\":%u,\"host_tests_convert_audio\":false,\"languages\":14,\"rates\":7,\"reference_samples\":%zu,\"reference_hash\":\"%016llx\",\"profile_names\":8,\"last_profile\":\"%ls\",\"comparisons\":[",
-        cases,format_changes,base.count,(unsigned long long)hash(base.pcm,base.count),sapi_profiles[7]);
-    for(unsigned i=0;i<comparison_count;++i)printf("%s{\"language\":%d,\"rate\":%d,\"samples\":%zu,\"hash\":\"%016llx\"}",
-        i?",":"",comparisons[i].language,comparisons[i].rate,comparisons[i].samples,(unsigned long long)comparisons[i].hash);
+    printf("{\"backend_cases\":%u,\"format_negotiation_cases\":%u,\"host_tests_convert_audio\":false,\"languages\":14,\"rates\":7,\"reference_samples\":%zu,\"reference_hash\":\"%016llx\",\"profile_names\":8,\"last_profile\":\"%ls\","
+        "\"long_german\":{\"marked_samples\":%zu,\"marked_hash\":\"%016llx\",\"plain_samples\":%zu,\"plain_hash\":\"%016llx\",\"events\":%zu,\"event_hash\":\"%016llx\"},\"comparisons\":[",
+        cases,format_changes,base.count,(unsigned long long)hash(base.pcm,base.count),sapi_profiles[7],
+        long_marked,(unsigned long long)long_marked_hash,long_plain,(unsigned long long)long_plain_hash,
+        long_events,(unsigned long long)long_event_hash);
+    for(unsigned i=0;i<comparison_count;++i){
+        printf("%s{\"language\":%d,\"rate\":%d,\"samples\":%zu,\"hash\":\"%016llx\",\"event_offsets\":[",
+            i?",":"",comparisons[i].language,comparisons[i].rate,comparisons[i].samples,(unsigned long long)comparisons[i].hash);
+        for(unsigned j=0;j<comparisons[i].event_count;++j)printf("%s%u",j?",":"",(unsigned)comparisons[i].event_offsets[j]);
+        fputs("],\"event_audio_offsets\":[",stdout);
+        for(unsigned j=0;j<comparisons[i].event_count;++j)
+            printf("%s%llu",j?",":"",(unsigned long long)comparisons[i].event_audio_offsets[j]);
+        fputs("]}",stdout);
+    }
     puts("]}");
     (void)sapi_anatomy;free(base.pcm);sapi_backend_delete(b);return 0;
 }

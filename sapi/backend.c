@@ -1,6 +1,5 @@
-/* SAPI owns the output thread and its format converter. Keep the initialized
- * language on that call path, as SAPI5IBMTTS does, without another producer
- * thread. One small live buffer batches writes after the immediate start. */
+/* A bounded output queue lets the initialized language run ahead while the
+ * SAPI client waits for playback. The caller alone owns the SAPI site. */
 #include "settings.h"
 #define RELOQ_ECI_STATIC
 #include "reloq_eci.h"
@@ -45,7 +44,7 @@ static BOOL CALLBACK load_core(PINIT_ONCE once,PVOID unused,PVOID *context)
     LOAD(stop,"eciStop");LOAD(clear,"eciClearInput");LOAD(dictionary,"eciSetDictionaryPath");
 #undef LOAD
     /* The initialized provider owns process/thread-local lookup state. Keep
-     * its adapter mapped until process exit; per-voice handles still close. */
+     * its adapter mapped until process exit; per-voice workers still close. */
     HMODULE pinned=NULL;
     if(!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN|GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
         (LPCWSTR)&core_once,&pinned))goto fail;
@@ -53,16 +52,17 @@ static BOOL CALLBACK load_core(PINIT_ONCE once,PVOID unused,PVOID *context)
     return TRUE;
 fail:FreeLibrary(core.module);memset(&core,0,sizeof core);return FALSE;
 }
+enum {PACKET_CAPACITY=256};
+struct packet {int type;ULONG bytes,volume;SPEVENT event;HRESULT result;short pcm[512];};
 struct job {
     struct sapi_settings settings;const SPVTEXTFRAG *fragments;
     DWORD flags,rate;LONG speed;USHORT volume;ULONGLONG interest;
 };
 struct bookmark {struct bookmark *next;WCHAR text[];};
 struct sapi_backend {
-    volatile LONG cancel,busy;struct job job;
+    HANDLE thread,start,room,ready;volatile LONG cancel,exit,busy;
+    unsigned put,get;struct packet packets[PACKET_CAPACITY];struct job job;
     int dialect;ULONG fragment_volume;ECIHand handle;short pcm[512];
-    ISpTTSEngineSite *site;HRESULT result;ULONGLONG audio_offset;
-    short pending[4096];size_t pending_count;int started;
     SPEVENT *events;size_t event_count,event_capacity;
     struct bookmark *bookmarks;
     int dictionary_ready;WCHAR dictionary_path[2048];
@@ -71,71 +71,93 @@ struct sapi_backend {
 static void cancel_backend(struct sapi_backend *b)
 {
     if(InterlockedExchange(&b->cancel,1))return;
-    if(b->handle)core.stop(b->handle);
+    /* The owner stops inside its next callback; a completed render needs no stop. */
 }
-static int actions(struct sapi_backend *b)
+static int put(struct sapi_backend *b,const struct packet *packet)
 {
-    if(InterlockedCompareExchange(&b->cancel,0,0))return 0;
-    DWORD flags=b->site->lpVtbl->GetActions(b->site);
-    if(flags&SPVES_SKIP){SPVSKIPTYPE kind;LONG count=0;
-        if(SUCCEEDED(b->site->lpVtbl->GetSkipInfo(b->site,&kind,&count)))b->site->lpVtbl->CompleteSkip(b->site,0);
-        cancel_backend(b);}
-    if(flags&SPVES_ABORT)cancel_backend(b);
-    if(flags&SPVES_VOLUME){USHORT volume=b->job.volume;
-        if(SUCCEEDED(b->site->lpVtbl->GetVolume(b->site,&volume)))b->job.volume=volume>100?100:volume;}
-    return !InterlockedCompareExchange(&b->cancel,0,0);
-}
-static int write_pcm(struct sapi_backend *b,short *pcm,size_t samples)
-{
-    if(!samples)return 1;
-    if(!actions(b))return 0;
-    if(b->job.volume!=100||b->fragment_volume!=100)
-        for(size_t i=0;i<samples;++i)pcm[i]=(short)((int64_t)pcm[i]*b->job.volume*b->fragment_volume/10000);
-    ULONG bytes=(ULONG)samples*2,at=0;
-    while(at<bytes){ULONG written=0;
-        HRESULT hr=b->site->lpVtbl->Write(b->site,(BYTE *)pcm+at,bytes-at,&written);
-        if(!actions(b))return 0;
-        if(hr!=S_OK||!written||written>bytes-at||(written&1)){
-            b->result=FAILED(hr)?hr:hr==S_OK?E_FAIL:S_OK;cancel_backend(b);return 0;}
-        at+=written;b->audio_offset+=written;
-    }
-    b->started=1;return 1;
-}
-static int flush_pcm(struct sapi_backend *b)
-{
-    int ok=write_pcm(b,b->pending,b->pending_count);b->pending_count=0;return ok;
-}
-static int append_pcm(struct sapi_backend *b,const short *pcm,size_t samples)
-{
-    /* Preserve the first native callback's response time. Subsequent audio
-     * reaches SAPI in reference-sized blocks, or at the next event/flush.
-     * This is live delivery only: no resampling or speech-result cache. */
-    if(!b->started&&!b->pending_count){
-        memcpy(b->pending,pcm,samples*2);return write_pcm(b,b->pending,samples);}
-    while(samples){size_t n=4096-b->pending_count;if(n>samples)n=samples;
-        memcpy(b->pending+b->pending_count,pcm,n*2);b->pending_count+=n;pcm+=n;samples-=n;
-        if(b->pending_count==4096&&!flush_pcm(b))return 0;}
-    return 1;
-}
-static int deliver_event(struct sapi_backend *b,SPEVENT event)
-{
-    if(!flush_pcm(b)||!actions(b))return 0;
-    event.ullAudioStreamOffset=b->audio_offset;
-    HRESULT hr=b->site->lpVtbl->AddEvents(b->site,&event,1);
-    if(FAILED(hr)){b->result=hr;cancel_backend(b);return 0;}return 1;
+    for(;;){if(InterlockedCompareExchange(&b->cancel,0,0))return 0;
+        DWORD rc=WaitForSingleObject(b->room,10);if(rc==WAIT_TIMEOUT)continue;
+        if(rc!=WAIT_OBJECT_0)return 0;break;}
+    b->packets[b->put]=*packet;b->put=(b->put+1)%PACKET_CAPACITY;
+    return ReleaseSemaphore(b->ready,1,NULL)!=0;
 }
 static int ECICALL callback(ECIHand handle,int message,int value,void *context)
 {
-    struct sapi_backend *b=context;(void)handle;
-    if(!actions(b))return 0;
+    struct sapi_backend *b=context;
+    if(InterlockedCompareExchange(&b->cancel,0,0)){core.stop(handle);return 0;}
+    struct packet packet={0};
     if(message==RELOQ_ECI_WAVEFORM_BUFFER){
         if(value<0||value>512)return 0;
-        return append_pcm(b,b->pcm,(size_t)value);
+        packet.type=1;packet.bytes=(ULONG)value*2;packet.volume=b->fragment_volume;
+        memcpy(packet.pcm,b->pcm,packet.bytes);
     }else if(message==RELOQ_ECI_INDEX_REPLY){
         if(value<1||(size_t)value>b->event_count)return 0;
-        return deliver_event(b,b->events[value-1]);
+        packet.type=2;packet.event=b->events[value-1];
     }else return 1;
+    int ok=put(b,&packet);
+    if(!ok && InterlockedCompareExchange(&b->cancel,0,0))core.stop(handle);
+    return ok;
+}
+struct output {
+    struct sapi_backend *backend;ISpTTSEngineSite *site;
+    ULONGLONG offset;USHORT volume;ULONG fragment_volume;
+    short pending[4096];size_t count;HRESULT result;
+};
+static int output_actions(struct output *o)
+{
+    struct sapi_backend *b=o->backend;
+    if(InterlockedCompareExchange(&b->cancel,0,0))return 0;
+    DWORD flags=o->site->lpVtbl->GetActions(o->site);
+    if(flags&SPVES_SKIP){SPVSKIPTYPE kind;LONG count=0;
+        if(SUCCEEDED(o->site->lpVtbl->GetSkipInfo(o->site,&kind,&count)))o->site->lpVtbl->CompleteSkip(o->site,0);
+        cancel_backend(b);}
+    if(flags&SPVES_ABORT)cancel_backend(b);
+    if(flags&SPVES_VOLUME){USHORT volume=o->volume;
+        if(SUCCEEDED(o->site->lpVtbl->GetVolume(o->site,&volume)))o->volume=volume>100?100:volume;}
+    return !InterlockedCompareExchange(&b->cancel,0,0);
+}
+static int output_flush(struct output *o)
+{
+    size_t samples=o->count;o->count=0;if(!samples)return 1;
+    if(!output_actions(o))return 0;
+    if(o->volume!=100||o->fragment_volume!=100)
+        for(size_t i=0;i<samples;++i)o->pending[i]=(short)((int64_t)o->pending[i]*o->volume*o->fragment_volume/10000);
+    ULONG bytes=(ULONG)samples*2,at=0;
+    while(at<bytes){ULONG written=0;
+        HRESULT hr=o->site->lpVtbl->Write(o->site,(BYTE *)o->pending+at,bytes-at,&written);
+        if(!output_actions(o))return 0;
+        if(hr!=S_OK||!written||written>bytes-at||(written&1)){
+            o->result=FAILED(hr)?hr:hr==S_OK?E_FAIL:S_OK;cancel_backend(o->backend);return 0;}
+        at+=written;o->offset+=written;
+    }
     return 1;
+}
+static int output_pcm(struct output *o,const short *pcm,size_t samples,ULONG fragment_volume)
+{
+    if(o->count&&fragment_volume!=o->fragment_volume&&!output_flush(o))return 0;
+    o->fragment_volume=fragment_volume;
+    uint64_t startup=((uint64_t)o->backend->job.rate*60+999)/1000;
+    uint64_t startup_window=((uint64_t)o->backend->job.rate*500+999)/1000;
+    size_t early_block=(size_t)(((uint64_t)o->backend->job.rate*80+999)/1000);
+    while(samples){
+        size_t target=4096;uint64_t delivered=o->offset/sizeof(short);
+        if(delivered<startup&&startup-delivered<target)target=(size_t)(startup-delivered);
+        else if(delivered>=startup&&delivered<startup_window){
+            if(early_block<target)target=early_block;
+            if(startup_window-delivered<target)target=(size_t)(startup_window-delivered);
+        }
+        size_t n=target-o->count;if(n>samples)n=samples;
+        memcpy(o->pending+o->count,pcm,n*2);o->count+=n;pcm+=n;samples-=n;
+        if(o->count==target&&!output_flush(o))return 0;
+    }
+    return 1;
+}
+static int output_event(struct output *o,SPEVENT event)
+{
+    if(!output_flush(o)||!output_actions(o))return 0;
+    event.ullAudioStreamOffset=o->offset;
+    HRESULT hr=o->site->lpVtbl->AddEvents(o->site,&event,1);
+    if(FAILED(hr)){o->result=hr;cancel_backend(o->backend);return 0;}return 1;
 }
 static struct bookmark *bookmark_copy(LPCWSTR text,size_t length)
 {
@@ -275,13 +297,13 @@ static HRESULT synthesize(struct sapi_backend *b)
             continue;
         }
         if(f->State.eAction==SPVA_Silence){
-            /* Explicit SAPI silence is outside the pronunciation frontend. */
-            if(has_text){if(!core.synthesize(b->handle)||!flush_pcm(b)||!core.clear(b->handle))return E_FAIL;has_text=0;delivered_events=b->event_count;}
+            /* Silence is represented by a packet, outside the pronunciation
+             * frontend. Flush only where the host explicitly requested it. */
+            if(has_text){if(!core.synthesize(b->handle)||!core.clear(b->handle))return E_FAIL;has_text=0;delivered_events=b->event_count;}
             uint64_t samples=(uint64_t)b->job.rate*f->State.SilenceMSecs/1000;
-            static const short zero[512]={0};
-            while(samples){size_t n=samples>512?512:(size_t)samples;
-                if(!append_pcm(b,zero,n))return S_OK;samples-=n;}
-            if(!flush_pcm(b))return S_OK;
+            struct packet p={.type=1,.volume=100};
+            while(samples){size_t n=samples>512?512:(size_t)samples;p.bytes=(ULONG)n*2;
+                if(!put(b,&p))return S_OK;samples-=n;}
             continue;
         }
         if(f->State.eAction==SPVA_ParseUnknownTag||f->State.eAction==SPVA_Section)continue;
@@ -292,7 +314,7 @@ static HRESULT synthesize(struct sapi_backend *b)
         ULONG fragment_volume=f->State.Volume>100?100:f->State.Volume;
         if(speed!=last_rate||f->State.PitchAdj.RangeAdj!=last_range||f->State.EmphAdj!=last_emphasis||
            fragment_volume!=b->fragment_volume){
-            if(has_text){if(!core.synthesize(b->handle)||!flush_pcm(b)||!core.clear(b->handle))return E_FAIL;
+            if(has_text){if(!core.synthesize(b->handle)||!core.clear(b->handle))return E_FAIL;
                 has_text=0;delivered_events=b->event_count;}
             int inflection=(int)lround(b->job.settings.inflection*pow(2.0,f->State.PitchAdj.RangeAdj/10.0))+f->State.EmphAdj*3;
             if(inflection<0)inflection=0;if(inflection>100)inflection=100;
@@ -329,22 +351,44 @@ static HRESULT synthesize(struct sapi_backend *b)
             has_text=1;
         }
     }
+    if(InterlockedCompareExchange(&b->cancel,0,0))return S_OK;
     if(has_text&&!core.synthesize(b->handle))return InterlockedCompareExchange(&b->cancel,0,0)?S_OK:E_FAIL;
     /* Bookmark-only streams still need their zero-position index callbacks. */
     if(!has_text&&b->event_count>delivered_events){for(size_t i=delivered_events;i<b->event_count;++i){
-        if(!deliver_event(b,b->events[i]))return S_OK;}}
+        struct packet p={.type=2,.event=b->events[i]};if(!put(b,&p))return S_OK;}}
     return S_OK;
+}
+static DWORD WINAPI worker(void *context)
+{
+    struct sapi_backend *b=context;
+    for(;;){if(WaitForSingleObject(b->start,INFINITE)!=WAIT_OBJECT_0)break;
+        if(InterlockedCompareExchange(&b->exit,0,0))break;
+        HRESULT hr=InterlockedCompareExchange(&b->cancel,0,0)?S_OK:synthesize(b);
+        /* Cancellation discards queued packets on the caller, but always
+         * acknowledges the job before its borrowed fragment list expires. */
+        if(b->handle)core.clear(b->handle);
+        free(b->events);b->events=NULL;b->event_count=0;b->event_capacity=0;
+        struct packet p={.type=3,.result=hr};
+        while(WaitForSingleObject(b->room,10)==WAIT_TIMEOUT){}
+        b->packets[b->put]=p;b->put=(b->put+1)%PACKET_CAPACITY;ReleaseSemaphore(b->ready,1,NULL);
+    }
+    if(b->handle)core.destroy(b->handle);return 0;
 }
 struct sapi_backend *sapi_backend_new(int dialect)
 {
     if(!InitOnceExecuteOnce(&core_once,load_core,NULL,NULL))return NULL;
     struct sapi_backend *b=calloc(1,sizeof *b);if(!b)return NULL;b->dialect=dialect;
-    return b;
+    b->start=CreateEventW(NULL,FALSE,FALSE,NULL);b->room=CreateSemaphoreW(NULL,PACKET_CAPACITY,PACKET_CAPACITY,NULL);
+    b->ready=CreateSemaphoreW(NULL,0,PACKET_CAPACITY,NULL);
+    if(b->start&&b->room&&b->ready)b->thread=CreateThread(NULL,0,worker,b,0,NULL);
+    if(!b->thread){sapi_backend_delete(b);return NULL;}return b;
 }
 void sapi_backend_delete(struct sapi_backend *b)
 {
     if(!b)return;
-    if(b->handle)core.destroy(b->handle);
+    if(b->thread){InterlockedExchange(&b->exit,1);SetEvent(b->start);
+        WaitForSingleObject(b->thread,INFINITE);CloseHandle(b->thread);}
+    if(b->start)CloseHandle(b->start);if(b->room)CloseHandle(b->room);if(b->ready)CloseHandle(b->ready);
     free(b->events);free(b);
 }
 HRESULT sapi_backend_speak(struct sapi_backend *b,const struct sapi_settings *settings,DWORD flags,
@@ -355,15 +399,22 @@ HRESULT sapi_backend_speak(struct sapi_backend *b,const struct sapi_settings *se
     if(speed< -10)speed=-10;if(speed>10)speed=10;if(volume>100)volume=100;
     ULONGLONG interest=0;site->lpVtbl->GetEventInterest(site,&interest);
     b->job=(struct job){.settings=*settings,.fragments=fragments,.flags=flags,.rate=format->nSamplesPerSec,.speed=speed,.volume=volume,.interest=interest};
-    b->site=site;b->result=S_OK;b->audio_offset=0;b->pending_count=0;b->started=0;
-    InterlockedExchange(&b->cancel,0);
-    HRESULT result=actions(b)?synthesize(b):S_OK;
-    if(SUCCEEDED(result)&&!InterlockedCompareExchange(&b->cancel,0,0))flush_pcm(b);
-    if(FAILED(b->result))result=b->result;
-    else if(InterlockedCompareExchange(&b->cancel,0,0))result=S_OK;
-    if(b->handle)core.clear(b->handle);
-    b->pending_count=0;b->site=NULL;
-    free(b->events);b->events=NULL;b->event_count=0;b->event_capacity=0;
+    struct output output={.backend=b,.site=site,.volume=volume,.fragment_volume=100,.result=S_OK};
+    InterlockedExchange(&b->cancel,0);SetEvent(b->start);HRESULT result=S_OK;
+    for(;;){output_actions(&output);
+        DWORD wait=WaitForSingleObject(b->ready,10);if(wait==WAIT_TIMEOUT)continue;
+        if(wait!=WAIT_OBJECT_0){cancel_backend(b);result=E_FAIL;continue;}
+        struct packet p=b->packets[b->get];b->get=(b->get+1)%PACKET_CAPACITY;ReleaseSemaphore(b->room,1,NULL);
+        if(p.type==3){
+            if(SUCCEEDED(result)&&SUCCEEDED(p.result)&&!InterlockedCompareExchange(&b->cancel,0,0))output_flush(&output);
+            if(FAILED(output.result))result=output.result;
+            else if(SUCCEEDED(result))result=InterlockedCompareExchange(&b->cancel,0,0)?S_OK:p.result;
+            break;
+        }
+        if(InterlockedCompareExchange(&b->cancel,0,0))continue;
+        if(p.type==2)output_event(&output,p.event);
+        else if(p.type==1)output_pcm(&output,p.pcm,p.bytes/2,p.volume);
+    }
     while(b->bookmarks){struct bookmark *next=b->bookmarks->next;free(b->bookmarks);b->bookmarks=next;}
     InterlockedExchange(&b->busy,0);return result;
 }

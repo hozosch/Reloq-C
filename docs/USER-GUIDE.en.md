@@ -1,5 +1,9 @@
 # Eloquence C – user guide
 
+## Version 1.1.1
+
+The speech engine handles dashes in running text in tested European languages even without surrounding spaces. In German character reading, underscore uses noun stress.
+
 ## Version 1.1.0
 
 The German E-I glide defaults to opening 85, backness 45 and softness 45. German sentence and sound planning improve hyphenated words, number words and question contours. English analysis retains the whole stem in “recosp” and the final vowel in “tzsche”.
@@ -75,6 +79,8 @@ Select Eloquence C first, then open **NVDA Settings → Eloquence C**.
 
 Under **Dictionary source**, you can also select **Alternative IBM TTS Dictionaries**. This source currently provides US English and Castilian Spanish, but no German dictionary. It is downloaded in the background the first time it is needed; own files take priority.
 
+After an update, a dialog reports the number of new distinct entries and new dictionary files. Changes and removals do not count as additions. The first download reports both totals; if the previous version cannot be compared, the dialog says so. Online updates currently retrieve a fixed set of supported filenames; other new files are not downloaded automatically.
+
 Use **Add file** to select your own Dic files and assign a language and dictionary type. Filenames can be arbitrary; files stay at their original locations. Later files in the list take priority. Choose **OK** or **Apply** to save the selection.
 
 **Open dictionary folder** opens the existing `synthDrivers/reloqC/communityDictionaries` folder inside the add-on. This is where the bundled files live and editor changes are detected. With community dictionaries enabled, you can add files using a prefix from the language table and one of these suffixes:
@@ -95,7 +101,7 @@ NVDA can process symbols before sending text to the synthesizer; its symbol sett
 
 When [reporting an issue](https://github.com/hozosch/Reloq-C/issues), include a short example, language, voice, version, sample rate and whether dictionaries are enabled. Explain whether speech stops, pronunciation is wrong or NVDA itself exits.
 
-## SAPI5 x64 and x86 previews
+## SAPI5 x64 and x86
 
 Run the single SAPI5 `setup.exe`. Its Inno Setup language chooser offers the supported interface languages. It installs x64 and x86 voices together on compatible Windows, and x86 on 32-bit Windows.
 After restarting existing SAPI applications, choose a **ReLoq C** language voice.

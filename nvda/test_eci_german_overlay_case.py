@@ -36,7 +36,7 @@ def main():
                 path = root / f'case-{i}.rlex'
                 lexicon(path, group)
                 engines.append(DirectEciEngine(args.library.resolve(), dialect=0x40000,
-                    encoding='utf8', experimental_generic=True, lexicon_path=path))
+                    encoding='utf8', native_voice=True, lexicon_path=path))
             both, upper, lower, empty = engines
             for spelling, selected in (('Zup', upper), ('zup', lower),
                                        ('März', upper), ('märz', lower)):
@@ -58,7 +58,7 @@ def main():
                 path = root / f'long-{length}.rlex'
                 lexicon(path, ((spelling, '`[.1tEst]'),))
                 selected = DirectEciEngine(args.library.resolve(), dialect=0x40000,
-                    encoding='utf8', experimental_generic=True, lexicon_path=path)
+                    encoding='utf8', native_voice=True, lexicon_path=path)
                 try:
                     parts = [spelling + '.', EciIndex(3)]
                     original = capture(selected, parts)
@@ -87,11 +87,11 @@ def main():
             (root_dir/'DEURoot.dic').write_bytes(spelling.encode('cp1252')+b'\t`[.1hal.o]\n')
             path=root/'root-collision.rlex';lexicon(path,((spelling,'`[.1tEst]'),))
             both_long=DirectEciEngine(args.library.resolve(),dialect=0x40000,
-                encoding='utf8',experimental_generic=True,lexicon_path=path)
+                encoding='utf8',native_voice=True,lexicon_path=path)
             root_only=DirectEciEngine(args.library.resolve(),dialect=0x40000,
-                encoding='utf8',experimental_generic=True)
+                encoding='utf8',native_voice=True)
             overlay_only=DirectEciEngine(args.library.resolve(),dialect=0x40000,
-                encoding='utf8',experimental_generic=True,lexicon_path=path)
+                encoding='utf8',native_voice=True,lexicon_path=path)
             try:
                 both_long.set_dictionary_path(root_dir);root_only.set_dictionary_path(root_dir)
                 parts=[spelling+'.',EciIndex(3)]

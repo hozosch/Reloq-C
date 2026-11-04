@@ -78,4 +78,11 @@
     <string name="phrase_prediction">詞組預測</string>
     <string name="dictionary_repository">字典來源</string>
     <string-array name="dictionary_repositories"><item>IBM TTS 字典</item><item>替代 IBM TTS 字典</item></string-array>
+    <string name="dictionary_update_title">發音字典</string>
+    <string name="dictionary_update_new">字典更新完成。新增項目：%1$d</string>
+    <string name="dictionary_update_first">首次載入字典。項目數：%1$d</string>
+    <string name="dictionary_update_unknown">字典更新完成，但無法確定新增項目數。</string>
+    <string name="dictionary_update_files_new">新增字典檔案: %1$d</string>
+    <string name="dictionary_update_files_total">字典檔案總數: %1$d</string>
+    <string name="dictionary_update_files_unknown">無法確定新增字典檔案數。</string>
 </resources>

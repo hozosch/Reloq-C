@@ -16,7 +16,7 @@ import types
 from unittest import mock
 import zipfile
 
-from build_preview import assert_x64_pe
+from pe_format import assert_x64_pe
 from build_synth import build
 from nvda_test_api import (
     configuration_manager, install as install_nvda_contract, load as load_nvda_api,
@@ -87,10 +87,10 @@ class Player:
 class Engine:
     instances = []
 
-    def __init__(self, path, *, experimental_generic=False, lexicon_path=None,
+    def __init__(self, path, *, native_voice=False, lexicon_path=None,
                  dialect=0x40000, encoding="cp1252"):
         assert Path(path).name == "eci.dll"
-        assert experimental_generic
+        assert native_voice
         assert dialect in (0x40000, 0x10000, 0x10001, 0x20000, 0x20001, 0x30000, 0x30001, 0x50000, 0x70000, 0x90000, 0x60000, 0x60001, 0x80000, 0xa0000, 0x120000) and encoding == "utf-8"
         assert lexicon_path is None
         self.dialect = dialect

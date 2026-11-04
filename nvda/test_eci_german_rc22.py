@@ -12,7 +12,7 @@ def main():
     parser.add_argument('--library', type=Path, required=True)
     args = parser.parse_args()
     engine = DirectEciEngine(args.library.resolve(), dialect=0x40000,
-                             encoding='utf8', experimental_generic=True)
+                             encoding='utf8', native_voice=True)
     engine.set_parameter(PROCESS_TAGS, 1)
     checks = 0
     try:

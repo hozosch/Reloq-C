@@ -18,7 +18,7 @@ from _reloq_updates import check, download, select, Update, version
 class Updates(unittest.TestCase):
     def setUp(self):
         self.bytes = b'fixture package\0' * 5000
-        self.asset = dict(name='reloq-c-synth-experimental-x64-0.2.197.nvda-addon',
+        self.asset = dict(name='reloq-c-synth-x64-0.2.197.nvda-addon',
             size=len(self.bytes), digest='sha256:' + hashlib.sha256(self.bytes).hexdigest())
         self.asset['browser_download_url'] = 'https://github.com/hozosch/Reloq-C/releases/download/v0.2.197/' + self.asset['name']
         self.feed = [{'assets': [self.asset], 'draft': False}]
@@ -36,7 +36,7 @@ class Updates(unittest.TestCase):
 
     def test_development_build_waits_for_matching_stable_release(self):
         def feed(number):
-            name = f'reloq-c-synth-experimental-x64-{number}.nvda-addon'
+            name = f'reloq-c-synth-x64-{number}.nvda-addon'
             return [{'assets': [{**self.asset, 'name': name, 'browser_download_url':
                 f'https://github.com/hozosch/Reloq-C/releases/download/v{number}/{name}'}]}]
         self.assertIsNone(select(feed('1.0.1'), '1.0.2-dev1'))
@@ -54,16 +54,16 @@ class Updates(unittest.TestCase):
             with self.subTest(values=values), self.assertRaises(ValueError):
                 select([{'assets': [{**self.asset, **values}]}], '0.2.196')
 
-    def test_first_official_release_updates_existing_test_installations(self):
-        name = 'reloq-c-synth-experimental-x64-1.0.0.nvda-addon'
+    def test_older_version_numbers_with_stable_filename(self):
+        name = 'reloq-c-synth-x64-1.0.0.nvda-addon'
         asset = {**self.asset, 'name': name, 'browser_download_url':
                  'https://github.com/hozosch/Reloq-C/releases/download/v1.0/' + name}
         for installed in ('0.2.192', '0.2.204', '0.2.205'):
             self.assertEqual(select([{'assets': [asset]}], installed).version, '1.0.0')
         self.assertIsNone(select([{'assets': [asset]}], '1.0.0'))
 
-    def test_patch_release_updates_official_installations(self):
-        name = 'reloq-c-synth-experimental-x64-1.0.1.nvda-addon'
+    def test_version_ordering_for_stable_filename(self):
+        name = 'reloq-c-synth-x64-1.0.1.nvda-addon'
         asset = {**self.asset, 'name': name, 'browser_download_url':
                  'https://github.com/hozosch/Reloq-C/releases/download/v1.0.1/' + name}
         self.assertEqual(select([{'assets': [asset]}], '1.0.0').version, '1.0.1')
@@ -97,7 +97,7 @@ class Updates(unittest.TestCase):
             with self.subTest(wrong_identity=wrong_identity, closed=closed, corrupt=corrupt):
                 output = io.BytesIO()
                 with zipfile.ZipFile(output, 'w') as archive:
-                    archive.writestr('manifest.ini', json.dumps(dict(name='other' if wrong_identity else 'reloqCExperimental', version='0.2.197')))
+                    archive.writestr('manifest.ini', json.dumps(dict(name='other' if wrong_identity else 'reloqC', version='0.2.197')))
                 data = output.getvalue()
                 asset = {**self.asset, 'size': len(data), 'digest': 'sha256:' + hashlib.sha256(data).hexdigest()}
                 candidate = select([{'assets': [asset]}], '0.2.196')
@@ -125,7 +125,7 @@ class Updates(unittest.TestCase):
                 exec(compile(ast.Module(body=[panel_code], type_ignores=[]), str(source), 'exec'), environment)
                 panel = environment['EloquenceSettingsPanel']()
                 panel.package_update = None; panel.package_pending = False; panel.closing = False
-                panel.installed_name = 'reloqCExperimental'; panel.installed_version = '0.2.196'
+                panel.installed_name = 'reloqC'; panel.installed_version = '0.2.196'
                 panel.package_button = Control(); panel.package_status = Control()
                 with patch.dict(sys.modules, modules):
                     panel.on_package_update(None)

@@ -23,7 +23,7 @@ from compare_eci_builds import TEXTS, capture
 
 def pair(paths, language):
     return [DirectEciEngine(path.resolve(), dialect=language, encoding='utf8',
-                            experimental_generic=True) for path in paths]
+                            native_voice=True) for path in paths]
 
 
 def main():

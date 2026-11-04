@@ -23,7 +23,7 @@ def capture(engine,parts):
 def main():
     rows=[];pause_rows=[]
     for language,texts in CASES.items():
-        e=DirectEciEngine(R/'eci/libreloq_eci.so',dialect=language,encoding='utf-8',experimental_generic=True)
+        e=DirectEciEngine(R/'eci/libreloq_eci.so',dialect=language,encoding='utf-8',native_voice=True)
         try:
             profile = LANGUAGES[LANGUAGE_ALIASES.get(language,language)]
             assert language_for("zh_TW" if language==0x60001 else profile.locale,0x40000)==profile.id

@@ -35,7 +35,7 @@ def main():
     for language,text in texts.items():
         for gender,head,breath in ((0,50,0),(1,29,60)):
             engines=[DirectEciEngine(path.resolve(),dialect=language,
-                encoding='utf8',experimental_generic=True)
+                encoding='utf8',native_voice=True)
                 for path in ([args.library,args.baseline] if args.baseline else [args.library])]
             try:
                 for e in engines:
@@ -59,7 +59,7 @@ def main():
     # head size, or unusual but supported pitch/head combinations.
     stress='Am Morgen hören wir ruhige Musik. Oma und Werner wohnen neben dem Bahnhof.'
     for gender in (0,1):
-        e=DirectEciEngine(args.library.resolve(),encoding='utf8',experimental_generic=True)
+        e=DirectEciEngine(args.library.resolve(),encoding='utf8',native_voice=True)
         try:
             for param,value in ((NATIVE_SPEED,75),(HIGH_RATE_PROFILE,args.profile),(GENDER,gender)):
                 e.set_parameter(param,value)
@@ -76,7 +76,7 @@ def main():
         finally:e.close()
     # Exercise every exposed preset with its actual anatomy and source.
     for language,text in texts.items():
-        e=DirectEciEngine(args.library.resolve(),dialect=language,encoding='utf8',experimental_generic=True)
+        e=DirectEciEngine(args.library.resolve(),dialect=language,encoding='utf8',native_voice=True)
         try:
             copy=e._dll.eciCopyVoice
             copy.argtypes=(ctypes.c_void_p,ctypes.c_int,ctypes.c_int);copy.restype=ctypes.c_int

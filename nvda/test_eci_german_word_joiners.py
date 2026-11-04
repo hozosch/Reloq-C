@@ -31,9 +31,9 @@ def main():
     p.add_argument('--baseline',type=Path)
     args=p.parse_args();checks=0
     engine=DirectEciEngine(args.library.resolve(),dialect=0x40000,
-        encoding='utf8',experimental_generic=True)
+        encoding='utf8',native_voice=True)
     old=DirectEciEngine(args.baseline.resolve(),dialect=0x40000,
-        encoding='utf8',experimental_generic=True) if args.baseline else None
+        encoding='utf8',native_voice=True) if args.baseline else None
     try:
         engine.set_parameter(NATIVE_SPEED,120)
         if old:old.set_parameter(NATIVE_SPEED,120)

@@ -14,7 +14,7 @@ input text and source identifiers, never cached reference audio or phoneme
 transcripts. The source `reloq_text_coverage.c` is compiled into a temporary
 executable by the script and queries the **real** C annotation frontend in
 two modes: no optional lexicon, then `data/german_apple_observed.rlex` loaded.
-The latter measures possible annotation coverage. The experimental ECI mode
+The latter measures possible annotation coverage. The native ECI mode
 can load the packaged, merged `.rlex` through `eciLoadLexicon`; words still
 require supported C acoustic targets and transitions to produce audio.
 

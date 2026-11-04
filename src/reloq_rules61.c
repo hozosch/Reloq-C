@@ -19,6 +19,33 @@
 #include <string.h>
 #include "reloq_inline_word_controls.h"
 
+static int dash_space(uint32_t c)
+{return c==' '||c=='\t'||c=='\r'||c=='\n'||c==0xa0;}
+static int dash_word_edge(uint32_t c)
+{
+    if(c<128)return (c>='A'&&c<='Z')||(c>='a'&&c<='z')||(c>='0'&&c<='9')||
+        c=='_'||c=='\''||c=='"'||c=='('||c==')'||c=='['||c==']';
+    /* Avoid classifying Unicode punctuation or symbols as word material. */
+    return (c>=0xc0&&c<0x2000)||(c>=0x2c00&&c<=0xd7ff)||
+        c==0x2018||c==0x2019||c==0x201c||c==0x201d;
+}
+static int dash_between_words(const unsigned char *text,size_t length,size_t begin,size_t end)
+{
+    uint32_t left=0,right=0;size_t p=begin;
+    while(p){size_t at=p-1;while(at&&(text[at]&0xc0)==0x80)--at;
+        size_t next=at;if(reloq_utf8_next(text,p,&next,&left)!=1||next!=p)return 0;
+        p=at;
+        if(!dash_space(left))break;
+        left=0;}
+    p=end;
+    while(p<length){if(reloq_utf8_next(text,length,&p,&right)!=1)return 0;
+        if(!dash_space(right))break;
+        right=0;}
+    if(!dash_word_edge(left)||!dash_word_edge(right))return 0;
+    /* Keep the native handling of numeric ranges such as 2–4. */
+    return !(left>='0'&&left<='9'&&right>='0'&&right<='9');
+}
+
 /* Preserve admitted text until the native sentence frontend sees it. The
  * former word-by-word SPR conversion ran a second, older language analysis
  * and forced every ordinary token through its historical dictionaries. */
@@ -26,7 +53,7 @@ static int english_input(const unsigned char *text,size_t length,int tags,int un
     unsigned char **out,size_t **source,size_t *written)
 {
     if(length==SIZE_MAX||memchr(text,0,length))return -1;
-    unsigned char *bytes=NULL;size_t *map=NULL,n=0,capacity=0;
+    unsigned char *bytes=NULL;size_t *map=NULL,n=0,capacity=0;int spelling=0;
     for(size_t at=0;at<length;) {
         size_t begin=at,end=at;uint32_t cp;
         if(reloq_utf8_next(text,length,&end,&cp)!=1)goto invalid;
@@ -36,9 +63,15 @@ static int english_input(const unsigned char *text,size_t length,int tags,int un
                 struct reloq_inline_tag t=reloq_inline_tag_read(text+at,length-at,0);
                 if(t.length&&(tags||t.kind==RELOQ_TAG_SPR||t.kind==RELOQ_TAG_PROMINENCE)) {
                     count=t.length;end=at+count;
+                    if(t.kind==RELOQ_TAG_SPELL)spelling=t.value;
                 }
             }
             if(!count){encoded[0]=cp=='`'&&!tags?' ':(unsigned char)cp;count=1;}
+        } else if(cp==0x2013&&!spelling&&dash_between_words(text,length,at,end)) {
+            /* The native long-dash rule supplies the pause, including the
+             * agreed short-dash behavior, without inserting a spoken word. */
+            if(unicode){encoded[0]=0xe2;encoded[1]=0x80;encoded[2]=0x94;count=3;}
+            else {encoded[0]=0x97;count=1;}
         } else if(unicode) {
             count=end-at;memcpy(encoded,text+at,count);
         } else if(reloq_german_input_encode(text+at,end-at,encoded,sizeof encoded,&count,NULL)) {
@@ -842,15 +875,19 @@ static void take_pause(void *context,int64_t from,int64_t to,int64_t after)
 }
 /* Map original UTF-8 offsets to a complete SPR boundary. Inserting an
  * index inside a phoneme group would change the token stream. */
-static size_t annotation_boundary(const unsigned char *a,size_t n,const size_t *map,size_t offset)
+static size_t annotation_boundary(const unsigned char *a,size_t n,const size_t *map,size_t offset,size_t *cursor)
 {
-    if(!offset)return 0;
+    if(!offset){*cursor=0;return 0;}
     size_t boundary=n;
-    for(size_t j=0;j<n;) {
+    /* Source positions normally arrive in increasing order. Resume at the
+     * unadjusted match, so each annotation token is scanned only once while
+     * preserving the original punctuation and inside-word adjustments. */
+    for(size_t j=*cursor;j<n;) {
         if(map[j]>=offset){boundary=j;break;}
         struct reloq_inline_tag t=reloq_inline_tag_read(a+j,n-j,1);
         j+=t.length?t.length:1;
     }
+    *cursor=boundary;
     /* An AddText piece ending in punctuation lets the private ECI parser
      * finish a stretch before the following index arrives. Put the mark
      * at the preceding complete word edge, leaving punctuation and the
@@ -1236,14 +1273,18 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     if(mark_count) {
         if(mark_count>SIZE_MAX/sizeof *marks)goto memory;
         marks=malloc(mark_count*sizeof *marks);if(!marks)goto memory;
-        size_t i=0,p=0;
+        size_t i=0,p=0,cursor=0,previous_offset=0;
         for(size_t j=0;j<mark_count;++j) {
             int is_index=p==pitch_count||(i<index_count&&indices[i].annotation_offset<=pitches[p].annotation_offset);
             size_t offset=is_index?indices[i].annotation_offset:pitches[p].annotation_offset;
             if(offset>length)goto done;
             if(!is_index&&(pitches[p].native_pitch<0||pitches[p].native_pitch>100))goto done;
-            marks[j]=(struct reloq61_mark){annotation_boundary(a,n,map,offset),
-                (int32_t)(is_index?i:index_count+p),-1};
+            /* Preserve behaviour for callers with out-of-order inputs. */
+            if(j&&offset<previous_offset)cursor=0;
+            marks[j]=(struct reloq61_mark){annotation_boundary(a,n,map,offset,&cursor),
+                (int32_t)(is_index?i:index_count+p),
+                is_index&&plan.cjk_volume?RELOQ61_SOURCE_INDEX_ONLY:-1};
+            previous_offset=offset;
             if(j&&marks[j].offset<marks[j-1].offset)goto done;
             if(is_index)++i;else ++p;
         }

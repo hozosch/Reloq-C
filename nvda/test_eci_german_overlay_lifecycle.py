@@ -29,7 +29,7 @@ def main():
         lexicon(first, 'Sonderstamm', '`[.1tEst]')
         lexicon(second, 'Sonderstamm', '`[.1kAt]')
         engine = DirectEciEngine(args.library, dialect=0x40000,
-                                 experimental_generic=True, encoding='utf8')
+                                 native_voice=True, encoding='utf8')
         try:
             load = engine._dll.eciLoadLexicon
             load.argtypes = (ctypes.c_void_p, ctypes.c_char_p)

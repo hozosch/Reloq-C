@@ -11,7 +11,7 @@ from test_eci_german_overlay_case import lexicon
 
 def engine(path, **kwargs):
     result = DirectEciEngine(path.resolve(), dialect=0x40000, encoding='utf8',
-                             experimental_generic=True, **kwargs)
+                             native_voice=True, **kwargs)
     result.set_parameter(PROCESS_TAGS, 1)
     return result
 

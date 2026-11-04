@@ -1,32 +1,31 @@
 # Android ARM64
 
 ReLoq C uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `1.1.0` targets ARM64 (`arm64-v8a`), Android 8/API 26
+add-on. Version `1.1.1` targets ARM64 (`arm64-v8a`), Android 8/API 26
 or later. Speech runs offline. Network access is used only when you explicitly update pronunciation dictionaries or check for an app update. Package downloads open in the browser.
 
 ## Install or update
 
-Install `reloq-c-android-arm64-1.1.0.apk` over the existing app.
-The package remains `org.reloq.tts.preview`, the preview signing certificate is
-unchanged, and versionCode increases to 11010000. Android can therefore
-update the existing app and retain its settings. Do not uninstall it first.
-The update checker in earlier 1.1.0-rc previews may not offer 1.1.0 because
-their version codes were unusually high. Install the 1.1.0 APK from GitHub
-Releases manually once; later update checks use the corrected ordering.
+Install `reloq-c-android-arm64-1.1.1.apk` from GitHub Releases. This build
+is named **ReLoq C 1.1.1** and uses the app identity `org.reloq.tts`. The published 1.1 uses an earlier identity, so Android installs this version alongside that app. Installations already using `org.reloq.tts` update in place. Select the new app in
+Android's text-to-speech settings and set up voices and dictionaries again.
+Keep the old app installed until you have copied any information you need
+and verified the replacement. App-private settings and file permissions do not
+transfer automatically between the two identities.
 
-Open **ReLoq C** to adjust its settings or read a test text. To use it
+Open **ReLoq C 1.1.1** to adjust its settings or read a test text. To use it
 with TalkBack or another client, open **Android speech settings** and choose
-**ReLoq C** as the preferred text-to-speech engine. All 15 language
+**ReLoq C 1.1.1** as the preferred text-to-speech engine. All 15 language
 variants and eight named voice presets are available, including separate
 mainland and Taiwan Mandarin routes. Existing saved language indices retain
 their meaning; Taiwan Mandarin is appended to the catalogue.
 
 The speech engine and live settings have been confirmed in practical use.
-This APK retains its existing technical installation identity so test installations update in place.
+The APK keeps the existing signing certificate but uses a new app identity.
 
 ## Speech before the first unlock
 
-The TTS service is marked Direct Boot aware. While the device is locked after a reboot, it uses device-protected copies of speech settings and the active, merged dictionary volumes. The source files and their original paths remain in credential-protected storage. Dictionary changes, including removal, refresh the device-protected copy; in-progress speech retains its snapshot until finished. An update receiver migrates existing settings and dictionaries; opening the settings once while unlocked also refreshes the copies. No boot or other additional permission is requested. Real-device testing before first unlock is still required. Play Protect decisions cannot be predicted from the manifest or signing checks alone.
+The TTS service is marked Direct Boot aware. While the device is locked after a reboot, it uses device-protected copies of speech settings and the active, merged dictionary volumes. The source files and their original paths remain in credential-protected storage. Dictionary changes, including removal, refresh the device-protected copy; in-progress speech retains its snapshot until finished. For updates that retain the same app identity, an update receiver migrates existing settings and dictionaries; opening the settings once while unlocked also refreshes the copies. The change to a separate app identity does not transfer private data. No boot or other additional permission is requested. Real-device testing before first unlock is still required. Play Protect decisions cannot be predicted from the manifest or signing checks alone.
 
 ## Voice and output settings
 
@@ -93,6 +92,12 @@ holds its immutable snapshot until native synthesis finishes. Native tables
 load once per used language and remain resident across ordinary requests and
 cancellation; selecting a changed snapshot reloads that language when next used.
 
+The dictionary update and reload actions display an accessible confirmation
+dialog showing new distinct entries and new dictionary files. Replacements and
+deletions do not count as additions. The first download shows both totals, and
+an unavailable comparison is reported instead of guessing. Online updates
+currently retrieve a fixed set of supported filenames.
+
 ## Build on Linux x86-64
 
 Requirements: Python 3, GNU Make, JDK 17, Android SDK platform 35, SDK build
@@ -104,22 +109,21 @@ latest dictionary master and reuses existing verified data when possible.
 export ANDROID_SDK_ROOT=/path/to/android-sdk
 export ANDROID_NDK_HOME=/path/to/android-ndk-r30
 export JAVA_HOME=/path/to/jdk-17
-python3 android/build.py --upgrade-from dist/reloq-c-android-arm64-0.2.204-preview16.apk
+python3 android/build.py --previous-package path/to/previous.apk
 ```
 
 Explicit `--sdk`, `--ndk`, `--java-home`, `--build-tools` and `--android-jar`
-paths are also accepted. Omit `--upgrade-from` when there is no previous APK.
-When given, it compares both signed artifacts' package names, versionCodes
-and certificates and rejects an incompatible update. `--verified-dictionaries`
+paths are also accepted. Omit `--previous-package` when there is no previous APK.
+When given, it checks both signed artifacts' package names, versionCodes
+and certificates, and reports if they install as separate apps. `--verified-dictionaries`
 is reserved for a build where the current master commit has already been
 resolved independently and the local snapshot has been verified. Output goes
 under `dist/`. Android uses separate object directories and preserves the
 Windows/Linux outputs. Rebuild the Android objects after changing compiler flags.
 
-The checked-in `preview-debug.p12` is an intentionally public **test signing
-identity**, alias `androiddebugkey`, password `android`. It keeps preview updates
-installable over earlier previews. Production distribution needs a separate
-private signing identity and a deliberate migration plan.
+The checked-in `release-signing.p12` is an intentionally public **test signing
+identity**, alias `androiddebugkey`, password `android`. Production distribution
+needs a separate private signing identity and a deliberate migration plan.
 
 ## Transport and resources
 
@@ -133,13 +137,13 @@ wakes both sides, and delayed stops are scoped to their own requests.
 
 German uses the built-in native C dictionary, just like the other languages.
 The former 712,343-byte supplemental lexicon is neither packaged nor installed.
-Updates remove only its generated content-named and old preview-named copies;
+Updates remove only its generated content-named and obsolete generated copies;
 user `.dic` files are retained. Dictionary snapshots are reused by content and
 unused old snapshots are removed after their last active request finishes.
 
 Packaging uses DEFLATE level 9 while preserving aapt2's uncompressed resource
 table. The APK additionally includes the optional community data, so its total
-size is larger than preview 2 despite the stronger compression. All language
+size includes the optional community dictionaries. All language
 and acoustic data remain included. Release rule tracing is compiled out. German source knots now grow with
 actual use rather than reserving the sum of six worst-case target buffers.
 The 4,000-word host test requests 91,652,850 peak live heap bytes instead of
@@ -183,12 +187,11 @@ The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 ```sh
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
-python3 android/verify_apk.py dist/reloq-c-android-arm64-1.1.0.apk
+python3 android/verify_apk.py dist/reloq-c-android-arm64-1.1.1.apk
 ```
 
 Build verification checks signatures, the install-critical resource table,
-16-KiB ELF compatibility and package/certificate continuity with the previous
-preview. The app retains its browser update flow and INTERNET-only permission
+16-KiB ELF compatibility and the signing certificate and whether the package has a separate app identity. The app retains its browser update flow and INTERNET-only permission
 profile. Host checks do not replace device and TalkBack testing.
 
 For an isolated build, pass `--build-dir /absolute/fresh/build-directory`; the output APK path remains controlled by `--output`.

@@ -29,7 +29,7 @@ def main():
     with tempfile.TemporaryDirectory() as folder:
         def engine(language,library=None):
             return DirectEciEngine((library or a.library).resolve(),dialect=language,encoding='utf8',
-                experimental_generic=True,lexicon_path=None)
+                native_voice=True,lexicon_path=None)
         for language in LANGUAGES.values():
             e=engine(language.id)
             try:

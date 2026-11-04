@@ -35,7 +35,7 @@ def main():
     rows = []
     for language, text in TEXTS.items():
         engines = [DirectEciEngine(path.resolve(), dialect=language, encoding='utf8',
-                                   experimental_generic=True) for path in (args.baseline, args.library)]
+                                   native_voice=True) for path in (args.baseline, args.library)]
         try:
             changed = False
             for rate in range(7):

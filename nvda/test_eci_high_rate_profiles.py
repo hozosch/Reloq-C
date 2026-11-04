@@ -37,7 +37,7 @@ def main():
                            (0x10000, 'Sue sees six ships. Susan visits the zoo on Thursday.')):
         paths = [args.library] + ([args.baseline] if args.baseline else [])
         engines = [DirectEciEngine(path.resolve(), dialect=language, encoding='utf8',
-                                   experimental_generic=True) for path in paths]
+                                   native_voice=True) for path in paths]
         engine = engines[0]
         try:
             assert engine._dll.eciGetParam(engine._handle, HIGH_RATE_PROFILE) == 3
@@ -68,7 +68,7 @@ def main():
             for e in engines: e.close()
     for language in LANGUAGES.values():
         engine = DirectEciEngine(args.library.resolve(), dialect=language.id, encoding='utf8',
-                                 experimental_generic=True)
+                                 native_voice=True)
         try:
             for rate in (1, 6):
                 engine.set_parameter(SAMPLE_RATE, rate)

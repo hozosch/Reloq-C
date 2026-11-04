@@ -1,4 +1,4 @@
-package org.reloq.tts.preview;
+package org.reloq.tts;
 
 import android.media.AudioFormat;
 import android.speech.tts.SynthesisCallback;

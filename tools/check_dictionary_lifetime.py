@@ -35,7 +35,7 @@ def main():
         parser.error("--stride must be positive")
     if args.corpus:
         engine = DirectEciEngine(args.library, dialect=0x10000,
-                                 experimental_generic=True, encoding="utf8")
+                                 native_voice=True, encoding="utf8")
         complete, rejected = 0, []
         try:
             engine.set_dictionary_path(args.dictionaries)
@@ -68,7 +68,7 @@ def main():
     count = 0
     for cycle in range(args.cycles):
         engine = DirectEciEngine(args.library, dialect=0x10000,
-                                 experimental_generic=True, encoding="utf8")
+                                 native_voice=True, encoding="utf8")
         try:
             for directory in (args.dictionaries, None, args.dictionaries):
                 engine.set_dictionary_path(directory)

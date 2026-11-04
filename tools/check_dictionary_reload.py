@@ -24,7 +24,7 @@ def main():
     rows = []
     for _ in range(args.cycles):
         row = {}
-        engine = DirectEciEngine(args.library, dialect=0x10000, encoding="utf8", experimental_generic=True)
+        engine = DirectEciEngine(args.library, dialect=0x10000, encoding="utf8", native_voice=True)
 
         def timed(label, action):
             begin = time.perf_counter()

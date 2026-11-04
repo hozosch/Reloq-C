@@ -182,7 +182,7 @@ static int acoustic_mark(const struct capture *c,size_t mark)
 {
     const struct reloq61_mark *m=c->q->marks+mark;
     const char *text=c->q->text;size_t n=c->source_length,at=m->offset;
-    if(!c->acoustic_marks||at>n||m->pitch>=0||m->index<0)return 0;
+    if(!c->acoustic_marks||at>n||m->pitch>=0||m->pitch==RELOQ61_SOURCE_INDEX_ONLY||m->index<0)return 0;
     if(at&&at!=n&&!strchr(" \t\r\n",text[at])&&!strchr(" \t\r\n",text[at-1]))return 0;
     if(!c->source_has_spr)return 1;
     /* Greek admission supplies SPR words. Mark the space between those

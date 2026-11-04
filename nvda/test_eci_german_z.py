@@ -30,7 +30,7 @@ def main():
     controls = ('Hallo Welt.', 'Susi sieht sieben Segel.', 'Farbe und Papier.',
                 'Katze.', 'setzen.', 'Mütze.', 'Hitze.', 'kurz.', 'Platz.')
     engines = [DirectEciEngine(f.resolve(), dialect=0x40000,
-                              encoding='utf8', experimental_generic=True)
+                              encoding='utf8', native_voice=True)
                for f in (a.baseline, a.library)]
     checks = 0
     level_checks = 0

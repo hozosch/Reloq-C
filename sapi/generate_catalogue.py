@@ -17,7 +17,7 @@ LCIDS = {'de_DE': 0x407, 'en_US': 0x409, 'en_GB': 0x809, 'es_ES': 0xc0a,
 
 
 def generate():
-    java = (ROOT / 'android/java/org/reloq/tts/preview/Catalog.java').read_text()
+    java = (ROOT / 'android/java/org/reloq/tts/Catalog.java').read_text()
     samples = {int(i, 16): json.loads('"' + sample + '"') for i, sample in
                re.findall(r'new Language\((0x[0-9a-f]+),"[^"]+","[^"]+","([^"]+)"\)', java)}
     wide = lambda value: 'L' + json.dumps(value, ensure_ascii=False)

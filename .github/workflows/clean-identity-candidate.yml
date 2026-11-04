@@ -1,0 +1,270 @@
+name: Verify 1.1.1 stable-identity candidate
+on:
+  push:
+    branches: [codex/1-1-clean-identities]
+concurrency:
+  group: clean-identity-${{ github.sha }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  fast:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Verify identity, updater, language and package source
+        run: |
+          set -euo pipefail
+          PYTHONPATH=nvda python3 nvda/test_updates.py
+          PYTHONPATH=nvda python3 nvda/test_dictionary_manager.py
+          PYTHONPATH=nvda python3 nvda/test_dictionary_update_ui.py
+          PYTHONPATH=nvda python3 nvda/test_eci_direct.py
+          python3 android/test_versioning.py
+          python3 android/test_apk_identity.py
+          python3 sapi/generate_catalogue.py --check
+          cc -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -DRELOQ_SAPI_SETTINGS_TEST -I sapi sapi/settings.c sapi/test_settings.c -o /tmp/test-sapi-settings
+          /tmp/test-sapi-settings
+          python3 - <<'PY'
+          import struct,sys
+          sys.path.insert(0,'addon')
+          from pe_format import assert_x64_pe
+          valid=bytearray(256)
+          valid[:2]=b'MZ'
+          struct.pack_into('<I',valid,0x3c,0x80)
+          valid[0x80:0x84]=bytes((0x50,0x45,0,0))
+          struct.pack_into('<H',valid,0x84,0x8664)
+          struct.pack_into('<H',valid,0x98,0x20b)
+          assert_x64_pe(valid)
+          try:
+              assert_x64_pe(bytes(256))
+          except ValueError:
+              pass
+          else:
+              raise AssertionError('invalid PE was accepted')
+          PY
+          python3 android/test_translations.py
+          python3 android/test_direct_boot.py --java-home "$JAVA_HOME"
+          javac -d /tmp/reloq-java android/java/org/reloq/tts/UpdateData.java android/test/UpdateDataTest.java
+          java -cp /tmp/reloq-java org.reloq.tts.UpdateDataTest
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, xml.etree.ElementTree as ET
+          manifest=Path('addon/synth/manifest.ini').read_text()
+          assert 'name = "reloqC"' in manifest
+          assert 'version = "1.1.1"' in manifest
+          android=ET.parse('android/AndroidManifest.xml').getroot()
+          assert android.get('package') == 'org.reloq.tts'
+          assert android.get('{http://schemas.android.com/apk/res/android}versionName') == '1.1.1'
+          assert android.get('{http://schemas.android.com/apk/res/android}versionCode') == '11010001'
+          paths=[Path('addon/synth/manifest.ini'),Path('addon/synth/synthDrivers/reloqC/__init__.py'),
+                 *(Path('nvda')/name for name in ('_reloq_eci_direct.py','_reloq_languages.py','_reloq_updates.py')),
+                 Path('android/AndroidManifest.xml'),Path('android/res/xml/tts_engine.xml'),
+                 *Path('android/java/org/reloq/tts').glob('*.java'),Path('android/native/reloq_jni.c')]
+          for path in paths:
+              assert not re.search(r'experimental|preview',path.read_text(encoding='utf-8'),re.I),path
+          print('Production identity sources use stable names.')
+          PY
+  host:
+    needs: fast
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Build shared host engine
+        run: make -C eci -j2 all PROVIDER_LTO=-flto=2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: host-native-library
+          path: eci/libreloq_eci.so
+          retention-days: 14
+      - name: Verify SAPI, tags and pronunciation
+        run: |
+          cc -O2 -std=c11 -Iinclude tests/test_reloq_unicode.c eci/build/posix/reloq_unicode.o eci/build/posix/reloq_unicode_names.o eci/build/posix/reloq_character.o eci/build/posix/reloq_german_input.o eci/build/posix/reloq_utf8.o -Wl,--gc-sections -lm -o /tmp/test-reloq-unicode
+          /tmp/test-reloq-unicode
+          PYTHONPATH=nvda python3 nvda/test_eci_dash_pause.py --library eci/libreloq_eci.so
+          PYTHONPATH=nvda python3 nvda/test_eci_cjk_index_parity.py --library eci/libreloq_eci.so
+          make -C sapi test
+          PYTHONPATH=nvda python3 nvda/test_eci_languages.py
+          PYTHONPATH=nvda python3 nvda/test_eci_crash_regressions.py --library eci/libreloq_eci.so
+          PYTHONPATH=nvda python3 nvda/test_eci_glide_tuning.py --library eci/libreloq_eci.so
+          PYTHONPATH=nvda python3 nvda/test_eci_german_streaming.py --library eci/libreloq_eci.so
+      - name: Verify SAPI audio and event parity against 1.1
+        run: |
+          git show 76e2c04bb00c66ece46a93224a1066d5dab57328:sapi/backend.c > /tmp/original-backend.c
+          cc -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -DRELOQ_SAPI_REFERENCE_BASELINE -I sapi -I include /tmp/original-backend.c sapi/test_host.c sapi/test_backend.c src/reloq_voice_controls.c -ldl -lpthread -lm -o /tmp/original-sapi-test
+          /tmp/original-sapi-test "$PWD/eci/libreloq_eci.so" > /tmp/original-sapi.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          original=json.loads(Path('/tmp/original-sapi.json').read_text())
+          candidate=json.loads(Path('sapi/build/backend-results.json').read_text())
+          assert original['long_german']==candidate['long_german'], 'long German PCM or events changed'
+          assert original['comparisons']==candidate['comparisons'], 'language/rate PCM or marks changed'
+          print('All reference PCM, event marks and long German output match the previous SAPI adapter.')
+          PY
+  android-settings:
+    needs: host
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - run: sdkmanager 'platforms;android-35'
+      - uses: actions/download-artifact@v4
+        with:
+          name: host-native-library
+          path: eci
+      - name: Exercise Android settings and speech configuration
+        run: python3 android/test_settings.py --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar"
+  sapi:
+    needs: fast
+    uses: ./.github/workflows/sapi-installer.yml
+  android:
+    needs: fast
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Install Android SDK and NDK
+        run: sdkmanager 'ndk;30.0.16248370' 'platforms;android-35' 'build-tools;35.0.1'
+      - name: Fetch the existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download v1.1 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-android-arm64-1.1.0.apk' --dir previous
+      - name: Build the new app and check its distinct identity
+        run: |
+          python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --previous-package previous/reloq-c-android-arm64-1.1.0.apk --jobs 2
+      - name: Check the delivered Android identity and label
+        run: |
+          "$ANDROID_HOME/build-tools/35.0.1/aapt2" dump badging dist/reloq-c-android-arm64-1.1.1.apk > /tmp/apk-badging.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,zipfile
+          badging=Path('/tmp/apk-badging.txt').read_text()
+          assert "package: name='org.reloq.tts'" in badging
+          assert "application-label:'ReLoq C 1.1.1'" in badging
+          with zipfile.ZipFile('dist/reloq-c-android-arm64-1.1.1.apk') as archive:
+              assert archive.testzip() is None
+              assert all(not re.search(r'experimental|preview',name,re.I) for name in archive.namelist())
+              dex=archive.read('classes.dex')
+              assert b'org/reloq/tts/preview' not in dex
+              assert b'org.reloq.tts.preview' not in dex
+              assert b'Lorg/reloq/tts/ReLoqService;' in dex
+          print('Android package, visible label and native service use the stable identity.')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-stable-identity
+          path: dist/reloq-c-android-arm64-1.1.1.apk
+          compression-level: 0
+          retention-days: 14
+  nvda:
+    needs: sapi
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: sapi-native-x64
+          path: dist
+      - name: Install translation compiler
+        run: |
+          if ! command -v msgfmt >/dev/null; then
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update -qq
+            sudo apt-get install -y --no-install-recommends gettext
+          fi
+      - name: Build the add-on with the verified shared core
+        run: |
+          python3 - <<'PY'
+          import pathlib,sys,zipfile
+          sys.path.insert(0,'addon')
+          from build_synth import build,DEFAULT_OUTPUT
+          payload,=pathlib.Path('dist').glob('reloq-c-sapi5-x64-*-payload.zip')
+          with zipfile.ZipFile(payload) as archive:
+              assert archive.testzip() is None
+              core=pathlib.Path('eci/eci.dll');core.write_bytes(archive.read('eci.dll'))
+          build(DEFAULT_OUTPUT,core,refresh_dictionaries=False)
+          PY
+      - name: Check delivered add-on names and text
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,zipfile
+          addon,=Path('dist').glob('*.nvda-addon')
+          with zipfile.ZipFile(addon) as archive:
+              assert archive.testzip() is None
+              manifest=archive.read('manifest.ini').decode('utf-8')
+              assert 'name = "reloqC"' in manifest and 'version = "1.1.1"' in manifest
+              for name in archive.namelist():
+                  assert not re.search(r'experimental|preview',name,re.I),name
+                  if name.endswith(('.py','.ini','.html')):
+                      assert not re.search(rb'experimental|preview',archive.read(name),re.I),name
+          print('The delivered add-on names, manifest and authored text use stable names.')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nvda-stable-identity
+          path: dist/*.nvda-addon
+          compression-level: 0
+          retention-days: 14
+  nvda-windows:
+    needs: nvda
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-stable-identity
+          path: candidate
+      - name: Validate the packaged NVDA driver and native core
+        shell: pwsh
+        run: |
+          $addon = (Get-ChildItem candidate -Filter *.nvda-addon | Select-Object -First 1).FullName
+          python -c "import sys,zipfile; z=zipfile.ZipFile(sys.argv[1]); open('eci/eci.dll','wb').write(z.read('synthDrivers/reloqC/eci.dll'))" $addon
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python addon/test_synth_native.py --library eci/eci.dll --addon $addon --output packaged-driver-native.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_crash_regressions.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_glide_tuning.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_streaming.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_dash_pause.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_cjk_index_parity.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

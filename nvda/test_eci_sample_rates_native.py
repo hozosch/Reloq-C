@@ -11,7 +11,7 @@ def main():
  reports=[]
  with tempfile.TemporaryDirectory() as folder:
   folder=Path(folder);(folder/'eci.dll').symlink_to(ROOT/'eci/libreloq_eci.so')
-  e=DirectEciEngine(folder/'eci.dll',experimental_generic=True,lexicon_path=None)
+  e=DirectEciEngine(folder/'eci.dll',native_voice=True,lexicon_path=None)
   e.set_parameter(NATIVE_SPEED,98)
   text='Sechs schnelle Fische. Wortanalyse.'
   def capture(parts):

@@ -14,10 +14,10 @@ def main():
     parser.add_argument('--baseline', type=Path)
     args = parser.parse_args()
     engine = DirectEciEngine(args.library.resolve(), dialect=0x40000,
-                             encoding='utf8', experimental_generic=True)
+                             encoding='utf8', native_voice=True)
     checks = 0
     baseline = DirectEciEngine(args.baseline.resolve(), dialect=0x40000,
-        encoding='utf8', experimental_generic=True) if args.baseline else None
+        encoding='utf8', native_voice=True) if args.baseline else None
     try:
         engine.set_parameter(PROCESS_TAGS, 1)
         if baseline:
@@ -65,7 +65,7 @@ def main():
             lexicon(path, (('samt', '`[.1sAmt]'),
                            ('veröffentlicht', "`[.0fEr.1'OE'.0fEnt.0lIXt]")))
             custom = DirectEciEngine(args.library.resolve(), dialect=0x40000,
-                encoding='utf8', experimental_generic=True, lexicon_path=path)
+                encoding='utf8', native_voice=True, lexicon_path=path)
             try:
                 custom.set_parameter(PROCESS_TAGS, 1)
                 assert '[.1sAmt]' in phonemes(custom, 'samt')
@@ -80,7 +80,7 @@ def main():
             for spelling in ('samt', 'Samt', 'SAMT', 'sAmT'):
                 lexicon(path, ((spelling, '`[.1sAmt]'),))
                 custom = DirectEciEngine(args.library.resolve(), dialect=0x40000,
-                    encoding='utf8', experimental_generic=True, lexicon_path=path)
+                    encoding='utf8', native_voice=True, lexicon_path=path)
                 try:
                     custom.set_parameter(PROCESS_TAGS, 1)
                     assert '[.1sAmt]' in phonemes(custom, spelling), spelling
@@ -91,7 +91,7 @@ def main():
                     custom.close()
             (Path(temporary) / 'DEURoot.dic').write_bytes(b'samt\t`[.1sAmt]\n')
             root = DirectEciEngine(args.library.resolve(), dialect=0x40000,
-                encoding='utf8', experimental_generic=True)
+                encoding='utf8', native_voice=True)
             try:
                 root.set_dictionary_path(temporary)
                 root.set_parameter(PROCESS_TAGS, 1)

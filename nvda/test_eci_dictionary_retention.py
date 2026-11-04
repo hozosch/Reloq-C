@@ -46,7 +46,7 @@ def main():
         second=Path(temporary)/"second";second.mkdir()
         source=first/"ENUmain.dic";source.write_bytes(b"cancellationtoken\tbanana\n")
         (second/"ENUmain.dic").write_bytes(b"cancellationtoken\torange\n")
-        engine=DirectEciEngine(a.library,dialect=0x10000,encoding="utf8",experimental_generic=True)
+        engine=DirectEciEngine(a.library,dialect=0x10000,encoding="utf8",native_voice=True)
         try:
             engine.set_parameter(NATIVE_SPEED,98);engine.set_dictionary_path(first)
             expected=capture(engine)

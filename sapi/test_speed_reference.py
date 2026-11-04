@@ -16,7 +16,7 @@ def main():
     a = p.parse_args()
     report = json.loads(a.report.read_text())
     for language in (0x10000, 0x40000):
-        e = DirectEciEngine(a.library.resolve(), dialect=language, encoding='utf8', experimental_generic=True)
+        e = DirectEciEngine(a.library.resolve(), dialect=language, encoding='utf8', native_voice=True)
         try:
             for key, value in ((NATIVE_PITCH,65),(NATIVE_INFLECTION,30),(NATIVE_VOLUME,100)):
                 e.set_parameter(key,value)

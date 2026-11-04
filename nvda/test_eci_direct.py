@@ -255,7 +255,7 @@ def main():
     assert fake.deleted
     generic_dll = FakeEci()
     generic = DirectEciEngine("ignored.dll", _loader=lambda _path: generic_dll,
-                              experimental_generic=True,
+                              native_voice=True,
                               lexicon_path=__file__)
     assert generic_dll.voice_mode == 1
     assert generic_dll.lexicon_paths and generic_dll.lexicon_paths[0].endswith(
@@ -266,18 +266,18 @@ def main():
     rejected_lexicon = FakeEci()
     rejected_lexicon.failure["eciLoadLexicon"] = 0
     fallback = DirectEciEngine("ignored.dll", _loader=lambda _path: rejected_lexicon,
-                               experimental_generic=True, lexicon_path=__file__)
+                               native_voice=True, lexicon_path=__file__)
     assert rejected_lexicon.voice_mode == 1
     fallback.close()
     refused_dll = FakeEci()
     refused_dll.failure["eciSetParam"] = -1
     try:
         DirectEciEngine("ignored.dll", _loader=lambda _path: refused_dll,
-                        experimental_generic=True)
+                        native_voice=True)
     except RuntimeError as error:
-        assert "experimental generic" in str(error)
+        assert "native voice" in str(error)
     else:
-        raise AssertionError("experimental mode refusal not surfaced")
+        raise AssertionError("native voice mode refusal not surfaced")
     assert refused_dll.deleted
     for failing in ("eciSetOutputBuffer", "eciAddText", "eciInsertIndex",
                     "eciInsertPitch",

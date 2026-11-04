@@ -1,3 +1,11 @@
+# Releasevorbereitung 1.1.1
+
+- SAPI bereitet Sprache parallel zur Wiedergabe vor und reagiert schneller auf Unterbrechungen.
+- Gedankenstriche im Text werden in den geprüften europäischen Sprachen als Pausenzeichen ausgewertet; bei Zahlenbereichen bleibt die bisherige Behandlung erhalten.
+- Japanische und chinesische Wortmarkierungen unterbrechen die native Textanalyse nicht mehr und erzeugen keine zusätzlichen Pausen. Koreanisch verwendet denselben nicht eingreifenden Markierungsweg.
+- Bei ausdrücklicher Zeichenlesung wird der deutsche Unterstrich als Nomen betont. Die Satzanalyse unterscheidet Nomen und Verb weiterhin nach Kontext.
+- Nach Wörterbuchaktualisierungen zeigen NVDA, SAPI und Android einen Dialog mit der Anzahl neuer unterschiedlicher Einträge und Wörterbuchdateien. Beim ersten Laden werden die Gesamtzahlen angezeigt; bei fehlendem Vergleichsstand bleiben sie ausdrücklich unbekannt. Online-Updates übernehmen derzeit einen festen Satz unterstützter Dateinamen.
+
 # Releasevorbereitung 1.1.0
 
 - Der bestätigte deutsche E-I-Gleitlaut verwendet Öffnung 85, Rücklage 45 und Weichheit 45. Die drei vorübergehenden NVDA-Regler sind entfernt; Einstellungen aus rc27 werden nicht mehr an den Sprachkern übertragen.

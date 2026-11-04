@@ -1,4 +1,4 @@
-"""Conservative Unicode admission for the experimental German NVDA voice.
+"""Conservative Unicode admission for the German NVDA voice.
 
 The current native ECI takes CP1252, not UTF-8. This adapter preserves German letters and punctuation, folds other Latin
 letters for running speech and names their accents in spelling. Unknown

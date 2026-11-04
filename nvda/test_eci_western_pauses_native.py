@@ -14,7 +14,7 @@ def main():
     count=0
     for language,text in WORDS.items():
         e=DirectEciEngine(ROOT/'eci/libreloq_eci.so',dialect=language,
-            encoding='utf-8',experimental_generic=True)
+            encoding='utf-8',native_voice=True)
         def render(text,mode):
             e.set_parameter(PAUSE_MODE,mode);blocks=[];marks=[]
             assert e.speak([EciText(text,False),EciIndex(7)],blocks.append,marks.append)

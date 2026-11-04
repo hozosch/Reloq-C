@@ -127,8 +127,8 @@ msgstr "Männlich 4"
 
 #. Translators: Add-on name shown in NVDA's add-on manager.
 #: addon/build_translations.py:30
-msgid "Eloquence C: fourteen language variants"
-msgstr "Eloquence C: vierzehn Sprachvarianten"
+msgid "Eloquence C 1.1.1: fourteen language variants"
+msgstr "Eloquence C 1.1.1: vierzehn Sprachvarianten"
 
 #. Translators: Add-on description; this refers to the spoken language.
 #: addon/build_translations.py:32
@@ -319,3 +319,21 @@ msgstr "IBM-TTS-Wörterbücher"
 
 msgid "Alternative IBM TTS Dictionaries"
 msgstr "Alternative IBM-TTS-Wörterbücher"
+
+msgid "Dictionary update complete. The number of new entries could not be determined."
+msgstr "Die Wörterbuchaktualisierung ist abgeschlossen. Die Anzahl neuer Einträge konnte nicht ermittelt werden."
+
+msgid "Dictionary loaded for the first time. Entries: %s"
+msgstr "Wörterbuch erstmals geladen. Einträge insgesamt: %s"
+
+msgid "Dictionary update complete. New entries: %s"
+msgstr "Wörterbuchaktualisierung abgeschlossen. Neue Einträge: %s"
+
+msgid "The number of new dictionary files could not be determined."
+msgstr "Die Anzahl neuer Wörterbuchdateien konnte nicht ermittelt werden."
+
+msgid "Dictionary files in total: %s"
+msgstr "Wörterbuchdateien insgesamt: %s"
+
+msgid "New dictionary files: %s"
+msgstr "Neue Wörterbuchdateien: %s"

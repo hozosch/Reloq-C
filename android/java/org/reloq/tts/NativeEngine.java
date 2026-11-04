@@ -1,4 +1,4 @@
-package org.reloq.tts.preview;
+package org.reloq.tts;
 
 final class NativeEngine {
     static { System.loadLibrary("reloq_android"); }

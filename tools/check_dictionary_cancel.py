@@ -24,7 +24,7 @@ def main():
     p.add_argument("--output",type=Path)
     a=p.parse_args()
     if a.cycles<1:p.error("--cycles must be positive")
-    engine=DirectEciEngine(a.library,dialect=0x10000,encoding="utf8",experimental_generic=True)
+    engine=DirectEciEngine(a.library,dialect=0x10000,encoding="utf8",native_voice=True)
     engine.set_parameter(NATIVE_SPEED,98);engine.set_parameter(SAMPLE_RATE,a.rate)
     rows=[]
     def complete():

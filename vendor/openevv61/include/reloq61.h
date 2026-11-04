@@ -12,6 +12,9 @@ struct reloq61_curve { int32_t at_l, val_l, at_r, val_r; };
 #define RELOQ61_DE_AF_PACK 512
 typedef int (*reloq61_span_sink)(void *,int32_t from,int32_t to,
     const struct reloq61_curve curves[62],int32_t volume);
+/* Public indices can remain metadata when native queue tokens would alter
+ * the language's own lexical segmentation. Pitch marks remain acoustic. */
+#define RELOQ61_SOURCE_INDEX_ONLY (-2)
 struct reloq61_mark { size_t offset; int32_t index, pitch; };
 typedef int (*reloq61_frame_sink)(void *, const int32_t frame[62], int32_t volume);
 typedef void (*reloq61_index_sink)(void *, int32_t index, int64_t tick);

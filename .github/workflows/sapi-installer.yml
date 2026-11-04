@@ -17,7 +17,7 @@ permissions:
 jobs:
   native:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -27,11 +27,16 @@ jobs:
         with:
           persist-credentials: false
       - name: Install cross compiler
-        timeout-minutes: 7
+        timeout-minutes: 25
         run: |
           set -euo pipefail
           if [ '${{ matrix.arch }}' = x64 ]; then prefix=x86-64; compiler_prefix=x86_64; else prefix=i686; compiler_prefix=i686; fi
           if command -v "$compiler_prefix-w64-mingw32-gcc-posix" >/dev/null; then exit 0; fi
+          # Azure's mirror can become too slow for the cross-toolchain; use
+          # Ubuntu's official archive on these disposable build machines.
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
           sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
           sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends gcc-mingw-w64-$prefix-posix
       - uses: actions/cache@v4
@@ -118,6 +123,7 @@ jobs:
           if ($p.ExitCode -ne 0) { throw "Upgrade failed: $($p.ExitCode)" }
           Test-StartLinks 'Stimmeinstellungen' 'Anleitung'
           if ((Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'Dictionary edit lost during upgrade' }
+          & ./sapi/test_japanese_sapi.ps1 -ReportPath dist/validation/japanese-results.json
           foreach ($arch in @('x64','x86')) {
             $test = if ($arch -eq 'x64') { Join-Path $install 'Test-SAPI.exe' } else { Join-Path $install 'x86\Test-SAPI.exe' }
             & $test --all-native-rates *> "dist/validation/sapi-$arch.txt"

@@ -67,7 +67,7 @@ def worker(args):
     for language in args.languages:
         dialect, unit = TEXTS[language]
         engine = DirectEciEngine(args.library.resolve(), dialect=dialect,
-            encoding="utf8", experimental_generic=True, buffer_samples=1100)
+            encoding="utf8", native_voice=True, buffer_samples=1100)
         try:
             engine.set_parameter(NATIVE_SPEED, 75)
             if args.dictionary:

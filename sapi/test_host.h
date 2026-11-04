@@ -19,6 +19,7 @@ typedef struct {DWORD dwFileAttributes;FILETIME ftCreationTime,ftLastAccessTime,
 BOOL GetFileAttributesExW(LPCWSTR,int,WIN32_FILE_ATTRIBUTE_DATA *);
 DWORD GetLastError(void);
 extern unsigned sapi_test_dictionary_calls;
+extern unsigned sapi_test_synth_complete;
 #ifdef RELOQ_SAPI_SETTINGS_TEST
 typedef void *HKEY;typedef LONG LSTATUS;
 #define HKEY_CURRENT_USER ((HKEY)(uintptr_t)1)
@@ -29,10 +30,12 @@ typedef void *HKEY;typedef LONG LSTATUS;
 #define RRF_RT_REG_BINARY 8
 #define RRF_RT_REG_DWORD 16
 #define KEY_SET_VALUE 2
+#define KEY_READ 0x20019
 #define S_FALSE ((HRESULT)1)
 #define E_POINTER ((HRESULT)0x80004003)
 DWORD GetModuleFileNameW(HMODULE,WCHAR *,DWORD);
 LSTATUS RegGetValueW(HKEY,LPCWSTR,LPCWSTR,DWORD,DWORD *,void *,DWORD *);
+LSTATUS RegOpenKeyExW(HKEY,LPCWSTR,DWORD,DWORD,HKEY *);
 LSTATUS RegCreateKeyExW(HKEY,LPCWSTR,DWORD,void *,DWORD,DWORD,void *,HKEY *,DWORD *);
 LSTATUS RegSetValueExW(HKEY,LPCWSTR,DWORD,DWORD,const BYTE *,DWORD);
 LSTATUS RegCloseKey(HKEY);

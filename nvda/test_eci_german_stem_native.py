@@ -9,7 +9,7 @@ from test_eci_german_clock_native import phonemes,render
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library',type=Path,required=True);args=parser.parse_args()
-    engine=DirectEciEngine(args.library.resolve(),dialect=0x40000,experimental_generic=True)
+    engine=DirectEciEngine(args.library.resolve(),dialect=0x40000,native_voice=True)
     try:
         engine.set_parameter(PROCESS_TAGS,1)
         examples={
@@ -30,7 +30,7 @@ def main():
     with tempfile.TemporaryDirectory() as tmp:
         lex=Path(tmp)/'override.rlex';word=b'konzentrieren';spr=b'`[.1tEst]'
         lex.write_bytes(b'RELOQ-DE-SPR-1\n'+word.hex().upper().encode()+b'\t'+spr.hex().upper().encode()+b'\n')
-        engine=DirectEciEngine(args.library.resolve(),experimental_generic=True,lexicon_path=lex)
+        engine=DirectEciEngine(args.library.resolve(),native_voice=True,lexicon_path=lex)
         try:assert '`[.1tEst]' in phonemes(engine,'konzentrieren')
         finally:engine.close()
     print(f'German stem: {len(examples)} native word/phoneme/index cases and explicit dictionary precedence passed')

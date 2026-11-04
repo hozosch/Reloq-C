@@ -15,7 +15,7 @@ def main():
     parser.add_argument('--report', type=Path)
     parser.add_argument('--speed', type=int, default=98)
     args = parser.parse_args()
-    engine = DirectEciEngine(args.library.resolve(), encoding='utf8', experimental_generic=True)
+    engine = DirectEciEngine(args.library.resolve(), encoding='utf8', native_voice=True)
     records = []
     try:
         engine.set_parameter(NATIVE_SPEED, args.speed)

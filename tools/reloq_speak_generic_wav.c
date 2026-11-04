@@ -98,7 +98,7 @@ int main(int argc, char **argv)
                 &best_annotation, &annotation_length,
                 &approximate_words, &bad);
             if (converted) {
-                fprintf(stderr, "experimental best-effort text: status %d at encoded byte %zu\n",
+                fprintf(stderr, "best-effort text: status %d at encoded byte %zu\n",
                         converted, bad);
                 reloq_german_lexicon_file_clear(&lexicon);
                 return 1;
@@ -176,12 +176,12 @@ int main(int argc, char **argv)
     if (!status && rename(temporary, path)) status = RELOQ_DE_UTTERANCE_SINK;
     if (status) {
         unlink(temporary);
-        fprintf(stderr, "experimental voice: status %d, byte %zu, phones %zu, "
+        fprintf(stderr, "native voice: status %d, byte %zu, phones %zu, "
                 "frames %zu%s\n", status, progress.error_offset,
                 progress.phone_count, progress.frames_completed,
                 output.error ? ", WAV size or write failed" : "");
     } else {
-        fprintf(stderr, "experimental voice: %zu phones, %zu frames, "
+        fprintf(stderr, "native voice: %zu phones, %zu frames, "
                 "%u samples at 11025 Hz; %zu guessed words%s\n",
                 progress.phone_count, progress.frames_completed,
                 output.samples, approximate_words,

@@ -13,7 +13,7 @@ def main():
     parser.add_argument('--library', type=Path, required=True)
     args = parser.parse_args()
     engine = DirectEciEngine(args.library.resolve(), dialect=0x40000,
-                             encoding='utf8', experimental_generic=True)
+                             encoding='utf8', native_voice=True)
     checks = 0
     try:
         engine.set_parameter(PROCESS_TAGS, 1)
@@ -85,7 +85,7 @@ def main():
         # The caller's Main replacement still wins over any built-in fix.
         (folder/'DEUmain.dic').write_bytes(b'Sprachauswahl\tKirsche\nSuchauswahl\tFenster\n')
         engine = DirectEciEngine(args.library.resolve(), dialect=0x40000,
-                                 encoding='utf8', experimental_generic=True)
+                                 encoding='utf8', native_voice=True)
         try:
             engine.set_parameter(PROCESS_TAGS, 1)
             engine.set_dictionary_path(folder)
@@ -100,7 +100,7 @@ def main():
                            ('Unterricht', '`[.0Un.0tR.1rIXt]'),
                            ('Pizza', '`[.1pI.0TA]')))
         engine = DirectEciEngine(args.library.resolve(), dialect=0x40000,
-                                 encoding='utf8', experimental_generic=True,
+                                 encoding='utf8', native_voice=True,
                                  lexicon_path=explicit)
         try:
             engine.set_parameter(PROCESS_TAGS, 1)
