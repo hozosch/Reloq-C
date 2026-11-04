@@ -50,7 +50,10 @@ def main():
             engine = engines[language]
             engine.set_parameter(SAMPLE_RATE, row['rate'])
             pcm = bytearray()
-            assert engine.speak(parts_with_events(samples[language], row['event_offsets']), pcm.extend, lambda _value: None)
+            marks = []
+            assert engine.speak(parts_with_events(samples[language], row['event_offsets']), pcm.extend,
+                                lambda value: marks.append((value, len(pcm))))
+            assert marks == list(enumerate(row['event_audio_offsets'], 1)), row
             values = array.array('h', pcm)
             digest = 1469598103934665603
             for value in values:

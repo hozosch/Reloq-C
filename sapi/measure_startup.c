@@ -6,6 +6,7 @@
 #include <time.h>
 
 static double started, first, playable;
+static int writes_to_playable;
 static double clock_s(void)
 {
     struct timespec t;
@@ -17,7 +18,10 @@ static HRESULT timed_write(ISpTTSEngineSite *p,const void *data,ULONG bytes,ULON
     if (!first) first = clock_s() - started;
     HRESULT result = write_pcm(p,data,bytes,written);
     const struct site *site = (const struct site *)p;
-    if (!playable && site->first_playable_samples) playable = clock_s() - started;
+    if (!playable && site->first_playable_samples) {
+        playable = clock_s() - started;
+        writes_to_playable = site->writes;
+    }
     return result;
 }
 static const ISpTTSEngineSiteVtbl timing_vtable =
@@ -50,14 +54,15 @@ int main(int argc, char **argv)
                 result.interest = events_enabled ? ~(ULONGLONG)0 : 0;
                 result.playback_threshold = (output.nSamplesPerSec + 19) / 20;
                 result.abort_after = result.playback_threshold;
-                first = playable = 0;
+                first = playable = 0; writes_to_playable = 0;
                 started = clock_s();
                 HRESULT status = sapi_backend_speak(backend,&config,0,&output,&fragment,&result.iface);
                 double elapsed = clock_s() - started;
                 assert(SUCCEEDED(status) && result.count > 0 && first > 0 && playable > 0);
-                printf("language=%s hz=%u events=%d words=%u iteration=%d first_ms=%.3f playable_ms=%.3f total_ms=%.3f samples=%zu\n",
+                printf("language=%s hz=%u events=%d words=%u iteration=%d first_ms=%.3f playable_ms=%.3f total_ms=%.3f samples=%zu first_write_samples=%zu writes_to_playable=%d\n",
                     language ? "de" : "en", output.nSamplesPerSec, events_enabled,
-                    counts[k], iteration, first*1000, playable*1000, elapsed*1000, result.count);
+                    counts[k], iteration, first*1000, playable*1000, elapsed*1000,
+                    result.count, result.first_write_samples, writes_to_playable);
                 free(result.pcm);
             }
             free(message);

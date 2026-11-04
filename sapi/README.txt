@@ -57,12 +57,14 @@ spelling fragments use the shared C engine.
 Responsiveness and dictionaries
 -------------------------------
 The initialized language runs directly on SAPI's output thread, following the
-SAPI5IBMTTS transport approach. The initial callbacks are delivered promptly
-so that clients can reach their playback threshold. After approximately 120 ms
-of source audio, callbacks are collected in one live 4,096-sample buffer and
-flushed at events and fragment boundaries. There is no second producer thread
-or semaphore queue. This reduces small writes without changing samples or the
-native synthesis rate.
+SAPI5IBMTTS transport approach. For the first output, the adapter collects
+approximately 60 ms of source audio in one live buffer. This lets clients such
+as NVDA reach their initial playback threshold without a separate SAPI write for
+every tiny native callback. Additional short blocks during the first 500 ms of
+source audio help clients that apply speed-up; later blocks contain up to 4,096
+samples. Event and fragment boundaries are flushed at their exact positions.
+There is no second producer thread or semaphore queue. The samples and native
+synthesis rate are unchanged.
 
 Unchanged dictionary paths retain initialized language data. Small metadata
 checks detect edits, replacement, creation and deletion of native .dic files

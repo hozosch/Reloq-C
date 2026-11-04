@@ -62,7 +62,7 @@ struct sapi_backend {
     volatile LONG cancel,busy;struct job job;
     int dialect;ULONG fragment_volume;ECIHand handle;short pcm[512];
     ISpTTSEngineSite *site;HRESULT result;ULONGLONG audio_offset;
-    short pending[4096];size_t pending_count;int started;
+    short pending[4096];size_t pending_count;
     SPEVENT *events;size_t event_count,event_capacity;
     struct bookmark *bookmarks;
     int dictionary_ready;WCHAR dictionary_path[2048];
@@ -99,7 +99,7 @@ static int write_pcm(struct sapi_backend *b,short *pcm,size_t samples)
             b->result=FAILED(hr)?hr:hr==S_OK?E_FAIL:S_OK;cancel_backend(b);return 0;}
         at+=written;b->audio_offset+=written;
     }
-    b->started=1;return 1;
+    return 1;
 }
 static int flush_pcm(struct sapi_backend *b)
 {
@@ -107,19 +107,28 @@ static int flush_pcm(struct sapi_backend *b)
 }
 static int append_pcm(struct sapi_backend *b,const short *pcm,size_t samples)
 {
-    /* Send the first 120 ms as native callbacks. Some SAPI consumers wait
-     * for an initial audio threshold before playback; sending just 512
-     * samples before switching to a 4096-sample batch can delay that
-     * threshold, especially at higher synthesis rates. Later callbacks
-     * remain batched and event flushes keep their exact stream offsets. */
-    uint64_t startup=((uint64_t)b->job.rate*120+999)/1000;
-    if(!b->started||b->audio_offset/sizeof(short)<startup){
-        memcpy(b->pending,pcm,samples*sizeof *pcm);
-        return write_pcm(b,b->pending,samples);
-    }
-    while(samples){size_t n=4096-b->pending_count;if(n>samples)n=samples;
+    /* The native engine often calls back once per millisecond. Collect a
+     * short first block before entering SAPI, whose client may itself have
+     * to cross into another runtime for each write. At ordinary speed NVDA
+     * waits for 50 ms of audio; 60 ms reaches that threshold in one write.
+     * Use short subsequent blocks through the first 500 ms of source audio:
+     * a client performing speed-up can need more than 60 ms before it can
+     * play. Event flushes preserve exact positions and can produce smaller
+     * blocks. */
+    uint64_t startup=((uint64_t)b->job.rate*60+999)/1000;
+    uint64_t startup_window=((uint64_t)b->job.rate*500+999)/1000;
+    size_t early_block=(size_t)(((uint64_t)b->job.rate*80+999)/1000);
+    while(samples){
+        size_t target=4096;
+        uint64_t delivered=b->audio_offset/sizeof(short);
+        if(delivered<startup&&startup-delivered<target)target=(size_t)(startup-delivered);
+        else if(delivered>=startup&&delivered<startup_window){
+            if(early_block<target)target=early_block;
+            if(startup_window-delivered<target)target=(size_t)(startup_window-delivered);
+        }
+        size_t n=target-b->pending_count;if(n>samples)n=samples;
         memcpy(b->pending+b->pending_count,pcm,n*2);b->pending_count+=n;pcm+=n;samples-=n;
-        if(b->pending_count==4096&&!flush_pcm(b))return 0;}
+        if(b->pending_count==target&&!flush_pcm(b))return 0;}
     return 1;
 }
 static int deliver_event(struct sapi_backend *b,SPEVENT event)
@@ -360,7 +369,7 @@ HRESULT sapi_backend_speak(struct sapi_backend *b,const struct sapi_settings *se
     if(speed< -10)speed=-10;if(speed>10)speed=10;if(volume>100)volume=100;
     ULONGLONG interest=0;site->lpVtbl->GetEventInterest(site,&interest);
     b->job=(struct job){.settings=*settings,.fragments=fragments,.flags=flags,.rate=format->nSamplesPerSec,.speed=speed,.volume=volume,.interest=interest};
-    b->site=site;b->result=S_OK;b->audio_offset=0;b->pending_count=0;b->started=0;
+    b->site=site;b->result=S_OK;b->audio_offset=0;b->pending_count=0;
     InterlockedExchange(&b->cancel,0);
     HRESULT result=actions(b)?synthesize(b):S_OK;
     if(SUCCEEDED(result)&&!InterlockedCompareExchange(&b->cancel,0,0))flush_pcm(b);

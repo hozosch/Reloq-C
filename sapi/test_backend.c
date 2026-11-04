@@ -10,7 +10,7 @@
 #include "catalogue.inc"
 struct site {
     ISpTTSEngineSite iface;short *pcm;size_t count,capacity,abort_after;
-    size_t playback_threshold,first_playable_samples,batched_after;
+    size_t playback_threshold,first_playable_samples,first_write_samples,batched_after;
     int post_start_writes;
     SPEVENT events[4096];size_t event_count;ULONG partial;int fail_after,writes;
     LONG speed;USHORT volume;struct sapi_backend *nested;int nested_done;
@@ -42,7 +42,8 @@ static HRESULT write_pcm(ISpTTSEngineSite *p,const void *data,ULONG bytes,ULONG 
     if(s->batched_after&&s->count>=s->batched_after)++s->post_start_writes;
     if(s->fail_after&&s->writes>=s->fail_after){*written=0;return E_FAIL;}
     if(s->partial&&bytes>s->partial)bytes=s->partial;*written=bytes;
-    size_t count=bytes/2;if(s->count+count>s->capacity){s->capacity=(s->count+count)*2;
+    size_t count=bytes/2;if(!s->first_write_samples)s->first_write_samples=count;
+    if(s->count+count>s->capacity){s->capacity=(s->count+count)*2;
         void *mem=realloc(s->pcm,s->capacity*sizeof *s->pcm);assert(mem);s->pcm=mem;}
     memcpy(s->pcm+s->count,data,bytes);s->count+=count;
     if(s->playback_threshold&&!s->first_playable_samples&&s->count>=s->playback_threshold)
@@ -61,7 +62,8 @@ static void same(const struct site *a,const struct site *b)
 int main(int argc,char **argv)
 {
     assert(argc==2);sapi_test_library=argv[1];struct sapi_settings s=settings();unsigned cases=0;
-    struct {int language,rate;size_t samples;uint64_t hash;unsigned event_count;ULONG event_offsets[128];} comparisons[98];
+    struct {int language,rate;size_t samples;uint64_t hash;unsigned event_count;
+        ULONG event_offsets[128];uint64_t event_audio_offsets[128];} comparisons[98];
     unsigned comparison_count=0,format_changes=0;
     size_t long_marked=0,long_plain=0,long_events=0;uint64_t long_marked_hash=0,long_plain_hash=0,long_event_hash=0;
     for(size_t i=0;i<sizeof sapi_languages/sizeof *sapi_languages;++i){
@@ -80,6 +82,7 @@ int main(int argc,char **argv)
                 assert(output.events[k].eEventId==SPEI_WORD_BOUNDARY||output.events[k].eEventId==SPEI_SENTENCE_BOUNDARY);
                 assert((uint64_t)output.events[k].lParam<=f.ulTextLen);
                 comparisons[comparison_count].event_offsets[k]=(ULONG)output.events[k].lParam;
+                comparisons[comparison_count].event_audio_offsets[k]=output.events[k].ullAudioStreamOffset;
             }
             ++comparison_count;
             free(output.pcm);++cases;
@@ -109,7 +112,7 @@ int main(int argc,char **argv)
     struct site fragmented=site_new();fragmented.partial=38;
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&a,&fragmented.iface)));same(&base,&fragmented);free(fragmented.pcm);++cases;
     struct site uninterested=site_new();uninterested.interest=0;
-    uninterested.batched_after=(out.nSamplesPerSec*120+999)/1000;
+    uninterested.batched_after=(out.nSamplesPerSec*500+999)/1000;
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&uninterested.iface)));
     assert(!uninterested.event_count);same(&base,&uninterested);
     /* Delivery stays batched after the short startup phase. */
@@ -119,8 +122,8 @@ int main(int argc,char **argv)
     assert(uninterested.post_start_writes<=(int)(later/4096)+2);
     free(uninterested.pcm);++cases;
     /* Model a consumer that waits for 50 ms of samples before playback,
-     * including NVDA's SAPI audio stream. Do not strand its startup behind
-     * the later 4096-sample batching threshold at any supported rate. */
+     * including NVDA's SAPI audio stream. With no intervening events, one
+     * short first write should cross that threshold at every native rate. */
     static const unsigned startup_rates[]={8000,11025,16000,22050,32000,44100,48000};
     for(size_t k=0;k<sizeof startup_rates/sizeof *startup_rates;++k){
         WAVEFORMATEX early_format=format(startup_rates[k]);
@@ -130,7 +133,16 @@ int main(int argc,char **argv)
         assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&early_format,&early_text,&early.iface)));
         assert(early.first_playable_samples>=early.playback_threshold);
 #ifndef RELOQ_SAPI_REFERENCE_BASELINE
-        assert(early.first_playable_samples<early.playback_threshold+512);
+        size_t first_block=(startup_rates[k]*60+999)/1000;
+        assert(early.first_write_samples==first_block);
+        assert(early.first_playable_samples==first_block);
+        struct site boosted=site_new();boosted.interest=0;
+        boosted.playback_threshold=(startup_rates[k]*300+999)/1000;
+        assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&early_format,&early_text,&boosted.iface)));
+        size_t early_block=(startup_rates[k]*80+999)/1000;
+        assert(boosted.first_playable_samples>=boosted.playback_threshold);
+        assert(boosted.first_playable_samples<boosted.playback_threshold+early_block);
+        free(boosted.pcm);++cases;
 #endif
         free(early.pcm);++cases;
     }
@@ -205,6 +217,9 @@ int main(int argc,char **argv)
         printf("%s{\"language\":%d,\"rate\":%d,\"samples\":%zu,\"hash\":\"%016llx\",\"event_offsets\":[",
             i?",":"",comparisons[i].language,comparisons[i].rate,comparisons[i].samples,(unsigned long long)comparisons[i].hash);
         for(unsigned j=0;j<comparisons[i].event_count;++j)printf("%s%u",j?",":"",(unsigned)comparisons[i].event_offsets[j]);
+        fputs("],\"event_audio_offsets\":[",stdout);
+        for(unsigned j=0;j<comparisons[i].event_count;++j)
+            printf("%s%llu",j?",":"",(unsigned long long)comparisons[i].event_audio_offsets[j]);
         fputs("]}",stdout);
     }
     puts("]}");
