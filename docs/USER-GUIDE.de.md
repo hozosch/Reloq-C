@@ -1,8 +1,8 @@
 # Eloquence C – Bedienungsanleitung
 
-## Testversion 1.1.0-rc23
+## Testversion 1.1.0-rc24
 
-Konsonantisches R folgt wieder der kontextabhängigen Anregung des früheren deutschen Pfades. Der J-Übergang in „Homepage“ geht vom Ei-Laut in „drei“ aus und verschiebt sich leicht zum langen I; US-englische Fragen erhalten eine ansteigende Schlusskontur. Wenn die native Analyse einen Wörterbucheintrag in einer Bindestrichzusammensetzung bereits verwendet, bleibt die Satzplanung erhalten. Die alternative IBM-Wörterbuchquelle ist auswählbar. Bitte Aussprache und Satzmelodie in NVDA prüfen.
+Der J-Gleitlaut in „Homepage“ geht vom unveränderten nativen Eloquence-Pfad aus und wird leicht nach hinten verschoben; bei „Kann er“ ist das unbetonte E am früheren ReLoq-Planer orientiert. Wortanfängliches „sm“ und „sn“ übernehmen die S-Anregung des früheren ReLoq-Planers. Mehrere bisher stumme Bindestrichwörter sprechen wieder. Bitte den Klang in NVDA prüfen.
 
 Die Testversion gleicht die Anregung des konsonantischen R und die Mischung des finalen A anhand des früheren deutschen Planers ab. Sie verkürzt das N in „neunund“ und berücksichtigt Wörterbuchaussprache in Bindestrich-Zusammensetzungen wie „ETI-Eloquence“, auch innerhalb von Anführungszeichen. Eine zusätzliche Tonhöhenanhebung bei schwachen Verben nach dem Satzakzent entfällt; deutsche Fragen erhalten eine ansteigende Schlusskontur. Die Klangwirkung muss in NVDA gehört werden.
 

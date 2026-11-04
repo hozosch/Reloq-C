@@ -2526,6 +2526,10 @@ int32_t reloq_dede61_insert_stress(void *state, int32_t p0, int32_t p1, int32_t 
     r0 = reloq61_typed_get_parm(DELTA_ENTRY_get_parm, state, (delta_loc *)(base + (-20)), EVV_AT(delta_loc *, (int32_t)PARAM(int32_t, 1)), (int16_t)(-6));
     r0 = reloq61_typed_get_parm(DELTA_ENTRY_get_parm, state, (delta_loc *)(base + (-12)), EVV_AT(delta_loc *, (int32_t)PARAM(int32_t, 2)), (int16_t)(-6));
     r0 = reloq61_typed_get_parm(DELTA_ENTRY_get_parm, state, (delta_loc *)(base + (-28)), EVV_AT(delta_loc *, (int32_t)PARAM(int32_t, 3)), (int16_t)(-4));
+    /* Some hyphenated particles have no matching syllable span. Let the
+     * surrounding stress rule try its alternative instead of passing a
+     * null timing position to lpta_ctxtl/rpta_ctxtr and dropping the text. */
+    if (!AT(int32_t, -16) || !AT(int32_t, -8)) goto L360;
     r0 = reloq61_typed_fence(DELTA_ENTRY_fence, state, (int8_t)(0), EVV_AT(const uint8_t *, delta_sym_ref[293]));
     r0 = reloq61_typed_inline61_lflags(DELTA_ENTRY_inline61_lflags, state, (int32_t)(1));
     r0 = reloq61_typed_inline61_lnode(DELTA_ENTRY_inline61_lnode, state, (int32_t)((int32_t)AT(int32_t, -16)));

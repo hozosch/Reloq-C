@@ -1,3 +1,11 @@
+# Testkandidat 1.1.0-rc24: Deutscher Gleitlaut und stille Wörter
+
+- Der J-Gleitlaut in „Homepage“ geht vom unveränderten nativen Eloquence-Pfad aus und wird behutsam nach hinten verschoben. Ein spektraler Vergleich mit der proprietären Original-DLL stützt den Ausgangspunkt; die neue Färbung bleibt ein Hörkandidat. Messbedingungen: [Originalvergleich](REFERENCE-ELOQUENCE-GLIDE.md).
+- Unbetontes E vor vokalischem R, wie in „Kann er“, verwendet die Formantfärbung des früheren ReLoq-Planers; die Regel berücksichtigt Text und Lautschrift.
+- Bei wortanfänglichem „sm“ und „sn“ soll das S wieder die Anregung des früheren ReLoq-Planers verwenden; Timing und Übergang bleiben im nativen Pfad. Die Klangwirkung benötigt einen Hörtest.
+- Die nativen Zeitmarken- und Bereichsprüfungen lassen mehrere bislang stumme Wörter sprechen, darunter „dane-ben“, „dage-gen“, „audio-encoder“, „video-encoder“, „macro-encoder“ und englisches „bad'hhesiron“. Regressionstests prüfen auch die Sprachausgabe nach diesen Wörtern.
+- Die Untersuchung der weiteren Fehlermuster aus Eloquence 64 ist noch nicht abgeschlossen: Französisches „quil.“, englisches „tzsche“, chinesisch-englisches „recosp“ und spanische Beträge wie „€123 456.78“ bleiben in diesen Sprachvarianten stumm oder unvollständig. Sie sind noch kein Release-fähiger Stand. Issue #10 zu schneller Dateinavigation ist bislang nicht reproduziert.
+
 # Testkandidat 1.1.0-rc23: Zahlwörter und weitere deutsche Aussprache
 
 - Bei 42 und 43 erhält der Übergang von „zwei“ beziehungsweise „drei“ zu „und“ wieder die Zeitpunkte des alten Planers; die verbindende Aussprache ohne Glottisschlag bleibt erhalten. Vor „achtzig“ wird der Glottisschlag in den zusammengesetzten Achtzigern wieder gesetzt.

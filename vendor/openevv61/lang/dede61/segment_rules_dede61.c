@@ -250,6 +250,17 @@ int32_t reloq_dede61_doAF(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p
     struct reloq61_spr_phone phone;
     if(reloq61_spr_phone_at(state,at,&phone)) {
         unsigned name=reloq61_spr_feature(state,&phone,0);
+        struct reloq61_spr_phone next;
+        /* The earlier German planner uses the ordinary /s/ excitation for
+         * word-initial /sm/ and /sn/, while the native rule lowers it by
+         * 12. Keep the native transition, and leave medial clusters and
+         * affricates alone. Match phone records for text and SPR alike. */
+        if(name==9 && reloq61_spr_feature(state,&phone,14)==0 &&
+           begins_projection(state,&phone,4) &&
+           reloq61_spr_phone_at(state,phone.after,&next) &&
+           !begins_projection(state,&next,7) &&
+           (reloq61_spr_feature(state,&next,0)==21 ||
+            reloq61_spr_feature(state,&next,0)==22))gain+=12;
         /* Apply the established high-rate source compensation to German
          * /f/ and /v/ (orthographic W), for text and phonetic input alike.
          * It is independent of the male /ts/ marker, including /tsv/. */

@@ -13,7 +13,7 @@ struct pitch_plan {
     uint64_t acoustic_hash;int64_t ticks;
     int32_t max_diplophonia,max_aspiration;
     int32_t aj_to_und_start,aj_to_und_end,continuous_until;
-    int i_e_r_target,i_e_target,final_a_target,comma_a_transition,kamera_a_target,oe_er_target,oe_r_lowered,weak_verb_rise,direct_weak_verb_fall,j_glide_target,ei_glide_target,j_onset_target;
+    int i_e_r_target,i_e_target,unstressed_er_target,initial_s_nasal_target,final_a_target,comma_a_transition,kamera_a_target,oe_er_target,oe_r_lowered,weak_verb_rise,direct_weak_verb_fall,j_glide_target,ei_glide_target,j_onset_target;
     unsigned r_phase_mask,r_phase_anywhere;
     int r_continuous,r_medial;
 };
@@ -57,7 +57,10 @@ static int span(void *context,int32_t from,int32_t to,
     if(c[2].val_l==0&&c[2].val_r==28&&c[7].val_l==28&&c[7].val_r==53)p->r_medial=1;
     if(c[9].val_l==400&&c[13].val_l==2050)p->i_e_r_target=1;
     if(c[9].val_l==370&&c[13].val_l==2150)p->i_e_target=1;
-    if(c[9].val_l==400&&c[13].val_l==1940&&c[15].val_l==2540)p->j_glide_target=1;
+    if(c[9].val_l==400&&c[13].val_l==2150&&c[15].val_l==2700)p->unstressed_er_target=1;
+    if(c[8].val_l==62&&c[39].val_l==50&&c[9].val_l==300&&
+       c[13].val_l==1500&&c[15].val_l==2600)p->initial_s_nasal_target=1;
+    if(c[9].val_l==285&&c[13].val_l==2100&&c[15].val_l==2850)p->j_glide_target=1;
     if(c[9].val_l==420&&c[13].val_l==1900&&c[15].val_l==2450)p->ei_glide_target=1;
     if(c[9].val_l==300&&c[13].val_l==2100&&c[15].val_l==2900)p->j_onset_target=1;
     return 0;
@@ -181,8 +184,22 @@ static unsigned german_phone_targets(void)
     assert(p.i_e_r_target);
     p=german_pitch("wie eben",65,0,75);
     assert(p.i_e_target);
-    /* /Ej/ uses the /aj/ glide moved slightly towards long i, for text and
-     * explicit phonemes; German /aj/ keeps its established target. */
+    p=german_pitch("Kann er",65,0,75);
+    assert(p.unstressed_er_target);
+    p=german_pitch("Kann er das?",65,0,75);
+    assert(p.unstressed_er_target);
+    p=german_pitch("`[.0er]",65,0,75);
+    assert(p.unstressed_er_target);
+    /* Word-initial /sm/ and /sn/ use the former planner's AF=62 while
+     * keeping its A5F=50 and the native duration/transition. */
+    const char *s_nasals[]={"Smiley","Snob","ein Smiley","ein Snob",
+                            "`[.1smI]","`[.1snOp]"};
+    for(size_t i=0;i<sizeof(s_nasals)/sizeof(*s_nasals);++i) {
+        p=german_pitch(s_nasals[i],65,0,75);
+        assert(p.initial_s_nasal_target);
+    }
+    /* The original native /Ej/ target, shifted slightly back, applies in
+     * text and explicit phonemes; German /aj/ keeps its established target. */
     p=german_pitch("Homepage",65,0,75);
     assert(p.j_glide_target);
     p=german_pitch("`[.1pEjC]",65,0,75);

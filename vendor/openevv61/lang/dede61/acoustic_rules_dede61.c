@@ -112,8 +112,8 @@ static int e_after_i(delta_state *d)
     return 1;
 }
 
-/* In an /Ej/ coda, as in Homepage, start with the /aj/ glide and move its
- * formants a little towards long /i/. Keep onset j and /aj/ unchanged. */
+/* In an /Ej/ coda, as in Homepage, move the original front glide only
+ * slightly back. Keep onset j and /aj/ unchanged. */
 static int e_j_glide(delta_state *d)
 {
     int32_t at;memcpy(&at,(const unsigned char *)d+DG_BASE+712,sizeof at);
@@ -128,6 +128,28 @@ static int e_j_glide(delta_state *d)
     if(!node)return 0;
     previous=(struct reloq61_spr_phone){node,EVV_AT(const int32_t *,node)[1]&~3};
     return previous.after&&reloq61_spr_feature(d,&previous,0)==31;
+}
+
+/* The former composer used a brighter long E before a syllable-final R,
+ * even when the syllable is unstressed, as in "Kann er das?". Inspect
+ * phonetic records so explicit SPR receives the same acoustic target. */
+static int unstressed_e_before_r(delta_state *d)
+{
+    int32_t at;memcpy(&at,(const unsigned char *)d+DG_BASE+712,sizeof at);
+    struct reloq61_spr_phone e,r;
+    if(!reloq61_spr_phone_at(d,at,&e)||reloq61_spr_feature(d,&e,0)!=30||
+       !reloq61_spr_phone_at(d,e.after,&r))return 0;
+    unsigned name=reloq61_spr_feature(d,&r,0);
+    if(name!=15 && !(name==25&&reloq61_spr_feature(d,&r,1)==2))return 0;
+    delta_vars *v=EVV_AT(delta_vars *,d->vars);
+    int32_t rleft=*EVV_AT(const int32_t *,r.node)&~3;
+    if(*EVV_AT(const int32_t *,rleft+(v->fence_base+7)*4)&1)return 0;
+    int32_t eleft=*EVV_AT(const int32_t *,e.node)&~3;
+    int32_t syll=vgetsc(d,0,0,eleft,7);
+    while(syll&&(*EVV_AT(const int32_t *,syll)&2))syll=vgetsc(d,0,0,syll,7);
+    if(!syll)return 0;
+    int16_t stress;memcpy(&stress,delta_record_field(&vstmtbl[7],0,TFLDS(EVV_AT(void *,syll))),2);
+    return stress==0;
 }
 /* A syllable-final r after long /oe/ has its own approved vocalic colour.
  * Use phone and syllable records, so the same rule applies to SPR input. */
@@ -281,9 +303,13 @@ int32_t reloq_dede61_doF(void *state,int32_t p0,int32_t p1,int32_t p2,int32_t p3
         }
     }
     if(stream.field>=1&&stream.field<=3&&e_j_glide(d)) {
-        static const int16_t target[]={400,1940,2540};
+        static const int16_t target[]={285,2100,2850};
         if(left.field>0)left.field=target[stream.field-1];
         if(right.field>0)right.field=target[stream.field-1];
+    }
+    if(stream.field==2&&unstressed_e_before_r(d)) {
+        if(left.field>0)left.field=2150;
+        if(right.field>0)right.field=2150;
     }
     /* The text and SPR parsers place four's consonantal R on opposite
      * sides of the syllable fence. Use the existing text-path formants for
