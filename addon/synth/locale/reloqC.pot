@@ -127,7 +127,7 @@ msgstr ""
 
 #. Translators: Add-on name shown in NVDA's add-on manager.
 #: addon/build_translations.py:30
-msgid "Eloquence C: fourteen language variants"
+msgid "Eloquence C 1.1: fourteen language variants"
 msgstr ""
 
 #. Translators: Add-on description; this refers to the spoken language.

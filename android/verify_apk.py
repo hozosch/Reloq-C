@@ -51,10 +51,10 @@ def verify_apk(path):
 
 def apk_identity(path,aapt2,apksigner,environment=None):
     badging=subprocess.run([str(aapt2),"dump","badging",str(path)],check=True,capture_output=True,text=True).stdout
-    package=re.search(r"package: name='([^']+)' versionCode='(\\d+)'",badging)
+    package=re.search(r"package: name='([^']+)' versionCode='(\d+)'",badging)
     certificates=subprocess.run([str(apksigner),"verify","--print-certs",str(path)],
         check=True,capture_output=True,text=True,env=environment).stdout
-    digests=re.findall(r"Signer #\\d+ certificate SHA-256 digest: ([a-f0-9]+)",certificates)
+    digests=re.findall(r"Signer #\d+ certificate SHA-256 digest: ([a-f0-9]+)",certificates)
     if not package or not digests:raise ValueError("APK identity or signing certificate missing")
     return dict(package=package[1],version_code=int(package[2]),certificates=sorted(digests))
 

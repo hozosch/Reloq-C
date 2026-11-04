@@ -26,6 +26,7 @@ jobs:
           PYTHONPATH=nvda python3 nvda/test_eci_direct.py
           PYTHONPATH=nvda python3 nvda/test_eci_languages.py
           python3 android/test_versioning.py
+          python3 android/test_apk_identity.py
           python3 android/test_translations.py
           python3 android/test_direct_boot.py --java-home "$JAVA_HOME"
           javac -d /tmp/reloq-java android/java/org/reloq/tts/UpdateData.java android/test/UpdateDataTest.java

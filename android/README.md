@@ -7,7 +7,7 @@ or later. Speech runs offline. Network access is used only when you explicitly u
 ## Install or update
 
 Install `reloq-c-android-arm64-1.1.0.apk` from GitHub Releases. This build
-uses the new app identity `org.reloq.tts`, so Android installs it alongside
+is named **ReLoq C 1.1** and uses the new app identity `org.reloq.tts`, so Android installs it alongside
 the earlier app rather than updating it in place. Select the new app in
 Android's text-to-speech settings and set up voices and dictionaries again.
 Keep the old app installed until you have copied any information you need

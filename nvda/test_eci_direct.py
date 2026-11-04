@@ -275,9 +275,9 @@ def main():
         DirectEciEngine("ignored.dll", _loader=lambda _path: refused_dll,
                         native_voice=True)
     except RuntimeError as error:
-        assert "experimental generic" in str(error)
+        assert "native voice" in str(error)
     else:
-        raise AssertionError("experimental mode refusal not surfaced")
+        raise AssertionError("native voice mode refusal not surfaced")
     assert refused_dll.deleted
     for failing in ("eciSetOutputBuffer", "eciAddText", "eciInsertIndex",
                     "eciInsertPitch",
