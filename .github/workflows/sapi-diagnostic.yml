@@ -1,0 +1,103 @@
+name: Diagnose SAPI long-text parity
+on:
+  push:
+    branches: [codex/sapi-diagnostic]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  parity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Wait for the identical native host library
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in $(seq 1 60); do
+            if gh run download 41885284810 --repo "$GITHUB_REPOSITORY" --name host-native-library --dir eci >/dev/null 2>&1 && test -s eci/libreloq_eci.so; then
+              break
+            fi
+            sleep 15
+          done
+          test -s eci/libreloq_eci.so
+      - name: Locate the failed PCM assertion
+        run: |
+          set -euo pipefail
+          mkdir -p sapi/build
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('sapi/test_backend.c')
+          s=p.read_text()
+          old='{assert(a->count==b->count);assert(!memcmp(a->pcm,b->pcm,a->count*2));}'
+          new='{fprintf(stderr,"SAME %zu:%016llx %zu:%016llx\\n",a->count,(unsigned long long)hash(a->pcm,a->count),b->count,(unsigned long long)hash(b->pcm,b->count));assert(a->count==b->count);assert(!memcmp(a->pcm,b->pcm,a->count*2));}'
+          assert old in s
+          s=s.replace(old,new)
+          assert 'same(&marked,&plain);assert(!plain.event_count);' in s
+          s=s.replace('same(&marked,&plain);assert(!plain.event_count);','fprintf(stderr,"MARKED_PLAIN\\n");same(&marked,&plain);assert(!plain.event_count);')
+          p.write_text(s)
+          PY
+          cc -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -I sapi -I include sapi/backend.c sapi/test_host.c sapi/test_backend.c src/reloq_voice_controls.c -ldl -lpthread -lm -o sapi/build/test_backend
+          set +e
+          sapi/build/test_backend "$PWD/eci/libreloq_eci.so" > /tmp/initial.json 2> /tmp/initial.log
+          result=$?
+          set -e
+          cat /tmp/initial.log
+          echo "Initial exit: $result"
+          test "$result" -ne 0
+          grep -q MARKED_PLAIN /tmp/initial.log
+      - name: Compare candidate with the previous SAPI adapter
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('sapi/test_backend.c')
+          s=p.read_text()
+          old='fprintf(stderr,"MARKED_PLAIN\\n");same(&marked,&plain);assert(!plain.event_count);'
+          new='''uint64_t eventhash=1469598103934665603ULL;
+          for(size_t k=0;k<marked.event_count;++k){SPEVENT *e=&marked.events[k];
+              eventhash=(eventhash^e->eEventId)*1099511628211ULL;
+              eventhash=(eventhash^e->wParam)*1099511628211ULL;
+              eventhash=(eventhash^(uint64_t)e->lParam)*1099511628211ULL;
+              eventhash=(eventhash^e->ullAudioStreamOffset)*1099511628211ULL;}
+          fprintf(stderr,"LONG_RESULT %zu:%016llx %zu:%016llx %zu:%016llx\\n",
+              marked.count,(unsigned long long)hash(marked.pcm,marked.count),
+              plain.count,(unsigned long long)hash(plain.pcm,plain.count),
+              marked.event_count,(unsigned long long)eventhash);
+          assert(!plain.event_count);'''
+          assert old in s
+          p.write_text(s.replace(old,new))
+          PY
+          cc -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -I sapi -I include sapi/backend.c sapi/test_host.c sapi/test_backend.c src/reloq_voice_controls.c -ldl -lpthread -lm -o sapi/build/test_backend
+          sapi/build/test_backend "$PWD/eci/libreloq_eci.so" > /tmp/candidate.json 2> /tmp/candidate.log || { cat /tmp/candidate.log; exit 1; }
+          python3 sapi/test_reference.py --library eci/libreloq_eci.so --report /tmp/candidate.json
+          git show 76e2c04bb00c66ece46a93224a1066d5dab57328:sapi/backend.c > sapi/backend.c
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('sapi/test_backend.c')
+          s=p.read_text()
+          old='assert(early.first_playable_samples<early.playback_threshold+512);'
+          assert old in s
+          p.write_text(s.replace(old,'assert(early.first_playable_samples>=early.playback_threshold);'))
+          PY
+          cc -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -I sapi -I include sapi/backend.c sapi/test_host.c sapi/test_backend.c src/reloq_voice_controls.c -ldl -lpthread -lm -o sapi/build/test_backend
+          sapi/build/test_backend "$PWD/eci/libreloq_eci.so" > /tmp/baseline.json 2> /tmp/baseline.log || { cat /tmp/baseline.log; exit 1; }
+          python3 sapi/test_reference.py --library eci/libreloq_eci.so --report /tmp/baseline.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          def summary(which):
+              return next(l for l in Path('/tmp/'+which+'.log').read_text().splitlines() if l.startswith('LONG_RESULT '))
+          new,old=summary('candidate'),summary('baseline')
+          print('Candidate:',new)
+          print('Previous: ',old)
+          assert new==old, 'SAPI changes altered long German PCM or event offsets'
+          a=json.loads(Path('/tmp/candidate.json').read_text())
+          b=json.loads(Path('/tmp/baseline.json').read_text())
+          assert a['comparisons']==b['comparisons'], 'SAPI changes altered the language/rate reference PCM'
+          print('Candidate and previous adapter give identical PCM and word events for the long German case, and identical PCM for all reference cases.')
+          PY
