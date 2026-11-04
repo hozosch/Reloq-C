@@ -24,7 +24,6 @@ jobs:
           set -euo pipefail
           PYTHONPATH=nvda python3 nvda/test_updates.py
           PYTHONPATH=nvda python3 nvda/test_eci_direct.py
-          PYTHONPATH=nvda python3 nvda/test_eci_languages.py
           python3 android/test_versioning.py
           python3 android/test_apk_identity.py
           python3 android/test_translations.py
@@ -58,6 +57,7 @@ jobs:
       - name: Verify SAPI, tags and pronunciation
         run: |
           make -C sapi test
+          PYTHONPATH=nvda python3 nvda/test_eci_languages.py
           PYTHONPATH=nvda python3 nvda/test_eci_crash_regressions.py --library eci/libreloq_eci.so
           PYTHONPATH=nvda python3 nvda/test_eci_glide_tuning.py --library eci/libreloq_eci.so
           PYTHONPATH=nvda python3 nvda/test_eci_german_streaming.py --library eci/libreloq_eci.so
