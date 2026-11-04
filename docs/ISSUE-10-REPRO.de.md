@@ -1,9 +1,9 @@
 # Dateinamen-Test für Issue #10
 
 Die Meldung betrifft Version 1.0.1 beim schnellen Navigieren in xplorer2.
-Der Fehler ließ sich bisher weder mit der bisherigen automatischen Prüfung
-noch beim Projektinhaber nachstellen. Die folgenden Schritte schaffen eine
-ähnliche Situation; sie garantieren keine Reproduktion.
+Der Fehler wurde inzwischen mit dem automatischen Windows-Stresstest bei
+48 kHz nachgestellt. Die folgenden Schritte schaffen eine ähnliche Situation
+in xplorer2; sie garantieren keine Reproduktion auf jedem Gerät.
 
 1. Das Skript `tools/repro_issue_10.ps1` in PowerShell ausführen. Es erstellt
    einen neuen Ordner im temporären Verzeichnis mit 60 langen Dateinamen und

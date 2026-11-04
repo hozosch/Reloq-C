@@ -14,6 +14,7 @@ import sys
 import tempfile
 import threading
 import time
+import traceback
 import zipfile
 from unittest import mock
 
@@ -67,7 +68,16 @@ def main():
                 settings = {str(p): self._dll.eciGetParam(self._handle, p)
                             for p in (native.SAMPLE_RATE, native.HIGH_RATE_PROFILE, native.PROCESS_TAGS)}
                 self.calls.append((parts, settings))
-                return super().speak(parts, pcm, on_index)
+                try:
+                    return super().speak(parts, pcm, on_index)
+                except BaseException as error:
+                    # An interrupted job can be stale by the time its error
+                    # reaches NVDA. Keep the originating exception visible
+                    # when a native call leaves the handle busy.
+                    if self._native_busy_diagnostic() == '1':
+                        print('ORIGINAL NATIVE BUSY FAILURE:', repr(error), flush=True)
+                        traceback.print_exc()
+                    raise
 
         class Player:
             def __init__(self, hz):
