@@ -99,6 +99,28 @@ int main(int argc,char **argv)
      * rather than one small Write per native callback. */
     assert(uninterested.writes>1&&uninterested.writes<=(int)(uninterested.count/4096)+2);
     free(uninterested.pcm);++cases;
+    /* SAPI commonly requests every word position. A long utterance must
+     * retain the same PCM and ordered, in-range word events as ordinary
+     * speech without those events. */
+    {
+        WCHAR long_text[4096]=L"";
+        for(unsigned i=0;i<50;++i)wcscat(long_text,L"Dies ist ein langer Text mit mehreren Worten, ");
+        wcscat(long_text,L"Ende.");
+        SPVTEXTFRAG long_fragment=text(long_text,0);
+        struct sapi_backend *german=sapi_backend_new(0x40000);assert(german);
+        struct site marked=site_new(),plain=site_new();plain.interest=0;
+        assert(SUCCEEDED(sapi_backend_speak(german,&s,0,&out,&long_fragment,&marked.iface)));
+        assert(SUCCEEDED(sapi_backend_speak(german,&s,0,&out,&long_fragment,&plain.iface)));
+        same(&marked,&plain);assert(!plain.event_count);
+        size_t words=0;ULONG previous=0;
+        for(size_t i=0;i<marked.event_count;++i)if(marked.events[i].eEventId==SPEI_WORD_BOUNDARY){
+            ULONG position=(ULONG)marked.events[i].lParam;
+            assert(marked.events[i].wParam>0&&position<long_fragment.ulTextLen);
+            assert(!words||position>=previous);previous=position;++words;
+        }
+        assert(words>300);
+        free(marked.pcm);free(plain.pcm);sapi_backend_delete(german);++cases;
+    }
     struct site half=site_new();half.volume=50;
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&half.iface)));assert(half.count==base.count);
     for(size_t i=0;i<base.count;++i)assert(half.pcm[i]==base.pcm[i]/2);free(half.pcm);++cases;
