@@ -1,0 +1,21 @@
+name: Original Eloquence reference probe
+on:
+  push:
+    branches: [codex/eci-reference-probe]
+jobs:
+  probe:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x86
+      - name: Analyze the reference voice
+        run: python tools/reference_probe.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-reference-metrics
+          path: reference-metrics.json
+          retention-days: 1
