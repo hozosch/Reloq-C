@@ -1,5 +1,9 @@
 # Eloquence C – Bedienungsanleitung
 
+## Version 1.1.1
+
+Der Sprachkern berücksichtigt Gedankenstriche in den getesteten europäischen Sprachen auch ohne Leerzeichen. Bei der ausdrücklichen Zeichenlesung wird „Unterstrich“ als Nomen betont.
+
 ## Version 1.1.0
 
 Der deutsche E-I-Gleitlaut ist auf Öffnung 85, Rücklage 45 und Weichheit 45 abgestimmt. Die deutsche Satz- und Lautplanung verbessert unter anderem Bindestrichwörter, Zahlwörter und Fragemelodie. In englischer Analyse werden bei „recosp“ der vollständige Stamm und bei „tzsche“ der Schlussvokal erhalten.

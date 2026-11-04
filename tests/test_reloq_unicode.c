@@ -47,6 +47,11 @@ int main(void)
     check("α",1,0," Alpha ");check("α",1,1," alpha ");
     check("μ",1,0," My ");check("μ",1,1," mu ");
     check("ÄÖÜß",0,1,"ÄÖÜß");check("ÄÖÜß",0,0,"ÄÖÜß");
+    check("word—word",0,1,"word—word");
+    check("word–word",0,1,"word–word");
+    check("2–4",0,1,"2-4");check("2020 — 2024",0,1,"2020 - 2024");
+    check("a_b",0,0,"a_b");
+    check("_",1,0," `[.1Un.0tR.2StrIX] ");
     check("café",0,0,"café");check("øł",0,0,"øł");
     check("Sa\xcc\x83o, ac\xcc\xa7" "a\xcc\x83o",0,2,"São, ação");
     check("Helsinki/Turku - ääni",0,2,"Helsinki/Turku - ääni");

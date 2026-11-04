@@ -1,4 +1,4 @@
-name: Verify 1.1 stable-identity candidate
+name: Verify 1.1.1 stable-identity candidate
 on:
   push:
     branches: [codex/1-1-clean-identities]
@@ -56,7 +56,11 @@ jobs:
           import re, xml.etree.ElementTree as ET
           manifest=Path('addon/synth/manifest.ini').read_text()
           assert 'name = "reloqC"' in manifest
-          assert ET.parse('android/AndroidManifest.xml').getroot().get('package') == 'org.reloq.tts'
+          assert 'version = "1.1.1"' in manifest
+          android=ET.parse('android/AndroidManifest.xml').getroot()
+          assert android.get('package') == 'org.reloq.tts'
+          assert android.get('{http://schemas.android.com/apk/res/android}versionName') == '1.1.1'
+          assert android.get('{http://schemas.android.com/apk/res/android}versionCode') == '11010001'
           paths=[Path('addon/synth/manifest.ini'),Path('addon/synth/synthDrivers/reloqC/__init__.py'),
                  *(Path('nvda')/name for name in ('_reloq_eci_direct.py','_reloq_languages.py','_reloq_updates.py')),
                  Path('android/AndroidManifest.xml'),Path('android/res/xml/tts_engine.xml'),
@@ -83,6 +87,9 @@ jobs:
           retention-days: 14
       - name: Verify SAPI, tags and pronunciation
         run: |
+          cc -O2 -std=c11 -Iinclude tests/test_reloq_unicode.c eci/build/posix/reloq_unicode.o eci/build/posix/reloq_unicode_names.o eci/build/posix/reloq_character.o eci/build/posix/reloq_german_input.o eci/build/posix/reloq_utf8.o -Wl,--gc-sections -lm -o /tmp/test-reloq-unicode
+          /tmp/test-reloq-unicode
+          PYTHONPATH=nvda python3 nvda/test_eci_dash_pause.py --library eci/libreloq_eci.so
           make -C sapi test
           PYTHONPATH=nvda python3 nvda/test_eci_languages.py
           PYTHONPATH=nvda python3 nvda/test_eci_crash_regressions.py --library eci/libreloq_eci.so
@@ -155,14 +162,14 @@ jobs:
           python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --previous-package previous/reloq-c-android-arm64-1.1.0.apk --jobs 2
       - name: Check the delivered Android identity and label
         run: |
-          "$ANDROID_HOME/build-tools/35.0.1/aapt2" dump badging dist/reloq-c-android-arm64-1.1.0.apk > /tmp/apk-badging.txt
+          "$ANDROID_HOME/build-tools/35.0.1/aapt2" dump badging dist/reloq-c-android-arm64-1.1.1.apk > /tmp/apk-badging.txt
           python3 - <<'PY'
           from pathlib import Path
           import re,zipfile
           badging=Path('/tmp/apk-badging.txt').read_text()
           assert "package: name='org.reloq.tts'" in badging
-          assert "application-label:'ReLoq C 1.1'" in badging
-          with zipfile.ZipFile('dist/reloq-c-android-arm64-1.1.0.apk') as archive:
+          assert "application-label:'ReLoq C 1.1.1'" in badging
+          with zipfile.ZipFile('dist/reloq-c-android-arm64-1.1.1.apk') as archive:
               assert archive.testzip() is None
               assert all(not re.search(r'experimental|preview',name,re.I) for name in archive.namelist())
               dex=archive.read('classes.dex')
@@ -174,7 +181,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: android-stable-identity
-          path: dist/reloq-c-android-arm64-1.1.0.apk
+          path: dist/reloq-c-android-arm64-1.1.1.apk
           compression-level: 0
           retention-days: 14
   nvda:
@@ -215,7 +222,7 @@ jobs:
           with zipfile.ZipFile(addon) as archive:
               assert archive.testzip() is None
               manifest=archive.read('manifest.ini').decode('utf-8')
-              assert 'name = "reloqC"' in manifest and 'version = "1.1.0"' in manifest
+              assert 'name = "reloqC"' in manifest and 'version = "1.1.1"' in manifest
               for name in archive.namelist():
                   assert not re.search(r'experimental|preview',name,re.I),name
                   if name.endswith(('.py','.ini','.html')):
@@ -253,4 +260,6 @@ jobs:
           python nvda/test_eci_glide_tuning.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_german_streaming.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_dash_pause.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

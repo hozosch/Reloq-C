@@ -1,5 +1,9 @@
 # Eloquence C – user guide
 
+## Version 1.1.1
+
+The speech engine handles dashes in running text in tested European languages even without surrounding spaces. In German character reading, underscore uses noun stress.
+
 ## Version 1.1.0
 
 The German E-I glide defaults to opening 85, backness 45 and softness 45. German sentence and sound planning improve hyphenated words, number words and question contours. English analysis retains the whole stem in “recosp” and the final vowel in “tzsche”.

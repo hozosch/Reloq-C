@@ -7,7 +7,7 @@ import subprocess
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '1.1.0'
+VERSION = '1.1.1'
 
 
 def stage(build, packages):
@@ -22,6 +22,7 @@ def stage(build, packages):
             assert archive.testzip() is None, package
             manifest = json.loads(archive.read('package.json'))
             assert manifest['architecture'] == arch, package
+            assert manifest['version'] == VERSION + '-payload', package
             for name, row in manifest['files'].items():
                 data = archive.read(name)
                 assert hashlib.sha256(data).hexdigest() == row['sha256'], (package, name)
@@ -50,7 +51,7 @@ def main():
     parser.add_argument('--x86', type=Path)
     parser.add_argument('--output-dir', type=Path, default=ROOT / 'dist')
     args = parser.parse_args()
-    packages = {arch: (getattr(args, arch) or sorted((ROOT / 'dist').glob(f'reloq-c-sapi5-{arch}-*.zip'))[-1]).resolve()
+    packages = {arch: (getattr(args, arch) or sorted((ROOT / 'dist').glob(f'reloq-c-sapi5-{arch}-{VERSION}-payload.zip'))[-1]).resolve()
                 for arch in ('x64', 'x86')}
     build = args.build_dir.resolve()
     payload, snapshots = stage(build, packages)
@@ -60,7 +61,7 @@ def main():
     subprocess.run([str(args.iscc.resolve()), '/DAppVersion=' + VERSION, '/DPayload=' + str(payload),
                     '/DOutput=' + str(output), str(script)], check=True)
     installer = output / f'reloq-c-sapi5-{VERSION}-setup.exe'
-    report = {'version': VERSION, 'architectures': ['x86', 'x64'], 'languages': 12,
+    report = {'version': VERSION, 'architectures': ['x86', 'x64'], 'languages': 14,
               'sha256': hashlib.sha256(installer.read_bytes()).hexdigest(),
               'bytes': installer.stat().st_size, 'payloads': snapshots,
               'shared_dictionary_copies': 1, 'uninstall': 'Inno Setup, both COM registry views'}

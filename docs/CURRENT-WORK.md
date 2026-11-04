@@ -1,3 +1,9 @@
+# Releasevorbereitung 1.1.1
+
+- SAPI bereitet Sprache parallel zur Wiedergabe vor und reagiert schneller auf Unterbrechungen.
+- Gedankenstriche im Text werden in den geprüften europäischen Sprachen als Pausenzeichen ausgewertet; bei Zahlenbereichen bleibt die bisherige Behandlung erhalten.
+- Bei ausdrücklicher Zeichenlesung wird der deutsche Unterstrich als Nomen betont. Die Satzanalyse unterscheidet Nomen und Verb weiterhin nach Kontext.
+
 # Releasevorbereitung 1.1.0
 
 - Der bestätigte deutsche E-I-Gleitlaut verwendet Öffnung 85, Rücklage 45 und Weichheit 45. Die drei vorübergehenden NVDA-Regler sind entfernt; Einstellungen aus rc27 werden nicht mehr an den Sprachkern übertragen.

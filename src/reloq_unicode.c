@@ -53,6 +53,12 @@ static int scalar(struct buffer *b,uint32_t c)
     unsigned char s[4];size_t n=encode(s,c);
     return add(b,s,n);
 }
+static int ascii_number_range(const unsigned char *text,size_t length,size_t begin,size_t end)
+{
+    while(begin&&(text[begin-1]==' '||text[begin-1]=='\t'||text[begin-1]=='\r'||text[begin-1]=='\n'))--begin;
+    while(end<length&&(text[end]==' '||text[end]=='\t'||text[end]=='\r'||text[end]=='\n'))++end;
+    return begin&&end<length&&text[begin-1]>='0'&&text[begin-1]<='9'&&text[end]>='0'&&text[end]<='9';
+}
 uint32_t reloq_unicode_compose(uint32_t a,uint32_t b)
 {
     /* Hangul composition is algorithmic and has no UnicodeData table rows. */
@@ -153,7 +159,7 @@ static int one(struct buffer *b,uint32_t c,int mode,int en,int tags)
         }
         if(en&&(c==0x2018||c==0x2019))return add(b,"'",1);
         if(en&&(c==0x201c||c==0x201d))return add(b,"\"",1);
-        if(en&&(c==0x2013||c==0x2014))return add(b,"-",1);
+        /* Preserve Unicode dashes for the native punctuation grammar. */
         if(cp1252(c))return scalar(b,c);
         if(c==0xfe0e||c==0xfe0f||c==0x200d)return 0;
         if(c==0x200b||c==0x200c||c==0x2060||c==0xfeff)return 0;
@@ -348,6 +354,9 @@ static int unicode_admit(const unsigned char *text,size_t length,
             uint32_t mark;size_t z;if(decode(text+end,length-end,&z,&mark))goto fail;
             uint32_t merged=reloq_unicode_compose(c,mark);if(!merged)break;c=merged;end+=z;
         }
+        /* Keep the existing US-English Unicode reading of numeric ranges. */
+        if(english==1&&!mode&&!source_spelling&&(c==0x2013||c==0x2014)&&
+           ascii_number_range(text,length,begin,end))c='-';
         {
             size_t matched=0;
             const char *label=emoji_label(text,length,modes,begin,c,mode,
@@ -514,7 +523,9 @@ static int unicode_admit(const unsigned char *text,size_t length,
         struct reloq_character_reading native_reading;
         int native=mode&&(!label||matched<=end)&&
             reloq_character_read_native(c,english,&native_reading)==1;
-        int raw=mode&&!english&&c!='`'&&(!label||matched<=end)&&
+        /* The native underscore reading already has noun stress. Route this
+         * explicit character through that reading, not the ambiguous word. */
+        int raw=mode&&!english&&c!='`'&&c!='_'&&(!label||matched<=end)&&
             reloq_character_native_available(c,0);
         if(native_run&&!raw) {
             if(add(&b," `ts0 ",6)){rc=-2;goto fail;}

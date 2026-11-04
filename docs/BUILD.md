@@ -49,7 +49,7 @@ python3 addon/build_synth.py --dll eci/eci.dll
 
 Der Paketbau prüft das x64-PE-Format, übernimmt Treiber und Daten und fragt die aktuelle Master-Version von `eigencrow/ibmttsdictionaries` ab. Dafür wird Netzwerkzugriff benötigt. Das Paket landet unter `dist/`; Versionsangaben und Ausgabe-Pfad stehen in `addon/synth/manifest.ini` und `addon/build_synth.py` und müssen für eine neue Veröffentlichung gemeinsam aktualisiert werden.
 
-Der aktuelle Paketstand ist 1.1.0. Änderungen und bekannte Grenzen stehen in [den Versionshinweisen](releases/1.1.md). Die C-Kernversion wird beim Laden im NVDA-Protokoll ausgegeben; damit lässt sich prüfen, welche DLL tatsächlich aktiv ist.
+Der aktuelle Paketstand ist 1.1.1. Änderungen und bekannte Grenzen stehen in [den Versionshinweisen](releases/1.1.1.md). Die C-Kernversion wird beim Laden im NVDA-Protokoll ausgegeben; damit lässt sich prüfen, welche DLL tatsächlich aktiv ist.
 
 ## Android ARM64
 
