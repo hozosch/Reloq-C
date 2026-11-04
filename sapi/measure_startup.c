@@ -51,7 +51,7 @@ int main(int argc, char **argv)
                 HRESULT status = sapi_backend_speak(backend,&config,0,&output,&fragment,&result.iface);
                 double elapsed = clock_s() - started;
                 assert(SUCCEEDED(status) && result.count > 0 && first > 0);
-                printf("language=%s hz=%u events=%d words=%u iteration=%d first_ms=%.3f total_ms=%.3f samples=%zu\\n",
+                printf("language=%s hz=%u events=%d words=%u iteration=%d first_ms=%.3f total_ms=%.3f samples=%zu\n",
                     language ? "de" : "en", output.nSamplesPerSec, events_enabled,
                     counts[k], iteration, first*1000, elapsed*1000, result.count);
                 free(result.pcm);
