@@ -111,8 +111,17 @@ def main():
                     assert render(e, ['Er sagte: ' + quoted]) == expected, quoted
                     checks += 1
             p = phonemes(e, 'Test-Solo')
-            assert 'bIn.0d@' not in p and p.count('tEst') == 2, p
-            checks += 1
+            assert '`[.1tEst.2tEst]' in p and 'bIn.0d@' not in p, p
+            assert render(e, ['Test-Solo']) == render(e, [p])
+            p = phonemes(e, 'A-ETI-Solo')
+            assert '`[.1a.2e.0ti.2tEst]' in p, p
+            assert render(e, ['A-ETI-Solo']) == render(e, [p])
+            p = phonemes(e, 'A-Solo-Zup')
+            assert '`[.1a.2tEst.2tEst]' in p, p
+            assert render(e, ['A-Solo-Zup']) == render(e, [p])
+            p = phonemes(e, 'AI-Solo')
+            assert p.count('`[') == 3, p
+            checks += 7
             for word, target in (('ETI-Zup', 'tEst'), ('ETI-zup', 'kAt')):
                 assert target in phonemes(e, word), word
                 checks += 1

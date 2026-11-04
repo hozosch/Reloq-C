@@ -136,8 +136,18 @@ static int samt_has_user_entry(int initial)
     unsigned char key[]="samt";
     if(initial=='S')key[0]='S';
     const struct reloq_lexicon *overlay=reloq61_dictionary_overlay_current();
-    const struct reloq_lexicon_override *entry=NULL;
-    if(overlay&&reloq_lexicon_find_override(overlay,key,4,&entry)==1)return 1;
+    if(overlay) {
+        size_t low=0,high=overlay->override_count;
+        while(low<high) {
+            size_t middle=low+(high-low)/2;
+            const struct reloq_lexicon_override *entry=overlay->overrides+middle;
+            size_t common=entry->key_length<4?entry->key_length:4;
+            int order=memcmp(entry->key,key,common);
+            if(!order)order=(entry->key_length>4)-(entry->key_length<4);
+            if(!order)return 1;
+            if(order<0)low=middle+1;else high=middle;
+        }
+    }
     const struct reloq_lexicon_resolver *resolver=reloq61_dictionary_resolver();
     int found=resolver&&resolver->find&&resolver->find(resolver->context,key,4)!=NULL;
     reloq61_dictionary_resolver_release(resolver);
