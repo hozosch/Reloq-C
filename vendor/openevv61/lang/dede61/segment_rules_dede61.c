@@ -198,10 +198,22 @@ static int consonant_r_voicing(void *state,int16_t stream,int16_t value,int32_t 
         reloq61_submit_interval(state,stream,(int16_t)(value-2),from,to);
         return 1;
     }
-    if(reloq_dede61_old_r_source(state)!=1)return 0;
+    int mode=reloq_dede61_old_r_source(state);
+    if(mode!=1&&mode!=3)return 0;
     int32_t first,last;memcpy(&first,(const unsigned char *)state+DG_BASE+1048,4);
     memcpy(&last,(const unsigned char *)state+DG_BASE+1056,4);
-    if(last<=first||last-first<60000)return 0;
+    if(last<=first)return 0;
+    if(mode==3) {
+        /* The old R+J and medial short-U gestures are voiced throughout,
+         * even if the native onset would otherwise start with two phases. */
+        if(from==first&&to<last&&value==0) {
+            reloq61_submit_interval(state,stream,41,first,last);
+            return 1;
+        }
+        if(from>first&&to==last&&value==28)return 1;
+        return 0;
+    }
+    if(last-first<60000)return 0;
     int64_t span=(int64_t)last-first;
     int64_t third=(int64_t)first+span*7/10+10000;
     if(third+10000>=last)return 0;
@@ -281,7 +293,10 @@ static int32_t german_duration(void *state,int16_t kind,int32_t value)
        reloq61_spr_phone_at(d,pos,&current)&&reloq61_spr_phone_at(d,current.after,&next)) {
         unsigned id=reloq61_spr_feature(d,&current,0),following=reloq61_spr_feature(d,&next,0);
         int32_t replacement=0;
-        if((seven_und_n(d,&current,&next)||nine_und_n(d,&current,&next))&&value>300000) {
+        if(id==15&&following==26&&reloq_dede61_old_r_source(state)==3) {
+            /* The old continuous R+J onset holds R for 44 unscaled ticks. */
+            replacement=440000;
+        } else if((seven_und_n(d,&current,&next)||nine_und_n(d,&current,&next))&&value>300000) {
             /* In the connected number word the preceding n is the short
              * 30-ms nasal, rather than the standalone seven's longer coda. */
             replacement=300000;

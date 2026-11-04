@@ -12,7 +12,7 @@ struct pitch_plan {
     int32_t pair[2048][2];size_t count;
     uint64_t acoustic_hash;int64_t ticks;
     int32_t max_diplophonia,max_aspiration;
-    int32_t aj_to_und_start;
+    int32_t aj_to_und_start,continuous_until;
     int i_e_r_target,i_e_target,final_a_target,comma_a_transition,kamera_a_target,oe_er_target,oe_r_lowered,weak_verb_rise,direct_weak_verb_fall,j_glide_target,ei_glide_target,j_onset_target;
     unsigned r_phase_mask,r_phase_anywhere;
     int r_continuous,r_medial;
@@ -47,6 +47,8 @@ static int span(void *context,int32_t from,int32_t to,
     if(from<50&&c[7].val_l==28&&c[7].val_r==53)p->r_phase_mask|=4u;
     if(from>0&&c[2].val_l==41&&c[2].val_r==41&&c[6].val_l==0&&c[6].val_r==0&&
        c[7].val_l==53&&c[7].val_r==53)p->r_continuous=1;
+    if(c[2].val_l==41&&c[2].val_r==41&&c[7].val_l==53&&c[7].val_r==53&&
+       to>p->continuous_until)p->continuous_until=to;
     if(c[7].val_l==28&&c[7].val_r==49)p->r_phase_anywhere|=1u;
     if(c[7].val_l==49&&c[7].val_r==28)p->r_phase_anywhere|=2u;
     if(c[7].val_l==28&&c[7].val_r==53)p->r_phase_anywhere|=4u;
@@ -136,6 +138,11 @@ static unsigned german_phone_targets(void)
     assert(p.max_aspiration==53&&p.r_phase_mask==7&&p.max_diplophonia==0);
     p=german_pitch("vierund",65,0,75);
     assert(p.max_diplophonia==0&&p.r_continuous&&!p.r_phase_anywhere);
+    p=german_pitch("`[.1rja]",65,0,75);
+    assert(p.max_diplophonia==0&&p.r_continuous&&!p.r_phase_anywhere&&
+           p.continuous_until>=25&&p.continuous_until<=30);
+    p=german_pitch("`[.0A.1rja]",65,0,75);
+    assert(p.r_continuous&&!(p.r_phase_anywhere&3u));
     p=german_pitch("brennen",65,0,75);
     assert(p.max_diplophonia==40&&!p.r_phase_anywhere);
     p=german_pitch("Stra\337e",65,0,75);
@@ -194,7 +201,7 @@ static unsigned german_phone_targets(void)
            abs(three.aj_to_und_start-twentythree.aj_to_und_start)<=2);
     assert(two.max_diplophonia<100&&three.max_diplophonia<100&&
            twentytwo.max_diplophonia<100&&twentythree.max_diplophonia<100);
-    return 27;
+    return 29;
 }
 
 static int pitch_pair(const struct pitch_plan *p,int32_t left,int32_t right)

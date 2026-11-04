@@ -20,7 +20,7 @@ static int16_t consonant_r_source(void *state,int16_t stream,int16_t value)
      * retain the diplophonia selected by the native segment planner. */
     int mode=reloq_dede61_old_r_source(state);
     if(mode==3) {
-        if(stream==aspiration)return value==0?53:value;
+        if(stream==aspiration)return 53;
         return 0;
     }
     if(stream==diplophonia&&(mode==1||mode==2))return 0;
