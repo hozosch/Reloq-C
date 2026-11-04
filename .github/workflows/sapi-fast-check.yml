@@ -4,8 +4,15 @@ on:
     branches: [codex/sapi-diagnostic]
 permissions:
   contents: read
-  actions: read
+  actions: write
 jobs:
+  cancel-superseded:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Cancel the superseded candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run cancel 41886939702 --repo "$GITHUB_REPOSITORY" || true
   verify:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
