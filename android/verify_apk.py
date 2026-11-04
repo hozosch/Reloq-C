@@ -49,22 +49,41 @@ def verify_apk(path):
     print(f"APK install rules: stored resources.arsc at {offset}, 4-byte alignment and ARM64 16-KiB segments passed")
 
 
+def apk_identity(path,aapt2,apksigner,environment=None):
+    badging=subprocess.run([str(aapt2),"dump","badging",str(path)],check=True,capture_output=True,text=True).stdout
+    package=re.search(r"package: name='([^']+)' versionCode='(\\d+)'",badging)
+    certificates=subprocess.run([str(apksigner),"verify","--print-certs",str(path)],
+        check=True,capture_output=True,text=True,env=environment).stdout
+    digests=re.findall(r"Signer #\\d+ certificate SHA-256 digest: ([a-f0-9]+)",certificates)
+    if not package or not digests:raise ValueError("APK identity or signing certificate missing")
+    return dict(package=package[1],version_code=int(package[2]),certificates=sorted(digests))
+
+
 def verify_upgrade(new,old,aapt2,apksigner,environment=None):
-    """Compare actual signed artifacts, not just the source manifest/key path."""
-    def inspect(path):
-        badging=subprocess.run([str(aapt2),"dump","badging",str(path)],check=True,capture_output=True,text=True).stdout
-        package=re.search(r"package: name='([^']+)' versionCode='(\d+)'",badging)
-        certificates=subprocess.run([str(apksigner),"verify","--print-certs",str(path)],
-            check=True,capture_output=True,text=True,env=environment).stdout
-        digests=re.findall(r"Signer #\d+ certificate SHA-256 digest: ([a-f0-9]+)",certificates)
-        if not package or not digests:raise ValueError("APK identity or signing certificate missing")
-        return dict(package=package[1],version_code=int(package[2]),certificates=sorted(digests))
-    before,after=inspect(old),inspect(new)
+    """Require a genuine in-place update of an installed package."""
+    before=apk_identity(old,aapt2,apksigner,environment)
+    after=apk_identity(new,aapt2,apksigner,environment)
     if before["package"]!=after["package"]:raise ValueError("Package name changed: installs a second app")
     if before["certificates"]!=after["certificates"]:raise ValueError("Signing certificate changed: existing app cannot update")
     if after["version_code"]<=before["version_code"]:raise ValueError("Update versionCode must increase")
     print(f"APK upgrade: {after['package']}, same certificate, versionCode {before['version_code']} -> {after['version_code']} passed")
     return dict(before=before,after=after)
+
+
+def verify_previous_package(new,old,aapt2,apksigner,environment=None):
+    """Verify signing and report honestly whether the package is separate."""
+    before=apk_identity(old,aapt2,apksigner,environment)
+    after=apk_identity(new,aapt2,apksigner,environment)
+    if after["package"]!="org.reloq.tts":raise ValueError("Unexpected current app identity")
+    if before["certificates"]!=after["certificates"]:raise ValueError("Signing certificate changed")
+    separate=before["package"]!=after["package"]
+    if not separate and after["version_code"]<before["version_code"]:
+        raise ValueError("Package versionCode would downgrade the current installation")
+    if separate:
+        print("APK has a new app identity: it installs separately and cannot automatically import previous private data.")
+    else:
+        print("APK keeps the current app identity and signing certificate.")
+    return dict(before=before,after=after,separate=separate)
 
 
 def verify_direct_boot_manifest(tree):

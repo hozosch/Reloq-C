@@ -6,13 +6,13 @@ or later. Speech runs offline. Network access is used only when you explicitly u
 
 ## Install or update
 
-Install `reloq-c-android-arm64-1.1.0.apk` over the existing app.
-The package remains `org.reloq.tts.preview`, the preview signing certificate is
-unchanged, and versionCode increases to 11010000. Android can therefore
-update the existing app and retain its settings. Do not uninstall it first.
-The update checker in earlier 1.1.0-rc previews may not offer 1.1.0 because
-their version codes were unusually high. Install the 1.1.0 APK from GitHub
-Releases manually once; later update checks use the corrected ordering.
+Install `reloq-c-android-arm64-1.1.0.apk` from GitHub Releases. This build
+uses the new app identity `org.reloq.tts`, so Android installs it alongside
+the earlier app rather than updating it in place. Select the new app in
+Android's text-to-speech settings and set up voices and dictionaries again.
+Keep the old app installed until you have copied any information you need
+and verified the replacement. App-private settings and file permissions do not
+transfer automatically between the two identities.
 
 Open **ReLoq C** to adjust its settings or read a test text. To use it
 with TalkBack or another client, open **Android speech settings** and choose
@@ -22,7 +22,7 @@ mainland and Taiwan Mandarin routes. Existing saved language indices retain
 their meaning; Taiwan Mandarin is appended to the catalogue.
 
 The speech engine and live settings have been confirmed in practical use.
-This APK retains its existing technical installation identity so test installations update in place.
+The APK keeps the existing signing certificate but uses a new app identity.
 
 ## Speech before the first unlock
 
@@ -104,22 +104,21 @@ latest dictionary master and reuses existing verified data when possible.
 export ANDROID_SDK_ROOT=/path/to/android-sdk
 export ANDROID_NDK_HOME=/path/to/android-ndk-r30
 export JAVA_HOME=/path/to/jdk-17
-python3 android/build.py --upgrade-from dist/reloq-c-android-arm64-0.2.204-preview16.apk
+python3 android/build.py --previous-package path/to/previous.apk
 ```
 
 Explicit `--sdk`, `--ndk`, `--java-home`, `--build-tools` and `--android-jar`
-paths are also accepted. Omit `--upgrade-from` when there is no previous APK.
-When given, it compares both signed artifacts' package names, versionCodes
-and certificates and rejects an incompatible update. `--verified-dictionaries`
+paths are also accepted. Omit `--previous-package` when there is no previous APK.
+When given, it checks both signed artifacts' package names, versionCodes
+and certificates, and reports if they install as separate apps. `--verified-dictionaries`
 is reserved for a build where the current master commit has already been
 resolved independently and the local snapshot has been verified. Output goes
 under `dist/`. Android uses separate object directories and preserves the
 Windows/Linux outputs. Rebuild the Android objects after changing compiler flags.
 
-The checked-in `preview-debug.p12` is an intentionally public **test signing
-identity**, alias `androiddebugkey`, password `android`. It keeps preview updates
-installable over earlier previews. Production distribution needs a separate
-private signing identity and a deliberate migration plan.
+The checked-in `release-signing.p12` is an intentionally public **test signing
+identity**, alias `androiddebugkey`, password `android`. Production distribution
+needs a separate private signing identity and a deliberate migration plan.
 
 ## Transport and resources
 

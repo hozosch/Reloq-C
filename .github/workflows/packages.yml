@@ -72,11 +72,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release download --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-android-arm64-*.apk' --dir previous
-      - name: Build and verify ARM64 preview APK
+      - name: Build and verify ARM64 APK
         run: |
           previous_apk=(previous/*.apk)
           test "${#previous_apk[@]}" -eq 1
-          python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --upgrade-from "${previous_apk[0]}" --jobs 2
+          python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --previous-package "${previous_apk[0]}" --jobs 2
       - uses: actions/upload-artifact@v4
         with:
           name: android-apk

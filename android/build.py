@@ -12,7 +12,7 @@ import shutil
 import subprocess
 import sys
 import zipfile
-from verify_apk import verify_apk,verify_upgrade,verify_permissions
+from verify_apk import verify_apk,verify_upgrade,verify_previous_package,verify_permissions
 from codegen import generate
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -36,7 +36,9 @@ def main():
     parser.add_argument("--keystore",type=Path,default=HERE/"release-signing.p12")
     parser.add_argument("--verified-dictionaries",action="store_true",
         help="use locally verified data after separately resolving its current master commit")
-    parser.add_argument("--upgrade-from",type=Path,help="require an in-place update over this signed APK")
+    previous=parser.add_mutually_exclusive_group()
+    previous.add_argument("--upgrade-from",type=Path,help="require an in-place update over this signed APK")
+    previous.add_argument("--previous-package",type=Path,help="verify signing and report whether the previous APK is a separate app")
     args=parser.parse_args()
     if not args.sdk or not args.ndk or not args.java_home:
         parser.error("set --sdk, --ndk and --java-home (or their environment variables)")
@@ -108,6 +110,7 @@ def main():
     verify_apk(signed)
     verify_permissions(signed,tools/"aapt2")
     if args.upgrade_from:verify_upgrade(signed,args.upgrade_from.resolve(),tools/"aapt2",tools/"apksigner",environment)
+    if args.previous_package:verify_previous_package(signed,args.previous_package.resolve(),tools/"aapt2",tools/"apksigner",environment)
     # Publish only a closed, fully verified APK. Readers never see a partly
     # written signing output, and a failed rebuild leaves the old APK intact.
     pending=output.with_suffix(output.suffix+".tmp")

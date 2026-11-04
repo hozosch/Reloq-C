@@ -54,7 +54,7 @@ class Updates(unittest.TestCase):
             with self.subTest(values=values), self.assertRaises(ValueError):
                 select([{'assets': [{**self.asset, **values}]}], '0.2.196')
 
-    def test_first_official_release_updates_existing_test_installations(self):
+    def test_older_version_numbers_with_stable_filename(self):
         name = 'reloq-c-synth-x64-1.0.0.nvda-addon'
         asset = {**self.asset, 'name': name, 'browser_download_url':
                  'https://github.com/hozosch/Reloq-C/releases/download/v1.0/' + name}
@@ -62,7 +62,7 @@ class Updates(unittest.TestCase):
             self.assertEqual(select([{'assets': [asset]}], installed).version, '1.0.0')
         self.assertIsNone(select([{'assets': [asset]}], '1.0.0'))
 
-    def test_patch_release_updates_official_installations(self):
+    def test_version_ordering_for_stable_filename(self):
         name = 'reloq-c-synth-x64-1.0.1.nvda-addon'
         asset = {**self.asset, 'name': name, 'browser_download_url':
                  'https://github.com/hozosch/Reloq-C/releases/download/v1.0.1/' + name}
