@@ -64,6 +64,22 @@ def main():
             actual=chinese_accents_from_phonemes(full_phones[c_at+len('[.1si]'):],limit=6)
             assert actual==expected,(hex(dialect),'full NVDA About text',expected,actual)
             checks+=1
+            # After a number and an English sentence, the next Mandarin
+            # array can restart at zero. It must not inherit the already
+            # emitted English clock and silently discard the native tail.
+            engine.set_parameter(NATIVE_SPEED,75)
+            for inflection in (0,47,100):
+                engine.set_parameter(NATIVE_INFLECTION,inflection)
+                for prefix in ('3.0 menu.','3 0 menu.','3.1 menu!'):
+                    base=render(engine,[prefix,EciIndex(9)])[0]
+                    extended=render(engine,[prefix+' 你好 世界',EciIndex(9)])[0]
+                    assert len(extended)>len(base)+3000,(hex(dialect),inflection,prefix)
+                    checks+=1
+            engine.set_parameter(NATIVE_INFLECTION,47)
+            base=render(engine,[symbol_none,EciIndex(9)])[0]
+            extended=render(engine,[symbol_none+' 你好 世界',EciIndex(9)])[0]
+            assert len(extended)>len(base)+3000,(hex(dialect),'NVDA About Mandarin tail')
+            checks+=1
             for gender in (0,1):
                 engine.set_parameter(GENDER,gender)
                 for speed in (75,150):

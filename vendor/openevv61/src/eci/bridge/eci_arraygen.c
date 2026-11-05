@@ -292,6 +292,11 @@ int32_t sendArrayParameters(delta_state *d, int32_t from, int32_t to,
 
     (void)unused;
 
+    if (GEN(d)->reloq_frame) {
+        extern int reloq61_bank_clock_restart(void *,int32_t,int32_t,int32_t);
+        if (reloq61_bank_clock_restart(GEN(d)->reloq_context,from,bounded,continuing))
+            continuing = 1;
+    }
     if (from == 0)
         GEN_STARTED(d) = 0;
     GEN_LIMIT(d) = to;
