@@ -6,6 +6,23 @@ extern int32_t reloq_zhcn61_init_mcvoice_vars(void*,int32_t,int32_t);
 extern int32_t reloq_zhcn61_generate_tone(void*,int32_t,int32_t,int32_t);
 
 struct bank_pitch_grid {int32_t *time,*point;size_t count;};
+/* An English sentence-stress value of zero is not a command to suppress the
+ * Mandarin host's lexical tone. Keep explicitly reduced function words weak,
+ * but let the host plan accented content words from their lexical syllables. */
+static int bank_pitch_keep_word_stress(const struct reloq61_english_bank *p,size_t word)
+{
+ int16_t stress=p->pitch_word_stress[word];
+ if(stress)return stress>0;
+ const delta_stmt *en=delta_lang_by_id(0x10000)->stmtbl+4;
+ unsigned category=p->words[word].fields[2];
+ if(category>=(unsigned)en->fields[1].nvalues)return 0;
+ const char *name=((const char*const*)en->fields[1].values)[category];
+ static const char *const lexical[]={"adj","adv","interj","not","noun","verb",
+     "adj_adv","noun_verb","noun_adj","verb_adj","noun_verb_adj"};
+ for(size_t i=0;i<sizeof lexical/sizeof *lexical;++i)
+  if(!strcmp(name,lexical[i]))return 1;
+ return 0;
+}
 static int pitch_time_compare(const void *a,const void *b)
 {
  int32_t x=*(const int32_t*)a,y=*(const int32_t*)b;return (x>y)-(x<y);
@@ -40,7 +57,7 @@ static int pitch_acoustic_grid(delta_state *d,struct reloq61_english_bank *p,int
   if(insert_2pt_s(d,7,1,&zero,0))return 94;
   int32_t n=projected_record(d,left,7);if(!n)return 94;
   /* English stress selects the native foreign-syllable tone class. */
-  unsigned char *sb=TFLDS(EVV_AT(void*,n));int16_t stress=p->pitch_word_stress[sy->word-1]<=0?0:sy->stress,tone=stress>0?1:0;
+  unsigned char *sb=TFLDS(EVV_AT(void*,n));int16_t stress=bank_pitch_keep_word_stress(p,sy->word-1)?sy->stress:0,tone=stress>0?1:0;
   memcpy(sb,&stress,2);memcpy(sb+2,&tone,2);
   for(size_t i=sy->begin;i<sy->end;){
    size_t j=i+1;while(j<sy->end&&p->atoms[j].group==p->atoms[i].group)++j;
@@ -143,7 +160,7 @@ static int bank_host_pitch(delta_state *d,int32_t machine,struct reloq61_english
    unsigned char *word_fields=TFLDS(EVV_AT(void*,word));int16_t saved_stress;
    memcpy(&saved_stress,word_fields+4,2);
    int16_t native_stress=p->pitch_word_stress[current_word-1];
-   if(native_stress<=0)memcpy(word_fields+4,&native_stress,2);
+   if(!bank_pitch_keep_word_stress(p,current_word-1))memcpy(word_fields+4,&native_stress,2);
    if(reloq_zhcn61_init_word_vars(d,machine)){memcpy(word_fields+4,&saved_stress,2);goto done;}
    memcpy(word_fields+4,&saved_stress,2);
    int16_t neutral=0;int32_t unset=0;

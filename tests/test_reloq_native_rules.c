@@ -78,13 +78,40 @@ static struct reloq61_request request(int language,const char *text)
     struct reloq61_request q={.language=language,.annotations=1,.voice={0,50,65,30,0,0,75,100},
         .text=text,.frame=unexpected_frame,.span=span,.output_rate=11025};return q;
 }
-static struct pitch_plan pitch(const char *text,int speed,int gender,int head,int setting)
+static struct pitch_plan pitch_with_inflection(const char *text,int speed,int gender,int head,int setting,int inflection)
 {
     struct pitch_plan p={.acoustic_hash=UINT64_C(1469598103934665603)};
     struct reloq61_request q=request(0x60000,text);struct reloq61_result result={0};
-    q.context=&p;q.voice[0]=gender;q.voice[1]=head;q.voice[2]=setting;q.voice[6]=speed;
+    q.context=&p;q.voice[0]=gender;q.voice[1]=head;q.voice[2]=setting;q.voice[3]=inflection;q.voice[6]=speed;
     assert(!reloq61_generate(&q,&result)&&!result.error&&!result.unsupported);
     assert(p.count&&result.ticks>0);p.ticks=result.ticks;return p;
+}
+static struct pitch_plan pitch(const char *text,int speed,int gender,int head,int setting)
+{return pitch_with_inflection(text,speed,gender,head,setting,30);}
+
+static int pitch_transition(const struct pitch_plan *p,int32_t a,int32_t b)
+{
+    for(size_t i=0;i<p->count;++i)if(p->pair[i][0]==a&&p->pair[i][1]==b)return 1;
+    return 0;
+}
+static unsigned chinese_english_host_stress(void)
+{
+    /* In this long user-reported sentence, English sentence analysis marks
+     * the content words "make" and "code" with zero sentence stress. Their
+     * Chinese host tone must still use their accented lexical syllables. */
+    const char *text="You are free to share or change this software in any way you like as long as "
+        "it is accompanied by the license and you make all source code available to anyone who wants it.";
+    struct pitch_plan actual=pitch(text,75,0,50,65);
+    assert(pitch_transition(&actual,820,1002));
+    assert(pitch_transition(&actual,1002,715));
+    /* The donor's intonation stays neutral even when the host setting moves. */
+    struct pitch_plan low=pitch_with_inflection(text,75,0,50,65,0);
+    struct pitch_plan high=pitch_with_inflection(text,75,0,50,65,100);
+    assert(low.count==high.count&&!memcmp(low.pair,high.pair,low.count*sizeof *low.pair));
+    /* A previously verified weak demonstrative must stay unaccented. */
+    struct pitch_plan weak=pitch("This is an English text with some words.",75,0,50,65);
+    assert(weak.count&&weak.pair[0][0]==1225);
+    return 4;
 }
 static unsigned chinese(void)
 {
@@ -395,7 +422,7 @@ static unsigned clocks(void)
 }
 int main(void)
 {
-    unsigned c=clocks(),p=chinese(),g=german_high_pitch(),a=german_phone_targets(),m=german_postfocus_melody(),q=german_question_contours(),qa=german_question_alignment(),enq=english_question_contours();
-    printf("Native rules: %u English seconds/zero/fraction cases, %u full Chinese F0 sequences, %u German high-pitch contours, %u rhotic/e/A targets, %u post-focus melodies, %u German question contours, %u old-path question alignment and %u US question contours; tempo, models, heads and pitch controls\n",c,p,g,a,m,q,qa,enq);
+    unsigned c=clocks(),p=chinese(),zhstress=chinese_english_host_stress(),g=german_high_pitch(),a=german_phone_targets(),m=german_postfocus_melody(),q=german_question_contours(),qa=german_question_alignment(),enq=english_question_contours();
+    printf("Native rules: %u English seconds/zero/fraction cases, %u full Chinese F0 sequences, %u Chinese host-stress checks, %u German high-pitch contours, %u rhotic/e/A targets, %u post-focus melodies, %u German question contours, %u old-path question alignment and %u US question contours; tempo, models, heads and pitch controls\n",c,p,zhstress,g,a,m,q,qa,enq);
     return 0;
 }

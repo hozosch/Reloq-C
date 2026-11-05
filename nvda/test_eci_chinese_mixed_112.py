@@ -10,6 +10,10 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def main():
     text=(ROOT/'tests/fixtures/chinese_nvda_about.txt').read_text(encoding='utf8')
+    # NVDA 2026.3 at Chinese symbol level SOME supplies these spoken symbol
+    # names to the synthesizer between the English words and numbers.
+    symbol_text=(ROOT/'tests/fixtures/chinese_nvda_about_symbols.txt').read_text(encoding='utf8')
+    assert 'https: 斜杠  斜杠 www 点 nvaccess 点 org' in symbol_text
     assert 'Version: 2026.3 (2026.3.0.58174)' in text
     checks=0
     for dialect in (0x60000,0x60001):
@@ -42,6 +46,20 @@ def main():
             engine.set_parameter(NATIVE_INFLECTION,0);a=render(engine,['Hello world.',EciIndex(9)])[0]
             engine.set_parameter(NATIVE_INFLECTION,100);b=render(engine,['Hello world.',EciIndex(9)])[0]
             assert a==b,(hex(dialect),'English bank inflection');checks+=1
+            # Exercise the actual NVDA-processed mixed text, not just the raw
+            # English source. Chinese symbol names follow English repeatedly.
+            engine.set_parameter(NATIVE_SPEED,75)
+            engine.set_parameter(GENDER,0)
+            for inflection in (0,30,100):
+                engine.set_parameter(NATIVE_INFLECTION,inflection)
+                processed=render(engine,[symbol_text,EciIndex(9)])
+                assert processed[0] and processed[1][-1]==(9,len(processed[0]))
+                checks+=1
+            split=symbol_text.index('Copyright')
+            whole=render(engine,[symbol_text,EciIndex(9)])
+            fragments=render(engine,[symbol_text[:split],EciIndex(1),symbol_text[split:],EciIndex(9)])
+            assert whole[0]==fragments[0] and [i for i,_ in fragments[1]]==[1,9]
+            checks+=1
             # A Chinese transliteration must not replace English-bank words;
             # the native dictionary used to do this only for lowercase forms.
             for word in ('clinton','microsoft','internet'):

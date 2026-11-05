@@ -64,17 +64,20 @@ def main():
             result=readings(current(chr(int(cp))));assert len(result)==1 and result[0] in options.split(),(cp,result,options);checks+=1
         name=current("G");assert current("g")==name and current("ｇ")==name;checks+=2
         assert re.sub(r"`ts[012]","",current("`ts1 g")).strip()==name.strip();checks+=1
-        # Native language switches have a 20 ms boundary in either direction;
-        # numbers and Pinyin use the Chinese path too. Sentence punctuation
-        # continues to determine its own pause instead of gaining another one.
+        # Native language switches keep a text boundary in both directions,
+        # but add no timed pause; numbers and Pinyin use the Chinese path too.
+        # Ordinary sentence punctuation keeps determining its own pause.
         for text,expected in {
-            "你好 Hello 世界":" `ga_ni3hao3  `p20  `g9_Hello  `p20  `gb_shi4jie4",
-            "Hello 你好":" `g9_Hello  `p20  `ga_ni3hao3",
-            "你好 Hello":" `ga_ni3hao3  `p20  `g9_Hello",
-            "Hello ni3 hao3":" `g9_Hello  `p20 ni3 hao3",
-            "ni3 hao3 Hello":"ni3 hao3  `p20  `g9_Hello",
-            "Version: 2026.3":" `g9_Version:  `p20 2026.3",
+            "你好 Hello 世界":" `ga_ni3hao3   `g9_Hello   `gb_shi4jie4",
+            "Hello 你好":" `g9_Hello   `ga_ni3hao3",
+            "你好 Hello":" `ga_ni3hao3   `g9_Hello",
+            "Hello ni3 hao3":" `g9_Hello  ni3 hao3",
+            "ni3 hao3 Hello":"ni3 hao3   `g9_Hello",
+            "Version: 2026.3":" `g9_Version:  2026.3",
             "你好. Hello":" `ga_ni3hao3.  `g9_Hello",
+            "你好 `p20 Hello":" `ga_ni3hao3 `p20   `g9_Hello",
+            "https: 斜杠  斜杠 www 点 nvaccess 点 org":
+                " `g9_https:   `gH_xie2gang4   `gH_xie2gang4   `g9_www   `gQ_dian3   `g9_nvaccess   `gQ_dian3   `g9_org",
         }.items():
             assert current(text)==expected,(text,current(text))
             for cut in range(len(text.encode())+1):

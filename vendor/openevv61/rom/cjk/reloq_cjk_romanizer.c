@@ -176,12 +176,12 @@ static int chinese_literal_letters(const struct text_buffer *word)
  * These are romanizer properties, not caller-side language switches. */
 static int chinese_operator(unsigned cp)
 {return cp>0&&cp<128&&strchr("_+#$^~*|",(int)cp)!=NULL;}
-/* A small boundary remains audible, but need not delay a language switch as
- * much as the original 40 ms. Keep ordinary punctuation pauses independent. */
-static const char chinese_english_pause[]=" `p20 ";
+/* Preserve token separation across scripts without inserting a timed pause.
+ * Normal word and sentence boundaries still control their own durations. */
+static const char chinese_english_boundary[]=" ";
 static int chinese_symbol(struct cjk_romanizer *r,unsigned cp,int *previous)
 {
-    if(*previous==2&&say(&r->output,chinese_english_pause))return -1;
+    if(*previous==2&&say(&r->output,chinese_english_boundary))return -1;
     else if(*previous==1&&say(&r->output," "))return -1;
     const char *escape=cp=='|'?"\\|":cp=='^'?"\\\\^":NULL;
     char literal=(char)cp;
@@ -204,7 +204,7 @@ static int chinese_latin(struct cjk_romanizer *r,const unsigned char *text,
         const int changed=foreign&&latin_letter(cp)&&last_width>=0&&last_width!=full;
         if(!active||changed) {
             if(foreign) {
-                if(!active&&*previous==1&&say(&r->output,chinese_english_pause))return -1;
+                if(!active&&*previous==1&&say(&r->output,chinese_english_boundary))return -1;
                 if(say(&r->output," `g9_"))return -1;
             } else if(!active&&*previous==1&&say(&r->output," "))return -1;
             *previous=foreign?2:1;active=1;
@@ -248,7 +248,7 @@ static int chinese_number(struct cjk_romanizer *r,const unsigned char *text,
     }
     int expand=lexical&&((r->wide.length==2&&value>9)||
                          (r->wide.length==4&&value<=3000));
-    if(previous==2&&say(&r->output,chinese_english_pause))return -1;
+    if(previous==2&&say(&r->output,chinese_english_boundary))return -1;
     if(expand) {
         if(say(&r->output," `gD_"))return -1;
         for(size_t i=0;i<r->wide.length;++i) {
@@ -310,7 +310,7 @@ static int chinese(struct cjk_romanizer *r,const unsigned char *text,size_t n)
         if(ideograph(cp)) {
             /* The romanizer marks its own script boundary independently of
                ordinary punctuation pause policy. */
-            if(previous_word==2&&say(&r->output,chinese_english_pause))return -1;
+            if(previous_word==2&&say(&r->output,chinese_english_boundary))return -1;
             previous_word=1;
             char key[8*4+1],original[8*4+1];size_t at=0,original_at=0,p=i,end=i+used,best_end=end;
             const struct traditional_reading *identities[8]={0};
@@ -351,7 +351,7 @@ static int chinese(struct cjk_romanizer *r,const unsigned char *text,size_t n)
         if(latin_letter(width_fold(cp))||enclosing) {
             size_t pinyin=cp<128&&!enclosing?reloq_pinyin_prefix(text+i,n-i):0;
             if(pinyin){
-                if(previous_word==2&&say(&r->output,chinese_english_pause))return -1;
+                if(previous_word==2&&say(&r->output,chinese_english_boundary))return -1;
                 if(append(&r->output,text+i,pinyin))return -1;
                 previous_word=1;i+=pinyin;continue;
             }
@@ -371,7 +371,7 @@ static int chinese(struct cjk_romanizer *r,const unsigned char *text,size_t n)
         cp=width_fold(cp);
         if(p)cp=(unsigned)p;
         if(cp=='-'&&previous_word&&width_fold(following)>='0'&&width_fold(following)<='9') {
-            if(say(&r->output,previous_word==2?chinese_english_pause:" ")||say(&r->output,"-"))return -1;
+            if(say(&r->output," ")||say(&r->output,"-"))return -1;
             previous_word=1;i+=used;continue;
         }
         if(cp>='0'&&cp<='9') {
