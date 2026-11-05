@@ -1,5 +1,9 @@
 # Eloquence C – user guide
 
+## Version 1.1.2
+
+A separated dash before a number becomes a pause. Chinese and English switch more smoothly while Chinese inflection remains available, and German number-word corrections also apply in thousands.
+
 ## Version 1.1.1
 
 The speech engine handles dashes in running text in tested European languages even without surrounding spaces. In German character reading, underscore uses noun stress.

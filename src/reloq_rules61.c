@@ -45,6 +45,29 @@ static int dash_between_words(const unsigned char *text,size_t length,size_t beg
     /* Keep the native handling of numeric ranges such as 2–4. */
     return !(left>='0'&&left<='9'&&right>='0'&&right<='9');
 }
+/* A dash before whitespace and a number in prose is a sentence
+ * separator. Preserve numeric subtraction, a leading minus and -1. */
+static int dash_before_number(const unsigned char *text,size_t length,size_t begin,size_t end)
+{
+    uint32_t right=0,left=0;size_t p=end;
+    if(p>=length||reloq_utf8_next(text,length,&p,&right)!=1||!dash_space(right))return 0;
+    while(p<length) {
+        if(reloq_utf8_next(text,length,&p,&right)!=1)return 0;
+        if(!dash_space(right))break;
+    }
+    if(right<'0'||right>'9')return 0;
+    p=begin;
+    if(!p)return 0;
+    while(p) {
+        size_t at=p-1;while(at&&(text[at]&0xc0)==0x80)--at;
+        size_t next=at;if(reloq_utf8_next(text,p,&next,&left)!=1||next!=p)return 0;
+        p=at;
+        if(!dash_space(left))break;
+        left=0;
+    }
+    if((left>='0'&&left<='9')||left=='('||left=='[')return 0;
+    return dash_word_edge(left)||left=='.'||left==','||left==':'||left==';'||left=='!'||left=='?';
+}
 
 /* Preserve admitted text until the native sentence frontend sees it. The
  * former word-by-word SPR conversion ran a second, older language analysis
@@ -66,7 +89,11 @@ static int english_input(const unsigned char *text,size_t length,int tags,int un
                     if(t.kind==RELOQ_TAG_SPELL)spelling=t.value;
                 }
             }
-            if(!count){encoded[0]=cp=='`'&&!tags?' ':(unsigned char)cp;count=1;}
+            if(!count){
+                encoded[0]=cp=='`'&&!tags?' ':
+                    cp=='-'&&!spelling&&dash_before_number(text,length,at,end)?',':(unsigned char)cp;
+                count=1;
+            }
         } else if(cp==0x2013&&!spelling&&dash_between_words(text,length,at,end)) {
             /* The native long-dash rule supplies the pause, including the
              * agreed short-dash behavior, without inserting a spoken word. */

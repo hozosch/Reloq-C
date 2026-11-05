@@ -105,6 +105,8 @@ int word_text(void*state,int32_t a,int32_t b,char*out,size_t cap)
 
 int reloq_zhcn61_bank_init(void){return install_word_fields()||install_phone_fields()!=97?94:0;}
 int reloq_zhcn61_bank_word(void*state,int32_t a){delta_state*d=state;int32_t point=vgetsc(d,1,1,argument_point(a),4);int32_t n=projected_record(d,point,4);return n&&*((unsigned char*)TFLDS(EVV_AT(void*,n))+9)!=0;}
+/* At the input boundary the word record starts at the supplied point. */
+int reloq_zhcn61_bank_input_word(void*state,int32_t a){delta_state*d=state;int32_t n=projected_record(d,argument_point(a),4);return n&&*((unsigned char*)TFLDS(EVV_AT(void*,n))+9)!=0;}
 int reloq_zhcn61_bank_character(int character){const char*const*names=vstmtbl[1].fields[0].values;for(int i=0;i<vstmtbl[1].fields[0].nvalues;++i)if(names[i]&&names[i][0]==character&&!names[i][1])return i;return -1;}
 int reloq_zhcn61_bank_dot(void){return reloq_zhcn61_bank_character('.');}
 static int32_t record_end(int32_t p){return EVV_AT(int32_t*,p)[1]&~3;}
@@ -178,7 +180,27 @@ static int project_word(delta_state*d,int32_t left,int32_t end,struct reloq61_en
  }
  return 0;
 }
-struct bank_edit {delta_rule_block scope;int32_t status;delta_loc loc[2];};
+/* The text module advances word and phrase cursors in small batches. A
+ * foreign bank may span several such batches, and projecting its English
+ * words removes the old interior word-boundary nodes. Remember any active
+ * cursor on those nodes before the rewrite. The entire bank is already
+ * analyzed, so its right edge is the next safe native processing position. */
+static const unsigned bank_cursor_offsets[]={2500,2508,2516,2524,4016};
+static unsigned bank_interior_cursors(delta_state*d,int32_t left,int32_t end,int32_t saved[5])
+{
+ unsigned mask=0;int32_t limit=right_point(d,end,4),at=left;
+ for(size_t i=0;i<5;++i)memcpy(saved+i,(char*)d+DG_BASE+bank_cursor_offsets[i],4);
+ for(unsigned guard=0;guard<255&&right_point(d,at,4)!=limit;++guard){
+  int32_t word=projected_record(d,at,4);if(!word)break;
+  int32_t next=record_end(word);if(!next||next==at)break;
+  if(right_point(d,next,4)!=limit)
+   for(size_t i=0;i<5;++i)if(saved[i]==next)mask|=1u<<i;
+  at=next;
+ }
+ return mask;
+}
+struct bank_edit {delta_rule_block scope;int32_t status;delta_loc loc[2];
+ unsigned stale_cursors;int32_t cursor_values[5];};
 int reloq_zhcn61_bank_assign(void*state,int32_t a,int32_t b)
 {
  delta_state*host_state=state;int32_t existing_word=projected_record(host_state,argument_point(a),4);
@@ -189,8 +211,14 @@ int reloq_zhcn61_bank_assign(void*state,int32_t a,int32_t b)
  delta_state*d=state;struct bank_edit*f=evv_frame_push(sizeof*f);if(!f)return 94;memset(f,0,sizeof*f);f->status=94;volatile int entered=0;
  if(EVV_LAND_SAVE((intptr_t)f->scope.landing))goto done;if(ventproc(d,&f->scope.rec,f->scope.fence[0],f->scope.fence[1],f->scope.fence[2],f->scope.landing))goto done;entered=1;fence(d,0,NULL);
  bank->host_left=argument_point(a);bank->host_right=end;
+ f->stale_cursors=bank_interior_cursors(d,bank->host_left,bank->host_right,f->cursor_values);
  f->status=project_word(d,bank->host_left,bank->host_right,bank);
- done:if(entered&&vretproc(d,f->status?94:1))f->status=94;int result=f->status;evv_land_forget((uintptr_t)f,(uintptr_t)f+sizeof*f);evv_frame_pop(f);return result;
+ done:if(entered&&vretproc(d,f->status?94:1))f->status=94;int result=f->status;
+ if(!result)for(size_t i=0;i<5;++i)if(f->stale_cursors&(1u<<i)){
+  int32_t current;memcpy(&current,(char*)d+DG_BASE+bank_cursor_offsets[i],4);
+  if(current==f->cursor_values[i])memcpy((char*)d+DG_BASE+bank_cursor_offsets[i],&bank->host_right,4);
+ }
+ evv_land_forget((uintptr_t)f,(uintptr_t)f+sizeof*f);evv_frame_pop(f);return result;
 }
 
 static int32_t owner_record(delta_state*d,int32_t at,unsigned field){return projected_record(d,vgetsc(d,1,1,at,(uint8_t)field),field);}
@@ -238,16 +266,23 @@ static void foreign_boundary(delta_state*d,struct reloq61_english_bank*p)
 }
 int reloq_zhcn61_bank_speech(void*state,int32_t machine)
 {
- delta_state*d=state;int32_t left,end;memcpy(&left,(char*)d+DG_BASE+160,4);memcpy(&end,(char*)d+DG_BASE+168,4);int32_t word=projected_record(d,left,4);if(!word)return -1;const unsigned char*w=TFLDS(EVV_AT(void*,word));if(pitch_prepare_phrase(d,left))return 94;if(!w[9])return -1;struct reloq61_english_bank*bank=reloq61_english_bank_for_word(state,word);if(!bank)return 94;
- /* A lexical token may expand to several English word records. Its bank is
-  * emitted once; the outer iterator still visits each original word. */
- if(bank->emitted)return 0;int32_t saved_end=end;end=bank->host_right;
+ delta_state*d=state;int32_t left,end;memcpy(&left,(char*)d+DG_BASE+160,4);memcpy(&end,(char*)d+DG_BASE+168,4);int32_t word=projected_record(d,left,4);if(!word)return -1;const unsigned char*w=TFLDS(EVV_AT(void*,word));
+ /* A bank can expand to several word records. Later visits are already
+  * complete: do not re-enter phrase planning on their rewritten word graph,
+  * which can backtrack out of the surrounding speech loop. */
+ struct reloq61_english_bank*bank=w[9]?reloq61_english_bank_for_word(state,word):NULL;
+ if(bank&&bank->emitted)return 0;
+ if(pitch_prepare_phrase(d,left))return 94;if(!w[9])return -1;if(!bank)return 94;
+ int32_t saved_end=end;end=bank->host_right;
  struct bank_edit*f=evv_frame_push(sizeof*f);if(!f)return 94;memcpy((char*)d+DG_BASE+168,&end,4);memset(f,0,sizeof*f);f->status=94;volatile int entered=0;
  if(EVV_LAND_SAVE((intptr_t)f->scope.landing))goto done;if(ventproc(d,&f->scope.rec,f->scope.fence[0],f->scope.fence[1],f->scope.fence[2],f->scope.landing))goto done;entered=1;fence(d,0,NULL);
  if(reloq_zhcn61_init_word_vars(state,machine))goto done;
  if(reloq_zhcn61_set_klattparms(state,machine))goto done;
  f->loc[0].value=left;if(reloq_zhcn61_text_index(state,machine,EVV_REF(f->loc)))goto done;
- if(!bank->emitted){int32_t phrase=owner_record(d,bank->host_left,5);bank->trim_pause=phrase&&right_point(d,record_end(phrase),4)!=right_point(d,bank->host_right,4);foreign_boundary(d,bank);if(reloq61_english_bank_render(state,bank,bank->trim_pause))goto done;int32_t duration=bank->spans[bank->span_count-1].to;if(bank->trim_pause&&bank->pause_to>bank->pause_from)duration=(int32_t)bank->pause_from;
+ if(!bank->emitted){int32_t phrase=owner_record(d,bank->host_left,5);bank->trim_pause=phrase&&right_point(d,record_end(phrase),4)!=right_point(d,bank->host_right,4);
+  int32_t next=projected_record(d,bank->host_right,4);
+  bank->shorten_release=bank->trim_pause&&next&&!((const unsigned char*)TFLDS(EVV_AT(void*,next)))[9];
+  foreign_boundary(d,bank);if(reloq61_english_bank_render(state,bank,bank->trim_pause))goto done;int32_t duration=bank->spans[bank->span_count-1].to;if(bank->trim_pause&&bank->pause_to>bank->pause_from)duration=(int32_t)bank->pause_from;
   if(duration<=0||duration>32767)goto done;uint8_t ms[2]={(uint8_t)(duration>>8),(uint8_t)duration};
   f->loc[0].value=bank->host_left;f->loc[1].value=bank->host_right;lpta_rpta_loadp(d,(const delta_token*)f->loc,(const delta_token*)(f->loc+1));if(insert_2pt_i(d,8,2,ms,0))goto done;
   memcpy((char*)d+DG_BASE+248,&bank->host_left,4);memcpy((char*)d+DG_BASE+256,&bank->host_right,4);

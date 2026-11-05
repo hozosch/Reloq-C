@@ -12,6 +12,7 @@ struct pitch_plan {
     int32_t pair[2048][2];size_t count;
     uint64_t acoustic_hash;int64_t ticks;
     int32_t max_diplophonia,max_aspiration;
+    unsigned glottal_onsets;int glottal_active;
     int32_t aj_to_und_start,aj_to_und_end,continuous_until;
     int i_e_r_target,i_e_target,unstressed_er_target,initial_s_nasal_target,final_a_target,comma_a_transition,kamera_a_target,oe_er_target,oe_r_lowered,weak_verb_rise,direct_weak_verb_fall,j_glide_target,ei_glide_target,j_onset_target;
     unsigned r_phase_mask,r_phase_anywhere;
@@ -33,6 +34,10 @@ static int span(void *context,int32_t from,int32_t to,
     }
     if(c[6].val_l>p->max_diplophonia)p->max_diplophonia=c[6].val_l;
     if(c[6].val_r>p->max_diplophonia)p->max_diplophonia=c[6].val_r;
+    if(c[6].val_l>=90||c[6].val_r>=90) {
+        if(!p->glottal_active)++p->glottal_onsets;
+        p->glottal_active=1;
+    } else p->glottal_active=0;
     if(c[7].val_l>p->max_aspiration)p->max_aspiration=c[7].val_l;
     if(c[7].val_r>p->max_aspiration)p->max_aspiration=c[7].val_r;
     if(c[9].val_l==775&&c[13].val_l==1205)p->final_a_target=1;
@@ -73,13 +78,123 @@ static struct reloq61_request request(int language,const char *text)
     struct reloq61_request q={.language=language,.annotations=1,.voice={0,50,65,30,0,0,75,100},
         .text=text,.frame=unexpected_frame,.span=span,.output_rate=11025};return q;
 }
-static struct pitch_plan pitch(const char *text,int speed,int gender,int head,int setting)
+static struct pitch_plan pitch_with_inflection(const char *text,int speed,int gender,int head,int setting,int inflection)
 {
     struct pitch_plan p={.acoustic_hash=UINT64_C(1469598103934665603)};
     struct reloq61_request q=request(0x60000,text);struct reloq61_result result={0};
-    q.context=&p;q.voice[0]=gender;q.voice[1]=head;q.voice[2]=setting;q.voice[6]=speed;
+    q.context=&p;q.voice[0]=gender;q.voice[1]=head;q.voice[2]=setting;q.voice[3]=inflection;q.voice[6]=speed;
     assert(!reloq61_generate(&q,&result)&&!result.error&&!result.unsupported);
     assert(p.count&&result.ticks>0);p.ticks=result.ticks;return p;
+}
+static struct pitch_plan pitch(const char *text,int speed,int gender,int head,int setting)
+{return pitch_with_inflection(text,speed,gender,head,setting,30);}
+
+static int pitch_transition(const struct pitch_plan *p,int32_t a,int32_t b)
+{
+    for(size_t i=0;i<p->count;++i)if(p->pair[i][0]==a&&p->pair[i][1]==b)return 1;
+    return 0;
+}
+static int32_t sample_curve(const struct reloq61_curve *c,int32_t t)
+{
+    if(c->at_l==c->at_r||c->val_l==c->val_r)return c->val_l;
+    float v=(float)(t-c->at_l);v*=(float)(c->val_r-c->val_l);
+    v/=(float)(c->at_r-c->at_l);return (int32_t)((float)c->val_l+v);
+}
+struct foreign_acoustics {
+    uint64_t hash;int64_t ticks;
+    int64_t window_start;
+    int32_t f0[2200];unsigned char voiced[2200];
+};
+static int foreign_acoustic_span(void *context,int32_t from,int32_t to,
+    const struct reloq61_curve c[62],int32_t volume)
+{
+    struct foreign_acoustics *out=context;(void)volume;
+    for(int32_t t=from;t<to;++t) {
+        /* A fixed time grid compares donor targets even if different F0
+         * curves split the sparse callback spans at different places. */
+        for(unsigned k=2;k<62;++k)
+            out->hash=(out->hash^(uint32_t)sample_curve(c+k,t))*UINT64_C(1099511628211);
+        int64_t position=out->ticks++-out->window_start;
+        if(position>=0&&position<2200) {
+            out->f0[position]=sample_curve(c+1,t);
+            out->voiced[position]=sample_curve(c+2,t)>10;
+        }
+    }
+    return 0;
+}
+static struct foreign_acoustics foreign_acoustics_window(const char *text,int inflection,int64_t start,int head,int setting)
+{
+    struct foreign_acoustics out={.hash=UINT64_C(1469598103934665603),.window_start=start};
+    struct reloq61_request q=request(0x60000,text);struct reloq61_result r={0};
+    q.voice[1]=head;q.voice[2]=setting;q.voice[3]=inflection;q.context=&out;q.span=foreign_acoustic_span;
+    assert(!reloq61_generate(&q,&r)&&!r.error&&!r.unsupported&&out.ticks>0);
+    return out;
+}
+static struct foreign_acoustics foreign_acoustics(const char *text,int inflection)
+{return foreign_acoustics_window(text,inflection,1200,50,65);}
+static unsigned chinese_english_host_stress(void)
+{
+    /* In this long user-reported sentence, English sentence analysis marks
+     * the content words "make" and "code" with zero sentence stress. Their
+     * Chinese host tone must still use their accented lexical syllables. */
+    const char *text="You are free to share or change this software in any way you like as long as "
+        "it is accompanied by the license and you make all source code available to anyone who wants it.";
+    struct pitch_plan actual=pitch_with_inflection(text,75,0,50,65,0);
+    assert(pitch_transition(&actual,820,1002));
+    assert(pitch_transition(&actual,1002,715));
+    /* Both the English donor and its actual F0 stay neutral. */
+    struct foreign_acoustics low=foreign_acoustics("NVDA Contributors.",0);
+    struct foreign_acoustics high=foreign_acoustics("NVDA Contributors.",100);
+    assert(low.ticks==high.ticks&&low.hash==high.hash);
+    struct pitch_plan low_pitch=pitch_with_inflection(text,75,0,50,65,0);
+    struct pitch_plan high_pitch=pitch_with_inflection(text,75,0,50,65,100);
+    assert(low_pitch.count==high_pitch.count&&!memcmp(low_pitch.pair,high_pitch.pair,
+        low_pitch.count*sizeof *low_pitch.pair));
+    /* In the reported Copyright line the years are Mandarin, and the later
+     * NVDA/Contributors words are English. Check the two acoustic intervals
+     * independently: native tones must respond to the user's inflection,
+     * while the English bank stays neutral after the handoff settles. */
+    const char *copyright="Copyright (C) 2006-2026 NVDA Contributors";
+    struct foreign_acoustics zero=foreign_acoustics(copyright,0);
+    struct foreign_acoustics full=foreign_acoustics(copyright,47);
+    unsigned native=0,native_changes=0,english=0;int max_english_delta=0;
+    assert(zero.ticks==full.ticks);
+    for(int t=1300;t<3400;++t) {
+        int i=t-1200;if(!zero.voiced[i]||!full.voiced[i])continue;
+        int delta=zero.f0[i]-full.f0[i];if(delta<0)delta=-delta;
+        if(t<2350){++native;if(delta>30)++native_changes;}
+        else if(t>=2700){++english;if(delta>max_english_delta)max_english_delta=delta;}
+    }
+    assert(native>600&&native_changes>300);
+    assert(english>300&&max_english_delta<=10);
+    /* NVDA supplies spoken Chinese symbol names in the complete About text.
+     * Check its Copyright years and following English independently too. */
+    FILE *fixture=fopen("tests/fixtures/chinese_nvda_about_symbols.txt","rb");
+    assert(fixture);char about[4096];size_t length=fread(about,1,sizeof about-1,fixture);
+    assert(!ferror(fixture)&&feof(fixture));fclose(fixture);about[length]=0;
+    const char *copyright_start=strstr(about,"Copyright");assert(copyright_start);
+    const char *year_start=strstr(copyright_start,"2006");assert(year_start);
+    char prefix[4096];size_t prefix_length=(size_t)(year_start-about);
+    assert(prefix_length<sizeof prefix);memcpy(prefix,about,prefix_length);prefix[prefix_length]=0;
+    /* Anchor the comparison to the real prefix instead of an utterance-wide
+     * constant: earlier Chinese windows may correctly become audible again. */
+    int64_t about_start=pitch_with_inflection(prefix,75,0,86,56,47).ticks;
+    struct foreign_acoustics about_zero=foreign_acoustics_window(about,0,about_start,86,56);
+    struct foreign_acoustics about_selected=foreign_acoustics_window(about,47,about_start,86,56);
+    native=0;native_changes=0;english=0;max_english_delta=0;
+    assert(about_zero.ticks==about_selected.ticks);
+    for(int i=40;i<2100;++i) {
+        if(!about_zero.voiced[i]||!about_selected.voiced[i])continue;
+        int delta=about_zero.f0[i]-about_selected.f0[i];if(delta<0)delta=-delta;
+        if(i<1050){++native;if(delta>30)++native_changes;}
+        else if(i>=1320){++english;if(delta>max_english_delta)max_english_delta=delta;}
+    }
+    assert(native>600&&native_changes>300);
+    assert(english>400&&max_english_delta<=10);
+    /* A previously verified weak demonstrative must stay unaccented. */
+    struct pitch_plan weak=pitch_with_inflection("This is an English text with some words.",75,0,50,65,0);
+    assert(weak.count&&weak.pair[0][0]==1225);
+    return 8;
 }
 static unsigned chinese(void)
 {
@@ -230,6 +345,32 @@ static unsigned german_phone_targets(void)
     assert(fortytwo.max_diplophonia<100&&fortythree.max_diplophonia<100);
     p=german_pitch("82",65,0,75);
     assert(p.max_diplophonia==100); /* Glottal onset of achtzig. */
+    /* The same units in a thousand compound must not regain the glottal
+     * break before und. Retain the separate onset before achtzig and the
+     * accepted vier/r liaison. Check every tens group, not just 42000. */
+    const int units[]={2,3,4,7,9};
+    for(int tens=20;tens<=90;tens+=10)for(size_t i=0;i<sizeof units/sizeof *units;++i) {
+        char small[16],thousand[16];int n=tens+units[i];
+        snprintf(small,sizeof small,"%d",n);snprintf(thousand,sizeof thousand,"%d",n*1000);
+        struct pitch_plan a=german_pitch(small,65,0,75),b=german_pitch(thousand,65,0,75);
+        assert(a.glottal_onsets==(unsigned)(tens==80));
+        assert(b.glottal_onsets==a.glottal_onsets);
+        if(units[i]==4)assert(a.r_continuous&&b.r_continuous);
+        if(units[i]==2||units[i]==3) {
+            assert(a.aj_to_und_start&&b.aj_to_und_start);
+            assert(abs((a.aj_to_und_end-a.aj_to_und_start)-
+                       (b.aj_to_und_end-b.aj_to_und_start))<=2);
+        }
+    }
+    p=german_pitch("vierundvierzigtausend",65,0,75);
+    assert(!p.glottal_onsets&&p.r_continuous);
+    /* Five, six and eight intentionally retain their onset before und. */
+    for(int unit=5;unit<=8;++unit)if(unit!=7) {
+        char small[16],thousand[16];snprintf(small,sizeof small,"%d",20+unit);
+        snprintf(thousand,sizeof thousand,"%d",(20+unit)*1000);
+        struct pitch_plan a=german_pitch(small,65,0,75),b=german_pitch(thousand,65,0,75);
+        assert(a.glottal_onsets&&b.glottal_onsets==a.glottal_onsets);
+    }
     return 32;
 }
 
@@ -364,7 +505,7 @@ static unsigned clocks(void)
 }
 int main(void)
 {
-    unsigned c=clocks(),p=chinese(),g=german_high_pitch(),a=german_phone_targets(),m=german_postfocus_melody(),q=german_question_contours(),qa=german_question_alignment(),enq=english_question_contours();
-    printf("Native rules: %u English seconds/zero/fraction cases, %u full Chinese F0 sequences, %u German high-pitch contours, %u rhotic/e/A targets, %u post-focus melodies, %u German question contours, %u old-path question alignment and %u US question contours; tempo, models, heads and pitch controls\n",c,p,g,a,m,q,qa,enq);
+    unsigned c=clocks(),p=chinese(),zhstress=chinese_english_host_stress(),g=german_high_pitch(),a=german_phone_targets(),m=german_postfocus_melody(),q=german_question_contours(),qa=german_question_alignment(),enq=english_question_contours();
+    printf("Native rules: %u English seconds/zero/fraction cases, %u full Chinese F0 sequences, %u Chinese host-stress checks, %u German high-pitch contours, %u rhotic/e/A targets, %u post-focus melodies, %u German question contours, %u old-path question alignment and %u US question contours; tempo, models, heads and pitch controls\n",c,p,zhstress,g,a,m,q,qa,enq);
     return 0;
 }

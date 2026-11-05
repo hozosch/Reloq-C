@@ -1,5 +1,9 @@
 # Eloquence C – Bedienungsanleitung
 
+## Version 1.1.2
+
+Ein abgesetzter Bindestrich vor einer Zahl wird als Pause gelesen. Chinesisch und Englisch wechseln flüssiger, die chinesische Betonung bleibt erhalten und deutsche Zahlwortkorrekturen gelten auch bei Tausendern.
+
 ## Version 1.1.1
 
 Der Sprachkern berücksichtigt Gedankenstriche in den getesteten europäischen Sprachen auch ohne Leerzeichen. Bei der ausdrücklichen Zeichenlesung wird „Unterstrich“ als Nomen betont.

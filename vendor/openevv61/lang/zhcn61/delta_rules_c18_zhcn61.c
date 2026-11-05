@@ -4803,6 +4803,9 @@ static int32_t evv_convert_chi_monetary_exp(void *state, const int32_t *args, in
 /* chi_dict_lookup, from f61_38.obj */
 int32_t reloq_zhcn61_chi_dict_lookup(void *state, int32_t p0, int32_t p1, int32_t p2)
 {
+    /* Latin words already assigned to the English bank must not be replaced
+     * by a case-sensitive Chinese transliteration before that bank sees them. */
+    if(reloq_zhcn61_bank_input_word(state,p1))return 94;
     const int32_t reloq_machine_ref=
         EVV_AT(void *,p0)==state?p0:REG_REF(state);
     const int reloq_landing_mark=evv_land_mark();

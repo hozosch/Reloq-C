@@ -26,7 +26,7 @@ struct reloq61_english_bank {
  struct reloq61_bank_atom *atoms;size_t atom_count,atom_capacity;
  struct reloq61_bank_syllable *syllables;size_t syllable_count,syllable_capacity;
  struct reloq61_bank_pitch *pitch;size_t pitch_count;
- int32_t word_points[255];int32_t host_left,host_right;int64_t pause_from,pause_to;int trim_pause;
+ int32_t word_points[255];int32_t host_left,host_right;int64_t pause_from,pause_to;int trim_pause,shorten_release;
  char text[256];int rendering,nonfinal,neutral_inflection;
 };
 void *reloq61_english_bank_scope(struct reloq61_english_bank *);

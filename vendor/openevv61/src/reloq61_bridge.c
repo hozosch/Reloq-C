@@ -177,6 +177,7 @@ struct capture {
     int metadata,source_started,pause_policy;
     pause_sink pause;void *pause_context;
     reloq61_phoneme_sink phoneme_sink;void *phoneme_context;
+    int english_sentence_pending;
 };
 static int acoustic_mark(const struct capture *c,size_t mark)
 {
@@ -294,6 +295,17 @@ void reloq61_clock_begin(void *context,int32_t from)
     /* The module restarts its local array clock for a new text stretch.
        Source indices exposed to the host use one utterance-wide clock. */
     if(!from)c->clock_base=c->r->ticks;
+}
+/* An English bank has already emitted its sentence-final audio. If the
+ * Mandarin array restarts from zero afterwards, its first native window must
+ * reset the interpolation cursor as a new window, rather than inherit the
+ * old English end time and silently discard the Chinese output. */
+int reloq61_bank_clock_restart(void *context,int32_t from,int32_t bounded,int32_t continuing)
+{
+    struct capture *c=context;
+    if(!c->english_sentence_pending||from)return 0;
+    c->english_sentence_pending=0;
+    return bounded&&!continuing;
 }
 int reloq61_array_span(void *context,int32_t from,int32_t to,
     const struct reloq61_curve curves[62],int32_t volume)
@@ -497,10 +509,43 @@ struct reloq61_english_bank *reloq61_english_bank_build(void*state,const char*te
  size_t n=strlen(text);if(n>=sizeof p->text){free(p);return NULL;}memcpy(p->text,text,n+1);p->neutral_inflection=1;
  if(bank_generate(state,p,1)||!p->phone_count||!p->word_count){reloq61_english_bank_free(p);return NULL;}return p;
 }
+/* The donor ends a word with its own release even when a native Chinese
+ * word follows. Shorten that release, rather than discarding the sound or
+ * altering Chinese onset and punctuation pauses. Map every acoustic target
+ * through the same monotone clock so the full final phone remains audible. */
+static int32_t bank_transition_time(int32_t at,int32_t begin,int32_t end,int32_t cut)
+{
+ if(at<=begin)return at;
+ if(at>=end)return at-cut;
+ return begin+(int32_t)(((int64_t)(at-begin)*(end-begin-cut)+(end-begin)/2)/(end-begin));
+}
+static void bank_shorten_release(struct reloq61_english_bank*p)
+{
+ if(!p->shorten_release||!p->span_count||!p->syllable_count)return;
+ int32_t end=p->spans[p->span_count-1].to;
+ if(p->pause_to>p->pause_from&&p->pause_from>=0&&p->pause_from<=end)end=(int32_t)p->pause_from;
+ int32_t begin=p->syllables[p->syllable_count-1].to,tail=end-begin;
+ if(begin<0||tail<4)return;
+ int32_t cut=tail/2;if(cut>20)cut=20;
+ for(size_t i=0;i<p->span_count;++i){
+  struct reloq61_bank_span*s=p->spans+i;
+  s->from=bank_transition_time(s->from,begin,end,cut);
+  s->to=bank_transition_time(s->to,begin,end,cut);
+  for(unsigned k=0;k<62;++k){
+   s->curve[k].at_l=bank_transition_time(s->curve[k].at_l,begin,end,cut);
+   s->curve[k].at_r=bank_transition_time(s->curve[k].at_r,begin,end,cut);
+  }
+ }
+ if(p->pause_to>p->pause_from){
+  p->pause_from=bank_transition_time((int32_t)p->pause_from,begin,end,cut);
+  p->pause_to=bank_transition_time((int32_t)p->pause_to,begin,end,cut);
+ }
+}
 int reloq61_english_bank_render(void*state,struct reloq61_english_bank*p,int nonfinal)
 {
  if(!p||p->rendering||p->emitted||p->span_count)return -1;
  p->rendering=1;p->nonfinal=nonfinal;int result=bank_generate(state,p,0);p->rendering=0;
+ if(!result&&nonfinal)bank_shorten_release(p);
  return result||!p->span_count||!p->atom_count||!p->syllable_count?-1:0;
 }
 
@@ -567,7 +612,10 @@ int reloq61_english_bank_emit(void*state,const struct reloq61_english_bank*p,int
  for(unsigned k=1;k<62;++k)if(map[k+1]>=0){const struct reloq61_curve*last=p->spans[0].curve+k;for(size_t i=0;i<p->span_count&&p->spans[i].from<limit;++i)last=p->spans[i].curve+k;if(!reloq61_array_bank_put(d,map[k+1],from+limit,(k==1&&p->pitch_count)?bank_final_pitch(p,limit):bank_value(last,limit)))return -1;}
 
 
- if(!p->trim_pause&&p->pause_to>p->pause_from&&c->pause)c->pause(c->pause_context,c->clock_base+from+p->pause_from,c->clock_base+from+p->pause_to,c->clock_base+from+p->pause_to);
+ if(!p->trim_pause){
+  c->english_sentence_pending=1;
+  if(p->pause_to>p->pause_from&&c->pause)c->pause(c->pause_context,c->clock_base+from+p->pause_from,c->clock_base+from+p->pause_to,c->clock_base+from+p->pause_to);
+ }
  return 0;
 }
 static int generate_core_impl(const struct reloq61_request *,struct reloq61_result *,reloq61_phoneme_sink,void *);
