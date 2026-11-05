@@ -139,7 +139,7 @@ static int bank_host_pitch(delta_state *d,int32_t machine,struct reloq61_english
  int32_t saved_words[2];memcpy(saved_words,(char*)d+DG_BASE+160,4);
  memcpy(saved_words+1,(char*)d+DG_BASE+168,4);
  int16_t saved_foreign;memcpy(&saved_foreign,(char*)d+DG_BASE+4060,2);
- /* Neutral inflection belongs to this English bank only. */
+ /* Preserve the host voice while planning the embedded English run. */
  int16_t saved_inflection;int32_t saved_pitch_range;
  memcpy(&saved_inflection,(char*)d+DG_BASE+3148,2);
  memcpy(&saved_pitch_range,(char*)d+DG_BASE+3544,4);
@@ -163,8 +163,10 @@ static int bank_host_pitch(delta_state *d,int32_t machine,struct reloq61_english
    if(!bank_pitch_keep_word_stress(p,current_word-1))memcpy(word_fields+4,&native_stress,2);
    if(reloq_zhcn61_init_word_vars(d,machine)){memcpy(word_fields+4,&saved_stress,2);goto done;}
    memcpy(word_fields+4,&saved_stress,2);
-   int16_t neutral=0;int32_t unset=0;
-   memcpy((char*)d+DG_BASE+3148,&neutral,2);memcpy((char*)d+DG_BASE+3536,&unset,4);
+   /* The English donor is rendered with neutral inflection in its own
+    * engine. This is the Mandarin host's tone planner: leave its selected
+    * inflection intact, including after a run of Chinese number words. */
+   int32_t unset=0;memcpy((char*)d+DG_BASE+3536,&unset,4);
    if(reloq_zhcn61_init_mcvoice_vars(d,machine,EVV_REF((char*)d+DG_BASE+4020)))goto done;
    if(phrase_start){int32_t first=pitch_grid_point(&grid,p->syllables[0].from);memcpy((char*)d+DG_BASE+648,&first,4);}
    if(!p->trim_pause){int32_t last=pitch_grid_point(&grid,p->syllables[p->syllable_count-1].to);memcpy((char*)d+DG_BASE+656,&last,4);}
@@ -186,8 +188,7 @@ static int bank_host_pitch(delta_state *d,int32_t machine,struct reloq61_english
  done:free(grid.time);memcpy((char*)d+DG_BASE+648,saved_phrase,4);memcpy((char*)d+DG_BASE+656,saved_phrase+1,4);memcpy((char*)d+DG_BASE+160,saved_words,4);memcpy((char*)d+DG_BASE+168,saved_words+1,4);
  memcpy((char*)d+DG_BASE+4060,&saved_foreign,2);
  memcpy((char*)d+DG_BASE+3148,&saved_inflection,2);
- /* The bank initialized the pitch cache for neutral English. Invalidate it
-  * so the next native word derives both pitch values from its own voice. */
+ /* Reinitialize the pitch cache for the next native word. */
  {int32_t unset=0;memcpy((char*)d+DG_BASE+3536,&unset,4);}
  memcpy((char*)d+DG_BASE+3544,&saved_pitch_range,4);return result;
 }

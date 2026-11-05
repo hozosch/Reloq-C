@@ -253,7 +253,10 @@ int reloq_zhcn61_bank_speech(void*state,int32_t machine)
  if(reloq_zhcn61_init_word_vars(state,machine))goto done;
  if(reloq_zhcn61_set_klattparms(state,machine))goto done;
  f->loc[0].value=left;if(reloq_zhcn61_text_index(state,machine,EVV_REF(f->loc)))goto done;
- if(!bank->emitted){int32_t phrase=owner_record(d,bank->host_left,5);bank->trim_pause=phrase&&right_point(d,record_end(phrase),4)!=right_point(d,bank->host_right,4);foreign_boundary(d,bank);if(reloq61_english_bank_render(state,bank,bank->trim_pause))goto done;int32_t duration=bank->spans[bank->span_count-1].to;if(bank->trim_pause&&bank->pause_to>bank->pause_from)duration=(int32_t)bank->pause_from;
+ if(!bank->emitted){int32_t phrase=owner_record(d,bank->host_left,5);bank->trim_pause=phrase&&right_point(d,record_end(phrase),4)!=right_point(d,bank->host_right,4);
+  int32_t next=projected_record(d,bank->host_right,4);
+  bank->shorten_release=bank->trim_pause&&next&&!((const unsigned char*)TFLDS(EVV_AT(void*,next)))[9];
+  foreign_boundary(d,bank);if(reloq61_english_bank_render(state,bank,bank->trim_pause))goto done;int32_t duration=bank->spans[bank->span_count-1].to;if(bank->trim_pause&&bank->pause_to>bank->pause_from)duration=(int32_t)bank->pause_from;
   if(duration<=0||duration>32767)goto done;uint8_t ms[2]={(uint8_t)(duration>>8),(uint8_t)duration};
   f->loc[0].value=bank->host_left;f->loc[1].value=bank->host_right;lpta_rpta_loadp(d,(const delta_token*)f->loc,(const delta_token*)(f->loc+1));if(insert_2pt_i(d,8,2,ms,0))goto done;
   memcpy((char*)d+DG_BASE+248,&bank->host_left,4);memcpy((char*)d+DG_BASE+256,&bank->host_right,4);

@@ -94,6 +94,39 @@ static int pitch_transition(const struct pitch_plan *p,int32_t a,int32_t b)
     for(size_t i=0;i<p->count;++i)if(p->pair[i][0]==a&&p->pair[i][1]==b)return 1;
     return 0;
 }
+static int32_t sample_curve(const struct reloq61_curve *c,int32_t t)
+{
+    if(c->at_l==c->at_r||c->val_l==c->val_r)return c->val_l;
+    float v=(float)(t-c->at_l);v*=(float)(c->val_r-c->val_l);
+    v/=(float)(c->at_r-c->at_l);return (int32_t)((float)c->val_l+v);
+}
+struct foreign_acoustics {uint64_t hash;int64_t ticks;int32_t low,high;};
+static int foreign_acoustic_span(void *context,int32_t from,int32_t to,
+    const struct reloq61_curve c[62],int32_t volume)
+{
+    struct foreign_acoustics *out=context;(void)volume;
+    for(int32_t t=from;t<to;++t) {
+        /* A fixed time grid compares donor targets even if different F0
+         * curves split the sparse callback spans at different places. */
+        for(unsigned k=2;k<62;++k)
+            out->hash=(out->hash^(uint32_t)sample_curve(c+k,t))*UINT64_C(1099511628211);
+        ++out->ticks;
+        if(t>=1750&&t<2300&&sample_curve(c+2,t)>0) {
+            int32_t value=sample_curve(c+1,t);
+            if(value<out->low)out->low=value;
+            if(value>out->high)out->high=value;
+        }
+    }
+    return 0;
+}
+static struct foreign_acoustics foreign_acoustics(const char *text,int inflection)
+{
+    struct foreign_acoustics out={.hash=UINT64_C(1469598103934665603),.low=INT32_MAX};
+    struct reloq61_request q=request(0x60000,text);struct reloq61_result r={0};
+    q.voice[3]=inflection;q.context=&out;q.span=foreign_acoustic_span;
+    assert(!reloq61_generate(&q,&r)&&!r.error&&!r.unsupported&&out.ticks>0);
+    return out;
+}
 static unsigned chinese_english_host_stress(void)
 {
     /* In this long user-reported sentence, English sentence analysis marks
@@ -101,17 +134,26 @@ static unsigned chinese_english_host_stress(void)
      * Chinese host tone must still use their accented lexical syllables. */
     const char *text="You are free to share or change this software in any way you like as long as "
         "it is accompanied by the license and you make all source code available to anyone who wants it.";
-    struct pitch_plan actual=pitch(text,75,0,50,65);
+    struct pitch_plan actual=pitch_with_inflection(text,75,0,50,65,0);
     assert(pitch_transition(&actual,820,1002));
     assert(pitch_transition(&actual,1002,715));
-    /* The donor's intonation stays neutral even when the host setting moves. */
-    struct pitch_plan low=pitch_with_inflection(text,75,0,50,65,0);
-    struct pitch_plan high=pitch_with_inflection(text,75,0,50,65,100);
-    assert(low.count==high.count&&!memcmp(low.pair,high.pair,low.count*sizeof *low.pair));
+    /* Only the donor's non-F0 targets stay neutral. Mandarin's host tone
+     * planner uses its own setting for the embedded English range. */
+    struct foreign_acoustics low=foreign_acoustics("NVDA Contributors.",0);
+    struct foreign_acoustics high=foreign_acoustics("NVDA Contributors.",100);
+    assert(low.ticks==high.ticks&&low.hash==high.hash);
+    struct pitch_plan low_pitch=pitch_with_inflection(text,75,0,50,65,0);
+    struct pitch_plan high_pitch=pitch_with_inflection(text,75,0,50,65,100);
+    assert(low_pitch.count!=high_pitch.count||memcmp(low_pitch.pair,high_pitch.pair,
+        low_pitch.count*sizeof *low_pitch.pair));
+    /* After the years in the user's example, NVDA Contributors used to
+     * remain at a single F0 target for most of the English bank. */
+    struct foreign_acoustics copyright=foreign_acoustics("Copyright 2006-2026 NVDA Contributors",30);
+    assert(copyright.low!=INT32_MAX&&copyright.high-copyright.low>100);
     /* A previously verified weak demonstrative must stay unaccented. */
-    struct pitch_plan weak=pitch("This is an English text with some words.",75,0,50,65);
+    struct pitch_plan weak=pitch_with_inflection("This is an English text with some words.",75,0,50,65,0);
     assert(weak.count&&weak.pair[0][0]==1225);
-    return 4;
+    return 5;
 }
 static unsigned chinese(void)
 {

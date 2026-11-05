@@ -2,7 +2,7 @@
 from pathlib import Path
 import re
 from _reloq_eci_direct import (DirectEciEngine,EciIndex,NATIVE_INFLECTION,
-    NATIVE_SPEED,GENDER,SAMPLE_RATE,PAUSE_MODE)
+    NATIVE_SPEED,GENDER,SAMPLE_RATE,PAUSE_MODE,PROCESS_TAGS)
 from test_eci_german_clock_native import phonemes,render
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -41,11 +41,12 @@ def main():
                         chunked=render(engine,[text[:split],EciIndex(1),text[split:],EciIndex(9)])
                         assert plain[0]==chunked[0] and [i for i,_ in chunked[1]]==[1,9]
                         assert 0<=chunked[1][0][1]<=chunked[1][1][1]==len(chunked[0]);checks+=1
-            # A wholly English bank retains its neutral local inflection.
+            # The Mandarin host keeps its own tone setting even when the
+            # sound-producing English bank uses neutral donor inflection.
             engine.set_parameter(PAUSE_MODE,0)
             engine.set_parameter(NATIVE_INFLECTION,0);a=render(engine,['Hello world.',EciIndex(9)])[0]
             engine.set_parameter(NATIVE_INFLECTION,100);b=render(engine,['Hello world.',EciIndex(9)])[0]
-            assert a==b,(hex(dialect),'English bank inflection');checks+=1
+            assert len(a)==len(b) and a!=b,(hex(dialect),'host inflection');checks+=1
             # Exercise the actual NVDA-processed mixed text, not just the raw
             # English source. Chinese symbol names follow English repeatedly.
             engine.set_parameter(NATIVE_SPEED,75)
@@ -89,6 +90,25 @@ def main():
                     assert english_phones in actual,(hex(dialect),example,actual)
                     checks+=1
                 checks+=1
+            # Measure the real audio clock on both sides of the language
+            # switch. The English-to-Chinese release used to leave these
+            # examples 18 ms and 12 ms longer, respectively. Retain the
+            # English final consonant, ordinary punctuation, and manual p50.
+            for key,value in ((SAMPLE_RATE,3),(NATIVE_SPEED,75),(NATIVE_INFLECTION,0),
+                              (GENDER,0),(PAUSE_MODE,0),(PROCESS_TAGS,1)):
+                engine.set_parameter(key,value)
+            def milliseconds(s):
+                return len(render(engine,[s,EciIndex(9)])[0])/(16000*2)*1000
+            hello=milliseconds('你好 Hello 世界')
+            world=milliseconds('你好 world 世界')
+            assert 999<=hello<1010,(hex(dialect),'hello return',hello)
+            assert 973<=world<982,(hex(dialect),'world return',world)
+            assert 775<=milliseconds('你好 Hello')<=785,(hex(dialect),'Chinese to English')
+            assert milliseconds('你好 Hello，世界')>hello+100,(hex(dialect),'comma pause')
+            assert milliseconds('你好 Hello `p50 世界')>hello+20,(hex(dialect),'explicit pause')
+            long_english='The quick brown fox jumps over the lazy dog '*8
+            assert 14645<=milliseconds(long_english)<=14655,(hex(dialect),'English bank split')
+            checks+=6
         finally:engine.close()
     print(f'Chinese mixed text: {checks} long-text, inflection, gender, speed, pause and index checks passed')
 

@@ -497,10 +497,43 @@ struct reloq61_english_bank *reloq61_english_bank_build(void*state,const char*te
  size_t n=strlen(text);if(n>=sizeof p->text){free(p);return NULL;}memcpy(p->text,text,n+1);p->neutral_inflection=1;
  if(bank_generate(state,p,1)||!p->phone_count||!p->word_count){reloq61_english_bank_free(p);return NULL;}return p;
 }
+/* The donor ends a word with its own release even when a native Chinese
+ * word follows. Shorten that release, rather than discarding the sound or
+ * altering Chinese onset and punctuation pauses. Map every acoustic target
+ * through the same monotone clock so the full final phone remains audible. */
+static int32_t bank_transition_time(int32_t at,int32_t begin,int32_t end,int32_t cut)
+{
+ if(at<=begin)return at;
+ if(at>=end)return at-cut;
+ return begin+(int32_t)(((int64_t)(at-begin)*(end-begin-cut)+(end-begin)/2)/(end-begin));
+}
+static void bank_shorten_release(struct reloq61_english_bank*p)
+{
+ if(!p->shorten_release||!p->span_count||!p->syllable_count)return;
+ int32_t end=p->spans[p->span_count-1].to;
+ if(p->pause_to>p->pause_from&&p->pause_from>=0&&p->pause_from<=end)end=(int32_t)p->pause_from;
+ int32_t begin=p->syllables[p->syllable_count-1].to,tail=end-begin;
+ if(begin<0||tail<4)return;
+ int32_t cut=tail/2;if(cut>20)cut=20;
+ for(size_t i=0;i<p->span_count;++i){
+  struct reloq61_bank_span*s=p->spans+i;
+  s->from=bank_transition_time(s->from,begin,end,cut);
+  s->to=bank_transition_time(s->to,begin,end,cut);
+  for(unsigned k=0;k<62;++k){
+   s->curve[k].at_l=bank_transition_time(s->curve[k].at_l,begin,end,cut);
+   s->curve[k].at_r=bank_transition_time(s->curve[k].at_r,begin,end,cut);
+  }
+ }
+ if(p->pause_to>p->pause_from){
+  p->pause_from=bank_transition_time((int32_t)p->pause_from,begin,end,cut);
+  p->pause_to=bank_transition_time((int32_t)p->pause_to,begin,end,cut);
+ }
+}
 int reloq61_english_bank_render(void*state,struct reloq61_english_bank*p,int nonfinal)
 {
  if(!p||p->rendering||p->emitted||p->span_count)return -1;
  p->rendering=1;p->nonfinal=nonfinal;int result=bank_generate(state,p,0);p->rendering=0;
+ if(!result&&nonfinal)bank_shorten_release(p);
  return result||!p->span_count||!p->atom_count||!p->syllable_count?-1:0;
 }
 
