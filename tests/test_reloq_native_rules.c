@@ -172,15 +172,22 @@ static unsigned chinese_english_host_stress(void)
     FILE *fixture=fopen("tests/fixtures/chinese_nvda_about_symbols.txt","rb");
     assert(fixture);char about[4096];size_t length=fread(about,1,sizeof about-1,fixture);
     assert(!ferror(fixture)&&feof(fixture));fclose(fixture);about[length]=0;
-    struct foreign_acoustics about_zero=foreign_acoustics_window(about,0,10500,86,56);
-    struct foreign_acoustics about_selected=foreign_acoustics_window(about,47,10500,86,56);
+    const char *copyright_start=strstr(about,"Copyright");assert(copyright_start);
+    const char *year_start=strstr(copyright_start,"2006");assert(year_start);
+    char prefix[4096];size_t prefix_length=(size_t)(year_start-about);
+    assert(prefix_length<sizeof prefix);memcpy(prefix,about,prefix_length);prefix[prefix_length]=0;
+    /* Anchor the comparison to the real prefix instead of an utterance-wide
+     * constant: earlier Chinese windows may correctly become audible again. */
+    int64_t about_start=pitch_with_inflection(prefix,75,0,86,56,47).ticks;
+    struct foreign_acoustics about_zero=foreign_acoustics_window(about,0,about_start,86,56);
+    struct foreign_acoustics about_selected=foreign_acoustics_window(about,47,about_start,86,56);
     native=0;native_changes=0;english=0;max_english_delta=0;
     assert(about_zero.ticks==about_selected.ticks);
-    for(int t=10560;t<12700;++t) {
-        int i=t-10500;if(!about_zero.voiced[i]||!about_selected.voiced[i])continue;
+    for(int i=40;i<2100;++i) {
+        if(!about_zero.voiced[i]||!about_selected.voiced[i])continue;
         int delta=about_zero.f0[i]-about_selected.f0[i];if(delta<0)delta=-delta;
-        if(t<11600){++native;if(delta>30)++native_changes;}
-        else if(t>=11850){++english;if(delta>max_english_delta)max_english_delta=delta;}
+        if(i<1050){++native;if(delta>30)++native_changes;}
+        else if(i>=1320){++english;if(delta>max_english_delta)max_english_delta=delta;}
     }
     assert(native>600&&native_changes>300);
     assert(english>400&&max_english_delta<=10);
