@@ -139,10 +139,9 @@ static int bank_host_pitch(delta_state *d,int32_t machine,struct reloq61_english
  int32_t saved_words[2];memcpy(saved_words,(char*)d+DG_BASE+160,4);
  memcpy(saved_words+1,(char*)d+DG_BASE+168,4);
  int16_t saved_foreign;memcpy(&saved_foreign,(char*)d+DG_BASE+4060,2);
- /* Preserve the host voice while planning the embedded English run. */
- int16_t saved_inflection;int32_t saved_pitch_range,saved_pitch_base;
+ /* Neutral inflection belongs to this English bank only. */
+ int16_t saved_inflection;int32_t saved_pitch_range;
  memcpy(&saved_inflection,(char*)d+DG_BASE+3148,2);
- memcpy(&saved_pitch_base,(char*)d+DG_BASE+3156,4);
  memcpy(&saved_pitch_range,(char*)d+DG_BASE+3544,4);
  if(pitch_acoustic_grid(d,p,to-from,&grid))goto done;
  int count=pitch_phrase_syllables(d,p->host_left);if(count<=0||count>32767)goto done;
@@ -164,10 +163,8 @@ static int bank_host_pitch(delta_state *d,int32_t machine,struct reloq61_english
    if(!bank_pitch_keep_word_stress(p,current_word-1))memcpy(word_fields+4,&native_stress,2);
    if(reloq_zhcn61_init_word_vars(d,machine)){memcpy(word_fields+4,&saved_stress,2);goto done;}
    memcpy(word_fields+4,&saved_stress,2);
-   /* The English donor is rendered with neutral inflection in its own
-    * engine. This is the Mandarin host's tone planner: leave its selected
-    * inflection intact, including after a run of Chinese number words. */
-   int32_t unset=0;memcpy((char*)d+DG_BASE+3536,&unset,4);
+   int16_t neutral=0;int32_t unset=0;
+   memcpy((char*)d+DG_BASE+3148,&neutral,2);memcpy((char*)d+DG_BASE+3536,&unset,4);
    if(reloq_zhcn61_init_mcvoice_vars(d,machine,EVV_REF((char*)d+DG_BASE+4020)))goto done;
    if(phrase_start){int32_t first=pitch_grid_point(&grid,p->syllables[0].from);memcpy((char*)d+DG_BASE+648,&first,4);}
    if(!p->trim_pause){int32_t last=pitch_grid_point(&grid,p->syllables[p->syllable_count-1].to);memcpy((char*)d+DG_BASE+656,&last,4);}
@@ -185,22 +182,12 @@ static int bank_host_pitch(delta_state *d,int32_t machine,struct reloq61_english
   if(reloq_zhcn61_find_acoustic_nuc(d,machine)||reloq_zhcn61_set_syll_offset_vals(d,machine))goto done;
   if(reloq_zhcn61_generate_tone(d,machine,EVV_REF((char*)d+DG_BASE+4020),EVV_REF((char*)d+DG_BASE+796)))goto done;
  }
- if(reloq61_english_bank_pitch(d,p,from,to))goto done;
- /* High host inflection combined with English stress can otherwise drive
-  * foreign syllables far below the Mandarin voice's usable pitch range.
-  * Bound only positive-inflection banks relative to the selected voice; a
-  * deliberately neutral host keeps its original declination untouched. */
- if(saved_inflection>0&&saved_pitch_base>0){
-  int32_t low=(int32_t)(((int64_t)saved_pitch_base+12500)/25000);
-  if(low<200)low=200; /* 20 Hz in the native F0 units */
-  for(size_t i=0;i<p->pitch_count;++i)
-   if(p->pitch[i].value>0&&p->pitch[i].value<low)p->pitch[i].value=low;
- }
- if(pitch_keep_transitions(p))goto done;result=0;
+ if(reloq61_english_bank_pitch(d,p,from,to)||pitch_keep_transitions(p))goto done;result=0;
  done:free(grid.time);memcpy((char*)d+DG_BASE+648,saved_phrase,4);memcpy((char*)d+DG_BASE+656,saved_phrase+1,4);memcpy((char*)d+DG_BASE+160,saved_words,4);memcpy((char*)d+DG_BASE+168,saved_words+1,4);
  memcpy((char*)d+DG_BASE+4060,&saved_foreign,2);
  memcpy((char*)d+DG_BASE+3148,&saved_inflection,2);
- /* Reinitialize the pitch cache for the next native word. */
+ /* The bank initialized the pitch cache for neutral English. Invalidate it
+  * so the next native word derives both pitch values from its own voice. */
  {int32_t unset=0;memcpy((char*)d+DG_BASE+3536,&unset,4);}
  memcpy((char*)d+DG_BASE+3544,&saved_pitch_range,4);return result;
 }

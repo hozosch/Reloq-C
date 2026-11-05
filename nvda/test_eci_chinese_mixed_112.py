@@ -2,7 +2,8 @@
 from pathlib import Path
 import re
 from _reloq_eci_direct import (DirectEciEngine,EciIndex,NATIVE_INFLECTION,
-    NATIVE_SPEED,GENDER,SAMPLE_RATE,PAUSE_MODE,PROCESS_TAGS)
+    NATIVE_SPEED,GENDER,SAMPLE_RATE,PAUSE_MODE,PROCESS_TAGS,EciLanguage)
+from _reloq_languages import LanguageEngine,CHINESE_CHINA,US_ENGLISH
 from test_eci_german_clock_native import phonemes,render
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -27,31 +28,33 @@ def main():
                     for pause in (0,2):
                         engine.set_parameter(PAUSE_MODE,pause)
                         sounds=[]
-                        for inflection in (0,30,100):
+                        for inflection in (0,30,47,100):
                             engine.set_parameter(NATIVE_INFLECTION,inflection)
                             result=render(engine,[text+' 你好世界。',EciIndex(9)])
                             assert result[0] and result[1][-1]==(9,len(result[0]))
                             sounds.append(result[0]);checks+=1
                         # The native Chinese words and numbers remain sensitive
                         # to the user's setting after many English fragments.
-                        assert sounds[0]!=sounds[1] and sounds[1]!=sounds[2]
+                        assert all(a!=b for a,b in zip(sounds,sounds[1:]))
                         engine.set_parameter(NATIVE_INFLECTION,30)
                         split=text.index('Copyright')
                         plain=render(engine,[text,EciIndex(9)])
                         chunked=render(engine,[text[:split],EciIndex(1),text[split:],EciIndex(9)])
                         assert plain[0]==chunked[0] and [i for i,_ in chunked[1]]==[1,9]
                         assert 0<=chunked[1][0][1]<=chunked[1][1][1]==len(chunked[0]);checks+=1
-            # The Mandarin host keeps its own tone setting even when the
-            # sound-producing English bank uses neutral donor inflection.
+            # English output in the Mandarin voice remains neutral when
+            # the user's Mandarin inflection setting changes.
             engine.set_parameter(PAUSE_MODE,0)
-            engine.set_parameter(NATIVE_INFLECTION,0);a=render(engine,['Hello world.',EciIndex(9)])[0]
-            engine.set_parameter(NATIVE_INFLECTION,100);b=render(engine,['Hello world.',EciIndex(9)])[0]
-            assert len(a)==len(b) and a!=b,(hex(dialect),'host inflection');checks+=1
+            english=[]
+            for inflection in (0,47,100):
+                engine.set_parameter(NATIVE_INFLECTION,inflection)
+                english.append(render(engine,['Hello world.',EciIndex(9)])[0])
+            assert english[0]==english[1]==english[2],(hex(dialect),'English bank inflection');checks+=1
             # Exercise the actual NVDA-processed mixed text, not just the raw
             # English source. Chinese symbol names follow English repeatedly.
             engine.set_parameter(NATIVE_SPEED,75)
             engine.set_parameter(GENDER,0)
-            for inflection in (0,30,100):
+            for inflection in (0,30,47,100):
                 engine.set_parameter(NATIVE_INFLECTION,inflection)
                 processed=render(engine,[symbol_text,EciIndex(9)])
                 assert processed[0] and processed[1][-1]==(9,len(processed[0]))
@@ -110,6 +113,21 @@ def main():
             assert 14645<=milliseconds(long_english)<=14655,(hex(dialect),'English bank split')
             checks+=6
         finally:engine.close()
+    # The NVDA language router must restore the selected Chinese inflection
+    # when an explicit language command returns from another language.
+    routed=LanguageEngine(ROOT/'eci/libreloq_eci.so',language=CHINESE_CHINA.id,voice='4')
+    direct=DirectEciEngine(ROOT/'eci/libreloq_eci.so',dialect=CHINESE_CHINA.id,encoding='utf8',native_voice=True)
+    try:
+        for key,value in (*CHINESE_CHINA.voice('4').parameters,(NATIVE_SPEED,75),
+                          (SAMPLE_RATE,1),(PAUSE_MODE,0),(PROCESS_TAGS,1),(NATIVE_INFLECTION,47)):
+            routed.set_parameter(key,value);direct.set_parameter(key,value)
+        copyright_text=symbol_text[symbol_text.index('Copyright'):]
+        assert render(routed,[EciLanguage(US_ENGLISH.id,'4'),'Hello',
+            EciLanguage(CHINESE_CHINA.id,'4'),copyright_text,EciIndex(9)])[0]
+        assert render(routed,[copyright_text,EciIndex(9)])==render(direct,[copyright_text,EciIndex(9)])
+        checks+=1
+    finally:
+        routed.close();direct.close()
     print(f'Chinese mixed text: {checks} long-text, inflection, gender, speed, pause and index checks passed')
 
 

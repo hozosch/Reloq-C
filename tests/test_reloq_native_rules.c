@@ -100,7 +100,11 @@ static int32_t sample_curve(const struct reloq61_curve *c,int32_t t)
     float v=(float)(t-c->at_l);v*=(float)(c->val_r-c->val_l);
     v/=(float)(c->at_r-c->at_l);return (int32_t)((float)c->val_l+v);
 }
-struct foreign_acoustics {uint64_t hash;int64_t ticks;int32_t low,high;};
+struct foreign_acoustics {
+    uint64_t hash;int64_t ticks;
+    int64_t window_start;
+    int32_t f0[2200];unsigned char voiced[2200];
+};
 static int foreign_acoustic_span(void *context,int32_t from,int32_t to,
     const struct reloq61_curve c[62],int32_t volume)
 {
@@ -110,25 +114,24 @@ static int foreign_acoustic_span(void *context,int32_t from,int32_t to,
          * curves split the sparse callback spans at different places. */
         for(unsigned k=2;k<62;++k)
             out->hash=(out->hash^(uint32_t)sample_curve(c+k,t))*UINT64_C(1099511628211);
-        ++out->ticks;
-        if(t>=1750&&t<2300&&sample_curve(c+2,t)>0) {
-            int32_t value=sample_curve(c+1,t);
-            if(value<out->low)out->low=value;
-            if(value>out->high)out->high=value;
+        int64_t position=out->ticks++-out->window_start;
+        if(position>=0&&position<2200) {
+            out->f0[position]=sample_curve(c+1,t);
+            out->voiced[position]=sample_curve(c+2,t)>10;
         }
     }
     return 0;
 }
-static struct foreign_acoustics foreign_acoustics_at(const char *text,int inflection,int setting)
+static struct foreign_acoustics foreign_acoustics_window(const char *text,int inflection,int64_t start,int head,int setting)
 {
-    struct foreign_acoustics out={.hash=UINT64_C(1469598103934665603),.low=INT32_MAX};
+    struct foreign_acoustics out={.hash=UINT64_C(1469598103934665603),.window_start=start};
     struct reloq61_request q=request(0x60000,text);struct reloq61_result r={0};
-    q.voice[2]=setting;q.voice[3]=inflection;q.context=&out;q.span=foreign_acoustic_span;
+    q.voice[1]=head;q.voice[2]=setting;q.voice[3]=inflection;q.context=&out;q.span=foreign_acoustic_span;
     assert(!reloq61_generate(&q,&r)&&!r.error&&!r.unsupported&&out.ticks>0);
     return out;
 }
 static struct foreign_acoustics foreign_acoustics(const char *text,int inflection)
-{return foreign_acoustics_at(text,inflection,65);}
+{return foreign_acoustics_window(text,inflection,1200,50,65);}
 static unsigned chinese_english_host_stress(void)
 {
     /* In this long user-reported sentence, English sentence analysis marks
@@ -139,29 +142,52 @@ static unsigned chinese_english_host_stress(void)
     struct pitch_plan actual=pitch_with_inflection(text,75,0,50,65,0);
     assert(pitch_transition(&actual,820,1002));
     assert(pitch_transition(&actual,1002,715));
-    /* Only the donor's non-F0 targets stay neutral. Mandarin's host tone
-     * planner uses its own setting for the embedded English range. */
+    /* Both the English donor and its actual F0 stay neutral. */
     struct foreign_acoustics low=foreign_acoustics("NVDA Contributors.",0);
     struct foreign_acoustics high=foreign_acoustics("NVDA Contributors.",100);
     assert(low.ticks==high.ticks&&low.hash==high.hash);
     struct pitch_plan low_pitch=pitch_with_inflection(text,75,0,50,65,0);
     struct pitch_plan high_pitch=pitch_with_inflection(text,75,0,50,65,100);
-    assert(low_pitch.count!=high_pitch.count||memcmp(low_pitch.pair,high_pitch.pair,
+    assert(low_pitch.count==high_pitch.count&&!memcmp(low_pitch.pair,high_pitch.pair,
         low_pitch.count*sizeof *low_pitch.pair));
-    /* After the years in the user's example, NVDA Contributors used to
-     * remain at a single F0 target for most of the English bank. */
-    struct foreign_acoustics copyright=foreign_acoustics("Copyright 2006-2026 NVDA Contributors",30);
-    assert(copyright.low!=INT32_MAX&&copyright.high-copyright.low>100);
-    /* At maximum inflection the same English syllables must not collapse
-     * into subsonic F0 while adjacent Mandarin remains in the voice range. */
-    struct foreign_acoustics extreme=foreign_acoustics("Copyright 2006-2026 NVDA Contributors",100);
-    assert(extreme.low>=400&&extreme.high>extreme.low+100);
-    struct foreign_acoustics low_voice=foreign_acoustics_at("Copyright 2006-2026 NVDA Contributors",100,0);
-    assert(low_voice.low>=200&&low_voice.high>low_voice.low+100);
+    /* In the reported Copyright line the years are Mandarin, and the later
+     * NVDA/Contributors words are English. Check the two acoustic intervals
+     * independently: native tones must respond to the user's inflection,
+     * while the English bank stays neutral after the handoff settles. */
+    const char *copyright="Copyright (C) 2006-2026 NVDA Contributors";
+    struct foreign_acoustics zero=foreign_acoustics(copyright,0);
+    struct foreign_acoustics full=foreign_acoustics(copyright,47);
+    unsigned native=0,native_changes=0,english=0;int max_english_delta=0;
+    assert(zero.ticks==full.ticks);
+    for(int t=1300;t<3400;++t) {
+        int i=t-1200;if(!zero.voiced[i]||!full.voiced[i])continue;
+        int delta=zero.f0[i]-full.f0[i];if(delta<0)delta=-delta;
+        if(t<2350){++native;if(delta>30)++native_changes;}
+        else if(t>=2700){++english;if(delta>max_english_delta)max_english_delta=delta;}
+    }
+    assert(native>600&&native_changes>300);
+    assert(english>300&&max_english_delta<=10);
+    /* NVDA supplies spoken Chinese symbol names in the complete About text.
+     * Check its Copyright years and following English independently too. */
+    FILE *fixture=fopen("tests/fixtures/chinese_nvda_about_symbols.txt","rb");
+    assert(fixture);char about[4096];size_t length=fread(about,1,sizeof about-1,fixture);
+    assert(!ferror(fixture)&&feof(fixture));fclose(fixture);about[length]=0;
+    struct foreign_acoustics about_zero=foreign_acoustics_window(about,0,10500,86,56);
+    struct foreign_acoustics about_selected=foreign_acoustics_window(about,47,10500,86,56);
+    native=0;native_changes=0;english=0;max_english_delta=0;
+    assert(about_zero.ticks==about_selected.ticks);
+    for(int t=10560;t<12700;++t) {
+        int i=t-10500;if(!about_zero.voiced[i]||!about_selected.voiced[i])continue;
+        int delta=about_zero.f0[i]-about_selected.f0[i];if(delta<0)delta=-delta;
+        if(t<11600){++native;if(delta>30)++native_changes;}
+        else if(t>=11850){++english;if(delta>max_english_delta)max_english_delta=delta;}
+    }
+    assert(native>600&&native_changes>300);
+    assert(english>400&&max_english_delta<=10);
     /* A previously verified weak demonstrative must stay unaccented. */
     struct pitch_plan weak=pitch_with_inflection("This is an English text with some words.",75,0,50,65,0);
     assert(weak.count&&weak.pair[0][0]==1225);
-    return 7;
+    return 8;
 }
 static unsigned chinese(void)
 {
