@@ -164,12 +164,13 @@ int ECICALL eciUpdateDictA(ECIHand handle,ECIDictHand dictionary,int volume,
     reloq61_worker_free(candidate);if(result)return result==2?2:eciDictInternalError;
     struct reloq_eci_dictionary next=*d;next.volumes[volume]=data;next.sizes[volume]=size;
     void *api=dictionary_api_worker(&next);
-    void *active=e->active_dictionary==d?dictionary_worker(e,e->language,&next,0):NULL;
-    if(!api||(e->active_dictionary==d&&!active)) {
-        reloq61_worker_free(api);reloq61_worker_free(active);free(data);return eciDictOutOfMemory;
+    void *prepared=dictionary_worker(e,d->language,&next,0);
+    if(!api||!prepared) {
+        reloq61_worker_free(api);reloq61_worker_free(prepared);free(data);return eciDictOutOfMemory;
     }
     reloq61_worker_free(d->api_worker);d->api_worker=api;
-    if(active){reloq61_worker_free(e->rule_worker);e->rule_worker=active;}
+    if(e->active_dictionary==d){reloq61_worker_free(e->rule_worker);e->rule_worker=prepared;}
+    else {reloq61_worker_free(d->cached_worker);d->cached_worker=prepared;}
     free(d->volumes[volume]);d->volumes[volume]=data;d->sizes[volume]=size;
     memset(d->walk_active,0,sizeof d->walk_active);return eciDictNoError;
 }

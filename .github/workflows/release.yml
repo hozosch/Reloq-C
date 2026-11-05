@@ -62,6 +62,10 @@ jobs:
           RELEASE_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.tag_name == \"v$RELEASE_VERSION\") | .id")
           if [ -n "$RELEASE_ID" ]; then
             gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" > /tmp/existing-release.json
+            if [ "$(python3 -c 'import json; print(str(json.load(open("/tmp/existing-release.json"))["draft"]).lower())')" = false ]; then
+              python3 tools/replace_release.py "$RELEASE_ID" release-packages
+              exit 0
+            fi
             python3 - <<'PY'
           import json, sys
           sys.path.insert(0, 'tools')

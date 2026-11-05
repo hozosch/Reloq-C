@@ -55,7 +55,9 @@ jobs:
       - name: Check number, pitch, pause, source-index and multilingual behavior
         run: |
           ./eci/test_reloq_native_rules
+          python3 -B tests/test_replace_release.py
           python3 -B tools/test_native_text_input.py
+          python3 -B nvda/test_eci_dictionary_cache.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_dash_pause.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_chinese_mixed_112.py
           python3 -B nvda/test_eci_cjk_latin_native.py

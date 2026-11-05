@@ -221,7 +221,7 @@ static struct reloq_eci_dictionary *find_eci_dictionary(struct reloq_eci_engine 
 static void clear_eci_dictionaries(struct reloq_eci_engine *e)
 {
     while(e->dictionaries) {struct reloq_eci_dictionary *d=e->dictionaries;e->dictionaries=d->next;
-        reloq61_worker_free(d->api_worker);
+        reloq61_worker_free(d->api_worker);reloq61_worker_free(d->cached_worker);
         for(unsigned i=0;i<4;++i){free(d->volumes[i]);}free(d);}
 }
 static void *dictionary_worker(struct reloq_eci_engine *e,int language,const struct reloq_eci_dictionary *set,int directory)
@@ -232,14 +232,34 @@ static void *dictionary_worker(struct reloq_eci_engine *e,int language,const str
     if(status){reloq61_worker_free(w);return NULL;}return w;
 }
 
+/* Each dictionary set owns its prepared worker while inactive. The active
+ * worker remains on the engine; moving it between these two owners avoids
+ * reparsing the volumes on every language switch or dictionary selection. */
+static void park_eci_dictionary_worker(struct reloq_eci_engine *e)
+{
+    if(e->active_dictionary) {
+        reloq61_worker_free(e->active_dictionary->cached_worker);
+        e->active_dictionary->cached_worker=e->rule_worker;
+    } else reloq61_worker_free(e->rule_worker);
+    e->rule_worker=NULL;
+}
+static void *take_eci_dictionary_worker(struct reloq_eci_engine *e,int language,
+    struct reloq_eci_dictionary *set,int directory)
+{
+    if(set&&set->cached_worker) {
+        void *w=set->cached_worker;set->cached_worker=NULL;return w;
+    }
+    return dictionary_worker(e,language,set,directory);
+}
+
 static int switch_eci_language(struct reloq_eci_engine *e,int language)
 {
     int base=language&~0xff00;
     if(((language&0xff00)!=0&&(language&0xff00)!=0x800)||!reloq61_language_supported(base)||dictionary_language_slot(base)>=15)return -1;
     if(base==e->language){e->language_dialect=language;return 0;}
     struct reloq_eci_dictionary *set=e->language_dictionaries[dictionary_language_slot(base)];
-    void *next=dictionary_worker(e,base,set,1);if(!next)return -1;
-    reloq61_worker_free(e->rule_worker);e->rule_worker=next;
+    void *next=take_eci_dictionary_worker(e,base,set,1);if(!next)return -1;
+    park_eci_dictionary_worker(e);e->rule_worker=next;
     e->active_dictionary=set;
     e->language=base;e->language_dialect=language;return 0;
 }
@@ -259,10 +279,14 @@ int ECICALL eciSetDict(ECIHand handle,ECIDictHand dictionary)
     struct reloq_eci_dictionary *d=find_eci_dictionary(e,dictionary);if(dictionary&&!d)return eci_refuse(e,eciDictInternalError);
     unsigned slot=dictionary_language_slot(d?d->language:e->language);
     if(d&&d->language!=e->language){e->language_dictionaries[slot]=d;return eciDictNoError;}
-    void *w=dictionary_worker(e,e->language,d,0);
+    if(d&&d==e->active_dictionary) {
+        e->language_dictionaries[slot]=d;free(e->dictionary_path);e->dictionary_path=NULL;
+        return eciDictNoError;
+    }
+    void *w=take_eci_dictionary_worker(e,e->language,d,0);
     if(!w)return eciDictOutOfMemory;
     e->language_dictionaries[slot]=d;
-    reloq61_worker_free(e->rule_worker);e->rule_worker=w;e->active_dictionary=d;free(e->dictionary_path);e->dictionary_path=NULL;return eciDictNoError;
+    park_eci_dictionary_worker(e);e->rule_worker=w;e->active_dictionary=d;free(e->dictionary_path);e->dictionary_path=NULL;return eciDictNoError;
 }
 ECIDictHand ECICALL eciDeleteDict(ECIHand handle,ECIDictHand dictionary)
 {
@@ -271,7 +295,7 @@ ECIDictHand ECICALL eciDeleteDict(ECIHand handle,ECIDictHand dictionary)
     if(e->active_dictionary==d&&eciSetDict(e,NULL)!=eciDictNoError)return dictionary;
     for(unsigned i=0;i<15;++i)if(e->language_dictionaries[i]==d)e->language_dictionaries[i]=NULL;
     struct reloq_eci_dictionary **at=&e->dictionaries;while(*at!=d)at=&(*at)->next;*at=d->next;
-    reloq61_worker_free(d->api_worker);
+    reloq61_worker_free(d->api_worker);reloq61_worker_free(d->cached_worker);
     for(unsigned i=0;i<4;++i){free(d->volumes[i]);}free(d);return NULL;
 }
 int ECICALL eciLoadDict(ECIHand handle,ECIDictHand dictionary,int volume,const void *filename)
@@ -288,8 +312,9 @@ int ECICALL eciLoadDict(ECIHand handle,ECIDictHand dictionary,int volume,const v
     if(fread(data,1,(size_t)bytes,f)!=(size_t)bytes||ferror(f)){fclose(f);free(data);return 6;}
     fclose(f);data[bytes]=0;
     struct reloq_eci_dictionary candidate=*d;candidate.volumes[volume]=data;candidate.sizes[volume]=(size_t)bytes;
-    void *w=dictionary_worker(e,e->language,&candidate,0);if(!w){free(data);return 6;}
-    if(e->active_dictionary==d){reloq61_worker_free(e->rule_worker);e->rule_worker=w;}else reloq61_worker_free(w);
+    void *w=dictionary_worker(e,d->language,&candidate,0);if(!w){free(data);return 6;}
+    if(e->active_dictionary==d){reloq61_worker_free(e->rule_worker);e->rule_worker=w;}
+    else {reloq61_worker_free(d->cached_worker);d->cached_worker=w;}
     reloq61_worker_free(d->api_worker);d->api_worker=NULL;memset(d->walk_active,0,sizeof d->walk_active);
     free(d->volumes[volume]);d->volumes[volume]=data;d->sizes[volume]=(size_t)bytes;return 0;
 }
@@ -303,12 +328,17 @@ static int reset_eci_defaults(struct reloq_eci_engine *e)
     struct reloq_eci_engine *n=eciNew();
     if(!n){busy_end(&e->busy);return 0;}
     struct reloq_eci_dictionary *set=e->language_dictionaries[dictionary_language_slot(n->language)];
-    n->rule_worker=dictionary_worker(e,n->language,set,1);
+    n->rule_worker=set==e->active_dictionary?dictionary_worker(e,n->language,set,1):
+        take_eci_dictionary_worker(e,n->language,set,1);
     if(!n->rule_worker){eciDelete(n);busy_end(&e->busy);return 0;}
     lock_session(&e->session_lock);
     struct reloq_session *old=e->session;e->session=n->session;n->session=old;
     old=e->text_session;e->text_session=n->text_session;n->text_session=old;
     void *worker=e->rule_worker;e->rule_worker=n->rule_worker;n->rule_worker=worker;
+    if(e->active_dictionary&&e->active_dictionary!=set) {
+        reloq61_worker_free(e->active_dictionary->cached_worker);
+        e->active_dictionary->cached_worker=n->rule_worker;n->rule_worker=NULL;
+    }
     unlock_session(&e->session_lock);
     clear_queue(e);
     e->sample_rate_code=n->sample_rate_code;e->synth_mode=n->synth_mode;e->voice_mode=n->voice_mode;

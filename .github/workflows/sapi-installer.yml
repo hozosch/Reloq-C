@@ -82,6 +82,11 @@ jobs:
             & "./test-$arch/Test-Dictionary.exe"
             if ($LASTEXITCODE -ne 0) { throw "Dictionary source smoke test failed for $arch" }
           }
+      - name: Check standard ECI dictionary switching and performance
+        shell: pwsh
+        run: |
+          python nvda/test_eci_dictionary_cache.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'ECI dictionary cache regression test failed' }
       - name: Compile unified Inno Setup installer
         shell: pwsh
         run: |
