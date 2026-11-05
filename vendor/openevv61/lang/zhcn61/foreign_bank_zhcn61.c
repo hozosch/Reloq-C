@@ -180,7 +180,27 @@ static int project_word(delta_state*d,int32_t left,int32_t end,struct reloq61_en
  }
  return 0;
 }
-struct bank_edit {delta_rule_block scope;int32_t status;delta_loc loc[2];};
+/* The text module advances word and phrase cursors in small batches. A
+ * foreign bank may span several such batches, and projecting its English
+ * words removes the old interior word-boundary nodes. Remember any active
+ * cursor on those nodes before the rewrite. The entire bank is already
+ * analyzed, so its right edge is the next safe native processing position. */
+static const unsigned bank_cursor_offsets[]={2500,2508,2516,2524,4016};
+static unsigned bank_interior_cursors(delta_state*d,int32_t left,int32_t end,int32_t saved[5])
+{
+ unsigned mask=0;int32_t limit=right_point(d,end,4),at=left;
+ for(size_t i=0;i<5;++i)memcpy(saved+i,(char*)d+DG_BASE+bank_cursor_offsets[i],4);
+ for(unsigned guard=0;guard<255&&right_point(d,at,4)!=limit;++guard){
+  int32_t word=projected_record(d,at,4);if(!word)break;
+  int32_t next=record_end(word);if(!next||next==at)break;
+  if(right_point(d,next,4)!=limit)
+   for(size_t i=0;i<5;++i)if(saved[i]==next)mask|=1u<<i;
+  at=next;
+ }
+ return mask;
+}
+struct bank_edit {delta_rule_block scope;int32_t status;delta_loc loc[2];
+ unsigned stale_cursors;int32_t cursor_values[5];};
 int reloq_zhcn61_bank_assign(void*state,int32_t a,int32_t b)
 {
  delta_state*host_state=state;int32_t existing_word=projected_record(host_state,argument_point(a),4);
@@ -191,8 +211,14 @@ int reloq_zhcn61_bank_assign(void*state,int32_t a,int32_t b)
  delta_state*d=state;struct bank_edit*f=evv_frame_push(sizeof*f);if(!f)return 94;memset(f,0,sizeof*f);f->status=94;volatile int entered=0;
  if(EVV_LAND_SAVE((intptr_t)f->scope.landing))goto done;if(ventproc(d,&f->scope.rec,f->scope.fence[0],f->scope.fence[1],f->scope.fence[2],f->scope.landing))goto done;entered=1;fence(d,0,NULL);
  bank->host_left=argument_point(a);bank->host_right=end;
+ f->stale_cursors=bank_interior_cursors(d,bank->host_left,bank->host_right,f->cursor_values);
  f->status=project_word(d,bank->host_left,bank->host_right,bank);
- done:if(entered&&vretproc(d,f->status?94:1))f->status=94;int result=f->status;evv_land_forget((uintptr_t)f,(uintptr_t)f+sizeof*f);evv_frame_pop(f);return result;
+ done:if(entered&&vretproc(d,f->status?94:1))f->status=94;int result=f->status;
+ if(!result)for(size_t i=0;i<5;++i)if(f->stale_cursors&(1u<<i)){
+  int32_t current;memcpy(&current,(char*)d+DG_BASE+bank_cursor_offsets[i],4);
+  if(current==f->cursor_values[i])memcpy((char*)d+DG_BASE+bank_cursor_offsets[i],&bank->host_right,4);
+ }
+ evv_land_forget((uintptr_t)f,(uintptr_t)f+sizeof*f);evv_frame_pop(f);return result;
 }
 
 static int32_t owner_record(delta_state*d,int32_t at,unsigned field){return projected_record(d,vgetsc(d,1,1,at,(uint8_t)field),field);}

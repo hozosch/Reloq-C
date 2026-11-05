@@ -9,18 +9,61 @@ from test_eci_german_clock_native import phonemes,render
 ROOT=Path(__file__).resolve().parents[1]
 
 
+def chinese_accents_from_phonemes(phones,limit=None):
+    groups=re.findall(r'\[\+([^]]+)\]',phones)
+    if limit is not None:groups=groups[:limit]
+    result=[tuple(map(int,pair)) for group in groups for pair in re.findall(r'\.([0-4])([0-4])',group)]
+    assert result,(phones,groups)
+    return result
+
+
+def chinese_syllable_accents(engine,text):
+    """Capture Mandarin lexical tones and stress, excluding English banks."""
+    return chinese_accents_from_phonemes(phonemes(engine,text))
+
+
 def main():
     text=(ROOT/'tests/fixtures/chinese_nvda_about.txt').read_text(encoding='utf8')
+    # Produced by the NVDA 2026.3 Chinese/English symbol dictionaries at
+    # level NONE, then passed through NVDA's normal whitespace processing.
+    symbol_none=(ROOT/'tests/fixtures/chinese_nvda_about_symbols_0.txt').read_text(encoding='utf8').strip()
     # NVDA 2026.3 at Chinese symbol level SOME supplies these spoken symbol
     # names to the synthesizer between the English words and numbers.
     symbol_text=(ROOT/'tests/fixtures/chinese_nvda_about_symbols.txt').read_text(encoding='utf8')
     assert 'https: 斜杠  斜杠 www 点 nvaccess 点 org' in symbol_text
+    assert 'https:  www nvaccess org Copyright (C) 2006 2026' in symbol_none
     assert 'Version: 2026.3 (2026.3.0.58174)' in text
     checks=0
     for dialect in (0x60000,0x60001):
         engine=DirectEciEngine(ROOT/'eci/libreloq_eci.so',dialect=dialect,encoding='utf8',native_voice=True)
         try:
             engine.set_parameter(SAMPLE_RATE,1)
+            # NVDA 2026.3 symbol level NONE removes URL slashes, dots and
+            # the year dash. A long English bank followed by a second bank
+            # used to invalidate the native word/phrase cursors and leave
+            # the following Mandarin syllables without their normal stress.
+            engine.set_parameter(NATIVE_INFLECTION,47)
+            for prefix,suffix in (
+                ('https:  www nvaccess org ','Copyright (C) 2006 2026'),
+                ('a a a a ','Copyright (C) 2006 2026'),
+                ('a a a a ','Copyright (C) 你好'),
+                ('alpha beta gamma delta ','Copyright (C) 42'),
+                ('hello world this is a longer string of english text ','Copyright (C) 你好 2006 2026'),
+            ):
+                expected=chinese_syllable_accents(engine,suffix)
+                actual=chinese_syllable_accents(engine,prefix+suffix)
+                assert actual==expected,(hex(dialect),prefix,suffix,expected,actual)
+                checks+=1
+            # Also verify the exact complete About text, including the
+            # preceding version and URL, not merely the reduced example.
+            full_phones=phonemes(engine,symbol_none)
+            copyright_at=full_phones.find('[.1ka.0pi.2rayt]')
+            c_at=full_phones.find('[.1si]',copyright_at)
+            assert copyright_at>=0 and c_at>copyright_at
+            expected=chinese_syllable_accents(engine,'Copyright (C) 2006 2026')
+            actual=chinese_accents_from_phonemes(full_phones[c_at+len('[.1si]'):],limit=6)
+            assert actual==expected,(hex(dialect),'full NVDA About text',expected,actual)
+            checks+=1
             for gender in (0,1):
                 engine.set_parameter(GENDER,gender)
                 for speed in (75,150):
