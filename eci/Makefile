@@ -138,7 +138,7 @@ test_reloq_hash_delete: ../tests/test_reloq_hash_delete.c $(RULES61)
 	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -DEVV_ARENA=1 -I../vendor/openevv61/src/port $< $(RULES61) -pthread -lm -o $@
 
 test_reloq_native_rules: ../tests/test_reloq_native_rules.c $(OBJECTS) $(RULES61)
-	$(CC) $(CFLAGS) $(PROVIDER_LINK) -I../vendor/openevv61/include $< $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections -lm -o $@
+	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -I../vendor/openevv61/include $< $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections -lm -o $@
 
 eci_native_rules_probe.exe: ../tests/test_reloq_native_rules.c ../src/reloq_german_lexicon.c ../src/reloq_german_spr.c reloq_eci_fixed_math.c $(RULES61_WIN)
 	$(WINDOWS_CC) $(filter-out -Werror,$(WINDOWS_CFLAGS)) $(PROVIDER_LINK) $(SECTIONS) -I../include -I../vendor/openevv61/include $^ $(WINDOWS_LDFLAGS) -Wl,--gc-sections -lm -o $@
