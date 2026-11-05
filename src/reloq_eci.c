@@ -142,7 +142,7 @@ struct connected_index_boundary {
 struct reloq_eci_dictionary {
     struct reloq_eci_dictionary *next;
     unsigned char *volumes[4];size_t sizes[4];
-    void *api_worker;
+    void *api_worker,*cached_worker;
     int language,walk_active[3];
 };
 
@@ -1547,7 +1547,7 @@ int ECICALL eciSetDictionaryPath(ECIHand handle,const char *utf8_directory)
     if(!worker||reloq61_worker_dictionary(worker,path)) {
         reloq61_worker_free(worker);free(path);eci_error(e,RELOQ_ECI_INVALID);return 0;
     }
-    reloq61_worker_free(e->rule_worker);free(e->dictionary_path);
+    park_eci_dictionary_worker(e);free(e->dictionary_path);
     e->language_dictionaries[dictionary_language_slot(e->language)]=NULL;
     e->rule_worker=worker;e->dictionary_path=path;e->active_dictionary=NULL;eci_error(e,RELOQ_ECI_OK);return 1;
 }
