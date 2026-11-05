@@ -1,8 +1,9 @@
 """Mixed Mandarin/English, long NVDA example, native controls and indices."""
 from pathlib import Path
+import re
 from _reloq_eci_direct import (DirectEciEngine,EciIndex,NATIVE_INFLECTION,
     NATIVE_SPEED,GENDER,SAMPLE_RATE,PAUSE_MODE)
-from test_eci_german_clock_native import render
+from test_eci_german_clock_native import phonemes,render
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -41,6 +42,19 @@ def main():
             engine.set_parameter(NATIVE_INFLECTION,0);a=render(engine,['Hello world.',EciIndex(9)])[0]
             engine.set_parameter(NATIVE_INFLECTION,100);b=render(engine,['Hello world.',EciIndex(9)])[0]
             assert a==b,(hex(dialect),'English bank inflection');checks+=1
+            # A Chinese transliteration must not replace English-bank words;
+            # the native dictionary used to do this only for lowercase forms.
+            for word in ('clinton','microsoft','internet'):
+                expected=phonemes(engine,word.capitalize())
+                assert phonemes(engine,word)==expected,(hex(dialect),word)
+                english_phones=''.join(re.findall(r'\[([^]]+)\]',expected))
+                english_phones=re.sub(r'\.[0123]','',english_phones)
+                for example in (word+' is here','你好 '+word+' 世界'):
+                    actual=''.join(re.findall(r'\[([^]]+)\]',phonemes(engine,example)))
+                    actual=re.sub(r'\.[0123]','',actual)
+                    assert english_phones in actual,(hex(dialect),example,actual)
+                    checks+=1
+                checks+=1
         finally:engine.close()
     print(f'Chinese mixed text: {checks} long-text, inflection, gender, speed, pause and index checks passed')
 

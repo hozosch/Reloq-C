@@ -105,6 +105,8 @@ int word_text(void*state,int32_t a,int32_t b,char*out,size_t cap)
 
 int reloq_zhcn61_bank_init(void){return install_word_fields()||install_phone_fields()!=97?94:0;}
 int reloq_zhcn61_bank_word(void*state,int32_t a){delta_state*d=state;int32_t point=vgetsc(d,1,1,argument_point(a),4);int32_t n=projected_record(d,point,4);return n&&*((unsigned char*)TFLDS(EVV_AT(void*,n))+9)!=0;}
+/* At the input boundary the word record starts at the supplied point. */
+int reloq_zhcn61_bank_input_word(void*state,int32_t a){delta_state*d=state;int32_t n=projected_record(d,argument_point(a),4);return n&&*((unsigned char*)TFLDS(EVV_AT(void*,n))+9)!=0;}
 int reloq_zhcn61_bank_character(int character){const char*const*names=vstmtbl[1].fields[0].values;for(int i=0;i<vstmtbl[1].fields[0].nvalues;++i)if(names[i]&&names[i][0]==character&&!names[i][1])return i;return -1;}
 int reloq_zhcn61_bank_dot(void){return reloq_zhcn61_bank_character('.');}
 static int32_t record_end(int32_t p){return EVV_AT(int32_t*,p)[1]&~3;}
