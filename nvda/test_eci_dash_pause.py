@@ -73,7 +73,7 @@ def main():
         finally:engine.close()
     # Issue #15: an isolated dash before a number in running text is a
     # separator, including after sentence punctuation and across ECI chunks.
-    examples=('Post - 0 of 3000 characters','This is - 1 test.',
+    examples=('Post - 0 of 3000 characters','Post- 0 of 3000 characters','This is - 1 test.',
               'It was related to dictionaries, not sound. - 14 minutes ago.')
     for dialect in (0x10000,0x10001,0x40000,0x60000,0x80000):
         engine=DirectEciEngine(args.library.resolve(),dialect=dialect,encoding='utf8',native_voice=True)

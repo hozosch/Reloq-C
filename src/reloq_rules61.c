@@ -45,7 +45,7 @@ static int dash_between_words(const unsigned char *text,size_t length,size_t beg
     /* Keep the native handling of numeric ranges such as 2–4. */
     return !(left>='0'&&left<='9'&&right>='0'&&right<='9');
 }
-/* A separated dash between prose and a following number is a sentence
+/* A dash before whitespace and a number in prose is a sentence
  * separator. Preserve numeric subtraction, a leading minus and -1. */
 static int dash_before_number(const unsigned char *text,size_t length,size_t begin,size_t end)
 {
@@ -58,15 +58,14 @@ static int dash_before_number(const unsigned char *text,size_t length,size_t beg
     if(right<'0'||right>'9')return 0;
     p=begin;
     if(!p)return 0;
-    int saw_space=0;
     while(p) {
         size_t at=p-1;while(at&&(text[at]&0xc0)==0x80)--at;
         size_t next=at;if(reloq_utf8_next(text,p,&next,&left)!=1||next!=p)return 0;
         p=at;
         if(!dash_space(left))break;
-        saw_space=1;left=0;
+        left=0;
     }
-    if(!saw_space||(left>='0'&&left<='9'))return 0;
+    if(left>='0'&&left<='9')return 0;
     return dash_word_edge(left)||left=='.'||left==','||left==':'||left==';'||left=='!'||left=='?';
 }
 
