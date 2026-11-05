@@ -150,10 +150,14 @@ static unsigned chinese_english_host_stress(void)
      * remain at a single F0 target for most of the English bank. */
     struct foreign_acoustics copyright=foreign_acoustics("Copyright 2006-2026 NVDA Contributors",30);
     assert(copyright.low!=INT32_MAX&&copyright.high-copyright.low>100);
+    /* At maximum inflection the same English syllables must not collapse
+     * into subsonic F0 while adjacent Mandarin remains in the voice range. */
+    struct foreign_acoustics extreme=foreign_acoustics("Copyright 2006-2026 NVDA Contributors",100);
+    assert(extreme.low>=400&&extreme.high>extreme.low+100);
     /* A previously verified weak demonstrative must stay unaccented. */
     struct pitch_plan weak=pitch_with_inflection("This is an English text with some words.",75,0,50,65,0);
     assert(weak.count&&weak.pair[0][0]==1225);
-    return 5;
+    return 6;
 }
 static unsigned chinese(void)
 {
