@@ -1,20 +1,20 @@
 {
-  "version": "1.1.1",
-  "release_version": "1.1.1",
-  "source_commit": "dc5ca26a40f31e71861c3215fe2f928492ad1732",
-  "run_id": 41932402840,
+  "version": "1.1.2",
+  "release_version": "1.1.2",
+  "source_commit": "6513c8715326171395c1787208b3edfb0d7f283c",
+  "run_id": 42078760356,
   "assets": {
-    "reloq-c-android-arm64-1.1.1.apk": {
-      "size": 17380974,
-      "sha256": "4b0ba810fa7644b5d571d11d87ddd23ef16605d94a2a4b278f78c48174e8684f"
+    "reloq-c-android-arm64-1.1.2.apk": {
+      "size": 17385070,
+      "sha256": "6a07a73dfa58287b252f3cd2adb01e7a245d1c4194e04d6120c43f19a7066df9"
     },
-    "reloq-c-synth-x64-1.1.1.nvda-addon": {
-      "size": 19627798,
-      "sha256": "9a4a7e8d89bcf47e4e77d3eab02876253eca91e47e76e3c195a7454bb501d7fa"
+    "reloq-c-synth-x64-1.1.2.nvda-addon": {
+      "size": 19629441,
+      "sha256": "06a9622dc1eb563b96aeeaff8c6e5d1af39912e0b0f1eb9da05e75ec53ac71bd"
     },
-    "reloq-c-sapi5-1.1.1-setup.exe": {
-      "size": 19430169,
-      "sha256": "5c207102d2e200cf477f729bb90122b31042b0360e4786f9d36145d1e48382be"
+    "reloq-c-sapi5-1.1.2-setup.exe": {
+      "size": 19433169,
+      "sha256": "424444b4d406658f00a95734ba7f4dd1870028c3d8b63b8dfb9da7f4700a45b7"
     }
   }
 }
