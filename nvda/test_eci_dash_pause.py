@@ -71,6 +71,26 @@ def main():
             assert short==long and len(short)>len(hyphen),(dialect,'native dash pause')
             checks+=1
         finally:engine.close()
+    # Issue #15: an isolated dash before a number in running text is a
+    # separator, including after sentence punctuation and across ECI chunks.
+    examples=('Post - 0 of 3000 characters','This is - 1 test.',
+              'It was related to dictionaries, not sound. - 14 minutes ago.')
+    for dialect in (0x10000,0x10001,0x40000,0x60000,0x80000):
+        engine=DirectEciEngine(args.library.resolve(),dialect=dialect,encoding='utf8',native_voice=True)
+        try:
+            engine.set_parameter(NATIVE_SPEED,85)
+            for rate,pause in ((1,0),(3,0),(1,2)):
+                engine.set_parameter(SAMPLE_RATE,rate);engine.set_parameter(PAUSE_MODE,pause)
+                for text in examples:
+                    left,right=text.split('-',1)
+                    def capture(separator):
+                        return render(engine,[left,EciIndex(1),separator,EciIndex(2),right,EciIndex(3)])
+                    assert capture('-')==capture(','),(hex(dialect),rate,pause,text)
+                    assert phonemes(engine,text)==phonemes(engine,text.replace('-',',')),(hex(dialect),text)
+                    checks+=2
+            assert character_phonemes(engine,'-')!=character_phonemes(engine,',')
+            checks+=1
+        finally:engine.close()
     german=DirectEciEngine(args.library.resolve(),dialect=0x40000,encoding='utf8',native_voice=True)
     try:
         german.set_parameter(PROCESS_TAGS,1)
@@ -96,6 +116,7 @@ def main():
                     for engine in (old,new):
                         engine.set_parameter(NATIVE_SPEED,85);engine.set_parameter(SAMPLE_RATE,3)
                     texts=('2–4','2020 – 2024','2 – -4','2 – +4','und 24–32 Punkte',
+                           '2 - 1','2020 - 2024','- 1','-1','- 42','Room 2 - 1',
                            'Das ist ein einfacher Satz.','Der Unterstrich ist lang.','Er unterstrich den Satz.')
                     if encoding=='utf8':texts+=('2 – +4',)
                     for text in texts:

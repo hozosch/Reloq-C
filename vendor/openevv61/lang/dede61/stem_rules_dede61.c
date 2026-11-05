@@ -269,7 +269,7 @@ static void repair_number_onset(delta_state *d,int32_t begin,int32_t end,
             size_t length=strlen(tens[j]);
             if(!strncmp((const char *)spelling+n,tens[j],length)) {
                 const char *ending=(const char *)spelling+n+length;
-                if(!*ending||!strcmp(ending,"ste")||!strcmp(ending,"sten")||
+                if(!*ending||!strncmp(ending,"tausend",7)||!strcmp(ending,"ste")||!strcmp(ending,"sten")||
                    !strcmp(ending,"ster")||!strcmp(ending,"stes")||!strcmp(ending,"stem"))numeric=1;
             }
         }

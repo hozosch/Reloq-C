@@ -12,6 +12,7 @@ struct pitch_plan {
     int32_t pair[2048][2];size_t count;
     uint64_t acoustic_hash;int64_t ticks;
     int32_t max_diplophonia,max_aspiration;
+    unsigned glottal_onsets;int glottal_active;
     int32_t aj_to_und_start,aj_to_und_end,continuous_until;
     int i_e_r_target,i_e_target,unstressed_er_target,initial_s_nasal_target,final_a_target,comma_a_transition,kamera_a_target,oe_er_target,oe_r_lowered,weak_verb_rise,direct_weak_verb_fall,j_glide_target,ei_glide_target,j_onset_target;
     unsigned r_phase_mask,r_phase_anywhere;
@@ -33,6 +34,10 @@ static int span(void *context,int32_t from,int32_t to,
     }
     if(c[6].val_l>p->max_diplophonia)p->max_diplophonia=c[6].val_l;
     if(c[6].val_r>p->max_diplophonia)p->max_diplophonia=c[6].val_r;
+    if(c[6].val_l>=90||c[6].val_r>=90) {
+        if(!p->glottal_active)++p->glottal_onsets;
+        p->glottal_active=1;
+    } else p->glottal_active=0;
     if(c[7].val_l>p->max_aspiration)p->max_aspiration=c[7].val_l;
     if(c[7].val_r>p->max_aspiration)p->max_aspiration=c[7].val_r;
     if(c[9].val_l==775&&c[13].val_l==1205)p->final_a_target=1;
@@ -230,6 +235,32 @@ static unsigned german_phone_targets(void)
     assert(fortytwo.max_diplophonia<100&&fortythree.max_diplophonia<100);
     p=german_pitch("82",65,0,75);
     assert(p.max_diplophonia==100); /* Glottal onset of achtzig. */
+    /* The same units in a thousand compound must not regain the glottal
+     * break before und. Retain the separate onset before achtzig and the
+     * accepted vier/r liaison. Check every tens group, not just 42000. */
+    const int units[]={2,3,4,7,9};
+    for(int tens=20;tens<=90;tens+=10)for(size_t i=0;i<sizeof units/sizeof *units;++i) {
+        char small[16],thousand[16];int n=tens+units[i];
+        snprintf(small,sizeof small,"%d",n);snprintf(thousand,sizeof thousand,"%d",n*1000);
+        struct pitch_plan a=german_pitch(small,65,0,75),b=german_pitch(thousand,65,0,75);
+        assert(a.glottal_onsets==(unsigned)(tens==80));
+        assert(b.glottal_onsets==a.glottal_onsets);
+        if(units[i]==4)assert(a.r_continuous&&b.r_continuous);
+        if(units[i]==2||units[i]==3) {
+            assert(a.aj_to_und_start&&b.aj_to_und_start);
+            assert(abs((a.aj_to_und_end-a.aj_to_und_start)-
+                       (b.aj_to_und_end-b.aj_to_und_start))<=2);
+        }
+    }
+    p=german_pitch("vierundvierzigtausend",65,0,75);
+    assert(!p.glottal_onsets&&p.r_continuous);
+    /* Five, six and eight intentionally retain their onset before und. */
+    for(int unit=5;unit<=8;++unit)if(unit!=7) {
+        char small[16],thousand[16];snprintf(small,sizeof small,"%d",20+unit);
+        snprintf(thousand,sizeof thousand,"%d",(20+unit)*1000);
+        struct pitch_plan a=german_pitch(small,65,0,75),b=german_pitch(thousand,65,0,75);
+        assert(a.glottal_onsets&&b.glottal_onsets==a.glottal_onsets);
+    }
     return 32;
 }
 

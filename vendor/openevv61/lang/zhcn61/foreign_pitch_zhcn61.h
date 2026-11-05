@@ -122,6 +122,10 @@ static int bank_host_pitch(delta_state *d,int32_t machine,struct reloq61_english
  int32_t saved_words[2];memcpy(saved_words,(char*)d+DG_BASE+160,4);
  memcpy(saved_words+1,(char*)d+DG_BASE+168,4);
  int16_t saved_foreign;memcpy(&saved_foreign,(char*)d+DG_BASE+4060,2);
+ /* Neutral inflection belongs to this English bank only. */
+ int16_t saved_inflection;int32_t saved_pitch_range;
+ memcpy(&saved_inflection,(char*)d+DG_BASE+3148,2);
+ memcpy(&saved_pitch_range,(char*)d+DG_BASE+3544,4);
  if(pitch_acoustic_grid(d,p,to-from,&grid))goto done;
  int count=pitch_phrase_syllables(d,p->host_left);if(count<=0||count>32767)goto done;
  int16_t total=(int16_t)count,foreign=1;memcpy((char*)d+DG_BASE+4036,&total,2);
@@ -163,5 +167,10 @@ static int bank_host_pitch(delta_state *d,int32_t machine,struct reloq61_english
  }
  if(reloq61_english_bank_pitch(d,p,from,to)||pitch_keep_transitions(p))goto done;result=0;
  done:free(grid.time);memcpy((char*)d+DG_BASE+648,saved_phrase,4);memcpy((char*)d+DG_BASE+656,saved_phrase+1,4);memcpy((char*)d+DG_BASE+160,saved_words,4);memcpy((char*)d+DG_BASE+168,saved_words+1,4);
- memcpy((char*)d+DG_BASE+4060,&saved_foreign,2);return result;
+ memcpy((char*)d+DG_BASE+4060,&saved_foreign,2);
+ memcpy((char*)d+DG_BASE+3148,&saved_inflection,2);
+ /* The bank initialized the pitch cache for neutral English. Invalidate it
+  * so the next native word derives both pitch values from its own voice. */
+ {int32_t unset=0;memcpy((char*)d+DG_BASE+3536,&unset,4);}
+ memcpy((char*)d+DG_BASE+3544,&saved_pitch_range,4);return result;
 }
