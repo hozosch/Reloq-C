@@ -240,10 +240,14 @@ static void foreign_boundary(delta_state*d,struct reloq61_english_bank*p)
 }
 int reloq_zhcn61_bank_speech(void*state,int32_t machine)
 {
- delta_state*d=state;int32_t left,end;memcpy(&left,(char*)d+DG_BASE+160,4);memcpy(&end,(char*)d+DG_BASE+168,4);int32_t word=projected_record(d,left,4);if(!word)return -1;const unsigned char*w=TFLDS(EVV_AT(void*,word));if(pitch_prepare_phrase(d,left))return 94;if(!w[9])return -1;struct reloq61_english_bank*bank=reloq61_english_bank_for_word(state,word);if(!bank)return 94;
- /* A lexical token may expand to several English word records. Its bank is
-  * emitted once; the outer iterator still visits each original word. */
- if(bank->emitted)return 0;int32_t saved_end=end;end=bank->host_right;
+ delta_state*d=state;int32_t left,end;memcpy(&left,(char*)d+DG_BASE+160,4);memcpy(&end,(char*)d+DG_BASE+168,4);int32_t word=projected_record(d,left,4);if(!word)return -1;const unsigned char*w=TFLDS(EVV_AT(void*,word));
+ /* A bank can expand to several word records. Later visits are already
+  * complete: do not re-enter phrase planning on their rewritten word graph,
+  * which can backtrack out of the surrounding speech loop. */
+ struct reloq61_english_bank*bank=w[9]?reloq61_english_bank_for_word(state,word):NULL;
+ if(bank&&bank->emitted)return 0;
+ if(pitch_prepare_phrase(d,left))return 94;if(!w[9])return -1;if(!bank)return 94;
+ int32_t saved_end=end;end=bank->host_right;
  struct bank_edit*f=evv_frame_push(sizeof*f);if(!f)return 94;memcpy((char*)d+DG_BASE+168,&end,4);memset(f,0,sizeof*f);f->status=94;volatile int entered=0;
  if(EVV_LAND_SAVE((intptr_t)f->scope.landing))goto done;if(ventproc(d,&f->scope.rec,f->scope.fence[0],f->scope.fence[1],f->scope.fence[2],f->scope.landing))goto done;entered=1;fence(d,0,NULL);
  if(reloq_zhcn61_init_word_vars(state,machine))goto done;

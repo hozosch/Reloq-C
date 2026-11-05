@@ -60,6 +60,22 @@ def main():
             fragments=render(engine,[symbol_text[:split],EciIndex(1),symbol_text[split:],EciIndex(9)])
             assert whole[0]==fragments[0] and [i for i,_ in fragments[1]]==[1,9]
             checks+=1
+            # With many successive switches, revisiting an emitted English
+            # bank used to end the surrounding Chinese speech loop early.
+            # NVDA's higher symbol levels supply precisely such a sequence.
+            engine.set_parameter(NATIVE_SPEED,150)
+            engine.set_parameter(NATIVE_INFLECTION,30)
+            for level in (200,300):
+                processed_text=(ROOT/f'tests/fixtures/chinese_nvda_about_symbols_{level}.txt').read_text(encoding='utf8')
+                split=processed_text.index('NVDA is developed')
+                prefix=render(engine,[processed_text[:split],EciIndex(9)])[0]
+                complete=render(engine,[processed_text,EciIndex(9)])[0]
+                extended=render(engine,[processed_text+' The big purple banana slowly dances along the beach.',EciIndex(9)])[0]
+                # The final paragraphs and an additional sentence must both
+                # contribute audible output; previously the lengths froze.
+                assert len(complete)>len(prefix)+11025,(hex(dialect),level,'lost final paragraphs')
+                assert len(extended)>len(complete)+11025,(hex(dialect),level,'lost appended sentence')
+                checks+=2
             # A Chinese transliteration must not replace English-bank words;
             # the native dictionary used to do this only for lowercase forms.
             for word in ('clinton','microsoft','internet'):
