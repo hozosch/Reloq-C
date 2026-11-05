@@ -119,14 +119,16 @@ static int foreign_acoustic_span(void *context,int32_t from,int32_t to,
     }
     return 0;
 }
-static struct foreign_acoustics foreign_acoustics(const char *text,int inflection)
+static struct foreign_acoustics foreign_acoustics_at(const char *text,int inflection,int setting)
 {
     struct foreign_acoustics out={.hash=UINT64_C(1469598103934665603),.low=INT32_MAX};
     struct reloq61_request q=request(0x60000,text);struct reloq61_result r={0};
-    q.voice[3]=inflection;q.context=&out;q.span=foreign_acoustic_span;
+    q.voice[2]=setting;q.voice[3]=inflection;q.context=&out;q.span=foreign_acoustic_span;
     assert(!reloq61_generate(&q,&r)&&!r.error&&!r.unsupported&&out.ticks>0);
     return out;
 }
+static struct foreign_acoustics foreign_acoustics(const char *text,int inflection)
+{return foreign_acoustics_at(text,inflection,65);}
 static unsigned chinese_english_host_stress(void)
 {
     /* In this long user-reported sentence, English sentence analysis marks
@@ -154,10 +156,12 @@ static unsigned chinese_english_host_stress(void)
      * into subsonic F0 while adjacent Mandarin remains in the voice range. */
     struct foreign_acoustics extreme=foreign_acoustics("Copyright 2006-2026 NVDA Contributors",100);
     assert(extreme.low>=400&&extreme.high>extreme.low+100);
+    struct foreign_acoustics low_voice=foreign_acoustics_at("Copyright 2006-2026 NVDA Contributors",100,0);
+    assert(low_voice.low>=200&&low_voice.high>low_voice.low+100);
     /* A previously verified weak demonstrative must stay unaccented. */
     struct pitch_plan weak=pitch_with_inflection("This is an English text with some words.",75,0,50,65,0);
     assert(weak.count&&weak.pair[0][0]==1225);
-    return 6;
+    return 7;
 }
 static unsigned chinese(void)
 {

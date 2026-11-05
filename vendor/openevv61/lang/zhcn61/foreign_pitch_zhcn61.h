@@ -192,6 +192,7 @@ static int bank_host_pitch(delta_state *d,int32_t machine,struct reloq61_english
   * deliberately neutral host keeps its original declination untouched. */
  if(saved_inflection>0&&saved_pitch_base>0){
   int32_t low=(int32_t)(((int64_t)saved_pitch_base+12500)/25000);
+  if(low<200)low=200; /* 20 Hz in the native F0 units */
   for(size_t i=0;i<p->pitch_count;++i)
    if(p->pitch[i].value>0&&p->pitch[i].value<low)p->pitch[i].value=low;
  }
