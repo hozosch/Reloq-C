@@ -65,7 +65,7 @@ static int dash_before_number(const unsigned char *text,size_t length,size_t beg
         if(!dash_space(left))break;
         left=0;
     }
-    if(left>='0'&&left<='9')return 0;
+    if((left>='0'&&left<='9')||left=='('||left=='[')return 0;
     return dash_word_edge(left)||left=='.'||left==','||left==':'||left==';'||left=='!'||left=='?';
 }
 

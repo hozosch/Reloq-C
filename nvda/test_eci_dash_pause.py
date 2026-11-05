@@ -116,7 +116,8 @@ def main():
                     for engine in (old,new):
                         engine.set_parameter(NATIVE_SPEED,85);engine.set_parameter(SAMPLE_RATE,3)
                     texts=('2–4','2020 – 2024','2 – -4','2 – +4','und 24–32 Punkte',
-                           '2 - 1','2020 - 2024','- 1','-1','- 42','Room 2 - 1',
+                           '2 - 1','2- 1','2020 - 2024','- 1','-1','- 42','Room 2 - 1',
+                           '(- 1)','( - 1)','[ - 1]',
                            'Das ist ein einfacher Satz.','Der Unterstrich ist lang.','Er unterstrich den Satz.')
                     if encoding=='utf8':texts+=('2 – +4',)
                     for text in texts:
