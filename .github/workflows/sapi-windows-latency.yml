@@ -1,0 +1,48 @@
+name: Measure the Windows SAPI start path
+on:
+  push:
+    branches: ['codex/sapi-latency-*']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install Windows cross compiler
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends gcc-mingw-w64-x86-64-posix
+      - name: Build the stream timing probe
+        run: |
+          x86_64-w64-mingw32-gcc-posix -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DUNICODE -D_UNICODE -I sapi sapi/test_windows_latency.c sapi/guids.c -static-libgcc -municode -lole32 -luuid -o sapi-latency.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sapi-latency-probe
+          path: sapi-latency.exe
+  windows:
+    needs: compile
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: sapi-latency-probe
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 42211928699
+          name: sapi-installer
+          path: previous
+      - name: Install the previous test build and measure the Windows stream
+        shell: pwsh
+        run: |
+          $setup = (Get-Item previous/reloq-c-sapi5-1.1.4-dev1-setup.exe).FullName
+          $p = Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Install failed: $($p.ExitCode)" }
+          & ./sapi-latency.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Windows SAPI timing probe failed' }
