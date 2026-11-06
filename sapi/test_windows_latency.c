@@ -50,7 +50,7 @@ static HRESULT STDMETHODCALLTYPE unlock_stream(IStream *p,ULARGE_INTEGER at,ULAR
 static HRESULT STDMETHODCALLTYPE stat_stream(IStream *p,STATSTG *stat,DWORD flags)
 {return IStream_Stat(((timed_stream *)p)->memory,stat,flags);}
 static HRESULT STDMETHODCALLTYPE clone_stream(IStream *p,IStream **other){(void)p;(void)other;return E_NOTIMPL;}
-static const IStreamVtbl stream_vtable={query,addref,release,read_stream,write_stream,seek_stream,
+static IStreamVtbl stream_vtable={query,addref,release,read_stream,write_stream,seek_stream,
     resize_stream,copy_stream,commit_stream,revert_stream,lock_stream,unlock_stream,stat_stream,clone_stream};
 static double ms(LARGE_INTEGER end,LARGE_INTEGER start,LARGE_INTEGER frequency)
 {return 1000.0*(double)(end.QuadPart-start.QuadPart)/(double)frequency.QuadPart;}
