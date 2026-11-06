@@ -39,7 +39,8 @@ static HRESULT STDMETHODCALLTYPE token_set(ISpObjectWithToken *p,ISpObjectToken 
     if(e->token)return HRESULT_FROM_WIN32(ERROR_ALREADY_INITIALIZED);
     DWORD dialect=0;HRESULT hr=ISpObjectToken_GetDWORD(token,L"ReLoqDialect",&dialect);
     if(FAILED(hr)||sapi_language_index((int)dialect)<0)return E_INVALIDARG;
-    struct sapi_settings settings;hr=sapi_settings_read((int)dialect,&settings);if(FAILED(hr))return hr;
+    struct sapi_settings settings;
+    if(FAILED(sapi_settings_read((int)dialect,&settings)))sapi_settings_default(&settings);
     struct sapi_backend *backend=sapi_backend_new_prepared((int)dialect,&settings);
     if(!backend)return E_OUTOFMEMORY;
     ISpObjectToken_AddRef(token);e->token=token;e->dialect=(int)dialect;e->backend=backend;return S_OK;

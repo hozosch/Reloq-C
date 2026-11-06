@@ -51,6 +51,7 @@ jobs:
           & ./sapi-latency.exe 500
           if ($LASTEXITCODE -ne 0) { throw 'Windows SAPI timing probe failed' }
           $install = Join-Path $env:ProgramFiles 'ReLoq C\SAPI5'
+          Copy-Item (Join-Path $install 'ReLoqSapi.dll') original-adapter.dll
           Copy-Item sapi/build/ReLoqSapi.dll (Join-Path $install 'ReLoqSapi.dll') -Force
           Write-Host 'Prepared adapter, after voice selection'
           & ./sapi-latency.exe 500
@@ -58,3 +59,7 @@ jobs:
           Write-Host 'Prepared adapter, immediately after voice selection'
           & ./sapi-latency.exe 0
           if ($LASTEXITCODE -ne 0) { throw 'Immediate Windows SAPI timing probe failed' }
+          Copy-Item original-adapter.dll (Join-Path $install 'ReLoqSapi.dll') -Force
+          Write-Host 'Previous adapter with files already cached'
+          & ./sapi-latency.exe 500
+          if ($LASTEXITCODE -ne 0) { throw 'Repeated Windows SAPI timing probe failed' }

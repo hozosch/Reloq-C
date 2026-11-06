@@ -13,7 +13,7 @@ endif
 all: $(BUILD)/ReLoqSapi.dll $(BUILD)/ReLoqSettings.exe $(BUILD)/Test-SAPI.exe $(BUILD)/Test-Dictionary.exe
 $(BUILD):
 	mkdir -p $@
-$(BUILD)/ReLoqSapi.dll: $(SOURCES) sapi_ddk.h settings.h speed.h format.h dictionary_diff.h catalogue.inc ui.inc | $(BUILD)
+$(BUILD)/ReLoqSapi.dll: $(SOURCES) sapi_ddk.h settings.h speed.h pitch.h format.h dictionary_diff.h catalogue.inc ui.inc | $(BUILD)
 	$(CC) $(CFLAGS) -shared $(SOURCES) $(LDFLAGS) $(LIBS) -o $@
 $(BUILD)/ReLoqSettings.exe: settings_main.c | $(BUILD)
 	$(CC) $(CFLAGS) -municode -mwindows $< $(LDFLAGS) -luser32 -o $@
@@ -32,6 +32,8 @@ test: | $(BUILD)
 	$(BUILD)/test_format > $(BUILD)/format-results.json
 	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -I. test_speed.c -o $(BUILD)/test_speed
 	$(BUILD)/test_speed > $(BUILD)/speed-results.json
+	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -I. -I../include test_pitch.c ../src/reloq_voice_controls.c -lm -o $(BUILD)/test_pitch
+	$(BUILD)/test_pitch > $(BUILD)/pitch-results.txt
 	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -DRELOQ_SAPI_SETTINGS_TEST -I. settings.c test_settings.c -o $(BUILD)/test_settings
 	$(BUILD)/test_settings > $(BUILD)/settings-results.json
 	python3 generate_ui.py --check
@@ -42,6 +44,8 @@ test: | $(BUILD)
 	python3 test_reference.py --library $(abspath ../eci/libreloq_eci.so) --report $(BUILD)/backend-results.json
 	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -I. -I../include backend.c test_host.c test_buffered_cancel.c ../src/reloq_voice_controls.c -ldl -lpthread -lm -o $(BUILD)/test_buffered_cancel
 	$(BUILD)/test_buffered_cancel $(abspath ../eci/libreloq_eci.so) > $(BUILD)/buffered-cancel-results.json
+	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -I. -I../include backend.c test_host.c test_prepared.c ../src/reloq_voice_controls.c -ldl -lpthread -lm -o $(BUILD)/test_prepared
+	$(BUILD)/test_prepared $(abspath ../eci/libreloq_eci.so) > $(BUILD)/prepared-results.txt
 	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -I. -I../include backend.c test_host.c test_cancel_recovery.c ../src/reloq_voice_controls.c -ldl -lpthread -lm -o $(BUILD)/test_cancel_recovery
 	$(BUILD)/test_cancel_recovery $(abspath ../eci/libreloq_eci.so) > $(BUILD)/cancel-recovery-results.txt
 	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -I. -I../include backend.c test_host.c test_dictionary.c ../src/reloq_voice_controls.c -ldl -lpthread -lm -o $(BUILD)/test_dictionary

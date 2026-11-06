@@ -5,6 +5,7 @@
 #include "reloq_eci.h"
 #include "reloq_voice_controls.h"
 #include "speed.h"
+#include "pitch.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -204,15 +205,6 @@ static int add_wide(struct sapi_backend *b,const WCHAR *text,size_t length,int s
         core.add(b->handle,utf8,(size_t)n,spell);
     if(utf8!=local)free(utf8);return ok;
 }
-static int native_pitch(int base,LONG adjustment)
-{
-    if(!adjustment)return base;
-    double target=reloq_voice_pitch_f0_scale(base)*pow(2.0,adjustment/10.0);
-    int best=0;double error=HUGE_VAL;
-    for(int i=0;i<=100;++i){double d=fabs(log(reloq_voice_pitch_f0_scale(i)/target));
-        if(d<error){error=d;best=i;}}
-    return best;
-}
 /* eciSetDictionaryPath explicitly reloads the language as well as its .dic
  * files. Preserve initialized linguistic state while file metadata stays
  * unchanged. This retains no text, pronunciation or audio result. */
@@ -337,7 +329,7 @@ static HRESULT synthesize(struct sapi_backend *b)
         }
         /* SAPI already parsed XML. Absolute pitch marks preserve the native
          * analyzer's single connected utterance across ordinary fragments. */
-        int pitch=native_pitch((int)b->job.settings.pitch,f->State.PitchAdj.MiddleAdj);
+        int pitch=sapi_native_pitch((int)b->job.settings.pitch,f->State.PitchAdj.MiddleAdj);
         if(pitch!=last_pitch){if(!core.pitch(b->handle,pitch))return E_FAIL;last_pitch=pitch;}
         if(!(b->job.interest&(((ULONGLONG)1<<SPEI_WORD_BOUNDARY)|((ULONGLONG)1<<SPEI_SENTENCE_BOUNDARY)))){
             if(!add_wide(b,f->pTextStart,f->ulTextLen,f->State.eAction==SPVA_SpellOut))return E_FAIL;
