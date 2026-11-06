@@ -1,0 +1,37 @@
+name: Recover exact development source and baseline
+on:
+  push:
+    branches: ['codex/issue22-23-work-20261106']
+    paths: ['.github/workflows/research-issues22-23.yml']
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Archive the exact source tree
+        run: git archive --format=tar HEAD | gzip -1 > reloq-source.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: development-source
+          path: reloq-source.tar.gz
+          compression-level: 0
+          retention-days: 7
+  native-baseline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build baseline native speech engine
+        run: make -C eci -j2 libreloq_eci.so PROVIDER_LTO=-flto=2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: development-native-baseline
+          path: eci/libreloq_eci.so
+          compression-level: 6
+          retention-days: 7
