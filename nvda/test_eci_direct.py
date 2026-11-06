@@ -348,11 +348,29 @@ def main():
             ("text", b"word"), ("prosody", 6, 98), ("prosody", 7, 100)]
         assert fake.voice_parameters == {6: 98, 7: 100}
 
-        # Long input is synthesized in bounded word-boundary rounds
-        # (upstream issue #19); joining the rounds restores the input.
+        # Ordinary long text stays in one round: every extra round is a
+        # phrase-final pause the listener can hear. The reported example
+        # (207 bytes, short sentences, ordinary words) must not split.
+        ordinary_text = (
+            "Yeah yeah yeah! The fix works! Man NVAccess should incorporate "
+            "your add-on changes and improvements! They won't, I know. But "
+            "who cares! At the end of the day, those who want it can find "
+            "what you have done! :")
+        assert len(ordinary_text.encode("cp1252")) > 200
+        assert len(DirectEciEngine._rounds(
+            DirectEciEngine._prepare([ordinary_text], "cp1252"))) == 1
+        assert len(DirectEciEngine._rounds(DirectEciEngine._prepare(
+            ["word " * 60], "cp1252"))) == 1
+
+        # A long phrase carrying hard tokens is synthesized in bounded
+        # word-boundary rounds (upstream issue #19); joining the rounds
+        # restores the input.
         rounds_before = fake.synthesize_calls
         events_before = len(fake.events)
-        long_text = "word " * 60
+        long_text = (
+            "ai-data-centre-72mw-at-thames-valley-park-reading-stop-"
+            "construction A2O3GeBaf9fNSvi39WoAAHicyyvNyQEABF8BvDNmYzM3YTIy "
+            + "word " * 40)
         heard_indices = []
         assert engine.speak([long_text, EciIndex(9)],
                             lambda pcm: None,
@@ -372,6 +390,14 @@ def main():
                    for round_parts in rounds), rounds
         assert b"".join(p for round_parts in rounds for p in round_parts) == \
             long_text.encode("cp1252")
+        # Safe text before a risky phrase is not resubmitted with it:
+        # the risky phrase starts a round of its own.
+        mixed = "Hello world. " + long_text
+        rounds = DirectEciEngine._rounds(
+            DirectEciEngine._prepare([mixed], "cp1252"))
+        assert b"".join(rounds[0]) == b"Hello world.", rounds[0]
+        assert b"".join(p for round_parts in rounds for p in round_parts) == \
+            mixed.encode("cp1252")
 
         previous = len(fake.events)
         for invalid in (["a", "\U0001f600"], ["a\0b"], [EciIndex(-1)],

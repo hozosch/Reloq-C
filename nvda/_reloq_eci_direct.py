@@ -454,13 +454,37 @@ class DirectEciEngine:
             return result
         raise RuntimeError("ECI busy recovery did not run")  # pragma: no cover
 
-    # One native phrase of URL-like text (a sentence past roughly 250
-    # characters carrying very long tokens) corrupts the vendored rules
-    # engine and crashes the host process (upstream issue #19). Long input
-    # is therefore synthesized in word-boundary rounds of at most this many
-    # text bytes; a single longer word keeps a round of its own. Ordinary
-    # utterances below the bound take the single-round path unchanged.
+    # One native phrase of URL-like text corrupts the vendored rules
+    # engine and crashes the host process (upstream issue #19): a phrase
+    # past a few hundred bytes carrying hard tokens (a long hyphenated
+    # compound, a long mixed letter/digit token) is enough, while long
+    # ordinary prose synthesizes safely as one phrase. Every extra
+    # eciSynthesize round costs a phrase-final pause, so only risky
+    # phrases are split, in word-boundary rounds of at most this many
+    # text bytes; a single longer word keeps a round of its own. All
+    # other text, however long, keeps the single-round path unchanged.
     _MAX_ROUND_TEXT_BYTES = 200
+    # A phrase longer than this is split even without hard tokens, as a
+    # safety net for planner loads this driver has not characterized.
+    _LONG_PHRASE_TEXT_BYTES = 1024
+    _LONG_PHRASE_ROUND_BYTES = 512
+
+    @staticmethod
+    def _is_hard_token(unit: bytes) -> bool:
+        core = unit.strip(b" \t\r\n\"'()[]{}<>.,;:!?")
+        if len(core) >= 48:
+            return True
+        if len(core) >= 20 and core.count(b"-") >= 2:
+            return True
+        return (len(core) >= 32 and any(48 <= byte <= 57 for byte in core)
+                and any(65 <= byte <= 90 or 97 <= byte <= 122 for byte in core))
+
+    @staticmethod
+    def _ends_phrase(unit: bytes) -> bool:
+        if b"\n" in unit:
+            return True
+        core = unit.rstrip(b" \t\r\n\"'()[]{}<>")
+        return core.endswith((b".", b"!", b"?"))
 
     @classmethod
     def _rounds(cls, prepared):
@@ -468,31 +492,70 @@ class DirectEciEngine:
                     len(p) if isinstance(p, bytes) else 0 for p in prepared)
         if total <= cls._MAX_ROUND_TEXT_BYTES:
             return (tuple(prepared),)
-        rounds = []
-        current = []
-        current_bytes = 0
-
-        def flush():
-            nonlocal current, current_bytes
-            if current:
-                rounds.append(tuple(current))
-                current = []
-                current_bytes = 0
-
+        # Flatten to word/space units tagged with their phrase, keeping
+        # non-text parts in order between the units around them.
+        items = []  # (output part, phrase id or None, is word unit)
+        phrase = 0
         for part in prepared:
             if isinstance(part, (_Utf8Text, bytes)):
                 data = part.data if isinstance(part, _Utf8Text) else part
                 for unit in re.findall(rb"[^ ]+| +", data):
-                    if (current_bytes and current_bytes + len(unit) > cls._MAX_ROUND_TEXT_BYTES
-                            and unit.strip()):
-                        flush()
-                    current.append(_Utf8Text(unit, part.character_mode)
-                                   if isinstance(part, _Utf8Text) else unit)
-                    current_bytes += len(unit)
+                    output = (_Utf8Text(unit, part.character_mode)
+                              if isinstance(part, _Utf8Text) else unit)
+                    items.append((output, phrase, bool(unit.strip())))
+                    if unit.strip() and cls._ends_phrase(unit):
+                        phrase += 1
             else:
-                current.append(part)
+                items.append((part, None, False))
+        phrase_bytes: dict[int, int] = {}
+        phrase_hard: dict[int, bool] = {}
+        for output, owner, is_word in items:
+            if owner is None:
+                continue
+            data = output.data if isinstance(output, _Utf8Text) else output
+            phrase_bytes[owner] = phrase_bytes.get(owner, 0) + len(data)
+            if is_word and cls._is_hard_token(data):
+                phrase_hard[owner] = True
+
+        def round_limit(owner: int) -> int | None:
+            if phrase_bytes.get(owner, 0) <= cls._MAX_ROUND_TEXT_BYTES:
+                return None
+            if phrase_hard.get(owner):
+                return cls._MAX_ROUND_TEXT_BYTES
+            if phrase_bytes[owner] > cls._LONG_PHRASE_TEXT_BYTES:
+                return cls._LONG_PHRASE_ROUND_BYTES
+            return None
+
+        rounds = []
+        current = []
+        current_phrase_bytes = 0
+        active_phrase: int | None = None
+
+        def flush():
+            nonlocal current, current_phrase_bytes
+            if current:
+                rounds.append(tuple(current))
+                current = []
+                current_phrase_bytes = 0
+
+        for output, owner, is_word in items:
+            if owner is not None:
+                data = output.data if isinstance(output, _Utf8Text) else output
+                limit = round_limit(owner)
+                if limit is not None and owner != active_phrase and current:
+                    # A split phrase must start a fresh round: sharing a
+                    # round with earlier text would resubmit it whole.
+                    flush()
+                if (limit is not None and is_word and current_phrase_bytes
+                        and current_phrase_bytes + len(data) > limit):
+                    flush()
+                if owner != active_phrase:
+                    active_phrase = owner
+                    current_phrase_bytes = 0
+                current_phrase_bytes += len(data)
+            current.append(output)
         flush()
-        return tuple(rounds)
+        return tuple(rounds) if rounds else (tuple(prepared),)
 
     def _synthesize_round(self, round_parts, parts, restore) -> bool:
         """Submit one round and synthesize it; False means cancelled."""
