@@ -1,20 +1,55 @@
 {
-  "version": "1.1.2",
-  "release_version": "1.1.2",
-  "source_commit": "372f31f83d609b52f47a4552a86e1edff085dc6d",
-  "run_id": 42086005641,
+  "version": "1.1.3",
+  "release_version": "1.1.3",
+  "source_commit": "6799ebd629d1b67c4dc698a9a4dd9e99fc71030d",
+  "run_id": 42197791867,
+  "dictionary_snapshot": {
+    "repository": "eigencrow/IBMTTSDictionaries",
+    "branch": "master",
+    "commit": "9fbcde1c62f62afa2893a17da36c3dc97d7df5b5",
+    "files": {
+      "DEUmain.dic": {
+        "sha": "fb8c156bbd28f1dceeed53e2527ed5e0370c6fa7",
+        "size": 917
+      },
+      "DEURoot.dic": {
+        "sha": "a3dd101862ff7c70376ba6a617b8103a6ef2a75f",
+        "size": 3533
+      },
+      "DEUabbr.dic": {
+        "sha": "e6bf1e8cd1a40845c0bf6866d1fe03ed6596be8b",
+        "size": 254
+      },
+      "ENUmain.dic": {
+        "sha": "f59853dba90a3554ba1a05d8223e3bfb40e0772b",
+        "size": 28078
+      },
+      "ENURoot.dic": {
+        "sha": "1521b6073e315f1eded1a2c1d094dfcfc5842930",
+        "size": 2259498
+      },
+      "ENUabbr.dic": {
+        "sha": "edfdaa94d633a08fe57d63dbd12294a1f40f6450",
+        "size": 1489
+      },
+      "LICENSE.md": {
+        "sha": "0e259d42c996742e9e3cba14c677129b2c1b6311",
+        "size": 7048
+      }
+    }
+  },
   "assets": {
-    "reloq-c-android-arm64-1.1.2.apk": {
-      "size": 17385070,
-      "sha256": "034cebad9b761fa1edf2bf94f17893484e30b34be8b1df19ef9ad6d150247d12"
+    "reloq-c-android-arm64-1.1.3.apk": {
+      "size": 17389166,
+      "sha256": "5762928477702f47cef82c1de81496224c6bdd659ce619e4ccc450fb9d38c3e4"
     },
-    "reloq-c-synth-x64-1.1.2.nvda-addon": {
-      "size": 19630186,
-      "sha256": "494e3100bb0f59e9ab3f4ba400f386aad3f8b8f3b4f3238eaff629a96045608b"
+    "reloq-c-synth-x64-1.1.3.nvda-addon": {
+      "size": 19630884,
+      "sha256": "ac9a074e5a8b2f9297b7914a5ca67d471e594bf0af450568374ba802f5407800"
     },
-    "reloq-c-sapi5-1.1.2-setup.exe": {
-      "size": 19436010,
-      "sha256": "06e1da77d4fcd9e09000baefb45e339555658f6c48291102a8d9c573302d616e"
+    "reloq-c-sapi5-1.1.3-setup.exe": {
+      "size": 19437808,
+      "sha256": "1b4920caf1e10adc8add50c4f499af26367b905a6436a41a334568b64ac7786b"
     }
   }
 }
