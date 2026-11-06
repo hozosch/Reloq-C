@@ -58,9 +58,26 @@ def main():
         for word in ('πώς', 'πού', 'ή'):
             assert '[.1' in phonemes(greek, word + ' σπίτι'), word
 
-        # Preserve both the phonemes and the rendered PCM of Greek gamma
-        # combinations; the change only applies to English donor phonemes.
-        for word in ('άγκυρα', 'αγκάθι', 'γκολ', 'αγγλικά', 'άγγελος'):
+        # Medial γγ normally uses the same nasal and stop as γκ. Synthetic
+        # spelling pairs isolate that choice without changing the vowels.
+        for normal, same_sounds in (('άγγελος', 'άγκελος'),
+                                    ('αγγούρι', 'αγκούρι'),
+                                    ('αγγλικά', 'αγκλικά'),
+                                    ('εγγόνι', 'εγκόνι'),
+                                    ('συγγενής', 'συγκενής')):
+            assert phonemes(greek, normal) == phonemes(greek, same_sounds), normal
+            assert render(greek, [normal, EciIndex(7)]) == render(greek, [same_sounds, EciIndex(7)]), normal
+        # Some learned compounds retain a nasal followed by fricative γ.
+        for word, different in (('έγγραφο', 'έγκραφο'),
+                                ('συγγραφέας', 'συγκραφέας'),
+                                ('εγγεγραμμένος', 'εγκεγραμμένος'),
+                                ('εγγενής', 'εγκενής'),
+                                ('έγγαμος', 'έγκαμος'),
+                                ('συγγνώμη', 'συγκνώμη')):
+            assert render(greek, [word, EciIndex(7)]) != render(greek, [different, EciIndex(7)]), word
+
+        # The native γκ rules are unchanged, including at the start of a word.
+        for word in ('άγκυρα', 'αγκάθι', 'γκολ', 'εγκάρδιο'):
             if old:
                 assert phonemes(greek, word) == phonemes(old, word), word
         for rate in range(7):
@@ -71,10 +88,10 @@ def main():
                 greek.set_parameter(GENDER, gender)
                 if old:
                     old.set_parameter(GENDER, gender)
-                for text in ('από την Αθήνα', 'Manhattan working ongoing', 'άγκυρα και αγγλικά'):
+                for text in ('από την Αθήνα', 'Manhattan working ongoing', 'άγκυρα και αγκάθι'):
                     pcm, marks = render(greek, [text, EciIndex(7)])
                     assert pcm and marks == [(7, len(pcm))], (rate, gender, text)
-                    if old and text == 'άγκυρα και αγγλικά':
+                    if old and text == 'άγκυρα και αγκάθι':
                         assert (pcm, marks) == render(old, [text, EciIndex(7)]), (rate, gender, text)
     finally:
         greek.close()

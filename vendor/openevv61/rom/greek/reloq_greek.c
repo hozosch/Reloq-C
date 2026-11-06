@@ -57,6 +57,8 @@ static size_t onset(const struct sound *s,size_t first,size_t next)
     char a=s[next-2].value,b=s[next-1].value;
     if(count>=3&&s[next-3].value=='s'&&
        ((strchr("ptk",a)&&b=='r')||(strchr("pk",a)&&b=='l')))return 3;
+    /* A learned γγρ may be a nasal followed by the fricative γρ. */
+    if(count>=3&&s[next-3].value=='N'&&a=='G'&&b=='r')return 2;
     if((b=='r'||b=='l')&&strchr("pbtdkgfvBTD",a))return 2;
     if(a=='s'&&strchr("tkpfmn",b))return 2;
     return 1;
@@ -66,6 +68,24 @@ static int weak_word(const struct greek_letter *g,size_t n)
     static const char *const words[]={"και","κι","να","στο","στα","στη","στην","στον","στους","στις","στου","στης","στων","τον","την","τη","το","του","της","τους","τις","τα","των","μου","σου","μας","σας","ο","η","οι","σε","με","για","θα","δεν","δε","μη","μην","που","πως","αν","σαν","ως","ας"};
     for(size_t w=0;w<COUNT(words);++w){size_t j=0,i=0;while(words[w][i]&&j<n){uint32_t cp;size_t k=decode(words[w]+i,&cp);if(!k||letter(cp).base!=g[j].base)break;i+=k;++j;}if(j==n&&!words[w][i])return 1;}
     return 0;
+}
+/* Most γγ is pronounced like medial γκ. The written combinations in
+   these learned word families instead retain nasal + fricative gamma. */
+static int fricative_gamma_gamma(const struct greek_letter *g,size_t n,size_t i)
+{
+    if(i+4>=n)return 0;
+    uint32_t a=g[i+2].base,b=g[i+3].base,c=g[i+4].base;
+    /* εγγραφή, έγγραφο, συγγραφέας, εγγράμματος and inflections. */
+    if(a==0x3c1&&b==0x3b1&&(c==0x3c6||c==0x3bc||c==0x3c8))return 1;
+    /* εγγεγραμμένος: the reduplicated form of εγγράφω. */
+    if(a==0x3b5&&b==0x3b3&&c==0x3c1&&i+6<n&&
+       g[i+5].base==0x3b1&&(g[i+6].base==0x3bc||g[i+6].base==0x3c6))return 1;
+    /* έγγαμος and εγγενής; συγγενής uses the ordinary stop. */
+    if(i==1&&g[0].base==0x3b5&&
+       ((a==0x3b1&&b==0x3bc)||(a==0x3b5&&b==0x3bd)))return 1;
+    /* συγγνώμη and its inflections. */
+    return i>=2&&g[i-2].base==0x3c3&&g[i-1].base==0x3c5&&
+        a==0x3bd&&b==0x3c9&&c==0x3bc;
 }
 static const char *character_name(uint32_t cp);
 static int greek_words(struct buffer *out,const char *text);
@@ -90,10 +110,15 @@ static int greek_word(struct buffer *out,const char *text,size_t bytes,int conte
         }
         if(a==0x3bc&&b==0x3c0){if(i)phone(s,&m,'m',0,0);phone(s,&m,'b',0,0);++i;continue;}
         if(a==0x3bd&&b==0x3c4){if(i)phone(s,&m,'n',0,0);phone(s,&m,'d',0,0);++i;continue;}
-        if(a==0x3b3&&(b==0x3b3||b==0x3ba||b==0x3c7||b==0x3be)){
+        if(a==0x3b3&&b==0x3b3){
+            int fricative=fricative_gamma_gamma(g,n,i);
+            if(i)phone(s,&m,fricative?'N':'n',0,0);
+            phone(s,&m,fricative?(front_vowel(g,n,i+2)?'Y':'G'):'g',0,0);
+            ++i;continue;
+        }
+        if(a==0x3b3&&(b==0x3ba||b==0x3c7||b==0x3be)){
             if(i||b!=0x3ba)phone(s,&m,b==0x3ba?'n':'N',0,0);
-            phone(s,&m,b==0x3c7?'j':b==0x3be?'k':b==0x3ba?'g':
-                front_vowel(g,n,i+2)?'Y':i+2<n&&vowel(g[i+2].base)?'G':'g',0,0);
+            phone(s,&m,b==0x3c7?'j':b==0x3be?'k':'g',0,0);
             if(b==0x3be)phone(s,&m,'s',0,0);++i;continue;
         }
         if(a==0x3c4&&(b==0x3c3||b==0x3b6)){phone(s,&m,'t',0,0);phone(s,&m,b==0x3b6?'z':'s',0,0);++i;continue;}
