@@ -22,6 +22,7 @@
 #include "delta_rules_engb61.h"
 #include "delta_rules_c.h"
 #include "evv_arena.h"
+#include "reloq61_url.h"
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_engb61.h"
@@ -1627,6 +1628,7 @@ L474:;
     r0 = reloq61_typed_backtrack_function(DELTA_ENTRY_backtrack_function, state, (int32_t *)(base + (-4)));
     goto L2646;
 L562:;
+    reloq61_url_optional_s(state, base);
     AT(int32_t, -8) = (6);
     AT(int32_t, -12) = (RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 208));
     r0 = reloq61_typed_savescptr(DELTA_ENTRY_savescptr, state, (int16_t)((int32_t)AT(int32_t, -8)), EVV_AT(delta_loc *, (int32_t)AT(int32_t, -12)));

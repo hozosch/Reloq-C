@@ -4,9 +4,9 @@ ReLoq C is a speech synthesis project that preserves the familiar character of E
 
 The shared synthesis engine is written in C. NVDA, Android ARM64 and Windows SAPI5 use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
 
-**1.1.2** improves German number pronunciation in thousands, shortens
-switches between Chinese and English, keeps Chinese inflection active in
-mixed text and treats a separated dash before a number as a pause.
+**1.1.3** prevents a crash on certain long texts, extends native HTTP reading
+to HTTPS addresses and refines English pronunciation in the Greek voice.
+App names no longer include the version number.
 
 ## Download and install
 
@@ -18,7 +18,7 @@ The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provide
 | Android | ARM64 `.apk` | Android 8 or later, ARM64 device |
 | Windows SAPI5 | `-setup.exe` | Installs x64 and x86 voices together on compatible Windows |
 
-Release **1.1.2** updates existing 1.1.1 installations on all three platforms. If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [1.1.2 release notes](docs/releases/1.1.2.md) for this update. Source archives are for developers and are not installable packages.
+Release **1.1.3** updates existing 1.1.2 installations on all three platforms. If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [1.1.3 release notes](docs/releases/1.1.3.md) for this update. Source archives are for developers and are not installable packages.
 
 ## Current features
 

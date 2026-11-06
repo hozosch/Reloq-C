@@ -84,6 +84,12 @@ jobs:
               assert archive.testzip() is None
               core = pathlib.Path('eci/eci.dll')
               core.write_bytes(archive.read('eci.dll'))
+              # Use the exact dictionary snapshot from the already-verified
+              # platform payload rather than today's potentially newer head.
+              target = pathlib.Path('data/community')
+              for name in archive.namelist():
+                  if name.startswith('dictionaries/'):
+                      (target / pathlib.Path(name).name).write_bytes(archive.read(name))
           import subprocess
           for ui in ('en', 'de'):
               subprocess.run([sys.executable, '-B', 'addon/test_synth.py', ui], check=True)

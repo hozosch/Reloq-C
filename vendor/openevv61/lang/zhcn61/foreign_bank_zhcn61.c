@@ -26,7 +26,12 @@ static int word_value(int field,const char*name)
 static void put_word_bank(void*p,const void*v){memcpy((char*)p+9,v,1);}
 int install_word_fields(void)
 {
- delta_stmt*t=&vstmtbl[4];if(word_ready)return 0;if(t->nfields!=10||t->length!=16)return -1;
+ delta_stmt*t=&vstmtbl[4];
+ if(word_ready){
+  if(t->length!=16||(t->nfields!=10&&t->fields!=word_fields))return -1;
+  t->fields=word_fields;t->field_offset=word_offsets;t->put=word_put;t->nfields=11;return 0;
+ }
+ if(t->nfields!=10||t->length!=16)return -1;
  memcpy(word_fields,t->fields,10*sizeof*word_fields);memcpy(word_offsets,t->field_offset,10*sizeof*word_offsets);memcpy(word_put,t->put,10*sizeof*word_put);
  const delta_stmt*en=delta_lang_by_id(0x10000)->stmtbl+4;
  for(int f=1;f<=2;++f){
@@ -76,7 +81,12 @@ static int feature_id(int field,const char*name)
 }
 int install_phone_fields(void)
 {
- if(phone_ready)return phone_count;delta_stmt*t=&vstmtbl[2];const delta_stmt*en=delta_lang_by_id(0x10000)->stmtbl+2;
+ delta_stmt*t=&vstmtbl[2];
+ if(phone_ready){
+  if(t->length!=18||t->stride!=10||(t->nfields!=14&&t->fields!=phone_fields))return -1;
+  t->fields=phone_fields;t->field_offset=phone_offsets;t->put=phone_put;t->variants=phone_variants;t->nfields=15;return phone_count;
+ }
+ const delta_stmt*en=delta_lang_by_id(0x10000)->stmtbl+2;
  if(t->nfields!=14||t->length!=18||t->stride!=10||t->fields[0].nvalues!=47)return -1;
  memcpy(phone_fields,t->fields,14*sizeof*phone_fields);memcpy(phone_offsets,t->field_offset,14*sizeof*phone_offsets);memcpy(phone_put,t->put,14*sizeof*phone_put);memcpy(phone_variants,t->variants,470);
  for(int f=1;f<14;++f)if(t->fields[f].values){if(t->fields[f].nvalues>64)return -1;memcpy(feature_names[f],t->fields[f].values,t->fields[f].nvalues*sizeof(char*));phone_fields[f].values=feature_names[f];}

@@ -159,9 +159,22 @@ void lpta_rpta_loadp(delta_state *d, const delta_token *lp,
 
 /* The stack grows downward, and both pointers move together by whatever the
    record kind costs. */
-static delta_frame *bs_push(delta_stack *s, int32_t size)
+/* All backtracking records share this fixed-address segment. A failed
+   allocation must unwind through the engine's error path, before a write can
+   reach an unrelated arena block. */
+static void require_stack(delta_state *d, int32_t size)
 {
+    delta_stack *s = EVV_AT(delta_stack *, d->stack);
+    if (size < 0 || s->limit < size)
+        forceErrorBacktrack(d);
+}
+
+static delta_frame *bs_push(delta_state *d, int32_t size)
+{
+    delta_stack *s = EVV_AT(delta_stack *, d->stack);
     delta_frame *slot;
+
+    require_stack(d, size);
 
     s->top -= size;
     slot = (delta_frame *)EVV_AT(uint8_t *, s->top);
@@ -172,7 +185,7 @@ static delta_frame *bs_push(delta_stack *s, int32_t size)
 /* A context record, carrying the tag the rule is testing against. */
 void bspush_ca(delta_state *d, int16_t tag)
 {
-    delta_frame *slot = bs_push(EVV_AT(delta_stack *, d->stack), EVV_AT(delta_stack *, d->stack)->ca_size);
+    delta_frame *slot = bs_push(d, EVV_AT(delta_stack *, d->stack)->ca_size);
 
     slot->kind = 0;
     slot->value = tag;
@@ -188,7 +201,7 @@ void bsclr_pushca(delta_state *d, int16_t tag)
     clearDeltaStackBack(d);
 
     s = EVV_AT(delta_stack *, d->stack);
-    slot = bs_push(s, s->ca_size);
+    slot = bs_push(d, s->ca_size);
     slot->kind = 0;
     slot->value = tag;
 }
@@ -198,7 +211,7 @@ void bsclr_pushca(delta_state *d, int16_t tag)
 void bspush_vbot(delta_state *d)
 {
     delta_stack *s = EVV_AT(delta_stack *, d->stack);
-    delta_frame *slot = bs_push(s, s->size_b8);
+    delta_frame *slot = bs_push(d, s->size_b8);
 
     slot->kind = 5;
     slot->value = EVV_REF(getDeltaStackVBot(d));
@@ -219,12 +232,12 @@ void bspop_vbot(delta_state *d)
 /* The two markers a rule leaves where an alternative begins. */
 void bspush_boa(delta_state *d)
 {
-    bs_push(EVV_AT(delta_stack *, d->stack), EVV_AT(delta_stack *, d->stack)->boa_size)->kind = 4;
+    bs_push(d, EVV_AT(delta_stack *, d->stack)->boa_size)->kind = 4;
 }
 
 void bspush_nboa(delta_state *d)
 {
-    bs_push(EVV_AT(delta_stack *, d->stack), EVV_AT(delta_stack *, d->stack)->boa_size)->kind = 6;
+    bs_push(d, EVV_AT(delta_stack *, d->stack)->boa_size)->kind = 6;
 }
 
 int testeq(delta_state *d)
@@ -306,11 +319,11 @@ int test_time(delta_state *d, int16_t tag)
 
     s = EVV_AT(delta_stack *, d->stack);
 
-    slot = bs_push(s, s->ca_size);
+    slot = bs_push(d, s->ca_size);
     slot->kind = 3;
     slot->value = tag;
 
-    slot = bs_push(s, s->size_b0);
+    slot = bs_push(d, s->size_b0);
     slot->kind = 1;
     EVV_COPY8((uint8_t *)slot + 4, &v->scan_ptr);
 
@@ -382,11 +395,11 @@ int test_fence(delta_state *d, int16_t tag, uint8_t n, const uint8_t *chars)
 
     s = EVV_AT(delta_stack *, d->stack);
 
-    slot = bs_push(s, s->ca_size);
+    slot = bs_push(d, s->ca_size);
     slot->kind = 3;
     slot->value = tag;
 
-    slot = bs_push(s, s->size_b0);
+    slot = bs_push(d, s->size_b0);
     slot->kind = 1;
     EVV_COPY8((uint8_t *)slot + 4, &v->scan_ptr);
 
@@ -444,13 +457,13 @@ AT_VARS(gen_dst, 0x1074);
    pushes when it is about to try a match it may need to unwind. */
 void bspush_ca_scan(delta_state *d, int16_t tag)
 {
-    delta_frame *ca = bs_push(EVV_AT(delta_stack *, d->stack), EVV_AT(delta_stack *, d->stack)->ca_size);
+    delta_frame *ca = bs_push(d, EVV_AT(delta_stack *, d->stack)->ca_size);
     delta_frame *save;
 
     ca->kind = 0;
     ca->value = tag;
 
-    save = bs_push(EVV_AT(delta_stack *, d->stack), EVV_AT(delta_stack *, d->stack)->size_b0);
+    save = bs_push(d, EVV_AT(delta_stack *, d->stack)->size_b0);
     save->kind = 1;
     /* A frame is only as aligned as the machine's own frame sizes make it,
        which on this layout is often two bytes. The field says four, so a
@@ -665,7 +678,7 @@ void starttest(delta_state *d, int16_t tag)
     EVV_AT(delta_vars *, d->vars)->test_tag = tag;
     clearDeltaStackBack(d);
 
-    slot = bs_push(EVV_AT(delta_stack *, d->stack), EVV_AT(delta_stack *, d->stack)->ca_size);
+    slot = bs_push(d, EVV_AT(delta_stack *, d->stack)->ca_size);
     slot->kind = 0;
     slot->value = EVV_AT(delta_vars *, d->vars)->test_tag;
 
@@ -1976,6 +1989,7 @@ void vpush_var(delta_state *d, const delta_operand *v)
     pad = ((size - 1) & ~1) | 1;
     step = s->size_ac + pad + 1;
 
+    require_stack(d, step);
     s->top -= step;
     slot = EVV_AT(uint8_t *, s->top);
     s->limit -= step;
@@ -2435,10 +2449,12 @@ void vassign(delta_state *d, const delta_operand *dst, const delta_operand *src)
                 : delta_int_fixed(*(const int32_t *)src->ptr);
         break;
     case DK_SYNC:
-        memcpy(dst->ptr, src->ptr, 4);
+        memmove(dst->ptr, src->ptr, 4);
         break;
     default:
-        memcpy(dst->ptr, src->ptr, (size_t)stmt_length(dst->kind));
+        /* Some native word variables are overlapping views of the same
+           record. Their assignment has to retain the original source. */
+        memmove(dst->ptr, src->ptr, (size_t)stmt_length(dst->kind));
         break;
     }
 }
@@ -2837,6 +2853,7 @@ static void push_ca_and_scan(delta_state *d, int16_t tag)
     uint8_t *ca;
     uint8_t *save;
 
+    require_stack(d, s->ca_size + s->size_b0);
     s->top -= s->ca_size;
     ca = EVV_AT(uint8_t *, s->top);
     s->limit -= s->ca_size;
@@ -5794,6 +5811,7 @@ int ventproc(delta_state *d, delta_actrec *rec, uint8_t *index,
 
     d->unknown_3c = 0;
 
+    require_stack(d, s->size_a8);
     if (rec == NULL || !init_ptr_active_record(d))
         return 1;
 
@@ -7173,6 +7191,7 @@ int chstream(delta_state *d, int16_t v, uint8_t f)
             return 1;
     }
 
+    require_stack(d, s->ca_size + s->size_b0);
     s->top -= s->ca_size;
     ctx = EVV_AT(uint8_t *, s->top);
     s->limit -= s->ca_size;
