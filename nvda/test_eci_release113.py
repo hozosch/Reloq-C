@@ -71,7 +71,7 @@ def main():
         greek.set_parameter(PROCESS_TAGS, 1)
         expected = {'go':'[.1gow]', 'Google':'[.1gu.0gel]', 'again':'[.0a.1gen]',
                     'together':'[.0to.1ge.0der]', 'message':'[.1me.0sidz]',
-                    'language':'[.1lang.0gwidz]', 'comfortable':'[.1kamf.0ter.0bal]',
+                    'language':'[.1lan.0gwidz]', 'comfortable':'[.1kamf.0ter.0bal]',
                     'wanted':'[.1wan.0tid]',
                     'audacity':'[.0o.1da.0si.0ti]',
                     'digital':'[.1did.0zi.0tal]',

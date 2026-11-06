@@ -63,7 +63,7 @@ static size_t onset(const struct sound *s,size_t first,size_t next)
 }
 static int weak_word(const struct greek_letter *g,size_t n)
 {
-    static const char *const words[]={"και","να","στο","στα","στη","στην","στον","στους","στις","τον","την","το","του","της","τους","τις","τα","των","μου","σου","μας","σας","ο","η","οι","σε","με","για","θα","δεν","μη","μην","που","ας"};
+    static const char *const words[]={"και","κι","να","στο","στα","στη","στην","στον","στους","στις","στου","στης","στων","τον","την","τη","το","του","της","τους","τις","τα","των","μου","σου","μας","σας","ο","η","οι","σε","με","για","θα","δεν","δε","μη","μην","που","πως","αν","σαν","ως","ας"};
     for(size_t w=0;w<COUNT(words);++w){size_t j=0,i=0;while(words[w][i]&&j<n){uint32_t cp;size_t k=decode(words[w]+i,&cp);if(!k||letter(cp).base!=g[j].base)break;i+=k;++j;}if(j==n&&!words[w][i])return 1;}
     return 0;
 }
@@ -124,7 +124,13 @@ static int greek_word(struct buffer *out,const char *text,size_t bytes,int conte
         }
         free(g);free(s);return error;
     }
-    int unstressed=context&&!explicit_accent&&weak_word(g,n);
+    /* από is normally written with an accent even when it is a proclitic.
+       Only remove that accent before an adjacent following word or number;
+       an isolated από and an accented homograph remain stressed. */
+    int apo=(context&2)&&n==3&&g[0].base==0x3b1&&g[1].base==0x3c0&&
+        g[2].base==0x3bf&&!g[0].accent&&!g[1].accent;
+    int unstressed=apo||(context&&!explicit_accent&&weak_word(g,n));
+    if(apo){explicit_accent=0;for(size_t j=0;j<m;++j)s[j].accent=0;}
     if(!explicit_accent&&!unstressed&&nuclei){size_t target=nuclei>1?nuclei-2:0,k=0;for(size_t j=0;j<m;++j)if(s[j].vowel&&k++==target){s[j].accent=1;break;}}
     int error=say(out," `[");size_t begin=0;
     for(size_t j=0;j<m&&!error;++j)if(s[j].vowel){
@@ -135,6 +141,10 @@ static int greek_word(struct buffer *out,const char *text,size_t bytes,int conte
         size_t tail=next==m?m:next-onset(s,j+1,next);
         for(size_t k=j+1;k<tail&&!error;++k)error=sound_text(out,s+k);
         begin=tail;j=tail?tail-1:j;
+        /* Castilian accepts a single unstressed syllable but rejects a
+           multi-syllable group with no primary stress. Keep each weak
+           syllable valid without inserting a stressed vowel. */
+        if(!error&&unstressed&&nuclei>1&&next<m)error=say(out,"] `[");
     }
     if(!nuclei)for(size_t j=0;j<m&&!error;++j)error=sound_text(out,s+j);
     if(!error)error=say(out,"] ");free(g);free(s);return error;
@@ -235,7 +245,7 @@ static int latin(struct buffer *out,const char *word,reloq_greek_english english
     char phonemes[16384];if(english(context,word,phonemes,sizeof phonemes))return -1;
     size_t wanted=0;
     for(size_t i=0;phonemes[i];++i)if(phonemes[i]=='[') {
-        while(phonemes[++i]&&phonemes[i]!=']')wanted+=strchr("aAeEiIoOuUxXHYWcR",phonemes[i])!=NULL;
+        while(phonemes[++i]&&phonemes[i]!=']')wanted+=strchr("aAeEiIoOuUxXHYWcRN",phonemes[i])!=NULL;
         if(!phonemes[i])break;
     }
     size_t length=strlen(word);
@@ -259,7 +269,7 @@ static int latin(struct buffer *out,const char *word,reloq_greek_english english
                 if(add(out,&c,1))goto error;continue;
             }
             char written=0;
-            if(strchr("aAeEiIoOuUxXHYWcR",c)&&position<count)
+            if(strchr("aAeEiIoOuUxXHYWcRN",c)&&position<count)
                 written=vowels[position++].value;
             if(c=='t'||c=='d')consume_written_stop(word,&stop,c);
             switch(c){case 'A':mapped[0]='a';break;case 'E':mapped[0]='e';break;case 'I':mapped[0]='i';break;case 'O':strcpy(mapped,"oy");break;case 'c':mapped[0]='o';break;case 'U':mapped[0]='u';break;case 'H':mapped[0]='a';break;case 'a':mapped[0]=written=='o'?'o':'a';break;case 'e':strcpy(mapped,"ey");break;case 'o':strcpy(mapped,"ow");break;
@@ -272,7 +282,17 @@ static int latin(struct buffer *out,const char *word,reloq_greek_english english
                         lower_ascii(word[length-2])=='e'&&lower_ascii(word[length-1])=='d')mapped[0]='i';
                 else mapped[0]=written=='a'?'a':written=='i'?'i':written=='o'?'o':written=='u'?'u':'e';
                 break;
-            case 'Y':strcpy(mapped,"ay");break;case 'W':strcpy(mapped,"aw");break;case 'S':mapped[0]='s';break;case 'Z':mapped[0]='z';break;case 'C':strcpy(mapped,"ts");break;case 'J':strcpy(mapped,"dz");break;case 'T':mapped[0]='T';break;case 'D':mapped[0]='D';break;case 'g':mapped[0]='g';break;case 'G':strcpy(mapped,"ng");break;case 'R':strcpy(mapped,"er");break;case 'F':mapped[0]=written_stop(word,&stop);break;case '?':break;case 'N':mapped[0]='n';break;default:if(strchr("bdfhjklmnprstuvwyzeiou",c))mapped[0]=c=='v'?'B':c=='h'?'j':c;break;}
+            case 'Y':strcpy(mapped,"ay");break;case 'W':strcpy(mapped,"aw");break;case 'S':mapped[0]='s';break;case 'Z':mapped[0]='z';break;case 'C':strcpy(mapped,"ts");break;case 'J':strcpy(mapped,"dz");break;case 'T':mapped[0]='T';break;case 'D':mapped[0]='D';break;case 'g':mapped[0]='g';break;
+            /* Greek's Castilian inventory has no English velar nasal. Use n
+               here; ordinary Greek gamma and digraphs have their own path. */
+            case 'G':mapped[0]='n';break;
+            case 'R':strcpy(mapped,"er");break;case 'F':mapped[0]=written_stop(word,&stop);break;
+            /* English ?N is a glottalized t followed by syllabic n. The
+               Castilian SPR parser needs a vowel in that syllable; without
+               one it discards the ending, as in Manhattan and kitten. */
+            case '?':if(phonemes[i]=='N'){mapped[0]='t';consume_written_stop(word,&stop,'t');}break;
+            case 'N':mapped[0]=written=='a'?'a':written=='i'?'i':written=='o'?'o':written=='u'?'u':'e';mapped[1]='n';break;
+            default:if(strchr("bdfhjklmnprstuvwyzeiou",c))mapped[0]=c=='v'?'B':c=='h'?'j':c;break;}
             if(*mapped&&say(out,mapped))goto error;
         }
         if(say(out,"] "))goto error;if(!phonemes[i])break;
@@ -381,7 +401,7 @@ int reloq_greek_text(const char *text,int annotations,reloq_greek_english englis
             }
             i+=z;previous=0;
         }
-        else if(letter(cp).base){size_t end=i+z;while(text[end]){uint32_t next;size_t k=decode(text+end,&next);if(!k||!letter(next).base)break;end+=k;}size_t after=end;while(text[after]==' '||text[after]=='\t')++after;uint32_t next=0;if(text[after])decode(text+after,&next);failed=greek_word(&b,text+i,end-i,previous||letter(next).base!=0);previous=1;i=end;expanded=1;}
+        else if(letter(cp).base){size_t end=i+z;while(text[end]){uint32_t next;size_t k=decode(text+end,&next);if(!k||!letter(next).base)break;end+=k;}size_t after=end;while(text[after]==' '||text[after]=='\t')++after;uint32_t next=0;if(text[after])decode(text+after,&next);int following=letter(next).base||reloq61_latin_byte(next)||(next>='0'&&next<='9');failed=greek_word(&b,text+i,end-i,(previous?1:0)|(following?2:0));previous=1;i=end;expanded=1;}
         else if(cp>='0'&&cp<='9'){
             uint64_t number=0;size_t end=i;int overflow=0;while(text[end]>='0'&&text[end]<='9'){unsigned digit=text[end]-'0';if(number>(UINT64_MAX-digit)/10)overflow=1;else number=number*10+digit;++end;}
             if(overflow){for(size_t j=i;j<end&&!failed;++j)failed=cardinal(&b,text[j]-'0');}else failed=cardinal(&b,number);i=end;previous=0;expanded=1;

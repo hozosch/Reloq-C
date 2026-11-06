@@ -157,11 +157,12 @@ int main(int argc,char **argv)
     assert(uninterested.writes>1);
     size_t later=uninterested.count>uninterested.batched_after?
         uninterested.count-uninterested.batched_after:0;
-    assert(uninterested.post_start_writes<=(int)(later/4096)+2);
+    size_t steady_block=(out.nSamplesPerSec*80+999)/1000;
+    if(steady_block>4096)steady_block=4096;
+    assert(uninterested.post_start_writes<=(int)(later/steady_block)+2);
     free(uninterested.pcm);++cases;
-    /* Model a consumer that waits for 50 ms of samples before playback,
-     * including NVDA's SAPI audio stream. With no intervening events, one
-     * short first write should cross that threshold at every native rate. */
+    /* Start immediately, even when the consumer needs to collect 50 ms
+     * before playback; bound how much later audio is buffered. */
     static const unsigned startup_rates[]={8000,11025,16000,22050,32000,44100,48000};
     for(size_t k=0;k<sizeof startup_rates/sizeof *startup_rates;++k){
         WAVEFORMATEX early_format=format(startup_rates[k]);
@@ -171,13 +172,13 @@ int main(int argc,char **argv)
         assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&early_format,&early_text,&early.iface)));
         assert(early.first_playable_samples>=early.playback_threshold);
 #ifndef RELOQ_SAPI_REFERENCE_BASELINE
-        size_t first_block=(startup_rates[k]*60+999)/1000;
-        assert(early.first_write_samples==first_block);
-        assert(early.first_playable_samples==first_block);
+        size_t early_block=(startup_rates[k]*40+999)/1000;
+        assert(early.first_write_samples>0);
+        assert(early.first_write_samples<=(startup_rates[k]*20+999)/1000);
+        assert(early.first_playable_samples==early.playback_threshold);
         struct site boosted=site_new();boosted.interest=0;
         boosted.playback_threshold=(startup_rates[k]*300+999)/1000;
         assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&early_format,&early_text,&boosted.iface)));
-        size_t early_block=(startup_rates[k]*80+999)/1000;
         assert(boosted.first_playable_samples>=boosted.playback_threshold);
         assert(boosted.first_playable_samples<boosted.playback_threshold+early_block);
         free(boosted.pcm);++cases;

@@ -136,14 +136,22 @@ static int output_pcm(struct output *o,const short *pcm,size_t samples,ULONG fra
 {
     if(o->count&&fragment_volume!=o->fragment_volume&&!output_flush(o))return 0;
     o->fragment_volume=fragment_volume;
-    uint64_t startup=((uint64_t)o->backend->job.rate*60+999)/1000;
+    uint64_t startup_ready=((uint64_t)o->backend->job.rate*50+999)/1000;
     uint64_t startup_window=((uint64_t)o->backend->job.rate*500+999)/1000;
-    size_t early_block=(size_t)(((uint64_t)o->backend->job.rate*80+999)/1000);
+    size_t early_block=(size_t)(((uint64_t)o->backend->job.rate*40+999)/1000);
+    size_t steady_block=(size_t)(((uint64_t)o->backend->job.rate*80+999)/1000);
     while(samples){
-        size_t target=4096;uint64_t delivered=o->offset/sizeof(short);
-        if(delivered<startup&&startup-delivered<target)target=(size_t)(startup-delivered);
-        else if(delivered>=startup&&delivered<startup_window){
-            if(early_block<target)target=early_block;
+        uint64_t delivered=o->offset/sizeof(short);
+        /* Start the SAPI stream as soon as the engine produces audio. */
+        if(!delivered&&!o->count){
+            size_t n=samples>4096?4096:samples;
+            memcpy(o->pending,pcm,n*sizeof *pcm);o->count=n;pcm+=n;samples-=n;
+            if(!output_flush(o))return 0;continue;
+        }
+        size_t target=delivered<startup_ready?(size_t)(startup_ready-delivered):
+            delivered<startup_window?early_block:steady_block;
+        if(target>4096)target=4096;
+        if(delivered<startup_window){
             if(startup_window-delivered<target)target=(size_t)(startup_window-delivered);
         }
         size_t n=target-o->count;if(n>samples)n=samples;

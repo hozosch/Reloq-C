@@ -1,0 +1,87 @@
+"""Greek English phones, weak words, and unchanged native Greek digraphs."""
+import argparse
+from pathlib import Path
+import unicodedata
+
+from _reloq_eci_direct import DirectEciEngine, EciIndex, GENDER, PROCESS_TAGS, SAMPLE_RATE
+from test_eci_german_clock_native import phonemes, render
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--library', type=Path, required=True)
+    parser.add_argument('--baseline', type=Path)
+    args = parser.parse_args()
+    greek = DirectEciEngine(args.library.resolve(), dialect=0x120000,
+                            encoding='utf8', native_voice=True)
+    old = (DirectEciEngine(args.baseline.resolve(), dialect=0x120000,
+                           encoding='utf8', native_voice=True)
+           if args.baseline else None)
+    try:
+        greek.set_parameter(PROCESS_TAGS, 1)
+        if old:
+            old.set_parameter(PROCESS_TAGS, 1)
+        english = {
+            'Manhattan': '[.0man.1ja.0tan]',
+            'button': '[.1ba.0ton]',
+            'kitten': '[.1ki.0ten]',
+            'working': '[.1wer.0kin]',
+            'ongoing': '[.1on.0go.0win]',
+            'finger': '[.1fin.0ger]',
+            'singer': '[.1si.0ner]',
+            'language': '[.1lan.0gwidz]',
+        }
+        for word, expected in english.items():
+            result = phonemes(greek, word)
+            assert expected in result, (word, result)
+            assert render(greek, [word, EciIndex(7)])[0]
+
+        weak_apo = '`[.0a] `[.0po]'
+        for text in ('από Αθήνα', 'Από την Αθήνα', 'από London', 'από 5'):
+            result = phonemes(greek, text)
+            assert weak_apo in result and '[.1po]' not in result, (text, result)
+            assert result == phonemes(greek, unicodedata.normalize('NFD', text))
+            pcm, marks = render(greek, [text, EciIndex(7)])
+            assert pcm and marks == [(7, len(pcm))], (text, marks)
+            for cut in range(1, len(text)):
+                assert render(greek, [text[:cut], text[cut:], EciIndex(7)]) == (pcm, marks), (text, cut)
+        for text in ('από', 'από.', 'από, Αθήνα', 'λέω από'):
+            assert '[.0a.1po]' in phonemes(greek, text), text
+        assert '[.1a.0po]' in phonemes(greek, 'άπο Αθήνα')
+
+        # These unaccented function words weaken in a sentence, while a
+        # written accent and a word spoken on its own keep their stress.
+        for word in ('κι', 'τη', 'δε', 'πως', 'αν', 'σαν', 'ως', 'στου', 'στης', 'στων'):
+            alone = phonemes(greek, word)
+            context = phonemes(greek, word + ' σπίτι')
+            assert '[.1' in alone and '[.0' in context, (word, alone, context)
+        for word in ('πώς', 'πού', 'ή'):
+            assert '[.1' in phonemes(greek, word + ' σπίτι'), word
+
+        # Preserve both the phonemes and the rendered PCM of Greek gamma
+        # combinations; the change only applies to English donor phonemes.
+        for word in ('άγκυρα', 'αγκάθι', 'γκολ', 'αγγλικά', 'άγγελος'):
+            if old:
+                assert phonemes(greek, word) == phonemes(old, word), word
+        for rate in range(7):
+            greek.set_parameter(SAMPLE_RATE, rate)
+            if old:
+                old.set_parameter(SAMPLE_RATE, rate)
+            for gender in (0, 1):
+                greek.set_parameter(GENDER, gender)
+                if old:
+                    old.set_parameter(GENDER, gender)
+                for text in ('από την Αθήνα', 'Manhattan working ongoing', 'άγκυρα και αγγλικά'):
+                    pcm, marks = render(greek, [text, EciIndex(7)])
+                    assert pcm and marks == [(7, len(pcm))], (rate, gender, text)
+                    if old and text == 'άγκυρα και αγγλικά':
+                        assert (pcm, marks) == render(old, [text, EciIndex(7)]), (rate, gender, text)
+    finally:
+        greek.close()
+        if old:
+            old.close()
+    print('Greek connected speech, English nasals, syllabic n and native gamma passed')
+
+
+if __name__ == '__main__':
+    main()
