@@ -36,12 +36,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Resolve current dictionary master and verify committed snapshot
+      - name: Download and verify current community dictionaries
         env:
           RELOQ_BUILD_GITHUB_TOKEN: ${{ github.token }}
         run: |
           python3 -c "import sys; sys.path.insert(0, 'addon'); from build_synth import refresh_community_dictionaries; refresh_community_dictionaries()"
-          git diff --exit-code -- data/community
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dictionary-snapshot
+          path: data/community/
+          if-no-files-found: error
+          retention-days: 30
   native-regressions:
     needs: dictionaries
     runs-on: ubuntu-24.04
@@ -50,12 +55,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: dictionary-snapshot
+          path: data/community
       - name: Build the shared native engine and acoustic rule tests
         run: make -C eci -j2 libreloq_eci.so test_reloq_native_rules PROVIDER_LTO=-flto=2
       - name: Check number, pitch, pause, source-index and multilingual behavior
         run: |
           ./eci/test_reloq_native_rules
           python3 -B tests/test_replace_release.py
+          python3 -B tests/test_release_dictionaries.py
           python3 -B tools/test_native_text_input.py
           python3 -B nvda/test_eci_dictionary_cache.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_dash_pause.py --library eci/libreloq_eci.so
@@ -67,6 +77,8 @@ jobs:
   sapi:
     needs: dictionaries
     uses: ./.github/workflows/sapi-installer.yml
+    with:
+      shared_dictionary_snapshot: true
   android:
     needs: dictionaries
     runs-on: ubuntu-24.04
@@ -75,6 +87,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: dictionary-snapshot
+          path: data/community
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -112,6 +128,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: dictionary-snapshot
+          path: data/community
       - uses: actions/download-artifact@v4
         with:
           name: sapi-native-x64
@@ -154,6 +174,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: dictionary-snapshot
+          path: data/community
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sapi-native-*
+          path: artifacts/payload
+          merge-multiple: true
       - uses: actions/download-artifact@v4
         with:
           pattern: sapi-installer

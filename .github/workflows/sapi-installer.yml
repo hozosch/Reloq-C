@@ -12,6 +12,11 @@ on:
       - data/community/**
   workflow_dispatch:
   workflow_call:
+    inputs:
+      shared_dictionary_snapshot:
+        required: false
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -26,6 +31,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Use the shared release dictionary snapshot
+        if: ${{ inputs.shared_dictionary_snapshot }}
+        uses: actions/download-artifact@v4
+        with:
+          name: dictionary-snapshot
+          path: data/community
+      - name: Fetch current community dictionaries for standalone builds
+        if: ${{ !inputs.shared_dictionary_snapshot }}
+        env:
+          RELOQ_BUILD_GITHUB_TOKEN: ${{ github.token }}
+        run: python3 -c "import sys; sys.path.insert(0, 'addon'); from build_synth import refresh_community_dictionaries; refresh_community_dictionaries()"
       - name: Install cross compiler
         timeout-minutes: 25
         run: |

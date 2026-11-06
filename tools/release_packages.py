@@ -8,6 +8,11 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
+import zipfile
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'nvda'))
+from _reloq_dictionaries import FILES as DICTIONARY_FILES, validate_snapshot
 
 
 def sha256(path):
@@ -32,6 +37,20 @@ def android_name(version, name):
     return re.fullmatch(rf'reloq-c-android-arm64-{re.escape(version)}\.apk', name)
 
 
+def verify_packaged_dictionaries(archives, directory):
+    """All platform packages must contain exactly the resolved snapshot."""
+    directory = Path(directory)
+    manifest = validate_snapshot(directory)
+    expected = {name: (directory / name).read_bytes()
+                for name in (*DICTIONARY_FILES, 'manifest.json')}
+    for path, prefix in archives:
+        with zipfile.ZipFile(path) as archive:
+            for name, data in expected.items():
+                if archive.read(prefix + name) != data:
+                    raise ValueError(f'dictionary differs: {path.name}: {name}')
+    return manifest
+
+
 def collect(source, destination):
     version = re.search(r'^version\s*=\s*(\S+)', Path('addon/synth/manifest.ini').read_text(), re.M)[1].strip('"')
     required = names(version)
@@ -39,10 +58,23 @@ def collect(source, destination):
              (path.name in required or android_name(version, path.name))]
     if len(files) != 3 or not set(required).issubset(path.name for path in files):
         raise ValueError('expected one SAPI installer, one NVDA add-on and one ARM64 APK')
+    addon = next(p for p in files if p.name.endswith('.nvda-addon'))
+    android = next(p for p in files if p.name.endswith('.apk'))
+    payloads = []
+    for arch in ('x64', 'x86'):
+        matches = list(source.rglob(f'reloq-c-sapi5-{arch}-{version}-payload.zip'))
+        if len(matches) != 1:
+            raise ValueError(f'expected one {arch} SAPI payload')
+        payloads.append(matches[0])
+    dictionary = verify_packaged_dictionaries(
+        [(addon, 'synthDrivers/reloqC/communityDictionaries/'),
+         (android, 'assets/community/'),
+         *((p, 'dictionaries/') for p in payloads)], Path('data/community'))
     destination.mkdir(parents=True, exist_ok=False)
     manifest = {'version': version, 'release_version': release_version(version),
                 'source_commit': os.environ['GITHUB_SHA'],
-                'run_id': int(os.environ['GITHUB_RUN_ID']), 'assets': {}}
+                'run_id': int(os.environ['GITHUB_RUN_ID']),
+                'dictionary_snapshot': dictionary, 'assets': {}}
     policy = Path('.github/release-policy.json')
     if policy.exists():
         supersedes = json.loads(policy.read_text())['supersedes_tag']
