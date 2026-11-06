@@ -32,12 +32,13 @@ def main():
     parser.add_argument("--android-jar",type=Path)
     parser.add_argument("--jobs",type=int,default=4)
     parser.add_argument("--build-dir",type=Path,help="isolated Android build directory")
-    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-1.1.4.apk")
+    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-1.1.4-dev1.apk")
     parser.add_argument("--keystore",type=Path,default=HERE/"release-signing.p12")
     parser.add_argument("--verified-dictionaries",action="store_true",
         help="use locally verified data after separately resolving its current master commit")
     previous=parser.add_mutually_exclusive_group()
     previous.add_argument("--upgrade-from",type=Path,help="require an in-place update over this signed APK")
+    previous.add_argument("--replace-from",type=Path,help="require the same signed app and a nondecreasing versionCode")
     previous.add_argument("--previous-package",type=Path,help="verify signing and report whether the previous APK is a separate app")
     args=parser.parse_args()
     if not args.sdk or not args.ndk or not args.java_home:
@@ -110,6 +111,8 @@ def main():
     verify_apk(signed)
     verify_permissions(signed,tools/"aapt2")
     if args.upgrade_from:verify_upgrade(signed,args.upgrade_from.resolve(),tools/"aapt2",tools/"apksigner",environment)
+    if args.replace_from and verify_previous_package(signed,args.replace_from.resolve(),tools/"aapt2",tools/"apksigner",environment)["separate"]:
+        raise ValueError("Replacement APK must retain the same app identity")
     if args.previous_package:verify_previous_package(signed,args.previous_package.resolve(),tools/"aapt2",tools/"apksigner",environment)
     # Publish only a closed, fully verified APK. Readers never see a partly
     # written signing output, and a failed rebuild leaves the old APK intact.

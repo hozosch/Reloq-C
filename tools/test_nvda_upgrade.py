@@ -25,8 +25,11 @@ def manifest(path):
 
 
 def version(text):
-    assert re.fullmatch(r'\d+\.\d+\.\d+', text), text
-    return tuple(map(int, text.split('.')))
+    match = re.fullmatch(r'(\d+)\.(\d+)\.(\d+)(?:-(dev|rc)(\d+))?', text)
+    assert match, text
+    major, minor, patch = map(int, match.groups()[:3])
+    stage, number = match.groups()[3:]
+    return (major, minor, patch, {'dev': 0, 'rc': 1, None: 2}[stage], int(number or 0))
 
 
 def main():

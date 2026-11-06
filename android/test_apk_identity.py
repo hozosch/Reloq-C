@@ -28,6 +28,7 @@ with patch("verify_apk.subprocess.run", side_effect=run):
     assert info == {"package": "org.reloq.tts", "version_code": 11010001, "certificates": [certificate]}
     assert verify_previous_package("current.apk", "previous.apk", "aapt2", "apksigner")["separate"]
     assert not verify_previous_package("current.apk", "older-current.apk", "aapt2", "apksigner")["separate"]
+    assert not verify_previous_package("current.apk", "current.apk", "aapt2", "apksigner")["separate"]
     verify_upgrade("current.apk", "older-current.apk", "aapt2", "apksigner")
     verify_upgrade("current.apk", "same-identity-110.apk", "aapt2", "apksigner")
     verify_upgrade("candidate-113.apk", "released-112.apk", "aapt2", "apksigner")
