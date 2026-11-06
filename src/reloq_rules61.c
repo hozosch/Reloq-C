@@ -69,10 +69,40 @@ static int dash_before_number(const unsigned char *text,size_t length,size_t beg
     return dash_word_edge(left)||left=='.'||left==','||left==':'||left==';'||left=='!'||left=='?';
 }
 
+/* The native English parser normally treats a lone letter and one following
+ * space as a person's initial, dropping the period. Two spaces retain a
+ * sentence boundary. Only apply this when the following token is a likely
+ * sentence start; names, sequences of initials, domains and abbreviations
+ * remain in the native parser's care. */
+static int english_initial_sentence_space(const unsigned char *text,size_t n,size_t at)
+{
+    if(at<2||at+1>=n||text[at]!=' '||text[at-1]!='.')return 0;
+    unsigned char letter=text[at-2];
+    if(letter<'A'||letter>'Z')return 0;
+    size_t start=at-2;
+    if(start&&text[start-1]!=' '&&text[start-1]!='\t'&&text[start-1]!='\n')return 0;
+    size_t previous=start;
+    while(previous&&(text[previous-1]==' '||text[previous-1]=='\t'||text[previous-1]=='\n'))--previous;
+    if(previous&&text[previous-1]=='.')return 0;
+    size_t next=at+1,end=next;
+    if(text[next]<'A'||text[next]>'Z')return 0;
+    while(end<n&&((text[end]>='A'&&text[end]<='Z')||(text[end]>='a'&&text[end]<='z')))++end;
+    if(end==next || (end<n&&text[end]=='.'&&end-next==1))return 0;
+    int acronym=end-next>=2;
+    for(size_t i=next;i<end;++i)if(text[i]<'A'||text[i]>'Z')acronym=0;
+    if(acronym)return 1;
+    static const char *const starters[]={"A","After","Before","For","He","Here","However",
+        "I","In","It","Next","Now","Please","She","That","The","These","They",
+        "This","Those","We","You"};
+    for(size_t i=0;i<sizeof starters/sizeof *starters;++i)
+        if(strlen(starters[i])==end-next&&!memcmp(text+next,starters[i],end-next))return 1;
+    return 0;
+}
+
 /* Preserve admitted text until the native sentence frontend sees it. The
  * former word-by-word SPR conversion ran a second, older language analysis
  * and forced every ordinary token through its historical dictionaries. */
-static int english_input(const unsigned char *text,size_t length,int tags,int unicode,
+static int english_input(const unsigned char *text,size_t length,int tags,int unicode,int english,
     unsigned char **out,size_t **source,size_t *written)
 {
     if(length==SIZE_MAX||memchr(text,0,length))return -1;
@@ -93,6 +123,8 @@ static int english_input(const unsigned char *text,size_t length,int tags,int un
                 encoded[0]=cp=='`'&&!tags?' ':
                     cp=='-'&&!spelling&&dash_before_number(text,length,at,end)?',':(unsigned char)cp;
                 count=1;
+                if(english&&!spelling&&cp==' '&&english_initial_sentence_space(text,length,at))
+                    encoded[count++]=' ';
             }
         } else if(cp==0x2013&&!spelling&&dash_between_words(text,length,at,end)) {
             /* The native long-dash rule supplies the pause, including the
@@ -708,7 +740,7 @@ int reloq_rules61_phonemes(int language,const unsigned char *text,size_t length,
     unsigned char *input=NULL;size_t *map=NULL,n=0;
     int family=language>>16;
     int status=english_input(text,length,tags,
-        family==6||family==8||family==10||family==18,&input,&map,&n);
+        family==6||family==8||family==10||family==18,family==1,&input,&map,&n);
     if(status)return status;
     if(language==0x40000) {
         german_compact_input(input,map,&n,tags);
@@ -1189,7 +1221,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     struct reloq61_mark *volumes=NULL;size_t volume_count=0;size_t *control_sources=NULL;
     int family=language>>16;
     plan.cjk_volume=family==6||family==8||family==10;
-    int input_status=english_input(text,length,tags,family==6||family==8||family==10||family==18,&a,&map,&n);
+    int input_status=english_input(text,length,tags,family==6||family==8||family==10||family==18,family==1,&a,&map,&n);
     if(input_status==-2)goto memory;
     if(input_status)goto done;
     if(language==0x40000)german_compact_input(a,map,&n,tags);

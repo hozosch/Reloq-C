@@ -7,8 +7,12 @@
 #include <time.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <sys/inotify.h>
+#include <poll.h>
+#include <unistd.h>
 const char *sapi_test_library;
 unsigned sapi_test_dictionary_calls;
+unsigned sapi_test_attribute_calls;
 unsigned sapi_test_synth_complete;
 static int (*dictionary_api)(void *,const char *);
 static int (*synthesize_api)(void *);
@@ -35,10 +39,12 @@ static _Thread_local DWORD last_error;
 DWORD GetLastError(void){return last_error;}
 BOOL GetFileAttributesExW(LPCWSTR path,int kind,WIN32_FILE_ATTRIBUTE_DATA *out)
 {
+ ++sapi_test_attribute_calls;
  (void)kind;char name[8192];if(!WideCharToMultiByte(CP_UTF8,0,path,-1,name,sizeof name,NULL,NULL)){last_error=87;return FALSE;}
  for(char *p=name;*p;++p)if(*p=='\\')*p='/';struct stat st;
  if(stat(name,&st)){last_error=errno==ENOENT?ERROR_FILE_NOT_FOUND:5;return FALSE;}
  memset(out,0,sizeof *out);out->dwFileAttributes=S_ISDIR(st.st_mode)?16:128;
+ if(S_ISDIR(st.st_mode)){uint64_t id=(uint64_t)st.st_ino;out->ftCreationTime=(FILETIME){(DWORD)id,(DWORD)(id>>32)};}
  out->nFileSizeHigh=(DWORD)((uint64_t)st.st_size>>32);out->nFileSizeLow=(DWORD)st.st_size;
  uint64_t time=(uint64_t)st.st_mtim.tv_sec*10000000+(unsigned long)st.st_mtim.tv_nsec/100;
  out->ftLastWriteTime=(FILETIME){(DWORD)time,(DWORD)(time>>32)};return TRUE;
@@ -46,8 +52,19 @@ BOOL GetFileAttributesExW(LPCWSTR path,int kind,WIN32_FILE_ATTRIBUTE_DATA *out)
 BOOL FreeLibrary(HMODULE h){return dlclose(h)==0;}
 BOOL GetModuleHandleExW(DWORD flags,LPCWSTR address,HMODULE *out){(void)flags;(void)address;*out=(HMODULE)1;return TRUE;}
 int sapi_module_path(WCHAR *p,size_t cap,const WCHAR *name){if(wcslen(name)>=cap)return 0;wcscpy(p,name);return 1;}
-struct handle {int thread,event,manual,count,maximum;pthread_mutex_t lock;pthread_cond_t condition;pthread_t tid;DWORD (*fn)(void *);void *arg;};
+struct handle {int thread,event,manual,count,maximum,watcher,watch_fd;pthread_mutex_t lock;pthread_cond_t condition;pthread_t tid;DWORD (*fn)(void *);void *arg;};
 static HANDLE new_handle(void){struct handle *h=calloc(1,sizeof *h);if(h){pthread_mutex_init(&h->lock,NULL);pthread_cond_init(&h->condition,NULL);}return h;}
+HANDLE FindFirstChangeNotificationW(LPCWSTR path,BOOL subtree,DWORD filter)
+{(void)subtree;(void)filter;char name[8192];
+ if(!WideCharToMultiByte(CP_UTF8,0,path,-1,name,sizeof name,NULL,NULL))return INVALID_HANDLE_VALUE;
+ for(char *p=name;*p;++p)if(*p=='\\')*p='/';
+ int fd=inotify_init1(IN_NONBLOCK|IN_CLOEXEC);if(fd<0)return INVALID_HANDLE_VALUE;
+ if(inotify_add_watch(fd,name,IN_CREATE|IN_DELETE|IN_MOVED_FROM|IN_MOVED_TO|IN_CLOSE_WRITE|IN_MODIFY|IN_ATTRIB|IN_DELETE_SELF|IN_MOVE_SELF)<0){close(fd);return INVALID_HANDLE_VALUE;}
+ struct handle *h=new_handle();if(!h){close(fd);return INVALID_HANDLE_VALUE;}h->watcher=1;h->watch_fd=fd;return h;}
+BOOL FindNextChangeNotification(HANDLE handle)
+{struct handle *h=handle;char buffer[4096];while(read(h->watch_fd,buffer,sizeof buffer)>0){}return errno==EAGAIN;}
+BOOL FindCloseChangeNotification(HANDLE handle)
+{struct handle *h=handle;if(!h||!h->watcher)return FALSE;close(h->watch_fd);h->watcher=0;return CloseHandle(h);}
 HANDLE CreateSemaphoreW(void *a,LONG initial,LONG maximum,LPCWSTR name)
 {(void)a;(void)name;struct handle *h=new_handle();if(h){h->count=initial;h->maximum=maximum;}return h;}
 HANDLE CreateEventW(void *a,BOOL manual,BOOL initial,LPCWSTR name)
@@ -57,7 +74,8 @@ HANDLE CreateThread(void *security,size_t stack,DWORD (*fn)(void *),void *arg,DW
 {(void)security;(void)stack;(void)flags;(void)id;struct handle *h=new_handle();if(!h)return NULL;
  h->thread=1;h->fn=fn;h->arg=arg;if(pthread_create(&h->tid,NULL,thread_main,h)){CloseHandle(h);return NULL;}return h;}
 DWORD WaitForSingleObject(HANDLE handle,DWORD ms)
-{struct handle *h=handle;if(h->thread){pthread_join(h->tid,NULL);h->thread=0;return WAIT_OBJECT_0;}
+{struct handle *h=handle;if(h->watcher){struct pollfd p={.fd=h->watch_fd,.events=POLLIN};return poll(&p,1,(int)ms)>0?WAIT_OBJECT_0:WAIT_TIMEOUT;}
+ if(h->thread){pthread_join(h->tid,NULL);h->thread=0;return WAIT_OBJECT_0;}
  pthread_mutex_lock(&h->lock);int rc=0;struct timespec until;clock_gettime(CLOCK_REALTIME,&until);
  until.tv_sec+=ms/1000;until.tv_nsec+=(long)(ms%1000)*1000000;if(until.tv_nsec>=1000000000){until.tv_sec++;until.tv_nsec-=1000000000;}
  while(!h->count&&!rc)rc=ms==INFINITE?pthread_cond_wait(&h->condition,&h->lock):pthread_cond_timedwait(&h->condition,&h->lock,&until);

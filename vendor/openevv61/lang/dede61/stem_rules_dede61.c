@@ -131,18 +131,19 @@ static void repair_konzentrier(delta_state *d,int32_t word_begin,int32_t word_en
 
 /* Keep the voiced onset of the independent word consistent with its
  * productive forms such as samtig. Explicit phonetic input is left alone. */
-static int samt_has_user_entry(delta_state *d,int32_t word_begin)
+static int word_has_user_entry(delta_state *d,int32_t word_begin,size_t length)
 {
     /* Recover each character's case only for this word. The native spelling
      * scanner normalizes the letters, but an RLEX lookup is case-sensitive. */
     int32_t start=word_begin;
-    for(unsigned i=0;i<4;++i) {
+    if(!length||length>127)return 0;
+    for(size_t i=0;i<length;++i) {
         int32_t previous=start;int c=input_at(d,&previous,1);
         if(!ascii_letter(c))break;
         start=previous;
     }
-    unsigned char key[5];int32_t scan=start;
-    for(unsigned i=0;i<4;++i) {
+    unsigned char key[128];int32_t scan=start;
+    for(size_t i=0;i<length;++i) {
         int32_t node=vgetsc(d,0,0,scan,1);
         while(node&&(*EVV_AT(const int32_t *,node)&2))node=vgetsc(d,0,0,node,1);
         unsigned letter_case=node?*(const unsigned char *)delta_record_field(&vstmtbl[1],1,TFLDS(EVV_AT(void *,node))):0;
@@ -150,22 +151,22 @@ static int samt_has_user_entry(delta_state *d,int32_t word_begin)
         if(c<0)return 0;
         key[i]=(unsigned char)(letter_case==2&&c>='a'&&c<='z'?c-32:c);
     }
-    key[4]=0;
+    key[length]=0;
     const struct reloq_lexicon *overlay=reloq61_dictionary_overlay_current();
     if(overlay) {
         size_t low=0,high=overlay->override_count;
         while(low<high) {
             size_t middle=low+(high-low)/2;
             const struct reloq_lexicon_override *entry=overlay->overrides+middle;
-            size_t common=entry->key_length<4?entry->key_length:4;
+            size_t common=entry->key_length<length?entry->key_length:length;
             int order=memcmp(entry->key,key,common);
-            if(!order)order=(entry->key_length>4)-(entry->key_length<4);
+            if(!order)order=(entry->key_length>length)-(entry->key_length<length);
             if(!order)return 1;
             if(order<0)low=middle+1;else high=middle;
         }
     }
     const struct reloq_lexicon_resolver *resolver=reloq61_dictionary_resolver();
-    int found=resolver&&resolver->find&&resolver->find(resolver->context,key,4)!=NULL;
+    int found=resolver&&resolver->find&&resolver->find(resolver->context,key,length)!=NULL;
     reloq61_dictionary_resolver_release(resolver);
     return found;
 }
@@ -174,12 +175,29 @@ static void repair_samt(delta_state *d,int32_t begin,int32_t end,
 {
     struct reloq61_spr_phone s,a,m,t;
     if(phonetic||strcmp((const char *)spelling,"samt")||
-       samt_has_user_entry(d,begin)||
+       word_has_user_entry(d,begin,4)||
        !reloq61_spr_phone_at(d,begin,&s)||reloq61_spr_feature(d,&s,0)!=9||
        !reloq61_spr_phone_at(d,s.after,&a)||reloq61_spr_feature(d,&a,0)!=34||
        !reloq61_spr_phone_at(d,a.after,&m)||reloq61_spr_feature(d,&m,0)!=21||
        !reloq61_spr_phone_at(d,m.after,&t)||reloq61_spr_feature(d,&t,0)!=3||t.after!=end)return;
     put_phone(d,&s,10);
+}
+
+/* The built-in entry for Touch has the long German a of Tatsch. English
+ * touch uses the short German a here. Leave explicit SPR and custom entries
+ * untouched and only change the native touch phone sequence. */
+static void repair_touch(delta_state *d,int32_t begin,int32_t end,
+    const unsigned char *spelling,int phonetic)
+{
+    struct reloq61_spr_phone t,a,ch;
+    size_t length=strlen((const char *)spelling);
+    if(phonetic||length<5||memcmp(spelling,"touch",5)||
+       word_has_user_entry(d,begin,length)||word_has_user_entry(d,begin,5)||
+       !reloq61_spr_phone_at(d,begin,&t)||reloq61_spr_feature(d,&t,0)!=3||
+       !reloq61_spr_phone_at(d,t.after,&a)||reloq61_spr_feature(d,&a,0)!=33||
+       !reloq61_spr_phone_at(d,a.after,&ch)||reloq61_spr_feature(d,&ch,0)!=18||
+       ch.after==a.after||a.after==end)return;
+    put_phone(d,&a,34);
 }
 
 /* The participle and its inflections must use the same reduced vowel in
@@ -543,6 +561,7 @@ void reloq_dede61_repair_stem(void *state,int32_t begin,int32_t end)
     word_spelling(d,repair_begin,spelling,&initial);
     repair_konzentrier(d,repair_begin,repair_end,spelling);
     repair_samt(d,repair_begin,repair_end,spelling,phonetic);
+    repair_touch(d,repair_begin,repair_end,spelling,phonetic);
     repair_oeffentlich(d,repair_begin,repair_end,spelling,phonetic);
     repair_eighty_onset(d,repair_begin,repair_end);
     repair_os_adjective(d,repair_begin,repair_end,spelling);

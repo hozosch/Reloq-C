@@ -58,12 +58,15 @@ void reloq_session_destroy(struct reloq_session *session);
 float reloq_session_sample_rate(const struct reloq_session *session);
 /* Hearing-trial profile for subsequent utterances, with no PCM resampling. */
 int reloq_session_high_rate_profile(struct reloq_session *,unsigned);
+/* Set the production text voice's master gain and PCM peak protection.
+ * Numeric/reference sessions retain their original output level. */
+int reloq_session_text_loudness(struct reloq_session *,int);
 /* Update absolute source levels for a word-scoped voice model. Histories,
  * phase and configured reset defaults stay intact. Serialized render only. */
 int reloq_session_source_levels(struct reloq_session *session,long source,
     long av,long ah,long af,unsigned reference_formants);
-/* Extended-rate volume belongs before finite PCM conversion/protection.
- * Legacy A and narrow-band callers retain their exact post-PCM scaling. */
+/* Production text volume belongs before finite PCM conversion/protection.
+ * Legacy reference callers retain their exact post-PCM scaling. */
 int reloq_session_float_volume(const struct reloq_session *session);
 int reloq_session_linear_gain(struct reloq_session *session,float gain);
 

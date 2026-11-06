@@ -69,6 +69,7 @@ struct sapi_backend {
     struct bookmark *bookmarks;
     int dictionary_ready;WCHAR dictionary_path[2048];
     WIN32_FILE_ATTRIBUTE_DATA dictionary_files[6];
+    HANDLE dictionary_watch;FILETIME dictionary_directory_created;
 };
 static void cancel_backend(struct sapi_backend *b)
 {
@@ -218,6 +219,32 @@ static HRESULT dictionary(struct sapi_backend *b,const struct sapi_settings *s)
 #else
         else if(!sapi_default_dictionary_path(path,2048))return E_FAIL;
 #endif
+        /* Retain initialized dictionaries without testing every file on
+         * every announcement. Recheck the directory identity so deleting
+         * and recreating it cannot strand the watch on the old directory. */
+        WIN32_FILE_ATTRIBUTE_DATA dir={0};
+        int exists=GetFileAttributesExW(path,GetFileExInfoStandard,&dir)!=0;
+        int same=b->dictionary_ready&&!wcscmp(path,b->dictionary_path);
+        if(b->dictionary_watch&&(!same||!exists||
+           memcmp(&dir.ftCreationTime,&b->dictionary_directory_created,sizeof(FILETIME)))) {
+            FindCloseChangeNotification(b->dictionary_watch);b->dictionary_watch=NULL;
+        }
+        int already_watching=b->dictionary_watch!=NULL;
+        if(exists&&!b->dictionary_watch&&
+           (dir.ftCreationTime.dwLowDateTime||dir.ftCreationTime.dwHighDateTime)) {
+            HANDLE watch=FindFirstChangeNotificationW(path,FALSE,
+                FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_LAST_WRITE|FILE_NOTIFY_CHANGE_SIZE|FILE_NOTIFY_CHANGE_CREATION);
+            if(watch!=INVALID_HANDLE_VALUE) {
+                b->dictionary_watch=watch;b->dictionary_directory_created=dir.ftCreationTime;
+            }
+        }
+        if(b->dictionary_watch) {
+            DWORD changed=WaitForSingleObject(b->dictionary_watch,0);
+            if(changed==WAIT_TIMEOUT&&same&&already_watching)return S_OK;
+            if(changed!=WAIT_TIMEOUT&&(changed!=WAIT_OBJECT_0||!FindNextChangeNotification(b->dictionary_watch))) {
+                FindCloseChangeNotification(b->dictionary_watch);b->dictionary_watch=NULL;
+            }
+        }
         const WCHAR *prefix=NULL;
         switch(b->dialect){
         case 0x10000:prefix=L"ENU";break;case 0x10001:prefix=L"ENG";break;
@@ -239,6 +266,9 @@ static HRESULT dictionary(struct sapi_backend *b,const struct sapi_settings *s)
             }
             files[i].ftLastAccessTime=(FILETIME){0,0};
         }
+    }
+    if(!path[0]&&b->dictionary_watch) {
+        FindCloseChangeNotification(b->dictionary_watch);b->dictionary_watch=NULL;
     }
     if(b->dictionary_ready&&!wcscmp(path,b->dictionary_path)&&
        !memcmp(files,b->dictionary_files,sizeof files))return S_OK;
@@ -408,6 +438,7 @@ void sapi_backend_delete(struct sapi_backend *b)
     if(b->thread){InterlockedExchange(&b->exit,1);SetEvent(b->start);
         WaitForSingleObject(b->thread,INFINITE);CloseHandle(b->thread);}
     if(b->start)CloseHandle(b->start);if(b->room)CloseHandle(b->room);if(b->ready)CloseHandle(b->ready);
+    if(b->dictionary_watch)FindCloseChangeNotification(b->dictionary_watch);
     free(b->events);free(b);
 }
 HRESULT sapi_backend_speak(struct sapi_backend *b,const struct sapi_settings *settings,DWORD flags,

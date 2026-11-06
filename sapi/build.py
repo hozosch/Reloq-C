@@ -25,7 +25,7 @@ def main():
     args.cc = args.cc or prefix + '-w64-mingw32-gcc'
     args.objdump = args.objdump or prefix + '-w64-mingw32-objdump'
     args.core = args.core or ROOT / ('eci/eci-x86.dll' if args.arch == 'x86' else 'eci/eci.dll')
-    args.output = args.output or ROOT / f'dist/reloq-c-sapi5-{args.arch}-1.1.4-dev2-payload.zip'
+    args.output = args.output or ROOT / f'dist/reloq-c-sapi5-{args.arch}-1.1.4-dev3-payload.zip'
     build = ROOT / 'sapi/build' / args.arch
     subprocess.run([sys.executable, str(ROOT / 'sapi/generate_catalogue.py'), '--check'], check=True)
     subprocess.run([sys.executable, str(ROOT / 'sapi/generate_ui.py'), '--check'], check=True)
@@ -59,7 +59,7 @@ def main():
     required = {'DllCanUnloadNow', 'DllGetClassObject', 'DllRegisterServer', 'DllUnregisterServer', 'ReLoqSettings'}
     assert set(exports) == required, exports
     hashes = {name: {'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()} for name, data in entries.items()}
-    entries['package.json'] = (json.dumps({'version': '1.1.4-dev2-payload', 'architecture': args.arch,
+    entries['package.json'] = (json.dumps({'version': '1.1.4-dev3-payload', 'architecture': args.arch,
         'voices': 14, 'core_copies': 1, 'dictionary_commit': dictionary['commit'], 'files': hashes}, indent=2) + '\n').encode()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(args.output, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:

@@ -73,13 +73,19 @@ struct reloq_session {
     reloq_epoch_atomic cancel_epoch;
     reloq_epoch_atomic active_epoch;
     unsigned high_rate_profile;
+    int text_loudness;
     float linear_gain;
 };
 
 float reloq_session_sample_rate(const struct reloq_session *s)
 { return s ? s->config.sample_rate : 0; }
 int reloq_session_float_volume(const struct reloq_session *s)
-{return s&&s->high_rate_profile&&s->config.sample_rate>=16000&&s->config.glottal_reference_rate>0;}
+{return s&&(s->text_loudness||(s->high_rate_profile&&s->config.sample_rate>=16000&&s->config.glottal_reference_rate>0));}
+int reloq_session_text_loudness(struct reloq_session *s,int enabled)
+{
+    if(!s||(enabled!=0&&enabled!=1))return RELOQ_SESSION_INVALID;
+    s->text_loudness=enabled;return RELOQ_SESSION_OK;
+}
 int reloq_session_linear_gain(struct reloq_session *s,float gain)
 {
     if(!s||!isfinite(gain)||gain<0||gain>16)return RELOQ_SESSION_INVALID;
@@ -143,6 +149,11 @@ static int output_pcm(const struct reloq_session *session, size_t count)
     const float *output = session->buffers.output;
     int16_t *pcm = session->buffers.pcm;
     float gain = session->config.output_gain;
+#ifndef RELOQ_SESSION_FLOAT_DIAGNOSTIC
+    /* Restore the measured 100-vs-92 ECI loudness ratio. Do this while
+     * samples are still wide so transient protection can prevent clipping. */
+    if(session->text_loudness)gain*=2768.533f/2066.394f;
+#endif
 #ifdef RELOQ_SESSION_FLOAT_DIAGNOSTIC
     gain*=.015625f;
 #endif
@@ -165,7 +176,15 @@ static int output_pcm(const struct reloq_session *session, size_t count)
          * unbounded synthesis fits PCM: raw-source tests and observations
          * must measure before this knee. */
 #ifndef RELOQ_SESSION_FLOAT_DIAGNOSTIC
-        if(session->high_rate_profile && session->config.sample_rate>=16000)
+        if(session->text_loudness)
+            for(size_t i=0;i<n;++i) {
+                double amplitude=fabs((double)block[i]);
+                if(amplitude>28000) {
+                    double bounded=28000-4700*expm1(-(amplitude-28000)/4700);
+                    block[i]=(int64_t)copysign(bounded,(double)block[i]);
+                }
+            }
+        else if(session->high_rate_profile && session->config.sample_rate>=16000)
             for(size_t i=0;i<n;++i) {
                 double amplitude=fabs((double)block[i]);
                 if(amplitude>30000) {

@@ -19,7 +19,15 @@ typedef struct {DWORD dwFileAttributes;FILETIME ftCreationTime,ftLastAccessTime,
 BOOL GetFileAttributesExW(LPCWSTR,int,WIN32_FILE_ATTRIBUTE_DATA *);
 DWORD GetLastError(void);
 extern unsigned sapi_test_dictionary_calls;
+extern unsigned sapi_test_attribute_calls;
 extern unsigned sapi_test_synth_complete;
+#define INVALID_HANDLE_VALUE ((HANDLE)(intptr_t)-1)
+#define FILE_NOTIFY_CHANGE_FILE_NAME 1
+#define FILE_NOTIFY_CHANGE_SIZE 8
+#define FILE_NOTIFY_CHANGE_LAST_WRITE 16
+#define FILE_NOTIFY_CHANGE_CREATION 64
+HANDLE FindFirstChangeNotificationW(LPCWSTR,BOOL,DWORD);
+BOOL FindNextChangeNotification(HANDLE),FindCloseChangeNotification(HANDLE);
 #ifdef RELOQ_SAPI_SETTINGS_TEST
 typedef void *HKEY;typedef LONG LSTATUS;
 #define HKEY_CURRENT_USER ((HKEY)(uintptr_t)1)

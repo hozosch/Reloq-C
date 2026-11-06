@@ -837,6 +837,8 @@ int ECICALL eciSynthesize(ECIHand handle)
      * legacy parameter value for callers which still set/query it, but do
      * not let stale saved A/B settings change speech in any ECI host. */
     (void)reloq_session_high_rate_profile(e->text_session,3);
+    (void)reloq_session_text_loudness(e->text_session,
+        e->voice_mode==RELOQ_ECI_VOICE_GENERIC);
     struct reloq61_text_options previous_options=reloq61_text_options_scope(
         (struct reloq61_text_options){e->dictionary_disabled,e->phrase_prediction});
     struct reloq61_glide_options previous_glide=reloq61_glide_options_scope(
@@ -894,6 +896,7 @@ int ECICALL eciSynthesize(ECIHand handle)
             struct reloq_session *next=make_text_session(e->gender,e->head_size,e->sample_rate_code);
             if(!next){result=RELOQ_ECI_MEMORY;goto done;}
             (void)reloq_session_high_rate_profile(next,3);
+            (void)reloq_session_text_loudness(next,1);
             lock_session(&e->session_lock);saved_text_session=e->text_session;e->text_session=next;unlock_session(&e->session_lock);
         }
     }
