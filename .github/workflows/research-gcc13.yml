@@ -1,0 +1,20 @@
+name: Prepare local compiler for native tests
+on:
+  push:
+    branches: ['codex/reloq-gcc13-bootstrap']
+permissions:
+  contents: read
+jobs:
+  compiler:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Archive the installed compiler
+        run: |
+          gcc-13 --version | head -1
+          tar -C / -cf - usr/bin/x86_64-linux-gnu-gcc-13 usr/lib/gcc/x86_64-linux-gnu/13 | gzip -1 > gcc13.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gcc13-local-toolchain
+          path: gcc13.tar.gz
+          compression-level: 0
+          retention-days: 2
