@@ -149,13 +149,17 @@ static int greek_word(struct buffer *out,const char *text,size_t bytes,int conte
         }
         free(g);free(s);return error;
     }
-    /* από is normally written with an accent even when it is a proclitic.
-       Only remove that accent before an adjacent following word or number;
-       an isolated από and an accented homograph remain stressed. */
-    int apo=(context&2)&&n==3&&g[0].base==0x3b1&&g[1].base==0x3c0&&
+    /* από and κατά are written with an accent even when they are proclitic.
+       Only remove it before an adjacent following word or number; isolated
+       words and differently accented homographs remain stressed. */
+    int apo=n==3&&g[0].base==0x3b1&&g[1].base==0x3c0&&
         g[2].base==0x3bf&&!g[0].accent&&!g[1].accent;
-    int unstressed=apo||(context&&!explicit_accent&&weak_word(g,n));
-    if(apo){explicit_accent=0;for(size_t j=0;j<m;++j)s[j].accent=0;}
+    int kata=n==4&&g[0].base==0x3ba&&g[1].base==0x3b1&&
+        g[2].base==0x3c4&&g[3].base==0x3b1&&
+        !g[0].accent&&!g[1].accent&&!g[2].accent;
+    int weak_preposition=(context&2)&&(apo||kata);
+    int unstressed=weak_preposition||(context&&!explicit_accent&&weak_word(g,n));
+    if(weak_preposition){explicit_accent=0;for(size_t j=0;j<m;++j)s[j].accent=0;}
     if(!explicit_accent&&!unstressed&&nuclei){size_t target=nuclei>1?nuclei-2:0,k=0;for(size_t j=0;j<m;++j)if(s[j].vowel&&k++==target){s[j].accent=1;break;}}
     int error=say(out," `[");size_t begin=0;
     for(size_t j=0;j<m&&!error;++j)if(s[j].vowel){
@@ -293,9 +297,10 @@ static int latin(struct buffer *out,const char *word,reloq_greek_english english
                 if(c=='2'){c=primary?'0':'1';primary=1;}
                 if(add(out,&c,1))goto error;continue;
             }
-            char written=0;
-            if(strchr("aAeEiIoOuUxXHYWcRN",c)&&position<count)
-                written=vowels[position++].value;
+            char written=0;size_t written_at=SIZE_MAX;
+            if(strchr("aAeEiIoOuUxXHYWcRN",c)&&position<count){
+                written=vowels[position].value;written_at=vowels[position++].at;
+            }
             if(c=='t'||c=='d')consume_written_stop(word,&stop,c);
             switch(c){case 'A':mapped[0]='a';break;case 'E':mapped[0]='e';break;case 'I':mapped[0]='i';break;case 'O':strcpy(mapped,"oy");break;case 'c':mapped[0]='o';break;case 'U':mapped[0]='u';break;case 'H':mapped[0]='a';break;case 'a':mapped[0]=written=='o'?'o':'a';break;case 'e':strcpy(mapped,"ey");break;case 'o':strcpy(mapped,"ow");break;
             case 'x':case 'X':
@@ -311,7 +316,11 @@ static int latin(struct buffer *out,const char *word,reloq_greek_english english
             /* Greek's Castilian inventory has no English velar nasal. Use n
                here; ordinary Greek gamma and digraphs have their own path. */
             case 'G':mapped[0]='n';break;
-            case 'R':strcpy(mapped,"er");break;case 'F':mapped[0]=written_stop(word,&stop);break;
+            /* English /ɝ/ in written wor- is rendered with Greek o; the
+               same phone in her, bird, doctor etc. keeps the existing e. */
+            case 'R':strcpy(mapped,written=='o'&&written_at>0&&written_at!=SIZE_MAX&&
+                lower_ascii(word[written_at-1])=='w'&&lower_ascii(word[written_at+1])=='r'?"or":"er");break;
+            case 'F':mapped[0]=written_stop(word,&stop);break;
             /* English ?N is a glottalized t followed by syllabic n. The
                Castilian SPR parser needs a vowel in that syllable; without
                one it discards the ending, as in Manhattan and kitten. */
@@ -341,7 +350,63 @@ static const char *character_name(uint32_t cp)
 {
     static const char *const names[]={"άλφα","βήτα","γάμμα","δέλτα","έψιλον","ζήτα","ήτα","θήτα","γιώτα","κάππα","λάμδα","μι","νι","ξι","όμικρον","πι","ρο","σίγμα","σίγμα","ταυ","ύψιλον","φι","χι","ψι","ωμέγα"};
     struct greek_letter g=letter(cp);if(g.base>=0x3b1&&g.base<=0x3c9)return names[g.base-0x3b1];
-    switch(cp){case 0x384:return "τόνος";case 0x385:return "διαλυτικά τόνος";case '.':return "τελεία";case ',':return "κόμμα";case '?':case ';':case 0x37e:return "ερωτηματικό";case '!':return "θαυμαστικό";case ':':return "άνω και κάτω τελεία";case 0xb7:case 0x387:return "άνω τελεία";case '(':return "ανοιχτή παρένθεση";case ')':return "κλειστή παρένθεση";case '[':return "ανοιχτή αγκύλη";case ']':return "κλειστή αγκύλη";case '{':return "ανοιχτό άγκιστρο";case '}':return "κλειστό άγκιστρο";case '@':return "παπάκι";case '+':return "συν";case '-':case 0x2010:case 0x2011:case 0x2012:case 0x2013:case 0x2014:case 0x2015:return "παύλα";case 0x2026:return "αποσιωπητικά";case 0x2212:return "μείον";case '_':return "κάτω παύλα";case '=':return "ίσον";case '/':return "κάθετος";case '\\':return "ανάποδη κάθετος";case '%':return "τοις εκατό";case '#':return "δίεση";case ' ':return "διάστημα";case '`':return "βαρεία";case '"':return "εισαγωγικά";case '\'':return "απόστροφος";case '<':return "μικρότερο από";case '>':return "μεγαλύτερο από";default:return NULL;}
+    switch(cp){
+    case 0x384:return "τόνος";case 0x385:return "διαλυτικά τόνος";
+    case '.':return "τελεία";case ',':return "κόμμα";
+    case '?':case ';':case 0x37e:return "ερωτηματικό";
+    case '!':return "θαυμαστικό";case ':':return "άνω και κάτω τελεία";
+    case 0xb7:case 0x387:return "άνω τελεία";
+    case '(':return "ανοιχτή παρένθεση";case ')':return "κλειστή παρένθεση";
+    case '[':return "ανοιχτή αγκύλη";case ']':return "κλειστή αγκύλη";
+    case '{':return "ανοιχτό άγκιστρο";case '}':return "κλειστό άγκιστρο";
+    case '@':return "παπάκι";case '+':return "συν";
+    case '-':case 0x2010:case 0x2011:case 0x2012:case 0x2013:
+    case 0x2014:case 0x2015:return "παύλα";
+    case 0x2026:return "αποσιωπητικά";case 0x2212:return "μείον";
+    case 0x20ac:return "ευρώ";case '_':return "κάτω παύλα";
+    case '=':return "ίσον";case '/':return "κάθετος";
+    case '\\':return "ανάποδη κάθετος";case '%':return "τοις εκατό";
+    case '#':return "δίεση";case ' ':return "διάστημα";
+    case '`':return "βαρεία";case '"':case 0xab:case 0xbb:
+    case 0x201c:case 0x201d:case 0x201e:case 0x201f:return "εισαγωγικά";
+    case '\'':case 0x2018:case 0x2019:case 0x201a:case 0x201b:return "απόστροφος";
+    case '<':return "μικρότερο από";case '>':return "μεγαλύτερο από";
+    case '$':return "δολάριο";case '*':return "αστερίσκος";
+    case '&':return "και";case '|':return "κάθετη γραμμή";
+    case '^':case '~':return "περισπωμένη";
+    case 0xa3:return "λίρα";case 0xa5:return "γιέν";
+    case 0xa7:return "παράγραφος";case 0xb0:return "βαθμός";
+    case 0xb1:return "συν ή πλην";case 0xd7:return "επί";case 0xf7:return "δια";
+    case 0xa9:return "πνευματική ιδιοκτησία";case 0xae:return "σήμα κατατεθέν";
+    case 0x2122:return "εμπορικό σήμα";case 0x2030:return "τοις χιλίοις";
+    case 0x2020:return "σύμβολο σταυρού στίξης";
+    case 0x2021:return "σύμβολο διπλού σταυρού στίξης";
+    case 0x2022:return "κουκίδα";
+    case '0':return "μηδέν";case '1':return "ένα";case '2':return "δύο";
+    case '3':return "τρία";case '4':return "τέσσερα";case '5':return "πέντε";
+    case '6':return "έξι";case '7':return "επτά";case '8':return "οκτώ";
+    case '9':return "εννέα";
+    case 0xa1:return "ανάποδο θαυμαστικό";case 0xa2:return "λεπτό";
+    case 0xa4:return "σύμβολο νομίσματος";case 0xa6:return "διακεκομμένη κάθετος";
+    case 0xa8:return "διαλυτικά";case 0xaa:return "θηλυκό";
+    case 0xac:return "άρνηση";case 0xaf:return "μακρόν";
+    case 0xb2:return "εκθέτης δύο";case 0xb3:return "εκθέτης τρία";
+    case 0xb4:return "απόστροφος";case 0xb6:return "σημείο παραγράφου";
+    case 0xb8:return "σεντίγια";case 0xb9:return "εκθέτης ένα";
+    case 0xba:return "αρσενικό";case 0xbc:return "ένα τέταρτο";
+    case 0xbd:return "ένα δεύτερο";case 0xbe:return "τρία τέταρτα";
+    case 0xbf:return "ανάποδο ερωτηματικό";case 0x2dc:return "περισπωμένη";
+    default:return NULL;
+    }
+}
+/* Character labels are full Greek text, not a series of isolated words:
+   use the same connected-word and letter rules as ordinary speech. */
+static int greek_character_phrase(struct buffer *out,const char *text,
+    reloq_greek_english english,void *context)
+{
+    char *converted=NULL;size_t *map=NULL;
+    if(reloq_greek_text(text,0,english,context,&converted,&map))return -1;
+    int result=say(out,converted);free(converted);free(map);return result;
 }
 /* Preserve punctuation as syntax in running text. Unicode typography uses
    the same native phrase rules as its ordinary punctuation counterpart. */
@@ -397,11 +462,12 @@ int reloq_greek_text(const char *text,int annotations,reloq_greek_english englis
         } else if(spelling){
             if((cp>='A'&&cp<='Z')||(cp>='a'&&cp<='z'))
                 failed=latin_character(&b,(char)cp,spelling,english,context);
-            else if(cp<128){char value=(char)cp;failed=add(&b,&value,1);}
             else {
                 const char *mark=punctuation(cp);
-                const char *name=character_name(cp);
-                if(western_symbol(cp))failed=western_character(&b,cp);
+                /* The spaces surrounding internal spelling tags are not
+                   themselves characters to be named. */
+                const char *name=cp==' '?NULL:character_name(cp);
+                if(western_symbol(cp)&&!name)failed=western_character(&b,cp);
                 else {
                     size_t lo=0,hi=COUNT(greek_character_accents);
                     while(lo<hi){size_t mid=lo+(hi-lo)/2;if(greek_character_accents[mid].cp<cp)lo=mid+1;else hi=mid;}
@@ -416,10 +482,16 @@ int reloq_greek_text(const char *text,int annotations,reloq_greek_english englis
                             failed=say(&b," ")||latin_character(&b,base,spelling,english,context)||say(&b," ");
                         }
                         if(!failed)failed=say(&b," `ts0 ");
-                        if(!failed&&name)failed=greek_words(&b,name);
-                        if(!failed&&accent)failed=greek_words(&b,accent->names);
+                        if(!failed&&name&&accent){
+                            struct buffer combined={0};
+                            failed=say(&combined,name)||say(&combined," ")||say(&combined,accent->names)||
+                                greek_character_phrase(&b,combined.data,english,context);
+                            free(combined.data);
+                        }else if(!failed&&name)failed=greek_character_phrase(&b,name,english,context);
+                        else if(!failed&&accent)failed=greek_character_phrase(&b,accent->names,english,context);
                         if(!failed)failed=say(&b,spelling==1?" `ts1 ":" `ts2 ");
                     }
+                    else if(cp<128){char value=(char)cp;failed=add(&b,&value,1);}
                     else if(mark)failed=say(&b,mark);
                     else if(cp>=0xa0&&cp<=0xff)failed=western_character(&b,cp);
                 }

@@ -107,6 +107,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Long text and HTTPS regression test failed' }
           python nvda/test_eci_greek_connected.py --library test-x64/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Greek connected speech regression test failed' }
+          python nvda/test_eci_greek_characters.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Greek character regression test failed' }
           python nvda/test_eci_chinese_locale_order.py --library test-x64/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Chinese locale order regression test failed' }
       - name: Compile unified Inno Setup installer
@@ -158,7 +160,7 @@ jobs:
           if ($p.ExitCode -ne 0) { throw "Upgrade failed: $($p.ExitCode)" }
           Test-StartLinks 'Stimmeinstellungen' 'Anleitung'
           $registered = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D3F8BA6E-1C62-4B0D-8A33-3840B77376AC}_is1'
-          if ($registered.DisplayName -ne 'ReLoq C SAPI5' -or $registered.DisplayVersion -ne '1.1.4-dev1') { throw 'SAPI application name or version metadata is incorrect' }
+          if ($registered.DisplayName -ne 'ReLoq C SAPI5' -or $registered.DisplayVersion -ne '1.1.4-dev2') { throw 'SAPI application name or version metadata is incorrect' }
           if ((Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'Dictionary edit lost during upgrade' }
           & ./sapi/test_japanese_sapi.ps1 -ReportPath dist/validation/japanese-results.json
           foreach ($arch in @('x64','x86')) {

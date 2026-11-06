@@ -25,7 +25,13 @@ def main():
             'Manhattan': '[.0man.1ja.0tan]',
             'button': '[.1ba.0ton]',
             'kitten': '[.1ki.0ten]',
-            'working': '[.1wer.0kin]',
+            'work': '[.1work]',
+            'working': '[.1wor.0kin]',
+            'word': '[.1word]',
+            'world': '[.1world]',
+            'worker': '[.1wor.0ker]',
+            'her': '[.1jer]',
+            'doctor': '[.1dok.0ter]',
             'ongoing': '[.1on.0go.0win]',
             'finger': '[.1fin.0ger]',
             'singer': '[.1si.0ner]',
@@ -48,6 +54,21 @@ def main():
         for text in ('από', 'από.', 'από, Αθήνα', 'λέω από'):
             assert '[.0a.1po]' in phonemes(greek, text), text
         assert '[.1a.0po]' in phonemes(greek, 'άπο Αθήνα')
+
+        # κατά is commonly proclitic before its complement, but not in
+        # isolation or when the orthography marks another syllable.
+        weak_kata = '`[.0ka] `[.0ta]'
+        for text in ('κατά Αθήνα', 'Κατά τη διάρκεια', 'κατά London', 'κατά 5'):
+            result = phonemes(greek, text)
+            assert weak_kata in result and '[.1ta]' not in result, (text, result)
+            assert result == phonemes(greek, unicodedata.normalize('NFD', text))
+            pcm, marks = render(greek, [text, EciIndex(7)])
+            assert pcm and marks == [(7, len(pcm))], (text, marks)
+            for cut in range(1, len(text)):
+                assert render(greek, [text[:cut], text[cut:], EciIndex(7)]) == (pcm, marks), (text, cut)
+        for text in ('κατά', 'κατά.', 'κατά, Αθήνα', 'είμαι κατά'):
+            assert '[.0ka.1ta]' in phonemes(greek, text), text
+        assert '[.1ka.0ta]' in phonemes(greek, 'κάτα Αθήνα')
 
         # These unaccented function words weaken in a sentence, while a
         # written accent and a word spoken on its own keep their stress.
