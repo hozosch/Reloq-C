@@ -42,6 +42,7 @@ const WCHAR *sapi_profile_name(unsigned);
 int sapi_sample_rate(unsigned);
 struct sapi_backend;
 struct sapi_backend *sapi_backend_new(int);
+struct sapi_backend *sapi_backend_new_prepared(int,const struct sapi_settings *);
 void sapi_backend_delete(struct sapi_backend *);
 HRESULT sapi_backend_speak(struct sapi_backend *,const struct sapi_settings *,DWORD,const WAVEFORMATEX *,const SPVTEXTFRAG *,ISpTTSEngineSite *);
 #endif

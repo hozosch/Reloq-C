@@ -62,6 +62,7 @@ struct bookmark {struct bookmark *next;WCHAR text[];};
 struct sapi_backend {
     HANDLE thread,start,room,ready;volatile LONG cancel,exit,busy;
     unsigned put,get;struct packet packets[PACKET_CAPACITY];struct job job;
+    struct sapi_settings initial_settings;int prepare,warming;
     int dialect;ULONG fragment_volume;ECIHand handle;short pcm[512];
     SPEVENT *events;size_t event_count,event_capacity;
     struct bookmark *bookmarks;
@@ -84,6 +85,8 @@ static int put(struct sapi_backend *b,const struct packet *packet)
 static int ECICALL callback(ECIHand handle,int message,int value,void *context)
 {
     struct sapi_backend *b=context;
+    /* Startup preflight deliberately has no SAPI site or audible output. */
+    if(b->warming)return InterlockedCompareExchange(&b->cancel,0,0)?eciDataAbort:eciDataProcessed;
     if(InterlockedCompareExchange(&b->cancel,0,0)){core.stop(handle);return 0;}
     struct packet packet={0};
     if(message==RELOQ_ECI_WAVEFORM_BUFFER){
@@ -257,9 +260,9 @@ static HRESULT dictionary(struct sapi_backend *b,const struct sapi_settings *s)
     wcscpy(b->dictionary_path,path);memcpy(b->dictionary_files,files,sizeof files);
     b->dictionary_ready=1;return S_OK;
 }
-static HRESULT configure(struct sapi_backend *b)
+static HRESULT configure(struct sapi_backend *b,const struct job *j)
 {
-    struct job *j=&b->job;const struct sapi_settings *s=&j->settings;
+    const struct sapi_settings *s=&j->settings;
     static const int rates[]={8000,11025,22050,16000,32000,44100,48000};
     int rate=-1;for(int i=0;i<7;++i)if((DWORD)rates[i]==j->rate)rate=i;
     if(rate<0)return E_INVALIDARG;
@@ -293,7 +296,7 @@ static ULONG sentence_length(const SPVTEXTFRAG *fragment,size_t at)
 }
 static HRESULT synthesize(struct sapi_backend *b)
 {
-    HRESULT hr=configure(b);if(FAILED(hr))return hr;
+    HRESULT hr=configure(b,&b->job);if(FAILED(hr))return hr;
     int sentence=1,has_text=0,last_pitch=(int)b->job.settings.pitch;
     int last_rate=sapi_native_speed(b->job.speed,0,b->job.settings.boost),last_range=0,last_emphasis=0;
     size_t delivered_events=0;b->fragment_volume=100;
@@ -369,6 +372,18 @@ static HRESULT synthesize(struct sapi_backend *b)
 static DWORD WINAPI worker(void *context)
 {
     struct sapi_backend *b=context;
+    if(b->prepare&&!InterlockedCompareExchange(&b->exit,0,0)){
+        static const DWORD rates[]={8000,11025,22050,16000,32000,44100,48000};
+        struct job initial={.settings=b->initial_settings,.rate=rates[b->initial_settings.rate]};
+        /* Set up the actual voice and dictionary on the owner thread as soon
+         * as SAPI binds the token. Warm the rule worker without emitting
+         * packets. A request that has already arrived takes priority. */
+        b->warming=1;
+        if(SUCCEEDED(configure(b,&initial))&&!InterlockedCompareExchange(&b->busy,0,0)&&
+           core.add(b->handle,"a",1,0))core.synthesize(b->handle);
+        if(b->handle)core.clear(b->handle);
+        b->warming=0;
+    }
     for(;;){if(WaitForSingleObject(b->start,INFINITE)!=WAIT_OBJECT_0)break;
         if(InterlockedCompareExchange(&b->exit,0,0))break;
         HRESULT hr=InterlockedCompareExchange(&b->cancel,0,0)?S_OK:synthesize(b);
@@ -382,15 +397,19 @@ static DWORD WINAPI worker(void *context)
     }
     if(b->handle)core.destroy(b->handle);return 0;
 }
-struct sapi_backend *sapi_backend_new(int dialect)
+static struct sapi_backend *backend_new(int dialect,const struct sapi_settings *initial)
 {
     if(!InitOnceExecuteOnce(&core_once,load_core,NULL,NULL))return NULL;
     struct sapi_backend *b=calloc(1,sizeof *b);if(!b)return NULL;b->dialect=dialect;
+    if(initial){if(initial->rate>=7){free(b);return NULL;}b->initial_settings=*initial;b->prepare=1;}
     b->start=CreateEventW(NULL,FALSE,FALSE,NULL);b->room=CreateSemaphoreW(NULL,PACKET_CAPACITY,PACKET_CAPACITY,NULL);
     b->ready=CreateSemaphoreW(NULL,0,PACKET_CAPACITY,NULL);
     if(b->start&&b->room&&b->ready)b->thread=CreateThread(NULL,0,worker,b,0,NULL);
     if(!b->thread){sapi_backend_delete(b);return NULL;}return b;
 }
+struct sapi_backend *sapi_backend_new(int dialect){return backend_new(dialect,NULL);}
+struct sapi_backend *sapi_backend_new_prepared(int dialect,const struct sapi_settings *settings)
+{return settings?backend_new(dialect,settings):NULL;}
 void sapi_backend_delete(struct sapi_backend *b)
 {
     if(!b)return;

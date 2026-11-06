@@ -54,7 +54,7 @@ static IStreamVtbl stream_vtable={query,addref,release,read_stream,write_stream,
     resize_stream,copy_stream,commit_stream,revert_stream,lock_stream,unlock_stream,stat_stream,clone_stream};
 static double ms(LARGE_INTEGER end,LARGE_INTEGER start,LARGE_INTEGER frequency)
 {return 1000.0*(double)(end.QuadPart-start.QuadPart)/(double)frequency.QuadPart;}
-int wmain(void)
+int wmain(int argc,wchar_t **argv)
 {
     setvbuf(stdout,NULL,_IONBF,0);LARGE_INTEGER frequency;QueryPerformanceFrequency(&frequency);
     HRESULT hr=CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);if(FAILED(hr))return 1;
@@ -63,7 +63,10 @@ int wmain(void)
     hr=CoCreateInstance(&CLSID_SpVoice,NULL,CLSCTX_INPROC_SERVER,&IID_ISpVoice,(void **)&voice);
     if(SUCCEEDED(hr))hr=CoCreateInstance(&CLSID_SpObjectToken,NULL,CLSCTX_INPROC_SERVER,&IID_ISpObjectToken,(void **)&token);
     if(SUCCEEDED(hr))hr=ISpObjectToken_SetId(token,NULL,L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Speech\\Voices\\Tokens\\ReLoqC_01_00040000",FALSE);
+    LARGE_INTEGER binding_start,binding_end;QueryPerformanceCounter(&binding_start);
     if(SUCCEEDED(hr))hr=ISpVoice_SetVoice(voice,token);
+    QueryPerformanceCounter(&binding_end);
+    if(SUCCEEDED(hr))printf("voice_binding_ms=%.3f\n",ms(binding_end,binding_start,frequency));
     if(SUCCEEDED(hr))hr=CreateStreamOnHGlobal(NULL,TRUE,&output.memory);
     if(SUCCEEDED(hr))hr=CoCreateInstance(&CLSID_SpStream,NULL,CLSCTX_INPROC_SERVER,&IID_ISpStream,(void **)&stream);
     WAVEFORMATEX fmt={WAVE_FORMAT_PCM,1,11025,22050,2,16,0};
@@ -72,6 +75,7 @@ int wmain(void)
     /* NVDA asks for bookmarks rather than word or sentence events. */
     ULONGLONG interests=(1ULL<<30)|(1ULL<<33)|(1ULL<<SPEI_START_INPUT_STREAM)|(1ULL<<SPEI_TTS_BOOKMARK)|(1ULL<<SPEI_END_INPUT_STREAM);
     if(SUCCEEDED(hr))hr=ISpVoice_SetInterest(voice,interests,interests);
+    if(argc==2)Sleep((DWORD)wcstoul(argv[1],NULL,10));
     for(int words=1;SUCCEEDED(hr)&&words<=100;words*=100){
         WCHAR message[1800]=L"<pitch absmiddle=\"0\">";
         for(int i=0;i<words;i++)wcscat(message,L"Beispiel ");

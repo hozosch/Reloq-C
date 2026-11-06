@@ -20,10 +20,13 @@ jobs:
       - name: Build the stream timing probe
         run: |
           x86_64-w64-mingw32-gcc-posix -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DUNICODE -D_UNICODE -I sapi sapi/test_windows_latency.c sapi/guids.c -static-libgcc -municode -lole32 -luuid -o sapi-latency.exe
+          make -C sapi build/ReLoqSapi.dll CC=x86_64-w64-mingw32-gcc-posix
       - uses: actions/upload-artifact@v4
         with:
           name: sapi-latency-probe
-          path: sapi-latency.exe
+          path: |
+            sapi-latency.exe
+            sapi/build/ReLoqSapi.dll
   windows:
     needs: compile
     runs-on: windows-2022
@@ -44,5 +47,14 @@ jobs:
           $setup = (Get-Item previous/reloq-c-sapi5-1.1.4-dev1-setup.exe).FullName
           $p = Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Install failed: $($p.ExitCode)" }
-          & ./sapi-latency.exe
+          Write-Host 'Previous adapter, after voice selection'
+          & ./sapi-latency.exe 500
           if ($LASTEXITCODE -ne 0) { throw 'Windows SAPI timing probe failed' }
+          $install = Join-Path $env:ProgramFiles 'ReLoq C\SAPI5'
+          Copy-Item sapi/build/ReLoqSapi.dll (Join-Path $install 'ReLoqSapi.dll') -Force
+          Write-Host 'Prepared adapter, after voice selection'
+          & ./sapi-latency.exe 500
+          if ($LASTEXITCODE -ne 0) { throw 'Prepared Windows SAPI timing probe failed' }
+          Write-Host 'Prepared adapter, immediately after voice selection'
+          & ./sapi-latency.exe 0
+          if ($LASTEXITCODE -ne 0) { throw 'Immediate Windows SAPI timing probe failed' }
