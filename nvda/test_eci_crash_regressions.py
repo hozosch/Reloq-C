@@ -185,6 +185,33 @@ def main():
                             checks += 1
         finally:
             engine.close()
+    # Upstream issue #19: NVDA symbol expansion turns this change.org URL
+    # into one very long sentence of spoken symbol names carrying a 123-char
+    # token. Spoken whole it corrupted the native rules engine and crashed
+    # the host; the driver now synthesizes long input in bounded rounds.
+    url_sentence = (
+        'https colon slash slash www.change.org slash p slash '
+        'ai-data-centre-72mw-at-thames-valley-park-reading-stop-construction '
+        'slash signed-petition-home question activityId equals 35563811 and '
+        'activityType equals starter and cs line tk equals '
+        'A2O3GeBaf9fNSvi39WoAAHicyyvNyQEABF8BvDNmYzM3YTI2YWNhYWI5OTE1ZTI3NjQy'
+        'MzMyMzZkZDljYjVkZWJkOWY1M2U0NThmZDYzOTU1M2Q4ZWIzMTdhMzk percent 3D '
+        'and utm line campaign equals 591080b3c0de404881f759784d1d4b39 and '
+        'utm line content equals sunrise line v1 line 2 line 3 and utm line '
+        'medium equals email and utm line source equals petition line update '
+        'and utm line term equals cs')
+    engine = DirectEciEngine(args.library.resolve(), dialect=0x10000,
+                             encoding='utf8', native_voice=True)
+    try:
+        audio, marks = render(engine, [url_sentence, EciIndex(7)])
+        assert audio and any(audio), 'URL sentence was silent'
+        assert marks == [(7, len(audio))], marks
+        checks += 1
+        recovered, _ = render(engine, ['Test.'])
+        assert recovered and any(recovered), 'no recovery after URL sentence'
+        checks += 1
+    finally:
+        engine.close()
     # Mandarin's English bank reuses the donor phonetics but has its own
     # pitch planner. It currently reports some interior indices at the end,
     # so check the final marker and the actual length of speech on each side.

@@ -40,6 +40,7 @@ class FakeEci:
         self.stopped = False
         self.deleted = False
         self.clear_calls = 0
+        self.synthesize_calls = 0
         self.on_add_text = None
         self.failure = {}
         self.voice_mode = 0
@@ -95,6 +96,7 @@ class FakeEci:
 
     def _eciSynthesize(self, handle):
         assert handle == HIGH_HANDLE and self.buffer is not None
+        self.synthesize_calls += 1
         self.stop_event.clear()
         self.started.clear()
         self.stopped = False
@@ -167,6 +169,156 @@ class FakeEci:
         return old
 
 
+class WedgeFake:
+    """First handle is poisoned: it reports busy=1 and refuses input/clear.
+
+    A rebuilt handle behaves. Mirrors the field failure where one cancelled
+    utterance left native busy=1 and every later job was rejected.
+    """
+
+    def __init__(self, wedge_mode):
+        self.wedge_mode = wedge_mode
+        self.next_handle = 1000
+        self.new_calls = 0
+        self.deleted = []
+        self.callback = None
+        self.buffer = None
+        self.parameters = {}
+        self.dictionary_paths = {}
+        self.added = []
+        for name in (
+            "eciNewEx", "eciDelete", "eciRegisterCallback", "eciSetOutputBuffer",
+            "eciAddText", "eciAddTextUtf8", "eciInsertIndex", "eciInsertPitch",
+            "eciSynthesize", "eciSynchronize", "eciClearInput", "eciStop",
+            "eciGetParam", "eciSetParam", "eciGetVoiceParam", "eciSetVoiceParam",
+            "eciSetDictionaryPath", "eciIsBeingReentered",
+        ):
+            setattr(self, name, Function(getattr(self, "_" + name)))
+
+    def _wedged(self, handle):
+        return handle == 1001
+
+    def _eciNewEx(self, dialect):
+        self.new_calls += 1
+        self.next_handle += 1
+        self.parameters[self.next_handle] = {}
+        return self.next_handle
+
+    def _eciDelete(self, handle):
+        self.deleted.append(handle)
+        return None
+
+    def _eciRegisterCallback(self, handle, callback, context):
+        self.callback = callback
+
+    def _eciSetOutputBuffer(self, handle, capacity, buffer):
+        self.buffer = buffer
+        return 1
+
+    def _eciAddText(self, handle, text):
+        if self._wedged(handle) and self.wedge_mode == "add":
+            return 0
+        self.added.append((handle, text))
+        return 1
+
+    def _eciAddTextUtf8(self, handle, data, length, mode):
+        if self._wedged(handle) and self.wedge_mode == "add":
+            return 0
+        self.added.append((handle, data))
+        return 1
+
+    def _eciInsertIndex(self, handle, index):
+        return 0 if self._wedged(handle) and self.wedge_mode == "add" else 1
+
+    def _eciInsertPitch(self, handle, pitch):
+        return 1
+
+    def _eciSynthesize(self, handle):
+        self.buffer[0] = 7
+        self.callback(handle, 0, 1, None)
+        return 1
+
+    def _eciSynchronize(self, handle):
+        return 1
+
+    def _eciClearInput(self, handle):
+        return 0 if self._wedged(handle) else 1
+
+    def _eciStop(self, handle):
+        return 1
+
+    def _eciIsBeingReentered(self, handle):
+        return 1 if self._wedged(handle) else 0
+
+    def _eciGetParam(self, handle, parameter):
+        return self.parameters[handle].get(parameter, 0)
+
+    def _eciSetParam(self, handle, parameter, value):
+        old = self.parameters[handle].get(parameter, 0)
+        self.parameters[handle][parameter] = value
+        return old
+
+    def _eciGetVoiceParam(self, handle, voice, parameter):
+        return 100
+
+    def _eciSetVoiceParam(self, handle, voice, parameter, value):
+        return 100
+
+    def _eciSetDictionaryPath(self, handle, path):
+        self.dictionary_paths[handle] = path
+        return 1
+
+
+def check_busy_recovery():
+    from _reloq_eci_direct import EciText, NATIVE_SPEED
+    # Busy refusal at submission: rebuilt handle must deliver the job once,
+    # with the caller's parameters and dictionary replayed.
+    fake = WedgeFake("add")
+    engine = DirectEciEngine("ignored.dll", dialect=0x00010000,
+                             encoding="utf-8", _loader=lambda _path: fake)
+    try:
+        engine.set_parameter(NATIVE_SPEED, 120)
+        engine.set_dictionary_path("dictionaries")
+        heard = []
+        assert engine.speak([EciText("hello world")],
+                            lambda pcm: heard.append(pcm),
+                            lambda index: None)
+        assert fake.new_calls == 2 and fake.deleted == [1001], (
+            fake.new_calls, fake.deleted)
+        assert heard == [b"\x07\x00"], heard
+        assert fake.parameters[1002][NATIVE_SPEED] == 120
+        assert fake.dictionary_paths[1002] == b"dictionaries"
+        assert engine.speak([EciText("again")],
+                            lambda pcm: None, lambda index: None)
+        assert fake.new_calls == 2, "healthy handle must be reused"
+    finally:
+        engine.close()
+    # Cancelled job whose input cannot be cleared: the next job must still
+    # run, on a rebuilt handle, instead of failing busy forever.
+    fake = WedgeFake("clear")
+    engine = DirectEciEngine("ignored.dll", dialect=0x00010000,
+                             encoding="utf-8", _loader=lambda _path: fake)
+    try:
+        engine._dll.eciAddTextUtf8  # binding exists for utf-8 engines
+        original_add = fake._eciAddTextUtf8
+        def add_then_cancel(handle, data, length, mode):
+            result = original_add(handle, data, length, mode)
+            engine.cancel()
+            return result
+        fake.eciAddTextUtf8 = Function(add_then_cancel)
+        assert engine.speak([EciText("cancel me")],
+                            lambda pcm: None, lambda index: None) is False
+        fake.eciAddTextUtf8 = Function(original_add)
+        assert fake.new_calls == 2 and fake.deleted == [1001], (
+            fake.new_calls, fake.deleted)
+        assert engine.speak([EciText("recovery")],
+                            lambda pcm: None, lambda index: None)
+        assert fake.new_calls == 2
+    finally:
+        engine.close()
+    print("busy recovery: poisoned handle rebuilt, job and next job delivered")
+
+
 def main():
     fake = FakeEci()
     engine = DirectEciEngine("ignored.dll", _loader=lambda _path: fake,
@@ -195,6 +347,31 @@ def main():
         assert fake.events[-5:] == [("prosody", 6, 75), ("prosody", 7, 40),
             ("text", b"word"), ("prosody", 6, 98), ("prosody", 7, 100)]
         assert fake.voice_parameters == {6: 98, 7: 100}
+
+        # Long input is synthesized in bounded word-boundary rounds
+        # (upstream issue #19); joining the rounds restores the input.
+        rounds_before = fake.synthesize_calls
+        events_before = len(fake.events)
+        long_text = "word " * 60
+        heard_indices = []
+        assert engine.speak([long_text, EciIndex(9)],
+                            lambda pcm: None,
+                            lambda index: heard_indices.append(index))
+        assert fake.synthesize_calls - rounds_before >= 2, (
+            fake.synthesize_calls, rounds_before)
+        joined = b"".join(event[1] for event in fake.events[events_before:]
+                          if event[0] == "text")
+        assert joined == long_text.encode("cp1252"), joined[:80]
+        # The fake answers every synthesis round with its fixed index 42.
+        assert heard_indices and all(index == 42 for index in heard_indices), heard_indices
+        assert len(heard_indices) == fake.synthesize_calls - rounds_before
+        rounds = DirectEciEngine._rounds(
+            DirectEciEngine._prepare([long_text], "cp1252"))
+        assert len(rounds) >= 2
+        assert all(sum(len(p) for p in round_parts) <= 200
+                   for round_parts in rounds), rounds
+        assert b"".join(p for round_parts in rounds for p in round_parts) == \
+            long_text.encode("cp1252")
 
         previous = len(fake.events)
         for invalid in (["a", "\U0001f600"], ["a\0b"], [EciIndex(-1)],
@@ -312,6 +489,7 @@ def main():
                 raise AssertionError(f"negative {failing} error accepted")
         finally:
             broken_engine.close()
+    check_busy_recovery()
     print("direct ECI binding: 64-bit handle, CP1252, PCM, index, cancel/join OK")
 
 

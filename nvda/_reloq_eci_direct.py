@@ -16,6 +16,7 @@ import codecs
 from dataclasses import dataclass
 import logging
 from pathlib import Path
+import re
 import sys
 import threading
 import time
@@ -97,6 +98,21 @@ class EciLanguage:
     voice: str
 
 
+class _BusyRejection(RuntimeError):
+    """A submission was refused because the native handle stayed busy.
+
+    On the owner thread no synthesis of this engine can legitimately be in
+    flight before eciSynthesize, so a busy refusal here means the handle is
+    poisoned: every later submission would be refused the same way until
+    the handle is rebuilt.
+    """
+
+    def __init__(self, operation: str, code: int) -> None:
+        self.operation = operation
+        self.code = code
+        super().__init__(f"{operation} rejected input (code {code}; native busy=1)")
+
+
 class EciSynthesisError(RuntimeError):
     """Structured native failure, including transactional preflight rejection."""
 
@@ -132,6 +148,13 @@ class DirectEciEngine:
         if not isinstance(buffer_samples, int) or isinstance(buffer_samples, bool) or not 1 <= buffer_samples <= 0x7fffffff:
             raise ValueError("buffer_samples must be positive ECI int")
         self._encoding = codecs.lookup(encoding).name
+        self._dialect = dialect
+        self._native_voice = native_voice
+        self._lexicon_path = lexicon_path
+        self._parameters: dict[int, int] = {}
+        self._dictionary_path: str | None = None
+        self._dictionary_path_set = False
+        self._handle_poisoned = False
         self._owner = threading.get_ident()
         self._cancelled = threading.Event()
         self._on_pcm: Callable[[bytes], None] | None = None
@@ -153,38 +176,70 @@ class DirectEciEngine:
             self.native_version = label.value.decode("ascii", errors="replace")
         _log.info("Eloquence C native version %s, dialect %#x, DLL %s",
                   self.native_version, dialect, Path(dll_path).resolve())
-        self._handle = self._dll.eciNewEx(dialect)
-        if not self._handle:
-            raise RuntimeError(f"eciNewEx failed for dialect 0x{dialect:x}")
+        self._handle = self._open_handle()
+
+    def _open_handle(self):
+        handle = self._dll.eciNewEx(self._dialect)
+        if not handle:
+            raise RuntimeError(f"eciNewEx failed for dialect 0x{self._dialect:x}")
         try:
-            if not native_voice:
-                self._dll.eciSetParam(self._handle, NATIVE_VOICE_MODE, 0)
-            if native_voice:
+            if not self._native_voice:
+                self._dll.eciSetParam(handle, NATIVE_VOICE_MODE, 0)
+            if self._native_voice:
                 previous = self._dll.eciSetParam(
-                    self._handle, NATIVE_VOICE_MODE, 1)
+                    handle, NATIVE_VOICE_MODE, 1)
                 if previous not in (0, 1) or self._dll.eciGetParam(
-                        self._handle, NATIVE_VOICE_MODE) != 1:
+                        handle, NATIVE_VOICE_MODE) != 1:
                     raise RuntimeError("eciSetParam rejected the native voice")
-                if lexicon_path is not None:
-                    path = Path(lexicon_path)
+                if self._lexicon_path is not None:
+                    path = Path(self._lexicon_path)
                     if path.is_file():
                         load = getattr(self._dll, "eciLoadLexicon", None)
                         if load is not None:
                             load.argtypes = (ctypes.c_void_p, ctypes.c_char_p)
                             load.restype = ctypes.c_int
-                            if load(self._handle, str(path.resolve()).encode("utf-8")) != 1:
+                            if load(handle, str(path.resolve()).encode("utf-8")) != 1:
                                 _log.warning("optional generic lexicon was rejected: %s", path)
                         else:
                             _log.warning("ECI DLL lacks optional lexicon loader")
                     else:
                         _log.warning("optional generic lexicon is missing: %s", path)
-            self._dll.eciRegisterCallback(self._handle, self._callback, None)
-            if self._dll.eciSetOutputBuffer(self._handle, buffer_samples, self._buffer) <= 0:
+            self._dll.eciRegisterCallback(handle, self._callback, None)
+            if self._dll.eciSetOutputBuffer(handle, self._buffer_samples, self._buffer) <= 0:
                 raise RuntimeError("eciSetOutputBuffer failed")
         except BaseException:
-            self._dll.eciDelete(self._handle)
-            self._handle = None
+            self._dll.eciDelete(handle)
             raise
+        return handle
+
+    def _recreate_handle(self) -> None:
+        """Replace a poisoned native handle and replay this engine's state.
+
+        Only the owner thread calls this, between utterances, when no
+        callback can be active. The old handle is stopped and deleted on a
+        best-effort basis: a native handle that still claims busy may refuse
+        deletion, but its replacement is independent, so speech can resume.
+        """
+        self._assert_owner()
+        if self._on_pcm is not None:
+            raise RuntimeError("cannot rebuild ECI handle while a callback may be active")
+        old = self._handle
+        self._handle = None
+        if old:
+            try:
+                self._dll.eciStop(old)
+            except Exception:
+                _log.exception("ECI stop failed while rebuilding a busy handle")
+            try:
+                self._dll.eciDelete(old)
+            except Exception:
+                _log.exception("ECI delete failed while rebuilding a busy handle")
+        _log.warning("Eloquence C rebuilt a native handle that stayed busy")
+        self._handle = self._open_handle()
+        if self._dictionary_path_set:
+            self._apply_dictionary_path(self._handle, self._dictionary_path)
+        for parameter, value in self._parameters.items():
+            self._apply_parameter(self._handle, parameter, value)
 
     def _bind(self) -> None:
         def function(name: str, args: tuple[object, ...], result: object) -> None:
@@ -212,14 +267,27 @@ class DirectEciEngine:
         function("eciGetVoiceParam", (h, i, i), i)
         function("eciSetVoiceParam", (h, i, i, i), i)
 
-    def set_dictionary_path(self, path: str | Path | None) -> None:
-        self._assert_owner()
+    def _apply_dictionary_path(self, handle, path: str | None) -> None:
         target = self._dll.eciSetDictionaryPath
         target.argtypes = (ctypes.c_void_p, ctypes.c_char_p)
         target.restype = ctypes.c_int
-        encoded = str(path).encode("utf-8") if path is not None else None
-        if not target(self._handle, encoded):
+        encoded = path.encode("utf-8") if path is not None else None
+        if not target(handle, encoded):
             raise RuntimeError("native ECI dictionary volumes could not be loaded")
+
+    def set_dictionary_path(self, path: str | Path | None) -> None:
+        self._assert_owner()
+        if not self._handle:
+            raise RuntimeError("ECI engine has been closed")
+        stored = str(path) if path is not None else None
+        self._apply_dictionary_path(self._handle, stored)
+        self._dictionary_path = stored
+        self._dictionary_path_set = True
+
+    def _apply_parameter(self, handle, parameter: int, value: int) -> None:
+        previous = self._dll.eciSetParam(handle, parameter, value)
+        if previous < 0 or self._dll.eciGetParam(handle, parameter) != value:
+            raise RuntimeError(f"eciSetParam rejected generic parameter {parameter:#x}")
 
     def set_parameter(self, parameter: int, value: int) -> None:
         """Change a generic-voice setting on the ECI owner's worker thread."""
@@ -237,9 +305,8 @@ class DirectEciEngine:
                      (0, 2) if parameter == PAUSE_MODE else (0, 100))
         if not isinstance(value, int) or isinstance(value, bool) or not low <= value <= high:
             raise ValueError(f"generic voice parameter must be {low}..{high}")
-        previous = self._dll.eciSetParam(self._handle, parameter, value)
-        if previous < 0 or self._dll.eciGetParam(self._handle, parameter) != value:
-            raise RuntimeError(f"eciSetParam rejected generic parameter {parameter:#x}")
+        self._apply_parameter(self._handle, parameter, value)
+        self._parameters[parameter] = value
         if parameter in (SAMPLE_RATE, HIGH_RATE_PROFILE, PROCESS_TAGS):
             _log.info("Eloquence C native setting verified: parameter=%#x value=%d", parameter, value)
 
@@ -340,12 +407,146 @@ class DirectEciEngine:
         are re-raised on the caller thread. This does not wait for audio played
         by NVDA's WavePlayer.
         """
-        started_at = time.perf_counter()
         self._assert_owner()
         prepared = self._prepare(parts, self._encoding)  # Preflight before queue mutation.
         if not self._handle:
             raise RuntimeError("ECI engine has been closed")
         self._cancelled.clear()
+        delivered = False
+
+        def pcm_hook(data: bytes) -> None:
+            nonlocal delivered
+            delivered = True
+            on_pcm(data)
+
+        def index_hook(value: int) -> None:
+            nonlocal delivered
+            delivered = True
+            on_index(value)
+
+        for attempt in (0, 1):
+            self._handle_poisoned = False
+            try:
+                result = self._speak_attempt(
+                    prepared, parts, pcm_hook, index_hook)
+            except _BusyRejection:
+                if attempt == 0 and not delivered and not self._cancelled.is_set():
+                    self._recreate_handle()
+                    continue
+                if self._handle_poisoned:
+                    try:
+                        self._recreate_handle()
+                    except Exception:
+                        _log.exception("ECI busy recovery failed")
+                raise
+            except BaseException:
+                if self._handle_poisoned:
+                    try:
+                        self._recreate_handle()
+                    except Exception:
+                        _log.exception("ECI busy recovery failed")
+                raise
+            if self._handle_poisoned:
+                try:
+                    self._recreate_handle()
+                except Exception:
+                    _log.exception("ECI busy recovery failed")
+            return result
+        raise RuntimeError("ECI busy recovery did not run")  # pragma: no cover
+
+    # One native phrase of URL-like text (a sentence past roughly 250
+    # characters carrying very long tokens) corrupts the vendored rules
+    # engine and crashes the host process (upstream issue #19). Long input
+    # is therefore synthesized in word-boundary rounds of at most this many
+    # text bytes; a single longer word keeps a round of its own. Ordinary
+    # utterances below the bound take the single-round path unchanged.
+    _MAX_ROUND_TEXT_BYTES = 200
+
+    @classmethod
+    def _rounds(cls, prepared):
+        total = sum(len(p.data) if isinstance(p, _Utf8Text) else
+                    len(p) if isinstance(p, bytes) else 0 for p in prepared)
+        if total <= cls._MAX_ROUND_TEXT_BYTES:
+            return (tuple(prepared),)
+        rounds = []
+        current = []
+        current_bytes = 0
+
+        def flush():
+            nonlocal current, current_bytes
+            if current:
+                rounds.append(tuple(current))
+                current = []
+                current_bytes = 0
+
+        for part in prepared:
+            if isinstance(part, (_Utf8Text, bytes)):
+                data = part.data if isinstance(part, _Utf8Text) else part
+                for unit in re.findall(rb"[^ ]+| +", data):
+                    if (current_bytes and current_bytes + len(unit) > cls._MAX_ROUND_TEXT_BYTES
+                            and unit.strip()):
+                        flush()
+                    current.append(_Utf8Text(unit, part.character_mode)
+                                   if isinstance(part, _Utf8Text) else unit)
+                    current_bytes += len(unit)
+            else:
+                current.append(part)
+        flush()
+        return tuple(rounds)
+
+    def _synthesize_round(self, round_parts, parts, restore) -> bool:
+        """Submit one round and synthesize it; False means cancelled."""
+        for part in round_parts:
+            if self._cancelled.is_set():
+                return False
+            if isinstance(part, _Utf8Text):
+                ok = self._dll.eciAddTextUtf8(self._handle, part.data, len(part.data), int(part.character_mode))
+                operation = "eciAddTextUtf8"
+            elif isinstance(part, EciIndex):
+                ok = self._dll.eciInsertIndex(self._handle, part.value)
+                operation = "eciInsertIndex"
+            elif isinstance(part, EciPitch):
+                ok = self._dll.eciInsertPitch(self._handle, part.value)
+                operation = "eciInsertPitch"
+            elif isinstance(part, EciProsody):
+                if part.parameter not in restore:
+                    restore[part.parameter] = self._dll.eciGetVoiceParam(self._handle, 0, part.parameter)
+                    if restore[part.parameter] < 0:
+                        raise RuntimeError("eciGetVoiceParam failed")
+                previous = self._dll.eciSetVoiceParam(self._handle, 0, part.parameter, part.value)
+                ok = int(previous >= 0 and
+                    self._dll.eciGetVoiceParam(self._handle, 0, part.parameter) == part.value)
+                operation = "eciSetVoiceParam"
+            else:
+                ok = self._dll.eciAddText(self._handle, part)
+                operation = "eciAddText"
+            if ok <= 0:
+                busy = self._native_busy_diagnostic()
+                if busy == "1":
+                    raise _BusyRejection(operation, ok)
+                raise RuntimeError(f"{operation} rejected input (code {ok}; native busy={busy})")
+        if self._cancelled.is_set():
+            return False
+        started = self._dll.eciSynthesize(self._handle)
+        if started <= 0:
+            if self._callback_error is not None:
+                raise self._callback_error
+            if self._cancelled.is_set():
+                return False
+            raise self._synthesis_error(parts)
+        completed = self._dll.eciSynchronize(self._handle)
+        if self._callback_error is not None:
+            raise self._callback_error
+        if self._cancelled.is_set():
+            return False
+        if completed <= 0:
+            raise RuntimeError("eciSynchronize failed")
+        return True
+
+    def _speak_attempt(self, prepared, parts,
+                       on_pcm: Callable[[bytes], None],
+                       on_index: Callable[[int], None]) -> bool:
+        started_at = time.perf_counter()
         self._callback_error = None
         self._on_pcm, self._on_index = on_pcm, on_index
         characters = sum(len(p.text) if isinstance(p, EciText) else len(p) if isinstance(p, str) else 0 for p in parts)
@@ -353,49 +554,9 @@ class DirectEciEngine:
         completed_successfully = False
         restore = {}
         try:
-            for part in prepared:
-                if self._cancelled.is_set():
+            for round_parts in self._rounds(prepared):
+                if not self._synthesize_round(round_parts, parts, restore):
                     return False
-                if isinstance(part, _Utf8Text):
-                    ok = self._dll.eciAddTextUtf8(self._handle, part.data, len(part.data), int(part.character_mode))
-                    operation = "eciAddTextUtf8"
-                elif isinstance(part, EciIndex):
-                    ok = self._dll.eciInsertIndex(self._handle, part.value)
-                    operation = "eciInsertIndex"
-                elif isinstance(part, EciPitch):
-                    ok = self._dll.eciInsertPitch(self._handle, part.value)
-                    operation = "eciInsertPitch"
-                elif isinstance(part, EciProsody):
-                    if part.parameter not in restore:
-                        restore[part.parameter] = self._dll.eciGetVoiceParam(self._handle, 0, part.parameter)
-                        if restore[part.parameter] < 0:
-                            raise RuntimeError("eciGetVoiceParam failed")
-                    previous = self._dll.eciSetVoiceParam(self._handle, 0, part.parameter, part.value)
-                    ok = int(previous >= 0 and
-                        self._dll.eciGetVoiceParam(self._handle, 0, part.parameter) == part.value)
-                    operation = "eciSetVoiceParam"
-                else:
-                    ok = self._dll.eciAddText(self._handle, part)
-                    operation = "eciAddText"
-                if ok <= 0:
-                    busy = self._native_busy_diagnostic()
-                    raise RuntimeError(f"{operation} rejected input (code {ok}; native busy={busy})")
-            if self._cancelled.is_set():
-                return False
-            started = self._dll.eciSynthesize(self._handle)
-            if started <= 0:
-                if self._callback_error is not None:
-                    raise self._callback_error
-                if self._cancelled.is_set():
-                    return False
-                raise self._synthesis_error(parts)
-            completed = self._dll.eciSynchronize(self._handle)
-            if self._callback_error is not None:
-                raise self._callback_error
-            if self._cancelled.is_set():
-                return False
-            if completed <= 0:
-                raise RuntimeError("eciSynchronize failed")
             completed_successfully = True
             return True
         finally:
@@ -404,8 +565,13 @@ class DirectEciEngine:
             # cannot accidentally join them to its own text.
             if not completed_successfully and self._handle:
                 if not self._dll.eciClearInput(self._handle):
+                    busy = self._native_busy_diagnostic()
                     _log.error("ECI could not clear cancelled input; native busy=%s",
-                               self._native_busy_diagnostic())
+                               busy)
+                    if busy == "1":
+                        # The handle would refuse every later submission.
+                        # Let speak() rebuild it before the next job runs.
+                        self._handle_poisoned = True
             # These are job-local NVDA commands, unlike the persistent user
             # sliders. Restore after synthesis/cancellation, never from PCM
             # callbacks while the native engine is busy.
