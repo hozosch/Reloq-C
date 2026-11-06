@@ -70,7 +70,7 @@ int wmain(void)
     if(SUCCEEDED(hr))hr=ISpStream_SetBaseStream(stream,&output.iface,&SPDFID_WaveFormatEx,&fmt);
     if(SUCCEEDED(hr))hr=ISpVoice_SetOutput(voice,(IUnknown *)stream,FALSE);
     /* NVDA asks for bookmarks rather than word or sentence events. */
-    ULONGLONG interests=(1ULL<<SPEI_START_INPUT_STREAM)|(1ULL<<SPEI_TTS_BOOKMARK)|(1ULL<<SPEI_END_INPUT_STREAM);
+    ULONGLONG interests=(1ULL<<30)|(1ULL<<33)|(1ULL<<SPEI_START_INPUT_STREAM)|(1ULL<<SPEI_TTS_BOOKMARK)|(1ULL<<SPEI_END_INPUT_STREAM);
     if(SUCCEEDED(hr))hr=ISpVoice_SetInterest(voice,interests,interests);
     for(int words=1;SUCCEEDED(hr)&&words<=100;words*=100){
         WCHAR message[1800]=L"<pitch absmiddle=\"0\">";
