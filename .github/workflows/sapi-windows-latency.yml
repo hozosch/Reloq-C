@@ -15,8 +15,11 @@ jobs:
           persist-credentials: false
       - name: Install Windows cross compiler
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends gcc-mingw-w64-x86-64-posix
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 install -y --no-install-recommends gcc-mingw-w64-x86-64-posix
       - name: Build the stream timing probe
         run: |
           x86_64-w64-mingw32-gcc-posix -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DUNICODE -D_UNICODE -I sapi sapi/test_windows_latency.c sapi/guids.c -static-libgcc -municode -lole32 -luuid -o sapi-latency.exe
