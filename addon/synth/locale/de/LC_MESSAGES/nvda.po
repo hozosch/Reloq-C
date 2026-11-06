@@ -2,7 +2,7 @@
 # The source language of the interface is English.
 msgid ""
 msgstr ""
-"Project-Id-Version: Eloquence C 1.0.0\n"
+"Project-Id-Version: Eloquence C 1.1.3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-10-12 22:55+0300\n"
 "PO-Revision-Date: 2026-10-12 00:00+0000\n"
@@ -127,8 +127,8 @@ msgstr "Männlich 4"
 
 #. Translators: Add-on name shown in NVDA's add-on manager.
 #: addon/build_translations.py:30
-msgid "Eloquence C 1.1.2: fourteen language variants"
-msgstr "Eloquence C 1.1.2: vierzehn Sprachvarianten"
+msgid "Eloquence C: fourteen language variants"
+msgstr "Eloquence C: vierzehn Sprachvarianten"
 
 #. Translators: Add-on description; this refers to the spoken language.
 #: addon/build_translations.py:32

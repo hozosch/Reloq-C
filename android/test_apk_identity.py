@@ -8,6 +8,8 @@ certificate = "abcd" * 16
 packages = {
     "previous.apk": ("org.reloq.tts." + "pre" + "view", 11010000, certificate),
     "current.apk": ("org.reloq.tts", 11010001, certificate),
+    "released-112.apk": ("org.reloq.tts", 11010002, certificate),
+    "candidate-113.apk": ("org.reloq.tts", 11010003, certificate),
     "same-identity-110.apk": ("org.reloq.tts", 11010000, certificate),
     "older-current.apk": ("org.reloq.tts", 11000000, certificate),
     "other-signer.apk": ("org.reloq.tts", 11010000, "dead" * 16),
@@ -28,6 +30,7 @@ with patch("verify_apk.subprocess.run", side_effect=run):
     assert not verify_previous_package("current.apk", "older-current.apk", "aapt2", "apksigner")["separate"]
     verify_upgrade("current.apk", "older-current.apk", "aapt2", "apksigner")
     verify_upgrade("current.apk", "same-identity-110.apk", "aapt2", "apksigner")
+    verify_upgrade("candidate-113.apk", "released-112.apk", "aapt2", "apksigner")
     for old in ("previous.apk", "current.apk", "other-signer.apk"):
         try:
             verify_upgrade("current.apk", old, "aapt2", "apksigner")

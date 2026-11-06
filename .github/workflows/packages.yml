@@ -59,6 +59,8 @@ jobs:
           python3 -B tools/test_native_text_input.py
           python3 -B nvda/test_eci_dictionary_cache.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_dash_pause.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_release113.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_chinese_locale_order.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_chinese_mixed_112.py
           python3 -B nvda/test_eci_cjk_latin_native.py
           python3 -B nvda/test_eci_asian_greek_native.py
@@ -96,7 +98,7 @@ jobs:
         run: |
           previous_apk=(previous/*.apk)
           test "${#previous_apk[@]}" -eq 1
-          python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --previous-package "${previous_apk[0]}" --jobs 2
+          python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --upgrade-from "${previous_apk[0]}" --jobs 2
       - uses: actions/upload-artifact@v4
         with:
           name: android-apk
@@ -133,6 +135,12 @@ jobs:
               core.write_bytes(archive.read('eci.dll'))
           build(DEFAULT_OUTPUT, core, refresh_dictionaries=False)
           PY
+      - name: Verify update identity against the published add-on
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v1.1.2 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-1.1.2.nvda-addon' --dir previous-addon
+          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.1.2.nvda-addon --candidate dist/reloq-c-synth-x64-1.1.3.nvda-addon
       - uses: actions/upload-artifact@v4
         with:
           name: nvda-addon

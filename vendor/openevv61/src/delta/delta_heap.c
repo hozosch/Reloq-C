@@ -47,11 +47,16 @@ static evv_ref allocDynaSegment(delta_state *d, int32_t size)
     delta_seg *seg;
     evv_ref ref;
 
-    if (s->free_segs != 0) {
-        ref = s->free_segs;
+    /* Heap segments may be smaller than the backtracking stack. In
+       particular, resetting the stack must not reuse a small heap segment. */
+    evv_ref *link = &s->free_segs;
+    while (*link != 0 && SEG(*link)->end - SEG(*link)->block + 1 < size)
+        link = &SEG(*link)->next;
+    if (*link != 0) {
+        ref = *link;
         seg = SEG(ref);
         seg->live = 0;
-        s->free_segs = seg->next;
+        *link = seg->next;
         s->free_count--;
 
         seg->used = seg->end & 3;
@@ -237,6 +242,8 @@ int32_t initializeDeltaStack(delta_state *d, int32_t size)
     delta_stack *s = EVV_AT(delta_stack *, d->stack);
 
     s->seg = allocDynaSegment(d, size);
+    if (s->seg == 0)
+        return 0;
 
     s->top = SEG(s->seg)->end - SEG(s->seg)->used;
     s->base = size;
@@ -248,7 +255,7 @@ int32_t initializeDeltaStack(delta_state *d, int32_t size)
     *EVV_AT(uint8_t *, s->top) = 8;
     setDeltaStackVBot(d, EVV_AT(uint8_t *, s->top));
 
-    return s->seg != 0;
+    return 1;
 }
 
 /* Walking the backtracking stack a record at a time.

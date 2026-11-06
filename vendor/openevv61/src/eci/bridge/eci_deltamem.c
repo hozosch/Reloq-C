@@ -19,7 +19,13 @@
 #define NAME_STACK_BYTES 0x28
 
 /* How big the stack and the heap start out. */
-#define STACK_BYTES 0x2000
+/* Long phrases can accumulate many backtracking records without reaching a
+   sentence boundary. Keep their native prosody and give the stack enough
+   room instead of splitting the caller's text into separate utterances. */
+#ifndef RELOQ61_STACK_BYTES
+#define RELOQ61_STACK_BYTES 0x100000
+#endif
+#define STACK_BYTES RELOQ61_STACK_BYTES
 #define HEAP_BYTES  0x1000
 
 

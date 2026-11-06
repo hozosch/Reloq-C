@@ -1,27 +1,27 @@
 # Android ARM64
 
 ReLoq C uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `1.1.2` targets ARM64 (`arm64-v8a`), Android 8/API 26
+add-on. Version `1.1.3` targets ARM64 (`arm64-v8a`), Android 8/API 26
 or later. Speech runs offline. Network access is used only when you explicitly update pronunciation dictionaries or check for an app update. Package downloads open in the browser.
 
 ## Install or update
 
-Install `reloq-c-android-arm64-1.1.2.apk` from GitHub Releases. This build
-is named **ReLoq C 1.1.2** and uses the app identity `org.reloq.tts`. The published 1.1 uses an earlier identity, so Android installs this version alongside that app. Installations already using `org.reloq.tts` update in place. Select the new app in
+Install `reloq-c-android-arm64-1.1.3.apk` from GitHub Releases. This build
+is named **ReLoq C** and uses the app identity `org.reloq.tts`. The published 1.1 uses an earlier identity, so Android installs this version alongside that app. Installations already using `org.reloq.tts` update in place. Select the new app in
 Android's text-to-speech settings and set up voices and dictionaries again.
 Keep the old app installed until you have copied any information you need
 and verified the replacement. App-private settings and file permissions do not
 transfer automatically between the two identities.
 
-Open **ReLoq C 1.1.2** to adjust its settings or read a test text. To use it
+Open **ReLoq C** to adjust its settings or read a test text. To use it
 with TalkBack or another client, open **Android speech settings** and choose
-**ReLoq C 1.1.2** as the preferred text-to-speech engine. All 15 language
+**ReLoq C** as the preferred text-to-speech engine. All 15 language
 variants and eight named voice presets are available, including separate
 mainland and Taiwan Mandarin routes. Existing saved language indices retain
 their meaning; Taiwan Mandarin is appended to the catalogue.
 
 The speech engine and live settings have been confirmed in practical use.
-The APK keeps the existing signing certificate but uses a new app identity.
+The APK retains the signing certificate and app identity used by version 1.1.2.
 
 ## Speech before the first unlock
 
@@ -187,7 +187,7 @@ The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 ```sh
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
-python3 android/verify_apk.py dist/reloq-c-android-arm64-1.1.2.apk
+python3 android/verify_apk.py dist/reloq-c-android-arm64-1.1.3.apk
 ```
 
 Build verification checks signatures, the install-critical resource table,

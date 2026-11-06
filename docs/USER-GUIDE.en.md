@@ -1,5 +1,9 @@
 # Eloquence C – user guide
 
+## Version 1.1.3
+
+A crash on certain long texts has been fixed. HTTPS addresses use the HTTP reader. English pronunciation in the Greek voice has been refined.
+
 ## Version 1.1.2
 
 A separated dash before a number becomes a pause. Chinese and English switch more smoothly while Chinese inflection remains available, and German number-word corrections also apply in thousands.

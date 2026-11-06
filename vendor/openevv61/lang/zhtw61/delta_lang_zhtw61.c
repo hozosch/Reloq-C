@@ -9,6 +9,7 @@
 #include "delta.h"
 #include "delta_rules_c.h"
 #include "delta_rules_zhtw61.h"
+#include "foreign_bank_zhcn61.h"
 
 extern const int32_t zhtw61_eci_library_lang;
 extern const char    zhtw61_eci_library_name[];
@@ -58,6 +59,7 @@ extern int32_t zhtw61_DeltaProc_main(int32_t d);
 
 static int32_t proc_start(delta_state *d)
 {
+    if(reloq_zhcn61_bank_init())return 94;
     return zhtw61_DeltaProc_start(EVV_REF(d));
 }
 

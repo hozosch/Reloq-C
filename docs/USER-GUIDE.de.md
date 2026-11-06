@@ -1,5 +1,9 @@
 # Eloquence C – Bedienungsanleitung
 
+## Version 1.1.3
+
+Ein Absturz bei bestimmten langen Texten wurde behoben. HTTPS-Adressen nutzen die HTTP-Verarbeitung. Die Aussprache englischer Wörter in der griechischen Stimme wurde verbessert.
+
 ## Version 1.1.2
 
 Ein abgesetzter Bindestrich vor einer Zahl wird als Pause gelesen. Chinesisch und Englisch wechseln flüssiger, die chinesische Betonung bleibt erhalten und deutsche Zahlwortkorrekturen gelten auch bei Tausendern.

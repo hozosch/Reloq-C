@@ -10,6 +10,8 @@
 [Setup]
 AppId={{D3F8BA6E-1C62-4B0D-8A33-3840B77376AC}
 AppName=ReLoq C SAPI5
+AppVerName=ReLoq C SAPI5
+UninstallDisplayName=ReLoq C SAPI5
 AppVersion={#AppVersion}
 AppPublisher=ReLoq C contributors
 AppPublisherURL=https://github.com/hozosch/Reloq-C

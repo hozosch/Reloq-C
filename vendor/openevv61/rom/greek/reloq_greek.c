@@ -179,9 +179,17 @@ static char lower_ascii(char c)
     if(base)c=(char)base;
     return c>='A'&&c<='Z'?(char)(c+32):c;
 }
-/* A flap retains the spelling's first eligible dental stop. This cursor
-   is independent of the vowel alignment: an earlier written d can supply
-   the later spoken flap even when a stressed syllable has intervened. */
+/* Keep the English flap's written t/d identity. Explicit English t and d
+   advance the same cursor, so an earlier full stop cannot be mistaken for a
+   later flap (as in audacity or identity). */
+static void consume_written_stop(const char *word,size_t *cursor,char c)
+{
+    size_t n=strlen(word);
+    for(size_t p=*cursor;p<n;++p)if(lower_ascii(word[p])==c){
+        do{++p;}while(p<n&&lower_ascii(word[p])==c);
+        *cursor=p;return;
+    }
+}
 static char written_stop(const char *word,size_t *cursor)
 {
     size_t n=strlen(word);
@@ -190,7 +198,7 @@ static char written_stop(const char *word,size_t *cursor)
         if(c!='d'&&c!='t')continue;
         size_t end=p+1;
         while(end<n&&lower_ascii(word[end])==c)++end;
-        if(p&&end<n&&strchr("aeiouyrnl",lower_ascii(word[p-1]))&&
+        if(p&&end<n&&strchr("aeiouyrnlh",lower_ascii(word[p-1]))&&
            strchr("aeiouyl",lower_ascii(word[end]))) {
             *cursor=end;return c;
         }
@@ -203,7 +211,9 @@ static size_t written_vowels(const char *word,size_t wanted,struct written_vowel
     size_t n=0;
     for(size_t i=0;word[i];++i) {
         char c=lower_ascii(word[i]);
-        if(!latin_vowel(c)||(c=='u'&&i&&lower_ascii(word[i-1])=='q'))continue;
+        if(!latin_vowel(c)||(c=='u'&&i&&lower_ascii(word[i-1])=='q')||
+           (c=='u'&&i&&lower_ascii(word[i-1])=='g'&&
+            word[i+1]&&latin_vowel(lower_ascii(word[i+1]))))continue;
         out[n++]=(struct written_vowel){i,c=='y'?'i':c};
     }
     /* Retain hiatus when the pronunciation has separate nuclei. Collapse
@@ -225,7 +235,7 @@ static int latin(struct buffer *out,const char *word,reloq_greek_english english
     char phonemes[16384];if(english(context,word,phonemes,sizeof phonemes))return -1;
     size_t wanted=0;
     for(size_t i=0;phonemes[i];++i)if(phonemes[i]=='[') {
-        while(phonemes[++i]&&phonemes[i]!=']')wanted+=strchr("aAeEiIoOuUxXHYWc",phonemes[i])!=NULL;
+        while(phonemes[++i]&&phonemes[i]!=']')wanted+=strchr("aAeEiIoOuUxXHYWcR",phonemes[i])!=NULL;
         if(!phonemes[i])break;
     }
     size_t length=strlen(word);
@@ -249,9 +259,20 @@ static int latin(struct buffer *out,const char *word,reloq_greek_english english
                 if(add(out,&c,1))goto error;continue;
             }
             char written=0;
-            if(strchr("aAeEiIoOuUxXHYWc",c)&&position<count)
+            if(strchr("aAeEiIoOuUxXHYWcR",c)&&position<count)
                 written=vowels[position++].value;
-            switch(c){case 'A':mapped[0]='a';break;case 'E':mapped[0]='e';break;case 'I':mapped[0]='i';break;case 'O':strcpy(mapped,"oy");break;case 'c':mapped[0]='o';break;case 'U':mapped[0]='u';break;case 'H':mapped[0]='a';break;case 'a':mapped[0]=written=='o'?'o':'a';break;case 'e':strcpy(mapped,"ey");break;case 'o':strcpy(mapped,"ow");break;case 'x':case 'X':mapped[0]=written=='a'?'a':written=='i'?'i':written=='o'?'o':written=='u'?'u':'e';break;case 'Y':strcpy(mapped,"ay");break;case 'W':strcpy(mapped,"aw");break;case 'S':mapped[0]='s';break;case 'Z':mapped[0]='z';break;case 'C':strcpy(mapped,"ts");break;case 'J':strcpy(mapped,"dz");break;case 'T':mapped[0]='T';break;case 'D':mapped[0]='D';break;case 'G':strcpy(mapped,"ng");break;case 'R':strcpy(mapped,"er");break;case 'F':mapped[0]=written_stop(word,&stop);break;case '?':break;case 'N':mapped[0]='n';break;default:if(strchr("bdfghjklmnprstuvwyzeiou",c))mapped[0]=c=='v'?'B':c=='h'?'j':c;break;}
+            if(c=='t'||c=='d')consume_written_stop(word,&stop,c);
+            switch(c){case 'A':mapped[0]='a';break;case 'E':mapped[0]='e';break;case 'I':mapped[0]='i';break;case 'O':strcpy(mapped,"oy");break;case 'c':mapped[0]='o';break;case 'U':mapped[0]='u';break;case 'H':mapped[0]='a';break;case 'a':mapped[0]=written=='o'?'o':'a';break;case 'e':strcpy(mapped,"ey");break;case 'o':strcpy(mapped,"ow");break;
+            case 'x':case 'X':
+                /* The weak vowels in English -age and syllabic -ed are
+                   normally front vowels, despite their written a/e. */
+                if(c=='X'&&length>=3&&phonemes[i]=='J'&&
+                   lower_ascii(word[length-3])=='a'&&lower_ascii(word[length-2])=='g'&&lower_ascii(word[length-1])=='e')mapped[0]='i';
+                else if(c=='X'&&length>=2&&phonemes[i]=='d'&&
+                        lower_ascii(word[length-2])=='e'&&lower_ascii(word[length-1])=='d')mapped[0]='i';
+                else mapped[0]=written=='a'?'a':written=='i'?'i':written=='o'?'o':written=='u'?'u':'e';
+                break;
+            case 'Y':strcpy(mapped,"ay");break;case 'W':strcpy(mapped,"aw");break;case 'S':mapped[0]='s';break;case 'Z':mapped[0]='z';break;case 'C':strcpy(mapped,"ts");break;case 'J':strcpy(mapped,"dz");break;case 'T':mapped[0]='T';break;case 'D':mapped[0]='D';break;case 'g':mapped[0]='g';break;case 'G':strcpy(mapped,"ng");break;case 'R':strcpy(mapped,"er");break;case 'F':mapped[0]=written_stop(word,&stop);break;case '?':break;case 'N':mapped[0]='n';break;default:if(strchr("bdfhjklmnprstuvwyzeiou",c))mapped[0]=c=='v'?'B':c=='h'?'j':c;break;}
             if(*mapped&&say(out,mapped))goto error;
         }
         if(say(out,"] "))goto error;if(!phonemes[i])break;
