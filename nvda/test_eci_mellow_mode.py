@@ -1,6 +1,7 @@
 """Mellow-mode switching through the public ECI interface, with PCM in RAM."""
 from pathlib import Path
 import argparse
+import ctypes
 
 from _reloq_eci_direct import DirectEciEngine, EciIndex, GENDER, MELLOW_MODE, SAMPLE_RATE
 from test_eci_german_clock_native import render
@@ -33,6 +34,8 @@ def main():
             assert engine._dll.eciSetParam(engine._handle, MELLOW_MODE, 2) == -1
             assert engine._dll.eciGetParam(engine._handle, MELLOW_MODE) == 0
             engine.set_parameter(MELLOW_MODE, 1)
+            engine._dll.eciReset.argtypes = (ctypes.c_void_p,)
+            engine._dll.eciReset.restype = ctypes.c_int
             assert engine._dll.eciReset(engine._handle) == 1
             assert engine._dll.eciGetParam(engine._handle, MELLOW_MODE) == 0
         finally:
