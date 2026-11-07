@@ -1,0 +1,92 @@
+name: Temporary SAPI cancellation latency comparison
+on:
+  push:
+    branches: [codex/sapi-latency-dev5-20261107]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends gcc-mingw-w64-i686-posix
+      - run: i686-w64-mingw32-gcc -std=c11 -Os -Wall -Wextra -Werror -Wno-misleading-indentation -municode -DUNICODE -D_UNICODE -I sapi -I include sapi/test_latency_windows.c sapi/guids.c -static-libgcc -lole32 -luuid -ladvapi32 -lcomctl32 -lshell32 -lgdi32 -lwinhttp -lm -o latency.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: latency-probe
+          path: latency.exe
+  compare:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    needs: build
+    steps:
+      - name: Wait for the candidate x86 build
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          $ready=$false
+          for($i=0;$i -lt 70;$i++) {
+            $a=gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/42381540459/artifacts" | ConvertFrom-Json
+            if($a.artifacts | Where-Object { $_.name -eq 'sapi-native-x86' -and !$_.expired }) {$ready=$true;break}
+            $r=gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/42381540459" | ConvertFrom-Json
+            if($r.status -eq 'completed'){throw "Candidate workflow completed without its x86 artifact: $($r.conclusion)"}
+            Start-Sleep -Seconds 15
+          }
+          if(!$ready){throw 'Candidate x86 build did not finish in time'}
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 42373845198
+          github-token: ${{ github.token }}
+          name: sapi-native-x86
+          path: baseline-archive
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 42381540459
+          github-token: ${{ github.token }}
+          name: sapi-native-x86
+          path: candidate-archive
+      - uses: actions/download-artifact@v4
+        with:
+          name: latency-probe
+      - name: Install original eSpeak 1.48.04
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          curl.exe -fL --retry 3 --connect-timeout 20 --max-time 120 -o setup-espeak.exe 'https://downloads.sourceforge.net/project/espeak/espeak/espeak-1.48/setup_espeak-1.48.04.exe'
+          if ($LASTEXITCODE -ne 0) { throw 'Original eSpeak download failed' }
+          $p=Start-Process ./setup-espeak.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-' -Wait -PassThru
+          if($p.ExitCode -ne 0){throw "eSpeak installer exited $($p.ExitCode)"}
+      - name: Compare first audio after cancellation
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Expand-Archive (Get-ChildItem baseline-archive/*.zip | Select-Object -First 1).FullName -DestinationPath baseline
+          Expand-Archive (Get-ChildItem candidate-archive/*.zip | Select-Object -First 1).FullName -DestinationPath candidate
+          $base=[Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,[Microsoft.Win32.RegistryView]::Registry32)
+          $key=$base.OpenSubKey('Software\Microsoft\Speech\Voices\Tokens\eSpeak',$true)
+          if(!$key){throw 'Original eSpeak token missing'}
+          $key.SetValue('VoiceName','de');$key.Close();$base.Close()
+          New-Item -Path 'HKCU:\Software\ReLoq C\SAPI5' -Force | Out-Null
+          New-ItemProperty -Path 'HKCU:\Software\ReLoq C\SAPI5' -Name OutputRate -PropertyType DWord -Value 2 -Force | Out-Null
+          $espeak='HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\eSpeak'
+          $reloq='HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\ReLoqC_01_00040000'
+          foreach($mode in @('plain','xml')) {
+            Write-Host "Comparing original eSpeak: $mode"
+            if($mode -eq 'xml'){& ./latency.exe $espeak xml}else{& ./latency.exe $espeak}
+            if($LASTEXITCODE -ne 0){throw 'eSpeak timing failed'}
+          }
+          foreach($version in @('baseline','candidate')) {
+            $reg=Start-Process "$env:windir/SysWOW64/regsvr32.exe" -ArgumentList '/s', (Resolve-Path "$version/ReLoqSapi.dll").Path -Wait -PassThru
+            if($reg.ExitCode -ne 0){throw "$version registration failed"}
+            foreach($mode in @('plain','xml')) {
+              Write-Host "Comparing $version ReLoq: $mode"
+              if($mode -eq 'xml'){& ./latency.exe $reloq xml}else{& ./latency.exe $reloq}
+              if($LASTEXITCODE -ne 0){throw "$version timing failed"}
+            }
+          }
