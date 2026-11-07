@@ -295,7 +295,8 @@ static HRESULT configure(struct sapi_backend *b,const struct job *j)
         {RELOQ_ECI_GENDER,(int)s->gender},{RELOQ_ECI_PROCESS_TAGS,(int)s->tags},
         {RELOQ_ECI_PAUSE_MODE,(int)s->pauses},{RELOQ_ECI_DICTIONARY,!s->abbreviations},
         {RELOQ_ECI_PHRASE_PREDICTION,(int)s->prediction},
-        {RELOQ_ECI_ORIGINAL_QUESTIONS,(int)s->original_questions}};
+        {RELOQ_ECI_ORIGINAL_QUESTIONS,(int)s->original_questions},
+        {RELOQ_ECI_MELLOW_MODE,(int)s->mellow_mode}};
     for(size_t i=0;i<sizeof parameters/sizeof *parameters;++i)
         if(core.set(b->handle,parameters[i].key,parameters[i].value)==-1)return E_FAIL;
     return dictionary(b,s);

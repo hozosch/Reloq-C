@@ -327,3 +327,6 @@ msgstr ""
 
 msgid "The selected pronunciation dictionaries could not be loaded. Speech will resume when they are available. Check the dictionary settings, or select another synthesizer."
 msgstr ""
+
+msgid "&Mellow mode (16 kHz and above)"
+msgstr ""

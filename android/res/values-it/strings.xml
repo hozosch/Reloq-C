@@ -86,4 +86,5 @@
     <string name="dictionary_update_files_total">File del dizionario totali: %1$d</string>
     <string name="dictionary_update_files_unknown">Impossibile determinare il numero dei nuovi file del dizionario.</string>
     <string name="original_questions">Usa l’intonazione originale delle domande</string>
+    <string name="mellow_mode">Modalità morbida (da 16 kHz)</string>
 </resources>

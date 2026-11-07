@@ -348,7 +348,7 @@ static int reset_eci_defaults(struct reloq_eci_engine *e)
     e->native_speed_active=e->native_pitch_active=e->native_inflection_active=e->native_volume_active=1;
     e->input_type=n->input_type;e->process_tags=n->process_tags;e->text_mode=n->text_mode;
     e->dictionary_disabled=n->dictionary_disabled;e->real_world_units=n->real_world_units;
-    e->phrase_prediction=0;e->pause_mode=0;
+    e->phrase_prediction=0;e->pause_mode=0;e->mellow_mode=0;
     e->language=n->language;e->language_dialect=n->language_dialect;
     e->active_dictionary=set;
     e->gender=n->gender;e->head_size=n->head_size;e->roughness=n->roughness;e->breathiness=n->breathiness;

@@ -14,7 +14,7 @@ typedef struct {
     ECIHand handle;
     short *pcm;
     char *dictionary;
-    int controls[14],configured;
+    int controls[15],configured;
 } language_engine;
 typedef struct {
     JavaVM *vm;
@@ -93,7 +93,7 @@ Java_org_reloq_tts_NativeEngine_synthesize(JNIEnv *env, jclass type,
 {
     (void)type;
     android_engine *engine = (android_engine *)(intptr_t)pointer;
-    if (!engine || (*env)->GetArrayLength(env, controls) != 14) return JNI_FALSE;
+    if (!engine || (*env)->GetArrayLength(env, controls) != 15) return JNI_FALSE;
     engine->sink = (*env)->NewGlobalRef(env, sink);
     if (!engine->sink) return JNI_FALSE;
     jclass sink_type = (*env)->GetObjectClass(env, sink);
@@ -137,18 +137,18 @@ Java_org_reloq_tts_NativeEngine_synthesize(JNIEnv *env, jclass type,
         if(!eciSetDictionaryPath(handle,engine->dictionary)){free(copy);goto done;}
         free(slot->dictionary);slot->dictionary=copy;
     }
-    jint values[14];
-    static const int parameters[14] = {
+    jint values[15];
+    static const int parameters[15] = {
         RELOQ_ECI_GENDER, RELOQ_ECI_HEAD_SIZE, RELOQ_ECI_NATIVE_PITCH,
         RELOQ_ECI_NATIVE_INFLECTION, RELOQ_ECI_ROUGHNESS,
         RELOQ_ECI_BREATHINESS, RELOQ_ECI_NATIVE_VOLUME,
         RELOQ_ECI_NATIVE_SPEED, RELOQ_ECI_SAMPLE_RATE, RELOQ_ECI_PAUSE_MODE,
         RELOQ_ECI_PROCESS_TAGS, RELOQ_ECI_DICTIONARY, RELOQ_ECI_PHRASE_PREDICTION,
-        RELOQ_ECI_ORIGINAL_QUESTIONS
+        RELOQ_ECI_ORIGINAL_QUESTIONS, RELOQ_ECI_MELLOW_MODE
     };
-    (*env)->GetIntArrayRegion(env, controls, 0, 14, values);
+    (*env)->GetIntArrayRegion(env, controls, 0, 15, values);
     if ((*env)->ExceptionCheck(env)) goto done;
-    for (size_t i = 0; i < 14; ++i)
+    for (size_t i = 0; i < 15; ++i)
         if(!slot->configured||slot->controls[i]!=values[i]) {
             if(eciSetParam(handle,parameters[i],values[i])<0)goto done;
             slot->controls[i]=values[i];

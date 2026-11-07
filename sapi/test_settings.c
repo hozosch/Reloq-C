@@ -84,10 +84,14 @@ int main(void)
     sapi_settings_default(&s);s.rate=5;s.pitch=78;wcscpy(s.directory,L"C:\\Existing dictionaries");
     assert(!RegSetValueExW(key,L"Settings",0,REG_BINARY,(const BYTE *)&s,offsetof(struct sapi_settings,original_questions)));
     assert(sapi_settings_read(0x10000,&en)==S_OK&&en.rate==5);++checks;
-    assert(sapi_settings_read(0x40000,&s)==S_OK&&s.pitch==78&&!s.original_questions&&
+    assert(sapi_settings_read(0x40000,&s)==S_OK&&s.pitch==78&&!s.original_questions&&!s.mellow_mode&&
         !wcscmp(s.directory,L"C:\\Existing dictionaries"));++checks;
-    s.original_questions=1;assert(sapi_settings_write(0x40000,&s)==S_OK);
-    assert(sapi_settings_read(0x40000,&s)==S_OK&&s.original_questions==1&&s.pitch==78);++checks;
+    s.original_questions=1;
+    assert(!RegSetValueExW(key,L"Settings",0,REG_BINARY,(const BYTE *)&s,offsetof(struct sapi_settings,mellow_mode)));
+    assert(sapi_settings_read(0x40000,&s)==S_OK&&s.original_questions==1&&!s.mellow_mode&&s.pitch==78);++checks;
+    s.mellow_mode=1;assert(sapi_settings_write(0x40000,&s)==S_OK);
+    assert(sapi_settings_read(0x40000,&s)==S_OK&&s.original_questions==1&&s.mellow_mode==1&&s.pitch==78);++checks;
+    s.mellow_mode=2;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.mellow_mode=1;++checks;
     s.original_questions=2;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);++checks;
     open_error=5;assert(sapi_settings_read(0x10000,&en)==S_OK&&en.rate==5);open_error=0;++checks;
     values[0].bytes=8;assert(FAILED(sapi_settings_read(0x40000,&s)));++checks;

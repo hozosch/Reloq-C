@@ -70,6 +70,8 @@ public final class NativeTransportTest {
             VoiceSettings question=new VoiceSettings(0);question.originalQuestions=true;
             render(0x10000,question,"What would you like to do?");
             render(0x40000,question,"Was möchtest du machen?");
+            VoiceSettings mellow=new VoiceSettings(0);mellow.rate=6;mellow.mellowMode=true;
+            render(0x40000,mellow,"Eine weiche Stimme zum Vergleichen.");
             dictionary(arguments[0]);render(0x10000,0,"This is cancellationtoken.");
             render(0x40000,0,"Ich bin TokenX dir.");
             dictionary(arguments[1]);render(0x10000,0,"This is cancellationtoken.");

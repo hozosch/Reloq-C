@@ -179,7 +179,7 @@ struct reloq_eci_engine {
     int native_volume_active;
     int input_type;
     int process_tags;
-    int dictionary_disabled,phrase_prediction,original_questions;
+    int dictionary_disabled,phrase_prediction,original_questions,mellow_mode;
     int pause_mode;
     int head_size,roughness,breathiness,gender;
     int german_glide_opening,german_glide_backness,german_glide_softness;
@@ -837,6 +837,7 @@ int ECICALL eciSynthesize(ECIHand handle)
      * legacy parameter value for callers which still set/query it, but do
      * not let stale saved A/B settings change speech in any ECI host. */
     (void)reloq_session_high_rate_profile(e->text_session,3);
+    (void)reloq_session_mellow_mode(e->text_session,e->mellow_mode);
     (void)reloq_session_text_loudness(e->text_session,
         e->voice_mode==RELOQ_ECI_VOICE_GENERIC);
     struct reloq61_text_options previous_options=reloq61_text_options_scope(
@@ -896,6 +897,7 @@ int ECICALL eciSynthesize(ECIHand handle)
             struct reloq_session *next=make_text_session(e->gender,e->head_size,e->sample_rate_code);
             if(!next){result=RELOQ_ECI_MEMORY;goto done;}
             (void)reloq_session_high_rate_profile(next,3);
+            (void)reloq_session_mellow_mode(next,e->mellow_mode);
             (void)reloq_session_text_loudness(next,1);
             lock_session(&e->session_lock);saved_text_session=e->text_session;e->text_session=next;unlock_session(&e->session_lock);
         }
@@ -1343,6 +1345,7 @@ int ECICALL eciGetParam(ECIHand handle, int parameter)
     case RELOQ_ECI_DICTIONARY: return e->dictionary_disabled;
     case RELOQ_ECI_PHRASE_PREDICTION: return e->phrase_prediction;
     case RELOQ_ECI_ORIGINAL_QUESTIONS: return e->original_questions;
+    case RELOQ_ECI_MELLOW_MODE: return e->mellow_mode;
     case RELOQ_ECI_PAUSE_MODE: return e->pause_mode;
     case RELOQ_ECI_HEAD_SIZE: return e->head_size;
     case RELOQ_ECI_ROUGHNESS: return e->roughness;
@@ -1471,6 +1474,9 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
     case RELOQ_ECI_ORIGINAL_QUESTIONS:
         if(value!=0 && value!=1)return eci_refuse(e,-1);
         e->original_questions=value;break;
+    case RELOQ_ECI_MELLOW_MODE:
+        if(value!=0 && value!=1)return eci_refuse(e,-1);
+        e->mellow_mode=value;break;
     case RELOQ_ECI_PROCESS_TAGS:
         if(value!=0 && value!=1)return eci_refuse(e,-1);
         e->process_tags=value;e->input_type=value;break;

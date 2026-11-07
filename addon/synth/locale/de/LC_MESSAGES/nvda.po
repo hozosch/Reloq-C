@@ -343,3 +343,6 @@ msgstr "Neue Wörterbuchdateien: %s"
 
 msgid "The selected pronunciation dictionaries could not be loaded. Speech will resume when they are available. Check the dictionary settings, or select another synthesizer."
 msgstr "Die ausgewählten Aussprachewörterbücher konnten nicht geladen werden. Die Sprachausgabe wird fortgesetzt, sobald sie verfügbar sind. Prüfe die Wörterbucheinstellungen oder wähle einen anderen Synthesizer."
+
+msgid "&Mellow mode (16 kHz and above)"
+msgstr "&Weicher Modus (ab 16 kHz)"

@@ -58,6 +58,7 @@ void reloq_session_destroy(struct reloq_session *session);
 float reloq_session_sample_rate(const struct reloq_session *session);
 /* Hearing-trial profile for subsequent utterances, with no PCM resampling. */
 int reloq_session_high_rate_profile(struct reloq_session *,unsigned);
+int reloq_session_mellow_mode(struct reloq_session *,int);
 /* Set the production text voice's master gain and PCM peak protection.
  * Numeric/reference sessions retain their original output level. */
 int reloq_session_text_loudness(struct reloq_session *,int);

@@ -240,6 +240,24 @@ int main(int argc,char **argv)
     struct site after=site_new();assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&after.iface)));same(&base,&after);free(after.pcm);++cases;
     struct site failure=site_new();failure.fail_after=2;
     assert(FAILED(sapi_backend_speak(b,&s,0,&out,&f,&failure.iface)));free(failure.pcm);++cases;
+    /* Mellow mode follows the stored setting on successive SAPI requests,
+     * without changing the duration or the audio/index delivery contract. */
+    {
+        struct sapi_backend *voice=sapi_backend_new(0x40000);assert(voice);
+        struct sapi_settings m=s; m.rate=3;
+        WAVEFORMATEX wide=format(16000);
+        SPVTEXTFRAG phrase=text(L"Eine weiche Stimme zum Vergleichen.",0);
+        struct site regular=site_new(),mellow=site_new(),restored=site_new();
+        assert(SUCCEEDED(sapi_backend_speak(voice,&m,0,&wide,&phrase,&regular.iface)));
+        m.mellow_mode=1;assert(SUCCEEDED(sapi_backend_speak(voice,&m,0,&wide,&phrase,&mellow.iface)));
+        assert(regular.count==mellow.count&&hash(regular.pcm,regular.count)!=hash(mellow.pcm,mellow.count));
+        assert(regular.event_count==mellow.event_count);
+        for(size_t i=0;i<regular.event_count;++i)
+            assert(regular.events[i].ullAudioStreamOffset==mellow.events[i].ullAudioStreamOffset);
+        m.mellow_mode=0;assert(SUCCEEDED(sapi_backend_speak(voice,&m,0,&wide,&phrase,&restored.iface)));
+        same(&regular,&restored);
+        free(regular.pcm);free(mellow.pcm);free(restored.pcm);sapi_backend_delete(voice);++cases;
+    }
     /* The exposed question setting must reach the same native core on the
      * next SAPI request without changing ordinary declarative sentences. */
     for(unsigned i=0;i<2;++i){

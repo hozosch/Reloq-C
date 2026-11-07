@@ -22,9 +22,7 @@ static double lift(int rate,int frequency)
 {
     struct reloq_rate_transfer current={0};prepare(&current,rate);
     struct reloq_rate_transfer previous=current;
-    memset(previous.voice_colour[3],0,sizeof previous.voice_colour[3]);
-    previous.voice_colour[3][0]=1;
-    previous.voice_band[0]=0;
+    previous.mellow_mode=1;previous.presence_rate=0;prepare(&previous,rate);
     double old_energy=0,new_energy=0;
     for(int i=0;i<rate/2;++i) {
         float x=(float)(.01*sin(6.283185307179586*frequency*i/rate)),a=x,b=x;
@@ -89,6 +87,6 @@ int main(void)
         reloq_rate_transfer_process_voice(&a,samples,3);
         assert(!memcmp(samples,before,sizeof before));
     }
-    puts("Presence: flat 3.5..4 kHz band at about 2.44..2.5 dB, stable causal sections, all five extended clocks; exact block boundaries, unchanged aspiration and legacy bypass passed");
+    puts("Mellow mode: 2.44..2.5 dB reduction at 3.5..4 kHz across all five extended clocks; unchanged aspiration, stable sections and block boundaries passed");
     return 0;
 }

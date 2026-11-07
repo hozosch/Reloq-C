@@ -86,4 +86,5 @@
     <string name="dictionary_update_files_total">字典檔案總數: %1$d</string>
     <string name="dictionary_update_files_unknown">無法確定新增字典檔案數。</string>
     <string name="original_questions">使用原始疑問語調</string>
+    <string name="mellow_mode">柔和模式（16 kHz 及以上）</string>
 </resources>

@@ -11,10 +11,10 @@ struct sapi_settings {
     DWORD schema,profile,pitch,inflection,head,roughness,breathiness,gender;
     DWORD rate,pauses,tags,abbreviations,prediction,dictionaries,boost;
     WCHAR directory[1024];
-    DWORD original_questions;
+    DWORD original_questions,mellow_mode;
 };
 #ifndef RELOQ_SAPI_TEST_HOST
-_Static_assert(sizeof(struct sapi_settings)==2112,"SAPI settings must be compatible across x86/x64");
+_Static_assert(sizeof(struct sapi_settings)==2116,"SAPI settings must be compatible across x86/x64");
 #endif
 extern HMODULE sapi_module;
 extern volatile LONG sapi_objects,sapi_locks;

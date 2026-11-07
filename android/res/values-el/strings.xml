@@ -86,4 +86,5 @@
     <string name="dictionary_update_files_total">Συνολικά αρχεία λεξικού: %1$d</string>
     <string name="dictionary_update_files_unknown">Δεν ήταν δυνατό να προσδιοριστεί ο αριθμός νέων αρχείων λεξικού.</string>
     <string name="original_questions">Χρήση του αρχικού επιτονισμού ερωτήσεων</string>
+    <string name="mellow_mode">Απαλός ήχος (από 16 kHz)</string>
 </resources>

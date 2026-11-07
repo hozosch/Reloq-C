@@ -149,6 +149,9 @@ eci_rate_dispatch_probe.exe: ../tests/test_reloq_rate_dispatch.c ../src/reloq_ra
 test_reloq_rate_dispatch: ../tests/test_reloq_rate_dispatch.c ../src/reloq_rate_transfer.c $(HEADERS)
 	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< -Wl,--gc-sections -lm -o $@
 
+test_reloq_presence: ../tests/test_reloq_presence.c ../src/reloq_rate_transfer.c ../src/reloq_core.c ../src/reloq_noise_profile.c $(HEADERS)
+	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< ../src/reloq_rate_transfer.c ../src/reloq_core.c ../src/reloq_noise_profile.c -Wl,--gc-sections -lm -o $@
+
 test_reloq_classic_voice: ../tests/test_reloq_classic_voice.c ../src/reloq_rate_transfer.c $(HEADERS)
 	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< -Wl,--gc-sections -lm -o $@
 

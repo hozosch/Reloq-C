@@ -119,6 +119,8 @@ enum {
     RELOQ_ECI_GERMAN_GLIDE_SOFTNESS = 0x1014,
     /* 0: ReLoq's consistently rising questions; 1: native question melody. */
     RELOQ_ECI_ORIGINAL_QUESTIONS = 0x1015,
+    /* 0: standard voice; 1: reduce periodic presence from 16 kHz. */
+    RELOQ_ECI_MELLOW_MODE = 0x1016,
     RELOQ_ECI_ENGLISH = 0x00010000,
     RELOQ_ECI_ENGLISH_BRITAIN = 0x00010001,
     RELOQ_ECI_SPANISH_SPAIN = 0x00020000,

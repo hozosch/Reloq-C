@@ -73,6 +73,7 @@ struct reloq_session {
     reloq_epoch_atomic cancel_epoch;
     reloq_epoch_atomic active_epoch;
     unsigned high_rate_profile;
+    int mellow_mode;
     int text_loudness;
     float linear_gain;
     double text_peak_gain;
@@ -99,6 +100,12 @@ int reloq_session_high_rate_profile(struct reloq_session *s,unsigned profile)
 {
     if(!s||profile>3)return RELOQ_SESSION_INVALID;
     s->high_rate_profile=profile;return RELOQ_SESSION_OK;
+}
+
+int reloq_session_mellow_mode(struct reloq_session *s,int enabled)
+{
+    if(!s||(enabled!=0&&enabled!=1))return RELOQ_SESSION_INVALID;
+    s->mellow_mode=enabled;return RELOQ_SESSION_OK;
 }
 
 int reloq_session_source_levels(struct reloq_session *s,long source,
@@ -337,6 +344,7 @@ int reloq_session_reset(struct reloq_session *session)
      * it does not change the glottal source, aspiration or AF noise. */
     unsigned classic=session->high_rate_profile==3?1:session->high_rate_profile;
     next.rate_transfer.trial_profile=c->sample_rate<16000?classic:0;
+    next.rate_transfer.mellow_mode=session->mellow_mode;
     if(session->high_rate_profile==3&&c->glottal_reference_rate>0)
         next.rate_transfer.body_amount=c->sample_rate>=48000?.41666667f:
             c->sample_rate>=44100?.36666667f:c->sample_rate>=32000?.26666667f:

@@ -64,10 +64,10 @@ public final class SettingsTest {
             s.androidRate=true;s.androidPitch=true;s.rateBoost=true;
             require(s.controls(100,200)[7]>55);
         }
-        VoiceSettings options=new VoiceSettings(0);options.abbreviations=false;options.prediction=true;options.originalQuestions=true;
+        VoiceSettings options=new VoiceSettings(0);options.abbreviations=false;options.prediction=true;options.originalQuestions=true;options.mellowMode=true;
         Map<String,Object> stored=new HashMap<>();Preferences.save(memory(stored),0,options);
         VoiceSettings restored=Preferences.read(memory(stored),0);
-        require(!restored.abbreviations&&restored.prediction&&restored.originalQuestions&&restored.controls(100,100)[11]==1&&restored.controls(100,100)[12]==1&&restored.controls(100,100)[13]==1);
+        require(!restored.abbreviations&&restored.prediction&&restored.originalQuestions&&restored.mellowMode&&restored.controls(100,100)[11]==1&&restored.controls(100,100)[12]==1&&restored.controls(100,100)[13]==1&&restored.controls(100,100)[14]==1);
         double f0=VoiceSettings.pitchHz(65),f2=VoiceSettings.pitchHz(VoiceSettings.androidPitch(65,200));
         require(Math.abs(f2/f0-2)<.04);
         require(VoiceSettings.androidPitch(65,1000)==100&&VoiceSettings.androidPitch(65,1)==0);
@@ -79,7 +79,7 @@ public final class SettingsTest {
         // A direct-boot copy includes every voice control but never private
         // dictionary paths, imported text, or update credentials/metadata.
         Map<String,Object> privateData=new HashMap<>();
-        privateData.put("profile",5);privateData.put("language",1);privateData.put("androidVoice",false);privateData.put("originalQuestions",true);
+        privateData.put("profile",5);privateData.put("language",1);privateData.put("androidVoice",false);privateData.put("originalQuestions",true);privateData.put("mellowMode",true);
         privateData.put("voice.5.pitch",48);privateData.put("voice.5.volume",71);
         privateData.put("dictionarySnapshot","/private/dictionary");
         privateData.put("dictionarySources","content://private/words");
@@ -87,10 +87,10 @@ public final class SettingsTest {
         privateData.put("voice.5.private",55);privateData.put("rate","wrong type");
         Map<String,Object> bootData=new HashMap<>();bootData.put("stalePrivate", "remove");
         BootPreferences.mirror(memory(privateData),memory(bootData));
-        require(bootData.equals(Map.of("profile",5,"language",1,"androidVoice",false,"originalQuestions",true,"dictionaryRequired",true,
+        require(bootData.equals(Map.of("profile",5,"language",1,"androidVoice",false,"originalQuestions",true,"mellowMode",true,"dictionaryRequired",true,
             "voice.5.pitch",48,"voice.5.volume",71)));
         VoiceSettings bootVoice=Preferences.read(memory(bootData),5);
-        require(bootVoice.manualPitch==48&&bootVoice.volume==71&&bootVoice.rate==1&&bootVoice.originalQuestions);
+        require(bootVoice.manualPitch==48&&bootVoice.volume==71&&bootVoice.rate==1&&bootVoice.originalQuestions&&bootVoice.mellowMode);
         privateData.put("voice.5.pitch",52);privateData.remove("voice.5.volume");
         BootPreferences.mirror(memory(privateData),memory(bootData));
         require(bootData.get("voice.5.pitch").equals(52)&&!bootData.containsKey("voice.5.volume"));

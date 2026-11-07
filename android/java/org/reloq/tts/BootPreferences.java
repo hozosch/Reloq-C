@@ -9,7 +9,7 @@ import java.util.Map;
 final class BootPreferences {
     private static final String DEVICE_FILE="speech-before-unlock";
     private static final String[] BOOLS={"androidVoice","androidRate","androidPitch",
-        "rateBoost","abbreviations","prediction","originalQuestions","tags"};
+        "rateBoost","abbreviations","prediction","originalQuestions","mellowMode","tags"};
     private static final String[] INTS={"language","profile","manualWpm","rate","pauses"};
     private static final String[] VOICE={"pitch","gender","head","inflection","roughness","breathiness","volume"};
     private BootPreferences() {}

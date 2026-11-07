@@ -10,6 +10,7 @@ final class Preferences {
         s.manualWpm=p.getInt("manualWpm",190);s.rateBoost=p.getBoolean("rateBoost",false);
         s.abbreviations=p.getBoolean("abbreviations",true);s.prediction=p.getBoolean("prediction",false);
         s.originalQuestions=p.getBoolean("originalQuestions",false);
+        s.mellowMode=p.getBoolean("mellowMode",false);
         s.tags=p.getBoolean("tags",false);s.rate=p.getInt("rate",1);s.pauses=p.getInt("pauses",0);
         s.manualPitch=p.getInt(key+"pitch",s.manualPitch);
         s.gender=p.getInt(key+"gender",s.gender);s.head=p.getInt(key+"head",s.head);
@@ -23,6 +24,7 @@ final class Preferences {
             .putInt("manualWpm",s.manualWpm).putBoolean("rateBoost",s.rateBoost)
             .putBoolean("abbreviations",s.abbreviations).putBoolean("prediction",s.prediction)
             .putBoolean("originalQuestions",s.originalQuestions)
+            .putBoolean("mellowMode",s.mellowMode)
             .putBoolean("tags",s.tags).putInt("rate",s.rate).putInt("pauses",s.pauses)
             .putInt(key+"pitch",s.manualPitch).putInt(key+"gender",s.gender).putInt(key+"head",s.head)
             .putInt(key+"inflection",s.inflection).putInt(key+"roughness",s.roughness)

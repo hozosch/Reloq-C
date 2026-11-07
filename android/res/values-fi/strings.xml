@@ -86,4 +86,5 @@
     <string name="dictionary_update_files_total">Sanakirjatiedostoja yhteensä: %1$d</string>
     <string name="dictionary_update_files_unknown">Uusien sanakirjatiedostojen määrää ei voitu selvittää.</string>
     <string name="original_questions">Käytä alkuperäistä kysymysintonaatiota</string>
+    <string name="mellow_mode">Pehmeä tila (vähintään 16 kHz)</string>
 </resources>

@@ -689,6 +689,14 @@ static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rat
     brilliance[0]=trim*(1+alpha*upper)/d;brilliance[1]=-2*trim*cos(w)/d;
     brilliance[2]=trim*(1-alpha*upper)/d;brilliance[3]=-2*cos(w)/d;
     brilliance[4]=(1-alpha/upper)/d;
+    if(s->mellow_mode) {
+        /* Bypass only the additional periodic presence band. The existing
+         * tract, aspiration and independent frication stay unchanged. */
+        double *band=s->voice_colour[3];
+        band[0]=1;band[1]=band[2]=band[3]=band[4]=0;
+        memset(s->voice_band,0,sizeof s->voice_band);
+        return;
+    }
     /* Additional periodic presence: a fourth-order minimum-phase
      * band with a +2.5-dB plateau from 3.5 to 4 kHz. A Butterworth
      * low-pass shelf is mapped to a band using prewarped edge clocks.

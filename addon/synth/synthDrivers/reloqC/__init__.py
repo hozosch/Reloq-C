@@ -33,7 +33,7 @@ from synthDriverHandler import (SynthDriver as BaseSynthDriver, VoiceInfo, Langu
 from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciProsody, EciLanguage, EciText, NATIVE_VOLUME,
                                 NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION, PROCESS_TAGS,
                                 PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATES,
-                                DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS)
+                                DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE)
 from ._reloq_eci_transport import DictionaryStartupError, EciTextTransport
 from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries
 from ._reloq_languages import GERMAN, LANGUAGES, LANGUAGE_ALIASES, LANGUAGE_DISPLAY_ORDER, LanguageEngine, language_for
@@ -182,6 +182,7 @@ class SynthDriver(BaseSynthDriver):
         BooleanDriverSetting("abbreviationDictionary", _("Use &abbreviation dictionary"), defaultVal=True),
         BooleanDriverSetting("phrasePrediction", _("Phrase &prediction"), defaultVal=False),
         BooleanDriverSetting("originalQuestions", _("Use original &question intonation"), defaultVal=False),
+        BooleanDriverSetting("mellowMode", _("&Mellow mode (16 kHz and above)"), defaultVal=False),
         BooleanDriverSetting("voiceTags", _("Process &ECI tags"), defaultVal=False),
         BooleanDriverSetting("_dictionaryCommunity", _("Use &community pronunciation dictionaries"), defaultVal=False),
         DriverSetting("pauseMode", _("Shorten pa&uses"), defaultVal="0"),
@@ -217,6 +218,7 @@ class SynthDriver(BaseSynthDriver):
         self._abbreviationDictionary = True
         self._phrasePrediction = False
         self._originalQuestions = False
+        self._mellowMode = False
         self._voiceTags = False
         self._communityDictionaries = self._initial_dictionary_setting()
         self._dictionary_updater = None
@@ -248,6 +250,7 @@ class SynthDriver(BaseSynthDriver):
         self._transport.set_parameter(ROUGHNESS, self._roughness)
         self._transport.set_parameter(BREATHINESS, self._breathiness)
         self._transport.set_parameter(ORIGINAL_QUESTIONS, 0)
+        self._transport.set_parameter(MELLOW_MODE, 0)
         manager = self.dictionary_manager()
         # Start monitoring the installed dictionaries and selected own files.
         self._dictionary_request(lambda: manager.set_enabled(self._communityDictionaries))
@@ -517,6 +520,18 @@ class SynthDriver(BaseSynthDriver):
             self._transport.set_parameter(ORIGINAL_QUESTIONS, int(enable))
             self._originalQuestions = enable
 
+    def _get_mellowMode(self):
+        return self._mellowMode
+
+    def _set_mellowMode(self, enable):
+        if not isinstance(enable, bool):
+            raise ValueError("mellowMode must be boolean")
+        with self._submit_lock:
+            if self._terminating or self._mellowMode == enable:
+                return
+            self._transport.set_parameter(MELLOW_MODE, int(enable))
+            self._mellowMode = enable
+
     def _get_voiceTags(self):
         return self._voiceTags
 
@@ -590,6 +605,7 @@ class SynthDriver(BaseSynthDriver):
                 (DICTIONARY, int(not self._abbreviationDictionary)),
                 (PHRASE_PREDICTION, int(self._phrasePrediction)),
                 (ORIGINAL_QUESTIONS, int(self._originalQuestions)),
+                (MELLOW_MODE, int(self._mellowMode)),
             ))
             self._selectedLanguage, self._voice = selected, voice
 

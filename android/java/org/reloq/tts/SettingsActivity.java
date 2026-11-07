@@ -15,7 +15,7 @@ public final class SettingsActivity extends Activity {
     private boolean ready;
     private LinearLayout content;
     private Spinner languages,profiles,rates,pauses,models;
-    private CheckBox androidVoice,androidRate,androidPitch,boost,tags,abbreviations,prediction,originalQuestions;
+    private CheckBox androidVoice,androidRate,androidPitch,boost,tags,abbreviations,prediction,originalQuestions,mellowMode;
     private Numeric speed,pitch,inflection,volume,head,roughness,breathiness;
     private EditText text;
     private TextView status;
@@ -131,6 +131,7 @@ public final class SettingsActivity extends Activity {
         abbreviations=check(R.string.abbreviation_dictionary,settings.abbreviations);
         prediction=check(R.string.phrase_prediction,settings.prediction);
         originalQuestions=check(R.string.original_questions,settings.originalQuestions);
+        mellowMode=check(R.string.mellow_mode,settings.mellowMode);
         tags=check(R.string.eci_tags,settings.tags);
         Button dictionaries=new Button(this);dictionaries.setText(R.string.dictionaries);content.addView(dictionaries);
         dictionaries.setOnClickListener(v -> startActivity(new Intent(this,DictionaryActivity.class)));
@@ -188,6 +189,7 @@ public final class SettingsActivity extends Activity {
         s.abbreviations=abbreviations==null?preferences.getBoolean("abbreviations",true):abbreviations.isChecked();
         s.prediction=prediction==null?preferences.getBoolean("prediction",false):prediction.isChecked();
         s.originalQuestions=originalQuestions==null?preferences.getBoolean("originalQuestions",false):originalQuestions.isChecked();
+        s.mellowMode=mellowMode==null?preferences.getBoolean("mellowMode",false):mellowMode.isChecked();
         s.tags=tags==null?preferences.getBoolean("tags",false):tags.isChecked();
         Preferences.save(preferences,loadedProfile,s);
     }

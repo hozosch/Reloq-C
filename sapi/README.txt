@@ -64,7 +64,9 @@ The samples and synthesis rate are unchanged.
 
 “Use original question intonation” selects the native question contour for
 German and US English; it is off by default. Existing settings are retained
-when upgrading. Unchanged dictionary paths retain initialized language data. Small metadata
+when upgrading. “Mellow mode” reduces periodic voice presence between 3.5 and
+4 kHz at synthesis rates of 16 kHz and above; it is off by default.
+Unchanged dictionary paths retain initialized language data. Small metadata
 checks detect edits, replacement, creation and deletion of native .dic files
 between utterances. No text result or synthesized speech is cached. Aborted
 audio is discarded, and the next announcement is generated afresh.
