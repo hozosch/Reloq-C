@@ -196,26 +196,43 @@ static int32_t greek_record_at(delta_state *d,int32_t at,unsigned type)
     int32_t node=right?vgetsc(d,0,0,right,(uint8_t)type):0;
     return node&&!(*EVV_AT(int32_t *,node)&2)?node:0;
 }
-static int greek_word_has_accent(delta_state *d,int32_t from,int32_t to,unsigned *vowels)
+static int greek_word_has_accent(delta_state *d,int32_t from,int32_t to,unsigned *vowels,int *connector,int inspect)
 {
-    *vowels=0;
+    *vowels=0;*connector=0;
     if(!from||!to)return 0;
-    int accented=0;
+    int accented=0;char phones[64];size_t used=0;
     int32_t at=from,end=greek_record_right(d,to,4);
     for(unsigned guard=0;at&&greek_record_right(d,at,4)!=end&&guard<1024;++guard) {
         int32_t phone=greek_record_at(d,at,4);int16_t stress;
         if(!phone)return 0;
         void *body=TFLDS(EVV_AT(void *,phone));
         memcpy(&stress,delta_record_field(&vstmtbl[4],8,body),2);
-        if(stress>0)accented=1;
+        if(stress>0){accented=1;if(!inspect)return 1;}
         if(*(const unsigned char *)delta_record_field(&vstmtbl[4],1,body)==1)++*vowels;
+        if(inspect) {
+            unsigned name=*(const unsigned char *)delta_record_field(&vstmtbl[4],0,body);
+            const delta_fielddesc *field=&vstmtbl[4].fields[0];
+            if(name<(unsigned)field->nvalues) {
+                const char *phone_name=((const char *const *)field->values)[name];
+                size_t n=phone_name?strlen(phone_name):0;
+                if(n&&n<sizeof phones-used){memcpy(phones+used,phone_name,n);used+=n;}
+            }
+        }
         int32_t next=EVV_AT(int32_t *,phone)[1]&~3;
         if(!next||next==at)break;
         at=next;
     }
+    phones[used]=0;
+    /* Common subordinate and connective words can retain lexical stress,
+       yet their neighbor is often the better candidate for phrase accent.
+       Use the native phone stream so case and Unicode normalization agree. */
+    static const char *const connectors[]={"otan","epiDi","afu","eno","molis",
+        "kaTos","ean","mejri","opos","oste","oso"};
+    for(size_t i=0;inspect&&i<sizeof connectors/sizeof *connectors;++i)
+        if(!strcmp(phones,connectors[i])){*connector=1;break;}
     return accented;
 }
-struct greek_unstressed_word {unsigned char *level;unsigned vowels;};
+struct greek_unstressed_word {unsigned char *level;unsigned vowels;int connector;};
 static void greek_finish_unstressed_run(struct greek_unstressed_word *words,size_t count,int next_stress)
 {
     /* Greek content words normally retain prenuclear accents, but a run of
@@ -226,7 +243,10 @@ static void greek_finish_unstressed_run(struct greek_unstressed_word *words,size
        initialisms, weak words, the final approach and explicit controls alone. */
     int16_t normal=1;
     if(count==1&&words[0].vowels>=2&&next_stress==1)memcpy(words[0].level,&normal,2);
-    else if(count==2)memcpy(words[0].level,&normal,2);
+    else if(count==2) {
+        size_t which=words[0].connector&&!words[1].connector?1:0;
+        memcpy(words[which].level,&normal,2);
+    }
     else if(count>=3)for(size_t i=1;i+1<count;i+=3)memcpy(words[i].level,&normal,2);
 }
 int reloq61_greek_keep_lexical_duration(void *state)
@@ -258,9 +278,9 @@ void reloq61_greek_adjust_word_stress(void *state,int32_t from,int32_t to)
         if(annotation) {
             greek_finish_unstressed_run(run,count,0);count=0;
         } else {
-            unsigned vowels;
-            if(greek_word_has_accent(d,begin,next,&vowels)) {
-                if(stress==0)run[count++]=(struct greek_unstressed_word){level,vowels};
+            unsigned vowels;int connector;
+            if(greek_word_has_accent(d,begin,next,&vowels,&connector,stress==0)) {
+                if(stress==0)run[count++]=(struct greek_unstressed_word){level,vowels,connector};
                 else {greek_finish_unstressed_run(run,count,stress);count=0;}
             }
         }
