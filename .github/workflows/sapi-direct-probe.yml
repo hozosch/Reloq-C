@@ -16,7 +16,7 @@ jobs:
           run-id: 42363445606
           github-token: ${{ github.token }}
           path: payload
-      - name: Check one real SAPI activation
+      - name: Inspect SAPI process shutdown
         shell: pwsh
         run: |
           Expand-Archive (Get-ChildItem payload/*.zip | Select-Object -First 1).FullName test
@@ -25,11 +25,17 @@ jobs:
           if ($reg.ExitCode -ne 0) { throw "Registration failed: $($reg.ExitCode)" }
           $test = (Resolve-Path 'test/Test-SAPI.exe').Path
           $p = Start-Process $test -ArgumentList '--first-case' -RedirectStandardOutput probe.txt -RedirectStandardError errors.txt -PassThru
-          $done = $p.WaitForExit(30000)
-          Write-Host "Process finished within 30 seconds: $done"
+          $done = $p.WaitForExit(5000)
+          Write-Host "Process finished: $done PID $($p.Id)"
           Get-Content probe.txt, errors.txt -ErrorAction SilentlyContinue
           if (!$done) {
+            $running = Get-Process -Id $p.Id -ErrorAction SilentlyContinue
+            Write-Host "Still running:" ($null -ne $running)
+            Get-CimInstance Win32_Thread -Filter "ProcessHandle='$($p.Id)'" | Select-Object Handle,ThreadState,WaitMode,WaitReason | Format-Table | Out-String | Write-Host
+            $cdb = Get-ChildItem 'C:/Program Files (x86)/Windows Kits/10/Debuggers/x64/cdb.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($cdb) { & $cdb.FullName -p $p.Id -c "~* k; q" 2>&1 | Out-String | Write-Host }
+            else { Write-Host 'Windows debugger not installed' }
             Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
-            throw 'SAPI first case did not finish in 30 seconds'
+            throw 'SAPI first case did not exit'
           }
           if ($p.ExitCode -ne 0) { throw "SAPI first case failed: $($p.ExitCode)" }
