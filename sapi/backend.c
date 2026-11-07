@@ -411,9 +411,24 @@ static struct context_cache *thread_cache(void)
 #else
 static INIT_ONCE cache_once=INIT_ONCE_STATIC_INIT;
 static DWORD cache_key=FLS_OUT_OF_INDEXES;
-static void WINAPI cache_gone(void *value){cache_destroy(value);}
+typedef BOOLEAN (WINAPI *shutdown_query)(void);
+static shutdown_query query_shutdown;
+static void WINAPI cache_gone(void *value)
+{
+    /* ExitProcess has already stopped the provider's other threads. Joining
+     * them from an FLS callback would hang the host; the OS reclaims their
+     * resources. Ordinary thread exits still free their own contexts. */
+    if(query_shutdown&&!query_shutdown())cache_destroy(value);
+}
 static BOOL CALLBACK cache_open(PINIT_ONCE once,PVOID unused,PVOID *context)
-{(void)once;(void)unused;(void)context;cache_key=FlsAlloc(cache_gone);return cache_key!=FLS_OUT_OF_INDEXES;}
+{
+    (void)once;(void)unused;(void)context;
+    HMODULE ntdll=GetModuleHandleW(L"ntdll.dll");
+    FARPROC p=ntdll?GetProcAddress(ntdll,"RtlDllShutdownInProgress"):NULL;
+    if(!p)return FALSE;
+    memcpy(&query_shutdown,&p,sizeof p);
+    cache_key=FlsAlloc(cache_gone);return cache_key!=FLS_OUT_OF_INDEXES;
+}
 static struct context_cache *thread_cache(void)
 {
     if(!InitOnceExecuteOnce(&cache_once,cache_open,NULL,NULL))return NULL;

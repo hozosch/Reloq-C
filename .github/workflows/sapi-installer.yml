@@ -169,6 +169,11 @@ jobs:
           & ./sapi/test_japanese_sapi.ps1 -ReportPath dist/validation/japanese-results.json
           foreach ($arch in @('x64','x86')) {
             $test = if ($arch -eq 'x64') { Join-Path $install 'Test-SAPI.exe' } else { Join-Path $install 'x86\Test-SAPI.exe' }
+            & $test --threadcase *> "dist/validation/sapi-$arch-threads.txt"
+            if ($LASTEXITCODE -ne 0) {
+              Get-Content "dist/validation/sapi-$arch-threads.txt" -Tail 60
+              throw "SAPI $arch caller thread validation failed"
+            }
             & $test --all-native-rates *> "dist/validation/sapi-$arch.txt"
             $testExit = $LASTEXITCODE
             if ($testExit -ne 0) {

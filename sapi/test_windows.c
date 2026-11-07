@@ -18,7 +18,7 @@ static HRESULT native_format(ISpObjectToken *token,DWORD target,DWORD *rate)
     if(SUCCEEDED(hr))*rate=output->nSamplesPerSec;
     CoTaskMemFree(output);if(bound)ISpObjectWithToken_Release(bound);if(engine)engine->lpVtbl->Release(engine);return hr;
 }
-int wmain(int argc,wchar_t **argv)
+static int run_one(int argc,wchar_t **argv)
 {
     /* Preserve the last completed case if a native adapter terminates. */
     setvbuf(stdout,NULL,_IONBF,0);
@@ -93,4 +93,28 @@ int wmain(int argc,wchar_t **argv)
     CoUninitialize();
     wprintf(L"SAPI activation: %u/%u language/format cases passed (HRESULT=%08lX).\n",passed,expected,(unsigned long)hr);
     (void)sapi_rates;(void)sapi_profiles;(void)sapi_anatomy;return passed==expected?0:1;
+}
+
+static DWORD WINAPI run_thread(void *unused)
+{
+    (void)unused;
+    wchar_t *args[]={L"Test-SAPI",L"--first-case"};
+    return (DWORD)run_one(2,args);
+}
+
+int wmain(int argc,wchar_t **argv)
+{
+    if(argc!=2||wcscmp(argv[1],L"--threadcase"))return run_one(argc,argv);
+    /* A fresh caller must be able to end and free its cached contexts, even
+     * when SAPI creates and releases its voices on many different threads. */
+    for(unsigned i=0;i<12;++i){
+        HANDLE thread=CreateThread(NULL,0,run_thread,NULL,0,NULL);
+        if(!thread)return 2;
+        DWORD wait=WaitForSingleObject(thread,20000),result=1;
+        if(wait==WAIT_OBJECT_0)GetExitCodeThread(thread,&result);
+        CloseHandle(thread);
+        wprintf(L"Caller thread %u: wait=%lu result=%lu\n",i,(unsigned long)wait,(unsigned long)result);
+        if(wait!=WAIT_OBJECT_0||result)return 3;
+    }
+    return 0;
 }

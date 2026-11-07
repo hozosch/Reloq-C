@@ -1,0 +1,45 @@
+name: Temporary SAPI architecture probe
+on:
+  push:
+    branches: [codex/sapi-direct-probe-20261107]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  probe:
+    runs-on: windows-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 42364751897
+          github-token: ${{ github.token }}
+          name: sapi-native-x64
+          path: payload-x64
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 42364751897
+          github-token: ${{ github.token }}
+          name: sapi-native-x86
+          path: payload-x86
+      - name: Test caller-thread lifetime and full language set
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          foreach ($arch in @('x64','x86')) {
+            Expand-Archive (Get-ChildItem "payload-$arch/*.zip" | Select-Object -First 1).FullName -DestinationPath "test-$arch"
+            $regsvr=if($arch -eq 'x64'){"$env:windir/System32/regsvr32.exe"}else{"$env:windir/SysWOW64/regsvr32.exe"}
+            $reg=Start-Process $regsvr -ArgumentList '/s', (Resolve-Path "test-$arch/ReLoqSapi.dll").Path -Wait -PassThru
+            if($reg.ExitCode -ne 0){throw "registration failed $arch"}
+            foreach ($case in @('--first-case','--threadcase','--all-native-rates')) {
+              $output="$arch-$($case.TrimStart('-'))-out.txt"; $err="$arch-$($case.TrimStart('-'))-err.txt"
+              $p=Start-Process (Resolve-Path "test-$arch/Test-SAPI.exe").Path -ArgumentList $case -RedirectStandardOutput $output -RedirectStandardError $err -PassThru
+              $timeout=if($case -eq '--all-native-rates'){90000}else{30000}
+              $done=$p.WaitForExit($timeout)
+              Write-Host "Case $arch $case finished=$done PID=$($p.Id)"
+              Get-Content $output -Tail 4 -ErrorAction SilentlyContinue | Write-Host
+              Get-Content $err -Tail 10 -ErrorAction SilentlyContinue | Write-Host
+              if(!$done){Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue;throw "Timeout $arch $case"}
+              if($p.ExitCode -ne 0){throw "Failure $arch $case exit=$($p.ExitCode)"}
+            }
+          }
