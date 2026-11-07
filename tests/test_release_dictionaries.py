@@ -9,7 +9,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 sys.path.insert(0, str(ROOT / 'nvda'))
-from release_packages import verify_packaged_dictionaries
+from release_packages import release_version, verify_packaged_dictionaries
 from _reloq_dictionaries import FILES
 
 
@@ -18,6 +18,9 @@ def blob(data):
 
 
 def main():
+    assert release_version('1.0.0') == '1.0'
+    assert release_version('1.2.0') == '1.2.0'
+    assert release_version('1.1.3') == '1.1.3'
     with tempfile.TemporaryDirectory() as temp:
         root = Path(temp)
         snapshot = root / 'snapshot'

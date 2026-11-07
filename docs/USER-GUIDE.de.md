@@ -1,5 +1,9 @@
 # Eloquence C – Bedienungsanleitung
 
+## Version 1.2.0
+
+Die griechische Aussprache und Satzmelodie wurden verbessert. Die erste Sprachausgabe wartet auf die ausgewählten Wörterbücher, Lautstärke und SAPI-Reaktion wurden verbessert und ein Punkt nach einem einzelnen Buchstaben kann einen englischen Satz beenden. Der weiche Modus und die ursprüngliche Frageintonation sind als Optionen verfügbar.
+
 ## Version 1.1.3
 
 Ein Absturz bei bestimmten langen Texten wurde behoben. HTTPS-Adressen nutzen die HTTP-Verarbeitung. Die Aussprache englischer Wörter in der griechischen Stimme wurde verbessert.

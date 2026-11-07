@@ -1,5 +1,9 @@
 # Eloquence C – user guide
 
+## Version 1.2.0
+
+Greek pronunciation and sentence melody have been refined. The first utterance waits for the selected dictionaries, speech volume and SAPI responsiveness have been improved, and a full stop after a single letter can end an English sentence. Mellow mode and original question intonation are available as optional settings.
+
 ## Version 1.1.3
 
 A crash on certain long texts has been fixed. HTTPS addresses use the HTTP reader. English pronunciation in the Greek voice has been refined.

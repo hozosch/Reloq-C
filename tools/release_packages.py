@@ -30,7 +30,7 @@ def names(version):
 def release_version(version):
     """Stable 1.0 is packaged as SemVer 1.0.0 for existing update clients."""
     names(version)
-    return version[:-2] if version.endswith('.0') else version
+    return '1.0' if version == '1.0.0' else version
 
 
 def android_name(version, name):
