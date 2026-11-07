@@ -725,6 +725,7 @@ static int generate_core_impl(const struct reloq61_request *q,struct reloq61_res
         worker->last_annotations!=q->annotations||worker->last_sample_rate!=q->sample_rate||
         worker->last_text_options.dictionary_disabled!=text_options.dictionary_disabled||
         worker->last_text_options.phrase_prediction!=text_options.phrase_prediction||
+        worker->last_text_options.original_questions!=text_options.original_questions||
         memcmp(worker->last_voice,q->voice,sizeof worker->last_voice));
     int prepared=worker&&worker->handle&&!reset;
     initialize();h=worker?worker->handle:NULL;

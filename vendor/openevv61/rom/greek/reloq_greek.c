@@ -158,10 +158,14 @@ static int greek_word(struct buffer *out,const char *text,size_t bytes,int conte
         g[2].base==0x3c4&&g[3].base==0x3b1&&
         !g[0].accent&&!g[1].accent&&!g[2].accent;
     int weak_preposition=(context&2)&&(apo||kata);
-    int unstressed=weak_preposition||(context&&!explicit_accent&&weak_word(g,n));
+    int unstressed=weak_preposition||((context&3)&&!explicit_accent&&weak_word(g,n));
     if(weak_preposition){explicit_accent=0;for(size_t j=0;j<m;++j)s[j].accent=0;}
     if(!explicit_accent&&!unstressed&&nuclei){size_t target=nuclei>1?nuclei-2:0,k=0;for(size_t j=0;j<m;++j)if(s[j].vowel&&k++==target){s[j].accent=1;break;}}
-    int error=say(out," `[");size_t begin=0;
+    /* The Castilian sentence planner can otherwise deaccent a Greek
+     * content word despite its explicit .1 lexical stress. Request normal
+     * prominence for written Greek words, leaving weak function words and
+     * explicit caller prominence controls to their existing rules. */
+    int error=say(out,(context&8)&&!unstressed&&!(context&4)?" `1 `[":" `[");size_t begin=0;
     for(size_t j=0;j<m&&!error;++j)if(s[j].vowel){
         if(j>begin){/* consonants already belong to this syllable */}
         error=say(out,s[j].accent?".1":".0");
@@ -451,12 +455,14 @@ int reloq_greek_text(const char *text,int annotations,reloq_greek_english englis
 {
     size_t length=strlen(text);if(length>SIZE_MAX/sizeof(size_t)-1)return -1;
     size_t *map=malloc((length+1)*sizeof *map);if(!map)return -1;
-    struct buffer b={0};int spelling=0,previous=0,failed=0;
+    struct buffer b={0};int spelling=0,previous=0,failed=0,explicit_prominence=0;
     for(size_t i=0;i<length&&!failed;){size_t begin=i,start=b.length;int expanded=0;uint32_t cp;size_t z=decode(text+i,&cp);if(!z){failed=1;break;}
         if(cp>=0xff01&&cp<=0xff5e&&
            strchr("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~",(int)(cp-0xfee0)))cp-=0xfee0;
         if(cp=='`'&&annotations&&z==1){
             struct reloq_inline_tag tag=reloq_inline_tag_read((const unsigned char *)text+i,length-i,0);
+            if(tag.kind==RELOQ_TAG_PROMINENCE)explicit_prominence=1;
+            else if(tag.kind==RELOQ_TAG_SPR)explicit_prominence=0;
             if(tag.kind==RELOQ_TAG_SPELL){spelling=tag.value;failed=say(&b,spelling==2?" `ts2 ":spelling==1?" `ts1 ":" `ts0 ");i+=tag.length;}
             else {size_t end=i+1;if(text[end]=='['){while(text[end]&&text[end]!=']')++end;if(text[end])++end;}else while(text[end]&&(unsigned char)text[end]>32&&(unsigned char)text[end]<128)++end;failed=add(&b,text+i,end-i);i=end;}
         } else if(spelling){
@@ -498,10 +504,10 @@ int reloq_greek_text(const char *text,int annotations,reloq_greek_english englis
             }
             i+=z;previous=0;
         }
-        else if(letter(cp).base){size_t end=i+z;while(text[end]){uint32_t next;size_t k=decode(text+end,&next);if(!k||!letter(next).base)break;end+=k;}size_t after=end;while(text[after]==' '||text[after]=='\t')++after;uint32_t next=0;if(text[after])decode(text+after,&next);int following=letter(next).base||reloq61_latin_byte(next)||(next>='0'&&next<='9');failed=greek_word(&b,text+i,end-i,(previous?1:0)|(following?2:0));previous=1;i=end;expanded=1;}
+        else if(letter(cp).base){size_t end=i+z;while(text[end]){uint32_t next;size_t k=decode(text+end,&next);if(!k||!letter(next).base)break;end+=k;}size_t after=end;while(text[after]==' '||text[after]=='\t')++after;uint32_t next=0;if(text[after])decode(text+after,&next);int following=letter(next).base||reloq61_latin_byte(next)||(next>='0'&&next<='9');failed=greek_word(&b,text+i,end-i,8|(explicit_prominence?4:0)|(previous?1:0)|(following?2:0));previous=1;explicit_prominence=0;i=end;expanded=1;}
         else if(cp>='0'&&cp<='9'){
             uint64_t number=0;size_t end=i;int overflow=0;while(text[end]>='0'&&text[end]<='9'){unsigned digit=text[end]-'0';if(number>(UINT64_MAX-digit)/10)overflow=1;else number=number*10+digit;++end;}
-            if(overflow){for(size_t j=i;j<end&&!failed;++j)failed=cardinal(&b,text[j]-'0');}else failed=cardinal(&b,number);i=end;previous=0;expanded=1;
+            if(overflow){for(size_t j=i;j<end&&!failed;++j)failed=cardinal(&b,text[j]-'0');}else failed=cardinal(&b,number);i=end;previous=0;explicit_prominence=0;expanded=1;
         } else if(reloq61_latin_byte(cp)){
             /* Keep accented letters in their complete native English word.
                The spelling alignment uses the shared base identities; the
@@ -516,7 +522,7 @@ int reloq_greek_text(const char *text,int annotations,reloq_greek_english englis
                 end+=k;++bytes;
             }
             if(!failed&&bytes)failed=latin(&b,word.data,english,context);
-            free(word.data);i=end;previous=0;expanded=1;
+            free(word.data);i=end;previous=0;explicit_prominence=0;expanded=1;
         } else if(cp=='\\') {
             /* Internal SPR must not become an escaped literal after a
                caller's backslash. Preserve explicit caller annotations;

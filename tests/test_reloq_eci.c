@@ -225,7 +225,7 @@ static int native_german_analysis(void)
     for(int dictionary=0;dictionary<2;++dictionary)for(int prediction=0;prediction<2;++prediction)
         for(size_t i=0;i<sizeof texts/sizeof *texts;++i) {
             struct reloq61_text_options previous=reloq61_text_options_scope(
-                (struct reloq61_text_options){dictionary,prediction});
+                (struct reloq61_text_options){dictionary,prediction,0});
             unsigned char *own=NULL;size_t length=0,approximate=0;
             char native[16384];unsigned char encoded[2048];size_t encoded_length=0;
             CHECK(!reloq_character_encode_text((const unsigned char *)texts[i],strlen(texts[i]),
@@ -418,7 +418,7 @@ static int native_german_gap_analysis(void)
                 CHECK(!reloq_character_encode_text((unsigned char *)text,(size_t)used,
                     encoded,NULL,sizeof encoded,&encoded_length,NULL,NULL));
                 struct reloq61_text_options previous=reloq61_text_options_scope(
-                    (struct reloq61_text_options){dictionary,prediction});
+                    (struct reloq61_text_options){dictionary,prediction,0});
                 struct reloq61_result result;
                 struct reloq61_request request={.language=0x40000,.annotations=1,.phonemes_only=1,
                     .voice={0,50,65,30,0,0,50,92},.text=(char *)encoded,
@@ -443,7 +443,7 @@ static int native_german_gap_analysis(void)
 static int phrase_prediction_frontend(void)
 {
     static const unsigned char text[]="Das ist ein Test der eine l\303\244ngere Wortgruppe ohne Satzzeichen enth\303\244lt und danach noch viel mehr W\303\266rter hinzuf\303\274gt damit die automatische Satzvorhersage Grenzen finden kann.";
-    struct reloq61_text_options previous=reloq61_text_options_scope((struct reloq61_text_options){0,1});
+    struct reloq61_text_options previous=reloq61_text_options_scope((struct reloq61_text_options){0,1,0});
     unsigned char *annotation=NULL;size_t length=0,approximate=0;
     int status=reloq_german_best_effort_annotate(text,sizeof text-1,NULL,&annotation,&length,&approximate,NULL);
     reloq61_text_options_scope(previous);

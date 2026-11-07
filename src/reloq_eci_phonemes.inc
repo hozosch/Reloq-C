@@ -92,7 +92,7 @@ int ECICALL eciGeneratePhonemes(ECIHand handle,int room,void *buffer)
     }
     void *worker=reloq61_worker_scope(e->rule_worker);
     struct reloq61_text_options options=reloq61_text_options_scope(
-        (struct reloq61_text_options){e->dictionary_disabled,e->phrase_prediction});
+        (struct reloq61_text_options){e->dictionary_disabled,e->phrase_prediction,e->original_questions});
     struct reloq61_cancel_check cancel=reloq61_cancel_scope(
         (struct reloq61_cancel_check){phoneme_cancelled,&output});
     int voice[8]={e->gender,e->head_size,e->native_pitch,e->native_inflection,

@@ -275,6 +275,9 @@ msgstr "&Abkürzungswörterbuch verwenden"
 msgid "Phrase &prediction"
 msgstr "Satz&vorhersage"
 
+msgid "Use original &question intonation"
+msgstr "Ursprüngliche &Frageintonation verwenden"
+
 msgid "Add-on updates"
 msgstr "Add-on-Updates"
 

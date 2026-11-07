@@ -264,11 +264,12 @@ def merge_sources(community, sources, cache, *, replacements=None):
 
 class DictionaryManager:
     def __init__(self, bundled, cache, deliver, on_error, *, fetch=urlopen, watch_interval=0.5,
-                 settings_path=None, legacy_settings=None, on_update=None):
+                 settings_path=None, legacy_settings=None, on_update=None, on_load_error=None):
         self.bundled, self.cache = Path(bundled), Path(cache)
         self.settings_path = Path(settings_path) if settings_path is not None else self.cache / "sources.json"
         self.deliver, self.on_error, self.fetch = deliver, on_error, fetch
         self.on_update = on_update
+        self.on_load_error = on_load_error
         self._lock = threading.Lock()
         self._revision, self._closed, self._enabled = 0, False, False
         self._last_delivery = None
@@ -497,10 +498,53 @@ class DictionaryManager:
             return None, {"community_commit": None, "own_sources": 0, "files": {}}
         return merge_sources(community, sources, self.cache, replacements=replacements)
 
+    def _startup_signature(self, community, sources, enabled, repository, state):
+        # Reuse an already validated merged directory across synthesizer
+        # activations, but hash the actual input bytes: timestamps alone can
+        # be preserved by editors or synchronization tools.
+        identity = {"enabled": enabled, "repository": repository,
+                    "community": Path(community).name if community else None,
+                    "sources": [s.record() for s in sources], "state": state}
+        digest = hashlib.sha256(json.dumps(identity, sort_keys=True).encode('utf8'))
+        paths = [Path(name) for name, _ in state]
+        if enabled: paths.append(self.bundled / 'manifest.json')
+        for path in paths:
+            digest.update(str(path).encode('utf8') + b'\0')
+            try:
+                data = _read(path)
+            except FileNotFoundError:
+                digest.update(b'missing\0')
+            else:
+                digest.update(hashlib.sha256(data).digest())
+        return digest.hexdigest()
+
+    def _cached_startup(self, signature):
+        try:
+            record = json.loads((self.cache / 'startup.json').read_text(encoding='utf8'))
+            name = record['snapshot']
+            if (record['version'] != 1 or record['signature'] != signature or
+                    not isinstance(name, str) or len(name) != 64 or
+                    any(c not in '0123456789abcdef' for c in name)):
+                return None
+            path = self.cache / 'merged' / name
+            return path, validate_merged(path)
+        except (OSError, ValueError, TypeError, KeyError):
+            return None
+
+    def _remember_startup(self, signature, path):
+        if path is None or Path(path).parent != self.cache / 'merged':
+            return
+        try:
+            _atomic_json(self.cache / 'startup.json', {'version': 1,
+                'signature': signature, 'snapshot': Path(path).name})
+        except OSError:
+            pass  # An unavailable cache must not prevent speech.
+
     def _work(self, revision, enabled, sources, repository, update, completed, save):
-        state = self._state(enabled, sources)
+        state = None
         committed = False
         try:
+            state = self._state(enabled, sources)
             community = self._community(repository) if enabled else None
             previous_community = community
             with self._lock:
@@ -510,7 +554,9 @@ class DictionaryManager:
                 community = fetch_master(self.cache, fetch=self.fetch, publish=False, source=repository)
                 latest = community
                 update = False
-            path, details = self._build(community, sources, enabled, repository)
+            signature = self._startup_signature(community, sources, enabled, repository, state)
+            cached = self._cached_startup(signature)
+            path, details = cached if cached is not None else self._build(community, sources, enabled, repository)
             if self._state(enabled, sources) != state:
                 raise OSError("dictionary source changed while it was being read")
             with self._lock:
@@ -524,6 +570,7 @@ class DictionaryManager:
                     _atomic_json(self.cache / repository / "current.json", {"commit": community.name})
                 self._watched_state = state
                 committed = True
+            self._remember_startup(signature, path)
             self._emit(revision, path)
             if update:
                 latest = fetch_master(self.cache, fetch=self.fetch, publish=False, source=repository)
@@ -540,6 +587,9 @@ class DictionaryManager:
                     if not self._closed and self._revision == revision:
                         _atomic_json((self.cache if repository == "community" else self.cache / repository) / "current.json", {"commit": latest.name})
                         self._watched_state = installed_state
+                if self.current(revision):
+                    updated_signature = self._startup_signature(latest, sources, enabled, repository, installed_state)
+                    self._remember_startup(updated_signature, path)
             if not self.current(revision):
                 return
             self._emit(revision, path)
@@ -576,9 +626,13 @@ class DictionaryManager:
                         self._repository = self._committed_repository
                     # Report an invalid saved file once. Its next write,
                     # disappearance or return will be checked automatically.
-                    self._watched_state = state
+                    if state is not None:self._watched_state = state
             if active:
-                self.on_error(error)
+                try:
+                    self.on_error(error)
+                finally:
+                    if self.on_load_error:
+                        self.on_load_error(revision)
                 if completed:
                     completed(error, None)
         finally:

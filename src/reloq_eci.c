@@ -179,7 +179,7 @@ struct reloq_eci_engine {
     int native_volume_active;
     int input_type;
     int process_tags;
-    int dictionary_disabled,phrase_prediction;
+    int dictionary_disabled,phrase_prediction,original_questions;
     int pause_mode;
     int head_size,roughness,breathiness,gender;
     int german_glide_opening,german_glide_backness,german_glide_softness;
@@ -840,7 +840,7 @@ int ECICALL eciSynthesize(ECIHand handle)
     (void)reloq_session_text_loudness(e->text_session,
         e->voice_mode==RELOQ_ECI_VOICE_GENERIC);
     struct reloq61_text_options previous_options=reloq61_text_options_scope(
-        (struct reloq61_text_options){e->dictionary_disabled,e->phrase_prediction});
+        (struct reloq61_text_options){e->dictionary_disabled,e->phrase_prediction,e->original_questions});
     struct reloq61_glide_options previous_glide=reloq61_glide_options_scope(
         (struct reloq61_glide_options){e->german_glide_opening,e->german_glide_backness,e->german_glide_softness});
     e->failure_stage = RELOQ_ECI_STAGE_NONE;
@@ -1342,6 +1342,7 @@ int ECICALL eciGetParam(ECIHand handle, int parameter)
     case RELOQ_ECI_PROCESS_TAGS: return e->process_tags;
     case RELOQ_ECI_DICTIONARY: return e->dictionary_disabled;
     case RELOQ_ECI_PHRASE_PREDICTION: return e->phrase_prediction;
+    case RELOQ_ECI_ORIGINAL_QUESTIONS: return e->original_questions;
     case RELOQ_ECI_PAUSE_MODE: return e->pause_mode;
     case RELOQ_ECI_HEAD_SIZE: return e->head_size;
     case RELOQ_ECI_ROUGHNESS: return e->roughness;
@@ -1467,6 +1468,9 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
     case RELOQ_ECI_PHRASE_PREDICTION:
         if(value!=0 && value!=1)return eci_refuse(e,-1);
         e->phrase_prediction=value;break;
+    case RELOQ_ECI_ORIGINAL_QUESTIONS:
+        if(value!=0 && value!=1)return eci_refuse(e,-1);
+        e->original_questions=value;break;
     case RELOQ_ECI_PROCESS_TAGS:
         if(value!=0 && value!=1)return eci_refuse(e,-1);
         e->process_tags=value;e->input_type=value;break;

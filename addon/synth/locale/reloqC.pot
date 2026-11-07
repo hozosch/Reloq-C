@@ -43,6 +43,9 @@ msgstr ""
 msgid "Phrase &prediction"
 msgstr ""
 
+msgid "Use original &question intonation"
+msgstr ""
+
 #: addon/synth/synthDrivers/reloqC/__init__.py:189
 msgid "Process &ECI tags"
 msgstr ""

@@ -75,6 +75,7 @@ struct reloq_session {
     unsigned high_rate_profile;
     int text_loudness;
     float linear_gain;
+    double text_peak_gain;
 };
 
 float reloq_session_sample_rate(const struct reloq_session *s)
@@ -144,7 +145,7 @@ static int reserve_buffers(struct reloq_session_buffers *buffers, size_t count)
     return RELOQ_SESSION_OK;
 }
 
-static int output_pcm(const struct reloq_session *session, size_t count)
+static int output_pcm(struct reloq_session *session, size_t count)
 {
     const float *output = session->buffers.output;
     int16_t *pcm = session->buffers.pcm;
@@ -176,14 +177,27 @@ static int output_pcm(const struct reloq_session *session, size_t count)
          * unbounded synthesis fits PCM: raw-source tests and observations
          * must measure before this knee. */
 #ifndef RELOQ_SESSION_FLOAT_DIAGNOSTIC
-        if(session->text_loudness)
+        if(session->text_loudness) {
+            /* Short source onsets can be conspicuous without reaching the
+             * PCM rails. A continuous knee and an 8 ms gain recovery tame
+             * them before PCM conversion without a block-size dependent
+             * jump or a lookahead buffer in the speech startup path. */
+            const double recovery=-expm1(-1.0/(session->config.sample_rate*.008));
             for(size_t i=0;i<n;++i) {
                 double amplitude=fabs((double)block[i]);
-                if(amplitude>28000) {
-                    double bounded=28000-4700*expm1(-(amplitude-28000)/4700);
-                    block[i]=(int64_t)copysign(bounded,(double)block[i]);
+                double desired=1;
+                if(amplitude>22000) {
+                    double bounded=22000-6000*expm1(-(amplitude-22000)/6000);
+                    desired=bounded/amplitude;
                 }
+                if(desired<session->text_peak_gain)session->text_peak_gain=desired;
+                else {
+                    session->text_peak_gain+=(1-session->text_peak_gain)*recovery;
+                    if(session->text_peak_gain>desired)session->text_peak_gain=desired;
+                }
+                block[i]=(int64_t)((double)block[i]*session->text_peak_gain);
             }
+        }
         else if(session->high_rate_profile && session->config.sample_rate>=16000)
             for(size_t i=0;i<n;++i) {
                 double amplitude=fabs((double)block[i]);
@@ -291,6 +305,7 @@ int reloq_session_reset(struct reloq_session *session)
             c->sample_rate>=44100?.36666667f:c->sample_rate>=32000?.26666667f:
             c->sample_rate>=22050?.15f:0;
     session->linear_gain=1;
+    session->text_peak_gain=1;
     next.noise_transfer.trial_profile=classic;
     session->frame_state = next;
     epoch_store(&session->active_epoch, generation);

@@ -33,7 +33,7 @@ from synthDriverHandler import (SynthDriver as BaseSynthDriver, VoiceInfo, Langu
 from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciProsody, EciLanguage, EciText, NATIVE_VOLUME,
                                 NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION, PROCESS_TAGS,
                                 PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATES,
-                                DICTIONARY, PHRASE_PREDICTION)
+                                DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS)
 from ._reloq_eci_transport import EciTextTransport
 from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries
 from ._reloq_languages import GERMAN, LANGUAGES, LANGUAGE_ALIASES, LANGUAGE_DISPLAY_ORDER, LanguageEngine, language_for
@@ -181,6 +181,7 @@ class SynthDriver(BaseSynthDriver):
         NumericDriverSetting("breathiness", _("&Breathiness"), False, defaultVal=0),
         BooleanDriverSetting("abbreviationDictionary", _("Use &abbreviation dictionary"), defaultVal=True),
         BooleanDriverSetting("phrasePrediction", _("Phrase &prediction"), defaultVal=False),
+        BooleanDriverSetting("originalQuestions", _("Use original &question intonation"), defaultVal=False),
         BooleanDriverSetting("voiceTags", _("Process &ECI tags"), defaultVal=False),
         BooleanDriverSetting("_dictionaryCommunity", _("Use &community pronunciation dictionaries"), defaultVal=False),
         DriverSetting("pauseMode", _("Shorten pa&uses"), defaultVal="0"),
@@ -215,6 +216,7 @@ class SynthDriver(BaseSynthDriver):
         self._breathiness = 0
         self._abbreviationDictionary = True
         self._phrasePrediction = False
+        self._originalQuestions = False
         self._voiceTags = False
         self._communityDictionaries = False
         self._dictionary_updater = None
@@ -245,9 +247,10 @@ class SynthDriver(BaseSynthDriver):
         self._transport.set_parameter(HEAD_SIZE, self._headSize)
         self._transport.set_parameter(ROUGHNESS, self._roughness)
         self._transport.set_parameter(BREATHINESS, self._breathiness)
+        self._transport.set_parameter(ORIGINAL_QUESTIONS, 0)
         manager = self.dictionary_manager()
         # Start monitoring the installed dictionaries and selected own files.
-        manager.set_enabled(False)
+        self._dictionary_request(lambda: manager.set_enabled(False))
         filter_speechSequence.register(self._protect_tags)
         try:
             source = json.loads((DLL.parents[2] / "doc/source.json").read_text(encoding="utf-8"))
@@ -362,6 +365,26 @@ class SynthDriver(BaseSynthDriver):
                     and self._dictionary_updater.current(revision)):
                 self._transport.set_dictionary_path(path)
 
+    def _dictionary_snapshot_failed(self, revision):
+        with self._submit_lock:
+            if (not self._terminating and self._dictionary_updater is not None
+                    and self._dictionary_updater.current(revision)):
+                self._transport.fail_dictionary_load()
+
+    def _dictionary_request(self, start):
+        # Speech jobs wait on their own worker until the complete local
+        # snapshot has been selected and installed into the native engine.
+        # The NVDA UI and background network update never wait on it.
+        with self._submit_lock:
+            if self._terminating:
+                raise RuntimeError("synthesizer is terminating")
+            self._transport.begin_dictionary_load()
+            try:
+                return start()
+            except Exception:
+                self._transport.fail_dictionary_load()
+                raise
+
     def dictionary_manager(self):
         with self._submit_lock:
             if self._terminating:
@@ -376,7 +399,8 @@ class SynthDriver(BaseSynthDriver):
                     lambda error: log.warning("Community dictionary refresh failed: %s", error),
                     settings_path=profile / "reloqCDictionaries.json",
                     legacy_settings=profile / "reloqCommunityDictionaries" / "sources.json",
-                    on_update=self._dictionary_update_notice)
+                    on_update=self._dictionary_update_notice,
+                    on_load_error=self._dictionary_snapshot_failed)
             return self._dictionary_updater
 
     def _dictionary_update_notice(self, revision, details):
@@ -391,14 +415,15 @@ class SynthDriver(BaseSynthDriver):
         wx.CallAfter(show)
 
     def refresh_dictionaries(self, completed=None):
-        return self.dictionary_manager().refresh(completed)
+        return self._dictionary_request(lambda: self.dictionary_manager().refresh(completed))
 
     def set_dictionary_sources(self, sources, completed=None):
-        return self.dictionary_manager().set_sources(sources, completed)
+        return self._dictionary_request(lambda: self.dictionary_manager().set_sources(sources, completed))
 
     def configure_dictionaries(self, sources, enabled, completed=None, repository=None):
         with self._submit_lock:
-            revision = self.dictionary_manager().configure(sources, enabled, completed, repository=repository)
+            revision = self._dictionary_request(lambda: self.dictionary_manager().configure(
+                sources, enabled, completed, repository=repository))
             self._communityDictionaries = enabled
             return revision
 
@@ -408,7 +433,7 @@ class SynthDriver(BaseSynthDriver):
         with self._submit_lock:
             if self._terminating or self._communityDictionaries == enable:
                 return
-            self.dictionary_manager().set_enabled(enable)
+            self._dictionary_request(lambda: self.dictionary_manager().set_enabled(enable))
             self._communityDictionaries = enable
 
     def _get_abbreviationDictionary(self):
@@ -434,6 +459,18 @@ class SynthDriver(BaseSynthDriver):
                 return
             self._transport.set_parameter(PHRASE_PREDICTION, int(enable))
             self._phrasePrediction = enable
+
+    def _get_originalQuestions(self):
+        return self._originalQuestions
+
+    def _set_originalQuestions(self, enable):
+        if not isinstance(enable, bool):
+            raise ValueError("originalQuestions must be boolean")
+        with self._submit_lock:
+            if self._terminating or self._originalQuestions == enable:
+                return
+            self._transport.set_parameter(ORIGINAL_QUESTIONS, int(enable))
+            self._originalQuestions = enable
 
     def _get_voiceTags(self):
         return self._voiceTags
@@ -507,6 +544,7 @@ class SynthDriver(BaseSynthDriver):
                 (PROCESS_TAGS, int(self._voiceTags)), (PAUSE_MODE, int(self._pauseMode)),
                 (DICTIONARY, int(not self._abbreviationDictionary)),
                 (PHRASE_PREDICTION, int(self._phrasePrediction)),
+                (ORIGINAL_QUESTIONS, int(self._originalQuestions)),
             ))
             self._selectedLanguage, self._voice = selected, voice
 

@@ -1,6 +1,7 @@
 """Runtime updates, independent source merging, rollback and selection races."""
 from pathlib import Path
 import json
+import os
 import shutil
 import tempfile
 import threading
@@ -38,6 +39,43 @@ class ManagerTests(unittest.TestCase):
         path = self.root / name
         path.write_bytes(data)
         return DictionarySource(str(path), language, volume)
+
+    def test_startup_cache_checks_contents_and_reuses_valid_merged_snapshot(self):
+        own = self.source('cached.dic', b'Unigram\tFirst\n', 0x10000)
+        builds = []
+        original = self.manager._build
+        def build(*args):
+            builds.append(True)
+            return original(*args)
+        self.manager._build = build
+        error, _ = self.wait(lambda done: self.manager.set_sources([own], done))
+        self.assertIsNone(error)
+        first = self.deliveries[-1][1]
+        self.assertEqual(len(builds), 1)
+        error, _ = self.wait(self.manager.refresh)
+        self.assertIsNone(error)
+        self.assertEqual(len(builds), 1, 'unchanged input should reuse its verified snapshot')
+        self.assertEqual(self.deliveries[-1][1], first)
+
+        state = self.manager._state(False, [own])
+        before = self.manager._startup_signature(None, [own], False, 'community', state)
+        timestamp = Path(own.path).stat()
+        Path(own.path).write_bytes(b'Unigram\tOther\n')
+        os.utime(own.path, ns=(timestamp.st_atime_ns, timestamp.st_mtime_ns))
+        after = self.manager._startup_signature(None, [own], False, 'community', state)
+        self.assertNotEqual(before, after, 'matching metadata must not hide changed input bytes')
+        error, _ = self.wait(self.manager.refresh)
+        self.assertIsNone(error)
+        self.assertEqual(len(builds), 2)
+        self.assertIn(b'Unigram\tOther\n', (self.deliveries[-1][1]/'ENUmain.dic').read_bytes())
+
+        # A forged pointer cannot make an unrelated directory a valid hit.
+        record = json.loads((self.cache/'startup.json').read_text(encoding='utf8'))
+        record['snapshot'] = '../other'
+        (self.cache/'startup.json').write_text(json.dumps(record), encoding='utf8')
+        error, _ = self.wait(self.manager.refresh)
+        self.assertIsNone(error)
+        self.assertEqual(len(builds), 3)
 
     def test_merge_native_volumes_precedence_and_unchanged_inputs(self):
         a = self.source('my-unrelated-name.dic', b'Armin\tErster\nOwn\t`[.1a]\n')

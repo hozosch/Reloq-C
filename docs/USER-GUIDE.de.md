@@ -71,6 +71,8 @@ Die folgenden Optionen befinden sich in den Sprachausgaben-Einstellungen:
 
 **Pausen verkürzen** hat drei Werte: **Nie**, **Nur am Textende** und **Immer**. Die Kürzung betrifft automatisch erzeugte Pausen. Ausdrücklich angegebene Pausen behalten ihre Dauer.
 
+**Ursprüngliche Frageintonation verwenden** stellt für Deutsch und US-Englisch die Fragekontur des Sprachkerns ein. Die Option ist zunächst ausgeschaltet; dann bleibt die ansteigende Frageintonation erhalten.
+
 **ECI-Tags verarbeiten** ist zunächst ausgeschaltet. Eingeschaltet können unterstützte Backtick-Befehle im Text Aussprache, Buchstabierung, Betonung, Stimmparameter, Stimmen und Sprachen steuern. Für gewöhnliches Lesen ist die Option nicht erforderlich. Eigene Aussprachewörterbücher können Ausspracheangaben unabhängig von dieser Einstellung enthalten.
 
 **Abkürzungswörterbuch verwenden** schaltet die native Abkürzungsauflösung und ist zunächst eingeschaltet. Haupt- und Stammwörterbücher für die Aussprache bleiben davon unabhängig aktiv. **Satzvorhersage** ist zunächst ausgeschaltet; eingeschaltet ermittelt der Sprachkern Phrasengrenzen in Text ohne Satzzeichen. Beide Einstellungen stehen auch unter Android zur Verfügung und gelten ab der nächsten Syntheseanfrage. Gleiche Geschwindigkeitswerte behalten das Dauermodell der jeweiligen Sprache bei; sie garantieren keine gleiche Anzahl Wörter oder Silben pro Minute.

@@ -71,6 +71,8 @@ These controls are in NVDA's Speech settings:
 
 **Shorten pauses** offers **Never**, **Only at text end** and **Always**. It changes automatically generated pauses. Explicitly requested pauses retain their duration.
 
+**Use original question intonation** uses the language core's question contour for German and American English. It is off by default, preserving the rising question contour.
+
 **Process ECI tags** is off by default. When enabled, supported backtick commands in text can control pronunciation, spelling, emphasis, voice parameters, voices and languages. This option is not needed for ordinary reading. Pronunciation dictionaries can contain pronunciation annotations independently of this setting.
 
 **Use abbreviation dictionary** controls native abbreviation expansion and starts enabled. Main and Root pronunciation dictionaries remain active independently. **Phrase prediction** starts disabled; enabled, it uses the language core to infer phrase boundaries in text without punctuation. Both settings also appear on Android and apply to the next synthesis request. Equal speed values retain each language’s own duration model; they do not promise equal words or syllables per minute.

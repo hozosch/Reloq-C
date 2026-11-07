@@ -2,10 +2,11 @@
  * leave its words, focus, phonemes and duration analysis intact. This runs
  * once at the beginning of the F0 realization stage. */
 #include "delta.h"
+#include "reloq61.h"
 
 static int is_question(void *state,int32_t phrase)
 {
-    if(!phrase)return 0;
+    if(!phrase||reloq61_text_options_current().original_questions)return 0;
     delta_state *d=state;
     int32_t token=vgetsc(d,0,0,phrase,5);
     if(!token || (*EVV_AT(unsigned char *,token)&2))return 0;

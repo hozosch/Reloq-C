@@ -63,6 +63,15 @@ class _DictionaryPath:
     path: str | None
 
 
+@dataclass
+class _DictionaryBarrier:
+    # A complete, validated snapshot is supplied by the dictionary worker.
+    # A failed refresh releases the queue without replacing the old snapshot.
+    ready: bool = False
+    apply: bool = False
+    path: str | None = None
+
+
 @dataclass(frozen=True)
 class _Selection:
     language: int
@@ -172,7 +181,8 @@ class EciTextTransport:
         self._watch_deadline: float | None = None
         self._notification_lock = threading.RLock()
         self._pause_mode = 0
-        self._jobs: deque[_Job | _Control | _Selection | _SampleRate | _DictionaryPath] = deque()
+        self._jobs: deque[_Job | _Control | _Selection | _SampleRate | _DictionaryPath | _DictionaryBarrier] = deque()
+        self._dictionary_barrier: _DictionaryBarrier | None = None
         self._audio: deque[_Playback] = deque()
         self._active_playback: _PlaybackBatch | None = None
         self._audio_limit = playback_queue_size
@@ -297,11 +307,38 @@ class EciTextTransport:
             self._jobs.append(_Control(parameter, value))
             self._condition.notify_all()
 
+    def begin_dictionary_load(self) -> None:
+        """Place a non-UI-blocking barrier before subsequent speech."""
+        with self._condition:
+            if self._closed:
+                raise RuntimeError("transport has shut down")
+            barrier = self._dictionary_barrier
+            if barrier is None:
+                barrier = self._dictionary_barrier = _DictionaryBarrier()
+                self._jobs.append(barrier)
+            else:
+                # A newer request supersedes a result not yet consumed.
+                barrier.ready = barrier.apply = False
+            self._condition.notify_all()
+
+    def fail_dictionary_load(self) -> None:
+        with self._condition:
+            if self._dictionary_barrier is not None:
+                self._dictionary_barrier.ready = True
+                self._dictionary_barrier.apply = False
+                self._condition.notify_all()
+
     def set_dictionary_path(self, path) -> None:
         with self._condition:
             if self._closed:
                 raise RuntimeError("transport has shut down")
-            self._jobs.append(_DictionaryPath(str(path) if path is not None else None))
+            path = str(path) if path is not None else None
+            if self._dictionary_barrier is not None:
+                self._dictionary_barrier.path = path
+                self._dictionary_barrier.apply = True
+                self._dictionary_barrier.ready = True
+            else:
+                self._jobs.append(_DictionaryPath(path))
             self._condition.notify_all()
 
     def set_sample_rate(self, code: int, player_factory: Callable[[int], _Player],
@@ -660,12 +697,16 @@ class EciTextTransport:
         try:
             while True:
                 with self._condition:
-                    while (not self._jobs or self._stops_in_flight) and not self._closed:
+                    while (not self._jobs or self._stops_in_flight or
+                           (isinstance(self._jobs[0], _DictionaryBarrier) and
+                            not self._jobs[0].ready)) and not self._closed:
                         self._condition.wait()
                     if self._closed:
                         break
                     job = self._jobs.popleft()
-                if isinstance(job, (_Control, _Selection, _SampleRate, _DictionaryPath)):
+                    if isinstance(job, _DictionaryBarrier):
+                        self._dictionary_barrier = None
+                if isinstance(job, (_Control, _Selection, _SampleRate, _DictionaryPath, _DictionaryBarrier)):
                     try:
                         if isinstance(job, _SampleRate):
                             try:
@@ -675,6 +716,9 @@ class EciTextTransport:
                                     job.completed(self._sample_rate_code)
                         elif isinstance(job, _DictionaryPath):
                             engine.set_dictionary_path(job.path)
+                        elif isinstance(job, _DictionaryBarrier):
+                            if job.apply:
+                                engine.set_dictionary_path(job.path)
                         elif isinstance(job, _Selection):
                             engine.select_voice(job.language, job.voice)
                             # A language-only choice keeps NVDA's displayed
@@ -706,7 +750,7 @@ class EciTextTransport:
                 return
             self._generation += 1
             self._jobs = deque(item for item in self._jobs
-                               if isinstance(item, (_Control, _Selection, _SampleRate, _DictionaryPath)))
+                               if isinstance(item, (_Control, _Selection, _SampleRate, _DictionaryPath, _DictionaryBarrier)))
             self._markers.clear()
             self._clear_audio_locked()
             self._played_out_of_order.clear()

@@ -64,7 +64,7 @@ void reloq61_german_predicted_phrase(void *,int32_t,unsigned);
 void reloq61_german_syllable_begin(void);
 /* Owner-thread analysis controls, inherited by nested language analyzers.
  * Scope/restore brackets one transaction; no utterance result is retained. */
-struct reloq61_text_options {int dictionary_disabled, phrase_prediction;};
+struct reloq61_text_options {int dictionary_disabled, phrase_prediction, original_questions;};
 struct reloq61_text_options reloq61_text_options_current(void);
 struct reloq61_text_options reloq61_text_options_scope(struct reloq61_text_options);
 /* Per-synthesis German /Ej/ glide tuning; scope/restore protects nested engines. */
