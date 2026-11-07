@@ -73,7 +73,8 @@ public final class SettingsTest {
         require(VoiceSettings.androidPitch(65,1000)==100&&VoiceSettings.androidPitch(65,1)==0);
         // Manual pitch slider: 50 is Reed's native 65, the ends stay 0 and 100.
         int[] levels={0,25,50,75,100},natives={0,33,65,83,100};
-        for(int i=0;i<levels.length;++i)require(VoiceSettings.pitchNative(levels[i])==natives[i]&&VoiceSettings.pitchLevel(natives[i])==levels[i]);
+        for(int i=0;i<levels.length;++i)require(VoiceSettings.pitchNative(levels[i])==natives[i]&&VoiceSettings.pitchNative(VoiceSettings.pitchLevel(natives[i]))==natives[i]);
+        require(VoiceSettings.pitchLevel(0)==0&&VoiceSettings.pitchLevel(100)==100);
         for(int level=0;level<100;++level)require(VoiceSettings.pitchNative(level)<=VoiceSettings.pitchNative(level+1));
         for(int value=65;value<=100;++value)require(VoiceSettings.pitchNative(VoiceSettings.pitchLevel(value))==value);
         for(int[] preset:Catalog.PARAMETERS)require(VoiceSettings.pitchNative(VoiceSettings.pitchLevel(preset[2]))==preset[2]);

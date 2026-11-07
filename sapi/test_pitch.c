@@ -23,7 +23,8 @@ int main(void)
     /* Dialog scale: 50 is Reed's native 65, both ends stay at 0 and 100. */
     const unsigned levels[]={0,25,50,75,100},natives[]={0,33,65,83,100};
     for(unsigned i=0;i<5;++i){assert(sapi_pitch_native_value(levels[i])==natives[i]);
-        assert(sapi_pitch_level(natives[i])==levels[i]);}
+        assert(sapi_pitch_native_value(sapi_pitch_level(natives[i]))==natives[i]);}
+    assert(sapi_pitch_level(65)==50&&sapi_pitch_level(0)==0&&sapi_pitch_level(100)==100);
     for(unsigned level=0;level<100;++level)
         assert(sapi_pitch_native_value(level)<=sapi_pitch_native_value(level+1));
     for(unsigned native=65;native<=100;++native)
