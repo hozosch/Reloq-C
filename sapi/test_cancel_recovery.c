@@ -7,10 +7,12 @@
  * Use a new thread so no already-prepared context can mask that sequence. */
 static void *unprepared_recovery(void *unused)
 {
- (void)unused;struct sapi_settings s=settings();
- struct sapi_backend *b=sapi_backend_new(0x40000);assert(b);
+ int dialect=(int)(intptr_t)unused;struct sapi_settings s=settings();
+ struct sapi_backend *b=sapi_backend_new(dialect);assert(b);
  WAVEFORMATEX out=format(11025);
- SPVTEXTFRAG f=text(L"Eine längere Ansage, die mehrfach unterbrochen wird.",0);
+ SPVTEXTFRAG f=text(dialect==0x120000?
+   L"Μια μεγάλη δοκιμαστική πρόταση διαβάζεται στην οθόνη.":
+   L"Eine längere Ansage, die mehrfach unterbrochen wird.",0);
  for(int i=0;i<3;++i){
   struct site cancelled=site_new();cancelled.abort_after=100;
   assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&cancelled.iface)));
@@ -30,8 +32,11 @@ static void *unprepared_recovery(void *unused)
 int main(int argc,char **argv)
 {
  assert(argc==2);sapi_test_library=argv[1];struct sapi_settings s=settings();size_t cases=0;
- pthread_t cold;assert(!pthread_create(&cold,NULL,unprepared_recovery,NULL));
- assert(!pthread_join(cold,NULL));
+ for(size_t i=0;i<2;++i){
+  pthread_t cold;int dialect=i?0x120000:0x40000;
+  assert(!pthread_create(&cold,NULL,unprepared_recovery,(void *)(intptr_t)dialect));
+  assert(!pthread_join(cold,NULL));
+ }
  for(size_t i=0;i<sizeof sapi_languages/sizeof *sapi_languages;++i)
  for(unsigned rateindex=0;rateindex<2;++rateindex){
   struct sapi_backend *b=sapi_backend_new(sapi_languages[i].dialect);assert(b);

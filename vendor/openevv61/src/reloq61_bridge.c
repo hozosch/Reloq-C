@@ -778,6 +778,22 @@ int reloq61_generate_phonemes(const struct reloq61_request *q,struct reloq61_res
         return german_clock_generate(&request,r,sink,context);
     return generate_core(&request,r,sink,context);
 }
+
+/* Greek's own text frontend emits one closed SPR group per word. Those
+ * groups describe pronunciation and do not leave an annotation mode set.
+ * Any other tag, including explicit user controls and spelling modes, keeps
+ * the conservative full-reset path. */
+static int greek_closed_spr_only(const char *text)
+{
+    int found=0;const char *p=text;
+    while((p=strchr(p,'`'))!=NULL) {
+        if(p[1]!='[')return 0;
+        const char *end=strchr(p+2,']');
+        if(!end||memchr(p+2,'`',(size_t)(end-(p+2))))return 0;
+        found=1;p=end+1;
+    }
+    return found;
+}
 static int generate_core_impl(const struct reloq61_request *q,struct reloq61_result *r,
     reloq61_phoneme_sink sink,void *context)
 {
@@ -795,14 +811,15 @@ static int generate_core_impl(const struct reloq61_request *q,struct reloq61_res
     if(q->phonemes && q->phonemes_capacity)q->phonemes[0]=0;
     struct provider_worker *worker=owner_worker&&owner_worker->language==q->language?owner_worker:NULL;
     int annotated=strchr(q->text,'`')!=NULL;
+    int reusable_text=!annotated||(q->language==0x120000&&greek_closed_spr_only(q->text));
     int controls_changed=worker&&(worker->last_phonemes!=q->phonemes_only||
         worker->last_annotations!=q->annotations||worker->last_sample_rate!=q->sample_rate||
         worker->last_text_options.dictionary_disabled!=text_options.dictionary_disabled||
         worker->last_text_options.phrase_prediction!=text_options.phrase_prediction||
         worker->last_text_options.original_questions!=text_options.original_questions||
         memcmp(worker->last_voice,q->voice,sizeof worker->last_voice));
-    int reset=worker&&(!worker->prepared||annotated||controls_changed);
-    int recover=worker&&worker->recoverable_cancel&&!annotated&&!controls_changed;
+    int reset=worker&&(!worker->prepared||!reusable_text||controls_changed);
+    int recover=worker&&worker->recoverable_cancel&&reusable_text&&!controls_changed;
     int prepared=worker&&worker->handle&&!reset;
     initialize();h=worker?worker->handle:NULL;
     void *previous_inline=reloq61_inline_scope(h?&((ECIinstance *)h->fresh)->queue:NULL);
@@ -968,11 +985,11 @@ static int generate_core_impl(const struct reloq61_request *q,struct reloq61_res
         /* The first request can be interrupted before prepare_next has ever
          * run. Its render callback runs only after configuration and
          * dictionary binding; retain those exact controls as well. */
-        worker->recoverable_cancel=!annotated&&metadata;
+        worker->recoverable_cancel=reusable_text&&metadata;
         if(worker->recoverable_cancel)remember_controls(worker,q);
     } else if(!worker || !ok || r->error || r->unsupported) {
         release_handle(worker,h);
-    } else if(!annotated&&metadata&&!prepare_next(worker,q)) {
+    } else if(reusable_text&&metadata&&!prepare_next(worker,q)) {
         release_handle(worker,h);
     }
     reloq61_inline_scope(previous_inline);
