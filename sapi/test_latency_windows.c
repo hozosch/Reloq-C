@@ -7,8 +7,9 @@ static double seconds(void){LARGE_INTEGER t,f;QueryPerformanceCounter(&t);QueryP
 static HRESULT clear(IStream *p){LARGE_INTEGER a={0};ULARGE_INTEGER b={0};HRESULT r=IStream_Seek(p,a,STREAM_SEEK_SET,NULL);return SUCCEEDED(r)?IStream_SetSize(p,b):r;}
 int wmain(int argc,wchar_t **argv)
 {
- if(argc!=2 && argc!=3)return 2;
- const int xml=argc==3;
+ if(argc<2 || argc>4)return 2;
+ const int xml=argc>=3 && !wcscmp(argv[2],L"xml");
+ const int greek=argc==4 && !wcscmp(argv[3],L"el");
  setvbuf(stdout,NULL,_IONBF,0);
  HRESULT h=CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);if(FAILED(h))return 3;
  ISpVoice *voice=NULL;ISpObjectToken *token=NULL;ISpStream *out=NULL;IStream *mem=NULL;
@@ -23,10 +24,11 @@ int wmain(int argc,wchar_t **argv)
  if(SUCCEEDED(h))h=ISpVoice_SetOutput(voice,(IUnknown *)out,FALSE);
  if(SUCCEEDED(h)){ULONGLONG interest=SPFEI(SPEI_START_INPUT_STREAM)|SPFEI(SPEI_END_INPUT_STREAM)|SPFEI(SPEI_TTS_BOOKMARK);h=ISpVoice_SetInterest(voice,interest,interest);}
  if(SUCCEEDED(h))h=ISpVoice_SetRate(voice,5);
- if(SUCCEEDED(h))h=ISpVoice_Speak(voice,L"Eine kurze Ansage zur Vorbereitung.",SPF_IS_NOT_XML,NULL);
+ if(SUCCEEDED(h))h=ISpVoice_Speak(voice,greek?L"Μια δοκιμή για την προετοιμασία.":L"Eine kurze Ansage zur Vorbereitung.",SPF_IS_NOT_XML,NULL);
  for(int i=0;i<15&&SUCCEEDED(h);++i){
   h=clear(mem);double start=seconds(),first=0,play=0;ULONGLONG firstbytes=0;
-  if(SUCCEEDED(h))h=ISpVoice_Speak(voice,xml ? L"<bookmark mark=\"1\"/>Ein Beispiel für eine kurze Ansage beim Navigieren durch NVDA. Weitere Wörter machen die Unterbrechung gut sichtbar." : L"Ein Beispiel für eine kurze Ansage beim Navigieren durch NVDA. Weitere Wörter machen die Unterbrechung gut sichtbar.",SPF_ASYNC|(xml?SPF_IS_XML:SPF_IS_NOT_XML),NULL);
+  LPCWSTR message=greek?L"Μια εκτενής δοκιμαστική πρόταση για την καθυστέρηση της ελληνικής ομιλίας.":xml?L"<bookmark mark=\"1\"/>Ein Beispiel für eine kurze Ansage beim Navigieren durch NVDA. Weitere Wörter machen die Unterbrechung gut sichtbar.":L"Ein Beispiel für eine kurze Ansage beim Navigieren durch NVDA. Weitere Wörter machen die Unterbrechung gut sichtbar.";
+  if(SUCCEEDED(h))h=ISpVoice_Speak(voice,message,SPF_ASYNC|(xml?SPF_IS_XML:SPF_IS_NOT_XML),NULL);
   while(SUCCEEDED(h)&&!play&&seconds()-start<2.0){STATSTG s={0};h=IStream_Stat(mem,&s,STATFLAG_NONAME);double elapsed=seconds()-start;
    if(s.cbSize.QuadPart&&!first){first=elapsed;firstbytes=s.cbSize.QuadPart;}
    if(s.cbSize.QuadPart>=2206)play=elapsed;

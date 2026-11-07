@@ -76,6 +76,7 @@ jobs:
           New-ItemProperty -Path 'HKCU:\Software\ReLoq C\SAPI5' -Name OutputRate -PropertyType DWord -Value 2 -Force | Out-Null
           $espeak='HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\eSpeak'
           $reloq='HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\ReLoqC_01_00040000'
+          $greek='HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\ReLoqC_13_00120000'
           foreach($mode in @('plain','xml')) {
             Write-Host "Comparing original eSpeak: $mode"
             if($mode -eq 'xml'){& ./latency.exe $espeak xml}else{& ./latency.exe $espeak}
@@ -89,4 +90,7 @@ jobs:
               if($mode -eq 'xml'){& ./latency.exe $reloq xml}else{& ./latency.exe $reloq}
               if($LASTEXITCODE -ne 0){throw "$version timing failed"}
             }
+            Write-Host "Comparing $version ReLoq: greek"
+            & ./latency.exe $greek plain el
+            if($LASTEXITCODE -ne 0){throw "$version Greek timing failed"}
           }
