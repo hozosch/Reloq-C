@@ -31,6 +31,20 @@ def main():
         # spacing difference must not synthesize a comma or invent a pause.
         title = 'Αλλαγή Διαμόρφωσης Γλώσσας  παράθυρο διαλόγου'
         body = 'Πρέπει να γίνει επανεκκίνηση του NVDA, για να τεθεί σε ισχύ η νέα γλώσσα.'
+        # A long preceding title used to leave the whole subordinate clause
+        # without a normal word accent, even though its lexical vowels were
+        # marked. Restore the middle content word while keeping the nearby
+        # function words weak and the core's other reductions intact.
+        phones = phonemes(greek, title + '  ' + body)
+        clause = phones.split(',', 1)[1]
+        assert '`0 `[.0te.1Ti]' in clause, clause
+        assert '`0 `[.0is.1ji]' not in clause and '`[.0is.1ji]' in clause, clause
+        assert '`0 `[.1ne.0a]' in clause, clause
+        assert '`[.0La]' in clause and '`[.0na]' in clause and '`[.0se]' in clause, clause
+        # Two reduced content words in an ordinary phrase are not enough to
+        # invoke the long-run correction.
+        ordinary = phonemes(greek, 'Το μεγάλο πράσινο παράθυρο είναι ανοιχτό.')
+        assert '`0 `[.1pra.0si.0no] `0 `[.0pa.1ra.0Ti.0ro]' in ordinary, ordinary
         assert phonemes(greek, title + '  ' + body) == phonemes(greek, title + ' ' + body)
         mixed_title = 'Αλλαγή γλώσσας για το NVDA'
         assert phonemes(greek, mixed_title + '  ' + body) == phonemes(greek, mixed_title + ' ' + body)

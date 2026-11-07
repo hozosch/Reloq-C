@@ -35,6 +35,8 @@ extern int STDCALL es_synchronize(OldInst *);
 extern int ev_sendParameters(OldInst *);
 extern int STDCALL ev_generatePhonemes(OldInst *,int32_t,void *);
 extern delta_state *ew_machine(void *);
+extern int32_t getEngsynError(delta_state *);
+extern THIS int32_t stl_stop_after_cancel(struct SynthThread *);
 extern void stb_staticWordCallback(int32_t,void *);
 extern void reloq61_array_reset(delta_state *);
 /* IndexManager is an original C++-style object: on 32-bit builds its first
@@ -44,7 +46,7 @@ extern void *reloq61_inline_scope(void *);
 static atomic_int initialized;
 struct reloq_lexicon;
 struct provider_worker {
-    OldInst *handle;int language,prepared,last_voice[8],last_phonemes,last_annotations,last_sample_rate;struct reloq61_text_options last_text_options;int16_t pcm[4096];
+    OldInst *handle;int language,prepared,recoverable_cancel,last_voice[8],last_phonemes,last_annotations,last_sample_rate;struct reloq61_text_options last_text_options;int16_t pcm[4096];
     struct provider_worker *english;
     char *dictionary_path,*dictionary_files[4];void *dictionary;
     const struct reloq_lexicon *overlay;uint64_t overlay_version;
@@ -83,7 +85,7 @@ static void release_handle(struct provider_worker *worker,OldInst *h)
 {
     /* An interrupted utterance invalidates its machine, not its immutable
      * dictionary data. Rebind that data when a new machine is needed. */
-    if(worker){dictionary_detach(worker,h);worker->handle=NULL;worker->prepared=0;}
+    if(worker){dictionary_detach(worker,h);worker->handle=NULL;worker->prepared=0;worker->recoverable_cancel=0;}
     if(h)es_delete(h);
 }
 void reloq61_worker_free(void *context)
@@ -177,8 +179,72 @@ struct capture {
     int metadata,source_started,pause_policy;
     pause_sink pause;void *pause_context;
     reloq61_phoneme_sink phoneme_sink;void *phoneme_context;
-    int english_sentence_pending;
+    int english_sentence_pending,greek_explicit_prominence;
 };
+
+static int32_t greek_record_right(delta_state *d,int32_t at,unsigned type)
+{
+    return at?EVV_REF(vmover(d,EVV_AT(void *,at),(uint8_t)type)):0;
+}
+static int32_t greek_record_at(delta_state *d,int32_t at,unsigned type)
+{
+    int32_t right=greek_record_right(d,at,type);
+    int32_t node=right?vgetsc(d,0,0,right,(uint8_t)type):0;
+    return node&&!(*EVV_AT(int32_t *,node)&2)?node:0;
+}
+static int greek_word_has_accent(delta_state *d,int32_t from,int32_t to)
+{
+    if(!from||!to)return 0;
+    int32_t at=from,end=greek_record_right(d,to,4);
+    for(unsigned guard=0;at&&greek_record_right(d,at,4)!=end&&guard<1024;++guard) {
+        int32_t phone=greek_record_at(d,at,4);int16_t stress;
+        if(!phone)return 0;
+        memcpy(&stress,delta_record_field(&vstmtbl[4],8,TFLDS(EVV_AT(void *,phone))),2);
+        if(stress>0)return 1;
+        int32_t next=EVV_AT(int32_t *,phone)[1]&~3;
+        if(!next||next==at)break;
+        at=next;
+    }
+    return 0;
+}
+static void greek_finish_unstressed_run(unsigned char **words,size_t count)
+{
+    /* Keep the core's normal reductions. Only interrupt a run of at least
+       three lexically stressed words which it made entirely unstressed. */
+    int16_t normal=1;
+    if(count>=3)for(size_t i=1;i+1<count;i+=3)memcpy(words[i],&normal,2);
+}
+void reloq61_greek_adjust_word_stress(void *state,int32_t from,int32_t to)
+{
+    delta_state *d=state;DeltaLang *dl=EVV_AT(DeltaLang *,d->dlang);
+    const struct capture *c=dl->reloq_context;
+    /* An explicit ECI prominence command belongs to the caller. */
+    if(!dl->reloq_frame||!c||c->q->language!=0x120000||
+       c->greek_explicit_prominence||!from||!to)return;
+    delta_loc *left=EVV_AT(delta_loc *,from),*right=EVV_AT(delta_loc *,to);
+    if(!left->value||!right->value)return;
+    int32_t at=left->value,end=greek_record_right(d,right->value,2);
+    unsigned char *run[256];size_t count=0;
+    for(unsigned guard=0;at&&greek_record_right(d,at,2)!=end&&guard<256;++guard) {
+        int32_t word=greek_record_at(d,at,2);
+        if(!word)break;
+        unsigned char *body=TFLDS(EVV_AT(void *,word));
+        unsigned char *level=delta_record_field(&vstmtbl[2],6,body);
+        int16_t stress;memcpy(&stress,level,2);
+        unsigned annotation=*(unsigned char *)delta_record_field(&vstmtbl[2],9,body);
+        int32_t begin=*EVV_AT(int32_t *,word)&~3;
+        int32_t next=EVV_AT(int32_t *,word)[1]&~3;
+        if(annotation) {
+            greek_finish_unstressed_run(run,count);count=0;
+        } else if(greek_word_has_accent(d,begin,next)) {
+            if(stress==0)run[count++]=level;
+            else {greek_finish_unstressed_run(run,count);count=0;}
+        }
+        if(!next||next==at)break;
+        at=next;
+    }
+    greek_finish_unstressed_run(run,count);
+}
 static int acoustic_mark(const struct capture *c,size_t mark)
 {
     const struct reloq61_mark *m=c->q->marks+mark;
@@ -716,17 +782,23 @@ static int generate_core_impl(const struct reloq61_request *q,struct reloq61_res
     if(!q||!r||!q->text||(q->mark_count&&!q->marks)||
        (q->sample_rate && q->sample_rate!=8000 && q->sample_rate!=11025))return -1;
     memset(r,0,sizeof *r);memset(&c,0,sizeof c);c.q=q;c.r=r;
+    if(q->language==0x120000) {
+        for(const char *p=q->text;(p=strchr(p,'`'))!=NULL;++p)
+            if(p[1]>='0'&&p[1]<='2'){c.greek_explicit_prominence=1;break;}
+    }
     c.phoneme_sink=sink;c.phoneme_context=context;
     c.pause_policy=pause_request.policy;c.pause=pause_request.sink;c.pause_context=pause_request.context;
     if(q->phonemes && q->phonemes_capacity)q->phonemes[0]=0;
     struct provider_worker *worker=owner_worker&&owner_worker->language==q->language?owner_worker:NULL;
     int annotated=strchr(q->text,'`')!=NULL;
-    int reset=worker&&(!worker->prepared||annotated||worker->last_phonemes!=q->phonemes_only||
+    int controls_changed=worker&&(worker->last_phonemes!=q->phonemes_only||
         worker->last_annotations!=q->annotations||worker->last_sample_rate!=q->sample_rate||
         worker->last_text_options.dictionary_disabled!=text_options.dictionary_disabled||
         worker->last_text_options.phrase_prediction!=text_options.phrase_prediction||
         worker->last_text_options.original_questions!=text_options.original_questions||
         memcmp(worker->last_voice,q->voice,sizeof worker->last_voice));
+    int reset=worker&&(!worker->prepared||annotated||controls_changed);
+    int recover=worker&&worker->recoverable_cancel&&!annotated&&!controls_changed;
     int prepared=worker&&worker->handle&&!reset;
     initialize();h=worker?worker->handle:NULL;
     void *previous_inline=reloq61_inline_scope(h?&((ECIinstance *)h->fresh)->queue:NULL);
@@ -735,7 +807,19 @@ static int generate_core_impl(const struct reloq61_request *q,struct reloq61_res
            annotation/spelling modes changed by the preceding text. */
         eo_registerCallback(h,NULL,NULL);
         eo_clearInput(h);
-        if(reset && api_reset(h->fresh,q->language)) {
+        int reset_error=0;
+        if(reset) {
+            struct SynthThread *thread=((ECIinstance *)h->fresh)->thread;
+            delta_state *machine=thread?ew_machine(thread->engine):NULL;
+            int error=machine?getEngsynError(machine):0;
+            /* Preserve the existing machine only for an interrupted request
+             * whose unchanged controls were already prepared. A complete
+             * reset remains the fallback for any other engine error. */
+            if(recover && (error==-3||error==-7))
+                reset_error=stl_stop_after_cancel(thread);
+            else reset_error=api_reset(h->fresh,q->language);
+        }
+        if(reset_error) {
             reloq61_inline_scope(NULL);release_handle(worker,h);h=NULL;
         }
         else if(reset) {
@@ -758,7 +842,7 @@ static int generate_core_impl(const struct reloq61_request *q,struct reloq61_res
         }
     }
     if(worker)worker->handle=h;
-    if(worker)worker->prepared=0;
+    if(worker){worker->prepared=0;worker->recoverable_cancel=0;}
     if(!h){reloq61_inline_scope(previous_inline);r->error=100;return -1;}
     /* Drain constructor messages before moving this private instance onto
        the already serialized host worker. The engine setup and message
@@ -877,6 +961,7 @@ static int generate_core_impl(const struct reloq61_request *q,struct reloq61_res
          * engine. Preserve its instance and immutable dictionaries; the
          * next caller performs the existing full reset before reuse. */
         worker->prepared=0;
+        worker->recoverable_cancel=prepared&&!annotated&&metadata;
     } else if(!worker || !ok || r->error || r->unsupported) {
         release_handle(worker,h);
     } else if(!annotated&&metadata&&!prepare_next(worker,q)) {

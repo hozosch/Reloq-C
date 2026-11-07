@@ -544,7 +544,7 @@ THIS int32_t stl_initialize(SynthThread *t, LangIdentifier *want)
    because the messages are exactly what is being thrown away. Everything is
    suspended first and resumed at the end, so nothing arrives half way
    through. */
-THIS int32_t stl_stop(SynthThread *t)
+static int32_t stop_thread(SynthThread *t, int expected_cancel)
 {
     int32_t rc = OK;
     void *lock;
@@ -571,7 +571,11 @@ THIS int32_t stl_stop(SynthThread *t)
     if (ST_ENGINE(t)) {
         EngReset reset = (EngReset)ENG_CALL_ON(ST_ENGINE(t), ENG_RESET);
 
-        if (reset(ST_ENGINE(t), 1))
+        /* A cooperative cancellation can leave the engine's error slot set.
+           The abort half reports that existing error even though it has
+           stopped correctly. In the private cancellation-recovery path only,
+           let the restart below decide whether the machine is reusable. */
+        if (reset(ST_ENGINE(t), 1) && !expected_cancel)
             rc = ERR_ENGINE;
     }
     sy_mutexRelease(lock);
@@ -619,6 +623,18 @@ THIS int32_t stl_stop(SynthThread *t)
     stm_pauseMessageQueue(ST_APP(t), 0);
     app->vt->resume(app);
     return rc;
+}
+
+THIS int32_t stl_stop(SynthThread *t)
+{
+    return stop_thread(t, 0);
+}
+
+/* The private host calls this only after its own audio callback requested a
+   stop and the engine reported the corresponding cancellation error. */
+THIS int32_t stl_stop_after_cancel(SynthThread *t)
+{
+    return stop_thread(t, 1);
 }
 
 /* ---- taking apart ---------------------------------------------------- */

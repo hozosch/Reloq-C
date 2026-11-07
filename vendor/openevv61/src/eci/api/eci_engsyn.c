@@ -210,8 +210,10 @@ STDCALL int32_t es_engsynFlush(delta_state *d, int32_t stop)
         if (ELOQ_BUSY(d) == 0)
             throwDeltaErrorNow(d);
         stopSynthesizing(d);
-    } else {
-        es_engsynRestart(d);
+    } else if (es_engsynRestart(d)) {
+        /* A failed machine/heap restart must not be mistaken for a usable
+           engine merely because the error slot itself was cleared. */
+        return 1;
     }
 
     return checkEngsynError(d);
