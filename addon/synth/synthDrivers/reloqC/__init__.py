@@ -182,11 +182,11 @@ class SynthDriver(BaseSynthDriver):
         BooleanDriverSetting("abbreviationDictionary", _("Use &abbreviation dictionary"), defaultVal=True),
         BooleanDriverSetting("phrasePrediction", _("Phrase &prediction"), defaultVal=False),
         BooleanDriverSetting("originalQuestions", _("Use original &question intonation"), defaultVal=False),
-        BooleanDriverSetting("mellowMode", _("&Mellow mode (16 kHz and above)"), defaultVal=False),
         BooleanDriverSetting("voiceTags", _("Process &ECI tags"), defaultVal=False),
         BooleanDriverSetting("_dictionaryCommunity", _("Use &community pronunciation dictionaries"), defaultVal=False),
         DriverSetting("pauseMode", _("Shorten pa&uses"), defaultVal="0"),
         DriverSetting("sampleRate", _("&Sample rate"), defaultVal="1"),
+        BooleanDriverSetting("mellowMode", _("&Mellow mode (16 kHz and above)"), defaultVal=False),
     )
 
     @classmethod

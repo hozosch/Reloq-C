@@ -127,11 +127,11 @@ public final class SettingsActivity extends Activity {
         heading(R.string.output_settings);
         rates=select(R.string.sample_rate,new String[]{"8 kHz","11.025 kHz","16 kHz","22.05 kHz",
             "32 kHz","44.1 kHz","48 kHz"},settings.rate);
+        mellowMode=check(R.string.mellow_mode,settings.mellowMode);
         pauses=select(R.string.pause_mode,getResources().getStringArray(R.array.pause_modes),settings.pauses);
         abbreviations=check(R.string.abbreviation_dictionary,settings.abbreviations);
         prediction=check(R.string.phrase_prediction,settings.prediction);
         originalQuestions=check(R.string.original_questions,settings.originalQuestions);
-        mellowMode=check(R.string.mellow_mode,settings.mellowMode);
         tags=check(R.string.eci_tags,settings.tags);
         Button dictionaries=new Button(this);dictionaries.setText(R.string.dictionaries);content.addView(dictionaries);
         dictionaries.setOnClickListener(v -> startActivity(new Intent(this,DictionaryActivity.class)));

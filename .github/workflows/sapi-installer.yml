@@ -101,6 +101,8 @@ jobs:
       - name: Check standard ECI dictionary switching and performance
         shell: pwsh
         run: |
+          python sapi/test_dialog_order.py --directory test-x64
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI settings tab order regression test failed' }
           python nvda/test_eci_dictionary_cache.py --library test-x64/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'ECI dictionary cache regression test failed' }
           python nvda/test_eci_dictionary_retention.py --library test-x64/eci.dll
@@ -166,7 +168,7 @@ jobs:
           if ($p.ExitCode -ne 0) { throw "Upgrade failed: $($p.ExitCode)" }
           Test-StartLinks 'Stimmeinstellungen' 'Anleitung'
           $registered = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D3F8BA6E-1C62-4B0D-8A33-3840B77376AC}_is1'
-          if ($registered.DisplayName -ne 'ReLoq C SAPI5' -or $registered.DisplayVersion -ne '1.2.0-dev9') { throw 'SAPI application name or version metadata is incorrect' }
+          if ($registered.DisplayName -ne 'ReLoq C SAPI5' -or $registered.DisplayVersion -ne '1.2.0-dev10') { throw 'SAPI application name or version metadata is incorrect' }
           if ((Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'Dictionary edit lost during upgrade' }
           & ./sapi/test_japanese_sapi.ps1 -ReportPath dist/validation/japanese-results.json
           foreach ($arch in @('x64','x86')) {

@@ -101,7 +101,8 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         RECT frame={0,0,620,722};AdjustWindowRectEx(&frame,(DWORD)GetWindowLongPtrW(w,GWL_STYLE),FALSE,0);
         SetWindowPos(w,NULL,0,0,frame.right-frame.left,frame.bottom-frame.top,SWP_NOMOVE|SWP_NOZORDER);
         combo(w,LANGUAGE,T(LANGUAGE),8);combo(w,PROFILE,T(PROFILE),38);
-        combo(w,GENDER,T(MODEL),68);combo(w,RATE,T(RATE),98);combo(w,PAUSES,T(PAUSES),128);
+        combo(w,GENDER,T(MODEL),68);combo(w,RATE,T(RATE),98);
+        check(w,MELLOW_MODE,T(MELLOW_MODE),128);combo(w,PAUSES,T(PAUSES),151);
         for(size_t i=0;i<sapi_language_count();++i){WCHAR name[128];const struct sapi_language *language=sapi_language_at(i);
             if(!GetLocaleInfoW(language->lcid,LOCALE_SLOCALIZEDDISPLAYNAME,name,128))wcscpy(name,language->name);
             add(w,LANGUAGE,name);}
@@ -109,12 +110,12 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         add(w,GENDER,T(MALE));add(w,GENDER,T(FEMALE));
         for(unsigned i=0;i<7;++i){WCHAR text[32];swprintf(text,32,L"%d Hz",sapi_sample_rate(i));add(w,RATE,text);}
         add(w,PAUSES,T(NEVER));add(w,PAUSES,T(FINAL));add(w,PAUSES,T(ALWAYS));
-        check(w,SHARED,T(SHARED),160);
-        number(w,PITCH,T(PITCH),188);number(w,INFLECTION,T(INFLECTION),215);
-        number(w,HEAD,T(HEAD),242);number(w,ROUGH,T(ROUGH),269);number(w,BREATH,T(BREATH),296);
-        check(w,TAGS,T(TAGS),326);check(w,ABBREVIATIONS,T(ABBREVIATIONS),349);
-        check(w,PREDICTION,T(PREDICTION),372);check(w,ORIGINAL_QUESTIONS,T(ORIGINAL_QUESTIONS),395);
-        check(w,MELLOW_MODE,T(MELLOW_MODE),418);check(w,DICTIONARIES,T(DICTIONARIES),441);check(w,BOOST,T(BOOST),464);
+        check(w,SHARED,T(SHARED),183);
+        number(w,PITCH,T(PITCH),211);number(w,INFLECTION,T(INFLECTION),238);
+        number(w,HEAD,T(HEAD),265);number(w,ROUGH,T(ROUGH),292);number(w,BREATH,T(BREATH),319);
+        check(w,TAGS,T(TAGS),349);check(w,ABBREVIATIONS,T(ABBREVIATIONS),372);
+        check(w,PREDICTION,T(PREDICTION),395);check(w,ORIGINAL_QUESTIONS,T(ORIGINAL_QUESTIONS),418);
+        check(w,DICTIONARIES,T(DICTIONARIES),441);check(w,BOOST,T(BOOST),464);
         combo(w,DICT_SOURCE,T(DICT_SOURCE),489);
         add(w,DICT_SOURCE,T(DICT_COMMUNITY));add(w,DICT_SOURCE,T(DICT_ALTERNATIVE));
         control(w,L"BUTTON",T(DICT_DOWNLOAD),WS_TABSTOP|BS_PUSHBUTTON,DICT_DOWNLOAD,210,519,398,24);

@@ -196,11 +196,12 @@ static int32_t greek_record_at(delta_state *d,int32_t at,unsigned type)
     int32_t node=right?vgetsc(d,0,0,right,(uint8_t)type):0;
     return node&&!(*EVV_AT(int32_t *,node)&2)?node:0;
 }
-static int greek_word_has_accent(delta_state *d,int32_t from,int32_t to,unsigned *vowels,int *connector,int inspect)
+static int greek_word_has_accent(delta_state *d,int32_t from,int32_t to,
+    unsigned *vowels,int *connector,char phones[64],int inspect)
 {
-    *vowels=0;*connector=0;
+    *vowels=0;*connector=0;phones[0]=0;
     if(!from||!to)return 0;
-    int accented=0;char phones[64];size_t used=0;
+    int accented=0;size_t used=0;
     int32_t at=from,end=greek_record_right(d,to,4);
     for(unsigned guard=0;at&&greek_record_right(d,at,4)!=end&&guard<1024;++guard) {
         int32_t phone=greek_record_at(d,at,4);int16_t stress;
@@ -209,14 +210,12 @@ static int greek_word_has_accent(delta_state *d,int32_t from,int32_t to,unsigned
         memcpy(&stress,delta_record_field(&vstmtbl[4],8,body),2);
         if(stress>0){accented=1;if(!inspect)return 1;}
         if(*(const unsigned char *)delta_record_field(&vstmtbl[4],1,body)==1)++*vowels;
-        if(inspect) {
-            unsigned name=*(const unsigned char *)delta_record_field(&vstmtbl[4],0,body);
-            const delta_fielddesc *field=&vstmtbl[4].fields[0];
-            if(name<(unsigned)field->nvalues) {
-                const char *phone_name=((const char *const *)field->values)[name];
-                size_t n=phone_name?strlen(phone_name):0;
-                if(n&&n<sizeof phones-used){memcpy(phones+used,phone_name,n);used+=n;}
-            }
+        unsigned name=*(const unsigned char *)delta_record_field(&vstmtbl[4],0,body);
+        const delta_fielddesc *field=&vstmtbl[4].fields[0];
+        if(name<(unsigned)field->nvalues) {
+            const char *phone_name=((const char *const *)field->values)[name];
+            size_t n=phone_name?strlen(phone_name):0;
+            if(n&&n<64-used){memcpy(phones+used,phone_name,n);used+=n;}
         }
         int32_t next=EVV_AT(int32_t *,phone)[1]&~3;
         if(!next||next==at)break;
@@ -232,8 +231,10 @@ static int greek_word_has_accent(delta_state *d,int32_t from,int32_t to,unsigned
         if(!strcmp(phones,connectors[i])){*connector=1;break;}
     return accented;
 }
-struct greek_unstressed_word {unsigned char *level;unsigned vowels;int connector;};
-static void greek_finish_unstressed_run(struct greek_unstressed_word *words,size_t count,int next_stress)
+struct greek_unstressed_word {
+    unsigned char *level;unsigned vowels;unsigned char connector,after_preposition;
+};
+static void greek_promote_reduced_span(struct greek_unstressed_word *words,size_t count,int next_stress)
 {
     /* Greek content words normally retain prenuclear accents, but a run of
        full accents sounded too strong in the shared Castilian core. Restore
@@ -248,6 +249,45 @@ static void greek_finish_unstressed_run(struct greek_unstressed_word *words,size
         memcpy(words[which].level,&normal,2);
     }
     else if(count>=3)for(size_t i=1;i+1<count;i+=3)memcpy(words[i].level,&normal,2);
+}
+static void greek_finish_unstressed_run(struct greek_unstressed_word *words,size_t count,int next_stress)
+{
+    /* Keep the existing choice, then prevent a separate prepositional
+       group from remaining entirely unaccented. This changes no pauses. */
+    greek_promote_reduced_span(words,count,next_stress);
+    if(next_stress!=1)return;
+    size_t begin=0;
+    for(size_t end=1;end<=count;++end) {
+        if(end<count&&!words[end].after_preposition)continue;
+        if(begin) {
+            int accented=0;
+            for(size_t i=begin;i<end;++i) {
+                int16_t level;memcpy(&level,words[i].level,2);
+                if(level>0){accented=1;break;}
+            }
+            if(!accented)greek_promote_reduced_span(words+begin,end-begin,next_stress);
+        }
+        begin=end;
+    }
+}
+static int greek_unstressed_preposition(const char *phone,unsigned *prefix)
+{
+    /* The Greek frontend keeps weak από and κατά valid for the Spanish
+       parser by emitting each syllable as a separate unstressed word. */
+    static const char *const articles[]={"o","i","to","ta","tin","ti","ton","tu","tis","tus"};
+    static const char *const fused[]={"sto","sta","sti","stin","ston","stus","stis","stu"};
+    int boundary=(*prefix==1&&!strcmp(phone,"ta"))||(*prefix==2&&!strcmp(phone,"po"));
+    if(*prefix==3)for(size_t i=0;i<sizeof articles/sizeof *articles;++i)
+        if(!strcmp(phone,articles[i])){boundary=1;break;}
+    for(size_t i=0;i<sizeof fused/sizeof *fused;++i)
+        if(!strcmp(phone,fused[i])){boundary=1;break;}
+    *prefix=0;
+    if(!boundary) {
+        if(!strcmp(phone,"ka"))*prefix=1;
+        else if(!strcmp(phone,"a"))*prefix=2;
+        else if(!strcmp(phone,"me")||!strcmp(phone,"se")||!strcmp(phone,"Ya"))*prefix=3;
+    }
+    return boundary;
 }
 int reloq61_greek_keep_lexical_duration(void *state)
 {
@@ -266,6 +306,7 @@ void reloq61_greek_adjust_word_stress(void *state,int32_t from,int32_t to)
     if(!left->value||!right->value)return;
     int32_t at=left->value,end=greek_record_right(d,right->value,2);
     struct greek_unstressed_word run[256];size_t count=0;
+    unsigned weak_prefix=0;int after_preposition=0;
     for(unsigned guard=0;at&&greek_record_right(d,at,2)!=end&&guard<256;++guard) {
         int32_t word=greek_record_at(d,at,2);
         if(!word)break;
@@ -277,12 +318,14 @@ void reloq61_greek_adjust_word_stress(void *state,int32_t from,int32_t to)
         int32_t next=EVV_AT(int32_t *,word)[1]&~3;
         if(annotation) {
             greek_finish_unstressed_run(run,count,0);count=0;
+            weak_prefix=0;after_preposition=0;
         } else {
-            unsigned vowels;int connector;
-            if(greek_word_has_accent(d,begin,next,&vowels,&connector,stress==0)) {
-                if(stress==0)run[count++]=(struct greek_unstressed_word){level,vowels,connector};
+            unsigned vowels;int connector;char phones[64];
+            if(greek_word_has_accent(d,begin,next,&vowels,&connector,phones,stress==0)) {
+                if(stress==0)run[count++]=(struct greek_unstressed_word){level,vowels,connector,after_preposition};
                 else {greek_finish_unstressed_run(run,count,stress);count=0;}
-            }
+                weak_prefix=0;after_preposition=0;
+            } else if(greek_unstressed_preposition(phones,&weak_prefix))after_preposition=1;
         }
         if(!next||next==at)break;
         at=next;

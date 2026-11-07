@@ -308,7 +308,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert PitchCommand in driver.supportedCommands
                 assert CharacterModeCommand in driver.supportedCommands
                 assert [setting.id for setting in driver.supportedSettings] == [
-                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "mellowMode", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate"]
+                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode"]
                 assert driver.supportedSettings[0].availableInSettingsRing
                 assert not any(hasattr(driver, '_'+name) for name in
                                ('glideOpening', 'glideBackness', 'glideSoftness'))

@@ -69,6 +69,24 @@ def main():
         assert phonemes(greek, announcement) == phonemes(greek, announcement.replace('  ', ' '))
         assert render(greek, [announcement, EciIndex(12)]) == render(
             greek, [announcement.replace('  ', ' '), EciIndex(12)])
+        # A prepositional group must not lose all its content-word emphasis
+        # merely because another word in the preceding group was accented.
+        # Keep that earlier accent, and do not synthesize a phrase pause.
+        prepositional = (
+            ('Ειδοποίηση για εκκρεμή ενημέρωση κατά την εκκίνηση  πλαίσιο επιλογής  επιλεγμένο',
+             '[.0e.0ni.1me.0ro.0si]', '[.0e.1ki.0ni.0si]'),
+            ('Ειδοποίηση για διαθέσιμη ενημέρωση από την εφαρμογή  πλαίσιο επιλογής  επιλεγμένο',
+             '[.0e.0ni.1me.0ro.0si]', '[.0e.0far.0mo.1Yi]'),
+            ('Ρύθμιση για ασφαλή σύνδεση με τον διακομιστή  πλαίσιο επιλογής  ενεργό',
+             '[.1sin.0de.0si]', '[.0di.0a.0ko.0mi.1sti]'),
+        )
+        for text, earlier, later in prepositional:
+            result = phonemes(greek, text)
+            for expected in (earlier, later):
+                assert '`' + expected in result and '`0 `' + expected not in result, result
+            assert result == phonemes(greek, text.replace('  ', ' '))
+            assert render(greek, [text, EciIndex(13)]) == render(
+                greek, [text.replace('  ', ' '), EciIndex(13)])
         assert phonemes(greek, title + '  ' + body) == phonemes(greek, title + ' ' + body)
         mixed_title = 'Αλλαγή γλώσσας για το NVDA'
         assert phonemes(greek, mixed_title + '  ' + body) == phonemes(greek, mixed_title + ' ' + body)
