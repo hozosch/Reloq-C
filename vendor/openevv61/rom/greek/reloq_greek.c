@@ -163,9 +163,10 @@ static int greek_word(struct buffer *out,const char *text,size_t bytes,int conte
     if(!explicit_accent&&!unstressed&&nuclei){size_t target=nuclei>1?nuclei-2:0,k=0;for(size_t j=0;j<m;++j)if(s[j].vowel&&k++==target){s[j].accent=1;break;}}
     /* The Castilian sentence planner can otherwise deaccent a Greek
      * content word despite its explicit .1 lexical stress. Request normal
-     * prominence for written Greek words, leaving weak function words and
-     * explicit caller prominence controls to their existing rules. */
-    int error=say(out,(context&8)&&!unstressed&&!(context&4)?" `1 `[":" `[");size_t begin=0;
+     * prominence for written Greek words, leaving weak function words,
+     * hyphenated continuations and explicit caller controls to their
+     * existing rules. */
+    int error=say(out,(context&8)&&!unstressed&&!(context&(4|16))?" `1 `[":" `[");size_t begin=0;
     for(size_t j=0;j<m&&!error;++j)if(s[j].vowel){
         if(j>begin){/* consonants already belong to this syllable */}
         error=say(out,s[j].accent?".1":".0");
@@ -504,7 +505,7 @@ int reloq_greek_text(const char *text,int annotations,reloq_greek_english englis
             }
             i+=z;previous=0;
         }
-        else if(letter(cp).base){size_t end=i+z;while(text[end]){uint32_t next;size_t k=decode(text+end,&next);if(!k||!letter(next).base)break;end+=k;}size_t after=end;while(text[after]==' '||text[after]=='\t')++after;uint32_t next=0;if(text[after])decode(text+after,&next);int following=letter(next).base||reloq61_latin_byte(next)||(next>='0'&&next<='9');failed=greek_word(&b,text+i,end-i,8|(explicit_prominence?4:0)|(previous?1:0)|(following?2:0));previous=1;explicit_prominence=0;i=end;expanded=1;}
+        else if(letter(cp).base){size_t end=i+z;while(text[end]){uint32_t next;size_t k=decode(text+end,&next);if(!k||!letter(next).base)break;end+=k;}size_t after=end;while(text[after]==' '||text[after]=='\t')++after;uint32_t next=0;if(text[after])decode(text+after,&next);int following=letter(next).base||reloq61_latin_byte(next)||(next>='0'&&next<='9');int joined=b.length&&b.data[b.length-1]=='-';failed=greek_word(&b,text+i,end-i,8|(joined?16:0)|(explicit_prominence?4:0)|(previous?1:0)|(following?2:0));previous=1;explicit_prominence=0;i=end;expanded=1;}
         else if(cp>='0'&&cp<='9'){
             uint64_t number=0;size_t end=i;int overflow=0;while(text[end]>='0'&&text[end]<='9'){unsigned digit=text[end]-'0';if(number>(UINT64_MAX-digit)/10)overflow=1;else number=number*10+digit;++end;}
             if(overflow){for(size_t j=i;j<end&&!failed;++j)failed=cardinal(&b,text[j]-'0');}else failed=cardinal(&b,number);i=end;previous=0;explicit_prominence=0;expanded=1;

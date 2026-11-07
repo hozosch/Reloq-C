@@ -30,6 +30,10 @@ def main():
         assert '`[.0a] `[.0po]' in phonemes(greek, 'από Αθήνα')
         assert '[.0a.1po]' in phonemes(greek, 'από')
         assert render(greek, ['`0 Αθήνα και Θεσσαλονίκη']) != render(greek, ['`1 Αθήνα και Θεσσαλονίκη'])
+        # Injecting a prominence tag directly after a hyphen caused the
+        # Castilian core to read a spurious punctuation name between words.
+        for joiner in ('-', '‐', '‑', '−'):
+            assert '[.1pa.0bla]' not in phonemes(greek, 'Καλός καιρός' + joiner + 'ήρθε η καταιγίδα.')
     finally:
         greek.close()
 
