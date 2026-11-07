@@ -818,7 +818,7 @@ static int generate_core_impl(const struct reloq61_request *q,struct reloq61_res
         worker->last_text_options.phrase_prediction!=text_options.phrase_prediction||
         worker->last_text_options.original_questions!=text_options.original_questions||
         memcmp(worker->last_voice,q->voice,sizeof worker->last_voice));
-    int reset=worker&&(!worker->prepared||!reusable_text||controls_changed);
+    int reset=worker&&(!worker->prepared||annotated||controls_changed);
     int recover=worker&&worker->recoverable_cancel&&reusable_text&&!controls_changed;
     int prepared=worker&&worker->handle&&!reset;
     initialize();h=worker?worker->handle:NULL;
@@ -989,7 +989,7 @@ static int generate_core_impl(const struct reloq61_request *q,struct reloq61_res
         if(worker->recoverable_cancel)remember_controls(worker,q);
     } else if(!worker || !ok || r->error || r->unsupported) {
         release_handle(worker,h);
-    } else if(reusable_text&&metadata&&!prepare_next(worker,q)) {
+    } else if(!annotated&&metadata&&!prepare_next(worker,q)) {
         release_handle(worker,h);
     }
     reloq61_inline_scope(previous_inline);
