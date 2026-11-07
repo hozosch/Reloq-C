@@ -157,6 +157,25 @@ def main():
         finally:
             assert transport.shutdown()
 
+        # A local snapshot may be ready before a subsequent online refresh
+        # fails. Failure must not erase that successful queued selection.
+        engine, done, errors = Engine(), threading.Event(), []
+        transport = EciTextTransport(lambda: engine, Player(), lambda index: None,
+                                     lambda number: done.set(), errors.append)
+        try:
+            # Prevent the worker from consuming the barrier between these
+            # calls so that this exercises the actual race deterministically.
+            with transport._condition:
+                transport.begin_dictionary_load()
+                transport.set_dictionary_path(first)
+                transport.fail_dictionary_load()
+                transport.submit(['old', EciIndex(1)])
+            assert done.wait(3)
+            assert engine.calls == [('old', b'old\told\n')], engine.calls
+            assert not errors
+        finally:
+            assert transport.shutdown()
+
         # A source failure is reported and releases the barrier; shutting
         # down while a load is pending must never wait for the I/O worker.
         engine, done, errors = Engine(), threading.Event(), []

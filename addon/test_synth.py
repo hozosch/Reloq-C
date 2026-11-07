@@ -293,6 +293,9 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert driver.availableSamplerates["1"].displayName == ("11,025 kHz" if german_ui else "11.025 kHz")
                 head_setting = next(item for item in driver.supportedSettings if item.id == "headSize")
                 assert head_setting.displayNameWithAccelerator == ("Kopf&größe" if german_ui else "&Head size")
+                question_setting = next(item for item in driver.supportedSettings if item.id == "originalQuestions")
+                assert question_setting.displayNameWithAccelerator == (
+                    "Ursprüngliche &Frageintonation verwenden" if german_ui else "Use original &question intonation")
                 driver.voice = "deu_experimental"
                 assert driver.voice == "1", "old voice IDs must migrate"
                 driver.voice = "262144:1"
@@ -300,7 +303,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert PitchCommand in driver.supportedCommands
                 assert CharacterModeCommand in driver.supportedCommands
                 assert [setting.id for setting in driver.supportedSettings] == [
-                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate"]
+                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate"]
                 assert driver.supportedSettings[0].availableInSettingsRing
                 assert not any(hasattr(driver, '_'+name) for name in
                                ('glideOpening', 'glideBackness', 'glideSoftness'))
@@ -390,10 +393,10 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         driver_module.EciText("Deutsch."), driver_module.EciLanguage(0x10000, "1"), driver_module.EciText("English."),
                         driver_module.EciLanguage(0x40000, "1"), driver_module.EciText("Wieder deutsch.")]
                 until(lambda: len(Engine.instances) == 1)
-                until(lambda: len(Engine.instances[0].parameters) == 14)
+                until(lambda: len(Engine.instances[0].parameters) == 15)
                 assert Engine.instances[0].parameters == list(german.voices[0].parameters) + [(0x1007, 98), (0x1008, 50),
                                                           (0x1009, 30),
-                                                          (0x100a, 100), (0x100d, 50), (0x100e, 0), (0x100f, 0)]
+                                                          (0x100a, 100), (0x100d, 50), (0x100e, 0), (0x100f, 0), (0x1015, 0)]
                 driver._set_rate(70)
                 driver._set_pitch(65)
                 driver._set_inflection(75)
@@ -408,7 +411,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 worker = Engine.instances[0]
                 assert worker.parameters == list(german.voices[0].parameters) + [(0x1007, 98), (0x1008, 50),
                                              (0x1009, 30), (0x100a, 100),
-                                             (0x100d, 50), (0x100e, 0), (0x100f, 0),
+                                             (0x100d, 50), (0x100e, 0), (0x100f, 0), (0x1015, 0),
                                              (0x1007, 121), (0x1008, 65),
                                              (0x1009, 75),
                                              (0x100a, 85)]
@@ -522,6 +525,12 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 until(lambda: Engine.instances[0].parameters[-1] == (3, 0))
                 driver.phrasePrediction = False
                 until(lambda: Engine.instances[0].parameters[-1] == (11, 0))
+                assert driver.originalQuestions is False
+                driver.originalQuestions = True
+                until(lambda: Engine.instances[0].parameters[-1] == (0x1015, 1))
+                assert driver.originalQuestions is True
+                driver.originalQuestions = False
+                until(lambda: Engine.instances[0].parameters[-1] == (0x1015, 0))
                 assert list(driver.availablePausemodes) == ["0", "1", "2"]
                 assert list(driver.availablePauseModes) == ["0", "1", "2"]
                 assert driver.pauseMode == "0"

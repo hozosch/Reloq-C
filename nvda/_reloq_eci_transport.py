@@ -323,7 +323,7 @@ class EciTextTransport:
 
     def fail_dictionary_load(self) -> None:
         with self._condition:
-            if self._dictionary_barrier is not None:
+            if self._dictionary_barrier is not None and not self._dictionary_barrier.ready:
                 self._dictionary_barrier.ready = True
                 self._dictionary_barrier.apply = False
                 self._condition.notify_all()
