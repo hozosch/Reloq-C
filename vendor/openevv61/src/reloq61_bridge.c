@@ -205,7 +205,7 @@ static int greek_word_has_accent(delta_state *d,int32_t from,int32_t to,
     int32_t at=from,end=greek_record_right(d,to,4);
     for(unsigned guard=0;at&&greek_record_right(d,at,4)!=end&&guard<1024;++guard) {
         int32_t phone=greek_record_at(d,at,4);int16_t stress;
-        if(!phone)return 0;
+        if(!phone){phones[0]=0;return 0;}
         void *body=TFLDS(EVV_AT(void *,phone));
         memcpy(&stress,delta_record_field(&vstmtbl[4],8,body),2);
         if(stress>0){accented=1;if(!inspect)return 1;}
