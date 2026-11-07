@@ -103,6 +103,8 @@ jobs:
         run: |
           python nvda/test_eci_dictionary_cache.py --library test-x64/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'ECI dictionary cache regression test failed' }
+          python nvda/test_eci_dictionary_retention.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Multilingual dictionary startup regression test failed' }
           python nvda/test_eci_release113.py --library test-x64/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Long text and HTTPS regression test failed' }
           python nvda/test_eci_release120.py --library test-x64/eci.dll

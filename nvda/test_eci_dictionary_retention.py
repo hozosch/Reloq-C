@@ -72,6 +72,29 @@ def main():
             engine.set_dictionary_path(None)
             assert capture(engine)!=updated,"Disabling retained an active dictionary";checks+=1
         finally:engine.close()
+        # Selecting a directory must load the active language and, for Greek,
+        # Chinese and Korean, its separate English path before any output.
+        # Removing the source after selection makes a lazy load observable.
+        for dialect,prefix in ((0x20000,"ESP"),(0x120000,"ENU"),
+                               (0x60000,"ENU"),(0xa0000,"ENU")):
+            folder=Path(temporary)/str(dialect);folder.mkdir()
+            source=folder/(prefix+"main.dic");source.write_bytes(b"Unigram\tbanana\n")
+            def make():
+                voice=DirectEciEngine(a.library,dialect=dialect,encoding="utf8",native_voice=True)
+                voice.set_dictionary_path(folder)
+                return voice
+            reference=make()
+            try:
+                expected=[];assert reference.speak(["Unigram."],expected.append,lambda i:None)
+                expected=b"".join(expected);assert expected
+            finally:reference.close()
+            candidate=make()
+            try:
+                source.rename(folder/"unavailable")
+                actual=[];assert candidate.speak(["Unigram."],actual.append,lambda i:None)
+                assert b"".join(actual)==expected,hex(dialect)
+                checks+=1
+            finally:candidate.close()
     print(f"Dictionary retention: {checks} cancel/error/profile/update/disable checks passed with source files absent; no audio files")
 
 

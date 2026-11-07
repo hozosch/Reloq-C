@@ -74,6 +74,7 @@ jobs:
           python3 -B tests/test_release_dictionaries.py
           python3 -B tools/test_native_text_input.py
           python3 -B nvda/test_eci_dictionary_cache.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_dictionary_retention.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_dash_pause.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_release113.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_release114.py --library eci/libreloq_eci.so

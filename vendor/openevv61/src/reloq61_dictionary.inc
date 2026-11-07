@@ -249,6 +249,18 @@ int reloq61_worker_lexicon_overlay(void *context,const struct reloq_lexicon *vie
     if(w->dictionary&&reloq61_dictionary_set_overlay(w->dictionary,view))return -1;
     w->overlay=view;w->overlay_version=version;return 0;
 }
+/* Parse each active language's selected volumes before returning success.
+ * In particular, Chinese, Korean and Greek can call their separate English
+ * worker after native speech has already begun. That worker must own the
+ * same complete snapshot before the host emits the first sample. */
+static int dictionary_prepare(struct provider_worker *w)
+{
+    char phonemes[512];struct reloq61_request q={.language=w->language,
+        .annotations=1,.phonemes_only=1,.voice={0,50,65,30,0,0,50,92},
+        .text="",.phonemes=phonemes,.phonemes_capacity=sizeof phonemes};
+    struct reloq61_result result;void *previous=reloq61_worker_scope(w);
+    int status=reloq61_generate(&q,&result);reloq61_worker_scope(previous);return status;
+}
 int reloq61_worker_dictionary(void *context,const char *path)
 {
     struct provider_worker *w=context;
@@ -260,14 +272,8 @@ int reloq61_worker_dictionary(void *context,const char *path)
         w->english->dictionary_path=malloc(n+1);if(!w->english->dictionary_path)return -1;
         memcpy(w->english->dictionary_path,path,n+1);
     }
-    if(w->language==0x40000||w->language==0x10000) {
-        char phonemes[512];struct reloq61_request q={.language=w->language,
-            .annotations=1,.phonemes_only=1,.voice={0,50,65,30,0,0,50,92},
-            .text="",.phonemes=phonemes,.phonemes_capacity=sizeof phonemes};
-        struct reloq61_result result;void *previous=reloq61_worker_scope(w);
-        int status=reloq61_generate(&q,&result);reloq61_worker_scope(previous);return status;
-    }
-    return 0;
+    if(w->english&&dictionary_prepare(w->english))return -1;
+    return dictionary_prepare(w);
 }
 /* Configure immutable explicit volumes on a fresh worker. */
 int reloq61_worker_dictionary_files(void *context,const char *const files[4])
