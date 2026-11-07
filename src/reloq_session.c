@@ -345,7 +345,9 @@ int reloq_session_reset(struct reloq_session *session)
     unsigned classic=session->high_rate_profile==3?1:session->high_rate_profile;
     next.rate_transfer.trial_profile=c->sample_rate<16000?classic:0;
     next.rate_transfer.mellow_mode=session->mellow_mode;
-    if(session->high_rate_profile==3&&c->glottal_reference_rate>0)
+    /* Mellow keeps the same source and consonants, but omits C's optional
+     * periodic richness contour. The normal mode retains it unchanged. */
+    if(session->high_rate_profile==3&&!session->mellow_mode&&c->glottal_reference_rate>0)
         next.rate_transfer.body_amount=c->sample_rate>=48000?.41666667f:
             c->sample_rate>=44100?.36666667f:c->sample_rate>=32000?.26666667f:
             c->sample_rate>=22050?.15f:0;

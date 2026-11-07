@@ -77,7 +77,7 @@ These controls are in NVDA's Speech settings:
 
 **Use original question intonation** uses the language core's question contour for German and American English. It is off by default, preserving the rising question contour.
 
-**Mellow mode** reduces voiced presence at 3.5–4 kHz at sample rates of 16 kHz and above. It is off by default and leaves frication and aspiration unchanged.
+**Mellow mode** softens voiced presence around 3–4 kHz at sample rates of 16 kHz and above and omits the added richness from 22 kHz. It is off by default and leaves frication and aspiration unchanged.
 
 **Process ECI tags** is off by default. When enabled, supported backtick commands in text can control pronunciation, spelling, emphasis, voice parameters, voices and languages. This option is not needed for ordinary reading. Pronunciation dictionaries can contain pronunciation annotations independently of this setting.
 

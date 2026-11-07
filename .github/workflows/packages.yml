@@ -65,12 +65,13 @@ jobs:
           name: dictionary-snapshot
           path: data/community
       - name: Build the shared native engine and acoustic rule tests
-        run: make -C eci -j2 libreloq_eci.so test_reloq_native_rules test_reloq_text_peaks test_reloq_presence PROVIDER_LTO=-flto=2
+        run: make -C eci -j2 libreloq_eci.so test_reloq_native_rules test_reloq_text_peaks test_reloq_presence test_reloq_hearing_profiles PROVIDER_LTO=-flto=2
       - name: Check number, pitch, pause, source-index and multilingual behavior
         run: |
           ./eci/test_reloq_native_rules
           ./eci/test_reloq_text_peaks
           ./eci/test_reloq_presence
+          ./eci/test_reloq_hearing_profiles
           python3 -B tests/test_replace_release.py
           python3 -B tests/test_release_dictionaries.py
           python3 -B tools/test_native_text_input.py
@@ -187,12 +188,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download v1.1.3 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-1.1.3.nvda-addon' --dir previous-addon
-          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.1.3.nvda-addon --candidate dist/reloq-c-synth-x64-1.2.0.nvda-addon
+          gh release download v1.2.0 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-1.2.0.nvda-addon' --dir previous-addon
+          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.2.0.nvda-addon --candidate dist/reloq-c-synth-x64-1.2.1-dev1.nvda-addon
       - name: Verify NVDA driver and offline dictionary startup
         run: |
           for language in en de; do
-            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.2.0.nvda-addon"))' "$language"
+            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.2.1-dev1.nvda-addon"))' "$language"
           done
       - uses: actions/upload-artifact@v4
         with:

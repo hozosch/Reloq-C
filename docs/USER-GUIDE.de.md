@@ -77,7 +77,7 @@ Die folgenden Optionen befinden sich in den Sprachausgaben-Einstellungen:
 
 **Ursprüngliche Frageintonation verwenden** stellt für Deutsch und US-Englisch die Fragekontur des Sprachkerns ein. Die Option ist zunächst ausgeschaltet; dann bleibt die ansteigende Frageintonation erhalten.
 
-**Weicher Modus** reduziert ab 16 kHz die Präsenz der stimmhaften Anteile bei 3,5 bis 4 kHz. Er ist zunächst ausgeschaltet und verändert Zisch- und Atemgeräusche nicht.
+**Weicher Modus** senkt ab 16 kHz die Präsenz stimmhafter Anteile bei etwa 3 bis 4 kHz und lässt ab 22 kHz die zusätzliche Richness weg. Er ist zunächst ausgeschaltet und verändert Zisch- und Atemgeräusche nicht.
 
 **ECI-Tags verarbeiten** ist zunächst ausgeschaltet. Eingeschaltet können unterstützte Backtick-Befehle im Text Aussprache, Buchstabierung, Betonung, Stimmparameter, Stimmen und Sprachen steuern. Für gewöhnliches Lesen ist die Option nicht erforderlich. Eigene Aussprachewörterbücher können Ausspracheangaben unabhängig von dieser Einstellung enthalten.
 

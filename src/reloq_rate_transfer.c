@@ -690,12 +690,12 @@ static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rat
     brilliance[2]=trim*(1-alpha*upper)/d;brilliance[3]=-2*cos(w)/d;
     brilliance[4]=(1-alpha/upper)/d;
     /* A fourth-order minimum-phase band is confined to periodic voicing.
-     * The normal mode keeps the original +2.5 dB presence lift; mellow
-     * replaces it with -3.5 dB, a 6 dB centre reduction relative to normal.
+     * Normal keeps the +2.5 dB lift at 3.5..4 kHz; mellow replaces it
+     * with -3.5 dB over a wider band starting at 3 kHz.
      * Keep the pre-presence gain instead of lowering the bass with a
      * broadband trim. Aspiration and frication remain independent. */
     const double band_gain=s->mellow_mode?0.6683439175686147:1.333521432163324;
-    const double lo=tan(pi*3500/rate),hi=tan(pi*4000/rate);
+    const double lo=tan(pi*(s->mellow_mode?3000:3500)/rate),hi=tan(pi*4000/rate);
     const double centre=sqrt(lo*hi),width=2.2*(hi-lo);
     const double complex pole=(-1+I)/sqrt(2),zero=pole*sqrt(band_gain);
     const double complex pd=csqrt(pole*pole*width*width-4*centre*centre);

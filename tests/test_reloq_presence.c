@@ -47,11 +47,12 @@ int main(void)
             if(gain>most)most=gain;
         }
         assert(most-least<.31);
-        assert(fabs(lift(rate,3750)-6.0)<.002);
-        assert(lift(rate,1000)<.002);
-        assert(lift(rate,2000)<.04);
-        assert(lift(rate,3000)<1.15);
-        assert(lift(rate,5000)<.33);
+        assert(lift(rate,3750)>5.95);
+        assert(lift(rate,1000)<.02);
+        assert(lift(rate,2000)<.35);
+        assert(lift(rate,2500)>1.3 && lift(rate,2500)<1.6);
+        assert(lift(rate,3000)>3.7 && lift(rate,3000)<4.1);
+        assert(lift(rate,5000)<1.1);
         for(unsigned mode=0;mode<2;++mode) {
             struct reloq_rate_transfer stable={0};stable.mellow_mode=mode;prepare(&stable,rate);
             const double *sections[]={stable.voice_colour[3],stable.voice_band};
@@ -92,6 +93,6 @@ int main(void)
         reloq_rate_transfer_process_voice(&a,samples,3);
         assert(!memcmp(samples,before,sizeof before));
     }
-    puts("Mellow mode: 5.7..6 dB reduction at 3.5..4 kHz across all five extended clocks; unchanged aspiration, stable sections and block boundaries passed");
+    puts("Mellow mode: wider reduction reaching 3 kHz across all five extended clocks; unchanged aspiration, stable sections and block boundaries passed");
     return 0;
 }

@@ -12,14 +12,15 @@ static int take(void *context,const int16_t *samples,size_t count)
     memcpy(out->samples+out->count,samples,count*sizeof *samples);
     out->count+=count;return 0;
 }
-static void render(float rate,unsigned profile,int voiced,int aspiration,int broad,
+static void render(float rate,unsigned profile,int mellow,int voiced,int aspiration,int broad,
     struct capture *out)
 {
     struct reloq_session_config config={.sample_rate=rate,.duration_scale=1,
         .output_gain=1,.initial_seed=8,.max_frame_samples=5000,
         .glottal_reference_rate=11025,.reference_formants=5,.frication_reference_rate=16000};
     struct reloq_session *session=reloq_session_create(&config);assert(session);
-    assert(!reloq_session_high_rate_profile(session,profile));assert(!reloq_session_reset(session));
+    assert(!reloq_session_high_rate_profile(session,profile));
+    assert(!reloq_session_mellow_mode(session,mellow));assert(!reloq_session_reset(session));
     struct reloq_core_voiced_frame frame={.pitch_tenths=1153,.open_percent=50,
         .av_level=voiced?55:0,.glottal_profile=4};
     frame.noise.duration_ms=100;
@@ -45,16 +46,27 @@ int main(void)
     for(unsigned r=0;r<7;++r) {
         for(int aspiration=0;aspiration<2;++aspiration) {
             struct capture b={0},c={0};
-            render(rates[r],1,0,aspiration,0,&b);render(rates[r],3,0,aspiration,0,&c);
+            render(rates[r],1,0,0,aspiration,0,&b);render(rates[r],3,0,0,aspiration,0,&c);
             assert(b.count==c.count&&!memcmp(b.samples,c.samples,b.count*sizeof *b.samples));++checks;
         }
-        struct capture b={0},c={0};render(rates[r],1,0,0,1,&b);render(rates[r],3,0,0,1,&c);
+        struct capture b={0},c={0};render(rates[r],1,0,0,0,1,&b);render(rates[r],3,0,0,0,1,&c);
         assert(b.count==c.count&&!memcmp(b.samples,c.samples,b.count*sizeof *b.samples));++checks;
         memset(&b,0,sizeof b);memset(&c,0,sizeof c);
-        render(rates[r],1,1,0,0,&b);render(rates[r],3,1,0,0,&c);
+        render(rates[r],1,0,1,0,0,&b);render(rates[r],3,0,1,0,0,&c);
         assert(b.count==c.count);
         assert((memcmp(b.samples,c.samples,b.count*sizeof *b.samples)!=0)==(rates[r]>16000));++checks;
+        /* Profile C's added periodic richness must disappear in mellow
+         * mode. Both profiles then render the same voice at every rate. */
+        memset(&b,0,sizeof b);memset(&c,0,sizeof c);
+        render(rates[r],1,1,1,0,0,&b);render(rates[r],3,1,1,0,0,&c);
+        assert(b.count==c.count&&!memcmp(b.samples,c.samples,b.count*sizeof *b.samples));++checks;
+        /* Mellow must never modify pure frication or aspiration. */
+        for(int aspiration=0;aspiration<2;++aspiration) {
+            memset(&b,0,sizeof b);memset(&c,0,sizeof c);
+            render(rates[r],3,0,0,aspiration,0,&b);render(rates[r],3,1,0,aspiration,0,&c);
+            assert(b.count==c.count&&!memcmp(b.samples,c.samples,b.count*sizeof *b.samples));++checks;
+        }
     }
-    printf("Gentle richness separation: %u PCM comparisons, AF/AH unchanged and 16 kHz preserved\n",checks);
+    printf("Mellow and richness separation: %u PCM comparisons, AF/AH unchanged\n",checks);
     return 0;
 }
