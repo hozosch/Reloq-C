@@ -77,6 +77,18 @@ class ManagerTests(unittest.TestCase):
         self.assertIsNone(error)
         self.assertEqual(len(builds), 3)
 
+        # Different selections can yield identical bytes and thus share a
+        # directory, but their source and conflict counts must stay current.
+        duplicate = self.source('duplicate.dic', b'Unigram\tOther\n', 0x10000)
+        previous = self.deliveries[-1][1]
+        error, details = self.wait(lambda done:self.manager.set_sources([own, duplicate], done))
+        self.assertIsNone(error)
+        self.assertEqual(self.deliveries[-1][1], previous)
+        self.assertEqual((details['own_sources'], details['conflicts']), (2, 1))
+        error, details = self.wait(self.manager.refresh)
+        self.assertIsNone(error)
+        self.assertEqual((details['own_sources'], details['conflicts']), (2, 1))
+
     def test_merge_native_volumes_precedence_and_unchanged_inputs(self):
         a = self.source('my-unrelated-name.dic', b'Armin\tErster\nOwn\t`[.1a]\n')
         b = self.source('other.dic', b'Armin\tZweiter\nOwn\t`[.1b]')

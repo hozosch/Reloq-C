@@ -527,16 +527,20 @@ class DictionaryManager:
                     any(c not in '0123456789abcdef' for c in name)):
                 return None
             path = self.cache / 'merged' / name
-            return path, validate_merged(path)
+            verified = validate_merged(path)
+            details = record['details']
+            if not isinstance(details, dict) or details.get('files') != verified['files']:
+                return None
+            return path, details
         except (OSError, ValueError, TypeError, KeyError):
             return None
 
-    def _remember_startup(self, signature, path):
+    def _remember_startup(self, signature, path, details):
         if path is None or Path(path).parent != self.cache / 'merged':
             return
         try:
             _atomic_json(self.cache / 'startup.json', {'version': 1,
-                'signature': signature, 'snapshot': Path(path).name})
+                'signature': signature, 'snapshot': Path(path).name, 'details': details})
         except OSError:
             pass  # An unavailable cache must not prevent speech.
 
@@ -570,7 +574,7 @@ class DictionaryManager:
                     _atomic_json(self.cache / repository / "current.json", {"commit": community.name})
                 self._watched_state = state
                 committed = True
-            self._remember_startup(signature, path)
+            self._remember_startup(signature, path, details)
             self._emit(revision, path)
             if update:
                 latest = fetch_master(self.cache, fetch=self.fetch, publish=False, source=repository)
@@ -589,7 +593,7 @@ class DictionaryManager:
                         self._watched_state = installed_state
                 if self.current(revision):
                     updated_signature = self._startup_signature(latest, sources, enabled, repository, installed_state)
-                    self._remember_startup(updated_signature, path)
+                    self._remember_startup(updated_signature, path, details)
             if not self.current(revision):
                 return
             self._emit(revision, path)
