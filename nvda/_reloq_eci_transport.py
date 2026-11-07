@@ -70,6 +70,8 @@ class _DictionaryBarrier:
     ready: bool = False
     apply: bool = False
     path: str | None = None
+    fallback_apply: bool = False
+    fallback_path: str | None = None
 
 
 @dataclass(frozen=True)
@@ -318,6 +320,10 @@ class EciTextTransport:
                 self._jobs.append(barrier)
             else:
                 # A newer request supersedes a result not yet consumed.
+                # If it fails, retain the previous completed snapshot.
+                if barrier.ready and barrier.apply:
+                    barrier.fallback_apply = True
+                    barrier.fallback_path = barrier.path
                 barrier.ready = barrier.apply = False
             self._condition.notify_all()
 
@@ -325,7 +331,8 @@ class EciTextTransport:
         with self._condition:
             if self._dictionary_barrier is not None and not self._dictionary_barrier.ready:
                 self._dictionary_barrier.ready = True
-                self._dictionary_barrier.apply = False
+                self._dictionary_barrier.apply = self._dictionary_barrier.fallback_apply
+                self._dictionary_barrier.path = self._dictionary_barrier.fallback_path
                 self._condition.notify_all()
 
     def set_dictionary_path(self, path) -> None:

@@ -176,6 +176,24 @@ def main():
         finally:
             assert transport.shutdown()
 
+        # A newer, invalid selection must fall back to the previous complete
+        # snapshot even when the worker has not installed that snapshot yet.
+        engine, done, errors = Engine(), threading.Event(), []
+        transport = EciTextTransport(lambda: engine, Player(), lambda index: None,
+                                     lambda number: done.set(), errors.append)
+        try:
+            with transport._condition:
+                transport.begin_dictionary_load()
+                transport.set_dictionary_path(first)
+                transport.begin_dictionary_load()
+                transport.fail_dictionary_load()
+                transport.submit(['old', EciIndex(1)])
+            assert done.wait(3)
+            assert engine.calls == [('old', b'old\told\n')], engine.calls
+            assert not errors
+        finally:
+            assert transport.shutdown()
+
         # A source failure is reported and releases the barrier; shutting
         # down while a load is pending must never wait for the I/O worker.
         engine, done, errors = Engine(), threading.Event(), []
