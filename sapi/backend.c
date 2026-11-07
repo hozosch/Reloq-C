@@ -1,5 +1,5 @@
-/* A bounded output queue lets the initialized language run ahead while the
- * SAPI client waits for playback. The caller alone owns the SAPI site. */
+/* Synthesize on SAPI's caller thread and deliver each native PCM block
+ * directly to its site. Each caller owns its initialized ECI contexts. */
 #include "settings.h"
 #define RELOQ_ECI_STATIC
 #include "reloq_eci.h"
@@ -13,6 +13,9 @@
 #include <string.h>
 #include <wchar.h>
 #include <wctype.h>
+#ifdef RELOQ_SAPI_TEST_HOST
+#include <pthread.h>
+#endif
 
 struct core_api {
     HMODULE module;
@@ -53,24 +56,26 @@ static BOOL CALLBACK load_core(PINIT_ONCE once,PVOID unused,PVOID *context)
     return TRUE;
 fail:FreeLibrary(core.module);memset(&core,0,sizeof core);return FALSE;
 }
-enum {PACKET_CAPACITY=256};
 struct packet {int type;ULONG bytes,volume;SPEVENT event;HRESULT result;short pcm[512];};
 struct job {
     struct sapi_settings settings;const SPVTEXTFRAG *fragments;
     DWORD flags,rate;LONG speed;USHORT volume;ULONGLONG interest;
 };
 struct bookmark {struct bookmark *next;WCHAR text[];};
+struct output;
 struct sapi_backend {
-    HANDLE thread,start,room,ready;volatile LONG cancel,exit,busy;
-    unsigned put,get;struct packet packets[PACKET_CAPACITY];struct job job;
-    struct sapi_settings initial_settings;int prepare,warming;
+    volatile LONG cancel,busy;
+    struct job job;int warming,cached;
     int dialect;ULONG fragment_volume;ECIHand handle;short pcm[512];
+    struct output *output;
     SPEVENT *events;size_t event_count,event_capacity;
     struct bookmark *bookmarks;
     int dictionary_ready;WCHAR dictionary_path[2048];
     WIN32_FILE_ATTRIBUTE_DATA dictionary_files[6];
     HANDLE dictionary_watch;FILETIME dictionary_directory_created;
 };
+static int output_pcm(struct output *,const short *,size_t,ULONG);
+static int output_event(struct output *,SPEVENT);
 static void cancel_backend(struct sapi_backend *b)
 {
     if(InterlockedExchange(&b->cancel,1))return;
@@ -78,11 +83,10 @@ static void cancel_backend(struct sapi_backend *b)
 }
 static int put(struct sapi_backend *b,const struct packet *packet)
 {
-    for(;;){if(InterlockedCompareExchange(&b->cancel,0,0))return 0;
-        DWORD rc=WaitForSingleObject(b->room,10);if(rc==WAIT_TIMEOUT)continue;
-        if(rc!=WAIT_OBJECT_0)return 0;break;}
-    b->packets[b->put]=*packet;b->put=(b->put+1)%PACKET_CAPACITY;
-    return ReleaseSemaphore(b->ready,1,NULL)!=0;
+    if(InterlockedCompareExchange(&b->cancel,0,0)||!b->output)return 0;
+    if(packet->type==1)return output_pcm(b->output,packet->pcm,packet->bytes/2,packet->volume);
+    if(packet->type==2)return output_event(b->output,packet->event);
+    return 0;
 }
 static int ECICALL callback(ECIHand handle,int message,int value,void *context)
 {
@@ -90,16 +94,14 @@ static int ECICALL callback(ECIHand handle,int message,int value,void *context)
     /* Startup preflight deliberately has no SAPI site or audible output. */
     if(b->warming)return InterlockedCompareExchange(&b->cancel,0,0)?eciDataAbort:eciDataProcessed;
     if(InterlockedCompareExchange(&b->cancel,0,0)){core.stop(handle);return 0;}
-    struct packet packet={0};
+    int ok=1;
     if(message==RELOQ_ECI_WAVEFORM_BUFFER){
         if(value<0||value>512)return 0;
-        packet.type=1;packet.bytes=(ULONG)value*2;packet.volume=b->fragment_volume;
-        memcpy(packet.pcm,b->pcm,packet.bytes);
+        ok=output_pcm(b->output,b->pcm,(size_t)value,b->fragment_volume);
     }else if(message==RELOQ_ECI_INDEX_REPLY){
         if(value<1||(size_t)value>b->event_count)return 0;
-        packet.type=2;packet.event=b->events[value-1];
+        ok=output_event(b->output,b->events[value-1]);
     }else return 1;
-    int ok=put(b,&packet);
     if(!ok && InterlockedCompareExchange(&b->cancel,0,0))core.stop(handle);
     return ok;
 }
@@ -139,29 +141,11 @@ static int output_flush(struct output *o)
 }
 static int output_pcm(struct output *o,const short *pcm,size_t samples,ULONG fragment_volume)
 {
-    if(o->count&&fragment_volume!=o->fragment_volume&&!output_flush(o))return 0;
     o->fragment_volume=fragment_volume;
-    uint64_t startup_ready=((uint64_t)o->backend->job.rate*50+999)/1000;
-    uint64_t startup_window=((uint64_t)o->backend->job.rate*500+999)/1000;
-    size_t early_block=(size_t)(((uint64_t)o->backend->job.rate*40+999)/1000);
-    size_t steady_block=(size_t)(((uint64_t)o->backend->job.rate*80+999)/1000);
     while(samples){
-        uint64_t delivered=o->offset/sizeof(short);
-        /* Start the SAPI stream as soon as the engine produces audio. */
-        if(!delivered&&!o->count){
-            size_t n=samples>4096?4096:samples;
-            memcpy(o->pending,pcm,n*sizeof *pcm);o->count=n;pcm+=n;samples-=n;
-            if(!output_flush(o))return 0;continue;
-        }
-        size_t target=delivered<startup_ready?(size_t)(startup_ready-delivered):
-            delivered<startup_window?early_block:steady_block;
-        if(target>4096)target=4096;
-        if(delivered<startup_window){
-            if(startup_window-delivered<target)target=(size_t)(startup_window-delivered);
-        }
-        size_t n=target-o->count;if(n>samples)n=samples;
-        memcpy(o->pending+o->count,pcm,n*2);o->count+=n;pcm+=n;samples-=n;
-        if(o->count==target&&!output_flush(o))return 0;
+        size_t n=samples>4096?4096:samples;
+        memcpy(o->pending,pcm,n*sizeof *pcm);o->count=n;pcm+=n;samples-=n;
+        if(!output_flush(o))return 0;
     }
     return 1;
 }
@@ -324,7 +308,7 @@ static HRESULT synthesize(struct sapi_backend *b)
     size_t delivered_events=0;b->fragment_volume=100;
     b->event_count=0;
     for(const SPVTEXTFRAG *f=b->job.fragments;f;f=f->pNext){
-        if(InterlockedCompareExchange(&b->cancel,0,0))return S_OK;
+        if(!output_actions(b->output))return S_OK;
         if(f->State.eAction==SPVA_Bookmark){
             if(!f->pTextStart||!event_mark(b,SPEI_TTS_BOOKMARK,0,f->ulTextLen,f->pTextStart))return E_FAIL;
             continue;
@@ -365,15 +349,16 @@ static HRESULT synthesize(struct sapi_backend *b)
             if(!add_wide(b,f->pTextStart,f->ulTextLen,f->State.eAction==SPVA_SpellOut))return E_FAIL;
             has_text|=f->ulTextLen!=0;continue;
         }
-        size_t at=0;
+        size_t at=0,next_poll=0;
         while(at<f->ulTextLen){size_t start=at;
-            if(InterlockedCompareExchange(&b->cancel,0,0))return S_OK;
+            if(at>=next_poll){if(!output_actions(b->output))return S_OK;next_poll=at+256;}
             WCHAR c=f->pTextStart[at];
             if(iswspace(c)||iswpunct(c)){++at;
                 if(sentence_end(c))sentence=1;
                 if(!add_wide(b,f->pTextStart+start,at-start,f->State.eAction==SPVA_SpellOut))return E_FAIL;
             }else{
-                do{++at;if(c>=0xd800&&c<=0xdbff&&at<f->ulTextLen)++at;
+                do{++at;if((at&1023)==0&&!output_actions(b->output))return S_OK;
+                    if(c>=0xd800&&c<=0xdbff&&at<f->ulTextLen)++at;
                     if(at>=f->ulTextLen)break;c=f->pTextStart[at];
                 }while(!iswspace(c)&&!iswpunct(c));
                 if(start>ULONG_MAX-f->ulTextSrcOffset||at-start>ULONG_MAX)return E_INVALIDARG;
@@ -391,80 +376,106 @@ static HRESULT synthesize(struct sapi_backend *b)
         struct packet p={.type=2,.event=b->events[i]};if(!put(b,&p))return S_OK;}}
     return S_OK;
 }
-static DWORD WINAPI worker(void *context)
+/* ECI contexts and their provider data belong to their creating thread.
+ * Reuse a few per caller without sharing them between threads or retaining
+ * speech. The slot destructor runs on that same thread at thread exit. */
+enum {CONTEXT_CACHE_SIZE=4};
+struct context_cache {struct sapi_backend *slot[CONTEXT_CACHE_SIZE];};
+static void context_destroy(struct sapi_backend *b)
 {
-    struct sapi_backend *b=context;
-    if(b->prepare&&!InterlockedCompareExchange(&b->exit,0,0)){
-        static const DWORD rates[]={8000,11025,22050,16000,32000,44100,48000};
-        struct job initial={.settings=b->initial_settings,.rate=rates[b->initial_settings.rate]};
-        /* Set up the actual voice and dictionary on the owner thread as soon
-         * as SAPI binds the token. Warm the rule worker without emitting
-         * packets. A request that has already arrived takes priority. */
-        b->warming=1;
-        if(SUCCEEDED(configure(b,&initial))&&!InterlockedCompareExchange(&b->busy,0,0)&&
-           core.add(b->handle,"a",1,0))core.synthesize(b->handle);
-        if(b->handle)core.clear(b->handle);
-        b->warming=0;
-    }
-    for(;;){if(WaitForSingleObject(b->start,INFINITE)!=WAIT_OBJECT_0)break;
-        if(InterlockedCompareExchange(&b->exit,0,0))break;
-        HRESULT hr=InterlockedCompareExchange(&b->cancel,0,0)?S_OK:synthesize(b);
-        /* Cancellation discards queued packets on the caller, but always
-         * acknowledges the job before its borrowed fragment list expires. */
-        if(b->handle)core.clear(b->handle);
-        free(b->events);b->events=NULL;b->event_count=0;b->event_capacity=0;
-        struct packet p={.type=3,.result=hr};
-        while(WaitForSingleObject(b->room,10)==WAIT_TIMEOUT){}
-        b->packets[b->put]=p;b->put=(b->put+1)%PACKET_CAPACITY;ReleaseSemaphore(b->ready,1,NULL);
-    }
-    if(b->handle)core.destroy(b->handle);return 0;
+    if(!b)return;
+    if(b->handle)core.destroy(b->handle);
+    if(b->dictionary_watch)FindCloseChangeNotification(b->dictionary_watch);
+    free(b->events);
+    while(b->bookmarks){struct bookmark *next=b->bookmarks->next;free(b->bookmarks);b->bookmarks=next;}
+    free(b);
 }
+static void cache_destroy(void *value)
+{
+    struct context_cache *cache=value;if(!cache)return;
+    for(unsigned i=0;i<CONTEXT_CACHE_SIZE;++i)context_destroy(cache->slot[i]);
+    free(cache);
+}
+#ifdef RELOQ_SAPI_TEST_HOST
+static pthread_once_t cache_once=PTHREAD_ONCE_INIT;
+static pthread_key_t cache_key;
+static int cache_key_ready;
+static void cache_open(void){cache_key_ready=pthread_key_create(&cache_key,cache_destroy)==0;}
+static struct context_cache *thread_cache(void)
+{
+    pthread_once(&cache_once,cache_open);if(!cache_key_ready)return NULL;
+    struct context_cache *cache=pthread_getspecific(cache_key);
+    if(!cache){cache=calloc(1,sizeof *cache);if(cache&&pthread_setspecific(cache_key,cache)){free(cache);cache=NULL;}}
+    return cache;
+}
+#else
+static INIT_ONCE cache_once=INIT_ONCE_STATIC_INIT;
+static DWORD cache_key=FLS_OUT_OF_INDEXES;
+static void WINAPI cache_gone(void *value){cache_destroy(value);}
+static BOOL CALLBACK cache_open(PINIT_ONCE once,PVOID unused,PVOID *context)
+{(void)once;(void)unused;(void)context;cache_key=FlsAlloc(cache_gone);return cache_key!=FLS_OUT_OF_INDEXES;}
+static struct context_cache *thread_cache(void)
+{
+    if(!InitOnceExecuteOnce(&cache_once,cache_open,NULL,NULL))return NULL;
+    struct context_cache *cache=FlsGetValue(cache_key);
+    if(!cache){cache=calloc(1,sizeof *cache);if(cache&&!FlsSetValue(cache_key,cache)){free(cache);cache=NULL;}}
+    return cache;
+}
+#endif
+static struct sapi_backend *context_acquire(int dialect)
+{
+    struct context_cache *cache=thread_cache();int slot=-1;
+    if(cache){
+        for(unsigned i=0;i<CONTEXT_CACHE_SIZE;++i){struct sapi_backend *b=cache->slot[i];
+            if(b&&!b->busy&&b->dialect==dialect){b->busy=1;return b;}}
+        for(unsigned i=0;i<CONTEXT_CACHE_SIZE;++i)if(!cache->slot[i]){slot=(int)i;break;}
+        if(slot<0)for(unsigned i=0;i<CONTEXT_CACHE_SIZE;++i)if(!cache->slot[i]->busy){
+            slot=(int)i;context_destroy(cache->slot[i]);cache->slot[i]=NULL;break;}
+    }
+    struct sapi_backend *b=calloc(1,sizeof *b);if(!b)return NULL;
+    b->dialect=dialect;b->busy=1;b->cached=slot>=0;
+    if(slot>=0)cache->slot[slot]=b;return b;
+}
+static void context_release(struct sapi_backend *b)
+{b->busy=0;if(!b->cached)context_destroy(b);}
 static struct sapi_backend *backend_new(int dialect,const struct sapi_settings *initial)
 {
     if(!InitOnceExecuteOnce(&core_once,load_core,NULL,NULL))return NULL;
-    struct sapi_backend *b=calloc(1,sizeof *b);if(!b)return NULL;b->dialect=dialect;
-    if(initial){if(initial->rate>=7){free(b);return NULL;}b->initial_settings=*initial;b->prepare=1;}
-    b->start=CreateEventW(NULL,FALSE,FALSE,NULL);b->room=CreateSemaphoreW(NULL,PACKET_CAPACITY,PACKET_CAPACITY,NULL);
-    b->ready=CreateSemaphoreW(NULL,0,PACKET_CAPACITY,NULL);
-    if(b->start&&b->room&&b->ready)b->thread=CreateThread(NULL,0,worker,b,0,NULL);
-    if(!b->thread){sapi_backend_delete(b);return NULL;}return b;
+    if(initial&&initial->rate>=7)return NULL;
+    struct sapi_backend *public=calloc(1,sizeof *public);if(!public)return NULL;public->dialect=dialect;
+    if(initial){
+        static const DWORD rates[]={8000,11025,22050,16000,32000,44100,48000};
+        struct sapi_backend *b=context_acquire(dialect);
+        if(b){struct job job={.settings=*initial,.rate=rates[initial->rate]};b->warming=1;
+            InterlockedExchange(&b->cancel,0);
+            if(SUCCEEDED(configure(b,&job))&&core.add(b->handle,"a",1,0))core.synthesize(b->handle);
+            if(b->handle)core.clear(b->handle);b->warming=0;context_release(b);}
+    }
+    return public;
 }
 struct sapi_backend *sapi_backend_new(int dialect){return backend_new(dialect,NULL);}
 struct sapi_backend *sapi_backend_new_prepared(int dialect,const struct sapi_settings *settings)
 {return settings?backend_new(dialect,settings):NULL;}
-void sapi_backend_delete(struct sapi_backend *b)
-{
-    if(!b)return;
-    if(b->thread){InterlockedExchange(&b->exit,1);SetEvent(b->start);
-        WaitForSingleObject(b->thread,INFINITE);CloseHandle(b->thread);}
-    if(b->start)CloseHandle(b->start);if(b->room)CloseHandle(b->room);if(b->ready)CloseHandle(b->ready);
-    if(b->dictionary_watch)FindCloseChangeNotification(b->dictionary_watch);
-    free(b->events);free(b);
-}
+void sapi_backend_delete(struct sapi_backend *b){free(b);}
 HRESULT sapi_backend_speak(struct sapi_backend *b,const struct sapi_settings *settings,DWORD flags,
     const WAVEFORMATEX *format,const SPVTEXTFRAG *fragments,ISpTTSEngineSite *site)
 {
     if(InterlockedCompareExchange(&b->busy,1,0))return HRESULT_FROM_WIN32(ERROR_BUSY);
+    struct sapi_backend *context=context_acquire(b->dialect);
+    if(!context){InterlockedExchange(&b->busy,0);return E_OUTOFMEMORY;}
     LONG speed=0;USHORT volume=100;site->lpVtbl->GetRate(site,&speed);site->lpVtbl->GetVolume(site,&volume);
     if(speed< -10)speed=-10;if(speed>10)speed=10;if(volume>100)volume=100;
     ULONGLONG interest=0;site->lpVtbl->GetEventInterest(site,&interest);
-    b->job=(struct job){.settings=*settings,.fragments=fragments,.flags=flags,.rate=format->nSamplesPerSec,.speed=speed,.volume=volume,.interest=interest};
-    struct output output={.backend=b,.site=site,.volume=volume,.fragment_volume=100,.result=S_OK};
-    InterlockedExchange(&b->cancel,0);SetEvent(b->start);HRESULT result=S_OK;
-    for(;;){output_actions(&output);
-        DWORD wait=WaitForSingleObject(b->ready,10);if(wait==WAIT_TIMEOUT)continue;
-        if(wait!=WAIT_OBJECT_0){cancel_backend(b);result=E_FAIL;continue;}
-        struct packet p=b->packets[b->get];b->get=(b->get+1)%PACKET_CAPACITY;ReleaseSemaphore(b->room,1,NULL);
-        if(p.type==3){
-            if(SUCCEEDED(result)&&SUCCEEDED(p.result)&&!InterlockedCompareExchange(&b->cancel,0,0))output_flush(&output);
-            if(FAILED(output.result))result=output.result;
-            else if(SUCCEEDED(result))result=InterlockedCompareExchange(&b->cancel,0,0)?S_OK:p.result;
-            break;
-        }
-        if(InterlockedCompareExchange(&b->cancel,0,0))continue;
-        if(p.type==2)output_event(&output,p.event);
-        else if(p.type==1)output_pcm(&output,p.pcm,p.bytes/2,p.volume);
-    }
-    while(b->bookmarks){struct bookmark *next=b->bookmarks->next;free(b->bookmarks);b->bookmarks=next;}
+    context->job=(struct job){.settings=*settings,.fragments=fragments,.flags=flags,.rate=format->nSamplesPerSec,.speed=speed,.volume=volume,.interest=interest};
+    struct output output={.backend=context,.site=site,.volume=volume,.fragment_volume=100,.result=S_OK};
+    context->output=&output;InterlockedExchange(&context->cancel,0);
+    HRESULT result=output_actions(&output)?synthesize(context):S_OK;
+    if(SUCCEEDED(result)&&!InterlockedCompareExchange(&context->cancel,0,0))output_flush(&output);
+    if(FAILED(output.result))result=output.result;
+    else if(InterlockedCompareExchange(&context->cancel,0,0))result=S_OK;
+    if(context->handle)core.clear(context->handle);
+    free(context->events);context->events=NULL;context->event_count=context->event_capacity=0;
+    while(context->bookmarks){struct bookmark *next=context->bookmarks->next;free(context->bookmarks);context->bookmarks=next;}
+    context->output=NULL;context_release(context);
     InterlockedExchange(&b->busy,0);return result;
 }

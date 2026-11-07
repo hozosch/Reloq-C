@@ -56,13 +56,10 @@ spelling fragments use the shared C engine.
 
 Responsiveness and dictionaries
 -------------------------------
-The initialized language prepares speech on a worker while SAPI delivers it
-through a bounded queue. A short announcement can therefore finish rendering
-while it is being played, making interruptions more responsive. For the first
-output, the adapter collects approximately 60 ms of source audio in one block.
-Additional short blocks during the first 500 ms help clients that apply speed-up;
-later blocks contain up to 4,096 samples. Event and fragment boundaries are
-flushed at their exact positions. The samples and native synthesis rate are unchanged.
+The language synthesizes on the SAPI caller's thread and delivers each native
+audio block to SAPI as it becomes available. Events retain their exact audio
+positions. A caller reuses its own initialized language contexts; contexts are
+not transferred between threads. The samples and synthesis rate are unchanged.
 
 Unchanged dictionary paths retain initialized language data. Small metadata
 checks detect edits, replacement, creation and deletion of native .dic files
@@ -104,7 +101,8 @@ These are native x86/x64 builds, not native ARM64. Phoneme-ID input, SAPI
 lexicons and visemes are not implemented. Sentence skip reports zero skipped
 sentences and stops the stream. Mid-utterance speed changes apply to the next
 utterance; volume and abort are handled while streaming. XML rate/volume
-changes apply at fragment-state boundaries. Settings do not change queued PCM.
+changes apply at fragment-state boundaries. Settings do not change audio
+already delivered to the application.
 
 Neither engine needs NVDA, Python, original Eloquence DLL/SYN files, bytecode,
 a helper process, temporary audio files or an audio cache.

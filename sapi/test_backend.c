@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
+#include <pthread.h>
 #include "catalogue.inc"
 struct site {
     ISpTTSEngineSite iface;short *pcm;size_t count,capacity,abort_after;
@@ -15,6 +16,7 @@ struct site {
     int post_start_writes;
     SPEVENT events[4096];size_t event_count;ULONG partial;int fail_after,writes;
     LONG speed;USHORT volume;struct sapi_backend *nested;int nested_done;
+    pthread_t caller;int require_caller;
     ULONGLONG interest;
     struct sapi_settings *settings;
 };
@@ -36,6 +38,7 @@ static struct site site_new(void){return (struct site){.iface={&vtable},.volume=
 static HRESULT write_pcm(ISpTTSEngineSite *p,const void *data,ULONG bytes,ULONG *written)
 {
     struct site *s=(struct site *)p;assert(!(bytes&1));
+    if(s->require_caller)assert(pthread_equal(s->caller,pthread_self()));
     if(s->nested&&!s->nested_done){s->nested_done=1;struct site child=site_new();
         SPVTEXTFRAG f=text(L"This priority message must not deadlock.",0);WAVEFORMATEX out=format(11025);
         assert(SUCCEEDED(sapi_backend_speak(s->nested,s->settings,0,&out,&f,&child.iface)));assert(child.count>0);free(child.pcm);}
@@ -153,13 +156,9 @@ int main(int argc,char **argv)
     uninterested.batched_after=(out.nSamplesPerSec*500+999)/1000;
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&uninterested.iface)));
     assert(!uninterested.event_count);same(&base,&uninterested);
-    /* Delivery stays batched after the short startup phase. */
+    /* Each native block is delivered by the caller, without an output queue. */
     assert(uninterested.writes>1);
-    size_t later=uninterested.count>uninterested.batched_after?
-        uninterested.count-uninterested.batched_after:0;
-    size_t steady_block=(out.nSamplesPerSec*80+999)/1000;
-    if(steady_block>4096)steady_block=4096;
-    assert(uninterested.post_start_writes<=(int)(later/steady_block)+2);
+    assert(uninterested.first_write_samples<=512);
     free(uninterested.pcm);++cases;
     /* Start immediately, even when the consumer needs to collect 50 ms
      * before playback; bound how much later audio is buffered. */
@@ -167,20 +166,20 @@ int main(int argc,char **argv)
     for(size_t k=0;k<sizeof startup_rates/sizeof *startup_rates;++k){
         WAVEFORMATEX early_format=format(startup_rates[k]);
         struct site early=site_new();early.interest=0;
+        early.caller=pthread_self();early.require_caller=1;
         early.playback_threshold=(startup_rates[k]+19)/20;
         SPVTEXTFRAG early_text=text(L"A clear sentence starts playing promptly.",0);
         assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&early_format,&early_text,&early.iface)));
         assert(early.first_playable_samples>=early.playback_threshold);
 #ifndef RELOQ_SAPI_REFERENCE_BASELINE
-        size_t early_block=(startup_rates[k]*40+999)/1000;
         assert(early.first_write_samples>0);
-        assert(early.first_write_samples<=(startup_rates[k]*20+999)/1000);
-        assert(early.first_playable_samples==early.playback_threshold);
+        assert(early.first_write_samples<=512);
+        assert(early.first_playable_samples<early.playback_threshold+512);
         struct site boosted=site_new();boosted.interest=0;
         boosted.playback_threshold=(startup_rates[k]*300+999)/1000;
         assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&early_format,&early_text,&boosted.iface)));
         assert(boosted.first_playable_samples>=boosted.playback_threshold);
-        assert(boosted.first_playable_samples<boosted.playback_threshold+early_block);
+        assert(boosted.first_playable_samples<boosted.playback_threshold+512);
         free(boosted.pcm);++cases;
 #endif
         free(early.pcm);++cases;

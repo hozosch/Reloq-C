@@ -1,6 +1,6 @@
-/* A blocked SAPI output must not block synthesis of a short announcement.
- * Once the producer finishes, cancelling the buffered output must discard it
- * and leave the next announcement unchanged. No audio device is opened. */
+/* SAPI is called synchronously during synthesis, as in original eSpeak.
+ * An abort observed after the first write stops the current output and the
+ * next announcement must be unchanged. No audio device is opened. */
 #define _POSIX_C_SOURCE 200809L
 #define main other_backend_tests
 #include "test_backend.c"
@@ -12,11 +12,7 @@ static HRESULT blocked_write(ISpTTSEngineSite *p,const void *data,ULONG bytes,UL
 {
     struct site *s=(struct site *)p;
     HRESULT result=write_pcm(p,data,bytes,written);
-    struct timespec delay={0,1000000};
-    unsigned waited=0;
-    while(__atomic_load_n(&sapi_test_synth_complete,__ATOMIC_SEQ_CST)==before_synthesis&&waited++<10000)
-        nanosleep(&delay,NULL);
-    assert(__atomic_load_n(&sapi_test_synth_complete,__ATOMIC_SEQ_CST)>before_synthesis);
+    assert(__atomic_load_n(&sapi_test_synth_complete,__ATOMIC_SEQ_CST)==before_synthesis);
     s->abort_after=s->count;
     return result;
 }
@@ -42,6 +38,6 @@ int main(int argc,char **argv)
         same(&reference,&recovered);
         free(reference.pcm);free(cancelled.pcm);free(recovered.pcm);sapi_backend_delete(b);
     }
-    puts("{\"buffered_cancel_cases\":2,\"producer_finishes_while_output_waits\":true,\"next_output_identical\":true}");
+    puts("{\"direct_cancel_cases\":2,\"write_inside_synthesis\":true,\"next_output_identical\":true}");
     return 0;
 }

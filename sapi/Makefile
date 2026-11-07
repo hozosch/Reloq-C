@@ -44,6 +44,8 @@ test: | $(BUILD)
 	python3 test_reference.py --library $(abspath ../eci/libreloq_eci.so) --report $(BUILD)/backend-results.json
 	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -I. -I../include backend.c test_host.c test_buffered_cancel.c ../src/reloq_voice_controls.c -ldl -lpthread -lm -o $(BUILD)/test_buffered_cancel
 	$(BUILD)/test_buffered_cancel $(abspath ../eci/libreloq_eci.so) > $(BUILD)/buffered-cancel-results.json
+	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -I. -I../include backend.c test_host.c test_synchronous_threads.c ../src/reloq_voice_controls.c -ldl -lpthread -lm -o $(BUILD)/test_synchronous_threads
+	$(BUILD)/test_synchronous_threads $(abspath ../eci/libreloq_eci.so)
 	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -I. -I../include backend.c test_host.c test_prepared.c ../src/reloq_voice_controls.c -ldl -lpthread -lm -o $(BUILD)/test_prepared
 	$(BUILD)/test_prepared $(abspath ../eci/libreloq_eci.so) > $(BUILD)/prepared-results.txt
 	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -I. -I../include backend.c test_host.c test_cancel_recovery.c ../src/reloq_voice_controls.c -ldl -lpthread -lm -o $(BUILD)/test_cancel_recovery
