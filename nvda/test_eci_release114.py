@@ -44,6 +44,13 @@ def main():
         whole = render(english, [text, EciIndex(7)])
         for cut in range(len(text)+1):
             assert render(english, [text[:cut], text[cut:], EciIndex(7)]) == whole, cut
+        # Issue 22: a single-letter name before a full stop must close its
+        # sentence before the next one, including the reported README text.
+        reported = ('The shared synthesis engine is written in C. NVDA, '
+                    'Android ARM64 and Windows SAPI5 use the same core.')
+        joined = reported.replace('C. NVDA', 'C NVDA')
+        assert '[.1si].' in phonemes(english, reported)
+        assert len(render(english, [reported])[0]) > len(render(english, [joined])[0]) + 2205
         if old:
             for text in ('A. B. C. hello', 'Dr. Smith is here.', 'I saw J. Smith.',
                          'Version 1.2. NVDA works.', 'U.S. policy is important.',

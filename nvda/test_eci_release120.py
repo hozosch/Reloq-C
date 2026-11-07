@@ -36,6 +36,8 @@ def main():
         combined = phonemes(greek, title + '  ' + body)
         assert combined[combined.index(first):] == isolated[isolated.index(first):], (combined, isolated)
         assert phonemes(greek, title + '  ' + body) == phonemes(greek, title + ', ' + body)
+        mixed_title = 'Αλλαγή γλώσσας για το NVDA'
+        assert phonemes(greek, mixed_title + '  ' + body) == phonemes(greek, mixed_title + ', ' + body)
         whole = render(greek, [title + '  ' + body, EciIndex(11)])
         assert whole[0] and whole[1] == [(11, len(whole[0]))]
         assert whole == render(greek, [title + ', ' + body, EciIndex(11)])
