@@ -13,6 +13,7 @@
 #include <string.h>
 #include <wchar.h>
 #include <wctype.h>
+#define DIAG(...) do { if(getenv("RELOQ_SAPI_TRACE")){fprintf(stderr,__VA_ARGS__);fflush(stderr);} } while(0)
 #ifdef RELOQ_SAPI_TEST_HOST
 #include <pthread.h>
 #endif
@@ -79,6 +80,7 @@ static int output_event(struct output *,SPEVENT);
 static void cancel_backend(struct sapi_backend *b)
 {
     if(InterlockedExchange(&b->cancel,1))return;
+    DIAG("TRACE cancel thread=%lu context=%p handle=%p\n",(unsigned long)GetCurrentThreadId(),(void *)b,(void *)b->handle);
     /* The owner stops inside its next callback; a completed render needs no stop. */
 }
 static int put(struct sapi_backend *b,const struct packet *packet)
@@ -93,7 +95,7 @@ static int ECICALL callback(ECIHand handle,int message,int value,void *context)
     struct sapi_backend *b=context;
     /* Startup preflight deliberately has no SAPI site or audible output. */
     if(b->warming)return InterlockedCompareExchange(&b->cancel,0,0)?eciDataAbort:eciDataProcessed;
-    if(InterlockedCompareExchange(&b->cancel,0,0)){core.stop(handle);return 0;}
+    if(InterlockedCompareExchange(&b->cancel,0,0)){DIAG("TRACE callback abort thread=%lu context=%p\n",(unsigned long)GetCurrentThreadId(),(void *)b);core.stop(handle);return 0;}
     int ok=1;
     if(message==RELOQ_ECI_WAVEFORM_BUFFER){
         if(value<0||value>512)return 0;
@@ -102,7 +104,7 @@ static int ECICALL callback(ECIHand handle,int message,int value,void *context)
         if(value<1||(size_t)value>b->event_count)return 0;
         ok=output_event(b->output,b->events[value-1]);
     }else return 1;
-    if(!ok && InterlockedCompareExchange(&b->cancel,0,0))core.stop(handle);
+    if(!ok && InterlockedCompareExchange(&b->cancel,0,0)){DIAG("TRACE callback output abort thread=%lu context=%p\n",(unsigned long)GetCurrentThreadId(),(void *)b);core.stop(handle);}
     return ok;
 }
 struct output {
@@ -382,7 +384,12 @@ static HRESULT synthesize(struct sapi_backend *b)
         }
     }
     if(InterlockedCompareExchange(&b->cancel,0,0))return S_OK;
-    if(has_text&&!core.synthesize(b->handle))return InterlockedCompareExchange(&b->cancel,0,0)?S_OK:E_FAIL;
+    if(has_text){
+        DIAG("TRACE synth start thread=%lu context=%p handle=%p\n",(unsigned long)GetCurrentThreadId(),(void *)b,(void *)b->handle);
+        int ok=core.synthesize(b->handle);
+        DIAG("TRACE synth end thread=%lu context=%p ok=%d cancelled=%ld\n",(unsigned long)GetCurrentThreadId(),(void *)b,ok,(long)InterlockedCompareExchange(&b->cancel,0,0));
+        if(!ok)return InterlockedCompareExchange(&b->cancel,0,0)?S_OK:E_FAIL;
+    }
     /* Bookmark-only streams still need their zero-position index callbacks. */
     if(!has_text&&b->event_count>delivered_events){for(size_t i=delivered_events;i<b->event_count;++i){
         struct packet p={.type=2,.event=b->events[i]};if(!put(b,&p))return S_OK;}}
@@ -454,13 +461,14 @@ static struct sapi_backend *context_acquire(int dialect)
     struct context_cache *cache=thread_cache();int slot=-1;
     if(cache){
         for(unsigned i=0;i<CONTEXT_CACHE_SIZE;++i){struct sapi_backend *b=cache->slot[i];
-            if(b&&!b->busy&&b->dialect==dialect){b->busy=1;return b;}}
+            if(b&&!b->busy&&b->dialect==dialect){b->busy=1;DIAG("TRACE reuse thread=%lu context=%p handle=%p\n",(unsigned long)GetCurrentThreadId(),(void *)b,(void *)b->handle);return b;}}
         for(unsigned i=0;i<CONTEXT_CACHE_SIZE;++i)if(!cache->slot[i]){slot=(int)i;break;}
         if(slot<0)for(unsigned i=0;i<CONTEXT_CACHE_SIZE;++i)if(!cache->slot[i]->busy){
             slot=(int)i;context_destroy(cache->slot[i]);cache->slot[i]=NULL;break;}
     }
     struct sapi_backend *b=calloc(1,sizeof *b);if(!b)return NULL;
     b->dialect=dialect;b->busy=1;b->cached=slot>=0;
+    DIAG("TRACE new thread=%lu context=%p cached=%d\n",(unsigned long)GetCurrentThreadId(),(void *)b,b->cached);
     if(slot>=0)cache->slot[slot]=b;return b;
 }
 static void context_release(struct sapi_backend *b)
@@ -490,6 +498,7 @@ HRESULT sapi_backend_speak(struct sapi_backend *b,const struct sapi_settings *se
     if(InterlockedCompareExchange(&b->busy,1,0))return HRESULT_FROM_WIN32(ERROR_BUSY);
     struct sapi_backend *context=context_acquire(b->dialect);
     if(!context){InterlockedExchange(&b->busy,0);return E_OUTOFMEMORY;}
+    DIAG("TRACE speak thread=%lu context=%p handle=%p\n",(unsigned long)GetCurrentThreadId(),(void *)context,(void *)context->handle);
     LONG speed=0;USHORT volume=100;site->lpVtbl->GetRate(site,&speed);site->lpVtbl->GetVolume(site,&volume);
     if(speed< -10)speed=-10;if(speed>10)speed=10;if(volume>100)volume=100;
     ULONGLONG interest=0;site->lpVtbl->GetEventInterest(site,&interest);
