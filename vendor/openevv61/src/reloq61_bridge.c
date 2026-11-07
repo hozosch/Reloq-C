@@ -144,6 +144,13 @@ static int32_t STDCALL idle_message(void *h,int32_t kind,int32_t value,void *con
 {
     (void)h;(void)kind;(void)value;(void)context;return 1;
 }
+static void remember_controls(struct provider_worker *worker,const struct reloq61_request *q)
+{
+    worker->last_phonemes=q->phonemes_only;
+    worker->last_annotations=q->annotations;
+    worker->last_sample_rate=q->sample_rate;worker->last_text_options=text_options;
+    memcpy(worker->last_voice,q->voice,sizeof worker->last_voice);
+}
 static int prepare_next(struct provider_worker *worker,const struct reloq61_request *q)
 {
     OldInst *h=worker->handle;
@@ -160,10 +167,7 @@ static int prepare_next(struct provider_worker *worker,const struct reloq61_requ
        et_synthesize(h)&&es_synchronize(h);
     eo_registerCallback(h,NULL,NULL);
     if(!ok)return 0;
-    worker->prepared=1;worker->last_phonemes=q->phonemes_only;
-    worker->last_annotations=q->annotations;
-    worker->last_sample_rate=q->sample_rate;worker->last_text_options=text_options;
-    memcpy(worker->last_voice,q->voice,sizeof worker->last_voice);
+    worker->prepared=1;remember_controls(worker,q);
     return 1;
 }
 struct capture {
@@ -813,8 +817,8 @@ static int generate_core_impl(const struct reloq61_request *q,struct reloq61_res
             delta_state *machine=thread?ew_machine(thread->engine):NULL;
             int error=machine?getEngsynError(machine):0;
             /* Preserve the existing machine only for an interrupted request
-             * whose unchanged controls were already prepared. A complete
-             * reset remains the fallback for any other engine error. */
+             * whose configured controls have not changed. A complete reset
+             * remains the fallback for any other engine error. */
             if(recover && (error==-3||error==-7))
                 reset_error=stl_stop_after_cancel(thread);
             else reset_error=api_reset(h->fresh,q->language);
@@ -961,7 +965,11 @@ static int generate_core_impl(const struct reloq61_request *q,struct reloq61_res
          * engine. Preserve its instance and immutable dictionaries; the
          * next caller performs the existing full reset before reuse. */
         worker->prepared=0;
-        worker->recoverable_cancel=prepared&&!annotated&&metadata;
+        /* The first request can be interrupted before prepare_next has ever
+         * run. Its render callback runs only after configuration and
+         * dictionary binding; retain those exact controls as well. */
+        worker->recoverable_cancel=!annotated&&metadata;
+        if(worker->recoverable_cancel)remember_controls(worker,q);
     } else if(!worker || !ok || r->error || r->unsupported) {
         release_handle(worker,h);
     } else if(!annotated&&metadata&&!prepare_next(worker,q)) {

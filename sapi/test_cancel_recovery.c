@@ -1,9 +1,37 @@
 #define main other_backend_tests
 #include "test_backend.c"
 #undef main
+
+/* A screen reader can interrupt the very first request as soon as audio is
+ * available, and continue doing so without ever finishing an utterance.
+ * Use a new thread so no already-prepared context can mask that sequence. */
+static void *unprepared_recovery(void *unused)
+{
+ (void)unused;struct sapi_settings s=settings();
+ struct sapi_backend *b=sapi_backend_new(0x40000);assert(b);
+ WAVEFORMATEX out=format(11025);
+ SPVTEXTFRAG f=text(L"Eine längere Ansage, die mehrfach unterbrochen wird.",0);
+ for(int i=0;i<3;++i){
+  struct site cancelled=site_new();cancelled.abort_after=100;
+  assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&cancelled.iface)));
+  assert(cancelled.count>=cancelled.abort_after);free(cancelled.pcm);
+ }
+ struct site recovered=site_new(),reference=site_new();
+ assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&recovered.iface)));
+ assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&reference.iface)));
+ same(&recovered,&reference);
+ assert(recovered.event_count==reference.event_count);
+ for(size_t i=0;i<reference.event_count;++i){
+  assert(recovered.events[i].eEventId==reference.events[i].eEventId);
+  assert(recovered.events[i].ullAudioStreamOffset==reference.events[i].ullAudioStreamOffset);
+ }
+ free(recovered.pcm);free(reference.pcm);sapi_backend_delete(b);return NULL;
+}
 int main(int argc,char **argv)
 {
  assert(argc==2);sapi_test_library=argv[1];struct sapi_settings s=settings();size_t cases=0;
+ pthread_t cold;assert(!pthread_create(&cold,NULL,unprepared_recovery,NULL));
+ assert(!pthread_join(cold,NULL));
  for(size_t i=0;i<sizeof sapi_languages/sizeof *sapi_languages;++i)
  for(unsigned rateindex=0;rateindex<2;++rateindex){
   struct sapi_backend *b=sapi_backend_new(sapi_languages[i].dialect);assert(b);
