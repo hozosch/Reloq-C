@@ -860,11 +860,11 @@ void reloq_rate_transfer_process_aspiration(struct reloq_rate_transfer *s,
     float *samples,size_t count,int voiced)
 {
     if(s->presence_rate<=0)return;
-    /* Reduce the breath component of voicing by 2 dB, plus 1.5 dB in
+    /* Reduce the breath component of voicing by 2 dB, plus 4.5 dB in
      * mellow mode. Unvoiced h keeps its level. A continuous 5-ms gain
      * approach avoids a step at voice on/off and remains independent of
      * callback/frame boundaries. */
-    const double reduction=1-(s->mellow_mode?0.6683439175686147:0.7943282347242815);
+    const double reduction=1-(s->mellow_mode?0.47315125896148047:0.7943282347242815);
     for(size_t j=0;j<count;++j) {
         s->aspiration_voicing+=(!!voiced-s->aspiration_voicing)*s->aspiration_step;
         samples[j]=(float)(samples[j]*(1-reduction*s->aspiration_voicing));

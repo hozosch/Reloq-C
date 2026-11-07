@@ -1,4 +1,4 @@
-ReLoq C 1.2.1-dev2 — unified SAPI5 Windows installer
+ReLoq C 1.2.1-dev3 — unified SAPI5 Windows installer
 
 Installation
 ------------
@@ -65,7 +65,7 @@ The samples and synthesis rate are unchanged.
 “Use original question intonation” selects the native question contour for
 German and US English; it is off by default. Existing settings are retained
 when upgrading. “Mellow mode” softens periodic voice presence around 3–4 kHz at synthesis
-rates of 16 kHz and above, omits added richness from 22 kHz and slightly reduces
+rates of 16 kHz and above, omits added richness from 22 kHz and reduces
 voiced breathiness; it is off by default.
 Unchanged dictionary paths retain initialized language data. Small metadata
 checks detect edits, replacement, creation and deletion of native .dic files

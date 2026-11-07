@@ -48,7 +48,7 @@ static void check_voiced_aspiration(int rate)
     reloq_rate_transfer_process_aspiration(&normal,a,count,0);
     reloq_rate_transfer_process_aspiration(&mellow,b,count,0);
     for(size_t i=0;i<count;++i)assert(a[i]==1 && b[i]==1);
-    /* After the 5-ms transition, mellow is 1.5 dB below normal.
+    /* After the 5-ms transition, mellow is 4.5 dB below normal.
      * Splitting the same samples across blocks cannot change the output. */
     reloq_rate_transfer_process_aspiration(&normal,a,count,1);
     reloq_rate_transfer_process_aspiration(&mellow,b,count,1);
@@ -58,7 +58,7 @@ static void check_voiced_aspiration(int rate)
     }
     assert(!memcmp(b,c,count*sizeof *b));
     assert(fabs(a[count-1]-0.7943282347242815)<1e-6);
-    assert(fabs(b[count-1]-0.6683439175686147)<1e-6);
+    assert(fabs(b[count-1]-0.47315125896148047)<1e-6);
     float last=b[count-1];
     for(size_t i=0;i<count;++i)a[i]=b[i]=1;
     reloq_rate_transfer_process_aspiration(&normal,a,count,0);
@@ -127,6 +127,6 @@ int main(void)
         reloq_rate_transfer_process_voice(&a,samples,3);
         assert(!memcmp(samples,before,sizeof before));
     }
-    puts("Mellow mode: wider voice reduction and 1.5 dB less voiced aspiration across all five extended clocks; unvoiced breath, stability and block boundaries passed");
+    puts("Mellow mode: wider voice reduction and 4.5 dB less voiced aspiration than normal across all five extended clocks; unvoiced breath, stability and block boundaries passed");
     return 0;
 }
