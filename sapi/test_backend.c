@@ -16,6 +16,7 @@ struct site {
     int post_start_writes;
     SPEVENT events[4096];size_t event_count;ULONG partial;int fail_after,writes;
     LONG speed;USHORT volume;struct sapi_backend *nested;int nested_done;
+    size_t volume_change_after;int volume_changed;
     pthread_t caller;int require_caller;
     ULONGLONG interest;
     struct sapi_settings *settings;
@@ -27,7 +28,11 @@ static HRESULT events(ISpTTSEngineSite *p,const SPEVENT *e,ULONG count)
     if(s->event_count)assert(e[i].ullAudioStreamOffset>=s->events[s->event_count-1].ullAudioStreamOffset);
     s->events[s->event_count++]=e[i];}return S_OK;}
 static HRESULT interest(ISpTTSEngineSite *p,ULONGLONG *out){*out=((struct site *)p)->interest;return S_OK;}
-static DWORD actions(ISpTTSEngineSite *p){struct site *s=(struct site *)p;return s->abort_after&&s->count>=s->abort_after?SPVES_ABORT:0;}
+static DWORD actions(ISpTTSEngineSite *p)
+{struct site *s=(struct site *)p;
+    if(s->abort_after&&s->count>=s->abort_after)return SPVES_ABORT;
+    if(s->volume_change_after&&!s->volume_changed&&s->count>=s->volume_change_after){s->volume=50;s->volume_changed=1;return SPVES_VOLUME;}
+    return 0;}
 static HRESULT rate(ISpTTSEngineSite *p,LONG *out){*out=((struct site *)p)->speed;return S_OK;}
 static HRESULT volume(ISpTTSEngineSite *p,USHORT *out){*out=((struct site *)p)->volume;return S_OK;}
 static const ISpTTSEngineSiteVtbl vtable;
@@ -156,9 +161,9 @@ int main(int argc,char **argv)
     uninterested.batched_after=(out.nSamplesPerSec*500+999)/1000;
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&uninterested.iface)));
     assert(!uninterested.event_count);same(&base,&uninterested);
-    /* Each native block is delivered by the caller, without an output queue. */
+    /* Delivery remains synchronous on the caller, with bounded blocks. */
     assert(uninterested.writes>1);
-    assert(uninterested.first_write_samples<=512);
+    assert(uninterested.first_write_samples<=(out.nSamplesPerSec+19)/20);
     free(uninterested.pcm);++cases;
     /* Start immediately, even when the consumer needs to collect 50 ms
      * before playback; bound how much later audio is buffered. */
@@ -173,13 +178,13 @@ int main(int argc,char **argv)
         assert(early.first_playable_samples>=early.playback_threshold);
 #ifndef RELOQ_SAPI_REFERENCE_BASELINE
         assert(early.first_write_samples>0);
-        assert(early.first_write_samples<=512);
-        assert(early.first_playable_samples<early.playback_threshold+512);
+        assert(early.first_write_samples==early.playback_threshold);
+        assert(early.first_playable_samples==early.playback_threshold);
         struct site boosted=site_new();boosted.interest=0;
         boosted.playback_threshold=(startup_rates[k]*300+999)/1000;
         assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&early_format,&early_text,&boosted.iface)));
         assert(boosted.first_playable_samples>=boosted.playback_threshold);
-        assert(boosted.first_playable_samples<boosted.playback_threshold+512);
+        assert(boosted.first_playable_samples<boosted.playback_threshold+(startup_rates[k]+49)/50);
         free(boosted.pcm);++cases;
 #endif
         free(early.pcm);++cases;
@@ -216,6 +221,12 @@ int main(int argc,char **argv)
     struct site half=site_new();half.volume=50;
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&half.iface)));assert(half.count==base.count);
     for(size_t i=0;i<base.count;++i)assert(half.pcm[i]==base.pcm[i]/2);free(half.pcm);++cases;
+    struct site changed_volume=site_new();changed_volume.interest=0;changed_volume.volume_change_after=1;
+    assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&changed_volume.iface)));
+    assert(changed_volume.volume_changed&&changed_volume.count==base.count);
+    for(size_t i=0;i<base.count;++i)
+        assert(changed_volume.pcm[i]==(i<changed_volume.first_write_samples?base.pcm[i]:base.pcm[i]/2));
+    free(changed_volume.pcm);++cases;
     SPVTEXTFRAG xml=f;xml.State.Volume=50;struct site soft=site_new();
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&xml,&soft.iface)));assert(soft.count==base.count);
     for(size_t i=0;i<base.count;++i)assert(soft.pcm[i]==base.pcm[i]/2);free(soft.pcm);++cases;

@@ -1,4 +1,4 @@
-ReLoq C 1.2.0-dev1 — unified SAPI5 Windows installer
+ReLoq C 1.2.0-dev2 — unified SAPI5 Windows installer
 
 Installation
 ------------
@@ -56,10 +56,11 @@ spelling fragments use the shared C engine.
 
 Responsiveness and dictionaries
 -------------------------------
-The language synthesizes on the SAPI caller's thread and delivers each native
-audio block to SAPI as it becomes available. Events retain their exact audio
-positions. A caller reuses its own initialized language contexts; contexts are
-not transferred between threads. The samples and synthesis rate are unchanged.
+The language synthesizes on the SAPI caller's thread and delivers small audio
+batches directly to SAPI. The first batch supplies the usual 50 ms startup
+reserve; events retain their exact audio positions. A caller reuses its own
+initialized language contexts; contexts are not transferred between threads.
+The samples and synthesis rate are unchanged.
 
 Unchanged dictionary paths retain initialized language data. Small metadata
 checks detect edits, replacement, creation and deletion of native .dic files

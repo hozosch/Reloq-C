@@ -16,17 +16,34 @@ def main():
     greek = DirectEciEngine(library, dialect=0x120000, encoding='utf8', native_voice=True)
     try:
         greek.set_parameter(PROCESS_TAGS, 1)
-        # Text from NVDA's Greek interface: the planner used to insert `0
-        # ahead of the explicitly stressed content words in these phrases.
+        # Preserve the existing sentence analysis rather than emphasizing
+        # every lexical content word in ordinary connected Greek.
         cases = [('Γλώσσα Ελληνικά αναδυόμενο κουτί', '[.0a.0na.0di.1o.0me.0no]'),
                  ('Αυτόματη εναλλαγή γλώσσας ενεργή', '[.1glo.0sas]')]
         for text, stressed in cases:
             phones = phonemes(greek, text)
-            assert stressed in phones and '`0 `' + stressed not in phones, phones
+            assert '`0 `' + stressed in phones, phones
             whole = render(greek, [text, EciIndex(7)])
             assert whole[0] and whole[1] == [(7, len(whole[0]))]
             for cut in range(len(text) + 1):
                 assert render(greek, [text[:cut], text[cut:], EciIndex(7)]) == whole, (text, cut)
+        # NVDA can join a control label and a new sentence with a wide gap.
+        # The following sentence should keep its own native prominence.
+        title = 'Αλλαγή Διαμόρφωσης Γλώσσας  παράθυρο διαλόγου'
+        body = 'Πρέπει να γίνει επανεκκίνηση του NVDA, για να τεθεί σε ισχύ η νέα γλώσσα.'
+        first = '`[.1pre.0pi]'
+        isolated = phonemes(greek, body)
+        combined = phonemes(greek, title + '  ' + body)
+        assert combined[combined.index(first):] == isolated[isolated.index(first):], (combined, isolated)
+        assert phonemes(greek, title + '  ' + body) == phonemes(greek, title + ', ' + body)
+        whole = render(greek, [title + '  ' + body, EciIndex(11)])
+        assert whole[0] and whole[1] == [(11, len(whole[0]))]
+        assert whole == render(greek, [title + ', ' + body, EciIndex(11)])
+        for cut in range(len(title) - 1, len(title) + 4):
+            text = title + '  ' + body
+            assert render(greek, [text[:cut], text[cut:], EciIndex(11)]) == whole
+        # A double space after an ordinary preposition is not a new phrase.
+        assert phonemes(greek, 'Αυτός έρχεται από  Αθήνα.') == phonemes(greek, 'Αυτός έρχεται από Αθήνα.')
         assert '`[.0a] `[.0po]' in phonemes(greek, 'από Αθήνα')
         assert '[.0a.1po]' in phonemes(greek, 'από')
         assert render(greek, ['`0 Αθήνα και Θεσσαλονίκη']) != render(greek, ['`1 Αθήνα και Θεσσαλονίκη'])

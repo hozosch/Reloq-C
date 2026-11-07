@@ -107,7 +107,7 @@ static int ECICALL callback(ECIHand handle,int message,int value,void *context)
 }
 struct output {
     struct sapi_backend *backend;ISpTTSEngineSite *site;
-    ULONGLONG offset;USHORT volume;ULONG fragment_volume;
+    ULONGLONG offset;USHORT volume;ULONG fragment_volume;DWORD rate;
     short pending[4096];size_t count;HRESULT result;
 };
 static int output_actions(struct output *o)
@@ -127,8 +127,6 @@ static int output_flush(struct output *o)
 {
     size_t samples=o->count;o->count=0;if(!samples)return 1;
     if(!output_actions(o))return 0;
-    if(o->volume!=100||o->fragment_volume!=100)
-        for(size_t i=0;i<samples;++i)o->pending[i]=(short)((int64_t)o->pending[i]*o->volume*o->fragment_volume/10000);
     ULONG bytes=(ULONG)samples*2,at=0;
     while(at<bytes){ULONG written=0;
         HRESULT hr=o->site->lpVtbl->Write(o->site,(BYTE *)o->pending+at,bytes-at,&written);
@@ -141,11 +139,24 @@ static int output_flush(struct output *o)
 }
 static int output_pcm(struct output *o,const short *pcm,size_t samples,ULONG fragment_volume)
 {
+    if(!output_actions(o))return 0;
     o->fragment_volume=fragment_volume;
     while(samples){
-        size_t n=samples>4096?4096:samples;
-        memcpy(o->pending,pcm,n*sizeof *pcm);o->count=n;pcm+=n;samples-=n;
-        if(!output_flush(o))return 0;
+        /* SAPI consumers such as NVDA wait for an initial 50 ms before
+         * feeding the device. Deliver that reserve in one synchronous
+         * Write instead of crossing COM once per short native frame. The
+         * subsequent 20-ms batches bound cancellation and keep streaming. */
+        size_t initial=((size_t)o->rate+19)/20;
+        size_t already=(size_t)(o->offset/2);
+        size_t target=already<initial?initial-already:((size_t)o->rate+49)/50;
+        if(!target)target=1;if(target>4096)target=4096;
+        size_t room=target>o->count?target-o->count:0;
+        if(!room){if(!output_flush(o))return 0;continue;}
+        size_t n=samples<room?samples:room;
+        if(o->volume==100&&fragment_volume==100)memcpy(o->pending+o->count,pcm,n*sizeof *pcm);
+        else for(size_t i=0;i<n;++i)o->pending[o->count+i]=(short)((int64_t)pcm[i]*o->volume*fragment_volume/10000);
+        o->count+=n;pcm+=n;samples-=n;
+        if(o->count==target&&!output_flush(o))return 0;
     }
     return 1;
 }
@@ -482,7 +493,7 @@ HRESULT sapi_backend_speak(struct sapi_backend *b,const struct sapi_settings *se
     if(speed< -10)speed=-10;if(speed>10)speed=10;if(volume>100)volume=100;
     ULONGLONG interest=0;site->lpVtbl->GetEventInterest(site,&interest);
     context->job=(struct job){.settings=*settings,.fragments=fragments,.flags=flags,.rate=format->nSamplesPerSec,.speed=speed,.volume=volume,.interest=interest};
-    struct output output={.backend=context,.site=site,.volume=volume,.fragment_volume=100,.result=S_OK};
+    struct output output={.backend=context,.site=site,.volume=volume,.fragment_volume=100,.rate=format->nSamplesPerSec,.result=S_OK};
     context->output=&output;InterlockedExchange(&context->cancel,0);
     HRESULT result=output_actions(&output)?synthesize(context):S_OK;
     if(SUCCEEDED(result)&&!InterlockedCompareExchange(&context->cancel,0,0))output_flush(&output);

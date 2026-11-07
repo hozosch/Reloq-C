@@ -85,6 +85,7 @@ int reloq61_generate_phonemes(const struct reloq61_request *,struct reloq61_resu
  * output callback. Scope/restore also supports nested language analysis. */
 struct reloq61_cancel_check {int (*check)(void *);void *context;};
 struct reloq61_cancel_check reloq61_cancel_scope(struct reloq61_cancel_check);
+int reloq61_cancel_requested(void);
 /* Optional owner-scoped worker state; no speech-result reuse. The ECI owner serializes requests,
  * restores the preceding scope after each utterance, and destroys the worker
  * after all callbacks and cancellation have joined. No process-global engine. */

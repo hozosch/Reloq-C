@@ -872,7 +872,12 @@ static int generate_core_impl(const struct reloq61_request *q,struct reloq61_res
     dl->reloq_frame=0;dl->reloq_context=0;
     dl->device->index_cb=c.index_original;dl->device->index_data=c.index_data;
     eo_registerCallback(h,NULL,NULL);
-    if(!worker || !ok || r->error || r->unsupported) {
+    if(worker && r->error==2 && !r->unsupported && reloq61_cancel_requested()) {
+        /* A host-requested stop during audio delivery is not a corrupt
+         * engine. Preserve its instance and immutable dictionaries; the
+         * next caller performs the existing full reset before reuse. */
+        worker->prepared=0;
+    } else if(!worker || !ok || r->error || r->unsupported) {
         release_handle(worker,h);
     } else if(!annotated&&metadata&&!prepare_next(worker,q)) {
         release_handle(worker,h);

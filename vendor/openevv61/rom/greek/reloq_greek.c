@@ -34,6 +34,17 @@ static struct greek_letter letter(uint32_t cp)
     return (struct greek_letter){cp,0,0,0};
 }
 static int vowel(uint32_t cp){return cp==0x3b1||cp==0x3b5||cp==0x3b7||cp==0x3b9||cp==0x3bf||cp==0x3c5||cp==0x3c9;}
+/* A run of spaces between a preceding Greek phrase and a capitalized Greek
+ * word is a common screen-reader boundary between a control label and its
+ * description. Require a second, lowercase Greek letter so initials and
+ * uppercase abbreviations do not become artificial phrase boundaries. */
+static int greek_capital(uint32_t cp)
+{
+    return (cp>=0x391&&cp<=0x3ab&&cp!=0x3a2)||cp==0x386||cp==0x388||
+        cp==0x389||cp==0x38a||cp==0x38c||cp==0x38e||cp==0x38f;
+}
+static int greek_lowercase(uint32_t cp)
+{return (cp>=0x3ac&&cp<=0x3ce)&&letter(cp).base;}
 static char vowel_sound(uint32_t cp){return cp==0x3b1?'a':cp==0x3b5?'e':cp==0x3bf||cp==0x3c9?'o':'i';}
 static int voiceless(uint32_t cp){return cp==0x3ba||cp==0x3c0||cp==0x3c4||cp==0x3c3||cp==0x3be||cp==0x3c8||cp==0x3b8||cp==0x3c6||cp==0x3c7;}
 static int front_vowel(const struct greek_letter *g,size_t n,size_t at)
@@ -89,7 +100,7 @@ static int fricative_gamma_gamma(const struct greek_letter *g,size_t n,size_t i)
 }
 static const char *character_name(uint32_t cp);
 static int greek_words(struct buffer *out,const char *text);
-static int greek_word(struct buffer *out,const char *text,size_t bytes,int context)
+static int greek_word(struct buffer *out,const char *text,size_t bytes,int context,int *weak)
 {
     if(bytes>SIZE_MAX/sizeof(struct greek_letter)-1)return -1;
     struct greek_letter *g=malloc((bytes+1)*sizeof *g);
@@ -158,15 +169,11 @@ static int greek_word(struct buffer *out,const char *text,size_t bytes,int conte
         g[2].base==0x3c4&&g[3].base==0x3b1&&
         !g[0].accent&&!g[1].accent&&!g[2].accent;
     int weak_preposition=(context&2)&&(apo||kata);
-    int unstressed=weak_preposition||((context&3)&&!explicit_accent&&weak_word(g,n));
+    int unstressed=weak_preposition||(context&&!explicit_accent&&weak_word(g,n));
+    if(weak)*weak=unstressed;
     if(weak_preposition){explicit_accent=0;for(size_t j=0;j<m;++j)s[j].accent=0;}
     if(!explicit_accent&&!unstressed&&nuclei){size_t target=nuclei>1?nuclei-2:0,k=0;for(size_t j=0;j<m;++j)if(s[j].vowel&&k++==target){s[j].accent=1;break;}}
-    /* The Castilian sentence planner can otherwise deaccent a Greek
-     * content word despite its explicit .1 lexical stress. Request normal
-     * prominence for written Greek words, leaving weak function words,
-     * hyphenated continuations and explicit caller controls to their
-     * existing rules. */
-    int error=say(out,(context&8)&&!unstressed&&!(context&(4|16))?" `1 `[":" `[");size_t begin=0;
+    int error=say(out," `[");size_t begin=0;
     for(size_t j=0;j<m&&!error;++j)if(s[j].vowel){
         if(j>begin){/* consonants already belong to this syllable */}
         error=say(out,s[j].accent?".1":".0");
@@ -186,7 +193,7 @@ static int greek_word(struct buffer *out,const char *text,size_t bytes,int conte
 static int greek_words(struct buffer *out,const char *text)
 {
     for(size_t i=0;text[i];){uint32_t c;size_t z=decode(text+i,&c);if(!z)return -1;
-        if(letter(c).base){size_t end=i+z;while(text[end]){uint32_t v;size_t k=decode(text+end,&v);if(!k||!letter(v).base)break;end+=k;}if(greek_word(out,text+i,end-i,0))return -1;i=end;}
+        if(letter(c).base){size_t end=i+z;while(text[end]){uint32_t v;size_t k=decode(text+end,&v);if(!k||!letter(v).base)break;end+=k;}if(greek_word(out,text+i,end-i,0,NULL))return -1;i=end;}
         else {if(add(out,text+i,z))return -1;i+=z;}}
     return 0;
 }
@@ -456,14 +463,13 @@ int reloq_greek_text(const char *text,int annotations,reloq_greek_english englis
 {
     size_t length=strlen(text);if(length>SIZE_MAX/sizeof(size_t)-1)return -1;
     size_t *map=malloc((length+1)*sizeof *map);if(!map)return -1;
-    struct buffer b={0};int spelling=0,previous=0,failed=0,explicit_prominence=0;
+    struct buffer b={0};int spelling=0,previous=0,failed=0,last_weak=0;
+    size_t phrase_words=0;
     for(size_t i=0;i<length&&!failed;){size_t begin=i,start=b.length;int expanded=0;uint32_t cp;size_t z=decode(text+i,&cp);if(!z){failed=1;break;}
         if(cp>=0xff01&&cp<=0xff5e&&
            strchr("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~",(int)(cp-0xfee0)))cp-=0xfee0;
         if(cp=='`'&&annotations&&z==1){
             struct reloq_inline_tag tag=reloq_inline_tag_read((const unsigned char *)text+i,length-i,0);
-            if(tag.kind==RELOQ_TAG_PROMINENCE)explicit_prominence=1;
-            else if(tag.kind==RELOQ_TAG_SPR)explicit_prominence=0;
             if(tag.kind==RELOQ_TAG_SPELL){spelling=tag.value;failed=say(&b,spelling==2?" `ts2 ":spelling==1?" `ts1 ":" `ts0 ");i+=tag.length;}
             else {size_t end=i+1;if(text[end]=='['){while(text[end]&&text[end]!=']')++end;if(text[end])++end;}else while(text[end]&&(unsigned char)text[end]>32&&(unsigned char)text[end]<128)++end;failed=add(&b,text+i,end-i);i=end;}
         } else if(spelling){
@@ -503,12 +509,23 @@ int reloq_greek_text(const char *text,int annotations,reloq_greek_english englis
                     else if(cp>=0xa0&&cp<=0xff)failed=western_character(&b,cp);
                 }
             }
-            i+=z;previous=0;
+            i+=z;previous=0;phrase_words=0;
         }
-        else if(letter(cp).base){size_t end=i+z;while(text[end]){uint32_t next;size_t k=decode(text+end,&next);if(!k||!letter(next).base)break;end+=k;}size_t after=end;while(text[after]==' '||text[after]=='\t')++after;uint32_t next=0;if(text[after])decode(text+after,&next);int following=letter(next).base||reloq61_latin_byte(next)||(next>='0'&&next<='9');int joined=b.length&&b.data[b.length-1]=='-';failed=greek_word(&b,text+i,end-i,8|(joined?16:0)|(explicit_prominence?4:0)|(previous?1:0)|(following?2:0));previous=1;explicit_prominence=0;i=end;expanded=1;}
+        else if((cp==' '||cp=='\t')&&previous){
+            size_t end=i;while(text[end]==' '||text[end]=='\t')++end;
+            uint32_t next=0,second=0;size_t k=text[end]?decode(text+end,&next):0;
+            if(k&&text[end+k])decode(text+end+k,&second);
+            if(end-i>=2&&phrase_words>=3&&!last_weak&&greek_capital(next)&&greek_lowercase(second)) {
+                /* A soft phrase boundary lets the shared planner give the
+                 * following sentence its normal contour. No word is forced
+                 * to be prominent and ordinary single spaces are untouched. */
+                failed=say(&b,", ");previous=0;phrase_words=0;i=end;
+            } else {failed=add(&b,text+i,1);++i;}
+        }
+        else if(letter(cp).base){size_t end=i+z;while(text[end]){uint32_t next;size_t k=decode(text+end,&next);if(!k||!letter(next).base)break;end+=k;}size_t after=end;while(text[after]==' '||text[after]=='\t')++after;uint32_t next=0;if(text[after])decode(text+after,&next);int following=letter(next).base||reloq61_latin_byte(next)||(next>='0'&&next<='9');failed=greek_word(&b,text+i,end-i,(previous?1:0)|(following?2:0),&last_weak);previous=1;++phrase_words;i=end;expanded=1;}
         else if(cp>='0'&&cp<='9'){
             uint64_t number=0;size_t end=i;int overflow=0;while(text[end]>='0'&&text[end]<='9'){unsigned digit=text[end]-'0';if(number>(UINT64_MAX-digit)/10)overflow=1;else number=number*10+digit;++end;}
-            if(overflow){for(size_t j=i;j<end&&!failed;++j)failed=cardinal(&b,text[j]-'0');}else failed=cardinal(&b,number);i=end;previous=0;explicit_prominence=0;expanded=1;
+            if(overflow){for(size_t j=i;j<end&&!failed;++j)failed=cardinal(&b,text[j]-'0');}else failed=cardinal(&b,number);i=end;previous=0;phrase_words=0;expanded=1;
         } else if(reloq61_latin_byte(cp)){
             /* Keep accented letters in their complete native English word.
                The spelling alignment uses the shared base identities; the
@@ -523,7 +540,7 @@ int reloq_greek_text(const char *text,int annotations,reloq_greek_english englis
                 end+=k;++bytes;
             }
             if(!failed&&bytes)failed=latin(&b,word.data,english,context);
-            free(word.data);i=end;previous=0;explicit_prominence=0;expanded=1;
+            free(word.data);i=end;previous=0;phrase_words=0;expanded=1;
         } else if(cp=='\\') {
             /* Internal SPR must not become an escaped literal after a
                caller's backslash. Preserve explicit caller annotations;
@@ -536,8 +553,8 @@ int reloq_greek_text(const char *text,int annotations,reloq_greek_english englis
             if(!annotations)count*=2;
             else if((generated||!text[end])&&(count&1))++count;
             for(size_t j=0;j<count&&!failed;++j)failed=say(&b,"\\");
-            previous=0;i=end;
-        } else {const char *mark=punctuation(cp);if(western_symbol(cp))failed=western_character(&b,cp);else if(cp==0x387)failed=western_character(&b,0xb7);else if(mark)failed=say(&b,mark);else if(cp=='`')failed=greek_words(&b,"βαρεία");else if(cp<128){char value=(char)cp;failed=add(&b,&value,1);}else if(western_symbol(cp))failed=western_character(&b,cp);else failed=say(&b," ");if(cp!=' '&&cp!='\t')previous=0;i+=z;}
+            previous=0;phrase_words=0;i=end;
+        } else {const char *mark=punctuation(cp);if(western_symbol(cp))failed=western_character(&b,cp);else if(cp==0x387)failed=western_character(&b,0xb7);else if(mark)failed=say(&b,mark);else if(cp=='`')failed=greek_words(&b,"βαρεία");else if(cp<128){char value=(char)cp;failed=add(&b,&value,1);}else if(western_symbol(cp))failed=western_character(&b,cp);else failed=say(&b," ");if(cp!=' '&&cp!='\t'){previous=0;phrase_words=0;}i+=z;}
         /* The spelling rules add separators for generated phrases. Their
            outer padding must not change the caller's punctuation adjacency:
            "(word)" and "( word )" take different native phrase paths. */

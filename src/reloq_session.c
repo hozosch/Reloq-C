@@ -180,13 +180,34 @@ static int output_pcm(struct reloq_session *session, size_t count)
         if(session->text_loudness) {
             /* Short source onsets can be conspicuous without reaching the
              * PCM rails. A continuous knee and an 8 ms gain recovery tame
-             * them before PCM conversion without a block-size dependent
-             * jump or a lookahead buffer in the speech startup path. */
+             * them before PCM conversion without an extra audio buffer. */
             const double recovery=-expm1(-1.0/(session->config.sample_rate*.008));
+            float *anticipated=session->buffers.scratch+at;
+            if(session->config.sample_rate>=22050) {
+                /* The whole native frame has already been synthesized.
+                 * Anticipate peaks within that frame, easing the gain down
+                 * before the peak rather than changing it abruptly on a
+                 * single high-frequency sample. This adds no audio buffer
+                 * or samples and leaves the accepted 8/11/16-kHz path. */
+                const double attack=exp(-1.0/(session->config.sample_rate*.002));
+                double future=1;
+                for(size_t i=n;i>0;--i) {
+                    double amplitude=fabs((double)block[i-1]);
+                    double desired=1;
+                    if(amplitude>22000) {
+                        double bounded=22000-6000*expm1(-(amplitude-22000)/6000);
+                        desired=bounded/amplitude;
+                    }
+                    double approaching=1-(1-future)*attack;
+                    future=desired<approaching?desired:approaching;
+                    anticipated[i-1]=(float)future;
+                }
+            }
             for(size_t i=0;i<n;++i) {
                 double amplitude=fabs((double)block[i]);
                 double desired=1;
-                if(amplitude>22000) {
+                if(session->config.sample_rate>=22050)desired=anticipated[i];
+                else if(amplitude>22000) {
                     double bounded=22000-6000*expm1(-(amplitude-22000)/6000);
                     desired=bounded/amplitude;
                 }

@@ -873,6 +873,8 @@ struct reloq61_cancel_check reloq61_cancel_scope(struct reloq61_cancel_check nex
     analysis_cancel=next;analysis_cancel_polls=0;
     return previous;
 }
+int reloq61_cancel_requested(void)
+{return analysis_cancel.check&&analysis_cancel.check(analysis_cancel.context);}
 int32_t deltaErrorThrown(delta_state *d)
 {
     delta_vars *v=EVV_AT(delta_vars *, d->vars);
