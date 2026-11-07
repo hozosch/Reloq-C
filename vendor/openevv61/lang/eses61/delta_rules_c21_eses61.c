@@ -4513,10 +4513,10 @@ L296:;
     /* Word-level pitch accent and lexical vowel stress are distinct in
        Greek. A deaccented content word must not lose the native duration of
        its stressed vowel; explicit caller prominence stays authoritative. */
-    if (reloq61_greek_keep_lexical_duration(state)) goto L528;
     r0 = reloq61_typed_starttest(DELTA_ENTRY_starttest, state, (int16_t)(4));
     AT(int32_t, -16) = (r0);
-    r0 = reloq61_typed_move_f(DELTA_ENTRY_move_f, state, (delta_loc *)(base + (-24)), (int32_t)(9000));
+    r0 = reloq61_typed_move_f(DELTA_ENTRY_move_f, state, (delta_loc *)(base + (-24)),
+        reloq61_greek_keep_lexical_duration(state)?10000:9000);
     AT(int32_t, -16) = (r0);
     AT(int32_t, -12) = (80);
 L352:;
