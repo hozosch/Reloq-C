@@ -80,8 +80,8 @@ def main():
             assert '[.1' in phonemes(greek, word + ' σπίτι'), word
         # Full Greek negatives are normally stress-bearing in speech even
         # though the written monosyllables do not carry an accent mark.
-        for word in ('δεν', 'μην'):
-            assert '[.1' in phonemes(greek, word + ' θέλω'), word
+        for word, expected in (('δεν', '[.1Den]'), ('μην', '[.1min]')):
+            assert expected in phonemes(greek, word + ' θέλω'), word
 
         # Medial γγ normally uses the same nasal and stop as γκ. Synthetic
         # spelling pairs isolate that choice without changing the vowels.
