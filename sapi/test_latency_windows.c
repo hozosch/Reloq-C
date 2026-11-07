@@ -25,10 +25,10 @@ int wmain(int argc,wchar_t **argv)
  for(int i=0;i<15&&SUCCEEDED(h);++i){
   h=clear(mem);double start=seconds(),first=0,play=0;ULONGLONG firstbytes=0;
   if(SUCCEEDED(h))h=ISpVoice_Speak(voice,L"Ein Beispiel für eine kurze Ansage beim Navigieren durch NVDA. Weitere Wörter machen die Unterbrechung gut sichtbar.",SPF_ASYNC|SPF_IS_NOT_XML,NULL);
-  for(int k=0;k<2000&&SUCCEEDED(h)&&!play;++k){STATSTG s={0};h=IStream_Stat(mem,&s,STATFLAG_NONAME);double elapsed=seconds()-start;
+  while(SUCCEEDED(h)&&!play&&seconds()-start<2.0){STATSTG s={0};h=IStream_Stat(mem,&s,STATFLAG_NONAME);double elapsed=seconds()-start;
    if(s.cbSize.QuadPart&&!first){first=elapsed;firstbytes=s.cbSize.QuadPart;}
    if(s.cbSize.QuadPart>=2206)play=elapsed;
-   if(!play)Sleep(1);
+   if(!play)SwitchToThread();
   }
   if(!play)h=E_FAIL;
   if(SUCCEEDED(h))h=ISpVoice_Speak(voice,NULL,SPF_PURGEBEFORESPEAK,NULL);
