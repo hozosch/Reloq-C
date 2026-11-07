@@ -1,0 +1,68 @@
+name: Temporary SAPI abort probe
+on:
+  push:
+    branches: [codex/sapi-abort-probe-20261107]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  adapter:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        arch: [x64, x86]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install cross compiler
+        shell: bash
+        run: |
+          if [ '${{ matrix.arch }}' = x64 ]; then prefix=x86-64; else prefix=i686; fi
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends gcc-mingw-w64-$prefix-posix
+      - name: Compile real SAPI regression test
+        shell: bash
+        run: |
+          if [ '${{ matrix.arch }}' = x86 ]; then output=build/x86; else output=build; fi
+          make -C sapi "$output/Test-SAPI.exe" ARCH=${{ matrix.arch }}
+          mkdir -p diagnostic
+          cp "sapi/$output/Test-SAPI.exe" diagnostic/Test-SAPI.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: abort-test-${{ matrix.arch }}
+          path: diagnostic/Test-SAPI.exe
+  probe:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    needs: adapter
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, x86]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 42373270712
+          github-token: ${{ github.token }}
+          name: sapi-native-${{ matrix.arch }}
+          path: payload
+      - uses: actions/download-artifact@v4
+        with:
+          name: abort-test-${{ matrix.arch }}
+          path: diagnostic
+      - name: Exercise real SAPI interruptions
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Expand-Archive (Get-ChildItem payload/*.zip | Select-Object -First 1).FullName -DestinationPath test
+          Copy-Item diagnostic/Test-SAPI.exe test/Test-SAPI.exe -Force
+          $regsvr=if('${{ matrix.arch }}' -eq 'x64'){"$env:windir/System32/regsvr32.exe"}else{"$env:windir/SysWOW64/regsvr32.exe"}
+          $reg=Start-Process $regsvr -ArgumentList '/s', (Resolve-Path test/ReLoqSapi.dll).Path -Wait -PassThru
+          if($reg.ExitCode -ne 0){throw 'registration failed'}
+          $p=Start-Process (Resolve-Path test/Test-SAPI.exe).Path -ArgumentList '--abortcase' -RedirectStandardOutput abort-out.txt -RedirectStandardError abort-err.txt -PassThru
+          $done=$p.WaitForExit(60000)
+          Get-Content abort-out.txt,abort-err.txt -ErrorAction SilentlyContinue | Write-Host
+          if(!$done){Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue;throw 'SAPI abort timeout'}
+          if($p.ExitCode -ne 0){throw "SAPI abort failure exit=$($p.ExitCode)"}
