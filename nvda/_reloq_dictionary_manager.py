@@ -291,6 +291,7 @@ class DictionaryManager:
             self.on_error(error)
         try:
             settings = json.loads(self.settings_path.read_text(encoding="utf8"))
+            if not isinstance(settings, dict): raise ValueError("invalid dictionary settings")
             self._repository = settings.get("repository", "community")
             if self._repository not in SOURCES: raise ValueError("unknown dictionary source")
         except FileNotFoundError:

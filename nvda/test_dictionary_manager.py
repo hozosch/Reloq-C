@@ -112,6 +112,20 @@ class ManagerTests(unittest.TestCase):
         finally:
             manager.close()
 
+    def test_invalid_settings_shape_does_not_enable_an_empty_selection(self):
+        settings = self.root / 'invalid-shape.json'
+        settings.write_text('[]', encoding='utf8')
+        delivered, failed = [], threading.Event()
+        manager = DictionaryManager(self.bundle, self.root / 'shape-cache',
+            lambda revision, path: delivered.append(path), lambda error: None,
+            settings_path=settings, on_load_error=lambda revision: failed.set())
+        try:
+            manager.set_enabled(False)
+            self.assertTrue(failed.wait(3))
+            self.assertEqual(delivered, [])
+        finally:
+            manager.close()
+
     def test_merge_native_volumes_precedence_and_unchanged_inputs(self):
         a = self.source('my-unrelated-name.dic', b'Armin\tErster\nOwn\t`[.1a]\n')
         b = self.source('other.dic', b'Armin\tZweiter\nOwn\t`[.1b]')
