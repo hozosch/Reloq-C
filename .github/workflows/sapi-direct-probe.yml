@@ -25,10 +25,11 @@ jobs:
           if ($reg.ExitCode -ne 0) { throw "Registration failed: $($reg.ExitCode)" }
           $test = (Resolve-Path 'test/Test-SAPI.exe').Path
           $p = Start-Process $test -ArgumentList '--first-case' -RedirectStandardOutput probe.txt -RedirectStandardError errors.txt -PassThru
-          if (!$p.WaitForExit(45000)) {
-            Stop-Process -Id $p.Id -Force
-            Get-Content probe.txt, errors.txt -ErrorAction SilentlyContinue
-            throw 'SAPI first case did not finish in 45 seconds'
-          }
+          $done = $p.WaitForExit(30000)
+          Write-Host "Process finished within 30 seconds: $done"
           Get-Content probe.txt, errors.txt -ErrorAction SilentlyContinue
+          if (!$done) {
+            Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+            throw 'SAPI first case did not finish in 30 seconds'
+          }
           if ($p.ExitCode -ne 0) { throw "SAPI first case failed: $($p.ExitCode)" }
