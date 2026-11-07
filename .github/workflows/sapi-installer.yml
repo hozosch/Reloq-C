@@ -174,6 +174,11 @@ jobs:
               Get-Content "dist/validation/sapi-$arch-threads.txt" -Tail 60
               throw "SAPI $arch caller thread validation failed"
             }
+            & $test --abortcase *> "dist/validation/sapi-$arch-abort.txt"
+            if ($LASTEXITCODE -ne 0) {
+              Get-Content "dist/validation/sapi-$arch-abort.txt" -Tail 60
+              throw "SAPI $arch abort and recovery validation failed"
+            }
             & $test --all-native-rates *> "dist/validation/sapi-$arch.txt"
             $testExit = $LASTEXITCODE
             if ($testExit -ne 0) {

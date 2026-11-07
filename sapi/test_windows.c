@@ -2,6 +2,8 @@
  * the test never opens an audio device or creates an audio file. */
 #include "settings.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
 #include <wchar.h>
 #include "catalogue.inc"
 static HRESULT native_format(ISpObjectToken *token,DWORD target,DWORD *rate)
@@ -102,8 +104,78 @@ static DWORD WINAPI run_thread(void *unused)
     return (DWORD)run_one(2,args);
 }
 
+static HRESULT clear_memory(IStream *stream)
+{
+    LARGE_INTEGER zero={0};ULARGE_INTEGER empty={0};
+    HRESULT hr=IStream_Seek(stream,zero,STREAM_SEEK_SET,NULL);
+    return SUCCEEDED(hr)?IStream_SetSize(stream,empty):hr;
+}
+
+static HRESULT memory_hash(IStream *stream,ULONGLONG *bytes,uint64_t *hash)
+{
+    STATSTG stat={0};HGLOBAL storage=NULL;
+    HRESULT hr=IStream_Stat(stream,&stat,STATFLAG_NONAME);
+    if(SUCCEEDED(hr))hr=GetHGlobalFromStream(stream,&storage);
+    if(FAILED(hr)||!stat.cbSize.QuadPart||(ULONGLONG)(size_t)stat.cbSize.QuadPart!=stat.cbSize.QuadPart)return E_FAIL;
+    const unsigned char *data=GlobalLock(storage);if(!data)return E_FAIL;
+    uint64_t value=1469598103934665603ULL;
+    for(size_t i=0;i<(size_t)stat.cbSize.QuadPart;++i)value=(value^data[i])*1099511628211ULL;
+    GlobalUnlock(storage);*bytes=stat.cbSize.QuadPart;*hash=value;return S_OK;
+}
+
+static int run_abort_case(void)
+{
+    HRESULT hr=CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);if(FAILED(hr))return 1;
+    ISpVoice *voice=NULL;ISpObjectToken *token=NULL;ISpStream *audio=NULL;IStream *memory=NULL;
+    WCHAR key[512];size_t german=0;
+    const size_t languages=sizeof sapi_languages/sizeof *sapi_languages;
+    while(german<languages&&sapi_languages[german].dialect!=0x40000)++german;
+    if(german==languages){hr=E_FAIL;goto done;}
+    swprintf(key,512,L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Speech\\Voices\\Tokens\\ReLoqC_%02u_%08X",
+        (unsigned)german,0x40000u);
+    hr=CoCreateInstance(&CLSID_SpVoice,NULL,CLSCTX_INPROC_SERVER,&IID_ISpVoice,(void **)&voice);
+    if(SUCCEEDED(hr))hr=CoCreateInstance(&CLSID_SpObjectToken,NULL,CLSCTX_INPROC_SERVER,&IID_ISpObjectToken,(void **)&token);
+    if(SUCCEEDED(hr))hr=ISpObjectToken_SetId(token,NULL,key,FALSE);
+    if(SUCCEEDED(hr))hr=ISpVoice_SetVoice(voice,token);
+    if(SUCCEEDED(hr))hr=CreateStreamOnHGlobal(NULL,TRUE,&memory);
+    if(SUCCEEDED(hr))hr=CoCreateInstance(&CLSID_SpStream,NULL,CLSCTX_INPROC_SERVER,&IID_ISpStream,(void **)&audio);
+    WAVEFORMATEX format={WAVE_FORMAT_PCM,1,11025,22050,2,16,0};
+    if(SUCCEEDED(hr))hr=ISpStream_SetBaseStream(audio,memory,&SPDFID_WaveFormatEx,&format);
+    if(SUCCEEDED(hr))hr=ISpVoice_SetOutput(voice,(IUnknown *)audio,FALSE);
+    const WCHAR *short_text=L"Dies ist eine kurze Ansage.";
+    if(SUCCEEDED(hr))hr=ISpVoice_Speak(voice,short_text,SPF_IS_NOT_XML,NULL);
+    ULONGLONG bytes=0;uint64_t expected=0;
+    if(SUCCEEDED(hr))hr=memory_hash(memory,&bytes,&expected);
+    WCHAR long_text[8192]=L"";
+    for(unsigned i=0;i<180;++i)wcscat(long_text,L"Eine längere Ansage zum Unterbrechen. ");
+    for(unsigned i=0;i<12&&SUCCEEDED(hr);++i){
+        hr=clear_memory(memory);
+        if(SUCCEEDED(hr))hr=ISpVoice_Speak(voice,long_text,SPF_ASYNC|SPF_IS_NOT_XML,NULL);
+        /* Wait until the asynchronous utterance has actually produced PCM;
+         * this exercises interruption during synthesis, rather than merely
+         * removing a still-pending utterance from SAPI's queue. */
+        STATSTG progress={0};
+        for(unsigned wait=0;SUCCEEDED(hr)&&!progress.cbSize.QuadPart&&wait<400;++wait){
+            Sleep(5);hr=IStream_Stat(memory,&progress,STATFLAG_NONAME);
+        }
+        if(SUCCEEDED(hr)&&!progress.cbSize.QuadPart)hr=E_FAIL;
+        if(SUCCEEDED(hr))hr=ISpVoice_Speak(voice,NULL,SPF_PURGEBEFORESPEAK,NULL);
+        if(SUCCEEDED(hr))hr=clear_memory(memory);
+        if(SUCCEEDED(hr))hr=ISpVoice_Speak(voice,short_text,SPF_IS_NOT_XML,NULL);
+        ULONGLONG got_bytes=0;uint64_t got=0;
+        if(SUCCEEDED(hr))hr=memory_hash(memory,&got_bytes,&got);
+        if(SUCCEEDED(hr)&&(got_bytes!=bytes||got!=expected))hr=E_FAIL;
+        wprintf(L"SAPI abort/recovery %u: HRESULT=%08lX\n",i,(unsigned long)hr);
+    }
+done:
+    if(voice)ISpVoice_Release(voice);if(audio)ISpStream_Release(audio);
+    if(memory)IStream_Release(memory);if(token)ISpObjectToken_Release(token);
+    CoUninitialize();return FAILED(hr)?1:0;
+}
+
 int wmain(int argc,wchar_t **argv)
 {
+    if(argc==2&&!wcscmp(argv[1],L"--abortcase"))return run_abort_case();
     if(argc!=2||wcscmp(argv[1],L"--threadcase"))return run_one(argc,argv);
     /* A fresh caller must be able to end and free its cached contexts, even
      * when SAPI creates and releases its voices on many different threads. */
