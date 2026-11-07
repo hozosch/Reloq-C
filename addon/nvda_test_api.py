@@ -31,7 +31,18 @@ class Validator:
         if value is None:
             return None
         if spec.startswith("boolean"):
-            return value is True or str(value) == "True"
+            # Match ConfigObj's boolean validation for values read from a
+            # profile file, which are initially strings, as well as 0/1.
+            if isinstance(value, str):
+                values = {"true": True, "yes": True, "on": True, "1": True,
+                          "false": False, "no": False, "off": False, "0": False}
+                try:
+                    return values[value.lower()]
+                except KeyError:
+                    raise ValueError("invalid boolean") from None
+            if value == 0 or value == 1:
+                return bool(value)
+            raise ValueError("invalid boolean")
         if spec.startswith("integer"):
             return int(value)
         return str(value)

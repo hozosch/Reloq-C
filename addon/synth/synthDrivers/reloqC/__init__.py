@@ -348,10 +348,20 @@ class SynthDriver(BaseSynthDriver):
             section = speech[self.name]
             for key in ("_dictionaryCommunity", "communityDictionaries"):
                 if section.isSet(key):
-                    value = section[key]
-                    if isinstance(value, bool):
-                        return value
+                    # The driver schema has not yet been installed. Reading
+                    # through [] here caches a raw ConfigObj string, and
+                    # NVDA's later schema update does not invalidate it.
+                    # Read without caching, then use NVDA's own validator.
+                    value = section.__getitem__(key, checkValidity=False)
+                    return self._dictionary_config_boolean(value, section)
         return False
+
+    def _dictionary_config_boolean(self, value, section=None):
+        if isinstance(value, bool):
+            return value
+        if section is None:
+            section = config.conf[self._configSection][self.name]
+        return section.manager.validator.check("boolean(default=False)", value)
 
     def loadSettings(self, onlyChanged=False):
         # NVDA restores voice before other settings. Select the module first
@@ -360,7 +370,8 @@ class SynthDriver(BaseSynthDriver):
         self._select_language(self._initial_language())
         section["language"] = self._get_language()
         if not section.isSet("_dictionaryCommunity") and section.isSet("communityDictionaries"):
-            section["_dictionaryCommunity"] = section["communityDictionaries"]
+            previous = section.__getitem__("communityDictionaries", checkValidity=False)
+            section["_dictionaryCommunity"] = self._dictionary_config_boolean(previous, section)
         # AggregatedSection supports neither pop nor deletion. Leave any
         # legacy value intact; the canonical language now takes precedence.
         super().loadSettings(onlyChanged=onlyChanged)
@@ -372,7 +383,9 @@ class SynthDriver(BaseSynthDriver):
         return self.communityDictionaries
 
     def _set__dictionaryCommunity(self, enabled):
-        self.communityDictionaries = enabled
+        # A different caller may have cached a raw value before the schema
+        # was installed. Normalize that cached setting as well.
+        self.communityDictionaries = self._dictionary_config_boolean(enabled)
 
     def _apply_dictionary_snapshot(self, revision, path):
         with self._submit_lock:

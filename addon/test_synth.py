@@ -740,22 +740,42 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                     # Even a speech request immediately after construction,
                     # before NVDA's later initSettings call, must use the
                     # dictionary enabled in the active or legacy profile.
-                    for saved in ({"_dictionaryCommunity": True},
-                                  {"communityDictionaries": True},
-                                  {"_dictionaryCommunity": False, "communityDictionaries": True}):
+                    cases = [({"_dictionaryCommunity": True}, True, False),
+                             ({"_dictionaryCommunity": False}, False, False),
+                             ({"_dictionaryCommunity": "True"}, True, False),
+                             ({"_dictionaryCommunity": "False"}, False, False),
+                             ({"_dictionaryCommunity": "yes"}, True, False),
+                             ({"_dictionaryCommunity": "0"}, False, False),
+                             ({"_dictionaryCommunity": "True"}, True, True),
+                             ({"_dictionaryCommunity": "False"}, False, True),
+                             ({"communityDictionaries": "True"}, True, False),
+                             ({"communityDictionaries": "False"}, False, False),
+                             ({"_dictionaryCommunity": "False", "communityDictionaries": "True"}, False, False)]
+                    for saved, expected, precache in cases:
                         profile = {"speech": {driver.name: saved},
                                    "audio": {"outputDevice": "default"},
                                    "general": {"language": "Windows"}}
                         config_api.conf = configuration_manager(profile).rootSection
+                        if precache:
+                            # A prior reader can have cached the unvalidated
+                            # string even before the driver is constructed.
+                            section = config_api.conf["speech"][driver.name]
+                            assert isinstance(section["_dictionaryCommunity"], str)
                         before = len(Engine.instances)
                         with mock.patch.object(driver_module, "CommunityDictionaries", side_effect=updater):
                             fresh = driver_module.SynthDriver()
                             try:
+                                enabled_at_construction = fresh.communityDictionaries
                                 fresh.speak(["Unigram"])
                                 until(lambda: len(Engine.instances) > before and Engine.instances[-1].parts)
                                 actual = Engine.instances[-1].dictionary_paths_at_speak[0]
-                                enabled = saved.get("_dictionaryCommunity", saved.get("communityDictionaries"))
-                                assert bool(actual and actual[-1]) is enabled, (saved, actual)
+                                # NVDA calls this after the driver's early
+                                # settings lookup. ConfigObj reads saved booleans
+                                # from disk as strings until validated.
+                                fresh.initSettings()
+                                assert enabled_at_construction is expected, (saved, enabled_at_construction)
+                                assert fresh.communityDictionaries is expected
+                                assert bool(actual and actual[-1]) is expected, (saved, actual)
                             finally:
                                 fresh.terminate()
                     print("NVDA initial dictionary: saved and legacy settings precede first speech")
