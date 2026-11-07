@@ -93,7 +93,7 @@
     "Dictionary files in total: %ls",
     "The number of new dictionary files could not be determined.",
     "Use original &question intonation",
-    "&Mellow mode (16 kHz and above)"
+    "Mello&w mode (16 kHz and above)"
   ],
   "de": [
     "ReLoq C – Stimmeinstellungen",
@@ -141,7 +141,7 @@
     "Wörterbuchdateien insgesamt: %ls",
     "Die Anzahl neuer Wörterbuchdateien konnte nicht ermittelt werden.",
     "Ursprüngliche &Frageintonation verwenden",
-    "&Weicher Modus (ab 16 kHz)"
+    "Weicher Mod&us (ab 16 kHz)"
   ],
   "es": [
     "ReLoq C – Ajustes de voz",
