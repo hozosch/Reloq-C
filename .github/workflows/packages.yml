@@ -188,11 +188,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download v1.1.3 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-1.1.3.nvda-addon' --dir previous-addon
-          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.1.3.nvda-addon --candidate dist/reloq-c-synth-x64-1.2.0-dev8.nvda-addon
+          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.1.3.nvda-addon --candidate dist/reloq-c-synth-x64-1.2.0-dev9.nvda-addon
       - name: Verify NVDA driver and offline dictionary startup
         run: |
           for language in en de; do
-            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.2.0-dev8.nvda-addon"))' "$language"
+            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.2.0-dev9.nvda-addon"))' "$language"
           done
       - uses: actions/upload-artifact@v4
         with:

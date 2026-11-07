@@ -50,6 +50,24 @@ def main():
         network = phonemes(greek, 'Ο έλεγχος σύνδεσης δικτύου ολοκληρώθηκε.')
         assert '`[.1sin.0de.0sis] `0 `[.0dik.1ti.0u]' in network, network
         assert '`0 `[.1sin.0de.0sis]' not in network, network
+        # An isolated reduced content word can still sit well before the
+        # nuclear accent; keep an ordinary prenuclear accent in that case.
+        # The rule also works without an English initialism or UI label.
+        for text, content in (
+            ('Εκκίνηση του NVDA όταν συνδεθώ  πλαίσιο επιλογής  επιλεγμένο',
+             '[.0sin.0de.1To]'),
+            ('Η υπηρεσία αποστέλλει δεδομένα κάθε πρωί.', '[.0de.0do.1me.0na]'),
+            ('Η Μαρία διάβασε την εφημερίδα και πήγε στη δουλειά.',
+             '[.0di.1a.0ba.0se]'),
+        ):
+            result = phonemes(greek, text)
+            assert '`' + content in result and '`0 `' + content not in result, result
+        # Do not manufacture emphasis for every letter of an initialism.
+        announcement = 'Εκκίνηση του NVDA όταν συνδεθώ  πλαίσιο επιλογής  επιλεγμένο'
+        assert '`0 `[.1bi]' in phonemes(greek, announcement)
+        assert phonemes(greek, announcement) == phonemes(greek, announcement.replace('  ', ' '))
+        assert render(greek, [announcement, EciIndex(12)]) == render(
+            greek, [announcement.replace('  ', ' '), EciIndex(12)])
         assert phonemes(greek, title + '  ' + body) == phonemes(greek, title + ' ' + body)
         mixed_title = 'Αλλαγή γλώσσας για το NVDA'
         assert phonemes(greek, mixed_title + '  ' + body) == phonemes(greek, mixed_title + ' ' + body)

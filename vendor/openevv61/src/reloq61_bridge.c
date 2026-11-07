@@ -196,30 +196,38 @@ static int32_t greek_record_at(delta_state *d,int32_t at,unsigned type)
     int32_t node=right?vgetsc(d,0,0,right,(uint8_t)type):0;
     return node&&!(*EVV_AT(int32_t *,node)&2)?node:0;
 }
-static int greek_word_has_accent(delta_state *d,int32_t from,int32_t to)
+static int greek_word_has_accent(delta_state *d,int32_t from,int32_t to,unsigned *vowels)
 {
+    *vowels=0;
     if(!from||!to)return 0;
+    int accented=0;
     int32_t at=from,end=greek_record_right(d,to,4);
     for(unsigned guard=0;at&&greek_record_right(d,at,4)!=end&&guard<1024;++guard) {
         int32_t phone=greek_record_at(d,at,4);int16_t stress;
         if(!phone)return 0;
-        memcpy(&stress,delta_record_field(&vstmtbl[4],8,TFLDS(EVV_AT(void *,phone))),2);
-        if(stress>0)return 1;
+        void *body=TFLDS(EVV_AT(void *,phone));
+        memcpy(&stress,delta_record_field(&vstmtbl[4],8,body),2);
+        if(stress>0)accented=1;
+        if(*(const unsigned char *)delta_record_field(&vstmtbl[4],1,body)==1)++*vowels;
         int32_t next=EVV_AT(int32_t *,phone)[1]&~3;
         if(!next||next==at)break;
         at=next;
     }
-    return 0;
+    return accented;
 }
-static void greek_finish_unstressed_run(unsigned char **words,size_t count)
+struct greek_unstressed_word {unsigned char *level;unsigned vowels;};
+static void greek_finish_unstressed_run(struct greek_unstressed_word *words,size_t count,int next_stress)
 {
     /* Greek content words normally retain prenuclear accents, but a run of
        full accents sounded too strong in the shared Castilian core. Restore
-       one ordinary accent in an otherwise fully reduced pair or longer run;
-       keep the remaining reductions and leave function words alone. */
+       one ordinary accent in a reduced pair or longer run. A lone reduced
+       multisyllabic word also receives an accent when another prenuclear
+       word follows: the nucleus is still further away. Leave single-letter
+       initialisms, weak words, the final approach and explicit controls alone. */
     int16_t normal=1;
-    if(count==2)memcpy(words[0],&normal,2);
-    else if(count>=3)for(size_t i=1;i+1<count;i+=3)memcpy(words[i],&normal,2);
+    if(count==1&&words[0].vowels>=2&&next_stress==1)memcpy(words[0].level,&normal,2);
+    else if(count==2)memcpy(words[0].level,&normal,2);
+    else if(count>=3)for(size_t i=1;i+1<count;i+=3)memcpy(words[i].level,&normal,2);
 }
 int reloq61_greek_keep_lexical_duration(void *state)
 {
@@ -237,7 +245,7 @@ void reloq61_greek_adjust_word_stress(void *state,int32_t from,int32_t to)
     delta_loc *left=EVV_AT(delta_loc *,from),*right=EVV_AT(delta_loc *,to);
     if(!left->value||!right->value)return;
     int32_t at=left->value,end=greek_record_right(d,right->value,2);
-    unsigned char *run[256];size_t count=0;
+    struct greek_unstressed_word run[256];size_t count=0;
     for(unsigned guard=0;at&&greek_record_right(d,at,2)!=end&&guard<256;++guard) {
         int32_t word=greek_record_at(d,at,2);
         if(!word)break;
@@ -248,15 +256,18 @@ void reloq61_greek_adjust_word_stress(void *state,int32_t from,int32_t to)
         int32_t begin=*EVV_AT(int32_t *,word)&~3;
         int32_t next=EVV_AT(int32_t *,word)[1]&~3;
         if(annotation) {
-            greek_finish_unstressed_run(run,count);count=0;
-        } else if(greek_word_has_accent(d,begin,next)) {
-            if(stress==0)run[count++]=level;
-            else {greek_finish_unstressed_run(run,count);count=0;}
+            greek_finish_unstressed_run(run,count,0);count=0;
+        } else {
+            unsigned vowels;
+            if(greek_word_has_accent(d,begin,next,&vowels)) {
+                if(stress==0)run[count++]=(struct greek_unstressed_word){level,vowels};
+                else {greek_finish_unstressed_run(run,count,stress);count=0;}
+            }
         }
         if(!next||next==at)break;
         at=next;
     }
-    greek_finish_unstressed_run(run,count);
+    greek_finish_unstressed_run(run,count,0);
 }
 static int acoustic_mark(const struct capture *c,size_t mark)
 {

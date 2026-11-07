@@ -1,4 +1,4 @@
-ReLoq C 1.2.0-dev8 — unified SAPI5 Windows installer
+ReLoq C 1.2.0-dev9 — unified SAPI5 Windows installer
 
 Installation
 ------------

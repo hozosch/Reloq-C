@@ -29,7 +29,7 @@ struct reloq_rate_transfer {
     /* Session-owned Classic hearing trial, with periodic upper-bass
      * restoration and native expansion from 22.05 kHz. Legacy C aliases B. */
     unsigned trial_profile,colour_profile,colour_extension;
-    /* Remove the optional 3.5–4 kHz lift from periodic voicing only. */
+    /* Further soften the 3.5–4 kHz band in periodic voicing only. */
     unsigned mellow_mode;
     unsigned fit_samples;
     /* Continuous A transfer in the high-rate hybrid and comparison probes.

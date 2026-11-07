@@ -689,21 +689,12 @@ static RATE_NOINLINE void prepare_colour(struct reloq_rate_transfer *s,float rat
     brilliance[0]=trim*(1+alpha*upper)/d;brilliance[1]=-2*trim*cos(w)/d;
     brilliance[2]=trim*(1-alpha*upper)/d;brilliance[3]=-2*cos(w)/d;
     brilliance[4]=(1-alpha/upper)/d;
-    if(s->mellow_mode) {
-        /* Bypass only the additional periodic presence band. The existing
-         * tract, aspiration and independent frication stay unchanged. */
-        double *band=s->voice_colour[3];
-        band[0]=1;band[1]=band[2]=band[3]=band[4]=0;
-        memset(s->voice_band,0,sizeof s->voice_band);
-        return;
-    }
-    /* Additional periodic presence: a fourth-order minimum-phase
-     * band with a +2.5-dB plateau from 3.5 to 4 kHz. A Butterworth
-     * low-pass shelf is mapped to a band using prewarped edge clocks.
-     * Its edge level is about 2.44 dB at every supported rate; the centre
-     * reaches 2.5 dB. Keep the pre-presence master gain instead of lowering
-     * the bass with a broadband trim. No lookahead or saturation. */
-    const double band_gain=1.333521432163324; /* 10^(2.5/20) */
+    /* A fourth-order minimum-phase band is confined to periodic voicing.
+     * The normal mode keeps the original +2.5 dB presence lift; mellow
+     * replaces it with -3.5 dB, a 6 dB centre reduction relative to normal.
+     * Keep the pre-presence gain instead of lowering the bass with a
+     * broadband trim. Aspiration and frication remain independent. */
+    const double band_gain=s->mellow_mode?0.6683439175686147:1.333521432163324;
     const double lo=tan(pi*3500/rate),hi=tan(pi*4000/rate);
     const double centre=sqrt(lo*hi),width=2.2*(hi-lo);
     const double complex pole=(-1+I)/sqrt(2),zero=pole*sqrt(band_gain);

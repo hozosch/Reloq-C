@@ -42,34 +42,39 @@ int main(void)
         double least=10,most=0;
         for(int frequency=3500;frequency<=4000;frequency+=25) {
             double gain=lift(rate,frequency);
-            assert(gain>2.41 && gain<2.502);
+            assert(gain>5.69 && gain<6.002);
             if(gain<least)least=gain;
             if(gain>most)most=gain;
         }
-        assert(most-least<.12);
-        assert(fabs(lift(rate,3750)-2.5)<.002);
+        assert(most-least<.31);
+        assert(fabs(lift(rate,3750)-6.0)<.002);
         assert(lift(rate,1000)<.002);
         assert(lift(rate,2000)<.04);
-        assert(lift(rate,3000)<1.56);
-        struct reloq_rate_transfer stable={0};prepare(&stable,rate);
-        const double *sections[]={stable.voice_colour[3],stable.voice_band};
-        for(unsigned i=0;i<2;++i) {
-            const double *c=sections[i];
-            assert(1+c[3]+c[4]>0 && 1-c[3]+c[4]>0 && 1-c[4]>0);
+        assert(lift(rate,3000)<1.15);
+        assert(lift(rate,5000)<.33);
+        for(unsigned mode=0;mode<2;++mode) {
+            struct reloq_rate_transfer stable={0};stable.mellow_mode=mode;prepare(&stable,rate);
+            const double *sections[]={stable.voice_colour[3],stable.voice_band};
+            for(unsigned i=0;i<2;++i) {
+                const double *c=sections[i];
+                assert(1+c[3]+c[4]>0 && 1-c[3]+c[4]>0 && 1-c[4]>0);
+            }
+            struct reloq_rate_transfer a=stable,b=a;
+            float full[4096],split[4096];
+            for(unsigned i=0;i<4096;++i)
+                full[i]=split[i]=(float)(.01*sin(i*.743)+.003*cos(i*.177));
+            reloq_rate_transfer_process_voice(&a,full,4096);
+            for(size_t i=0;i<4096;) {
+                size_t n=1+(i*31)%127;if(n>4096-i)n=4096-i;
+                reloq_rate_transfer_process_voice(&b,split+i,n);i+=n;
+            }
+            assert(!memcmp(full,split,sizeof full));
+            assert(!memcmp(a.voice_colour_delay,b.voice_colour_delay,sizeof a.voice_colour_delay));
+            assert(!memcmp(a.voice_band_delay,b.voice_band_delay,sizeof a.voice_band_delay));
         }
         struct reloq_rate_transfer a={0};prepare(&a,rate);
         struct reloq_rate_transfer b=a;
         float full[4096],split[4096];
-        for(unsigned i=0;i<4096;++i)
-            full[i]=split[i]=(float)(.01*sin(i*.743)+.003*cos(i*.177));
-        reloq_rate_transfer_process_voice(&a,full,4096);
-        for(size_t i=0;i<4096;) {
-            size_t n=1+(i*31)%127;if(n>4096-i)n=4096-i;
-            reloq_rate_transfer_process_voice(&b,split+i,n);i+=n;
-        }
-        assert(!memcmp(full,split,sizeof full));
-        assert(!memcmp(a.voice_colour_delay,b.voice_colour_delay,sizeof a.voice_colour_delay));
-        assert(!memcmp(a.voice_band_delay,b.voice_band_delay,sizeof a.voice_band_delay));
         /* The new section cannot change aspiration's existing smoothing. */
         a.aspiration_voicing=b.aspiration_voicing=0;
         for(unsigned i=0;i<4096;++i)full[i]=split[i]=.01f;
@@ -87,6 +92,6 @@ int main(void)
         reloq_rate_transfer_process_voice(&a,samples,3);
         assert(!memcmp(samples,before,sizeof before));
     }
-    puts("Mellow mode: 2.44..2.5 dB reduction at 3.5..4 kHz across all five extended clocks; unchanged aspiration, stable sections and block boundaries passed");
+    puts("Mellow mode: 5.7..6 dB reduction at 3.5..4 kHz across all five extended clocks; unchanged aspiration, stable sections and block boundaries passed");
     return 0;
 }
