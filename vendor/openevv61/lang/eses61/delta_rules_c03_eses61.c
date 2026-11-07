@@ -25,7 +25,6 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_eses61.h"
-extern void reloq61_greek_adjust_word_stress(void *,int32_t,int32_t);
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -1858,7 +1857,6 @@ L1888:;
     r0 = reloq61_typed_vretproc(DELTA_ENTRY_vretproc, state, (int32_t)(94));
     RELOQ_RULE_RETURN(94);
 L1907:;
-    reloq61_greek_adjust_word_stress(state,p1,p2);
     r0 = reloq61_typed_succeed(DELTA_ENTRY_succeed, state);
     RELOQ_RULE_RETURN(0);
 }
