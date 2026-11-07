@@ -51,6 +51,32 @@ def _native_speed(percent, boost=False):
     return min(250, (8 * value + 2) // 5) if boost else value
 
 
+# The pitch slider is a user scale, not the native ECI pitch baseline.
+# Slider 50 is native 65, the baseline of the default Reed voice, so the
+# middle of the slider is Eloquence's normal pitch. The two halves are
+# linear: 0..50 covers native 0..65 and 50..100 covers native 65..100.
+# The same scale is used by the SAPI5 settings dialog and Android.
+PITCH_MIDDLE = 65
+
+
+def _native_pitch(level):
+    """Native ECI pitch baseline for a 0..100 pitch slider value."""
+    if not isinstance(level, int) or isinstance(level, bool) or not 0 <= level <= 100:
+        raise ValueError("pitch must be from 0 to 100")
+    if level <= 50:
+        return (level * PITCH_MIDDLE + 25) // 50
+    return PITCH_MIDDLE + ((level - 50) * (100 - PITCH_MIDDLE) + 25) // 50
+
+
+def _pitch_level(native):
+    """Slider value for a native pitch; exact inverse for every native value above 65."""
+    native = max(0, min(100, int(native)))
+    if native <= PITCH_MIDDLE:
+        return (native * 50 + PITCH_MIDDLE // 2) // PITCH_MIDDLE
+    span = 100 - PITCH_MIDDLE
+    return 50 + ((native - PITCH_MIDDLE) * 50 + span // 2) // span
+
+
 def _command_pitch(command, base_pitch):
     """NVDA's spelling pitch is relative to the configured native pitch."""
     if getattr(command, "isDefault", False):
@@ -119,8 +145,9 @@ def _parts(speech_sequence, *, base_pitch=50, base_rate=50, base_volume=100, rat
             parts.append(EciIndex(item.index))
         elif isinstance(item, PitchCommand):
             flush()
+            # NVDA's capital pitch change works on the slider scale.
             value = _command_pitch(item, base_pitch)
-            parts.append(EciPitch(value))
+            parts.append(EciPitch(_native_pitch(value)))
             raised = value != base_pitch
         elif isinstance(item, (RateCommand, VolumeCommand)):
             flush()
@@ -209,7 +236,7 @@ class SynthDriver(BaseSynthDriver):
         self._request_epoch = 0
         self._rate = 50
         self._rateBoost = False
-        self._pitch = 50
+        self._pitch = 50  # slider scale; native 65 (see _native_pitch)
         self._inflection = 30
         self._volume = 100
         self._headSize = 50
@@ -243,7 +270,7 @@ class SynthDriver(BaseSynthDriver):
         # Enqueue defaults before speech. NVDA may show a stored/default
         # setting without calling its setter on the first initialization.
         self._transport.set_parameter(NATIVE_SPEED, _native_speed(self._rate))
-        self._transport.set_parameter(NATIVE_PITCH, self._pitch)
+        self._transport.set_parameter(NATIVE_PITCH, _native_pitch(self._pitch))
         self._transport.set_parameter(NATIVE_INFLECTION, self._inflection)
         self._transport.set_parameter(NATIVE_VOLUME, self._volume)
         self._transport.set_parameter(HEAD_SIZE, self._headSize)
@@ -377,6 +404,8 @@ class SynthDriver(BaseSynthDriver):
             section["_dictionaryCommunity"] = self._dictionary_config_boolean(previous, section)
         # AggregatedSection supports neither pop nor deletion. Leave any
         # legacy value intact; the canonical language now takes precedence.
+        if not onlyChanged:
+            self._migrate_pitch_scale(section)
         super().loadSettings(onlyChanged=onlyChanged)
 
     def _get_communityDictionaries(self):
@@ -598,7 +627,7 @@ class SynthDriver(BaseSynthDriver):
                 voice = language.voice(None).id
             self._transport.select_voice(selected, voice, parameters=(
                 (NATIVE_SPEED, _native_speed(self._rate, self._rateBoost)),
-                (NATIVE_PITCH, self._pitch), (NATIVE_INFLECTION, self._inflection),
+                (NATIVE_PITCH, _native_pitch(self._pitch)), (NATIVE_INFLECTION, self._inflection),
                 (NATIVE_VOLUME, self._volume), (HEAD_SIZE, self._headSize),
                 (ROUGHNESS, self._roughness), (BREATHINESS, self._breathiness),
                 (PROCESS_TAGS, int(self._voiceTags)), (PAUSE_MODE, int(self._pauseMode)),
@@ -626,6 +655,9 @@ class SynthDriver(BaseSynthDriver):
                 name = {NATIVE_PITCH: "pitch", NATIVE_VOLUME: "volume",
                         NATIVE_INFLECTION: "inflection", HEAD_SIZE: "headSize",
                         ROUGHNESS: "roughness", BREATHINESS: "breathiness"}.get(parameter)
+                if name == "pitch":
+                    # Presets hold native values; the slider shows its scale.
+                    value = _pitch_level(value)
                 if name is not None:
                     setattr(self, "_" + name, value)
 
@@ -668,7 +700,39 @@ class SynthDriver(BaseSynthDriver):
         return self._pitch
 
     def _set_pitch(self, value):
-        self._set_setting("pitch", NATIVE_PITCH, value)
+        if not isinstance(value, int) or isinstance(value, bool) or not 0 <= value <= 100:
+            raise ValueError("pitch must be from 0 to 100")
+        self._set_setting("pitch", NATIVE_PITCH, value, _native_pitch(value))
+
+    def _migrate_pitch_scale(self, section):
+        """Convert a preset pitch saved by 1.2.0 or older, once.
+
+        Older versions sent the slider value unchanged as the native pitch,
+        and a selected preset stored its native baseline (Reed 65) as the
+        slider value. Such a value is read once as the preset's own pitch so
+        the voice sounds as before. A marker in NVDA's configuration folder
+        prevents a later deliberate slider value from being converted again.
+        """
+        try:
+            import globalVars
+            marker = Path(globalVars.appArgs.configPath) / "reloqCPitchScale.json"
+            if marker.exists():
+                return
+            saved = section.get("pitch", None)
+            voice = section.get("voice", None)
+            try:
+                preset = dict(self._languages[self._selectedLanguage].voice(
+                    None if voice is None else str(voice)).parameters).get(NATIVE_PITCH)
+                saved = None if saved is None else int(saved)
+            except (TypeError, ValueError):
+                preset = saved = None
+            if saved is not None and saved != 50 and saved == preset:
+                section["pitch"] = _pitch_level(saved)
+                log.info("Eloquence C converted saved pitch %d to slider value %d", saved, _pitch_level(saved))
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(json.dumps({"pitchScale": 2}), encoding="utf-8")
+        except Exception as error:  # never block loading the synthesizer
+            log.warning("Eloquence C could not check the saved pitch scale: %s", error)
 
     def _get_volume(self):
         return self._volume

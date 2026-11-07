@@ -1,5 +1,9 @@
 # Eloquence C – user guide
 
+## Version 1.2.1
+
+Pitch 50 is now Eloquence's normal pitch, the pitch of the Reed voice, on the NVDA pitch slider, in the SAPI5 settings and in Android's manual pitch. Before, 50 was lower. 0 and 100 are still the lowest and highest pitch. A pitch saved by selecting a voice keeps its sound.
+
 ## Version 1.2.0
 
 Greek pronunciation and sentence melody have been refined. The first utterance waits for the selected dictionaries, speech volume and SAPI responsiveness have been improved, and a full stop after a single letter can end an English sentence. Mellow mode and original question intonation are available as optional settings.
@@ -68,7 +72,7 @@ The voice presets are **Reed, Shelly, Bobby, Rocko, Glen, Sandy, Grandma and Gra
 These controls are in NVDA's Speech settings:
 
 - **Rate and rate boost:** reading speed and its extended range.
-- **Pitch, inflection and volume:** base pitch, sentence melody range and output level.
+- **Pitch, inflection and volume:** base pitch, sentence melody range and output level. Pitch 50 is the normal pitch of the Reed voice (native 65).
 - **Head size:** resonance and voice character.
 - **Roughness and breathiness:** additional voice-source characteristics.
 - **Sample rate:** 8, 11.025, 16, 22.05, 32, 44.1 or 48 kHz; the default is 11.025 kHz. Higher rates extend the frequency range and use more CPU. If speech stutters, compare with 11.025 or 22.05 kHz to help identify the cause.

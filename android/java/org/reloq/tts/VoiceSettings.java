@@ -30,6 +30,20 @@ final class VoiceSettings {
         if(low>40 && Math.abs(Math.log(timeScale(low-1)/wanted))<Math.abs(Math.log(timeScale(low)/wanted)))--low;
         return low;
     }
+    /* The manual pitch slider uses the NVDA and SAPI5 scale: 50 is native
+     * 65, the baseline of the default Reed voice. 0..50 covers native 0..65
+     * and 50..100 covers native 65..100. Preferences keep native values. */
+    static final int PITCH_MIDDLE=65;
+    static int pitchNative(int level) {
+        level=bounded(level,0,100);
+        return level<=50?(level*PITCH_MIDDLE+25)/50:PITCH_MIDDLE+((level-50)*(100-PITCH_MIDDLE)+25)/50;
+    }
+    static int pitchLevel(int nativePitch) {
+        nativePitch=bounded(nativePitch,0,100);
+        int span=100-PITCH_MIDDLE;
+        return nativePitch<=PITCH_MIDDLE?(nativePitch*50+PITCH_MIDDLE/2)/PITCH_MIDDLE:
+            50+((nativePitch-PITCH_MIDDLE)*50+span/2)/span;
+    }
     static double pitchHz(int value) { return 35.11023877+4.889761232*Math.pow(2,.06306456*value); }
     static int androidPitch(int base,int percent) {
         double desired=pitchHz(base)*Math.max(1,percent)/100;

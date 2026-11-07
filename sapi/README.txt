@@ -1,4 +1,4 @@
-ReLoq C 1.2.0 — unified SAPI5 Windows installer
+ReLoq C 1.2.1 — unified SAPI5 Windows installer
 
 Installation
 ------------
@@ -45,6 +45,9 @@ Eloquence synthesis rate. Legacy rate migration uses
 the saved German rate, then US English, then the first configured language.
 The default is 11,025 Hz. Reset preserves the common sample rate.
 
+Base pitch uses the same 0–100 scale as the NVDA pitch slider and Android:
+50 is native pitch 65, the normal pitch of the Reed profile. 0 and 100 remain
+the lowest and highest pitch. Saved settings are kept unchanged.
 Eight profiles, male/female model, head size, pitch, inflection, roughness,
 breathiness, seven rates, pause shortening, speed boost, ECI tags, abbreviations,
 phrase prediction and dictionaries are available. SAPI controls speed and

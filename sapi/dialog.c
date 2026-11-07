@@ -2,6 +2,7 @@
  * Every valid change commits immediately to this user's language settings. */
 #include "settings.h"
 #include "dictionary_diff.h"
+#include "pitch_scale.h"
 #include <commctrl.h>
 #include <shellapi.h>
 #include <stdio.h>
@@ -78,7 +79,7 @@ static void populate(HWND window,struct dialog *d)
     SendDlgItemMessageW(window,RATE,CB_SETCURSEL,d->s.rate,0);
     SendDlgItemMessageW(window,PAUSES,CB_SETCURSEL,d->s.pauses,0);
     SendDlgItemMessageW(window,DICT_SOURCE,CB_SETCURSEL,sapi_dictionary_source(),0);
-    const DWORD values[]={d->s.pitch,d->s.inflection,d->s.head,d->s.roughness,d->s.breathiness};
+    const DWORD values[]={sapi_pitch_level(d->s.pitch),d->s.inflection,d->s.head,d->s.roughness,d->s.breathiness};
     for(int i=0;i<5;++i)SetDlgItemInt(window,PITCH+i,values[i],FALSE);
     const DWORD checks[]={d->s.tags,d->s.abbreviations,d->s.prediction,d->s.dictionaries,d->s.boost};
     for(int i=0;i<5;++i)CheckDlgButton(window,TAGS+i,checks[i]?BST_CHECKED:BST_UNCHECKED);
@@ -182,6 +183,11 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
     }
     if(notification==EN_CHANGE&&id>=PITCH&&id<=BREATH){BOOL translated=FALSE;UINT value=GetDlgItemInt(w,id,&translated,FALSE);
         if(!translated||value>100)return TRUE;
+        if(id==PITCH){
+            /* The field shows the slider scale; keep an equivalent stored
+             * native value unchanged so rounding never moves it. */
+            if(value!=sapi_pitch_level(d->s.pitch)){d->s.pitch=sapi_pitch_native_value(value);persist(w,d);}
+            return TRUE;}
         DWORD *fields[]={&d->s.pitch,&d->s.inflection,&d->s.head,&d->s.roughness,&d->s.breathiness};
         *fields[id-PITCH]=value;persist(w,d);return TRUE;}
     if(notification==BN_CLICKED&&id>=TAGS&&id<=BOOST){DWORD *fields[]={&d->s.tags,&d->s.abbreviations,&d->s.prediction,&d->s.dictionaries,&d->s.boost};

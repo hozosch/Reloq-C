@@ -399,7 +399,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         driver_module.EciLanguage(0x40000, "1"), driver_module.EciText("Wieder deutsch.")]
                 until(lambda: len(Engine.instances) == 1)
                 until(lambda: len(Engine.instances[0].parameters) == 16)
-                assert Engine.instances[0].parameters == list(german.voices[0].parameters) + [(0x1007, 98), (0x1008, 50),
+                assert Engine.instances[0].parameters == list(german.voices[0].parameters) + [(0x1007, 98), (0x1008, 65),
                                                           (0x1009, 30),
                                                           (0x100a, 100), (0x100d, 50), (0x100e, 0), (0x100f, 0), (0x1015, 0), (0x1016, 0)]
                 driver._set_rate(70)
@@ -414,10 +414,10 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                               "Kippte.", IndexCommand(13)])
                 until(lambda: len(players[0].buffers) == 2)
                 worker = Engine.instances[0]
-                assert worker.parameters == list(german.voices[0].parameters) + [(0x1007, 98), (0x1008, 50),
+                assert worker.parameters == list(german.voices[0].parameters) + [(0x1007, 98), (0x1008, 65),
                                              (0x1009, 30), (0x100a, 100),
                                              (0x100d, 50), (0x100e, 0), (0x100f, 0), (0x1015, 0), (0x1016, 0),
-                                             (0x1007, 121), (0x1008, 65),
+                                             (0x1007, 121), (0x1008, 76),
                                              (0x1009, 75),
                                              (0x100a, 85)]
                 assert driver._get_rate() == 70
@@ -460,8 +460,8 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                     PitchCommand(multiplier=1.4), CharacterModeCommand(True), "A",
                     CharacterModeCommand(False), PitchCommand(), "b",
                     IndexCommand(4)], base_pitch=65) == [
-                        driver_module.EciPitch(91), driver_module.EciText("A", True),
-                        driver_module.EciPitch(65), driver_module.EciText(" b"),
+                        driver_module.EciPitch(94), driver_module.EciText("A", True),
+                        driver_module.EciPitch(76), driver_module.EciText(" b"),
                         driver_module.EciIndex(4)]
                 assert driver_module._parts([
                     CharacterModeCommand(True), "ABC123", "e\u0308ß",
@@ -475,18 +475,34 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert driver_module._parts([
                     CharacterModeCommand(True), "CD", PitchCommand(multiplier=1.4),
                     "LM", PitchCommand(), CharacterModeCommand(False),
-                    " normal"]) == [driver_module.EciText("CD", True), driver_module.EciPitch(70),
-                                   driver_module.EciText(" "), driver_module.EciText("LM", True), driver_module.EciPitch(50), driver_module.EciText(" normal")]
+                    " normal"]) == [driver_module.EciText("CD", True), driver_module.EciPitch(79),
+                                   driver_module.EciText(" "), driver_module.EciText("LM", True), driver_module.EciPitch(65), driver_module.EciText(" normal")]
                 assert driver_module._parts([PitchCommand(offset=30), "A"], base_pitch=0) == [
-                    driver_module.EciPitch(30), driver_module.EciText("A")]
+                    driver_module.EciPitch(39), driver_module.EciText("A")]
+                # The pitch slider's middle is the Reed baseline, native 65.
+                assert [driver_module._native_pitch(level) for level in (0, 25, 50, 75, 100)] == [0, 33, 65, 83, 100]
+                assert all(driver_module._native_pitch(driver_module._pitch_level(native)) == native
+                           for native in range(65, 101)), "a native pitch above the middle is unreachable"
+                assert all(driver_module._native_pitch(level) <= driver_module._native_pitch(level + 1)
+                           for level in range(100))
+                for preset in german.voices:
+                    native = dict(preset.parameters)[driver_module.NATIVE_PITCH]
+                    assert driver_module._native_pitch(driver_module._pitch_level(native)) == native, preset.name
+                for invalid in (-1, 101, 50.0, True):
+                    try:
+                        driver_module._native_pitch(invalid)
+                    except ValueError:
+                        pass
+                    else:
+                        raise AssertionError(f"accepted pitch {invalid!r}")
                 driver.speak([PitchCommand(multiplier=1.4), CharacterModeCommand(True),
                               "A", CharacterModeCommand(False),
                               PitchCommand(), "b", IndexCommand(4)])
                 until(lambda: len(worker.parts) == 3 and
                       len(players[0].buffers) == 4)
                 assert worker.parts[2] == (
-                    driver_module.EciPitch(91), driver_module.EciText("A", True),
-                    driver_module.EciPitch(65), driver_module.EciText(" b"),
+                    driver_module.EciPitch(94), driver_module.EciText("A", True),
+                    driver_module.EciPitch(76), driver_module.EciText(" b"),
                     driver_module.EciIndex(4))
                 players[0].play_one()
                 until(lambda: notifications and notifications[-1][0] == "done")
@@ -593,7 +609,8 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 driver_module._parts = normal_parts
                 driver.voice = "2"
                 assert driver.headSize == 50 and driver.breathiness == 50
-                assert driver.pitch == 81 and driver.inflection == 30
+                assert driver.pitch == 73 and driver.inflection == 30, "Shelly's native 81 is slider 73"
+                until(lambda: dict(worker.parameters).get(0x1008) == 81)
                 female_worker = worker
                 until(lambda: dict(female_worker.parameters).get(0x1010) == 1)
                 assert len(Engine.instances) == 1, "voice preset duplicated the language core"
@@ -607,6 +624,24 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 driver.breathiness = 0
                 driver.loadSettings()
                 assert (driver.headSize, driver.roughness, driver.breathiness) == (22, 27, 61)
+                # 1.2.0 and older saved a preset's native pitch as the slider
+                # value. The first full load converts it once, then never again.
+                marker = path / "profile" / "reloqCPitchScale.json"
+                assert marker.exists()
+                marker.unlink()
+                speech_config[driver.name]["pitch"] = 81
+                driver.loadSettings()
+                assert driver.pitch == 73 and speech_config[driver.name]["pitch"] == 73 and marker.exists()
+                until(lambda: dict(female_worker.parameters).get(0x1008) == 81)
+                speech_config[driver.name]["pitch"] = 81
+                driver.loadSettings()
+                assert driver.pitch == 81, "a deliberate slider value was converted twice"
+                until(lambda: dict(female_worker.parameters).get(0x1008) == 87)
+                marker.unlink()
+                speech_config[driver.name]["pitch"] = 60
+                driver.loadSettings()
+                assert driver.pitch == 60 and marker.exists(), "a custom pitch must stay on the slider"
+                driver.pitch = 73
                 driver.voice = "1"
                 assert driver.headSize == 50 and driver.breathiness == 0
                 until(lambda: dict(worker.parameters).get(0x1010) == 0)
@@ -616,7 +651,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 driver.headSize = 54
                 driver.roughness = 12
                 driver.breathiness = 17
-                snapshot = ((0x1008,43),(0x1009,71),(0x100a,78),
+                snapshot = ((0x1008,56),(0x1009,71),(0x100a,78),
                             (0x100d,54),(0x100e,12),(0x100f,17))
                 for locale, language in (("en_US",65536),("pt_BR",458752),("fi_FI",589824),("de_DE",262144),("en_US",65536),("de_DE",262144)):
                     driver.language = locale

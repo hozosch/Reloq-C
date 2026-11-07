@@ -1,12 +1,12 @@
 # Android ARM64
 
 ReLoq C uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `1.2.0` targets ARM64 (`arm64-v8a`), Android 8/API 26
+add-on. Version `1.2.1` targets ARM64 (`arm64-v8a`), Android 8/API 26
 or later. Speech runs offline. Network access is used only when you explicitly update pronunciation dictionaries or check for an app update. Package downloads open in the browser.
 
 ## Install or update
 
-Install `reloq-c-android-arm64-1.2.0.apk` from GitHub Releases. This build
+Install `reloq-c-android-arm64-1.2.1.apk` from GitHub Releases. This build
 is named **ReLoq C** and uses the app identity `org.reloq.tts`. The published 1.1 uses an earlier identity, so Android installs this version alongside that app. Installations already using `org.reloq.tts` update in place. Select the new app in
 Android's text-to-speech settings and set up voices and dictionaries again.
 Keep the old app installed until you have copied any information you need
@@ -187,7 +187,7 @@ The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 ```sh
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
-python3 android/verify_apk.py dist/reloq-c-android-arm64-1.2.0.apk
+python3 android/verify_apk.py dist/reloq-c-android-arm64-1.2.1.apk
 ```
 
 Build verification checks signatures, the install-critical resource table,

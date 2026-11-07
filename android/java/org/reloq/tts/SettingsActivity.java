@@ -106,7 +106,7 @@ public final class SettingsActivity extends Activity {
         androidRate.setOnCheckedChangeListener((button,checked) -> {speed.enabled(!checked);changed();});
         boost=check(R.string.rate_boost,settings.rateBoost);
         androidPitch=check(R.string.android_pitch,settings.androidPitch);
-        pitch=new Numeric(R.string.pitch,settings.manualPitch);pitch.enabled(!settings.androidPitch);
+        pitch=new Numeric(R.string.pitch,VoiceSettings.pitchLevel(settings.manualPitch));pitch.enabled(!settings.androidPitch);
         androidPitch.setOnCheckedChangeListener((button,checked) -> {pitch.enabled(!checked);changed();});
         inflection=new Numeric(R.string.inflection,settings.inflection);
         volume=new Numeric(R.string.volume,settings.volume);
@@ -173,7 +173,7 @@ public final class SettingsActivity extends Activity {
     private void loadVoice(VoiceSettings s) {
         boolean previous=initializing;initializing=true;
         try {
-            pitch.set(s.manualPitch);inflection.set(s.inflection);volume.set(s.volume);
+            pitch.set(VoiceSettings.pitchLevel(s.manualPitch));inflection.set(s.inflection);volume.set(s.volume);
             models.setSelection(VoiceSettings.bounded(s.gender,0,1));head.set(s.head);
             roughness.set(s.roughness);breathiness.set(s.breathiness);
         } finally {initializing=previous;}
@@ -181,7 +181,11 @@ public final class SettingsActivity extends Activity {
     private void saveVoice() {
         VoiceSettings s=new VoiceSettings(loadedProfile);
         s.androidRate=androidRate.isChecked();s.androidPitch=androidPitch.isChecked();
-        s.manualWpm=speed.get();s.rateBoost=boost.isChecked();s.manualPitch=pitch.get();
+        s.manualWpm=speed.get();s.rateBoost=boost.isChecked();
+        // The slider shows the shared pitch scale. An unchanged position keeps
+        // the stored native value, so rounding never moves it.
+        int storedPitch=Preferences.read(preferences,loadedProfile).manualPitch;
+        s.manualPitch=pitch.get()==VoiceSettings.pitchLevel(storedPitch)?storedPitch:VoiceSettings.pitchNative(pitch.get());
         s.inflection=inflection.get();s.volume=volume.get();s.gender=models.getSelectedItemPosition();
         s.head=head.get();s.roughness=roughness.get();s.breathiness=breathiness.get();
         s.rate=rates==null?preferences.getInt("rate",1):rates.getSelectedItemPosition();

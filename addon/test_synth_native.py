@@ -148,7 +148,7 @@ def main():
                 for locale, (prefix, word, suffix) in cases.items():
                     driver.language = locale
                     driver.voice = "1"
-                    driver.pitch = 65
+                    driver.pitch = 50  # slider middle: Reed native 65
                     driver.rate = 50
                     driver.volume = 100
                     baseline = run([prefix + word + suffix])

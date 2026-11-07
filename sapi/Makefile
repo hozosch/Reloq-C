@@ -13,7 +13,7 @@ endif
 all: $(BUILD)/ReLoqSapi.dll $(BUILD)/ReLoqSettings.exe $(BUILD)/Test-SAPI.exe $(BUILD)/Test-Dictionary.exe
 $(BUILD):
 	mkdir -p $@
-$(BUILD)/ReLoqSapi.dll: $(SOURCES) sapi_ddk.h settings.h speed.h pitch.h format.h dictionary_diff.h catalogue.inc ui.inc | $(BUILD)
+$(BUILD)/ReLoqSapi.dll: $(SOURCES) sapi_ddk.h settings.h speed.h pitch.h pitch_scale.h format.h dictionary_diff.h catalogue.inc ui.inc | $(BUILD)
 	$(CC) $(CFLAGS) -shared $(SOURCES) $(LDFLAGS) $(LIBS) -o $@
 $(BUILD)/ReLoqSettings.exe: settings_main.c | $(BUILD)
 	$(CC) $(CFLAGS) -municode -mwindows $< $(LDFLAGS) -luser32 -o $@

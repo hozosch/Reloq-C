@@ -131,14 +131,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download v1.1.3 --repo "$env:GITHUB_REPOSITORY" --pattern 'reloq-c-sapi5-1.1.3-setup.exe' --dir previous-sapi
+          gh release download v1.2.0 --repo hozosch/Reloq-C --pattern 'reloq-c-sapi5-1.2.0-setup.exe' --dir previous-sapi
           if ($LASTEXITCODE -ne 0) { throw 'Previous SAPI installer could not be downloaded' }
       - name: Install, upgrade, test SAPI in RAM, and uninstall
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist/validation | Out-Null
           $setup = (Get-ChildItem dist/reloq-c-sapi5-*-setup.exe | Sort-Object LastWriteTime | Select-Object -Last 1).FullName
-          $previousSetup = (Get-Item previous-sapi/reloq-c-sapi5-1.1.3-setup.exe).FullName
+          $previousSetup = (Get-Item previous-sapi/reloq-c-sapi5-1.2.0-setup.exe).FullName
           $install = Join-Path $env:ProgramFiles 'ReLoq C\SAPI5'
           $group = Join-Path ([Environment]::GetFolderPath('CommonPrograms')) 'ReLoq C SAPI5'
           function Test-StartLinks($settingsName, $guideName) {
@@ -168,7 +168,7 @@ jobs:
           if ($p.ExitCode -ne 0) { throw "Upgrade failed: $($p.ExitCode)" }
           Test-StartLinks 'Stimmeinstellungen' 'Anleitung'
           $registered = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D3F8BA6E-1C62-4B0D-8A33-3840B77376AC}_is1'
-          if ($registered.DisplayName -ne 'ReLoq C SAPI5' -or $registered.DisplayVersion -ne '1.2.0') { throw 'SAPI application name or version metadata is incorrect' }
+          if ($registered.DisplayName -ne 'ReLoq C SAPI5' -or $registered.DisplayVersion -ne '1.2.1') { throw 'SAPI application name or version metadata is incorrect' }
           if ((Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'Dictionary edit lost during upgrade' }
           & ./sapi/test_japanese_sapi.ps1 -ReportPath dist/validation/japanese-results.json
           foreach ($arch in @('x64','x86')) {

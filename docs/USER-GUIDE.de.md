@@ -1,5 +1,9 @@
 # Eloquence C – Bedienungsanleitung
 
+## Version 1.2.1
+
+Stimmhöhe 50 ist jetzt die normale Eloquence-Stimmhöhe der Stimme Reed, beim NVDA-Regler, in den SAPI5-Einstellungen und bei der manuellen Stimmhöhe unter Android. Bisher war 50 tiefer. 0 und 100 bleiben die tiefste und höchste Stimmhöhe. Eine durch die Stimmauswahl gespeicherte Stimmhöhe klingt wie bisher.
+
 ## Version 1.2.0
 
 Die griechische Aussprache und Satzmelodie wurden verbessert. Die erste Sprachausgabe wartet auf die ausgewählten Wörterbücher, Lautstärke und SAPI-Reaktion wurden verbessert und ein Punkt nach einem einzelnen Buchstaben kann einen englischen Satz beenden. Der weiche Modus und die ursprüngliche Frageintonation sind als Optionen verfügbar.
@@ -68,7 +72,7 @@ Die Stimmprofile heißen **Reed, Shelly, Bobby, Rocko, Glen, Sandy, Grandma und 
 Die folgenden Optionen befinden sich in den Sprachausgaben-Einstellungen:
 
 - **Geschwindigkeit und Sprachgeschwindigkeit anheben:** Lesetempo und erweiterter Geschwindigkeitsbereich.
-- **Stimmhöhe, Betonung und Lautstärke:** Grundtonhöhe, Umfang der Sprachmelodie und Wiedergabepegel.
+- **Stimmhöhe, Betonung und Lautstärke:** Grundtonhöhe, Umfang der Sprachmelodie und Wiedergabepegel. Stimmhöhe 50 ist die normale Stimmhöhe der Stimme Reed (nativ 65).
 - **Kopfgröße:** verändert die Resonanzen und damit den Stimmcharakter.
 - **Rauigkeit und Behauchtheit:** zusätzliche Eigenschaften der Stimmquelle.
 - **Abtastrate:** 8, 11,025, 16, 22,05, 32, 44,1 oder 48 kHz. Voreingestellt sind 11,025 kHz. Höhere Raten erweitern die Klangbandbreite und benötigen mehr Rechenleistung. Bei Aussetzern hilft zum Eingrenzen ein Vergleich mit 11,025 oder 22,05 kHz.

@@ -136,7 +136,7 @@ jobs:
       - name: Download the preceding APK for upgrade verification
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release download --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-android-arm64-*.apk' --dir previous
+        run: gh release download v1.2.0 --repo hozosch/Reloq-C --pattern 'reloq-c-android-arm64-*.apk' --dir previous
       - name: Build and verify ARM64 APK
         run: |
           previous_apk=(previous/*.apk)
@@ -187,12 +187,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download v1.1.3 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-1.1.3.nvda-addon' --dir previous-addon
-          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.1.3.nvda-addon --candidate dist/reloq-c-synth-x64-1.2.0.nvda-addon
+          gh release download v1.2.0 --repo hozosch/Reloq-C --pattern 'reloq-c-synth-x64-1.2.0.nvda-addon' --dir previous-addon
+          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.2.0.nvda-addon --candidate dist/reloq-c-synth-x64-1.2.1.nvda-addon
       - name: Verify NVDA driver and offline dictionary startup
         run: |
           for language in en de; do
-            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.2.0.nvda-addon"))' "$language"
+            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.2.1.nvda-addon"))' "$language"
           done
       - uses: actions/upload-artifact@v4
         with:
