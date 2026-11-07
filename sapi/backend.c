@@ -108,7 +108,7 @@ static int ECICALL callback(ECIHand handle,int message,int value,void *context)
 struct output {
     struct sapi_backend *backend;ISpTTSEngineSite *site;
     ULONGLONG offset;USHORT volume;ULONG fragment_volume;DWORD rate;
-    short pending[4096];size_t count;HRESULT result;
+    short pending[8192];size_t count;HRESULT result;
 };
 static int output_actions(struct output *o)
 {
@@ -142,14 +142,14 @@ static int output_pcm(struct output *o,const short *pcm,size_t samples,ULONG fra
     if(!output_actions(o))return 0;
     o->fragment_volume=fragment_volume;
     while(samples){
-        /* SAPI consumers such as NVDA wait for an initial 50 ms before
-         * feeding the device. Deliver that reserve in one synchronous
-         * Write instead of crossing COM once per short native frame. The
-         * subsequent 20-ms batches bound cancellation and keep streaming. */
-        size_t initial=((size_t)o->rate+19)/20;
+        /* SAPI consumers such as NVDA wait for at least 50 ms of converted
+         * output. A nominal 50-ms input write may produce just under that
+         * amount after sample-rate conversion. Like original eSpeak SAPI,
+         * send about 100 ms first, then continue with small 20-ms batches. */
+        size_t initial=((size_t)o->rate+9)/10;
         size_t already=(size_t)(o->offset/2);
         size_t target=already<initial?initial-already:((size_t)o->rate+49)/50;
-        if(!target)target=1;if(target>4096)target=4096;
+        if(!target)target=1;if(target>8192)target=8192;
         size_t room=target>o->count?target-o->count:0;
         if(!room){if(!output_flush(o))return 0;continue;}
         size_t n=samples<room?samples:room;

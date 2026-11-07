@@ -15,10 +15,15 @@ jobs:
           persist-credentials: false
       - run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends gcc-mingw-w64-i686-posix
       - run: i686-w64-mingw32-gcc -std=c11 -Os -Wall -Wextra -Werror -Wno-misleading-indentation -municode -DUNICODE -D_UNICODE -I sapi -I include sapi/test_latency_windows.c sapi/guids.c -static-libgcc -lole32 -luuid -ladvapi32 -lcomctl32 -lshell32 -lgdi32 -lwinhttp -lm -o latency.exe
+      - name: Build adapter with longer initial buffer
+        run: |
+          make -C sapi ARCH=x86 build/x86/ReLoqSapi.dll
+          mkdir -p diagnostic
+          cp latency.exe sapi/build/x86/ReLoqSapi.dll diagnostic/
       - uses: actions/upload-artifact@v4
         with:
           name: latency-test
-          path: latency.exe
+          path: diagnostic/*
   compare:
     runs-on: windows-latest
     timeout-minutes: 8
@@ -61,3 +66,9 @@ jobs:
             & ./diagnostic/latency.exe $token
             if($LASTEXITCODE -ne 0){throw "Failed timing $token exit $LASTEXITCODE"}
           }
+          Copy-Item diagnostic/ReLoqSapi.dll test/ReLoqSapi.dll -Force
+          $reg=Start-Process "$env:windir/SysWOW64/regsvr32.exe" -ArgumentList '/s', (Resolve-Path test/ReLoqSapi.dll).Path -Wait -PassThru
+          if($reg.ExitCode -ne 0){throw 'Modified ReLoq registration failed'}
+          Write-Host 'Comparing ReLoq 100ms initial block'
+          & ./diagnostic/latency.exe $tokens[1]
+          if($LASTEXITCODE -ne 0){throw "Failed modified timing exit $LASTEXITCODE"}
