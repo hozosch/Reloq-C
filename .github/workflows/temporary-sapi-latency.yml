@@ -1,0 +1,63 @@
+name: Temporary original eSpeak SAPI comparison
+on:
+  push:
+    branches: [codex/sapi-latency-compare-20261107]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends gcc-mingw-w64-i686-posix
+      - run: i686-w64-mingw32-gcc -std=c11 -Os -Wall -Wextra -Werror -Wno-misleading-indentation -municode -DUNICODE -D_UNICODE -I sapi -I include sapi/test_latency_windows.c sapi/guids.c -static-libgcc -lole32 -luuid -ladvapi32 -lcomctl32 -lshell32 -lgdi32 -lwinhttp -lm -o latency.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: latency-test
+          path: latency.exe
+  compare:
+    runs-on: windows-latest
+    timeout-minutes: 8
+    needs: build
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 42373845198
+          github-token: ${{ github.token }}
+          name: sapi-native-x86
+          path: payload
+      - uses: actions/download-artifact@v4
+        with:
+          name: latency-test
+          path: diagnostic
+      - name: Install original eSpeak 1.48.04
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          curl.exe -fL --retry 3 --connect-timeout 20 --max-time 120 -o setup-espeak.exe 'https://downloads.sourceforge.net/project/espeak/espeak/espeak-1.48/setup_espeak-1.48.04.exe'
+          if ($LASTEXITCODE -ne 0) { throw 'Original eSpeak download failed' }
+          $p=Start-Process ./setup-espeak.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-' -Wait -PassThru
+          if($p.ExitCode -ne 0){throw "eSpeak installer exited $($p.ExitCode)"}
+      - name: Register ReLoq and compare actual SAPI delivery
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Expand-Archive (Get-ChildItem payload/*.zip | Select-Object -First 1).FullName -DestinationPath test
+          $reg=Start-Process "$env:windir/SysWOW64/regsvr32.exe" -ArgumentList '/s', (Resolve-Path test/ReLoqSapi.dll).Path -Wait -PassThru
+          if($reg.ExitCode -ne 0){throw 'ReLoq registration failed'}
+          $base=[Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,[Microsoft.Win32.RegistryView]::Registry32)
+          $key=$base.OpenSubKey('Software\Microsoft\Speech\Voices\Tokens\eSpeak',$true)
+          if(!$key){throw 'Original eSpeak token missing'}
+          $key.SetValue('VoiceName','de');$key.Close();$base.Close()
+          New-Item -Path 'HKCU:\Software\ReLoq C\SAPI5' -Force | Out-Null
+          New-ItemProperty -Path 'HKCU:\Software\ReLoq C\SAPI5' -Name OutputRate -PropertyType DWord -Value 2 -Force | Out-Null
+          $tokens=@('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\eSpeak','HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\ReLoqC_01_00040000')
+          foreach($token in $tokens){
+            Write-Host "Comparing $token"
+            & ./diagnostic/latency.exe $token
+            if($LASTEXITCODE -ne 0){throw "Failed timing $token exit $LASTEXITCODE"}
+          }
