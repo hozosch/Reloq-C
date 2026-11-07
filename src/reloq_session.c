@@ -76,6 +76,8 @@ struct reloq_session {
     int text_loudness;
     float linear_gain;
     double text_peak_gain;
+    unsigned text_quiet_samples;
+    int text_started;
 };
 
 float reloq_session_sample_rate(const struct reloq_session *s)
@@ -178,12 +180,12 @@ static int output_pcm(struct reloq_session *session, size_t count)
          * must measure before this knee. */
 #ifndef RELOQ_SESSION_FLOAT_DIAGNOSTIC
         if(session->text_loudness) {
-            /* Short source onsets can be conspicuous without reaching the
-             * PCM rails. A continuous knee and an 8 ms gain recovery tame
-             * them before PCM conversion without an extra audio buffer. */
-            const double recovery=-expm1(-1.0/(session->config.sample_rate*.008));
+            /* Smooth the high-rate headroom before PCM conversion without
+             * buffering another audio block or delaying the first sample. */
+            const int wide=session->config.sample_rate>=22050;
+            const double recovery=-expm1(-1.0/(session->config.sample_rate*(wide?.030:.008)));
             float *anticipated=session->buffers.scratch+at;
-            if(session->config.sample_rate>=22050) {
+            if(wide) {
                 /* The whole native frame has already been synthesized.
                  * Anticipate peaks within that frame, easing the gain down
                  * before the peak rather than changing it abruptly on a
@@ -206,13 +208,27 @@ static int output_pcm(struct reloq_session *session, size_t count)
             for(size_t i=0;i<n;++i) {
                 double amplitude=fabs((double)block[i]);
                 double desired=1;
-                if(session->config.sample_rate>=22050)desired=anticipated[i];
+                if(wide)desired=anticipated[i];
                 else if(amplitude>22000) {
                     double bounded=22000-6000*expm1(-(amplitude-22000)/6000);
                     desired=bounded/amplitude;
                 }
+                if(wide) {
+                    /* An onset can peak just after a frame boundary. Keep
+                     * short, inaudible silence at the same headroom as the
+                     * start of a new utterance; release it only once sound
+                     * begins, over 30 ms. */
+                    if(amplitude<64) {
+                        unsigned limit=(unsigned)(session->config.sample_rate*.020f);
+                        if(session->text_quiet_samples<limit)++session->text_quiet_samples;
+                        if(session->text_quiet_samples>=limit) {
+                            session->text_started=0;
+                            if(session->text_peak_gain>.82)session->text_peak_gain=.82;
+                        }
+                    } else {session->text_quiet_samples=0;session->text_started=1;}
+                }
                 if(desired<session->text_peak_gain)session->text_peak_gain=desired;
-                else {
+                else if(!wide||session->text_started) {
                     session->text_peak_gain+=(1-session->text_peak_gain)*recovery;
                     if(session->text_peak_gain>desired)session->text_peak_gain=desired;
                 }
@@ -326,7 +342,9 @@ int reloq_session_reset(struct reloq_session *session)
             c->sample_rate>=44100?.36666667f:c->sample_rate>=32000?.26666667f:
             c->sample_rate>=22050?.15f:0;
     session->linear_gain=1;
-    session->text_peak_gain=1;
+    session->text_peak_gain=c->sample_rate>=22050?.82:1;
+    session->text_quiet_samples=0;
+    session->text_started=0;
     next.noise_transfer.trial_profile=classic;
     session->frame_state = next;
     epoch_store(&session->active_epoch, generation);
