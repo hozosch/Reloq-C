@@ -65,10 +65,11 @@ jobs:
           name: dictionary-snapshot
           path: data/community
       - name: Build the shared native engine and acoustic rule tests
-        run: make -C eci -j2 libreloq_eci.so test_reloq_native_rules PROVIDER_LTO=-flto=2
+        run: make -C eci -j2 libreloq_eci.so test_reloq_native_rules test_reloq_text_peaks PROVIDER_LTO=-flto=2
       - name: Check number, pitch, pause, source-index and multilingual behavior
         run: |
           ./eci/test_reloq_native_rules
+          ./eci/test_reloq_text_peaks
           python3 -B tests/test_replace_release.py
           python3 -B tests/test_release_dictionaries.py
           python3 -B tools/test_native_text_input.py
