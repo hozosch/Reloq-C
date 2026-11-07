@@ -60,7 +60,7 @@ public class Context {
  public static final String ACTION_MY_PACKAGE_REPLACED="android.intent.action.MY_PACKAGE_REPLACED";
  private String action; public Intent(String a){action=a;} public String getAction(){return action;} }""",
 "android/media/AudioFormat.java": "package android.media; public class AudioFormat { public static final int ENCODING_PCM_16BIT=2; }",
-"android/util/Log.java": "package android.util; public class Log { public static int e(String a,String b,Throwable c){throw new AssertionError(b,c);} }",
+"android/util/Log.java": "package android.util; public class Log { public static int e(String a,String b,Throwable c){return 0;} }",
 "android/speech/tts/TextToSpeech.java": """package android.speech.tts; public class TextToSpeech {
  public static final int SUCCESS=0, ERROR=-1, ERROR_INVALID_REQUEST=-8, ERROR_SYNTHESIS=-3, ERROR_SERVICE=-4,
  LANG_NOT_SUPPORTED=-2, LANG_COUNTRY_AVAILABLE=1, LANG_AVAILABLE=0; }""",
@@ -82,8 +82,10 @@ public abstract class TextToSpeechService extends android.content.Context {
  protected abstract void onStop(); }""",
 "org/reloq/tts/DictionaryStore.java": """package org.reloq.tts; import android.content.Context;
 final class DictionaryStore { static int starts,stops,acquires,closes;static java.util.concurrent.Executor WORK=Runnable::run;
+ static java.util.concurrent.CompletableFuture<Void> startup=java.util.concurrent.CompletableFuture.completedFuture(null);
  static void syncBoot(Context c) throws Exception {BootDictionaries.publish(c,BootDictionaries.prepare(c,Context.ce.getString("dictionarySnapshot",null)));}
- static void start(Context c){if(Context.locked)throw new AssertionError();++starts;try{syncBoot(c);}catch(Exception e){throw new RuntimeException(e);}}
+ static java.util.concurrent.Future<?> start(Context c){if(Context.locked)throw new AssertionError();++starts;try{syncBoot(c);}catch(Exception e){throw new RuntimeException(e);}return startup;}
+ static java.util.concurrent.Future<?> retryStartup(Context c){return startup;}
  static void stop(){++stops;} static Lease acquire(Context c){if(Context.locked)throw new AssertionError();++acquires;return new Lease(Context.ce.getString("dictionarySnapshot",null));}
  static class Lease { final String path;Lease(String p){path=p;} void close(){++closes;} } }""",
 "org/reloq/tts/NativeEngine.java": """package org.reloq.tts;
@@ -92,7 +94,7 @@ final class NativeEngine { static int created,synthesized;static int[] controls;
  static boolean synthesize(long c,int d,int[] v,byte[] t,PcmQueue q){++synthesized;controls=v;return q.write(new byte[]{1,2,3,4});}
  static void stop(long c,PcmQueue q){} static void destroy(long c){} }""",
 "org/reloq/tts/DirectBootTest.java": """package org.reloq.tts;
-import android.content.*;import android.speech.tts.*;import java.io.*;import java.nio.file.*;
+import android.content.*;import android.speech.tts.*;import java.io.*;import java.nio.file.*;import java.util.concurrent.*;
 public class DirectBootTest {
  static void check(boolean b){if(!b)throw new AssertionError();}
  static void speak(ReLoqService s){SynthesisCallback c=new SynthesisCallback();s.onSynthesizeText(new SynthesisRequest(),c);
@@ -121,7 +123,13 @@ public class DirectBootTest {
   File preparedFile=new File(new Context().createDeviceProtectedStorageContext().getFilesDir(),"speech-dictionaries/"+prepared+"/ready");
   check(preparedFile.isFile());BootDictionaries.publish(new Context(),prepared);
   check(new File(oldPath).isDirectory());old.close();check(!new File(oldPath).exists());
-  Context.ce.data.put("dictionarySnapshot",second.getAbsolutePath());speak(s);
+  Context.ce.data.put("dictionarySnapshot",second.getAbsolutePath());
+  DictionaryStore.startup=new CompletableFuture<>();
+  CountDownLatch entered=new CountDownLatch(1);
+  FutureTask<Void> firstSpeech=new FutureTask<>(() -> {entered.countDown();speak(s);return null;});
+  new Thread(firstSpeech).start();check(entered.await(2,TimeUnit.SECONDS));
+  Thread.sleep(100);check(NativeEngine.synthesized==1&&DictionaryStore.acquires==0);
+  DictionaryStore.startup.complete(null);firstSpeech.get(3,TimeUnit.SECONDS);
   check(NativeEngine.created==1&&NativeEngine.synthesized==2&&NativeEngine.controls[2]==62);
   check(second.getAbsolutePath().equals(NativeEngine.path));
   check(DictionaryStore.starts==1&&DictionaryStore.acquires==1&&DictionaryStore.closes==1);
@@ -132,7 +140,14 @@ public class DirectBootTest {
   check(NativeEngine.created==2&&NativeEngine.controls[2]==62&&NativeEngine.path!=null);
   check(Files.readString(new File(NativeEngine.path,"DEUmain.dic").toPath()).contains("Birnenwort"));
   check(DictionaryStore.starts==1&&DictionaryStore.acquires==1);next.onDestroy();check(DictionaryStore.stops==1);
-  Context.locked=false;Context.ce.data.remove("dictionarySnapshot");DictionaryStore.syncBoot(new Context());
+  Context.deDictionaries.data.put("active","f".repeat(64));
+  ReLoqService missing=new ReLoqService();missing.onCreate();
+  int beforeMissing=NativeEngine.synthesized;SynthesisCallback unavailable=new SynthesisCallback();
+  missing.onSynthesizeText(new SynthesisRequest(),unavailable);
+  check(unavailable.errors==1&&unavailable.done==1&&unavailable.bytes==0&&NativeEngine.synthesized==beforeMissing);
+  missing.onDestroy();
+  Context.locked=false;Context.ce.data.remove("dictionarySnapshot");Context.ce.data.remove("dictionarySources");
+  BootPreferences.refresh(new Context());DictionaryStore.syncBoot(new Context());
   Context.locked=true;ReLoqService disabled=new ReLoqService();disabled.onCreate();speak(disabled);
   check(NativeEngine.path==null);disabled.onDestroy();
   Context.locked=false;Context.ce.data.put("dictionarySnapshot",second.getAbsolutePath());DictionaryStore.syncBoot(new Context());

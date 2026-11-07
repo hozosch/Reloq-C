@@ -340,3 +340,6 @@ msgstr "Wörterbuchdateien insgesamt: %s"
 
 msgid "New dictionary files: %s"
 msgstr "Neue Wörterbuchdateien: %s"
+
+msgid "The selected pronunciation dictionaries could not be loaded. Speech will resume when they are available. Check the dictionary settings, or select another synthesizer."
+msgstr "Die ausgewählten Aussprachewörterbücher konnten nicht geladen werden. Die Sprachausgabe wird fortgesetzt, sobald sie verfügbar sind. Prüfe die Wörterbucheinstellungen oder wähle einen anderen Synthesizer."

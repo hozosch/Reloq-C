@@ -240,6 +240,24 @@ int main(int argc,char **argv)
     struct site after=site_new();assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&after.iface)));same(&base,&after);free(after.pcm);++cases;
     struct site failure=site_new();failure.fail_after=2;
     assert(FAILED(sapi_backend_speak(b,&s,0,&out,&f,&failure.iface)));free(failure.pcm);++cases;
+    /* The exposed question setting must reach the same native core on the
+     * next SAPI request without changing ordinary declarative sentences. */
+    for(unsigned i=0;i<2;++i){
+        int dialect=i?0x40000:0x10000;
+        struct sapi_backend *question_voice=sapi_backend_new(dialect);assert(question_voice);
+        SPVTEXTFRAG question=text(i?L"Was möchtest du machen?":L"What would you like to do?",0);
+        SPVTEXTFRAG statement=text(i?L"Das ist ein Satz.":L"This is a sentence.",0);
+        struct site rising=site_new(),original=site_new(),plain=site_new(),plain_original=site_new();
+        s.original_questions=0;assert(SUCCEEDED(sapi_backend_speak(question_voice,&s,0,&out,&question,&rising.iface)));
+        assert(SUCCEEDED(sapi_backend_speak(question_voice,&s,0,&out,&statement,&plain.iface)));
+        s.original_questions=1;assert(SUCCEEDED(sapi_backend_speak(question_voice,&s,0,&out,&question,&original.iface)));
+        assert(SUCCEEDED(sapi_backend_speak(question_voice,&s,0,&out,&statement,&plain_original.iface)));
+        assert(rising.count==original.count&&hash(rising.pcm,rising.count)!=hash(original.pcm,original.count));
+        same(&plain,&plain_original);
+        free(rising.pcm);free(original.pcm);free(plain.pcm);free(plain_original.pcm);
+        sapi_backend_delete(question_voice);++cases;
+    }
+    s.original_questions=0;
     struct sapi_settings female=s;female.gender=1;female.head=22;female.pitch=93;
     struct site changed=site_new();assert(SUCCEEDED(sapi_backend_speak(b,&female,0,&out,&f,&changed.iface)));
     assert(hash(changed.pcm,changed.count)!=hash(base.pcm,base.count));free(changed.pcm);++cases;

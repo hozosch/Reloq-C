@@ -43,7 +43,8 @@
     "DICT_COUNT_UNKNOWN",
     "DICT_FILES_NEW",
     "DICT_FILES_TOTAL",
-    "DICT_FILES_UNKNOWN"
+    "DICT_FILES_UNKNOWN",
+    "ORIGINAL_QUESTIONS"
   ],
   "en": [
     "ReLoq C voice settings",
@@ -89,7 +90,8 @@
     "Dictionary update complete. The number of new entries could not be determined.",
     "New dictionary files: %ls",
     "Dictionary files in total: %ls",
-    "The number of new dictionary files could not be determined."
+    "The number of new dictionary files could not be determined.",
+    "Use original &question intonation"
   ],
   "de": [
     "ReLoq C – Stimmeinstellungen",
@@ -135,7 +137,8 @@
     "Wörterbuchaktualisierung abgeschlossen. Die Anzahl neuer Einträge konnte nicht ermittelt werden.",
     "Neue Wörterbuchdateien: %ls",
     "Wörterbuchdateien insgesamt: %ls",
-    "Die Anzahl neuer Wörterbuchdateien konnte nicht ermittelt werden."
+    "Die Anzahl neuer Wörterbuchdateien konnte nicht ermittelt werden.",
+    "Ursprüngliche &Frageintonation verwenden"
   ],
   "es": [
     "ReLoq C – Ajustes de voz",
@@ -181,7 +184,8 @@
     "Actualización completada. No se pudo determinar el número de entradas nuevas.",
     "Archivos de diccionario nuevos: %ls",
     "Archivos de diccionario en total: %ls",
-    "No se pudo determinar el número de archivos de diccionario nuevos."
+    "No se pudo determinar el número de archivos de diccionario nuevos.",
+    "Usar la entonación original de las preguntas"
   ],
   "fr": [
     "ReLoq C – Paramètres de voix",
@@ -227,7 +231,8 @@
     "Mise à jour terminée. Le nombre de nouvelles entrées n’a pas pu être déterminé.",
     "Nouveaux fichiers de dictionnaire: %ls",
     "Nombre total de fichiers de dictionnaire: %ls",
-    "Impossible de déterminer le nombre de nouveaux fichiers de dictionnaire."
+    "Impossible de déterminer le nombre de nouveaux fichiers de dictionnaire.",
+    "Utiliser l’intonation originale des questions"
   ],
   "it": [
     "ReLoq C – Impostazioni voce",
@@ -273,7 +278,8 @@
     "Aggiornamento completato. Impossibile determinare il numero di nuove voci.",
     "Nuovi file del dizionario: %ls",
     "File del dizionario totali: %ls",
-    "Impossibile determinare il numero dei nuovi file del dizionario."
+    "Impossibile determinare il numero dei nuovi file del dizionario.",
+    "Usa l’intonazione originale delle domande"
   ],
   "pt": [
     "ReLoq C – Configurações de voz",
@@ -319,7 +325,8 @@
     "Atualização concluída. Não foi possível determinar o número de novas entradas.",
     "Novos arquivos de dicionário: %ls",
     "Total de arquivos de dicionário: %ls",
-    "Não foi possível determinar o número de novos arquivos de dicionário."
+    "Não foi possível determinar o número de novos arquivos de dicionário.",
+    "Usar a entonação original das perguntas"
   ],
   "fi": [
     "ReLoq C – Ääniasetukset",
@@ -365,7 +372,8 @@
     "Sanaston päivitys valmis. Uusien merkintöjen määrää ei voitu selvittää.",
     "Uudet sanakirjatiedostot: %ls",
     "Sanakirjatiedostoja yhteensä: %ls",
-    "Uusien sanakirjatiedostojen määrää ei voitu selvittää."
+    "Uusien sanakirjatiedostojen määrää ei voitu selvittää.",
+    "Käytä alkuperäistä kysymysintonaatiota"
   ],
   "el": [
     "ReLoq C – Ρυθμίσεις φωνής",
@@ -411,7 +419,8 @@
     "Η ενημέρωση ολοκληρώθηκε. Δεν ήταν δυνατός ο υπολογισμός των νέων καταχωρίσεων.",
     "Νέα αρχεία λεξικού: %ls",
     "Συνολικά αρχεία λεξικού: %ls",
-    "Δεν ήταν δυνατό να προσδιοριστεί ο αριθμός νέων αρχείων λεξικού."
+    "Δεν ήταν δυνατό να προσδιοριστεί ο αριθμός νέων αρχείων λεξικού.",
+    "Χρήση του αρχικού επιτονισμού ερωτήσεων"
   ],
   "ja": [
     "ReLoq C 音声設定",
@@ -457,7 +466,8 @@
     "辞書の更新が完了しました。新しい項目数を確認できませんでした。",
     "新しい辞書ファイル: %ls",
     "辞書ファイルの合計: %ls",
-    "新しい辞書ファイル数を特定できませんでした。"
+    "新しい辞書ファイル数を特定できませんでした。",
+    "元の疑問文のイントネーションを使用"
   ],
   "ko": [
     "ReLoq C 음성 설정",
@@ -503,7 +513,8 @@
     "사전 업데이트를 완료했지만 새 항목 수를 확인할 수 없습니다.",
     "새 사전 파일: %ls",
     "전체 사전 파일: %ls",
-    "새 사전 파일 수를 확인할 수 없습니다."
+    "새 사전 파일 수를 확인할 수 없습니다.",
+    "원래의 질문 억양 사용"
   ],
   "zh": [
     "ReLoq C 语音设置",
@@ -549,7 +560,8 @@
     "词典更新完成，但无法确定新增条目数。",
     "新增词典文件: %ls",
     "词典文件总数: %ls",
-    "无法确定新增词典文件数。"
+    "无法确定新增词典文件数。",
+    "使用原始疑问语调"
   ],
   "zh-Hant": [
     "ReLoq C 語音設定",
@@ -595,6 +607,7 @@
     "字典更新完成，但無法確定新增項目數。",
     "新增字典檔案: %ls",
     "字典檔案總數: %ls",
-    "無法確定新增字典檔案數。"
+    "無法確定新增字典檔案數。",
+    "使用原始疑問語調"
   ]
 }

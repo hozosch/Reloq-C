@@ -85,4 +85,5 @@
     <string name="dictionary_update_files_new">Νέα αρχεία λεξικού: %1$d</string>
     <string name="dictionary_update_files_total">Συνολικά αρχεία λεξικού: %1$d</string>
     <string name="dictionary_update_files_unknown">Δεν ήταν δυνατό να προσδιοριστεί ο αριθμός νέων αρχείων λεξικού.</string>
+    <string name="original_questions">Χρήση του αρχικού επιτονισμού ερωτήσεων</string>
 </resources>

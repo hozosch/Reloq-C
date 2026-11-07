@@ -278,6 +278,7 @@ class DictionaryManager:
         self._watch_event = threading.Event()
         self._watch_thread = None
         self._watched_state = None
+        self._settings_error = None
         try:
             if not self.settings_path.exists() and legacy_settings is not None and Path(legacy_settings).is_file():
                 self._sources = load_sources(self.cache, settings_path=legacy_settings)
@@ -286,13 +287,19 @@ class DictionaryManager:
                 self._sources = load_sources(self.cache, settings_path=self.settings_path)
         except (OSError, ValueError, TypeError, KeyError) as error:
             self._sources = ()
+            self._settings_error = error
             self.on_error(error)
         try:
             settings = json.loads(self.settings_path.read_text(encoding="utf8"))
             self._repository = settings.get("repository", "community")
             if self._repository not in SOURCES: raise ValueError("unknown dictionary source")
-        except (OSError, ValueError, TypeError):
+        except FileNotFoundError:
             self._repository = "community"
+        except (OSError, ValueError, TypeError) as error:
+            self._repository = "community"
+            if self._settings_error is None:
+                self._settings_error = error
+                self.on_error(error)
         self._committed_sources = self._sources
         self._committed_repository = self._repository
 
@@ -452,7 +459,7 @@ class DictionaryManager:
                     name="Eloquence dictionary file monitor", daemon=True)
                 self._watch_thread.start()
         self._watch_event.set()
-        if not enabled and not sources:
+        if not enabled and not sources and not save and self._settings_error is None:
             self._emit(revision, None)
         # File verification and merging belong to the background worker.
         # In particular, do not emit an older cached set before applying a
@@ -548,6 +555,10 @@ class DictionaryManager:
         state = None
         committed = False
         try:
+            with self._lock:
+                settings_error = self._settings_error
+            if settings_error is not None and not save:
+                raise ValueError("saved dictionary settings could not be loaded") from settings_error
             state = self._state(enabled, sources)
             community = self._community(repository) if enabled else None
             previous_community = community
@@ -568,6 +579,7 @@ class DictionaryManager:
                     return
                 if save:
                     _atomic_json(self.settings_path, {"version": 1, "sources": [s.record() for s in sources], "repository": repository})
+                    self._settings_error = None
                 self._committed_sources = sources
                 self._committed_repository = repository
                 if enabled and community and repository != "community":

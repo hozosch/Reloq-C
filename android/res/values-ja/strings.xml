@@ -85,4 +85,5 @@
     <string name="dictionary_update_files_new">新しい辞書ファイル: %1$d</string>
     <string name="dictionary_update_files_total">辞書ファイルの合計: %1$d</string>
     <string name="dictionary_update_files_unknown">新しい辞書ファイル数を特定できませんでした。</string>
+    <string name="original_questions">元の疑問文のイントネーションを使用</string>
 </resources>

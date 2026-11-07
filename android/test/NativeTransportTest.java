@@ -67,6 +67,9 @@ public final class NativeTransportTest {
             custom.abbreviations=false;custom.prediction=true;
             render(0x10000,custom,"Dr. Smith works at St. James with Mrs. Jones.");
             render(0x40000,custom,"Der Doktor sagt dass wir heute mit dem Zug nach Berlin fahren.");
+            VoiceSettings question=new VoiceSettings(0);question.originalQuestions=true;
+            render(0x10000,question,"What would you like to do?");
+            render(0x40000,question,"Was möchtest du machen?");
             dictionary(arguments[0]);render(0x10000,0,"This is cancellationtoken.");
             render(0x40000,0,"Ich bin TokenX dir.");
             dictionary(arguments[1]);render(0x10000,0,"This is cancellationtoken.");

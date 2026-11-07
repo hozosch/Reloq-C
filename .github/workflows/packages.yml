@@ -87,6 +87,12 @@ jobs:
           python3 -B nvda/test_eci_asian_greek_native.py
       - name: Verify SAPI delivery, timing and cancellation against the engine
         run: make -C sapi test
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Verify Android controls against the shared native engine
+        run: python3 android/test_native_transport.py --java-home "$JAVA_HOME" --library eci/libreloq_eci.so
   sapi:
     needs: dictionaries
     uses: ./.github/workflows/sapi-installer.yml
@@ -119,6 +125,11 @@ jobs:
           log-accepted-android-sdk-licenses: false
       - name: Install official SDK and NDK tools
         run: sdkmanager 'ndk;30.0.16248370' 'platforms;android-35' 'build-tools;35.0.1'
+      - name: Check Android settings, translations and dictionary startup
+        run: |
+          python3 android/test_translations.py
+          python3 android/test_settings.py --settings-only --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar"
+          python3 android/test_direct_boot.py --java-home "$JAVA_HOME"
       - name: Download the preceding APK for upgrade verification
         env:
           GH_TOKEN: ${{ github.token }}
@@ -174,11 +185,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download v1.1.3 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-1.1.3.nvda-addon' --dir previous-addon
-          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.1.3.nvda-addon --candidate dist/reloq-c-synth-x64-1.2.0-dev2.nvda-addon
+          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.1.3.nvda-addon --candidate dist/reloq-c-synth-x64-1.2.0-dev3.nvda-addon
       - name: Verify NVDA driver and offline dictionary startup
         run: |
           for language in en de; do
-            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.2.0-dev2.nvda-addon"))' "$language"
+            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.2.0-dev3.nvda-addon"))' "$language"
           done
       - uses: actions/upload-artifact@v4
         with:

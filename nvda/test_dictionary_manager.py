@@ -89,6 +89,29 @@ class ManagerTests(unittest.TestCase):
         self.assertIsNone(error)
         self.assertEqual((details['own_sources'], details['conflicts']), (2, 1))
 
+    def test_invalid_saved_selection_is_not_replaced_with_an_empty_dictionary(self):
+        settings = self.root / 'broken-settings.json'
+        settings.write_text('{invalid', encoding='utf8')
+        delivered, failed, completed = [], threading.Event(), threading.Event()
+        manager = DictionaryManager(self.bundle, self.root / 'broken-cache',
+            lambda revision, path: delivered.append(path), lambda error: None,
+            settings_path=settings, fetch=self.server,
+            on_load_error=lambda revision: failed.set())
+        try:
+            manager.set_enabled(False)
+            self.assertTrue(failed.wait(3))
+            self.assertEqual(delivered, [], 'a corrupt saved selection must not become an empty selection')
+            source = self.source('recovered.dic', b'Unigram\tbanana\n', 0x10000)
+            result = []
+            manager.configure([source], False,
+                lambda error, details: (result.append(error), completed.set()))
+            self.assertTrue(completed.wait(3))
+            self.assertEqual(result, [None])
+            self.assertEqual((delivered[-1]/'ENUmain.dic').read_bytes(), b'Unigram\tbanana\n')
+            self.assertEqual(load_sources(self.root / 'broken-cache', settings_path=settings), (source,))
+        finally:
+            manager.close()
+
     def test_merge_native_volumes_precedence_and_unchanged_inputs(self):
         a = self.source('my-unrelated-name.dic', b'Armin\tErster\nOwn\t`[.1a]\n')
         b = self.source('other.dic', b'Armin\tZweiter\nOwn\t`[.1b]')

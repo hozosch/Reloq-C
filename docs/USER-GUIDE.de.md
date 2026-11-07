@@ -103,6 +103,8 @@ Die Dateien verwenden das native Dic-Format: Windows-1252, ein Eintrag pro Zeile
 
 Änderungen an eingebundenen Dateien und Dateien im Wörterbuchordner werden im Hintergrund erkannt. Das gilt auch für neu angelegte Dateien und für Editoren, die eine Datei beim Speichern ersetzen. Bei ungültigen Daten bleibt der letzte gültige Stand aktiv. Gemeinschaftswörterbuch-Updates aktualisieren die Dateien in diesem Add-on-Ordner. Eigene eingebundene Dateien und lokal bearbeitete oder entfernte Wörterbuchdateien werden dabei erhalten. Ein lokal bearbeitetes Volume hat Vorrang vor der heruntergeladenen Fassung. Es wird kein zusätzlicher Bearbeitungsordner im NVDA-Hauptverzeichnis angelegt.
 
+Die erste Sprachausgabe wartet, bis die ausgewählten Wörterbücher vollständig geladen sind. Wenn beim Start kein gültiger Stand verfügbar ist, erscheint eine Fehlermeldung. Prüfe dann die Wörterbucheinstellungen oder wähle vorübergehend eine andere Sprachausgabe.
+
 Unter **Add-on-Updates** prüft **Nach Add-on-Updates suchen** die veröffentlichten GitHub-Releases. Ist ein neueres Paket verfügbar, prüft **Update herunterladen und installieren** den Download und öffnet NVDAs normalen Installations- und Bestätigungsdialog. Die Prüfung läuft nur auf Anforderung. Wenn noch kein Paket veröffentlicht wurde, zeigt der Bereich dies an. **Wörterbücher jetzt aktualisieren** bleibt davon unabhängig.
 
 ## Fehler melden

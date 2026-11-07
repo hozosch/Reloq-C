@@ -47,17 +47,20 @@ static int valid(const struct sapi_settings *s)
 {
     return s->schema==1&&s->profile<8&&s->pitch<=100&&s->inflection<=100&&s->head<=100&&
         s->roughness<=100&&s->breathiness<=100&&s->gender<=1&&s->rate<7&&s->pauses<3&&
-        s->tags<2&&s->abbreviations<2&&s->prediction<2&&s->dictionaries<2&&s->boost<2&&
+        s->tags<2&&s->abbreviations<2&&s->prediction<2&&s->dictionaries<2&&s->boost<2&&s->original_questions<2&&
         wmemchr(s->directory,0,sizeof s->directory/sizeof *s->directory)!=NULL;
 }
 static const WCHAR root[]=L"Software\\ReLoq C\\SAPI5";
 static HRESULT read_binary(const WCHAR *key,const WCHAR *name,struct sapi_settings *out)
 {
-    struct sapi_settings input;DWORD size=sizeof input,type=0;
+    struct sapi_settings input;sapi_settings_default(&input);DWORD size=sizeof input,type=0;
     LSTATUS rc=RegGetValueW(HKEY_CURRENT_USER,key,name,RRF_RT_REG_BINARY,&type,&input,&size);
     if(rc==ERROR_FILE_NOT_FOUND)return S_FALSE;
     if(rc!=ERROR_SUCCESS)return HRESULT_FROM_WIN32(rc);
-    if(size!=sizeof input||!valid(&input))return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+    /* Earlier releases end at directory[]. Preserve every existing option
+     * and default only the new question contour setting when upgrading. */
+    if((size!=sizeof input&&size!=offsetof(struct sapi_settings,original_questions))||!valid(&input))
+        return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
     *out=input;return S_OK;
 }
 static HRESULT write_value(const WCHAR *key,const WCHAR *name,DWORD type,const void *data,DWORD bytes)

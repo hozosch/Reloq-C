@@ -66,7 +66,7 @@ class _DictionaryPath:
 @dataclass
 class _DictionaryBarrier:
     # A complete, validated snapshot is supplied by the dictionary worker.
-    # A failed refresh releases the queue without replacing the old snapshot.
+    # A failed refresh may retain an already installed complete snapshot.
     ready: bool = False
     apply: bool = False
     path: str | None = None
@@ -98,6 +98,10 @@ class _Marker:
 
 class _Discarded(Exception):
     pass
+
+
+class DictionaryStartupError(RuntimeError):
+    """A first dictionary selection could not be installed into ECI."""
 
 
 @dataclass
@@ -185,6 +189,9 @@ class EciTextTransport:
         self._pause_mode = 0
         self._jobs: deque[_Job | _Control | _Selection | _SampleRate | _DictionaryPath | _DictionaryBarrier] = deque()
         self._dictionary_barrier: _DictionaryBarrier | None = None
+        # None is itself a valid, deliberately selected empty dictionary.
+        # Distinguish that from never having installed any selection at all.
+        self._dictionary_installed = False
         self._audio: deque[_Playback] = deque()
         self._active_playback: _PlaybackBatch | None = None
         self._audio_limit = playback_queue_size
@@ -327,13 +334,30 @@ class EciTextTransport:
                 barrier.ready = barrier.apply = False
             self._condition.notify_all()
 
-    def fail_dictionary_load(self) -> None:
+    def fail_dictionary_load(self) -> bool:
+        """Keep the first speech blocked unless a complete set is available.
+
+        Return whether speech can proceed on an earlier complete selection.
+        A later successful request can release an unresolved startup barrier.
+        """
         with self._condition:
-            if self._dictionary_barrier is not None and not self._dictionary_barrier.ready:
-                self._dictionary_barrier.ready = True
-                self._dictionary_barrier.apply = self._dictionary_barrier.fallback_apply
-                self._dictionary_barrier.path = self._dictionary_barrier.fallback_path
+            barrier = self._dictionary_barrier
+            if barrier is not None and not barrier.ready:
+                if barrier.fallback_apply:
+                    barrier.apply = True
+                    barrier.path = barrier.fallback_path
+                    barrier.ready = True
+                elif self._dictionary_installed:
+                    barrier.ready = True
                 self._condition.notify_all()
+                return barrier.ready
+            return barrier is None or barrier.ready
+
+    def dictionary_startup_blocked(self) -> bool:
+        with self._condition:
+            return (not self._dictionary_installed and
+                    self._dictionary_barrier is not None and
+                    not self._dictionary_barrier.ready and not self._closed)
 
     def set_dictionary_path(self, path) -> None:
         with self._condition:
@@ -723,9 +747,13 @@ class EciTextTransport:
                                     job.completed(self._sample_rate_code)
                         elif isinstance(job, _DictionaryPath):
                             engine.set_dictionary_path(job.path)
+                            with self._condition:
+                                self._dictionary_installed = True
                         elif isinstance(job, _DictionaryBarrier):
                             if job.apply:
                                 engine.set_dictionary_path(job.path)
+                                with self._condition:
+                                    self._dictionary_installed = True
                         elif isinstance(job, _Selection):
                             engine.select_voice(job.language, job.voice)
                             # A language-only choice keeps NVDA's displayed
@@ -741,7 +769,29 @@ class EciTextTransport:
                             if job.parameter == PAUSE_MODE:
                                 self._pause_mode = job.value
                     except Exception as error:
-                        self._report_error(error, self._generation)
+                        startup_failure = False
+                        if isinstance(job, (_DictionaryPath, _DictionaryBarrier)):
+                            with self._condition:
+                                if not self._dictionary_installed:
+                                    # Installation itself can fail after the
+                                    # manager produced a valid snapshot. Keep
+                                    # all speech behind the next successful
+                                    # selection, including when another load
+                                    # arrived while the engine was installing.
+                                    barrier = self._dictionary_barrier
+                                    if barrier is None:
+                                        barrier = self._dictionary_barrier = _DictionaryBarrier()
+                                    else:
+                                        self._jobs.remove(barrier)
+                                    self._jobs.appendleft(barrier)
+                                    self._condition.notify_all()
+                                    startup_failure = True
+                        if startup_failure:
+                            failure = DictionaryStartupError("native dictionary installation failed")
+                            failure.__cause__ = error
+                            self._report_error(failure, self._generation)
+                        else:
+                            self._report_error(error, self._generation)
                 else:
                     self._run_job(engine, job)
         finally:
@@ -833,4 +883,4 @@ class EciTextTransport:
         return True
 
 
-__all__ = ["EciTextTransport"]
+__all__ = ["DictionaryStartupError", "EciTextTransport"]

@@ -63,6 +63,66 @@ final class DictionaryStore {
             return new Lease(c.getApplicationContext(),path);
         }
     }
+    /** Check the complete, immutable snapshot before the first utterance.
+     * The merged directory name is a hash of every volume and its contents;
+     * the bundled set has a manifest with Git blob hashes instead. */
+    private static boolean completeSnapshot(Context c,String path) {
+        if(path==null)return false;
+        try {
+            File folder=new File(path).getCanonicalFile();
+            File root=root(c).getCanonicalFile(),parent=folder.getParentFile();
+            String name=folder.getName();
+            if(parent!=null&&parent.equals(new File(root,"community"))&&name.matches("[a-f0-9]{40}")) {
+                JSONObject manifest=json(new File(folder,"manifest.json"));
+                if(!name.equals(manifest.getString("commit")))return false;
+                for(String item:DictionaryData.COMMUNITY)verify(manifest,item,bytes(new File(folder,item)));
+                return true;
+            }
+            if(parent==null||!parent.equals(new File(root,"snapshots"))||
+                    !name.matches("[a-f0-9]{64}")||!new File(folder,"ready").isFile())return false;
+            File[] entries=folder.listFiles((dir,item) -> item.endsWith(".dic"));
+            if(entries==null)return false;
+            Arrays.sort(entries,Comparator.comparing(File::getName));
+            MessageDigest hash=MessageDigest.getInstance("SHA-256");
+            for(File entry:entries) {
+                if(!folder.equals(entry.getCanonicalFile().getParentFile()))return false;
+                byte[] data=bytes(entry);
+                hash.update(entry.getName().getBytes(StandardCharsets.US_ASCII));hash.update((byte)0);
+                hash.update(Integer.toString(data.length).getBytes(StandardCharsets.US_ASCII));hash.update((byte)0);hash.update(data);
+            }
+            return name.equals(DictionaryData.hex(hash.digest()));
+        } catch(Exception error) {return false;}
+    }
+    private static void prepareStartup(Context c) throws Exception {
+        SharedPreferences settings=prefs(c);
+        // Invalid saved selections must not silently become an empty set.
+        JSONArray own=new JSONArray(settings.getString("dictionarySources","[]"));
+        boolean enabled=settings.getBoolean("communityDictionaries",false);
+        String path=settings.getString("dictionarySnapshot",null);
+        boolean expected=enabled||own.length()!=0;
+        if(!expected&&path==null)return;
+        boolean complete=expected?completeSnapshot(c,path):path==null;
+        String content=sourceContent(c,own);
+        if(!complete||!Objects.equals(state(c,own),settings.getString("dictionarySourceState",null))||
+                !content.equals(settings.getString("dictionaryContentState",null)))
+            rebuild(c,enabled,own);
+    }
+    private static void hashSource(MessageDigest hash,byte[] data) {
+        hash.update(Integer.toString(data.length).getBytes(StandardCharsets.US_ASCII));
+        hash.update((byte)0);hash.update(data);
+    }
+    private static String sourceContent(Context c,JSONArray own) throws Exception {
+        MessageDigest hash=MessageDigest.getInstance("SHA-256");
+        hash.update(own.toString().getBytes(StandardCharsets.UTF_8));hash.update((byte)0);
+        for(int i=0;i<own.length();++i) {
+            Uri uri=Uri.parse(own.getJSONObject(i).getString("uri"));
+            try(InputStream in=c.getContentResolver().openInputStream(uri)) {
+                if(in==null)throw new IOException("Dictionary unavailable");
+                hashSource(hash,DictionaryData.read(in,DictionaryData.LIMIT));
+            }
+        }
+        return DictionaryData.hex(hash.digest());
+    }
     private static void prune(Context c) {
         ArrayList<String> remove=new ArrayList<>();
         synchronized(GUARD) {
@@ -127,6 +187,8 @@ final class DictionaryStore {
     }
     static String rebuild(Context c,boolean enabled,JSONArray own) throws Exception {
         initialize(c);String before=state(c,own);DictionaryData.Merger merger=new DictionaryData.Merger();
+        MessageDigest sourceHash=MessageDigest.getInstance("SHA-256");
+        sourceHash.update(own.toString().getBytes(StandardCharsets.UTF_8));sourceHash.update((byte)0);
         File original=null;
         if(enabled) {
             File base=community(c);JSONObject manifest=json(new File(base,"manifest.json"));
@@ -144,10 +206,11 @@ final class DictionaryStore {
             try(InputStream in=c.getContentResolver().openInputStream(Uri.parse(source.getString("uri")))) {
                 if(in==null)throw new IOException("Dictionary unavailable");data=DictionaryData.read(in,DictionaryData.LIMIT);
             }
+            hashSource(sourceHash,data);
             merger.add(DictionaryData.name(source.getInt("language"),source.getInt("volume")),data);
         }
         TreeMap<String,byte[]> volumes=merger.finish();String path=original==null?null:original.getAbsolutePath();
-        if(!volumes.isEmpty()) {
+        if(!volumes.isEmpty()||((enabled||own.length()!=0)&&original==null)) {
             MessageDigest hash=MessageDigest.getInstance("SHA-256");
             for(Map.Entry<String,byte[]> row:volumes.entrySet()) {
                 hash.update(row.getKey().getBytes(StandardCharsets.US_ASCII));hash.update((byte)0);
@@ -173,7 +236,8 @@ final class DictionaryStore {
             synchronized(GUARD) {
                 BootDictionaries.publish(c,bootSnapshot);bootPublished=true;
                 SharedPreferences.Editor editor=prefs(c).edit().putBoolean("communityDictionaries",enabled)
-                    .putString("dictionarySources",own.toString()).putString("dictionarySourceState",after);
+                    .putString("dictionarySources",own.toString()).putString("dictionarySourceState",after)
+                    .putString("dictionaryContentState",DictionaryData.hex(sourceHash.digest()));
                 if(path==null)editor.remove("dictionarySnapshot");else {editor.putString("dictionarySnapshot",path);published.add(path);}
                 editor.apply();watched=after;candidate=null;
             }
@@ -343,11 +407,18 @@ final class DictionaryStore {
             });},2,2,TimeUnit.SECONDS);
         }
     }
-    static void start(Context context) {
+    static Future<?> start(Context context) {
         Context c=context.getApplicationContext();initialize(c);
         synchronized(GUARD){++users;}
         monitor(c);
-        queueSyncBoot(c);
+        return retryStartup(c);
+    }
+    static Future<?> retryStartup(Context context) {
+        Context c=context.getApplicationContext();
+        return WORK.submit(() -> {
+            try {prepareStartup(c);syncBoot(c);}
+            catch(Exception error) {throw new CompletionException(error);}
+        });
     }
     static void queueSyncBoot(Context context) {
         Context c=context.getApplicationContext();

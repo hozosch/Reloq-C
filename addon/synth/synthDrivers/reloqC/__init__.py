@@ -34,7 +34,7 @@ from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciProsody,
                                 NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION, PROCESS_TAGS,
                                 PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATES,
                                 DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS)
-from ._reloq_eci_transport import EciTextTransport
+from ._reloq_eci_transport import DictionaryStartupError, EciTextTransport
 from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries
 from ._reloq_languages import GERMAN, LANGUAGES, LANGUAGE_ALIASES, LANGUAGE_DISPLAY_ORDER, LanguageEngine, language_for
 from ._speech_tags import EciTagCommand, protect_sequence
@@ -218,7 +218,7 @@ class SynthDriver(BaseSynthDriver):
         self._phrasePrediction = False
         self._originalQuestions = False
         self._voiceTags = False
-        self._communityDictionaries = False
+        self._communityDictionaries = self._initial_dictionary_setting()
         self._dictionary_updater = None
         self._pauseMode = "0"
         self._sampleRate = "1"
@@ -250,7 +250,7 @@ class SynthDriver(BaseSynthDriver):
         self._transport.set_parameter(ORIGINAL_QUESTIONS, 0)
         manager = self.dictionary_manager()
         # Start monitoring the installed dictionaries and selected own files.
-        self._dictionary_request(lambda: manager.set_enabled(False))
+        self._dictionary_request(lambda: manager.set_enabled(self._communityDictionaries))
         filter_speechSequence.register(self._protect_tags)
         try:
             source = json.loads((DLL.parents[2] / "doc/source.json").read_text(encoding="utf-8"))
@@ -338,6 +338,21 @@ class SynthDriver(BaseSynthDriver):
         selected = language_for(value, 0, self._languages) if isinstance(value, str) else None
         return selected if selected in self._languages else next(iter(self._languages))
 
+    def _initial_dictionary_setting(self):
+        # Read the active profile before starting the dictionary worker. NVDA
+        # restores settings after constructing the driver; starting with the
+        # default could otherwise briefly allow speech before a saved enabled
+        # community dictionary has been installed.
+        speech = config.conf[self._configSection]
+        if speech.isSet(self.name):
+            section = speech[self.name]
+            for key in ("_dictionaryCommunity", "communityDictionaries"):
+                if section.isSet(key):
+                    value = section[key]
+                    if isinstance(value, bool):
+                        return value
+        return False
+
     def loadSettings(self, onlyChanged=False):
         # NVDA restores voice before other settings. Select the module first
         # so a voice belonging to a non-default language can be validated.
@@ -369,7 +384,24 @@ class SynthDriver(BaseSynthDriver):
         with self._submit_lock:
             if (not self._terminating and self._dictionary_updater is not None
                     and self._dictionary_updater.current(revision)):
-                self._transport.fail_dictionary_load()
+                if not self._transport.fail_dictionary_load():
+                    self._show_dictionary_startup_error()
+
+    def _show_dictionary_startup_error(self):
+        # The normal speech path is waiting, so expose the failure as an
+        # accessible dialog too (for example on a braille display).
+        import wx
+        def show():
+            with self._submit_lock:
+                if self._terminating or not self._transport.dictionary_startup_blocked():
+                    return
+            import gui
+            gui.messageBox(_("The selected pronunciation dictionaries could not be loaded. "
+                             "Speech will resume when they are available. Check the dictionary "
+                             "settings, or select another synthesizer."),
+                           _("Pronunciation dictionaries"), wx.OK | wx.ICON_ERROR,
+                           parent=getattr(gui, "mainFrame", None))
+        wx.CallAfter(show)
 
     def _dictionary_request(self, start):
         # Speech jobs wait on their own worker until the complete local
@@ -650,6 +682,8 @@ class SynthDriver(BaseSynthDriver):
     def _on_error(self, error):
         log.error("Eloquence C synthesis failed", exc_info=(
             type(error), error, error.__traceback__))
+        if isinstance(error, DictionaryStartupError):
+            self._show_dictionary_startup_error()
 
     def speak(self, speechSequence):
         with self._submit_lock:

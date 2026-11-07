@@ -8,7 +8,7 @@ import time
 
 from _reloq_dictionary_manager import DictionaryManager, DictionarySource
 from _reloq_eci_direct import DirectEciEngine, EciIndex
-from _reloq_eci_transport import EciTextTransport
+from _reloq_eci_transport import DictionaryStartupError, EciTextTransport
 from test_eci_german_clock_native import render
 
 
@@ -194,8 +194,8 @@ def main():
         finally:
             assert transport.shutdown()
 
-        # A source failure is reported and releases the barrier; shutting
-        # down while a load is pending must never wait for the I/O worker.
+        # The first failed selection must never release speech without the
+        # requested dictionary. A later successful selection can recover.
         engine, done, errors = Engine(), threading.Event(), []
         transport = EciTextTransport(lambda: engine, Player(), lambda index: None,
                                      lambda number: done.set(), errors.append)
@@ -203,13 +203,76 @@ def main():
             transport.begin_dictionary_load()
             transport.submit(['recover', EciIndex(1)])
             assert not engine.started.wait(.05)
-            transport.fail_dictionary_load()
-            assert done.wait(3) and engine.calls == [('recover', b'')]
+            assert not transport.fail_dictionary_load()
+            assert transport.dictionary_startup_blocked()
+            assert not engine.started.wait(.05) and not done.is_set()
+            transport.begin_dictionary_load()
+            transport.set_dictionary_path(first)
+            assert done.wait(3) and engine.calls == [('recover', b'old\told\n')]
+            assert not transport.dictionary_startup_blocked()
+            # A later failed refresh retains the already installed set.
+            done.clear();engine.started.clear()
+            transport.begin_dictionary_load()
+            assert transport.fail_dictionary_load()
+            transport.submit(['refresh', EciIndex(2)])
+            assert done.wait(3) and engine.calls[-1] == ('refresh', b'old\told\n')
             transport.begin_dictionary_load()
             start = time.monotonic()
             assert transport.shutdown() and time.monotonic()-start < 1
         finally:
             transport.shutdown()
+
+        # A validated snapshot can still fail during the native installation.
+        # It must not be treated as installed until that call actually returns.
+        class FailedInstallation(Engine):
+            def set_dictionary_path(self, path):
+                if path and Path(path) == first:
+                    raise RuntimeError('simulated native dictionary error')
+                super().set_dictionary_path(path)
+        engine, done, errors, reported = FailedInstallation(), threading.Event(), [], threading.Event()
+        def report(error):
+            errors.append(error);reported.set()
+        transport = EciTextTransport(lambda: engine, Player(), lambda index: None,
+                                     lambda number: done.set(), report)
+        try:
+            transport.begin_dictionary_load()
+            transport.set_dictionary_path(first)
+            transport.submit(['native', EciIndex(1)])
+            assert reported.wait(3) and isinstance(errors[0], DictionaryStartupError)
+            assert transport.dictionary_startup_blocked()
+            assert not engine.started.wait(.05) and not done.is_set()
+            transport.begin_dictionary_load()
+            transport.set_dictionary_path(second)
+            assert done.wait(3) and engine.calls == [('native', b'new\tnew\n')]
+        finally:
+            transport.shutdown()
+
+        # A newer selection that arrives during a failing native load must
+        # also precede speech that was already queued behind the first one.
+        entered, resume = threading.Event(), threading.Event()
+        class SlowFailure(Engine):
+            def set_dictionary_path(self, path):
+                if path and Path(path) == first:
+                    entered.set()
+                    assert resume.wait(3)
+                    raise RuntimeError('simulated delayed installation error')
+                super().set_dictionary_path(path)
+        engine, done, errors = SlowFailure(), threading.Event(), []
+        transport = EciTextTransport(lambda: engine, Player(), lambda index: None,
+                                     lambda number: done.set(), errors.append)
+        try:
+            transport.begin_dictionary_load()
+            transport.set_dictionary_path(first)
+            assert entered.wait(3)
+            transport.submit(['superseded', EciIndex(1)])
+            transport.begin_dictionary_load()
+            transport.set_dictionary_path(second)
+            resume.set()
+            assert done.wait(3)
+            assert engine.calls == [('superseded', b'new\tnew\n')]
+            assert len(errors) == 1 and isinstance(errors[0], DictionaryStartupError)
+        finally:
+            resume.set();transport.shutdown()
     print('Dictionary startup ordering, cancellation, supersession and failure recovery passed')
 
 

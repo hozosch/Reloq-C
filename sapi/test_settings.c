@@ -81,8 +81,14 @@ int main(void)
     assert(sapi_settings_write(0xdead,&s)==E_INVALIDARG);s.rate=9;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);++checks;
     /* Legacy settings migration works before any common OutputRate exists. */
     value_count=key_count=0;HKEY key;assert(!RegCreateKeyExW(HKEY_CURRENT_USER,L"Software\\ReLoq C\\SAPI5\\Voices\\00040000",0,NULL,0,KEY_SET_VALUE,NULL,&key,NULL));
-    sapi_settings_default(&s);s.rate=5;assert(!RegSetValueExW(key,L"Settings",0,REG_BINARY,(const BYTE *)&s,sizeof s));
+    sapi_settings_default(&s);s.rate=5;s.pitch=78;wcscpy(s.directory,L"C:\\Existing dictionaries");
+    assert(!RegSetValueExW(key,L"Settings",0,REG_BINARY,(const BYTE *)&s,offsetof(struct sapi_settings,original_questions)));
     assert(sapi_settings_read(0x10000,&en)==S_OK&&en.rate==5);++checks;
+    assert(sapi_settings_read(0x40000,&s)==S_OK&&s.pitch==78&&!s.original_questions&&
+        !wcscmp(s.directory,L"C:\\Existing dictionaries"));++checks;
+    s.original_questions=1;assert(sapi_settings_write(0x40000,&s)==S_OK);
+    assert(sapi_settings_read(0x40000,&s)==S_OK&&s.original_questions==1&&s.pitch==78);++checks;
+    s.original_questions=2;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);++checks;
     open_error=5;assert(sapi_settings_read(0x10000,&en)==S_OK&&en.rate==5);open_error=0;++checks;
     values[0].bytes=8;assert(FAILED(sapi_settings_read(0x40000,&s)));++checks;
     printf("{\"settings_checks\":%u,\"languages\":%zu,\"shared_rate\":true,\"language_settings_preserved\":true}\n",checks,sapi_language_count());return 0;

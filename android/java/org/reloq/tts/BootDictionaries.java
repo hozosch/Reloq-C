@@ -53,7 +53,9 @@ final class BootDictionaries {
                     try(FileOutputStream out=new FileOutputStream(new File(stage,item))){out.write(data);out.getFD().sync();}
                     ++copied;
                 }
-                if(copied==0)throw new IOException("Active dictionary snapshot is empty");
+                // An explicitly selected empty source is still a complete
+                // snapshot, marked by the atomic publisher's ready file.
+                if(copied==0&&!new File(source,"ready").isFile())throw new IOException("Active dictionary snapshot is empty");
                 try(FileOutputStream out=new FileOutputStream(new File(stage,"ready"))){out.getFD().sync();}
                 if(target.exists())erase(target);
                 if(!stage.renameTo(target))throw new IOException("Device dictionary publication failed");

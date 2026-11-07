@@ -85,4 +85,5 @@
     <string name="dictionary_update_files_new">Neue Wörterbuchdateien: %1$d</string>
     <string name="dictionary_update_files_total">Wörterbuchdateien insgesamt: %1$d</string>
     <string name="dictionary_update_files_unknown">Die Anzahl neuer Wörterbuchdateien konnte nicht ermittelt werden.</string>
+    <string name="original_questions">Ursprüngliche Frageintonation verwenden</string>
 </resources>

@@ -103,6 +103,8 @@ Files use the native Dic format: Windows-1252 encoding, one entry per line and a
 
 Edits to selected files and files in the dictionary folder are detected in the background, including newly created files and editor-style file replacements. Invalid data leaves the last valid set active. Community updates refresh the files in this add-on folder. Selected own files and locally edited or removed dictionary files are preserved. A locally edited volume takes priority over the downloaded volume. No additional editing folder is created in NVDA’s main directory.
 
+The first utterance waits until the selected dictionaries have loaded completely. If no valid set is available at startup, an error dialog appears. Check the dictionary settings or temporarily choose another synthesizer.
+
 Under **Add-on updates**, choose **Check for add-on updates** to check published GitHub Releases. If a newer package is available, **Download and install update** checks the download and opens NVDA’s normal installation and confirmation flow. Checks run only when requested. If no package has been published, the panel says so. **Update dictionaries now** remains independent of package updates.
 
 ## Reporting problems

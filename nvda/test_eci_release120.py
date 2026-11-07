@@ -1,4 +1,4 @@
-"""Regressions for Greek prominence, question contour and short PCM peaks."""
+"""Regressions for Greek spacing, question contour and short PCM peaks."""
 import argparse
 from array import array
 from pathlib import Path
@@ -27,20 +27,17 @@ def main():
             assert whole[0] and whole[1] == [(7, len(whole[0]))]
             for cut in range(len(text) + 1):
                 assert render(greek, [text[:cut], text[cut:], EciIndex(7)]) == whole, (text, cut)
-        # NVDA can join a control label and a new sentence with a wide gap.
-        # The following sentence should keep its own native prominence.
+        # NVDA can join a control label and text with multiple spaces.  A
+        # spacing difference must not synthesize a comma or invent a pause.
         title = 'Αλλαγή Διαμόρφωσης Γλώσσας  παράθυρο διαλόγου'
         body = 'Πρέπει να γίνει επανεκκίνηση του NVDA, για να τεθεί σε ισχύ η νέα γλώσσα.'
-        first = '`[.1pre.0pi]'
-        isolated = phonemes(greek, body)
-        combined = phonemes(greek, title + '  ' + body)
-        assert combined[combined.index(first):] == isolated[isolated.index(first):], (combined, isolated)
-        assert phonemes(greek, title + '  ' + body) == phonemes(greek, title + ', ' + body)
+        assert phonemes(greek, title + '  ' + body) == phonemes(greek, title + ' ' + body)
         mixed_title = 'Αλλαγή γλώσσας για το NVDA'
-        assert phonemes(greek, mixed_title + '  ' + body) == phonemes(greek, mixed_title + ', ' + body)
+        assert phonemes(greek, mixed_title + '  ' + body) == phonemes(greek, mixed_title + ' ' + body)
         whole = render(greek, [title + '  ' + body, EciIndex(11)])
         assert whole[0] and whole[1] == [(11, len(whole[0]))]
-        assert whole == render(greek, [title + ', ' + body, EciIndex(11)])
+        assert whole == render(greek, [title + ' ' + body, EciIndex(11)])
+        assert len(render(greek, [title + ', ' + body, EciIndex(11)])[0]) > len(whole[0])
         for cut in range(len(title) - 1, len(title) + 4):
             text = title + '  ' + body
             assert render(greek, [text[:cut], text[cut:], EciIndex(11)]) == whole
@@ -91,7 +88,7 @@ def main():
                 assert marks == [(5, len(data))], (gender, rate, marks)
     finally:
         german.close()
-    print('Greek sentence prominence, selectable question contour and short peaks passed')
+    print('Greek spacing and existing prominence, selectable question contour and short peaks passed')
 
 
 if __name__ == '__main__':

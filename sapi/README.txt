@@ -1,4 +1,4 @@
-ReLoq C 1.2.0-dev2 — unified SAPI5 Windows installer
+ReLoq C 1.2.0-dev3 — unified SAPI5 Windows installer
 
 Installation
 ------------
@@ -62,7 +62,9 @@ reserve; events retain their exact audio positions. A caller reuses its own
 initialized language contexts; contexts are not transferred between threads.
 The samples and synthesis rate are unchanged.
 
-Unchanged dictionary paths retain initialized language data. Small metadata
+“Use original question intonation” selects the native question contour for
+German and US English; it is off by default. Existing settings are retained
+when upgrading. Unchanged dictionary paths retain initialized language data. Small metadata
 checks detect edits, replacement, creation and deletion of native .dic files
 between utterances. No text result or synthesized speech is cached. Aborted
 audio is discarded, and the next announcement is generated afresh.

@@ -25,7 +25,7 @@ The APK retains the signing certificate and app identity used by version 1.1.2.
 
 ## Speech before the first unlock
 
-The TTS service is marked Direct Boot aware. While the device is locked after a reboot, it uses device-protected copies of speech settings and the active, merged dictionary volumes. The source files and their original paths remain in credential-protected storage. Dictionary changes, including removal, refresh the device-protected copy; in-progress speech retains its snapshot until finished. For updates that retain the same app identity, an update receiver migrates existing settings and dictionaries; opening the settings once while unlocked also refreshes the copies. The change to a separate app identity does not transfer private data. No boot or other additional permission is requested. Real-device testing before first unlock is still required. Play Protect decisions cannot be predicted from the manifest or signing checks alone.
+The TTS service is marked Direct Boot aware. While the device is locked after a reboot, it uses device-protected copies of speech settings and the active, merged dictionary volumes. The source files and their original paths remain in credential-protected storage. Dictionary changes, including removal, refresh the device-protected copy; in-progress speech retains its snapshot until finished. The first utterance waits for the selected complete set, and a missing required copy produces a synthesis error instead of using an incomplete dictionary. For updates that retain the same app identity, an update receiver migrates existing settings and dictionaries; opening the settings once while unlocked also refreshes the copies. The change to a separate app identity does not transfer private data. No boot or other additional permission is requested. Real-device testing before first unlock is still required. Play Protect decisions cannot be predicted from the manifest or signing checks alone.
 
 ## Voice and output settings
 
@@ -53,7 +53,7 @@ text** starts a speech sample, and **Stop** interrupts it.
   for each of the eight presets. **Reset selected voice profile** restores that
   preset's anatomy and voice values; speed and output settings stay global.
 - All seven sample rates from 8 to 48 kHz, the three native pause policies and
-  optional ECI command processing are available. **Use abbreviation dictionary**
+  optional ECI command processing are available. **Use original question intonation** selects the native question contour for German and US English; it is off by default. **Use abbreviation dictionary**
   starts enabled; **Phrase prediction** starts disabled. Prediction uses the
   language core to infer phrase boundaries in unpunctuated text. Main and Root
   pronunciation volumes remain separate from abbreviation expansion. Initial output is 11,025 Hz.

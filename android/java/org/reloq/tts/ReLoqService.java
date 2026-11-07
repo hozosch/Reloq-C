@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.Future;
 
 public final class ReLoqService extends TextToSpeechService {
     private final Object contextGuard = new Object();
@@ -24,6 +25,7 @@ public final class ReLoqService extends TextToSpeechService {
     private long context;
     private volatile boolean destroyed;
     private boolean dictionariesStarted,legacyFilesCleaned;
+    private Future<?> dictionaryStartup;
     private volatile PcmQueue active;
     private volatile Catalog.Language selected = Catalog.LANGUAGES[3];
 
@@ -36,18 +38,16 @@ public final class ReLoqService extends TextToSpeechService {
             if(destroyed)return false;
             if(!dictionariesStarted) {
                 BootPreferences.refresh(this);
-                DictionaryStore.start(this);
+                dictionaryStartup=DictionaryStore.start(this);
                 dictionariesStarted=true;
+            } else if(dictionaryStartup!=null&&dictionaryStartup.isDone()) {
+                try {dictionaryStartup.get();}
+                catch(java.util.concurrent.ExecutionException error) {dictionaryStartup=DictionaryStore.retryStartup(this);}
+                catch(InterruptedException error) {Thread.currentThread().interrupt();}
             }
             return true;
         }
     }
-    private DictionaryStore.Lease acquireDictionaries() {
-        synchronized(dictionaryGuard) {
-            return startDictionariesIfUnlocked()?DictionaryStore.acquire(this):null;
-        }
-    }
-
     @Override protected String[] onGetLanguage() {
         Catalog.Language item = selected;
         return new String[]{item.locale.getISO3Language(),item.locale.getISO3Country(),""};
@@ -128,18 +128,27 @@ public final class ReLoqService extends TextToSpeechService {
         PcmQueue queue=new PcmQueue(16);
         active=queue;
         final int dialect=item.id;
-        final DictionaryStore.Lease dictionaries=acquireDictionaries();
+        final boolean unlocked=startDictionariesIfUnlocked();
+        final Future<?> startup;
+        synchronized(dictionaryGuard) { startup=unlocked?dictionaryStartup:null; }
         // If unlock races this request after the credential check, the
         // device copy remains usable for this utterance.
-        final BootDictionaries.Lease bootDictionaries=dictionaries==null?BootDictionaries.acquire(this):null;
+        final BootDictionaries.Lease bootDictionaries=!unlocked?BootDictionaries.acquire(this):null;
         boolean submitted=false;
         try {
             if(callback.start(Catalog.RATES[rate],AudioFormat.ENCODING_PCM_16BIT,1)!=TextToSpeech.SUCCESS)
                 { queue.cancel(); return; }
             worker.execute(() -> {
                 boolean success=false;
+                DictionaryStore.Lease dictionaries=null;
                 try {
                     if(!queue.isCancelled()) {
+                        if(startup!=null)startup.get();
+                        if(queue.isCancelled())return;
+                        if(unlocked)dictionaries=DictionaryStore.acquire(this);
+                        else if(preferences.getBoolean("dictionaryRequired",false)&&
+                                (bootDictionaries==null||bootDictionaries.path==null))
+                            throw new IllegalStateException("Direct Boot dictionary snapshot unavailable");
                         long handle=ensureContext();
                         if(handle!=0 && !queue.isCancelled()) {
                             NativeEngine.dictionary(handle,dictionaries!=null?dictionaries.path:
@@ -168,7 +177,6 @@ public final class ReLoqService extends TextToSpeechService {
         } catch(RejectedExecutionException error) {
             queue.cancel(); callback.error(TextToSpeech.ERROR_SERVICE);
         } finally {
-            if(!submitted&&dictionaries!=null)dictionaries.close();
             if(!submitted&&bootDictionaries!=null)bootDictionaries.close();
             if(queue.isCancelled()) stopNative(queue);
             if(active==queue) active=null;

@@ -26,7 +26,7 @@ def main():
         'eciDeleteDict': (H, (H, H)), 'eciLoadDict': (I, (H, H, I, H)),
         'eciUpdateDict': (I, (H, H, I, H, H)),
         'eciSetDictionaryPath': (I, (H, H)),
-        'eciClearInput': (I, (H,)), 'eciAddText': (I, (H, H)),
+        'eciClearInput': (I, (H,)), 'eciAddText': (I, (H, H)), 'eciStop': (I, (H,)),
         'eciSynthesize': (I, (H,)), 'eciSynchronize': (I, (H,)),
         'eciSetOutputBuffer': (I, (H, I, c.POINTER(c.c_short))),
     }
@@ -41,11 +41,15 @@ def main():
     assert h
     output = (c.c_short * 4096)()
     audio = bytearray()
+    abort = [False]
 
     @callback_type
     def callback(handle, message, count, context):
         if message == 0:
             audio.extend(c.string_at(output, 2 * count))
+            if abort[0]:
+                abort[0] = False
+                assert lib.eciStop(handle)
         return 1
 
     lib.eciRegisterCallback(h, callback, None)
@@ -98,6 +102,20 @@ def main():
         switches = statistics.median(elapsed(switch_pair) for _ in range(9))
         assert same < 0.05, f'reselecting a loaded dictionary took {same:.3f}s'
         assert switches < 0.05, f'switching two loaded dictionaries took {switches:.3f}s'
+
+        # A screen reader often cancels speech before switching language or
+        # reselecting its dictionary.  The prepared large tables must survive
+        # the cancellation and the recovered voice must remain sample-exact.
+        expected = speak(b'Unigram and Amir')
+        for _ in range(8):
+            audio.clear()
+            assert lib.eciClearInput(h) and lib.eciAddText(h, b'This is a longer message. ' * 40)
+            abort[0] = True
+            lib.eciSynthesize(h)
+            assert not abort[0] and audio, 'the interruption must occur after audio starts'
+            assert lib.eciClearInput(h) and lib.eciGetDict(h) == english
+            switch_pair();same_dictionary()
+            assert speak(b'Unigram and Amir') == expected, 'cancellation or switching lost dictionary state'
 
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'cache-test.dic'

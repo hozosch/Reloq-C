@@ -85,4 +85,5 @@
     <string name="dictionary_update_files_new">Novos arquivos de dicionário: %1$d</string>
     <string name="dictionary_update_files_total">Total de arquivos de dicionário: %1$d</string>
     <string name="dictionary_update_files_unknown">Não foi possível determinar o número de novos arquivos de dicionário.</string>
+    <string name="original_questions">Usar a entonação original das perguntas</string>
 </resources>

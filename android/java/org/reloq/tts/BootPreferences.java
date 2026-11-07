@@ -9,7 +9,7 @@ import java.util.Map;
 final class BootPreferences {
     private static final String DEVICE_FILE="speech-before-unlock";
     private static final String[] BOOLS={"androidVoice","androidRate","androidPitch",
-        "rateBoost","abbreviations","prediction","tags"};
+        "rateBoost","abbreviations","prediction","originalQuestions","tags"};
     private static final String[] INTS={"language","profile","manualWpm","rate","pauses"};
     private static final String[] VOICE={"pitch","gender","head","inflection","roughness","breathiness","volume"};
     private BootPreferences() {}
@@ -30,6 +30,10 @@ final class BootPreferences {
         SharedPreferences.Editor edit=destination.edit().clear();
         for(String key:BOOLS)if(values.get(key) instanceof Boolean)edit.putBoolean(key,(Boolean)values.get(key));
         for(String key:INTS)if(values.get(key) instanceof Integer)edit.putInt(key,(Integer)values.get(key));
+        Object sources=values.get("dictionarySources");
+        boolean own=sources instanceof String&&!((String)sources).replaceAll("\\s","").equals("[]");
+        edit.putBoolean("dictionaryRequired",Boolean.TRUE.equals(values.get("communityDictionaries"))||
+            own||values.get("dictionarySnapshot") instanceof String);
         for(int profile=0;profile<Catalog.PROFILES.length;++profile)for(String field:VOICE) {
             String key="voice."+profile+"."+field;
             if(values.get(key) instanceof Integer)edit.putInt(key,(Integer)values.get(key));

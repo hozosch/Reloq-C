@@ -99,10 +99,12 @@ class Engine:
         self.cancelled = False
         self.parameters = []
         self.dictionary_paths = []
+        self.dictionary_paths_at_speak = []
         self.__class__.instances.append(self)
 
     def speak(self, parts, on_pcm, on_index):
         self.parts.append(tuple(parts))
+        self.dictionary_paths_at_speak.append(tuple(self.dictionary_paths))
         for part in parts:
             if type(part).__name__ == "EciText" and part.text:
                 on_pcm(part.text.encode("utf8"))
@@ -735,6 +737,28 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                             finally:
                                 fresh.terminate()
                     print(f"NVDA initial language: {len(first_language_cases)} fresh/saved/schema/region cases passed")
+                    # Even a speech request immediately after construction,
+                    # before NVDA's later initSettings call, must use the
+                    # dictionary enabled in the active or legacy profile.
+                    for saved in ({"_dictionaryCommunity": True},
+                                  {"communityDictionaries": True},
+                                  {"_dictionaryCommunity": False, "communityDictionaries": True}):
+                        profile = {"speech": {driver.name: saved},
+                                   "audio": {"outputDevice": "default"},
+                                   "general": {"language": "Windows"}}
+                        config_api.conf = configuration_manager(profile).rootSection
+                        before = len(Engine.instances)
+                        with mock.patch.object(driver_module, "CommunityDictionaries", side_effect=updater):
+                            fresh = driver_module.SynthDriver()
+                            try:
+                                fresh.speak(["Unigram"])
+                                until(lambda: len(Engine.instances) > before and Engine.instances[-1].parts)
+                                actual = Engine.instances[-1].dictionary_paths_at_speak[0]
+                                enabled = saved.get("_dictionaryCommunity", saved.get("communityDictionaries"))
+                                assert bool(actual and actual[-1]) is enabled, (saved, actual)
+                            finally:
+                                fresh.terminate()
+                    print("NVDA initial dictionary: saved and legacy settings precede first speech")
                 finally:
                     config_api.conf = original_conf
                 if inspect_adapter is not None:

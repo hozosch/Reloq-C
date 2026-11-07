@@ -22,6 +22,7 @@ def main():
     p.add_argument("--android-jar",type=Path,required=True)
     p.add_argument("--library",type=Path,default=ROOT/"eci/libreloq_eci.so")
     p.add_argument("--report",type=Path)
+    p.add_argument("--settings-only",action="store_true",help="run host persistence and controls without a native audio measurement")
     a=p.parse_args()
     if not a.java_home:p.error("--java-home required")
     with tempfile.TemporaryDirectory() as temporary:
@@ -38,6 +39,7 @@ def main():
         result=subprocess.run([*base,"org.reloq.tts.SettingsTest"],check=True,capture_output=True,text=True,timeout=30)
         print(result.stdout,end="")
         controls=list(map(int,result.stdout.splitlines()[-1].split("\t")[1:]))
+    if a.settings_only:return
     texts=[("The clear morning light was coming through the window while we talked about "
           "the work that needed to be done and the places we hoped to visit during "
           "the coming summer when the weather would be warm and the days would be long."),

@@ -10,7 +10,7 @@
 #include "ui.inc"
 enum {LANGUAGE=100,PROFILE,GENDER,RATE,PAUSES,PITCH,INFLECTION,HEAD,ROUGH,BREATH,
       TAGS,ABBREVIATIONS,PREDICTION,DICTIONARIES,BOOST,DIRECTORY,OPEN_FOLDER,RESET,STATUS,SHARED,
-      DICT_SOURCE,DICT_DOWNLOAD};
+      DICT_SOURCE,DICT_DOWNLOAD,ORIGINAL_QUESTIONS};
 #define DICTIONARY_DONE (WM_APP+31)
 struct dictionary_task {HWND window;HMODULE module;};
 static DWORD WINAPI dictionary_worker(void *parameter)
@@ -82,6 +82,7 @@ static void populate(HWND window,struct dialog *d)
     for(int i=0;i<5;++i)SetDlgItemInt(window,PITCH+i,values[i],FALSE);
     const DWORD checks[]={d->s.tags,d->s.abbreviations,d->s.prediction,d->s.dictionaries,d->s.boost};
     for(int i=0;i<5;++i)CheckDlgButton(window,TAGS+i,checks[i]?BST_CHECKED:BST_UNCHECKED);
+    CheckDlgButton(window,ORIGINAL_QUESTIONS,d->s.original_questions?BST_CHECKED:BST_UNCHECKED);
     CheckDlgButton(window,SHARED,d->shared?BST_CHECKED:BST_UNCHECKED);
     SetDlgItemTextW(window,RESET,d->shared?T(RESET_ALL):T(RESET));
     SetDlgItemTextW(window,DIRECTORY,d->s.directory);d->loading=0;
@@ -96,7 +97,7 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
     struct dialog *d=(struct dialog *)GetWindowLongPtrW(w,DWLP_USER);
     if(message==WM_INITDIALOG){d=(struct dialog *)lp;SetWindowLongPtrW(w,DWLP_USER,(LONG_PTR)d);
         SetWindowTextW(w,T(TITLE));
-        RECT frame={0,0,620,690};AdjustWindowRectEx(&frame,(DWORD)GetWindowLongPtrW(w,GWL_STYLE),FALSE,0);
+        RECT frame={0,0,620,714};AdjustWindowRectEx(&frame,(DWORD)GetWindowLongPtrW(w,GWL_STYLE),FALSE,0);
         SetWindowPos(w,NULL,0,0,frame.right-frame.left,frame.bottom-frame.top,SWP_NOMOVE|SWP_NOZORDER);
         combo(w,LANGUAGE,T(LANGUAGE),8);combo(w,PROFILE,T(PROFILE),38);
         combo(w,GENDER,T(MODEL),68);combo(w,RATE,T(RATE),98);combo(w,PAUSES,T(PAUSES),128);
@@ -111,18 +112,19 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         number(w,PITCH,T(PITCH),188);number(w,INFLECTION,T(INFLECTION),215);
         number(w,HEAD,T(HEAD),242);number(w,ROUGH,T(ROUGH),269);number(w,BREATH,T(BREATH),296);
         check(w,TAGS,T(TAGS),326);check(w,ABBREVIATIONS,T(ABBREVIATIONS),350);
-        check(w,PREDICTION,T(PREDICTION),374);check(w,DICTIONARIES,T(DICTIONARIES),398);check(w,BOOST,T(BOOST),422);
-        combo(w,DICT_SOURCE,T(DICT_SOURCE),449);
+        check(w,PREDICTION,T(PREDICTION),374);check(w,ORIGINAL_QUESTIONS,T(ORIGINAL_QUESTIONS),398);
+        check(w,DICTIONARIES,T(DICTIONARIES),422);check(w,BOOST,T(BOOST),446);
+        combo(w,DICT_SOURCE,T(DICT_SOURCE),473);
         add(w,DICT_SOURCE,T(DICT_COMMUNITY));add(w,DICT_SOURCE,T(DICT_ALTERNATIVE));
-        control(w,L"BUTTON",T(DICT_DOWNLOAD),WS_TABSTOP|BS_PUSHBUTTON,DICT_DOWNLOAD,210,479,398,24);
-        label(w,T(DIRECTORY),12,507,596);
-        control(w,L"EDIT",L"",WS_TABSTOP|ES_AUTOHSCROLL,DIRECTORY,12,532,440,24);
-        control(w,L"BUTTON",T(OPEN),WS_TABSTOP|BS_PUSHBUTTON,OPEN_FOLDER,462,532,146,24);
-        label(w,T(DICT_OVERRIDE),12,559,596);
-        control(w,L"STATIC",T(RATE_HINT),0,-1,12,583,596,36);
-        control(w,L"STATIC",L"",0,STATUS,12,621,596,24);
-        control(w,L"BUTTON",T(RESET),WS_TABSTOP|BS_PUSHBUTTON,RESET,12,653,360,28);
-        control(w,L"BUTTON",T(CLOSE),WS_TABSTOP|BS_DEFPUSHBUTTON,IDOK,498,653,110,28);
+        control(w,L"BUTTON",T(DICT_DOWNLOAD),WS_TABSTOP|BS_PUSHBUTTON,DICT_DOWNLOAD,210,503,398,24);
+        label(w,T(DIRECTORY),12,531,596);
+        control(w,L"EDIT",L"",WS_TABSTOP|ES_AUTOHSCROLL,DIRECTORY,12,556,440,24);
+        control(w,L"BUTTON",T(OPEN),WS_TABSTOP|BS_PUSHBUTTON,OPEN_FOLDER,462,556,146,24);
+        label(w,T(DICT_OVERRIDE),12,583,596);
+        control(w,L"STATIC",T(RATE_HINT),0,-1,12,607,596,36);
+        control(w,L"STATIC",L"",0,STATUS,12,645,596,24);
+        control(w,L"BUTTON",T(RESET),WS_TABSTOP|BS_PUSHBUTTON,RESET,12,677,360,28);
+        control(w,L"BUTTON",T(CLOSE),WS_TABSTOP|BS_DEFPUSHBUTTON,IDOK,498,677,110,28);
         populate(w,d);SetDlgItemTextW(w,STATUS,T(ACTIVE));
         SetFocus(GetDlgItem(w,LANGUAGE));return FALSE;
     }
@@ -182,6 +184,8 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         *fields[id-PITCH]=value;persist(w,d);return TRUE;}
     if(notification==BN_CLICKED&&id>=TAGS&&id<=BOOST){DWORD *fields[]={&d->s.tags,&d->s.abbreviations,&d->s.prediction,&d->s.dictionaries,&d->s.boost};
         *fields[id-TAGS]=IsDlgButtonChecked(w,id)==BST_CHECKED;persist(w,d);return TRUE;}
+    if(notification==BN_CLICKED&&id==ORIGINAL_QUESTIONS){
+        d->s.original_questions=IsDlgButtonChecked(w,id)==BST_CHECKED;persist(w,d);return TRUE;}
     if(id==DIRECTORY&&notification==EN_CHANGE){WCHAR path[1024];GetDlgItemTextW(w,id,path,1024);
         DWORD attributes=path[0]?GetFileAttributesW(path):FILE_ATTRIBUTE_DIRECTORY;
         if(attributes==INVALID_FILE_ATTRIBUTES||!(attributes&FILE_ATTRIBUTE_DIRECTORY)){
@@ -201,7 +205,7 @@ HRESULT sapi_settings_dialog(HWND parent,int dialect)
         .dialog={.style=WS_POPUP|WS_CAPTION|WS_SYSMENU|DS_MODALFRAME|DS_CENTER,.cx=335,.cy=430},
         .title=L"ReLoq C voice settings"};
     /* Controls use pixels, so size the client area independently of dialog
-     * units. The initial WM_INITDIALOG layout fits a 620 × 690 client area. */
+     * units. The initial WM_INITDIALOG layout fits a 620 × 714 client area. */
     INT_PTR result=DialogBoxIndirectParamW(sapi_module,&templ.dialog,parent,dialog_proc,(LPARAM)&d);
     return result==-1?HRESULT_FROM_WIN32(GetLastError()):S_OK;
 }

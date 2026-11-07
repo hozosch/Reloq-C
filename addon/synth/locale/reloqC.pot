@@ -324,3 +324,6 @@ msgstr ""
 
 msgid "New dictionary files: %s"
 msgstr ""
+
+msgid "The selected pronunciation dictionaries could not be loaded. Speech will resume when they are available. Check the dictionary settings, or select another synthesizer."
+msgstr ""

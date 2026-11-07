@@ -53,7 +53,7 @@ def main():
                 native_voice=True)
             try:
                 if dictionaries!="-":with_engine.set_dictionary_path(dictionaries)
-                keys=(0x1010,0x100d,0x1008,0x1009,0x100e,0x100f,0x100a,0x1007,5,0x100c,0x100b,3,11)
+                keys=(0x1010,0x100d,0x1008,0x1009,0x100e,0x100f,0x100a,0x1007,5,0x100c,0x100b,3,11,0x1015)
                 for parameter,value in zip(keys,map(int,controls.split(','))):
                     with_engine.set_parameter(parameter,value)
                 digest=hashlib.sha256();size=[0]
