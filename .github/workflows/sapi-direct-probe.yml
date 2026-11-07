@@ -1,0 +1,34 @@
+name: Probe synchronous SAPI
+on:
+  push:
+    branches: ['codex/sapi-direct-probe-20261107']
+permissions:
+  actions: read
+  contents: read
+jobs:
+  probe:
+    runs-on: windows-2022
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: sapi-native-x64
+          run-id: 42363445606
+          github-token: ${{ github.token }}
+          path: payload
+      - name: Check one real SAPI activation
+        shell: pwsh
+        run: |
+          Expand-Archive (Get-ChildItem payload/*.zip | Select-Object -First 1).FullName test
+          $dll = (Resolve-Path 'test/ReLoqSapi.dll').Path
+          $reg = Start-Process "$env:windir/System32/regsvr32.exe" -ArgumentList '/s', $dll -Wait -PassThru
+          if ($reg.ExitCode -ne 0) { throw "Registration failed: $($reg.ExitCode)" }
+          $test = (Resolve-Path 'test/Test-SAPI.exe').Path
+          $p = Start-Process $test -ArgumentList '--first-case' -RedirectStandardOutput probe.txt -RedirectStandardError errors.txt -PassThru
+          if (!$p.WaitForExit(45000)) {
+            Stop-Process -Id $p.Id -Force
+            Get-Content probe.txt, errors.txt -ErrorAction SilentlyContinue
+            throw 'SAPI first case did not finish in 45 seconds'
+          }
+          Get-Content probe.txt, errors.txt -ErrorAction SilentlyContinue
+          if ($p.ExitCode -ne 0) { throw "SAPI first case failed: $($p.ExitCode)" }
