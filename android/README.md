@@ -54,7 +54,7 @@ text** starts a speech sample, and **Stop** interrupts it.
   preset's anatomy and voice values; speed and output settings stay global.
 - All seven sample rates from 8 to 48 kHz, the three native pause policies and
   optional ECI command processing are available. **Use original question intonation** selects the native question contour for German and US English; it is off by default. **Use abbreviation dictionary**
-  starts enabled; **Phrase prediction** starts disabled. **Mellow mode** softens voiced presence around 3–4 kHz at rates of 16 kHz and above and omits added richness from 22 kHz. It is off by default. Prediction uses the
+  starts enabled; **Phrase prediction** starts disabled. **Mellow mode** softens voiced presence around 3–4 kHz at rates of 16 kHz and above, omits added richness from 22 kHz and slightly reduces voiced breathiness. It is off by default. Prediction uses the
   language core to infer phrase boundaries in unpunctuated text. Main and Root
   pronunciation volumes remain separate from abbreviation expansion. Initial output is 11,025 Hz.
   Android's media volume continues to control playback independently of the

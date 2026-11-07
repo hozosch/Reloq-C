@@ -34,11 +34,45 @@ static double lift(int rate,int frequency)
     return 10*log10(new_energy/old_energy);
 }
 
+static void check_voiced_aspiration(int rate)
+{
+    struct reloq_rate_transfer normal={0},mellow={0};
+    mellow.mellow_mode=1;
+    prepare(&normal,rate);prepare(&mellow,rate);
+    struct reloq_rate_transfer split=mellow;
+    float a[3840],b[3840],c[3840];
+    const size_t count=(size_t)(rate*.08);
+    assert(count<=sizeof a/sizeof *a);
+    for(size_t i=0;i<count;++i)a[i]=b[i]=c[i]=1;
+    /* An initially unvoiced breath, including h, is identical. */
+    reloq_rate_transfer_process_aspiration(&normal,a,count,0);
+    reloq_rate_transfer_process_aspiration(&mellow,b,count,0);
+    for(size_t i=0;i<count;++i)assert(a[i]==1 && b[i]==1);
+    /* After the 5-ms transition, mellow is 1.5 dB below normal.
+     * Splitting the same samples across blocks cannot change the output. */
+    reloq_rate_transfer_process_aspiration(&normal,a,count,1);
+    reloq_rate_transfer_process_aspiration(&mellow,b,count,1);
+    for(size_t i=0;i<count;) {
+        size_t n=1+(i*31)%127;if(n>count-i)n=count-i;
+        reloq_rate_transfer_process_aspiration(&split,c+i,n,1);i+=n;
+    }
+    assert(!memcmp(b,c,count*sizeof *b));
+    assert(fabs(a[count-1]-0.7943282347242815)<1e-6);
+    assert(fabs(b[count-1]-0.6683439175686147)<1e-6);
+    float last=b[count-1];
+    for(size_t i=0;i<count;++i)a[i]=b[i]=1;
+    reloq_rate_transfer_process_aspiration(&normal,a,count,0);
+    reloq_rate_transfer_process_aspiration(&mellow,b,count,0);
+    assert(b[0]>last && b[0]-last<.01);
+    assert(a[count-1]>.99999 && b[count-1]>.99999);
+}
+
 int main(void)
 {
     const int rates[]={16000,22050,32000,44100,48000};
     for(unsigned k=0;k<sizeof rates/sizeof *rates;++k) {
         int rate=rates[k];
+        check_voiced_aspiration(rate);
         double least=10,most=0;
         for(int frequency=3500;frequency<=4000;frequency+=25) {
             double gain=lift(rate,frequency);
@@ -93,6 +127,6 @@ int main(void)
         reloq_rate_transfer_process_voice(&a,samples,3);
         assert(!memcmp(samples,before,sizeof before));
     }
-    puts("Mellow mode: wider reduction reaching 3 kHz across all five extended clocks; unchanged aspiration, stable sections and block boundaries passed");
+    puts("Mellow mode: wider voice reduction and 1.5 dB less voiced aspiration across all five extended clocks; unvoiced breath, stability and block boundaries passed");
     return 0;
 }
