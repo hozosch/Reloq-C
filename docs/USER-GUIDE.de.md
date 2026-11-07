@@ -1,5 +1,9 @@
 # Eloquence C – Bedienungsanleitung
 
+## Version 1.2.1
+
+Der weiche Modus wurde klanglich verfeinert: Er dämpft die stimmhaften Anteile breiter, verzichtet auf zusätzliche Richness und reduziert die Behauchung bei stimmhaften Lauten.
+
 ## Version 1.2.0
 
 Die griechische Aussprache und Satzmelodie wurden verbessert. Die erste Sprachausgabe wartet auf die ausgewählten Wörterbücher, Lautstärke und SAPI-Reaktion wurden verbessert und ein Punkt nach einem einzelnen Buchstaben kann einen englischen Satz beenden. Der weiche Modus und die ursprüngliche Frageintonation sind als Optionen verfügbar.

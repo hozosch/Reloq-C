@@ -1,5 +1,9 @@
 # Eloquence C – user guide
 
+## Version 1.2.1
+
+Mellow mode has been refined with a broader reduction in voiced presence, no added richness and less breathiness during voicing.
+
 ## Version 1.2.0
 
 Greek pronunciation and sentence melody have been refined. The first utterance waits for the selected dictionaries, speech volume and SAPI responsiveness have been improved, and a full stop after a single letter can end an English sentence. Mellow mode and original question intonation are available as optional settings.
