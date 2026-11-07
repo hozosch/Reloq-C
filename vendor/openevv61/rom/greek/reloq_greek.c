@@ -65,7 +65,10 @@ static size_t onset(const struct sound *s,size_t first,size_t next)
 }
 static int weak_word(const struct greek_letter *g,size_t n)
 {
-    static const char *const words[]={"και","κι","να","στο","στα","στη","στην","στον","στους","στις","στου","στης","στων","τον","την","τη","το","του","της","τους","τις","τα","των","μου","σου","μας","σας","ο","η","οι","σε","με","για","θα","δεν","δε","μη","μην","που","πως","αν","σαν","ως","ας"};
+    /* Full negative particles δεν and μην can carry lexical stress even
+       though their usual spelling has no written accent. The shorter δε
+       and μη remain weak here, as do articles and clitic pronouns. */
+    static const char *const words[]={"και","κι","να","στο","στα","στη","στην","στον","στους","στις","στου","στης","στων","τον","την","τη","το","του","της","τους","τις","τα","των","μου","σου","μας","σας","ο","η","οι","σε","με","για","θα","δε","μη","που","πως","αν","σαν","ως","ας"};
     for(size_t w=0;w<COUNT(words);++w){size_t j=0,i=0;while(words[w][i]&&j<n){uint32_t cp;size_t k=decode(words[w]+i,&cp);if(!k||letter(cp).base!=g[j].base)break;i+=k;++j;}if(j==n&&!words[w][i])return 1;}
     return 0;
 }
