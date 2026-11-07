@@ -213,10 +213,19 @@ static int greek_word_has_accent(delta_state *d,int32_t from,int32_t to)
 }
 static void greek_finish_unstressed_run(unsigned char **words,size_t count)
 {
-    /* Keep the core's normal reductions. Only interrupt a run of at least
-       three lexically stressed words which it made entirely unstressed. */
+    /* Greek content words normally retain prenuclear accents, but a run of
+       full accents sounded too strong in the shared Castilian core. Restore
+       one ordinary accent in an otherwise fully reduced pair or longer run;
+       keep the remaining reductions and leave function words alone. */
     int16_t normal=1;
-    if(count>=3)for(size_t i=1;i+1<count;i+=3)memcpy(words[i],&normal,2);
+    if(count==2)memcpy(words[0],&normal,2);
+    else if(count>=3)for(size_t i=1;i+1<count;i+=3)memcpy(words[i],&normal,2);
+}
+int reloq61_greek_keep_lexical_duration(void *state)
+{
+    delta_state *d=state;DeltaLang *dl=EVV_AT(DeltaLang *,d->dlang);
+    const struct capture *c=dl->reloq_context;
+    return dl->reloq_frame&&c&&c->q->language==0x120000&&!c->greek_explicit_prominence;
 }
 void reloq61_greek_adjust_word_stress(void *state,int32_t from,int32_t to)
 {

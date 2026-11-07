@@ -25,6 +25,7 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_eses61.h"
+extern int reloq61_greek_keep_lexical_duration(void *);
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -4509,6 +4510,10 @@ L277:;
     if ((int16_t)(STATE(int16_t, s18)) == 1) goto L296;
     goto L528;
 L296:;
+    /* Word-level pitch accent and lexical vowel stress are distinct in
+       Greek. A deaccented content word must not lose the native duration of
+       its stressed vowel; explicit caller prominence stays authoritative. */
+    if (reloq61_greek_keep_lexical_duration(state)) goto L528;
     r0 = reloq61_typed_starttest(DELTA_ENTRY_starttest, state, (int16_t)(4));
     AT(int32_t, -16) = (r0);
     r0 = reloq61_typed_move_f(DELTA_ENTRY_move_f, state, (delta_loc *)(base + (-24)), (int32_t)(9000));

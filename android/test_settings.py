@@ -36,7 +36,12 @@ def main():
         base=[str(a.java_home/"bin/java"),"-cp",classpath]
         subprocess.run([*base,"org.reloq.tts.PcmQueueTest"],check=True,timeout=30)
         subprocess.run([*base,"org.reloq.tts.UpdateDataTest"],check=True,timeout=30)
-        result=subprocess.run([*base,"org.reloq.tts.SettingsTest"],check=True,capture_output=True,text=True,timeout=30)
+        try:
+            result=subprocess.run([*base,"org.reloq.tts.SettingsTest"],check=True,capture_output=True,text=True,timeout=30)
+        except subprocess.CalledProcessError as error:
+            print(error.stdout, file=sys.stderr)
+            print(error.stderr, file=sys.stderr)
+            raise
         print(result.stdout,end="")
         controls=list(map(int,result.stdout.splitlines()[-1].split("\t")[1:]))
     if a.settings_only:return

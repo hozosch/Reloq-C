@@ -36,15 +36,20 @@ def main():
         # marked. Restore the middle content word while keeping the nearby
         # function words weak and the core's other reductions intact.
         phones = phonemes(greek, title + '  ' + body)
+        assert '`0 `[.1glo.0sas]' not in phones and '`[.1glo.0sas]' in phones, phones
         clause = phones.split(',', 1)[1]
         assert '`0 `[.0te.1Ti]' in clause, clause
         assert '`0 `[.0is.1ji]' not in clause and '`[.0is.1ji]' in clause, clause
         assert '`0 `[.1ne.0a]' in clause, clause
         assert '`[.0La]' in clause and '`[.0na]' in clause and '`[.0se]' in clause, clause
-        # Two reduced content words in an ordinary phrase are not enough to
-        # invoke the long-run correction.
+        # At most one of two consecutively reduced content words receives a
+        # normal accent; do not force both into full prominence.
         ordinary = phonemes(greek, 'Το μεγάλο πράσινο παράθυρο είναι ανοιχτό.')
-        assert '`0 `[.1pra.0si.0no] `0 `[.0pa.1ra.0Ti.0ro]' in ordinary, ordinary
+        assert '`[.1pra.0si.0no] `0 `[.0pa.1ra.0Ti.0ro]' in ordinary, ordinary
+        assert '`0 `[.1pra.0si.0no]' not in ordinary, ordinary
+        network = phonemes(greek, 'Ο έλεγχος σύνδεσης δικτύου ολοκληρώθηκε.')
+        assert '`[.1sin.0de.0sis] `0 `[.0dik.1ti.0u]' in network, network
+        assert '`0 `[.1sin.0de.0sis]' not in network, network
         assert phonemes(greek, title + '  ' + body) == phonemes(greek, title + ' ' + body)
         mixed_title = 'Αλλαγή γλώσσας για το NVDA'
         assert phonemes(greek, mixed_title + '  ' + body) == phonemes(greek, mixed_title + ' ' + body)

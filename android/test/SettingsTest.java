@@ -53,7 +53,7 @@ public final class SettingsTest {
             s.androidRate=false;s.manualWpm=280;s.androidPitch=false;s.manualPitch=43;
             s.gender=1;s.head=22;s.inflection=65;s.roughness=12;s.breathiness=60;
             s.volume=80;s.rate=6;s.pauses=2;s.tags=true;
-            int[] expected={1,22,43,65,12,60,80,VoiceSettings.targetSpeed(280.0/190),6,2,1,0,0,0};
+            int[] expected={1,22,43,65,12,60,80,VoiceSettings.targetSpeed(280.0/190),6,2,1,0,0,0,0};
             require(Arrays.equals(s.controls(20,20),expected));
             require(Arrays.equals(s.controls(400,400),expected));
             Map<String,Object> values=new HashMap<>();SharedPreferences p=memory(values);
