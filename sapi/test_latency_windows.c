@@ -20,6 +20,7 @@ int wmain(int argc,wchar_t **argv)
  WAVEFORMATEX wf={WAVE_FORMAT_PCM,1,22050,44100,2,16,0};
  if(SUCCEEDED(h))h=ISpStream_SetBaseStream(out,mem,&SPDFID_WaveFormatEx,&wf);
  if(SUCCEEDED(h))h=ISpVoice_SetOutput(voice,(IUnknown *)out,FALSE);
+ if(SUCCEEDED(h)){ULONGLONG interest=SPFEI(SPEI_START_INPUT_STREAM)|SPFEI(SPEI_END_INPUT_STREAM)|SPFEI(SPEI_TTS_BOOKMARK);h=ISpVoice_SetInterest(voice,interest,interest);}
  if(SUCCEEDED(h))h=ISpVoice_SetRate(voice,5);
  if(SUCCEEDED(h))h=ISpVoice_Speak(voice,L"Eine kurze Ansage zur Vorbereitung.",SPF_IS_NOT_XML,NULL);
  for(int i=0;i<15&&SUCCEEDED(h);++i){
