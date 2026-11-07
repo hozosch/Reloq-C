@@ -1,4 +1,4 @@
-name: Temporary SAPI dev6 cancellation latency comparison
+name: Temporary final SAPI cancellation latency comparison
 on:
   push:
     branches: [codex/sapi-latency-dev5-20261107]
@@ -32,22 +32,22 @@ jobs:
           $ErrorActionPreference='Stop'
           $ready=$false
           for($i=0;$i -lt 70;$i++) {
-            $a=gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/42382410559/artifacts" | ConvertFrom-Json
+            $a=gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/42382700023/artifacts" | ConvertFrom-Json
             if($a.artifacts | Where-Object { $_.name -eq 'sapi-native-x86' -and !$_.expired }) {$ready=$true;break}
-            $r=gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/42382410559" | ConvertFrom-Json
+            $r=gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/42382700023" | ConvertFrom-Json
             if($r.status -eq 'completed'){throw "Candidate workflow completed without its x86 artifact: $($r.conclusion)"}
             Start-Sleep -Seconds 15
           }
           if(!$ready){throw 'Candidate x86 build did not finish in time'}
       - uses: actions/download-artifact@v4
         with:
-          run-id: 42373845198
+          run-id: 42381540459
           github-token: ${{ github.token }}
           name: sapi-native-x86
           path: baseline-archive
       - uses: actions/download-artifact@v4
         with:
-          run-id: 42382410559
+          run-id: 42382700023
           github-token: ${{ github.token }}
           name: sapi-native-x86
           path: candidate-archive
