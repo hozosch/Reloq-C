@@ -1,0 +1,30 @@
+name: Prepare Windows cross compiler
+on:
+  push:
+    branches: [codex/build-cross-toolchain-20261108]
+permissions:
+  contents: read
+jobs:
+  toolchain:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install compiler
+        run: |
+          set -euo pipefail
+          sudo apt-get -o Acquire::Retries=2 update -qq
+          sudo apt-get -o Acquire::Retries=2 install -y --no-install-recommends gcc-mingw-w64-x86-64-posix binutils-mingw-w64-x86-64
+      - name: Archive compiler and target libraries
+        run: |
+          set -euo pipefail
+          files=(/usr/bin/x86_64-w64-mingw32-* /usr/lib/gcc/x86_64-w64-mingw32 /usr/x86_64-w64-mingw32)
+          tar --dereference -C / -cf - "${files[@]#/}" | gzip -1 > cross-toolchain.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mingw-x64-toolchain
+          path: cross-toolchain.tar.gz
+          compression-level: 0
+          retention-days: 1
