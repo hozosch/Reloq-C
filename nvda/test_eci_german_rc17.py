@@ -37,14 +37,11 @@ def main():
                 for ending in ('. Test', '? Test', '! Test', '. Mama.'):
                     assert first_index(engine, ending) == final, (gender, rate, ending)
                     checks += 1
-                # A comma with a following word is still the short text A;
-                # explicit phonetic input keeps its own pronunciation.
-                text = 'Pizza, Test'
-                assert render(engine, [text]) == render(engine, [phonemes(engine, text)])
-                checks += 1
-                text = 'Pizza. Test'
-                assert render(engine, [text]) != render(engine, [phonemes(engine, text)])
-                checks += 1
+                # Before punctuation, text uses the final A while an explicit
+                # phonetic transcription keeps its supplied pronunciation.
+                for text in ('Pizza, Test', 'Pizza: Test', 'Pizza. Test'):
+                    assert render(engine, [text]) != render(engine, [phonemes(engine, text)]), (gender, rate, text)
+                    checks += 1
                 for number in ('27', '47', '67', '97'):
                     p = phonemes(engine, number)
                     assert render(engine, [number, EciIndex(7)]) == render(engine, [p, EciIndex(7)]), (gender, rate, number)
@@ -61,10 +58,10 @@ def main():
             for e in (engine, baseline):
                 e.set_parameter(GENDER, 0)
                 e.set_parameter(SAMPLE_RATE, 1)
-            for text in ('Rot', 'vierund', 'Barriere', 'wie eben', 'Pizza', 'Pizza. Test'):
+            for text in ('Rot', 'vierund', 'Barriere', 'wie eben', 'Pizza', 'Pizza. Test', 'Pizza, Test'):
                 assert render(engine, [text]) != render(baseline, [text]), text
                 checks += 1
-            for text in ('sieben', '1 Test', 'plus', 'Pizza ist gut', 'Pizza, Test'):
+            for text in ('sieben', '1 Test', 'plus', 'Pizza ist gut'):
                 assert render(engine, [text]) == render(baseline, [text]), text
                 checks += 1
             for text in ('27', '47', '67', '97', 'siebenund'):
