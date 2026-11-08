@@ -1080,6 +1080,17 @@ static void word_voice_frame(const struct rule_plan *s,const struct rule_span *f
         if(m->breathiness==100)c[2]=0;
     }
 }
+static double pitch_ratio(int target,int native_baseline)
+{
+    double baseline=reloq_voice_pitch_f0_scale(native_baseline);
+    if(reloq_pitch_is_hz(target)) {
+        /* The provider emits its baseline in whole tenths of a hertz.
+         * Undo that rounding before applying the absolute Hz request. */
+        double tenths=trunc(1189.15*baseline);
+        return 10.0*(target-RELOQ_PITCH_HZ_OFFSET)/tenths;
+    }
+    return reloq_voice_pitch_f0_scale(target)/baseline;
+}
 static int render_until(struct rule_plan *s,int64_t limit)
 {
     struct rule_playback *p=s->playback;
@@ -1130,7 +1141,7 @@ static int render_until(struct rule_plan *s,int64_t limit)
         word_voice_frame(s,voice,controls);
         double pitch_scale=voice->pitch>=0&&(voice->pitch_tick>p->last_pitch_tick||
             (voice->pitch_tick==p->last_pitch_tick&&voice->pitch_source>=p->last_pitch_source))?
-            reloq_voice_pitch_f0_scale(voice->pitch)/reloq_voice_pitch_f0_scale(voice->native_pitch):p->pitch_scale;
+            pitch_ratio(voice->pitch,voice->native_pitch):p->pitch_scale;
         if(pitch_scale!=1)controls[1]=(float)(controls[1]*pitch_scale);
         if(memcmp(&p->model,&voice->model,sizeof p->model)) {
             p->model=voice->model;
@@ -1208,11 +1219,17 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
 {
     if(!text||!settings||!session||!sink||(index_count&&!indices)||(pitch_count&&!pitches)||
        index_count>INT32_MAX||pitch_count>(size_t)INT32_MAX-index_count)return RELOQ_DE_UTTERANCE_INVALID;
+    if(settings->native_pitch_plus_one<0)return RELOQ_DE_UTTERANCE_INVALID;
+    int configured_pitch=settings->native_pitch_plus_one?settings->native_pitch_plus_one-1:
+        language==0x40000?65:settings->pitch;
+    if(!reloq_pitch_valid(configured_pitch))return RELOQ_DE_UTTERANCE_INVALID;
+    /* The provider accepts only ECI 0..100. Its curves are rescaled in the
+     * renderer below when the requested baseline is expressed in Hz. */
+    int provider_pitch=reloq_pitch_is_hz(configured_pitch)?65:configured_pitch;
     unsigned char *a=NULL;size_t *map=NULL,n=0;
     struct rule_plan plan={.session=session,.index_count=index_count+pitch_count,
         .retracted_filter=language==0x20000||language==0x120000,.word_volume=native_volume,.word_pitch=-1,
-        .native_pitch=settings->native_pitch_plus_one?settings->native_pitch_plus_one-1:
-            language==0x40000?65:settings->pitch,
+        .native_pitch=provider_pitch,
         .word_speed=-1,.word_inflection=-1};
     plan.word_model=(struct reloq_german_voice_model){
         settings->head_size_plus_one?settings->head_size_plus_one-1:50,
@@ -1230,13 +1247,20 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     if(language==0x40000&&german_dictionary_compound_input(&a,&map,&n,tags))goto memory;
     if(language==0x40000&&german_long_overlay_input(&a,&map,&n,tags))goto memory;
     if(language==0x40000&&german_currency_input(&a,&map,&n,tags))goto memory;
+    int cjk_exact_pitch=plan.cjk_volume && reloq_pitch_is_hz(configured_pitch);
+    if(plan.cjk_volume && tags)for(size_t i=0;i<n;) {
+        struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
+        if(t.kind==RELOQ_TAG_PITCH && reloq_pitch_is_hz(t.value))cjk_exact_pitch=1;
+        i+=t.length?t.length:1;
+    }
+    int managed_controls=!plan.cjk_volume || cjk_exact_pitch;
     if(plan.cjk_volume) {
         /* CJK lexers can treat even a redundant command as a token break.
          * No-op voice controls must leave native segmentation untouched. Actual
          * changes retain the module's acoustic-word parameter schedule. */
         int values[8]={settings->gender,
             settings->head_size_plus_one?settings->head_size_plus_one-1:50,
-            settings->native_pitch_plus_one?settings->native_pitch_plus_one-1:settings->pitch,
+            configured_pitch,
             settings->native_inflection_plus_one?settings->native_inflection_plus_one-1:30,
             settings->roughness,settings->breathiness,
             settings->native_speed?(settings->native_speed<0?0:settings->native_speed):settings->rate,
@@ -1274,7 +1298,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
      * callback. Native analysis must see the unchanged lexical sentence. */
     for(size_t i=0;i<n;) {
         struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
-        if(!plan.cjk_volume) {
+        if(managed_controls) {
             if(t.kind==RELOQ_TAG_PITCH||t.kind==RELOQ_TAG_SPEED||t.kind==RELOQ_TAG_VOLUME||
                t.kind==RELOQ_TAG_INFLECTION||t.kind==RELOQ_TAG_GENDER||t.kind==RELOQ_TAG_HEAD_SIZE||
                t.kind==RELOQ_TAG_ROUGHNESS||t.kind==RELOQ_TAG_BREATHINESS)++volume_count;
@@ -1358,12 +1382,11 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     q.controls=volumes;q.control_count=volume_count;q.control=take_control;plan.control_sources=control_sources;
     q.voice[0]=settings->gender;
     q.voice[1]=settings->head_size_plus_one?settings->head_size_plus_one-1:50;
-    q.voice[2]=settings->native_pitch_plus_one?settings->native_pitch_plus_one-1:
-        language==0x40000?65:settings->pitch;
+    q.voice[2]=provider_pitch;
     q.voice[3]=settings->native_inflection_plus_one?settings->native_inflection_plus_one-1:30;
     q.voice[4]=settings->roughness;q.voice[5]=settings->breathiness;
     q.voice[6]=settings->native_speed?(settings->native_speed<0?0:settings->native_speed):settings->rate;
-    q.voice[7]=plan.cjk_volume?native_volume:100;
+    q.voice[7]=managed_controls?100:native_volume;
     memcpy(plan.base_voice,q.voice,sizeof plan.base_voice);
     /* Only an explicit trailing pause protects the final silence. A p0
        reset or an earlier pause must not disable the entire policy. */
@@ -1389,7 +1412,8 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         .model={q.voice[1],q.voice[4],q.voice[5],q.voice[0],reloq_session_sample_rate(session)},
         .settings=settings,.pitches=pitches,.index_count=index_count,.pitch_count=pitch_count,
         .pause_mode=!explicit_pause&&settings->pause_mode==1,
-        .pitch_scale=language==0x40000&&!settings->native_pitch_plus_one?
+        .pitch_scale=reloq_pitch_is_hz(configured_pitch)?pitch_ratio(configured_pitch,provider_pitch):
+            language==0x40000&&!settings->native_pitch_plus_one?
             (150.0+settings->pitch)/200.0:1,
         .base_pitch=reloq_voice_pitch_f0_scale(q.voice[2]),.last_pitch_tick=INT64_MIN,
         .delivery={.sink=sink,.context=context,.gain=1,

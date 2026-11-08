@@ -56,8 +56,11 @@ static size_t language_prefix(const struct language_controls *c,char prefix[192]
     const int values[]={v->gender,v->head_size,v->pitch,v->inflection,
         v->roughness,v->breathiness,v->speed,v->volume};
     static const char letters[]="ghbfrysv";size_t n=0;
-    for(unsigned i=0;i<8;++i)if(c->mask&(1u<<i))
-        n+=(size_t)snprintf(prefix+n,192-n,"`v%c%d ",letters[i],values[i]);
+    for(unsigned i=0;i<8;++i)if(c->mask&(1u<<i)) {
+        if(i==2 && reloq_pitch_is_hz(values[i]))
+            n+=(size_t)snprintf(prefix+n,192-n,"`vbhz%d ",values[i]-RELOQ_PITCH_HZ_OFFSET);
+        else n+=(size_t)snprintf(prefix+n,192-n,"`v%c%d ",letters[i],values[i]);
+    }
     if(c->spelling)n+=(size_t)snprintf(prefix+n,192-n,"`ts%d ",c->spelling);
     if(c->emphasis) {
         static const char *const emphasis[]={"","`00 ","`0 ","`1 ","`2 ","`3 ","`4 "};

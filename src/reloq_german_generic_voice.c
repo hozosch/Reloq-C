@@ -171,7 +171,8 @@ static int output_settings_init(
         s->pitch < 0 || s->pitch > 100 ||
         s->volume < 0 || s->volume > 100 ||
         (s->native_speed < -1 || s->native_speed > 250) ||
-        s->native_pitch_plus_one < 0 || s->native_pitch_plus_one > 101 ||
+        s->native_pitch_plus_one < 0 ||
+        (s->native_pitch_plus_one && !reloq_pitch_valid(s->native_pitch_plus_one-1)) ||
         s->native_inflection_plus_one < 0 ||
         s->native_inflection_plus_one > 101 || s->pause_mode<0 || s->pause_mode>2 ||
         s->head_size_plus_one<0 || s->head_size_plus_one>101 ||
@@ -3278,7 +3279,7 @@ static int pitch_words(const unsigned char *annotation, size_t length,
                        int *word_pitch)
 {
     if (!annotation || (count && !marks) ||
-        (word_count && !word_pitch) || baseline < 0 || baseline > 100)
+        (word_count && !word_pitch) || !reloq_pitch_valid(baseline))
         return -1;
     for (size_t i = 0; i < count; ++i)
         if (marks[i].native_pitch < 0 || marks[i].native_pitch > 100 ||
@@ -3317,7 +3318,7 @@ static int apply_pitch_words(struct reloq_target_builder *builder,
                              const int64_t *word_ticks, size_t word_count,
                              const int *word_pitch, int baseline,int initial)
 {
-    if (!builder || !word_ticks || !word_pitch || baseline < 0 || baseline > 100)
+    if (!builder || !word_ticks || !word_pitch || !reloq_pitch_valid(baseline))
         return -1;
     struct reloq_target_buffer *f0 = &builder->stream[RELOQ_TARGET_F0];
     if (!f0->count) return -1;

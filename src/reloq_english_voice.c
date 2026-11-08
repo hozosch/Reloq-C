@@ -312,8 +312,13 @@ static int parse(const unsigned char *s,size_t n,const size_t *map,int tags,
                 if(v>100000)goto invalid;
                 v=10*v+s[end++]-'0';
             }
-            if(k==end||k-i!=3)goto invalid;
-            if(!memcmp(s+i+1,"vs",2)){if(v<40||v>250)goto invalid;speed=v;}
+            if(k==end||(k-i!=3 && k-i!=5))goto invalid;
+            if(k-i==5 && !memcmp(s+i+1,"vbhz",4)) {
+                if(v<RELOQ_PITCH_HZ_MIN||v>RELOQ_PITCH_HZ_MAX)goto invalid;
+                pitch=RELOQ_PITCH_HZ_OFFSET+v;
+            }
+            else if(k-i!=3)goto invalid;
+            else if(!memcmp(s+i+1,"vs",2)){if(v<40||v>250)goto invalid;speed=v;}
             else if(!memcmp(s+i+1,"vb",2)){if(v>100)goto invalid;pitch=v;}
             else if(!memcmp(s+i+1,"vv",2)){if(v>100)goto invalid;volume=v;}
             else if(!memcmp(s+i+1,"rp",2)){if(v>30000||!used)goto invalid;out[used-1].pause=v+100000;}
@@ -769,7 +774,8 @@ int reloq_english_render_text(const unsigned char *text,size_t length,int tags,i
     if(settings->rate<0||settings->rate>100||settings->pitch<0||settings->pitch>100||
        settings->volume<0||settings->volume>100||settings->pause_mode<0||settings->pause_mode>2||
        (settings->native_speed< -1||settings->native_speed>250)||
-       settings->native_pitch_plus_one<0||settings->native_pitch_plus_one>101||
+       settings->native_pitch_plus_one<0||
+       (settings->native_pitch_plus_one && !reloq_pitch_valid(settings->native_pitch_plus_one-1))||
        settings->native_inflection_plus_one<0||settings->native_inflection_plus_one>101||
        settings->head_size_plus_one<0||settings->head_size_plus_one>101||
        settings->roughness<0||settings->roughness>100||settings->breathiness<0||settings->breathiness>100||

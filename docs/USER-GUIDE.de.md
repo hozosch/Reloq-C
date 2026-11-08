@@ -85,6 +85,8 @@ Die folgenden Optionen befinden sich in den Sprachausgaben-Einstellungen:
 
 **ECI-Tags verarbeiten** ist zunächst ausgeschaltet. Eingeschaltet können unterstützte Backtick-Befehle im Text Aussprache, Buchstabierung, Betonung, Stimmparameter, Stimmen und Sprachen steuern. Für gewöhnliches Lesen ist die Option nicht erforderlich. Eigene Aussprachewörterbücher können Ausspracheangaben unabhängig von dieser Einstellung enthalten.
 
+Mit `` `vbhz150 `` lässt sich die Grundtonhöhe für den folgenden Text auf 150 Hertz setzen; möglich sind ganzzahlige Werte von 40 bis 422 Hertz. `` `vb65 `` wechselt zurück zur üblichen ECI-Skala. Für eine Messung kann zusätzlich `` `vf0 `` die Sprachmelodie ausschalten; in Tonsprachen können sprachliche Tonverläufe dennoch erhalten bleiben. Die Tags ändern nicht die gespeicherten Einstellungen.
+
 **Abkürzungswörterbuch verwenden** schaltet die native Abkürzungsauflösung und ist zunächst eingeschaltet. Haupt- und Stammwörterbücher für die Aussprache bleiben davon unabhängig aktiv. **Satzvorhersage** ist zunächst ausgeschaltet; eingeschaltet ermittelt der Sprachkern Phrasengrenzen in Text ohne Satzzeichen. Beide Einstellungen stehen auch unter Android zur Verfügung und gelten ab der nächsten Syntheseanfrage. Gleiche Geschwindigkeitswerte behalten das Dauermodell der jeweiligen Sprache bei; sie garantieren keine gleiche Anzahl Wörter oder Silben pro Minute.
 
 Deutsch verwendet wie die übrigen Sprachen das eingebaute C-Wörterbuch. Die zusätzliche deutsche Lexikondatei früherer Versionen wird nicht mehr benötigt; die optionalen Aussprachewörterbücher bleiben verfügbar.

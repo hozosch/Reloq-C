@@ -13,7 +13,7 @@
  * pitch changes F0, and volume changes all excitation sources together.
  * They never modify the separately matched exact German voice. Optional
  * native_speed (1..250, or -1 for native zero) and native_pitch_plus_one
- * (1..101, for pitch 0..100)
+ * (1..101 for pitch 0..100, or an internally encoded Hertz value)
  * select the separately measured Apple ECI curve. Zero leaves the legacy
  * developmental control unchanged. All existing callers initialize the
  * optional fields to zero. native_inflection_plus_one (1..101) similarly

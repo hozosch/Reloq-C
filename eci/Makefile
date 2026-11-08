@@ -196,6 +196,8 @@ test: test_reloq_eci test_reloq_german_context test_reloq_german_cancel test_rel
 	python3 test_public_abi.py libreloq_eci.so --header ../include/reloq_eci.h
 	python3 ../nvda/test_eci_standard_api.py --library libreloq_eci.so
 	python3 ../nvda/test_eci_extended_standard_api.py --library libreloq_eci.so
+	python3 ../nvda/test_eci_pitch_hz.py --library libreloq_eci.so
+	python3 ../addon/test_speech_tags.py
 	python3 ../nvda/test_eci_contract_api.py --library libreloq_eci.so
 	python3 ../nvda/test_eci_phonemes_pause.py --library libreloq_eci.so
 	python3 ../nvda/test_eci_german_tag_context.py --library libreloq_eci.so

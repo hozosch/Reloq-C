@@ -55,6 +55,11 @@ text** starts a speech sample, and **Stop** interrupts it.
   roughness and breathiness are available. Voice values are stored separately
   for each of the eight presets. **Reset selected voice profile** restores that
   preset's anatomy and voice values; speed and output settings stay global.
+- With ECI tags enabled, `` `vbhz150 `` sets the base pitch of the following
+  text to 150 Hz (range: 40–422 Hz), and `` `vb65 `` returns to the usual
+  native pitch scale. `` `vf0 `` turns off inflection; linguistic tones in
+  tonal languages may remain.
+  These commands do not change saved voice settings.
 - All seven sample rates from 8 to 48 kHz, the three native pause policies and
   optional ECI command processing are available. **Use original question intonation** selects the native question contour for German and US English; it is off by default. **Use abbreviation dictionary**
   starts enabled; **Phrase prediction** starts disabled. **Mellow mode** softens voiced presence around 3–4 kHz at rates of 16 kHz and above, omits added richness from 22 kHz and reduces voiced breathiness. It is off by default. Prediction uses the

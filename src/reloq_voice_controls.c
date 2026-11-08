@@ -77,6 +77,8 @@ double reloq_voice_speed_time_scale(int native_speed)
 
 double reloq_voice_pitch_f0_scale(int native_pitch)
 {
+    if(reloq_pitch_is_hz(native_pitch))
+        return (native_pitch-RELOQ_PITCH_HZ_OFFSET)/118.915;
     if(native_pitch<0 || native_pitch>100)return -1;
     if(native_pitch==65)return 1;
     /* Continuous physical pitch, before the public integer-Hz display.

@@ -82,6 +82,8 @@ jobs:
           python3 -B nvda/test_eci_release114.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_release120.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_mellow_mode.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_pitch_hz.py --library eci/libreloq_eci.so
+          python3 -B addon/test_speech_tags.py
           python3 -B nvda/test_eci_dictionary_startup.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_greek_connected.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_greek_characters.py --library eci/libreloq_eci.so

@@ -110,6 +110,7 @@ _Static_assert(sizeof(short) == sizeof(int16_t), "ECI output needs 16-bit short"
 
 struct queued_voice {
     int values[8],generic[3];
+    int pitch_hz;
     unsigned active;
 };
 struct queued_item {
@@ -204,6 +205,7 @@ static struct queued_voice capture_voice(const struct reloq_eci_engine *e)
         {e->gender,e->head_size,e->native_pitch,e->native_inflection,
          e->roughness,e->breathiness,e->native_speed,e->native_volume},
         {e->generic_rate,e->generic_pitch,e->generic_volume},
+        (e->real_voice_flags[0]&(1u<<2))?e->real_voice_values[0][2]:0,
         (unsigned)(e->native_speed_active|e->native_pitch_active<<1|
             e->native_inflection_active<<2|e->native_volume_active<<3)};
 }
@@ -214,6 +216,9 @@ static void apply_voice(struct reloq_eci_engine *e,const struct queued_voice *v)
     e->roughness=v->values[4];e->breathiness=v->values[5];
     e->native_speed=v->values[6];e->native_volume=v->values[7];
     e->generic_rate=v->generic[0];e->generic_pitch=v->generic[1];e->generic_volume=v->generic[2];
+    if(v->pitch_hz) {
+        e->real_voice_values[0][2]=v->pitch_hz;e->real_voice_flags[0]|=1u<<2;
+    } else e->real_voice_flags[0]&=~(1u<<2);
     e->native_speed_active=!!(v->active&1);e->native_pitch_active=!!(v->active&2);
     e->native_inflection_active=!!(v->active&4);e->native_volume_active=!!(v->active&8);
 }
@@ -237,8 +242,11 @@ static int insert_voice_controls(unsigned char **text,size_t *length,
     for(size_t i=0;i<count;++i) {
         size_t at=source_map?source_map[controls[i].offset]:controls[i].offset;
         memcpy(next+used,*text+from,at-from);used+=at-from;from=at;
-        for(unsigned k=0;k<8;++k)if(initial.values[k]!=controls[i].voice.values[k]) {
-            int n=snprintf((char *)next+used,80,"`%s%d",names[k],controls[i].voice.values[k]);
+        for(unsigned k=0;k<8;++k)if(initial.values[k]!=controls[i].voice.values[k] ||
+            (k==2 && initial.pitch_hz!=controls[i].voice.pitch_hz)) {
+            int hz=k==2?controls[i].voice.pitch_hz:0;
+            int n=snprintf((char *)next+used,80,"`%s%d",hz?"vbhz":names[k],
+                hz?hz:controls[i].voice.values[k]);
             if(n<0||n>=80){free(next);free(offsets);free(added);return -1;}
             used+=(size_t)n;
         }
@@ -495,7 +503,9 @@ static int synthesize_generic(struct reloq_eci_engine *e,
     struct pcm_bridge bridge={.engine=e,.session=e->text_session,.marks=marks,.mark_count=mark_count,.inline_volume=frame_volume};
     struct reloq_german_generic_settings settings={e->generic_rate,e->generic_pitch,
         (e->native_volume_active||e->process_tags)?100:e->generic_volume,e->native_speed_active?(e->native_speed?e->native_speed:-1):0,
-        e->native_pitch_active?e->native_pitch+1:0,e->native_inflection_active?e->native_inflection+1:0,
+        e->native_pitch_active?((e->real_voice_flags[0]&(1u<<2))?
+            RELOQ_PITCH_HZ_OFFSET+e->real_voice_values[0][2]:e->native_pitch)+1:0,
+        e->native_inflection_active?e->native_inflection+1:0,
         e->pause_mode,e->head_size+1,e->roughness,e->breathiness,e->gender};
     if(e->process_tags)leading_models(phrase,length,&settings,e->language==RELOQ_ECI_GERMAN);
     if(settings.gender!=e->gender || settings.head_size_plus_one!=e->head_size+1) {
@@ -883,7 +893,8 @@ int ECICALL eciSynthesize(ECIHand handle)
         }
         if(e->queue[i].length&&e->voice_mode==RELOQ_ECI_VOICE_GENERIC) {
             if(!have_voice){initial_voice=last_voice=e->queue[i].voice;have_voice=1;}
-            else if(memcmp(last_voice.values,e->queue[i].voice.values,sizeof last_voice.values)) {
+            else if(memcmp(last_voice.values,e->queue[i].voice.values,sizeof last_voice.values) ||
+                    last_voice.pitch_hz!=e->queue[i].voice.pitch_hz) {
                 controls[control_count++]=(struct queued_control){text_bytes,e->queue[i].voice};
                 last_voice=e->queue[i].voice;
             }

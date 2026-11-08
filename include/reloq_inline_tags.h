@@ -1,6 +1,7 @@
 #ifndef RELOQ_INLINE_TAGS_H
 #define RELOQ_INLINE_TAGS_H
 #include <stddef.h>
+#include "reloq_voice_controls.h"
 
 /* Independent, bounded recognizer. Unknown/malformed tags remain text.
  * VP is a private annotation carrier for a validated public p command;
@@ -29,7 +30,7 @@ static inline struct reloq_inline_tag reloq_inline_tag_read(
         }
         return t;
     }
-    size_t at=1;unsigned limit=100;
+    size_t at=1;unsigned limit=100;int pitch_hz=0;
     if(s[1]>='0' && s[1]<='9') {t.kind=RELOQ_TAG_PROMINENCE;limit=9;}
     else if(s[1]=='l') {t.kind=RELOQ_TAG_LANGUAGE;at=2;limit=32767;}
     else if(n>2 && s[1]=='v' && s[2]>='1' && s[2]<='9')
@@ -38,6 +39,9 @@ static inline struct reloq_inline_tag reloq_inline_tag_read(
     else if(n>3 && s[1]=='d' && s[2]=='a') {t.kind=RELOQ_TAG_DICTIONARY;at=3;limit=1;}
     else if(n>3 && s[1]=='p' && s[2]=='p') {t.kind=RELOQ_TAG_PREDICTION;at=3;limit=1;}
     else if(s[1]=='p') {t.kind=RELOQ_TAG_PAUSE;at=2;limit=60000;}
+    else if(n>5 && s[1]=='v' && s[2]=='b' && s[3]=='h' && s[4]=='z') {
+        t.kind=RELOQ_TAG_PITCH;at=5;limit=RELOQ_PITCH_HZ_MAX;pitch_hz=1;
+    }
     else if(n>3 && s[1]=='v') {
         at=3;
         switch(s[2]) {
@@ -62,6 +66,10 @@ static inline struct reloq_inline_tag reloq_inline_tag_read(
     }
     if(t.kind==RELOQ_TAG_PROMINENCE && at-start>1 && !(at-start==2 && !value))
         return (struct reloq_inline_tag){0};
+    if(pitch_hz) {
+        if(value<RELOQ_PITCH_HZ_MIN)return (struct reloq_inline_tag){0};
+        value+=RELOQ_PITCH_HZ_OFFSET;
+    }
     if(t.kind==RELOQ_TAG_LANGUAGE) {
         unsigned dialect=0;
         if(at+1<n && s[at]=='.' && s[at+1]>='0' && s[at+1]<='9') {

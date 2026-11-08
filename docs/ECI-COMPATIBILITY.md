@@ -52,9 +52,25 @@ Wiederholung dagegen bereits den gemeldeten Index. Dev8 veröffentlichte den
 Wert irrtümlich vorher; dev9 korrigiert das. Reset verwirft ihn nicht.
 
 Bei Real-World-Units bleiben angeforderte Hz/WPM/Volume-Werte beim Zurücklesen
-und beim Kopieren zwischen Stimmenplätzen erhalten; der Renderer verwendet
-den nächstliegenden nativen Wert. Die privaten nativen ReLoq-Aliasse arbeiten
-weiter in ihren dokumentierten Rohwerten.
+und beim Kopieren zwischen Stimmenplätzen erhalten. Bis 1.2.1 verwendete der
+Renderer den nächstliegenden nativen Wert. Die privaten nativen ReLoq-Aliasse
+arbeiten weiter in ihren dokumentierten Rohwerten.
+
+## Hertz-Tonhöhe
+
+Mit `eciRealWorldUnits=1` nimmt `eciSetVoiceParam(handle, 0, eciPitchBaseline,
+hz)` für die aktive Stimme ganzzahlige Werte von 40 bis 422 Hertz an. Diese
+Grundtonhöhe wird ohne Rundung auf eine VB-Stufe weitergegeben und bleibt beim
+Kopieren zwischen Stimmenplätzen erhalten. Eine spätere native VB-Einstellung
+ersetzt sie. Sprachmelodie verändert die momentane Tonhöhe um diese Basis;
+mit `eciSetParam(handle, RELOQ_ECI_NATIVE_INFLECTION, 0)` kann sie für die
+Prüfung abgeschaltet werden. Tonspracheigene Tonverläufe können unabhängig
+davon erhalten bleiben.
+
+Bei aktivierten ECI-Tags setzt `` `vbhz150 `` die Grundtonhöhe für den folgenden
+Text auf 150 Hertz. `` `vf0 `` schaltet die Sprachmelodie aus, und zum Beispiel
+`` `vb65 `` wechselt zur normalen VB-Skala zurück. Diese Tags gelten nur für
+die aktuelle Äußerung und ändern keine gespeicherten Stimmenparameter.
 
 ## Allgemeine Erweiterungen in dev9
 
