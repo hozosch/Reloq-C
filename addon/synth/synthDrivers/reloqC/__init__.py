@@ -227,7 +227,11 @@ class SynthDriver(BaseSynthDriver):
         self._sample_rate_revision = 0
         self._languages = dict(LANGUAGES)
         self._selectedLanguage = self._initial_language()
-        self._voice = self._languages[self._selectedLanguage].voice(None).id
+        default_voice = self._languages[self._selectedLanguage].voice(None)
+        self._voice = default_voice.id
+        # On the first NVDA initialization, match the selected voice's ECI
+        # preset. NVDA subsequently restores any existing saved pitch.
+        self._pitch = dict(default_voice.parameters).get(NATIVE_PITCH, self._pitch)
         initial_language, initial_voice = self._selectedLanguage, self._voice
         player = self._make_player(11025)
         self._transport = EciTextTransport(

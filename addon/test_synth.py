@@ -399,7 +399,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         driver_module.EciLanguage(0x40000, "1"), driver_module.EciText("Wieder deutsch.")]
                 until(lambda: len(Engine.instances) == 1)
                 until(lambda: len(Engine.instances[0].parameters) == 16)
-                assert Engine.instances[0].parameters == list(german.voices[0].parameters) + [(0x1007, 98), (0x1008, 50),
+                assert Engine.instances[0].parameters == list(german.voices[0].parameters) + [(0x1007, 98), (0x1008, 65),
                                                           (0x1009, 30),
                                                           (0x100a, 100), (0x100d, 50), (0x100e, 0), (0x100f, 0), (0x1015, 0), (0x1016, 0)]
                 driver._set_rate(70)
@@ -414,7 +414,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                               "Kippte.", IndexCommand(13)])
                 until(lambda: len(players[0].buffers) == 2)
                 worker = Engine.instances[0]
-                assert worker.parameters == list(german.voices[0].parameters) + [(0x1007, 98), (0x1008, 50),
+                assert worker.parameters == list(german.voices[0].parameters) + [(0x1007, 98), (0x1008, 65),
                                              (0x1009, 30), (0x100a, 100),
                                              (0x100d, 50), (0x100e, 0), (0x100f, 0), (0x1015, 0), (0x1016, 0),
                                              (0x1007, 121), (0x1008, 65),
@@ -608,7 +608,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 driver.loadSettings()
                 assert (driver.headSize, driver.roughness, driver.breathiness) == (22, 27, 61)
                 driver.voice = "1"
-                assert driver.headSize == 50 and driver.breathiness == 0
+                assert driver.pitch == 65 and driver.headSize == 50 and driver.breathiness == 0
                 until(lambda: dict(worker.parameters).get(0x1010) == 0)
                 driver.pitch = 43
                 driver.inflection = 71
@@ -738,14 +738,75 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                             fresh = driver_module.SynthDriver()
                             try:
                                 assert fresh.language == expected, (nvda_language, saved, fresh.language)
+                                assert fresh.voice == "1" and fresh.pitch == 65
                                 fresh.initSettings()
                                 assert fresh.language == expected
                                 assert config_api.conf["speech"][fresh.name]["language"] == expected
+                                if not saved:
+                                    assert fresh.pitch == 65
+                                    assert config_api.conf["speech"][fresh.name]["pitch"] == 65
                                 until(lambda: len(Engine.instances) == before + 1)
                                 assert Engine.instances[-1].dialect == fresh._selectedLanguage
                             finally:
                                 fresh.terminate()
                     print(f"NVDA initial language: {len(first_language_cases)} fresh/saved/schema/region cases passed")
+                    # First install starts at Reed's native pitch; explicit
+                    # values in existing profiles must remain unchanged.
+                    pitch_cases = [({}, "1", 65),
+                                   ({"pitch": 0}, "1", 0),
+                                   ({"pitch": 50}, "1", 50),
+                                   ({"pitch": 65}, "1", 65),
+                                   ({"pitch": 100}, "1", 100),
+                                   ({"voice": "2", "pitch": 50}, "2", 50),
+                                   ({"voice": "2", "pitch": 81}, "2", 81),
+                                   ({"rate": 38}, "1", 50)]
+                    for saved, expected_voice, expected_pitch in pitch_cases:
+                        profile = {"speech": {}, "audio": {"outputDevice": "default"}}
+                        if saved:
+                            profile["speech"][driver.name] = dict(saved)
+                        config_api.conf = configuration_manager(profile).rootSection
+                        before = len(Engine.instances)
+                        fresh = driver_module.SynthDriver()
+                        try:
+                            fresh.initSettings()
+                            assert fresh.voice == expected_voice and fresh.pitch == expected_pitch, saved
+                            fresh.speak(["Pitch test"])
+                            until(lambda: len(Engine.instances) > before and Engine.instances[-1].parts)
+                            assert dict(Engine.instances[-1].parameters)[driver_module.NATIVE_PITCH] == expected_pitch, saved
+                            if not saved:
+                                assert profile["speech"][fresh.name]["pitch"] == 65
+                                fresh.terminate()
+                                before = len(Engine.instances)
+                                fresh = driver_module.SynthDriver()
+                                fresh.initSettings()
+                                assert fresh.voice == "1" and fresh.pitch == 65
+                                fresh.speak(["Restart test"])
+                                until(lambda: len(Engine.instances) > before and Engine.instances[-1].parts)
+                                assert dict(Engine.instances[-1].parameters)[driver_module.NATIVE_PITCH] == 65
+                            elif "pitch" in saved:
+                                assert profile["speech"][fresh.name]["pitch"] == saved["pitch"]
+                        finally:
+                            fresh.terminate()
+                    base = {"speech": {driver.name: {"voice": "1", "pitch": 65}},
+                            "audio": {"outputDevice": "default"}}
+                    active = {"speech": {driver.name: {"pitch": 50}}}
+                    config_api.conf = configuration_manager(base, active).rootSection
+                    before = len(Engine.instances)
+                    fresh = driver_module.SynthDriver()
+                    try:
+                        fresh.initSettings()
+                        assert fresh.voice == "1" and fresh.pitch == 50
+                        config_api.conf["speech"][fresh.name]["pitch"] = 100
+                        fresh.loadSettings(onlyChanged=True)
+                        assert fresh.pitch == 100
+                        fresh.speak(["Profile test"])
+                        until(lambda: len(Engine.instances) > before and Engine.instances[-1].parts)
+                        assert dict(Engine.instances[-1].parameters)[driver_module.NATIVE_PITCH] == 100
+                        assert base["speech"][fresh.name]["pitch"] == 65
+                        assert active["speech"][fresh.name]["pitch"] == 100
+                    finally:
+                        fresh.terminate()
+                    print("NVDA initial pitch: fresh, saved, and voice-specific profiles passed")
                     # Even a speech request immediately after construction,
                     # before NVDA's later initSettings call, must use the
                     # dictionary enabled in the active or legacy profile.
