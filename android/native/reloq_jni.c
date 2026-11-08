@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "reloq_eci.h"
+#include "reloq_voice_controls.h"
 
 #define ENGINE_LIMIT 15
 #define PCM_SAMPLES 1100
@@ -28,6 +29,15 @@ typedef struct {
 
 static int same_path(const char *a,const char *b)
 {return (!a&&!b)||(a&&b&&!strcmp(a,b));}
+
+static int set_pitch_hz(ECIHand handle,int hz)
+{
+    if(hz<RELOQ_PITCH_HZ_MIN||hz>RELOQ_PITCH_HZ_MAX ||
+       eciSetParam(handle,RELOQ_ECI_REAL_WORLD_UNITS,1)<0)return 0;
+    int result=eciSetVoiceParam(handle,0,2,hz);
+    int restored=eciSetParam(handle,RELOQ_ECI_REAL_WORLD_UNITS,0);
+    return result>=0&&restored>=0;
+}
 
 static int is_cancelled(JNIEnv *env, android_engine *engine)
 {
@@ -150,7 +160,9 @@ Java_org_reloq_tts_NativeEngine_synthesize(JNIEnv *env, jclass type,
     if ((*env)->ExceptionCheck(env)) goto done;
     for (size_t i = 0; i < 15; ++i)
         if(!slot->configured||slot->controls[i]!=values[i]) {
-            if(eciSetParam(handle,parameters[i],values[i])<0)goto done;
+            if(i==2&&values[i]>RELOQ_PITCH_HZ_OFFSET) {
+                if(!set_pitch_hz(handle,values[i]-RELOQ_PITCH_HZ_OFFSET))goto done;
+            } else if(eciSetParam(handle,parameters[i],values[i])<0)goto done;
             slot->controls[i]=values[i];
         }
     slot->configured=1;

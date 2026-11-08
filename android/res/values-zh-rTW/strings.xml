@@ -87,4 +87,7 @@
     <string name="dictionary_update_files_unknown">無法確定新增字典檔案數。</string>
     <string name="original_questions">使用原始疑問語調</string>
     <string name="mellow_mode">柔和模式（16 kHz 及以上）</string>
+    <string name="pitch_hz_mode">以赫茲設定音高</string>
+    <string name="pitch_hz_value">基準音高（赫茲）</string>
+    <string name="pitch_hz_error">請輸入 1 到 24000 Hz 的值。</string>
 </resources>

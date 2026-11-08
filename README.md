@@ -4,10 +4,11 @@ ReLoq C is a speech synthesis project that preserves the familiar character of E
 
 The shared synthesis engine is written in C. NVDA, Android ARM64 and Windows SAPI5 use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
 
-**1.2.1** refines the optional mellow voice mode for a softer, less breathy
-sound. **1.2.0** improved Greek pronunciation and sentence melody, dictionary
-startup, speech volume and SAPI responsiveness, and added a choice of question
-intonation for German and American English.
+**1.2.2** adds an optional exact base pitch in hertz and improves German final
+A before pauses. **1.2.1** refined the optional mellow voice mode for a softer,
+less breathy sound. **1.2.0** improved Greek pronunciation and sentence melody,
+dictionary startup, speech volume and SAPI responsiveness, and added a choice of
+question intonation for German and American English.
 
 ## Download and install
 
@@ -19,12 +20,13 @@ The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provide
 | Android | ARM64 `.apk` | Android 8 or later, ARM64 device |
 | Windows SAPI5 | `-setup.exe` | Installs x64 and x86 voices together on compatible Windows |
 
-Release **1.2.1** updates existing 1.2.0 and 1.1.3 installations on all three platforms. If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [1.2.1 release notes](docs/releases/1.2.1.md) for this update. Source archives are for developers and are not installable packages.
+Release **1.2.2** updates existing 1.2.1 installations on all three platforms. If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [1.2.2 release notes](docs/releases/1.2.2.md) for this update. Source archives are for developers and are not installable packages.
 
 ## Current features
 
 - **14 language variants**, including German, American and British English, Chinese, Japanese, Korean and Greek.
 - **Eight voice presets:** Reed, Shelly, Bobby, Rocko, Glen, Sandy, Grandma and Grandpa, with adjustable head size, pitch, roughness and breathiness.
+- **Optional exact base pitch in hertz**, alongside the normal pitch controls.
 - **Seven sample rates from 8 to 48 kHz**, covering the classic sound and an extended frequency range.
 - **Unicode and language-specific character names**, extending the handling of letters, accents and symbols.
 - **Optional pronunciation dictionaries:** community data for German and American English, plus your own Dic files managed through NVDA settings or the Android dictionary screen.

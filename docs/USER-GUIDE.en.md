@@ -1,5 +1,9 @@
 # Eloquence C – user guide
 
+## Version 1.2.2
+
+The base pitch can optionally be set exactly in hertz. German final A is now also used before commas, colons and other pauses. For new NVDA installations the default pitch of 65 corresponds to the default Reed voice.
+
 ## Version 1.2.1
 
 Mellow mode has been refined with a broader reduction in voiced presence, no added richness and less breathiness during voicing.

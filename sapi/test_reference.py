@@ -8,7 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'nvda'))
-from _reloq_eci_direct import (DirectEciEngine, EciIndex, SAMPLE_RATE, NATIVE_SPEED, NATIVE_PITCH,
+from _reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitchHz, PITCH_HZ, SAMPLE_RATE, NATIVE_SPEED, NATIVE_PITCH,
     NATIVE_INFLECTION, HEAD_SIZE, NATIVE_VOLUME, GENDER, ROUGHNESS, BREATHINESS,
     PAUSE_MODE, PROCESS_TAGS)
 
@@ -62,6 +62,19 @@ def main():
     finally:
         for engine in engines.values():
             engine.close()
+    engine=DirectEciEngine(args.library.resolve(),dialect=0x40000,encoding='utf8',native_voice=True)
+    try:
+        for key,value in ((SAMPLE_RATE,3),(NATIVE_SPEED,60),(NATIVE_PITCH,65),(NATIVE_INFLECTION,0),
+                          (HEAD_SIZE,50),(NATIVE_VOLUME,100),(GENDER,0),(ROUGHNESS,0),
+                          (BREATHINESS,0),(PAUSE_MODE,0),(PROCESS_TAGS,0),(PITCH_HZ,151)):
+            engine.set_parameter(key,value)
+        for row,parts in zip(report['pitch_hz'],(['Hallo Welt.'],[EciPitchHz(302),'Hallo Welt.'],
+                                                ['Hallo ',EciPitchHz(302),'Welt.'])):
+            pcm=bytearray();assert engine.speak(parts,pcm.extend,lambda _:None)
+            values=array.array('h',pcm);digest=1469598103934665603
+            for value in values:digest=((digest^(value&0xffff))*1099511628211)&0xffffffffffffffff
+            assert (len(values),f'{digest:016x}')==(row['samples'],row['hash']),row
+    finally:engine.close()
     report['direct_eci_identical_pcm_cases'] = len(report['comparisons'])
     report['no_audio_files'] = True
     args.report.write_text(json.dumps(report, indent=2) + '\n')

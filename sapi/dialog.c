@@ -10,7 +10,7 @@
 #include "ui.inc"
 enum {LANGUAGE=100,PROFILE,GENDER,RATE,PAUSES,PITCH,INFLECTION,HEAD,ROUGH,BREATH,
       TAGS,ABBREVIATIONS,PREDICTION,DICTIONARIES,BOOST,DIRECTORY,OPEN_FOLDER,RESET,STATUS,SHARED,
-      DICT_SOURCE,DICT_DOWNLOAD,ORIGINAL_QUESTIONS,MELLOW_MODE};
+      DICT_SOURCE,DICT_DOWNLOAD,ORIGINAL_QUESTIONS,MELLOW_MODE,PITCH_HZ_MODE,PITCH_HZ_VALUE};
 #define DICTIONARY_DONE (WM_APP+31)
 struct dictionary_task {HWND window;HMODULE module;};
 static DWORD WINAPI dictionary_worker(void *parameter)
@@ -69,6 +69,21 @@ static void number(HWND p,int id,const WCHAR *title,int y)
 }
 static void check(HWND p,int id,const WCHAR *text,int y)
 {control(p,L"BUTTON",text,WS_TABSTOP|BS_AUTOCHECKBOX,id,12,y,596,23);}
+static void pitch_hertz(HWND p,const struct dialog *d,int y)
+{
+    control(p,L"BUTTON",T(PITCH_HZ_MODE),WS_TABSTOP|BS_AUTOCHECKBOX,PITCH_HZ_MODE,350,y,138,24);
+    label(p,T(PITCH_HZ),490,y,27);
+    HWND e=control(p,L"EDIT",L"",WS_TABSTOP|ES_NUMBER|ES_AUTOHSCROLL,PITCH_HZ_VALUE,520,y,88,24);
+    HWND spin=control(p,UPDOWN_CLASSW,L"",UDS_ALIGNRIGHT|UDS_SETBUDDYINT|UDS_ARROWKEYS|UDS_NOTHOUSANDS,
+        PITCH_HZ_VALUE+200,0,0,0,0);
+    SendMessageW(spin,UDM_SETBUDDY,(WPARAM)e,0);SendMessageW(spin,UDM_SETRANGE32,1,24000);
+}
+static void enable_pitch_controls(HWND p,const struct dialog *d)
+{
+    BOOL hz=d->s.pitch_hz_enabled!=0;
+    EnableWindow(GetDlgItem(p,PITCH),!hz);EnableWindow(GetDlgItem(p,PITCH+200),!hz);
+    EnableWindow(GetDlgItem(p,PITCH_HZ_VALUE),hz);EnableWindow(GetDlgItem(p,PITCH_HZ_VALUE+200),hz);
+}
 static void populate(HWND window,struct dialog *d)
 {
     d->loading=1;
@@ -80,6 +95,9 @@ static void populate(HWND window,struct dialog *d)
     SendDlgItemMessageW(window,DICT_SOURCE,CB_SETCURSEL,sapi_dictionary_source(),0);
     const DWORD values[]={d->s.pitch,d->s.inflection,d->s.head,d->s.roughness,d->s.breathiness};
     for(int i=0;i<5;++i)SetDlgItemInt(window,PITCH+i,values[i],FALSE);
+    SetDlgItemInt(window,PITCH_HZ_VALUE,d->s.pitch_hz,FALSE);
+    CheckDlgButton(window,PITCH_HZ_MODE,d->s.pitch_hz_enabled?BST_CHECKED:BST_UNCHECKED);
+    enable_pitch_controls(window,d);
     const DWORD checks[]={d->s.tags,d->s.abbreviations,d->s.prediction,d->s.dictionaries,d->s.boost};
     for(int i=0;i<5;++i)CheckDlgButton(window,TAGS+i,checks[i]?BST_CHECKED:BST_UNCHECKED);
     CheckDlgButton(window,ORIGINAL_QUESTIONS,d->s.original_questions?BST_CHECKED:BST_UNCHECKED);
@@ -92,6 +110,14 @@ static void persist(HWND w,struct dialog *d)
 {
     HRESULT hr=sapi_settings_write(d->dialect,&d->s);
     SetDlgItemTextW(w,STATUS,FAILED(hr)?T(ERROR):T(ACTIVE));
+}
+static void commit_pitch_hertz(HWND w,struct dialog *d)
+{
+    BOOL translated=FALSE;UINT value=GetDlgItemInt(w,PITCH_HZ_VALUE,&translated,FALSE);
+    if(translated&&value>=1&&value<=24000){
+        if(value!=d->s.pitch_hz){d->s.pitch_hz=value;persist(w,d);}}
+    else {d->loading=1;SetDlgItemInt(w,PITCH_HZ_VALUE,d->s.pitch_hz,FALSE);d->loading=0;
+        SetDlgItemTextW(w,STATUS,T(ERROR));}
 }
 static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
 {
@@ -111,7 +137,7 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         for(unsigned i=0;i<7;++i){WCHAR text[32];swprintf(text,32,L"%d Hz",sapi_sample_rate(i));add(w,RATE,text);}
         add(w,PAUSES,T(NEVER));add(w,PAUSES,T(FINAL));add(w,PAUSES,T(ALWAYS));
         check(w,SHARED,T(SHARED),183);
-        number(w,PITCH,T(PITCH),211);number(w,INFLECTION,T(INFLECTION),238);
+        number(w,PITCH,T(PITCH),211);pitch_hertz(w,d,211);number(w,INFLECTION,T(INFLECTION),238);
         number(w,HEAD,T(HEAD),265);number(w,ROUGH,T(ROUGH),292);number(w,BREATH,T(BREATH),319);
         check(w,TAGS,T(TAGS),349);check(w,ABBREVIATIONS,T(ABBREVIATIONS),372);
         check(w,PREDICTION,T(PREDICTION),395);check(w,ORIGINAL_QUESTIONS,T(ORIGINAL_QUESTIONS),418);
@@ -131,7 +157,7 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         SetFocus(GetDlgItem(w,LANGUAGE));return FALSE;
     }
     if(!d)return FALSE;
-    if(message==WM_CLOSE){EndDialog(w,IDOK);return TRUE;}
+    if(message==WM_CLOSE){if(d->s.pitch_hz_enabled)commit_pitch_hertz(w,d);EndDialog(w,IDOK);return TRUE;}
     if(message==DICTIONARY_DONE){
         EnableWindow(GetDlgItem(w,DICT_SOURCE),TRUE);EnableWindow(GetDlgItem(w,DICT_DOWNLOAD),TRUE);
         populate(w,d);SetDlgItemTextW(w,STATUS,FAILED((HRESULT)wp)?T(DICT_FAILED):T(ACTIVE));
@@ -151,7 +177,7 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
     }
     if(message!=WM_COMMAND)return FALSE;
     int id=LOWORD(wp),notification=HIWORD(wp);
-    if(id==IDOK||id==IDCANCEL){EndDialog(w,id);return TRUE;}
+    if(id==IDOK||id==IDCANCEL){if(d->s.pitch_hz_enabled)commit_pitch_hertz(w,d);EndDialog(w,id);return TRUE;}
     if(d->loading)return TRUE;
     if(id==LANGUAGE&&notification==CBN_SELCHANGE){int i=(int)SendDlgItemMessageW(w,id,CB_GETCURSEL,0,0);
         const struct sapi_language *language=sapi_language_at((size_t)i);if(!language)return TRUE;
@@ -174,6 +200,12 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         populate(w,d);SetDlgItemTextW(w,STATUS,FAILED(hr)?T(ERROR):T(ACTIVE));return TRUE;
     }
     if(id==RESET){DWORD rate=d->s.rate;sapi_settings_default(&d->s);d->s.rate=rate;populate(w,d);persist(w,d);return TRUE;}
+    if(notification==BN_CLICKED&&id==PITCH_HZ_MODE){
+        d->s.pitch_hz_enabled=IsDlgButtonChecked(w,id)==BST_CHECKED;
+        enable_pitch_controls(w,d);persist(w,d);return TRUE;}
+    if(notification==EN_KILLFOCUS&&id==PITCH_HZ_VALUE){
+        commit_pitch_hertz(w,d);
+        return TRUE;}
     if(notification==CBN_SELCHANGE&&id>=PROFILE&&id<=PAUSES){
         DWORD value=(DWORD)SendDlgItemMessageW(w,id,CB_GETCURSEL,0,0);
         if(id==PROFILE){sapi_settings_profile(&d->s,value);populate(w,d);}

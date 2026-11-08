@@ -115,6 +115,7 @@ public class DirectBootTest {
   check(Files.readString(new File(NativeEngine.path,"DEUmain.dic").toPath()).contains("Apfelwort"));
   check(DictionaryStore.starts==0&&DictionaryStore.acquires==0);
   Context.locked=false;Context.ce.data.put("voice.5.pitch",62);
+  Context.ce.data.put("voice.5.pitchHertz",151);Context.ce.data.put("voice.5.pitchHertzMode",true);
   File second=new File(new Context().getFilesDir(),"dictionaries/snapshots/"+"b".repeat(64));check(second.mkdirs());
   Files.writeString(new File(second,"DEUmain.dic").toPath(),"Birne\\tBirnenwort\\nTokenX\\tbei\\n");
   BootDictionaries.Lease old=BootDictionaries.acquire(new Context());String oldPath=old.path;
@@ -130,14 +131,14 @@ public class DirectBootTest {
   new Thread(firstSpeech).start();check(entered.await(2,TimeUnit.SECONDS));
   Thread.sleep(100);check(NativeEngine.synthesized==1&&DictionaryStore.acquires==0);
   DictionaryStore.startup.complete(null);firstSpeech.get(3,TimeUnit.SECONDS);
-  check(NativeEngine.created==1&&NativeEngine.synthesized==2&&NativeEngine.controls[2]==62);
+  check(NativeEngine.created==1&&NativeEngine.synthesized==2&&NativeEngine.controls[2]==1151);
   check(second.getAbsolutePath().equals(NativeEngine.path));
   check(DictionaryStore.starts==1&&DictionaryStore.acquires==1&&DictionaryStore.closes==1);
-  check(Context.de.data.get("voice.5.pitch").equals(62));s.onDestroy();check(DictionaryStore.stops==1);
+  check(Context.de.data.get("voice.5.pitch").equals(62)&&Context.de.data.get("voice.5.pitchHertz").equals(151));s.onDestroy();check(DictionaryStore.stops==1);
   Context.locked=true;
   new UpgradeReceiver().onReceive(new Context(),new Intent(Intent.ACTION_MY_PACKAGE_REPLACED));
   ReLoqService next=new ReLoqService();next.onCreate();speak(next);
-  check(NativeEngine.created==2&&NativeEngine.controls[2]==62&&NativeEngine.path!=null);
+  check(NativeEngine.created==2&&NativeEngine.controls[2]==1151&&NativeEngine.path!=null);
   check(Files.readString(new File(NativeEngine.path,"DEUmain.dic").toPath()).contains("Birnenwort"));
   check(DictionaryStore.starts==1&&DictionaryStore.acquires==1);next.onDestroy();check(DictionaryStore.stops==1);
   Context.deDictionaries.data.put("active","f".repeat(64));

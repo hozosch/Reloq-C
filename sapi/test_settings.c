@@ -62,11 +62,12 @@ int main(void)
     assert(sapi_settings_read(0x40000,&de)==S_OK&&de.rate==1);
     assert(value_reads==3&&key_opens==1);++checks;
     assert(sapi_settings_shared(&shared)==S_OK&&!shared);++checks;
-    de.pitch=72;de.rate=6;wcscpy(de.directory,L"C:\\My dictionaries");de.dictionaries=1;
+    de.pitch=72;de.rate=6;de.pitch_hz=151;de.pitch_hz_enabled=1;
+    wcscpy(de.directory,L"C:\\My dictionaries");de.dictionaries=1;
     assert(sapi_settings_write(0x40000,&de)==S_OK);
     assert(sapi_settings_read(0x10000,&en)==S_OK&&en.rate==6&&en.pitch==65&&!en.dictionaries);++checks;
     en.pitch=43;en.rate=4;assert(sapi_settings_write(0x10000,&en)==S_OK);
-    assert(sapi_settings_read(0x40000,&s)==S_OK&&s.rate==4&&s.pitch==72);++checks;
+    assert(sapi_settings_read(0x40000,&s)==S_OK&&s.rate==4&&s.pitch==72&&s.pitch_hz==151&&s.pitch_hz_enabled);++checks;
     for(size_t i=0;i<sapi_language_count();++i){assert(sapi_settings_read(sapi_language_at(i)->dialect,&s)==S_OK&&s.rate==4);++checks;}
     assert(sapi_settings_set_shared(0x40000,TRUE)==S_OK);assert(sapi_settings_shared(&shared)==S_OK&&shared);++checks;
     de.rate=4;
@@ -91,6 +92,10 @@ int main(void)
     assert(sapi_settings_read(0x40000,&s)==S_OK&&s.original_questions==1&&!s.mellow_mode&&s.pitch==78);++checks;
     s.mellow_mode=1;assert(sapi_settings_write(0x40000,&s)==S_OK);
     assert(sapi_settings_read(0x40000,&s)==S_OK&&s.original_questions==1&&s.mellow_mode==1&&s.pitch==78);++checks;
+    assert(!RegSetValueExW(key,L"Settings",0,REG_BINARY,(const BYTE *)&s,offsetof(struct sapi_settings,pitch_hz)));
+    assert(sapi_settings_read(0x40000,&s)==S_OK&&s.pitch_hz==150&&!s.pitch_hz_enabled&&s.pitch==78);++checks;
+    s.pitch_hz=24001;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.pitch_hz=150;++checks;
+    s.pitch_hz_enabled=2;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.pitch_hz_enabled=0;++checks;
     s.mellow_mode=2;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.mellow_mode=1;++checks;
     s.original_questions=2;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);++checks;
     open_error=5;assert(sapi_settings_read(0x10000,&en)==S_OK&&en.rate==5);open_error=0;++checks;

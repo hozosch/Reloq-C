@@ -19,6 +19,11 @@ int main(void)
     const long extremes[]={-1000000,1000000};
     for(int base=0;base<=100;++base)for(unsigned i=0;i<2;++i)
         assert(sapi_native_pitch(base,extremes[i])==previous(base,extremes[i]));
+    assert(sapi_hertz_pitch(150,0)==150);
+    assert(sapi_hertz_pitch(150,10)==300);
+    assert(sapi_hertz_pitch(150,-10)==75);
+    assert(sapi_hertz_pitch(150,1000000)==24000);
+    assert(sapi_hertz_pitch(150,-1000000)==1);
     puts("SAPI pitch offsets match the original search for 40,703 combinations");
     return 0;
 }

@@ -87,4 +87,7 @@
     <string name="dictionary_update_files_unknown">Uusien sanakirjatiedostojen määrää ei voitu selvittää.</string>
     <string name="original_questions">Käytä alkuperäistä kysymysintonaatiota</string>
     <string name="mellow_mode">Pehmeä tila (vähintään 16 kHz)</string>
+    <string name="pitch_hz_mode">Käytä äänenkorkeutta hertseinä</string>
+    <string name="pitch_hz_value">Perusäänenkorkeus hertseinä</string>
+    <string name="pitch_hz_error">Anna arvo välillä 1–24000 Hz.</string>
 </resources>

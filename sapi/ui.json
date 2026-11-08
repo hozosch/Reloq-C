@@ -45,7 +45,9 @@
     "DICT_FILES_TOTAL",
     "DICT_FILES_UNKNOWN",
     "ORIGINAL_QUESTIONS",
-    "MELLOW_MODE"
+    "MELLOW_MODE",
+    "PITCH_HZ_MODE",
+    "PITCH_HZ"
   ],
   "en": [
     "ReLoq C voice settings",
@@ -93,7 +95,9 @@
     "Dictionary files in total: %ls",
     "The number of new dictionary files could not be determined.",
     "Use original &question intonation",
-    "Mello&w mode (16 kHz and above)"
+    "Mello&w mode (16 kHz and above)",
+    "Use &Hz",
+    "Hz:"
   ],
   "de": [
     "ReLoq C – Stimmeinstellungen",
@@ -141,7 +145,9 @@
     "Wörterbuchdateien insgesamt: %ls",
     "Die Anzahl neuer Wörterbuchdateien konnte nicht ermittelt werden.",
     "Ursprüngliche &Frageintonation verwenden",
-    "Weicher Mod&us (ab 16 kHz)"
+    "Weicher Mod&us (ab 16 kHz)",
+    "In &Hertz",
+    "Hz:"
   ],
   "es": [
     "ReLoq C – Ajustes de voz",
@@ -189,7 +195,9 @@
     "Archivos de diccionario en total: %ls",
     "No se pudo determinar el número de archivos de diccionario nuevos.",
     "Usar la entonación original de las preguntas",
-    "Modo suave (desde 16 kHz)"
+    "Modo suave (desde 16 kHz)",
+    "Usar &Hz",
+    "Hz:"
   ],
   "fr": [
     "ReLoq C – Paramètres de voix",
@@ -237,7 +245,9 @@
     "Nombre total de fichiers de dictionnaire: %ls",
     "Impossible de déterminer le nombre de nouveaux fichiers de dictionnaire.",
     "Utiliser l’intonation originale des questions",
-    "Mode doux (à partir de 16 kHz)"
+    "Mode doux (à partir de 16 kHz)",
+    "Utiliser &Hz",
+    "Hz:"
   ],
   "it": [
     "ReLoq C – Impostazioni voce",
@@ -285,7 +295,9 @@
     "File del dizionario totali: %ls",
     "Impossibile determinare il numero dei nuovi file del dizionario.",
     "Usa l’intonazione originale delle domande",
-    "Modalità morbida (da 16 kHz)"
+    "Modalità morbida (da 16 kHz)",
+    "Usa &Hz",
+    "Hz:"
   ],
   "pt": [
     "ReLoq C – Configurações de voz",
@@ -333,7 +345,9 @@
     "Total de arquivos de dicionário: %ls",
     "Não foi possível determinar o número de novos arquivos de dicionário.",
     "Usar a entonação original das perguntas",
-    "Modo suave (a partir de 16 kHz)"
+    "Modo suave (a partir de 16 kHz)",
+    "Usar &Hz",
+    "Hz:"
   ],
   "fi": [
     "ReLoq C – Ääniasetukset",
@@ -381,7 +395,9 @@
     "Sanakirjatiedostoja yhteensä: %ls",
     "Uusien sanakirjatiedostojen määrää ei voitu selvittää.",
     "Käytä alkuperäistä kysymysintonaatiota",
-    "Pehmeä tila (vähintään 16 kHz)"
+    "Pehmeä tila (vähintään 16 kHz)",
+    "Käytä &hertsejä",
+    "Hz:"
   ],
   "el": [
     "ReLoq C – Ρυθμίσεις φωνής",
@@ -429,7 +445,9 @@
     "Συνολικά αρχεία λεξικού: %ls",
     "Δεν ήταν δυνατό να προσδιοριστεί ο αριθμός νέων αρχείων λεξικού.",
     "Χρήση του αρχικού επιτονισμού ερωτήσεων",
-    "Απαλός ήχος (από 16 kHz)"
+    "Απαλός ήχος (από 16 kHz)",
+    "Χρήση &Hz",
+    "Hz:"
   ],
   "ja": [
     "ReLoq C 音声設定",
@@ -477,7 +495,9 @@
     "辞書ファイルの合計: %ls",
     "新しい辞書ファイル数を特定できませんでした。",
     "元の疑問文のイントネーションを使用",
-    "ソフトモード（16 kHz 以上）"
+    "ソフトモード（16 kHz 以上）",
+    "&Hz を使用",
+    "Hz:"
   ],
   "ko": [
     "ReLoq C 음성 설정",
@@ -525,7 +545,9 @@
     "전체 사전 파일: %ls",
     "새 사전 파일 수를 확인할 수 없습니다.",
     "원래의 질문 억양 사용",
-    "부드러운 모드 (16 kHz 이상)"
+    "부드러운 모드 (16 kHz 이상)",
+    "&Hz 사용",
+    "Hz:"
   ],
   "zh": [
     "ReLoq C 语音设置",
@@ -573,7 +595,9 @@
     "词典文件总数: %ls",
     "无法确定新增词典文件数。",
     "使用原始疑问语调",
-    "柔和模式（16 kHz 及以上）"
+    "柔和模式（16 kHz 及以上）",
+    "使用 &Hz",
+    "Hz:"
   ],
   "zh-Hant": [
     "ReLoq C 語音設定",
@@ -621,6 +645,8 @@
     "字典檔案總數: %ls",
     "無法確定新增字典檔案數。",
     "使用原始疑問語調",
-    "柔和模式（16 kHz 及以上）"
+    "柔和模式（16 kHz 及以上）",
+    "使用 &Hz",
+    "Hz:"
   ]
 }

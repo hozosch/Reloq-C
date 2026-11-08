@@ -87,4 +87,7 @@
     <string name="dictionary_update_files_unknown">Die Anzahl neuer Wörterbuchdateien konnte nicht ermittelt werden.</string>
     <string name="original_questions">Ursprüngliche Frageintonation verwenden</string>
     <string name="mellow_mode">Weicher Modus (ab 16 kHz)</string>
+    <string name="pitch_hz_mode">Tonhöhe in Hertz verwenden</string>
+    <string name="pitch_hz_value">Grundtonhöhe in Hertz</string>
+    <string name="pitch_hz_error">Bitte einen Wert von 1 bis 24000 Hz eingeben.</string>
 </resources>

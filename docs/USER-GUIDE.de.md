@@ -1,5 +1,9 @@
 # Eloquence C – Bedienungsanleitung
 
+## Version 1.2.2
+
+Die Grundtonhöhe lässt sich optional exakt in Hertz einstellen. Bei Deutsch wird das finale A auch vor Komma, Doppelpunkt und weiteren Pausen verwendet. Bei einer Neuinstallation in NVDA entspricht die Standardtonhöhe 65 der voreingestellten Stimme Reed.
+
 ## Version 1.2.1
 
 Der weiche Modus wurde klanglich verfeinert: Er dämpft die stimmhaften Anteile breiter, verzichtet auf zusätzliche Richness und reduziert die Behauchung bei stimmhaften Lauten.

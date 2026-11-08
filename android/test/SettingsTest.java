@@ -59,8 +59,14 @@ public final class SettingsTest {
             Map<String,Object> values=new HashMap<>();SharedPreferences p=memory(values);
             Preferences.save(p,profile,s);
             require(Arrays.equals(Preferences.read(p,profile).controls(100,100),expected));
+            s.pitchHertz=151;s.pitchHertzMode=true;
+            require(s.controls(100,100)[2]==1151);
+            Preferences.save(p,profile,s);
+            VoiceSettings exact=Preferences.read(p,profile);
+            require(exact.pitchHertzMode&&exact.pitchHertz==151&&exact.controls(100,100)[2]==1151);
+            exact.androidPitch=true;require(exact.controls(100,100)[2]==exact.pitch);
             VoiceSettings other=Preferences.read(p,(profile+1)%8);
-            require(other.head==Catalog.PARAMETERS[(profile+1)%8][1]&&other.manualPitch==Catalog.PARAMETERS[(profile+1)%8][2]);
+            require(other.head==Catalog.PARAMETERS[(profile+1)%8][1]&&other.manualPitch==Catalog.PARAMETERS[(profile+1)%8][2]&&!other.pitchHertzMode);
             s.androidRate=true;s.androidPitch=true;s.rateBoost=true;
             require(s.controls(100,200)[7]>55);
         }
@@ -81,6 +87,7 @@ public final class SettingsTest {
         Map<String,Object> privateData=new HashMap<>();
         privateData.put("profile",5);privateData.put("language",1);privateData.put("androidVoice",false);privateData.put("originalQuestions",true);privateData.put("mellowMode",true);
         privateData.put("voice.5.pitch",48);privateData.put("voice.5.volume",71);
+        privateData.put("voice.5.pitchHertz",151);privateData.put("voice.5.pitchHertzMode",true);
         privateData.put("dictionarySnapshot","/private/dictionary");
         privateData.put("dictionarySources","content://private/words");
         privateData.put("communityCommit","secret");privateData.put("voice.99.pitch",33);
@@ -88,9 +95,9 @@ public final class SettingsTest {
         Map<String,Object> bootData=new HashMap<>();bootData.put("stalePrivate", "remove");
         BootPreferences.mirror(memory(privateData),memory(bootData));
         require(bootData.equals(Map.of("profile",5,"language",1,"androidVoice",false,"originalQuestions",true,"mellowMode",true,"dictionaryRequired",true,
-            "voice.5.pitch",48,"voice.5.volume",71)));
+            "voice.5.pitch",48,"voice.5.volume",71,"voice.5.pitchHertz",151,"voice.5.pitchHertzMode",true)));
         VoiceSettings bootVoice=Preferences.read(memory(bootData),5);
-        require(bootVoice.manualPitch==48&&bootVoice.volume==71&&bootVoice.rate==1&&bootVoice.originalQuestions&&bootVoice.mellowMode);
+        require(bootVoice.manualPitch==48&&bootVoice.pitchHertz==151&&bootVoice.pitchHertzMode&&bootVoice.volume==71&&bootVoice.rate==1&&bootVoice.originalQuestions&&bootVoice.mellowMode);
         privateData.put("voice.5.pitch",52);privateData.remove("voice.5.volume");
         BootPreferences.mirror(memory(privateData),memory(bootData));
         require(bootData.get("voice.5.pitch").equals(52)&&!bootData.containsKey("voice.5.volume"));

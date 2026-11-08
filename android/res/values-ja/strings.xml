@@ -87,4 +87,7 @@
     <string name="dictionary_update_files_unknown">新しい辞書ファイル数を特定できませんでした。</string>
     <string name="original_questions">元の疑問文のイントネーションを使用</string>
     <string name="mellow_mode">ソフトモード（16 kHz 以上）</string>
+    <string name="pitch_hz_mode">音の高さをヘルツで設定</string>
+    <string name="pitch_hz_value">基本音高（ヘルツ）</string>
+    <string name="pitch_hz_error">1 から 24000 Hz の値を入力してください。</string>
 </resources>

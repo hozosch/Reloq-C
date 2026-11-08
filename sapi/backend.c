@@ -24,6 +24,7 @@ struct core_api {
     void (ECICALL *callback)(ECIHand,ECICallback,void *);
     int (ECICALL *buffer)(ECIHand,int,short *);
     int (ECICALL *set)(ECIHand,int,int);
+    int (ECICALL *set_voice)(ECIHand,int,int,int);
     int (ECICALL *add)(ECIHand,const void *,size_t,int);
     int (ECICALL *index)(ECIHand,int);
     int (ECICALL *pitch)(ECIHand,int);
@@ -43,7 +44,7 @@ static BOOL CALLBACK load_core(PINIT_ONCE once,PVOID unused,PVOID *context)
 #define LOAD(field,name) do {FARPROC p=GetProcAddress(core.module,name); \
     if(!p)goto fail;memcpy(&core.field,&p,sizeof p);}while(0)
     LOAD(new_ex,"eciNewEx");LOAD(destroy,"eciDelete");LOAD(callback,"eciRegisterCallback");
-    LOAD(buffer,"eciSetOutputBuffer");LOAD(set,"eciSetParam");LOAD(add,"eciAddTextUtf8");
+    LOAD(buffer,"eciSetOutputBuffer");LOAD(set,"eciSetParam");LOAD(set_voice,"eciSetVoiceParam");LOAD(add,"eciAddTextUtf8");
     LOAD(index,"eciInsertIndex");LOAD(pitch,"eciInsertPitch");LOAD(synthesize,"eciSynthesize");
     LOAD(stop,"eciStop");LOAD(clear,"eciClearInput");LOAD(dictionary,"eciSetDictionaryPath");
 #undef LOAD
@@ -277,6 +278,13 @@ static HRESULT dictionary(struct sapi_backend *b,const struct sapi_settings *s)
     wcscpy(b->dictionary_path,path);memcpy(b->dictionary_files,files,sizeof files);
     b->dictionary_ready=1;return S_OK;
 }
+static int set_hertz(ECIHand handle,int hz)
+{
+    if(core.set(handle,RELOQ_ECI_REAL_WORLD_UNITS,1)<0)return 0;
+    int result=core.set_voice(handle,0,2,hz);
+    int restored=core.set(handle,RELOQ_ECI_REAL_WORLD_UNITS,0);
+    return result>=0&&restored>=0;
+}
 static HRESULT configure(struct sapi_backend *b,const struct job *j)
 {
     const struct sapi_settings *s=&j->settings;
@@ -299,6 +307,7 @@ static HRESULT configure(struct sapi_backend *b,const struct job *j)
         {RELOQ_ECI_MELLOW_MODE,(int)s->mellow_mode}};
     for(size_t i=0;i<sizeof parameters/sizeof *parameters;++i)
         if(core.set(b->handle,parameters[i].key,parameters[i].value)==-1)return E_FAIL;
+    if(s->pitch_hz_enabled&&!set_hertz(b->handle,(int)s->pitch_hz))return E_FAIL;
     return dictionary(b,s);
 }
 static int sentence_end(WCHAR c)
@@ -317,6 +326,7 @@ static HRESULT synthesize(struct sapi_backend *b)
 {
     HRESULT hr=configure(b,&b->job);if(FAILED(hr))return hr;
     int sentence=1,has_text=0,last_pitch=(int)b->job.settings.pitch;
+    int last_hz=b->job.settings.pitch_hz_enabled?(int)b->job.settings.pitch_hz:0;
     int last_rate=sapi_native_speed(b->job.speed,0,b->job.settings.boost),last_range=0,last_emphasis=0;
     size_t delivered_events=0;b->fragment_volume=100;
     b->event_count=0;
@@ -352,12 +362,18 @@ static HRESULT synthesize(struct sapi_backend *b)
                core.set(b->handle,RELOQ_ECI_NATIVE_INFLECTION,inflection)==-1)return E_FAIL;
             last_rate=speed;last_range=f->State.PitchAdj.RangeAdj;last_emphasis=f->State.EmphAdj;
             b->fragment_volume=fragment_volume;
-            if(core.set(b->handle,RELOQ_ECI_NATIVE_PITCH,last_pitch)==-1)return E_FAIL;
+            if(last_hz? !set_hertz(b->handle,last_hz):
+               core.set(b->handle,RELOQ_ECI_NATIVE_PITCH,last_pitch)==-1)return E_FAIL;
         }
         /* SAPI already parsed XML. Absolute pitch marks preserve the native
          * analyzer's single connected utterance across ordinary fragments. */
-        int pitch=sapi_native_pitch((int)b->job.settings.pitch,f->State.PitchAdj.MiddleAdj);
-        if(pitch!=last_pitch){if(!core.pitch(b->handle,pitch))return E_FAIL;last_pitch=pitch;}
+        if(b->job.settings.pitch_hz_enabled) {
+            int pitch=sapi_hertz_pitch((int)b->job.settings.pitch_hz,f->State.PitchAdj.MiddleAdj);
+            if(pitch!=last_hz){if(!set_hertz(b->handle,pitch))return E_FAIL;last_hz=pitch;}
+        } else {
+            int pitch=sapi_native_pitch((int)b->job.settings.pitch,f->State.PitchAdj.MiddleAdj);
+            if(pitch!=last_pitch){if(!core.pitch(b->handle,pitch))return E_FAIL;last_pitch=pitch;}
+        }
         if(!(b->job.interest&(((ULONGLONG)1<<SPEI_WORD_BOUNDARY)|((ULONGLONG)1<<SPEI_SENTENCE_BOUNDARY)))){
             if(!add_wide(b,f->pTextStart,f->ulTextLen,f->State.eAction==SPVA_SpellOut))return E_FAIL;
             has_text|=f->ulTextLen!=0;continue;

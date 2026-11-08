@@ -87,4 +87,7 @@
     <string name="dictionary_update_files_unknown">Não foi possível determinar o número de novos arquivos de dicionário.</string>
     <string name="original_questions">Usar a entonação original das perguntas</string>
     <string name="mellow_mode">Modo suave (a partir de 16 kHz)</string>
+    <string name="pitch_hz_mode">Usar tom em hertz</string>
+    <string name="pitch_hz_value">Tom básico em hertz</string>
+    <string name="pitch_hz_error">Digite um valor de 1 a 24000 Hz.</string>
 </resources>

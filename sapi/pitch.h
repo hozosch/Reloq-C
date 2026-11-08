@@ -22,4 +22,15 @@ static int sapi_native_pitch(int base,long adjustment)
     double lower=fabs(log(reloq_voice_pitch_f0_scale(low-1)/target));
     return upper<lower?low:low-1;
 }
+/* Preserve SAPI's relative pitch adjustment around an exact Hertz base.
+ * At the application's neutral value, adjustment is zero. */
+static int sapi_hertz_pitch(int base,long adjustment)
+{
+    if(adjustment>200)return 24000;
+    if(adjustment< -200)return 1;
+    double wanted=(double)base*pow(2.0,adjustment/10.0);
+    if(wanted<=1.0)return 1;
+    if(wanted>=24000.0)return 24000;
+    return (int)lround(wanted);
+}
 #endif

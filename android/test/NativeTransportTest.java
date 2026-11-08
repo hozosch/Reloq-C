@@ -64,6 +64,11 @@ public final class NativeTransportTest {
             render(0x10000,custom,"This is `vb70 a test `vb43 with 504 and 4004.");
             render(0x40000,custom,"Dies ist eine Sprachprobe mit Eloquence.");
             render(0x10000,0,"Defaults after customized speech.");
+            VoiceSettings hertz=new VoiceSettings(0);hertz.androidPitch=false;hertz.pitchHertzMode=true;
+            hertz.pitchHertz=151;hertz.inflection=0;hertz.rate=3;
+            render(0x40000,hertz,"Hallo Welt.");render(0x10000,hertz,"Hello world.");
+            hertz.pitchHertz=302;render(0x40000,hertz,"Hallo Welt.");
+            hertz.pitchHertzMode=false;hertz.manualPitch=65;render(0x40000,hertz,"Hallo Welt.");
             custom.abbreviations=false;custom.prediction=true;
             render(0x10000,custom,"Dr. Smith works at St. James with Mrs. Jones.");
             render(0x40000,custom,"Der Doktor sagt dass wir heute mit dem Zug nach Berlin fahren.");

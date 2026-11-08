@@ -6,6 +6,9 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.Voice;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.text.InputType;
 import android.view.View;
 import android.widget.*;
 
@@ -15,12 +18,13 @@ public final class SettingsActivity extends Activity {
     private boolean ready;
     private LinearLayout content;
     private Spinner languages,profiles,rates,pauses,models;
-    private CheckBox androidVoice,androidRate,androidPitch,boost,tags,abbreviations,prediction,originalQuestions,mellowMode;
+    private CheckBox androidVoice,androidRate,androidPitch,pitchHertzMode,boost,tags,abbreviations,prediction,originalQuestions,mellowMode;
     private Numeric speed,pitch,inflection,volume,head,roughness,breathiness;
-    private EditText text;
+    private EditText text,pitchHertzInput;
     private TextView status;
     private SharedPreferences preferences;
     private int loadedProfile;
+    private int pitchHertz=150;
     private boolean initializing=true;
 
     private void changed() {if(!initializing)save();}
@@ -106,8 +110,25 @@ public final class SettingsActivity extends Activity {
         androidRate.setOnCheckedChangeListener((button,checked) -> {speed.enabled(!checked);changed();});
         boost=check(R.string.rate_boost,settings.rateBoost);
         androidPitch=check(R.string.android_pitch,settings.androidPitch);
-        pitch=new Numeric(R.string.pitch,settings.manualPitch);pitch.enabled(!settings.androidPitch);
-        androidPitch.setOnCheckedChangeListener((button,checked) -> {pitch.enabled(!checked);changed();});
+        pitch=new Numeric(R.string.pitch,settings.manualPitch);
+        pitchHertzMode=check(R.string.pitch_hz_mode,settings.pitchHertzMode);
+        TextView hzLabel=new TextView(this);hzLabel.setText(R.string.pitch_hz_value);
+        pitchHertzInput=new EditText(this);pitchHertzInput.setId(View.generateViewId());
+        hzLabel.setLabelFor(pitchHertzInput.getId());content.addView(hzLabel);
+        pitchHertzInput.setInputType(InputType.TYPE_CLASS_NUMBER);pitchHertzInput.setSingleLine(true);
+        pitchHertz=VoiceSettings.bounded(settings.pitchHertz,1,24000);
+        pitchHertzInput.setText(Integer.toString(pitchHertz));content.addView(pitchHertzInput);
+        pitchHertzInput.addTextChangedListener(new TextWatcher() {
+            public void beforeTextChanged(CharSequence s,int start,int count,int after) {}
+            public void onTextChanged(CharSequence s,int start,int before,int count) {}
+            public void afterTextChanged(Editable value) {
+                if(!initializing)pitchHertzInput.setError(validHertz(value.toString())?null:getString(R.string.pitch_hz_error));
+            }
+        });
+        pitchHertzInput.setOnFocusChangeListener((view,focused) -> {if(!focused)commitPitchHertz();});
+        androidPitch.setOnCheckedChangeListener((button,checked) -> {updatePitchControls();changed();});
+        pitchHertzMode.setOnCheckedChangeListener((button,checked) -> {updatePitchControls();changed();});
+        updatePitchControls();
         inflection=new Numeric(R.string.inflection,settings.inflection);
         volume=new Numeric(R.string.volume,settings.volume);
         heading(R.string.anatomy);
@@ -173,7 +194,9 @@ public final class SettingsActivity extends Activity {
     private void loadVoice(VoiceSettings s) {
         boolean previous=initializing;initializing=true;
         try {
-            pitch.set(s.manualPitch);inflection.set(s.inflection);volume.set(s.volume);
+            pitch.set(s.manualPitch);pitchHertz=VoiceSettings.bounded(s.pitchHertz,1,24000);
+            pitchHertzInput.setText(Integer.toString(pitchHertz));pitchHertzMode.setChecked(s.pitchHertzMode);
+            updatePitchControls();inflection.set(s.inflection);volume.set(s.volume);
             models.setSelection(VoiceSettings.bounded(s.gender,0,1));head.set(s.head);
             roughness.set(s.roughness);breathiness.set(s.breathiness);
         } finally {initializing=previous;}
@@ -182,6 +205,7 @@ public final class SettingsActivity extends Activity {
         VoiceSettings s=new VoiceSettings(loadedProfile);
         s.androidRate=androidRate.isChecked();s.androidPitch=androidPitch.isChecked();
         s.manualWpm=speed.get();s.rateBoost=boost.isChecked();s.manualPitch=pitch.get();
+        s.pitchHertz=pitchHertz;s.pitchHertzMode=pitchHertzMode.isChecked();
         s.inflection=inflection.get();s.volume=volume.get();s.gender=models.getSelectedItemPosition();
         s.head=head.get();s.roughness=roughness.get();s.breathiness=breathiness.get();
         s.rate=rates==null?preferences.getInt("rate",1):rates.getSelectedItemPosition();
@@ -198,5 +222,21 @@ public final class SettingsActivity extends Activity {
             .putInt("profile",profiles.getSelectedItemPosition()).putBoolean("androidVoice",androidVoice.isChecked()).apply();
         BootPreferences.refresh(this);
     }
+    private void updatePitchControls() {
+        boolean manual=!androidPitch.isChecked(),hz=manual&&pitchHertzMode.isChecked();
+        pitch.enabled(manual&&!hz);pitchHertzMode.setEnabled(manual);pitchHertzInput.setEnabled(hz);
+    }
+    private static boolean validHertz(String text) {
+        try {int value=Integer.parseInt(text);return value>=1&&value<=24000;}
+        catch(NumberFormatException error){return false;}
+    }
+    private void commitPitchHertz() {
+        if(initializing||pitchHertzInput==null)return;
+        String value=pitchHertzInput.getText().toString();
+        if(!validHertz(value)){pitchHertzInput.setError(getString(R.string.pitch_hz_error));return;}
+        int next=Integer.parseInt(value);pitchHertzInput.setError(null);
+        if(next!=pitchHertz){pitchHertz=next;changed();}
+    }
+    @Override protected void onPause(){commitPitchHertz();super.onPause();}
     @Override public void onDestroy(){if(tts!=null){tts.stop();tts.shutdown();}super.onDestroy();}
 }

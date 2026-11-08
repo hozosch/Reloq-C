@@ -74,6 +74,7 @@ int main(int argc,char **argv)
     struct {int language,rate;size_t samples;uint64_t hash;unsigned event_count;
         ULONG event_offsets[128];uint64_t event_audio_offsets[128];} comparisons[98];
     unsigned comparison_count=0,format_changes=0;
+    size_t hz_samples[3]={0};uint64_t hz_hashes[3]={0};
     size_t long_marked=0,long_plain=0,long_events=0;uint64_t long_marked_hash=0,long_plain_hash=0,long_event_hash=0;
     for(size_t i=0;i<sizeof sapi_languages/sizeof *sapi_languages;++i){
         struct sapi_backend *b=sapi_backend_new(sapi_languages[i].dialect);assert(b);
@@ -235,6 +236,31 @@ int main(int argc,char **argv)
     xml=f;xml.State.PitchAdj.MiddleAdj=2;struct site high=site_new();
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&xml,&high.iface)));
     assert(high.count==base.count&&hash(high.pcm,high.count)!=hash(base.pcm,base.count));free(high.pcm);++cases;
+    #ifndef RELOQ_SAPI_REFERENCE_BASELINE
+    /* Exact Hertz stays the base for SAPI's neutral 50. Relative pitch
+     * offsets and interior fragments keep the same continuous ECI stream. */
+    {
+        struct sapi_backend *voice=sapi_backend_new(0x40000);assert(voice);
+        struct sapi_settings h=settings();h.rate=3;h.inflection=0;h.pitch_hz=151;h.pitch_hz_enabled=1;
+        WAVEFORMATEX fmt=format(16000);
+        SPVTEXTFRAG phrase=text(L"Hallo Welt.",0),raised=phrase;
+        raised.State.PitchAdj.MiddleAdj=10;
+        SPVTEXTFRAG left=text(L"Hallo ",0),right=text(L"Welt.",6);
+        left.pNext=&right;right.State.PitchAdj.MiddleAdj=10;
+        SPVTEXTFRAG *fragments[]={&phrase,&raised,&left};
+        for(unsigned i=0;i<3;++i){
+            struct site audible=site_new();audible.interest=0;
+            assert(SUCCEEDED(sapi_backend_speak(voice,&h,0,&fmt,fragments[i],&audible.iface)));
+            hz_samples[i]=audible.count;hz_hashes[i]=hash(audible.pcm,audible.count);
+            free(audible.pcm);
+        }
+        assert(hz_samples[0]==hz_samples[1]&&hz_hashes[0]!=hz_hashes[1]);
+        struct site restored=site_new();restored.interest=0;
+        assert(SUCCEEDED(sapi_backend_speak(voice,&h,0,&fmt,&phrase,&restored.iface)));
+        assert(restored.count==hz_samples[0]&&hash(restored.pcm,restored.count)==hz_hashes[0]);
+        free(restored.pcm);sapi_backend_delete(voice);cases+=4;
+    }
+    #endif
     struct site cancel=site_new();cancel.abort_after=512;
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&cancel.iface)));assert(cancel.count<base.count);free(cancel.pcm);++cases;
     struct site after=site_new();assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&after.iface)));same(&base,&after);free(after.pcm);++cases;
@@ -294,8 +320,11 @@ int main(int argc,char **argv)
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&spell,&letters.iface)));assert(letters.count>0);free(letters.pcm);++cases;
     assert(sapi_test_dictionary_calls==0);++cases;
     printf("{\"backend_cases\":%u,\"format_negotiation_cases\":%u,\"host_tests_convert_audio\":false,\"languages\":14,\"rates\":7,\"reference_samples\":%zu,\"reference_hash\":\"%016llx\",\"profile_names\":8,\"last_profile\":\"%ls\","
+        "\"pitch_hz\":[{\"samples\":%zu,\"hash\":\"%016llx\"},{\"samples\":%zu,\"hash\":\"%016llx\"},{\"samples\":%zu,\"hash\":\"%016llx\"}],"
         "\"long_german\":{\"marked_samples\":%zu,\"marked_hash\":\"%016llx\",\"plain_samples\":%zu,\"plain_hash\":\"%016llx\",\"events\":%zu,\"event_hash\":\"%016llx\"},\"comparisons\":[",
         cases,format_changes,base.count,(unsigned long long)hash(base.pcm,base.count),sapi_profiles[7],
+        hz_samples[0],(unsigned long long)hz_hashes[0],hz_samples[1],(unsigned long long)hz_hashes[1],
+        hz_samples[2],(unsigned long long)hz_hashes[2],
         long_marked,(unsigned long long)long_marked_hash,long_plain,(unsigned long long)long_plain_hash,
         long_events,(unsigned long long)long_event_hash);
     for(unsigned i=0;i<comparison_count;++i){

@@ -1,4 +1,4 @@
-ReLoq C 1.2.1 — unified SAPI5 Windows installer
+ReLoq C 1.2.2 — unified SAPI5 Windows installer
 
 Installation
 ------------
@@ -53,6 +53,14 @@ adjustment), bounded to 0–250. SAPI 0 is ECI 60; +10 is ECI 160; values at
 -6 or lower select ECI 0. Optional speed boost multiplies this by 1.6, capped
 at 250. Leave boost off for the reference scale. Profiles start at volume 100. Normal SAPI XML pitch, rate, volume and
 spelling fragments use the shared C engine.
+
+Next to the normal pitch control, enable “In hertz” and enter a whole-number
+base pitch from 1 to 24,000 Hz. The inactive ECI control keeps its saved value.
+SAPI application pitch 50 remains neutral and uses this base; application pitch
+adjustments still work. Inflection 0 makes the base easier to measure, although
+tonal languages can retain linguistic contours. The synthesis rate must exceed
+twice the requested frequency. Voice filters can attenuate very high pitches;
+an insufficient rate can distort or interrupt synthesis.
 
 Responsiveness and dictionaries
 -------------------------------

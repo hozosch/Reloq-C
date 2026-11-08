@@ -1,12 +1,12 @@
 # Android ARM64
 
 ReLoq C uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `1.2.1` targets ARM64 (`arm64-v8a`), Android 8/API 26
+add-on. Version `1.2.2` targets ARM64 (`arm64-v8a`), Android 8/API 26
 or later. Speech runs offline. Network access is used only when you explicitly update pronunciation dictionaries or check for an app update. Package downloads open in the browser.
 
 ## Install or update
 
-Install `reloq-c-android-arm64-1.2.1.apk` from GitHub Releases. This build
+Install `reloq-c-android-arm64-1.2.2.apk` from GitHub Releases. This build
 is named **ReLoq C** and uses the app identity `org.reloq.tts`. Installations
 already using this identity update in place and retain their settings and
 dictionaries. The published 1.1 uses an earlier identity, so a direct upgrade
@@ -55,6 +55,10 @@ text** starts a speech sample, and **Stop** interrupts it.
   roughness and breathiness are available. Voice values are stored separately
   for each of the eight presets. **Reset selected voice profile** restores that
   preset's anatomy and voice values; speed and output settings stay global.
+- To enter an exact base pitch, turn off **Control pitch through Android**,
+  enable **Use pitch in hertz** and enter a value from 1 to 24,000. The normal
+  manual ECI slider and the Hertz input are enabled exclusively. The number is
+  saved when editing ends; enabling Android pitch control takes precedence.
 - With ECI tags enabled, `` `vbhz150 `` sets the base pitch of the following
   text to 150 Hz (range: 1–24,000 Hz), and `` `vb65 `` returns to the usual
   native pitch scale. `` `vf0 `` turns off inflection; linguistic tones in
@@ -197,7 +201,7 @@ The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 ```sh
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
-python3 android/verify_apk.py dist/reloq-c-android-arm64-1.2.1.apk
+python3 android/verify_apk.py dist/reloq-c-android-arm64-1.2.2.apk
 ```
 
 Build verification checks signatures, the install-critical resource table,

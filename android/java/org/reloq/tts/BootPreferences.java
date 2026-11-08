@@ -11,7 +11,8 @@ final class BootPreferences {
     private static final String[] BOOLS={"androidVoice","androidRate","androidPitch",
         "rateBoost","abbreviations","prediction","originalQuestions","mellowMode","tags"};
     private static final String[] INTS={"language","profile","manualWpm","rate","pauses"};
-    private static final String[] VOICE={"pitch","gender","head","inflection","roughness","breathiness","volume"};
+    private static final String[] VOICE={"pitch","pitchHertz","gender","head","inflection","roughness","breathiness","volume"};
+    private static final String[] VOICE_BOOLS={"pitchHertzMode"};
     private BootPreferences() {}
     static boolean unlocked(Context context) {
         UserManager users=(UserManager)context.getSystemService(Context.USER_SERVICE);
@@ -37,6 +38,10 @@ final class BootPreferences {
         for(int profile=0;profile<Catalog.PROFILES.length;++profile)for(String field:VOICE) {
             String key="voice."+profile+"."+field;
             if(values.get(key) instanceof Integer)edit.putInt(key,(Integer)values.get(key));
+        }
+        for(int profile=0;profile<Catalog.PROFILES.length;++profile)for(String field:VOICE_BOOLS) {
+            String key="voice."+profile+"."+field;
+            if(values.get(key) instanceof Boolean)edit.putBoolean(key,(Boolean)values.get(key));
         }
         edit.apply();
     }

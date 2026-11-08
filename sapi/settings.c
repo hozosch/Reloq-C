@@ -17,7 +17,7 @@ void sapi_settings_profile(struct sapi_settings *s,unsigned profile)
     s->roughness=sapi_anatomy[profile][4];s->breathiness=sapi_anatomy[profile][5];
 }
 void sapi_settings_default(struct sapi_settings *s)
-{memset(s,0,sizeof *s);s->schema=1;sapi_settings_profile(s,0);s->rate=1;s->abbreviations=1;}
+{memset(s,0,sizeof *s);s->schema=1;sapi_settings_profile(s,0);s->rate=1;s->abbreviations=1;s->pitch_hz=150;}
 int sapi_module_path(WCHAR *path,size_t capacity,const WCHAR *name)
 {
     DWORD n=GetModuleFileNameW(sapi_module,path,(DWORD)capacity);
@@ -48,6 +48,7 @@ static int valid(const struct sapi_settings *s)
     return s->schema==1&&s->profile<8&&s->pitch<=100&&s->inflection<=100&&s->head<=100&&
         s->roughness<=100&&s->breathiness<=100&&s->gender<=1&&s->rate<7&&s->pauses<3&&
         s->tags<2&&s->abbreviations<2&&s->prediction<2&&s->dictionaries<2&&s->boost<2&&s->original_questions<2&&s->mellow_mode<2&&
+        s->pitch_hz>=1&&s->pitch_hz<=24000&&s->pitch_hz_enabled<2&&
         wmemchr(s->directory,0,sizeof s->directory/sizeof *s->directory)!=NULL;
 }
 static const WCHAR root[]=L"Software\\ReLoq C\\SAPI5";
@@ -57,10 +58,10 @@ static HRESULT read_binary(const WCHAR *key,const WCHAR *name,struct sapi_settin
     LSTATUS rc=RegGetValueW(HKEY_CURRENT_USER,key,name,RRF_RT_REG_BINARY,&type,&input,&size);
     if(rc==ERROR_FILE_NOT_FOUND)return S_FALSE;
     if(rc!=ERROR_SUCCESS)return HRESULT_FROM_WIN32(rc);
-    /* Older versions end at directory[] or after original_questions.
+    /* Older versions end at directory[], original_questions or mellow_mode.
      * Preserve their settings and default any missing extensions to zero. */
     if((size!=sizeof input&&size!=offsetof(struct sapi_settings,original_questions)&&
-        size!=offsetof(struct sapi_settings,mellow_mode))||!valid(&input))
+        size!=offsetof(struct sapi_settings,mellow_mode)&&size!=offsetof(struct sapi_settings,pitch_hz))||!valid(&input))
         return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
     *out=input;return S_OK;
 }
