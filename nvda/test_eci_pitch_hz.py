@@ -53,7 +53,7 @@ def main():
         for code, rate in ((0, 8000), (1, 11025), (3, 16000), (2, 22050),
                            (4, 32000), (5, 44100), (6, 48000)):
             assert e.lib.eciSetParam(e.h, 5, code) >= 0
-            for hz in (60, 123, 150, 300, 400):
+            for hz in (40, 60, 123, 150, 300, 400, 422):
                 set_hz(e, hz)
                 api = e.speak("`[.1a]")
                 measured = measure_pitch(api, rate, hz)
