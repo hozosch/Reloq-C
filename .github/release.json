@@ -1,12 +1,12 @@
 {
-  "version": "1.2.1",
-  "release_version": "1.2.1",
-  "source_commit": "b8db2aaa734eeac221551a859284678ae0b9d24b",
-  "run_id": 42418244566,
+  "version": "1.2.2",
+  "release_version": "1.2.2",
+  "source_commit": "f11b0eef9a72b4526ed65abf9cfff561539f06a4",
+  "run_id": 42508921347,
   "dictionary_snapshot": {
     "repository": "eigencrow/IBMTTSDictionaries",
     "branch": "master",
-    "commit": "a0a3e471702b36ede8052847129b830d71864831",
+    "commit": "51038410f84a859508436bdcc4b38f6924f5c9f0",
     "files": {
       "DEUmain.dic": {
         "sha": "fb8c156bbd28f1dceeed53e2527ed5e0370c6fa7",
@@ -25,8 +25,8 @@
         "size": 28091
       },
       "ENURoot.dic": {
-        "sha": "def5eb7b4ccd2182aaf3f2160fb28185e22429cc",
-        "size": 2259235
+        "sha": "6871e93a5741c93cb2bd1e9c6c2a75769ee2cc5d",
+        "size": 2259399
       },
       "ENUabbr.dic": {
         "sha": "edfdaa94d633a08fe57d63dbd12294a1f40f6450",
@@ -39,17 +39,17 @@
     }
   },
   "assets": {
-    "reloq-c-android-arm64-1.2.1.apk": {
-      "size": 17397358,
-      "sha256": "e7758902a7a939b81386962ece6f81c0cdf9b88a6c6bbca647a008ff6fddea57"
+    "reloq-c-android-arm64-1.2.2.apk": {
+      "size": 17405550,
+      "sha256": "90263b5ccdc759b1ed625927c82dfd3c939f0734960dcb4a6ae2379eb180a1f4"
     },
-    "reloq-c-synth-x64-1.2.1.nvda-addon": {
-      "size": 19638403,
-      "sha256": "3d17bc153afa65aeab8d5658fed02210ac1de04282401f28b1ac08acef067cfe"
+    "reloq-c-synth-x64-1.2.2.nvda-addon": {
+      "size": 19641992,
+      "sha256": "3cfc78682a24ac4dd22e05ef6e51b811d12daedf1d67066233bae4e563d36e20"
     },
-    "reloq-c-sapi5-1.2.1-setup.exe": {
-      "size": 19443646,
-      "sha256": "4002c4df6fd226232efd6a1d2e92d515a3020fcf507bd9a5afbb618ba5bbd684"
+    "reloq-c-sapi5-1.2.2-setup.exe": {
+      "size": 19450748,
+      "sha256": "83392760068e53fc3333b915d9d6b152278d533824b7d08049d6d5d4cce521c7"
     }
   }
 }
