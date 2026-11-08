@@ -30,10 +30,10 @@ from speech.extensions import filter_speechSequence
 from synthDriverHandler import (SynthDriver as BaseSynthDriver, VoiceInfo, LanguageInfo,
                                 synthDoneSpeaking, synthIndexReached)
 
-from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciProsody, EciLanguage, EciText, NATIVE_VOLUME,
+from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciPitchHz, EciProsody, EciLanguage, EciText, NATIVE_VOLUME,
                                 NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION, PROCESS_TAGS,
                                 PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATES,
-                                DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE)
+                                DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, PITCH_HZ)
 from ._reloq_eci_transport import DictionaryStartupError, EciTextTransport
 from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries
 from ._reloq_languages import GERMAN, LANGUAGES, LANGUAGE_ALIASES, LANGUAGE_DISPLAY_ORDER, LanguageEngine, language_for
@@ -71,7 +71,7 @@ def _command_pitch(command, base_pitch):
     return max(0, min(100, int(round(value))))
 
 
-def _parts(speech_sequence, *, base_pitch=50, base_rate=50, base_volume=100, rate_boost=False, voice_tags=False,
+def _parts(speech_sequence, *, base_pitch=50, base_pitch_hz=0, base_rate=50, base_volume=100, rate_boost=False, voice_tags=False,
            language=GERMAN, voice="1", languages=LANGUAGES):
     """Keep NVDA's text and indices together in one native utterance.
 
@@ -120,7 +120,14 @@ def _parts(speech_sequence, *, base_pitch=50, base_rate=50, base_volume=100, rat
         elif isinstance(item, PitchCommand):
             flush()
             value = _command_pitch(item, base_pitch)
-            parts.append(EciPitch(value))
+            if base_pitch_hz:
+                # Preserve NVDA's relative capital-pitch behavior around the
+                # explicitly selected physical baseline.
+                hz_for = lambda v: 35.11023877 + 4.889761232 * 2 ** (.06306456 * v)
+                frequency = round(base_pitch_hz * hz_for(value) / hz_for(base_pitch))
+                parts.append(EciPitchHz(max(1, min(24000, frequency))))
+            else:
+                parts.append(EciPitch(value))
             raised = value != base_pitch
         elif isinstance(item, (RateCommand, VolumeCommand)):
             flush()
@@ -187,6 +194,10 @@ class SynthDriver(BaseSynthDriver):
         DriverSetting("pauseMode", _("Shorten pa&uses"), defaultVal="0"),
         DriverSetting("sampleRate", _("&Sample rate"), defaultVal="1"),
         BooleanDriverSetting("mellowMode", _("&Mellow mode (16 kHz and above)"), defaultVal=False),
+        # Hidden from NVDA's automatic slider panel. The dedicated Eloquence
+        # panel uses a numeric input, while the standard pitch stays 0..100.
+        NumericDriverSetting("_pitchHertz", _("Pitch in hertz"), defaultVal=150, minVal=1, maxVal=24000),
+        BooleanDriverSetting("_pitchInHertz", _("Use pitch in hertz"), defaultVal=False),
     )
 
     @classmethod
@@ -210,6 +221,10 @@ class SynthDriver(BaseSynthDriver):
         self._rate = 50
         self._rateBoost = False
         self._pitch = 50
+        self._pitchHertz = 150
+        self._pitchInHertz = False
+        self._applied_pitch_hz = 0
+        self._loading_pitch_settings = False
         self._inflection = 30
         self._volume = 100
         self._headSize = 50
@@ -316,10 +331,17 @@ class SynthDriver(BaseSynthDriver):
     def initSettings(self):
         # OpenEVV refreshes the schema before NVDA restores existing profiles.
         # This also covers NVDA releases whose base class did not do so yet.
-        section = config.conf[self._configSection]
-        if section.isSet(self.name):
-            section[self.name].spec.update(self.getConfigSpec())
-        super().initSettings()
+        previous = self._loading_pitch_settings
+        self._loading_pitch_settings = True
+        try:
+            section = config.conf[self._configSection]
+            if section.isSet(self.name):
+                section[self.name].spec.update(self.getConfigSpec())
+            super().initSettings()
+        finally:
+            self._loading_pitch_settings = previous
+        if not previous:
+            self._sync_pitch_hertz()
 
     def _initial_language(self):
         # Schema defaults are not a saved choice. Use NVDA's resolved UI
@@ -373,15 +395,22 @@ class SynthDriver(BaseSynthDriver):
     def loadSettings(self, onlyChanged=False):
         # NVDA restores voice before other settings. Select the module first
         # so a voice belonging to a non-default language can be validated.
-        section = config.conf[self._configSection][self.name]
-        self._select_language(self._initial_language())
-        section["language"] = self._get_language()
-        if not section.isSet("_dictionaryCommunity") and section.isSet("communityDictionaries"):
-            previous = section.__getitem__("communityDictionaries", checkValidity=False)
-            section["_dictionaryCommunity"] = self._dictionary_config_boolean(previous, section)
-        # AggregatedSection supports neither pop nor deletion. Leave any
-        # legacy value intact; the canonical language now takes precedence.
-        super().loadSettings(onlyChanged=onlyChanged)
+        was_loading = self._loading_pitch_settings
+        self._loading_pitch_settings = True
+        try:
+            section = config.conf[self._configSection][self.name]
+            self._select_language(self._initial_language())
+            section["language"] = self._get_language()
+            if not section.isSet("_dictionaryCommunity") and section.isSet("communityDictionaries"):
+                previous = section.__getitem__("communityDictionaries", checkValidity=False)
+                section["_dictionaryCommunity"] = self._dictionary_config_boolean(previous, section)
+            # AggregatedSection supports neither pop nor deletion. Leave any
+            # legacy value intact; the canonical language now takes precedence.
+            super().loadSettings(onlyChanged=onlyChanged)
+        finally:
+            self._loading_pitch_settings = was_loading
+        if not was_loading:
+            self._sync_pitch_hertz()
 
     def _get_communityDictionaries(self):
         return self._communityDictionaries
@@ -610,7 +639,7 @@ class SynthDriver(BaseSynthDriver):
                 (PHRASE_PREDICTION, int(self._phrasePrediction)),
                 (ORIGINAL_QUESTIONS, int(self._originalQuestions)),
                 (MELLOW_MODE, int(self._mellowMode)),
-            ))
+            ) + (((PITCH_HZ, self._pitchHertz),) if self._pitchInHertz else ()))
             self._selectedLanguage, self._voice = selected, voice
 
     def _get_voice(self):
@@ -623,7 +652,8 @@ class SynthDriver(BaseSynthDriver):
             selected = self._languages[self._selectedLanguage].voice(voice)
             if selected.id == self._voice:
                 return
-            self._transport.select_voice(self._selectedLanguage, selected.id)
+            self._transport.select_voice(self._selectedLanguage, selected.id,
+                parameters=((PITCH_HZ, self._pitchHertz),) if self._pitchInHertz else ())
             self._voice = selected.id
             # A module may define presets using the controls supported by C.
             for parameter, value in selected.parameters:
@@ -672,7 +702,39 @@ class SynthDriver(BaseSynthDriver):
         return self._pitch
 
     def _set_pitch(self, value):
-        self._set_setting("pitch", NATIVE_PITCH, value)
+        switched = False
+        with self._submit_lock:
+            self._set_setting("pitch", NATIVE_PITCH, value)
+            if self._applied_pitch_hz:
+                self._transport.set_parameter(PITCH_HZ, 0)
+                self._applied_pitch_hz = 0
+            if self._pitchInHertz and not self._loading_pitch_settings:
+                self._pitchInHertz = False
+                switched = True
+        if switched:
+            import ui
+            ui.message(_("Hertz pitch off; using the ECI pitch scale."))
+
+    def _sync_pitch_hertz(self):
+        with self._submit_lock:
+            if self._terminating:
+                return
+            wanted = self._pitchHertz if self._pitchInHertz else 0
+            if wanted == self._applied_pitch_hz:
+                return
+            if wanted:
+                self._transport.set_parameter(PITCH_HZ, wanted)
+            else:
+                self._transport.set_parameter(PITCH_HZ, 0)
+                self._transport.set_parameter(NATIVE_PITCH, self._pitch)
+            self._applied_pitch_hz = wanted
+
+    def configure_pitch_hertz(self, enabled, value):
+        if type(enabled) is not bool or type(value) is not int or not 1 <= value <= 24000:
+            raise ValueError("invalid Hertz pitch setting")
+        with self._submit_lock:
+            self._pitchHertz, self._pitchInHertz = value, enabled
+            self._sync_pitch_hertz()
 
     def _get_volume(self):
         return self._volume
@@ -724,12 +786,13 @@ class SynthDriver(BaseSynthDriver):
                 return
             epoch = self._request_epoch
             pitch = self._pitch
+            pitch_hz = self._pitchHertz if self._pitchInHertz else 0
             tags = self._voiceTags
             language = self._selectedLanguage
             voice = self._voice
             rate, boost, volume = self._rate, self._rateBoost, self._volume
         def make_parts():
-            return _parts(speechSequence, base_pitch=pitch, voice_tags=tags,
+            return _parts(speechSequence, base_pitch=pitch, base_pitch_hz=pitch_hz, voice_tags=tags,
                           base_rate=rate, rate_boost=boost, base_volume=volume,
                           language=self._languages[language], voice=voice, languages=self._languages)
         parts = make_parts()
@@ -739,9 +802,10 @@ class SynthDriver(BaseSynthDriver):
             # A settings change can arrive while a long sequence is being
             # normalized. Keep its inline relative commands paired with the
             # base pitch which will precede this job in the native queue.
-            if (self._pitch, self._voiceTags, self._selectedLanguage, self._voice,
-                self._rate, self._rateBoost, self._volume) != (pitch, tags, language, voice, rate, boost, volume):
+            if (self._pitch, self._pitchHertz if self._pitchInHertz else 0, self._voiceTags, self._selectedLanguage, self._voice,
+                self._rate, self._rateBoost, self._volume) != (pitch, pitch_hz, tags, language, voice, rate, boost, volume):
                 pitch, tags, language, voice = self._pitch, self._voiceTags, self._selectedLanguage, self._voice
+                pitch_hz = self._pitchHertz if self._pitchInHertz else 0
                 rate, boost, volume = self._rate, self._rateBoost, self._volume
                 parts = make_parts()
             characters = sum(len(p.text) if isinstance(p, EciText) else len(p) if isinstance(p, str) else 0 for p in parts)

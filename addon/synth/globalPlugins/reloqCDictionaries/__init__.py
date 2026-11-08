@@ -47,6 +47,23 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.sources = list(self.synth.dictionary_manager().sources) if self.synth else []
         self.pending, self.closing = False, False
         self.operation = 0
+        self.pitch_dirty = False
+        content.Add(wx.StaticText(self, label=_("Exact base pitch")), 0, wx.ALL, 10)
+        self.pitch_hz_mode = wx.CheckBox(self, label=_("Use base pitch in &hertz"))
+        self.pitch_hz_mode.SetValue(self.synth._pitchInHertz if self.synth else False)
+        content.Add(self.pitch_hz_mode, 0, wx.ALL, 10)
+        pitch_label = wx.StaticText(self, label=_("Base pitch in hertz (1–24000):"))
+        content.Add(pitch_label, 0, wx.LEFT | wx.RIGHT, 10)
+        self.pitch_hz_value = wx.SpinCtrl(self, min=1, max=24000,
+            initial=self.synth._pitchHertz if self.synth else 150)
+        self.pitch_hz_value.SetName(pitch_label.GetLabelText())
+        content.Add(self.pitch_hz_value, 0, wx.ALL, 10)
+        content.Add(wx.StaticText(self, label=_(
+            "Changing NVDA's normal pitch slider switches back to the ECI scale.")),
+            0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        self.pitch_hz_mode.Bind(wx.EVT_CHECKBOX, self.on_pitch_changed)
+        self.pitch_hz_value.Bind(wx.EVT_SPINCTRL, self.on_pitch_changed)
+        self.pitch_hz_value.Bind(wx.EVT_TEXT, self.on_pitch_changed)
         content.Add(wx.StaticText(self, label=_("Pronunciation dictionaries")), 0, wx.ALL, 10)
         self.community = wx.CheckBox(self, label=_("Use &community pronunciation dictionaries"))
         self.community.SetValue(self.synth.communityDictionaries if self.synth else False)
@@ -163,6 +180,13 @@ class EloquenceSettingsPanel(SettingsPanel):
     def enable_controls(self, enabled):
         for control in (*self.edits, self.files, self.update, self.community, self.repository):
             control.Enable(enabled)
+        self.pitch_hz_mode.Enable(enabled)
+        self.pitch_hz_value.Enable(enabled and self.pitch_hz_mode.GetValue())
+
+    def on_pitch_changed(self, event):
+        self.pitch_dirty = True
+        self.pitch_hz_value.Enable(bool(self.current_synth()) and self.pitch_hz_mode.GetValue())
+        event.Skip()
 
     def on_folder(self, event):
         if self.current_synth():
@@ -275,6 +299,9 @@ class EloquenceSettingsPanel(SettingsPanel):
         if self.current_synth():
             completed = self.begin()
             try:
+                if self.pitch_dirty:
+                    self.synth.configure_pitch_hertz(self.pitch_hz_mode.GetValue(), self.pitch_hz_value.GetValue())
+                    self.pitch_dirty = False
                 self.synth.configure_dictionaries(self.sources, self.community.GetValue(), completed,
                     "alternative" if self.repository.GetSelection() == 1 else "community")
                 self.synth.saveSettings()
@@ -296,10 +323,17 @@ class EloquenceSettingsPanel(SettingsPanel):
             self.pending = False
             self.synth = synth
             self.sources = list(synth.dictionary_manager().sources)
+            self.pitch_hz_mode.SetValue(synth._pitchInHertz)
+            self.pitch_hz_value.SetValue(synth._pitchHertz)
+            self.pitch_dirty = False
             self.community.SetValue(synth.communityDictionaries)
             self.repository.SetSelection(1 if synth.dictionary_manager().repository == "alternative" else 0)
             self.redraw()
             self.status.SetLabel(_("Own entries override community entries. Original files are kept unchanged."))
+        if self.current_synth() and not self.pitch_dirty:
+            self.pitch_hz_mode.SetValue(self.synth._pitchInHertz)
+            self.pitch_hz_value.SetValue(self.synth._pitchHertz)
+            self.pitch_dirty = False
         self.enable_controls(not self.pending and self.current_synth())
         super().onPanelActivated()
 

@@ -208,6 +208,21 @@ msgstr "Eigene Dateien &speichern"
 msgid "Close"
 msgstr "Schließen"
 
+msgid "Exact base pitch"
+msgstr "Genaue Grundtonhöhe"
+
+msgid "Use base pitch in &hertz"
+msgstr "Grundtonhöhe in &Hertz verwenden"
+
+msgid "Base pitch in hertz (1–24000):"
+msgstr "Grundtonhöhe in Hertz (1–24000):"
+
+msgid "Changing NVDA's normal pitch slider switches back to the ECI scale."
+msgstr "Eine Änderung an NVDAs normalem Tonhöhenregler schaltet zurück auf die ECI-Skala."
+
+msgid "Hertz pitch off; using the ECI pitch scale."
+msgstr "Hertz-Tonhöhe aus; die ECI-Tonhöhenskala ist aktiv."
+
 msgid "Main words"
 msgstr "Hauptwörterbuch"
 

@@ -200,6 +200,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 self.lang = lang
 
         notifications = []
+        ui_messages = []
         players = []
         fake_module("autoSettingsUtils", __path__=[])
         fake_module("autoSettingsUtils.driverSetting",
@@ -208,6 +209,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
         fake_module("autoSettingsUtils.utils",
                     StringParameterInfo=lambda id, label: types.SimpleNamespace(id=id, displayName=label))
         fake_module("config", conf={"audio": {"outputDevice": "default"}})
+        fake_module("ui", message=ui_messages.append)
         fake_module("logHandler", log=types.SimpleNamespace(
             info=lambda *args, **kw: None,
             error=lambda *args, **kw: notifications.append(("error", args)),
@@ -308,7 +310,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert PitchCommand in driver.supportedCommands
                 assert CharacterModeCommand in driver.supportedCommands
                 assert [setting.id for setting in driver.supportedSettings] == [
-                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode"]
+                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode", "_pitchHertz", "_pitchInHertz"]
                 assert driver.supportedSettings[0].availableInSettingsRing
                 assert not any(hasattr(driver, '_'+name) for name in
                                ('glideOpening', 'glideBackness', 'glideSoftness'))
@@ -807,6 +809,59 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                     finally:
                         fresh.terminate()
                     print("NVDA initial pitch: fresh, saved, and voice-specific profiles passed")
+                    # The independent Hertz value survives configuration
+                    # reload, language and voice selection. Moving the normal
+                    # 0..100 slider explicitly returns to the ECI scale.
+                    profile = {"speech": {driver.name: {"voice": "1", "pitch": 65}},
+                               "audio": {"outputDevice": "default"}}
+                    config_api.conf = configuration_manager(profile).rootSection
+                    fresh = driver_module.SynthDriver()
+                    try:
+                        fresh.initSettings()
+                        assert not fresh._pitchInHertz and fresh.pitch == 65
+                        fresh.configure_pitch_hertz(True, 151)
+                        fresh.saveSettings()
+                        assert profile["speech"][fresh.name]["_pitchHertz"] == 151
+                        assert profile["speech"][fresh.name]["_pitchInHertz"] is True
+                        parts = driver_module._parts([PitchCommand(multiplier=2), "A", PitchCommand(), "a"],
+                            base_pitch=65, base_pitch_hz=151)
+                        marks = [p.value for p in parts if isinstance(p, driver_module.EciPitchHz)]
+                        assert len(marks)==2 and marks[0]>151 and marks[1]==151
+                        config_api.conf["speech"][fresh.name]["_pitchHertz"] = 152
+                        fresh.loadSettings(onlyChanged=True)
+                        assert fresh._pitchInHertz and fresh._pitchHertz == 152
+                        fresh.configure_pitch_hertz(True,151)
+                        fresh.saveSettings()
+                    finally:
+                        fresh.terminate()
+                    before = len(Engine.instances)
+                    fresh = driver_module.SynthDriver()
+                    try:
+                        fresh.initSettings()
+                        assert fresh._pitchInHertz and fresh._pitchHertz==151 and fresh.pitch==65
+                        fresh.voice = "2"
+                        fresh.language = "en_US"
+                        fresh.speak([PitchCommand(), "Test"])
+                        until(lambda: any(instance.dialect==0x10000 and instance.parts
+                                          for instance in Engine.instances[before:]))
+                        worker = next(instance for instance in reversed(Engine.instances[before:])
+                                      if instance.dialect==0x10000 and instance.parts)
+                        assert dict(worker.parameters)[driver_module.PITCH_HZ] == 151
+                        assert any(isinstance(p,driver_module.EciPitchHz) and p.value==151
+                                   for p in worker.parts[-1])
+                        fresh.pitch = 44
+                        assert not fresh._pitchInHertz and fresh.pitch == 44
+                        assert ui_messages[-1] == translation.gettext("Hertz pitch off; using the ECI pitch scale.")
+                        fresh.saveSettings()
+                        assert profile["speech"][fresh.name]["_pitchInHertz"] is False
+                        fresh.cancel()
+                        fresh.speak(["VB"])
+                        until(lambda: worker.parts and worker.parts[-1][-1].text=="VB")
+                        assert dict(worker.parameters)[driver_module.NATIVE_PITCH] == 44
+                        assert dict(worker.parameters)[driver_module.PITCH_HZ] == 0
+                    finally:
+                        fresh.terminate()
+                    print("NVDA Hertz mode: save/reload, voice/language, capital marks and VB switch passed")
                     # Even a speech request immediately after construction,
                     # before NVDA's later initSettings call, must use the
                     # dictionary enabled in the active or legacy profile.
@@ -858,7 +913,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
             sys.path.remove(str(path))
             for name in tuple(sys.modules):
                 if name.startswith("synthDrivers") or name in (
-                    "config", "logHandler", "nvwave", "speech", "addonHandler",
+                    "config", "logHandler", "nvwave", "speech", "addonHandler", "ui",
                     "speech.commands", "speech.extensions", "synthDriverHandler", "languageHandler"):
                     del sys.modules[name]
             if original_translate is None:

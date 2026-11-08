@@ -176,6 +176,22 @@ def main():
                 # old NVDA slider settings no longer reach the DLL.
                 driver.language = "de_DE"
                 driver.voice = "1"
+                driver.inflection = 0
+                driver.configure_pitch_hertz(True, 151)
+                from test_eci_pitch_hz import measure_pitch
+                hertz = run(["Hallo."])
+                assert abs(measure_pitch(hertz,16000,151)-151)<1
+                raised = run([commands.PitchCommand(multiplier=1.2), "Hallo.", commands.PitchCommand()])
+                assert raised != hertz and run(["Hallo."]) == hertz
+                driver.language = "en_US"
+                english_hz = run(["Hello."])
+                assert abs(measure_pitch(english_hz,16000,151)-151)<1
+                driver.language = "de_DE"
+                assert run(["Hallo."]) == hertz
+                driver.pitch = 65
+                assert not driver._pitchInHertz and run(["Hallo."]) != hertz
+                driver.inflection = 30
+                report["checks"] += 6
                 glide_reference = run(["Homepage"])
                 settings = spoken_engines[-1].calls[-1][1]
                 assert [settings[str(p)] for p in (native.GERMAN_GLIDE_OPENING,

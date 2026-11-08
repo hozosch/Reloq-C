@@ -83,6 +83,8 @@ These controls are in NVDA's Speech settings:
 
 **Mellow mode** softens voiced presence around 3–4 kHz at sample rates of 16 kHz and above and omits the added richness from 22 kHz. It also reduces breathiness during voicing and is off by default.
 
+Under **NVDA settings → Eloquence C → Exact base pitch**, enable **Use base pitch in hertz**, enter a whole number, and choose **OK** or **Apply**. NVDA's regular pitch slider retains the 0–100 ECI scale. Changing that slider switches back to the ECI scale with an announcement; the Hertz value is retained for later. Voice and language changes preserve an active Hertz baseline. Inflection 0 is useful for checking the pitch; tonal languages can retain their linguistic contours.
+
 **Process ECI tags** is off by default. When enabled, supported backtick commands in text can control pronunciation, spelling, emphasis, voice parameters, voices and languages. This option is not needed for ordinary reading. Pronunciation dictionaries can contain pronunciation annotations independently of this setting.
 
 `` `vbhz150 `` sets the base pitch of the following text to 150 hertz; integer values from 1 to 24,000 hertz are supported. `` `vb65 `` returns to the usual ECI pitch scale. For measurements, `` `vf0 `` can turn off inflection; linguistic tones in tonal languages may remain. The sample rate must exceed twice the desired frequency, and the voice filters can attenuate very high values. An insufficient sample rate can distort the result or cause synthesis to fail. These tags do not change the saved settings.

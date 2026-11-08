@@ -48,6 +48,8 @@ GERMAN_GLIDE_BACKNESS = 0x1013
 GERMAN_GLIDE_SOFTNESS = 0x1014
 ORIGINAL_QUESTIONS = 0x1015
 MELLOW_MODE = 0x1016
+# Adapter-only control: exact ECI pitch in Hz; zero restores the VB scale.
+PITCH_HZ = 0x2000
 _log = logging.getLogger(__name__)
 WAVEFORM_BUFFER = 0
 INDEX_REPLY = 2
@@ -79,6 +81,13 @@ class EciIndex:
 @dataclass(frozen=True)
 class EciPitch:
     """Absolute native pitch from this point in the same ECI utterance."""
+
+    value: int
+
+
+@dataclass(frozen=True)
+class EciPitchHz:
+    """Absolute Hertz pitch at a boundary in one utterance."""
 
     value: int
 
@@ -134,6 +143,7 @@ class DirectEciEngine:
         if not isinstance(buffer_samples, int) or isinstance(buffer_samples, bool) or not 1 <= buffer_samples <= 0x7fffffff:
             raise ValueError("buffer_samples must be positive ECI int")
         self._encoding = codecs.lookup(encoding).name
+        self._pitch_hz = 0
         self._owner = threading.get_ident()
         self._cancelled = threading.Event()
         self._on_pcm: Callable[[bytes], None] | None = None
@@ -228,6 +238,17 @@ class DirectEciEngine:
         self._assert_owner()
         if not self._handle:
             raise RuntimeError("ECI engine has been closed")
+        if parameter == PITCH_HZ:
+            if type(value) is not int or not 0 <= value <= 24000:
+                raise ValueError("Hertz pitch must be 0..24000")
+            if value:
+                self._apply_pitch_hz(value)
+            else:
+                raw = self._dll.eciGetParam(self._handle, NATIVE_PITCH)
+                if raw < 0 or self._dll.eciSetParam(self._handle, NATIVE_PITCH, raw) < 0:
+                    raise RuntimeError("could not restore native pitch")
+            self._pitch_hz = value
+            return
         if parameter not in (GENERIC_RATE, GENERIC_PITCH, GENERIC_VOLUME,
                              NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION,
                              NATIVE_VOLUME, PROCESS_TAGS, DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATE, HIGH_RATE_PROFILE, GERMAN_GLIDE_OPENING, GERMAN_GLIDE_BACKNESS, GERMAN_GLIDE_SOFTNESS):
@@ -242,8 +263,24 @@ class DirectEciEngine:
         previous = self._dll.eciSetParam(self._handle, parameter, value)
         if previous < 0 or self._dll.eciGetParam(self._handle, parameter) != value:
             raise RuntimeError(f"eciSetParam rejected generic parameter {parameter:#x}")
+        if parameter == NATIVE_PITCH:
+            self._pitch_hz = 0
         if parameter in (SAMPLE_RATE, HIGH_RATE_PROFILE, PROCESS_TAGS):
             _log.info("Eloquence C native setting verified: parameter=%#x value=%d", parameter, value)
+
+    def _apply_pitch_hz(self, value: int) -> None:
+        # Restore the caller's units immediately: speed and volume voice
+        # parameters must retain their usual ECI units in this same handle.
+        units = self._dll.eciGetParam(self._handle, 8)
+        if units not in (0, 1) or self._dll.eciSetParam(self._handle, 8, 1) < 0:
+            raise RuntimeError("ECI real-world units unavailable")
+        try:
+            if (self._dll.eciSetVoiceParam(self._handle, 0, 2, value) < 0 or
+                    self._dll.eciGetVoiceParam(self._handle, 0, 2) != value):
+                raise RuntimeError("ECI rejected the Hertz pitch")
+        finally:
+            if self._dll.eciSetParam(self._handle, 8, units) < 0:
+                raise RuntimeError("ECI could not restore voice parameter units")
 
     def _assert_owner(self) -> None:
         if threading.get_ident() != self._owner:
@@ -296,6 +333,10 @@ class DirectEciEngine:
             elif isinstance(part, EciPitch):
                 if isinstance(part.value, bool) or not isinstance(part.value, int) or not 0 <= part.value <= 100:
                     raise ValueError("pitch must be a native 0..100 value")
+                prepared.append(part)
+            elif isinstance(part, EciPitchHz):
+                if type(part.value) is not int or not 1 <= part.value <= 24000:
+                    raise ValueError("Hertz pitch must be 1..24000")
                 prepared.append(part)
             elif isinstance(part, EciProsody):
                 if (type(part.parameter) is not int or part.parameter not in (6, 7)
@@ -354,6 +395,7 @@ class DirectEciEngine:
         self._first_pcm_diagnostic = (started_at, characters) if characters >= 1024 else None
         completed_successfully = False
         restore = {}
+        restore_pitch = None
         try:
             for part in prepared:
                 if self._cancelled.is_set():
@@ -367,6 +409,14 @@ class DirectEciEngine:
                 elif isinstance(part, EciPitch):
                     ok = self._dll.eciInsertPitch(self._handle, part.value)
                     operation = "eciInsertPitch"
+                elif isinstance(part, EciPitchHz):
+                    if restore_pitch is None:
+                        raw = self._dll.eciGetParam(self._handle, NATIVE_PITCH)
+                        if raw < 0:
+                            raise RuntimeError("could not read native pitch")
+                        restore_pitch = (self._pitch_hz, raw)
+                    self._apply_pitch_hz(part.value)
+                    ok, operation = 1, "eciSetVoiceParam"
                 elif isinstance(part, EciProsody):
                     if part.parameter not in restore:
                         restore[part.parameter] = self._dll.eciGetVoiceParam(self._handle, 0, part.parameter)
@@ -412,6 +462,12 @@ class DirectEciEngine:
             # sliders. Restore after synthesis/cancellation, never from PCM
             # callbacks while the native engine is busy.
             if self._handle:
+                if restore_pitch is not None:
+                    hz, raw = restore_pitch
+                    if hz:
+                        self._apply_pitch_hz(hz)
+                    elif self._dll.eciSetParam(self._handle, NATIVE_PITCH, raw) < 0:
+                        _log.error("ECI could not restore native pitch")
                 for parameter, value in restore.items():
                     if self._dll.eciSetVoiceParam(self._handle, 0, parameter, value) < 0:
                         _log.error("ECI could not restore voice parameter %s", parameter)
@@ -435,7 +491,7 @@ class DirectEciEngine:
             self._dll.eciDelete(handle)
 
 
-__all__ = ["EciText", "DirectEciEngine", "EciIndex", "EciPitch", "EciProsody", "EciLanguage", "EciSynthesisError",
+__all__ = ["EciText", "DirectEciEngine", "EciIndex", "EciPitch", "EciPitchHz", "EciProsody", "EciLanguage", "EciSynthesisError", "PITCH_HZ",
            "GERMAN_DIALECT", "NATIVE_VOICE_MODE", "GENERIC_RATE",
            "GENERIC_PITCH", "GENERIC_VOLUME", "NATIVE_SPEED", "NATIVE_PITCH",
            "NATIVE_INFLECTION", "NATIVE_VOLUME", "DICTIONARY", "PHRASE_PREDICTION", "ORIGINAL_QUESTIONS", "MELLOW_MODE", "PROCESS_TAGS", "PAUSE_MODE", "HEAD_SIZE", "ROUGHNESS", "BREATHINESS", "GENDER", "HIGH_RATE_PROFILE", "GERMAN_GLIDE_OPENING", "GERMAN_GLIDE_BACKNESS", "GERMAN_GLIDE_SOFTNESS", "SAMPLE_RATE", "SAMPLE_RATES"]

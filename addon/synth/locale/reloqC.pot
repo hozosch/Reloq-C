@@ -330,3 +330,24 @@ msgstr ""
 
 msgid "&Mellow mode (16 kHz and above)"
 msgstr ""
+
+msgid "Pitch in hertz"
+msgstr ""
+
+msgid "Use pitch in hertz"
+msgstr ""
+
+msgid "Exact base pitch"
+msgstr ""
+
+msgid "Use base pitch in &hertz"
+msgstr ""
+
+msgid "Base pitch in hertz (1–24000):"
+msgstr ""
+
+msgid "Changing NVDA's normal pitch slider switches back to the ECI scale."
+msgstr ""
+
+msgid "Hertz pitch off; using the ECI pitch scale."
+msgstr ""
