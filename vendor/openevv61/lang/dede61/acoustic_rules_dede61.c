@@ -72,7 +72,7 @@ int reloq_dede61_final_text_a(void *state)
     int32_t at;memcpy(&at,(const unsigned char *)state+DG_BASE+712,sizeof at);
     struct reloq61_spr_phone phone;
     return reloq61_spr_phone_at(state,at,&phone)&&
-        reloq61_german_final_matches(state,phone.node);
+        reloq61_german_final_matches(state,phone.node,phone.after);
 }
 static int16_t final_a_f2(delta_state *d)
 {

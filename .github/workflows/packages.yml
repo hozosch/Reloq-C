@@ -1,4 +1,4 @@
-name: Build NVDA Hertz test package
+name: Build NVDA final A test package
 on:
   push:
     branches: ['codex/release121hztest']
@@ -29,19 +29,19 @@ jobs:
           import pathlib, sys
           sys.path.insert(0, 'addon')
           from build_synth import build
-          package=pathlib.Path('dist/reloq-c-synth-x64-1.2.2-dev1.nvda-addon')
+          package=pathlib.Path('dist/reloq-c-synth-x64-1.2.2-dev2.nvda-addon')
           build(package, pathlib.Path('eci/eci.dll'), refresh_dictionaries=False)
           PY
       - name: Check NVDA driver and tag transport
         run: |
           python3 -B addon/test_speech_tags.py
           for language in en de; do
-            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.2.2-dev1.nvda-addon"))' "$language"
+            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.2.2-dev2.nvda-addon"))' "$language"
           done
       - uses: actions/upload-artifact@v4
         with:
-          name: nvda-hz-test
-          path: dist/reloq-c-synth-x64-1.2.2-dev1.nvda-addon
+          name: nvda-final-a-test
+          path: dist/reloq-c-synth-x64-1.2.2-dev2.nvda-addon
           compression-level: 0
           retention-days: 7
   windows_validation:
@@ -54,15 +54,23 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
-          name: nvda-hz-test
+          name: nvda-final-a-test
           path: dist
       - name: Extract DLL from the exact add-on
         shell: pwsh
         run: |
-          python -c "import pathlib,zipfile; z=zipfile.ZipFile('dist/reloq-c-synth-x64-1.2.2-dev1.nvda-addon'); p=pathlib.Path('dist/eci.dll'); p.write_bytes(z.read('synthDrivers/reloqC/eci.dll'))"
+          python -c "import pathlib,zipfile; z=zipfile.ZipFile('dist/reloq-c-synth-x64-1.2.2-dev2.nvda-addon'); p=pathlib.Path('dist/eci.dll'); p.write_bytes(z.read('synthDrivers/reloqC/eci.dll'))"
       - name: Check actual Windows ECI output and pitch handling
         shell: pwsh
         run: |
+          python -B nvda/test_eci_german_final_a_pause.py --library dist/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'German final A pause regression failed' }
+          python -B nvda/test_eci_german_rc17.py --library dist/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'German sentence-final regression failed' }
+          python -B nvda/test_eci_german_urls.py --library dist/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'German URL regression failed' }
+          python -B nvda/test_eci_dash_pause.py --library dist/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Dash pause regression failed' }
           python -B nvda/test_eci_pitch_hz.py --library dist/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Hertz acoustic regression failed' }
           python -B nvda/test_eci_extended_standard_api.py --library dist/eci.dll

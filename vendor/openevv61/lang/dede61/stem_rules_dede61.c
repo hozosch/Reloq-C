@@ -1,6 +1,7 @@
 #include "reloq61_spr_output.h"
 #include "reloq61_german_final.h"
 #include "reloq_lexicon.h"
+#include <stdlib.h>
 #include <string.h>
 extern const struct reloq_lexicon *reloq61_dictionary_overlay_current(void);
 extern const struct reloq_lexicon_resolver *reloq61_dictionary_resolver(void);
@@ -11,10 +12,58 @@ static const unsigned char alphabet[]={
 static _Thread_local struct reloq61_german_final_a final_a;
 struct reloq61_german_final_a reloq61_german_final_scope(struct reloq61_german_final_a next)
 {struct reloq61_german_final_a previous=final_a;final_a=next;return previous;}
-void reloq61_german_final_note(void *state,int32_t phone)
-{final_a=(struct reloq61_german_final_a){state,phone};}
-int reloq61_german_final_matches(void *state,int32_t phone)
-{return final_a.state==state&&final_a.phone==phone&&phone!=0;}
+void reloq61_german_final_dispose(struct reloq61_german_final_a scope)
+{free(scope.entries);}
+static size_t final_hash(int32_t phone,int32_t end)
+{
+    uint64_t h=(uint32_t)phone;
+    h=(h^(uint32_t)end)*UINT64_C(0xc2b2ae3d27d4eb4f);
+    return (size_t)(h^(h>>32));
+}
+static void final_insert(struct reloq61_german_final_entry *entries,size_t capacity,
+    struct reloq61_german_final_entry entry)
+{
+    size_t at=final_hash(entry.phone,entry.end)&(capacity-1);
+    while(entries[at].phone && (entries[at].phone!=entry.phone ||
+        entries[at].end!=entry.end))
+        at=(at+1)&(capacity-1);
+    entries[at]=entry;
+}
+void reloq61_german_final_note(void *state,int32_t phone,int32_t end)
+{
+    if(final_a.failed||!phone)return;
+    if(final_a.state!=state) {
+        free(final_a.entries);
+        final_a=(struct reloq61_german_final_a){.state=state};
+    }
+    if(!final_a.capacity || final_a.count>=final_a.capacity/2) {
+        size_t capacity=final_a.capacity?final_a.capacity*2:16;
+        if(capacity<final_a.capacity || capacity>SIZE_MAX/sizeof *final_a.entries)
+            {final_a.failed=1;return;}
+        struct reloq61_german_final_entry *entries=calloc(capacity,sizeof *entries);
+        if(!entries){final_a.failed=1;return;}
+        for(size_t i=0;i<final_a.capacity;++i)
+            if(final_a.entries[i].phone)final_insert(entries,capacity,final_a.entries[i]);
+        free(final_a.entries);final_a.entries=entries;final_a.capacity=capacity;
+    }
+    size_t at=final_hash(phone,end)&(final_a.capacity-1);
+    while(final_a.entries[at].phone) {
+        if(final_a.entries[at].phone==phone && final_a.entries[at].end==end)return;
+        at=(at+1)&(final_a.capacity-1);
+    }
+    final_a.entries[at]=(struct reloq61_german_final_entry){phone,end};
+    ++final_a.count;
+}
+int reloq61_german_final_matches(void *state,int32_t phone,int32_t end)
+{
+    if(final_a.state!=state||!phone||!final_a.capacity)return 0;
+    size_t at=final_hash(phone,end)&(final_a.capacity-1);
+    while(final_a.entries[at].phone) {
+        if(final_a.entries[at].phone==phone && final_a.entries[at].end==end)return 1;
+        at=(at+1)&(final_a.capacity-1);
+    }
+    return 0;
+}
 static int32_t left_of(const struct reloq61_spr_phone *p)
 {return *EVV_AT(const int32_t *,p->node)&~3;}
 static int begins_syllable(delta_state *d,const struct reloq61_spr_phone *p)
@@ -65,6 +114,20 @@ static int input_at(delta_state *d,int32_t *at,int back)
     unsigned name=*(const unsigned char *)delta_record_field(&vstmtbl[1],0,TFLDS(EVV_AT(void *,node)));
     *at=*EVV_AT(const int32_t *,node+(back?0:4))&~3;
     return name<sizeof alphabet?alphabet[name]:-1;
+}
+/* The native input retains positive ECI pauses as `p<ms>. A disabled
+ * backtick is projected as a phonetic group instead, so it cannot match. */
+static int explicit_pause_after(delta_state *d,int32_t at)
+{
+    if(input_at(d,&at,0)!='p')return 0;
+    unsigned value=0,digits=0;
+    for(unsigned i=0;i<128;++i) {
+        int32_t next=at;int c=input_at(d,&next,0);
+        if(c<'0'||c>'9')break;
+        value=value*10+(unsigned)(c-'0');++digits;at=next;
+        if(value>60000)return 0;
+    }
+    return digits && value>0;
 }
 /* A phone's input projection can start before its own grapheme. For example,
  * the final vowel in Kamera can share the span for "ra": inspecting only
@@ -257,9 +320,12 @@ static void note_final_a(delta_state *d,int32_t begin,int32_t end)
     for(unsigned i=0;i<4096&&scan;++i) {
         int c=input_at(d,&scan,0);
         if(c<0){scan=0;break;}
-        /* A full sentence boundary ends this vowel's immediate context,
-         * even when another sentence follows in the same request. */
-        if(c=='?'||c=='!') {scan=0;break;}
+        /* These marks introduce a spoken boundary even when the next word
+         * belongs to the same sentence. Keep adjacent words on the original
+         * short-a path, and let the existing rules decide pause duration. */
+        if(c=='?'||c=='!'||c==','||c==':'||c==';'||c==0x85||
+           c=='('||c==')'||c=='-'||c==0x96||c==0x97) {scan=0;break;}
+        if(c=='`' && explicit_pause_after(d,scan)) {scan=0;break;}
         if(c=='.') {
             int32_t following=scan;int next=input_at(d,&following,0);
             /* Do not treat a dot inside a domain or decimal-like token as
@@ -269,7 +335,7 @@ static void note_final_a(delta_state *d,int32_t begin,int32_t end)
         if(ascii_letter(c)||(c>='0'&&c<='9'))return;
     }
     if(scan)return;
-    reloq61_german_final_note(d,last.node);
+    reloq61_german_final_note(d,last.node,last.after);
 }
 /* The previous number planner connected und without a glottal break for
  * these five units. Five, six and eight intentionally retain the break. */

@@ -209,6 +209,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_german_rc17.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_german_final_a_pause.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_german_rc18.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_german_rc19.py --library $core
