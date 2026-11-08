@@ -19,7 +19,7 @@ class EciTagCommand(SynthCommand):
 
 _NUMBER = re.compile(r"`(vbhz|v[bsvfghry]|ts|da|pp|l|p|v(?=[1-9])|(?=[0-9]))([0-9]+)")
 _LIMITS = {"vs": 250, "vg": 1, "ts": 2, "da": 1, "pp": 1,
-           "l": 32767, "p": 60000, "v": 9, "": 9, "vbhz": 422}
+           "l": 32767, "p": 60000, "v": 9, "": 9, "vbhz": 24000}
 _WORD_CONTROLS = {"vb", "vbhz", "vs", "vv", "vf", "vg", "vh", "vr", "vy", "v"}
 
 
@@ -40,7 +40,7 @@ def _read(text, at):
     limit = _LIMITS.get(name, 100)
     if len(significant) > 5 or int(significant) > limit:
         return None
-    if name == "vbhz" and int(significant) < 40:
+    if name == "vbhz" and int(significant) < 1:
         return None
     if name == "" and len(digits) > 1 and digits != "00":
         return None

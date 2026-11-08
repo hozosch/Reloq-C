@@ -62,8 +62,16 @@ int ECICALL eciSetVoiceParam(ECIHand handle,int voice,int parameter,int value)
     int maximum=parameter==0?1:parameter==6?250:100,raw=value;
     if(e->real_world_units) {
         if(parameter!=0 && value<1)return eci_refuse(e,-1);
-        if(value<eci2RealWorld(1,parameter,0)||value>eci2RealWorld(1,parameter,maximum))return eci_refuse(e,-1);
-        raw=realWorld2eci(1,parameter,value,0,maximum);
+        int lo=eci2RealWorld(1,parameter,0),hi=eci2RealWorld(1,parameter,maximum);
+        if(parameter==2) {
+            if(value<RELOQ_PITCH_HZ_MIN || value>RELOQ_PITCH_HZ_MAX)return eci_refuse(e,-1);
+            /* Keep the public VB shadow in 0..100. The exact requested Hz
+             * value is stored separately and used by the renderer. */
+            raw=value<lo?0:value>hi?maximum:realWorld2eci(1,parameter,value,0,maximum);
+        } else {
+            if(value<lo||value>hi)return eci_refuse(e,-1);
+            raw=realWorld2eci(1,parameter,value,0,maximum);
+        }
     }
     if(raw<0||raw>maximum)return eci_refuse(e,-1);
     int old=eciGetVoiceParam(e,voice,parameter);

@@ -59,13 +59,16 @@ arbeiten weiter in ihren dokumentierten Rohwerten.
 ## Hertz-Tonhöhe
 
 Mit `eciRealWorldUnits=1` nimmt `eciSetVoiceParam(handle, 0, eciPitchBaseline,
-hz)` für die aktive Stimme ganzzahlige Werte von 40 bis 422 Hertz an. Diese
+hz)` für die aktive Stimme ganzzahlige Werte von 1 bis 24.000 Hertz an. Diese
 Grundtonhöhe wird ohne Rundung auf eine VB-Stufe weitergegeben und bleibt beim
 Kopieren zwischen Stimmenplätzen erhalten. Eine spätere native VB-Einstellung
 ersetzt sie. Sprachmelodie verändert die momentane Tonhöhe um diese Basis;
 mit `eciSetParam(handle, RELOQ_ECI_NATIVE_INFLECTION, 0)` kann sie für die
 Prüfung abgeschaltet werden. Tonspracheigene Tonverläufe können unabhängig
-davon erhalten bleiben.
+davon erhalten bleiben. Die Abtastrate muss höher als das Doppelte der
+gewünschten Frequenz sein. Hohe Werte können durch die Stimmfilter stark
+gedämpft werden; eine zu geringe Abtastrate kann das Ergebnis verfälschen oder
+die Synthese abbrechen. Der native 0..100-VB-Wert bleibt unabhängig begrenzt.
 
 Bei aktivierten ECI-Tags setzt `` `vbhz150 `` die Grundtonhöhe für den folgenden
 Text auf 150 Hertz. `` `vf0 `` schaltet die Sprachmelodie aus, und zum Beispiel

@@ -46,8 +46,8 @@ int main(void)
     assert(reloq_voice_pitch_f0_scale(101) < 0);
     for(int frequency=RELOQ_PITCH_HZ_MIN;frequency<=RELOQ_PITCH_HZ_MAX;++frequency)
         assert(fabs(118.915*reloq_voice_pitch_f0_scale(RELOQ_PITCH_HZ_OFFSET+frequency)-frequency)<1e-9);
-    assert(!reloq_pitch_valid(RELOQ_PITCH_HZ_OFFSET+39));
-    assert(!reloq_pitch_valid(RELOQ_PITCH_HZ_OFFSET+423));
+    assert(!reloq_pitch_valid(RELOQ_PITCH_HZ_OFFSET));
+    assert(!reloq_pitch_valid(RELOQ_PITCH_HZ_OFFSET+24001));
 
     assert(reloq_voice_head_formant_hundredths(0) == 125);
     assert(reloq_voice_head_formant_hundredths(25) == 112);

@@ -35,12 +35,12 @@ class Tags(unittest.TestCase):
             ["ein", ("control", "`vv50"), " test"])
 
     def test_public_syntax(self):
-        for tag in ("vb0", "vb100", "vbhz40", "vbhz150", "vbhz422", "vs250", "vv50", "vf10", "vg1", "vh60",
+        for tag in ("vb0", "vb100", "vbhz1", "vbhz39", "vbhz150", "vbhz423", "vbhz1000", "vbhz24000", "vs250", "vv50", "vf10", "vg1", "vh60",
                     "vr20", "vy0", "v1", "v9", "l4.0.1252", "l32767.65535.65535",
                     "ts2", "da1", "pp0", "p60000", "00", "9", "[.1tEst]"):
             with self.subTest(tag=tag):
                 self.assertEqual(protected("`" + tag), [("control", "`" + tag)])
-        for tag in ("vv101", "vbhz39", "vbhz423", "vbhz-1", "vs251", "vg2", "vh-1", "v0", "v22", "l32768",
+        for tag in ("vv101", "vb101", "vbhz0", "vbhz24001", "vbhz-1", "vs251", "vg2", "vh-1", "v0", "v22", "l32768",
                     "l4.65536", "p60001", "ts3", "da2", "pp2", "11", "000", "vp50",
                     "vv", "other", "[unclosed", "[bad[nesting]"):
             with self.subTest(tag=tag):

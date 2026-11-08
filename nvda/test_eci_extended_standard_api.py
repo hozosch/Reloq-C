@@ -45,8 +45,12 @@ def main():
             assert lib.eciGetVoiceParam(h,0,p)==value;checks+=6
         for p in range(1,8):
             assert lib.eciSetVoiceParam(h,0,p,0)==-1;checks+=1
-        for p,bad in ((2,39),(2,423),(6,69),(6,1298),(7,65536)):
+        for p,bad in ((2,24001),(6,69),(6,1298),(7,65536)):
             assert lib.eciSetVoiceParam(h,0,p,bad)==-1;checks+=1
+        for hz in (1,39,423,1000,24000):
+            assert lib.eciSetVoiceParam(h,0,2,hz)>=0
+            assert lib.eciGetVoiceParam(h,0,2)==hz;checks+=2
+        assert lib.eciSetVoiceParam(h,0,2,123)>=0
         assert lib.eciSetParam(h,8,0)==1
         raw_pitch=lib.eciGetVoiceParam(h,0,2)
         assert 0<=raw_pitch<=100 and raw_pitch!=123;checks+=2

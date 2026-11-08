@@ -56,9 +56,11 @@ text** starts a speech sample, and **Stop** interrupts it.
   for each of the eight presets. **Reset selected voice profile** restores that
   preset's anatomy and voice values; speed and output settings stay global.
 - With ECI tags enabled, `` `vbhz150 `` sets the base pitch of the following
-  text to 150 Hz (range: 40–422 Hz), and `` `vb65 `` returns to the usual
+  text to 150 Hz (range: 1–24,000 Hz), and `` `vb65 `` returns to the usual
   native pitch scale. `` `vf0 `` turns off inflection; linguistic tones in
-  tonal languages may remain.
+  tonal languages may remain. The sample rate must exceed twice the requested
+  frequency. Voice filters can attenuate very high values; an insufficient
+  sample rate can distort the result or cause synthesis to fail.
   These commands do not change saved voice settings.
 - All seven sample rates from 8 to 48 kHz, the three native pause policies and
   optional ECI command processing are available. **Use original question intonation** selects the native question contour for German and US English; it is off by default. **Use abbreviation dictionary**

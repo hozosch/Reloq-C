@@ -10,8 +10,8 @@ double reloq_voice_speed_time_scale(int native_speed);
 /* Internal pitch representation: the ordinary ECI scale remains 0..100.
  * Hertz values use a disjoint range while they travel through word controls;
  * they never enter the public native 0..100 parameter or the rule provider. */
-enum { RELOQ_PITCH_HZ_OFFSET = 1000, RELOQ_PITCH_HZ_MIN = 40,
-       RELOQ_PITCH_HZ_MAX = 422 };
+enum { RELOQ_PITCH_HZ_OFFSET = 1000, RELOQ_PITCH_HZ_MIN = 1,
+       RELOQ_PITCH_HZ_MAX = 24000 };
 static inline int reloq_pitch_is_hz(int value)
 {return value>=RELOQ_PITCH_HZ_OFFSET+RELOQ_PITCH_HZ_MIN &&
         value<=RELOQ_PITCH_HZ_OFFSET+RELOQ_PITCH_HZ_MAX;}
