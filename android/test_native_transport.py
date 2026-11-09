@@ -15,6 +15,8 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"nvda"))
 from _reloq_eci_direct import DirectEciEngine, PITCH_HZ
 
+NATIVE_WPM = 0x1017
+
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
@@ -57,6 +59,8 @@ def main():
                 for parameter,value in zip(keys,map(int,controls.split(','))):
                     if parameter==0x1008 and value>1000:
                         with_engine.set_parameter(PITCH_HZ,value-1000)
+                    elif parameter==NATIVE_WPM:
+                        assert with_engine._dll.eciSetParam(with_engine._handle,parameter,value)>=0
                     else:
                         with_engine.set_parameter(parameter,value)
                 digest=hashlib.sha256();size=[0]
