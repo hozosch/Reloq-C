@@ -2,8 +2,9 @@
 import argparse
 import ctypes
 from ctypes import wintypes
+import os
 from pathlib import Path
-import subprocess
+import threading
 import time
 
 
@@ -41,7 +42,16 @@ def main():
     (rate_eci_id, rate_wpm_id, rate_wpm_value_id, pitch_eci_id,
      pitch_hz_id, pitch_value_id, pitch_hz_value_id) = range(132, 139)
     bm_getcheck, bm_click, wm_close = 0xF0, 0xF5, 0x10
-    process = subprocess.Popen([str(directory / 'ReLoqSettings.exe')], cwd=directory)
+    # Create the real settings dialog in this process. Win32 intentionally
+    # does not expose edit-control text reliably across process boundaries.
+    module = ctypes.WinDLL(str(directory / 'ReLoqSapi.dll'), use_last_error=True)
+    show_settings = module.ReLoqSettings
+    show_settings.argtypes = (wintypes.HWND, ctypes.c_int)
+    show_settings.restype = ctypes.c_long
+    result = []
+    thread = threading.Thread(target=lambda: result.append(show_settings(None, -1)), daemon=True)
+    thread.start()
+    own_pid = os.getpid()
     window = None
     modal = None
     saved = None
@@ -53,7 +63,7 @@ def main():
         def visit(handle, unused):
             pid = wintypes.DWORD()
             user32.GetWindowThreadProcessId(handle, ctypes.byref(pid))
-            if pid.value == process.pid and user32.GetDlgItem(handle, 1):
+            if pid.value == own_pid and user32.GetDlgItem(handle, 1):
                 # WM_INITDIALOG creates the controls before populating their
                 # numbers. Wait for all values, not merely the first button.
                 ready = True
@@ -78,8 +88,8 @@ def main():
             found = find_modal()
             if found:
                 return found
-            if process.poll() is not None:
-                raise AssertionError(f'Settings process exited with {process.returncode}')
+            if not thread.is_alive():
+                raise AssertionError(f'Settings dialog exited with {result}')
             time.sleep(.05)
         state = []
 
@@ -87,7 +97,7 @@ def main():
         def inspect(handle, unused):
             pid = wintypes.DWORD()
             user32.GetWindowThreadProcessId(handle, ctypes.byref(pid))
-            if pid.value == process.pid and user32.GetDlgItem(handle, own_rate_id):
+            if pid.value == own_pid and user32.GetDlgItem(handle, own_rate_id):
                 for control_id in (1, own_rate_value_id, rate_wpm_value_id, pitch_value_id,
                                    pitch_hz_value_id, own_volume_value_id):
                     value = ctypes.create_unicode_buffer(128)
@@ -133,7 +143,7 @@ def main():
             def visit(handle, unused):
                 pid = wintypes.DWORD()
                 user32.GetWindowThreadProcessId(handle, ctypes.byref(pid))
-                if (pid.value == process.pid and user32.GetDlgItem(handle, rate_id)
+                if (pid.value == own_pid and user32.GetDlgItem(handle, rate_id)
                         and user32.GetDlgItem(handle, mellow_id)):
                     candidates.append(handle)
                 return True
@@ -142,8 +152,8 @@ def main():
             if candidates:
                 window = candidates[0]
                 break
-            if process.poll() is not None:
-                raise AssertionError(f'Settings process exited with {process.returncode}')
+            if not thread.is_alive():
+                raise AssertionError(f'Settings dialog exited with {result}')
             time.sleep(.1)
         assert window, 'Settings dialog did not appear'
         rate, mellow, pauses = (user32.GetDlgItem(window, control)
@@ -204,7 +214,7 @@ def main():
         assert not user32.IsWindowEnabled(user32.GetDlgItem(modal, own_volume_value_id))
         print('SAPI controls, keyboard order, override persistence and enable states verified')
     finally:
-        if saved and process.poll() is None:
+        if saved and thread.is_alive():
             if not modal or not user32.IsWindow(modal):
                 modal = open_modal()
             set_checked(modal, own_rate_id, True)
@@ -223,11 +233,9 @@ def main():
             close_modal(modal)
         if window:
             user32.PostMessageW(window, wm_close, 0, 0)
-        try:
-            process.wait(timeout=8)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait(timeout=8)
+        thread.join(timeout=8)
+        assert not thread.is_alive(), 'Settings dialog did not close'
+        assert result and result[0] >= 0, f'Settings dialog failed: {result}'
 
 
 if __name__ == '__main__':
