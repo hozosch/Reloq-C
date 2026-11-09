@@ -51,8 +51,17 @@ def main():
         def visit(handle, unused):
             pid = wintypes.DWORD()
             user32.GetWindowThreadProcessId(handle, ctypes.byref(pid))
-            if pid.value == process.pid and user32.GetDlgItem(handle, own_rate_id):
-                candidates.append(handle)
+            if pid.value == process.pid and user32.GetDlgItem(handle, 1):
+                # WM_INITDIALOG creates the controls before populating their
+                # numbers. Wait for all values, not merely the first button.
+                ready = True
+                for control_id in (own_rate_value_id, rate_wpm_value_id, pitch_value_id,
+                                   pitch_hz_value_id, own_volume_value_id):
+                    translated = wintypes.BOOL()
+                    user32.GetDlgItemInt(handle, control_id, ctypes.byref(translated), False)
+                    ready = ready and bool(translated.value)
+                if ready:
+                    candidates.append(handle)
             return True
 
         user32.EnumWindows(visit, 0)
