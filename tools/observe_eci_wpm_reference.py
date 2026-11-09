@@ -13,11 +13,25 @@ import subprocess
 import sys
 
 
-CASES = ((0x40000, "Hallo."), (0x10000, "Hello."))
+CASES = (
+    (0x40000, "Hallo.", "cp1252"),
+    (0x10000, "Hello.", "cp1252"),
+    (0x10001, "Hello.", "cp1252"),
+    (0x20000, "Hola.", "cp1252"),
+    (0x20001, "Hola.", "cp1252"),
+    (0x30000, "Bonjour.", "cp1252"),
+    (0x30001, "Bonjour.", "cp1252"),
+    (0x50000, "Ciao.", "cp1252"),
+    (0x70000, "Olá.", "cp1252"),
+    (0x90000, "Moi.", "cp1252"),
+    (0x60000, "你好。", "cp936"),
+    (0x80000, "こんにちは。", "cp932"),
+    (0xa0000, "안녕하세요.", "cp949"),
+)
 VALUES = (1, 2, 3, 4, 5, 8, 10, 12, 16, 20, 30, 50, 150, 200)
 
 
-def single(library, language, text, value):
+def single(library, language, text, value, encoding):
     library = library.resolve()
     os.chdir(library.parent)
     directory = os.add_dll_directory(str(library.parent))
@@ -57,7 +71,7 @@ def single(library, language, text, value):
         assert dll.eciSetParam(engine, 5, 1) >= 0  # 11025 Hz.
         assert dll.eciSetVoiceParam(engine, 0, 6, 50) >= 0
         prefix = f"`vwpm{value} " if value else "`vs50 "
-        data = (prefix + text).encode("cp1252")
+        data = (prefix + text).encode(encoding)
         assert dll.eciAddText(engine, data)
         assert dll.eciSynthesize(engine)
         assert dll.eciSynchronize(engine)
@@ -76,19 +90,20 @@ def main():
     p.add_argument("--child", action="store_true")
     p.add_argument("--language", type=int)
     p.add_argument("--text")
+    p.add_argument("--encoding")
     p.add_argument("--value", type=int)
     args = p.parse_args()
     if args.child:
         print("WPM_RESULT=" + json.dumps(single(args.library, args.language,
-                                                args.text, args.value)))
+                                                args.text, args.value, args.encoding)))
         return
     library = args.library.resolve()
     cases = []
-    for language, text in CASES:
+    for language, text, encoding in CASES:
         for value in (0, *VALUES):
             command = [sys.executable, str(Path(__file__).resolve()), "--child",
                        "--library", str(library), "--language", str(language),
-                       "--text", text, "--value", str(value)]
+                       "--text", text, "--encoding", encoding, "--value", str(value)]
             try:
                 process = subprocess.run(command, capture_output=True, text=True, timeout=40)
                 lines = [line for line in process.stdout.splitlines() if line.startswith("WPM_RESULT=")]
