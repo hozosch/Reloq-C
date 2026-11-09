@@ -55,3 +55,40 @@ jobs:
               $record.Resources | ForEach-Object { Write-Output "Resource: $_" }
             }
           }
+      - name: Obtain the exact native packages
+        if: steps.defender.outputs.available == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: sapi-native-*
+          path: native-archives
+          merge-multiple: true
+          run-id: 42666034611
+          github-token: ${{ github.token }}
+      - name: Scan contained executables and DLLs without running them
+        if: steps.defender.outputs.available == 'true'
+        shell: pwsh
+        run: |
+          $started = Get-Date
+          New-Item -ItemType Directory -Force inspected | Out-Null
+          foreach ($arch in @('x64','x86')) {
+            $zip = Get-ChildItem native-archives -Filter "reloq-c-sapi5-$arch-*-payload.zip" | Select-Object -First 1
+            if (!$zip) { throw "Missing $arch native payload" }
+            Expand-Archive -LiteralPath $zip.FullName -DestinationPath "inspected/$arch" -Force
+          }
+          $items = @(Get-ChildItem inspected -Recurse -File | Where-Object { $_.Extension -in '.exe','.dll' })
+          if ($items.Count -lt 8) { throw "Expected native binaries; found only $($items.Count)" }
+          foreach ($item in $items) {
+            $hash = (Get-FileHash -LiteralPath $item.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            Write-Output "Inspecting $($item.Directory.Name)/$($item.Name); SHA-256=$hash"
+            Start-MpScan -ScanType CustomScan -ScanPath $item.FullName -ErrorAction Stop
+          }
+          $records = @(Get-MpThreatDetection -ErrorAction Stop | Where-Object { $_.InitialDetectionTime -ge $started.AddSeconds(-10) -and ($_.Resources -join ' ') -like '*inspected*' })
+          if ($records.Count -eq 0) { Write-Output "RESULT: $($items.Count) native binary scans completed with no matching recorded detection." }
+          else {
+            $known = @(Get-MpThreat -ErrorAction Stop)
+            foreach ($record in $records) {
+              $threat = $known | Where-Object { $_.ThreatID -eq $record.ThreatID } | Select-Object -First 1
+              Write-Output "RESULT: ThreatID=$($record.ThreatID); Name=$($threat.ThreatName); Status=$($record.ThreatStatusID)"
+              $record.Resources | ForEach-Object { Write-Output "Resource: $_" }
+            }
+          }
