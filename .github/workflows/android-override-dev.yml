@@ -1,0 +1,49 @@
+name: Android override development test
+on:
+  push:
+    branches: [codex/android-overrides-test-20261109]
+permissions:
+  contents: read
+jobs:
+  android-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Install official SDK and NDK tools
+        run: sdkmanager 'ndk;30.0.16248370' 'platforms;android-35' 'build-tools;35.0.1'
+      - name: Fetch current community dictionaries
+        env:
+          RELOQ_BUILD_GITHUB_TOKEN: ${{ github.token }}
+        run: python3 -c "import sys; sys.path.insert(0, 'addon'); from build_synth import refresh_community_dictionaries; refresh_community_dictionaries()"
+      - name: Validate settings, translations and direct boot
+        run: |
+          python3 android/test_translations.py
+          python3 android/test_settings.py --settings-only --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar"
+          python3 android/test_direct_boot.py --java-home "$JAVA_HOME"
+      - name: Download the published APK for replacement verification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-android-arm64-*.apk' --dir previous
+      - name: Build a signed development APK
+        run: |
+          python3 .github/scripts/prepare-sapi-override-dev.py android
+          previous_apk=(previous/*.apk)
+          test "${#previous_apk[@]}" -eq 1
+          python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --replace-from "${previous_apk[0]}" --jobs 2 --output dist/reloq-c-android-arm64-1.2.3-dev1.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-override-test
+          path: dist/reloq-c-android-arm64-1.2.3-dev1.apk
+          compression-level: 0
+          retention-days: 14
