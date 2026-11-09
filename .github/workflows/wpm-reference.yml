@@ -1,0 +1,46 @@
+name: Original ECI VWPM measurements
+on:
+  push:
+    branches: ['codex/wpm-reference-*']
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          architecture: x86
+      - name: Prepare the original host DLL and language files
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, pathlib, re, urllib.request, zipfile
+          path = pathlib.Path('eloquence64-reference.nvda-addon')
+          urllib.request.urlretrieve('https://github.com/fastfinge/eloquence_64/releases/download/v25/Eloquence-v25.nvda-addon', path)
+          assert hashlib.sha256(path.read_bytes()).hexdigest() == '3b14eaa9923a006553b7ea6152abf2ca9cd8f11c1b3dcebe2a905658863ea409'
+          target = pathlib.Path('reference'); target.mkdir()
+          with zipfile.ZipFile(path) as z:
+              for name in z.namelist():
+                  if name.lower().startswith('synthdrivers/eloquence/') and name.lower().endswith(('.dll','.syn','.ini')):
+                      (target / pathlib.PurePosixPath(name).name).write_bytes(z.read(name))
+          ini = target / 'ECI.INI'
+          content = ini.read_text(encoding='latin1')
+          content = re.sub(r'(?im)^(\s*Path\s*=\s*).*?[\\/]?([^\\/\r\n]+\.syn)\s*$',
+              lambda m: m[1] + str((target / m[2]).resolve()), content)
+          ini.write_text(content, encoding='ascii')
+          PY
+      - name: Measure the original at low VWPM values
+        run: python tools/observe_eci_wpm_reference.py --library reference/ECI.DLL --output wpm-original.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-vwpm-observations
+          path: wpm-original.json
+          if-no-files-found: warn
+          retention-days: 14
