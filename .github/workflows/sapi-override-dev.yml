@@ -1,0 +1,249 @@
+name: SAPI override development test
+on:
+  push:
+    branches: [codex/sapi-overrides-test-20261109]
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, x86]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use the shared release dictionary snapshot
+        if: ${{ inputs.shared_dictionary_snapshot }}
+        uses: actions/download-artifact@v4
+        with:
+          name: dictionary-snapshot
+          path: data/community
+      - name: Fetch current community dictionaries for standalone builds
+        if: ${{ !inputs.shared_dictionary_snapshot }}
+        env:
+          RELOQ_BUILD_GITHUB_TOKEN: ${{ github.token }}
+        run: python3 -c "import sys; sys.path.insert(0, 'addon'); from build_synth import refresh_community_dictionaries; refresh_community_dictionaries()"
+      - name: Install cross compiler
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          if [ '${{ matrix.arch }}' = x64 ]; then prefix=x86-64; compiler_prefix=x86_64; else prefix=i686; compiler_prefix=i686; fi
+          if command -v "$compiler_prefix-w64-mingw32-gcc-posix" >/dev/null; then exit 0; fi
+          # Azure's mirror can become too slow for the cross-toolchain; use
+          # Ubuntu's official archive on these disposable build machines.
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends gcc-mingw-w64-$prefix-posix
+      - uses: actions/cache@v4
+        id: rules
+        with:
+          path: vendor/openevv61/build
+          key: sapi-rules-ubuntu24-gcc13-v1-${{ matrix.arch }}-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c') }}
+      - name: Restore unchanged rule timestamps
+        if: steps.rules.outputs.cache-hit == 'true'
+        run: find vendor/openevv61/build -type f -exec touch {} +
+      - name: Build native core and SAPI adapter
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ '${{ matrix.arch }}' = x64 ]; then prefix=x86_64; else prefix=i686; fi
+          make -C eci -j2 windows-${{ matrix.arch }} PROVIDER_LTO=-flto=2 WINDOWS_CC=$prefix-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=$prefix-w64-mingw32-objdump
+          python3 .github/scripts/prepare-sapi-override-dev.py native
+          python3 sapi/build.py --arch ${{ matrix.arch }} --cc $prefix-w64-mingw32-gcc-posix --objdump $prefix-w64-mingw32-objdump
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sapi-native-${{ matrix.arch }}
+          path: dist/reloq-c-sapi5-${{ matrix.arch }}-*.zip
+          compression-level: 0
+          retention-days: 7
+  installer:
+    needs: native
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sapi-native-*
+          path: dist
+          merge-multiple: true
+      - name: Download and verify the alternative dictionary through both adapters
+        shell: pwsh
+        run: |
+          foreach ($arch in @('x64', 'x86')) {
+            $zip = (Get-ChildItem dist/reloq-c-sapi5-$arch-*.zip | Select-Object -First 1).FullName
+            Expand-Archive -Path $zip -DestinationPath "test-$arch"
+            & "./test-$arch/Test-Dictionary.exe"
+            if ($LASTEXITCODE -ne 0) { throw "Dictionary source smoke test failed for $arch" }
+          }
+      - name: Check standard ECI dictionary switching and performance
+        shell: pwsh
+        run: |
+          python sapi/test_dialog_order.py --directory test-x64
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI settings tab order regression test failed' }
+          python nvda/test_eci_wpm_setting.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'WPM override regression test failed' }
+          python nvda/test_eci_dictionary_cache.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'ECI dictionary cache regression test failed' }
+          python nvda/test_eci_dictionary_retention.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Multilingual dictionary startup regression test failed' }
+          python nvda/test_eci_release113.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Long text and HTTPS regression test failed' }
+          python nvda/test_eci_release120.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Greek prominence, question contour or volume regression test failed' }
+          python nvda/test_eci_dictionary_startup.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Dictionary startup ordering regression test failed' }
+          python nvda/test_eci_greek_connected.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Greek connected speech regression test failed' }
+          python nvda/test_eci_greek_characters.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Greek character regression test failed' }
+          python nvda/test_eci_chinese_locale_order.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Chinese locale order regression test failed' }
+      - name: Compile unified Inno Setup installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (!(Test-Path $iscc)) { throw 'Inno Setup 6 compiler not installed on runner' }
+          python .github/scripts/prepare-sapi-override-dev.py installer
+          python sapi/build_installer.py --iscc $iscc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Download the published installer for upgrade verification
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v1.2.1 --repo "$env:GITHUB_REPOSITORY" --pattern 'reloq-c-sapi5-1.2.1-setup.exe' --dir previous-sapi
+          if ($LASTEXITCODE -ne 0) { throw 'Previous SAPI installer could not be downloaded' }
+      - name: Install, upgrade, test SAPI in RAM, and uninstall
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist/validation | Out-Null
+          $setup = (Get-ChildItem dist/reloq-c-sapi5-*-setup.exe | Sort-Object LastWriteTime | Select-Object -Last 1).FullName
+          $previousSetup = (Get-Item previous-sapi/reloq-c-sapi5-1.2.1-setup.exe).FullName
+          $install = Join-Path $env:ProgramFiles 'ReLoq C\SAPI5'
+          $group = Join-Path ([Environment]::GetFolderPath('CommonPrograms')) 'ReLoq C SAPI5'
+          function Test-StartLinks($settingsName, $guideName) {
+            $shell = New-Object -ComObject WScript.Shell
+            $links = @(Get-ChildItem $group -Filter *.lnk)
+            if ($links.Count -ne 3) { throw "Expected three Start menu entries, found $($links.Count)" }
+            $expected = @{}
+            $expected["ReLoq C - $settingsName.lnk"] = Join-Path $install 'ReLoqSettings.exe'
+            $expected["ReLoq C - $guideName.lnk"] = Join-Path $install 'README.txt'
+            foreach ($name in $expected.Keys) {
+              $shortcut = $shell.CreateShortcut((Join-Path $group $name))
+              if ($shortcut.TargetPath -ne $expected[$name] -or !(Test-Path $shortcut.TargetPath)) {
+                throw "Incorrect Start menu link: $name -> $($shortcut.TargetPath)"
+              }
+            }
+            $targets = @($links | ForEach-Object { $shell.CreateShortcut($_.FullName).TargetPath })
+            if ((Join-Path $install 'unins000.exe') -notin $targets) { throw 'Uninstall shortcut missing' }
+            $links.Name | Out-File -Append dist/validation/start-menu.txt
+          }
+          $p = Start-Process $previousSetup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-','/LANG=en',"/LOG=$pwd\dist\validation\install.log" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Install failed: $($p.ExitCode)" }
+          Test-StartLinks 'Voice settings' 'User guide'
+          $dictionary = Join-Path $install 'dictionaries\ENUmain.dic'
+          [IO.File]::AppendAllText($dictionary, "`r`n", [Text.Encoding]::ASCII)
+          $edited = (Get-FileHash $dictionary -Algorithm SHA256).Hash
+          $p = Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-','/LANG=de',"/LOG=$pwd\dist\validation\upgrade.log" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Upgrade failed: $($p.ExitCode)" }
+          Test-StartLinks 'Stimmeinstellungen' 'Anleitung'
+          $registered = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D3F8BA6E-1C62-4B0D-8A33-3840B77376AC}_is1'
+          if ($registered.DisplayName -ne 'ReLoq C SAPI5' -or $registered.DisplayVersion -ne '1.2.3-dev1') { throw 'SAPI application name or version metadata is incorrect' }
+          if ((Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'Dictionary edit lost during upgrade' }
+          & ./sapi/test_japanese_sapi.ps1 -ReportPath dist/validation/japanese-results.json
+          foreach ($arch in @('x64','x86')) {
+            $test = if ($arch -eq 'x64') { Join-Path $install 'Test-SAPI.exe' } else { Join-Path $install 'x86\Test-SAPI.exe' }
+            & $test --threadcase *> "dist/validation/sapi-$arch-threads.txt"
+            if ($LASTEXITCODE -ne 0) {
+              Get-Content "dist/validation/sapi-$arch-threads.txt" -Tail 60
+              throw "SAPI $arch caller thread validation failed"
+            }
+            & $test --abortcase *> "dist/validation/sapi-$arch-abort.txt"
+            if ($LASTEXITCODE -ne 0) {
+              Get-Content "dist/validation/sapi-$arch-abort.txt" -Tail 60
+              throw "SAPI $arch abort and recovery validation failed"
+            }
+            & $test --all-native-rates *> "dist/validation/sapi-$arch.txt"
+            $testExit = $LASTEXITCODE
+            if ($testExit -ne 0) {
+              Get-Content "dist/validation/sapi-$arch.txt" -Tail 60
+              if ($arch -eq 'x86') {
+                $env:RAL_TRACE = '1'
+                & $test --first-case *> "dist/validation/sapi-x86-trace.txt"
+                Remove-Item Env:RAL_TRACE
+                Get-Content "dist/validation/sapi-x86-trace.txt" -Tail 120
+              }
+              throw "SAPI $arch validation failed with exit code $testExit"
+            }
+          }
+          $p = Start-Process (Join-Path $install 'unins000.exe') -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=$pwd\dist\validation\uninstall.log" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Uninstall failed: $($p.ExitCode)" }
+          if (Test-Path $group) { throw 'Start menu group remains after uninstall' }
+          if (!(Test-Path $dictionary) -or (Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'User dictionary lost during uninstall' }
+          foreach ($view in @([Microsoft.Win32.RegistryView]::Registry32,[Microsoft.Win32.RegistryView]::Registry64)) {
+            $h = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,$view)
+            $k = $h.OpenSubKey('SOFTWARE\Microsoft\Speech\Voices\Tokens')
+            if ($k -and @($k.GetSubKeyNames() | Where-Object { $_ -like 'ReLoqC_*' }).Count) { throw "Voice tokens remain: $view" }
+            if ($k) { $k.Dispose() }; $h.Dispose()
+          }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sapi-installer
+          path: |
+            dist/reloq-c-sapi5-*-setup.exe
+            dist/*installer*.json
+            dist/validation/
+          compression-level: 0
+          retention-days: 14
+  android-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Install official SDK and NDK tools
+        run: sdkmanager 'ndk;30.0.16248370' 'platforms;android-35' 'build-tools;35.0.1'
+      - name: Fetch current community dictionaries
+        env:
+          RELOQ_BUILD_GITHUB_TOKEN: ${{ github.token }}
+        run: python3 -c "import sys; sys.path.insert(0, 'addon'); from build_synth import refresh_community_dictionaries; refresh_community_dictionaries()"
+      - name: Validate settings, translations and direct boot
+        run: |
+          python3 android/test_translations.py
+          python3 android/test_settings.py --settings-only --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar"
+          python3 android/test_direct_boot.py --java-home "$JAVA_HOME"
+      - name: Download the published APK for replacement verification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-android-arm64-*.apk' --dir previous
+      - name: Build a signed development APK
+        run: |
+          python3 .github/scripts/prepare-sapi-override-dev.py android
+          previous_apk=(previous/*.apk)
+          test "${#previous_apk[@]}" -eq 1
+          python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --replace-from "${previous_apk[0]}" --jobs 2 --output dist/reloq-c-android-arm64-1.2.3-dev1.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-override-test
+          path: dist/reloq-c-android-arm64-1.2.3-dev1.apk
+          compression-level: 0
+          retention-days: 14
