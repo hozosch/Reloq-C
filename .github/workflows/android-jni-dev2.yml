@@ -1,0 +1,24 @@
+name: Android native override development check
+on:
+  push:
+    branches: [codex/android-jni-test2-20261109]
+permissions:
+  contents: read
+jobs:
+  android-jni:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build shared native core
+        run: make -C eci -j2 libreloq_eci.so PROVIDER_LTO=-flto=2
+      - name: Verify Android JNI output against direct ECI
+        run: python3 android/test_native_transport.py --java-home "$JAVA_HOME" --library eci/libreloq_eci.so
+      - name: Check native WPM settings across languages
+        run: python3 nvda/test_eci_wpm_setting.py --library eci/libreloq_eci.so
