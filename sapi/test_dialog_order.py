@@ -144,8 +144,13 @@ def main():
                 pid = wintypes.DWORD()
                 user32.GetWindowThreadProcessId(handle, ctypes.byref(pid))
                 if (pid.value == own_pid and user32.GetDlgItem(handle, rate_id)
-                        and user32.GetDlgItem(handle, mellow_id)):
-                    candidates.append(handle)
+                        and user32.GetDlgItem(handle, mellow_id) and user32.GetDlgItem(handle, 1)):
+                    pitch_ready = wintypes.BOOL()
+                    hz_ready = wintypes.BOOL()
+                    user32.GetDlgItemInt(handle, 105, ctypes.byref(pitch_ready), False)
+                    user32.GetDlgItemInt(handle, 125, ctypes.byref(hz_ready), False)
+                    if pitch_ready.value and hz_ready.value:
+                        candidates.append(handle)
                 return True
 
             user32.EnumWindows(visit, 0)
@@ -166,7 +171,10 @@ def main():
             assert user32.GetWindowRect(control, ctypes.byref(rect))
         assert rectangles[0].bottom <= rectangles[1].top
         assert rectangles[1].bottom <= rectangles[2].top
+        main_pitch, main_hertz = number(window, 105), number(window, 125)
         modal = open_modal()
+        assert number(modal, pitch_value_id) == main_pitch
+        assert number(modal, pitch_hz_value_id) == main_hertz
         controls = [own_rate_id, own_pitch_id, own_volume_id]
         edits = (own_rate_value_id, rate_wpm_value_id, pitch_value_id, pitch_hz_value_id, own_volume_value_id)
         saved = ([checked(modal, control) for control in controls],
