@@ -1,0 +1,152 @@
+name: SAPI installer development validation
+on:
+  push:
+    branches: [codex/sapi-installer-test-20261109]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  installer:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sapi-native-*
+          path: dist
+          merge-multiple: true
+          run-id: 42663272506
+          github-token: ${{ github.token }}
+      - name: Download and verify the alternative dictionary through both adapters
+        shell: pwsh
+        run: |
+          foreach ($arch in @('x64', 'x86')) {
+            $zip = (Get-ChildItem dist/reloq-c-sapi5-$arch-*.zip | Select-Object -First 1).FullName
+            Expand-Archive -Path $zip -DestinationPath "test-$arch"
+            & "./test-$arch/Test-Dictionary.exe"
+            if ($LASTEXITCODE -ne 0) { throw "Dictionary source smoke test failed for $arch" }
+          }
+      - name: Check standard ECI dictionary switching and performance
+        shell: pwsh
+        run: |
+          python sapi/test_dialog_order.py --directory test-x64
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI settings tab order regression test failed' }
+          python nvda/test_eci_wpm_setting.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'WPM override regression test failed' }
+          python nvda/test_eci_dictionary_cache.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'ECI dictionary cache regression test failed' }
+          python nvda/test_eci_dictionary_retention.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Multilingual dictionary startup regression test failed' }
+          python nvda/test_eci_release113.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Long text and HTTPS regression test failed' }
+          python nvda/test_eci_release120.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Greek prominence, question contour or volume regression test failed' }
+          python nvda/test_eci_dictionary_startup.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Dictionary startup ordering regression test failed' }
+          python nvda/test_eci_greek_connected.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Greek connected speech regression test failed' }
+          python nvda/test_eci_greek_characters.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Greek character regression test failed' }
+          python nvda/test_eci_chinese_locale_order.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Chinese locale order regression test failed' }
+      - name: Compile unified Inno Setup installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (!(Test-Path $iscc)) { throw 'Inno Setup 6 compiler not installed on runner' }
+          python .github/scripts/prepare-sapi-override-dev.py installer
+          python sapi/build_installer.py --iscc $iscc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Download the published installer for upgrade verification
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v1.2.1 --repo "$env:GITHUB_REPOSITORY" --pattern 'reloq-c-sapi5-1.2.1-setup.exe' --dir previous-sapi
+          if ($LASTEXITCODE -ne 0) { throw 'Previous SAPI installer could not be downloaded' }
+      - name: Install, upgrade, test SAPI in RAM, and uninstall
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist/validation | Out-Null
+          $setup = (Get-ChildItem dist/reloq-c-sapi5-*-setup.exe | Sort-Object LastWriteTime | Select-Object -Last 1).FullName
+          $previousSetup = (Get-Item previous-sapi/reloq-c-sapi5-1.2.1-setup.exe).FullName
+          $install = Join-Path $env:ProgramFiles 'ReLoq C\SAPI5'
+          $group = Join-Path ([Environment]::GetFolderPath('CommonPrograms')) 'ReLoq C SAPI5'
+          function Test-StartLinks($settingsName, $guideName) {
+            $shell = New-Object -ComObject WScript.Shell
+            $links = @(Get-ChildItem $group -Filter *.lnk)
+            if ($links.Count -ne 3) { throw "Expected three Start menu entries, found $($links.Count)" }
+            $expected = @{}
+            $expected["ReLoq C - $settingsName.lnk"] = Join-Path $install 'ReLoqSettings.exe'
+            $expected["ReLoq C - $guideName.lnk"] = Join-Path $install 'README.txt'
+            foreach ($name in $expected.Keys) {
+              $shortcut = $shell.CreateShortcut((Join-Path $group $name))
+              if ($shortcut.TargetPath -ne $expected[$name] -or !(Test-Path $shortcut.TargetPath)) {
+                throw "Incorrect Start menu link: $name -> $($shortcut.TargetPath)"
+              }
+            }
+            $targets = @($links | ForEach-Object { $shell.CreateShortcut($_.FullName).TargetPath })
+            if ((Join-Path $install 'unins000.exe') -notin $targets) { throw 'Uninstall shortcut missing' }
+            $links.Name | Out-File -Append dist/validation/start-menu.txt
+          }
+          $p = Start-Process $previousSetup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-','/LANG=en',"/LOG=$pwd\dist\validation\install.log" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Install failed: $($p.ExitCode)" }
+          Test-StartLinks 'Voice settings' 'User guide'
+          $dictionary = Join-Path $install 'dictionaries\ENUmain.dic'
+          [IO.File]::AppendAllText($dictionary, "`r`n", [Text.Encoding]::ASCII)
+          $edited = (Get-FileHash $dictionary -Algorithm SHA256).Hash
+          $p = Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-','/LANG=de',"/LOG=$pwd\dist\validation\upgrade.log" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Upgrade failed: $($p.ExitCode)" }
+          Test-StartLinks 'Stimmeinstellungen' 'Anleitung'
+          $registered = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D3F8BA6E-1C62-4B0D-8A33-3840B77376AC}_is1'
+          if ($registered.DisplayName -ne 'ReLoq C SAPI5' -or $registered.DisplayVersion -ne '1.2.3-dev1') { throw 'SAPI application name or version metadata is incorrect' }
+          if ((Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'Dictionary edit lost during upgrade' }
+          & ./sapi/test_japanese_sapi.ps1 -ReportPath dist/validation/japanese-results.json
+          foreach ($arch in @('x64','x86')) {
+            $test = if ($arch -eq 'x64') { Join-Path $install 'Test-SAPI.exe' } else { Join-Path $install 'x86\Test-SAPI.exe' }
+            & $test --threadcase *> "dist/validation/sapi-$arch-threads.txt"
+            if ($LASTEXITCODE -ne 0) {
+              Get-Content "dist/validation/sapi-$arch-threads.txt" -Tail 60
+              throw "SAPI $arch caller thread validation failed"
+            }
+            & $test --abortcase *> "dist/validation/sapi-$arch-abort.txt"
+            if ($LASTEXITCODE -ne 0) {
+              Get-Content "dist/validation/sapi-$arch-abort.txt" -Tail 60
+              throw "SAPI $arch abort and recovery validation failed"
+            }
+            & $test --all-native-rates *> "dist/validation/sapi-$arch.txt"
+            $testExit = $LASTEXITCODE
+            if ($testExit -ne 0) {
+              Get-Content "dist/validation/sapi-$arch.txt" -Tail 60
+              if ($arch -eq 'x86') {
+                $env:RAL_TRACE = '1'
+                & $test --first-case *> "dist/validation/sapi-x86-trace.txt"
+                Remove-Item Env:RAL_TRACE
+                Get-Content "dist/validation/sapi-x86-trace.txt" -Tail 120
+              }
+              throw "SAPI $arch validation failed with exit code $testExit"
+            }
+          }
+          $p = Start-Process (Join-Path $install 'unins000.exe') -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=$pwd\dist\validation\uninstall.log" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Uninstall failed: $($p.ExitCode)" }
+          if (Test-Path $group) { throw 'Start menu group remains after uninstall' }
+          if (!(Test-Path $dictionary) -or (Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'User dictionary lost during uninstall' }
+          foreach ($view in @([Microsoft.Win32.RegistryView]::Registry32,[Microsoft.Win32.RegistryView]::Registry64)) {
+            $h = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,$view)
+            $k = $h.OpenSubKey('SOFTWARE\Microsoft\Speech\Voices\Tokens')
+            if ($k -and @($k.GetSubKeyNames() | Where-Object { $_ -like 'ReLoqC_*' }).Count) { throw "Voice tokens remain: $view" }
+            if ($k) { $k.Dispose() }; $h.Dispose()
+          }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sapi-installer
+          path: |
+            dist/reloq-c-sapi5-*-setup.exe
+            dist/*installer*.json
+            dist/validation/
+          compression-level: 0
+          retention-days: 14
