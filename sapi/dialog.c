@@ -235,6 +235,7 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
 {
     struct dialog *d=(struct dialog *)GetWindowLongPtrW(w,DWLP_USER);
     if(message==WM_INITDIALOG){d=(struct dialog *)lp;SetWindowLongPtrW(w,DWLP_USER,(LONG_PTR)d);
+        d->loading=1;
         SetWindowTextW(w,T(TITLE));
         RECT frame={0,0,620,722};AdjustWindowRectEx(&frame,(DWORD)GetWindowLongPtrW(w,GWL_STYLE),FALSE,0);
         SetWindowPos(w,NULL,0,0,frame.right-frame.left,frame.bottom-frame.top,SWP_NOMOVE|SWP_NOZORDER);
