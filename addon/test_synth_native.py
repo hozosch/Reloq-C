@@ -156,7 +156,7 @@ def main():
                     # of our protection: a backtick never reaches the driver.
                     for level in (0, 200, 300):
                         assert "`" not in api.processText(locale, prefix + "`vv30" + word + suffix, level)
-                        for tag in ("`vv30", "`vb80", "`vs40", "`vf10", "`vh60", "`vy20", "`vr10"):
+                        for tag in ("`vv30", "`vb80", "`vs40", "`vwpm150", "`vf10", "`vh60", "`vy20", "`vr10"):
                             changed = run([prefix + tag + word + suffix], level=level)
                             cut = len(word) // 2
                             interior = run([prefix + word[:cut] + tag + word[cut:] + suffix], level=level)

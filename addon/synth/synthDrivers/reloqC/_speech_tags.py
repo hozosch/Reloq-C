@@ -17,10 +17,10 @@ class EciTagCommand(SynthCommand):
         return f"EciTagCommand({self.text!r})"
 
 
-_NUMBER = re.compile(r"`(vbhz|v[bsvfghry]|ts|da|pp|l|p|v(?=[1-9])|(?=[0-9]))([0-9]+)")
+_NUMBER = re.compile(r"`(vbhz|vwpm|v[bsvfghry]|ts|da|pp|l|p|v(?=[1-9])|(?=[0-9]))([0-9]+)")
 _LIMITS = {"vs": 250, "vg": 1, "ts": 2, "da": 1, "pp": 1,
-           "l": 32767, "p": 60000, "v": 9, "": 9, "vbhz": 24000}
-_WORD_CONTROLS = {"vb", "vbhz", "vs", "vv", "vf", "vg", "vh", "vr", "vy", "v"}
+           "l": 32767, "p": 60000, "v": 9, "": 9, "vbhz": 24000, "vwpm": 6000}
+_WORD_CONTROLS = {"vb", "vbhz", "vs", "vwpm", "vv", "vf", "vg", "vh", "vr", "vy", "v"}
 
 
 def _read(text, at):
@@ -40,7 +40,7 @@ def _read(text, at):
     limit = _LIMITS.get(name, 100)
     if len(significant) > 5 or int(significant) > limit:
         return None
-    if name == "vbhz" and int(significant) < 1:
+    if name in ("vbhz", "vwpm") and int(significant) < 1:
         return None
     if name == "" and len(digits) > 1 and digits != "00":
         return None

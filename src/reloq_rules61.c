@@ -120,7 +120,11 @@ static int english_input(const unsigned char *text,size_t length,int tags,int un
                 }
             }
             if(!count){
-                encoded[0]=cp=='`'&&!tags?' ':
+                /* Never let an invalid VWPM control reach the native
+                 * divisor. Unknown text remains available to be spoken. */
+                int invalid_wpm=cp=='`'&&tags&&end+4<=length&&
+                    !memcmp(text+end,"vwpm",4);
+                encoded[0]=cp=='`'&&(!tags||invalid_wpm)?' ':
                     cp=='-'&&!spelling&&dash_before_number(text,length,at,end)?',':(unsigned char)cp;
                 count=1;
                 if(english&&!spelling&&cp==' '&&english_initial_sentence_space(text,length,at))
@@ -1247,6 +1251,12 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     if(language==0x40000&&german_dictionary_compound_input(&a,&map,&n,tags))goto memory;
     if(language==0x40000&&german_long_overlay_input(&a,&map,&n,tags))goto memory;
     if(language==0x40000&&german_currency_input(&a,&map,&n,tags))goto memory;
+    int has_wpm=0;
+    if(tags)for(size_t i=0;i<n;) {
+        struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
+        if(t.kind==RELOQ_TAG_WPM)has_wpm=1;
+        i+=t.length?t.length:1;
+    }
     int cjk_exact_pitch=plan.cjk_volume && reloq_pitch_is_hz(configured_pitch);
     if(plan.cjk_volume && tags)for(size_t i=0;i<n;) {
         struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
@@ -1254,6 +1264,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         i+=t.length?t.length:1;
     }
     int managed_controls=!plan.cjk_volume || cjk_exact_pitch;
+    if(has_wpm&&managed_controls&&native_preset_speed_tags(&a,&map,&n))goto memory;
     if(plan.cjk_volume) {
         /* CJK lexers can treat even a redundant command as a token break.
          * No-op voice controls must leave native segmentation untouched. Actual
@@ -1277,7 +1288,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
             case RELOQ_TAG_INFLECTION:parameter=3;break;
             case RELOQ_TAG_ROUGHNESS:parameter=4;break;
             case RELOQ_TAG_BREATHINESS:parameter=5;break;
-            case RELOQ_TAG_SPEED:parameter=6;break;
+            case RELOQ_TAG_SPEED:if(!has_wpm)parameter=6;break;
             case RELOQ_TAG_VOLUME:parameter=7;break;
             default:break;
             }
@@ -1299,10 +1310,10 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     for(size_t i=0;i<n;) {
         struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
         if(managed_controls) {
-            if(t.kind==RELOQ_TAG_PITCH||t.kind==RELOQ_TAG_SPEED||t.kind==RELOQ_TAG_VOLUME||
+            if(t.kind==RELOQ_TAG_PITCH||(t.kind==RELOQ_TAG_SPEED&&!has_wpm)||t.kind==RELOQ_TAG_VOLUME||
                t.kind==RELOQ_TAG_INFLECTION||t.kind==RELOQ_TAG_GENDER||t.kind==RELOQ_TAG_HEAD_SIZE||
                t.kind==RELOQ_TAG_ROUGHNESS||t.kind==RELOQ_TAG_BREATHINESS)++volume_count;
-            else if(t.kind==RELOQ_TAG_PRESET)volume_count+=8;
+            else if(t.kind==RELOQ_TAG_PRESET)volume_count+=has_wpm?7:8;
         }
         i+=t.length?t.length:1;
     }
@@ -1320,7 +1331,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
             int parameter=t.kind==RELOQ_TAG_GENDER?0:t.kind==RELOQ_TAG_HEAD_SIZE?1:
                 t.kind==RELOQ_TAG_PITCH?2:t.kind==RELOQ_TAG_INFLECTION?3:
                 t.kind==RELOQ_TAG_ROUGHNESS?4:t.kind==RELOQ_TAG_BREATHINESS?5:
-                t.kind==RELOQ_TAG_SPEED?6:t.kind==RELOQ_TAG_VOLUME?7:-1;
+                t.kind==RELOQ_TAG_SPEED&&!has_wpm?6:t.kind==RELOQ_TAG_VOLUME?7:-1;
             if(parameter>=0) {
                 control_sources[control]=map[i];volumes[control++]=(struct reloq61_mark){out,t.value,parameter};
             }
@@ -1328,6 +1339,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
                 struct reloq_inline_word v={0};reloq_inline_preset(&v,t.value);
                 int preset[]={v.gender,v.head_size,v.pitch,v.inflection,v.roughness,v.breathiness,v.speed,v.volume};
                 for(int k=0;k<8;++k) {
+                    if(has_wpm&&k==6)continue;
                     control_sources[control]=map[i];volumes[control++]=(struct reloq61_mark){out,preset[k],k};
                 }
             } else {

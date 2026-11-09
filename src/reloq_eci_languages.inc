@@ -3,7 +3,7 @@
  * new native language plan. Indices, pitch marks and cancellation retain
  * their source positions. No text result survives this request. */
 struct language_run {size_t begin,end;int language;};
-struct language_controls {struct reloq_inline_word voice;unsigned mask;int spelling,emphasis,dictionary,prediction;};
+struct language_controls {struct reloq_inline_word voice;unsigned mask;int spelling,emphasis,dictionary,prediction,wpm;};
 static struct reloq_inline_tag source_tag(const unsigned char *text,size_t n,
     const unsigned char *modes,size_t at)
 {
@@ -33,14 +33,15 @@ static void language_control(struct language_controls *c,struct reloq_inline_tag
     switch(tag.kind) {
     case RELOQ_TAG_DICTIONARY:c->dictionary=tag.value+1;break;
     case RELOQ_TAG_PREDICTION:c->prediction=tag.value+1;break;
-    case RELOQ_TAG_PRESET:reloq_inline_preset(v,tag.value);c->mask=255;break;
+    case RELOQ_TAG_PRESET:reloq_inline_preset(v,tag.value);c->mask=255;c->wpm=0;break;
     case RELOQ_TAG_GENDER:v->gender=tag.value;c->mask|=1;break;
     case RELOQ_TAG_HEAD_SIZE:v->head_size=tag.value;c->mask|=2;break;
     case RELOQ_TAG_PITCH:v->pitch=tag.value;c->mask|=4;break;
     case RELOQ_TAG_INFLECTION:v->inflection=tag.value;c->mask|=8;break;
     case RELOQ_TAG_ROUGHNESS:v->roughness=tag.value;c->mask|=16;break;
     case RELOQ_TAG_BREATHINESS:v->breathiness=tag.value;c->mask|=32;break;
-    case RELOQ_TAG_SPEED:v->speed=tag.value;c->mask|=64;break;
+    case RELOQ_TAG_SPEED:v->speed=tag.value;c->mask|=64;c->wpm=0;break;
+    case RELOQ_TAG_WPM:c->wpm=tag.value;c->mask&=~64u;break;
     case RELOQ_TAG_VOLUME:v->volume=tag.value;c->mask|=128;break;
     case RELOQ_TAG_SPELL:c->spelling=tag.value;break;
     case RELOQ_TAG_PROMINENCE:
@@ -61,6 +62,7 @@ static size_t language_prefix(const struct language_controls *c,char prefix[192]
             n+=(size_t)snprintf(prefix+n,192-n,"`vbhz%d ",values[i]-RELOQ_PITCH_HZ_OFFSET);
         else n+=(size_t)snprintf(prefix+n,192-n,"`v%c%d ",letters[i],values[i]);
     }
+    if(c->wpm)n+=(size_t)snprintf(prefix+n,192-n,"`vwpm%d ",c->wpm);
     if(c->spelling)n+=(size_t)snprintf(prefix+n,192-n,"`ts%d ",c->spelling);
     if(c->emphasis) {
         static const char *const emphasis[]={"","`00 ","`0 ","`1 ","`2 ","`3 ","`4 "};

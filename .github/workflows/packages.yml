@@ -65,10 +65,11 @@ jobs:
           name: dictionary-snapshot
           path: data/community
       - name: Build the shared native engine and acoustic rule tests
-        run: make -C eci -j2 libreloq_eci.so test_reloq_native_rules test_reloq_text_peaks test_reloq_presence test_reloq_hearing_profiles PROVIDER_LTO=-flto=2
+        run: make -C eci -j2 libreloq_eci.so test_reloq_native_rules test_reloq_wpm_native test_reloq_text_peaks test_reloq_presence test_reloq_hearing_profiles PROVIDER_LTO=-flto=2
       - name: Check number, pitch, pause, source-index and multilingual behavior
         run: |
           ./eci/test_reloq_native_rules
+          ./eci/test_reloq_wpm_native
           ./eci/test_reloq_text_peaks
           ./eci/test_reloq_presence
           ./eci/test_reloq_hearing_profiles
@@ -83,7 +84,9 @@ jobs:
           python3 -B nvda/test_eci_release120.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_mellow_mode.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_pitch_hz.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_wpm.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_hz_adapter.py
+          python3 -B nvda/test_eci_callback_only.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_german_final_a_pause.py --library eci/libreloq_eci.so
           python3 -B addon/test_hertz_settings_panel.py
           python3 -B addon/test_speech_tags.py

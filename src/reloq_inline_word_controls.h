@@ -6,7 +6,8 @@
  * German admission path. CJK keeps its native acoustic-word segmentation. */
 static int word_voice_control(struct reloq_inline_tag t)
 {
-    return t.kind>=RELOQ_TAG_PITCH&&t.kind<=RELOQ_TAG_PRESET&&t.kind!=RELOQ_TAG_PAUSE;
+    return (t.kind>=RELOQ_TAG_PITCH&&t.kind<=RELOQ_TAG_PRESET&&t.kind!=RELOQ_TAG_PAUSE)||
+        t.kind==RELOQ_TAG_WPM;
 }
 
 static size_t voice_word_letter(const unsigned char *p,size_t n,int unicode)
@@ -91,6 +92,40 @@ static int normalize_word_voice_controls(unsigned char **input,size_t **source,
             bytes[out]=' ';positions[out++]=map[at];
         }
         at+=count;
+    }
+    bytes[out]=0;positions[out]=map[n];free(a);free(map);
+    *input=bytes;*source=positions;*length=out;return 0;
+}
+
+/* In a phrase using native VWPM, native VS changes must reach the same
+ * duration planner. Presets are still applied via word-scoped controls, so
+ * project their speed into that planner at the preset's original position. */
+static int native_preset_speed_tags(unsigned char **input,size_t **source,size_t *length)
+{
+    unsigned char *a=*input;size_t *map=*source,n=*length,count=0;
+    for(size_t i=0;i<n;) {
+        struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
+        if(t.kind==RELOQ_TAG_PRESET)++count;
+        i+=t.length?t.length:1;
+    }
+    if(!count)return 0;
+    if(count>(SIZE_MAX-n-1)/10 || n+count*10+1>SIZE_MAX/sizeof *map)return -1;
+    unsigned char *bytes=malloc(n+count*10+1);
+    size_t *positions=malloc((n+count*10+1)*sizeof *positions);
+    if(!bytes||!positions){free(bytes);free(positions);return -1;}
+    size_t out=0;
+    for(size_t i=0;i<n;) {
+        struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
+        size_t size=t.length?t.length:1;
+        memcpy(bytes+out,a+i,size);memcpy(positions+out,map+i,size*sizeof *map);out+=size;
+        if(t.kind==RELOQ_TAG_PRESET) {
+            struct reloq_inline_word voice={0};reloq_inline_preset(&voice,t.value);
+            char speed[10];int written=snprintf(speed,sizeof speed,"`vs%d ",voice.speed);
+            if(written<0||(size_t)written>=sizeof speed){free(bytes);free(positions);return -1;}
+            memcpy(bytes+out,speed,(size_t)written);
+            for(int j=0;j<written;++j)positions[out++]=map[i];
+        }
+        i+=size;
     }
     bytes[out]=0;positions[out]=map[n];free(a);free(map);
     *input=bytes;*source=positions;*length=out;return 0;

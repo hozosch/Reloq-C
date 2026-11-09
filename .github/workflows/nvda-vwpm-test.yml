@@ -1,0 +1,77 @@
+name: NVDA VWPM development package
+on:
+  push:
+    branches: ['codex/nvda-vwpm-test*']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install x64 compiler and translation tools
+        run: |
+          sudo apt-get -o Acquire::Retries=2 update -qq
+          sudo apt-get -o Acquire::Retries=2 install -y --no-install-recommends gcc-mingw-w64-x86-64-posix gettext
+      - uses: actions/cache@v4
+        with:
+          path: vendor/openevv61/build
+          key: sapi-rules-ubuntu24-gcc13-v1-x64-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c') }}
+      - name: Build x64 native engine
+        run: make -C eci -j2 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
+      - name: Build a separate development add-on
+        env:
+          RELOQ_BUILD_GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('addon/synth/manifest.ini')
+          s=p.read_text(encoding='utf-8')
+          old='version = "1.2.2"'
+          assert s.count(old)==1
+          p.write_text(s.replace(old,'version = "1.2.3-dev1"'),encoding='utf-8')
+          PY
+          python3 -B addon/test_speech_tags.py
+          python3 addon/build_synth.py --output dist/reloq-c-synth-x64-1.2.3-vwpm-dev1.nvda-addon
+          PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,test_synth; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.2.3-vwpm-dev1.nvda-addon"))'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nvda-vwpm-candidate
+          path: |
+            dist/reloq-c-synth-x64-1.2.3-vwpm-dev1.nvda-addon
+            eci/eci.dll
+          compression-level: 0
+          retention-days: 14
+  windows:
+    needs: package
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-vwpm-candidate
+          path: candidate
+      - name: Check WPM on the Windows core and the packaged NVDA driver
+        shell: pwsh
+        run: |
+          $core = (Get-ChildItem candidate -Recurse -Filter eci.dll | Select-Object -First 1).FullName
+          $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
+          python nvda/test_eci_wpm.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_callback_only.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python addon/test_synth_native.py --library $core --addon $addon
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nvda-vwpm-tested
+          path: candidate/**/*.nvda-addon
+          compression-level: 0
+          retention-days: 14
