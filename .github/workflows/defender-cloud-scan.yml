@@ -1,0 +1,59 @@
+name: Investigate Defender cloud metadata verdict
+on:
+  push:
+    branches: [codex/defender-cloud-scan-20261109]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  metadata-scan:
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - name: Download the exact installer as a build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: sapi-installer
+          path: suspect
+          run-id: 42666034611
+          github-token: ${{ github.token }}
+      - name: Check the exact file and enable cloud metadata checks
+        shell: pwsh
+        run: |
+          $file = Get-ChildItem suspect -Recurse -Filter 'reloq-c-sapi5-1.2.3-dev1-setup.exe' | Select-Object -First 1
+          if (!$file) { throw 'Installer not present for test' }
+          $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($hash -ne '61b95a2fe71e09ee3ea838f61ca8c1efc6fc1b008a1657fe69e37e1f6718f762') { throw 'Incorrect installer hash' }
+          Write-Output "Test file SHA-256: $hash"
+          try {
+            Set-MpPreference -MAPSReporting Advanced -SubmitSamplesConsent NeverSend -DisableRealtimeMonitoring $false -ErrorAction Stop
+            Start-Sleep -Seconds 3
+            $prefs = Get-MpPreference -ErrorAction Stop
+            $state = Get-MpComputerStatus -ErrorAction Stop
+            $prefs | Select-Object MAPSReporting, SubmitSamplesConsent, CloudBlockLevel, DisableBlockAtFirstSeen | Format-List
+            $state | Select-Object AMRunningMode, AntivirusEnabled, RealTimeProtectionEnabled, AntivirusSignatureVersion | Format-List
+            if ([int]$prefs.SubmitSamplesConsent -ne 2) { throw 'Automatic sample submission did not remain disabled' }
+            if ([int]$prefs.MAPSReporting -ne 2 -or !$state.RealTimeProtectionEnabled) { throw 'Cloud metadata or realtime protection could not be enabled' }
+          } catch {
+            Write-Output "RESULT: INCONCLUSIVE: Cannot verify requested protection settings: $($_.Exception.Message)"
+            exit 0
+          }
+          $started = (Get-Date).AddSeconds(-30)
+          try {
+            $hashAgain = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256 -ErrorAction Stop).Hash.ToLowerInvariant()
+            if ($hashAgain -ne $hash) { throw 'Installer changed during test' }
+            Start-MpScan -ScanType CustomScan -ScanPath $file.FullName -ErrorAction Stop
+            Write-Output 'On-demand scan invoked without executing installer.'
+          } catch { Write-Output "Access or scan result: $($_.Exception.Message)" }
+          Start-Sleep -Seconds 5
+          $records = @(Get-MpThreatDetection -ErrorAction SilentlyContinue | Where-Object { $_.InitialDetectionTime -ge $started -and ($_.Resources -join ' ') -like "*$($file.Name)*" })
+          if ($records.Count -eq 0) {
+            Write-Output 'RESULT: No recorded detection for the installer on this test machine. This does not include cloud file-sample analysis.'
+          } else {
+            $known = @(Get-MpThreat -ErrorAction SilentlyContinue)
+            foreach ($record in $records) {
+              $threat = $known | Where-Object { $_.ThreatID -eq $record.ThreatID } | Select-Object -First 1
+              Write-Output "RESULT: ThreatID=$($record.ThreatID); Name=$($threat.ThreatName); Status=$($record.ThreatStatusID)"
+              $record.Resources | ForEach-Object { Write-Output "Resource: $_" }
+            }
+          }
