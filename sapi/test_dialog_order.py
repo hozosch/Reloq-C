@@ -31,6 +31,8 @@ def main():
     user32.SetDlgItemInt.argtypes = (wintypes.HWND, ctypes.c_int, wintypes.UINT, wintypes.BOOL)
     user32.GetDlgItemInt.argtypes = (wintypes.HWND, ctypes.c_int, ctypes.POINTER(wintypes.BOOL), wintypes.BOOL)
     user32.GetDlgItemInt.restype = wintypes.UINT
+    user32.GetDlgItemTextW.argtypes = (wintypes.HWND, ctypes.c_int, wintypes.LPWSTR, ctypes.c_int)
+    user32.GetDlgItemTextW.restype = wintypes.UINT
 
     # The IDs identify real controls created by dialog.c; do not use translated
     # text to locate them, since the dialog follows the Windows UI language.
@@ -79,7 +81,22 @@ def main():
             if process.poll() is not None:
                 raise AssertionError(f'Settings process exited with {process.returncode}')
             time.sleep(.05)
-        raise AssertionError('Application overrides dialog did not appear')
+        state = []
+
+        @callback
+        def inspect(handle, unused):
+            pid = wintypes.DWORD()
+            user32.GetWindowThreadProcessId(handle, ctypes.byref(pid))
+            if pid.value == process.pid and user32.GetDlgItem(handle, own_rate_id):
+                for control_id in (1, own_rate_value_id, rate_wpm_value_id, pitch_value_id,
+                                   pitch_hz_value_id, own_volume_value_id):
+                    value = ctypes.create_unicode_buffer(128)
+                    user32.GetDlgItemTextW(handle, control_id, value, len(value))
+                    state.append((control_id, bool(user32.GetDlgItem(handle, control_id)), value.value))
+            return True
+
+        user32.EnumWindows(inspect, 0)
+        raise AssertionError(f'Application overrides dialog did not initialize: {state}')
 
     def close_modal(handle):
         user32.PostMessageW(handle, wm_close, 0, 0)
