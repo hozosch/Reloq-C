@@ -43,6 +43,13 @@ jobs:
               for name in ('chsrom.dll', 'jpnrom.dll', 'korrom.dll'):
                   try: ctypes.WinDLL(str((target/name).resolve())); print('ROM load ok:', name)
                   except OSError as error: print('ROM load failed:', name, str(error))
+          memcmp = ctypes.CDLL('msvcrt.dll').memcmp
+          memcmp.argtypes = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t)
+          memcmp.restype = ctypes.c_int
+          for left, right in ((1, 200), (200, 1), (1, 2670), (2670, 1)):
+              a, b = ctypes.c_int16(left), ctypes.c_int16(right)
+              value = memcmp(ctypes.byref(a), ctypes.byref(b), 2)
+              print('CRT memcmp:', left, right, value, 'int8:', ctypes.c_int8(value).value)
           PY
       - name: Measure the original at low VWPM values
         run: python tools/observe_eci_wpm_reference.py --library reference/ECI.DLL --output wpm-original.json
