@@ -1,0 +1,57 @@
+name: Investigate Defender alert on SAPI test installer
+on:
+  push:
+    branches: [codex/defender-sapi-test-20261109]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  defender:
+    runs-on: windows-2022
+    timeout-minutes: 12
+    steps:
+      - name: Inspect Defender availability
+        id: defender
+        shell: pwsh
+        run: |
+          try {
+            $s = Get-MpComputerStatus -ErrorAction Stop
+            $s | Select-Object AMRunningMode,AntivirusEnabled,RealTimeProtectionEnabled,AMEngineVersion,AntivirusSignatureVersion,AntivirusSignatureLastUpdated | Format-List
+            if (!$s.AntivirusEnabled -or !$s.AMEngineVersion) {
+              Write-Output 'RESULT: Defender antivirus is unavailable or not enabled; this run cannot determine the file verdict.'
+              "available=false" >> $env:GITHUB_OUTPUT
+            } else { "available=true" >> $env:GITHUB_OUTPUT }
+          } catch {
+            Write-Output "RESULT: Defender status unavailable: $($_.Exception.Message)"
+            "available=false" >> $env:GITHUB_OUTPUT
+          }
+      - name: Obtain the exact installer artifact
+        if: steps.defender.outputs.available == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: sapi-installer
+          path: test-installer
+          run-id: 42666034611
+          github-token: ${{ github.token }}
+      - name: Scan the installer without running it
+        if: steps.defender.outputs.available == 'true'
+        shell: pwsh
+        run: |
+          $path = (Get-ChildItem test-installer -Recurse -Filter 'reloq-c-sapi5-1.2.3-dev1-setup.exe' | Select-Object -First 1).FullName
+          if (!$path) { Write-Output 'RESULT: The exact installer is not available after download.'; exit 2 }
+          $hash = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+          Write-Output "Installer SHA-256: $hash"
+          if ($hash -ne '61b95a2fe71e09ee3ea838f61ca8c1efc6fc1b008a1657fe69e37e1f6718f762') { throw 'Installer hash differs from the delivered file' }
+          $started = Get-Date
+          Start-MpScan -ScanType CustomScan -ScanPath $path -ErrorAction Stop
+          $records = @(Get-MpThreatDetection -ErrorAction Stop | Where-Object { $_.InitialDetectionTime -ge $started.AddSeconds(-10) -and ($_.Resources -join ' ') -like "*$([IO.Path]::GetFileName($path))*" })
+          if ($records.Count -eq 0) {
+            Write-Output 'RESULT: The completed custom scan produced no recorded detection for the installer on this machine.'
+          } else {
+            $known = @(Get-MpThreat -ErrorAction Stop)
+            foreach ($record in $records) {
+              $threat = $known | Where-Object { $_.ThreatID -eq $record.ThreatID } | Select-Object -First 1
+              Write-Output "RESULT: ThreatID=$($record.ThreatID); Name=$($threat.ThreatName); ActionSuccess=$($record.ActionSuccess); Status=$($record.ThreatStatusID)"
+              $record.Resources | ForEach-Object { Write-Output "Resource: $_" }
+            }
+          }
