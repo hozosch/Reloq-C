@@ -34,6 +34,10 @@ VALUES = (1, 2, 3, 4, 5, 8, 10, 12, 16, 20, 30, 50, 150, 200)
 def single(library, language, text, value, encoding):
     library = library.resolve()
     os.chdir(library.parent)
+    os.environ['PATH'] = str(library.parent) + os.pathsep + os.environ.get('PATH', '')
+    locale_id = {0x60000: 0x0804, 0x80000: 0x0411, 0xa0000: 0x0412}.get(language)
+    if locale_id:
+        C.windll.kernel32.SetThreadLocale(locale_id)
     directory = os.add_dll_directory(str(library.parent))
     dll = C.WinDLL(str(library))
     H, I = C.c_void_p, C.c_int

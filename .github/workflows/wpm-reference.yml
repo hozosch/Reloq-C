@@ -33,8 +33,8 @@ jobs:
                       (target / pathlib.PurePosixPath(name).name).write_bytes(z.read(name))
           ini = target / 'ECI.INI'
           content = ini.read_text(encoding='latin1')
-          content = re.sub(r'(?im)^(\s*Path(?:_Rom)?\s*=\s*).*?[\\/]?([^\\/\r\n]+\.(?:syn|dll))\s*$',
-              lambda m: m[1] + str((target / m[2]).resolve()), content)
+          content = content.replace('C:\\dummy\\', str(target.resolve()) + '\\')
+          assert 'C:\\dummy\\' not in content
           ini.write_text(content, encoding='ascii')
           for line in content.splitlines():
               if line.lower().lstrip().startswith('path_rom='):
