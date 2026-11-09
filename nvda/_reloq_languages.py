@@ -22,9 +22,9 @@ def N_(message: str) -> str:
     return message
 
 if __package__:
-    from ._reloq_eci_direct import DirectEciEngine, EciLanguage, EciPitch, EciPitchHz, EciProsody, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER
+    from ._reloq_eci_direct import DirectEciEngine, EciText, EciLanguage, EciPitch, EciPitchHz, EciProsody, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER
 else:
-    from _reloq_eci_direct import DirectEciEngine, EciLanguage, EciPitch, EciPitchHz, EciProsody, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER
+    from _reloq_eci_direct import DirectEciEngine, EciText, EciLanguage, EciPitch, EciPitchHz, EciProsody, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER
 
 
 @dataclass(frozen=True)
@@ -299,6 +299,12 @@ class LanguageEngine:
                         # Keep the last source order between different controls.
                         prosody.pop(slot, None)
                         prosody[slot] = part
+                    elif isinstance(part, EciText) and part.speed_control:
+                        # The tag has already been validated by the NVDA
+                        # filter. Keep its effective speed across real NVDA
+                        # language switches without altering saved settings.
+                        prosody.pop(6, None)
+                        prosody[6] = EciText(part.speed_control + " ")
                     pending.append(part)
             return flush()
         finally:

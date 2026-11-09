@@ -172,6 +172,12 @@ def main():
                         assert run([prefix + word + suffix]) == baseline, (locale, "prosody leaked")
                         report["checks"] += 2
                     driver.voiceTags = True
+                driver.language = "de_DE"
+                driver.voice = "1"
+                across_languages = ["`vwpm150 Hallo. ", commands.LangChangeCommand("en_US"), "Hello world."]
+                explicit_wpm = ["`vwpm150 Hallo. ", commands.LangChangeCommand("en_US"), "`vwpm150 Hello world."]
+                assert run(across_languages) == run(explicit_wpm), "VWPM did not survive NVDA language switching"
+                report["checks"] += 1
                 # The accepted fixed glide survives switching languages;
                 # old NVDA slider settings no longer reach the DLL.
                 driver.language = "de_DE"

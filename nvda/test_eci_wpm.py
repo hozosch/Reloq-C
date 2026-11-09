@@ -2,6 +2,8 @@
 import argparse
 from pathlib import Path
 
+from _reloq_eci_direct import DirectEciEngine, EciLanguage, EciProsody, EciText, NATIVE_SPEED, PROCESS_TAGS
+from _reloq_languages import GERMAN, US_ENGLISH, LanguageEngine
 from test_eci_inline_queue import Engine, TEXTS
 
 
@@ -61,6 +63,45 @@ def main():
         checks += 1
     finally:
         e.close()
+    engine = DirectEciEngine(library.resolve(), dialect=GERMAN.id, native_voice=True, encoding='utf8')
+    engine.set_parameter(PROCESS_TAGS, 1)
+    engine.set_parameter(NATIVE_SPEED, 50)
+    try:
+        def render_direct(parts):
+            chunks = []
+            assert engine.speak(parts, chunks.append, lambda _: None)
+            return b''.join(chunks)
+
+        for speed in (0, 60, 120):
+            prefix = '`vwpm150 Hallo '
+            changed = [EciText(prefix), EciProsody(6, speed), EciText('Welt.')]
+            explicit = [EciText(prefix + f'`vs{speed} Welt.')]
+            assert render_direct(changed) == render_direct(explicit), speed
+            checks += 1
+    finally:
+        engine.close()
+    # NVDA uses its own language commands, not the textual ECI language tag.
+    # A protected WPM command stays active through those independent handles.
+    engine = LanguageEngine(library.resolve(), language=GERMAN.id)
+    engine.set_parameter(PROCESS_TAGS, 1)
+    engine.set_parameter(NATIVE_SPEED, 50)
+    try:
+        def render(parts):
+            chunks = []
+            assert engine.speak(parts, chunks.append, lambda _: None)
+            return b''.join(chunks)
+
+        start = [EciText('`vwpm150', False, '`vwpm150'), EciText(' Hallo. ')]
+        switch = EciLanguage(US_ENGLISH.id, '1')
+        plain = start + [switch, EciText('Hello world.')]
+        explicit = start + [switch, EciText('`vwpm150 Hello world.')]
+        assert render(plain) == render(explicit)
+        reset = start + [EciProsody(6, 70), switch, EciText('Hello world.')]
+        explicit_reset = start + [EciProsody(6, 70), switch, EciText('`vs70 Hello world.')]
+        assert render(reset) == render(explicit_reset)
+        checks += 2
+    finally:
+        engine.close()
     print(f'VWPM: {checks} native duration, language, scope and tag checks passed')
 
 

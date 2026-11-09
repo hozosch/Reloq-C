@@ -65,6 +65,9 @@ _CallbackType = (ctypes.WINFUNCTYPE if sys.platform == "win32" else
 class EciText:
     text: str
     character_mode: bool = False
+    # If this text is a protected NVDA speed tag, replay just its speed
+    # effect across an explicit NVDA language change in the same utterance.
+    speed_control: str | None = None
 
 
 @dataclass(frozen=True)
