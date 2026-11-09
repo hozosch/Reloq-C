@@ -48,7 +48,8 @@ text** starts a speech sample, and **Stop** interrupts it.
 - Choose either the native **ECI speed (0–250)** or **words per minute
   (1–6000)** for manual speed. WPM uses the same native timing rule as the
   `vwpm command; actual WPM depends on language, word lengths and pauses.
-  Existing manual speeds keep their previous sound when updating. Android's TTS
+  Existing manual WPM numbers use the native WPM rule after updating, so their
+  audible speed may change from the previous approximation. Android's TTS
   request supplies a percentage with 100 meaning normal. Normal is mapped to
   native speed 55; 2× is approximately twice as fast. Rate boost multiplies the
   Android-controlled speed by 1.6, within the native limits.

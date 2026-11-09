@@ -8,10 +8,11 @@ final class Preferences {
         String key="voice."+profile+".";
         s.androidRate=p.getBoolean("androidRate",true);s.androidPitch=p.getBoolean("androidPitch",true);
         s.manualWpm=p.getInt("manualWpm",190);s.rateBoost=p.getBoolean("rateBoost",false);
-        /* Older manual WPM was a scaled ECI target. Migrate its actual
-         * previous speed, including boost, instead of changing playback. */
+        /* Older manual WPM was an approximate ECI target. Preserve the WPM
+         * number and use the native WPM timing by default. Keep the old ECI
+         * target available if the user explicitly selects that scale. */
         int oldSpeed=VoiceSettings.targetSpeed(VoiceSettings.bounded(s.manualWpm,140,1400)/190.0*(s.rateBoost?1.6:1));
-        s.manualSpeed=p.getInt("manualSpeed",oldSpeed);s.speedWpmMode=p.getBoolean("speedWpmMode",false);
+        s.manualSpeed=p.getInt("manualSpeed",oldSpeed);s.speedWpmMode=p.getBoolean("speedWpmMode",true);
         s.abbreviations=p.getBoolean("abbreviations",true);s.prediction=p.getBoolean("prediction",false);
         s.originalQuestions=p.getBoolean("originalQuestions",false);
         s.mellowMode=p.getBoolean("mellowMode",false);

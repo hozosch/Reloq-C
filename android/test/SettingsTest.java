@@ -50,7 +50,7 @@ public final class SettingsTest {
         for(int profile=0;profile<Catalog.PROFILES.length;++profile) {
             VoiceSettings s=new VoiceSettings(profile);
             require(s.controls(100,100)[2]==s.pitch);
-            s.androidRate=false;s.manualSpeed=87;s.manualWpm=280;s.androidPitch=false;s.manualPitch=43;
+            s.androidRate=false;s.speedWpmMode=false;s.manualSpeed=87;s.manualWpm=280;s.androidPitch=false;s.manualPitch=43;
             s.gender=1;s.head=22;s.inflection=65;s.roughness=12;s.breathiness=60;
             s.volume=80;s.rate=6;s.pauses=2;s.tags=true;
             int[] expected={1,22,43,65,12,60,80,87,6,2,1,0,0,0,0,0};
@@ -88,9 +88,9 @@ public final class SettingsTest {
         require(migrated.controls(100,100)[2]==93&&migrated.manualWpm==190);
         legacy.put("androidRate",false);legacy.put("manualWpm",280);legacy.put("rateBoost",true);
         migrated=Preferences.read(memory(legacy),2);
-        require(!migrated.speedWpmMode&&migrated.manualWpm==280&&
+        require(migrated.speedWpmMode&&migrated.manualWpm==280&&
             migrated.manualSpeed==VoiceSettings.targetSpeed(280.0/190*1.6)&&
-            migrated.controls(100,100)[7]==VoiceSettings.targetSpeed(280.0/190*1.6));
+            migrated.controls(100,100)[15]==280);
 
         // A direct-boot copy includes every voice control but never private
         // dictionary paths, imported text, or update credentials/metadata.
