@@ -69,7 +69,8 @@ text** starts a speech sample, and **Stop** interrupts it.
 - With ECI tags enabled, `` `vwpm150 `` sets the following speech to 150 using
   the native WPM timing rule. Whole numbers from 1 to 6000 are accepted;
   `` `vs50 `` returns to the ECI speed scale. Audible WPM depends on language,
-  text and pauses, and extreme values can hit timing limits.
+  text and pauses. Values below 30 can produce irregular speeds; very high
+  values can also hit timing limits.
 - All seven sample rates from 8 to 48 kHz, the three native pause policies and
   optional ECI command processing are available. **Use original question intonation** selects the native question contour for German and US English; it is off by default. **Use abbreviation dictionary**
   starts enabled; **Phrase prediction** starts disabled. **Mellow mode** softens voiced presence around 3–4 kHz at rates of 16 kHz and above, omits added richness from 22 kHz and reduces voiced breathiness. It is off by default. Prediction uses the

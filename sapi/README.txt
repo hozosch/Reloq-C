@@ -65,7 +65,8 @@ an insufficient rate can distort or interrupt synthesis.
 With ECI tags enabled, `vwpm150 sets the following speech to 150 using the
 native WPM timing rule, and `vs50 returns to the ECI speed scale. Whole numbers
 from 1 to 6000 are accepted. Audible WPM depends on language, text and pauses;
-extreme values can hit timing limits. Tags do not change saved settings.
+values below 30 can produce irregular speeds, and very high values can also hit
+timing limits. Tags do not change saved settings.
 
 Responsiveness and dictionaries
 -------------------------------

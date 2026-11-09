@@ -91,7 +91,7 @@ Under **NVDA settings → Eloquence C → Exact base pitch**, enable **Use base 
 
 **Process ECI tags** is off by default. When enabled, supported backtick commands in text can control pronunciation, spelling, emphasis, voice parameters, voices and languages. This option is not needed for ordinary reading. Pronunciation dictionaries can contain pronunciation annotations independently of this setting.
 
-`` `vwpm150 `` sets the following speech to 150 using the native WPM timing rule. Whole numbers from 1 to 6000 are accepted; `` `vs50 `` returns to the usual ECI speed scale. Audible words per minute depend on the language, text and pauses. Very low and high values can hit timing limits. These commands do not change saved sliders.
+`` `vwpm150 `` sets the following speech to 150 using the native WPM timing rule. Whole numbers from 1 to 6000 are accepted; `` `vs50 `` returns to the usual ECI speed scale. Audible words per minute depend on the language, text and pauses. At very low values, especially below 30, timing limits can produce irregular speeds. Very high values may also hit timing limits. These commands do not change saved sliders.
 
 `` `vbhz150 `` sets the base pitch of the following text to 150 hertz; integer values from 1 to 24,000 hertz are supported. `` `vb65 `` returns to the usual ECI pitch scale. For measurements, `` `vf0 `` can turn off inflection; linguistic tones in tonal languages may remain. The sample rate must exceed twice the desired frequency, and the voice filters can attenuate very high values. An insufficient sample rate can distort the result or cause synthesis to fail. These tags do not change the saved settings.
 
