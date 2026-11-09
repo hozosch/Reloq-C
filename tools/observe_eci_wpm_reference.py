@@ -40,7 +40,7 @@ def single(library, language, text, value, encoding):
     CB = C.WINFUNCTYPE(I, H, I, I, H)
     for name, restype, args in (
         ("eciNewEx", H, (I,)), ("eciDelete", H, (H,)),
-        ("eciSetParam", I, (H, I, I)),
+        ("eciSetParam", I, (H, I, I)), ("eciGetParam", I, (H, I)),
         ("eciSetVoiceParam", I, (H, I, I, I)),
         ("eciRegisterCallback", None, (H, CB, H)),
         ("eciSetOutputBuffer", I, (H, I, C.POINTER(C.c_short))),
@@ -51,7 +51,16 @@ def single(library, language, text, value, encoding):
         func.restype, func.argtypes = restype, args
     engine = dll.eciNewEx(language)
     if not engine:
-        raise RuntimeError("eciNewEx failed")
+        # Some host versions initialize their Asian backend only after a
+        # default handle has been created. Record the actual selected dialect.
+        engine = dll.eciNewEx(0x10000)
+        if not engine:
+            raise RuntimeError("eciNewEx failed for both target and default")
+        previous = dll.eciSetParam(engine, 9, language)
+        selected = dll.eciGetParam(engine, 9)
+        if selected != language:
+            dll.eciDelete(engine)
+            raise RuntimeError(f"target creation and language switch failed: previous={previous}, selected={selected}")
     samples = 0
     buffer = (C.c_short * 1100)()
 
