@@ -20,13 +20,15 @@ jobs:
         shell: bash
         run: |
           python - <<'PY'
-          import hashlib, pathlib, re, urllib.request, zipfile
+          import ctypes, hashlib, os, pathlib, re, urllib.request, zipfile
           path = pathlib.Path('eloquence64-reference.nvda-addon')
           urllib.request.urlretrieve('https://github.com/fastfinge/eloquence_64/releases/download/v25/Eloquence-v25.nvda-addon', path)
           assert hashlib.sha256(path.read_bytes()).hexdigest() == '3b14eaa9923a006553b7ea6152abf2ca9cd8f11c1b3dcebe2a905658863ea409'
           target = pathlib.Path('reference'); target.mkdir()
           with zipfile.ZipFile(path) as z:
               for name in z.namelist():
+                  if name.lower().startswith('synthdrivers/eloquence/'):
+                      print('reference member:', name)
                   if name.lower().startswith('synthdrivers/eloquence/') and name.lower().endswith(('.dll','.syn','.ini')):
                       (target / pathlib.PurePosixPath(name).name).write_bytes(z.read(name))
           ini = target / 'ECI.INI'
@@ -34,6 +36,13 @@ jobs:
           content = re.sub(r'(?im)^(\s*Path(?:_Rom)?\s*=\s*).*?[\\/]?([^\\/\r\n]+\.(?:syn|dll))\s*$',
               lambda m: m[1] + str((target / m[2]).resolve()), content)
           ini.write_text(content, encoding='ascii')
+          for line in content.splitlines():
+              if line.lower().lstrip().startswith('path_rom='):
+                  print('resolved ROM:', line)
+          with os.add_dll_directory(str(target.resolve())):
+              for name in ('chsrom.dll', 'jpnrom.dll', 'korrom.dll'):
+                  try: ctypes.WinDLL(str((target/name).resolve())); print('ROM load ok:', name)
+                  except OSError as error: print('ROM load failed:', name, str(error))
           PY
       - name: Measure the original at low VWPM values
         run: python tools/observe_eci_wpm_reference.py --library reference/ECI.DLL --output wpm-original.json
