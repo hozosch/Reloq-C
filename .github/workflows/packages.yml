@@ -87,6 +87,7 @@ jobs:
           python3 -B nvda/test_eci_mellow_mode.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_pitch_hz.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_wpm.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_wpm_setting.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_wpm_languages.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_hz_adapter.py
           python3 -B nvda/test_eci_callback_only.py --library eci/libreloq_eci.so

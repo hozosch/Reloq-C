@@ -33,6 +33,22 @@ def main():
         finally:
             engine.close()
 
+    for language in (0x10000, 0x40000, 0x60000, 0x80000, 0x120000):
+        engine = Engine(library, language)
+        try:
+            engine.voice(6, 50)
+            text = TEXTS[language][1] + '.'
+            for wpm in (1, 4):
+                engine.tags(1)
+                assert engine.lib.eciSetParam(engine.h, NATIVE_WPM, 0) >= 0
+                tagged = engine.speak(f'`vwpm{wpm} {text}')
+                engine.tags(0)
+                assert engine.lib.eciSetParam(engine.h, NATIVE_WPM, wpm) >= 0
+                assert engine.speak(text) == tagged, (hex(language), wpm)
+                checks += 1
+        finally:
+            engine.close()
+
     engine = Engine(library, 0x40000)
     try:
         engine.voice(6, 50)

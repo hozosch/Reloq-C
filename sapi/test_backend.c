@@ -274,13 +274,18 @@ int main(int argc,char **argv)
         struct site actual=site_new();actual.interest=0;actual.speed=-10;
         SPVTEXTFRAG shifted=f;shifted.State.RateAdj=10;
         assert(SUCCEEDED(sapi_backend_speak(b,&own,0,&out,&shifted,&actual.iface)));same(&expected,&actual);
+        struct site marked=site_new();
+        assert(SUCCEEDED(sapi_backend_speak(b,&own,0,&out,&shifted,&marked.iface)));same(&actual,&marked);
+        assert(marked.event_count==base.event_count);
+        for(size_t i=0;i<base.event_count;++i)
+            assert(marked.events[i].eEventId==base.events[i].eEventId&&marked.events[i].wParam==base.events[i].wParam&&marked.events[i].lParam==base.events[i].lParam);
         own.speed_wpm_enabled=0;own.speed_value=95;
         struct site eci=site_new();eci.interest=0;
         assert(SUCCEEDED(sapi_backend_speak(b,&own,0,&out,&f,&eci.iface)));
         assert(eci.count!=actual.count);
         struct site restored=site_new();restored.interest=0;
         assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&restored.iface)));same(&base,&restored);
-        free(expected.pcm);free(actual.pcm);free(eci.pcm);free(restored.pcm);cases+=3;
+        free(expected.pcm);free(actual.pcm);free(marked.pcm);free(eci.pcm);free(restored.pcm);cases+=4;
     }
     /* Exact Hertz stays the base for SAPI's neutral 50. Relative pitch
      * offsets and interior fragments keep the same continuous ECI stream. */
