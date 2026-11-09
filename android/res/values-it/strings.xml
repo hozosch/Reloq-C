@@ -90,4 +90,11 @@
     <string name="pitch_hz_mode">Usa altezza in hertz</string>
     <string name="pitch_hz_value">Altezza di base in hertz</string>
     <string name="pitch_hz_error">Inserisci un valore da 1 a 24000 Hz.</string>
+    <string name="speed_scale">Scala della velocità manuale:</string>
+    <string name="speed_eci_mode">Velocità ECI (0–250)</string>
+    <string name="speed_wpm_mode">Parole al minuto (1–6000)</string>
+    <string name="speed_eci_value">Velocità ECI manuale</string>
+    <string name="speed_wpm_error">Inserisci un valore da 1 a 6000 parole al minuto.</string>
+    <string name="pitch_scale">Scala del tono manuale:</string>
+    <string name="pitch_eci_mode">Tono ECI (0–100)</string>
 </resources>

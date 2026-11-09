@@ -351,7 +351,7 @@ static int reset_eci_defaults(struct reloq_eci_engine *e)
     clear_queue(e);
     e->sample_rate_code=n->sample_rate_code;e->synth_mode=n->synth_mode;e->voice_mode=n->voice_mode;
     e->generic_rate=n->generic_rate;e->generic_pitch=n->generic_pitch;e->generic_volume=n->generic_volume;
-    e->native_speed=n->native_speed;e->native_pitch=n->native_pitch;
+    e->native_speed=n->native_speed;e->native_wpm=0;e->native_pitch=n->native_pitch;
     e->native_inflection=n->native_inflection;e->native_volume=n->native_volume;
     e->native_speed_active=e->native_pitch_active=e->native_inflection_active=e->native_volume_active=1;
     e->input_type=n->input_type;e->process_tags=n->process_tags;e->text_mode=n->text_mode;

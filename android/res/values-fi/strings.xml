@@ -90,4 +90,11 @@
     <string name="pitch_hz_mode">Käytä äänenkorkeutta hertseinä</string>
     <string name="pitch_hz_value">Perusäänenkorkeus hertseinä</string>
     <string name="pitch_hz_error">Anna arvo välillä 1–24000 Hz.</string>
+    <string name="speed_scale">Manuaalisen nopeuden asteikko:</string>
+    <string name="speed_eci_mode">ECI-nopeus (0–250)</string>
+    <string name="speed_wpm_mode">Sanaa minuutissa (1–6000)</string>
+    <string name="speed_eci_value">Manuaalinen ECI-nopeus</string>
+    <string name="speed_wpm_error">Anna arvo 1–6000 sanaa minuutissa.</string>
+    <string name="pitch_scale">Manuaalisen äänenkorkeuden asteikko:</string>
+    <string name="pitch_eci_mode">ECI-äänikorkeus (0–100)</string>
 </resources>

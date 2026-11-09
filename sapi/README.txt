@@ -47,26 +47,34 @@ The default is 11,025 Hz. Reset preserves the common sample rate.
 
 Eight profiles, male/female model, head size, pitch, inflection, roughness,
 breathiness, seven rates, pause shortening, speed boost, ECI tags, abbreviations,
-phrase prediction and dictionaries are available. SAPI controls speed and
-volume. Normal speed follows SAPI5IBMTTS: ECI = 60 + 10 × (SAPI rate + XML
+phrase prediction and dictionaries are available. By default, SAPI controls
+speed and volume. Normal speed follows SAPI5IBMTTS: ECI = 60 + 10 × (SAPI rate + XML
 adjustment), bounded to 0–250. SAPI 0 is ECI 60; +10 is ECI 160; values at
 -6 or lower select ECI 0. Optional speed boost multiplies this by 1.6, capped
 at 250. Leave boost off for the reference scale. Profiles start at volume 100. Normal SAPI XML pitch, rate, volume and
 spelling fragments use the shared C engine.
 
+Choose “Application overrides” to independently use ReLoq's own speed, pitch
+or volume instead of the application's values. Choose between native ECI speed
+0–250 and 1–6000 words per minute. Speed boost applies only when SAPI controls
+speed. Choose the pitch in ECI units 0–100 or in hertz; this is the same base
+pitch also shown in the main window. Volume uses 0–100. These settings affect only
+ReLoq C and can be enabled separately for each language or shared across them.
+
 Next to the normal pitch control, enable “In hertz” and enter a whole-number
 base pitch from 1 to 24,000 Hz. The inactive ECI control keeps its saved value.
 SAPI application pitch 50 remains neutral and uses this base; application pitch
-adjustments still work. Inflection 0 makes the base easier to measure, although
+adjustments still work unless the pitch override is enabled. Inflection 0 makes the base easier to measure, although
 tonal languages can retain linguistic contours. The synthesis rate must exceed
 twice the requested frequency. Voice filters can attenuate very high pitches;
 an insufficient rate can distort or interrupt synthesis.
 
 With ECI tags enabled, `vwpm150 sets the following speech to 150 using the
 native WPM timing rule, and `vs50 returns to the ECI speed scale. Whole numbers
-from 1 to 6000 are accepted. Audible WPM depends on language, text and pauses;
-values below 30 can produce irregular speeds, and very high values can also hit
-timing limits. Tags do not change saved settings.
+from 1 to 6000 are accepted. At 1 to 4 WPM, the synthesis control frames are
+slowed to avoid overflow while retaining pitch. Audible WPM depends on language,
+text and pauses; very high values can also hit timing limits. Tags do not change
+saved settings.
 
 Responsiveness and dictionaries
 -------------------------------

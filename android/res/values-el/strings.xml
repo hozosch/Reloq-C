@@ -90,4 +90,11 @@
     <string name="pitch_hz_mode">Χρήση ύψους φωνής σε hertz</string>
     <string name="pitch_hz_value">Βασικό ύψος φωνής σε hertz</string>
     <string name="pitch_hz_error">Εισαγάγετε τιμή από 1 έως 24000 Hz.</string>
+    <string name="speed_scale">Κλίμακα μη αυτόματης ταχύτητας:</string>
+    <string name="speed_eci_mode">Ταχύτητα ECI (0–250)</string>
+    <string name="speed_wpm_mode">Λέξεις ανά λεπτό (1–6000)</string>
+    <string name="speed_eci_value">Μη αυτόματη ταχύτητα ECI</string>
+    <string name="speed_wpm_error">Εισαγάγετε μια τιμή από 1 έως 6000 λέξεις ανά λεπτό.</string>
+    <string name="pitch_scale">Κλίμακα μη αυτόματου τόνου:</string>
+    <string name="pitch_eci_mode">Τόνος ECI (0–100)</string>
 </resources>

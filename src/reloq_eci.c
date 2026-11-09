@@ -170,7 +170,7 @@ struct reloq_eci_engine {
     int generic_rate;
     int generic_pitch;
     int generic_volume;
-    int native_speed;
+    int native_speed,native_wpm;
     int native_pitch;
     int native_inflection;
     int native_volume;
@@ -517,7 +517,7 @@ static int synthesize_generic(struct reloq_eci_engine *e,
     }
     int rendered=reset?RELOQ_DE_UTTERANCE_INVALID:reloq_language_rules_render(e->language,phrase,length,e->process_tags||admitted,
         frame_volume?(e->native_volume_active?e->native_volume:e->generic_volume):100,
-        &settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
+        e->native_wpm,&settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
         send_pcm,send_generic_index,&bridge);
     free(english_indices);free(english_pitch);
     if(preflight_cancelled(&cancel_check)||reloq_session_cancelled(e->text_session))return RELOQ_ECI_CANCELLED;
@@ -1347,6 +1347,7 @@ int ECICALL eciGetParam(ECIHand handle, int parameter)
     case RELOQ_ECI_GENERIC_PITCH: return e->generic_pitch;
     case RELOQ_ECI_GENERIC_VOLUME: return e->generic_volume;
     case RELOQ_ECI_NATIVE_SPEED: return e->native_speed;
+    case RELOQ_ECI_NATIVE_WPM: return e->native_wpm;
     case RELOQ_ECI_NATIVE_PITCH: return e->native_pitch;
     case RELOQ_ECI_NATIVE_INFLECTION: return e->native_inflection;
     case RELOQ_ECI_NATIVE_VOLUME: return e->native_volume;
@@ -1426,6 +1427,9 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
         e->native_speed_active = 1;
         e->real_voice_flags[0]&=~(1u<<6);
         break;
+    case RELOQ_ECI_NATIVE_WPM:
+        if(value<0 || value>6000)return eci_refuse(e,-1);
+        e->native_wpm=value;break;
     case RELOQ_ECI_NATIVE_PITCH:
         if (value < 0 || value > 100) return eci_refuse(e,-1);
         e->native_pitch = value;

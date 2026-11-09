@@ -8,6 +8,10 @@ final class Preferences {
         String key="voice."+profile+".";
         s.androidRate=p.getBoolean("androidRate",true);s.androidPitch=p.getBoolean("androidPitch",true);
         s.manualWpm=p.getInt("manualWpm",190);s.rateBoost=p.getBoolean("rateBoost",false);
+        /* Older manual WPM was a scaled ECI target. Migrate its actual
+         * previous speed, including boost, instead of changing playback. */
+        int oldSpeed=VoiceSettings.targetSpeed(VoiceSettings.bounded(s.manualWpm,140,1400)/190.0*(s.rateBoost?1.6:1));
+        s.manualSpeed=p.getInt("manualSpeed",oldSpeed);s.speedWpmMode=p.getBoolean("speedWpmMode",false);
         s.abbreviations=p.getBoolean("abbreviations",true);s.prediction=p.getBoolean("prediction",false);
         s.originalQuestions=p.getBoolean("originalQuestions",false);
         s.mellowMode=p.getBoolean("mellowMode",false);
@@ -23,7 +27,8 @@ final class Preferences {
     static void save(SharedPreferences p,int profile,VoiceSettings s) {
         String key="voice."+profile+".";
         p.edit().putBoolean("androidRate",s.androidRate).putBoolean("androidPitch",s.androidPitch)
-            .putInt("manualWpm",s.manualWpm).putBoolean("rateBoost",s.rateBoost)
+            .putInt("manualWpm",s.manualWpm).putInt("manualSpeed",s.manualSpeed)
+            .putBoolean("speedWpmMode",s.speedWpmMode).putBoolean("rateBoost",s.rateBoost)
             .putBoolean("abbreviations",s.abbreviations).putBoolean("prediction",s.prediction)
             .putBoolean("originalQuestions",s.originalQuestions)
             .putBoolean("mellowMode",s.mellowMode)

@@ -62,6 +62,11 @@ struct job {
     struct sapi_settings settings;const SPVTEXTFRAG *fragments;
     DWORD flags,rate;LONG speed;USHORT volume;ULONGLONG interest;
 };
+static int job_speed(const struct job *job,LONG adjustment)
+{
+    return job->settings.speed_override?(int)job->settings.speed_value:
+        sapi_native_speed(job->speed,adjustment,job->settings.boost);
+}
 struct bookmark {struct bookmark *next;WCHAR text[];};
 struct output;
 struct sapi_backend {
@@ -120,7 +125,7 @@ static int output_actions(struct output *o)
         if(SUCCEEDED(o->site->lpVtbl->GetSkipInfo(o->site,&kind,&count)))o->site->lpVtbl->CompleteSkip(o->site,0);
         cancel_backend(b);}
     if(flags&SPVES_ABORT)cancel_backend(b);
-    if(flags&SPVES_VOLUME){USHORT volume=o->volume;
+    if((flags&SPVES_VOLUME)&&!b->job.settings.volume_override){USHORT volume=o->volume;
         if(SUCCEEDED(o->site->lpVtbl->GetVolume(o->site,&volume)))o->volume=volume>100?100:volume;}
     return !InterlockedCompareExchange(&b->cancel,0,0);
 }
@@ -296,7 +301,8 @@ static HRESULT configure(struct sapi_backend *b,const struct job *j)
     if(!core.clear(b->handle))return E_FAIL;
     struct {int key,value;} parameters[]={
         {RELOQ_ECI_VOICE_MODE,1},{RELOQ_ECI_SYNTH_MODE,1},{RELOQ_ECI_SAMPLE_RATE,rate},
-        {RELOQ_ECI_NATIVE_SPEED,sapi_native_speed(j->speed,0,s->boost)},
+        {RELOQ_ECI_NATIVE_SPEED,job_speed(j,0)},
+        {RELOQ_ECI_NATIVE_WPM,s->speed_override&&s->speed_wpm_enabled?(int)s->speed_wpm:0},
         {RELOQ_ECI_NATIVE_PITCH,(int)s->pitch},{RELOQ_ECI_NATIVE_VOLUME,100},
         {RELOQ_ECI_NATIVE_INFLECTION,(int)s->inflection},{RELOQ_ECI_HEAD_SIZE,(int)s->head},
         {RELOQ_ECI_ROUGHNESS,(int)s->roughness},{RELOQ_ECI_BREATHINESS,(int)s->breathiness},
@@ -327,7 +333,7 @@ static HRESULT synthesize(struct sapi_backend *b)
     HRESULT hr=configure(b,&b->job);if(FAILED(hr))return hr;
     int sentence=1,has_text=0,last_pitch=(int)b->job.settings.pitch;
     int last_hz=b->job.settings.pitch_hz_enabled?(int)b->job.settings.pitch_hz:0;
-    int last_rate=sapi_native_speed(b->job.speed,0,b->job.settings.boost),last_range=0,last_emphasis=0;
+    int last_rate=job_speed(&b->job,0),last_range=0,last_emphasis=0;
     size_t delivered_events=0;b->fragment_volume=100;
     b->event_count=0;
     for(const SPVTEXTFRAG *f=b->job.fragments;f;f=f->pNext){
@@ -350,8 +356,9 @@ static HRESULT synthesize(struct sapi_backend *b)
         if(f->State.eAction!=SPVA_Speak&&f->State.eAction!=SPVA_SpellOut&&f->State.eAction!=SPVA_Pronounce)return E_NOTIMPL;
         if(f->State.eAction==SPVA_Pronounce&&f->State.pPhoneIds)return E_NOTIMPL;
         if(!f->pTextStart&&f->ulTextLen)return E_INVALIDARG;
-        int speed=sapi_native_speed(b->job.speed,f->State.RateAdj,b->job.settings.boost);
-        ULONG fragment_volume=f->State.Volume>100?100:f->State.Volume;
+        int speed=job_speed(&b->job,f->State.RateAdj);
+        ULONG fragment_volume=b->job.settings.volume_override?100:
+            f->State.Volume>100?100:f->State.Volume;
         if(speed!=last_rate||f->State.PitchAdj.RangeAdj!=last_range||f->State.EmphAdj!=last_emphasis||
            fragment_volume!=b->fragment_volume){
             if(has_text){if(!core.synthesize(b->handle)||!core.clear(b->handle))return E_FAIL;
@@ -368,10 +375,12 @@ static HRESULT synthesize(struct sapi_backend *b)
         /* SAPI already parsed XML. Absolute pitch marks preserve the native
          * analyzer's single connected utterance across ordinary fragments. */
         if(b->job.settings.pitch_hz_enabled) {
-            int pitch=sapi_hertz_pitch((int)b->job.settings.pitch_hz,f->State.PitchAdj.MiddleAdj);
+            int pitch=sapi_hertz_pitch((int)b->job.settings.pitch_hz,
+                b->job.settings.pitch_override?0:f->State.PitchAdj.MiddleAdj);
             if(pitch!=last_hz){if(!set_hertz(b->handle,pitch))return E_FAIL;last_hz=pitch;}
         } else {
-            int pitch=sapi_native_pitch((int)b->job.settings.pitch,f->State.PitchAdj.MiddleAdj);
+            int pitch=sapi_native_pitch((int)b->job.settings.pitch,
+                b->job.settings.pitch_override?0:f->State.PitchAdj.MiddleAdj);
             if(pitch!=last_pitch){if(!core.pitch(b->handle,pitch))return E_FAIL;last_pitch=pitch;}
         }
         if(!(b->job.interest&(((ULONGLONG)1<<SPEI_WORD_BOUNDARY)|((ULONGLONG)1<<SPEI_SENTENCE_BOUNDARY)))){
@@ -511,7 +520,9 @@ HRESULT sapi_backend_speak(struct sapi_backend *b,const struct sapi_settings *se
     if(speed< -10)speed=-10;if(speed>10)speed=10;if(volume>100)volume=100;
     ULONGLONG interest=0;site->lpVtbl->GetEventInterest(site,&interest);
     context->job=(struct job){.settings=*settings,.fragments=fragments,.flags=flags,.rate=format->nSamplesPerSec,.speed=speed,.volume=volume,.interest=interest};
-    struct output output={.backend=context,.site=site,.volume=volume,.fragment_volume=100,.rate=format->nSamplesPerSec,.result=S_OK};
+    struct output output={.backend=context,.site=site,
+        .volume=settings->volume_override?(USHORT)settings->volume_value:volume,
+        .fragment_volume=100,.rate=format->nSamplesPerSec,.result=S_OK};
     context->output=&output;InterlockedExchange(&context->cancel,0);
     HRESULT result=output_actions(&output)?synthesize(context):S_OK;
     if(SUCCEEDED(result)&&!InterlockedCompareExchange(&context->cancel,0,0))output_flush(&output);

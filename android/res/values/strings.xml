@@ -91,4 +91,11 @@
     <string name="pitch_hz_mode">Use pitch in hertz</string>
     <string name="pitch_hz_value">Base pitch in hertz</string>
     <string name="pitch_hz_error">Enter a value from 1 to 24000 Hz.</string>
+    <string name="speed_scale">Manual speed scale:</string>
+    <string name="speed_eci_mode">ECI speed (0–250)</string>
+    <string name="speed_wpm_mode">Words per minute (1–6000)</string>
+    <string name="speed_eci_value">Manual ECI speed</string>
+    <string name="speed_wpm_error">Enter a value from 1 to 6000 words per minute.</string>
+    <string name="pitch_scale">Manual pitch scale:</string>
+    <string name="pitch_eci_mode">ECI pitch (0–100)</string>
 </resources>

@@ -90,4 +90,11 @@
     <string name="pitch_hz_mode">음높이를 헤르츠로 설정</string>
     <string name="pitch_hz_value">기본 음높이(헤르츠)</string>
     <string name="pitch_hz_error">1에서 24000 Hz 사이의 값을 입력하세요.</string>
+    <string name="speed_scale">수동 속도 범위:</string>
+    <string name="speed_eci_mode">ECI 속도 (0–250)</string>
+    <string name="speed_wpm_mode">분당 단어 수 (1–6000)</string>
+    <string name="speed_eci_value">수동 ECI 속도</string>
+    <string name="speed_wpm_error">분당 1에서 6000 사이의 값을 입력하세요.</string>
+    <string name="pitch_scale">수동 음높이 범위:</string>
+    <string name="pitch_eci_mode">ECI 음높이 (0–100)</string>
 </resources>

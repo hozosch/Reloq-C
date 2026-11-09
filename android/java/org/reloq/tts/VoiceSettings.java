@@ -3,8 +3,8 @@ package org.reloq.tts;
 /** Settings copied for one request; usable in host tests without Android. */
 final class VoiceSettings {
     boolean androidRate=true,androidPitch=true,rateBoost=false,tags=false,abbreviations=true,prediction=false,originalQuestions=false,mellowMode=false;
-    boolean pitchHertzMode=false;
-    int manualWpm=190,manualPitch,pitchHertz=150,gender,head,pitch,inflection,roughness,breathiness,volume;
+    boolean pitchHertzMode=false,speedWpmMode=false;
+    int manualWpm=190,manualSpeed=55,manualPitch,pitchHertz=150,gender,head,pitch,inflection,roughness,breathiness,volume;
     int rate=1,pauses=0;
 
     VoiceSettings(int profile) {
@@ -38,12 +38,13 @@ final class VoiceSettings {
         return bounded((int)Math.round(Math.log((desired-35.11023877)/4.889761232)/Math.log(2)/.06306456),0,100);
     }
     int[] controls(int requestedRate,int requestedPitch) {
-        double ratio=androidRate?Math.max(1,requestedRate)/100.0:bounded(manualWpm,140,1400)/190.0;
-        int speed=targetSpeed(ratio*(rateBoost?1.6:1));
+        double ratio=Math.max(1,requestedRate)/100.0;
+        int speed=androidRate?targetSpeed(ratio*(rateBoost?1.6:1)):bounded(manualSpeed,0,250);
         return new int[]{bounded(gender,0,1),bounded(head,0,100),
             androidPitch?androidPitch(pitch,requestedPitch):
                 pitchHertzMode?1000+bounded(pitchHertz,1,24000):bounded(manualPitch,0,100),
             bounded(inflection,0,100),bounded(roughness,0,100),bounded(breathiness,0,100),
-            bounded(volume,0,100),speed,Catalog.RATE_IDS[bounded(rate,0,6)],bounded(pauses,0,2),tags?1:0,abbreviations?0:1,prediction?1:0,originalQuestions?1:0,mellowMode?1:0};
+            bounded(volume,0,100),speed,Catalog.RATE_IDS[bounded(rate,0,6)],bounded(pauses,0,2),tags?1:0,abbreviations?0:1,prediction?1:0,originalQuestions?1:0,mellowMode?1:0,
+            !androidRate&&speedWpmMode?bounded(manualWpm,1,6000):0};
     }
 }

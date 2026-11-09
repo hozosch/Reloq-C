@@ -237,6 +237,51 @@ int main(int argc,char **argv)
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&xml,&high.iface)));
     assert(high.count==base.count&&hash(high.pcm,high.count)!=hash(base.pcm,base.count));free(high.pcm);++cases;
     #ifndef RELOQ_SAPI_REFERENCE_BASELINE
+    /* Per-engine overrides ignore SAPI and XML values while remaining
+     * independent, including mid-output application volume changes. */
+    {
+        struct sapi_settings own=s;own.speed_override=1;own.speed_value=95;
+        own.pitch_override=1;own.volume_override=1;own.volume_value=40;
+        SPVTEXTFRAG a=f,bfrag=f;
+        a.State.RateAdj=-5;a.State.PitchAdj.MiddleAdj=-7;a.State.Volume=10;
+        bfrag.State.RateAdj=7;bfrag.State.PitchAdj.MiddleAdj=9;bfrag.State.Volume=80;
+        struct site left=site_new(),right=site_new();left.speed=-10;left.volume=15;
+        right.speed=10;right.volume=95;right.volume_change_after=1;
+        assert(SUCCEEDED(sapi_backend_speak(b,&own,0,&out,&a,&left.iface)));
+        assert(SUCCEEDED(sapi_backend_speak(b,&own,0,&out,&bfrag,&right.iface)));
+        assert(left.count>0&&right.volume_changed);same(&left,&right);
+        own.boost=1;struct site boosted=site_new();boosted.speed=7;boosted.volume=1;
+        assert(SUCCEEDED(sapi_backend_speak(b,&own,0,&out,&a,&boosted.iface)));same(&left,&boosted);
+        own.speed_override=0;own.boost=0;struct site different_rate=site_new();different_rate.speed=10;
+        assert(SUCCEEDED(sapi_backend_speak(b,&own,0,&out,&bfrag,&different_rate.iface)));
+        assert(different_rate.count!=left.count);
+        own.speed_override=1;own.pitch_override=0;struct site different_pitch=site_new();
+        assert(SUCCEEDED(sapi_backend_speak(b,&own,0,&out,&bfrag,&different_pitch.iface)));
+        assert(different_pitch.count==left.count&&hash(different_pitch.pcm,different_pitch.count)!=hash(left.pcm,left.count));
+        own.pitch_override=1;own.volume_value=0;struct site silent=site_new();
+        assert(SUCCEEDED(sapi_backend_speak(b,&own,0,&out,&a,&silent.iface)));
+        assert(silent.count==left.count);for(size_t i=0;i<silent.count;++i)assert(silent.pcm[i]==0);
+        free(left.pcm);free(right.pcm);free(boosted.pcm);free(different_rate.pcm);free(different_pitch.pcm);free(silent.pcm);cases+=6;
+    }
+    {
+        /* A WPM override has the same native timing as a VWPM tag, even
+         * when the application-facing ECI tag option is switched off. */
+        struct sapi_settings tagged=s;tagged.tags=1;
+        SPVTEXTFRAG tagged_f=text(L"`vwpm150 One computer. The next sentence works.",0);
+        struct site expected=site_new();expected.interest=0;
+        assert(SUCCEEDED(sapi_backend_speak(b,&tagged,0,&out,&tagged_f,&expected.iface)));
+        struct sapi_settings own=s;own.speed_override=1;own.speed_wpm_enabled=1;own.speed_wpm=150;
+        struct site actual=site_new();actual.interest=0;actual.speed=-10;
+        SPVTEXTFRAG shifted=f;shifted.State.RateAdj=10;
+        assert(SUCCEEDED(sapi_backend_speak(b,&own,0,&out,&shifted,&actual.iface)));same(&expected,&actual);
+        own.speed_wpm_enabled=0;own.speed_value=95;
+        struct site eci=site_new();eci.interest=0;
+        assert(SUCCEEDED(sapi_backend_speak(b,&own,0,&out,&f,&eci.iface)));
+        assert(eci.count!=actual.count);
+        struct site restored=site_new();restored.interest=0;
+        assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&f,&restored.iface)));same(&base,&restored);
+        free(expected.pcm);free(actual.pcm);free(eci.pcm);free(restored.pcm);cases+=3;
+    }
     /* Exact Hertz stays the base for SAPI's neutral 50. Relative pitch
      * offsets and interior fragments keep the same continuous ECI stream. */
     {
@@ -255,10 +300,15 @@ int main(int argc,char **argv)
             free(audible.pcm);
         }
         assert(hz_samples[0]==hz_samples[1]&&hz_hashes[0]!=hz_hashes[1]);
+        h.pitch_override=1;
+        struct site fixed_hz=site_new();fixed_hz.interest=0;
+        assert(SUCCEEDED(sapi_backend_speak(voice,&h,0,&fmt,&raised,&fixed_hz.iface)));
+        assert(fixed_hz.count==hz_samples[0]&&hash(fixed_hz.pcm,fixed_hz.count)==hz_hashes[0]);
+        free(fixed_hz.pcm);h.pitch_override=0;
         struct site restored=site_new();restored.interest=0;
         assert(SUCCEEDED(sapi_backend_speak(voice,&h,0,&fmt,&phrase,&restored.iface)));
         assert(restored.count==hz_samples[0]&&hash(restored.pcm,restored.count)==hz_hashes[0]);
-        free(restored.pcm);sapi_backend_delete(voice);cases+=4;
+        free(restored.pcm);sapi_backend_delete(voice);cases+=5;
     }
     #endif
     struct site cancel=site_new();cancel.abort_after=512;

@@ -12,9 +12,11 @@ struct sapi_settings {
     DWORD rate,pauses,tags,abbreviations,prediction,dictionaries,boost;
     WCHAR directory[1024];
     DWORD original_questions,mellow_mode,pitch_hz,pitch_hz_enabled;
+    DWORD speed_override,speed_value,pitch_override,volume_override,volume_value;
+    DWORD speed_wpm_enabled,speed_wpm;
 };
 #ifndef RELOQ_SAPI_TEST_HOST
-_Static_assert(sizeof(struct sapi_settings)==2124,"SAPI settings must be compatible across x86/x64");
+_Static_assert(sizeof(struct sapi_settings)==2152,"SAPI settings must be compatible across x86/x64");
 #endif
 extern HMODULE sapi_module;
 extern volatile LONG sapi_objects,sapi_locks;

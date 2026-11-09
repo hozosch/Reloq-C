@@ -121,6 +121,9 @@ enum {
     RELOQ_ECI_ORIGINAL_QUESTIONS = 0x1015,
     /* 0: standard voice; 1: reduce periodic presence from 16 kHz. */
     RELOQ_ECI_MELLOW_MODE = 0x1016,
+    /* Default native VWPM timing. 0 uses the ordinary ECI speed; otherwise
+     * 1..6000 sets WPM without enabling user-supplied inline tags. */
+    RELOQ_ECI_NATIVE_WPM = 0x1017,
     RELOQ_ECI_ENGLISH = 0x00010000,
     RELOQ_ECI_ENGLISH_BRITAIN = 0x00010001,
     RELOQ_ECI_SPANISH_SPAIN = 0x00020000,

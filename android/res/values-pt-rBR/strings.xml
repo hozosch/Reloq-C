@@ -90,4 +90,11 @@
     <string name="pitch_hz_mode">Usar tom em hertz</string>
     <string name="pitch_hz_value">Tom básico em hertz</string>
     <string name="pitch_hz_error">Digite um valor de 1 a 24000 Hz.</string>
+    <string name="speed_scale">Escala de velocidade manual:</string>
+    <string name="speed_eci_mode">Velocidade ECI (0–250)</string>
+    <string name="speed_wpm_mode">Palavras por minuto (1–6000)</string>
+    <string name="speed_eci_value">Velocidade ECI manual</string>
+    <string name="speed_wpm_error">Digite um valor de 1 a 6000 palavras por minuto.</string>
+    <string name="pitch_scale">Escala de tom manual:</string>
+    <string name="pitch_eci_mode">Tom ECI (0–100)</string>
 </resources>

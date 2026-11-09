@@ -90,4 +90,11 @@
     <string name="pitch_hz_mode">Tonhöhe in Hertz verwenden</string>
     <string name="pitch_hz_value">Grundtonhöhe in Hertz</string>
     <string name="pitch_hz_error">Bitte einen Wert von 1 bis 24000 Hz eingeben.</string>
+    <string name="speed_scale">Skala für die eigene Geschwindigkeit:</string>
+    <string name="speed_eci_mode">ECI-Geschwindigkeit (0–250)</string>
+    <string name="speed_wpm_mode">Wörter pro Minute (1–6000)</string>
+    <string name="speed_eci_value">Eigene ECI-Geschwindigkeit</string>
+    <string name="speed_wpm_error">Bitte einen Wert von 1 bis 6000 Wörtern pro Minute eingeben.</string>
+    <string name="pitch_scale">Skala für die eigene Tonhöhe:</string>
+    <string name="pitch_eci_mode">ECI-Tonhöhe (0–100)</string>
 </resources>

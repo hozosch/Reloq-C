@@ -1223,7 +1223,7 @@ static int process_spans(struct rule_plan *s,int final)
 static int rule_cancelled(void *context)
 {return reloq_session_cancelled(context);}
 
-int reloq_language_rules_render(int language,const unsigned char *text,size_t length,int tags,int native_volume,
+int reloq_language_rules_render(int language,const unsigned char *text,size_t length,int tags,int native_volume,int default_wpm,
     const struct reloq_german_generic_settings *settings,
     const struct reloq_german_generic_index *indices,size_t index_count,
     const struct reloq_german_generic_pitch_mark *pitches,size_t pitch_count,
@@ -1260,6 +1260,21 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     if(language==0x40000&&german_dictionary_compound_input(&a,&map,&n,tags))goto memory;
     if(language==0x40000&&german_long_overlay_input(&a,&map,&n,tags))goto memory;
     if(language==0x40000&&german_currency_input(&a,&map,&n,tags))goto memory;
+    if(default_wpm) {
+        /* Input has already been sanitized according to the caller's tag
+         * setting. Add only this trusted control afterwards so WPM works
+         * even when ordinary text tags are disabled. Map it to source 0. */
+        char prefix[16];int count=snprintf(prefix,sizeof prefix,"`vwpm%d ",default_wpm);
+        if(count<=0||(size_t)count>=sizeof prefix||n>SIZE_MAX-(size_t)count-1||
+           n+(size_t)count+1>SIZE_MAX/sizeof *map)goto memory;
+        size_t shift=(size_t)count;
+        unsigned char *new_a=malloc(n+shift+1);size_t *new_map=malloc((n+shift+1)*sizeof *new_map);
+        if(!new_a||!new_map){free(new_a);free(new_map);goto memory;}
+        memcpy(new_a,prefix,shift);memcpy(new_a+shift,a,n+1);
+        for(size_t i=0;i<shift;++i)new_map[i]=0;
+        memcpy(new_map+shift,map,(n+1)*sizeof *map);
+        free(a);free(map);a=new_a;map=new_map;n+=shift;tags=1;
+    }
     int has_wpm=0,has_very_slow_wpm=0;
     if(tags)for(size_t i=0;i<n;) {
         struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
@@ -1503,6 +1518,6 @@ int reloq_english_rules_render(const unsigned char *text,size_t length,int tags,
     struct reloq_session *session,reloq_session_pcm_sink sink,
     reloq_german_generic_index_sink index_sink,void *context)
 {
-    return reloq_language_rules_render(0x10000,text,length,tags,native_volume,
+    return reloq_language_rules_render(0x10000,text,length,tags,native_volume,0,
         settings,indices,index_count,pitches,pitch_count,session,sink,index_sink,context);
 }

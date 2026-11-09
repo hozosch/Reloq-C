@@ -43,20 +43,21 @@ text** starts a speech sample, and **Stop** interrupts it.
 - **Control language and voice through Android** lets clients choose a voice.
   Turn it off to use the saved language and voice for all requests.
 - **Control speed through Android** and **Control pitch through Android** work
-  independently. Turning either off enables its manual slider and overrides
+  independently. Turning either off enables its own controls and overrides
   the corresponding value supplied by Android or the client.
-- Manual speed is expressed as an approximate **140–1400 words per minute**,
-  initially 190. Android's TTS request supplies a percentage with 100 meaning
-  normal, rather than an absolute WPM count. Normal is mapped to native speed
-  55; the inverse C duration curve makes 2× approximately twice as fast. Actual
-  WPM depends on language, word lengths and pauses. Rate boost multiplies the
-  requested speed by 1.6, within the native limits.
+- Choose either the native **ECI speed (0–250)** or **words per minute
+  (1–6000)** for manual speed. WPM uses the same native timing rule as the
+  `vwpm command; actual WPM depends on language, word lengths and pauses.
+  Existing manual speeds keep their previous sound when updating. Android's TTS
+  request supplies a percentage with 100 meaning normal. Normal is mapped to
+  native speed 55; 2× is approximately twice as fast. Rate boost multiplies the
+  Android-controlled speed by 1.6, within the native limits.
 - Manual pitch, inflection, voice volume, male/female model, head size,
   roughness and breathiness are available. Voice values are stored separately
   for each of the eight presets. **Reset selected voice profile** restores that
   preset's anatomy and voice values; speed and output settings stay global.
 - To enter an exact base pitch, turn off **Control pitch through Android**,
-  enable **Use pitch in hertz** and enter a value from 1 to 24,000. The normal
+  select **Use pitch in hertz** and enter a value from 1 to 24,000. The normal
   manual ECI slider and the Hertz input are enabled exclusively. The number is
   saved when editing ends; enabling Android pitch control takes precedence.
 - With ECI tags enabled, `` `vbhz150 `` sets the base pitch of the following
@@ -69,8 +70,7 @@ text** starts a speech sample, and **Stop** interrupts it.
 - With ECI tags enabled, `` `vwpm150 `` sets the following speech to 150 using
   the native WPM timing rule. Whole numbers from 1 to 6000 are accepted;
   `` `vs50 `` returns to the ECI speed scale. Audible WPM depends on language,
-  text and pauses. Values below 30 can produce irregular speeds; very high
-  values can also hit timing limits.
+  text and pauses. Very high values can hit timing limits.
 - All seven sample rates from 8 to 48 kHz, the three native pause policies and
   optional ECI command processing are available. **Use original question intonation** selects the native question contour for German and US English; it is off by default. **Use abbreviation dictionary**
   starts enabled; **Phrase prediction** starts disabled. **Mellow mode** softens voiced presence around 3–4 kHz at rates of 16 kHz and above, omits added richness from 22 kHz and reduces voiced breathiness. It is off by default. Prediction uses the

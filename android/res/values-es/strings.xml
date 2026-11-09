@@ -90,4 +90,11 @@
     <string name="pitch_hz_mode">Usar tono en hercios</string>
     <string name="pitch_hz_value">Tono base en hercios</string>
     <string name="pitch_hz_error">Introduce un valor de 1 a 24000 Hz.</string>
+    <string name="speed_scale">Escala de velocidad manual:</string>
+    <string name="speed_eci_mode">Velocidad ECI (0–250)</string>
+    <string name="speed_wpm_mode">Palabras por minuto (1–6000)</string>
+    <string name="speed_eci_value">Velocidad ECI manual</string>
+    <string name="speed_wpm_error">Introduce un valor de 1 a 6000 palabras por minuto.</string>
+    <string name="pitch_scale">Escala de tono manual:</string>
+    <string name="pitch_eci_mode">Tono ECI (0–100)</string>
 </resources>

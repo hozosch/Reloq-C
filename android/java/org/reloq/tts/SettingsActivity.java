@@ -18,13 +18,16 @@ public final class SettingsActivity extends Activity {
     private boolean ready;
     private LinearLayout content;
     private Spinner languages,profiles,rates,pauses,models;
-    private CheckBox androidVoice,androidRate,androidPitch,pitchHertzMode,boost,tags,abbreviations,prediction,originalQuestions,mellowMode;
+    private CheckBox androidVoice,androidRate,androidPitch,boost,tags,abbreviations,prediction,originalQuestions,mellowMode;
+    private RadioButton speedEciMode,speedWpmMode,pitchEciMode,pitchHertzMode;
+    private RadioGroup speedModes,pitchModes;
     private Numeric speed,pitch,inflection,volume,head,roughness,breathiness;
-    private EditText text,pitchHertzInput;
+    private EditText text,pitchHertzInput,wpmInput;
+    private TextView pitchHertzLabel,wpmLabel;
     private TextView status;
     private SharedPreferences preferences;
     private int loadedProfile;
-    private int pitchHertz=150;
+    private int pitchHertz=150,manualWpm=190;
     private boolean initializing=true;
 
     private void changed() {if(!initializing)save();}
@@ -47,6 +50,16 @@ public final class SettingsActivity extends Activity {
         control.setOnCheckedChangeListener((button,checked) -> changed());
         content.addView(control);return control;
     }
+    private RadioGroup modes(int label,RadioButton first,RadioButton second,boolean useSecond) {
+        TextView caption=new TextView(this);caption.setText(label);content.addView(caption);
+        RadioGroup group=new RadioGroup(this);group.setOrientation(RadioGroup.VERTICAL);
+        first.setId(View.generateViewId());second.setId(View.generateViewId());
+        group.addView(first);group.addView(second);group.check(useSecond?second.getId():first.getId());
+        content.addView(group);return group;
+    }
+    private RadioButton radio(int label) {
+        RadioButton button=new RadioButton(this);button.setText(label);return button;
+    }
     private void heading(int label) {
         TextView view=new TextView(this);view.setText(label);view.setTextSize(20);
         view.setPadding(0,24,0,8);
@@ -64,7 +77,7 @@ public final class SettingsActivity extends Activity {
             this.title=title;label=new TextView(SettingsActivity.this);
             control=new SeekBar(SettingsActivity.this);control.setId(View.generateViewId());
             control.setMin(minimum);control.setMax(maximum);label.setLabelFor(control.getId());
-            control.setKeyProgressIncrement(title==R.string.speed?5:1);
+            control.setKeyProgressIncrement(1);
             control.setContentDescription(getString(title));
             content.addView(label);content.addView(control);
             control.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -75,8 +88,7 @@ public final class SettingsActivity extends Activity {
         }
         void describe() {
             label.setText(getString(R.string.parameter_value,getString(title),control.getProgress()));
-            if(android.os.Build.VERSION.SDK_INT>=30)control.setStateDescription(title==R.string.speed?
-                getString(R.string.wpm_value,control.getProgress()):Integer.toString(control.getProgress()));
+            if(android.os.Build.VERSION.SDK_INT>=30)control.setStateDescription(Integer.toString(control.getProgress()));
         }
         void set(int value) {control.setProgress(VoiceSettings.bounded(value,control.getMin(),control.getMax()));describe();}
         int get() {return control.getProgress();}
@@ -105,16 +117,34 @@ public final class SettingsActivity extends Activity {
         loadedProfile=profiles.getSelectedItemPosition();
         VoiceSettings settings=Preferences.read(preferences,loadedProfile);
         androidRate=check(R.string.android_rate,settings.androidRate);
-        speed=new Numeric(R.string.speed,settings.manualWpm,140,1400);speed.enabled(!settings.androidRate);
+        speedEciMode=radio(R.string.speed_eci_mode);speedWpmMode=radio(R.string.speed_wpm_mode);
+        speedModes=modes(R.string.speed_scale,speedEciMode,speedWpmMode,settings.speedWpmMode);
+        speed=new Numeric(R.string.speed_eci_value,settings.manualSpeed,0,250);
+        wpmLabel=new TextView(this);wpmLabel.setText(R.string.speed);
+        wpmInput=new EditText(this);wpmInput.setId(View.generateViewId());wpmLabel.setLabelFor(wpmInput.getId());
+        content.addView(wpmLabel);wpmInput.setInputType(InputType.TYPE_CLASS_NUMBER);wpmInput.setSingleLine(true);
+        manualWpm=VoiceSettings.bounded(settings.manualWpm,1,6000);
+        wpmInput.setText(Integer.toString(manualWpm));content.addView(wpmInput);
+        wpmInput.addTextChangedListener(new TextWatcher() {
+            public void beforeTextChanged(CharSequence s,int start,int count,int after) {}
+            public void onTextChanged(CharSequence s,int start,int before,int count) {}
+            public void afterTextChanged(Editable value) {
+                if(!initializing)wpmInput.setError(validNumber(value.toString(),6000)?null:getString(R.string.speed_wpm_error));
+            }
+        });
+        wpmInput.setOnFocusChangeListener((view,focused) -> {if(!focused)commitWpm();});
         TextView tempoHelp=new TextView(this);tempoHelp.setText(R.string.speed_help);content.addView(tempoHelp);
-        androidRate.setOnCheckedChangeListener((button,checked) -> {speed.enabled(!checked);changed();});
         boost=check(R.string.rate_boost,settings.rateBoost);
+        androidRate.setOnCheckedChangeListener((button,checked) -> {updateSpeedControls();changed();});
+        speedModes.setOnCheckedChangeListener((group,id) -> {updateSpeedControls();changed();});
+        updateSpeedControls();
         androidPitch=check(R.string.android_pitch,settings.androidPitch);
+        pitchEciMode=radio(R.string.pitch_eci_mode);pitchHertzMode=radio(R.string.pitch_hz_mode);
+        pitchModes=modes(R.string.pitch_scale,pitchEciMode,pitchHertzMode,settings.pitchHertzMode);
         pitch=new Numeric(R.string.pitch,settings.manualPitch);
-        pitchHertzMode=check(R.string.pitch_hz_mode,settings.pitchHertzMode);
-        TextView hzLabel=new TextView(this);hzLabel.setText(R.string.pitch_hz_value);
+        pitchHertzLabel=new TextView(this);pitchHertzLabel.setText(R.string.pitch_hz_value);
         pitchHertzInput=new EditText(this);pitchHertzInput.setId(View.generateViewId());
-        hzLabel.setLabelFor(pitchHertzInput.getId());content.addView(hzLabel);
+        pitchHertzLabel.setLabelFor(pitchHertzInput.getId());content.addView(pitchHertzLabel);
         pitchHertzInput.setInputType(InputType.TYPE_CLASS_NUMBER);pitchHertzInput.setSingleLine(true);
         pitchHertz=VoiceSettings.bounded(settings.pitchHertz,1,24000);
         pitchHertzInput.setText(Integer.toString(pitchHertz));content.addView(pitchHertzInput);
@@ -122,12 +152,12 @@ public final class SettingsActivity extends Activity {
             public void beforeTextChanged(CharSequence s,int start,int count,int after) {}
             public void onTextChanged(CharSequence s,int start,int before,int count) {}
             public void afterTextChanged(Editable value) {
-                if(!initializing)pitchHertzInput.setError(validHertz(value.toString())?null:getString(R.string.pitch_hz_error));
+                if(!initializing)pitchHertzInput.setError(validNumber(value.toString(),24000)?null:getString(R.string.pitch_hz_error));
             }
         });
         pitchHertzInput.setOnFocusChangeListener((view,focused) -> {if(!focused)commitPitchHertz();});
         androidPitch.setOnCheckedChangeListener((button,checked) -> {updatePitchControls();changed();});
-        pitchHertzMode.setOnCheckedChangeListener((button,checked) -> {updatePitchControls();changed();});
+        pitchModes.setOnCheckedChangeListener((group,id) -> {updatePitchControls();changed();});
         updatePitchControls();
         inflection=new Numeric(R.string.inflection,settings.inflection);
         volume=new Numeric(R.string.volume,settings.volume);
@@ -170,7 +200,7 @@ public final class SettingsActivity extends Activity {
         });
         Button speak=new Button(this);speak.setText(R.string.speak);content.addView(speak);
         speak.setOnClickListener(v -> {
-            save();if(!ready){status.setText(R.string.initializing);return;}
+            commitWpm();commitPitchHertz();save();if(!ready){status.setText(R.string.initializing);return;}
             Catalog.Language item=Catalog.LANGUAGES[languages.getSelectedItemPosition()];
             String name=item.voice(profiles.getSelectedItemPosition());
             java.util.Set<Voice> voices=tts.getVoices();
@@ -195,7 +225,8 @@ public final class SettingsActivity extends Activity {
         boolean previous=initializing;initializing=true;
         try {
             pitch.set(s.manualPitch);pitchHertz=VoiceSettings.bounded(s.pitchHertz,1,24000);
-            pitchHertzInput.setText(Integer.toString(pitchHertz));pitchHertzMode.setChecked(s.pitchHertzMode);
+            pitchHertzInput.setText(Integer.toString(pitchHertz));
+            pitchModes.check(s.pitchHertzMode?pitchHertzMode.getId():pitchEciMode.getId());
             updatePitchControls();inflection.set(s.inflection);volume.set(s.volume);
             models.setSelection(VoiceSettings.bounded(s.gender,0,1));head.set(s.head);
             roughness.set(s.roughness);breathiness.set(s.breathiness);
@@ -204,7 +235,8 @@ public final class SettingsActivity extends Activity {
     private void saveVoice() {
         VoiceSettings s=new VoiceSettings(loadedProfile);
         s.androidRate=androidRate.isChecked();s.androidPitch=androidPitch.isChecked();
-        s.manualWpm=speed.get();s.rateBoost=boost.isChecked();s.manualPitch=pitch.get();
+        s.manualWpm=manualWpm;s.manualSpeed=speed.get();s.speedWpmMode=speedWpmMode.isChecked();
+        s.rateBoost=boost.isChecked();s.manualPitch=pitch.get();
         s.pitchHertz=pitchHertz;s.pitchHertzMode=pitchHertzMode.isChecked();
         s.inflection=inflection.get();s.volume=volume.get();s.gender=models.getSelectedItemPosition();
         s.head=head.get();s.roughness=roughness.get();s.breathiness=breathiness.get();
@@ -224,19 +256,32 @@ public final class SettingsActivity extends Activity {
     }
     private void updatePitchControls() {
         boolean manual=!androidPitch.isChecked(),hz=manual&&pitchHertzMode.isChecked();
-        pitch.enabled(manual&&!hz);pitchHertzMode.setEnabled(manual);pitchHertzInput.setEnabled(hz);
+        pitch.enabled(manual&&!hz);pitchEciMode.setEnabled(manual);pitchHertzMode.setEnabled(manual);
+        pitchHertzInput.setEnabled(hz);pitchHertzLabel.setEnabled(hz);
     }
-    private static boolean validHertz(String text) {
-        try {int value=Integer.parseInt(text);return value>=1&&value<=24000;}
+    private void updateSpeedControls() {
+        boolean manual=!androidRate.isChecked(),wpm=manual&&speedWpmMode.isChecked();
+        speedEciMode.setEnabled(manual);speedWpmMode.setEnabled(manual);speed.enabled(manual&&!wpm);
+        wpmInput.setEnabled(wpm);wpmLabel.setEnabled(wpm);boost.setEnabled(!manual);
+    }
+    private static boolean validNumber(String text,int maximum) {
+        try {int value=Integer.parseInt(text);return value>=1&&value<=maximum;}
         catch(NumberFormatException error){return false;}
+    }
+    private void commitWpm() {
+        if(initializing||wpmInput==null)return;
+        String value=wpmInput.getText().toString();
+        if(!validNumber(value,6000)){wpmInput.setError(getString(R.string.speed_wpm_error));return;}
+        int next=Integer.parseInt(value);wpmInput.setError(null);
+        if(next!=manualWpm){manualWpm=next;changed();}
     }
     private void commitPitchHertz() {
         if(initializing||pitchHertzInput==null)return;
         String value=pitchHertzInput.getText().toString();
-        if(!validHertz(value)){pitchHertzInput.setError(getString(R.string.pitch_hz_error));return;}
+        if(!validNumber(value,24000)){pitchHertzInput.setError(getString(R.string.pitch_hz_error));return;}
         int next=Integer.parseInt(value);pitchHertzInput.setError(null);
         if(next!=pitchHertz){pitchHertz=next;changed();}
     }
-    @Override protected void onPause(){commitPitchHertz();super.onPause();}
+    @Override protected void onPause(){commitWpm();commitPitchHertz();super.onPause();}
     @Override public void onDestroy(){if(tts!=null){tts.stop();tts.shutdown();}super.onDestroy();}
 }

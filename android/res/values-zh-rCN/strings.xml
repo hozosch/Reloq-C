@@ -90,4 +90,11 @@
     <string name="pitch_hz_mode">以赫兹设置音高</string>
     <string name="pitch_hz_value">基准音高（赫兹）</string>
     <string name="pitch_hz_error">请输入 1 到 24000 Hz 的值。</string>
+    <string name="speed_scale">手动语速刻度：</string>
+    <string name="speed_eci_mode">ECI 语速 (0–250)</string>
+    <string name="speed_wpm_mode">每分钟词数 (1–6000)</string>
+    <string name="speed_eci_value">手动 ECI 语速</string>
+    <string name="speed_wpm_error">请输入每分钟 1 到 6000 个词。</string>
+    <string name="pitch_scale">手动音高刻度：</string>
+    <string name="pitch_eci_mode">ECI 音高 (0–100)</string>
 </resources>

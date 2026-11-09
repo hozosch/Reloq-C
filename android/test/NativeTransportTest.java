@@ -58,7 +58,7 @@ public final class NativeTransportTest {
             if(producer.get(5,TimeUnit.SECONDS)) throw new AssertionError("Cancelled output succeeded");
             render(0x10000,0,"Speech after cancellation.");
             VoiceSettings custom=new VoiceSettings(0);
-            custom.androidRate=false;custom.manualWpm=280;custom.androidPitch=false;custom.manualPitch=43;
+            custom.androidRate=false;custom.speedWpmMode=true;custom.manualWpm=280;custom.androidPitch=false;custom.manualPitch=43;
             custom.inflection=65;custom.volume=80;custom.head=22;custom.gender=1;custom.roughness=12;custom.breathiness=60;
             custom.rate=6;custom.pauses=2;custom.tags=true;
             render(0x10000,custom,"This is `vb70 a test `vb43 with 504 and 4004.");

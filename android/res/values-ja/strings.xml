@@ -90,4 +90,11 @@
     <string name="pitch_hz_mode">音の高さをヘルツで設定</string>
     <string name="pitch_hz_value">基本音高（ヘルツ）</string>
     <string name="pitch_hz_error">1 から 24000 Hz の値を入力してください。</string>
+    <string name="speed_scale">手動速度のスケール:</string>
+    <string name="speed_eci_mode">ECI 速度 (0–250)</string>
+    <string name="speed_wpm_mode">1分あたりの単語数 (1–6000)</string>
+    <string name="speed_eci_value">手動 ECI 速度</string>
+    <string name="speed_wpm_error">1分あたり 1 から 6000 語の値を入力してください。</string>
+    <string name="pitch_scale">手動音程のスケール:</string>
+    <string name="pitch_eci_mode">ECI 音程 (0–100)</string>
 </resources>
