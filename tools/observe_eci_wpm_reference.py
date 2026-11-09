@@ -75,9 +75,8 @@ def single(library, language, text, value, encoding):
         assert dll.eciAddText(engine, data)
         assert dll.eciSynthesize(engine)
         assert dll.eciSynchronize(engine)
-        assert samples > 0
         return {"language": language, "text": text, "wpm": value,
-                "samples": samples, "sample_rate": 11025}
+                "samples": samples, "sample_rate": 11025, "silent": samples == 0}
     finally:
         dll.eciDelete(engine)
         directory.close()
