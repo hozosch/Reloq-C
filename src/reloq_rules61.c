@@ -805,7 +805,7 @@ struct rule_span {
     struct reloq61_curve curve[62];
     struct reloq61_curve male_af;
     int af_marked;
-    int32_t from,to,volume,step,pitch,native_pitch,speed,inflection;
+    int32_t from,to,volume,step,pitch,native_pitch,speed,inflection,slow_wpm;
     int64_t tick,pitch_tick;size_t pitch_source;
     struct reloq_german_voice_model model;
 };
@@ -822,7 +822,7 @@ struct rule_plan {
     const size_t *control_sources;size_t pitch_source;
     struct rule_control *controls;size_t control_count,control_capacity;
     struct reloq_session *session;
-    int memory,retracted_filter,retracted_st,word_volume,cjk_volume,word_pitch,native_pitch,word_speed,word_inflection,german_af_markers;
+    int memory,retracted_filter,retracted_st,word_volume,cjk_volume,managed_voice_controls,word_pitch,native_pitch,word_speed,word_inflection,german_af_markers;
     struct reloq_german_voice_model word_model;
     int base_voice[8];
     struct rule_playback *playback;
@@ -855,6 +855,7 @@ static int take_span(void *context,int32_t from,int32_t to,
     }
     f->from=from;f->to=to;f->volume=s->cjk_volume&&volume>=10000?
         (volume-10000)/100:s->word_volume;f->step=1;f->tick=s->ticks;f->pitch=s->word_pitch;f->native_pitch=s->native_pitch;
+    f->slow_wpm=s->cjk_volume&&volume>=10000?(volume-10000)%100:0;
     f->model=s->word_model;f->speed=s->word_speed;f->inflection=s->word_inflection;f->pitch_tick=s->pitch_tick;f->pitch_source=s->pitch_source;
     s->ticks+=to-from;return s->playback?process_spans(s,0):0;
 }
@@ -873,6 +874,7 @@ static int take_frame(void *context,const int32_t p[62],int32_t volume)
     }
     f->from=0;f->to=p[0];f->step=p[0];f->volume=s->cjk_volume&&volume>=10000?
         (volume-10000)/100:s->word_volume;f->tick=s->ticks;f->pitch=s->word_pitch;f->native_pitch=s->native_pitch;
+    f->slow_wpm=s->cjk_volume&&volume>=10000?(volume-10000)%100:0;
     f->model=s->word_model;f->speed=s->word_speed;f->inflection=s->word_inflection;f->pitch_tick=s->pitch_tick;f->pitch_source=s->pitch_source;
     s->ticks+=p[0];return s->playback?process_spans(s,0):0;
 }
@@ -1013,6 +1015,7 @@ struct rule_playback {
     size_t last_pitch_source;
     int pause_mode,final,result;
     double pitch_scale,base_pitch,time_fraction;
+    int slow_wpm;
     struct rule_delivery delivery;
     reloq_german_generic_index_sink index_sink;
     void *context;
@@ -1138,8 +1141,9 @@ static int render_until(struct rule_plan *s,int64_t limit)
                 else if(parameter==1)p->voice.model.head_size=value;
                 else if(parameter==4)p->voice.model.roughness=value;
                 else if(parameter==5)p->voice.model.breathiness=value;
+                else if(parameter==8)p->slow_wpm=value;
             }
-            voice=&p->voice;
+            if(s->managed_voice_controls)voice=&p->voice;
         }
         if(f->af_marked&&!voice->model.gender)controls[8]=(float)curve_value(&f->male_af,at);
         word_voice_frame(s,voice,controls);
@@ -1180,8 +1184,13 @@ static int render_until(struct rule_plan *s,int64_t limit)
             }
             p->delivery.gain=1;
         }
-        if(voice->speed>=0&&voice->speed!=s->base_voice[6]) {
-            double ratio=reloq_voice_speed_time_scale(voice->speed)/reloq_voice_speed_time_scale(s->base_voice[6]);
+        int slow_wpm=s->cjk_volume?f->slow_wpm:p->slow_wpm;
+        if((voice->speed>=0&&voice->speed!=s->base_voice[6])||slow_wpm) {
+            double ratio=1;
+            if(voice->speed>=0&&voice->speed!=s->base_voice[6])
+                ratio=reloq_voice_speed_time_scale(voice->speed)/reloq_voice_speed_time_scale(s->base_voice[6]);
+            if(slow_wpm>=21&&slow_wpm<=39)ratio*=20.0/(slow_wpm-20);
+            else if(slow_wpm)ratio*=5.0/slow_wpm;
             p->time_fraction+=f->step*ratio;
             int milliseconds=(int)p->time_fraction;p->time_fraction-=milliseconds;
             if(!milliseconds)continue;
@@ -1251,10 +1260,10 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     if(language==0x40000&&german_dictionary_compound_input(&a,&map,&n,tags))goto memory;
     if(language==0x40000&&german_long_overlay_input(&a,&map,&n,tags))goto memory;
     if(language==0x40000&&german_currency_input(&a,&map,&n,tags))goto memory;
-    int has_wpm=0;
+    int has_wpm=0,has_very_slow_wpm=0;
     if(tags)for(size_t i=0;i<n;) {
         struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
-        if(t.kind==RELOQ_TAG_WPM)has_wpm=1;
+        if(t.kind==RELOQ_TAG_WPM){has_wpm=1;if(t.value<5)has_very_slow_wpm=1;}
         i+=t.length?t.length:1;
     }
     int cjk_exact_pitch=plan.cjk_volume && reloq_pitch_is_hz(configured_pitch);
@@ -1264,6 +1273,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         i+=t.length?t.length:1;
     }
     int managed_controls=!plan.cjk_volume || cjk_exact_pitch;
+    plan.managed_voice_controls=managed_controls;
     if(has_wpm&&managed_controls&&native_preset_speed_tags(&a,&map,&n))goto memory;
     if(plan.cjk_volume) {
         /* CJK lexers can treat even a redundant command as a token break.
@@ -1309,6 +1319,8 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
      * callback. Native analysis must see the unchanged lexical sentence. */
     for(size_t i=0;i<n;) {
         struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
+        if(has_very_slow_wpm&&!plan.cjk_volume&&(t.kind==RELOQ_TAG_WPM||t.kind==RELOQ_TAG_SPEED||
+                              t.kind==RELOQ_TAG_PRESET))++volume_count;
         if(managed_controls) {
             if(t.kind==RELOQ_TAG_PITCH||(t.kind==RELOQ_TAG_SPEED&&!has_wpm)||t.kind==RELOQ_TAG_VOLUME||
                t.kind==RELOQ_TAG_INFLECTION||t.kind==RELOQ_TAG_GENDER||t.kind==RELOQ_TAG_HEAD_SIZE||
@@ -1328,6 +1340,19 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         for(size_t i=0;i<n;) {
             struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
             size_t count=t.length?t.length:1;
+            /* At 1--4 WPM the native 16-bit duration cells can wrap, even in
+             * the reference. Generate at 5 and stretch its control frames as
+             * they are synthesized, retaining the pitch and word boundaries. */
+            if(has_very_slow_wpm&&!plan.cjk_volume&&(t.kind==RELOQ_TAG_WPM||t.kind==RELOQ_TAG_SPEED||
+                                   t.kind==RELOQ_TAG_PRESET)) {
+                int slow=t.kind==RELOQ_TAG_WPM&&t.value<5?t.value:0;
+                control_sources[control]=map[i];
+                volumes[control++]=(struct reloq61_mark){out+(t.kind==RELOQ_TAG_WPM?count:0),slow,8};
+                if(slow) {
+                    for(size_t j=i+5;j<i+count;++j)a[j]='0';
+                    a[i+count-1]='5';
+                }
+            }
             int parameter=t.kind==RELOQ_TAG_GENDER?0:t.kind==RELOQ_TAG_HEAD_SIZE?1:
                 t.kind==RELOQ_TAG_PITCH?2:t.kind==RELOQ_TAG_INFLECTION?3:
                 t.kind==RELOQ_TAG_ROUGHNESS?4:t.kind==RELOQ_TAG_BREATHINESS?5:
@@ -1391,6 +1416,8 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         .span=take_span,.sample_rate=reloq_session_sample_rate(session)==8000?8000:0,
         .output_rate=(int)reloq_session_sample_rate(session)};
     q.german_affricate_markers=plan.german_af_markers=language==0x40000;
+    q.cjk_slow_wpm=plan.cjk_volume&&has_very_slow_wpm;
+    q.cjk_has_wpm=plan.cjk_volume&&has_wpm;
     q.controls=volumes;q.control_count=volume_count;q.control=take_control;plan.control_sources=control_sources;
     q.voice[0]=settings->gender;
     q.voice[1]=settings->head_size_plus_one?settings->head_size_plus_one-1:50;

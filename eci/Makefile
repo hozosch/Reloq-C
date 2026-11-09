@@ -36,6 +36,7 @@ RULES61_SOURCES += ../include/reloq_inline_tags.h
 RULES61_SOURCES += ../src/reloq_orthography.c ../include/reloq_orthography.h
 RULES61_SOURCES += ../src/reloq_german_word_edges.c ../include/reloq_german_word_edges.h
 RULES61_SOURCES += ../vendor/openevv61/src/reloq61_german_alphabet.inc
+RULES61_SOURCES += ../vendor/openevv61/src/reloq61_duration_math.h
 RULES61_SOURCES += ../src/reloq_english_word_edges.c ../include/reloq_english_word_edges.h
 RULES61_SOURCES += ../vendor/openevv61/src/reloq61_english_alphabet.inc
 RULES61_SOURCES += ../vendor/openevv61/src/reloq61_latin_data.inc
@@ -142,6 +143,12 @@ test_reloq_native_rules: ../tests/test_reloq_native_rules.c $(OBJECTS) $(RULES61
 
 test_reloq_wpm_native: ../tests/test_reloq_wpm_native.c $(OBJECTS) $(RULES61)
 	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -I../include $< $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections -lm -o $@
+
+test_wpm_arithmetic: ../tests/test_wpm_arithmetic.c ../vendor/openevv61/src/reloq61_duration_math.h
+	$(CC) $(CFLAGS) -I../vendor/openevv61/src $< -o $@
+
+test_eci_stream_time: ../tests/test_eci_stream_time.c ../vendor/openevv61/src/eci/bridge/eci_stmarray.c ../vendor/openevv61/src/eci/queue/eci_tvqueue.c
+	$(CC) -O2 -std=gnu11 -Wno-attributes -ffunction-sections -fdata-sections -I../vendor/openevv61/include -I../vendor/openevv61/src $(addprefix -I,$(wildcard ../vendor/openevv61/src/*/ ../vendor/openevv61/src/*/*/)) $^ -Wl,--gc-sections -o $@
 
 eci_native_rules_probe.exe: ../tests/test_reloq_native_rules.c ../src/reloq_german_lexicon.c ../src/reloq_german_spr.c reloq_eci_fixed_math.c $(RULES61_WIN)
 	$(WINDOWS_CC) $(filter-out -Werror,$(WINDOWS_CFLAGS)) $(PROVIDER_LINK) $(SECTIONS) -I../include -I../vendor/openevv61/include $^ $(WINDOWS_LDFLAGS) -Wl,--gc-sections -lm -o $@

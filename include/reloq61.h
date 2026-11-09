@@ -45,6 +45,9 @@ struct reloq61_request {
     size_t control_count;
     void (*control)(void *,int,int,int64_t,size_t);
     int german_affricate_markers;
+    /* Preserve native CJK word scheduling for explicit 1--4 WPM tags. */
+    int cjk_slow_wpm;
+    int cjk_has_wpm;
 };
 /* Lossless German onset facts collected during the existing phoneme pass.
  * The caller owns this scoped sink; no word or synthesis result is retained. */

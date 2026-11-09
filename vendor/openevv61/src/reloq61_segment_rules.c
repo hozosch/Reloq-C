@@ -3,6 +3,7 @@
  * frames, speculative alternatives or per-call heap allocations. */
 #include "reloq61_segment_rules.h"
 #include "reloq61_scalar_state.h"
+#include "reloq61_duration_math.h"
 
 struct cursor {
     delta_tpos left,right;
@@ -159,8 +160,7 @@ static int32_t speed_value(delta_state *d,const struct reloq61_segment_layout *l
         }
     }
     if(factor==1000000)return duration;
-    int32_t scaled=delta_muldiv(factor,duration,10000,1);
-    return delta_muldiv(scaled,10000,1000000,1);
+    return delta_scale_percent(duration,factor);
 }
 int32_t reloq61_segment_speed(void *state,const struct reloq61_segment_layout *layout,
     int32_t duration_arg,int32_t position_arg)

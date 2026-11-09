@@ -25,6 +25,7 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_kokr61.h"
+#include "reloq61_duration_math.h"
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -1156,7 +1157,7 @@ L795:;
     AT(int32_t, -16) = (r1);
     r1 = (delta_muldiv((int32_t)AT(int32_t, -20), 10000, (int32_t)AT(int32_t, -16), 1));
     AT(int32_t, -20) = (r1);
-    STATE(int32_t, f21) = ((int32_t)AT(int32_t, -20));
+    STATE(int32_t, f21) = reloq61_cjk_wpm_factor(state, (int32_t)AT(int32_t, -20), (int32_t)STATE(int32_t, l1));
     STATE_D(int16_t, c11, 2) = (2);
     r0 = reloq61_typed_copyvar(DELTA_ENTRY_copyvar, state, EVV_AT(delta_loc *, STATE_AT(c11, 0)), EVV_AT(delta_loc *, STATE_AT(f21, -4)));
     AT(int32_t, -24) = (r0);

@@ -22,6 +22,7 @@
 #include "delta_rules_fifi.h"
 #include "delta_rules_c.h"
 #include "evv_arena.h"
+#include "reloq61_duration_math.h"
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_fifi.h"
@@ -970,9 +971,7 @@ L1179:;
 L1198:;
     goto L1270;
 L1203:;
-    r1 = (delta_muldiv((int32_t)AT(int32_t, -28), (int32_t)AT(int32_t, -64), 10000, 1));
-    AT(int32_t, -28) = (r1);
-    r1 = (delta_muldiv((int32_t)AT(int32_t, -28), 10000, 1000000, 1));
+    r1 = delta_scale_percent((int32_t)AT(int32_t, -28), (int32_t)AT(int32_t, -64));
     AT(int32_t, -28) = (r1);
     AT(int32_t, -64) = ((int32_t)AT(int32_t, -28));
     goto L1270;

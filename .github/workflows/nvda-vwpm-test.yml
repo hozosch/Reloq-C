@@ -33,16 +33,16 @@ jobs:
           s=p.read_text(encoding='utf-8')
           old='version = "1.2.2"'
           assert s.count(old)==1
-          p.write_text(s.replace(old,'version = "1.2.3-dev1"'),encoding='utf-8')
+          p.write_text(s.replace(old,'version = "1.2.3-dev2"'),encoding='utf-8')
           PY
           python3 -B addon/test_speech_tags.py
-          python3 addon/build_synth.py --output dist/reloq-c-synth-x64-1.2.3-vwpm-dev1.nvda-addon
-          PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,test_synth; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.2.3-vwpm-dev1.nvda-addon"))'
+          python3 addon/build_synth.py --output dist/reloq-c-synth-x64-1.2.3-vwpm-dev2.nvda-addon
+          PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,test_synth; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.2.3-vwpm-dev2.nvda-addon"))'
       - uses: actions/upload-artifact@v4
         with:
           name: nvda-vwpm-candidate
           path: |
-            dist/reloq-c-synth-x64-1.2.3-vwpm-dev1.nvda-addon
+            dist/reloq-c-synth-x64-1.2.3-vwpm-dev2.nvda-addon
             eci/eci.dll
           compression-level: 0
           retention-days: 14
@@ -65,7 +65,11 @@ jobs:
           $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
           python nvda/test_eci_wpm.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python nvda/test_eci_wpm_languages.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_callback_only.py --library $core
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python addon/test_nvda_remote_loopback.py --library $core --addon $addon
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python addon/test_synth_native.py --library $core --addon $addon
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

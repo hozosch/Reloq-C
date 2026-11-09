@@ -85,6 +85,24 @@
       "url": "https://raw.githubusercontent.com/nvaccess/nvda/release-2026.3/source/locale/fr/symbols.dic",
       "retrieved": "2026-11-02",
       "sha256": "d79c0076231e3108ffd5df06b4cab63c27dee44deaa1977840522c23b936076a"
+    },
+    {
+      "path": "_remoteClient/session.py",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/release-2026.3/source/_remoteClient/session.py",
+      "retrieved": "2026-11-09",
+      "sha256": "c4b6d7baed7a5fe5019f2dbf04b1780cc1f8a08af1744d1ab91f43f35de91412"
+    },
+    {
+      "path": "_remoteClient/transport.py",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/release-2026.3/source/_remoteClient/transport.py",
+      "retrieved": "2026-11-09",
+      "sha256": "829ea02bfa5410ed194f1f602f445fb9098755df6d079549dd7be3ee58cf24aa"
+    },
+    {
+      "path": "_remoteClient/localMachine.py",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/release-2026.3/source/_remoteClient/localMachine.py",
+      "retrieved": "2026-11-09",
+      "sha256": "7b5ffdaa05bb9898c7236081977f3b0a96924eac493fc6ed2f5ccae7f50d3cc4"
     }
   ]
 }

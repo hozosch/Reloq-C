@@ -15,6 +15,7 @@
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_dede61.h"
 #include "reloq61_german_compound_bounds.h"
+#include "reloq61_duration_math.h"
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -883,9 +884,7 @@ L538:;
     AT(int32_t, -24) = (r0);
 L628:;
     AT(int32_t, -12) = ((int32_t)STATE(int32_t, f33));
-    r1 = (delta_muldiv((int32_t)AT(int32_t, -12), (int32_t)STATE(int32_t, f4), 10000, 1));
-    AT(int32_t, -12) = (r1);
-    r1 = (delta_muldiv((int32_t)AT(int32_t, -12), 10000, 1000000, 1));
+    r1 = delta_scale_percent((int32_t)AT(int32_t, -12), (int32_t)STATE(int32_t, f4));
     AT(int32_t, -12) = (r1);
     STATE(int32_t, f33) = ((int32_t)AT(int32_t, -12));
     r0 = reloq61_typed_starttest(DELTA_ENTRY_starttest, state, (int16_t)(4));

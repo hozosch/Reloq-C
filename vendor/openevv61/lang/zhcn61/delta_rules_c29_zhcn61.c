@@ -23,6 +23,7 @@
 #include "delta_rules_zhcn61.h"
 #include "delta_rules_c.h"
 #include "evv_arena.h"
+#include "reloq61_duration_math.h"
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_zhcn61.h"
@@ -975,9 +976,7 @@ L876:;
 L895:;
     goto L959;
 L900:;
-    r1 = (delta_muldiv((int32_t)AT(int32_t, -20), (int32_t)AT(int32_t, -44), 10000, 1));
-    AT(int32_t, -20) = (r1);
-    r1 = (delta_muldiv((int32_t)AT(int32_t, -20), 10000, 1000000, 1));
+    r1 = delta_scale_percent((int32_t)AT(int32_t, -20), reloq61_cjk_duration_factor(state, (int32_t)AT(int32_t, -44)));
     AT(int32_t, -20) = (r1);
     AT(int32_t, -44) = ((int32_t)AT(int32_t, -20));
     goto L959;

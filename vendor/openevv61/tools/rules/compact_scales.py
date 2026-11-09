@@ -32,5 +32,45 @@ def apply(text):
             '    r1 = (delta_muldiv('+m['x']+', '+str(num)+', '+den+', 1));\n'
             '    '+m['dest']+' = (r1);')
     return _PAIR.sub(fuse,text),count
-def convert_bodies(bodies):
-    return [(name,apply(body)[0])for name,body in bodies]
+_NUCLEUS_SPEED = '''    r1 = (delta_muldiv((int32_t)AT(int32_t, -12), (int32_t)STATE(int32_t, f4), 10000, 1));
+    AT(int32_t, -12) = (r1);
+    r1 = (delta_muldiv((int32_t)AT(int32_t, -12), 10000, 1000000, 1));'''
+_NUCLEUS_SPEED_WIDE = '''    r1 = delta_scale_percent((int32_t)AT(int32_t, -12), (int32_t)STATE(int32_t, f4));'''
+_SPEED_ANNOTATION = re.compile(
+    r'    r1 = \(delta_muldiv\((?P<a>\(int32_t\)AT\(int32_t, -?\d+\)), '
+    r'(?P<b>\(int32_t\)AT\(int32_t, -?\d+\)), 10000, 1\)\);\n'
+    r'    (?P<dst>AT\(int32_t, -?\d+\)) = \(r1\);\n'
+    r'    r1 = \(delta_muldiv\(\(int32_t\)(?P=dst), 10000, 1000000, 1\)\);'
+)
+
+def wide_speed_annotation(body):
+    def convert(m):
+        if m['a'] != '(int32_t)' + m['dst']:
+            return m[0]
+        return '    r1 = delta_scale_percent(' + m['a'] + ', ' + m['b'] + ');'
+    return _SPEED_ANNOTATION.sub(convert,body)
+
+def convert_bodies(bodies, language=None):
+    converted=[]
+    for name,body in bodies:
+        body=apply(body)[0]
+        # The nucleus duration uses the same percentage as insert_dur. At
+        # low VWPM its temporary can overflow despite a valid final value.
+        if name.endswith('distribute_nucdur'):
+            body=body.replace(_NUCLEUS_SPEED,_NUCLEUS_SPEED_WIDE)
+        elif name.endswith('apply_speed_anno'):
+            body=wide_speed_annotation(body)
+        if language in ('zhcn61', 'jajp61', 'kokr61'):
+            if name.endswith('distribute_nucdur'):
+                body=body.replace('(int32_t)STATE(int32_t, f4));',
+                    'reloq61_cjk_duration_factor(state, (int32_t)STATE(int32_t, f4)));')
+            elif name.endswith('apply_speed_anno'):
+                body=re.sub(r'(r1 = delta_scale_percent\([^\n]*, )'
+                            r'(\(int32_t\)AT\(int32_t, -?\d+\))(\);)',
+                            r'\1reloq61_cjk_duration_factor(state, \2)\3', body)
+            elif name.endswith('wpm_anno'):
+                body=body.replace('STATE(int32_t, f21) = ((int32_t)AT(int32_t, -20));',
+                    'STATE(int32_t, f21) = reloq61_cjk_wpm_factor(state, '
+                    '(int32_t)AT(int32_t, -20), (int32_t)STATE(int32_t, l1));')
+        converted.append((name,body))
+    return converted

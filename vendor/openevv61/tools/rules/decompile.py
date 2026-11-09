@@ -633,7 +633,7 @@ def write(names):
     from local_values import convert_bodies as private_local_values
     bodies=private_local_values(bodies)
     from compact_scales import convert_bodies as compact_percentages
-    bodies=compact_percentages(bodies)
+    bodies=compact_percentages(bodies,census.LANG_TAG)
     from compact_pitch_window import convert_bodies as direct_pitch_window
     bodies=direct_pitch_window(bodies)
     from compact_contour_target import convert_bodies as direct_contour_target
@@ -663,6 +663,8 @@ def write(names):
     for n, part in enumerate(share_out(bodies)):
         intro=(HEAD % (PARTS, census.LANG_TAG)).replace('#include "evv_arena.h"',
             '#include "evv_arena.h"\n/* Compact C workspaces, scalar-only helpers. */\n#include "reloq61_scalar_blocks.h"\n#include "reloq61_rule_calls_'+census.LANG_TAG+'.h"')
+        if any('delta_scale_percent(' in body or 'reloq61_cjk_wpm_factor(' in body for _name, body in part):
+            intro += '#include "reloq61_duration_math.h"\n'
         text = [intro, defs]
         for _name, body in part:
             text.append(body)

@@ -376,6 +376,45 @@ int reloq61_volume_factor(void *state,int raw,int factor)
     return dl->reloq_frame&&c&&c->q->control&&raw>=0&&raw<=100?
         1000000+raw*10000:factor;
 }
+static int cjk_slow_request(const struct capture *c)
+{
+    int family=c->q->language>>16;
+    return c->q->cjk_slow_wpm&&(family==6||family==8||family==10);
+}
+/* The CJK rules retain the unmodified factor in their word record. Only the
+ * duration calculation is capped; the renderer receives the true setting. */
+int32_t reloq61_cjk_duration_factor(void *state,int32_t factor)
+{
+    delta_state *d=state;DeltaLang *dl=EVV_AT(DeltaLang *,d->dlang);
+    const struct capture *c=dl->reloq_context;
+    return dl->reloq_frame&&c&&cjk_slow_request(c)&&factor>35600000?
+        35600000:factor;
+}
+int32_t reloq61_cjk_wpm_factor(void *state,int32_t factor,int32_t wpm)
+{
+    delta_state *d=state;DeltaLang *dl=EVV_AT(DeltaLang *,d->dlang);
+    const struct capture *c=dl->reloq_context;
+    /* Small offsets survive the word-record quantization and identify which
+     * streaming expansion belongs to this native acoustic word. */
+    return dl->reloq_frame&&c&&cjk_slow_request(c)&&wpm>=1&&wpm<=4?
+        35600000+10000*wpm:factor;
+}
+static int32_t cjk_pack_slow_wpm(struct capture *c,int32_t volume)
+{
+    if(!cjk_slow_request(c)||!c->thread)return volume;
+    /* English donor spans may already carry their own 20-WPM expansion. */
+    if(volume>=10000&&volume<=20199&&(volume-10000)%100>=21)return volume;
+    delta_state *d=ew_machine(c->thread->engine);
+    if(!d)return volume;
+    /* All three CJK modules have the current word's f4 at this offset. */
+    int32_t factor;memcpy(&factor,(char *)d+DG_BASE+464,sizeof factor);
+    if(factor<35610000||factor>35640000||(factor-35600000)%10000)return volume;
+    int32_t wpm=(factor-35600000)/10000;
+    /* Embedded English uses an unencoded donor volume; carry the parent's
+     * normal volume into the private packed form for this slow span. */
+    if(volume<10000||volume>20000)volume=10000+c->q->voice[7]*100;
+    return volume+wpm;
+}
 static void report_index(struct capture *c,int32_t index,int64_t tick)
 {
     if(c->q->index)c->q->index(c->q->context,index,tick);
@@ -431,6 +470,7 @@ static int32_t STDCALL message(void *h,int32_t kind,int32_t value,void *context)
 static int frame(void *context,const int32_t *p,int32_t volume)
 {
     struct capture *c=context;
+    volume=cjk_pack_slow_wpm(c,volume);
     if(c->q->frame && c->q->frame(c->q->context,p,volume)) {
         c->r->error=2;return 0;
     }
@@ -464,6 +504,7 @@ int reloq61_array_span(void *context,int32_t from,int32_t to,
     const struct reloq61_curve curves[62],int32_t volume)
 {
     struct capture *c=context;
+    volume=cjk_pack_slow_wpm(c,volume);
     if(c->q->span(c->q->context,from,to,curves,volume)) {
         c->r->error=2;return 0;
     }
@@ -647,6 +688,22 @@ static int bank_generate(void*state,struct reloq61_english_bank*p,int lexical)
  struct reloq61_request q=*c->q;struct reloq61_result result;
  q.language=0x10000;q.text=p->text;q.marks=NULL;q.mark_count=0;q.annotations=0;q.index=NULL;q.phonemes_only=lexical;
  q.controls=NULL;q.control_count=0;q.control=NULL;
+ char timed[sizeof p->text+32];
+ if(!lexical&&c->q->cjk_has_wpm) {
+  int32_t factor;memcpy(&factor,(char *)d+DG_BASE+464,sizeof factor);
+  if(factor>0) {
+   int32_t wpm=factor>=35610000&&factor<=35640000&&(factor-35600000)%10000==0?
+       (factor-35600000)/10000:(int32_t)((178000000LL+factor/2)/factor);
+   if(wpm>=1&&wpm<=6000) {
+    p->wpm=wpm;
+    /* The donor bank stores its timing in 16-bit cells. Generate its
+     * targets at no less than 20 WPM and stream-expand them afterward. */
+    int n=snprintf(timed,sizeof timed,"`vwpm%d %s",wpm<20?20:wpm,p->text);
+    if(n<0||(size_t)n>=sizeof timed)return -1;
+    q.text=timed;q.annotations=1;
+   }
+  }
+ }
  /* Embedded English keeps the selected model, pitch and rate. Its neutral
   * inflection is local to this bank; the Mandarin request remains intact. */
  if(!lexical&&p->neutral_inflection)q.voice[3]=0;
@@ -758,8 +815,12 @@ int reloq61_english_bank_emit(void*state,const struct reloq61_english_bank*p,int
   }
   int32_t value=bank_value(last_curve,limit);if((last_at!=limit||last_value!=value)&&!reloq61_array_bank_put(d,stream,from+limit,value))return -1;
  }
- dl->reloq_volume=p->spans[0].volume;
- if(!sendArrayParameters(d,from,from+limit,1,1,1,0,1,map,defaults))return -1;
+ int32_t previous_volume=dl->reloq_volume;
+ dl->reloq_volume=p->wpm>0&&p->wpm<20?
+     10000+c->q->voice[7]*100+20+p->wpm:p->spans[0].volume;
+ int sent=sendArrayParameters(d,from,from+limit,1,1,1,0,1,map,defaults);
+ if(p->wpm>0&&p->wpm<20)dl->reloq_volume=previous_volume;
+ if(!sent)return -1;
  /* A following native window may restart its cursors. Leave the exact
   * boundary values queued so that its first interpolation is continuous. */
  for(unsigned k=1;k<62;++k)if(map[k+1]>=0){const struct reloq61_curve*last=p->spans[0].curve+k;for(size_t i=0;i<p->span_count&&p->spans[i].from<limit;++i)last=p->spans[i].curve+k;if(!reloq61_array_bank_put(d,map[k+1],from+limit,(k==1&&p->pitch_count)?bank_final_pitch(p,limit):bank_value(last,limit)))return -1;}

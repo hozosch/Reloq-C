@@ -1,0 +1,1574 @@
+{
+  "pointer_bits": 32,
+  "dll_sha256": "c1653e61e9fd599421d2f7faee21eda171d3a8ff4329343ddb24a2dd565fba5f",
+  "cases": [
+    {
+      "language": 262144,
+      "text": "Hallo.",
+      "wpm": 0,
+      "samples": 8778,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 262144,
+      "text": "Hallo.",
+      "wpm": 1,
+      "samples": 841082,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 262144,
+      "text": "Hallo.",
+      "wpm": 2,
+      "samples": 329450,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 262144,
+      "text": "Hallo.",
+      "wpm": 3,
+      "samples": 520630,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 262144,
+      "text": "Hallo.",
+      "wpm": 4,
+      "samples": 390456,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 262144,
+      "text": "Hallo.",
+      "wpm": 5,
+      "samples": 312356,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 262144,
+      "text": "Hallo.",
+      "wpm": 8,
+      "samples": 195250,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 262144,
+      "text": "Hallo.",
+      "wpm": 10,
+      "samples": 156156,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 262144,
+      "text": "Hallo.",
+      "wpm": 12,
+      "samples": 130130,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 262144,
+      "text": "Hallo.",
+      "wpm": 16,
+      "samples": 97614,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 262144,
+      "text": "Hallo.",
+      "wpm": 20,
+      "samples": 78056,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 262144,
+      "text": "Hallo.",
+      "wpm": 30,
+      "samples": 52030,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 262144,
+      "text": "Hallo.",
+      "wpm": 50,
+      "samples": 31240,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 262144,
+      "text": "Hallo.",
+      "wpm": 150,
+      "samples": 10384,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 262144,
+      "text": "Hallo.",
+      "wpm": 200,
+      "samples": 7766,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65536,
+      "text": "Hello.",
+      "wpm": 0,
+      "samples": 9922,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65536,
+      "text": "Hello.",
+      "wpm": 1,
+      "samples": 617430,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65536,
+      "text": "Hello.",
+      "wpm": 2,
+      "samples": 431805,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65536,
+      "text": "Hello.",
+      "wpm": 3,
+      "samples": 589655,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65536,
+      "text": "Hello.",
+      "wpm": 4,
+      "samples": 442299,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65536,
+      "text": "Hello.",
+      "wpm": 5,
+      "samples": 353771,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65536,
+      "text": "Hello.",
+      "wpm": 8,
+      "samples": 221122,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65536,
+      "text": "Hello.",
+      "wpm": 10,
+      "samples": 176913,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65536,
+      "text": "Hello.",
+      "wpm": 12,
+      "samples": 147367,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65536,
+      "text": "Hello.",
+      "wpm": 16,
+      "samples": 110495,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65536,
+      "text": "Hello.",
+      "wpm": 20,
+      "samples": 88473,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65536,
+      "text": "Hello.",
+      "wpm": 30,
+      "samples": 58927,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65536,
+      "text": "Hello.",
+      "wpm": 50,
+      "samples": 35409,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65536,
+      "text": "Hello.",
+      "wpm": 150,
+      "samples": 11759,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65536,
+      "text": "Hello.",
+      "wpm": 200,
+      "samples": 8822,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65537,
+      "text": "Hello.",
+      "wpm": 0,
+      "samples": 9977,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65537,
+      "text": "Hello.",
+      "wpm": 1,
+      "samples": 646800,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65537,
+      "text": "Hello.",
+      "wpm": 2,
+      "samples": 436700,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65537,
+      "text": "Hello.",
+      "wpm": 3,
+      "samples": 592944,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65537,
+      "text": "Hello.",
+      "wpm": 4,
+      "samples": 444697,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65537,
+      "text": "Hello.",
+      "wpm": 5,
+      "samples": 355773,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65537,
+      "text": "Hello.",
+      "wpm": 8,
+      "samples": 222321,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65537,
+      "text": "Hello.",
+      "wpm": 10,
+      "samples": 177914,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65537,
+      "text": "Hello.",
+      "wpm": 12,
+      "samples": 148203,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65537,
+      "text": "Hello.",
+      "wpm": 16,
+      "samples": 111144,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65537,
+      "text": "Hello.",
+      "wpm": 20,
+      "samples": 88979,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65537,
+      "text": "Hello.",
+      "wpm": 30,
+      "samples": 59268,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65537,
+      "text": "Hello.",
+      "wpm": 50,
+      "samples": 35552,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65537,
+      "text": "Hello.",
+      "wpm": 150,
+      "samples": 11803,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 65537,
+      "text": "Hello.",
+      "wpm": 200,
+      "samples": 8877,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131072,
+      "text": "Hola.",
+      "wpm": 0,
+      "samples": 7348,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131072,
+      "text": "Hola.",
+      "wpm": 1,
+      "samples": 587664,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131072,
+      "text": "Hola.",
+      "wpm": 2,
+      "samples": 203335,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131072,
+      "text": "Hola.",
+      "wpm": 3,
+      "samples": 436150,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131072,
+      "text": "Hola.",
+      "wpm": 4,
+      "samples": 327096,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131072,
+      "text": "Hola.",
+      "wpm": 5,
+      "samples": 261690,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131072,
+      "text": "Hola.",
+      "wpm": 8,
+      "samples": 163526,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131072,
+      "text": "Hola.",
+      "wpm": 10,
+      "samples": 130845,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131072,
+      "text": "Hola.",
+      "wpm": 12,
+      "samples": 108966,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131072,
+      "text": "Hola.",
+      "wpm": 16,
+      "samples": 81730,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131072,
+      "text": "Hola.",
+      "wpm": 20,
+      "samples": 65428,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131072,
+      "text": "Hola.",
+      "wpm": 30,
+      "samples": 43593,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131072,
+      "text": "Hola.",
+      "wpm": 50,
+      "samples": 26147,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131072,
+      "text": "Hola.",
+      "wpm": 150,
+      "samples": 8657,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131072,
+      "text": "Hola.",
+      "wpm": 200,
+      "samples": 6512,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131073,
+      "text": "Hola.",
+      "wpm": 0,
+      "samples": 7579,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131073,
+      "text": "Hola.",
+      "wpm": 1,
+      "samples": 623194,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131073,
+      "text": "Hola.",
+      "wpm": 2,
+      "samples": 221100,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131073,
+      "text": "Hola.",
+      "wpm": 3,
+      "samples": 448019,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131073,
+      "text": "Hola.",
+      "wpm": 4,
+      "samples": 336039,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131073,
+      "text": "Hola.",
+      "wpm": 5,
+      "samples": 268829,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131073,
+      "text": "Hola.",
+      "wpm": 8,
+      "samples": 168003,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131073,
+      "text": "Hola.",
+      "wpm": 10,
+      "samples": 134387,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131073,
+      "text": "Hola.",
+      "wpm": 12,
+      "samples": 111936,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131073,
+      "text": "Hola.",
+      "wpm": 16,
+      "samples": 83963,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131073,
+      "text": "Hola.",
+      "wpm": 20,
+      "samples": 67177,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131073,
+      "text": "Hola.",
+      "wpm": 30,
+      "samples": 44770,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131073,
+      "text": "Hola.",
+      "wpm": 50,
+      "samples": 26862,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131073,
+      "text": "Hola.",
+      "wpm": 150,
+      "samples": 8866,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 131073,
+      "text": "Hola.",
+      "wpm": 200,
+      "samples": 6710,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196608,
+      "text": "Bonjour.",
+      "wpm": 0,
+      "samples": 11385,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196608,
+      "text": "Bonjour.",
+      "wpm": 1,
+      "samples": 1306602,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196608,
+      "text": "Bonjour.",
+      "wpm": 2,
+      "samples": 523160,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196608,
+      "text": "Bonjour.",
+      "wpm": 3,
+      "samples": 675785,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196608,
+      "text": "Bonjour.",
+      "wpm": 4,
+      "samples": 506836,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196608,
+      "text": "Bonjour.",
+      "wpm": 5,
+      "samples": 405471,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196608,
+      "text": "Bonjour.",
+      "wpm": 8,
+      "samples": 253440,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196608,
+      "text": "Bonjour.",
+      "wpm": 10,
+      "samples": 202774,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196608,
+      "text": "Bonjour.",
+      "wpm": 12,
+      "samples": 168905,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196608,
+      "text": "Bonjour.",
+      "wpm": 16,
+      "samples": 126621,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196608,
+      "text": "Bonjour.",
+      "wpm": 20,
+      "samples": 101365,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196608,
+      "text": "Bonjour.",
+      "wpm": 30,
+      "samples": 67507,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196608,
+      "text": "Bonjour.",
+      "wpm": 50,
+      "samples": 40535,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196608,
+      "text": "Bonjour.",
+      "wpm": 150,
+      "samples": 13464,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196608,
+      "text": "Bonjour.",
+      "wpm": 200,
+      "samples": 10164,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196609,
+      "text": "Bonjour.",
+      "wpm": 0,
+      "samples": 12089,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196609,
+      "text": "Bonjour.",
+      "wpm": 1,
+      "samples": 1428229,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196609,
+      "text": "Bonjour.",
+      "wpm": 2,
+      "samples": 0,
+      "sample_rate": 11025,
+      "silent": true
+    },
+    {
+      "language": 196609,
+      "text": "Bonjour.",
+      "wpm": 3,
+      "samples": 716364,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196609,
+      "text": "Bonjour.",
+      "wpm": 4,
+      "samples": 537262,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196609,
+      "text": "Bonjour.",
+      "wpm": 5,
+      "samples": 429781,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196609,
+      "text": "Bonjour.",
+      "wpm": 8,
+      "samples": 268653,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196609,
+      "text": "Bonjour.",
+      "wpm": 10,
+      "samples": 214929,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196609,
+      "text": "Bonjour.",
+      "wpm": 12,
+      "samples": 179058,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196609,
+      "text": "Bonjour.",
+      "wpm": 16,
+      "samples": 134211,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196609,
+      "text": "Bonjour.",
+      "wpm": 20,
+      "samples": 107437,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196609,
+      "text": "Bonjour.",
+      "wpm": 30,
+      "samples": 71577,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196609,
+      "text": "Bonjour.",
+      "wpm": 50,
+      "samples": 42999,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196609,
+      "text": "Bonjour.",
+      "wpm": 150,
+      "samples": 14245,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 196609,
+      "text": "Bonjour.",
+      "wpm": 200,
+      "samples": 10769,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 327680,
+      "text": "Ciao.",
+      "wpm": 0,
+      "samples": 8844,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 327680,
+      "text": "Ciao.",
+      "wpm": 1,
+      "samples": 848617,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 327680,
+      "text": "Ciao.",
+      "wpm": 2,
+      "samples": 362560,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 327680,
+      "text": "Ciao.",
+      "wpm": 3,
+      "samples": 523116,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 327680,
+      "text": "Ciao.",
+      "wpm": 4,
+      "samples": 392403,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 327680,
+      "text": "Ciao.",
+      "wpm": 5,
+      "samples": 313918,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 327680,
+      "text": "Ciao.",
+      "wpm": 8,
+      "samples": 196185,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 327680,
+      "text": "Ciao.",
+      "wpm": 10,
+      "samples": 156937,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 327680,
+      "text": "Ciao.",
+      "wpm": 12,
+      "samples": 130779,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 327680,
+      "text": "Ciao.",
+      "wpm": 16,
+      "samples": 98021,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 327680,
+      "text": "Ciao.",
+      "wpm": 20,
+      "samples": 78441,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 327680,
+      "text": "Ciao.",
+      "wpm": 30,
+      "samples": 52261,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 327680,
+      "text": "Ciao.",
+      "wpm": 50,
+      "samples": 31361,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 327680,
+      "text": "Ciao.",
+      "wpm": 150,
+      "samples": 10395,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 327680,
+      "text": "Ciao.",
+      "wpm": 200,
+      "samples": 7843,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 458752,
+      "text": "Olá.",
+      "wpm": 0,
+      "samples": 8129,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 458752,
+      "text": "Olá.",
+      "wpm": 1,
+      "samples": 720379,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 458752,
+      "text": "Olá.",
+      "wpm": 2,
+      "samples": 268620,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 458752,
+      "text": "Olá.",
+      "wpm": 3,
+      "samples": 480414,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 458752,
+      "text": "Olá.",
+      "wpm": 4,
+      "samples": 360305,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 458752,
+      "text": "Olá.",
+      "wpm": 5,
+      "samples": 288222,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 458752,
+      "text": "Olá.",
+      "wpm": 8,
+      "samples": 180147,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 458752,
+      "text": "Olá.",
+      "wpm": 10,
+      "samples": 144144,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 458752,
+      "text": "Olá.",
+      "wpm": 12,
+      "samples": 120109,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 458752,
+      "text": "Olá.",
+      "wpm": 16,
+      "samples": 89991,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 458752,
+      "text": "Olá.",
+      "wpm": 20,
+      "samples": 72050,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 458752,
+      "text": "Olá.",
+      "wpm": 30,
+      "samples": 48015,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 458752,
+      "text": "Olá.",
+      "wpm": 50,
+      "samples": 28820,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 458752,
+      "text": "Olá.",
+      "wpm": 150,
+      "samples": 9537,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 458752,
+      "text": "Olá.",
+      "wpm": 200,
+      "samples": 7161,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 589824,
+      "text": "Moi.",
+      "wpm": 0,
+      "samples": 8195,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 589824,
+      "text": "Moi.",
+      "wpm": 1,
+      "samples": 737781,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 589824,
+      "text": "Moi.",
+      "wpm": 2,
+      "samples": 264000,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 589824,
+      "text": "Moi.",
+      "wpm": 3,
+      "samples": 486244,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 589824,
+      "text": "Moi.",
+      "wpm": 4,
+      "samples": 364672,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 589824,
+      "text": "Moi.",
+      "wpm": 5,
+      "samples": 291753,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 589824,
+      "text": "Moi.",
+      "wpm": 8,
+      "samples": 182369,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 589824,
+      "text": "Moi.",
+      "wpm": 10,
+      "samples": 145904,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 589824,
+      "text": "Moi.",
+      "wpm": 12,
+      "samples": 121517,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 589824,
+      "text": "Moi.",
+      "wpm": 16,
+      "samples": 91091,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 589824,
+      "text": "Moi.",
+      "wpm": 20,
+      "samples": 72974,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 589824,
+      "text": "Moi.",
+      "wpm": 30,
+      "samples": 48587,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 589824,
+      "text": "Moi.",
+      "wpm": 50,
+      "samples": 29183,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 589824,
+      "text": "Moi.",
+      "wpm": 150,
+      "samples": 9636,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 589824,
+      "text": "Moi.",
+      "wpm": 200,
+      "samples": 7293,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 393216,
+      "text": "你好。",
+      "wpm": 0,
+      "samples": 10186,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 393216,
+      "text": "你好。",
+      "wpm": 1,
+      "samples": 1099263,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 393216,
+      "text": "你好。",
+      "wpm": 2,
+      "samples": 371580,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 393216,
+      "text": "你好。",
+      "wpm": 3,
+      "samples": 606672,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 393216,
+      "text": "你好。",
+      "wpm": 4,
+      "samples": 455059,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 393216,
+      "text": "你好。",
+      "wpm": 5,
+      "samples": 364023,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 393216,
+      "text": "你好。",
+      "wpm": 8,
+      "samples": 227491,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 393216,
+      "text": "你好。",
+      "wpm": 10,
+      "samples": 182039,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 393216,
+      "text": "你好。",
+      "wpm": 12,
+      "samples": 151635,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 393216,
+      "text": "你好。",
+      "wpm": 16,
+      "samples": 113729,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 393216,
+      "text": "你好。",
+      "wpm": 20,
+      "samples": 90992,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 393216,
+      "text": "你好。",
+      "wpm": 30,
+      "samples": 60654,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 393216,
+      "text": "你好。",
+      "wpm": 50,
+      "samples": 36366,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 393216,
+      "text": "你好。",
+      "wpm": 150,
+      "samples": 12089,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 393216,
+      "text": "你好。",
+      "wpm": 200,
+      "samples": 9097,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 524288,
+      "text": "こんにちは。",
+      "wpm": 0,
+      "samples": 14619,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 524288,
+      "text": "こんにちは。",
+      "wpm": 1,
+      "samples": 1157453,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 524288,
+      "text": "こんにちは。",
+      "wpm": 2,
+      "samples": 578754,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 524288,
+      "text": "こんにちは。",
+      "wpm": 3,
+      "samples": 369655,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 524288,
+      "text": "こんにちは。",
+      "wpm": 4,
+      "samples": 649825,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 524288,
+      "text": "こんにちは。",
+      "wpm": 5,
+      "samples": 519838,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 524288,
+      "text": "こんにちは。",
+      "wpm": 8,
+      "samples": 324918,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 524288,
+      "text": "こんにちは。",
+      "wpm": 10,
+      "samples": 259897,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 524288,
+      "text": "こんにちは。",
+      "wpm": 12,
+      "samples": 216579,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 524288,
+      "text": "こんにちは。",
+      "wpm": 16,
+      "samples": 162360,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 524288,
+      "text": "こんにちは。",
+      "wpm": 20,
+      "samples": 129965,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 524288,
+      "text": "こんにちは。",
+      "wpm": 30,
+      "samples": 86614,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 524288,
+      "text": "こんにちは。",
+      "wpm": 50,
+      "samples": 51975,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 524288,
+      "text": "こんにちは。",
+      "wpm": 150,
+      "samples": 17171,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 524288,
+      "text": "こんにちは。",
+      "wpm": 200,
+      "samples": 13024,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 655360,
+      "text": "안녕하세요.",
+      "wpm": 0,
+      "samples": 17160,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 655360,
+      "text": "안녕하세요.",
+      "wpm": 1,
+      "samples": 1376430,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 655360,
+      "text": "안녕하세요.",
+      "wpm": 2,
+      "samples": 900570,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 655360,
+      "text": "안녕하세요.",
+      "wpm": 3,
+      "samples": 600325,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 655360,
+      "text": "안녕하세요.",
+      "wpm": 4,
+      "samples": 764555,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 655360,
+      "text": "안녕하세요.",
+      "wpm": 5,
+      "samples": 611644,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 655360,
+      "text": "안녕하세요.",
+      "wpm": 8,
+      "samples": 382283,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 655360,
+      "text": "안녕하세요.",
+      "wpm": 10,
+      "samples": 305756,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 655360,
+      "text": "안녕하세요.",
+      "wpm": 12,
+      "samples": 254793,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 655360,
+      "text": "안녕하세요.",
+      "wpm": 16,
+      "samples": 191015,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 655360,
+      "text": "안녕하세요.",
+      "wpm": 20,
+      "samples": 152856,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 655360,
+      "text": "안녕하세요.",
+      "wpm": 30,
+      "samples": 101904,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 655360,
+      "text": "안녕하세요.",
+      "wpm": 50,
+      "samples": 61127,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 655360,
+      "text": "안녕하세요.",
+      "wpm": 150,
+      "samples": 20284,
+      "sample_rate": 11025,
+      "silent": false
+    },
+    {
+      "language": 655360,
+      "text": "안녕하세요.",
+      "wpm": 200,
+      "samples": 15246,
+      "sample_rate": 11025,
+      "silent": false
+    }
+  ],
+  "source": {
+    "repository": "https://github.com/fastfinge/eloquence_64",
+    "release": "v25",
+    "asset_sha256": "3b14eaa9923a006553b7ea6152abf2ca9cd8f11c1b3dcebe2a905658863ea409",
+    "workflow_run": 42622087025,
+    "probe_commit": "1d2f0444d575743a96555c4c5bb753d9f1458dc2",
+    "notes": "PCM sample counts from an external x86 DLL, 11025 Hz. No original files or audio retained. Greek and traditional Chinese are not present in this original."
+  }
+}

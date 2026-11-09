@@ -12,7 +12,8 @@
 
 /* One value, and the moment it takes effect. */
 typedef struct {
-    int16_t time;
+    /* Gaps are unsigned and 0xffff is an escape for a full-width time. */
+    uint16_t time;
     int16_t value;
 } TimeValuePair;
 
