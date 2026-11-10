@@ -47,8 +47,9 @@ jobs:
           set -euo pipefail
           if [ '${{ matrix.arch }}' = x64 ]; then prefix=x86_64; else prefix=i686; fi
           make -C eci -j2 windows-${{ matrix.arch }} PROVIDER_LTO=-flto=2 WINDOWS_CC=$prefix-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=$prefix-w64-mingw32-objdump
-          archive=vendor/openevv61/build/windows-${{ matrix.arch }}-release/libreloq61.a
-          object=vendor/openevv61/build/windows-${{ matrix.arch }}-release/lang/ptbr/delta_rules_c10_ptbr.o
+          if [ '${{ matrix.arch }}' = x64 ]; then rules=windows-release; else rules=windows-x86-release; fi
+          archive=vendor/openevv61/build/$rules/libreloq61.a
+          object=vendor/openevv61/build/$rules/lang/ptbr/delta_rules_c10_ptbr.o
           "$prefix-w64-mingw32-gcc-ar-posix" p "$archive" delta_rules_c10_ptbr.o | cmp - "$object"
           python3 sapi/build.py --arch '${{ matrix.arch }}' --cc $prefix-w64-mingw32-gcc-posix --objdump $prefix-w64-mingw32-objdump
       - uses: actions/upload-artifact@v4
