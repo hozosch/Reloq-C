@@ -1115,12 +1115,12 @@ static double pitch_ratio(int target,int native_baseline)
 }
 /* The native speed rule maps VS to a fixed-point duration percentage;
  * VWPM178 is its 100-percent clock. Use that common physical scale so WPM,
- * VS tags and settings select the same acoustic timing. NVDA's normal 40
- * and 60 sliders correspond to VS84 and VS106. Between them the control
+ * VS tags and settings select the same acoustic timing. NVDA's normal 50
+ * and 60 sliders correspond to VS95 and VS106. Between them the control
  * values crossfade continuously instead of switching abruptly. */
 static float acoustic_cadence_percent(double duration)
 {
-    const double slower=51.0,faster=33.0;
+    const double slower=41.0,faster=33.0;
     if(duration>=slower)return 0;
     if(duration<=faster)return 1;
     return (float)((slower-duration)/(slower-faster));

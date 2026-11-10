@@ -21,7 +21,7 @@ The user found that applying this clock at all speeds made the previously
 accepted slow voice sound less natural. The original still uses the 5 ms
 clock at those speeds; matching it is not sufficient to preserve that voice.
 The shared renderer therefore keeps 1 ms interpolation up through native
-VS84 (normal NVDA 40), blends the controls continuously through VS106, and
+VS95 (normal NVDA 50), blends the controls continuously through VS106, and
 uses the reference 5 ms clock from VS106 (normal NVDA 60). The blend uses
 the native duration factor, also for VWPM; it is independent of host and
 tag syntax. Intra-utterance changes transition over 20 ms.

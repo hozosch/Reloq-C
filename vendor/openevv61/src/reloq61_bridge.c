@@ -418,7 +418,7 @@ static int32_t cjk_pack_slow_wpm(struct capture *c,int32_t volume)
 /* CJK control indices can be delivered only at the end of an utterance.
  * Its acoustic word already carries the actual native duration factor, so
  * propagate that factor alongside the existing private volume encoding.
- * Only 0..51 percent is needed: all slower clocks have the same 1 ms mode. */
+ * Only 0..41 percent is needed: all slower clocks have the same 1 ms mode. */
 static int32_t cjk_pack_acoustic_clock(struct capture *c,int32_t volume)
 {
     volume=cjk_pack_slow_wpm(c,volume);
@@ -429,7 +429,7 @@ static int32_t cjk_pack_acoustic_clock(struct capture *c,int32_t volume)
     if(!d)return volume;
     int32_t factor;memcpy(&factor,(char *)d+DG_BASE+464,sizeof factor);
     if(factor<=0)return volume;
-    int32_t percent=factor>=510000?51:(factor+5000)/10000;
+    int32_t percent=factor>=410000?41:(factor+5000)/10000;
     return 100000000+percent*100000+volume;
 }
 static void report_index(struct capture *c,int32_t index,int64_t tick)
