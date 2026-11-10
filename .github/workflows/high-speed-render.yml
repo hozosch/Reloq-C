@@ -1,0 +1,51 @@
+name: Render exact NVDA speed comparison
+on:
+  push:
+    branches: ['codex/high-speed-render-*']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  render:
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: high-speed-nvda-test
+          path: tested
+          run-id: 42916635928
+          github-token: ${{ github.token }}
+      - name: Download and verify released 1.3.0 package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v1.3.0 --repo "$env:GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-1.3.0.nvda-addon' --dir old
+          if ($LASTEXITCODE -ne 0) { throw 'Release download failed' }
+          if ((Get-FileHash old/reloq-c-synth-x64-1.3.0.nvda-addon -Algorithm SHA256).Hash -ne '5EA4C960C795E0CAEE61C5E7C55353DFC9E0F3C46BA75C88D87B4915E3484459') { throw 'Released add-on changed' }
+      - name: Render actual x64 speech cores
+        shell: bash
+        run: |
+          python - <<'PY'
+          import pathlib,sys,zipfile
+          sys.path.insert(0,'tools')
+          from observe_high_speed_reference import capture
+          pairs=[('old/reloq-c-synth-x64-1.3.0.nvda-addon','old',110),('tested/reloq-c-synth-x64-1.3.1-dev2.nvda-addon','new',106)]
+          pathlib.Path('samples').mkdir()
+          for package,label,speed in pairs:
+              core=pathlib.Path(label)/'eci.dll'
+              with zipfile.ZipFile(package) as z:
+                  assert z.testzip() is None
+                  core.write_bytes(z.read('synthDrivers/reloqC/eci.dll'))
+              result=capture(core,False,'adictive drums',speed,pathlib.Path('samples',label+'.wav').resolve())
+              print(label,result['seconds'],'seconds')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: high-speed-exact-x64-audio
+          path: samples/
+          if-no-files-found: error
+          retention-days: 7
