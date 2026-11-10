@@ -35,7 +35,21 @@ class NativeDictionaryKeys:
         # ECI main/abbreviation entries retain case. Its English root lookup
         # sees folded mixed-case words, but all-capital words are treated as
         # abbreviations instead of using the lower-case root entry.
-        return word in self.exact or (not (self.english and word.isupper()) and word.casefold() in self.roots)
+        if word in self.exact:
+            return True
+        lower = word.casefold()
+        if not (self.english and word.isupper()) and lower in self.roots:
+            return True
+        # Unlike main entries, root entries can cover inflected forms. ECI
+        # also checks these roots in upper-case plurals and participles.
+        for ending in _ENDINGS:
+            if len(lower) <= len(ending) + 2 or not lower.endswith(ending):
+                continue
+            stem = lower[:-len(ending)]
+            if (stem in self.roots or stem + "e" in self.roots or
+                len(stem) > 2 and stem[-1] == stem[-2] and stem[:-1] in self.roots):
+                return True
+        return False
 
 
 def _in_dictionary(word, dictionary):
@@ -135,7 +149,8 @@ class WordSegmenter:
             return True
         # An ECI root may also cover inflected forms. Avoid changing a form
         # that could be supplied by the user's active pronunciation data.
-        if any(word.endswith(ending) and len(word) > len(ending) + 1 and
+        if not isinstance(dictionary, NativeDictionaryKeys) and any(
+               word.endswith(ending) and len(word) > len(ending) + 1 and
                _in_dictionary(original[:-len(ending)], dictionary) for ending in _ENDINGS):
             return True
         return self._sayable(word)

@@ -36,8 +36,11 @@ def main():
                 engine.close()
         # Main entries are case-sensitive; English roots also match mixed
         # case, but the engine spells all-uppercase tokens as abbreviations.
-        for volume, cases in (('main', (('cgroup', True), ('CGROUP', False), ('Cgroup', False))),
-                              ('Root', (('cgroup', True), ('CGROUP', False), ('Cgroup', True)))):
+        for volume, cases in (('main', (('cgroup', True), ('CGROUP', False), ('Cgroup', False),
+                                       ('cgroups', False), ('CGROUPS', False))),
+                              ('Root', (('cgroup', True), ('CGROUP', False), ('Cgroup', True),
+                                       ('cgroups', True), ('CGROUPS', True), ('cGroups', True),
+                                       ('CGROUPING', True)))):
             folder = root / volume
             folder.mkdir()
             (folder / f'ENU{volume}.dic').write_bytes(b'cgroup\t`[.1tEst]\n')

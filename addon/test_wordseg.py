@@ -35,13 +35,19 @@ def main():
         assert 'cgroup' in keys[0x10000] and 'fdopen' in keys[0x10001]
         assert 'fdopen' not in keys[0x10000] and 'cgroup' not in keys[0x10001]
         assert 'CGROUP' not in keys[0x10000], 'ECI main entries distinguish case'
+        assert 'cgroups' not in keys[0x10000] and 'CGROUPS' not in keys[0x10000]
         assert 'FdOpen' in keys[0x10001] and 'FDOPEN' not in keys[0x10001]
         assert 'WLANTest' in keys[0x40000] and 'wlantest' not in keys[0x40000]
         assert 'HAUS' in keys[0x40000] and 'haus' in keys[0x40000]
         assert segmenter.text('CGROUP', keys[0x10000]) == 'C group'
+        assert segmenter.text('cgroups', keys[0x10000]) == segmenter.text('CGROUPS', keys[0x10000])
         assert split_camel('WLANTest und meinTest', keys[0x40000]) == 'WLANTest und mein Test'
         assert list(protected_native_spans('Vor WLANTest nach', keys[0x40000])) == [
             ('Vor ', False), ('WLANTest', True), (' nach', False)]
+        Path(folder, 'ENURoot.dic').write_bytes(b'cgroup\tcustom pronunciation\n')
+        roots = dictionary_keys(folder)[0x10000]
+        assert 'cgroups' in roots and 'CGROUPS' in roots and 'cGroups' in roots
+        assert split_camel('cGroups und meinTest', roots) == 'cGroups und mein Test'
     samples = {'meinWort': 'mein Wort', 'HTTPServer': 'HTTP Server',
                'XMLHttpRequest': 'XML Http Request', 'StraßenName': 'Straßen Name',
                'δοκιμήΛέξη': 'δοκιμή Λέξη', 'приветМир': 'привет Мир',
