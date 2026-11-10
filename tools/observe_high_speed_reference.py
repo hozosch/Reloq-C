@@ -16,7 +16,7 @@ SLIDERS = (40, 50, 60, 80, 100)
 
 
 def capture(library, reference, text, speed, path, *, buffer_samples=110,
-            want_phones=True, dialect=0x10000, sample_rate=11025, gender=0):
+            want_phones=True, dialect=0x10000, sample_rate=11025, gender=0, voice=None):
     library=library.resolve();directory=os.add_dll_directory(str(library.parent)) if os.name=='nt' else None
     old=Path.cwd();os.chdir(library.parent)
     try:
@@ -46,7 +46,7 @@ def capture(library, reference, text, speed, path, *, buffer_samples=110,
             return 1
         try:
             assert lib.eciCopyVoice(engine,1,0)
-            for param,val in enumerate((gender,50,65,30,0,0,speed,100)):
+            for param,val in enumerate(voice if voice is not None else (gender,50,65,30,0,0,speed,100)):
                 if lib.eciSetVoiceParam(engine,0,param,val)<0:raise RuntimeError(f'voice parameter {param} refused')
             if not reference:
                 assert lib.eciSetParam(engine,0x1003,1)>=0
