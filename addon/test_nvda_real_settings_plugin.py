@@ -55,7 +55,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             frame=wx.Frame(None)
             panel=EloquenceSettingsPanel(frame)
             section=config.conf['speech'][synth.name]
-            before=(section['_pitchHertz'],section['_rateWpm'],section['_eqEnabled'])
+            # A fresh NVDA profile may have no explicitly stored entry yet.
+            # Compare optional values until Apply creates the settings.
+            before=tuple(section.get(key) for key in ('_pitchHertz','_rateWpm','_eqEnabled'))
             assert not panel.pitch_hz_value.IsEnabled() and not panel.wpm_value.IsEnabled()
             assert not panel.eq_preset.IsEnabled()
             assert panel.pitch_hz_value.GetName() and all(x.GetName() for x in panel.eq_bands)
@@ -76,10 +78,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             assert (synth._rateInWpm,synth._rateWpm)==(True,50)
             assert synth._eqEnabled and synth._eqPreset==1
             assert tuple(x.GetValue() for x in panel.eq_bands)==(4,0,-1)
-            assert (section['_pitchHertz'],section['_rateWpm'],section['_eqEnabled'])==before
+            assert tuple(section.get(key) for key in ('_pitchHertz','_rateWpm','_eqEnabled'))==before
 
             panel.onSave()
-            assert (section['_pitchHertz'],section['_rateWpm'],section['_eqEnabled'])==(151,50,True)
+            stored=tuple(section.get(key) for key in ('_pitchHertz','_rateWpm','_eqEnabled'))
+            assert stored==(151,50,True), f'saved values: {stored!r}; keys: {list(section)!r}'
             panel.pitch_hz_value.SetValue(220)
             event(panel.pitch_hz_value,wx.wxEVT_SPINCTRL)
             panel.wpm_value.SetValue(90)
@@ -89,6 +92,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             assert (synth._pitchHertz,synth._rateWpm,synth._eqPreset)==(220,90,4)
             panel.onDiscard()
             assert (synth._pitchHertz,synth._rateWpm,synth._eqPreset)==(151,50,1)
+            synth.configure_pitch_hertz(False,111)
+            synth.configure_rate_wpm(False,100)
+            synth.configure_equalizer(False,0,0,0,0)
+            synth.loadSettings()
+            assert (synth._pitchInHertz,synth._pitchHertz,synth._rateInWpm,synth._rateWpm,
+                    synth._eqEnabled,synth._eqPreset)==(True,151,True,50,True,1)
             RESULT.write_text(json.dumps({'ok':True,'details':'real NVDA wx controls, live preview, Apply and Cancel'}),encoding='utf8')
         except BaseException:
             RESULT.write_text(json.dumps({'ok':False,'error':traceback.format_exc()}),encoding='utf8')
