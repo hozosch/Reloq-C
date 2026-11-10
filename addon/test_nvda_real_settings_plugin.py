@@ -29,6 +29,13 @@ def event(widget, event_type):
     widget.GetEventHandler().ProcessEvent(evt)
 
 
+def check(condition, message):
+    # NVDA's packaged Python runs with assertions disabled. A real probe must
+    # therefore never use assert, especially for a call with side effects.
+    if not condition:
+        raise AssertionError(message)
+
+
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     def __init__(self):
         super().__init__()
@@ -47,8 +54,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             nvwave.WavePlayer=lambda *a,**k: Player()
             reloq.SynthDriver._make_player=staticmethod(lambda sample_rate: Player())
             speech.cancelSpeech()
-            assert synthDriverHandler.setSynth('reloqC')
+            selected=synthDriverHandler.setSynth('reloqC')
+            check(selected, 'could not select ReLoq C')
             synth=synthDriverHandler.getSynth()
+            check(synth is not None and synth.name=='reloqC', 'the selected synth is not ReLoq C')
             # The panel's save also initiates an unrelated dictionary refresh;
             # isolate the settings lifecycle without changing saved entries.
             synth.configure_dictionaries=lambda sources, enabled, cb, repository: cb(None,{})
@@ -58,9 +67,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             # A fresh NVDA profile may have no explicitly stored entry yet.
             # Compare optional values until Apply creates the settings.
             before=tuple(section.get(key) for key in ('_pitchHertz','_rateWpm','_eqEnabled'))
-            assert not panel.pitch_hz_value.IsEnabled() and not panel.wpm_value.IsEnabled()
-            assert not panel.eq_preset.IsEnabled()
-            assert panel.pitch_hz_value.GetName() and all(x.GetName() for x in panel.eq_bands)
+            check(not panel.pitch_hz_value.IsEnabled() and not panel.wpm_value.IsEnabled(), 'initial pitch or rate control enabled')
+            check(not panel.eq_preset.IsEnabled(), 'initial equalizer control enabled')
+            check(panel.pitch_hz_value.GetName() and all(x.GetName() for x in panel.eq_bands), 'accessible control names missing')
 
             panel.pitch_hz_mode.SetValue(True)
             event(panel.pitch_hz_mode,wx.wxEVT_CHECKBOX)
@@ -74,30 +83,31 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             event(panel.eq_mode,wx.wxEVT_CHECKBOX)
             panel.eq_preset.SetSelection(1)
             event(panel.eq_preset,wx.wxEVT_CHOICE)
-            assert (synth._pitchInHertz,synth._pitchHertz)==(True,151)
-            assert (synth._rateInWpm,synth._rateWpm)==(True,50)
-            assert synth._eqEnabled and synth._eqPreset==1
-            assert tuple(x.GetValue() for x in panel.eq_bands)==(4,0,-1)
-            assert tuple(section.get(key) for key in ('_pitchHertz','_rateWpm','_eqEnabled'))==before
+            check((synth._pitchInHertz,synth._pitchHertz)==(True,151), 'pitch preview failed')
+            check((synth._rateInWpm,synth._rateWpm)==(True,50), 'rate preview failed')
+            check(synth._eqEnabled and synth._eqPreset==1, 'equalizer preset preview failed')
+            check(tuple(x.GetValue() for x in panel.eq_bands)==(4,0,-1), 'equalizer preset controls incorrect')
+            check(tuple(section.get(key) for key in ('_pitchHertz','_rateWpm','_eqEnabled'))==before,
+                  'preview changed saved settings')
 
             panel.onSave()
             stored=tuple(section.get(key) for key in ('_pitchHertz','_rateWpm','_eqEnabled'))
-            assert stored==(151,50,True), f'saved values: {stored!r}; keys: {list(section)!r}'
+            check(stored==(151,50,True), f'saved values: {stored!r}; keys: {list(section)!r}')
             panel.pitch_hz_value.SetValue(220)
             event(panel.pitch_hz_value,wx.wxEVT_SPINCTRL)
             panel.wpm_value.SetValue(90)
             event(panel.wpm_value,wx.wxEVT_SPINCTRL)
             panel.eq_bands[1].SetValue(3)
             event(panel.eq_bands[1],wx.wxEVT_SPINCTRL)
-            assert (synth._pitchHertz,synth._rateWpm,synth._eqPreset)==(220,90,4)
+            check((synth._pitchHertz,synth._rateWpm,synth._eqPreset)==(220,90,4), 'custom preview failed')
             panel.onDiscard()
-            assert (synth._pitchHertz,synth._rateWpm,synth._eqPreset)==(151,50,1)
+            check((synth._pitchHertz,synth._rateWpm,synth._eqPreset)==(151,50,1), 'Cancel did not restore Apply values')
             synth.configure_pitch_hertz(False,111)
             synth.configure_rate_wpm(False,100)
             synth.configure_equalizer(False,0,0,0,0)
             synth.loadSettings()
-            assert (synth._pitchInHertz,synth._pitchHertz,synth._rateInWpm,synth._rateWpm,
-                    synth._eqEnabled,synth._eqPreset)==(True,151,True,50,True,1)
+            check((synth._pitchInHertz,synth._pitchHertz,synth._rateInWpm,synth._rateWpm,
+                   synth._eqEnabled,synth._eqPreset)==(True,151,True,50,True,1), 'saved settings did not reload')
             RESULT.write_text(json.dumps({'ok':True,'details':'real NVDA wx controls, live preview, Apply and Cancel'}),encoding='utf8')
         except BaseException:
             RESULT.write_text(json.dumps({'ok':False,'error':traceback.format_exc()}),encoding='utf8')
