@@ -45,9 +45,25 @@ def main():
                     assert render(engine,[text,EciIndex(3)])==flat,(language,rate,'above Nyquist')
                     engine.set_parameter(EQ_FILTER_BASE,0)
                 checks+=1
+            # A saved 6 kHz filter is bypassed at 8 kHz, becomes active at
+            # 48 kHz, and is bypassed again without losing its frequency.
+            for offset,value in ((1,6000),(2,18),(3,100),(0,0)):
+                engine.set_parameter(EQ_FILTER_BASE+offset,value)
+            engine.set_parameter(SAMPLE_RATE,0);low_flat=render(engine,[text,EciIndex(3)])
+            engine.set_parameter(EQ_FILTER_BASE,1)
+            assert render(engine,[text,EciIndex(3)])==low_flat
+            engine.set_parameter(SAMPLE_RATE,6);high_tuned=render(engine,[text,EciIndex(3)])
+            engine.set_parameter(EQ_FILTER_BASE,0);high_flat=render(engine,[text,EciIndex(3)])
+            assert high_tuned[0]!=high_flat[0] and high_tuned[1]==high_flat[1]
+            engine.set_parameter(EQ_FILTER_BASE,1);engine.set_parameter(SAMPLE_RATE,0)
+            assert render(engine,[text,EciIndex(3)])==low_flat
+            assert engine._dll.eciGetParam(engine._handle,EQ_FILTER_BASE+1)==6000
+            engine.set_parameter(EQ_FILTER_BASE,0)
+            engine.set_parameter(EQ_FILTER_BASE+1,1)
+            assert engine._dll.eciGetParam(engine._handle,EQ_FILTER_BASE+1)==1
             assert engine._dll.eciSetParam(engine._handle,EQ_LOW,-1)==-1
             assert engine._dll.eciSetParam(engine._handle,EQ_HIGH,25)==-1
-            for param,value in ((EQ_FILTER_BASE,2),(EQ_FILTER_BASE+1,19),
+            for param,value in ((EQ_FILTER_BASE,2),(EQ_FILTER_BASE+1,0),
                                 (EQ_FILTER_BASE+2,25),(EQ_FILTER_BASE+3,401)):
                 assert engine._dll.eciSetParam(engine._handle,param,value)==-1
             engine.set_parameter(EQ_MID,0)

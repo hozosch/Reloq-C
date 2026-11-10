@@ -246,7 +246,7 @@ class SynthDriver(BaseSynthDriver):
         NumericDriverSetting("_eqCustomHigh", _("Equalizer treble"), defaultVal=0, minVal=-12, maxVal=12),
         *(setting for i, frequency in enumerate(EQ_FILTER_FREQUENCIES, 1) for setting in (
             BooleanDriverSetting(f"_eqFilter{i}Enabled", _("Equalizer filter enabled"), defaultVal=False),
-            NumericDriverSetting(f"_eqFilter{i}Frequency", _("Equalizer filter frequency"), defaultVal=frequency, minVal=20, maxVal=24000),
+            NumericDriverSetting(f"_eqFilter{i}Frequency", _("Equalizer filter frequency"), defaultVal=frequency, minVal=1, maxVal=24000),
             NumericDriverSetting(f"_eqFilter{i}Gain", _("Equalizer filter gain"), defaultVal=0, minVal=-12, maxVal=12),
             NumericDriverSetting(f"_eqFilter{i}Width", _("Equalizer filter bandwidth"), defaultVal=100, minVal=10, maxVal=400),
         )),
@@ -1009,7 +1009,7 @@ class SynthDriver(BaseSynthDriver):
         filters = tuple(tuple(values) for values in filters)
         if len(filters) != EQ_FILTER_COUNT or any(len(row) != 4 or type(row[0]) is not bool or
                 any(type(value) is not int for value in row[1:]) or
-                not 20 <= row[1] <= 24000 or not -12 <= row[2] <= 12 or
+                not 1 <= row[1] <= 24000 or not -12 <= row[2] <= 12 or
                 not 10 <= row[3] <= 400 for row in filters):
             raise ValueError("invalid equalizer filter")
         with self._submit_lock:

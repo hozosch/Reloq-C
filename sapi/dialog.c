@@ -300,7 +300,7 @@ static void filter_commit(HWND w,struct dialog *d,int id,BOOL restore_invalid)
 {
     struct sapi_eq_filter *f=d->s.eq_filters+d->filter_index;
     BOOL translated=FALSE;int value=(int)GetDlgItemInt(w,id,&translated,id==FILTER_GAIN);
-    int low=id==FILTER_FREQ?20:id==FILTER_WIDTH?10:-12;
+    int low=id==FILTER_FREQ?1:id==FILTER_WIDTH?10:-12;
     int high=id==FILTER_FREQ?24000:id==FILTER_WIDTH?400:12;
     if(translated&&value>=low&&value<=high){
         DWORD *target=id==FILTER_FREQ?&f->frequency:id==FILTER_WIDTH?&f->width:&f->gain;
@@ -319,7 +319,7 @@ static INT_PTR CALLBACK filter_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         combo(w,FILTER_SELECT,T(FILTER_SELECT),8);
         for(int i=0;i<SAPI_EQ_FILTER_COUNT;++i){WCHAR text[96];swprintf(text,96,L"%ls %d",T(FILTER_NAME),i+1);add(w,FILTER_SELECT,text);}
         check(w,FILTER_ENABLED,T(FILTER_ENABLED),38);
-        number(w,FILTER_FREQ,T(FILTER_FREQ),68);SendDlgItemMessageW(w,FILTER_FREQ+200,UDM_SETRANGE32,20,24000);
+        number(w,FILTER_FREQ,T(FILTER_FREQ),68);SendDlgItemMessageW(w,FILTER_FREQ+200,UDM_SETRANGE32,1,24000);
         equalizer_number(w,FILTER_GAIN,T(FILTER_GAIN),98);
         number(w,FILTER_WIDTH,T(FILTER_WIDTH),128);SendDlgItemMessageW(w,FILTER_WIDTH+200,UDM_SETRANGE32,10,400);
         control(w,L"STATIC",T(FILTER_NYQUIST),0,-1,12,160,596,42);

@@ -338,7 +338,7 @@ public final class SettingsActivity extends Activity {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);select.setAdapter(adapter);
         box.addView(label);box.addView(select);
         CheckBox enabled=new CheckBox(this);enabled.setText(R.string.filter_enabled);box.addView(enabled);
-        EditText frequency=filterInput(box,R.string.filter_frequency,20,24000);
+        EditText frequency=filterInput(box,R.string.filter_frequency,1,24000);
         EditText gain=filterInput(box,R.string.filter_gain,-12,12);
         EditText width=filterInput(box,R.string.filter_width,10,400);
         TextView hint=new TextView(this);hint.setText(R.string.filter_nyquist);box.addView(hint);
@@ -349,7 +349,7 @@ public final class SettingsActivity extends Activity {
             gain.setText(Integer.toString(f[2]));width.setText(Integer.toString(f[3]));
             frequency.setError(null);gain.setError(null);width.setError(null);
         } finally {loading[0]=false;}};
-        watchFilterInput(frequency,1,20,24000,loading,selected);
+        watchFilterInput(frequency,1,1,24000,loading,selected);
         watchFilterInput(gain,2,-12,12,loading,selected);
         watchFilterInput(width,3,10,400,loading,selected);
         enabled.setOnCheckedChangeListener((button,checked) -> {if(!loading[0]){

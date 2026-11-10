@@ -57,7 +57,7 @@ final class VoiceSettings {
             eq[0]+12,eq[1]+12,eq[2]+12};
         int[] result=java.util.Arrays.copyOf(base,base.length+4*eqFilters.length);
         for(int i=0;i<eqFilters.length;++i){int[] f=eqFilters[i];int offset=base.length+4*i;
-            result[offset]=eqEnabled&&f[0]!=0?1:0;result[offset+1]=bounded(f[1],20,24000);
+            result[offset]=eqEnabled&&f[0]!=0?1:0;result[offset+1]=bounded(f[1],1,24000);
             result[offset+2]=bounded(f[2],-12,12)+12;result[offset+3]=bounded(f[3],10,400);}
         return result;
     }

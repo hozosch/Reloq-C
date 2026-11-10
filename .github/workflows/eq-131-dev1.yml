@@ -33,6 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
@@ -48,11 +49,17 @@ jobs:
           fi
           sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
           sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends gcc-mingw-w64-$package-posix
+      - name: Verify cached language-rule inputs are unchanged
+        run: |
+          git diff --exit-code a05d5ac2003ac423eab8ffef8ad2b293e4c600ce HEAD -- \
+            vendor/openevv61/ src/reloq_voice_filter.c src/reloq_orthography.c \
+            src/reloq_german_word_edges.c src/reloq_english_word_edges.c include/ \
+            ':(exclude)include/reloq_eci.h' ':(exclude)include/reloq_equalizer.h'
       - uses: actions/cache@v4
         id: rules
         with:
           path: vendor/openevv61/build
-          key: sapi-rules-ubuntu24-gcc13-v1-${{ matrix.arch }}-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c') }}
+          key: sapi-rules-ubuntu24-gcc13-v1-${{ matrix.arch }}-01b350b6ebd77d6e3353892a975d30272c04af54048edcadb04bb8c822ec5549
       - name: Restore matching cache timestamps
         if: steps.rules.outputs.cache-hit == 'true'
         run: find vendor/openevv61/build -type f -exec touch {} +

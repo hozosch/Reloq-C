@@ -162,7 +162,7 @@
     "Filter:",
     "Filter",
     "Enable filter",
-    "Frequency (Hz):",
+    "Frequency (1–24000 Hz):",
     "Gain (dB):",
     "Bandwidth (% of octave):",
     "100% is one octave. Frequencies at or above half the sample rate are inactive."
@@ -246,7 +246,7 @@
     "Filter:",
     "Filter",
     "Filter aktivieren",
-    "Frequenz (Hz):",
+    "Frequenz (1–24000 Hz):",
     "Verstärkung (dB):",
     "Bandbreite (% Oktave):",
     "100 % entspricht einer Oktave. Frequenzen ab der halben Abtastrate sind ohne Wirkung."
@@ -330,7 +330,7 @@
     "Filtro:",
     "Filtro",
     "Activar filtro",
-    "Frecuencia (Hz):",
+    "Frecuencia (1–24000 Hz):",
     "Ganancia (dB):",
     "Ancho (% de octava):",
     "100 % equivale a una octava. Las frecuencias desde la mitad de la frecuencia de muestreo no se aplican."
@@ -414,7 +414,7 @@
     "Filtre:",
     "Filtre",
     "Activer le filtre",
-    "Fréquence (Hz):",
+    "Fréquence (1–24000 Hz):",
     "Gain (dB):",
     "Largeur (% d’octave):",
     "100 % correspond à une octave. Les fréquences à partir de la moitié du taux d’échantillonnage sont inactives."
@@ -498,7 +498,7 @@
     "Filtro:",
     "Filtro",
     "Attiva filtro",
-    "Frequenza (Hz):",
+    "Frequenza (1–24000 Hz):",
     "Guadagno (dB):",
     "Larghezza (% ottava):",
     "Il 100% equivale a un’ottava. Le frequenze dalla metà del campionamento non sono attive."
@@ -582,7 +582,7 @@
     "Filtro:",
     "Filtro",
     "Ativar filtro",
-    "Frequência (Hz):",
+    "Frequência (1–24000 Hz):",
     "Ganho (dB):",
     "Largura (% da oitava):",
     "100% equivale a uma oitava. Frequências a partir da metade da taxa de amostragem ficam inativas."
@@ -666,7 +666,7 @@
     "Suodatin:",
     "Suodatin",
     "Ota suodatin käyttöön",
-    "Taajuus (Hz):",
+    "Taajuus (1–24000 Hz):",
     "Vahvistus (dB):",
     "Leveys (% oktaavista):",
     "100 % vastaa yhtä oktaavia. Vähintään puolet näytteenottotaajuudesta olevat taajuudet eivät vaikuta."
@@ -750,7 +750,7 @@
     "Φίλτρο:",
     "Φίλτρο",
     "Ενεργοποίηση φίλτρου",
-    "Συχνότητα (Hz):",
+    "Συχνότητα (1–24000 Hz):",
     "Ενίσχυση (dB):",
     "Εύρος (% οκτάβας):",
     "Το 100% ισούται με μία οκτάβα. Συχνότητες από το μισό του ρυθμού δειγματοληψίας είναι ανενεργές."
@@ -834,7 +834,7 @@
     "フィルター:",
     "フィルター",
     "フィルターを有効にする",
-    "周波数 (Hz):",
+    "周波数 (1–24000 Hz):",
     "ゲイン (dB):",
     "帯域幅 (オクターブの%):",
     "100%は1オクターブです。サンプルレートの半分以上の周波数は無効です。"
@@ -918,7 +918,7 @@
     "필터:",
     "필터",
     "필터 사용",
-    "주파수 (Hz):",
+    "주파수 (1–24000 Hz):",
     "게인 (dB):",
     "대역폭 (옥타브의 %):",
     "100%는 1옥타브입니다. 샘플 속도의 절반 이상인 주파수는 적용되지 않습니다."
@@ -1002,7 +1002,7 @@
     "滤波器:",
     "滤波器",
     "启用滤波器",
-    "频率 (Hz):",
+    "频率 (1–24000 Hz):",
     "增益 (dB):",
     "带宽（八度百分比）:",
     "100% 为一个八度。达到或超过采样率一半的频率不会生效。"
@@ -1086,7 +1086,7 @@
     "濾波器:",
     "濾波器",
     "啟用濾波器",
-    "頻率 (Hz):",
+    "頻率 (1–24000 Hz):",
     "增益 (dB):",
     "頻寬（八度百分比）:",
     "100% 為一個八度。達到或超過取樣率一半的頻率不會生效。"

@@ -124,6 +124,10 @@ int main(void)
     assert(gains[0]==12&&gains[1]==12&&gains[2]==12);++checks;
     s.eq_enabled=2;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.eq_enabled=0;++checks;
     s.eq_filters[0].frequency=24001;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.eq_filters[0].frequency=125;++checks;
+    s.eq_filters[0].frequency=0;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);
+    s.eq_filters[0].frequency=1;assert(sapi_settings_write(0x40000,&s)==S_OK);
+    assert(sapi_settings_read(0x40000,&en)==S_OK&&en.eq_filters[0].frequency==1);
+    s.eq_filters[0].frequency=125;++checks;
     s.eq_filters[0].width=9;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.eq_filters[0].width=100;++checks;
     s.speed_wpm_enabled=2;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.speed_wpm_enabled=0;++checks;
     s.speed_wpm=0;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.speed_wpm=180;++checks;

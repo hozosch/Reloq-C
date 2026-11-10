@@ -268,7 +268,7 @@ class DirectEciEngine:
                              NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION,
                              NATIVE_VOLUME, NATIVE_WPM, PROCESS_TAGS, DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, EQ_LOW, EQ_MID, EQ_HIGH, PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATE, HIGH_RATE_PROFILE, GERMAN_GLIDE_OPENING, GERMAN_GLIDE_BACKNESS, GERMAN_GLIDE_SOFTNESS):
             raise ValueError("unsupported generic voice parameter")
-        low, high = (((0,1),(20,24000),(0,24),(10,400))[(parameter-EQ_FILTER_BASE)%EQ_FILTER_STRIDE] if eq_filter else
+        low, high = (((0,1),(1,24000),(0,24),(10,400))[(parameter-EQ_FILTER_BASE)%EQ_FILTER_STRIDE] if eq_filter else
                      (0, 24) if parameter in (EQ_LOW, EQ_MID, EQ_HIGH) else
                      (0, 6000) if parameter == NATIVE_WPM else
                      (0, 250) if parameter == NATIVE_SPEED else

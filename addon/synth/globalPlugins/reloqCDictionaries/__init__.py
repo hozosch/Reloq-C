@@ -52,7 +52,7 @@ class EqualizerFiltersDialog(wx.Dialog):
         self.enabled = wx.CheckBox(self, label=_("Enable filter"))
         layout.Add(self.enabled, 0, wx.ALL, 8)
         self.inputs = []
-        for text, minimum, maximum in ((_("Frequency in hertz (20–24000):"),20,24000),
+        for text, minimum, maximum in ((_("Frequency in hertz (1–24000):"),1,24000),
                                        (_("Gain in dB (-12 to +12):"),-12,12),
                                        (_("Bandwidth (% of an octave, 10–400):"),10,400)):
             label = wx.StaticText(self, label=text)
@@ -92,7 +92,7 @@ class EqualizerFiltersDialog(wx.Dialog):
     def on_change(self, event):
         if not self.updating:
             values = tuple(control.GetValue() for control in self.inputs)
-            if (all(type(value) is int for value in values) and 20 <= values[0] <= 24000 and
+            if (all(type(value) is int for value in values) and 1 <= values[0] <= 24000 and
                     -12 <= values[1] <= 12 and 10 <= values[2] <= 400):
                 self.values[self.selector.GetSelection()] = [bool(self.enabled.GetValue()), *values]
                 self.synth.configure_equalizer_filters(self.values)

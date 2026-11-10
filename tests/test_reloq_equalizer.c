@@ -70,7 +70,7 @@ int main(void)
         assert(!reloq_equalizer_init_extended(&flat,rate,0,0,0,peaks)&&!flat.active);
         memcpy(a,input,sizeof a);reloq_equalizer_process(&flat,a,N);assert(!memcmp(a,input,sizeof a));
         for(int i=0;i<RELOQ_EQ_FILTER_COUNT;++i)
-            peaks[i]=(struct reloq_equalizer_peak){1,20+i*(rate/2-21)/4,i%2? -12:12,i%2?10:400};
+            peaks[i]=(struct reloq_equalizer_peak){1,1+i*(rate/2-2)/4,i%2? -12:12,i%2?10:400};
         assert(!reloq_equalizer_init_extended(&one,rate,0,0,0,peaks));
         assert(!reloq_equalizer_init_extended(&chunks,rate,0,0,0,peaks));
         memcpy(a,input,sizeof a);memcpy(b,input,sizeof b);

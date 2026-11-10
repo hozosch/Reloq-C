@@ -60,7 +60,7 @@ int reloq_equalizer_init_extended(struct reloq_equalizer *e,int rate,
     memset(e,0,sizeof *e);e->limiter_gain=1;
     if(peaks)for(int i=0;i<RELOQ_EQ_FILTER_COUNT;++i){
         const struct reloq_equalizer_peak *p=peaks+i;
-        if((p->enabled!=0&&p->enabled!=1)||p->frequency<20||p->frequency>24000||
+        if((p->enabled!=0&&p->enabled!=1)||p->frequency<1||p->frequency>24000||
            p->gain< -12||p->gain>12||p->width_percent<10||p->width_percent>400)return -1;
     }
     e->active=low||mid||high;

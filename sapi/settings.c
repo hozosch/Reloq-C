@@ -50,7 +50,7 @@ static void key_name(int dialect,WCHAR key[128])
 static int valid(const struct sapi_settings *s)
 {
     for(int i=0;i<SAPI_EQ_FILTER_COUNT;++i){const struct sapi_eq_filter *f=s->eq_filters+i;
-        if(f->enabled>1||f->frequency<20||f->frequency>24000||f->gain>24||f->width<10||f->width>400)return 0;}
+        if(f->enabled>1||f->frequency<1||f->frequency>24000||f->gain>24||f->width<10||f->width>400)return 0;}
     return s->schema==1&&s->profile<8&&s->pitch<=100&&s->inflection<=100&&s->head<=100&&
         s->roughness<=100&&s->breathiness<=100&&s->gender<=1&&s->rate<7&&s->pauses<3&&
         s->tags<2&&s->abbreviations<2&&s->prediction<2&&s->dictionaries<2&&s->boost<2&&s->original_questions<2&&s->mellow_mode<2&&

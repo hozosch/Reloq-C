@@ -521,8 +521,8 @@ msgstr "Filter %s"
 msgid "Enable filter"
 msgstr "Filter aktivieren"
 
-msgid "Frequency in hertz (20–24000):"
-msgstr "Frequenz in Hertz (20–24000):"
+msgid "Frequency in hertz (1–24000):"
+msgstr "Frequenz in Hertz (1–24000):"
 
 msgid "Gain in dB (-12 to +12):"
 msgstr "Verstärkung in dB (-12 bis +12):"

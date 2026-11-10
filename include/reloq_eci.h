@@ -129,7 +129,7 @@ enum {
     RELOQ_ECI_EQ_MID = 0x1019,
     RELOQ_ECI_EQ_HIGH = 0x101a,
     /* Five optional peaking filters, each with four consecutive parameters:
-     * enabled 0/1, frequency 20..24000 Hz, gain 0..24 (-12..+12 dB),
+     * enabled 0/1, frequency 1..24000 Hz, gain 0..24 (-12..+12 dB),
      * and bandwidth 10..400 percent of an octave. */
     RELOQ_ECI_EQ_FILTER_BASE = 0x1020,
     RELOQ_ECI_ENGLISH = 0x00010000,

@@ -1421,7 +1421,7 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
     if(parameter>=RELOQ_ECI_EQ_FILTER_BASE&&parameter<RELOQ_ECI_EQ_FILTER_BASE+RELOQ_EQ_FILTER_COUNT*RELOQ_ECI_EQ_FILTER_STRIDE){
         int eq_index=parameter-RELOQ_ECI_EQ_FILTER_BASE;
         int field=eq_index%RELOQ_ECI_EQ_FILTER_STRIDE;
-        if((field==0&&(value<0||value>1))||(field==1&&(value<20||value>24000))||
+        if((field==0&&(value<0||value>1))||(field==1&&(value<1||value>24000))||
            (field==2&&(value<0||value>24))||(field==3&&(value<10||value>400)))return eci_refuse(e,-1);
         e->eq_filters[eq_index/RELOQ_ECI_EQ_FILTER_STRIDE][field]=value;
         eci_error(e,RELOQ_ECI_OK);return old;
