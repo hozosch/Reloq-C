@@ -60,15 +60,20 @@ def main():
     panel=plugin.EloquenceSettingsPanel();panel.makeSettings(Widget())
     assert panel.pitch_hz_mode.enabled and not panel.pitch_hz_value.enabled
     assert panel.pitch_hz_value.name=='Base pitch in hertz (1–24000):'
+    assert panel.camel_case.enabled and not panel.camel_case.GetValue()
     panel.pitch_hz_mode.SetValue(True);panel.on_pitch_changed(Widget())
     assert panel.pitch_hz_value.enabled and panel.pitch_dirty
+    panel.camel_case.SetValue(True);panel.on_camel_changed(Widget())
     panel.pitch_hz_value.SetValue(151);panel.onSave()
     assert synth._pitchInHertz and synth._pitchHertz==151 and synth.saved
+    assert synth._camelCase and not panel.camel_dirty
     assert not panel.pitch_dirty
     synth._pitchInHertz=False
     panel.onPanelActivated()
     assert not panel.pitch_hz_mode.GetValue() and not panel.pitch_hz_value.enabled
-    print('NVDA Hertz panel: accessible label, enablement, save and refresh passed')
+    synth._camelCase=False;panel.onPanelActivated()
+    assert not panel.camel_case.GetValue()
+    print('NVDA settings panel: Hertz and camel case enablement, save and refresh passed')
 
 
 if __name__=='__main__':main()

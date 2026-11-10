@@ -37,9 +37,9 @@ from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciPitchHz,
 from ._reloq_eci_transport import DictionaryStartupError, EciTextTransport
 from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries
 from ._reloq_nvda_dicts import ImportedDictionaries
-from ._reloq_wordseg import WordSegmenter, dictionary_keys
+from ._reloq_wordseg import WordSegmenter, dictionary_keys, split_camel, protected_native_spans, transform_unmatched
 from ._reloq_languages import GERMAN, LANGUAGES, LANGUAGE_ALIASES, LANGUAGE_DISPLAY_ORDER, LanguageEngine, language_for
-from ._speech_tags import EciTagCommand, SegmentationGuard, protect_sequence
+from ._speech_tags import EciTagCommand, SegmentationGuard, NativeDictionaryWord, protect_sequence
 
 
 DLL = Path(__file__).with_name("eci.dll")
@@ -163,6 +163,9 @@ def _parts(speech_sequence, *, base_pitch=50, base_pitch_hz=0, base_rate=50, bas
         elif isinstance(item, SegmentationGuard):
             flush()
             segmentation_guarded = item.enabled
+        elif isinstance(item, NativeDictionaryWord):
+            flush()
+            parts.append(EciText(item.text, spelling))
         elif isinstance(item, LangChangeCommand):
             selected = language_for(item.lang, home_language, languages)
             if selected is not None and selected != language.id:
@@ -191,7 +194,7 @@ class SynthDriver(BaseSynthDriver):
     # Translators: Name in NVDA's synthesizer selection dialog.
     description = _("Eloquence C")
     supportedCommands = {IndexCommand, CharacterModeCommand, PitchCommand, RateCommand,
-                         VolumeCommand, LangChangeCommand, EciTagCommand, SegmentationGuard}
+                         VolumeCommand, LangChangeCommand, EciTagCommand, SegmentationGuard, NativeDictionaryWord}
     supportedNotifications = {synthIndexReached, synthDoneSpeaking}
     supportedSettings = (
         BaseSynthDriver.LanguageSetting(),
@@ -217,6 +220,7 @@ class SynthDriver(BaseSynthDriver):
         NumericDriverSetting("_pitchHertz", _("Pitch in hertz"), defaultVal=150, minVal=1, maxVal=24000),
         BooleanDriverSetting("_pitchInHertz", _("Use pitch in hertz"), defaultVal=False),
         BooleanDriverSetting("_wordSegmentation", _("Split unfamiliar English words"), defaultVal=False),
+        BooleanDriverSetting("_camelCase", _("Split camel case"), defaultVal=False),
     )
 
     @classmethod
@@ -255,6 +259,7 @@ class SynthDriver(BaseSynthDriver):
         self._mellowMode = False
         self._voiceTags = False
         self._wordSegmentation = False
+        self._camelCase = False
         self._wordseg_keys = None
         self._word_segmenters = {}
         import globalVars
@@ -318,10 +323,12 @@ class SynthDriver(BaseSynthDriver):
         import globalVars
         if not getattr(globalVars, "speechDictionaryProcessing", True):
             return sequence
-        if not self._wordSegmentation and not self._imported_dictionaries.records:
+        if not (self._wordSegmentation or self._camelCase or self._imported_dictionaries.records):
             return sequence
         with self._submit_lock:
             home, voice = self._selectedLanguage, self._voice
+            word_segment, camel, keys = self._wordSegmentation, self._camelCase, self._wordseg_keys
+        segment = word_segment or camel
         selected, spelling, result = home, False, []
         for item in sequence:
             if isinstance(item, LangChangeCommand):
@@ -330,42 +337,83 @@ class SynthDriver(BaseSynthDriver):
             elif isinstance(item, CharacterModeCommand):
                 spelling = bool(item.state)
             elif isinstance(item, str) and not spelling:
-                protected = self._wordSegmentation and self._imported_dictionaries.matches(item, selected, voice)
+                protected = segment and self._imported_dictionaries.matches(item, selected, voice)
                 item = self._imported_dictionaries.process(item, selected, voice)
-                if self._wordSegmentation:
-                    protected = protected or self._matches_nvda_dictionary(item)
+                spans = self._nvda_dictionary_matches(item) if segment else ()
+                protected = protected or spans is None
                 if protected:
                     result.extend((SegmentationGuard(True), item, SegmentationGuard(False)))
+                    continue
+                if segment and keys is not None:
+                    language = self._languages[selected]
+                    transformed = transform_unmatched(item, spans,
+                        lambda word: self._segment_text(word, language, keys, word_segment, camel))
+                    transformed_spans = spans if transformed == item else self._nvda_dictionary_matches(transformed)
+                    if transformed_spans is None:
+                        # A complex regular expression can depend on the
+                        # entire original context. Let NVDA handle it intact.
+                        result.extend((SegmentationGuard(True), item, SegmentationGuard(False)))
+                        continue
+                    # NVDA's built-in dictionary is applied after this filter.
+                    # Preserve a native entry that it would split, then apply
+                    # our optional transforms to the remaining text while
+                    # the complete original casing is still available.
+                    for part, native in protected_native_spans(transformed, keys.get(selected, frozenset()), transformed_spans):
+                        if native:
+                            result.append(NativeDictionaryWord(part))
+                        else:
+                            result.extend((SegmentationGuard(True), part, SegmentationGuard(False)))
                     continue
             result.append(item)
         return result
 
     @staticmethod
-    def _matches_nvda_dictionary(text):
-        """Keep user substitutions intact even when they resemble identifiers."""
+    def _nvda_dictionary_matches(text):
+        """Return simple match ranges; None preserves a complex whole run."""
         try:
             import speechDictHandler
             if hasattr(speechDictHandler, "listAvailableSpeechDictDefinitions"):
-                dictionaries = (d.dictionary for d in speechDictHandler.listAvailableSpeechDictDefinitions() if d.enabled)
+                dictionaries = (d.dictionary for d in speechDictHandler.listAvailableSpeechDictDefinitions()
+                                if d.enabled and getattr(d.source, "value", d.source) != "builtin")
             else:
-                dictionaries = speechDictHandler.dictionaries.values()
-            return any(entry.compiled.search(text) for dictionary in dictionaries for entry in dictionary)
+                dictionaries = (dictionary for name, dictionary in speechDictHandler.dictionaries.items()
+                                if name != "builtin")
+            spans = []
+            for dictionary in dictionaries:
+                for entry in dictionary:
+                    for match in entry.compiled.finditer(text):
+                        # Arbitrary regexes may inspect any other part of the
+                        # run; preserving it avoids changing their context.
+                        if getattr(entry, "type", None) not in (0, 2) or match.start() == match.end():
+                            return None
+                        spans.append(match.span())
+                        if len(spans) > 4096:
+                            return None
+            return tuple(spans)
         except (ImportError, AttributeError, ValueError):
             # Never alter a possible personal substitution we cannot inspect.
-            return True
+            return None
+
+    @staticmethod
+    def _matches_nvda_dictionary(text):
+        matches = SynthDriver._nvda_dictionary_matches(text)
+        return matches is None or bool(matches)
 
     def imported_dictionary_manager(self):
         return self._imported_dictionaries
 
-    def _segment_text(self, text, language, keys):
-        tag = "enus" if language.locale == "en_US" else "engb" if language.locale == "en_GB" else None
-        if tag is None or keys is None:
+    def _segment_text(self, text, language, keys, word_segment=True, camel=False):
+        if keys is None:
             return text
-        segmenter = self._word_segmenters.get(tag)
-        if segmenter is None:
-            segmenter = WordSegmenter.from_files(DLL.with_name("wordseg-data"), tag)
-            self._word_segmenters[tag] = segmenter
-        return segmenter.text(text, keys[tag])
+        dictionary = keys.get(language.id, frozenset())
+        tag = "enus" if language.locale == "en_US" else "engb" if language.locale == "en_GB" else None
+        if word_segment and tag is not None:
+            segmenter = self._word_segmenters.get(tag)
+            if segmenter is None:
+                segmenter = WordSegmenter.from_files(DLL.with_name("wordseg-data"), tag)
+                self._word_segmenters[tag] = segmenter
+            text = segmenter.text(text, dictionary)
+        return split_camel(text, dictionary) if camel else text
 
     @staticmethod
     def _make_player(sample_rate):
@@ -873,12 +921,12 @@ class SynthDriver(BaseSynthDriver):
             language = self._selectedLanguage
             voice = self._voice
             rate, boost, volume = self._rate, self._rateBoost, self._volume
-            segment, segment_keys = self._wordSegmentation, self._wordseg_keys
+            segment, camel, segment_keys = self._wordSegmentation, self._camelCase, self._wordseg_keys
         def make_parts():
             return _parts(speechSequence, base_pitch=pitch, base_pitch_hz=pitch_hz, voice_tags=tags,
                           base_rate=rate, rate_boost=boost, base_volume=volume,
                           language=self._languages[language], voice=voice, languages=self._languages,
-                          text_transform=(lambda text, lang: self._segment_text(text, lang, segment_keys)) if segment else None)
+                          text_transform=(lambda text, lang: self._segment_text(text, lang, segment_keys, segment, camel)) if (segment or camel) else None)
         parts = make_parts()
         with self._submit_lock:
             if self._terminating or epoch != self._request_epoch:
@@ -887,11 +935,11 @@ class SynthDriver(BaseSynthDriver):
             # normalized. Keep its inline relative commands paired with the
             # base pitch which will precede this job in the native queue.
             if (self._pitch, self._pitchHertz if self._pitchInHertz else 0, self._voiceTags, self._selectedLanguage, self._voice,
-                self._rate, self._rateBoost, self._volume, self._wordSegmentation, self._wordseg_keys) != (pitch, pitch_hz, tags, language, voice, rate, boost, volume, segment, segment_keys):
+                self._rate, self._rateBoost, self._volume, self._wordSegmentation, self._camelCase, self._wordseg_keys) != (pitch, pitch_hz, tags, language, voice, rate, boost, volume, segment, camel, segment_keys):
                 pitch, tags, language, voice = self._pitch, self._voiceTags, self._selectedLanguage, self._voice
                 pitch_hz = self._pitchHertz if self._pitchInHertz else 0
                 rate, boost, volume = self._rate, self._rateBoost, self._volume
-                segment, segment_keys = self._wordSegmentation, self._wordseg_keys
+                segment, camel, segment_keys = self._wordSegmentation, self._camelCase, self._wordseg_keys
                 parts = make_parts()
             characters = sum(len(p.text) if isinstance(p, EciText) else len(p) if isinstance(p, str) else 0 for p in parts)
             protected_tags = sum(isinstance(p, EciTagCommand) for p in speechSequence)

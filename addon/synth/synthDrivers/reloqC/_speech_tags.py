@@ -26,6 +26,15 @@ class SegmentationGuard(SynthCommand):
         return f"SegmentationGuard({self.enabled!r})"
 
 
+class NativeDictionaryWord(SynthCommand):
+    """Pass a native dictionary key through NVDA's builtin splitter intact."""
+    def __init__(self, text):
+        self.text = text
+
+    def __repr__(self):
+        return f"NativeDictionaryWord({self.text!r})"
+
+
 _NUMBER = re.compile(r"`(vbhz|vwpm|v[bsvfghry]|ts|da|pp|l|p|v(?=[1-9])|(?=[0-9]))([0-9]+)")
 _LIMITS = {"vs": 250, "vg": 1, "ts": 2, "da": 1, "pp": 1,
            "l": 32767, "p": 60000, "v": 9, "": 9, "vbhz": 24000, "vwpm": 6000}

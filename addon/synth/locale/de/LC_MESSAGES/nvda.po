@@ -20,6 +20,12 @@ msgstr "Unbekannte englische Wörter zerlegen"
 msgid "Split unfamiliar &English words"
 msgstr "Unbekannte &englische Wörter zerlegen"
 
+msgid "Split &camel-case words (all languages)"
+msgstr "&Camel-Case-Wörter zerlegen (alle Sprachen)"
+
+msgid "Split camel case"
+msgstr "Camel Case zerlegen"
+
 msgid "Imported NVDA speech dictionaries:"
 msgstr "Importierte NVDA-Sprachwörterbücher:"
 

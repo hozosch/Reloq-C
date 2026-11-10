@@ -49,6 +49,7 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.operation = 0
         self.pitch_dirty = False
         self.segmentation_dirty = False
+        self.camel_dirty = False
         content.Add(wx.StaticText(self, label=_("Exact base pitch")), 0, wx.ALL, 10)
         self.pitch_hz_mode = wx.CheckBox(self, label=_("Use base pitch in &hertz"))
         self.pitch_hz_mode.SetValue(self.synth._pitchInHertz if self.synth else False)
@@ -69,6 +70,10 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.segmentation.SetValue(getattr(self.synth, "_wordSegmentation", False) if self.synth else False)
         self.segmentation.Bind(wx.EVT_CHECKBOX, self.on_segmentation_changed)
         content.Add(self.segmentation, 0, wx.ALL, 10)
+        self.camel_case = wx.CheckBox(self, label=_("Split &camel-case words (all languages)"))
+        self.camel_case.SetValue(getattr(self.synth, "_camelCase", False) if self.synth else False)
+        self.camel_case.Bind(wx.EVT_CHECKBOX, self.on_camel_changed)
+        content.Add(self.camel_case, 0, wx.ALL, 10)
         content.Add(wx.StaticText(self, label=_("Pronunciation dictionaries")), 0, wx.ALL, 10)
         self.community = wx.CheckBox(self, label=_("Use &community pronunciation dictionaries"))
         self.community.SetValue(self.synth.communityDictionaries if self.synth else False)
@@ -201,7 +206,7 @@ class EloquenceSettingsPanel(SettingsPanel):
         threading.Thread(target=work, name='ReLoq package update', daemon=True).start()
 
     def enable_controls(self, enabled):
-        for control in (*self.edits, self.files, self.imported, self.update, self.community, self.repository, self.segmentation):
+        for control in (*self.edits, self.files, self.imported, self.update, self.community, self.repository, self.segmentation, self.camel_case):
             control.Enable(enabled)
         self.pitch_hz_mode.Enable(enabled)
         self.pitch_hz_value.Enable(enabled and self.pitch_hz_mode.GetValue())
@@ -213,6 +218,10 @@ class EloquenceSettingsPanel(SettingsPanel):
 
     def on_segmentation_changed(self, event):
         self.segmentation_dirty = True
+        event.Skip()
+
+    def on_camel_changed(self, event):
+        self.camel_dirty = True
         event.Skip()
 
     def redraw_imported(self, selected=None):
@@ -418,6 +427,9 @@ class EloquenceSettingsPanel(SettingsPanel):
                 if self.segmentation_dirty:
                     self.synth._wordSegmentation = self.segmentation.GetValue()
                     self.segmentation_dirty = False
+                if self.camel_dirty:
+                    self.synth._camelCase = self.camel_case.GetValue()
+                    self.camel_dirty = False
                 self.synth.configure_dictionaries(self.sources, self.community.GetValue(), completed,
                     "alternative" if self.repository.GetSelection() == 1 else "community")
                 self.synth.saveSettings()
@@ -444,6 +456,8 @@ class EloquenceSettingsPanel(SettingsPanel):
             self.pitch_dirty = False
             self.segmentation.SetValue(getattr(synth, "_wordSegmentation", False))
             self.segmentation_dirty = False
+            self.camel_case.SetValue(getattr(synth, "_camelCase", False))
+            self.camel_dirty = False
             self.community.SetValue(synth.communityDictionaries)
             self.repository.SetSelection(1 if synth.dictionary_manager().repository == "alternative" else 0)
             self.redraw()
@@ -454,6 +468,8 @@ class EloquenceSettingsPanel(SettingsPanel):
             self.pitch_dirty = False
         if self.current_synth() and not self.segmentation_dirty:
             self.segmentation.SetValue(getattr(self.synth, "_wordSegmentation", False))
+        if self.current_synth() and not self.camel_dirty:
+            self.camel_case.SetValue(getattr(self.synth, "_camelCase", False))
         self.enable_controls(not self.pending and self.current_synth())
         super().onPanelActivated()
 

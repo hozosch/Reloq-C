@@ -8,6 +8,7 @@ import gettext
 from dataclasses import replace
 import importlib
 from pathlib import Path
+import re
 import sys
 import tempfile
 import threading
@@ -311,7 +312,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert PitchCommand in driver.supportedCommands
                 assert CharacterModeCommand in driver.supportedCommands
                 assert [setting.id for setting in driver.supportedSettings] == [
-                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode", "_pitchHertz", "_pitchInHertz", "_wordSegmentation"]
+                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode", "_pitchHertz", "_pitchInHertz", "_wordSegmentation", "_camelCase"]
                 assert driver.supportedSettings[0].availableInSettingsRing
                 assert not any(hasattr(driver, '_'+name) for name in
                                ('glideOpening', 'glideBackness', 'glideSoftness'))
@@ -395,7 +396,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                     driver_module.EciText("world"), driver_module.EciLanguage(262144,"1"), driver_module.EciText("Hallo")]
                 # The optional text adapter follows language and character
                 # mode boundaries and must not split speech-dictionary output.
-                keys = {"enus": frozenset({"cgroup"}), "engb": frozenset()}
+                keys = {0x10000: frozenset({"cgroup"}), 0x10001: frozenset()}
                 transform = lambda text, lang: driver._segment_text(text, lang, keys)
                 guarded = driver_module.SegmentationGuard
                 result = driver_module._parts(["usrdct", LangChangeCommand("en-US"),
@@ -414,11 +415,70 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 driver._imported_dictionaries = Imported()
                 driver._wordSegmentation = True
                 fake_module("speechDictHandler", dictionaries={})
+                saved_keys = driver._wordseg_keys
+                driver._wordseg_keys = None
                 result = driver._protect_tags(["nvda", LangChangeCommand("en-US"), "nvda"])
                 assert isinstance(result[0], guarded) and result[1] == "custom" and isinstance(result[2], guarded)
                 assert result[3].lang == "en-US" and result[4] == "nvda"
+                # Built-in camel splitting is not a personal override. Apply
+                # our rules while the original mixed-case token is intact.
+                builtin = [types.SimpleNamespace(compiled=re.compile(r"([a-z])([A-Z])"), replacement=r"\1 \2"),
+                           types.SimpleNamespace(compiled=re.compile(r"([A-Z])([A-Z][a-z])"), replacement=r"\1 \2")]
+                speech_dicts = fake_module("speechDictHandler", dictionaries={"builtin": builtin, "default": []})
+                driver._wordseg_keys = {0x40000: frozenset({"meinwort"}), 0x10000: frozenset()}
+                driver._camelCase = True
+                result = driver._protect_tags(["MeinWort und meinTest"])
+                assert isinstance(result[0], driver_module.NativeDictionaryWord) and result[0].text == "MeinWort"
+                assert any(item == " und mein Test" for item in result if isinstance(item, str)), result
+                parts = driver_module._parts(result, text_transform=lambda text, lang: driver._segment_text(text, lang, driver._wordseg_keys, True, True))
+                assert parts == [driver_module.EciText("MeinWort"), driver_module.EciText(" und mein Test")], parts
+                # Model NVDA's actual built-in substitutions between its
+                # early filter and the synth driver's speak call.
+                processed = []
+                for item in result:
+                    if isinstance(item, str):
+                        for entry in builtin:
+                            item = entry.compiled.sub(entry.replacement, item)
+                    processed.append(item)
+                assert driver_module._parts(processed) == parts
+                result = driver._protect_tags([LangChangeCommand("en-US"), "UsRdCt TmpFiles"])
+                assert any(item == "U S R D C T T M P files" for item in result if isinstance(item, str)), result
+                driver._camelCase = False
+                result = driver._protect_tags([LangChangeCommand("en-US"), "FdOpen"])
+                assert any(item == "F D open" for item in result if isinstance(item, str)), result
+                driver._camelCase = True
+                result = driver._protect_tags([CharacterModeCommand(True), "meinTest", CharacterModeCommand(False)])
+                assert result[1] == "meinTest", result
+                for language in driver_module.LANGUAGES.values():
+                    assert driver._segment_text("StraßenName HTTPServer", language, {}, False, True) == "Straßen Name HTTP Server"
+                personal = types.SimpleNamespace(compiled=re.compile("meinTest"), type=0)
+                speech_dicts.dictionaries["default"] = [personal]
+                result = driver._protect_tags(["meinTest"])
+                assert isinstance(result[0], guarded) and result[1] == "meinTest" and isinstance(result[2], guarded)
+                result = driver._protect_tags(["meinTest und anderesWort"])
+                assert any(item == "meinTest und anderes Wort" for item in result if isinstance(item, str)), result
+                result = driver._protect_tags(["meinTest MeinWort und anderesWort"])
+                assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "MeinWort" for item in result), result
+                assert any("anderes Wort" in item for item in result if isinstance(item, str)), result
+                phrase = types.SimpleNamespace(compiled=re.compile("meinTest und"), type=0)
+                speech_dicts.dictionaries["default"] = [phrase]
+                result = driver._protect_tags(["meinTest und anderesWort"])
+                source = next(item for item in result if isinstance(item, str))
+                assert source == "meinTest und anderes Wort" and phrase.compiled.sub("eigene Aussprache", source) == "eigene Aussprache anderes Wort"
+                complex_entry = types.SimpleNamespace(compiled=re.compile(r"mein(?=Test)"), type=1)
+                speech_dicts.dictionaries["default"] = [complex_entry]
+                result = driver._protect_tags(["meinTest und anderesWort"])
+                assert result[1] == "meinTest und anderesWort", result
+                speech_dicts.dictionaries["default"] = [personal]
+                definitions = [types.SimpleNamespace(enabled=True, source=types.SimpleNamespace(value="builtin"), dictionary=builtin),
+                               types.SimpleNamespace(enabled=True, source=types.SimpleNamespace(value="default"), dictionary=[personal])]
+                fake_module("speechDictHandler", listAvailableSpeechDictDefinitions=lambda:definitions)
+                assert driver._matches_nvda_dictionary("meinTest")
+                assert not driver._matches_nvda_dictionary("anderesWort")
+                driver._camelCase = False
                 driver._wordSegmentation = False
                 driver._imported_dictionaries = original_imports
+                driver._wordseg_keys = saved_keys
                 german = driver_module.GERMAN
                 english = replace(german, id=0x10000, locale="en_GB", name="Test only")
                 catalog = {german.id: german, english.id: english}
@@ -846,6 +906,11 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                     try:
                         fresh.initSettings()
                         assert not fresh._pitchInHertz and fresh.pitch == 65
+                        assert not fresh._wordSegmentation and not fresh._camelCase
+                        fresh._wordSegmentation = fresh._camelCase = True
+                        fresh.saveSettings()
+                        assert profile["speech"][fresh.name]["_wordSegmentation"] is True
+                        assert profile["speech"][fresh.name]["_camelCase"] is True
                         fresh.configure_pitch_hertz(True, 151)
                         fresh.saveSettings()
                         assert profile["speech"][fresh.name]["_pitchHertz"] == 151
@@ -866,6 +931,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                     try:
                         fresh.initSettings()
                         assert fresh._pitchInHertz and fresh._pitchHertz==151 and fresh.pitch==65
+                        assert fresh._wordSegmentation and fresh._camelCase
                         fresh.voice = "2"
                         fresh.language = "en_US"
                         fresh.speak([PitchCommand(), "Test"])

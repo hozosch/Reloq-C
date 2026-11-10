@@ -5,17 +5,43 @@ see OpenEVV-NOTICE.txt.  This is a text adapter for NVDA, not an ECI rule.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 import re
+import unicodedata
 
-_WORDS = re.compile(r"[a-z]{2,32}")
+if __package__:
+    from ._reloq_dictionary_manager import PREFIXES, SUFFIXES
+else:
+    from _reloq_dictionary_manager import PREFIXES, SUFFIXES
+
+_WORDS = re.compile(r"[A-Za-z]{2,32}")
 _VOWELS = frozenset("aeiou")
 _ENDINGS = ("ings", "ing", "ers", "er", "ed", "es", "s")
 
 
 def _vowel(word, at):
     return word[at] in _VOWELS or (word[at] == "y" and at > 0 and word[at - 1] not in _VOWELS)
+
+
+@dataclass(frozen=True)
+class NativeDictionaryKeys:
+    exact: frozenset
+    roots: frozenset
+    english: bool = False
+
+    def __contains__(self, word):
+        # ECI main/abbreviation entries retain case. Its English root lookup
+        # sees folded mixed-case words, but all-capital words are treated as
+        # abbreviations instead of using the lower-case root entry.
+        return word in self.exact or (not (self.english and word.isupper()) and word.casefold() in self.roots)
+
+
+def _in_dictionary(word, dictionary):
+    if isinstance(dictionary, NativeDictionaryKeys):
+        return word in dictionary
+    return word.casefold() in dictionary
 
 
 class WordSegmenter:
@@ -100,23 +126,25 @@ class WordSegmenter:
                 return True
         return False
 
-    def _leave(self, word, dictionary):
+    def _leave(self, word, dictionary, original):
         if len(word) < 2 or len(word) > 32 or not any(_vowel(word, i) for i in range(len(word))):
             return True
         if all(c in "ivxlc" for c in word) or word.startswith("mc"):
             return True
-        if word in self.protected or word in self.pieces or word in dictionary:
+        if word in self.protected or word in self.pieces or _in_dictionary(original, dictionary):
             return True
         # An ECI root may also cover inflected forms. Avoid changing a form
         # that could be supplied by the user's active pronunciation data.
         if any(word.endswith(ending) and len(word) > len(ending) + 1 and
-               word[:-len(ending)] in dictionary for ending in _ENDINGS):
+               _in_dictionary(original[:-len(ending)], dictionary) for ending in _ENDINGS):
             return True
         return self._sayable(word)
 
     def split(self, word, dictionary=frozenset()):
-        if self._leave(word, dictionary):
-            return word
+        original = word
+        word = word.lower()
+        if self._leave(word, dictionary, original):
+            return original
         n = len(word)
         inf = 0x3fffffff
         letters, other, target = [inf] * (n + 1), [inf] * (n + 1), [0] * (n + 1)
@@ -139,7 +167,7 @@ class WordSegmenter:
             else:
                 end = target[at]
                 if end <= at:
-                    return word
+                    return original
                 value = word[at:end]
                 if value in self.abbreviations:
                     value = " ".join(c.upper() for c in value)
@@ -151,8 +179,8 @@ class WordSegmenter:
     def text(self, text, dictionary=frozenset()):
         def replace(match):
             start, end = match.span()
-            # Never split a part of a mixed-case, accented, numeric or
-            # apostrophized token; underscore and punctuation delimit names.
+            # Never split a part of an accented, numeric or apostrophized
+            # token; underscore and punctuation delimit names.
             if ((start and (text[start - 1].isalnum() or text[start - 1] in "'’")) or
                 (end < len(text) and (text[end].isalnum() or text[end] in "'’"))):
                 return match.group()
@@ -160,13 +188,114 @@ class WordSegmenter:
         return _WORDS.sub(replace, text)
 
 
+def _word_char(char):
+    return char.isalnum() or char in "_'’" or unicodedata.category(char).startswith("M")
+
+
+def word_runs(text):
+    """Yield complete word-like spans, retaining Unicode combining marks."""
+    start = None
+    for index, char in enumerate(text):
+        if _word_char(char):
+            if start is None:
+                start = index
+        elif start is not None:
+            yield start, index
+            start = None
+    if start is not None:
+        yield start, len(text)
+
+
+def _upper(char):
+    return char.isupper() or (char.isalpha() and char.istitle())
+
+
+def camel_word(word):
+    """Split lower/upper and acronym/word boundaries without changing case."""
+    boundaries = []
+    for index, char in enumerate(word):
+        if not _upper(char) or index == 0:
+            continue
+        before = index - 1
+        while before >= 0 and unicodedata.category(word[before]).startswith("M"):
+            before -= 1
+        after = index + 1
+        while after < len(word) and unicodedata.category(word[after]).startswith("M"):
+            after += 1
+        if before >= 0 and (word[before].islower() or
+                            (_upper(word[before]) and after < len(word) and word[after].islower())):
+            boundaries.append(index)
+    if not boundaries:
+        return word
+    pieces, start = [], 0
+    for end in boundaries:
+        pieces.append(word[start:end])
+        start = end
+    pieces.append(word[start:])
+    return " ".join(pieces)
+
+
+def split_camel(text, dictionary=frozenset()):
+    output, previous = [], 0
+    for start, end in word_runs(text):
+        word = text[start:end]
+        output.append(text[previous:start])
+        output.append(word if _in_dictionary(word, dictionary) else camel_word(word))
+        previous = end
+    output.append(text[previous:])
+    return "".join(output)
+
+
+def transform_unmatched(text, protected, transform):
+    """Transform word runs except those touched by a personal dictionary."""
+    output, previous = [], 0
+    spans, at = sorted(protected), 0
+    for start, end in word_runs(text):
+        output.append(text[previous:start])
+        word = text[start:end]
+        while at < len(spans) and spans[at][1] <= start:
+            at += 1
+        overlaps = at < len(spans) and spans[at][0] < end
+        output.append(word if overlaps else transform(word))
+        previous = end
+    output.append(text[previous:])
+    return "".join(output)
+
+
+def protected_native_spans(text, dictionary, personal_spans=()):
+    """Preserve native entries that NVDA's builtin.dic would otherwise split.
+
+    NVDA processes its speech dictionaries before the engine sees the text.
+    Call only after checking that no NVDA user dictionary matches the run.
+    """
+    previous = 0
+    spans, at = sorted(personal_spans), 0
+    for start, end in word_runs(text):
+        word = text[start:end]
+        if not _in_dictionary(word, dictionary):
+            continue
+        while at < len(spans) and spans[at][1] <= start:
+            at += 1
+        if at < len(spans) and spans[at][0] < end:
+            continue
+        if camel_word(word) == word and not re.search(r"[^\W\d_]\d", word):
+            continue
+        if previous < start:
+            yield text[previous:start], False
+        yield word, True
+        previous = end
+    if previous < len(text):
+        yield text[previous:], False
+
+
 def dictionary_keys(directory):
-    """Collect exact protected keys from the same immutable ECI snapshot."""
-    result = {"enus": set(), "engb": set()}
+    """Collect protected keys per language from the immutable ECI snapshot."""
+    by_prefix = {prefix: {"exact": set(), "roots": set()} for prefix in PREFIXES.values()}
     if directory is None:
-        return {k: frozenset() for k in result}
-    for language, prefix in (("enus", "ENU"), ("engb", "ENG")):
-        for suffix in ("main", "Root", "abbr"):
+        return {language: NativeDictionaryKeys(frozenset(), frozenset(), prefix in ("ENU", "ENG"))
+                for language, prefix in PREFIXES.items()}
+    for prefix, groups in by_prefix.items():
+        for suffix in SUFFIXES:
             path = Path(directory) / (prefix + suffix + ".dic")
             try:
                 with path.open("rb") as stream:
@@ -174,11 +303,17 @@ def dictionary_keys(directory):
                         key, separator, value = line.partition(b"\t")
                         if separator and value.strip():
                             try:
-                                word = key.strip().decode("cp1252").lower()
+                                word = key.strip().decode("cp1252")
                             except UnicodeDecodeError:
                                 continue
-                            if 1 < len(word) <= 32 and word.isascii() and word.isalpha():
-                                result[language].add(word)
+                            if 1 < len(word) <= 128 and all(_word_char(c) for c in word):
+                                if suffix == "Root":
+                                    groups["roots"].add(word.casefold())
+                                else:
+                                    groups["exact"].add(word)
             except FileNotFoundError:
                 pass
-    return {k: frozenset(v) for k, v in result.items()}
+    return {language: NativeDictionaryKeys(frozenset(by_prefix[prefix]["exact"]),
+                                           frozenset(by_prefix[prefix]["roots"]),
+                                           prefix in ("ENU", "ENG"))
+            for language, prefix in PREFIXES.items()}
