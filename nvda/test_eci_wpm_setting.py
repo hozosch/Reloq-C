@@ -19,7 +19,7 @@ def main():
         try:
             engine.voice(6, 50)
             text = ''.join(parts)
-            for wpm in (50, 150, 300, 350, 400, 450, 500, 550, 600):
+            for wpm in (50, 150, 300, 350, 400, 434, 435, 450, 500, 550, 600):
                 engine.tags(1)
                 assert engine.lib.eciSetParam(engine.h, NATIVE_WPM, 0) >= 0
                 tagged = engine.speak(f'`vwpm{wpm} {text}')
@@ -47,6 +47,17 @@ def main():
             assert engine.finish() == expected, (hex(language), 'queued WPM')
             assert engine.lib.eciGetParam(engine.h, NATIVE_WPM) == 150
             checks += 2
+            for first, second in ((434, 435), (435, 434)):
+                engine.tags(1)
+                assert engine.lib.eciSetParam(engine.h, NATIVE_WPM, 0) >= 0
+                tagged = engine.speak(f'`vwpm{first} {parts[0]}`vwpm{second} {parts[1]}{parts[2]}')
+                engine.tags(0)
+                assert engine.lib.eciSetParam(engine.h, NATIVE_WPM, first) >= 0
+                engine.add(parts[0])
+                assert engine.lib.eciSetParam(engine.h, NATIVE_WPM, second) >= 0
+                engine.add(parts[1] + parts[2])
+                assert engine.finish() == tagged, (hex(language), first, second, 'adjacent WPM')
+                checks += 1
         finally:
             engine.close()
 

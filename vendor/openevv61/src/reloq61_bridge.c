@@ -415,23 +415,6 @@ static int32_t cjk_pack_slow_wpm(struct capture *c,int32_t volume)
     if(volume<10000||volume>20000)volume=10000+c->q->voice[7]*100;
     return volume+wpm;
 }
-/* CJK control indices can be delivered only at the end of an utterance.
- * Its acoustic word already carries the actual native duration factor, so
- * propagate that factor alongside the existing private volume encoding.
- * Only 0..41 percent is needed: all slower clocks have the same 1 ms mode. */
-static int32_t cjk_pack_acoustic_clock(struct capture *c,int32_t volume)
-{
-    volume=cjk_pack_slow_wpm(c,volume);
-    int family=c->q->language>>16;
-    if((family!=6&&family!=8&&family!=10)||!c->q->control||!c->thread||volume<0||volume>=100000)
-        return volume;
-    delta_state *d=ew_machine(c->thread->engine);
-    if(!d)return volume;
-    int32_t factor;memcpy(&factor,(char *)d+DG_BASE+464,sizeof factor);
-    if(factor<=0)return volume;
-    int32_t percent=factor>=410000?41:(factor+5000)/10000;
-    return 100000000+percent*100000+volume;
-}
 static void report_index(struct capture *c,int32_t index,int64_t tick)
 {
     if(c->q->index)c->q->index(c->q->context,index,tick);
@@ -487,7 +470,7 @@ static int32_t STDCALL message(void *h,int32_t kind,int32_t value,void *context)
 static int frame(void *context,const int32_t *p,int32_t volume)
 {
     struct capture *c=context;
-    volume=cjk_pack_acoustic_clock(c,volume);
+    volume=cjk_pack_slow_wpm(c,volume);
     if(c->q->frame && c->q->frame(c->q->context,p,volume)) {
         c->r->error=2;return 0;
     }
@@ -521,7 +504,7 @@ int reloq61_array_span(void *context,int32_t from,int32_t to,
     const struct reloq61_curve curves[62],int32_t volume)
 {
     struct capture *c=context;
-    volume=cjk_pack_acoustic_clock(c,volume);
+    volume=cjk_pack_slow_wpm(c,volume);
     if(c->q->span(c->q->context,from,to,curves,volume)) {
         c->r->error=2;return 0;
     }

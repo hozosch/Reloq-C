@@ -227,6 +227,7 @@ struct reloq_core_clock reloq_core_clock_for_rate(float sample_rate)
                       sample_rate == 8000.0f ? 0 : 3;
     clock.noise_reference_rate = 0;
     clock.noise_reference_formants = 0;
+    clock.voice_reference_rate = 0;
     return clock;
 }
 
@@ -236,6 +237,9 @@ int reloq_core_resonator_set_coefficients(
 {
     if (!filter)
         return -1;
+
+    filter->ramp_samples_total = 0;
+    filter->ramp_samples_done = 0;
 
     float previous_gain = -radius * radius;
     float latest_gain = radius * cosine;
@@ -412,7 +416,11 @@ int reloq_core_resonator_process(struct reloq_core_resonator *filter,
 
     long length = count > 0 ? count : 0;
     long ramp = filter->ramp_remaining;
-    long ramp_count = ramp < length ? ramp : length;
+    int extended = ramp && filter->ramp_samples_total > 3;
+    if (extended && filter->ramp_samples_done >= filter->ramp_samples_total)
+        return -1;
+    long left = extended ? (long)(filter->ramp_samples_total-filter->ramp_samples_done) : ramp;
+    long ramp_count = left < length ? left : length;
     if (filter->stable) {
         double real=filter->coupled_real,imaginary=filter->coupled_imaginary;
         double cosine,sine,input;
@@ -422,7 +430,7 @@ int reloq_core_resonator_process(struct reloq_core_resonator *filter,
         for(long i=0;i<length;++i) {
             double c=cosine,s=sine,a=input;
             if(i<ramp_count) {
-                long row=3-ramp+i;
+                long row=extended?(long)(3u*(filter->ramp_samples_done+(unsigned)i)/filter->ramp_samples_total):3-ramp+i;
                 if(coupled_coefficients(filter->ramp_input[row],filter->ramp_latest[row],
                     filter->ramp_previous[row],&c,&s,&a))return -1;
             }
@@ -434,7 +442,11 @@ int reloq_core_resonator_process(struct reloq_core_resonator *filter,
         }
         filter->coupled_real=real;filter->coupled_imaginary=imaginary;
         filter->previous=previous;filter->latest=latest;
-        filter->ramp_remaining-=ramp_count;
+        if (extended) {
+            filter->ramp_samples_done+=(unsigned)ramp_count;
+            filter->ramp_remaining=filter->ramp_samples_done==filter->ramp_samples_total?0:
+                3-(long)(3u*filter->ramp_samples_done/filter->ramp_samples_total);
+        } else filter->ramp_remaining-=ramp_count;
         return 0;
     }
     float previous = filter->previous;
@@ -442,7 +454,7 @@ int reloq_core_resonator_process(struct reloq_core_resonator *filter,
     float old_latest = latest;
 
     for (long i = 0; i < ramp_count; ++i) {
-        long index = 3 - ramp + i;
+        long index = extended?(long)(3u*(filter->ramp_samples_done+(unsigned)i)/filter->ramp_samples_total):3-ramp+i;
         float lag_one = filter->ramp_latest[index] * latest;
         float input = filter->ramp_input[index] * samples[i];
         float sum = input + lag_one;
@@ -452,7 +464,11 @@ int reloq_core_resonator_process(struct reloq_core_resonator *filter,
         previous = latest;
         latest = result;
     }
-    filter->ramp_remaining -= ramp_count;
+    if (extended) {
+        filter->ramp_samples_done+=(unsigned)ramp_count;
+        filter->ramp_remaining=filter->ramp_samples_done==filter->ramp_samples_total?0:
+            3-(long)(3u*filter->ramp_samples_done/filter->ramp_samples_total);
+    } else filter->ramp_remaining -= ramp_count;
 
     for (long i = ramp_count; i < length; ++i) {
         float lag_one = filter->latest_gain * latest;
@@ -481,13 +497,17 @@ int reloq_core_antiresonator_process(struct reloq_core_resonator *filter,
 
     long length = count > 0 ? count : 0;
     long ramp = filter->ramp_remaining;
-    long ramp_count = ramp < length ? ramp : length;
+    int extended = ramp && filter->ramp_samples_total > 3;
+    if (extended && filter->ramp_samples_done >= filter->ramp_samples_total)
+        return -1;
+    long left = extended ? (long)(filter->ramp_samples_total-filter->ramp_samples_done) : ramp;
+    long ramp_count = left < length ? left : length;
     float previous = filter->previous;
     float latest = filter->latest;
     float old_latest = latest;
 
     for (long i = 0; i < ramp_count; ++i) {
-        long index = 3 - ramp + i;
+        long index = extended?(long)(3u*(filter->ramp_samples_done+(unsigned)i)/filter->ramp_samples_total):3-ramp+i;
         float current = samples[i];
         float lag_one = filter->ramp_latest[index] * latest;
         float input = filter->ramp_input[index] * current;
@@ -497,7 +517,11 @@ int reloq_core_antiresonator_process(struct reloq_core_resonator *filter,
         previous = latest;
         latest = current;
     }
-    filter->ramp_remaining -= ramp_count;
+    if (extended) {
+        filter->ramp_samples_done+=(unsigned)ramp_count;
+        filter->ramp_remaining=filter->ramp_samples_done==filter->ramp_samples_total?0:
+            3-(long)(3u*filter->ramp_samples_done/filter->ramp_samples_total);
+    } else filter->ramp_remaining -= ramp_count;
 
     for (long i = ramp_count; i < length; ++i) {
         float current = samples[i];
@@ -525,6 +549,15 @@ static int reloq_core_prepare_formant(
             filter, clock, specification->frequency_hz,
             specification->bandwidth_hz, transition))
         return -1;
+    if (transition && clock->voice_reference_rate>0 &&
+        clock->samples_per_millisecond*1000>clock->voice_reference_rate) {
+        /* Three reference samples represent a fixed time, not a fixed
+         * number of samples at every expanded output rate. Preserve their
+         * three coefficient values while spreading them over that time. */
+        long samples=lroundf(fminf(64.0f,3000.0f*clock->samples_per_millisecond/
+                                        clock->voice_reference_rate));
+        if(samples>3)filter->ramp_samples_total=(unsigned)samples;
+    }
     if (inverse && reloq_core_antiresonator_coefficients(
                        filter, coefficients))
         return -1;
@@ -686,6 +719,8 @@ int reloq_core_serial_frame_begin(
                         stage->ramp_previous[row] = stage->previous_gain;
                     }
                     stage->ramp_remaining = 3;
+                    stage->ramp_samples_total = 0;
+                    stage->ramp_samples_done = 0;
                 } else {
                     stage->ramp_remaining = 0;
                 }
@@ -1914,6 +1949,7 @@ static int voiced_frame_render_owned(
     const int shaped=state->frication_reference_rate==16000 && noise->sample_rate>=16000;
     noise->clock.noise_reference_rate=state->frication_reference_rate;
     noise->clock.noise_reference_formants=state->reference_formants;
+    noise->clock.voice_reference_rate=state->glottal_reference_rate;
     const struct reloq_core_noise_frame *params = &frame->noise;
     if(state->frication_reference_rate>0 && !shaped)
         reloq_core_frication_bank_colour(&noise->fricatives,noise->sample_rate,

@@ -1,4 +1,4 @@
-"""CJK voices keep the slow and accepted fast clocks at the right rates."""
+"""Native voices keep the slow and accepted fast clocks at the right rates."""
 import argparse
 from array import array
 import json
@@ -15,8 +15,12 @@ def main():
     parser.add_argument('--library', type=Path, required=True)
     library = parser.parse_args().library
     checks = 0
-    for filename in ('slow_clock_cjk_before_dev3.json', 'fast_clock_cjk_dev3.json',
-                     'slow_clock_cjk_wpm.json', 'fast_clock_cjk_wpm.json'):
+    for filename in ('slow_clock_cjk_5ms.json', 'fast_clock_cjk_dev3.json',
+                     'slow_clock_cjk_wpm_5ms.json', 'fast_clock_cjk_wpm.json',
+                     'fast_clock_cjk_transition.json',
+                     'clock_cjk_wpm434_5ms.json', 'clock_cjk_wpm435_5ms.json',
+                     'clock_western_wpm434_5ms.json', 'clock_western_wpm435_5ms.json',
+                     'clock_western_vs96_5ms.json'):
         reference = json.loads((ROOT/'tests/data'/filename).read_text(encoding='utf8'))
         size = reference['window_samples']
         for case in reference['cases']:
@@ -37,7 +41,7 @@ def main():
             error=math.sqrt(sum((a-b)**2 for a,b in zip(actual,expected))/sum(v*v for v in expected))
             assert error<0.01,(filename,hex(case['language']),case['speed'],case['gender'],error)
             checks+=1
-    print(f'CJK acoustic clocks: {checks} slow and fast speech envelopes match')
+    print(f'Acoustic clocks: {checks} slow, fast and adjacent speech envelopes match')
 
 
 if __name__ == '__main__':

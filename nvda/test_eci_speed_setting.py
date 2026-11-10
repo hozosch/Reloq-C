@@ -16,7 +16,7 @@ def main():
             text = ''.join(parts)
             # Include the native value used by the NVDA 60 slider, a slower
             # setting and a faster one. Compare the actual PCM, not just WPM.
-            for speed in (62, 80, 84, 90, 95, 100, 106, 140):
+            for speed in (62, 80, 84, 90, 95, 96, 97, 99, 100, 102, 104, 106, 140):
                 engine.tags(0)
                 engine.voice(6, speed)
                 configured = engine.speak(text)
@@ -52,6 +52,19 @@ def main():
                 engine.voice(6, speed)
                 engine.add(word + suffix)
                 assert engine.finish() == tagged, (hex(language), speed, 'queued speed')
+                checks += 1
+            # Neighboring rates in a queued sentence must use identical
+            # native timing for tags and setters, in either direction.
+            for first, second in ((95, 96), (96, 95)):
+                engine.voice(6, first)
+                engine.tags(1)
+                tagged = engine.speak(prefix + f'`vs{second} ' + word + suffix)
+                engine.tags(0)
+                engine.voice(6, first)
+                engine.add(prefix)
+                engine.voice(6, second)
+                engine.add(word + suffix)
+                assert engine.finish() == tagged, (hex(language), first, second, 'adjacent speed')
                 checks += 1
         finally:
             engine.close()

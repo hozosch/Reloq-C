@@ -47,6 +47,8 @@ struct reloq_core_clock {
     /* Number of measured noise poles when extending that reference.
      * Zero retains the legacy five-pole calibration convention. */
     unsigned noise_reference_formants;
+    /* Optional reference clock for the extended speech vocal tract. */
+    float voice_reference_rate;
 };
 
 /* Klatt's reference sample-rate coefficients. rate_kind is the original
@@ -75,6 +77,11 @@ struct reloq_core_resonator {
     int stable;
     double coupled_real;
     double coupled_imaginary;
+    /* For the extended-rate speech tract, the three reference coefficient
+     * steps may each last several output samples. Zero keeps the original
+     * one-sample-per-step numeric contract. */
+    unsigned ramp_samples_total;
+    unsigned ramp_samples_done;
 };
 
 /* Set coefficients for an enabled second-order resonator from its radius
