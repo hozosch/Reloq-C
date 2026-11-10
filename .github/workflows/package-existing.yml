@@ -15,46 +15,64 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Verify platform results and unchanged build inputs
+      - name: Verify the platform and real NVDA test evidence
         id: source
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           python3 - <<'PY'
-          import json, os, subprocess, sys
-          request = json.load(open('.github/package-source.json'))
-          run_id, commit = request['run_id'], request['source_commit']
+          import json, os, subprocess
+          from pathlib import Path
+          request = json.loads(Path('.github/package-source.json').read_text())
+          run_id, source = request['run_id'], request['source_commit']
+          probe_id, probe = request['nvda_settings_run_id'], request['nvda_settings_commit']
           assert isinstance(run_id, int) and run_id > 0
+          assert isinstance(probe_id, int) and probe_id > 0
           repo = os.environ['GITHUB_REPOSITORY']
-          run = json.loads(subprocess.check_output(['gh', 'api', f'repos/{repo}/actions/runs/{run_id}']))
-          assert run['head_sha'] == commit and run['path'] == '.github/workflows/packages.yml'
-          jobs = json.loads(subprocess.check_output(['gh', 'api', f'repos/{repo}/actions/runs/{run_id}/jobs?filter=all&per_page=100']))['jobs']
-          required = {'dictionaries', 'android', 'sapi / native (x64)', 'sapi / native (x86)', 'sapi / installer'}
+          def api(path):
+              return json.loads(subprocess.check_output(['gh', 'api', f'repos/{repo}/{path}']))
+          run = api(f'actions/runs/{run_id}')
+          assert run['status'] == 'completed' and run['head_sha'] == source
+          assert run['path'] == '.github/workflows/packages.yml'
+          jobs = api(f'actions/runs/{run_id}/jobs?filter=all&per_page=100')['jobs']
           good = {job['name'] for job in jobs if job['conclusion'] == 'success'}
-          assert required <= good, 'Platform validation did not pass'
-          changed = subprocess.check_output(['git', 'diff', '--name-only', commit, 'HEAD'], text=True).splitlines()
-          allowed = {'.github/package-source.json', '.github/workflows/package-existing.yml', 'tools/release_packages.py',
-                     '.github/workflows/packages.yml', '.github/workflows/release.yml',
-                     'tests/test_reloq_eci.c', 'vendor/openevv61/lang/engb61/rules/constants',
-                     'addon/synth/synthDrivers/reloqC/__init__.py', 'addon/test_synth.py', 'addon/nvda_test_api.py',
-                     'addon/synth/doc/en/readme.html', 'addon/synth/doc/de/readme.html',
-                     'README.md', 'docs/USER-GUIDE.en.md', 'docs/USER-GUIDE.de.md',
-                     'docs/CURRENT-WORK.md', 'docs/releases/1.0.1.md', 'docs/changes/1.0.1.md',
-                     'docs/validation/1.0.1.json'}
-          # The maintenance constants are not runtime input: Makefile.native
-          # builds the checked-in C arrays, which must still match.
-          # NVDA Python and packaged guides may change because this job
-          # rebuilds and tests the add-on below. Native Windows/Android
-          # sources, data, versions and build scripts remain protected.
-          assert set(changed) <= allowed, 'Runtime, data or build-script inputs changed: rebuild platforms'
-          sys.path.insert(0, 'addon')
-          from build_synth import refresh_community_dictionaries
-          refresh_community_dictionaries()
-          subprocess.run(['git', 'diff', '--exit-code', '--', 'data/community'], check=True)
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
-              out.write(f'run_id={run_id}\n')
-          print(f'Windows/Android inputs identical to {commit}; platform checks passed in run {run_id}; NVDA is rebuilt and tested')
+          required = {'version', 'dictionaries', 'native-regressions', 'android',
+                      'sapi / native (x64)', 'sapi / native (x86)', 'sapi / installer', 'nvda'}
+          assert required <= good, 'A platform validation did not pass'
+          nvda = next(job for job in jobs if job['name'] == 'nvda-windows')
+          assert any(step['name'] == 'Verify packaged Windows core and NVDA integration' and
+                     step['conclusion'] == 'success' for step in nvda['steps'])
+          failed = {job['name'] for job in jobs if job['conclusion'] in ('failure','timed_out','cancelled')}
+          assert failed <= {'nvda-windows'}, 'An unrelated validation failed'
+          probe_run = api(f'actions/runs/{probe_id}')
+          assert probe_run['status'] == 'completed' and probe_run['conclusion'] == 'success'
+          assert probe_run['head_sha'] == probe
+          assert probe_run['path'] == '.github/workflows/real-nvda-diagnostic.yml'
+          probe_jobs = api(f'actions/runs/{probe_id}/jobs?filter=all&per_page=100')['jobs']
+          assert any(job['name'] == 'settings' and job['conclusion'] == 'success' for job in probe_jobs)
+          def git(*args):
+              return subprocess.check_output(['git', *args], text=True)
+          changed = set(git('diff', '--name-only', source, 'HEAD').splitlines())
+          allowed = {'.github/package-source.json', '.github/workflows/package-existing.yml',
+                     'addon/test_nvda_real_settings_plugin.py'}
+          assert changed <= allowed, f'Build or runtime inputs changed: {changed - allowed}'
+          probe_changed = set(git('diff', '--name-only', source, probe).splitlines())
+          assert probe_changed <= {'addon/test_nvda_real_settings_plugin.py',
+                                   '.github/workflows/real-nvda-diagnostic.yml'}
+          test_path = 'addon/test_nvda_real_settings_plugin.py'
+          assert git('show', f'{probe}:{test_path}') == Path(test_path).read_text()
+          workflow = git('show', f'{probe}:.github/workflows/real-nvda-diagnostic.yml')
+          assert f'run-id: {run_id}' in workflow and 'name: nvda-addon' in workflow
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'run_id={run_id}\n')
+          print(f'Platform run {run_id} and real NVDA settings run {probe_id} verified; runtime inputs unchanged')
           PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: dictionary-snapshot
+          path: data/community
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ github.token }}
       - uses: actions/download-artifact@v4
         with:
           pattern: sapi-*
@@ -67,37 +85,36 @@ jobs:
           path: artifacts/android
           run-id: ${{ steps.source.outputs.run_id }}
           github-token: ${{ github.token }}
-      - name: Install translation compiler
-        timeout-minutes: 6
-        run: |
-          if command -v msgfmt >/dev/null; then exit 0; fi
-          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
-          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends gettext
-      - name: Package NVDA using the verified SAPI x64 core
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-addon
+          path: artifacts/nvda
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ github.token }}
+      - name: Verify the exact NVDA build source
         run: |
           python3 - <<'PY'
-          import pathlib, sys, zipfile
-          sys.path.insert(0, 'addon')
-          from build_synth import build, DEFAULT_OUTPUT
-          payload, = pathlib.Path('artifacts/sapi/sapi-native-x64').glob('*.zip')
-          with zipfile.ZipFile(payload) as archive:
+          import json, pathlib, zipfile
+          request = json.loads(pathlib.Path('.github/package-source.json').read_text())
+          addon, = pathlib.Path('artifacts/nvda').glob('*.nvda-addon')
+          with zipfile.ZipFile(addon) as archive:
               assert archive.testzip() is None
-              core = pathlib.Path('eci/eci.dll')
-              core.write_bytes(archive.read('eci.dll'))
-              # Use the exact dictionary snapshot from the already-verified
-              # platform payload rather than today's potentially newer head.
-              target = pathlib.Path('data/community')
-              for name in archive.namelist():
-                  if name.startswith('dictionaries/'):
-                      (target / pathlib.Path(name).name).write_bytes(archive.read(name))
-          import subprocess
-          for ui in ('en', 'de'):
-              subprocess.run([sys.executable, '-B', 'addon/test_synth.py', ui], check=True)
-          destination = pathlib.Path('artifacts/nvda') / DEFAULT_OUTPUT.name
-          build(destination, core, refresh_dictionaries=False)
+              assert json.loads(archive.read('doc/source.json'))['source_commit'] == request['source_commit']
           PY
-      - name: Collect exactly the three installable packages
-        run: python3 tools/release_packages.py collect artifacts release-packages
+      - name: Collect exactly the three verified installable packages
+        run: |
+          python3 tools/release_packages.py collect artifacts release-packages
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          request = json.loads(Path('.github/package-source.json').read_text())
+          path = Path('release-packages/manifest.json')
+          manifest = json.loads(path.read_text())
+          manifest['build_source_commit'] = request['source_commit']
+          manifest['platform_validation_run_id'] = request['run_id']
+          manifest['nvda_settings_validation_run_id'] = request['nvda_settings_run_id']
+          path.write_text(json.dumps(manifest, indent=2) + '\n')
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: release-packages
