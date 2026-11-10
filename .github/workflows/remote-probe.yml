@@ -1,0 +1,46 @@
+name: Real NVDA Remote diagnostic
+on:
+  push:
+    branches: ['codex/nvda-real-remote-*']
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Download verified NVDA and the pre-word-segmentation add-on
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download release-2026.3.1 --repo nvaccess/nvda --pattern nvda_2026.3.1.exe --dir candidate
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA download failed' }
+          gh release download v1.2.2 --repo hozosch/Reloq-C --pattern reloq-c-synth-x64-1.2.2.nvda-addon --dir candidate
+          if ($LASTEXITCODE -ne 0) { throw 'Add-on download failed' }
+          if ((Get-FileHash candidate/nvda_2026.3.1.exe -Algorithm SHA256).Hash -ne '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052') { throw 'Unexpected NVDA installer' }
+          if ((Get-FileHash candidate/reloq-c-synth-x64-1.2.2.nvda-addon -Algorithm SHA256).Hash -ne '3CFC78682A24AC4DD22E05EF6E51B811D12DAEDF1D67066233BAE4E563D36E20') { throw 'Unexpected add-on' }
+      - name: Create a portable NVDA copy
+        shell: pwsh
+        run: |
+          $portable = Join-Path $pwd 'portable-nvda'
+          $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
+          $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw "Portable NVDA creation failed: $($p.ExitCode)" }
+      - name: Probe follower and leader through NVDA's real Remote transport
+        shell: pwsh
+        env:
+          RELOQ_DUMP_NVDA_LOG: '1'
+        run: |
+          python -B remote-diagnostic/run_probe.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.2.2.nvda-addon --plugin remote-diagnostic/probe_plugin.py --work remote-results
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA Remote probe failed' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nvda-remote-probe-diagnostics
+          path: remote-results/**
+          if-no-files-found: warn
+          retention-days: 7
