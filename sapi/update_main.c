@@ -29,6 +29,18 @@ static BOOL set_automatic(BOOL enabled)
     if(r!=ERROR_SUCCESS)return FALSE;r=RegSetValueExW(key,L"AutomaticUpdates",0,REG_DWORD,(BYTE *)&value,sizeof value);
     RegCloseKey(key);return r==ERROR_SUCCESS;
 }
+static BOOL previously_offered(const WCHAR *version)
+{
+    WCHAR stored[48]={0};DWORD bytes=sizeof stored;
+    return RegGetValueW(HKEY_CURRENT_USER,update_key,L"LastOfferedUpdate",RRF_RT_REG_SZ,NULL,stored,&bytes)==ERROR_SUCCESS
+        &&!wcscmp(stored,version);
+}
+static void remember_offer(const WCHAR *version)
+{
+    HKEY key;if(RegCreateKeyExW(HKEY_CURRENT_USER,update_key,0,NULL,0,KEY_SET_VALUE,NULL,&key,NULL)!=ERROR_SUCCESS)return;
+    RegSetValueExW(key,L"LastOfferedUpdate",0,REG_SZ,(const BYTE *)version,(DWORD)((wcslen(version)+1)*sizeof(WCHAR)));
+    RegCloseKey(key);
+}
 static HINTERNET request(HINTERNET session,const WCHAR *address,HINTERNET *connection)
 {
     URL_COMPONENTSW c={0};WCHAR host[256],path[2048],extra[1024];c.dwStructSize=sizeof c;
@@ -99,6 +111,8 @@ static int check_once(BOOL interactive,char *offered,size_t offered_size)
     if(offered&&strlen(update.version)<offered_size)strcpy(offered,update.version);
     WCHAR version[48],question[512];
     if(!MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,update.version,-1,version,48))return 0;
+    if(!interactive&&previously_offered(version))return 0;
+    if(!interactive)remember_offer(version);
     swprintf(question,512,T(UPDATE_AVAILABLE),version);
     if(MessageBoxW(NULL,question,T(UPDATE_TITLE),MB_YESNO|MB_ICONQUESTION|MB_SETFOREGROUND)!=IDYES)return 0;
     MessageBoxW(NULL,T(UPDATE_DOWNLOADING),T(UPDATE_TITLE),MB_OK|MB_ICONINFORMATION|MB_SETFOREGROUND);
@@ -140,6 +154,18 @@ static INT_PTR CALLBACK dialog(HWND w,UINT message,WPARAM wp,LPARAM lp)
 int WINAPI wWinMain(HINSTANCE instance,HINSTANCE previous,LPWSTR command,int show)
 {
     (void)previous;(void)show;ui=sapi_ui_for_language(GetUserDefaultUILanguage());
+#ifdef RELOQ_UPDATER_TEST
+    int argc=0;LPWSTR *argv=CommandLineToArgvW(GetCommandLineW(),&argc);
+    if(argv&&argc==5&&!wcscmp(argv[1],L"--test-download")) {
+        struct reloq_update test={0};WCHAR *end=NULL;unsigned long size=wcstoul(argv[3],&end,10);
+        int valid=end&&!*end&&size>0&&size<=RELOQ_UPDATE_LIMIT&&
+            WideCharToMultiByte(CP_UTF8,0,argv[2],-1,test.url,sizeof test.url,NULL,NULL)>0&&
+            WideCharToMultiByte(CP_UTF8,0,argv[4],-1,test.sha256,sizeof test.sha256,NULL,NULL)>0;
+        test.size=(uint32_t)size;WCHAR path[MAX_PATH];int ok=valid&&verified_download(&test,path);
+        if(ok)DeleteFileW(path);LocalFree(argv);return ok?0:9;
+    }
+    if(argv)LocalFree(argv);
+#endif
     if(!wcscmp(command,L"--background")){
         HANDLE mutex=CreateMutexW(NULL,TRUE,L"Local\\ReLoqC-SAPI-Update");
         if(!mutex||GetLastError()==ERROR_ALREADY_EXISTS){if(mutex)CloseHandle(mutex);return 0;}

@@ -11,7 +11,7 @@ ifeq ($(ARCH),x86)
 CFLAGS += -msse2 -mfpmath=sse
 LDFLAGS += -Wl,--kill-at
 endif
-all: $(BUILD)/ReLoqSapi.dll $(BUILD)/ReLoqSettings.exe $(BUILD)/ReLoqUpdate.exe $(BUILD)/Test-SAPI.exe $(BUILD)/Test-Dictionary.exe
+all: $(BUILD)/ReLoqSapi.dll $(BUILD)/ReLoqSettings.exe $(BUILD)/ReLoqUpdate.exe $(BUILD)/Test-Update.exe $(BUILD)/Test-SAPI.exe $(BUILD)/Test-Dictionary.exe
 $(BUILD):
 	mkdir -p $@
 $(BUILD)/ReLoqSapi.dll: $(SOURCES) sapi_ddk.h settings.h speed.h pitch.h format.h dictionary_diff.h catalogue.inc ui.inc | $(BUILD)
@@ -20,6 +20,8 @@ $(BUILD)/ReLoqSettings.exe: settings_main.c | $(BUILD)
 	$(CC) $(CFLAGS) -municode -mwindows $< $(LDFLAGS) -luser32 -o $@
 $(BUILD)/ReLoqUpdate.exe: update_main.c update_data.c update_data.h ui.inc version.py | $(BUILD)
 	$(CC) $(CFLAGS) -DRELOQ_APP_VERSION=\"$(VERSION)\" -municode -mwindows update_main.c update_data.c $(LDFLAGS) -luser32 -lgdi32 -lshell32 -lwinhttp -ladvapi32 -o $@
+$(BUILD)/Test-Update.exe: update_main.c update_data.c update_data.h ui.inc version.py | $(BUILD)
+	$(CC) $(CFLAGS) -DRELOQ_UPDATER_TEST -DRELOQ_APP_VERSION=\"$(VERSION)\" -municode -mwindows update_main.c update_data.c $(LDFLAGS) -luser32 -lgdi32 -lshell32 -lwinhttp -ladvapi32 -o $@
 $(BUILD)/Test-SAPI.exe: test_windows.c guids.c sapi_ddk.h catalogue.inc | $(BUILD)
 	$(CC) $(CFLAGS) -municode test_windows.c guids.c $(LDFLAGS) $(LIBS) -o $@
 

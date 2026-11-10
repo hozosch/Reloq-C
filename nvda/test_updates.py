@@ -158,6 +158,55 @@ class Updates(unittest.TestCase):
                 self.assertEqual(len(installed), 0 if wrong_identity or closed or corrupt else 1)
                 self.assertTrue(all(not path.exists() for path in paths))
 
+    def test_automatic_offer_checks_consent_and_package_identity(self):
+        source = Path(__file__).resolve().parents[1] / 'addon/synth/globalPlugins/reloqCDictionaries/__init__.py'
+        tree = ast.parse(source.read_text())
+        code = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == 'GlobalPlugin')
+        class Thread:
+            def __init__(self, *, target, **kwargs): self.target = target
+            def start(self): self.target()
+        for consent, wrong_identity, corrupt, enabled in ((True,False,False,True),
+                (False,False,False,True),(True,True,False,True),(True,False,True,True),
+                (True,False,False,False)):
+            with self.subTest(consent=consent, identity=wrong_identity, corrupt=corrupt, enabled=enabled):
+                output=io.BytesIO()
+                with zipfile.ZipFile(output,'w') as archive:
+                    archive.writestr('manifest.ini',json.dumps(dict(
+                        name='wrong' if wrong_identity else 'reloqC',version='0.2.197')))
+                data=output.getvalue()
+                asset={**self.asset,'size':len(data),'digest':'sha256:'+hashlib.sha256(data).hexdigest()}
+                candidate=select([{'assets':[asset]}],'0.2.196')
+                installed=[];messages=[];paths=[]
+                def transfer(update,folder):
+                    path=download(update,folder,fetch=lambda *a,**kw:io.BytesIO(data+b'x' if corrupt else data))
+                    paths.append(path);return path
+                def bundle(path):
+                    with zipfile.ZipFile(path) as archive:
+                        return types.SimpleNamespace(manifest=json.loads(archive.read('manifest.ini')))
+                adapter=types.ModuleType('synthDrivers.reloqC')
+                adapter._reloq_updates=types.SimpleNamespace(download=transfer)
+                installer=types.ModuleType('gui.addonGui')
+                installer.installAddon=lambda parent,path:installed.append(path) or True
+                gui=types.ModuleType('gui');gui.mainFrame=object()
+                gui.messageBox=lambda message,*a,**kw:messages.append(message) or (1 if consent else 0)
+                wx=types.SimpleNamespace(CallAfter=lambda f,*a:f(*a),YES=1,YES_NO=2,ICON_QUESTION=4,OK=8,ICON_ERROR=16)
+                environment=dict(globalPluginHandler=types.SimpleNamespace(GlobalPlugin=object),_=lambda s:s,
+                    wx=wx,gui=gui,config=types.SimpleNamespace(conf={'reloqCUpdates':{'automatic':enabled,'lastOffered':''}}),
+                    threading=types.SimpleNamespace(Thread=Thread),tempfile=tempfile,
+                    addonHandler=types.SimpleNamespace(AddonBundle=bundle),ui=types.SimpleNamespace(message=lambda s:None))
+                modules={'synthDrivers':types.ModuleType('synthDrivers'),'synthDrivers.reloqC':adapter,
+                         'gui':gui,'gui.addonGui':installer}
+                exec(compile(ast.Module(body=[code],type_ignores=[]),str(source),'exec'),environment)
+                plugin=environment['GlobalPlugin'].__new__(environment['GlobalPlugin'])
+                plugin._closed=False;plugin._offered=set();plugin._addon_name='reloqC'
+                with patch.dict(sys.modules,modules):
+                    plugin._offer_update(candidate)
+                    plugin._offer_update(candidate)
+                self.assertEqual(len(installed),1 if consent and not wrong_identity and not corrupt and enabled else 0)
+                self.assertTrue(all(not path.exists() for path in paths))
+                if enabled:self.assertEqual(sum('available.' in x for x in messages),1)
+                else:self.assertEqual(messages,[])
+
 
 if __name__ == '__main__':
     unittest.main()

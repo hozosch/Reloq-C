@@ -14,7 +14,8 @@ import ui
 import wx
 
 addonHandler.initTranslation()
-config.conf.spec["reloqCUpdates"] = {"automatic": "boolean(default=True)"}
+config.conf.spec["reloqCUpdates"] = {"automatic": "boolean(default=True)",
+                                    "lastOffered": "string(default='')"}
 
 
 def dictionary_update_message(details):
@@ -756,9 +757,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         self._updates.start()
 
     def _offer_update(self, update):
-        if self._closed or not config.conf['reloqCUpdates']['automatic'] or update.version in self._offered:
+        settings = config.conf['reloqCUpdates']
+        if (self._closed or not settings['automatic'] or update.version in self._offered or
+                update.version == settings['lastOffered']):
             return
         self._offered.add(update.version)
+        settings['lastOffered'] = update.version
         result = gui.messageBox(
             _("Eloquence C version %s is available. Download and install it?") % update.version,
             _("Add-on updates"), wx.YES_NO | wx.ICON_QUESTION, parent=gui.mainFrame)
