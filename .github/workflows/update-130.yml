@@ -268,6 +268,7 @@ jobs:
           python3 android/test_translations.py
           python3 android/test_settings.py --settings-only --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar"
           python3 android/test_direct_boot.py --java-home "$JAVA_HOME"
+          python3 android/test_auto_updates.py --java-home "$JAVA_HOME"
       - name: Download 1.3.0 APK for replacement verification
         env:
           GH_TOKEN: ${{ github.token }}
@@ -296,3 +297,40 @@ jobs:
         run: make -C eci -j2 libreloq_eci.so PROVIDER_LTO=-flto=2
       - name: Compare JNI and direct native audio
         run: python3 android/test_native_transport.py --java-home "$JAVA_HOME" --library eci/libreloq_eci.so
+  collect:
+    needs: [dictionaries, native, addon-windows, installer, android, android-native-test]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: update130-dictionaries
+          path: data/community
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: update130-native-*
+          path: verified/native
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-update130-dev1
+          path: verified/nvda
+      - uses: actions/download-artifact@v4
+        with:
+          name: sapi-update130-dev1
+          path: verified/sapi
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-update130-dev1
+          path: verified/android
+      - name: Verify packaged dictionaries and collect exact installables
+        run: python3 tools/release_packages.py collect verified release-packages
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-packages
+          path: release-packages/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30

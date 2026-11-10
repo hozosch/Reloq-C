@@ -40,7 +40,8 @@ jobs:
           run = json.load(open('/tmp/candidate.json'))
           request = json.load(open('.github/release.json'))
           assert run['conclusion'] == 'success'
-          assert run['path'] in ('.github/workflows/packages.yml', '.github/workflows/package-existing.yml')
+          assert run['path'] in ('.github/workflows/packages.yml', '.github/workflows/package-existing.yml',
+                                 '.github/workflows/update-130.yml')
           assert run['head_sha'] == request['source_commit']
           PY
       - uses: actions/download-artifact@v4

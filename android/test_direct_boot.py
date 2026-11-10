@@ -62,7 +62,7 @@ public class Context {
  public static final String ACTION_MY_PACKAGE_REPLACED="android.intent.action.MY_PACKAGE_REPLACED";
  private String action; public Intent(String a){action=a;} public String getAction(){return action;} }""",
 "android/media/AudioFormat.java": "package android.media; public class AudioFormat { public static final int ENCODING_PCM_16BIT=2; }",
-"android/util/Log.java": "package android.util; public class Log { public static int e(String a,String b,Throwable c){return 0;} }",
+"android/util/Log.java": "package android.util; public class Log { public static int e(String a,String b,Throwable c){return 0;} public static int w(String a,String b,Throwable c){return 0;} }",
 "android/speech/tts/TextToSpeech.java": """package android.speech.tts; public class TextToSpeech {
  public static final int SUCCESS=0, ERROR=-1, ERROR_INVALID_REQUEST=-8, ERROR_SYNTHESIS=-3, ERROR_SERVICE=-4,
  LANG_NOT_SUPPORTED=-2, LANG_COUNTRY_AVAILABLE=1, LANG_AVAILABLE=0; }""",
