@@ -100,7 +100,8 @@ def verify_permissions(path,aapt2):
     listing=subprocess.run([str(aapt2),"dump","permissions",str(path)],
         check=True,capture_output=True,text=True).stdout
     permissions=re.findall(r"uses-permission: name='([^']+)'",listing)
-    if permissions!=["android.permission.INTERNET"]:
+    if permissions!=["android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE", "android.permission.RECEIVE_BOOT_COMPLETED",
+                    "android.permission.POST_NOTIFICATIONS"]:
         raise ValueError("Unexpected APK permissions: "+repr(permissions))
     tree=subprocess.run([str(aapt2),"dump","xmltree",str(path),"--file","AndroidManifest.xml"],
         check=True,capture_output=True,text=True).stdout
@@ -111,7 +112,7 @@ def verify_permissions(path,aapt2):
                         b"android.settings.MANAGE_UNKNOWN_APP_SOURCES",
                         b"android.intent.action.INSTALL_PACKAGE"):
             if removed in dex:raise ValueError("Removed APK installer code remains in DEX")
-    print("APK permissions: INTERNET only; TTS service Direct Boot aware; removed APK installer code absent from DEX")
+    print("APK permissions: internet, persistent checks and notifications; TTS Direct Boot aware; no APK installer code")
     return permissions
 
 

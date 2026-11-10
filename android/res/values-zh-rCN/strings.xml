@@ -113,4 +113,11 @@
     <string name="filter_gain">增益 (dB)</string>
     <string name="filter_width" formatted="false">带宽（八度百分比）</string>
     <string name="filter_nyquist" formatted="false">100% 为一个八度。达到或超过采样率一半的频率不会生效。</string>
+    <string name="automatic_updates">自动检查应用更新</string>
+    <string name="notification_settings">通知设置</string>
+    <string name="notification_explanation">允许通知以了解 ReLoq C 的新版本。也可以手动检查更新。</string>
+    <string name="allow_notifications">允许通知</string>
+    <string name="not_now">暂不</string>
+    <string name="update_notification_title">ReLoq C 更新</string>
+    <string name="update_notification_body">版本 %1$s 已发布。点击查看并下载。</string>
 </resources>

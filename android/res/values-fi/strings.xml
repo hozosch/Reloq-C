@@ -113,4 +113,11 @@
     <string name="filter_gain">Vahvistus (dB)</string>
     <string name="filter_width" formatted="false">Leveys (% oktaavista)</string>
     <string name="filter_nyquist" formatted="false">100 % vastaa yhtä oktaavia. Vähintään puolet näytteenottotaajuudesta olevat taajuudet eivät vaikuta.</string>
+    <string name="automatic_updates">Tarkista sovelluspäivitykset automaattisesti</string>
+    <string name="notification_settings">Ilmoitusasetukset</string>
+    <string name="notification_explanation">Salli ilmoitukset saadaksesi tiedon ReLoq C:n uusista versioista. Voit tarkistaa päivitykset myös itse.</string>
+    <string name="allow_notifications">Salli ilmoitukset</string>
+    <string name="not_now">Ei nyt</string>
+    <string name="update_notification_title">ReLoq C -päivitykset</string>
+    <string name="update_notification_body">Versio %1$s on saatavilla. Avaa tarkistaaksesi ja ladataksesi.</string>
 </resources>

@@ -9,6 +9,7 @@ public final class UpgradeReceiver extends BroadcastReceiver {
     @Override public void onReceive(Context context,Intent intent) {
         if(!Intent.ACTION_MY_PACKAGE_REPLACED.equals(intent.getAction())||!BootPreferences.unlocked(context))return;
         BootPreferences.refresh(context);
+        UpdateScheduler.schedule(context);
         PendingResult pending=goAsync();
         Context app=context.getApplicationContext();
         DictionaryStore.WORK.execute(() -> {

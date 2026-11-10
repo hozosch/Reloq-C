@@ -113,4 +113,11 @@
     <string name="filter_gain">ゲイン (dB)</string>
     <string name="filter_width" formatted="false">帯域幅 (オクターブの%)</string>
     <string name="filter_nyquist" formatted="false">100%は1オクターブです。サンプルレートの半分以上の周波数は無効です。</string>
+    <string name="automatic_updates">アプリの更新を自動的に確認</string>
+    <string name="notification_settings">通知の設定</string>
+    <string name="notification_explanation">新しい ReLoq C のバージョンを知るには通知を許可してください。手動で確認することもできます。</string>
+    <string name="allow_notifications">通知を許可</string>
+    <string name="not_now">後で</string>
+    <string name="update_notification_title">ReLoq C の更新</string>
+    <string name="update_notification_body">バージョン %1$s が利用可能です。タップして確認し、ダウンロードします。</string>
 </resources>

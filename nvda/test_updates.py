@@ -9,10 +9,11 @@ import ast
 import types
 import sys
 import weakref
+import threading
 import zipfile
 from unittest.mock import patch
 from dataclasses import replace
-from _reloq_updates import check, download, select, Update, version
+from _reloq_updates import AutomaticUpdates, check, download, select, Update, version
 
 
 class Updates(unittest.TestCase):
@@ -81,6 +82,28 @@ class Updates(unittest.TestCase):
                 self.assertFalse(Path(str(target)+'.part').exists())
             with self.assertRaises(ValueError):
                 download(replace(update, name='../escape.nvda-addon'), folder)
+
+    def test_automatic_check_is_background_stoppable_and_obeys_setting(self):
+        arrived = threading.Event()
+        calls = []
+        enabled = [False]
+        candidate = select(self.feed, '0.2.196')
+        def fetch(installed):
+            calls.append(installed)
+            return candidate
+        service = AutomaticUpdates('0.2.196', lambda: enabled[0],
+                                   lambda value: arrived.set(), fetch=fetch,
+                                   startup_delay=0, interval=.02)
+        service.start()
+        self.assertFalse(arrived.wait(.06))
+        self.assertEqual(calls, [])
+        enabled[0] = True
+        self.assertTrue(arrived.wait(1))
+        service.stop()
+        service.thread.join(1)
+        self.assertFalse(service.thread.is_alive())
+        self.assertTrue(calls and all(value == '0.2.196' for value in calls))
+        self.assertIsNone(select([{'prerelease': True, 'assets': [self.asset]}], '0.2.196'))
 
     def test_settings_check_download_and_native_installer_handoff(self):
         source = Path(__file__).resolve().parents[1] / 'addon/synth/globalPlugins/reloqCDictionaries/__init__.py'

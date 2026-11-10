@@ -40,6 +40,10 @@ public final class ReLoqService extends TextToSpeechService {
                 BootPreferences.refresh(this);
                 dictionaryStartup=DictionaryStore.start(this);
                 dictionariesStarted=true;
+                new Thread(() -> {
+                    try {UpdateScheduler.schedule(getApplicationContext());}
+                    catch(RuntimeException error) {Log.w("ReLoq","Update scheduling failed",error);}
+                },"ReLoq update scheduling").start();
             } else if(dictionaryStartup!=null&&dictionaryStartup.isDone()) {
                 try {dictionaryStartup.get();}
                 catch(java.util.concurrent.ExecutionException error) {dictionaryStartup=DictionaryStore.retryStartup(this);}

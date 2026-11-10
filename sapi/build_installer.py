@@ -7,7 +7,7 @@ import subprocess
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '1.3.1-dev1'
+from version import VERSION
 
 
 def stage(build, packages):
@@ -26,7 +26,7 @@ def stage(build, packages):
             for name, row in manifest['files'].items():
                 data = archive.read(name)
                 assert hashlib.sha256(data).hexdigest() == row['sha256'], (package, name)
-            for name in ('eci.dll', 'ReLoqSapi.dll', 'ReLoqSettings.exe', 'Test-SAPI.exe'):
+            for name in ('eci.dll', 'ReLoqSapi.dll', 'ReLoqSettings.exe', 'ReLoqUpdate.exe', 'Test-SAPI.exe'):
                 (target / name).write_bytes(archive.read(name))
             shared = {n: archive.read(n) for n in archive.namelist()
                       if n.startswith(('dictionaries/', 'licenses/')) or n in ('LICENSE', 'README.txt')}

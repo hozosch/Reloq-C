@@ -15,7 +15,7 @@ enum {LANGUAGE=100,PROFILE,GENDER,RATE,PAUSES,PITCH,INFLECTION,HEAD,ROUGH,BREATH
       OWN_RATE_ECI,OWN_RATE_WPM,OWN_RATE_WPM_VALUE,OWN_PITCH_ECI,OWN_PITCH_HZ,
       OWN_PITCH_VALUE,OWN_PITCH_HZ_VALUE,PITCH_LABEL,PITCH_GROUP_CONTROL,
       EQ_DIALOG,EQ_ENABLED,EQ_PRESET,EQ_LOW,EQ_MID,EQ_HIGH,EQ_ADVANCED,
-      FILTER_SELECT,FILTER_ENABLED,FILTER_FREQ,FILTER_GAIN,FILTER_WIDTH};
+      FILTER_SELECT,FILTER_ENABLED,FILTER_FREQ,FILTER_GAIN,FILTER_WIDTH,UPDATE_SETTINGS};
 #define DICTIONARY_DONE (WM_APP+31)
 struct dictionary_task {HWND window;HMODULE module;};
 static DWORD WINAPI dictionary_worker(void *parameter)
@@ -419,6 +419,7 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         control(w,L"BUTTON",T(OVERRIDES),WS_TABSTOP|BS_PUSHBUTTON,OVERRIDES,350,266,258,24);
         number(w,HEAD,T(HEAD),293);number(w,ROUGH,T(ROUGH),320);number(w,BREATH,T(BREATH),347);
         control(w,L"BUTTON",T(EQ_DIALOG),WS_TABSTOP|BS_PUSHBUTTON,EQ_DIALOG,350,293,258,24);
+        control(w,L"BUTTON",T(UPDATE_SETTINGS),WS_TABSTOP|BS_PUSHBUTTON,UPDATE_SETTINGS,350,320,258,24);
         check(w,TAGS,T(TAGS),377);check(w,ABBREVIATIONS,T(ABBREVIATIONS),400);
         check(w,PREDICTION,T(PREDICTION),423);check(w,ORIGINAL_QUESTIONS,T(ORIGINAL_QUESTIONS),446);
         check(w,DICTIONARIES,T(DICTIONARIES),469);check(w,BOOST,T(BOOST),492);
@@ -472,6 +473,9 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
     if(id==DICT_DOWNLOAD&&notification==BN_CLICKED){start_dictionary(w,d);return TRUE;}
     if(id==OVERRIDES&&notification==BN_CLICKED){show_overrides(w,d);return TRUE;}
     if(id==EQ_DIALOG&&notification==BN_CLICKED){show_equalizer(w,d);return TRUE;}
+    if(id==UPDATE_SETTINGS&&notification==BN_CLICKED){WCHAR path[2048];
+        if(sapi_module_path(path,2048,L"ReLoqUpdate.exe"))ShellExecuteW(w,L"open",path,NULL,NULL,SW_SHOWNORMAL);
+        return TRUE;}
     if(id==OPEN_FOLDER){WCHAR path[2048];
         if(d->s.directory[0])wcscpy(path,d->s.directory);else if(!sapi_default_dictionary_path(path,2048))return TRUE;
         ShellExecuteW(w,L"open",path,NULL,NULL,SW_SHOWNORMAL);return TRUE;}

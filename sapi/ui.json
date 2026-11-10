@@ -81,7 +81,16 @@
     "FILTER_FREQ",
     "FILTER_GAIN",
     "FILTER_WIDTH",
-    "FILTER_NYQUIST"
+    "FILTER_NYQUIST",
+    "UPDATE_SETTINGS",
+    "AUTO_UPDATE",
+    "CHECK_UPDATE",
+    "UPDATE_TITLE",
+    "UPDATE_AVAILABLE",
+    "UPDATE_NONE",
+    "UPDATE_FAILED",
+    "UPDATE_DOWNLOADING",
+    "UPDATE_LAUNCH_FAILED"
   ],
   "en": [
     "ReLoq C voice settings",
@@ -165,7 +174,16 @@
     "Frequency (1–24000 Hz):",
     "Gain (dB):",
     "Bandwidth (% of octave):",
-    "100% is one octave. Frequencies at or above half the sample rate are inactive."
+    "100% is one octave. Frequencies at or above half the sample rate are inactive.",
+    "Program &updates…",
+    "Automatically check for program updates",
+    "&Check for updates",
+    "ReLoq C updates",
+    "Version %ls is available. Download it and start the installer?",
+    "No newer program version is available.",
+    "Could not check or download the update.",
+    "The update is being downloaded. The installer will open when the download is verified.",
+    "The verified installer could not be opened."
   ],
   "de": [
     "ReLoq C – Stimmeinstellungen",
@@ -249,7 +267,16 @@
     "Frequenz (1–24000 Hz):",
     "Verstärkung (dB):",
     "Bandbreite (% Oktave):",
-    "100 % entspricht einer Oktave. Frequenzen ab der halben Abtastrate sind ohne Wirkung."
+    "100 % entspricht einer Oktave. Frequenzen ab der halben Abtastrate sind ohne Wirkung.",
+    "Programm-&Updates…",
+    "Automatisch nach Programm-Updates suchen",
+    "&Jetzt nach Updates suchen",
+    "ReLoq-C-Updates",
+    "Version %ls ist verfügbar. Herunterladen und das Installationsprogramm starten?",
+    "Es ist keine neuere Programmversion verfügbar.",
+    "Das Update konnte nicht gesucht oder heruntergeladen werden.",
+    "Das Update wird heruntergeladen. Nach der Überprüfung öffnet sich das Installationsprogramm.",
+    "Das geprüfte Installationsprogramm konnte nicht geöffnet werden."
   ],
   "es": [
     "ReLoq C – Ajustes de voz",
@@ -333,7 +360,16 @@
     "Frecuencia (1–24000 Hz):",
     "Ganancia (dB):",
     "Ancho (% de octava):",
-    "100 % equivale a una octava. Las frecuencias desde la mitad de la frecuencia de muestreo no se aplican."
+    "100 % equivale a una octava. Las frecuencias desde la mitad de la frecuencia de muestreo no se aplican.",
+    "&Actualizaciones…",
+    "Buscar actualizaciones automáticamente",
+    "&Buscar actualizaciones",
+    "Actualizaciones de ReLoq C",
+    "La versión %ls está disponible. ¿Descargarla e iniciar el instalador?",
+    "No hay una versión más reciente.",
+    "No se pudo buscar o descargar la actualización.",
+    "Se está descargando la actualización. El instalador se abrirá después de verificarla.",
+    "No se pudo abrir el instalador verificado."
   ],
   "fr": [
     "ReLoq C – Paramètres de voix",
@@ -417,7 +453,16 @@
     "Fréquence (1–24000 Hz):",
     "Gain (dB):",
     "Largeur (% d’octave):",
-    "100 % correspond à une octave. Les fréquences à partir de la moitié du taux d’échantillonnage sont inactives."
+    "100 % correspond à une octave. Les fréquences à partir de la moitié du taux d’échantillonnage sont inactives.",
+    "&Mises à jour…",
+    "Rechercher automatiquement les mises à jour",
+    "&Rechercher les mises à jour",
+    "Mises à jour ReLoq C",
+    "La version %ls est disponible. La télécharger et lancer le programme d’installation ?",
+    "Aucune version plus récente disponible.",
+    "Impossible de rechercher ou télécharger la mise à jour.",
+    "Téléchargement en cours. Le programme d’installation s’ouvrira après vérification.",
+    "Impossible d’ouvrir le programme d’installation vérifié."
   ],
   "it": [
     "ReLoq C – Impostazioni voce",
@@ -501,7 +546,16 @@
     "Frequenza (1–24000 Hz):",
     "Guadagno (dB):",
     "Larghezza (% ottava):",
-    "Il 100% equivale a un’ottava. Le frequenze dalla metà del campionamento non sono attive."
+    "Il 100% equivale a un’ottava. Le frequenze dalla metà del campionamento non sono attive.",
+    "&Aggiornamenti…",
+    "Cerca automaticamente aggiornamenti",
+    "&Cerca aggiornamenti",
+    "Aggiornamenti ReLoq C",
+    "La versione %ls è disponibile. Scaricarla e avviare il programma di installazione?",
+    "Nessuna versione più recente disponibile.",
+    "Impossibile cercare o scaricare l’aggiornamento.",
+    "Download in corso. Il programma di installazione si aprirà dopo la verifica.",
+    "Impossibile aprire il programma di installazione verificato."
   ],
   "pt": [
     "ReLoq C – Configurações de voz",
@@ -585,7 +639,16 @@
     "Frequência (1–24000 Hz):",
     "Ganho (dB):",
     "Largura (% da oitava):",
-    "100% equivale a uma oitava. Frequências a partir da metade da taxa de amostragem ficam inativas."
+    "100% equivale a uma oitava. Frequências a partir da metade da taxa de amostragem ficam inativas.",
+    "&Atualizações…",
+    "Buscar atualizações automaticamente",
+    "&Buscar atualizações",
+    "Atualizações do ReLoq C",
+    "A versão %ls está disponível. Baixar e iniciar o instalador?",
+    "Não há uma versão mais recente.",
+    "Não foi possível buscar ou baixar a atualização.",
+    "A atualização está sendo baixada. O instalador será aberto após a verificação.",
+    "Não foi possível abrir o instalador verificado."
   ],
   "fi": [
     "ReLoq C – Ääniasetukset",
@@ -669,7 +732,16 @@
     "Taajuus (1–24000 Hz):",
     "Vahvistus (dB):",
     "Leveys (% oktaavista):",
-    "100 % vastaa yhtä oktaavia. Vähintään puolet näytteenottotaajuudesta olevat taajuudet eivät vaikuta."
+    "100 % vastaa yhtä oktaavia. Vähintään puolet näytteenottotaajuudesta olevat taajuudet eivät vaikuta.",
+    "&Päivitykset…",
+    "Tarkista päivitykset automaattisesti",
+    "&Tarkista päivitykset",
+    "ReLoq C -päivitykset",
+    "Versio %ls on saatavilla. Ladataanko se ja käynnistetäänkö asennus?",
+    "Uudempaa versiota ei ole saatavilla.",
+    "Päivitystä ei voitu tarkistaa tai ladata.",
+    "Päivitystä ladataan. Asennusohjelma avautuu tarkistuksen jälkeen.",
+    "Tarkistettua asennusohjelmaa ei voitu avata."
   ],
   "el": [
     "ReLoq C – Ρυθμίσεις φωνής",
@@ -753,7 +825,16 @@
     "Συχνότητα (1–24000 Hz):",
     "Ενίσχυση (dB):",
     "Εύρος (% οκτάβας):",
-    "Το 100% ισούται με μία οκτάβα. Συχνότητες από το μισό του ρυθμού δειγματοληψίας είναι ανενεργές."
+    "Το 100% ισούται με μία οκτάβα. Συχνότητες από το μισό του ρυθμού δειγματοληψίας είναι ανενεργές.",
+    "&Ενημερώσεις…",
+    "Αυτόματος έλεγχος ενημερώσεων",
+    "&Έλεγχος ενημερώσεων",
+    "Ενημερώσεις ReLoq C",
+    "Η έκδοση %ls είναι διαθέσιμη. Να γίνει λήψη και εκκίνηση του προγράμματος εγκατάστασης;",
+    "Δεν υπάρχει νεότερη έκδοση.",
+    "Δεν ήταν δυνατός ο έλεγχος ή η λήψη της ενημέρωσης.",
+    "Γίνεται λήψη της ενημέρωσης. Το πρόγραμμα εγκατάστασης θα ανοίξει μετά τον έλεγχο.",
+    "Δεν ήταν δυνατό το άνοιγμα του ελεγμένου προγράμματος εγκατάστασης."
   ],
   "ja": [
     "ReLoq C 音声設定",
@@ -837,7 +918,16 @@
     "周波数 (1–24000 Hz):",
     "ゲイン (dB):",
     "帯域幅 (オクターブの%):",
-    "100%は1オクターブです。サンプルレートの半分以上の周波数は無効です。"
+    "100%は1オクターブです。サンプルレートの半分以上の周波数は無効です。",
+    "更新(&U)…",
+    "更新を自動的に確認",
+    "更新を確認(&C)",
+    "ReLoq C の更新",
+    "バージョン %ls が利用可能です。ダウンロードしてインストーラーを起動しますか？",
+    "新しいバージョンはありません。",
+    "更新を確認またはダウンロードできませんでした。",
+    "更新をダウンロードしています。確認後にインストーラーが開きます。",
+    "確認済みインストーラーを開けませんでした。"
   ],
   "ko": [
     "ReLoq C 음성 설정",
@@ -921,7 +1011,16 @@
     "주파수 (1–24000 Hz):",
     "게인 (dB):",
     "대역폭 (옥타브의 %):",
-    "100%는 1옥타브입니다. 샘플 속도의 절반 이상인 주파수는 적용되지 않습니다."
+    "100%는 1옥타브입니다. 샘플 속도의 절반 이상인 주파수는 적용되지 않습니다.",
+    "업데이트(&U)…",
+    "업데이트 자동 확인",
+    "업데이트 확인(&C)",
+    "ReLoq C 업데이트",
+    "버전 %ls을 사용할 수 있습니다. 다운로드하고 설치 프로그램을 시작할까요?",
+    "새 버전이 없습니다.",
+    "업데이트를 확인하거나 다운로드하지 못했습니다.",
+    "업데이트를 다운로드하고 있습니다. 확인 후 설치 프로그램이 열립니다.",
+    "확인된 설치 프로그램을 열지 못했습니다."
   ],
   "zh": [
     "ReLoq C 语音设置",
@@ -1005,7 +1104,16 @@
     "频率 (1–24000 Hz):",
     "增益 (dB):",
     "带宽（八度百分比）:",
-    "100% 为一个八度。达到或超过采样率一半的频率不会生效。"
+    "100% 为一个八度。达到或超过采样率一半的频率不会生效。",
+    "更新(&U)…",
+    "自动检查程序更新",
+    "检查更新(&C)",
+    "ReLoq C 更新",
+    "版本 %ls 已发布。下载并启动安装程序吗？",
+    "没有更新的程序版本。",
+    "无法检查或下载更新。",
+    "正在下载更新。验证完成后将打开安装程序。",
+    "无法打开已验证的安装程序。"
   ],
   "zh-Hant": [
     "ReLoq C 語音設定",
@@ -1089,6 +1197,15 @@
     "頻率 (1–24000 Hz):",
     "增益 (dB):",
     "頻寬（八度百分比）:",
-    "100% 為一個八度。達到或超過取樣率一半的頻率不會生效。"
+    "100% 為一個八度。達到或超過取樣率一半的頻率不會生效。",
+    "更新(&U)…",
+    "自動檢查程式更新",
+    "檢查更新(&C)",
+    "ReLoq C 更新",
+    "版本 %ls 已推出。要下載並啟動安裝程式嗎？",
+    "沒有更新的程式版本。",
+    "無法檢查或下載更新。",
+    "正在下載更新。驗證完成後會開啟安裝程式。",
+    "無法開啟已驗證的安裝程式。"
   ]
 }

@@ -70,6 +70,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             check(not panel.pitch_hz_value.IsEnabled() and not panel.wpm_value.IsEnabled(), 'initial pitch or rate control enabled')
             check(not panel.eq_preset.IsEnabled(), 'initial equalizer control enabled')
             check(panel.pitch_hz_value.GetName() and all(x.GetName() for x in panel.eq_bands), 'accessible control names missing')
+            check(panel.auto_update.GetValue(), 'automatic update checks should be enabled by default')
+            panel.auto_update.SetValue(False)
 
             panel.pitch_hz_mode.SetValue(True)
             event(panel.pitch_hz_mode,wx.wxEVT_CHECKBOX)
@@ -110,6 +112,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             panel.eq_dirty=True
 
             panel.onSave()
+            check(not config.conf['reloqCUpdates']['automatic'], 'automatic update setting did not save')
             stored=tuple(section.get(key) for key in ('_pitchHertz','_rateWpm','_eqEnabled'))
             check(stored==(151,50,True), f'saved values: {stored!r}; keys: {list(section)!r}')
             check(section.get('_eqFilter1Frequency')==777 and section.get('_eqFilter1Enabled') is True,

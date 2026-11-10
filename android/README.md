@@ -2,7 +2,7 @@
 
 ReLoq C uses the same C pronunciation and acoustic core as the NVDA
 add-on. Version `1.2.2` targets ARM64 (`arm64-v8a`), Android 8/API 26
-or later. Speech runs offline. Network access is used only when you explicitly update pronunciation dictionaries or check for an app update. Package downloads open in the browser.
+or later. Speech runs offline. Network access is used for dictionary updates and automatic or manual app-update checks. Package downloads open in the browser.
 
 ## Install or update
 
@@ -28,7 +28,7 @@ The APK retains the signing certificate and app identity used by version 1.1.2.
 
 ## Speech before the first unlock
 
-The TTS service is marked Direct Boot aware. While the device is locked after a reboot, it uses device-protected copies of speech settings and the active, merged dictionary volumes. The source files and their original paths remain in credential-protected storage. Dictionary changes, including removal, refresh the device-protected copy; in-progress speech retains its snapshot until finished. The first utterance waits for the selected complete set, and a missing required copy produces a synthesis error instead of using an incomplete dictionary. For updates that retain the same app identity, an update receiver migrates existing settings and dictionaries; opening the settings once while unlocked also refreshes the copies. The change to a separate app identity does not transfer private data. No boot or other additional permission is requested. Real-device testing before first unlock is still required. Play Protect decisions cannot be predicted from the manifest or signing checks alone.
+The TTS service is marked Direct Boot aware. While the device is locked after a reboot, it uses device-protected copies of speech settings and the active, merged dictionary volumes. The source files and their original paths remain in credential-protected storage. Dictionary changes, including removal, refresh the device-protected copy; in-progress speech retains its snapshot until finished. The first utterance waits for the selected complete set, and a missing required copy produces a synthesis error instead of using an incomplete dictionary. For updates that retain the same app identity, an update receiver migrates existing settings and dictionaries; opening the settings once while unlocked also refreshes the copies. The change to a separate app identity does not transfer private data. The boot permission lets the system retain scheduled update checks across a restart. Real-device testing before first unlock is still required. Play Protect decisions cannot be predicted from the manifest or signing checks alone.
 
 ## Voice and output settings
 
@@ -217,15 +217,14 @@ python3 android/verify_apk.py dist/reloq-c-android-arm64-1.2.2.apk
 ```
 
 Build verification checks signatures, the install-critical resource table,
-16-KiB ELF compatibility and the signing certificate and whether the package has a separate app identity. The app retains its browser update flow and INTERNET-only permission
+16-KiB ELF compatibility and the signing certificate and whether the package has a separate app identity. The app retains its browser update flow and requests internet, network state, boot scheduling and notification permissions
 profile. Host checks do not replace device and TalkBack testing.
 
 For an isolated build, pass `--build-dir /absolute/fresh/build-directory`; the output APK path remains controlled by `--output`.
 
 ## App updates
 
-Choose **App updates** on the settings screen, then **Check for updates**. The app checks published GitHub Releases on request. If a newer ARM64 package is available, choose **Open download in browser**. The release link must name this project’s newer ARM64 APK on GitHub, with valid size and SHA-256 metadata. The browser downloads the file and Android handles installation and signature checks. ReLoq does not request package-install permission or provide an APK installation service. Keep Play Protect enabled; a warning is not a successful security check.
+Choose **App updates** on the settings screen, then **Check for updates**. By default, the app periodically checks published GitHub Releases and notifies you of a newer version. You can disable automatic checks on this screen. On Android 13 or later, notification permission is requested when you open the settings; without it the manual check still works. Android can defer background checks to conserve power. If a newer ARM64 package is available, choose **Open download in browser**. The release link must name this project’s newer ARM64 APK on GitHub, with valid size and SHA-256 metadata. The browser downloads the file and Android handles installation and signature checks. ReLoq does not request package-install permission or provide an APK installation service. Keep Play Protect enabled; a warning is not a successful security check.
 
 Installable packages are available from [GitHub Releases](https://github.com/hozosch/Reloq-C/releases).
-There is no background polling and the speech service does not perform update
-downloads. Package updates and dictionary updates are separate actions.
+The speech service does not perform update downloads. Package updates and dictionary updates are separate actions.

@@ -114,4 +114,11 @@
     <string name="filter_gain">Gain (dB)</string>
     <string name="filter_width" formatted="false">Bandwidth (% of octave)</string>
     <string name="filter_nyquist" formatted="false">100% is one octave. Frequencies at or above half the sample rate are inactive.</string>
+    <string name="automatic_updates">Automatically check for app updates</string>
+    <string name="notification_settings">Notification settings</string>
+    <string name="notification_explanation">Allow notifications to be informed about new ReLoq C versions. You can still check manually without notifications.</string>
+    <string name="allow_notifications">Allow notifications</string>
+    <string name="not_now">Not now</string>
+    <string name="update_notification_title">ReLoq C updates</string>
+    <string name="update_notification_body">Version %1$s is available. Tap to review and download.</string>
 </resources>

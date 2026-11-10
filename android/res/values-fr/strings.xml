@@ -113,4 +113,11 @@
     <string name="filter_gain">Gain (dB)</string>
     <string name="filter_width" formatted="false">Largeur (% d’octave)</string>
     <string name="filter_nyquist" formatted="false">100 % correspond à une octave. Les fréquences à partir de la moitié du taux d’échantillonnage sont inactives.</string>
+    <string name="automatic_updates">Rechercher automatiquement les mises à jour</string>
+    <string name="notification_settings">Paramètres des notifications</string>
+    <string name="notification_explanation">Autorisez les notifications pour connaître les nouvelles versions de ReLoq C. La recherche manuelle reste possible.</string>
+    <string name="allow_notifications">Autoriser les notifications</string>
+    <string name="not_now">Pas maintenant</string>
+    <string name="update_notification_title">Mises à jour de ReLoq C</string>
+    <string name="update_notification_body">La version %1$s est disponible. Touchez pour consulter et télécharger.</string>
 </resources>

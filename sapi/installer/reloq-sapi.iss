@@ -13,7 +13,7 @@ AppName=ReLoq C SAPI5
 AppVerName=ReLoq C SAPI5
 UninstallDisplayName=ReLoq C SAPI5
 AppVersion={#AppVersion}
-VersionInfoVersion=1.3.1.0
+VersionInfoVersion=1.3.0.0
 AppPublisher=ReLoq C contributors
 AppPublisherURL=https://github.com/hozosch/Reloq-C
 AppSupportURL=https://github.com/hozosch/Reloq-C/issues
@@ -81,10 +81,12 @@ zh_tw.UserGuide=使用指南
 Source: "{#Payload}\x64\eci.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
 Source: "{#Payload}\x64\ReLoqSapi.dll"; DestDir: "{app}"; Flags: ignoreversion regserver 64bit; Check: Is64BitInstallMode
 Source: "{#Payload}\x64\ReLoqSettings.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
+Source: "{#Payload}\x64\ReLoqUpdate.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
 Source: "{#Payload}\x64\Test-SAPI.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
 Source: "{#Payload}\x86\eci.dll"; DestDir: "{app}\x86"; Flags: ignoreversion
 Source: "{#Payload}\x86\ReLoqSapi.dll"; DestDir: "{app}\x86"; Flags: ignoreversion regserver 32bit
 Source: "{#Payload}\x86\ReLoqSettings.exe"; DestDir: "{app}\x86"; Flags: ignoreversion
+Source: "{#Payload}\x86\ReLoqUpdate.exe"; DestDir: "{app}\x86"; Flags: ignoreversion
 Source: "{#Payload}\x86\Test-SAPI.exe"; DestDir: "{app}\x86"; Flags: ignoreversion
 ; Keep existing user edits, including a prior manual x86 installation.
 Source: "{commonpf32}\ReLoq C\SAPI5\dictionaries\*.dic"; DestDir: "{app}\dictionaries"; Flags: external skipifsourcedoesntexist onlyifdoesntexist uninsneveruninstall; Check: Is64BitInstallMode
@@ -97,6 +99,10 @@ Source: "Inno-Setup-LICENSE.txt"; DestDir: "{app}\licenses"; Flags: ignoreversio
 [InstallDelete]
 Type: files; Name: "{app}\Install-SAPI.exe"
 
+[Registry]
+Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "ReLoqCUpdates"; ValueData: """{app}\ReLoqUpdate.exe"" --background"; Flags: uninsdeletevalue; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "ReLoqCUpdates"; ValueData: """{app}\x86\ReLoqUpdate.exe"" --background"; Flags: uninsdeletevalue; Check: not Is64BitInstallMode
+
 [Icons]
 Name: "{group}\ReLoq C - {cm:UserGuide}"; Filename: "{app}\README.txt"
 Name: "{group}\ReLoq C - {cm:VoiceSettings}"; Filename: "{app}\ReLoqSettings.exe"; Check: Is64BitInstallMode
@@ -104,6 +110,8 @@ Name: "{group}\ReLoq C - {cm:VoiceSettings}"; Filename: "{app}\x86\ReLoqSettings
 Name: "{group}\{cm:UninstallProgram,ReLoq C SAPI5}"; Filename: "{uninstallexe}"
 
 [Run]
+Filename: "{app}\ReLoqUpdate.exe"; Parameters: "--background"; Flags: nowait skipifsilent runasoriginaluser; Check: Is64BitInstallMode
+Filename: "{app}\x86\ReLoqUpdate.exe"; Parameters: "--background"; Flags: nowait skipifsilent runasoriginaluser; Check: not Is64BitInstallMode
 Filename: "{app}\ReLoqSettings.exe"; Description: "{cm:VoiceSettings}"; Flags: postinstall nowait skipifsilent runasoriginaluser; Check: Is64BitInstallMode
 Filename: "{app}\x86\ReLoqSettings.exe"; Description: "{cm:VoiceSettings}"; Flags: postinstall nowait skipifsilent runasoriginaluser; Check: not Is64BitInstallMode
 

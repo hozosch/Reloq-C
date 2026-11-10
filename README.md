@@ -45,7 +45,7 @@ All three integrations are available. Android offers an offline TTS service, liv
 
 The synthesizer is listed as **Eloquence C**. It requires NVDA 2026.1 or later in a 64-bit process. The DLL is currently built for Windows x64.
 
-Install the `.nvda-addon` file from [Releases](https://github.com/hozosch/Reloq-C/releases) with NVDA, restart NVDA and press **NVDA+Control+S** to select **Eloquence C**. Choose your language and voice in NVDA's Speech settings. The ReLoq settings category manages dictionaries and checks for package updates on request.
+Install the `.nvda-addon` file from [Releases](https://github.com/hozosch/Reloq-C/releases) with NVDA, restart NVDA and press **NVDA+Control+S** to select **Eloquence C**. Choose your language and voice in NVDA's Speech settings. The ReLoq settings category manages dictionaries and offers automatic and manual package update checks.
 
 The [English user guide](docs/USER-GUIDE.en.md) and [German user guide](docs/USER-GUIDE.de.md) cover languages, settings and dictionaries.
 

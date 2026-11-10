@@ -141,7 +141,7 @@ Edits to selected files and files in the dictionary folder are detected in the b
 
 The first utterance waits until the selected dictionaries have loaded completely. If no valid set is available at startup, an error dialog appears. Check the dictionary settings or temporarily choose another synthesizer.
 
-Under **Add-on updates**, choose **Check for add-on updates** to check published GitHub Releases. If a newer package is available, **Download and install update** checks the download and opens NVDA’s normal installation and confirmation flow. Checks run only when requested. If no package has been published, the panel says so. **Update dictionaries now** remains independent of package updates.
+Under **Add-on updates**, choose **Check for add-on updates** to check published GitHub Releases. If a newer package is available, **Download and install update** checks the download and opens NVDA’s normal installation and confirmation flow. By default, checks also run automatically after NVDA starts and periodically thereafter. You can confirm the download and NVDA installation, or turn automatic checks off here. If no package has been published, the panel says so. **Update dictionaries now** remains independent of package updates.
 
 ## Reporting problems
 

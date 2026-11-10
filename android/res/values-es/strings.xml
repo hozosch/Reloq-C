@@ -113,4 +113,11 @@
     <string name="filter_gain">Ganancia (dB)</string>
     <string name="filter_width" formatted="false">Ancho (% de octava)</string>
     <string name="filter_nyquist" formatted="false">100 % equivale a una octava. Las frecuencias desde la mitad de la frecuencia de muestreo no se aplican.</string>
+    <string name="automatic_updates">Buscar actualizaciones automáticamente</string>
+    <string name="notification_settings">Configuración de notificaciones</string>
+    <string name="notification_explanation">Permite las notificaciones para saber cuándo hay nuevas versiones de ReLoq C. También puedes buscar manualmente.</string>
+    <string name="allow_notifications">Permitir notificaciones</string>
+    <string name="not_now">Ahora no</string>
+    <string name="update_notification_title">Actualizaciones de ReLoq C</string>
+    <string name="update_notification_body">La versión %1$s está disponible. Toca para revisar y descargar.</string>
 </resources>

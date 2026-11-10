@@ -4,6 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import threading
 from urllib.parse import unquote, urlsplit
 from urllib.request import Request, urlopen
 
@@ -34,7 +35,7 @@ def select(releases, installed):
         raise ValueError("Invalid release list")
     available = []
     for release in releases:
-        if not isinstance(release, dict) or release.get('draft'):
+        if not isinstance(release, dict) or release.get('draft') or release.get('prerelease'):
             continue
         for asset in release.get('assets', []):
             if not isinstance(asset, dict):
@@ -97,3 +98,37 @@ def download(update, directory, *, fetch=urlopen):
         return target
     finally:
         partial.unlink(missing_ok=True)
+
+
+class AutomaticUpdates:
+    """Check outside NVDA's UI and speech threads, stopping promptly on exit."""
+    def __init__(self, installed, enabled, notify, *, fetch=check, interval=86400,
+                 startup_delay=15):
+        self.installed, self.enabled, self.notify = installed, enabled, notify
+        self.fetch, self.interval, self.startup_delay = fetch, interval, startup_delay
+        self.stopped = threading.Event()
+        self.thread = None
+
+    def start(self):
+        if self.thread is not None:
+            return
+        self.thread = threading.Thread(target=self._run, name='ReLoq automatic updates', daemon=True)
+        self.thread.start()
+
+    def _run(self):
+        if self.stopped.wait(self.startup_delay):
+            return
+        while not self.stopped.is_set():
+            try:
+                if self.enabled():
+                    update = self.fetch(self.installed)
+                    if update is not None and not self.stopped.is_set():
+                        self.notify(update)
+            except Exception:
+                # A failed background check must never interrupt speech.
+                pass
+            if self.stopped.wait(self.interval):
+                return
+
+    def stop(self):
+        self.stopped.set()

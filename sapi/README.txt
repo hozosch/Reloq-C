@@ -163,3 +163,10 @@ Build both architecture payloads, then run the Inno Setup 6.7 compiler on Window
     python sapi/build_installer.py --iscc "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 The .github/workflows/sapi-installer.yml workflow builds, installs, tests and
 uninstalls the combined package. Internal payload ZIPs are not installers.
+
+Program updates
+---------------
+Open the voice settings and choose “Program updates…” to enable or disable
+automatic checks or check immediately. A separate background process checks
+at login and daily thereafter. With your confirmation, it downloads the newer
+installer, verifies its published SHA-256 and starts the normal setup.

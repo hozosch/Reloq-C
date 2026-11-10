@@ -102,6 +102,10 @@ public final class SettingsActivity extends Activity {
     }
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);preferences=getSharedPreferences("settings",MODE_PRIVATE);
+        UpdateScheduler.schedule(this);
+        if(UpdateScheduler.enabled(this))new android.os.Handler(getMainLooper()).post(() -> {
+            if(!isFinishing()&&!isDestroyed())UpdateScheduler.requestNotificationsOnce(this);
+        });
         BootPreferences.refresh(this);
         DictionaryStore.queueSyncBoot(this);
         ScrollView scroll=new ScrollView(this);

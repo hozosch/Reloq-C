@@ -113,4 +113,11 @@
     <string name="filter_gain">Ενίσχυση (dB)</string>
     <string name="filter_width" formatted="false">Εύρος (% οκτάβας)</string>
     <string name="filter_nyquist" formatted="false">Το 100% ισούται με μία οκτάβα. Συχνότητες από το μισό του ρυθμού δειγματοληψίας είναι ανενεργές.</string>
+    <string name="automatic_updates">Αυτόματος έλεγχος ενημερώσεων</string>
+    <string name="notification_settings">Ρυθμίσεις ειδοποιήσεων</string>
+    <string name="notification_explanation">Επιτρέψτε ειδοποιήσεις για τις νέες εκδόσεις του ReLoq C. Μπορείτε επίσης να ελέγξετε χειροκίνητα.</string>
+    <string name="allow_notifications">Να επιτρέπονται ειδοποιήσεις</string>
+    <string name="not_now">Όχι τώρα</string>
+    <string name="update_notification_title">Ενημερώσεις ReLoq C</string>
+    <string name="update_notification_body">Η έκδοση %1$s είναι διαθέσιμη. Πατήστε για έλεγχο και λήψη.</string>
 </resources>

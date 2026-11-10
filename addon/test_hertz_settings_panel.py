@@ -32,6 +32,9 @@ def main():
     builtins._=lambda x:x
     module('addonHandler',initTranslation=lambda:None,
            getCodeAddon=lambda:types.SimpleNamespace(manifest={'name':'reloqC','version':'test'}))
+    class Configuration(dict):
+        spec = {}
+    module('config',conf=Configuration(reloqCUpdates={'automatic':True}))
     module('globalPluginHandler',GlobalPlugin=type('GlobalPlugin',(),{}))
     module('gui',__path__=[],messageBox=lambda *a,**k:None)
     class SettingsPanel(Widget):

@@ -544,3 +544,9 @@ msgstr "Verstärkung des Equalizer-Filters"
 
 msgid "Equalizer filter bandwidth"
 msgstr "Bandbreite des Equalizer-Filters"
+
+msgid "Automatically check for add-on updates"
+msgstr "Automatisch nach Add-on-Updates suchen"
+
+msgid "Eloquence C version %s is available. Download and install it?"
+msgstr "Eloquence C Version %s ist verfügbar. Herunterladen und installieren?"

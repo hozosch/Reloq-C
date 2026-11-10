@@ -5,6 +5,7 @@ import tempfile
 import threading
 
 import addonHandler
+import config
 import globalPluginHandler
 import gui
 from gui.settingsDialogs import NVDASettingsDialog, SettingsPanel
@@ -13,6 +14,7 @@ import ui
 import wx
 
 addonHandler.initTranslation()
+config.conf.spec["reloqCUpdates"] = {"automatic": "boolean(default=True)"}
 
 
 def dictionary_update_message(details):
@@ -270,6 +272,9 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.installed_version = package_manifest['version']
         self.installed_name = package_manifest['name']
         content.Add(wx.StaticText(self, label=_("Add-on updates")), 0, wx.ALL, 10)
+        self.auto_update = wx.CheckBox(self, label=_("Automatically check for add-on updates"))
+        self.auto_update.SetValue(config.conf["reloqCUpdates"]["automatic"])
+        content.Add(self.auto_update, 0, wx.ALL, 10)
         self.package_status = wx.StaticText(self, label=_("Installed version: %s") % self.installed_version)
         content.Add(self.package_status, 0, wx.LEFT | wx.RIGHT, 10)
         self.package_button = wx.Button(self, label=_("Check for add-on updates"))
@@ -629,6 +634,7 @@ class EloquenceSettingsPanel(SettingsPanel):
         return True
 
     def onSave(self):
+        config.conf["reloqCUpdates"]["automatic"] = self.auto_update.GetValue()
         if self.current_synth():
             completed = self.begin()
             try:
@@ -739,8 +745,57 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         super().__init__(*args, **kwargs)
         if EloquenceSettingsPanel not in NVDASettingsDialog.categoryClasses:
             NVDASettingsDialog.categoryClasses.append(EloquenceSettingsPanel)
+        self._closed = False
+        self._offered = set()
+        manifest = addonHandler.getCodeAddon().manifest
+        self._addon_name = manifest['name']
+        from synthDrivers.reloqC import _reloq_updates
+        self._updates = _reloq_updates.AutomaticUpdates(manifest['version'],
+            lambda: config.conf['reloqCUpdates']['automatic'],
+            lambda update: wx.CallAfter(self._offer_update, update))
+        self._updates.start()
+
+    def _offer_update(self, update):
+        if self._closed or not config.conf['reloqCUpdates']['automatic'] or update.version in self._offered:
+            return
+        self._offered.add(update.version)
+        result = gui.messageBox(
+            _("Eloquence C version %s is available. Download and install it?") % update.version,
+            _("Add-on updates"), wx.YES_NO | wx.ICON_QUESTION, parent=gui.mainFrame)
+        if result != wx.YES or self._closed:
+            return
+        ui.message(_("Downloading update…"))
+        def work():
+            from synthDrivers.reloqC import _reloq_updates
+            temporary = tempfile.TemporaryDirectory(prefix='reloq-update-')
+            try:
+                path = _reloq_updates.download(update, temporary.name)
+                wx.CallAfter(self._install_update, update, temporary, path, None)
+            except Exception as error:
+                wx.CallAfter(self._install_update, update, temporary, None, error)
+        threading.Thread(target=work, name='ReLoq download update', daemon=True).start()
+
+    def _install_update(self, update, temporary, path, error):
+        try:
+            if self._closed:
+                return
+            if error:
+                raise error
+            manifest = addonHandler.AddonBundle(str(path)).manifest
+            if manifest['name'] != self._addon_name or manifest['version'] != update.version:
+                raise ValueError('Update package name or version mismatch')
+            from gui.addonGui import installAddon
+            if installAddon(gui.mainFrame, str(path)):
+                ui.message(_("Update handed to NVDA."))
+        except Exception as error:
+            gui.messageBox(_("Update failed: %s") % str(error), _("Add-on updates"),
+                           wx.OK | wx.ICON_ERROR, parent=gui.mainFrame)
+        finally:
+            temporary.cleanup()
 
     def terminate(self):
+        self._closed = True
+        self._updates.stop()
         if EloquenceSettingsPanel in NVDASettingsDialog.categoryClasses:
             NVDASettingsDialog.categoryClasses.remove(EloquenceSettingsPanel)
         super().terminate()

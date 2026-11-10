@@ -113,4 +113,11 @@
     <string name="filter_gain">Verstärkung (dB)</string>
     <string name="filter_width" formatted="false">Bandbreite (% Oktave)</string>
     <string name="filter_nyquist" formatted="false">100 % entspricht einer Oktave. Frequenzen ab der halben Abtastrate sind ohne Wirkung.</string>
+    <string name="automatic_updates">Automatisch nach App-Updates suchen</string>
+    <string name="notification_settings">Benachrichtigungseinstellungen</string>
+    <string name="notification_explanation">Erlaube Benachrichtigungen, um über neue ReLoq-C-Versionen informiert zu werden. Ohne Benachrichtigungen kannst du weiterhin manuell suchen.</string>
+    <string name="allow_notifications">Benachrichtigungen erlauben</string>
+    <string name="not_now">Jetzt nicht</string>
+    <string name="update_notification_title">ReLoq-C-Updates</string>
+    <string name="update_notification_body">Version %1$s ist verfügbar. Zum Prüfen und Herunterladen öffnen.</string>
 </resources>
