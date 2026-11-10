@@ -68,9 +68,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             tones.player = Player('tone')
             tones.decide_beep.register(capture_tone)
             nvwave.decide_playWaveFile.register(capture_wave)
+            import synthDrivers.reloqC as reloq
+            reloq.SynthDriver._make_player = staticmethod(lambda sample_rate: Player('speech'))
             if not synthDriverHandler.setSynth('reloqC'):
                 raise RuntimeError('Could not select Eloquence C')
-            record('synth', name=synthDriverHandler.getSynth().name)
+            synth = synthDriverHandler.getSynth()
+            original_speak = synth.speak
+            def capture_speak(sequence):
+                record('synth_speak', sequence=[str(item) for item in sequence])
+                return original_speak(sequence)
+            synth.speak = capture_speak
+            record('synth', name=synth.name)
             client = _remoteClient._remoteClient
             if client is None:
                 raise RuntimeError('NVDA Remote was not initialized')

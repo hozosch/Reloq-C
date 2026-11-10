@@ -65,6 +65,7 @@ def run(role, exe, addon, plugin, root):
             messages = []
             buffer = b''
             sent = False
+            before_send = 0
             deadline = time.monotonic()+50
             while time.monotonic() < deadline:
                 try:
@@ -82,6 +83,7 @@ def run(role, exe, addon, plugin, root):
                 if role=='leader' and not sent and any(m.get('type')=='channel_joined' for m in messages):
                     # Give the NVDA client time to process channel_joined.
                     time.sleep(1)
+                    before_send = len(read_events(work))
                     send({'type':'speak','sequence':['Fernzugriff Test.'], 'priority':0})
                     send({'type':'tone','hz':763,'length':50,'left':50,'right':50})
                     send({'type':'wave','fileName':ready['wav']})
@@ -95,11 +97,15 @@ def run(role, exe, addon, plugin, root):
                         print('PASS real NVDA follower: speech, queued beep/WAV and direct progress beep sent over TLS', flush=True)
                         return
                 else:
-                    tone = any(e.get('kind')=='beep' and e.get('hz')==763 for e in events)
-                    wave = any(e.get('kind')=='wave' and e.get('file')=='start.wav' for e in events)
-                    pcm = any(e.get('kind')=='audio' and e.get('bytes',0)>0 for e in events)
-                    if tone and wave and pcm:
-                        print('PASS real NVDA leader: remote beep and WAV reached audio feed while ReLoq was active', flush=True)
+                    recent = events[before_send:] if sent else []
+                    tone = any(e.get('kind')=='beep' and e.get('hz')==763 for e in recent)
+                    wave = any(e.get('kind')=='wave' and e.get('file')=='start.wav' for e in recent)
+                    speech = any(e.get('kind')=='synth_speak' and
+                                 'Fernzugriff' in ''.join(e.get('sequence', [])) for e in recent)
+                    outputs = {e.get('source') for e in recent
+                               if e.get('kind')=='audio' and e.get('bytes',0)>0}
+                    if tone and wave and speech and {'tone', 'wave', 'speech'} <= outputs:
+                        print('PASS real NVDA leader: remote speech, beep and WAV reached separate audio feeds', flush=True)
                         return
             raise RuntimeError(f'{role} incomplete: messages={messages!r}, events={events!r}')
     finally:
