@@ -1,5 +1,11 @@
 # Eloquence C – user guide
 
+## Version 1.3.0 – test version
+
+The Eloquence C NVDA settings category can optionally split unfamiliar English words. It is off by default and applies to American and British English. Known words and dictionary entries are preserved where possible; unfamiliar names and foreign words can still be misidentified.
+
+Choose “Import NVDA dictionary” to select an existing NVDA speech dictionary from another driver, then choose its language and either one voice or all voices. Regular expressions, case sensitivity and comments are retained. The imported copy can be edited or removed in the same category; the original file is not changed. Imported rules are applied before NVDA's other speech dictionaries. Native ECI dictionaries use a different format and remain under “Own dictionary files”.
+
 ## Version 1.2.2
 
 The base pitch can optionally be set exactly in hertz. German final A is now also used before commas, colons and other pauses. For new NVDA installations the default pitch of 65 corresponds to the default Reed voice.

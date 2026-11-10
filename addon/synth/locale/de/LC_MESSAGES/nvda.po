@@ -14,6 +14,75 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+msgid "Split unfamiliar English words"
+msgstr "Unbekannte englische Wörter zerlegen"
+
+msgid "Split unfamiliar &English words"
+msgstr "Unbekannte &englische Wörter zerlegen"
+
+msgid "Imported NVDA speech dictionaries:"
+msgstr "Importierte NVDA-Sprachwörterbücher:"
+
+msgid "Import NVDA dictionary…"
+msgstr "NVDA-Wörterbuch importieren…"
+
+msgid "Edit imported dictionary…"
+msgstr "Importiertes Wörterbuch bearbeiten…"
+
+msgid "Remove imported dictionary"
+msgstr "Importiertes Wörterbuch entfernen"
+
+msgid "Imported NVDA dictionaries apply only to their chosen language and voices. Original files are unchanged."
+msgstr "Importierte NVDA-Wörterbücher gelten nur für die gewählte Sprache und Stimmen. Die Originaldateien bleiben unverändert."
+
+msgid "All voices"
+msgstr "Alle Stimmen"
+
+msgid "NVDA cannot save dictionaries in this mode."
+msgstr "NVDA kann in diesem Modus keine Wörterbücher speichern."
+
+msgid "Choose an NVDA speech dictionary"
+msgstr "NVDA-Sprachwörterbuch auswählen"
+
+msgid "NVDA dictionary files (*.dic)|*.dic|All files (*.*)|*.*"
+msgstr "NVDA-Wörterbuchdateien (*.dic)|*.dic|Alle Dateien (*.*)|*.*"
+
+msgid "Language for this dictionary:"
+msgstr "Sprache für dieses Wörterbuch:"
+
+msgid "NVDA dictionary language"
+msgstr "Sprache des NVDA-Wörterbuchs"
+
+msgid "Apply to which voices?"
+msgstr "Für welche Stimmen verwenden?"
+
+msgid "NVDA dictionary voice"
+msgstr "Stimme des NVDA-Wörterbuchs"
+
+msgid "Imported NVDA dictionary entries: %s"
+msgstr "Importierte NVDA-Wörterbucheinträge: %s"
+
+msgid "This NVDA dictionary was already imported. Entries: %s"
+msgstr "Dieses NVDA-Wörterbuch wurde bereits importiert. Einträge: %s"
+
+msgid "NVDA speech dictionaries"
+msgstr "NVDA-Sprachwörterbücher"
+
+msgid "NVDA dictionary import failed: %s"
+msgstr "Import des NVDA-Wörterbuchs fehlgeschlagen: %s"
+
+msgid "Imported NVDA dictionary"
+msgstr "Importiertes NVDA-Wörterbuch"
+
+msgid "NVDA dictionary edit failed: %s"
+msgstr "Bearbeiten des NVDA-Wörterbuchs fehlgeschlagen: %s"
+
+msgid "Remove this imported copy? The original dictionary is kept."
+msgstr "Diese importierte Kopie entfernen? Das ursprüngliche Wörterbuch bleibt erhalten."
+
+msgid "NVDA dictionary removal failed: %s"
+msgstr "Entfernen des NVDA-Wörterbuchs fehlgeschlagen: %s"
+
 #. Translators: Name in NVDA's synthesizer selection dialog.
 #: addon/synth/synthDrivers/reloqC/__init__.py:161
 msgid "Eloquence C"

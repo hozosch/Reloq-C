@@ -151,7 +151,8 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
             assert not any(name.endswith(".rlex") for name in names)
             assert "synthDrivers/reloqC/_reloq_unicode.py" not in names
             assert "doc/licenses/Unicode-LICENSE.txt" in names
-            licenses={"doc/licenses/OpenEVV-LICENSE.txt","doc/licenses/OpenEVV-NOTICE.txt"}
+            licenses={"doc/licenses/OpenEVV-LICENSE.txt", "doc/licenses/OpenEVV-NOTICE.txt",
+                      "doc/licenses/OpenEVV-wordseg-LICENSE.txt", "doc/licenses/OpenEVV-wordseg-NOTICE.txt"}
             assert licenses<=set(names)
             assert not any("openevv" in name.lower() for name in names if name not in licenses)
             assert "locale/de/LC_MESSAGES/nvda.mo" in names
@@ -310,7 +311,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert PitchCommand in driver.supportedCommands
                 assert CharacterModeCommand in driver.supportedCommands
                 assert [setting.id for setting in driver.supportedSettings] == [
-                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode", "_pitchHertz", "_pitchInHertz"]
+                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode", "_pitchHertz", "_pitchInHertz", "_wordSegmentation"]
                 assert driver.supportedSettings[0].availableInSettingsRing
                 assert not any(hasattr(driver, '_'+name) for name in
                                ('glideOpening', 'glideBackness', 'glideSoftness'))
@@ -392,6 +393,32 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert driver_module._parts(["Hello", LangChangeCommand("en-US"), "world",
                     LangChangeCommand(None), "Hallo"]) == [driver_module.EciText("Hello"), driver_module.EciLanguage(65536,"1"),
                     driver_module.EciText("world"), driver_module.EciLanguage(262144,"1"), driver_module.EciText("Hallo")]
+                # The optional text adapter follows language and character
+                # mode boundaries and must not split speech-dictionary output.
+                keys = {"enus": frozenset({"cgroup"}), "engb": frozenset()}
+                transform = lambda text, lang: driver._segment_text(text, lang, keys)
+                guarded = driver_module.SegmentationGuard
+                result = driver_module._parts(["usrdct", LangChangeCommand("en-US"),
+                    "usrdct cgroup", guarded(True), " fdopen", guarded(False), " tmpfiles",
+                    CharacterModeCommand(True), "usrdct", CharacterModeCommand(False),
+                    LangChangeCommand(None), " usrdct"], text_transform=transform)
+                assert result == [driver_module.EciText("usrdct"), driver_module.EciLanguage(65536, "1"),
+                    driver_module.EciText("U S R D C T cgroup"), driver_module.EciText(" fdopen"),
+                    driver_module.EciText(" T M P files "), driver_module.EciText("usrdct", True),
+                    driver_module.EciLanguage(262144, "1"), driver_module.EciText(" usrdct")], result
+                original_imports = driver._imported_dictionaries
+                class Imported:
+                    records = (object(),)
+                    def matches(self, text, language, voice): return language == 0x40000 and text == "nvda"
+                    def process(self, text, language, voice): return "custom" if self.matches(text, language, voice) else text
+                driver._imported_dictionaries = Imported()
+                driver._wordSegmentation = True
+                fake_module("speechDictHandler", dictionaries={})
+                result = driver._protect_tags(["nvda", LangChangeCommand("en-US"), "nvda"])
+                assert isinstance(result[0], guarded) and result[1] == "custom" and isinstance(result[2], guarded)
+                assert result[3].lang == "en-US" and result[4] == "nvda"
+                driver._wordSegmentation = False
+                driver._imported_dictionaries = original_imports
                 german = driver_module.GERMAN
                 english = replace(german, id=0x10000, locale="en_GB", name="Test only")
                 catalog = {german.id: german, english.id: english}

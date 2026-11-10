@@ -23,7 +23,7 @@ from build_translations import translation_entries
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "addon" / "synth"
-DEFAULT_OUTPUT = ROOT / "dist" / "reloq-c-synth-x64-1.2.2.nvda-addon"
+DEFAULT_OUTPUT = ROOT / "dist" / "reloq-c-synth-x64-1.3.0-dev1.nvda-addon"
 RLEX_HEADER = b"RELOQ-DE-SPR-1\n"
 HEX = re.compile(rb"[0-9A-F]+\Z")
 
@@ -87,8 +87,12 @@ def make_entries(dll_path: Path) -> dict[str, bytes]:
     prefix = "synthDrivers/reloqC/"
     for module in ("_reloq_eci_direct.py", "_reloq_eci_transport.py",
                    "_reloq_languages.py", "_reloq_dictionaries.py", "_reloq_dictionary_manager.py",
-                   "_reloq_updates.py"):
+                   "_reloq_updates.py", "_reloq_nvda_dicts.py", "_reloq_wordseg.py"):
         entries[prefix + module] = (ROOT / "nvda" / module).read_bytes()
+    for name in ("enus-sayable", "enus-pieces", "engb-sayable", "engb-pieces"):
+        entries[prefix + "wordseg-data/" + name] = (ROOT / "nvda" / "wordseg-data" / name).read_bytes()
+    entries["doc/licenses/OpenEVV-wordseg-NOTICE.txt"] = (ROOT / "nvda" / "wordseg-data" / "NOTICE").read_bytes()
+    entries["doc/licenses/OpenEVV-wordseg-LICENSE.txt"] = (ROOT / "nvda" / "wordseg-data" / "LICENSE").read_bytes()
     entries["doc/licenses/ReLoq-C-LICENSE.txt"] = (ROOT / "LICENSE").read_bytes()
     entries["doc/licenses/ReLoq-C-NOTICE.txt"] = (ROOT / "NOTICE").read_bytes()
     entries["doc/licenses/Dictionaries-CC0.txt"] = (ROOT / "data/community/LICENSE.md").read_bytes()

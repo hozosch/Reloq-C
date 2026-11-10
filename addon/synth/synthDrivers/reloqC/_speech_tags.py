@@ -17,6 +17,15 @@ class EciTagCommand(SynthCommand):
         return f"EciTagCommand({self.text!r})"
 
 
+class SegmentationGuard(SynthCommand):
+    """Protect a text run matched by an NVDA speech dictionary."""
+    def __init__(self, enabled):
+        self.enabled = bool(enabled)
+
+    def __repr__(self):
+        return f"SegmentationGuard({self.enabled!r})"
+
+
 _NUMBER = re.compile(r"`(vbhz|vwpm|v[bsvfghry]|ts|da|pp|l|p|v(?=[1-9])|(?=[0-9]))([0-9]+)")
 _LIMITS = {"vs": 250, "vg": 1, "ts": 2, "da": 1, "pp": 1,
            "l": 32767, "p": 60000, "v": 9, "": 9, "vbhz": 24000, "vwpm": 6000}

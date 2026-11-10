@@ -48,6 +48,7 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.pending, self.closing = False, False
         self.operation = 0
         self.pitch_dirty = False
+        self.segmentation_dirty = False
         content.Add(wx.StaticText(self, label=_("Exact base pitch")), 0, wx.ALL, 10)
         self.pitch_hz_mode = wx.CheckBox(self, label=_("Use base pitch in &hertz"))
         self.pitch_hz_mode.SetValue(self.synth._pitchInHertz if self.synth else False)
@@ -64,6 +65,10 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.pitch_hz_mode.Bind(wx.EVT_CHECKBOX, self.on_pitch_changed)
         self.pitch_hz_value.Bind(wx.EVT_SPINCTRL, self.on_pitch_changed)
         self.pitch_hz_value.Bind(wx.EVT_TEXT, self.on_pitch_changed)
+        self.segmentation = wx.CheckBox(self, label=_("Split unfamiliar &English words"))
+        self.segmentation.SetValue(getattr(self.synth, "_wordSegmentation", False) if self.synth else False)
+        self.segmentation.Bind(wx.EVT_CHECKBOX, self.on_segmentation_changed)
+        content.Add(self.segmentation, 0, wx.ALL, 10)
         content.Add(wx.StaticText(self, label=_("Pronunciation dictionaries")), 0, wx.ALL, 10)
         self.community = wx.CheckBox(self, label=_("Use &community pronunciation dictionaries"))
         self.community.SetValue(self.synth.communityDictionaries if self.synth else False)
@@ -105,6 +110,24 @@ class EloquenceSettingsPanel(SettingsPanel):
         row.Add(folder, 0, wx.RIGHT, 8)
         self.edits.append(folder)
         content.Add(row, 0, wx.ALL, 10)
+        label = wx.StaticText(self, label=_("Imported NVDA speech dictionaries:"))
+        content.Add(label, 0, wx.LEFT | wx.RIGHT, 10)
+        self.imported = wx.ListBox(self, size=(-1, 100))
+        self.imported.SetName(label.GetLabelText())
+        content.Add(self.imported, 0, wx.EXPAND | wx.ALL, 10)
+        self.imported_records = ()
+        row = wx.BoxSizer(wx.HORIZONTAL)
+        for text, callback in ((_("Import NVDA dictionary…"), self.on_import_nvda),
+                               (_("Edit imported dictionary…"), self.on_edit_nvda),
+                               (_("Remove imported dictionary"), self.on_remove_nvda)):
+            button = wx.Button(self, label=text)
+            button.Bind(wx.EVT_BUTTON, callback)
+            self.edits.append(button)
+            row.Add(button, 0, wx.RIGHT, 8)
+        content.Add(row, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        content.Add(wx.StaticText(self, label=_(
+            "Imported NVDA dictionaries apply only to their chosen language and voices. Original files are unchanged.")),
+            0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
         self.Bind(wx.EVT_WINDOW_DESTROY, self.on_destroy)
         self.redraw()
         self.enable_controls(bool(self.synth))
@@ -178,7 +201,7 @@ class EloquenceSettingsPanel(SettingsPanel):
         threading.Thread(target=work, name='ReLoq package update', daemon=True).start()
 
     def enable_controls(self, enabled):
-        for control in (*self.edits, self.files, self.update, self.community, self.repository):
+        for control in (*self.edits, self.files, self.imported, self.update, self.community, self.repository, self.segmentation):
             control.Enable(enabled)
         self.pitch_hz_mode.Enable(enabled)
         self.pitch_hz_value.Enable(enabled and self.pitch_hz_mode.GetValue())
@@ -187,6 +210,95 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.pitch_dirty = True
         self.pitch_hz_value.Enable(bool(self.current_synth()) and self.pitch_hz_mode.GetValue())
         event.Skip()
+
+    def on_segmentation_changed(self, event):
+        self.segmentation_dirty = True
+        event.Skip()
+
+    def redraw_imported(self, selected=None):
+        self.imported_records = self.synth.imported_dictionary_manager().records if self.synth and hasattr(self.synth, "imported_dictionary_manager") else ()
+        languages = {lang.id: _(lang.name) for lang in self.languages}
+        voices = {voice.id: voice.name for lang in self.languages for voice in lang.voices}
+        labels = []
+        for path, language, voice, _dictionary in self.imported_records:
+            source = path.stem.split("-", 3)[-1]
+            scope = _("All voices") if voice == "all" else voices.get(voice, voice)
+            labels.append(f"{languages.get(language, str(language))} — {scope} — {source}")
+        self.imported.Set(labels)
+        if selected is not None and self.imported_records:
+            self.imported.SetSelection(min(selected, len(self.imported_records) - 1))
+
+    def on_import_nvda(self, event):
+        if not self.current_synth(): return
+        try:
+            from NVDAState import WritePaths, shouldWriteToDisk
+            if not shouldWriteToDisk(): raise PermissionError(_("NVDA cannot save dictionaries in this mode."))
+            folder = str(WritePaths.voiceDictsDir)
+            with wx.FileDialog(self, _("Choose an NVDA speech dictionary"), defaultDir=folder,
+                               wildcard=_("NVDA dictionary files (*.dic)|*.dic|All files (*.*)|*.*"),
+                               style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as dialog:
+                if dialog.ShowModal() != wx.ID_OK: return
+                path = dialog.GetPath()
+            with wx.SingleChoiceDialog(self, _("Language for this dictionary:"),
+                                       _("NVDA dictionary language"), [_(x.name) for x in self.languages]) as dialog:
+                current = next((i for i, language in enumerate(self.languages)
+                                if language.id == self.synth._selectedLanguage), 0)
+                dialog.SetSelection(current)
+                if dialog.ShowModal() != wx.ID_OK: return
+                language = self.languages[dialog.GetSelection()]
+            choices = [_('All voices')] + [voice.name for voice in language.voices]
+            with wx.SingleChoiceDialog(self, _("Apply to which voices?"),
+                                       _("NVDA dictionary voice"), choices) as dialog:
+                dialog.SetSelection(0)
+                if dialog.ShowModal() != wx.ID_OK: return
+                selected = dialog.GetSelection()
+            voice = "all" if selected == 0 else language.voices[selected - 1].id
+            _path, count, created = self.synth.imported_dictionary_manager().import_file(path, language.id, voice)
+            self.redraw_imported()
+            message = (_("Imported NVDA dictionary entries: %s") if created else _("This NVDA dictionary was already imported. Entries: %s")) % count
+            gui.messageBox(message, _("NVDA speech dictionaries"), wx.OK | wx.ICON_INFORMATION, parent=self)
+        except (OSError, ValueError, UnicodeError) as error:
+            gui.messageBox(_("NVDA dictionary import failed: %s") % str(error),
+                           _("NVDA speech dictionaries"), wx.OK | wx.ICON_ERROR, parent=self)
+
+    def on_edit_nvda(self, event):
+        selected = self.imported.GetSelection()
+        if not self.current_synth() or selected == wx.NOT_FOUND: return
+        try:
+            from NVDAState import shouldWriteToDisk
+            if not shouldWriteToDisk(): raise PermissionError(_("NVDA cannot save dictionaries in this mode."))
+            from gui.speechDict import DictionaryDialog
+            path, _language, _voice, original = self.imported_records[selected]
+            dictionary = type(original)()
+            dictionary.load(str(path))
+            class ImportedDictionaryDialog(DictionaryDialog):
+                def __init__(dialog, parent):
+                    super().__init__(parent, _("Imported NVDA dictionary"), dictionary)
+            with ImportedDictionaryDialog(self) as dialog:
+                dialog.ShowModal()
+            self.synth.imported_dictionary_manager().reload()
+            self.redraw_imported(selected)
+        except (OSError, ValueError, UnicodeError) as error:
+            gui.messageBox(_("NVDA dictionary edit failed: %s") % str(error), self.title,
+                           wx.OK | wx.ICON_ERROR, parent=self)
+
+    def on_remove_nvda(self, event):
+        selected = self.imported.GetSelection()
+        if not self.current_synth() or selected == wx.NOT_FOUND: return
+        from NVDAState import shouldWriteToDisk
+        if not shouldWriteToDisk():
+            gui.messageBox(_("NVDA cannot save dictionaries in this mode."), self.title,
+                           wx.OK | wx.ICON_ERROR, parent=self)
+            return
+        if gui.messageBox(_("Remove this imported copy? The original dictionary is kept."),
+                          _("NVDA speech dictionaries"), wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION,
+                          parent=self) != wx.YES: return
+        try:
+            self.synth.imported_dictionary_manager().remove(self.imported_records[selected][0])
+            self.redraw_imported(selected)
+        except (OSError, ValueError) as error:
+            gui.messageBox(_("NVDA dictionary removal failed: %s") % str(error), self.title,
+                           wx.OK | wx.ICON_ERROR, parent=self)
 
     def on_folder(self, event):
         if self.current_synth():
@@ -201,6 +313,7 @@ class EloquenceSettingsPanel(SettingsPanel):
                         for index, source in enumerate(self.sources)])
         if selected is not None and self.sources:
             self.files.SetSelection(min(selected, len(self.sources) - 1))
+        self.redraw_imported()
 
     def on_add(self, event):
         with wx.FileDialog(self, _("Choose a pronunciation dictionary"),
@@ -302,6 +415,9 @@ class EloquenceSettingsPanel(SettingsPanel):
                 if self.pitch_dirty:
                     self.synth.configure_pitch_hertz(self.pitch_hz_mode.GetValue(), self.pitch_hz_value.GetValue())
                     self.pitch_dirty = False
+                if self.segmentation_dirty:
+                    self.synth._wordSegmentation = self.segmentation.GetValue()
+                    self.segmentation_dirty = False
                 self.synth.configure_dictionaries(self.sources, self.community.GetValue(), completed,
                     "alternative" if self.repository.GetSelection() == 1 else "community")
                 self.synth.saveSettings()
@@ -326,6 +442,8 @@ class EloquenceSettingsPanel(SettingsPanel):
             self.pitch_hz_mode.SetValue(synth._pitchInHertz)
             self.pitch_hz_value.SetValue(synth._pitchHertz)
             self.pitch_dirty = False
+            self.segmentation.SetValue(getattr(synth, "_wordSegmentation", False))
+            self.segmentation_dirty = False
             self.community.SetValue(synth.communityDictionaries)
             self.repository.SetSelection(1 if synth.dictionary_manager().repository == "alternative" else 0)
             self.redraw()
@@ -334,6 +452,8 @@ class EloquenceSettingsPanel(SettingsPanel):
             self.pitch_hz_mode.SetValue(self.synth._pitchInHertz)
             self.pitch_hz_value.SetValue(self.synth._pitchHertz)
             self.pitch_dirty = False
+        if self.current_synth() and not self.segmentation_dirty:
+            self.segmentation.SetValue(getattr(self.synth, "_wordSegmentation", False))
         self.enable_controls(not self.pending and self.current_synth())
         super().onPanelActivated()
 

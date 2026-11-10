@@ -1,0 +1,10 @@
+The optional English word segmentation data and algorithm are adapted from
+OpenEVV commit 103277c72b4b1a4dc4c5a91fb9d0ddf0d75f87db, under the MIT
+license in OpenEVV-wordseg-LICENSE.txt. https://github.com/Mudb0y/openevv
+
+OpenEVV's sayable and pieces tables were generated from the Moby word lists,
+which Grady Ward placed in the public domain, and from the 1993 Carnegie
+Mellon Pronouncing Dictionary, copyright 1993 Carnegie Mellon University,
+whose use for any research or commercial purpose is unrestricted with
+acknowledgement. OpenEVV's tables also include its language data and manually
+curated technical words. Their original comments are retained in the files.

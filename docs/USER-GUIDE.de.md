@@ -1,5 +1,11 @@
 # Eloquence C – Bedienungsanleitung
 
+## Version 1.3.0 – Testversion
+
+In der NVDA-Einstellungskategorie Eloquence C kann die Zerlegung unbekannter englischer Wörter eingeschaltet werden. Sie ist zunächst deaktiviert und gilt für amerikanisches und britisches Englisch. Erkannte Wörter und Wörterbucheinträge bleiben möglichst erhalten; die Erkennung kann sich bei unbekannten Namen und Fremdwörtern irren.
+
+Über „NVDA-Wörterbuch importieren“ lässt sich ein vorhandenes NVDA-Sprachwörterbuch aus einem anderen Treiber auswählen. Wähle danach die Sprache und entweder eine Stimme oder alle Stimmen. Reguläre Ausdrücke, Groß-/Kleinschreibung und Kommentare bleiben erhalten. Die importierte Kopie lässt sich in derselben Kategorie mit NVDA bearbeiten oder entfernen; die ursprüngliche Datei bleibt unverändert. Importierte Regeln werden vor den übrigen NVDA-Sprachwörterbüchern angewendet. Native ECI-Wörterbücher sind ein anderes Format und werden wie bisher unter „Eigene Wörterbuchdateien“ verwaltet.
+
 ## Version 1.2.2
 
 Die Grundtonhöhe lässt sich optional exakt in Hertz einstellen. Bei Deutsch wird das finale A auch vor Komma, Doppelpunkt und weiteren Pausen verwendet. Bei einer Neuinstallation in NVDA entspricht die Standardtonhöhe 65 der voreingestellten Stimme Reed.
