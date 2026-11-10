@@ -1,0 +1,135 @@
+name: SAPI keyboard and pitch test build
+on:
+  push:
+    branches: ['codex/sapi-dialog-dev3-*']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  adapter:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, x86]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: sapi-native-${{ matrix.arch }}
+          run-id: 42861433404
+          github-token: ${{ github.token }}
+          path: previous-native
+      - uses: actions/download-artifact@v4
+        with:
+          name: dictionary-snapshot
+          run-id: 42861433404
+          github-token: ${{ github.token }}
+          path: data/community
+      - name: Verify and extract the existing speech core
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, os, pathlib, zipfile
+          arch = os.environ['ARCH']
+          package = pathlib.Path(f'previous-native/reloq-c-sapi5-{arch}-1.3.0-dev1-payload.zip')
+          hashes = {'x64': ('a0a3d1256cbbd8f44adb6aa36c618326e24e1fcd3dd72aed2718a89728d0094b', 'c13804323ff86d3a622bdf728305813d53153bacea933c43ac8ef4201ac158a7'),
+                    'x86': ('926ce498ecb1eb14dcb6bc872ad7874996fb1dddde49256cbe5247941afa6be1', 'fbfb1a78c7d8a82897ae09e972716371bdcbc4a2b437be8ae13b64f0494dafd2')}
+          assert hashlib.sha256(package.read_bytes()).hexdigest() == hashes[arch][0]
+          with zipfile.ZipFile(package) as archive:
+              assert archive.testzip() is None
+              core = archive.read('eci.dll')
+              assert hashlib.sha256(core).hexdigest() == hashes[arch][1]
+              pathlib.Path('eci/eci-x86.dll' if arch == 'x86' else 'eci/eci.dll').write_bytes(core)
+          PY
+      - name: Install the cross compiler
+        run: |
+          set -euo pipefail
+          if [ '${{ matrix.arch }}' = x64 ]; then prefix=x86-64; compiler=x86_64; else prefix=i686; compiler=i686; fi
+          if command -v "$compiler-w64-mingw32-gcc-posix" >/dev/null; then exit 0; fi
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends gcc-mingw-w64-$prefix-posix
+      - name: Build and verify the SAPI adapter
+        run: |
+          if [ '${{ matrix.arch }}' = x64 ]; then prefix=x86_64; else prefix=i686; fi
+          python3 sapi/build.py --arch '${{ matrix.arch }}' --cc "$prefix-w64-mingw32-gcc-posix" --objdump "$prefix-w64-mingw32-objdump"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sapi-dialog-native-${{ matrix.arch }}
+          path: dist/reloq-c-sapi5-${{ matrix.arch }}-1.3.0-dev3-payload.zip
+          if-no-files-found: error
+          retention-days: 14
+  installer:
+    needs: adapter
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sapi-dialog-native-*
+          path: dist
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: sapi-installer
+          run-id: 42861433404
+          github-token: ${{ github.token }}
+          path: previous-sapi
+      - name: Exercise the real dialog and keyboard navigation
+        shell: pwsh
+        run: |
+          foreach ($arch in @('x64','x86')) {
+            Expand-Archive -Path "dist/reloq-c-sapi5-$arch-1.3.0-dev3-payload.zip" -DestinationPath "test-$arch"
+          }
+          python sapi/test_dialog_order.py --directory test-x64
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI dialog keyboard and pitch test failed' }
+      - name: Compile the installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          python sapi/build_installer.py --iscc $iscc
+          if ($LASTEXITCODE -ne 0) { throw 'Installer build failed' }
+      - name: Verify installer upgrade and speech
+        shell: pwsh
+        run: |
+          $previous = (Get-ChildItem previous-sapi -Recurse -Filter 'reloq-c-sapi5-1.3.0-dev1-setup.exe' | Select-Object -First 1).FullName
+          $setup = (Get-Item dist/reloq-c-sapi5-1.3.0-dev3-setup.exe).FullName
+          if (!$previous) { throw 'Previous test installer not found' }
+          $install = Join-Path $env:ProgramFiles 'ReLoq C\SAPI5'
+          $p = Start-Process $previous -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Previous installation failed: $($p.ExitCode)" }
+          $dictionary = Join-Path $install 'dictionaries\ENUmain.dic'
+          [IO.File]::AppendAllText($dictionary, "`r`n", [Text.Encoding]::ASCII)
+          $edited = (Get-FileHash $dictionary -Algorithm SHA256).Hash
+          $p = Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Upgrade failed: $($p.ExitCode)" }
+          if ((Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'Dictionary edit lost during upgrade' }
+          $registered = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D3F8BA6E-1C62-4B0D-8A33-3840B77376AC}_is1'
+          if ($registered.DisplayVersion -ne '1.3.0-dev3') { throw 'Incorrect installer version' }
+          foreach ($arch in @('x64','x86')) {
+            $test = if ($arch -eq 'x64') { Join-Path $install 'Test-SAPI.exe' } else { Join-Path $install 'x86\Test-SAPI.exe' }
+            & $test --all-native-rates
+            if ($LASTEXITCODE -ne 0) { throw "SAPI $arch speech test failed" }
+          }
+          $p = Start-Process (Join-Path $install 'unins000.exe') -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Uninstall failed: $($p.ExitCode)" }
+          if (!(Test-Path $dictionary) -or (Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'User dictionary lost during uninstall' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sapi-dialog-installer-dev3
+          path: |
+            dist/reloq-c-sapi5-1.3.0-dev3-setup.exe
+            dist/reloq-c-sapi5-1.3.0-dev3-installer.json
+          compression-level: 0
+          retention-days: 14

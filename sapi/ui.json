@@ -59,7 +59,8 @@
     "OWN_RATE_WPM",
     "OWN_PITCH_ECI",
     "OWN_PITCH_HZ",
-    "OVERRIDE_VALUE"
+    "OVERRIDE_VALUE",
+    "PITCH_GROUP"
   ],
   "en": [
     "ReLoq C voice settings",
@@ -121,7 +122,8 @@
     "Words per minute (1–6000)",
     "ECI pitch scale (0–100)",
     "Pitch in hertz (1–24000)",
-    "Value:"
+    "Value:",
+    "Base pitch"
   ],
   "de": [
     "ReLoq C – Stimmeinstellungen",
@@ -183,7 +185,8 @@
     "Wörter pro Minute (1–6000)",
     "ECI-Tonhöhe (0–100)",
     "Tonhöhe in Hertz (1–24000)",
-    "Wert:"
+    "Wert:",
+    "Grundtonhöhe"
   ],
   "es": [
     "ReLoq C – Ajustes de voz",
@@ -245,7 +248,8 @@
     "Palabras por minuto (1–6000)",
     "Tono ECI (0–100)",
     "Tono en hercios (1–24000)",
-    "Valor:"
+    "Valor:",
+    "Tono base"
   ],
   "fr": [
     "ReLoq C – Paramètres de voix",
@@ -307,7 +311,8 @@
     "Mots par minute (1–6000)",
     "Hauteur ECI (0–100)",
     "Hauteur en hertz (1–24000)",
-    "Valeur :"
+    "Valeur :",
+    "Hauteur de base"
   ],
   "it": [
     "ReLoq C – Impostazioni voce",
@@ -369,7 +374,8 @@
     "Parole al minuto (1–6000)",
     "Tono ECI (0–100)",
     "Tono in hertz (1–24000)",
-    "Valore:"
+    "Valore:",
+    "Tono base"
   ],
   "pt": [
     "ReLoq C – Configurações de voz",
@@ -431,7 +437,8 @@
     "Palavras por minuto (1–6000)",
     "Tom ECI (0–100)",
     "Tom em hertz (1–24000)",
-    "Valor:"
+    "Valor:",
+    "Tonalidade base"
   ],
   "fi": [
     "ReLoq C – Ääniasetukset",
@@ -493,7 +500,8 @@
     "Sanaa minuutissa (1–6000)",
     "ECI-äänikorkeus (0–100)",
     "Äänikorkeus hertseinä (1–24000)",
-    "Arvo:"
+    "Arvo:",
+    "Peruskorkeus"
   ],
   "el": [
     "ReLoq C – Ρυθμίσεις φωνής",
@@ -555,7 +563,8 @@
     "Λέξεις ανά λεπτό (1–6000)",
     "Τόνος ECI (0–100)",
     "Τόνος σε hertz (1–24000)",
-    "Τιμή:"
+    "Τιμή:",
+    "Βασικό ύψος φωνής"
   ],
   "ja": [
     "ReLoq C 音声設定",
@@ -617,7 +626,8 @@
     "1分あたりの単語数 (1–6000)",
     "ECI 音程 (0–100)",
     "音程 Hz (1–24000)",
-    "値:"
+    "値:",
+    "基本音高"
   ],
   "ko": [
     "ReLoq C 음성 설정",
@@ -679,7 +689,8 @@
     "분당 단어 수 (1–6000)",
     "ECI 음높이 (0–100)",
     "음높이 Hz (1–24000)",
-    "값:"
+    "값:",
+    "기본 음높이"
   ],
   "zh": [
     "ReLoq C 语音设置",
@@ -741,7 +752,8 @@
     "每分钟词数 (1–6000)",
     "ECI 音高 (0–100)",
     "音高赫兹 (1–24000)",
-    "值："
+    "值：",
+    "基准音高"
   ],
   "zh-Hant": [
     "ReLoq C 語音設定",
@@ -803,6 +815,7 @@
     "每分鐘詞數 (1–6000)",
     "ECI 音高 (0–100)",
     "音高赫茲 (1–24000)",
-    "值："
+    "值：",
+    "基準音高"
   ]
 }

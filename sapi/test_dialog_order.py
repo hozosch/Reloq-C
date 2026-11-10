@@ -20,6 +20,8 @@ def main():
     user32.GetDlgItem.restype = wintypes.HWND
     user32.GetNextDlgTabItem.argtypes = (wintypes.HWND, wintypes.HWND, wintypes.BOOL)
     user32.GetNextDlgTabItem.restype = wintypes.HWND
+    user32.GetNextDlgGroupItem.argtypes = (wintypes.HWND, wintypes.HWND, wintypes.BOOL)
+    user32.GetNextDlgGroupItem.restype = wintypes.HWND
     user32.GetWindowRect.argtypes = (wintypes.HWND, ctypes.POINTER(wintypes.RECT))
     user32.GetWindowRect.restype = wintypes.BOOL
     user32.PostMessageW.argtypes = (wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM)
@@ -41,6 +43,7 @@ def main():
     overrides_id, own_rate_id, own_rate_value_id, own_pitch_id, own_volume_id, own_volume_value_id = range(126, 132)
     (rate_eci_id, rate_wpm_id, rate_wpm_value_id, pitch_eci_id,
      pitch_hz_id, pitch_value_id, pitch_hz_value_id) = range(132, 139)
+    main_value_id, main_hz_id, main_label_id, main_group_id = 105, 124, 139, 140
     bm_getcheck, bm_click, wm_close = 0xF0, 0xF5, 0x10
     # Create the real settings dialog in this process. Win32 intentionally
     # does not expose edit-control text reliably across process boundaries.
@@ -55,6 +58,7 @@ def main():
     window = None
     modal = None
     saved = None
+    saved_main = None
 
     def find_modal():
         candidates = []
@@ -134,6 +138,26 @@ def main():
     def select_radio(handle, selected, other):
         user32.SendMessageW(user32.GetDlgItem(handle, selected), bm_click, 0, 0)
         assert checked(handle, selected) and not checked(handle, other)
+
+    def text(handle, control_id):
+        value = ctypes.create_unicode_buffer(256)
+        user32.GetDlgItemTextW(handle, control_id, value, len(value))
+        return value.value
+
+    def select_radio_by_arrow(handle, start, target, key):
+        source, destination = (user32.GetDlgItem(handle, value) for value in (start, target))
+        assert user32.GetNextDlgGroupItem(handle, source, key == 0x26) == destination
+        # Give the radio focus on the dialog's UI thread, then send the same
+        # arrow-key messages that the dialog manager receives from a keyboard.
+        user32.SendMessageW(handle, 0x28, source, 1)  # WM_NEXTDLGCTL, explicit HWND
+        user32.PostMessageW(source, 0x100, key, 0)  # WM_KEYDOWN
+        user32.PostMessageW(source, 0x101, key, 0)  # WM_KEYUP
+        end = time.monotonic() + 3
+        while time.monotonic() < end:
+            if checked(handle, target) and not checked(handle, start):
+                return
+            time.sleep(.02)
+        raise AssertionError(f'Arrow key did not select radio {target} from {start}')
     try:
         end = time.monotonic() + 20
         while time.monotonic() < end and window is None:
@@ -146,10 +170,8 @@ def main():
                 if (pid.value == own_pid and user32.GetDlgItem(handle, rate_id)
                         and user32.GetDlgItem(handle, mellow_id) and user32.GetDlgItem(handle, 1)):
                     pitch_ready = wintypes.BOOL()
-                    hz_ready = wintypes.BOOL()
-                    user32.GetDlgItemInt(handle, 105, ctypes.byref(pitch_ready), False)
-                    user32.GetDlgItemInt(handle, 125, ctypes.byref(hz_ready), False)
-                    if pitch_ready.value and hz_ready.value:
+                    user32.GetDlgItemInt(handle, main_value_id, ctypes.byref(pitch_ready), False)
+                    if pitch_ready.value and user32.GetDlgItem(handle, main_hz_id):
                         candidates.append(handle)
                 return True
 
@@ -171,10 +193,32 @@ def main():
             assert user32.GetWindowRect(control, ctypes.byref(rect))
         assert rectangles[0].bottom <= rectangles[1].top
         assert rectangles[1].bottom <= rectangles[2].top
-        main_pitch, main_hertz = number(window, 105), number(window, 125)
+        mode, value = (user32.GetDlgItem(window, control) for control in (main_hz_id, main_value_id))
+        assert mode and value and user32.GetDlgItem(window, main_label_id) and user32.GetDlgItem(window, main_group_id)
+        assert not user32.GetDlgItem(window, 125), 'A second base-pitch edit must not be created'
+        assert user32.GetNextDlgTabItem(window, mode, False) == value
+        assert user32.IsWindowEnabled(value) and text(window, main_group_id)
+        initial_hz = checked(window, main_hz_id)
+        initial_value = number(window, main_value_id)
+        set_checked(window, main_hz_id, not initial_hz)
+        other_value = number(window, main_value_id)
+        saved_main = ((other_value, initial_value) if initial_hz else (initial_value, other_value)) + (initial_hz,)
+        set_checked(window, main_hz_id, False)
+        assert user32.GetDlgItem(window, main_value_id) == value and user32.IsWindowEnabled(value)
+        assert '100' in text(window, main_label_id)
+        assert user32.SetDlgItemInt(window, main_value_id, 72, False)
+        set_checked(window, main_hz_id, True)
+        assert user32.GetDlgItem(window, main_value_id) == value and user32.IsWindowEnabled(value)
+        assert '24000' in text(window, main_label_id)
+        assert user32.SetDlgItemInt(window, main_value_id, 151, False)
+        set_checked(window, main_hz_id, False)
+        assert number(window, main_value_id) == 72
+        set_checked(window, main_hz_id, True)
+        assert number(window, main_value_id) == 151
+        set_checked(window, main_hz_id, initial_hz)
         modal = open_modal()
-        assert number(modal, pitch_value_id) == main_pitch
-        assert number(modal, pitch_hz_value_id) == main_hertz
+        assert number(modal, pitch_value_id) == 72
+        assert number(modal, pitch_hz_value_id) == 151
         controls = [own_rate_id, own_pitch_id, own_volume_id]
         edits = (own_rate_value_id, rate_wpm_value_id, pitch_value_id, pitch_hz_value_id, own_volume_value_id)
         saved = ([checked(modal, control) for control in controls],
@@ -192,8 +236,10 @@ def main():
         assert not user32.IsWindowEnabled(user32.GetDlgItem(modal, pitch_hz_value_id))
         assert user32.SetDlgItemInt(modal, own_rate_value_id, 87, False)
         assert user32.SetDlgItemInt(modal, pitch_value_id, 72, False)
-        select_radio(modal, rate_wpm_id, rate_eci_id)
-        select_radio(modal, pitch_hz_id, pitch_eci_id)
+        select_radio_by_arrow(modal, rate_eci_id, rate_wpm_id, 0x28)  # Down
+        select_radio_by_arrow(modal, pitch_eci_id, pitch_hz_id, 0x28)
+        select_radio_by_arrow(modal, rate_wpm_id, rate_eci_id, 0x26)  # Up
+        select_radio_by_arrow(modal, rate_eci_id, rate_wpm_id, 0x28)
         assert not user32.IsWindowEnabled(user32.GetDlgItem(modal, own_rate_value_id))
         assert user32.IsWindowEnabled(user32.GetDlgItem(modal, rate_wpm_value_id))
         assert not user32.IsWindowEnabled(user32.GetDlgItem(modal, pitch_value_id))
@@ -239,6 +285,12 @@ def main():
                 set_checked(modal, control, old_state)
         if modal and user32.IsWindow(modal):
             close_modal(modal)
+        if saved_main and window and user32.IsWindow(window):
+            set_checked(window, main_hz_id, False)
+            user32.SetDlgItemInt(window, main_value_id, saved_main[0], False)
+            set_checked(window, main_hz_id, True)
+            user32.SetDlgItemInt(window, main_value_id, saved_main[1], False)
+            set_checked(window, main_hz_id, saved_main[2])
         if window:
             user32.PostMessageW(window, wm_close, 0, 0)
         thread.join(timeout=8)
