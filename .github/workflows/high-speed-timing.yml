@@ -49,6 +49,7 @@ jobs:
         run: |
           python tools/observe_timing_buffers.py reference/ECI.DLL original observations/original
           python tools/observe_timing_buffers.py candidate/eci.dll reloq observations/reloq
+          python tools/observe_multilingual_timing.py reference/ECI.DLL observations/multilingual
       - uses: actions/upload-artifact@v4
         with:
           name: high-speed-timing-buffers
