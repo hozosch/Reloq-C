@@ -805,7 +805,7 @@ struct rule_span {
     struct reloq61_curve curve[62];
     struct reloq61_curve male_af;
     int af_marked;
-    int32_t from,to,volume,step,pitch,native_pitch,speed,inflection,slow_wpm;
+    int32_t from,to,volume,step,pitch,native_pitch,speed,slow_wpm;
     int64_t tick,pitch_tick;size_t pitch_source;
     struct reloq_german_voice_model model;
 };
@@ -822,7 +822,7 @@ struct rule_plan {
     const size_t *control_sources;size_t pitch_source;
     struct rule_control *controls;size_t control_count,control_capacity;
     struct reloq_session *session;
-    int memory,retracted_filter,retracted_st,word_volume,cjk_volume,managed_voice_controls,word_pitch,native_pitch,word_speed,word_inflection,german_af_markers;
+    int memory,retracted_filter,retracted_st,word_volume,cjk_volume,managed_voice_controls,word_pitch,native_pitch,word_speed,german_af_markers;
     struct reloq_german_voice_model word_model;
     int base_voice[8];
     struct rule_playback *playback;
@@ -856,7 +856,7 @@ static int take_span(void *context,int32_t from,int32_t to,
     f->from=from;f->to=to;f->volume=s->cjk_volume&&volume>=10000?
         (volume-10000)/100:s->word_volume;f->step=1;f->tick=s->ticks;f->pitch=s->word_pitch;f->native_pitch=s->native_pitch;
     f->slow_wpm=s->cjk_volume&&volume>=10000?(volume-10000)%100:0;
-    f->model=s->word_model;f->speed=s->word_speed;f->inflection=s->word_inflection;f->pitch_tick=s->pitch_tick;f->pitch_source=s->pitch_source;
+    f->model=s->word_model;f->speed=s->word_speed;f->pitch_tick=s->pitch_tick;f->pitch_source=s->pitch_source;
     s->ticks+=to-from;return s->playback?process_spans(s,0):0;
 }
 /* General fallback for a provider window whose step is not one ms. */
@@ -875,7 +875,7 @@ static int take_frame(void *context,const int32_t p[62],int32_t volume)
     f->from=0;f->to=p[0];f->step=p[0];f->volume=s->cjk_volume&&volume>=10000?
         (volume-10000)/100:s->word_volume;f->tick=s->ticks;f->pitch=s->word_pitch;f->native_pitch=s->native_pitch;
     f->slow_wpm=s->cjk_volume&&volume>=10000?(volume-10000)%100:0;
-    f->model=s->word_model;f->speed=s->word_speed;f->inflection=s->word_inflection;f->pitch_tick=s->pitch_tick;f->pitch_source=s->pitch_source;
+    f->model=s->word_model;f->speed=s->word_speed;f->pitch_tick=s->pitch_tick;f->pitch_source=s->pitch_source;
     s->ticks+=p[0];return s->playback?process_spans(s,0):0;
 }
 static void take_index(void *context,int32_t index,int64_t tick)
@@ -1045,10 +1045,6 @@ static int32_t neutral_endpoint(const struct reloq_voice_filter *model,unsigned 
 static void word_voice_frame(const struct rule_plan *s,const struct rule_span *f,float c[62])
 {
     const int *v=s->base_voice;
-    if(f->inflection>=0&&f->inflection!=v[3]&&v[3]>0) {
-        double centre=1189.15*reloq_voice_pitch_f0_scale(v[2]);
-        c[1]=(float)fmax(10,centre+(c[1]-centre)*f->inflection/v[3]);
-    }
     const struct reloq_german_voice_model *m=&f->model;
     if(m->gender!=v[0]||m->head_size!=v[1]) {
         struct reloq_voice_filter old={v[1],v[0],m->sample_rate,(250-v[1])/2,24};
@@ -1135,7 +1131,6 @@ static int render_until(struct rule_plan *s,int64_t limit)
                 if(parameter==7)p->voice.volume=value;
                 else if(parameter==2){p->voice.pitch=value;p->voice.pitch_tick=change->tick;
                     p->voice.pitch_source=s->control_sources[change->ordinal];}
-                else if(parameter==3)p->voice.inflection=value;
                 else if(parameter==6)p->voice.speed=value;
                 else if(parameter==0)p->voice.model.gender=value;
                 else if(parameter==1)p->voice.model.head_size=value;
@@ -1243,7 +1238,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     struct rule_plan plan={.session=session,.index_count=index_count+pitch_count,
         .retracted_filter=language==0x20000||language==0x120000,.word_volume=native_volume,.word_pitch=-1,
         .native_pitch=provider_pitch,
-        .word_speed=-1,.word_inflection=-1};
+        .word_speed=-1};
     plan.word_model=(struct reloq_german_voice_model){
         settings->head_size_plus_one?settings->head_size_plus_one-1:50,
         settings->roughness,settings->breathiness,settings->gender,reloq_session_sample_rate(session)};
@@ -1330,6 +1325,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         }
         n=out;a[n]=0;map[n]=length;
     }
+    if(managed_controls&&native_preset_inflection_tags(&a,&map,&n))goto memory;
     /* Voice tags travel beside text, and are applied at the native word
      * callback. Native analysis must see the unchanged lexical sentence. */
     for(size_t i=0;i<n;) {
@@ -1338,9 +1334,9 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
                               t.kind==RELOQ_TAG_PRESET))++volume_count;
         if(managed_controls) {
             if(t.kind==RELOQ_TAG_PITCH||(t.kind==RELOQ_TAG_SPEED&&!has_wpm)||t.kind==RELOQ_TAG_VOLUME||
-               t.kind==RELOQ_TAG_INFLECTION||t.kind==RELOQ_TAG_GENDER||t.kind==RELOQ_TAG_HEAD_SIZE||
+               t.kind==RELOQ_TAG_GENDER||t.kind==RELOQ_TAG_HEAD_SIZE||
                t.kind==RELOQ_TAG_ROUGHNESS||t.kind==RELOQ_TAG_BREATHINESS)++volume_count;
-            else if(t.kind==RELOQ_TAG_PRESET)volume_count+=has_wpm?7:8;
+            else if(t.kind==RELOQ_TAG_PRESET)volume_count+=has_wpm?6:7;
         }
         i+=t.length?t.length:1;
     }
@@ -1369,7 +1365,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
                 }
             }
             int parameter=t.kind==RELOQ_TAG_GENDER?0:t.kind==RELOQ_TAG_HEAD_SIZE?1:
-                t.kind==RELOQ_TAG_PITCH?2:t.kind==RELOQ_TAG_INFLECTION?3:
+                t.kind==RELOQ_TAG_PITCH?2:
                 t.kind==RELOQ_TAG_ROUGHNESS?4:t.kind==RELOQ_TAG_BREATHINESS?5:
                 t.kind==RELOQ_TAG_SPEED&&!has_wpm?6:t.kind==RELOQ_TAG_VOLUME?7:-1;
             if(parameter>=0) {
@@ -1379,7 +1375,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
                 struct reloq_inline_word v={0};reloq_inline_preset(&v,t.value);
                 int preset[]={v.gender,v.head_size,v.pitch,v.inflection,v.roughness,v.breathiness,v.speed,v.volume};
                 for(int k=0;k<8;++k) {
-                    if(has_wpm&&k==6)continue;
+                    if(k==3||(has_wpm&&k==6))continue;
                     control_sources[control]=map[i];volumes[control++]=(struct reloq61_mark){out,preset[k],k};
                 }
             } else {
@@ -1461,7 +1457,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         else if(pitches[i].annotation_offset>=length)plan.indices[index_count+i]=INT64_MAX;
     }
     struct rule_playback playback={
-        .voice={.volume=native_volume,.pitch=-1,.native_pitch=q.voice[2],.speed=-1,.inflection=-1,
+        .voice={.volume=native_volume,.pitch=-1,.native_pitch=q.voice[2],.speed=-1,
             .model={q.voice[1],q.voice[4],q.voice[5],q.voice[0],reloq_session_sample_rate(session)}},
         .model={q.voice[1],q.voice[4],q.voice[5],q.voice[0],reloq_session_sample_rate(session)},
         .settings=settings,.pitches=pitches,.index_count=index_count,.pitch_count=pitch_count,

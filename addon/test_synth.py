@@ -312,7 +312,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert PitchCommand in driver.supportedCommands
                 assert CharacterModeCommand in driver.supportedCommands
                 assert [setting.id for setting in driver.supportedSettings] == [
-                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode", "_pitchHertz", "_pitchInHertz", "_wordSegmentation", "_camelCase"]
+                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode", "_pitchHertz", "_pitchInHertz", "_rateWpm", "_rateInWpm", "_wordSegmentation", "_camelCase"]
                 assert driver.supportedSettings[0].availableInSettingsRing
                 assert not any(hasattr(driver, '_'+name) for name in
                                ('glideOpening', 'glideBackness', 'glideSoftness'))
@@ -927,13 +927,19 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         assert profile["speech"][fresh.name]["_wordSegmentation"] is True
                         assert profile["speech"][fresh.name]["_camelCase"] is True
                         fresh.configure_pitch_hertz(True, 151)
+                        fresh.configure_rate_wpm(True, 151)
                         fresh.saveSettings()
                         assert profile["speech"][fresh.name]["_pitchHertz"] == 151
                         assert profile["speech"][fresh.name]["_pitchInHertz"] is True
+                        assert profile["speech"][fresh.name]["_rateInWpm"] is True
+                        assert profile["speech"][fresh.name]["_rateWpm"] == 151
                         parts = driver_module._parts([PitchCommand(multiplier=2), "A", PitchCommand(), "a"],
                             base_pitch=65, base_pitch_hz=151)
                         marks = [p.value for p in parts if isinstance(p, driver_module.EciPitchHz)]
                         assert len(marks)==2 and marks[0]>151 and marks[1]==151
+                        parts = driver_module._parts([commands.RateCommand(multiplier=2), "A", commands.RateCommand(), "B"],
+                                                     base_rate=50, base_wpm=150)
+                        assert [(p.parameter,p.value) for p in parts if isinstance(p,driver_module.EciProsody)] == [(8,300),(8,150)]
                         config_api.conf["speech"][fresh.name]["_pitchHertz"] = 152
                         fresh.loadSettings(onlyChanged=True)
                         assert fresh._pitchInHertz and fresh._pitchHertz == 152
@@ -946,6 +952,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                     try:
                         fresh.initSettings()
                         assert fresh._pitchInHertz and fresh._pitchHertz==151 and fresh.pitch==65
+                        assert fresh._rateInWpm and fresh._rateWpm==151
                         assert fresh._wordSegmentation and fresh._camelCase
                         fresh.voice = "2"
                         fresh.language = "en_US"
@@ -955,6 +962,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         worker = next(instance for instance in reversed(Engine.instances[before:])
                                       if instance.dialect==0x10000 and instance.parts)
                         assert dict(worker.parameters)[driver_module.PITCH_HZ] == 151
+                        assert dict(worker.parameters)[driver_module.NATIVE_WPM] == 151
                         assert any(isinstance(p,driver_module.EciPitchHz) and p.value==151
                                    for p in worker.parts[-1])
                         fresh.pitch = 44
@@ -967,6 +975,13 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         until(lambda: worker.parts and worker.parts[-1][-1].text=="VB")
                         assert dict(worker.parameters)[driver_module.NATIVE_PITCH] == 44
                         assert dict(worker.parameters)[driver_module.PITCH_HZ] == 0
+                        fresh.rate = 60
+                        assert not fresh._rateInWpm
+                        assert ui_messages[-1] == translation.gettext("WPM rate off; using the normal rate scale.")
+                        fresh.cancel()
+                        fresh.speak(["VS"])
+                        until(lambda: worker.parts and worker.parts[-1][-1].text == "VS")
+                        assert dict(worker.parameters)[driver_module.NATIVE_WPM] == 0
                     finally:
                         fresh.terminate()
                     print("NVDA Hertz mode: save/reload, voice/language, capital marks and VB switch passed")

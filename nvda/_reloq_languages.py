@@ -321,7 +321,8 @@ class LanguageEngine:
                     pending.append(EciText(part.segmented if spelled is False else part.original))
                 else:
                     if isinstance(part, (EciPitch, EciPitchHz, EciProsody)):
-                        slot = "pitch" if isinstance(part, (EciPitch, EciPitchHz)) else part.parameter
+                        slot = ("pitch" if isinstance(part, (EciPitch, EciPitchHz)) else
+                                "speed" if part.parameter in (6, 8) else part.parameter)
                         # Keep the last source order between different controls.
                         prosody.pop(slot, None)
                         prosody[slot] = part
@@ -329,8 +330,8 @@ class LanguageEngine:
                         # The tag has already been validated by the NVDA
                         # filter. Keep its effective speed across real NVDA
                         # language switches without altering saved settings.
-                        prosody.pop(6, None)
-                        prosody[6] = EciText(part.speed_control + " ")
+                        prosody.pop("speed", None)
+                        prosody["speed"] = EciText(part.speed_control + " ")
                     pending.append(part)
             return flush()
         finally:

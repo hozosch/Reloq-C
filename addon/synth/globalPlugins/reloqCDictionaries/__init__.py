@@ -48,6 +48,7 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.pending, self.closing = False, False
         self.operation = 0
         self.pitch_dirty = False
+        self.wpm_dirty = False
         self.segmentation_dirty = False
         self.camel_dirty = False
         content.Add(wx.StaticText(self, label=_("Exact base pitch")), 0, wx.ALL, 10)
@@ -66,6 +67,22 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.pitch_hz_mode.Bind(wx.EVT_CHECKBOX, self.on_pitch_changed)
         self.pitch_hz_value.Bind(wx.EVT_SPINCTRL, self.on_pitch_changed)
         self.pitch_hz_value.Bind(wx.EVT_TEXT, self.on_pitch_changed)
+        content.Add(wx.StaticText(self, label=_("Exact speech rate")), 0, wx.ALL, 10)
+        self.wpm_mode = wx.CheckBox(self, label=_("Use speech rate in &words per minute"))
+        self.wpm_mode.SetValue(self.synth._rateInWpm if self.synth else False)
+        content.Add(self.wpm_mode, 0, wx.ALL, 10)
+        wpm_label = wx.StaticText(self, label=_("Speech rate in words per minute (1–6000):"))
+        content.Add(wpm_label, 0, wx.LEFT | wx.RIGHT, 10)
+        self.wpm_value = wx.SpinCtrl(self, min=1, max=6000,
+            initial=self.synth._rateWpm if self.synth else 150)
+        self.wpm_value.SetName(wpm_label.GetLabelText())
+        content.Add(self.wpm_value, 0, wx.ALL, 10)
+        content.Add(wx.StaticText(self, label=_(
+            "Changing NVDA's normal rate or rate boost switches back to the normal rate scale.")),
+            0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        self.wpm_mode.Bind(wx.EVT_CHECKBOX, self.on_wpm_changed)
+        self.wpm_value.Bind(wx.EVT_SPINCTRL, self.on_wpm_changed)
+        self.wpm_value.Bind(wx.EVT_TEXT, self.on_wpm_changed)
         self.segmentation = wx.CheckBox(self, label=_("Split unfamiliar &English words"))
         self.segmentation.SetValue(getattr(self.synth, "_wordSegmentation", False) if self.synth else False)
         self.segmentation.Bind(wx.EVT_CHECKBOX, self.on_segmentation_changed)
@@ -210,10 +227,17 @@ class EloquenceSettingsPanel(SettingsPanel):
             control.Enable(enabled)
         self.pitch_hz_mode.Enable(enabled)
         self.pitch_hz_value.Enable(enabled and self.pitch_hz_mode.GetValue())
+        self.wpm_mode.Enable(enabled)
+        self.wpm_value.Enable(enabled and self.wpm_mode.GetValue())
 
     def on_pitch_changed(self, event):
         self.pitch_dirty = True
         self.pitch_hz_value.Enable(bool(self.current_synth()) and self.pitch_hz_mode.GetValue())
+        event.Skip()
+
+    def on_wpm_changed(self, event):
+        self.wpm_dirty = True
+        self.wpm_value.Enable(bool(self.current_synth()) and self.wpm_mode.GetValue())
         event.Skip()
 
     def on_segmentation_changed(self, event):
@@ -424,6 +448,9 @@ class EloquenceSettingsPanel(SettingsPanel):
                 if self.pitch_dirty:
                     self.synth.configure_pitch_hertz(self.pitch_hz_mode.GetValue(), self.pitch_hz_value.GetValue())
                     self.pitch_dirty = False
+                if self.wpm_dirty:
+                    self.synth.configure_rate_wpm(self.wpm_mode.GetValue(), self.wpm_value.GetValue())
+                    self.wpm_dirty = False
                 if self.segmentation_dirty:
                     self.synth._wordSegmentation = self.segmentation.GetValue()
                     self.segmentation_dirty = False
@@ -454,6 +481,9 @@ class EloquenceSettingsPanel(SettingsPanel):
             self.pitch_hz_mode.SetValue(synth._pitchInHertz)
             self.pitch_hz_value.SetValue(synth._pitchHertz)
             self.pitch_dirty = False
+            self.wpm_mode.SetValue(synth._rateInWpm)
+            self.wpm_value.SetValue(synth._rateWpm)
+            self.wpm_dirty = False
             self.segmentation.SetValue(getattr(synth, "_wordSegmentation", False))
             self.segmentation_dirty = False
             self.camel_case.SetValue(getattr(synth, "_camelCase", False))
@@ -466,6 +496,9 @@ class EloquenceSettingsPanel(SettingsPanel):
             self.pitch_hz_mode.SetValue(self.synth._pitchInHertz)
             self.pitch_hz_value.SetValue(self.synth._pitchHertz)
             self.pitch_dirty = False
+        if self.current_synth() and not self.wpm_dirty:
+            self.wpm_mode.SetValue(self.synth._rateInWpm)
+            self.wpm_value.SetValue(self.synth._rateWpm)
         if self.current_synth() and not self.segmentation_dirty:
             self.segmentation.SetValue(getattr(self.synth, "_wordSegmentation", False))
         if self.current_synth() and not self.camel_dirty:

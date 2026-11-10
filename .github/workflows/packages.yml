@@ -89,6 +89,9 @@ jobs:
           python3 -B nvda/test_eci_wpm.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_wpm_setting.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_wpm_languages.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_ptbr_numbers.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_inflection_tags.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_inline_queue.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_hz_adapter.py
           python3 -B nvda/test_eci_callback_only.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_german_final_a_pause.py --library eci/libreloq_eci.so
@@ -205,11 +208,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download v1.2.1 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-1.2.1.nvda-addon' --dir previous-addon
-          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.2.1.nvda-addon --candidate dist/reloq-c-synth-x64-1.3.0-dev3.nvda-addon
+          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.2.1.nvda-addon --candidate dist/reloq-c-synth-x64-1.3.0-dev4.nvda-addon
       - name: Verify NVDA driver and offline dictionary startup
         run: |
           for language in en de; do
-            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.0-dev3.nvda-addon"))' "$language"
+            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.0-dev4.nvda-addon"))' "$language"
           done
       - uses: actions/upload-artifact@v4
         with:

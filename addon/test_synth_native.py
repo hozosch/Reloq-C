@@ -193,6 +193,21 @@ def main():
                 explicit_wpm = ["`vwpm150 Hallo. ", commands.LangChangeCommand("en_US"), "`vwpm150 Hello world."]
                 assert run(across_languages) == run(explicit_wpm), "VWPM did not survive NVDA language switching"
                 report["checks"] += 1
+                driver.voiceTags = False
+                driver.configure_rate_wpm(True, 150)
+                configured = run(["Hallo Welt."])
+                changed = run(["Hallo ", commands.RateCommand(multiplier=2), "Welt.", commands.RateCommand()])
+                assert changed != configured and run(["Hallo Welt."]) == configured
+                driver.configure_rate_wpm(False, 150)
+                driver.voiceTags = True
+                assert run(["`vwpm150 Hallo Welt."]) == configured, "NVDA WPM setting differs from native tag"
+                driver.configure_rate_wpm(True, 150)
+                driver.language = "en_US"
+                english_configured = run(["Hello world."])
+                driver.configure_rate_wpm(False, 150)
+                assert run(["`vwpm150 Hello world."]) == english_configured, "WPM lost on language switch"
+                driver.language = "de_DE"
+                report["checks"] += 4
                 # The accepted fixed glide survives switching languages;
                 # old NVDA slider settings no longer reach the DLL.
                 driver.language = "de_DE"

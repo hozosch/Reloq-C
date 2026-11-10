@@ -436,3 +436,24 @@ msgstr "Die ausgewählten Aussprachewörterbücher konnten nicht geladen werden.
 
 msgid "&Mellow mode (16 kHz and above)"
 msgstr "&Weicher Modus (ab 16 kHz)"
+
+msgid "Exact speech rate"
+msgstr "Genaue Sprechgeschwindigkeit"
+
+msgid "Use speech rate in &words per minute"
+msgstr "Sprechgeschwindigkeit in &Wörtern pro Minute verwenden"
+
+msgid "Speech rate in words per minute (1–6000):"
+msgstr "Sprechgeschwindigkeit in Wörtern pro Minute (1–6000):"
+
+msgid "Changing NVDA's normal rate or rate boost switches back to the normal rate scale."
+msgstr "Beim Ändern der normalen NVDA-Geschwindigkeit oder der Geschwindigkeitsverstärkung wird wieder die normale Geschwindigkeitsskala verwendet."
+
+msgid "Rate in words per minute"
+msgstr "Geschwindigkeit in Wörtern pro Minute"
+
+msgid "Use rate in words per minute"
+msgstr "Geschwindigkeit in Wörtern pro Minute verwenden"
+
+msgid "WPM rate off; using the normal rate scale."
+msgstr "Wörter pro Minute deaktiviert; normale Geschwindigkeitsskala wird verwendet."

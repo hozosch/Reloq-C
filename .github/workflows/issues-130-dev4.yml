@@ -1,0 +1,210 @@
+name: ReLoq 1.3.0 issue test packages
+on:
+  push:
+    branches: ['codex/issues-130-dev4-*']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, x86]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: dictionary-snapshot
+          run-id: 42861433404
+          github-token: ${{ github.token }}
+          path: data/community
+      - name: Install the cross compiler
+        run: |
+          set -euo pipefail
+          if [ '${{ matrix.arch }}' = x64 ]; then package=x86-64; prefix=x86_64; else package=i686; prefix=i686; fi
+          if command -v "$prefix-w64-mingw32-gcc-posix" >/dev/null; then exit 0; fi
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends gcc-mingw-w64-$package-posix
+      - uses: actions/cache@v4
+        id: rules
+        with:
+          path: vendor/openevv61/build
+          key: sapi-rules-ubuntu24-gcc13-v1-${{ matrix.arch }}-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c') }}
+      - name: Restore exact cached rule timestamps
+        if: steps.rules.outputs.cache-hit == 'true'
+        run: find vendor/openevv61/build -type f -exec touch {} +
+      - name: Build the shared speech core and SAPI adapter
+        run: |
+          set -euo pipefail
+          if [ '${{ matrix.arch }}' = x64 ]; then prefix=x86_64; else prefix=i686; fi
+          make -C eci -j2 windows-${{ matrix.arch }} PROVIDER_LTO=-flto=2 WINDOWS_CC=$prefix-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=$prefix-w64-mingw32-objdump
+          python3 sapi/build.py --arch '${{ matrix.arch }}' --cc $prefix-w64-mingw32-gcc-posix --objdump $prefix-w64-mingw32-objdump
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue-dev4-native-${{ matrix.arch }}
+          path: dist/reloq-c-sapi5-${{ matrix.arch }}-1.3.0-dev4-payload.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+  addon:
+    needs: native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue-dev4-native-x64
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: dictionary-snapshot
+          run-id: 42861433404
+          github-token: ${{ github.token }}
+          path: data/community
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-capital-dev3
+          run-id: 42876317252
+          github-token: ${{ github.token }}
+          path: previous
+      - name: Install translation compiler
+        run: |
+          if command -v msgfmt >/dev/null; then exit 0; fi
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends gettext
+      - name: Build and check the add-on
+        run: |
+          python3 -B addon/test_hertz_settings_panel.py
+          python3 -B addon/test_speech_tags.py
+          python3 -B addon/test_wordseg.py
+          python3 -B addon/test_nvda_dictionary_import.py
+          python3 - <<'PY'
+          import hashlib, pathlib, sys, zipfile
+          sys.path.insert(0, 'addon')
+          from build_synth import build, DEFAULT_OUTPUT
+          old = pathlib.Path('previous/reloq-c-synth-x64-1.3.0-dev3.nvda-addon')
+          assert hashlib.sha256(old.read_bytes()).hexdigest() == '4f301287fdf396e812695ade821047066849b9506b58d4a87959b176c33d38fe'
+          payload = pathlib.Path('dist/reloq-c-sapi5-x64-1.3.0-dev4-payload.zip')
+          with zipfile.ZipFile(payload) as z:
+              assert z.testzip() is None
+              pathlib.Path('eci/eci.dll').write_bytes(z.read('eci.dll'))
+          build(DEFAULT_OUTPUT, pathlib.Path('eci/eci.dll'), refresh_dictionaries=False)
+          PY
+          python3 tools/test_nvda_upgrade.py --previous previous/reloq-c-synth-x64-1.3.0-dev3.nvda-addon --candidate dist/reloq-c-synth-x64-1.3.0-dev4.nvda-addon
+          for language in en de; do
+            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.0-dev4.nvda-addon"))' "$language"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue-dev4-addon-candidate
+          path: dist/reloq-c-synth-x64-1.3.0-dev4.nvda-addon
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+  addon-windows:
+    needs: addon
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue-dev4-addon-candidate
+          path: candidate
+      - name: Test the packaged NVDA driver and the native Windows core
+        shell: pwsh
+        run: |
+          $addon = (Get-Item candidate/reloq-c-synth-x64-1.3.0-dev4.nvda-addon).FullName
+          python -c "import zipfile; z=zipfile.ZipFile(r'$addon'); assert z.testzip() is None; z.extract('synthDrivers/reloqC/eci.dll', 'candidate')"
+          if ($LASTEXITCODE -ne 0) { throw 'Core extraction failed' }
+          $dll = (Get-Item candidate/synthDrivers/reloqC/eci.dll).FullName
+          foreach ($test in @('nvda/test_eci_ptbr_numbers.py','nvda/test_eci_inflection_tags.py','nvda/test_eci_wpm_setting.py','nvda/test_eci_inline_queue.py','addon/test_uppercase_native.py')) {
+            python -B $test --library $dll
+            if ($LASTEXITCODE -ne 0) { throw "$test failed" }
+          }
+          $env:PYTHONPATH = 'addon;nvda'
+          python -B addon/test_nvda_remote_loopback.py --library $dll --addon $addon
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA Remote serialization and simulated sound paths failed' }
+          python -B addon/test_synth_native.py --library $dll --addon $addon
+          if ($LASTEXITCODE -ne 0) { throw 'Packaged NVDA/native integration failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nvda-issues-dev4
+          path: candidate/reloq-c-synth-x64-1.3.0-dev4.nvda-addon
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+  installer:
+    needs: native
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: issue-dev4-native-*
+          path: dist
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: sapi-dialog-installer-dev3
+          run-id: 42876315282
+          github-token: ${{ github.token }}
+          path: previous-sapi
+      - name: Exercise the SAPI dialog and compile the installer
+        shell: pwsh
+        run: |
+          Expand-Archive -Path 'dist/reloq-c-sapi5-x64-1.3.0-dev4-payload.zip' -DestinationPath 'test-x64'
+          python -B sapi/test_dialog_order.py --directory test-x64
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI dialog test failed' }
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          python -B sapi/build_installer.py --iscc $iscc
+          if ($LASTEXITCODE -ne 0) { throw 'Installer build failed' }
+      - name: Verify upgrade and speech for both architectures
+        shell: pwsh
+        run: |
+          $previous = (Get-Item previous-sapi/reloq-c-sapi5-1.3.0-dev3-setup.exe).FullName
+          $setup = (Get-Item dist/reloq-c-sapi5-1.3.0-dev4-setup.exe).FullName
+          $install = Join-Path $env:ProgramFiles 'ReLoq C\SAPI5'
+          $p = Start-Process $previous -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw 'Previous installation failed' }
+          $dictionary = Join-Path $install 'dictionaries\ENUmain.dic'
+          [IO.File]::AppendAllText($dictionary, "`r`n", [Text.Encoding]::ASCII)
+          $edited = (Get-FileHash $dictionary -Algorithm SHA256).Hash
+          $p = Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw 'Upgrade failed' }
+          if ((Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'Dictionary edit lost during upgrade' }
+          $registered = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D3F8BA6E-1C62-4B0D-8A33-3840B77376AC}_is1'
+          if ($registered.DisplayVersion -ne '1.3.0-dev4') { throw 'Incorrect version' }
+          foreach ($arch in @('x64','x86')) {
+            $test = if ($arch -eq 'x64') { Join-Path $install 'Test-SAPI.exe' } else { Join-Path $install 'x86\Test-SAPI.exe' }
+            & $test --all-native-rates
+            if ($LASTEXITCODE -ne 0) { throw "SAPI $arch speech test failed" }
+          }
+          $p = Start-Process (Join-Path $install 'unins000.exe') -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw 'Uninstall failed' }
+          if (!(Test-Path $dictionary) -or (Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'User dictionary lost during uninstall' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sapi-issues-dev4
+          path: |
+            dist/reloq-c-sapi5-1.3.0-dev4-setup.exe
+            dist/reloq-c-sapi5-1.3.0-dev4-installer.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14

@@ -31,7 +31,7 @@ from synthDriverHandler import (SynthDriver as BaseSynthDriver, VoiceInfo, Langu
                                 synthDoneSpeaking, synthIndexReached)
 
 from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciPitchHz, EciProsody, EciLanguage, EciText, EciCapitalWord, NATIVE_VOLUME,
-                                NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION, PROCESS_TAGS,
+                                NATIVE_SPEED, NATIVE_WPM, NATIVE_PITCH, NATIVE_INFLECTION, PROCESS_TAGS,
                                 PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATES,
                                 DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, PITCH_HZ)
 from ._reloq_eci_transport import DictionaryStartupError, EciTextTransport
@@ -40,7 +40,7 @@ from ._reloq_nvda_dicts import ImportedDictionaries
 from ._reloq_wordseg import (WordSegmenter, dictionary_keys, split_camel, protected_native_spans,
                              transform_unmatched, native_compound_spans, uppercase_candidates)
 from ._reloq_languages import GERMAN, LANGUAGES, LANGUAGE_ALIASES, LANGUAGE_DISPLAY_ORDER, LanguageEngine, language_for
-from ._speech_tags import EciTagCommand, SegmentationGuard, NativeDictionaryWord, CapitalWordCommand, protect_sequence
+from ._speech_tags import EciTagCommand, SegmentationGuard, NativeDictionaryWord, CapitalWordCommand, protect_sequence, register_remote_commands
 
 
 DLL = Path(__file__).with_name("eci.dll")
@@ -74,7 +74,7 @@ def _command_pitch(command, base_pitch):
     return max(0, min(100, int(round(value))))
 
 
-def _parts(speech_sequence, *, base_pitch=50, base_pitch_hz=0, base_rate=50, base_volume=100, rate_boost=False, voice_tags=False,
+def _parts(speech_sequence, *, base_pitch=50, base_pitch_hz=0, base_rate=50, base_wpm=0, base_volume=100, rate_boost=False, voice_tags=False,
            language=GERMAN, voice="1", languages=LANGUAGES, text_transform=None):
     """Keep NVDA's text and indices together in one native utterance.
 
@@ -138,8 +138,18 @@ def _parts(speech_sequence, *, base_pitch=50, base_pitch_hz=0, base_rate=50, bas
             flush()
             rate = isinstance(item, RateCommand)
             value = _command_pitch(item, base_rate if rate else base_volume)
-            parts.append(EciProsody(6 if rate else 7,
-                _native_speed(value, rate_boost) if rate else value))
+            if rate and base_wpm:
+                if getattr(item, "isDefault", False):
+                    wpm = base_wpm
+                elif getattr(item, "_offset", 0):
+                    wpm = round(base_wpm * value / max(1, base_rate))
+                else:
+                    multiplier = getattr(item, "multiplier", None)
+                    wpm = round(base_wpm * multiplier) if isinstance(multiplier, (int, float)) and math.isfinite(multiplier) else round(base_wpm * value / max(1, base_rate))
+                parts.append(EciProsody(8, max(1, min(6000, wpm))))
+            else:
+                parts.append(EciProsody(6 if rate else 7,
+                    _native_speed(value, rate_boost) if rate else value))
         elif isinstance(item, EciTagCommand):
             # A setting can change after the early NVDA filter. Keep its
             # original text even then; native tag/character-mode admission
@@ -223,6 +233,8 @@ class SynthDriver(BaseSynthDriver):
         # panel uses a numeric input, while the standard pitch stays 0..100.
         NumericDriverSetting("_pitchHertz", _("Pitch in hertz"), defaultVal=150, minVal=1, maxVal=24000),
         BooleanDriverSetting("_pitchInHertz", _("Use pitch in hertz"), defaultVal=False),
+        NumericDriverSetting("_rateWpm", _("Rate in words per minute"), defaultVal=150, minVal=1, maxVal=6000),
+        BooleanDriverSetting("_rateInWpm", _("Use rate in words per minute"), defaultVal=False),
         BooleanDriverSetting("_wordSegmentation", _("Split unfamiliar English words"), defaultVal=False),
         BooleanDriverSetting("_camelCase", _("Split camel case"), defaultVal=False),
     )
@@ -242,16 +254,20 @@ class SynthDriver(BaseSynthDriver):
     def __init__(self):
         if not self.check():
             raise RuntimeError("The x64 ECI DLL cannot load in this NVDA process")
+        register_remote_commands()
         self._terminating = False
         self._submit_lock = threading.RLock()
         self._request_epoch = 0
         self._rate = 50
         self._rateBoost = False
+        self._rateWpm = 150
+        self._rateInWpm = False
+        self._applied_wpm = 0
         self._pitch = 50
         self._pitchHertz = 150
         self._pitchInHertz = False
         self._applied_pitch_hz = 0
-        self._loading_pitch_settings = False
+        self._loading_voice_settings = False
         self._inflection = 30
         self._volume = 100
         self._headSize = 50
@@ -485,17 +501,18 @@ class SynthDriver(BaseSynthDriver):
     def initSettings(self):
         # OpenEVV refreshes the schema before NVDA restores existing profiles.
         # This also covers NVDA releases whose base class did not do so yet.
-        previous = self._loading_pitch_settings
-        self._loading_pitch_settings = True
+        previous = self._loading_voice_settings
+        self._loading_voice_settings = True
         try:
             section = config.conf[self._configSection]
             if section.isSet(self.name):
                 section[self.name].spec.update(self.getConfigSpec())
             super().initSettings()
         finally:
-            self._loading_pitch_settings = previous
+            self._loading_voice_settings = previous
         if not previous:
             self._sync_pitch_hertz()
+            self._sync_wpm()
 
     def _initial_language(self):
         # Schema defaults are not a saved choice. Use NVDA's resolved UI
@@ -549,8 +566,8 @@ class SynthDriver(BaseSynthDriver):
     def loadSettings(self, onlyChanged=False):
         # NVDA restores voice before other settings. Select the module first
         # so a voice belonging to a non-default language can be validated.
-        was_loading = self._loading_pitch_settings
-        self._loading_pitch_settings = True
+        was_loading = self._loading_voice_settings
+        self._loading_voice_settings = True
         try:
             section = config.conf[self._configSection][self.name]
             self._select_language(self._initial_language())
@@ -562,9 +579,10 @@ class SynthDriver(BaseSynthDriver):
             # legacy value intact; the canonical language now takes precedence.
             super().loadSettings(onlyChanged=onlyChanged)
         finally:
-            self._loading_pitch_settings = was_loading
+            self._loading_voice_settings = was_loading
         if not was_loading:
             self._sync_pitch_hertz()
+            self._sync_wpm()
 
     def _get_communityDictionaries(self):
         return self._communityDictionaries
@@ -843,8 +861,17 @@ class SynthDriver(BaseSynthDriver):
         return self._rate
 
     def _set_rate(self, value):
-        self._set_setting("rate", NATIVE_SPEED, value,
-                          _native_speed(value, self._rateBoost))
+        switched = False
+        with self._submit_lock:
+            self._set_setting("rate", NATIVE_SPEED, value,
+                              _native_speed(value, self._rateBoost))
+            if self._rateInWpm and not self._loading_voice_settings:
+                self._rateInWpm = False
+                self._sync_wpm()
+                switched = True
+        if switched:
+            import ui
+            ui.message(_("WPM rate off; using the normal rate scale."))
 
     def _get_rateBoost(self):
         return self._rateBoost
@@ -852,12 +879,36 @@ class SynthDriver(BaseSynthDriver):
     def _set_rateBoost(self, enable):
         if not isinstance(enable, bool):
             raise ValueError("rateBoost must be boolean")
+        switched = False
         with self._submit_lock:
             if self._terminating or self._rateBoost == enable:
                 return
             self._rateBoost = enable
             self._transport.set_parameter(
                 NATIVE_SPEED, _native_speed(self._rate, enable))
+            if self._rateInWpm and not self._loading_voice_settings:
+                self._rateInWpm = False
+                self._sync_wpm()
+                switched = True
+        if switched:
+            import ui
+            ui.message(_("WPM rate off; using the normal rate scale."))
+
+    def _sync_wpm(self):
+        with self._submit_lock:
+            if self._terminating:
+                return
+            wanted = self._rateWpm if self._rateInWpm else 0
+            if wanted != self._applied_wpm:
+                self._transport.set_parameter(NATIVE_WPM, wanted)
+                self._applied_wpm = wanted
+
+    def configure_rate_wpm(self, enabled, value):
+        if type(enabled) is not bool or type(value) is not int or not 1 <= value <= 6000:
+            raise ValueError("invalid WPM rate setting")
+        with self._submit_lock:
+            self._rateWpm, self._rateInWpm = value, enabled
+            self._sync_wpm()
 
     def _get_pitch(self):
         return self._pitch
@@ -869,7 +920,7 @@ class SynthDriver(BaseSynthDriver):
             if self._applied_pitch_hz:
                 self._transport.set_parameter(PITCH_HZ, 0)
                 self._applied_pitch_hz = 0
-            if self._pitchInHertz and not self._loading_pitch_settings:
+            if self._pitchInHertz and not self._loading_voice_settings:
                 self._pitchInHertz = False
                 switched = True
         if switched:
@@ -952,10 +1003,11 @@ class SynthDriver(BaseSynthDriver):
             language = self._selectedLanguage
             voice = self._voice
             rate, boost, volume = self._rate, self._rateBoost, self._volume
+            wpm = self._rateWpm if self._rateInWpm else 0
             segment, camel, segment_keys = self._wordSegmentation, self._camelCase, self._wordseg_keys
         def make_parts():
             return _parts(speechSequence, base_pitch=pitch, base_pitch_hz=pitch_hz, voice_tags=tags,
-                          base_rate=rate, rate_boost=boost, base_volume=volume,
+                          base_rate=rate, base_wpm=wpm, rate_boost=boost, base_volume=volume,
                           language=self._languages[language], voice=voice, languages=self._languages,
                           text_transform=(lambda text, lang: self._segment_text(text, lang, segment_keys, segment, camel)) if (segment or camel) else None)
         parts = make_parts()
@@ -966,10 +1018,11 @@ class SynthDriver(BaseSynthDriver):
             # normalized. Keep its inline relative commands paired with the
             # base pitch which will precede this job in the native queue.
             if (self._pitch, self._pitchHertz if self._pitchInHertz else 0, self._voiceTags, self._selectedLanguage, self._voice,
-                self._rate, self._rateBoost, self._volume, self._wordSegmentation, self._camelCase, self._wordseg_keys) != (pitch, pitch_hz, tags, language, voice, rate, boost, volume, segment, camel, segment_keys):
+                self._rate, self._rateBoost, self._volume, self._rateWpm if self._rateInWpm else 0, self._wordSegmentation, self._camelCase, self._wordseg_keys) != (pitch, pitch_hz, tags, language, voice, rate, boost, volume, wpm, segment, camel, segment_keys):
                 pitch, tags, language, voice = self._pitch, self._voiceTags, self._selectedLanguage, self._voice
                 pitch_hz = self._pitchHertz if self._pitchInHertz else 0
                 rate, boost, volume = self._rate, self._rateBoost, self._volume
+                wpm = self._rateWpm if self._rateInWpm else 0
                 segment, camel, segment_keys = self._wordSegmentation, self._camelCase, self._wordseg_keys
                 parts = make_parts()
             characters = sum(len(p.text) if isinstance(p, EciText) else len(p.original) if isinstance(p, EciCapitalWord) else len(p) if isinstance(p, str) else 0 for p in parts)

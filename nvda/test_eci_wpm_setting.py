@@ -3,6 +3,8 @@ import argparse
 from pathlib import Path
 
 from test_eci_inline_queue import Engine, TEXTS
+from _reloq_eci_direct import DirectEciEngine, EciProsody, NATIVE_WPM as WPM, PROCESS_TAGS
+from test_eci_german_clock_native import render
 
 NATIVE_WPM = 0x1017
 
@@ -29,6 +31,21 @@ def main():
                 checks += 1
             assert engine.lib.eciSetParam(engine.h, NATIVE_WPM, -1) == -1
             assert engine.lib.eciSetParam(engine.h, NATIVE_WPM, 6001) == -1
+            checks += 2
+            # Queued WPM changes preserve one connected sentence even with
+            # ordinary caller-supplied tags disabled.
+            engine.tags(1)
+            assert engine.lib.eciSetParam(engine.h, NATIVE_WPM, 0) >= 0
+            expected = engine.speak(f'`vwpm150 {parts[0]}`vwpm300 {parts[1]}`vwpm150 {parts[2]}')
+            engine.tags(0)
+            assert engine.lib.eciSetParam(engine.h, NATIVE_WPM, 150) >= 0
+            engine.add(parts[0])
+            assert engine.lib.eciSetParam(engine.h, NATIVE_WPM, 300) >= 0
+            engine.add(parts[1])
+            assert engine.lib.eciSetParam(engine.h, NATIVE_WPM, 150) >= 0
+            engine.add(parts[2])
+            assert engine.finish() == expected, (hex(language), 'queued WPM')
+            assert engine.lib.eciGetParam(engine.h, NATIVE_WPM) == 150
             checks += 2
         finally:
             engine.close()
@@ -63,6 +80,20 @@ def main():
         checks += 2
     finally:
         engine.close()
+    for language in (0x10000, 0x40000, 0x60000):
+        engine = DirectEciEngine(library.resolve(), dialect=language, encoding='utf8', native_voice=True)
+        try:
+            engine.set_parameter(PROCESS_TAGS, 0)
+            engine.set_parameter(WPM, 150)
+            text = TEXTS[language]
+            changed = render(engine, [text[0], EciProsody(8, 300), text[1], EciProsody(8, 150), text[2]])
+            engine.set_parameter(WPM, 0)
+            engine.set_parameter(PROCESS_TAGS, 1)
+            tagged = render(engine, [f'`vwpm150 {text[0]}`vwpm300 {text[1]}`vwpm150 {text[2]}'])
+            assert changed == tagged, hex(language)
+            checks += 1
+        finally:
+            engine.close()
     print(f'WPM setting: {checks} language, tag isolation and bounds checks passed')
 
 

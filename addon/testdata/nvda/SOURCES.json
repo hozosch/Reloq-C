@@ -103,6 +103,12 @@
       "url": "https://raw.githubusercontent.com/nvaccess/nvda/release-2026.3/source/_remoteClient/localMachine.py",
       "retrieved": "2026-11-09",
       "sha256": "7b5ffdaa05bb9898c7236081977f3b0a96924eac493fc6ed2f5ccae7f50d3cc4"
+    },
+    {
+      "path": "_remoteClient/serializer.py",
+      "url": "https://raw.githubusercontent.com/nvaccess/nvda/release-2026.3/source/_remoteClient/serializer.py",
+      "retrieved": "2026-11-10",
+      "sha256": "ad0c85f5e91118bcb73796957ad7cbda3991fdadda1fe3044bce559d4394373a"
     }
   ]
 }

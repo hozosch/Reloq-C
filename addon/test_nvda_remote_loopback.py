@@ -6,9 +6,9 @@ and NVDA GUI are simulated; this is not an end-to-end Remote connection.
 import argparse
 import ast
 import ctypes
+import importlib.util
 from enum import IntEnum
 import inspect as py_inspect
-import json
 from pathlib import Path
 import queue
 import sys
@@ -69,6 +69,21 @@ def inspect(module):
         def _make_player(hz):return Player()
     original=module.DirectEciEngine;module.DirectEciEngine=Native
     driver=Driver()
+    # Use NVDA Remote's actual JSON encoder and decoder. Its decoder resolves
+    # SynthCommand names in speech.commands, so a simple JSON round-trip
+    # cannot detect an unknown ReLoq command being silently discarded.
+    sys.modules['speech'].commands=commands
+    spec=importlib.util.spec_from_file_location('remote_serializer_test', SOURCE/'_remoteClient/serializer.py')
+    remote_serializer=importlib.util.module_from_spec(spec);spec.loader.exec_module(remote_serializer)
+    serializer=remote_serializer.JSONSerializer()
+    markers=[module.EciTagCommand('`vf30'), module.SegmentationGuard(True),
+             module.NativeDictionaryWord('PowerShell'), module.CapitalWordCommand('CGROUP','C group'),
+             module.SegmentationGuard(False)]
+    decoded=serializer.deserialize(serializer.serialize(type='speak',sequence=markers))['sequence']
+    assert [type(value) for value in decoded]==[type(value) for value in markers], 'Remote discarded ReLoq commands'
+    assert [vars(value) for value in decoded]==[vars(value) for value in markers]
+    assert module._parts(decoded,voice_tags=True)==module._parts(markers,voice_tags=True)
+    print('PASS Remote JSON preserves protected tags, dictionary words and uppercase candidates',flush=True)
     tone_events=[];wave_events=[];sent_speech=[];wire=[]
     tone_decider=Signal();wave_decider=Signal()
     leader_tones=types.SimpleNamespace(beep=lambda hz,length,left,right:tone_events.append((hz,length,left,right)))
@@ -96,8 +111,10 @@ def inspect(module):
             instance.filter=filter;instance.transport=None;instance.register(self);self.outboundHandlers[messageType]=instance
         def unregisterOutbound(self,messageType):self.outboundHandlers.pop(messageType).unregister()
         def send(self,type,**kw):
-            if type=='speak':sent_speech.append(kw['sequence']);return
-            payload=json.loads(json.dumps(kw));wire.append((type,payload))
+            payload=serializer.deserialize(serializer.serialize(type=type,**kw))
+            type=payload.pop('type')
+            if type=='speak':sent_speech.append(payload['sequence']);return
+            wire.append((type,payload))
             func={'tone':leader.beep,'wave':leader.playWave}.get(type)
             if func:
                 accepted=py_inspect.signature(func).parameters

@@ -2,6 +2,8 @@
 
 ## Version 1.3.0 – Testversion
 
+Die Zahlen 12 und 19 verwenden auf Brasilianisch-Portugiesisch auch in größeren Zahlen die üblichen Vokale. ECI-Betonungsbefehle verwenden dieselbe Sprachmelodie wie der entsprechende Reglerwert.
+
 In der NVDA-Einstellungskategorie Eloquence C kann die Zerlegung unbekannter englischer Wörter eingeschaltet werden. Sie ist zunächst deaktiviert und gilt unabhängig von der Groß- und Kleinschreibung für amerikanisches und britisches Englisch. Bei vollständig großgeschriebenen Wörtern bleibt Eloquences eigene Buchstabierung erhalten, wenn der Sprachkern das Wort buchstabiert; andere können weiterhin zerlegt werden. Erkannte Wörter und Wörterbucheinträge bleiben möglichst erhalten; die Erkennung kann sich bei unbekannten Namen und Fremdwörtern irren.
 
 Die getrennte Option **Camel-Case-Wörter zerlegen (alle Sprachen)** setzt Wortgrenzen bei Binnen-Großbuchstaben, zum Beispiel `meinWort` und `HTTPServer`. Sie ist zunächst ausgeschaltet. NVDA kann mit seinem eigenen eingebauten Sprachwörterbuch unabhängig davon ebenfalls Camel Case aufteilen. Eigene NVDA- und native Wörterbucheinträge haben Vorrang vor der zusätzlichen Zerlegung.
@@ -96,6 +98,8 @@ Die folgenden Optionen befinden sich in den Sprachausgaben-Einstellungen:
 **Weicher Modus** senkt ab 16 kHz die Präsenz stimmhafter Anteile bei etwa 3 bis 4 kHz und lässt ab 22 kHz die zusätzliche Richness weg. Er reduziert außerdem die Behauchung stimmhafter Laute und ist zunächst ausgeschaltet.
 
 Unter **NVDA-Einstellungen → Eloquence C → Genaue Grundtonhöhe** kann die Grundtonhöhe zusätzlich als ganze Zahl in Hertz angegeben werden. Aktiviere dazu **Grundtonhöhe in Hertz verwenden**, gib den Wert ein und wähle **OK** oder **Übernehmen**. Die normale NVDA-Stimmhöhe behält ihre ECI-Skala von 0 bis 100. Wird dieser Regler verändert, schaltet Eloquence mit einer Ansage zurück auf die ECI-Skala; der Hertz-Wert bleibt für eine spätere erneute Aktivierung gespeichert. Stimmen- und Sprachwechsel behalten die aktivierte Hertz-Vorgabe bei. Bei Betonung 0 lässt sich die Grundtonhöhe gut überprüfen; Tonsprachen können weiterhin sprachliche Tonverläufe verwenden.
+
+Unter **NVDA-Einstellungen → Eloquence C → Genaue Sprechgeschwindigkeit** kann die Geschwindigkeit alternativ als ganze Zahl von 1 bis 6000 Wörtern pro Minute eingegeben werden. Die normale NVDA-Geschwindigkeit bleibt als eigener Wert erhalten. Wird der normale Regler oder die Geschwindigkeitsverstärkung verändert, schaltet Eloquence mit einer Ansage auf die normale Skala zurück; der WPM-Wert bleibt gespeichert. Die tatsächliche Wortzahl hängt von Sprache, Text und Pausen ab.
 
 **ECI-Tags verarbeiten** ist zunächst ausgeschaltet. Eingeschaltet können unterstützte Backtick-Befehle im Text Aussprache, Buchstabierung, Betonung, Stimmparameter, Stimmen und Sprachen steuern. Für gewöhnliches Lesen ist die Option nicht erforderlich. Eigene Aussprachewörterbücher können Ausspracheangaben unabhängig von dieser Einstellung enthalten.
 

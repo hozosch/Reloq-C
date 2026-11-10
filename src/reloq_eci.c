@@ -110,7 +110,7 @@ _Static_assert(sizeof(short) == sizeof(int16_t), "ECI output needs 16-bit short"
 
 struct queued_voice {
     int values[8],generic[3];
-    int pitch_hz;
+    int pitch_hz,native_wpm;
     unsigned active;
 };
 struct queued_item {
@@ -206,6 +206,7 @@ static struct queued_voice capture_voice(const struct reloq_eci_engine *e)
          e->roughness,e->breathiness,e->native_speed,e->native_volume},
         {e->generic_rate,e->generic_pitch,e->generic_volume},
         (e->real_voice_flags[0]&(1u<<2))?e->real_voice_values[0][2]:0,
+        e->native_wpm,
         (unsigned)(e->native_speed_active|e->native_pitch_active<<1|
             e->native_inflection_active<<2|e->native_volume_active<<3)};
 }
@@ -215,6 +216,7 @@ static void apply_voice(struct reloq_eci_engine *e,const struct queued_voice *v)
     e->native_pitch=v->values[2];e->native_inflection=v->values[3];
     e->roughness=v->values[4];e->breathiness=v->values[5];
     e->native_speed=v->values[6];e->native_volume=v->values[7];
+    e->native_wpm=v->native_wpm;
     e->generic_rate=v->generic[0];e->generic_pitch=v->generic[1];e->generic_volume=v->generic[2];
     if(v->pitch_hz) {
         e->real_voice_values[0][2]=v->pitch_hz;e->real_voice_flags[0]|=1u<<2;
@@ -234,8 +236,8 @@ static int insert_voice_controls(unsigned char **text,size_t *length,
 {
     static const char *const names[]={"vg","vh","vb","vf","vr","vy","vs","vv"};
     if(!count)return 0;
-    if(count>(SIZE_MAX-*length-2)/80)return -1;
-    unsigned char *next=malloc(*length+count*80+2);
+    if(count>(SIZE_MAX-*length-2)/96)return -1;
+    unsigned char *next=malloc(*length+count*96+2);
     size_t *offsets=malloc((count+1)*sizeof *offsets),*added=malloc((count+1)*sizeof *added);
     if(!next||!offsets||!added){free(next);free(offsets);free(added);return -1;}
     size_t used=0,from=0;
@@ -244,10 +246,20 @@ static int insert_voice_controls(unsigned char **text,size_t *length,
         memcpy(next+used,*text+from,at-from);used+=at-from;from=at;
         for(unsigned k=0;k<8;++k)if(initial.values[k]!=controls[i].voice.values[k] ||
             (k==2 && initial.pitch_hz!=controls[i].voice.pitch_hz)) {
+            /* An enabled WPM setting owns speed until explicitly cleared. */
+            if(k==6&&(controls[i].voice.native_wpm ||
+                      initial.native_wpm!=controls[i].voice.native_wpm))continue;
             int hz=k==2?controls[i].voice.pitch_hz:0;
             int n=snprintf((char *)next+used,80,"`%s%d",hz?"vbhz":names[k],
                 hz?hz:controls[i].voice.values[k]);
             if(n<0||n>=80){free(next);free(offsets);free(added);return -1;}
+            used+=(size_t)n;
+        }
+        if(initial.native_wpm!=controls[i].voice.native_wpm) {
+            int wpm=controls[i].voice.native_wpm;
+            int n=snprintf((char *)next+used,96,"`%s%d",wpm?"vwpm":"vs",
+                           wpm?wpm:controls[i].voice.values[6]);
+            if(n<0||n>=96){free(next);free(offsets);free(added);return -1;}
             used+=(size_t)n;
         }
         initial=controls[i].voice;offsets[i]=at;added[i]=used-at;
@@ -894,7 +906,8 @@ int ECICALL eciSynthesize(ECIHand handle)
         if(e->queue[i].length&&e->voice_mode==RELOQ_ECI_VOICE_GENERIC) {
             if(!have_voice){initial_voice=last_voice=e->queue[i].voice;have_voice=1;}
             else if(memcmp(last_voice.values,e->queue[i].voice.values,sizeof last_voice.values) ||
-                    last_voice.pitch_hz!=e->queue[i].voice.pitch_hz) {
+                    last_voice.pitch_hz!=e->queue[i].voice.pitch_hz ||
+                    last_voice.native_wpm!=e->queue[i].voice.native_wpm) {
                 controls[control_count++]=(struct queued_control){text_bytes,e->queue[i].voice};
                 last_voice=e->queue[i].voice;
             }

@@ -49,8 +49,10 @@ def main():
     module('synthDrivers.reloqC._reloq_dictionary_manager',DictionarySource=object)
     class Synth:
         name='reloqC';communityDictionaries=False;_pitchInHertz=False;_pitchHertz=150
+        _rateInWpm=False;_rateWpm=150
         def dictionary_manager(self):return types.SimpleNamespace(sources=[],repository='community')
         def configure_pitch_hertz(self,enabled,value):self._pitchInHertz=enabled;self._pitchHertz=value
+        def configure_rate_wpm(self,enabled,value):self._rateInWpm=enabled;self._rateWpm=value
         def configure_dictionaries(self,sources,enabled,callback,repository):callback(None,{})
         def saveSettings(self):self.saved=True
     synth=Synth();module('synthDriverHandler',getSynth=lambda:synth)
@@ -59,6 +61,7 @@ def main():
     plugin=importlib.util.module_from_spec(spec);spec.loader.exec_module(plugin)
     panel=plugin.EloquenceSettingsPanel();panel.makeSettings(Widget())
     assert panel.pitch_hz_mode.enabled and not panel.pitch_hz_value.enabled
+    assert panel.wpm_mode.enabled and not panel.wpm_value.enabled
     assert panel.pitch_hz_value.name=='Base pitch in hertz (1–24000):'
     assert panel.camel_case.enabled and not panel.camel_case.GetValue()
     panel.pitch_hz_mode.SetValue(True);panel.on_pitch_changed(Widget())
@@ -68,6 +71,13 @@ def main():
     assert synth._pitchInHertz and synth._pitchHertz==151 and synth.saved
     assert synth._camelCase and not panel.camel_dirty
     assert not panel.pitch_dirty
+    panel.wpm_mode.SetValue(True);panel.on_wpm_changed(Widget())
+    assert panel.wpm_value.enabled and panel.wpm_dirty
+    panel.wpm_value.SetValue(50);panel.onSave()
+    assert synth._rateInWpm and synth._rateWpm==50 and not panel.wpm_dirty
+    synth._rateInWpm=False
+    panel.onPanelActivated()
+    assert not panel.wpm_mode.GetValue() and not panel.wpm_value.enabled
     synth._pitchInHertz=False
     panel.onPanelActivated()
     assert not panel.pitch_hz_mode.GetValue() and not panel.pitch_hz_value.enabled

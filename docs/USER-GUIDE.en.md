@@ -2,6 +2,8 @@
 
 ## Version 1.3.0 – test version
 
+In Brazilian Portuguese, 12 and 19 use their usual vowels within larger numbers as well. ECI inflection commands use the same intonation as the corresponding setting.
+
 The Eloquence C NVDA settings category can optionally split unfamiliar English words, irrespective of capitalization. It is off by default and applies to American and British English. Fully capitalized words keep Eloquence's own spelling when the engine spells them; others can still be segmented. Known words and dictionary entries are preserved where possible; unfamiliar names and foreign words can still be misidentified.
 
 The separate **Split camel-case words (all languages)** option inserts word boundaries at internal capitals, for example `myWord` and `HTTPServer`. It is initially off. NVDA's own built-in speech dictionary may split camel case independently of this setting. User NVDA and native dictionary entries take priority over the additional segmentation.
@@ -96,6 +98,8 @@ These controls are in NVDA's Speech settings:
 **Mellow mode** softens voiced presence around 3–4 kHz at sample rates of 16 kHz and above and omits the added richness from 22 kHz. It also reduces breathiness during voicing and is off by default.
 
 Under **NVDA settings → Eloquence C → Exact base pitch**, enable **Use base pitch in hertz**, enter a whole number, and choose **OK** or **Apply**. NVDA's regular pitch slider retains the 0–100 ECI scale. Changing that slider switches back to the ECI scale with an announcement; the Hertz value is retained for later. Voice and language changes preserve an active Hertz baseline. Inflection 0 is useful for checking the pitch; tonal languages can retain their linguistic contours.
+
+Under **NVDA settings → Eloquence C → Exact speech rate**, the rate can instead be entered as a whole number from 1 to 6000 words per minute. The normal NVDA rate remains a separate saved value. Changing the normal rate slider or rate boost switches back to that scale with an announcement; the WPM value is retained. The actual number of words per minute depends on the language, text and pauses.
 
 **Process ECI tags** is off by default. When enabled, supported backtick commands in text can control pronunciation, spelling, emphasis, voice parameters, voices and languages. This option is not needed for ordinary reading. Pronunciation dictionaries can contain pronunciation annotations independently of this setting.
 

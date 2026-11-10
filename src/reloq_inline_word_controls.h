@@ -130,4 +130,39 @@ static int native_preset_speed_tags(unsigned char **input,size_t **source,size_t
     bytes[out]=0;positions[out]=map[n];free(a);free(map);
     *input=bytes;*source=positions;*length=out;return 0;
 }
+
+/* Voice presets are otherwise handled as word-scoped acoustic controls.
+ * Let native language rules plan their actual inflection, just as they do
+ * for a standalone vf command. Project it at the preset's original source
+ * position so later vf commands remain ordered correctly. */
+static int native_preset_inflection_tags(unsigned char **input,size_t **source,size_t *length)
+{
+    unsigned char *a=*input;size_t *map=*source,n=*length,count=0;
+    for(size_t i=0;i<n;) {
+        struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
+        if(t.kind==RELOQ_TAG_PRESET)++count;
+        i+=t.length?t.length:1;
+    }
+    if(!count)return 0;
+    if(count>(SIZE_MAX-n-1)/10||n+count*10+1>SIZE_MAX/sizeof *map)return -1;
+    unsigned char *bytes=malloc(n+count*10+1);
+    size_t *positions=malloc((n+count*10+1)*sizeof *positions);
+    if(!bytes||!positions){free(bytes);free(positions);return -1;}
+    size_t out=0;
+    for(size_t i=0;i<n;) {
+        struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
+        size_t size=t.length?t.length:1;
+        memcpy(bytes+out,a+i,size);memcpy(positions+out,map+i,size*sizeof *map);out+=size;
+        if(t.kind==RELOQ_TAG_PRESET) {
+            struct reloq_inline_word voice={0};reloq_inline_preset(&voice,t.value);
+            char inflection[10];int written=snprintf(inflection,sizeof inflection,"`vf%d ",voice.inflection);
+            if(written<0||(size_t)written>=sizeof inflection){free(bytes);free(positions);return -1;}
+            memcpy(bytes+out,inflection,(size_t)written);
+            for(int j=0;j<written;++j)positions[out++]=map[i];
+        }
+        i+=size;
+    }
+    bytes[out]=0;positions[out]=map[n];free(a);free(map);
+    *input=bytes;*source=positions;*length=out;return 0;
+}
 #endif

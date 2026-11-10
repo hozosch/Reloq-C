@@ -2432,8 +2432,8 @@ uint8_t ptbr_evv_authored_data[] = {
     13,2,31,
     /* eti_s_f02f9, 4 bytes at 4925 */
     4,21,31,2,
-    /* eti_s_f02fd, 4 bytes at 4929 */
-    13,4,31,2,
+    /* eti_s_f02fd, 4 bytes at 4929: number 12, with closed ô */
+    13,120,31,2,
     /* eti_s_f0301, 5 bytes at 4933 */
     26,24,2,31,2,
     /* eti_s_f0306, 8 bytes at 4938 */
@@ -2446,8 +2446,8 @@ uint8_t ptbr_evv_authored_data[] = {
     13,2,31,2,25,25,2,26,2,
     /* eti_s_f0326, 7 bytes at 4970 */
     13,2,31,4,3,26,4,
-    /* eti_s_f032d, 8 bytes at 4977 */
-    13,2,31,2,21,4,27,2,
+    /* eti_s_f032d, 8 bytes at 4977: number 19, with open ó */
+    13,2,31,2,21,110,27,2,
     /* eti_s_f0335, 7 bytes at 4985 */
     22,24,3,20,2,3,24,
     /* eti_s_f033c, 6 bytes at 4992 */

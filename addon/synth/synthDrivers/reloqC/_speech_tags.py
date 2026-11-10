@@ -7,6 +7,7 @@ never hide a complete sentence from NVDA to preserve one backtick.
 import re
 
 from speech.commands import CharacterModeCommand, SynthCommand
+import importlib
 
 
 class EciTagCommand(SynthCommand):
@@ -42,6 +43,20 @@ class CapitalWordCommand(SynthCommand):
 
     def __repr__(self):
         return f"CapitalWordCommand({self.original!r}, {self.segmented!r})"
+
+
+def register_remote_commands():
+    """Let NVDA Remote reconstruct our commands when ReLoq is on both ends.
+
+    NVDA Remote resolves serialized command class names in speech.commands.
+    Without these aliases it silently drops protected text, including whole
+    dictionary words. Do not replace another add-on's registered class.
+    """
+    commands = importlib.import_module("speech.commands")
+    for command in (EciTagCommand, SegmentationGuard, NativeDictionaryWord, CapitalWordCommand):
+        existing = getattr(commands, command.__name__, None)
+        if existing is None:
+            setattr(commands, command.__name__, command)
 
 
 _NUMBER = re.compile(r"`(vbhz|vwpm|v[bsvfghry]|ts|da|pp|l|p|v(?=[1-9])|(?=[0-9]))([0-9]+)")

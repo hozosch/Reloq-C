@@ -49,6 +49,7 @@ GERMAN_GLIDE_BACKNESS = 0x1013
 GERMAN_GLIDE_SOFTNESS = 0x1014
 ORIGINAL_QUESTIONS = 0x1015
 MELLOW_MODE = 0x1016
+NATIVE_WPM = 0x1017
 # Adapter-only control: exact ECI pitch in Hz; zero restores the VB scale.
 PITCH_HZ = 0x2000
 _log = logging.getLogger(__name__)
@@ -105,7 +106,7 @@ class EciPitchHz:
 
 @dataclass(frozen=True)
 class EciProsody:
-    """A standard ECI speed (6) or volume (7) change in queued text."""
+    """A queued ECI speed (6), volume (7), or native WPM (8) change."""
 
     parameter: int
     value: int
@@ -262,9 +263,10 @@ class DirectEciEngine:
             return
         if parameter not in (GENERIC_RATE, GENERIC_PITCH, GENERIC_VOLUME,
                              NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION,
-                             NATIVE_VOLUME, PROCESS_TAGS, DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATE, HIGH_RATE_PROFILE, GERMAN_GLIDE_OPENING, GERMAN_GLIDE_BACKNESS, GERMAN_GLIDE_SOFTNESS):
+                             NATIVE_VOLUME, NATIVE_WPM, PROCESS_TAGS, DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATE, HIGH_RATE_PROFILE, GERMAN_GLIDE_OPENING, GERMAN_GLIDE_BACKNESS, GERMAN_GLIDE_SOFTNESS):
             raise ValueError("unsupported generic voice parameter")
-        low, high = ((0, 250) if parameter == NATIVE_SPEED else
+        low, high = ((0, 6000) if parameter == NATIVE_WPM else
+                     (0, 250) if parameter == NATIVE_SPEED else
                      (0, 1) if parameter in (PROCESS_TAGS, GENDER, DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE) else
                      (0, 6) if parameter == SAMPLE_RATE else
                      (0, 3) if parameter == HIGH_RATE_PROFILE else
@@ -404,8 +406,8 @@ class DirectEciEngine:
                     raise ValueError("Hertz pitch must be 1..24000")
                 prepared.append(part)
             elif isinstance(part, EciProsody):
-                if (type(part.parameter) is not int or part.parameter not in (6, 7)
-                    or type(part.value) is not int or not 0 <= part.value <= (250 if part.parameter == 6 else 100)):
+                if (type(part.parameter) is not int or part.parameter not in (6, 7, 8)
+                    or type(part.value) is not int or not 0 <= part.value <= (250 if part.parameter == 6 else 6000 if part.parameter == 8 else 100)):
                     raise ValueError("invalid ECI speed/volume change")
                 prepared.append(part)
             else:
@@ -483,14 +485,23 @@ class DirectEciEngine:
                     self._apply_pitch_hz(part.value)
                     ok, operation = 1, "eciSetVoiceParam"
                 elif isinstance(part, EciProsody):
-                    if part.parameter not in restore:
-                        restore[part.parameter] = self._dll.eciGetVoiceParam(self._handle, 0, part.parameter)
-                        if restore[part.parameter] < 0:
-                            raise RuntimeError("eciGetVoiceParam failed")
-                    previous = self._dll.eciSetVoiceParam(self._handle, 0, part.parameter, part.value)
-                    ok = int(previous >= 0 and
-                        self._dll.eciGetVoiceParam(self._handle, 0, part.parameter) == part.value)
-                    operation = "eciSetVoiceParam"
+                    if part.parameter == 8:
+                        if 8 not in restore:
+                            restore[8] = self._dll.eciGetParam(self._handle, NATIVE_WPM)
+                            if restore[8] < 0:
+                                raise RuntimeError("could not read native WPM")
+                        previous = self._dll.eciSetParam(self._handle, NATIVE_WPM, part.value)
+                        ok = int(previous >= 0 and self._dll.eciGetParam(self._handle, NATIVE_WPM) == part.value)
+                        operation = "eciSetParam WPM"
+                    else:
+                        if part.parameter not in restore:
+                            restore[part.parameter] = self._dll.eciGetVoiceParam(self._handle, 0, part.parameter)
+                            if restore[part.parameter] < 0:
+                                raise RuntimeError("eciGetVoiceParam failed")
+                        previous = self._dll.eciSetVoiceParam(self._handle, 0, part.parameter, part.value)
+                        ok = int(previous >= 0 and
+                            self._dll.eciGetVoiceParam(self._handle, 0, part.parameter) == part.value)
+                        operation = "eciSetVoiceParam"
                 else:
                     ok = self._dll.eciAddText(self._handle, part)
                     operation = "eciAddText"
@@ -534,7 +545,9 @@ class DirectEciEngine:
                     elif self._dll.eciSetParam(self._handle, NATIVE_PITCH, raw) < 0:
                         _log.error("ECI could not restore native pitch")
                 for parameter, value in restore.items():
-                    if self._dll.eciSetVoiceParam(self._handle, 0, parameter, value) < 0:
+                    result = (self._dll.eciSetParam(self._handle, NATIVE_WPM, value) if parameter == 8
+                              else self._dll.eciSetVoiceParam(self._handle, 0, parameter, value))
+                    if result < 0:
                         _log.error("ECI could not restore voice parameter %s", parameter)
             self._on_pcm = self._on_index = None
             self._first_pcm_diagnostic = None
@@ -558,5 +571,5 @@ class DirectEciEngine:
 
 __all__ = ["EciText", "DirectEciEngine", "EciIndex", "EciPitch", "EciPitchHz", "EciProsody", "EciLanguage", "EciSynthesisError", "PITCH_HZ",
            "GERMAN_DIALECT", "NATIVE_VOICE_MODE", "GENERIC_RATE",
-           "GENERIC_PITCH", "GENERIC_VOLUME", "NATIVE_SPEED", "NATIVE_PITCH",
+           "GENERIC_PITCH", "GENERIC_VOLUME", "NATIVE_SPEED", "NATIVE_WPM", "NATIVE_PITCH",
            "NATIVE_INFLECTION", "NATIVE_VOLUME", "DICTIONARY", "PHRASE_PREDICTION", "ORIGINAL_QUESTIONS", "MELLOW_MODE", "PROCESS_TAGS", "PAUSE_MODE", "HEAD_SIZE", "ROUGHNESS", "BREATHINESS", "GENDER", "HIGH_RATE_PROFILE", "GERMAN_GLIDE_OPENING", "GERMAN_GLIDE_BACKNESS", "GERMAN_GLIDE_SOFTNESS", "SAMPLE_RATE", "SAMPLE_RATES"]
