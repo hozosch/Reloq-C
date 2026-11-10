@@ -5344,6 +5344,24 @@ L7456:;
     r0 = reloq61_typed_vretproc(DELTA_ENTRY_vretproc, state, (int32_t)(94));
     RELOQ_RULE_RETURN(94);
 L7475:;
+    /* ReLoq: do not start moving the closed /o/ towards the following /z/
+     * through the vowel itself. The /z/ rule supplies the smooth transition
+     * after the dark vowel; other contexts, including /oi/, stay native. */
+    if (STATE(int16_t, s450) > 0 && STATE(int16_t, s451) > STATE(int16_t, s450)) {
+        delta_state *d = state;
+        delta_pta saved_lpta = d->lpta;
+        delta_vars *vars = EVV_AT(delta_vars *, d->vars);
+        int32_t saved_ptr = vars->scan_ptr;
+        uint8_t saved_field = vars->scan_field, saved_rev = vars->scan_rev,
+            saved_held = vars->scan_held;
+        reloq61_typed_lpta_loadp(DELTA_ENTRY_lpta_loadp, state,
+            EVV_AT(const delta_token *, STATE_AT(w63, -4)));
+        int next_z = !reloq61_typed_setscan_r(DELTA_ENTRY_setscan_r, state, 4) &&
+            !reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq, state, 4, 0, 10);
+        d->lpta = saved_lpta;vars->scan_ptr = saved_ptr;
+        vars->scan_field = saved_field;vars->scan_rev = saved_rev;vars->scan_held = saved_held;
+        if (next_z) STATE(int16_t, s451) = STATE(int16_t, s450);
+    }
     r0 = reloq61_typed_succeed(DELTA_ENTRY_succeed, state);
     RELOQ_RULE_RETURN(0);
 }

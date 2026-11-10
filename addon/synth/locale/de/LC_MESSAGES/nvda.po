@@ -457,3 +457,51 @@ msgstr "Geschwindigkeit in Wörtern pro Minute verwenden"
 
 msgid "WPM rate off; using the normal rate scale."
 msgstr "Wörter pro Minute deaktiviert; normale Geschwindigkeitsskala wird verwendet."
+
+msgid "Equalizer"
+msgstr "Equalizer"
+
+msgid "Enable &equalizer"
+msgstr "&Equalizer aktivieren"
+
+msgid "Enable equalizer"
+msgstr "Equalizer aktivieren"
+
+msgid "Equalizer &preset:"
+msgstr "Equalizer-&Voreinstellung:"
+
+msgid "Equalizer preset"
+msgstr "Equalizer-Voreinstellung"
+
+msgid "Balanced"
+msgstr "Ausgewogen"
+
+msgid "Warm"
+msgstr "Warm"
+
+msgid "Bright"
+msgstr "Hell"
+
+msgid "Smooth"
+msgstr "Sanft"
+
+msgid "Custom"
+msgstr "Benutzerdefiniert"
+
+msgid "Bass (250 Hz, -12 to +12 dB):"
+msgstr "Tiefen (250 Hz, -12 bis +12 dB):"
+
+msgid "Midrange (1200 Hz, -12 to +12 dB):"
+msgstr "Mitten (1200 Hz, -12 bis +12 dB):"
+
+msgid "Treble (3000 Hz, -12 to +12 dB):"
+msgstr "Höhen (3000 Hz, -12 bis +12 dB):"
+
+msgid "Equalizer bass"
+msgstr "Equalizer-Tiefen"
+
+msgid "Equalizer midrange"
+msgstr "Equalizer-Mitten"
+
+msgid "Equalizer treble"
+msgstr "Equalizer-Höhen"

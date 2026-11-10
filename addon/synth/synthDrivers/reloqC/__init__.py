@@ -33,7 +33,8 @@ from synthDriverHandler import (SynthDriver as BaseSynthDriver, VoiceInfo, Langu
 from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciPitchHz, EciProsody, EciLanguage, EciText, EciCapitalWord, NATIVE_VOLUME,
                                 NATIVE_SPEED, NATIVE_WPM, NATIVE_PITCH, NATIVE_INFLECTION, PROCESS_TAGS,
                                 PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATES,
-                                DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, PITCH_HZ)
+                                DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE,
+                                EQ_LOW, EQ_MID, EQ_HIGH, PITCH_HZ)
 from ._reloq_eci_transport import DictionaryStartupError, EciTextTransport
 from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries
 from ._reloq_nvda_dicts import ImportedDictionaries
@@ -44,6 +45,8 @@ from ._speech_tags import EciTagCommand, SegmentationGuard, NativeDictionaryWord
 
 
 DLL = Path(__file__).with_name("eci.dll")
+# The last preset uses the user's independent saved values.
+EQ_PRESETS = ((0, 0, 0), (4, 0, -1), (-1, 0, 4), (0, -1, -4))
 
 
 def _native_speed(percent, boost=False):
@@ -235,6 +238,11 @@ class SynthDriver(BaseSynthDriver):
         BooleanDriverSetting("_pitchInHertz", _("Use pitch in hertz"), defaultVal=False),
         NumericDriverSetting("_rateWpm", _("Rate in words per minute"), defaultVal=150, minVal=1, maxVal=6000),
         BooleanDriverSetting("_rateInWpm", _("Use rate in words per minute"), defaultVal=False),
+        BooleanDriverSetting("_eqEnabled", _("Enable equalizer"), defaultVal=False),
+        NumericDriverSetting("_eqPreset", _("Equalizer preset"), defaultVal=0, minVal=0, maxVal=4),
+        NumericDriverSetting("_eqCustomLow", _("Equalizer bass"), defaultVal=0, minVal=-12, maxVal=12),
+        NumericDriverSetting("_eqCustomMid", _("Equalizer midrange"), defaultVal=0, minVal=-12, maxVal=12),
+        NumericDriverSetting("_eqCustomHigh", _("Equalizer treble"), defaultVal=0, minVal=-12, maxVal=12),
         BooleanDriverSetting("_wordSegmentation", _("Split unfamiliar English words"), defaultVal=False),
         BooleanDriverSetting("_camelCase", _("Split camel case"), defaultVal=False),
     )
@@ -277,6 +285,10 @@ class SynthDriver(BaseSynthDriver):
         self._phrasePrediction = False
         self._originalQuestions = False
         self._mellowMode = False
+        self._eqEnabled = False
+        self._eqPreset = 0
+        self._eqCustomLow = self._eqCustomMid = self._eqCustomHigh = 0
+        self._applied_eq = (12, 12, 12)
         self._voiceTags = False
         self._wordSegmentation = False
         self._camelCase = False
@@ -513,6 +525,7 @@ class SynthDriver(BaseSynthDriver):
         if not previous:
             self._sync_pitch_hertz()
             self._sync_wpm()
+            self._sync_equalizer()
 
     def _initial_language(self):
         # Schema defaults are not a saved choice. Use NVDA's resolved UI
@@ -583,6 +596,7 @@ class SynthDriver(BaseSynthDriver):
         if not was_loading:
             self._sync_pitch_hertz()
             self._sync_wpm()
+            self._sync_equalizer()
 
     def _get_communityDictionaries(self):
         return self._communityDictionaries
@@ -947,6 +961,28 @@ class SynthDriver(BaseSynthDriver):
         with self._submit_lock:
             self._pitchHertz, self._pitchInHertz = value, enabled
             self._sync_pitch_hertz()
+
+    def _sync_equalizer(self):
+        with self._submit_lock:
+            if self._terminating:
+                return
+            values = ((self._eqCustomLow, self._eqCustomMid, self._eqCustomHigh)
+                      if self._eqPreset == 4 else EQ_PRESETS[self._eqPreset])
+            wanted = tuple(value + 12 for value in values) if self._eqEnabled else (12, 12, 12)
+            for parameter, old, value in zip((EQ_LOW, EQ_MID, EQ_HIGH), self._applied_eq, wanted):
+                if value != old:
+                    self._transport.set_parameter(parameter, value)
+            self._applied_eq = wanted
+
+    def configure_equalizer(self, enabled, preset, low, mid, high):
+        if type(enabled) is not bool or type(preset) is not int or not 0 <= preset <= 4:
+            raise ValueError("invalid equalizer preset")
+        if any(type(value) is not int or not -12 <= value <= 12 for value in (low, mid, high)):
+            raise ValueError("equalizer bands must be between -12 and 12 dB")
+        with self._submit_lock:
+            self._eqEnabled, self._eqPreset = enabled, preset
+            self._eqCustomLow, self._eqCustomMid, self._eqCustomHigh = low, mid, high
+            self._sync_equalizer()
 
     def _get_volume(self):
         return self._volume

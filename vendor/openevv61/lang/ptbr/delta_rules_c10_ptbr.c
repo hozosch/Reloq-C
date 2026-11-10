@@ -3731,6 +3731,7 @@ int32_t reloq_ptbr_por_ph_z(void *state, int32_t p0)
     unsigned char *param = base + 8;
     int32_t arg[8];
     int argn = 0;
+    int reloq_closed_o_before_z = 0;
     int32_t r0 = 0, r1 = 0, r2 = 0, r3 = 0, r4 = 0, r5 = 0, r6 = 0, r7 = 0;
 
     if (frame == 0)
@@ -3782,7 +3783,27 @@ L263:;
 L304:;
     STATE(int16_t, s396) = (1);
 L312:;
+    /* ReLoq: the closed /o/ before /z/ was already drifting towards the
+     * dental F2 target while the vowel was still sounding. Identify the
+     * preceding phone in the native scheduler and keep the z onset backed;
+     * the ordinary right-hand transition to the following vowel is kept. */
+    {
+        delta_state *d = state;
+        delta_pta saved_lpta = d->lpta;
+        delta_vars *vars = EVV_AT(delta_vars *, d->vars);
+        int32_t saved_ptr = vars->scan_ptr;
+        uint8_t saved_field = vars->scan_field, saved_rev = vars->scan_rev,
+            saved_held = vars->scan_held;
+        reloq61_typed_lpta_loadp(DELTA_ENTRY_lpta_loadp, state,
+            EVV_AT(const delta_token *, STATE_AT(w60, -4)));
+        reloq_closed_o_before_z = !reloq61_typed_setscan_l(DELTA_ENTRY_setscan_l, state, 4) &&
+            !reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq, state, 4, 0, 31);
+        d->lpta = saved_lpta;vars->scan_ptr = saved_ptr;
+        vars->scan_field = saved_field;vars->scan_rev = saved_rev;vars->scan_held = saved_held;
+    }
     r0 = reloq_call_ptbr_por_dental_Fv(state, (int32_t)(FIELD(0)));
+    if (reloq_closed_o_before_z && STATE(int16_t, s450) > 1000)
+        STATE(int16_t, s450) -= 200;
     STATE_D(int16_t, c14, 2) = (3);
     r0 = reloq61_typed_if_testeq_v_i(DELTA_ENTRY_if_testeq_v_i, state, EVV_AT(delta_loc *, STATE_AT(c14, 0)), (int32_t)(11025));
     if (r0 == 0) goto L368;

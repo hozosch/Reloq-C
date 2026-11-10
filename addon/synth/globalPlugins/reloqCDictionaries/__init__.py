@@ -49,6 +49,13 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.operation = 0
         self.pitch_dirty = False
         self.wpm_dirty = False
+        self.eq_dirty = False
+        self._updating_controls = False
+        self._saved_pitch = ((self.synth._pitchInHertz, self.synth._pitchHertz)
+                             if self.synth else None)
+        self._saved_wpm = ((self.synth._rateInWpm, self.synth._rateWpm)
+                           if self.synth else None)
+        self._saved_eq = self._equalizer_state(self.synth)
         self.segmentation_dirty = False
         self.camel_dirty = False
         content.Add(wx.StaticText(self, label=_("Exact base pitch")), 0, wx.ALL, 10)
@@ -83,6 +90,32 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.wpm_mode.Bind(wx.EVT_CHECKBOX, self.on_wpm_changed)
         self.wpm_value.Bind(wx.EVT_SPINCTRL, self.on_wpm_changed)
         self.wpm_value.Bind(wx.EVT_TEXT, self.on_wpm_changed)
+        content.Add(wx.StaticText(self, label=_("Equalizer")), 0, wx.ALL, 10)
+        self.eq_mode = wx.CheckBox(self, label=_("Enable &equalizer"))
+        self.eq_mode.SetValue(self.synth._eqEnabled if self.synth else False)
+        content.Add(self.eq_mode, 0, wx.ALL, 10)
+        eq_label = wx.StaticText(self, label=_("Equalizer &preset:"))
+        content.Add(eq_label, 0, wx.LEFT | wx.RIGHT, 10)
+        self.eq_preset = wx.Choice(self, choices=[_("Balanced"), _("Warm"),
+            _("Bright"), _("Smooth"), _("Custom")])
+        self.eq_preset.SetName(eq_label.GetLabelText())
+        self.eq_preset.SetSelection(self.synth._eqPreset if self.synth else 0)
+        content.Add(self.eq_preset, 0, wx.ALL, 10)
+        eq_values = self._equalizer_values(self.synth)
+        self.eq_bands = []
+        for label_text, value in zip((_("Bass (250 Hz, -12 to +12 dB):"),
+                                      _("Midrange (1200 Hz, -12 to +12 dB):"),
+                                      _("Treble (3000 Hz, -12 to +12 dB):")), eq_values):
+            label = wx.StaticText(self, label=label_text)
+            content.Add(label, 0, wx.LEFT | wx.RIGHT, 10)
+            control = wx.SpinCtrl(self, min=-12, max=12, initial=value)
+            control.SetName(label.GetLabelText())
+            control.Bind(wx.EVT_SPINCTRL, self.on_equalizer_band)
+            control.Bind(wx.EVT_TEXT, self.on_equalizer_band)
+            content.Add(control, 0, wx.ALL, 10)
+            self.eq_bands.append(control)
+        self.eq_mode.Bind(wx.EVT_CHECKBOX, self.on_equalizer_mode)
+        self.eq_preset.Bind(wx.EVT_CHOICE, self.on_equalizer_preset)
         self.segmentation = wx.CheckBox(self, label=_("Split unfamiliar &English words"))
         self.segmentation.SetValue(getattr(self.synth, "_wordSegmentation", False) if self.synth else False)
         self.segmentation.Bind(wx.EVT_CHECKBOX, self.on_segmentation_changed)
@@ -229,15 +262,77 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.pitch_hz_value.Enable(enabled and self.pitch_hz_mode.GetValue())
         self.wpm_mode.Enable(enabled)
         self.wpm_value.Enable(enabled and self.wpm_mode.GetValue())
+        self.eq_mode.Enable(enabled)
+        self.eq_preset.Enable(enabled and self.eq_mode.GetValue())
+        for control in self.eq_bands:
+            control.Enable(enabled and self.eq_mode.GetValue())
+
+    @staticmethod
+    def _equalizer_state(synth):
+        return ((synth._eqEnabled, synth._eqPreset, synth._eqCustomLow,
+                 synth._eqCustomMid, synth._eqCustomHigh) if synth else None)
+
+    @staticmethod
+    def _equalizer_values(synth):
+        if synth is None:
+            return (0, 0, 0)
+        from synthDrivers.reloqC import EQ_PRESETS
+        return ((synth._eqCustomLow, synth._eqCustomMid, synth._eqCustomHigh)
+                if synth._eqPreset == 4 else EQ_PRESETS[synth._eqPreset])
+
+    def _preview_equalizer(self, preset, custom):
+        if self.current_synth():
+            self.synth.configure_equalizer(bool(self.eq_mode.GetValue()), preset, *custom)
+            self.eq_dirty = True
+
+    def on_equalizer_mode(self, event):
+        if not self._updating_controls and self.current_synth():
+            state = self._equalizer_state(self.synth)
+            self._preview_equalizer(self.eq_preset.GetSelection(), state[2:])
+        self.enable_controls(not self.pending and self.current_synth())
+        event.Skip()
+
+    def on_equalizer_preset(self, event):
+        if not self._updating_controls and self.current_synth():
+            from synthDrivers.reloqC import EQ_PRESETS
+            preset = self.eq_preset.GetSelection()
+            state = self._equalizer_state(self.synth)
+            values = state[2:] if preset == 4 else EQ_PRESETS[preset]
+            self._updating_controls = True
+            try:
+                for control, value in zip(self.eq_bands, values):
+                    control.SetValue(value)
+            finally:
+                self._updating_controls = False
+            self._preview_equalizer(preset, state[2:])
+        event.Skip()
+
+    def on_equalizer_band(self, event):
+        if not self._updating_controls and self.current_synth():
+            values = tuple(control.GetValue() for control in self.eq_bands)
+            if all(isinstance(value, int) and -12 <= value <= 12 for value in values):
+                self.eq_preset.SetSelection(4)
+                self._preview_equalizer(4, values)
+        event.Skip()
 
     def on_pitch_changed(self, event):
-        self.pitch_dirty = True
-        self.pitch_hz_value.Enable(bool(self.current_synth()) and self.pitch_hz_mode.GetValue())
+        synth = self.synth if self.current_synth() else None
+        self.pitch_hz_value.Enable(bool(synth) and self.pitch_hz_mode.GetValue())
+        if not self._updating_controls and synth:
+            value = self.pitch_hz_value.GetValue()
+            if isinstance(value, int) and 1 <= value <= 24000:
+                synth.configure_pitch_hertz(bool(self.pitch_hz_mode.GetValue()), value)
+                self.pitch_dirty = True
         event.Skip()
 
     def on_wpm_changed(self, event):
-        self.wpm_dirty = True
-        self.wpm_value.Enable(bool(self.current_synth()) and self.wpm_mode.GetValue())
+        synth = self.synth if self.current_synth() else None
+        self.wpm_value.Enable(bool(synth) and self.wpm_mode.GetValue())
+        if not self._updating_controls and synth:
+            value = self.wpm_value.GetValue()
+            if isinstance(value, int) and 1 <= value <= 6000:
+                synth.configure_rate_wpm(bool(self.wpm_mode.GetValue()), value)
+                self.wpm_dirty = True
         event.Skip()
 
     def on_segmentation_changed(self, event):
@@ -447,10 +542,12 @@ class EloquenceSettingsPanel(SettingsPanel):
             try:
                 if self.pitch_dirty:
                     self.synth.configure_pitch_hertz(self.pitch_hz_mode.GetValue(), self.pitch_hz_value.GetValue())
-                    self.pitch_dirty = False
                 if self.wpm_dirty:
                     self.synth.configure_rate_wpm(self.wpm_mode.GetValue(), self.wpm_value.GetValue())
-                    self.wpm_dirty = False
+                if self.eq_dirty:
+                    state = self._equalizer_state(self.synth)
+                    self.synth.configure_equalizer(bool(self.eq_mode.GetValue()),
+                                                   self.eq_preset.GetSelection(), *state[2:])
                 if self.segmentation_dirty:
                     self.synth._wordSegmentation = self.segmentation.GetValue()
                     self.segmentation_dirty = False
@@ -460,19 +557,46 @@ class EloquenceSettingsPanel(SettingsPanel):
                 self.synth.configure_dictionaries(self.sources, self.community.GetValue(), completed,
                     "alternative" if self.repository.GetSelection() == 1 else "community")
                 self.synth.saveSettings()
+                self._saved_pitch = (self.synth._pitchInHertz, self.synth._pitchHertz)
+                self._saved_wpm = (self.synth._rateInWpm, self.synth._rateWpm)
+                self._saved_eq = self._equalizer_state(self.synth)
+                self.pitch_dirty = self.wpm_dirty = self.eq_dirty = False
             except Exception as error:
                 completed(error, None)
 
+    def _restore_preview(self):
+        synth = self.synth if self.current_synth() else None
+        if synth:
+            if self.pitch_dirty and self._saved_pitch is not None:
+                synth.configure_pitch_hertz(*self._saved_pitch)
+            if self.wpm_dirty and self._saved_wpm is not None:
+                synth.configure_rate_wpm(*self._saved_wpm)
+            if self.eq_dirty and self._saved_eq is not None:
+                synth.configure_equalizer(*self._saved_eq)
+        self.pitch_dirty = self.wpm_dirty = self.eq_dirty = False
+
     def onDiscard(self):
+        self._restore_preview()
         self.closing = True
 
     def on_destroy(self, event):
         if event.GetEventObject() is self:
+            if not self.closing:
+                self._restore_preview()
             self.closing = True
         event.Skip()
 
     def onPanelActivated(self):
         synth = synthDriverHandler.getSynth()
+        self._updating_controls = True
+        try:
+            self._refresh_settings(synth)
+        finally:
+            self._updating_controls = False
+        self.enable_controls(not self.pending and self.current_synth())
+        super().onPanelActivated()
+
+    def _refresh_settings(self, synth):
         if synth is not None and synth.name == "reloqC" and synth is not self.synth:
             self.operation += 1
             self.pending = False
@@ -484,6 +608,7 @@ class EloquenceSettingsPanel(SettingsPanel):
             self.wpm_mode.SetValue(synth._rateInWpm)
             self.wpm_value.SetValue(synth._rateWpm)
             self.wpm_dirty = False
+            self.eq_dirty = False
             self.segmentation.SetValue(getattr(synth, "_wordSegmentation", False))
             self.segmentation_dirty = False
             self.camel_case.SetValue(getattr(synth, "_camelCase", False))
@@ -495,16 +620,22 @@ class EloquenceSettingsPanel(SettingsPanel):
         if self.current_synth() and not self.pitch_dirty:
             self.pitch_hz_mode.SetValue(self.synth._pitchInHertz)
             self.pitch_hz_value.SetValue(self.synth._pitchHertz)
+            self._saved_pitch = (self.synth._pitchInHertz, self.synth._pitchHertz)
             self.pitch_dirty = False
         if self.current_synth() and not self.wpm_dirty:
             self.wpm_mode.SetValue(self.synth._rateInWpm)
             self.wpm_value.SetValue(self.synth._rateWpm)
+            self._saved_wpm = (self.synth._rateInWpm, self.synth._rateWpm)
+        if self.current_synth() and not self.eq_dirty:
+            self.eq_mode.SetValue(self.synth._eqEnabled)
+            self.eq_preset.SetSelection(self.synth._eqPreset)
+            for control, value in zip(self.eq_bands, self._equalizer_values(self.synth)):
+                control.SetValue(value)
+            self._saved_eq = self._equalizer_state(self.synth)
         if self.current_synth() and not self.segmentation_dirty:
             self.segmentation.SetValue(getattr(self.synth, "_wordSegmentation", False))
         if self.current_synth() and not self.camel_dirty:
             self.camel_case.SetValue(getattr(self.synth, "_camelCase", False))
-        self.enable_controls(not self.pending and self.current_synth())
-        super().onPanelActivated()
 
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):

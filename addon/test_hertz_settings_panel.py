@@ -1,4 +1,4 @@
-"""Exercise the accessible Hertz controls and NVDA settings-panel lifecycle."""
+"""Exercise live Hertz/WPM preview and NVDA's Apply/Cancel lifecycle."""
 import builtins
 import importlib.util
 from pathlib import Path
@@ -42,17 +42,22 @@ def main():
     wx=module('wx',StaticText=Widget,CheckBox=Widget,SpinCtrl=Widget,Choice=Widget,
               ListBox=Widget,BoxSizer=Widget,Button=Widget,CallAfter=lambda fn,*a:fn(*a))
     for name in ('ALL','LEFT','RIGHT','BOTTOM','EXPAND','HORIZONTAL','EVT_CHECKBOX',
-                 'EVT_SPINCTRL','EVT_TEXT','EVT_BUTTON','EVT_WINDOW_DESTROY'):
+                 'EVT_SPINCTRL','EVT_TEXT','EVT_BUTTON','EVT_WINDOW_DESTROY','EVT_CHOICE'):
         setattr(wx,name,1)
     langs=module('synthDrivers.reloqC._reloq_languages',LANGUAGES={},LANGUAGE_DISPLAY_ORDER=[])
-    module('synthDrivers',__path__=[]);module('synthDrivers.reloqC',__path__=[])
+    module('synthDrivers',__path__=[]);module('synthDrivers.reloqC',__path__=[],
+        EQ_PRESETS=((0,0,0),(4,0,-1),(-1,0,4),(0,-1,-4)))
     module('synthDrivers.reloqC._reloq_dictionary_manager',DictionarySource=object)
     class Synth:
         name='reloqC';communityDictionaries=False;_pitchInHertz=False;_pitchHertz=150
         _rateInWpm=False;_rateWpm=150
+        _eqEnabled=False;_eqPreset=0;_eqCustomLow=0;_eqCustomMid=0;_eqCustomHigh=0
         def dictionary_manager(self):return types.SimpleNamespace(sources=[],repository='community')
         def configure_pitch_hertz(self,enabled,value):self._pitchInHertz=enabled;self._pitchHertz=value
         def configure_rate_wpm(self,enabled,value):self._rateInWpm=enabled;self._rateWpm=value
+        def configure_equalizer(self,enabled,preset,low,mid,high):
+            self._eqEnabled,self._eqPreset=enabled,preset
+            self._eqCustomLow,self._eqCustomMid,self._eqCustomHigh=low,mid,high
         def configure_dictionaries(self,sources,enabled,callback,repository):callback(None,{})
         def saveSettings(self):self.saved=True
     synth=Synth();module('synthDriverHandler',getSynth=lambda:synth)
@@ -66,15 +71,56 @@ def main():
     assert panel.camel_case.enabled and not panel.camel_case.GetValue()
     panel.pitch_hz_mode.SetValue(True);panel.on_pitch_changed(Widget())
     assert panel.pitch_hz_value.enabled and panel.pitch_dirty
+    assert synth._pitchInHertz and synth._pitchHertz==150 and not hasattr(synth, 'saved')
+    panel.pitch_hz_value.SetValue(151);panel.on_pitch_changed(Widget())
+    assert synth._pitchHertz==151 and not hasattr(synth, 'saved')
     panel.camel_case.SetValue(True);panel.on_camel_changed(Widget())
-    panel.pitch_hz_value.SetValue(151);panel.onSave()
+    panel.onSave()
     assert synth._pitchInHertz and synth._pitchHertz==151 and synth.saved
     assert synth._camelCase and not panel.camel_dirty
     assert not panel.pitch_dirty
     panel.wpm_mode.SetValue(True);panel.on_wpm_changed(Widget())
     assert panel.wpm_value.enabled and panel.wpm_dirty
-    panel.wpm_value.SetValue(50);panel.onSave()
+    panel.wpm_value.SetValue(50);panel.on_wpm_changed(Widget())
+    assert synth._rateInWpm and synth._rateWpm==50
+    panel.onSave()
     assert synth._rateInWpm and synth._rateWpm==50 and not panel.wpm_dirty
+    # Apply becomes the new baseline; cancelling subsequent live changes
+    # restores it instead of the values from when the dialog was opened.
+    panel.pitch_hz_value.SetValue(220);panel.on_pitch_changed(Widget())
+    panel.wpm_mode.SetValue(False);panel.on_wpm_changed(Widget())
+    assert synth._pitchHertz==220 and not synth._rateInWpm
+    panel.onDiscard()
+    assert (synth._pitchInHertz,synth._pitchHertz)==(True,151)
+    assert (synth._rateInWpm,synth._rateWpm)==(True,50)
+    assert not panel.pitch_dirty and not panel.wpm_dirty
+    panel=plugin.EloquenceSettingsPanel();panel.makeSettings(Widget())
+    panel.pitch_hz_mode.SetValue(False);panel.on_pitch_changed(Widget())
+    panel.wpm_value.SetValue(90);panel.on_wpm_changed(Widget())
+    assert not synth._pitchInHertz and synth._rateWpm==90
+    panel.onDiscard()
+    assert (synth._pitchInHertz,synth._pitchHertz)==(True,151)
+    assert (synth._rateInWpm,synth._rateWpm)==(True,50)
+    panel=plugin.EloquenceSettingsPanel();panel.makeSettings(Widget())
+    assert not panel.eq_mode.GetValue() and not panel.eq_preset.enabled
+    panel.eq_mode.SetValue(True);panel.on_equalizer_mode(Widget())
+    panel.eq_preset.SetSelection(1);panel.on_equalizer_preset(Widget())
+    assert synth._eqEnabled and synth._eqPreset==1
+    assert tuple(b.GetValue() for b in panel.eq_bands)==(4,0,-1)
+    panel.eq_bands[1].SetValue(3);panel.on_equalizer_band(Widget())
+    assert (synth._eqPreset,synth._eqCustomLow,synth._eqCustomMid,synth._eqCustomHigh)==(4,4,3,-1)
+    panel.onSave()
+    panel.eq_preset.SetSelection(2);panel.on_equalizer_preset(Widget())
+    assert synth._eqPreset==2 and (synth._eqCustomLow,synth._eqCustomMid,synth._eqCustomHigh)==(4,3,-1)
+    panel.eq_preset.SetSelection(4);panel.on_equalizer_preset(Widget())
+    assert tuple(b.GetValue() for b in panel.eq_bands)==(4,3,-1)
+    panel.eq_mode.SetValue(False);panel.on_equalizer_mode(Widget())
+    panel.onDiscard()
+    assert (synth._eqEnabled,synth._eqPreset,synth._eqCustomLow,synth._eqCustomMid,synth._eqCustomHigh)==(True,4,4,3,-1)
+    panel=plugin.EloquenceSettingsPanel();panel.makeSettings(Widget())
+    # Incomplete typed input must not preview an invalid native value.
+    panel.wpm_value.SetValue(0);panel.on_wpm_changed(Widget())
+    assert synth._rateWpm==50 and not panel.wpm_dirty
     synth._rateInWpm=False
     panel.onPanelActivated()
     assert not panel.wpm_mode.GetValue() and not panel.wpm_value.enabled
@@ -83,7 +129,7 @@ def main():
     assert not panel.pitch_hz_mode.GetValue() and not panel.pitch_hz_value.enabled
     synth._camelCase=False;panel.onPanelActivated()
     assert not panel.camel_case.GetValue()
-    print('NVDA settings panel: Hertz and camel case enablement, save and refresh passed')
+    print('NVDA settings panel: live Hertz/WPM/EQ preview, apply, cancel and refresh passed')
 
 
 if __name__=='__main__':main()

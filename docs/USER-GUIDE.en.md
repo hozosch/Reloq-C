@@ -101,6 +101,10 @@ Under **NVDA settings → Eloquence C → Exact base pitch**, enable **Use base 
 
 Under **NVDA settings → Eloquence C → Exact speech rate**, the rate can instead be entered as a whole number from 1 to 6000 words per minute. The normal NVDA rate remains a separate saved value. Changing the normal rate slider or rate boost switches back to that scale with an announcement; the WPM value is retained. The actual number of words per minute depends on the language, text and pauses.
 
+Hertz and WPM changes take effect immediately while the dialog is open. **Apply** or **OK** saves the current values; **Cancel** restores the last applied values.
+
+Under **NVDA settings → Eloquence C → Equalizer**, bass, midrange and treble can each be adjusted from -12 to +12 dB. The Balanced, Warm, Bright and Smooth presets are starting points. Changing a band selects the custom setting, which is retained when switching presets. Changes are audible immediately and follow Apply, OK and Cancel. The equalizer is off by default; turning it off or selecting Balanced leaves the audio unchanged. Boosts reduce the overall level to provide headroom against clipping.
+
 **Process ECI tags** is off by default. When enabled, supported backtick commands in text can control pronunciation, spelling, emphasis, voice parameters, voices and languages. This option is not needed for ordinary reading. Pronunciation dictionaries can contain pronunciation annotations independently of this setting.
 
 `` `vwpm150 `` sets the following speech to 150 using the native WPM timing rule. Whole numbers from 1 to 6000 are accepted; `` `vs50 `` returns to the usual ECI speed scale. At 1 to 4 WPM the control frames are slowed during synthesis to avoid overflow in the language rules; pitch is retained. Audible words per minute depend on the language, text and pauses; very high values may hit timing limits. These commands do not change saved sliders.

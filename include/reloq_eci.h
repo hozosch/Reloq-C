@@ -124,6 +124,10 @@ enum {
     /* Default native VWPM timing. 0 uses the ordinary ECI speed; otherwise
      * 1..6000 sets WPM without enabling user-supplied inline tags. */
     RELOQ_ECI_NATIVE_WPM = 0x1017,
+    /* Optional output EQ; values 0..24 represent -12..+12 dB. 12 is flat. */
+    RELOQ_ECI_EQ_LOW = 0x1018,
+    RELOQ_ECI_EQ_MID = 0x1019,
+    RELOQ_ECI_EQ_HIGH = 0x101a,
     RELOQ_ECI_ENGLISH = 0x00010000,
     RELOQ_ECI_ENGLISH_BRITAIN = 0x00010001,
     RELOQ_ECI_SPANISH_SPAIN = 0x00020000,

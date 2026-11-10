@@ -19,6 +19,7 @@
 #include "reloq_session.h"
 #include "reloq_english_voice.h"
 #include "reloq_voice_controls.h"
+#include "reloq_equalizer.h"
 
 #include <limits.h>
 #include <math.h>
@@ -181,6 +182,7 @@ struct reloq_eci_engine {
     int input_type;
     int process_tags;
     int dictionary_disabled,phrase_prediction,original_questions,mellow_mode;
+    int eq_low,eq_mid,eq_high;
     int pause_mode;
     int head_size,roughness,breathiness,gender;
     int german_glide_opening,german_glide_backness,german_glide_softness;
@@ -339,6 +341,8 @@ struct pcm_bridge {
     const struct connected_index_boundary *boundary;
     size_t span_samples;
     int inline_volume;
+    struct reloq_equalizer equalizer;
+    int equalizer_initialized;
     size_t pcm_period, pcm_phase, pcm_used, pcm_early;
 };
 
@@ -671,6 +675,7 @@ ECIHand ECICALL eciNewEx(int language)
     e->german_glide_opening=85;
     e->german_glide_backness=45;
     e->german_glide_softness=45;
+    e->eq_low=e->eq_mid=e->eq_high=12;
     e->generic_rate = 50;
     e->generic_pitch = 50;
     e->generic_volume = 100;
@@ -1371,6 +1376,9 @@ int ECICALL eciGetParam(ECIHand handle, int parameter)
     case RELOQ_ECI_PHRASE_PREDICTION: return e->phrase_prediction;
     case RELOQ_ECI_ORIGINAL_QUESTIONS: return e->original_questions;
     case RELOQ_ECI_MELLOW_MODE: return e->mellow_mode;
+    case RELOQ_ECI_EQ_LOW: return e->eq_low;
+    case RELOQ_ECI_EQ_MID: return e->eq_mid;
+    case RELOQ_ECI_EQ_HIGH: return e->eq_high;
     case RELOQ_ECI_PAUSE_MODE: return e->pause_mode;
     case RELOQ_ECI_HEAD_SIZE: return e->head_size;
     case RELOQ_ECI_ROUGHNESS: return e->roughness;
@@ -1505,6 +1513,14 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
     case RELOQ_ECI_MELLOW_MODE:
         if(value!=0 && value!=1)return eci_refuse(e,-1);
         e->mellow_mode=value;break;
+    case RELOQ_ECI_EQ_LOW:
+    case RELOQ_ECI_EQ_MID:
+    case RELOQ_ECI_EQ_HIGH:
+        if(value<0 || value>24)return eci_refuse(e,-1);
+        if(parameter==RELOQ_ECI_EQ_LOW)e->eq_low=value;
+        else if(parameter==RELOQ_ECI_EQ_MID)e->eq_mid=value;
+        else e->eq_high=value;
+        break;
     case RELOQ_ECI_PROCESS_TAGS:
         if(value!=0 && value!=1)return eci_refuse(e,-1);
         e->process_tags=value;e->input_type=value;break;
@@ -1664,6 +1680,12 @@ static int send_pcm(void *context, const int16_t *pcm, size_t samples)
             for (size_t i = 0; i < count; ++i)
                 e->output[i] = (short)lround((double)e->output[i] * gain);
         }
+        if(!b->equalizer_initialized) {
+            if(reloq_equalizer_init(&b->equalizer,sample_hz(e->sample_rate_code),
+                e->eq_low-12,e->eq_mid-12,e->eq_high-12))return -1;
+            b->equalizer_initialized=1;
+        }
+        reloq_equalizer_process(&b->equalizer,e->output,count);
         int status=notify_callback(e,RELOQ_ECI_WAVEFORM_BUFFER,(int)count);
         if(status!=RELOQ_ECI_OK) {
             b->callback_refused=status==RELOQ_ECI_CALLBACK;

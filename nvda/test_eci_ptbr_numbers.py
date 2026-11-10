@@ -1,10 +1,31 @@
 """Brazilian number words retain the requested open and closed vowels."""
 import argparse
+import math
 from pathlib import Path
+import struct
 
 from _reloq_eci_direct import DirectEciEngine, EciIndex, PROCESS_TAGS, SAMPLE_RATE
 from test_eci_german_clock_native import phonemes, render
 from test_eci_inline_queue import Engine
+
+
+def transition_band_ratio(pcm, center_ms):
+    """Measure the 800–1000 / 1000–1200 Hz balance during the /o z/ onset."""
+    samples=struct.unpack('<'+'h'*(len(pcm)//2),pcm)
+    window=samples[(center_ms-10)*16:(center_ms+10)*16]
+    assert len(window)==320
+    def energy(start):
+        total=0.0
+        for frequency in range(start,start+200,20):
+            real=imag=0.0
+            for i,sample in enumerate(window):
+                taper=.5-.5*math.cos(2*math.pi*i/(len(window)-1))
+                phase=2*math.pi*frequency*i/16000
+                real+=sample*taper*math.cos(phase)
+                imag+=sample*taper*math.sin(phase)
+            total+=math.hypot(real,imag)
+        return total
+    return energy(800)/energy(1000)
 
 
 def main():
@@ -30,6 +51,13 @@ def main():
                 actual = render(engine, [number, EciIndex(7)])
                 expanded = render(engine, [expected, EciIndex(7)])
                 assert actual == expanded, (rate, number)
+        # In /dozi/ the closed vowel and the beginning of /z/ should stay
+        # backed rather than rising immediately towards the final /i/. The
+        # original transition produces a ratio below 0.7 in these windows.
+        engine.set_parameter(SAMPLE_RATE,3)
+        twelve=render(engine,['12'])[0]
+        for centre in (170,190,210):
+            assert transition_band_ratio(twelve,centre)>0.95,centre
     finally:
         engine.close()
     # ECI's byte and UTF-8 entry points must reach the same language rules.
