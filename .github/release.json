@@ -1,8 +1,8 @@
 {
   "version": "1.3.0",
   "release_version": "1.3.0",
-  "source_commit": "5cc5ee29752a72c895cb3a40f31d50eec1b4615a",
-  "run_id": 42896428993,
+  "source_commit": "139fd5a7405ac4222e1b05fbbfc5aea0a269e2cb",
+  "run_id": 42911719457,
   "dictionary_snapshot": {
     "repository": "eigencrow/IBMTTSDictionaries",
     "branch": "master",
@@ -40,19 +40,16 @@
   },
   "assets": {
     "reloq-c-android-arm64-1.3.0.apk": {
-      "size": 17413742,
-      "sha256": "81fca6cba9960b4ded4dc652555ffa56cd129d2f3a9a704e37157335a5464b73"
+      "size": 17438318,
+      "sha256": "26a7606cdb126c3e10a785a034409f236a75c10609e2d1d0a837d7081e648719"
     },
     "reloq-c-synth-x64-1.3.0.nvda-addon": {
-      "size": 19811674,
-      "sha256": "6040868a17383d8a341ac9ad4968419aed79372c8f0e8c2791e3f85274007205"
+      "size": 19816452,
+      "sha256": "5ea4c960c795e0caee61c5e7c55353dfc9e0f3c46ba75c88d87b4915e3484459"
     },
     "reloq-c-sapi5-1.3.0-setup.exe": {
-      "size": 19468696,
-      "sha256": "82504da26579cd830b1e32c32bdacf87a0ea5a6b37040e5ecde998f298a93a93"
+      "size": 19493849,
+      "sha256": "24d9c3801dfb40ff3ce00544f95868b227971fd039a6caf4edcdad6bb1d972e0"
     }
-  },
-  "build_source_commit": "84fe76557342434c347a0f9b45d261b15f9fadb6",
-  "platform_validation_run_id": 42893699264,
-  "nvda_settings_validation_run_id": 42895931091
+  }
 }
