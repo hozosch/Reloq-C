@@ -15,17 +15,19 @@ def main():
     parser.add_argument('--library', type=Path, required=True)
     library = parser.parse_args().library
     checks = 0
-    for filename in ('slow_clock_cjk_before_dev3.json', 'fast_clock_cjk_dev3.json'):
+    for filename in ('slow_clock_cjk_before_dev3.json', 'fast_clock_cjk_dev3.json',
+                     'slow_clock_cjk_wpm.json', 'fast_clock_cjk_wpm.json'):
         reference = json.loads((ROOT/'tests/data'/filename).read_text(encoding='utf8'))
         size = reference['window_samples']
         for case in reference['cases']:
             engine = Engine(library, case['language'])
             try:
                 assert engine.lib.eciSetParam(engine.h,5,1)>=0
-                engine.tags(0)
+                engine.tags(1 if case.get('wpm') else 0)
                 for k, value in enumerate((case['gender'],50,65,30,0,0,case['speed'],100)):
                     engine.voice(k,value)
-                samples=array('h');samples.frombytes(engine.speak(case['text']))
+                text=(f"`vwpm{case['wpm']} " if case.get('wpm') else '')+case['text']
+                samples=array('h');samples.frombytes(engine.speak(text))
             finally:
                 engine.close()
             assert len(samples) == case['samples'], (filename,case['language'],case['speed'])

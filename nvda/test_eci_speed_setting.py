@@ -62,13 +62,14 @@ def main():
         try:
             for sample_rate in (3, 6):
                 assert engine.lib.eciSetParam(engine.h, 5, sample_rate) >= 0
-                engine.tags(0)
-                engine.voice(6, 106)
-                configured = engine.speak(''.join(TEXTS[language]))
-                engine.voice(6, 50)
-                engine.tags(1)
-                assert engine.speak('`vs106 ' + ''.join(TEXTS[language])) == configured, (hex(language), sample_rate)
-                checks += 1
+                for speed in (90, 100, 106):
+                    engine.tags(0)
+                    engine.voice(6, speed)
+                    configured = engine.speak(''.join(TEXTS[language]))
+                    engine.voice(6, 50)
+                    engine.tags(1)
+                    assert engine.speak(f'`vs{speed} ' + ''.join(TEXTS[language])) == configured, (hex(language), sample_rate, speed)
+                    checks += 1
         finally:
             engine.close()
     print(f'Voice controls: {checks} speed, pitch, queued and sample-rate comparisons passed')
