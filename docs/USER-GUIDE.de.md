@@ -2,7 +2,7 @@
 
 ## Version 1.3.0 – Testversion
 
-In der NVDA-Einstellungskategorie Eloquence C kann die Zerlegung unbekannter englischer Wörter eingeschaltet werden. Sie ist zunächst deaktiviert und gilt unabhängig von der Groß- und Kleinschreibung für amerikanisches und britisches Englisch. Erkannte Wörter und Wörterbucheinträge bleiben möglichst erhalten; die Erkennung kann sich bei unbekannten Namen und Fremdwörtern irren.
+In der NVDA-Einstellungskategorie Eloquence C kann die Zerlegung unbekannter englischer Wörter eingeschaltet werden. Sie ist zunächst deaktiviert und gilt unabhängig von der Groß- und Kleinschreibung für amerikanisches und britisches Englisch. Bei vollständig großgeschriebenen Wörtern bleibt Eloquences eigene Buchstabierung erhalten, wenn der Sprachkern das Wort buchstabiert; andere können weiterhin zerlegt werden. Erkannte Wörter und Wörterbucheinträge bleiben möglichst erhalten; die Erkennung kann sich bei unbekannten Namen und Fremdwörtern irren.
 
 Die getrennte Option **Camel-Case-Wörter zerlegen (alle Sprachen)** setzt Wortgrenzen bei Binnen-Großbuchstaben, zum Beispiel `meinWort` und `HTTPServer`. Sie ist zunächst ausgeschaltet. NVDA kann mit seinem eigenen eingebauten Sprachwörterbuch unabhängig davon ebenfalls Camel Case aufteilen. Eigene NVDA- und native Wörterbucheinträge haben Vorrang vor der zusätzlichen Zerlegung.
 

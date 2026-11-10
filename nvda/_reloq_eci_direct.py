@@ -16,6 +16,7 @@ import codecs
 from dataclasses import dataclass
 import logging
 from pathlib import Path
+import re
 import sys
 import threading
 import time
@@ -68,6 +69,13 @@ class EciText:
     # If this text is a protected NVDA speed tag, replay just its speed
     # effect across an explicit NVDA language change in the same utterance.
     speed_control: str | None = None
+
+
+@dataclass(frozen=True)
+class EciCapitalWord:
+    """A candidate split whose native uppercase pronunciation is not yet known."""
+    original: str
+    segmented: str
 
 
 @dataclass(frozen=True)
@@ -288,6 +296,60 @@ class DirectEciEngine:
     def _assert_owner(self) -> None:
         if threading.get_ident() != self._owner:
             raise RuntimeError("ECI instance belongs to its creating worker")
+
+    def _phonemes_for_probe(self, text: str) -> str:
+        """Read phonemes on the owning worker, then restore the audio callback."""
+        self._assert_owner()
+        if not self._handle or self._encoding != "utf-8":
+            raise RuntimeError("native UTF-8 engine unavailable")
+        generate = getattr(self._dll, "eciGeneratePhonemes")
+        generate.argtypes = (ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p)
+        generate.restype = ctypes.c_int
+        buffer = ctypes.create_string_buffer(8192)
+        chunks, errors = [], []
+
+        @_CallbackType
+        def receive(_handle, message, count, _context):
+            if self._cancelled.is_set():
+                return DATA_ABORT
+            if message == DATA_PROCESSED:
+                if not 0 <= count <= len(buffer):
+                    errors.append("invalid phoneme buffer size")
+                    return DATA_ABORT
+                chunks.append(buffer.raw[:count])
+            return DATA_PROCESSED
+
+        previous = self._dll.eciGetParam(self._handle, 0)
+        if previous < 0 or self._dll.eciSetParam(self._handle, 0, 1) < 0:
+            raise RuntimeError("ECI phoneme mode unavailable")
+        self._dll.eciRegisterCallback(self._handle, receive, None)
+        try:
+            encoded = text.encode("utf-8")
+            if not self._dll.eciAddTextUtf8(self._handle, encoded, len(encoded), 0):
+                raise RuntimeError("ECI rejected phoneme probe")
+            if not generate(self._handle, len(buffer), buffer) or errors:
+                raise RuntimeError("ECI phoneme probe failed")
+        finally:
+            self._dll.eciClearInput(self._handle)
+            self._dll.eciSetParam(self._handle, 0, previous)
+            self._dll.eciRegisterCallback(self._handle, self._callback, None)
+        return b"".join(chunks).decode("cp1252")
+
+    def spells_uppercase(self, word: str) -> bool | None:
+        """Check the actual voice and dictionaries without producing audio."""
+        self._assert_owner()
+        self._cancelled.clear()
+        try:
+            actual = self._phonemes_for_probe(word)
+            letters = self._phonemes_for_probe(" ".join(word))
+            def groups(value):
+                return tuple(re.sub(r"\.[0-3]", "", part)
+                             for part in re.findall(r"`\[([^\]]+)\]", value))
+            first, second = groups(actual), groups(letters)
+            return first == second if first and second else None
+        except (AttributeError, OSError, RuntimeError, UnicodeError, ValueError):
+            _log.debug("Native capitalization probe failed; keep original text", exc_info=True)
+            return None
 
     def _receive(self, _handle: int, message: int, value: int,
                  _context: int) -> int:

@@ -30,7 +30,7 @@ from speech.extensions import filter_speechSequence
 from synthDriverHandler import (SynthDriver as BaseSynthDriver, VoiceInfo, LanguageInfo,
                                 synthDoneSpeaking, synthIndexReached)
 
-from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciPitchHz, EciProsody, EciLanguage, EciText, NATIVE_VOLUME,
+from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciPitchHz, EciProsody, EciLanguage, EciText, EciCapitalWord, NATIVE_VOLUME,
                                 NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION, PROCESS_TAGS,
                                 PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATES,
                                 DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, PITCH_HZ)
@@ -38,9 +38,9 @@ from ._reloq_eci_transport import DictionaryStartupError, EciTextTransport
 from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries
 from ._reloq_nvda_dicts import ImportedDictionaries
 from ._reloq_wordseg import (WordSegmenter, dictionary_keys, split_camel, protected_native_spans,
-                             transform_unmatched, native_compound_spans)
+                             transform_unmatched, native_compound_spans, uppercase_candidates)
 from ._reloq_languages import GERMAN, LANGUAGES, LANGUAGE_ALIASES, LANGUAGE_DISPLAY_ORDER, LanguageEngine, language_for
-from ._speech_tags import EciTagCommand, SegmentationGuard, NativeDictionaryWord, protect_sequence
+from ._speech_tags import EciTagCommand, SegmentationGuard, NativeDictionaryWord, CapitalWordCommand, protect_sequence
 
 
 DLL = Path(__file__).with_name("eci.dll")
@@ -167,6 +167,9 @@ def _parts(speech_sequence, *, base_pitch=50, base_pitch_hz=0, base_rate=50, bas
         elif isinstance(item, NativeDictionaryWord):
             flush()
             parts.append(EciText(item.text, spelling))
+        elif isinstance(item, CapitalWordCommand):
+            flush()
+            parts.append(EciCapitalWord(item.original, item.segmented))
         elif isinstance(item, LangChangeCommand):
             selected = language_for(item.lang, home_language, languages)
             if selected is not None and selected != language.id:
@@ -195,7 +198,7 @@ class SynthDriver(BaseSynthDriver):
     # Translators: Name in NVDA's synthesizer selection dialog.
     description = _("Eloquence C")
     supportedCommands = {IndexCommand, CharacterModeCommand, PitchCommand, RateCommand,
-                         VolumeCommand, LangChangeCommand, EciTagCommand, SegmentationGuard, NativeDictionaryWord}
+                         VolumeCommand, LangChangeCommand, EciTagCommand, SegmentationGuard, NativeDictionaryWord, CapitalWordCommand}
     supportedNotifications = {synthIndexReached, synthDoneSpeaking}
     supportedSettings = (
         BaseSynthDriver.LanguageSetting(),
@@ -360,11 +363,32 @@ class SynthDriver(BaseSynthDriver):
                     # Preserve a native entry that it would split, then apply
                     # our optional transforms to the remaining text while
                     # the complete original casing is still available.
+                    ranges, cursor = [], 0
                     for part, native in protected_native_spans(transformed, native_keys, transformed_spans):
+                        end = cursor + len(part)
                         if native:
-                            result.append(NativeDictionaryWord(part))
+                            ranges.append((cursor, end, "native", None))
+                        cursor = end
+                    tag = "enus" if language.locale == "en_US" else "engb" if language.locale == "en_GB" else None
+                    if word_segment and tag:
+                        segmenter = self._word_segmenters.get(tag)
+                        if segmenter is None:
+                            segmenter = WordSegmenter.from_files(DLL.with_name("wordseg-data"), tag)
+                            self._word_segmenters[tag] = segmenter
+                        blocked = (*transformed_spans, *((start, end) for start, end, _, _ in ranges))
+                        ranges.extend((start, end, "capital", candidate) for start, end, candidate in
+                                      uppercase_candidates(transformed, segmenter, native_keys, blocked))
+                    cursor = 0
+                    for start, end, kind, candidate in sorted(ranges):
+                        if start > cursor:
+                            result.extend((SegmentationGuard(True), transformed[cursor:start], SegmentationGuard(False)))
+                        if kind == "native":
+                            result.append(NativeDictionaryWord(transformed[start:end]))
                         else:
-                            result.extend((SegmentationGuard(True), part, SegmentationGuard(False)))
+                            result.append(CapitalWordCommand(transformed[start:end], candidate))
+                        cursor = end
+                    if cursor < len(transformed):
+                        result.extend((SegmentationGuard(True), transformed[cursor:], SegmentationGuard(False)))
                     continue
             result.append(item)
         return result
@@ -415,7 +439,9 @@ class SynthDriver(BaseSynthDriver):
                 if segmenter is None:
                     segmenter = WordSegmenter.from_files(DLL.with_name("wordseg-data"), tag)
                     self._word_segmenters[tag] = segmenter
-                value = segmenter.text(value, dictionary)
+                # All-capital candidates are handled on the native worker so
+                # Eloquence's own letter-spelling decision can take priority.
+                value = segmenter.text(value, dictionary, preserve_upper=True)
             return split_camel(value, dictionary) if camel else value
         compounds = native_compound_spans(text, dictionary)
         return transform_unmatched(text, compounds, transform) if compounds else transform(text)
@@ -946,7 +972,7 @@ class SynthDriver(BaseSynthDriver):
                 rate, boost, volume = self._rate, self._rateBoost, self._volume
                 segment, camel, segment_keys = self._wordSegmentation, self._camelCase, self._wordseg_keys
                 parts = make_parts()
-            characters = sum(len(p.text) if isinstance(p, EciText) else len(p) if isinstance(p, str) else 0 for p in parts)
+            characters = sum(len(p.text) if isinstance(p, EciText) else len(p.original) if isinstance(p, EciCapitalWord) else len(p) if isinstance(p, str) else 0 for p in parts)
             protected_tags = sum(isinstance(p, EciTagCommand) for p in speechSequence)
             if characters >= 1024 or protected_tags:
                 log.info("Eloquence C queued speech: characters=%d, protected_tags=%d, rate=%d Hz, tags=%s",

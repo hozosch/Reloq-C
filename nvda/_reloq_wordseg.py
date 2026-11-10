@@ -192,7 +192,7 @@ class WordSegmenter:
             at = end
         return " ".join(output)
 
-    def text(self, text, dictionary=frozenset()):
+    def text(self, text, dictionary=frozenset(), *, preserve_upper=False):
         def replace(match):
             start, end = match.span()
             # Never split a part of an accented, numeric or apostrophized
@@ -200,8 +200,29 @@ class WordSegmenter:
             if ((start and (text[start - 1].isalnum() or text[start - 1] in "'’")) or
                 (end < len(text) and (text[end].isalnum() or text[end] in "'’"))):
                 return match.group()
+            if preserve_upper and match.group().isupper():
+                return match.group()
             return self.split(match.group(), dictionary)
         return _WORDS.sub(replace, text)
+
+
+def uppercase_candidates(text, segmenter, dictionary, protected=()):
+    """Defer only changed uppercase words until the native voice can inspect them."""
+    result = []
+    for match in _WORDS.finditer(text):
+        start, end = match.span()
+        word = match.group()
+        if not word.isupper():
+            continue
+        if ((start and (text[start - 1].isalnum() or text[start - 1] in "'’")) or
+                (end < len(text) and (text[end].isalnum() or text[end] in "'’"))):
+            continue
+        if any(left < end and right > start for left, right in protected):
+            continue
+        segmented = segmenter.split(word, dictionary)
+        if segmented != word:
+            result.append((start, end, segmented))
+    return tuple(result)
 
 
 def _word_char(char):

@@ -16,9 +16,9 @@ import time
 from typing import Callable, Protocol, Sequence
 
 if __package__:
-    from ._reloq_eci_direct import EciIndex, EciPitch, EciPitchHz, EciProsody, EciLanguage, EciText, SAMPLE_RATE, SAMPLE_RATES, PAUSE_MODE
+    from ._reloq_eci_direct import EciIndex, EciPitch, EciPitchHz, EciProsody, EciLanguage, EciText, EciCapitalWord, SAMPLE_RATE, SAMPLE_RATES, PAUSE_MODE
 else:  # Standalone development tests run from this directory.
-    from _reloq_eci_direct import EciIndex, EciPitch, EciPitchHz, EciProsody, EciLanguage, EciText, SAMPLE_RATE, SAMPLE_RATES, PAUSE_MODE
+    from _reloq_eci_direct import EciIndex, EciPitch, EciPitchHz, EciProsody, EciLanguage, EciText, EciCapitalWord, SAMPLE_RATE, SAMPLE_RATES, PAUSE_MODE
 
 
 _log = logging.getLogger(__name__)
@@ -283,7 +283,7 @@ class EciTextTransport:
     def submit(self, parts: Sequence[str | EciIndex | EciPitch | EciLanguage], *,
                finish_sequence: bool = True) -> int:
         snapshot = tuple(parts)
-        if not all(isinstance(item, (str, EciIndex, EciPitch, EciPitchHz, EciProsody, EciLanguage, EciText)) for item in snapshot):
+        if not all(isinstance(item, (str, EciIndex, EciPitch, EciPitchHz, EciProsody, EciLanguage, EciText, EciCapitalWord)) for item in snapshot):
             raise TypeError("expected text, index, prosody or language parts")
         with self._condition:
             if self._closed:
@@ -616,7 +616,7 @@ class EciTextTransport:
             return
         pending = bytearray()
         batch = _PlaybackBatch(job.generation)
-        batch.characters = sum(len(p.text) if isinstance(p, EciText) else len(p) if isinstance(p, str) else 0 for p in job.parts)
+        batch.characters = sum(len(p.text) if isinstance(p, EciText) else len(p.original) if isinstance(p, EciCapitalWord) else len(p) if isinstance(p, str) else 0 for p in job.parts)
         if batch.characters >= 1024:
             batch.first_feed_started = job.queued_at
         first_sent = False

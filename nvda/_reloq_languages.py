@@ -7,6 +7,7 @@ NVDA settings and language-command routing do not contain German special cases.
 
 from __future__ import annotations
 
+from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
 import threading
@@ -22,9 +23,9 @@ def N_(message: str) -> str:
     return message
 
 if __package__:
-    from ._reloq_eci_direct import DirectEciEngine, EciText, EciLanguage, EciPitch, EciPitchHz, EciProsody, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER
+    from ._reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER
 else:
-    from _reloq_eci_direct import DirectEciEngine, EciText, EciLanguage, EciPitch, EciPitchHz, EciProsody, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER
+    from _reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER
 
 
 @dataclass(frozen=True)
@@ -155,6 +156,7 @@ class LanguageEngine:
         self._engine_keys = {}
         self._engine_parameters = {}
         self._parameters = {}
+        self._uppercase_cache = OrderedDict()
         self._dictionary_path = None
         self._active = None
         self._closed = False
@@ -293,6 +295,30 @@ class LanguageEngine:
                     # Capital/spelling pitch remains active across a real
                     # language boundary until NVDA sends its reset command.
                     pending.extend(prosody.values())
+                elif isinstance(part, EciCapitalWord):
+                    # Check the actual language, active dictionary and voice
+                    # on the owning worker. Do not delay NVDA's main thread.
+                    cache_key = (key, part.original, self._dictionary_path,
+                                 tuple(sorted(self._parameters.items())))
+                    if cache_key in self._uppercase_cache:
+                        spelled = self._uppercase_cache[cache_key]
+                        self._uppercase_cache.move_to_end(cache_key)
+                    else:
+                        engine = self._activate(key)
+                        probe = getattr(engine, "spells_uppercase", None)
+                        try:
+                            spelled = probe(part.original) if probe else None
+                        except Exception:
+                            # Failed inspection must never prevent speech.
+                            spelled = None
+                        if spelled is not None:
+                            self._uppercase_cache[cache_key] = spelled
+                            if len(self._uppercase_cache) > 4096:
+                                self._uppercase_cache.popitem(last=False)
+                    if self._cancelled.is_set():
+                        return False
+                    # If the probe is unavailable, retain native behavior.
+                    pending.append(EciText(part.segmented if spelled is False else part.original))
                 else:
                     if isinstance(part, (EciPitch, EciPitchHz, EciProsody)):
                         slot = "pitch" if isinstance(part, (EciPitch, EciPitchHz)) else part.parameter

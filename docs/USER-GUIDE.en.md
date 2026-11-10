@@ -2,7 +2,7 @@
 
 ## Version 1.3.0 – test version
 
-The Eloquence C NVDA settings category can optionally split unfamiliar English words, irrespective of capitalization. It is off by default and applies to American and British English. Known words and dictionary entries are preserved where possible; unfamiliar names and foreign words can still be misidentified.
+The Eloquence C NVDA settings category can optionally split unfamiliar English words, irrespective of capitalization. It is off by default and applies to American and British English. Fully capitalized words keep Eloquence's own spelling when the engine spells them; others can still be segmented. Known words and dictionary entries are preserved where possible; unfamiliar names and foreign words can still be misidentified.
 
 The separate **Split camel-case words (all languages)** option inserts word boundaries at internal capitals, for example `myWord` and `HTTPServer`. It is initially off. NVDA's own built-in speech dictionary may split camel case independently of this setting. User NVDA and native dictionary entries take priority over the additional segmentation.
 

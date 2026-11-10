@@ -1,0 +1,105 @@
+name: NVDA uppercase spelling test package
+on:
+  push:
+    branches: ['codex/nvda-capital-dev3-*']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  addon:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-addon
+          run-id: 42861433404
+          github-token: ${{ github.token }}
+          path: previous
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-wordseg-test-130dev2
+          run-id: 42871962309
+          github-token: ${{ github.token }}
+          path: previous-dev2
+      - name: Install the translation compiler
+        run: |
+          if command -v msgfmt >/dev/null; then exit 0; fi
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends gettext
+      - name: Reuse the verified native core and dictionaries
+        run: |
+          python3 - <<'PY'
+          import hashlib, pathlib, shutil, zipfile
+          old = pathlib.Path('previous/reloq-c-synth-x64-1.3.0-dev1.nvda-addon')
+          assert hashlib.sha256(old.read_bytes()).hexdigest() == 'fdd60dea914aff07d6df5cdad934fcdd9814d3c869835feea8c8d8894fd4cf9d'
+          previous = pathlib.Path('previous-dev2/reloq-c-synth-x64-1.3.0-dev2.nvda-addon')
+          assert hashlib.sha256(previous.read_bytes()).hexdigest() == 'cc014299ddadc8d9eaaf0d9cb46037945b290ae7825b35c8a27e2fadd2752289'
+          with zipfile.ZipFile(old) as archive:
+              assert archive.testzip() is None
+              core = archive.read('synthDrivers/reloqC/eci.dll')
+              assert hashlib.sha256(core).hexdigest() == 'c13804323ff86d3a622bdf728305813d53153bacea933c43ac8ef4201ac158a7'
+              pathlib.Path('eci/eci.dll').write_bytes(core)
+              root = pathlib.Path('data/community')
+              shutil.rmtree(root)
+              root.mkdir(parents=True)
+              prefix = 'synthDrivers/reloqC/communityDictionaries/'
+              for name in archive.namelist():
+                  if name.startswith(prefix):
+                      part = name[len(prefix):]
+                      assert part and '/' not in part and '\\' not in part
+                      (root / part).write_bytes(archive.read(name))
+              (root / 'LICENSE.md').write_bytes(archive.read('doc/licenses/Dictionaries-CC0.txt'))
+          PY
+      - name: Check the NVDA settings and dictionaries
+        run: |
+          python3 -B addon/test_wordseg.py
+          python3 -B addon/test_nvda_dictionary_import.py
+          python3 -B addon/test_hertz_settings_panel.py
+          python3 -B addon/test_speech_tags.py
+      - name: Build and check the add-on
+        run: |
+          python3 - <<'PY'
+          import pathlib, sys
+          sys.path.insert(0, 'addon')
+          from build_synth import build, DEFAULT_OUTPUT
+          build(DEFAULT_OUTPUT, pathlib.Path('eci/eci.dll'), refresh_dictionaries=False)
+          PY
+          python3 tools/test_nvda_upgrade.py --previous previous-dev2/reloq-c-synth-x64-1.3.0-dev2.nvda-addon --candidate dist/reloq-c-synth-x64-1.3.0-dev3.nvda-addon
+          for language in en de; do
+            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.0-dev3.nvda-addon"))' "$language"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nvda-capital-dev3
+          path: dist/reloq-c-synth-x64-1.3.0-dev3.nvda-addon
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+  windows:
+    needs: addon
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-capital-dev3
+          path: candidate
+      - name: Test real Windows speech and capitalization
+        shell: pwsh
+        run: |
+          $addon = (Get-Item candidate/reloq-c-synth-x64-1.3.0-dev3.nvda-addon).FullName
+          python -c "import pathlib,zipfile; z=zipfile.ZipFile(r'$addon'); assert z.testzip() is None; z.extract('synthDrivers/reloqC/eci.dll', 'candidate')"
+          if ($LASTEXITCODE -ne 0) { throw 'Could not extract the verified speech core' }
+          $dll = (Get-Item candidate/synthDrivers/reloqC/eci.dll).FullName
+          python -B addon/test_uppercase_native.py --library $dll
+          if ($LASTEXITCODE -ne 0) { throw 'Native capitalization test failed' }
+          $env:PYTHONPATH = 'addon;nvda'
+          python -B addon/test_synth_native.py --library $dll --addon $addon
+          if ($LASTEXITCODE -ne 0) { throw 'Packaged NVDA/native integration test failed' }

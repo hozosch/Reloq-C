@@ -1,4 +1,4 @@
-ReLoq C 1.2.2 — unified SAPI5 Windows installer
+ReLoq C — unified SAPI5 Windows installer
 
 Installation
 ------------
@@ -56,13 +56,16 @@ spelling fragments use the shared C engine.
 
 Choose “Application overrides” to independently use ReLoq's own speed, pitch
 or volume instead of the application's values. Choose between native ECI speed
-0–250 and 1–6000 words per minute. Speed boost applies only when SAPI controls
+0–250 and 1–6000 words per minute using the radio buttons and arrow keys; Tab
+moves to the selected value. Speed boost applies only when SAPI controls
 speed. Choose the pitch in ECI units 0–100 or in hertz; this is the same base
 pitch also shown in the main window. Volume uses 0–100. These settings affect only
 ReLoq C and can be enabled separately for each language or shared across them.
 
-Next to the normal pitch control, enable “In hertz” and enter a whole-number
-base pitch from 1 to 24,000 Hz. The inactive ECI control keeps its saved value.
+In the “Base pitch” group, “Use Hz” is followed by one value field. With the
+checkbox off the field edits the ECI value from 0 to 100; with it on the same
+field edits a whole-number base pitch from 1 to 24,000 Hz. Each scale retains
+its saved value when switching.
 SAPI application pitch 50 remains neutral and uses this base; application pitch
 adjustments still work unless the pitch override is enabled. Inflection 0 makes the base easier to measure, although
 tonal languages can retain linguistic contours. The synthesis rate must exceed

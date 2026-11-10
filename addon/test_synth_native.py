@@ -15,6 +15,7 @@ import tempfile
 import threading
 import time
 import traceback
+import types
 import zipfile
 from unittest import mock
 
@@ -172,6 +173,20 @@ def main():
                         assert run([prefix + word + suffix]) == baseline, (locale, "prosody leaked")
                         report["checks"] += 2
                     driver.voiceTags = True
+                # Preserve actual Eloquence spelling of all-capital words,
+                # while still segmenting ones it normally pronounces whole.
+                driver.language = "en_US"
+                driver.voiceTags = False
+                driver._wordSegmentation = False
+                ordinary_caps = run(["CGROUP"])
+                segmented_word = run(["T M P files"])
+                driver._wordSegmentation = True
+                with mock.patch.dict(sys.modules, {"speechDictHandler": types.SimpleNamespace(dictionaries={})}):
+                    assert run(["CGROUP"]) == ordinary_caps, "native uppercase spelling changed"
+                    assert run(["TMPFILES"]) == segmented_word, "pronounceable uppercase was not segmented"
+                    report["checks"] += 2
+                driver._wordSegmentation = False
+                driver.voiceTags = True
                 driver.language = "de_DE"
                 driver.voice = "1"
                 across_languages = ["`vwpm150 Hallo. ", commands.LangChangeCommand("en_US"), "Hello world."]

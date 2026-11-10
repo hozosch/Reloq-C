@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'nvda'))
 from _reloq_wordseg import (WordSegmenter, dictionary_keys, split_camel,
-                            protected_native_spans, native_compound_spans)
+                            protected_native_spans, native_compound_spans, uppercase_candidates)
 
 
 def main():
@@ -22,6 +22,11 @@ def main():
         for word in ('algorithm', 'HELLO', 'éusrdct', 'usrdct3', "usrdct's"):
             assert segmenter.text(word) == word, (language, word)
         assert segmenter.text('cGroup') == 'C group'
+        assert segmenter.text('CGROUP TMPFILES', preserve_upper=True) == 'CGROUP TMPFILES'
+        assert uppercase_candidates('CGROUP TMPFILES', segmenter, frozenset()) == (
+            (0, 6, 'C group'), (7, 15, 'T M P files'))
+        assert uppercase_candidates('CGROUP TMPFILES', segmenter, frozenset(), ((0, 6),)) == (
+            (7, 15, 'T M P files'),)
         assert segmenter.text('cgroup', frozenset({'cgroup'})) == 'cgroup'
         assert segmenter.text('CGROUP', frozenset({'cgroup'})) == 'CGROUP'
         assert segmenter.text('cgroups', frozenset({'cgroup'})) == 'cgroups'

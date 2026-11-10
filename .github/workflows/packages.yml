@@ -97,6 +97,7 @@ jobs:
           python3 -B addon/test_wordseg.py
           python3 -B addon/test_nvda_dictionary_import.py
           python3 -B addon/test_segmentation_eci.py --library eci/libreloq_eci.so
+          python3 -B addon/test_uppercase_native.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_dictionary_startup.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_greek_connected.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_greek_characters.py --library eci/libreloq_eci.so

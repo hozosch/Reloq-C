@@ -446,6 +446,12 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 driver._camelCase = False
                 result = driver._protect_tags([LangChangeCommand("en-US"), "FdOpen"])
                 assert any(item == "F D open" for item in result if isinstance(item, str)), result
+                result = driver._protect_tags([LangChangeCommand("en-US"), "CGROUP TMPFILES"])
+                capital = [item for item in result if isinstance(item, driver_module.CapitalWordCommand)]
+                assert [(x.original, x.segmented) for x in capital] == [("CGROUP", "C group"), ("TMPFILES", "T M P files")], result
+                native_parts = driver_module._parts(result)
+                assert [p for p in native_parts if isinstance(p, driver_module.EciCapitalWord)] == [
+                    driver_module.EciCapitalWord("CGROUP", "C group"), driver_module.EciCapitalWord("TMPFILES", "T M P files")]
                 driver._camelCase = True
                 result = driver._protect_tags([CharacterModeCommand(True), "meinTest", CharacterModeCommand(False)])
                 assert result[1] == "meinTest", result
