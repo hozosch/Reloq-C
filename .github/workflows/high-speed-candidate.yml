@@ -29,6 +29,7 @@ jobs:
           git diff --exit-code a05d5ac2003ac423eab8ffef8ad2b293e4c600ce HEAD -- \
             vendor/openevv61/ src/reloq_voice_filter.c src/reloq_orthography.c \
             src/reloq_german_word_edges.c src/reloq_english_word_edges.c include/ \
+            ':(exclude)vendor/openevv61/src/reloq61_bridge.c' \
             ':(exclude)include/reloq_eci.h' ':(exclude)include/reloq_equalizer.h'
       - uses: actions/cache@v4
         id: rules
@@ -37,7 +38,13 @@ jobs:
           key: sapi-rules-ubuntu24-gcc13-v1-x64-01b350b6ebd77d6e3353892a975d30272c04af54048edcadb04bb8c822ec5549
       - name: Restore cache timestamps
         if: steps.rules.outputs.cache-hit == 'true'
-        run: find vendor/openevv61/build -type f -exec touch {} +
+        run: |
+          find vendor/openevv61/build -type f -exec touch {} +
+          # This one changed adapter must be recompiled, then re-archived;
+          # all other cached rule inputs were checked above.
+          rm -f vendor/openevv61/build/windows-release/src/reloq61_bridge.o \
+                vendor/openevv61/build/windows-release/src/reloq61_bridge.d \
+                vendor/openevv61/build/windows-release/libreloq61.a
       - name: Check all normal and boosted speed values
         run: |
           gcc -O2 -std=c11 -Wall -Wextra -Werror -Iinclude tests/test_reloq_voice_controls.c src/reloq_voice_controls.c -lm -o /tmp/test_reloq_voice_controls
@@ -79,7 +86,7 @@ jobs:
           python -c "import zipfile; z=zipfile.ZipFile(r'$addon'); assert z.testzip() is None; z.extract('synthDrivers/reloqC/eci.dll', 'candidate')"
           if ($LASTEXITCODE -ne 0) { throw 'Core extraction failed' }
           $dll = (Get-Item candidate/synthDrivers/reloqC/eci.dll).FullName
-          foreach ($test in @('nvda/test_eci_high_speed_reference.py','nvda/test_eci_slow_speed_reference.py','nvda/test_eci_speed_setting.py','nvda/test_eci_inline_queue.py','nvda/test_eci_pitch_hz.py','nvda/test_eci_ptbr_numbers.py','nvda/test_eci_equalizer.py','nvda/test_eci_wpm.py','nvda/test_eci_wpm_languages.py','nvda/test_eci_wpm_setting.py')) {
+          foreach ($test in @('nvda/test_eci_high_speed_reference.py','nvda/test_eci_slow_speed_reference.py','nvda/test_eci_cjk_acoustic_clock.py','nvda/test_eci_speed_setting.py','nvda/test_eci_inline_queue.py','nvda/test_eci_pitch_hz.py','nvda/test_eci_ptbr_numbers.py','nvda/test_eci_equalizer.py','nvda/test_eci_wpm.py','nvda/test_eci_wpm_languages.py','nvda/test_eci_wpm_setting.py')) {
             python -B $test --library $dll
             if ($LASTEXITCODE -ne 0) { throw "$test failed" }
           }

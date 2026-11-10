@@ -805,7 +805,7 @@ struct rule_span {
     struct reloq61_curve curve[62];
     struct reloq61_curve male_af;
     int af_marked;
-    int32_t from,to,volume,step,pitch,native_pitch,speed,slow_wpm;
+    int32_t from,to,volume,step,pitch,native_pitch,speed,slow_wpm,cadence_percent;
     int64_t tick,pitch_tick;size_t pitch_source;
     struct reloq_german_voice_model model;
 };
@@ -841,11 +841,22 @@ static struct rule_span *new_span(struct rule_plan *s)
     }
     return s->spans+s->count++;
 }
+static int32_t cjk_unpack_acoustic_clock(struct rule_plan *s,struct rule_span *f,int32_t volume)
+{
+    f->cadence_percent=-1;
+    if(s->cjk_volume&&volume>=100000000&&volume<105200000) {
+        volume-=100000000;
+        f->cadence_percent=volume/100000;
+        volume%=100000;
+    }
+    return volume;
+}
 static int take_span(void *context,int32_t from,int32_t to,
     const struct reloq61_curve curves[62],int32_t volume)
 {
     struct rule_plan *s=context;struct rule_span *f=new_span(s);
     if(!f)return 1;
+    volume=cjk_unpack_acoustic_clock(s,f,volume);
     memcpy(f->curve,curves,sizeof f->curve);
     f->af_marked=0;
     if(s->german_af_markers) {
@@ -864,6 +875,7 @@ static int take_frame(void *context,const int32_t p[62],int32_t volume)
 {
     struct rule_plan *s=context;struct rule_span *f=new_span(s);
     if(!f)return 1;
+    volume=cjk_unpack_acoustic_clock(s,f,volume);
     for(unsigned k=0;k<62;++k)f->curve[k]=(struct reloq61_curve){0,p[k],p[0],p[k]};
     f->af_marked=0;
     if(s->german_af_markers&&p[8]>=RELOQ61_DE_AF_FRAME) {
@@ -1106,6 +1118,13 @@ static double pitch_ratio(int target,int native_baseline)
  * VS tags and settings select the same acoustic timing. NVDA's normal 40
  * and 60 sliders correspond to VS84 and VS106. Between them the control
  * values crossfade continuously instead of switching abruptly. */
+static float acoustic_cadence_percent(double duration)
+{
+    const double slower=51.0,faster=33.0;
+    if(duration>=slower)return 0;
+    if(duration<=faster)return 1;
+    return (float)((slower-duration)/(slower-faster));
+}
 static float acoustic_cadence(int speed,int wpm)
 {
     double duration;
@@ -1117,10 +1136,7 @@ static float acoustic_cadence(int speed,int wpm)
         long fixed=lround(10000.0*exp(-0.04*half));
         duration=(double)lround(100.0*fixed/1353.0);
     }
-    const double slower=51.0,faster=33.0;
-    if(duration>=slower)return 0;
-    if(duration<=faster)return 1;
-    return (float)((slower-duration)/(slower-faster));
+    return acoustic_cadence_percent(duration);
 }
 static int integer_control(unsigned k)
 {return k==2||k==4||k==7||k==8||(k>=35&&k<=42);}
@@ -1181,6 +1197,8 @@ static int render_until(struct rule_plan *s,int64_t limit)
             }
             if(s->managed_voice_controls)voice=&p->voice;
         }
+        if(s->cjk_volume&&f->cadence_percent>=0)
+            p->cadence_target=acoustic_cadence_percent(f->cadence_percent);
         if(!p->cadence_started) {
             p->cadence_current=p->cadence_target;p->cadence_started=1;
         } else {
@@ -1396,8 +1414,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
      * callback. Native analysis must see the unchanged lexical sentence. */
     for(size_t i=0;i<n;) {
         struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
-        if(t.kind==RELOQ_TAG_SPEED||t.kind==RELOQ_TAG_WPM||
-           (!managed_controls&&t.kind==RELOQ_TAG_PRESET))++volume_count;
+        if(!plan.cjk_volume&&(t.kind==RELOQ_TAG_SPEED||t.kind==RELOQ_TAG_WPM))++volume_count;
         if(has_very_slow_wpm&&!plan.cjk_volume&&(t.kind==RELOQ_TAG_WPM||t.kind==RELOQ_TAG_SPEED||
                               t.kind==RELOQ_TAG_PRESET))++volume_count;
         if(managed_controls) {
@@ -1432,12 +1449,8 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
                     a[i+count-1]='5';
                 }
             }
-            if(t.kind==RELOQ_TAG_SPEED||t.kind==RELOQ_TAG_WPM||
-               (!managed_controls&&t.kind==RELOQ_TAG_PRESET)) {
+            if(!plan.cjk_volume&&(t.kind==RELOQ_TAG_SPEED||t.kind==RELOQ_TAG_WPM)) {
                 int value=t.value,parameter=t.kind==RELOQ_TAG_WPM?10:9;
-                if(t.kind==RELOQ_TAG_PRESET) {
-                    struct reloq_inline_word v={0};reloq_inline_preset(&v,t.value);value=v.speed;
-                }
                 control_sources[control]=map[i];
                 volumes[control++]=(struct reloq61_mark){out+count,value,parameter};
             }
