@@ -53,6 +53,12 @@ text** starts a speech sample, and **Stop** interrupts it.
   request supplies a percentage with 100 meaning normal. Normal is mapped to
   native speed 55; 2× is approximately twice as fast. Rate boost multiplies the
   Android-controlled speed by 1.6, within the native limits.
+- **Equalizer** adjusts bass, midrange and treble and offers the same presets as
+  NVDA. **Advanced filters** selects one of five independent filters, each with
+  frequency 20–24000 Hz, gain -12 to +12 dB, and bandwidth 10–400 percent of
+  an octave. 100 percent is one octave. Frequencies at or above half the sample
+  rate remain saved but inactive. EQ settings are shared across voice profiles;
+  turning the equalizer off bypasses all filters. Peaks are limited as needed.
 - Manual pitch, inflection, voice volume, male/female model, head size,
   roughness and breathiness are available. Voice values are stored separately
   for each of the eight presets. **Reset selected voice profile** restores that

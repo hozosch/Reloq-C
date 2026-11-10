@@ -358,6 +358,7 @@ static int reset_eci_defaults(struct reloq_eci_engine *e)
     e->dictionary_disabled=n->dictionary_disabled;e->real_world_units=n->real_world_units;
     e->phrase_prediction=0;e->pause_mode=0;e->mellow_mode=0;
     e->eq_low=e->eq_mid=e->eq_high=12;
+    reset_equalizer_filters(e);
     e->language=n->language;e->language_dialect=n->language_dialect;
     e->active_dictionary=set;
     e->gender=n->gender;e->head_size=n->head_size;e->roughness=n->roughness;e->breathiness=n->breathiness;

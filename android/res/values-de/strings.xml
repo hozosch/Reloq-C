@@ -97,4 +97,20 @@
     <string name="speed_wpm_error">Bitte einen Wert von 1 bis 6000 Wörtern pro Minute eingeben.</string>
     <string name="pitch_scale">Skala für die eigene Tonhöhe:</string>
     <string name="pitch_eci_mode">ECI-Tonhöhe (0–100)</string>
+    <string name="equalizer">Equalizer</string>
+    <string name="equalizer_enabled">Equalizer aktivieren</string>
+    <string name="equalizer_preset">Equalizer-Voreinstellung</string>
+    <string name="equalizer_low">Tiefen (dB)</string>
+    <string name="equalizer_mid">Mitten (dB)</string>
+    <string name="equalizer_high">Höhen (dB)</string>
+    <string-array name="equalizer_presets"><item>Ausgewogen</item><item>Warm</item><item>Hell</item><item>Sanft</item><item>Benutzerdefiniert</item></string-array>
+    <string name="equalizer_advanced">Erweiterte Filter…</string>
+    <string name="filter_title">Erweiterte Equalizer-Filter</string>
+    <string name="filter_select">Filter</string>
+    <string name="filter_name">Filter</string>
+    <string name="filter_enabled">Filter aktivieren</string>
+    <string name="filter_frequency">Frequenz (Hz)</string>
+    <string name="filter_gain">Verstärkung (dB)</string>
+    <string name="filter_width" formatted="false">Bandbreite (% Oktave)</string>
+    <string name="filter_nyquist" formatted="false">100 % entspricht einer Oktave. Frequenzen ab der halben Abtastrate sind ohne Wirkung.</string>
 </resources>

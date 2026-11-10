@@ -3783,10 +3783,8 @@ L263:;
 L304:;
     STATE(int16_t, s396) = (1);
 L312:;
-    /* ReLoq: the closed /o/ before /z/ was already drifting towards the
-     * dental F2 target while the vowel was still sounding. Identify the
-     * preceding phone in the native scheduler and keep the z onset backed;
-     * the ordinary right-hand transition to the following vowel is kept. */
+    /* Ease the /o/ to /z/ F2 transition without pulling its onset so far
+     * back that the closed vowel acquires an /u/-like offglide. */
     {
         delta_state *d = state;
         delta_pta saved_lpta = d->lpta;
@@ -3803,7 +3801,7 @@ L312:;
     }
     r0 = reloq_call_ptbr_por_dental_Fv(state, (int32_t)(FIELD(0)));
     if (reloq_closed_o_before_z && STATE(int16_t, s450) > 1000)
-        STATE(int16_t, s450) -= 200;
+        STATE(int16_t, s450) -= 150;
     STATE_D(int16_t, c14, 2) = (3);
     r0 = reloq61_typed_if_testeq_v_i(DELTA_ENTRY_if_testeq_v_i, state, EVV_AT(delta_loc *, STATE_AT(c14, 0)), (int32_t)(11025));
     if (r0 == 0) goto L368;

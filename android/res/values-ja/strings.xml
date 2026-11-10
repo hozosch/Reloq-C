@@ -97,4 +97,20 @@
     <string name="speed_wpm_error">1分あたり 1 から 6000 語の値を入力してください。</string>
     <string name="pitch_scale">手動音程のスケール:</string>
     <string name="pitch_eci_mode">ECI 音程 (0–100)</string>
+    <string name="equalizer">イコライザー</string>
+    <string name="equalizer_enabled">イコライザーを有効にする</string>
+    <string name="equalizer_preset">イコライザーのプリセット</string>
+    <string name="equalizer_low">低音 (dB)</string>
+    <string name="equalizer_mid">中音 (dB)</string>
+    <string name="equalizer_high">高音 (dB)</string>
+    <string-array name="equalizer_presets"><item>バランス</item><item>暖かい</item><item>明るい</item><item>滑らか</item><item>カスタム</item></string-array>
+    <string name="equalizer_advanced">詳細フィルター…</string>
+    <string name="filter_title">イコライザーの詳細フィルター</string>
+    <string name="filter_select">フィルター</string>
+    <string name="filter_name">フィルター</string>
+    <string name="filter_enabled">フィルターを有効にする</string>
+    <string name="filter_frequency">周波数 (Hz)</string>
+    <string name="filter_gain">ゲイン (dB)</string>
+    <string name="filter_width" formatted="false">帯域幅 (オクターブの%)</string>
+    <string name="filter_nyquist" formatted="false">100%は1オクターブです。サンプルレートの半分以上の周波数は無効です。</string>
 </resources>

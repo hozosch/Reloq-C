@@ -33,6 +33,80 @@ def show_dictionary_update(details, parent=None):
                    parent=parent if parent is not None else getattr(gui, "mainFrame", None))
 
 
+class EqualizerFiltersDialog(wx.Dialog):
+    """Edit one of five live-preview filters with ordinary labelled controls."""
+    def __init__(self, parent, synth):
+        super().__init__(parent, title=_("Advanced equalizer filters"))
+        self.synth = synth
+        self.original = synth.equalizer_filters()
+        self.values = [list(row) for row in self.original]
+        self.updating = True
+        self.accepted = False
+        layout = wx.BoxSizer(wx.VERTICAL)
+        label = wx.StaticText(self, label=_("Filter:"))
+        layout.Add(label, 0, wx.ALL, 8)
+        self.selector = wx.Choice(self, choices=[_("Filter %s") % str(i) for i in range(1, 6)])
+        self.selector.SetName(label.GetLabelText())
+        self.selector.SetSelection(0)
+        layout.Add(self.selector, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        self.enabled = wx.CheckBox(self, label=_("Enable filter"))
+        layout.Add(self.enabled, 0, wx.ALL, 8)
+        self.inputs = []
+        for text, minimum, maximum in ((_("Frequency in hertz (20–24000):"),20,24000),
+                                       (_("Gain in dB (-12 to +12):"),-12,12),
+                                       (_("Bandwidth (% of an octave, 10–400):"),10,400)):
+            label = wx.StaticText(self, label=text)
+            layout.Add(label, 0, wx.LEFT | wx.RIGHT | wx.TOP, 8)
+            control = wx.SpinCtrl(self, min=minimum, max=maximum, initial=minimum)
+            control.SetName(label.GetLabelText())
+            layout.Add(control, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+            control.Bind(wx.EVT_SPINCTRL, self.on_change)
+            control.Bind(wx.EVT_TEXT, self.on_change)
+            self.inputs.append(control)
+        layout.Add(wx.StaticText(self, label=_(
+            "100% is one octave. Frequencies at or above half the sample rate are inactive.")),
+            0, wx.EXPAND | wx.ALL, 8)
+        layout.Add(self.CreateButtonSizer(wx.OK | wx.CANCEL), 0, wx.EXPAND | wx.ALL, 8)
+        self.SetSizerAndFit(layout)
+        self.selector.Bind(wx.EVT_CHOICE, self.on_select)
+        self.enabled.Bind(wx.EVT_CHECKBOX, self.on_change)
+        self.Bind(wx.EVT_BUTTON, self.on_ok, id=wx.ID_OK)
+        self.Bind(wx.EVT_BUTTON, self.on_cancel, id=wx.ID_CANCEL)
+        self.Bind(wx.EVT_CLOSE, self.on_cancel)
+        self.display()
+
+    def display(self):
+        self.updating = True
+        try:
+            enabled, *values = self.values[self.selector.GetSelection()]
+            self.enabled.SetValue(enabled)
+            for control, value in zip(self.inputs, values):
+                control.SetValue(value)
+        finally:
+            self.updating = False
+
+    def on_select(self, event):
+        self.display()
+        event.Skip()
+
+    def on_change(self, event):
+        if not self.updating:
+            values = tuple(control.GetValue() for control in self.inputs)
+            if (all(type(value) is int for value in values) and 20 <= values[0] <= 24000 and
+                    -12 <= values[1] <= 12 and 10 <= values[2] <= 400):
+                self.values[self.selector.GetSelection()] = [bool(self.enabled.GetValue()), *values]
+                self.synth.configure_equalizer_filters(self.values)
+        event.Skip()
+
+    def on_ok(self, event):
+        self.accepted = True
+        self.EndModal(wx.ID_OK)
+
+    def on_cancel(self, event):
+        self.synth.configure_equalizer_filters(self.original)
+        self.EndModal(wx.ID_CANCEL)
+
+
 class EloquenceSettingsPanel(SettingsPanel):
     title = _("Eloquence C")
 
@@ -56,6 +130,7 @@ class EloquenceSettingsPanel(SettingsPanel):
         self._saved_wpm = ((self.synth._rateInWpm, self.synth._rateWpm)
                            if self.synth else None)
         self._saved_eq = self._equalizer_state(self.synth)
+        self._saved_filters = self.synth.equalizer_filters() if self.synth else None
         self.segmentation_dirty = False
         self.camel_dirty = False
         content.Add(wx.StaticText(self, label=_("Exact base pitch")), 0, wx.ALL, 10)
@@ -114,6 +189,9 @@ class EloquenceSettingsPanel(SettingsPanel):
             control.Bind(wx.EVT_TEXT, self.on_equalizer_band)
             content.Add(control, 0, wx.ALL, 10)
             self.eq_bands.append(control)
+        self.eq_advanced = wx.Button(self, label=_("Advanced filters…"))
+        self.eq_advanced.Bind(wx.EVT_BUTTON, self.on_equalizer_filters)
+        content.Add(self.eq_advanced, 0, wx.ALL, 10)
         self.eq_mode.Bind(wx.EVT_CHECKBOX, self.on_equalizer_mode)
         self.eq_preset.Bind(wx.EVT_CHOICE, self.on_equalizer_preset)
         self.segmentation = wx.CheckBox(self, label=_("Split unfamiliar &English words"))
@@ -263,6 +341,7 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.wpm_mode.Enable(enabled)
         self.wpm_value.Enable(enabled and self.wpm_mode.GetValue())
         self.eq_mode.Enable(enabled)
+        self.eq_advanced.Enable(enabled)
         self.eq_preset.Enable(enabled and self.eq_mode.GetValue())
         for control in self.eq_bands:
             control.Enable(enabled and self.eq_mode.GetValue())
@@ -284,6 +363,19 @@ class EloquenceSettingsPanel(SettingsPanel):
         if self.current_synth():
             self.synth.configure_equalizer(bool(self.eq_mode.GetValue()), preset, *custom)
             self.eq_dirty = True
+
+    def on_equalizer_filters(self, event):
+        if not self.current_synth():
+            return
+        dialog = EqualizerFiltersDialog(self, self.synth)
+        try:
+            result = dialog.ShowModal()
+            if result == wx.ID_OK and self.synth.equalizer_filters() != dialog.original:
+                self.eq_dirty = True
+        finally:
+            if not dialog.accepted:
+                self.synth.configure_equalizer_filters(dialog.original)
+            dialog.Destroy()
 
     def on_equalizer_mode(self, event):
         if not self._updating_controls and self.current_synth():
@@ -560,6 +652,7 @@ class EloquenceSettingsPanel(SettingsPanel):
                 self._saved_pitch = (self.synth._pitchInHertz, self.synth._pitchHertz)
                 self._saved_wpm = (self.synth._rateInWpm, self.synth._rateWpm)
                 self._saved_eq = self._equalizer_state(self.synth)
+                self._saved_filters = self.synth.equalizer_filters()
                 self.pitch_dirty = self.wpm_dirty = self.eq_dirty = False
             except Exception as error:
                 completed(error, None)
@@ -573,6 +666,8 @@ class EloquenceSettingsPanel(SettingsPanel):
                 synth.configure_rate_wpm(*self._saved_wpm)
             if self.eq_dirty and self._saved_eq is not None:
                 synth.configure_equalizer(*self._saved_eq)
+                if self._saved_filters is not None:
+                    synth.configure_equalizer_filters(self._saved_filters)
         self.pitch_dirty = self.wpm_dirty = self.eq_dirty = False
 
     def onDiscard(self):
@@ -632,6 +727,7 @@ class EloquenceSettingsPanel(SettingsPanel):
             for control, value in zip(self.eq_bands, self._equalizer_values(self.synth)):
                 control.SetValue(value)
             self._saved_eq = self._equalizer_state(self.synth)
+            self._saved_filters = self.synth.equalizer_filters()
         if self.current_synth() and not self.segmentation_dirty:
             self.segmentation.SetValue(getattr(self.synth, "_wordSegmentation", False))
         if self.current_synth() and not self.camel_dirty:

@@ -128,6 +128,10 @@ enum {
     RELOQ_ECI_EQ_LOW = 0x1018,
     RELOQ_ECI_EQ_MID = 0x1019,
     RELOQ_ECI_EQ_HIGH = 0x101a,
+    /* Five optional peaking filters, each with four consecutive parameters:
+     * enabled 0/1, frequency 20..24000 Hz, gain 0..24 (-12..+12 dB),
+     * and bandwidth 10..400 percent of an octave. */
+    RELOQ_ECI_EQ_FILTER_BASE = 0x1020,
     RELOQ_ECI_ENGLISH = 0x00010000,
     RELOQ_ECI_ENGLISH_BRITAIN = 0x00010001,
     RELOQ_ECI_SPANISH_SPAIN = 0x00020000,
@@ -144,6 +148,8 @@ enum {
     RELOQ_ECI_KOREAN = 0x000a0000,
     RELOQ_ECI_GREEK = 0x00120000
 };
+#define RELOQ_ECI_EQ_FILTER_COUNT 5
+#define RELOQ_ECI_EQ_FILTER_STRIDE 4
 
 /* Standard ECI voice/dictionary parameter numbers and return codes. */
 typedef enum {eciGender=0,eciHeadSize=1,eciPitchBaseline=2,eciPitchFluctuation=3,

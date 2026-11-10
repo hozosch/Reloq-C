@@ -97,4 +97,20 @@
     <string name="speed_wpm_error">Εισαγάγετε μια τιμή από 1 έως 6000 λέξεις ανά λεπτό.</string>
     <string name="pitch_scale">Κλίμακα μη αυτόματου τόνου:</string>
     <string name="pitch_eci_mode">Τόνος ECI (0–100)</string>
+    <string name="equalizer">Ισοσταθμιστής</string>
+    <string name="equalizer_enabled">Ενεργοποίηση ισοσταθμιστή</string>
+    <string name="equalizer_preset">Προεπιλογή ισοσταθμιστή</string>
+    <string name="equalizer_low">Μπάσα (dB)</string>
+    <string name="equalizer_mid">Μεσαία (dB)</string>
+    <string name="equalizer_high">Πρίμα (dB)</string>
+    <string-array name="equalizer_presets"><item>Ισορροπημένο</item><item>Ζεστό</item><item>Φωτεινό</item><item>Απαλό</item><item>Προσαρμοσμένο</item></string-array>
+    <string name="equalizer_advanced">Προηγμένα φίλτρα…</string>
+    <string name="filter_title">Προηγμένα φίλτρα ισοσταθμιστή</string>
+    <string name="filter_select">Φίλτρο</string>
+    <string name="filter_name">Φίλτρο</string>
+    <string name="filter_enabled">Ενεργοποίηση φίλτρου</string>
+    <string name="filter_frequency">Συχνότητα (Hz)</string>
+    <string name="filter_gain">Ενίσχυση (dB)</string>
+    <string name="filter_width" formatted="false">Εύρος (% οκτάβας)</string>
+    <string name="filter_nyquist" formatted="false">Το 100% ισούται με μία οκτάβα. Συχνότητες από το μισό του ρυθμού δειγματοληψίας είναι ανενεργές.</string>
 </resources>

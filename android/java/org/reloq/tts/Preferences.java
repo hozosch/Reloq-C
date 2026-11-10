@@ -16,6 +16,12 @@ final class Preferences {
         s.abbreviations=p.getBoolean("abbreviations",true);s.prediction=p.getBoolean("prediction",false);
         s.originalQuestions=p.getBoolean("originalQuestions",false);
         s.mellowMode=p.getBoolean("mellowMode",false);
+        s.eqEnabled=p.getBoolean("eqEnabled",false);s.eqPreset=p.getInt("eqPreset",0);
+        s.eqLow=p.getInt("eqLow",0);s.eqMid=p.getInt("eqMid",0);s.eqHigh=p.getInt("eqHigh",0);
+        for(int i=0;i<s.eqFilters.length;++i){String prefix="eqFilter."+i+".";
+            s.eqFilters[i][0]=p.getBoolean(prefix+"enabled",false)?1:0;
+            s.eqFilters[i][1]=p.getInt(prefix+"frequency",s.eqFilters[i][1]);
+            s.eqFilters[i][2]=p.getInt(prefix+"gain",0);s.eqFilters[i][3]=p.getInt(prefix+"width",100);}
         s.tags=p.getBoolean("tags",false);s.rate=p.getInt("rate",1);s.pauses=p.getInt("pauses",0);
         s.manualPitch=p.getInt(key+"pitch",s.manualPitch);
         s.pitchHertz=p.getInt(key+"pitchHertz",s.pitchHertz);
@@ -27,12 +33,18 @@ final class Preferences {
     }
     static void save(SharedPreferences p,int profile,VoiceSettings s) {
         String key="voice."+profile+".";
-        p.edit().putBoolean("androidRate",s.androidRate).putBoolean("androidPitch",s.androidPitch)
+        SharedPreferences.Editor editor=p.edit();
+        for(int i=0;i<s.eqFilters.length;++i){String prefix="eqFilter."+i+".";int[] f=s.eqFilters[i];
+            editor.putBoolean(prefix+"enabled",f[0]!=0).putInt(prefix+"frequency",f[1])
+                .putInt(prefix+"gain",f[2]).putInt(prefix+"width",f[3]);}
+        editor.putBoolean("androidRate",s.androidRate).putBoolean("androidPitch",s.androidPitch)
             .putInt("manualWpm",s.manualWpm).putInt("manualSpeed",s.manualSpeed)
             .putBoolean("speedWpmMode",s.speedWpmMode).putBoolean("rateBoost",s.rateBoost)
             .putBoolean("abbreviations",s.abbreviations).putBoolean("prediction",s.prediction)
             .putBoolean("originalQuestions",s.originalQuestions)
             .putBoolean("mellowMode",s.mellowMode)
+            .putBoolean("eqEnabled",s.eqEnabled).putInt("eqPreset",s.eqPreset)
+            .putInt("eqLow",s.eqLow).putInt("eqMid",s.eqMid).putInt("eqHigh",s.eqHigh)
             .putBoolean("tags",s.tags).putInt("rate",s.rate).putInt("pauses",s.pauses)
             .putInt(key+"pitch",s.manualPitch).putInt(key+"pitchHertz",s.pitchHertz)
             .putBoolean(key+"pitchHertzMode",s.pitchHertzMode).putInt(key+"gender",s.gender).putInt(key+"head",s.head)

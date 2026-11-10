@@ -97,4 +97,20 @@
     <string name="speed_wpm_error">Digite um valor de 1 a 6000 palavras por minuto.</string>
     <string name="pitch_scale">Escala de tom manual:</string>
     <string name="pitch_eci_mode">Tom ECI (0–100)</string>
+    <string name="equalizer">Equalizador</string>
+    <string name="equalizer_enabled">Ativar equalizador</string>
+    <string name="equalizer_preset">Predefinição do equalizador</string>
+    <string name="equalizer_low">Graves (dB)</string>
+    <string name="equalizer_mid">Médios (dB)</string>
+    <string name="equalizer_high">Agudos (dB)</string>
+    <string-array name="equalizer_presets"><item>Equilibrado</item><item>Quente</item><item>Brilhante</item><item>Suave</item><item>Personalizado</item></string-array>
+    <string name="equalizer_advanced">Filtros avançados…</string>
+    <string name="filter_title">Filtros avançados do equalizador</string>
+    <string name="filter_select">Filtro</string>
+    <string name="filter_name">Filtro</string>
+    <string name="filter_enabled">Ativar filtro</string>
+    <string name="filter_frequency">Frequência (Hz)</string>
+    <string name="filter_gain">Ganho (dB)</string>
+    <string name="filter_width" formatted="false">Largura (% da oitava)</string>
+    <string name="filter_nyquist" formatted="false">100% equivale a uma oitava. Frequências a partir da metade da taxa de amostragem ficam inativas.</string>
 </resources>

@@ -505,3 +505,42 @@ msgstr "Equalizer-Mitten"
 
 msgid "Equalizer treble"
 msgstr "Equalizer-Höhen"
+
+msgid "Advanced filters…"
+msgstr "Erweiterte Filter…"
+
+msgid "Advanced equalizer filters"
+msgstr "Erweiterte Equalizer-Filter"
+
+msgid "Filter:"
+msgstr "Filter:"
+
+msgid "Filter %s"
+msgstr "Filter %s"
+
+msgid "Enable filter"
+msgstr "Filter aktivieren"
+
+msgid "Frequency in hertz (20–24000):"
+msgstr "Frequenz in Hertz (20–24000):"
+
+msgid "Gain in dB (-12 to +12):"
+msgstr "Verstärkung in dB (-12 bis +12):"
+
+msgid "Bandwidth (% of an octave, 10–400):"
+msgstr "Bandbreite (% einer Oktave, 10–400):"
+
+msgid "100% is one octave. Frequencies at or above half the sample rate are inactive."
+msgstr "100 % entspricht einer Oktave. Frequenzen ab der halben Abtastrate sind ohne Wirkung."
+
+msgid "Equalizer filter enabled"
+msgstr "Equalizer-Filter aktiviert"
+
+msgid "Equalizer filter frequency"
+msgstr "Frequenz des Equalizer-Filters"
+
+msgid "Equalizer filter gain"
+msgstr "Verstärkung des Equalizer-Filters"
+
+msgid "Equalizer filter bandwidth"
+msgstr "Bandbreite des Equalizer-Filters"

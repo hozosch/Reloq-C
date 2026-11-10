@@ -1,6 +1,6 @@
 # Eloquence C – Bedienungsanleitung
 
-## Version 1.3.0
+## Version 1.3.1-dev1
 
 Die Zahlen 12 und 19 verwenden auf Brasilianisch-Portugiesisch auch in größeren Zahlen die üblichen Vokale. ECI-Betonungsbefehle verwenden dieselbe Sprachmelodie wie der entsprechende Reglerwert.
 
@@ -103,7 +103,7 @@ Unter **NVDA-Einstellungen → Eloquence C → Genaue Sprechgeschwindigkeit** ka
 
 Hertz und WPM ändern die laufende Sprachausgabe bereits im Dialog. **Übernehmen** oder **OK** speichert die aktuellen Werte; **Abbrechen** stellt den zuletzt übernommenen Zustand wieder her.
 
-Unter **NVDA-Einstellungen → Eloquence C → Equalizer** kann die Klangfarbe optional mit Tiefen, Mitten und Höhen von jeweils -12 bis +12 dB verändert werden. Die Voreinstellungen „Ausgewogen“, „Warm“, „Hell“ und „Sanft“ dienen als Ausgangspunkt. Sobald ein Band geändert wird, entsteht eine benutzerdefinierte Einstellung, die auch beim Wechsel zu einer Voreinstellung erhalten bleibt. Die Änderungen sind sofort hörbar und folgen ebenfalls Übernehmen, OK und Abbrechen. Der Equalizer ist zunächst ausgeschaltet; ausgeschaltet und bei „Ausgewogen“ bleibt die Ausgabe unverändert. Bei Anhebungen wird der Gesamtpegel zum Schutz vor Übersteuerung abgesenkt.
+Unter **NVDA-Einstellungen → Eloquence C → Equalizer** kann die Klangfarbe optional mit Tiefen, Mitten und Höhen von jeweils -12 bis +12 dB verändert werden. Die Voreinstellungen „Ausgewogen“, „Warm“, „Hell“ und „Sanft“ dienen als Ausgangspunkt. Sobald ein Band geändert wird, entsteht eine benutzerdefinierte Einstellung, die auch beim Wechsel zu einer Voreinstellung erhalten bleibt. Die Änderungen sind sofort hörbar und folgen ebenfalls Übernehmen, OK und Abbrechen. Der Equalizer ist zunächst ausgeschaltet; ausgeschaltet bleibt die Ausgabe unverändert. „Ausgewogen“ setzt die drei einfachen Bereiche auf null, lässt aber erweiterte Filter aktiv. Unter „Erweiterte Filter“ lassen sich fünf Filter einzeln aktivieren und mit Frequenz (20–24000 Hz), Verstärkung (-12 bis +12 dB) und Bandbreite (10–400 Prozent einer Oktave) einstellen. 100 Prozent entspricht einer Oktave. Frequenzen ab der halben Abtastrate sind ohne Wirkung, bleiben aber gespeichert. Der Pegel wird nur begrenzt, wenn das bearbeitete Signal sonst übersteuern würde.
 
 **ECI-Tags verarbeiten** ist zunächst ausgeschaltet. Eingeschaltet können unterstützte Backtick-Befehle im Text Aussprache, Buchstabierung, Betonung, Stimmparameter, Stimmen und Sprachen steuern. Für gewöhnliches Lesen ist die Option nicht erforderlich. Eigene Aussprachewörterbücher können Ausspracheangaben unabhängig von dieser Einstellung enthalten.
 
@@ -163,7 +163,7 @@ eigene Wörterbücher und Benutzereinstellungen bleiben erhalten.
 `ReLoqSettings.exe` oder die Stimmeigenschaften öffnen die sofort wirksamen
 Sprachparameter. Das Kontrollfeld für gemeinsame Einstellungen übernimmt die
 Parameter für alle Sprachen; beim Ausschalten kehren die getrennten Werte
-zurück. Die Eloquence-Abtastrate gilt immer sprachübergreifend. SAPI oder die
+zurück. Im Dialog „Equalizer“ stehen Tiefen, Mitten und Höhen sowie fünf frei einstellbare Filter zur Verfügung. Die Einstellungen folgen der gewählten Sprache oder der gemeinsamen Einstellung. Die Eloquence-Abtastrate gilt immer sprachübergreifend. SAPI oder die
 Anwendung wandelt das Signal in ihre Ausgabe-Abtastrate um. Die angeforderte
 Ausgaberate verändert weder Eloquences Syntheserate noch deren Klangprofil.
 Standardmäßig steuert die SAPI-Anwendung Geschwindigkeit und Lautstärke. Im Dialog

@@ -97,4 +97,20 @@
     <string name="speed_wpm_error">Saisissez une valeur de 1 à 6000 mots par minute.</string>
     <string name="pitch_scale">Échelle de hauteur manuelle :</string>
     <string name="pitch_eci_mode">Hauteur ECI (0–100)</string>
+    <string name="equalizer">Égaliseur</string>
+    <string name="equalizer_enabled">Activer l’égaliseur</string>
+    <string name="equalizer_preset">Préréglage de l’égaliseur</string>
+    <string name="equalizer_low">Graves (dB)</string>
+    <string name="equalizer_mid">Médiums (dB)</string>
+    <string name="equalizer_high">Aigus (dB)</string>
+    <string-array name="equalizer_presets"><item>Équilibré</item><item>Chaud</item><item>Brillant</item><item>Doux</item><item>Personnalisé</item></string-array>
+    <string name="equalizer_advanced">Filtres avancés…</string>
+    <string name="filter_title">Filtres avancés de l’égaliseur</string>
+    <string name="filter_select">Filtre</string>
+    <string name="filter_name">Filtre</string>
+    <string name="filter_enabled">Activer le filtre</string>
+    <string name="filter_frequency">Fréquence (Hz)</string>
+    <string name="filter_gain">Gain (dB)</string>
+    <string name="filter_width" formatted="false">Largeur (% d’octave)</string>
+    <string name="filter_nyquist" formatted="false">100 % correspond à une octave. Les fréquences à partir de la moitié du taux d’échantillonnage sont inactives.</string>
 </resources>

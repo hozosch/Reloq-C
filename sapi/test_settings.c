@@ -62,11 +62,15 @@ int main(void)
     assert(sapi_settings_read(0x40000,&de)==S_OK&&de.rate==1);
     assert(!de.speed_override&&de.speed_value==60&&!de.pitch_override&&
            !de.volume_override&&de.volume_value==100&&!de.speed_wpm_enabled&&de.speed_wpm==180);
+    assert(!de.eq_enabled&&de.eq_preset==0&&de.eq_low==12&&de.eq_filters[0].frequency==125&&
+           !de.eq_filters[0].enabled&&de.eq_filters[0].gain==12&&de.eq_filters[0].width==100);
     assert(value_reads==3&&key_opens==1);++checks;
     assert(sapi_settings_shared(&shared)==S_OK&&!shared);++checks;
     de.pitch=72;de.rate=6;de.pitch_hz=151;de.pitch_hz_enabled=1;
     de.speed_override=1;de.speed_value=87;de.pitch_override=1;de.volume_override=1;de.volume_value=42;
     de.speed_wpm_enabled=1;de.speed_wpm=210;
+    de.eq_enabled=1;de.eq_preset=4;de.eq_low=16;de.eq_mid=10;de.eq_high=15;
+    de.eq_filters[0]=(struct sapi_eq_filter){1,777,18,50};
     wcscpy(de.directory,L"C:\\My dictionaries");de.dictionaries=1;
     assert(sapi_settings_write(0x40000,&de)==S_OK);
     assert(sapi_settings_read(0x10000,&en)==S_OK&&en.rate==6&&en.pitch==65&&!en.dictionaries&&
@@ -74,7 +78,8 @@ int main(void)
     en.pitch=43;en.rate=4;assert(sapi_settings_write(0x10000,&en)==S_OK);
     assert(sapi_settings_read(0x40000,&s)==S_OK&&s.rate==4&&s.pitch==72&&s.pitch_hz==151&&s.pitch_hz_enabled&&
            s.speed_override&&s.speed_value==87&&s.pitch_override&&s.volume_override&&s.volume_value==42&&
-           s.speed_wpm_enabled&&s.speed_wpm==210);++checks;
+           s.speed_wpm_enabled&&s.speed_wpm==210&&s.eq_enabled&&s.eq_preset==4&&s.eq_low==16&&
+           s.eq_filters[0].enabled&&s.eq_filters[0].frequency==777&&s.eq_filters[0].gain==18&&s.eq_filters[0].width==50);++checks;
     for(size_t i=0;i<sapi_language_count();++i){assert(sapi_settings_read(sapi_language_at(i)->dialect,&s)==S_OK&&s.rate==4);++checks;}
     assert(sapi_settings_set_shared(0x40000,TRUE)==S_OK);assert(sapi_settings_shared(&shared)==S_OK&&shared);++checks;
     de.rate=4;
@@ -110,6 +115,16 @@ int main(void)
     assert(!RegSetValueExW(key,L"Settings",0,REG_BINARY,(const BYTE *)&s,offsetof(struct sapi_settings,speed_wpm_enabled)));
     assert(sapi_settings_read(0x40000,&s)==S_OK&&s.speed_override&&s.speed_value==95&&
         !s.speed_wpm_enabled&&s.speed_wpm==180);++checks;
+    s.speed_wpm_enabled=1;s.speed_wpm=210;
+    assert(!RegSetValueExW(key,L"Settings",0,REG_BINARY,(const BYTE *)&s,offsetof(struct sapi_settings,eq_enabled)));
+    assert(sapi_settings_read(0x40000,&s)==S_OK&&s.speed_wpm_enabled&&s.speed_wpm==210&&
+           !s.eq_enabled&&s.eq_filters[0].frequency==125&&s.eq_filters[0].gain==12);++checks;
+    int gains[3];s.eq_enabled=1;s.eq_preset=1;sapi_equalizer_gains(&s,gains);
+    assert(gains[0]==16&&gains[1]==12&&gains[2]==11);s.eq_enabled=0;sapi_equalizer_gains(&s,gains);
+    assert(gains[0]==12&&gains[1]==12&&gains[2]==12);++checks;
+    s.eq_enabled=2;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.eq_enabled=0;++checks;
+    s.eq_filters[0].frequency=24001;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.eq_filters[0].frequency=125;++checks;
+    s.eq_filters[0].width=9;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.eq_filters[0].width=100;++checks;
     s.speed_wpm_enabled=2;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.speed_wpm_enabled=0;++checks;
     s.speed_wpm=0;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.speed_wpm=180;++checks;
     s.speed_wpm=6001;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.speed_wpm=180;++checks;

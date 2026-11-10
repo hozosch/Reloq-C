@@ -63,7 +63,9 @@ static HRESULT skip(ISpTTSEngineSite *p,SPVSKIPTYPE *type,LONG *n){(void)p;*type
 static HRESULT complete(ISpTTSEngineSite *p,LONG n){(void)p;(void)n;return S_OK;}
 static const ISpTTSEngineSiteVtbl vtable={NULL,NULL,NULL,events,interest,actions,write_pcm,rate,volume,skip,complete};
 static struct sapi_settings settings(void)
-{struct sapi_settings s={.schema=1,.profile=0,.head=50,.pitch=65,.inflection=30,.rate=1,.abbreviations=1};return s;}
+{struct sapi_settings s={.schema=1,.profile=0,.head=50,.pitch=65,.inflection=30,.rate=1,.abbreviations=1,
+    .eq_low=12,.eq_mid=12,.eq_high=12,
+    .eq_filters={{0,125,12,100},{0,500,12,100},{0,1200,12,100},{0,3000,12,100},{0,6000,12,100}}};return s;}
 static uint64_t hash(const short *pcm,size_t count)
 {uint64_t h=1469598103934665603ULL;for(size_t i=0;i<count;++i){h^=(uint16_t)pcm[i];h*=1099511628211ULL;}return h;}
 static void same(const struct site *a,const struct site *b)
@@ -237,6 +239,21 @@ int main(int argc,char **argv)
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&xml,&high.iface)));
     assert(high.count==base.count&&hash(high.pcm,high.count)!=hash(base.pcm,base.count));free(high.pcm);++cases;
     #ifndef RELOQ_SAPI_REFERENCE_BASELINE
+    {
+        /* The adapter must forward both simple and freely tuned filters,
+         * and switching off must restore bit-identical ordinary output. */
+        struct sapi_settings eq=s;eq.eq_enabled=1;eq.eq_preset=1;
+        struct site warm=site_new();warm.interest=0;
+        assert(SUCCEEDED(sapi_backend_speak(b,&eq,0,&out,&f,&warm.iface)));
+        assert(warm.count==base.count&&hash(warm.pcm,warm.count)!=hash(base.pcm,base.count));
+        eq.eq_preset=0;eq.eq_filters[0]=(struct sapi_eq_filter){1,777,18,50};
+        struct site custom=site_new();custom.interest=0;
+        assert(SUCCEEDED(sapi_backend_speak(b,&eq,0,&out,&f,&custom.iface)));
+        assert(custom.count==base.count&&hash(custom.pcm,custom.count)!=hash(base.pcm,base.count));
+        eq.eq_enabled=0;struct site restored=site_new();restored.interest=0;
+        assert(SUCCEEDED(sapi_backend_speak(b,&eq,0,&out,&f,&restored.iface)));same(&base,&restored);
+        free(warm.pcm);free(custom.pcm);free(restored.pcm);cases+=3;
+    }
     /* Per-engine overrides ignore SAPI and XML values while remaining
      * independent, including mid-output application volume changes. */
     {

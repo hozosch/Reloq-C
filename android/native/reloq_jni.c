@@ -15,7 +15,7 @@ typedef struct {
     ECIHand handle;
     short *pcm;
     char *dictionary;
-    int controls[16],configured;
+    int controls[19+RELOQ_ECI_EQ_FILTER_COUNT*RELOQ_ECI_EQ_FILTER_STRIDE],configured;
 } language_engine;
 typedef struct {
     JavaVM *vm;
@@ -103,7 +103,8 @@ Java_org_reloq_tts_NativeEngine_synthesize(JNIEnv *env, jclass type,
 {
     (void)type;
     android_engine *engine = (android_engine *)(intptr_t)pointer;
-    if (!engine || (*env)->GetArrayLength(env, controls) != 16) return JNI_FALSE;
+    enum { CONTROL_COUNT=19+RELOQ_ECI_EQ_FILTER_COUNT*RELOQ_ECI_EQ_FILTER_STRIDE };
+    if (!engine || (*env)->GetArrayLength(env, controls) != CONTROL_COUNT) return JNI_FALSE;
     engine->sink = (*env)->NewGlobalRef(env, sink);
     if (!engine->sink) return JNI_FALSE;
     jclass sink_type = (*env)->GetObjectClass(env, sink);
@@ -147,22 +148,23 @@ Java_org_reloq_tts_NativeEngine_synthesize(JNIEnv *env, jclass type,
         if(!eciSetDictionaryPath(handle,engine->dictionary)){free(copy);goto done;}
         free(slot->dictionary);slot->dictionary=copy;
     }
-    jint values[16];
-    static const int parameters[16] = {
+    jint values[CONTROL_COUNT];
+    static const int parameters[19] = {
         RELOQ_ECI_GENDER, RELOQ_ECI_HEAD_SIZE, RELOQ_ECI_NATIVE_PITCH,
         RELOQ_ECI_NATIVE_INFLECTION, RELOQ_ECI_ROUGHNESS,
         RELOQ_ECI_BREATHINESS, RELOQ_ECI_NATIVE_VOLUME,
         RELOQ_ECI_NATIVE_SPEED, RELOQ_ECI_SAMPLE_RATE, RELOQ_ECI_PAUSE_MODE,
         RELOQ_ECI_PROCESS_TAGS, RELOQ_ECI_DICTIONARY, RELOQ_ECI_PHRASE_PREDICTION,
-        RELOQ_ECI_ORIGINAL_QUESTIONS, RELOQ_ECI_MELLOW_MODE, RELOQ_ECI_NATIVE_WPM
+        RELOQ_ECI_ORIGINAL_QUESTIONS, RELOQ_ECI_MELLOW_MODE, RELOQ_ECI_NATIVE_WPM,
+        RELOQ_ECI_EQ_LOW, RELOQ_ECI_EQ_MID, RELOQ_ECI_EQ_HIGH
     };
-    (*env)->GetIntArrayRegion(env, controls, 0, 16, values);
+    (*env)->GetIntArrayRegion(env, controls, 0, CONTROL_COUNT, values);
     if ((*env)->ExceptionCheck(env)) goto done;
-    for (size_t i = 0; i < 16; ++i)
+    for (size_t i = 0; i < CONTROL_COUNT; ++i)
         if(!slot->configured||slot->controls[i]!=values[i]) {
             if(i==2&&values[i]>RELOQ_PITCH_HZ_OFFSET) {
                 if(!set_pitch_hz(handle,values[i]-RELOQ_PITCH_HZ_OFFSET))goto done;
-            } else if(eciSetParam(handle,parameters[i],values[i])<0)goto done;
+            } else if(eciSetParam(handle,i<19?parameters[i]:RELOQ_ECI_EQ_FILTER_BASE+(int)i-19,values[i])<0)goto done;
             slot->controls[i]=values[i];
         }
     slot->configured=1;

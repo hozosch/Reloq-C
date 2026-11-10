@@ -1,6 +1,6 @@
 # Eloquence C – user guide
 
-## Version 1.3.0
+## Version 1.3.1-dev1
 
 In Brazilian Portuguese, 12 and 19 use their usual vowels within larger numbers as well. ECI inflection commands use the same intonation as the corresponding setting.
 
@@ -103,7 +103,7 @@ Under **NVDA settings → Eloquence C → Exact speech rate**, the rate can inst
 
 Hertz and WPM changes take effect immediately while the dialog is open. **Apply** or **OK** saves the current values; **Cancel** restores the last applied values.
 
-Under **NVDA settings → Eloquence C → Equalizer**, bass, midrange and treble can each be adjusted from -12 to +12 dB. The Balanced, Warm, Bright and Smooth presets are starting points. Changing a band selects the custom setting, which is retained when switching presets. Changes are audible immediately and follow Apply, OK and Cancel. The equalizer is off by default; turning it off or selecting Balanced leaves the audio unchanged. Boosts reduce the overall level to provide headroom against clipping.
+Under **NVDA settings → Eloquence C → Equalizer**, bass, midrange and treble can each be adjusted from -12 to +12 dB. The Balanced, Warm, Bright and Smooth presets are starting points. Changing a band selects the custom setting, which is retained when switching presets. Changes are audible immediately and follow Apply, OK and Cancel. The equalizer is off by default; turning it off leaves the audio unchanged. Balanced sets the three simple bands to zero while leaving any advanced filters active. Advanced filters lets you enable and adjust five independent filters by frequency (20–24000 Hz), gain (-12 to +12 dB), and bandwidth (10–400 percent of an octave). 100 percent is one octave. Frequencies at or above half the sample rate remain saved but are inactive at that rate. The output is limited only when processing would otherwise exceed the PCM range.
 
 **Process ECI tags** is off by default. When enabled, supported backtick commands in text can control pronunciation, spelling, emphasis, voice parameters, voices and languages. This option is not needed for ordinary reading. Pronunciation dictionaries can contain pronunciation annotations independently of this setting.
 
@@ -158,7 +158,7 @@ voice's SAPI properties to select a profile and additional language parameters.
 Changes are saved immediately for the next utterance. The dialog follows the
 supported Windows display language; the installer also offers an explicit language chooser. Its checkbox shares
 all parameters across languages; turning it off restores separate language
-settings. The synthesis sample rate is common to every language. SAPI or the
+settings. The Equalizer dialog provides bass, midrange, treble and five independently configurable filters, stored with the selected language or shared settings. The synthesis sample rate is common to every language. SAPI or the
 application converts this signal to its own output format; requesting a higher
 output rate does not change Eloquence's synthesis rate or bandwidth. By default
 the SAPI application controls speed and volume. The Application overrides dialog

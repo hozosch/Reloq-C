@@ -1,0 +1,284 @@
+name: ReLoq 1.3.1 equalizer test packages
+on:
+  push:
+    branches: ['codex/eq-131-dev1-*']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  dictionaries:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Resolve current complete dictionary snapshot
+        env:
+          RELOQ_BUILD_GITHUB_TOKEN: ${{ github.token }}
+        run: python3 -c "import sys; sys.path.insert(0, 'addon'); from build_synth import refresh_community_dictionaries; refresh_community_dictionaries()"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eq131-dictionaries
+          path: data/community/
+          if-no-files-found: error
+          retention-days: 14
+  native:
+    needs: dictionaries
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, x86]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: eq131-dictionaries
+          path: data/community
+      - name: Install cross compiler
+        run: |
+          set -euo pipefail
+          if [ '${{ matrix.arch }}' = x64 ]; then package=x86-64; prefix=x86_64; else package=i686; prefix=i686; fi
+          if command -v "$prefix-w64-mingw32-gcc-posix" >/dev/null; then exit 0; fi
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends gcc-mingw-w64-$package-posix
+      - uses: actions/cache@v4
+        id: rules
+        with:
+          path: vendor/openevv61/build
+          key: sapi-rules-ubuntu24-gcc13-v1-${{ matrix.arch }}-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c') }}
+      - name: Restore matching cache timestamps
+        if: steps.rules.outputs.cache-hit == 'true'
+        run: find vendor/openevv61/build -type f -exec touch {} +
+      - name: Build the shared speech core and SAPI adapter
+        run: |
+          set -euo pipefail
+          if [ '${{ matrix.arch }}' = x64 ]; then prefix=x86_64; else prefix=i686; fi
+          make -C eci -j2 windows-${{ matrix.arch }} PROVIDER_LTO=-flto=2 WINDOWS_CC=$prefix-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=$prefix-w64-mingw32-objdump
+          python3 sapi/build.py --arch '${{ matrix.arch }}' --cc $prefix-w64-mingw32-gcc-posix --objdump $prefix-w64-mingw32-objdump
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eq131-native-${{ matrix.arch }}
+          path: dist/reloq-c-sapi5-${{ matrix.arch }}-1.3.1-dev1-payload.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+  addon:
+    needs: [dictionaries, native]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: eq131-dictionaries
+          path: data/community
+      - uses: actions/download-artifact@v4
+        with:
+          name: eq131-native-x64
+          path: dist
+      - name: Install translation compiler
+        run: |
+          if command -v msgfmt >/dev/null; then exit 0; fi
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends gettext
+      - name: Build and check NVDA package
+        run: |
+          gcc -O2 -std=c11 -Wall -Wextra -Werror -Iinclude tests/test_reloq_equalizer.c src/reloq_equalizer.c -lm -o /tmp/test_reloq_equalizer
+          /tmp/test_reloq_equalizer
+          python3 -B addon/test_hertz_settings_panel.py
+          python3 - <<'PY'
+          import pathlib, sys, zipfile
+          sys.path.insert(0, 'addon')
+          from build_synth import build, DEFAULT_OUTPUT
+          payload = pathlib.Path('dist/reloq-c-sapi5-x64-1.3.1-dev1-payload.zip')
+          with zipfile.ZipFile(payload) as z:
+              assert z.testzip() is None
+              pathlib.Path('eci/eci.dll').write_bytes(z.read('eci.dll'))
+          build(DEFAULT_OUTPUT, pathlib.Path('eci/eci.dll'), refresh_dictionaries=False)
+          PY
+          for language in en de; do
+            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.1-dev1.nvda-addon"))' "$language"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eq131-addon-candidate
+          path: dist/reloq-c-synth-x64-1.3.1-dev1.nvda-addon
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+  addon-windows:
+    needs: addon
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: eq131-addon-candidate
+          path: candidate
+      - name: Test packaged native core and NVDA driver
+        shell: pwsh
+        run: |
+          $addon = (Get-Item candidate/reloq-c-synth-x64-1.3.1-dev1.nvda-addon).FullName
+          python -c "import zipfile; z=zipfile.ZipFile(r'$addon'); assert z.testzip() is None; z.extract('synthDrivers/reloqC/eci.dll', 'candidate')"
+          if ($LASTEXITCODE -ne 0) { throw 'Core extraction failed' }
+          $dll = (Get-Item candidate/synthDrivers/reloqC/eci.dll).FullName
+          foreach ($test in @('nvda/test_eci_ptbr_numbers.py','nvda/test_eci_equalizer.py','nvda/test_eci_inflection_tags.py','nvda/test_eci_wpm_setting.py')) {
+            python -B $test --library $dll
+            if ($LASTEXITCODE -ne 0) { throw "$test failed" }
+          }
+          $env:PYTHONPATH = 'addon;nvda'
+          python -B addon/test_synth_native.py --library $dll --addon $addon
+          if ($LASTEXITCODE -ne 0) { throw 'Packaged NVDA/native integration failed' }
+      - name: Verify live controls in actual NVDA
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download release-2026.3.1 --repo nvaccess/nvda --pattern nvda_2026.3.1.exe --dir candidate
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA download failed' }
+          if ((Get-FileHash candidate/nvda_2026.3.1.exe -Algorithm SHA256).Hash -ne '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052') { throw 'Unexpected NVDA installer' }
+          $portable = Join-Path $pwd 'portable-nvda'
+          $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
+          $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
+          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.3.1-dev1.nvda-addon --work settings-results
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA settings probe failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nvda-eq131-dev1
+          path: candidate/reloq-c-synth-x64-1.3.1-dev1.nvda-addon
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+  installer:
+    needs: native
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: eq131-native-*
+          path: dist
+          merge-multiple: true
+      - name: Verify accessible dialogs and build installer
+        shell: pwsh
+        run: |
+          Expand-Archive -Path 'dist/reloq-c-sapi5-x64-1.3.1-dev1-payload.zip' -DestinationPath 'test-x64'
+          python -B sapi/test_dialog_order.py --directory test-x64
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI settings dialog test failed' }
+          python -B sapi/test_equalizer_dialog.py --directory test-x64
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI equalizer dialog test failed' }
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          python -B sapi/build_installer.py --iscc $iscc
+          if ($LASTEXITCODE -ne 0) { throw 'Installer build failed' }
+      - name: Download 1.3.0 installer
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v1.3.0 --repo "$env:GITHUB_REPOSITORY" --pattern 'reloq-c-sapi5-1.3.0-setup.exe' --dir previous
+          if ($LASTEXITCODE -ne 0) { throw 'Previous installer download failed' }
+      - name: Test installation, update and speech for both architectures
+        shell: pwsh
+        run: |
+          $previous = (Get-Item previous/reloq-c-sapi5-1.3.0-setup.exe).FullName
+          $setup = (Get-Item dist/reloq-c-sapi5-1.3.1-dev1-setup.exe).FullName
+          $install = Join-Path $env:ProgramFiles 'ReLoq C\SAPI5'
+          $p = Start-Process $previous -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw 'Previous installation failed' }
+          $dictionary = Join-Path $install 'dictionaries\ENUmain.dic'
+          [IO.File]::AppendAllText($dictionary, "`r`n", [Text.Encoding]::ASCII)
+          $edited = (Get-FileHash $dictionary -Algorithm SHA256).Hash
+          $p = Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw 'Upgrade failed' }
+          if ((Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'Dictionary edit lost during upgrade' }
+          $registered = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D3F8BA6E-1C62-4B0D-8A33-3840B77376AC}_is1'
+          if ($registered.DisplayVersion -ne '1.3.1-dev1') { throw 'Incorrect version' }
+          foreach ($arch in @('x64','x86')) {
+            $test = if ($arch -eq 'x64') { Join-Path $install 'Test-SAPI.exe' } else { Join-Path $install 'x86\Test-SAPI.exe' }
+            & $test --all-native-rates
+            if ($LASTEXITCODE -ne 0) { throw "SAPI $arch speech test failed" }
+          }
+          $p = Start-Process (Join-Path $install 'unins000.exe') -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw 'Uninstall failed' }
+          if (!(Test-Path $dictionary) -or (Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'User dictionary lost during uninstall' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sapi-eq131-dev1
+          path: |
+            dist/reloq-c-sapi5-1.3.1-dev1-setup.exe
+            dist/reloq-c-sapi5-1.3.1-dev1-installer.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+  android:
+    needs: dictionaries
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: eq131-dictionaries
+          path: data/community
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Install official SDK and NDK tools
+        run: sdkmanager 'ndk;30.0.16248370' 'platforms;android-35' 'build-tools;35.0.1'
+      - name: Check Android settings and localizations
+        run: |
+          python3 android/test_versioning.py
+          python3 android/test_translations.py
+          python3 android/test_settings.py --settings-only --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar"
+          python3 android/test_direct_boot.py --java-home "$JAVA_HOME"
+      - name: Download 1.3.0 APK for replacement verification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download v1.3.0 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-android-arm64-1.3.0.apk' --dir previous
+      - name: Build and verify ARM64 APK
+        run: python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --replace-from previous/reloq-c-android-arm64-1.3.0.apk --jobs 2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-eq131-dev1
+          path: dist/reloq-c-android-arm64-1.3.1-dev1.apk
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+  android-native-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build host speech core
+        run: make -C eci -j2 libreloq_eci.so PROVIDER_LTO=-flto=2
+      - name: Compare JNI and direct native audio
+        run: python3 android/test_native_transport.py --java-home "$JAVA_HOME" --library eci/libreloq_eci.so

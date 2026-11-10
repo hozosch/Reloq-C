@@ -97,4 +97,20 @@
     <string name="speed_wpm_error">请输入每分钟 1 到 6000 个词。</string>
     <string name="pitch_scale">手动音高刻度：</string>
     <string name="pitch_eci_mode">ECI 音高 (0–100)</string>
+    <string name="equalizer">均衡器</string>
+    <string name="equalizer_enabled">启用均衡器</string>
+    <string name="equalizer_preset">均衡器预设</string>
+    <string name="equalizer_low">低音 (dB)</string>
+    <string name="equalizer_mid">中音 (dB)</string>
+    <string name="equalizer_high">高音 (dB)</string>
+    <string-array name="equalizer_presets"><item>均衡</item><item>温暖</item><item>明亮</item><item>柔和</item><item>自定义</item></string-array>
+    <string name="equalizer_advanced">高级滤波器…</string>
+    <string name="filter_title">高级均衡器滤波器</string>
+    <string name="filter_select">滤波器</string>
+    <string name="filter_name">滤波器</string>
+    <string name="filter_enabled">启用滤波器</string>
+    <string name="filter_frequency">频率 (Hz)</string>
+    <string name="filter_gain">增益 (dB)</string>
+    <string name="filter_width" formatted="false">带宽（八度百分比）</string>
+    <string name="filter_nyquist" formatted="false">100% 为一个八度。达到或超过采样率一半的频率不会生效。</string>
 </resources>

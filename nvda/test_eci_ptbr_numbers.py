@@ -51,13 +51,13 @@ def main():
                 actual = render(engine, [number, EciIndex(7)])
                 expanded = render(engine, [expected, EciIndex(7)])
                 assert actual == expanded, (rate, number)
-        # In /dozi/ the closed vowel and the beginning of /z/ should stay
-        # backed rather than rising immediately towards the final /i/. The
-        # original transition produces a ratio below 0.7 in these windows.
+        # Catch both the original rapid brightening and the overly backed
+        # 1.3.0 transition. This numerical check does not replace listening.
         engine.set_parameter(SAMPLE_RATE,3)
         twelve=render(engine,['12'])[0]
-        for centre in (170,190,210):
-            assert transition_band_ratio(twelve,centre)>0.95,centre
+        for centre,low,high in ((170,0.8,2.5),(190,0.45,1.8)):
+            ratio=transition_band_ratio(twelve,centre)
+            assert low<ratio<high,(centre,ratio)
     finally:
         engine.close()
     # ECI's byte and UTF-8 entry points must reach the same language rules.

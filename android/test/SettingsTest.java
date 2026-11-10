@@ -53,7 +53,8 @@ public final class SettingsTest {
             s.androidRate=false;s.speedWpmMode=false;s.manualSpeed=87;s.manualWpm=280;s.androidPitch=false;s.manualPitch=43;
             s.gender=1;s.head=22;s.inflection=65;s.roughness=12;s.breathiness=60;
             s.volume=80;s.rate=6;s.pauses=2;s.tags=true;
-            int[] expected={1,22,43,65,12,60,80,87,6,2,1,0,0,0,0,0};
+            int[] expected={1,22,43,65,12,60,80,87,6,2,1,0,0,0,0,0,12,12,12,
+                0,125,12,100,0,500,12,100,0,1200,12,100,0,3000,12,100,0,6000,12,100};
             require(Arrays.equals(s.controls(20,20),expected));
             require(Arrays.equals(s.controls(400,400),expected));
             Map<String,Object> values=new HashMap<>();SharedPreferences p=memory(values);
@@ -79,6 +80,18 @@ public final class SettingsTest {
         Map<String,Object> stored=new HashMap<>();Preferences.save(memory(stored),0,options);
         VoiceSettings restored=Preferences.read(memory(stored),0);
         require(!restored.abbreviations&&restored.prediction&&restored.originalQuestions&&restored.mellowMode&&restored.controls(100,100)[11]==1&&restored.controls(100,100)[12]==1&&restored.controls(100,100)[13]==1&&restored.controls(100,100)[14]==1);
+        options.eqEnabled=true;options.eqPreset=1;options.eqLow=-3;options.eqMid=2;options.eqHigh=4;
+        options.eqFilters[0]=new int[]{1,777,6,50};options.eqFilters[4]=new int[]{1,22000,-4,150};
+        Preferences.save(memory(stored),0,options);restored=Preferences.read(memory(stored),3);
+        int[] equalized=restored.controls(100,100);
+        require(restored.eqEnabled&&restored.eqPreset==1&&restored.eqLow==-3&&restored.eqMid==2&&restored.eqHigh==4);
+        require(equalized[16]==16&&equalized[17]==12&&equalized[18]==11);
+        require(equalized[19]==1&&equalized[20]==777&&equalized[21]==18&&equalized[22]==50);
+        require(equalized[35]==1&&equalized[36]==22000&&equalized[37]==8&&equalized[38]==150);
+        restored.eqPreset=4;equalized=restored.controls(100,100);
+        require(equalized[16]==9&&equalized[17]==14&&equalized[18]==16);
+        restored.eqEnabled=false;equalized=restored.controls(100,100);
+        require(equalized[16]==12&&equalized[17]==12&&equalized[18]==12&&equalized[19]==0&&equalized[35]==0);
         double f0=VoiceSettings.pitchHz(65),f2=VoiceSettings.pitchHz(VoiceSettings.androidPitch(65,200));
         require(Math.abs(f2/f0-2)<.04);
         require(VoiceSettings.androidPitch(65,1000)==100&&VoiceSettings.androidPitch(65,1)==0);
@@ -99,6 +112,8 @@ public final class SettingsTest {
         privateData.put("voice.5.pitch",48);privateData.put("voice.5.volume",71);
         privateData.put("voice.5.pitchHertz",151);privateData.put("voice.5.pitchHertzMode",true);
         privateData.put("manualSpeed",87);privateData.put("manualWpm",210);privateData.put("speedWpmMode",true);
+        privateData.put("eqEnabled",true);privateData.put("eqFilter.0.enabled",true);
+        privateData.put("eqFilter.0.frequency",777);privateData.put("eqFilter.0.gain",6);privateData.put("eqFilter.0.width",50);
         privateData.put("dictionarySnapshot","/private/dictionary");
         privateData.put("dictionarySources","content://private/words");
         privateData.put("communityCommit","secret");privateData.put("voice.99.pitch",33);
@@ -106,12 +121,13 @@ public final class SettingsTest {
         Map<String,Object> bootData=new HashMap<>();bootData.put("stalePrivate", "remove");
         BootPreferences.mirror(memory(privateData),memory(bootData));
         require(bootData.get("manualSpeed").equals(87)&&bootData.get("manualWpm").equals(210)&&bootData.get("speedWpmMode").equals(true));
-        require(bootData.size()==13&&bootData.get("profile").equals(5)&&bootData.get("language").equals(1)&&
+        require(bootData.size()==18&&bootData.get("profile").equals(5)&&bootData.get("language").equals(1)&&
             bootData.get("androidVoice").equals(false)&&bootData.get("originalQuestions").equals(true)&&bootData.get("mellowMode").equals(true)&&
             bootData.get("dictionaryRequired").equals(true)&&bootData.get("voice.5.pitch").equals(48)&&bootData.get("voice.5.volume").equals(71)&&
             bootData.get("voice.5.pitchHertz").equals(151)&&bootData.get("voice.5.pitchHertzMode").equals(true));
         VoiceSettings bootVoice=Preferences.read(memory(bootData),5);
         require(bootVoice.manualPitch==48&&bootVoice.pitchHertz==151&&bootVoice.pitchHertzMode&&bootVoice.volume==71&&bootVoice.rate==1&&bootVoice.originalQuestions&&bootVoice.mellowMode&&bootVoice.speedWpmMode&&bootVoice.manualWpm==210&&bootVoice.manualSpeed==87);
+        require(bootVoice.eqEnabled&&Arrays.equals(bootVoice.eqFilters[0],new int[]{1,777,6,50}));
         privateData.put("voice.5.pitch",52);privateData.remove("voice.5.volume");
         BootPreferences.mirror(memory(privateData),memory(bootData));
         require(bootData.get("voice.5.pitch").equals(52)&&!bootData.containsKey("voice.5.volume"));

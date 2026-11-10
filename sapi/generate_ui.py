@@ -25,7 +25,10 @@ def generate():
         assert all(isinstance(v, str) and v for v in values)
         for key, value, expected in zip(keys, values, formats):
             actual = re.findall(r'%(?:ls|08lX)', value)
-            assert actual == expected and value.count('%') == len(actual), (lang, key, 'format arguments')
+            # These two labels are displayed directly, never as printf
+            # formats, so their percent signs are literal units.
+            literal_percent = key in ('FILTER_WIDTH', 'FILTER_NYQUIST')
+            assert actual == expected and (literal_percent or value.count('%') == len(actual)), (lang, key, 'format arguments')
         out.append('    {0x%x,{%s}},' % (LANGS[lang], ','.join('L' + json.dumps(v, ensure_ascii=False) for v in values)))
     return '\n'.join(out + ['};', '''static const struct sapi_ui *sapi_ui_for_language(unsigned language)
 {

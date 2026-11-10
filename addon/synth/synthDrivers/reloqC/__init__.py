@@ -34,7 +34,7 @@ from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciPitchHz,
                                 NATIVE_SPEED, NATIVE_WPM, NATIVE_PITCH, NATIVE_INFLECTION, PROCESS_TAGS,
                                 PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATES,
                                 DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE,
-                                EQ_LOW, EQ_MID, EQ_HIGH, PITCH_HZ)
+                                EQ_LOW, EQ_MID, EQ_HIGH, EQ_FILTER_BASE, EQ_FILTER_COUNT, EQ_FILTER_STRIDE, PITCH_HZ)
 from ._reloq_eci_transport import DictionaryStartupError, EciTextTransport
 from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries
 from ._reloq_nvda_dicts import ImportedDictionaries
@@ -47,6 +47,7 @@ from ._speech_tags import EciTagCommand, SegmentationGuard, NativeDictionaryWord
 DLL = Path(__file__).with_name("eci.dll")
 # The last preset uses the user's independent saved values.
 EQ_PRESETS = ((0, 0, 0), (4, 0, -1), (-1, 0, 4), (0, -1, -4))
+EQ_FILTER_FREQUENCIES = (125, 500, 1200, 3000, 6000)
 
 
 def _native_speed(percent, boost=False):
@@ -243,6 +244,12 @@ class SynthDriver(BaseSynthDriver):
         NumericDriverSetting("_eqCustomLow", _("Equalizer bass"), defaultVal=0, minVal=-12, maxVal=12),
         NumericDriverSetting("_eqCustomMid", _("Equalizer midrange"), defaultVal=0, minVal=-12, maxVal=12),
         NumericDriverSetting("_eqCustomHigh", _("Equalizer treble"), defaultVal=0, minVal=-12, maxVal=12),
+        *(setting for i, frequency in enumerate(EQ_FILTER_FREQUENCIES, 1) for setting in (
+            BooleanDriverSetting(f"_eqFilter{i}Enabled", _("Equalizer filter enabled"), defaultVal=False),
+            NumericDriverSetting(f"_eqFilter{i}Frequency", _("Equalizer filter frequency"), defaultVal=frequency, minVal=20, maxVal=24000),
+            NumericDriverSetting(f"_eqFilter{i}Gain", _("Equalizer filter gain"), defaultVal=0, minVal=-12, maxVal=12),
+            NumericDriverSetting(f"_eqFilter{i}Width", _("Equalizer filter bandwidth"), defaultVal=100, minVal=10, maxVal=400),
+        )),
         BooleanDriverSetting("_wordSegmentation", _("Split unfamiliar English words"), defaultVal=False),
         BooleanDriverSetting("_camelCase", _("Split camel case"), defaultVal=False),
     )
@@ -288,7 +295,12 @@ class SynthDriver(BaseSynthDriver):
         self._eqEnabled = False
         self._eqPreset = 0
         self._eqCustomLow = self._eqCustomMid = self._eqCustomHigh = 0
-        self._applied_eq = (12, 12, 12)
+        for i, frequency in enumerate(EQ_FILTER_FREQUENCIES, 1):
+            setattr(self, f"_eqFilter{i}Enabled", False)
+            setattr(self, f"_eqFilter{i}Frequency", frequency)
+            setattr(self, f"_eqFilter{i}Gain", 0)
+            setattr(self, f"_eqFilter{i}Width", 100)
+        self._applied_eq = (12, 12, 12) + tuple(v for frequency in EQ_FILTER_FREQUENCIES for v in (0,frequency,12,100))
         self._voiceTags = False
         self._wordSegmentation = False
         self._camelCase = False
@@ -969,7 +981,11 @@ class SynthDriver(BaseSynthDriver):
             values = ((self._eqCustomLow, self._eqCustomMid, self._eqCustomHigh)
                       if self._eqPreset == 4 else EQ_PRESETS[self._eqPreset])
             wanted = tuple(value + 12 for value in values) if self._eqEnabled else (12, 12, 12)
-            for parameter, old, value in zip((EQ_LOW, EQ_MID, EQ_HIGH), self._applied_eq, wanted):
+            for enabled, frequency, gain, width in self.equalizer_filters():
+                wanted += (int(enabled and self._eqEnabled), frequency, gain + 12, width)
+            parameters = (EQ_LOW, EQ_MID, EQ_HIGH) + tuple(range(EQ_FILTER_BASE,
+                EQ_FILTER_BASE + EQ_FILTER_COUNT * EQ_FILTER_STRIDE))
+            for parameter, old, value in zip(parameters, self._applied_eq, wanted):
                 if value != old:
                     self._transport.set_parameter(parameter, value)
             self._applied_eq = wanted
@@ -982,6 +998,24 @@ class SynthDriver(BaseSynthDriver):
         with self._submit_lock:
             self._eqEnabled, self._eqPreset = enabled, preset
             self._eqCustomLow, self._eqCustomMid, self._eqCustomHigh = low, mid, high
+            self._sync_equalizer()
+
+    def equalizer_filters(self):
+        return tuple(tuple(getattr(self, f"_eqFilter{i}{field}") for field in
+                     ("Enabled", "Frequency", "Gain", "Width"))
+                     for i in range(1, EQ_FILTER_COUNT + 1))
+
+    def configure_equalizer_filters(self, filters):
+        filters = tuple(tuple(values) for values in filters)
+        if len(filters) != EQ_FILTER_COUNT or any(len(row) != 4 or type(row[0]) is not bool or
+                any(type(value) is not int for value in row[1:]) or
+                not 20 <= row[1] <= 24000 or not -12 <= row[2] <= 12 or
+                not 10 <= row[3] <= 400 for row in filters):
+            raise ValueError("invalid equalizer filter")
+        with self._submit_lock:
+            for i, values in enumerate(filters, 1):
+                for field, value in zip(("Enabled", "Frequency", "Gain", "Width"), values):
+                    setattr(self, f"_eqFilter{i}{field}", value)
             self._sync_equalizer()
 
     def _get_volume(self):

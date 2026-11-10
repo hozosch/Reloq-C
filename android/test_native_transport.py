@@ -55,7 +55,7 @@ def main():
                 native_voice=True)
             try:
                 if dictionaries!="-":with_engine.set_dictionary_path(dictionaries)
-                keys=(0x1010,0x100d,0x1008,0x1009,0x100e,0x100f,0x100a,0x1007,5,0x100c,0x100b,3,11,0x1015,0x1016,0x1017)
+                keys=(0x1010,0x100d,0x1008,0x1009,0x100e,0x100f,0x100a,0x1007,5,0x100c,0x100b,3,11,0x1015,0x1016,0x1017,0x1018,0x1019,0x101a,*range(0x1020,0x1034))
                 for parameter,value in zip(keys,map(int,controls.split(','))):
                     if parameter==0x1008 and value>1000:
                         with_engine.set_parameter(PITCH_HZ,value-1000)

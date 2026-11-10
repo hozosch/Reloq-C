@@ -7,6 +7,8 @@
 #endif
 #include <stddef.h>
 struct sapi_language {int dialect;WORD lcid;const WCHAR *name,*locale,*sample;};
+#define SAPI_EQ_FILTER_COUNT 5
+struct sapi_eq_filter {DWORD enabled,frequency,gain,width;};
 struct sapi_settings {
     DWORD schema,profile,pitch,inflection,head,roughness,breathiness,gender;
     DWORD rate,pauses,tags,abbreviations,prediction,dictionaries,boost;
@@ -14,10 +16,20 @@ struct sapi_settings {
     DWORD original_questions,mellow_mode,pitch_hz,pitch_hz_enabled;
     DWORD speed_override,speed_value,pitch_override,volume_override,volume_value;
     DWORD speed_wpm_enabled,speed_wpm;
+    /* Encoded gains use 12 as 0 dB; custom values survive preset changes. */
+    DWORD eq_enabled,eq_preset,eq_low,eq_mid,eq_high;
+    struct sapi_eq_filter eq_filters[SAPI_EQ_FILTER_COUNT];
 };
 #ifndef RELOQ_SAPI_TEST_HOST
-_Static_assert(sizeof(struct sapi_settings)==2152,"SAPI settings must be compatible across x86/x64");
+_Static_assert(sizeof(struct sapi_settings)==2252,"SAPI settings must be compatible across x86/x64");
 #endif
+static inline void sapi_equalizer_gains(const struct sapi_settings *s,int result[3])
+{
+    static const int presets[4][3]={{12,12,12},{16,12,11},{11,12,16},{12,11,8}};
+    if(!s->eq_enabled){result[0]=result[1]=result[2]=12;return;}
+    if(s->eq_preset<4){for(int i=0;i<3;++i)result[i]=presets[s->eq_preset][i];return;}
+    result[0]=(int)s->eq_low;result[1]=(int)s->eq_mid;result[2]=(int)s->eq_high;
+}
 extern HMODULE sapi_module;
 extern volatile LONG sapi_objects,sapi_locks;
 const struct sapi_language *sapi_language_at(size_t);

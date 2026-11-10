@@ -183,6 +183,7 @@ struct reloq_eci_engine {
     int process_tags;
     int dictionary_disabled,phrase_prediction,original_questions,mellow_mode;
     int eq_low,eq_mid,eq_high;
+    int eq_filters[RELOQ_EQ_FILTER_COUNT][RELOQ_ECI_EQ_FILTER_STRIDE];
     int pause_mode;
     int head_size,roughness,breathiness,gender;
     int german_glide_opening,german_glide_backness,german_glide_softness;
@@ -289,6 +290,14 @@ static void eci_record_error(struct reloq_eci_engine *e,unsigned flag)
 static int eci_refuse(struct reloq_eci_engine *e,int result)
 {
     eci_record_error(e,e&&epoch_get(&e->busy)?0x800:0x80);return result;
+}
+static void reset_equalizer_filters(struct reloq_eci_engine *e)
+{
+    static const int frequencies[RELOQ_EQ_FILTER_COUNT]={125,500,1200,3000,6000};
+    for(int i=0;i<RELOQ_EQ_FILTER_COUNT;++i){
+        e->eq_filters[i][0]=0;e->eq_filters[i][1]=frequencies[i];
+        e->eq_filters[i][2]=12;e->eq_filters[i][3]=100;
+    }
 }
 static void eci_error(struct reloq_eci_engine *e,int result)
 {
@@ -676,6 +685,7 @@ ECIHand ECICALL eciNewEx(int language)
     e->german_glide_backness=45;
     e->german_glide_softness=45;
     e->eq_low=e->eq_mid=e->eq_high=12;
+    reset_equalizer_filters(e);
     e->generic_rate = 50;
     e->generic_pitch = 50;
     e->generic_volume = 100;
@@ -1358,6 +1368,10 @@ int ECICALL eciGetParam(ECIHand handle, int parameter)
 {
     struct reloq_eci_engine *e = handle;
     if (!e || epoch_get(&e->busy)) return eci_refuse(e,-1);
+    if(parameter>=RELOQ_ECI_EQ_FILTER_BASE&&parameter<RELOQ_ECI_EQ_FILTER_BASE+RELOQ_EQ_FILTER_COUNT*RELOQ_ECI_EQ_FILTER_STRIDE){
+        int eq_index=parameter-RELOQ_ECI_EQ_FILTER_BASE;
+        return e->eq_filters[eq_index/RELOQ_ECI_EQ_FILTER_STRIDE][eq_index%RELOQ_ECI_EQ_FILTER_STRIDE];
+    }
     switch (parameter) {
     case RELOQ_ECI_SYNTH_MODE: return e->synth_mode;
     case RELOQ_ECI_VOICE_MODE: return e->voice_mode;
@@ -1404,6 +1418,14 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
     if (!e || epoch_get(&e->busy)) return eci_refuse(e,-1);
     int old = eciGetParam(handle, parameter);
     if (old < 0) return eci_refuse(e,-1);
+    if(parameter>=RELOQ_ECI_EQ_FILTER_BASE&&parameter<RELOQ_ECI_EQ_FILTER_BASE+RELOQ_EQ_FILTER_COUNT*RELOQ_ECI_EQ_FILTER_STRIDE){
+        int eq_index=parameter-RELOQ_ECI_EQ_FILTER_BASE;
+        int field=eq_index%RELOQ_ECI_EQ_FILTER_STRIDE;
+        if((field==0&&(value<0||value>1))||(field==1&&(value<20||value>24000))||
+           (field==2&&(value<0||value>24))||(field==3&&(value<10||value>400)))return eci_refuse(e,-1);
+        e->eq_filters[eq_index/RELOQ_ECI_EQ_FILTER_STRIDE][field]=value;
+        eci_error(e,RELOQ_ECI_OK);return old;
+    }
     switch (parameter) {
     case RELOQ_ECI_GERMAN_GLIDE_OPENING:
         if(value<0 || value>100)return eci_refuse(e,-1);
@@ -1681,8 +1703,13 @@ static int send_pcm(void *context, const int16_t *pcm, size_t samples)
                 e->output[i] = (short)lround((double)e->output[i] * gain);
         }
         if(!b->equalizer_initialized) {
-            if(reloq_equalizer_init(&b->equalizer,sample_hz(e->sample_rate_code),
-                e->eq_low-12,e->eq_mid-12,e->eq_high-12))return -1;
+            struct reloq_equalizer_peak peaks[RELOQ_EQ_FILTER_COUNT];
+            for(int i=0;i<RELOQ_EQ_FILTER_COUNT;++i){
+                peaks[i]=(struct reloq_equalizer_peak){e->eq_filters[i][0],e->eq_filters[i][1],
+                    e->eq_filters[i][2]-12,e->eq_filters[i][3]};
+            }
+            if(reloq_equalizer_init_extended(&b->equalizer,sample_hz(e->sample_rate_code),
+                e->eq_low-12,e->eq_mid-12,e->eq_high-12,peaks))return -1;
             b->equalizer_initialized=1;
         }
         reloq_equalizer_process(&b->equalizer,e->output,count);

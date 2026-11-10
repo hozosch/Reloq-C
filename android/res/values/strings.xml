@@ -98,4 +98,20 @@
     <string name="speed_wpm_error">Enter a value from 1 to 6000 words per minute.</string>
     <string name="pitch_scale">Manual pitch scale:</string>
     <string name="pitch_eci_mode">ECI pitch (0–100)</string>
+    <string name="equalizer">Equalizer</string>
+    <string name="equalizer_enabled">Enable equalizer</string>
+    <string name="equalizer_preset">Equalizer preset</string>
+    <string name="equalizer_low">Bass (dB)</string>
+    <string name="equalizer_mid">Midrange (dB)</string>
+    <string name="equalizer_high">Treble (dB)</string>
+    <string-array name="equalizer_presets"><item>Balanced</item><item>Warm</item><item>Bright</item><item>Smooth</item><item>Custom</item></string-array>
+    <string name="equalizer_advanced">Advanced filters…</string>
+    <string name="filter_title">Advanced equalizer filters</string>
+    <string name="filter_select">Filter</string>
+    <string name="filter_name">Filter</string>
+    <string name="filter_enabled">Enable filter</string>
+    <string name="filter_frequency">Frequency (Hz)</string>
+    <string name="filter_gain">Gain (dB)</string>
+    <string name="filter_width" formatted="false">Bandwidth (% of octave)</string>
+    <string name="filter_nyquist" formatted="false">100% is one octave. Frequencies at or above half the sample rate are inactive.</string>
 </resources>

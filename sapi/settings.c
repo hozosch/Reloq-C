@@ -17,8 +17,11 @@ void sapi_settings_profile(struct sapi_settings *s,unsigned profile)
     s->roughness=sapi_anatomy[profile][4];s->breathiness=sapi_anatomy[profile][5];
 }
 void sapi_settings_default(struct sapi_settings *s)
-{memset(s,0,sizeof *s);s->schema=1;sapi_settings_profile(s,0);s->rate=1;s->abbreviations=1;s->pitch_hz=150;
-  s->speed_value=60;s->volume_value=100;s->speed_wpm=180;}
+{static const DWORD frequencies[SAPI_EQ_FILTER_COUNT]={125,500,1200,3000,6000};
+ memset(s,0,sizeof *s);s->schema=1;sapi_settings_profile(s,0);s->rate=1;s->abbreviations=1;s->pitch_hz=150;
+ s->speed_value=60;s->volume_value=100;s->speed_wpm=180;s->eq_low=s->eq_mid=s->eq_high=12;
+ for(int i=0;i<SAPI_EQ_FILTER_COUNT;++i){s->eq_filters[i].frequency=frequencies[i];
+     s->eq_filters[i].gain=12;s->eq_filters[i].width=100;}}
 int sapi_module_path(WCHAR *path,size_t capacity,const WCHAR *name)
 {
     DWORD n=GetModuleFileNameW(sapi_module,path,(DWORD)capacity);
@@ -46,6 +49,8 @@ static void key_name(int dialect,WCHAR key[128])
 {swprintf(key,128,L"Software\\ReLoq C\\SAPI5\\Voices\\%08X",(unsigned)dialect);}
 static int valid(const struct sapi_settings *s)
 {
+    for(int i=0;i<SAPI_EQ_FILTER_COUNT;++i){const struct sapi_eq_filter *f=s->eq_filters+i;
+        if(f->enabled>1||f->frequency<20||f->frequency>24000||f->gain>24||f->width<10||f->width>400)return 0;}
     return s->schema==1&&s->profile<8&&s->pitch<=100&&s->inflection<=100&&s->head<=100&&
         s->roughness<=100&&s->breathiness<=100&&s->gender<=1&&s->rate<7&&s->pauses<3&&
         s->tags<2&&s->abbreviations<2&&s->prediction<2&&s->dictionaries<2&&s->boost<2&&s->original_questions<2&&s->mellow_mode<2&&
@@ -53,6 +58,7 @@ static int valid(const struct sapi_settings *s)
         s->speed_override<2&&s->speed_value<=250&&s->pitch_override<2&&
         s->volume_override<2&&s->volume_value<=100&&
         s->speed_wpm_enabled<2&&s->speed_wpm>=1&&s->speed_wpm<=6000&&
+        s->eq_enabled<2&&s->eq_preset<5&&s->eq_low<=24&&s->eq_mid<=24&&s->eq_high<=24&&
         wmemchr(s->directory,0,sizeof s->directory/sizeof *s->directory)!=NULL;
 }
 static const WCHAR root[]=L"Software\\ReLoq C\\SAPI5";
@@ -67,7 +73,9 @@ static HRESULT read_binary(const WCHAR *key,const WCHAR *name,struct sapi_settin
     if((size!=sizeof input&&size!=offsetof(struct sapi_settings,original_questions)&&
         size!=offsetof(struct sapi_settings,mellow_mode)&&size!=offsetof(struct sapi_settings,pitch_hz)&&
         size!=offsetof(struct sapi_settings,speed_override)&&
-        size!=offsetof(struct sapi_settings,speed_wpm_enabled))||!valid(&input))
+        size!=offsetof(struct sapi_settings,speed_wpm_enabled)&&
+        size!=offsetof(struct sapi_settings,eq_enabled)&&
+        size!=offsetof(struct sapi_settings,eq_filters))||!valid(&input))
         return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
     *out=input;return S_OK;
 }

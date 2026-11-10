@@ -39,7 +39,7 @@ def main():
     module('gui.settingsDialogs',SettingsPanel=SettingsPanel,
            NVDASettingsDialog=type('NVDASettingsDialog',(),{'categoryClasses':[]}))
     module('ui',message=lambda message:None)
-    wx=module('wx',StaticText=Widget,CheckBox=Widget,SpinCtrl=Widget,Choice=Widget,
+    wx=module('wx',Dialog=Widget,StaticText=Widget,CheckBox=Widget,SpinCtrl=Widget,Choice=Widget,
               ListBox=Widget,BoxSizer=Widget,Button=Widget,CallAfter=lambda fn,*a:fn(*a))
     for name in ('ALL','LEFT','RIGHT','BOTTOM','EXPAND','HORIZONTAL','EVT_CHECKBOX',
                  'EVT_SPINCTRL','EVT_TEXT','EVT_BUTTON','EVT_WINDOW_DESTROY','EVT_CHOICE'):
@@ -52,12 +52,15 @@ def main():
         name='reloqC';communityDictionaries=False;_pitchInHertz=False;_pitchHertz=150
         _rateInWpm=False;_rateWpm=150
         _eqEnabled=False;_eqPreset=0;_eqCustomLow=0;_eqCustomMid=0;_eqCustomHigh=0
+        filters=tuple((False,f,0,100) for f in (125,500,1200,3000,6000))
         def dictionary_manager(self):return types.SimpleNamespace(sources=[],repository='community')
         def configure_pitch_hertz(self,enabled,value):self._pitchInHertz=enabled;self._pitchHertz=value
         def configure_rate_wpm(self,enabled,value):self._rateInWpm=enabled;self._rateWpm=value
         def configure_equalizer(self,enabled,preset,low,mid,high):
             self._eqEnabled,self._eqPreset=enabled,preset
             self._eqCustomLow,self._eqCustomMid,self._eqCustomHigh=low,mid,high
+        def equalizer_filters(self):return self.filters
+        def configure_equalizer_filters(self,filters):self.filters=tuple(tuple(row) for row in filters)
         def configure_dictionaries(self,sources,enabled,callback,repository):callback(None,{})
         def saveSettings(self):self.saved=True
     synth=Synth();module('synthDriverHandler',getSynth=lambda:synth)
@@ -110,6 +113,8 @@ def main():
     panel.eq_bands[1].SetValue(3);panel.on_equalizer_band(Widget())
     assert (synth._eqPreset,synth._eqCustomLow,synth._eqCustomMid,synth._eqCustomHigh)==(4,4,3,-1)
     panel.onSave()
+    changed_filters=list(synth.equalizer_filters());changed_filters[0]=(True,900,4,50)
+    synth.configure_equalizer_filters(changed_filters);panel.eq_dirty=True
     panel.eq_preset.SetSelection(2);panel.on_equalizer_preset(Widget())
     assert synth._eqPreset==2 and (synth._eqCustomLow,synth._eqCustomMid,synth._eqCustomHigh)==(4,3,-1)
     panel.eq_preset.SetSelection(4);panel.on_equalizer_preset(Widget())
@@ -117,6 +122,7 @@ def main():
     panel.eq_mode.SetValue(False);panel.on_equalizer_mode(Widget())
     panel.onDiscard()
     assert (synth._eqEnabled,synth._eqPreset,synth._eqCustomLow,synth._eqCustomMid,synth._eqCustomHigh)==(True,4,4,3,-1)
+    assert synth.equalizer_filters()[0]==(False,125,0,100)
     panel=plugin.EloquenceSettingsPanel();panel.makeSettings(Widget())
     # Incomplete typed input must not preview an invalid native value.
     panel.wpm_value.SetValue(0);panel.on_wpm_changed(Widget())

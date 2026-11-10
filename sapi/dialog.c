@@ -13,7 +13,9 @@ enum {LANGUAGE=100,PROFILE,GENDER,RATE,PAUSES,PITCH,INFLECTION,HEAD,ROUGH,BREATH
       DICT_SOURCE,DICT_DOWNLOAD,ORIGINAL_QUESTIONS,MELLOW_MODE,PITCH_HZ_MODE,PITCH_HZ_VALUE,
       OVERRIDES,OWN_RATE,OWN_RATE_VALUE,OWN_PITCH,OWN_VOLUME,OWN_VOLUME_VALUE,
       OWN_RATE_ECI,OWN_RATE_WPM,OWN_RATE_WPM_VALUE,OWN_PITCH_ECI,OWN_PITCH_HZ,
-      OWN_PITCH_VALUE,OWN_PITCH_HZ_VALUE,PITCH_LABEL,PITCH_GROUP_CONTROL};
+      OWN_PITCH_VALUE,OWN_PITCH_HZ_VALUE,PITCH_LABEL,PITCH_GROUP_CONTROL,
+      EQ_DIALOG,EQ_ENABLED,EQ_PRESET,EQ_LOW,EQ_MID,EQ_HIGH,EQ_ADVANCED,
+      FILTER_SELECT,FILTER_ENABLED,FILTER_FREQ,FILTER_GAIN,FILTER_WIDTH};
 #define DICTIONARY_DONE (WM_APP+31)
 struct dictionary_task {HWND window;HMODULE module;};
 static DWORD WINAPI dictionary_worker(void *parameter)
@@ -29,7 +31,7 @@ static DWORD WINAPI dictionary_worker(void *parameter)
     InterlockedDecrement(&sapi_objects);FreeLibraryAndExitThread(module,0);
     return 0;
 }
-struct dialog {struct sapi_settings s;int dialect,loading;BOOL shared;const struct sapi_ui *ui;};
+struct dialog {struct sapi_settings s;int dialect,loading,filter_index;BOOL shared;const struct sapi_ui *ui;};
 #define T(key) (d->ui->text[UI_##key])
 static void start_dictionary(HWND window,struct dialog *d)
 {
@@ -242,6 +244,158 @@ static void show_overrides(HWND parent,struct dialog *d)
     populate(parent,d);
     if(result==-1)SetDlgItemTextW(parent,STATUS,T(ERROR));
 }
+static void equalizer_enable(HWND w,const struct dialog *d)
+{
+    BOOL enabled=d->s.eq_enabled!=0;
+    EnableWindow(GetDlgItem(w,EQ_PRESET),enabled);
+    for(int id=EQ_LOW;id<=EQ_HIGH;++id){
+        EnableWindow(GetDlgItem(w,id),enabled);EnableWindow(GetDlgItem(w,id+200),enabled);
+    }
+}
+static void equalizer_display(HWND w,struct dialog *d)
+{
+    struct sapi_settings selected=d->s;selected.eq_enabled=1;
+    int values[3];sapi_equalizer_gains(&selected,values);
+    d->loading=1;
+    CheckDlgButton(w,EQ_ENABLED,d->s.eq_enabled?BST_CHECKED:BST_UNCHECKED);
+    SendDlgItemMessageW(w,EQ_PRESET,CB_SETCURSEL,d->s.eq_preset,0);
+    for(int i=0;i<3;++i)SetDlgItemInt(w,EQ_LOW+i,(UINT)(values[i]-12),TRUE);
+    d->loading=0;equalizer_enable(w,d);
+}
+static void equalizer_number(HWND w,int id,const WCHAR *title,int y)
+{
+    label(w,title,12,y,235);
+    /* ES_NUMBER excludes the minus sign, so accept signed text and validate it. */
+    HWND edit=control(w,L"EDIT",L"",WS_TABSTOP|ES_AUTOHSCROLL,id,260,y,80,24);
+    HWND spin=control(w,UPDOWN_CLASSW,L"",UDS_ALIGNRIGHT|UDS_SETBUDDYINT|UDS_ARROWKEYS|UDS_NOTHOUSANDS,id+200,0,0,0,0);
+    SendMessageW(spin,UDM_SETBUDDY,(WPARAM)edit,0);SendMessageW(spin,UDM_SETRANGE32,-12,12);
+}
+static void equalizer_commit(HWND w,struct dialog *d,BOOL restore_invalid)
+{
+    int values[3];BOOL valid=TRUE;
+    for(int i=0;i<3;++i){BOOL translated=FALSE;
+        values[i]=(int)GetDlgItemInt(w,EQ_LOW+i,&translated,TRUE);
+        if(!translated||values[i]<-12||values[i]>12)valid=FALSE;
+    }
+    if(valid){
+        struct sapi_settings selected=d->s;selected.eq_enabled=1;
+        int current[3];sapi_equalizer_gains(&selected,current);
+        if(values[0]==current[0]-12&&values[1]==current[1]-12&&values[2]==current[2]-12)return;
+        d->s.eq_low=(DWORD)(values[0]+12);d->s.eq_mid=(DWORD)(values[1]+12);d->s.eq_high=(DWORD)(values[2]+12);
+        d->s.eq_preset=4;SendDlgItemMessageW(w,EQ_PRESET,CB_SETCURSEL,4,0);persist(GetParent(w),d);
+    } else if(restore_invalid)equalizer_display(w,d);
+}
+static void filter_display(HWND w,struct dialog *d)
+{
+    const struct sapi_eq_filter *f=d->s.eq_filters+d->filter_index;
+    d->loading=1;
+    SendDlgItemMessageW(w,FILTER_SELECT,CB_SETCURSEL,d->filter_index,0);
+    CheckDlgButton(w,FILTER_ENABLED,f->enabled?BST_CHECKED:BST_UNCHECKED);
+    SetDlgItemInt(w,FILTER_FREQ,f->frequency,FALSE);
+    SetDlgItemInt(w,FILTER_GAIN,(UINT)((int)f->gain-12),TRUE);
+    SetDlgItemInt(w,FILTER_WIDTH,f->width,FALSE);
+    d->loading=0;
+}
+static void filter_commit(HWND w,struct dialog *d,int id,BOOL restore_invalid)
+{
+    struct sapi_eq_filter *f=d->s.eq_filters+d->filter_index;
+    BOOL translated=FALSE;int value=(int)GetDlgItemInt(w,id,&translated,id==FILTER_GAIN);
+    int low=id==FILTER_FREQ?20:id==FILTER_WIDTH?10:-12;
+    int high=id==FILTER_FREQ?24000:id==FILTER_WIDTH?400:12;
+    if(translated&&value>=low&&value<=high){
+        DWORD *target=id==FILTER_FREQ?&f->frequency:id==FILTER_WIDTH?&f->width:&f->gain;
+        DWORD encoded=(DWORD)(id==FILTER_GAIN?value+12:value);
+        if(*target!=encoded){*target=encoded;persist(GetParent(GetParent(w)),d);}
+    }else if(restore_invalid)filter_display(w,d);
+}
+static INT_PTR CALLBACK filter_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
+{
+    struct dialog *d=(struct dialog *)GetWindowLongPtrW(w,DWLP_USER);
+    if(message==WM_INITDIALOG){
+        d=(struct dialog *)lp;SetWindowLongPtrW(w,DWLP_USER,(LONG_PTR)d);d->loading=1;
+        SetWindowTextW(w,T(FILTER_TITLE));
+        RECT frame={0,0,620,255};AdjustWindowRectEx(&frame,(DWORD)GetWindowLongPtrW(w,GWL_STYLE),FALSE,0);
+        SetWindowPos(w,NULL,0,0,frame.right-frame.left,frame.bottom-frame.top,SWP_NOMOVE|SWP_NOZORDER);
+        combo(w,FILTER_SELECT,T(FILTER_SELECT),8);
+        for(int i=0;i<SAPI_EQ_FILTER_COUNT;++i){WCHAR text[96];swprintf(text,96,L"%ls %d",T(FILTER_NAME),i+1);add(w,FILTER_SELECT,text);}
+        check(w,FILTER_ENABLED,T(FILTER_ENABLED),38);
+        number(w,FILTER_FREQ,T(FILTER_FREQ),68);SendDlgItemMessageW(w,FILTER_FREQ+200,UDM_SETRANGE32,20,24000);
+        equalizer_number(w,FILTER_GAIN,T(FILTER_GAIN),98);
+        number(w,FILTER_WIDTH,T(FILTER_WIDTH),128);SendDlgItemMessageW(w,FILTER_WIDTH+200,UDM_SETRANGE32,10,400);
+        control(w,L"STATIC",T(FILTER_NYQUIST),0,-1,12,160,596,42);
+        control(w,L"BUTTON",T(CLOSE),WS_TABSTOP|BS_DEFPUSHBUTTON,IDOK,498,214,110,28);
+        filter_display(w,d);SetFocus(GetDlgItem(w,FILTER_SELECT));return FALSE;
+    }
+    if(!d)return FALSE;
+    if(message==WM_CLOSE||(message==WM_COMMAND&&(LOWORD(wp)==IDOK||LOWORD(wp)==IDCANCEL))){EndDialog(w,IDOK);return TRUE;}
+    if(message!=WM_COMMAND||d->loading)return FALSE;
+    int id=LOWORD(wp),notification=HIWORD(wp);
+    if(id==FILTER_SELECT&&notification==CBN_SELCHANGE){
+        int selected=(int)SendDlgItemMessageW(w,id,CB_GETCURSEL,0,0);
+        if(selected>=0&&selected<SAPI_EQ_FILTER_COUNT){d->filter_index=selected;filter_display(w,d);}return TRUE;
+    }
+    if(id==FILTER_ENABLED&&notification==BN_CLICKED){
+        d->s.eq_filters[d->filter_index].enabled=IsDlgButtonChecked(w,id)==BST_CHECKED;
+        persist(GetParent(GetParent(w)),d);return TRUE;
+    }
+    if((id==FILTER_FREQ||id==FILTER_GAIN||id==FILTER_WIDTH)&&
+        (notification==EN_CHANGE||notification==EN_KILLFOCUS)){
+        filter_commit(w,d,id,notification==EN_KILLFOCUS);return TRUE;
+    }
+    return FALSE;
+}
+static void show_filters(HWND parent,struct dialog *d)
+{
+    struct {DLGTEMPLATE dialog;WORD menu,window_class;WCHAR title[32];} templ={
+        .dialog={.style=WS_POPUP|WS_CAPTION|WS_SYSMENU|DS_MODALFRAME|DS_CENTER,.cx=335,.cy=150},
+        .title=L"Equalizer filters"};
+    if(DialogBoxIndirectParamW(sapi_module,&templ.dialog,parent,filter_proc,(LPARAM)d)==-1)
+        SetDlgItemTextW(GetParent(parent),STATUS,T(ERROR));
+}
+static INT_PTR CALLBACK equalizer_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
+{
+    struct dialog *d=(struct dialog *)GetWindowLongPtrW(w,DWLP_USER);
+    if(message==WM_INITDIALOG){
+        d=(struct dialog *)lp;SetWindowLongPtrW(w,DWLP_USER,(LONG_PTR)d);d->loading=1;
+        SetWindowTextW(w,T(EQ_TITLE));
+        RECT frame={0,0,620,220};AdjustWindowRectEx(&frame,(DWORD)GetWindowLongPtrW(w,GWL_STYLE),FALSE,0);
+        SetWindowPos(w,NULL,0,0,frame.right-frame.left,frame.bottom-frame.top,SWP_NOMOVE|SWP_NOZORDER);
+        check(w,EQ_ENABLED,T(EQ_ENABLE),8);combo(w,EQ_PRESET,T(EQ_PRESET),38);
+        add(w,EQ_PRESET,T(EQ_BALANCED));add(w,EQ_PRESET,T(EQ_WARM));add(w,EQ_PRESET,T(EQ_BRIGHT));
+        add(w,EQ_PRESET,T(EQ_SMOOTH));add(w,EQ_PRESET,T(EQ_CUSTOM));
+        equalizer_number(w,EQ_LOW,T(EQ_LOW),68);equalizer_number(w,EQ_MID,T(EQ_MID),98);
+        equalizer_number(w,EQ_HIGH,T(EQ_HIGH),128);
+        control(w,L"BUTTON",T(EQ_ADVANCED),WS_TABSTOP|BS_PUSHBUTTON,EQ_ADVANCED,350,128,258,24);
+        control(w,L"BUTTON",T(CLOSE),WS_TABSTOP|BS_DEFPUSHBUTTON,IDOK,498,178,110,28);
+        equalizer_display(w,d);SetFocus(GetDlgItem(w,EQ_ENABLED));return FALSE;
+    }
+    if(!d)return FALSE;
+    if(message==WM_CLOSE||(message==WM_COMMAND&&(LOWORD(wp)==IDOK||LOWORD(wp)==IDCANCEL))){
+        EndDialog(w,IDOK);return TRUE;
+    }
+    if(message!=WM_COMMAND||d->loading)return FALSE;
+    int id=LOWORD(wp),notification=HIWORD(wp);
+    if(id==EQ_ADVANCED&&notification==BN_CLICKED){show_filters(w,d);return TRUE;}
+    if(id==EQ_ENABLED&&notification==BN_CLICKED){
+        d->s.eq_enabled=IsDlgButtonChecked(w,id)==BST_CHECKED;equalizer_enable(w,d);persist(GetParent(w),d);return TRUE;
+    }
+    if(id==EQ_PRESET&&notification==CBN_SELCHANGE){
+        DWORD preset=(DWORD)SendDlgItemMessageW(w,id,CB_GETCURSEL,0,0);
+        if(preset<5){d->s.eq_preset=preset;equalizer_display(w,d);persist(GetParent(w),d);}return TRUE;
+    }
+    if(id>=EQ_LOW&&id<=EQ_HIGH&&(notification==EN_CHANGE||notification==EN_KILLFOCUS)){
+        equalizer_commit(w,d,notification==EN_KILLFOCUS);return TRUE;
+    }
+    return FALSE;
+}
+static void show_equalizer(HWND parent,struct dialog *d)
+{
+    struct {DLGTEMPLATE dialog;WORD menu,window_class;WCHAR title[32];} templ={
+        .dialog={.style=WS_POPUP|WS_CAPTION|WS_SYSMENU|DS_MODALFRAME|DS_CENTER,.cx=335,.cy=150},
+        .title=L"Equalizer"};
+    INT_PTR result=DialogBoxIndirectParamW(sapi_module,&templ.dialog,parent,equalizer_proc,(LPARAM)d);
+    if(result==-1)SetDlgItemTextW(parent,STATUS,T(ERROR));
+}
 static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
 {
     struct dialog *d=(struct dialog *)GetWindowLongPtrW(w,DWLP_USER);
@@ -264,6 +418,7 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         base_pitch(w,d,209);number(w,INFLECTION,T(INFLECTION),266);
         control(w,L"BUTTON",T(OVERRIDES),WS_TABSTOP|BS_PUSHBUTTON,OVERRIDES,350,266,258,24);
         number(w,HEAD,T(HEAD),293);number(w,ROUGH,T(ROUGH),320);number(w,BREATH,T(BREATH),347);
+        control(w,L"BUTTON",T(EQ_DIALOG),WS_TABSTOP|BS_PUSHBUTTON,EQ_DIALOG,350,293,258,24);
         check(w,TAGS,T(TAGS),377);check(w,ABBREVIATIONS,T(ABBREVIATIONS),400);
         check(w,PREDICTION,T(PREDICTION),423);check(w,ORIGINAL_QUESTIONS,T(ORIGINAL_QUESTIONS),446);
         check(w,DICTIONARIES,T(DICTIONARIES),469);check(w,BOOST,T(BOOST),492);
@@ -316,6 +471,7 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
     }
     if(id==DICT_DOWNLOAD&&notification==BN_CLICKED){start_dictionary(w,d);return TRUE;}
     if(id==OVERRIDES&&notification==BN_CLICKED){show_overrides(w,d);return TRUE;}
+    if(id==EQ_DIALOG&&notification==BN_CLICKED){show_equalizer(w,d);return TRUE;}
     if(id==OPEN_FOLDER){WCHAR path[2048];
         if(d->s.directory[0])wcscpy(path,d->s.directory);else if(!sapi_default_dictionary_path(path,2048))return TRUE;
         ShellExecuteW(w,L"open",path,NULL,NULL,SW_SHOWNORMAL);return TRUE;}

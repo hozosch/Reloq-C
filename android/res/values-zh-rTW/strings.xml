@@ -97,4 +97,20 @@
     <string name="speed_wpm_error">請輸入每分鐘 1 到 6000 個詞。</string>
     <string name="pitch_scale">手動音高刻度：</string>
     <string name="pitch_eci_mode">ECI 音高 (0–100)</string>
+    <string name="equalizer">等化器</string>
+    <string name="equalizer_enabled">啟用等化器</string>
+    <string name="equalizer_preset">等化器預設</string>
+    <string name="equalizer_low">低音 (dB)</string>
+    <string name="equalizer_mid">中音 (dB)</string>
+    <string name="equalizer_high">高音 (dB)</string>
+    <string-array name="equalizer_presets"><item>平衡</item><item>溫暖</item><item>明亮</item><item>柔和</item><item>自訂</item></string-array>
+    <string name="equalizer_advanced">進階濾波器…</string>
+    <string name="filter_title">進階等化器濾波器</string>
+    <string name="filter_select">濾波器</string>
+    <string name="filter_name">濾波器</string>
+    <string name="filter_enabled">啟用濾波器</string>
+    <string name="filter_frequency">頻率 (Hz)</string>
+    <string name="filter_gain">增益 (dB)</string>
+    <string name="filter_width" formatted="false">頻寬（八度百分比）</string>
+    <string name="filter_nyquist" formatted="false">100% 為一個八度。達到或超過取樣率一半的頻率不會生效。</string>
 </resources>

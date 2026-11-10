@@ -312,7 +312,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert PitchCommand in driver.supportedCommands
                 assert CharacterModeCommand in driver.supportedCommands
                 assert [setting.id for setting in driver.supportedSettings] == [
-                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode", "_pitchHertz", "_pitchInHertz", "_rateWpm", "_rateInWpm", "_eqEnabled", "_eqPreset", "_eqCustomLow", "_eqCustomMid", "_eqCustomHigh", "_wordSegmentation", "_camelCase"]
+                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode", "_pitchHertz", "_pitchInHertz", "_rateWpm", "_rateInWpm", "_eqEnabled", "_eqPreset", "_eqCustomLow", "_eqCustomMid", "_eqCustomHigh", *[f"_eqFilter{i}{field}" for i in range(1,6) for field in ("Enabled","Frequency","Gain","Width")], "_wordSegmentation", "_camelCase"]
                 assert driver.supportedSettings[0].availableInSettingsRing
                 assert not any(hasattr(driver, '_'+name) for name in
                                ('glideOpening', 'glideBackness', 'glideSoftness'))
@@ -929,6 +929,8 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         fresh.configure_pitch_hertz(True, 151)
                         fresh.configure_rate_wpm(True, 151)
                         fresh.configure_equalizer(True, 4, 6, -2, 3)
+                        filters=list(fresh.equalizer_filters());filters[0]=(True,777,6,50)
+                        filters[4]=(True,22000,-4,150);fresh.configure_equalizer_filters(filters)
                         fresh.saveSettings()
                         assert profile["speech"][fresh.name]["_pitchHertz"] == 151
                         assert profile["speech"][fresh.name]["_pitchInHertz"] is True
@@ -937,6 +939,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         assert profile["speech"][fresh.name]["_eqEnabled"] is True
                         assert profile["speech"][fresh.name]["_eqPreset"] == 4
                         assert profile["speech"][fresh.name]["_eqCustomMid"] == -2
+                        assert profile["speech"][fresh.name]["_eqFilter1Frequency"] == 777
                         parts = driver_module._parts([PitchCommand(multiplier=2), "A", PitchCommand(), "a"],
                             base_pitch=65, base_pitch_hz=151)
                         marks = [p.value for p in parts if isinstance(p, driver_module.EciPitchHz)]
@@ -959,6 +962,8 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         assert fresh._rateInWpm and fresh._rateWpm==151
                         assert (fresh._eqEnabled,fresh._eqPreset,fresh._eqCustomLow,
                                 fresh._eqCustomMid,fresh._eqCustomHigh)==(True,4,6,-2,3)
+                        assert fresh.equalizer_filters()[0]==(True,777,6,50)
+                        assert fresh.equalizer_filters()[4]==(True,22000,-4,150)
                         assert fresh._wordSegmentation and fresh._camelCase
                         fresh.voice = "2"
                         fresh.language = "en_US"
@@ -971,6 +976,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         assert dict(worker.parameters)[driver_module.NATIVE_WPM] == 151
                         assert [dict(worker.parameters)[p] for p in
                                 (driver_module.EQ_LOW,driver_module.EQ_MID,driver_module.EQ_HIGH)] == [18,10,15]
+                        assert [dict(worker.parameters)[driver_module.EQ_FILTER_BASE+i] for i in range(4)]==[1,777,18,50]
                         assert any(isinstance(p,driver_module.EciPitchHz) and p.value==151
                                    for p in worker.parts[-1])
                         fresh.pitch = 44

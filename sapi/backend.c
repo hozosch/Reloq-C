@@ -299,6 +299,7 @@ static HRESULT configure(struct sapi_backend *b,const struct job *j)
     if(!b->handle){b->handle=core.new_ex(b->dialect);if(!b->handle)return E_OUTOFMEMORY;
         core.callback(b->handle,callback,b);if(!core.buffer(b->handle,512,b->pcm))return E_FAIL;}
     if(!core.clear(b->handle))return E_FAIL;
+    int eq[3];sapi_equalizer_gains(s,eq);
     struct {int key,value;} parameters[]={
         {RELOQ_ECI_VOICE_MODE,1},{RELOQ_ECI_SYNTH_MODE,1},{RELOQ_ECI_SAMPLE_RATE,rate},
         {RELOQ_ECI_NATIVE_SPEED,job_speed(j,0)},
@@ -310,9 +311,15 @@ static HRESULT configure(struct sapi_backend *b,const struct job *j)
         {RELOQ_ECI_PAUSE_MODE,(int)s->pauses},{RELOQ_ECI_DICTIONARY,!s->abbreviations},
         {RELOQ_ECI_PHRASE_PREDICTION,(int)s->prediction},
         {RELOQ_ECI_ORIGINAL_QUESTIONS,(int)s->original_questions},
-        {RELOQ_ECI_MELLOW_MODE,(int)s->mellow_mode}};
+        {RELOQ_ECI_MELLOW_MODE,(int)s->mellow_mode},
+        {RELOQ_ECI_EQ_LOW,eq[0]},{RELOQ_ECI_EQ_MID,eq[1]},{RELOQ_ECI_EQ_HIGH,eq[2]}};
     for(size_t i=0;i<sizeof parameters/sizeof *parameters;++i)
         if(core.set(b->handle,parameters[i].key,parameters[i].value)==-1)return E_FAIL;
+    for(int i=0;i<SAPI_EQ_FILTER_COUNT;++i){const struct sapi_eq_filter *f=s->eq_filters+i;
+        int values[]={s->eq_enabled?(int)f->enabled:0,(int)f->frequency,(int)f->gain,(int)f->width};
+        for(int j=0;j<RELOQ_ECI_EQ_FILTER_STRIDE;++j)
+            if(core.set(b->handle,RELOQ_ECI_EQ_FILTER_BASE+i*RELOQ_ECI_EQ_FILTER_STRIDE+j,values[j])==-1)return E_FAIL;
+    }
     if(s->pitch_hz_enabled&&!set_hertz(b->handle,(int)s->pitch_hz))return E_FAIL;
     return dictionary(b,s);
 }

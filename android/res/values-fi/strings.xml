@@ -97,4 +97,20 @@
     <string name="speed_wpm_error">Anna arvo 1–6000 sanaa minuutissa.</string>
     <string name="pitch_scale">Manuaalisen äänenkorkeuden asteikko:</string>
     <string name="pitch_eci_mode">ECI-äänikorkeus (0–100)</string>
+    <string name="equalizer">Taajuuskorjain</string>
+    <string name="equalizer_enabled">Ota taajuuskorjain käyttöön</string>
+    <string name="equalizer_preset">Taajuuskorjaimen esiasetus</string>
+    <string name="equalizer_low">Bassot (dB)</string>
+    <string name="equalizer_mid">Keskiäänet (dB)</string>
+    <string name="equalizer_high">Diskantit (dB)</string>
+    <string-array name="equalizer_presets"><item>Tasapainoinen</item><item>Lämmin</item><item>Kirkas</item><item>Pehmeä</item><item>Mukautettu</item></string-array>
+    <string name="equalizer_advanced">Lisäsuodattimet…</string>
+    <string name="filter_title">Taajuuskorjaimen lisäsuodattimet</string>
+    <string name="filter_select">Suodatin</string>
+    <string name="filter_name">Suodatin</string>
+    <string name="filter_enabled">Ota suodatin käyttöön</string>
+    <string name="filter_frequency">Taajuus (Hz)</string>
+    <string name="filter_gain">Vahvistus (dB)</string>
+    <string name="filter_width" formatted="false">Leveys (% oktaavista)</string>
+    <string name="filter_nyquist" formatted="false">100 % vastaa yhtä oktaavia. Vähintään puolet näytteenottotaajuudesta olevat taajuudet eivät vaikuta.</string>
 </resources>

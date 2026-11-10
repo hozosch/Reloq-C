@@ -62,6 +62,14 @@ speed. Choose the pitch in ECI units 0–100 or in hertz; this is the same base
 pitch also shown in the main window. Volume uses 0–100. These settings affect only
 ReLoq C and can be enabled separately for each language or shared across them.
 
+Choose “Equalizer” for bass, midrange, treble and presets. The “Advanced
+filters” dialog edits one of five independently enabled filters at a time:
+frequency 20–24000 Hz, gain -12 to +12 dB, and bandwidth 10–400 percent
+of an octave (100 percent is one octave). Frequencies at or above half the
+synthesis sample rate are inactive but remain saved. Simple and advanced
+filters combine; switching off the equalizer bypasses them. Peaks are limited
+only when necessary. EQ settings follow the chosen language or shared settings.
+
 In the “Base pitch” group, “Use Hz” is followed by one value field. With the
 checkbox off the field edits the ECI value from 0 to 100; with it on the same
 field edits a whole-number base pitch from 1 to 24,000 Hz. Each scale retains

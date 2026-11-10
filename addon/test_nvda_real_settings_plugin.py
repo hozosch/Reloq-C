@@ -49,7 +49,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             import speech
             import synthDriverHandler
             import synthDrivers.reloqC as reloq
-            from globalPlugins.reloqCDictionaries import EloquenceSettingsPanel
+            from globalPlugins.reloqCDictionaries import EloquenceSettingsPanel, EqualizerFiltersDialog
 
             nvwave.WavePlayer=lambda *a,**k: Player()
             reloq.SynthDriver._make_player=staticmethod(lambda sample_rate: Player())
@@ -90,25 +90,51 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             check(tuple(section.get(key) for key in ('_pitchHertz','_rateWpm','_eqEnabled'))==before,
                   'preview changed saved settings')
 
+            dialog=EqualizerFiltersDialog(panel,synth)
+            failures=[]
+            def edit_filter():
+                try:
+                    check(dialog.selector.GetName() and all(c.GetName() for c in dialog.inputs),
+                          'accessible filter control names missing')
+                    dialog.enabled.SetValue(True);event(dialog.enabled,wx.wxEVT_CHECKBOX)
+                    for control,value in zip(dialog.inputs,(777,6,50)):
+                        control.SetValue(value);event(control,wx.wxEVT_SPINCTRL)
+                    check(synth.equalizer_filters()[0]==(True,777,6,50), 'advanced filter preview failed')
+                    dialog.on_ok(None)
+                except BaseException:
+                    failures.append(traceback.format_exc());dialog.EndModal(wx.ID_CANCEL)
+            wx.CallAfter(edit_filter)
+            result=dialog.ShowModal();dialog.Destroy()
+            check(not failures, 'advanced filter dialog failed: '+''.join(failures))
+            check(result==wx.ID_OK, 'advanced filter dialog did not accept')
+            panel.eq_dirty=True
+
             panel.onSave()
             stored=tuple(section.get(key) for key in ('_pitchHertz','_rateWpm','_eqEnabled'))
             check(stored==(151,50,True), f'saved values: {stored!r}; keys: {list(section)!r}')
+            check(section.get('_eqFilter1Frequency')==777 and section.get('_eqFilter1Enabled') is True,
+                  'advanced filter settings were not saved')
             panel.pitch_hz_value.SetValue(220)
             event(panel.pitch_hz_value,wx.wxEVT_SPINCTRL)
             panel.wpm_value.SetValue(90)
             event(panel.wpm_value,wx.wxEVT_SPINCTRL)
             panel.eq_bands[1].SetValue(3)
             event(panel.eq_bands[1],wx.wxEVT_SPINCTRL)
+            modified=list(synth.equalizer_filters());modified[0]=(True,900,2,100)
+            synth.configure_equalizer_filters(modified)
             check((synth._pitchHertz,synth._rateWpm,synth._eqPreset)==(220,90,4), 'custom preview failed')
             panel.onDiscard()
             check((synth._pitchHertz,synth._rateWpm,synth._eqPreset)==(151,50,1), 'Cancel did not restore Apply values')
+            check(synth.equalizer_filters()[0]==(True,777,6,50), 'Cancel did not restore saved filters')
             synth.configure_pitch_hertz(False,111)
             synth.configure_rate_wpm(False,100)
             synth.configure_equalizer(False,0,0,0,0)
+            synth.configure_equalizer_filters([(False,125,0,100)]*5)
             synth.loadSettings()
             check((synth._pitchInHertz,synth._pitchHertz,synth._rateInWpm,synth._rateWpm,
                    synth._eqEnabled,synth._eqPreset)==(True,151,True,50,True,1), 'saved settings did not reload')
-            RESULT.write_text(json.dumps({'ok':True,'details':'real NVDA wx controls, live preview, Apply and Cancel'}),encoding='utf8')
+            check(synth.equalizer_filters()[0]==(True,777,6,50), 'saved filter did not reload')
+            RESULT.write_text(json.dumps({'ok':True,'details':'real NVDA wx controls, advanced filters, live preview, Apply and Cancel'}),encoding='utf8')
         except BaseException:
             RESULT.write_text(json.dumps({'ok':False,'error':traceback.format_exc()}),encoding='utf8')
         finally:

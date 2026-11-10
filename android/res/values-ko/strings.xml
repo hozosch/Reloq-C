@@ -97,4 +97,20 @@
     <string name="speed_wpm_error">분당 1에서 6000 사이의 값을 입력하세요.</string>
     <string name="pitch_scale">수동 음높이 범위:</string>
     <string name="pitch_eci_mode">ECI 음높이 (0–100)</string>
+    <string name="equalizer">이퀄라이저</string>
+    <string name="equalizer_enabled">이퀄라이저 사용</string>
+    <string name="equalizer_preset">이퀄라이저 프리셋</string>
+    <string name="equalizer_low">저음 (dB)</string>
+    <string name="equalizer_mid">중음 (dB)</string>
+    <string name="equalizer_high">고음 (dB)</string>
+    <string-array name="equalizer_presets"><item>균형</item><item>따뜻함</item><item>밝음</item><item>부드러움</item><item>사용자 지정</item></string-array>
+    <string name="equalizer_advanced">고급 필터…</string>
+    <string name="filter_title">고급 이퀄라이저 필터</string>
+    <string name="filter_select">필터</string>
+    <string name="filter_name">필터</string>
+    <string name="filter_enabled">필터 사용</string>
+    <string name="filter_frequency">주파수 (Hz)</string>
+    <string name="filter_gain">게인 (dB)</string>
+    <string name="filter_width" formatted="false">대역폭 (옥타브의 %)</string>
+    <string name="filter_nyquist" formatted="false">100%는 1옥타브입니다. 샘플 속도의 절반 이상인 주파수는 적용되지 않습니다.</string>
 </resources>

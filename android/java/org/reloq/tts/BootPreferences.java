@@ -9,8 +9,8 @@ import java.util.Map;
 final class BootPreferences {
     private static final String DEVICE_FILE="speech-before-unlock";
     private static final String[] BOOLS={"androidVoice","androidRate","androidPitch",
-        "rateBoost","speedWpmMode","abbreviations","prediction","originalQuestions","mellowMode","tags"};
-    private static final String[] INTS={"language","profile","manualWpm","manualSpeed","rate","pauses"};
+        "rateBoost","speedWpmMode","abbreviations","prediction","originalQuestions","mellowMode","eqEnabled","tags"};
+    private static final String[] INTS={"language","profile","manualWpm","manualSpeed","rate","pauses","eqPreset","eqLow","eqMid","eqHigh"};
     private static final String[] VOICE={"pitch","pitchHertz","gender","head","inflection","roughness","breathiness","volume"};
     private static final String[] VOICE_BOOLS={"pitchHertzMode"};
     private BootPreferences() {}
@@ -31,6 +31,11 @@ final class BootPreferences {
         SharedPreferences.Editor edit=destination.edit().clear();
         for(String key:BOOLS)if(values.get(key) instanceof Boolean)edit.putBoolean(key,(Boolean)values.get(key));
         for(String key:INTS)if(values.get(key) instanceof Integer)edit.putInt(key,(Integer)values.get(key));
+        for(int i=0;i<5;++i){String prefix="eqFilter."+i+".";
+            if(values.get(prefix+"enabled") instanceof Boolean)edit.putBoolean(prefix+"enabled",(Boolean)values.get(prefix+"enabled"));
+            for(String field:new String[]{"frequency","gain","width"})
+                if(values.get(prefix+field) instanceof Integer)edit.putInt(prefix+field,(Integer)values.get(prefix+field));
+        }
         Object sources=values.get("dictionarySources");
         boolean own=sources instanceof String&&!((String)sources).replaceAll("\\s","").equals("[]");
         edit.putBoolean("dictionaryRequired",Boolean.TRUE.equals(values.get("communityDictionaries"))||
