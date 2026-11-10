@@ -1016,11 +1016,13 @@ struct rule_playback {
     int pause_mode,final,result;
     double pitch_scale,base_pitch,time_fraction;
     int slow_wpm;
-    /* Native Eloquence reads the acoustic targets every five milliseconds.
-     * Keep that clock independent of sparse-span and output-buffer edges. */
+    /* The 5 ms reference clock is blended in as speech gets faster; the
+     * slower voice keeps its previous, finer 1 ms control interpolation. */
     float acoustic_controls[62], male_af;
     int64_t acoustic_tick;
     int acoustic_valid, af_marked;
+    int cadence_speed,cadence_wpm,cadence_started;
+    float cadence_current,cadence_target;
     struct rule_delivery delivery;
     reloq_german_generic_index_sink index_sink;
     void *context;
@@ -1099,6 +1101,29 @@ static double pitch_ratio(int target,int native_baseline)
     }
     return reloq_voice_pitch_f0_scale(target)/baseline;
 }
+/* The native speed rule maps VS to a fixed-point duration percentage;
+ * VWPM178 is its 100-percent clock. Use that common physical scale so WPM,
+ * VS tags and settings select the same acoustic timing. NVDA's normal 40
+ * and 60 sliders correspond to VS84 and VS106. Between them the control
+ * values crossfade continuously instead of switching abruptly. */
+static float acoustic_cadence(int speed,int wpm)
+{
+    double duration;
+    if(wpm>0)duration=17800.0/wpm;
+    else {
+        if(speed<0)speed=0;
+        if(speed>250)speed=250;
+        int half=(speed+50)/2;
+        long fixed=lround(10000.0*exp(-0.04*half));
+        duration=(double)lround(100.0*fixed/1353.0);
+    }
+    const double slower=51.0,faster=33.0;
+    if(duration>=slower)return 0;
+    if(duration<=faster)return 1;
+    return (float)((slower-duration)/(slower-faster));
+}
+static int integer_control(unsigned k)
+{return k==2||k==4||k==7||k==8||(k>=35&&k<=42);}
 static int render_until(struct rule_plan *s,int64_t limit)
 {
     struct rule_playback *p=s->playback;
@@ -1127,17 +1152,14 @@ static int render_until(struct rule_plan *s,int64_t limit)
             p->pitch_scale=reloq_voice_pitch_f0_scale(p->pitches[p->next_pitch++].native_pitch)/p->base_pitch;
         }
         if(previous!=f){prepare_controls(f,&prepared);previous=f;}
+        float current[62];read_controls(&prepared,f,at,current);
         int64_t acoustic_tick=tick-tick%5;
         if(!p->acoustic_valid || p->acoustic_tick!=acoustic_tick) {
-            read_controls(&prepared,f,at,p->acoustic_controls);
+            memcpy(p->acoustic_controls,current,sizeof current);
             p->af_marked=f->af_marked;
             if(f->af_marked)p->male_af=(float)curve_value(&f->male_af,at);
             p->acoustic_tick=acoustic_tick;p->acoustic_valid=1;
         }
-        float controls[62];memcpy(controls,p->acoustic_controls,sizeof controls);
-        /* A provider fallback frame can cover more than one millisecond;
-         * the latched targets must not replace its actual duration. */
-        controls[0]=(float)f->step;
         const struct rule_span *voice=f;
         if(s->control_capacity) {
             while(p->next_control<s->control_count&&s->controls[p->next_control].tick<=tick) {
@@ -1152,10 +1174,37 @@ static int render_until(struct rule_plan *s,int64_t limit)
                 else if(parameter==4)p->voice.model.roughness=value;
                 else if(parameter==5)p->voice.model.breathiness=value;
                 else if(parameter==8)p->slow_wpm=value;
+                else if(parameter==9){p->cadence_speed=value;p->cadence_wpm=0;
+                    p->cadence_target=acoustic_cadence(value,0);}
+                else if(parameter==10){p->cadence_wpm=value;
+                    p->cadence_target=acoustic_cadence(p->cadence_speed,value);}
             }
             if(s->managed_voice_controls)voice=&p->voice;
         }
-        if(p->af_marked&&!voice->model.gender)controls[8]=p->male_af;
+        if(!p->cadence_started) {
+            p->cadence_current=p->cadence_target;p->cadence_started=1;
+        } else {
+            /* Inline changes may occur mid-utterance. Move over 20 ms so a
+             * control command cannot introduce a sudden audio discontinuity. */
+            float step=(float)f->step/20.0f;
+            float difference=p->cadence_target-p->cadence_current;
+            p->cadence_current+=fmaxf(-step,fminf(step,difference));
+        }
+        float controls[62];
+        if(p->cadence_current<=0)memcpy(controls,current,sizeof controls);
+        else if(p->cadence_current>=1)memcpy(controls,p->acoustic_controls,sizeof controls);
+        else for(unsigned k=0;k<62;++k) {
+            float value=current[k]+(p->acoustic_controls[k]-current[k])*p->cadence_current;
+            controls[k]=integer_control(k)?roundf(value):value;
+        }
+        /* A provider fallback frame can cover more than one millisecond;
+         * neither target clock may replace its actual duration. */
+        controls[0]=(float)f->step;
+        if(!voice->model.gender&&(p->af_marked||f->af_marked)) {
+            float now=f->af_marked?(float)curve_value(&f->male_af,at):current[8];
+            float held=p->af_marked?p->male_af:p->acoustic_controls[8];
+            controls[8]=roundf(now+(held-now)*p->cadence_current);
+        }
         word_voice_frame(s,voice,controls);
         double pitch_scale=voice->pitch>=0&&(voice->pitch_tick>p->last_pitch_tick||
             (voice->pitch_tick==p->last_pitch_tick&&voice->pitch_source>=p->last_pitch_source))?
@@ -1347,6 +1396,8 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
      * callback. Native analysis must see the unchanged lexical sentence. */
     for(size_t i=0;i<n;) {
         struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
+        if(t.kind==RELOQ_TAG_SPEED||t.kind==RELOQ_TAG_WPM||
+           (!managed_controls&&t.kind==RELOQ_TAG_PRESET))++volume_count;
         if(has_very_slow_wpm&&!plan.cjk_volume&&(t.kind==RELOQ_TAG_WPM||t.kind==RELOQ_TAG_SPEED||
                               t.kind==RELOQ_TAG_PRESET))++volume_count;
         if(managed_controls) {
@@ -1381,14 +1432,23 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
                     a[i+count-1]='5';
                 }
             }
-            int parameter=t.kind==RELOQ_TAG_GENDER?0:t.kind==RELOQ_TAG_HEAD_SIZE?1:
+            if(t.kind==RELOQ_TAG_SPEED||t.kind==RELOQ_TAG_WPM||
+               (!managed_controls&&t.kind==RELOQ_TAG_PRESET)) {
+                int value=t.value,parameter=t.kind==RELOQ_TAG_WPM?10:9;
+                if(t.kind==RELOQ_TAG_PRESET) {
+                    struct reloq_inline_word v={0};reloq_inline_preset(&v,t.value);value=v.speed;
+                }
+                control_sources[control]=map[i];
+                volumes[control++]=(struct reloq61_mark){out+count,value,parameter};
+            }
+            int parameter=!managed_controls?-1:t.kind==RELOQ_TAG_GENDER?0:t.kind==RELOQ_TAG_HEAD_SIZE?1:
                 t.kind==RELOQ_TAG_PITCH?2:
                 t.kind==RELOQ_TAG_ROUGHNESS?4:t.kind==RELOQ_TAG_BREATHINESS?5:
                 t.kind==RELOQ_TAG_VOLUME?7:-1;
             if(parameter>=0) {
                 control_sources[control]=map[i];volumes[control++]=(struct reloq61_mark){out,t.value,parameter};
             }
-            else if(t.kind==RELOQ_TAG_PRESET) {
+            else if(managed_controls&&t.kind==RELOQ_TAG_PRESET) {
                 struct reloq_inline_word v={0};reloq_inline_preset(&v,t.value);
                 int preset[]={v.gender,v.head_size,v.pitch,v.inflection,v.roughness,v.breathiness,v.speed,v.volume};
                 for(int k=0;k<8;++k) {
@@ -1483,6 +1543,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
             language==0x40000&&!settings->native_pitch_plus_one?
             (150.0+settings->pitch)/200.0:1,
         .base_pitch=reloq_voice_pitch_f0_scale(q.voice[2]),.last_pitch_tick=INT64_MIN,
+        .cadence_speed=q.voice[6],.cadence_target=acoustic_cadence(q.voice[6],0),
         .delivery={.sink=sink,.context=context,.gain=1,
             .limit=(size_t)reloq_session_sample_rate(session)/100,
             .next_limit=(size_t)reloq_session_sample_rate(session)/50},

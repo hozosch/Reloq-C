@@ -16,7 +16,7 @@ def main():
             text = ''.join(parts)
             # Include the native value used by the NVDA 60 slider, a slower
             # setting and a faster one. Compare the actual PCM, not just WPM.
-            for speed in (80, 106, 140):
+            for speed in (62, 80, 84, 90, 95, 100, 106, 140):
                 engine.tags(0)
                 engine.voice(6, speed)
                 configured = engine.speak(text)
@@ -42,14 +42,17 @@ def main():
             prefix, word, suffix = parts
             engine.voice(6, 50)
             engine.tags(1)
-            tagged = engine.speak(prefix + '`vs106 ' + word + suffix)
-            engine.tags(0)
-            engine.voice(6, 50)
-            engine.add(prefix)
-            engine.voice(6, 106)
-            engine.add(word + suffix)
-            assert engine.finish() == tagged, (hex(language), 'queued speed')
-            checks += 1
+            for speed in (62, 95, 106):
+                engine.tags(1)
+                engine.voice(6, 50)
+                tagged = engine.speak(prefix + f'`vs{speed} ' + word + suffix)
+                engine.tags(0)
+                engine.voice(6, 50)
+                engine.add(prefix)
+                engine.voice(6, speed)
+                engine.add(word + suffix)
+                assert engine.finish() == tagged, (hex(language), speed, 'queued speed')
+                checks += 1
         finally:
             engine.close()
     # Both extended clocks use the identical scheduler, not a post-render

@@ -1,0 +1,43 @@
+name: Compare low-speed acoustic continuity
+on:
+  push:
+    branches: ['codex/low-speed-reference-*']
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          architecture: x86
+      - name: Prepare pinned original ECI
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, pathlib, urllib.request, zipfile
+          root=pathlib.Path('reference');root.mkdir()
+          archive=pathlib.Path('reference-addon.zip')
+          urllib.request.urlretrieve('https://github.com/fastfinge/eloquence_64/releases/download/v25/Eloquence-v25.nvda-addon',archive)
+          assert hashlib.sha256(archive.read_bytes()).hexdigest()=='3b14eaa9923a006553b7ea6152abf2ca9cd8f11c1b3dcebe2a905658863ea409'
+          with zipfile.ZipFile(archive) as z:
+              for name in z.namelist():
+                  if name.lower().startswith('synthdrivers/eloquence/') and name.lower().endswith(('.dll','.syn','.ini')):
+                      (root/pathlib.PurePosixPath(name).name).write_bytes(z.read(name))
+          ini=root/'ECI.INI';text=ini.read_text(encoding='latin1').replace('C:\\dummy\\',str(root.resolve())+'\\')
+          assert 'C:\\dummy\\' not in text
+          ini.write_text(text,encoding='ascii')
+          PY
+      - name: Capture slow and comparison rates
+        run: python tools/observe_low_speed_reference.py reference/ECI.DLL observations
+      - uses: actions/upload-artifact@v4
+        with:
+          name: low-speed-original-reference
+          path: observations/
+          if-no-files-found: error
+          retention-days: 7

@@ -19,7 +19,7 @@ def main():
         try:
             engine.voice(6, 50)
             text = ''.join(parts)
-            for wpm in (50, 150, 300):
+            for wpm in (50, 150, 300, 350, 400, 450, 500, 550, 600):
                 engine.tags(1)
                 assert engine.lib.eciSetParam(engine.h, NATIVE_WPM, 0) >= 0
                 tagged = engine.speak(f'`vwpm{wpm} {text}')
