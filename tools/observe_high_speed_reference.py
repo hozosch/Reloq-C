@@ -15,7 +15,8 @@ TEXTS = ('adictive drums', 'addictive drums', 'six ships and fresh cups', 'hello
 SLIDERS = (40, 50, 60, 80, 100)
 
 
-def capture(library, reference, text, speed, path):
+def capture(library, reference, text, speed, path, *, buffer_samples=110,
+            want_phones=True, dialect=0x10000, sample_rate=11025, gender=0):
     library=library.resolve();directory=os.add_dll_directory(str(library.parent)) if os.name=='nt' else None
     old=Path.cwd();os.chdir(library.parent)
     try:
@@ -29,9 +30,9 @@ def capture(library, reference, text, speed, path):
             ('eciRegisterCallback',None,(H,CB,H)),('eciSetOutputBuffer',I,(H,I,C.POINTER(C.c_short))),
             ('eciAddText',I,(H,C.c_char_p)),('eciSynthesize',I,(H,)),('eciSynchronize',I,(H,))):
             fn=getattr(lib,name);fn.restype,fn.argtypes=result,args
-        engine=lib.eciNewEx(0x10000)
-        if not engine:raise RuntimeError('Cannot create US English engine')
-        chunks=[];events=[];samples=0;buffer=(C.c_short*110)()
+        engine=lib.eciNewEx(dialect)
+        if not engine:raise RuntimeError(f'Cannot create engine for dialect {dialect:#x}')
+        chunks=[];events=[];samples=0;buffer=(C.c_short*buffer_samples)()
         @CB
         def callback(handle,message,param,context):
             nonlocal samples
@@ -45,13 +46,14 @@ def capture(library, reference, text, speed, path):
             return 1
         try:
             assert lib.eciCopyVoice(engine,1,0)
-            for param,val in enumerate((0,50,65,30,0,0,speed,100)):
+            for param,val in enumerate((gender,50,65,30,0,0,speed,100)):
                 if lib.eciSetVoiceParam(engine,0,param,val)<0:raise RuntimeError(f'voice parameter {param} refused')
             if not reference:
                 assert lib.eciSetParam(engine,0x1003,1)>=0
-            assert lib.eciSetParam(engine,5,1)>=0
+            assert sample_rate in (8000,11025)
+            assert lib.eciSetParam(engine,5,int(sample_rate==11025))>=0
             assert lib.eciSetParam(engine,1,1)>=0
-            phones=lib.eciSetParam(engine,7,1) if reference else -1
+            phones=lib.eciSetParam(engine,7,int(want_phones)) if reference else -1
             lib.eciRegisterCallback(engine,callback,None)
             assert lib.eciSetOutputBuffer(engine,len(buffer),buffer)>0
             assert lib.eciAddText(engine,text.encode('cp1252'))
@@ -60,8 +62,8 @@ def capture(library, reference, text, speed, path):
             raw=b''.join(chunks)
             if not raw:raise RuntimeError('No speech samples captured')
             with wave.open(str(path),'wb') as out:
-                out.setnchannels(1);out.setsampwidth(2);out.setframerate(11025);out.writeframes(raw)
-            return dict(text=text,speed=speed,samples=samples,seconds=samples/11025,
+                out.setnchannels(1);out.setsampwidth(2);out.setframerate(sample_rate);out.writeframes(raw)
+            return dict(text=text,speed=speed,samples=samples,seconds=samples/sample_rate,
                         phoneme_indices=phones,events=events,
                         voice=[lib.eciGetVoiceParam(engine,0,p) for p in range(8)])
         finally:lib.eciDelete(engine)

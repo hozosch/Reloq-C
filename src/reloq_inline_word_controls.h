@@ -97,9 +97,9 @@ static int normalize_word_voice_controls(unsigned char **input,size_t **source,
     *input=bytes;*source=positions;*length=out;return 0;
 }
 
-/* In a phrase using native VWPM, native VS changes must reach the same
- * duration planner. Presets are still applied via word-scoped controls, so
- * project their speed into that planner at the preset's original position. */
+/* Native VS and VWPM changes use the same per-phone duration planner.
+ * Presets are applied via word-scoped controls, so project their speed
+ * into that planner at the preset's original position as well. */
 static int native_preset_speed_tags(unsigned char **input,size_t **source,size_t *length)
 {
     unsigned char *a=*input;size_t *map=*source,n=*length,count=0;

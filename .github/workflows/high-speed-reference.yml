@@ -1,7 +1,7 @@
 name: Compare original and ReLoq high-speed timing
 on:
   push:
-    branches: ['codex/high-speed-*']
+    branches: ['codex/high-speed-reference-only-*']
 permissions:
   contents: read
   actions: read

@@ -1,4 +1,4 @@
-name: NVDA high-speed scale listening candidate
+name: NVDA acoustic timing listening candidate
 on:
   push:
     branches: ['codex/eq-131-dev1-*']
@@ -51,19 +51,19 @@ jobs:
           from build_synth import build,DEFAULT_OUTPUT
           build(DEFAULT_OUTPUT,pathlib.Path('eci/eci.dll'),refresh_dictionaries=False)
           PY
-          for lang in en de; do PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.1-dev2.nvda-addon"))' "$lang"; done
+          for lang in en de; do PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.1-dev3.nvda-addon"))' "$lang"; done
           PYTHONPATH=nvda python3 -B nvda/test_updates.py
       - uses: actions/upload-artifact@v4
         with:
           name: high-speed-addon-candidate
-          path: dist/reloq-c-synth-x64-1.3.1-dev2.nvda-addon
+          path: dist/reloq-c-synth-x64-1.3.1-dev3.nvda-addon
           if-no-files-found: error
           compression-level: 0
           retention-days: 14
   windows:
     needs: addon
     runs-on: windows-2022
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,11 +75,11 @@ jobs:
       - name: Check the packaged core, WPM and original timing
         shell: pwsh
         run: |
-          $addon = (Get-Item candidate/reloq-c-synth-x64-1.3.1-dev2.nvda-addon).FullName
+          $addon = (Get-Item candidate/reloq-c-synth-x64-1.3.1-dev3.nvda-addon).FullName
           python -c "import zipfile; z=zipfile.ZipFile(r'$addon'); assert z.testzip() is None; z.extract('synthDrivers/reloqC/eci.dll', 'candidate')"
           if ($LASTEXITCODE -ne 0) { throw 'Core extraction failed' }
           $dll = (Get-Item candidate/synthDrivers/reloqC/eci.dll).FullName
-          foreach ($test in @('nvda/test_eci_high_speed_reference.py','nvda/test_eci_ptbr_numbers.py','nvda/test_eci_equalizer.py','nvda/test_eci_wpm_setting.py')) {
+          foreach ($test in @('nvda/test_eci_high_speed_reference.py','nvda/test_eci_speed_setting.py','nvda/test_eci_inline_queue.py','nvda/test_eci_pitch_hz.py','nvda/test_eci_ptbr_numbers.py','nvda/test_eci_equalizer.py','nvda/test_eci_wpm.py','nvda/test_eci_wpm_languages.py','nvda/test_eci_wpm_setting.py')) {
             python -B $test --library $dll
             if ($LASTEXITCODE -ne 0) { throw "$test failed" }
           }
@@ -98,12 +98,12 @@ jobs:
           $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
           $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
           if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
-          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.3.1-dev2.nvda-addon --work settings-results
+          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.3.1-dev3.nvda-addon --work settings-results
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA settings probe failed' }
       - uses: actions/upload-artifact@v4
         with:
           name: high-speed-nvda-test
-          path: candidate/reloq-c-synth-x64-1.3.1-dev2.nvda-addon
+          path: candidate/reloq-c-synth-x64-1.3.1-dev3.nvda-addon
           if-no-files-found: error
           compression-level: 0
           retention-days: 14

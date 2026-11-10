@@ -1016,6 +1016,11 @@ struct rule_playback {
     int pause_mode,final,result;
     double pitch_scale,base_pitch,time_fraction;
     int slow_wpm;
+    /* Native Eloquence reads the acoustic targets every five milliseconds.
+     * Keep that clock independent of sparse-span and output-buffer edges. */
+    float acoustic_controls[62], male_af;
+    int64_t acoustic_tick;
+    int acoustic_valid, af_marked;
     struct rule_delivery delivery;
     reloq_german_generic_index_sink index_sink;
     void *context;
@@ -1122,7 +1127,17 @@ static int render_until(struct rule_plan *s,int64_t limit)
             p->pitch_scale=reloq_voice_pitch_f0_scale(p->pitches[p->next_pitch++].native_pitch)/p->base_pitch;
         }
         if(previous!=f){prepare_controls(f,&prepared);previous=f;}
-        float controls[62];read_controls(&prepared,f,at,controls);
+        int64_t acoustic_tick=tick-tick%5;
+        if(!p->acoustic_valid || p->acoustic_tick!=acoustic_tick) {
+            read_controls(&prepared,f,at,p->acoustic_controls);
+            p->af_marked=f->af_marked;
+            if(f->af_marked)p->male_af=(float)curve_value(&f->male_af,at);
+            p->acoustic_tick=acoustic_tick;p->acoustic_valid=1;
+        }
+        float controls[62];memcpy(controls,p->acoustic_controls,sizeof controls);
+        /* A provider fallback frame can cover more than one millisecond;
+         * the latched targets must not replace its actual duration. */
+        controls[0]=(float)f->step;
         const struct rule_span *voice=f;
         if(s->control_capacity) {
             while(p->next_control<s->control_count&&s->controls[p->next_control].tick<=tick) {
@@ -1140,7 +1155,7 @@ static int render_until(struct rule_plan *s,int64_t limit)
             }
             if(s->managed_voice_controls)voice=&p->voice;
         }
-        if(f->af_marked&&!voice->model.gender)controls[8]=(float)curve_value(&f->male_af,at);
+        if(p->af_marked&&!voice->model.gender)controls[8]=p->male_af;
         word_voice_frame(s,voice,controls);
         double pitch_scale=voice->pitch>=0&&(voice->pitch_tick>p->last_pitch_tick||
             (voice->pitch_tick==p->last_pitch_tick&&voice->pitch_source>=p->last_pitch_source))?
@@ -1284,7 +1299,9 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     }
     int managed_controls=!plan.cjk_volume || cjk_exact_pitch;
     plan.managed_voice_controls=managed_controls;
-    if(has_wpm&&managed_controls&&native_preset_speed_tags(&a,&map,&n))goto memory;
+    /* Speed changes must reach the native duration planner for every scale.
+     * A renderer-side time multiplier cannot reproduce its per-phone rules. */
+    if(managed_controls&&native_preset_speed_tags(&a,&map,&n))goto memory;
     if(plan.cjk_volume) {
         /* CJK lexers can treat even a redundant command as a token break.
          * No-op voice controls must leave native segmentation untouched. Actual
@@ -1333,10 +1350,10 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         if(has_very_slow_wpm&&!plan.cjk_volume&&(t.kind==RELOQ_TAG_WPM||t.kind==RELOQ_TAG_SPEED||
                               t.kind==RELOQ_TAG_PRESET))++volume_count;
         if(managed_controls) {
-            if(t.kind==RELOQ_TAG_PITCH||(t.kind==RELOQ_TAG_SPEED&&!has_wpm)||t.kind==RELOQ_TAG_VOLUME||
+            if(t.kind==RELOQ_TAG_PITCH||t.kind==RELOQ_TAG_VOLUME||
                t.kind==RELOQ_TAG_GENDER||t.kind==RELOQ_TAG_HEAD_SIZE||
                t.kind==RELOQ_TAG_ROUGHNESS||t.kind==RELOQ_TAG_BREATHINESS)++volume_count;
-            else if(t.kind==RELOQ_TAG_PRESET)volume_count+=has_wpm?6:7;
+            else if(t.kind==RELOQ_TAG_PRESET)volume_count+=6;
         }
         i+=t.length?t.length:1;
     }
@@ -1367,7 +1384,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
             int parameter=t.kind==RELOQ_TAG_GENDER?0:t.kind==RELOQ_TAG_HEAD_SIZE?1:
                 t.kind==RELOQ_TAG_PITCH?2:
                 t.kind==RELOQ_TAG_ROUGHNESS?4:t.kind==RELOQ_TAG_BREATHINESS?5:
-                t.kind==RELOQ_TAG_SPEED&&!has_wpm?6:t.kind==RELOQ_TAG_VOLUME?7:-1;
+                t.kind==RELOQ_TAG_VOLUME?7:-1;
             if(parameter>=0) {
                 control_sources[control]=map[i];volumes[control++]=(struct reloq61_mark){out,t.value,parameter};
             }
@@ -1375,7 +1392,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
                 struct reloq_inline_word v={0};reloq_inline_preset(&v,t.value);
                 int preset[]={v.gender,v.head_size,v.pitch,v.inflection,v.roughness,v.breathiness,v.speed,v.volume};
                 for(int k=0;k<8;++k) {
-                    if(k==3||(has_wpm&&k==6))continue;
+                    if(k==3||k==6)continue;
                     control_sources[control]=map[i];volumes[control++]=(struct reloq61_mark){out,preset[k],k};
                 }
             } else {
