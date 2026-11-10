@@ -15,7 +15,8 @@ TEXTS = ('adictive drums', 'addictive drums', 'six ships and fresh cups', 'hello
 SLIDERS = (40, 50, 60, 80, 100)
 
 
-def capture(library, reference, text, speed, path):
+def capture(library, reference, text, speed, path, *, buffer_samples=110,
+            want_phones=True):
     library=library.resolve();directory=os.add_dll_directory(str(library.parent)) if os.name=='nt' else None
     old=Path.cwd();os.chdir(library.parent)
     try:
@@ -31,7 +32,7 @@ def capture(library, reference, text, speed, path):
             fn=getattr(lib,name);fn.restype,fn.argtypes=result,args
         engine=lib.eciNewEx(0x10000)
         if not engine:raise RuntimeError('Cannot create US English engine')
-        chunks=[];events=[];samples=0;buffer=(C.c_short*110)()
+        chunks=[];events=[];samples=0;buffer=(C.c_short*buffer_samples)()
         @CB
         def callback(handle,message,param,context):
             nonlocal samples
@@ -51,7 +52,7 @@ def capture(library, reference, text, speed, path):
                 assert lib.eciSetParam(engine,0x1003,1)>=0
             assert lib.eciSetParam(engine,5,1)>=0
             assert lib.eciSetParam(engine,1,1)>=0
-            phones=lib.eciSetParam(engine,7,1) if reference else -1
+            phones=lib.eciSetParam(engine,7,int(want_phones)) if reference else -1
             lib.eciRegisterCallback(engine,callback,None)
             assert lib.eciSetOutputBuffer(engine,len(buffer),buffer)>0
             assert lib.eciAddText(engine,text.encode('cp1252'))
