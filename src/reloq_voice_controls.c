@@ -57,11 +57,15 @@ static double interpolate(const struct anchor *anchors, size_t count,
 int reloq_voice_speed_from_nvda(int percent, int boost)
 {
     if (percent < 0 || percent > 100 || (boost != 0 && boost != 1)) return -1;
-    int native = 40 + (116 * percent + 50) / 100;
     if (boost) {
+        int native = 40 + (116 * percent + 50) / 100;
         native = (8 * native + 2) / 5;
         if (native > 250) native = 250;
+        return native;
     }
+    int product=110*percent, native=40+product/100, remainder=product%100;
+    /* NVDA rounds ties to the nearest even integer. */
+    if(remainder>50||(remainder==50&&(native&1)))++native;
     return native;
 }
 

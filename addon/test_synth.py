@@ -273,6 +273,10 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                   mock.patch.object(ctypes, "WinDLL", create=True,
                                     return_value=object())):
                 driver_module = importlib.import_module("synthDrivers.reloqC")
+                for percent in range(101):
+                    assert driver_module._native_speed(percent) == round(float(percent) / 100 * 110 + 40)
+                    previous = 40 + (116 * percent + 50) // 100
+                    assert driver_module._native_speed(percent, True) == min(250, (8 * previous + 2) // 5)
                 driver_module.DirectEciEngine = Engine
                 assert driver_module.SynthDriver.check()
                 with mock.patch.object(ctypes, "sizeof", return_value=4):
@@ -503,7 +507,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         driver_module.EciLanguage(0x40000, "1"), driver_module.EciText("Wieder deutsch.")]
                 until(lambda: len(Engine.instances) == 1)
                 until(lambda: len(Engine.instances[0].parameters) == 16)
-                assert Engine.instances[0].parameters == list(german.voices[0].parameters) + [(0x1007, 98), (0x1008, 65),
+                assert Engine.instances[0].parameters == list(german.voices[0].parameters) + [(0x1007, 95), (0x1008, 65),
                                                           (0x1009, 30),
                                                           (0x100a, 100), (0x100d, 50), (0x100e, 0), (0x100f, 0), (0x1015, 0), (0x1016, 0)]
                 driver._set_rate(70)
@@ -518,10 +522,10 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                               "Kippte.", IndexCommand(13)])
                 until(lambda: len(players[0].buffers) == 2)
                 worker = Engine.instances[0]
-                assert worker.parameters == list(german.voices[0].parameters) + [(0x1007, 98), (0x1008, 65),
+                assert worker.parameters == list(german.voices[0].parameters) + [(0x1007, 95), (0x1008, 65),
                                              (0x1009, 30), (0x100a, 100),
                                              (0x100d, 50), (0x100e, 0), (0x100f, 0), (0x1015, 0), (0x1016, 0),
-                                             (0x1007, 121), (0x1008, 65),
+                                             (0x1007, 117), (0x1008, 65),
                                              (0x1009, 75),
                                              (0x100a, 85)]
                 assert driver._get_rate() == 70
@@ -607,12 +611,12 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 driver.cancel()
                 assert players[0].stops and worker.cancelled
                 driver._set_rate(60)
-                until(lambda: worker.parameters[-1:] == [(0x1007, 110)])
+                until(lambda: worker.parameters[-1:] == [(0x1007, 106)])
                 driver._set_rateBoost(True)
                 until(lambda: worker.parameters[-1:] == [(0x1007, 176)])
                 assert driver._get_rate() == 60 and driver._get_rateBoost()
                 driver._set_rateBoost(False)
-                until(lambda: worker.parameters[-1:] == [(0x1007, 110)])
+                until(lambda: worker.parameters[-1:] == [(0x1007, 106)])
                 assert not driver._get_rateBoost()
                 entered, release = threading.Event(), threading.Event()
                 assert driver_module._parts(["Hallo `vb80 Welt."], voice_tags=True) == [

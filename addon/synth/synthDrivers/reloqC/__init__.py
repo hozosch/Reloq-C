@@ -51,11 +51,16 @@ EQ_FILTER_FREQUENCIES = (125, 500, 1200, 3000, 6000)
 
 
 def _native_speed(percent, boost=False):
-    """OpenEVV's useful NVDA range: ECI 40..156, boost to at most 250."""
+    """Match the reference NVDA driver's ECI 40..150 normal range.
+
+    Rate boost is an independent extension and retains its existing range.
+    """
     if not isinstance(percent, int) or isinstance(percent, bool) or not 0 <= percent <= 100:
         raise ValueError("rate must be from 0 to 100")
-    value = 40 + (116 * percent + 50) // 100
-    return min(250, (8 * value + 2) // 5) if boost else value
+    if boost:
+        value = 40 + (116 * percent + 50) // 100
+        return min(250, (8 * value + 2) // 5)
+    return round(float(percent) / 100 * 110 + 40)
 
 
 def _command_pitch(command, base_pitch):

@@ -1,0 +1,138 @@
+{
+  "reference": "fastfinge/eloquence_64 v25, original 32-bit host ECI.DLL",
+  "reference_addon_sha256": "3b14eaa9923a006553b7ea6152abf2ca9cd8f11c1b3dcebe2a905658863ea409",
+  "sample_rate": 11025,
+  "voice": [
+    0,
+    50,
+    65,
+    30,
+    0,
+    0,
+    "rate",
+    100
+  ],
+  "description": "PCM callback sample counts, Reed, no external dictionaries; ECI rates are the reference NVDA driver values.",
+  "cases": [
+    {
+      "text": "adictive drums",
+      "nvda_rate": 40,
+      "eci_rate": 84,
+      "samples": 8481
+    },
+    {
+      "text": "adictive drums",
+      "nvda_rate": 50,
+      "eci_rate": 95,
+      "samples": 6853
+    },
+    {
+      "text": "adictive drums",
+      "nvda_rate": 60,
+      "eci_rate": 106,
+      "samples": 5500
+    },
+    {
+      "text": "adictive drums",
+      "nvda_rate": 80,
+      "eci_rate": 128,
+      "samples": 3531
+    },
+    {
+      "text": "adictive drums",
+      "nvda_rate": 100,
+      "eci_rate": 150,
+      "samples": 2376
+    },
+    {
+      "text": "addictive drums",
+      "nvda_rate": 40,
+      "eci_rate": 84,
+      "samples": 8481
+    },
+    {
+      "text": "addictive drums",
+      "nvda_rate": 50,
+      "eci_rate": 95,
+      "samples": 6853
+    },
+    {
+      "text": "addictive drums",
+      "nvda_rate": 60,
+      "eci_rate": 106,
+      "samples": 5500
+    },
+    {
+      "text": "addictive drums",
+      "nvda_rate": 80,
+      "eci_rate": 128,
+      "samples": 3531
+    },
+    {
+      "text": "addictive drums",
+      "nvda_rate": 100,
+      "eci_rate": 150,
+      "samples": 2376
+    },
+    {
+      "text": "six ships and fresh cups",
+      "nvda_rate": 40,
+      "eci_rate": 84,
+      "samples": 12045
+    },
+    {
+      "text": "six ships and fresh cups",
+      "nvda_rate": 50,
+      "eci_rate": 95,
+      "samples": 9680
+    },
+    {
+      "text": "six ships and fresh cups",
+      "nvda_rate": 60,
+      "eci_rate": 106,
+      "samples": 7854
+    },
+    {
+      "text": "six ships and fresh cups",
+      "nvda_rate": 80,
+      "eci_rate": 128,
+      "samples": 5027
+    },
+    {
+      "text": "six ships and fresh cups",
+      "nvda_rate": 100,
+      "eci_rate": 150,
+      "samples": 3520
+    },
+    {
+      "text": "hello friend",
+      "nvda_rate": 40,
+      "eci_rate": 84,
+      "samples": 7656
+    },
+    {
+      "text": "hello friend",
+      "nvda_rate": 50,
+      "eci_rate": 95,
+      "samples": 6193
+    },
+    {
+      "text": "hello friend",
+      "nvda_rate": 60,
+      "eci_rate": 106,
+      "samples": 4983
+    },
+    {
+      "text": "hello friend",
+      "nvda_rate": 80,
+      "eci_rate": 128,
+      "samples": 3146
+    },
+    {
+      "text": "hello friend",
+      "nvda_rate": 100,
+      "eci_rate": 150,
+      "samples": 2189
+    }
+  ]
+}

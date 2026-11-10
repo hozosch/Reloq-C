@@ -12,11 +12,18 @@ static void close_relative(double predicted, double observed, double limit)
 
 int main(void)
 {
-    const int mapping[] = {40, 69, 98, 127, 156};
+    const int mapping[] = {40, 68, 95, 122, 150};
     for (int i = 0; i < 5; ++i)
         assert(reloq_voice_speed_from_nvda(25*i, 0) == mapping[i]);
     assert(reloq_voice_speed_from_nvda(0, 1) == 64);
     assert(reloq_voice_speed_from_nvda(100, 1) == 250);
+    assert(reloq_voice_speed_from_nvda(60, 0) == 106);
+    assert(reloq_voice_speed_from_nvda(60, 1) == 176);
+    for(int p=0;p<=100;++p) {
+        int product=110*p,base=40+product/100,remainder=product%100;
+        int expected=base+(remainder>50||(remainder==50&&(base&1)));
+        assert(reloq_voice_speed_from_nvda(p,0)==expected);
+    }
     assert(reloq_voice_speed_from_nvda(-1, 0) == -1);
     assert(reloq_voice_speed_from_nvda(50, 2) == -1);
 
