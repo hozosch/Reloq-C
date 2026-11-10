@@ -5,7 +5,7 @@ see OpenEVV-NOTICE.txt.  This is a text adapter for NVDA, not an ECI rule.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 import re
@@ -30,6 +30,7 @@ class NativeDictionaryKeys:
     exact: frozenset
     roots: frozenset
     english: bool = False
+    compound: dict = field(default_factory=dict)
 
     def __contains__(self, word):
         # ECI main/abbreviation entries retain case. Its English root lookup
@@ -277,27 +278,46 @@ def transform_unmatched(text, protected, transform):
     return "".join(output)
 
 
+def native_compound_spans(text, dictionary):
+    """Find case-sensitive native entries that contain punctuation."""
+    if not isinstance(dictionary, NativeDictionaryKeys) or not dictionary.compound:
+        return ()
+    result = []
+    for start, end in word_runs(text):
+        for word in dictionary.compound.get(text[start:end], ()):
+            finish = start + len(word)
+            if (text.startswith(word, start) and
+                    (finish == len(text) or not _word_char(text[finish]))):
+                result.append((start, finish))
+    return tuple(result)
+
+
 def protected_native_spans(text, dictionary, personal_spans=()):
     """Preserve native entries that NVDA's builtin.dic would otherwise split.
 
     NVDA processes its speech dictionaries before the engine sees the text.
-    Call only after checking that no NVDA user dictionary matches the run.
+    Personal matches are left as text so NVDA can apply them first.
     """
     previous = 0
-    spans, at = sorted(personal_spans), 0
+    candidates = list(native_compound_spans(text, dictionary))
     for start, end in word_runs(text):
         word = text[start:end]
         if not _in_dictionary(word, dictionary):
+            continue
+        if camel_word(word) == word and not re.search(r"[^\W\d_]\d", word):
+            continue
+        candidates.append((start, end))
+    spans, at = sorted(personal_spans), 0
+    for start, end in sorted(candidates, key=lambda span: (span[0], -span[1])):
+        if start < previous:
             continue
         while at < len(spans) and spans[at][1] <= start:
             at += 1
         if at < len(spans) and spans[at][0] < end:
             continue
-        if camel_word(word) == word and not re.search(r"[^\W\d_]\d", word):
-            continue
         if previous < start:
             yield text[previous:start], False
-        yield word, True
+        yield text[start:end], True
         previous = end
     if previous < len(text):
         yield text[previous:], False
@@ -305,7 +325,7 @@ def protected_native_spans(text, dictionary, personal_spans=()):
 
 def dictionary_keys(directory):
     """Collect protected keys per language from the immutable ECI snapshot."""
-    by_prefix = {prefix: {"exact": set(), "roots": set()} for prefix in PREFIXES.values()}
+    by_prefix = {prefix: {"exact": set(), "roots": set(), "compound": {}} for prefix in PREFIXES.values()}
     if directory is None:
         return {language: NativeDictionaryKeys(frozenset(), frozenset(), prefix in ("ENU", "ENG"))
                 for language, prefix in PREFIXES.items()}
@@ -321,14 +341,23 @@ def dictionary_keys(directory):
                                 word = key.strip().decode("cp1252")
                             except UnicodeDecodeError:
                                 continue
-                            if 1 < len(word) <= 128 and all(_word_char(c) for c in word):
+                            if not 1 < len(word) <= 128 or any(c.isspace() for c in word):
+                                continue
+                            if all(_word_char(c) for c in word):
                                 if suffix == "Root":
                                     groups["roots"].add(word.casefold())
                                 else:
                                     groups["exact"].add(word)
+                            elif suffix in ("main", "abbr"):
+                                runs = iter(word_runs(word))
+                                first = next(runs, None)
+                                if first is not None and first[0] == 0:
+                                    groups["compound"].setdefault(word[:first[1]], set()).add(word)
             except FileNotFoundError:
                 pass
     return {language: NativeDictionaryKeys(frozenset(by_prefix[prefix]["exact"]),
                                            frozenset(by_prefix[prefix]["roots"]),
-                                           prefix in ("ENU", "ENG"))
+                                           prefix in ("ENU", "ENG"),
+                                           {key: tuple(sorted(values, key=len, reverse=True))
+                                            for key, values in by_prefix[prefix]["compound"].items()})
             for language, prefix in PREFIXES.items()}

@@ -5,7 +5,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'nvda'))
-from _reloq_wordseg import WordSegmenter, dictionary_keys, split_camel, protected_native_spans
+from _reloq_wordseg import (WordSegmenter, dictionary_keys, split_camel,
+                            protected_native_spans, native_compound_spans)
 
 
 def main():
@@ -27,7 +28,7 @@ def main():
         assert segmenter.text('cgrouping', frozenset({'cgroup'})) == 'cgrouping'
         assert segmenter.text('eci_usrdct.c') == 'eci_U S R D C T.c'
     with tempfile.TemporaryDirectory() as folder:
-        Path(folder, 'ENUmain.dic').write_bytes(b'cgroup\tcustom pronunciation\n')
+        Path(folder, 'ENUmain.dic').write_bytes(b'cgroup\tcustom pronunciation\nfoo-BarBaz\tcustom pronunciation\n')
         Path(folder, 'ENGRoot.dic').write_bytes(b'fdopen\tcustom pronunciation\n')
         Path(folder, 'DEUmain.dic').write_bytes('WLANTest\tMein Test\n'.encode('cp1252'))
         Path(folder, 'DEURoot.dic').write_bytes(b'haus\tcustom pronunciation\n')
@@ -41,6 +42,10 @@ def main():
         assert 'HAUS' in keys[0x40000] and 'haus' in keys[0x40000]
         assert segmenter.text('CGROUP', keys[0x10000]) == 'C group'
         assert segmenter.text('cgroups', keys[0x10000]) == segmenter.text('CGROUPS', keys[0x10000])
+        assert native_compound_spans('vor foo-BarBaz danach', keys[0x10000]) == ((4, 14),)
+        assert list(protected_native_spans('vor foo-BarBaz danach', keys[0x10000])) == [
+            ('vor ', False), ('foo-BarBaz', True), (' danach', False)]
+        assert not native_compound_spans('foo-BarBazooka', keys[0x10000])
         assert split_camel('WLANTest und meinTest', keys[0x40000]) == 'WLANTest und mein Test'
         assert list(protected_native_spans('Vor WLANTest nach', keys[0x40000])) == [
             ('Vor ', False), ('WLANTest', True), (' nach', False)]

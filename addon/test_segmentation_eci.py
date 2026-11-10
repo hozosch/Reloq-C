@@ -18,7 +18,8 @@ def main():
     with TemporaryDirectory() as temporary:
         root = Path(temporary)
         for language, prefix, word in ((0x40000, 'DEU', 'MeinWort'),
-                                       (0x10000, 'ENU', 'FdOpen')):
+                                       (0x10000, 'ENU', 'FdOpen'),
+                                       (0x10000, 'ENU', 'hello-MyWorld')):
             (root / f'{prefix}main.dic').write_bytes((word + '\t`[.1tEst]\n').encode('cp1252'))
             engine = DirectEciEngine(args.library.resolve(), dialect=language,
                                      encoding='utf8', native_voice=True)

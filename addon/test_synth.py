@@ -451,6 +451,15 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert result[1] == "meinTest", result
                 for language in driver_module.LANGUAGES.values():
                     assert driver._segment_text("StraßenName HTTPServer", language, {}, False, True) == "Straßen Name HTTP Server"
+                compound_dir = path / "native-compound-test"
+                compound_dir.mkdir()
+                (compound_dir / "DEUmain.dic").write_bytes(b"foo-BarBaz\tcustom pronunciation\n")
+                driver._wordseg_keys = driver_module.dictionary_keys(compound_dir)
+                result = driver._protect_tags(["vor foo-BarBaz und anderesWort"])
+                assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "foo-BarBaz" for item in result), result
+                assert any("anderes Wort" in item for item in result if isinstance(item, str)), result
+                assert driver._segment_text("foo-BarBaz", driver_module.GERMAN, driver._wordseg_keys, False, True) == "foo-BarBaz"
+                driver._wordseg_keys = {0x40000: frozenset({"meinwort"}), 0x10000: frozenset()}
                 personal = types.SimpleNamespace(compiled=re.compile("meinTest"), type=0)
                 speech_dicts.dictionaries["default"] = [personal]
                 result = driver._protect_tags(["meinTest"])

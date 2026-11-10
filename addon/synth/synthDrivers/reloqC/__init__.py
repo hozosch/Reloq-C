@@ -37,7 +37,8 @@ from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciPitchHz,
 from ._reloq_eci_transport import DictionaryStartupError, EciTextTransport
 from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries
 from ._reloq_nvda_dicts import ImportedDictionaries
-from ._reloq_wordseg import WordSegmenter, dictionary_keys, split_camel, protected_native_spans, transform_unmatched
+from ._reloq_wordseg import (WordSegmenter, dictionary_keys, split_camel, protected_native_spans,
+                             transform_unmatched, native_compound_spans)
 from ._reloq_languages import GERMAN, LANGUAGES, LANGUAGE_ALIASES, LANGUAGE_DISPLAY_ORDER, LanguageEngine, language_for
 from ._speech_tags import EciTagCommand, SegmentationGuard, NativeDictionaryWord, protect_sequence
 
@@ -346,7 +347,8 @@ class SynthDriver(BaseSynthDriver):
                     continue
                 if segment and keys is not None:
                     language = self._languages[selected]
-                    transformed = transform_unmatched(item, spans,
+                    native_keys = keys.get(selected, frozenset())
+                    transformed = transform_unmatched(item, (*spans, *native_compound_spans(item, native_keys)),
                         lambda word: self._segment_text(word, language, keys, word_segment, camel))
                     transformed_spans = spans if transformed == item else self._nvda_dictionary_matches(transformed)
                     if transformed_spans is None:
@@ -358,7 +360,7 @@ class SynthDriver(BaseSynthDriver):
                     # Preserve a native entry that it would split, then apply
                     # our optional transforms to the remaining text while
                     # the complete original casing is still available.
-                    for part, native in protected_native_spans(transformed, keys.get(selected, frozenset()), transformed_spans):
+                    for part, native in protected_native_spans(transformed, native_keys, transformed_spans):
                         if native:
                             result.append(NativeDictionaryWord(part))
                         else:
@@ -407,13 +409,16 @@ class SynthDriver(BaseSynthDriver):
             return text
         dictionary = keys.get(language.id, frozenset())
         tag = "enus" if language.locale == "en_US" else "engb" if language.locale == "en_GB" else None
-        if word_segment and tag is not None:
-            segmenter = self._word_segmenters.get(tag)
-            if segmenter is None:
-                segmenter = WordSegmenter.from_files(DLL.with_name("wordseg-data"), tag)
-                self._word_segmenters[tag] = segmenter
-            text = segmenter.text(text, dictionary)
-        return split_camel(text, dictionary) if camel else text
+        def transform(value):
+            if word_segment and tag is not None:
+                segmenter = self._word_segmenters.get(tag)
+                if segmenter is None:
+                    segmenter = WordSegmenter.from_files(DLL.with_name("wordseg-data"), tag)
+                    self._word_segmenters[tag] = segmenter
+                value = segmenter.text(value, dictionary)
+            return split_camel(value, dictionary) if camel else value
+        compounds = native_compound_spans(text, dictionary)
+        return transform_unmatched(text, compounds, transform) if compounds else transform(text)
 
     @staticmethod
     def _make_player(sample_rate):
