@@ -1,6 +1,6 @@
 # Eloquence C – Bedienungsanleitung
 
-## Version 1.3.0 – Testversion
+## Version 1.3.0
 
 Die Zahlen 12 und 19 verwenden auf Brasilianisch-Portugiesisch auch in größeren Zahlen die üblichen Vokale. ECI-Betonungsbefehle verwenden dieselbe Sprachmelodie wie der entsprechende Reglerwert.
 
@@ -166,6 +166,8 @@ Parameter für alle Sprachen; beim Ausschalten kehren die getrennten Werte
 zurück. Die Eloquence-Abtastrate gilt immer sprachübergreifend. SAPI oder die
 Anwendung wandelt das Signal in ihre Ausgabe-Abtastrate um. Die angeforderte
 Ausgaberate verändert weder Eloquences Syntheserate noch deren Klangprofil.
-Geschwindigkeit und Lautstärke steuert SAPI. Ohne Geschwindigkeitsschub entspricht
-SAPI 0 dem ECI-Wert 60, jeder Schritt zehn ECI-Einheiten. Alle Profile starten
+Standardmäßig steuert die SAPI-Anwendung Geschwindigkeit und Lautstärke. Im Dialog
+„Anwendungswerte überschreiben“ lassen sich Geschwindigkeit, Tonhöhe und Lautstärke
+für ReLoq C unabhängig davon festlegen. Ohne Überschreibung oder Geschwindigkeitsschub
+entspricht SAPI 0 dem ECI-Wert 60, jeder Schritt zehn ECI-Einheiten. Alle Profile starten
 bei Lautstärke 100. Weitere Hinweise stehen im [SAPI-Leitfaden](../sapi/README.txt).

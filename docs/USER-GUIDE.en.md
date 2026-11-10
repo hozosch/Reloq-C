@@ -1,6 +1,6 @@
 # Eloquence C – user guide
 
-## Version 1.3.0 – test version
+## Version 1.3.0
 
 In Brazilian Portuguese, 12 and 19 use their usual vowels within larger numbers as well. ECI inflection commands use the same intonation as the corresponding setting.
 
@@ -160,7 +160,9 @@ supported Windows display language; the installer also offers an explicit langua
 all parameters across languages; turning it off restores separate language
 settings. The synthesis sample rate is common to every language. SAPI or the
 application converts this signal to its own output format; requesting a higher
-output rate does not change Eloquence's synthesis rate or bandwidth. Speed
-and volume belong to SAPI. Without speed boost, SAPI 0 maps to native ECI 60,
+output rate does not change Eloquence's synthesis rate or bandwidth. By default
+the SAPI application controls speed and volume. The Application overrides dialog
+can instead set ReLoq's speed, pitch and volume independently. Without an override
+or speed boost, SAPI 0 maps to native ECI 60,
 with ten native units per SAPI step. All profile volumes default to 100. Updates use the same installer. Windows Installed apps or the Start menu uninstall shortcut removes both architectures, retaining user dictionary files and settings. Basic x64 use is confirmed; further device and screen-reader UI testing remains necessary.
 See [the SAPI guide](../sapi/README.txt) for controls, installation and limitations.

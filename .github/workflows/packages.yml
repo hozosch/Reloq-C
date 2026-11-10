@@ -90,6 +90,9 @@ jobs:
           python3 -B nvda/test_eci_wpm_setting.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_wpm_languages.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_ptbr_numbers.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_equalizer.py --library eci/libreloq_eci.so
+          gcc -O2 -std=c11 -Wall -Wextra -Werror -Iinclude tests/test_reloq_equalizer.c src/reloq_equalizer.c -lm -o /tmp/test_reloq_equalizer
+          /tmp/test_reloq_equalizer
           python3 -B nvda/test_eci_inflection_tags.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_inline_queue.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_hz_adapter.py
@@ -208,11 +211,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download v1.2.1 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-1.2.1.nvda-addon' --dir previous-addon
-          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.2.1.nvda-addon --candidate dist/reloq-c-synth-x64-1.3.0-dev4.nvda-addon
+          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.2.1.nvda-addon --candidate dist/reloq-c-synth-x64-1.3.0.nvda-addon
       - name: Verify NVDA driver and offline dictionary startup
         run: |
           for language in en de; do
-            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.0-dev4.nvda-addon"))' "$language"
+            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.0.nvda-addon"))' "$language"
           done
       - uses: actions/upload-artifact@v4
         with:
@@ -220,8 +223,50 @@ jobs:
           path: dist/*.nvda-addon
           compression-level: 0
           retention-days: 14
+  nvda-windows:
+    needs: nvda
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-addon
+          path: candidate
+      - name: Verify packaged Windows core and NVDA integration
+        shell: pwsh
+        run: |
+          $addon = (Get-Item candidate/reloq-c-synth-x64-1.3.0.nvda-addon).FullName
+          python -c "import zipfile; z=zipfile.ZipFile(r'$addon'); assert z.testzip() is None; z.extract('synthDrivers/reloqC/eci.dll', 'candidate')"
+          if ($LASTEXITCODE -ne 0) { throw 'Core extraction failed' }
+          $dll = (Get-Item candidate/synthDrivers/reloqC/eci.dll).FullName
+          foreach ($test in @('nvda/test_eci_ptbr_numbers.py','nvda/test_eci_equalizer.py','nvda/test_eci_inflection_tags.py','nvda/test_eci_wpm_setting.py')) {
+            python -B $test --library $dll
+            if ($LASTEXITCODE -ne 0) { throw "$test failed" }
+          }
+          $env:PYTHONPATH = 'addon;nvda'
+          python -B addon/test_nvda_remote_loopback.py --library $dll --addon $addon
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA Remote integration failed' }
+          python -B addon/test_synth_native.py --library $dll --addon $addon
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA/native integration failed' }
+      - name: Verify live settings in real NVDA
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download release-2026.3.1 --repo nvaccess/nvda --pattern nvda_2026.3.1.exe --dir candidate
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA download failed' }
+          if ((Get-FileHash candidate/nvda_2026.3.1.exe -Algorithm SHA256).Hash -ne '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052') { throw 'Unexpected NVDA installer' }
+          $portable = Join-Path $pwd 'portable-nvda'
+          $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
+          $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
+          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.3.0.nvda-addon --work settings-results
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA settings probe failed' }
   collect:
-    needs: [version, native-regressions, sapi, android, nvda]
+    needs: [version, native-regressions, sapi, android, nvda, nvda-windows]
     if: needs.version.outputs.stable == 'true'
     runs-on: ubuntu-24.04
     steps:
