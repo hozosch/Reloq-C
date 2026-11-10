@@ -25,6 +25,18 @@ def main():
                 tagged = engine.speak(f'`vs{speed} {text}')
                 assert tagged == configured, (hex(language), speed, len(tagged), len(configured))
                 checks += 1
+            # The ordinary VB pitch scale must keep the same contract too;
+            # exact Hertz and WPM each have their own wider acoustic tests.
+            engine.voice(6, 106)
+            for pitch in (40, 80):
+                engine.tags(0)
+                engine.voice(2, pitch)
+                configured = engine.speak(text)
+                engine.voice(2, 65)
+                engine.tags(1)
+                tagged = engine.speak(f'`vb{pitch} {text}')
+                assert tagged == configured, (hex(language), pitch, 'VB pitch')
+                checks += 1
             # A queued setter and an inline tag after the same text must
             # preserve the same context and take effect at the same word.
             prefix, word, suffix = parts
@@ -56,7 +68,7 @@ def main():
                 checks += 1
         finally:
             engine.close()
-    print(f'Speed setting: {checks} VS tag, queued change and sample-rate comparisons passed')
+    print(f'Voice controls: {checks} speed, pitch, queued and sample-rate comparisons passed')
 
 
 if __name__ == '__main__':
