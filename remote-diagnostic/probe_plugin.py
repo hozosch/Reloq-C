@@ -56,6 +56,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             import globalVars
             import nvwave
             import tones
+            import speech
             import synthDriverHandler
             import config
             import _remoteClient
@@ -70,6 +71,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             nvwave.decide_playWaveFile.register(capture_wave)
             import synthDrivers.reloqC as reloq
             reloq.SynthDriver._make_player = staticmethod(lambda sample_rate: Player('speech'))
+            # Match NVDA's normal synth-switch sequence: clear the old
+            # synthesizer's speech queue before replacing its driver.
+            speech.cancelSpeech()
             if not synthDriverHandler.setSynth('reloqC'):
                 raise RuntimeError('Could not select Eloquence C')
             synth = synthDriverHandler.getSynth()
