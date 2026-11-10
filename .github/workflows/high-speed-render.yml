@@ -35,6 +35,7 @@ jobs:
           pathlib.Path('samples').mkdir()
           for package,label,speed in pairs:
               core=pathlib.Path(label)/'eci.dll'
+              core.parent.mkdir(exist_ok=True)
               with zipfile.ZipFile(package) as z:
                   assert z.testzip() is None
                   core.write_bytes(z.read('synthDrivers/reloqC/eci.dll'))
