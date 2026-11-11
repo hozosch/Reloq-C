@@ -20,7 +20,7 @@ The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provide
 | Android | ARM64 `.apk` | Android 8 or later, ARM64 device |
 | Windows SAPI5 | `-setup.exe` | Installs x64 and x86 voices together on compatible Windows |
 
-Release **1.2.2** updates existing 1.2.1 installations on all three platforms. If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [1.2.2 release notes](docs/releases/1.2.2.md) for this update. Source archives are for developers and are not installable packages.
+Release **1.3.1** updates existing installations on all three platforms. If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [1.3.1 release notes](docs/releases/1.3.1.md) for this update. Source archives are for developers and are not installable packages.
 
 ## Current features
 
