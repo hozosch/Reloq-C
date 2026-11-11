@@ -1,0 +1,38 @@
+name: Probe native capitalization
+on:
+  push:
+    branches: [codex/wordseg-case-probe]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  probe:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: wordseg-core-candidate
+          path: candidate
+          run-id: 43019116697
+          github-token: ${{ github.token }}
+      - name: Compare original and separated pronunciation
+        shell: pwsh
+        run: |
+          $dll = (Get-ChildItem candidate -Recurse -Filter eci.dll | Select-Object -First 1).FullName
+          $env:PROBE_DLL = $dll
+          @'
+          import os,sys
+          sys.path.insert(0,'nvda')
+          from _reloq_eci_direct import DirectEciEngine,WORD_SEGMENTATION
+          for lang in (0x10000,0x10001):
+              e=DirectEciEngine(os.environ['PROBE_DLL'],dialect=lang,encoding='utf8',native_voice=True)
+              for t in ('CGROUP','C G R O U P','C','G','R','O','U','P','SWAPFILE','swapfile','NASA'):
+                  e.set_parameter(WORD_SEGMENTATION,0)
+                  before=e._phonemes_for_probe(t)
+                  e.set_parameter(WORD_SEGMENTATION,1)
+                  after=e._phonemes_for_probe(t)
+                  print(hex(lang),repr(t),repr(before),repr(after),flush=True)
+              e.close()
+          '@ | python -
+          if ($LASTEXITCODE -ne 0) { throw 'Probe failed' }
