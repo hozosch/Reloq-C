@@ -24,17 +24,27 @@ jobs:
         run: |
           dll=$(find candidate -name eci.dll -print -quit)
           test -n "$dll"
+          curl --fail --silent --show-error --location --output cmudict.dict https://raw.githubusercontent.com/cmusphinx/cmudict/74790861f652b15e4ac49015a90074ad62a27690/cmudict.dict
           python - "$dll" <<'PY'
-          import json, re, sys
+          import hashlib, json, re, sys
           from pathlib import Path
           sys.path.insert(0, 'nvda')
           from _reloq_eci_direct import DirectEciEngine, WORD_SEGMENTATION
           source = Path('src/reloq_wordseg_compounds.inc').read_text(encoding='ascii')
           candidates = re.findall(r'^\s*\{"([a-z]+)",(\d+),', source, re.M)
+          cmudata = Path('cmudict.dict').read_bytes()
+          assert hashlib.sha256(cmudata).hexdigest() == '81917843c7f44ce2b094ac63873c2c7a4cf802040792c455ba3ca406891c3d22'
+          cmuwords = {m.group(1) for line in cmudata.decode('utf8').splitlines() if (m := re.match(r'^([a-z]+)(?:\(\d+\))? +', line))}
+          pieces = set(Path('nvda/wordseg-data/enus-pieces').read_text(encoding='utf8').splitlines())
           needed = set()
           for word, boundary in candidates:
               at = int(boundary)
               needed.update((word, word[:at], word[at:]))
+              for suffix in ('s', 'es', 'ed', 'ing'):
+                  extended = word + suffix
+                  a, b = extended[:at], extended[at:]
+                  if extended in cmuwords and a in pieces and b in pieces and a in cmuwords and b in cmuwords:
+                      needed.update((extended, a, b))
           output = {'source_commit': '8dd892cb1670295e16ba938257d435ed98d5df2f', 'readings': {}}
           for dialect, name in ((0x10000, 'enus'), (0x10001, 'engb')):
               engine = DirectEciEngine(Path(sys.argv[1]).resolve(), dialect=dialect, encoding='utf8', native_voice=True)
