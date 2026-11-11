@@ -65,9 +65,11 @@ int wmain(void)
         WAVEFORMATEX format={WAVE_FORMAT_PCM,1,11025,22050,2,16,0};
         if(SUCCEEDED(hr))hr=ISpStream_SetBaseStream(audio,memory,&SPDFID_WaveFormatEx,&format);
         if(SUCCEEDED(hr))hr=ISpVoice_SetOutput(voice,(IUnknown *)audio,FALSE);
-        for(unsigned n=0;n<3&&SUCCEEDED(hr);++n){
-            settings.dictionaries=n==1;if(FAILED(sapi_settings_write(dialect,&settings))){hr=E_FAIL;break;}
-            wprintf(L"English dialect %08X, community %ls:\n",(unsigned)dialect,settings.dictionaries?L"on":L"off");
+        for(unsigned n=0;n<3&&SUCCEEDED(hr);++n)for(unsigned mode=0;mode<4&&SUCCEEDED(hr);++mode){
+            settings.dictionaries=n==1;settings.word_segmentation=mode&1;settings.camel_case=(mode>>1)&1;
+            if(FAILED(sapi_settings_write(dialect,&settings))){hr=E_FAIL;break;}
+            wprintf(L"English dialect %08X, community %ls, word %lu, camel %lu:\n",(unsigned)dialect,
+                settings.dictionaries?L"on":L"off",(unsigned long)settings.word_segmentation,(unsigned long)settings.camel_case);
             const WCHAR *words[]={L"youtube",L"HumanWare",L"snapdragon"};
             for(unsigned i=0;i<3&&SUCCEEDED(hr);++i)hr=expect_same(voice,memory,words[i],L"test");
             if(SUCCEEDED(hr))hr=expect_same(voice,memory,L"mainsource",L"banana");
