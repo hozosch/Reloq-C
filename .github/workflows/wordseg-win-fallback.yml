@@ -99,7 +99,7 @@ jobs:
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          make -C sapi -j2 CC=gcc BUILD=build SAPI_VERSION=1.4.0
+          make -C sapi -j2 CC=gcc BUILD=build build/ReLoqSapi.dll build/Test-SAPI.exe
           cp eci/eci.dll sapi/build/eci.dll
       - name: Test personal dictionaries through Windows SAPI
         shell: pwsh
