@@ -127,7 +127,7 @@ Unter **Wörterbuchquelle** kannst du zusätzlich **Alternative IBM-TTS-Wörterb
 
 Nach einer Aktualisierung erscheint ein Dialog mit der Zahl neuer, unterschiedlicher Einträge und neuer Wörterbuchdateien. Änderungen oder Entfernungen zählen nicht als Zugänge. Beim ersten Download werden die Gesamtzahlen angezeigt; falls der vorherige Stand nicht vergleichbar ist, weist der Dialog darauf hin. Online-Updates übernehmen derzeit einen festen Satz unterstützter Dateinamen; andere neu hinzugefügte Dateien werden nicht automatisch heruntergeladen.
 
-Mit **Datei hinzufügen** kannst du eigene Dic-Dateien auswählen und ihnen Sprache und Wörterbuchtyp zuordnen. Die Dateien dürfen beliebig heißen und bleiben an ihrem bisherigen Ort. Spätere Dateien in der Liste haben Vorrang. **OK** oder **Übernehmen** speichert die Auswahl.
+Mit **Datei hinzufügen** wählst du ein NVDA- oder Eloquence-Wörterbuch und seine Sprache. Eine NVDA-Datei wird als eigene Kopie importiert, die du über die Liste bearbeiten kannst; die Originaldatei bleibt unverändert. Ein Eloquence-Wörterbuch bleibt an seinem bisherigen Ort. Bei mehreren Eloquence-Dateien haben spätere Dateien Vorrang; **OK** oder **Übernehmen** speichert ihre Auswahl.
 
 Mit **Wörterbuchordner öffnen** erreichst du den vorhandenen Ordner `synthDrivers/reloqC/communityDictionaries` im Add-on. Dort liegen die mitgelieferten Dateien; dort werden auch Änderungen in einem Editor erkannt. Bei aktivierten Gemeinschaftswörterbüchern kannst du weitere Dateien mit dem Präfix aus der Sprachtabelle und einem dieser Namen ergänzen:
 
@@ -137,7 +137,7 @@ Mit **Wörterbuchordner öffnen** erreichst du den vorhandenen Ordner `synthDriv
 
 Die Dateien verwenden das native Dic-Format: Windows-1252, ein Eintrag pro Zeile und ein Tabulator zwischen Suchwort und Ersetzung. Main unterscheidet Groß- und Kleinschreibung; gewöhnliche Textersetzungen durchlaufen anschließend die normale Textanalyse. Stamm- und Ausspracheangaben werden an der jeweiligen Wörterbuchstelle verarbeitet.
 
-Änderungen an eingebundenen Dateien und Dateien im Wörterbuchordner werden im Hintergrund erkannt. Das gilt auch für neu angelegte Dateien und für Editoren, die eine Datei beim Speichern ersetzen. Bei ungültigen Daten bleibt der letzte gültige Stand aktiv. Gemeinschaftswörterbuch-Updates aktualisieren die Dateien in diesem Add-on-Ordner. Eigene eingebundene Dateien und lokal bearbeitete oder entfernte Wörterbuchdateien werden dabei erhalten. Ein lokal bearbeitetes Volume hat Vorrang vor der heruntergeladenen Fassung. Es wird kein zusätzlicher Bearbeitungsordner im NVDA-Hauptverzeichnis angelegt.
+Änderungen an eingebundenen Eloquence-Dateien und Dateien im Wörterbuchordner werden im Hintergrund erkannt. Das gilt auch für neu angelegte Dateien und für Editoren, die eine Datei beim Speichern ersetzen. Bei ungültigen Daten bleibt der letzte gültige Stand aktiv. Gemeinschaftswörterbuch-Updates aktualisieren die Dateien in diesem Add-on-Ordner. Eigene eingebundene Dateien und lokal bearbeitete oder entfernte Wörterbuchdateien werden dabei erhalten. Ein lokal bearbeitetes Volume hat Vorrang vor der heruntergeladenen Fassung.
 
 Die erste Sprachausgabe wartet, bis die ausgewählten Wörterbücher vollständig geladen sind. Wenn beim Start kein gültiger Stand verfügbar ist, erscheint eine Fehlermeldung. Prüfe dann die Wörterbucheinstellungen oder wähle vorübergehend eine andere Sprachausgabe.
 

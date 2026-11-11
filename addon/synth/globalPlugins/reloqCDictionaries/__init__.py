@@ -486,13 +486,23 @@ class EloquenceSettingsPanel(SettingsPanel):
                     return
                 path = dialog.GetPath()
             from synthDrivers.reloqC._reloq_nvda_dicts import identify_file
-            suggested = identify_file(path)
+            try:
+                suggested = identify_file(path)
+            except ValueError:
+                # An ambiguous or large native dictionary can still be
+                # selected explicitly, without guessing that it is NVDA.
+                suggested = None
             formats = [_('NVDA speech dictionary'), _('Eloquence pronunciation dictionary')]
-            with wx.SingleChoiceDialog(self, _("Dictionary format:"), _("Dictionary format"), formats) as dialog:
-                dialog.SetSelection(0 if suggested == 'nvda' else 1)
+            prompt = (_("Dictionary format:") if suggested else
+                      _("Could not detect the format. Choose the dictionary format:"))
+            with wx.SingleChoiceDialog(self, prompt, _("Dictionary format"), formats) as dialog:
+                dialog.SetSelection(0 if suggested == 'nvda' else 1 if suggested == 'eci' else wx.NOT_FOUND)
                 if dialog.ShowModal() != wx.ID_OK:
                     return
-                nvda = dialog.GetSelection() == 0
+                choice = dialog.GetSelection()
+                if choice not in (0, 1):
+                    return
+                nvda = choice == 0
             with wx.SingleChoiceDialog(self, _("Language of the dictionary:"),
                                        _("Dictionary language"), [_(item.name) for item in self.languages]) as dialog:
                 current = next((i for i, item in enumerate(self.languages)

@@ -163,7 +163,9 @@ class ImportedDictionaries:
         source = Path(source)
         with source.open("rb") as stream:
             data = stream.read(_MAX_BYTES + 1)
-        count = _validate(data)
+        # An intentionally empty NVDA dictionary is still useful: the copy
+        # can be opened in NVDA's editor and filled in after import.
+        count = _validate(data, allow_empty=True)
         stem = re.sub(r"[^A-Za-z0-9_.-]+", "_", source.stem).strip("._")[:60] or "dictionary"
         digest = hashlib.sha256(data).hexdigest()[:16]
         self.directory.mkdir(parents=True, exist_ok=True)

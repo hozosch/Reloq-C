@@ -41,6 +41,9 @@ msgstr "Eloquence-Dateien werden mit OK oder Übernehmen gespeichert. NVDA-Impor
 msgid "Dictionary format:"
 msgstr "Wörterbuchformat:"
 
+msgid "Could not detect the format. Choose the dictionary format:"
+msgstr "Das Format konnte nicht erkannt werden. Wähle das Wörterbuchformat:"
+
 msgid "Dictionary format"
 msgstr "Wörterbuchformat"
 
