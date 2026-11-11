@@ -1,4 +1,4 @@
-name: Compare fileswap across English dialects
+name: Probe British compound phoneme input
 on:
   push:
     branches: [codex/wordseg-native-probe-20261111]
@@ -20,34 +20,27 @@ jobs:
           run-id: 43041033700
           github-token: ${{ github.token }}
           path: candidate
-      - name: Probe actual ECI phonemes and audio
+      - name: Probe British phoneme tags
         shell: bash
         run: |
           dll=$(find candidate -name eci.dll -print -quit)
           python - "$dll" <<'PY'
-          import hashlib, re, sys
+          import sys
           from pathlib import Path
-          sys.path.insert(0, 'nvda')
-          from _reloq_eci_direct import DirectEciEngine, WORD_SEGMENTATION
+          sys.path.insert(0,'nvda')
+          from _reloq_eci_direct import DirectEciEngine, PROCESS_TAGS, WORD_SEGMENTATION
           from test_eci_german_clock_native import render
-          pairs={'fileswap':('file','swap'), 'swapfile':('swap','file'), 'filebuffer':('file','buffer'), 'bufferfile':('buffer','file'), 'framebuffer':('frame','buffer'), 'screenreader':('screen','reader'), 'redhead':('red','head')}
-          def phones(s):
-              return ''.join(re.sub(r'\.[0-3]', '', p) for p in re.findall(r'`\[([^]]+)\]', s))
-          for dialect in (0x10000, 0x10001):
-              engine=DirectEciEngine(Path(sys.argv[1]).resolve(), dialect=dialect, encoding='utf8', native_voice=True)
-              try:
-                  print('DIALECT',hex(dialect))
-                  for word,parts in pairs.items():
-                      engine.set_parameter(WORD_SEGMENTATION,0)
-                      before=engine._phonemes_for_probe(word)
-                      p=[engine._phonemes_for_probe(x) for x in parts]
-                      engine.set_parameter(WORD_SEGMENTATION,1)
-                      after=engine._phonemes_for_probe(word)
-                      print(word,'before=',repr(before),'after=',repr(after),'parts=',repr(p),'matched=',phones(after)==''.join(phones(x) for x in p))
-                  for text in ('fileswap', 'fileswap Fenster', 'Open fileswap now', 'Fileswap', 'FILESWAP'):
-                      for state in (0,1):
-                          engine.set_parameter(WORD_SEGMENTATION,state)
-                          print('TEXT',repr(text),'setting',state,'PHONES',repr(engine._phonemes_for_probe(text)))
-              finally:
-                  engine.close()
+          engine=DirectEciEngine(Path(sys.argv[1]).resolve(), dialect=0x10001, encoding='utf8', native_voice=True)
+          try:
+              engine.set_parameter(PROCESS_TAGS,1)
+              for text in ('swap', 'candle', 'fileswap', 'candlefile', 'filecandle', '`[.1fYl.2sw@p]', '`[.1kAn.0dL.2fYl]', '`[.1fYl.2kAn.0dL]'):
+                  engine.set_parameter(WORD_SEGMENTATION, 0)
+                  try:
+                      print('PHONES',repr(text),repr(engine._phonemes_for_probe(text)))
+                      a=render(engine,[text])[0]
+                      print('AUDIO',repr(text),'size=',len(a))
+                  except Exception as e:
+                      print('ERROR',repr(text),repr(e))
+          finally:
+              engine.close()
           PY
