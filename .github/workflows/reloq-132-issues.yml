@@ -28,6 +28,7 @@ jobs:
           name: italian-original-observations
           path: italian-original.json
   source:
+    if: false
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -43,6 +44,7 @@ jobs:
           compression-level: 0
           retention-days: 7
   italian-before:
+    if: false
     runs-on: windows-2022
     timeout-minutes: 15
     env:

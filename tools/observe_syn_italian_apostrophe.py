@@ -29,6 +29,34 @@ CASES = ('po', "po'", 'po\u2019', 'p\u00f2', "Aspetta un po'", 'Aspetta un po\u2
          "l'amico", "perche'", "qual'e'", "'po'", "po'chi")
 
 
+def original_phonemes(dll, text):
+    callback_type=C.WINFUNCTYPE(C.c_int,C.c_void_p,C.c_int,C.c_int,C.c_void_p)
+    buffer=C.create_string_buffer(65536)
+    chunks=[]
+    messages=[]
+    @callback_type
+    def callback(_handle,message,count,_user):
+        messages.append((message,count))
+        if message==1 and 0<=count<=len(buffer):
+            chunks.append(buffer.raw[:count])
+        return 1
+    dll.eciRegisterCallback.argtypes=[C.c_void_p,callback_type,C.c_void_p]
+    dll.eciRegisterCallback.restype=None
+    handle=dll.eciNewEx(0x50000)
+    if not handle:raise RuntimeError('Cannot initialize original Italian ECI')
+    try:
+        dll.eciRegisterCallback(handle,callback,None)
+        mode=dll.eciSetParam(handle,0,1)
+        input_type=dll.eciSetParam(handle,1,1)
+        added=dll.eciAddText(handle,text.encode('cp1252'))
+        status=dll.eciGeneratePhonemes(handle,len(buffer),buffer)
+        dll.eciSynchronize(handle)
+        data=b''.join(chunks) if chunks else buffer.value
+        return {'status':status,'mode':mode,'input':input_type,'added':added,
+                'messages':messages,'phonemes':data.decode('cp1252',errors='replace')}
+    finally:dll.eciDelete(handle)
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',type=Path,required=True)
@@ -41,7 +69,7 @@ def main():
         dll=load(args.engine_dir/'ECI.DLL')
         rows=[]
         for text in CASES:
-            row={'text':text,'spr':observe(dll,0x50000,text,phonemes=True),
+            row={'text':text,'spr':original_phonemes(dll,text),
                  'pcm':observe(dll,0x50000,text)}
             rows.append(row)
             print(json.dumps(row,ensure_ascii=True),flush=True)
