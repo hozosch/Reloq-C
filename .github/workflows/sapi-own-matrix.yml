@@ -1,0 +1,39 @@
+name: Investigate SAPI personal dictionaries
+on:
+  push:
+    branches: [codex/sapi-own-matrix-20261111]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  test:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: sapi-native-x64
+          run-id: 43089766529
+          github-token: ${{ github.token }}
+          path: payload
+      - name: Unpack tested 1.4.0 native components
+        shell: pwsh
+        run: |
+          $z = (Get-ChildItem payload/reloq-c-sapi5-x64-*-payload.zip | Select-Object -First 1).FullName
+          Expand-Archive -Path $z -DestinationPath candidate
+      - name: Compile dictionary matrix probe
+        shell: bash
+        run: |
+          export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
+          gcc -std=c11 -Os -Wall -Wextra -Werror -Wno-misleading-indentation -ffunction-sections -fdata-sections -DUNICODE -D_UNICODE -Isapi -Iinclude -municode sapi/test_sapi_personal_matrix.c sapi/settings.c sapi/guids.c -static-libgcc -Wl,--gc-sections,--strip-all,--no-insert-timestamp -lole32 -luuid -ladvapi32 -lcomctl32 -lcomdlg32 -lshell32 -lgdi32 -lwinhttp -lm -o candidate/Test-PersonalMatrix.exe
+      - name: Check personal dictionaries with and without community data
+        shell: pwsh
+        run: |
+          $dll = (Get-Item candidate/ReLoqSapi.dll).FullName
+          $p = Start-Process regsvr32.exe -ArgumentList '/s', $dll -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "SAPI registration failed: $($p.ExitCode)" }
+          & candidate/Test-PersonalMatrix.exe
+          if ($LASTEXITCODE -ne 0) { throw "Personal dictionary matrix failed: $LASTEXITCODE" }
