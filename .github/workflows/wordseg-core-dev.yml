@@ -18,11 +18,16 @@ jobs:
         run: |
           sudo apt-get -o Acquire::Retries=2 update -qq
           sudo apt-get -o Acquire::Retries=2 install -y --no-install-recommends gcc-mingw-w64-x86-64-posix gettext
+      - name: Check cached provider inputs
+        run: |
+          git fetch --no-tags --depth=1 origin 8833399d4a3f74a0fa5f8e4c9a3cb45aeb976d66
+          git diff --quiet FETCH_HEAD HEAD -- vendor/openevv61 src/reloq_voice_filter.c include/reloq_voice_filter.h include/reloq_voice_controls.h include/reloq_inline_tags.h src/reloq_orthography.c include/reloq_orthography.h src/reloq_german_word_edges.c include/reloq_german_word_edges.h src/reloq_english_word_edges.c include/reloq_english_word_edges.h
       - uses: actions/cache@v4
         id: rules
         with:
           path: vendor/openevv61/build
-          key: sapi-rules-ubuntu24-gcc13-v1-x64-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c') }}
+          # Same provider inputs as 1.3.1; new segmentation lives in the host.
+          key: sapi-rules-ubuntu24-gcc13-v1-x64-bf015a5474ab1999fcc51b40d7352fd3f4df5c786da942e6d0eb1ab99d8c6b88
       - name: Restore cached rule timestamps
         if: steps.rules.outputs.cache-hit == 'true'
         run: find vendor/openevv61/build -type f -exec touch {} +
@@ -77,6 +82,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'NVDA adapter failed' }
           python addon/test_nvda_remote_loopback.py --library $dll --addon $addon
           if ($LASTEXITCODE -ne 0) { throw 'NVDA remote loopback failed' }
+          $sapi = (Get-ChildItem candidate -Recurse -Filter ReLoqSapi.dll | Select-Object -First 1).DirectoryName
+          Copy-Item $dll (Join-Path $sapi 'eci.dll')
+          python sapi/test_dialog_order.py --directory $sapi
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI settings dialog failed' }
       - name: Install real portable NVDA
         shell: pwsh
         env:

@@ -104,6 +104,7 @@ public class DirectBootTest {
  public static void main(String[] x) throws Exception {
   Context.ce.data.put("profile",5);Context.ce.data.put("language",1);Context.ce.data.put("androidVoice",false);
   Context.ce.data.put("rate",2);Context.ce.data.put("androidPitch",false);Context.ce.data.put("voice.5.pitch",48);
+  Context.ce.data.put("wordSegmentation",true);Context.ce.data.put("camelCase",true);
   Context.ce.data.put("dictionarySources","private URI");
   File first=new File(new Context().getFilesDir(),"dictionaries/snapshots/"+"a".repeat(64));check(first.mkdirs());
   Files.writeString(new File(first,"DEUmain.dic").toPath(),"Apfel\\tApfelwort\\n");
@@ -114,6 +115,7 @@ public class DirectBootTest {
   ReLoqService s=new ReLoqService();s.onCreate();
   check(s.onGetDefaultVoiceNameFor("de","DE","").endsWith("-Sandy"));speak(s);
   check(NativeEngine.created==1&&NativeEngine.synthesized==1&&NativeEngine.path!=null&&NativeEngine.controls[2]==48);
+  check(NativeEngine.controls[40]==1&&NativeEngine.controls[41]==1);
   check(Files.readString(new File(NativeEngine.path,"DEUmain.dic").toPath()).contains("Apfelwort"));
   check(DictionaryStore.starts==0&&DictionaryStore.acquires==0);
   Context.locked=false;Context.ce.data.put("voice.5.pitch",62);

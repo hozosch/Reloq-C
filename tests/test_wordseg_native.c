@@ -37,6 +37,9 @@ int main(void)
     assert((reloq_wordseg_category(0x39b)&RELOQ_WORDSEG_UPPER)!=0);
     assert((reloq_wordseg_category(0x308)&RELOQ_WORDSEG_MARK)!=0);
     assert(!(reloq_wordseg_category(' ')&RELOQ_WORDSEG_WORD));
+    unsigned char folded[12];
+    assert(reloq_wordseg_casefold(0xdf,folded)==2&&!memcmp(folded,"ss",2));
+    assert(reloq_wordseg_casefold(0x39b,folded)==2&&!memcmp(folded,"\xce\xbb",2));
     puts("Native segmentation: English recognition and Unicode case passed");
     return 0;
 }

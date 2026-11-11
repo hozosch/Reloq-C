@@ -41,6 +41,7 @@ def main():
     # text to locate them, since the dialog follows the Windows UI language.
     rate_id, pauses_id, mellow_id = 103, 104, 123
     clock_id = 154
+    segmentation_id, camel_id = 156, 157
     overrides_id, own_rate_id, own_rate_value_id, own_pitch_id, own_volume_id, own_volume_value_id = range(126, 132)
     (rate_eci_id, rate_wpm_id, rate_wpm_value_id, pitch_eci_id,
      pitch_hz_id, pitch_value_id, pitch_hz_value_id) = range(132, 139)
@@ -61,6 +62,7 @@ def main():
     saved = None
     saved_main = None
     saved_clock = None
+    saved_segmentation = saved_camel = None
 
     def find_modal():
         candidates = []
@@ -185,6 +187,16 @@ def main():
                 raise AssertionError(f'Settings dialog exited with {result}')
             time.sleep(.1)
         assert window, 'Settings dialog did not appear'
+        tags, segmentation, abbreviations, camel = (user32.GetDlgItem(window, control)
+                                                     for control in (110, segmentation_id, 111, camel_id))
+        assert tags and segmentation and abbreviations and camel
+        assert text(window, segmentation_id) and text(window, camel_id)
+        assert user32.GetNextDlgTabItem(window, tags, False) == segmentation
+        assert user32.GetNextDlgTabItem(window, segmentation, False) == abbreviations
+        assert user32.GetNextDlgTabItem(window, abbreviations, False) == camel
+        saved_segmentation, saved_camel = checked(window, segmentation_id), checked(window, camel_id)
+        set_checked(window, segmentation_id, not saved_segmentation)
+        set_checked(window, camel_id, not saved_camel)
         assert user32.GetDlgItem(window, clock_id) and text(window, clock_id), 'Original timing checkbox missing'
         saved_clock = checked(window, clock_id)
         set_checked(window, clock_id, not saved_clock)
@@ -275,6 +287,9 @@ def main():
         assert not user32.IsWindowEnabled(user32.GetDlgItem(modal, own_volume_value_id))
         print('SAPI controls, keyboard order, override persistence and enable states verified')
     finally:
+        if saved_segmentation is not None and window and user32.IsWindow(window):
+            set_checked(window, segmentation_id, saved_segmentation)
+            set_checked(window, camel_id, saved_camel)
         if saved_clock is not None and window and user32.IsWindow(window):
             set_checked(window, clock_id, saved_clock)
         if saved and thread.is_alive():
