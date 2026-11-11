@@ -28,13 +28,14 @@ def main():
     with tempfile.TemporaryDirectory() as temporary:
         build=Path(temporary);generate(build/"generated")
         folder=ROOT/"android/java/org/reloq/tts"
-        sources=[folder/(n+".java") for n in ("PcmQueue","Catalog","VoiceSettings","Preferences","BootPreferences","DictionaryData","UpdateData")]
+        sources=[folder/(n+".java") for n in ("PcmQueue","Catalog","VoiceSettings","Preferences","BootPreferences","DictionaryData","SpeechDictionary","UpdateData")]
         sources.extend((build/"generated").rglob("RateCurve.java"))
-        sources.extend(ROOT/"android/test"/(n+".java") for n in ("PcmQueueTest","SettingsTest","UpdateDataTest"))
+        sources.extend(ROOT/"android/test"/(n+".java") for n in ("PcmQueueTest","SettingsTest","SpeechDictionaryTest","UpdateDataTest"))
         subprocess.run([str(a.java_home/"bin/javac"),"-encoding","UTF-8","-cp",str(a.android_jar),"-d",str(build),*map(str,sources)],check=True)
         classpath=str(build)+os.pathsep+str(a.android_jar)
         base=[str(a.java_home/"bin/java"),"-cp",classpath]
         subprocess.run([*base,"org.reloq.tts.PcmQueueTest"],check=True,timeout=30)
+        subprocess.run([*base,"org.reloq.tts.SpeechDictionaryTest"],check=True,timeout=30)
         subprocess.run([*base,"org.reloq.tts.UpdateDataTest"],check=True,timeout=30)
         try:
             result=subprocess.run([*base,"org.reloq.tts.SettingsTest"],check=True,capture_output=True,text=True,timeout=30)

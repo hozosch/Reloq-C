@@ -45,9 +45,10 @@ HRESULT sapi_settings_shared(BOOL *);
 HRESULT sapi_settings_set_shared(int,BOOL);
 HRESULT sapi_settings_dialog(HWND,int);
 int sapi_module_path(WCHAR *,size_t,const WCHAR *);
-#ifndef RELOQ_SAPI_TEST_HOST
 #define SAPI_DICTIONARY_FILES_MAX 64
-struct sapi_dictionary_file {int dialect;DWORD volume;WCHAR path[1024];};
+enum {SAPI_DICT_AUTO=0,SAPI_DICT_ECI=1,SAPI_DICT_NVDA=2};
+struct sapi_dictionary_file {int dialect;DWORD volume;WCHAR path[1024];DWORD format,voice;};
+#ifndef RELOQ_SAPI_TEST_HOST
 HRESULT sapi_dictionary_files_load(struct sapi_dictionary_file *,size_t,size_t *);
 HRESULT sapi_dictionary_files_save(const struct sapi_dictionary_file *,size_t);
 HRESULT sapi_dictionary_resolve(const struct sapi_settings *,WCHAR *,size_t);

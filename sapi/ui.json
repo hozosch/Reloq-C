@@ -109,7 +109,13 @@
     "DICT_OK",
     "DICT_CANCEL",
     "WORD_SEGMENTATION",
-    "CAMEL_CASE"
+    "CAMEL_CASE",
+    "DICT_FORMAT",
+    "DICT_FORMAT_AUTO",
+    "DICT_FORMAT_ECI",
+    "DICT_FORMAT_NVDA",
+    "DICT_VOICE",
+    "DICT_ALL_VOICES"
   ],
   "en": [
     "ReLoq C voice settings",
@@ -221,7 +227,13 @@
     "OK",
     "Cancel",
     "Split unfamiliar English words",
-    "Split camel-case words (all languages)"
+    "Split camel-case words (all languages)",
+    "Dictionary &format:",
+    "Detect automatically",
+    "Eloquence dictionary",
+    "NVDA speech dictionary",
+    "Apply to &voice:",
+    "All voices"
   ],
   "de": [
     "ReLoq C – Stimmeinstellungen",
@@ -333,7 +345,13 @@
     "OK",
     "Abbrechen",
     "Unbekannte englische Wörter zerlegen",
-    "Camel-Case-Wörter zerlegen (alle Sprachen)"
+    "Camel-Case-Wörter zerlegen (alle Sprachen)",
+    "Wörterbuch&format:",
+    "Automatisch erkennen",
+    "Eloquence-Wörterbuch",
+    "NVDA-Sprachwörterbuch",
+    "Für &Stimme:",
+    "Alle Stimmen"
   ],
   "es": [
     "ReLoq C – Ajustes de voz",
@@ -445,7 +463,13 @@
     "Aceptar",
     "Cancelar",
     "Dividir palabras inglesas desconocidas",
-    "Dividir palabras camelCase (todos los idiomas)"
+    "Dividir palabras camelCase (todos los idiomas)",
+    "&Formato del diccionario:",
+    "Detectar automáticamente",
+    "Diccionario Eloquence",
+    "Diccionario de voz NVDA",
+    "Aplicar a la &voz:",
+    "Todas las voces"
   ],
   "fr": [
     "ReLoq C – Paramètres de voix",
@@ -557,7 +581,13 @@
     "OK",
     "Annuler",
     "Séparer les mots anglais inconnus",
-    "Séparer les mots camelCase (toutes les langues)"
+    "Séparer les mots camelCase (toutes les langues)",
+    "&Format du dictionnaire :",
+    "Détection automatique",
+    "Dictionnaire Eloquence",
+    "Dictionnaire vocal NVDA",
+    "Appliquer à la &voix :",
+    "Toutes les voix"
   ],
   "it": [
     "ReLoq C – Impostazioni voce",
@@ -669,7 +699,13 @@
     "OK",
     "Annulla",
     "Suddividi parole inglesi sconosciute",
-    "Suddividi parole camelCase (tutte le lingue)"
+    "Suddividi parole camelCase (tutte le lingue)",
+    "&Formato del dizionario:",
+    "Rileva automaticamente",
+    "Dizionario Eloquence",
+    "Dizionario vocale NVDA",
+    "Applica alla &voce:",
+    "Tutte le voci"
   ],
   "pt": [
     "ReLoq C – Configurações de voz",
@@ -781,7 +817,13 @@
     "OK",
     "Cancelar",
     "Dividir palavras desconhecidas em inglês",
-    "Dividir palavras camelCase (todos os idiomas)"
+    "Dividir palavras camelCase (todos os idiomas)",
+    "&Formato do dicionário:",
+    "Detectar automaticamente",
+    "Dicionário Eloquence",
+    "Dicionário de voz NVDA",
+    "Aplicar à &voz:",
+    "Todas as vozes"
   ],
   "fi": [
     "ReLoq C – Ääniasetukset",
@@ -893,7 +935,13 @@
     "OK",
     "Peruuta",
     "Jaa tuntemattomat englanninkieliset sanat",
-    "Jaa camelCase-sanat (kaikki kielet)"
+    "Jaa camelCase-sanat (kaikki kielet)",
+    "Sanaston &muoto:",
+    "Tunnista automaattisesti",
+    "Eloquence-sanasto",
+    "NVDA-puhesanasto",
+    "Käytä &äänessä:",
+    "Kaikki äänet"
   ],
   "el": [
     "ReLoq C – Ρυθμίσεις φωνής",
@@ -1005,7 +1053,13 @@
     "Εντάξει",
     "Ακύρωση",
     "Διαίρεση άγνωστων αγγλικών λέξεων",
-    "Διαίρεση λέξεων camelCase (όλες οι γλώσσες)"
+    "Διαίρεση λέξεων camelCase (όλες οι γλώσσες)",
+    "&Μορφή λεξικού:",
+    "Αυτόματη αναγνώριση",
+    "Λεξικό Eloquence",
+    "Λεξικό ομιλίας NVDA",
+    "Εφαρμογή στη &φωνή:",
+    "Όλες οι φωνές"
   ],
   "ja": [
     "ReLoq C 音声設定",
@@ -1117,7 +1171,13 @@
     "OK",
     "キャンセル",
     "未知の英単語を分割",
-    "キャメルケースを分割（すべての言語）"
+    "キャメルケースを分割（すべての言語）",
+    "辞書の形式(&F):",
+    "自動判定",
+    "Eloquence辞書",
+    "NVDA音声辞書",
+    "適用する音声(&V):",
+    "すべての音声"
   ],
   "ko": [
     "ReLoq C 음성 설정",
@@ -1229,7 +1289,13 @@
     "확인",
     "취소",
     "알 수 없는 영어 단어 분리",
-    "카멜 케이스 단어 분리 (모든 언어)"
+    "카멜 케이스 단어 분리 (모든 언어)",
+    "사전 형식(&F):",
+    "자동 감지",
+    "Eloquence 사전",
+    "NVDA 음성 사전",
+    "적용할 음성(&V):",
+    "모든 음성"
   ],
   "zh": [
     "ReLoq C 语音设置",
@@ -1341,7 +1407,13 @@
     "确定",
     "取消",
     "拆分未知英语单词",
-    "拆分驼峰式单词（所有语言）"
+    "拆分驼峰式单词（所有语言）",
+    "词典格式(&F)：",
+    "自动检测",
+    "Eloquence 词典",
+    "NVDA 语音词典",
+    "应用到语音(&V)：",
+    "所有语音"
   ],
   "zh-Hant": [
     "ReLoq C 語音設定",
@@ -1453,6 +1525,12 @@
     "確定",
     "取消",
     "拆分未知英語單字",
-    "拆分駝峰式單字（所有語言）"
+    "拆分駝峰式單字（所有語言）",
+    "字典格式(&F)：",
+    "自動偵測",
+    "Eloquence 字典",
+    "NVDA 語音字典",
+    "套用至語音(&V)：",
+    "所有語音"
   ]
 }

@@ -96,13 +96,19 @@ current master** resolves the current `eigencrow/IBMTTSDictionaries` master,
 verifies the downloaded Git blobs and activates a complete new snapshot.
 Synthesis does not access the network.
 
-Select a language and Main, Root or Abbreviations before adding your own Dic
-file through Android's file picker. Files use Windows-1252 and tab-separated
-entries. You can reorder or remove sources; later own files override earlier
-ones and community entries. Main preserves case; German Root retains its native
-case folding. Replacements and phonetic entries go through the C core's normal
-dictionary stages, including compound/context handling, rather than a Java
-text substitution.
+Select a language and file format before adding a personal dictionary through
+Android's file picker. Eloquence files use Main, Root or Abbreviations and
+Windows-1252; later own files override earlier files and community entries.
+They go through the normal native dictionary stages, including compound and
+context handling. Main preserves case; German Root retains its native folding.
+
+NVDA speech dictionaries use UTF-8 and apply to all voices or one selected
+voice. Their entries are processed in order before pronunciation and word
+segmentation, independently of the community switch. The format can be detected
+automatically or selected explicitly, including for an ambiguous file.
+Previously selected NVDA-format files are recognized on reload. The source
+file is not changed. Android uses its own regular-expression engine, so some
+Python-specific patterns and Unicode case-folding details may differ from NVDA.
 
 Selected sources remain linked using persistent file permissions. While the
 speech service is running, the monitor checks modification metadata every two

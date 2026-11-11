@@ -54,7 +54,7 @@
     <string name="move_dictionary_up">Sposta prima il file selezionato</string>
     <string name="move_dictionary_down">Sposta dopo il file selezionato</string>
     <string name="reload_dictionaries">Ricarica i file selezionati</string>
-    <string name="dictionary_help">I dizionari della comunità e le voci Dic personali usano le fasi native dei dizionari. Scegli la lingua e la sezione prima di aggiungere un file. I file usano la codifica Windows-1252. I file successivi sostituiscono le voci dei precedenti. Le modifiche vengono monitorate se il fornitore di documenti fornisce metadati di modifica; Ricarica i file selezionati rilegge sempre le fonti. La fonte scelta viene scaricata al primo utilizzo o durante l’aggiornamento. I dizionari attivati vengono copiati nella memoria protetta del dispositivo per usarli dopo il riavvio, prima del primo sblocco.</string>
+    <string name="dictionary_help">Scegli la lingua e il formato. I file Eloquence usano la sezione selezionata e i file NVDA la voce selezionata. I file personali funzionano indipendentemente dai dizionari della comunità. Ricarica i file per leggerli nuovamente.</string>
     <string name="dictionary_working">Preparazione dei dizionari</string>
     <string name="dictionary_ready">Dizionari pronti</string>
     <string name="dictionary_error">Aggiornamento del dizionario non riuscito: %1$s</string>
@@ -123,4 +123,8 @@
     <string name="not_now">Non ora</string>
     <string name="update_notification_title">Aggiornamenti di ReLoq C</string>
     <string name="update_notification_body">La versione %1$s è disponibile. Tocca per esaminare e scaricare.</string>
+    <string name="dictionary_format">Formato del dizionario</string>
+    <string name="dictionary_voice">Voci per i dizionari NVDA</string>
+    <string name="dictionary_all_voices">Tutte le voci</string>
+    <string-array name="dictionary_formats"><item>Rileva automaticamente</item><item>NVDA</item><item>Eloquence</item></string-array>
 </resources>

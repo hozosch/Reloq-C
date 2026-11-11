@@ -77,3 +77,8 @@ open-dict-data/ipa-dict revision 972cd67dd5f96bc5660e28070cde26e3928abcd7:
 https://github.com/open-dict-data/ipa-dict
 That dataset is based on Leo Boiko's ipacards and is licensed under GPL-3.0;
 the license text is included in LICENSE.
+
+PCRE2
+The SAPI adapter uses PCRE2 10.45 for imported speech-dictionary patterns.
+The source and copyright/license terms are in vendor/pcre2/LICENSE; the SAPI
+packages include the same text in licenses/PCRE2-LICENSE.txt.

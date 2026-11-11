@@ -119,14 +119,23 @@ are verified in the background and stored in the current user's profile. A
 successful update displays the numbers of new distinct entries and files;
 changes and removals do not count as additions.
 
-Choose “Own dictionaries” to add native .dic files and select the language
-and Main, Root or Abbreviations volume for each one. Move files up or down to
-change their precedence: later files override earlier files and the selected
-community source. The original files are never altered. Personal files remain
-active even when community dictionaries are disabled. Updates to selected
-files are detected between utterances. A previously configured custom folder
-still overrides the chosen community source. SAPI's lexicon editor is not
-implemented.
+Choose “Own dictionaries” to add Eloquence .dic files or NVDA speech
+dictionaries. Select the language and, for Eloquence files, Main, Root or
+Abbreviations. For NVDA files, select all voices or a specific voice. The
+dialog suggests the format; change it if an ambiguous file was identified
+incorrectly. Existing automatically selected NVDA files are recognized on
+reload. The original files are never altered and personal files remain active
+when community dictionaries are disabled. Changes to selected source files are
+detected between utterances.
+
+Eloquence files use the native dictionary stages; later own files override
+earlier files and the selected community source. NVDA files use UTF-8, retain
+their entry order, case setting and match type, and are applied before speech
+and word segmentation. They support ordinary regular-expression captures.
+SAPI uses PCRE2 for regular expressions, so some Python-specific patterns and
+Unicode case-folding details can differ from NVDA. Invalid patterns are
+reported when selecting the file. A previously configured custom folder still
+overrides the chosen community source. SAPI's lexicon editor is not implemented.
 
 Validation and limits
 ---------------------

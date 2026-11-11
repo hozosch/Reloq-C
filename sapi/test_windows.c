@@ -204,6 +204,17 @@ static int run_personal_dictionary_case(void)
             actual_bytes==expected_bytes&&actual==expected);
         if(SUCCEEDED(hr)&&(actual_bytes!=expected_bytes||actual!=expected))hr=E_FAIL;
     }
+    /* A previously selected NVDA speech dictionary is identified from its
+     * contents, even if its old selection used the root volume. */
+    if(SUCCEEDED(hr))hr=speak_hash(voice,memory,L"banana",&expected_bytes,&expected);
+    file=NULL;if(SUCCEEDED(hr)){file=_wfopen(source,L"wb");if(!file)hr=E_FAIL;}
+    if(file){const char *data="\xef\xbb\xbf# NVDA speech dictionary\r\nyoutube\tbanana\t0\t0\r\n";size_t n=strlen(data);
+        int written=fwrite(data,1,n,file)==n;int closed=fclose(file)==0;if(!written||!closed)hr=E_FAIL;}
+    Sleep(550);
+    if(SUCCEEDED(hr))hr=speak_hash(voice,memory,L"youtube",&actual_bytes,&actual);
+    wprintf(L"NVDA-format dictionary: HRESULT=%08lX, matched=%d\n",(unsigned long)hr,
+        actual_bytes==expected_bytes&&actual==expected);
+    if(SUCCEEDED(hr)&&(actual_bytes!=expected_bytes||actual!=expected))hr=E_FAIL;
     if(SUCCEEDED(hr)){
         list[0]=list[1]=0;
         if(RegSetValueExW(key,L"DictionaryFiles",0,REG_MULTI_SZ,(BYTE *)list,2*sizeof(WCHAR))!=ERROR_SUCCESS)hr=E_FAIL;

@@ -103,6 +103,8 @@ jobs:
             Expand-Archive -Path $zip -DestinationPath "test-$arch"
             & "./test-$arch/Test-Dictionary.exe"
             if ($LASTEXITCODE -ne 0) { throw "Dictionary source smoke test failed for $arch" }
+            & "./test-$arch/Test-DictionarySources.exe"
+            if ($LASTEXITCODE -ne 0) { throw "Personal dictionary snapshot test failed for $arch" }
           }
       - name: Check standard ECI dictionary switching and performance
         shell: pwsh
@@ -177,6 +179,8 @@ jobs:
           if ($registered.DisplayName -ne 'ReLoq C SAPI5' -or $registered.DisplayVersion -ne '1.4.0') { throw 'SAPI application name or version metadata is incorrect' }
           if ((Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'Dictionary edit lost during upgrade' }
           & ./sapi/test_japanese_sapi.ps1 -ReportPath dist/validation/japanese-results.json
+          python -B sapi/test_dictionary_import_ui.py --directory $install
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI personal dictionary dialog failed' }
           foreach ($arch in @('x64','x86')) {
             $test = if ($arch -eq 'x64') { Join-Path $install 'Test-SAPI.exe' } else { Join-Path $install 'x86\Test-SAPI.exe' }
             & $test --dictionarycase *> "dist/validation/sapi-$arch-dictionary.txt"

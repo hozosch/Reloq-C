@@ -55,7 +55,7 @@
     <string name="move_dictionary_up">Move selected file earlier</string>
     <string name="move_dictionary_down">Move selected file later</string>
     <string name="reload_dictionaries">Reload selected files</string>
-    <string name="dictionary_help">Community and own Dic entries use the native dictionary stages. Choose the language and volume before adding a file. Files use Windows-1252 encoding. Later files override earlier entries. Changes are monitored when the document provider supplies change metadata; Reload selected files always rereads the sources. The selected online source is downloaded when first needed or when updated. Activated dictionaries are copied to device-protected storage so they can be used after a restart before the first unlock.</string>
+    <string name="dictionary_help">Select a language and format. Eloquence files use the selected volume; NVDA files use the selected voice. Own files work independently of community dictionaries. Reload selected files to reread their sources.</string>
     <string name="dictionary_working">Preparing dictionaries</string>
     <string name="dictionary_ready">Dictionaries ready</string>
     <string name="dictionary_error">Dictionary update failed: %1$s</string>
@@ -124,4 +124,8 @@
     <string name="not_now">Not now</string>
     <string name="update_notification_title">ReLoq C updates</string>
     <string name="update_notification_body">Version %1$s is available. Tap to review and download.</string>
+    <string name="dictionary_format">Dictionary format</string>
+    <string name="dictionary_voice">Voices for NVDA dictionaries</string>
+    <string name="dictionary_all_voices">All voices</string>
+    <string-array name="dictionary_formats"><item>Detect automatically</item><item>NVDA</item><item>Eloquence</item></string-array>
 </resources>

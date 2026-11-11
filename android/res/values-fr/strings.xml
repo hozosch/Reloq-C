@@ -54,7 +54,7 @@
     <string name="move_dictionary_up">Déplacer le fichier sélectionné vers le haut</string>
     <string name="move_dictionary_down">Déplacer le fichier sélectionné vers le bas</string>
     <string name="reload_dictionaries">Recharger les fichiers sélectionnés</string>
-    <string name="dictionary_help">Les dictionnaires communautaires et les entrées Dic personnelles utilisent les étapes natives des dictionnaires. Choisissez la langue et la section avant d’ajouter un fichier. Les fichiers utilisent l’encodage Windows-1252. Les fichiers suivants remplacent les entrées des précédents. Les modifications sont surveillées lorsque le fournisseur de documents transmet des métadonnées de modification ; Recharger les fichiers sélectionnés relit toujours les sources. La source choisie est téléchargée lors de sa première utilisation ou de sa mise à jour. Les dictionnaires activés sont copiés dans le stockage protégé de l’appareil pour être utilisables après un redémarrage et avant le premier déverrouillage.</string>
+    <string name="dictionary_help">Choisissez la langue et le format. Les fichiers Eloquence utilisent la section sélectionnée et les fichiers NVDA la voix sélectionnée. Les fichiers personnels fonctionnent indépendamment des dictionnaires communautaires. Rechargez les fichiers pour les relire.</string>
     <string name="dictionary_working">Préparation des dictionnaires</string>
     <string name="dictionary_ready">Dictionnaires prêts</string>
     <string name="dictionary_error">Échec de la mise à jour du dictionnaire : %1$s</string>
@@ -123,4 +123,8 @@
     <string name="not_now">Pas maintenant</string>
     <string name="update_notification_title">Mises à jour de ReLoq C</string>
     <string name="update_notification_body">La version %1$s est disponible. Touchez pour consulter et télécharger.</string>
+    <string name="dictionary_format">Format du dictionnaire</string>
+    <string name="dictionary_voice">Voix pour les dictionnaires NVDA</string>
+    <string name="dictionary_all_voices">Toutes les voix</string>
+    <string-array name="dictionary_formats"><item>Détection automatique</item><item>NVDA</item><item>Eloquence</item></string-array>
 </resources>

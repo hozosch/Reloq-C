@@ -11,11 +11,11 @@ import android.view.View;
 import android.widget.*;
 import org.json.*;
 
-/** Native dictionary data selection; downloads/merges never run on the UI. */
+/** Personal and community dictionary selection; merges stay off the UI. */
 public final class DictionaryActivity extends Activity {
     private static final int OPEN=41;
     private CheckBox community;
-    private Spinner language,volume,repository;
+    private Spinner language,volume,repository,format,voice;
     private ListView list;
     private TextView status;
     private LinearLayout content;
@@ -65,7 +65,17 @@ public final class DictionaryActivity extends Activity {
         content.addView(list,new LinearLayout.LayoutParams(-1,(int)(200*getResources().getDisplayMetrics().density)));
         int first=DictionaryStore.prefs(this).getInt("language",3);
         language=select(R.string.dictionary_language,Catalog.LANGUAGES,first);
+        format=select(R.string.dictionary_format,getResources().getStringArray(R.array.dictionary_formats),0);
         volume=select(R.string.dictionary_volume,getResources().getStringArray(R.array.dictionary_volumes),0);
+        String[] voices=new String[Catalog.PROFILES.length+1];voices[0]=getString(R.string.dictionary_all_voices);
+        System.arraycopy(Catalog.PROFILES,0,voices,1,Catalog.PROFILES.length);
+        voice=select(R.string.dictionary_voice,voices,0);
+        format.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+            public void onItemSelected(android.widget.AdapterView<?> parent,View view,int position,long id) {
+                updateFormatControls();
+            }
+        });
         button(R.string.add_dictionary,() -> {
             Intent intent=new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE)
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
@@ -85,6 +95,10 @@ public final class DictionaryActivity extends Activity {
     private static JSONArray copy(JSONArray array) {
         try{return new JSONArray(array.toString());}catch(JSONException e){throw new IllegalArgumentException(e);}
     }
+    private void updateFormatControls() {
+        int selected=format.getSelectedItemPosition();
+        volume.setEnabled(!busy&&selected!=1);voice.setEnabled(!busy&&selected!=2);
+    }
     private void reload() {
         loading=true;sources=DictionaryStore.sources(this);
         community.setChecked(DictionaryStore.prefs(this).getBoolean("communityDictionaries",false));
@@ -93,9 +107,19 @@ public final class DictionaryActivity extends Activity {
         for(int i=0;i<sources.length();++i)try {
             JSONObject row=sources.getJSONObject(i);Catalog.Language lang=null;
             for(Catalog.Language l:Catalog.LANGUAGES)if(l.id==row.getInt("language"))lang=l;
+            String type=row.optString("format","auto");int selectedVoice=row.optInt("voice",0);
+            if(selectedVoice<0||selectedVoice>Catalog.PROFILES.length||row.getInt("volume")<0||row.getInt("volume")>2)
+                throw new IllegalArgumentException("Invalid dictionary scope");
+            if(type.equals("auto")) {
+                String snapshot=DictionaryStore.prefs(this).getString("dictionarySnapshot",null);
+                if(snapshot!=null&&new java.io.File(snapshot,SpeechDictionary.snapshotName(i,row.getInt("language"),selectedVoice)).isFile())type="nvda";
+                else type="eci";
+            }
+            String scope=type.equals("nvda")?(selectedVoice==0?getString(R.string.dictionary_all_voices):
+                Catalog.PROFILES[selectedVoice-1]):getResources().getStringArray(R.array.dictionary_volumes)[row.getInt("volume")];
             names.add((i+1)+". "+row.optString("name",row.getString("uri"))+" — "+
-                (lang==null?"":lang.name)+", "+getResources().getStringArray(R.array.dictionary_volumes)[row.getInt("volume")]);
-        }catch(JSONException e){names.add(getString(R.string.dictionary_unavailable));}
+                (lang==null?"":lang.name)+", "+(type.equals("nvda")?"NVDA":"Eloquence")+", "+scope);
+        }catch(JSONException|IllegalArgumentException e){names.add(getString(R.string.dictionary_unavailable));}
         list.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_list_item_single_choice,names));loading=false;
     }
     private interface Action {void run() throws Exception;}
@@ -112,7 +136,7 @@ public final class DictionaryActivity extends Activity {
             final DictionaryData.UpdateSummary summary=result;
             runOnUiThread(() -> {
                 if(isFinishing()||isDestroyed())return;
-                busy=false;for(View view:actions)view.setEnabled(true);reload();
+                busy=false;for(View view:actions)view.setEnabled(true);updateFormatControls();reload();
                 status.setText(error==null?getString(R.string.dictionary_ready):getString(R.string.dictionary_error,error.getMessage()));
                 if(error==null&&summary!=null) {
                     boolean first=summary.known&&!summary.compared&&(summary.total>0||summary.totalFiles>0);
@@ -151,7 +175,9 @@ public final class DictionaryActivity extends Activity {
         try {
             JSONArray next=copy(sources);
             next.put(new JSONObject().put("uri",uri.toString()).put("name",name)
-                .put("language",Catalog.LANGUAGES[language.getSelectedItemPosition()].id).put("volume",volume.getSelectedItemPosition()));
+                .put("language",Catalog.LANGUAGES[language.getSelectedItemPosition()].id).put("volume",volume.getSelectedItemPosition())
+                .put("format",new String[]{"auto","nvda","eci"}[format.getSelectedItemPosition()])
+                .put("voice",voice.getSelectedItemPosition()));
             boolean enabled=community.isChecked();work(() -> DictionaryStore.rebuild(this,enabled,next));
         }catch(JSONException error){status.setText(getString(R.string.dictionary_error,error.getMessage()));}
     }

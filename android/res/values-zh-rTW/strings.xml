@@ -54,7 +54,7 @@
     <string name="move_dictionary_up">將所選檔案往前移</string>
     <string name="move_dictionary_down">將所選檔案往後移</string>
     <string name="reload_dictionaries">重新載入所選檔案</string>
-    <string name="dictionary_help">社群字典和自訂 Dic 項目均使用引擎原生的字典處理階段。新增檔案前請選擇語言和分卷。檔案使用 Windows-1252 編碼。後面的檔案會覆寫前面檔案的項目。若文件提供者提供修改資訊，就會監控檔案變更；重新載入所選檔案會一律重新讀取來源檔案。所選來源在首次使用或更新時下載。 啟用的字典會複製到裝置保護儲存空間，以便重新啟動後在首次解鎖前使用。</string>
+    <string name="dictionary_help">選擇語言與格式。Eloquence 檔案使用選定的字典類型，NVDA 檔案使用選定的語音。個人檔案獨立於社群字典运作。重新載入可再次讀取來源檔案。</string>
     <string name="dictionary_working">正在準備字典</string>
     <string name="dictionary_ready">字典已就緒</string>
     <string name="dictionary_error">字典更新失敗：%1$s</string>
@@ -123,4 +123,8 @@
     <string name="not_now">暫不</string>
     <string name="update_notification_title">ReLoq C 更新</string>
     <string name="update_notification_body">版本 %1$s 已推出。點選以檢視並下載。</string>
+    <string name="dictionary_format">字典格式</string>
+    <string name="dictionary_voice">NVDA 字典使用的語音</string>
+    <string name="dictionary_all_voices">所有語音</string>
+    <string-array name="dictionary_formats"><item>自動偵測</item><item>NVDA</item><item>Eloquence</item></string-array>
 </resources>

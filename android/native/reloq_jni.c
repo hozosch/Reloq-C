@@ -98,8 +98,8 @@ Java_org_reloq_tts_NativeEngine_create(JNIEnv *env, jclass type)
 }
 
 JNIEXPORT jboolean JNICALL
-Java_org_reloq_tts_NativeEngine_synthesize(JNIEnv *env, jclass type,
-    jlong pointer, jint dialect, jintArray controls, jbyteArray text, jobject sink)
+Java_org_reloq_tts_NativeEngine_synthesizeImpl(JNIEnv *env, jclass type,
+    jlong pointer, jint dialect, jintArray controls, jbyteArray text, jobject sink, jboolean guarded)
 {
     (void)type;
     android_engine *engine = (android_engine *)(intptr_t)pointer;
@@ -174,7 +174,7 @@ Java_org_reloq_tts_NativeEngine_synthesize(JNIEnv *env, jclass type,
     jsize length = (*env)->GetArrayLength(env, text);
     jbyte *bytes = (*env)->GetByteArrayElements(env, text, NULL);
     if (!bytes) goto done;
-    int accepted = eciAddTextUtf8(handle, bytes, (size_t)length, 0);
+    int accepted = eciAddTextUtf8(handle, bytes, (size_t)length, guarded?2:0);
     (*env)->ReleaseByteArrayElements(env, text, bytes, JNI_ABORT);
     if (accepted && !is_cancelled(env, engine))
         ok = eciSynthesize(handle) && eciSynchronize(handle);

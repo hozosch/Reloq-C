@@ -54,7 +54,7 @@
     <string name="move_dictionary_up">Gewählte Datei nach vorne verschieben</string>
     <string name="move_dictionary_down">Gewählte Datei nach hinten verschieben</string>
     <string name="reload_dictionaries">Gewählte Dateien neu laden</string>
-    <string name="dictionary_help">Einträge aus Gemeinschafts- und eigenen Dic-Dateien nutzen die nativen Wörterbuchstufen. Wähle Sprache und Typ vor dem Hinzufügen einer Datei. Die Dateien verwenden Windows-1252. Spätere Dateien überschreiben frühere Einträge. Änderungen werden erkannt, wenn der Dateianbieter Änderungsdaten liefert; Neu laden liest die Quellen immer erneut. Die gewählte Onlinequelle wird bei der ersten Verwendung oder beim Aktualisieren heruntergeladen. Aktivierte Wörterbücher werden in den gerätegeschützten Speicher kopiert, damit sie nach einem Neustart schon vor dem ersten Entsperren verfügbar sind.</string>
+    <string name="dictionary_help">Wähle Sprache und Format. Für Eloquence-Dateien gilt der ausgewählte Wörterbuchtyp, für NVDA-Dateien die ausgewählte Stimme. Eigene Dateien funktionieren unabhängig von den Gemeinschaftswörterbüchern. Neu laden liest die Quellen erneut.</string>
     <string name="dictionary_working">Wörterbücher werden vorbereitet</string>
     <string name="dictionary_ready">Wörterbücher bereit</string>
     <string name="dictionary_error">Wörterbuchaktualisierung fehlgeschlagen: %1$s</string>
@@ -123,4 +123,8 @@
     <string name="not_now">Jetzt nicht</string>
     <string name="update_notification_title">ReLoq-C-Updates</string>
     <string name="update_notification_body">Version %1$s ist verfügbar. Zum Prüfen und Herunterladen öffnen.</string>
+    <string name="dictionary_format">Wörterbuchformat</string>
+    <string name="dictionary_voice">Stimmen für NVDA-Wörterbücher</string>
+    <string name="dictionary_all_voices">Alle Stimmen</string>
+    <string-array name="dictionary_formats"><item>Automatisch erkennen</item><item>NVDA</item><item>Eloquence</item></string-array>
 </resources>

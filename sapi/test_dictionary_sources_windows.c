@@ -46,6 +46,22 @@ int main(void)
     swprintf(file,2048,L"%ls\\ENUmain.dic",path);if(!equals(file,"alpha\tcommunity\ncustom\tone\nshared\treplaced-longer\n"))return 14;
     settings.dictionaries=0;if(FAILED(sapi_dictionary_resolve(&settings,path,2048)))return 15;
     swprintf(file,2048,L"%ls\\ENUmain.dic",path);if(!equals(file,"custom\tone\nshared\treplaced-longer\n"))return 16;
+    /* Preserve explicit format and voice, and publish NVDA data separately
+     * with or without the community native volumes. */
+    const char *nvda="\xef\xbb\xbf# NVDA\nyoutube\tbanana\t0\t2\n";
+    if(!write_file(sources[0].path,nvda))return 28;
+    sources[0].format=SAPI_DICT_NVDA;sources[0].voice=2;
+    if(FAILED(sapi_dictionary_files_save(sources,2))||FAILED(sapi_dictionary_files_load(loaded,2,&count))||
+       count!=2||loaded[0].format!=SAPI_DICT_NVDA||loaded[0].voice!=2)return 29;
+    for(unsigned enabled=0;enabled<2;++enabled){settings.dictionaries=enabled;
+        if(FAILED(sapi_dictionary_prepare(&settings,sources,2,path,2048)))return 30;
+        swprintf(file,2048,L"%ls\\nvda-000-00010000-2.nvda",path);
+        if(!equals(file,nvda)||!equals(sources[0].path,nvda))return 31;
+        swprintf(file,2048,L"%ls\\ENUmain.dic",path);
+        if(!equals(file,enabled?"alpha\tcommunity\nshared\treplaced-longer\n":"shared\treplaced-longer\n"))return 32;
+    }
+    sources[0].format=0;sources[0].voice=0;settings.dictionaries=0;
+    if(!write_file(sources[0].path,"shared\tfirst\ncustom\tone\n")||FAILED(sapi_dictionary_files_save(sources,2)))return 33;
     sources[0].dialect=0x60000;sources[1].dialect=0x60001;
     if(FAILED(sapi_dictionary_files_save(sources,2))||FAILED(sapi_dictionary_resolve(&settings,path,2048)))return 17;
     swprintf(file,2048,L"%ls\\CHSmain.dic",path);

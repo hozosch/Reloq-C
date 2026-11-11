@@ -1,7 +1,9 @@
 # Cross-platform NVDA speech dictionary compatibility
 
-This branch establishes parsing and reference tests. It does not yet enable
-NVDA speech-dictionary processing in the SAPI or Android speech pipelines.
+This branch adds NVDA-format import and speech preprocessing to SAPI and
+Android using the same format, language and voice selection as the add-on.
+It does not replace either platform's regular-expression implementation with
+the NVDA process or claim identical behavior for every Python regex.
 
 ## Reference behavior
 
@@ -28,23 +30,20 @@ mark as a word character while PCRE2 with Unicode properties does. Word-type
 entries in NVDA intentionally use different word-boundary behavior. A simple
 replacement of NVDA's regex engine with a PCRE2 call is not sufficient.
 
-`common/nvda_dictionary.c` only parses the file structure; it does not compile
-patterns or make replacements. Callers must validate regexes as well, and must
-avoid treating an ambiguous four-column native Eloquence file as NVDA without
-allowing the user to override the detected format.
+`common/nvda_dictionary.c` parses the file structure. The SAPI adapter compiles
+and applies entries with PCRE2; Android uses its built-in regex engine. Invalid
+expressions are rejected at import. The format can be selected explicitly so
+an ambiguous four-column native Eloquence file can remain a native source.
 
 ## Integration checks
 
-The completed feature needs tests for all entry types, regex captures,
-case-insensitive Unicode, empty and malformed inputs, BOM and comments,
-language and voice scope, source order, and independent operation with
-community dictionaries both enabled and disabled. Existing mistakenly selected
-NVDA-format files need a migration path that leaves source bytes intact.
+Host-side tests cover entry types, regex captures, case, malformed inputs,
+BOM and comments, language and voice scope, source order, and independent
+operation with community dictionaries enabled or disabled. They also cover
+mistakenly selected NVDA-format files without modifying the original source.
 
-SAPI must preserve original source offsets and word, sentence and bookmark
-events when replacement text has a different length. Replacements must also
-work across its ordinary fragmented speech input. Android must include the
-new dictionary data in the device-protected snapshot used before unlock, while
-preserving the existing snapshot publication and lifetime rules. In both
-adapters the replacement stage must cooperate with word segmentation and not
-affect native Eloquence dictionary handling.
+SAPI host tests check original source offsets, speech events, word segmentation,
+and ordinary fragmented input. Android host tests exercise snapshot publication,
+the device-protected copy before unlock, and actual JNI synthesis. Windows
+installer and Android package builds and platform-specific tests must still pass
+before the feature can be considered release-ready.

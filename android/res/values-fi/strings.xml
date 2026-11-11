@@ -54,7 +54,7 @@
     <string name="move_dictionary_up">Siirrä valittu tiedosto aiemmaksi</string>
     <string name="move_dictionary_down">Siirrä valittu tiedosto myöhemmäksi</string>
     <string name="reload_dictionaries">Lataa valitut tiedostot uudelleen</string>
-    <string name="dictionary_help">Yhteisön sanastot ja omat Dic-merkinnät käyttävät moottorin omia sanastovaiheita. Valitse kieli ja sanaston tyyppi ennen tiedoston lisäämistä. Tiedostot käyttävät Windows-1252-merkistöä. Myöhemmät tiedostot korvaavat aiempien merkinnät. Muutoksia seurataan, jos asiakirjapalvelu välittää muutostietoja; Lataa valitut tiedostot uudelleen lukee aina lähdetiedostot uudestaan. Valittu lähde ladataan ensimmäisellä käyttökerralla tai päivitettäessä. Käytössä olevat sanastot kopioidaan laitteen suojattuun tallennustilaan, jotta ne ovat käytettävissä uudelleenkäynnistyksen jälkeen ennen ensimmäistä lukituksen avaamista.</string>
+    <string name="dictionary_help">Valitse kieli ja muoto. Eloquence-tiedostot käyttävät valittua sanastotyyppiä ja NVDA-tiedostot valittua ääntä. Omat tiedostot toimivat yhteisön sanastoista riippumatta. Lataa tiedostot uudelleen, jotta lähteet luetaan uudestaan.</string>
     <string name="dictionary_working">Valmistellaan sanastoja</string>
     <string name="dictionary_ready">Sanastot valmiit</string>
     <string name="dictionary_error">Sanaston päivitys epäonnistui: %1$s</string>
@@ -123,4 +123,8 @@
     <string name="not_now">Ei nyt</string>
     <string name="update_notification_title">ReLoq C -päivitykset</string>
     <string name="update_notification_body">Versio %1$s on saatavilla. Avaa tarkistaaksesi ja ladataksesi.</string>
+    <string name="dictionary_format">Sanaston muoto</string>
+    <string name="dictionary_voice">NVDA-sanastojen äänet</string>
+    <string name="dictionary_all_voices">Kaikki äänet</string>
+    <string-array name="dictionary_formats"><item>Tunnista automaattisesti</item><item>NVDA</item><item>Eloquence</item></string-array>
 </resources>

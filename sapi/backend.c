@@ -6,6 +6,7 @@
 #include "reloq_voice_controls.h"
 #include "speed.h"
 #include "pitch.h"
+#include "speech_dictionary.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -77,6 +78,8 @@ struct sapi_backend {
     SPEVENT *events;size_t event_count,event_capacity;
     struct bookmark *bookmarks;
     int dictionary_ready;WCHAR dictionary_path[2048];
+    struct reloq_nvda_speech *speech_dictionary;
+    WCHAR speech_path[2048];unsigned speech_profile;int speech_ready;
     WIN32_FILE_ATTRIBUTE_DATA dictionary_files[6];
     HANDLE dictionary_watch;FILETIME dictionary_directory_created;
 };
@@ -217,12 +220,19 @@ static HRESULT dictionary(struct sapi_backend *b,const struct sapi_settings *s)
     if(s->dictionaries){
         if(s->directory[0])wcscpy(path,s->directory);
         else if(!sapi_module_path(path,2048,L"dictionaries"))return E_FAIL;
+    }
 #else
     HRESULT resolved=sapi_dictionary_resolve(s,path,2048);
     /* Reuse already initialized dictionaries after a transient error. */
     if(FAILED(resolved))return b->dictionary_ready?S_OK:resolved;
-    if(path[0]){
 #endif
+    if(!b->speech_ready||wcscmp(path,b->speech_path)||b->speech_profile!=s->profile){
+        struct reloq_nvda_speech *next=NULL;
+        if(!sapi_speech_dictionary_load(path,b->dialect,s->profile,&next))return E_FAIL;
+        reloq_nvda_speech_free(b->speech_dictionary);b->speech_dictionary=next;
+        wcscpy(b->speech_path,path);b->speech_profile=s->profile;b->speech_ready=1;
+    }
+    if(path[0]){
         /* Retain initialized dictionaries without testing every file on
          * every announcement. Recheck the directory identity so deleting
          * and recreating it cannot strand the watch on the old directory. */
@@ -341,9 +351,111 @@ static ULONG sentence_length(const SPVTEXTFRAG *fragment,size_t at)
     }
     return end>begin&&end-begin<=ULONG_MAX?(ULONG)(end-begin):0;
 }
-static HRESULT synthesize(struct sapi_backend *b)
+struct speech_fragment {char *text;size_t length,*wide,*map;int matched;};
+static void fragment_free(struct speech_fragment *f)
+{free(f->text);free(f->wide);free(f->map);memset(f,0,sizeof *f);}
+static int fragment_prepare(struct sapi_backend *b,const SPVTEXTFRAG *f,struct speech_fragment *out)
 {
-    HRESULT hr=configure(b,&b->job);if(FAILED(hr))return hr;
+    memset(out,0,sizeof *out);
+    if(!b->speech_dictionary||f->State.eAction==SPVA_SpellOut||!f->ulTextLen)return 1;
+    size_t count=f->ulTextLen;if(count>INT_MAX||count>=SIZE_MAX/sizeof(size_t))return 0;
+    int bytes=WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,f->pTextStart,(int)count,NULL,0,NULL,NULL);
+    if(bytes<=0)return 0;char *utf8=malloc((size_t)bytes+1);size_t *wide=malloc((count+1)*sizeof *wide);
+    if(!utf8||!wide){free(utf8);free(wide);return 0;}
+    if(WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,f->pTextStart,(int)count,utf8,bytes,NULL,NULL)!=bytes){free(utf8);free(wide);return 0;}
+    size_t at=0,offset=0;wide[0]=0;
+    while(at<count){uint32_t c=(uint32_t)f->pTextStart[at++];
+        if(c>=0xd800&&c<=0xdbff&&at<count){wide[at]=offset;
+            c=0x10000+((c-0xd800)<<10)+((uint32_t)f->pTextStart[at++]-0xdc00);}
+        offset+=c<0x80?1:c<0x800?2:c<0x10000?3:4;wide[at]=offset;
+    }
+    if(offset!=(size_t)bytes||!reloq_nvda_speech_apply(b->speech_dictionary,utf8,(size_t)bytes,
+            &out->text,&out->length,&out->map,&out->matched)){
+        free(utf8);free(wide);fragment_free(out);return 0;}
+    free(utf8);out->wide=wide;return 1;
+}
+static int fragment_add(struct sapi_backend *b,const SPVTEXTFRAG *f,const struct speech_fragment *t,size_t start,size_t end)
+{
+    if(start==end)return 1;
+    if(!t->text)return add_wide(b,f->pTextStart+start,end-start,f->State.eAction==SPVA_SpellOut);
+    size_t first=t->map[t->wide[start]],last=t->map[t->wide[end]];
+    return last>=first&&last<=t->length&&(! (last-first)||core.add(b->handle,t->text+first,last-first,t->matched?2:0));
+}
+/* Preserve SAPI's original source offsets while applying substitutions to a
+ * whole ordinary fragment before sending its word-boundary chunks to ECI. */
+static int fragment_speak(struct sapi_backend *b,const SPVTEXTFRAG *f,int *sentence,int *has_text)
+{
+    struct speech_fragment t;if(!fragment_prepare(b,f,&t))return 0;int status=1;
+    if(!(b->job.interest&(((ULONGLONG)1<<SPEI_WORD_BOUNDARY)|((ULONGLONG)1<<SPEI_SENTENCE_BOUNDARY)))){
+        status=fragment_add(b,f,&t,0,f->ulTextLen);
+        *has_text|=t.text?t.length!=0:f->ulTextLen!=0;fragment_free(&t);return status;
+    }
+    size_t at=0,next_poll=0;
+    while(at<f->ulTextLen){size_t start=at;
+        if(at>=next_poll){if(!output_actions(b->output)){status=-1;break;}next_poll=at+256;}
+        WCHAR c=f->pTextStart[at];
+        if(iswspace(c)||iswpunct(c)){++at;
+            if(sentence_end(c))*sentence=1;
+            if(!fragment_add(b,f,&t,start,at)){status=0;break;}
+        }else{
+            do{++at;if((at&1023)==0&&!output_actions(b->output)){status=-1;break;}
+                if(c>=0xd800&&c<=0xdbff&&at<f->ulTextLen)++at;
+                if(at>=f->ulTextLen)break;c=f->pTextStart[at];
+            }while(!iswspace(c)&&!iswpunct(c));
+            if(status<0)break;
+            if(start>UINT32_MAX-f->ulTextSrcOffset||at-start>UINT32_MAX){status=0;break;}
+            if(*sentence){if(!event_mark(b,SPEI_SENTENCE_BOUNDARY,f->ulTextSrcOffset+(ULONG)start,sentence_length(f,start),NULL)){status=0;break;}*sentence=0;}
+            if(!event_mark(b,SPEI_WORD_BOUNDARY,f->ulTextSrcOffset+(ULONG)start,(ULONG)(at-start),NULL)||
+               !fragment_add(b,f,&t,start,at)){status=0;break;}
+        }
+        *has_text|=t.text?t.length!=0:1;
+    }
+    fragment_free(&t);return status;
+}
+struct joined_fragment {SPVTEXTFRAG fragment;WCHAR *owned;};
+static int compatible_fragments(const SPVTEXTFRAG *a,const SPVTEXTFRAG *b)
+{
+    return a&&b&&a->State.eAction==SPVA_Speak&&b->State.eAction==SPVA_Speak&&
+        a->pTextStart&&b->pTextStart&&a->ulTextSrcOffset<=UINT32_MAX-a->ulTextLen&&
+        a->ulTextSrcOffset+a->ulTextLen==b->ulTextSrcOffset&&
+        a->State.LangID==b->State.LangID&&a->State.RateAdj==b->State.RateAdj&&
+        a->State.EmphAdj==b->State.EmphAdj&&a->State.Volume==b->State.Volume&&
+        a->State.PitchAdj.MiddleAdj==b->State.PitchAdj.MiddleAdj&&
+        a->State.PitchAdj.RangeAdj==b->State.PitchAdj.RangeAdj;
+}
+static void joined_free(struct joined_fragment *nodes,size_t count)
+{if(nodes){for(size_t i=0;i<count;++i)free(nodes[i].owned);free(nodes);}}
+static int join_fragments(struct sapi_backend *b,const SPVTEXTFRAG *first,struct joined_fragment **result,size_t *result_count)
+{
+    struct joined_fragment *nodes=NULL;size_t count=0,capacity=0,polled=0;
+    while(first){
+        if((polled++&127)==0&&!output_actions(b->output)){joined_free(nodes,count);return -1;}
+        const SPVTEXTFRAG *last=first;size_t length=first->ulTextLen;
+        while(compatible_fragments(last,last->pNext)){
+            if((polled++&127)==0&&!output_actions(b->output)){joined_free(nodes,count);return -1;}
+            const SPVTEXTFRAG *next=last->pNext;
+            if(length>UINT32_MAX||next->ulTextLen>UINT32_MAX-length||
+               length>SIZE_MAX/sizeof(WCHAR)-1||next->ulTextLen>SIZE_MAX/sizeof(WCHAR)-1-length)break;
+            length+=next->ulTextLen;last=next;
+        }
+        if(count==capacity){if(capacity>SIZE_MAX/2){joined_free(nodes,count);return 0;}
+            size_t n=capacity?capacity*2:16;
+            if(n>SIZE_MAX/sizeof *nodes){joined_free(nodes,count);return 0;}
+            void *p=realloc(nodes,n*sizeof *nodes);if(!p){joined_free(nodes,count);return 0;}nodes=p;capacity=n;}
+        nodes[count]=(struct joined_fragment){.fragment=*first};
+        if(last!=first){WCHAR *text=malloc((length+1)*sizeof *text);if(!text){joined_free(nodes,count);return 0;}
+            size_t at=0;for(const SPVTEXTFRAG *part=first;;part=part->pNext){
+                if((polled++&127)==0&&!output_actions(b->output)){free(text);joined_free(nodes,count);return -1;}
+                memcpy(text+at,part->pTextStart,part->ulTextLen*sizeof *text);at+=part->ulTextLen;if(part==last)break;}
+            text[length]=0;nodes[count].owned=text;nodes[count].fragment.pTextStart=text;nodes[count].fragment.ulTextLen=(ULONG)length;
+        }
+        ++count;first=last->pNext;
+    }
+    for(size_t i=0;i<count;++i)nodes[i].fragment.pNext=i+1<count?&nodes[i+1].fragment:NULL;
+    *result=nodes;*result_count=count;return 1;
+}
+static HRESULT synthesize_prepared(struct sapi_backend *b)
+{
     int sentence=1,has_text=0,last_pitch=(int)b->job.settings.pitch;
     int last_hz=b->job.settings.pitch_hz_enabled?(int)b->job.settings.pitch_hz:0;
     int last_rate=job_speed(&b->job,0),last_range=0,last_emphasis=0;
@@ -396,29 +508,8 @@ static HRESULT synthesize(struct sapi_backend *b)
                 b->job.settings.pitch_override?0:f->State.PitchAdj.MiddleAdj);
             if(pitch!=last_pitch){if(!core.pitch(b->handle,pitch))return E_FAIL;last_pitch=pitch;}
         }
-        if(!(b->job.interest&(((ULONGLONG)1<<SPEI_WORD_BOUNDARY)|((ULONGLONG)1<<SPEI_SENTENCE_BOUNDARY)))){
-            if(!add_wide(b,f->pTextStart,f->ulTextLen,f->State.eAction==SPVA_SpellOut))return E_FAIL;
-            has_text|=f->ulTextLen!=0;continue;
-        }
-        size_t at=0,next_poll=0;
-        while(at<f->ulTextLen){size_t start=at;
-            if(at>=next_poll){if(!output_actions(b->output))return S_OK;next_poll=at+256;}
-            WCHAR c=f->pTextStart[at];
-            if(iswspace(c)||iswpunct(c)){++at;
-                if(sentence_end(c))sentence=1;
-                if(!add_wide(b,f->pTextStart+start,at-start,f->State.eAction==SPVA_SpellOut))return E_FAIL;
-            }else{
-                do{++at;if((at&1023)==0&&!output_actions(b->output))return S_OK;
-                    if(c>=0xd800&&c<=0xdbff&&at<f->ulTextLen)++at;
-                    if(at>=f->ulTextLen)break;c=f->pTextStart[at];
-                }while(!iswspace(c)&&!iswpunct(c));
-                if(start>ULONG_MAX-f->ulTextSrcOffset||at-start>ULONG_MAX)return E_INVALIDARG;
-                if(sentence){if(!event_mark(b,SPEI_SENTENCE_BOUNDARY,f->ulTextSrcOffset+(ULONG)start,sentence_length(f,start),NULL))return E_FAIL;sentence=0;}
-                if(!event_mark(b,SPEI_WORD_BOUNDARY,f->ulTextSrcOffset+(ULONG)start,(ULONG)(at-start),NULL)||
-                   !add_wide(b,f->pTextStart+start,at-start,f->State.eAction==SPVA_SpellOut))return E_FAIL;
-            }
-            has_text=1;
-        }
+        int spoken=fragment_speak(b,f,&sentence,&has_text);
+        if(spoken<0)return S_OK;if(!spoken)return E_FAIL;
     }
     if(InterlockedCompareExchange(&b->cancel,0,0))return S_OK;
     if(has_text&&!core.synthesize(b->handle))return InterlockedCompareExchange(&b->cancel,0,0)?S_OK:E_FAIL;
@@ -426,6 +517,18 @@ static HRESULT synthesize(struct sapi_backend *b)
     if(!has_text&&b->event_count>delivered_events){for(size_t i=delivered_events;i<b->event_count;++i){
         struct packet p={.type=2,.event=b->events[i]};if(!put(b,&p))return S_OK;}}
     return S_OK;
+}
+static HRESULT synthesize(struct sapi_backend *b)
+{
+    HRESULT hr=configure(b,&b->job);if(FAILED(hr))return hr;
+    struct joined_fragment *joined=NULL;size_t count=0;
+    const SPVTEXTFRAG *original=b->job.fragments;
+    if(b->speech_dictionary&&original){
+        int result=join_fragments(b,original,&joined,&count);
+        if(result<0)return S_OK;if(!result)return E_OUTOFMEMORY;
+        b->job.fragments=&joined[0].fragment;
+    }
+    hr=synthesize_prepared(b);b->job.fragments=original;joined_free(joined,count);return hr;
 }
 /* ECI contexts and their provider data belong to their creating thread.
  * Reuse a few per caller without sharing them between threads or retaining
@@ -437,6 +540,7 @@ static void context_destroy(struct sapi_backend *b)
     if(!b)return;
     if(b->handle)core.destroy(b->handle);
     if(b->dictionary_watch)FindCloseChangeNotification(b->dictionary_watch);
+    reloq_nvda_speech_free(b->speech_dictionary);
     free(b->events);
     while(b->bookmarks){struct bookmark *next=b->bookmarks->next;free(b->bookmarks);b->bookmarks=next;}
     free(b);

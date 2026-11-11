@@ -117,7 +117,41 @@ def main():
             for entry,expected in zip(saved,(first,second)):
                 language,volume,path=entry.split('\t',2)
                 assert language=='00010000' and volume=='0' and os.path.samefile(path,expected),saved
-        print('SAPI own dictionary dialogs: list, priority, removal, file selection and language/volume passed')
+        nvda=Path(root.name)/'nvda.dic'
+        nvda_data=b'\xef\xbb\xbf# NVDA\nyoutube\tbanana\t0\t0\n'
+        nvda.write_bytes(nvda_data)
+        click(main_window,155)
+        own=wait_for(lambda w:bool(user.GetDlgItem(w,600)))
+        click(own,601)
+        picker=wait_for(lambda w:w not in (main_window,own) and bool(user.GetDlgItem(w,1)))
+        edits=[]
+        @enum
+        def nvda_child(handle,_):
+            name=ctypes.create_unicode_buffer(64);user.GetClassNameW(handle,name,len(name))
+            if name.value=='Edit' and user.IsWindowVisible(handle):edits.append(handle)
+            return True
+        user.EnumChildWindows(picker,nvda_child,0)
+        assert edits,'file name field not found'
+        send_text(edits[-1],str(nvda));click(picker,1)
+        choice=wait_for(lambda w:bool(user.GetDlgItem(w,605)) and bool(user.GetDlgItem(w,608)))
+        assert user.SendMessageW(user.GetDlgItem(choice,607),0x147,0,0)==2, 'NVDA format was not suggested'
+        user.SendMessageW(user.GetDlgItem(choice,608),0x14E,2,0)  # Shelly
+        click(choice,1)
+        deadline=time.monotonic()+15
+        while user.IsWindow(choice) and time.monotonic()<deadline:time.sleep(.05)
+        assert not user.IsWindow(choice)
+        listing=user.GetDlgItem(own,600);assert user.SendMessageW(listing,0x18B,0,0)==3
+        label=ctypes.create_unicode_buffer(1600)
+        assert user.SendMessageW(listing,0x189,2,ctypes.addressof(label))>=0 and 'NVDA' in label.value
+        click(own,1)
+        deadline=time.monotonic()+15
+        while user.IsWindow(own) and time.monotonic()<deadline:time.sleep(.05)
+        assert not user.IsWindow(own) and nvda.read_bytes()==nvda_data
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER,r'Software\ReLoq C\SAPI5') as config:
+            saved,_=winreg.QueryValueEx(config,'DictionaryFiles')
+            language,volume,path,format_,voice=saved[2].split('\t')
+            assert language=='00010000' and volume=='0' and os.path.samefile(path,nvda) and format_=='2' and voice=='2',saved
+        print('SAPI own dictionary dialogs: native and NVDA formats, priority, selection and voice scope passed')
     finally:
         for handle in (choice,own,main_window):
             if handle and user.IsWindow(handle):user.PostMessageW(handle,0x10,0,0)
