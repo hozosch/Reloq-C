@@ -1,4 +1,4 @@
-name: Diagnose the Windows candidate
+name: Diagnose personal dictionary precedence
 on:
   push:
     branches: [codex/wordseg-native-probe-20261111]
@@ -20,15 +20,27 @@ jobs:
           run-id: 43038970204
           github-token: ${{ github.token }}
           path: candidate
-      - name: Run diagnostic checks
-        shell: pwsh
+      - name: Print dictionary readings
+        shell: bash
         run: |
-          $dll = (Get-ChildItem candidate -Recurse -Filter eci.dll | Select-Object -First 1).FullName
-          $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
-          python nvda/test_eci_wordseg_native.py --library $dll
-          Write-Output "wordseg exit: $LASTEXITCODE"
-          python nvda/test_eci_german_cup_native.py --library $dll
-          Write-Output "german cup exit: $LASTEXITCODE"
-          python addon/test_synth_native.py --library $dll --addon $addon
-          Write-Output "adapter exit: $LASTEXITCODE"
-          exit 0
+          dll=$(find candidate -name eci.dll -print -quit)
+          python - "$dll" <<'PY'
+          import sys, tempfile
+          from pathlib import Path
+          sys.path.insert(0, 'nvda')
+          from _reloq_eci_direct import DirectEciEngine, WORD_SEGMENTATION
+          for dialect, prefix in ((0x10000, 'ENU'), (0x10001, 'ENG')):
+              engine=DirectEciEngine(Path(sys.argv[1]).resolve(), dialect=dialect, encoding='utf8', native_voice=True)
+              try:
+                  with tempfile.TemporaryDirectory() as temporary:
+                      folder=Path(temporary)
+                      (folder / (prefix+'main.dic')).write_bytes(b'framebuffer\t`[.1tEst]\nredhead\t`[.1zibrx]\n')
+                      engine.set_dictionary_path(folder)
+                      print('DIALECT',hex(dialect))
+                      for state in (1, 0, 1, 0):
+                          engine.set_parameter(WORD_SEGMENTATION, state)
+                          for word in ('framebuffer', 'redhead'):
+                              print(state, word, repr(engine._phonemes_for_probe(word)))
+              finally:
+                  engine.close()
+          PY
