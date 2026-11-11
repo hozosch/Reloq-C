@@ -324,7 +324,7 @@ jobs:
         with:
           name: nvda-addon
           path: artifacts/nvda
-      - name: Collect exactly the three installable packages
+      - name: Collect the four installable packages
         run: python3 tools/release_packages.py collect artifacts release-packages
       - uses: actions/upload-artifact@v4
         with:

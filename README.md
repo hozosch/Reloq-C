@@ -4,6 +4,8 @@ ReLoq C is a speech synthesis project that preserves the familiar character of E
 
 The shared synthesis engine is written in C. NVDA, Android and Windows SAPI5 use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
 
+**1.4.0** improves optional word segmentation and NVDA dictionary import,
+fixes Italian words ending in an apostrophe, and adds Android x86-64 packages.
 **1.2.2** adds an optional exact base pitch in hertz and improves German final
 A before pauses. **1.2.1** refined the optional mellow voice mode for a softer,
 less breathy sound. **1.2.0** improved Greek pronunciation and sentence melody,

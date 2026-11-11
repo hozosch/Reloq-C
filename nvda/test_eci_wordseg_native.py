@@ -46,7 +46,8 @@ def main():
                     compounds[first + second] = (first, second)
                 established = ('cupboard', 'Cupboard', 'CUPBOARD', 'cupboards',
                                'breakfast', 'breakfasts', 'raspberry', 'raspberries',
-                               'strawberry', 'waistcoat', 'butterfly', 'lighthouse')
+                               'strawberry', 'waistcoat', 'butterfly', 'lighthouse',
+                               'landmark', 'Jackson')
                 normal = {text: engine._phonemes_for_probe(text) for text in (*compounds, 'CGROUP')}
                 audio = {text: render(engine, [text])[0] for text in compounds}
                 capital_audio = render(engine, ['CGROUP'])[0]

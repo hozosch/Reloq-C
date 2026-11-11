@@ -221,6 +221,7 @@ The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
 python3 android/verify_apk.py dist/reloq-c-android-arm64-1.4.0.apk
+python3 android/verify_apk.py dist/reloq-c-android-x86_64-1.4.0.apk --abi x86_64
 ```
 
 Build verification checks signatures, the install-critical resource table,

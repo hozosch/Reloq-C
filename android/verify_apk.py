@@ -122,10 +122,11 @@ def verify_permissions(path,aapt2):
 if __name__=="__main__":
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("apk",type=Path)
+    p.add_argument("--abi",choices=sorted(MACHINES),default="arm64-v8a")
     p.add_argument("--reject",type=Path,help="Regression: an older broken APK that must fail validation")
     a=p.parse_args()
     if a.reject:
-        try:verify_apk(a.reject)
+        try:verify_apk(a.reject,a.abi)
         except ValueError as error:print("Previous APK rejected as expected:",error)
         else:raise AssertionError("known-broken APK unexpectedly passed")
-    verify_apk(a.apk)
+    verify_apk(a.apk,a.abi)

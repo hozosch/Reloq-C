@@ -145,6 +145,8 @@ static int run_personal_dictionary_case(void)
     HKEY isolated=NULL,key=NULL;
     if(RegCreateKeyExW(HKEY_CURRENT_USER,keyname,0,NULL,0,KEY_ALL_ACCESS,NULL,&isolated,NULL)!=ERROR_SUCCESS)return 3;
     if(RegOverridePredefKey(HKEY_CURRENT_USER,isolated)!=ERROR_SUCCESS)return 4;
+    if(RegCreateKeyExW(HKEY_CURRENT_USER,L"Software\\ReLoq C\\SAPI5",0,NULL,0,KEY_SET_VALUE,NULL,&key,NULL)!=ERROR_SUCCESS)return 5;
+    RegCloseKey(key);key=NULL;
     swprintf(source,MAX_PATH,L"%ls\\personal.dic",root);
     HRESULT hr=CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);
     int com_ready=SUCCEEDED(hr);
@@ -171,7 +173,7 @@ static int run_personal_dictionary_case(void)
     FILE *file=NULL;
     if(SUCCEEDED(hr)){file=_wfopen(source,L"wb");if(!file)hr=E_FAIL;}
     if(file){const char *data="youtube\tbanana\nHumanWare\tbanana\n";size_t n=strlen(data);
-        if(fwrite(data,1,n,file)!=n||fclose(file)!=0)hr=E_FAIL;}
+        int written=fwrite(data,1,n,file)==n;int closed=fclose(file)==0;if(!written||!closed)hr=E_FAIL;}
     if(SUCCEEDED(hr)&&RegCreateKeyExW(HKEY_CURRENT_USER,L"Software\\ReLoq C\\SAPI5",0,NULL,0,KEY_SET_VALUE,NULL,&key,NULL)!=ERROR_SUCCESS)hr=E_FAIL;
     WCHAR list[1200]={0};
     if(SUCCEEDED(hr)){
@@ -182,6 +184,23 @@ static int run_personal_dictionary_case(void)
     for(unsigned i=0;i<2&&SUCCEEDED(hr);++i){
         hr=speak_hash(voice,memory,words[i],&actual_bytes,&actual);
         wprintf(L"Personal dictionary %ls: HRESULT=%08lX, matched=%d\n",words[i],(unsigned long)hr,
+            actual_bytes==expected_bytes&&actual==expected);
+        if(SUCCEEDED(hr)&&(actual_bytes!=expected_bytes||actual!=expected))hr=E_FAIL;
+    }
+    /* Phonetic root dictionaries use lowercase English lookup keys and must
+     * affect mixed-case words as well as ordinary lowercase words. */
+    if(SUCCEEDED(hr))hr=speak_hash(voice,memory,L"test",&expected_bytes,&expected);
+    file=NULL;
+    if(SUCCEEDED(hr)){file=_wfopen(source,L"wb");if(!file)hr=E_FAIL;}
+    if(file){const char *data="youtube\t`[.1tEst]\nhumanware\t`[.1tEst]\n";size_t n=strlen(data);
+        int written=fwrite(data,1,n,file)==n;int closed=fclose(file)==0;if(!written||!closed)hr=E_FAIL;}
+    if(SUCCEEDED(hr)){
+        int chars=swprintf(list,1200,L"%08X\t1\t%ls",0x10000u,source);
+        if(chars<0||RegSetValueExW(key,L"DictionaryFiles",0,REG_MULTI_SZ,(BYTE *)list,(DWORD)((chars+2)*sizeof(WCHAR)))!=ERROR_SUCCESS)hr=E_FAIL;
+    }
+    for(unsigned i=0;i<2&&SUCCEEDED(hr);++i){
+        hr=speak_hash(voice,memory,words[i],&actual_bytes,&actual);
+        wprintf(L"Personal root dictionary %ls: HRESULT=%08lX, matched=%d\n",words[i],(unsigned long)hr,
             actual_bytes==expected_bytes&&actual==expected);
         if(SUCCEEDED(hr)&&(actual_bytes!=expected_bytes||actual!=expected))hr=E_FAIL;
     }

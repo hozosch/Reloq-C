@@ -123,7 +123,7 @@ def replace(release_id, directory):
             except Exception as rollback_error:
                 print(f'Could not fully restore the original release: {rollback_error}', file=sys.stderr)
             raise
-    print(f'Updated {tag} with three verified assets and matching source')
+    print(f'Updated {tag} with {len(wanted)} verified assets and matching source')
 
 
 if __name__ == '__main__':
