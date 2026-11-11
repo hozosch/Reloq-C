@@ -6,6 +6,27 @@ permissions:
   contents: read
   actions: read
 jobs:
+  italian-reference:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: x86
+      - name: Compare with the original Italian ECI and SYN
+        shell: pwsh
+        run: |
+          python -u tools/observe_syn_italian_apostrophe.py --output italian-original.json
+          if ($LASTEXITCODE -ne 0) { throw 'Original Italian reference comparison failed' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: italian-original-observations
+          path: italian-original.json
   source:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
