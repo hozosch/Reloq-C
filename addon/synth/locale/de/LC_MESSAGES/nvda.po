@@ -44,6 +44,9 @@ msgstr "Wörterbuchformat:"
 msgid "Could not detect the format. Choose the dictionary format:"
 msgstr "Das Format konnte nicht erkannt werden. Wähle das Wörterbuchformat:"
 
+msgid "Choose a format…"
+msgstr "Format auswählen…"
+
 msgid "Dictionary format"
 msgstr "Wörterbuchformat"
 

@@ -493,13 +493,17 @@ class EloquenceSettingsPanel(SettingsPanel):
                 # selected explicitly, without guessing that it is NVDA.
                 suggested = None
             formats = [_('NVDA speech dictionary'), _('Eloquence pronunciation dictionary')]
+            if suggested is None:
+                formats.insert(0, _("Choose a format…"))
             prompt = (_("Dictionary format:") if suggested else
                       _("Could not detect the format. Choose the dictionary format:"))
             with wx.SingleChoiceDialog(self, prompt, _("Dictionary format"), formats) as dialog:
-                dialog.SetSelection(0 if suggested == 'nvda' else 1 if suggested == 'eci' else wx.NOT_FOUND)
+                dialog.SetSelection(1 if suggested == 'eci' else 0)
                 if dialog.ShowModal() != wx.ID_OK:
                     return
                 choice = dialog.GetSelection()
+                if suggested is None:
+                    choice -= 1
                 if choice not in (0, 1):
                     return
                 nvda = choice == 0
