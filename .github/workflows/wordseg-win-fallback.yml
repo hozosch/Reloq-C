@@ -1,0 +1,21 @@
+name: Probe preinstalled Windows build tools
+on:
+  push:
+    branches: [codex/wordseg-win-fallback-20261111]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: windows-2022
+    timeout-minutes: 8
+    steps:
+      - name: Inspect build tools
+        shell: pwsh
+        run: |
+          foreach ($file in @('C:\mingw64\bin\gcc.exe', 'C:\mingw64\bin\mingw32-make.exe', 'C:\mingw64\bin\gcc-ar.exe', 'C:\msys64\usr\bin\make.exe', 'C:\msys64\usr\bin\msgfmt.exe', 'C:\msys64\mingw64\bin\gcc.exe', 'C:\msys64\usr\bin\bash.exe')) {
+            Write-Output "$file : $(Test-Path $file)"
+          }
+          where.exe gcc
+          where.exe make
+          where.exe mingw32-make
+          exit 0
