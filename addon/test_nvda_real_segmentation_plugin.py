@@ -60,6 +60,20 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             temporary = next(d for d in speechDictHandler.listAvailableSpeechDictDefinitions()
                              if getattr(d.source, 'value', d.source) == 'temp')
             temporary.dictionary.append(SpeechDictEntry('reloqtest', 'swapfile'))
+            source = RESULT.parent / 'nvda-import-fixture.dic'
+            source.write_bytes(('# Real NVDA speech dictionary\r\n'
+                'probenull\tErsatz\t0\t0\r\n'
+                'probeganz\tTermin 2035\t1\t2\r\n'
+                '^probe([0-9]+)$\tZahl \\1\t0\t1\r\n').encode('utf-8-sig'))
+            manager = self.synth.imported_dictionary_manager()
+            _copy, count, created = manager.import_file(source, 0x40000, 'all')
+            if not created or count != 3: raise AssertionError('NVDA dictionary fixture not imported')
+            if manager.process('probenull', 0x40000, '1') != 'Ersatz':
+                raise AssertionError('NVDA option fields leaked into replacement')
+            if manager.process('probeganz', 0x40000, '1') != 'Termin 2035':
+                raise AssertionError('literal replacement digits were changed')
+            if manager.process('probe57', 0x40000, '1') != 'Zahl 57':
+                raise AssertionError('NVDA regular-expression replacement was changed')
             self.synth.language = 'de_DE'
             self.synth.voiceTags = False
             original = self.synth._transport.submit
@@ -84,6 +98,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 for word,camel in ((False,False),(True,False),(False,True),(True,True))]
             self.cases += [(word,False,text) for text in ('DICT:plain', 'DICT:compound')
                            for word in (False,True)]
+            self.cases += [(word,False,text) for text in ('IMPORT:plain', 'IMPORT:digits', 'IMPORT:regex')
+                           for word in (False,True)]
             self.next()
         except BaseException:
             self.fail()
@@ -106,6 +122,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                 raise AssertionError('NVDA dictionary replacement was not protected: ' + repr(row))
                             if not any('framebuffer' in (p['text'] or '') and not p['guarded'] for p in parts):
                                 raise AssertionError('unrelated word was protected too: ' + repr(row))
+                        if row['input'].startswith('IMPORT:'):
+                            expected = {'IMPORT:plain':'Ersatz', 'IMPORT:digits':'Termin 2035',
+                                        'IMPORT:regex':'Zahl 57'}[row['input']]
+                            if expected not in combined or '\t0\t' in combined or '\t1\t' in combined:
+                                raise AssertionError('NVDA import changed a replacement or included options: ' + repr(row))
                     plain = [row for row in self.results if row['input'] == 'DICT:plain']
                     if len(plain) != 2 or plain[0]['pcm_sha256'] != plain[1]['pcm_sha256']:
                         raise AssertionError('personal dictionary changed unrelated NVDA speech: ' + repr(plain))
@@ -121,7 +142,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.synth.language = 'en_US' if text.startswith('DICT:') else 'de_DE'
             self.records.clear()
             self.before = [(p,len(p.chunks)) for p in self.players]
-            if text.startswith('DICT:'):
+            if text.startswith('IMPORT:'):
+                original = {'IMPORT:plain':'probenull', 'IMPORT:digits':'probeganz',
+                            'IMPORT:regex':'probe57'}[text]
+                self.speech.speak([original])
+            elif text.startswith('DICT:'):
                 self.speech.speak(['reloqtest ' + ('hello' if text == 'DICT:plain' else 'framebuffer')])
             elif text.startswith('ROLE:'):
                 import controlTypes
