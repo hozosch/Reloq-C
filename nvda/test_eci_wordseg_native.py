@@ -67,7 +67,7 @@ def main():
                 engine.set_parameter(WORD_SEGMENTATION, 1)
                 with_split = engine._phonemes_for_probe('redhead')
                 engine.set_parameter(WORD_SEGMENTATION, 0)
-                assert with_split == engine._phonemes_for_probe('redhead') and 'zibrx' in with_split
+                assert phones(with_split) == phones(engine._phonemes_for_probe('redhead')) == 'zibrx'
                 checks += 1
                 engine.set_dictionary_path(None)
                 # A host dictionary may protect only its replaced run; an

@@ -29,6 +29,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Reuse the running provider build when available
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $deadline = (Get-Date).AddMinutes(12)
+          do {
+            $run = gh api "repos/${{ github.repository }}/actions/runs/43040470994/jobs" | ConvertFrom-Json
+            $job = $run.jobs | Where-Object name -eq 'windows-core' | Select-Object -First 1
+            $save = $job.steps | Where-Object name -like '*cache/save*' | Select-Object -First 1
+            if ($save.conclusion -eq 'success' -or $job.status -eq 'completed') { break }
+            Start-Sleep -Seconds 15
+          } while ((Get-Date) -lt $deadline)
       - uses: actions/cache/restore@v4
         id: rules
         with:
