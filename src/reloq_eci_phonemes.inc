@@ -51,7 +51,7 @@ int ECICALL eciGeneratePhonemes(ECIHand handle,int room,void *buffer)
     if(room<1||!buffer)return eci_refuse(e,0);
     unsigned before=epoch_get(&e->stop_epoch);
     if(!busy_begin(&e->busy))return eci_refuse(e,0);
-    int status=RELOQ_ECI_OK;unsigned char *text=NULL,*modes=NULL;
+    int status=RELOQ_ECI_OK;unsigned char *text=NULL,*modes=NULL,*guards=NULL;int have_guards=0;
     struct reloq61_mark *marks=NULL;size_t *map=NULL,length=0,count=0;
     struct phoneme_delivery output={.engine=e,.buffer=buffer,.capacity=(size_t)room,
         .epoch=before,.status=RELOQ_ECI_OK};
@@ -59,23 +59,30 @@ int ECICALL eciGeneratePhonemes(ECIHand handle,int room,void *buffer)
         if(e->queue[i].is_index)++count;
         else if(e->queue[i].is_pitch){status=RELOQ_ECI_INVALID;goto done;}
         else if(e->queue[i].length>SIZE_MAX-length-1){status=RELOQ_ECI_MEMORY;goto done;}
-        else length+=e->queue[i].length;
+        else {length+=e->queue[i].length;have_guards|=e->queue[i].segmentation_guarded;}
     }
+    if(have_guards&&length>SIZE_MAX-2){status=RELOQ_ECI_MEMORY;goto done;}
     if(count>INT32_MAX||count>SIZE_MAX/sizeof *marks){status=RELOQ_ECI_MEMORY;goto done;}
     text=malloc(length+1);modes=malloc(length?length:1);
+    if(have_guards)guards=calloc(length+2,1);
     if(count)marks=malloc(count*sizeof *marks);
-    if(!text||!modes||(count&&!marks)){status=RELOQ_ECI_MEMORY;goto done;}
+    if(!text||!modes||(have_guards&&!guards)||(count&&!marks)){status=RELOQ_ECI_MEMORY;goto done;}
     size_t at=0,mark=0;
     for(size_t i=0;i<e->queued;++i) {
         struct queued_item *q=e->queue+i;
         if(q->is_index)marks[mark++]=(struct reloq61_mark){at,q->index,-1};
-        else if(q->length){memcpy(text+at,q->utf8,q->length);memset(modes+at,q->character_mode,q->length);at+=q->length;}
+        else if(q->length){memcpy(text+at,q->utf8,q->length);memset(modes+at,q->character_mode,q->length);
+            if(guards)memset(guards+at,q->segmentation_guarded,q->length);
+            at+=q->length;}
     }
     text[length]=0;
     unsigned char *admitted=NULL;size_t admitted_length=0;
     int admission=reloq_unicode_admit_language(text,length,modes,e->language,
         e->process_tags,&admitted,&admitted_length,&map);
     if(admission){status=admission==-2?RELOQ_ECI_MEMORY:RELOQ_ECI_INVALID;goto done;}
+    if(guards){unsigned char *mapped=project_guards(guards,length,admitted_length,map,0);
+        if(!mapped){free(admitted);status=RELOQ_ECI_MEMORY;goto done;}
+        free(guards);guards=mapped;}
     for(size_t i=0;i<count;++i)marks[i].offset=map[marks[i].offset];
     free(text);text=admitted;length=admitted_length;
     output.marks=marks;output.mark_count=count;
@@ -95,17 +102,21 @@ int ECICALL eciGeneratePhonemes(ECIHand handle,int room,void *buffer)
         (struct reloq61_text_options){e->dictionary_disabled,e->phrase_prediction,e->original_questions});
     struct reloq61_cancel_check cancel=reloq61_cancel_scope(
         (struct reloq61_cancel_check){phoneme_cancelled,&output});
+    struct reloq_wordseg_options wordseg=reloq_wordseg_scope((struct reloq_wordseg_options){
+        e->word_segmentation,e->camel_case,
+        reloq61_worker_dictionary_handle(e->rule_worker),e->dictionary_disabled,guards,length});
     int voice[8]={e->gender,e->head_size,e->native_pitch,e->native_inflection,
         e->roughness,e->breathiness,e->native_speed,e->native_volume};
     int generated=reloq_rules61_phonemes(e->language,text,length,e->process_tags,
         voice,ordinals,count,deliver_phonemes,phoneme_index,&output);
+    reloq_wordseg_scope(wordseg);
     reloq61_cancel_scope(cancel);reloq61_text_options_scope(options);reloq61_worker_scope(worker);
     free(ordinals);
     if(phoneme_cancelled(&output))status=output.status?output.status:RELOQ_ECI_CANCELLED;
     else if(generated)status=RELOQ_ECI_RENDER;
     else if(flush_phonemes(&output))status=output.status?output.status:RELOQ_ECI_CANCELLED;
 done:
-    free(text);free(modes);free(map);free(marks);clear_queue(e);
+    free(text);free(modes);free(guards);free(map);free(marks);clear_queue(e);
     eci_error(e,status);e->last_synthesis_error=status;busy_end(&e->busy);
     return status==RELOQ_ECI_OK;
 }

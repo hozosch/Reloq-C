@@ -85,6 +85,8 @@
     <string name="dictionary_update_files_new">Archivos de diccionario nuevos: %1$d</string>
     <string name="dictionary_update_files_total">Archivos de diccionario en total: %1$d</string>
     <string name="dictionary_update_files_unknown">No se pudo determinar el número de archivos de diccionario nuevos.</string>
+    <string name="word_segmentation">Dividir palabras inglesas desconocidas</string>
+    <string name="camel_case">Dividir palabras en camelCase (todos los idiomas)</string>
     <string name="original_questions">Usar la entonación original de las preguntas</string>
     <string name="mellow_mode">Modo suave (desde 16 kHz)</string>
     <string name="original_acoustic_clock">Usar el ritmo acústico original de Eloquence para el idioma seleccionado (5 ms)</string>

@@ -86,6 +86,8 @@
     <string name="dictionary_update_files_new">New dictionary files: %1$d</string>
     <string name="dictionary_update_files_total">Dictionary files in total: %1$d</string>
     <string name="dictionary_update_files_unknown">The number of new dictionary files could not be determined.</string>
+    <string name="word_segmentation">Split unfamiliar English words</string>
+    <string name="camel_case">Split camel-case words (all languages)</string>
     <string name="original_questions">Use original question intonation</string>
     <string name="mellow_mode">Mellow mode (16 kHz and above)</string>
     <string name="original_acoustic_clock">Use original Eloquence acoustic timing for the selected language (5 ms)</string>

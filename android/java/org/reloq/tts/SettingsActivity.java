@@ -19,7 +19,7 @@ public final class SettingsActivity extends Activity {
     private boolean ready;
     private LinearLayout content;
     private Spinner languages,profiles,rates,pauses,models,eqPreset;
-    private CheckBox androidVoice,androidRate,androidPitch,boost,tags,abbreviations,prediction,originalQuestions,mellowMode,originalAcousticClock,eqEnabled;
+    private CheckBox androidVoice,androidRate,androidPitch,boost,tags,abbreviations,prediction,originalQuestions,mellowMode,originalAcousticClock,eqEnabled,wordSegmentation,camelCase;
     private RadioButton speedEciMode,speedWpmMode,pitchEciMode,pitchHertzMode;
     private RadioGroup speedModes,pitchModes;
     private Numeric speed,pitch,inflection,volume,head,roughness,breathiness,eqLow,eqMid,eqHigh;
@@ -219,6 +219,8 @@ public final class SettingsActivity extends Activity {
         abbreviations=check(R.string.abbreviation_dictionary,settings.abbreviations);
         prediction=check(R.string.phrase_prediction,settings.prediction);
         originalQuestions=check(R.string.original_questions,settings.originalQuestions);
+        wordSegmentation=check(R.string.word_segmentation,settings.wordSegmentation);
+        camelCase=check(R.string.camel_case,settings.camelCase);
         tags=check(R.string.eci_tags,settings.tags);
         Button dictionaries=new Button(this);dictionaries.setText(R.string.dictionaries);content.addView(dictionaries);
         dictionaries.setOnClickListener(v -> startActivity(new Intent(this,DictionaryActivity.class)));
@@ -286,6 +288,8 @@ public final class SettingsActivity extends Activity {
         s.prediction=prediction==null?preferences.getBoolean("prediction",false):prediction.isChecked();
         s.originalQuestions=originalQuestions==null?preferences.getBoolean("originalQuestions",false):originalQuestions.isChecked();
         s.mellowMode=mellowMode==null?preferences.getBoolean("mellowMode",false):mellowMode.isChecked();
+        s.wordSegmentation=wordSegmentation==null?preferences.getBoolean("wordSegmentation",false):wordSegmentation.isChecked();
+        s.camelCase=camelCase==null?preferences.getBoolean("camelCase",false):camelCase.isChecked();
         if(originalAcousticClock!=null) {
             int bit=1<<clockUiLanguage;
             acousticClockMask=originalAcousticClock.isChecked()?acousticClockMask|bit:acousticClockMask&~bit;

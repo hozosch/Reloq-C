@@ -40,6 +40,8 @@ def main():
     for name, source in {
         'OpenEVV-LICENSE.txt': 'vendor/openevv61/LICENSE',
         'OpenEVV-NOTICE.txt': 'vendor/openevv61/NOTICE',
+        'OpenEVV-wordseg-LICENSE.txt': 'nvda/wordseg-data/LICENSE',
+        'OpenEVV-wordseg-NOTICE.txt': 'nvda/wordseg-data/NOTICE',
         'Dictionaries-CC0.txt': 'data/community/LICENSE.md',
         'Unicode-LICENSE.txt': 'reference-apple/behavior-0.2.82/unicode-input/LICENSE.txt',
         'SCOWL-Copyright.txt': 'reference-apple/behavior-0.2.83/input/SCOWL-Copyright.txt',

@@ -77,6 +77,8 @@ def main():
               "Dictionaries-CC0.txt":ROOT/"data/community/LICENSE.md",
               "OpenEVV-LICENSE.txt":ROOT/"vendor/openevv61/LICENSE",
               "OpenEVV-NOTICE.txt":ROOT/"vendor/openevv61/NOTICE",
+              "OpenEVV-wordseg-LICENSE.txt":ROOT/"nvda/wordseg-data/LICENSE",
+              "OpenEVV-wordseg-NOTICE.txt":ROOT/"nvda/wordseg-data/NOTICE",
               "Unicode-LICENSE.txt":ROOT/"reference-apple/behavior-0.2.82/unicode-input/LICENSE.txt",
               "SCOWL-Copyright.txt":ROOT/"reference-apple/behavior-0.2.83/input/SCOWL-Copyright.txt"}
     for name,source in licenses.items(): shutil.copyfile(source,assets/name)

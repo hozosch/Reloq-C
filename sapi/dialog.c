@@ -15,7 +15,8 @@ enum {LANGUAGE=100,PROFILE,GENDER,RATE,PAUSES,PITCH,INFLECTION,HEAD,ROUGH,BREATH
       OWN_RATE_ECI,OWN_RATE_WPM,OWN_RATE_WPM_VALUE,OWN_PITCH_ECI,OWN_PITCH_HZ,
       OWN_PITCH_VALUE,OWN_PITCH_HZ_VALUE,PITCH_LABEL,PITCH_GROUP_CONTROL,
       EQ_DIALOG,EQ_ENABLED,EQ_PRESET,EQ_LOW,EQ_MID,EQ_HIGH,EQ_ADVANCED,
-      FILTER_SELECT,FILTER_ENABLED,FILTER_FREQ,FILTER_GAIN,FILTER_WIDTH,UPDATE_SETTINGS,ORIGINAL_ACOUSTIC_CLOCK,OWN_DICTIONARIES};
+      FILTER_SELECT,FILTER_ENABLED,FILTER_FREQ,FILTER_GAIN,FILTER_WIDTH,UPDATE_SETTINGS,ORIGINAL_ACOUSTIC_CLOCK,OWN_DICTIONARIES,
+      WORD_SEGMENTATION,CAMEL_CASE};
 #define DICTIONARY_DONE (WM_APP+31)
 struct dictionary_task {HWND window;HMODULE module;DWORD source;};
 static DWORD WINAPI dictionary_worker(void *parameter)
@@ -112,6 +113,8 @@ static void populate(HWND window,struct dialog *d)
     CheckDlgButton(window,ORIGINAL_ACOUSTIC_CLOCK,
         d->s.original_acoustic_clock==1||(d->s.original_acoustic_clock==2&&
             (d->dialect==0x20000||d->dialect==0x120000))?BST_CHECKED:BST_UNCHECKED);
+    CheckDlgButton(window,WORD_SEGMENTATION,d->s.word_segmentation?BST_CHECKED:BST_UNCHECKED);
+    CheckDlgButton(window,CAMEL_CASE,d->s.camel_case?BST_CHECKED:BST_UNCHECKED);
     CheckDlgButton(window,SHARED,d->shared?BST_CHECKED:BST_UNCHECKED);
     SetDlgItemTextW(window,RESET,d->shared?T(RESET_ALL):T(RESET));
     SetDlgItemTextW(window,DIRECTORY,d->s.directory);d->loading=0;
@@ -424,7 +427,10 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         control(w,L"BUTTON",T(EQ_DIALOG),WS_TABSTOP|BS_PUSHBUTTON,EQ_DIALOG,350,293,258,24);
         control(w,L"BUTTON",T(UPDATE_SETTINGS),WS_TABSTOP|BS_PUSHBUTTON,UPDATE_SETTINGS,350,320,258,24);
         control(w,L"BUTTON",T(ORIGINAL_ACOUSTIC_CLOCK),WS_TABSTOP|BS_AUTOCHECKBOX,ORIGINAL_ACOUSTIC_CLOCK,350,347,258,24);
-        check(w,TAGS,T(TAGS),377);check(w,ABBREVIATIONS,T(ABBREVIATIONS),400);
+        control(w,L"BUTTON",T(TAGS),WS_TABSTOP|BS_AUTOCHECKBOX,TAGS,12,377,326,23);
+        control(w,L"BUTTON",T(WORD_SEGMENTATION),WS_TABSTOP|BS_AUTOCHECKBOX,WORD_SEGMENTATION,350,377,258,23);
+        control(w,L"BUTTON",T(ABBREVIATIONS),WS_TABSTOP|BS_AUTOCHECKBOX,ABBREVIATIONS,12,400,326,23);
+        control(w,L"BUTTON",T(CAMEL_CASE),WS_TABSTOP|BS_AUTOCHECKBOX,CAMEL_CASE,350,400,258,23);
         check(w,PREDICTION,T(PREDICTION),423);check(w,ORIGINAL_QUESTIONS,T(ORIGINAL_QUESTIONS),446);
         check(w,DICTIONARIES,T(DICTIONARIES),469);check(w,BOOST,T(BOOST),492);
         combo(w,DICT_SOURCE,T(DICT_SOURCE),517);
@@ -518,6 +524,10 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         d->s.mellow_mode=IsDlgButtonChecked(w,id)==BST_CHECKED;persist(w,d);return TRUE;}
     if(notification==BN_CLICKED&&id==ORIGINAL_ACOUSTIC_CLOCK){
         d->s.original_acoustic_clock=IsDlgButtonChecked(w,id)==BST_CHECKED;persist(w,d);return TRUE;}
+    if(notification==BN_CLICKED&&id==WORD_SEGMENTATION){
+        d->s.word_segmentation=IsDlgButtonChecked(w,id)==BST_CHECKED;persist(w,d);return TRUE;}
+    if(notification==BN_CLICKED&&id==CAMEL_CASE){
+        d->s.camel_case=IsDlgButtonChecked(w,id)==BST_CHECKED;persist(w,d);return TRUE;}
     if(id==DIRECTORY&&notification==EN_CHANGE){WCHAR path[1024];GetDlgItemTextW(w,id,path,1024);
         DWORD attributes=path[0]?GetFileAttributesW(path):FILE_ATTRIBUTE_DIRECTORY;
         if(attributes==INVALID_FILE_ATTRIBUTES||!(attributes&FILE_ATTRIBUTE_DIRECTORY)){

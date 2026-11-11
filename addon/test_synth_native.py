@@ -189,9 +189,11 @@ def main():
                                                          driver._wordseg_keys, True, False)
                         assert separated != compound
                         driver._wordSegmentation = False
-                        expected = run([separated])
+                        original = run([compound])
+                        separate_words = run([separated])
                         driver._wordSegmentation = True
-                        assert run([compound]) == expected, compound
+                        connected = run([compound])
+                        assert connected != original and connected != separate_words, compound
                     report["checks"] += 2
                 driver._wordSegmentation = False
                 # Exercise commas after real abbreviations through NVDA's

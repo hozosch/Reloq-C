@@ -85,6 +85,8 @@
     <string name="dictionary_update_files_new">Neue Wörterbuchdateien: %1$d</string>
     <string name="dictionary_update_files_total">Wörterbuchdateien insgesamt: %1$d</string>
     <string name="dictionary_update_files_unknown">Die Anzahl neuer Wörterbuchdateien konnte nicht ermittelt werden.</string>
+    <string name="word_segmentation">Unbekannte englische Wörter zerlegen</string>
+    <string name="camel_case">Camel-Case-Wörter zerlegen (alle Sprachen)</string>
     <string name="original_questions">Ursprüngliche Frageintonation verwenden</string>
     <string name="mellow_mode">Weicher Modus (ab 16 kHz)</string>
     <string name="original_acoustic_clock">Originalen Eloquence-Lauttakt für die ausgewählte Sprache verwenden (5 ms)</string>

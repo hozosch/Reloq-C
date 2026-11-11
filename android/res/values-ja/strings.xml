@@ -85,6 +85,8 @@
     <string name="dictionary_update_files_new">新しい辞書ファイル: %1$d</string>
     <string name="dictionary_update_files_total">辞書ファイルの合計: %1$d</string>
     <string name="dictionary_update_files_unknown">新しい辞書ファイル数を特定できませんでした。</string>
+    <string name="word_segmentation">未知の英単語を分割</string>
+    <string name="camel_case">キャメルケースの単語を分割（すべての言語）</string>
     <string name="original_questions">元の疑問文のイントネーションを使用</string>
     <string name="mellow_mode">ソフトモード（16 kHz 以上）</string>
     <string name="original_acoustic_clock">選択した言語に元の音響タイミングを使用（5 ms）</string>

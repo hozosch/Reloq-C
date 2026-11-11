@@ -316,6 +316,8 @@ static HRESULT configure(struct sapi_backend *b,const struct job *j)
         {RELOQ_ECI_ORIGINAL_QUESTIONS,(int)s->original_questions},
         {RELOQ_ECI_MELLOW_MODE,(int)s->mellow_mode},
         {RELOQ_ECI_ORIGINAL_ACOUSTIC_CLOCK,(int)s->original_acoustic_clock},
+        {RELOQ_ECI_WORD_SEGMENTATION,(int)s->word_segmentation},
+        {RELOQ_ECI_CAMEL_CASE,(int)s->camel_case},
         {RELOQ_ECI_EQ_LOW,eq[0]},{RELOQ_ECI_EQ_MID,eq[1]},{RELOQ_ECI_EQ_HIGH,eq[2]}};
     for(size_t i=0;i<sizeof parameters/sizeof *parameters;++i)
         if(core.set(b->handle,parameters[i].key,parameters[i].value)==-1)return E_FAIL;

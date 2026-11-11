@@ -85,6 +85,8 @@
     <string name="dictionary_update_files_new">Nouveaux fichiers de dictionnaire: %1$d</string>
     <string name="dictionary_update_files_total">Nombre total de fichiers de dictionnaire: %1$d</string>
     <string name="dictionary_update_files_unknown">Impossible de déterminer le nombre de nouveaux fichiers de dictionnaire.</string>
+    <string name="word_segmentation">Séparer les mots anglais inconnus</string>
+    <string name="camel_case">Séparer les mots en camelCase (toutes les langues)</string>
     <string name="original_questions">Utiliser l’intonation originale des questions</string>
     <string name="mellow_mode">Mode doux (à partir de 16 kHz)</string>
     <string name="original_acoustic_clock">Utiliser la cadence acoustique originale pour la langue sélectionnée (5 ms)</string>

@@ -132,6 +132,9 @@ enum {
      * Automatic uses 5 ms for Castilian Spanish and Greek, 1 ms otherwise.
      * Native VS and VWPM duration scales are unchanged in every mode. */
     RELOQ_ECI_ORIGINAL_ACOUSTIC_CLOCK = 0x101b,
+    /* Optional shared text analysis controls; disabled by default. */
+    RELOQ_ECI_WORD_SEGMENTATION = 0x101c,
+    RELOQ_ECI_CAMEL_CASE = 0x101d,
     /* Five optional peaking filters, each with four consecutive parameters:
      * enabled 0/1, frequency 1..24000 Hz, gain 0..24 (-12..+12 dB),
      * and bandwidth 10..400 percent of an octave. */
@@ -273,6 +276,8 @@ ECIAPI int ECICALL eciUpdateDictA(ECIHand handle,ECIDictHand dictionary,int volu
  * experimental generic text frontend; the exact voice remains unchanged. */
 /* Length-aware native Unicode input. Mode 1 names characters in the selected
  * language; mode 0 reads text. Successive fragments are analyzed together. */
+/* Mode bit 0 requests character spelling; bit 1 protects the text from the
+ * optional word/CamelCase segmenter (for host-side dictionary substitutions). */
 ECIAPI int ECICALL eciAddTextUtf8(ECIHand handle, const void *text, size_t bytes, int character_mode);
 
 ECIAPI int ECICALL eciLoadLexicon(ECIHand handle, const char *utf8_path);

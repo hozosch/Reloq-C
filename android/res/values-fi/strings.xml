@@ -85,6 +85,8 @@
     <string name="dictionary_update_files_new">Uudet sanakirjatiedostot: %1$d</string>
     <string name="dictionary_update_files_total">Sanakirjatiedostoja yhteensä: %1$d</string>
     <string name="dictionary_update_files_unknown">Uusien sanakirjatiedostojen määrää ei voitu selvittää.</string>
+    <string name="word_segmentation">Jaa tuntemattomat englanninkieliset sanat</string>
+    <string name="camel_case">Jaa camelCase-sanat (kaikki kielet)</string>
     <string name="original_questions">Käytä alkuperäistä kysymysintonaatiota</string>
     <string name="mellow_mode">Pehmeä tila (vähintään 16 kHz)</string>
     <string name="original_acoustic_clock">Käytä valitulle kielelle alkuperäistä äänen ajoitusta (5 ms)</string>

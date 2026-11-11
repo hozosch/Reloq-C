@@ -20,9 +20,10 @@ struct sapi_settings {
     DWORD eq_enabled,eq_preset,eq_low,eq_mid,eq_high;
     struct sapi_eq_filter eq_filters[SAPI_EQ_FILTER_COUNT];
     DWORD original_acoustic_clock;
+    DWORD word_segmentation,camel_case;
 };
 #ifndef RELOQ_SAPI_TEST_HOST
-_Static_assert(sizeof(struct sapi_settings)==2256,"SAPI settings must be compatible across x86/x64");
+_Static_assert(sizeof(struct sapi_settings)==2264,"SAPI settings must be compatible across x86/x64");
 #endif
 static inline void sapi_equalizer_gains(const struct sapi_settings *s,int result[3])
 {

@@ -54,7 +54,7 @@ public final class SettingsTest {
             s.gender=1;s.head=22;s.inflection=65;s.roughness=12;s.breathiness=60;
             s.volume=80;s.rate=6;s.pauses=2;s.tags=true;
             int[] expected={1,22,43,65,12,60,80,87,6,2,1,0,0,0,0,0,12,12,12,
-                0,125,12,100,0,500,12,100,0,1200,12,100,0,3000,12,100,0,6000,12,100,2};
+                0,125,12,100,0,500,12,100,0,1200,12,100,0,3000,12,100,0,6000,12,100,2,0,0};
             require(Arrays.equals(s.controls(20,20),expected));
             require(Arrays.equals(s.controls(400,400),expected));
             Map<String,Object> values=new HashMap<>();SharedPreferences p=memory(values);
@@ -76,9 +76,10 @@ public final class SettingsTest {
             s.androidRate=true;s.androidPitch=true;s.rateBoost=true;
             require(s.controls(100,200)[7]>55);
         }
-        VoiceSettings options=new VoiceSettings(0);options.abbreviations=false;options.prediction=true;options.originalQuestions=true;options.mellowMode=true;options.setOriginalClock(0x10000,true);
+        VoiceSettings options=new VoiceSettings(0);options.abbreviations=false;options.prediction=true;options.originalQuestions=true;options.mellowMode=true;options.wordSegmentation=true;options.camelCase=true;options.setOriginalClock(0x10000,true);
         Map<String,Object> stored=new HashMap<>();Preferences.save(memory(stored),0,options);
         VoiceSettings restored=Preferences.read(memory(stored),0);
+        require(restored.wordSegmentation&&restored.camelCase&&restored.controls(100,100)[40]==1&&restored.controls(100,100)[41]==1);
         require(!restored.abbreviations&&restored.prediction&&restored.originalQuestions&&restored.mellowMode&&restored.originalClock(0x10000)&&restored.controls(100,100)[11]==1&&restored.controls(100,100)[12]==1&&restored.controls(100,100)[13]==1&&restored.controls(100,100)[14]==1&&restored.controls(100,100,0x10000)[39]==1);
         VoiceSettings defaults=Preferences.read(memory(new HashMap<>()),0);
         require(defaults.originalClock(0x20000)&&defaults.originalClock(0x120000)&&!defaults.originalClock(0x20001)&&!defaults.originalClock(0x10000));

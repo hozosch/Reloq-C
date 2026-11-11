@@ -107,7 +107,9 @@
     "DICT_IMPORT_ERROR",
     "DICT_TOO_MANY",
     "DICT_OK",
-    "DICT_CANCEL"
+    "DICT_CANCEL",
+    "WORD_SEGMENTATION",
+    "CAMEL_CASE"
   ],
   "en": [
     "ReLoq C voice settings",
@@ -217,7 +219,9 @@
     "A selected file could not be read or merged.",
     "Too many dictionary files.",
     "OK",
-    "Cancel"
+    "Cancel",
+    "Split unfamiliar English words",
+    "Split camel-case words (all languages)"
   ],
   "de": [
     "ReLoq C – Stimmeinstellungen",
@@ -327,7 +331,9 @@
     "Eine ausgewählte Datei konnte nicht gelesen oder zusammengeführt werden.",
     "Zu viele Wörterbuchdateien.",
     "OK",
-    "Abbrechen"
+    "Abbrechen",
+    "Unbekannte englische Wörter zerlegen",
+    "Camel-Case-Wörter zerlegen (alle Sprachen)"
   ],
   "es": [
     "ReLoq C – Ajustes de voz",
@@ -437,7 +443,9 @@
     "No se pudo leer o combinar un archivo seleccionado.",
     "Demasiados archivos de diccionario.",
     "Aceptar",
-    "Cancelar"
+    "Cancelar",
+    "Dividir palabras inglesas desconocidas",
+    "Dividir palabras camelCase (todos los idiomas)"
   ],
   "fr": [
     "ReLoq C – Paramètres de voix",
@@ -547,7 +555,9 @@
     "Impossible de lire ou de fusionner un fichier sélectionné.",
     "Trop de fichiers de dictionnaire.",
     "OK",
-    "Annuler"
+    "Annuler",
+    "Séparer les mots anglais inconnus",
+    "Séparer les mots camelCase (toutes les langues)"
   ],
   "it": [
     "ReLoq C – Impostazioni voce",
@@ -657,7 +667,9 @@
     "Impossibile leggere o unire un file selezionato.",
     "Troppi file di dizionario.",
     "OK",
-    "Annulla"
+    "Annulla",
+    "Suddividi parole inglesi sconosciute",
+    "Suddividi parole camelCase (tutte le lingue)"
   ],
   "pt": [
     "ReLoq C – Configurações de voz",
@@ -767,7 +779,9 @@
     "Não foi possível ler ou combinar um arquivo selecionado.",
     "Arquivos de dicionário demais.",
     "OK",
-    "Cancelar"
+    "Cancelar",
+    "Dividir palavras desconhecidas em inglês",
+    "Dividir palavras camelCase (todos os idiomas)"
   ],
   "fi": [
     "ReLoq C – Ääniasetukset",
@@ -877,7 +891,9 @@
     "Valittua tiedostoa ei voitu lukea tai yhdistää.",
     "Liian monta sanastotiedostoa.",
     "OK",
-    "Peruuta"
+    "Peruuta",
+    "Jaa tuntemattomat englanninkieliset sanat",
+    "Jaa camelCase-sanat (kaikki kielet)"
   ],
   "el": [
     "ReLoq C – Ρυθμίσεις φωνής",
@@ -987,7 +1003,9 @@
     "Δεν ήταν δυνατή η ανάγνωση ή συγχώνευση αρχείου.",
     "Πάρα πολλά αρχεία λεξικού.",
     "Εντάξει",
-    "Ακύρωση"
+    "Ακύρωση",
+    "Διαίρεση άγνωστων αγγλικών λέξεων",
+    "Διαίρεση λέξεων camelCase (όλες οι γλώσσες)"
   ],
   "ja": [
     "ReLoq C 音声設定",
@@ -1097,7 +1115,9 @@
     "選択したファイルを読み取りまたは統合できません。",
     "辞書ファイルが多すぎます。",
     "OK",
-    "キャンセル"
+    "キャンセル",
+    "未知の英単語を分割",
+    "キャメルケースを分割（すべての言語）"
   ],
   "ko": [
     "ReLoq C 음성 설정",
@@ -1207,7 +1227,9 @@
     "선택한 파일을 읽거나 병합할 수 없습니다.",
     "사전 파일이 너무 많습니다.",
     "확인",
-    "취소"
+    "취소",
+    "알 수 없는 영어 단어 분리",
+    "카멜 케이스 단어 분리 (모든 언어)"
   ],
   "zh": [
     "ReLoq C 语音设置",
@@ -1317,7 +1339,9 @@
     "无法读取或合并所选文件。",
     "词典文件过多。",
     "确定",
-    "取消"
+    "取消",
+    "拆分未知英语单词",
+    "拆分驼峰式单词（所有语言）"
   ],
   "zh-Hant": [
     "ReLoq C 語音設定",
@@ -1427,6 +1451,8 @@
     "無法讀取或合併所選檔案。",
     "字典檔案過多。",
     "確定",
-    "取消"
+    "取消",
+    "拆分未知英語單字",
+    "拆分駝峰式單字（所有語言）"
   ]
 }

@@ -11,6 +11,8 @@
 #include "reloq_utf8.h"
 #include "reloq_voice_controls.h"
 #include "reloq_voice_filter.h"
+#include "reloq_wordseg.h"
+#include "reloq_eci.h"
 #include <limits.h>
 #include <math.h>
 #include <stdint.h>
@@ -270,6 +272,221 @@ static int german_shared_append(struct german_shared_buffer *b,const unsigned ch
     memcpy(b->bytes+b->used,bytes,count);
     for(size_t j=0;j<count;++j)b->map[b->used+j]=map?map[j]:origin;
     b->used+=count;return 0;
+}
+
+/* The segmenter runs on the already admitted native input, before language
+ * analysis.  Its output keeps source positions so ECI indices and pitch
+ * controls are still projected by the ordinary sentence frontend. */
+extern const char *ECICALL es_engsynDictLookup(void *,int,const char *);
+struct wordseg_marks {
+    const struct reloq61_mark *phoneme;size_t phoneme_count;
+    const struct reloq_german_generic_index *indices;size_t index_count;
+    const struct reloq_german_generic_pitch_mark *pitches;size_t pitch_count;
+};
+static int wordseg_mark_inside(const struct wordseg_marks *marks,size_t begin,size_t end)
+{
+    if(!marks)return 0;
+    for(size_t i=0;i<marks->phoneme_count;++i)
+        if(marks->phoneme[i].offset>begin&&marks->phoneme[i].offset<end)return 1;
+    for(size_t i=0;i<marks->index_count;++i)
+        if(marks->indices[i].annotation_offset>begin&&marks->indices[i].annotation_offset<end)return 1;
+    for(size_t i=0;i<marks->pitch_count;++i)
+        if(marks->pitches[i].annotation_offset>begin&&marks->pitches[i].annotation_offset<end)return 1;
+    return 0;
+}
+
+static uint32_t wordseg_cp1252(unsigned char c)
+{
+    static const uint16_t controls[32]={0x20ac,0,0x201a,0x0192,0x201e,0x2026,0x2020,0x2021,
+        0x02c6,0x2030,0x0160,0x2039,0x0152,0,0x017d,0,
+        0,0x2018,0x2019,0x201c,0x201d,0x2022,0x2013,0x2014,
+        0x02dc,0x2122,0x0161,0x203a,0x0153,0,0x017e,0x0178};
+    return c>=0x80&&c<=0x9f?controls[c-0x80]:c;
+}
+
+static size_t wordseg_character(const unsigned char *a,size_t n,size_t at,int utf8,uint32_t *c)
+{
+    if(!utf8){*c=wordseg_cp1252(a[at]);return at+1;}
+    size_t end=at;
+    return reloq_utf8_next(a,n,&end,c)==1?end:at;
+}
+
+/* Main and abbreviation entries are exact; Root entries are case-folded by
+ * the language model and may cover normal English inflections. */
+static int wordseg_dictionary(void *dictionary,const unsigned char *word,size_t n,int english,
+    int utf8,int abbreviations_disabled)
+{
+    if(!dictionary||!n||n>128)return 0;
+    char original[129],folded[129];memcpy(original,word,n);original[n]=0;
+    if(es_engsynDictLookup(dictionary,0,original)||
+       (!abbreviations_disabled&&es_engsynDictLookup(dictionary,2,original)))return 1;
+    int uppercase=0,lowercase=0;unsigned char unicode[1537];size_t used=0;
+    for(size_t i=0;i<n;) {
+        uint32_t c=0;size_t end=wordseg_character(word,n,i,utf8,&c);
+        if(end<=i)return 0;
+        unsigned flags=reloq_wordseg_category(c);
+        uppercase|=!!(flags&RELOQ_WORDSEG_UPPER);lowercase|=!!(flags&RELOQ_WORDSEG_LOWER);
+        unsigned char lower[12];size_t count=reloq_wordseg_casefold(c,lower);
+        if(!count||count>sizeof unicode-used-1)return 0;
+        memcpy(unicode+used,lower,count);used+=count;i=end;
+    }
+    unicode[used]=0;size_t folded_n=0;
+    if(utf8) {
+        if(used>=sizeof folded)return 0;
+        memcpy(folded,unicode,used+1);folded_n=used;
+    } else if(reloq_german_input_encode(unicode,used,(unsigned char *)folded,sizeof folded,&folded_n,NULL))return 0;
+    if(!(english&&uppercase&&!lowercase)&&es_engsynDictLookup(dictionary,1,folded))return 1;
+    if(english) {
+        static const char *const endings[]={"ings","ing","ers","er","ed","es","s"};
+        for(size_t i=0;i<sizeof endings/sizeof *endings;++i) {
+            size_t len=strlen(endings[i]);
+            if(folded_n<=len+2||memcmp(folded+folded_n-len,endings[i],len))continue;
+            size_t stem=folded_n-len;char candidate[130];
+            memcpy(candidate,folded,stem);candidate[stem]=0;
+            int found=!!es_engsynDictLookup(dictionary,1,candidate);
+            if(!found){candidate[stem]='e';candidate[stem+1]=0;
+                found=!!es_engsynDictLookup(dictionary,1,candidate);}
+            if(!found&&stem>2&&candidate[stem-1]==candidate[stem-2]) {
+                candidate[stem-1]=0;found=!!es_engsynDictLookup(dictionary,1,candidate);
+            }
+            if(found)return 1;
+        }
+    }
+    return 0;
+}
+
+/* A compound made of independently recognized words is supplied to the
+ * native planner as one SPR word. This preserves phone transitions and
+ * avoids introducing an audible word pause between the components. */
+static int wordseg_compound_spr(int language,const unsigned char *segmented,
+    unsigned char *out,size_t capacity,size_t *length)
+{
+    size_t at=0,used=0,parts=0,n=strlen((const char *)segmented);
+    if(capacity<4)return 0;
+    out[used++]='`';out[used++]='[';
+    while(at<n) {
+        size_t end=at;while(end<n&&segmented[end]!=' ')++end;
+        if(end-at<2)return 0;
+        for(size_t i=at;i<end;++i)
+            if(segmented[i]<'a'||segmented[i]>'z')return 0;
+        unsigned char spr[2048];size_t count=0;
+        if(reloq_rules61_word(language,segmented+at,end-at,spr,sizeof spr,&count)!=1||
+           count<4||spr[0]!='`'||spr[1]!='['||spr[count-1]!=']')return 0;
+        size_t chunk=count-3;
+        if(chunk>capacity-used-2)return 0;
+        memcpy(out+used,spr+2,chunk);
+        if(parts&&chunk>=2&&out[used]=='.'&&out[used+1]=='1')out[used+1]='2';
+        used+=chunk;++parts;at=end<n?end+1:end;
+    }
+    if(parts<2)return 0;
+    out[used++]=']';out[used]=0;*length=used;return 1;
+}
+
+static int wordseg_input(unsigned char **text,size_t **source,size_t *length,int language,
+    const struct wordseg_marks *marks)
+{
+    struct reloq_wordseg_options options=reloq_wordseg_current();
+    int english=(language==0x10000||language==0x10001);
+    if(!options.camel&&!(english&&options.english))return 0;
+    int family=language>>16,utf8=family==6||family==8||family==10||family==18;
+    const unsigned char *a=*text;const size_t *map=*source,n=*length;
+    struct german_shared_buffer b={0};int changed=0,spelling=0;
+    int abbreviations_disabled=options.abbreviations_disabled;
+    for(size_t i=0;i<n;) {
+        struct reloq_inline_tag tag=reloq_inline_tag_read(a+i,n-i,1);
+        if(tag.length) {
+            if(tag.kind==RELOQ_TAG_SPELL)spelling=tag.value;
+            if(tag.kind==RELOQ_TAG_DICTIONARY)abbreviations_disabled=tag.value;
+            if(german_shared_append(&b,a+i,map+i,tag.length,0))goto fail;
+            i+=tag.length;continue;
+        }
+        uint32_t cp=0;size_t next=wordseg_character(a,n,i,utf8,&cp);
+        if(next<=i)goto fail;
+        unsigned category=reloq_wordseg_category(cp);
+        if(spelling||!(category&RELOQ_WORDSEG_WORD)||cp=='_') {
+            if(german_shared_append(&b,a+i,map+i,next-i,0))goto fail;
+            i=next;continue;
+        }
+        size_t end=next;
+        while(end<n) {
+            uint32_t c=0;size_t after=wordseg_character(a,n,end,utf8,&c);
+            if(after<=end||!(reloq_wordseg_category(c)&RELOQ_WORDSEG_WORD)||c=='_')break;
+            end=after;
+        }
+        void *dictionary=options.dictionary;
+        /* A longer exact dictionary key may include punctuation such as a
+         * hyphen. Keep the complete entry intact before considering parts. */
+        size_t extended=end;
+        if(dictionary) {
+            while(extended<n&&a[extended]>32&&a[extended]!='`'&&extended-i<128)++extended;
+            while(extended>end&&strchr(",.;:!?)]}",a[extended-1]))--extended;
+            if(extended>end&&wordseg_dictionary(dictionary,a+i,extended-i,english,utf8,abbreviations_disabled))end=extended;
+        }
+        int protected=0;
+        if(options.protected_text) {
+            size_t first=map[i],last=map[end];
+            if(last>options.protected_length)last=options.protected_length;
+            for(size_t j=first;j<last;++j)if(options.protected_text[j]){protected=1;break;}
+        }
+        if(protected||wordseg_mark_inside(marks,map[i],map[end])||
+           wordseg_dictionary(dictionary,a+i,end-i,english,utf8,abbreviations_disabled)) {
+            if(german_shared_append(&b,a+i,map+i,end-i,0))goto fail;
+            i=end;continue;
+        }
+        if(options.english&&english&&end-i<=32) {
+            int ascii=1,upper=1;
+            for(size_t j=i;j<end;++j) {
+                ascii&=(a[j]>='a'&&a[j]<='z')||(a[j]>='A'&&a[j]<='Z');
+                if(a[j]>='a'&&a[j]<='z')upper=0;
+            }
+            unsigned char pieces[256];
+            int split=ascii?reloq_wordseg_english(a+i,end-i,language==0x10001,pieces,sizeof pieces):0;
+            if(split==1&&upper) {
+                unsigned char probe[2048];size_t probe_n=0;
+                if(reloq_rules61_word(language,a+i,end-i,probe,sizeof probe,&probe_n)!=1)split=0;
+            }
+            if(split==1) {
+                unsigned char spr[8192];size_t spr_n=0;
+                const unsigned char *replacement=pieces;size_t replacement_n=strlen((char *)pieces);
+                if(wordseg_compound_spr(language,pieces,spr,sizeof spr,&spr_n)) {
+                    replacement=spr;replacement_n=spr_n;
+                }
+                if(german_shared_append(&b,replacement,NULL,replacement_n,map[i]))goto fail;
+                changed=1;i=end;continue;
+            }
+        }
+        if(options.camel) {
+            size_t at=i;unsigned previous=0;
+            while(at<end) {
+                uint32_t c=0;size_t after=wordseg_character(a,end,at,utf8,&c);
+                if(after<=at)goto fail;
+                unsigned flags=reloq_wordseg_category(c),following=0;
+                size_t look=after;
+                while(look<end) {
+                    uint32_t later=0;size_t after_later=wordseg_character(a,end,look,utf8,&later);
+                    if(after_later<=look)goto fail;
+                    following=reloq_wordseg_category(later);
+                    if(!(following&RELOQ_WORDSEG_MARK))break;
+                    look=after_later;
+                }
+                if((flags&RELOQ_WORDSEG_UPPER)&&at>i&&
+                    ((previous&RELOQ_WORDSEG_LOWER)||
+                     ((previous&RELOQ_WORDSEG_UPPER)&&(following&RELOQ_WORDSEG_LOWER)))) {
+                    if(german_shared_append(&b,(const unsigned char *)" ",NULL,1,map[at]))goto fail;
+                    changed=1;
+                }
+                if(german_shared_append(&b,a+at,map+at,after-at,0))goto fail;
+                if(!(flags&RELOQ_WORDSEG_MARK))previous=flags;
+                at=after;
+            }
+        } else if(german_shared_append(&b,a+i,map+i,end-i,0))goto fail;
+        i=end;
+    }
+    if(!changed){free(b.bytes);free(b.map);return 0;}
+    if(german_shared_append(&b,(const unsigned char *)"",NULL,0,map[n]))goto fail;
+    b.bytes[b.used]=0;b.map[b.used]=map[n];
+    free(*text);free(*source);*text=b.bytes;*source=b.map;*length=b.used;return 0;
+fail:free(b.bytes);free(b.map);return -1;
 }
 
 /* Main text aliases are resolved once before grammar, including components
@@ -751,6 +968,10 @@ int reloq_rules61_phonemes(int language,const unsigned char *text,size_t length,
     int status=english_input(text,length,tags,
         family==6||family==8||family==10||family==18,&input,&map,&n);
     if(status)return status;
+    struct wordseg_marks wordseg_marks={.phoneme=indices,.phoneme_count=count};
+    if(wordseg_input(&input,&map,&n,language,&wordseg_marks)) {
+        free(input);free(map);return -2;
+    }
     if(language==0x40000) {
         german_compact_input(input,map,&n,tags);
         if(german_main_input(&input,&map,&n,tags)){free(input);free(map);return -2;}
@@ -1275,6 +1496,9 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     int input_status=english_input(text,length,tags,family==6||family==8||family==10||family==18,&a,&map,&n);
     if(input_status==-2)goto memory;
     if(input_status)goto done;
+    struct wordseg_marks wordseg_marks={.indices=indices,.index_count=index_count,
+        .pitches=pitches,.pitch_count=pitch_count};
+    if(wordseg_input(&a,&map,&n,language,&wordseg_marks))goto memory;
     if(language==0x40000)german_compact_input(a,map,&n,tags);
     if(tags&&!plan.cjk_volume&&normalize_word_voice_controls(&a,&map,&n,family==18))goto memory;
     if(language==0x40000&&german_main_input(&a,&map,&n,tags))goto memory;

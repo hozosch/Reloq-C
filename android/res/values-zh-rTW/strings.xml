@@ -85,6 +85,8 @@
     <string name="dictionary_update_files_new">新增字典檔案: %1$d</string>
     <string name="dictionary_update_files_total">字典檔案總數: %1$d</string>
     <string name="dictionary_update_files_unknown">無法確定新增字典檔案數。</string>
+    <string name="word_segmentation">拆分未知英語單字</string>
+    <string name="camel_case">拆分駝峰式單字（所有語言）</string>
     <string name="original_questions">使用原始疑問語調</string>
     <string name="mellow_mode">柔和模式（16 kHz 及以上）</string>
     <string name="original_acoustic_clock">對所選語言使用原始聲音時序（5 毫秒）</string>
