@@ -1,0 +1,41 @@
+name: Compare existing native English readings
+on:
+  push:
+    branches: [codex/wordseg-native-probe-20261111]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  probe:
+    runs-on: windows-2022
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: wordseg-core-candidate
+          run-id: 43029675658
+          github-token: ${{ github.token }}
+          path: candidate
+      - name: Compare isolated words and reference readings
+        shell: bash
+        run: |
+          dll=$(find candidate -name eci.dll -print -quit)
+          test -n "$dll"
+          python - "$dll" <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, 'nvda')
+          from _reloq_eci_direct import DirectEciEngine, WORD_SEGMENTATION
+          for dialect in (0x10000, 0x10001):
+              engine = DirectEciEngine(Path(sys.argv[1]).resolve(), dialect=dialect, encoding='utf8', native_voice=True)
+              try:
+                  engine.set_parameter(WORD_SEGMENTATION, 0)
+                  print('DIALECT', hex(dialect))
+                  for word in ('red', 'head', 'redhead', 'headed', 'redheaded', 'heads', 'redheads', 'cupboard', 'breakfast'):
+                      print(word, repr(engine._phonemes_for_probe(word)))
+              finally:
+                  engine.close()
+          PY
