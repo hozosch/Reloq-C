@@ -1,0 +1,57 @@
+name: Validate unified NVDA dictionaries
+on:
+  push:
+    branches: [codex/nvda-unified-diagnostic]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  actual-nvda:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: wordseg-core-candidate
+          run-id: 43025732720
+          github-token: ${{ github.token }}
+          path: candidate
+      - name: Add the current dictionary implementation to the verified native build
+        shell: pwsh
+        run: |
+          python -c "import zipfile; from pathlib import Path; z=zipfile.ZipFile('candidate/dist/reloq-c-synth-x64-1.3.2-dev2.nvda-addon'); c={'synthDrivers/reloqC/__init__.py':'addon/synth/synthDrivers/reloqC/__init__.py','synthDrivers/reloqC/_reloq_dictionary_manager.py':'nvda/_reloq_dictionary_manager.py','synthDrivers/reloqC/_reloq_nvda_dicts.py':'nvda/_reloq_nvda_dicts.py','globalPlugins/reloqCDictionaries/__init__.py':'addon/synth/globalPlugins/reloqCDictionaries/__init__.py'}; o=zipfile.ZipFile('candidate/unified-test.nvda-addon','w',zipfile.ZIP_DEFLATED); [o.writestr(x,z.read(x)) for x in z.namelist() if x not in c]; [o.writestr(k,Path(v).read_bytes()) for k,v in c.items()]; o.close()"
+          if ($LASTEXITCODE -ne 0) { throw 'Diagnostic add-on preparation failed' }
+      - name: Install real portable NVDA
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download release-2026.3.1 --repo nvaccess/nvda --pattern nvda_2026.3.1.exe --dir candidate
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA download failed' }
+          if ((Get-FileHash candidate/nvda_2026.3.1.exe -Algorithm SHA256).Hash -ne '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052') { throw 'Unexpected NVDA installer' }
+          $portable = Join-Path $pwd 'portable-nvda'
+          $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
+          $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
+      - name: Verify migration and spoken text in real NVDA
+        shell: pwsh
+        run: |
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/unified-test.nvda-addon --work segmentation-probe
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA migration and segmentation failed' }
+      - name: Verify combined dictionary controls in real NVDA
+        shell: pwsh
+        run: |
+          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/unified-test.nvda-addon --work settings-probe
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA dictionary controls failed' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unified-nvda-diagnostic-results
+          path: |
+            segmentation-probe/result.json
+            segmentation-probe/nvda.log
+            settings-probe/result.json
+            settings-probe/nvda.log
