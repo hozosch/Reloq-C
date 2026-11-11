@@ -1,4 +1,4 @@
-name: Compare existing native English readings
+name: Measure native English compound readings
 on:
   push:
     branches: [codex/wordseg-native-probe-20261111]
@@ -8,7 +8,7 @@ permissions:
 jobs:
   probe:
     runs-on: windows-2022
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,23 +19,40 @@ jobs:
           run-id: 43029675658
           github-token: ${{ github.token }}
           path: candidate
-      - name: Compare isolated words and reference readings
+      - name: Measure word and component readings
         shell: bash
         run: |
           dll=$(find candidate -name eci.dll -print -quit)
           test -n "$dll"
           python - "$dll" <<'PY'
-          import sys
+          import json, re, sys
           from pathlib import Path
           sys.path.insert(0, 'nvda')
           from _reloq_eci_direct import DirectEciEngine, WORD_SEGMENTATION
-          for dialect in (0x10000, 0x10001):
+          source = Path('src/reloq_wordseg_compounds.inc').read_text(encoding='ascii')
+          candidates = re.findall(r'^\s*\{"([a-z]+)",(\d+),', source, re.M)
+          needed = set()
+          for word, boundary in candidates:
+              at = int(boundary)
+              needed.update((word, word[:at], word[at:]))
+          output = {'source_commit': '8dd892cb1670295e16ba938257d435ed98d5df2f', 'readings': {}}
+          for dialect, name in ((0x10000, 'enus'), (0x10001, 'engb')):
               engine = DirectEciEngine(Path(sys.argv[1]).resolve(), dialect=dialect, encoding='utf8', native_voice=True)
+              found = {}
               try:
                   engine.set_parameter(WORD_SEGMENTATION, 0)
-                  print('DIALECT', hex(dialect))
-                  for word in ('red', 'head', 'redhead', 'headed', 'redheaded', 'heads', 'redheads', 'cupboard', 'breakfast'):
-                      print(word, repr(engine._phonemes_for_probe(word)))
+                  for word in sorted(needed):
+                      phones = re.findall(r'`\[([^]]+)\]', engine._phonemes_for_probe(word))
+                      if len(phones) == 1:
+                          found[word] = '`[' + phones[0] + ']'
               finally:
                   engine.close()
+              output['readings'][name] = found
+              print(name, len(found), 'of', len(needed), 'readings recorded')
+          Path('english-compound-observed.json').write_text(json.dumps(output, indent=2, sort_keys=True) + '\n', encoding='utf8')
           PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: english-compound-observed
+          path: english-compound-observed.json
+          retention-days: 7
