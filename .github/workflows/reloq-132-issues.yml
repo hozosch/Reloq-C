@@ -1,0 +1,48 @@
+name: Diagnose Italian speech and prepare source
+on:
+  push:
+    branches: [codex/italian-android-sapi-20261111]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Prepare the exact source tree
+        run: tar --exclude=.git -czf "$RUNNER_TEMP/reloq-source.tar.gz" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reloq-132-source
+          path: ${{ runner.temp }}/reloq-source.tar.gz
+          compression-level: 0
+          retention-days: 7
+  italian-before:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: wordseg-windows-candidate
+          run-id: 43048057996
+          github-token: ${{ github.token }}
+          path: candidate
+      - name: Probe Italian speech in isolated processes
+        shell: pwsh
+        run: |
+          python -u nvda/probe_eci_italian_apostrophe.py --library candidate/eci/eci.dll | Tee-Object -FilePath italian-before.jsonl
+          if ($LASTEXITCODE -ne 0) { throw 'Italian probe did not complete' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: italian-before
+          path: italian-before.jsonl
