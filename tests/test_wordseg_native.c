@@ -27,6 +27,18 @@ int main(void)
         check("swapfile","swap file",uk);
         check("framebuffer","frame buffer",uk);
         check("keyframe","key frame",uk);
+        check("cupboard",NULL,uk);
+        check("Cupboard",NULL,uk);
+        check("CUPBOARD",NULL,uk);
+        check("cupboards",NULL,uk);
+        check("breakfast",NULL,uk);
+        check("breakfasts",NULL,uk);
+        check("raspberry",NULL,uk);
+        check("raspberries",NULL,uk);
+        check("strawberry",NULL,uk);
+        check("waistcoat",NULL,uk);
+        check("butterfly",NULL,uk);
+        check("lighthouse",NULL,uk);
         check("algorithm",NULL,uk);
         check("HELLO",NULL,uk);
         check("inside",NULL,uk);

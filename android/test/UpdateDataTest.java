@@ -57,6 +57,10 @@ public final class UpdateDataTest {
         UpdateData.Package upgrade=UpdateData.candidate(stable,stableUrl,18000000,digest,1090027);
         require(upgrade!=null&&upgrade.code==11010000&&upgrade.version.equals("1.1.0"));
         require(UpdateData.candidate(stable,stableUrl,18000000,digest,11010000)==null);
+        String release132="reloq-c-android-arm64-1.3.2.apk";
+        String url132="https://github.com/hozosch/Reloq-C/releases/download/v1.3.2/"+release132;
+        require(UpdateData.candidate(release132,url132,18000000,digest,11030001,0,0).code==11030002);
+        require(UpdateData.candidate(release132,url132,18000000,digest,11030002,0,0)==null);
         String following="reloq-c-android-arm64-1.1.1.apk";
         String followingUrl="https://github.com/hozosch/Reloq-C/releases/download/v1.1.1/"+following;
         require(UpdateData.candidate(following,followingUrl,18000000,digest,11010000).code==11010001);

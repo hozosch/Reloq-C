@@ -1,6 +1,6 @@
 # Eloquence C – user guide
 
-## Version 1.3.1-dev1
+## Version 1.3.2
 
 In Brazilian Portuguese, 12 and 19 use their usual vowels within larger numbers as well. ECI inflection commands use the same intonation as the corresponding setting.
 

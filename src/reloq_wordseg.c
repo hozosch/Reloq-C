@@ -7,6 +7,7 @@
 
 struct wordseg_category_range { uint32_t first, last; unsigned char flags; };
 struct wordseg_casefold_entry { uint32_t codepoint; const char *folded; };
+struct wordseg_known_chunk { const char *words; unsigned char count; };
 #include "reloq_wordseg_data.inc"
 #define COUNT(a) (sizeof(a)/sizeof *(a))
 struct wordseg_table { const char *const *words; size_t count; };
@@ -121,6 +122,64 @@ static int word_piece(const char *word,size_t n)
     return 0;
 }
 
+static int suffix_order(const char *value,const char *suffix,size_t n)
+{
+    size_t length=strlen(value),common=length<n?length:n;
+    int order=memcmp(value,suffix,common);
+    return order?order:(length>n)-(length<n);
+}
+
+static int known_exact(const char *word,size_t n)
+{
+    if(n<2||word[0]<'a'||word[0]>'z'||word[1]<'a'||word[1]>'z')return 0;
+    size_t bucket=(size_t)(word[0]-'a')*26+(size_t)(word[1]-'a');
+    size_t begin=wordseg_known_start[bucket],lo=begin,hi=wordseg_known_start[bucket+1];
+    while(lo<hi) {
+        size_t mid=lo+(hi-lo)/2;
+        if(suffix_order(wordseg_known_chunks[mid].words,word+2,n-2)<=0)lo=mid+1;
+        else hi=mid;
+    }
+    if(lo==begin)return 0;
+    const struct wordseg_known_chunk *chunk=&wordseg_known_chunks[lo-1];
+    const char *value=chunk->words;
+    for(unsigned i=0;i<chunk->count;++i) {
+        int order=suffix_order(value,word+2,n-2);
+        if(!order)return 1;
+        if(order>0)return 0;
+        value+=strlen(value)+1;
+    }
+    return 0;
+}
+
+static int known_stem(const char *word,size_t n)
+{
+    return known_exact(word,n)||member(TABLE(wordseg_pieces),word,n);
+}
+
+/* Inflections belong to an established word too. Do not replace the native
+ * pronunciation simply because the inflected spelling can be divided. */
+static int known_word(const char *word,size_t n)
+{
+    if(known_stem(word,n))return 1;
+    static const char *const endings[]={"ings","ing","ers","er","ed","es","s"};
+    for(size_t i=0;i<COUNT(endings);++i) {
+        size_t k=strlen(endings[i]);if(n<k+3||memcmp(word+n-k,endings[i],k))continue;
+        if(k==1&&word[n-2]=='s')continue;
+        if(k==2&&endings[i][0]=='e'&&endings[i][1]=='s'&&!strchr("sxzh",word[n-3]))continue;
+        size_t root=n-k;
+        if(known_stem(word,root))return 1;
+        char restored[34];memcpy(restored,word,root);restored[root]='e';
+        if(known_stem(restored,root+1))return 1;
+        if(root>3&&word[root-1]==word[root-2]&&!strchr("aeiou",word[root-1])&&
+           known_stem(word,root-1))return 1;
+    }
+    if(n>4&&!memcmp(word+n-3,"ies",3)) {
+        char singular[34];memcpy(singular,word,n-3);singular[n-3]='y';
+        if(known_stem(singular,n-2))return 1;
+    }
+    return 0;
+}
+
 static int leave_word(const char *word,size_t n,int uk)
 {
     if(n<2||n>32)return 1;
@@ -128,7 +187,7 @@ static int leave_word(const char *word,size_t n,int uk)
     for(size_t i=0;i<n;++i){has_vowel|=vowel(word,i);roman&=strchr("ivxlc",word[i])!=NULL;}
     if(!has_vowel||roman||(n>=2&&word[0]=='m'&&word[1]=='c'))return 1;
     struct wordseg_table protected=uk?TABLE(wordseg_engb_word):TABLE(wordseg_enus_word);
-    if(member(protected,word,n)||word_piece(word,n))return 1;
+    if(member(protected,word,n)||word_piece(word,n)||known_word(word,n))return 1;
     if(!sayable(word,n,uk))return 0;
     for(size_t i=3;i+3<=n;++i)
         if(word_piece(word,i)&&word_piece(word+i,n-i))return 0;

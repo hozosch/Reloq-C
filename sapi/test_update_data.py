@@ -39,6 +39,8 @@ with tempfile.TemporaryDirectory(prefix='reloq-update-test-') as folder:
     result,update=call(feed(asset('1.3.1'),asset('1.4.0'),asset('1.3.10')))
     assert result==1 and update.version==b'1.4.0' and update.size==12345
     assert call(feed(asset('1.3.10')),installed='1.3.9')[0]==1
+    assert call(feed(asset('1.3.2')),installed='1.3.1',epoch=0)[0]==1
+    assert call(feed(asset('1.3.2')),installed='1.3.2',epoch=0)[0]==0
     same=feed(asset('1.3.1'))
     marker='<!-- ReLoq-C build:1700000001 -->'
     for body in ('',marker+' suffix','prefix '+marker,'before\\n'+marker,

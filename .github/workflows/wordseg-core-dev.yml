@@ -23,16 +23,28 @@ jobs:
       - name: Check cached provider inputs
         run: |
           git fetch --no-tags --depth=1 origin 8833399d4a3f74a0fa5f8e4c9a3cb45aeb976d66
-          git diff --quiet FETCH_HEAD HEAD -- vendor/openevv61 src/reloq_voice_filter.c include/reloq_voice_filter.h include/reloq_voice_controls.h include/reloq_inline_tags.h src/reloq_orthography.c include/reloq_orthography.h src/reloq_german_word_edges.c include/reloq_german_word_edges.h src/reloq_english_word_edges.c include/reloq_english_word_edges.h
+          git diff --quiet FETCH_HEAD HEAD -- vendor/openevv61 ':(exclude)vendor/openevv61/lang/dede61/delta_authored_dede61.c' src/reloq_voice_filter.c include/reloq_voice_filter.h include/reloq_voice_controls.h include/reloq_inline_tags.h src/reloq_orthography.c include/reloq_orthography.h src/reloq_german_word_edges.c include/reloq_german_word_edges.h src/reloq_english_word_edges.c include/reloq_english_word_edges.h
+          git show FETCH_HEAD:vendor/openevv61/lang/dede61/delta_authored_dede61.c > /tmp/reloq-original-german.c
+          python3 - <<'PY'
+          from pathlib import Path
+          old = Path('/tmp/reloq-original-german.c').read_text()
+          new = Path('vendor/openevv61/lang/dede61/delta_authored_dede61.c').read_text()
+          before = '/* eti_s_13ca63, 3 bytes at 2591 */\n    5,42,1,'
+          after = '/* eti_s_13ca63, 3 bytes at 2591: German "cup" with short a. */\n    5,34,1,'
+          assert old.count(before) == 1 and new == old.replace(before, after)
+          PY
       - uses: actions/cache@v4
         id: rules
         with:
           path: vendor/openevv61/build
           # Same provider inputs as 1.3.1; new segmentation lives in the host.
           key: sapi-rules-ubuntu24-gcc13-v1-x64-bf015a5474ab1999fcc51b40d7352fd3f4df5c786da942e6d0eb1ab99d8c6b88
-      - name: Restore cached rule timestamps
+      - name: Restore cached rule timestamps and rebuild the changed dictionary
         if: steps.rules.outputs.cache-hit == 'true'
-        run: find vendor/openevv61/build -type f -exec touch {} +
+        run: |
+          find vendor/openevv61/build -type f -exec touch {} +
+          rm -f vendor/openevv61/build/windows-release/lang/dede61/delta_authored_dede61.o
+          rm -f vendor/openevv61/build/windows-release/libreloq61.a
       - name: Compile the Windows core and SAPI adapter
         run: |
           make -C eci -j2 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
@@ -43,8 +55,8 @@ jobs:
           from pathlib import Path
           p=Path('addon/synth/manifest.ini')
           source=p.read_text(encoding='utf8')
-          assert 'version = "1.3.1"' in source
-          p.write_text(source.replace('version = "1.3.1"','version = "1.3.2-dev2"'),encoding='utf8')
+          assert 'version = "1.3.2"' in source
+          p.write_text(source.replace('version = "1.3.2"','version = "1.3.2-dev2"'),encoding='utf8')
           import sys
           sys.path.insert(0,'addon')
           from build_synth import build
@@ -81,6 +93,8 @@ jobs:
           $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
           python nvda/test_eci_wordseg_native.py --library $dll
           if ($LASTEXITCODE -ne 0) { throw 'Native segmentation failed' }
+          python nvda/test_eci_german_cup_native.py --library $dll
+          if ($LASTEXITCODE -ne 0) { throw 'German native dictionary failed' }
           python addon/test_synth_native.py --library $dll --addon $addon
           if ($LASTEXITCODE -ne 0) { throw 'NVDA adapter failed' }
           python addon/test_nvda_remote_loopback.py --library $dll --addon $addon
@@ -136,11 +150,15 @@ jobs:
       - name: Check platform settings and translations
         run: |
           sdkmanager 'platforms;android-35'
+          python3 tools/generate_wordseg_data.py
+          git diff --exit-code -- src/reloq_wordseg_data.inc
           python3 sapi/generate_ui.py --check
           cc -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -DRELOQ_SAPI_SETTINGS_TEST -I sapi sapi/settings.c sapi/test_settings.c -o /tmp/test-sapi-settings
           /tmp/test-sapi-settings
           cc -std=c11 -O2 -Wall -Wextra -Werror -DRELOQ_SAPI_TEST_HOST -I sapi sapi/test_ui.c -o /tmp/test-sapi-ui
           /tmp/test-sapi-ui
+          cc -std=c11 -O2 -Wall -Wextra -Werror -pedantic -Iinclude tests/test_wordseg_native.c src/reloq_wordseg.c -o /tmp/test-wordseg
+          /tmp/test-wordseg
           python3 sapi/test_update_data.py
           python3 nvda/test_updates.py
           python3 -B tests/test_release_dictionaries.py

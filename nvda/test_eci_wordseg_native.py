@@ -21,14 +21,24 @@ def main():
                 assert engine._dll.eciGetParam(engine._handle, CAMEL_CASE) == 0
                 compounds = {'swapfile': ('swap', 'file'), 'framebuffer': ('frame', 'buffer'),
                              'keyframe': ('key', 'frame'), 'blackboard': ('black', 'board')}
+                established = ('cupboard', 'Cupboard', 'CUPBOARD', 'cupboards',
+                               'breakfast', 'breakfasts', 'raspberry', 'raspberries',
+                               'strawberry', 'waistcoat', 'butterfly', 'lighthouse')
                 normal = {text: engine._phonemes_for_probe(text) for text in (*compounds, 'CGROUP')}
                 audio = {text: render(engine, [text])[0] for text in compounds}
                 capital_audio = render(engine, ['CGROUP'])[0]
+                known_phones = {text: re.findall(r'`\[([^]]+)\]', engine._phonemes_for_probe(text))
+                                for text in established}
+                known_audio = {text: render(engine, [text])[0] for text in established}
                 def phones(value):
                     return ''.join(re.sub(r'\.[0-3]', '', group) for group in re.findall(r'`\[([^]]+)\]', value))
                 pieces = {text: ''.join(phones(engine._phonemes_for_probe(part)) for part in pair)
                           for text, pair in compounds.items()}
                 engine.set_parameter(WORD_SEGMENTATION, 1)
+                for text in established:
+                    assert re.findall(r'`\[([^]]+)\]', engine._phonemes_for_probe(text)) == known_phones[text], (dialect, text)
+                    assert render(engine, [text])[0] == known_audio[text], (dialect, text, 'established pronunciation changed')
+                    checks += 1
                 for text in compounds:
                     result = engine._phonemes_for_probe(text)
                     assert len(re.findall(r'`\[', result)) == 1 and phones(result) == pieces[text], (dialect, text, result)

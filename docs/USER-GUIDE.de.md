@@ -1,6 +1,6 @@
 # Eloquence C – Bedienungsanleitung
 
-## Version 1.3.1-dev1
+## Version 1.3.2
 
 Die Zahlen 12 und 19 verwenden auf Brasilianisch-Portugiesisch auch in größeren Zahlen die üblichen Vokale. ECI-Betonungsbefehle verwenden dieselbe Sprachmelodie wie der entsprechende Reglerwert.
 

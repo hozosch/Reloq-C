@@ -71,6 +71,13 @@ class Updates(unittest.TestCase):
         self.assertEqual(select([{'assets': [asset]}], '1.0.0').version, '1.0.1')
         self.assertIsNone(select([{'assets': [asset]}], '1.0.1'))
 
+    def test_132_is_an_update_even_for_legacy_131_without_build_date(self):
+        name = 'reloq-c-synth-x64-1.3.2.nvda-addon'
+        asset = {**self.asset, 'name': name, 'browser_download_url':
+                 'https://github.com/hozosch/Reloq-C/releases/download/v1.3.2/' + name}
+        self.assertEqual(select([{'assets': [asset]}], '1.3.1', 0).version, '1.3.2')
+        self.assertIsNone(select([{'assets': [asset]}], '1.3.2', 0))
+
     def test_same_version_requires_a_later_build_marker(self):
         asset = self.asset
         old = {'body': '<!-- ReLoq-C build:1700000000 -->', 'assets': [asset]}

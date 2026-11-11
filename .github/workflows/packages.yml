@@ -67,7 +67,10 @@ jobs:
           name: dictionary-snapshot
           path: data/community
       - name: Build the shared native engine and acoustic rule tests
-        run: make -C eci -j2 libreloq_eci.so test_reloq_native_rules test_reloq_wpm_native test_wpm_arithmetic test_eci_stream_time test_reloq_text_peaks test_reloq_presence test_reloq_hearing_profiles PROVIDER_LTO=-flto=2
+        run: |
+          python3 tools/generate_wordseg_data.py
+          git diff --exit-code -- src/reloq_wordseg_data.inc
+          make -C eci -j2 libreloq_eci.so test_reloq_native_rules test_reloq_wpm_native test_wpm_arithmetic test_eci_stream_time test_reloq_text_peaks test_reloq_presence test_reloq_hearing_profiles PROVIDER_LTO=-flto=2
       - name: Check number, pitch, pause, source-index and multilingual behavior
         run: |
           ./eci/test_reloq_native_rules
@@ -109,6 +112,7 @@ jobs:
           python3 -B addon/test_segmentation_eci.py --library eci/libreloq_eci.so
           python3 -B addon/test_uppercase_native.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_wordseg_native.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_german_cup_native.py --library eci/libreloq_eci.so
           python3 -B nvda/test_updates.py
           python3 -B nvda/test_eci_dictionary_startup.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_greek_connected.py --library eci/libreloq_eci.so
@@ -223,11 +227,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download v1.2.1 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-1.2.1.nvda-addon' --dir previous-addon
-          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.2.1.nvda-addon --candidate dist/reloq-c-synth-x64-1.3.1.nvda-addon
+          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.2.1.nvda-addon --candidate dist/reloq-c-synth-x64-1.3.2.nvda-addon
       - name: Verify NVDA driver and offline dictionary startup
         run: |
           for language in en de; do
-            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.1.nvda-addon"))' "$language"
+            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.2.nvda-addon"))' "$language"
           done
       - uses: actions/upload-artifact@v4
         with:
@@ -250,7 +254,7 @@ jobs:
       - name: Verify packaged Windows core and NVDA integration
         shell: pwsh
         run: |
-          $addon = (Get-Item candidate/reloq-c-synth-x64-1.3.1.nvda-addon).FullName
+          $addon = (Get-Item candidate/reloq-c-synth-x64-1.3.2.nvda-addon).FullName
           python -c "import zipfile; z=zipfile.ZipFile(r'$addon'); assert z.testzip() is None; z.extract('synthDrivers/reloqC/eci.dll', 'candidate')"
           if ($LASTEXITCODE -ne 0) { throw 'Core extraction failed' }
           $dll = (Get-Item candidate/synthDrivers/reloqC/eci.dll).FullName
@@ -275,7 +279,7 @@ jobs:
           $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
           $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
           if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
-          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.3.1.nvda-addon --work settings-results
+          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.3.2.nvda-addon --work settings-results
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA settings probe failed' }
   collect:
     needs: [version, native-regressions, sapi, android, nvda, nvda-windows]

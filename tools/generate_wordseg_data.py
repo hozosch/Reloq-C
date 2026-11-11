@@ -5,6 +5,7 @@ The English lists retain the OpenEVV attribution in nvda/wordseg-data/NOTICE.
 Run this after updating those source lists; no runtime files are required.
 """
 from pathlib import Path
+import re
 import unicodedata
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,6 +38,30 @@ def emit_group(output, name, words):
     output.append("};\n")
 
 
+def emit_known_words(output, words):
+    """Exact, prefix-bucketed words without one native pointer per word."""
+    groups = {}
+    for word in sorted(words):
+        if 2 <= len(word) <= 32:
+            groups.setdefault(word[:2], []).append(word[2:])
+    starts, chunks = [], []
+    for first in 'abcdefghijklmnopqrstuvwxyz':
+        for second in 'abcdefghijklmnopqrstuvwxyz':
+            starts.append(len(chunks))
+            values = groups.get(first + second, [])
+            chunks.extend(values[i:i + 64] for i in range(0, len(values), 64))
+    starts.append(len(chunks))
+    if len(chunks) >= 65536:
+        raise ValueError('too many English vocabulary chunks')
+    output.append('static const uint16_t wordseg_known_start[] = {\n')
+    for i in range(0, len(starts), 16):
+        output.append('    ' + ','.join(map(str, starts[i:i + 16])) + ',\n')
+    output.append('};\nstatic const struct wordseg_known_chunk wordseg_known_chunks[] = {\n')
+    for chunk in chunks:
+        output.append('    {"' + ''.join(word + r'\0' for word in chunk) + '",' + str(len(chunk)) + '},\n')
+    output.append('};\n')
+
+
 def case_flags(ch):
     upper = ch.isupper() or (ch.isalpha() and ch.istitle())
     lower = ch.islower()
@@ -53,6 +78,19 @@ def main():
         raise ValueError("English piece tables differ; represent them separately")
     emit_group(out, "wordseg_pieces", us)
     emit_group(out, "wordseg_abbreviations", abbr)
+    # Protect ordinary words with an established pronunciation in the
+    # project's independently observed English vocabularies. The native
+    # engine remains responsible for saying them in each dialect. In
+    # particular, a spelling that happens to consist of two known pieces
+    # does not imply that the word is pronounced as those pieces.
+    observed = set()
+    for name in ("reloq_english_lexicon.inc", "reloq_english_vocabulary82.inc",
+                 "reloq_english_vocabulary83.inc"):
+        source = (ROOT / "src" / name).read_text(encoding="utf8")
+        observed.update(re.findall(r'^\s*\{"([a-z]+)"\s*,', source, re.M))
+    if len(observed) < 50000:
+        raise ValueError("observed English vocabulary is incomplete")
+    emit_known_words(out, observed - us)
     for language in ("enus", "engb"):
         groups = {"onset": set(), "coda": set(), "word": set()}
         for line in (DATA / (language + "-sayable")).read_text(encoding="utf8").splitlines():
