@@ -71,17 +71,17 @@ jobs:
           p = Path('addon/synth/manifest.ini')
           manifest = p.read_text(encoding='utf8')
           assert 'version = "1.4.0"' in manifest
-          p.write_text(manifest.replace('version = "1.4.0"', 'version = "1.4.0-dev1"'), encoding='utf8')
+          p.write_text(manifest.replace('version = "1.4.0"', 'version = "1.4.0-dev2"'), encoding='utf8')
           sys.path.insert(0, 'addon')
           from build_synth import build
-          build(Path('dist/reloq-c-synth-x64-1.4.0-dev1.nvda-addon'), Path('eci/eci.dll'), refresh_dictionaries=False)
+          build(Path('dist/reloq-c-synth-x64-1.4.0-dev2.nvda-addon'), Path('eci/eci.dll'), refresh_dictionaries=False)
           PY
       - uses: actions/upload-artifact@v4
         with:
           name: wordseg-windows-candidate
           path: |
             eci/eci.dll
-            dist/reloq-c-synth-x64-1.4.0-dev1.nvda-addon
+            dist/reloq-c-synth-x64-1.4.0-dev2.nvda-addon
           compression-level: 0
           retention-days: 7
       - name: Verify the common core and package
@@ -93,7 +93,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'German cup pronunciation failed' }
           python nvda/test_eci_italian_apostrophe_native.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Italian apostrophe regression failed' }
-          python addon/test_synth_native.py --library eci/eci.dll --addon dist/reloq-c-synth-x64-1.4.0-dev1.nvda-addon
+          python addon/test_synth_native.py --library eci/eci.dll --addon dist/reloq-c-synth-x64-1.4.0-dev2.nvda-addon
           if ($LASTEXITCODE -ne 0) { throw 'NVDA adapter failed' }
       - name: Compile the real SAPI adapter and integration test
         shell: bash

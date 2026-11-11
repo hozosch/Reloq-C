@@ -20,6 +20,7 @@ def main():
                 assert engine._dll.eciGetParam(engine._handle, WORD_SEGMENTATION) == 0
                 assert engine._dll.eciGetParam(engine._handle, CAMEL_CASE) == 0
                 compounds = {'swapfile': ('swap', 'file'), 'fileswap': ('file', 'swap'),
+                             'filetable': ('file', 'table'),
                              'swaphost': ('swap', 'host'), 'swapbuffer': ('swap', 'buffer'),
                              'filecandle': ('file', 'candle'), 'candlefile': ('candle', 'file'),
                              'shopfile': ('shop', 'file'), 'filelock': ('file', 'lock'),
@@ -47,13 +48,18 @@ def main():
                 established = ('cupboard', 'Cupboard', 'CUPBOARD', 'cupboards',
                                'breakfast', 'breakfasts', 'raspberry', 'raspberries',
                                'strawberry', 'waistcoat', 'butterfly', 'lighthouse',
-                               'landmark', 'Jackson')
+                               'landmark', 'Jackson', 'switchable', 'Switchable',
+                               'switchably', 'switchability', 'switchless', 'spellless',
+                               'switchlessness', 'happiness', 'paintable', 'deletable',
+                               'rollable', 'viewable', 'searchable', 'jumpable', 'parkable')
                 normal = {text: engine._phonemes_for_probe(text) for text in (*compounds, 'CGROUP')}
                 audio = {text: render(engine, [text])[0] for text in compounds}
                 capital_audio = render(engine, ['CGROUP'])[0]
                 known_phones = {text: re.findall(r'`\[([^]]+)\]', engine._phonemes_for_probe(text))
                                 for text in established}
                 known_audio = {text: render(engine, [text])[0] for text in established}
+                derived_sentences = ('This setting is switchable.', 'A searchable list is open.')
+                sentence_audio = {text: render(engine, [text])[0] for text in derived_sentences}
                 if dialect == 0x10001:
                     # A correct British word and uncertain British compound
                     # readings must not be replaced just because the US
@@ -69,6 +75,9 @@ def main():
                 for text in established:
                     assert re.findall(r'`\[([^]]+)\]', engine._phonemes_for_probe(text)) == known_phones[text], (dialect, text)
                     assert render(engine, [text])[0] == known_audio[text], (dialect, text, 'established pronunciation changed')
+                    checks += 1
+                for text in derived_sentences:
+                    assert render(engine, [text])[0] == sentence_audio[text], (dialect, text)
                     checks += 1
                 if dialect == 0x10001:
                     for word in uk_protected:

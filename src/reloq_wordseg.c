@@ -215,6 +215,49 @@ static int known_word(const char *word,size_t n)
     return 0;
 }
 
+/* Prefer an attested verb form when an -able derivation competes with a
+ * longer word at the same boundary (paint+able versus pain+table). */
+static int attested_verb_form(const char *word,size_t n)
+{
+    if(n<2||n>28)return 0;
+    char form[34];memcpy(form,word,n);
+    size_t ed=n;
+    if(word[n-1]!='e')form[ed++]='e';
+    form[ed++]='d';
+    if(known_stem(form,ed))return 1;
+    size_t ing=n;
+    if(word[n-1]=='e'&&word[n-2]!='e')--ing;
+    memcpy(form,word,ing);memcpy(form+ing,"ing",3);
+    return known_stem(form,ing+3);
+}
+
+/* Productive adjective endings are not independent words. A recognised
+ * stem such as switch therefore keeps its native pronunciation in
+ * switchable, switchably, switchability and switchless. Keep competing
+ * compounds such as file+table when the stem's verb form is unattested. */
+static int derived_word(const char *word,size_t n)
+{
+    static const char *const endings[]={"abilities","ability","ables","ably","able",
+        "ibilities","ibility","ibles","ibly","ible","lessness","lessly","less",
+        "fulness","fully","ful","ness"};
+    for(size_t i=0;i<COUNT(endings);++i){
+        size_t k=strlen(endings[i]);if(n<k+2||memcmp(word+n-k,endings[i],k))continue;
+        size_t root=n-k;int competing=0;
+        for(size_t at=3;at<root;++at)
+            if(word_piece(word,at)&&word_piece(word+at,n-at)){competing=1;break;}
+        if(known_stem(word,root)&&(!competing||attested_verb_form(word,root)))return 1;
+        char restored[34];memcpy(restored,word,root);restored[root]='e';
+        if(known_stem(restored,root+1))return 1;
+        if(root>3&&word[root-1]==word[root-2]&&!strchr("aeiou",word[root-1])&&
+           known_stem(word,root-1)&&(!competing||attested_verb_form(word,root-1)))return 1;
+        if(word[root-1]=='i'){
+            restored[root-1]='y';
+            if(known_stem(restored,root)&&(!competing||attested_verb_form(restored,root)))return 1;
+        }
+    }
+    return 0;
+}
+
 static int leave_word(const char *word,size_t n,int uk)
 {
     if(n<2||n>32)return 1;
@@ -222,7 +265,7 @@ static int leave_word(const char *word,size_t n,int uk)
     for(size_t i=0;i<n;++i){has_vowel|=vowel(word,i);roman&=strchr("ivxlc",word[i])!=NULL;}
     if(!has_vowel||roman||(n>=2&&word[0]=='m'&&word[1]=='c'))return 1;
     struct wordseg_table protected=uk?TABLE(wordseg_engb_word):TABLE(wordseg_enus_word);
-    if(member(protected,word,n)||word_piece(word,n)||known_word(word,n))return 1;
+    if(member(protected,word,n)||word_piece(word,n)||known_word(word,n)||derived_word(word,n))return 1;
     if(!sayable(word,n,uk))return 0;
     for(size_t i=3;i+3<=n;++i)
         if(word_piece(word,i)&&word_piece(word+i,n-i))return 0;
