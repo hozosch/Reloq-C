@@ -740,11 +740,12 @@ void vcompare(delta_state *d, const delta_operand *a, const delta_operand *b)
         } else {
             int32_t len = stmt_length(a->kind);
 
-            /* The original keeps only the low byte of what memcmp returns,
-               so the exact value matters and not just its sign. That was
-               already true of IBM's builds; using memcmp keeps it so. */
+            int order = memcmp(a->ptr, b->ptr, (size_t)len);
+
+            /* C fixes only the sign of memcmp's result; the low byte can
+               otherwise wrap to zero for unequal data (e.g. x86-64 bionic). */
             EVV_AT(delta_vars *, d->vars)->compared_equal =
-                (int8_t)memcmp(a->ptr, b->ptr, (size_t)len);
+                (int8_t)((order > 0) - (order < 0));
         }
         break;
     }
@@ -4869,6 +4870,12 @@ void fdel(delta_state *d, int32_t whole, int32_t arg)
 int vdel_1pt(delta_state *d, uint8_t f, int32_t t, int32_t arg)
 {
     delta_stack *s = EVV_AT(delta_stack *, d->stack);
+
+    /* A rule can reach a missing sync, for example after an Italian final
+       apostrophe. There is no statement to delete: let its caller backtrack
+       instead of dereferencing the null reference. */
+    if (t == 0)
+        return 0;
 
     EVV_AT(delta_owner *, d->owner)->changed = 1;
 

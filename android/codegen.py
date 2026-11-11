@@ -11,7 +11,9 @@ def build_epoch():
     return int(value)
 
 
-def generate(destination):
+def generate(destination, package_arch="arm64"):
+    if package_arch not in ("arm64", "x86_64"):
+        raise ValueError("Unsupported Android package architecture")
     root=Path(__file__).resolve().parents[1]
     target=Path(destination)/"org/reloq/tts"
     target.mkdir(parents=True,exist_ok=True)
@@ -30,4 +32,5 @@ def generate(destination):
         ' static final double[] TIMES={'+','.join(repr(v) for v in times)+'};\n}\n')
     (target/"BuildData.java").write_text(
         'package org.reloq.tts;\n'
-        'final class BuildData { static final long BUILD_EPOCH='+str(build_epoch())+'L; }\n')
+        'final class BuildData { static final long BUILD_EPOCH='+str(build_epoch())+'L; '
+        'static final String PACKAGE_ARCH="'+package_arch+'"; }\n')

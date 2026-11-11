@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the offline ARM64 app with official SDK/NDK tools and JDK 17.
+"""Build the offline ARM64 or x86-64 app with official SDK/NDK tools and JDK 17.
 
 No Gradle, original modules or audio files are involved. Builds resolve the
 current community dictionary master; synthesis itself is offline.
@@ -17,6 +17,9 @@ from codegen import generate,build_epoch
 
 ROOT=Path(__file__).resolve().parents[1]
 HERE=ROOT/"android"
+# Android ABI -> (clang target prefix, file tag)
+ABIS={"arm64-v8a":("aarch64-linux-android26","arm64"),
+      "x86_64":("x86_64-linux-android26","x86_64")}
 
 
 def run(*command, **kwargs):
@@ -32,7 +35,8 @@ def main():
     parser.add_argument("--android-jar",type=Path)
     parser.add_argument("--jobs",type=int,default=4)
     parser.add_argument("--build-dir",type=Path,help="isolated Android build directory")
-    parser.add_argument("--output",type=Path,default=ROOT/"dist/reloq-c-android-arm64-1.3.2.apk")
+    parser.add_argument("--abi",choices=sorted(ABIS),default="arm64-v8a")
+    parser.add_argument("--output",type=Path)
     parser.add_argument("--keystore",type=Path,default=HERE/"release-signing.p12")
     parser.add_argument("--verified-dictionaries",action="store_true",
         help="use locally verified data after separately resolving its current master commit")
@@ -46,12 +50,18 @@ def main():
     sdk,ndk,java=(x.resolve() for x in (args.sdk,args.ndk,args.java_home))
     tools=(args.build_tools or sdk/"build-tools/35.0.1").resolve()
     android_jar=(args.android_jar or sdk/"platforms/android-35/android.jar").resolve()
-    host=ndk/"toolchains/llvm/prebuilt/linux-x86_64/bin"
-    compiler=host/"aarch64-linux-android26-clang"
+    triple,tag=ABIS[args.abi]
+    if args.build_dir is None and args.abi!="arm64-v8a":args.build_dir=HERE/f"build-{tag}"
+    if args.output is None:args.output=ROOT/f"dist/reloq-c-android-{tag}-1.4.0.apk"
+    prebuilt={"linux":"linux-x86_64","darwin":"darwin-x86_64"}.get(sys.platform,"linux-x86_64")
+    host=ndk/f"toolchains/llvm/prebuilt/{prebuilt}/bin"
+    compiler=host/f"{triple}-clang"
     for path in (compiler,host/"llvm-ar",android_jar,tools/"aapt2",tools/"d8",tools/"apksigner",java/"bin/javac",args.keystore):
         if not path.is_file(): parser.error(f"missing build input: {path}")
     build=(args.build_dir or HERE/"build").resolve();build.mkdir(parents=True,exist_ok=True)
     environment={**os.environ,"JAVA_HOME":str(java),"PATH":str(java/"bin")+os.pathsep+os.environ["PATH"]}
+    # The linked library has one path for every ABI; relink it each time.
+    (ROOT/"eci/libreloq_android.so").unlink(missing_ok=True)
     run("make","-C",ROOT/"eci",f"-j{args.jobs}","libreloq_android.so",
         f"ANDROID_CC={compiler}",f"ANDROID_AR={host/'llvm-ar'}",
         f"ANDROID_BUILD={build/'native-eci'}",
@@ -67,7 +77,7 @@ def main():
     from build_synth import refresh_community_dictionaries
     if not args.verified_dictionaries:refresh_community_dictionaries()
     (assets/"german.rlex").unlink(missing_ok=True)
-    generate(generated)
+    generate(generated,tag)
     (assets/'reloq-build-epoch.txt').write_text(str(build_epoch())+'\n',encoding='ascii')
     from _reloq_dictionaries import FILES,validate_snapshot
     validate_snapshot(ROOT/"data/community")
@@ -103,7 +113,7 @@ def main():
         # made target-30+ APKs uninstallable despite valid signatures.
         for entry in resources.infolist(): apk.writestr(entry,resources.read(entry),compresslevel=9)
         apk.write(dex/"classes.dex","classes.dex")
-        apk.write(native,"lib/arm64-v8a/libreloq_android.so")
+        apk.write(native,f"lib/{args.abi}/libreloq_android.so")
     run(tools/"zipalign","-P","16","-f","4",build/"unsigned.apk",build/"aligned.apk")
     output=args.output.resolve();output.parent.mkdir(parents=True,exist_ok=True)
     signed=build/"signed.apk"
@@ -111,7 +121,7 @@ def main():
         "--ks-pass","pass:android","--key-pass","pass:android","--out",signed,build/"aligned.apk",env=environment)
     run(tools/"apksigner","verify","--verbose",signed,env=environment)
     run(tools/"zipalign","-c","-P","16","4",signed)
-    verify_apk(signed)
+    verify_apk(signed,args.abi)
     verify_permissions(signed,tools/"aapt2")
     if args.upgrade_from:verify_upgrade(signed,args.upgrade_from.resolve(),tools/"aapt2",tools/"apksigner",environment)
     if args.replace_from and verify_previous_package(signed,args.replace_from.resolve(),tools/"aapt2",tools/"apksigner",environment)["separate"]:

@@ -7,7 +7,7 @@ import java.util.regex.*;
 final class UpdateData {
     static final String RELEASES="https://api.github.com/repos/hozosch/Reloq-C/releases?per_page=30";
     static final long LIMIT=128L*1024*1024;
-    private static final Pattern NAME=Pattern.compile("reloq-c-android-arm64-((\\d+)\\.(\\d+)\\.(\\d+))\\.apk");
+    private static final Pattern NAME=Pattern.compile("reloq-c-android-(arm64|x86_64)-((\\d+)\\.(\\d+)\\.(\\d+))\\.apk");
     private static final Pattern BUILD=Pattern.compile("(?m)^<!-- ReLoq-C build:([1-9]\\d{0,11}) -->$");
     private static final long MAX_EPOCH=253402300799L;
     static final class Package {
@@ -27,9 +27,14 @@ final class UpdateData {
         return candidate(name,url,size,digest,installed,0,0);
     }
     static Package candidate(String name,String url,long size,String digest,long installed,long installedEpoch,long releaseEpoch) {
+        return candidate(name,url,size,digest,installed,installedEpoch,releaseEpoch,"arm64");
+    }
+    static Package candidate(String name,String url,long size,String digest,long installed,long installedEpoch,long releaseEpoch,String packageArch) {
+        if(!"arm64".equals(packageArch)&&!"x86_64".equals(packageArch))
+            throw new IllegalArgumentException("Unsupported package architecture");
         Matcher m=NAME.matcher(name);
-        if(!m.matches())return null;
-        long major=Long.parseLong(m.group(2)),minor=Long.parseLong(m.group(3)),patch=Long.parseLong(m.group(4));
+        if(!m.matches()||!packageArch.equals(m.group(1)))return null;
+        long major=Long.parseLong(m.group(3)),minor=Long.parseLong(m.group(4)),patch=Long.parseLong(m.group(5));
         if(major>2000||minor>=100||patch>=10000)throw new IllegalArgumentException("Invalid package version");
         long code=major*1000000+minor*10000+patch;
         // Earlier 1.1 builds used codes up to 10900xx, higher than the original
@@ -44,6 +49,6 @@ final class UpdateData {
                 Pattern.quote(name)))throw new IllegalArgumentException("Invalid package URL");
         if(size<1||size>LIMIT||digest==null||!digest.matches("sha256:[0-9a-fA-F]{64}"))
             throw new IllegalArgumentException("Invalid package size or SHA-256 checksum");
-        return new Package(name,m.group(1),url,digest.substring(7).toLowerCase(java.util.Locale.ROOT),code,size,releaseEpoch);
+        return new Package(name,m.group(2),url,digest.substring(7).toLowerCase(java.util.Locale.ROOT),code,size,releaseEpoch);
     }
 }

@@ -1,6 +1,6 @@
 # Eloquence C – user guide
 
-## Version 1.3.2
+## Version 1.4.0
 
 In Brazilian Portuguese, 12 and 19 use their usual vowels within larger numbers as well. ECI inflection commands use the same intonation as the corresponding setting.
 
@@ -42,7 +42,7 @@ The German E-I glide defaults to opening 85, backness 45 and softness 45. German
 
 English clock times such as `13:28:25` keep the ordinary hours/minutes reading and append “and twenty five seconds”. One second uses the singular; fractional seconds remain in the normal number reader. This applies to US and British English in the native core, including NVDA and other ECI clients. Source indices remain attached to their original text positions.
 
-Eloquence C is the NVDA add-on from [ReLoq C](https://github.com/hozosch/Reloq-C). It develops the familiar Eloquence sound with pronunciation corrections, Unicode support and additional voice controls. NVDA is the first integration and current speech testing platform. The same engine is also available for Android ARM64 and Windows SAPI5.
+Eloquence C is the NVDA add-on from [ReLoq C](https://github.com/hozosch/Reloq-C). It develops the familiar Eloquence sound with pronunciation corrections, Unicode support and additional voice controls. NVDA is the first integration and current speech testing platform. The same engine is also available for Android on ARM64 and x86-64, and for Windows SAPI5.
 
 ## Install and select
 

@@ -113,6 +113,9 @@ jobs:
           python3 -B addon/test_uppercase_native.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_wordseg_native.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_german_cup_native.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_italian_apostrophe_native.py --library eci/libreloq_eci.so
+          gcc -std=gnu11 -O2 -fno-builtin-memcmp -ffunction-sections -fdata-sections -DEVV_ARENA=1 -DEVV_NO_BYTECODE -DRELOQ61_PARAMETERS_ONLY=1 -Ivendor/openevv61/include -Ivendor/openevv61/src -Ivendor/openevv61/src/delta -Ivendor/openevv61/src/port -Ivendor/openevv61/src/eci/util -Ivendor/openevv61/src/eci/sound -Ivendor/openevv61/src/eci/api -Ivendor/openevv61/src/eci/bridge -Ivendor/openevv61/src/eci/queue -Ivendor/openevv61/src/eci/synth -Iinclude tests/test_delta_comparison.c vendor/openevv61/src/delta/delta.c -Wl,--gc-sections,--wrap=memcmp -o /tmp/test-delta-comparison
+          /tmp/test-delta-comparison
           python3 -B nvda/test_updates.py
           python3 -B nvda/test_eci_dictionary_startup.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_greek_connected.py --library eci/libreloq_eci.so
@@ -138,6 +141,14 @@ jobs:
   android:
     needs: [version, dictionaries]
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - abi: arm64-v8a
+            tag: arm64
+          - abi: x86_64
+            tag: x86_64
     env:
       RELOQ_BUILD_EPOCH: ${{ needs.version.outputs.build_epoch }}
     timeout-minutes: 30
@@ -175,15 +186,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release download --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-android-arm64-*.apk' --dir previous
-      - name: Build and verify ARM64 APK
+      - name: Build and verify Android APK
         run: |
           previous_apk=(previous/*.apk)
           test "${#previous_apk[@]}" -eq 1
-          python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --replace-from "${previous_apk[0]}" --jobs 2
+          python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --abi '${{ matrix.abi }}' --verified-dictionaries --replace-from "${previous_apk[0]}" --jobs 2
       - uses: actions/upload-artifact@v4
         with:
-          name: android-apk
-          path: dist/reloq-c-android-arm64-*.apk
+          name: android-apk-${{ matrix.tag }}
+          path: dist/reloq-c-android-${{ matrix.tag }}-*.apk
           compression-level: 0
           retention-days: 14
   nvda:
@@ -227,11 +238,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download v1.2.1 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-1.2.1.nvda-addon' --dir previous-addon
-          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.2.1.nvda-addon --candidate dist/reloq-c-synth-x64-1.3.2.nvda-addon
+          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.2.1.nvda-addon --candidate dist/reloq-c-synth-x64-1.4.0.nvda-addon
       - name: Verify NVDA driver and offline dictionary startup
         run: |
           for language in en de; do
-            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.2.nvda-addon"))' "$language"
+            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.4.0.nvda-addon"))' "$language"
           done
       - uses: actions/upload-artifact@v4
         with:
@@ -254,11 +265,11 @@ jobs:
       - name: Verify packaged Windows core and NVDA integration
         shell: pwsh
         run: |
-          $addon = (Get-Item candidate/reloq-c-synth-x64-1.3.2.nvda-addon).FullName
+          $addon = (Get-Item candidate/reloq-c-synth-x64-1.4.0.nvda-addon).FullName
           python -c "import zipfile; z=zipfile.ZipFile(r'$addon'); assert z.testzip() is None; z.extract('synthDrivers/reloqC/eci.dll', 'candidate')"
           if ($LASTEXITCODE -ne 0) { throw 'Core extraction failed' }
           $dll = (Get-Item candidate/synthDrivers/reloqC/eci.dll).FullName
-          foreach ($test in @('nvda/test_eci_ptbr_numbers.py','nvda/test_eci_equalizer.py','nvda/test_eci_inflection_tags.py','nvda/test_eci_wpm_setting.py')) {
+          foreach ($test in @('nvda/test_eci_ptbr_numbers.py','nvda/test_eci_equalizer.py','nvda/test_eci_inflection_tags.py','nvda/test_eci_wpm_setting.py','nvda/test_eci_italian_apostrophe_native.py')) {
             python -B $test --library $dll
             if ($LASTEXITCODE -ne 0) { throw "$test failed" }
           }
@@ -279,9 +290,9 @@ jobs:
           $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
           $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
           if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
-          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.3.2.nvda-addon --work settings-results
+          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.0.nvda-addon --work settings-results
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA settings probe failed' }
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.3.2.nvda-addon --work segmentation-results
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.0.nvda-addon --work segmentation-results
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA dictionary and segmentation probe failed' }
   collect:
     needs: [version, native-regressions, sapi, android, nvda, nvda-windows]
@@ -306,7 +317,8 @@ jobs:
           path: artifacts/sapi
       - uses: actions/download-artifact@v4
         with:
-          name: android-apk
+          pattern: android-apk-*
+          merge-multiple: true
           path: artifacts/android
       - uses: actions/download-artifact@v4
         with:

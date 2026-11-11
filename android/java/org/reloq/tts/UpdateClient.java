@@ -31,7 +31,7 @@ final class UpdateClient {
                 JSONObject asset=assets.getJSONObject(a);
                 UpdateData.Package next=UpdateData.candidate(asset.optString("name"),
                     asset.optString("browser_download_url"),asset.optLong("size"),
-                    asset.optString("digest"),installed,installedEpoch,releaseEpoch);
+                    asset.optString("digest"),installed,installedEpoch,releaseEpoch,BuildData.PACKAGE_ARCH);
                 if(next!=null&&(best==null||next.code>best.code||
                     (next.code==best.code&&next.buildEpoch>best.buildEpoch)))best=next;
             }

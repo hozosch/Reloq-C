@@ -174,11 +174,16 @@ jobs:
           if ($p.ExitCode -ne 0) { throw "Upgrade failed: $($p.ExitCode)" }
           Test-StartLinks 'Stimmeinstellungen' 'Anleitung'
           $registered = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D3F8BA6E-1C62-4B0D-8A33-3840B77376AC}_is1'
-          if ($registered.DisplayName -ne 'ReLoq C SAPI5' -or $registered.DisplayVersion -ne '1.3.2') { throw 'SAPI application name or version metadata is incorrect' }
+          if ($registered.DisplayName -ne 'ReLoq C SAPI5' -or $registered.DisplayVersion -ne '1.4.0') { throw 'SAPI application name or version metadata is incorrect' }
           if ((Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'Dictionary edit lost during upgrade' }
           & ./sapi/test_japanese_sapi.ps1 -ReportPath dist/validation/japanese-results.json
           foreach ($arch in @('x64','x86')) {
             $test = if ($arch -eq 'x64') { Join-Path $install 'Test-SAPI.exe' } else { Join-Path $install 'x86\Test-SAPI.exe' }
+            & $test --dictionarycase *> "dist/validation/sapi-$arch-dictionary.txt"
+            if ($LASTEXITCODE -ne 0) {
+              Get-Content "dist/validation/sapi-$arch-dictionary.txt" -Tail 60
+              throw "SAPI $arch personal dictionary integration failed"
+            }
             & $test --threadcase *> "dist/validation/sapi-$arch-threads.txt"
             if ($LASTEXITCODE -ne 0) {
               Get-Content "dist/validation/sapi-$arch-threads.txt" -Tail 60

@@ -1,6 +1,6 @@
 # Eloquence C – Bedienungsanleitung
 
-## Version 1.3.2
+## Version 1.4.0
 
 Die Zahlen 12 und 19 verwenden auf Brasilianisch-Portugiesisch auch in größeren Zahlen die üblichen Vokale. ECI-Betonungsbefehle verwenden dieselbe Sprachmelodie wie der entsprechende Reglerwert.
 
@@ -42,7 +42,7 @@ Der deutsche E-I-Gleitlaut ist auf Öffnung 85, Rücklage 45 und Weichheit 45 ab
 
 Englische Uhrzeiten wie `13:28:25` behalten die normale Stunden-/Minutenlesung und ergänzen „and twenty five seconds“. Bei einer Sekunde steht der Singular; Sekundenbruchteile bleiben in der gewöhnlichen Zahlenlesung. Dies gilt für US- und britisches Englisch im nativen Kern, auch für NVDA und andere ECI-Programme. Quellindizes bleiben ihren ursprünglichen Textpositionen zugeordnet.
 
-Eloquence C ist die NVDA-Erweiterung des Projekts [ReLoq C](https://github.com/hozosch/Reloq-C). Sie entwickelt den Eloquence-Klang mit gezielten Aussprachekorrekturen, Unicode-Unterstützung und zusätzlichen Klangmöglichkeiten weiter. NVDA ist die erste Anbindung und dient derzeit zum Prüfen der Sprachausgabe. Derselbe Kern ist auch für Android ARM64 und Windows SAPI5 verfügbar.
+Eloquence C ist die NVDA-Erweiterung des Projekts [ReLoq C](https://github.com/hozosch/Reloq-C). Sie entwickelt den Eloquence-Klang mit gezielten Aussprachekorrekturen, Unicode-Unterstützung und zusätzlichen Klangmöglichkeiten weiter. NVDA ist die erste Anbindung und dient derzeit zum Prüfen der Sprachausgabe. Derselbe Kern ist auch für Android mit ARM64 oder x86-64 und für Windows SAPI5 verfügbar.
 
 ## Installieren und auswählen
 

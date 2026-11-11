@@ -1,4 +1,4 @@
-name: Build and verify English compounds on Windows
+name: Build and verify the 1.4.0 Windows candidate
 on:
   push:
     branches: [codex/wordseg-win-fallback-20261111]
@@ -37,11 +37,14 @@ jobs:
         id: rules
         with:
           path: vendor/openevv61/build/windows-release
-          key: wordseg-windows-gcc14-provider-v1-${{ hashFiles('vendor/openevv61/**', 'include/reloq_voice_filter.h', 'include/reloq_voice_controls.h', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c') }}
+          key: wordseg-windows-gcc14-provider-v1-2332aa876d9e729ffadd214fc6da8f2ce764a6f6b41a9ada6571cb8a23691846
       - name: Restore cached provider timestamps
         if: steps.rules.outputs.cache-hit == 'true'
         shell: bash
-        run: find vendor/openevv61/build/windows-release -type f -exec touch {} +
+        run: |
+          find vendor/openevv61/build/windows-release -type f -exec touch {} +
+          sleep 1
+          touch vendor/openevv61/src/delta/delta.c vendor/openevv61/lang/itit61/delta_rules_c17_itit61.c
       - name: Build the common ECI core
         shell: bash
         run: |
@@ -51,11 +54,6 @@ jobs:
           command -v objdump
           make -C eci -j2 eci.dll SHELL=C:/msys64/usr/bin/bash.exe PROVIDER_LTO=-flto=2 WINDOWS_CC=gcc WINDOWS_OBJDUMP=objdump
           python eci/verify_pe_exports.py eci/eci.dll --objdump objdump --header include/reloq_eci.h
-      - uses: actions/cache/save@v4
-        if: steps.rules.outputs.cache-hit != 'true'
-        with:
-          path: vendor/openevv61/build/windows-release
-          key: ${{ steps.rules.outputs.cache-primary-key }}
       - uses: actions/download-artifact@v4
         with:
           name: dictionary-snapshot
@@ -72,18 +70,18 @@ jobs:
           import sys
           p = Path('addon/synth/manifest.ini')
           manifest = p.read_text(encoding='utf8')
-          assert 'version = "1.3.2"' in manifest
-          p.write_text(manifest.replace('version = "1.3.2"', 'version = "1.3.2-dev5"'), encoding='utf8')
+          assert 'version = "1.4.0"' in manifest
+          p.write_text(manifest.replace('version = "1.4.0"', 'version = "1.4.0-dev1"'), encoding='utf8')
           sys.path.insert(0, 'addon')
           from build_synth import build
-          build(Path('dist/reloq-c-synth-x64-1.3.2-dev5.nvda-addon'), Path('eci/eci.dll'), refresh_dictionaries=False)
+          build(Path('dist/reloq-c-synth-x64-1.4.0-dev1.nvda-addon'), Path('eci/eci.dll'), refresh_dictionaries=False)
           PY
       - uses: actions/upload-artifact@v4
         with:
           name: wordseg-windows-candidate
           path: |
             eci/eci.dll
-            dist/reloq-c-synth-x64-1.3.2-dev5.nvda-addon
+            dist/reloq-c-synth-x64-1.4.0-dev1.nvda-addon
           compression-level: 0
           retention-days: 7
       - name: Verify the common core and package
@@ -93,8 +91,44 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Native word segmentation failed' }
           python nvda/test_eci_german_cup_native.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'German cup pronunciation failed' }
-          python addon/test_synth_native.py --library eci/eci.dll --addon dist/reloq-c-synth-x64-1.3.2-dev5.nvda-addon
+          python nvda/test_eci_italian_apostrophe_native.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Italian apostrophe regression failed' }
+          python addon/test_synth_native.py --library eci/eci.dll --addon dist/reloq-c-synth-x64-1.4.0-dev1.nvda-addon
           if ($LASTEXITCODE -ne 0) { throw 'NVDA adapter failed' }
+      - name: Compile the real SAPI adapter and integration test
+        shell: bash
+        run: |
+          export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
+          make -C sapi -j2 CC=gcc BUILD=build SAPI_VERSION=1.4.0
+          cp eci/eci.dll sapi/build/eci.dll
+      - name: Test personal dictionaries through Windows SAPI
+        shell: pwsh
+        run: |
+          $dll = (Get-Item sapi/build/ReLoqSapi.dll).FullName
+          $p = Start-Process regsvr32.exe -ArgumentList '/s', $dll -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "SAPI registration failed: $($p.ExitCode)" }
+          & sapi/build/Test-SAPI.exe --dictionarycase
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI personal dictionary integration failed' }
+          $p = Start-Process regsvr32.exe -ArgumentList '/s', '/u', $dll -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "SAPI unregistration failed: $($p.ExitCode)" }
+  android-update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Check architecture-specific Android updates and packaging
+        run: |
+          python3 android/test_versioning.py
+          javac -d /tmp/reloq-update-test android/java/org/reloq/tts/UpdateData.java android/test/UpdateDataTest.java
+          java -cp /tmp/reloq-update-test org.reloq.tts.UpdateDataTest
+          python3 android/test_auto_updates.py --java-home "$JAVA_HOME"
+          python3 tests/test_release_dictionaries.py
   actual-nvda:
     needs: [windows-core, reference-check]
     runs-on: windows-2022

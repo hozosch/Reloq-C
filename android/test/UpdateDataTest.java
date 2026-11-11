@@ -61,6 +61,15 @@ public final class UpdateDataTest {
         String url132="https://github.com/hozosch/Reloq-C/releases/download/v1.3.2/"+release132;
         require(UpdateData.candidate(release132,url132,18000000,digest,11030001,0,0).code==11030002);
         require(UpdateData.candidate(release132,url132,18000000,digest,11030002,0,0)==null);
+        String x86="reloq-c-android-x86_64-1.4.0.apk";
+        String x86Url="https://github.com/hozosch/Reloq-C/releases/download/v1.4.0/"+x86;
+        String arm="reloq-c-android-arm64-1.4.0.apk";
+        String armUrl="https://github.com/hozosch/Reloq-C/releases/download/v1.4.0/"+arm;
+        require(UpdateData.candidate(x86,x86Url,18000000,digest,11030002,0,0,"x86_64").code==11040000);
+        require(UpdateData.candidate(x86,x86Url,18000000,digest,11030002,0,0,"arm64")==null);
+        require(UpdateData.candidate(arm,armUrl,18000000,digest,11030002,0,0,"x86_64")==null);
+        require(UpdateData.candidate(arm,armUrl,18000000,digest,11030002,0,0,"arm64").code==11040000);
+        reject(() -> UpdateData.candidate(x86,x86Url,18000000,digest,0,0,0,"x86"));
         String following="reloq-c-android-arm64-1.1.1.apk";
         String followingUrl="https://github.com/hozosch/Reloq-C/releases/download/v1.1.1/"+following;
         require(UpdateData.candidate(following,followingUrl,18000000,digest,11010000).code==11010001);
