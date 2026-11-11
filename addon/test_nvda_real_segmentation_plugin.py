@@ -73,7 +73,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if 'YouTube' not in self.synth._wordseg_keys[0x40000]:
                 raise RuntimeError('German community dictionary fixture missing')
             self.cases = [(word,camel,text) for text in ('YouTube Fenster.', 'YouTube Dokument.',
-                'Vor YouTube Fenster. Danach weiter.')
+                'Vor YouTube Fenster. Danach weiter.', 'ROLE:window', 'ROLE:document')
                 for word,camel in ((False,False),(True,False),(False,True),(True,True))]
             self.next()
         except BaseException:
@@ -95,7 +95,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.synth._camelCase = camel
             self.records.clear()
             self.before = [(p,len(p.chunks)) for p in self.players]
-            self.speech.speak([text])
+            if text.startswith('ROLE:'):
+                import controlTypes
+                role = controlTypes.Role.WINDOW if text == 'ROLE:window' else controlTypes.Role.DOCUMENT
+                label = 'Fenster' if text == 'ROLE:window' else 'Dokument'
+                sequence = self.speech.getPropertiesSpeech(name='YouTube', role=role, roleText=label)
+                self.speech.speak(sequence)
+            else:
+                self.speech.speak([text])
             wx.CallLater(1200,self.capture)
         except BaseException:
             self.fail()
