@@ -100,10 +100,21 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if self.synth._wordseg_keys is None: raise RuntimeError('dictionary keys not ready')
             if 'YouTube' not in self.synth._wordseg_keys[0x40000]:
                 raise RuntimeError('German community dictionary fixture missing')
+            english_keys = self.synth._wordseg_keys[0x10000]
+            # Community dictionaries are updated independently. Do not assume
+            # they lack real words: if a word has a dictionary entry, that
+            # entry must take priority over automatic segmentation.
+            self.ordinary_compound = next((word for word in ('framefile', 'swapbuffer')
+                                           if word not in english_keys), None)
+            if self.ordinary_compound is None:
+                raise RuntimeError('all independent compound test words are in the dictionary')
+            self.community_words = [word for word in ('swapfile', 'framebuffer') if word in english_keys]
             self.cases = [(word,camel,text) for text in ('YouTube Fenster.', 'YouTube Dokument.',
                 'Vor YouTube Fenster. Danach weiter.', 'ROLE:window', 'ROLE:document')
                 for word,camel in ((False,False),(True,False),(False,True),(True,True))]
             self.cases += [(word,False,text) for text in ('DICT:plain', 'DICT:compound')
+                           for word in (False,True)]
+            self.cases += [(word,False,'COMMUNITY:' + text) for text in self.community_words
                            for word in (False,True)]
             self.cases += [(word,False,text) for text in ('IMPORT:plain', 'IMPORT:digits', 'IMPORT:regex', 'IMPORT:legacy')
                            for word in (False,True)]
@@ -127,7 +138,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             parts = [p for group in row['submissions'] for p in group]
                             if not any('swapfile' in (p['text'] or '') and p['guarded'] for p in parts):
                                 raise AssertionError('NVDA dictionary replacement was not protected: ' + repr(row))
-                            if not any('framebuffer' in (p['text'] or '') and not p['guarded'] for p in parts):
+                            if not any(self.ordinary_compound in (p['text'] or '') and not p['guarded'] for p in parts):
                                 raise AssertionError('unrelated word was protected too: ' + repr(row))
                         if row['input'].startswith('IMPORT:'):
                             expected = {'IMPORT:plain':'Ersatz', 'IMPORT:digits':'Termin 2035',
@@ -140,13 +151,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     compounds = [row for row in self.results if row['input'] == 'DICT:compound']
                     if len(compounds) != 2 or compounds[0]['pcm_sha256'] == compounds[1]['pcm_sha256']:
                         raise AssertionError('unrelated English compound was not segmented: ' + repr(compounds))
+                    for word in self.community_words:
+                        rows = [row for row in self.results if row['input'] == 'COMMUNITY:' + word]
+                        if len(rows) != 2 or rows[0]['pcm_sha256'] != rows[1]['pcm_sha256']:
+                            raise AssertionError('community dictionary was overridden: ' + repr(rows))
                 RESULT.write_text(json.dumps({'ok':True,'cases':self.results}, ensure_ascii=False),encoding='utf8')
                 return
             word,camel,text = self.cases[self.case]
             self.speech.cancelSpeech()
             self.synth._wordSegmentation = word
             self.synth._camelCase = camel
-            self.synth.language = 'en_US' if text.startswith('DICT:') else 'de_DE'
+            self.synth.language = 'en_US' if text.startswith(('DICT:', 'COMMUNITY:')) else 'de_DE'
             self.records.clear()
             self.before = [(p,len(p.chunks)) for p in self.players]
             if text.startswith('IMPORT:'):
@@ -154,7 +169,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             'IMPORT:regex':'probe57', 'IMPORT:legacy':'legacyprobe'}[text]
                 self.speech.speak([original])
             elif text.startswith('DICT:'):
-                self.speech.speak(['reloqtest ' + ('hello' if text == 'DICT:plain' else 'framebuffer')])
+                self.speech.speak(['reloqtest ' + ('hello' if text == 'DICT:plain' else self.ordinary_compound)])
+            elif text.startswith('COMMUNITY:'):
+                self.speech.speak([text.split(':', 1)[1]])
             elif text.startswith('ROLE:'):
                 import controlTypes
                 role = controlTypes.Role.WINDOW if text == 'ROLE:window' else controlTypes.Role.DOCUMENT
