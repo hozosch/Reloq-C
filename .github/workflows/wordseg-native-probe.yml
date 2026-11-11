@@ -1,4 +1,4 @@
-name: Verify updated compound candidate
+name: Verify the candidate in real NVDA
 on:
   push:
     branches: [codex/wordseg-native-probe-20261111]
@@ -6,9 +6,9 @@ permissions:
   contents: read
   actions: read
 jobs:
-  probe:
+  nvda:
     runs-on: windows-2022
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -20,9 +20,32 @@ jobs:
           run-id: 43040470994
           github-token: ${{ github.token }}
           path: candidate
-      - name: Test both English dialects and personal dictionaries
+      - name: Install portable NVDA
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download release-2026.3.1 --repo nvaccess/nvda --pattern nvda_2026.3.1.exe --dir candidate
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA download failed' }
+          if ((Get-FileHash candidate/nvda_2026.3.1.exe -Algorithm SHA256).Hash -ne '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052') { throw 'Unexpected NVDA installer' }
+          $portable = Join-Path $pwd 'portable-nvda'
+          $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
+          $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
+      - name: Test real NVDA announcements and dictionary controls
         shell: pwsh
         run: |
-          $dll = (Get-ChildItem candidate -Recurse -Filter eci.dll | Select-Object -First 1).FullName
-          python nvda/test_eci_wordseg_native.py --library $dll
-          if ($LASTEXITCODE -ne 0) { throw 'Word segmentation failed' }
+          $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon $addon --work segmentation-probe
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA segmentation failed' }
+          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon $addon --work settings-probe
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA dictionary controls failed' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: candidate-real-nvda-results
+          path: |
+            segmentation-probe/result.json
+            segmentation-probe/nvda.log
+            settings-probe/result.json
+            settings-probe/nvda.log
