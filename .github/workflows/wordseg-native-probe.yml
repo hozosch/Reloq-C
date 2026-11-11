@@ -1,4 +1,4 @@
-name: Verify the candidate in real NVDA
+name: Compare fileswap across English dialects
 on:
   push:
     branches: [codex/wordseg-native-probe-20261111]
@@ -6,9 +6,9 @@ permissions:
   contents: read
   actions: read
 jobs:
-  nvda:
+  probe:
     runs-on: windows-2022
-    timeout-minutes: 25
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -17,35 +17,37 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: wordseg-windows-candidate
-          run-id: 43040470994
+          run-id: 43041033700
           github-token: ${{ github.token }}
           path: candidate
-      - name: Install portable NVDA
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Probe actual ECI phonemes and audio
+        shell: bash
         run: |
-          gh release download release-2026.3.1 --repo nvaccess/nvda --pattern nvda_2026.3.1.exe --dir candidate
-          if ($LASTEXITCODE -ne 0) { throw 'NVDA download failed' }
-          if ((Get-FileHash candidate/nvda_2026.3.1.exe -Algorithm SHA256).Hash -ne '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052') { throw 'Unexpected NVDA installer' }
-          $portable = Join-Path $pwd 'portable-nvda'
-          $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
-          $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
-          if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
-      - name: Test real NVDA announcements and dictionary controls
-        shell: pwsh
-        run: |
-          $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon $addon --work segmentation-probe
-          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA segmentation failed' }
-          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon $addon --work settings-probe
-          if ($LASTEXITCODE -ne 0) { throw 'NVDA dictionary controls failed' }
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: candidate-real-nvda-results
-          path: |
-            segmentation-probe/result.json
-            segmentation-probe/nvda.log
-            settings-probe/result.json
-            settings-probe/nvda.log
+          dll=$(find candidate -name eci.dll -print -quit)
+          python - "$dll" <<'PY'
+          import hashlib, re, sys
+          from pathlib import Path
+          sys.path.insert(0, 'nvda')
+          from _reloq_eci_direct import DirectEciEngine, WORD_SEGMENTATION
+          from test_eci_german_clock_native import render
+          pairs={'fileswap':('file','swap'), 'swapfile':('swap','file'), 'filebuffer':('file','buffer'), 'bufferfile':('buffer','file'), 'framebuffer':('frame','buffer'), 'screenreader':('screen','reader'), 'redhead':('red','head')}
+          def phones(s):
+              return ''.join(re.sub(r'\.[0-3]', '', p) for p in re.findall(r'`\[([^]]+)\]', s))
+          for dialect in (0x10000, 0x10001):
+              engine=DirectEciEngine(Path(sys.argv[1]).resolve(), dialect=dialect, encoding='utf8', native_voice=True)
+              try:
+                  print('DIALECT',hex(dialect))
+                  for word,parts in pairs.items():
+                      engine.set_parameter(WORD_SEGMENTATION,0)
+                      before=engine._phonemes_for_probe(word)
+                      p=[engine._phonemes_for_probe(x) for x in parts]
+                      engine.set_parameter(WORD_SEGMENTATION,1)
+                      after=engine._phonemes_for_probe(word)
+                      print(word,'before=',repr(before),'after=',repr(after),'parts=',repr(p),'matched=',phones(after)==''.join(phones(x) for x in p))
+                  for text in ('fileswap', 'fileswap Fenster', 'Open fileswap now', 'Fileswap', 'FILESWAP'):
+                      for state in (0,1):
+                          engine.set_parameter(WORD_SEGMENTATION,state)
+                          print('TEXT',repr(text),'setting',state,'PHONES',repr(engine._phonemes_for_probe(text)))
+              finally:
+                  engine.close()
+          PY
