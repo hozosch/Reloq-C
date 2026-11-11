@@ -1,0 +1,47 @@
+name: Verify NVDA dictionary reference behavior
+on:
+  push:
+    branches: [codex/nvda-dictionary-crossplatform-20261111]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  native-parser:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check UTF-8, settings and malformed input
+        run: |
+          cc -std=c11 -O2 -Wall -Wextra -Werror -pedantic -Icommon common/nvda_dictionary.c common/test_nvda_dictionary.c -o /tmp/reloq-nvda-parser
+          /tmp/reloq-nvda-parser
+  real-nvda:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-dev3-current-dictionaries
+          run-id: 43091559053
+          github-token: ${{ github.token }}
+          path: candidate
+      - name: Verify against NVDA 2026.3.1
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download release-2026.3.1 --repo nvaccess/nvda --pattern nvda_2026.3.1.exe --dir candidate
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA download failed' }
+          if ((Get-FileHash candidate/nvda_2026.3.1.exe -Algorithm SHA256).Hash -ne '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052') { throw 'Unexpected NVDA installer' }
+          $portable = Join-Path $pwd 'portable-nvda'
+          $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
+          $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
+          $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
+          if (!$addon) { throw 'Candidate add-on missing' }
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon $addon --work segmentation-results
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA reference test failed' }

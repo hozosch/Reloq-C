@@ -81,6 +81,45 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 raise AssertionError('literal replacement digits were changed')
             if manager.process('probe57', 0x40000, '1') != 'Zahl 57':
                 raise AssertionError('NVDA regular-expression replacement was changed')
+            # These checks use the real SpeechDictEntry implementation from
+            # NVDA rather than the lightweight host-test substitute. They
+            # provide the reference behavior for other platform adapters.
+            scoped = RESULT.parent / 'nvda-scoped-reference.dic'
+            scoped_data = ('# Scoped NVDA dictionary\r\n'
+                'literalprobe\t\\\\1\t1\t0\r\n'
+                '(?P<stem>regprobe)([0-9]+)\t\\g<stem>-\\2\t1\t1\r\n'
+                'strasse\tWeg\t0\t2\r\n'
+                'teilprobe\tTeil\t1\t3\r\n'
+                'anfangprobe\tAnfang\t1\t4\r\n'
+                'endeprobe\tEnde\t1\t5\r\n'
+                'wild?card\tPlatzhalter\t1\t6\r\n'
+                '\\#zeichen\t\\#Ersatz\t1\t0\r\n').encode('utf-8-sig')
+            scoped.write_bytes(scoped_data)
+            _, scoped_count, created = manager.import_file(scoped, 0x10000, '2')
+            if not created or scoped_count != 8:
+                raise AssertionError('scoped NVDA dictionary was not imported')
+            reference_cases = (
+                ('literalprobe', r'\\1'),
+                ('regprobe42', 'regprobe-42'),
+                ('Straße', 'Weg'),
+                ('teilprobe', 'teilprobe'),
+                ('xteilprobe', 'xTeil'),
+                ('anfangprobe', 'anfangprobe'),
+                ('anfangprobex', 'Anfangx'),
+                ('endeprobe', 'endeprobe'),
+                ('xendeprobe', 'xEnde'),
+                ('wildXcard', 'Platzhalter'),
+                ('#zeichen', '#Ersatz'),
+            )
+            for text, expected in reference_cases:
+                actual = manager.process(text, 0x10000, '2')
+                if actual != expected:
+                    raise AssertionError(f'NVDA reference {text!r}: {actual!r} != {expected!r}')
+            for language, voice in ((0x10000, '1'), (0x10001, '2'), (0x40000, '2')):
+                if manager.process('literalprobe', language, voice) != 'literalprobe':
+                    raise AssertionError('NVDA dictionary escaped its language/voice scope')
+            if scoped.read_bytes() != scoped_data:
+                raise AssertionError('NVDA dictionary source was modified')
             self.synth.language = 'de_DE'
             self.synth.voiceTags = False
             original = self.synth._transport.submit
