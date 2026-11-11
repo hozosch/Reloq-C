@@ -67,6 +67,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             from gui.settingsDialogs import VoiceSettingsPanel
             voice_panel=VoiceSettingsPanel(frame)
             clock=voice_panel.originalAcousticClockCheckbox
+            controls=list(voice_panel.sizerDict)
+            check(controls.index('originalAcousticClock')==controls.index('rateBoost')+1,
+                  'clock checkbox is not immediately after rate boost')
             check(clock.GetLabel() and not clock.GetValue(), 'clock checkbox missing or not off by default')
             clock.SetValue(True);event(clock,wx.wxEVT_CHECKBOX)
             check(synth.originalAcousticClock, 'clock preview failed')
