@@ -141,12 +141,19 @@ class WordSegmenter:
                 return True
         return False
 
+    def _compound(self, word):
+        # A pronounceable technical compound can still need word boundaries.
+        # Require two independently known pieces, rather than a word-specific
+        # exception or a merely pronounceable arbitrary substring.
+        return any(self._word(word[:i]) and self._word(word[i:])
+                   for i in range(3, len(word) - 2))
+
     def _leave(self, word, dictionary, original):
         if len(word) < 2 or len(word) > 32 or not any(_vowel(word, i) for i in range(len(word))):
             return True
         if all(c in "ivxlc" for c in word) or word.startswith("mc"):
             return True
-        if word in self.protected or word in self.pieces or _in_dictionary(original, dictionary):
+        if word in self.protected or self._word(word) or _in_dictionary(original, dictionary):
             return True
         # An ECI root may also cover inflected forms. Avoid changing a form
         # that could be supplied by the user's active pronunciation data.
@@ -154,7 +161,7 @@ class WordSegmenter:
                word.endswith(ending) and len(word) > len(ending) + 1 and
                _in_dictionary(original[:-len(ending)], dictionary) for ending in _ENDINGS):
             return True
-        return self._sayable(word)
+        return self._sayable(word) and not self._compound(word)
 
     def split(self, word, dictionary=frozenset()):
         original = word

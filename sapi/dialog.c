@@ -15,17 +15,17 @@ enum {LANGUAGE=100,PROFILE,GENDER,RATE,PAUSES,PITCH,INFLECTION,HEAD,ROUGH,BREATH
       OWN_RATE_ECI,OWN_RATE_WPM,OWN_RATE_WPM_VALUE,OWN_PITCH_ECI,OWN_PITCH_HZ,
       OWN_PITCH_VALUE,OWN_PITCH_HZ_VALUE,PITCH_LABEL,PITCH_GROUP_CONTROL,
       EQ_DIALOG,EQ_ENABLED,EQ_PRESET,EQ_LOW,EQ_MID,EQ_HIGH,EQ_ADVANCED,
-      FILTER_SELECT,FILTER_ENABLED,FILTER_FREQ,FILTER_GAIN,FILTER_WIDTH,UPDATE_SETTINGS,ORIGINAL_ACOUSTIC_CLOCK};
+      FILTER_SELECT,FILTER_ENABLED,FILTER_FREQ,FILTER_GAIN,FILTER_WIDTH,UPDATE_SETTINGS,ORIGINAL_ACOUSTIC_CLOCK,OWN_DICTIONARIES};
 #define DICTIONARY_DONE (WM_APP+31)
-struct dictionary_task {HWND window;HMODULE module;};
+struct dictionary_task {HWND window;HMODULE module;DWORD source;};
 static DWORD WINAPI dictionary_worker(void *parameter)
 {
-    struct dictionary_task *task=parameter;HWND window=task->window;HMODULE module=task->module;free(task);
+    struct dictionary_task *task=parameter;HWND window=task->window;HMODULE module=task->module;DWORD source=task->source;free(task);
     struct sapi_dictionary_update update={0};
-    HRESULT result=sapi_dictionary_download_report(&update);LPARAM info=0;
+    HRESULT result=sapi_dictionary_download_source(source,&update);LPARAM info=0;
     if(SUCCEEDED(result)&&update.known){size_t count=update.compared?update.added:update.total;
         size_t files=update.compared?update.added_files:update.total_files;
-        /* Three 8-MiB volumes cannot contain 2^24 distinct entries. */
+        /* Six 8-MiB volumes cannot contain 2^24 valid distinct entries. */
         info=(LPARAM)(UINT_PTR)sapi_dictionary_pack_counts(count,files,update.compared);}
     PostMessageW(window,DICTIONARY_DONE,(WPARAM)result,info);
     InterlockedDecrement(&sapi_objects);FreeLibraryAndExitThread(module,0);
@@ -33,10 +33,10 @@ static DWORD WINAPI dictionary_worker(void *parameter)
 }
 struct dialog {struct sapi_settings s;int dialect,loading,filter_index;BOOL shared;const struct sapi_ui *ui;};
 #define T(key) (d->ui->text[UI_##key])
-static void start_dictionary(HWND window,struct dialog *d)
+static void start_dictionary(HWND window,struct dialog *d,DWORD source)
 {
     struct dictionary_task *task=malloc(sizeof *task);if(!task){SetDlgItemTextW(window,STATUS,T(DICT_FAILED));return;}
-    task->window=window;
+    task->window=window;task->source=source;
     if(!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,(LPCWSTR)(const void *)&dictionary_worker,&task->module)) {
         free(task);SetDlgItemTextW(window,STATUS,T(DICT_FAILED));return;
     }
@@ -429,6 +429,7 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         check(w,DICTIONARIES,T(DICTIONARIES),469);check(w,BOOST,T(BOOST),492);
         combo(w,DICT_SOURCE,T(DICT_SOURCE),517);
         add(w,DICT_SOURCE,T(DICT_COMMUNITY));add(w,DICT_SOURCE,T(DICT_ALTERNATIVE));
+        control(w,L"BUTTON",T(DICT_OWN),WS_TABSTOP|BS_PUSHBUTTON,OWN_DICTIONARIES,12,547,188,24);
         control(w,L"BUTTON",T(DICT_DOWNLOAD),WS_TABSTOP|BS_PUSHBUTTON,DICT_DOWNLOAD,210,547,398,24);
         label(w,T(DIRECTORY),12,575,596);
         control(w,L"EDIT",L"",WS_TABSTOP|ES_AUTOHSCROLL,DIRECTORY,12,600,440,24);
@@ -470,11 +471,14 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         if(FAILED(hr))sapi_settings_default(&d->s);populate(w,d);return TRUE;}
     if(id==DICT_SOURCE&&notification==CBN_SELCHANGE){
         DWORD choice=(DWORD)SendDlgItemMessageW(w,id,CB_GETCURSEL,0,0);
-        if(choice==1&&!sapi_alternative_dictionary_available())start_dictionary(w,d);
+        if(choice==1&&!sapi_alternative_dictionary_available())start_dictionary(w,d,choice);
         else {HRESULT result=sapi_dictionary_choose(choice);populate(w,d);SetDlgItemTextW(w,STATUS,FAILED(result)?T(ERROR):T(ACTIVE));}
         return TRUE;
     }
-    if(id==DICT_DOWNLOAD&&notification==BN_CLICKED){start_dictionary(w,d);return TRUE;}
+    if(id==DICT_DOWNLOAD&&notification==BN_CLICKED){start_dictionary(w,d,sapi_dictionary_source());return TRUE;}
+    if(id==OWN_DICTIONARIES&&notification==BN_CLICKED){
+        HRESULT result=sapi_dictionary_files_dialog(w,d->dialect,&d->s);
+        if(FAILED(result))SetDlgItemTextW(w,STATUS,T(ERROR));return TRUE;}
     if(id==OVERRIDES&&notification==BN_CLICKED){show_overrides(w,d);return TRUE;}
     if(id==EQ_DIALOG&&notification==BN_CLICKED){show_equalizer(w,d);return TRUE;}
     if(id==UPDATE_SETTINGS&&notification==BN_CLICKED){WCHAR path[2048];

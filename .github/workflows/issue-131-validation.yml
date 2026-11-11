@@ -1,0 +1,62 @@
+name: Verify 1.3.1 dictionary work
+on:
+  push:
+    branches: ['codex/issue131-work']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  sapi-build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install Windows compiler
+        run: |
+          sudo apt-get -o Acquire::Retries=2 update -qq
+          sudo apt-get install -y --no-install-recommends gcc-mingw-w64-x86-64-posix
+      - name: Compile SAPI and dictionary tests
+        run: |
+          python3 sapi/generate_ui.py --check
+          make -C sapi CC=x86_64-w64-mingw32-gcc-posix build/ReLoqSapi.dll build/Test-Dictionary.exe build/Test-DictionarySources.exe
+          cc -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -I sapi sapi/dictionary_merge.c sapi/test_dictionary_merge.c -o /tmp/test-dictionary-merge
+          /tmp/test-dictionary-merge
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue131-sapi-test
+          path: |
+            sapi/build/ReLoqSapi.dll
+            sapi/build/Test-Dictionary.exe
+            sapi/build/Test-DictionarySources.exe
+          if-no-files-found: error
+  sapi-windows:
+    needs: sapi-build
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue131-sapi-test
+          path: candidate/sapi
+      - uses: actions/download-artifact@v4
+        with:
+          name: high-speed-addon-candidate
+          path: candidate
+          run-id: 42934160366
+          github-token: ${{ github.token }}
+      - name: Check dictionary integration and settings
+        shell: pwsh
+        run: |
+          python -c "import zipfile; z=zipfile.ZipFile('candidate/reloq-c-synth-x64-1.3.1-dev7.nvda-addon'); assert z.testzip() is None; open('candidate/sapi/eci.dll','wb').write(z.read('synthDrivers/reloqC/eci.dll'))"
+          if ($LASTEXITCODE -ne 0) { throw 'Core extraction failed' }
+          & candidate/sapi/Test-DictionarySources.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Dictionary source/snapshot test failed' }
+          & candidate/sapi/Test-Dictionary.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Dictionary download test failed' }
+          python -B sapi/test_dialog_order.py --directory candidate/sapi
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI settings test failed' }
+          python -B sapi/test_dictionary_import_ui.py --directory candidate/sapi
+          if ($LASTEXITCODE -ne 0) { throw 'Personal dictionary dialog test failed' }

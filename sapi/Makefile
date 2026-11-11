@@ -2,11 +2,11 @@
 CC = $(if $(filter x86,$(ARCH)),i686,x86_64)-w64-mingw32-gcc
 CFLAGS = -std=c11 -Os -Wall -Wextra -Werror -Wno-misleading-indentation -ffunction-sections -fdata-sections -DUNICODE -D_UNICODE -I. -I../include
 LDFLAGS = -static-libgcc -Wl,--gc-sections,--strip-all,--no-insert-timestamp
-LIBS = -lole32 -luuid -ladvapi32 -lcomctl32 -lshell32 -lgdi32 -lwinhttp -lm
+LIBS = -lole32 -luuid -ladvapi32 -lcomctl32 -lcomdlg32 -lshell32 -lgdi32 -lwinhttp -lm
 BUILD ?= $(if $(filter x86,$(ARCH)),build/x86,build)
 ARCH ?= x64
 VERSION ?= $(shell python3 -c 'from version import VERSION; print(VERSION)')
-SOURCES = engine.c backend.c settings.c dictionary.c dictionary_diff.c dialog.c register.c guids.c ../src/reloq_voice_controls.c
+SOURCES = engine.c backend.c settings.c dictionary.c dictionary_diff.c dictionary_merge.c dictionary_sources.c dictionary_snapshot.c dictionary_dialog.c dialog.c register.c guids.c ../src/reloq_voice_controls.c
 ifeq ($(ARCH),x86)
 CFLAGS += -msse2 -mfpmath=sse
 LDFLAGS += -Wl,--kill-at
@@ -14,7 +14,7 @@ endif
 all: $(BUILD)/ReLoqSapi.dll $(BUILD)/ReLoqSettings.exe $(BUILD)/ReLoqUpdate.exe $(BUILD)/Test-Update.exe $(BUILD)/Test-SAPI.exe $(BUILD)/Test-Dictionary.exe
 $(BUILD):
 	mkdir -p $@
-$(BUILD)/ReLoqSapi.dll: $(SOURCES) sapi_ddk.h settings.h speed.h pitch.h format.h dictionary_diff.h catalogue.inc ui.inc | $(BUILD)
+$(BUILD)/ReLoqSapi.dll: $(SOURCES) sapi_ddk.h settings.h speed.h pitch.h format.h dictionary_diff.h dictionary_merge.h catalogue.inc ui.inc | $(BUILD)
 	$(CC) $(CFLAGS) -shared $(SOURCES) $(LDFLAGS) $(LIBS) -o $@
 $(BUILD)/ReLoqSettings.exe: settings_main.c | $(BUILD)
 	$(CC) $(CFLAGS) -municode -mwindows $< $(LDFLAGS) -luser32 -o $@
@@ -27,10 +27,14 @@ $(BUILD)/Test-SAPI.exe: test_windows.c guids.c sapi_ddk.h catalogue.inc | $(BUIL
 
 $(BUILD)/Test-Dictionary.exe: test_dictionary_download.c dictionary.c dictionary_diff.c dictionary_diff.h settings.h | $(BUILD)
 	$(CC) $(CFLAGS) test_dictionary_download.c dictionary.c dictionary_diff.c $(LDFLAGS) -lwinhttp -ladvapi32 -o $@
+$(BUILD)/Test-DictionarySources.exe: test_dictionary_sources_windows.c dictionary.c dictionary_diff.c dictionary_merge.c dictionary_sources.c dictionary_snapshot.c dictionary_merge.h settings.h | $(BUILD)
+	$(CC) $(CFLAGS) test_dictionary_sources_windows.c dictionary.c dictionary_diff.c dictionary_merge.c dictionary_sources.c dictionary_snapshot.c $(LDFLAGS) -lwinhttp -ladvapi32 -o $@
 
 .PHONY: test
 HOST_CC ?= cc
 test: | $(BUILD)
+	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -I. dictionary_merge.c test_dictionary_merge.c -o $(BUILD)/test_dictionary_merge
+	$(BUILD)/test_dictionary_merge
 	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -I. dictionary_diff.c test_dictionary_diff.c -o $(BUILD)/test_dictionary_diff
 	$(BUILD)/test_dictionary_diff
 	$(HOST_CC) -std=c11 -O2 -Wall -Wextra -Werror -I. test_format.c -o $(BUILD)/test_format

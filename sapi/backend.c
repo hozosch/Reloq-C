@@ -213,12 +213,16 @@ static int add_wide(struct sapi_backend *b,const WCHAR *text,size_t length,int s
 static HRESULT dictionary(struct sapi_backend *b,const struct sapi_settings *s)
 {
     WCHAR path[2048]=L"";WIN32_FILE_ATTRIBUTE_DATA files[6]={0};
+#ifdef RELOQ_SAPI_TEST_HOST
     if(s->dictionaries){
         if(s->directory[0])wcscpy(path,s->directory);
-#ifdef RELOQ_SAPI_TEST_HOST
         else if(!sapi_module_path(path,2048,L"dictionaries"))return E_FAIL;
 #else
-        else if(!sapi_default_dictionary_path(path,2048))return E_FAIL;
+    HRESULT resolved=sapi_dictionary_resolve(s,path,2048);
+    /* A temporarily unreadable edited source must not interrupt speech that
+     * already has a complete snapshot. Retry on the next request. */
+    if(FAILED(resolved))return b->dictionary_ready?S_OK:resolved;
+    if(path[0]){
 #endif
         /* Retain initialized dictionaries without testing every file on
          * every announcement. Recheck the directory identity so deleting

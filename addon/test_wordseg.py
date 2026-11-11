@@ -14,7 +14,9 @@ def main():
         segmenter = WordSegmenter.from_files(ROOT / 'nvda/wordseg-data', language)
         examples = {'usrdct': 'U S R D C T', 'cgroup': 'C group',
                     'tmpfiles': 'T M P files', 'lvmlockd': 'L V M lock D',
-                    'gethostbyaddr': 'get host by addr', 'fdopen': 'F D open'}
+                    'gethostbyaddr': 'get host by addr', 'fdopen': 'F D open',
+                    'swapfile': 'swap file', 'framebuffer': 'frame buffer',
+                    'keyframe': 'key frame', 'blackboard': 'black board'}
         for source, expected in examples.items():
             mixed = ''.join(c.upper() if i % 2 else c.lower() for i, c in enumerate(source))
             for spelling in (source, source.upper(), source.capitalize(), mixed):

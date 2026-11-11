@@ -184,6 +184,14 @@ def main():
                 with mock.patch.dict(sys.modules, {"speechDictHandler": types.SimpleNamespace(dictionaries={})}):
                     assert run(["CGROUP"]) == ordinary_caps, "native uppercase spelling changed"
                     assert run(["TMPFILES"]) == segmented_word, "pronounceable uppercase was not segmented"
+                    for compound in ("swapfile", "framebuffer", "keyframe", "blackboard"):
+                        separated = driver._segment_text(compound, driver._languages[driver._selectedLanguage],
+                                                         driver._wordseg_keys, True, False)
+                        assert separated != compound
+                        driver._wordSegmentation = False
+                        expected = run([separated])
+                        driver._wordSegmentation = True
+                        assert run([compound]) == expected, compound
                     report["checks"] += 2
                 driver._wordSegmentation = False
                 driver.voiceTags = True
