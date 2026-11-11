@@ -9,7 +9,7 @@ HMODULE sapi_module;
 static WCHAR installed[1024];
 int sapi_module_path(WCHAR *path,size_t capacity,const WCHAR *name)
 {(void)name;if(wcslen(installed)>=capacity)return 0;wcscpy(path,installed);return 1;}
-int sapi_language_index(int dialect){return dialect==0x10000?0:dialect==0x40000?1:-1;}
+int sapi_language_index(int dialect){return dialect==0x10000?0:dialect==0x40000?1:dialect==0x60000?2:dialect==0x60001?3:-1;}
 static int write_file(const WCHAR *path,const char *data)
 {FILE *f=_wfopen(path,L"wb");if(!f)return 0;size_t n=strlen(data);int ok=fwrite(data,1,n,f)==n;return fclose(f)==0&&ok;}
 static int equals(const WCHAR *path,const char *expected)
@@ -46,7 +46,11 @@ int main(void)
     swprintf(file,2048,L"%ls\\ENUmain.dic",path);if(!equals(file,"alpha\tcommunity\ncustom\tone\nshared\treplaced-longer\n"))return 14;
     settings.dictionaries=0;if(FAILED(sapi_dictionary_resolve(&settings,path,2048)))return 15;
     swprintf(file,2048,L"%ls\\ENUmain.dic",path);if(!equals(file,"custom\tone\nshared\treplaced-longer\n"))return 16;
+    sources[0].dialect=0x60000;sources[1].dialect=0x60001;
+    if(FAILED(sapi_dictionary_files_save(sources,2))||FAILED(sapi_dictionary_resolve(&settings,path,2048)))return 17;
+    swprintf(file,2048,L"%ls\\CHSmain.dic",path);
+    if(!equals(file,"custom\tone\nshared\treplaced-longer\n"))return 18;
     RegOverridePredefKey(HKEY_CURRENT_USER,NULL);RegCloseKey(isolated);RegDeleteTreeW(HKEY_CURRENT_USER,keyname);
     SetEnvironmentVariableW(L"LOCALAPPDATA",old_appdata);
-    puts("SAPI personal dictionaries: per-user files, ordering, merge, updates and community bypass passed");return 0;
+    puts("SAPI personal dictionaries: per-user files, ordering, merge, updates, Chinese dialects and community bypass passed");return 0;
 }

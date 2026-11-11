@@ -10,8 +10,10 @@ architecture registers 14 languages. Restart existing speech applications.
 Choose SAPI5 and a “ReLoq C” voice.
 
 The installation is under %ProgramFiles%\ReLoq C\SAPI5. The x86 components
-live in its x86 subfolder. Both architectures use one common dictionaries
-folder. Existing dictionary edits and user settings survive upgrades. Uninstall
+live in its x86 subfolder. Both architectures share the current user's settings
+and dictionary data under %LOCALAPPDATA%\ReLoq C\SAPI5\Dictionaries. Existing
+installed dictionary files are copied to the user profile on first use and
+are not changed. Existing dictionary edits and user settings survive upgrades. Uninstall
 through Windows Installed apps or the Start menu shortcut; the same Inno
 uninstaller removes both architectures and their voice registrations, retaining
 user dictionary files and per-user settings. Future installers update this
@@ -109,17 +111,22 @@ checks detect edits, replacement, creation and deletion of native .dic files
 between utterances. No text result or synthesized speech is cached. Aborted
 audio is discarded, and the next announcement is generated afresh.
 
-Enable dictionaries and choose either the bundled IBM TTS Dictionaries or
-Alternative IBM TTS Dictionaries in the settings window. The alternative is
-downloaded and verified in the background and can be updated there. The
-alternative source currently provides US English and Castilian Spanish files.
-A successful alternative dictionary download displays a dialog with the
-numbers of new distinct entries and dictionary files. Changes and removals do
-not count as additions. The first download shows both totals; if an earlier
-copy cannot be compared, the dialog reports that the counts are unavailable.
-Online updates currently retrieve the three supported alternative filenames.
-A custom dictionary folder overrides the selected source and stays unchanged.
-SAPI's lexicon editor is not implemented.
+Enable community dictionaries and choose either IBM TTS Dictionaries or
+Alternative IBM TTS Dictionaries in the settings window. Both sources can be
+downloaded and updated there. The bundled community source supports German and
+US English; the alternative supports US English and Castilian Spanish. Downloads
+are verified in the background and stored in the current user's profile. A
+successful update displays the numbers of new distinct entries and files;
+changes and removals do not count as additions.
+
+Choose “Own dictionary files” to add native .dic files and select the language
+and Main, Root or Abbreviations volume for each one. Move files up or down to
+change their precedence: later files override earlier files and the selected
+community source. The original files are never altered. Personal files remain
+active even when community dictionaries are disabled. Updates to selected
+files are detected between utterances. A previously configured custom folder
+still overrides the chosen community source. SAPI's lexicon editor is not
+implemented.
 
 Validation and limits
 ---------------------

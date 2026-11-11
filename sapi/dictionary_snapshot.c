@@ -17,6 +17,11 @@ static const struct volume volumes[]={
     {0x60000,L"CHS"},{0x70000,L"PTB"},{0x80000,L"JPN"},{0x90000,L"FIN"},
     {0xa0000,L"KOR"},{0x120000,L"ELL"}};
 static const WCHAR *const suffixes[]={L"main.dic",L"Root.dic",L"abbr.dic"};
+/* Both Chinese dialects use the same native CHS dictionary filenames, as in
+ * the NVDA manager. Files selected for either dialect therefore contribute
+ * to the same ordered volume. */
+static int same_volume_language(int left,int right)
+{return left==right||(left>>16==6&&right>>16==6);}
 /* Short-lived metadata cache keeps ordinary SAPI announcements responsive;
  * changes are rechecked shortly and the previous complete snapshot remains
  * usable while a personal file is temporarily inaccessible. */
@@ -76,8 +81,12 @@ static int read_file(const WCHAR *path,int required,unsigned char **data,size_t 
     *data=NULL;*length=0;FILE *f=_wfopen(path,L"rb");
     if(!f){DWORD attr=GetFileAttributesW(path);return !required&&attr==INVALID_FILE_ATTRIBUTES&&
         (GetLastError()==ERROR_FILE_NOT_FOUND||GetLastError()==ERROR_PATH_NOT_FOUND);}
-    unsigned char *bytes=malloc(LIMIT+1);if(!bytes){fclose(f);return 0;}
-    size_t n=fread(bytes,1,LIMIT+1,f);int ok=!ferror(f)&&n<=LIMIT;fclose(f);
+    if(fseek(f,0,SEEK_END)){fclose(f);return 0;}
+    long size=ftell(f);
+    if(size<0||(unsigned long)size>LIMIT||fseek(f,0,SEEK_SET)){fclose(f);return 0;}
+    unsigned char *bytes=malloc(size?(size_t)size:1);if(!bytes){fclose(f);return 0;}
+    size_t n=fread(bytes,1,(size_t)size,f);
+    int ok=n==(size_t)size&&fgetc(f)==EOF&&!ferror(f);fclose(f);
     if(!ok){free(bytes);return 0;}*data=bytes;*length=n;return 1;
 }
 static int ready(const WCHAR *path)
@@ -102,7 +111,7 @@ static int build(const WCHAR *base,const struct sapi_dictionary_file *files,size
             if(data)input[used++]=(struct sapi_dictionary_input){data,length};
         }
         int ok=1;
-        for(size_t i=0;i<count;++i)if(files[i].dialect==volumes[lang].dialect&&files[i].volume==volume){
+        for(size_t i=0;i<count;++i)if(same_volume_language(files[i].dialect,volumes[lang].dialect)&&files[i].volume==volume){
             unsigned char *data=NULL;size_t length=0;
             if(!read_file(files[i].path,1,&data,&length)){ok=0;break;}
             input[used++]=(struct sapi_dictionary_input){data,length};}

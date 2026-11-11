@@ -21,7 +21,7 @@ def main():
             mixed = ''.join(c.upper() if i % 2 else c.lower() for i, c in enumerate(source))
             for spelling in (source, source.upper(), source.capitalize(), mixed):
                 assert segmenter.text(spelling) == expected, (language, spelling, segmenter.text(spelling))
-        for word in ('algorithm', 'HELLO', 'éusrdct', 'usrdct3', "usrdct's"):
+        for word in ('algorithm', 'inside', 'another', 'example', 'HELLO', 'éusrdct', 'usrdct3', "usrdct's"):
             assert segmenter.text(word) == word, (language, word)
         assert segmenter.text('cGroup') == 'C group'
         assert segmenter.text('CGROUP TMPFILES', preserve_upper=True) == 'CGROUP TMPFILES'
@@ -30,6 +30,7 @@ def main():
         assert uppercase_candidates('CGROUP TMPFILES', segmenter, frozenset(), ((0, 6),)) == (
             (7, 15, 'T M P files'),)
         assert segmenter.text('cgroup', frozenset({'cgroup'})) == 'cgroup'
+        assert segmenter.text('framebuffer', frozenset({'framebuffer'})) == 'framebuffer'
         assert segmenter.text('CGROUP', frozenset({'cgroup'})) == 'CGROUP'
         assert segmenter.text('cgroups', frozenset({'cgroup'})) == 'cgroups'
         assert segmenter.text('cgrouping', frozenset({'cgroup'})) == 'cgrouping'

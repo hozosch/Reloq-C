@@ -113,7 +113,10 @@ def main():
         assert not user.IsWindow(own),'new file did not save'
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER,r'Software\ReLoq C\SAPI5') as config:
             saved,_=winreg.QueryValueEx(config,'DictionaryFiles')
-            assert saved==[f'00010000\t0\t{first}',f'00010000\t0\t{second}'],saved
+            assert len(saved)==2,saved
+            for entry,expected in zip(saved,(first,second)):
+                language,volume,path=entry.split('\t',2)
+                assert language=='00010000' and volume=='0' and os.path.samefile(path,expected),saved
         print('SAPI own dictionary dialogs: list, priority, removal, file selection and language/volume passed')
     finally:
         for handle in (choice,own,main_window):
