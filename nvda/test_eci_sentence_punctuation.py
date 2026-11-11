@@ -25,9 +25,9 @@ def main():
     for language, following in phrases.items():
         engine = DirectEciEngine(library, dialect=language, encoding='utf8', native_voice=True)
         try:
-            for letter in ('X', 'b'):
-                text = f'{letter}. {following}'
-                separated = f'{letter}.  {following}'
+            for letter, continuation in (('X', following), ('b', following), ('X', '2026')):
+                text = f'{letter}. {continuation}'
+                separated = f'{letter}.  {continuation}'
                 assert phonemes(engine, text) == phonemes(engine, separated), (hex(language), text)
                 assert render(engine, [text])[0] == render(engine, [separated])[0], (hex(language), text)
                 # Fragment boundaries and callback indices are kept in the
@@ -38,6 +38,20 @@ def main():
                 checks += 3
         finally:
             engine.close()
+    # Include native letters from the supported writing systems, not only
+    # Latin letters spoken by each language.
+    for language, letter in ((0x40000, 'Ä'), (0x30000, 'é'), (0x20000, 'Ñ'),
+                             (0x120000, 'α'), (0x60000, '字'),
+                             (0x80000, 'あ'), (0xa0000, '한')):
+        engine = DirectEciEngine(library, dialect=language, encoding='utf8', native_voice=True)
+        try:
+            text = f'{letter}. {phrases[language]}'
+            separated = f'{letter}.  {phrases[language]}'
+            assert phonemes(engine, text) == phonemes(engine, separated), (hex(language), text)
+            assert render(engine, [text])[0] == render(engine, [separated])[0], (hex(language), text)
+            checks += 2
+        finally:
+            engine.close()
     english = DirectEciEngine(library, dialect=0x10000, encoding='utf8', native_voice=True)
     try:
         for enabled in (0, 1):
@@ -46,8 +60,13 @@ def main():
             without_commas = 'Mr. Ms. and MRS. Johnson are there.'
             spoken = phonemes(english, with_commas)
             assert spoken.count(',') >= 2, (enabled, spoken)
-            assert len(render(english, [with_commas])[0]) > len(render(english, [without_commas])[0])
-            checks += 2
+            # Without abbreviation expansion, the native parser treats the
+            # dots as separate sentence boundaries; comparing that duration
+            # to commas is not a meaningful pause test.
+            if enabled:
+                assert len(render(english, [with_commas])[0]) > len(render(english, [without_commas])[0])
+                checks += 1
+            checks += 1
     finally:
         english.close()
     print(f'Sentence punctuation: {checks} multilingual, fragment and abbreviation checks passed')

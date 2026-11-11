@@ -194,6 +194,17 @@ def main():
                         assert run([compound]) == expected, compound
                     report["checks"] += 2
                 driver._wordSegmentation = False
+                # Exercise commas after real abbreviations through NVDA's
+                # symbol processor and the native abbreviation switch.
+                for enabled in (True, False):
+                    driver.abbreviationDictionary = enabled
+                    phrase = "Mr., Ms., and MRS. Johnson are there."
+                    joined = "Mr. Ms. and MRS. Johnson are there."
+                    assert api.processText("en_US", phrase, 0).count(",") >= 2
+                    if enabled:
+                        assert len(run([phrase])) > len(run([joined])) + 2000, (enabled, phrase)
+                    report["checks"] += 1
+                driver.abbreviationDictionary = True
                 driver.voiceTags = True
                 driver.language = "de_DE"
                 driver.voice = "1"

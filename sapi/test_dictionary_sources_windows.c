@@ -50,7 +50,22 @@ int main(void)
     if(FAILED(sapi_dictionary_files_save(sources,2))||FAILED(sapi_dictionary_resolve(&settings,path,2048)))return 17;
     swprintf(file,2048,L"%ls\\CHSmain.dic",path);
     if(!equals(file,"custom\tone\nshared\treplaced-longer\n"))return 18;
+    if(!DeleteFileW(sources[1].path))return 19;
+    settings.dictionaries=1;
+    if(SUCCEEDED(sapi_dictionary_prepare(&settings,sources,2,path,2048)))return 20;
+    if(FAILED(sapi_dictionary_resolve(&settings,path,2048))||wcscmp(path,installed))return 21;
+    settings.dictionaries=0;
+    if(FAILED(sapi_dictionary_resolve(&settings,path,2048))||!path[0])return 22;
+    struct sapi_dictionary_file saved=sources[0];sources[0]=sources[1];sources[1]=saved;
+    if(FAILED(sapi_dictionary_files_save(sources,2))||FAILED(sapi_dictionary_resolve(&settings,path,2048))||path[0])return 23;
+    saved=sources[0];sources[0]=sources[1];sources[1]=saved;
+    if(FAILED(sapi_dictionary_files_save(sources,2)))return 24;
+    if(!write_file(sources[1].path,"shared\trestored\n"))return 25;
+    Sleep(550);
+    if(FAILED(sapi_dictionary_resolve(&settings,path,2048))||!path[0])return 26;
+    swprintf(file,2048,L"%ls\\CHSmain.dic",path);
+    if(!equals(file,"custom\tone\nshared\trestored\n"))return 27;
     RegOverridePredefKey(HKEY_CURRENT_USER,NULL);RegCloseKey(isolated);RegDeleteTreeW(HKEY_CURRENT_USER,keyname);
     SetEnvironmentVariableW(L"LOCALAPPDATA",old_appdata);
-    puts("SAPI personal dictionaries: per-user files, ordering, merge, updates, Chinese dialects and community bypass passed");return 0;
+    puts("SAPI personal dictionaries: per-user files, ordering, merge, edits, missing files and recovery passed");return 0;
 }

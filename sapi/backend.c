@@ -219,8 +219,7 @@ static HRESULT dictionary(struct sapi_backend *b,const struct sapi_settings *s)
         else if(!sapi_module_path(path,2048,L"dictionaries"))return E_FAIL;
 #else
     HRESULT resolved=sapi_dictionary_resolve(s,path,2048);
-    /* A temporarily unreadable edited source must not interrupt speech that
-     * already has a complete snapshot. Retry on the next request. */
+    /* Reuse already initialized dictionaries after a transient error. */
     if(FAILED(resolved))return b->dictionary_ready?S_OK:resolved;
     if(path[0]){
 #endif

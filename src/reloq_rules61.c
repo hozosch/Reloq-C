@@ -98,8 +98,9 @@ static int isolated_letter_sentence_space(const unsigned char *text,size_t n,siz
     size_t next=at+1;
     while(next<n&&(text[next]=='"'||text[next]=='('||text[next]=='['))++next;
     p=next;uint32_t following=0;
-    if(reloq_utf8_next(text,n,&p,&following)!=1||!sentence_letter(following))return 0;
-    if(p<n&&text[p]=='.')return 0;
+    if(reloq_utf8_next(text,n,&p,&following)!=1||
+       (!sentence_letter(following)&&!(following>='0'&&following<='9')))return 0;
+    if(sentence_letter(following)&&p<n&&text[p]=='.')return 0;
     return 1;
 }
 

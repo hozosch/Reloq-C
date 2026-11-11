@@ -181,5 +181,20 @@ HRESULT sapi_dictionary_resolve(const struct sapi_settings *settings,WCHAR *path
         memcpy(cache.files,files,count*sizeof *files);
         ReleaseSRWLockExclusive(&cache_lock);
     }
+    if(FAILED(result)){
+        /* A disconnected or temporarily inaccessible personal file must
+         * not prevent a new voice from speaking. Use the available community
+         * directory, or no dictionary, and retry the files next time. The
+         * dialog still validates them with sapi_dictionary_prepare. */
+        path[0]=0;
+        if(settings->dictionaries){
+            if(settings->directory[0]&&wcslen(settings->directory)<capacity)wcscpy(path,settings->directory);
+            else if(!settings->directory[0])(void)sapi_default_dictionary_path(path,capacity);
+            WIN32_FILE_ATTRIBUTE_DATA info;
+            if(path[0]&&(!GetFileAttributesExW(path,GetFileExInfoStandard,&info)||
+                         !(info.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY)))path[0]=0;
+        }
+        result=S_OK;
+    }
     free(files);return result;
 }
