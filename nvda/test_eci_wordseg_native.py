@@ -21,7 +21,8 @@ def main():
                 assert engine._dll.eciGetParam(engine._handle, CAMEL_CASE) == 0
                 compounds = {'swapfile': ('swap', 'file'), 'framebuffer': ('frame', 'buffer'),
                              'keyframe': ('key', 'frame'), 'blackboard': ('black', 'board'),
-                             'redhead': ('red', 'head'), 'redheaded': ('red', 'headed')}
+                             'redhead': ('red', 'head'), 'redheaded': ('red', 'headed'),
+                             'redheads': ('red', 'heads')}
                 established = ('cupboard', 'Cupboard', 'CUPBOARD', 'cupboards',
                                'breakfast', 'breakfasts', 'raspberry', 'raspberries',
                                'strawberry', 'waistcoat', 'butterfly', 'lighthouse')

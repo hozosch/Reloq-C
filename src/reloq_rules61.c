@@ -484,7 +484,7 @@ static int wordseg_input(unsigned char **text,size_t **source,size_t *length,int
             unsigned char pieces[256];
             int split=ascii?reloq_wordseg_english(a+i,end-i,language==0x10001,pieces,sizeof pieces):0;
             const char *reference_whole=NULL,*reference_joined=NULL;
-            int reference=ascii&&reloq_wordseg_reference(a+i,end-i,
+            int reference=ascii&&reloq_wordseg_reference(a+i,end-i,language==0x10001,
                 &reference_whole,&reference_joined);
             if(split==1&&upper) {
                 unsigned char probe[2048];size_t probe_n=0;

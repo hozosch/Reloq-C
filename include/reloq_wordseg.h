@@ -21,7 +21,7 @@ int reloq_wordseg_english(const unsigned char *word, size_t length, int uk,
 
 /* If a known compound has reference-checked component readings, return the
  * observed whole and joined SPR readings used to validate it at runtime. */
-int reloq_wordseg_reference(const unsigned char *word, size_t length,
+int reloq_wordseg_reference(const unsigned char *word, size_t length, int uk,
     const char **whole, const char **joined);
 
 /* Scoped to the serialized ECI worker, with no cross-utterance results. */

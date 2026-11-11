@@ -31,6 +31,7 @@ int main(void)
         check("Redhead","red head",uk);
         check("REDHEAD","red head",uk);
         check("redheaded","red headed",uk);
+        check("redheads","red heads",uk);
         check("cupboard",NULL,uk);
         check("Cupboard",NULL,uk);
         check("CUPBOARD",NULL,uk);
@@ -47,10 +48,13 @@ int main(void)
         check("HELLO",NULL,uk);
         check("inside",NULL,uk);
         const char *whole=NULL,*joined=NULL;
-        assert(reloq_wordseg_reference((const unsigned char *)"Redhead",7,&whole,&joined));
+        assert(reloq_wordseg_reference((const unsigned char *)"Redhead",7,uk,&whole,&joined));
         assert(!strcmp(whole,"`[.2ri.1did]")&&!strcmp(joined,"`[.1rEd.2hEd]"));
-        assert(!reloq_wordseg_reference((const unsigned char *)"cupboard",8,&whole,&joined));
-        assert(!reloq_wordseg_reference((const unsigned char *)"breakfast",9,&whole,&joined));
+        assert(!reloq_wordseg_reference((const unsigned char *)"cupboard",8,uk,&whole,&joined));
+        assert(!reloq_wordseg_reference((const unsigned char *)"breakfast",9,uk,&whole,&joined));
+        assert(reloq_wordseg_reference((const unsigned char *)"redheaded",9,uk,&whole,&joined));
+        assert(!strcmp(whole,uk?"`[.2ri.1di.0dXd]":"`[.2ri.1di.0FXd]"));
+        assert(!strcmp(joined,uk?"`[.1rEd.2hE.0dXd]":"`[.1rEd.2hE.0FXd]"));
         unsigned char small[8];
         assert(reloq_wordseg_english((const unsigned char *)"redhead",7,uk,small,sizeof small)==-1);
     }

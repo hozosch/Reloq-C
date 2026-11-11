@@ -17,18 +17,19 @@ struct wordseg_verified_compound {
 struct wordseg_table { const char *const *words; size_t count; };
 #define TABLE(name) (struct wordseg_table){name,COUNT(name)}
 
-static const struct wordseg_verified_compound *verified_find(const char *word)
+static const struct wordseg_verified_compound *verified_find(const char *word,int uk)
 {
-    size_t lo=0,hi=COUNT(wordseg_verified);
+    const struct wordseg_verified_compound *table=uk?wordseg_verified_engb:wordseg_verified_enus;
+    size_t count=uk?COUNT(wordseg_verified_engb):COUNT(wordseg_verified_enus);
+    size_t lo=0,hi=count;
     while(lo<hi) {
         size_t mid=lo+(hi-lo)/2;
-        if(strcmp(wordseg_verified[mid].word,word)<0)lo=mid+1;else hi=mid;
+        if(strcmp(table[mid].word,word)<0)lo=mid+1;else hi=mid;
     }
-    return lo<COUNT(wordseg_verified)&&!strcmp(wordseg_verified[lo].word,word)?
-        &wordseg_verified[lo]:NULL;
+    return lo<count&&!strcmp(table[lo].word,word)?&table[lo]:NULL;
 }
 
-int reloq_wordseg_reference(const unsigned char *original,size_t n,
+int reloq_wordseg_reference(const unsigned char *original,size_t n,int uk,
     const char **whole,const char **joined)
 {
     if(!original||!n||n>32)return 0;
@@ -40,7 +41,7 @@ int reloq_wordseg_reference(const unsigned char *original,size_t n,
         word[i]=(char)c;
     }
     word[n]=0;
-    const struct wordseg_verified_compound *found=verified_find(word);
+    const struct wordseg_verified_compound *found=verified_find(word,uk);
     if(!found)return 0;
     if(whole)*whole=found->whole;
     if(joined)*joined=found->joined;
@@ -248,7 +249,7 @@ int reloq_wordseg_english(const unsigned char *original,size_t n,int uk,
         word[i]=(char)c;
     }
     word[n]=0;
-    const struct wordseg_verified_compound *verified=verified_find(word);
+    const struct wordseg_verified_compound *verified=verified_find(word,uk);
     if(verified) {
         size_t used=0;output[0]=0;
         if(append(output,capacity,&used,word,verified->boundary)||
