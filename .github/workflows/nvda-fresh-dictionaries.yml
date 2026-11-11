@@ -1,0 +1,86 @@
+name: Build NVDA test package with current dictionaries
+on:
+  push:
+    branches: [codex/nvda140-dict-refresh-20261111]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: wordseg-windows-candidate
+          run-id: 43089756490
+          github-token: ${{ github.token }}
+          path: candidate
+      - name: Install translation compiler
+        run: |
+          if ! command -v msgfmt >/dev/null; then
+            sudo apt-get -o Acquire::Retries=2 update -qq
+            sudo apt-get install -y --no-install-recommends gettext
+          fi
+      - name: Resolve current community dictionaries and build dev3
+        env:
+          RELOQ_BUILD_GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          export RELOQ_BUILD_EPOCH=$(date +%s)
+          python3 - <<'PY'
+          from pathlib import Path
+          import sys
+          sys.path.insert(0, 'addon')
+          from build_synth import build, refresh_community_dictionaries
+          p=Path('addon/synth/manifest.ini')
+          value=p.read_text(encoding='utf8')
+          assert 'version = "1.4.0"' in value
+          p.write_text(value.replace('version = "1.4.0"', 'version = "1.4.0-dev3"'), encoding='utf8')
+          refresh_community_dictionaries()
+          build(Path('dist/reloq-c-synth-x64-1.4.0-dev3.nvda-addon'), Path('candidate/eci/eci.dll'), refresh_dictionaries=False)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nvda-dev3-current-dictionaries
+          path: dist/reloq-c-synth-x64-1.4.0-dev3.nvda-addon
+          compression-level: 0
+          retention-days: 7
+  windows:
+    needs: package
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-dev3-current-dictionaries
+          path: candidate
+      - name: Verify the native core and actual NVDA
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $addon = (Get-Item candidate/reloq-c-synth-x64-1.4.0-dev3.nvda-addon).FullName
+          python -c "import zipfile; z=zipfile.ZipFile(r'$addon'); assert z.testzip() is None; z.extract('synthDrivers/reloqC/eci.dll', 'candidate')"
+          if ($LASTEXITCODE -ne 0) { throw 'Core extraction failed' }
+          $dll = (Get-Item candidate/synthDrivers/reloqC/eci.dll).FullName
+          foreach ($test in @('nvda/test_eci_wordseg_native.py','nvda/test_eci_italian_apostrophe_native.py')) {
+            python -B $test --library $dll
+            if ($LASTEXITCODE -ne 0) { throw "$test failed" }
+          }
+          gh release download release-2026.3.1 --repo nvaccess/nvda --pattern nvda_2026.3.1.exe --dir candidate
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA download failed' }
+          if ((Get-FileHash candidate/nvda_2026.3.1.exe -Algorithm SHA256).Hash -ne '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052') { throw 'Unexpected NVDA installer' }
+          $portable = Join-Path $pwd 'portable-nvda'
+          $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
+          $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon $addon --work segmentation-probe
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA segmentation failed' }
+          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon $addon --work settings-probe
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA dictionary controls failed' }
