@@ -100,6 +100,12 @@ def main():
         assert len(manager.records) == 2, 'an intentionally emptied dictionary remains editable'
         manager.remove(other)
         assert not other.exists() and source.read_bytes() == data
+        empty = root / 'empty.dic'
+        empty.write_text('# an empty speech dictionary\n', encoding='utf-8-sig')
+        empty_copy, count, created = manager.import_file(empty, 0x40000, 'all')
+        assert created and count == 0 and empty_copy.read_bytes() == empty.read_bytes()
+        assert any(record[0] == empty_copy for record in manager.records)
+        manager.remove(empty_copy)
     print('NVDA dictionary import: scope, preservation, regex, duplicate, validation and removal passed')
 
 
