@@ -281,6 +281,8 @@ jobs:
           if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
           python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.3.2.nvda-addon --work settings-results
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA settings probe failed' }
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.3.2.nvda-addon --work segmentation-results
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA dictionary and segmentation probe failed' }
   collect:
     needs: [version, native-regressions, sapi, android, nvda, nvda-windows]
     if: needs.version.outputs.stable == 'true'

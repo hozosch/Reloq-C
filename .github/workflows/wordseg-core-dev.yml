@@ -123,6 +123,12 @@ jobs:
           $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
           python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon $addon --work segmentation-probe
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA segmentation failed' }
+      - name: Verify the combined dictionary controls in real NVDA
+        shell: pwsh
+        run: |
+          $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
+          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon $addon --work settings-probe
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA dictionary controls failed' }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -130,6 +136,8 @@ jobs:
           path: |
             segmentation-probe/result.json
             segmentation-probe/nvda.log
+            settings-probe/result.json
+            settings-probe/nvda.log
   platform-settings:
     runs-on: ubuntu-24.04
     env:

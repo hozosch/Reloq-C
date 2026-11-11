@@ -23,6 +23,11 @@ def main():
     profile = work / 'config'
     target = profile / 'addons' / 'reloqC'
     target.mkdir(parents=True)
+    legacy = work / 'legacy-nvda-dictionary.dic'
+    legacy.write_text('# A previously selected NVDA dictionary\nlegacyprobe\tSonderwort\t0\t2\n', encoding='utf-8-sig')
+    (profile / 'reloqCDictionaries.json').write_text(json.dumps({
+        'version': 1, 'repository': 'community', 'sources': [
+            {'path': str(legacy), 'language': 0x40000, 'volume': 0}]}), encoding='utf8')
     with zipfile.ZipFile(args.addon) as bundle:
         if bundle.testzip() is not None: raise RuntimeError('corrupt add-on')
         bundle.extractall(target)

@@ -52,6 +52,75 @@ def _validate(data, *, allow_empty=False):
     return count
 
 
+def dictionary_format(data):
+    """Identify a complete NVDA speech dictionary; otherwise use native ECI.
+
+    NVDA stores two numeric options in separate tab-delimited columns. An
+    ECI replacement can itself contain tabs, so callers can override the
+    suggested format when selecting a file.
+    """
+    if len(data) > _MAX_BYTES or b"\0" in data:
+        raise ValueError("invalid or oversized dictionary")
+    try:
+        text = data.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return "eci"
+    lines = [line for line in text.splitlines() if line.strip() and not line.startswith("#")]
+    if not lines:
+        return "eci"
+    fields = [line.split("\t") for line in lines]
+    if all(len(row) == 4 and row[2] in ("0", "1") and row[3].isdigit() for row in fields):
+        # Invalid options or a broken regex must not be treated as native
+        # text, where those option columns would be spoken as replacements.
+        _validate(data)
+        return "nvda"
+    if any(len(row) == 4 and row[2] in ("0", "1") and row[3].isdigit() for row in fields):
+        raise ValueError("mixed or invalid NVDA speech dictionary")
+    return "eci"
+
+
+def identify_file(path):
+    with Path(path).open("rb") as stream:
+        return dictionary_format(stream.read(_MAX_BYTES + 1))
+
+
+def migrate_nvda_sources(sources, imported):
+    """Move wrongly selected NVDA files to their matching speech-dict path.
+
+    The original is never changed. Native sources continue in their original
+    order; NVDA entries retain case, match type, comments and replacement.
+    """
+    native, migrated = [], []
+    for source in sources:
+        if getattr(source, "format", None) == "eci":
+            native.append(source)
+            continue
+        try:
+            format_name = identify_file(source.path)
+        except OSError:
+            native.append(source)
+            continue
+        if format_name == "nvda":
+            migrated.append(source)
+        else:
+            native.append(source)
+    # Validate the complete selection before creating any imported copies.
+    created = []
+    try:
+        for source in migrated:
+            path, _count, fresh = imported.import_file(source.path, source.language, "all")
+            if fresh:
+                created.append(path)
+    except BaseException:
+        for path in reversed(created):
+            try:
+                imported.remove(path)
+            except (OSError, ValueError):
+                pass
+        raise
+    return tuple(native), tuple(migrated)
+
+
 class ImportedDictionaries:
     def __init__(self, profile):
         self.directory = Path(profile) / "reloqNVDAImported"

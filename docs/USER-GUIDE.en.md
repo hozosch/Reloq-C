@@ -8,7 +8,7 @@ The Eloquence C NVDA settings category can optionally split unfamiliar English w
 
 The separate **Split camel-case words (all languages)** option inserts word boundaries at internal capitals, for example `myWord` and `HTTPServer`. It is initially off. NVDA's own built-in speech dictionary may split camel case independently of this setting. User NVDA and native dictionary entries take priority over the additional segmentation.
 
-Choose “Import NVDA dictionary” to select an existing NVDA speech dictionary from another driver, then choose its language and either one voice or all voices. Regular expressions, case sensitivity and comments are retained. The imported copy can be edited or removed in the same category; the original file is not changed. Imported rules are applied before NVDA's other speech dictionaries. Native ECI dictionaries use a different format and remain under “Own dictionary files”.
+Manage NVDA speech dictionaries and Eloquence pronunciation dictionaries together under “Own dictionaries”. Choose “Add file”, confirm or change the suggested format, and select the language. For an NVDA file, choose one or all voices; for an Eloquence file, choose its dictionary volume. NVDA regular expressions, case sensitivity and comments are retained. An imported NVDA copy can be edited or removed without changing the original file. NVDA imports and edits take effect immediately; Eloquence files are saved with OK or Apply. NVDA dictionaries previously selected as Eloquence files are migrated on startup.
 
 ## Version 1.2.2
 

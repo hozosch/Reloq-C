@@ -36,8 +36,8 @@ from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciPitchHz,
                                 DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, ORIGINAL_ACOUSTIC_CLOCK, WORD_SEGMENTATION, CAMEL_CASE,
                                 EQ_LOW, EQ_MID, EQ_HIGH, EQ_FILTER_BASE, EQ_FILTER_COUNT, EQ_FILTER_STRIDE, PITCH_HZ)
 from ._reloq_eci_transport import DictionaryStartupError, EciTextTransport
-from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries
-from ._reloq_nvda_dicts import ImportedDictionaries
+from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries, DictionarySource
+from ._reloq_nvda_dicts import ImportedDictionaries, migrate_nvda_sources
 from ._reloq_wordseg import (WordSegmenter, dictionary_keys, split_camel, protected_native_spans,
                              transform_unmatched, native_compound_spans, uppercase_candidates, word_runs, camel_word)
 from ._reloq_languages import (GERMAN, LANGUAGES, LANGUAGE_ALIASES, LANGUAGE_DISPLAY_ORDER, LanguageEngine, language_for,
@@ -359,7 +359,12 @@ class SynthDriver(BaseSynthDriver):
         self._transport.set_acoustic_clocks(self._acoustic_clocks)
         manager = self.dictionary_manager()
         # Start monitoring the installed dictionaries and selected own files.
-        self._dictionary_request(lambda: manager.set_enabled(self._communityDictionaries))
+        sources, migrated = self._migrate_nvda_sources(manager.sources)
+        if migrated:
+            self._dictionary_request(lambda: manager.configure(
+                sources, self._communityDictionaries, initial_update=True))
+        else:
+            self._dictionary_request(lambda: manager.set_enabled(self._communityDictionaries))
         filter_speechSequence.register(self._protect_tags)
         try:
             source = json.loads((DLL.parents[2] / "doc/source.json").read_text(encoding="utf-8"))
@@ -525,6 +530,24 @@ class SynthDriver(BaseSynthDriver):
 
     def imported_dictionary_manager(self):
         return self._imported_dictionaries
+
+    def _migrate_nvda_sources(self, sources):
+        """Recover NVDA files previously selected as native dictionaries."""
+        sources = tuple(source if isinstance(source, DictionarySource) else DictionarySource(**source)
+                        for source in sources)
+        if not sources:
+            return sources, ()
+        try:
+            from NVDAState import shouldWriteToDisk
+            if not shouldWriteToDisk():
+                return sources, ()
+        except ImportError:
+            return sources, ()
+        try:
+            return migrate_nvda_sources(sources, self._imported_dictionaries)
+        except (OSError, ValueError, UnicodeError):
+            log.warning("Could not migrate an NVDA speech dictionary", exc_info=True)
+            return sources, ()
 
     def _segment_text(self, text, language, keys, word_segment=True, camel=False):
         if keys is None:
@@ -768,10 +791,12 @@ class SynthDriver(BaseSynthDriver):
         return self._dictionary_request(lambda: self.dictionary_manager().refresh(completed))
 
     def set_dictionary_sources(self, sources, completed=None):
+        sources, _migrated = self._migrate_nvda_sources(sources)
         return self._dictionary_request(lambda: self.dictionary_manager().set_sources(sources, completed))
 
     def configure_dictionaries(self, sources, enabled, completed=None, repository=None):
         with self._submit_lock:
+            sources, _migrated = self._migrate_nvda_sources(sources)
             revision = self._dictionary_request(lambda: self.dictionary_manager().configure(
                 sources, enabled, completed, repository=repository))
             self._communityDictionaries = enabled

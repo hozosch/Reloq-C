@@ -66,6 +66,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 'probeganz\tTermin 2035\t1\t2\r\n'
                 '^probe([0-9]+)$\tZahl \\1\t0\t1\r\n').encode('utf-8-sig'))
             manager = self.synth.imported_dictionary_manager()
+            if manager.process('legacyprobe', 0x40000, '1') != 'Sonderwort':
+                raise AssertionError('previous NVDA source was not migrated correctly')
+            if self.synth.dictionary_manager().sources:
+                raise AssertionError('previous NVDA source is still treated as native ECI')
+            legacy = RESULT.parent / 'legacy-nvda-dictionary.dic'
+            if not legacy.is_file() or '\t0\t2' not in legacy.read_text(encoding='utf-8-sig'):
+                raise AssertionError('source NVDA dictionary was altered')
             _copy, count, created = manager.import_file(source, 0x40000, 'all')
             if not created or count != 3: raise AssertionError('NVDA dictionary fixture not imported')
             if manager.process('probenull', 0x40000, '1') != 'Ersatz':
@@ -98,7 +105,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 for word,camel in ((False,False),(True,False),(False,True),(True,True))]
             self.cases += [(word,False,text) for text in ('DICT:plain', 'DICT:compound')
                            for word in (False,True)]
-            self.cases += [(word,False,text) for text in ('IMPORT:plain', 'IMPORT:digits', 'IMPORT:regex')
+            self.cases += [(word,False,text) for text in ('IMPORT:plain', 'IMPORT:digits', 'IMPORT:regex', 'IMPORT:legacy')
                            for word in (False,True)]
             self.next()
         except BaseException:
@@ -124,7 +131,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                 raise AssertionError('unrelated word was protected too: ' + repr(row))
                         if row['input'].startswith('IMPORT:'):
                             expected = {'IMPORT:plain':'Ersatz', 'IMPORT:digits':'Termin 2035',
-                                        'IMPORT:regex':'Zahl 57'}[row['input']]
+                                        'IMPORT:regex':'Zahl 57', 'IMPORT:legacy':'Sonderwort'}[row['input']]
                             if expected not in combined or '\t0\t' in combined or '\t1\t' in combined:
                                 raise AssertionError('NVDA import changed a replacement or included options: ' + repr(row))
                     plain = [row for row in self.results if row['input'] == 'DICT:plain']
@@ -144,7 +151,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.before = [(p,len(p.chunks)) for p in self.players]
             if text.startswith('IMPORT:'):
                 original = {'IMPORT:plain':'probenull', 'IMPORT:digits':'probeganz',
-                            'IMPORT:regex':'probe57'}[text]
+                            'IMPORT:regex':'probe57', 'IMPORT:legacy':'legacyprobe'}[text]
                 self.speech.speak([original])
             elif text.startswith('DICT:'):
                 self.speech.speak(['reloqtest ' + ('hello' if text == 'DICT:plain' else 'framebuffer')])
