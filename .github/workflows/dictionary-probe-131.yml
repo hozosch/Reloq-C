@@ -1,0 +1,26 @@
+name: Diagnose SAPI dictionary download
+on:
+  push:
+    branches: [codex/dictionary-probe-131]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  probe:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: sapi-native-x64
+          path: payload
+          run-id: 43006678992
+          github-token: ${{ github.token }}
+      - name: Run the exact release dictionary test
+        shell: pwsh
+        run: |
+          $zip = (Get-ChildItem payload/*.zip | Select-Object -First 1).FullName
+          Expand-Archive $zip test-x64
+          & ./test-x64/Test-Dictionary.exe
+          $code = $LASTEXITCODE
+          Write-Host "Dictionary test exit code: $code"
+          if ($code -ne 0) { throw "Dictionary test returned $code" }
