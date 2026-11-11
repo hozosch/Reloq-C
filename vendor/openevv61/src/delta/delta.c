@@ -739,12 +739,14 @@ void vcompare(delta_state *d, const delta_operand *a, const delta_operand *b)
             EVV_AT(delta_vars *, d->vars)->compared_equal = 1;
         } else {
             int32_t len = stmt_length(a->kind);
+            int order = memcmp(a->ptr, b->ptr, (size_t)len);
 
-            /* The original keeps only the low byte of what memcmp returns,
-               so the exact value matters and not just its sign. That was
-               already true of IBM's builds; using memcmp keeps it so. */
+            /* The original keeps only the low byte of memcmp's answer. C
+               fixes only its sign: ARM64 bionic answers -1, 0 or 1, but
+               x86-64 bionic can answer +-768, whose low byte is 0 and
+               reads as equal. Keep the sign alone. */
             EVV_AT(delta_vars *, d->vars)->compared_equal =
-                (int8_t)memcmp(a->ptr, b->ptr, (size_t)len);
+                (int8_t)((order > 0) - (order < 0));
         }
         break;
     }
