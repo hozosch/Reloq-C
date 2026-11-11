@@ -1,4 +1,4 @@
-name: Diagnose personal dictionary precedence
+name: Verify updated compound candidate
 on:
   push:
     branches: [codex/wordseg-native-probe-20261111]
@@ -12,35 +12,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 84cfa61081657aa76a619458a258718d6b2a270a
+          ref: 0d44aa40810c39b10dcc51301c9114bcf20219d6
           persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
           name: wordseg-windows-candidate
-          run-id: 43038970204
+          run-id: 43040470994
           github-token: ${{ github.token }}
           path: candidate
-      - name: Print dictionary readings
-        shell: bash
+      - name: Test both English dialects and personal dictionaries
+        shell: pwsh
         run: |
-          dll=$(find candidate -name eci.dll -print -quit)
-          python - "$dll" <<'PY'
-          import sys, tempfile
-          from pathlib import Path
-          sys.path.insert(0, 'nvda')
-          from _reloq_eci_direct import DirectEciEngine, WORD_SEGMENTATION
-          for dialect, prefix in ((0x10000, 'ENU'), (0x10001, 'ENG')):
-              engine=DirectEciEngine(Path(sys.argv[1]).resolve(), dialect=dialect, encoding='utf8', native_voice=True)
-              try:
-                  with tempfile.TemporaryDirectory() as temporary:
-                      folder=Path(temporary)
-                      (folder / (prefix+'main.dic')).write_bytes(b'framebuffer\t`[.1tEst]\nredhead\t`[.1zibrx]\n')
-                      engine.set_dictionary_path(folder)
-                      print('DIALECT',hex(dialect))
-                      for state in (1, 0, 1, 0):
-                          engine.set_parameter(WORD_SEGMENTATION, state)
-                          for word in ('framebuffer', 'redhead'):
-                              print(state, word, repr(engine._phonemes_for_probe(word)))
-              finally:
-                  engine.close()
-          PY
+          $dll = (Get-ChildItem candidate -Recurse -Filter eci.dll | Select-Object -First 1).FullName
+          python nvda/test_eci_wordseg_native.py --library $dll
+          if ($LASTEXITCODE -ne 0) { throw 'Word segmentation failed' }
