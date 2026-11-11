@@ -1,0 +1,35 @@
+name: Verify personal dictionaries in real Windows SAPI
+on:
+  push:
+    branches: [codex/sapi-dictionary-20261111]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  dictionary:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: wordseg-windows-candidate
+          run-id: 43048057996
+          github-token: ${{ github.token }}
+          path: candidate
+      - name: Build the SAPI adapter and test
+        shell: bash
+        run: |
+          export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
+          make -C sapi -j2 CC=gcc BUILD=build
+          cp candidate/eci/eci.dll sapi/build/eci.dll
+      - name: Test dictionary selection through registered Windows SAPI
+        shell: pwsh
+        run: |
+          $dll = (Get-Item sapi/build/ReLoqSapi.dll).FullName
+          $p = Start-Process regsvr32.exe -ArgumentList '/s', $dll -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "SAPI registration failed: $($p.ExitCode)" }
+          & sapi/build/Test-SAPI.exe --dictionarycase
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI personal dictionary integration failed' }
