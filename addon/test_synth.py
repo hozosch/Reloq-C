@@ -449,6 +449,20 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                             item = entry.compiled.sub(entry.replacement, item)
                     processed.append(item)
                 assert driver_module._parts(processed) == parts
+                # NVDA gives object names and roles as separate text items.
+                # It adds a separator to text items but not to SynthCommands.
+                # Protecting a complete dictionary word must retain that
+                # separator before the following role.
+                result = driver._protect_tags(["MeinWort", "Fenster"])
+                processed = []
+                for item in result:
+                    if isinstance(item, str):
+                        for entry in builtin:
+                            item = entry.compiled.sub(entry.replacement, item)
+                        item += "  "
+                    processed.append(item)
+                assert "".join(part.text for part in driver_module._parts(processed)
+                               if isinstance(part, driver_module.EciText)) == "MeinWort  Fenster  "
                 result = driver._protect_tags([LangChangeCommand("en-US"), "UsRdCt TmpFiles"])
                 assert any(item == "U S R D C T T M P files" for item in result if isinstance(item, str)), result
                 driver._camelCase = False
@@ -460,6 +474,11 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 native_parts = driver_module._parts(result)
                 assert [p for p in native_parts if isinstance(p, driver_module.EciCapitalWord)] == [
                     driver_module.EciCapitalWord("CGROUP", "C group"), driver_module.EciCapitalWord("TMPFILES", "T M P files")]
+                result = driver._protect_tags([LangChangeCommand("en-US"), "CGROUP", "window"])
+                native_parts = driver_module._parts(result)
+                capital_at = next(i for i, item in enumerate(native_parts)
+                                  if isinstance(item, driver_module.EciCapitalWord))
+                assert native_parts[capital_at + 1] == driver_module.EciText("  ")
                 driver._camelCase = True
                 result = driver._protect_tags([CharacterModeCommand(True), "meinTest", CharacterModeCommand(False)])
                 assert result[1] == "meinTest", result

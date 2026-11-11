@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import threading
 import traceback
 
@@ -87,6 +88,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                         combined = ''.join(part.get('text') or '' for group in row['submissions'] for part in group)
                         if 'YouTubeFenster' in combined or 'YouTubeDokument' in combined:
                             raise AssertionError('NVDA joined adjacent words: ' + repr(row))
+                        if (row['word'] or row['camel']) and row['input'].startswith('ROLE:'):
+                            label = 'Fenster' if row['input'] == 'ROLE:window' else 'Dokument'
+                            if not re.search(r'YouTube\s+' + label, combined):
+                                raise AssertionError('NVDA lost the object boundary: ' + repr(row))
                 RESULT.write_text(json.dumps({'ok':True,'cases':self.results}, ensure_ascii=False),encoding='utf8')
                 return
             word,camel,text = self.cases[self.case]

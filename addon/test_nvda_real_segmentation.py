@@ -13,6 +13,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--nvda', type=Path, required=True)
     parser.add_argument('--addon', type=Path, required=True)
+    parser.add_argument('--driver', type=Path,
+                        help='use this candidate driver with the packaged native DLL')
     parser.add_argument('--work', type=Path, required=True)
     parser.add_argument('--diagnose', action='store_true')
     args = parser.parse_args()
@@ -24,6 +26,8 @@ def main():
     with zipfile.ZipFile(args.addon) as bundle:
         if bundle.testzip() is not None: raise RuntimeError('corrupt add-on')
         bundle.extractall(target)
+    if args.driver:
+        shutil.copy2(args.driver, target / 'synthDrivers' / 'reloqC' / '__init__.py')
     shutil.copy2(Path(__file__).with_name('test_nvda_real_segmentation_plugin.py'),
                  target / 'globalPlugins' / 'reloqSegmentationProbe.py')
     (profile / 'nvda.ini').write_text('[general]\nplayStartAndExitSounds = False\n[speech]\nsynth = silence\n',encoding='utf8')

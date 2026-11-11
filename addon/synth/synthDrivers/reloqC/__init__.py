@@ -438,6 +438,15 @@ class SynthDriver(BaseSynthDriver):
                             result.append(NativeDictionaryWord(transformed[start:end]))
                         else:
                             result.append(CapitalWordCommand(transformed[start:end], candidate))
+                        # NVDA normally appends its chunk separator to every
+                        # text item after symbol/dictionary processing. A
+                        # protected word is a SynthCommand instead of text,
+                        # so a word ending the original item needs that same
+                        # separator before the next item (for example, an
+                        # object's name followed by its role). Keep it in a
+                        # command so NVDA doesn't strip a whitespace string.
+                        if end == len(transformed):
+                            result.append(NativeDictionaryWord("  "))
                         cursor = end
                     if cursor < len(transformed):
                         result.extend((SegmentationGuard(True), transformed[cursor:], SegmentationGuard(False)))
