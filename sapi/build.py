@@ -3,6 +3,7 @@ from pathlib import Path
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -28,21 +29,31 @@ def main():
     args.core = args.core or ROOT / ('eci/eci-x86.dll' if args.arch == 'x86' else 'eci/eci.dll')
     args.output = args.output or ROOT / f'dist/reloq-c-sapi5-{args.arch}-{VERSION}-payload.zip'
     build = ROOT / 'sapi/build' / args.arch
+    epoch = os.environ.get('RELOQ_BUILD_EPOCH', '0') or '0'
+    if not re.fullmatch(r'(?:0|[1-9]\d{0,11})', epoch) or int(epoch) > 253402300799:
+        raise ValueError('invalid build timestamp')
+    # These executables embed the timestamp: do not reuse a previous build.
+    for name in ('ReLoqUpdate.exe', 'Test-Update.exe'):
+        (build / name).unlink(missing_ok=True)
     subprocess.run([sys.executable, str(ROOT / 'sapi/generate_catalogue.py'), '--check'], check=True)
     subprocess.run([sys.executable, str(ROOT / 'sapi/generate_ui.py'), '--check'], check=True)
     subprocess.run(['make', '-C', str(ROOT / 'sapi'), '-j2', 'CC=' + args.cc,
                     'ARCH=' + args.arch, 'BUILD=' + str(build), 'VERSION=' + VERSION], check=True)
     dictionary = validate_snapshot(ROOT / 'data/community')
-    names = ['ReLoqSapi.dll', 'ReLoqSettings.exe', 'ReLoqUpdate.exe', 'Test-Update.exe', 'Test-SAPI.exe', 'Test-Dictionary.exe']
+    names = ['ReLoqSapi.dll', 'ReLoqSettings.exe', 'ReLoqUpdate.exe', 'Test-Update.exe', 'Test-SAPI.exe', 'Test-Dictionary.exe', 'Test-DictionarySources.exe']
     entries = {name: (build / name).read_bytes() for name in names}
     entries.update({'eci.dll': args.core.read_bytes(), 'README.txt': (ROOT / 'sapi/README.txt').read_bytes(),
-                    'LICENSE': (ROOT / 'LICENSE').read_bytes(), 'NOTICE': (ROOT / 'NOTICE').read_bytes()})
+                    'LICENSE': (ROOT / 'LICENSE').read_bytes(), 'NOTICE': (ROOT / 'NOTICE').read_bytes(),
+                    'build-epoch.txt': (epoch + '\n').encode('ascii')})
     for name, source in {
         'OpenEVV-LICENSE.txt': 'vendor/openevv61/LICENSE',
         'OpenEVV-NOTICE.txt': 'vendor/openevv61/NOTICE',
+        'OpenEVV-wordseg-LICENSE.txt': 'nvda/wordseg-data/LICENSE',
+        'OpenEVV-wordseg-NOTICE.txt': 'nvda/wordseg-data/NOTICE',
         'Dictionaries-CC0.txt': 'data/community/LICENSE.md',
         'Unicode-LICENSE.txt': 'reference-apple/behavior-0.2.82/unicode-input/LICENSE.txt',
         'SCOWL-Copyright.txt': 'reference-apple/behavior-0.2.83/input/SCOWL-Copyright.txt',
+        'PCRE2-LICENSE.txt': 'vendor/pcre2/LICENSE',
     }.items():
         entries['licenses/' + name] = (ROOT / source).read_bytes()
     for name in (*FILES, 'manifest.json'):

@@ -91,9 +91,10 @@ final class DictionaryStore { static int starts,stops,acquires,closes;static jav
  static void stop(){++stops;} static Lease acquire(Context c){if(Context.locked)throw new AssertionError();++acquires;return new Lease(Context.ce.getString("dictionarySnapshot",null));}
  static class Lease { final String path;Lease(String p){path=p;} void close(){++closes;} } }""",
 "org/reloq/tts/NativeEngine.java": """package org.reloq.tts;
-final class NativeEngine { static int created,synthesized;static int[] controls;static String path;
+final class NativeEngine { static int created,synthesized;static int[] controls;static String path,text;static boolean guarded;
  static long create(){++created;return 42;} static void dictionary(long c,String p){path=p;}
- static boolean synthesize(long c,int d,int[] v,byte[] t,PcmQueue q){++synthesized;controls=v;return q.write(new byte[]{1,2,3,4});}
+ static boolean synthesize(long c,int d,int[] v,byte[] t,PcmQueue q,boolean g){++synthesized;controls=v;
+  text=new String(t,java.nio.charset.StandardCharsets.UTF_8);guarded=g;return q.write(new byte[]{1,2,3,4});}
  static void stop(long c,PcmQueue q){} static void destroy(long c){} }""",
 "org/reloq/tts/DirectBootTest.java": """package org.reloq.tts;
 import android.content.*;import android.speech.tts.*;import java.io.*;import java.nio.file.*;import java.util.concurrent.*;
@@ -104,9 +105,11 @@ public class DirectBootTest {
  public static void main(String[] x) throws Exception {
   Context.ce.data.put("profile",5);Context.ce.data.put("language",1);Context.ce.data.put("androidVoice",false);
   Context.ce.data.put("rate",2);Context.ce.data.put("androidPitch",false);Context.ce.data.put("voice.5.pitch",48);
+  Context.ce.data.put("wordSegmentation",true);Context.ce.data.put("camelCase",true);
   Context.ce.data.put("dictionarySources","private URI");
   File first=new File(new Context().getFilesDir(),"dictionaries/snapshots/"+"a".repeat(64));check(first.mkdirs());
   Files.writeString(new File(first,"DEUmain.dic").toPath(),"Apfel\\tApfelwort\\n");
+  Files.writeString(new File(first,"nvda-000-00040000-6.nvda").toPath(),"Test\\tErfolg\\t0\\t2\\n");
   Context.ce.data.put("dictionarySnapshot",first.getAbsolutePath());
   new UpgradeReceiver().onReceive(new Context(),new Intent(Intent.ACTION_MY_PACKAGE_REPLACED));
   check(!Context.de.data.containsKey("dictionarySources"));
@@ -114,6 +117,8 @@ public class DirectBootTest {
   ReLoqService s=new ReLoqService();s.onCreate();
   check(s.onGetDefaultVoiceNameFor("de","DE","").endsWith("-Sandy"));speak(s);
   check(NativeEngine.created==1&&NativeEngine.synthesized==1&&NativeEngine.path!=null&&NativeEngine.controls[2]==48);
+  check(NativeEngine.text.equals("Erfolg")&&NativeEngine.guarded);
+  check(NativeEngine.controls[40]==1&&NativeEngine.controls[41]==1);
   check(Files.readString(new File(NativeEngine.path,"DEUmain.dic").toPath()).contains("Apfelwort"));
   check(DictionaryStore.starts==0&&DictionaryStore.acquires==0);
   Context.locked=false;Context.ce.data.put("voice.5.pitch",62);
@@ -134,6 +139,7 @@ public class DirectBootTest {
   Thread.sleep(100);check(NativeEngine.synthesized==1&&DictionaryStore.acquires==0);
   DictionaryStore.startup.complete(null);firstSpeech.get(3,TimeUnit.SECONDS);
   check(NativeEngine.created==1&&NativeEngine.synthesized==2&&NativeEngine.controls[2]==1151);
+  check(NativeEngine.text.equals("Test")&&!NativeEngine.guarded);
   check(second.getAbsolutePath().equals(NativeEngine.path));
   check(DictionaryStore.starts==1&&DictionaryStore.acquires==1&&DictionaryStore.closes==1);
   check(Context.de.data.get("voice.5.pitch").equals(62)&&Context.de.data.get("voice.5.pitchHertz").equals(151));s.onDestroy();check(DictionaryStore.stops==1);
@@ -185,7 +191,7 @@ def main():
             target=build/path;target.parent.mkdir(parents=True,exist_ok=True);target.write_text(content)
         folder=ROOT/"android/java/org/reloq/tts"
         sources=[folder/(name+".java") for name in ("Catalog","VoiceSettings","Preferences","BootPreferences",
-            "DictionaryData","BootDictionaries","UpgradeReceiver","PcmQueue","ReLoqService")]
+            "DictionaryData","SpeechDictionary","BootDictionaries","UpgradeReceiver","PcmQueue","ReLoqService")]
         sources+=list(build.rglob("*.java"))
         subprocess.run([str(args.java_home/"bin/javac"),"-encoding","UTF-8","-d",str(build),*map(str,sources)],check=True)
         result=subprocess.run([str(args.java_home/"bin/java"),"-Djava.io.tmpdir="+str(build),"-cp",str(build),

@@ -1,0 +1,83 @@
+{
+  "reference": "Original x86 ECI.DLL and ITA.SYN, phonemes observed in phoneme mode",
+  "eci_sha256": "c1653e61e9fd599421d2f7faee21eda171d3a8ff4329343ddb24a2dd565fba5f",
+  "ita_sha256": "6965a5704dc42c215a9c3e3a2a82096d3d555cd685d28366c6c140a38ac4f7bf",
+  "cases": [
+    {
+      "text": "po",
+      "phonemes": "`[.1pc]"
+    },
+    {
+      "text": "po'",
+      "phonemes": "`[.1po]"
+    },
+    {
+      "text": "po’",
+      "phonemes": "`[.1po]"
+    },
+    {
+      "text": "pò",
+      "phonemes": "`[.1pc]"
+    },
+    {
+      "text": "Aspetta un po'",
+      "phonemes": "`[.0a.1spet.0ta] `00 `[.0un] `2 `[.1po]"
+    },
+    {
+      "text": "Aspetta un po’",
+      "phonemes": "`[.0a.1spet.0ta] `00 `[.0un] `2 `[.1po]"
+    },
+    {
+      "text": "un po' di latte",
+      "phonemes": "`00 `[.0un] `[.1po] `00 `[.0di] `2 `[.1lat.0te]"
+    },
+    {
+      "text": "mo'",
+      "phonemes": "`[.1mo]"
+    },
+    {
+      "text": "to'",
+      "phonemes": "`[.1to]"
+    },
+    {
+      "text": "va'",
+      "phonemes": "`[.1va]"
+    },
+    {
+      "text": "sta'",
+      "phonemes": "`[.1sta]"
+    },
+    {
+      "text": "da'",
+      "phonemes": "`[.1da]"
+    },
+    {
+      "text": "di'",
+      "phonemes": "`[.1di]"
+    },
+    {
+      "text": "be'",
+      "phonemes": "`[.1bE]"
+    },
+    {
+      "text": "l'amico",
+      "phonemes": "`[.0la.1mi.0ko]"
+    },
+    {
+      "text": "perche'",
+      "phonemes": "`[.0per.1ke]"
+    },
+    {
+      "text": "qual'e'",
+      "phonemes": "`[.0kwa.1le]"
+    },
+    {
+      "text": "'po'",
+      "phonemes": "`[.1po]"
+    },
+    {
+      "text": "po'chi",
+      "phonemes": "`[.1po.0ki]"
+    }
+  ]
+}

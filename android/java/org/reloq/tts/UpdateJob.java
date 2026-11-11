@@ -16,7 +16,7 @@ public final class UpdateJob extends JobService {
                 if(UpdateScheduler.enabled(this)) {
                     PackageInfo info=getPackageManager().getPackageInfo(getPackageName(),0);
                     long installed=Build.VERSION.SDK_INT>=28?info.getLongVersionCode():info.versionCode;
-                    UpdateData.Package found=UpdateClient.check(installed);
+                    UpdateData.Package found=UpdateClient.check(installed,BuildData.BUILD_EPOCH);
                     if(found!=null&&Long.valueOf(current).equals(active.get(id)))UpdateScheduler.notifyUpdate(this,found);
                 }
             } catch(Exception error) {

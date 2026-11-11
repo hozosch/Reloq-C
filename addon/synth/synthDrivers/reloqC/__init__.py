@@ -33,13 +33,13 @@ from synthDriverHandler import (SynthDriver as BaseSynthDriver, VoiceInfo, Langu
 from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciPitchHz, EciProsody, EciLanguage, EciText, EciCapitalWord, NATIVE_VOLUME,
                                 NATIVE_SPEED, NATIVE_WPM, NATIVE_PITCH, NATIVE_INFLECTION, PROCESS_TAGS,
                                 PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATES,
-                                DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, ORIGINAL_ACOUSTIC_CLOCK,
+                                DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, ORIGINAL_ACOUSTIC_CLOCK, WORD_SEGMENTATION, CAMEL_CASE,
                                 EQ_LOW, EQ_MID, EQ_HIGH, EQ_FILTER_BASE, EQ_FILTER_COUNT, EQ_FILTER_STRIDE, PITCH_HZ)
 from ._reloq_eci_transport import DictionaryStartupError, EciTextTransport
-from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries
-from ._reloq_nvda_dicts import ImportedDictionaries
+from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries, DictionarySource
+from ._reloq_nvda_dicts import ImportedDictionaries, migrate_nvda_sources
 from ._reloq_wordseg import (WordSegmenter, dictionary_keys, split_camel, protected_native_spans,
-                             transform_unmatched, native_compound_spans, uppercase_candidates)
+                             transform_unmatched, native_compound_spans, uppercase_candidates, word_runs, camel_word)
 from ._reloq_languages import (GERMAN, LANGUAGES, LANGUAGE_ALIASES, LANGUAGE_DISPLAY_ORDER, LanguageEngine, language_for,
                                ACOUSTIC_CLOCK_BITS, ACOUSTIC_CLOCK_DEFAULT, ACOUSTIC_CLOCK_MAX)
 from ._speech_tags import EciTagCommand, SegmentationGuard, NativeDictionaryWord, CapitalWordCommand, protect_sequence, register_remote_commands
@@ -109,7 +109,8 @@ def _parts(speech_sequence, *, base_pitch=50, base_pitch_hz=0, base_rate=50, bas
                     runs[-1] = (runs[-1][0] + text, character_mode)
                 else:
                     runs.append((text, character_mode))
-            parts.extend(EciText(text_transform(text, language) if text_transform and not mode and not segmentation_guarded else text, mode)
+            parts.extend(EciText(text_transform(text, language) if text_transform and not mode and not segmentation_guarded else text,
+                                 mode, None, segmentation_guarded)
                          for text, mode in runs)
             pieces.clear()
 
@@ -186,7 +187,7 @@ def _parts(speech_sequence, *, base_pitch=50, base_pitch_hz=0, base_rate=50, bas
             segmentation_guarded = item.enabled
         elif isinstance(item, NativeDictionaryWord):
             flush()
-            parts.append(EciText(item.text, spelling))
+            parts.append(EciText(item.text, spelling, None, segmentation_guarded))
         elif isinstance(item, CapitalWordCommand):
             flush()
             parts.append(EciCapitalWord(item.original, item.segmented))
@@ -315,6 +316,7 @@ class SynthDriver(BaseSynthDriver):
         self._voiceTags = False
         self._wordSegmentation = False
         self._camelCase = False
+        self._applied_segmentation = (False, False)
         self._wordseg_keys = None
         self._word_segmenters = {}
         import globalVars
@@ -357,7 +359,12 @@ class SynthDriver(BaseSynthDriver):
         self._transport.set_acoustic_clocks(self._acoustic_clocks)
         manager = self.dictionary_manager()
         # Start monitoring the installed dictionaries and selected own files.
-        self._dictionary_request(lambda: manager.set_enabled(self._communityDictionaries))
+        sources, migrated = self._migrate_nvda_sources(manager.sources)
+        if migrated:
+            self._dictionary_request(lambda: manager.configure(
+                sources, self._communityDictionaries, initial_update=True))
+        else:
+            self._dictionary_request(lambda: manager.set_enabled(self._communityDictionaries))
         filter_speechSequence.register(self._protect_tags)
         try:
             source = json.loads((DLL.parents[2] / "doc/source.json").read_text(encoding="utf-8"))
@@ -396,51 +403,50 @@ class SynthDriver(BaseSynthDriver):
                 protected = segment and self._imported_dictionaries.matches(item, selected, voice)
                 item = self._imported_dictionaries.process(item, selected, voice)
                 spans = self._nvda_dictionary_matches(item) if segment else ()
-                protected = protected or spans is None
+                personal = self._nvda_personal_word_ranges(item, spans) if spans else ()
+                # Preserve the whole run for expressions or substitutions
+                # whose context cannot safely be separated by word.
+                protected = protected or spans is None or personal is None or (bool(spans) and keys is None)
                 if protected:
                     result.extend((SegmentationGuard(True), item, SegmentationGuard(False)))
                     continue
                 if segment and keys is not None:
                     language = self._languages[selected]
                     native_keys = keys.get(selected, frozenset())
-                    transformed = transform_unmatched(item, (*spans, *native_compound_spans(item, native_keys)),
-                        lambda word: self._segment_text(word, language, keys, word_segment, camel))
-                    transformed_spans = spans if transformed == item else self._nvda_dictionary_matches(transformed)
-                    if transformed_spans is None:
-                        # A complex regular expression can depend on the
-                        # entire original context. Let NVDA handle it intact.
-                        result.extend((SegmentationGuard(True), item, SegmentationGuard(False)))
-                        continue
-                    # NVDA's built-in dictionary is applied after this filter.
-                    # Preserve a native entry that it would split, then apply
-                    # our optional transforms to the remaining text while
-                    # the complete original casing is still available.
-                    ranges, cursor = [], 0
-                    for part, native in protected_native_spans(transformed, native_keys, transformed_spans):
+                    # NVDA's builtin.dic runs after this filter. Protect the
+                    # complete original CamelCase spelling so the shared C
+                    # core can apply its own rules and native dictionaries.
+                    ranges, cursor = [(start, end, "personal") for start, end in personal], 0
+                    for part, native in protected_native_spans(item, native_keys):
                         end = cursor + len(part)
-                        if native:
-                            ranges.append((cursor, end, "native", None))
+                        if native and not any(left < end and right > cursor for left, right, _ in ranges):
+                            ranges.append((cursor, end, "native"))
                         cursor = end
-                    tag = "enus" if language.locale == "en_US" else "engb" if language.locale == "en_GB" else None
-                    if word_segment and tag:
-                        segmenter = self._word_segmenters.get(tag)
-                        if segmenter is None:
-                            segmenter = WordSegmenter.from_files(DLL.with_name("wordseg-data"), tag)
-                            self._word_segmenters[tag] = segmenter
-                        blocked = (*transformed_spans, *((start, end) for start, end, _, _ in ranges))
-                        ranges.extend((start, end, "capital", candidate) for start, end, candidate in
-                                      uppercase_candidates(transformed, segmenter, native_keys, blocked))
+                    if camel or (word_segment and language.locale in ("en_US", "en_GB")):
+                        for start, end in word_runs(item):
+                            if camel_word(item[start:end]) != item[start:end] and not any(
+                                    left < end and right > start for left, right, _ in ranges):
+                                ranges.append((start, end, "native"))
                     cursor = 0
-                    for start, end, kind, candidate in sorted(ranges):
+                    for start, end, kind in sorted(ranges):
                         if start > cursor:
-                            result.extend((SegmentationGuard(True), transformed[cursor:start], SegmentationGuard(False)))
-                        if kind == "native":
-                            result.append(NativeDictionaryWord(transformed[start:end]))
+                            result.append(item[cursor:start])
+                        if kind == "personal":
+                            result.extend((SegmentationGuard(True), item[start:end], SegmentationGuard(False)))
                         else:
-                            result.append(CapitalWordCommand(transformed[start:end], candidate))
+                            result.append(NativeDictionaryWord(item[start:end]))
+                        # NVDA normally appends its chunk separator to every
+                        # text item after symbol/dictionary processing. A
+                        # protected word is a SynthCommand instead of text,
+                        # so a word ending the original item needs that same
+                        # separator before the next item (for example, an
+                        # object's name followed by its role). Keep it in a
+                        # command so NVDA doesn't strip a whitespace string.
+                        if kind != "personal" and end == len(item):
+                            result.append(NativeDictionaryWord("  "))
                         cursor = end
-                    if cursor < len(transformed):
-                        result.extend((SegmentationGuard(True), transformed[cursor:], SegmentationGuard(False)))
+                    if cursor < len(item):
+                        result.append(item[cursor:])
                     continue
             result.append(item)
         return result
@@ -473,12 +479,75 @@ class SynthDriver(BaseSynthDriver):
             return None
 
     @staticmethod
+    def _nvda_personal_word_ranges(text, spans):
+        """Split simple, independent personal entries at existing spaces.
+
+        Arbitrary expressions, punctuation or cross-word replacements keep
+        the full run unchanged so NVDA retains its dictionary semantics.
+        """
+        try:
+            import speechDictHandler
+            if hasattr(speechDictHandler, "listAvailableSpeechDictDefinitions"):
+                dictionaries = (d.dictionary for d in speechDictHandler.listAvailableSpeechDictDefinitions()
+                                if d.enabled and getattr(d.source, "value", d.source) != "builtin")
+            else:
+                dictionaries = (dictionary for name, dictionary in speechDictHandler.dictionaries.items()
+                                if name != "builtin")
+            def word_only(value):
+                return all(char.isalnum() or char == "_" for char in value)
+            for dictionary in dictionaries:
+                for entry in dictionary:
+                    pattern, replacement = entry.pattern, entry.replacement
+                    if (getattr(entry, "type", None) not in (0, 2) or not pattern or
+                            not word_only(pattern) or not word_only(replacement)):
+                        return None
+            words = tuple(word_runs(text))
+            ranges = []
+            for left, right in spans:
+                overlapping = [(start, end) for start, end in words if start < right and end > left]
+                if not overlapping:
+                    return None
+                start, end = overlapping[0][0], overlapping[-1][1]
+                if (left < start or right > end or
+                        (start and not text[start - 1].isspace()) or
+                        (end < len(text) and not text[end].isspace())):
+                    return None
+                ranges.append((start, end))
+            merged = []
+            for start, end in sorted(ranges):
+                if merged and start <= merged[-1][1]:
+                    merged[-1] = (merged[-1][0], max(end, merged[-1][1]))
+                else:
+                    merged.append((start, end))
+            return tuple(merged)
+        except (ImportError, AttributeError, TypeError, ValueError):
+            return None
+
+    @staticmethod
     def _matches_nvda_dictionary(text):
         matches = SynthDriver._nvda_dictionary_matches(text)
         return matches is None or bool(matches)
 
     def imported_dictionary_manager(self):
         return self._imported_dictionaries
+
+    def _migrate_nvda_sources(self, sources):
+        """Recover NVDA files previously selected as native dictionaries."""
+        sources = tuple(source if isinstance(source, DictionarySource) else DictionarySource(**source)
+                        for source in sources)
+        if not sources:
+            return sources, ()
+        try:
+            from NVDAState import shouldWriteToDisk
+            if not shouldWriteToDisk():
+                return sources, ()
+        except ImportError:
+            return sources, ()
+        try:
+            return migrate_nvda_sources(sources, self._imported_dictionaries)
+        except (OSError, ValueError, UnicodeError):
+            log.warning("Could not migrate an NVDA speech dictionary", exc_info=True)
+            return sources, ()
 
     def _segment_text(self, text, language, keys, word_segment=True, camel=False):
         if keys is None:
@@ -722,10 +791,12 @@ class SynthDriver(BaseSynthDriver):
         return self._dictionary_request(lambda: self.dictionary_manager().refresh(completed))
 
     def set_dictionary_sources(self, sources, completed=None):
+        sources, _migrated = self._migrate_nvda_sources(sources)
         return self._dictionary_request(lambda: self.dictionary_manager().set_sources(sources, completed))
 
     def configure_dictionaries(self, sources, enabled, completed=None, repository=None):
         with self._submit_lock:
+            sources, _migrated = self._migrate_nvda_sources(sources)
             revision = self._dictionary_request(lambda: self.dictionary_manager().configure(
                 sources, enabled, completed, repository=repository))
             self._communityDictionaries = enabled
@@ -1172,8 +1243,7 @@ class SynthDriver(BaseSynthDriver):
         def make_parts():
             return _parts(speechSequence, base_pitch=pitch, base_pitch_hz=pitch_hz, voice_tags=tags,
                           base_rate=rate, base_wpm=wpm, rate_boost=boost, base_volume=volume,
-                          language=self._languages[language], voice=voice, languages=self._languages,
-                          text_transform=(lambda text, lang: self._segment_text(text, lang, segment_keys, segment, camel)) if (segment or camel) else None)
+                          language=self._languages[language], voice=voice, languages=self._languages)
         parts = make_parts()
         with self._submit_lock:
             if self._terminating or epoch != self._request_epoch:
@@ -1194,6 +1264,11 @@ class SynthDriver(BaseSynthDriver):
             if characters >= 1024 or protected_tags:
                 log.info("Eloquence C queued speech: characters=%d, protected_tags=%d, rate=%d Hz, tags=%s",
                     characters, protected_tags, SAMPLE_RATES[int(self._sampleRate)], tags)
+            wanted = (segment, camel)
+            for parameter, old, value in zip((WORD_SEGMENTATION, CAMEL_CASE), self._applied_segmentation, wanted):
+                if value != old:
+                    self._transport.set_parameter(parameter, int(value))
+            self._applied_segmentation = wanted
             self._transport.submit(parts)
 
     def cancel(self):

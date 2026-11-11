@@ -20,6 +20,7 @@
 #include "reloq_english_voice.h"
 #include "reloq_voice_controls.h"
 #include "reloq_equalizer.h"
+#include "reloq_wordseg.h"
 
 #include <limits.h>
 #include <math.h>
@@ -121,7 +122,7 @@ struct queued_item {
     int is_index;
     int pitch;
     int is_pitch;
-    int unicode_input, character_mode;
+    int unicode_input, character_mode, segmentation_guarded;
     struct queued_voice voice;
 };
 
@@ -182,6 +183,7 @@ struct reloq_eci_engine {
     int input_type;
     int process_tags;
     int dictionary_disabled,phrase_prediction,original_questions,mellow_mode,original_acoustic_clock;
+    int word_segmentation,camel_case;
     int eq_low,eq_mid,eq_high;
     int eq_filters[RELOQ_EQ_FILTER_COUNT][RELOQ_ECI_EQ_FILTER_STRIDE];
     int pause_mode;
@@ -235,18 +237,22 @@ struct queued_control {size_t offset;struct queued_voice voice;};
 static int insert_voice_controls(unsigned char **text,size_t *length,
     struct queued_control *controls,size_t count,struct queued_voice initial,
     const size_t *source_map,struct index_mark *marks,size_t mark_count,
-    struct pitch_mark *pitches,size_t pitch_count)
+    struct pitch_mark *pitches,size_t pitch_count,unsigned char **guards)
 {
     static const char *const names[]={"vg","vh","vb","vf","vr","vy","vs","vv"};
     if(!count)return 0;
     if(count>(SIZE_MAX-*length-2)/96)return -1;
     unsigned char *next=malloc(*length+count*96+2);
+    unsigned char *next_guards=guards&&*guards?calloc(*length+count*96+2,1):NULL;
     size_t *offsets=malloc((count+1)*sizeof *offsets),*added=malloc((count+1)*sizeof *added);
-    if(!next||!offsets||!added){free(next);free(offsets);free(added);return -1;}
+    if(!next||!offsets||!added||(guards&&*guards&&!next_guards)){
+        free(next);free(next_guards);free(offsets);free(added);return -1;}
     size_t used=0,from=0;
     for(size_t i=0;i<count;++i) {
         size_t at=source_map?source_map[controls[i].offset]:controls[i].offset;
-        memcpy(next+used,*text+from,at-from);used+=at-from;from=at;
+        memcpy(next+used,*text+from,at-from);
+        if(next_guards)memcpy(next_guards+used,*guards+from,at-from);
+        used+=at-from;from=at;
         for(unsigned k=0;k<8;++k)if(initial.values[k]!=controls[i].voice.values[k] ||
             (k==2 && initial.pitch_hz!=controls[i].voice.pitch_hz)) {
             /* An enabled WPM setting owns speed until explicitly cleared. */
@@ -255,19 +261,21 @@ static int insert_voice_controls(unsigned char **text,size_t *length,
             int hz=k==2?controls[i].voice.pitch_hz:0;
             int n=snprintf((char *)next+used,80,"`%s%d",hz?"vbhz":names[k],
                 hz?hz:controls[i].voice.values[k]);
-            if(n<0||n>=80){free(next);free(offsets);free(added);return -1;}
+            if(n<0||n>=80){free(next);free(next_guards);free(offsets);free(added);return -1;}
             used+=(size_t)n;
         }
         if(initial.native_wpm!=controls[i].voice.native_wpm) {
             int wpm=controls[i].voice.native_wpm;
             int n=snprintf((char *)next+used,96,"`%s%d",wpm?"vwpm":"vs",
                            wpm?wpm:controls[i].voice.values[6]);
-            if(n<0||n>=96){free(next);free(offsets);free(added);return -1;}
+            if(n<0||n>=96){free(next);free(next_guards);free(offsets);free(added);return -1;}
             used+=(size_t)n;
         }
         initial=controls[i].voice;offsets[i]=at;added[i]=used-at;
     }
-    memcpy(next+used,*text+from,*length-from);used+=*length-from;next[used]=0;
+    memcpy(next+used,*text+from,*length-from);
+    if(next_guards)memcpy(next_guards+used,*guards+from,*length-from);
+    used+=*length-from;next[used]=0;
     for(size_t i=0;i<mark_count;++i) {
         size_t extra=0;for(size_t j=0;j<count&&offsets[j]<=marks[i].offset;++j)extra=added[j];
         marks[i].offset+=extra;
@@ -276,7 +284,25 @@ static int insert_voice_controls(unsigned char **text,size_t *length,
         size_t extra=0;for(size_t j=0;j<count&&offsets[j]<=pitches[i].offset;++j)extra=added[j];
         pitches[i].offset+=extra;
     }
-    free(*text);*text=next;*length=used;free(offsets);free(added);return 0;
+    free(*text);*text=next;
+    if(next_guards){free(*guards);*guards=next_guards;}
+    *length=used;free(offsets);free(added);return 0;
+}
+
+/* Map protected source bytes through the same Unicode admission map used by
+ * public indices. Added annotations do not inherit dictionary protection. */
+static unsigned char *project_guards(const unsigned char *guards,size_t original,
+    size_t admitted,const size_t *map,size_t prefix)
+{
+    if(!guards)return NULL;
+    if(admitted>SIZE_MAX-prefix-2)return NULL;
+    unsigned char *out=calloc(prefix+admitted+2,1);if(!out)return NULL;
+    for(size_t i=0;i<original;++i)if(guards[i]) {
+        size_t start=map?map[i]:i,end=map?map[i+1]:i+1;
+        if(end>admitted)end=admitted;
+        if(start<end)memset(out+prefix+start,1,end-start);
+    }
+    return out;
 }
 
 static void eci_record_error(struct reloq_eci_engine *e,unsigned flag)
@@ -500,7 +526,8 @@ static int synthesize_generic(struct reloq_eci_engine *e,
                               const struct index_mark *marks,
                               size_t mark_count,
                               const struct pitch_mark *pitches,
-                              size_t pitch_count, unsigned int epoch,int admitted)
+                              size_t pitch_count, unsigned int epoch,int admitted,
+                              const unsigned char *guards)
 {
     (void)original_length;
     struct preflight_cancel cancel_check = {e, epoch};
@@ -540,11 +567,15 @@ static int synthesize_generic(struct reloq_eci_engine *e,
         unsigned reference=sample_hz(e->sample_rate_code)>=16000?(head<=(gender?40:30)?4u:5u):0;
         if(reloq_session_source_levels(e->text_session,source,gender?-3:-5,6,gender?-7:0,reference))reset=1;
     }
+    struct reloq_wordseg_options wordseg=reloq_wordseg_scope((struct reloq_wordseg_options){
+        e->word_segmentation,e->camel_case,
+        reloq61_worker_dictionary_handle(e->rule_worker),e->dictionary_disabled,guards,length});
     int rendered=reset?RELOQ_DE_UTTERANCE_INVALID:reloq_language_rules_render(e->language,phrase,length,e->process_tags||admitted,
         frame_volume?(e->native_volume_active?e->native_volume:e->generic_volume):100,
         e->native_wpm,e->original_acoustic_clock==1||(e->original_acoustic_clock==2&&
             (e->language==0x20000||e->language==0x120000)),&settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
         send_pcm,send_generic_index,&bridge);
+    reloq_wordseg_scope(wordseg);
     free(english_indices);free(english_pitch);
     if(preflight_cancelled(&cancel_check)||reloq_session_cancelled(e->text_session))return RELOQ_ECI_CANCELLED;
     if(rendered==RELOQ_DE_UTTERANCE_OK)return RELOQ_ECI_OK;
@@ -819,7 +850,7 @@ int ECICALL eciAddTextUtf8(ECIHand handle,const void *text,size_t bytes,int mode
 {
     struct reloq_eci_engine *e=handle;
     if(!e||epoch_get(&e->busy))return 0;
-    if((!text&&bytes)||(mode!=0&&mode!=1)||bytes==SIZE_MAX) {
+    if((!text&&bytes)||(mode<0||mode>3)||bytes==SIZE_MAX) {
         eci_error(e,RELOQ_ECI_INVALID);return 0;
     }
     unsigned char *copy=malloc(bytes+1);
@@ -827,7 +858,8 @@ int ECICALL eciAddTextUtf8(ECIHand handle,const void *text,size_t bytes,int mode
     if(bytes)memcpy(copy,text,bytes);
     copy[bytes]=0;
     if(append_item(e,(struct queued_item){.utf8=copy,.length=bytes,
-       .voice=capture_voice(e),.unicode_input=1,.character_mode=mode})) {
+       .voice=capture_voice(e),.unicode_input=1,.character_mode=mode&1,
+       .segmentation_guarded=!!(mode&2)})) {
         free(copy);eci_error(e,RELOQ_ECI_MEMORY);return 0;
     }
     eci_error(e,RELOQ_ECI_OK);return 1;
@@ -892,7 +924,7 @@ int ECICALL eciSynthesize(ECIHand handle)
     size_t text_bytes = 0;
     size_t original_text_bytes = 0, source_bytes = 0;
     int unicode_input=0;
-    unsigned char *modes=NULL;size_t *source_map=NULL;
+    unsigned char *modes=NULL,*guards=NULL;size_t *source_map=NULL;int have_guards=0;
     size_t mark_count = 0, next_mark = 0, pitch_count = 0;
     unsigned char *phrase = NULL;
     struct index_mark *marks = NULL;
@@ -930,6 +962,7 @@ int ECICALL eciSynthesize(ECIHand handle)
         }
         text_bytes += e->queue[i].length;
         unicode_input|=e->queue[i].unicode_input;
+        have_guards|=e->queue[i].segmentation_guarded;
     }
     if(have_voice) {
         apply_voice(e,&initial_voice);
@@ -1000,6 +1033,10 @@ int ECICALL eciSynthesize(ECIHand handle)
         modes=malloc(text_bytes);
         if(!modes){result=RELOQ_ECI_MEMORY;goto done;}
     }
+    if(have_guards&&text_bytes) {
+        guards=calloc(text_bytes+2,1);
+        if(!guards){result=RELOQ_ECI_MEMORY;goto done;}
+    }
     size_t offset = 0;
     size_t marker = 0, pitch_marker = 0;
     for (size_t i = 0; i < e->queued; ++i) {
@@ -1016,12 +1053,13 @@ int ECICALL eciSynthesize(ECIHand handle)
         } else if (item->length) {
             memcpy(phrase + offset, item->utf8, item->length);
             if(modes)memset(modes+offset,item->character_mode,item->length);
+            if(guards)memset(guards+offset,item->segmentation_guarded,item->length);
             offset += item->length;
         }
     }
     if(text_bytes && !control_count && e->process_tags && e->voice_mode==RELOQ_ECI_VOICE_GENERIC &&
        inline_language_commands(phrase,text_bytes,modes)) {
-        result=synthesize_languages(e,phrase,text_bytes,modes,unicode_input,
+        result=synthesize_languages(e,phrase,text_bytes,modes,guards,unicode_input,
             marks,mark_count,pitches,pitch_count,before);
         goto done;
     }
@@ -1033,17 +1071,20 @@ int ECICALL eciSynthesize(ECIHand handle)
             e->failure_stage=RELOQ_ECI_STAGE_TEXT;goto done;}
         for(size_t i=0;i<mark_count;++i)marks[i].offset=source_map[marks[i].offset];
         for(size_t i=0;i<pitch_count;++i)pitches[i].offset=source_map[pitches[i].offset];
+        if(guards){unsigned char *mapped=project_guards(guards,text_bytes,count,source_map,0);
+            if(!mapped){free(normalized);result=RELOQ_ECI_MEMORY;goto done;}
+            free(guards);guards=mapped;}
         free(phrase);phrase=normalized;text_bytes=count;
     }
     if(control_count) {
         if(insert_voice_controls(&phrase,&text_bytes,controls,control_count,initial_voice,
-            source_map,marks,mark_count,pitches,pitch_count)) {result=RELOQ_ECI_MEMORY;goto done;}
+            source_map,marks,mark_count,pitches,pitch_count,&guards)) {result=RELOQ_ECI_MEMORY;goto done;}
         e->process_tags=1;
         /* Diagnostics below refer to the admitted stream, not the temporary
          * annotations. Public index/pitch positions have already moved. */
         free(source_map);source_map=NULL;
         if(inline_language_commands(phrase,text_bytes,NULL)) {
-            result=synthesize_languages(e,phrase,text_bytes,NULL,0,marks,mark_count,pitches,pitch_count,before);
+            result=synthesize_languages(e,phrase,text_bytes,NULL,guards,0,marks,mark_count,pitches,pitch_count,before);
             goto done;
         }
     }
@@ -1067,7 +1108,7 @@ int ECICALL eciSynthesize(ECIHand handle)
             result = synthesize_generic(e, phrase, text_bytes,
                                         original_text_bytes, marks,
                                         mark_count, pitches,
-                                        pitch_count, before,unicode_input);
+                                        pitch_count, before,unicode_input,guards);
             reloq61_worker_scope(previous_rule_worker);
             goto done;
         }
@@ -1253,7 +1294,7 @@ done:
         while(i<source_bytes&&source_map[i+1]<=(size_t)e->failure_utf8_offset)++i;
         e->failure_utf8_offset=diagnostic_offset(i,source_bytes);
     }
-    free(source_map);free(modes);
+    free(source_map);free(modes);free(guards);
     if (result == RELOQ_ECI_OK && epoch_get(&e->stop_epoch) != before)
         result = RELOQ_ECI_CANCELLED;
     free(boundaries);
@@ -1392,6 +1433,8 @@ int ECICALL eciGetParam(ECIHand handle, int parameter)
     case RELOQ_ECI_ORIGINAL_QUESTIONS: return e->original_questions;
     case RELOQ_ECI_MELLOW_MODE: return e->mellow_mode;
     case RELOQ_ECI_ORIGINAL_ACOUSTIC_CLOCK: return e->original_acoustic_clock;
+    case RELOQ_ECI_WORD_SEGMENTATION: return e->word_segmentation;
+    case RELOQ_ECI_CAMEL_CASE: return e->camel_case;
     case RELOQ_ECI_EQ_LOW: return e->eq_low;
     case RELOQ_ECI_EQ_MID: return e->eq_mid;
     case RELOQ_ECI_EQ_HIGH: return e->eq_high;
@@ -1540,6 +1583,12 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
     case RELOQ_ECI_ORIGINAL_ACOUSTIC_CLOCK:
         if(value<0 || value>2)return eci_refuse(e,-1);
         e->original_acoustic_clock=value;break;
+    case RELOQ_ECI_WORD_SEGMENTATION:
+        if(value!=0 && value!=1)return eci_refuse(e,-1);
+        e->word_segmentation=value;break;
+    case RELOQ_ECI_CAMEL_CASE:
+        if(value!=0 && value!=1)return eci_refuse(e,-1);
+        e->camel_case=value;break;
     case RELOQ_ECI_EQ_LOW:
     case RELOQ_ECI_EQ_MID:
     case RELOQ_ECI_EQ_HIGH:

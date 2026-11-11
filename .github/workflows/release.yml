@@ -82,12 +82,15 @@ jobs:
           PY
           else
             python3 - <<'PYDRAFT'
-          import json, os
+          import json, os, sys
           from pathlib import Path
+          sys.path.insert(0, 'tools')
+          from release_packages import release_body
           version = os.environ['RELEASE_VERSION']
+          request = json.load(open('.github/release.json'))
           json.dump({'tag_name': 'v' + version, 'target_commitish': os.environ['GITHUB_SHA'],
                      'name': 'ReLoq C ' + version, 'draft': True,
-                     'body': Path(f'docs/releases/{version}.md').read_text()},
+                     'body': release_body(Path(f'docs/releases/{version}.md').read_text(), request.get('build_epoch'))},
                     open('/tmp/draft-release.json', 'w'))
           PYDRAFT
             # Capture the created ID directly: release collections can lag a
@@ -109,8 +112,14 @@ jobs:
               assert actual[name]['digest'] == 'sha256:' + metadata['sha256']
           PY
           python3 - <<'PY'
-          import json, os
-          json.dump({'draft': False, 'make_latest': 'true', 'target_commitish': os.environ['GITHUB_SHA']},
+          import json, os, sys
+          from pathlib import Path
+          sys.path.insert(0, 'tools')
+          from release_packages import release_body
+          request = json.load(open('.github/release.json'))
+          notes = Path(f'docs/releases/{request["release_version"]}.md').read_text()
+          json.dump({'draft': False, 'make_latest': 'true', 'target_commitish': os.environ['GITHUB_SHA'],
+                     'body': release_body(notes, request.get('build_epoch'))},
                     open('/tmp/publish-release.json', 'w'))
           PY
           gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" --input /tmp/publish-release.json --jq .html_url

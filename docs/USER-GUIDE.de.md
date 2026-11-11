@@ -1,6 +1,6 @@
 # Eloquence C – Bedienungsanleitung
 
-## Version 1.3.1-dev1
+## Version 1.4.0
 
 Die Zahlen 12 und 19 verwenden auf Brasilianisch-Portugiesisch auch in größeren Zahlen die üblichen Vokale. ECI-Betonungsbefehle verwenden dieselbe Sprachmelodie wie der entsprechende Reglerwert.
 
@@ -8,7 +8,7 @@ In der NVDA-Einstellungskategorie Eloquence C kann die Zerlegung unbekannter eng
 
 Die getrennte Option **Camel-Case-Wörter zerlegen (alle Sprachen)** setzt Wortgrenzen bei Binnen-Großbuchstaben, zum Beispiel `meinWort` und `HTTPServer`. Sie ist zunächst ausgeschaltet. NVDA kann mit seinem eigenen eingebauten Sprachwörterbuch unabhängig davon ebenfalls Camel Case aufteilen. Eigene NVDA- und native Wörterbucheinträge haben Vorrang vor der zusätzlichen Zerlegung.
 
-Über „NVDA-Wörterbuch importieren“ lässt sich ein vorhandenes NVDA-Sprachwörterbuch aus einem anderen Treiber auswählen. Wähle danach die Sprache und entweder eine Stimme oder alle Stimmen. Reguläre Ausdrücke, Groß-/Kleinschreibung und Kommentare bleiben erhalten. Die importierte Kopie lässt sich in derselben Kategorie mit NVDA bearbeiten oder entfernen; die ursprüngliche Datei bleibt unverändert. Importierte Regeln werden vor den übrigen NVDA-Sprachwörterbüchern angewendet. Native ECI-Wörterbücher sind ein anderes Format und werden wie bisher unter „Eigene Wörterbuchdateien“ verwaltet.
+Unter „Eigene Wörterbücher“ verwaltest du NVDA-Sprachwörterbücher und Eloquence-Aussprachewörterbücher gemeinsam. Mit „Datei hinzufügen“ wird das Format vorgeschlagen; bestätige oder ändere es und wähle die Sprache. Für NVDA-Dateien wählst du zusätzlich eine Stimme oder alle Stimmen, für Eloquence-Dateien den Wörterbuchtyp. Reguläre Ausdrücke, Groß-/Kleinschreibung und Kommentare der NVDA-Dateien bleiben erhalten. Eine importierte NVDA-Kopie lässt sich bearbeiten oder entfernen; die Originaldatei bleibt unverändert. NVDA-Importe und Bearbeitungen gelten sofort, Eloquence-Dateien werden mit OK oder Übernehmen gespeichert. Zuvor versehentlich als Eloquence-Dateien ausgewählte NVDA-Wörterbücher werden beim Start passend übernommen.
 
 ## Version 1.2.2
 
@@ -42,7 +42,7 @@ Der deutsche E-I-Gleitlaut ist auf Öffnung 85, Rücklage 45 und Weichheit 45 ab
 
 Englische Uhrzeiten wie `13:28:25` behalten die normale Stunden-/Minutenlesung und ergänzen „and twenty five seconds“. Bei einer Sekunde steht der Singular; Sekundenbruchteile bleiben in der gewöhnlichen Zahlenlesung. Dies gilt für US- und britisches Englisch im nativen Kern, auch für NVDA und andere ECI-Programme. Quellindizes bleiben ihren ursprünglichen Textpositionen zugeordnet.
 
-Eloquence C ist die NVDA-Erweiterung des Projekts [ReLoq C](https://github.com/hozosch/Reloq-C). Sie entwickelt den Eloquence-Klang mit gezielten Aussprachekorrekturen, Unicode-Unterstützung und zusätzlichen Klangmöglichkeiten weiter. NVDA ist die erste Anbindung und dient derzeit zum Prüfen der Sprachausgabe. Derselbe Kern ist auch für Android ARM64 und Windows SAPI5 verfügbar.
+Eloquence C ist die NVDA-Erweiterung des Projekts [ReLoq C](https://github.com/hozosch/Reloq-C). Sie entwickelt den Eloquence-Klang mit gezielten Aussprachekorrekturen, Unicode-Unterstützung und zusätzlichen Klangmöglichkeiten weiter. NVDA ist die erste Anbindung und dient derzeit zum Prüfen der Sprachausgabe. Derselbe Kern ist auch für Android mit ARM64 oder x86-64 und für Windows SAPI5 verfügbar.
 
 ## Installieren und auswählen
 
@@ -127,7 +127,7 @@ Unter **Wörterbuchquelle** kannst du zusätzlich **Alternative IBM-TTS-Wörterb
 
 Nach einer Aktualisierung erscheint ein Dialog mit der Zahl neuer, unterschiedlicher Einträge und neuer Wörterbuchdateien. Änderungen oder Entfernungen zählen nicht als Zugänge. Beim ersten Download werden die Gesamtzahlen angezeigt; falls der vorherige Stand nicht vergleichbar ist, weist der Dialog darauf hin. Online-Updates übernehmen derzeit einen festen Satz unterstützter Dateinamen; andere neu hinzugefügte Dateien werden nicht automatisch heruntergeladen.
 
-Mit **Datei hinzufügen** kannst du eigene Dic-Dateien auswählen und ihnen Sprache und Wörterbuchtyp zuordnen. Die Dateien dürfen beliebig heißen und bleiben an ihrem bisherigen Ort. Spätere Dateien in der Liste haben Vorrang. **OK** oder **Übernehmen** speichert die Auswahl.
+Mit **Datei hinzufügen** wählst du ein NVDA- oder Eloquence-Wörterbuch und seine Sprache. Eine NVDA-Datei wird als eigene Kopie importiert, die du über die Liste bearbeiten kannst; die Originaldatei bleibt unverändert. Ein Eloquence-Wörterbuch bleibt an seinem bisherigen Ort. Bei mehreren Eloquence-Dateien haben spätere Dateien Vorrang; **OK** oder **Übernehmen** speichert ihre Auswahl.
 
 Mit **Wörterbuchordner öffnen** erreichst du den vorhandenen Ordner `synthDrivers/reloqC/communityDictionaries` im Add-on. Dort liegen die mitgelieferten Dateien; dort werden auch Änderungen in einem Editor erkannt. Bei aktivierten Gemeinschaftswörterbüchern kannst du weitere Dateien mit dem Präfix aus der Sprachtabelle und einem dieser Namen ergänzen:
 
@@ -137,7 +137,7 @@ Mit **Wörterbuchordner öffnen** erreichst du den vorhandenen Ordner `synthDriv
 
 Die Dateien verwenden das native Dic-Format: Windows-1252, ein Eintrag pro Zeile und ein Tabulator zwischen Suchwort und Ersetzung. Main unterscheidet Groß- und Kleinschreibung; gewöhnliche Textersetzungen durchlaufen anschließend die normale Textanalyse. Stamm- und Ausspracheangaben werden an der jeweiligen Wörterbuchstelle verarbeitet.
 
-Änderungen an eingebundenen Dateien und Dateien im Wörterbuchordner werden im Hintergrund erkannt. Das gilt auch für neu angelegte Dateien und für Editoren, die eine Datei beim Speichern ersetzen. Bei ungültigen Daten bleibt der letzte gültige Stand aktiv. Gemeinschaftswörterbuch-Updates aktualisieren die Dateien in diesem Add-on-Ordner. Eigene eingebundene Dateien und lokal bearbeitete oder entfernte Wörterbuchdateien werden dabei erhalten. Ein lokal bearbeitetes Volume hat Vorrang vor der heruntergeladenen Fassung. Es wird kein zusätzlicher Bearbeitungsordner im NVDA-Hauptverzeichnis angelegt.
+Änderungen an eingebundenen Eloquence-Dateien und Dateien im Wörterbuchordner werden im Hintergrund erkannt. Das gilt auch für neu angelegte Dateien und für Editoren, die eine Datei beim Speichern ersetzen. Bei ungültigen Daten bleibt der letzte gültige Stand aktiv. Gemeinschaftswörterbuch-Updates aktualisieren die Dateien in diesem Add-on-Ordner. Eigene eingebundene Dateien und lokal bearbeitete oder entfernte Wörterbuchdateien werden dabei erhalten. Ein lokal bearbeitetes Volume hat Vorrang vor der heruntergeladenen Fassung.
 
 Die erste Sprachausgabe wartet, bis die ausgewählten Wörterbücher vollständig geladen sind. Wenn beim Start kein gültiger Stand verfügbar ist, erscheint eine Fehlermeldung. Prüfe dann die Wörterbucheinstellungen oder wähle vorübergehend eine andere Sprachausgabe.
 

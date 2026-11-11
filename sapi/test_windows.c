@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <wchar.h>
 #include "catalogue.inc"
 static HRESULT native_format(ISpObjectToken *token,DWORD target,DWORD *rate)
@@ -123,6 +124,111 @@ static HRESULT memory_hash(IStream *stream,ULONGLONG *bytes,uint64_t *hash)
     GlobalUnlock(storage);*bytes=stat.cbSize.QuadPart;*hash=value;return S_OK;
 }
 
+static HRESULT speak_hash(ISpVoice *voice,IStream *memory,const WCHAR *text,ULONGLONG *bytes,uint64_t *hash)
+{
+    HRESULT hr=clear_memory(memory);
+    if(SUCCEEDED(hr))hr=ISpVoice_Speak(voice,text,SPF_IS_NOT_XML,NULL);
+    if(SUCCEEDED(hr))hr=memory_hash(memory,bytes,hash);
+    return hr;
+}
+
+/* Exercise the registered SAPI engine, its real per-user dictionary snapshot,
+ * and ECI together. All registry and files live under disposable test roots. */
+static int run_personal_dictionary_case(void)
+{
+    WCHAR temp[MAX_PATH],root[MAX_PATH],source[MAX_PATH],keyname[128],old_appdata[2048];
+    if(!GetTempPathW(MAX_PATH,temp)||!GetTempFileNameW(temp,L"rqs",0,root)||
+       !DeleteFileW(root)||!CreateDirectoryW(root,NULL))return 1;
+    DWORD old=GetEnvironmentVariableW(L"LOCALAPPDATA",old_appdata,2048);
+    if(!old||old>=2048||!SetEnvironmentVariableW(L"LOCALAPPDATA",root))return 2;
+    swprintf(keyname,128,L"Software\\ReLoq-SapiIntegrationTest-%lu",(unsigned long)GetCurrentProcessId());
+    HKEY isolated=NULL,key=NULL;
+    if(RegCreateKeyExW(HKEY_CURRENT_USER,keyname,0,NULL,0,KEY_ALL_ACCESS,NULL,&isolated,NULL)!=ERROR_SUCCESS)return 3;
+    if(RegOverridePredefKey(HKEY_CURRENT_USER,isolated)!=ERROR_SUCCESS)return 4;
+    if(RegCreateKeyExW(HKEY_CURRENT_USER,L"Software\\ReLoq C\\SAPI5",0,NULL,0,KEY_SET_VALUE,NULL,&key,NULL)!=ERROR_SUCCESS)return 5;
+    RegCloseKey(key);key=NULL;
+    swprintf(source,MAX_PATH,L"%ls\\personal.dic",root);
+    HRESULT hr=CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);
+    int com_ready=SUCCEEDED(hr);
+    ISpVoice *voice=NULL;ISpObjectToken *token=NULL;ISpStream *audio=NULL;IStream *memory=NULL;
+    WCHAR token_key[512];size_t english=0;
+    const size_t languages=sizeof sapi_languages/sizeof *sapi_languages;
+    while(english<languages&&sapi_languages[english].dialect!=0x10000)++english;
+    if(english==languages)hr=E_FAIL;
+    swprintf(token_key,512,L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Speech\\Voices\\Tokens\\ReLoqC_%02u_%08X",
+        (unsigned)english,0x10000u);
+    if(SUCCEEDED(hr))hr=CoCreateInstance(&CLSID_SpVoice,NULL,CLSCTX_INPROC_SERVER,&IID_ISpVoice,(void **)&voice);
+    if(SUCCEEDED(hr))hr=CoCreateInstance(&CLSID_SpObjectToken,NULL,CLSCTX_INPROC_SERVER,&IID_ISpObjectToken,(void **)&token);
+    if(SUCCEEDED(hr))hr=ISpObjectToken_SetId(token,NULL,token_key,FALSE);
+    if(SUCCEEDED(hr))hr=ISpVoice_SetVoice(voice,token);
+    if(SUCCEEDED(hr))hr=CreateStreamOnHGlobal(NULL,TRUE,&memory);
+    if(SUCCEEDED(hr))hr=CoCreateInstance(&CLSID_SpStream,NULL,CLSCTX_INPROC_SERVER,&IID_ISpStream,(void **)&audio);
+    WAVEFORMATEX format={WAVE_FORMAT_PCM,1,11025,22050,2,16,0};
+    if(SUCCEEDED(hr))hr=ISpStream_SetBaseStream(audio,memory,&SPDFID_WaveFormatEx,&format);
+    if(SUCCEEDED(hr))hr=ISpVoice_SetOutput(voice,(IUnknown *)audio,FALSE);
+    ULONGLONG before_bytes=0,expected_bytes=0,actual_bytes=0;uint64_t before=0,expected=0,actual=0;
+    if(SUCCEEDED(hr))hr=speak_hash(voice,memory,L"youtube",&before_bytes,&before);
+    if(SUCCEEDED(hr))hr=speak_hash(voice,memory,L"banana",&expected_bytes,&expected);
+    if(SUCCEEDED(hr)&&before_bytes==expected_bytes&&before==expected)hr=E_FAIL;
+    FILE *file=NULL;
+    if(SUCCEEDED(hr)){file=_wfopen(source,L"wb");if(!file)hr=E_FAIL;}
+    if(file){const char *data="youtube\tbanana\nHumanWare\tbanana\n";size_t n=strlen(data);
+        int written=fwrite(data,1,n,file)==n;int closed=fclose(file)==0;if(!written||!closed)hr=E_FAIL;}
+    if(SUCCEEDED(hr)&&RegCreateKeyExW(HKEY_CURRENT_USER,L"Software\\ReLoq C\\SAPI5",0,NULL,0,KEY_SET_VALUE,NULL,&key,NULL)!=ERROR_SUCCESS)hr=E_FAIL;
+    WCHAR list[1200]={0};
+    if(SUCCEEDED(hr)){
+        int chars=swprintf(list,1200,L"%08X\t0\t%ls",0x10000u,source);
+        if(chars<0||RegSetValueExW(key,L"DictionaryFiles",0,REG_MULTI_SZ,(BYTE *)list,(DWORD)((chars+2)*sizeof(WCHAR)))!=ERROR_SUCCESS)hr=E_FAIL;
+    }
+    const WCHAR *words[]={L"youtube",L"HumanWare"};
+    for(unsigned i=0;i<2&&SUCCEEDED(hr);++i){
+        hr=speak_hash(voice,memory,words[i],&actual_bytes,&actual);
+        wprintf(L"Personal dictionary %ls: HRESULT=%08lX, matched=%d\n",words[i],(unsigned long)hr,
+            actual_bytes==expected_bytes&&actual==expected);
+        if(SUCCEEDED(hr)&&(actual_bytes!=expected_bytes||actual!=expected))hr=E_FAIL;
+    }
+    /* Phonetic root dictionaries use lowercase English lookup keys and must
+     * affect mixed-case words as well as ordinary lowercase words. */
+    if(SUCCEEDED(hr))hr=speak_hash(voice,memory,L"test",&expected_bytes,&expected);
+    file=NULL;
+    if(SUCCEEDED(hr)){file=_wfopen(source,L"wb");if(!file)hr=E_FAIL;}
+    if(file){const char *data="youtube\t`[.1tEst]\nhumanware\t`[.1tEst]\n";size_t n=strlen(data);
+        int written=fwrite(data,1,n,file)==n;int closed=fclose(file)==0;if(!written||!closed)hr=E_FAIL;}
+    if(SUCCEEDED(hr)){
+        int chars=swprintf(list,1200,L"%08X\t1\t%ls",0x10000u,source);
+        if(chars<0||RegSetValueExW(key,L"DictionaryFiles",0,REG_MULTI_SZ,(BYTE *)list,(DWORD)((chars+2)*sizeof(WCHAR)))!=ERROR_SUCCESS)hr=E_FAIL;
+    }
+    for(unsigned i=0;i<2&&SUCCEEDED(hr);++i){
+        hr=speak_hash(voice,memory,words[i],&actual_bytes,&actual);
+        wprintf(L"Personal root dictionary %ls: HRESULT=%08lX, matched=%d\n",words[i],(unsigned long)hr,
+            actual_bytes==expected_bytes&&actual==expected);
+        if(SUCCEEDED(hr)&&(actual_bytes!=expected_bytes||actual!=expected))hr=E_FAIL;
+    }
+    /* A previously selected NVDA speech dictionary is identified from its
+     * contents, even if its old selection used the root volume. */
+    if(SUCCEEDED(hr))hr=speak_hash(voice,memory,L"banana",&expected_bytes,&expected);
+    file=NULL;if(SUCCEEDED(hr)){file=_wfopen(source,L"wb");if(!file)hr=E_FAIL;}
+    if(file){const char *data="\xef\xbb\xbf# NVDA speech dictionary\r\nyoutube\tbanana\t0\t0\r\n";size_t n=strlen(data);
+        int written=fwrite(data,1,n,file)==n;int closed=fclose(file)==0;if(!written||!closed)hr=E_FAIL;}
+    Sleep(550);
+    if(SUCCEEDED(hr))hr=speak_hash(voice,memory,L"youtube",&actual_bytes,&actual);
+    wprintf(L"NVDA-format dictionary: HRESULT=%08lX, matched=%d\n",(unsigned long)hr,
+        actual_bytes==expected_bytes&&actual==expected);
+    if(SUCCEEDED(hr)&&(actual_bytes!=expected_bytes||actual!=expected))hr=E_FAIL;
+    if(SUCCEEDED(hr)){
+        list[0]=list[1]=0;
+        if(RegSetValueExW(key,L"DictionaryFiles",0,REG_MULTI_SZ,(BYTE *)list,2*sizeof(WCHAR))!=ERROR_SUCCESS)hr=E_FAIL;
+    }
+    if(SUCCEEDED(hr))hr=speak_hash(voice,memory,L"youtube",&actual_bytes,&actual);
+    if(SUCCEEDED(hr)&&(actual_bytes!=before_bytes||actual!=before))hr=E_FAIL;
+    if(key)RegCloseKey(key);if(voice)ISpVoice_Release(voice);if(audio)ISpStream_Release(audio);
+    if(memory)IStream_Release(memory);if(token)ISpObjectToken_Release(token);if(com_ready)CoUninitialize();
+    RegOverridePredefKey(HKEY_CURRENT_USER,NULL);RegCloseKey(isolated);RegDeleteTreeW(HKEY_CURRENT_USER,keyname);
+    SetEnvironmentVariableW(L"LOCALAPPDATA",old_appdata);DeleteFileW(source);
+    wprintf(L"SAPI personal dictionary integration: HRESULT=%08lX\n",(unsigned long)hr);
+    return FAILED(hr)?1:0;
+}
+
 static int run_abort_case(void)
 {
     HRESULT hr=CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);if(FAILED(hr))return 1;
@@ -175,6 +281,7 @@ done:
 
 int wmain(int argc,wchar_t **argv)
 {
+    if(argc==2&&!wcscmp(argv[1],L"--dictionarycase"))return run_personal_dictionary_case();
     if(argc==2&&!wcscmp(argv[1],L"--abortcase"))return run_abort_case();
     if(argc!=2||wcscmp(argv[1],L"--threadcase"))return run_one(argc,argv);
     /* A fresh caller must be able to end and free its cached contexts, even

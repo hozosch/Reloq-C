@@ -1,6 +1,6 @@
 # Eloquence C – user guide
 
-## Version 1.3.1-dev1
+## Version 1.4.0
 
 In Brazilian Portuguese, 12 and 19 use their usual vowels within larger numbers as well. ECI inflection commands use the same intonation as the corresponding setting.
 
@@ -8,7 +8,7 @@ The Eloquence C NVDA settings category can optionally split unfamiliar English w
 
 The separate **Split camel-case words (all languages)** option inserts word boundaries at internal capitals, for example `myWord` and `HTTPServer`. It is initially off. NVDA's own built-in speech dictionary may split camel case independently of this setting. User NVDA and native dictionary entries take priority over the additional segmentation.
 
-Choose “Import NVDA dictionary” to select an existing NVDA speech dictionary from another driver, then choose its language and either one voice or all voices. Regular expressions, case sensitivity and comments are retained. The imported copy can be edited or removed in the same category; the original file is not changed. Imported rules are applied before NVDA's other speech dictionaries. Native ECI dictionaries use a different format and remain under “Own dictionary files”.
+Manage NVDA speech dictionaries and Eloquence pronunciation dictionaries together under “Own dictionaries”. Choose “Add file”, confirm or change the suggested format, and select the language. For an NVDA file, choose one or all voices; for an Eloquence file, choose its dictionary volume. NVDA regular expressions, case sensitivity and comments are retained. An imported NVDA copy can be edited or removed without changing the original file. NVDA imports and edits take effect immediately; Eloquence files are saved with OK or Apply. NVDA dictionaries previously selected as Eloquence files are migrated on startup.
 
 ## Version 1.2.2
 
@@ -42,7 +42,7 @@ The German E-I glide defaults to opening 85, backness 45 and softness 45. German
 
 English clock times such as `13:28:25` keep the ordinary hours/minutes reading and append “and twenty five seconds”. One second uses the singular; fractional seconds remain in the normal number reader. This applies to US and British English in the native core, including NVDA and other ECI clients. Source indices remain attached to their original text positions.
 
-Eloquence C is the NVDA add-on from [ReLoq C](https://github.com/hozosch/Reloq-C). It develops the familiar Eloquence sound with pronunciation corrections, Unicode support and additional voice controls. NVDA is the first integration and current speech testing platform. The same engine is also available for Android ARM64 and Windows SAPI5.
+Eloquence C is the NVDA add-on from [ReLoq C](https://github.com/hozosch/Reloq-C). It develops the familiar Eloquence sound with pronunciation corrections, Unicode support and additional voice controls. NVDA is the first integration and current speech testing platform. The same engine is also available for Android on ARM64 and x86-64, and for Windows SAPI5.
 
 ## Install and select
 
@@ -127,7 +127,7 @@ Under **Dictionary source**, you can also select **Alternative IBM TTS Dictionar
 
 After an update, a dialog reports the number of new distinct entries and new dictionary files. Changes and removals do not count as additions. The first download reports both totals; if the previous version cannot be compared, the dialog says so. Online updates currently retrieve a fixed set of supported filenames; other new files are not downloaded automatically.
 
-Use **Add file** to select your own Dic files and assign a language and dictionary type. Filenames can be arbitrary; files stay at their original locations. Later files in the list take priority. Choose **OK** or **Apply** to save the selection.
+Use **Add file** to select an NVDA or Eloquence dictionary and its language. An NVDA file is imported as a separate copy, which you can edit from the list; the original remains unchanged. An Eloquence dictionary stays at its original location. With multiple Eloquence files, later files take priority; **OK** or **Apply** saves their selection.
 
 **Open dictionary folder** opens the existing `synthDrivers/reloqC/communityDictionaries` folder inside the add-on. This is where the bundled files live and editor changes are detected. With community dictionaries enabled, you can add files using a prefix from the language table and one of these suffixes:
 
@@ -137,7 +137,7 @@ Use **Add file** to select your own Dic files and assign a language and dictiona
 
 Files use the native Dic format: Windows-1252 encoding, one entry per line and a tab between the lookup word and replacement. Main keys are case-sensitive, and ordinary text replacements subsequently undergo normal text analysis. Root and pronunciation entries are handled at their respective dictionary stages.
 
-Edits to selected files and files in the dictionary folder are detected in the background, including newly created files and editor-style file replacements. Invalid data leaves the last valid set active. Community updates refresh the files in this add-on folder. Selected own files and locally edited or removed dictionary files are preserved. A locally edited volume takes priority over the downloaded volume. No additional editing folder is created in NVDA’s main directory.
+Edits to selected Eloquence files and files in the dictionary folder are detected in the background, including newly created files and editor-style file replacements. Invalid data leaves the last valid set active. Community updates refresh the files in this add-on folder. Selected own files and locally edited or removed dictionary files are preserved. A locally edited volume takes priority over the downloaded volume.
 
 The first utterance waits until the selected dictionaries have loaded completely. If no valid set is available at startup, an error dialog appears. Check the dictionary settings or temporarily choose another synthesizer.
 

@@ -47,12 +47,13 @@ class DictionarySource:
     path: str
     language: int
     volume: int
+    format: str | None = None
 
     def __post_init__(self):
         if (not isinstance(self.path, str) or not self.path or "\0" in self.path
                 or not Path(self.path).is_absolute() or type(self.language) is not int
                 or self.language not in PREFIXES or type(self.volume) is not int
-                or not 0 <= self.volume < 3):
+                or not 0 <= self.volume < 3 or self.format not in (None, "eci")):
             raise ValueError("invalid own dictionary source")
 
     @property
@@ -60,7 +61,10 @@ class DictionarySource:
         return PREFIXES[self.language] + SUFFIXES[self.volume] + ".dic"
 
     def record(self):
-        return {"path": self.path, "language": self.language, "volume": self.volume}
+        result = {"path": self.path, "language": self.language, "volume": self.volume}
+        if self.format is not None:
+            result["format"] = self.format
+        return result
 
 
 def _atomic_json(path, value):
@@ -426,7 +430,7 @@ class DictionaryManager:
             self._sources = sources
         return self._request(update=False, completed=completed, save=True)
 
-    def configure(self, sources, enabled, completed=None, repository=None):
+    def configure(self, sources, enabled, completed=None, repository=None, *, initial_update=False):
         """Apply a settings panel's sources and switch as one revision."""
         if type(enabled) is not bool:
             raise ValueError("community dictionary setting must be boolean")
@@ -437,7 +441,7 @@ class DictionaryManager:
             if repository not in SOURCES: raise ValueError("unknown dictionary source")
             changed = repository != self._repository
             self._sources, self._enabled, self._repository = sources, enabled, repository
-        return self._request(update=enabled and changed, completed=completed, save=True)
+        return self._request(update=enabled and (changed or initial_update), completed=completed, save=True)
 
     def refresh(self, completed=None):
         # Reload every selected local source too. The GitHub setting controls

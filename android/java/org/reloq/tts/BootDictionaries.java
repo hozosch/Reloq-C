@@ -46,6 +46,9 @@ final class BootDictionaries {
                 int copied=0;Set<String> names=new TreeSet<>();
                 for(Catalog.Language language:Catalog.LANGUAGES)
                     for(int volume=0;volume<3;++volume)names.add(DictionaryData.name(language.id,volume));
+                File[] speech=source.listFiles((dir,item) -> SpeechDictionary.isSnapshotName(item));
+                if(speech==null)throw new IOException("Dictionary snapshot unavailable");
+                for(File file:speech)names.add(file.getName());
                 for(String item:names) {
                     File input=new File(source,item);if(!input.isFile())continue;
                     if(!source.equals(input.getCanonicalFile().getParentFile()))throw new IOException("Invalid dictionary volume");

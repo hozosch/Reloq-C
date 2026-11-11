@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-int reloq_english_parse(const unsigned char *text,size_t n,
-    struct reloq_english_phone **phones,size_t *count,size_t *error)
+static int parse_english(const unsigned char *text,size_t n,
+    struct reloq_english_phone **phones,size_t *count,size_t *error,int british)
 {
     if(!text || !phones || !count || n>SIZE_MAX/sizeof **phones)
         return RELOQ_ENGLISH_INVALID;
@@ -40,16 +40,30 @@ int reloq_english_parse(const unsigned char *text,size_t n,
             if(i+1>=n || text[i+1]<'0' || text[i+1]>'2')goto invalid;
             stress=text[++i]-'0';++syllable;have_syllable=1;syllable_has_phone=0;continue;
         }
-        if(!have_syllable || !c || !strchr("bpdtF?kgDTvfzsZSJChmnGrlywiIeEAXHxauUocRYWONM",c))
+        if(!have_syllable || !c ||
+           (!strchr("bpdtF?kgDTvfzsZSJChmnGrlywiIeEAXHxauUocRYWONM",c)&&
+            !(british&&(c=='@'||c=='L'))))
             goto invalid;
         syllable_has_phone=1;
         out[used++]=(struct reloq_english_phone){
-            c=='N'?'n':c=='M'?'m':c,(unsigned char)stress,
-            c=='N'||c=='M',(unsigned char)weak,(signed char)accent,word-1,syllable-1,i};
+            c=='N'?'n':c=='M'?'m':c=='L'?'l':c,(unsigned char)stress,
+            c=='N'||c=='M'||c=='L',(unsigned char)weak,(signed char)accent,word-1,syllable-1,i};
     }
     if(in_word)goto invalid;
     *phones=out;*count=used;return RELOQ_ENGLISH_OK;
 invalid:
     if(error)*error=i;
     free(out);return RELOQ_ENGLISH_INVALID;
+}
+
+int reloq_english_parse(const unsigned char *text,size_t n,
+    struct reloq_english_phone **phones,size_t *count,size_t *error)
+{
+    return parse_english(text,n,phones,count,error,0);
+}
+
+int reloq_english_parse_british(const unsigned char *text,size_t n,
+    struct reloq_english_phone **phones,size_t *count,size_t *error)
+{
+    return parse_english(text,n,phones,count,error,1);
 }

@@ -412,7 +412,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                     CharacterModeCommand(True), "usrdct", CharacterModeCommand(False),
                     LangChangeCommand(None), " usrdct"], text_transform=transform)
                 assert result == [driver_module.EciText("usrdct"), driver_module.EciLanguage(65536, "1"),
-                    driver_module.EciText("U S R D C T cgroup"), driver_module.EciText(" fdopen"),
+                    driver_module.EciText("U S R D C T cgroup"), driver_module.EciText(" fdopen", False, None, True),
                     driver_module.EciText(" T M P files "), driver_module.EciText("usrdct", True),
                     driver_module.EciLanguage(262144, "1"), driver_module.EciText(" usrdct")], result
                 original_imports = driver._imported_dictionaries
@@ -428,8 +428,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 result = driver._protect_tags(["nvda", LangChangeCommand("en-US"), "nvda"])
                 assert isinstance(result[0], guarded) and result[1] == "custom" and isinstance(result[2], guarded)
                 assert result[3].lang == "en-US" and result[4] == "nvda"
-                # Built-in camel splitting is not a personal override. Apply
-                # our rules while the original mixed-case token is intact.
+                # Keep mixed-case spelling intact until the shared C core sees it.
                 builtin = [types.SimpleNamespace(compiled=re.compile(r"([a-z])([A-Z])"), replacement=r"\1 \2"),
                            types.SimpleNamespace(compiled=re.compile(r"([A-Z])([A-Z][a-z])"), replacement=r"\1 \2")]
                 speech_dicts = fake_module("speechDictHandler", dictionaries={"builtin": builtin, "default": []})
@@ -437,9 +436,9 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 driver._camelCase = True
                 result = driver._protect_tags(["MeinWort und meinTest"])
                 assert isinstance(result[0], driver_module.NativeDictionaryWord) and result[0].text == "MeinWort"
-                assert any(item == " und mein Test" for item in result if isinstance(item, str)), result
-                parts = driver_module._parts(result, text_transform=lambda text, lang: driver._segment_text(text, lang, driver._wordseg_keys, True, True))
-                assert parts == [driver_module.EciText("MeinWort"), driver_module.EciText(" und mein Test")], parts
+                assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "meinTest" for item in result), result
+                parts = driver_module._parts(result)
+                assert "".join(part.text for part in parts if isinstance(part, driver_module.EciText)) == "MeinWort und meinTest  ", parts
                 # Model NVDA's actual built-in substitutions between its
                 # early filter and the synth driver's speak call.
                 processed = []
@@ -449,17 +448,27 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                             item = entry.compiled.sub(entry.replacement, item)
                     processed.append(item)
                 assert driver_module._parts(processed) == parts
+                # NVDA gives object names and roles as separate text items.
+                # It adds a separator to text items but not to SynthCommands.
+                # Protecting a complete dictionary word must retain that
+                # separator before the following role.
+                result = driver._protect_tags(["MeinWort", "Fenster"])
+                processed = []
+                for item in result:
+                    if isinstance(item, str):
+                        for entry in builtin:
+                            item = entry.compiled.sub(entry.replacement, item)
+                        item += "  "
+                    processed.append(item)
+                assert "".join(part.text for part in driver_module._parts(processed)
+                               if isinstance(part, driver_module.EciText)) == "MeinWort  Fenster  "
                 result = driver._protect_tags([LangChangeCommand("en-US"), "UsRdCt TmpFiles"])
-                assert any(item == "U S R D C T T M P files" for item in result if isinstance(item, str)), result
+                assert [item.text for item in result if isinstance(item, driver_module.NativeDictionaryWord)][:2] == ["UsRdCt", "TmpFiles"], result
                 driver._camelCase = False
                 result = driver._protect_tags([LangChangeCommand("en-US"), "FdOpen"])
-                assert any(item == "F D open" for item in result if isinstance(item, str)), result
+                assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "FdOpen" for item in result), result
                 result = driver._protect_tags([LangChangeCommand("en-US"), "CGROUP TMPFILES"])
-                capital = [item for item in result if isinstance(item, driver_module.CapitalWordCommand)]
-                assert [(x.original, x.segmented) for x in capital] == [("CGROUP", "C group"), ("TMPFILES", "T M P files")], result
-                native_parts = driver_module._parts(result)
-                assert [p for p in native_parts if isinstance(p, driver_module.EciCapitalWord)] == [
-                    driver_module.EciCapitalWord("CGROUP", "C group"), driver_module.EciCapitalWord("TMPFILES", "T M P files")]
+                assert result[1] == "CGROUP TMPFILES", result
                 driver._camelCase = True
                 result = driver._protect_tags([CharacterModeCommand(True), "meinTest", CharacterModeCommand(False)])
                 assert result[1] == "meinTest", result
@@ -471,7 +480,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 driver._wordseg_keys = driver_module.dictionary_keys(compound_dir)
                 result = driver._protect_tags(["vor foo-BarBaz und anderesWort"])
                 assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "foo-BarBaz" for item in result), result
-                assert any("anderes Wort" in item for item in result if isinstance(item, str)), result
+                assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "anderesWort" for item in result), result
                 assert driver._segment_text("foo-BarBaz", driver_module.GERMAN, driver._wordseg_keys, False, True) == "foo-BarBaz"
                 driver._wordseg_keys = {0x40000: frozenset({"meinwort"}), 0x10000: frozenset()}
                 personal = types.SimpleNamespace(compiled=re.compile("meinTest"), type=0)
@@ -479,15 +488,27 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 result = driver._protect_tags(["meinTest"])
                 assert isinstance(result[0], guarded) and result[1] == "meinTest" and isinstance(result[2], guarded)
                 result = driver._protect_tags(["meinTest und anderesWort"])
-                assert any(item == "meinTest und anderes Wort" for item in result if isinstance(item, str)), result
+                assert isinstance(result[0], guarded) and result[1] == "meinTest und anderesWort", result
+                assert driver_module._parts(result) == [driver_module.EciText("meinTest und anderesWort", False, None, True)]
                 result = driver._protect_tags(["meinTest MeinWort und anderesWort"])
-                assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "MeinWort" for item in result), result
-                assert any("anderes Wort" in item for item in result if isinstance(item, str)), result
+                assert isinstance(result[0], guarded) and result[1] == "meinTest MeinWort und anderesWort", result
+                simple = types.SimpleNamespace(compiled=re.compile("meinTest"), type=0,
+                                               pattern="meinTest", replacement="Ersatz")
+                speech_dicts.dictionaries["default"] = [simple]
+                result = driver._protect_tags(["meinTest anderesWort"])
+                assert isinstance(result[0], guarded) and result[1] == "meinTest"
+                assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "anderesWort" for item in result)
+                processed = [simple.compiled.sub(simple.replacement, item) if isinstance(item, str) else item
+                             for item in result]
+                parts = driver_module._parts(processed)
+                assert parts[0].text == "Ersatz" and parts[0].segmentation_guarded
+                assert any(part.text == "anderesWort" and not part.segmentation_guarded for part in parts
+                           if isinstance(part, driver_module.EciText))
                 phrase = types.SimpleNamespace(compiled=re.compile("meinTest und"), type=0)
                 speech_dicts.dictionaries["default"] = [phrase]
                 result = driver._protect_tags(["meinTest und anderesWort"])
                 source = next(item for item in result if isinstance(item, str))
-                assert source == "meinTest und anderes Wort" and phrase.compiled.sub("eigene Aussprache", source) == "eigene Aussprache anderes Wort"
+                assert source == "meinTest und anderesWort" and phrase.compiled.sub("eigene Aussprache", source) == "eigene Aussprache anderesWort"
                 complex_entry = types.SimpleNamespace(compiled=re.compile(r"mein(?=Test)"), type=1)
                 speech_dicts.dictionaries["default"] = [complex_entry]
                 result = driver._protect_tags(["meinTest und anderesWort"])

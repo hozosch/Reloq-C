@@ -90,7 +90,7 @@ static void language_advance(struct language_controls *controls,
         language_control(controls,(struct reloq_inline_tag){RELOQ_TAG_PITCH,0,pitches[first++].value});
 }
 static int synthesize_languages(struct reloq_eci_engine *e,
-    unsigned char *text,size_t length,const unsigned char *modes,int unicode,
+    unsigned char *text,size_t length,const unsigned char *modes,const unsigned char *guards,int unicode,
     const struct index_mark *marks,size_t mark_count,
     const struct pitch_mark *pitches,size_t pitch_count,unsigned epoch)
 {
@@ -159,6 +159,8 @@ static int synthesize_languages(struct reloq_eci_engine *e,
         if(bytes>SIZE_MAX-prefix_n-2){free(normalized);free(map);result=RELOQ_ECI_MEMORY;break;}
         unsigned char *phrase=malloc(prefix_n+bytes+2);
         if(!phrase){free(normalized);free(map);result=RELOQ_ECI_MEMORY;break;}
+        unsigned char *local_guards=project_guards(guards?guards+r->begin:NULL,n,bytes,map,prefix_n);
+        if(guards&&!local_guards){free(phrase);free(normalized);free(map);result=RELOQ_ECI_MEMORY;break;}
         memcpy(phrase,prefix,prefix_n);
         memcpy(phrase+prefix_n,normalized?normalized:text+r->begin,bytes);
         size_t source_length=prefix_n+bytes;phrase[source_length]=0;
@@ -193,7 +195,7 @@ static int synthesize_languages(struct reloq_eci_engine *e,
         {
             void *previous=reloq61_worker_scope(e->rule_worker);
             result=synthesize_generic(e,phrase,source_length,prefix_n+bytes,
-                local_marks,mc,local_pitch,pc,epoch,unicode);
+                local_marks,mc,local_pitch,pc,epoch,unicode,local_guards);
             reloq61_worker_scope(previous);
         }
         /* Controls before the next language command keep their normal ECI
@@ -210,7 +212,7 @@ run_done:
             }
             e->failure_utf8_offset=diagnostic_offset(r->begin+at,length);
         }
-        free(phrase);free(normalized);free(map);
+        free(phrase);free(normalized);free(map);free(local_guards);
         if(result)break;
     }
 done:

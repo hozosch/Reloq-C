@@ -1581,8 +1581,8 @@ uint8_t dede61_evv_authored_data[] = {
     5,37,22,7,31,15,47,9,26,30,
     /* eti_s_13ca5f, 4 bytes at 2587 */
     5,33,27,18,
-    /* eti_s_13ca63, 3 bytes at 2591 */
-    5,42,1,
+    /* eti_s_13ca63, 3 bytes at 2591: German "cup" with short a. */
+    5,34,1,
     /* eti_s_13ca66, 4 bytes at 2594 */
     5,15,32,21,
     /* eti_s_13ca6a, 6 bytes at 2598 */

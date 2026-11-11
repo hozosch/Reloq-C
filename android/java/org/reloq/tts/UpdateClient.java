@@ -7,6 +7,9 @@ import org.json.*;
 /** Shared bounded network check for the foreground and background updater. */
 final class UpdateClient {
     static UpdateData.Package check(long installed) throws Exception {
+        return check(installed,0);
+    }
+    static UpdateData.Package check(long installed,long installedEpoch) throws Exception {
         URLConnection connection=new URL(UpdateData.RELEASES).openConnection();
         connection.setConnectTimeout(15000);connection.setReadTimeout(15000);
         connection.setRequestProperty("User-Agent","ReLoq-C-updater");
@@ -22,13 +25,15 @@ final class UpdateClient {
         for(int i=0;i<releases.length();++i) {
             JSONObject release=releases.getJSONObject(i);
             if(release.optBoolean("draft")||release.optBoolean("prerelease"))continue;
+            long releaseEpoch=UpdateData.buildEpoch(release.optString("body",""));
             JSONArray assets=release.optJSONArray("assets");if(assets==null)continue;
             for(int a=0;a<assets.length();++a) {
                 JSONObject asset=assets.getJSONObject(a);
                 UpdateData.Package next=UpdateData.candidate(asset.optString("name"),
                     asset.optString("browser_download_url"),asset.optLong("size"),
-                    asset.optString("digest"),installed);
-                if(next!=null&&(best==null||next.code>best.code))best=next;
+                    asset.optString("digest"),installed,installedEpoch,releaseEpoch,BuildData.PACKAGE_ARCH);
+                if(next!=null&&(best==null||next.code>best.code||
+                    (next.code==best.code&&next.buildEpoch>best.buildEpoch)))best=next;
             }
         }
         return best;

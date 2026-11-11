@@ -45,7 +45,7 @@ def main():
     wx=module('wx',Dialog=Widget,StaticText=Widget,CheckBox=Widget,SpinCtrl=Widget,Choice=Widget,
               ListBox=Widget,BoxSizer=Widget,Button=Widget,CallAfter=lambda fn,*a:fn(*a))
     for name in ('ALL','LEFT','RIGHT','BOTTOM','EXPAND','HORIZONTAL','EVT_CHECKBOX',
-                 'EVT_SPINCTRL','EVT_TEXT','EVT_BUTTON','EVT_WINDOW_DESTROY','EVT_CHOICE'):
+                 'EVT_SPINCTRL','EVT_TEXT','EVT_BUTTON','EVT_WINDOW_DESTROY','EVT_CHOICE','EVT_LISTBOX'):
         setattr(wx,name,1)
     langs=module('synthDrivers.reloqC._reloq_languages',LANGUAGES={},LANGUAGE_DISPLAY_ORDER=[])
     module('synthDrivers',__path__=[]);module('synthDrivers.reloqC',__path__=[],

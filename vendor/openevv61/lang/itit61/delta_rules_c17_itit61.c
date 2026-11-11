@@ -5256,6 +5256,10 @@ L616:;
     r0 = reloq61_typed_inline61_lflags(DELTA_ENTRY_inline61_lflags, state, (int32_t)(1));
 L631:;
     r7 = ((int32_t)AT(int32_t, -16));
+    /* An elided final syllable may leave the candidate reference empty.
+       In that case the extra sync is the scan position saved at L489. */
+    if (*(int32_t *)(REG_P(r7) + 0) == 0)
+        r7 = RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 204);
     r0 = reloq61_typed_inline61_lnode(DELTA_ENTRY_inline61_lnode, state, (int32_t)((int32_t)(*(int32_t *)(REG_P(r7) + 0))));
     r0 = reloq61_typed_inline61_loffset(DELTA_ENTRY_inline61_loffset, state, (int32_t)(0));
     AT(int32_t, -12) = (2);

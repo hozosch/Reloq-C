@@ -14,6 +14,7 @@ import zipfile
 from unittest.mock import patch
 from dataclasses import replace
 from _reloq_updates import AutomaticUpdates, check, download, select, Update, version
+import _reloq_updates
 
 
 class Updates(unittest.TestCase):
@@ -69,6 +70,46 @@ class Updates(unittest.TestCase):
                  'https://github.com/hozosch/Reloq-C/releases/download/v1.0.1/' + name}
         self.assertEqual(select([{'assets': [asset]}], '1.0.0').version, '1.0.1')
         self.assertIsNone(select([{'assets': [asset]}], '1.0.1'))
+
+    def test_132_is_an_update_even_for_legacy_131_without_build_date(self):
+        name = 'reloq-c-synth-x64-1.3.2.nvda-addon'
+        asset = {**self.asset, 'name': name, 'browser_download_url':
+                 'https://github.com/hozosch/Reloq-C/releases/download/v1.3.2/' + name}
+        self.assertEqual(select([{'assets': [asset]}], '1.3.1', 0).version, '1.3.2')
+        self.assertIsNone(select([{'assets': [asset]}], '1.3.2', 0))
+
+    def test_same_version_requires_a_later_build_marker(self):
+        asset = self.asset
+        old = {'body': '<!-- ReLoq-C build:1700000000 -->', 'assets': [asset]}
+        new = {'body': 'Release notes\n\n<!-- ReLoq-C build:1700000600 -->', 'assets': [asset]}
+        self.assertIsNone(select([old], '0.2.197', 1700000000))
+        self.assertEqual(select([new], '0.2.197', 1700000000).build_epoch, 1700000600)
+        self.assertEqual(select([new, old], '0.2.197', 1699999999).build_epoch, 1700000600)
+        self.assertEqual(select([{**new, 'body': new['body'].replace('\n', '\r\n')}],
+                                '0.2.197', 1700000000).build_epoch, 1700000600)
+        self.assertIsNone(select([new], '0.2.197', 0))
+        self.assertIsNone(select([{'body': '', 'assets': [asset]}], '0.2.197', 1700000000))
+        duplicate = new['body'] + '\n<!-- ReLoq-C build:1700000700 -->'
+        self.assertIsNone(select([{'body': duplicate, 'assets': [asset]}], '0.2.197', 1700000000))
+        self.assertIsNone(select([{'body': '<!-- ReLoq-C build:999999999999 -->', 'assets': [asset]}], '0.2.197', 1700000000))
+        candidate = select([new], '0.2.197', 1700000000)
+        self.assertEqual(candidate.identity, '0.2.197@1700000600')
+        with tempfile.TemporaryDirectory() as folder:
+            self.assertEqual(download(candidate, folder, fetch=lambda *a, **kw: io.BytesIO(self.bytes)).read_bytes(), self.bytes)
+
+    def test_installed_build_is_read_from_addon_metadata(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            module = root / 'synthDrivers/reloqC/_reloq_updates.py'
+            module.parent.mkdir(parents=True)
+            (root / 'doc').mkdir()
+            metadata = root / 'doc/source.json'
+            with patch.object(_reloq_updates, '__file__', str(module)):
+                self.assertEqual(_reloq_updates.installed_build_epoch(), 0)
+                metadata.write_text(json.dumps({'build_epoch': 1700000000}))
+                self.assertEqual(_reloq_updates.installed_build_epoch(), 1700000000)
+                metadata.write_text(json.dumps({'build_epoch': True}))
+                self.assertEqual(_reloq_updates.installed_build_epoch(), 0)
 
     def test_streamed_download_then_reject_corrupt_truncated_and_oversized(self):
         update = select(self.feed, '0.2.196')

@@ -75,10 +75,13 @@ public class SchedulerTest {static int checks;static void check(boolean v){if(!v
  UpdateScheduler.notifyUpdate(c,one);check(c.notifications.count==0);check(c.prefs.getString("notifiedVersion","").isEmpty());
  c.permission=true;UpdateScheduler.notifyUpdate(c,one);check(c.notifications.count==1);
  UpdateScheduler.notifyUpdate(c,one);check(c.notifications.count==1);
+ UpdateData.Package revised=new UpdateData.Package("n","1.3.1","u","h",11030001,1,1700000001L);
+ UpdateScheduler.notifyUpdate(c,revised);check(c.notifications.count==2);
+ UpdateScheduler.notifyUpdate(c,revised);check(c.notifications.count==2);
  UpdateData.Package two=new UpdateData.Package("n","1.3.2","u","h",11030002,1);
- UpdateScheduler.notifyUpdate(c,two);check(c.notifications.count==2);
+ UpdateScheduler.notifyUpdate(c,two);check(c.notifications.count==3);
  c.prefs.edit().putBoolean("automatic",false).apply();UpdateScheduler.schedule(c);check(c.jobs.jobs.isEmpty());
- UpdateScheduler.notifyUpdate(c,one);check(c.notifications.count==2);
+ UpdateScheduler.notifyUpdate(c,one);check(c.notifications.count==3);
  c.prefs.edit().putBoolean("automatic",true).putLong("firstScheduled",0).apply();UpdateScheduler.schedule(c);
  check(c.jobs.jobs.size()==2);c.notifications.enabled=false;check(!UpdateScheduler.notificationsEnabled(c));
  c.notifications.enabled=true;c.permission=false;check(!UpdateScheduler.notificationsEnabled(c));

@@ -54,7 +54,7 @@
     <string name="move_dictionary_up">Μετακίνηση επιλεγμένου αρχείου νωρίτερα</string>
     <string name="move_dictionary_down">Μετακίνηση επιλεγμένου αρχείου αργότερα</string>
     <string name="reload_dictionaries">Επαναφόρτωση επιλεγμένων αρχείων</string>
-    <string name="dictionary_help">Τα λεξικά κοινότητας και οι προσωπικές καταχωρίσεις Dic χρησιμοποιούν τα εγγενή στάδια λεξικού. Επιλέξτε γλώσσα και ενότητα πριν προσθέσετε αρχείο. Τα αρχεία χρησιμοποιούν κωδικοποίηση Windows-1252. Τα μεταγενέστερα αρχεία αντικαθιστούν τις καταχωρίσεις των προηγούμενων. Οι αλλαγές παρακολουθούνται όταν ο πάροχος εγγράφων παρέχει μεταδεδομένα τροποποίησης· η Επαναφόρτωση επιλεγμένων αρχείων διαβάζει πάντα ξανά τις πηγές. Η πηγή λαμβάνεται κατά την πρώτη χρήση ή την ενημέρωση. Τα ενεργά λεξικά αντιγράφονται στον χώρο αποθήκευσης που προστατεύεται από τη συσκευή, ώστε να είναι διαθέσιμα μετά την επανεκκίνηση και πριν από το πρώτο ξεκλείδωμα.</string>
+    <string name="dictionary_help">Επιλέξτε γλώσσα και μορφή. Τα αρχεία Eloquence χρησιμοποιούν τον επιλεγμένο τύπο και τα αρχεία NVDA την επιλεγμένη φωνή. Τα προσωπικά αρχεία λειτουργούν ανεξάρτητα από τα κοινοτικά λεξικά. Επαναφορτώστε τα αρχεία για να διαβαστούν ξανά.</string>
     <string name="dictionary_working">Προετοιμασία λεξικών</string>
     <string name="dictionary_ready">Τα λεξικά είναι έτοιμα</string>
     <string name="dictionary_error">Η ενημέρωση λεξικού απέτυχε: %1$s</string>
@@ -85,6 +85,8 @@
     <string name="dictionary_update_files_new">Νέα αρχεία λεξικού: %1$d</string>
     <string name="dictionary_update_files_total">Συνολικά αρχεία λεξικού: %1$d</string>
     <string name="dictionary_update_files_unknown">Δεν ήταν δυνατό να προσδιοριστεί ο αριθμός νέων αρχείων λεξικού.</string>
+    <string name="word_segmentation">Διαίρεση άγνωστων αγγλικών λέξεων</string>
+    <string name="camel_case">Διαίρεση λέξεων camelCase (όλες οι γλώσσες)</string>
     <string name="original_questions">Χρήση του αρχικού επιτονισμού ερωτήσεων</string>
     <string name="mellow_mode">Απαλός ήχος (από 16 kHz)</string>
     <string name="original_acoustic_clock">Χρήση αρχικού χρονισμού ήχου για την επιλεγμένη γλώσσα (5 ms)</string>
@@ -121,4 +123,8 @@
     <string name="not_now">Όχι τώρα</string>
     <string name="update_notification_title">Ενημερώσεις ReLoq C</string>
     <string name="update_notification_body">Η έκδοση %1$s είναι διαθέσιμη. Πατήστε για έλεγχο και λήψη.</string>
+    <string name="dictionary_format">Μορφή λεξικού</string>
+    <string name="dictionary_voice">Φωνές για λεξικά NVDA</string>
+    <string name="dictionary_all_voices">Όλες οι φωνές</string>
+    <string-array name="dictionary_formats"><item>Αυτόματη αναγνώριση</item><item>NVDA</item><item>Eloquence</item></string-array>
 </resources>

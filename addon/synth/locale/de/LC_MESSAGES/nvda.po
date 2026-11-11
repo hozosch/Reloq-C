@@ -29,6 +29,36 @@ msgstr "Camel Case zerlegen"
 msgid "Imported NVDA speech dictionaries:"
 msgstr "Importierte NVDA-Sprachwörterbücher:"
 
+msgid "&Own dictionaries (NVDA and Eloquence):"
+msgstr "&Eigene Wörterbücher (NVDA und Eloquence):"
+
+msgid "Edit NVDA dictionary…"
+msgstr "NVDA-Wörterbuch bearbeiten…"
+
+msgid "Eloquence files are saved with OK or Apply. NVDA imports and edits take effect immediately."
+msgstr "Eloquence-Dateien werden mit OK oder Übernehmen gespeichert. NVDA-Importe und Bearbeitungen gelten sofort."
+
+msgid "Dictionary format:"
+msgstr "Wörterbuchformat:"
+
+msgid "Could not detect the format. Choose the dictionary format:"
+msgstr "Das Format konnte nicht erkannt werden. Wähle das Wörterbuchformat:"
+
+msgid "Choose a format…"
+msgstr "Format auswählen…"
+
+msgid "Dictionary format"
+msgstr "Wörterbuchformat"
+
+msgid "NVDA speech dictionary"
+msgstr "NVDA-Sprachwörterbuch"
+
+msgid "Eloquence pronunciation dictionary"
+msgstr "Eloquence-Aussprachewörterbuch"
+
+msgid "Dictionary import failed: %s"
+msgstr "Import des Wörterbuchs fehlgeschlagen: %s"
+
 msgid "Import NVDA dictionary…"
 msgstr "NVDA-Wörterbuch importieren…"
 

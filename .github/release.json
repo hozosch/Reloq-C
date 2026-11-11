@@ -1,12 +1,12 @@
 {
-  "version": "1.3.1",
-  "release_version": "1.3.1",
-  "source_commit": "8833399d4a3f74a0fa5f8e4c9a3cb45aeb976d66",
-  "run_id": 43006678992,
+  "version": "1.4.0",
+  "release_version": "1.4.0",
+  "source_commit": "29efceb39e468b4e100ccc6150611e9112fbf547",
+  "run_id": 43102437479,
   "dictionary_snapshot": {
     "repository": "eigencrow/IBMTTSDictionaries",
     "branch": "master",
-    "commit": "28872803ea7924719132aa57b1684d89df430bc5",
+    "commit": "a7bf35addda1c7a59275cc923ec6081af811a895",
     "files": {
       "DEUmain.dic": {
         "sha": "fb8c156bbd28f1dceeed53e2527ed5e0370c6fa7",
@@ -25,8 +25,8 @@
         "size": 28058
       },
       "ENURoot.dic": {
-        "sha": "be2065b5a7f687cebd80aefc79324a14b0cadeea",
-        "size": 2260602
+        "sha": "8900e673e93176bbe03d98a375a117e6494fd692",
+        "size": 2260630
       },
       "ENUabbr.dic": {
         "sha": "edfdaa94d633a08fe57d63dbd12294a1f40f6450",
@@ -38,18 +38,23 @@
       }
     }
   },
+  "build_epoch": 1794432241,
   "assets": {
-    "reloq-c-android-arm64-1.3.1.apk": {
-      "size": 17438318,
-      "sha256": "ae212d702e0ce2f5054bea30540c4f30d23a0bf99c8cc6111a940faf834ae1fb"
+    "reloq-c-android-arm64-1.4.0.apk": {
+      "size": 17901399,
+      "sha256": "6a1a8173f01715790b1f76a181fea527098242944e442f2a7960d960170b30a7"
     },
-    "reloq-c-synth-x64-1.3.1.nvda-addon": {
-      "size": 19819505,
-      "sha256": "33132f064eabc8fb5877fddf0c9c3a1f3e55fe48722bf5c0631fecf81b3e3dd4"
+    "reloq-c-android-x86_64-1.4.0.apk": {
+      "size": 19416916,
+      "sha256": "3c51043719dbe2b6dff5e9d13068a1abd90c030b4d1bbb9de46a6668a047d268"
     },
-    "reloq-c-sapi5-1.3.1-setup.exe": {
-      "size": 19515391,
-      "sha256": "7944b6f6825b4a6f93aed0528a66e664cd536d572885f86786f6487c066db3a1"
+    "reloq-c-synth-x64-1.4.0.nvda-addon": {
+      "size": 20147671,
+      "sha256": "782e27d8c5b13d75df57de41c02a4eb32db1837548804cde817cef1c477a0227"
+    },
+    "reloq-c-sapi5-1.4.0-setup.exe": {
+      "size": 19947378,
+      "sha256": "becfacd22aea77a504972b6fac1d59f29d9703560d38a557cd549760812f0a20"
     }
   }
 }

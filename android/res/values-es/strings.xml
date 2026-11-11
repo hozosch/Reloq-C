@@ -54,7 +54,7 @@
     <string name="move_dictionary_up">Mover el archivo seleccionado hacia arriba</string>
     <string name="move_dictionary_down">Mover el archivo seleccionado hacia abajo</string>
     <string name="reload_dictionaries">Volver a cargar los archivos seleccionados</string>
-    <string name="dictionary_help">Los diccionarios de la comunidad y las entradas Dic propias utilizan las etapas nativas de diccionario. Elige el idioma y la sección antes de añadir un archivo. Los archivos usan la codificación Windows-1252. Los archivos posteriores sustituyen las entradas de los anteriores. Los cambios se supervisan cuando el proveedor de documentos facilita metadatos de modificación; Volver a cargar los archivos seleccionados siempre vuelve a leer los archivos de origen. La fuente elegida se descarga al usarla por primera vez o al actualizarla. Los diccionarios activados se copian al almacenamiento protegido del dispositivo para poder usarlos tras reiniciar y antes del primer desbloqueo.</string>
+    <string name="dictionary_help">Elige el idioma y el formato. Los archivos Eloquence usan la sección elegida y los archivos NVDA la voz elegida. Los archivos propios funcionan independientemente de los diccionarios de la comunidad. Recarga los archivos para volver a leerlos.</string>
     <string name="dictionary_working">Preparando diccionarios</string>
     <string name="dictionary_ready">Diccionarios preparados</string>
     <string name="dictionary_error">Error al actualizar el diccionario: %1$s</string>
@@ -85,6 +85,8 @@
     <string name="dictionary_update_files_new">Archivos de diccionario nuevos: %1$d</string>
     <string name="dictionary_update_files_total">Archivos de diccionario en total: %1$d</string>
     <string name="dictionary_update_files_unknown">No se pudo determinar el número de archivos de diccionario nuevos.</string>
+    <string name="word_segmentation">Dividir palabras inglesas desconocidas</string>
+    <string name="camel_case">Dividir palabras en camelCase (todos los idiomas)</string>
     <string name="original_questions">Usar la entonación original de las preguntas</string>
     <string name="mellow_mode">Modo suave (desde 16 kHz)</string>
     <string name="original_acoustic_clock">Usar el ritmo acústico original de Eloquence para el idioma seleccionado (5 ms)</string>
@@ -121,4 +123,8 @@
     <string name="not_now">Ahora no</string>
     <string name="update_notification_title">Actualizaciones de ReLoq C</string>
     <string name="update_notification_body">La versión %1$s está disponible. Toca para revisar y descargar.</string>
+    <string name="dictionary_format">Formato del diccionario</string>
+    <string name="dictionary_voice">Voces para diccionarios NVDA</string>
+    <string name="dictionary_all_voices">Todas las voces</string>
+    <string-array name="dictionary_formats"><item>Detectar automáticamente</item><item>NVDA</item><item>Eloquence</item></string-array>
 </resources>

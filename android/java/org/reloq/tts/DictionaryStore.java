@@ -80,7 +80,7 @@ final class DictionaryStore {
             }
             if(parent==null||!parent.equals(new File(root,"snapshots"))||
                     !name.matches("[a-f0-9]{64}")||!new File(folder,"ready").isFile())return false;
-            File[] entries=folder.listFiles((dir,item) -> item.endsWith(".dic"));
+            File[] entries=folder.listFiles((dir,item) -> item.endsWith(".dic")||SpeechDictionary.isSnapshotName(item));
             if(entries==null)return false;
             Arrays.sort(entries,Comparator.comparing(File::getName));
             MessageDigest hash=MessageDigest.getInstance("SHA-256");
@@ -201,15 +201,26 @@ final class DictionaryStore {
             }
             if(!alternative&&own.length()==0)original=base;
         }
+        TreeMap<String,byte[]> speechDictionaries=new TreeMap<>();
         for(int i=0;i<own.length();++i) {
             JSONObject source=own.getJSONObject(i);byte[] data;
             try(InputStream in=c.getContentResolver().openInputStream(Uri.parse(source.getString("uri")))) {
                 if(in==null)throw new IOException("Dictionary unavailable");data=DictionaryData.read(in,DictionaryData.LIMIT);
             }
             hashSource(sourceHash,data);
-            merger.add(DictionaryData.name(source.getInt("language"),source.getInt("volume")),data);
+            String format=source.optString("format","auto");
+            if(!format.equals("auto")&&!format.equals("nvda")&&!format.equals("eci"))
+                throw new IOException("Invalid dictionary format");
+            boolean nvda=format.equals("nvda")||(format.equals("auto")&&SpeechDictionary.looksNvda(data));
+            if(nvda) {
+                SpeechDictionary.parse(data);
+                DictionaryData.prefix(source.getInt("language"));
+                int voice=source.optInt("voice",0);
+                speechDictionaries.put(SpeechDictionary.snapshotName(i,source.getInt("language"),voice),data);
+            } else merger.add(DictionaryData.name(source.getInt("language"),source.getInt("volume")),data);
         }
         TreeMap<String,byte[]> volumes=merger.finish();String path=original==null?null:original.getAbsolutePath();
+        volumes.putAll(speechDictionaries);
         if(!volumes.isEmpty()||((enabled||own.length()!=0)&&original==null)) {
             MessageDigest hash=MessageDigest.getInstance("SHA-256");
             for(Map.Entry<String,byte[]> row:volumes.entrySet()) {

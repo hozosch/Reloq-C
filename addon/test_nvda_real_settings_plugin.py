@@ -107,6 +107,66 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             ring_language.value=home
             synth.saveSettings()
             panel=EloquenceSettingsPanel(frame)
+            # The combined list accepts each format through one accessible
+            # control and chooses the correct parser before asking scope.
+            import gui
+            native = RESULT.parent / 'native-ui-test.dic'
+            imported = RESULT.parent / 'nvda-ui-test.dic'
+            ambiguous = RESULT.parent / 'ambiguous-native-ui-test.dic'
+            native.write_text('nativeprobe\tNativ\n', encoding='utf8')
+            imported.write_text('nvdaprobe\tErsatz 2035\t0\t2\n', encoding='utf-8-sig')
+            ambiguous.write_text('first\tvalue\t0\t2\nsecond\tother\n', encoding='utf8')
+            selected_file = [imported]
+            choose_ambiguous = [False]
+            choices_seen = []
+            class FakeFile:
+                def __init__(self,*args,**kwargs): pass
+                def __enter__(self): return self
+                def __exit__(self,*args): pass
+                def ShowModal(self): return wx.ID_OK
+                def GetPath(self): return str(selected_file[0])
+            class FakeChoice:
+                def __init__(self,*args,**kwargs): self.value=0;self.title=args[2];self.choices=args[3]
+                def __enter__(self): return self
+                def __exit__(self,*args): pass
+                def ShowModal(self):
+                    choices_seen.append((self.title,self.value,self.choices))
+                    if (selected_file[0] == ambiguous and self.title == 'Dictionary format'
+                            and choose_ambiguous[0]): self.value = 2
+                    return wx.ID_OK
+                def SetSelection(self,value): self.value=value
+                def GetSelection(self): return self.value
+            old_file,old_choice,old_message = wx.FileDialog,wx.SingleChoiceDialog,gui.messageBox
+            with old_choice(panel, 'Select a format', 'Dictionary format',
+                            ['Choose a format…', 'NVDA', 'Eloquence']) as unselected:
+                unselected.SetSelection(0)
+                check(unselected.GetSelection()==0, 'wx did not select the format prompt')
+            try:
+                wx.FileDialog,wx.SingleChoiceDialog,gui.messageBox = FakeFile,FakeChoice,lambda *args,**kwargs:wx.OK
+                panel.on_add(None)
+                check(choices_seen and choices_seen[0][1]==0, 'NVDA format was not recognized')
+                selected_file[0]=native;choices_seen.clear();panel.on_add(None)
+                check(choices_seen and choices_seen[0][1]==1, 'native format was not recognized')
+                selected_file[0]=ambiguous;choices_seen.clear();panel.on_add(None)
+                check(choices_seen and choices_seen[0][1]==0
+                      and choices_seen[0][2][0]=='Choose a format…',
+                      'ambiguous format was selected without a user choice')
+                check(len(panel.sources)==1, 'ambiguous file was added without a format choice')
+                choose_ambiguous[0]=True;panel.on_add(None)
+            finally:
+                wx.FileDialog,wx.SingleChoiceDialog,gui.messageBox = old_file,old_choice,old_message
+            check(panel.files.GetName() and panel.files.GetCount()==3, 'combined dictionary list is not accessible')
+            check('Eloquence' in panel.files.GetString(0) and 'Eloquence' in panel.files.GetString(1)
+                  and 'NVDA' in panel.files.GetString(2),
+                  'combined rows do not identify their formats')
+            check(synth.imported_dictionary_manager().process('nvdaprobe', synth._selectedLanguage, synth._voice)=='Ersatz 2035',
+                  'NVDA options leaked or literal replacement digits were removed')
+            panel.files.SetSelection(0);panel.on_dictionary_selection(wx.CommandEvent())
+            check(not panel.edit_dictionary.IsEnabled() and panel.remove_dictionary.IsEnabled(),
+                  'native selection offers an invalid edit action')
+            panel.files.SetSelection(2);panel.on_dictionary_selection(wx.CommandEvent())
+            check(panel.edit_dictionary.IsEnabled() and not panel.move_up.IsEnabled(),
+                  'NVDA selection has incorrect actions')
             section=config.conf['speech'][synth.name]
             # A fresh NVDA profile may have no explicitly stored entry yet.
             # Compare optional values until Apply creates the settings.

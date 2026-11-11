@@ -3,7 +3,13 @@
  * volume was read successfully and the source metadata is still unchanged. */
 #include "settings.h"
 #include "dictionary_merge.h"
+#include "dictionary_hint.h"
+#include "../common/nvda_speech.h"
+#ifdef RELOQ_SAPI_SNAPSHOT_TEST
+#include "test_snapshot_host.h"
+#else
 #include <wincrypt.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -64,12 +70,16 @@ static int signature(const WCHAR *base,const struct sapi_dictionary_file *files,
     HCRYPTPROV provider=0;HCRYPTHASH hash=0;BYTE value[32];DWORD length=sizeof value;int ok=0;
     if(!CryptAcquireContextW(&provider,NULL,NULL,PROV_RSA_AES,CRYPT_VERIFYCONTEXT)||
        !CryptCreateHash(provider,CALG_SHA_256,0,0,&hash))goto done;
-    if(!CryptHashData(hash,(const BYTE *)base,(DWORD)((wcslen(base)+1)*sizeof(WCHAR)),0))goto done;
+    static const BYTE version[]="reloq-speech-dictionaries-1";
+    if(!CryptHashData(hash,version,sizeof version,0)||
+       !CryptHashData(hash,(const BYTE *)base,(DWORD)((wcslen(base)+1)*sizeof(WCHAR)),0))goto done;
     if(base[0])for(size_t i=0;i<sizeof volumes/sizeof *volumes;++i)for(unsigned j=0;j<3;++j){
         WCHAR path[2048];if(!volume_path(path,2048,base,i,j)||!attributes(hash,path,0))goto done;}
     for(size_t i=0;i<count;++i){
         if(!CryptHashData(hash,(const BYTE *)&files[i].dialect,sizeof files[i].dialect,0)||
            !CryptHashData(hash,(const BYTE *)&files[i].volume,sizeof files[i].volume,0)||
+           !CryptHashData(hash,(const BYTE *)&files[i].format,sizeof files[i].format,0)||
+           !CryptHashData(hash,(const BYTE *)&files[i].voice,sizeof files[i].voice,0)||
            !attributes(hash,files[i].path,1))goto done;
     }
     if(!CryptGetHashParam(hash,HP_HASHVAL,value,&length,0)||length!=32)goto done;
@@ -95,10 +105,25 @@ static int ready(const WCHAR *path)
     return swprintf(marker,2048,L"%ls\\ready",path)>=0&&
         GetFileAttributesExW(marker,GetFileExInfoStandard,&a)&&!(a.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY);
 }
+static int speech_file(const struct sapi_dictionary_file *file,const unsigned char *data,size_t length,int *is_speech)
+{
+    *is_speech=file->format==SAPI_DICT_NVDA||
+        (file->format==SAPI_DICT_AUTO&&sapi_dictionary_looks_nvda(data,length));
+    if(!*is_speech)return 1;
+    struct reloq_nvda_speech *dictionary=reloq_nvda_speech_new();if(!dictionary)return 0;
+    int ok=reloq_nvda_speech_add(dictionary,data,length);reloq_nvda_speech_free(dictionary);return ok;
+}
 static void clear_stage(const WCHAR *path)
 {
     WCHAR file[2048];for(size_t i=0;i<sizeof volumes/sizeof *volumes;++i)for(unsigned j=0;j<3;++j)
         if(volume_path(file,2048,path,i,j))DeleteFileW(file);
+    if(swprintf(file,2048,L"%ls\\nvda-*.nvda",path)>=0){WIN32_FIND_DATAW item;
+        HANDLE search=FindFirstFileW(file,&item);
+        if(search!=INVALID_HANDLE_VALUE){do{
+            if(!(item.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY)&&
+               swprintf(file,2048,L"%ls\\%ls",path,item.cFileName)>=0)DeleteFileW(file);
+        }while(FindNextFileW(search,&item));FindClose(search);}}
+    if(swprintf(file,2048,L"%ls\\nvda.ready",path)>=0)DeleteFileW(file);
     if(swprintf(file,2048,L"%ls\\ready",path)>=0)DeleteFileW(file);RemoveDirectoryW(path);
 }
 static int build(const WCHAR *base,const struct sapi_dictionary_file *files,size_t count,const WCHAR *stage)
@@ -114,7 +139,9 @@ static int build(const WCHAR *base,const struct sapi_dictionary_file *files,size
         for(size_t i=0;i<count;++i)if(same_volume_language(files[i].dialect,volumes[lang].dialect)&&files[i].volume==volume){
             unsigned char *data=NULL;size_t length=0;
             if(!read_file(files[i].path,1,&data,&length)){ok=0;break;}
-            input[used++]=(struct sapi_dictionary_input){data,length};}
+            int is_speech=0;
+            if(!speech_file(files+i,data,length,&is_speech)){free(data);ok=0;break;}
+            if(is_speech)free(data);else input[used++]=(struct sapi_dictionary_input){data,length};}
         unsigned char *merged=NULL;size_t size=0;
         if(ok&&used)ok=sapi_dictionary_merge(input,used,volumes[lang].dialect==0x40000&&volume==1,&merged,&size);
         for(size_t i=0;i<used;++i)free((void *)input[i].data);
@@ -122,6 +149,19 @@ static int build(const WCHAR *base,const struct sapi_dictionary_file *files,size
             else {FILE *f=_wfopen(path,L"wb");if(!f)ok=0;else{ok=fwrite(merged,1,size,f)==size;if(fclose(f))ok=0;}}}
         free(merged);if(!ok)return 0;
     }
+    int has_speech=0;
+    for(size_t i=0;i<count;++i){unsigned char *data=NULL;size_t length=0;int is_speech=0;
+        if(!read_file(files[i].path,1,&data,&length))return 0;
+        int ok=speech_file(files+i,data,length,&is_speech);
+        if(ok&&is_speech){WCHAR path[2048];has_speech=1;
+            if(swprintf(path,2048,L"%ls\\nvda-%03u-%08x-%lu.nvda",stage,(unsigned)i,
+                (unsigned)files[i].dialect,(unsigned long)files[i].voice)<0)ok=0;
+            else {FILE *out=_wfopen(path,L"wb");if(!out)ok=0;
+                else {ok=fwrite(data,1,length,out)==length;if(fclose(out))ok=0;}}}
+        free(data);if(!ok)return 0;
+    }
+    if(has_speech){WCHAR path[2048];if(swprintf(path,2048,L"%ls\\nvda.ready",stage)<0)return 0;
+        FILE *f=_wfopen(path,L"wb");if(!f)return 0;if(fclose(f))return 0;}
     WCHAR marker[2048];if(swprintf(marker,2048,L"%ls\\ready",stage)<0)return 0;
     FILE *f=_wfopen(marker,L"wb");if(!f)return 0;return fclose(f)==0;
 }

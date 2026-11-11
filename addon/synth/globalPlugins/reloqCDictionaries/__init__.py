@@ -1,6 +1,7 @@
 """Accessible runtime management of native pronunciation dictionary data."""
 import weakref
 import os
+from pathlib import Path
 import tempfile
 import threading
 
@@ -215,23 +216,27 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.repository.SetName(label.GetLabelText())
         self.repository.SetSelection(1 if self.synth and self.synth.dictionary_manager().repository == "alternative" else 0)
         content.Add(self.repository, 0, wx.EXPAND | wx.ALL, 10)
-        label = wx.StaticText(self, label=_("&Own dictionary files (later files take priority):"))
+        label = wx.StaticText(self, label=_("&Own dictionaries (NVDA and Eloquence):"))
         content.Add(label, 0, wx.LEFT | wx.RIGHT, 10)
         self.files = wx.ListBox(self, size=(-1, 180))
         self.files.SetName(label.GetLabelText())
+        self.files.Bind(wx.EVT_LISTBOX, self.on_dictionary_selection)
         content.Add(self.files, 1, wx.EXPAND | wx.ALL, 10)
+        self.imported_records = ()
         self.edits = []
         row = wx.BoxSizer(wx.HORIZONTAL)
-        for text, callback in ((_("&Add file…"), self.on_add), (_("&Remove"), self.on_remove),
+        for text, callback in ((_("&Add file…"), self.on_add), (_("Edit NVDA dictionary…"), self.on_edit_nvda),
+                               (_("&Remove"), self.on_remove),
                                (_("Move &up"), lambda event: self.move(-1)),
                                (_("Move &down"), lambda event: self.move(1))):
             button = wx.Button(self, label=text)
             button.Bind(wx.EVT_BUTTON, callback)
             self.edits.append(button)
             row.Add(button, 0, wx.RIGHT, 8)
+        self.add_dictionary, self.edit_dictionary, self.remove_dictionary, self.move_up, self.move_down = self.edits
         content.Add(row, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
         content.Add(wx.StaticText(self, label=_(
-            "Use OK or Apply to save. Changes to selected .dic files are loaded automatically.")),
+            "Eloquence files are saved with OK or Apply. NVDA imports and edits take effect immediately.")),
             0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
         self.status = wx.StaticText(self, label=_(
             "Own entries override community entries. Original files are kept unchanged.")
@@ -246,24 +251,6 @@ class EloquenceSettingsPanel(SettingsPanel):
         row.Add(folder, 0, wx.RIGHT, 8)
         self.edits.append(folder)
         content.Add(row, 0, wx.ALL, 10)
-        label = wx.StaticText(self, label=_("Imported NVDA speech dictionaries:"))
-        content.Add(label, 0, wx.LEFT | wx.RIGHT, 10)
-        self.imported = wx.ListBox(self, size=(-1, 100))
-        self.imported.SetName(label.GetLabelText())
-        content.Add(self.imported, 0, wx.EXPAND | wx.ALL, 10)
-        self.imported_records = ()
-        row = wx.BoxSizer(wx.HORIZONTAL)
-        for text, callback in ((_("Import NVDA dictionary…"), self.on_import_nvda),
-                               (_("Edit imported dictionary…"), self.on_edit_nvda),
-                               (_("Remove imported dictionary"), self.on_remove_nvda)):
-            button = wx.Button(self, label=text)
-            button.Bind(wx.EVT_BUTTON, callback)
-            self.edits.append(button)
-            row.Add(button, 0, wx.RIGHT, 8)
-        content.Add(row, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-        content.Add(wx.StaticText(self, label=_(
-            "Imported NVDA dictionaries apply only to their chosen language and voices. Original files are unchanged.")),
-            0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
         self.Bind(wx.EVT_WINDOW_DESTROY, self.on_destroy)
         self.redraw()
         self.enable_controls(bool(self.synth))
@@ -340,8 +327,9 @@ class EloquenceSettingsPanel(SettingsPanel):
         threading.Thread(target=work, name='ReLoq package update', daemon=True).start()
 
     def enable_controls(self, enabled):
-        for control in (*self.edits, self.files, self.imported, self.update, self.community, self.repository, self.segmentation, self.camel_case):
+        for control in (*self.edits, self.files, self.update, self.community, self.repository, self.segmentation, self.camel_case):
             control.Enable(enabled)
+        self._update_dictionary_controls(enabled)
         self.pitch_hz_mode.Enable(enabled)
         self.pitch_hz_value.Enable(enabled and self.pitch_hz_mode.GetValue())
         self.wpm_mode.Enable(enabled)
@@ -441,60 +429,138 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.camel_dirty = True
         event.Skip()
 
-    def redraw_imported(self, selected=None):
-        self.imported_records = self.synth.imported_dictionary_manager().records if self.synth and hasattr(self.synth, "imported_dictionary_manager") else ()
-        languages = {lang.id: _(lang.name) for lang in self.languages}
-        voices = {voice.id: voice.name for lang in self.languages for voice in lang.voices}
-        labels = []
-        for path, language, voice, _dictionary in self.imported_records:
-            source = path.stem.split("-", 3)[-1]
-            scope = _("All voices") if voice == "all" else voices.get(voice, voice)
-            labels.append(f"{languages.get(language, str(language))} — {scope} — {source}")
-        self.imported.Set(labels)
-        if selected is not None and self.imported_records:
-            self.imported.SetSelection(min(selected, len(self.imported_records) - 1))
+    def _selected_dictionary(self):
+        selected = self.files.GetSelection()
+        if selected < 0:
+            return None
+        if selected < len(self.sources):
+            return "eci", selected
+        selected -= len(self.sources)
+        if selected < len(self.imported_records):
+            return "nvda", selected
+        return None
 
-    def on_import_nvda(self, event):
-        if not self.current_synth(): return
+    def _update_dictionary_controls(self, enabled=None):
+        if enabled is None:
+            enabled = bool(self.current_synth() and not self.pending)
+        selected = self._selected_dictionary()
+        native = selected is not None and selected[0] == "eci"
+        index = selected[1] if native else -1
+        self.remove_dictionary.Enable(bool(enabled and selected))
+        self.edit_dictionary.Enable(bool(enabled and selected and selected[0] == "nvda"))
+        self.move_up.Enable(bool(enabled and native and index > 0))
+        self.move_down.Enable(bool(enabled and native and index + 1 < len(self.sources)))
+
+    def on_dictionary_selection(self, event):
+        self._update_dictionary_controls()
+        event.Skip()
+
+    def current_synth(self):
+        return self.synth is not None and synthDriverHandler.getSynth() is self.synth
+
+    def redraw(self, selected=None):
+        labels = {language.id: _(language.name) for language in self.languages}
+        self.imported_records = (self.synth.imported_dictionary_manager().records
+                                 if self.synth and hasattr(self.synth, "imported_dictionary_manager") else ())
+        rows = [f"{_('Eloquence')} — {source.path} — {labels.get(source.language, str(source.language))}, {self.volumes[source.volume]}"
+                for source in self.sources]
+        for path, language, voice, _dictionary in self.imported_records:
+            model = next((item for item in self.languages if item.id == language), None)
+            names = {item.id: item.name for item in model.voices} if model else {}
+            scope = _("All voices") if voice == "all" else names.get(voice, voice)
+            name = path.stem.split("-", 3)[-1]
+            rows.append(f"{_('NVDA')} — {name} — {labels.get(language, str(language))}, {scope}")
+        self.files.Set(rows)
+        if selected is not None and rows:
+            self.files.SetSelection(min(max(0, selected), len(rows) - 1))
+        self._update_dictionary_controls()
+
+    def on_add(self, event):
+        if not self.current_synth():
+            return
         try:
-            from NVDAState import WritePaths, shouldWriteToDisk
-            if not shouldWriteToDisk(): raise PermissionError(_("NVDA cannot save dictionaries in this mode."))
-            folder = str(WritePaths.voiceDictsDir)
-            with wx.FileDialog(self, _("Choose an NVDA speech dictionary"), defaultDir=folder,
-                               wildcard=_("NVDA dictionary files (*.dic)|*.dic|All files (*.*)|*.*"),
+            with wx.FileDialog(self, _("Choose a pronunciation dictionary"),
+                               wildcard=_("Dictionary files (*.dic)|*.dic|All files (*.*)|*.*"),
                                style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as dialog:
-                if dialog.ShowModal() != wx.ID_OK: return
+                if dialog.ShowModal() != wx.ID_OK:
+                    return
                 path = dialog.GetPath()
-            with wx.SingleChoiceDialog(self, _("Language for this dictionary:"),
-                                       _("NVDA dictionary language"), [_(x.name) for x in self.languages]) as dialog:
-                current = next((i for i, language in enumerate(self.languages)
-                                if language.id == self.synth._selectedLanguage), 0)
+            from synthDrivers.reloqC._reloq_nvda_dicts import identify_file
+            try:
+                suggested = identify_file(path)
+            except ValueError:
+                # An ambiguous or large native dictionary can still be
+                # selected explicitly, without guessing that it is NVDA.
+                suggested = None
+            formats = [_('NVDA speech dictionary'), _('Eloquence pronunciation dictionary')]
+            if suggested is None:
+                formats.insert(0, _("Choose a format…"))
+            prompt = (_("Dictionary format:") if suggested else
+                      _("Could not detect the format. Choose the dictionary format:"))
+            with wx.SingleChoiceDialog(self, prompt, _("Dictionary format"), formats) as dialog:
+                dialog.SetSelection(1 if suggested == 'eci' else 0)
+                if dialog.ShowModal() != wx.ID_OK:
+                    return
+                choice = dialog.GetSelection()
+                if suggested is None:
+                    choice -= 1
+                if choice not in (0, 1):
+                    return
+                nvda = choice == 0
+            with wx.SingleChoiceDialog(self, _("Language of the dictionary:"),
+                                       _("Dictionary language"), [_(item.name) for item in self.languages]) as dialog:
+                current = next((i for i, item in enumerate(self.languages)
+                                if item.id == self.synth._selectedLanguage), 0)
                 dialog.SetSelection(current)
-                if dialog.ShowModal() != wx.ID_OK: return
+                if dialog.ShowModal() != wx.ID_OK:
+                    return
                 language = self.languages[dialog.GetSelection()]
-            choices = [_('All voices')] + [voice.name for voice in language.voices]
-            with wx.SingleChoiceDialog(self, _("Apply to which voices?"),
-                                       _("NVDA dictionary voice"), choices) as dialog:
-                dialog.SetSelection(0)
-                if dialog.ShowModal() != wx.ID_OK: return
-                selected = dialog.GetSelection()
-            voice = "all" if selected == 0 else language.voices[selected - 1].id
-            _path, count, created = self.synth.imported_dictionary_manager().import_file(path, language.id, voice)
-            self.redraw_imported()
-            message = (_("Imported NVDA dictionary entries: %s") if created else _("This NVDA dictionary was already imported. Entries: %s")) % count
-            gui.messageBox(message, _("NVDA speech dictionaries"), wx.OK | wx.ICON_INFORMATION, parent=self)
+            if nvda:
+                from NVDAState import shouldWriteToDisk
+                if not shouldWriteToDisk():
+                    raise PermissionError(_("NVDA cannot save dictionaries in this mode."))
+                choices = [_('All voices')] + [voice.name for voice in language.voices]
+                with wx.SingleChoiceDialog(self, _("Apply to which voices?"),
+                                           _("NVDA dictionary voice"), choices) as dialog:
+                    dialog.SetSelection(0)
+                    if dialog.ShowModal() != wx.ID_OK:
+                        return
+                    choice = dialog.GetSelection()
+                voice = "all" if choice == 0 else language.voices[choice - 1].id
+                imported, count, created = self.synth.imported_dictionary_manager().import_file(path, language.id, voice)
+                # A legacy file accidentally selected as native would apply
+                # its two option columns as speech. Remove that selection on Apply.
+                self.sources = [source for source in self.sources if not (
+                    source.language == language.id and getattr(source, 'format', None) is None and
+                    Path(source.path).resolve() == Path(path).resolve())]
+                records = self.synth.imported_dictionary_manager().records
+                at = next((i for i, record in enumerate(records) if record[0] == imported), 0)
+                self.redraw(len(self.sources) + at)
+                message = (_("Imported NVDA dictionary entries: %s") if created else
+                           _("This NVDA dictionary was already imported. Entries: %s")) % count
+                gui.messageBox(message, _("NVDA speech dictionaries"), wx.OK | wx.ICON_INFORMATION, parent=self)
+                return
+            with wx.SingleChoiceDialog(self, _("Dictionary type:"), _("Dictionary type"), self.volumes) as dialog:
+                if dialog.ShowModal() != wx.ID_OK:
+                    return
+                volume = dialog.GetSelection()
+            self.sources.append(self.source_class(path, language.id, volume, format="eci"))
+            self.redraw(len(self.sources) - 1)
         except (OSError, ValueError, UnicodeError) as error:
-            gui.messageBox(_("NVDA dictionary import failed: %s") % str(error),
-                           _("NVDA speech dictionaries"), wx.OK | wx.ICON_ERROR, parent=self)
+            gui.messageBox(_("Dictionary import failed: %s") % str(error), self.title,
+                           wx.OK | wx.ICON_ERROR, parent=self)
 
     def on_edit_nvda(self, event):
-        selected = self.imported.GetSelection()
-        if not self.current_synth() or selected == wx.NOT_FOUND: return
+        selected = self._selected_dictionary()
+        if not self.current_synth() or not selected or selected[0] != 'nvda':
+            return
+        index = selected[1]
         try:
             from NVDAState import shouldWriteToDisk
-            if not shouldWriteToDisk(): raise PermissionError(_("NVDA cannot save dictionaries in this mode."))
+            if not shouldWriteToDisk():
+                raise PermissionError(_("NVDA cannot save dictionaries in this mode."))
             from gui.speechDict import DictionaryDialog
-            path, _language, _voice, original = self.imported_records[selected]
+            path, _language, _voice, original = self.imported_records[index]
             dictionary = type(original)()
             dictionary.load(str(path))
             class ImportedDictionaryDialog(DictionaryDialog):
@@ -503,14 +569,20 @@ class EloquenceSettingsPanel(SettingsPanel):
             with ImportedDictionaryDialog(self) as dialog:
                 dialog.ShowModal()
             self.synth.imported_dictionary_manager().reload()
-            self.redraw_imported(selected)
+            self.redraw(len(self.sources) + index)
         except (OSError, ValueError, UnicodeError) as error:
             gui.messageBox(_("NVDA dictionary edit failed: %s") % str(error), self.title,
                            wx.OK | wx.ICON_ERROR, parent=self)
 
-    def on_remove_nvda(self, event):
-        selected = self.imported.GetSelection()
-        if not self.current_synth() or selected == wx.NOT_FOUND: return
+    def on_remove(self, event):
+        selected = self._selected_dictionary()
+        if not self.current_synth() or not selected:
+            return
+        kind, index = selected
+        if kind == 'eci':
+            del self.sources[index]
+            self.redraw(index)
+            return
         from NVDAState import shouldWriteToDisk
         if not shouldWriteToDisk():
             gui.messageBox(_("NVDA cannot save dictionaries in this mode."), self.title,
@@ -518,62 +590,27 @@ class EloquenceSettingsPanel(SettingsPanel):
             return
         if gui.messageBox(_("Remove this imported copy? The original dictionary is kept."),
                           _("NVDA speech dictionaries"), wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION,
-                          parent=self) != wx.YES: return
+                          parent=self) != wx.YES:
+            return
         try:
-            self.synth.imported_dictionary_manager().remove(self.imported_records[selected][0])
-            self.redraw_imported(selected)
+            self.synth.imported_dictionary_manager().remove(self.imported_records[index][0])
+            self.redraw(len(self.sources) + index)
         except (OSError, ValueError) as error:
             gui.messageBox(_("NVDA dictionary removal failed: %s") % str(error), self.title,
                            wx.OK | wx.ICON_ERROR, parent=self)
 
+    def move(self, delta):
+        selected = self._selected_dictionary()
+        if selected and selected[0] == 'eci':
+            index = selected[1]
+            target = index + delta
+            if 0 <= target < len(self.sources):
+                self.sources[index], self.sources[target] = self.sources[target], self.sources[index]
+                self.redraw(target)
+
     def on_folder(self, event):
         if self.current_synth():
             os.startfile(str(self.synth.dictionary_manager().bundled))
-
-    def current_synth(self):
-        return self.synth is not None and synthDriverHandler.getSynth() is self.synth
-
-    def redraw(self, selected=None):
-        labels = {language.id: _(language.name) for language in self.languages}
-        self.files.Set([f"{index + 1}. {source.path} — {labels[source.language]}, {self.volumes[source.volume]}"
-                        for index, source in enumerate(self.sources)])
-        if selected is not None and self.sources:
-            self.files.SetSelection(min(selected, len(self.sources) - 1))
-        self.redraw_imported()
-
-    def on_add(self, event):
-        with wx.FileDialog(self, _("Choose a pronunciation dictionary"),
-                           wildcard=_("Dictionary files (*.dic)|*.dic|All files (*.*)|*.*"),
-                           style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as dialog:
-            if dialog.ShowModal() != wx.ID_OK:
-                return
-            path = dialog.GetPath()
-        language_names = [_(language.name) for language in self.languages]
-        with wx.SingleChoiceDialog(self, _("Language of the dictionary:"),
-                                   _("Dictionary language"), language_names) as dialog:
-            if dialog.ShowModal() != wx.ID_OK:
-                return
-            language = self.languages[dialog.GetSelection()].id
-        with wx.SingleChoiceDialog(self, _("Dictionary type:"),
-                                   _("Dictionary type"), self.volumes) as dialog:
-            if dialog.ShowModal() != wx.ID_OK:
-                return
-            volume = dialog.GetSelection()
-        self.sources.append(self.source_class(path, language, volume))
-        self.redraw(len(self.sources) - 1)
-
-    def on_remove(self, event):
-        selected = self.files.GetSelection()
-        if selected != wx.NOT_FOUND:
-            del self.sources[selected]
-            self.redraw(selected)
-
-    def move(self, delta):
-        selected = self.files.GetSelection()
-        target = selected + delta
-        if selected != wx.NOT_FOUND and 0 <= target < len(self.sources):
-            self.sources[selected], self.sources[target] = self.sources[target], self.sources[selected]
-            self.redraw(target)
 
     def begin(self, show_result=False):
         self.pending = True
@@ -758,11 +795,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
     def _offer_update(self, update):
         settings = config.conf['reloqCUpdates']
-        if (self._closed or not settings['automatic'] or update.version in self._offered or
-                update.version == settings['lastOffered']):
+        if (self._closed or not settings['automatic'] or update.identity in self._offered or
+                update.identity == settings['lastOffered']):
             return
-        self._offered.add(update.version)
-        settings['lastOffered'] = update.version
+        self._offered.add(update.identity)
+        settings['lastOffered'] = update.identity
         result = gui.messageBox(
             _("Eloquence C version %s is available. Download and install it?") % update.version,
             _("Add-on updates"), wx.YES_NO | wx.ICON_QUESTION, parent=gui.mainFrame)

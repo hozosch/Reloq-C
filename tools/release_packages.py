@@ -34,7 +34,13 @@ def release_version(version):
 
 
 def android_name(version, name):
-    return re.fullmatch(rf'reloq-c-android-arm64-{re.escape(version)}\.apk', name)
+    return name in android_names(version)
+
+
+def android_names(version):
+    names(version)  # Validate before interpolating into a package name.
+    archs = ('arm64', 'x86_64') if tuple(map(int, version.split('.'))) >= (1, 4, 0) else ('arm64',)
+    return tuple(f'reloq-c-android-{arch}-{version}.apk' for arch in archs)
 
 
 def verify_packaged_dictionaries(archives, directory):
@@ -51,15 +57,40 @@ def verify_packaged_dictionaries(archives, directory):
     return manifest
 
 
+def verify_packaged_build_epoch(addon, androids, payloads):
+    """All installers must identify the exact same candidate build."""
+    with zipfile.ZipFile(addon) as archive:
+        epoch = json.loads(archive.read('doc/source.json')).get('build_epoch')
+    if type(epoch) is not int or not 0 < epoch <= 253402300799:
+        raise ValueError('invalid NVDA build timestamp')
+    for path, name in [*((p, 'assets/reloq-build-epoch.txt') for p in androids),
+                       *((p, 'build-epoch.txt') for p in payloads)]:
+        with zipfile.ZipFile(path) as archive:
+            if archive.read(name) != f'{epoch}\n'.encode('ascii'):
+                raise ValueError(f'package build timestamp differs: {path.name}')
+    return epoch
+
+
+def release_body(notes, epoch):
+    """The invisible marker identifies a build, not the asset upload time."""
+    if epoch is None:  # Historic release manifests predate build timestamps.
+        return notes
+    if type(epoch) is not int or not 0 < epoch <= 253402300799:
+        raise ValueError('invalid release build timestamp')
+    if '<!-- ReLoq-C build:' in notes:
+        raise ValueError('release notes already contain a build marker')
+    return notes.rstrip() + f'\n\n<!-- ReLoq-C build:{epoch} -->\n'
+
+
 def collect(source, destination):
     version = re.search(r'^version\s*=\s*(\S+)', Path('addon/synth/manifest.ini').read_text(), re.M)[1].strip('"')
-    required = names(version)
+    required = (*names(version), *android_names(version))
     files = [path for path in source.rglob('*') if path.is_file() and
-             (path.name in required or android_name(version, path.name))]
-    if len(files) != 3 or not set(required).issubset(path.name for path in files):
-        raise ValueError('expected one SAPI installer, one NVDA add-on and one ARM64 APK')
+             path.name in required]
+    if len(files) != len(required) or set(required) != {path.name for path in files}:
+        raise ValueError('expected one SAPI installer, one NVDA add-on and every Android ABI')
     addon = next(p for p in files if p.name.endswith('.nvda-addon'))
-    android = next(p for p in files if p.name.endswith('.apk'))
+    androids = [p for p in files if p.name.endswith('.apk')]
     payloads = []
     for arch in ('x64', 'x86'):
         matches = list(source.rglob(f'reloq-c-sapi5-{arch}-{version}-payload.zip'))
@@ -68,13 +99,14 @@ def collect(source, destination):
         payloads.append(matches[0])
     dictionary = verify_packaged_dictionaries(
         [(addon, 'synthDrivers/reloqC/communityDictionaries/'),
-         (android, 'assets/community/'),
+         *((p, 'assets/community/') for p in androids),
          *((p, 'dictionaries/') for p in payloads)], Path('data/community'))
+    epoch = verify_packaged_build_epoch(addon, androids, payloads)
     destination.mkdir(parents=True, exist_ok=False)
     manifest = {'version': version, 'release_version': release_version(version),
                 'source_commit': os.environ['GITHUB_SHA'],
                 'run_id': int(os.environ['GITHUB_RUN_ID']),
-                'dictionary_snapshot': dictionary, 'assets': {}}
+                'dictionary_snapshot': dictionary, 'build_epoch': epoch, 'assets': {}}
     policy = Path('.github/release-policy.json')
     if policy.exists():
         supersedes = json.loads(policy.read_text())['supersedes_tag']
@@ -104,16 +136,16 @@ def verify(directory, request):
     actual = json.loads((directory / 'manifest.json').read_text())
     if actual != wanted:
         raise ValueError('candidate artifact differs from the approved release manifest')
-    expected = names(actual['version'])
+    expected = (*names(actual['version']), *android_names(actual['version']))
     if actual['release_version'] != release_version(actual['version']):
         raise ValueError('release name differs from package version')
     assets = actual['assets']
-    if len(assets) != 3 or not set(expected).issubset(assets):
+    if set(assets) != set(expected):
         raise ValueError('missing installable packages')
     if set(path.name for path in directory.iterdir()) != {*assets, 'manifest.json'}:
         raise ValueError('unexpected files in release artifact')
     for name, metadata in assets.items():
-        if name not in expected and not android_name(actual['version'], name):
+        if name not in expected:
             raise ValueError('unexpected asset name')
         path = directory / name
         if path.stat().st_size != metadata['size'] or sha256(path) != metadata['sha256']:
@@ -122,7 +154,7 @@ def verify(directory, request):
     if os.environ.get('GITHUB_OUTPUT'):
         with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
             output.write(f"version={actual['version']}\nrelease_version={actual['release_version']}\n")
-    print(f"Verified three installables for {actual['version']} from {actual['source_commit']}")
+    print(f"Verified {len(expected)} installables for {actual['version']} from {actual['source_commit']}")
 
 
 if __name__ == '__main__':

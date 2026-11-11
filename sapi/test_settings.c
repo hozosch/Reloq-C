@@ -125,6 +125,13 @@ int main(void)
     assert(sapi_settings_read(0x40000,&s)==S_OK&&s.original_acoustic_clock==2&&s.speed_wpm==210);++checks;
     s.original_acoustic_clock=1;assert(sapi_settings_write(0x40000,&s)==S_OK);
     assert(sapi_settings_read(0x40000,&s)==S_OK&&s.original_acoustic_clock);++checks;
+    s.word_segmentation=1;s.camel_case=1;
+    assert(!RegSetValueExW(key,L"Settings",0,REG_BINARY,(const BYTE *)&s,offsetof(struct sapi_settings,word_segmentation)));
+    assert(sapi_settings_read(0x40000,&en)==S_OK&&!en.word_segmentation&&!en.camel_case&&en.original_acoustic_clock==1);++checks;
+    assert(sapi_settings_write(0x40000,&s)==S_OK);
+    assert(sapi_settings_read(0x40000,&en)==S_OK&&en.word_segmentation&&en.camel_case);++checks;
+    s.word_segmentation=2;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.word_segmentation=1;
+    s.camel_case=2;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.camel_case=1;++checks;
     int gains[3];s.eq_enabled=1;s.eq_preset=1;sapi_equalizer_gains(&s,gains);
     assert(gains[0]==16&&gains[1]==12&&gains[2]==11);s.eq_enabled=0;sapi_equalizer_gains(&s,gains);
     assert(gains[0]==12&&gains[1]==12&&gains[2]==12);++checks;

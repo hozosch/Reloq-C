@@ -20,9 +20,10 @@ struct sapi_settings {
     DWORD eq_enabled,eq_preset,eq_low,eq_mid,eq_high;
     struct sapi_eq_filter eq_filters[SAPI_EQ_FILTER_COUNT];
     DWORD original_acoustic_clock;
+    DWORD word_segmentation,camel_case;
 };
 #ifndef RELOQ_SAPI_TEST_HOST
-_Static_assert(sizeof(struct sapi_settings)==2256,"SAPI settings must be compatible across x86/x64");
+_Static_assert(sizeof(struct sapi_settings)==2264,"SAPI settings must be compatible across x86/x64");
 #endif
 static inline void sapi_equalizer_gains(const struct sapi_settings *s,int result[3])
 {
@@ -44,9 +45,10 @@ HRESULT sapi_settings_shared(BOOL *);
 HRESULT sapi_settings_set_shared(int,BOOL);
 HRESULT sapi_settings_dialog(HWND,int);
 int sapi_module_path(WCHAR *,size_t,const WCHAR *);
-#ifndef RELOQ_SAPI_TEST_HOST
 #define SAPI_DICTIONARY_FILES_MAX 64
-struct sapi_dictionary_file {int dialect;DWORD volume;WCHAR path[1024];};
+enum {SAPI_DICT_AUTO=0,SAPI_DICT_ECI=1,SAPI_DICT_NVDA=2};
+struct sapi_dictionary_file {int dialect;DWORD volume;WCHAR path[1024];DWORD format,voice;};
+#ifndef RELOQ_SAPI_TEST_HOST
 HRESULT sapi_dictionary_files_load(struct sapi_dictionary_file *,size_t,size_t *);
 HRESULT sapi_dictionary_files_save(const struct sapi_dictionary_file *,size_t);
 HRESULT sapi_dictionary_resolve(const struct sapi_settings *,WCHAR *,size_t);

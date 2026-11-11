@@ -1,12 +1,13 @@
-# Android ARM64
+# Android
 
 ReLoq C uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `1.2.2` targets ARM64 (`arm64-v8a`), Android 8/API 26
+add-on. Version `1.4.0` targets ARM64 (`arm64-v8a`) and x86-64 (`x86_64`), Android 8/API 26
 or later. Speech runs offline. Network access is used for dictionary updates and automatic or manual app-update checks. Package downloads open in the browser.
 
 ## Install or update
 
-Install `reloq-c-android-arm64-1.2.2.apk` from GitHub Releases. This build
+Install the `reloq-c-android-arm64-1.4.0.apk` or
+`reloq-c-android-x86_64-1.4.0.apk` from GitHub Releases according to the device architecture. This build
 is named **ReLoq C** and uses the app identity `org.reloq.tts`. Installations
 already using this identity update in place and retain their settings and
 dictionaries. The published 1.1 uses an earlier identity, so a direct upgrade
@@ -95,13 +96,19 @@ current master** resolves the current `eigencrow/IBMTTSDictionaries` master,
 verifies the downloaded Git blobs and activates a complete new snapshot.
 Synthesis does not access the network.
 
-Select a language and Main, Root or Abbreviations before adding your own Dic
-file through Android's file picker. Files use Windows-1252 and tab-separated
-entries. You can reorder or remove sources; later own files override earlier
-ones and community entries. Main preserves case; German Root retains its native
-case folding. Replacements and phonetic entries go through the C core's normal
-dictionary stages, including compound/context handling, rather than a Java
-text substitution.
+Select a language and file format before adding a personal dictionary through
+Android's file picker. Eloquence files use Main, Root or Abbreviations and
+Windows-1252; later own files override earlier files and community entries.
+They go through the normal native dictionary stages, including compound and
+context handling. Main preserves case; German Root retains its native folding.
+
+NVDA speech dictionaries use UTF-8 and apply to all voices or one selected
+voice. Their entries are processed in order before pronunciation and word
+segmentation, independently of the community switch. The format can be detected
+automatically or selected explicitly, including for an ambiguous file.
+Previously selected NVDA-format files are recognized on reload. The source
+file is not changed. Android uses its own regular-expression engine, so some
+Python-specific patterns and Unicode case-folding details may differ from NVDA.
 
 Selected sources remain linked using persistent file permissions. While the
 speech service is running, the monitor checks modification metadata every two
@@ -146,6 +153,12 @@ is reserved for a build where the current master commit has already been
 resolved independently and the local snapshot has been verified. Output goes
 under `dist/`. Android uses separate object directories and preserves the
 Windows/Linux outputs. Rebuild the Android objects after changing compiler flags.
+
+`--abi x86_64` builds an x86-64 APK, `dist/reloq-c-android-x86_64-1.4.0.apk`,
+with its objects under `android/build-x86_64`. The default is `arm64-v8a`.
+The package name and signing identity are the same for both ABIs. App updates
+select the architecture of the installed package. The NDK host directory is
+selected for Linux or macOS.
 
 The checked-in `release-signing.p12` is an intentionally public **test signing
 identity**, alias `androiddebugkey`, password `android`. Production distribution
@@ -213,7 +226,8 @@ The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 ```sh
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
-python3 android/verify_apk.py dist/reloq-c-android-arm64-1.2.2.apk
+python3 android/verify_apk.py dist/reloq-c-android-arm64-1.4.0.apk
+python3 android/verify_apk.py dist/reloq-c-android-x86_64-1.4.0.apk --abi x86_64
 ```
 
 Build verification checks signatures, the install-critical resource table,
@@ -224,7 +238,7 @@ For an isolated build, pass `--build-dir /absolute/fresh/build-directory`; the o
 
 ## App updates
 
-Choose **App updates** on the settings screen, then **Check for updates**. By default, the app periodically checks published GitHub Releases and notifies you of a newer version. You can disable automatic checks on this screen. On Android 13 or later, notification permission is requested when you open the settings; without it the manual check still works. Android can defer background checks to conserve power. If a newer ARM64 package is available, choose **Open download in browser**. The release link must name this project’s newer ARM64 APK on GitHub, with valid size and SHA-256 metadata. The browser downloads the file and Android handles installation and signature checks. ReLoq does not request package-install permission or provide an APK installation service. Keep Play Protect enabled; a warning is not a successful security check.
+Choose **App updates** on the settings screen, then **Check for updates**. By default, the app periodically checks published GitHub Releases and notifies you of a newer version. You can disable automatic checks on this screen. On Android 13 or later, notification permission is requested when you open the settings; without it the manual check still works. Android can defer background checks to conserve power. If a newer package for the installed architecture is available, choose **Open download in browser**. The release link must name this project’s matching APK on GitHub, with valid size and SHA-256 metadata. The browser downloads the file and Android handles installation and signature checks. ReLoq does not request package-install permission or provide an APK installation service. Keep Play Protect enabled; a warning is not a successful security check.
 
 Installable packages are available from [GitHub Releases](https://github.com/hozosch/Reloq-C/releases).
 The speech service does not perform update downloads. Package updates and dictionary updates are separate actions.

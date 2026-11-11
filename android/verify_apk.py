@@ -20,7 +20,10 @@ def data_offset(stream, entry):
     return entry.header_offset+30+name+extra
 
 
-def verify_apk(path):
+MACHINES={"arm64-v8a":183,"x86_64":62}
+
+
+def verify_apk(path,abi="arm64-v8a"):
     path=Path(path)
     with path.open("rb") as stream,zipfile.ZipFile(path) as apk:
         entry=apk.getinfo("resources.arsc")
@@ -30,12 +33,12 @@ def verify_apk(path):
         if offset%4:raise ValueError("resources.arsc is not 4-byte aligned")
         if not apk.read("classes.dex").startswith(b"dex\n"):
             raise ValueError("missing DEX code")
-        native=apk.getinfo("lib/arm64-v8a/libreloq_android.so")
+        native=apk.getinfo(f"lib/{abi}/libreloq_android.so")
         if native.compress_type==zipfile.ZIP_STORED and data_offset(stream,native)%16384:
-            raise ValueError("uncompressed ARM64 library is not 16-KiB ZIP aligned")
+            raise ValueError(f"uncompressed {abi} library is not 16-KiB ZIP aligned")
         data=apk.read(native)
-        if data[:6]!=b"\x7fELF\x02\x01" or struct.unpack_from("<H",data,18)[0]!=183:
-            raise ValueError("native library is not little-endian ELF64 AArch64")
+        if data[:6]!=b"\x7fELF\x02\x01" or struct.unpack_from("<H",data,18)[0]!=MACHINES[abi]:
+            raise ValueError(f"native library is not little-endian ELF64 {abi}")
         at=struct.unpack_from("<Q",data,32)[0]
         size,count=struct.unpack_from("<HH",data,54)
         loads=0
@@ -44,9 +47,9 @@ def verify_apk(path):
             if kind==1:
                 loads+=1
                 if alignment<16384 or location%alignment!=address%alignment:
-                    raise ValueError("ARM64 LOAD segment is not 16-KiB aligned")
+                    raise ValueError(f"{abi} LOAD segment is not 16-KiB aligned")
         if not loads:raise ValueError("no native LOAD segments")
-    print(f"APK install rules: stored resources.arsc at {offset}, 4-byte alignment and ARM64 16-KiB segments passed")
+    print(f"APK install rules: stored resources.arsc at {offset}, 4-byte alignment and {abi} 16-KiB segments passed")
 
 
 def apk_identity(path,aapt2,apksigner,environment=None):
@@ -119,10 +122,11 @@ def verify_permissions(path,aapt2):
 if __name__=="__main__":
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("apk",type=Path)
+    p.add_argument("--abi",choices=sorted(MACHINES),default="arm64-v8a")
     p.add_argument("--reject",type=Path,help="Regression: an older broken APK that must fail validation")
     a=p.parse_args()
     if a.reject:
-        try:verify_apk(a.reject)
+        try:verify_apk(a.reject,a.abi)
         except ValueError as error:print("Previous APK rejected as expected:",error)
         else:raise AssertionError("known-broken APK unexpectedly passed")
-    verify_apk(a.apk)
+    verify_apk(a.apk,a.abi)

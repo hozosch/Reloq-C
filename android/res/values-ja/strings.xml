@@ -54,7 +54,7 @@
     <string name="move_dictionary_up">選択したファイルを前へ移動</string>
     <string name="move_dictionary_down">選択したファイルを後へ移動</string>
     <string name="reload_dictionaries">選択したファイルを再読み込み</string>
-    <string name="dictionary_help">コミュニティ辞書と自分の Dic エントリーは、エンジン本来の辞書処理を使用します。ファイルを追加する前に、言語と辞書の種類を選んでください。ファイルの文字コードは Windows-1252 です。後のファイルのエントリーが、前のファイルのエントリーを上書きします。ドキュメントプロバイダーが更新情報を提供する場合は、変更を監視します。選択したファイルを再読み込みすると、必ず元のファイルを読み直します。選択したソースは初回使用時または更新時にダウンロードされます。 有効な辞書はデバイス保護ストレージにコピーされ、再起動後、最初のロック解除前から使用できます。</string>
+    <string name="dictionary_help">言語と形式を選択します。Eloquence辞書には選択した種類が、NVDA辞書には選択した音声が適用されます。個人辞書はコミュニティ辞書とは別に動作します。再読み込みで元のファイルを読み直します。</string>
     <string name="dictionary_working">辞書を準備しています</string>
     <string name="dictionary_ready">辞書の準備ができました</string>
     <string name="dictionary_error">辞書の更新に失敗しました：%1$s</string>
@@ -85,6 +85,8 @@
     <string name="dictionary_update_files_new">新しい辞書ファイル: %1$d</string>
     <string name="dictionary_update_files_total">辞書ファイルの合計: %1$d</string>
     <string name="dictionary_update_files_unknown">新しい辞書ファイル数を特定できませんでした。</string>
+    <string name="word_segmentation">未知の英単語を分割</string>
+    <string name="camel_case">キャメルケースの単語を分割（すべての言語）</string>
     <string name="original_questions">元の疑問文のイントネーションを使用</string>
     <string name="mellow_mode">ソフトモード（16 kHz 以上）</string>
     <string name="original_acoustic_clock">選択した言語に元の音響タイミングを使用（5 ms）</string>
@@ -121,4 +123,8 @@
     <string name="not_now">後で</string>
     <string name="update_notification_title">ReLoq C の更新</string>
     <string name="update_notification_body">バージョン %1$s が利用可能です。タップして確認し、ダウンロードします。</string>
+    <string name="dictionary_format">辞書の形式</string>
+    <string name="dictionary_voice">NVDA辞書を使う音声</string>
+    <string name="dictionary_all_voices">すべての音声</string>
+    <string-array name="dictionary_formats"><item>自動判定</item><item>NVDA</item><item>Eloquence</item></string-array>
 </resources>

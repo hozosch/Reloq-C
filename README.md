@@ -2,8 +2,10 @@
 
 ReLoq C is a speech synthesis project that preserves the familiar character of Eloquence while improving pronunciation, responsiveness and control over the voice. Apple Eloquence serves as the reference for language behaviour and sound.
 
-The shared synthesis engine is written in C. NVDA, Android ARM64 and Windows SAPI5 use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
+The shared synthesis engine is written in C. NVDA, Android and Windows SAPI5 use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
 
+**1.4.0** improves optional word segmentation and NVDA dictionary import,
+fixes Italian words ending in an apostrophe, and adds Android x86-64 packages.
 **1.2.2** adds an optional exact base pitch in hertz and improves German final
 A before pauses. **1.2.1** refined the optional mellow voice mode for a softer,
 less breathy sound. **1.2.0** improved Greek pronunciation and sentence melody,
@@ -12,15 +14,15 @@ question intonation for German and American English.
 
 ## Download and install
 
-The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provides three installable packages:
+The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provides installable packages for three platforms:
 
 | Platform | Package | Requirements |
 | --- | --- | --- |
 | NVDA | `.nvda-addon` | NVDA 2026.1 or later, 64-bit process |
-| Android | ARM64 `.apk` | Android 8 or later, ARM64 device |
+| Android | ARM64 or x86-64 `.apk` | Android 8 or later, matching device architecture |
 | Windows SAPI5 | `-setup.exe` | Installs x64 and x86 voices together on compatible Windows |
 
-Release **1.3.1** updates existing installations on all three platforms. If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [1.3.1 release notes](docs/releases/1.3.1.md) for this update. Source archives are for developers and are not installable packages.
+Release **1.4.0** updates existing installations on all three platforms. If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [1.4.0 release notes](docs/releases/1.4.0.md) for this update. Source archives are for developers and are not installable packages.
 
 ## Current features
 
@@ -51,7 +53,7 @@ The [English user guide](docs/USER-GUIDE.en.md) and [German user guide](docs/USE
 
 ## Android
 
-The Android app targets **ARM64 devices running Android 8 or later**. It includes all 14 language variants and eight voice presets, runs offline, and appears as **ReLoq C** in Android's text-to-speech settings. Its launcher screen provides all voice/output controls, independent Android speed and pitch overrides, and optional community/custom dictionaries.
+The Android app targets **ARM64 and x86-64 devices running Android 8 or later**. It includes all 14 language variants and eight voice presets, runs offline, and appears as **ReLoq C** in Android's text-to-speech settings. Its launcher screen provides all voice/output controls, independent Android speed and pitch overrides, and optional community/custom dictionaries.
 
 The [Android instructions](android/README.md) explain installation, building and validation limits. Android's live settings and speech engine have been confirmed in practical use. Automated host tests complement device testing; they do not establish audible performance on every device.
 

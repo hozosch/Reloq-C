@@ -30,3 +30,55 @@ The GPL text is also available at https://www.gnu.org/licenses/gpl-3.0.html.
 
 This notice covers ReLoq C; it grants no rights to proprietary Eloquence,
 IBM, Apple or other third-party software, data or trademarks.
+
+
+CMU Pronouncing Dictionary (CMUdict)
+The reference-checked English compound data in src/reloq_wordseg_compounds.inc
+was derived using CMUdict revision 74790861f652b15e4ac49015a90074ad62a27690:
+https://github.com/cmusphinx/cmudict
+
+Copyright (C) 1993-2015 Carnegie Mellon University. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+   The contents of this file are deemed to be source code.
+
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in
+   the documentation and/or other materials provided with the
+   distribution.
+
+This work was supported in part by funding from the Defense Advanced
+Research Projects Agency, the Office of Naval Research and the National
+Science Foundation of the United States of America, and by member
+companies of the Carnegie Mellon Sphinx Speech Consortium. We acknowledge
+the contributions of many volunteers to the expansion and improvement of
+this dictionary.
+
+THIS SOFTWARE IS PROVIDED BY CARNEGIE MELLON UNIVERSITY ``AS IS'' AND
+ANY EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
+NOR ITS EMPLOYEES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+British English pronunciation reference
+The reference-checked compound data was also compared with en_UK from
+open-dict-data/ipa-dict revision 972cd67dd5f96bc5660e28070cde26e3928abcd7:
+https://github.com/open-dict-data/ipa-dict
+That dataset is based on Leo Boiko's ipacards and is licensed under GPL-3.0;
+the license text is included in LICENSE.
+
+PCRE2
+The SAPI adapter uses PCRE2 10.45 for imported speech-dictionary patterns.
+The source and copyright/license terms are in vendor/pcre2/LICENSE; the SAPI
+packages include the same text in licenses/PCRE2-LICENSE.txt.

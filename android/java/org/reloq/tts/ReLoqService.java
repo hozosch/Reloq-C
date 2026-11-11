@@ -26,6 +26,9 @@ public final class ReLoqService extends TextToSpeechService {
     private volatile boolean destroyed;
     private boolean dictionariesStarted,legacyFilesCleaned;
     private Future<?> dictionaryStartup;
+    private String speechDictionaryPath;
+    private int speechDictionaryLanguage=-1,speechDictionaryVoice=-1;
+    private SpeechDictionary speechDictionary;
     private volatile PcmQueue active;
     private volatile Catalog.Language selected = Catalog.LANGUAGES[3];
 
@@ -128,7 +131,7 @@ public final class ReLoqService extends TextToSpeechService {
         VoiceSettings settings=Preferences.read(preferences,profile);
         int rate=VoiceSettings.bounded(settings.rate,0,Catalog.RATES.length-1);
         int[] controls=settings.controls(request.getSpeechRate(),request.getPitch(),item.id);
-        byte[] utf8=request.getCharSequenceText().toString().getBytes(StandardCharsets.UTF_8);
+        String originalText=request.getCharSequenceText().toString();
         PcmQueue queue=new PcmQueue(16);
         active=queue;
         final int dialect=item.id;
@@ -155,9 +158,18 @@ public final class ReLoqService extends TextToSpeechService {
                             throw new IllegalStateException("Direct Boot dictionary snapshot unavailable");
                         long handle=ensureContext();
                         if(handle!=0 && !queue.isCancelled()) {
-                            NativeEngine.dictionary(handle,dictionaries!=null?dictionaries.path:
-                                bootDictionaries!=null?bootDictionaries.path:null);
-                            success=NativeEngine.synthesize(handle,dialect,controls,utf8,queue);
+                            String path=dictionaries!=null?dictionaries.path:
+                                bootDictionaries!=null?bootDictionaries.path:null;
+                            NativeEngine.dictionary(handle,path);
+                            int voice=profile+1;
+                            if(speechDictionary==null||!java.util.Objects.equals(path,speechDictionaryPath)||
+                               dialect!=speechDictionaryLanguage||voice!=speechDictionaryVoice) {
+                                speechDictionary=SpeechDictionary.load(path==null?null:new File(path),dialect,voice);
+                                speechDictionaryPath=path;speechDictionaryLanguage=dialect;speechDictionaryVoice=voice;
+                            }
+                            SpeechDictionary.Result changed=speechDictionary.apply(originalText);
+                            success=NativeEngine.synthesize(handle,dialect,controls,
+                                changed.text.getBytes(StandardCharsets.UTF_8),queue,changed.matched);
                         }
                     }
                 } catch(Throwable error) { Log.e("ReLoq","Synthesis failed",error); }

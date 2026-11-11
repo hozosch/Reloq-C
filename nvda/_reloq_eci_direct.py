@@ -52,6 +52,7 @@ MELLOW_MODE = 0x1016
 NATIVE_WPM = 0x1017
 EQ_LOW, EQ_MID, EQ_HIGH = 0x1018, 0x1019, 0x101a
 ORIGINAL_ACOUSTIC_CLOCK = 0x101b
+WORD_SEGMENTATION, CAMEL_CASE = 0x101c, 0x101d
 EQ_FILTER_BASE, EQ_FILTER_COUNT, EQ_FILTER_STRIDE = 0x1020, 5, 4
 # Adapter-only control: exact ECI pitch in Hz; zero restores the VB scale.
 PITCH_HZ = 0x2000
@@ -73,6 +74,8 @@ class EciText:
     # If this text is a protected NVDA speed tag, replay just its speed
     # effect across an explicit NVDA language change in the same utterance.
     speed_control: str | None = None
+    # Host dictionary substitutions take precedence over the native splitter.
+    segmentation_guarded: bool = False
 
 
 @dataclass(frozen=True)
@@ -86,6 +89,7 @@ class EciCapitalWord:
 class _Utf8Text:
     data: bytes
     character_mode: bool
+    segmentation_guarded: bool = False
 
 
 @dataclass(frozen=True)
@@ -267,14 +271,14 @@ class DirectEciEngine:
         eq_filter = EQ_FILTER_BASE <= parameter < EQ_FILTER_BASE + EQ_FILTER_COUNT * EQ_FILTER_STRIDE
         if not eq_filter and parameter not in (GENERIC_RATE, GENERIC_PITCH, GENERIC_VOLUME,
                              NATIVE_SPEED, NATIVE_PITCH, NATIVE_INFLECTION,
-                             NATIVE_VOLUME, NATIVE_WPM, PROCESS_TAGS, DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, ORIGINAL_ACOUSTIC_CLOCK, EQ_LOW, EQ_MID, EQ_HIGH, PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATE, HIGH_RATE_PROFILE, GERMAN_GLIDE_OPENING, GERMAN_GLIDE_BACKNESS, GERMAN_GLIDE_SOFTNESS):
+                             NATIVE_VOLUME, NATIVE_WPM, PROCESS_TAGS, DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, ORIGINAL_ACOUSTIC_CLOCK, WORD_SEGMENTATION, CAMEL_CASE, EQ_LOW, EQ_MID, EQ_HIGH, PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATE, HIGH_RATE_PROFILE, GERMAN_GLIDE_OPENING, GERMAN_GLIDE_BACKNESS, GERMAN_GLIDE_SOFTNESS):
             raise ValueError("unsupported generic voice parameter")
         low, high = (((0,1),(1,24000),(0,24),(10,400))[(parameter-EQ_FILTER_BASE)%EQ_FILTER_STRIDE] if eq_filter else
                      (0, 24) if parameter in (EQ_LOW, EQ_MID, EQ_HIGH) else
                      (0, 6000) if parameter == NATIVE_WPM else
                      (0, 250) if parameter == NATIVE_SPEED else
                      (0, 2) if parameter == ORIGINAL_ACOUSTIC_CLOCK else
-                     (0, 1) if parameter in (PROCESS_TAGS, GENDER, DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE) else
+                     (0, 1) if parameter in (PROCESS_TAGS, GENDER, DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, WORD_SEGMENTATION, CAMEL_CASE) else
                      (0, 6) if parameter == SAMPLE_RATE else
                      (0, 3) if parameter == HIGH_RATE_PROFILE else
                      (0, 2) if parameter == PAUSE_MODE else (0, 100))
@@ -392,9 +396,10 @@ class DirectEciEngine:
             if isinstance(part, EciText) or isinstance(part, str) and codecs.lookup(encoding).name == "utf-8":
                 text = part.text if isinstance(part, EciText) else part
                 mode = part.character_mode if isinstance(part, EciText) else False
-                if not isinstance(text, str) or not isinstance(mode, bool):
+                guarded = part.segmentation_guarded if isinstance(part, EciText) else False
+                if not isinstance(text, str) or not isinstance(mode, bool) or not isinstance(guarded, bool):
                     raise TypeError("invalid native Unicode text run")
-                prepared.append(_Utf8Text(text.encode("utf-8", errors="strict"), mode))
+                prepared.append(_Utf8Text(text.encode("utf-8", errors="strict"), mode, guarded))
             elif isinstance(part, str):
                 encoded = part.encode(encoding, errors="strict")
                 if b"\0" in encoded:
@@ -475,7 +480,8 @@ class DirectEciEngine:
                 if self._cancelled.is_set():
                     return False
                 if isinstance(part, _Utf8Text):
-                    ok = self._dll.eciAddTextUtf8(self._handle, part.data, len(part.data), int(part.character_mode))
+                    mode = int(part.character_mode) | (int(part.segmentation_guarded) << 1)
+                    ok = self._dll.eciAddTextUtf8(self._handle, part.data, len(part.data), mode)
                     operation = "eciAddTextUtf8"
                 elif isinstance(part, EciIndex):
                     ok = self._dll.eciInsertIndex(self._handle, part.value)

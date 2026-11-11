@@ -54,7 +54,7 @@
     <string name="move_dictionary_up">将所选文件前移</string>
     <string name="move_dictionary_down">将所选文件后移</string>
     <string name="reload_dictionaries">重新加载所选文件</string>
-    <string name="dictionary_help">社区词典和自定义 Dic 条目均使用引擎原生的词典处理阶段。添加文件前请选择语言和分卷。文件使用 Windows-1252 编码。后面的文件会覆盖前面文件的条目。如果文档提供程序提供修改信息，就会监控文件变更；重新加载所选文件会始终重新读取源文件。所选来源在首次使用或更新时下载。 启用的词典会复制到设备保护存储空间，以便重启后在首次解锁前使用。</string>
+    <string name="dictionary_help">选择语言和格式。Eloquence 文件使用选定的词典类型，NVDA 文件使用选定的语音。个人文件独立于社区词典运行。重新加载可再次读取源文件。</string>
     <string name="dictionary_working">正在准备词典</string>
     <string name="dictionary_ready">词典已就绪</string>
     <string name="dictionary_error">词典更新失败：%1$s</string>
@@ -85,6 +85,8 @@
     <string name="dictionary_update_files_new">新增词典文件: %1$d</string>
     <string name="dictionary_update_files_total">词典文件总数: %1$d</string>
     <string name="dictionary_update_files_unknown">无法确定新增词典文件数。</string>
+    <string name="word_segmentation">拆分未知英语单词</string>
+    <string name="camel_case">拆分驼峰式单词（所有语言）</string>
     <string name="original_questions">使用原始疑问语调</string>
     <string name="mellow_mode">柔和模式（16 kHz 及以上）</string>
     <string name="original_acoustic_clock">对所选语言使用原始声音时序（5 毫秒）</string>
@@ -121,4 +123,8 @@
     <string name="not_now">暂不</string>
     <string name="update_notification_title">ReLoq C 更新</string>
     <string name="update_notification_body">版本 %1$s 已发布。点击查看并下载。</string>
+    <string name="dictionary_format">词典格式</string>
+    <string name="dictionary_voice">NVDA 词典使用的语音</string>
+    <string name="dictionary_all_voices">所有语音</string>
+    <string-array name="dictionary_formats"><item>自动检测</item><item>NVDA</item><item>Eloquence</item></string-array>
 </resources>

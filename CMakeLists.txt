@@ -5,7 +5,7 @@ add_library(reloq_core STATIC src/reloq_core.c src/reloq_annotation.c
     src/reloq_german_stop_phase.c
     src/reloq_duration_span.c
     src/reloq_german_transition_duration.c
-    src/reloq_parameter_stream.c src/reloq_utf8.c src/reloq_cp1252.c src/reloq_german_input.c
+    src/reloq_parameter_stream.c src/reloq_utf8.c src/reloq_cp1252.c src/reloq_german_input.c src/reloq_wordseg.c
     src/reloq_phonetic.c
     src/reloq_frame_adapter.c src/reloq_session.c
     src/reloq_numeric_pipeline.c src/reloq_acoustic_curve.c
