@@ -166,6 +166,7 @@ jobs:
           python3 android/test_translations.py
           python3 android/test_settings.py --settings-only --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar"
           python3 android/test_direct_boot.py --java-home "$JAVA_HOME"
+          python3 android/test_update_compilation.py --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar"
       - name: Download the preceding APK for upgrade verification
         env:
           GH_TOKEN: ${{ github.token }}
