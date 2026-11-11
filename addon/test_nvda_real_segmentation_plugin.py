@@ -116,6 +116,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                            for word in (False,True)]
             self.cases += [(word,False,'COMMUNITY:' + text) for text in self.community_words
                            for word in (False,True)]
+            self.cases += [(word,False,dialect + ':' + text)
+                           for dialect in ('ENUS', 'ENGB')
+                           for text in ('fileswap',)
+                           for word in (False,True)]
             self.cases += [(word,False,text) for text in ('IMPORT:plain', 'IMPORT:digits', 'IMPORT:regex', 'IMPORT:legacy')
                            for word in (False,True)]
             self.next()
@@ -155,13 +159,19 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                         rows = [row for row in self.results if row['input'] == 'COMMUNITY:' + word]
                         if len(rows) != 2 or rows[0]['pcm_sha256'] != rows[1]['pcm_sha256']:
                             raise AssertionError('community dictionary was overridden: ' + repr(rows))
+                    for dialect in ('ENUS', 'ENGB'):
+                        for text in ('fileswap',):
+                            rows = [row for row in self.results if row['input'] == dialect + ':' + text]
+                            if len(rows) != 2 or rows[0]['pcm_sha256'] == rows[1]['pcm_sha256']:
+                                raise AssertionError('English compound was not segmented in NVDA: ' + repr(rows))
                 RESULT.write_text(json.dumps({'ok':True,'cases':self.results}, ensure_ascii=False),encoding='utf8')
                 return
             word,camel,text = self.cases[self.case]
             self.speech.cancelSpeech()
             self.synth._wordSegmentation = word
             self.synth._camelCase = camel
-            self.synth.language = 'en_US' if text.startswith(('DICT:', 'COMMUNITY:')) else 'de_DE'
+            self.synth.language = ('en_GB' if text.startswith('ENGB:') else
+                                   'en_US' if text.startswith(('ENUS:', 'DICT:', 'COMMUNITY:')) else 'de_DE')
             self.records.clear()
             self.before = [(p,len(p.chunks)) for p in self.players]
             if text.startswith('IMPORT:'):
@@ -171,6 +181,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             elif text.startswith('DICT:'):
                 self.speech.speak(['reloqtest ' + ('hello' if text == 'DICT:plain' else self.ordinary_compound)])
             elif text.startswith('COMMUNITY:'):
+                self.speech.speak([text.split(':', 1)[1]])
+            elif text.startswith(('ENUS:', 'ENGB:')):
                 self.speech.speak([text.split(':', 1)[1]])
             elif text.startswith('ROLE:'):
                 import controlTypes

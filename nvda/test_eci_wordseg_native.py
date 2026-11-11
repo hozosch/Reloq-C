@@ -19,10 +19,31 @@ def main():
             try:
                 assert engine._dll.eciGetParam(engine._handle, WORD_SEGMENTATION) == 0
                 assert engine._dll.eciGetParam(engine._handle, CAMEL_CASE) == 0
-                compounds = {'swapfile': ('swap', 'file'), 'framebuffer': ('frame', 'buffer'),
+                compounds = {'swapfile': ('swap', 'file'), 'fileswap': ('file', 'swap'),
+                             'swaphost': ('swap', 'host'), 'swapbuffer': ('swap', 'buffer'),
+                             'filecandle': ('file', 'candle'), 'candlefile': ('candle', 'file'),
+                             'shopfile': ('shop', 'file'), 'filelock': ('file', 'lock'),
+                             'framebuffer': ('frame', 'buffer'),
                              'keyframe': ('key', 'frame'), 'blackboard': ('black', 'board'),
+                             'newspaper': ('news', 'paper'), 'candlelight': ('candle', 'light'),
+                             'homepage': ('home', 'page'), 'waterbed': ('water', 'bed'),
                              'redhead': ('red', 'head'), 'redheaded': ('red', 'headed'),
                              'redheads': ('red', 'heads')}
+                if dialect == 0x10000:
+                    compounds['piebald'] = ('pie', 'bald')
+                # Both dialects must handle the same productive component
+                # boundaries, using each dialect's native pronunciations.
+                for first, second in (
+                    ('file','cache'), ('cache','file'), ('file','type'), ('type','file'),
+                    ('file','mode'), ('mode','file'), ('file','path'), ('path','file'),
+                    ('file','slot'), ('slot','file'), ('file','index'), ('index','file'),
+                    ('file','map'), ('map','file'), ('file','port'), ('port','file'),
+                    ('lock','buffer'), ('buffer','lock'), ('disk','file'), ('file','disk'),
+                    ('stock','file'), ('file','stock'), ('file','host'), ('host','file'),
+                    ('screen','file'), ('file','screen'), ('swap','cache'), ('cache','swap'),
+                    ('swap','data'), ('swap','name'), ('swap','frame'), ('lock','file'),
+                    ('home','spot'), ('top','swap')):
+                    compounds[first + second] = (first, second)
                 established = ('cupboard', 'Cupboard', 'CUPBOARD', 'cupboards',
                                'breakfast', 'breakfasts', 'raspberry', 'raspberries',
                                'strawberry', 'waistcoat', 'butterfly', 'lighthouse')
@@ -32,6 +53,13 @@ def main():
                 known_phones = {text: re.findall(r'`\[([^]]+)\]', engine._phonemes_for_probe(text))
                                 for text in established}
                 known_audio = {text: render(engine, [text])[0] for text in established}
+                if dialect == 0x10001:
+                    # A correct British word and uncertain British compound
+                    # readings must not be replaced just because the US
+                    # pronunciation can be split.
+                    uk_protected = ('homophone', 'piebald', 'coverall', 'cation')
+                    known_uk = {word: engine._phonemes_for_probe(word) for word in uk_protected}
+                    known_uk_audio = {word: render(engine, [word])[0] for word in uk_protected}
                 def phones(value):
                     return ''.join(re.sub(r'\.[0-3]', '', group) for group in re.findall(r'`\[([^]]+)\]', value))
                 pieces = {text: ''.join(phones(engine._phonemes_for_probe(part)) for part in pair)
@@ -41,6 +69,12 @@ def main():
                     assert re.findall(r'`\[([^]]+)\]', engine._phonemes_for_probe(text)) == known_phones[text], (dialect, text)
                     assert render(engine, [text])[0] == known_audio[text], (dialect, text, 'established pronunciation changed')
                     checks += 1
+                if dialect == 0x10001:
+                    for word in uk_protected:
+                        assert re.findall(r'`\[([^]]+)\]', engine._phonemes_for_probe(word)) == \
+                            re.findall(r'`\[([^]]+)\]', known_uk[word]), (word, dialect)
+                        assert render(engine, [word])[0] == known_uk_audio[word], (word, dialect)
+                        checks += 1
                 for text in compounds:
                     result = engine._phonemes_for_probe(text)
                     assert len(re.findall(r'`\[', result)) == 1 and phones(result) == pieces[text], (dialect, text, result)
@@ -53,12 +87,16 @@ def main():
                 assert re.findall(r'`\[([^]]+)\]', capital) == re.findall(r'`\[([^]]+)\]', normal['CGROUP'])
                 assert render(engine, ['CGROUP'])[0] == capital_audio, 'native uppercase spelling was changed'
                 assert phones(engine._phonemes_for_probe('SWAPFILE')) == pieces['swapfile']
+                assert phones(engine._phonemes_for_probe('FILESWAP')) == pieces['fileswap']
+                assert phones(engine._phonemes_for_probe('Fileswap')) == pieces['fileswap']
+                sentence = re.findall(r'`\[([^]]+)\]', engine._phonemes_for_probe('Open fileswap now'))
+                assert len(sentence)==3 and re.sub(r'\.[0-3]', '', sentence[1])==pieces['fileswap'], (dialect, sentence)
                 checks += 1
                 # A personal pronunciation must beat automatic word splitting.
                 folder = Path(temporary) / prefix
                 folder.mkdir()
                 (folder / (prefix + 'main.dic')).write_bytes(
-                    b'framebuffer\t`[.1tEst]\nredhead\t`[.1zibrx]\n')
+                    b'fileswap\t`[.1mup]\nframebuffer\t`[.1tEst]\nredhead\t`[.1zibrx]\n')
                 engine.set_dictionary_path(folder)
                 with_split = engine._phonemes_for_probe('framebuffer')
                 engine.set_parameter(WORD_SEGMENTATION, 0)
@@ -68,6 +106,11 @@ def main():
                 with_split = engine._phonemes_for_probe('redhead')
                 engine.set_parameter(WORD_SEGMENTATION, 0)
                 assert phones(with_split) == phones(engine._phonemes_for_probe('redhead')) == 'zibrx'
+                checks += 1
+                engine.set_parameter(WORD_SEGMENTATION, 1)
+                with_split = engine._phonemes_for_probe('fileswap')
+                engine.set_parameter(WORD_SEGMENTATION, 0)
+                assert phones(with_split) == phones(engine._phonemes_for_probe('fileswap')) == 'mup'
                 checks += 1
                 engine.set_dictionary_path(None)
                 # A host dictionary may protect only its replaced run; an

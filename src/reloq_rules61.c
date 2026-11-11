@@ -1080,7 +1080,9 @@ int reloq_rules61_word(int language,const unsigned char *word,size_t length,
     if(language==0x40000)status=reloq_german_lexicon_validate_spr(spr,n,NULL)==1;
     else {
         struct reloq_english_phone *p=NULL;size_t count=0;
-        status=!reloq_english_parse(spr,n,&p,&count,NULL)&&count>0;free(p);
+        int parsed=language==0x10001?reloq_english_parse_british(spr,n,&p,&count,NULL):
+            reloq_english_parse(spr,n,&p,&count,NULL);
+        status=!parsed&&count>0;free(p);
     }
     if(!status)return 0;
     *written=n;if(capacity<=n)return -2;

@@ -70,3 +70,10 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+British English pronunciation reference
+The reference-checked compound data was also compared with en_UK from
+open-dict-data/ipa-dict revision 972cd67dd5f96bc5660e28070cde26e3928abcd7:
+https://github.com/open-dict-data/ipa-dict
+That dataset is based on Leo Boiko's ipacards and is licensed under GPL-3.0;
+the license text is included in LICENSE.

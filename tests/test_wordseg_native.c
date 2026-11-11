@@ -25,6 +25,9 @@ int main(void)
         check("TMPFILES","T M P files",uk);
         check("gethostbyaddr","get host by addr",uk);
         check("swapfile","swap file",uk);
+        check("fileswap","file swap",uk);
+        check("swaphost","swap host",uk);
+        check("filecandle","file candle",uk);
         check("framebuffer","frame buffer",uk);
         check("keyframe","key frame",uk);
         check("redhead","red head",uk);
@@ -32,6 +35,9 @@ int main(void)
         check("REDHEAD","red head",uk);
         check("redheaded","red headed",uk);
         check("redheads","red heads",uk);
+        check("newspaper","news paper",uk);
+        check("candlelight","candle light",uk);
+        check("homophone",uk?NULL:"homo phone",uk);
         check("cupboard",NULL,uk);
         check("Cupboard",NULL,uk);
         check("CUPBOARD",NULL,uk);

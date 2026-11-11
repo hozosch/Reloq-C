@@ -28,6 +28,10 @@ struct reloq_english_phone {
  * returned vector is caller-owned. Unknown tokens fail transactionally. */
 int reloq_english_parse(const unsigned char *annotation,size_t length,
     struct reloq_english_phone **phones,size_t *count,size_t *error_offset);
+/* The British native provider also emits @ (short o) and syllabic L.
+ * Preserve the same structural checks while accepting its full inventory. */
+int reloq_english_parse_british(const unsigned char *annotation,size_t length,
+    struct reloq_english_phone **phones,size_t *count,size_t *error_offset);
 
 /* Development acoustic implementation: isolated, stressed English vowel nuclei
  * and Y/W/O diphthongs with continuous tract/source gestures,
