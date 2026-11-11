@@ -19,6 +19,11 @@ size_t reloq_wordseg_casefold(uint32_t codepoint, unsigned char output[12]);
 int reloq_wordseg_english(const unsigned char *word, size_t length, int uk,
     unsigned char *output, size_t capacity);
 
+/* If a known compound has reference-checked component readings, return the
+ * observed whole and joined SPR readings used to validate it at runtime. */
+int reloq_wordseg_reference(const unsigned char *word, size_t length,
+    const char **whole, const char **joined);
+
 /* Scoped to the serialized ECI worker, with no cross-utterance results. */
 struct reloq_wordseg_options {
     int english, camel; void *dictionary; int abbreviations_disabled;

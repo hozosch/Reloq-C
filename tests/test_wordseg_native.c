@@ -27,6 +27,10 @@ int main(void)
         check("swapfile","swap file",uk);
         check("framebuffer","frame buffer",uk);
         check("keyframe","key frame",uk);
+        check("redhead","red head",uk);
+        check("Redhead","red head",uk);
+        check("REDHEAD","red head",uk);
+        check("redheaded","red headed",uk);
         check("cupboard",NULL,uk);
         check("Cupboard",NULL,uk);
         check("CUPBOARD",NULL,uk);
@@ -42,6 +46,13 @@ int main(void)
         check("algorithm",NULL,uk);
         check("HELLO",NULL,uk);
         check("inside",NULL,uk);
+        const char *whole=NULL,*joined=NULL;
+        assert(reloq_wordseg_reference((const unsigned char *)"Redhead",7,&whole,&joined));
+        assert(!strcmp(whole,"`[.2ri.1did]")&&!strcmp(joined,"`[.1rEd.2hEd]"));
+        assert(!reloq_wordseg_reference((const unsigned char *)"cupboard",8,&whole,&joined));
+        assert(!reloq_wordseg_reference((const unsigned char *)"breakfast",9,&whole,&joined));
+        unsigned char small[8];
+        assert(reloq_wordseg_english((const unsigned char *)"redhead",7,uk,small,sizeof small)==-1);
     }
     assert((reloq_wordseg_category('a')&RELOQ_WORDSEG_LOWER)!=0);
     assert((reloq_wordseg_category('A')&RELOQ_WORDSEG_UPPER)!=0);

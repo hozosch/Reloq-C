@@ -8,10 +8,44 @@
 struct wordseg_category_range { uint32_t first, last; unsigned char flags; };
 struct wordseg_casefold_entry { uint32_t codepoint; const char *folded; };
 struct wordseg_known_chunk { const char *words; unsigned char count; };
+struct wordseg_verified_compound {
+    const char *word; unsigned char boundary; const char *whole, *joined;
+};
 #include "reloq_wordseg_data.inc"
+#include "reloq_wordseg_compounds.inc"
 #define COUNT(a) (sizeof(a)/sizeof *(a))
 struct wordseg_table { const char *const *words; size_t count; };
 #define TABLE(name) (struct wordseg_table){name,COUNT(name)}
+
+static const struct wordseg_verified_compound *verified_find(const char *word)
+{
+    size_t lo=0,hi=COUNT(wordseg_verified);
+    while(lo<hi) {
+        size_t mid=lo+(hi-lo)/2;
+        if(strcmp(wordseg_verified[mid].word,word)<0)lo=mid+1;else hi=mid;
+    }
+    return lo<COUNT(wordseg_verified)&&!strcmp(wordseg_verified[lo].word,word)?
+        &wordseg_verified[lo]:NULL;
+}
+
+int reloq_wordseg_reference(const unsigned char *original,size_t n,
+    const char **whole,const char **joined)
+{
+    if(!original||!n||n>32)return 0;
+    char word[33];
+    for(size_t i=0;i<n;++i) {
+        unsigned c=original[i];
+        if(c>='A'&&c<='Z')c+=32;
+        if(c<'a'||c>'z')return 0;
+        word[i]=(char)c;
+    }
+    word[n]=0;
+    const struct wordseg_verified_compound *found=verified_find(word);
+    if(!found)return 0;
+    if(whole)*whole=found->whole;
+    if(joined)*joined=found->joined;
+    return 1;
+}
 
 static _Thread_local struct reloq_wordseg_options options;
 struct reloq_wordseg_options reloq_wordseg_scope(struct reloq_wordseg_options value)
@@ -214,6 +248,13 @@ int reloq_wordseg_english(const unsigned char *original,size_t n,int uk,
         word[i]=(char)c;
     }
     word[n]=0;
+    const struct wordseg_verified_compound *verified=verified_find(word);
+    if(verified) {
+        size_t used=0;output[0]=0;
+        if(append(output,capacity,&used,word,verified->boundary)||
+           append(output,capacity,&used,word+verified->boundary,n-verified->boundary))return -1;
+        return 1;
+    }
     if(leave_word(word,n,uk))return 0;
     const int inf=0x3fffffff;
     int letters[33],other[33];size_t target[33];

@@ -8,3 +8,7 @@ Mellon Pronouncing Dictionary, copyright 1993 Carnegie Mellon University,
 whose use for any research or commercial purpose is unrestricted with
 acknowledgement. OpenEVV's tables also include its language data and manually
 curated technical words. Their original comments are retained in the files.
+
+Reference-checked English compound readings also use CMUdict revision
+74790861f652b15e4ac49015a90074ad62a27690; its full license is in the
+project's ReLoq-C-NOTICE.txt (NOTICE in the source tree).

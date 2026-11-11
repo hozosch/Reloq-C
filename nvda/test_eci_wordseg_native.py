@@ -20,7 +20,8 @@ def main():
                 assert engine._dll.eciGetParam(engine._handle, WORD_SEGMENTATION) == 0
                 assert engine._dll.eciGetParam(engine._handle, CAMEL_CASE) == 0
                 compounds = {'swapfile': ('swap', 'file'), 'framebuffer': ('frame', 'buffer'),
-                             'keyframe': ('key', 'frame'), 'blackboard': ('black', 'board')}
+                             'keyframe': ('key', 'frame'), 'blackboard': ('black', 'board'),
+                             'redhead': ('red', 'head'), 'redheaded': ('red', 'headed')}
                 established = ('cupboard', 'Cupboard', 'CUPBOARD', 'cupboards',
                                'breakfast', 'breakfasts', 'raspberry', 'raspberries',
                                'strawberry', 'waistcoat', 'butterfly', 'lighthouse')
@@ -55,11 +56,17 @@ def main():
                 # A personal pronunciation must beat automatic word splitting.
                 folder = Path(temporary) / prefix
                 folder.mkdir()
-                (folder / (prefix + 'main.dic')).write_bytes(b'framebuffer\t`[.1tEst]\n')
+                (folder / (prefix + 'main.dic')).write_bytes(
+                    b'framebuffer\t`[.1tEst]\nredhead\t`[.1zibrx]\n')
                 engine.set_dictionary_path(folder)
                 with_split = engine._phonemes_for_probe('framebuffer')
                 engine.set_parameter(WORD_SEGMENTATION, 0)
                 assert with_split == engine._phonemes_for_probe('framebuffer') and 'tEst' in with_split
+                checks += 1
+                engine.set_parameter(WORD_SEGMENTATION, 1)
+                with_split = engine._phonemes_for_probe('redhead')
+                engine.set_parameter(WORD_SEGMENTATION, 0)
+                assert with_split == engine._phonemes_for_probe('redhead') and 'zibrx' in with_split
                 checks += 1
                 engine.set_dictionary_path(None)
                 # A host dictionary may protect only its replaced run; an

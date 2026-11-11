@@ -400,6 +400,18 @@ static int wordseg_native_matches(int language,const unsigned char *word,size_t 
     return a==native_n-1&&b==compound_n-1;
 }
 
+/* The reference table describes observed readings, not a promise about all
+ * engine versions or dialects. Apply a correction only while both the native
+ * word and its independently analyzed pieces still have those exact phones
+ * and stresses. Otherwise leave the engine's reading alone. */
+static int wordseg_native_is(int language,const unsigned char *word,size_t length,
+    const char *expected)
+{
+    unsigned char native[2048];size_t native_n=0,expected_n=strlen(expected);
+    return reloq_rules61_word(language,word,length,native,sizeof native,&native_n)==1&&
+        native_n==expected_n&&!memcmp(native,expected,native_n);
+}
+
 static int wordseg_only_words(const unsigned char *pieces)
 {
     size_t at=0,parts=0,n=strlen((const char *)pieces);
@@ -471,6 +483,9 @@ static int wordseg_input(unsigned char **text,size_t **source,size_t *length,int
             }
             unsigned char pieces[256];
             int split=ascii?reloq_wordseg_english(a+i,end-i,language==0x10001,pieces,sizeof pieces):0;
+            const char *reference_whole=NULL,*reference_joined=NULL;
+            int reference=ascii&&reloq_wordseg_reference(a+i,end-i,
+                &reference_whole,&reference_joined);
             if(split==1&&upper) {
                 unsigned char probe[2048];size_t probe_n=0;
                 if(reloq_rules61_word(language,a+i,end-i,probe,sizeof probe,&probe_n)!=1)split=0;
@@ -479,12 +494,17 @@ static int wordseg_input(unsigned char **text,size_t **source,size_t *length,int
                 unsigned char spr[8192];size_t spr_n=0;
                 const unsigned char *replacement=pieces;size_t replacement_n=strlen((char *)pieces);
                 if(wordseg_compound_spr(language,pieces,spr,sizeof spr,&spr_n)) {
+                    if(reference&&(!wordseg_native_is(language,a+i,end-i,reference_whole)||
+                        spr_n!=strlen(reference_joined)||memcmp(spr,reference_joined,spr_n))) {
+                        if(german_shared_append(&b,a+i,map+i,end-i,0))goto fail;
+                        i=end;continue;
+                    }
                     if(wordseg_native_matches(language,a+i,end-i,spr,spr_n)) {
                         if(german_shared_append(&b,a+i,map+i,end-i,0))goto fail;
                         i=end;continue;
                     }
                     replacement=spr;replacement_n=spr_n;
-                } else if(wordseg_only_words(pieces)) {
+                } else if(reference||wordseg_only_words(pieces)) {
                     /* Without complete phone groups a word-spaced fallback
                      * would change the requested compound into separate
                      * words. Retain its native pronunciation instead. */

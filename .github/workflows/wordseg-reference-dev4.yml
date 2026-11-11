@@ -1,0 +1,191 @@
+name: Validate reference-checked English compounds
+on:
+  push:
+    branches: [codex/wordseg-reference-dev4-20261111]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  windows-core:
+    if: ${{ !contains(github.event.head_commit.message, '[settings-only]') }}
+    runs-on: ubuntu-24.04
+    env:
+      RELOQ_BUILD_EPOCH: '1700000000'
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install Windows compiler and translation tools
+        run: |
+          sudo apt-get -o Acquire::Retries=2 update -qq
+          sudo apt-get -o Acquire::Retries=2 install -y --no-install-recommends gcc-mingw-w64-x86-64-posix gettext
+      - name: Check cached provider inputs
+        run: |
+          git fetch --no-tags --depth=1 origin 8833399d4a3f74a0fa5f8e4c9a3cb45aeb976d66
+          git diff --quiet FETCH_HEAD HEAD -- vendor/openevv61 ':(exclude)vendor/openevv61/lang/dede61/delta_authored_dede61.c' src/reloq_voice_filter.c include/reloq_voice_filter.h include/reloq_voice_controls.h include/reloq_inline_tags.h src/reloq_orthography.c include/reloq_orthography.h src/reloq_german_word_edges.c include/reloq_german_word_edges.h src/reloq_english_word_edges.c include/reloq_english_word_edges.h
+          git show FETCH_HEAD:vendor/openevv61/lang/dede61/delta_authored_dede61.c > /tmp/reloq-original-german.c
+          python3 - <<'PY'
+          from pathlib import Path
+          old = Path('/tmp/reloq-original-german.c').read_text()
+          new = Path('vendor/openevv61/lang/dede61/delta_authored_dede61.c').read_text()
+          before = '/* eti_s_13ca63, 3 bytes at 2591 */\n    5,42,1,'
+          after = '/* eti_s_13ca63, 3 bytes at 2591: German "cup" with short a. */\n    5,34,1,'
+          assert old.count(before) == 1 and new == old.replace(before, after)
+          PY
+      - uses: actions/cache@v4
+        id: rules
+        with:
+          path: vendor/openevv61/build
+          # Same provider inputs as 1.3.1; new segmentation lives in the host.
+          key: sapi-rules-ubuntu24-gcc13-v1-x64-bf015a5474ab1999fcc51b40d7352fd3f4df5c786da942e6d0eb1ab99d8c6b88
+      - name: Restore cached rule timestamps and rebuild the changed dictionary
+        if: steps.rules.outputs.cache-hit == 'true'
+        run: |
+          find vendor/openevv61/build -type f -exec touch {} +
+          rm -f vendor/openevv61/build/windows-release/lang/dede61/delta_authored_dede61.o
+          rm -f vendor/openevv61/build/windows-release/libreloq61.a
+      - name: Compile the Windows core and SAPI adapter
+        run: |
+          make -C eci -j2 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
+          make -C sapi -j2 CC=x86_64-w64-mingw32-gcc-posix build/ReLoqSapi.dll build/ReLoqSettings.exe build/ReLoqUpdate.exe
+      - uses: actions/download-artifact@v4
+        with:
+          name: dictionary-snapshot
+          run-id: 43029669789
+          github-token: ${{ github.token }}
+          path: data/community
+      - name: Create a separate NVDA test build
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('addon/synth/manifest.ini')
+          source=p.read_text(encoding='utf8')
+          assert 'version = "1.3.2"' in source
+          p.write_text(source.replace('version = "1.3.2"','version = "1.3.2-dev4"'),encoding='utf8')
+          import sys
+          sys.path.insert(0,'addon')
+          from build_synth import build
+          build(Path('dist/reloq-c-synth-x64-1.3.2-dev4.nvda-addon'),Path('eci/eci.dll'),refresh_dictionaries=False)
+          PY
+          PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,test_synth; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.2-dev4.nvda-addon"))'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wordseg-core-candidate
+          path: |
+            dist/reloq-c-synth-x64-1.3.2-dev4.nvda-addon
+            eci/eci.dll
+            sapi/build/ReLoqSapi.dll
+            sapi/build/ReLoqSettings.exe
+            sapi/build/ReLoqUpdate.exe
+          compression-level: 0
+          retention-days: 7
+  actual-nvda:
+    needs: windows-core
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: wordseg-core-candidate
+          path: candidate
+      - name: Check the native splitter and NVDA adapter
+        shell: pwsh
+        run: |
+          $dll = (Get-ChildItem candidate -Recurse -Filter eci.dll | Select-Object -First 1).FullName
+          $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
+          python nvda/test_eci_wordseg_native.py --library $dll
+          if ($LASTEXITCODE -ne 0) { throw 'Native segmentation failed' }
+          python nvda/test_eci_german_cup_native.py --library $dll
+          if ($LASTEXITCODE -ne 0) { throw 'German native dictionary failed' }
+          python addon/test_synth_native.py --library $dll --addon $addon
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA adapter failed' }
+          python addon/test_nvda_remote_loopback.py --library $dll --addon $addon
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA remote loopback failed' }
+          $sapi = (Get-ChildItem candidate -Recurse -Filter ReLoqSapi.dll | Select-Object -First 1).DirectoryName
+          Copy-Item $dll (Join-Path $sapi 'eci.dll')
+          python sapi/test_dialog_order.py --directory $sapi
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI settings dialog failed' }
+          python sapi/test_updater_dialog.py --directory $sapi
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI updater dialog failed' }
+      - name: Install real portable NVDA
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download release-2026.3.1 --repo nvaccess/nvda --pattern nvda_2026.3.1.exe --dir candidate
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA download failed' }
+          if ((Get-FileHash candidate/nvda_2026.3.1.exe -Algorithm SHA256).Hash -ne '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052') { throw 'Unexpected NVDA installer' }
+          $portable = Join-Path $pwd 'portable-nvda'
+          $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
+          $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
+      - name: Verify object announcements in real NVDA
+        shell: pwsh
+        run: |
+          $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon $addon --work segmentation-probe
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA segmentation failed' }
+      - name: Verify the combined dictionary controls in real NVDA
+        shell: pwsh
+        run: |
+          $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
+          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon $addon --work settings-probe
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA dictionary controls failed' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wordseg-real-nvda-results
+          path: |
+            segmentation-probe/result.json
+            segmentation-probe/nvda.log
+            settings-probe/result.json
+            settings-probe/nvda.log
+  platform-settings:
+    runs-on: ubuntu-24.04
+    env:
+      RELOQ_BUILD_EPOCH: '1700000000'
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Check reference-checked compound generation
+        run: |
+          curl --fail --location --retry 3 --output /tmp/cmudict.dict https://raw.githubusercontent.com/cmusphinx/cmudict/74790861f652b15e4ac49015a90074ad62a27690/cmudict.dict
+          python3 tools/generate_wordseg_compounds.py /tmp/cmudict.dict
+          git diff --exit-code -- src/reloq_wordseg_compounds.inc
+      - name: Check platform settings and translations
+        run: |
+          sdkmanager 'platforms;android-35'
+          python3 tools/generate_wordseg_data.py
+          git diff --exit-code -- src/reloq_wordseg_data.inc
+          python3 sapi/generate_ui.py --check
+          cc -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -DRELOQ_SAPI_TEST_HOST -DRELOQ_SAPI_SETTINGS_TEST -I sapi sapi/settings.c sapi/test_settings.c -o /tmp/test-sapi-settings
+          /tmp/test-sapi-settings
+          cc -std=c11 -O2 -Wall -Wextra -Werror -DRELOQ_SAPI_TEST_HOST -I sapi sapi/test_ui.c -o /tmp/test-sapi-ui
+          /tmp/test-sapi-ui
+          cc -std=c11 -O2 -Wall -Wextra -Werror -pedantic -Iinclude tests/test_wordseg_native.c src/reloq_wordseg.c -o /tmp/test-wordseg
+          /tmp/test-wordseg
+          python3 sapi/test_update_data.py
+          python3 nvda/test_updates.py
+          python3 -B tests/test_release_dictionaries.py
+          python3 -B tests/test_replace_release.py
+          javac -d /tmp/reloq-update-test android/java/org/reloq/tts/UpdateData.java android/test/UpdateDataTest.java
+          java -cp /tmp/reloq-update-test org.reloq.tts.UpdateDataTest
+          python3 android/test_auto_updates.py --java-home "$JAVA_HOME"
+          python3 android/test_translations.py
+          python3 android/test_settings.py --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar" --settings-only
+          python3 android/test_direct_boot.py --java-home "$JAVA_HOME"
+          python3 android/test_update_compilation.py --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar"
