@@ -378,13 +378,26 @@ int main(int argc,char **argv)
         struct sapi_backend *voice=sapi_backend_new(0x10000);assert(voice);
         struct sapi_settings timing=s;timing.speed_override=1;timing.speed_value=106;
         SPVTEXTFRAG phrase=text(L"adictive drums",0);
-        struct site fine=site_new(),original=site_new(),restored=site_new();
+        struct site fine=site_new(),original=site_new(),restored=site_new(),automatic=site_new();
         timing.original_acoustic_clock=0;assert(SUCCEEDED(sapi_backend_speak(voice,&timing,0,&out,&phrase,&fine.iface)));
         timing.original_acoustic_clock=1;assert(SUCCEEDED(sapi_backend_speak(voice,&timing,0,&out,&phrase,&original.iface)));
         assert(fine.count==original.count&&hash(fine.pcm,fine.count)!=hash(original.pcm,original.count));
         timing.original_acoustic_clock=0;assert(SUCCEEDED(sapi_backend_speak(voice,&timing,0,&out,&phrase,&restored.iface)));
         same(&fine,&restored);
-        free(fine.pcm);free(original.pcm);free(restored.pcm);sapi_backend_delete(voice);++cases;
+        timing.original_acoustic_clock=2;assert(SUCCEEDED(sapi_backend_speak(voice,&timing,0,&out,&phrase,&automatic.iface)));
+        same(&fine,&automatic);
+        free(fine.pcm);free(original.pcm);free(restored.pcm);free(automatic.pcm);sapi_backend_delete(voice);++cases;
+    }
+    for(int i=0;i<2;++i){
+        int dialect=i?0x120000:0x20000;struct sapi_backend *voice=sapi_backend_new(dialect);assert(voice);
+        struct sapi_settings timing=s;timing.speed_override=1;timing.speed_value=106;
+        SPVTEXTFRAG phrase=text(i?L"Αυτή είναι μια δοκιμή.":L"Esta es una prueba.",0);
+        struct site automatic=site_new(),original=site_new(),fine=site_new();
+        timing.original_acoustic_clock=2;assert(SUCCEEDED(sapi_backend_speak(voice,&timing,0,&out,&phrase,&automatic.iface)));
+        timing.original_acoustic_clock=1;assert(SUCCEEDED(sapi_backend_speak(voice,&timing,0,&out,&phrase,&original.iface)));
+        timing.original_acoustic_clock=0;assert(SUCCEEDED(sapi_backend_speak(voice,&timing,0,&out,&phrase,&fine.iface)));
+        same(&automatic,&original);assert(hash(fine.pcm,fine.count)!=hash(original.pcm,original.count));
+        free(automatic.pcm);free(original.pcm);free(fine.pcm);sapi_backend_delete(voice);++cases;
     }
     struct sapi_settings female=s;female.gender=1;female.head=22;female.pitch=93;
     struct site changed=site_new();assert(SUCCEEDED(sapi_backend_speak(b,&female,0,&out,&f,&changed.iface)));

@@ -45,7 +45,7 @@ def main():
         try:
             assert engine.lib.eciGetParam(engine.h,CLOCK)==0
             assert engine.lib.eciSetParam(engine.h,CLOCK,-1)==-1
-            assert engine.lib.eciSetParam(engine.h,CLOCK,2)==-1
+            assert engine.lib.eciSetParam(engine.h,CLOCK,3)==-1
             for rate in (0,1,3,6):
                 assert engine.lib.eciSetParam(engine.h,5,rate)>=0
                 engine.tags(0)
@@ -57,13 +57,17 @@ def main():
                     original=engine.speak(''.join(parts))
                     assert len(fine)==len(original) and len(fine)>0,(hex(language),rate,speed)
                     changed+=fine!=original
+                    assert engine.lib.eciSetParam(engine.h,CLOCK,2)>=0
+                    automatic=engine.speak(''.join(parts))
+                    expected=original if language in (0x20000,0x120000) else fine
+                    assert automatic==expected,(hex(language),rate,speed,'automatic')
                     assert engine.lib.eciSetParam(engine.h,CLOCK,0)>=0
                     assert engine.speak(''.join(parts))==fine,(hex(language),rate,speed,'restore')
                     checks+=1
         finally:
             engine.close()
     assert changed>=len(TEXTS),changed
-    print(f'Acoustic timing option: {checks} legacy, duration and switch-back checks; {changed} differing PCM pairs')
+    print(f'Acoustic timing option: {checks} legacy, automatic, duration and switch-back checks; {changed} differing PCM pairs')
 
 
 if __name__=='__main__':

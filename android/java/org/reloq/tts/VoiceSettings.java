@@ -2,7 +2,8 @@ package org.reloq.tts;
 
 /** Settings copied for one request; usable in host tests without Android. */
 final class VoiceSettings {
-    boolean androidRate=true,androidPitch=true,rateBoost=false,tags=false,abbreviations=true,prediction=false,originalQuestions=false,mellowMode=false,originalAcousticClock=false;
+    boolean androidRate=true,androidPitch=true,rateBoost=false,tags=false,abbreviations=true,prediction=false,originalQuestions=false,mellowMode=false;
+    int acousticClockMask=defaultClockMask();
     boolean pitchHertzMode=false,speedWpmMode=true;
     boolean eqEnabled=false;
     int eqPreset=0,eqLow=0,eqMid=0,eqHigh=0;
@@ -19,6 +20,15 @@ final class VoiceSettings {
         for(int i=0;i<eqFilters.length;++i){eqFilters[i][1]=EQ_FILTER_FREQUENCIES[i];eqFilters[i][3]=100;}
     }
     static int bounded(int value,int low,int high) { return Math.max(low,Math.min(high,value)); }
+    static int clockBit(int dialect) {
+        for(int i=0;i<Catalog.LANGUAGES.length;++i)if(Catalog.LANGUAGES[i].id==dialect)return 1<<i;
+        return 0;
+    }
+    static int defaultClockMask() {return clockBit(0x20000)|clockBit(0x120000);}
+    boolean originalClock(int dialect) {return (acousticClockMask&clockBit(dialect))!=0;}
+    void setOriginalClock(int dialect,boolean enabled) {
+        int bit=clockBit(dialect);acousticClockMask=enabled?acousticClockMask|bit:acousticClockMask&~bit;
+    }
     static double timeScale(int speed) {
         speed=bounded(speed,40,250);
         for(int i=1;i<RateCurve.SPEEDS.length;++i) if(speed<=RateCurve.SPEEDS[i]) {
@@ -44,6 +54,9 @@ final class VoiceSettings {
         return bounded((int)Math.round(Math.log((desired-35.11023877)/4.889761232)/Math.log(2)/.06306456),0,100);
     }
     int[] controls(int requestedRate,int requestedPitch) {
+        return controls(requestedRate,requestedPitch,0);
+    }
+    int[] controls(int requestedRate,int requestedPitch,int dialect) {
         double ratio=Math.max(1,requestedRate)/100.0;
         int speed=androidRate?targetSpeed(ratio*(rateBoost?1.6:1)):bounded(manualSpeed,0,250);
         int preset=bounded(eqPreset,0,4);
@@ -59,7 +72,7 @@ final class VoiceSettings {
         for(int i=0;i<eqFilters.length;++i){int[] f=eqFilters[i];int offset=base.length+4*i;
             result[offset]=eqEnabled&&f[0]!=0?1:0;result[offset+1]=bounded(f[1],1,24000);
             result[offset+2]=bounded(f[2],-12,12)+12;result[offset+3]=bounded(f[3],10,400);}
-        result[result.length-1]=originalAcousticClock?1:0;
+        result[result.length-1]=clockBit(dialect)==0?2:originalClock(dialect)?1:0;
         return result;
     }
 }

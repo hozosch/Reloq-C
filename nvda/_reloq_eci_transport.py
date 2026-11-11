@@ -30,6 +30,7 @@ class _EciEngine(Protocol):
               on_index: Callable[[int], None]) -> bool: ...
     def cancel(self) -> None: ...
     def set_parameter(self, parameter: int, value: int) -> None: ...
+    def set_acoustic_clocks(self, choices: int) -> None: ...
     def select_voice(self, language: int, voice: str) -> None: ...
     def set_dictionary_path(self, path: str | None) -> None: ...
     def close(self) -> None: ...
@@ -56,6 +57,11 @@ class _Job:
 class _Control:
     parameter: int
     value: int
+
+
+@dataclass(frozen=True)
+class _AcousticClocks:
+    choices: int
 
 
 @dataclass(frozen=True)
@@ -187,7 +193,7 @@ class EciTextTransport:
         self._watch_deadline: float | None = None
         self._notification_lock = threading.RLock()
         self._pause_mode = 0
-        self._jobs: deque[_Job | _Control | _Selection | _SampleRate | _DictionaryPath | _DictionaryBarrier] = deque()
+        self._jobs: deque[_Job | _Control | _AcousticClocks | _Selection | _SampleRate | _DictionaryPath | _DictionaryBarrier] = deque()
         self._dictionary_barrier: _DictionaryBarrier | None = None
         # None is itself a valid, deliberately selected empty dictionary.
         # Distinguish that from never having installed any selection at all.
@@ -314,6 +320,14 @@ class EciTextTransport:
             if self._closed:
                 raise RuntimeError("transport has shut down")
             self._jobs.append(_Control(parameter, value))
+            self._condition.notify_all()
+
+    def set_acoustic_clocks(self, choices: int) -> None:
+        """Queue persistent per-language clock choices with other controls."""
+        with self._condition:
+            if self._closed:
+                raise RuntimeError("transport has shut down")
+            self._jobs.append(_AcousticClocks(choices))
             self._condition.notify_all()
 
     def begin_dictionary_load(self) -> None:
@@ -737,7 +751,7 @@ class EciTextTransport:
                     job = self._jobs.popleft()
                     if isinstance(job, _DictionaryBarrier):
                         self._dictionary_barrier = None
-                if isinstance(job, (_Control, _Selection, _SampleRate, _DictionaryPath, _DictionaryBarrier)):
+                if isinstance(job, (_Control, _AcousticClocks, _Selection, _SampleRate, _DictionaryPath, _DictionaryBarrier)):
                     try:
                         if isinstance(job, _SampleRate):
                             try:
@@ -754,6 +768,8 @@ class EciTextTransport:
                                 engine.set_dictionary_path(job.path)
                                 with self._condition:
                                     self._dictionary_installed = True
+                        elif isinstance(job, _AcousticClocks):
+                            engine.set_acoustic_clocks(job.choices)
                         elif isinstance(job, _Selection):
                             engine.select_voice(job.language, job.voice)
                             # A language-only choice keeps NVDA's displayed
@@ -807,7 +823,7 @@ class EciTextTransport:
                 return
             self._generation += 1
             self._jobs = deque(item for item in self._jobs
-                               if isinstance(item, (_Control, _Selection, _SampleRate, _DictionaryPath, _DictionaryBarrier)))
+                               if isinstance(item, (_Control, _AcousticClocks, _Selection, _SampleRate, _DictionaryPath, _DictionaryBarrier)))
             self._markers.clear()
             self._clear_audio_locked()
             self._played_out_of_order.clear()

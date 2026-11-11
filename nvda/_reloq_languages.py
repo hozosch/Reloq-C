@@ -23,9 +23,9 @@ def N_(message: str) -> str:
     return message
 
 if __package__:
-    from ._reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER
+    from ._reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, ORIGINAL_ACOUSTIC_CLOCK
 else:
-    from _reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER
+    from _reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, ORIGINAL_ACOUSTIC_CLOCK
 
 
 @dataclass(frozen=True)
@@ -112,6 +112,12 @@ GREEK = Language(0x120000, N_("Greek"), "el_GR", "utf-8", US_ENGLISH.voices)
 LANGUAGES = {p.id: p for p in (GERMAN, US_ENGLISH, BRITISH_ENGLISH,
     SPANISH_SPAIN, SPANISH_MEXICO, FRENCH_FRANCE, FRENCH_CANADA, ITALIAN,
     BRAZILIAN_PORTUGUESE, FINNISH, CHINESE_CHINA, JAPANESE, KOREAN, GREEK)}
+# Persistent bit positions: append new languages; never reorder existing ones.
+ACOUSTIC_CLOCK_LANGUAGES = (0x40000, 0x10000, 0x10001, 0x20000, 0x20001,
+    0x30000, 0x30001, 0x50000, 0x70000, 0x90000, 0x60000, 0x80000, 0xa0000, 0x120000)
+ACOUSTIC_CLOCK_BITS = {language: 1 << i for i, language in enumerate(ACOUSTIC_CLOCK_LANGUAGES)}
+ACOUSTIC_CLOCK_DEFAULT = ACOUSTIC_CLOCK_BITS[0x20000] | ACOUSTIC_CLOCK_BITS[0x120000]
+ACOUSTIC_CLOCK_MAX = (1 << len(ACOUSTIC_CLOCK_LANGUAGES)) - 1
 # Eloquence_64's shipped module order, with Greek at the end. Presentation
 # does not change the preference for a bare language command such as "en".
 LANGUAGE_DISPLAY_ORDER = (0x60000, 0x40000, 0x10001, 0x10000, 0x20001,
@@ -156,6 +162,7 @@ class LanguageEngine:
         self._engine_keys = {}
         self._engine_parameters = {}
         self._parameters = {}
+        self._acoustic_clocks = None
         self._uppercase_cache = OrderedDict()
         self._dictionary_path = None
         self._active = None
@@ -206,6 +213,8 @@ class LanguageEngine:
             wanted = dict(profile.voice(key[1]).parameters)
             wanted.update((parameter, self._parameter_for(key, parameter, value))
                           for parameter, value in self._parameters.items())
+            if self._acoustic_clocks is not None:
+                wanted[ORIGINAL_ACOUSTIC_CLOCK] = int(bool(self._acoustic_clocks & ACOUSTIC_CLOCK_BITS.get(language, 0)))
             current = self._engine_parameters[language]
             for parameter, value in wanted.items():
                 if current.get(parameter) != value:
@@ -251,6 +260,18 @@ class LanguageEngine:
                 engine.set_dictionary_path(self._dictionary_path)
             raise
         self._dictionary_path = path
+
+    def set_acoustic_clocks(self, choices):
+        """Apply a user's per-language clock choices on the owning worker."""
+        self._assert_owner()
+        if not isinstance(choices, int) or isinstance(choices, bool) or not 0 <= choices <= ACOUSTIC_CLOCK_MAX:
+            raise ValueError("invalid acoustic clock choices")
+        self._acoustic_clocks = choices
+        for language, engine in self._engines.items():
+            value = int(bool(choices & ACOUSTIC_CLOCK_BITS.get(language, 0)))
+            if self._engine_parameters[language].get(ORIGINAL_ACOUSTIC_CLOCK) != value:
+                engine.set_parameter(ORIGINAL_ACOUSTIC_CLOCK, value)
+                self._engine_parameters[language][ORIGINAL_ACOUSTIC_CLOCK] = value
 
     def set_parameter(self, parameter, value):
         self._assert_owner()

@@ -64,7 +64,7 @@ int main(void)
            !de.volume_override&&de.volume_value==100&&!de.speed_wpm_enabled&&de.speed_wpm==180);
     assert(!de.eq_enabled&&de.eq_preset==0&&de.eq_low==12&&de.eq_filters[0].frequency==125&&
            !de.eq_filters[0].enabled&&de.eq_filters[0].gain==12&&de.eq_filters[0].width==100);
-    assert(!de.original_acoustic_clock);
+    assert(de.original_acoustic_clock==2);
     assert(value_reads==3&&key_opens==1);++checks;
     assert(sapi_settings_shared(&shared)==S_OK&&!shared);++checks;
     de.pitch=72;de.rate=6;de.pitch_hz=151;de.pitch_hz_enabled=1;
@@ -122,7 +122,7 @@ int main(void)
            !s.eq_enabled&&s.eq_filters[0].frequency==125&&s.eq_filters[0].gain==12);++checks;
     s.original_acoustic_clock=1;
     assert(!RegSetValueExW(key,L"Settings",0,REG_BINARY,(const BYTE *)&s,offsetof(struct sapi_settings,original_acoustic_clock)));
-    assert(sapi_settings_read(0x40000,&s)==S_OK&&!s.original_acoustic_clock&&s.speed_wpm==210);++checks;
+    assert(sapi_settings_read(0x40000,&s)==S_OK&&s.original_acoustic_clock==2&&s.speed_wpm==210);++checks;
     s.original_acoustic_clock=1;assert(sapi_settings_write(0x40000,&s)==S_OK);
     assert(sapi_settings_read(0x40000,&s)==S_OK&&s.original_acoustic_clock);++checks;
     int gains[3];s.eq_enabled=1;s.eq_preset=1;sapi_equalizer_gains(&s,gains);
@@ -146,7 +146,9 @@ int main(void)
     s.pitch_hz=24001;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.pitch_hz=150;++checks;
     s.pitch_hz_enabled=2;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.pitch_hz_enabled=0;++checks;
     s.mellow_mode=2;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.mellow_mode=1;++checks;
-    s.original_acoustic_clock=2;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.original_acoustic_clock=0;++checks;
+    s.original_acoustic_clock=2;assert(sapi_settings_write(0x40000,&s)==S_OK);
+    assert(sapi_settings_read(0x40000,&en)==S_OK&&en.original_acoustic_clock==2);
+    s.original_acoustic_clock=3;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);s.original_acoustic_clock=0;++checks;
     s.original_questions=2;assert(sapi_settings_write(0x40000,&s)==E_INVALIDARG);++checks;
     open_error=5;assert(sapi_settings_read(0x10000,&en)==S_OK&&en.rate==5);open_error=0;++checks;
     values[0].bytes=8;assert(FAILED(sapi_settings_read(0x40000,&s)));++checks;

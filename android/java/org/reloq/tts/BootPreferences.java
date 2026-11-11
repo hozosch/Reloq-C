@@ -10,7 +10,7 @@ final class BootPreferences {
     private static final String DEVICE_FILE="speech-before-unlock";
     private static final String[] BOOLS={"androidVoice","androidRate","androidPitch",
         "rateBoost","speedWpmMode","abbreviations","prediction","originalQuestions","mellowMode","originalAcousticClock","eqEnabled","tags"};
-    private static final String[] INTS={"language","profile","manualWpm","manualSpeed","rate","pauses","eqPreset","eqLow","eqMid","eqHigh"};
+    private static final String[] INTS={"language","profile","manualWpm","manualSpeed","rate","pauses","eqPreset","eqLow","eqMid","eqHigh","acousticClockMask"};
     private static final String[] VOICE={"pitch","pitchHertz","gender","head","inflection","roughness","breathiness","volume"};
     private static final String[] VOICE_BOOLS={"pitchHertzMode"};
     private BootPreferences() {}

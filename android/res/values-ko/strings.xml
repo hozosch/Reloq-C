@@ -87,7 +87,7 @@
     <string name="dictionary_update_files_unknown">새 사전 파일 수를 확인할 수 없습니다.</string>
     <string name="original_questions">원래의 질문 억양 사용</string>
     <string name="mellow_mode">부드러운 모드 (16 kHz 이상)</string>
-    <string name="original_acoustic_clock">Eloquence의 원래 음향 타이밍 사용 (5밀리초)</string>
+    <string name="original_acoustic_clock">선택한 언어에 원래 음향 타이밍 사용 (5 ms)</string>
     <string name="pitch_hz_mode">음높이를 헤르츠로 설정</string>
     <string name="pitch_hz_value">기본 음높이(헤르츠)</string>
     <string name="pitch_hz_error">1에서 24000 Hz 사이의 값을 입력하세요.</string>

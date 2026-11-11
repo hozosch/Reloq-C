@@ -57,14 +57,14 @@ jobs:
           from build_synth import build,DEFAULT_OUTPUT
           build(DEFAULT_OUTPUT,pathlib.Path('eci/eci.dll'),refresh_dictionaries=False)
           PY
-          for lang in en de; do PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.1-dev6.nvda-addon"))' "$lang"; done
+          for lang in en de; do PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.1-dev7.nvda-addon"))' "$lang"; done
           PYTHONPATH=nvda python3 -B nvda/test_updates.py
       - name: Build the SAPI settings adapter
         run: make -C sapi CC=x86_64-w64-mingw32-gcc-posix build/ReLoqSapi.dll
       - uses: actions/upload-artifact@v4
         with:
           name: high-speed-addon-candidate
-          path: dist/reloq-c-synth-x64-1.3.1-dev6.nvda-addon
+          path: dist/reloq-c-synth-x64-1.3.1-dev7.nvda-addon
           if-no-files-found: error
           compression-level: 0
           retention-days: 14
@@ -93,7 +93,7 @@ jobs:
       - name: Check the packaged core, WPM and original timing
         shell: pwsh
         run: |
-          $addon = (Get-Item candidate/reloq-c-synth-x64-1.3.1-dev6.nvda-addon).FullName
+          $addon = (Get-Item candidate/reloq-c-synth-x64-1.3.1-dev7.nvda-addon).FullName
           python -c "import zipfile; z=zipfile.ZipFile(r'$addon'); assert z.testzip() is None; z.extract('synthDrivers/reloqC/eci.dll', 'candidate')"
           if ($LASTEXITCODE -ne 0) { throw 'Core extraction failed' }
           $dll = (Get-Item candidate/synthDrivers/reloqC/eci.dll).FullName
@@ -126,12 +126,40 @@ jobs:
           $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
           $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
           if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
-          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.3.1-dev6.nvda-addon --work settings-results
+          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.3.1-dev7.nvda-addon --work settings-results
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA settings probe failed' }
       - uses: actions/upload-artifact@v4
         with:
           name: high-speed-nvda-test
-          path: candidate/reloq-c-synth-x64-1.3.1-dev6.nvda-addon
+          path: candidate/reloq-c-synth-x64-1.3.1-dev7.nvda-addon
           if-no-files-found: error
           compression-level: 0
           retention-days: 14
+  android-settings:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Install Android build tools
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.1'
+      - name: Compile Android settings and resources
+        run: |
+          mkdir -p /tmp/reloq-android/generated /tmp/reloq-android/classes
+          python3 -c 'from pathlib import Path; from android.codegen import generate; generate(Path("/tmp/reloq-android/generated"))'
+          "$ANDROID_HOME/build-tools/35.0.1/aapt2" compile --dir android/res -o /tmp/reloq-android/resources.zip
+          "$ANDROID_HOME/build-tools/35.0.1/aapt2" link -o /tmp/reloq-android/resources.apk -I "$ANDROID_HOME/platforms/android-35/android.jar" --manifest android/AndroidManifest.xml --java /tmp/reloq-android/generated /tmp/reloq-android/resources.zip
+          mapfile -t sources < <(find android/java /tmp/reloq-android/generated -name '*.java' -print)
+          javac -encoding UTF-8 -source 8 -target 8 -Xlint:-options -bootclasspath "$ANDROID_HOME/platforms/android-35/android.jar:$ANDROID_HOME/build-tools/35.0.1/core-lambda-stubs.jar" -d /tmp/reloq-android/classes "${sources[@]}"
+          python3 android/test_translations.py
+          python3 android/test_settings.py --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar" --settings-only
+          python3 android/test_direct_boot.py --java-home "$JAVA_HOME"

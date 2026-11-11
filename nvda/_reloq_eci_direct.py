@@ -273,7 +273,8 @@ class DirectEciEngine:
                      (0, 24) if parameter in (EQ_LOW, EQ_MID, EQ_HIGH) else
                      (0, 6000) if parameter == NATIVE_WPM else
                      (0, 250) if parameter == NATIVE_SPEED else
-                     (0, 1) if parameter in (PROCESS_TAGS, GENDER, DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, ORIGINAL_ACOUSTIC_CLOCK) else
+                     (0, 2) if parameter == ORIGINAL_ACOUSTIC_CLOCK else
+                     (0, 1) if parameter in (PROCESS_TAGS, GENDER, DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE) else
                      (0, 6) if parameter == SAMPLE_RATE else
                      (0, 3) if parameter == HIGH_RATE_PROFILE else
                      (0, 2) if parameter == PAUSE_MODE else (0, 100))

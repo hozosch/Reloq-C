@@ -312,6 +312,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 clock_setting = next(item for item in driver.supportedSettings if item.id == "originalAcousticClock")
                 assert clock_setting.displayNameWithAccelerator == (
                     "&Originalen Eloquence-Lauttakt verwenden (5 ms)" if german_ui else "Use &original Eloquence acoustic timing (5 ms)")
+                assert clock_setting.availableInSettingsRing and clock_setting.useConfig
                 driver.voice = "deu_experimental"
                 assert driver.voice == "1", "old voice IDs must migrate"
                 driver.voice = "262144:1"
@@ -319,7 +320,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert PitchCommand in driver.supportedCommands
                 assert CharacterModeCommand in driver.supportedCommands
                 assert [setting.id for setting in driver.supportedSettings] == [
-                    "language", "voice", "rate", "rateBoost", "originalAcousticClock", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode", "_pitchHertz", "_pitchInHertz", "_rateWpm", "_rateInWpm", "_eqEnabled", "_eqPreset", "_eqCustomLow", "_eqCustomMid", "_eqCustomHigh", *[f"_eqFilter{i}{field}" for i in range(1,6) for field in ("Enabled","Frequency","Gain","Width")], "_wordSegmentation", "_camelCase"]
+                    "language", "voice", "rate", "rateBoost", "originalAcousticClock", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode", "_acousticClockMask", "_pitchHertz", "_pitchInHertz", "_rateWpm", "_rateInWpm", "_eqEnabled", "_eqPreset", "_eqCustomLow", "_eqCustomMid", "_eqCustomHigh", *[f"_eqFilter{i}{field}" for i in range(1,6) for field in ("Enabled","Frequency","Gain","Width")], "_wordSegmentation", "_camelCase"]
                 assert driver.supportedSettings[0].availableInSettingsRing
                 assert not any(hasattr(driver, '_'+name) for name in
                                ('glideOpening', 'glideBackness', 'glideSoftness'))
@@ -858,6 +859,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                                 assert fresh.voice == "1" and fresh.pitch == 65
                                 fresh.initSettings()
                                 assert fresh.language == expected
+                                assert fresh.originalAcousticClock == (expected in ("es_ES", "el_GR")), (expected, saved)
                                 assert config_api.conf["speech"][fresh.name]["language"] == expected
                                 if not saved:
                                     assert fresh.pitch == 65
@@ -867,6 +869,52 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                             finally:
                                 fresh.terminate()
                     print(f"NVDA initial language: {len(first_language_cases)} fresh/saved/schema/region cases passed")
+                    for saved, expected in (({}, driver_module.ACOUSTIC_CLOCK_DEFAULT),
+                                            ({"originalAcousticClock": False}, driver_module.ACOUSTIC_CLOCK_DEFAULT),
+                                            ({"originalAcousticClock": True}, driver_module.ACOUSTIC_CLOCK_MAX),
+                                            ({"originalAcousticClock": "True"}, driver_module.ACOUSTIC_CLOCK_MAX),
+                                            ({"originalAcousticClock": True, "_acousticClockMask": 0}, 0)):
+                        profile = {"speech": {driver.name: dict(saved)}, "audio": {"outputDevice": "default"}}
+                        config_api.conf = configuration_manager(profile).rootSection
+                        fresh = driver_module.SynthDriver()
+                        try:
+                            fresh.initSettings()
+                            assert fresh._acousticClockMask == expected, saved
+                            fresh.saveSettings()
+                            fresh._acousticClockMask = 0 if expected else driver_module.ACOUSTIC_CLOCK_DEFAULT
+                            fresh.loadSettings()
+                            assert fresh._acousticClockMask == expected, saved
+                        finally:
+                            fresh.terminate()
+                    print("NVDA acoustic timing: defaults, legacy migration and save/reload passed")
+                    profile = {"speech": {}, "audio": {"outputDevice": "default"}}
+                    config_api.conf = configuration_manager(profile).rootSection
+                    with mock.patch.object(driver_module.languageHandler, "getLanguage", return_value="de_DE"):
+                        fresh = driver_module.SynthDriver()
+                    try:
+                        fresh.initSettings()
+                        section=config_api.conf["speech"][fresh.name]
+                        with mock.patch.object(fresh, "_clock_settings_panels", return_value=[object()]):
+                            fresh.originalAcousticClock=True
+                            assert section["_acousticClockMask"]==driver_module.ACOUSTIC_CLOCK_DEFAULT
+                            fresh.loadSettings()
+                            assert not fresh.originalAcousticClock, "Cancel did not discard clock preview"
+                        fresh.originalAcousticClock=True
+                        assert section["_acousticClockMask"]==fresh._acousticClockMask, "ring setting was not saved"
+                        fresh.language="es_ES"
+                        assert fresh.originalAcousticClock
+                        fresh.originalAcousticClock=False
+                        fresh.language="el_GR"
+                        assert fresh.originalAcousticClock
+                        fresh.language="de_DE"
+                        assert fresh.originalAcousticClock
+                        fresh.loadSettings()
+                        assert fresh.originalAcousticClock
+                        fresh.language="es_ES"
+                        assert not fresh.originalAcousticClock
+                    finally:
+                        fresh.terminate()
+                    print("NVDA acoustic timing: per-language choices, ring save and dialog discard passed")
                     # First install starts at Reed's native pitch; explicit
                     # values in existing profiles must remain unchanged.
                     pitch_cases = [({}, "1", 65),

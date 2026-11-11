@@ -127,7 +127,7 @@ public final class ReLoqService extends TextToSpeechService {
             preferences.getInt("profile",0));
         VoiceSettings settings=Preferences.read(preferences,profile);
         int rate=VoiceSettings.bounded(settings.rate,0,Catalog.RATES.length-1);
-        int[] controls=settings.controls(request.getSpeechRate(),request.getPitch());
+        int[] controls=settings.controls(request.getSpeechRate(),request.getPitch(),item.id);
         byte[] utf8=request.getCharSequenceText().toString().getBytes(StandardCharsets.UTF_8);
         PcmQueue queue=new PcmQueue(16);
         active=queue;

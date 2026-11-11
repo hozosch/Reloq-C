@@ -542,7 +542,8 @@ static int synthesize_generic(struct reloq_eci_engine *e,
     }
     int rendered=reset?RELOQ_DE_UTTERANCE_INVALID:reloq_language_rules_render(e->language,phrase,length,e->process_tags||admitted,
         frame_volume?(e->native_volume_active?e->native_volume:e->generic_volume):100,
-        e->native_wpm,e->original_acoustic_clock,&settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
+        e->native_wpm,e->original_acoustic_clock==1||(e->original_acoustic_clock==2&&
+            (e->language==0x20000||e->language==0x120000)),&settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
         send_pcm,send_generic_index,&bridge);
     free(english_indices);free(english_pitch);
     if(preflight_cancelled(&cancel_check)||reloq_session_cancelled(e->text_session))return RELOQ_ECI_CANCELLED;
@@ -1537,7 +1538,7 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
         if(value!=0 && value!=1)return eci_refuse(e,-1);
         e->mellow_mode=value;break;
     case RELOQ_ECI_ORIGINAL_ACOUSTIC_CLOCK:
-        if(value!=0 && value!=1)return eci_refuse(e,-1);
+        if(value<0 || value>2)return eci_refuse(e,-1);
         e->original_acoustic_clock=value;break;
     case RELOQ_ECI_EQ_LOW:
     case RELOQ_ECI_EQ_MID:

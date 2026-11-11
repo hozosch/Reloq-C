@@ -109,7 +109,9 @@ static void populate(HWND window,struct dialog *d)
     EnableWindow(GetDlgItem(window,BOOST),!d->s.speed_override);
     CheckDlgButton(window,ORIGINAL_QUESTIONS,d->s.original_questions?BST_CHECKED:BST_UNCHECKED);
     CheckDlgButton(window,MELLOW_MODE,d->s.mellow_mode?BST_CHECKED:BST_UNCHECKED);
-    CheckDlgButton(window,ORIGINAL_ACOUSTIC_CLOCK,d->s.original_acoustic_clock?BST_CHECKED:BST_UNCHECKED);
+    CheckDlgButton(window,ORIGINAL_ACOUSTIC_CLOCK,
+        d->s.original_acoustic_clock==1||(d->s.original_acoustic_clock==2&&
+            (d->dialect==0x20000||d->dialect==0x120000))?BST_CHECKED:BST_UNCHECKED);
     CheckDlgButton(window,SHARED,d->shared?BST_CHECKED:BST_UNCHECKED);
     SetDlgItemTextW(window,RESET,d->shared?T(RESET_ALL):T(RESET));
     SetDlgItemTextW(window,DIRECTORY,d->s.directory);d->loading=0;

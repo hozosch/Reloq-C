@@ -40,7 +40,8 @@ from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionarie
 from ._reloq_nvda_dicts import ImportedDictionaries
 from ._reloq_wordseg import (WordSegmenter, dictionary_keys, split_camel, protected_native_spans,
                              transform_unmatched, native_compound_spans, uppercase_candidates)
-from ._reloq_languages import GERMAN, LANGUAGES, LANGUAGE_ALIASES, LANGUAGE_DISPLAY_ORDER, LanguageEngine, language_for
+from ._reloq_languages import (GERMAN, LANGUAGES, LANGUAGE_ALIASES, LANGUAGE_DISPLAY_ORDER, LanguageEngine, language_for,
+                               ACOUSTIC_CLOCK_BITS, ACOUSTIC_CLOCK_DEFAULT, ACOUSTIC_CLOCK_MAX)
 from ._speech_tags import EciTagCommand, SegmentationGuard, NativeDictionaryWord, CapitalWordCommand, protect_sequence, register_remote_commands
 
 
@@ -224,7 +225,8 @@ class SynthDriver(BaseSynthDriver):
         BaseSynthDriver.VoiceSetting(),
         BaseSynthDriver.RateSetting(),
         BaseSynthDriver.RateBoostSetting(),
-        BooleanDriverSetting("originalAcousticClock", _("Use &original Eloquence acoustic timing (5 ms)"), defaultVal=False),
+        BooleanDriverSetting("originalAcousticClock", _("Use &original Eloquence acoustic timing (5 ms)"),
+                             availableInSettingsRing=True, defaultVal=False),
         BaseSynthDriver.PitchSetting(),
         BaseSynthDriver.InflectionSetting(),
         BaseSynthDriver.VolumeSetting(),
@@ -239,6 +241,8 @@ class SynthDriver(BaseSynthDriver):
         DriverSetting("pauseMode", _("Shorten pa&uses"), defaultVal="0"),
         DriverSetting("sampleRate", _("&Sample rate"), defaultVal="1"),
         BooleanDriverSetting("mellowMode", _("&Mellow mode (16 kHz and above)"), defaultVal=False),
+        NumericDriverSetting("_acousticClockMask", _("Per-language acoustic timing"),
+                             defaultVal=ACOUSTIC_CLOCK_DEFAULT, minVal=0, maxVal=ACOUSTIC_CLOCK_MAX),
         # Hidden from NVDA's automatic slider panel. The dedicated Eloquence
         # panel uses a numeric input, while the standard pitch stays 0..100.
         NumericDriverSetting("_pitchHertz", _("Pitch in hertz"), defaultVal=150, minVal=1, maxVal=24000),
@@ -298,7 +302,7 @@ class SynthDriver(BaseSynthDriver):
         self._phrasePrediction = False
         self._originalQuestions = False
         self._mellowMode = False
-        self._originalAcousticClock = False
+        self._acoustic_clocks = ACOUSTIC_CLOCK_DEFAULT
         self._eqEnabled = False
         self._eqPreset = 0
         self._eqCustomLow = self._eqCustomMid = self._eqCustomHigh = 0
@@ -350,7 +354,7 @@ class SynthDriver(BaseSynthDriver):
         self._transport.set_parameter(BREATHINESS, self._breathiness)
         self._transport.set_parameter(ORIGINAL_QUESTIONS, 0)
         self._transport.set_parameter(MELLOW_MODE, 0)
-        self._transport.set_parameter(ORIGINAL_ACOUSTIC_CLOCK, 0)
+        self._transport.set_acoustic_clocks(self._acoustic_clocks)
         manager = self.dictionary_manager()
         # Start monitoring the installed dictionaries and selected own files.
         self._dictionary_request(lambda: manager.set_enabled(self._communityDictionaries))
@@ -608,6 +612,12 @@ class SynthDriver(BaseSynthDriver):
             if not section.isSet("_dictionaryCommunity") and section.isSet("communityDictionaries"):
                 previous = section.__getitem__("communityDictionaries", checkValidity=False)
                 section["_dictionaryCommunity"] = self._dictionary_config_boolean(previous, section)
+            # The dev6 checkbox was global. Preserve an explicitly enabled
+            # 5-ms choice; its default false gets the new language defaults.
+            if not section.isSet("_acousticClockMask") and section.isSet("originalAcousticClock"):
+                previous = section.__getitem__("originalAcousticClock", checkValidity=False)
+                if self._dictionary_config_boolean(previous, section):
+                    section["_acousticClockMask"] = ACOUSTIC_CLOCK_MAX
             # AggregatedSection supports neither pop nor deletion. Leave any
             # legacy value intact; the canonical language now takes precedence.
             super().loadSettings(onlyChanged=onlyChanged)
@@ -779,16 +789,79 @@ class SynthDriver(BaseSynthDriver):
             self._mellowMode = enable
 
     def _get_originalAcousticClock(self):
-        return self._originalAcousticClock
+        return bool(self._acoustic_clocks & ACOUSTIC_CLOCK_BITS.get(self._selectedLanguage, 0))
 
-    def _set_originalAcousticClock(self, enable):
-        if not isinstance(enable, bool):
+    def _set_originalAcousticClock(self, enabled):
+        if not isinstance(enabled, bool):
             raise ValueError("originalAcousticClock must be boolean")
+        # The per-language map, not this legacy single value, is authoritative
+        # while NVDA is restoring a profile or discarding a dialog preview.
+        if self._loading_voice_settings:
+            return
+        bit = ACOUSTIC_CLOCK_BITS.get(self._selectedLanguage, 0)
+        choices = self._acoustic_clocks | bit if enabled else self._acoustic_clocks & ~bit
+        self._set__acousticClockMask(choices)
+        # NVDA's settings ring saves only the visible boolean. Persist the
+        # language map too unless a Voice dialog is previewing changes; that
+        # dialog owns its Apply/Cancel transaction.
+        if not self._clock_settings_panels():
+            try:
+                config.conf[self._configSection][self.name]["_acousticClockMask"] = choices
+            except (KeyError, AttributeError):
+                pass  # The driver may not have received its config section yet.
+
+    def _get__acousticClockMask(self):
+        return self._acoustic_clocks
+
+    def _set__acousticClockMask(self, choices):
+        if not isinstance(choices, int) or isinstance(choices, bool) or not 0 <= choices <= ACOUSTIC_CLOCK_MAX:
+            raise ValueError("invalid per-language acoustic clock choices")
         with self._submit_lock:
-            if self._terminating or self._originalAcousticClock == enable:
+            if self._terminating or self._acoustic_clocks == choices:
                 return
-            self._transport.set_parameter(ORIGINAL_ACOUSTIC_CLOCK, int(enable))
-            self._originalAcousticClock = enable
+            self._transport.set_acoustic_clocks(choices)
+            self._acoustic_clocks = choices
+        self._refresh_clock_checkbox()
+
+    def _clock_settings_panels(self):
+        try:
+            import wx
+            from gui.settingsDialogs import VoiceSettingsPanel
+            pending = list(wx.GetTopLevelWindows())
+            found = []
+            while pending:
+                window = pending.pop()
+                if isinstance(window, VoiceSettingsPanel) and window.getSettings() is self:
+                    if not window.IsBeingDeleted():
+                        found.append(window)
+                else:
+                    pending.extend(window.GetChildren())
+            return found
+        except (ImportError, AttributeError, RuntimeError):
+            return []
+
+    def _refresh_clock_checkbox(self):
+        # NVDA updates dependent controls for voice changes, but not for the
+        # separate language choice. Keep the visible checkbox in sync when
+        # the selected language changes or the ring changes this setting.
+        try:
+            import wx
+            if not hasattr(wx, "GetTopLevelWindows"):
+                return
+        except ImportError:
+            return
+
+        def refresh():
+            if self._terminating:
+                return
+            try:
+                for window in self._clock_settings_panels():
+                    checkbox = getattr(window, "originalAcousticClockCheckbox", None)
+                    if checkbox and not checkbox.IsBeingDeleted():
+                        checkbox.SetValue(self.originalAcousticClock)
+            except (ImportError, RuntimeError):
+                log.debugWarning("Could not refresh acoustic timing control", exc_info=True)
+        wx.CallAfter(refresh)
 
     def _get_voiceTags(self):
         return self._voiceTags
@@ -864,9 +937,9 @@ class SynthDriver(BaseSynthDriver):
                 (PHRASE_PREDICTION, int(self._phrasePrediction)),
                 (ORIGINAL_QUESTIONS, int(self._originalQuestions)),
                 (MELLOW_MODE, int(self._mellowMode)),
-                (ORIGINAL_ACOUSTIC_CLOCK, int(self._originalAcousticClock)),
             ) + (((PITCH_HZ, self._pitchHertz),) if self._pitchInHertz else ()))
             self._selectedLanguage, self._voice = selected, voice
+        self._refresh_clock_checkbox()
 
     def _get_voice(self):
         return self._voice

@@ -3,6 +3,11 @@ package org.reloq.tts;
 import android.content.SharedPreferences;
 
 final class Preferences {
+    static int clockMask(SharedPreferences p) {
+        int max=(1<<Catalog.LANGUAGES.length)-1,mask=p.getInt("acousticClockMask",-1);
+        if(mask>=0&&mask<=max)return mask;
+        return p.getBoolean("originalAcousticClock",false)?max:VoiceSettings.defaultClockMask();
+    }
     static VoiceSettings read(SharedPreferences p,int profile) {
         VoiceSettings s=new VoiceSettings(profile);
         String key="voice."+profile+".";
@@ -16,7 +21,7 @@ final class Preferences {
         s.abbreviations=p.getBoolean("abbreviations",true);s.prediction=p.getBoolean("prediction",false);
         s.originalQuestions=p.getBoolean("originalQuestions",false);
         s.mellowMode=p.getBoolean("mellowMode",false);
-        s.originalAcousticClock=p.getBoolean("originalAcousticClock",false);
+        s.acousticClockMask=clockMask(p);
         s.eqEnabled=p.getBoolean("eqEnabled",false);s.eqPreset=p.getInt("eqPreset",0);
         s.eqLow=p.getInt("eqLow",0);s.eqMid=p.getInt("eqMid",0);s.eqHigh=p.getInt("eqHigh",0);
         for(int i=0;i<s.eqFilters.length;++i){String prefix="eqFilter."+i+".";
@@ -44,7 +49,7 @@ final class Preferences {
             .putBoolean("abbreviations",s.abbreviations).putBoolean("prediction",s.prediction)
             .putBoolean("originalQuestions",s.originalQuestions)
             .putBoolean("mellowMode",s.mellowMode)
-            .putBoolean("originalAcousticClock",s.originalAcousticClock)
+            .putInt("acousticClockMask",s.acousticClockMask&((1<<Catalog.LANGUAGES.length)-1))
             .putBoolean("eqEnabled",s.eqEnabled).putInt("eqPreset",s.eqPreset)
             .putInt("eqLow",s.eqLow).putInt("eqMid",s.eqMid).putInt("eqHigh",s.eqHigh)
             .putBoolean("tags",s.tags).putInt("rate",s.rate).putInt("pauses",s.pauses)

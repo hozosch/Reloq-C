@@ -23,10 +23,12 @@ Further observations at NVDA 52, 54, 56 and 58 confirm the original's complete
 5 ms snapshots there too. Across English and German examples in two genders,
 their 5 ms RMS envelopes differed from the original by at most 4.1%; the
 mixture differed by up to 51.7%. Further tests at slower speeds also support
-the 5 ms snapshots. The user requested a choice after listening: the shared
-renderer uses the previous 1 ms clock by default, or the complete original
-5 ms snapshots at every speed when selected. The native VS and VWPM duration
-rules remain the same in either mode; no intermediate clock is mixed in.
+the 5 ms snapshots. After listening, the user reported that Castilian Spanish
+and Greek sound more natural with 5 ms and requested a choice without manual
+changes on language switches. Automatic selects 5 ms for those two modules
+and the earlier 1 ms clock for the others. The clock can be changed and saved
+independently for each language. The native VS and VWPM duration rules remain
+the same in either mode; no intermediate clock is mixed in.
 These measurements do not establish perceptual equivalence.
 
 The user also hears an unnatural difference especially at higher sample

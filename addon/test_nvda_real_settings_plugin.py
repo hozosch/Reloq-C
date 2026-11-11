@@ -28,6 +28,8 @@ def event(widget, event_type):
     evt.SetEventObject(widget)
     if event_type==wx.wxEVT_CHECKBOX:
         evt.SetInt(int(widget.GetValue()))
+    elif event_type==wx.wxEVT_CHOICE:
+        evt.SetInt(widget.GetSelection())
     widget.GetEventHandler().ProcessEvent(evt)
 
 
@@ -70,19 +72,40 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             controls=list(voice_panel.sizerDict)
             check(controls.index('originalAcousticClock')==controls.index('rateBoost')+1,
                   'clock checkbox is not immediately after rate boost')
-            check(clock.GetLabel() and not clock.GetValue(), 'clock checkbox missing or not off by default')
-            clock.SetValue(True);event(clock,wx.wxEVT_CHECKBOX)
-            check(synth.originalAcousticClock, 'clock preview failed')
+            languages=voice_panel._languages
+            initial_language=synth.language
+            greek=next(i for i,item in enumerate(languages) if item.id=='el_GR')
+            voice_panel.languageList.SetSelection(greek);event(voice_panel.languageList,wx.wxEVT_CHOICE)
+            wx.Yield()
+            check(synth.language=='el_GR' and synth.originalAcousticClock and clock.GetValue(),
+                  'Greek default or checkbox refresh failed')
+            clock.SetValue(False);event(clock,wx.wxEVT_CHECKBOX)
+            check(not synth.originalAcousticClock, 'clock preview failed')
             voice_panel.onSave()
             section=config.conf['speech'][synth.name]
-            check(section.get('originalAcousticClock') is True, 'clock setting did not save')
-            clock.SetValue(False);event(clock,wx.wxEVT_CHECKBOX)
-            check(not synth.originalAcousticClock, 'clock live switch failed')
+            saved_clocks=section.get('_acousticClockMask')
+            clock.SetValue(True);event(clock,wx.wxEVT_CHECKBOX)
+            check(synth.originalAcousticClock, 'clock live switch failed')
+            check(section.get('_acousticClockMask')==saved_clocks, 'preview was saved before Apply')
             voice_panel.onDiscard()
-            check(synth.originalAcousticClock, 'Cancel did not restore clock setting')
-            synth.originalAcousticClock=False
-            synth.saveSettings()
+            check(not synth.originalAcousticClock, 'Cancel did not restore clock setting')
             voice_panel.Destroy()
+            wx.Yield()
+            import globalVars
+            ring=globalVars.settingsRing
+            ring_clock=next(item for item in ring.settings if item.setting.id=='originalAcousticClock')
+            ring_language=next(item for item in ring.settings if item.setting.id=='language')
+            ring_clock.value=1
+            check(synth.originalAcousticClock and section['_acousticClockMask']==synth._acousticClockMask,
+                  'ring choice was not persisted per language')
+            home=next(i for i,item in enumerate(ring_language._values) if item.id==initial_language)
+            greek=next(i for i,item in enumerate(ring_language._values) if item.id=='el_GR')
+            ring_language.value=home
+            ring_language.value=greek
+            synth.loadSettings()
+            check(synth.language=='el_GR' and synth.originalAcousticClock, 'ring choice did not survive language switches and reload')
+            ring_language.value=home
+            synth.saveSettings()
             panel=EloquenceSettingsPanel(frame)
             section=config.conf['speech'][synth.name]
             # A fresh NVDA profile may have no explicitly stored entry yet.

@@ -212,23 +212,55 @@ def main():
                 driver.voiceTags = False
                 driver.language = "en_US"
                 driver.rate = 60
-                driver.originalAcousticClock = False
+                assert not driver.originalAcousticClock
                 fine = run(["adictive drums"])
                 driver.originalAcousticClock = True
                 original = run(["adictive drums"])
                 assert len(fine) == len(original) and fine != original, "clock selection did not affect speech"
                 assert spoken_engines[-1].calls[-1][1][str(native.ORIGINAL_ACOUSTIC_CLOCK)] == 1
                 driver.language = "de_DE"
+                assert not driver.originalAcousticClock
                 run(["Die Stimme klingt ruhig."])
-                assert spoken_engines[-1].calls[-1][1][str(native.ORIGINAL_ACOUSTIC_CLOCK)] == 1
+                assert spoken_engines[-1].calls[-1][1][str(native.ORIGINAL_ACOUSTIC_CLOCK)] == 0
                 driver.language = "en_US"
+                assert driver.originalAcousticClock
                 assert run(["adictive drums"]) == original, "clock setting lost on language change"
                 driver.originalAcousticClock = False
                 assert run(["adictive drums"]) == fine, "clock setting did not switch back"
+                for language, text in (("el_GR", "Αυτή είναι μια δοκιμή."),
+                                       ("es_ES", "Esta es una prueba."),
+                                       ("en_US", "This is a test."),
+                                       ("es_MX", "Esta es una prueba.")):
+                    driver.language = language
+                    expected = language in ("el_GR", "es_ES")
+                    assert driver.originalAcousticClock == expected
+                    automatic = run([text])
+                    assert spoken_engines[-1].calls[-1][1][str(native.ORIGINAL_ACOUSTIC_CLOCK)] == expected
+                    driver.originalAcousticClock = not expected
+                    assert run([text]) != automatic, f"clock comparison had no effect for {language}"
+                    driver.originalAcousticClock = expected
+                    assert run([text]) == automatic, f"clock choice not restored for {language}"
+                driver.language = "en_US"
+                before = len(spoken_engines)
+                run(["Hello. ", commands.LangChangeCommand("es_ES"), "Esta es una prueba. ",
+                     commands.LangChangeCommand(None), "Back in English."])
+                routed = spoken_engines[before:]
+                assert len(routed) == 3 and routed[0] is routed[2] and routed[0] is not routed[1]
+                assert [engine.calls[-1][1][str(native.ORIGINAL_ACOUSTIC_CLOCK)] for engine in routed] == [0, 1, 0]
+                driver.language = "es_ES"
+                driver.originalAcousticClock = False
+                driver.cancel()
+                driver.language = "en_US"
+                before = len(spoken_engines)
+                run(["Hello. ", commands.LangChangeCommand("es_ES"), "Esta es una prueba. ",
+                     commands.LangChangeCommand(None), "Back in English."])
+                assert [engine.calls[-1][1][str(native.ORIGINAL_ACOUSTIC_CLOCK)] for engine in spoken_engines[before:]] == [0, 0, 0]
+                driver.language = "es_ES"
+                driver.originalAcousticClock = True
                 driver.rate = 50
                 driver.language = "de_DE"
                 driver.voiceTags = True
-                report["checks"] += 5
+                report["checks"] += 25
                 # The accepted fixed glide survives switching languages;
                 # old NVDA slider settings no longer reach the DLL.
                 driver.language = "de_DE"
