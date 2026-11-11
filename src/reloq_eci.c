@@ -181,7 +181,7 @@ struct reloq_eci_engine {
     int native_volume_active;
     int input_type;
     int process_tags;
-    int dictionary_disabled,phrase_prediction,original_questions,mellow_mode;
+    int dictionary_disabled,phrase_prediction,original_questions,mellow_mode,original_acoustic_clock;
     int eq_low,eq_mid,eq_high;
     int eq_filters[RELOQ_EQ_FILTER_COUNT][RELOQ_ECI_EQ_FILTER_STRIDE];
     int pause_mode;
@@ -542,7 +542,7 @@ static int synthesize_generic(struct reloq_eci_engine *e,
     }
     int rendered=reset?RELOQ_DE_UTTERANCE_INVALID:reloq_language_rules_render(e->language,phrase,length,e->process_tags||admitted,
         frame_volume?(e->native_volume_active?e->native_volume:e->generic_volume):100,
-        e->native_wpm,&settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
+        e->native_wpm,e->original_acoustic_clock,&settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
         send_pcm,send_generic_index,&bridge);
     free(english_indices);free(english_pitch);
     if(preflight_cancelled(&cancel_check)||reloq_session_cancelled(e->text_session))return RELOQ_ECI_CANCELLED;
@@ -1390,6 +1390,7 @@ int ECICALL eciGetParam(ECIHand handle, int parameter)
     case RELOQ_ECI_PHRASE_PREDICTION: return e->phrase_prediction;
     case RELOQ_ECI_ORIGINAL_QUESTIONS: return e->original_questions;
     case RELOQ_ECI_MELLOW_MODE: return e->mellow_mode;
+    case RELOQ_ECI_ORIGINAL_ACOUSTIC_CLOCK: return e->original_acoustic_clock;
     case RELOQ_ECI_EQ_LOW: return e->eq_low;
     case RELOQ_ECI_EQ_MID: return e->eq_mid;
     case RELOQ_ECI_EQ_HIGH: return e->eq_high;
@@ -1535,6 +1536,9 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
     case RELOQ_ECI_MELLOW_MODE:
         if(value!=0 && value!=1)return eci_refuse(e,-1);
         e->mellow_mode=value;break;
+    case RELOQ_ECI_ORIGINAL_ACOUSTIC_CLOCK:
+        if(value!=0 && value!=1)return eci_refuse(e,-1);
+        e->original_acoustic_clock=value;break;
     case RELOQ_ECI_EQ_LOW:
     case RELOQ_ECI_EQ_MID:
     case RELOQ_ECI_EQ_HIGH:

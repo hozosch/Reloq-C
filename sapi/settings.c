@@ -53,7 +53,7 @@ static int valid(const struct sapi_settings *s)
         if(f->enabled>1||f->frequency<1||f->frequency>24000||f->gain>24||f->width<10||f->width>400)return 0;}
     return s->schema==1&&s->profile<8&&s->pitch<=100&&s->inflection<=100&&s->head<=100&&
         s->roughness<=100&&s->breathiness<=100&&s->gender<=1&&s->rate<7&&s->pauses<3&&
-        s->tags<2&&s->abbreviations<2&&s->prediction<2&&s->dictionaries<2&&s->boost<2&&s->original_questions<2&&s->mellow_mode<2&&
+        s->tags<2&&s->abbreviations<2&&s->prediction<2&&s->dictionaries<2&&s->boost<2&&s->original_questions<2&&s->mellow_mode<2&&s->original_acoustic_clock<2&&
         s->pitch_hz>=1&&s->pitch_hz<=24000&&s->pitch_hz_enabled<2&&
         s->speed_override<2&&s->speed_value<=250&&s->pitch_override<2&&
         s->volume_override<2&&s->volume_value<=100&&
@@ -75,7 +75,8 @@ static HRESULT read_binary(const WCHAR *key,const WCHAR *name,struct sapi_settin
         size!=offsetof(struct sapi_settings,speed_override)&&
         size!=offsetof(struct sapi_settings,speed_wpm_enabled)&&
         size!=offsetof(struct sapi_settings,eq_enabled)&&
-        size!=offsetof(struct sapi_settings,eq_filters))||!valid(&input))
+        size!=offsetof(struct sapi_settings,eq_filters)&&
+        size!=offsetof(struct sapi_settings,original_acoustic_clock))||!valid(&input))
         return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
     *out=input;return S_OK;
 }

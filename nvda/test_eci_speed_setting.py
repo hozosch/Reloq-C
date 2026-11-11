@@ -8,11 +8,14 @@ from test_eci_inline_queue import Engine, TEXTS
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', type=Path, required=True)
-    library = parser.parse_args().library
+    parser.add_argument('--original-clock', action='store_true')
+    args = parser.parse_args()
+    library = args.library
     checks = 0
     for language, parts in TEXTS.items():
         engine = Engine(library, language)
         try:
+            assert engine.lib.eciSetParam(engine.h,0x101b,int(args.original_clock)) >= 0
             text = ''.join(parts)
             # Include the native value used by the NVDA 60 slider, a slower
             # setting and a faster one. Compare the actual PCM, not just WPM.
@@ -73,6 +76,7 @@ def main():
     for language in (0x10000, 0x40000, 0x60000):
         engine = Engine(library, language)
         try:
+            assert engine.lib.eciSetParam(engine.h,0x101b,int(args.original_clock)) >= 0
             for sample_rate in (3, 6):
                 assert engine.lib.eciSetParam(engine.h, 5, sample_rate) >= 0
                 for speed in (90, 100, 106):

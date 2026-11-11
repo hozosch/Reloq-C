@@ -27,6 +27,7 @@ def main():
             engine = Engine(library, case['language'])
             try:
                 assert engine.lib.eciSetParam(engine.h,5,1)>=0
+                assert engine.lib.eciSetParam(engine.h,0x101b,1)>=0
                 engine.tags(1 if case.get('wpm') else 0)
                 for k, value in enumerate((case['gender'],50,65,30,0,0,case['speed'],100)):
                     engine.voice(k,value)

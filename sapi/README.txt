@@ -100,6 +100,9 @@ German and US English; it is off by default. Existing settings are retained
 when upgrading. “Mellow mode” softens periodic voice presence around 3–4 kHz at synthesis
 rates of 16 kHz and above, omits added richness from 22 kHz and reduces
 voiced breathiness; it is off by default.
+“Original timing (5 ms)” switches between the earlier fine acoustic-control
+clock and the original Eloquence clock. It is off by default and does not
+change the speed or WPM scales.
 Unchanged dictionary paths retain initialized language data. Small metadata
 checks detect edits, replacement, creation and deletion of native .dic files
 between utterances. No text result or synthesized speech is cached. Aborted

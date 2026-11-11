@@ -16,7 +16,7 @@ SLIDERS = (40, 50, 60, 80, 100)
 
 
 def capture(library, reference, text, speed, path, *, buffer_samples=110,
-            want_phones=True, dialect=0x10000, sample_rate=11025, gender=0):
+            want_phones=True, dialect=0x10000, sample_rate=11025, gender=0, acoustic_clock=None):
     library=library.resolve();directory=os.add_dll_directory(str(library.parent)) if os.name=='nt' else None
     old=Path.cwd();os.chdir(library.parent)
     try:
@@ -50,6 +50,8 @@ def capture(library, reference, text, speed, path, *, buffer_samples=110,
                 if lib.eciSetVoiceParam(engine,0,param,val)<0:raise RuntimeError(f'voice parameter {param} refused')
             if not reference:
                 assert lib.eciSetParam(engine,0x1003,1)>=0
+                if acoustic_clock is not None:
+                    assert lib.eciSetParam(engine,0x101b,int(acoustic_clock))>=0
             assert sample_rate in (8000,11025)
             assert lib.eciSetParam(engine,5,int(sample_rate==11025))>=0
             assert lib.eciSetParam(engine,1,1)>=0

@@ -822,7 +822,7 @@ struct rule_plan {
     const size_t *control_sources;size_t pitch_source;
     struct rule_control *controls;size_t control_count,control_capacity;
     struct reloq_session *session;
-    int memory,retracted_filter,retracted_st,word_volume,cjk_volume,managed_voice_controls,word_pitch,native_pitch,word_speed,german_af_markers;
+    int memory,retracted_filter,retracted_st,word_volume,cjk_volume,managed_voice_controls,word_pitch,native_pitch,word_speed,german_af_markers,original_clock;
     struct reloq_german_voice_model word_model;
     int base_voice[8];
     struct rule_playback *playback;
@@ -1127,14 +1127,17 @@ static int render_until(struct rule_plan *s,int64_t limit)
             p->pitch_scale=reloq_voice_pitch_f0_scale(p->pitches[p->next_pitch++].native_pitch)/p->base_pitch;
         }
         if(previous!=f){prepare_controls(f,&prepared);previous=f;}
-        int64_t acoustic_tick=tick-tick%5;
-        if(!p->acoustic_valid || p->acoustic_tick!=acoustic_tick) {
-            read_controls(&prepared,f,at,p->acoustic_controls);
-            p->af_marked=f->af_marked;
-            if(f->af_marked)p->male_af=(float)curve_value(&f->male_af,at);
-            p->acoustic_tick=acoustic_tick;p->acoustic_valid=1;
-        }
-        float controls[62];memcpy(controls,p->acoustic_controls,sizeof controls);
+        float controls[62];
+        if(s->original_clock) {
+            int64_t acoustic_tick=tick-tick%5;
+            if(!p->acoustic_valid || p->acoustic_tick!=acoustic_tick) {
+                read_controls(&prepared,f,at,p->acoustic_controls);
+                p->af_marked=f->af_marked;
+                if(f->af_marked)p->male_af=(float)curve_value(&f->male_af,at);
+                p->acoustic_tick=acoustic_tick;p->acoustic_valid=1;
+            }
+            memcpy(controls,p->acoustic_controls,sizeof controls);
+        } else read_controls(&prepared,f,at,controls);
         /* A provider fallback frame can cover more than one millisecond;
          * the latched targets must not replace its actual duration. */
         controls[0]=(float)f->step;
@@ -1155,7 +1158,10 @@ static int render_until(struct rule_plan *s,int64_t limit)
             }
             if(s->managed_voice_controls)voice=&p->voice;
         }
-        if(p->af_marked&&!voice->model.gender)controls[8]=p->male_af;
+        if(!voice->model.gender) {
+            if(s->original_clock&&p->af_marked)controls[8]=p->male_af;
+            else if(!s->original_clock&&f->af_marked)controls[8]=(float)curve_value(&f->male_af,at);
+        }
         word_voice_frame(s,voice,controls);
         double pitch_scale=voice->pitch>=0&&(voice->pitch_tick>p->last_pitch_tick||
             (voice->pitch_tick==p->last_pitch_tick&&voice->pitch_source>=p->last_pitch_source))?
@@ -1233,7 +1239,7 @@ static int process_spans(struct rule_plan *s,int final)
 static int rule_cancelled(void *context)
 {return reloq_session_cancelled(context);}
 
-int reloq_language_rules_render(int language,const unsigned char *text,size_t length,int tags,int native_volume,int default_wpm,
+int reloq_language_rules_render(int language,const unsigned char *text,size_t length,int tags,int native_volume,int default_wpm,int original_clock,
     const struct reloq_german_generic_settings *settings,
     const struct reloq_german_generic_index *indices,size_t index_count,
     const struct reloq_german_generic_pitch_mark *pitches,size_t pitch_count,
@@ -1250,7 +1256,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
      * renderer below when the requested baseline is expressed in Hz. */
     int provider_pitch=reloq_pitch_is_hz(configured_pitch)?65:configured_pitch;
     unsigned char *a=NULL;size_t *map=NULL,n=0;
-    struct rule_plan plan={.session=session,.index_count=index_count+pitch_count,
+    struct rule_plan plan={.session=session,.index_count=index_count+pitch_count,.original_clock=original_clock,
         .retracted_filter=language==0x20000||language==0x120000,.word_volume=native_volume,.word_pitch=-1,
         .native_pitch=provider_pitch,
         .word_speed=-1};
@@ -1531,6 +1537,6 @@ int reloq_english_rules_render(const unsigned char *text,size_t length,int tags,
     struct reloq_session *session,reloq_session_pcm_sink sink,
     reloq_german_generic_index_sink index_sink,void *context)
 {
-    return reloq_language_rules_render(0x10000,text,length,tags,native_volume,0,
+    return reloq_language_rules_render(0x10000,text,length,tags,native_volume,0,0,
         settings,indices,index_count,pitches,pitch_count,session,sink,index_sink,context);
 }

@@ -309,6 +309,9 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 mellow_setting = next(item for item in driver.supportedSettings if item.id == "mellowMode")
                 assert mellow_setting.displayNameWithAccelerator == (
                     "&Weicher Modus (ab 16 kHz)" if german_ui else "&Mellow mode (16 kHz and above)")
+                clock_setting = next(item for item in driver.supportedSettings if item.id == "originalAcousticClock")
+                assert clock_setting.displayNameWithAccelerator == (
+                    "&Originalen Eloquence-Lauttakt verwenden (5 ms)" if german_ui else "Use &original Eloquence acoustic timing (5 ms)")
                 driver.voice = "deu_experimental"
                 assert driver.voice == "1", "old voice IDs must migrate"
                 driver.voice = "262144:1"
@@ -316,7 +319,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert PitchCommand in driver.supportedCommands
                 assert CharacterModeCommand in driver.supportedCommands
                 assert [setting.id for setting in driver.supportedSettings] == [
-                    "language", "voice", "rate", "rateBoost", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode", "_pitchHertz", "_pitchInHertz", "_rateWpm", "_rateInWpm", "_eqEnabled", "_eqPreset", "_eqCustomLow", "_eqCustomMid", "_eqCustomHigh", *[f"_eqFilter{i}{field}" for i in range(1,6) for field in ("Enabled","Frequency","Gain","Width")], "_wordSegmentation", "_camelCase"]
+                    "language", "voice", "rate", "rateBoost", "originalAcousticClock", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode", "_pitchHertz", "_pitchInHertz", "_rateWpm", "_rateInWpm", "_eqEnabled", "_eqPreset", "_eqCustomLow", "_eqCustomMid", "_eqCustomHigh", *[f"_eqFilter{i}{field}" for i in range(1,6) for field in ("Enabled","Frequency","Gain","Width")], "_wordSegmentation", "_camelCase"]
                 assert driver.supportedSettings[0].availableInSettingsRing
                 assert not any(hasattr(driver, '_'+name) for name in
                                ('glideOpening', 'glideBackness', 'glideSoftness'))
@@ -506,10 +509,10 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         driver_module.EciText("Deutsch."), driver_module.EciLanguage(0x10000, "1"), driver_module.EciText("English."),
                         driver_module.EciLanguage(0x40000, "1"), driver_module.EciText("Wieder deutsch.")]
                 until(lambda: len(Engine.instances) == 1)
-                until(lambda: len(Engine.instances[0].parameters) == 16)
+                until(lambda: len(Engine.instances[0].parameters) >= 17)
                 assert Engine.instances[0].parameters == list(german.voices[0].parameters) + [(0x1007, 95), (0x1008, 65),
                                                           (0x1009, 30),
-                                                          (0x100a, 100), (0x100d, 50), (0x100e, 0), (0x100f, 0), (0x1015, 0), (0x1016, 0)]
+                                                          (0x100a, 100), (0x100d, 50), (0x100e, 0), (0x100f, 0), (0x1015, 0), (0x1016, 0), (0x101b, 0)]
                 driver._set_rate(70)
                 driver._set_pitch(65)
                 driver._set_inflection(75)
@@ -524,7 +527,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 worker = Engine.instances[0]
                 assert worker.parameters == list(german.voices[0].parameters) + [(0x1007, 95), (0x1008, 65),
                                              (0x1009, 30), (0x100a, 100),
-                                             (0x100d, 50), (0x100e, 0), (0x100f, 0), (0x1015, 0), (0x1016, 0),
+                                             (0x100d, 50), (0x100e, 0), (0x100f, 0), (0x1015, 0), (0x1016, 0), (0x101b, 0),
                                              (0x1007, 117), (0x1008, 65),
                                              (0x1009, 75),
                                              (0x100a, 85)]
@@ -650,6 +653,12 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert driver.mellowMode is True
                 driver.mellowMode = False
                 until(lambda: Engine.instances[0].parameters[-1] == (0x1016, 0))
+                assert driver.originalAcousticClock is False
+                driver.originalAcousticClock = True
+                until(lambda: Engine.instances[0].parameters[-1] == (0x101b, 1))
+                assert driver.originalAcousticClock is True
+                driver.originalAcousticClock = False
+                until(lambda: Engine.instances[0].parameters[-1] == (0x101b, 0))
                 assert list(driver.availablePausemodes) == ["0", "1", "2"]
                 assert list(driver.availablePauseModes) == ["0", "1", "2"]
                 assert driver.pauseMode == "0"

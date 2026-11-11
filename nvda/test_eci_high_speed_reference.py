@@ -20,14 +20,14 @@ def main():
     with tempfile.TemporaryDirectory(prefix='reloq-speed-test-') as folder:
         output=Path(folder)/'sample.wav'
         for case in data['cases']:
-            actual=capture(args.library,False,case['text'],case['eci_rate'],output)
+            actual=capture(args.library,False,case['text'],case['eci_rate'],output,acoustic_clock=1)
             tolerance=max(55,round(case['samples']*.015))
             assert abs(actual['samples']-case['samples'])<=tolerance,(case,actual['samples'],tolerance)
         clock=json.loads((ROOT/'tests/data/original_acoustic_clock_enu.json').read_text())
         assert clock['sample_rate']==11025
         fast_cases=[case for case in clock['cases'] if case['eci_rate']>=106]
         for case in fast_cases:
-            capture(args.library,False,case['text'],case['eci_rate'],output)
+            capture(args.library,False,case['text'],case['eci_rate'],output,acoustic_clock=1)
             with wave.open(str(output),'rb') as speech:
                 assert speech.getframerate()==clock['sample_rate']
                 samples=array('h',speech.readframes(speech.getnframes()))

@@ -19,7 +19,7 @@ public final class SettingsActivity extends Activity {
     private boolean ready;
     private LinearLayout content;
     private Spinner languages,profiles,rates,pauses,models,eqPreset;
-    private CheckBox androidVoice,androidRate,androidPitch,boost,tags,abbreviations,prediction,originalQuestions,mellowMode,eqEnabled;
+    private CheckBox androidVoice,androidRate,androidPitch,boost,tags,abbreviations,prediction,originalQuestions,mellowMode,originalAcousticClock,eqEnabled;
     private RadioButton speedEciMode,speedWpmMode,pitchEciMode,pitchHertzMode;
     private RadioGroup speedModes,pitchModes;
     private Numeric speed,pitch,inflection,volume,head,roughness,breathiness,eqLow,eqMid,eqHigh;
@@ -189,6 +189,7 @@ public final class SettingsActivity extends Activity {
         rates=select(R.string.sample_rate,new String[]{"8 kHz","11.025 kHz","16 kHz","22.05 kHz",
             "32 kHz","44.1 kHz","48 kHz"},settings.rate);
         mellowMode=check(R.string.mellow_mode,settings.mellowMode);
+        originalAcousticClock=check(R.string.original_acoustic_clock,settings.originalAcousticClock);
         heading(R.string.equalizer);
         eqEnabled=check(R.string.equalizer_enabled,settings.eqEnabled);
         eqCustomLow=VoiceSettings.bounded(settings.eqLow,-12,12);
@@ -280,6 +281,7 @@ public final class SettingsActivity extends Activity {
         s.prediction=prediction==null?preferences.getBoolean("prediction",false):prediction.isChecked();
         s.originalQuestions=originalQuestions==null?preferences.getBoolean("originalQuestions",false):originalQuestions.isChecked();
         s.mellowMode=mellowMode==null?preferences.getBoolean("mellowMode",false):mellowMode.isChecked();
+        s.originalAcousticClock=originalAcousticClock==null?preferences.getBoolean("originalAcousticClock",false):originalAcousticClock.isChecked();
         s.eqEnabled=eqEnabled==null?preferences.getBoolean("eqEnabled",false):eqEnabled.isChecked();
         s.eqPreset=eqPreset==null?preferences.getInt("eqPreset",0):eqPreset.getSelectedItemPosition();
         s.eqLow=eqCustomLow;s.eqMid=eqCustomMid;s.eqHigh=eqCustomHigh;

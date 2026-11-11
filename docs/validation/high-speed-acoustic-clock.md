@@ -23,9 +23,11 @@ Further observations at NVDA 52, 54, 56 and 58 confirm the original's complete
 5 ms snapshots there too. Across English and German examples in two genders,
 their 5 ms RMS envelopes differed from the original by at most 4.1%; the
 mixture differed by up to 51.7%. Further tests at slower speeds also support
-the 5 ms snapshots. The shared renderer therefore uses them at every speed,
-including VS and VWPM controls. These measurements do not establish
-perceptual equivalence.
+the 5 ms snapshots. The user requested a choice after listening: the shared
+renderer uses the previous 1 ms clock by default, or the complete original
+5 ms snapshots at every speed when selected. The native VS and VWPM duration
+rules remain the same in either mode; no intermediate clock is mixed in.
+These measurements do not establish perceptual equivalence.
 
 The user also hears an unnatural difference especially at higher sample
 rates, for which the original DLL offers no direct reference. The extended
@@ -35,7 +37,8 @@ rather than approximately 0.272 ms at the 11.025-kHz reference clock. The
 extended speech tract now spreads the same three coefficient steps over
 approximately the same time. This does not interpolate the 5 ms acoustic
 targets or alter the independent frication-control clock. Whether the
-modified transitions sound more natural still requires a listening test.
+modified transitions sounded better across rates in the user's listening
+test. The same high-rate correction applies to both clock choices.
 
 The same comparison covered seven test texts in six languages/dialects,
 two speeds, two voice genders and both original sample rates (8 and 11.025

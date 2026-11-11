@@ -87,6 +87,7 @@
     <string name="dictionary_update_files_unknown">No se pudo determinar el número de archivos de diccionario nuevos.</string>
     <string name="original_questions">Usar la entonación original de las preguntas</string>
     <string name="mellow_mode">Modo suave (desde 16 kHz)</string>
+    <string name="original_acoustic_clock">Usar el ritmo acústico original de Eloquence (5 ms)</string>
     <string name="pitch_hz_mode">Usar tono en hercios</string>
     <string name="pitch_hz_value">Tono base en hercios</string>
     <string name="pitch_hz_error">Introduce un valor de 1 a 24000 Hz.</string>

@@ -16,6 +16,7 @@ final class Preferences {
         s.abbreviations=p.getBoolean("abbreviations",true);s.prediction=p.getBoolean("prediction",false);
         s.originalQuestions=p.getBoolean("originalQuestions",false);
         s.mellowMode=p.getBoolean("mellowMode",false);
+        s.originalAcousticClock=p.getBoolean("originalAcousticClock",false);
         s.eqEnabled=p.getBoolean("eqEnabled",false);s.eqPreset=p.getInt("eqPreset",0);
         s.eqLow=p.getInt("eqLow",0);s.eqMid=p.getInt("eqMid",0);s.eqHigh=p.getInt("eqHigh",0);
         for(int i=0;i<s.eqFilters.length;++i){String prefix="eqFilter."+i+".";
@@ -43,6 +44,7 @@ final class Preferences {
             .putBoolean("abbreviations",s.abbreviations).putBoolean("prediction",s.prediction)
             .putBoolean("originalQuestions",s.originalQuestions)
             .putBoolean("mellowMode",s.mellowMode)
+            .putBoolean("originalAcousticClock",s.originalAcousticClock)
             .putBoolean("eqEnabled",s.eqEnabled).putInt("eqPreset",s.eqPreset)
             .putInt("eqLow",s.eqLow).putInt("eqMid",s.eqMid).putInt("eqHigh",s.eqHigh)
             .putBoolean("tags",s.tags).putInt("rate",s.rate).putInt("pauses",s.pauses)

@@ -23,7 +23,7 @@ def main():
         output = Path(folder)/'sample.wav'
         for case in reference['cases']:
             capture(library, False, case['text'], case['speed'], output,
-                    want_phones=False, dialect=case['dialect'], gender=case['gender'])
+                    want_phones=False, dialect=case['dialect'], gender=case['gender'], acoustic_clock=1)
             with wave.open(str(output), 'rb') as speech:
                 assert speech.getframerate() == reference['sample_rate']
                 samples = array('h', speech.readframes(speech.getnframes()))

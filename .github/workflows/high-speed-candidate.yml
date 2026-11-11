@@ -29,7 +29,7 @@ jobs:
           git diff --exit-code a05d5ac2003ac423eab8ffef8ad2b293e4c600ce HEAD -- \
             vendor/openevv61/ src/reloq_voice_filter.c src/reloq_orthography.c \
             src/reloq_german_word_edges.c src/reloq_english_word_edges.c include/ \
-            ':(exclude)include/reloq_core.h' ':(exclude)include/reloq_eci.h' \
+            ':(exclude)include/reloq_core.h' ':(exclude)include/reloq_eci.h' ':(exclude)include/reloq_rules61.h' \
             ':(exclude)include/reloq_equalizer.h'
       - uses: actions/cache@v4
         id: rules
@@ -57,14 +57,22 @@ jobs:
           from build_synth import build,DEFAULT_OUTPUT
           build(DEFAULT_OUTPUT,pathlib.Path('eci/eci.dll'),refresh_dictionaries=False)
           PY
-          for lang in en de; do PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.1-dev5.nvda-addon"))' "$lang"; done
+          for lang in en de; do PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.1-dev6.nvda-addon"))' "$lang"; done
           PYTHONPATH=nvda python3 -B nvda/test_updates.py
+      - name: Build the SAPI settings adapter
+        run: make -C sapi CC=x86_64-w64-mingw32-gcc-posix build/ReLoqSapi.dll
       - uses: actions/upload-artifact@v4
         with:
           name: high-speed-addon-candidate
-          path: dist/reloq-c-synth-x64-1.3.1-dev5.nvda-addon
+          path: dist/reloq-c-synth-x64-1.3.1-dev6.nvda-addon
           if-no-files-found: error
           compression-level: 0
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clock-sapi-settings-candidate
+          path: sapi/build/ReLoqSapi.dll
+          if-no-files-found: error
           retention-days: 14
   windows:
     needs: addon
@@ -78,20 +86,34 @@ jobs:
         with:
           name: high-speed-addon-candidate
           path: candidate
+      - uses: actions/download-artifact@v4
+        with:
+          name: clock-sapi-settings-candidate
+          path: candidate/sapi
       - name: Check the packaged core, WPM and original timing
         shell: pwsh
         run: |
-          $addon = (Get-Item candidate/reloq-c-synth-x64-1.3.1-dev5.nvda-addon).FullName
+          $addon = (Get-Item candidate/reloq-c-synth-x64-1.3.1-dev6.nvda-addon).FullName
           python -c "import zipfile; z=zipfile.ZipFile(r'$addon'); assert z.testzip() is None; z.extract('synthDrivers/reloqC/eci.dll', 'candidate')"
           if ($LASTEXITCODE -ne 0) { throw 'Core extraction failed' }
           $dll = (Get-Item candidate/synthDrivers/reloqC/eci.dll).FullName
-          foreach ($test in @('nvda/test_eci_high_speed_reference.py','nvda/test_eci_slow_speed_reference.py','nvda/test_eci_transition_reference.py','nvda/test_eci_cjk_acoustic_clock.py','nvda/test_eci_speed_setting.py','nvda/test_eci_inline_queue.py','nvda/test_eci_pitch_hz.py','nvda/test_eci_ptbr_numbers.py','nvda/test_eci_equalizer.py','nvda/test_eci_wpm.py','nvda/test_eci_wpm_languages.py','nvda/test_eci_wpm_setting.py')) {
+          foreach ($test in @('nvda/test_eci_acoustic_clock_option.py','nvda/test_eci_high_speed_reference.py','nvda/test_eci_slow_speed_reference.py','nvda/test_eci_transition_reference.py','nvda/test_eci_cjk_acoustic_clock.py','nvda/test_eci_speed_setting.py','nvda/test_eci_inline_queue.py','nvda/test_eci_pitch_hz.py','nvda/test_eci_ptbr_numbers.py','nvda/test_eci_equalizer.py','nvda/test_eci_wpm.py','nvda/test_eci_wpm_languages.py','nvda/test_eci_wpm_setting.py')) {
             python -B $test --library $dll
             if ($LASTEXITCODE -ne 0) { throw "$test failed" }
+          }
+          foreach ($test in @('nvda/test_eci_speed_setting.py','nvda/test_eci_wpm_setting.py')) {
+            python -B $test --library $dll --original-clock
+            if ($LASTEXITCODE -ne 0) { throw "$test with original clock failed" }
           }
           $env:PYTHONPATH='addon;nvda'
           python -B addon/test_synth_native.py --library $dll --addon $addon
           if ($LASTEXITCODE -ne 0) { throw 'Native NVDA driver test failed' }
+          Copy-Item $dll candidate/sapi/eci.dll
+      - name: Verify SAPI keyboard and timing option
+        shell: pwsh
+        run: |
+          python -B sapi/test_dialog_order.py --directory candidate/sapi
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI settings dialog check failed' }
       - name: Verify live settings in NVDA
         shell: pwsh
         env:
@@ -104,12 +126,12 @@ jobs:
           $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
           $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
           if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
-          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.3.1-dev5.nvda-addon --work settings-results
+          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.3.1-dev6.nvda-addon --work settings-results
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA settings probe failed' }
       - uses: actions/upload-artifact@v4
         with:
           name: high-speed-nvda-test
-          path: candidate/reloq-c-synth-x64-1.3.1-dev5.nvda-addon
+          path: candidate/reloq-c-synth-x64-1.3.1-dev6.nvda-addon
           if-no-files-found: error
           compression-level: 0
           retention-days: 14

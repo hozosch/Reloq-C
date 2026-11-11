@@ -67,7 +67,7 @@ def main():
                         have_pcm = True
                     on_pcm(data)
                 settings = {str(p): self._dll.eciGetParam(self._handle, p)
-                            for p in (native.SAMPLE_RATE, native.HIGH_RATE_PROFILE, native.PROCESS_TAGS,
+                            for p in (native.SAMPLE_RATE, native.HIGH_RATE_PROFILE, native.PROCESS_TAGS, native.ORIGINAL_ACOUSTIC_CLOCK,
                                       native.GERMAN_GLIDE_OPENING, native.GERMAN_GLIDE_BACKNESS,
                                       native.GERMAN_GLIDE_SOFTNESS)}
                 self.calls.append((parts, settings))
@@ -208,6 +208,27 @@ def main():
                 assert run(["`vwpm150 Hello world."]) == english_configured, "WPM lost on language switch"
                 driver.language = "de_DE"
                 report["checks"] += 4
+                driver.configure_rate_wpm(False, 150)
+                driver.voiceTags = False
+                driver.language = "en_US"
+                driver.rate = 60
+                driver.originalAcousticClock = False
+                fine = run(["adictive drums"])
+                driver.originalAcousticClock = True
+                original = run(["adictive drums"])
+                assert len(fine) == len(original) and fine != original, "clock selection did not affect speech"
+                assert spoken_engines[-1].calls[-1][1][str(native.ORIGINAL_ACOUSTIC_CLOCK)] == 1
+                driver.language = "de_DE"
+                run(["Die Stimme klingt ruhig."])
+                assert spoken_engines[-1].calls[-1][1][str(native.ORIGINAL_ACOUSTIC_CLOCK)] == 1
+                driver.language = "en_US"
+                assert run(["adictive drums"]) == original, "clock setting lost on language change"
+                driver.originalAcousticClock = False
+                assert run(["adictive drums"]) == fine, "clock setting did not switch back"
+                driver.rate = 50
+                driver.language = "de_DE"
+                driver.voiceTags = True
+                report["checks"] += 5
                 # The accepted fixed glide survives switching languages;
                 # old NVDA slider settings no longer reach the DLL.
                 driver.language = "de_DE"

@@ -87,6 +87,7 @@
     <string name="dictionary_update_files_unknown">Δεν ήταν δυνατό να προσδιοριστεί ο αριθμός νέων αρχείων λεξικού.</string>
     <string name="original_questions">Χρήση του αρχικού επιτονισμού ερωτήσεων</string>
     <string name="mellow_mode">Απαλός ήχος (από 16 kHz)</string>
+    <string name="original_acoustic_clock">Χρήση του αρχικού χρονισμού ήχου Eloquence (5 ms)</string>
     <string name="pitch_hz_mode">Χρήση ύψους φωνής σε hertz</string>
     <string name="pitch_hz_value">Βασικό ύψος φωνής σε hertz</string>
     <string name="pitch_hz_error">Εισαγάγετε τιμή από 1 έως 24000 Hz.</string>

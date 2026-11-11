@@ -437,6 +437,9 @@ msgstr "Die ausgewählten Aussprachewörterbücher konnten nicht geladen werden.
 msgid "&Mellow mode (16 kHz and above)"
 msgstr "&Weicher Modus (ab 16 kHz)"
 
+msgid "Use &original Eloquence acoustic timing (5 ms)"
+msgstr "&Originalen Eloquence-Lauttakt verwenden (5 ms)"
+
 msgid "Exact speech rate"
 msgstr "Genaue Sprechgeschwindigkeit"
 

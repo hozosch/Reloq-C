@@ -15,7 +15,7 @@ typedef struct {
     ECIHand handle;
     short *pcm;
     char *dictionary;
-    int controls[19+RELOQ_ECI_EQ_FILTER_COUNT*RELOQ_ECI_EQ_FILTER_STRIDE],configured;
+    int controls[20+RELOQ_ECI_EQ_FILTER_COUNT*RELOQ_ECI_EQ_FILTER_STRIDE],configured;
 } language_engine;
 typedef struct {
     JavaVM *vm;
@@ -103,7 +103,7 @@ Java_org_reloq_tts_NativeEngine_synthesize(JNIEnv *env, jclass type,
 {
     (void)type;
     android_engine *engine = (android_engine *)(intptr_t)pointer;
-    enum { CONTROL_COUNT=19+RELOQ_ECI_EQ_FILTER_COUNT*RELOQ_ECI_EQ_FILTER_STRIDE };
+    enum { EQ_END=19+RELOQ_ECI_EQ_FILTER_COUNT*RELOQ_ECI_EQ_FILTER_STRIDE, CONTROL_COUNT=EQ_END+1 };
     if (!engine || (*env)->GetArrayLength(env, controls) != CONTROL_COUNT) return JNI_FALSE;
     engine->sink = (*env)->NewGlobalRef(env, sink);
     if (!engine->sink) return JNI_FALSE;
@@ -164,7 +164,8 @@ Java_org_reloq_tts_NativeEngine_synthesize(JNIEnv *env, jclass type,
         if(!slot->configured||slot->controls[i]!=values[i]) {
             if(i==2&&values[i]>RELOQ_PITCH_HZ_OFFSET) {
                 if(!set_pitch_hz(handle,values[i]-RELOQ_PITCH_HZ_OFFSET))goto done;
-            } else if(eciSetParam(handle,i<19?parameters[i]:RELOQ_ECI_EQ_FILTER_BASE+(int)i-19,values[i])<0)goto done;
+            } else if(eciSetParam(handle,i<19?parameters[i]:i<EQ_END?
+                RELOQ_ECI_EQ_FILTER_BASE+(int)i-19:RELOQ_ECI_ORIGINAL_ACOUSTIC_CLOCK,values[i])<0)goto done;
             slot->controls[i]=values[i];
         }
     slot->configured=1;

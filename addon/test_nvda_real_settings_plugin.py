@@ -26,6 +26,8 @@ class Player:
 def event(widget, event_type):
     evt=wx.CommandEvent(event_type, widget.GetId())
     evt.SetEventObject(widget)
+    if event_type==wx.wxEVT_CHECKBOX:
+        evt.SetInt(int(widget.GetValue()))
     widget.GetEventHandler().ProcessEvent(evt)
 
 
@@ -62,6 +64,22 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             # isolate the settings lifecycle without changing saved entries.
             synth.configure_dictionaries=lambda sources, enabled, cb, repository: cb(None,{})
             frame=wx.Frame(None)
+            from gui.settingsDialogs import VoiceSettingsPanel
+            voice_panel=VoiceSettingsPanel(frame)
+            clock=voice_panel.originalAcousticClockCheckbox
+            check(clock.GetLabel() and not clock.GetValue(), 'clock checkbox missing or not off by default')
+            clock.SetValue(True);event(clock,wx.wxEVT_CHECKBOX)
+            check(synth.originalAcousticClock, 'clock preview failed')
+            voice_panel.onSave()
+            section=config.conf['speech'][synth.name]
+            check(section.get('originalAcousticClock') is True, 'clock setting did not save')
+            clock.SetValue(False);event(clock,wx.wxEVT_CHECKBOX)
+            check(not synth.originalAcousticClock, 'clock live switch failed')
+            voice_panel.onDiscard()
+            check(synth.originalAcousticClock, 'Cancel did not restore clock setting')
+            synth.originalAcousticClock=False
+            synth.saveSettings()
+            voice_panel.Destroy()
             panel=EloquenceSettingsPanel(frame)
             section=config.conf['speech'][synth.name]
             # A fresh NVDA profile may have no explicitly stored entry yet.
@@ -137,7 +155,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             check((synth._pitchInHertz,synth._pitchHertz,synth._rateInWpm,synth._rateWpm,
                    synth._eqEnabled,synth._eqPreset)==(True,151,True,50,True,1), 'saved settings did not reload')
             check(synth.equalizer_filters()[0]==(True,777,6,50), 'saved filter did not reload')
-            RESULT.write_text(json.dumps({'ok':True,'details':'real NVDA wx controls, advanced filters, live preview, Apply and Cancel'}),encoding='utf8')
+            RESULT.write_text(json.dumps({'ok':True,'details':'real NVDA wx controls, acoustic clock, advanced filters, live preview, Apply and Cancel'}),encoding='utf8')
         except BaseException:
             RESULT.write_text(json.dumps({'ok':False,'error':traceback.format_exc()}),encoding='utf8')
         finally:

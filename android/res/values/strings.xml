@@ -88,6 +88,7 @@
     <string name="dictionary_update_files_unknown">The number of new dictionary files could not be determined.</string>
     <string name="original_questions">Use original question intonation</string>
     <string name="mellow_mode">Mellow mode (16 kHz and above)</string>
+    <string name="original_acoustic_clock">Use original Eloquence acoustic timing (5 ms)</string>
     <string name="pitch_hz_mode">Use pitch in hertz</string>
     <string name="pitch_hz_value">Base pitch in hertz</string>
     <string name="pitch_hz_error">Enter a value from 1 to 24000 Hz.</string>

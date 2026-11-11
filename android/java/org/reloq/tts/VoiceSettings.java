@@ -2,7 +2,7 @@ package org.reloq.tts;
 
 /** Settings copied for one request; usable in host tests without Android. */
 final class VoiceSettings {
-    boolean androidRate=true,androidPitch=true,rateBoost=false,tags=false,abbreviations=true,prediction=false,originalQuestions=false,mellowMode=false;
+    boolean androidRate=true,androidPitch=true,rateBoost=false,tags=false,abbreviations=true,prediction=false,originalQuestions=false,mellowMode=false,originalAcousticClock=false;
     boolean pitchHertzMode=false,speedWpmMode=true;
     boolean eqEnabled=false;
     int eqPreset=0,eqLow=0,eqMid=0,eqHigh=0;
@@ -55,10 +55,11 @@ final class VoiceSettings {
             bounded(volume,0,100),speed,Catalog.RATE_IDS[bounded(rate,0,6)],bounded(pauses,0,2),tags?1:0,abbreviations?0:1,prediction?1:0,originalQuestions?1:0,mellowMode?1:0,
             !androidRate&&speedWpmMode?bounded(manualWpm,1,6000):0,
             eq[0]+12,eq[1]+12,eq[2]+12};
-        int[] result=java.util.Arrays.copyOf(base,base.length+4*eqFilters.length);
+        int[] result=java.util.Arrays.copyOf(base,base.length+4*eqFilters.length+1);
         for(int i=0;i<eqFilters.length;++i){int[] f=eqFilters[i];int offset=base.length+4*i;
             result[offset]=eqEnabled&&f[0]!=0?1:0;result[offset+1]=bounded(f[1],1,24000);
             result[offset+2]=bounded(f[2],-12,12)+12;result[offset+3]=bounded(f[3],10,400);}
+        result[result.length-1]=originalAcousticClock?1:0;
         return result;
     }
 }

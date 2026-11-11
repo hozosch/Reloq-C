@@ -25,7 +25,7 @@ def main():
         for case in data['cases']:
             capture(library, False, case['text'], case['eci_rate'], output,
                     buffer_samples=1100, want_phones=False,
-                    dialect=case['dialect'], gender=case['gender'])
+                    dialect=case['dialect'], gender=case['gender'], acoustic_clock=1)
             with wave.open(str(output), 'rb') as speech:
                 samples = array('h', speech.readframes(speech.getnframes()))
                 if sys.byteorder != 'little':

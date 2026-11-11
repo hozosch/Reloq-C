@@ -33,7 +33,7 @@ from synthDriverHandler import (SynthDriver as BaseSynthDriver, VoiceInfo, Langu
 from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciPitchHz, EciProsody, EciLanguage, EciText, EciCapitalWord, NATIVE_VOLUME,
                                 NATIVE_SPEED, NATIVE_WPM, NATIVE_PITCH, NATIVE_INFLECTION, PROCESS_TAGS,
                                 PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATES,
-                                DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE,
+                                DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, ORIGINAL_ACOUSTIC_CLOCK,
                                 EQ_LOW, EQ_MID, EQ_HIGH, EQ_FILTER_BASE, EQ_FILTER_COUNT, EQ_FILTER_STRIDE, PITCH_HZ)
 from ._reloq_eci_transport import DictionaryStartupError, EciTextTransport
 from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries
@@ -224,6 +224,7 @@ class SynthDriver(BaseSynthDriver):
         BaseSynthDriver.VoiceSetting(),
         BaseSynthDriver.RateSetting(),
         BaseSynthDriver.RateBoostSetting(),
+        BooleanDriverSetting("originalAcousticClock", _("Use &original Eloquence acoustic timing (5 ms)"), defaultVal=False),
         BaseSynthDriver.PitchSetting(),
         BaseSynthDriver.InflectionSetting(),
         BaseSynthDriver.VolumeSetting(),
@@ -297,6 +298,7 @@ class SynthDriver(BaseSynthDriver):
         self._phrasePrediction = False
         self._originalQuestions = False
         self._mellowMode = False
+        self._originalAcousticClock = False
         self._eqEnabled = False
         self._eqPreset = 0
         self._eqCustomLow = self._eqCustomMid = self._eqCustomHigh = 0
@@ -348,6 +350,7 @@ class SynthDriver(BaseSynthDriver):
         self._transport.set_parameter(BREATHINESS, self._breathiness)
         self._transport.set_parameter(ORIGINAL_QUESTIONS, 0)
         self._transport.set_parameter(MELLOW_MODE, 0)
+        self._transport.set_parameter(ORIGINAL_ACOUSTIC_CLOCK, 0)
         manager = self.dictionary_manager()
         # Start monitoring the installed dictionaries and selected own files.
         self._dictionary_request(lambda: manager.set_enabled(self._communityDictionaries))
@@ -775,6 +778,18 @@ class SynthDriver(BaseSynthDriver):
             self._transport.set_parameter(MELLOW_MODE, int(enable))
             self._mellowMode = enable
 
+    def _get_originalAcousticClock(self):
+        return self._originalAcousticClock
+
+    def _set_originalAcousticClock(self, enable):
+        if not isinstance(enable, bool):
+            raise ValueError("originalAcousticClock must be boolean")
+        with self._submit_lock:
+            if self._terminating or self._originalAcousticClock == enable:
+                return
+            self._transport.set_parameter(ORIGINAL_ACOUSTIC_CLOCK, int(enable))
+            self._originalAcousticClock = enable
+
     def _get_voiceTags(self):
         return self._voiceTags
 
@@ -849,6 +864,7 @@ class SynthDriver(BaseSynthDriver):
                 (PHRASE_PREDICTION, int(self._phrasePrediction)),
                 (ORIGINAL_QUESTIONS, int(self._originalQuestions)),
                 (MELLOW_MODE, int(self._mellowMode)),
+                (ORIGINAL_ACOUSTIC_CLOCK, int(self._originalAcousticClock)),
             ) + (((PITCH_HZ, self._pitchHertz),) if self._pitchInHertz else ()))
             self._selectedLanguage, self._voice = selected, voice
 

@@ -90,7 +90,8 @@
     "UPDATE_NONE",
     "UPDATE_FAILED",
     "UPDATE_DOWNLOADING",
-    "UPDATE_LAUNCH_FAILED"
+    "UPDATE_LAUNCH_FAILED",
+    "ORIGINAL_ACOUSTIC_CLOCK"
   ],
   "en": [
     "ReLoq C voice settings",
@@ -183,7 +184,8 @@
     "No newer program version is available.",
     "Could not check or download the update.",
     "The update is being downloaded. The installer will open when the download is verified.",
-    "The verified installer could not be opened."
+    "The verified installer could not be opened.",
+    "Original &timing (5 ms)"
   ],
   "de": [
     "ReLoq C – Stimmeinstellungen",
@@ -276,7 +278,8 @@
     "Es ist keine neuere Programmversion verfügbar.",
     "Das Update konnte nicht gesucht oder heruntergeladen werden.",
     "Das Update wird heruntergeladen. Nach der Überprüfung öffnet sich das Installationsprogramm.",
-    "Das geprüfte Installationsprogramm konnte nicht geöffnet werden."
+    "Das geprüfte Installationsprogramm konnte nicht geöffnet werden.",
+    "&Originaler Lauttakt (5 ms)"
   ],
   "es": [
     "ReLoq C – Ajustes de voz",
@@ -369,7 +372,8 @@
     "No hay una versión más reciente.",
     "No se pudo buscar o descargar la actualización.",
     "Se está descargando la actualización. El instalador se abrirá después de verificarla.",
-    "No se pudo abrir el instalador verificado."
+    "No se pudo abrir el instalador verificado.",
+    "Ritmo &original (5 ms)"
   ],
   "fr": [
     "ReLoq C – Paramètres de voix",
@@ -462,7 +466,8 @@
     "Aucune version plus récente disponible.",
     "Impossible de rechercher ou télécharger la mise à jour.",
     "Téléchargement en cours. Le programme d’installation s’ouvrira après vérification.",
-    "Impossible d’ouvrir le programme d’installation vérifié."
+    "Impossible d’ouvrir le programme d’installation vérifié.",
+    "Cadence &originale (5 ms)"
   ],
   "it": [
     "ReLoq C – Impostazioni voce",
@@ -555,7 +560,8 @@
     "Nessuna versione più recente disponibile.",
     "Impossibile cercare o scaricare l’aggiornamento.",
     "Download in corso. Il programma di installazione si aprirà dopo la verifica.",
-    "Impossibile aprire il programma di installazione verificato."
+    "Impossibile aprire il programma di installazione verificato.",
+    "Ritmo &originale (5 ms)"
   ],
   "pt": [
     "ReLoq C – Configurações de voz",
@@ -648,7 +654,8 @@
     "Não há uma versão mais recente.",
     "Não foi possível buscar ou baixar a atualização.",
     "A atualização está sendo baixada. O instalador será aberto após a verificação.",
-    "Não foi possível abrir o instalador verificado."
+    "Não foi possível abrir o instalador verificado.",
+    "Ritmo &original (5 ms)"
   ],
   "fi": [
     "ReLoq C – Ääniasetukset",
@@ -741,7 +748,8 @@
     "Uudempaa versiota ei ole saatavilla.",
     "Päivitystä ei voitu tarkistaa tai ladata.",
     "Päivitystä ladataan. Asennusohjelma avautuu tarkistuksen jälkeen.",
-    "Tarkistettua asennusohjelmaa ei voitu avata."
+    "Tarkistettua asennusohjelmaa ei voitu avata.",
+    "&Alkuperäinen ajoitus (5 ms)"
   ],
   "el": [
     "ReLoq C – Ρυθμίσεις φωνής",
@@ -834,7 +842,8 @@
     "Δεν υπάρχει νεότερη έκδοση.",
     "Δεν ήταν δυνατός ο έλεγχος ή η λήψη της ενημέρωσης.",
     "Γίνεται λήψη της ενημέρωσης. Το πρόγραμμα εγκατάστασης θα ανοίξει μετά τον έλεγχο.",
-    "Δεν ήταν δυνατό το άνοιγμα του ελεγμένου προγράμματος εγκατάστασης."
+    "Δεν ήταν δυνατό το άνοιγμα του ελεγμένου προγράμματος εγκατάστασης.",
+    "&Αρχικός χρονισμός (5 ms)"
   ],
   "ja": [
     "ReLoq C 音声設定",
@@ -927,7 +936,8 @@
     "新しいバージョンはありません。",
     "更新を確認またはダウンロードできませんでした。",
     "更新をダウンロードしています。確認後にインストーラーが開きます。",
-    "確認済みインストーラーを開けませんでした。"
+    "確認済みインストーラーを開けませんでした。",
+    "元の音響タイミング（5ミリ秒）"
   ],
   "ko": [
     "ReLoq C 음성 설정",
@@ -1020,7 +1030,8 @@
     "새 버전이 없습니다.",
     "업데이트를 확인하거나 다운로드하지 못했습니다.",
     "업데이트를 다운로드하고 있습니다. 확인 후 설치 프로그램이 열립니다.",
-    "확인된 설치 프로그램을 열지 못했습니다."
+    "확인된 설치 프로그램을 열지 못했습니다.",
+    "원래 음향 타이밍(5ms)"
   ],
   "zh": [
     "ReLoq C 语音设置",
@@ -1113,7 +1124,8 @@
     "没有更新的程序版本。",
     "无法检查或下载更新。",
     "正在下载更新。验证完成后将打开安装程序。",
-    "无法打开已验证的安装程序。"
+    "无法打开已验证的安装程序。",
+    "原始声音时序（5毫秒）"
   ],
   "zh-Hant": [
     "ReLoq C 語音設定",
@@ -1206,6 +1218,7 @@
     "沒有更新的程式版本。",
     "無法檢查或下載更新。",
     "正在下載更新。驗證完成後會開啟安裝程式。",
-    "無法開啟已驗證的安裝程式。"
+    "無法開啟已驗證的安裝程式。",
+    "原始聲音時序（5毫秒）"
   ]
 }

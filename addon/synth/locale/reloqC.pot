@@ -331,6 +331,9 @@ msgstr ""
 msgid "&Mellow mode (16 kHz and above)"
 msgstr ""
 
+msgid "Use &original Eloquence acoustic timing (5 ms)"
+msgstr ""
+
 msgid "Pitch in hertz"
 msgstr ""
 

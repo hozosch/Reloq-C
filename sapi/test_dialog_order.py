@@ -40,6 +40,7 @@ def main():
     # The IDs identify real controls created by dialog.c; do not use translated
     # text to locate them, since the dialog follows the Windows UI language.
     rate_id, pauses_id, mellow_id = 103, 104, 123
+    clock_id = 154
     overrides_id, own_rate_id, own_rate_value_id, own_pitch_id, own_volume_id, own_volume_value_id = range(126, 132)
     (rate_eci_id, rate_wpm_id, rate_wpm_value_id, pitch_eci_id,
      pitch_hz_id, pitch_value_id, pitch_hz_value_id) = range(132, 139)
@@ -59,6 +60,7 @@ def main():
     modal = None
     saved = None
     saved_main = None
+    saved_clock = None
 
     def find_modal():
         candidates = []
@@ -183,6 +185,11 @@ def main():
                 raise AssertionError(f'Settings dialog exited with {result}')
             time.sleep(.1)
         assert window, 'Settings dialog did not appear'
+        assert user32.GetDlgItem(window, clock_id) and text(window, clock_id), 'Original timing checkbox missing'
+        saved_clock = checked(window, clock_id)
+        set_checked(window, clock_id, not saved_clock)
+        assert checked(window, clock_id) != saved_clock, 'Original timing checkbox did not change'
+        set_checked(window, clock_id, saved_clock)
         rate, mellow, pauses = (user32.GetDlgItem(window, control)
                                 for control in (rate_id, mellow_id, pauses_id))
         assert rate and mellow and pauses, 'Expected controls not found'
@@ -268,6 +275,8 @@ def main():
         assert not user32.IsWindowEnabled(user32.GetDlgItem(modal, own_volume_value_id))
         print('SAPI controls, keyboard order, override persistence and enable states verified')
     finally:
+        if saved_clock is not None and window and user32.IsWindow(window):
+            set_checked(window, clock_id, saved_clock)
         if saved and thread.is_alive():
             if not modal or not user32.IsWindow(modal):
                 modal = open_modal()

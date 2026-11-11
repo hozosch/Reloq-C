@@ -77,6 +77,9 @@ public final class NativeTransportTest {
             render(0x40000,question,"Was möchtest du machen?");
             VoiceSettings mellow=new VoiceSettings(0);mellow.rate=6;mellow.mellowMode=true;
             render(0x40000,mellow,"Eine weiche Stimme zum Vergleichen.");
+            VoiceSettings timing=new VoiceSettings(0);timing.originalAcousticClock=true;timing.rate=6;
+            render(0x10000,timing,"adictive drums");render(0x40000,timing,"Die Stimme klingt ruhig.");
+            timing.originalAcousticClock=false;render(0x10000,timing,"adictive drums");
             VoiceSettings eq=new VoiceSettings(0);eq.eqEnabled=true;eq.eqPreset=1;
             eq.eqFilters[0]=new int[]{1,777,6,50};eq.eqFilters[1]=new int[]{1,3000,-4,150};
             render(0x40000,eq,"Eine Stimme mit Equalizer.");render(0x10000,eq,"Equalizer test.");

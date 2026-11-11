@@ -3,7 +3,7 @@ import argparse
 from pathlib import Path
 
 from test_eci_inline_queue import Engine, TEXTS
-from _reloq_eci_direct import DirectEciEngine, EciProsody, NATIVE_WPM as WPM, PROCESS_TAGS
+from _reloq_eci_direct import DirectEciEngine, EciProsody, NATIVE_WPM as WPM, PROCESS_TAGS, ORIGINAL_ACOUSTIC_CLOCK
 from test_eci_german_clock_native import render
 
 NATIVE_WPM = 0x1017
@@ -12,11 +12,14 @@ NATIVE_WPM = 0x1017
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', type=Path, required=True)
-    library = parser.parse_args().library
+    parser.add_argument('--original-clock', action='store_true')
+    args = parser.parse_args()
+    library = args.library
     checks = 0
     for language, parts in TEXTS.items():
         engine = Engine(library, language)
         try:
+            assert engine.lib.eciSetParam(engine.h,ORIGINAL_ACOUSTIC_CLOCK,int(args.original_clock)) >= 0
             engine.voice(6, 50)
             text = ''.join(parts)
             for wpm in (50, 150, 300, 350, 400, 434, 435, 450, 500, 550, 600):
@@ -64,6 +67,7 @@ def main():
     for language in (0x10000, 0x40000, 0x60000, 0x80000, 0x120000):
         engine = Engine(library, language)
         try:
+            assert engine.lib.eciSetParam(engine.h,ORIGINAL_ACOUSTIC_CLOCK,int(args.original_clock)) >= 0
             engine.voice(6, 50)
             text = TEXTS[language][1] + '.'
             for wpm in (1, 4):
@@ -79,6 +83,7 @@ def main():
 
     engine = Engine(library, 0x40000)
     try:
+        assert engine.lib.eciSetParam(engine.h,ORIGINAL_ACOUSTIC_CLOCK,int(args.original_clock)) >= 0
         engine.voice(6, 50)
         assert engine.lib.eciSetParam(engine.h, NATIVE_WPM, 150) >= 0
         engine.tags(0)
@@ -94,6 +99,7 @@ def main():
     for language in (0x10000, 0x40000, 0x60000):
         engine = DirectEciEngine(library.resolve(), dialect=language, encoding='utf8', native_voice=True)
         try:
+            engine.set_parameter(ORIGINAL_ACOUSTIC_CLOCK,int(args.original_clock))
             engine.set_parameter(PROCESS_TAGS, 0)
             engine.set_parameter(WPM, 150)
             text = TEXTS[language]

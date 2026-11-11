@@ -7,7 +7,7 @@ int reloq_rules61_phonemes(int,const unsigned char *,size_t,int,const int[8],
     const struct reloq61_mark *,size_t,reloq61_phoneme_sink,
     reloq61_index_sink,void *);
 /* Complete native 6.1 acoustic rules, with the ReLoq PCM renderer. */
-int reloq_language_rules_render(int language,const unsigned char *,size_t,int,int,int,
+int reloq_language_rules_render(int language,const unsigned char *,size_t,int,int,int,int,
     const struct reloq_german_generic_settings *,
     const struct reloq_german_generic_index *,size_t,
     const struct reloq_german_generic_pitch_mark *,size_t,

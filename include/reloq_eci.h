@@ -128,6 +128,9 @@ enum {
     RELOQ_ECI_EQ_LOW = 0x1018,
     RELOQ_ECI_EQ_MID = 0x1019,
     RELOQ_ECI_EQ_HIGH = 0x101a,
+    /* 0: ReLoq's earlier 1-ms controls; 1: original 5-ms acoustic clock.
+     * The native VS and VWPM duration scales are unchanged in either mode. */
+    RELOQ_ECI_ORIGINAL_ACOUSTIC_CLOCK = 0x101b,
     /* Five optional peaking filters, each with four consecutive parameters:
      * enabled 0/1, frequency 1..24000 Hz, gain 0..24 (-12..+12 dB),
      * and bandwidth 10..400 percent of an octave. */
