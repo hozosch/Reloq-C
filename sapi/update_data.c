@@ -67,6 +67,47 @@ static int version(const char *s,unsigned out[3],const char **end)
 }
 static int newer(const unsigned a[3],const unsigned b[3])
 {for(int i=0;i<3;++i)if(a[i]!=b[i])return a[i]>b[i];return 0;}
+static int same_version(const unsigned a[3],const unsigned b[3])
+{return a[0]==b[0]&&a[1]==b[1]&&a[2]==b[2];}
+/* Decode the JSON string before examining whole lines. A literal "\\n" in
+ * release text must not be mistaken for a real newline. */
+static uint64_t release_epoch(const struct parser *p,int token)
+{
+    if(token<0||p->t[token].kind!='"')return 0;
+    static const char prefix[]="<!-- ReLoq-C build:",suffix[]=" -->";
+    size_t begin=p->t[token].begin+1,end=p->t[token].end-1,used=0;uint64_t found=0;
+    char *body=malloc(end-begin+1);if(!body)return 0;
+    for(size_t i=begin;i<end;++i) {
+        unsigned char c=(unsigned char)p->s[i];
+        if(c=='\\') {
+            c=(unsigned char)p->s[++i];
+            if(c=='n')c='\n';else if(c=='r')c='\r';else if(c=='t')c='\t';
+            else if(c=='b')c='\b';else if(c=='f')c='\f';
+            else if(c=='u') { /* Marker is ASCII; preserve encoded ASCII too. */
+                unsigned x=0;for(int k=0;k<4;++k){unsigned char h=(unsigned char)p->s[++i];
+                    x=x*16+(unsigned)(isdigit(h)?h-'0':tolower(h)-'a'+10);}
+                c=x&&x<128?(unsigned char)x:'?';
+            }
+        }
+        body[used++]=(char)c;
+    }
+    for(size_t at=0;at<used;) {
+        size_t line_end=at;while(line_end<used&&body[line_end]!='\n')++line_end;
+        size_t stop=line_end;if(stop>at&&body[stop-1]=='\r')--stop;
+        if(stop-at<sizeof prefix-1||memcmp(body+at,prefix,sizeof prefix-1))goto next;
+        size_t pos=at+sizeof prefix-1;uint64_t value=0;size_t digits=0;
+        if(pos>=stop||body[pos]<'1'||body[pos]>'9')goto next;
+        while(pos<stop&&isdigit((unsigned char)body[pos])) {
+            if(++digits>12){free(body);return 0;}
+            value=value*10+(unsigned)(body[pos++]-'0');
+        }
+        if(pos+sizeof suffix-1!=stop||memcmp(body+pos,suffix,sizeof suffix-1))goto next;
+        if(value>UINT64_C(253402300799)||found){found=0;break;}
+        found=value;
+next:   at=line_end<used?line_end+1:used;
+    }
+    free(body);return found;
+}
 static int uint_field(const struct parser *p,int i,uint32_t *out)
 {
     if(i<0)return 0;size_t n=p->t[i].end-p->t[i].begin;if(!n||n>10)return 0;
@@ -82,7 +123,8 @@ static int trusted_url(const char *url,const char *name)
     if(p==tag||*p++!='/'||(p-tag==2&&tag[0]=='.')||(p-tag==3&&tag[0]=='.'&&tag[1]=='.'))return 0;
     return !strcmp(p,name);
 }
-int reloq_update_parse(const char *json,size_t length,const char *installed,struct reloq_update *out)
+int reloq_update_parse_revision(const char *json,size_t length,const char *installed,
+    uint64_t installed_epoch,struct reloq_update *out)
 {
     if(!json||!out||!installed||length>2*1024*1024)return -1;
     unsigned current[3];const char *end;if(!version(installed,current,&end)||*end)return -1;
@@ -91,13 +133,16 @@ int reloq_update_parse(const char *json,size_t length,const char *installed,stru
     int draft=field(&p,root,"draft"),pre=field(&p,root,"prerelease"),assets=field(&p,root,"assets");
     if(draft<0||pre<0||assets<0||p.t[assets].kind!='['||p.t[draft].end-p.t[draft].begin!=5||
        p.t[pre].end-p.t[pre].begin!=5||memcmp(json+p.t[draft].begin,"false",5)||memcmp(json+p.t[pre].begin,"false",5))goto done;
+    int body=field(&p,root,"body");if(body==-2)goto done;
+    uint64_t build_epoch=release_epoch(&p,body);
     result=0;
     for(int i=assets+1;i<p.t[assets].next;i=p.t[i].next){char name[96];
         int f=field(&p,i,"name");if(f==-2){result=-1;break;}if(!copy_string(&p,f,name,sizeof name))continue;
         const char *prefix="reloq-c-sapi5-";if(strncmp(name,prefix,strlen(prefix)))continue;
         unsigned candidate[3];const char *finish;if(!version(name+strlen(prefix),candidate,&finish)||strcmp(finish,"-setup.exe"))continue;
-        if(!newer(candidate,current))continue;
+        if(!newer(candidate,current)&&!(same_version(candidate,current)&&installed_epoch&&build_epoch>installed_epoch))continue;
         struct reloq_update next={0};char digest[72];int u=field(&p,i,"browser_download_url"),s=field(&p,i,"size"),d=field(&p,i,"digest");
+        next.build_epoch=build_epoch;
         if(!copy_string(&p,u,next.url,sizeof next.url)||!trusted_url(next.url,name)||
            !uint_field(&p,s,&next.size)||!copy_string(&p,d,digest,sizeof digest)||
            strlen(digest)!=71||strncmp(digest,"sha256:",7)){result=-1;break;}
@@ -109,3 +154,6 @@ int reloq_update_parse(const char *json,size_t length,const char *installed,stru
     }
 done:free(p.t);return result;
 }
+
+int reloq_update_parse(const char *json,size_t length,const char *installed,struct reloq_update *out)
+{return reloq_update_parse_revision(json,length,installed,0,out);}

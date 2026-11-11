@@ -9,7 +9,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 sys.path.insert(0, str(ROOT / 'nvda'))
-from release_packages import release_version, verify_packaged_dictionaries
+from release_packages import release_version, verify_packaged_dictionaries, verify_packaged_build_epoch, release_body
 from _reloq_dictionaries import FILES
 
 
@@ -43,6 +43,20 @@ def main():
                     archive.writestr(prefix + name, (snapshot / name).read_bytes())
             archives.append((path, prefix))
         assert verify_packaged_dictionaries(archives, snapshot) == manifest
+        epoch=1700000001
+        epoch_files=(('doc/source.json',json.dumps({'build_epoch':epoch})),
+                     ('assets/reloq-build-epoch.txt',f'{epoch}\n'),
+                     ('build-epoch.txt',f'{epoch}\n'),('build-epoch.txt',f'{epoch}\n'))
+        for (path,_),(name,data) in zip(archives,epoch_files):
+            with zipfile.ZipFile(path,'a') as archive:archive.writestr(name,data)
+        assert verify_packaged_build_epoch(archives[0][0],archives[1][0],
+                    [archives[2][0],archives[3][0]])==epoch
+        bad=root/'bad.zip'
+        with zipfile.ZipFile(bad,'w') as archive:archive.writestr('build-epoch.txt',f'{epoch+1}\n')
+        try:verify_packaged_build_epoch(archives[0][0],archives[1][0],[archives[2][0],bad])
+        except ValueError:pass
+        else:raise AssertionError('mismatched package timestamp was accepted')
+        assert release_body('notes\n',epoch)=='notes\n\n<!-- ReLoq-C build:1700000001 -->\n'
         # A single stale file in any one platform must block publication.
         for path, prefix in archives:
             with zipfile.ZipFile(path, 'w') as archive:

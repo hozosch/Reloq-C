@@ -36,6 +36,17 @@ public final class UpdateDataTest {
         UpdateData.Package release=UpdateData.candidate(official,officialUrl,18000000,digest,20205);
         require(release!=null&&release.version.equals("1.0.0")&&release.code==1000000);
         require(UpdateData.candidate(official,officialUrl,18000000,digest,1000000)==null);
+        String marker="<!-- ReLoq-C build:1700000001 -->";
+        require(UpdateData.buildEpoch("notes\n\n"+marker+"\n")==1700000001L);
+        for(String invalid:new String[]{"", "prefix "+marker, marker+" suffix", "before\\n"+marker,
+                marker+"\n"+marker,"<!-- ReLoq-C build:253402300800 -->"})
+            require(UpdateData.buildEpoch(invalid)==0);
+        require(UpdateData.candidate(official,officialUrl,18000000,digest,1000000,0,1700000001L)==null);
+        require(UpdateData.candidate(official,officialUrl,18000000,digest,1000000,1700000001L,1700000001L)==null);
+        require(UpdateData.candidate(official,officialUrl,18000000,digest,1000000,1700000002L,1700000001L)==null);
+        UpdateData.Package replacement=UpdateData.candidate(official,officialUrl,18000000,digest,1000000,1700000000L,1700000001L);
+        require(replacement!=null&&replacement.buildEpoch==1700000001L&&replacement.identity().equals("1.0.0@1700000001"));
+        require(UpdateData.candidate(official,officialUrl,18000000,digest,20205,1700000002L,1700000001L)!=null);
         String patch="reloq-c-android-arm64-1.0.1.apk";
         String patchUrl="https://github.com/hozosch/Reloq-C/releases/download/v1.0.1/"+patch;
         UpdateData.Package update=UpdateData.candidate(patch,patchUrl,18000000,digest,1000000);

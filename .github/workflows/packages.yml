@@ -11,6 +11,7 @@ jobs:
     outputs:
       stable: ${{ steps.version.outputs.stable }}
       packageable: ${{ steps.version.outputs.packageable }}
+      build_epoch: ${{ steps.version.outputs.build_epoch }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,7 +20,7 @@ jobs:
         id: version
         run: |
           python3 - <<'PY'
-          import os, re
+          import os, re, time
           from pathlib import Path
           text = Path('addon/synth/manifest.ini').read_text()
           value = re.search(r'^version\s*=\s*"([^"]+)"', text, re.M)[1]
@@ -28,6 +29,7 @@ jobs:
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write('stable=' + str(stable).lower() + '\n')
               output.write('packageable=' + str(packageable).lower() + '\n')
+              output.write(f'build_epoch={int(time.time())}\n')
           if not stable:
               print('Test packages will be built without a publishable release manifest.')
           PY
@@ -106,6 +108,8 @@ jobs:
           python3 -B addon/test_nvda_dictionary_import.py
           python3 -B addon/test_segmentation_eci.py --library eci/libreloq_eci.so
           python3 -B addon/test_uppercase_native.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_wordseg_native.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_updates.py
           python3 -B nvda/test_eci_dictionary_startup.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_greek_connected.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_greek_characters.py --library eci/libreloq_eci.so
@@ -122,13 +126,16 @@ jobs:
       - name: Verify Android controls against the shared native engine
         run: python3 android/test_native_transport.py --java-home "$JAVA_HOME" --library eci/libreloq_eci.so
   sapi:
-    needs: dictionaries
+    needs: [version, dictionaries]
     uses: ./.github/workflows/sapi-installer.yml
     with:
       shared_dictionary_snapshot: true
+      build_epoch: ${{ needs.version.outputs.build_epoch }}
   android:
     needs: [version, dictionaries]
     runs-on: ubuntu-24.04
+    env:
+      RELOQ_BUILD_EPOCH: ${{ needs.version.outputs.build_epoch }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -147,6 +154,7 @@ jobs:
           python3 android/test_versioning.py
           javac -d /tmp/reloq-update-test android/java/org/reloq/tts/UpdateData.java android/test/UpdateDataTest.java
           java -cp /tmp/reloq-update-test org.reloq.tts.UpdateDataTest
+          python3 android/test_auto_updates.py --java-home "$JAVA_HOME"
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
@@ -166,8 +174,7 @@ jobs:
         run: |
           previous_apk=(previous/*.apk)
           test "${#previous_apk[@]}" -eq 1
-          if [[ '${{ needs.version.outputs.stable }}' == 'true' ]]; then mode=--upgrade-from; else mode=--replace-from; fi
-          python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries "$mode" "${previous_apk[0]}" --jobs 2
+          python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --replace-from "${previous_apk[0]}" --jobs 2
       - uses: actions/upload-artifact@v4
         with:
           name: android-apk
@@ -175,8 +182,10 @@ jobs:
           compression-level: 0
           retention-days: 14
   nvda:
-    needs: sapi
+    needs: [version, sapi]
     runs-on: ubuntu-24.04
+    env:
+      RELOQ_BUILD_EPOCH: ${{ needs.version.outputs.build_epoch }}
     steps:
       - uses: actions/checkout@v4
         with:

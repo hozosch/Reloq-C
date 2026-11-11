@@ -758,11 +758,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
     def _offer_update(self, update):
         settings = config.conf['reloqCUpdates']
-        if (self._closed or not settings['automatic'] or update.version in self._offered or
-                update.version == settings['lastOffered']):
+        if (self._closed or not settings['automatic'] or update.identity in self._offered or
+                update.identity == settings['lastOffered']):
             return
-        self._offered.add(update.version)
-        settings['lastOffered'] = update.version
+        self._offered.add(update.identity)
+        settings['lastOffered'] = update.identity
         result = gui.messageBox(
             _("Eloquence C version %s is available. Download and install it?") % update.version,
             _("Add-on updates"), wx.YES_NO | wx.ICON_QUESTION, parent=gui.mainFrame)

@@ -81,7 +81,7 @@ class ReplaceReleaseTest(unittest.TestCase):
             (root / 'docs/releases').mkdir(parents=True)
             (root / 'packages').mkdir()
             (root / 'docs/releases/1.1.2.md').write_text('new notes')
-            manifest = {'release_version': '1.1.2', 'assets': {}}
+            manifest = {'release_version': '1.1.2', 'build_epoch': 1700000001, 'assets': {}}
             for name, data in new_files.items():
                 (root / 'packages' / name).write_bytes(data)
                 manifest['assets'][name] = {'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
@@ -107,7 +107,7 @@ class ReplaceReleaseTest(unittest.TestCase):
         else:
             self.assertEqual(fake.contents(), new_files)
             self.assertEqual(fake.ref['sha'], 'new-commit')
-            self.assertEqual(fake.release['body'], 'new notes')
+            self.assertEqual(fake.release['body'], 'new notes\n\n<!-- ReLoq-C build:1700000001 -->\n')
 
     def test_success(self):
         self.run_case()

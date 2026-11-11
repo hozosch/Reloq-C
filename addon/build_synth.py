@@ -70,11 +70,17 @@ def make_entries(dll_path: Path) -> dict[str, bytes]:
     entries = {}
     revision = os.environ.get("GITHUB_SHA", "")
     if re.fullmatch(r"[0-9a-f]{40}", revision):
-        entries["doc/source.json"] = (json.dumps({
+        metadata = {
             "source_commit": revision,
             "source_url": "https://github.com/hozosch/Reloq-C/tree/" + revision,
             "build": "make -C eci windows-x64",
-        }, indent=2) + "\n").encode("utf-8")
+        }
+        stamp = os.environ.get("RELOQ_BUILD_EPOCH", "")
+        if stamp:
+            if not re.fullmatch(r"[1-9]\d{0,11}", stamp) or int(stamp) > 253402300799:
+                raise ValueError("invalid build timestamp")
+            metadata["build_epoch"] = int(stamp)
+        entries["doc/source.json"] = (json.dumps(metadata, indent=2) + "\n").encode("utf-8")
     for name in (
         "manifest.ini",
         "doc/de/readme.html",

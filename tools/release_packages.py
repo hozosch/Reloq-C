@@ -51,6 +51,31 @@ def verify_packaged_dictionaries(archives, directory):
     return manifest
 
 
+def verify_packaged_build_epoch(addon, android, payloads):
+    """All three installers must identify the exact same candidate build."""
+    with zipfile.ZipFile(addon) as archive:
+        epoch = json.loads(archive.read('doc/source.json')).get('build_epoch')
+    if type(epoch) is not int or not 0 < epoch <= 253402300799:
+        raise ValueError('invalid NVDA build timestamp')
+    for path, name in [(android, 'assets/reloq-build-epoch.txt'),
+                       *((p, 'build-epoch.txt') for p in payloads)]:
+        with zipfile.ZipFile(path) as archive:
+            if archive.read(name) != f'{epoch}\n'.encode('ascii'):
+                raise ValueError(f'package build timestamp differs: {path.name}')
+    return epoch
+
+
+def release_body(notes, epoch):
+    """The invisible marker identifies a build, not the asset upload time."""
+    if epoch is None:  # Historic release manifests predate build timestamps.
+        return notes
+    if type(epoch) is not int or not 0 < epoch <= 253402300799:
+        raise ValueError('invalid release build timestamp')
+    if '<!-- ReLoq-C build:' in notes:
+        raise ValueError('release notes already contain a build marker')
+    return notes.rstrip() + f'\n\n<!-- ReLoq-C build:{epoch} -->\n'
+
+
 def collect(source, destination):
     version = re.search(r'^version\s*=\s*(\S+)', Path('addon/synth/manifest.ini').read_text(), re.M)[1].strip('"')
     required = names(version)
@@ -70,11 +95,12 @@ def collect(source, destination):
         [(addon, 'synthDrivers/reloqC/communityDictionaries/'),
          (android, 'assets/community/'),
          *((p, 'dictionaries/') for p in payloads)], Path('data/community'))
+    epoch = verify_packaged_build_epoch(addon, android, payloads)
     destination.mkdir(parents=True, exist_ok=False)
     manifest = {'version': version, 'release_version': release_version(version),
                 'source_commit': os.environ['GITHUB_SHA'],
                 'run_id': int(os.environ['GITHUB_RUN_ID']),
-                'dictionary_snapshot': dictionary, 'assets': {}}
+                'dictionary_snapshot': dictionary, 'build_epoch': epoch, 'assets': {}}
     policy = Path('.github/release-policy.json')
     if policy.exists():
         supersedes = json.loads(policy.read_text())['supersedes_tag']

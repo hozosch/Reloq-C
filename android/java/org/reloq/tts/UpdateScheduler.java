@@ -62,7 +62,7 @@ final class UpdateScheduler {
     static synchronized void notifyUpdate(Context context,UpdateData.Package update) {
         if(!enabled(context)||!notificationsEnabled(context))return;
         android.content.SharedPreferences p=context.getSharedPreferences(PREFS,Context.MODE_PRIVATE);
-        if(update.version.equals(p.getString("notifiedVersion","")))return;
+        if(update.identity().equals(p.getString("notifiedVersion","")))return;
         NotificationManager manager=(NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
         manager.createNotificationChannel(new NotificationChannel(CHANNEL,
             context.getString(R.string.update_notification_title),NotificationManager.IMPORTANCE_DEFAULT));
@@ -75,6 +75,6 @@ final class UpdateScheduler {
             .setContentText(context.getString(R.string.update_notification_body,update.version))
             .setContentIntent(tap).setAutoCancel(true).build();
         manager.notify(PERIODIC,notification);
-        p.edit().putString("notifiedVersion",update.version).apply();
+        p.edit().putString("notifiedVersion",update.identity()).apply();
     }
 }

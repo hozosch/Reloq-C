@@ -17,11 +17,17 @@ on:
         required: false
         type: boolean
         default: false
+      build_epoch:
+        required: false
+        type: string
+        default: '0'
 permissions:
   contents: read
 jobs:
   native:
     runs-on: ubuntu-24.04
+    env:
+      RELOQ_BUILD_EPOCH: ${{ inputs.build_epoch }}
     timeout-minutes: 45
     strategy:
       fail-fast: false

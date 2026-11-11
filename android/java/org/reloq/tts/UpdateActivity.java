@@ -53,7 +53,7 @@ public final class UpdateActivity extends Activity {
         action.setEnabled(false);status.setText(R.string.checking_updates);
         worker=new Thread(() -> {
             try {
-                UpdateData.Package found=UpdateClient.check(installed);
+                UpdateData.Package found=UpdateClient.check(installed,BuildData.BUILD_EPOCH);
                 runOnUiThread(() -> {
                     if(closed)return;available=found;action.setEnabled(true);
                     action.setText(found==null?R.string.check_updates:R.string.download_update);

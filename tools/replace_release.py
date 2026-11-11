@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from release_packages import release_body
 
 
 def gh(*args, input_text=None):
@@ -90,7 +91,8 @@ def replace(release_id, directory):
             if ref != original_ref:
                 raise ValueError('release tag changed during publication')
             api('PATCH', update_ref_endpoint, {'sha': commit, 'force': False})
-            body = Path(f'docs/releases/{request["release_version"]}.md').read_text()
+            body = release_body(Path(f'docs/releases/{request["release_version"]}.md').read_text(),
+                                request.get('build_epoch'))
             api('PATCH', release_endpoint, {'body': body, 'target_commitish': commit, 'make_latest': 'true'})
             final = api('GET', release_endpoint)
             if final['draft'] or final['body'] != body or api('GET', ref_endpoint)['object']['sha'] != commit:

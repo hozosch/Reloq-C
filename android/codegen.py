@@ -1,6 +1,14 @@
 """Share the C speed curve and rate controls with Android Java."""
 from pathlib import Path
+import os
 import re
+
+
+def build_epoch():
+    value=os.environ.get('RELOQ_BUILD_EPOCH', '0') or '0'
+    if not re.fullmatch(r'(?:0|[1-9]\d{0,11})', value) or int(value)>253402300799:
+        raise ValueError('Invalid release build timestamp')
+    return int(value)
 
 
 def generate(destination):
@@ -20,4 +28,6 @@ def generate(destination):
         'final class RateCurve {\n'
         ' static final int[] SPEEDS={'+','.join(map(str,speeds))+'};\n'
         ' static final double[] TIMES={'+','.join(repr(v) for v in times)+'};\n}\n')
-    (target/"BuildData.java").unlink(missing_ok=True)
+    (target/"BuildData.java").write_text(
+        'package org.reloq.tts;\n'
+        'final class BuildData { static final long BUILD_EPOCH='+str(build_epoch())+'L; }\n')

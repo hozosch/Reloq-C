@@ -9,6 +9,8 @@ jobs:
   windows-core:
     if: ${{ !contains(github.event.head_commit.message, '[settings-only]') }}
     runs-on: ubuntu-24.04
+    env:
+      RELOQ_BUILD_EPOCH: '1700000000'
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +36,7 @@ jobs:
       - name: Compile the Windows core and SAPI adapter
         run: |
           make -C eci -j2 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
-          make -C sapi -j2 CC=x86_64-w64-mingw32-gcc-posix build/ReLoqSapi.dll build/ReLoqSettings.exe
+          make -C sapi -j2 CC=x86_64-w64-mingw32-gcc-posix build/ReLoqSapi.dll build/ReLoqSettings.exe build/ReLoqUpdate.exe
       - name: Create a separate NVDA test build
         run: |
           python3 - <<'PY'
@@ -57,6 +59,7 @@ jobs:
             eci/eci.dll
             sapi/build/ReLoqSapi.dll
             sapi/build/ReLoqSettings.exe
+            sapi/build/ReLoqUpdate.exe
           compression-level: 0
           retention-days: 7
   actual-nvda:
@@ -86,6 +89,8 @@ jobs:
           Copy-Item $dll (Join-Path $sapi 'eci.dll')
           python sapi/test_dialog_order.py --directory $sapi
           if ($LASTEXITCODE -ne 0) { throw 'SAPI settings dialog failed' }
+          python sapi/test_updater_dialog.py --directory $sapi
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI updater dialog failed' }
       - name: Install real portable NVDA
         shell: pwsh
         env:
@@ -113,6 +118,8 @@ jobs:
             segmentation-probe/nvda.log
   platform-settings:
     runs-on: ubuntu-24.04
+    env:
+      RELOQ_BUILD_EPOCH: '1700000000'
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -134,6 +141,13 @@ jobs:
           /tmp/test-sapi-settings
           cc -std=c11 -O2 -Wall -Wextra -Werror -DRELOQ_SAPI_TEST_HOST -I sapi sapi/test_ui.c -o /tmp/test-sapi-ui
           /tmp/test-sapi-ui
+          python3 sapi/test_update_data.py
+          python3 nvda/test_updates.py
+          python3 -B tests/test_release_dictionaries.py
+          python3 -B tests/test_replace_release.py
+          javac -d /tmp/reloq-update-test android/java/org/reloq/tts/UpdateData.java android/test/UpdateDataTest.java
+          java -cp /tmp/reloq-update-test org.reloq.tts.UpdateDataTest
+          python3 android/test_auto_updates.py --java-home "$JAVA_HOME"
           python3 android/test_translations.py
           python3 android/test_settings.py --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar" --settings-only
           python3 android/test_direct_boot.py --java-home "$JAVA_HOME"

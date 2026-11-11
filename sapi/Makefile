@@ -6,6 +6,7 @@ LIBS = -lole32 -luuid -ladvapi32 -lcomctl32 -lcomdlg32 -lshell32 -lgdi32 -lwinht
 BUILD ?= $(if $(filter x86,$(ARCH)),build/x86,build)
 ARCH ?= x64
 VERSION ?= $(shell python3 -c 'from version import VERSION; print(VERSION)')
+BUILD_EPOCH ?= $(if $(RELOQ_BUILD_EPOCH),$(RELOQ_BUILD_EPOCH),0)
 SOURCES = engine.c backend.c settings.c dictionary.c dictionary_diff.c dictionary_merge.c dictionary_sources.c dictionary_snapshot.c dictionary_dialog.c dialog.c register.c guids.c ../src/reloq_voice_controls.c
 ifeq ($(ARCH),x86)
 CFLAGS += -msse2 -mfpmath=sse
@@ -19,9 +20,9 @@ $(BUILD)/ReLoqSapi.dll: $(SOURCES) sapi_ddk.h settings.h speed.h pitch.h format.
 $(BUILD)/ReLoqSettings.exe: settings_main.c | $(BUILD)
 	$(CC) $(CFLAGS) -municode -mwindows $< $(LDFLAGS) -luser32 -o $@
 $(BUILD)/ReLoqUpdate.exe: update_main.c update_data.c update_data.h ui.inc version.py | $(BUILD)
-	$(CC) $(CFLAGS) -DRELOQ_APP_VERSION=\"$(VERSION)\" -municode -mwindows update_main.c update_data.c $(LDFLAGS) -luser32 -lgdi32 -lshell32 -lwinhttp -ladvapi32 -o $@
+	$(CC) $(CFLAGS) -DRELOQ_APP_VERSION=\"$(VERSION)\" -DRELOQ_BUILD_EPOCH=$(BUILD_EPOCH)ULL -municode -mwindows update_main.c update_data.c $(LDFLAGS) -luser32 -lgdi32 -lshell32 -lwinhttp -ladvapi32 -o $@
 $(BUILD)/Test-Update.exe: update_main.c update_data.c update_data.h ui.inc version.py | $(BUILD)
-	$(CC) $(CFLAGS) -DRELOQ_UPDATER_TEST -DRELOQ_APP_VERSION=\"$(VERSION)\" -municode -mwindows update_main.c update_data.c $(LDFLAGS) -luser32 -lgdi32 -lshell32 -lwinhttp -ladvapi32 -o $@
+	$(CC) $(CFLAGS) -DRELOQ_UPDATER_TEST -DRELOQ_APP_VERSION=\"$(VERSION)\" -DRELOQ_BUILD_EPOCH=$(BUILD_EPOCH)ULL -municode -mwindows update_main.c update_data.c $(LDFLAGS) -luser32 -lgdi32 -lshell32 -lwinhttp -ladvapi32 -o $@
 $(BUILD)/Test-SAPI.exe: test_windows.c guids.c sapi_ddk.h catalogue.inc | $(BUILD)
 	$(CC) $(CFLAGS) -municode test_windows.c guids.c $(LDFLAGS) $(LIBS) -o $@
 

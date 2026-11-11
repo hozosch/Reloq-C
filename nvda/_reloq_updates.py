@@ -11,6 +11,8 @@ from urllib.request import Request, urlopen
 RELEASES = "https://api.github.com/repos/hozosch/Reloq-C/releases?per_page=30"
 LIMIT = 128 * 1024 * 1024
 PACKAGE = re.compile(r"reloq-c-synth-x64-(\d+\.\d+\.\d+)\.nvda-addon\Z")
+BUILD_MARKER = re.compile(r"(?m)^<!-- ReLoq-C build:([1-9]\d{0,11}) -->$")
+MAX_BUILD_EPOCH = 253402300799
 
 
 @dataclass(frozen=True)
@@ -20,6 +22,29 @@ class Update:
     url: str
     size: int
     sha256: str
+    build_epoch: int = 0
+
+    @property
+    def identity(self):
+        return f"{self.version}@{self.build_epoch}" if self.build_epoch else self.version
+
+
+def build_epoch(body):
+    """Read the release's build timestamp, never its later upload time."""
+    matches = BUILD_MARKER.findall(body.replace('\r\n', '\n')) if isinstance(body, str) else []
+    if len(matches) != 1:
+        return 0
+    value = int(matches[0])
+    return value if value <= MAX_BUILD_EPOCH else 0
+
+
+def installed_build_epoch():
+    try:
+        metadata = json.loads((Path(__file__).resolve().parents[2] / 'doc/source.json').read_text(encoding='utf8'))
+        value = metadata.get('build_epoch')
+        return value if type(value) is int and 0 < value <= MAX_BUILD_EPOCH else 0
+    except (OSError, ValueError, TypeError, AttributeError):
+        return 0
 
 
 def version(value):
@@ -28,7 +53,7 @@ def version(value):
     return tuple(map(int, value.split('.')))
 
 
-def select(releases, installed):
+def select(releases, installed, installed_revision=0):
     development = re.fullmatch(r"(\d+\.\d+\.\d+)-(?:dev|rc)\d+", installed)
     current = version(development[1] if development else installed)
     if not isinstance(releases, list):
@@ -37,6 +62,7 @@ def select(releases, installed):
     for release in releases:
         if not isinstance(release, dict) or release.get('draft') or release.get('prerelease'):
             continue
+        revision = build_epoch(release.get('body'))
         for asset in release.get('assets', []):
             if not isinstance(asset, dict):
                 continue
@@ -45,7 +71,8 @@ def select(releases, installed):
             if not match:
                 continue
             candidate = version(match[1])
-            if candidate < current or (candidate == current and not development):
+            if candidate < current or (candidate == current and not development and
+                    not (installed_revision > 0 and revision > installed_revision)):
                 continue
             url, size, digest = (asset.get(k) for k in ('browser_download_url', 'size', 'digest'))
             if not isinstance(url, str) or not isinstance(digest, str):
@@ -59,25 +86,27 @@ def select(releases, installed):
                 raise ValueError("Invalid package size")
             if not re.fullmatch(r'sha256:[0-9a-fA-F]{64}', digest):
                 raise ValueError("Invalid package SHA-256 checksum")
-            available.append(Update(match[1], name, url, size, digest[7:].lower()))
-    return max(available, key=lambda update: version(update.version), default=None)
+            available.append(Update(match[1], name, url, size, digest[7:].lower(), revision))
+    return max(available, key=lambda update: (version(update.version), update.build_epoch), default=None)
 
 
 def _request(url):
     return Request(url, headers={'User-Agent': 'ReLoq-C-updater', 'Accept': 'application/vnd.github+json'})
 
 
-def check(installed, *, fetch=urlopen):
+def check(installed, *, fetch=urlopen, installed_revision=None):
     with fetch(_request(RELEASES), timeout=20) as response:
         data = response.read(2 * 1024 * 1024 + 1)
     if len(data) > 2 * 1024 * 1024:
         raise ValueError("Release list is too large")
-    return select(json.loads(data), installed)
+    revision = installed_build_epoch() if installed_revision is None else installed_revision
+    return select(json.loads(data), installed, revision)
 
 
 def download(update, directory, *, fetch=urlopen):
     # A candidate can also be supplied by a caller; validate it before I/O.
-    validated = select([{'assets': [dict(name=update.name, browser_download_url=update.url,
+    body = f'<!-- ReLoq-C build:{update.build_epoch} -->' if update.build_epoch else ''
+    validated = select([{'body': body, 'assets': [dict(name=update.name, browser_download_url=update.url,
         size=update.size, digest='sha256:' + update.sha256)]}], '0.0.0')
     if validated != update:
         raise ValueError("Invalid update candidate")

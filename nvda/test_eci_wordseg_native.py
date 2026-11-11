@@ -23,6 +23,7 @@ def main():
                              'keyframe': ('key', 'frame'), 'blackboard': ('black', 'board')}
                 normal = {text: engine._phonemes_for_probe(text) for text in (*compounds, 'CGROUP')}
                 audio = {text: render(engine, [text])[0] for text in compounds}
+                capital_audio = render(engine, ['CGROUP'])[0]
                 def phones(value):
                     return ''.join(re.sub(r'\.[0-3]', '', group) for group in re.findall(r'`\[([^]]+)\]', value))
                 pieces = {text: ''.join(phones(engine._phonemes_for_probe(part)) for part in pair)
@@ -34,7 +35,12 @@ def main():
                     if phones(normal[text]) == pieces[text]:
                         assert render(engine, [text])[0] == audio[text], (dialect, text, 'already correct speech changed')
                     checks += 1
-                assert engine._phonemes_for_probe('CGROUP') == normal['CGROUP'], 'native uppercase spelling was changed'
+                # ECI may omit a redundant leading volume annotation on the
+                # second query; compare each spoken letter and actual audio.
+                capital = engine._phonemes_for_probe('CGROUP')
+                assert re.findall(r'`\[([^]]+)\]', capital) == re.findall(r'`\[([^]]+)\]', normal['CGROUP'])
+                assert render(engine, ['CGROUP'])[0] == capital_audio, 'native uppercase spelling was changed'
+                assert phones(engine._phonemes_for_probe('SWAPFILE')) == pieces['swapfile']
                 checks += 1
                 # A personal pronunciation must beat automatic word splitting.
                 folder = Path(temporary) / prefix

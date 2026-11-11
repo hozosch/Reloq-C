@@ -13,6 +13,9 @@
 #ifndef RELOQ_APP_VERSION
 #define RELOQ_APP_VERSION "1.3.0"
 #endif
+#ifndef RELOQ_BUILD_EPOCH
+#define RELOQ_BUILD_EPOCH 0
+#endif
 #define CHECK_LIMIT (2u*1024u*1024u)
 static const WCHAR update_key[]=L"Software\\ReLoq C\\SAPI5";
 static const struct sapi_ui *ui;
@@ -31,7 +34,7 @@ static BOOL set_automatic(BOOL enabled)
 }
 static BOOL previously_offered(const WCHAR *version)
 {
-    WCHAR stored[48]={0};DWORD bytes=sizeof stored;
+    WCHAR stored[64]={0};DWORD bytes=sizeof stored;
     return RegGetValueW(HKEY_CURRENT_USER,update_key,L"LastOfferedUpdate",RRF_RT_REG_SZ,NULL,stored,&bytes)==ERROR_SUCCESS
         &&!wcscmp(stored,version);
 }
@@ -73,7 +76,7 @@ static int check(struct reloq_update *update)
     r=request(s,L"https://api.github.com/repos/hozosch/Reloq-C/releases/latest",&c);if(!r)goto done;
     for(;;){DWORD got=0;if(!WinHttpReadData(r,buffer+used,CHECK_LIMIT+1-used,&got))goto done;
         used+=got;if(used>CHECK_LIMIT)goto done;if(!got)break;}
-    result=reloq_update_parse((char *)buffer,used,RELOQ_APP_VERSION,update);
+    result=reloq_update_parse_revision((char *)buffer,used,RELOQ_APP_VERSION,RELOQ_BUILD_EPOCH,update);
  done:if(r)WinHttpCloseHandle(r);if(c)WinHttpCloseHandle(c);if(s)WinHttpCloseHandle(s);free(buffer);return result;
 }
 static int verified_download(const struct reloq_update *update,WCHAR path[MAX_PATH])
@@ -107,12 +110,16 @@ static int check_once(BOOL interactive,char *offered,size_t offered_size)
     struct reloq_update update={0};int found=check(&update);
     if(found<0){if(interactive)MessageBoxW(NULL,T(UPDATE_FAILED),T(UPDATE_TITLE),MB_OK|MB_ICONERROR|MB_SETFOREGROUND);return 0;}
     if(!found){if(interactive)MessageBoxW(NULL,T(UPDATE_NONE),T(UPDATE_TITLE),MB_OK|MB_ICONINFORMATION|MB_SETFOREGROUND);return 0;}
-    if(!interactive&&offered&&strcmp(offered,update.version)==0)return 0;
-    if(offered&&strlen(update.version)<offered_size)strcpy(offered,update.version);
-    WCHAR version[48],question[512];
+    char identity[64];
+    if(update.build_epoch)snprintf(identity,sizeof identity,"%s@%llu",update.version,(unsigned long long)update.build_epoch);
+    else snprintf(identity,sizeof identity,"%s",update.version);
+    if(!interactive&&offered&&strcmp(offered,identity)==0)return 0;
+    if(offered&&strlen(identity)<offered_size)strcpy(offered,identity);
+    WCHAR version[48],offer[64],question[512];
     if(!MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,update.version,-1,version,48))return 0;
-    if(!interactive&&previously_offered(version))return 0;
-    if(!interactive)remember_offer(version);
+    if(!MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,identity,-1,offer,64))return 0;
+    if(!interactive&&previously_offered(offer))return 0;
+    if(!interactive)remember_offer(offer);
     swprintf(question,512,T(UPDATE_AVAILABLE),version);
     if(MessageBoxW(NULL,question,T(UPDATE_TITLE),MB_YESNO|MB_ICONQUESTION|MB_SETFOREGROUND)!=IDYES)return 0;
     MessageBoxW(NULL,T(UPDATE_DOWNLOADING),T(UPDATE_TITLE),MB_OK|MB_ICONINFORMATION|MB_SETFOREGROUND);
@@ -169,7 +176,7 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE previous,LPWSTR command,int sho
     if(!wcscmp(command,L"--background")){
         HANDLE mutex=CreateMutexW(NULL,TRUE,L"Local\\ReLoqC-SAPI-Update");
         if(!mutex||GetLastError()==ERROR_ALREADY_EXISTS){if(mutex)CloseHandle(mutex);return 0;}
-        char offered[48]={0};for(;;){if(automatic()&&check_once(FALSE,offered,sizeof offered)==2)break;Sleep(24u*60u*60u*1000u);}
+        char offered[64]={0};for(;;){if(automatic()&&check_once(FALSE,offered,sizeof offered)==2)break;Sleep(24u*60u*60u*1000u);}
         ReleaseMutex(mutex);CloseHandle(mutex);return 0;
     }
     if(!wcscmp(command,L"--check")){check_once(TRUE,NULL,0);return 0;}

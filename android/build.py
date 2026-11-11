@@ -13,7 +13,7 @@ import subprocess
 import sys
 import zipfile
 from verify_apk import verify_apk,verify_upgrade,verify_previous_package,verify_permissions
-from codegen import generate
+from codegen import generate,build_epoch
 
 ROOT=Path(__file__).resolve().parents[1]
 HERE=ROOT/"android"
@@ -68,6 +68,7 @@ def main():
     if not args.verified_dictionaries:refresh_community_dictionaries()
     (assets/"german.rlex").unlink(missing_ok=True)
     generate(generated)
+    (assets/'reloq-build-epoch.txt').write_text(str(build_epoch())+'\n',encoding='ascii')
     from _reloq_dictionaries import FILES,validate_snapshot
     validate_snapshot(ROOT/"data/community")
     community=assets/"community";community.mkdir(exist_ok=True)
