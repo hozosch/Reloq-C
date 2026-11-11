@@ -1,4 +1,4 @@
-name: Measure native English compound readings
+name: Diagnose the Windows candidate
 on:
   push:
     branches: [codex/wordseg-native-probe-20261111]
@@ -12,57 +12,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: 84cfa61081657aa76a619458a258718d6b2a270a
           persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
-          name: wordseg-core-candidate
-          run-id: 43029675658
+          name: wordseg-windows-candidate
+          run-id: 43038970204
           github-token: ${{ github.token }}
           path: candidate
-      - name: Measure word and component readings
-        shell: bash
+      - name: Run diagnostic checks
+        shell: pwsh
         run: |
-          dll=$(find candidate -name eci.dll -print -quit)
-          test -n "$dll"
-          curl --fail --silent --show-error --location --output cmudict.dict https://raw.githubusercontent.com/cmusphinx/cmudict/74790861f652b15e4ac49015a90074ad62a27690/cmudict.dict
-          python - "$dll" <<'PY'
-          import hashlib, json, re, sys
-          from pathlib import Path
-          sys.path.insert(0, 'nvda')
-          from _reloq_eci_direct import DirectEciEngine, WORD_SEGMENTATION
-          source = Path('src/reloq_wordseg_compounds.inc').read_text(encoding='ascii')
-          candidates = re.findall(r'^\s*\{"([a-z]+)",(\d+),', source, re.M)
-          cmudata = Path('cmudict.dict').read_bytes()
-          assert hashlib.sha256(cmudata).hexdigest() == '81917843c7f44ce2b094ac63873c2c7a4cf802040792c455ba3ca406891c3d22'
-          cmuwords = {m.group(1) for line in cmudata.decode('utf8').splitlines() if (m := re.match(r'^([a-z]+)(?:\(\d+\))? +', line))}
-          pieces = set(Path('nvda/wordseg-data/enus-pieces').read_text(encoding='utf8').splitlines())
-          needed = set()
-          for word, boundary in candidates:
-              at = int(boundary)
-              needed.update((word, word[:at], word[at:]))
-              for suffix in ('s', 'es', 'ed', 'ing'):
-                  extended = word + suffix
-                  a, b = extended[:at], extended[at:]
-                  if extended in cmuwords and a in pieces and b in pieces and a in cmuwords and b in cmuwords:
-                      needed.update((extended, a, b))
-          output = {'source_commit': '8dd892cb1670295e16ba938257d435ed98d5df2f', 'readings': {}}
-          for dialect, name in ((0x10000, 'enus'), (0x10001, 'engb')):
-              engine = DirectEciEngine(Path(sys.argv[1]).resolve(), dialect=dialect, encoding='utf8', native_voice=True)
-              found = {}
-              try:
-                  engine.set_parameter(WORD_SEGMENTATION, 0)
-                  for word in sorted(needed):
-                      phones = re.findall(r'`\[([^]]+)\]', engine._phonemes_for_probe(word))
-                      if len(phones) == 1:
-                          found[word] = '`[' + phones[0] + ']'
-              finally:
-                  engine.close()
-              output['readings'][name] = found
-              print(name, len(found), 'of', len(needed), 'readings recorded')
-          Path('english-compound-observed.json').write_text(json.dumps(output, indent=2, sort_keys=True) + '\n', encoding='utf8')
-          PY
-      - uses: actions/upload-artifact@v4
-        with:
-          name: english-compound-observed
-          path: english-compound-observed.json
-          retention-days: 7
+          $dll = (Get-ChildItem candidate -Recurse -Filter eci.dll | Select-Object -First 1).FullName
+          $addon = (Get-ChildItem candidate -Recurse -Filter *.nvda-addon | Select-Object -First 1).FullName
+          python nvda/test_eci_wordseg_native.py --library $dll
+          Write-Output "wordseg exit: $LASTEXITCODE"
+          python nvda/test_eci_german_cup_native.py --library $dll
+          Write-Output "german cup exit: $LASTEXITCODE"
+          python addon/test_synth_native.py --library $dll --addon $addon
+          Write-Output "adapter exit: $LASTEXITCODE"
+          exit 0
