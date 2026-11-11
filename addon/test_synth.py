@@ -492,6 +492,18 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert driver_module._parts(result) == [driver_module.EciText("meinTest und anderesWort", False, None, True)]
                 result = driver._protect_tags(["meinTest MeinWort und anderesWort"])
                 assert isinstance(result[0], guarded) and result[1] == "meinTest MeinWort und anderesWort", result
+                simple = types.SimpleNamespace(compiled=re.compile("meinTest"), type=0,
+                                               pattern="meinTest", replacement="Ersatz")
+                speech_dicts.dictionaries["default"] = [simple]
+                result = driver._protect_tags(["meinTest anderesWort"])
+                assert isinstance(result[0], guarded) and result[1] == "meinTest"
+                assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "anderesWort" for item in result)
+                processed = [simple.compiled.sub(simple.replacement, item) if isinstance(item, str) else item
+                             for item in result]
+                parts = driver_module._parts(processed)
+                assert parts[0].text == "Ersatz" and parts[0].segmentation_guarded
+                assert any(part.text == "anderesWort" and not part.segmentation_guarded for part in parts
+                           if isinstance(part, driver_module.EciText))
                 phrase = types.SimpleNamespace(compiled=re.compile("meinTest und"), type=0)
                 speech_dicts.dictionaries["default"] = [phrase]
                 result = driver._protect_tags(["meinTest und anderesWort"])

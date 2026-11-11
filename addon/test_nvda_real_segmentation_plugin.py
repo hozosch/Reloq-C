@@ -47,6 +47,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         try:
             import nvwave
             import speech
+            import speechDictHandler
+            from speechDictHandler.types import SpeechDictEntry
             import synthDriverHandler
             import synthDrivers.reloqC as reloq
             self.speech = speech
@@ -55,12 +57,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             speech.cancelSpeech()
             if not synthDriverHandler.setSynth('reloqC'): raise RuntimeError('could not select ReLoq C')
             self.synth = synthDriverHandler.getSynth()
+            temporary = next(d for d in speechDictHandler.listAvailableSpeechDictDefinitions()
+                             if getattr(d.source, 'value', d.source) == 'temp')
+            temporary.dictionary.append(SpeechDictEntry('reloqtest', 'swapfile'))
             self.synth.language = 'de_DE'
             self.synth.voiceTags = False
             original = self.synth._transport.submit
             def submit(parts):
                 self.records.append([{'kind':type(item).__name__, 'text':getattr(item,'text',None),
-                                      'original':getattr(item,'original',None)} for item in parts])
+                                      'original':getattr(item,'original',None),
+                                      'guarded':getattr(item,'segmentation_guarded',False)} for item in parts])
                 return original(parts)
             self.synth._transport.submit = submit
             self.synth.configure_dictionaries([], True, lambda error, details: wx.CallAfter(self.ready, error))
@@ -76,6 +82,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.cases = [(word,camel,text) for text in ('YouTube Fenster.', 'YouTube Dokument.',
                 'Vor YouTube Fenster. Danach weiter.', 'ROLE:window', 'ROLE:document')
                 for word,camel in ((False,False),(True,False),(False,True),(True,True))]
+            self.cases += [(word,False,text) for text in ('DICT:plain', 'DICT:compound')
+                           for word in (False,True)]
             self.next()
         except BaseException:
             self.fail()
@@ -92,15 +100,30 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             label = 'Fenster' if row['input'] == 'ROLE:window' else 'Dokument'
                             if not re.search(r'YouTube\s+' + label, combined):
                                 raise AssertionError('NVDA lost the object boundary: ' + repr(row))
+                        if row['input'] == 'DICT:compound' and row['word']:
+                            parts = [p for group in row['submissions'] for p in group]
+                            if not any('swapfile' in (p['text'] or '') and p['guarded'] for p in parts):
+                                raise AssertionError('NVDA dictionary replacement was not protected: ' + repr(row))
+                            if not any('framebuffer' in (p['text'] or '') and not p['guarded'] for p in parts):
+                                raise AssertionError('unrelated word was protected too: ' + repr(row))
+                    plain = [row for row in self.results if row['input'] == 'DICT:plain']
+                    if len(plain) != 2 or plain[0]['pcm_sha256'] != plain[1]['pcm_sha256']:
+                        raise AssertionError('personal dictionary changed unrelated NVDA speech: ' + repr(plain))
+                    compounds = [row for row in self.results if row['input'] == 'DICT:compound']
+                    if len(compounds) != 2 or compounds[0]['pcm_sha256'] == compounds[1]['pcm_sha256']:
+                        raise AssertionError('unrelated English compound was not segmented: ' + repr(compounds))
                 RESULT.write_text(json.dumps({'ok':True,'cases':self.results}, ensure_ascii=False),encoding='utf8')
                 return
             word,camel,text = self.cases[self.case]
             self.speech.cancelSpeech()
             self.synth._wordSegmentation = word
             self.synth._camelCase = camel
+            self.synth.language = 'en_US' if text.startswith('DICT:') else 'de_DE'
             self.records.clear()
             self.before = [(p,len(p.chunks)) for p in self.players]
-            if text.startswith('ROLE:'):
+            if text.startswith('DICT:'):
+                self.speech.speak(['reloqtest ' + ('hello' if text == 'DICT:plain' else 'framebuffer')])
+            elif text.startswith('ROLE:'):
                 import controlTypes
                 role = controlTypes.Role.WINDOW if text == 'ROLE:window' else controlTypes.Role.DOCUMENT
                 label = 'Fenster' if text == 'ROLE:window' else 'Dokument'

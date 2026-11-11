@@ -19,11 +19,20 @@ def main():
             try:
                 assert engine._dll.eciGetParam(engine._handle, WORD_SEGMENTATION) == 0
                 assert engine._dll.eciGetParam(engine._handle, CAMEL_CASE) == 0
-                normal = {text: engine._phonemes_for_probe(text) for text in ('swapfile', 'framebuffer', 'keyframe', 'CGROUP')}
+                compounds = {'swapfile': ('swap', 'file'), 'framebuffer': ('frame', 'buffer'),
+                             'keyframe': ('key', 'frame'), 'blackboard': ('black', 'board')}
+                normal = {text: engine._phonemes_for_probe(text) for text in (*compounds, 'CGROUP')}
+                audio = {text: render(engine, [text])[0] for text in compounds}
+                def phones(value):
+                    return ''.join(re.sub(r'\.[0-3]', '', group) for group in re.findall(r'`\[([^]]+)\]', value))
+                pieces = {text: ''.join(phones(engine._phonemes_for_probe(part)) for part in pair)
+                          for text, pair in compounds.items()}
                 engine.set_parameter(WORD_SEGMENTATION, 1)
-                for text in ('swapfile', 'framebuffer', 'keyframe'):
+                for text in compounds:
                     result = engine._phonemes_for_probe(text)
-                    assert result != normal[text] and len(re.findall(r'`\[', result)) == 1, (dialect, text, result)
+                    assert len(re.findall(r'`\[', result)) == 1 and phones(result) == pieces[text], (dialect, text, result)
+                    if phones(normal[text]) == pieces[text]:
+                        assert render(engine, [text])[0] == audio[text], (dialect, text, 'already correct speech changed')
                     checks += 1
                 assert engine._phonemes_for_probe('CGROUP') == normal['CGROUP'], 'native uppercase spelling was changed'
                 checks += 1

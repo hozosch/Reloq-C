@@ -398,10 +398,10 @@ class SynthDriver(BaseSynthDriver):
                 protected = segment and self._imported_dictionaries.matches(item, selected, voice)
                 item = self._imported_dictionaries.process(item, selected, voice)
                 spans = self._nvda_dictionary_matches(item) if segment else ()
-                # Keep NVDA's complete input intact when a personal entry
-                # matches: regular-expression context and replacement order
-                # belong to NVDA. Mark that run for native bypass afterwards.
-                protected = protected or spans is None or bool(spans)
+                personal = self._nvda_personal_word_ranges(item, spans) if spans else ()
+                # Preserve the whole run for expressions or substitutions
+                # whose context cannot safely be separated by word.
+                protected = protected or spans is None or personal is None or (bool(spans) and keys is None)
                 if protected:
                     result.extend((SegmentationGuard(True), item, SegmentationGuard(False)))
                     continue
@@ -411,22 +411,25 @@ class SynthDriver(BaseSynthDriver):
                     # NVDA's builtin.dic runs after this filter. Protect the
                     # complete original CamelCase spelling so the shared C
                     # core can apply its own rules and native dictionaries.
-                    ranges, cursor = [], 0
+                    ranges, cursor = [(start, end, "personal") for start, end in personal], 0
                     for part, native in protected_native_spans(item, native_keys):
                         end = cursor + len(part)
-                        if native:
-                            ranges.append((cursor, end))
+                        if native and not any(left < end and right > cursor for left, right, _ in ranges):
+                            ranges.append((cursor, end, "native"))
                         cursor = end
                     if camel or (word_segment and language.locale in ("en_US", "en_GB")):
                         for start, end in word_runs(item):
                             if camel_word(item[start:end]) != item[start:end] and not any(
-                                    left < end and right > start for left, right in ranges):
-                                ranges.append((start, end))
+                                    left < end and right > start for left, right, _ in ranges):
+                                ranges.append((start, end, "native"))
                     cursor = 0
-                    for start, end in sorted(ranges):
+                    for start, end, kind in sorted(ranges):
                         if start > cursor:
                             result.append(item[cursor:start])
-                        result.append(NativeDictionaryWord(item[start:end]))
+                        if kind == "personal":
+                            result.extend((SegmentationGuard(True), item[start:end], SegmentationGuard(False)))
+                        else:
+                            result.append(NativeDictionaryWord(item[start:end]))
                         # NVDA normally appends its chunk separator to every
                         # text item after symbol/dictionary processing. A
                         # protected word is a SynthCommand instead of text,
@@ -434,7 +437,7 @@ class SynthDriver(BaseSynthDriver):
                         # separator before the next item (for example, an
                         # object's name followed by its role). Keep it in a
                         # command so NVDA doesn't strip a whitespace string.
-                        if end == len(item):
+                        if kind != "personal" and end == len(item):
                             result.append(NativeDictionaryWord("  "))
                         cursor = end
                     if cursor < len(item):
@@ -468,6 +471,51 @@ class SynthDriver(BaseSynthDriver):
             return tuple(spans)
         except (ImportError, AttributeError, ValueError):
             # Never alter a possible personal substitution we cannot inspect.
+            return None
+
+    @staticmethod
+    def _nvda_personal_word_ranges(text, spans):
+        """Split simple, independent personal entries at existing spaces.
+
+        Arbitrary expressions, punctuation or cross-word replacements keep
+        the full run unchanged so NVDA retains its dictionary semantics.
+        """
+        try:
+            import speechDictHandler
+            if hasattr(speechDictHandler, "listAvailableSpeechDictDefinitions"):
+                dictionaries = (d.dictionary for d in speechDictHandler.listAvailableSpeechDictDefinitions()
+                                if d.enabled and getattr(d.source, "value", d.source) != "builtin")
+            else:
+                dictionaries = (dictionary for name, dictionary in speechDictHandler.dictionaries.items()
+                                if name != "builtin")
+            def word_only(value):
+                return all(char.isalnum() or char == "_" for char in value)
+            for dictionary in dictionaries:
+                for entry in dictionary:
+                    pattern, replacement = entry.pattern, entry.replacement
+                    if (getattr(entry, "type", None) not in (0, 2) or not pattern or
+                            not word_only(pattern) or not word_only(replacement)):
+                        return None
+            words = tuple(word_runs(text))
+            ranges = []
+            for left, right in spans:
+                overlapping = [(start, end) for start, end in words if start < right and end > left]
+                if not overlapping:
+                    return None
+                start, end = overlapping[0][0], overlapping[-1][1]
+                if (left < start or right > end or
+                        (start and not text[start - 1].isspace()) or
+                        (end < len(text) and not text[end].isspace())):
+                    return None
+                ranges.append((start, end))
+            merged = []
+            for start, end in sorted(ranges):
+                if merged and start <= merged[-1][1]:
+                    merged[-1] = (merged[-1][0], max(end, merged[-1][1]))
+                else:
+                    merged.append((start, end))
+            return tuple(merged)
+        except (ImportError, AttributeError, TypeError, ValueError):
             return None
 
     @staticmethod

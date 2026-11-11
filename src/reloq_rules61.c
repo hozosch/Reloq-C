@@ -382,6 +382,36 @@ static int wordseg_compound_spr(int language,const unsigned char *segmented,
     out[used++]=']';out[used]=0;*length=used;return 1;
 }
 
+/* Do not replace a native pronunciation that already has the same phones.
+ * This also preserves its original sentence stress and natural timing. */
+static int wordseg_native_matches(int language,const unsigned char *word,size_t length,
+    const unsigned char *compound,size_t compound_n)
+{
+    unsigned char native[2048];size_t native_n=0;
+    if(reloq_rules61_word(language,word,length,native,sizeof native,&native_n)!=1 ||
+       native_n<3||compound_n<3)return 0;
+    size_t a=2,b=2;
+    while(a<native_n-1||b<compound_n-1) {
+        while(a+1<native_n-1&&native[a]=='.'&&native[a+1]>='0'&&native[a+1]<='3')a+=2;
+        while(b+1<compound_n-1&&compound[b]=='.'&&compound[b+1]>='0'&&compound[b+1]<='3')b+=2;
+        if(a==native_n-1||b==compound_n-1)break;
+        if(native[a++]!=compound[b++])return 0;
+    }
+    return a==native_n-1&&b==compound_n-1;
+}
+
+static int wordseg_only_words(const unsigned char *pieces)
+{
+    size_t at=0,parts=0,n=strlen((const char *)pieces);
+    while(at<n) {
+        size_t end=at;while(end<n&&pieces[end]!=' ')++end;
+        if(end-at<2)return 0;
+        for(size_t i=at;i<end;++i)if(pieces[i]<'a'||pieces[i]>'z')return 0;
+        ++parts;at=end<n?end+1:end;
+    }
+    return parts>1;
+}
+
 static int wordseg_input(unsigned char **text,size_t **source,size_t *length,int language,
     const struct wordseg_marks *marks)
 {
@@ -449,7 +479,17 @@ static int wordseg_input(unsigned char **text,size_t **source,size_t *length,int
                 unsigned char spr[8192];size_t spr_n=0;
                 const unsigned char *replacement=pieces;size_t replacement_n=strlen((char *)pieces);
                 if(wordseg_compound_spr(language,pieces,spr,sizeof spr,&spr_n)) {
+                    if(wordseg_native_matches(language,a+i,end-i,spr,spr_n)) {
+                        if(german_shared_append(&b,a+i,map+i,end-i,0))goto fail;
+                        i=end;continue;
+                    }
                     replacement=spr;replacement_n=spr_n;
+                } else if(wordseg_only_words(pieces)) {
+                    /* Without complete phone groups a word-spaced fallback
+                     * would change the requested compound into separate
+                     * words. Retain its native pronunciation instead. */
+                    if(german_shared_append(&b,a+i,map+i,end-i,0))goto fail;
+                    i=end;continue;
                 }
                 if(german_shared_append(&b,replacement,NULL,replacement_n,map[i]))goto fail;
                 changed=1;i=end;continue;
