@@ -119,7 +119,7 @@ are verified in the background and stored in the current user's profile. A
 successful update displays the numbers of new distinct entries and files;
 changes and removals do not count as additions.
 
-Choose “Own dictionary files” to add native .dic files and select the language
+Choose “Own dictionaries” to add native .dic files and select the language
 and Main, Root or Abbreviations volume for each one. Move files up or down to
 change their precedence: later files override earlier files and the selected
 community source. The original files are never altered. Personal files remain
