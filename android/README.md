@@ -147,6 +147,12 @@ resolved independently and the local snapshot has been verified. Output goes
 under `dist/`. Android uses separate object directories and preserves the
 Windows/Linux outputs. Rebuild the Android objects after changing compiler flags.
 
+`--abi x86_64` builds an x86-64 APK, `dist/reloq-c-android-x86_64-1.3.0.apk`,
+with its objects under `android/build-x86_64`. The default is `arm64-v8a`.
+The package name and signing identity are the same for both ABIs. App updates
+offer only the ARM64 package. The NDK host directory is selected for Linux or
+macOS.
+
 The checked-in `release-signing.p12` is an intentionally public **test signing
 identity**, alias `androiddebugkey`, password `android`. Production distribution
 needs a separate private signing identity and a deliberate migration plan.

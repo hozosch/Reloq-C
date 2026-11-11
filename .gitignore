@@ -12,6 +12,7 @@
 /vendor/openevv61/build/
 /dist/
 /android/build/
+/android/build-*/
 /sapi/build/
 *.apk
 *.wav
