@@ -1,0 +1,45 @@
+--- a/vendor/openevv61/lang/eses61/delta_rules_c18_eses61.c
++++ b/vendor/openevv61/lang/eses61/delta_rules_c18_eses61.c
+@@ -5256,0 +5257,17 @@
++    /* Temporary research probe: add the missing S SPR mapping to the
++       Castilian provider. Never ship this test variant as Castilian. */
++    {
++        const uint8_t letter=46,phone=16;
++        r0 = reloq61_typed_fence(DELTA_ENTRY_fence,state,0,EVV_AT(const uint8_t *,delta_sym_ref[1244]));
++        r0 = reloq61_typed_lpta_loadp(DELTA_ENTRY_lpta_loadp,state,(const delta_token *)(base-12));
++        r0 = reloq61_typed_setscan_r(DELTA_ENTRY_setscan_r,state,1);
++        if(!r0 && !reloq61_typed_test_string_s(DELTA_ENTRY_test_string_s,state,1,1,&letter)) {
++            reloq61_typed_inline61_lflags(DELTA_ENTRY_inline61_lflags,state,1);
++            reloq61_typed_inline61_lnode(DELTA_ENTRY_inline61_lnode,state,(int32_t)AT(int32_t,-16));
++            reloq61_typed_inline61_loffset(DELTA_ENTRY_inline61_loffset,state,0);
++            if(!reloq61_typed_test_ptr(DELTA_ENTRY_test_ptr,state)) {
++                reloq61_typed_lpta_rpta_loadp(DELTA_ENTRY_lpta_rpta_loadp,state,(const delta_token *)(base-12),(const delta_token *)(base-20));
++                if(!reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s,state,4,1,&phone,0))goto L7242;
++            }
++        }
++    }
+--- a/vendor/openevv61/lang/eses61/delta_rules_c31_eses61.c
++++ b/vendor/openevv61/lang/eses61/delta_rules_c31_eses61.c
+@@ -2840,0 +2841,18 @@
++/* Disposable probe: distinguish /S/ from the /S/ component of /C/. */
++static int aragonese_probe_is_standalone_sh(void *state,int32_t token_ref)
++{
++    delta_state *d=state;
++    if(!d||!d->vars||!token_ref)return 0;
++    delta_vars *v=EVV_AT(delta_vars *,d->vars);
++    delta_tpos left_saved=d->lpta,right_saved=d->rpta;
++    unsigned char scan[8];memcpy(scan,&v->scan_ptr,sizeof scan);
++    int8_t compared=v->compared_equal,fences=v->fence_count,testing=v->testing;
++    v->fence_count=0;v->testing=0;
++    const uint8_t phone=16;
++    lpta_loadp(d,EVV_AT(const delta_token *,token_ref));
++    int found=!setscan_r(d,4) && !test_string_s(d,4,1,&phone);
++    d->lpta=left_saved;d->rpta=right_saved;
++    memcpy(&v->scan_ptr,scan,sizeof scan);v->compared_equal=compared;
++    v->fence_count=fences;v->testing=testing;
++    return found;
++}
+@@ -2891 +2909,2 @@
+-    STATE(int32_t, f20) = ((int32_t)reloq_local_196.i32);
++    STATE(int32_t, f20) = aragonese_probe_is_standalone_sh(state,STATE_AT(w60,-4)) ?
++        (int32_t)((int64_t)reloq_local_196.i32*4/5) : (int32_t)reloq_local_196.i32;

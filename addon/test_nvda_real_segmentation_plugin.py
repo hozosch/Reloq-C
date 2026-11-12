@@ -192,13 +192,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                                       'PACs', 'FAQs', 'SMSs', 'MP3', 'BlindRadio', 'BlindRSS')),
                                                ('ENGB', ('CDs', 'DVDs', 'ROMs', 'IDs', 'PDFs', 'URLs',
                                                         'PACs', 'FAQs', 'SMSs', 'MP3', 'BlindRadio', 'BlindRSS')),
-                                               ('DE', ('CDs', 'BlindRadio')))
+                                               ('DE', ('CDs', 'SMSs', 'BlindRadio')))
                            for text in texts
                            for word,camel in ((False,False),(True,False),(False,True),(True,True))]
             self.cases += [(word,camel,'ACRREF-' + lang + ':' + text)
                            for lang in ('EN', 'ENGB') for text in ACRONYM_REFERENCES
                            for word,camel in ((False,False),(True,False),(False,True),(True,True))
                            if camel or text not in ('BlindRadio', 'BlindRSS')]
+            self.cases += [(word,camel,'ACRREF-DE:SMSs')
+                           for word,camel in ((False,False),(True,False),(False,True),(True,True))]
             self.cases += [(word,camel,'ACRPHRASE-' + lang + ':' + mode)
                            for lang in ('EN', 'ENGB') for mode in ('actual', 'reference')
                            for word,camel in ((False,False),(True,False),(False,True),(True,True))]
@@ -298,6 +300,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             if sentence['pcm_sha256'] != reference['pcm_sha256']:
                                 raise AssertionError('PACs sentence differed from packs: ' + repr(sentence))
                     for word, camel in ((False,False),(True,False),(False,True),(True,True)):
+                        spoken = next(row for row in self.results if row['input'] == 'ACR-DE:SMSs'
+                                      and (row['word'],row['camel']) == (word,camel))
+                        reference = next(row for row in self.results if row['input'] == 'ACRREF-DE:SMSs'
+                                         and (row['word'],row['camel']) == (word,camel))
+                        if spoken['pcm_sha256'] != reference['pcm_sha256']:
+                            raise AssertionError('German SMSs differs from four letter names: ' + repr(spoken))
+                    for word, camel in ((False,False),(True,False),(False,True),(True,True)):
                         native = next(row for row in self.results if row['input'] == 'NATIVE:TestEintrag'
                                       and (row['word'],row['camel']) == (word,camel))
                         reference = next(row for row in self.results if row['input'] == 'NATIVE:reference'
@@ -346,7 +355,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             elif text.startswith('ACR-'):
                 self.speech.speak([text.split(':', 1)[1]])
             elif text.startswith('ACRREF-'):
-                self.speech.speak([ACRONYM_REFERENCES[text.split(':', 1)[1]]])
+                reference = 'S M S S' if text == 'ACRREF-DE:SMSs' else ACRONYM_REFERENCES[text.split(':', 1)[1]]
+                self.speech.speak([reference])
             elif text.startswith('ACRPHRASE-'):
                 mode = text.split(':', 1)[1]
                 self.speech.speak([ACRONYM_SENTENCE if mode == 'actual' else ACRONYM_SENTENCE.replace('PACs', 'packs')])

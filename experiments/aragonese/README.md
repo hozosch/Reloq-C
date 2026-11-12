@@ -9,6 +9,10 @@ python3 experiments/aragonese/test_probe.py
 python3 experiments/aragonese/probe.py --library eci/libreloq_eci.so --wav /tmp/aragonese-probe.wav
 python3 experiments/aragonese/compare_sh.py --library eci/libreloq_eci.so --wav /tmp/aragonese-sh-comparison.wav
 python3 experiments/aragonese/castilian_sh_listening.py --library eci/libreloq_eci.so --wav /tmp/aragonese-castilian-sh.wav
+python3 experiments/aragonese/inventory.py --library eci/libreloq_eci.so
+# After building the ordinary Linux provider, make separate disposable probes:
+python3 experiments/aragonese/build_native_probe.py sh
+python3 experiments/aragonese/build_native_probe.py au
 ```
 
 The first experiment maps Aragonese **ny** to the Spanish spelling **ñ**,
@@ -56,6 +60,47 @@ point for a real synthesis-time implementation, not a fixed 30-ms cut to
 apply to arbitrary voices, rates or contexts.
 
 Further reference: [Mott, *Chistabino (Pyrenean Aragonese)*](https://www.cambridge.org/core/journals/journal-of-the-international-phonetic-association/article/chistabino-pyrenean-aragonese/02F4CE9705DC9B69280662963C61FA46).
+
+`inventory.py` lists independently sourced examples for developing and
+checking the language, alongside the Castilian provider's actual phonemes.
+It covers ny/ñ, x/ix, the Castilian-style interdental, palatal ll, rounded
+au, silent final t in -nt/-st/-rt, and word stress. In particular, x can
+also mean /ks/, even at the beginning of a word (*xenofobo*, *taxi*, *sexo*,
+*examen*); blindly mapping every x to /ʃ/ would therefore be wrong. Likewise,
+dropping the t in *rebost* before passing it to Spanish changes the Spanish
+stress rule. The inventory is a diagnostic baseline, not a claim that these
+features or numbers, punctuation, character names, dictionaries and platform
+integration have been implemented.
+
+With the current Castilian provider, `auca` is already analysed as `aw`;
+spelling the sound as `au` in SPR creates two syllables instead, so it is
+not a drop-in correction for the insufficiently rounded off-glide. The
+Castilian tables also contain an `S` acoustic rule, but the SPR reader lacks
+the Mexican provider's mapping from the input `S` to that phoneme. Enabling
+that mapping and choosing a duration must be scoped to Aragonese before the
+sound can be used safely in ordinary synthesis.
+
+Two **temporary, non-production** patches record the native experiments:
+`native-sh-probe.patch` admits the missing S and scales its native duration to
+80%; `native-au-probe.patch` lowers the w F1/F2 targets toward the existing u
+targets. Apply them only to private copies of the provider: they intentionally
+alter Castilian rather than checking a separate Aragonese identity. The short
+S probe successfully generated explicit phoneme groups for word-initial,
+medial, and final S, including the still-available Castilian T. Its first two
+test items were approximately 31 and 36 ms shorter than the Mexican reference
+for the same voice and rate. These are measurements, not a listener's
+validation and not evidence that running text or other contexts work. The
+first shortening also changed the /tʃ/ affricate; the patch now tries to
+distinguish a standalone S from that affricate and needs separate validation.
+The builder prints each private library path. Given those two paths and the
+unmodified baseline, `native_listening.py --baseline BASELINE --native-sh
+SH_LIBRARY --rounded-au AU_LIBRARY --wav FILE` makes the labelled comparison.
+
+`phoneme_probe.py` now also experiments with the latent final t rule on the
+Castilian phoneme output of an isolated word. It removes that sound after n,
+s or r while retaining the original stress and keeps the existing ny/ñ probe.
+This is not connected to any platform: dictionaries, names, loanwords, source
+positions and continuous speech must be handled before it can be used there.
 
 References used as starting points:
 

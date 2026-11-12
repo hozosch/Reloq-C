@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 
 from probe import spanish_probe_input
+from phoneme_probe import latent_final_t, probe_word
 
 
 def main():
@@ -16,7 +17,13 @@ def main():
     for source, expected in cases.items():
         assert spanish_probe_input(source) == expected, source
     assert spanish_probe_input('cigu\u0308enya') == 'cigüeña'
-    print(f'Aragonese experiment: {len(cases) + 1} isolated orthography checks passed')
+    # Keep the original primary stress while dropping the latent sound;
+    # respelling "rebost" as Spanish "rebos" would move that stress.
+    assert latent_final_t('rebost', '`[.0re.1bost]') == '`[.0re.1bos]'
+    assert latent_final_t('PUENT', '`[.1pwent]') == '`[.1pwen]'
+    assert latent_final_t('mocet', '`[.0mo.1Tet]') == '`[.0mo.1Tet]'
+    assert latent_final_t('rebost.', '`[.0re.1bost]') == '`[.0re.1bost]'
+    print(f'Aragonese experiment: {len(cases) + 5} isolated orthography and stress checks passed')
     if args.library:
         from _reloq_eci_direct import DirectEciEngine
         engine = DirectEciEngine(args.library.resolve(), dialect=0x20000, encoding='utf8', native_voice=True)
@@ -27,6 +34,10 @@ def main():
                 adapted = engine._phonemes_for_probe(spanish_probe_input(source))
                 assert adapted and adapted == engine._phonemes_for_probe(expected), source
             assert engine._phonemes_for_probe('Espanya') != engine._phonemes_for_probe('España')
+            for word in ('puent', 'chent', 'dolent', 'rebost', 'cort'):
+                original, candidate = probe_word(engine, word)
+                assert original != candidate and original.endswith('t]'), (word, original, candidate)
+                assert candidate == original[:-2] + ']', (word, original, candidate)
         finally:
             engine.close()
         print('Aragonese experiment: Spanish native phoneme comparisons passed')

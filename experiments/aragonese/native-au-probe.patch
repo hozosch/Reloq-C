@@ -1,0 +1,8 @@
+--- a/vendor/openevv61/lang/eses61/delta_rules_c25_eses61.c
++++ b/vendor/openevv61/lang/eses61/delta_rules_c25_eses61.c
+@@ -5031,0 +5032,5 @@
++    /* Isolated listening experiment, never a production Spanish change. */
++    if(STATE(int16_t,s448)>300)STATE(int16_t,s448)=300;
++    if(STATE(int16_t,s449)>300)STATE(int16_t,s449)=300;
++    if(STATE(int16_t,s450)>750)STATE(int16_t,s450)=750;
++    if(STATE(int16_t,s451)>750)STATE(int16_t,s451)=750;
