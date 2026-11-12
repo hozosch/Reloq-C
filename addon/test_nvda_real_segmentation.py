@@ -42,7 +42,7 @@ def main():
     process = subprocess.Popen([str(args.nvda.resolve()), '--minimal', '--no-sr-flag',
         '--debug-logging', '--config-path=' + str(profile), '--log-file=' + str(log)], env=env)
     try:
-        deadline = time.monotonic() + 120
+        deadline = time.monotonic() + 240
         while time.monotonic() < deadline and not result.exists():
             if process.poll() is not None: raise RuntimeError(f'NVDA exited early: {process.returncode}')
             time.sleep(.1)

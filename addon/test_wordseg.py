@@ -62,6 +62,12 @@ def main():
         assert 'cgroups' in roots and 'CGROUPS' in roots and 'cGroups' in roots
         assert split_camel('cGroups und meinTest', roots) == 'cGroups und mein Test'
     samples = {'meinWort': 'mein Wort', 'HTTPServer': 'HTTP Server',
+               'BlindRadio': 'Blind Radio', 'BlindRSS': 'Blind RSS',
+               'CDs': 'CDs', 'DVDs': 'DVDs', 'ROMs': 'ROMs', 'IDs': 'IDs',
+               'PDFs': 'PDFs', 'URLs': 'URLs', 'PACs': 'PACs', 'FAQs': 'FAQs',
+               'SMSs': 'SMSs', 'AGBs': 'AGBs', 'LKWs': 'LKWs', 'USBs': 'USBs',
+               'SOSes': 'SOSes', 'HTTPS': 'HTTPS', 'BlindCDs': 'Blind CDs',
+               'myURLs': 'my URLs', 'allePDFs': 'alle PDFs', 'IDServer': 'ID Server',
                'XMLHttpRequest': 'XML Http Request', 'StraßenName': 'Straßen Name',
                'δοκιμήΛέξη': 'δοκιμή Λέξη', 'приветМир': 'привет Мир',
                'a\u0308B': 'a\u0308 B', 'schon Richtig': 'schon Richtig'}

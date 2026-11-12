@@ -39,7 +39,8 @@ from ._reloq_eci_transport import DictionaryStartupError, EciTextTransport
 from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries, DictionarySource
 from ._reloq_nvda_dicts import ImportedDictionaries, migrate_nvda_sources
 from ._reloq_wordseg import (WordSegmenter, dictionary_keys, split_camel, protected_native_spans,
-                             transform_unmatched, native_compound_spans, uppercase_candidates, word_runs, camel_word)
+                             transform_unmatched, native_compound_spans, uppercase_candidates, word_runs, camel_word,
+                             plural_acronym)
 from ._reloq_languages import (GERMAN, LANGUAGES, LANGUAGE_ALIASES, LANGUAGE_DISPLAY_ORDER, LanguageEngine, language_for,
                                ACOUSTIC_CLOCK_BITS, ACOUSTIC_CLOCK_DEFAULT, ACOUSTIC_CLOCK_MAX)
 from ._speech_tags import EciTagCommand, SegmentationGuard, NativeDictionaryWord, CapitalWordCommand, protect_sequence, register_remote_commands
@@ -424,7 +425,7 @@ class SynthDriver(BaseSynthDriver):
                         cursor = end
                     if camel or (word_segment and language.locale in ("en_US", "en_GB")):
                         for start, end in word_runs(item):
-                            if camel_word(item[start:end]) != item[start:end] and not any(
+                            if (camel_word(item[start:end]) != item[start:end] or plural_acronym(item[start:end])) and not any(
                                     left < end and right > start for left, right, _ in ranges):
                                 ranges.append((start, end, "native"))
                     cursor = 0

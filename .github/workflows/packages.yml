@@ -112,6 +112,7 @@ jobs:
           python3 -B addon/test_segmentation_eci.py --library eci/libreloq_eci.so
           python3 -B addon/test_uppercase_native.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_wordseg_native.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_acronyms_native.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_german_cup_native.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_italian_apostrophe_native.py --library eci/libreloq_eci.so
           gcc -std=gnu11 -O2 -fno-builtin-memcmp -ffunction-sections -fdata-sections -DEVV_ARENA=1 -DEVV_NO_BYTECODE -DRELOQ61_PARAMETERS_ONLY=1 -Ivendor/openevv61/include -Ivendor/openevv61/src -Ivendor/openevv61/src/delta -Ivendor/openevv61/src/port -Ivendor/openevv61/src/eci/util -Ivendor/openevv61/src/eci/sound -Ivendor/openevv61/src/eci/api -Ivendor/openevv61/src/eci/bridge -Ivendor/openevv61/src/eci/queue -Ivendor/openevv61/src/eci/synth -Iinclude tests/test_delta_comparison.c vendor/openevv61/src/delta/delta.c -Wl,--gc-sections,--wrap=memcmp -o /tmp/test-delta-comparison

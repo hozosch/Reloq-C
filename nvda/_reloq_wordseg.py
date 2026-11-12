@@ -254,8 +254,25 @@ def _upper(char):
     return char.isupper() or (char.isalpha() and char.istitle())
 
 
+def plural_acronym(word):
+    """Keep an uppercase initialism with a lowercase plural ending intact."""
+    if not word.endswith("s"):
+        return False
+    for ending in ("es", "s"):
+        if not word.endswith(ending):
+            continue
+        stem = word[:-len(ending)]
+        letters = [character for character in stem
+                   if not unicodedata.category(character).startswith("M")]
+        if len(letters) >= 2 and all(_upper(character) for character in letters):
+            return True
+    return False
+
+
 def camel_word(word):
     """Split lower/upper and acronym/word boundaries without changing case."""
+    if plural_acronym(word):
+        return word
     boundaries = []
     for index, char in enumerate(word):
         if not _upper(char) or index == 0:
@@ -266,9 +283,14 @@ def camel_word(word):
         after = index + 1
         while after < len(word) and unicodedata.category(word[after]).startswith("M"):
             after += 1
-        if before >= 0 and (word[before].islower() or
-                            (_upper(word[before]) and after < len(word) and word[after].islower())):
+        if before >= 0 and word[before].islower():
             boundaries.append(index)
+        elif before >= 0 and _upper(word[before]) and after < len(word) and word[after].islower():
+            start = before
+            while start >= 0 and (_upper(word[start]) or unicodedata.category(word[start]).startswith("M")):
+                start -= 1
+            if not plural_acronym(word[start + 1:]):
+                boundaries.append(index)
     if not boundaries:
         return word
     pieces, start = [], 0

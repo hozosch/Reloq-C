@@ -1,0 +1,140 @@
+name: Verify acronym and CamelCase candidate
+on:
+  push:
+    branches: [codex/acronym-segmentation-20261112]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  wordseg:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check word segmentation and NVDA text protection
+        run: |
+          python3 -B addon/test_wordseg.py
+          cc -std=c11 -O2 -Wall -Wextra -Werror -pedantic -Iinclude tests/test_wordseg_native.c src/reloq_wordseg.c -o /tmp/reloq-wordseg
+          /tmp/reloq-wordseg
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 75
+    env:
+      RELOQ_BUILD_EPOCH: '1700000000'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/cache/restore@v4
+        id: rules
+        with:
+          path: vendor/openevv61/build/windows-release
+          key: wordseg-windows-gcc14-provider-v1-2332aa876d9e729ffadd214fc6da8f2ce764a6f6b41a9ada6571cb8a23691846
+      - name: Restore cached provider timestamps
+        if: steps.rules.outputs.cache-hit == 'true'
+        shell: bash
+        run: |
+          find vendor/openevv61/build/windows-release -type f -exec touch {} +
+          sleep 1
+          touch vendor/openevv61/src/delta/delta.c vendor/openevv61/lang/itit61/delta_rules_c17_itit61.c
+      - name: Build the common Windows core
+        shell: bash
+        run: |
+          export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
+          make -C eci -j2 eci.dll SHELL=C:/msys64/usr/bin/bash.exe PROVIDER_LTO=-flto=2 WINDOWS_CC=gcc WINDOWS_OBJDUMP=objdump
+          python eci/verify_pe_exports.py eci/eci.dll --objdump objdump --header include/reloq_eci.h
+      - uses: actions/download-artifact@v4
+        with:
+          name: dictionary-snapshot
+          run-id: 43102437479
+          github-token: ${{ github.token }}
+          path: data/community
+      - name: Build a separately named NVDA test package
+        shell: bash
+        run: |
+          export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
+          python - <<'PY'
+          from pathlib import Path
+          import sys
+          p = Path('addon/synth/manifest.ini')
+          manifest = p.read_text(encoding='utf8')
+          assert 'version = "1.4.0"' in manifest
+          p.write_text(manifest.replace('version = "1.4.0"', 'version = "1.4.1-dev1"'), encoding='utf8')
+          sys.path.insert(0, 'addon')
+          from build_synth import build
+          build(Path('dist/reloq-c-synth-x64-1.4.1-dev1.nvda-addon'), Path('eci/eci.dll'), refresh_dictionaries=False)
+          PY
+      - name: Check native pronunciation and the NVDA adapter
+        shell: pwsh
+        run: |
+          $env:PATH = 'C:\mingw64\bin;C:\msys64\usr\bin;' + $env:PATH
+          python -B addon/test_wordseg.py
+          if ($LASTEXITCODE -ne 0) { throw 'Python word segmentation failed' }
+          python -B nvda/test_eci_acronyms_native.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Acronym/CamelCase regression failed' }
+          python -B nvda/test_eci_wordseg_native.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Existing word segmentation regression failed' }
+          python -B addon/test_synth.py
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA speech processing regression failed' }
+          python -B addon/test_synth_native.py --library eci/eci.dll --addon dist/reloq-c-synth-x64-1.4.1-dev1.nvda-addon
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA native integration failed' }
+      - name: Compile the SAPI adapter
+        shell: bash
+        run: |
+          export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
+          make -C sapi -j2 CC=gcc BUILD=build build/ReLoqSapi.dll build/Test-SAPI.exe
+          cp eci/eci.dll sapi/build/eci.dll
+      - name: Test dictionaries through Windows SAPI
+        shell: pwsh
+        run: |
+          $dll = (Get-Item sapi/build/ReLoqSapi.dll).FullName
+          $p = Start-Process regsvr32.exe -ArgumentList '/s', $dll -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "SAPI registration failed: $($p.ExitCode)" }
+          & sapi/build/Test-SAPI.exe --dictionarycase
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI dictionary regression failed' }
+          $p = Start-Process regsvr32.exe -ArgumentList '/s', '/u', $dll -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "SAPI unregistration failed: $($p.ExitCode)" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acronym-nvda-candidate
+          path: dist/reloq-c-synth-x64-1.4.1-dev1.nvda-addon
+          compression-level: 0
+          retention-days: 14
+  real-nvda:
+    needs: [wordseg, windows]
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: acronym-nvda-candidate
+          path: candidate
+      - name: Install real portable NVDA
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download release-2026.3.1 --repo nvaccess/nvda --pattern nvda_2026.3.1.exe --dir candidate
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA download failed' }
+          if ((Get-FileHash candidate/nvda_2026.3.1.exe -Algorithm SHA256).Hash -ne '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052') { throw 'Unexpected NVDA installer' }
+          $portable = Join-Path $pwd 'portable-nvda'
+          $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
+          $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
+      - name: Check NVDA built-in dictionary and all option combinations
+        shell: pwsh
+        run: |
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1-dev1.nvda-addon --work segmentation-probe
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA acronym or segmentation regression failed' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acronym-real-nvda-results
+          path: |
+            segmentation-probe/result.json
+            segmentation-probe/nvda.log
+          if-no-files-found: ignore

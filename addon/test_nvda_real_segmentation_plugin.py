@@ -161,6 +161,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                            for word in (False,True)]
             self.cases += [(word,False,text) for text in ('IMPORT:plain', 'IMPORT:digits', 'IMPORT:regex', 'IMPORT:legacy')
                            for word in (False,True)]
+            self.cases += [(word,camel,'ACR-' + lang + ':' + text)
+                           for lang, texts in (('EN', ('CDs', 'SMSs', 'BlindRadio', 'BlindRSS')),
+                                               ('DE', ('CDs', 'SMSs', 'BlindRadio')))
+                           for text in texts
+                           for word,camel in ((False,False),(True,False),(False,True),(True,True))]
             self.next()
         except BaseException:
             self.fail()
@@ -188,6 +193,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                         'IMPORT:regex':'Zahl 57', 'IMPORT:legacy':'Sonderwort'}[row['input']]
                             if expected not in combined or '\t0\t' in combined or '\t1\t' in combined:
                                 raise AssertionError('NVDA import changed a replacement or included options: ' + repr(row))
+                        if row['input'].startswith('ACR-'):
+                            original = row['input'].split(':', 1)[1]
+                            active = row['camel'] or (row['word'] and row['input'].startswith('ACR-EN:'))
+                            if active and original not in combined:
+                                raise AssertionError('NVDA builtin dictionary split a protected acronym or case word: ' + repr(row))
                     plain = [row for row in self.results if row['input'] == 'DICT:plain']
                     if len(plain) != 2 or plain[0]['pcm_sha256'] != plain[1]['pcm_sha256']:
                         raise AssertionError('personal dictionary changed unrelated NVDA speech: ' + repr(plain))
@@ -210,7 +220,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.synth._wordSegmentation = word
             self.synth._camelCase = camel
             self.synth.language = ('en_GB' if text.startswith('ENGB:') else
-                                   'en_US' if text.startswith(('ENUS:', 'DICT:', 'COMMUNITY:')) else 'de_DE')
+                                   'en_US' if text.startswith(('ENUS:', 'DICT:', 'COMMUNITY:', 'ACR-EN:')) else 'de_DE')
             self.records.clear()
             self.before = [(p,len(p.chunks)) for p in self.players]
             if text.startswith('IMPORT:'):
@@ -222,6 +232,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             elif text.startswith('COMMUNITY:'):
                 self.speech.speak([text.split(':', 1)[1]])
             elif text.startswith(('ENUS:', 'ENGB:')):
+                self.speech.speak([text.split(':', 1)[1]])
+            elif text.startswith('ACR-'):
                 self.speech.speak([text.split(':', 1)[1]])
             elif text.startswith('ROLE:'):
                 import controlTypes

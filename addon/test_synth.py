@@ -448,6 +448,26 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                             item = entry.compiled.sub(entry.replacement, item)
                     processed.append(item)
                 assert driver_module._parts(processed) == parts
+                # NVDA's default dictionary also splits CDs into C Ds. Keep
+                # the complete plural until the native engine receives it.
+                for lang, segment, camel in (("de-DE", False, True), ("de-DE", True, True),
+                                             ("en-US", False, True), ("en-US", True, False),
+                                             ("en-US", True, True)):
+                    driver._wordSegmentation, driver._camelCase = segment, camel
+                    for word in ("CDs", "DVDs", "IDs", "PDFs", "URLs", "PACs", "FAQs", "SMSs", "BlindCDs"):
+                        result = driver._protect_tags([LangChangeCommand(lang), word])
+                        assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == word
+                                   for item in result), (lang, word, result)
+                        processed = []
+                        for item in result:
+                            if isinstance(item, str):
+                                for entry in builtin:
+                                    item = entry.compiled.sub(entry.replacement, item)
+                            processed.append(item)
+                        actual = "".join(part.text for part in driver_module._parts(processed)
+                                         if isinstance(part, driver_module.EciText))
+                        assert actual.strip() == word, (lang, word, actual)
+                driver._wordSegmentation, driver._camelCase = True, True
                 # NVDA gives object names and roles as separate text items.
                 # It adds a separator to text items but not to SynthCommands.
                 # Protecting a complete dictionary word must retain that
