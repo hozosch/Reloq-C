@@ -383,6 +383,11 @@ static int wordseg_initialism_plural_spr(int language,const unsigned char *word,
     size_t stem_n=n-1;if(stem_n&&word[stem_n-1]=='e')--stem_n;
     if(stem_n<2||stem_n>16)return 0;
     for(size_t i=0;i<stem_n;++i)if(word[i]<'A'||word[i]>'Z')return 0;
+    /* German SMS has an unchanged plural (or colloquial SMSen); do not
+     * add the English sibilant plural syllable to SMSs or X-final stems.
+     * Keep the token intact for CamelCase and leave its pronunciation to
+     * the current voice. The English voices handle these spellings below. */
+    if(!english&&(word[stem_n-1]=='S'||word[stem_n-1]=='X'))return 0;
     /* English already pluralizes most letter names correctly. A final S or X
      * needs its own syllable, which the original engine currently loses. */
     if(english&&word[stem_n-1]!='S'&&word[stem_n-1]!='X')return 0;

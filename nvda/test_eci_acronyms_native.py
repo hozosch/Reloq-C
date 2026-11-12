@@ -4,7 +4,7 @@ from pathlib import Path
 import re
 from tempfile import TemporaryDirectory
 
-from _reloq_eci_direct import CAMEL_CASE, WORD_SEGMENTATION, DirectEciEngine, EciIndex
+from _reloq_eci_direct import CAMEL_CASE, WORD_SEGMENTATION, DirectEciEngine, EciIndex, EciText
 from test_eci_german_clock_native import render
 
 
@@ -91,10 +91,11 @@ def main():
     with TemporaryDirectory() as temporary:
         root = Path(temporary)
         for dialect, prefix, word in ((0x40000, 'DEU', 'CDs'),
+                                      (0x40000, 'DEU', 'SMSs'),
                                       (0x10000, 'ENU', 'SMSs'),
                                       (0x10001, 'ENG', 'SMSs')):
             folder = root / prefix
-            folder.mkdir()
+            folder.mkdir(exist_ok=True)
             (folder / (prefix + 'main.dic')).write_bytes((word + '\t`[.1tEst]\n').encode('ascii'))
             engine = DirectEciEngine(args.library.resolve(), dialect=dialect, encoding='utf8', native_voice=True)
             try:
@@ -106,6 +107,23 @@ def main():
                     checks += 1
             finally:
                 engine.close()
+    # English-style SMSs must not acquire the English or German synthetic
+    # plural syllable in any other native voice. The guarded input reaches
+    # the underlying language unchanged and is an independent reference.
+    for dialect in (0x20000, 0x20001, 0x30000, 0x30001, 0x40000,
+                    0x50000, 0x60000, 0x60001, 0x70000, 0x80000,
+                    0x90000, 0xa0000, 0x120000):
+        engine = DirectEciEngine(args.library.resolve(), dialect=dialect, encoding='utf8', native_voice=True)
+        try:
+            for word in ('SMSs', 'SOSes', 'FAXes'):
+                baseline = render(engine, [EciText(word, segmentation_guarded=True)])
+                for word_seg, camel in ((0, 0), (0, 1), (1, 0), (1, 1)):
+                    engine.set_parameter(WORD_SEGMENTATION, word_seg)
+                    engine.set_parameter(CAMEL_CASE, camel)
+                    assert render(engine, [word]) == baseline, (hex(dialect), word, word_seg, camel, 'unexpected plural')
+                    checks += 1
+        finally:
+            engine.close()
     print(f'Native acronym and CamelCase: {checks} language, option and source-index checks passed')
 
 

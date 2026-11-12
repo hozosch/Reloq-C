@@ -29,29 +29,25 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      # Only Python-side NVDA changes follow this known-good build. Reuse its
-      # tested binary, but reject any changes to its native inputs.
-      - uses: actions/download-artifact@v4
+      # The acronym pronunciation lives in the common C host. Rebuild that
+      # host rather than repackaging the previous candidate's DLL.
+      - uses: actions/cache/restore@v4
+        id: rules
         with:
-          name: acronym-nvda-candidate
-          run-id: 43286892988
-          github-token: ${{ github.token }}
-          path: native-base
-      - name: Restore the verified common Windows core
+          path: vendor/openevv61/build/windows-release
+          key: wordseg-windows-gcc14-provider-v1-2332aa876d9e729ffadd214fc6da8f2ce764a6f6b41a9ada6571cb8a23691846
+      - name: Rebuild the common Windows core
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          git diff --exit-code 87608e1c108735392a4885ac4d8a6b6be49ba5a4 HEAD -- src include eci vendor/openevv61
-          python - <<'PY'
-          import hashlib, json, zipfile
-          from pathlib import Path
-          with zipfile.ZipFile('native-base/reloq-c-synth-x64-1.4.1-dev1.nvda-addon') as archive:
-              source = json.loads(archive.read('doc/source.json'))
-              assert source['source_commit'] == '87608e1c108735392a4885ac4d8a6b6be49ba5a4'
-              dll = archive.read('synthDrivers/reloqC/eci.dll')
-          assert hashlib.sha256(dll).hexdigest() == '15a9d7e01ab271a571eed46bc25d90b0cc2d24809c483ad38fa8a55bd819c6d0'
-          Path('eci/eci.dll').write_bytes(dll)
-          PY
+          # The restored provider cache is valid only for unchanged inputs.
+          git diff --exit-code 87608e1c108735392a4885ac4d8a6b6be49ba5a4 HEAD -- vendor/openevv61 src/reloq_voice_filter.c include/reloq_voice_filter.h include/reloq_voice_controls.h include/reloq_inline_tags.h src/reloq_orthography.c include/reloq_orthography.h src/reloq_german_word_edges.c include/reloq_german_word_edges.h src/reloq_english_word_edges.c include/reloq_english_word_edges.h
+          if [ -f vendor/openevv61/build/windows-release/libreloq61.a ]; then
+            find vendor/openevv61/build/windows-release -type f -exec touch {} +
+            sleep 1
+            touch vendor/openevv61/src/delta/delta.c vendor/openevv61/lang/itit61/delta_rules_c17_itit61.c
+          fi
+          make -C eci -j2 eci.dll SHELL=C:/msys64/usr/bin/bash.exe PROVIDER_LTO=-flto=2 WINDOWS_CC=gcc WINDOWS_OBJDUMP=objdump
           python eci/verify_pe_exports.py eci/eci.dll --objdump objdump --header include/reloq_eci.h
       - uses: actions/download-artifact@v4
         with:
@@ -69,10 +65,10 @@ jobs:
           p = Path('addon/synth/manifest.ini')
           manifest = p.read_text(encoding='utf8')
           assert 'version = "1.4.0"' in manifest
-          p.write_text(manifest.replace('version = "1.4.0"', 'version = "1.4.1-dev3"'), encoding='utf8')
+          p.write_text(manifest.replace('version = "1.4.0"', 'version = "1.4.1-dev4"'), encoding='utf8')
           sys.path.insert(0, 'addon')
           from build_synth import build
-          build(Path('dist/reloq-c-synth-x64-1.4.1-dev3.nvda-addon'), Path('eci/eci.dll'), refresh_dictionaries=False)
+          build(Path('dist/reloq-c-synth-x64-1.4.1-dev4.nvda-addon'), Path('eci/eci.dll'), refresh_dictionaries=False)
           PY
       - name: Check native pronunciation and the NVDA adapter
         shell: pwsh
@@ -88,9 +84,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Existing word segmentation regression failed' }
           python -B addon/test_synth.py
           if ($LASTEXITCODE -ne 0) { throw 'NVDA speech processing regression failed' }
-          python -B addon/test_synth_native.py --library eci/eci.dll --addon dist/reloq-c-synth-x64-1.4.1-dev3.nvda-addon
+          python -B addon/test_synth_native.py --library eci/eci.dll --addon dist/reloq-c-synth-x64-1.4.1-dev4.nvda-addon
           if ($LASTEXITCODE -ne 0) { throw 'NVDA native integration failed' }
-          python -B addon/test_nvda_remote_loopback.py --library eci/eci.dll --addon dist/reloq-c-synth-x64-1.4.1-dev3.nvda-addon
+          python -B addon/test_nvda_remote_loopback.py --library eci/eci.dll --addon dist/reloq-c-synth-x64-1.4.1-dev4.nvda-addon
           if ($LASTEXITCODE -ne 0) { throw 'NVDA Remote loopback regression failed' }
       - name: Compile the SAPI adapter
         shell: bash
@@ -111,7 +107,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: acronym-nvda-candidate
-          path: dist/reloq-c-synth-x64-1.4.1-dev3.nvda-addon
+          path: dist/reloq-c-synth-x64-1.4.1-dev4.nvda-addon
           compression-level: 0
           retention-days: 14
   real-nvda:
@@ -141,7 +137,7 @@ jobs:
       - name: Check NVDA built-in dictionary and all option combinations
         shell: pwsh
         run: |
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1-dev3.nvda-addon --work segmentation-probe
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1-dev4.nvda-addon --work segmentation-probe
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA acronym or segmentation regression failed' }
       - uses: actions/upload-artifact@v4
         if: always()
@@ -178,7 +174,7 @@ jobs:
       - name: Check punctuation and Unicode settings in real NVDA
         shell: pwsh
         run: |
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1-dev3.nvda-addon --plugin addon/test_nvda_real_issue40_plugin.py --work boundaries-probe
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1-dev4.nvda-addon --plugin addon/test_nvda_real_issue40_plugin.py --work boundaries-probe
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA boundary regression failed' }
       - uses: actions/upload-artifact@v4
         if: always()
