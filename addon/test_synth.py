@@ -1027,6 +1027,28 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         finally:
                             fresh.terminate()
                     print("NVDA acoustic timing: defaults, legacy migration and save/reload passed")
+                    # NVDA may restore a non-default saved clock mask before
+                    # wx.App exists. wx.CallAfter would raise at that point;
+                    # loading the synthesizer must still succeed.
+                    no_app = types.ModuleType("wx")
+                    no_app.GetTopLevelWindows = lambda: []
+                    no_app.GetApp = lambda: None
+                    def unexpected_call_after(*_args, **_kwargs):
+                        raise AssertionError("wx.CallAfter requires an active app")
+                    no_app.CallAfter = unexpected_call_after
+                    early_profile = {"speech": {driver.name: {"language": "de_DE",
+                                      "voice": "1", "_acousticClockMask": 0}},
+                                     "audio": {"outputDevice": "default"}}
+                    config_api.conf = configuration_manager(early_profile).rootSection
+                    with mock.patch.dict(sys.modules, {"wx": no_app}):
+                        fresh = driver_module.SynthDriver()
+                        try:
+                            fresh.initSettings()
+                            assert fresh._acousticClockMask == 0
+                            assert fresh.language == "de_DE"
+                        finally:
+                            fresh.terminate()
+                    print("NVDA startup: saved timing mask works before wx.App exists")
                     profile = {"speech": {}, "audio": {"outputDevice": "default"}}
                     config_api.conf = configuration_manager(profile).rootSection
                     with mock.patch.object(driver_module.languageHandler, "getLanguage", return_value="de_DE"):

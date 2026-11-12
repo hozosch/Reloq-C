@@ -1058,9 +1058,12 @@ class SynthDriver(BaseSynthDriver):
         # the selected language changes or the ring changes this setting.
         try:
             import wx
-            if not hasattr(wx, "GetTopLevelWindows"):
+            # NVDA can restore a saved mask while the synthesizer is being
+            # initialized before its wx application exists. There can be no
+            # settings panel to refresh at that point.
+            if not hasattr(wx, "GetTopLevelWindows") or wx.GetApp() is None:
                 return
-        except ImportError:
+        except (ImportError, AttributeError, RuntimeError):
             return
 
         def refresh():
@@ -1073,7 +1076,12 @@ class SynthDriver(BaseSynthDriver):
                         checkbox.SetValue(self.originalAcousticClock)
             except (ImportError, RuntimeError):
                 log.debugWarning("Could not refresh acoustic timing control", exc_info=True)
-        wx.CallAfter(refresh)
+        try:
+            wx.CallAfter(refresh)
+        except (AttributeError, RuntimeError):
+            # The application can also disappear between the check and the
+            # call during shutdown. A UI refresh must not break synthesis.
+            log.debugWarning("Could not schedule acoustic timing control refresh", exc_info=True)
 
     def _get_voiceTags(self):
         return self._voiceTags
