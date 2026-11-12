@@ -90,8 +90,18 @@ medial, and final S, including the still-available Castilian T. Its first two
 test items were approximately 31 and 36 ms shorter than the Mexican reference
 for the same voice and rate. These are measurements, not a listener's
 validation and not evidence that running text or other contexts work. The
-first shortening also changed the /tʃ/ affricate; the patch now tries to
-distinguish a standalone S from that affricate and needs separate validation.
+first shortening also changed the /tʃ/ affricate. A later private probe avoids
+shortening the S portion immediately following /t/: initial, medial and final
+/tʃ/, the Castilian /θ/, and the control words *hola* and *casa* remain
+byte-identical at three sample rates, two speeds and two voice genders. This adjacency
+heuristic is not yet a complete distinction between affricates and every
+possible /t/ + /ʃ/ sequence, and must not be shipped unchanged.
+The first w target change affected an onset in *puent*, but had no effect on
+*auca*, *pauto* or *cudiau*. The AU patch now tries the other native w target
+rule instead. In the private binary those three AU words change their PCM
+without changing phones or duration; *puent*, *hola*, *casa* and *mocet*
+remain byte-identical at 11.025, 16 and 48 kHz, two speeds and two voice
+genders. The candidate still needs a listening test and safe language scoping.
 The builder prints each private library path. Given those two paths and the
 unmodified baseline, `native_listening.py --baseline BASELINE --native-sh
 SH_LIBRARY --rounded-au AU_LIBRARY --wav FILE` makes the labelled comparison.

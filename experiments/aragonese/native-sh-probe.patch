@@ -20,7 +20,7 @@
 +    }
 --- a/vendor/openevv61/lang/eses61/delta_rules_c31_eses61.c
 +++ b/vendor/openevv61/lang/eses61/delta_rules_c31_eses61.c
-@@ -2840,0 +2841,18 @@
+@@ -2840,0 +2841,22 @@
 +/* Disposable probe: distinguish /S/ from the /S/ component of /C/. */
 +static int aragonese_probe_is_standalone_sh(void *state,int32_t token_ref)
 +{
@@ -34,12 +34,16 @@
 +    const uint8_t phone=16;
 +    lpta_loadp(d,EVV_AT(const delta_token *,token_ref));
 +    int found=!setscan_r(d,4) && !test_string_s(d,4,1,&phone);
++    const uint8_t stop=2; /* /t/ preceding the fricative in an affricate */
++    lpta_loadp(d,EVV_AT(const delta_token *,token_ref));
++    int affricate=!setscan_l(d,4) && !test_string_s(d,4,1,&stop);
++    found=found&&!affricate;
 +    d->lpta=left_saved;d->rpta=right_saved;
 +    memcpy(&v->scan_ptr,scan,sizeof scan);v->compared_equal=compared;
 +    v->fence_count=fences;v->testing=testing;
 +    return found;
 +}
-@@ -2891 +2909,2 @@
+@@ -2891 +2913,2 @@
 -    STATE(int32_t, f20) = ((int32_t)reloq_local_196.i32);
 +    STATE(int32_t, f20) = aragonese_probe_is_standalone_sh(state,STATE_AT(w60,-4)) ?
 +        (int32_t)((int64_t)reloq_local_196.i32*4/5) : (int32_t)reloq_local_196.i32;
