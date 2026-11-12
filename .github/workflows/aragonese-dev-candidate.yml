@@ -159,6 +159,7 @@ jobs:
       - run: sdkmanager 'platforms;android-35'
       - name: Test Android locale, settings and dictionaries
         run: |
+          python3 android/test_translations.py
           python3 android/test_settings.py --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar" --settings-only
           make -C eci -j2 libreloq_eci.so PROVIDER_LTO=-flto=2
           python3 android/test_native_transport.py --java-home "$JAVA_HOME"
