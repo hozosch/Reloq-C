@@ -500,6 +500,13 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert not any(isinstance(item, driver_module.NativeDictionaryWord)
                                for item in driver._protect_tags(["CDs"]))
                 speech_dicts.dictionaries["builtin"] = builtin
+                custom = types.SimpleNamespace(pattern="C Ds", replacement="Discs", type=0,
+                                               compiled=re.compile("C Ds"))
+                speech_dicts.dictionaries["builtin"] = builtin + [custom]
+                assert not driver._nvda_builtin_splits_acronym("CDs")
+                assert not any(isinstance(item, driver_module.NativeDictionaryWord)
+                               for item in driver._protect_tags(["CDs"]))
+                speech_dicts.dictionaries["builtin"] = builtin
                 # An add-on speech dictionary after builtin must remain in
                 # NVDA's pipeline even when it only matches the split form.
                 after = types.SimpleNamespace(pattern="C Ds", replacement="Discs", type=0,

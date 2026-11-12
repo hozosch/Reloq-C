@@ -486,6 +486,16 @@ class SynthDriver(BaseSynthDriver):
                     return False
             if not builtin:
                 return False
+            # A customized built-in file can contain other rules that depend
+            # on this word or its surrounding context. Bypass nothing unless
+            # every entry is one of the stock case or digit separators.
+            stock_rules = {r"(?=[A-Z])(?<=[a-z])", r"(?=[A-Z][a-z])(?<=[A-Z])",
+                           r"(?=\d)(?<=[^\W\d])"}
+            if any(getattr(entry, "pattern", None) not in stock_rules or
+                   getattr(entry, "replacement", None) != " " or
+                   getattr(entry, "type", None) != 1 or
+                   not getattr(entry, "caseSensitive", True) for entry in builtin):
+                return False
             rule = r"(?=[A-Z][a-z])(?<=[A-Z])"
             return any(getattr(entry, "pattern", None) == rule and
                        getattr(entry, "replacement", None) == " " and
