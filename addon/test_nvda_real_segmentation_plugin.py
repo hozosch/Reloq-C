@@ -135,7 +135,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                       'guarded':getattr(item,'segmentation_guarded',False)} for item in parts])
                 return original(parts)
             self.synth._transport.submit = submit
-            self.synth.configure_dictionaries([], True, lambda error, details: wx.CallAfter(self.ready, error))
+            own_native = RESULT.parent / 'own-native-DEU.dic'
+            own_native.write_bytes(b'TestEintrag\tHaus\n')
+            source = reloq.DictionarySource(str(own_native.resolve()), 0x40000, 0)
+            self.synth.configure_dictionaries([source], True, lambda error, details: wx.CallAfter(self.ready, error))
         except BaseException:
             self.fail()
 
@@ -145,6 +148,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if self.synth._wordseg_keys is None: raise RuntimeError('dictionary keys not ready')
             if 'YouTube' not in self.synth._wordseg_keys[0x40000]:
                 raise RuntimeError('German community dictionary fixture missing')
+            if 'TestEintrag' not in self.synth._wordseg_keys[0x40000]:
+                raise RuntimeError('Own native dictionary fixture missing')
             english_keys = self.synth._wordseg_keys[0x10000]
             # Community dictionaries are updated independently. Do not assume
             # they lack real words: if a word has a dictionary entry, that
@@ -173,6 +178,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                            for text in texts
                            for word,camel in ((False,False),(True,False),(False,True),(True,True))]
             self.cases += [(word,camel,'PERSONAL:ABCs')
+                           for word,camel in ((False,False),(True,False),(False,True),(True,True))]
+            self.cases += [(word,camel,'NATIVE:' + source) for source in ('TestEintrag', 'reference')
                            for word,camel in ((False,False),(True,False),(False,True),(True,True))]
             self.next()
         except BaseException:
@@ -211,8 +218,21 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                 raise AssertionError('NVDA speech viewer lost the original word: ' + repr(row))
                         if row['input'] == 'PERSONAL:ABCs' and 'Ersatz' not in combined:
                             raise AssertionError('Personal NVDA dictionary did not take precedence: ' + repr(row))
+                        if row['input'] == 'PERSONAL:ABCs' and not any('ABCs' in text for text in row['viewer']):
+                            raise AssertionError('NVDA speech viewer lost the personal-dictionary text: ' + repr(row))
+                        if row['input'] == 'NATIVE:TestEintrag' and 'TestEintrag' not in combined:
+                            raise AssertionError('Own native dictionary key was split: ' + repr(row))
+                        if row['input'] == 'NATIVE:TestEintrag' and not any('TestEintrag' in text for text in row['viewer']):
+                            raise AssertionError('NVDA speech viewer lost the native-dictionary text: ' + repr(row))
                         if row['input'].startswith('YouTube ') and 'YouTube' not in combined:
                             raise AssertionError('Native dictionary key was split: ' + repr(row))
+                    for word, camel in ((False,False),(True,False),(False,True),(True,True)):
+                        native = next(row for row in self.results if row['input'] == 'NATIVE:TestEintrag'
+                                      and (row['word'],row['camel']) == (word,camel))
+                        reference = next(row for row in self.results if row['input'] == 'NATIVE:reference'
+                                         and (row['word'],row['camel']) == (word,camel))
+                        if native['pcm_sha256'] != reference['pcm_sha256']:
+                            raise AssertionError('Own native dictionary replacement was not applied: ' + repr(native))
                     plain = [row for row in self.results if row['input'] == 'DICT:plain']
                     if len(plain) != 2 or plain[0]['pcm_sha256'] != plain[1]['pcm_sha256']:
                         raise AssertionError('personal dictionary changed unrelated NVDA speech: ' + repr(plain))
@@ -253,6 +273,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 self.speech.speak([text.split(':', 1)[1]])
             elif text.startswith('PERSONAL:'):
                 self.speech.speak([text.split(':', 1)[1]])
+            elif text.startswith('NATIVE:'):
+                self.speech.speak(['Haus' if text == 'NATIVE:reference' else text.split(':', 1)[1]])
             elif text.startswith('ROLE:'):
                 import controlTypes
                 role = controlTypes.Role.WINDOW if text == 'ROLE:window' else controlTypes.Role.DOCUMENT
