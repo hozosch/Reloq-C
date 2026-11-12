@@ -13,6 +13,7 @@ python3 experiments/aragonese/inventory.py --library eci/libreloq_eci.so
 # After building the ordinary Linux provider, make separate disposable probes:
 python3 experiments/aragonese/build_native_probe.py sh
 python3 experiments/aragonese/build_native_probe.py au
+python3 experiments/aragonese/build_native_probe.py refine
 ```
 
 The first experiment maps Aragonese **ny** to the Spanish spelling **ñ**,
@@ -105,6 +106,27 @@ genders. The candidate still needs a listening test and safe language scoping.
 The builder prints each private library path. Given those two paths and the
 unmodified baseline, `native_listening.py --baseline BASELINE --native-sh
 SH_LIBRARY --rounded-au AU_LIBRARY --wav FILE` makes the labelled comparison.
+
+The listener found the native 80% /ʃ/ longer than the earlier listening
+sketch and cautioned that the stronger AU glide could sound disyllabic. A further
+private `refine` build combines the patches and allows serial audition of
+multiple values in the same binary. It scales the native /ʃ/ duration to 80%,
+65% or 50%, and interpolates the AU target change at 0%, 40%, 65% or 100%.
+The 80% /ʃ/ and 100% AU settings reproduce the earlier isolated candidates;
+they are references, not approved production settings. Environment variables
+used by this throwaway binary are not an application API, and their controls
+are process-wide. Tests and rendering must run serially. To verify and compare:
+
+```
+python3 experiments/aragonese/test_refinement_probe.py --baseline BASELINE --previous-sh SH_LIBRARY --previous-au AU_LIBRARY --refined REFINED_LIBRARY
+python3 experiments/aragonese/refinement_listening.py --baseline BASELINE --refined REFINED_LIBRARY --wav FILE
+```
+
+The shorter variants retain the same S phone, and the AU variants retain the
+same phone sequence and total duration. Neither property proves that the AU
+will be perceived as one syllable; that remains a listening question. The
+limited /tʃ/ heuristic and the lack of language-specific scoping still prevent
+using these temporary patches as a production Aragonese voice.
 
 `phoneme_probe.py` now also experiments with the latent final t rule on the
 Castilian phoneme output of an isolated word. It removes that sound after n,

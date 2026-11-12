@@ -7,6 +7,7 @@ binary are never edited. Build the ordinary Linux engine first.
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -15,6 +16,53 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[2]
 PROVIDER = ROOT / 'vendor' / 'openevv61'
 HERE = Path(__file__).resolve().parent
+
+PROBE_PERCENT_HELPER = '''
+/* Private listening builds only; never include this in a real language. */
+static int aragonese_probe_percent(const char *name, int fallback)
+{
+    const char *text = getenv(name);
+    char *end;
+    long value;
+    if (!text || !*text) return fallback;
+    value = strtol(text, &end, 10);
+    if (*end) return fallback;
+    if (value < 0) return 0;
+    if (value > 100) return 100;
+    return (int)value;
+}
+'''
+
+
+def replace_once(text: str, before: str, after: str) -> str:
+    if text.count(before) != 1:
+        raise ValueError('Experimental patch target is missing or ambiguous')
+    return text.replace(before, after, 1)
+
+
+def enable_refinement(source: Path) -> None:
+    """Parameterize the two private patches without modifying the checkout."""
+    text = source.read_text(encoding='utf8')
+    if source.name.endswith('c31_eses61.c'):
+        text = replace_once(text, 'reloq_local_196.i32*4/5',
+                            'reloq_local_196.i32*aragonese_probe_percent('
+                            '"RELOQ_ARAGON_PROBE_SH_PERCENT",80)/100')
+    elif source.name.endswith('c30_eses61.c'):
+        old = ('    if(STATE(int16_t,s448)>300)STATE(int16_t,s448)=300;\n'
+               '    if(STATE(int16_t,s450)>750)STATE(int16_t,s450)=750;')
+        new = '''    {
+        int amount = aragonese_probe_percent("RELOQ_ARAGON_PROBE_AU_PERCENT",100);
+        if(STATE(int16_t,s448)>300)
+            STATE(int16_t,s448) -= (STATE(int16_t,s448)-300)*amount/100;
+        if(STATE(int16_t,s450)>750)
+            STATE(int16_t,s450) -= (STATE(int16_t,s450)-750)*amount/100;
+    }'''
+        text = replace_once(text, old, new)
+    else:
+        return
+    text = replace_once(text, '#include <string.h>',
+                        '#include <string.h>\n#include <stdlib.h>\n' + PROBE_PERCENT_HELPER)
+    source.write_text(text, encoding='utf8')
 
 
 def split_patches(source: str):
@@ -48,18 +96,28 @@ def host_objects():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('kind', choices=('sh', 'au'), help='sh = admitted/shortened S; au = rounded glide')
+    parser.add_argument('kind', choices=('sh', 'au', 'refine'),
+                        help='sh = shortened S; au = rounded glide; refine = variable listening probes')
     parser.add_argument('--dry-run', action='store_true', help='prepare and verify patches without compiling')
+    parser.add_argument('--work-dir', type=Path, help='new private directory for the build')
     args = parser.parse_args()
-    work = Path(tempfile.mkdtemp(prefix='reloq-aragonese-probe-'))
-    patch_file = HERE / ('native-sh-probe.patch' if args.kind == 'sh' else 'native-au-probe.patch')
+    if args.work_dir:
+        work = args.work_dir.resolve()
+        work.mkdir(parents=True, exist_ok=False)
+    else:
+        work = Path(tempfile.mkdtemp(prefix='reloq-aragonese-probe-'))
+    patch_files = ([HERE / 'native-sh-probe.patch', HERE / 'native-au-probe.patch']
+                   if args.kind == 'refine' else [HERE / f'native-{args.kind}-probe.patch'])
     modified = []
-    for relative, patch_text in split_patches(patch_file.read_text(encoding='utf8')):
-        original = ROOT / relative
-        destination = work / original.name
-        subprocess.run(['patch', '--silent', '-o', str(destination), str(original)],
-                       input=patch_text, text=True, check=True)
-        modified.append(destination)
+    for patch_file in patch_files:
+        for relative, patch_text in split_patches(patch_file.read_text(encoding='utf8')):
+            original = ROOT / relative
+            destination = work / original.name
+            subprocess.run(['patch', '--silent', '-o', str(destination), str(original)],
+                           input=patch_text, text=True, check=True)
+            if args.kind == 'refine':
+                enable_refinement(destination)
+            modified.append(destination)
     if args.dry_run:
         print(f'Prepared {len(modified)} isolated source files in {work}')
         return
@@ -79,6 +137,7 @@ def main():
              '-DEVV_ARENA=1', '-DEVV_NO_BYTECODE', '-DEVV_ROM_JAJP', '-DRELOQ61_PARAMETERS_ONLY=1', '-Os']
     compiled = []
     for source in modified:
+        print('Compiling', source.name, flush=True)
         obj = work / (source.stem + '.o')
         subprocess.run(['cc', *flags, *['-I' + p for p in dirs], '-c', str(source), '-o', str(obj)],
                        cwd=PROVIDER, check=True)
@@ -87,9 +146,10 @@ def main():
     shutil.copyfile(parent, archive)
     subprocess.run(['gcc-ar', 'r', str(archive), *map(str, compiled)], check=True)
     library = work / 'libreloq_eci.so'
+    print('Linking experimental library; this can take several minutes', flush=True)
     subprocess.run(['cc', '-O3', '-flto=4', '-fno-strict-aliasing', '-ffp-contract=off', '-shared',
                     *map(str, objects), str(archive), '-pthread', '-Wl,--gc-sections,--no-undefined',
-                    '-lm', '-o', str(library)], check=True)
+                    '-lm', '-o', str(library)], check=True, env={**os.environ, 'TMPDIR': str(work)})
     print('Experimental library:', library)
 
 
