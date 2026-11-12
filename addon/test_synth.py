@@ -234,7 +234,11 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                     value = handler(value)
                 return value
 
-        fake_module("speech.extensions", filter_speechSequence=Filter())
+            def notify(self, **kwargs):
+                for handler in self.handlers[:]:
+                    handler(**kwargs)
+
+        fake_module("speech.extensions", filter_speechSequence=Filter(), pre_speech=Filter())
         fake_module("speech.commands", IndexCommand=IndexCommand,
                     BreakCommand=BreakCommand, PhonemeCommand=PhonemeCommand,
                     CharacterModeCommand=CharacterModeCommand,
@@ -430,7 +434,8 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert result[3].lang == "en-US" and result[4] == "nvda"
                 # Keep mixed-case spelling intact until the shared C core sees it.
                 builtin = [types.SimpleNamespace(pattern=pattern, compiled=re.compile(pattern), replacement=" ", type=1)
-                           for pattern in (r"(?=[A-Z])(?<=[a-z])", r"(?=[A-Z][a-z])(?<=[A-Z])")]
+                           for pattern in (r"(?=[A-Z])(?<=[a-z])", r"(?=[A-Z][a-z])(?<=[A-Z])",
+                                           r"(?=\d)(?<=[^\W\d])")]
                 speech_dicts = fake_module("speechDictHandler", dictionaries={"builtin": builtin, "default": []})
                 driver._wordseg_keys = {0x40000: frozenset({"meinwort"}), 0x10000: frozenset()}
                 driver._camelCase = True
@@ -448,14 +453,14 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                             item = entry.compiled.sub(entry.replacement, item)
                     processed.append(item)
                 assert driver_module._parts(processed) == parts
-                # Protect stock builtin splits only while a relevant
-                # segmentation setting is enabled, and only in this driver.
-                for lang, segment, camel in (("de-DE", False, True),
+                # Recognized acronyms are protected across all switch
+                # combinations, while other CamelCase requires its option.
+                for lang, segment, camel in (("de-DE", False, False), ("de-DE", False, True),
                                              ("de-DE", True, True),
-                                             ("en-US", False, True), ("en-US", True, False),
+                                             ("en-US", False, False), ("en-US", False, True), ("en-US", True, False),
                                              ("en-US", True, True)):
                     driver._wordSegmentation, driver._camelCase = segment, camel
-                    words = ("CDs", "DVDs", "IDs", "PDFs", "URLs", "PACs", "FAQs", "SMSs")
+                    words = ("CDs", "DVDs", "IDs", "PDFs", "URLs", "PACs", "FAQs", "SMSs", "MP3", "CDs3")
                     if camel or (segment and lang == "en-US"):
                         words += ("BlindCDs",)
                     for word in words:
@@ -489,11 +494,35 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 driver._wordseg_keys = None
                 driver._wordSegmentation = driver._camelCase = False
                 result = driver._protect_tags(["CDs"])
-                assert result == ["CDs"], result
+                assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "CDs"
+                           for item in result), result
                 assert driver._protect_tags(["normal text"]) == ["normal text"]
                 driver._wordseg_keys = {0x40000: frozenset({"meinwort"}), 0x10000: frozenset()}
-                assert driver._protect_tags(["CDs"]) == ["CDs"]
+                assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "CDs"
+                           for item in driver._protect_tags(["CDs"]))
                 assert builtin[1].compiled.sub(builtin[1].replacement, "CDs") == "C Ds"
+                # The speech viewer receives original strings, and callers'
+                # lists remain unchanged when late protection is applied.
+                extensions = sys.modules["speech.extensions"]
+                original_sequence = ["CDs und Text"]
+                def copy_as_plain_list(sequence): return list(sequence)
+                extensions.filter_speechSequence.register(copy_as_plain_list)
+                prepared = extensions.filter_speechSequence.apply(original_sequence)
+                assert prepared is not original_sequence
+                viewer_text = ''.join(item for item in prepared if isinstance(item, str))
+                extensions.pre_speech.notify(speechSequence=prepared, symbolLevel=None, priority=0)
+                extensions.filter_speechSequence.unregister(copy_as_plain_list)
+                assert original_sequence == ["CDs und Text"] and viewer_text == "CDs und Text"
+                assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "CDs"
+                           for item in prepared), prepared
+                foreign = ["CDs"]
+                extensions.pre_speech.notify(speechSequence=foreign, symbolLevel=None, priority=0)
+                assert foreign == ["CDs"], foreign
+                # ECI dictionary entries with a stock split are also kept
+                # intact without enabling either segmentation option.
+                driver._wordseg_keys = {0x40000: frozenset({"meinwort"}), 0x10000: frozenset()}
+                assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "MeinWort"
+                           for item in driver._protect_tags(["MeinWort"]))
                 driver._camelCase = True
                 speech_dicts.dictionaries["builtin"] = []
                 assert not driver._nvda_builtin_splits_acronym("CDs")
@@ -1200,6 +1229,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 if inspect_adapter is not None:
                     inspect_adapter(driver_module)
                 assert not sys.modules["speech.extensions"].filter_speechSequence.handlers
+                assert not sys.modules["speech.extensions"].pre_speech.handlers
         finally:
             sys.path.remove(str(path))
             for name in tuple(sys.modules):

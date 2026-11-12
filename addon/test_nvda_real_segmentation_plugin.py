@@ -51,6 +51,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             from speechDictHandler.types import SpeechDictEntry
             import synthDriverHandler
             import synthDrivers.reloqC as reloq
+            import speechViewer
+            self.viewer_records = []
+            speechViewer.isActive = True
+            speechViewer.appendSpeechSequence = lambda seq: self.viewer_records.append(
+                ''.join(item for item in seq if isinstance(item, str)))
             self.speech = speech
             nvwave.WavePlayer = self.player
             reloq.SynthDriver._make_player = staticmethod(self.player)
@@ -60,6 +65,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             temporary = next(d for d in speechDictHandler.listAvailableSpeechDictDefinitions()
                              if getattr(d.source, 'value', d.source) == 'temp')
             temporary.dictionary.append(SpeechDictEntry('reloqtest', 'swapfile'))
+            temporary.dictionary.append(SpeechDictEntry('ABCs', 'Ersatz'))
             source = RESULT.parent / 'nvda-import-fixture.dic'
             source.write_bytes(('# Real NVDA speech dictionary\r\n'
                 'probenull\tErsatz\t0\t0\r\n'
@@ -162,9 +168,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.cases += [(word,False,text) for text in ('IMPORT:plain', 'IMPORT:digits', 'IMPORT:regex', 'IMPORT:legacy')
                            for word in (False,True)]
             self.cases += [(word,camel,'ACR-' + lang + ':' + text)
-                           for lang, texts in (('EN', ('CDs', 'SMSs', 'BlindRadio', 'BlindRSS')),
+                           for lang, texts in (('EN', ('CDs', 'SMSs', 'MP3', 'BlindRadio', 'BlindRSS')),
                                                ('DE', ('CDs', 'SMSs', 'BlindRadio')))
                            for text in texts
+                           for word,camel in ((False,False),(True,False),(False,True),(True,True))]
+            self.cases += [(word,camel,'PERSONAL:ABCs')
                            for word,camel in ((False,False),(True,False),(False,True),(True,True))]
             self.next()
         except BaseException:
@@ -195,10 +203,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                 raise AssertionError('NVDA import changed a replacement or included options: ' + repr(row))
                         if row['input'].startswith('ACR-'):
                             original = row['input'].split(':', 1)[1]
-                            active = (row['camel'] or
+                            active = (original in ('CDs', 'SMSs', 'MP3') or row['camel'] or
                                       (row['word'] and row['input'].startswith('ACR-EN:')))
                             if active and original not in combined:
                                 raise AssertionError('NVDA builtin dictionary split a protected acronym or case word: ' + repr(row))
+                            if not any(original in text for text in row['viewer']):
+                                raise AssertionError('NVDA speech viewer lost the original word: ' + repr(row))
+                        if row['input'] == 'PERSONAL:ABCs' and 'Ersatz' not in combined:
+                            raise AssertionError('Personal NVDA dictionary did not take precedence: ' + repr(row))
+                        if row['input'].startswith('YouTube ') and 'YouTube' not in combined:
+                            raise AssertionError('Native dictionary key was split: ' + repr(row))
                     plain = [row for row in self.results if row['input'] == 'DICT:plain']
                     if len(plain) != 2 or plain[0]['pcm_sha256'] != plain[1]['pcm_sha256']:
                         raise AssertionError('personal dictionary changed unrelated NVDA speech: ' + repr(plain))
@@ -223,6 +237,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.synth.language = ('en_GB' if text.startswith('ENGB:') else
                                    'en_US' if text.startswith(('ENUS:', 'DICT:', 'COMMUNITY:', 'ACR-EN:')) else 'de_DE')
             self.records.clear()
+            self.viewer_records.clear()
             self.before = [(p,len(p.chunks)) for p in self.players]
             if text.startswith('IMPORT:'):
                 original = {'IMPORT:plain':'probenull', 'IMPORT:digits':'probeganz',
@@ -235,6 +250,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             elif text.startswith(('ENUS:', 'ENGB:')):
                 self.speech.speak([text.split(':', 1)[1]])
             elif text.startswith('ACR-'):
+                self.speech.speak([text.split(':', 1)[1]])
+            elif text.startswith('PERSONAL:'):
                 self.speech.speak([text.split(':', 1)[1]])
             elif text.startswith('ROLE:'):
                 import controlTypes
@@ -256,6 +273,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if not self.records or not audio:
                 raise RuntimeError('real NVDA did not produce native speech: ' + repr(self.records))
             self.results.append({'word':word,'camel':camel,'input':text,'submissions':self.records[:],
+                                 'viewer':self.viewer_records[:],
                                  'pcm_bytes':len(audio),'pcm_sha256':hashlib.sha256(audio).hexdigest()})
             self.case += 1
             self.next()

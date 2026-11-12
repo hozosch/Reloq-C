@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'nvda'))
-from _reloq_wordseg import (WordSegmenter, dictionary_keys, split_camel,
+from _reloq_wordseg import (WordSegmenter, dictionary_keys, split_camel, builtin_acronym,
                             protected_native_spans, native_compound_spans, uppercase_candidates)
 
 
@@ -74,6 +74,10 @@ def main():
     for source, expected in samples.items():
         assert split_camel(source) == expected, (source, split_camel(source))
         assert split_camel(source, {source.casefold()}) == source
+    for word in ('CDs', 'SMSs', 'PACs', 'MP3', 'R2D2', 'CDs3'):
+        assert builtin_acronym(word), word
+    for word in ('CD', 'BlindRadio', 'iPhone', 'Version2', 'Wort'):
+        assert not builtin_acronym(word), word
     print('Word segmentation: case independence, multilingual camel case, and dictionary precedence passed')
 
 

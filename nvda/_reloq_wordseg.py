@@ -269,6 +269,22 @@ def plural_acronym(word):
     return False
 
 
+def builtin_acronym(word):
+    """Recognize initialism plurals and uppercase initialisms with digits.
+
+    Mixed-case names such as iPhone remain ordinary CamelCase unless a
+    pronunciation dictionary explicitly identifies them.
+    """
+    if plural_acronym(word):
+        return True
+    head = word.rstrip('0123456789')
+    if len(head) != len(word) and plural_acronym(head):
+        return True
+    letters = [c for c in word if not unicodedata.category(c).startswith("M")]
+    return (sum(_upper(c) for c in letters) >= 2 and any(c.isdecimal() for c in letters)
+            and all(_upper(c) or c.isdecimal() for c in letters))
+
+
 def camel_word(word):
     """Split lower/upper and acronym/word boundaries without changing case."""
     if plural_acronym(word):

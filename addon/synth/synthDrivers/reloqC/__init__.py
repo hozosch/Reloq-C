@@ -25,7 +25,7 @@ import languageHandler
 from logHandler import log
 import nvwave
 from speech.commands import (BreakCommand, CharacterModeCommand, IndexCommand, LangChangeCommand,
-                             PhonemeCommand, PitchCommand, RateCommand, VolumeCommand)
+                             PhonemeCommand, PitchCommand, RateCommand, SynthCommand, VolumeCommand)
 from speech.extensions import filter_speechSequence
 from synthDriverHandler import (SynthDriver as BaseSynthDriver, VoiceInfo, LanguageInfo,
                                 synthDoneSpeaking, synthIndexReached)
@@ -40,7 +40,7 @@ from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionarie
 from ._reloq_nvda_dicts import ImportedDictionaries, migrate_nvda_sources
 from ._reloq_wordseg import (WordSegmenter, dictionary_keys, split_camel, protected_native_spans,
                              transform_unmatched, native_compound_spans, uppercase_candidates, word_runs, camel_word,
-                             plural_acronym)
+                             builtin_acronym)
 from ._reloq_languages import (GERMAN, LANGUAGES, LANGUAGE_ALIASES, LANGUAGE_DISPLAY_ORDER, LanguageEngine, language_for,
                                ACOUSTIC_CLOCK_BITS, ACOUSTIC_CLOCK_DEFAULT, ACOUSTIC_CLOCK_MAX)
 from ._speech_tags import EciTagCommand, SegmentationGuard, NativeDictionaryWord, CapitalWordCommand, protect_sequence, register_remote_commands
@@ -50,6 +50,13 @@ DLL = Path(__file__).with_name("eci.dll")
 # The last preset uses the user's independent saved values.
 EQ_PRESETS = ((0, 0, 0), (4, 0, -1), (-1, 0, 4), (0, -1, -4))
 EQ_FILTER_FREQUENCIES = (125, 500, 1200, 3000, 6000)
+# Fast precheck only. The actual expressions and whether it is safe to skip
+# them are read from NVDA before any candidate is protected.
+_BUILTIN_BOUNDARY = re.compile(r"(?=[A-Z])(?<=[a-z])|(?=[A-Z][a-z])(?<=[A-Z])|(?=\d)(?<=[^\W\d])")
+
+
+class _SpeechPreparationMarker(SynthCommand):
+    """Identify our private sequence even if a later filter copies it."""
 
 
 def _native_speed(percent, boost=False):
@@ -319,6 +326,7 @@ class SynthDriver(BaseSynthDriver):
         self._camelCase = False
         self._applied_segmentation = (False, False)
         self._wordseg_keys = None
+        self._speech_preparation_marker = _SpeechPreparationMarker()
         self._word_segmenters = {}
         import globalVars
         self._imported_dictionaries = ImportedDictionaries(globalVars.appArgs.configPath)
@@ -366,13 +374,39 @@ class SynthDriver(BaseSynthDriver):
                 sources, self._communityDictionaries, initial_update=True))
         else:
             self._dictionary_request(lambda: manager.set_enabled(self._communityDictionaries))
-        filter_speechSequence.register(self._protect_tags)
+        filter_speechSequence.register(self._prepare_speech_sequence)
+        from speech.extensions import pre_speech
+        pre_speech.register(self._protect_before_speech)
         try:
             source = json.loads((DLL.parents[2] / "doc/source.json").read_text(encoding="utf-8"))
             revision = source["source_commit"]
         except (OSError, ValueError, KeyError, TypeError):
             revision = "local"
         log.info("Eloquence C loaded driver %s, source %s, DLL %s", __file__, revision, DLL)
+
+    def _prepare_speech_sequence(self, sequence):
+        if self._terminating:
+            return sequence
+        from synthDriverHandler import getSynth
+        if getSynth() is not self:
+            return sequence
+        needs_processing = (self._voiceTags or self._wordSegmentation or self._camelCase or
+                            self._imported_dictionaries.records or
+                            any(isinstance(item, str) and _BUILTIN_BOUNDARY.search(item) for item in sequence))
+        if not needs_processing:
+            return sequence
+        # A marker survives another filter's normal list copy, while keeping
+        # the caller's own list separate from our later in-place edit.
+        return [self._speech_preparation_marker, *sequence]
+
+    def _protect_before_speech(self, speechSequence, **_kwargs):
+        # NVDA shows the private copy in the speech viewer before this event.
+        # Never modify a list supplied by an application or another filter.
+        marker = self._speech_preparation_marker
+        if not isinstance(speechSequence, list) or not any(item is marker for item in speechSequence):
+            return
+        prepared = [item for item in speechSequence if item is not marker]
+        speechSequence[:] = self._protect_tags(prepared)
 
     def _protect_tags(self, sequence):
         # The extension runs before NVDA replaces the grave accent by its
@@ -386,8 +420,6 @@ class SynthDriver(BaseSynthDriver):
         sequence = protect_sequence(sequence) if self._voiceTags else sequence
         import globalVars
         if not getattr(globalVars, "speechDictionaryProcessing", True):
-            return sequence
-        if not (self._wordSegmentation or self._camelCase or self._imported_dictionaries.records):
             return sequence
         with self._submit_lock:
             home, voice = self._selectedLanguage, self._voice
@@ -403,34 +435,45 @@ class SynthDriver(BaseSynthDriver):
             elif isinstance(item, str) and not spelling:
                 protected = segment and self._imported_dictionaries.matches(item, selected, voice)
                 item = self._imported_dictionaries.process(item, selected, voice)
-                spans = self._nvda_dictionary_matches(item) if segment else ()
+                # With both splitting options off, common text follows NVDA's
+                # normal pipeline without inspecting its dictionaries.
+                if not segment and not _BUILTIN_BOUNDARY.search(item):
+                    result.append(item)
+                    continue
+                spans = self._nvda_dictionary_matches(item)
                 personal = self._nvda_personal_word_ranges(item, spans) if spans else ()
                 # Preserve the whole run for expressions or substitutions
                 # whose context cannot safely be separated by word.
                 protected = protected or spans is None or personal is None or (bool(spans) and keys is None)
                 if protected:
-                    result.extend((SegmentationGuard(True), item, SegmentationGuard(False)))
+                    if segment:
+                        result.extend((SegmentationGuard(True), item, SegmentationGuard(False)))
+                    else:
+                        result.append(item)
                     continue
-                if segment and keys is not None:
+                if segment or _BUILTIN_BOUNDARY.search(item):
                     language = self._languages[selected]
-                    native_keys = keys.get(selected, frozenset())
+                    native_keys = keys.get(selected, frozenset()) if keys is not None else frozenset()
                     # NVDA's builtin.dic runs after this filter. Protect the
                     # complete original CamelCase spelling so the shared C
                     # core can apply its own rules and native dictionaries.
-                    ranges, cursor = [(start, end, "personal") for start, end in personal], 0
+                    ranges, cursor = ([(start, end, "personal") for start, end in personal] if segment else []), 0
                     for part, native in protected_native_spans(item, native_keys):
                         end = cursor + len(part)
-                        if native and not any(left < end and right > cursor for left, right, _ in ranges):
+                        if (native and (segment or self._nvda_builtin_splits_acronym(part)) and
+                                not any(left < end and right > cursor for left, right in personal) and
+                                not any(left < end and right > cursor for left, right, _ in ranges)):
                             ranges.append((cursor, end, "native"))
                         cursor = end
-                    if camel or (word_segment and language.locale in ("en_US", "en_GB")):
-                        for start, end in word_runs(item):
-                            word = item[start:end]
-                            protect = (camel_word(word) != word or
-                                       (plural_acronym(word) and self._nvda_builtin_splits_acronym(word)))
-                            if protect and not any(
-                                    left < end and right > start for left, right, _ in ranges):
-                                ranges.append((start, end, "native"))
+                    for start, end in word_runs(item):
+                        word = item[start:end]
+                        case_enabled = (keys is not None and
+                            (camel or (word_segment and language.locale in ("en_US", "en_GB"))))
+                        protect = ((case_enabled and camel_word(word) != word) or
+                                   (builtin_acronym(word) and self._nvda_builtin_splits_acronym(word)))
+                        if protect and not any(left < end and right > start for left, right in personal) and not any(
+                                left < end and right > start for left, right, _ in ranges):
+                            ranges.append((start, end, "native"))
                     cursor = 0
                     for start, end, kind in sorted(ranges):
                         if start > cursor:
@@ -457,7 +500,7 @@ class SynthDriver(BaseSynthDriver):
 
     @staticmethod
     def _nvda_builtin_splits_acronym(word):
-        """Recognize only NVDA's stock rule; never alter its global dictionary.
+        """Recognize only NVDA's stock rules; never alter its global dictionary.
 
         Add-on dictionaries can run after NVDA's built-in dictionary. If one
         is active, leave processing to NVDA so it cannot be bypassed here.
@@ -496,10 +539,7 @@ class SynthDriver(BaseSynthDriver):
                    getattr(entry, "type", None) != 1 or
                    not getattr(entry, "caseSensitive", True) for entry in builtin):
                 return False
-            rule = r"(?=[A-Z][a-z])(?<=[A-Z])"
-            return any(getattr(entry, "pattern", None) == rule and
-                       getattr(entry, "replacement", None) == " " and
-                       entry.compiled.search(word) is not None for entry in builtin)
+            return any(entry.compiled.search(word) is not None for entry in builtin)
         except (ImportError, AttributeError, TypeError, ValueError):
             return False
 
@@ -1334,7 +1374,9 @@ class SynthDriver(BaseSynthDriver):
             self._transport.pause(switch)
 
     def terminate(self):
-        filter_speechSequence.unregister(self._protect_tags)
+        from speech.extensions import pre_speech
+        pre_speech.unregister(self._protect_before_speech)
+        filter_speechSequence.unregister(self._prepare_speech_sequence)
         with self._submit_lock:
             self._terminating = True
             if self._dictionary_updater is not None:
