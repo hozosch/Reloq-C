@@ -149,6 +149,16 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
             names = set(archive.namelist())
             assert "synthDrivers/reloqC/__init__.py" in names
             assert "synthDrivers/reloqC/eci.dll" in names
+            assert archive.getinfo("synthDrivers/reloqC/eci.dll").compress_type == zipfile.ZIP_LZMA
+            assert all(info.compress_type == zipfile.ZIP_DEFLATED for info in archive.infolist()
+                       if info.filename != "synthDrivers/reloqC/eci.dll")
+            wordseg = "synthDrivers/reloqC/wordseg-data/"
+            american = (ROOT / "nvda/wordseg-data/enus-pieces").read_bytes()
+            british = (ROOT / "nvda/wordseg-data/engb-pieces").read_bytes()
+            assert archive.read(wordseg + "enus-pieces") == american
+            assert (wordseg + "engb-pieces" in names) == (british != american)
+            if british != american:
+                assert archive.read(wordseg + "engb-pieces") == british
             assert not any(name.endswith(".rlex") for name in names)
             assert "synthDrivers/reloqC/_reloq_unicode.py" not in names
             assert "doc/licenses/Unicode-LICENSE.txt" in names

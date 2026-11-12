@@ -1,4 +1,5 @@
 """Regression coverage for optional unknown-English-word segmentation."""
+import shutil
 import tempfile
 import sys
 from pathlib import Path
@@ -35,6 +36,22 @@ def main():
         assert segmenter.text('cgroups', frozenset({'cgroup'})) == 'cgroups'
         assert segmenter.text('cgrouping', frozenset({'cgroup'})) == 'cgrouping'
         assert segmenter.text('eci_usrdct.c') == 'eci_U S R D C T.c'
+    with tempfile.TemporaryDirectory() as folder:
+        source = ROOT / 'nvda/wordseg-data'
+        root = Path(folder)
+        shutil.copyfile(source / 'engb-sayable', root / 'engb-sayable')
+        shutil.copyfile(source / 'enus-pieces', root / 'enus-pieces')
+        shared = WordSegmenter.from_files(root, 'engb')
+        reference = WordSegmenter.from_files(source, 'engb')
+        assert shared.pieces == reference.pieces
+        assert shared.abbreviations == reference.abbreviations
+        for word in ('fileswap', 'swapfile', 'framebuffer', 'cgroup'):
+            assert shared.text(word) == reference.text(word), word
+        # A later British-specific table must not silently use the US data.
+        (root / 'engb-pieces').write_text('britishonly\n', encoding='utf-8')
+        distinct = WordSegmenter.from_files(root, 'engb')
+        assert distinct.pieces == frozenset({'britishonly'})
+        assert distinct.pieces != shared.pieces
     with tempfile.TemporaryDirectory() as folder:
         Path(folder, 'ENUmain.dic').write_bytes(b'cgroup\tcustom pronunciation\nfoo-BarBaz\tcustom pronunciation\n')
         Path(folder, 'ENGRoot.dic').write_bytes(b'fdopen\tcustom pronunciation\n')
