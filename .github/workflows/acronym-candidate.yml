@@ -69,10 +69,10 @@ jobs:
           p = Path('addon/synth/manifest.ini')
           manifest = p.read_text(encoding='utf8')
           assert 'version = "1.4.0"' in manifest
-          p.write_text(manifest.replace('version = "1.4.0"', 'version = "1.4.1-dev2"'), encoding='utf8')
+          p.write_text(manifest.replace('version = "1.4.0"', 'version = "1.4.1-dev3"'), encoding='utf8')
           sys.path.insert(0, 'addon')
           from build_synth import build
-          build(Path('dist/reloq-c-synth-x64-1.4.1-dev2.nvda-addon'), Path('eci/eci.dll'), refresh_dictionaries=False)
+          build(Path('dist/reloq-c-synth-x64-1.4.1-dev3.nvda-addon'), Path('eci/eci.dll'), refresh_dictionaries=False)
           PY
       - name: Check native pronunciation and the NVDA adapter
         shell: pwsh
@@ -88,9 +88,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Existing word segmentation regression failed' }
           python -B addon/test_synth.py
           if ($LASTEXITCODE -ne 0) { throw 'NVDA speech processing regression failed' }
-          python -B addon/test_synth_native.py --library eci/eci.dll --addon dist/reloq-c-synth-x64-1.4.1-dev2.nvda-addon
+          python -B addon/test_synth_native.py --library eci/eci.dll --addon dist/reloq-c-synth-x64-1.4.1-dev3.nvda-addon
           if ($LASTEXITCODE -ne 0) { throw 'NVDA native integration failed' }
-          python -B addon/test_nvda_remote_loopback.py --library eci/eci.dll --addon dist/reloq-c-synth-x64-1.4.1-dev2.nvda-addon
+          python -B addon/test_nvda_remote_loopback.py --library eci/eci.dll --addon dist/reloq-c-synth-x64-1.4.1-dev3.nvda-addon
           if ($LASTEXITCODE -ne 0) { throw 'NVDA Remote loopback regression failed' }
       - name: Compile the SAPI adapter
         shell: bash
@@ -111,7 +111,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: acronym-nvda-candidate
-          path: dist/reloq-c-synth-x64-1.4.1-dev2.nvda-addon
+          path: dist/reloq-c-synth-x64-1.4.1-dev3.nvda-addon
           compression-level: 0
           retention-days: 14
   real-nvda:
@@ -141,7 +141,7 @@ jobs:
       - name: Check NVDA built-in dictionary and all option combinations
         shell: pwsh
         run: |
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1-dev2.nvda-addon --work segmentation-probe
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1-dev3.nvda-addon --work segmentation-probe
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA acronym or segmentation regression failed' }
       - uses: actions/upload-artifact@v4
         if: always()
@@ -150,4 +150,41 @@ jobs:
           path: |
             segmentation-probe/result.json
             segmentation-probe/nvda.log
+          if-no-files-found: ignore
+  real-nvda-boundaries:
+    needs: [wordseg, windows]
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: acronym-nvda-candidate
+          path: candidate
+      - name: Install real portable NVDA
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download release-2026.3.1 --repo nvaccess/nvda --pattern nvda_2026.3.1.exe --dir candidate
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA download failed' }
+          if ((Get-FileHash candidate/nvda_2026.3.1.exe -Algorithm SHA256).Hash -ne '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052') { throw 'Unexpected NVDA installer' }
+          $portable = Join-Path $pwd 'portable-nvda'
+          $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
+          $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
+      - name: Check punctuation and Unicode settings in real NVDA
+        shell: pwsh
+        run: |
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1-dev3.nvda-addon --plugin addon/test_nvda_real_issue40_plugin.py --work boundaries-probe
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA boundary regression failed' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acronym-nvda-boundaries-results
+          path: |
+            boundaries-probe/result.json
+            boundaries-probe/nvda.log
           if-no-files-found: ignore

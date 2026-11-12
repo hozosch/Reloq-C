@@ -6,6 +6,7 @@ worker. Speech and playback are queued without blocking NVDA's UI thread.
 
 from __future__ import annotations
 
+from bisect import bisect_left
 from collections import OrderedDict
 import ctypes
 import json
@@ -399,16 +400,57 @@ class SynthDriver(BaseSynthDriver):
         # the caller's own list separate from our later in-place edit.
         return [self._speech_preparation_marker, *sequence]
 
-    def _protect_before_speech(self, speechSequence, **_kwargs):
+    def _protect_before_speech(self, speechSequence, symbolLevel=None, **_kwargs):
         # NVDA shows the private copy in the speech viewer before this event.
         # Never modify a list supplied by an application or another filter.
         marker = self._speech_preparation_marker
         if not isinstance(speechSequence, list) or not any(item is marker for item in speechSequence):
             return
         prepared = [item for item in speechSequence if item is not marker]
-        speechSequence[:] = self._protect_tags(prepared)
+        speechSequence[:] = self._protect_tags(prepared, symbolLevel=symbolLevel)
 
-    def _protect_tags(self, sequence):
+    @staticmethod
+    def _native_following_boundary(text, start, end, words, starts, locale, symbol_level, normalize):
+        """Process a protected word's trailing symbols in their original context.
+
+        NVDA processes each string independently: an isolated suffix starting
+        with a dot loses the lookbehind which marks a sentence ending. Process
+        only the intervening symbols with both original neighboring words,
+        then carry that result as a command. If NVDA's processor cannot safely
+        delimit it, leave the word to NVDA instead of changing punctuation.
+        """
+        index = bisect_left(starts, end)
+        following = words[index] if index < len(words) else None
+        gap_end = following[0] if following else len(text)
+        gap = text[end:gap_end]
+        if not gap:
+            return gap_end, "  " if gap_end == len(text) else ""
+        left = text[start:end]
+        right = text[following[0]:following[1]] if following else ""
+        try:
+            import characterProcessing
+            level = symbol_level
+            if level is None or level == characterProcessing.SymbolLevel.UNCHANGED:
+                level = characterProcessing.SymbolLevel(config.conf["speech"]["symbolLevel"])
+            processed = characterProcessing.processSpeechSymbols(locale, left + gap + right, level)
+            if not processed.startswith(left) or (right and not processed.endswith(right)):
+                return None
+            boundary = processed[len(left):len(processed) - len(right) if right else None]
+            boundary = re.sub(r"[\0\r\n]", " ", boundary)
+            if normalize:
+                from textUtils import unicodeNormalize
+                boundary = unicodeNormalize(boundary)
+            if not following:
+                boundary = boundary.rstrip() + "  "
+            return gap_end, boundary
+        except (ImportError, AttributeError, KeyError, TypeError, ValueError):
+            # Lightweight test hosts may not expose symbol processing. Only
+            # ordinary whitespace is safe to reproduce without that API.
+            if gap.isspace() and symbol_level in (None, 0) and not normalize:
+                return gap_end, "  " if not following else " "
+            return None
+
+    def _protect_tags(self, sequence, *, symbolLevel=None):
         # The extension runs before NVDA replaces the grave accent by its
         # spoken symbol name (or a space). Keep this scoped to our active
         # synthesizer and its explicit tag setting.
@@ -425,11 +467,18 @@ class SynthDriver(BaseSynthDriver):
             home, voice = self._selectedLanguage, self._voice
             word_segment, camel, keys = self._wordSegmentation, self._camelCase, self._wordseg_keys
         segment = word_segment or camel
+        try:
+            initial_normalization = bool(config.conf["speech"]["unicodeNormalization"])
+        except (KeyError, TypeError):
+            initial_normalization = False
         selected, spelling, result = home, False, []
+        normalization = initial_normalization
         for item in sequence:
             if isinstance(item, LangChangeCommand):
                 chosen = language_for(item.lang, home, self._languages)
                 if chosen is not None: selected = chosen
+            elif type(item).__name__ == "SuppressUnicodeNormalizationCommand":
+                normalization = initial_normalization and not item.state
             elif isinstance(item, CharacterModeCommand):
                 spelling = bool(item.state)
             elif isinstance(item, str) and not spelling:
@@ -454,6 +503,8 @@ class SynthDriver(BaseSynthDriver):
                 if segment or _BUILTIN_BOUNDARY.search(item):
                     language = self._languages[selected]
                     native_keys = keys.get(selected, frozenset()) if keys is not None else frozenset()
+                    words = tuple(word_runs(item))
+                    word_starts = tuple(start for start, _end in words)
                     # NVDA's builtin.dic runs after this filter. Protect the
                     # complete original CamelCase spelling so the shared C
                     # core can apply its own rules and native dictionaries.
@@ -465,7 +516,7 @@ class SynthDriver(BaseSynthDriver):
                                 not any(left < end and right > cursor for left, right, _ in ranges)):
                             ranges.append((cursor, end, "native"))
                         cursor = end
-                    for start, end in word_runs(item):
+                    for start, end in words:
                         word = item[start:end]
                         case_enabled = (keys is not None and
                             (camel or (word_segment and language.locale in ("en_US", "en_GB"))))
@@ -476,22 +527,20 @@ class SynthDriver(BaseSynthDriver):
                             ranges.append((start, end, "native"))
                     cursor = 0
                     for start, end, kind in sorted(ranges):
+                        boundary = (self._native_following_boundary(item, start, end, words, word_starts,
+                                    language.locale, symbolLevel, normalization) if kind != "personal" else None)
+                        if kind != "personal" and boundary is None:
+                            continue
                         if start > cursor:
                             result.append(item[cursor:start])
                         if kind == "personal":
                             result.extend((SegmentationGuard(True), item[start:end], SegmentationGuard(False)))
+                            cursor = end
                         else:
                             result.append(NativeDictionaryWord(item[start:end]))
-                        # NVDA normally appends its chunk separator to every
-                        # text item after symbol/dictionary processing. A
-                        # protected word is a SynthCommand instead of text,
-                        # so a word ending the original item needs that same
-                        # separator before the next item (for example, an
-                        # object's name followed by its role). Keep it in a
-                        # command so NVDA doesn't strip a whitespace string.
-                        if kind != "personal" and end == len(item):
-                            result.append(NativeDictionaryWord("  "))
-                        cursor = end
+                            cursor, following = boundary
+                            if following:
+                                result.append(NativeDictionaryWord(following))
                     if cursor < len(item):
                         result.append(item[cursor:])
                     continue

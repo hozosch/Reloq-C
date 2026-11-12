@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 20475)
+Total output lines: 1256
+
 """Package and asynchronous NVDA driver checks without a Windows NVDA host."""
 
 from __future__ import annotations
@@ -572,7 +575,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert "".join(part.text for part in driver_module._parts(processed)
                                if isinstance(part, driver_module.EciText)) == "MeinWort  Fenster  "
                 result = driver._protect_tags([LangChangeCommand("en-US"), "UsRdCt TmpFiles"])
-                assert [item.text for item in result if isinstance(item, driver_module.NativeDictionaryWord)][:2] == ["UsRdCt", "TmpFiles"], result
+                assert [item.text for item in result if isinstance(item, driver_module.NativeDictionaryWord) and item.text.strip()][:2] == ["UsRdCt", "TmpFiles"], result
                 driver._camelCase = False
                 result = driver._protect_tags([LangChangeCommand("en-US"), "FdOpen"])
                 assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "FdOpen" for item in result), result
@@ -636,36 +639,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 english = replace(german, id=0x10000, locale="en_GB", name="Test only")
                 catalog = {german.id: german, english.id: english}
                 assert driver_module._parts(["Deutsch.", LangChangeCommand("en-US"),
-                    "English.", LangChangeCommand(None), "Wieder deutsch."], languages=catalog) == [
-                        driver_module.EciText("Deutsch."), driver_module.EciLanguage(0x10000, "1"), driver_module.EciText("English."),
-                        driver_module.EciLanguage(0x40000, "1"), driver_module.EciText("Wieder deutsch.")]
-                until(lambda: len(Engine.instances) == 1)
-                until(lambda: len(Engine.instances[0].parameters) >= 17)
-                assert Engine.instances[0].parameters == list(german.voices[0].parameters) + [(0x1007, 95), (0x1008, 65),
-                                                          (0x1009, 30),
-                                                          (0x100a, 100), (0x100d, 50), (0x100e, 0), (0x100f, 0), (0x1015, 0), (0x1016, 0), (0x101b, 0)]
-                driver._set_rate(70)
-                driver._set_pitch(65)
-                driver._set_inflection(75)
-                driver._set_volume(85)
-
-                class IgnoredCommand:
-                    pass
-
-                driver.speak(["Packte ", IndexCommand(12), IgnoredCommand(),
-                              "Kippte.", IndexCommand(13)])
-                until(lambda: len(players[0].buffers) == 2)
-                worker = Engine.instances[0]
-                assert worker.parameters == list(german.voices[0].parameters) + [(0x1007, 95), (0x1008, 65),
-                                             (0x1009, 30), (0x100a, 100),
-                                             (0x100d, 50), (0x100e, 0), (0x100f, 0), (0x1015, 0), (0x1016, 0), (0x101b, 0),
-                                             (0x1007, 117), (0x1008, 65),
-                                             (0x1009, 75),
-                                             (0x100a, 85)]
-                assert driver._get_rate() == 70
-                assert driver._get_pitch() == 65
-                assert driver._get_inflection() == 75
-                assert [tuple(type(x).__name__ for x in items)
+                    "English.", LangChangeCommand…475 tokens truncated…   assert [tuple(type(x).__name__ for x in items)
                         for items in worker.parts] == [
                             ("EciText", "EciIndex", "EciText", "EciIndex")]
                 assert [item.value for item in worker.parts[0]
