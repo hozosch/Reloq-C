@@ -157,6 +157,41 @@ of Cheso Aragonese, [published by Institución Fernando el Católico](https://if
 It is an acoustic test item, not proof that the parent Spanish voice has the
 appropriate pronunciation of the word as a whole.
 
+## AU timing against the preferred pauto
+
+The listener could barely hear the latest F1/F2 alternatives, identified
+duration as the more likely problem, and found *pauto* in the earlier 40%
+rounding probe good. That earlier setting is the reference for the following
+experiments. The isolated probe at 16 kHz and the recording's default voice
+and speed reported a native nucleus budget of approximately 148.5 ms for
+*auca* versus 125.4 ms for *pauto*. These are scheduler values, not measured
+boundaries of a separate /u/ phone; they depend on speech context and settings.
+Scaling the first budget to 85% gives about 126 ms in that example.
+
+The private `timing` build tries both vowel-transition timing (mode 1) and
+whole-nucleus timing (mode 2). Mode 2 at 85% or 70% changes the whole initial
+AU nucleus, not only its /u/ portion. Its formant target stays at the earlier
+40% setting; *pauto* is a byte-for-byte reference for the tested cases. A
+candidate detector distinguishes word-initial /aw/ and conservatively checks
+the word boundary. An earlier version falsely matched /a/ followed by /w/ in
+separate words such as *a hueso*. The revised mode-2 candidate passed 912
+checks across 11.025, 16 and 48 kHz, two speeds and two voice genders. They
+cover *a hueso*, *a huevo*, *la huerta*, *la pausa*, initial AU within phrases,
+and byte-identical *pauto* and *pauca* references. These checks do not prove
+that every word boundary or phonetic environment is correct. This remains a
+disposable Castilian-based experiment, not an Aragonese module.
+
+```
+python3 experiments/aragonese/build_native_probe.py timing
+python3 experiments/aragonese/test_au_timing_probe.py --reference REFINE_LIBRARY --timing TIMING_LIBRARY --mode 2
+python3 experiments/aragonese/au_timing_listening.py --baseline BASELINE --reference REFINE_LIBRARY --timing TIMING_LIBRARY --mode 2 --wav FILE
+```
+
+The spoken comparison repeats *pauto* unchanged and includes old and new
+versions of *auca*, *auto* and *la auca*. Listening remains necessary to tell
+whether any of the experiments preserve the preferred sound while avoiding a
+two-syllable impression.
+
 `phoneme_probe.py` now also experiments with the latent final t rule on the
 Castilian phoneme output of an isolated word. It removes that sound after n,
 s or r while retaining the original stress and keeps the existing ny/ñ probe.

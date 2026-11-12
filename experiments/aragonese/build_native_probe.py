@@ -75,6 +75,59 @@ static int aragonese_probe_glide_context(void *state, int32_t token_ref)
 }
 '''
 
+PROBE_AW_INITIAL_HELPER = r'''
+/* Result bits: 1 = /aw/, 2 = /a/ starts the word. Diagnostic only. */
+static int aragonese_probe_initial_aw(void *state,int32_t token_ref,int before_w)
+{
+    delta_state *d = state;
+    if(!d || !d->vars || !token_ref) return 0;
+    delta_vars *v = EVV_AT(delta_vars *,d->vars);
+    delta_tpos left=d->lpta,right=d->rpta;
+    unsigned char scan[8],index[256],marks[256],chars[256];
+    int8_t compared=v->compared_equal,fences=v->fence_count,testing=v->testing;
+    memcpy(scan,&v->scan_ptr,sizeof scan);
+    memcpy(index,EVV_AT(const void *,d->fence_index),d->nstmts);
+    memcpy(marks,EVV_AT(const void *,d->fence_marks),d->nstmts);
+    memcpy(chars,EVV_AT(const void *,d->fence_chars),d->nstmts);
+    v->testing=0;
+    const uint8_t word_fence[]={2};
+    fence(d,1,word_fence);
+    memset(EVV_AT(void *,d->fence_marks),0,d->nstmts);
+    lpta_loadp(d,EVV_AT(const delta_token *,token_ref));
+    int is_aw=0,initial=0;
+    if(before_w) {
+        int at_w=!setscan_r(d,4) && !testFldeq(d,4,0,28);
+        lpta_loadp(d,EVV_AT(const delta_token *,token_ref));
+        int at_a=0;
+        if(!setscan_l(d,4)) {
+            v->scan_held=0;
+            at_a=!testFldeq(d,4,0,31) && !advance_tok(d);
+        }
+        is_aw=at_w && at_a;
+        if(is_aw) initial=advance_tok(d)!=0;
+    } else {
+        is_aw=!setscan_r(d,4) && !testFldeq(d,4,0,31) && !advance_tok(d) &&
+              !testFldeq(d,4,0,28) && !advance_tok(d);
+        lpta_loadp(d,EVV_AT(const delta_token *,token_ref));
+        if(setscan_l(d,4)) initial=1;
+        else {v->scan_held=0;initial=advance_tok(d)!=0;}
+    }
+    d->lpta=left;d->rpta=right;memcpy(&v->scan_ptr,scan,sizeof scan);
+    v->compared_equal=compared;v->fence_count=fences;v->testing=testing;
+    memcpy(EVV_AT(void *,d->fence_index),index,d->nstmts);
+    memcpy(EVV_AT(void *,d->fence_marks),marks,d->nstmts);
+    memcpy(EVV_AT(void *,d->fence_chars),chars,d->nstmts);
+    return is_aw ? 1+(initial?2:0) : 0;
+}
+
+static int aragonese_probe_timing_active(int context,int mode)
+{
+    int wanted=aragonese_probe_percent("RELOQ_ARAGON_PROBE_TIMING_MODE",0);
+    int scope=aragonese_probe_percent("RELOQ_ARAGON_PROBE_TIMING_SCOPE",1);
+    return wanted==mode && (context&1) && (scope==2 || (context&2));
+}
+'''
+
 
 def replace_once(text: str, before: str, after: str) -> str:
     if text.count(before) != 1:
@@ -164,6 +217,60 @@ def enable_glide(source: Path) -> None:
     source.write_text(text, encoding='utf8')
 
 
+def enable_timing(source: Path) -> None:
+    """Test transition/nucleus timing in isolated source copies only."""
+    if source.name.endswith(('c30_eses61.c','c31_eses61.c')):
+        enable_refinement(source)
+        if source.name.endswith('c31_eses61.c'):
+            text=source.read_text(encoding='utf8')
+            text=replace_once(text,'"RELOQ_ARAGON_PROBE_SH_PERCENT",80',
+                              '"RELOQ_ARAGON_PROBE_SH_PERCENT",65')
+            source.write_text(text,encoding='utf8')
+        return
+    if not source.name.endswith(('c12_eses61.c','c21_eses61.c')):
+        return
+    text=source.read_text(encoding='utf8')
+    text=replace_once(text,'#include <string.h>',
+                      '#include <string.h>\n#include <stdlib.h>\n#include <stdio.h>\n'+PROBE_PERCENT_HELPER)
+    text=replace_once(text,'/* Where each global the rules touch lands in the state,',
+                      PROBE_AW_INITIAL_HELPER+'\n/* Where each global the rules touch lands in the state,')
+    if source.name.endswith('c12_eses61.c'):
+        begin=text.index('/* get_trans_dur, from f61_01.obj */')
+        end=text.index('static int32_t evv_get_trans_dur',begin)
+        section=text[begin:end]
+        before='    r1 = ((int32_t)AT(int16_t, -10));\n    r7 = ((int32_t)PARAM(int32_t, 1));'
+        after='''    r1 = ((int32_t)AT(int16_t, -10));
+    {
+        int context=aragonese_probe_initial_aw(state,STATE_AT(w61,-4),1);
+        if(getenv("RELOQ_ARAGON_PROBE_TIMING_TRACE"))
+            fprintf(stderr,"AU_TRANS context=%d duration=%d\\n",context,(int)r1);
+        if(aragonese_probe_timing_active(context,1)) {
+            int pct=aragonese_probe_percent("RELOQ_ARAGON_PROBE_TIMING_PERCENT",100);
+            r1=(int32_t)((int64_t)r1*pct/100);
+            if(r1<1)r1=1;
+        }
+    }
+    r7 = ((int32_t)PARAM(int32_t, 1));'''
+        text=text[:begin]+replace_once(section,before,after)+text[end:]
+    else:
+        begin=text.index('/* distribute_nucdur, from f61_04.obj */')
+        end=text.index('static int32_t evv_distribute_nucdur',begin)
+        section=text[begin:end]
+        before='    STATE(int32_t, f33) = ((int32_t)AT(int32_t, -12));'
+        after='''    STATE(int32_t, f33) = ((int32_t)AT(int32_t, -12));
+    {
+        int context=aragonese_probe_initial_aw(state,STATE_AT(w26,-4),0);
+        if(getenv("RELOQ_ARAGON_PROBE_TIMING_TRACE"))
+            fprintf(stderr,"AU_NUC context=%d duration=%d\\n",context,(int)STATE(int32_t,f33));
+        if(aragonese_probe_timing_active(context,2)) {
+            int pct=aragonese_probe_percent("RELOQ_ARAGON_PROBE_TIMING_PERCENT",100);
+            STATE(int32_t,f33)=(int32_t)((int64_t)STATE(int32_t,f33)*pct/100);
+        }
+    }'''
+        text=text[:begin]+replace_once(section,before,after)+text[end:]
+    source.write_text(text,encoding='utf8')
+
+
 def split_patches(source: str):
     """Yield the single-file diffs from our checked-in experimental patch."""
     chunks = []
@@ -195,8 +302,8 @@ def host_objects():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('kind', choices=('sh', 'au', 'refine', 'glide'),
-                        help='sh, au, refine, or independent glide listening probes')
+    parser.add_argument('kind', choices=('sh', 'au', 'refine', 'glide', 'timing'),
+                        help='sh, au, refine, glide, or vowel timing probes')
     parser.add_argument('--dry-run', action='store_true', help='prepare and verify patches without compiling')
     parser.add_argument('--work-dir', type=Path, help='new private directory for the build')
     args = parser.parse_args()
@@ -206,7 +313,7 @@ def main():
     else:
         work = Path(tempfile.mkdtemp(prefix='reloq-aragonese-probe-'))
     patch_files = ([HERE / 'native-sh-probe.patch', HERE / 'native-au-probe.patch']
-                   if args.kind in ('refine', 'glide') else [HERE / f'native-{args.kind}-probe.patch'])
+                   if args.kind in ('refine', 'glide', 'timing') else [HERE / f'native-{args.kind}-probe.patch'])
     modified = []
     for patch_file in patch_files:
         for relative, patch_text in split_patches(patch_file.read_text(encoding='utf8')):
@@ -216,6 +323,7 @@ def main():
                            input=patch_text, text=True, check=True)
             if args.kind == 'refine': enable_refinement(destination)
             if args.kind == 'glide': enable_glide(destination)
+            if args.kind == 'timing': enable_timing(destination)
             modified.append(destination)
     if args.kind == 'glide':
         original = PROVIDER / 'lang/eses61/delta_rules_c11_eses61.c'
@@ -223,6 +331,13 @@ def main():
         shutil.copyfile(original,destination)
         enable_glide(destination)
         modified.append(destination)
+    if args.kind == 'timing':
+        for name in ('delta_rules_c12_eses61.c','delta_rules_c21_eses61.c'):
+            original=PROVIDER / 'lang/eses61' / name
+            destination=work / name
+            shutil.copyfile(original,destination)
+            enable_timing(destination)
+            modified.append(destination)
     if args.dry_run:
         print(f'Prepared {len(modified)} isolated source files in {work}')
         return
