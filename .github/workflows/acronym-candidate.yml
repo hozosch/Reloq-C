@@ -15,6 +15,7 @@ jobs:
       - name: Check word segmentation and NVDA text protection
         run: |
           python3 -B addon/test_wordseg.py
+          python3 -B experiments/aragonese/test_probe.py
           cc -std=c11 -O2 -Wall -Wextra -Werror -pedantic -Iinclude tests/test_wordseg_native.c src/reloq_wordseg.c -o /tmp/reloq-wordseg
           /tmp/reloq-wordseg
   windows:
@@ -73,6 +74,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Python word segmentation failed' }
           python -B nvda/test_eci_acronyms_native.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Acronym/CamelCase regression failed' }
+          python -B experiments/aragonese/test_probe.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Isolated Aragonese probe failed' }
           python -B nvda/test_eci_wordseg_native.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Existing word segmentation regression failed' }
           python -B addon/test_synth.py

@@ -425,7 +425,10 @@ class SynthDriver(BaseSynthDriver):
                         cursor = end
                     if camel or (word_segment and language.locale in ("en_US", "en_GB")):
                         for start, end in word_runs(item):
-                            if (camel_word(item[start:end]) != item[start:end] or plural_acronym(item[start:end])) and not any(
+                            word = item[start:end]
+                            protect = (camel_word(word) != word or
+                                       (plural_acronym(word) and self._nvda_builtin_splits_acronym(word)))
+                            if protect and not any(
                                     left < end and right > start for left, right, _ in ranges):
                                 ranges.append((start, end, "native"))
                     cursor = 0
@@ -451,6 +454,44 @@ class SynthDriver(BaseSynthDriver):
                     continue
             result.append(item)
         return result
+
+    @staticmethod
+    def _nvda_builtin_splits_acronym(word):
+        """Recognize only NVDA's stock rule; never alter its global dictionary.
+
+        Add-on dictionaries can run after NVDA's built-in dictionary. If one
+        is active, leave processing to NVDA so it cannot be bypassed here.
+        """
+        try:
+            import speechDictHandler
+            if hasattr(speechDictHandler, "listAvailableSpeechDictDefinitions"):
+                definitions = speechDictHandler.listAvailableSpeechDictDefinitions()
+                builtin = None
+                after_builtin = False
+                for definition in definitions:
+                    if not definition.enabled:
+                        continue
+                    if getattr(definition.source, "value", definition.source) == "builtin":
+                        builtin = definition.dictionary
+                        after_builtin = True
+                    elif after_builtin and definition.dictionary:
+                        return False
+            else:
+                dictionaries = speechDictHandler.dictionaries
+                builtin = dictionaries.get("builtin")
+                # Older APIs do not expose reliable application order for
+                # add-on dictionaries; avoid hiding text when unsure.
+                if any(name not in ("builtin", "default", "voice", "temp") and dictionary
+                       for name, dictionary in dictionaries.items()):
+                    return False
+            if not builtin:
+                return False
+            rule = r"(?=[A-Z][a-z])(?<=[A-Z])"
+            return any(getattr(entry, "pattern", None) == rule and
+                       getattr(entry, "replacement", None) == " " and
+                       entry.compiled.search(word) is not None for entry in builtin)
+        except (ImportError, AttributeError, TypeError, ValueError):
+            return False
 
     @staticmethod
     def _nvda_dictionary_matches(text):

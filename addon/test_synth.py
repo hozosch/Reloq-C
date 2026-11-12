@@ -429,8 +429,8 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert isinstance(result[0], guarded) and result[1] == "custom" and isinstance(result[2], guarded)
                 assert result[3].lang == "en-US" and result[4] == "nvda"
                 # Keep mixed-case spelling intact until the shared C core sees it.
-                builtin = [types.SimpleNamespace(compiled=re.compile(r"([a-z])([A-Z])"), replacement=r"\1 \2"),
-                           types.SimpleNamespace(compiled=re.compile(r"([A-Z])([A-Z][a-z])"), replacement=r"\1 \2")]
+                builtin = [types.SimpleNamespace(pattern=pattern, compiled=re.compile(pattern), replacement=" ", type=1)
+                           for pattern in (r"(?=[A-Z])(?<=[a-z])", r"(?=[A-Z][a-z])(?<=[A-Z])")]
                 speech_dicts = fake_module("speechDictHandler", dictionaries={"builtin": builtin, "default": []})
                 driver._wordseg_keys = {0x40000: frozenset({"meinwort"}), 0x10000: frozenset()}
                 driver._camelCase = True
@@ -448,13 +448,17 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                             item = entry.compiled.sub(entry.replacement, item)
                     processed.append(item)
                 assert driver_module._parts(processed) == parts
-                # NVDA's default dictionary also splits CDs into C Ds. Keep
-                # the complete plural until the native engine receives it.
-                for lang, segment, camel in (("de-DE", False, True), ("de-DE", True, True),
+                # Protect stock builtin splits only while a relevant
+                # segmentation setting is enabled, and only in this driver.
+                for lang, segment, camel in (("de-DE", False, True),
+                                             ("de-DE", True, True),
                                              ("en-US", False, True), ("en-US", True, False),
                                              ("en-US", True, True)):
                     driver._wordSegmentation, driver._camelCase = segment, camel
-                    for word in ("CDs", "DVDs", "IDs", "PDFs", "URLs", "PACs", "FAQs", "SMSs", "BlindCDs"):
+                    words = ("CDs", "DVDs", "IDs", "PDFs", "URLs", "PACs", "FAQs", "SMSs")
+                    if camel or (segment and lang == "en-US"):
+                        words += ("BlindCDs",)
+                    for word in words:
                         result = driver._protect_tags([LangChangeCommand(lang), word])
                         assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == word
                                    for item in result), (lang, word, result)
@@ -467,6 +471,47 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         actual = "".join(part.text for part in driver_module._parts(processed)
                                          if isinstance(part, driver_module.EciText))
                         assert actual.strip() == word, (lang, word, actual)
+                # Personal NVDA dictionaries retain precedence.
+                entry = types.SimpleNamespace(pattern="CDs", replacement="Scheiben", type=0,
+                                              compiled=re.compile("CDs"))
+                speech_dicts.dictionaries["default"] = [entry]
+                result = driver._protect_tags(["CDs"])
+                assert any(isinstance(item, guarded) and item.enabled for item in result), result
+                assert not any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "CDs"
+                               for item in result), result
+                speech_dicts.dictionaries["default"] = []
+                saved_imports = driver._imported_dictionaries
+                class EmptyImported:
+                    records = ()
+                    def matches(self, *_args): return False
+                    def process(self, text, *_args): return text
+                driver._imported_dictionaries = EmptyImported()
+                driver._wordseg_keys = None
+                driver._wordSegmentation = driver._camelCase = False
+                result = driver._protect_tags(["CDs"])
+                assert result == ["CDs"], result
+                assert driver._protect_tags(["normal text"]) == ["normal text"]
+                driver._wordseg_keys = {0x40000: frozenset({"meinwort"}), 0x10000: frozenset()}
+                assert driver._protect_tags(["CDs"]) == ["CDs"]
+                assert builtin[1].compiled.sub(builtin[1].replacement, "CDs") == "C Ds"
+                driver._camelCase = True
+                speech_dicts.dictionaries["builtin"] = []
+                assert not driver._nvda_builtin_splits_acronym("CDs")
+                assert not any(isinstance(item, driver_module.NativeDictionaryWord)
+                               for item in driver._protect_tags(["CDs"]))
+                speech_dicts.dictionaries["builtin"] = builtin
+                # An add-on speech dictionary after builtin must remain in
+                # NVDA's pipeline even when it only matches the split form.
+                after = types.SimpleNamespace(pattern="C Ds", replacement="Discs", type=0,
+                                              compiled=re.compile("C Ds"))
+                definitions = [types.SimpleNamespace(enabled=True, source=types.SimpleNamespace(value="builtin"), dictionary=builtin),
+                               types.SimpleNamespace(enabled=True, source=types.SimpleNamespace(value="addon"), dictionary=[after])]
+                speech_dicts.listAvailableSpeechDictDefinitions = lambda: definitions
+                assert not driver._nvda_builtin_splits_acronym("CDs")
+                assert not any(isinstance(item, driver_module.NativeDictionaryWord)
+                               for item in driver._protect_tags(["CDs"]))
+                del speech_dicts.listAvailableSpeechDictDefinitions
+                driver._imported_dictionaries = saved_imports
                 driver._wordSegmentation, driver._camelCase = True, True
                 # NVDA gives object names and roles as separate text items.
                 # It adds a separator to text items but not to SynthCommands.

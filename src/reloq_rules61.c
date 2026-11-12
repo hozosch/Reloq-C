@@ -656,6 +656,20 @@ static int wordseg_input(unsigned char **text,size_t **source,size_t *length,int
                       !wordseg_plural_acronym(a,capitals,end,utf8)))) {
                     if(german_shared_append(&b,(const unsigned char *)" ",NULL,1,map[at]))goto fail;
                     changed=1;
+                    /* A CamelCase component can itself be a plural
+                     * initialism, as in myCDs or BlindURLs. Process it with
+                     * the same native rules after the case boundary. */
+                    if((previous&RELOQ_WORDSEG_LOWER)&&wordseg_plural_acronym(a,at,end,utf8)) {
+                        size_t stem_n=end-at-1;
+                        if(stem_n&&a[at+stem_n-1]=='e')--stem_n;
+                        unsigned char spr[8192];size_t spr_n=0;
+                        if(!wordseg_dictionary(dictionary,a+at,end-at,english,utf8,abbreviations_disabled)&&
+                           !wordseg_dictionary(dictionary,a+at,stem_n,english,utf8,abbreviations_disabled)&&
+                           wordseg_initialism_plural_spr(language,a+at,end-at,spr,sizeof spr,&spr_n)) {
+                            if(german_shared_append(&b,spr,NULL,spr_n,map[at]))goto fail;
+                            at=end;break;
+                        }
+                    }
                 }
                 if(german_shared_append(&b,a+at,map+at,after-at,0))goto fail;
                 if(!(flags&RELOQ_WORDSEG_MARK))previous=flags;

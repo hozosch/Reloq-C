@@ -195,7 +195,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                 raise AssertionError('NVDA import changed a replacement or included options: ' + repr(row))
                         if row['input'].startswith('ACR-'):
                             original = row['input'].split(':', 1)[1]
-                            active = row['camel'] or (row['word'] and row['input'].startswith('ACR-EN:'))
+                            active = (row['camel'] or
+                                      (row['word'] and row['input'].startswith('ACR-EN:')))
                             if active and original not in combined:
                                 raise AssertionError('NVDA builtin dictionary split a protected acronym or case word: ' + repr(row))
                     plain = [row for row in self.results if row['input'] == 'DICT:plain']
