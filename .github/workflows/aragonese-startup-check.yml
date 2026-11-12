@@ -1,0 +1,231 @@
+name: Verify NVDA startup and Aragonese candidate
+on:
+  push:
+    branches: [codex/aragonese-startup-check-20261113]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  report-start:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record this test run
+        run: |
+          mkdir -p .codex-tests
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path('.codex-tests/aragonese-startup-run.json').write_text(json.dumps({
+            'run_id': int(os.environ['GITHUB_RUN_ID']),
+            'source_commit': os.environ['GITHUB_SHA']}, indent=2) + '\n')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .codex-tests/aragonese-startup-run.json
+          git commit -m 'Record NVDA startup test [skip ci]'
+          git push origin HEAD:${GITHUB_REF}
+  quick:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: aragonese-test-candidate
+          run-id: 43330145701
+          github-token: ${{ github.token }}
+          path: candidate
+      - name: Apply only the startup fix to the tested base
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os,shutil,subprocess,zipfile
+          from pathlib import Path
+          base=Path('candidate/reloq-c-synth-x64-1.5.0-dev1.nvda-addon')
+          target=Path('candidate/reloq-c-synth-x64-1.5.0-dev2-startfix.nvda-addon')
+          out=Path('staged');(out/'synthDrivers/reloqC').mkdir(parents=True)
+          for locale in ('de','en'):(out/'doc'/locale).mkdir(parents=True)
+          shutil.copyfile(base,target)
+          shutil.copyfile('addon/synth/synthDrivers/reloqC/__init__.py',out/'synthDrivers/reloqC/__init__.py')
+          with zipfile.ZipFile(base) as z:
+              for name in ('manifest.ini','doc/de/readme.html','doc/en/readme.html'):
+                  text=z.read(name).decode('utf8')
+                  assert '1.5.0-dev1' in text
+                  (out/name).write_text(text.replace('1.5.0-dev1','1.5.0-dev2'),encoding='utf8')
+              meta=json.loads(z.read('doc/source.json'))
+          meta['build']='Verified 1.5.0-dev1 native core with the NVDA startup fix'
+          meta['driver_sha256']=hashlib.sha256((out/'synthDrivers/reloqC/__init__.py').read_bytes()).hexdigest()
+          meta['driver_source_commit']=os.environ['GITHUB_SHA']
+          (out/'doc/source.json').write_text(json.dumps(meta,indent=2)+'\n',encoding='utf8')
+          subprocess.run(['zip','-q',str(target.resolve()),'manifest.ini','doc/de/readme.html','doc/en/readme.html','doc/source.json','synthDrivers/reloqC/__init__.py'],cwd=out,check=True)
+          with zipfile.ZipFile(base) as old,zipfile.ZipFile(target) as new:
+              changes={'manifest.ini','doc/de/readme.html','doc/en/readme.html','doc/source.json','synthDrivers/reloqC/__init__.py'}
+              assert set(old.namelist())==set(new.namelist()) and new.testzip() is None
+              for name in old.namelist():
+                  if name not in changes: assert old.read(name)==new.read(name),name
+          PY
+          PYTHONPATH=addon python3 - <<'PY'
+          from pathlib import Path
+          from test_synth import main
+          main(package_path=Path('candidate/reloq-c-synth-x64-1.5.0-dev2-startfix.nvda-addon').resolve())
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nvda-startup-comparison
+          path: |
+            candidate/reloq-c-synth-x64-1.5.0-dev1.nvda-addon
+            candidate/reloq-c-synth-x64-1.5.0-dev2-startfix.nvda-addon
+            candidate/eci.dll
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+  windows-startup:
+    needs: quick
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: nvda-startup-comparison
+          path: candidate
+      - name: Install real portable NVDA
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download release-2026.3.1 --repo nvaccess/nvda --pattern nvda_2026.3.1.exe --dir candidate
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA download failed' }
+          if ((Get-FileHash candidate/nvda_2026.3.1.exe -Algorithm SHA256).Hash -ne '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052') { throw 'Unexpected NVDA installer' }
+          $portable=Join-Path $pwd 'portable-nvda'
+          $p=Start-Process (Get-Item candidate/nvda_2026.3.1.exe).FullName -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable installation failed' }
+      - name: Reproduce the old failure and verify its fix
+        shell: pwsh
+        run: |
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.5.0-dev1.nvda-addon --plugin addon/test_nvda_real_early_start_plugin.py --work startup-before
+          if ($LASTEXITCODE -eq 0) { throw 'Old package unexpectedly passed the early-start regression' }
+          $result=Get-Content startup-before/result.json -Raw | ConvertFrom-Json
+          if ($result.ok -or $result.error -notmatch '_CallAfterId') { throw "Wrong old-package failure: $($result.error)" }
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.5.0-dev2-startfix.nvda-addon --plugin addon/test_nvda_real_early_start_plugin.py --work startup-after
+          if ($LASTEXITCODE -ne 0) { throw 'Fixed package failed early-start regression' }
+          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.5.0-dev2-startfix.nvda-addon --work settings-after
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA settings panel regression' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nvda-startup-results
+          path: |
+            startup-before/result.json
+            startup-after/result.json
+            startup-after/nvda.log
+            settings-after/result.json
+            settings-after/nvda.log
+          if-no-files-found: ignore
+  final:
+    needs: windows-startup
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELOQ_BUILD_EPOCH: '1700000000'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Install translation compiler
+        run: |
+          if ! command -v msgfmt >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends gettext
+          fi
+      - name: Wait for the separately built native core
+        run: |
+          for i in $(seq 1 90); do
+            if gh api repos/$GITHUB_REPOSITORY/actions/runs/43331531962/artifacts --jq '.artifacts[] | select(.name == "aragonese-test-candidate" and .expired == false) | .id' | grep -q .; then exit 0; fi
+            sleep 10
+          done
+          echo 'The native candidate was not produced' >&2
+          exit 1
+      - uses: actions/download-artifact@v4
+        with:
+          name: aragonese-test-candidate
+          run-id: 43331531962
+          github-token: ${{ github.token }}
+          path: native
+      - uses: actions/download-artifact@v4
+        with:
+          name: dictionary-snapshot
+          run-id: 43102437479
+          github-token: ${{ github.token }}
+          path: data/community
+      - name: Verify core provenance and build the corrected add-on
+        run: |
+          git diff --exit-code a634658f9cd2ac54b37832add9c6113db59ca037 HEAD -- src include eci vendor/openevv61 android/native
+          python3 - <<'PY'
+          import sys,zipfile
+          from pathlib import Path
+          with zipfile.ZipFile('native/reloq-c-synth-x64-1.5.0-dev2.nvda-addon') as z:
+              assert z.read('synthDrivers/reloqC/eci.dll')==Path('native/eci.dll').read_bytes()
+          p=Path('addon/synth/manifest.ini');text=p.read_text(encoding='utf8')
+          assert 'version = "1.4.0"' in text
+          p.write_text(text.replace('version = "1.4.0"','version = "1.5.0-dev3"'),encoding='utf8')
+          for locale in ('de','en'):
+              p=Path('addon/synth/doc')/locale/'readme.html';text=p.read_text(encoding='utf8')
+              assert 'Version 1.4.0' in text
+              p.write_text(text.replace('Version 1.4.0','Version 1.5.0-dev3'),encoding='utf8')
+          sys.path.insert(0,'addon')
+          from build_synth import build
+          build(Path('dist/reloq-c-synth-x64-1.5.0-dev3.nvda-addon'),Path('native/eci.dll'),refresh_dictionaries=False)
+          PY
+          cp native/eci.dll dist/eci.dll
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aragonese-final-candidate
+          path: |
+            dist/reloq-c-synth-x64-1.5.0-dev3.nvda-addon
+            dist/eci.dll
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+  windows-final:
+    needs: final
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: aragonese-final-candidate
+          path: candidate
+      - name: Check the native core and adapter
+        shell: pwsh
+        run: |
+          python -B nvda/test_eci_aragonese_native.py --library candidate/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Aragonese regression' }
+          python -B nvda/test_eci_dash_pause.py --library candidate/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'German character regression' }
+          python -B addon/test_synth_native.py --library candidate/eci.dll --addon candidate/reloq-c-synth-x64-1.5.0-dev3.nvda-addon
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA native adapter regression' }
+      - name: Exercise real NVDA after restoring saved settings
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download release-2026.3.1 --repo nvaccess/nvda --pattern nvda_2026.3.1.exe --dir candidate
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA download failed' }
+          if ((Get-FileHash candidate/nvda_2026.3.1.exe -Algorithm SHA256).Hash -ne '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052') { throw 'Unexpected NVDA installer' }
+          $portable=Join-Path $pwd 'portable-nvda'
+          $p=Start-Process (Get-Item candidate/nvda_2026.3.1.exe).FullName -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable installation failed' }
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.5.0-dev3.nvda-addon --plugin addon/test_nvda_real_early_start_plugin.py --work startup-final
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA startup regression' }
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.5.0-dev3.nvda-addon --plugin addon/test_nvda_real_aragonese_plugin.py --work aragonese-final
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA Aragonese regression' }
