@@ -37,6 +37,9 @@ varieties, but /s/ for Benasqués; Mott's Chistabino description records an
 apical /s/. The choice of Castilian Spanish as a first acoustic basis is an
 experiment, not a claim that its /s/ represents every speaker. Castilian
 already has /θ/, but its provider does not accept the Mexican /ʃ/ phoneme.
+The 2023 official orthography describes the ordinary s as an alveolar /s/;
+it does not prescribe whether its articulation is apical. Chistabino's apical
+variant is evidence for one variety, not a standard pronunciation for all.
 
 `castilian_sh_listening.py` creates a labelled, offline PCM sketch using two
 explicit phoneme probes. It takes Mexican /ʃ/, shortens its unvoiced portion
@@ -46,6 +49,11 @@ only to the voice, rate and two probes in this experiment. This is not a
 general synthesizer implementation and cannot demonstrate production-quality
 transitions, word analysis, sentence prosody, other voices or rates. Those
 need synthesis-time integration and their own tests.
+
+For these probes the listener preferred **Probe zwei**, with 30 ms removed
+from the measured fricative window. That listening preference is the starting
+point for a real synthesis-time implementation, not a fixed 30-ms cut to
+apply to arbitrary voices, rates or contexts.
 
 Further reference: [Mott, *Chistabino (Pyrenean Aragonese)*](https://www.cambridge.org/core/journals/journal-of-the-international-phonetic-association/article/chistabino-pyrenean-aragonese/02F4CE9705DC9B69280662963C61FA46).
 

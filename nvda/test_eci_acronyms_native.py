@@ -12,10 +12,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', type=Path, required=True)
     args = parser.parse_args()
-    plurals = ('CDs', 'DVDs', 'ROMs', 'IDs', 'PDFs', 'URLs', 'PACs', 'FAQs', 'SMSs', 'SOSes',
-               'AGBs', 'USBs', 'LKWs', 'WLANs', 'NASAs', 'RAMs', 'KIs')
     checks = 0
     for dialect in (0x10000, 0x10001, 0x40000, 0x120000):
+        plurals = ('CDs', 'DVDs', 'ROMs', 'IDs', 'PDFs', 'URLs')
+        if dialect in (0x10000, 0x10001):
+            plurals += ('PACs', 'FAQs', 'SMSs', 'SOSes', 'NASAs', 'RAMs')
+        elif dialect == 0x40000:
+            plurals += ('AGBs', 'USBs', 'LKWs', 'WLANs', 'KIs')
         engine = DirectEciEngine(args.library.resolve(), dialect=dialect, encoding='utf8', native_voice=True)
         try:
             def phone_groups(text):
@@ -29,14 +32,29 @@ def main():
                 # internal transformation used to generate the plural.
                 examples = {'CDs':'C Dehs', 'DVDs':'D V Dehs', 'PDFs':'P D Effs',
                             'URLs':'U R Els', 'AGBs':'A G Bees', 'USBs':'U S Bees',
-                            'LKWs':'L K Wehs', 'WLANs':'W L A Ens', 'IDs':'Eidies',
-                            'SMSs':'S M Esses'}
+                            'LKWs':'L K Wehs', 'WLANs':'W L A Ens', 'IDs':'Eidies'}
                 for source, expected in examples.items():
                     assert phones(source) == phones(expected), (source, phones(source), phones(expected))
                     checks += 1
             elif dialect in (0x10000, 0x10001):
-                assert phones('SMSs') == phones('S M Esses'), (hex(dialect), phones('SMSs'))
-                checks += 1
+                # Independently stated pronunciations from issue #40. The
+                # English SMS plural is not a German-language example.
+                examples = {'CDs':'C Dees', 'DVDs':'D V Dees', 'ROMs':'roms',
+                            'IDs':'Eye Dees', 'PDFs':'P D Effs', 'URLs':'U R Els',
+                            'PACs':'packs', 'FAQs':'facks', 'SMSs':'S M Esses',
+                            'super PACs':'super packs'}
+                sentence = ('She was also outspent on TV advertising, with a flood of ads '
+                            'from left-leaning PACs and super PACs pushing support for Colom.')
+                examples[sentence] = sentence.replace('PACs', 'packs')
+                for word_seg, camel in ((0, 0), (0, 1), (1, 0), (1, 1)):
+                    engine.set_parameter(WORD_SEGMENTATION, word_seg)
+                    engine.set_parameter(CAMEL_CASE, camel)
+                    for source, expected in examples.items():
+                        assert phone_groups(source) == phone_groups(expected), (hex(dialect), word_seg, camel, source)
+                        assert render(engine, [source])[0] == render(engine, [expected])[0], (hex(dialect), word_seg, camel, source, 'audio differs')
+                        checks += 1
+                engine.set_parameter(WORD_SEGMENTATION, 0)
+                engine.set_parameter(CAMEL_CASE, 0)
             baseline = {word: (phone_groups(word), render(engine, [word])[0])
                         for word in plurals}
             for word_seg, camel in ((0, 1), (1, 0), (1, 1)):

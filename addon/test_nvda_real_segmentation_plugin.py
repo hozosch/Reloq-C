@@ -12,6 +12,14 @@ import wx
 
 RESULT = Path(os.environ['RELOQ_SEGMENTATION_PROBE_RESULT'])
 DIAGNOSE = os.environ.get('RELOQ_SEGMENTATION_DIAGNOSE') == '1'
+AMIR_WORDS = ('available', 'landmark', 'selection', 'Paperback', 'organically',
+              'expression', 'Jackson', 'developmental', 'suggestion')
+ACRONYM_REFERENCES = {'CDs': 'C Dees', 'DVDs': 'D V Dees', 'ROMs': 'roms',
+                      'IDs': 'Eye Dees', 'PDFs': 'P D Effs', 'URLs': 'U R Els',
+                      'PACs': 'packs', 'FAQs': 'facks', 'SMSs': 'S M Esses',
+                      'BlindRadio': 'Blind Radio', 'BlindRSS': 'Blind RSS'}
+ACRONYM_SENTENCE = ('She was also outspent on TV advertising, with a flood of ads '
+                    'from left-leaning PACs and super PACs pushing support for Colom.')
 
 
 class Player:
@@ -37,6 +45,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         wx.CallLater(1500, self.setup)
 
     def fail(self):
+        if hasattr(self, 'builtin_original'):
+            self.builtin[:] = self.builtin_original
         RESULT.write_text(json.dumps({'ok':False, 'error':traceback.format_exc(),
                                       'cases':self.results}, ensure_ascii=False), encoding='utf8')
 
@@ -57,6 +67,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             speechViewer.appendSpeechSequence = lambda seq: self.viewer_records.append(
                 ''.join(item for item in seq if isinstance(item, str)))
             self.speech = speech
+            self.builtin = next(d.dictionary for d in speechDictHandler.listAvailableSpeechDictDefinitions()
+                                if getattr(d.source, 'value', d.source) == 'builtin')
+            self.builtin_original = list(self.builtin)
+            if not self.builtin_original:
+                raise RuntimeError('NVDA builtin dictionary fixture is empty')
             nvwave.WavePlayer = self.player
             reloq.SynthDriver._make_player = staticmethod(self.player)
             speech.cancelSpeech()
@@ -173,13 +188,32 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.cases += [(word,False,text) for text in ('IMPORT:plain', 'IMPORT:digits', 'IMPORT:regex', 'IMPORT:legacy')
                            for word in (False,True)]
             self.cases += [(word,camel,'ACR-' + lang + ':' + text)
-                           for lang, texts in (('EN', ('CDs', 'SMSs', 'MP3', 'BlindRadio', 'BlindRSS')),
-                                               ('DE', ('CDs', 'SMSs', 'BlindRadio')))
+                           for lang, texts in (('EN', ('CDs', 'DVDs', 'ROMs', 'IDs', 'PDFs', 'URLs',
+                                                      'PACs', 'FAQs', 'SMSs', 'MP3', 'BlindRadio', 'BlindRSS')),
+                                               ('ENGB', ('CDs', 'DVDs', 'ROMs', 'IDs', 'PDFs', 'URLs',
+                                                        'PACs', 'FAQs', 'SMSs', 'MP3', 'BlindRadio', 'BlindRSS')),
+                                               ('DE', ('CDs', 'BlindRadio')))
                            for text in texts
+                           for word,camel in ((False,False),(True,False),(False,True),(True,True))]
+            self.cases += [(word,camel,'ACRREF-' + lang + ':' + text)
+                           for lang in ('EN', 'ENGB') for text in ACRONYM_REFERENCES
+                           for word,camel in ((False,False),(True,False),(False,True),(True,True))
+                           if camel or text not in ('BlindRadio', 'BlindRSS')]
+            self.cases += [(word,camel,'ACRPHRASE-' + lang + ':' + mode)
+                           for lang in ('EN', 'ENGB') for mode in ('actual', 'reference')
+                           for word,camel in ((False,False),(True,False),(False,True),(True,True))]
+            self.cases += [(word,camel,'AMIR-' + lang + ':sequence')
+                           for lang in ('EN', 'ENGB')
                            for word,camel in ((False,False),(True,False),(False,True),(True,True))]
             self.cases += [(word,camel,'PERSONAL:ABCs')
                            for word,camel in ((False,False),(True,False),(False,True),(True,True))]
             self.cases += [(word,camel,'NATIVE:' + source) for source in ('TestEintrag', 'reference')
+                           for word,camel in ((False,False),(True,False),(False,True),(True,True))]
+            # The reporter had removed builtin.dic. Empty only this isolated
+            # NVDA process's in-memory dictionary, leaving its file intact.
+            self.cases += [(word,camel,'NOBUILTIN-' + lang + ':' + text)
+                           for lang in ('EN', 'ENGB')
+                           for text in ACRONYM_REFERENCES
                            for word,camel in ((False,False),(True,False),(False,True),(True,True))]
             self.next()
         except BaseException:
@@ -210,8 +244,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                 raise AssertionError('NVDA import changed a replacement or included options: ' + repr(row))
                         if row['input'].startswith('ACR-'):
                             original = row['input'].split(':', 1)[1]
-                            active = (original in ('CDs', 'SMSs', 'MP3') or row['camel'] or
-                                      (row['word'] and row['input'].startswith('ACR-EN:')))
+                            active = (original in ('CDs', 'DVDs', 'ROMs', 'IDs', 'PDFs', 'URLs',
+                                                   'PACs', 'FAQs', 'SMSs', 'MP3') or row['camel'] or
+                                      (row['word'] and row['input'].startswith(('ACR-EN:', 'ACR-ENGB:'))))
                             if active and original not in combined:
                                 raise AssertionError('NVDA builtin dictionary split a protected acronym or case word: ' + repr(row))
                             if not any(original in text for text in row['viewer']):
@@ -226,6 +261,42 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             raise AssertionError('NVDA speech viewer lost the native-dictionary text: ' + repr(row))
                         if row['input'].startswith('YouTube ') and 'YouTube' not in combined:
                             raise AssertionError('Native dictionary key was split: ' + repr(row))
+                        if row['input'].startswith('AMIR-'):
+                            position = 0
+                            for item in AMIR_WORDS:
+                                match = re.search(r'(?<!\w)' + re.escape(item) + r'(?!\w)', combined[position:])
+                                if not match:
+                                    raise AssertionError('NVDA lost or joined an Amir word: ' + repr(row))
+                                position += match.end()
+                    for language in ('EN', 'ENGB'):
+                        amir_rows = [row for row in self.results if row['input'] == 'AMIR-' + language + ':sequence']
+                        if len(amir_rows) != 4 or len({row['pcm_sha256'] for row in amir_rows}) != 1:
+                            raise AssertionError('An Amir word changed with segmentation: ' + repr(amir_rows))
+                        for word, camel in ((False,False),(True,False),(False,True),(True,True)):
+                            for original in ACRONYM_REFERENCES:
+                                if not camel and original in ('BlindRadio', 'BlindRSS'):
+                                    continue
+                                spoken = next(row for row in self.results if row['input'] == 'ACR-' + language + ':' + original
+                                              and (row['word'],row['camel']) == (word,camel))
+                                reference = next(row for row in self.results if row['input'] == 'ACRREF-' + language + ':' + original
+                                                 and (row['word'],row['camel']) == (word,camel))
+                                if spoken['pcm_sha256'] != reference['pcm_sha256']:
+                                    raise AssertionError('Amir pronunciation differed from its reference: ' + repr(spoken))
+                            for original in ACRONYM_REFERENCES:
+                                if not camel and original in ('BlindRadio', 'BlindRSS'):
+                                    continue
+                                normal = next(row for row in self.results if row['input'] == 'ACR-' + language + ':' + original
+                                              and (row['word'],row['camel']) == (word,camel))
+                                no_builtin = next(row for row in self.results if row['input'] == 'NOBUILTIN-' + language + ':' + original
+                                                  and (row['word'],row['camel']) == (word,camel))
+                                if normal['pcm_sha256'] != no_builtin['pcm_sha256']:
+                                    raise AssertionError('builtin dictionary changed protected speech: ' + repr(no_builtin))
+                            sentence = next(row for row in self.results if row['input'] == 'ACRPHRASE-' + language + ':actual'
+                                            and (row['word'],row['camel']) == (word,camel))
+                            reference = next(row for row in self.results if row['input'] == 'ACRPHRASE-' + language + ':reference'
+                                             and (row['word'],row['camel']) == (word,camel))
+                            if sentence['pcm_sha256'] != reference['pcm_sha256']:
+                                raise AssertionError('PACs sentence differed from packs: ' + repr(sentence))
                     for word, camel in ((False,False),(True,False),(False,True),(True,True)):
                         native = next(row for row in self.results if row['input'] == 'NATIVE:TestEintrag'
                                       and (row['word'],row['camel']) == (word,camel))
@@ -248,14 +319,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             rows = [row for row in self.results if row['input'] == dialect + ':' + text]
                             if len(rows) != 2 or rows[0]['pcm_sha256'] == rows[1]['pcm_sha256']:
                                 raise AssertionError('English compound was not segmented in NVDA: ' + repr(rows))
+                self.builtin[:] = self.builtin_original
                 RESULT.write_text(json.dumps({'ok':True,'cases':self.results}, ensure_ascii=False),encoding='utf8')
                 return
             word,camel,text = self.cases[self.case]
             self.speech.cancelSpeech()
+            if text.startswith('NOBUILTIN-') and self.builtin:
+                self.builtin.clear()
             self.synth._wordSegmentation = word
             self.synth._camelCase = camel
-            self.synth.language = ('en_GB' if text.startswith('ENGB:') else
-                                   'en_US' if text.startswith(('ENUS:', 'DICT:', 'COMMUNITY:', 'ACR-EN:')) else 'de_DE')
+            self.synth.language = ('en_GB' if text.startswith(('ENGB:', 'ACR-ENGB:', 'ACRREF-ENGB:', 'ACRPHRASE-ENGB:', 'AMIR-ENGB:', 'NOBUILTIN-ENGB:')) else
+                                   'en_US' if text.startswith(('ENUS:', 'DICT:', 'COMMUNITY:', 'ACR-EN:', 'ACRREF-EN:', 'ACRPHRASE-EN:', 'AMIR-EN:', 'NOBUILTIN-EN:')) else 'de_DE')
             self.records.clear()
             self.viewer_records.clear()
             self.before = [(p,len(p.chunks)) for p in self.players]
@@ -270,6 +344,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             elif text.startswith(('ENUS:', 'ENGB:')):
                 self.speech.speak([text.split(':', 1)[1]])
             elif text.startswith('ACR-'):
+                self.speech.speak([text.split(':', 1)[1]])
+            elif text.startswith('ACRREF-'):
+                self.speech.speak([ACRONYM_REFERENCES[text.split(':', 1)[1]]])
+            elif text.startswith('ACRPHRASE-'):
+                mode = text.split(':', 1)[1]
+                self.speech.speak([ACRONYM_SENTENCE if mode == 'actual' else ACRONYM_SENTENCE.replace('PACs', 'packs')])
+            elif text.startswith('AMIR-'):
+                self.speech.speak(list(AMIR_WORDS))
+            elif text.startswith('NOBUILTIN-'):
                 self.speech.speak([text.split(':', 1)[1]])
             elif text.startswith('PERSONAL:'):
                 self.speech.speak([text.split(':', 1)[1]])

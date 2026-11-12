@@ -24,7 +24,7 @@ def main():
                              'swaphost': ('swap', 'host'), 'swapbuffer': ('swap', 'buffer'),
                              'filecandle': ('file', 'candle'), 'candlefile': ('candle', 'file'),
                              'shopfile': ('shop', 'file'), 'filelock': ('file', 'lock'),
-                             'framebuffer': ('frame', 'buffer'),
+                             'framebuffer': ('frame', 'buffer'), 'lineshape': ('line', 'shape'),
                              'keyframe': ('key', 'frame'), 'blackboard': ('black', 'board'),
                              'newspaper': ('news', 'paper'), 'candlelight': ('candle', 'light'),
                              'homepage': ('home', 'page'), 'waterbed': ('water', 'bed'),
@@ -45,10 +45,15 @@ def main():
                     ('swap','data'), ('swap','name'), ('swap','frame'), ('lock','file'),
                     ('home','spot'), ('top','swap')):
                     compounds[first + second] = (first, second)
+                # The complete set Amir reported in issue #34, rather than
+                # just the two examples initially repeated in discussion.
+                amir_words = ('available', 'landmark', 'selection', 'Paperback',
+                              'organically', 'expression', 'Jackson',
+                              'developmental', 'suggestion')
                 established = ('cupboard', 'Cupboard', 'CUPBOARD', 'cupboards',
                                'breakfast', 'breakfasts', 'raspberry', 'raspberries',
                                'strawberry', 'waistcoat', 'butterfly', 'lighthouse',
-                               'landmark', 'Jackson', 'switchable', 'Switchable',
+                               *amir_words, 'switchable', 'Switchable',
                                'switchably', 'switchability', 'switchless', 'spellless',
                                'switchlessness', 'happiness', 'paintable', 'deletable',
                                'rollable', 'viewable', 'searchable', 'jumpable', 'parkable')
@@ -60,6 +65,8 @@ def main():
                 known_audio = {text: render(engine, [text])[0] for text in established}
                 derived_sentences = ('This setting is switchable.', 'A searchable list is open.')
                 sentence_audio = {text: render(engine, [text])[0] for text in derived_sentences}
+                amir_parts = [word + '  ' for word in amir_words]
+                amir_audio = render(engine, amir_parts)[0]
                 if dialect == 0x10001:
                     # A correct British word and uncertain British compound
                     # readings must not be replaced just because the US
@@ -79,6 +86,17 @@ def main():
                 for text in derived_sentences:
                     assert render(engine, [text])[0] == sentence_audio[text], (dialect, text)
                     checks += 1
+                for word_seg, camel in ((0, 1), (1, 0), (1, 1)):
+                    engine.set_parameter(WORD_SEGMENTATION, word_seg)
+                    engine.set_parameter(CAMEL_CASE, camel)
+                    for word in amir_words:
+                        assert re.findall(r'`\[([^]]+)\]', engine._phonemes_for_probe(word)) == known_phones[word], (dialect, word_seg, camel, word)
+                        assert render(engine, [word])[0] == known_audio[word], (dialect, word_seg, camel, word)
+                        checks += 1
+                    assert render(engine, amir_parts)[0] == amir_audio, (dialect, word_seg, camel, 'Amir list in one utterance')
+                    checks += 1
+                engine.set_parameter(WORD_SEGMENTATION, 1)
+                engine.set_parameter(CAMEL_CASE, 0)
                 if dialect == 0x10001:
                     for word in uk_protected:
                         assert re.findall(r'`\[([^]]+)\]', engine._phonemes_for_probe(word)) == \
