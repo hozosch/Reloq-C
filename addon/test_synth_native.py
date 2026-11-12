@@ -389,7 +389,14 @@ def main():
                                     time.sleep((number % 4) * .004)
                                 driver.cancel()
                                 if number % 20 == 19:
-                                    assert run([recovery]) == reference, (repetition, rate, locale, number, 'recovery changed')
+                                    actual = run([recovery])
+                                    assert actual == reference, (repetition, rate, locale, number, 'recovery changed',
+                                        {'reference_bytes': len(reference), 'actual_bytes': len(actual),
+                                         'reference_sha256': hashlib.sha256(reference).hexdigest(),
+                                         'actual_sha256': hashlib.sha256(actual).hexdigest(),
+                                         'actual_ends_with_reference': actual.endswith(reference),
+                                         'actual_starts_with_reference': actual.startswith(reference),
+                                         'reference_starts_with_actual': reference.startswith(actual)})
                                     assert not errors, (repetition, rate, locale, errors)
                             report["checks"] += 84
                 # Use the actual settings manager, queue and NVDA symbol

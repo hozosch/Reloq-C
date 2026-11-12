@@ -484,6 +484,8 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert any(isinstance(item, guarded) and item.enabled for item in result), result
                 assert not any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "CDs"
                                for item in result), result
+                driver._wordSegmentation = driver._camelCase = False
+                assert driver._protect_tags(["CDs"]) == ["CDs"]
                 speech_dicts.dictionaries["default"] = []
                 saved_imports = driver._imported_dictionaries
                 class EmptyImported:
@@ -518,6 +520,12 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 foreign = ["CDs"]
                 extensions.pre_speech.notify(speechSequence=foreign, symbolLevel=None, priority=0)
                 assert foreign == ["CDs"], foreign
+                active_driver[0] = object()
+                other_synth = ["CDs"]
+                assert extensions.filter_speechSequence.apply(other_synth) is other_synth
+                extensions.pre_speech.notify(speechSequence=other_synth, symbolLevel=None, priority=0)
+                assert other_synth == ["CDs"], other_synth
+                active_driver[0] = driver
                 # ECI dictionary entries with a stock split are also kept
                 # intact without enabling either segmentation option.
                 driver._wordseg_keys = {0x40000: frozenset({"meinwort"}), 0x10000: frozenset()}
