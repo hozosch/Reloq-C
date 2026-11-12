@@ -56,15 +56,18 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             section = config.conf['speech'][synth.name]
             section['_acousticClockMask'] = 0
             old_get_app = wx.GetApp
-            call_after_globals = wx.CallAfter.__globals__
-            old_internal_get_app = call_after_globals['GetApp']
+            old_call_after = wx.CallAfter
+            def no_application(*_args, **_kwargs):
+                raise AttributeError("'NoneType' object has no attribute '_CallAfterId'")
             try:
                 wx.GetApp = lambda: None
-                call_after_globals['GetApp'] = lambda: None
+                # Reproduce the exception from wx.CallAfter on early startup;
+                # the rest of settings restoration uses the real NVDA code.
+                wx.CallAfter = no_application
                 synth.initSettings()
             finally:
                 wx.GetApp = old_get_app
-                call_after_globals['GetApp'] = old_internal_get_app
+                wx.CallAfter = old_call_after
             if synth._acousticClockMask != 0:
                 raise AssertionError('saved timing setting was not restored')
             self.speech.speak(['Die Stimme funktioniert nach dem Laden.'])
