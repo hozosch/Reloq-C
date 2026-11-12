@@ -23,6 +23,7 @@
 #include "delta_rules_c.h"
 #include "evv_arena.h"
 #include "reloq61_url.h"
+#include "reloq61_aragonese.h"
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_eses61.h"
@@ -6045,6 +6046,17 @@ L255:;
     if (r0 != 0) goto L335;
     goto L828;
 L335:;
+    if(delta_lang_now()->id==RELOQ61_ARAGONESE &&
+       reloq61_an_x_is_sh(state,RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,200),
+                          RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,192))) {
+        const uint8_t sh_phone=16;
+        r0=reloq61_typed_lpta_rpta_loadp(DELTA_ENTRY_lpta_rpta_loadp,state,
+            EVV_AT(const delta_token *,RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,200)),
+            (const delta_token *)(base-40));
+        r0=reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s,state,4,1,&sh_phone,0);
+        if(r0!=0)goto L779;
+        goto L828;
+    }
     AT(int32_t, -16) = (STATE_AT(w64, -4));
     AT(int32_t, -12) = (3);
     AT(int32_t, -24) = (STATE_AT(w64, -4));

@@ -102,7 +102,8 @@ def main():
         assert '[.1Un.0tR.2StrIX]' in spelling,spelling
         character=render(german,[EciText('_',True)])[0]
         assert character==render(german,[' `[.1Un.0tR.2StrIX] '])[0]
-        assert character!=render(german,['_'])[0]
+        # Both modes now use the same native character-name table.
+        assert character==render(german,['_'])[0]
         german.set_parameter(PROCESS_TAGS,0)
         assert character==render(german,[EciText('_',True)])[0]
         checks+=6

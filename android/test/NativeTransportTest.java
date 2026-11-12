@@ -88,7 +88,9 @@ public final class NativeTransportTest {
             eq.eqEnabled=false;render(0x40000,eq,"Eine Stimme mit Equalizer.");
             dictionary(arguments[0]);render(0x10000,0,"This is cancellationtoken.");
             render(0x40000,0,"Ich bin TokenX dir.");
+            render(0x130000,0,"Esta ye TokenX.");
             dictionary(arguments[1]);render(0x10000,0,"This is cancellationtoken.");
+            render(0x130000,0,"Esta ye TokenX.");
             dictionary(null);render(0x10000,0,"This is cancellationtoken.");
         } finally {
             worker.submit(() -> NativeEngine.destroy(context)).get(10,TimeUnit.SECONDS);

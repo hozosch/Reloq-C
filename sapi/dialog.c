@@ -112,7 +112,7 @@ static void populate(HWND window,struct dialog *d)
     CheckDlgButton(window,MELLOW_MODE,d->s.mellow_mode?BST_CHECKED:BST_UNCHECKED);
     CheckDlgButton(window,ORIGINAL_ACOUSTIC_CLOCK,
         d->s.original_acoustic_clock==1||(d->s.original_acoustic_clock==2&&
-            (d->dialect==0x20000||d->dialect==0x120000))?BST_CHECKED:BST_UNCHECKED);
+            (d->dialect==0x20000||d->dialect==0x120000||d->dialect==0x130000))?BST_CHECKED:BST_UNCHECKED);
     CheckDlgButton(window,WORD_SEGMENTATION,d->s.word_segmentation?BST_CHECKED:BST_UNCHECKED);
     CheckDlgButton(window,CAMEL_CASE,d->s.camel_case?BST_CHECKED:BST_UNCHECKED);
     CheckDlgButton(window,SHARED,d->shared?BST_CHECKED:BST_UNCHECKED);

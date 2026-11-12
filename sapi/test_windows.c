@@ -39,7 +39,8 @@ static int run_one(int argc,wchar_t **argv)
         if(had_saved!=ERROR_FILE_NOT_FOUND&&(had_saved!=ERROR_SUCCESS||saved_type!=REG_DWORD||saved_bytes!=sizeof saved)){
             RegCloseKey(settings);CoUninitialize();return 1;}
     }
-    unsigned passed=0,expected=first_case?1:112*(all_rates?7:1);ISpVoice *voice=NULL;
+    unsigned passed=0,expected=first_case?1:(unsigned)(sizeof sapi_languages/sizeof *sapi_languages)
+        *(unsigned)(sizeof rates/sizeof *rates)*(all_rates?7u:1u);ISpVoice *voice=NULL;
     for(unsigned native=0;native<(first_case?1u:all_rates?7u:1u);++native){
     if(all_rates&&RegSetValueExW(settings,L"OutputRate",0,REG_DWORD,(const BYTE *)&native,sizeof native)!=ERROR_SUCCESS){hr=E_FAIL;break;}
     hr=CoCreateInstance(&CLSID_SpVoice,NULL,CLSCTX_INPROC_SERVER,&IID_ISpVoice,(void **)&voice);

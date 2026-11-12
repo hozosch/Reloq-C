@@ -92,7 +92,7 @@ class Engine:
                  dialect=0x40000, encoding="cp1252"):
         assert Path(path).name == "eci.dll"
         assert native_voice
-        assert dialect in (0x40000, 0x10000, 0x10001, 0x20000, 0x20001, 0x30000, 0x30001, 0x50000, 0x70000, 0x90000, 0x60000, 0x60001, 0x80000, 0xa0000, 0x120000) and encoding == "utf-8"
+        assert dialect in (0x40000, 0x10000, 0x10001, 0x20000, 0x20001, 0x30000, 0x30001, 0x50000, 0x70000, 0x90000, 0x60000, 0x60001, 0x80000, 0xa0000, 0x120000, 0x130000) and encoding == "utf-8"
         assert lexicon_path is None
         self.dialect = dialect
         self.parts = []
@@ -168,7 +168,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
             assert not any("openevv" in name.lower() for name in names if name not in licenses)
             assert "locale/de/LC_MESSAGES/nvda.mo" in names
             assert "locale/de/manifest.ini" in names
-            assert b"fourteen language variants" in archive.read("manifest.ini")
+            assert b"fifteen language variants" in archive.read("manifest.ini")
             assert "Japanisch" in archive.read("locale/de/manifest.ini").decode("utf-8")
             assert "Griechisch" in archive.read("locale/de/manifest.ini").decode("utf-8")
             assert "globalPlugins/reloqCDictionaries/__init__.py" in names
@@ -395,8 +395,8 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                     assert "availablePausemodes" in str(error)
                 else:
                     raise AssertionError("test did not reproduce the reported 0.2.54 failure")
-                assert set(driver.availableLanguages) == {"de_DE", "en_US", "en_GB", "es_ES", "es_MX", "fr_FR", "fr_CA", "it_IT", "pt_BR", "fi_FI", "ja_JP", "ko_KR", "zh_CN", "el_GR"}
-                assert list(driver.availableLanguages) == ["zh_CN", "de_DE", "en_GB", "en_US", "es_MX", "es_ES", "fi_FI", "fr_FR", "fr_CA", "it_IT", "ja_JP", "ko_KR", "pt_BR", "el_GR"]
+                assert set(driver.availableLanguages) == {"de_DE", "en_US", "en_GB", "es_ES", "es_MX", "fr_FR", "fr_CA", "it_IT", "pt_BR", "fi_FI", "ja_JP", "ko_KR", "zh_CN", "el_GR", "an_ES"}
+                assert list(driver.availableLanguages) == ["zh_CN", "de_DE", "en_GB", "en_US", "es_MX", "es_ES", "fi_FI", "fr_FR", "fr_CA", "it_IT", "ja_JP", "ko_KR", "pt_BR", "el_GR", "an_ES"]
                 assert driver_module.language_for("en", 0x40000) == 0x10000
                 assert driver_module.language_for("zh-TW", 0x40000) == 0x60000
                 assert driver_module.language_for("zh-HK", 0x40000) == 0x60000
@@ -999,7 +999,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                                 assert fresh.voice == "1" and fresh.pitch == 65
                                 fresh.initSettings()
                                 assert fresh.language == expected
-                                assert fresh.originalAcousticClock == (expected in ("es_ES", "el_GR")), (expected, saved)
+                                assert fresh.originalAcousticClock == (expected in ("es_ES", "el_GR", "an_ES")), (expected, saved)
                                 assert config_api.conf["speech"][fresh.name]["language"] == expected
                                 if not saved:
                                     assert fresh.pitch == 65

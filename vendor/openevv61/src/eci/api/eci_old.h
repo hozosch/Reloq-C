@@ -77,6 +77,8 @@ typedef struct OldInst {
     /* And eciPauseMode, which goes the same way. */
     int32_t  pauses;
     int32_t  pauses_sent;
+    /* Families above the original 18 do not fit its overlaid legacy slots. */
+    uint32_t extra_active_dict[2];
 } OldInst;
 
 /* What eciPauseMode a new instance starts with, which eciSetDefaultParam

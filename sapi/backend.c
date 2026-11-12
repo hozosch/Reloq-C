@@ -267,7 +267,7 @@ static HRESULT dictionary(struct sapi_backend *b,const struct sapi_settings *s)
         case 0x40000:prefix=L"DEU";break;case 0x50000:prefix=L"ITA";break;
         case 0x60000:prefix=L"CHS";break;case 0x70000:prefix=L"PTB";break;
         case 0x80000:prefix=L"JPN";break;case 0x90000:prefix=L"FIN";break;
-        case 0xa0000:prefix=L"KOR";break;case 0x120000:prefix=L"ELL";break;
+        case 0xa0000:prefix=L"KOR";break;case 0x120000:prefix=L"ELL";break;case 0x130000:prefix=L"ARA";break;
         default:return E_INVALIDARG;}
         static const WCHAR *suffix[]={L"main.dic",L"Root.dic",L"abbr.dic"};
         for(unsigned i=0;i<6;++i){WCHAR file[2112];

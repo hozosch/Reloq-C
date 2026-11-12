@@ -2921,8 +2921,8 @@ L939:;
     AT(int32_t, -20) = (delta_sym_ref[1161]);
     AT(int32_t, -16) = (delta_sym_ref[1162]);
 L979:;
-    /* Native underscore name: Unterstrich. */
-    AT(int32_t, -32) = (11);
+    /* Native underscore name: Unterstrich, with compound stress. */
+    AT(int32_t, -32) = (12);
     AT(int32_t, -40) = (delta_sym_ref[1164]);
     goto L13708;
     goto L1045;

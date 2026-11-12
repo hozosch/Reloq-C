@@ -202,15 +202,14 @@ boundaries, /ʃ/, /tʃ/ and /θ/, across three output rates, two speeds and two
 voice genders. The Spanish, German, English and Greek controls also matched
 the previous library's PCM in the cases checked.
 
-This is still research scaffolding, **not a selectable Aragonese voice**.
-Orthographic analysis, localized character and number rules, dictionary
-ownership and all three platform integrations remain unfinished. In
-particular, the inherited 18-family active-dictionary slots must be extended
-before the private nineteenth family can safely use dictionaries. The /tʃ/
-adjacency heuristic still cannot distinguish a genuine /t/ followed by /ʃ/.
-The shared voice-table capacity is expanded for the extra private identity;
-the pronunciation experiments remain usable because their builder removes
-the scoped hooks only in temporary Castilian source copies.
+The next development candidate exposes this identity as an **initial test
+voice**. Its dictionary slots are separate from Spanish, and its native
+orthography includes ny/ñ and some x/ix cases. The remaining ambiguous x
+spellings still need lexical coverage. Number words and character names still
+inherit much of Castilian and are not yet a localized Aragonese system. The
+/tʃ/ adjacency heuristic still cannot distinguish a genuine /t/ followed
+by /ʃ/. The pronunciation experiments remain usable because their builder
+removes scoped hooks only in temporary Castilian source copies.
 
 On Linux with unstripped local ELF builds, the frame comparison can be
 repeated against an existing disposable timing-probe library:

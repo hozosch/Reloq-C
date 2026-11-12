@@ -101,11 +101,12 @@ static void unlock_session(reloq_eci_atomic *p)
 enum { CONTROL_FIELDS = 62, MAX_FRAME_SAMPLES = 4096 };
 static const unsigned int eci_languages[]={0x10000,0x10001,0x20000,0x20001,
     0x30000,0x30001,0x40000,0x50000,0x60000,0x60001,0x70000,0x80000,
-    0x90000,0xa0000,0x120000};
+    0x90000,0xa0000,0x120000,0x130000};
+#define ECI_LANGUAGE_COUNT (sizeof eci_languages/sizeof *eci_languages)
 static unsigned dictionary_language_slot(int language)
 {
     unsigned i=0;
-    while(i<sizeof eci_languages/sizeof *eci_languages&&eci_languages[i]!=(unsigned)language)++i;
+    while(i<ECI_LANGUAGE_COUNT&&eci_languages[i]!=(unsigned)language)++i;
     return i;
 }
 _Static_assert(sizeof(short) == sizeof(int16_t), "ECI output needs 16-bit short");
@@ -193,7 +194,7 @@ struct reloq_eci_engine {
     int saved_voices[16][8];char voice_names[17][120];
     int real_voice_values[17][8];unsigned real_voice_flags[17];
     struct reloq_eci_dictionary *dictionaries,*active_dictionary;
-    struct reloq_eci_dictionary *language_dictionaries[15];
+    struct reloq_eci_dictionary *language_dictionaries[ECI_LANGUAGE_COUNT];
     int high_rate_profile;
     int error;
     int last_synthesis_error;
@@ -573,7 +574,7 @@ static int synthesize_generic(struct reloq_eci_engine *e,
     int rendered=reset?RELOQ_DE_UTTERANCE_INVALID:reloq_language_rules_render(e->language,phrase,length,e->process_tags||admitted,
         frame_volume?(e->native_volume_active?e->native_volume:e->generic_volume):100,
         e->native_wpm,e->original_acoustic_clock==1||(e->original_acoustic_clock==2&&
-            (e->language==0x20000||e->language==0x120000)),&settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
+            (e->language==0x20000||e->language==0x120000||e->language==0x130000)),&settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
         send_pcm,send_generic_index,&bridge);
     reloq_wordseg_scope(wordseg);
     free(english_indices);free(english_pitch);
@@ -686,7 +687,7 @@ ECIHand ECICALL eciNewEx(int language)
     /* Language words carry an optional Unicode code-set byte. */
     int base=language&~0xff00;
     if ((language&0xff00)!=0 && (language&0xff00)!=0x800)return NULL;
-    if (!reloq61_language_supported(base)||dictionary_language_slot(base)>=15) return NULL;
+    if (!reloq61_language_supported(base)||dictionary_language_slot(base)>=ECI_LANGUAGE_COUNT) return NULL;
     struct reloq_eci_engine *e = calloc(1, sizeof *e);
     if (!e) return NULL;
     epoch_init(&e->busy);

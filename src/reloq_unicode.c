@@ -542,9 +542,8 @@ static int unicode_admit(const unsigned char *text,size_t length,
         struct reloq_character_reading native_reading;
         int native=mode&&(!label||matched<=end)&&
             reloq_character_read_native(c,english,&native_reading)==1;
-        /* The native underscore reading already has noun stress. Route this
-         * explicit character through that reading, not the ambiguous word. */
-        int raw=mode&&!english&&c!='`'&&c!='_'&&(!label||matched<=end)&&
+        /* Native character rules own their names, including underscore. */
+        int raw=mode&&!english&&c!='`'&&(!label||matched<=end)&&
             reloq_character_native_available(c,0);
         if(native_run&&!raw) {
             if(add(&b," `ts0 ",6)){rc=-2;goto fail;}

@@ -263,7 +263,7 @@ static void *take_eci_dictionary_worker(struct reloq_eci_engine *e,int language,
 static int switch_eci_language(struct reloq_eci_engine *e,int language)
 {
     int base=language&~0xff00;
-    if(((language&0xff00)!=0&&(language&0xff00)!=0x800)||!reloq61_language_supported(base)||dictionary_language_slot(base)>=15)return -1;
+    if(((language&0xff00)!=0&&(language&0xff00)!=0x800)||!reloq61_language_supported(base)||dictionary_language_slot(base)>=ECI_LANGUAGE_COUNT)return -1;
     if(base==e->language){e->language_dialect=language;return 0;}
     struct reloq_eci_dictionary *set=e->language_dictionaries[dictionary_language_slot(base)];
     void *next=take_eci_dictionary_worker(e,base,set,1);if(!next)return -1;
@@ -301,7 +301,7 @@ ECIDictHand ECICALL eciDeleteDict(ECIHand handle,ECIDictHand dictionary)
     struct reloq_eci_engine *e=handle;if(!e||epoch_get(&e->busy))return dictionary;
     struct reloq_eci_dictionary *d=find_eci_dictionary(e,dictionary);if(!d)return dictionary;
     if(e->active_dictionary==d&&eciSetDict(e,NULL)!=eciDictNoError)return dictionary;
-    for(unsigned i=0;i<15;++i)if(e->language_dictionaries[i]==d)e->language_dictionaries[i]=NULL;
+    for(unsigned i=0;i<ECI_LANGUAGE_COUNT;++i)if(e->language_dictionaries[i]==d)e->language_dictionaries[i]=NULL;
     struct reloq_eci_dictionary **at=&e->dictionaries;while(*at!=d)at=&(*at)->next;*at=d->next;
     reloq61_worker_free(d->api_worker);reloq61_worker_free(d->cached_worker);
     for(unsigned i=0;i<4;++i){free(d->volumes[i]);}free(d);return NULL;

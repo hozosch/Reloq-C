@@ -13,6 +13,7 @@ from version import VERSION
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'nvda'))
 from _reloq_dictionaries import FILES, validate_snapshot
+from _reloq_languages import LANGUAGE_DISPLAY_ORDER
 
 
 def main():
@@ -72,7 +73,7 @@ def main():
     assert set(exports) == required, exports
     hashes = {name: {'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()} for name, data in entries.items()}
     entries['package.json'] = (json.dumps({'version': VERSION + '-payload', 'architecture': args.arch,
-        'voices': 14, 'core_copies': 1, 'dictionary_commit': dictionary['commit'], 'files': hashes}, indent=2) + '\n').encode()
+        'voices': len(LANGUAGE_DISPLAY_ORDER), 'core_copies': 1, 'dictionary_commit': dictionary['commit'], 'files': hashes}, indent=2) + '\n').encode()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(args.output, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for name, data in sorted(entries.items()):

@@ -6,8 +6,13 @@ Run the supplied ReLoq C SAPI5 setup executable. Inno Setup offers the supported
 languages and initially selects the Windows display language. Administrator
 permission is requested. The single installer installs both x64 and x86 voices
 on compatible 64-bit Windows, and x86 voices on 32-bit Windows. Each installed
-architecture registers 14 languages. Restart existing speech applications.
+architecture registers 15 languages. Restart existing speech applications.
 Choose SAPI5 and a “ReLoq C” voice.
+
+Aragonese is an initial test voice; number and character names are not yet
+fully localized. SAPI has no assigned Aragonese Windows language identifier,
+so the test voice uses the identifier for Spanish (Spain) in SAPI metadata.
+Applications that filter voices by language may therefore group it with Spanish.
 
 The installation is under %ProgramFiles%\ReLoq C\SAPI5. The x86 components
 live in its x86 subfolder. Both architectures share the current user's settings
@@ -103,7 +108,7 @@ when upgrading. “Mellow mode” softens periodic voice presence around 3–4 k
 rates of 16 kHz and above, omits added richness from 22 kHz and reduces
 voiced breathiness; it is off by default.
 “Original timing (5 ms)” selects the clock for the chosen language. It is on
-by default for Castilian Spanish and Greek, and off for the other languages.
+by default for Castilian Spanish, Greek and Aragonese, and off for the other languages.
 With shared settings enabled, a manual choice applies to every language.
 The speed and WPM scales do not change.
 Unchanged dictionary paths retain initialized language data. Small metadata
@@ -146,7 +151,7 @@ and native imports are checked. Automated Windows installation, SAPI stream
 conversion and removal are exercised by the installer workflow. This does not
 measure audible latency or dropouts on individual sound devices.
 
-Test-SAPI.exe checks all 14 installed languages with eight successive application
+Test-SAPI.exe checks all 15 installed languages with eight successive application
 format requests, including reverse changes. It verifies that native synthesis
 stays at the selected rate, the application stream uses its requested rate and
 utterance duration remains consistent. Speech stays in memory: no audio file

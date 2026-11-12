@@ -1,5 +1,5 @@
-/* Private Aragonese research backend. No platform exposes it yet.
- * This shares immutable Castilian resources but owns its language identity.
+/* Initial Aragonese backend: shares immutable Castilian resources but owns
+ * its language identity, pronunciation rules, and dictionaries.
  */
 #include <string.h>
 #include <stdlib.h>
@@ -117,4 +117,44 @@ int reloq61_an_standalone_sh(void *state,int32_t token_ref)
     int affricate=!setscan_l(d,4)&&!test_string_s(d,4,1,&stop);
     restore_cursor(d,&saved);
     return found&&!affricate;
+}
+
+/* Conservative native spelling cases: vowel+ix and word-initial xa/xo/xu.
+ * Other x spellings can be /ks/ or /sh/ and remain with the inherited rule
+ * until the lexicon can resolve them. The word fence prevents a match across
+ * adjacent words. Nothing is changed in the caller's scanner. */
+int reloq61_an_x_is_sh(void *state,int32_t begin_ref,int32_t end_ref)
+{
+    delta_state *d=state;struct saved_cursor saved;
+    if(!begin_ref||!end_ref||!save_cursor(d,&saved))return 0;
+    word_fence(d);
+    lpta_loadp(d,EVV_AT(const delta_token *,begin_ref));
+    int left=setscan_l(d,1),match=0;
+    if(!left) {
+        /* setscan only establishes a cursor; it does not itself test the
+         * word fence. Try a step to tell the start of a word from an
+         * ordinary preceding letter. */
+        EVV_AT(delta_vars *,d->vars)->scan_held=0;
+        left=advance_tok(d)!=0;
+    }
+    if(left) {
+        lpta_loadp(d,EVV_AT(const delta_token *,end_ref));
+        if(!setscan_r(d,1)) {
+            const uint8_t vowels[]={1,4,5,6,9,10};
+            for(size_t i=0;i<sizeof vowels;++i)
+                if(!testFldeq(d,1,0,vowels[i])){match=1;break;}
+        }
+    } else {
+        lpta_loadp(d,EVV_AT(const delta_token *,begin_ref));
+        if(setscan_l(d,1))goto done;
+        if(testFldeq(d,1,0,3)&&testFldeq(d,1,0,8))goto done;
+        if(!advance_tok(d)) {
+            const uint8_t vowels[]={1,2,4,5,6,7,9,10};
+            for(size_t i=0;i<sizeof vowels;++i)
+                if(!testFldeq(d,1,0,vowels[i])){match=1;break;}
+        }
+    }
+done:
+    restore_cursor(d,&saved);
+    return match;
 }

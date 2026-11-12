@@ -128,16 +128,20 @@ msgstr ""
 msgid "Greek"
 msgstr ""
 
+#: nvda/_reloq_languages.py
+msgid "Aragonese"
+msgstr ""
+
 #. Translators: Add-on name shown in NVDA's add-on manager.
 #: addon/build_translations.py:30
-msgid "Eloquence C: fourteen language variants"
+msgid "Eloquence C: fifteen language variants"
 msgstr ""
 
 #. Translators: Add-on description; this refers to the spoken language.
 #: addon/build_translations.py:32
 msgid ""
-"Native C synthesizer with fourteen language variants at 8 to 48 kHz, "
-"including Japanese, Korean, Chinese and Greek."
+"Native C synthesizer with fifteen language variants at 8 to 48 kHz, "
+"including Aragonese, Japanese, Korean, Chinese and Greek."
 msgstr ""
 
 #: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:28

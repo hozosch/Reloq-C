@@ -5613,6 +5613,7 @@ int32_t reloq_eses61_apply_span_n_rules(void *state, int32_t p0, int32_t p1, int
     unsigned char *param = base + 8;
     int32_t arg[8];
     int argn = 0;
+    int aragonese_ny = 0, aragonese_ny_candidate = 0;
     int32_t r0 = 0, r1 = 0, r2 = 0, r3 = 0, r4 = 0, r5 = 0, r6 = 0, r7 = 0;
 
     if (frame == 0)
@@ -5647,20 +5648,37 @@ int32_t reloq_eses61_apply_span_n_rules(void *state, int32_t p0, int32_t p1, int
 L206:;
     r0 = reloq61_typed_test_string_s(DELTA_ENTRY_test_string_s, state, (uint8_t)(1), (uint8_t)(1), EVV_AT(const uint8_t *, delta_sym_ref[1142]));
     if (r0 == 0) goto L247;
+    /* Aragonese ny is one palatal nasal. Match the following source token
+     * in the native spelling rule, after the dictionary has had priority. */
+    if(delta_lang_now()->id==RELOQ61_ARAGONESE) {
+        const uint8_t lower_y=30,upper_y=51;
+        r0=reloq61_typed_lpta_loadp(DELTA_ENTRY_lpta_loadp,state,(const delta_token *)(base-20));
+        r0=reloq61_typed_setscan_r(DELTA_ENTRY_setscan_r,state,1);
+        if(!r0)r0=reloq61_typed_test_string_s(DELTA_ENTRY_test_string_s,state,1,1,&lower_y);
+        if(r0) {
+            r0=reloq61_typed_lpta_loadp(DELTA_ENTRY_lpta_loadp,state,(const delta_token *)(base-20));
+            r0=reloq61_typed_setscan_r(DELTA_ENTRY_setscan_r,state,1);
+            if(!r0)r0=reloq61_typed_test_string_s(DELTA_ENTRY_test_string_s,state,1,1,&upper_y);
+        }
+        if(!r0){aragonese_ny_candidate=1;goto L247;}
+    }
     goto L363;
 L247:;
     r0 = reloq61_typed_savescptr(DELTA_ENTRY_savescptr, state, (int16_t)(2), (delta_loc *)(base + (-20)));
+    /* Unlike Spanish nn, ny is also a digraph before another letter. */
+    if(aragonese_ny_candidate){aragonese_ny=1;goto L363;}
     r0 = reloq61_typed_inline61_lflags(DELTA_ENTRY_inline61_lflags, state, (int32_t)(1));
     r0 = reloq61_typed_inline61_lnode(DELTA_ENTRY_inline61_lnode, state, (int32_t)((int32_t)STATE(int32_t, w65)));
     r0 = reloq61_typed_inline61_loffset(DELTA_ENTRY_inline61_loffset, state, (int32_t)(0));
     r0 = reloq61_typed_test_ptr(DELTA_ENTRY_test_ptr, state);
-    if (r0 == 0) goto L363;
+    if (r0 == 0) {aragonese_ny=aragonese_ny_candidate;goto L363;}
+    aragonese_ny=0;
     AT(int32_t, -4) = (0);
     r0 = reloq61_typed_backtrack_function(DELTA_ENTRY_backtrack_function, state, (int32_t *)(base + (-4)));
     goto L481;
 L363:;
     r0 = reloq61_typed_lpta_rpta_loadp(DELTA_ENTRY_lpta_rpta_loadp, state, (const delta_token *)(base + (-12)), (const delta_token *)(base + (-20)));
-    r0 = reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s, state, (uint8_t)(4), (uint8_t)(1), EVV_AT(const uint8_t *, delta_sym_ref[1148]), (uint8_t)(0));
+    r0 = reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s, state, (uint8_t)(4), (uint8_t)(1), EVV_AT(const uint8_t *, delta_sym_ref[aragonese_ny?1150:1148]), (uint8_t)(0));
     if (r0 != 0) goto L427;
     goto L455;
 L427:;

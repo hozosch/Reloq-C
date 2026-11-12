@@ -35,6 +35,7 @@ def main():
             folder=build/name;folder.mkdir();folders.append(folder)
             (folder/"ENUmain.dic").write_bytes(b'cancellationtoken\t'+value+b'\n')
             (folder/"DEUmain.dic").write_bytes(b'TokenX\tbei\n')
+            (folder/"ARAmain.dic").write_bytes(b'TokenX\t'+value+b'\n')
         subprocess.run(["cc","-std=c11","-Wall","-Wextra","-Werror","-fPIC","-shared",
             "-I"+str(java/"include"),"-I"+str(java/"include/linux"),"-I"+str(ROOT/"include"),
             str(ROOT/"android/native/reloq_jni.c"),str(library),

@@ -25,7 +25,7 @@ final class VoiceSettings {
         for(int i=0;i<Catalog.LANGUAGES.length;++i)if(Catalog.LANGUAGES[i].id==dialect)return 1<<i;
         return 0;
     }
-    static int defaultClockMask() {return clockBit(0x20000)|clockBit(0x120000);}
+    static int defaultClockMask() {return clockBit(0x20000)|clockBit(0x120000)|clockBit(0x130000);}
     boolean originalClock(int dialect) {return (acousticClockMask&clockBit(dialect))!=0;}
     void setOriginalClock(int dialect,boolean enabled) {
         int bit=clockBit(dialect);acousticClockMask=enabled?acousticClockMask|bit:acousticClockMask&~bit;

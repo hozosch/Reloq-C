@@ -79,7 +79,7 @@ static const char *dictionary_prefix(int language)
     case 0x60000:case 0x60001:return "CHS";
     case 0x70000:return "PTB";case 0x80000:return "JPN";
     case 0x90000:return "FIN";case 0xa0000:return "KOR";
-    case 0x120000:return "ELL";default:return NULL;
+    case 0x120000:return "ELL";case 0x130000:return "ARA";default:return NULL;
     }
 }
 static int dictionary_compare(const void *a,const void *b)

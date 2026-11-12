@@ -1,0 +1,164 @@
+name: Aragonese development candidate
+on:
+  push:
+    branches: [codex/aragonese-private-core-20261112]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  report-start:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record this test run
+        run: |
+          mkdir -p .codex-tests
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path('.codex-tests/aragonese-run.json').write_text(json.dumps({
+              'run_id': int(os.environ['GITHUB_RUN_ID']),
+              'source_commit': os.environ['GITHUB_SHA']}, indent=2) + '\n')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .codex-tests/aragonese-run.json
+          git commit -m 'Record Aragonese test run [skip ci]'
+          git push origin HEAD:${GITHUB_REF}
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      RELOQ_BUILD_EPOCH: '1700000000'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: dictionary-snapshot
+          run-id: 43102437479
+          github-token: ${{ github.token }}
+          path: data/community
+      - name: Install compiler and translation tools
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=2 install -y --no-install-recommends gcc-mingw-w64-x86-64-posix gettext
+      - name: Check compact names and build the Windows engine
+        run: |
+          python3 -B tests/test_unicode_names_compact.py
+          make -C eci -j2 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
+          make -C sapi -j2 CC=x86_64-w64-mingw32-gcc-posix BUILD=build build/ReLoqSapi.dll build/Test-SAPI.exe
+      - name: Build the NVDA test add-on
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import sys
+          p=Path('addon/synth/manifest.ini')
+          original=p.read_text(encoding='utf8')
+          assert 'version = "1.4.0"' in original
+          p.write_text(original.replace('version = "1.4.0"','version = "1.5.0-dev1"'), encoding='utf8')
+          for locale in ('de','en'):
+              readme=Path('addon/synth/doc')/locale/'readme.html'
+              text=readme.read_text(encoding='utf8')
+              assert 'Version 1.4.0' in text
+              readme.write_text(text.replace('Version 1.4.0','Version 1.5.0-dev1'),encoding='utf8')
+          sys.path.insert(0,'addon')
+          from build_synth import build
+          build(Path('dist/reloq-c-synth-x64-1.5.0-dev1.nvda-addon'),Path('eci/eci.dll'),refresh_dictionaries=False)
+          PY
+          cp eci/eci.dll dist/eci.dll
+          cp sapi/build/ReLoqSapi.dll sapi/build/Test-SAPI.exe dist/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aragonese-test-candidate
+          path: |
+            dist/reloq-c-synth-x64-1.5.0-dev1.nvda-addon
+            dist/eci.dll
+            dist/ReLoqSapi.dll
+            dist/Test-SAPI.exe
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+  windows:
+    needs: build
+    runs-on: windows-2022
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: aragonese-test-candidate
+          path: candidate
+      - name: Test the Windows engine and dictionary adapter
+        shell: pwsh
+        run: |
+          python -B nvda/test_eci_aragonese_native.py --library candidate/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Aragonese rule or dictionary regression' }
+          python -B nvda/test_eci_standard_api.py --library candidate/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'ECI API regression' }
+          python -B nvda/test_eci_dash_pause.py --library candidate/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'German punctuation regression' }
+          python -B nvda/test_eci_analysis_options.py --library candidate/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Character mode regression' }
+          python -B nvda/test_eci_wordseg_native.py --library candidate/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Word segmentation regression' }
+          python -B nvda/test_eci_acronyms_native.py --library candidate/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Acronym regression' }
+          python -B addon/test_synth_native.py --library candidate/eci.dll --addon candidate/reloq-c-synth-x64-1.5.0-dev1.nvda-addon
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA native adapter regression' }
+          $p = Start-Process regsvr32.exe -ArgumentList '/s', (Get-Item candidate/ReLoqSapi.dll).FullName -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw 'SAPI registration failed' }
+          & candidate/Test-SAPI.exe
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI language or speech regression' }
+          & candidate/Test-SAPI.exe --dictionarycase
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI dictionary regression' }
+          $p = Start-Process regsvr32.exe -ArgumentList '/s', '/u', (Get-Item candidate/ReLoqSapi.dll).FullName -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw 'SAPI unregistration failed' }
+      - name: Install and exercise real NVDA
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download release-2026.3.1 --repo nvaccess/nvda --pattern nvda_2026.3.1.exe --dir candidate
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA download failed' }
+          if ((Get-FileHash candidate/nvda_2026.3.1.exe -Algorithm SHA256).Hash -ne '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052') { throw 'Unexpected NVDA installer' }
+          $portable = Join-Path $pwd 'portable-nvda'
+          $p = Start-Process (Get-Item candidate/nvda_2026.3.1.exe).FullName -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable installation failed' }
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.5.0-dev1.nvda-addon --plugin addon/test_nvda_real_aragonese_plugin.py --work aragonese-probe
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA Aragonese regression' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aragonese-real-nvda-results
+          path: |
+            aragonese-probe/result.json
+            aragonese-probe/nvda.log
+          if-no-files-found: ignore
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - run: sdkmanager 'platforms;android-35'
+      - name: Test Android locale, settings and dictionaries
+        run: |
+          python3 android/test_settings.py --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar" --settings-only
+          make -C eci -j2 libreloq_eci.so PROVIDER_LTO=-flto=2
+          python3 android/test_native_transport.py --java-home "$JAVA_HOME"

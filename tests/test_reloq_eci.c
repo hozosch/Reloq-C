@@ -501,7 +501,7 @@ int main(void)
     CHECK(!strcmp(version, "1.2.2"));
     int languages = 0;
     CHECK(eciGetAvailableLanguages(NULL, &languages) == 0 &&
-          languages == 15);
+          languages == 16);
     unsigned int code = 123;
     languages = 1;
     CHECK(eciGetAvailableLanguages(&code, &languages) == 0 &&
@@ -512,7 +512,7 @@ int main(void)
     const int additional_languages[] = {
         0x10001, 0x20000, 0x20001, 0x30000, 0x30001,
         0x50000, 0x70000, 0x90000, 0x60000, 0x60001,
-        0x80000, 0xa0000, 0x120000
+        0x80000, 0xa0000, 0x120000, 0x130000
     };
     for (size_t i = 0; i < sizeof additional_languages /
                                   sizeof additional_languages[0]; ++i) {

@@ -109,7 +109,7 @@ static int synthesize_languages(struct reloq_eci_engine *e,
     }
     int language=e->language,configured_language=e->language,result=RELOQ_ECI_OK;
     void *configured_worker=e->rule_worker;
-    void *workers[15]={0};int languages[15]={0};size_t worker_count=0;
+    void *workers[ECI_LANGUAGE_COUNT]={0};int languages[ECI_LANGUAGE_COUNT]={0};size_t worker_count=0;
     runs[0]=(struct language_run){0,length,language};count=1;
     for(size_t at=0;at<length;) {
         struct reloq_inline_tag t=source_tag(text,length,modes,at);
@@ -185,7 +185,7 @@ static int synthesize_languages(struct reloq_eci_engine *e,
         } else {
             size_t i=0;while(i<worker_count&&languages[i]!=e->language)++i;
             if(i==worker_count) {
-                if(worker_count==15){result=RELOQ_ECI_MEMORY;goto run_done;}
+                if(worker_count==ECI_LANGUAGE_COUNT){result=RELOQ_ECI_MEMORY;goto run_done;}
                 languages[i]=e->language;workers[i]=reloq61_worker_new(e->language);++worker_count;
                 if(workers[i]&&reloq61_worker_dictionary(workers[i],e->dictionary_path)) {result=RELOQ_ECI_INVALID;goto run_done;}
             }

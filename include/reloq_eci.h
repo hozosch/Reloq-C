@@ -129,7 +129,7 @@ enum {
     RELOQ_ECI_EQ_MID = 0x1019,
     RELOQ_ECI_EQ_HIGH = 0x101a,
     /* 0: 1-ms controls; 1: original 5-ms clock; 2: choose per language.
-     * Automatic uses 5 ms for Castilian Spanish and Greek, 1 ms otherwise.
+     * Automatic uses 5 ms for Castilian Spanish, Greek and Aragonese, 1 ms otherwise.
      * Native VS and VWPM duration scales are unchanged in every mode. */
     RELOQ_ECI_ORIGINAL_ACOUSTIC_CLOCK = 0x101b,
     /* Optional shared text analysis controls; disabled by default. */
@@ -153,7 +153,8 @@ enum {
     RELOQ_ECI_JAPANESE = 0x00080000,
     RELOQ_ECI_FINNISH = 0x00090000,
     RELOQ_ECI_KOREAN = 0x000a0000,
-    RELOQ_ECI_GREEK = 0x00120000
+    RELOQ_ECI_GREEK = 0x00120000,
+    RELOQ_ECI_ARAGONESE = 0x00130000
 };
 #define RELOQ_ECI_EQ_FILTER_COUNT 5
 #define RELOQ_ECI_EQ_FILTER_STRIDE 4

@@ -155,6 +155,17 @@ def private_castilian_source(source: Path, work: Path) -> Path:
         text = replace_once(text,
             '    if(delta_lang_now()->id==RELOQ61_ARAGONESE&&reloq61_an_initial_aw(state,STATE_AT(w26,-4)))\n'
             '        STATE(int32_t,f33)=(int32_t)((int64_t)STATE(int32_t,f33)*70/100);\n', '')
+        text = replace_once(text, '    int aragonese_ny = 0, aragonese_ny_candidate = 0;\n', '')
+        start = text.index('    /* Aragonese ny is one palatal nasal.')
+        end = text.index('    goto L363;', start)
+        text = text[:start] + text[end:]
+        text = replace_once(text,
+            '    /* Unlike Spanish nn, ny is also a digraph before another letter. */\n'
+            '    if(aragonese_ny_candidate){aragonese_ny=1;goto L363;}\n', '')
+        text = replace_once(text,
+            '    if (r0 == 0) {aragonese_ny=aragonese_ny_candidate;goto L363;}\n'
+            '    aragonese_ny=0;', '    if (r0 == 0) goto L363;')
+        text = replace_once(text, 'delta_sym_ref[aragonese_ny?1150:1148]', 'delta_sym_ref[1148]')
     elif source.name.endswith('c30_eses61.c'):
         start = text.index('    if(delta_lang_now()->id==RELOQ61_ARAGONESE&&reloq61_an_aw(')
         end = text.index('    r0 = reloq61_typed_succeed(DELTA_ENTRY_succeed, state);', start)

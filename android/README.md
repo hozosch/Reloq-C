@@ -19,10 +19,10 @@ do not transfer automatically between the two identities.
 
 Open **ReLoq C** to adjust its settings or read a test text. To use it
 with TalkBack or another client, open **Android speech settings** and choose
-**ReLoq C** as the preferred text-to-speech engine. All 15 language
+**ReLoq C** as the preferred text-to-speech engine. All 16 language
 variants and eight named voice presets are available, including separate
 mainland and Taiwan Mandarin routes. Existing saved language indices retain
-their meaning; Taiwan Mandarin is appended to the catalogue.
+their meaning; Taiwan Mandarin and the initial Aragonese test voice are appended to the catalogue.
 
 The speech engine and live settings have been confirmed in practical use.
 The APK retains the signing certificate and app identity used by version 1.1.2.
@@ -81,7 +81,7 @@ text** starts a speech sample, and **Stop** interrupts it.
   text and pauses. Very high values can hit timing limits.
 - All seven sample rates from 8 to 48 kHz, the three native pause policies and
   optional ECI command processing are available. **Use original question intonation** selects the native question contour for German and US English; it is off by default. **Use abbreviation dictionary**
-  starts enabled; **Phrase prediction** starts disabled. **Mellow mode** softens voiced presence around 3–4 kHz at rates of 16 kHz and above, omits added richness from 22 kHz and reduces voiced breathiness. It is off by default. **Original acoustic timing (5 ms)** is saved per selected language; Castilian Spanish and Greek default to 5 ms and other languages to 1 ms. The rate and WPM scales are unchanged. Prediction uses the
+  starts enabled; **Phrase prediction** starts disabled. **Mellow mode** softens voiced presence around 3–4 kHz at rates of 16 kHz and above, omits added richness from 22 kHz and reduces voiced breathiness. It is off by default. **Original acoustic timing (5 ms)** is saved per selected language; Castilian Spanish, Greek and Aragonese default to 5 ms and other languages to 1 ms. The rate and WPM scales are unchanged. Prediction uses the
   language core to infer phrase boundaries in unpunctuated text. Main and Root
   pronunciation volumes remain separate from abbreviation expansion. Initial output is 11,025 Hz.
   Android's media volume continues to control playback independently of the
@@ -202,7 +202,7 @@ storage/alignment, signatures and ZIP alignment are checked during the build.
 
 ## Validation
 
-Host tests exercise 120 voice identifiers, locale routing, streaming order,
+Host tests exercise 128 voice identifiers, locale routing, streaming order,
 backpressure and cancellation. The settings test covers speed inversion,
 physical pitch scaling, manual overrides, preset separation, preference
 migration and dictionary byte/case/priority handling. A three-passage native
