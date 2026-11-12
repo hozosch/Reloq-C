@@ -205,11 +205,17 @@ the previous library's PCM in the cases checked.
 The next development candidate exposes this identity as an **initial test
 voice**. Its dictionary slots are separate from Spanish, and its native
 orthography includes ny/ñ and some x/ix cases. The remaining ambiguous x
-spellings still need lexical coverage. Number words and character names still
+spellings still need lexical coverage: for example, fixar and mixina still
+have the inherited /ks/ reading. Number words and character names still
 inherit much of Castilian and are not yet a localized Aragonese system. The
 /tʃ/ adjacency heuristic still cannot distinguish a genuine /t/ followed
 by /ʃ/. The pronunciation experiments remain usable because their builder
 removes scoped hooks only in temporary Castilian source copies.
+
+The compact Unicode name data replaces the earlier uncompressed representation,
+but the existing Unicode admission step still expands some names before the
+native character rules. Moving those readings into the existing character and
+accent tables is separate work and is not completed by compression.
 
 On Linux with unstripped local ELF builds, the frame comparison can be
 repeated against an existing disposable timing-probe library:

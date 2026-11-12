@@ -2771,6 +2771,25 @@ static int32_t evv_insert_zero_sylls(void *state, const int32_t *args, int nargs
     return reloq_dede61_insert_zero_sylls(state, nargs>0?args[0]:0, nargs>1?args[1]:0, nargs>2?args[2]:0);
 }
 
+/* Read the existing input projection without changing its scan or fences.
+ * German's legacy action grouped em dash and underscore under one name. */
+static int reloq_dede61_is_em_dash(void *state,int32_t token_ref)
+{
+    delta_state *d=state;
+    if(!d||!token_ref)return 0;
+    const delta_loc *position=EVV_AT(const delta_loc *,token_ref);
+    if(position->kind!=DK_SYNC||!position->value)return 0;
+    int32_t at=position->value;
+    for(unsigned steps=0;at&&steps<1024;++steps) {
+        int32_t next=vgetsc(d,0,0,at,1);
+        if(!next)return 0;
+        if(*EVV_AT(int32_t *,next)&2){at=next;continue;}
+        const void *fields=TFLDS(EVV_AT(void *,next));
+        return *(const uint8_t *)delta_record_field(&vstmtbl[1],0,(void *)fields)==174;
+    }
+    return 0;
+}
+
 /* ger_char_name, from f61_26.obj */
 int32_t reloq_dede61_ger_char_name(void *state, int32_t p0, int32_t p1, int32_t p2)
 {
@@ -2922,8 +2941,13 @@ L939:;
     AT(int32_t, -16) = (delta_sym_ref[1162]);
 L979:;
     /* Native underscore name: Unterstrich, with compound stress. */
-    AT(int32_t, -32) = (12);
-    AT(int32_t, -40) = (delta_sym_ref[1164]);
+    if(reloq_dede61_is_em_dash(state,STATE_AT(w13,-4))) {
+        AT(int32_t, -32) = (14);
+        AT(int32_t, -40) = (delta_sym_ref[3106]);
+    } else {
+        AT(int32_t, -32) = (12);
+        AT(int32_t, -40) = (delta_sym_ref[1164]);
+    }
     goto L13708;
     goto L1045;
 L1005:;

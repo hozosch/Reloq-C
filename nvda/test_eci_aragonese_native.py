@@ -18,7 +18,8 @@ def main():
         # Both spellings are official; test word initial, medial and final.
         for ny, enye in (('sinyal', 'siñal'), ('cabanyera', 'cabañera'),
                          ('nyapir', 'ñapir'), ('bony', 'boñ'),
-                         ('Espanya', 'España')):
+                         ('Espanya', 'España'), ('NYAPIR', 'ÑAPIR'),
+                         ('Nyapir', 'Ñapir'), ('siNYal', 'siÑal')):
             actual, reference = phonemes(an, ny), phonemes(an, enye)
             assert actual == reference, (ny, enye, actual, reference)
             checks += 1

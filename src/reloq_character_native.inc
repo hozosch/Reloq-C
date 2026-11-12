@@ -194,7 +194,7 @@ static const struct original_character native_characters[] = {
 {353,{"`[.1Es] `2 `[.1ha.0CEk]","`[.1Es]"}},
 {732,{"`[.1tIl.0d@]","`[.1tIl.0dx]"}},
 {8211,{"`[.1bIn.0d@.2StrIX]","`[.1dAS]"}},
-{8212,{"`[.0Un.0tR.1Str'aj'.0XUG]","`[.1dAS]"}},
+{8212,{"`[.0g@.1dAG.0k@n.2StrIX]","`[.1dAS]"}},
 {8216,{"`[.2A.0pOs.1trof]","`[.0x.1pa.0strx.0fi]"}},
 {8217,{"`[.2A.0pOs.1trof]","`[.0x.1pa.0strx.0fi]"}},
 {8220,{"`[.1An.2fy.0rUGs.2T'aj'.0X@n]","`[.1o.0pXn] `2 `[.1kwot]"}},

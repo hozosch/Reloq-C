@@ -8,7 +8,6 @@
 #include "reloq_eci.h"
 #include "reloq_voice_controls.h"
 
-#define ENGINE_LIMIT 15
 #define PCM_SAMPLES 1100
 typedef struct {
     int dialect;
@@ -22,7 +21,8 @@ typedef struct {
     pthread_mutex_t guard;
     ECIHand active;
     char *dictionary;
-    language_engine engines[ENGINE_LIMIT];
+    language_engine *engines;
+    size_t engine_limit;
     jobject sink;
     jmethodID write, cancelled;
 } android_engine;
@@ -62,7 +62,7 @@ static int ECICALL receive(ECIHand handle, int message, int samples, void *opaqu
     if (!is_cancelled(env, engine)) {
         if (message != RELOQ_ECI_WAVEFORM_BUFFER) result = 1;
         else if (samples >= 0 && samples <= PCM_SAMPLES) {
-            for (size_t i = 0; i < ENGINE_LIMIT; ++i) {
+            for (size_t i = 0; i < engine->engine_limit; ++i) {
                 if (engine->engines[i].handle != handle) continue;
                 jbyteArray data = (*env)->NewByteArray(env, samples * 2);
                 if (data) {
@@ -92,8 +92,15 @@ Java_org_reloq_tts_NativeEngine_create(JNIEnv *env, jclass type)
     (void)type;
     android_engine *engine = calloc(1, sizeof *engine);
     if (!engine) return 0;
+    /* The engine catalogue is the source of truth. A fixed cache would
+     * reject the next language after all previous languages were used. */
+    int count=0;
+    if(eciGetAvailableLanguages(NULL,&count)!=0||count<=0) {free(engine);return 0;}
+    engine->engine_limit=(size_t)count;
+    engine->engines=calloc(engine->engine_limit,sizeof *engine->engines);
+    if(!engine->engines){free(engine);return 0;}
     if ((*env)->GetJavaVM(env, &engine->vm) != JNI_OK ||
-        pthread_mutex_init(&engine->guard, NULL)) { free(engine); return 0; }
+        pthread_mutex_init(&engine->guard, NULL)) {free(engine->engines);free(engine);return 0;}
     return (jlong)(intptr_t)engine;
 }
 
@@ -115,11 +122,11 @@ Java_org_reloq_tts_NativeEngine_synthesizeImpl(JNIEnv *env, jclass type,
     ECIHand handle = NULL;
     if (!engine->write || !engine->cancelled || is_cancelled(env, engine)) goto done;
     language_engine *slot = NULL;
-    for (size_t i = 0; i < ENGINE_LIMIT; ++i)
+    for (size_t i = 0; i < engine->engine_limit; ++i)
         if (engine->engines[i].handle && engine->engines[i].dialect == dialect)
             { slot = &engine->engines[i]; break; }
     if (!slot) {
-        for (size_t i = 0; i < ENGINE_LIMIT; ++i)
+        for (size_t i = 0; i < engine->engine_limit; ++i)
             if (!engine->engines[i].handle) { slot = &engine->engines[i]; break; }
         if (!slot) goto done;
         handle = eciNewEx(dialect);
@@ -214,7 +221,7 @@ Java_org_reloq_tts_NativeEngine_dictionary(JNIEnv *env,jclass type,jlong pointer
     free(engine->dictionary);engine->dictionary=copy;
     /* Explicit disable releases unused language tables as well. New data
      * loads lazily when a particular language is actually used again. */
-    if(!copy)for(size_t i=0;i<ENGINE_LIMIT;++i) {
+    if(!copy)for(size_t i=0;i<engine->engine_limit;++i) {
         language_engine *slot=engine->engines+i;
         if(slot->handle&&slot->dictionary&&eciSetDictionaryPath(slot->handle,NULL)) {
             free(slot->dictionary);slot->dictionary=NULL;
@@ -240,10 +247,11 @@ Java_org_reloq_tts_NativeEngine_destroy(JNIEnv *env, jclass type, jlong pointer)
     (void)env; (void)type;
     android_engine *engine = (android_engine *)(intptr_t)pointer;
     if (!engine) return;
-    for (size_t i = 0; i < ENGINE_LIMIT; ++i) {
+    for (size_t i = 0; i < engine->engine_limit; ++i) {
         if(engine->engines[i].handle)eciDelete(engine->engines[i].handle);
         free(engine->engines[i].pcm);free(engine->engines[i].dictionary);
     }
     pthread_mutex_destroy(&engine->guard);
+    free(engine->engines);
     free(engine->dictionary);free(engine);
 }

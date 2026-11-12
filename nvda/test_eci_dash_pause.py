@@ -104,6 +104,15 @@ def main():
         assert character==render(german,[' `[.1Un.0tR.2StrIX] '])[0]
         # Both modes now use the same native character-name table.
         assert character==render(german,['_'])[0]
+        # U+2014 used to share the underscore action. Its own entry in the
+        # native character table says Gedankenstrich, at all speeds tested.
+        for speed in (40,85,150):
+            german.set_parameter(NATIVE_SPEED,speed)
+            assert character_phonemes(german,'—')==phonemes(german,'Gedankenstrich')
+            assert render(german,[EciText('—',True),EciIndex(7)])==render(german,['Gedankenstrich',EciIndex(7)])
+            checks+=2
+        german.set_parameter(NATIVE_SPEED,85)
+        character=render(german,[EciText('_',True)])[0]
         german.set_parameter(PROCESS_TAGS,0)
         assert character==render(german,[EciText('_',True)])[0]
         checks+=6

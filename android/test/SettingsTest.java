@@ -82,7 +82,7 @@ public final class SettingsTest {
         require(restored.wordSegmentation&&restored.camelCase&&restored.controls(100,100)[40]==1&&restored.controls(100,100)[41]==1);
         require(!restored.abbreviations&&restored.prediction&&restored.originalQuestions&&restored.mellowMode&&restored.originalClock(0x10000)&&restored.controls(100,100)[11]==1&&restored.controls(100,100)[12]==1&&restored.controls(100,100)[13]==1&&restored.controls(100,100)[14]==1&&restored.controls(100,100,0x10000)[39]==1);
         VoiceSettings defaults=Preferences.read(memory(new HashMap<>()),0);
-        require(defaults.originalClock(0x20000)&&defaults.originalClock(0x120000)&&!defaults.originalClock(0x20001)&&!defaults.originalClock(0x10000));
+        require(defaults.originalClock(0x20000)&&defaults.originalClock(0x120000)&&defaults.originalClock(0x130000)&&!defaults.originalClock(0x20001)&&!defaults.originalClock(0x10000));
         require(defaults.controls(100,100,0x20000)[39]==1&&defaults.controls(100,100,0x120000)[39]==1&&defaults.controls(100,100,0x10000)[39]==0);
         Map<String,Object> oldClock=new HashMap<>();oldClock.put("originalAcousticClock",true);
         require(Preferences.read(memory(oldClock),0).originalClock(0x10000));

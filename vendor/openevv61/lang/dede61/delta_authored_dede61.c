@@ -5979,6 +5979,8 @@ uint8_t dede61_evv_authored_data[] = {
     26,2,5,14,2,19,
     /* eti_s_13ead8, 6 bytes at 11729 */
     28,2,25,25,2,21,
+    /* German character name for U+2014: Gedankenstrich. */
+    36,2,13,1,21,18,2,21,25,26,24,3,12,16,
 };
 
 const delta_store dede61_delta_authored_store[] = {
