@@ -1,0 +1,63 @@
+name: Check LZMA add-on extraction in NVDA
+on:
+  push:
+    branches: [codex/nvda-compression-check-20261112]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  extraction:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: acronym-nvda-candidate
+          run-id: 43306923529
+          github-token: ${{ github.token }}
+          path: candidate
+      - name: Install released portable versions
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $versions = @(
+            @('2026.1', '8DDB7DABCE62640B465ED2B7BFA63D9AC21F9901EC816BBC1A1F3678BF92BE28'),
+            @('2026.3.1', '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052')
+          )
+          foreach ($item in $versions) {
+            $version = $item[0]
+            gh release download "release-$version" --repo nvaccess/nvda --pattern "nvda_$version.exe" --dir candidate
+            if ($LASTEXITCODE -ne 0) { throw "NVDA $version download failed" }
+            $installer = (Get-Item "candidate/nvda_$version.exe").FullName
+            if ((Get-FileHash $installer -Algorithm SHA256).Hash -ne $item[1]) { throw "NVDA $version digest mismatch" }
+            $portable = Join-Path $pwd "portable-$version"
+            $process = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
+            if ($process.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw "NVDA $version portable installation failed" }
+          }
+      - name: Extract actual add-on and load DLL within real NVDA
+        shell: pwsh
+        run: |
+          python -B experiments/nvda-compression/check_real_nvda.py
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA LZMA test failed' }
+      - name: Publish test run ID on isolated branch
+        if: always()
+        shell: pwsh
+        run: |
+          $data = @{ run_id = $env:GITHUB_RUN_ID; job_status = '${{ job.status }}' } | ConvertTo-Json
+          New-Item -ItemType Directory -Force .codex-tests | Out-Null
+          Set-Content -Encoding utf8 .codex-tests/nvda-compression-run.json $data
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add .codex-tests/nvda-compression-run.json
+          git commit -m "Record isolated compression test [skip ci]"
+          git push
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nvda-lzma-probe
+          path: |
+            compression-probe/*/result.json
+            compression-probe/*/nvda.log
+          if-no-files-found: ignore
