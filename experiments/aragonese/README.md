@@ -128,6 +128,35 @@ will be perceived as one syllable; that remains a listening question. The
 limited /tʃ/ heuristic and the lack of language-specific scoping still prevent
 using these temporary patches as a production Aragonese voice.
 
+The listener selected **Sch, Probe eins**, the 65% duration setting, as the
+target for future integration. For AU, the listener preferred the earlier 40%
+rounding over 65% in the middle, but noted insufficient rounding word-finally
+and a two-syllable impression in *auca*. These are distinct requirements:
+rounding should not turn the second part into a weighted vowel.
+
+The next disposable `glide` build independently adjusts the first and second
+formant targets. The listening comparison keeps the earlier 40% F2 change for
+nonfinal AU; one candidate uses no F1 change and 65% F2 for final AU, the
+other a 20% F1 change and 80% F2 for final AU. These are experiments, not
+perceptual conclusions. A duration-control investigation in the same build
+showed that `span_ph_w_dur` does not change these AU samples, while it can
+change an onset /w/; do not treat it as a working AU duration control. The
+listening comparison leaves the duration setting unchanged at 100%. A native
+word-position detector is included only for investigation; its behavior needs
+the regression checks below. The optional manual mode sets the position per
+isolated word and is **not** a text-processing or platform implementation.
+
+```
+python3 experiments/aragonese/build_native_probe.py glide
+python3 experiments/aragonese/test_glide_probe.py --baseline BASELINE --previous REFINE_LIBRARY --glide GLIDE_LIBRARY
+python3 experiments/aragonese/glide_listening.py --baseline BASELINE --glide GLIDE_LIBRARY --wav FILE
+```
+
+The final-AU example *costau* is attested alongside *cudiau* in Bayo's study
+of Cheso Aragonese, [published by Institución Fernando el Católico](https://ifc.dpz.es/recursos/publicaciones/07/70/03bayo.pdf).
+It is an acoustic test item, not proof that the parent Spanish voice has the
+appropriate pronunciation of the word as a whole.
+
 `phoneme_probe.py` now also experiments with the latent final t rule on the
 Castilian phoneme output of an isolated word. It removes that sound after n,
 s or r while retaining the original stress and keeps the existing ny/ñ probe.
