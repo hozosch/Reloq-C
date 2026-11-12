@@ -104,7 +104,8 @@ static int eo_reentered(OldInst *h, uint32_t bit)
 
 /* How big an instance is, and how big the voice table it carries. */
 #define INSTANCE_BYTES  sizeof(OldInst)
-#define CONCAT_VOICES_BYTES 0x21db0
+#include "reloq61_family_count.h"
+#define CONCAT_VOICES_BYTES (RELOQ61_ECI_FAMILIES * 0x1e18)
 
 /* The environment, and the copy kept beside it so a change can be undone. */
 

@@ -9,9 +9,10 @@
  */
 
 /* One language and dialect, sixteen records of eighty bytes each and a
-   word in front, over eighteen families of two dialects. */
+   word in front, over the configured families of two dialects. */
 #define SV_FAMILY_BYTES 0x0a08
-#define FAMILIES        18
+#include "reloq61_family_count.h"
+#define FAMILIES        RELOQ61_ECI_FAMILIES
 
 /* A mutex, which is all the first-time flag is. */
 #define MUTEX_BYTES 0x0c

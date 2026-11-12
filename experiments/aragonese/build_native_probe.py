@@ -135,6 +135,45 @@ def replace_once(text: str, before: str, after: str) -> str:
     return text.replace(before, after, 1)
 
 
+def private_castilian_source(source: Path, work: Path) -> Path:
+    """Recover the Castilian reference before adding the disposable probes.
+
+    Production-scoped Aragonese hooks are stripped only in this temporary
+    copy; otherwise the historical line-based probe patches would overlap
+    them. The checkout and the ordinary Spanish provider remain untouched.
+    """
+    text = source.read_text(encoding='utf8')
+    marker = '#include "reloq61_aragonese.h"\n'
+    if marker not in text:
+        return source
+    text = replace_once(text, marker, '')
+    if source.name.endswith('c18_eses61.c'):
+        start = text.index('    /* Aragonese has /sh/;')
+        end = text.index('    r0 = reloq61_typed_lpta_loadp(DELTA_ENTRY_lpta_loadp, state,', start)
+        text = text[:start] + text[end:]
+    elif source.name.endswith('c21_eses61.c'):
+        text = replace_once(text,
+            '    if(delta_lang_now()->id==RELOQ61_ARAGONESE&&reloq61_an_initial_aw(state,STATE_AT(w26,-4)))\n'
+            '        STATE(int32_t,f33)=(int32_t)((int64_t)STATE(int32_t,f33)*70/100);\n', '')
+    elif source.name.endswith('c30_eses61.c'):
+        start = text.index('    if(delta_lang_now()->id==RELOQ61_ARAGONESE&&reloq61_an_aw(')
+        end = text.index('    r0 = reloq61_typed_succeed(DELTA_ENTRY_succeed, state);', start)
+        text = text[:start] + text[end:]
+    elif source.name.endswith('c31_eses61.c'):
+        text = replace_once(text,
+            '    STATE(int32_t, f20) = delta_lang_now()->id==RELOQ61_ARAGONESE&&\n'
+            '        reloq61_an_standalone_sh(state,STATE_AT(w60,-4)) ?\n'
+            '        (int32_t)((int64_t)reloq_local_196.i32*65/100) : (int32_t)reloq_local_196.i32;',
+            '    STATE(int32_t, f20) = ((int32_t)reloq_local_196.i32);')
+    else:
+        raise ValueError('Unexpected Aragonese-scoped provider hook: ' + source.name)
+    base = work / 'castilian-reference'
+    base.mkdir(exist_ok=True)
+    result = base / source.name
+    result.write_text(text, encoding='utf8')
+    return result
+
+
 def enable_refinement(source: Path) -> None:
     """Parameterize the two private patches without modifying the checkout."""
     text = source.read_text(encoding='utf8')
@@ -317,7 +356,7 @@ def main():
     modified = []
     for patch_file in patch_files:
         for relative, patch_text in split_patches(patch_file.read_text(encoding='utf8')):
-            original = ROOT / relative
+            original = private_castilian_source(ROOT / relative, work)
             destination = work / original.name
             subprocess.run(['patch', '--silent', '-o', str(destination), str(original)],
                            input=patch_text, text=True, check=True)
@@ -333,7 +372,7 @@ def main():
         modified.append(destination)
     if args.kind == 'timing':
         for name in ('delta_rules_c12_eses61.c','delta_rules_c21_eses61.c'):
-            original=PROVIDER / 'lang/eses61' / name
+            original=private_castilian_source(PROVIDER / 'lang/eses61' / name, work)
             destination=work / name
             shutil.copyfile(original,destination)
             enable_timing(destination)

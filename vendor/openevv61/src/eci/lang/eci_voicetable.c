@@ -35,7 +35,8 @@
 #define VOICE_PRESENT    0x44
 
 /* How many of each there is room for. */
-#define FAMILIES  18
+#include "reloq61_family_count.h"
+#define FAMILIES  RELOQ61_ECI_FAMILIES
 #define VOICE_TABLE_BYTES (FAMILIES * SV_FAMILY_BYTES)
 #define VOICES     8
 #define PARAMS     8
@@ -114,6 +115,9 @@ static void loadStandardVoice(char *table, char *section,
 
     lg_splitLanguageString(section, &family, &dialect, &third);
 
+    if (family < 1 || family > FAMILIES || dialect >= 2)
+        return;
+
     *(int32_t *)voice_block(table, family, dialect) = 1;
 
     for (voice = 1; voice <= VOICES; voice++) {
@@ -175,6 +179,9 @@ static void loadStandardConcatenativeVoice(char *table, char *section,
         return;
 
     lg_splitLanguageString(section, &family, &dialect, &third);
+
+    if (family < 1 || family > FAMILIES || dialect >= 2)
+        return;
 
     for (voice = 1; voice <= VOICES; voice++)
         for (rate = 0; rate < RATES; rate++) {

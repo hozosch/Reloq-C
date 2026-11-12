@@ -26,6 +26,7 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_eses61.h"
+#include "reloq61_aragonese.h"
 extern int reloq61_greek_keep_lexical_duration(void *);
 
 /* Where each global the rules touch lands in the state,
@@ -884,6 +885,8 @@ L665:;
     r1 = delta_scale_percent((int32_t)AT(int32_t, -12), (int32_t)STATE(int32_t, f4));
     AT(int32_t, -12) = (r1);
     STATE(int32_t, f33) = ((int32_t)AT(int32_t, -12));
+    if(delta_lang_now()->id==RELOQ61_ARAGONESE&&reloq61_an_initial_aw(state,STATE_AT(w26,-4)))
+        STATE(int32_t,f33)=(int32_t)((int64_t)STATE(int32_t,f33)*70/100);
     r0 = reloq61_typed_starttest(DELTA_ENTRY_starttest, state, (int16_t)(5));
     AT(int32_t, -24) = (r0);
     r1 = ((int32_t)AT(int16_t, -94));

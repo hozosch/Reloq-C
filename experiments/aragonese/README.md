@@ -192,6 +192,33 @@ versions of *auca*, *auto* and *la auca*. Listening remains necessary to tell
 whether any of the experiments preserve the preferred sound while avoiding a
 two-syllable impression.
 
+The listener selected timing **Probe 2**, the 70% initial-AU nucleus, with
+the earlier 40% rounding. A private provider identity now shares the
+Castilian rules and immutable tables and applies that timing, rounding and
+the selected 65% native /ʃ/ duration only to that identity. In one Linux
+build, 156 comparisons of provider control frames against the selected
+disposable timing probe matched, including initial and medial AU, word
+boundaries, /ʃ/, /tʃ/ and /θ/, across three output rates, two speeds and two
+voice genders. The Spanish, German, English and Greek controls also matched
+the previous library's PCM in the cases checked.
+
+This is still research scaffolding, **not a selectable Aragonese voice**.
+Orthographic analysis, localized character and number rules, dictionary
+ownership and all three platform integrations remain unfinished. In
+particular, the inherited 18-family active-dictionary slots must be extended
+before the private nineteenth family can safely use dictionaries. The /tʃ/
+adjacency heuristic still cannot distinguish a genuine /t/ followed by /ʃ/.
+The shared voice-table capacity is expanded for the extra private identity;
+the pronunciation experiments remain usable because their builder removes
+the scoped hooks only in temporary Castilian source copies.
+
+On Linux with unstripped local ELF builds, the frame comparison can be
+repeated against an existing disposable timing-probe library:
+
+```
+python3 experiments/aragonese/test_private_core_linux.py --library eci/libreloq_eci.so --timing TIMING_LIBRARY
+```
+
 `phoneme_probe.py` now also experiments with the latent final t rule on the
 Castilian phoneme output of an isolated word. It removes that sound after n,
 s or r while retaining the original stress and keeps the existing ny/ñ probe.
