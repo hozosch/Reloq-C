@@ -27,13 +27,13 @@ Research references:
 * [Persian interrogative intonation](https://journals.dartmouth.edu/journals/xmlpage/1/article/389?htmlOnce=yes)
 * [eSpeak NG Persian voice source](https://github.com/espeak-ng/espeak-ng/tree/master/dictsource)
 
-To reproduce, supply mono 16-bit eSpeak NG wave recordings named
-`fa_noqte.wav`, `fa_qalam.wav`, `ar_noqta.wav`, `ar_qalam.wav`,
-`fa_statement.wav` and `fa_question.wav`, plus Python NumPy and SciPy:
+To reproduce, install eSpeak NG (the initial recordings used version 1.51)
+and Python NumPy and SciPy, then run:
 
 ```
+python3 experiments/persian/espeak_reference.py --output /tmp/persian-reference
 python3 experiments/persian/listening.py --library eci/libreloq_eci.so \
-  --reference-dir /path/to/reference --wav /tmp/persian-comparison.wav
+  --reference-dir /tmp/persian-reference --wav /tmp/persian-comparison.wav
 ```
 
 The eSpeak samples are comparison recordings, not copied phoneme tables or
