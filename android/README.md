@@ -130,8 +130,9 @@ dialog showing new distinct entries and new dictionary files. Replacements and
 deletions do not count as additions. The first download shows both totals, and
 an unavailable comparison is reported instead of guessing. Online updates
 currently retrieve a fixed set of supported filenames. An automatic initial
-download when enabling or selecting a source runs without a success message;
-errors remain visible and accessible in the status field.
+download when enabling or selecting a source reports the result with a short
+Android toast that does not remain in the notification list. Errors remain
+visible and accessible in the status field.
 
 ## Build on Linux x86-64
 
