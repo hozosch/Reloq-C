@@ -3,7 +3,7 @@ import argparse
 from pathlib import Path
 import tempfile
 
-from _reloq_eci_direct import DirectEciEngine, EciIndex, EciText, DICTIONARY
+from _reloq_eci_direct import DirectEciEngine, EciIndex, EciText, DICTIONARY, PROCESS_TAGS, SAMPLE_RATE
 from test_eci_german_clock_native import phonemes, render
 
 
@@ -41,6 +41,27 @@ def main():
             assert phonemes(an, qu)==phonemes(an, cu), (qu, cu)
             checks += 1
         assert phonemes(an, 'queso')==phonemes(es, 'queso')
+        checks += 1
+        # In this voice tz is the Castilian-like interdental, including the
+        # numerals, derived words and word-final plurals and verb forms.
+        # Preserve t across a word boundary, and preserve Castilian rules.
+        for written, reference in (('dotze', 'doze'), ('tretze', 'treze'),
+                                   ('setze', 'seze'), ('dotzena', 'dozena'),
+                                   ('mocetz', 'mocez'), ('fetz', 'fez'),
+                                   ('verdatz', 'verdaz'), ('puetz', 'puez'),
+                                   ('DOTZE', 'DOZE'), ('Dotze', 'Doze')):
+            actual, expected = phonemes(an, written), phonemes(an, reference)
+            assert actual == expected, (written, reference, actual, expected)
+            checks += 1
+        assert phonemes(es, 'dotze') != phonemes(es, 'doze')
+        assert phonemes(an, 'gat zorro') != phonemes(an, 'ga zorro')
+        checks += 2
+        for number, reference in (('12', 'doze'), ('13', 'treze')):
+            assert phonemes(an, number) == phonemes(an, reference), number
+            checks += 1
+        whole, _ = render(an, ['dotze libros y tretze casas.'])
+        split, indices = render(an, ['dot', EciIndex(12), 'ze libros y tretze casas.'])
+        assert whole == split and [i for i, _ in indices] == [12], indices
         checks += 1
         # Written -nt/-st/-rt is latent in Aragonese at the word end. Keep
         # the original stress, final /s/ in plurals and the following word.
@@ -126,6 +147,37 @@ def main():
             actual=phonemes(an, sentence)
             assert '.0do' in actual and '.1mun' in actual, (sentence, actual)
             checks += 1
+        for sentence in ('la casa de mundo', 'as casas de mundo', 'mar de mundo',
+                         'lo camín de mundo', 'la casa, de mundo'):
+            actual=phonemes(an, sentence)
+            assert '.0de' in actual and '.1mun' in actual, (sentence, actual)
+            checks += 1
+        # The ECI phoneme text normalizes both dental allophones to 'd'.
+        # Compare speech durations with explicit native D/d references so a
+        # phoneme-only test cannot pass when the allophone is missing.
+        old_tags=an._dll.eciGetParam(an._handle, PROCESS_TAGS)
+        old_rate=an._dll.eciGetParam(an._handle, SAMPLE_RATE)
+        try:
+            an.set_parameter(PROCESS_TAGS, 1)
+            for rate in (1, 5):
+                an.set_parameter(SAMPLE_RATE, rate)
+                for prefix, expected in (('la casa', 'soft'), ('as casas', 'soft'),
+                                         ('mar', 'soft'), ('lo camín', 'stop'),
+                                         ('la casa,', 'stop')):
+                    for word, vowel in (("d'o", 'o'), ('de', 'e')):
+                        actual, soft, stop = [len(render(an, [f'{prefix} {item} mundo'])[0])
+                            for item in (word, f'`[.0D{vowel}]', f'`[.0d{vowel}]')]
+                        assert soft != stop, (rate, prefix, word, soft, stop)
+                        if expected == 'stop':
+                            assert actual == stop, (rate, prefix, word, actual, soft, stop)
+                        elif prefix == 'la casa':
+                            assert actual == soft, (rate, prefix, word, actual, soft, stop)
+                        else:
+                            assert actual < stop, (rate, prefix, word, actual, soft, stop)
+                        checks += 1
+        finally:
+            an.set_parameter(SAMPLE_RATE, old_rate)
+            an.set_parameter(PROCESS_TAGS, old_tags)
         for isolated, expected in (("d'o", '.1do'), ("d'a", '.1da'),
                                    ("d'os", '.1dos'), ("d'as", '.1das')):
             actual = phonemes(an, isolated)

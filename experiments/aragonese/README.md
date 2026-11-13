@@ -213,12 +213,17 @@ word stress rules also handle hyphenated pronouns and weak function words in
 context, including d'o, d'a, d'os and d'as, while an isolated form remains
 audible. The apostrophe is tracked in the original input so that forms such as
 the number dos do not acquire the same weak stress.
+In the selected pronunciation, written **tz** is the interdental /θ/, as in
+*dotze*, *tretze*, *mocetz* and *fetz*. This includes the historical spelling;
+the Benasquese realization /ts/ is a regional alternative, not the current
+voice's setting. Word-initial d can use the voiced dental approximant after a
+vowel, s or r in the same phrase; this applies to both *de* and *d'o*.
 The distinct relative locative adverb do is also pronounced as a word rather
 than expanded as the Spanish abbreviation for domingo; accented dó retains
 its own stress.
 
-Final latent t, the initial ll/y distinction, complete number vocabulary and
-character names still need work; inherited Castilian analysis is not a full
+Other final-consonant rules, the initial ll/y distinction, complete number
+vocabulary and character names still need work; inherited Castilian analysis is not a full
 Aragonese implementation. The /tʃ/ adjacency heuristic still cannot
 distinguish a genuine /t/ followed by /ʃ/. The pronunciation experiments
 remain usable because their builder removes scoped hooks only in temporary
@@ -245,4 +250,5 @@ positions and continuous speech must be handled before it can be used there.
 References used as starting points:
 
 - [Academia Aragonesa de la Lengua: official Aragonese orthography (2023)](https://www.academiaaragonesadelalengua.org/sites/default/files/ficheros-pdf/ortografia-del-aragones_web_es.pdf), especially the descriptions of **ny/ñ**, **x/ix**, **ll** and regional variation.
+- [Estudio de Filología Aragonesa: Gramatica Basica de l'Aragonés](https://www.efaragonesa.org/biblio/Edacar10_GBAprovisional.pdf), describing the historical **tz** digraph and its regional pronunciations.
 - [eSpeak NG: Aragonese language sources](https://github.com/espeak-ng/espeak-ng/tree/master/dictsource), as a separate implementation to compare rather than an authority for all dialects.

@@ -232,6 +232,22 @@ int reloq61_an_latent_t(void *state,int32_t begin_ref)
     return is_t&&prev&&(end||plural);
 }
 
+/* The historical tz digraph is /theta/ in the selected Aragonese voice,
+ * including dotze, tretze and plural or verb endings. Leave z for the
+ * existing interdental rule and suppress only the adjacent t in this word. */
+int reloq61_an_tz(void *state,int32_t begin_ref)
+{
+    delta_state *d=state;struct saved_cursor saved;
+    if(!begin_ref||!save_cursor(d,&saved))return 0;
+    word_fence(d);
+    lpta_loadp(d,EVV_AT(const delta_token *,begin_ref));
+    int match=!setscan_r(d,1)&&
+        (!testFldeq(d,1,0,26)||!testFldeq(d,1,0,47))&&
+        !advance_tok(d)&&(!testFldeq(d,1,0,31)||!testFldeq(d,1,0,52));
+    restore_cursor(d,&saved);
+    return match;
+}
+
 /* Within the native hundreds rule, select the Aragonese prefixes for
  * docientos, trecientos and seicientos. */
 int reloq61_an_hundreds_digit(void *state,int32_t digit_ref)
@@ -265,8 +281,9 @@ static unsigned an_input_name(int32_t node)
 }
 
 /* A word-initial d after a vowel, s or r in the same phrase uses the voiced
- * dental approximant. Require a genuine whitespace boundary and inspect the
- * input before it, so punctuation and phrase-initial words retain the stop. */
+ * dental approximant. This includes both de and apostrophized d'o. Require a
+ * genuine whitespace boundary, so punctuation and phrase-initial words retain
+ * the stop. */
 int reloq61_an_liaison_d(void *state,int32_t begin_ref)
 {
     if(!state||!begin_ref)return 0;
