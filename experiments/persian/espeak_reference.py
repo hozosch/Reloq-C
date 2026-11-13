@@ -7,6 +7,8 @@ import subprocess
 
 WORDS = {
     'fa_iran': ('fa', 'ایران'),
+    'fa_stop_sequence': ('fa', 'پا تا کار'),
+    'fa_ta': ('fa', 'تا'),
     'fa_noqte': ('fa', 'نقطه'),
     'fa_qalam': ('fa', 'قلم'),
     'ar_qalam': ('ar', 'قَلَم'),

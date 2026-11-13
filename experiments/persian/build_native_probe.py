@@ -1,7 +1,7 @@
-"""Build a private Finnish-based Persian acoustic experiment for Linux.
+"""Build a private Persian acoustic experiment for Linux.
 
 This is a listening prototype, not a Persian language module.  Its copy of
-the Finnish provider can be changed using process environment variables;
+the Finnish and US providers can be changed using process environment variables;
 never distribute this binary as a normal Finnish or Persian synthesizer.
 The repository's ordinary binaries and native provider sources are untouched.
 
@@ -43,7 +43,7 @@ static int persian_probe_source_q(void *state, int32_t position)
 static int persian_probe_setting(const char *name)
 {
     const char *value = getenv(name);
-    return value && value[0] >= '1' && value[0] <= '2' && !value[1]
+    return value && value[0] >= '1' && value[0] <= '4' && !value[1]
         ? value[0] - '0' : 0;
 }
 static int16_t persian_probe_lower(int16_t value, int offset, int minimum)
@@ -51,6 +51,28 @@ static int16_t persian_probe_lower(int16_t value, int offset, int minimum)
     if (value <= 0) return value; /* -1/-2 are native inheritance markers. */
     return value - offset < minimum ? minimum : value - offset;
 }
+'''
+
+US_A_PATCH = r'''
+    /* Experimental US /a/, as in father. The nominal base is 750/1200/2440
+       Hz. Two intermediate settings move it towards eSpeak's 0_3 nucleus
+       656/1000/2620, preserving context-dependent endpoints and sentinels. */
+    {
+        const char *setting = getenv("RELOQ_FA_PROBE_US_A");
+        int variant = setting && !setting[1] && (setting[0]=='1' || setting[0]=='2')
+            ? setting[0]-'0' : 0;
+        if (variant) {
+            int f1 = variant==1 ? 47 : 94;
+            int f2 = variant==1 ? 100 : 200;
+            int f3 = variant==1 ? 90 : 180;
+            if (STATE(int16_t,s448)>0) STATE(int16_t,s448)-=f1;
+            if (STATE(int16_t,s449)>0) STATE(int16_t,s449)-=f1;
+            if (STATE(int16_t,s450)>0) STATE(int16_t,s450)-=f2;
+            if (STATE(int16_t,s451)>0) STATE(int16_t,s451)-=f2;
+            if (STATE(int16_t,s452)>0) STATE(int16_t,s452)+=f3;
+            if (STATE(int16_t,s453)>0) STATE(int16_t,s453)+=f3;
+        }
+    }
 '''
 
 A_PATCH = r'''
@@ -73,9 +95,9 @@ Q_PATCH = r'''
             /* Tentative lower resonances and reduced high-frequency burst.
                Different release and coarticulation from a velar K, but not
                yet a phonetically validated Persian uvular consonant. */
-            int f2 = variant == 1 ? 150 : 300;
-            int f3 = variant == 1 ? 250 : 450;
-            int burst = variant == 1 ? 12 : 24;
+            int f2 = variant == 2 ? 300 : 150;
+            int f3 = variant == 2 ? 450 : 250;
+            int burst = variant == 2 ? 24 : 12;
             STATE(int16_t,s450)=persian_probe_lower(STATE(int16_t,s450),f2,650);
             STATE(int16_t,s451)=persian_probe_lower(STATE(int16_t,s451),f2,650);
             STATE(int16_t,s452)=persian_probe_lower(STATE(int16_t,s452),f3,1200);
@@ -83,15 +105,27 @@ Q_PATCH = r'''
             STATE(int16_t,s440)=persian_probe_lower(STATE(int16_t,s440),burst,0);
             STATE(int16_t,s441)=persian_probe_lower(STATE(int16_t,s441),burst,0);
             STATE(int16_t,s442)=persian_probe_lower(STATE(int16_t,s442),burst,0);
+            if (variant >= 3) {
+                /* Short post-release frication. The German /x/ rule uses
+                   similar mid-band levels (70 and 55); this is not a
+                   concatenated /k+x/ and not a validated [q]. f11 is the
+                   native release end timestamp in units of 1/10000 ms. */
+                int32_t extension = variant==3 ? 100000 : 250000;
+                if (STATE(int32_t,f11)>=0 && STATE(int32_t,f11)<=INT32_MAX-extension)
+                    STATE(int32_t,f11)+=extension;
+                if (STATE(int16_t,s438)<65) STATE(int16_t,s438)=65;
+                if (STATE(int16_t,s440)<(variant==3 ? 48 : 55))
+                    STATE(int16_t,s440)=variant==3 ? 48 : 55;
+            }
         }
     }
 '''
 
 
-def prepare(name: str, rule: str, label: str, patch: str, helper: str, work: Path) -> Path:
-    source = PROVIDER / 'lang' / 'fifi' / name
+def prepare(language: str, name: str, rule: str, label: str, patch: str, helper: str, work: Path) -> Path:
+    source = PROVIDER / 'lang' / language / name
     text = source.read_text(encoding='utf8')
-    start = text.index('int32_t reloq_fifi_' + rule + '(')
+    start = text.index('int32_t reloq_' + language + '_' + rule + '(')
     end = text.index('\nstatic int32_t evv_' + rule + '(', start)
     rule_text = text[start:end]
     marker = label + ':;\n    r0 = reloq61_typed_succeed'
@@ -100,7 +134,7 @@ def prepare(name: str, rule: str, label: str, patch: str, helper: str, work: Pat
     rule_text = rule_text.replace(marker, label + ':;\n' + patch +
                                   '    r0 = reloq61_typed_succeed', 1)
     text = text[:start] + rule_text + text[end:]
-    include = '#include "reloq61_rule_calls_fifi.h"\n'
+    include = '#include "reloq61_rule_calls_' + language + '.h"\n'
     if text.count(include) != 1:
         raise RuntimeError('Cannot locate unique include point in ' + name)
     text = text.replace(include, include + '#include <stdlib.h>\n' + helper, 1)
@@ -113,6 +147,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--work-dir', type=Path)
     parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('--jobs', type=int, default=4, choices=range(1, 9))
     args = parser.parse_args()
     if args.work_dir:
         work = args.work_dir.resolve()
@@ -120,8 +155,9 @@ def main() -> None:
     else:
         work = Path(tempfile.mkdtemp(prefix='reloq-persian-probe-'))
     modified = [
-        prepare('delta_rules_c17_fifi.c', 'stanfin_ph_a', 'L13086', A_PATCH, '', work),
-        prepare('delta_rules_c22_fifi.c', 'fin_ph_k', 'L5915', Q_PATCH, Q_HELPER, work),
+        prepare('fifi', 'delta_rules_c17_fifi.c', 'stanfin_ph_a', 'L13086', A_PATCH, '', work),
+        prepare('fifi', 'delta_rules_c22_fifi.c', 'fin_ph_k', 'L5915', Q_PATCH, Q_HELPER, work),
+        prepare('enus61', 'delta_rules_c06_enus61.c', 'ga_ph_a', 'L3010', US_A_PATCH, '', work),
     ]
     if args.dry_run:
         print('Prepared isolated source files:', work)
@@ -151,7 +187,7 @@ def main() -> None:
     subprocess.run(['gcc-ar', 'r', str(private_archive), *map(str, compiled)], check=True)
     library = work / 'libreloq_eci.so'
     print('Linking private experimental library; this may take several minutes', flush=True)
-    subprocess.run(['cc', '-O3', '-flto=4', '-fno-strict-aliasing', '-ffp-contract=off', '-shared',
+    subprocess.run(['cc', '-O3', f'-flto={args.jobs}', '-fno-strict-aliasing', '-ffp-contract=off', '-shared',
                     *map(str, objects), str(private_archive), '-pthread', '-Wl,--gc-sections,--no-undefined',
                     '-lm', '-o', str(library)], check=True, env={**os.environ, 'TMPDIR': str(work)})
     print('Experimental library:', library)
