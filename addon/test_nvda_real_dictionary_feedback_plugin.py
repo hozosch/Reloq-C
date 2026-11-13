@@ -2,7 +2,9 @@
 import json
 import os
 from pathlib import Path
+import threading
 import traceback
+import types
 
 import globalPluginHandler
 import wx
@@ -35,13 +37,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         try:
             import gui
             import ui
-            import synthDriverHandler
             from globalPlugins import reloqCDictionaries as dictionaries
-            if not synthDriverHandler.setSynth('reloqC'):
-                raise RuntimeError('could not select ReLoq C')
-            synth = synthDriverHandler.getSynth()
-            updater = synth.dictionary_manager()
-            revision = updater._revision
+            from synthDrivers.reloqC import SynthDriver
+            synth=types.SimpleNamespace(_submit_lock=threading.Lock(),_terminating=False,
+                _dictionary_updater=types.SimpleNamespace(current=lambda revision:revision==5))
             details = {'dictionary_update': {'compared': True, 'added': 3, 'total': 12,
                                              'added_files': 1, 'total_files': 4},
                        'remote_changed': True}
@@ -64,7 +63,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.manual.begin(show_result=True)(None, details)
             self.automatic.closing = True
             self.automatic.begin()(None, details)
-            synth._dictionary_update_notice(revision, details)
+            SynthDriver._dictionary_update_notice(synth, 5, details)
             wx.CallAfter(self.check)
         except BaseException:
             self.fail()
