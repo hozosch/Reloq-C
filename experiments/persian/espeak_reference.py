@@ -6,6 +6,7 @@ from pathlib import Path
 import subprocess
 
 WORDS = {
+    'fa_iran': ('fa', 'ایران'),
     'fa_noqte': ('fa', 'نقطه'),
     'fa_qalam': ('fa', 'قلم'),
     'ar_qalam': ('ar', 'قَلَم'),
