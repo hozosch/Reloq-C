@@ -52,6 +52,19 @@ int main(int argc,char **argv)
     assert(a.count!=e.count||memcmp(a.pcm,e.pcm,a.count*sizeof *a.pcm));free(a.pcm);free(e.pcm);
     struct sapi_backend *gb=sapi_backend_new(0x10001);assert(gb);
     s.word_segmentation=1;s.camel_case=1;sound_matches(gb,&s,L"fileswap",L"banana",events);
+    /* The actual SAPI adapter must pass the option to both English voices
+     * without changing the native pronunciation of these names. */
+    const WCHAR *names[]={L"Jayson",L"Peterson",L"Tilton",L"Coleman",L"Petersen",
+                          L"Jayson and Peterson live in Tilton."};
+    struct sapi_backend *voices[]={b,gb};
+    for(size_t language=0;language<2;++language)
+        for(size_t i=0;i<sizeof names/sizeof *names;++i) {
+            s.word_segmentation=0;s.camel_case=0;
+            struct site normal=render(voices[language],&s,names[i],0);
+            s.word_segmentation=1;s.camel_case=1;
+            struct site segmented=render(voices[language],&s,names[i],0);
+            same(&normal,&segmented);free(normal.pcm);free(segmented.pcm);
+        }
     sapi_backend_delete(gb);sapi_backend_delete(b);
     assert(!unlink(marker)&&!unlink(file)&&!unlink(scoped)&&!unlink(british)&&!unlink(native)&&!rmdir(folder));
     puts("SAPI host: imported NVDA speech dictionaries, voice scope, segmentation and source events passed");
