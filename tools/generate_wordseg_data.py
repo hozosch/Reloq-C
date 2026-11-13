@@ -90,6 +90,13 @@ def main():
         observed.update(re.findall(r'^\s*\{"([a-z]+)"\s*,', source, re.M))
     if len(observed) < 50000:
         raise ValueError("observed English vocabulary is incomplete")
+    # Known names share the same compact native table as established words;
+    # the source list is not an additional installed dictionary.
+    names = (DATA / "en-protected-names").read_text(encoding="ascii").splitlines()
+    names = [name for name in names if name and not name.startswith("#")]
+    if len(names) != len(set(names)) or any(not re.fullmatch(r"[a-z]{2,32}", name) for name in names):
+        raise ValueError("invalid protected name data")
+    observed.update(names)
     emit_known_words(out, observed - us)
     for language in ("enus", "engb"):
         groups = {"onset": set(), "coda": set(), "word": set()}

@@ -14,3 +14,7 @@ Reference-checked English compound readings also use CMUdict revision
 project's ReLoq-C-NOTICE.txt (NOTICE in the source tree).
 British reference checks also use the GPL-3.0 en_UK dataset from ipa-dict,
 based on Leo Boiko's ipacards; see ReLoq-C-NOTICE.txt for attribution.
+
+The source spelling list for protected names is derived from the public-domain
+US Census Bureau's 2010 surname frequencies, cross-checked with CMUdict and
+the same British IPA reference. The full datasets are not shipped at runtime.

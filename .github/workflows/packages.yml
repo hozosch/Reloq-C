@@ -72,6 +72,8 @@ jobs:
         run: |
           python3 tools/generate_wordseg_data.py
           git diff --exit-code -- src/reloq_wordseg_data.inc
+          cc -std=c11 -O2 -Wall -Wextra -Werror -pedantic -Iinclude tests/test_wordseg_native.c src/reloq_wordseg.c -o /tmp/test-wordseg
+          /tmp/test-wordseg
           make -C eci -j2 libreloq_eci.so test_reloq_native_rules test_reloq_wpm_native test_wpm_arithmetic test_eci_stream_time test_reloq_text_peaks test_reloq_presence test_reloq_hearing_profiles PROVIDER_LTO=-flto=2
       - name: Check number, pitch, pause, source-index and multilingual behavior
         run: |
@@ -241,8 +243,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download v1.2.1 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-1.2.1.nvda-addon' --dir previous-addon
-          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.2.1.nvda-addon --candidate dist/reloq-c-synth-x64-1.4.1.nvda-addon
+          gh release download v1.4.1 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-1.4.1.nvda-addon' --dir previous-addon
+          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.4.1.nvda-addon --candidate dist/reloq-c-synth-x64-1.4.1.nvda-addon --allow-rebuild
       - name: Verify NVDA driver and offline dictionary startup
         run: |
           for language in en de; do

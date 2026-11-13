@@ -25,6 +25,8 @@ def main():
                              'filecandle': ('file', 'candle'), 'candlefile': ('candle', 'file'),
                              'shopfile': ('shop', 'file'), 'filelock': ('file', 'lock'),
                              'framebuffer': ('frame', 'buffer'), 'lineshape': ('line', 'shape'),
+                             'webbutton': ('web', 'button'), 'buttonclick': ('button', 'click'),
+                             'longton': ('long', 'ton'), 'halfton': ('half', 'ton'),
                              'keyframe': ('key', 'frame'), 'blackboard': ('black', 'board'),
                              'newspaper': ('news', 'paper'), 'candlelight': ('candle', 'light'),
                              'homepage': ('home', 'page'), 'waterbed': ('water', 'bed'),
@@ -49,7 +51,9 @@ def main():
                 # just the two examples initially repeated in discussion.
                 amir_words = ('available', 'landmark', 'selection', 'Paperback',
                               'organically', 'expression', 'Jackson',
-                              'developmental', 'suggestion')
+                              'developmental', 'suggestion', 'Jayson', 'Peterson', 'Tilton',
+                              'jayson', 'peterson', 'tilton', 'Petersons', 'Petersen',
+                              'Coleman', 'Hawkins', 'Huffman', 'Larson', 'Buckley', 'Wiggins', 'Longton')
                 established = ('cupboard', 'Cupboard', 'CUPBOARD', 'cupboards',
                                'breakfast', 'breakfasts', 'raspberry', 'raspberries',
                                'strawberry', 'waistcoat', 'butterfly', 'lighthouse',
@@ -63,7 +67,9 @@ def main():
                 known_phones = {text: re.findall(r'`\[([^]]+)\]', engine._phonemes_for_probe(text))
                                 for text in established}
                 known_audio = {text: render(engine, [text])[0] for text in established}
-                derived_sentences = ('This setting is switchable.', 'A searchable list is open.')
+                derived_sentences = ('This setting is switchable.', 'A searchable list is open.',
+                                     'Jayson and Peterson live in Tilton.',
+                                     'Coleman, Hawkins, Huffman, and Wiggins arrived.')
                 sentence_audio = {text: render(engine, [text])[0] for text in derived_sentences}
                 amir_parts = [word + '  ' for word in amir_words]
                 amir_audio = render(engine, amir_parts)[0]
@@ -124,7 +130,8 @@ def main():
                 folder = Path(temporary) / prefix
                 folder.mkdir()
                 (folder / (prefix + 'main.dic')).write_bytes(
-                    b'fileswap\t`[.1mup]\nframebuffer\t`[.1tEst]\nredhead\t`[.1zibrx]\n')
+                    b'fileswap\t`[.1mup]\nframebuffer\t`[.1tEst]\nredhead\t`[.1zibrx]\n'
+                    b'Peterson\t`[.1zibrx]\n')
                 engine.set_dictionary_path(folder)
                 with_split = engine._phonemes_for_probe('framebuffer')
                 engine.set_parameter(WORD_SEGMENTATION, 0)
@@ -139,6 +146,12 @@ def main():
                 with_split = engine._phonemes_for_probe('fileswap')
                 engine.set_parameter(WORD_SEGMENTATION, 0)
                 assert phones(with_split) == phones(engine._phonemes_for_probe('fileswap')) == 'mup'
+                checks += 1
+                # Name protection must never bypass a personal dictionary.
+                engine.set_parameter(WORD_SEGMENTATION, 1)
+                with_split = engine._phonemes_for_probe('Peterson')
+                engine.set_parameter(WORD_SEGMENTATION, 0)
+                assert phones(with_split) == phones(engine._phonemes_for_probe('Peterson')) == 'zibrx'
                 checks += 1
                 engine.set_dictionary_path(None)
                 # A host dictionary may protect only its replaced run; an
