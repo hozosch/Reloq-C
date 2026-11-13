@@ -1,5 +1,17 @@
 # Persian: first listening comparison
 
+## Target architecture
+
+For the future Persian voice, retain Finnish as the general source of vowel
+qualities and sentence melody. Use German as the starting point for aspirated
+/p t k/ and the Ach-laut. The long back /A/ is the separately requested
+experiment: start from the US `father` vowel and close it somewhat towards the
+eSpeak Persian vowel. The uvular consonant requires its own implementation.
+These are design choices for a Persian module; they do not change Finnish,
+German, or US voices in the normal build. The current hearing experiments use
+separate existing native language paths and have not yet assembled them into
+a selectable Persian voice.
+
 The comparison tests acoustic building blocks, not an implemented Persian
 voice or general Persian grapheme-to-phoneme conversion. It uses the existing
 German and Finnish native engines for manually entered phoneme sequences.
