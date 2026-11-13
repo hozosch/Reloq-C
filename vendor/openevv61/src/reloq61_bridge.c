@@ -184,7 +184,44 @@ struct capture {
     pause_sink pause;void *pause_context;
     reloq61_phoneme_sink phoneme_sink;void *phoneme_context;
     int english_sentence_pending,greek_explicit_prominence;
+    /* Native input records for apostrophized Aragonese function words.
+     * Owned by this request; no text or source-index rewriting. */
+    int32_t *aragonese_elisions;
+    size_t aragonese_elision_count,aragonese_elision_capacity;
 };
+
+int reloq61_an_note_elision(void *state,int32_t input_node)
+{
+    delta_state *d=state;if(!d||!input_node)return 0;
+    DeltaLang *dl=EVV_AT(DeltaLang *,d->dlang);
+    struct capture *c=dl?dl->reloq_context:NULL;
+    if(!c||!c->q||c->q->language!=0x130000)return 0;
+    for(size_t i=0;i<c->aragonese_elision_count;++i)
+        if(c->aragonese_elisions[i]==input_node)return 1;
+    if(c->aragonese_elision_count==c->aragonese_elision_capacity) {
+        size_t n=c->aragonese_elision_capacity?2*c->aragonese_elision_capacity:8;
+        if(n<c->aragonese_elision_capacity||n>SIZE_MAX/sizeof *c->aragonese_elisions)return 0;
+        int32_t *p=realloc(c->aragonese_elisions,n*sizeof *p);if(!p)return 0;
+        c->aragonese_elisions=p;c->aragonese_elision_capacity=n;
+    }
+    c->aragonese_elisions[c->aragonese_elision_count++]=input_node;
+    return 1;
+}
+
+int reloq61_an_take_elision(void *state,int32_t input_node)
+{
+    delta_state *d=state;if(!d||!input_node)return 0;
+    DeltaLang *dl=EVV_AT(DeltaLang *,d->dlang);
+    struct capture *c=dl?dl->reloq_context:NULL;
+    if(!c||!c->q||c->q->language!=0x130000)return 0;
+    for(size_t i=0;i<c->aragonese_elision_count;++i) {
+        if(c->aragonese_elisions[i]==input_node) {
+            c->aragonese_elisions[i]=c->aragonese_elisions[--c->aragonese_elision_count];
+            return 1;
+        }
+    }
+    return 0;
+}
 
 static int32_t greek_record_right(delta_state *d,int32_t at,unsigned type)
 {
@@ -1119,6 +1156,7 @@ static int generate_core_impl(const struct reloq61_request *q,struct reloq61_res
         }
     for(size_t i=0;i<c.bank_count;++i)reloq61_english_bank_free(c.banks[i]);
     free(c.banks);
+    free(c.aragonese_elisions);
     if(dl->unsupported61)r->unsupported=dl->unsupported61;
     dl->reloq_frame=0;dl->reloq_context=0;
     dl->device->index_cb=c.index_original;dl->device->index_data=c.index_data;

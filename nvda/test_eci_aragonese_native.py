@@ -73,7 +73,9 @@ def main():
             assert f'.1{word}' in actual and 'min' not in actual and 'por' not in actual, (word, actual)
             checks += 1
         for sentence, expected in (('pa casa', '.0pa'),
-                                   ("d'o mundo", '.0do'), ('d’o Pirineu', '.0do'), ('ta casa', '.0ta'),
+                                   ("d'o mundo", '.0do'), ('d’o Pirineu', '.0do'),
+                                   ("d'a casa", '.0da'), ("d'os paises", '.0dos'),
+                                   ('d’as casas', '.0das'), ('ta casa', '.0ta'),
                                    ('enta casa', '`00 `[.1en.0ta'), ('bi ha', '.0bi'),
                                    ('ne veyo', '.0ne'), ('as casas', '.0as'),
                                    ('ro dia', '.0Ro'), ('ra casa', '.0Ra')):
@@ -81,9 +83,28 @@ def main():
             assert expected in actual, (sentence, actual)
             checks += 1
         assert '.1do' in phonemes(an, "d'o. Casa")
+        assert '.1pa' in phonemes(an, 'pa. Casa')
+        assert '.1da' in phonemes(an, 'da casa')
         assert '.1do' in phonemes(an, 'Dó ye?')
         assert '.1dos' in phonemes(an, 'dos libros')
-        checks += 3
+        assert '.1das' in phonemes(an, 'das casas')
+        for isolated, expected in (("d'o", '.1do'), ("d'a", '.1da'),
+                                   ("d'os", '.1dos'), ("d'as", '.1das')):
+            actual = phonemes(an, isolated)
+            assert expected in actual, (isolated, actual)
+            checks += 1
+        for sentence in ("d'os libros y dos amigos", "dos libros y d'os amigos"):
+            actual = phonemes(an, sentence)
+            assert '.0dos' in actual and '.1dos' in actual, (sentence, actual)
+            checks += 1
+        actual = phonemes(an, ' '.join(["d'os libros"] * 32) + ' y dos amigos')
+        assert actual.count('.0dos') == 32 and actual.count('.1dos') == 1, actual
+        checks += 1
+        checks += 6
+        whole, _ = render(an, ["d'os paises."])
+        split, indices = render(an, ["d'", EciIndex(11), 'os paises.'])
+        assert whole == split and [i for i,_ in indices] == [11], indices
+        checks += 1
         # Source fragments remain in the same word; indices are delivered in
         # order and the complete PCM matches a single input fragment.
         whole, _ = render(an, ['sinyal y cabanyera.'])

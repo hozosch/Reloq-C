@@ -256,6 +256,18 @@ int reloq61_an_suppress_spanish_abbr(void *state,int32_t from,int32_t to)
     const delta_loc *left=EVV_AT(const delta_loc *,from),*right=EVV_AT(const delta_loc *,to);
     char text[16];int accented=0;
     size_t n=an_word_spelling(d,left->value,right->value,text,sizeof text,&accented);
+    /* At this stage the native input still contains the apostrophe. Keep
+     * the original d token as provenance when the parser joins d'o/d'a,
+     * including their plural forms. Later, da and dos must remain distinct
+     * when they did not contain an apostrophe. */
+    if(!accented&&(n==3||n==4)&&text[0]=='d'&&text[1]=='?'&&
+       (text[2]=='o'||text[2]=='a')&&(n==3||text[3]=='s')) {
+        int32_t first=an_input_node(d,left->value,0);
+        int32_t position=first?(EVV_AT(int32_t *,first)[1]&~3):0;
+        int32_t apostrophe=an_input_node(d,position,0);
+        if(first&&an_input_name(apostrophe)==73)
+            (void)reloq61_an_note_elision(state,first);
+    }
     return !accented&&n==2&&!strcmp(text,"pa");
 }
 
@@ -275,9 +287,7 @@ static int an_enclitic_word(const char *text)
 static int an_weak_word(const char *text)
 {
     static const char *const words[]={
-        /* d'o is represented as do after the native apostrophe rule; bare
-         * do still follows its existing abbreviation/character handling. */
-        "do","pa","ta","enta","per","por","con","sin","de","en",
+        "pa","ta","enta","per","por","con","sin","de","en",
         "o","a","os","as","lo","la","los","las","ro","ra","ros","ras",
         "me","te","se","mos","nos","vos","le","les","li","ne","ie","bi","hu",
         "i","e","y","u","que"
@@ -313,7 +323,8 @@ void reloq61_an_adjust_clitics(void *state,int32_t from,int32_t to)
         int32_t begin=*EVV_AT(int32_t *,word)&~3,next=EVV_AT(int32_t *,word)[1]&~3;
         char text[128];int accented=0;
         size_t length=an_word_spelling(d,begin,next,text,sizeof text,&accented);
-        if(length&&!annotated&&!accented&&an_weak_word(text)&&
+        int elision=length&&reloq61_an_take_elision(state,an_input_node(d,begin,0));
+        if(length&&!annotated&&!accented&&(elision||an_weak_word(text))&&
            next&&an_right(d,next,2)!=end&&an_phone_node(d,next)) {
             int16_t unstressed=-1;
             memcpy(level,&unstressed,sizeof unstressed);

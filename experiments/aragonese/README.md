@@ -210,8 +210,9 @@ scientific xilo-/xeno- families and fixar retain /ks/; x remains ambiguous
 and other words still need lexical review. Number conversion includes the
 Aragonese forms ueito, nueu, vinte, trenta and other decades. The existing
 word stress rules also handle hyphenated pronouns and weak function words in
-context, including d'o, while an isolated form remains audible. Distinguishing
-d'a/d'os/d'as from identical spellings without an apostrophe remains open.
+context, including d'o, d'a, d'os and d'as, while an isolated form remains
+audible. The apostrophe is tracked in the original input so that forms such as
+the number dos do not acquire the same weak stress.
 
 Final latent t, the initial ll/y distinction, complete number vocabulary and
 character names still need work; inherited Castilian analysis is not a full
