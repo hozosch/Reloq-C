@@ -20,6 +20,7 @@ static void check(const char *source,const char *expected,int uk)
 int main(void)
 {
     for(int uk=0;uk<2;++uk) {
+        check("",NULL,uk);
         check("usrdct","U S R D C T",uk);
         check("cgroup","C group",uk);
         check("TMPFILES","T M P files",uk);

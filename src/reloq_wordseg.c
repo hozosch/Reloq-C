@@ -339,7 +339,7 @@ int reloq_wordseg_english(const unsigned char *original,size_t n,int uk,
     }
     /* Some unit compounds are also names (Longton). Preserve the name's
      * capitalized spelling but still split the lowercase unit expression. */
-    int lowercase_quantity=original[0]>='a'&&original[0]<='z'&&ton_quantity(word,n);
+    int lowercase_quantity=n&&original[0]>='a'&&original[0]<='z'&&ton_quantity(word,n);
     if(leave_word(word,n,uk)&&!lowercase_quantity)return 0;
     const int inf=0x3fffffff;
     int letters[33],other[33];size_t target[33];
