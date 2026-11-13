@@ -2262,13 +2262,6 @@ L666:;
     r0 = reloq_call_eses61_cons_syll_phone_adjust(state, (int32_t)(FIELD(0)));
 L685:;
     AT(int32_t, -28) = ((int32_t)AT(int32_t, -4));
-    if(delta_lang_now()->id==RELOQ61_ARAGONESE &&
-       reloq61_an_take_silent_phone(state,STATE_AT(w60,-4))) {
-        /* Keep the underlying consonant for the native stress analysis,
-         * but give the latent t neither a closure nor a release. */
-        STATE(int32_t,f20)=0;
-        STATE(int16_t,s458)=0;
-    }
     AT(int32_t, -20) = (STATE_AT(f20, -4));
     AT(int32_t, -24) = (STATE_AT(w61, -4));
     r0 = reloq_call_eses61_insert_dur(state, (int32_t)(FIELD(0)), (int32_t)((int32_t)AT(int32_t, -20)), (int32_t)(STATE_AT(w60, -4)), (int32_t)((int32_t)AT(int32_t, -24)), (int32_t)(STATE_AT(s37, -2)));

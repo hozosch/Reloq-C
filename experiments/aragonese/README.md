@@ -1,8 +1,9 @@
 # Aragonese: isolated Spanish-backend probe
 
-This is an initial research probe, not an available voice or a production
-Aragonese language implementation. It does not modify the Spanish voice, the
-language catalogue, user settings or release packages. Invoke it explicitly:
+This directory contains the original isolated research probes. The current
+development voice uses a separate Aragonese identity in the native provider;
+these probes themselves do not change the Spanish voice, the catalogue, user
+settings or release packages. Invoke the probes explicitly:
 
 ```
 python3 experiments/aragonese/test_probe.py
@@ -202,15 +203,22 @@ boundaries, /ʃ/, /tʃ/ and /θ/, across three output rates, two speeds and two
 voice genders. The Spanish, German, English and Greek controls also matched
 the previous library's PCM in the cases checked.
 
-The next development candidate exposes this identity as an **initial test
-voice**. Its dictionary slots are separate from Spanish, and its native
-orthography includes ny/ñ and some x/ix cases. The remaining ambiguous x
-spellings still need lexical coverage: for example, fixar and mixina still
-have the inherited /ks/ reading. Number words and character names still
-inherit much of Castilian and are not yet a localized Aragonese system. The
-/tʃ/ adjacency heuristic still cannot distinguish a genuine /t/ followed
-by /ʃ/. The pronunciation experiments remain usable because their builder
-removes scoped hooks only in temporary Castilian source copies.
+The development candidate exposes this identity as an **initial test voice**.
+Its dictionary slots are separate from Spanish. Native rules cover ny/ñ,
+several x/ix contexts (including mixina and ixambre), and qua/quo. The
+scientific xilo-/xeno- families and fixar retain /ks/; x remains ambiguous
+and other words still need lexical review. Number conversion includes the
+Aragonese forms ueito, nueu, vinte, trenta and other decades. The existing
+word stress rules also handle hyphenated pronouns and weak function words in
+context, including d'o, while an isolated form remains audible. Distinguishing
+d'a/d'os/d'as from identical spellings without an apostrophe remains open.
+
+Final latent t, the initial ll/y distinction, complete number vocabulary and
+character names still need work; inherited Castilian analysis is not a full
+Aragonese implementation. The /tʃ/ adjacency heuristic still cannot
+distinguish a genuine /t/ followed by /ʃ/. The pronunciation experiments
+remain usable because their builder removes scoped hooks only in temporary
+Castilian source copies.
 
 The compact Unicode name data replaces the earlier uncompressed representation,
 but the existing Unicode admission step still expands some names before the

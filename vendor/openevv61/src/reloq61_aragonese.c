@@ -184,21 +184,6 @@ done:
     return match;
 }
 
-/* Consonantal y is /Y/, distinct from the palatal lateral /L/ of ll.
- * Leave the conjunction y and other non-consonantal uses to the normal
- * vowel rules. The word fence excludes the following word. */
-int reloq61_an_consonant_y(void *state,int32_t end_ref)
-{
-    delta_state *d=state;struct saved_cursor saved;
-    if(!end_ref||!save_cursor(d,&saved))return 0;
-    word_fence(d);
-    lpta_loadp(d,EVV_AT(const delta_token *,end_ref));
-    /* A word-final y is followed by a delimiter, not a vowel. */
-    int match=!setscan_r(d,1)&&!testFldeq(d,1,4,1);
-    restore_cursor(d,&saved);
-    return match;
-}
-
 /* The inherited q-rule consumes u in every context. In qua/quo it is a
  * pronounced glide; in que/qui it remains the silent part of the digraph. */
 int reloq61_an_qu_glide(void *state,int32_t end_ref)
@@ -261,9 +246,9 @@ static size_t an_word_spelling(delta_state *d,int32_t begin,int32_t next,
     return used;
 }
 
-/* These are ordinary Aragonese words, not the parent's Spanish
- * abbreviations for domingo and por autorización. User abbreviation
- * dictionaries are consulted first in the existing caller. */
+/* Pa is an Aragonese preposition, not the parent's Spanish abbreviation
+ * for por autorización. User abbreviation dictionaries are consulted
+ * first in the existing caller. */
 int reloq61_an_suppress_spanish_abbr(void *state,int32_t from,int32_t to)
 {
     if(!from||!to)return 0;
@@ -271,7 +256,7 @@ int reloq61_an_suppress_spanish_abbr(void *state,int32_t from,int32_t to)
     const delta_loc *left=EVV_AT(const delta_loc *,from),*right=EVV_AT(const delta_loc *,to);
     char text[16];int accented=0;
     size_t n=an_word_spelling(d,left->value,right->value,text,sizeof text,&accented);
-    return !accented&&n==2&&(!strcmp(text,"do")||!strcmp(text,"pa"));
+    return !accented&&n==2&&!strcmp(text,"pa");
 }
 
 static int an_enclitic_word(const char *text)
@@ -290,6 +275,8 @@ static int an_enclitic_word(const char *text)
 static int an_weak_word(const char *text)
 {
     static const char *const words[]={
+        /* d'o is represented as do after the native apostrophe rule; bare
+         * do still follows its existing abbreviation/character handling. */
         "do","pa","ta","enta","per","por","con","sin","de","en",
         "o","a","os","as","lo","la","los","las","ro","ra","ros","ras",
         "me","te","se","mos","nos","vos","le","les","li","ne","ie","bi","hu",
@@ -304,73 +291,6 @@ static int32_t an_phone_node(delta_state *d,int32_t at)
 {
     int32_t point=an_right(d,at,4),node=point?vgetsc(d,0,0,point,4):0;
     return node&&!(*EVV_AT(int32_t *,node)&2)?node:0;
-}
-
-/* Preserve y=/Y/ and ll=/L/ even at the beginning of an utterance, where
- * the Castilian provider otherwise gives them the same initial allophone. */
-static void an_initial_sound(delta_state *d,int32_t begin,const char *text,size_t length)
-{
-    int y=length>=2&&text[0]=='y'&&strchr("aeiou",text[1]);
-    int article=!strcmp(text,"ro")||!strcmp(text,"ra")||
-                !strcmp(text,"ros")||!strcmp(text,"ras");
-    if(!y&&!article)return;
-    int32_t phone=an_phone_node(d,begin);if(!phone)return;
-    unsigned char *body=TFLDS(EVV_AT(void *,phone));
-    unsigned original=*(const unsigned char *)delta_record_field(&vstmtbl[4],0,body);
-    if((y&&original!=19)||(article&&original!=25))return;
-    unsigned char preserved[6],replacement=y?10:24;
-    memcpy(preserved,body+8,sizeof preserved);
-    vinitflds(d,4,body,&replacement);
-    memcpy(body+8,preserved,sizeof preserved);
-}
-
-static void an_destress_phones(delta_state *d,int32_t begin,int32_t next)
-{
-    int32_t at=begin,end=an_right(d,next,4);
-    for(unsigned guard=0;at&&an_right(d,at,4)!=end&&guard<256;++guard) {
-        int32_t phone=an_phone_node(d,at);if(!phone)return;
-        void *body=TFLDS(EVV_AT(void *,phone));
-        int16_t unstressed=0;
-        memcpy(delta_record_field(&vstmtbl[4],8,body),&unstressed,sizeof unstressed);
-        int32_t n=EVV_AT(int32_t *,phone)[1]&~3;
-        if(!n||n==at)return;
-        at=n;
-    }
-}
-
-/* Keep a written final -nt/-st/-rt through lexical stress assignment, then
- * mark the final phone for zero duration. The existing duration field is
- * otherwise unused at this stage, and is reset as soon as the marker is read. */
-static void an_mark_latent_t(delta_state *d,int32_t begin,int32_t next,
-                             const char *text,size_t length)
-{
-    int latent=length>=3&&text[length-1]=='t'&&strchr("nrs",text[length-2]);
-    latent|=!strcmp(text,"molt")||!strcmp(text,"muit")||!strcmp(text,"feit");
-    if(!latent)return;
-    int32_t at=begin,end=an_right(d,next,4),last=0;
-    for(unsigned guard=0;at&&an_right(d,at,4)!=end&&guard<256;++guard) {
-        int32_t phone=an_phone_node(d,at);if(!phone)return;
-        last=phone;
-        int32_t n=EVV_AT(int32_t *,phone)[1]&~3;if(!n||n==at)return;at=n;
-    }
-    if(!last||an_right(d,at,4)!=end)return;
-    void *body=TFLDS(EVV_AT(void *,last));
-    if(*(const unsigned char *)delta_record_field(&vstmtbl[4],0,body)!=2)return;
-    int16_t marker=INT16_MIN;
-    memcpy(delta_record_field(&vstmtbl[4],11,body),&marker,sizeof marker);
-}
-
-int reloq61_an_take_silent_phone(void *state,int32_t phone_begin)
-{
-    if(!phone_begin)return 0;
-    delta_state *d=state;const delta_loc *begin=EVV_AT(const delta_loc *,phone_begin);
-    int32_t phone=an_phone_node(d,begin->value);if(!phone)return 0;
-    void *body=TFLDS(EVV_AT(void *,phone));
-    unsigned char *duration=delta_record_field(&vstmtbl[4],11,body);
-    int16_t marker;memcpy(&marker,duration,sizeof marker);
-    if(marker!=INT16_MIN)return 0;
-    marker=0;memcpy(duration,&marker,sizeof marker);
-    return 1;
 }
 
 /* Hyphenated, postverbal pronouns are unstressed and belong to the verb's
@@ -393,22 +313,16 @@ void reloq61_an_adjust_clitics(void *state,int32_t from,int32_t to)
         int32_t begin=*EVV_AT(int32_t *,word)&~3,next=EVV_AT(int32_t *,word)[1]&~3;
         char text[128];int accented=0;
         size_t length=an_word_spelling(d,begin,next,text,sizeof text,&accented);
-        if(length&&!annotated) {
-            an_initial_sound(d,begin,text,length);
-            an_mark_latent_t(d,begin,next,text,length);
-        }
         if(length&&!annotated&&!accented&&an_weak_word(text)&&
            next&&an_right(d,next,2)!=end&&an_phone_node(d,next)) {
             int16_t unstressed=-1;
             memcpy(level,&unstressed,sizeof unstressed);
-            an_destress_phones(d,begin,next);
         }
         if(previous_word&&!previous_annotated&&!annotated&&
            an_input_name(an_input_node(d,begin,1))==63&&
            length&&an_enclitic_word(text)) {
             int16_t unstressed=-1;
             memcpy(level,&unstressed,sizeof unstressed);
-            an_destress_phones(d,begin,next);
         }
         previous_word=1;previous_annotated=annotated!=0;
         if(!next||next==at)break;

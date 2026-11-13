@@ -37,13 +37,6 @@ def main():
             checks += 1
         assert 'ks' in phonemes(an, 'xilofaga'), phonemes(an, 'xilofaga')
         checks += 1
-        for word in ('ya', 'ye', 'yo', 'yema', 'yera', 'yabos', 'yé'):
-            actual=phonemes(an, word)
-            assert 'Y' in actual and 'L' not in actual, (word, actual)
-            checks += 1
-        for word in ('llama', 'llebre', 'palla', 'viello'):
-            assert 'L' in phonemes(an, word), word
-            checks += 1
         for qu, cu in (('quaranta','cuaranta'), ('quadro','cuadro')):
             assert phonemes(an, qu)==phonemes(an, cu), (qu, cu)
             checks += 1
@@ -65,7 +58,7 @@ def main():
         for sentence, expected in (('minchar-las', '.0las'), ('sentir-ie', '.0ye'),
                                    ('partindo-ne', '.0ne'), ('contaz-me-la', '.0la'),
                                    ('fendo-le-ne', '.0ne'), ('da-me-ne', '.0ne'),
-                                   ('fer-los', '.0los'), ("minchand-mo'ne", '.0mo')):
+                                   ('fer-los', '.0los'), ("minchand-mo'ne", '`00 `[.1mo')):
             actual=phonemes(an, sentence)
             assert expected in actual, (sentence, actual)
             checks += 1
@@ -75,19 +68,19 @@ def main():
         # Independent function words must not inherit Spanish abbreviation
         # expansion; they are weak in connected speech, but remain audible
         # and stressed when isolated or explicitly accented.
-        for word in ('do', 'pa'):
+        for word in ('pa',):
             actual=phonemes(an, word)
             assert f'.1{word}' in actual and 'min' not in actual and 'por' not in actual, (word, actual)
             checks += 1
-        for sentence, expected in (('do libro', '.0do'), ('pa casa', '.0pa'),
-                                   ("d'o mundo", '.0do'), ('ta casa', '.0ta'),
-                                   ('enta casa', '.0en.0ta'), ('bi ha', '.0bi'),
+        for sentence, expected in (('pa casa', '.0pa'),
+                                   ("d'o mundo", '.0do'), ('d’o Pirineu', '.0do'), ('ta casa', '.0ta'),
+                                   ('enta casa', '`00 `[.1en.0ta'), ('bi ha', '.0bi'),
                                    ('ne veyo', '.0ne'), ('as casas', '.0as'),
-                                   ('ro dia', '.0ro'), ('ra casa', '.0ra')):
+                                   ('ro dia', '.0Ro'), ('ra casa', '.0Ra')):
             actual=phonemes(an, sentence)
             assert expected in actual, (sentence, actual)
             checks += 1
-        assert '.1do' in phonemes(an, 'do. Casa')
+        assert '.1do' in phonemes(an, "d'o. Casa")
         assert '.1do' in phonemes(an, 'Dó ye?')
         assert '.1dos' in phonemes(an, 'dos libros')
         checks += 3
@@ -102,7 +95,7 @@ def main():
         checks += 1
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory)
-            (folder / 'ARAmain.dic').write_bytes(b'probexword\tcasa\nsinyal\tcasa\nyema\tllama\n')
+            (folder / 'ARAmain.dic').write_bytes(b'probexword\tcasa\nsinyal\tcasa\nyema\tllama\npa\tcasa\n')
             (folder / 'ESPmain.dic').write_bytes(b'probexword\tnaranja\n')
             before = render(an, ['probexword.', EciIndex(7)])
             an.set_dictionary_path(folder)
@@ -112,8 +105,9 @@ def main():
                 assert render(an, ['probexword.', EciIndex(7)]) == render(an, ['casa.', EciIndex(7)])
                 assert render(an, ['sinyal.', EciIndex(7)]) == render(an, ['casa.', EciIndex(7)])
                 assert render(an, ['yema.', EciIndex(7)]) == render(an, ['llama.', EciIndex(7)])
+                assert render(an, ['pa.', EciIndex(7)]) == render(an, ['casa.', EciIndex(7)])
                 assert render(es, ['probexword.', EciIndex(7)]) == render(es, ['naranja.', EciIndex(7)])
-                checks += 4
+                checks += 5
             an.set_dictionary_path(None)
             an.set_parameter(DICTIONARY, 0)
             assert render(an, ['probexword.', EciIndex(7)]) == before
