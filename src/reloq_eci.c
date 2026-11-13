@@ -645,6 +645,21 @@ static int ends_german_word(const unsigned char *text, size_t length)
     }
 }
 
+extern const char *ECICALL es_engsynDictLookup(void *,int,const char *);
+/* Dictionary substitutions run after Unicode admission. Preserve exact
+ * main/abbreviation entries and the case-folded root entry for v/V. */
+static unsigned aragonese_dictionary_letters(void *worker,int language)
+{
+    if(language!=0x130000)return 0;
+    void *dictionary=reloq61_worker_dictionary_handle(worker);
+    if(!dictionary)return 0;
+    unsigned result=0;
+    if(es_engsynDictLookup(dictionary,1,"v"))result=3;
+    if(es_engsynDictLookup(dictionary,0,"v")||es_engsynDictLookup(dictionary,2,"v"))result|=1;
+    if(es_engsynDictLookup(dictionary,0,"V")||es_engsynDictLookup(dictionary,2,"V"))result|=2;
+    return result;
+}
+
 #include "reloq_eci_languages.inc"
 
 static struct reloq_session *make_session(int rate_code)
@@ -1066,8 +1081,9 @@ int ECICALL eciSynthesize(ECIHand handle)
     }
     if((unicode_input||control_count)&&text_bytes) {
         unsigned char *normalized=NULL;size_t count=0;source_bytes=text_bytes;
-        int r=reloq_unicode_admit_language(phrase,text_bytes,modes,e->language,
-            e->process_tags,&normalized,&count,&source_map);
+        int r=reloq_unicode_admit_language_masked(phrase,text_bytes,modes,e->language,
+            e->process_tags,aragonese_dictionary_letters(e->rule_worker,e->language),
+            &normalized,&count,&source_map);
         if(r){result=r==-2?RELOQ_ECI_MEMORY:RELOQ_ECI_INVALID;
             e->failure_stage=RELOQ_ECI_STAGE_TEXT;goto done;}
         for(size_t i=0;i<mark_count;++i)marks[i].offset=source_map[marks[i].offset];

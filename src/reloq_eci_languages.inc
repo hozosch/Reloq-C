@@ -148,10 +148,29 @@ static int synthesize_languages(struct reloq_eci_engine *e,
             language_advance(&controls,text,length,modes,r->begin,r->end,pitches,first,pitch_marker);
             continue;
         }
+        /* Admission must see the same language-specific dictionary as the
+         * renderer, including when the utterance changes language inline. */
+        e->language=r->language;
+        if(e->language==configured_language) {
+            if(!configured_worker)configured_worker=reloq61_worker_new(e->language);
+            e->rule_worker=configured_worker;
+        } else {
+            size_t i=0;while(i<worker_count&&languages[i]!=e->language)++i;
+            if(i==worker_count) {
+                if(worker_count==ECI_LANGUAGE_COUNT){result=RELOQ_ECI_MEMORY;break;}
+                languages[i]=e->language;workers[i]=reloq61_worker_new(e->language);++worker_count;
+                if(workers[i]&&reloq61_worker_dictionary(workers[i],e->dictionary_path)) {
+                    result=RELOQ_ECI_INVALID;break;
+                }
+            }
+            e->rule_worker=workers[i];
+        }
+        if(!e->rule_worker){result=RELOQ_ECI_MEMORY;break;}
         unsigned char *normalized=NULL;size_t bytes=n,*map=NULL;
         if(unicode) {
-            int status=reloq_unicode_admit_language(text+r->begin,n,modes?modes+r->begin:NULL,
-                r->language,e->process_tags,&normalized,&bytes,&map);
+            int status=reloq_unicode_admit_language_masked(text+r->begin,n,modes?modes+r->begin:NULL,
+                r->language,e->process_tags,aragonese_dictionary_letters(e->rule_worker,r->language),
+                &normalized,&bytes,&map);
             if(status){result=status==-2?RELOQ_ECI_MEMORY:RELOQ_ECI_INVALID;
                 e->failure_stage=RELOQ_ECI_STAGE_TEXT;break;}
         }
@@ -178,20 +197,6 @@ static int synthesize_languages(struct reloq_eci_engine *e,
             for(size_t i=0;i<mc;++i)if(local_marks[i].offset==source_length)++local_marks[i].offset;
             phrase[source_length++]='.';phrase[source_length]=0;
         }
-        e->language=r->language;
-        if(e->language==configured_language) {
-            if(!configured_worker)configured_worker=reloq61_worker_new(e->language);
-            e->rule_worker=configured_worker;
-        } else {
-            size_t i=0;while(i<worker_count&&languages[i]!=e->language)++i;
-            if(i==worker_count) {
-                if(worker_count==ECI_LANGUAGE_COUNT){result=RELOQ_ECI_MEMORY;goto run_done;}
-                languages[i]=e->language;workers[i]=reloq61_worker_new(e->language);++worker_count;
-                if(workers[i]&&reloq61_worker_dictionary(workers[i],e->dictionary_path)) {result=RELOQ_ECI_INVALID;goto run_done;}
-            }
-            e->rule_worker=workers[i];
-        }
-        if(!e->rule_worker){result=RELOQ_ECI_MEMORY;goto run_done;}
         {
             void *previous=reloq61_worker_scope(e->rule_worker);
             result=synthesize_generic(e,phrase,source_length,prefix_n+bytes,
@@ -202,7 +207,6 @@ static int synthesize_languages(struct reloq_eci_engine *e,
            lifetime. The configured voice and selected NVDA language do not
            change when this transaction ends. */
         language_advance(&controls,text,length,modes,r->begin,r->end,pitches,pitch_begin,pitch_marker);
-run_done:
         if(result&&e->failure_utf8_offset>=0) {
             size_t offset=(size_t)e->failure_utf8_offset,at=0;
             if(offset>prefix_n) {

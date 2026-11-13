@@ -53,6 +53,110 @@ static int scalar(struct buffer *b,uint32_t c)
     unsigned char s[4];size_t n=encode(s,c);
     return add(b,s,n);
 }
+static int spelling_space(uint32_t c)
+{
+    return c==' '||c=='\t'||c=='\r'||c=='\n'||c==0xa0||c==0x1680||
+        (c>=0x2000&&c<=0x200a)||c==0x2028||c==0x2029||c==0x202f||
+        c==0x205f||c==0x3000;
+}
+static int spelling_word_character(uint32_t c)
+{
+    if(c<128)return (c>='a'&&c<='z')||(c>='A'&&c<='Z')||
+        (c>='0'&&c<='9')||c=='_';
+    unsigned char base;
+    return reloq_character_latin_base(c,&base)==1;
+}
+static int preceding_scalar(const unsigned char *text,size_t end,size_t *begin,uint32_t *c)
+{
+    if(!end)return 0;
+    size_t at=end-1,n;while(at&&(text[at]&0xc0)==0x80)--at;
+    if(decode(text+at,end-at,&n,c)||n!=end-at)return 0;
+    *begin=at;return 1;
+}
+
+/* NVDA can submit consecutive spelled letters as separate character-mode
+ * fragments with ordinary spaces between them. Such fragments are one
+ * spelling run, whereas ordinary text on either side is not. */
+static int aragonese_one_mode_character(const unsigned char *text,size_t length,
+    const unsigned char *modes,size_t begin,size_t end)
+{
+    if(!modes||!modes[begin])return 0;
+    for(size_t p=begin;p;) {
+        size_t at=p-1,n;uint32_t c;
+        while(at&&(text[at]&0xc0)==0x80)--at;
+        if(decode(text+at,p-at,&n,&c)||n!=p-at)return 0;
+        if(modes[at])return 0;
+        if(!spelling_space(c))break;
+        p=at;
+    }
+    for(size_t p=end;p<length;) {
+        size_t n;uint32_t c;if(decode(text+p,length-p,&n,&c))return 0;
+        if(modes[p])return 0;
+        if(!spelling_space(c))break;
+        p+=n;
+    }
+    return 1;
+}
+
+/* Check an explicit `ts1/`ts2 span without counting the control tags as
+ * letters. Do not mistake the v inside a different ECI control for input. */
+static int aragonese_one_inline_character(const unsigned char *text,size_t length,
+    const unsigned char *modes,size_t begin)
+{
+    size_t start=0,stop=length;int active=0;
+    for(size_t p=0;p<length;) {
+        if(text[p]=='`'&&(!modes||!modes[p])) {
+            size_t back=p;while(back&&text[back-1]=='\\')--back;
+            struct reloq_inline_tag t=reloq_inline_tag_read(text+p,length-p,0);
+            if(!((p-back)&1)&&t.kind!=RELOQ_TAG_NONE) {
+                if(p<=begin&&begin<p+t.length)return 0;
+                if(t.kind==RELOQ_TAG_SPELL) {
+                    if(p<begin){start=p+t.length;active=t.value;}
+                    else {stop=p;break;}
+                }
+                p+=t.length;continue;
+            }
+        }
+        size_t n;uint32_t c;if(decode(text+p,length-p,&n,&c))return 0;p+=n;
+    }
+    if(!active)return 0;
+    unsigned count=0;
+    for(size_t p=start;p<stop;) {
+        if(text[p]=='`'&&(!modes||!modes[p])) {
+            struct reloq_inline_tag t=reloq_inline_tag_read(text+p,stop-p,0);
+            if(t.kind!=RELOQ_TAG_NONE){p+=t.length;continue;}
+        }
+        size_t n;uint32_t c;if(decode(text+p,stop-p,&n,&c))return 0;
+        if(!spelling_space(c)){if(p!=begin||++count>1)return 0;}
+        p+=n;
+    }
+    return count==1;
+}
+
+static int aragonese_single_v(const unsigned char *text,size_t length,
+    const unsigned char *modes,size_t begin,size_t end,int source_spelling)
+{
+    if(modes&&modes[begin])return aragonese_one_mode_character(text,length,modes,begin,end);
+    if(source_spelling)return aragonese_one_inline_character(text,length,modes,begin);
+    /* A single V in a sentence is still the letter name. A V inside a word,
+     * or alongside other single-letter tokens, belongs to a spelling run. */
+    size_t at,n;uint32_t c;
+    if(preceding_scalar(text,begin,&at,&c)&&spelling_word_character(c))return 0;
+    if(end<length&&(!decode(text+end,length-end,&n,&c))&&spelling_word_character(c))return 0;
+    size_t p=begin;int spaced=0;
+    while(preceding_scalar(text,p,&at,&c)&&spelling_space(c)){p=at;spaced=1;}
+    if(spaced&&preceding_scalar(text,p,&at,&c)&&spelling_word_character(c)) {
+        size_t prior;uint32_t before;
+        if(!preceding_scalar(text,at,&prior,&before)||!spelling_word_character(before))return 0;
+    }
+    p=end;spaced=0;
+    while(p<length&&!decode(text+p,length-p,&n,&c)&&spelling_space(c)){p+=n;spaced=1;}
+    if(spaced&&p<length&&!decode(text+p,length-p,&n,&c)&&spelling_word_character(c)) {
+        p+=n;
+        if(p==length||decode(text+p,length-p,&n,&c)||!spelling_word_character(c))return 0;
+    }
+    return 1;
+}
 static int ascii_number_range(const unsigned char *text,size_t length,size_t begin,size_t end)
 {
     uint32_t c;size_t used;
@@ -347,7 +451,7 @@ static int reading(struct buffer *b,const struct reloq_character_extension *r)
     return 0;
 }
 static int unicode_admit(const unsigned char *text,size_t length,
-    const unsigned char *modes,int english,int language,int tags,unsigned char **output,
+    const unsigned char *modes,int english,int language,int tags,unsigned protected_v,unsigned char **output,
     size_t *written,size_t **map)
 {
     if(!text||!output||!written||!map||length>SIZE_MAX/sizeof(size_t)-1)return -1;
@@ -372,6 +476,19 @@ static int unicode_admit(const unsigned char *text,size_t length,
         while(end<length&&(!modes||modes[end]==mode)) {
             uint32_t mark;size_t z;if(decode(text+end,length-end,&z,&mark))goto fail;
             uint32_t merged=reloq_unicode_compose(c,mark);if(!merged)break;c=merged;end+=z;
+        }
+        /* Aragonese uses the distinct full name for a letter read alone,
+         * but a short "ve" inside a spelled sequence. */
+        if(language==0x130000&&(c=='v'||c=='V')&&
+           (mode||source_spelling||!(protected_v&(c=='v'?1u:2u)))&&
+           aragonese_single_v(text,length,modes,begin,end,source_spelling)) {
+            old=b.n;
+            if((native_run||source_spelling)&&add(&b," `ts0 ",6)){rc=-2;goto fail;}
+            native_run=0;
+            if(say(&b,"ve baixa")||(source_spelling&&
+               add(&b,source_spelling==1?" `ts1 ":" `ts2 ",6))){rc=-2;goto fail;}
+            offsets[begin]=old;for(size_t j=begin+1;j<end;++j)offsets[j]=b.n;
+            offsets[end]=b.n;i=end;continue;
         }
         /* Keep the existing US-English Unicode reading of numeric ranges. */
         if(english==1&&!mode&&!source_spelling&&(c==0x2013||c==0x2014)&&
@@ -571,14 +688,20 @@ int reloq_unicode_admit(const unsigned char *text,size_t length,
     const unsigned char *modes,int english,int tags,unsigned char **output,
     size_t *written,size_t **map)
 {
-    return unicode_admit(text,length,modes,english,0,tags,output,written,map);
+    return unicode_admit(text,length,modes,english,0,tags,0,output,written,map);
+}
+int reloq_unicode_admit_language_masked(const unsigned char *text,size_t length,
+    const unsigned char *modes,int language,int tags,unsigned protected_v,
+    unsigned char **output,size_t *written,size_t **map)
+{
+    if(language==0x40000||language==0x10000)return unicode_admit(text,length,modes,language==0x10000,0,tags,0,output,written,map);
+    if(reloq_character_locale(language)<0)return -1;
+    int family=language>>16,policy=family==6||family==8||family==10||family==18?3:2;
+    return unicode_admit(text,length,modes,policy,language,tags,protected_v,output,written,map);
 }
 int reloq_unicode_admit_language(const unsigned char *text,size_t length,
     const unsigned char *modes,int language,int tags,unsigned char **output,
     size_t *written,size_t **map)
 {
-    if(language==0x40000||language==0x10000)return unicode_admit(text,length,modes,language==0x10000,0,tags,output,written,map);
-    if(reloq_character_locale(language)<0)return -1;
-    int family=language>>16,policy=family==6||family==8||family==10||family==18?3:2;
-    return unicode_admit(text,length,modes,policy,language,tags,output,written,map);
+    return reloq_unicode_admit_language_masked(text,length,modes,language,tags,0,output,written,map);
 }

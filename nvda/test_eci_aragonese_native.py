@@ -148,9 +148,10 @@ def main():
             assert '.0do' in actual and '.1mun' in actual, (sentence, actual)
             checks += 1
         for sentence in ('la casa de mundo', 'as casas de mundo', 'mar de mundo',
-                         'lo camín de mundo', 'la casa, de mundo'):
+                         'lo camín de mundo', 'la casa, de mundo',
+                         'signal de numero', 'sinyal de numero'):
             actual=phonemes(an, sentence)
-            assert '.0de' in actual and '.1mun' in actual, (sentence, actual)
+            assert '.0de' in actual and ('.1mun' in actual or '.1me' in actual), (sentence, actual)
             checks += 1
         # The ECI phoneme text normalizes both dental allophones to 'd'.
         # Compare speech durations with explicit native D/d references so a
@@ -162,8 +163,9 @@ def main():
             for rate in (1, 5):
                 an.set_parameter(SAMPLE_RATE, rate)
                 for prefix, expected in (('la casa', 'soft'), ('as casas', 'soft'),
-                                         ('mar', 'soft'), ('lo camín', 'stop'),
-                                         ('la casa,', 'stop')):
+                                         ('mar', 'soft'), ('signal', 'soft'),
+                                         ('sinyal', 'soft'), ('lo camín', 'stop'),
+                                         ('la casa,', 'stop'), ('signal,', 'stop')):
                     for word, vowel in (("d'o", 'o'), ('de', 'e')):
                         actual, soft, stop = [len(render(an, [f'{prefix} {item} mundo'])[0])
                             for item in (word, f'`[.0D{vowel}]', f'`[.0d{vowel}]')]
@@ -175,6 +177,13 @@ def main():
                         else:
                             assert actual < stop, (rate, prefix, word, actual, soft, stop)
                         checks += 1
+                for prefix in ('signal', 'sinyal'):
+                    actual, stop = [len(render(an, [f'{prefix} {word} numero'])[0])
+                                    for word in ('de', '`[.0de]')]
+                    assert actual < stop, (rate, prefix, actual, stop)
+                    checks += 1
+                assert render(an, ['final dia'])[0] == render(an, ['final `[.1dya]'])[0]
+                checks += 1
         finally:
             an.set_parameter(SAMPLE_RATE, old_rate)
             an.set_parameter(PROCESS_TAGS, old_tags)

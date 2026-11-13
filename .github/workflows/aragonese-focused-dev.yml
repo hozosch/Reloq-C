@@ -1,0 +1,149 @@
+name: Aragonese focused NVDA candidate
+on:
+  push:
+    branches: [codex/aragonese-letters-20261113]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      RELOQ_BUILD_EPOCH: '1700000000'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: dictionary-snapshot
+          run-id: 43505754441
+          github-token: ${{ github.token }}
+          path: data/community
+      - name: Install Windows compiler and translation tools
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=2 install -y --no-install-recommends gcc-mingw-w64-x86-64-posix gettext
+      - uses: actions/cache/restore@v4
+        id: prior
+        with:
+          path: vendor/openevv61/build
+          key: aragonese-hearing-ubuntu24-gcc13-x64-v1-${{ github.sha }}
+          restore-keys: |
+            aragonese-hearing-ubuntu24-gcc13-x64-v1-
+      - uses: actions/cache/restore@v4
+        id: released
+        if: steps.prior.outputs.cache-matched-key == ''
+        with:
+          path: vendor/openevv61/build
+          # The 1.4.1 main-branch provider cache, built from the commit below.
+          key: sapi-rules-ubuntu24-gcc13-v1-x64-80c0640b08d621ac1159cce5a830c0724f4c2443a5c8f2ee4577d8621742a65f
+      - name: Rebuild changed provider inputs
+        if: steps.prior.outputs.cache-matched-key != '' || steps.released.outputs.cache-hit == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ '${{ steps.prior.outputs.cache-matched-key }}' != '' ]; then
+            baseline=$(cat vendor/openevv61/build/.hearing-source-commit)
+          else
+            baseline=5d56224c51bcb1141f4fe4dd08f09f6060969e63
+          fi
+          git cat-file -e "$baseline^{commit}"
+          find vendor/openevv61/build -type f -exec touch {} +
+          sleep 1
+          git diff --name-only -z --diff-filter=ACMRT "$baseline" "$GITHUB_SHA" -- \
+            vendor/openevv61 include src/reloq_voice_filter.c src/reloq_orthography.c \
+            src/reloq_german_word_edges.c src/reloq_english_word_edges.c | xargs -0 -r touch --
+          if [ -n "$(git diff --name-only --diff-filter=D "$baseline" "$GITHUB_SHA" -- vendor/openevv61 include)" ]; then
+            rm -f vendor/openevv61/build/windows-release/libreloq61.a
+          fi
+      - name: Build the Windows engine
+        run: |
+          make -C eci -j4 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
+          printf '%s\n' "$GITHUB_SHA" > vendor/openevv61/build/.hearing-source-commit
+      - uses: actions/cache/save@v4
+        if: steps.prior.outputs.cache-hit != 'true'
+        with:
+          path: vendor/openevv61/build
+          key: ${{ steps.prior.outputs.cache-primary-key }}
+      - name: Build the focused NVDA add-on
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import sys
+          p=Path('addon/synth/manifest.ini')
+          source=p.read_text(encoding='utf8')
+          assert 'version = "1.4.1"' in source
+          p.write_text(source.replace('version = "1.4.1"','version = "1.5.0-dev10"'),encoding='utf8')
+          for locale in ('de','en'):
+              p=Path('addon/synth/doc')/locale/'readme.html'
+              source=p.read_text(encoding='utf8')
+              assert 'Version 1.4.1' in source
+              p.write_text(source.replace('Version 1.4.1','Version 1.5.0-dev10',1),encoding='utf8')
+          sys.path.insert(0,'addon')
+          from build_synth import build
+          build(Path('dist/reloq-c-synth-x64-1.5.0-dev10.nvda-addon'),Path('eci/eci.dll'),refresh_dictionaries=False)
+          PY
+          cp eci/eci.dll dist/eci.dll
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aragonese-focused-candidate
+          path: |
+            dist/reloq-c-synth-x64-1.5.0-dev10.nvda-addon
+            dist/eci.dll
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+  windows:
+    needs: build
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: aragonese-focused-candidate
+          path: candidate
+      - name: Test the changed language and character paths
+        shell: pwsh
+        run: |
+          python -B nvda/test_eci_aragonese_spanish_letters.py --library candidate/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Letter-name regression' }
+          python -B nvda/test_eci_aragonese_native.py --library candidate/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Aragonese pronunciation regression' }
+          python -B nvda/test_eci_phonemes_pause.py --library candidate/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'ECI phoneme and character regression' }
+          python -B nvda/test_eci_greek_characters.py --library candidate/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Greek character regression' }
+          python -B nvda/test_eci_wordseg_native.py --library candidate/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Word segmentation regression' }
+          python -B addon/test_synth_native.py --library candidate/eci.dll --addon candidate/reloq-c-synth-x64-1.5.0-dev10.nvda-addon
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA adapter regression' }
+      - name: Exercise the changed paths in NVDA
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download release-2026.3.1 --repo nvaccess/nvda --pattern nvda_2026.3.1.exe --dir candidate
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA download failed' }
+          if ((Get-FileHash candidate/nvda_2026.3.1.exe -Algorithm SHA256).Hash -ne '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052') { throw 'Unexpected NVDA installer' }
+          $portable = Join-Path $pwd 'portable-nvda'
+          $p = Start-Process (Get-Item candidate/nvda_2026.3.1.exe).FullName -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable installation failed' }
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.5.0-dev10.nvda-addon --plugin addon/test_nvda_real_aragonese_plugin.py --work aragonese-probe
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA language or spelling regression' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aragonese-focused-nvda-results
+          path: |
+            aragonese-probe/result.json
+            aragonese-probe/nvda.log
+          if-no-files-found: ignore

@@ -41,9 +41,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         try:
             import nvwave
             import speech
+            from speech.commands import CharacterModeCommand
             import synthDriverHandler
             import synthDrivers.reloqC as reloq
             self.speech = speech
+            self.character_mode = CharacterModeCommand
             nvwave.WavePlayer = self.player
             reloq.SynthDriver._make_player = staticmethod(self.player)
             speech.cancelSpeech()
@@ -52,10 +54,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.synth = synthDriverHandler.getSynth()
             if 'an_ES' not in self.synth.availableLanguages:
                 raise AssertionError('Aragonese is absent from the language list')
-            self.cases = [('an_ES', 'Esta ye una preba de voz.'),
-                          ('an_ES', 'Auca y pauto. Sinyal y cabanyera.'),
-                          ('es_ES', 'Esta es una prueba de voz.'),
-                          ('an_ES', 'L’aragonés ye una luenga de Aragón.')]
+            self.cases = [('an_ES', 'Esta ye una preba de voz.', False),
+                          ('an_ES', 'Auca y pauto. Sinyal y cabanyera.', False),
+                          ('es_ES', 'Esta es una prueba de voz.', False),
+                          ('an_ES', 'L’aragonés ye una luenga de Aragón.', False),
+                          ('an_ES', 'caixeta', False),
+                          ('an_ES', 'signal de numero', False),
+                          ('an_ES', 'v', True), ('an_ES', 'VB', True),
+                          ('an_ES', 'GJXW', True), ('es_MX', 'v', True),
+                          ('es_ES', 'v', True)]
             self.next()
         except BaseException:
             self.fail()
@@ -66,24 +73,26 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 RESULT.write_text(json.dumps({'ok': True, 'cases': self.results},
                                               ensure_ascii=False), encoding='utf8')
                 return
-            locale, text = self.cases[self.index]
+            locale, text, spelling = self.cases[self.index]
             self.speech.cancelSpeech()
             self.synth.language = locale
             if self.synth.language != locale:
                 raise AssertionError('language selection did not stick: ' + locale)
             self.before = {id(p): len(p.chunks) for p in self.players}
-            self.speech.speak([text])
+            sequence = ([self.character_mode(True), text, self.character_mode(False)]
+                        if spelling else [text])
+            self.speech.speak(sequence)
             wx.CallLater(1400, self.capture)
         except BaseException:
             self.fail()
 
     def capture(self):
         try:
-            locale, text = self.cases[self.index]
+            locale, text, spelling = self.cases[self.index]
             audio = b''.join(chunk for p in self.players
                              for chunk in p.chunks[self.before.get(id(p), 0):])
             if not audio: raise RuntimeError('no real NVDA audio for ' + text)
-            self.results.append({'locale': locale, 'text': text, 'pcm_bytes': len(audio),
+            self.results.append({'locale': locale, 'text': text, 'spelling': spelling, 'pcm_bytes': len(audio),
                                  'pcm_sha256': hashlib.sha256(audio).hexdigest()})
             self.index += 1
             self.next()

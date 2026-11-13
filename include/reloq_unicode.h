@@ -13,4 +13,9 @@ int reloq_unicode_admit(const unsigned char *text,size_t length,
 int reloq_unicode_admit_language(const unsigned char *text,size_t length,
     const unsigned char *modes,int language,int tags,unsigned char **output,
     size_t *written,size_t **map);
+/* Preserve dictionary-owned v/V in normal text. Bits 0 and 1 protect v/V;
+ * character-mode names remain independent of lexical overrides. */
+int reloq_unicode_admit_language_masked(const unsigned char *text,size_t length,
+    const unsigned char *modes,int language,int tags,unsigned protected_v,
+    unsigned char **output,size_t *written,size_t **map);
 #endif

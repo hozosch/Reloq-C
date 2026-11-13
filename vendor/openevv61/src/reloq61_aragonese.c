@@ -280,10 +280,32 @@ static unsigned an_input_name(int32_t node)
         TFLDS(EVV_AT(void *,node))):0;
 }
 
+static int32_t an_input_next(delta_state *d,int32_t node)
+{return node?an_input_node(d,*EVV_AT(int32_t *,node+4)&~3,0):0;}
+
+/* After l, this adjustment is limited to the weak preposition and its
+ * contractions. Ordinary words such as 'dia' retain their native stop. */
+static int an_preposition_d(delta_state *d,int32_t position)
+{
+    int32_t node=an_input_node(d,position,0);unsigned name=an_input_name(node);
+    if(name!=13&&name!=34)return 0; /* d */
+    node=an_input_next(d,node);name=an_input_name(node);
+    if(name==2||name==7) { /* de */
+        name=an_input_name(an_input_next(d,node));
+        return !(name>=1&&name<=52)&&!(name>=97&&name<=116);
+    }
+    if(!node||name==72||(name>=1&&name<=52)||(name>=97&&name<=116))return 0;
+    node=an_input_next(d,node);name=an_input_name(node); /* apostrophe + a/o */
+    if(name!=1&&name!=4&&name!=6&&name!=9)return 0;
+    node=an_input_next(d,node);name=an_input_name(node);
+    if(name==25||name==46)name=an_input_name(an_input_next(d,node));
+    return !(name>=1&&name<=52)&&!(name>=97&&name<=116);
+}
+
 /* A word-initial d after a vowel, s or r in the same phrase uses the voiced
- * dental approximant. This includes both de and apostrophized d'o. Require a
- * genuine whitespace boundary, so punctuation and phrase-initial words retain
- * the stop. */
+ * dental approximant. After l, apply this only to de and apostrophized d'o.
+ * Require a genuine whitespace boundary, so punctuation and phrase-initial
+ * words retain the stop. */
 int reloq61_an_liaison_d(void *state,int32_t begin_ref)
 {
     if(!state||!begin_ref)return 0;
@@ -296,6 +318,7 @@ int reloq61_an_liaison_d(void *state,int32_t begin_ref)
         prior=an_input_name(an_input_node(d,left,1));
     }
     return name==72&&((prior>=1&&prior<=10)||(prior>=97&&prior<=116)||
+                      ((prior==19||prior==40)&&an_preposition_d(d,pos))||
                       prior==24||prior==25||prior==45||prior==46);
 }
 
