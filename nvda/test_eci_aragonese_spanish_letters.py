@@ -62,6 +62,16 @@ def main():
                         checks += 2
                     checks += 6
             if language == 0x130000:
+                engine.set_parameter(PROCESS_TAGS, 1)
+                for rate in (1, 3, 6):
+                    engine.set_parameter(SAMPLE_RATE, rate)
+                    for prefix, softened in (('ve', True), ('la', True),
+                                             ('camín', False), ('la,', False)):
+                        actual, soft, stop = [len(render(engine, [f'{prefix} {word}'])[0])
+                            for word in ('baixa', '`[.1Bay.0Sa]', '`[.1bay.0Sa]')]
+                        assert soft != stop, (rate, prefix, soft, stop)
+                        assert actual == (soft if softened else stop), (rate, prefix, actual, soft, stop)
+                        checks += 1
                 with tempfile.TemporaryDirectory() as directory:
                     folder = Path(directory)
                     (folder / 'ARAmain.dic').write_bytes(b'v\tcasa\nV\tnaranja\n')
@@ -84,7 +94,7 @@ def main():
                                            encoding='utf8', native_voice=True)
                 try:
                     engine.set_parameter(SAMPLE_RATE, 1)
-                    for text in ('Hola, mundo.', 'caixeta', 'Viva la música.'):
+                    for text in ('Hola, mundo.', 'caixeta', 'Viva la música.', 've baixa'):
                         assert render(engine, [text]) == render(previous, [text]), text
                         checks += 1
                 finally:

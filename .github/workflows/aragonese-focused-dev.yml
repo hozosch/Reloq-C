@@ -79,22 +79,22 @@ jobs:
           p=Path('addon/synth/manifest.ini')
           source=p.read_text(encoding='utf8')
           assert 'version = "1.4.1"' in source
-          p.write_text(source.replace('version = "1.4.1"','version = "1.5.0-dev10"'),encoding='utf8')
+          p.write_text(source.replace('version = "1.4.1"','version = "1.5.0-dev11"'),encoding='utf8')
           for locale in ('de','en'):
               p=Path('addon/synth/doc')/locale/'readme.html'
               source=p.read_text(encoding='utf8')
               assert 'Version 1.4.1' in source
-              p.write_text(source.replace('Version 1.4.1','Version 1.5.0-dev10',1),encoding='utf8')
+              p.write_text(source.replace('Version 1.4.1','Version 1.5.0-dev11',1),encoding='utf8')
           sys.path.insert(0,'addon')
           from build_synth import build
-          build(Path('dist/reloq-c-synth-x64-1.5.0-dev10.nvda-addon'),Path('eci/eci.dll'),refresh_dictionaries=False)
+          build(Path('dist/reloq-c-synth-x64-1.5.0-dev11.nvda-addon'),Path('eci/eci.dll'),refresh_dictionaries=False)
           PY
           cp eci/eci.dll dist/eci.dll
       - uses: actions/upload-artifact@v4
         with:
           name: aragonese-focused-candidate
           path: |
-            dist/reloq-c-synth-x64-1.5.0-dev10.nvda-addon
+            dist/reloq-c-synth-x64-1.5.0-dev11.nvda-addon
             dist/eci.dll
           if-no-files-found: error
           compression-level: 0
@@ -124,7 +124,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Greek character regression' }
           python -B nvda/test_eci_wordseg_native.py --library candidate/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Word segmentation regression' }
-          python -B addon/test_synth_native.py --library candidate/eci.dll --addon candidate/reloq-c-synth-x64-1.5.0-dev10.nvda-addon
+          python -B addon/test_synth_native.py --library candidate/eci.dll --addon candidate/reloq-c-synth-x64-1.5.0-dev11.nvda-addon
           if ($LASTEXITCODE -ne 0) { throw 'NVDA adapter regression' }
       - name: Exercise the changed paths in NVDA
         shell: pwsh
@@ -137,7 +137,7 @@ jobs:
           $portable = Join-Path $pwd 'portable-nvda'
           $p = Start-Process (Get-Item candidate/nvda_2026.3.1.exe).FullName -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
           if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable installation failed' }
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.5.0-dev10.nvda-addon --plugin addon/test_nvda_real_aragonese_plugin.py --work aragonese-probe
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.5.0-dev11.nvda-addon --plugin addon/test_nvda_real_aragonese_plugin.py --work aragonese-probe
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA language or spelling regression' }
       - uses: actions/upload-artifact@v4
         if: always()

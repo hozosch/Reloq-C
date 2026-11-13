@@ -60,6 +60,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('an_ES', 'L’aragonés ye una luenga de Aragón.', False),
                           ('an_ES', 'caixeta', False),
                           ('an_ES', 'signal de numero', False),
+                          ('an_ES', 've baixa', False),
+                          ('an_ES', 'la boca', False),
                           ('an_ES', 'v', True), ('an_ES', 'VB', True),
                           ('an_ES', 'GJXW', True), ('es_MX', 'v', True),
                           ('es_ES', 'v', True)]

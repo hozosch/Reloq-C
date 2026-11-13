@@ -18,6 +18,7 @@ int reloq61_an_apocopated_t(void *state,int32_t from,int32_t to);
 int reloq61_an_latent_t_final_stress(void *state,int32_t from,int32_t to);
 int reloq61_an_hundreds_digit(void *state,int32_t digit_ref);
 int reloq61_an_liaison_d(void *state,int32_t begin_ref);
+int reloq61_an_liaison_b(void *state,int32_t begin_ref);
 int reloq61_an_suppress_spanish_abbr(void *state,int32_t from,int32_t to);
 int reloq61_an_note_elision(void *state,int32_t input_node);
 int reloq61_an_take_elision(void *state,int32_t input_node);

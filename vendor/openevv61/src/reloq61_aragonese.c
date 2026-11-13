@@ -283,6 +283,20 @@ static unsigned an_input_name(int32_t node)
 static int32_t an_input_next(delta_state *d,int32_t node)
 {return node?an_input_node(d,*EVV_AT(int32_t *,node+4)&~3,0):0;}
 
+/* A word-initial b/v after a vowel in the same phrase is the bilabial
+ * approximant. Keep the stop at the start and after nasals or punctuation. */
+int reloq61_an_liaison_b(void *state,int32_t begin_ref)
+{
+    if(!state||!begin_ref)return 0;
+    delta_state *d=state;
+    int32_t pos=EVV_AT(const delta_token *,begin_ref)->value;
+    int32_t previous=an_input_node(d,pos,1);
+    if(an_input_name(previous)!=72)return 0;
+    int32_t left=*EVV_AT(int32_t *,previous)&~3;
+    unsigned prior=an_input_name(an_input_node(d,left,1));
+    return (prior>=1&&prior<=10)||(prior>=97&&prior<=116);
+}
+
 /* After l, this adjustment is limited to the weak preposition and its
  * contractions. Ordinary words such as 'dia' retain their native stop. */
 static int an_preposition_d(delta_state *d,int32_t position,int elided)
