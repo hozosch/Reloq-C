@@ -246,9 +246,9 @@ static size_t an_word_spelling(delta_state *d,int32_t begin,int32_t next,
     return used;
 }
 
-/* Pa is an Aragonese preposition, not the parent's Spanish abbreviation
- * for por autorización. User abbreviation dictionaries are consulted
- * first in the existing caller. */
+/* Pa is a preposition and do a relative locative adverb. Neither should be
+ * expanded as a Spanish abbreviation. User dictionaries are consulted first
+ * in the existing caller. */
 int reloq61_an_suppress_spanish_abbr(void *state,int32_t from,int32_t to)
 {
     if(!from||!to)return 0;
@@ -268,7 +268,7 @@ int reloq61_an_suppress_spanish_abbr(void *state,int32_t from,int32_t to)
         if(first&&an_input_name(apostrophe)==73)
             (void)reloq61_an_note_elision(state,first);
     }
-    return !accented&&n==2&&!strcmp(text,"pa");
+    return !accented&&n==2&&(!strcmp(text,"pa")||!strcmp(text,"do"));
 }
 
 static int an_enclitic_word(const char *text)
@@ -287,7 +287,7 @@ static int an_enclitic_word(const char *text)
 static int an_weak_word(const char *text)
 {
     static const char *const words[]={
-        "pa","ta","enta","per","por","con","sin","de","en",
+        "do","pa","ta","enta","per","por","con","sin","de","en",
         "o","a","os","as","lo","la","los","las","ro","ra","ros","ras",
         "me","te","se","mos","nos","vos","le","les","li","ne","ie","bi","hu",
         "i","e","y","u","que"

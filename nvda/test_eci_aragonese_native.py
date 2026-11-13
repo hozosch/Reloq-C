@@ -68,11 +68,11 @@ def main():
         # Independent function words must not inherit Spanish abbreviation
         # expansion; they are weak in connected speech, but remain audible
         # and stressed when isolated or explicitly accented.
-        for word in ('pa',):
+        for word in ('pa', 'do'):
             actual=phonemes(an, word)
             assert f'.1{word}' in actual and 'min' not in actual and 'por' not in actual, (word, actual)
             checks += 1
-        for sentence, expected in (('pa casa', '.0pa'),
+        for sentence, expected in (('pa casa', '.0pa'), ('a casa do vivo', '.0do'),
                                    ("d'o mundo", '.0do'), ('d’o Pirineu', '.0do'),
                                    ("d'a casa", '.0da'), ("d'os paises", '.0dos'),
                                    ('d’as casas', '.0das'), ('ta casa', '.0ta'),
@@ -116,7 +116,7 @@ def main():
         checks += 1
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory)
-            (folder / 'ARAmain.dic').write_bytes(b'probexword\tcasa\nsinyal\tcasa\nyema\tllama\npa\tcasa\n')
+            (folder / 'ARAmain.dic').write_bytes(b'probexword\tcasa\nsinyal\tcasa\nyema\tllama\npa\tcasa\ndo\tcasa\n')
             (folder / 'ESPmain.dic').write_bytes(b'probexword\tnaranja\n')
             before = render(an, ['probexword.', EciIndex(7)])
             an.set_dictionary_path(folder)
@@ -127,8 +127,9 @@ def main():
                 assert render(an, ['sinyal.', EciIndex(7)]) == render(an, ['casa.', EciIndex(7)])
                 assert render(an, ['yema.', EciIndex(7)]) == render(an, ['llama.', EciIndex(7)])
                 assert render(an, ['pa.', EciIndex(7)]) == render(an, ['casa.', EciIndex(7)])
+                assert render(an, ['do.', EciIndex(7)]) == render(an, ['casa.', EciIndex(7)])
                 assert render(es, ['probexword.', EciIndex(7)]) == render(es, ['naranja.', EciIndex(7)])
-                checks += 5
+                checks += 6
             an.set_dictionary_path(None)
             an.set_parameter(DICTIONARY, 0)
             assert render(an, ['probexword.', EciIndex(7)]) == before

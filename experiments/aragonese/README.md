@@ -213,6 +213,9 @@ word stress rules also handle hyphenated pronouns and weak function words in
 context, including d'o, d'a, d'os and d'as, while an isolated form remains
 audible. The apostrophe is tracked in the original input so that forms such as
 the number dos do not acquire the same weak stress.
+The distinct relative locative adverb do is also pronounced as a word rather
+than expanded as the Spanish abbreviation for domingo; accented dó retains
+its own stress.
 
 Final latent t, the initial ll/y distinction, complete number vocabulary and
 character names still need work; inherited Castilian analysis is not a full
