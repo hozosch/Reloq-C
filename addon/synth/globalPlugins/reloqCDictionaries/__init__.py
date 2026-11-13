@@ -627,7 +627,7 @@ class EloquenceSettingsPanel(SettingsPanel):
                 elif details and "dictionary_update" in details:
                     message = dictionary_update_message(details)
                 else:
-                    commit = details.get("community_commit")
+                    commit = details.get("community_commit") if details else None
                     message = (_("Dictionaries updated. Community revision: %s") % commit[:12]
                                if commit else _("Own dictionaries updated."))
                 active = instance is not None and not instance.closing and instance.operation == operation
@@ -640,8 +640,10 @@ class EloquenceSettingsPanel(SettingsPanel):
                 if error and show_result:
                     gui.messageBox(message, _("Pronunciation dictionaries"), wx.OK | wx.ICON_ERROR,
                                    parent=instance if active else getattr(gui, "mainFrame", None))
-                elif not error and (show_result or details and details.get("remote_changed")):
+                elif not error and show_result:
                     show_dictionary_update(details, parent=instance if active else None)
+                elif not error and details and details.get("remote_changed"):
+                    ui.message(message)
                 elif active:
                     ui.message(message)
             wx.CallAfter(report)

@@ -53,11 +53,20 @@ class UpdateDialogTests(unittest.TestCase):
     def test_remote_update_after_settings_close_and_manual_error(self):
         done=self.panel.begin();self.panel.closing=True
         done(None,{'dictionary_update':{'compared':True,'added':2,'total':5,'added_files':1,'total_files':2},'remote_changed':True})
-        self.assertEqual(len(self.dialogs),1)
-        self.assertIn('New entries: 2',self.dialogs[0][0])
+        self.assertFalse(self.dialogs)
+        self.assertEqual(len(self.messages),1)
+        self.assertIn('New entries: 2',self.messages[0])
+        self.assertIn('New dictionary files: 1',self.messages[0])
         self.panel.closing=False
         done=self.panel.begin(show_result=True);done(ValueError('offline'),None)
         self.assertIn('offline',self.dialogs[-1][0]);self.assertEqual(self.dialogs[-1][2],5)
+
+    def test_manual_update_reports_unchanged_and_unknown_results(self):
+        for details, phrase in (({'dictionary_update':{'compared':True,'added':0,'total':4,'added_files':0,'total_files':1}},'New entries: 0'),
+                                ({'dictionary_update':None},'could not be determined')):
+            self.panel.begin(show_result=True)(None,details)
+            self.assertIn(phrase,self.dialogs[-1][0])
+        self.assertEqual(len(self.dialogs),2);self.assertFalse(self.messages)
 
     def test_stale_request_does_not_show_dialog(self):
         old=self.panel.begin(show_result=True);self.panel.begin(show_result=True)
@@ -74,15 +83,17 @@ class UpdateDialogTests(unittest.TestCase):
             _dictionary_updater=types.SimpleNamespace(current=lambda value:value==revision[0]))
         wx=types.ModuleType('wx');wx.CallAfter=pending.append
         package=types.ModuleType('globalPlugins');package.__path__=[]
-        plugin=types.ModuleType('globalPlugins.reloqCDictionaries');plugin.show_dictionary_update=shown.append
+        plugin=types.ModuleType('globalPlugins.reloqCDictionaries');plugin.dictionary_update_message=self.env['dictionary_update_message']
+        ui=types.ModuleType('ui');ui.message=shown.append
         details={'dictionary_update':{'compared':True,'added':2,'total':8,'added_files':1,'total_files':2}}
-        with mock.patch.dict(sys.modules,{'wx':wx,'globalPlugins':package,
+        with mock.patch.dict(sys.modules,{'wx':wx,'ui':ui,'globalPlugins':package,
                                           'globalPlugins.reloqCDictionaries':plugin}):
             env['_dictionary_update_notice'](instance,5,details)
-            self.assertFalse(shown);pending.pop(0)();self.assertEqual(shown,[details])
+            self.assertFalse(shown);pending.pop(0)();self.assertEqual(len(shown),1)
+            self.assertIn('New entries: 2',shown[0]);self.assertIn('New dictionary files: 1',shown[0])
             env['_dictionary_update_notice'](instance,5,details);revision[0]=6;pending.pop(0)()
             env['_dictionary_update_notice'](instance,6,details);instance._terminating=True;pending.pop(0)()
-        self.assertEqual(shown,[details])
+        self.assertEqual(len(shown),1)
 
 
 if __name__=='__main__':unittest.main()

@@ -280,6 +280,44 @@ static int append(unsigned char *out,size_t capacity,size_t *used,const char *te
     memcpy(out+*used,text,n);*used+=n;out[*used]=0;return 0;
 }
 
+/* English and Scandinavian names frequently end in an unstressed -son,
+ * -sen or -ton. Treating that ending as a separate word turns its weak
+ * vowel into a full stressed vowel. Check the chosen boundary, not merely
+ * the spelling, so a compound ending in a longer word (e.g. webbutton)
+ * can still be split at its actual boundary. */
+static int ton_quantity(const char *word,size_t n)
+{
+    static const char *const ton_quantities[]={"half","quarter","long","short","metric",
+        "net","gross","deadweight","one","two","three","four","five","six","seven",
+        "eight","nine","ten","hundred","thousand","million","billion","multi"};
+    size_t ending=0;
+    if(n>=4&&!memcmp(word+n-4,"tons",4))ending=4;
+    else if(n>=3&&!memcmp(word+n-3,"ton",3))ending=3;
+    if(!ending)return 0;
+    for(size_t i=0;i<COUNT(ton_quantities);++i)
+        if(strlen(ton_quantities[i])==n-ending&&
+           !memcmp(word,ton_quantities[i],n-ending))return 1;
+    return 0;
+}
+
+static int detached_name_ending(const char *word,size_t n,const unsigned char *output)
+{
+    static const char *const endings[]={"son","sen","ton","sons","sens","tons"};
+    const char *last=strrchr((const char *)output,' ');
+    if(!last)return 0;
+    ++last;
+    for(size_t i=0;i<COUNT(endings);++i) {
+        size_t length=strlen(endings[i]);
+        if(n>length+1&&!memcmp(word+n-length,endings[i],length)&&
+           !strcmp(last,endings[i])) {
+            /* A quantity followed by the unit ton is a real compound. */
+            if(endings[i][0]=='t'&&ton_quantity(word,n))return 0;
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int reloq_wordseg_english(const unsigned char *original,size_t n,int uk,
     unsigned char *output,size_t capacity)
 {
@@ -299,7 +337,10 @@ int reloq_wordseg_english(const unsigned char *original,size_t n,int uk,
            append(output,capacity,&used,word+verified->boundary,n-verified->boundary))return -1;
         return 1;
     }
-    if(leave_word(word,n,uk))return 0;
+    /* Some unit compounds are also names (Longton). Preserve the name's
+     * capitalized spelling but still split the lowercase unit expression. */
+    int lowercase_quantity=n&&original[0]>='a'&&original[0]<='z'&&ton_quantity(word,n);
+    if(leave_word(word,n,uk)&&!lowercase_quantity)return 0;
     const int inf=0x3fffffff;
     int letters[33],other[33];size_t target[33];
     for(size_t i=0;i<=n;++i){letters[i]=other[i]=inf;target[i]=0;}
@@ -339,5 +380,5 @@ int reloq_wordseg_english(const unsigned char *original,size_t n,int uk,
         }
         at=end;
     }
-    return 1;
+    return detached_name_ending(word,n,output)?0:1;
 }

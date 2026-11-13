@@ -7,7 +7,7 @@ BUILD ?= $(if $(filter x86,$(ARCH)),build/x86,build)
 ARCH ?= x64
 VERSION ?= $(shell python3 -c 'from version import VERSION; print(VERSION)')
 BUILD_EPOCH ?= $(if $(RELOQ_BUILD_EPOCH),$(RELOQ_BUILD_EPOCH),0)
-SOURCES = engine.c backend.c speech_dictionary.c settings.c dictionary.c dictionary_diff.c dictionary_merge.c dictionary_sources.c dictionary_snapshot.c dictionary_dialog.c dialog.c register.c guids.c ../src/reloq_voice_controls.c ../common/nvda_dictionary.c ../common/nvda_speech.c
+SOURCES = engine.c backend.c speech_dictionary.c settings.c dictionary.c dictionary_diff.c dictionary_merge.c dictionary_sources.c dictionary_snapshot.c dictionary_dialog.c dictionary_notification.c dialog.c register.c guids.c ../src/reloq_voice_controls.c ../common/nvda_dictionary.c ../common/nvda_speech.c
 PCRE_DIR = ../vendor/pcre2
 PCRE_SOURCES = $(filter-out $(PCRE_DIR)/pcre2_ucptables.c $(PCRE_DIR)/pcre2_convert.c $(PCRE_DIR)/pcre2_dfa_match.c $(PCRE_DIR)/pcre2_serialize.c,$(wildcard $(PCRE_DIR)/*.c))
 PCRE_OBJECTS = $(patsubst $(PCRE_DIR)/%.c,$(BUILD)/pcre2/%.o,$(PCRE_SOURCES))
@@ -17,7 +17,7 @@ ifeq ($(ARCH),x86)
 CFLAGS += -msse2 -mfpmath=sse
 LDFLAGS += -Wl,--kill-at
 endif
-all: $(BUILD)/ReLoqSapi.dll $(BUILD)/ReLoqSettings.exe $(BUILD)/ReLoqUpdate.exe $(BUILD)/Test-Update.exe $(BUILD)/Test-SAPI.exe $(BUILD)/Test-Dictionary.exe $(BUILD)/Test-DictionarySources.exe
+all: $(BUILD)/ReLoqSapi.dll $(BUILD)/ReLoqSettings.exe $(BUILD)/ReLoqUpdate.exe $(BUILD)/Test-Update.exe $(BUILD)/Test-SAPI.exe $(BUILD)/Test-Dictionary.exe $(BUILD)/Test-DictionarySources.exe $(BUILD)/Test-DictionaryNotice.exe
 $(BUILD):
 	mkdir -p $@
 $(BUILD)/pcre2/%.o: $(PCRE_DIR)/%.c $(wildcard $(PCRE_DIR)/*.h)
@@ -41,6 +41,8 @@ $(BUILD)/Test-Dictionary.exe: test_dictionary_download.c dictionary.c dictionary
 	$(CC) $(CFLAGS) test_dictionary_download.c dictionary.c dictionary_diff.c $(LDFLAGS) -lwinhttp -ladvapi32 -o $@
 $(BUILD)/Test-DictionarySources.exe: test_dictionary_sources_windows.c dictionary.c dictionary_diff.c dictionary_merge.c dictionary_sources.c dictionary_snapshot.c ../common/nvda_dictionary.c ../common/nvda_speech.c $(PCRE_OBJECTS) dictionary_merge.h settings.h | $(BUILD)
 	$(CC) $(CFLAGS) test_dictionary_sources_windows.c dictionary.c dictionary_diff.c dictionary_merge.c dictionary_sources.c dictionary_snapshot.c ../common/nvda_dictionary.c ../common/nvda_speech.c $(PCRE_OBJECTS) $(LDFLAGS) -lwinhttp -ladvapi32 -o $@
+$(BUILD)/Test-DictionaryNotice.exe: test_dictionary_notification.c dictionary_notification.c dictionary_notification.h | $(BUILD)
+	$(CC) $(CFLAGS) -DRELOQ_DICTIONARY_NOTICE_TEST test_dictionary_notification.c dictionary_notification.c $(LDFLAGS) -lshell32 -luser32 -o $@
 
 .PHONY: test
 HOST_CC ?= cc

@@ -17,13 +17,17 @@ def main():
                     'tmpfiles': 'T M P files', 'lvmlockd': 'L V M lock D',
                     'gethostbyaddr': 'get host by addr', 'fdopen': 'F D open',
                     'swapfile': 'swap file', 'framebuffer': 'frame buffer',
-                    'keyframe': 'key frame', 'blackboard': 'black board'}
+                    'keyframe': 'key frame', 'blackboard': 'black board',
+                    'webbutton': 'web button', 'buttonclick': 'button click',
+                    'halfton': 'half ton', 'longton': 'long ton', 'metricton': 'metric ton'}
         for source, expected in examples.items():
             mixed = ''.join(c.upper() if i % 2 else c.lower() for i, c in enumerate(source))
             for spelling in (source, source.upper(), source.capitalize(), mixed):
                 assert segmenter.text(spelling) == expected, (language, spelling, segmenter.text(spelling))
         for word in ('algorithm', 'inside', 'another', 'example', 'HELLO', 'éusrdct', 'usrdct3', "usrdct's"):
             assert segmenter.text(word) == word, (language, word)
+        for name in ('Jayson', 'peterson', 'Petersons', 'Tilton', 'Petersen', 'Jayton', 'Carlson'):
+            assert segmenter.text(name) == name, (language, name, segmenter.text(name))
         assert segmenter.text('cGroup') == 'C group'
         assert segmenter.text('CGROUP TMPFILES', preserve_upper=True) == 'CGROUP TMPFILES'
         assert uppercase_candidates('CGROUP TMPFILES', segmenter, frozenset()) == (

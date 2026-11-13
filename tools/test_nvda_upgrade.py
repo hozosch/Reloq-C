@@ -2,6 +2,7 @@
 import argparse
 import ast
 import configparser
+import json
 from pathlib import Path
 import re
 import zipfile
@@ -32,15 +33,28 @@ def version(text):
     return (major, minor, patch, {'dev': 0, 'rc': 1, None: 2}[stage], int(number or 0))
 
 
+def build_epoch(path):
+    with zipfile.ZipFile(path) as archive:
+        value = json.loads(archive.read('doc/source.json'))['build_epoch']
+    assert type(value) is int and value > 0
+    return value
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--previous', type=Path, required=True)
     parser.add_argument('--candidate', type=Path, required=True)
+    parser.add_argument('--allow-rebuild', action='store_true',
+                        help='also allow the same version with a newer build timestamp')
     args = parser.parse_args()
     old, _ = manifest(args.previous)
     new, summaries = manifest(args.candidate)
     assert old['name'] == new['name'] == 'reloqC'
-    assert version(new['version']) > version(old['version'])
+    old_version, new_version = version(old['version']), version(new['version'])
+    if args.allow_rebuild and new_version == old_version:
+        assert build_epoch(args.candidate) > build_epoch(args.previous)
+    else:
+        assert new_version > old_version
     for summary in summaries:
         assert not re.search(r'\b\d+\.\d+(?:\.\d+)?\b', summary), summary
     print(f'NVDA upgrade: same add-on identity, {old["version"]} -> {new["version"]}; version-free names')

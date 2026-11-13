@@ -52,7 +52,7 @@ def main():
     android_jar=(args.android_jar or sdk/"platforms/android-35/android.jar").resolve()
     triple,tag=ABIS[args.abi]
     if args.build_dir is None and args.abi!="arm64-v8a":args.build_dir=HERE/f"build-{tag}"
-    if args.output is None:args.output=ROOT/f"dist/reloq-c-android-{tag}-1.4.0.apk"
+    if args.output is None:args.output=ROOT/f"dist/reloq-c-android-{tag}-1.4.1.apk"
     prebuilt={"linux":"linux-x86_64","darwin":"darwin-x86_64"}.get(sys.platform,"linux-x86_64")
     host=ndk/f"toolchains/llvm/prebuilt/{prebuilt}/bin"
     compiler=host/f"{triple}-clang"

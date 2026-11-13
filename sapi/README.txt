@@ -121,8 +121,11 @@ Alternative IBM TTS Dictionaries in the settings window. Both sources can be
 downloaded and updated there. The bundled community source supports German and
 US English; the alternative supports US English and Castilian Spanish. Downloads
 are verified in the background and stored in the current user's profile. A
-successful update displays the numbers of new distinct entries and files;
-changes and removals do not count as additions.
+manual update displays the numbers of new distinct entries and files. An
+automatic initial download for the alternative source shows a temporary Windows
+notification; it does not open a modal dialog. Changes and removals do not
+count as additions. Windows 10 retains these notifications in its notification
+center, while Windows 11 treats them as temporary.
 
 Choose “Own dictionaries” to add Eloquence .dic files or NVDA speech
 dictionaries. Select the language and, for Eloquence files, Main, Root or

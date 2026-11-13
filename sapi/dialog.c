@@ -2,6 +2,7 @@
  * Every valid change commits immediately to this user's language settings. */
 #include "settings.h"
 #include "dictionary_diff.h"
+#include "dictionary_notification.h"
 #include <commctrl.h>
 #include <shellapi.h>
 #include <stdio.h>
@@ -18,10 +19,24 @@ enum {LANGUAGE=100,PROFILE,GENDER,RATE,PAUSES,PITCH,INFLECTION,HEAD,ROUGH,BREATH
       FILTER_SELECT,FILTER_ENABLED,FILTER_FREQ,FILTER_GAIN,FILTER_WIDTH,UPDATE_SETTINGS,ORIGINAL_ACOUSTIC_CLOCK,OWN_DICTIONARIES,
       WORD_SEGMENTATION,CAMEL_CASE};
 #define DICTIONARY_DONE (WM_APP+31)
-struct dictionary_task {HWND window;HMODULE module;DWORD source;};
+struct dictionary_task {HWND window;HMODULE module;DWORD source;BOOL automatic;const struct sapi_ui *ui;};
+static void dictionary_message(const struct sapi_ui *ui,LPARAM info,WCHAR *message,size_t length)
+{
+    WCHAR entry_text[256],file_text[256],number[32];size_t count,files;int compared;
+    if(!sapi_dictionary_unpack_counts((uint32_t)(UINT_PTR)info,&count,&files,&compared))
+        swprintf(message,length,L"%ls\n%ls",ui->text[UI_DICT_COUNT_UNKNOWN],ui->text[UI_DICT_FILES_UNKNOWN]);
+    else {
+        swprintf(number,32,L"%lu",(unsigned long)count);
+        swprintf(entry_text,256,ui->text[compared?UI_DICT_UPDATED_COUNT:UI_DICT_FIRST_COUNT],number);
+        swprintf(number,32,L"%lu",(unsigned long)files);
+        swprintf(file_text,256,ui->text[compared?UI_DICT_FILES_NEW:UI_DICT_FILES_TOTAL],number);
+        swprintf(message,length,L"%ls\n%ls",entry_text,file_text);
+    }
+}
 static DWORD WINAPI dictionary_worker(void *parameter)
 {
-    struct dictionary_task *task=parameter;HWND window=task->window;HMODULE module=task->module;DWORD source=task->source;free(task);
+    struct dictionary_task *task=parameter;HWND window=task->window;HMODULE module=task->module;DWORD source=task->source;
+    BOOL automatic=task->automatic;const struct sapi_ui *ui=task->ui;free(task);
     struct sapi_dictionary_update update={0};
     HRESULT result=sapi_dictionary_download_source(source,&update);LPARAM info=0;
     if(SUCCEEDED(result)&&update.known){size_t count=update.compared?update.added:update.total;
@@ -29,18 +44,23 @@ static DWORD WINAPI dictionary_worker(void *parameter)
         /* Six 8-MiB volumes cannot contain 2^24 valid distinct entries. */
         info=(LPARAM)(UINT_PTR)sapi_dictionary_pack_counts(count,files,update.compared);}
     PostMessageW(window,DICTIONARY_DONE,(WPARAM)result,info);
+    if(automatic&&SUCCEEDED(result)) {
+        WCHAR message[512]={0};dictionary_message(ui,info,message,512);
+        (void)sapi_dictionary_notify(ui->text[UI_TITLE],message);
+    }
     InterlockedDecrement(&sapi_objects);FreeLibraryAndExitThread(module,0);
     return 0;
 }
-struct dialog {struct sapi_settings s;int dialect,loading,filter_index;BOOL shared;const struct sapi_ui *ui;};
+struct dialog {struct sapi_settings s;int dialect,loading,filter_index;BOOL shared,dictionary_automatic;const struct sapi_ui *ui;};
 #define T(key) (d->ui->text[UI_##key])
-static void start_dictionary(HWND window,struct dialog *d,DWORD source)
+static void start_dictionary(HWND window,struct dialog *d,DWORD source,BOOL automatic)
 {
     struct dictionary_task *task=malloc(sizeof *task);if(!task){SetDlgItemTextW(window,STATUS,T(DICT_FAILED));return;}
-    task->window=window;task->source=source;
+    task->window=window;task->source=source;task->automatic=automatic;task->ui=d->ui;
     if(!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,(LPCWSTR)(const void *)&dictionary_worker,&task->module)) {
         free(task);SetDlgItemTextW(window,STATUS,T(DICT_FAILED));return;
     }
+    d->dictionary_automatic=automatic;
     InterlockedIncrement(&sapi_objects);
     HANDLE thread=CreateThread(NULL,0,dictionary_worker,task,0,NULL);
     if(!thread){InterlockedDecrement(&sapi_objects);FreeLibrary(task->module);free(task);SetDlgItemTextW(window,STATUS,T(DICT_FAILED));return;}
@@ -453,16 +473,8 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
     if(message==DICTIONARY_DONE){
         EnableWindow(GetDlgItem(w,DICT_SOURCE),TRUE);EnableWindow(GetDlgItem(w,DICT_DOWNLOAD),TRUE);
         populate(w,d);SetDlgItemTextW(w,STATUS,FAILED((HRESULT)wp)?T(DICT_FAILED):T(ACTIVE));
-        if(SUCCEEDED((HRESULT)wp)) {
-            WCHAR message[512],entry_text[256],file_text[256],number[32];size_t count,files;int compared;
-            if(!sapi_dictionary_unpack_counts((uint32_t)(UINT_PTR)lp,&count,&files,&compared))
-                swprintf(message,512,L"%ls\n%ls",T(DICT_COUNT_UNKNOWN),T(DICT_FILES_UNKNOWN));
-            else {
-                swprintf(number,32,L"%lu",(unsigned long)count);
-                swprintf(entry_text,256,compared?T(DICT_UPDATED_COUNT):T(DICT_FIRST_COUNT),number);
-                swprintf(number,32,L"%lu",(unsigned long)files);
-                swprintf(file_text,256,compared?T(DICT_FILES_NEW):T(DICT_FILES_TOTAL),number);
-                swprintf(message,512,L"%ls\n%ls",entry_text,file_text);}
+        if(SUCCEEDED((HRESULT)wp)&&!d->dictionary_automatic) {
+            WCHAR message[512]={0};dictionary_message(d->ui,lp,message,512);
             MessageBoxW(w,message,T(TITLE),MB_OK|MB_ICONINFORMATION);
         }
         return TRUE;
@@ -477,11 +489,11 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         if(FAILED(hr))sapi_settings_default(&d->s);populate(w,d);return TRUE;}
     if(id==DICT_SOURCE&&notification==CBN_SELCHANGE){
         DWORD choice=(DWORD)SendDlgItemMessageW(w,id,CB_GETCURSEL,0,0);
-        if(choice==1&&!sapi_alternative_dictionary_available())start_dictionary(w,d,choice);
+        if(choice==1&&!sapi_alternative_dictionary_available())start_dictionary(w,d,choice,TRUE);
         else {HRESULT result=sapi_dictionary_choose(choice);populate(w,d);SetDlgItemTextW(w,STATUS,FAILED(result)?T(ERROR):T(ACTIVE));}
         return TRUE;
     }
-    if(id==DICT_DOWNLOAD&&notification==BN_CLICKED){start_dictionary(w,d,sapi_dictionary_source());return TRUE;}
+    if(id==DICT_DOWNLOAD&&notification==BN_CLICKED){start_dictionary(w,d,sapi_dictionary_source(),FALSE);return TRUE;}
     if(id==OWN_DICTIONARIES&&notification==BN_CLICKED){
         HRESULT result=sapi_dictionary_files_dialog(w,d->dialect,&d->s);
         if(FAILED(result))SetDlgItemTextW(w,STATUS,T(ERROR));return TRUE;}

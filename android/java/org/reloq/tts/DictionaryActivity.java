@@ -3,6 +3,7 @@ package org.reloq.tts;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -47,7 +48,7 @@ public final class DictionaryActivity extends Activity {
         TextView info=new TextView(this);info.setText(R.string.dictionary_help);content.addView(info);
         community=new CheckBox(this);community.setText(R.string.community_dictionaries);content.addView(community);actions.add(community);
         community.setOnCheckedChangeListener((view,enabled) -> {
-            if(!loading&&!busy){JSONArray next=copy(sources);workWithResult(() -> DictionaryStore.rebuildWithFeedback(this,enabled,next));}
+            if(!loading&&!busy){JSONArray next=copy(sources);workAutomatically(() -> DictionaryStore.rebuildWithFeedback(this,enabled,next));}
         });
         repository=select(R.string.dictionary_repository,getResources().getStringArray(R.array.dictionary_repositories),
             DictionaryStore.repository(this).equals("alternative")?1:0);
@@ -56,7 +57,7 @@ public final class DictionaryActivity extends Activity {
             public void onItemSelected(android.widget.AdapterView<?> parent,View view,int position,long id) {
                 String selected=position==1?"alternative":"community";
                 if(!loading&&!busy&&!selected.equals(DictionaryStore.repository(DictionaryActivity.this)))
-                    workWithResult(() -> DictionaryStore.selectRepository(DictionaryActivity.this,selected));
+                    workAutomatically(() -> DictionaryStore.selectRepository(DictionaryActivity.this,selected));
             }
         });
         button(R.string.update_dictionaries,() -> workWithResult(() -> DictionaryStore.updateCommunity(this)));
@@ -127,27 +128,35 @@ public final class DictionaryActivity extends Activity {
     private void work(Action action) {
         workWithResult(() -> {action.run();return null;});
     }
+    private void workAutomatically(ResultAction action) {
+        workWithResult(action,true);
+    }
     private void workWithResult(ResultAction action) {
-        if(busy)return;busy=true;for(View view:actions)view.setEnabled(false);status.setText(R.string.dictionary_working);
+        workWithResult(action,false);
+    }
+    private void workWithResult(ResultAction action,boolean automatic) {
+        if(busy)return;busy=true;for(View view:actions)view.setEnabled(false);
+        if(automatic)status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_NONE);
+        status.setText(R.string.dictionary_working);
+        Context app=getApplicationContext();
         DictionaryStore.WORK.execute(() -> {
             Exception failure=null;DictionaryData.UpdateSummary result=null;
             try{result=action.run();}catch(Exception e){failure=e;}
             final Exception error=failure;
             final DictionaryData.UpdateSummary summary=result;
             runOnUiThread(() -> {
-                if(isFinishing()||isDestroyed())return;
+                if(isFinishing()||isDestroyed()) {
+                    if(error==null&&automatic)DictionaryUpdateFeedback.toast(app,summary);
+                    return;
+                }
                 busy=false;for(View view:actions)view.setEnabled(true);updateFormatControls();reload();
+                if(error!=null&&automatic)status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
                 status.setText(error==null?getString(R.string.dictionary_ready):getString(R.string.dictionary_error,error.getMessage()));
+                if(error==null&&automatic)status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
                 if(error==null&&summary!=null) {
-                    boolean first=summary.known&&!summary.compared&&(summary.total>0||summary.totalFiles>0);
-                    String message=!summary.known?getString(R.string.dictionary_update_unknown):
-                        first?getString(R.string.dictionary_update_first,summary.total):
-                        getString(R.string.dictionary_update_new,summary.added);
-                    message+="\n"+(!summary.known?getString(R.string.dictionary_update_files_unknown):
-                        first?getString(R.string.dictionary_update_files_total,summary.totalFiles):
-                        getString(R.string.dictionary_update_files_new,summary.addedFiles));
-                    new AlertDialog.Builder(this).setTitle(R.string.dictionary_update_title).setMessage(message)
-                        .setPositiveButton(android.R.string.ok,null).show();
+                    if(automatic)DictionaryUpdateFeedback.toast(app,summary);
+                    else new AlertDialog.Builder(this).setTitle(R.string.dictionary_update_title).setMessage(DictionaryUpdateFeedback.message(this,summary))
+                            .setPositiveButton(android.R.string.ok,null).show();
                 }
             });
         });

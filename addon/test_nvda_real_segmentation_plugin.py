@@ -13,7 +13,8 @@ import wx
 RESULT = Path(os.environ['RELOQ_SEGMENTATION_PROBE_RESULT'])
 DIAGNOSE = os.environ.get('RELOQ_SEGMENTATION_DIAGNOSE') == '1'
 AMIR_WORDS = ('available', 'landmark', 'selection', 'Paperback', 'organically',
-              'expression', 'Jackson', 'developmental', 'suggestion')
+              'expression', 'Jackson', 'developmental', 'suggestion',
+              'Jayson', 'Peterson', 'Tilton', 'Coleman', 'Petersen', 'Wiggins')
 ACRONYM_REFERENCES = {'CDs': 'C Dees', 'DVDs': 'D V Dees', 'ROMs': 'roms',
                       'IDs': 'Eye Dees', 'PDFs': 'P D Effs', 'URLs': 'U R Els',
                       'PACs': 'packs', 'FAQs': 'facks', 'SMSs': 'S M Esses',

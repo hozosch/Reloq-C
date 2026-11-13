@@ -20,10 +20,17 @@ static void check(const char *source,const char *expected,int uk)
 int main(void)
 {
     for(int uk=0;uk<2;++uk) {
+        check("",NULL,uk);
         check("usrdct","U S R D C T",uk);
         check("cgroup","C group",uk);
         check("TMPFILES","T M P files",uk);
         check("gethostbyaddr","get host by addr",uk);
+        check("webbutton","web button",uk);
+        check("buttonclick","button click",uk);
+        check("halfton","half ton",uk);
+        check("longton","long ton",uk);
+        check("metricton","metric ton",uk);
+        check("Longton",NULL,uk);
         check("swapfile","swap file",uk);
         check("fileswap","file swap",uk);
         check("filetable","file table",uk);
@@ -70,6 +77,20 @@ int main(void)
         check("algorithm",NULL,uk);
         check("HELLO",NULL,uk);
         check("inside",NULL,uk);
+        /* Names, including unseen combinations, retain weak name endings. */
+        check("Jayson",NULL,uk);
+        check("peterson",NULL,uk);
+        check("Petersons",NULL,uk);
+        check("Tilton",NULL,uk);
+        check("Petersen",NULL,uk);
+        check("Jayton",NULL,uk);
+        check("Carlson",NULL,uk);
+        check("Coleman",NULL,uk);
+        check("Hawkins",NULL,uk);
+        check("Huffman",NULL,uk);
+        check("Larson",NULL,uk);
+        check("Buckley",NULL,uk);
+        check("Wiggins",NULL,uk);
         const char *whole=NULL,*joined=NULL;
         assert(reloq_wordseg_reference((const unsigned char *)"Redhead",7,uk,&whole,&joined));
         assert(!strcmp(whole,"`[.2ri.1did]")&&!strcmp(joined,"`[.1rEd.2hEd]"));

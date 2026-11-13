@@ -202,6 +202,17 @@ class WordSegmenter:
                 by_letter = letters[end] < other[end]
             output.append(value)
             at = end
+        # An unstressed name ending must not become a stressed independent
+        # word. Check the selected piece so "webbutton" still splits at
+        # web+button, rather than treating the last letters as a name.
+        if (output[-1] in ("son", "sen", "ton", "sons", "sens", "tons") and
+                word.endswith(output[-1]) and len(word) > len(output[-1]) + 1):
+            ton_quantities = {"half", "quarter", "long", "short", "metric", "net", "gross",
+                              "deadweight", "one", "two", "three", "four", "five", "six",
+                              "seven", "eight", "nine", "ten", "hundred", "thousand", "million",
+                              "billion", "multi"}
+            if not output[-1].startswith("ton") or word[:-len(output[-1])] not in ton_quantities:
+                return original
         return " ".join(output)
 
     def text(self, text, dictionary=frozenset(), *, preserve_upper=False):

@@ -1,5 +1,9 @@
 # Eloquence C – user guide
 
+## Version 1.4.1
+
+CamelCase words and plural acronyms are handled more reliably, while pronunciation dictionaries retain precedence. For automatic dictionary updates NVDA announces the result without opening a dialog. Manually requested updates still show a dialog.
+
 ## Version 1.4.0
 
 In Brazilian Portuguese, 12 and 19 use their usual vowels within larger numbers as well. ECI inflection commands use the same intonation as the corresponding setting.
@@ -125,7 +129,7 @@ Select Eloquence C first, then open **NVDA Settings → Eloquence C**.
 
 Under **Dictionary source**, you can also select **Alternative IBM TTS Dictionaries**. This source currently provides US English and Castilian Spanish, but no German dictionary. It is downloaded in the background the first time it is needed; own files take priority.
 
-After an update, a dialog reports the number of new distinct entries and new dictionary files. Changes and removals do not count as additions. The first download reports both totals; if the previous version cannot be compared, the dialog says so. Online updates currently retrieve a fixed set of supported filenames; other new files are not downloaded automatically.
+A manual update shows a dialog with the number of new distinct entries and new dictionary files. When an update happens automatically, NVDA announces the same result without opening a dialog. Changes and removals do not count as additions. The first download reports both totals; if the previous version cannot be compared, the result says so. Online updates currently retrieve a fixed set of supported filenames; other new files are not downloaded automatically.
 
 Use **Add file** to select an NVDA or Eloquence dictionary and its language. An NVDA file is imported as a separate copy, which you can edit from the list; the original remains unchanged. An Eloquence dictionary stays at its original location. With multiple Eloquence files, later files take priority; **OK** or **Apply** saves their selection.
 

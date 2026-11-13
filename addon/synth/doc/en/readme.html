@@ -4,6 +4,8 @@
 <body>
 <!-- Generated from docs/USER-GUIDE.en.md; keep both copies in sync. -->
 <h1>Eloquence C – user guide</h1>
+<h2>Version 1.4.1</h2>
+<p>CamelCase words and plural acronyms are handled more reliably, while pronunciation dictionaries retain precedence. For automatic dictionary updates NVDA announces the result without opening a dialog. Manually requested updates still show a dialog.</p>
 <h2>Version 1.4.0</h2>
 <p>In Brazilian Portuguese, 12 and 19 use their usual vowels within larger numbers as well. ECI inflection commands use the same intonation as the corresponding setting.</p>
 <p>The Eloquence C NVDA settings category can optionally split unfamiliar English words, irrespective of capitalization. It is off by default and applies to American and British English. Fully capitalized words keep Eloquence's own spelling when the engine spells them; others can still be segmented. Known words and dictionary entries are preserved where possible; unfamiliar names and foreign words can still be misidentified.</p>
@@ -134,7 +136,7 @@
 <p>Select Eloquence C first, then open <strong>NVDA Settings → Eloquence C</strong>.</p>
 <p><strong>Use community pronunciation dictionaries</strong> adds German and American English entries from <a href="https://github.com/eigencrow/IBMTTSDictionaries">eigencrow/IBMTTSDictionaries</a>. It is off by default. <strong>Update dictionaries now</strong> checks the current <code>master</code> branch and applies a complete update in the background. Updating requires internet access.</p>
 <p>Under <strong>Dictionary source</strong>, you can also select <strong>Alternative IBM TTS Dictionaries</strong>. This source currently provides US English and Castilian Spanish, but no German dictionary. It is downloaded in the background the first time it is needed; own files take priority.</p>
-<p>After an update, a dialog reports the number of new distinct entries and new dictionary files. Changes and removals do not count as additions. The first download reports both totals; if the previous version cannot be compared, the dialog says so. Online updates currently retrieve a fixed set of supported filenames; other new files are not downloaded automatically.</p>
+<p>A manual update shows a dialog with the number of new distinct entries and new dictionary files. When an update happens automatically, NVDA announces the same result without opening a dialog. Changes and removals do not count as additions. The first download reports both totals; if the previous version cannot be compared, the result says so. Online updates currently retrieve a fixed set of supported filenames; other new files are not downloaded automatically.</p>
 
 <p>Use <strong>Add file</strong> to select an NVDA or Eloquence dictionary and its language. An NVDA file is imported as a separate copy, which you can edit from the list; the original remains unchanged. An Eloquence dictionary stays at its original location. With multiple Eloquence files, later files take priority; <strong>OK</strong> or <strong>Apply</strong> saves their selection.</p>
 <p><strong>Open dictionary folder</strong> opens the existing <code>synthDrivers/reloqC/communityDictionaries</code> folder inside the add-on. This is where the bundled files live and editor changes are detected. With community dictionaries enabled, you can add files using a prefix from the language table and one of these suffixes:</p>

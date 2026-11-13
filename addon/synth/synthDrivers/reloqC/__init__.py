@@ -924,8 +924,9 @@ class SynthDriver(BaseSynthDriver):
                 if (self._terminating or self._dictionary_updater is None or
                         not self._dictionary_updater.current(revision)):
                     return
-            from globalPlugins.reloqCDictionaries import show_dictionary_update
-            show_dictionary_update(details)
+            import ui
+            from globalPlugins.reloqCDictionaries import dictionary_update_message
+            ui.message(dictionary_update_message(details))
         wx.CallAfter(show)
 
     def refresh_dictionaries(self, completed=None):

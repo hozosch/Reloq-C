@@ -9,10 +9,10 @@ public final class NativeTransportTest {
     private static final ExecutorService worker=Executors.newSingleThreadExecutor();
     private static long context;
     private static String dictionary;
-    private static void render(int dialect,int profile,String text) throws Exception {
-        render(dialect,new VoiceSettings(profile),text);
+    private static String render(int dialect,int profile,String text) throws Exception {
+        return render(dialect,new VoiceSettings(profile),text);
     }
-    private static void render(int dialect,VoiceSettings settings,String text) throws Exception {
+    private static String render(int dialect,VoiceSettings settings,String text) throws Exception {
         PcmQueue queue=new PcmQueue(4);
         int[] controls=settings.controls(100,100,dialect);
         Future<?> producer=worker.submit(() -> {
@@ -28,6 +28,7 @@ public final class NativeTransportTest {
         StringBuilder hash=new StringBuilder();for(byte b:digest.digest()) hash.append(String.format("%02x",b&255));
         StringBuilder parameters=new StringBuilder();for(int n:controls){if(parameters.length()!=0)parameters.append(',');parameters.append(n);}
         System.out.println(dialect+"\t"+parameters+"\t"+bytes+"\t"+hash+"\t"+(dictionary==null?"-":dictionary)+"\t"+text);
+        return bytes+":"+hash;
     }
     private static void dictionary(String path) throws Exception {
         worker.submit(() -> NativeEngine.dictionary(context,path)).get(10,TimeUnit.SECONDS);dictionary=path;
@@ -82,6 +83,14 @@ public final class NativeTransportTest {
             timing.setOriginalClock(0x10000,false);render(0x10000,timing,"adictive drums");
             render(0x20000,timing,"Esta es una prueba.");
             render(0x120000,timing,"Αυτή είναι μια δοκιμή.");
+            for(int dialect:new int[]{0x10000,0x10001}) {
+                VoiceSettings names=new VoiceSettings(0);
+                String text="Jayson and Peterson live in Tilton. Coleman meets Petersen.";
+                String normal=render(dialect,names,text);
+                names.wordSegmentation=true;names.camelCase=true;
+                if(!normal.equals(render(dialect,names,text)))
+                    throw new AssertionError("Name pronunciation changed in Android JNI: "+dialect);
+            }
             VoiceSettings eq=new VoiceSettings(0);eq.eqEnabled=true;eq.eqPreset=1;
             eq.eqFilters[0]=new int[]{1,777,6,50};eq.eqFilters[1]=new int[]{1,3000,-4,150};
             render(0x40000,eq,"Eine Stimme mit Equalizer.");render(0x10000,eq,"Equalizer test.");
