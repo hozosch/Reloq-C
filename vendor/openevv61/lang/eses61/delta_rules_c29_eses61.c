@@ -6410,8 +6410,8 @@ L1508:;
 L1565:;
     AT(int32_t, -8) = (RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 192));
     r0 = reloq61_typed_lpta_rpta_loadp(DELTA_ENTRY_lpta_rpta_loadp, state, (const delta_token *)(base + (-24)), EVV_AT(const delta_token *, (int32_t)AT(int32_t, -8)));
-    AT(int32_t, -12) = (delta_sym_ref[1425]);
-    AT(int32_t, -8) = (4);
+    AT(int32_t, -12) = delta_sym_ref[delta_lang_now()->id==RELOQ61_ARAGONESE?552:1425];
+    AT(int32_t, -8) = delta_lang_now()->id==RELOQ61_ARAGONESE?5:4;
     r0 = reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s, state, (uint8_t)(1), (uint8_t)((int32_t)AT(int32_t, -8)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -12)), (uint8_t)(0));
     if (r0 != 0) goto L1653;
     goto L1881;
@@ -6439,8 +6439,8 @@ L1854:;
     if(delta_lang_now()->id==RELOQ61_ARAGONESE) {
         int digit=reloq61_an_hundreds_digit(state,RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,192));
         if(digit) {
-            int word=digit==2?547:digit==3?548:digit==6?551:552;
-            int length=digit==2?2:digit==7?5:3;
+            int word=digit==2?547:digit==3?548:551;
+            int length=digit==2?2:3;
             r0=reloq61_typed_lpta_rpta_loadp(DELTA_ENTRY_lpta_rpta_loadp,state,
                 (const delta_token *)(base+(-24)),(const delta_token *)(base+(-40)));
             r0=reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s,state,1,(uint8_t)length,

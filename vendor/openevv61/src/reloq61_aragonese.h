@@ -13,6 +13,7 @@ int reloq61_an_standalone_sh(void *state,int32_t token_ref);
 int reloq61_an_x_pronunciation(void *state,int32_t begin_ref,int32_t end_ref);
 int reloq61_an_qu_glide(void *state,int32_t end_ref);
 int reloq61_an_latent_t(void *state,int32_t begin_ref);
+int reloq61_an_apocopated_t(void *state,int32_t from,int32_t to);
 int reloq61_an_latent_t_final_stress(void *state,int32_t from,int32_t to);
 int reloq61_an_hundreds_digit(void *state,int32_t digit_ref);
 int reloq61_an_liaison_d(void *state,int32_t begin_ref);

@@ -212,24 +212,11 @@ int reloq61_an_latent_t(void *state,int32_t begin_ref)
     if(!begin_ref||!save_cursor(d,&saved))return 0;
     word_fence(d);
     lpta_loadp(d,EVV_AT(const delta_token *,begin_ref));
-    int prev=0,prev_n=0,apocopated=0;
+    int prev=0,prev_n=0;
     if(!setscan_l(d,1)) {
         prev_n=!testFldeq(d,1,0,21)||!testFldeq(d,1,0,42);
         prev=prev_n||!testFldeq(d,1,0,24)||!testFldeq(d,1,0,45)||
                      !testFldeq(d,1,0,25)||!testFldeq(d,1,0,46);
-        int i=!testFldeq(d,1,0,3)||!testFldeq(d,1,0,8);
-        int l=!testFldeq(d,1,0,19)||!testFldeq(d,1,0,40);
-        if((i||l)&&!advance_tok(d)) {
-            int u=!testFldeq(d,1,0,5)||!testFldeq(d,1,0,10);
-            int e=!testFldeq(d,1,0,2)||!testFldeq(d,1,0,7);
-            int o=!testFldeq(d,1,0,4)||!testFldeq(d,1,0,9);
-            if(((i&&(u||e))||(l&&o))&&!advance_tok(d)) {
-                int m=!testFldeq(d,1,0,20)||!testFldeq(d,1,0,41);
-                int f=!testFldeq(d,1,0,14)||!testFldeq(d,1,0,35);
-                if(((i&&u&&m)||(i&&e&&f)||(l&&o&&m))&&advance_tok(d))
-                    apocopated=1;
-            }
-        }
     }
     lpta_loadp(d,EVV_AT(const delta_token *,begin_ref));
     int right_set=!setscan_r(d,1),is_t=0,end=0,plural=0;
@@ -242,11 +229,11 @@ int reloq61_an_latent_t(void *state,int32_t begin_ref)
         }
     }
     restore_cursor(d,&saved);
-    return is_t&&((end&&(prev||apocopated))||(plural&&prev));
+    return is_t&&prev&&(end||plural);
 }
 
 /* Within the native hundreds rule, select the Aragonese prefixes for
- * docientos, trecientos, seicientos and sietecientos. */
+ * docientos, trecientos and seicientos. */
 int reloq61_an_hundreds_digit(void *state,int32_t digit_ref)
 {
     delta_state *d=state;struct saved_cursor saved;
@@ -257,7 +244,6 @@ int reloq61_an_hundreds_digit(void *state,int32_t digit_ref)
         if(!testFldeq(d,1,0,55))digit=2;
         else if(!testFldeq(d,1,0,56))digit=3;
         else if(!testFldeq(d,1,0,59))digit=6;
-        else if(!testFldeq(d,1,0,60))digit=7;
     }
     restore_cursor(d,&saved);
     return digit;
@@ -323,6 +309,18 @@ static size_t an_word_spelling(delta_state *d,int32_t begin,int32_t next,
     if(an_right(d,at,1)!=end)return 0;
     text[used]=0;
     return used;
+}
+
+/* These are whole apocopated words, not a general silent-t rule after
+ * vowels or l; derivatives such as muito retain their pronounced t. */
+int reloq61_an_apocopated_t(void *state,int32_t from,int32_t to)
+{
+    if(!state||!from||!to)return 0;
+    delta_state *d=state;
+    const delta_loc *left=EVV_AT(const delta_loc *,from),*right=EVV_AT(const delta_loc *,to);
+    char text[16];int accented=0;
+    size_t n=an_word_spelling(d,left->value,right->value,text,sizeof text,&accented);
+    return n==4&&!accented&&(!strcmp(text,"muit")||!strcmp(text,"molt")||!strcmp(text,"feit"));
 }
 
 /* The written consonant cluster still determines the default stress even
