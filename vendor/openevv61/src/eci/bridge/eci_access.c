@@ -439,11 +439,11 @@ int32_t time_field_value(int8_t f, void *tok)
     return -1;
 }
 
-/* One field of one token written out. The answer is a static, so it lives
-   only until the next call. */
+/* One field of one token written out. The answer is thread-local and lives
+   only until the next call on the same thread. */
 char *field_value(int8_t f, void *tok, int32_t fld)
 {
-    static char buf[0x54];
+    static _Thread_local char buf[0x54];
 
     const delta_fielddesc *fd    = FD(f, fld);
     const char *const     *names = (const char *const *)fd->values;
