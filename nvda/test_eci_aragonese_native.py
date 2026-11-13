@@ -183,7 +183,9 @@ def main():
                     assert actual < stop, (rate, prefix, actual, stop)
                     checks += 1
                 assert render(an, ['final dia'])[0] == render(an, ['final `[.1dya]'])[0]
-                assert render(an, ['signal do mundo'])[0] == render(an, ['signal `[.0do] mundo'])[0]
+                actual, stop, soft = [len(render(an, [text])[0]) for text in
+                    ('signal do mundo', 'signal `[.0do] mundo', 'signal `[.0Do] mundo')]
+                assert actual == stop and actual != soft, (rate, actual, stop, soft)
                 checks += 2
         finally:
             an.set_parameter(SAMPLE_RATE, old_rate)
