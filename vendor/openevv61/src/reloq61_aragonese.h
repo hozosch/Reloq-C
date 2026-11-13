@@ -21,6 +21,7 @@ int reloq61_an_liaison_d(void *state,int32_t begin_ref);
 int reloq61_an_suppress_spanish_abbr(void *state,int32_t from,int32_t to);
 int reloq61_an_note_elision(void *state,int32_t input_node);
 int reloq61_an_take_elision(void *state,int32_t input_node);
+int reloq61_an_take_liaison_elision(void *state,int32_t input_node);
 void reloq61_an_adjust_clitics(void *state,int32_t from,int32_t to);
 
 #endif

@@ -183,7 +183,8 @@ def main():
                     assert actual < stop, (rate, prefix, actual, stop)
                     checks += 1
                 assert render(an, ['final dia'])[0] == render(an, ['final `[.1dya]'])[0]
-                checks += 1
+                assert render(an, ['signal do mundo'])[0] == render(an, ['signal `[.0do] mundo'])[0]
+                checks += 2
         finally:
             an.set_parameter(SAMPLE_RATE, old_rate)
             an.set_parameter(PROCESS_TAGS, old_tags)

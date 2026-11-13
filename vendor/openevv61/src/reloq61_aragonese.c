@@ -285,7 +285,7 @@ static int32_t an_input_next(delta_state *d,int32_t node)
 
 /* After l, this adjustment is limited to the weak preposition and its
  * contractions. Ordinary words such as 'dia' retain their native stop. */
-static int an_preposition_d(delta_state *d,int32_t position)
+static int an_preposition_d(delta_state *d,int32_t position,int elided)
 {
     int32_t node=an_input_node(d,position,0);unsigned name=an_input_name(node);
     if(name!=13&&name!=34)return 0; /* d */
@@ -294,8 +294,12 @@ static int an_preposition_d(delta_state *d,int32_t position)
         name=an_input_name(an_input_next(d,node));
         return !(name>=1&&name<=52)&&!(name>=97&&name<=116);
     }
-    if(!node||name==72||(name>=1&&name<=52)||(name>=97&&name<=116))return 0;
-    node=an_input_next(d,node);name=an_input_name(node); /* apostrophe + a/o */
+    /* The parser may have removed the apostrophe by this stage. Provenance
+     * recorded before that removal distinguishes d'o from the word do. */
+    if(!elided) {
+        if(!node||name!=73)return 0;
+        node=an_input_next(d,node);name=an_input_name(node);
+    }
     if(name!=1&&name!=4&&name!=6&&name!=9)return 0;
     node=an_input_next(d,node);name=an_input_name(node);
     if(name==25||name==46)name=an_input_name(an_input_next(d,node));
@@ -311,6 +315,8 @@ int reloq61_an_liaison_d(void *state,int32_t begin_ref)
     if(!state||!begin_ref)return 0;
     delta_state *d=state;
     int32_t pos=EVV_AT(const delta_token *,begin_ref)->value;
+    int32_t initial=an_input_node(d,pos,0);
+    int elided=reloq61_an_take_liaison_elision(state,initial);
     int32_t previous=an_input_node(d,pos,1);
     unsigned name=an_input_name(previous),prior=0;
     if(previous&&name==72) {
@@ -318,7 +324,7 @@ int reloq61_an_liaison_d(void *state,int32_t begin_ref)
         prior=an_input_name(an_input_node(d,left,1));
     }
     return name==72&&((prior>=1&&prior<=10)||(prior>=97&&prior<=116)||
-                      ((prior==19||prior==40)&&an_preposition_d(d,pos))||
+                      ((prior==19||prior==40)&&an_preposition_d(d,pos,elided))||
                       prior==24||prior==25||prior==45||prior==46);
 }
 

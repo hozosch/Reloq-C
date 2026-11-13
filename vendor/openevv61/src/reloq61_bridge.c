@@ -185,7 +185,8 @@ struct capture {
     reloq61_phoneme_sink phoneme_sink;void *phoneme_context;
     int english_sentence_pending,greek_explicit_prominence;
     /* Native input records for apostrophized Aragonese function words.
-     * Owned by this request; no text or source-index rewriting. */
+     * The low bit marks a record already seen by prosody; aligned input
+     * nodes leave that bit free until the liaison rule consumes it. */
     int32_t *aragonese_elisions;
     size_t aragonese_elision_count,aragonese_elision_capacity;
 };
@@ -197,7 +198,9 @@ int reloq61_an_note_elision(void *state,int32_t input_node)
     struct capture *c=dl?dl->reloq_context:NULL;
     if(!c||!c->q||c->q->language!=0x130000)return 0;
     for(size_t i=0;i<c->aragonese_elision_count;++i)
-        if(c->aragonese_elisions[i]==input_node)return 1;
+        if((c->aragonese_elisions[i]&~3)==input_node) {
+            c->aragonese_elisions[i]=input_node;return 1;
+        }
     if(c->aragonese_elision_count==c->aragonese_elision_capacity) {
         size_t n=c->aragonese_elision_capacity?2*c->aragonese_elision_capacity:8;
         if(n<c->aragonese_elision_capacity||n>SIZE_MAX/sizeof *c->aragonese_elisions)return 0;
@@ -216,6 +219,21 @@ int reloq61_an_take_elision(void *state,int32_t input_node)
     if(!c||!c->q||c->q->language!=0x130000)return 0;
     for(size_t i=0;i<c->aragonese_elision_count;++i) {
         if(c->aragonese_elisions[i]==input_node) {
+            c->aragonese_elisions[i]=input_node|1;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int reloq61_an_take_liaison_elision(void *state,int32_t input_node)
+{
+    delta_state *d=state;if(!d||!input_node)return 0;
+    DeltaLang *dl=EVV_AT(DeltaLang *,d->dlang);
+    struct capture *c=dl?dl->reloq_context:NULL;
+    if(!c||!c->q||c->q->language!=0x130000)return 0;
+    for(size_t i=0;i<c->aragonese_elision_count;++i) {
+        if(c->aragonese_elisions[i]==(input_node|1)) {
             c->aragonese_elisions[i]=c->aragonese_elisions[--c->aragonese_elision_count];
             return 1;
         }
