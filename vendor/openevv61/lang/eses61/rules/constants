@@ -1463,3 +1463,23 @@ bytes eti_s_f8d14    00 00
 bytes eti_s_f8d16    00 00 00 00
 bytes eti_s_f8d1c    00 00
 bytes eti_s_f8d1e    00 00
+
+# Aragonese cardinal names, in the native input alphabet.
+bytes an_ueito       05 02 03 1a 04
+bytes an_nueu        15 05 02 05
+bytes an_dotze       0d 04 1a 1f 02
+bytes an_tretze      1a 18 02 1a 1f 02
+bytes an_deciueito   0d 02 0c 03 05 02 03 1a 04
+bytes an_decinueu    0d 02 0c 03 15 05 02 05
+bytes an_vinte       1b 03 15 1a 02
+bytes an_vinti       1b 03 15 1a 03
+bytes an_trenta      1a 18 02 15 1a 01
+bytes an_cuaranta    0c 05 01 18 01 15 1a 01
+bytes an_cincuanta   0c 03 15 0c 05 01 15 1a 01
+bytes an_sisanta     19 03 19 01 15 1a 01
+bytes an_setanta     19 02 1a 01 15 1a 01
+bytes an_uitanta     05 03 1a 01 15 1a 01
+bytes an_novanta     15 04 1b 01 15 1a 01
+bytes an_cincocient  0c 03 15 0c 04 0c 03 02 15 1a
+bytes an_deciseis    0d 02 0c 03 19 6c 03 19
+bytes an_decisiet    0d 02 0c 03 19 03 02 1a

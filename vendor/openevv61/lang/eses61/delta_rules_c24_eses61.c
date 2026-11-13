@@ -6072,6 +6072,9 @@ L928:;
 L933:;
     goto L454;
 L938:;
+    if(delta_lang_now()->id==RELOQ61_ARAGONESE &&
+       reloq61_an_latent_t_final_stress(state,STATE_AT(w44,-4),STATE_AT(w65,-4)))
+        goto L961;
     r0 = reloq_call_eses61_span_penult_str(state, (int32_t)(FIELD(0)));
     reloq_local_196.i32 = (r0);
     goto L1176;
@@ -6525,7 +6528,7 @@ L1328:;
     goto L1433;
 L1369:;
     r0 = reloq61_typed_lpta_rpta_loadp(DELTA_ENTRY_lpta_rpta_loadp, state, (const delta_token *)(base + (-28)), (const delta_token *)(base + (-20)));
-    r0 = reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s, state, (uint8_t)(1), (uint8_t)(5), EVV_AT(const uint8_t *, delta_sym_ref[1457]), (uint8_t)(0));
+    r0 = reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s, state, (uint8_t)(1), (uint8_t)(delta_lang_now()->id==RELOQ61_ARAGONESE?4:5), EVV_AT(const uint8_t *, delta_sym_ref[1457]), (uint8_t)(0));
     if (r0 != 0) goto L1433;
     goto L1721;
 L1433:;

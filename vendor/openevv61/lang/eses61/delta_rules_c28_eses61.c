@@ -25,6 +25,7 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_eses61.h"
+#include "reloq61_aragonese.h"
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -5860,7 +5861,11 @@ L4439:;
     goto L5461;
 L4471:;
     AT(int32_t, -44) = (RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 192));
-    r0 = reloq_call_eses61_apply_span_t_rules(state, (int32_t)(FIELD(0)), (int32_t)(RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 208)), (int32_t)((int32_t)AT(int32_t, -44)));
+    if(delta_lang_now()->id==RELOQ61_ARAGONESE &&
+       reloq61_an_latent_t(state,RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,208)))
+        r0 = reloq_call_eses61_apply_span_h_rules(state, (int32_t)(FIELD(0)), (int32_t)(RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 208)), (int32_t)((int32_t)AT(int32_t, -44)));
+    else
+        r0 = reloq_call_eses61_apply_span_t_rules(state, (int32_t)(FIELD(0)), (int32_t)(RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 208)), (int32_t)((int32_t)AT(int32_t, -44)));
     goto L5461;
 L4503:;
     r0 = reloq61_typed_bspush_ca_scan(DELTA_ENTRY_bspush_ca_scan, state, (int16_t)(58));

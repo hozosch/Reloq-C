@@ -42,14 +42,44 @@ def main():
             checks += 1
         assert phonemes(an, 'queso')==phonemes(es, 'queso')
         checks += 1
+        # Written -nt/-st/-rt is latent in Aragonese at the word end. Keep
+        # the original stress, final /s/ in plurals and the following word.
+        for word, expected in (('puent', '[.1pwen]'), ('chent', '[.1Cen]'),
+                               ('dolent', '[.0do.1len]'), ('rebost', '[.0Re.1bos]'),
+                               ('part', '[.1par]'), ('malament', '[.0ma.0la.1men]'),
+                               ('chents', '[.1Cens]'), ('dolents', '[.0do.1lens]'),
+                               ('málament', '[.1ma.0la.0men]'),
+                               ('muit', '[.1mwi]'), ('molt', '[.1mol]'),
+                               ('feit', '[.1fey]')):
+            actual=phonemes(an, word)
+            assert expected in actual, (word, actual)
+            checks += 1
+        for word, expected in (('mocet', '[.0mo.1Tet]'), ('puentes', '[.1pwen.0tes]'),
+                               ('muito', '[.1mwi.0to]'),
+                               ('siet', '[.1syet]')):
+            actual=phonemes(an, word)
+            assert expected in actual, (word, actual)
+            checks += 1
+        connected=phonemes(an, 'chent y malament, part. Casa.')
+        assert '[.1Cen]' in connected and '[.0ma.0la.1men]' in connected and '[.1par]' in connected and '[.1ka.0sa]' in connected, connected
+        assert '[.1pwent]' in phonemes(es, 'puent')
+        checks += 2
+        whole, _ = render(an, ['chent y casa.'])
+        split, indices = render(an, ['chen', EciIndex(9), 't y casa.'])
+        assert whole == split and [i for i,_ in indices] == [9], indices
+        checks += 1
         # Number words are chosen inside the existing numeric and character
         # rules, including hundreds and the combined twenties.
-        for number, word in (('8', 'ueito'), ('9', 'nueu'), ('12', 'dotze'),
-                             ('13', 'tretze'), ('18', 'deciueito'), ('19', 'decinueu'),
+        for number, word in (('7', 'siet'), ('8', 'ueito'), ('9', 'nueu'), ('12', 'dotze'),
+                             ('13', 'tretze'), ('16', 'deciséis'), ('17', 'decisiet'),
+                             ('18', 'deciueito'), ('19', 'decinueu'), ('27', 'vintisiet'),
                              ('20', 'vinte'), ('28', 'vintiueito'), ('29', 'vintinueu'),
                              ('30', 'trenta'), ('40', 'cuaranta'), ('50', 'cincuanta'),
                              ('60', 'sisanta'), ('70', 'setanta'), ('80', 'uitanta'),
-                             ('90', 'novanta'), ('500', 'cincocientos'), ('900', 'nueucientos')):
+                             ('90', 'novanta'), ('200', 'docientos'), ('300', 'trecientos'),
+                             ('500', 'cincocientos'), ('600', 'seicientos'),
+                             ('700', 'sietecientos'),
+                             ('800', 'ueitocientos'), ('900', 'nueucientos')):
             actual, reference = phonemes(an, number), phonemes(an, word)
             assert actual == reference, (number, word, actual, reference)
             checks += 1
@@ -88,6 +118,14 @@ def main():
         assert '.1do' in phonemes(an, 'Dó ye?')
         assert '.1dos' in phonemes(an, 'dos libros')
         assert '.1das' in phonemes(an, 'das casas')
+        # Keep the weak word and following word intact across contexts where
+        # the initial dental may become an approximant. A pause remains a
+        # boundary, and a nasal at the end of the preceding word is allowed.
+        for sentence in ("la casa d'o mundo", "as casas d'o mundo",
+                         "lo camín d'o mundo", "la casa, d'o mundo"):
+            actual=phonemes(an, sentence)
+            assert '.0do' in actual and '.1mun' in actual, (sentence, actual)
+            checks += 1
         for isolated, expected in (("d'o", '.1do'), ("d'a", '.1da'),
                                    ("d'os", '.1dos'), ("d'as", '.1das')):
             actual = phonemes(an, isolated)
@@ -116,7 +154,7 @@ def main():
         checks += 1
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory)
-            (folder / 'ARAmain.dic').write_bytes(b'probexword\tcasa\nsinyal\tcasa\nyema\tllama\npa\tcasa\ndo\tcasa\n')
+            (folder / 'ARAmain.dic').write_bytes(b'probexword\tcasa\nsinyal\tcasa\nyema\tllama\npa\tcasa\ndo\tcasa\nchent\tcasa\n')
             (folder / 'ESPmain.dic').write_bytes(b'probexword\tnaranja\n')
             before = render(an, ['probexword.', EciIndex(7)])
             an.set_dictionary_path(folder)
@@ -128,8 +166,9 @@ def main():
                 assert render(an, ['yema.', EciIndex(7)]) == render(an, ['llama.', EciIndex(7)])
                 assert render(an, ['pa.', EciIndex(7)]) == render(an, ['casa.', EciIndex(7)])
                 assert render(an, ['do.', EciIndex(7)]) == render(an, ['casa.', EciIndex(7)])
+                assert render(an, ['chent.', EciIndex(7)]) == render(an, ['casa.', EciIndex(7)])
                 assert render(es, ['probexword.', EciIndex(7)]) == render(es, ['naranja.', EciIndex(7)])
-                checks += 6
+                checks += 7
             an.set_dictionary_path(None)
             an.set_parameter(DICTIONARY, 0)
             assert render(an, ['probexword.', EciIndex(7)]) == before

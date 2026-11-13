@@ -2644,6 +2644,10 @@ L1553:;
     AT(int32_t, -60) = (delta_sym_ref[545]);
 L1601:;
     AT(int32_t, -80) = (delta_sym_ref[552]);
+    if(delta_lang_now()->id==RELOQ61_ARAGONESE) {
+        AT(int32_t, -84) = 4; /* siet, rather than inherited siete */
+        goto L14256;
+    }
     goto L13001;
     goto L1667;
 L1619:;

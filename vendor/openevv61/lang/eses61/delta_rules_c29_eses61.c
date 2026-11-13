@@ -6436,6 +6436,18 @@ L1766:;
     if (r0 != 0) goto L1854;
     goto L1881;
 L1854:;
+    if(delta_lang_now()->id==RELOQ61_ARAGONESE) {
+        int digit=reloq61_an_hundreds_digit(state,RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,192));
+        if(digit) {
+            int word=digit==2?547:digit==3?548:digit==6?551:552;
+            int length=digit==2?2:digit==7?5:3;
+            r0=reloq61_typed_lpta_rpta_loadp(DELTA_ENTRY_lpta_rpta_loadp,state,
+                (const delta_token *)(base+(-24)),(const delta_token *)(base+(-40)));
+            r0=reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s,state,1,(uint8_t)length,
+                EVV_AT(const uint8_t *,delta_sym_ref[word]),0);
+            if(r0==0)goto L1881;
+        }
+    }
     AT(int32_t, -8) = (RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 192));
     r0 = reloq_call_eses61_span_char_name(state, (int32_t)(FIELD(0)), (int32_t)(RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 208)), (int32_t)((int32_t)AT(int32_t, -8)));
 L1881:;

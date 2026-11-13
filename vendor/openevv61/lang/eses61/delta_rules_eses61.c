@@ -5040,9 +5040,11 @@ const void *const eses61_delta_rule_sym[] = {
     eses61_evv_authored_data + 6592, /* Aragonese uitanta */
     eses61_evv_authored_data + 6599, /* Aragonese novanta */
     eses61_evv_authored_data + 6606, /* Aragonese cincocient */
+    eses61_evv_authored_data + 6616, /* Aragonese deciséis */
+    eses61_evv_authored_data + 6624, /* Aragonese decisiet */
 };
 
-const int eses61_delta_rule_sym_count = 1521;
+const int eses61_delta_rule_sym_count = 1523;
 
 #if !RELOQ61_NATIVE_ENTRIES
 const delta_rule eses61_delta_rules[] = {

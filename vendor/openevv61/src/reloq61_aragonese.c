@@ -203,6 +203,66 @@ int reloq61_an_qu_glide(void *state,int32_t end_ref)
     return match;
 }
 
+/* The final t after n, r or s is orthographically retained but does not
+ * contribute a phone. The apocopated words muit, molt and feit are also
+ * conventionally silent. Check input tokens within the current native word. */
+int reloq61_an_latent_t(void *state,int32_t begin_ref)
+{
+    delta_state *d=state;struct saved_cursor saved;
+    if(!begin_ref||!save_cursor(d,&saved))return 0;
+    word_fence(d);
+    lpta_loadp(d,EVV_AT(const delta_token *,begin_ref));
+    int prev=0,prev_n=0,apocopated=0;
+    if(!setscan_l(d,1)) {
+        prev_n=!testFldeq(d,1,0,21)||!testFldeq(d,1,0,42);
+        prev=prev_n||!testFldeq(d,1,0,24)||!testFldeq(d,1,0,45)||
+                     !testFldeq(d,1,0,25)||!testFldeq(d,1,0,46);
+        int i=!testFldeq(d,1,0,3)||!testFldeq(d,1,0,8);
+        int l=!testFldeq(d,1,0,19)||!testFldeq(d,1,0,40);
+        if((i||l)&&!advance_tok(d)) {
+            int u=!testFldeq(d,1,0,5)||!testFldeq(d,1,0,10);
+            int e=!testFldeq(d,1,0,2)||!testFldeq(d,1,0,7);
+            int o=!testFldeq(d,1,0,4)||!testFldeq(d,1,0,9);
+            if(((i&&(u||e))||(l&&o))&&!advance_tok(d)) {
+                int m=!testFldeq(d,1,0,20)||!testFldeq(d,1,0,41);
+                int f=!testFldeq(d,1,0,14)||!testFldeq(d,1,0,35);
+                if(((i&&u&&m)||(i&&e&&f)||(l&&o&&m))&&advance_tok(d))
+                    apocopated=1;
+            }
+        }
+    }
+    lpta_loadp(d,EVV_AT(const delta_token *,begin_ref));
+    int right_set=!setscan_r(d,1),is_t=0,end=0,plural=0;
+    if(right_set) {
+        is_t=!testFldeq(d,1,0,26)||!testFldeq(d,1,0,47);
+        if(is_t&&!advance_tok(d)) {
+            int next_s=!testFldeq(d,1,0,25)||!testFldeq(d,1,0,46);
+            if(advance_tok(d))end=1;
+            else if(next_s&&prev_n)plural=advance_tok(d)!=0;
+        }
+    }
+    restore_cursor(d,&saved);
+    return is_t&&((end&&(prev||apocopated))||(plural&&prev));
+}
+
+/* Within the native hundreds rule, select the Aragonese prefixes for
+ * docientos, trecientos, seicientos and sietecientos. */
+int reloq61_an_hundreds_digit(void *state,int32_t digit_ref)
+{
+    delta_state *d=state;struct saved_cursor saved;
+    if(!digit_ref||!save_cursor(d,&saved))return 0;
+    lpta_loadp(d,EVV_AT(const delta_token *,digit_ref));
+    int digit=0;
+    if(!setscan_l(d,1)) {
+        if(!testFldeq(d,1,0,55))digit=2;
+        else if(!testFldeq(d,1,0,56))digit=3;
+        else if(!testFldeq(d,1,0,59))digit=6;
+        else if(!testFldeq(d,1,0,60))digit=7;
+    }
+    restore_cursor(d,&saved);
+    return digit;
+}
+
 /* Read the spelling projection of a word without modifying its tokens. */
 static int32_t an_input_node(delta_state *d,int32_t position,int back)
 {
@@ -217,6 +277,25 @@ static unsigned an_input_name(int32_t node)
     return node?*(const unsigned char *)delta_record_field(&vstmtbl[1],0,
         TFLDS(EVV_AT(void *,node))):0;
 }
+
+/* A word-initial d after a vowel, s or r in the same phrase uses the voiced
+ * dental approximant. Require a genuine whitespace boundary and inspect the
+ * input before it, so punctuation and phrase-initial words retain the stop. */
+int reloq61_an_liaison_d(void *state,int32_t begin_ref)
+{
+    if(!state||!begin_ref)return 0;
+    delta_state *d=state;
+    int32_t pos=EVV_AT(const delta_token *,begin_ref)->value;
+    int32_t previous=an_input_node(d,pos,1);
+    unsigned name=an_input_name(previous),prior=0;
+    if(previous&&name==72) {
+        int32_t left=*EVV_AT(int32_t *,previous)&~3;
+        prior=an_input_name(an_input_node(d,left,1));
+    }
+    return name==72&&((prior>=1&&prior<=10)||(prior>=97&&prior<=116)||
+                      prior==24||prior==25||prior==45||prior==46);
+}
+
 static int32_t an_right(delta_state *d,int32_t at,unsigned type)
 {return at?EVV_REF(vmover(d,EVV_AT(void *,at),(uint8_t)type)):0;}
 
@@ -244,6 +323,24 @@ static size_t an_word_spelling(delta_state *d,int32_t begin,int32_t next,
     if(an_right(d,at,1)!=end)return 0;
     text[used]=0;
     return used;
+}
+
+/* The written consonant cluster still determines the default stress even
+ * though its final t does not produce a phone. Accented vowels are handled
+ * by the provider before this fallback. */
+int reloq61_an_latent_t_final_stress(void *state,int32_t from,int32_t to)
+{
+    if(!state||!from||!to)return 0;
+    delta_state *d=state;
+    const delta_loc *left=EVV_AT(const delta_loc *,from),*right=EVV_AT(const delta_loc *,to);
+    char text[256];int accented=0;
+    size_t n=an_word_spelling(d,left->value,right->value,text,sizeof text,&accented);
+    if(accented||n<2)return 0;
+    if(text[n-1]=='s') {
+        if(n<3||text[n-3]!='n')return 0;
+        --n;
+    }
+    return n>=2&&text[n-1]=='t'&&(text[n-2]=='n'||text[n-2]=='r'||text[n-2]=='s');
 }
 
 /* Pa is a preposition and do a relative locative adverb. Neither should be
