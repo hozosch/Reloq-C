@@ -3,6 +3,7 @@
  */
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "delta.h"
 #include "delta_lang.h"
 #include "reloq61_aragonese.h"
@@ -119,11 +120,11 @@ int reloq61_an_standalone_sh(void *state,int32_t token_ref)
     return found&&!affricate;
 }
 
-/* Conservative native spelling cases: vowel+ix and word-initial xa/xo/xu.
- * Other x spellings can be /ks/ or /sh/ and remain with the inherited rule
- * until the lexicon can resolve them. The word fence prevents a match across
- * adjacent words. Nothing is changed in the caller's scanner. */
-int reloq61_an_x_is_sh(void *state,int32_t begin_ref,int32_t end_ref)
+/* Native x/ix spellings. This cannot be a completely mechanical rule:
+ * established and learned words can have the same spelling but /sh/ or /ks/.
+ * Preserve common learned fix-/mixt- spellings and the Spanish fallback for
+ * ambiguous cases, rather than turning every written x into /sh/. */
+int reloq61_an_x_pronunciation(void *state,int32_t begin_ref,int32_t end_ref)
 {
     delta_state *d=state;struct saved_cursor saved;
     if(!begin_ref||!end_ref||!save_cursor(d,&saved))return 0;
@@ -140,21 +141,202 @@ int reloq61_an_x_is_sh(void *state,int32_t begin_ref,int32_t end_ref)
     if(left) {
         lpta_loadp(d,EVV_AT(const delta_token *,end_ref));
         if(!setscan_r(d,1)) {
-            const uint8_t vowels[]={1,4,5,6,9,10};
+            const uint8_t vowels[]={1,2,3,4,5,6,7,8,9,10};
             for(size_t i=0;i<sizeof vowels;++i)
                 if(!testFldeq(d,1,0,vowels[i])){match=1;break;}
+            /* Greek xeno-, xero- and xilo- are pronounced /ks/ even
+             * though native initial xe-/xi- can be pronounced /sh/. */
+            int e=!testFldeq(d,1,0,2)||!testFldeq(d,1,0,7);
+            int i=!testFldeq(d,1,0,3)||!testFldeq(d,1,0,8);
+            if((e||i)&&!advance_tok(d)) {
+                int greek=(e&&(!testFldeq(d,1,0,21)||!testFldeq(d,1,0,42)||
+                               !testFldeq(d,1,0,24)||!testFldeq(d,1,0,45)))||
+                          (i&&(!testFldeq(d,1,0,19)||!testFldeq(d,1,0,40)));
+                if(greek&&!advance_tok(d)&&
+                   (!testFldeq(d,1,0,4)||!testFldeq(d,1,0,9)))match=2;
+            }
         }
     } else {
         lpta_loadp(d,EVV_AT(const delta_token *,begin_ref));
         if(setscan_l(d,1))goto done;
-        if(testFldeq(d,1,0,3)&&testFldeq(d,1,0,8))goto done;
-        if(!advance_tok(d)) {
-            const uint8_t vowels[]={1,2,4,5,6,7,9,10};
-            for(size_t i=0;i<sizeof vowels;++i)
-                if(!testFldeq(d,1,0,vowels[i])){match=1;break;}
+        if(!testFldeq(d,1,0,21)||!testFldeq(d,1,0,42)) {
+            /* enxargar: x immediately after n. */
+            match=1;
+        } else if(!testFldeq(d,1,0,3)||!testFldeq(d,1,0,8)) {
+            /* ix at the start of a word or following a vowel/consonant.
+             * fixar and its family, and mixto, retain /ks/. */
+            if(advance_tok(d))match=1;
+            else if(!testFldeq(d,1,0,14)||!testFldeq(d,1,0,35))match=0;
+            else if(!testFldeq(d,1,0,20)||!testFldeq(d,1,0,41)) {
+                lpta_loadp(d,EVV_AT(const delta_token *,end_ref));
+                if(!setscan_r(d,1)&&
+                   (!testFldeq(d,1,0,26)||!testFldeq(d,1,0,47)))match=0;
+                else match=1;
+            } else match=1;
+        } else if(!testFldeq(d,1,0,5)||!testFldeq(d,1,0,10)) {
+            /* engauxar and the same -gaux- root; do not misread auxilio. */
+            if(!advance_tok(d)&&(!testFldeq(d,1,0,1)||!testFldeq(d,1,0,6))&&
+               !advance_tok(d)&&(!testFldeq(d,1,0,15)||!testFldeq(d,1,0,36)))match=1;
         }
     }
 done:
     restore_cursor(d,&saved);
     return match;
+}
+
+/* Consonantal y is /Y/, distinct from the palatal lateral /L/ of ll.
+ * Leave the conjunction y and other non-consonantal uses to the normal
+ * vowel rules. The word fence excludes the following word. */
+int reloq61_an_consonant_y(void *state,int32_t end_ref)
+{
+    delta_state *d=state;struct saved_cursor saved;
+    if(!end_ref||!save_cursor(d,&saved))return 0;
+    word_fence(d);
+    lpta_loadp(d,EVV_AT(const delta_token *,end_ref));
+    /* A word-final y is followed by a delimiter, not a vowel. */
+    int match=!setscan_r(d,1)&&!testFldeq(d,1,4,1);
+    restore_cursor(d,&saved);
+    return match;
+}
+
+/* The inherited q-rule consumes u in every context. In qua/quo it is a
+ * pronounced glide; in que/qui it remains the silent part of the digraph. */
+int reloq61_an_qu_glide(void *state,int32_t end_ref)
+{
+    delta_state *d=state;struct saved_cursor saved;
+    if(!end_ref||!save_cursor(d,&saved))return 0;
+    word_fence(d);
+    lpta_loadp(d,EVV_AT(const delta_token *,end_ref));
+    int match=0;
+    if(!setscan_r(d,1)&&(!testFldeq(d,1,0,5)||!testFldeq(d,1,0,10))&&
+       !advance_tok(d)) {
+        const uint8_t open[]={1,4,6,9,107,110,112,115};
+        for(size_t i=0;i<sizeof open;++i)
+            if(!testFldeq(d,1,0,open[i])){match=1;break;}
+    }
+    restore_cursor(d,&saved);
+    return match;
+}
+
+/* Read the spelling projection of a word without modifying its tokens. */
+static int32_t an_input_node(delta_state *d,int32_t position,int back)
+{
+    if(!position)return 0;
+    int32_t point=back?EVV_REF(vmovel(d,EVV_AT(delta_node *,position),1)):
+        EVV_REF(vmover(d,EVV_AT(int32_t *,position),1));
+    int32_t node=vgetsc(d,back,0,point,1);
+    return node&&!(*EVV_AT(int32_t *,node)&2)?node:0;
+}
+static unsigned an_input_name(int32_t node)
+{
+    return node?*(const unsigned char *)delta_record_field(&vstmtbl[1],0,
+        TFLDS(EVV_AT(void *,node))):0;
+}
+static int32_t an_right(delta_state *d,int32_t at,unsigned type)
+{return at?EVV_REF(vmover(d,EVV_AT(void *,at),(uint8_t)type)):0;}
+
+static size_t an_word_spelling(delta_state *d,int32_t begin,int32_t next,
+                               char *text,size_t capacity)
+{
+    static const char alphabet[]="\0aeiouAEIOUbcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ";
+    size_t used=0;
+    int32_t at=begin,end=an_right(d,next,1);
+    for(unsigned guard=0;at&&an_right(d,at,1)!=end&&guard<256;++guard) {
+        int32_t node=an_input_node(d,at,0);unsigned name=an_input_name(node);
+        if(!node||!name||used+1>=capacity)return 0;
+        text[used++]=name<sizeof alphabet-1?
+            (char)tolower((unsigned char)alphabet[name]):'?';
+        int32_t n=EVV_AT(int32_t *,node)[1]&~3;
+        if(!n||n==at)return 0;
+        at=n;
+    }
+    if(an_right(d,at,1)!=end)return 0;
+    text[used]=0;
+    return used;
+}
+
+static int an_enclitic_word(const char *text)
+{
+    static const char *const clitics[]={
+        "me","te","se","mos","nos","vos","lo","la","los","las",
+        "le","les","li","ne","en","n","ie","i","bi",
+        /* Apostrophized combinations share one native word record. */
+        "mone","tone","sene","lin","lien","lsie"
+    };
+    for(size_t i=0;i<sizeof clitics/sizeof clitics[0];++i)
+        if(!strcmp(text,clitics[i]))return 1;
+    return 0;
+}
+
+static int32_t an_phone_node(delta_state *d,int32_t at)
+{
+    int32_t point=an_right(d,at,4),node=point?vgetsc(d,0,0,point,4):0;
+    return node&&!(*EVV_AT(int32_t *,node)&2)?node:0;
+}
+
+/* Keep a written final -nt/-st/-rt through lexical stress assignment, then
+ * mark the final phone for zero duration. The existing duration field is
+ * otherwise unused at this stage, and is reset as soon as the marker is read. */
+static void an_mark_latent_t(delta_state *d,int32_t begin,int32_t next,
+                             const char *text,size_t length)
+{
+    int latent=length>=3&&text[length-1]=='t'&&strchr("nrs",text[length-2]);
+    latent|=!strcmp(text,"molt")||!strcmp(text,"muit")||!strcmp(text,"feit");
+    if(!latent)return;
+    int32_t at=begin,end=an_right(d,next,4),last=0;
+    for(unsigned guard=0;at&&an_right(d,at,4)!=end&&guard<256;++guard) {
+        int32_t phone=an_phone_node(d,at);if(!phone)return;
+        last=phone;
+        int32_t n=EVV_AT(int32_t *,phone)[1]&~3;if(!n||n==at)return;at=n;
+    }
+    if(!last||an_right(d,at,4)!=end)return;
+    void *body=TFLDS(EVV_AT(void *,last));
+    if(*(const unsigned char *)delta_record_field(&vstmtbl[4],0,body)!=2)return;
+    int16_t marker=INT16_MIN;
+    memcpy(delta_record_field(&vstmtbl[4],11,body),&marker,sizeof marker);
+}
+
+int reloq61_an_take_silent_phone(void *state,int32_t phone_begin)
+{
+    if(!phone_begin)return 0;
+    delta_state *d=state;const delta_loc *begin=EVV_AT(const delta_loc *,phone_begin);
+    int32_t phone=an_phone_node(d,begin->value);if(!phone)return 0;
+    void *body=TFLDS(EVV_AT(void *,phone));
+    unsigned char *duration=delta_record_field(&vstmtbl[4],11,body);
+    int16_t marker;memcpy(&marker,duration,sizeof marker);
+    if(marker!=INT16_MIN)return 0;
+    marker=0;memcpy(duration,&marker,sizeof marker);
+    return 1;
+}
+
+/* Hyphenated, postverbal pronouns are unstressed and belong to the verb's
+ * prosodic group. Adjust the existing native word records before the phrase
+ * chooses its nuclear accent; spelling and source positions remain intact. */
+void reloq61_an_adjust_clitics(void *state,int32_t from,int32_t to)
+{
+    if(delta_lang_now()->id!=RELOQ61_ARAGONESE||!from||!to)return;
+    delta_state *d=state;
+    delta_loc *left=EVV_AT(delta_loc *,from),*right=EVV_AT(delta_loc *,to);
+    if(!left->value||!right->value)return;
+    int32_t at=left->value,end=an_right(d,right->value,2);
+    int previous_word=0,previous_annotated=0;
+    for(unsigned guard=0;at&&an_right(d,at,2)!=end&&guard<256;++guard) {
+        int32_t point=an_right(d,at,2),word=point?vgetsc(d,0,0,point,2):0;
+        if(!word||(*EVV_AT(int32_t *,word)&2))break;
+        unsigned char *body=TFLDS(EVV_AT(void *,word));
+        unsigned char *level=delta_record_field(&vstmtbl[2],6,body);
+        unsigned annotated=*(const unsigned char *)delta_record_field(&vstmtbl[2],9,body);
+        int32_t begin=*EVV_AT(int32_t *,word)&~3,next=EVV_AT(int32_t *,word)[1]&~3;
+        char text[128];size_t length=an_word_spelling(d,begin,next,text,sizeof text);
+        if(length&&!annotated)an_mark_latent_t(d,begin,next,text,length);
+        if(previous_word&&!previous_annotated&&!annotated&&
+           an_input_name(an_input_node(d,begin,1))==63&&
+           length&&an_enclitic_word(text)) {
+            int16_t unstressed=-1;
+            memcpy(level,&unstressed,sizeof unstressed);
+        }
+        previous_word=1;previous_annotated=annotated!=0;
+        if(!next||next==at)break;
+        at=next;
+    }
 }

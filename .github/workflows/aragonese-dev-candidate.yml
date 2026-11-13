@@ -60,15 +60,15 @@ jobs:
           p=Path('addon/synth/manifest.ini')
           original=p.read_text(encoding='utf8')
           assert 'version = "1.4.0"' in original
-          p.write_text(original.replace('version = "1.4.0"','version = "1.5.0-dev2"'), encoding='utf8')
+          p.write_text(original.replace('version = "1.4.0"','version = "1.5.0-dev4"'), encoding='utf8')
           for locale in ('de','en'):
               readme=Path('addon/synth/doc')/locale/'readme.html'
               text=readme.read_text(encoding='utf8')
               assert 'Version 1.4.0' in text
-              readme.write_text(text.replace('Version 1.4.0','Version 1.5.0-dev2'),encoding='utf8')
+              readme.write_text(text.replace('Version 1.4.0','Version 1.5.0-dev4'),encoding='utf8')
           sys.path.insert(0,'addon')
           from build_synth import build
-          build(Path('dist/reloq-c-synth-x64-1.5.0-dev2.nvda-addon'),Path('eci/eci.dll'),refresh_dictionaries=False)
+          build(Path('dist/reloq-c-synth-x64-1.5.0-dev4.nvda-addon'),Path('eci/eci.dll'),refresh_dictionaries=False)
           PY
           cp eci/eci.dll dist/eci.dll
           cp sapi/build/ReLoqSapi.dll sapi/build/Test-SAPI.exe dist/
@@ -76,7 +76,7 @@ jobs:
         with:
           name: aragonese-test-candidate
           path: |
-            dist/reloq-c-synth-x64-1.5.0-dev2.nvda-addon
+            dist/reloq-c-synth-x64-1.5.0-dev4.nvda-addon
             dist/eci.dll
             dist/ReLoqSapi.dll
             dist/Test-SAPI.exe
@@ -110,7 +110,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Word segmentation regression' }
           python -B nvda/test_eci_acronyms_native.py --library candidate/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Acronym regression' }
-          python -B addon/test_synth_native.py --library candidate/eci.dll --addon candidate/reloq-c-synth-x64-1.5.0-dev2.nvda-addon
+          python -B addon/test_synth_native.py --library candidate/eci.dll --addon candidate/reloq-c-synth-x64-1.5.0-dev4.nvda-addon
           if ($LASTEXITCODE -ne 0) { throw 'NVDA native adapter regression' }
           $p = Start-Process regsvr32.exe -ArgumentList '/s', (Get-Item candidate/ReLoqSapi.dll).FullName -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw 'SAPI registration failed' }
@@ -131,8 +131,10 @@ jobs:
           $portable = Join-Path $pwd 'portable-nvda'
           $p = Start-Process (Get-Item candidate/nvda_2026.3.1.exe).FullName -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
           if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable installation failed' }
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.5.0-dev2.nvda-addon --plugin addon/test_nvda_real_aragonese_plugin.py --work aragonese-probe
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.5.0-dev4.nvda-addon --plugin addon/test_nvda_real_aragonese_plugin.py --work aragonese-probe
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA Aragonese regression' }
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.5.0-dev4.nvda-addon --plugin addon/test_nvda_real_early_start_plugin.py --work early-start-probe
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA first-start regression' }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -140,6 +142,8 @@ jobs:
           path: |
             aragonese-probe/result.json
             aragonese-probe/nvda.log
+            early-start-probe/result.json
+            early-start-probe/nvda.log
           if-no-files-found: ignore
   android:
     runs-on: ubuntu-24.04

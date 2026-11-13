@@ -25,6 +25,8 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_eses61.h"
+#include "delta_lang.h"
+#include "reloq61_aragonese.h"
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -6103,7 +6105,7 @@ L2142:;
     goto L2247;
 L2183:;
     r0 = reloq61_typed_lpta_rpta_loadp(DELTA_ENTRY_lpta_rpta_loadp, state, (const delta_token *)(base + (-32)), (const delta_token *)(base + (-40)));
-    r0 = reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s, state, (uint8_t)(1), (uint8_t)(4), EVV_AT(const uint8_t *, delta_sym_ref[1357]), (uint8_t)(0));
+    r0 = reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s, state, (uint8_t)(1), (uint8_t)(delta_lang_now()->id==RELOQ61_ARAGONESE?5:4), EVV_AT(const uint8_t *, delta_sym_ref[delta_lang_now()->id==RELOQ61_ARAGONESE?1507:1357]), (uint8_t)(0));
     if (r0 != 0) goto L2247;
     goto L3300;
 L2247:;
@@ -6117,7 +6119,7 @@ L2295:;
     goto L2400;
 L2336:;
     r0 = reloq61_typed_lpta_rpta_loadp(DELTA_ENTRY_lpta_rpta_loadp, state, (const delta_token *)(base + (-32)), (const delta_token *)(base + (-40)));
-    r0 = reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s, state, (uint8_t)(1), (uint8_t)(5), EVV_AT(const uint8_t *, delta_sym_ref[1443]), (uint8_t)(0));
+    r0 = reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s, state, (uint8_t)(1), (uint8_t)(delta_lang_now()->id==RELOQ61_ARAGONESE?6:5), EVV_AT(const uint8_t *, delta_sym_ref[delta_lang_now()->id==RELOQ61_ARAGONESE?1508:1443]), (uint8_t)(0));
     if (r0 != 0) goto L2400;
     goto L3300;
 L2400:;
@@ -6187,7 +6189,7 @@ L3060:;
     goto L3165;
 L3101:;
     r0 = reloq61_typed_lpta_rpta_loadp(DELTA_ENTRY_lpta_rpta_loadp, state, (const delta_token *)(base + (-32)), (const delta_token *)(base + (-40)));
-    r0 = reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s, state, (uint8_t)(1), (uint8_t)(9), EVV_AT(const uint8_t *, delta_sym_ref[1448]), (uint8_t)(0));
+    r0 = reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s, state, (uint8_t)(1), (uint8_t)(delta_lang_now()->id==RELOQ61_ARAGONESE?9:9), EVV_AT(const uint8_t *, delta_sym_ref[delta_lang_now()->id==RELOQ61_ARAGONESE?1509:1448]), (uint8_t)(0));
     if (r0 != 0) goto L3165;
     goto L3300;
 L3165:;
@@ -6201,7 +6203,7 @@ L3213:;
     goto L3300;
 L3254:;
     r0 = reloq61_typed_lpta_rpta_loadp(DELTA_ENTRY_lpta_rpta_loadp, state, (const delta_token *)(base + (-32)), (const delta_token *)(base + (-40)));
-    r0 = reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s, state, (uint8_t)(1), (uint8_t)(10), EVV_AT(const uint8_t *, delta_sym_ref[1449]), (uint8_t)(0));
+    r0 = reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s, state, (uint8_t)(1), (uint8_t)(delta_lang_now()->id==RELOQ61_ARAGONESE?8:10), EVV_AT(const uint8_t *, delta_sym_ref[delta_lang_now()->id==RELOQ61_ARAGONESE?1510:1449]), (uint8_t)(0));
 L3300:;
     r0 = reloq_call_eses61_insert_space(state, (int32_t)(FIELD(0)), (int32_t)(RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 200)));
     r1 = ((int32_t)AT(int32_t, -36));

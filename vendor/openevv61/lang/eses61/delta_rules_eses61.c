@@ -5024,9 +5024,25 @@ const void *const eses61_delta_rule_sym[] = {
     eses61_evv_authored_data + 6484,
     eses61_evv_authored_data + 6485,
     eses61_evv_authored_data + 4,
+    eses61_evv_authored_data + 6508, /* Aragonese ueito */
+    eses61_evv_authored_data + 6513, /* Aragonese nueu */
+    eses61_evv_authored_data + 6517, /* Aragonese dotze */
+    eses61_evv_authored_data + 6522, /* Aragonese tretze */
+    eses61_evv_authored_data + 6528, /* Aragonese deciueito */
+    eses61_evv_authored_data + 6537, /* Aragonese decinueu */
+    eses61_evv_authored_data + 6545, /* Aragonese vinte */
+    eses61_evv_authored_data + 6550, /* Aragonese vinti */
+    eses61_evv_authored_data + 6555, /* Aragonese trenta */
+    eses61_evv_authored_data + 6561, /* Aragonese cuaranta */
+    eses61_evv_authored_data + 6569, /* Aragonese cincuanta */
+    eses61_evv_authored_data + 6578, /* Aragonese sisanta */
+    eses61_evv_authored_data + 6585, /* Aragonese setanta */
+    eses61_evv_authored_data + 6592, /* Aragonese uitanta */
+    eses61_evv_authored_data + 6599, /* Aragonese novanta */
+    eses61_evv_authored_data + 6606, /* Aragonese cincocient */
 };
 
-const int eses61_delta_rule_sym_count = 1505;
+const int eses61_delta_rule_sym_count = 1521;
 
 #if !RELOQ61_NATIVE_ENTRIES
 const delta_rule eses61_delta_rules[] = {

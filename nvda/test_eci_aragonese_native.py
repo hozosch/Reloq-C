@@ -27,13 +27,39 @@ def main():
         checks += 1
         # The /sh/ acoustic test is reachable through ordinary Aragonese
         # spelling; Spanish technical x words must keep their /ks/ reading.
-        for word in ('xada', 'Xada', 'la xada', 'a xada', 'xuela', 'caixa', 'aixina', 'peix'):
+        for word in ('xada', 'Xada', 'la xada', 'a xada', 'xuela', 'caixa', 'aixina', 'peix',
+                     'ixambre', 'ixe', 'ixuela', 'enxargar', 'engauxar', 'mixina', 'pixar', 'xino'):
             spoken = phonemes(an, word)
             assert 'S' in spoken, (word, spoken)
             checks += 1
-        for word in ('taxi', 'sexo', 'examen', 'xenofobo'):
+        for word in ('taxi', 'sexo', 'examen', 'xenofobo', 'fixar', 'mixto', 'afixo', 'auxilio'):
             assert phonemes(an, word) == phonemes(es, word), word
             checks += 1
+        assert 'ks' in phonemes(an, 'xilofaga'), phonemes(an, 'xilofaga')
+        checks += 1
+        # Number words are chosen inside the existing numeric and character
+        # rules, including hundreds and the combined twenties.
+        for number, word in (('8', 'ueito'), ('9', 'nueu'), ('12', 'dotze'),
+                             ('13', 'tretze'), ('18', 'deciueito'), ('19', 'decinueu'),
+                             ('20', 'vinte'), ('28', 'vintiueito'), ('29', 'vintinueu'),
+                             ('30', 'trenta'), ('40', 'cuaranta'), ('50', 'cincuanta'),
+                             ('60', 'sisanta'), ('70', 'setanta'), ('80', 'uitanta'),
+                             ('90', 'novanta'), ('500', 'cincocientos'), ('900', 'nueucientos')):
+            actual, reference = phonemes(an, number), phonemes(an, word)
+            assert actual == reference, (number, word, actual, reference)
+            checks += 1
+        # Only hyphen-attached pronouns lose their own word stress. Ordinary
+        # independent words and other kinds of hyphenated words stay intact.
+        for sentence, expected in (('minchar-las', '.0las'), ('sentir-ie', '.0ye'),
+                                   ('partindo-ne', '.0ne'), ('contaz-me-la', '.0la'),
+                                   ('fendo-le-ne', '.0ne'), ('da-me-ne', '.0ne'),
+                                   ('fer-los', '.0los'), ("minchand-mo'ne", '.0mo')):
+            actual=phonemes(an, sentence)
+            assert expected in actual, (sentence, actual)
+            checks += 1
+        assert '.1la' in phonemes(an, 'hola la')
+        assert '.1mun' in phonemes(an, 'hola-mundo')
+        checks += 2
         # Source fragments remain in the same word; indices are delivered in
         # order and the complete PCM matches a single input fragment.
         whole, _ = render(an, ['sinyal y cabanyera.'])

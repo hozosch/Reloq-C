@@ -25,6 +25,8 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_eses61.h"
+#include "delta_lang.h"
+#include "reloq61_aragonese.h"
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -6615,6 +6617,19 @@ L3554:;
 L3616:;
     AT(int32_t, -8) = (7);
 L3624:;
+    if(delta_lang_now()->id==RELOQ61_ARAGONESE) {
+        static const struct { int spanish, aragonese, length; } names[]={
+            {1395,1513,6}, {1396,1514,8}, {1397,1515,9},
+            {1398,1516,7}, {1399,1517,7}, {1400,1518,7}, {1394,1519,7}
+        };
+        for(size_t i=0;i<sizeof names/sizeof names[0];++i) {
+            if(AT(int32_t, -12)==delta_sym_ref[names[i].spanish]) {
+                AT(int32_t, -12)=delta_sym_ref[names[i].aragonese];
+                AT(int32_t, -8)=names[i].length;
+                break;
+            }
+        }
+    }
     r0 = reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s, state, (uint8_t)(1), (uint8_t)((int32_t)AT(int32_t, -8)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -12)), (uint8_t)(0));
     if (r0 != 0) goto L3669;
     goto L3825;

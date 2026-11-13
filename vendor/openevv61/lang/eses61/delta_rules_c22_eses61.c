@@ -6034,6 +6034,21 @@ int32_t reloq_eses61_apply_span_x_rules(void *state, int32_t p0, int32_t p1, int
     r0 = reloq61_typed_fence(DELTA_ENTRY_fence, state, (int8_t)(1), EVV_AT(const uint8_t *, delta_sym_ref[1137]));
     AT(int32_t, -12) = (STATE_AT(w44, -4));
     r0 = reloq61_typed_lpta_rpta_loadp(DELTA_ENTRY_lpta_rpta_loadp, state, EVV_AT(const delta_token *, (int32_t)AT(int32_t, -12)), EVV_AT(const delta_token *, STATE_AT(w45, -4)));
+    if(delta_lang_now()->id==RELOQ61_ARAGONESE) {
+        int pronunciation=reloq61_an_x_pronunciation(state,
+            RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,200),
+            RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,192));
+        if(pronunciation) {
+            const uint8_t sh[]={16},ks[]={3,12};
+            r0=reloq61_typed_lpta_rpta_loadp(DELTA_ENTRY_lpta_rpta_loadp,state,
+                EVV_AT(const delta_token *,RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,200)),
+                (const delta_token *)(base-40));
+            r0=reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s,state,4,
+                pronunciation==1?1:2,pronunciation==1?sh:ks,0);
+            if(r0!=0)goto L779;
+            goto L828;
+        }
+    }
     AT(int32_t, -12) = (1);
     r0 = reloq61_typed_setd_lookup(DELTA_ENTRY_setd_lookup, state, (int32_t)((int32_t)AT(int32_t, -12)), (int16_t)(104));
     if (r0 == 0) goto L255;
@@ -6046,17 +6061,6 @@ L255:;
     if (r0 != 0) goto L335;
     goto L828;
 L335:;
-    if(delta_lang_now()->id==RELOQ61_ARAGONESE &&
-       reloq61_an_x_is_sh(state,RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,200),
-                          RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,192))) {
-        const uint8_t sh_phone=16;
-        r0=reloq61_typed_lpta_rpta_loadp(DELTA_ENTRY_lpta_rpta_loadp,state,
-            EVV_AT(const delta_token *,RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,200)),
-            (const delta_token *)(base-40));
-        r0=reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s,state,4,1,&sh_phone,0);
-        if(r0!=0)goto L779;
-        goto L828;
-    }
     AT(int32_t, -16) = (STATE_AT(w64, -4));
     AT(int32_t, -12) = (3);
     AT(int32_t, -24) = (STATE_AT(w64, -4));
