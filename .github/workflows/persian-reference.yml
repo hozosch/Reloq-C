@@ -21,7 +21,7 @@ jobs:
           set -euo pipefail
           mkdir -p reference
           espeak-ng --version | tee reference/version.txt
-          for name in fa_noqte fa_qalam ar_qalam ar_noqta fa_statement fa_question fa_iran fa_stop_sequence; do
+          for name in fa_noqte fa_qalam ar_qalam ar_noqta fa_statement fa_question fa_iran fa_stop_sequence fa_ta; do
             case "$name" in
               fa_noqte) lang=fa; text='نقطه' ;;
               fa_qalam) lang=fa; text='قلم' ;;
@@ -31,6 +31,7 @@ jobs:
               fa_question) lang=fa; text='سلام دنیا؟' ;;
               fa_iran) lang=fa; text='ایران' ;;
               fa_stop_sequence) lang=fa; text='پا تا کار' ;;
+              fa_ta) lang=fa; text='تا' ;;
             esac
             printf '%s: %s\n' "$name" "$text" >> reference/phonemes.txt
             espeak-ng -v "$lang" -q --ipa=3 "$text" >> reference/phonemes.txt
