@@ -37,6 +37,18 @@ def main():
             checks += 1
         assert 'ks' in phonemes(an, 'xilofaga'), phonemes(an, 'xilofaga')
         checks += 1
+        for word in ('ya', 'ye', 'yo', 'yema', 'yera', 'yabos', 'yé'):
+            actual=phonemes(an, word)
+            assert 'Y' in actual and 'L' not in actual, (word, actual)
+            checks += 1
+        for word in ('llama', 'llebre', 'palla', 'viello'):
+            assert 'L' in phonemes(an, word), word
+            checks += 1
+        for qu, cu in (('quaranta','cuaranta'), ('quadro','cuadro')):
+            assert phonemes(an, qu)==phonemes(an, cu), (qu, cu)
+            checks += 1
+        assert phonemes(an, 'queso')==phonemes(es, 'queso')
+        checks += 1
         # Number words are chosen inside the existing numeric and character
         # rules, including hundreds and the combined twenties.
         for number, word in (('8', 'ueito'), ('9', 'nueu'), ('12', 'dotze'),
@@ -60,6 +72,25 @@ def main():
         assert '.1la' in phonemes(an, 'hola la')
         assert '.1mun' in phonemes(an, 'hola-mundo')
         checks += 2
+        # Independent function words must not inherit Spanish abbreviation
+        # expansion; they are weak in connected speech, but remain audible
+        # and stressed when isolated or explicitly accented.
+        for word in ('do', 'pa'):
+            actual=phonemes(an, word)
+            assert f'.1{word}' in actual and 'min' not in actual and 'por' not in actual, (word, actual)
+            checks += 1
+        for sentence, expected in (('do libro', '.0do'), ('pa casa', '.0pa'),
+                                   ("d'o mundo", '.0do'), ('ta casa', '.0ta'),
+                                   ('enta casa', '.0en.0ta'), ('bi ha', '.0bi'),
+                                   ('ne veyo', '.0ne'), ('as casas', '.0as'),
+                                   ('ro dia', '.0ro'), ('ra casa', '.0ra')):
+            actual=phonemes(an, sentence)
+            assert expected in actual, (sentence, actual)
+            checks += 1
+        assert '.1do' in phonemes(an, 'do. Casa')
+        assert '.1do' in phonemes(an, 'Dó ye?')
+        assert '.1dos' in phonemes(an, 'dos libros')
+        checks += 3
         # Source fragments remain in the same word; indices are delivered in
         # order and the complete PCM matches a single input fragment.
         whole, _ = render(an, ['sinyal y cabanyera.'])
@@ -71,7 +102,7 @@ def main():
         checks += 1
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory)
-            (folder / 'ARAmain.dic').write_bytes(b'probexword\tcasa\nsinyal\tcasa\n')
+            (folder / 'ARAmain.dic').write_bytes(b'probexword\tcasa\nsinyal\tcasa\nyema\tllama\n')
             (folder / 'ESPmain.dic').write_bytes(b'probexword\tnaranja\n')
             before = render(an, ['probexword.', EciIndex(7)])
             an.set_dictionary_path(folder)
@@ -80,8 +111,9 @@ def main():
                 an.set_parameter(DICTIONARY, flag)
                 assert render(an, ['probexword.', EciIndex(7)]) == render(an, ['casa.', EciIndex(7)])
                 assert render(an, ['sinyal.', EciIndex(7)]) == render(an, ['casa.', EciIndex(7)])
+                assert render(an, ['yema.', EciIndex(7)]) == render(an, ['llama.', EciIndex(7)])
                 assert render(es, ['probexword.', EciIndex(7)]) == render(es, ['naranja.', EciIndex(7)])
-                checks += 3
+                checks += 4
             an.set_dictionary_path(None)
             an.set_parameter(DICTIONARY, 0)
             assert render(an, ['probexword.', EciIndex(7)]) == before

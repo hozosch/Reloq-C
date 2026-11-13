@@ -25,6 +25,8 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_eses61.h"
+#include "delta_lang.h"
+#include "reloq61_aragonese.h"
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -4461,6 +4463,9 @@ L1863:;
     AT(int32_t, -28) = ((int32_t)AT(int32_t, -4));
     AT(int32_t, -20) = (RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 208));
     AT(int32_t, -24) = (RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 200));
+    if(delta_lang_now()->id==RELOQ61_ARAGONESE &&
+       reloq61_an_suppress_spanish_abbr(state,RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,208),
+                                       RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,192)))goto L2320;
     r0 = reloq_call_eses61_abbr(state, (int32_t)(FIELD(0)), (int32_t)((int32_t)AT(int32_t, -20)), (int32_t)(RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 192)), (int32_t)((int32_t)AT(int32_t, -24)));
     if (r0 == 0) goto L1928;
     goto L2320;
