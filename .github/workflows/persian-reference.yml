@@ -1,0 +1,41 @@
+name: Persian and Arabic eSpeak reference
+on:
+  push:
+    branches: [codex/persian-reference-20261113]
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Install eSpeak NG
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt; fi
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update -qq
+          sudo apt-get -y --no-install-recommends install espeak-ng
+      - name: Generate reference speech and phonemes
+        env:
+          LC_ALL: C.UTF-8
+        run: |
+          set -euo pipefail
+          mkdir -p reference
+          espeak-ng --version | tee reference/version.txt
+          for name in fa_noqte fa_qalam ar_qalam ar_noqta; do
+            case "$name" in
+              fa_noqte) lang=fa; text='نقطه' ;;
+              fa_qalam) lang=fa; text='قلم' ;;
+              ar_qalam) lang=ar; text='قَلَم' ;;
+              ar_noqta) lang=ar; text='نُقْطَة' ;;
+            esac
+            printf '%s: %s\n' "$name" "$text" >> reference/phonemes.txt
+            espeak-ng -v "$lang" -q --ipa=3 "$text" >> reference/phonemes.txt
+            espeak-ng -v "$lang" -w "reference/$name.wav" "$text"
+          done
+          cat reference/phonemes.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: persian-espeak-reference
+          path: reference/
+          if-no-files-found: error
+          retention-days: 7
