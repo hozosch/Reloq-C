@@ -311,6 +311,118 @@ static size_t wordseg_character(const unsigned char *a,size_t n,size_t at,int ut
     return reloq_utf8_next(a,n,&end,c)==1?end:at;
 }
 
+/* A lowercase plural ending is part of an uppercase initialism, not a new
+ * CamelCase word. Leave its pronunciation to the native language rules. */
+static int wordseg_plural_acronym(const unsigned char *a,size_t begin,size_t end,int utf8)
+{
+    if(end<=begin||a[end-1]!='s')return 0;
+    size_t stem=end-1;
+    if(stem>begin&&a[stem-1]=='e')--stem;
+    unsigned letters=0;
+    for(size_t at=begin;at<stem;) {
+        uint32_t cp=0;size_t next=wordseg_character(a,stem,at,utf8,&cp);
+        if(next<=at)return 0;
+        unsigned flags=reloq_wordseg_category(cp);
+        if(flags&RELOQ_WORDSEG_UPPER)++letters;
+        else if(!(flags&RELOQ_WORDSEG_MARK))return 0;
+        at=next;
+    }
+    return letters>=2;
+}
+
+/* Detect a genuine case boundary before unknown-English segmentation can
+ * lowercase the whole token and erase the boundary. */
+static int wordseg_camel_boundary(const unsigned char *a,size_t begin,size_t end,int utf8)
+{
+    unsigned previous=0;size_t capitals=begin;
+    for(size_t at=begin;at<end;) {
+        uint32_t cp=0;size_t next=wordseg_character(a,end,at,utf8,&cp);
+        if(next<=at)return 0;
+        unsigned flags=reloq_wordseg_category(cp),following=0;size_t look=next;
+        while(look<end) {
+            uint32_t later=0;size_t after=wordseg_character(a,end,look,utf8,&later);
+            if(after<=look)return 0;
+            following=reloq_wordseg_category(later);
+            if(!(following&RELOQ_WORDSEG_MARK))break;
+            look=after;
+        }
+        if((flags&RELOQ_WORDSEG_UPPER)&&!(previous&RELOQ_WORDSEG_UPPER))capitals=at;
+        if((flags&RELOQ_WORDSEG_UPPER)&&at>begin&&
+           ((previous&RELOQ_WORDSEG_LOWER)||
+            ((previous&RELOQ_WORDSEG_UPPER)&&(following&RELOQ_WORDSEG_LOWER)&&
+             !wordseg_plural_acronym(a,capitals,end,utf8))))return 1;
+        if(!(flags&RELOQ_WORDSEG_MARK))previous=flags;
+        at=next;
+    }
+    return 0;
+}
+
+/* Avoid a full word pass on ordinary text when neither segmentation option
+ * is enabled. Only ASCII initialisms can use the native letter-name fix. */
+static int wordseg_maybe_plural_acronym(const unsigned char *a,size_t n)
+{
+    if(!memchr(a,'s',n))return 0;
+    for(size_t i=2;i<n;++i)if(a[i]=='s') {
+        size_t stem=i;
+        if(a[stem-1]=='e')--stem;
+        if(stem>=2&&a[stem-1]>='A'&&a[stem-1]<='Z'&&
+           a[stem-2]>='A'&&a[stem-2]<='Z')return 1;
+    }
+    return 0;
+}
+
+/* For a base the original voice already spells as individual letters,
+ * retain its actual letter names and attach the plural to the final one.
+ * Pronounceable acronyms (such as PAC and NASA) are intentionally skipped. */
+static int wordseg_initialism_plural_spr(int language,const unsigned char *word,size_t n,
+    unsigned char *out,size_t capacity,size_t *written)
+{
+    int english=language==0x10000||language==0x10001;
+    if(language!=0x40000&&!english)return 0;
+    if(n<3||n>33||word[n-1]!='s')return 0;
+    size_t stem_n=n-1;if(stem_n&&word[stem_n-1]=='e')--stem_n;
+    if(stem_n<2||stem_n>16)return 0;
+    for(size_t i=0;i<stem_n;++i)if(word[i]<'A'||word[i]>'Z')return 0;
+    /* German SMS has an unchanged plural (or colloquial SMSen); do not
+     * add the English sibilant plural syllable to SMSs or X-final stems.
+     * Keep the token intact for CamelCase and leave its pronunciation to
+     * the current voice. The English voices handle these spellings below. */
+    if(!english&&(word[stem_n-1]=='S'||word[stem_n-1]=='X'))return 0;
+    /* English already pluralizes most letter names correctly. A final S or X
+     * needs its own syllable, which the original engine currently loses. */
+    if(english&&word[stem_n-1]!='S'&&word[stem_n-1]!='X')return 0;
+    char stem[17],phonemes[4096];memcpy(stem,word,stem_n);stem[stem_n]=0;
+    struct reloq61_request q={.language=language,.annotations=1,.phonemes_only=1,
+        .voice={0,50,65,30,0,0,50,100},.text=stem,
+        .phonemes=phonemes,.phonemes_capacity=sizeof phonemes};
+    struct reloq61_result result;
+    if(reloq61_generate(&q,&result))return 0;
+    const char *parts[16],*ends[16],*at=phonemes;size_t count=0,stresses=0;
+    while((at=strstr(at,"`["))!=NULL) {
+        const char *end=strchr(at+2,']');if(!end||count==16)return 0;
+        for(const char *p=at+2;p<end;++p) {
+            if(*p=='`'||*p=='[')return 0;
+            if(*p=='.'&&p+1<end&&(p[1]=='1'||p[1]=='2'))++stresses;
+        }
+        parts[count]=at;ends[count]=end;++count;at=end+1;
+    }
+    if(!count||(count!=stem_n&&stresses<stem_n))return 0;
+    char last=ends[count-1]>parts[count-1]+2?ends[count-1][-1]:0;
+    if(!last)return 0;
+    const char *suffix=english?"Xz":strchr("sSzZ",last)?"@s":"s";
+    size_t suffix_n=strlen(suffix),used=0;
+    for(size_t i=0;i<count;++i) {
+        size_t part_n=(size_t)(ends[i]-parts[i]);
+        size_t need=part_n+1+(i+1==count?suffix_n:0)+(i?1:0);
+        if(need>=capacity-used)return 0;
+        if(i)out[used++]=' ';
+        memcpy(out+used,parts[i],part_n);used+=part_n;
+        if(i+1==count){memcpy(out+used,suffix,suffix_n);used+=suffix_n;}
+        out[used++]=']';
+    }
+    out[used]=0;*written=used;return 1;
+}
+
 /* Main and abbreviation entries are exact; Root entries are case-folded by
  * the language model and may cover normal English inflections. */
 static int wordseg_dictionary(void *dictionary,const unsigned char *word,size_t n,int english,
@@ -429,7 +541,8 @@ static int wordseg_input(unsigned char **text,size_t **source,size_t *length,int
 {
     struct reloq_wordseg_options options=reloq_wordseg_current();
     int english=(language==0x10000||language==0x10001);
-    if(!options.camel&&!(english&&options.english))return 0;
+    if(!options.camel&&!(english&&options.english)&&
+       (!(english||language==0x40000)||!wordseg_maybe_plural_acronym(*text,*length)))return 0;
     int family=language>>16,utf8=family==6||family==8||family==10||family==18;
     const unsigned char *a=*text;const size_t *map=*source,n=*length;
     struct german_shared_buffer b={0};int changed=0,spelling=0;
@@ -475,7 +588,19 @@ static int wordseg_input(unsigned char **text,size_t **source,size_t *length,int
             if(german_shared_append(&b,a+i,map+i,end-i,0))goto fail;
             i=end;continue;
         }
-        if(options.english&&english&&end-i<=32) {
+        int plural_acronym=wordseg_plural_acronym(a,i,end,utf8);
+        int camel_boundary=!plural_acronym&&wordseg_camel_boundary(a,i,end,utf8);
+        if(plural_acronym) {
+            size_t stem_n=end-i-1;
+            if(stem_n&&a[i+stem_n-1]=='e')--stem_n;
+            unsigned char spr[8192];size_t spr_n=0;
+            if(!wordseg_dictionary(dictionary,a+i,stem_n,english,utf8,abbreviations_disabled)&&
+               wordseg_initialism_plural_spr(language,a+i,end-i,spr,sizeof spr,&spr_n)) {
+                if(german_shared_append(&b,spr,NULL,spr_n,map[i]))goto fail;
+                changed=1;i=end;continue;
+            }
+        }
+        if(options.english&&english&&!plural_acronym&&!camel_boundary&&end-i<=32) {
             int ascii=1,upper=1;
             for(size_t j=i;j<end;++j) {
                 ascii&=(a[j]>='a'&&a[j]<='z')||(a[j]>='A'&&a[j]<='Z');
@@ -515,8 +640,8 @@ static int wordseg_input(unsigned char **text,size_t **source,size_t *length,int
                 changed=1;i=end;continue;
             }
         }
-        if(options.camel) {
-            size_t at=i;unsigned previous=0;
+        if(options.camel&&!plural_acronym) {
+            size_t at=i,capitals=i;unsigned previous=0;
             while(at<end) {
                 uint32_t c=0;size_t after=wordseg_character(a,end,at,utf8,&c);
                 if(after<=at)goto fail;
@@ -529,11 +654,27 @@ static int wordseg_input(unsigned char **text,size_t **source,size_t *length,int
                     if(!(following&RELOQ_WORDSEG_MARK))break;
                     look=after_later;
                 }
+                if((flags&RELOQ_WORDSEG_UPPER)&&!(previous&RELOQ_WORDSEG_UPPER))capitals=at;
                 if((flags&RELOQ_WORDSEG_UPPER)&&at>i&&
                     ((previous&RELOQ_WORDSEG_LOWER)||
-                     ((previous&RELOQ_WORDSEG_UPPER)&&(following&RELOQ_WORDSEG_LOWER)))) {
+                     ((previous&RELOQ_WORDSEG_UPPER)&&(following&RELOQ_WORDSEG_LOWER)&&
+                      !wordseg_plural_acronym(a,capitals,end,utf8)))) {
                     if(german_shared_append(&b,(const unsigned char *)" ",NULL,1,map[at]))goto fail;
                     changed=1;
+                    /* A CamelCase component can itself be a plural
+                     * initialism, as in myCDs or BlindURLs. Process it with
+                     * the same native rules after the case boundary. */
+                    if((previous&RELOQ_WORDSEG_LOWER)&&wordseg_plural_acronym(a,at,end,utf8)) {
+                        size_t stem_n=end-at-1;
+                        if(stem_n&&a[at+stem_n-1]=='e')--stem_n;
+                        unsigned char spr[8192];size_t spr_n=0;
+                        if(!wordseg_dictionary(dictionary,a+at,end-at,english,utf8,abbreviations_disabled)&&
+                           !wordseg_dictionary(dictionary,a+at,stem_n,english,utf8,abbreviations_disabled)&&
+                           wordseg_initialism_plural_spr(language,a+at,end-at,spr,sizeof spr,&spr_n)) {
+                            if(german_shared_append(&b,spr,NULL,spr_n,map[at]))goto fail;
+                            at=end;break;
+                        }
+                    }
                 }
                 if(german_shared_append(&b,a+at,map+at,after-at,0))goto fail;
                 if(!(flags&RELOQ_WORDSEG_MARK))previous=flags;

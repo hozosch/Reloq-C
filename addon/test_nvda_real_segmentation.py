@@ -15,6 +15,8 @@ def main():
     parser.add_argument('--addon', type=Path, required=True)
     parser.add_argument('--driver', type=Path,
                         help='use this candidate driver with the packaged native DLL')
+    parser.add_argument('--plugin', type=Path,
+                        default=Path(__file__).with_name('test_nvda_real_segmentation_plugin.py'))
     parser.add_argument('--work', type=Path, required=True)
     parser.add_argument('--diagnose', action='store_true')
     args = parser.parse_args()
@@ -33,8 +35,7 @@ def main():
         bundle.extractall(target)
     if args.driver:
         shutil.copy2(args.driver, target / 'synthDrivers' / 'reloqC' / '__init__.py')
-    shutil.copy2(Path(__file__).with_name('test_nvda_real_segmentation_plugin.py'),
-                 target / 'globalPlugins' / 'reloqSegmentationProbe.py')
+    shutil.copy2(args.plugin, target / 'globalPlugins' / 'reloqSegmentationProbe.py')
     (profile / 'nvda.ini').write_text('[general]\nplayStartAndExitSounds = False\n[speech]\nsynth = silence\n',encoding='utf8')
     result, log = work / 'result.json', work / 'nvda.log'
     env = dict(os.environ, RELOQ_SEGMENTATION_PROBE_RESULT=str(result),
@@ -42,7 +43,9 @@ def main():
     process = subprocess.Popen([str(args.nvda.resolve()), '--minimal', '--no-sr-flag',
         '--debug-logging', '--config-path=' + str(profile), '--log-file=' + str(log)], env=env)
     try:
-        deadline = time.monotonic() + 120
+        # The complete issue #34/#39/#40 matrix uses the real speech manager,
+        # both English dialects and the stock/empty in-memory builtin dictionary.
+        deadline = time.monotonic() + 600
         while time.monotonic() < deadline and not result.exists():
             if process.poll() is not None: raise RuntimeError(f'NVDA exited early: {process.returncode}')
             time.sleep(.1)

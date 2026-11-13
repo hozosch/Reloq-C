@@ -84,6 +84,18 @@ def inspect(module):
     assert [vars(value) for value in decoded]==[vars(value) for value in markers]
     assert module._parts(decoded,voice_tags=True)==module._parts(markers,voice_tags=True)
     print('PASS Remote JSON preserves protected tags, dictionary words and uppercase candidates',flush=True)
+    # A late-protected sequence must reach the Remote serializer with the
+    # public ECI command, never with the private preparation marker.
+    driver._voiceTags = True
+    with mock.patch.object(sys.modules['synthDriverHandler'], 'getSynth', return_value=driver):
+        protected = driver._prepare_speech_sequence(['vor `vv30Wort'])
+        driver._protect_before_speech(protected, symbolLevel=None, priority=0)
+    assert any(isinstance(value, module.EciTagCommand) for value in protected), protected
+    assert not any(isinstance(value, module._SpeechPreparationMarker) for value in protected), protected
+    decoded = serializer.deserialize(serializer.serialize(type='speak',sequence=protected))['sequence']
+    assert module._parts(decoded,voice_tags=True) == module._parts(protected,voice_tags=True)
+    driver._voiceTags = False
+    print('PASS Remote serializes the late-protected sequence without private markers',flush=True)
     tone_events=[];wave_events=[];sent_speech=[];wire=[]
     tone_decider=Signal();wave_decider=Signal()
     leader_tones=types.SimpleNamespace(beep=lambda hz,length,left,right:tone_events.append((hz,length,left,right)))

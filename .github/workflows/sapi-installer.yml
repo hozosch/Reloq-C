@@ -105,6 +105,8 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "Dictionary source smoke test failed for $arch" }
             & "./test-$arch/Test-DictionarySources.exe"
             if ($LASTEXITCODE -ne 0) { throw "Personal dictionary snapshot test failed for $arch" }
+            & "./test-$arch/Test-DictionaryNotice.exe"
+            if ($LASTEXITCODE -ne 0) { throw "Dictionary notification test failed for $arch" }
           }
       - name: Check standard ECI dictionary switching and performance
         shell: pwsh
@@ -176,7 +178,7 @@ jobs:
           if ($p.ExitCode -ne 0) { throw "Upgrade failed: $($p.ExitCode)" }
           Test-StartLinks 'Stimmeinstellungen' 'Anleitung'
           $registered = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D3F8BA6E-1C62-4B0D-8A33-3840B77376AC}_is1'
-          if ($registered.DisplayName -ne 'ReLoq C SAPI5' -or $registered.DisplayVersion -ne '1.4.0') { throw 'SAPI application name or version metadata is incorrect' }
+          if ($registered.DisplayName -ne 'ReLoq C SAPI5' -or $registered.DisplayVersion -ne '1.4.1') { throw 'SAPI application name or version metadata is incorrect' }
           if ((Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'Dictionary edit lost during upgrade' }
           & ./sapi/test_japanese_sapi.ps1 -ReportPath dist/validation/japanese-results.json
           python -B sapi/test_dictionary_import_ui.py --directory $install

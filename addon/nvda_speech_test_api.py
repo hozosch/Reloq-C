@@ -66,7 +66,7 @@ def speech_api(driver, on_sequence):
     ns.update(characterProcessing=symbols, config=config, Spri=Spri, SpeechMode=SpeechMode,
         _speechState=types.SimpleNamespace(speechMode=SpeechMode.talk, isPaused=False),
         filter_speechSequence=sys.modules["speech.extensions"].filter_speechSequence,
-        pre_speech=types.SimpleNamespace(notify=lambda **kw: None),
+        pre_speech=sys.modules["speech.extensions"].pre_speech,
         getCurrentLanguage=lambda: driver._languages[driver._selectedLanguage].locale,
         languageHandling=types.SimpleNamespace(shouldMakeLangChangeCommand=lambda: True),
         logBadSequenceTypes=lambda sequence: None, CHUNK_SEPARATOR="  ",

@@ -61,7 +61,9 @@ jobs:
         with:
           persist-credentials: false
       - name: Check dictionary snapshot management
-        run: python3 -B nvda/test_dictionary_manager.py
+        run: |
+          python3 -B nvda/test_dictionary_manager.py
+          python3 -B nvda/test_dictionary_update_ui.py
       - uses: actions/download-artifact@v4
         with:
           name: dictionary-snapshot
@@ -112,6 +114,7 @@ jobs:
           python3 -B addon/test_segmentation_eci.py --library eci/libreloq_eci.so
           python3 -B addon/test_uppercase_native.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_wordseg_native.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_acronyms_native.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_german_cup_native.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_italian_apostrophe_native.py --library eci/libreloq_eci.so
           gcc -std=gnu11 -O2 -fno-builtin-memcmp -ffunction-sections -fdata-sections -DEVV_ARENA=1 -DEVV_NO_BYTECODE -DRELOQ61_PARAMETERS_ONLY=1 -Ivendor/openevv61/include -Ivendor/openevv61/src -Ivendor/openevv61/src/delta -Ivendor/openevv61/src/port -Ivendor/openevv61/src/eci/util -Ivendor/openevv61/src/eci/sound -Ivendor/openevv61/src/eci/api -Ivendor/openevv61/src/eci/bridge -Ivendor/openevv61/src/eci/queue -Ivendor/openevv61/src/eci/synth -Iinclude tests/test_delta_comparison.c vendor/openevv61/src/delta/delta.c -Wl,--gc-sections,--wrap=memcmp -o /tmp/test-delta-comparison
@@ -238,11 +241,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download v1.2.1 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-1.2.1.nvda-addon' --dir previous-addon
-          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.2.1.nvda-addon --candidate dist/reloq-c-synth-x64-1.4.0.nvda-addon
+          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.2.1.nvda-addon --candidate dist/reloq-c-synth-x64-1.4.1.nvda-addon
       - name: Verify NVDA driver and offline dictionary startup
         run: |
           for language in en de; do
-            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.4.0.nvda-addon"))' "$language"
+            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.4.1.nvda-addon"))' "$language"
           done
       - uses: actions/upload-artifact@v4
         with:
@@ -253,7 +256,7 @@ jobs:
   nvda-windows:
     needs: nvda
     runs-on: windows-2022
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
@@ -265,11 +268,11 @@ jobs:
       - name: Verify packaged Windows core and NVDA integration
         shell: pwsh
         run: |
-          $addon = (Get-Item candidate/reloq-c-synth-x64-1.4.0.nvda-addon).FullName
+          $addon = (Get-Item candidate/reloq-c-synth-x64-1.4.1.nvda-addon).FullName
           python -c "import zipfile; z=zipfile.ZipFile(r'$addon'); assert z.testzip() is None; z.extract('synthDrivers/reloqC/eci.dll', 'candidate')"
           if ($LASTEXITCODE -ne 0) { throw 'Core extraction failed' }
           $dll = (Get-Item candidate/synthDrivers/reloqC/eci.dll).FullName
-          foreach ($test in @('nvda/test_eci_ptbr_numbers.py','nvda/test_eci_equalizer.py','nvda/test_eci_inflection_tags.py','nvda/test_eci_wpm_setting.py','nvda/test_eci_italian_apostrophe_native.py')) {
+          foreach ($test in @('nvda/test_eci_ptbr_numbers.py','nvda/test_eci_equalizer.py','nvda/test_eci_inflection_tags.py','nvda/test_eci_wpm_setting.py','nvda/test_eci_italian_apostrophe_native.py','nvda/test_eci_acronyms_native.py','nvda/test_eci_wordseg_native.py')) {
             python -B $test --library $dll
             if ($LASTEXITCODE -ne 0) { throw "$test failed" }
           }
@@ -290,10 +293,16 @@ jobs:
           $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
           $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
           if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
-          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.0.nvda-addon --work settings-results
+          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1.nvda-addon --work settings-results
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA settings probe failed' }
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.0.nvda-addon --work segmentation-results
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1.nvda-addon --work segmentation-results
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA dictionary and segmentation probe failed' }
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1.nvda-addon --plugin addon/test_nvda_real_issue40_plugin.py --work acronym-results
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA acronym and dictionary boundary probe failed' }
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1.nvda-addon --plugin addon/test_nvda_real_early_start_plugin.py --work early-start-results
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA early startup probe failed' }
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1.nvda-addon --plugin addon/test_nvda_real_dictionary_feedback_plugin.py --work dictionary-feedback-results
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA dictionary feedback probe failed' }
   collect:
     needs: [version, native-regressions, sapi, android, nvda, nvda-windows]
     if: needs.version.outputs.stable == 'true'

@@ -10,12 +10,14 @@ import ctypes
 import hashlib
 import json
 from pathlib import Path
+import re
 import sys
 import tempfile
 import threading
 import time
 import traceback
 import types
+import unicodedata
 import zipfile
 from unittest import mock
 
@@ -198,6 +200,54 @@ def main():
                             assert connected != original, compound
                     report["checks"] += 2
                 driver._wordSegmentation = False
+                # NVDA processes each string fragment separately. Exercise the
+                # real pinned symbol processor and stock builtin rules around
+                # protected acronyms, with both normalization modes. A missing
+                # space or sentence-ending dot changes the actual native PCM.
+                stock = [types.SimpleNamespace(pattern=p, compiled=re.compile(p),
+                         replacement=' ', type=1, caseSensitive=True) for p in (
+                             r'(?=[A-Z])(?<=[a-z])', r'(?=[A-Z][a-z])(?<=[A-Z])',
+                             r'(?=\d)(?<=[^\W\d])')]
+                dictionaries = {'builtin': stock, 'default': []}
+                handler = types.SimpleNamespace(dictionaries=dictionaries)
+                def dictionary(text):
+                    for entry in dictionaries['builtin']:
+                        text = entry.compiled.sub(entry.replacement, text)
+                    return text
+                handler.processText = dictionary
+                original_handler = api.speak.__globals__['speechDictHandler']
+                original_normalization = sys.modules['config'].conf['speech']['unicodeNormalization']
+                fixtures = (
+                    ('PACs and PDFs', 'packs and P D Effs'),
+                    ('my PACs. Next', 'my packs. Next'),
+                    ('PACs, PDFs and URLs', 'packs, P D Effs and U R Els'),
+                )
+                try:
+                    with mock.patch.dict(sys.modules, {'speechDictHandler': handler,
+                            'characterProcessing': api.symbols,
+                            'textUtils': types.SimpleNamespace(unicodeNormalize=lambda s: unicodedata.normalize('NFKC', s))}):
+                        api.speak.__globals__['speechDictHandler'] = handler
+                        for locale in ('en_US', 'en_GB'):
+                            driver.language = locale
+                            for word_seg, camel in ((False,False),(True,False),(False,True),(True,True)):
+                                driver._wordSegmentation, driver._camelCase = word_seg, camel
+                                for normalize in (False, True):
+                                    sys.modules['config'].conf['speech']['unicodeNormalization'] = normalize
+                                    for level in (0, 100, 200, 300):
+                                        for source, target in fixtures:
+                                            actual = run([source], level=level)
+                                            assert actual == run([target], level=level), (locale, word_seg, camel, normalize, level, source)
+                                            dictionaries['builtin'] = []
+                                            try:
+                                                assert actual == run([source], level=level), (locale, word_seg, camel, normalize, level, source, 'builtin')
+                                            finally:
+                                                dictionaries['builtin'] = stock
+                                            report['checks'] += 1
+                finally:
+                    api.speak.__globals__['speechDictHandler'] = original_handler
+                    sys.modules['config'].conf['speech']['unicodeNormalization'] = original_normalization
+                    driver.language = 'en_US'
+                    driver._wordSegmentation = driver._camelCase = False
                 # Exercise commas after real abbreviations through NVDA's
                 # symbol processor and the native abbreviation switch.
                 for enabled in (True, False):
@@ -389,7 +439,14 @@ def main():
                                     time.sleep((number % 4) * .004)
                                 driver.cancel()
                                 if number % 20 == 19:
-                                    assert run([recovery]) == reference, (repetition, rate, locale, number, 'recovery changed')
+                                    actual = run([recovery])
+                                    assert actual == reference, (repetition, rate, locale, number, 'recovery changed',
+                                        {'reference_bytes': len(reference), 'actual_bytes': len(actual),
+                                         'reference_sha256': hashlib.sha256(reference).hexdigest(),
+                                         'actual_sha256': hashlib.sha256(actual).hexdigest(),
+                                         'actual_ends_with_reference': actual.endswith(reference),
+                                         'actual_starts_with_reference': actual.startswith(reference),
+                                         'reference_starts_with_actual': reference.startswith(actual)})
                                     assert not errors, (repetition, rate, locale, errors)
                             report["checks"] += 84
                 # Use the actual settings manager, queue and NVDA symbol

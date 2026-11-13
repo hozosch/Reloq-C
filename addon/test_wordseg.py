@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'nvda'))
-from _reloq_wordseg import (WordSegmenter, dictionary_keys, split_camel,
+from _reloq_wordseg import (WordSegmenter, dictionary_keys, split_camel, builtin_acronym,
                             protected_native_spans, native_compound_spans, uppercase_candidates)
 
 
@@ -62,12 +62,22 @@ def main():
         assert 'cgroups' in roots and 'CGROUPS' in roots and 'cGroups' in roots
         assert split_camel('cGroups und meinTest', roots) == 'cGroups und mein Test'
     samples = {'meinWort': 'mein Wort', 'HTTPServer': 'HTTP Server',
+               'BlindRadio': 'Blind Radio', 'BlindRSS': 'Blind RSS',
+               'CDs': 'CDs', 'DVDs': 'DVDs', 'ROMs': 'ROMs', 'IDs': 'IDs',
+               'PDFs': 'PDFs', 'URLs': 'URLs', 'PACs': 'PACs', 'FAQs': 'FAQs',
+               'SMSs': 'SMSs', 'AGBs': 'AGBs', 'LKWs': 'LKWs', 'USBs': 'USBs',
+               'SOSes': 'SOSes', 'HTTPS': 'HTTPS', 'BlindCDs': 'Blind CDs',
+               'myURLs': 'my URLs', 'allePDFs': 'alle PDFs', 'IDServer': 'ID Server',
                'XMLHttpRequest': 'XML Http Request', 'StraßenName': 'Straßen Name',
                'δοκιμήΛέξη': 'δοκιμή Λέξη', 'приветМир': 'привет Мир',
                'a\u0308B': 'a\u0308 B', 'schon Richtig': 'schon Richtig'}
     for source, expected in samples.items():
         assert split_camel(source) == expected, (source, split_camel(source))
         assert split_camel(source, {source.casefold()}) == source
+    for word in ('CDs', 'SMSs', 'PACs', 'MP3', 'R2D2', 'CDs3'):
+        assert builtin_acronym(word), word
+    for word in ('CD', 'BlindRadio', 'iPhone', 'Version2', 'Wort'):
+        assert not builtin_acronym(word), word
     print('Word segmentation: case independence, multilingual camel case, and dictionary precedence passed')
 
 

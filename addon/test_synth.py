@@ -234,7 +234,11 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                     value = handler(value)
                 return value
 
-        fake_module("speech.extensions", filter_speechSequence=Filter())
+            def notify(self, **kwargs):
+                for handler in self.handlers[:]:
+                    handler(**kwargs)
+
+        fake_module("speech.extensions", filter_speechSequence=Filter(), pre_speech=Filter())
         fake_module("speech.commands", IndexCommand=IndexCommand,
                     BreakCommand=BreakCommand, PhonemeCommand=PhonemeCommand,
                     CharacterModeCommand=CharacterModeCommand,
@@ -429,8 +433,9 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert isinstance(result[0], guarded) and result[1] == "custom" and isinstance(result[2], guarded)
                 assert result[3].lang == "en-US" and result[4] == "nvda"
                 # Keep mixed-case spelling intact until the shared C core sees it.
-                builtin = [types.SimpleNamespace(compiled=re.compile(r"([a-z])([A-Z])"), replacement=r"\1 \2"),
-                           types.SimpleNamespace(compiled=re.compile(r"([A-Z])([A-Z][a-z])"), replacement=r"\1 \2")]
+                builtin = [types.SimpleNamespace(pattern=pattern, compiled=re.compile(pattern), replacement=" ", type=1)
+                           for pattern in (r"(?=[A-Z])(?<=[a-z])", r"(?=[A-Z][a-z])(?<=[A-Z])",
+                                           r"(?=\d)(?<=[^\W\d])")]
                 speech_dicts = fake_module("speechDictHandler", dictionaries={"builtin": builtin, "default": []})
                 driver._wordseg_keys = {0x40000: frozenset({"meinwort"}), 0x10000: frozenset()}
                 driver._camelCase = True
@@ -448,6 +453,110 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                             item = entry.compiled.sub(entry.replacement, item)
                     processed.append(item)
                 assert driver_module._parts(processed) == parts
+                # Recognized acronyms are protected across all switch
+                # combinations, while other CamelCase requires its option.
+                for lang, segment, camel in (("de-DE", False, False), ("de-DE", False, True),
+                                             ("de-DE", True, True),
+                                             ("en-US", False, False), ("en-US", False, True), ("en-US", True, False),
+                                             ("en-US", True, True)):
+                    driver._wordSegmentation, driver._camelCase = segment, camel
+                    words = ("CDs", "DVDs", "IDs", "PDFs", "URLs", "PACs", "FAQs", "SMSs", "MP3", "CDs3")
+                    if camel or (segment and lang == "en-US"):
+                        words += ("BlindCDs",)
+                    for word in words:
+                        result = driver._protect_tags([LangChangeCommand(lang), word])
+                        assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == word
+                                   for item in result), (lang, word, result)
+                        processed = []
+                        for item in result:
+                            if isinstance(item, str):
+                                for entry in builtin:
+                                    item = entry.compiled.sub(entry.replacement, item)
+                            processed.append(item)
+                        actual = "".join(part.text for part in driver_module._parts(processed)
+                                         if isinstance(part, driver_module.EciText))
+                        assert actual.strip() == word, (lang, word, actual)
+                # Personal NVDA dictionaries retain precedence.
+                entry = types.SimpleNamespace(pattern="CDs", replacement="Scheiben", type=0,
+                                              compiled=re.compile("CDs"))
+                speech_dicts.dictionaries["default"] = [entry]
+                result = driver._protect_tags(["CDs"])
+                assert any(isinstance(item, guarded) and item.enabled for item in result), result
+                assert not any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "CDs"
+                               for item in result), result
+                driver._wordSegmentation = driver._camelCase = False
+                assert driver._protect_tags(["CDs"]) == ["CDs"]
+                speech_dicts.dictionaries["default"] = []
+                saved_imports = driver._imported_dictionaries
+                class EmptyImported:
+                    records = ()
+                    def matches(self, *_args): return False
+                    def process(self, text, *_args): return text
+                driver._imported_dictionaries = EmptyImported()
+                driver._wordseg_keys = None
+                driver._wordSegmentation = driver._camelCase = False
+                result = driver._protect_tags(["CDs"])
+                assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "CDs"
+                           for item in result), result
+                assert driver._protect_tags(["normal text"]) == ["normal text"]
+                driver._wordseg_keys = {0x40000: frozenset({"meinwort"}), 0x10000: frozenset()}
+                assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "CDs"
+                           for item in driver._protect_tags(["CDs"]))
+                assert builtin[1].compiled.sub(builtin[1].replacement, "CDs") == "C Ds"
+                # The speech viewer receives original strings, and callers'
+                # lists remain unchanged when late protection is applied.
+                extensions = sys.modules["speech.extensions"]
+                original_sequence = ["CDs und Text"]
+                def copy_as_plain_list(sequence): return list(sequence)
+                extensions.filter_speechSequence.register(copy_as_plain_list)
+                prepared = extensions.filter_speechSequence.apply(original_sequence)
+                assert prepared is not original_sequence
+                viewer_text = ''.join(item for item in prepared if isinstance(item, str))
+                extensions.pre_speech.notify(speechSequence=prepared, symbolLevel=None, priority=0)
+                extensions.filter_speechSequence.unregister(copy_as_plain_list)
+                assert original_sequence == ["CDs und Text"] and viewer_text == "CDs und Text"
+                assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "CDs"
+                           for item in prepared), prepared
+                foreign = ["CDs"]
+                extensions.pre_speech.notify(speechSequence=foreign, symbolLevel=None, priority=0)
+                assert foreign == ["CDs"], foreign
+                active_driver[0] = object()
+                other_synth = ["CDs"]
+                assert extensions.filter_speechSequence.apply(other_synth) is other_synth
+                extensions.pre_speech.notify(speechSequence=other_synth, symbolLevel=None, priority=0)
+                assert other_synth == ["CDs"], other_synth
+                active_driver[0] = driver
+                # ECI dictionary entries with a stock split are also kept
+                # intact without enabling either segmentation option.
+                driver._wordseg_keys = {0x40000: frozenset({"meinwort"}), 0x10000: frozenset()}
+                assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "MeinWort"
+                           for item in driver._protect_tags(["MeinWort"]))
+                driver._camelCase = True
+                speech_dicts.dictionaries["builtin"] = []
+                assert not driver._nvda_builtin_splits_acronym("CDs")
+                assert not any(isinstance(item, driver_module.NativeDictionaryWord)
+                               for item in driver._protect_tags(["CDs"]))
+                speech_dicts.dictionaries["builtin"] = builtin
+                custom = types.SimpleNamespace(pattern="C Ds", replacement="Discs", type=0,
+                                               compiled=re.compile("C Ds"))
+                speech_dicts.dictionaries["builtin"] = builtin + [custom]
+                assert not driver._nvda_builtin_splits_acronym("CDs")
+                assert not any(isinstance(item, driver_module.NativeDictionaryWord)
+                               for item in driver._protect_tags(["CDs"]))
+                speech_dicts.dictionaries["builtin"] = builtin
+                # An add-on speech dictionary after builtin must remain in
+                # NVDA's pipeline even when it only matches the split form.
+                after = types.SimpleNamespace(pattern="C Ds", replacement="Discs", type=0,
+                                              compiled=re.compile("C Ds"))
+                definitions = [types.SimpleNamespace(enabled=True, source=types.SimpleNamespace(value="builtin"), dictionary=builtin),
+                               types.SimpleNamespace(enabled=True, source=types.SimpleNamespace(value="addon"), dictionary=[after])]
+                speech_dicts.listAvailableSpeechDictDefinitions = lambda: definitions
+                assert not driver._nvda_builtin_splits_acronym("CDs")
+                assert not any(isinstance(item, driver_module.NativeDictionaryWord)
+                               for item in driver._protect_tags(["CDs"]))
+                del speech_dicts.listAvailableSpeechDictDefinitions
+                driver._imported_dictionaries = saved_imports
+                driver._wordSegmentation, driver._camelCase = True, True
                 # NVDA gives object names and roles as separate text items.
                 # It adds a separator to text items but not to SynthCommands.
                 # Protecting a complete dictionary word must retain that
@@ -463,7 +572,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert "".join(part.text for part in driver_module._parts(processed)
                                if isinstance(part, driver_module.EciText)) == "MeinWort  Fenster  "
                 result = driver._protect_tags([LangChangeCommand("en-US"), "UsRdCt TmpFiles"])
-                assert [item.text for item in result if isinstance(item, driver_module.NativeDictionaryWord)][:2] == ["UsRdCt", "TmpFiles"], result
+                assert [item.text for item in result if isinstance(item, driver_module.NativeDictionaryWord) and item.text.strip()][:2] == ["UsRdCt", "TmpFiles"], result
                 driver._camelCase = False
                 result = driver._protect_tags([LangChangeCommand("en-US"), "FdOpen"])
                 assert any(isinstance(item, driver_module.NativeDictionaryWord) and item.text == "FdOpen" for item in result), result
@@ -908,6 +1017,28 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         finally:
                             fresh.terminate()
                     print("NVDA acoustic timing: defaults, legacy migration and save/reload passed")
+                    # NVDA may restore a non-default saved clock mask before
+                    # wx.App exists. wx.CallAfter would raise at that point;
+                    # loading the synthesizer must still succeed.
+                    no_app = types.ModuleType("wx")
+                    no_app.GetTopLevelWindows = lambda: []
+                    no_app.GetApp = lambda: None
+                    def unexpected_call_after(*_args, **_kwargs):
+                        raise AssertionError("wx.CallAfter requires an active app")
+                    no_app.CallAfter = unexpected_call_after
+                    early_profile = {"speech": {driver.name: {"language": "de_DE",
+                                      "voice": "1", "_acousticClockMask": 0}},
+                                     "audio": {"outputDevice": "default"}}
+                    config_api.conf = configuration_manager(early_profile).rootSection
+                    with mock.patch.dict(sys.modules, {"wx": no_app}):
+                        fresh = driver_module.SynthDriver()
+                        try:
+                            fresh.initSettings()
+                            assert fresh._acousticClockMask == 0
+                            assert fresh.language == "de_DE"
+                        finally:
+                            fresh.terminate()
+                    print("NVDA startup: saved timing mask works before wx.App exists")
                     profile = {"speech": {}, "audio": {"outputDevice": "default"}}
                     config_api.conf = configuration_manager(profile).rootSection
                     with mock.patch.object(driver_module.languageHandler, "getLanguage", return_value="de_DE"):
@@ -1128,6 +1259,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 if inspect_adapter is not None:
                     inspect_adapter(driver_module)
                 assert not sys.modules["speech.extensions"].filter_speechSequence.handlers
+                assert not sys.modules["speech.extensions"].pre_speech.handlers
         finally:
             sys.path.remove(str(path))
             for name in tuple(sys.modules):

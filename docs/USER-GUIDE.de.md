@@ -1,5 +1,9 @@
 # Eloquence C – Bedienungsanleitung
 
+## Version 1.4.1
+
+Camel-Case-Wörter und Mehrzahlformen von Akronymen werden zuverlässiger behandelt; Aussprachewörterbücher behalten Vorrang. Bei automatischen Wörterbuchaktualisierungen sagt NVDA das Ergebnis an, statt einen Dialog zu öffnen. Manuell gestartete Aktualisierungen zeigen weiterhin einen Dialog.
+
 ## Version 1.4.0
 
 Die Zahlen 12 und 19 verwenden auf Brasilianisch-Portugiesisch auch in größeren Zahlen die üblichen Vokale. ECI-Betonungsbefehle verwenden dieselbe Sprachmelodie wie der entsprechende Reglerwert.
@@ -125,7 +129,7 @@ Mit **Gemeinschaftswörterbücher für die Aussprache verwenden** ergänzt du De
 
 Unter **Wörterbuchquelle** kannst du zusätzlich **Alternative IBM-TTS-Wörterbücher** auswählen. Diese Quelle enthält derzeit US-englische und kastilisch-spanische Einträge, aber kein deutsches Wörterbuch. Beim ersten Gebrauch wird sie im Hintergrund heruntergeladen; eigene Dateien behalten Vorrang.
 
-Nach einer Aktualisierung erscheint ein Dialog mit der Zahl neuer, unterschiedlicher Einträge und neuer Wörterbuchdateien. Änderungen oder Entfernungen zählen nicht als Zugänge. Beim ersten Download werden die Gesamtzahlen angezeigt; falls der vorherige Stand nicht vergleichbar ist, weist der Dialog darauf hin. Online-Updates übernehmen derzeit einen festen Satz unterstützter Dateinamen; andere neu hinzugefügte Dateien werden nicht automatisch heruntergeladen.
+Nach einer manuell gestarteten Aktualisierung zeigt ein Dialog die Zahl neuer, unterschiedlicher Einträge und neuer Wörterbuchdateien. Bei einer automatischen Aktualisierung sagt NVDA das Ergebnis an, ohne einen Dialog zu öffnen. Änderungen oder Entfernungen zählen nicht als Zugänge. Beim ersten Download werden die Gesamtzahlen genannt; falls der vorherige Stand nicht vergleichbar ist, weist die Meldung darauf hin. Online-Updates übernehmen derzeit einen festen Satz unterstützter Dateinamen; andere neu hinzugefügte Dateien werden nicht automatisch heruntergeladen.
 
 Mit **Datei hinzufügen** wählst du ein NVDA- oder Eloquence-Wörterbuch und seine Sprache. Eine NVDA-Datei wird als eigene Kopie importiert, die du über die Liste bearbeiten kannst; die Originaldatei bleibt unverändert. Ein Eloquence-Wörterbuch bleibt an seinem bisherigen Ort. Bei mehreren Eloquence-Dateien haben spätere Dateien Vorrang; **OK** oder **Übernehmen** speichert ihre Auswahl.
 
