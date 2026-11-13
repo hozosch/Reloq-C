@@ -38,6 +38,31 @@ jobs:
             espeak-ng -v "$lang" -w "reference/$name.wav" "$text"
           done
           cat reference/phonemes.txt
+          python3 - <<'PYCODE'
+          import json, subprocess
+          cases = [
+              ('fa', s) for s in [
+                'ایران','تهران','سلام','دنیا','خدا','خوب','خانه','خواهر',
+                'خود','خواندن','خورشید','نقطه','قلم','قهوه','آقا','غذا',
+                'آغاز','باغ','مرد','امروز','کتاب','کار','پا','تا','ساعت',
+                'شما','کشور','فارسی','تنظیمات','انتخاب','دکمه','پنجره',
+                'پوشه','پرونده','جستجو','ویرایش','ذخیره','باز کردن','خروج',
+                'می‌روم','می روم','می‌خواهم','خانهٔ','خانۀ','ک','ق','خ',
+                '۱۲۳','۱۲','۰','سلام دنیا.','سلام دنیا؟','نسخه NVDA','Windows',
+              ]
+          ]
+          latin = ['salam','khane','khodahafez','iran','noqte','qalam','ghaza',
+                   'zendegi','ketab','khabar','shoma','cheshm','dust','man',
+                   'hello','Windows','father','off','open','NVDA']
+          cases += [(voice, text) for voice in ('fa','fa-latn','en-us') for text in latin]
+          with open('reference/phoneme-corpus.jsonl','w',encoding='utf8') as sink:
+              for voice,text in cases:
+                  args=['espeak-ng','-v',voice,'-q']
+                  ascii_ph=subprocess.check_output(args+['-x',text],text=True).strip()
+                  ipa_ph=subprocess.check_output(args+['--ipa=3',text],text=True).strip()
+                  sink.write(json.dumps({'voice':voice,'text':text,'phonemes':ascii_ph,'ipa':ipa_ph},ensure_ascii=False)+'\\n')
+          print('Wrote',len(cases),'Persian, Pinglish and English reference cases')
+          PYCODE
       - uses: actions/upload-artifact@v4
         with:
           name: persian-espeak-reference
