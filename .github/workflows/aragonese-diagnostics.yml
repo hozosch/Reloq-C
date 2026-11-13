@@ -1,0 +1,37 @@
+name: Aragonese short diagnostic
+on:
+  push:
+    branches: [codex/aragonese-diagnostics-20261113]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  check:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: aragonese-focused-candidate
+          run-id: 43518746804
+          github-token: ${{ github.token }}
+          path: candidate
+      - name: Inspect Aragonese dental allophones
+        shell: pwsh
+        run: |
+          $env:PYTHONPATH = 'nvda'
+          @'
+          import hashlib
+          from pathlib import Path
+          from _reloq_eci_direct import DirectEciEngine, PROCESS_TAGS, SAMPLE_RATE
+          from test_eci_german_clock_native import phonemes, render
+          engine = DirectEciEngine(Path('candidate/eci.dll').resolve(), dialect=0x130000, encoding='utf8', native_voice=True)
+          engine.set_parameter(PROCESS_TAGS, 1)
+          for rate in (1, 5):
+              engine.set_parameter(SAMPLE_RATE, rate)
+              for text in ('signal de numero', 'signal d\'o numero', 'signal do mundo', 'signal `[.0do] mundo', 'signal `[.0Do] mundo', 'final dia', 'final `[.1dya]', 'final `[.1Dya]'):
+                  pcm = render(engine, [text])[0]
+                  print(rate, repr(text), len(pcm), hashlib.sha256(pcm).hexdigest()[:12], repr(phonemes(engine,text)))
+          engine.close()
+          '@ | python -B -
+          if ($LASTEXITCODE -ne 0) { throw 'Diagnostic failed' }
