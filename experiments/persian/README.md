@@ -3,10 +3,12 @@
 ## Target architecture
 
 For the future Persian voice, retain Finnish as the general source of vowel
-qualities and sentence melody. Use German as the starting point for aspirated
-/p t k/ and the Ach-laut. The long back /A/ is the separately requested
-experiment: a 40% `father` / 60% `off` acoustic target, embedded in the
-Finnish path. The uvular consonant requires its own implementation.
+qualities and sentence melody, with the accepted Spanish-inspired question
+rise. The current listening choices use a 60%-duration native Finnish H
+after eligible /p t k/, the German Ach-laut and an adaptation of German L.
+The selected long back /A/ follows the earlier three-peak eSpeak-informed
+approximation in the Finnish path; short /æ/ uses Finnish ä. The selected
+uvular-release experiment still requires its own phoneme implementation.
 These are design choices for a Persian module; they do not change Finnish,
 German, or US voices in the normal build. The current hearing experiments use
 separate existing native language paths and have not yet assembled them into
@@ -274,6 +276,39 @@ python3 experiments/persian/test_finetuned_probe.py --previous /tmp/old-fa/libre
   --probe /tmp/fa-probe/libreloq_eci.so
 python3 experiments/persian/compare_finetuned_probe.py --library /tmp/fa-probe/libreloq_eci.so \
   --reference-dir /tmp/fa-reference --wav /tmp/persian-finetuned.wav
+```
+
+## German L rule in the Finnish listening probe
+
+The chosen long back vowel uses `RELOQ_FA_PROBE_A=1`, the earlier three-peak
+eSpeak-informed approximation. The user's preferred Finnish H is now
+`RELOQ_FA_PROBE_H=5`, which scales a real native H after eligible /p t k/ to
+60% of its full duration. An 80-ms H consequently becomes 48 ms.
+
+The former `RELOQ_FA_PROBE_L=1` kept Finnish's L rule and added frequency
+offsets. It was judged too sharp and is retained solely as a historical
+comparison. `RELOQ_FA_PROBE_L=2` instead generates a temporary adaptation of
+the actual German `ger_ph_l` rule. It maps its acoustic state slots, phone
+symbols, word-boundary fence and vowel-feature tests to the Finnish engine;
+in particular Finnish ä follows the German short-front-vowel branch, while
+Finnish a follows the analogous German low-a branch. The native Finnish
+timing, voice defaults, vowels and prosody remain in force. This is a probe,
+not a claim that switching languages yields identical waveforms or that all
+Persian phonotactic contexts have been validated.
+
+For matching German and Finnish phone sequences, the focused test compares
+the actual rule's formant targets, bandwidths, voicing and source level using
+optional internal traces, in addition to checking PCM isolation, rates,
+gender, accepted question tone, short ä and the 60% H. The annotated audio
+compares the German core, Finnish core and translated German rule in Salam,
+Qalam and other positions. Qalam still uses the deliberately narrow Q=6 test
+switch for a manually supplied Finnish /k/.
+
+```
+python3 experiments/persian/test_german_l_transfer.py --baseline eci/libreloq_eci.so \
+  --probe /tmp/fa-probe/libreloq_eci.so
+python3 experiments/persian/compare_german_l_transfer.py --library /tmp/fa-probe/libreloq_eci.so \
+  --reference-dir /tmp/fa-reference --wav /tmp/persian-german-l.wav
 ```
 
 ## 50% Finnish H, German-informed L and eSpeak vowel targets
