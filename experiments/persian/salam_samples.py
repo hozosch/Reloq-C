@@ -17,6 +17,8 @@ PERSIAN_PHRASE_FINAL_STRESS = SALAM + ' ' + DONYA_FINAL_STRESS
 # Compare Iran without the Finnish long-A marker and with final noun stress.
 # Keep the previous long-A example separately for a controlled hearing test.
 IRAN_FINAL_STRESS = "`[.0'i:'.1r'a'n]"
+IRAN_FINAL_STRESS_LONG_A = "`[.0'i:'.1r'a:'n]"
+DONYA_FINAL_STRESS_LONG_A = "`[.0do.1nj'a:']"
 
 # The private Q=6 probe treats this manually specified Finnish /k/ as the
 # selected uvular experiment. Both uppercase A phones are Finnish /ä/.
