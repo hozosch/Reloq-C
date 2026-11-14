@@ -1024,8 +1024,8 @@ static int persian_probe_spanish_rise(void)
 
 
 
-def prepare_vowel_duration_trace(work: Path) -> Path:
-    """Print the existing Finnish nucleus duration without modifying it."""
+def prepare_vowel_duration_probe(work: Path) -> Path:
+    """Trace Finnish timing and try eSpeak's relative A base in this probe."""
     name = 'delta_rules_c08_fifi.c'
     text = (PROVIDER / 'lang' / 'fifi' / name).read_text(encoding='utf8')
     begin = text.index('int32_t reloq_fifi_distribute_nucdur(')
@@ -1035,35 +1035,52 @@ def prepare_vowel_duration_trace(work: Path) -> Path:
     if section.count(marker) != 1:
         raise RuntimeError('Cannot locate Finnish nucleus duration')
     section = section.replace(marker, marker + r'''
-    if (getenv("RELOQ_FA_TRACE_NUC")) {
-        delta_state *d=state;
-        int32_t at=STATE(int32_t,w26),node=0;
-        if (at) {
-            int32_t *point=vmover(d,EVV_AT(int32_t *,at),2);
-            if (point) node=vgetsc(d,0,0,EVV_REF(point),2);
+    {
+        const char *mode=getenv("RELOQ_FA_PROBE_VOWEL");
+        int enabled=mode && mode[0]=='1' && !mode[1];
+        int tracing=getenv("RELOQ_FA_TRACE_NUC")!=NULL;
+        if (enabled || tracing) {
+            delta_state *d=state;
+            int32_t at=STATE(int32_t,w26),node=0;
+            if (at) {
+                int32_t *point=vmover(d,EVV_AT(int32_t *,at),2);
+                if (point) node=vgetsc(d,0,0,EVV_REF(point),2);
+            }
+            int phone=-1,stress=-1,length=-1,cls=-1;
+            if (node && !(*EVV_AT(int32_t *,node)&2)) {
+                void *fields=TFLDS(EVV_AT(void *,node));
+                phone=*(const unsigned char *)delta_record_field(&vstmtbl[2],0,fields);
+                cls=*(const unsigned char *)delta_record_field(&vstmtbl[2],1,fields);
+                int16_t stress16=0;
+                memcpy(&stress16,delta_record_field(&vstmtbl[2],7,fields),sizeof stress16);
+                stress=stress16;
+                length=*(const unsigned char *)delta_record_field(&vstmtbl[2],11,fields);
+            }
+            int32_t before=STATE(int32_t,f33);
+            /* eSpeak's Farsi source uses 200 vs 160 nominal length units
+               for back A vs front a, before its own context adjustments.
+               This optional 125% Finnish-nucleus approximation is a hearing
+               candidate, not an empirically fixed Persian duration law.
+               Explicit Finnish long-A test tags retain their original timing. */
+            if (enabled && phone==34 && cls==1 && length==1 && before>0) {
+                int64_t scaled=((int64_t)before*5+2)/4;
+                STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
+            }
+            if (tracing)
+                fprintf(stderr,"FA_NUC phone=%d class=%d stress=%d length=%d before=%d duration=%d\n",
+                        phone,cls,stress,length,(int)before,(int)STATE(int32_t,f33));
         }
-        int phone=-1,stress=-1,length=-1,cls=-1;
-        if (node && !(*EVV_AT(int32_t *,node)&2)) {
-            void *fields=TFLDS(EVV_AT(void *,node));
-            phone=*(const unsigned char *)delta_record_field(&vstmtbl[2],0,fields);
-            cls=*(const unsigned char *)delta_record_field(&vstmtbl[2],1,fields);
-            int16_t stress16=0;
-            memcpy(&stress16,delta_record_field(&vstmtbl[2],7,fields),sizeof stress16);
-            stress=stress16;
-            length=*(const unsigned char *)delta_record_field(&vstmtbl[2],11,fields);
-        }
-        fprintf(stderr,"FA_NUC phone=%d class=%d stress=%d length=%d duration=%d\n",
-                phone,cls,stress,length,(int)STATE(int32_t,f33));
     }
 ''', 1)
     text = text[:begin] + section + text[end:]
     include = '#include "reloq61_rule_calls_fifi.h"\n'
     if text.count(include) != 1:
-        raise RuntimeError('Cannot locate duration trace includes')
-    text = text.replace(include, include + '#include <stdlib.h>\n#include <stdio.h>\n', 1)
+        raise RuntimeError('Cannot locate duration probe includes')
+    text = text.replace(include, include + '#include <stdlib.h>\n#include <stdio.h>\n#include <stdint.h>\n', 1)
     dest = work / name
     dest.write_text(text, encoding='utf8')
     return dest
+
 
 
 def main() -> None:
@@ -1089,7 +1106,7 @@ def main() -> None:
     modified.extend(prepare_question_rise(work))
     modified.append(prepare_finnish_h(work))
     modified.append(prepare_auto_finnish_h(work))
-    modified.append(prepare_vowel_duration_trace(work))
+    modified.append(prepare_vowel_duration_probe(work))
     if args.dry_run:
         print('Prepared isolated source files:', work)
         return
