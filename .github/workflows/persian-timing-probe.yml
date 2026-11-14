@@ -43,8 +43,19 @@ jobs:
           key: persian-linux-gcc13-463c72658de0-v1
       - name: Install analysis dependencies
         run: python3 -m pip install numpy scipy
+      - uses: actions/cache/restore@v4
+        id: probe
+        with:
+          path: ${{ runner.temp }}/fa
+          key: persian-probe-gcc13-v1-${{ hashFiles('experiments/persian/build_native_probe.py') }}
       - name: Build isolated acoustic probe
+        if: steps.probe.outputs.cache-hit != 'true'
         run: python3 experiments/persian/build_native_probe.py --work-dir "$RUNNER_TEMP/fa" --jobs 2
+      - uses: actions/cache/save@v4
+        if: steps.probe.outputs.cache-hit != 'true'
+        with:
+          path: ${{ runner.temp }}/fa
+          key: persian-probe-gcc13-v1-${{ hashFiles('experiments/persian/build_native_probe.py') }}
       - name: Observe word boundaries and nucleus timings
         run: python3 experiments/persian/trace_word_edges_timing.py --library "$RUNNER_TEMP/fa/libreloq_eci.so"
       - name: Verify automatic L selection and isolation
