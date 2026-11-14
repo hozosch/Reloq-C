@@ -5,8 +5,8 @@
 For the future Persian voice, retain Finnish as the general source of vowel
 qualities and sentence melody. Use German as the starting point for aspirated
 /p t k/ and the Ach-laut. The long back /A/ is the separately requested
-experiment: start from the US `father` vowel and close it somewhat towards the
-eSpeak Persian vowel. The uvular consonant requires its own implementation.
+experiment: a 40% `father` / 60% `off` acoustic target, embedded in the
+Finnish path. The uvular consonant requires its own implementation.
 These are design choices for a Persian module; they do not change Finnish,
 German, or US voices in the normal build. The current hearing experiments use
 separate existing native language paths and have not yet assembled them into
@@ -151,3 +151,80 @@ python3 experiments/persian/test_refined_probe.py --baseline eci/libreloq_eci.so
 python3 experiments/persian/compare_refined_probe.py --library /tmp/fa-probe/libreloq_eci.so \
   --reference-dir /tmp/fa-reference --wav /tmp/persian-refined.wav
 ```
+
+## Selected sound and Latin-script experiments
+
+In the private test library, `RELOQ_FA_PROBE_A=2` selects the requested
+40% US `father` and 60% US `off` target. The two US rules start at nominal
+F1/F2/F3 750/1200/2440 Hz and 700/1050/2410 Hz respectively; interpolation
+therefore gives 720/1110/2422 Hz, F4=3600 Hz and B1=168 Hz. These are Klatt
+parameter targets, not an interpolation of recorded audio. They are applied
+to the existing Finnish /a/ while preserving its native coarticulation,
+inherited-value markers, other vowels, and sentence melody. For the Iran
+test, the selected vowel's steady-state first three formant targets are
+720/1110/2422 Hz.
+
+`RELOQ_FA_PROBE_Q=5` uses the selected Q release, Q4, with the release
+frication amplitude lowered by 3 dB. In initial `qalam`, the measured release
+RMS is approximately 3 dB lower, the timing is unchanged and the later vowel
+samples are unchanged. The normal Finnish scheduler suppresses the Q release
+in `noqte`; this private build inserts it ahead of a following /p t k/ while
+keeping the native stop timing. Source-spelling `q` is only a private
+experimental switch and is not a general Persian phoneme implementation.
+
+`RELOQ_FA_PROBE_X=1` substitutes the German /x/ rule's frication and formant
+targets into a temporary Finnish `G` phoneme slot. This is a first acoustic
+transfer, not a sample copy or a verified complete native /x/ phone; enabling
+it repurposes Finnish /ŋ/ and therefore must not change an ordinary Finnish
+voice. German-style aspirated /p t k/ have **not** yet been transferred into
+this Finnish experiment. Neither the private settings nor the later
+reference-stage Pinglish work constitute a selectable Persian voice.
+
+`RELOQ_FA_PROBE_RISE=1` selects the Spanish voice's low nuclear accent and
+high phrase and boundary tones for questions, retaining Finnish timing and
+the Finnish contour for statements. Its high boundary uses the Spanish
+10/30 pitch-unit increase according to break strength. This is a private
+approximation: Finnish currently classifies all example question marks
+alike. Persian yes/no questions often end high, while WH questions can fall;
+their distinction requires a Persian frontend and grammatical analysis. See
+[Sadat-Tehrani, Persian interrogatives](https://journals.dartmouth.edu/journals/xmlpage/1/article/389?htmlOnce=yes)
+and [Estebas-Vilaplana and Prieto, Castilian Spanish intonation](https://sp-tobi.upf.edu/sites/default/files/2024-07/estebas-prieto2010.pdf).
+
+The intended Latin-script routing has two explicit modes:
+
+* In ordinary Persian, an embedded Latin word uses ReLoq's US-English
+  frontend, as requested. It does not use eSpeak's separate English voice.
+* In explicit `fa-Latn`/Pinglish mode, Latin spellings use Persian rules.
+  For example, eSpeak's reference reads `khane` as `xane` and `ghaza` with
+  its `q1` phoneme. Some inputs are dictionary or English fallback cases;
+  a Latin word alone cannot reliably identify the intended language.
+
+`reference_espeak_1_51.jsonl` contains 114 reference entries generated with
+eSpeak NG 1.51 (`fa`, `fa-latn`, and `en-us`). The checked-out eSpeak rules
+used for research are from commit `688cb60368d6e0998f3632af8d1c3c2ad4191fc2`;
+the source checkout and reference engine version differ. eSpeak NG is
+GPL-3.0-or-later. The experimental `pinglish_candidate.c`, in the GPL root
+project and not in the MIT provider, follows its basic Latin letter and
+digraph rules and reports an *unstressed candidate* only. It deliberately
+defers unsupported contexts. A complete frontend still needs dictionary
+priority and exceptions, stress and duration, Persian-script rules, mixed
+text segmentation and conversion from these reference mnemonics to real
+ReLoq phones. The route and candidate APIs are not connected to the ECI,
+NVDA, SAPI5 or Android frontends.
+
+Focused checks and listening sample, using the separately built probe:
+
+```
+python3 experiments/persian/test_selected_probe.py --baseline eci/libreloq_eci.so \
+  --probe /tmp/fa-probe/libreloq_eci.so
+python3 experiments/persian/test_question_rise.py --library /tmp/fa-probe/libreloq_eci.so
+python3 experiments/persian/test_pinglish_candidate.py
+python3 experiments/persian/compare_selected_probe.py --library /tmp/fa-probe/libreloq_eci.so \
+  --reference-dir /tmp/fa-reference --wav /tmp/persian-selected.wav
+python3 experiments/persian/collect_espeak_corpus.py --output /tmp/fa-corpus.jsonl
+```
+
+The corpus collector prints the installed eSpeak version; save it alongside a
+new corpus so that results from a different version are not confused with the
+1.51 references. The sound checks cover several rates and genders, disabled
+settings and language isolation; they are not a perceptual certification.
