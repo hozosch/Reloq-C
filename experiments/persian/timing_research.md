@@ -71,3 +71,17 @@ Finnish-based acoustic experiment, not a selectable Persian language.
 - Produce a short German-labelled listening comparison once the runtime is
   available. Explicit phoneme tags are test constructions and do not imply
   that Persian text analysis or an installable voice is finished.
+
+## eSpeak 1.51 timing observation
+
+In the isolated eSpeak NG 1.51 diagnostic at 175 WPM, the event-to-event
+interval from the back-A phoneme marker to the next phoneme marker in
+`دنیا` was 134 ms when the word was spoken alone, versus 101 ms in
+`سلام دنیا.`. In the same two conditions, the corresponding A interval in
+`سلام` was 151 ms alone versus 90 ms before the following word. These
+intervals include the engine's definition of event positions and
+coarticulation; they are not manually segmented acoustic vowel boundaries
+and cannot be applied directly to another synthesizer. They do demonstrate
+substantial context dependence. Reproduce the observations with
+`python3 experiments/persian/trace_espeak_events.py` with libespeak-ng and
+its voice data installed.
