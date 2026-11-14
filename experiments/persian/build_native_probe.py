@@ -222,6 +222,60 @@ static void persian_probe_cluster_release(void *state)
     reloq61_submit_interval(state,STATE(int16_t,s72),STATE(int16_t,s442),onset,end);
     reloq61_submit_interval(state,STATE(int16_t,s66),STATE(int16_t,s430),onset,end);
 }
+
+static int32_t persian_probe_phone(delta_state *d, int32_t position, int back)
+{
+    if (!position) return 0;
+    void *point=back ? (void *)vmovel(d,EVV_AT(delta_node *,position),2)
+                     : (void *)vmover(d,EVV_AT(int32_t *,position),2);
+    if (!point) return 0;
+    int32_t node=vgetsc(d,back,0,EVV_REF(point),2);
+    return node && !(*EVV_AT(int32_t *,node)&2) ? node : 0;
+}
+
+static unsigned persian_probe_phone_field(int32_t node, int field)
+{
+    return *(const unsigned char *)delta_record_field(
+        &vstmtbl[2],field,TFLDS(EVV_AT(void *,node)));
+}
+
+static int persian_probe_is_q(void *state, int32_t position)
+{
+    delta_state *d=state;
+    if (!position) return 0;
+    delta_node *point=vmovel(d,EVV_AT(delta_node *,position),1);
+    if (!point) return 0;
+    int32_t node=vgetsc(d,1,0,EVV_REF(point),1);
+    if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
+    unsigned key=*(const unsigned char *)delta_record_field(
+        &vstmtbl[1],0,TFLDS(EVV_AT(void *,node)));
+    return key==25 || key==45;
+}
+
+static void persian_probe_stop_aspiration(void *state)
+{
+    const char *setting=getenv("RELOQ_FA_PROBE_STOPS");
+    if (!setting || setting[0]!='1' || setting[1]) return;
+    delta_state *d=state;
+    int32_t begin=STATE(int32_t,w60),end=STATE(int32_t,w61);
+    int32_t current=persian_probe_phone(d,end,1);
+    int32_t next=persian_probe_phone(d,end,0);
+    int32_t previous=persian_probe_phone(d,begin,1);
+    if (!current || !next || persian_probe_phone_field(next,1)!=1 ||
+        (previous && persian_probe_phone_field(previous,1)!=1)) return;
+    unsigned phone=persian_probe_phone_field(current,0);
+    if (phone<1 || phone>3 || (phone==3 && persian_probe_is_q(state,end))) return;
+    int32_t start=STATE(int32_t,f11);
+    if (start<0 || start>INT32_MAX-400000) return;
+    STATE(int32_t,f11)=start+400000;
+    /* A first approximation to the German /p t k/ AH levels is transferred
+       into the Finnish stream. Only initial and intervocalic positions are
+       targeted; the 40-ms extension is a listening hypothesis, not a
+       language-independent voice-onset-time rule. */
+    int16_t level=phone==1 ? 49 : phone==2 ? 47 : 45;
+    reloq61_submit_interval(state,STATE(int16_t,s65),0,start,start);
+    reloq61_submit_interval(state,STATE(int16_t,s65),level,start+50000,start+400000);
+}
 '''
 
 
@@ -285,7 +339,8 @@ def prepare_q_cluster(work: Path) -> Path:
     text = text.replace(include, include + '#include <stdlib.h>\n'
                         '#include "reloq61_acoustic_output.h"\n', 1)
     text = text.replace(marker, Q_CLUSTER_HELPER + '\n' + marker +
-                        '    persian_probe_cluster_release(state);\n', 1)
+                        '    persian_probe_cluster_release(state);\n'
+                        '    persian_probe_stop_aspiration(state);\n', 1)
     destination = work / name
     destination.write_text(text, encoding='utf8')
     return destination

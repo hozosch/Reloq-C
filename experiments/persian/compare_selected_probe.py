@@ -23,7 +23,8 @@ def main() -> None:
     parser.add_argument('--wav', required=True, type=Path)
     args = parser.parse_args()
     references = {name: reference_audio(args.reference_dir / f'{name}.wav')
-                  for name in ('fa_iran', 'fa_qalam', 'fa_noqte', 'fa_statement', 'fa_question')}
+                  for name in ('fa_iran', 'fa_qalam', 'fa_noqte', 'fa_statement',
+                               'fa_question', 'fa_stop_sequence')}
     german = DirectEciEngine(args.library.resolve(), dialect=0x40000, encoding='utf8', native_voice=True)
     finnish = DirectEciEngine(args.library.resolve(), dialect=0x90000, encoding='utf8', native_voice=True)
     spanish = DirectEciEngine(args.library.resolve(), dialect=0x20000, encoding='utf8', native_voice=True)
@@ -34,6 +35,7 @@ def main() -> None:
             engine.set_parameter(SAMPLE_RATE, 3)
             engine.set_parameter(PROCESS_TAGS, 1)
         for engine, tag in ((finnish, IRAN), (finnish, '`[.1Ga]'), (german, '`[.1xa]'),
+                            (finnish, '`[.1pa]'), (finnish, '`[.1ta]'), (finnish, '`[.1ka]'),
                             (finnish, '`[.0sa.1lam]'), (finnish, '`[.1do.0nja]')):
             if tag not in engine._phonemes_for_probe(tag):
                 raise RuntimeError('Native phoneme tag rejected: ' + tag)
@@ -51,9 +53,10 @@ def main() -> None:
             append(render(german, text))
 
         def native(title: str, engine: DirectEciEngine, text: str, *,
-                   a: int = 0, q: int = 0, x: int = 0, rise: int = 0) -> None:
+                   a: int = 0, q: int = 0, x: int = 0, rise: int = 0,
+                   stops: int = 0) -> None:
             label(title)
-            set_probe(a=a, q=q, x=x, rise=rise)
+            set_probe(a=a, q=q, x=x, rise=rise, stops=stops)
             append(render(engine, text))
 
         def ref(title: str, name: str) -> None:
@@ -81,7 +84,13 @@ def main() -> None:
         native('Finnische Basis mit übertragenem Ach-Laut und neuem A.',
                finnish, '`[.1Ga]', a=2, x=1)
 
-        label('Fünftens. Satzmelodie. Aussage und Frage bedeuten jeweils Hallo Welt.')
+        label('Fünftens. Behauchtes P, T und K vor einem Vokal.')
+        ref('Persisch, eSpeak.', 'fa_stop_sequence')
+        stops = '`[.1pa] `[.1ta] `[.1ka]'
+        native('Finnische Basis, bisher.', finnish, stops, a=2)
+        native('Finnische Basis mit Behauchung nach deutschem Vorbild.', finnish, stops, a=2, stops=1)
+
+        label('Sechstens. Satzmelodie. Aussage und Frage bedeuten jeweils Hallo Welt.')
         ref('Persisch, eSpeak. Aussage.', 'fa_statement')
         ref('Persisch, eSpeak. Frage.', 'fa_question')
         native('Finnische Basis, Aussage.', finnish, PHRASE + '.', a=2, rise=1)

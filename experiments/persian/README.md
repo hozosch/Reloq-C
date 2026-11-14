@@ -176,9 +176,14 @@ experimental switch and is not a general Persian phoneme implementation.
 targets into a temporary Finnish `G` phoneme slot. This is a first acoustic
 transfer, not a sample copy or a verified complete native /x/ phone; enabling
 it repurposes Finnish /ŋ/ and therefore must not change an ordinary Finnish
-voice. German-style aspirated /p t k/ have **not** yet been transferred into
-this Finnish experiment. Neither the private settings nor the later
-reference-stage Pinglish work constitute a selectable Persian voice.
+voice. `RELOQ_FA_PROBE_STOPS=1` adds a first German-informed aspiration
+experiment for /p t k/ before a vowel, initially or between vowels, while
+leaving the experimental `q` distinct. It uses the German rule's AH levels
+49/47/45 respectively and adds 40 ms before voicing. That timing is a
+listening hypothesis informed by the eSpeak comparison, not a fixed Persian
+voice-onset-time rule or a complete transfer of the German consonants.
+Neither the private settings nor the later reference-stage Pinglish work
+constitute a selectable Persian voice.
 
 `RELOQ_FA_PROBE_RISE=1` selects the Spanish voice's low nuclear accent and
 high phrase and boundary tones for questions, retaining Finnish timing and
@@ -218,6 +223,7 @@ Focused checks and listening sample, using the separately built probe:
 python3 experiments/persian/test_selected_probe.py --baseline eci/libreloq_eci.so \
   --probe /tmp/fa-probe/libreloq_eci.so
 python3 experiments/persian/test_question_rise.py --library /tmp/fa-probe/libreloq_eci.so
+python3 experiments/persian/test_stop_aspiration.py --library /tmp/fa-probe/libreloq_eci.so
 python3 experiments/persian/test_pinglish_candidate.py
 python3 experiments/persian/compare_selected_probe.py --library /tmp/fa-probe/libreloq_eci.so \
   --reference-dir /tmp/fa-reference --wav /tmp/persian-selected.wav

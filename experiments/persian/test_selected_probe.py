@@ -15,11 +15,11 @@ from listening import render
 from test_native_probe import IRAN
 
 KEYS = ('RELOQ_FA_PROBE_A', 'RELOQ_FA_PROBE_Q', 'RELOQ_FA_PROBE_X',
-        'RELOQ_FA_PROBE_US_A', 'RELOQ_FA_PROBE_RISE')
+        'RELOQ_FA_PROBE_US_A', 'RELOQ_FA_PROBE_RISE', 'RELOQ_FA_PROBE_STOPS')
 
 
-def set_probe(a: int = 0, q: int = 0, x: int = 0, rise: int = 0) -> None:
-    for key, value in zip(KEYS, (a, q, x, 0, rise)):
+def set_probe(a: int = 0, q: int = 0, x: int = 0, rise: int = 0, stops: int = 0) -> None:
+    for key, value in zip(KEYS, (a, q, x, 0, rise, stops)):
         os.environ[key] = str(value)
 
 
@@ -119,6 +119,18 @@ def main() -> None:
                             b = render(probe, word)
                             assert a != b and len(a) == len(b), ('cluster at speed', speed, word)
                             checks += 1
+                    probe.set_parameter(NATIVE_SPEED, 98)
+                    for text, only in (
+                        ('noqte', dict(a=2, q=5)),
+                        ('`[.1pa] `[.1ta] `[.1ka]', dict(a=2, stops=1)),
+                        ('`[.0sa.1lam] `[.1do.0nja]?', dict(a=2, rise=1)),
+                        ('`[.1Ga]', dict(a=2, x=1)),
+                    ):
+                        set_probe(**only)
+                        expected = render(probe, text)
+                        set_probe(a=2, q=5, x=1, rise=1, stops=1)
+                        assert render(probe, text) == expected, ('combined modes', text)
+                        checks += 1
             finally:
                 base.close()
                 probe.close()
