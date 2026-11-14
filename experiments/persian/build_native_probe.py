@@ -1010,7 +1010,9 @@ def prepare_vowel_duration_trace(work: Path) -> Path:
             void *fields=TFLDS(EVV_AT(void *,node));
             phone=*(const unsigned char *)delta_record_field(&vstmtbl[2],0,fields);
             cls=*(const unsigned char *)delta_record_field(&vstmtbl[2],1,fields);
-            memcpy(&stress,delta_record_field(&vstmtbl[2],7,fields),sizeof(int16_t));
+            int16_t stress16=0;
+            memcpy(&stress16,delta_record_field(&vstmtbl[2],7,fields),sizeof stress16);
+            stress=stress16;
             length=*(const unsigned char *)delta_record_field(&vstmtbl[2],11,fields);
         }
         fprintf(stderr,"FA_NUC phone=%d class=%d stress=%d length=%d duration=%d\n",
