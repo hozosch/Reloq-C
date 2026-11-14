@@ -118,6 +118,21 @@ A_PATCH = r'''
         if (STATE(int16_t,s455)>0) STATE(int16_t,s455)+=100;
         if (STATE(int16_t,s397)>0) STATE(int16_t,s397)+=b1;
     }
+    else if (fa_a_setting && !fa_a_setting[1] &&
+             (fa_a_setting[0]=='5' || fa_a_setting[0]=='6')) {
+        /* Finnish /a/ mixed with the US off /c/ targets: 50/50 or 25/75.
+           Preserve native offsets and inherited-value markers. */
+        int balanced=fa_a_setting[0]=='5';
+        int f1=balanced ? 38 : 56, f3=balanced ? 95 : 142;
+        int f4=balanced ? 50 : 75, b1=balanced ? 40 : 60;
+        if (STATE(int16_t,s448)>0) STATE(int16_t,s448)+=f1;
+        if (STATE(int16_t,s449)>0) STATE(int16_t,s449)+=f1;
+        if (STATE(int16_t,s452)>0) STATE(int16_t,s452)-=f3;
+        if (STATE(int16_t,s453)>0) STATE(int16_t,s453)-=f3;
+        if (STATE(int16_t,s454)>0) STATE(int16_t,s454)+=f4;
+        if (STATE(int16_t,s455)>0) STATE(int16_t,s455)+=f4;
+        if (STATE(int16_t,s397)>0) STATE(int16_t,s397)+=b1;
+    }
 '''
 
 Q_PATCH = r'''
@@ -382,7 +397,7 @@ static int32_t persian_probe_h_phone(delta_state *d,int32_t at,int back)
 static int persian_probe_short_h(void *state,int32_t at)
 {
     const char *setting=getenv("RELOQ_FA_PROBE_H");
-    if (!setting || (setting[0]!='1' && setting[0]!='2') || setting[1]) return 0;
+    if (!setting || (setting[0]!='1' && setting[0]!='2' && setting[0]!='3') || setting[1]) return 0;
     delta_state *d=state;
     int32_t before=persian_probe_h_phone(d,at,1);
     int32_t after=persian_probe_h_phone(d,at,0);
@@ -402,7 +417,10 @@ static int persian_probe_short_h(void *state,int32_t at)
     block = block.replace(marker, r'''L1996:;
     if (persian_probe_short_h(state,AT(int32_t,-32))) {
         int16_t *duration=(int16_t *)(REG_P(p3)+2);
-        if (*duration>0) *duration=(int16_t)(((int)*duration*4+2)/5);
+        const char *setting=getenv("RELOQ_FA_PROBE_H");
+        if (*duration>0) *duration=setting[0]=='3'
+            ? (int16_t)(((int)*duration*7+5)/10)
+            : (int16_t)(((int)*duration*4+2)/5);
     }
     r0 = reloq61_typed_succeed''', 1)
     text = (text[:start] + block + text[end:]).replace(include, include + helper, 1)
@@ -446,7 +464,7 @@ static int persian_auto_h_is_q(delta_state *d,int32_t at)
 static void persian_auto_h_insert(void *state)
 {
     const char *setting=getenv("RELOQ_FA_PROBE_H");
-    if (!setting || setting[0]!='2' || setting[1]) return;
+    if (!setting || (setting[0]!='2' && setting[0]!='3') || setting[1]) return;
     delta_state *d=state;
     int32_t begin=STATE(int32_t,w60),end=STATE(int32_t,w61);
     int32_t previous=persian_auto_h_phone(d,begin,1);

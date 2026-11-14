@@ -11,6 +11,22 @@ static unsigned char lower(unsigned char c)
     return c >= 'A' && c <= 'Z' ? (unsigned char)(c + ('a' - 'A')) : c;
 }
 
+char fa_reference_a_to_finnish(char espeak_vowel)
+{
+    if (espeak_vowel == 'a') return 'A';
+    if (espeak_vowel == 'A') return 'a';
+    return 0;
+}
+
+static int is_salam(const char *word, size_t len)
+{
+    static const char canonical[] = "salam";
+    if (len != sizeof canonical - 1) return 0;
+    for (size_t i = 0; i < len; ++i)
+        if (lower((unsigned char)word[i]) != (unsigned char)canonical[i]) return 0;
+    return 1;
+}
+
 static const char *single(unsigned char c, unsigned char next)
 {
     static const char *const phones[26] = {
@@ -38,6 +54,15 @@ enum fa_latin_result fa_latin_candidate(enum fa_latin_mode mode,
     /* eSpeak also has letter names, dictionary entries and conditional
        English fallback. Do not pretend to resolve them with letter rules. */
     if (len == 1) return FA_LATIN_NEEDS_CONTEXT;
+    /* Pinglish often leaves long /A/ implicit. The greeting's Persian-script
+       reference is salAm; preserve the two vowel identities here. This
+       intentional exception differs from eSpeak 1.51's fa-Latn salam. */
+    if (is_salam(word, len)) {
+        static const char phones[] = "salAm";
+        if (capacity < sizeof phones) return FA_LATIN_OVERFLOW;
+        memcpy(out, phones, sizeof phones);
+        return FA_LATIN_CANDIDATE;
+    }
     for (size_t i = 0; i < len;) {
         unsigned char c = lower((unsigned char)word[i]);
         unsigned char n = i + 1 < len ? lower((unsigned char)word[i + 1]) : 0;

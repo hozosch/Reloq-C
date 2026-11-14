@@ -20,4 +20,8 @@ enum fa_latin_result {
 enum fa_latin_result fa_latin_candidate(enum fa_latin_mode mode,
                                          const char *word, char *out,
                                          size_t capacity);
+
+/* For the two eSpeak Persian A vowel mnemonics: short a -> Finnish A (ä),
+ * long/back A -> Finnish a. Returns 0 for all other input phones. */
+char fa_reference_a_to_finnish(char espeak_vowel);
 #endif

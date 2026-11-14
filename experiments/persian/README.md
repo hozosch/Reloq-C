@@ -211,7 +211,10 @@ the source checkout and reference engine version differ. eSpeak NG is
 GPL-3.0-or-later. The experimental `pinglish_candidate.c`, in the GPL root
 project and not in the MIT provider, follows its basic Latin letter and
 digraph rules and reports an *unstressed candidate* only. It deliberately
-defers unsupported contexts. A complete frontend still needs dictionary
+defers unsupported contexts. The greeting `salam` is an intentional Pinglish
+exception: it follows the Persian-script eSpeak reference `salAm`, not the
+different `fa-latn` 1.51 output; the English mode still routes the original
+Latin word to US English. A complete frontend still needs dictionary
 priority and exceptions, stress and duration, Persian-script rules, mixed
 text segmentation and conversion from these reference mnemonics to real
 ReLoq phones. The route and candidate APIs are not connected to the ECI,
@@ -271,4 +274,37 @@ python3 experiments/persian/test_finetuned_probe.py --previous /tmp/old-fa/libre
   --probe /tmp/fa-probe/libreloq_eci.so
 python3 experiments/persian/compare_finetuned_probe.py --library /tmp/fa-probe/libreloq_eci.so \
   --reference-dir /tmp/fa-reference --wav /tmp/persian-finetuned.wav
+```
+
+## Finnish/off mixture, shorter H and Salam
+
+`RELOQ_FA_PROBE_A=5` interpolates the Finnish /a/ and US `off` Klatt target
+parameters equally. Its nominal F1/F2/F3 are 663/1050/2505 Hz, with F4 3550
+and B1 160. `=6` uses 25% Finnish and 75% `off`, yielding approximately
+681/1050/2458 Hz, F4 3575 and B1 180. The native contextual offsets and
+sentinels remain in place. These are parameter mixtures, not mixes of recorded
+sound. All prior candidates remain available for comparison.
+
+`RELOQ_FA_PROBE_H=3` uses the same automatic native Finnish H transition as
+`=2`, shortened from 80% to 70% of its full native duration. In a context
+where the full H is 80 ms this makes the transition 56 ms, 8 ms shorter than
+the previous 64-ms candidate. The accepted `RELOQ_FA_PROBE_RISE=2` question
+contour is unchanged.
+
+The Persian-script reference `سلام` is `sal'Am` in eSpeak's Persian mnemonic
+phonemes: the first `a` is the short front vowel and the later `A` is the
+back vowel. In the temporary Finnish examples these map respectively to
+Finnish `A` (ä) and the separately tuned Finnish `a`, giving
+`` `[.0sA.1lam] ``. `fa_reference_a_to_finnish` records those two mappings for
+the experimental frontend. Its Pinglish candidate includes a narrow `salam`
+exception for the same contrast, because ordinary Pinglish spelling does not
+always identify long vowels. These are not yet connected to a selectable
+Persian module.
+
+```
+python3 experiments/persian/test_balanced_probe.py --baseline eci/libreloq_eci.so \
+  --probe /tmp/fa-probe/libreloq_eci.so
+python3 experiments/persian/test_pinglish_candidate.py
+python3 experiments/persian/compare_balanced_probe.py --library /tmp/fa-probe/libreloq_eci.so \
+  --reference-dir /tmp/fa-reference --wav /tmp/persian-balanced.wav
 ```

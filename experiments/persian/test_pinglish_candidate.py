@@ -21,6 +21,9 @@ def main() -> None:
         f = ctypes.CDLL(str(binary)).fa_latin_candidate
         f.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_void_p, ctypes.c_size_t]
         f.restype = ctypes.c_int
+        to_finnish = ctypes.CDLL(str(binary)).fa_reference_a_to_finnish
+        to_finnish.argtypes = [ctypes.c_char]
+        to_finnish.restype = ctypes.c_char
 
         def run(mode: int, word: str, capacity: int = 256) -> tuple[int, str]:
             buf = ctypes.create_string_buffer(capacity)
@@ -40,6 +43,11 @@ def main() -> None:
             # This stage deliberately excludes stress and duration. Compare
             # only the phone sequence, keeping multi-character phone names.
             unstressed = row['phonemes'].replace("'", '').replace(',', '')
+            if text.lower() == 'salam':
+                # Intentional Pinglish exception: follow the Persian-script
+                # eSpeak reference instead of fa-Latn's two short a vowels.
+                persian = next(r for r in corpus if r['voice'] == 'fa' and r['text'] == 'سلام')
+                unstressed = persian['phonemes'].replace("'", '').replace(',', '')
             assert (status, candidate) == (CANDIDATE, unstressed), (text, candidate, unstressed)
             compared += 1
         assert compared == 19, compared
@@ -47,13 +55,20 @@ def main() -> None:
         assert run(PINGLISH, 'GHaza') == (CANDIDATE, 'q1aza')
         assert run(PINGLISH, 'cheese') == (CANDIDATE, 'tSise')
         assert run(PINGLISH, 'city') == (CANDIDATE, 'sitj')
+        assert run(PINGLISH, 'salam') == (CANDIDATE, 'salAm')
+        assert run(PINGLISH, 'SALAM') == (CANDIDATE, 'salAm')
+        assert run(PINGLISH, 'salaam') == (CANDIDATE, 'salAm')
+        assert run(PINGLISH, 'salam', 5) == (OVERFLOW, '')
+        assert run(ENGLISH, 'salam') == (EN_US, '')
+        assert to_finnish(b'a') == b'A' and to_finnish(b'A') == b'a'
+        assert to_finnish(b'e') == b'\x00'
         for word in ('k', 'father', 'photo', 'zooo', 'a\'a', 'سلام', 'khane!'):
             assert run(PINGLISH, word) == (NEEDS_CONTEXT, ''), word
         assert run(PINGLISH, '') == (INVALID, '')
         assert run(PINGLISH, 'khane', 4) == (OVERFLOW, '')
         assert run(PINGLISH, 'khane', 5) == (CANDIDATE, 'xane')
         assert run(12, 'khane') == (INVALID, '')
-        print(f'Compared {compared} Pinglish phone sequences with eSpeak NG 1.51; '
+        print(f'Compared {compared} Pinglish phone sequences with eSpeak NG 1.51, including the intentional salam exception; '
               f'{len(samples)} normal-mode words route to US English.')
         print('Stress, dictionary exceptions and conversion to ReLoq phones remain unimplemented.')
 
