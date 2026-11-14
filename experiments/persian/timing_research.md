@@ -1,8 +1,9 @@
 # Persian listening probe: L and vowel-duration notes
 
-Status: research and test plan only. The combined L rule and revised vowel
-duration are not implemented yet. The existing binary remains a private
-Finnish-based acoustic experiment, not a selectable Persian language.
+Status: the mixed L rule is implemented in a private listening candidate;
+its focused tests and listening comparison are pending. Donyā and Iran now
+have additional explicit final-stress test examples. No general Persian text
+analysis or selectable Persian language is implemented.
 
 ## Decisions already made for the next probe
 
@@ -85,3 +86,16 @@ and cannot be applied directly to another synthesizer. They do demonstrate
 substantial context dependence. Reproduce the observations with
 `python3 experiments/persian/trace_espeak_events.py` with libespeak-ng and
 its voice data installed.
+
+## Internal timing observations
+
+The private Finnish diagnostic uses units of 1/10,000 ms for its nucleus
+target. With Donyā as a single explicit phone example, shifting stress from
+the first to the final syllable moved the back-A target from about 83.8 ms
+to 119.7 ms at the default setting. This does not by itself establish the
+physical duration of the vowel or prove the final result perceptually correct.
+The old Iran example explicitly marks both /i/ and /a/ as long Finnish
+phonemes and yielded an A nucleus target of approximately 183 ms; it also
+places stress on the first syllable. A second Iran example retains the vowel
+colour, removes the explicit Finnish long-A marker and places stress on the
+last syllable. These are listening probes, not a universal Persian rule.
