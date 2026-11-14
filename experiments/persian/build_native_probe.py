@@ -254,6 +254,39 @@ static void persian_probe_trace_l_edges(void *state,int32_t ltok,int32_t rtok)
 }
 '''
 
+
+FINNISH_L_WORD_FINAL = r'''
+/* Determine whether this Finnish phone is the last phone within its word.
+   The native scanner treats field 4 as a word fence. Save its registers and
+   fence state so the subsequent real L rule sees exactly its normal state. */
+static int persian_probe_l_word_final(void *state,int32_t token_ref)
+{
+    delta_state *d=state;
+    if (!d || !d->vars || d->nstmts<5 || d->nstmts>256 || !token_ref) return 0;
+    delta_vars *v=EVV_AT(delta_vars *,d->vars);
+    delta_tpos left=d->lpta,right=d->rpta;
+    unsigned char scan[8],index[256],marks[256],chars[256];
+    int8_t compared=v->compared_equal,fences=v->fence_count,testing=v->testing;
+    memcpy(scan,&v->scan_ptr,sizeof scan);
+    memcpy(index,EVV_AT(const void *,d->fence_index),d->nstmts);
+    memcpy(marks,EVV_AT(const void *,d->fence_marks),d->nstmts);
+    memcpy(chars,EVV_AT(const void *,d->fence_chars),d->nstmts);
+    v->testing=0;
+    const uint8_t word_fence[]={4};
+    fence(d,1,word_fence);
+    memset(EVV_AT(void *,d->fence_marks),0,d->nstmts);
+    lpta_loadp(d,EVV_AT(const delta_token *,token_ref));
+    int final=!setscan_r(d,2) && !testFldeq(d,2,0,21) &&
+              !advance_tok(d) && advance_tok(d);
+    d->lpta=left; d->rpta=right; memcpy(&v->scan_ptr,scan,sizeof scan);
+    v->compared_equal=compared; v->fence_count=fences; v->testing=testing;
+    memcpy(EVV_AT(void *,d->fence_index),index,d->nstmts);
+    memcpy(EVV_AT(void *,d->fence_marks),marks,d->nstmts);
+    memcpy(EVV_AT(void *,d->fence_chars),chars,d->nstmts);
+    return final;
+}
+'''
+
 FRENCH_L_ADAPTER = r'''
 /* Translate the French phone record's feature tests to Finnish records.
    Phones unavailable in this private probe simply cannot match. */
@@ -427,7 +460,7 @@ def prepare_german_l(work: Path) -> list[Path]:
         return persian_probe_german_l(state,p0);
 '''
     text = text.replace('#include <stdlib.h>\n', '#include <stdlib.h>\n#include <stdio.h>\n', 1)
-    text = text.replace(marker, FINNISH_L_CONTEXT + '\n' + FINNISH_L_EDGE_TRACE + '\n' + rule + '\n' + marker + redirect, 1)
+    text = text.replace(marker, FINNISH_L_CONTEXT + '\n' + FINNISH_L_EDGE_TRACE + '\n' + FINNISH_L_WORD_FINAL + '\n' + rule + '\n' + marker + redirect, 1)
     destination.write_text(text, encoding='utf8')
     native = prepare('dede61', 'delta_rules_c05_dede61.c', 'ger_ph_l',
                      'L2680', GERMAN_L_TRACE, '#include <stdio.h>\n', work)
@@ -519,7 +552,10 @@ def prepare_french_l(work: Path) -> list[Path]:
     if text.count(old) != 1:
         raise RuntimeError('Cannot locate the German L probe redirect')
     text = text.replace(old, old + '    if (fa_l && fa_l[0]==\'3\' && !fa_l[1])\n'
-                        '        return persian_probe_fr_l(state,p0);\n', 1)
+                        '        return persian_probe_fr_l(state,p0);\n'
+                        '    if (fa_l && fa_l[0]==\'4\' && !fa_l[1])\n'
+                        '        return persian_probe_l_word_final(state,STATE_AT(w60,-4)) ?\n'
+                        '            persian_probe_fr_l(state,p0) : persian_probe_german_l(state,p0);\n', 1)
     destination.write_text(text, encoding='utf8')
     native = prepare('frfr61', 'delta_rules_c08_frfr61.c', 'fren_ph_l', 'L4217',
                      GERMAN_L_TRACE.replace('DE_L', 'FR_L'), '#include <stdio.h>\n', work)
