@@ -9,7 +9,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'nvda'))
 from _reloq_eci_direct import DirectEciEngine, PROCESS_TAGS, SAMPLE_RATE, SAMPLE_RATES
 from listening import render
-from salam_samples import SALAM, QALAM, PERSIAN_PHRASE, IRAN_FINAL_STRESS
+from salam_samples import (SALAM, QALAM, PERSIAN_PHRASE, IRAN_FINAL_STRESS,
+                           IRAN_FINAL_STRESS_LONG_A, DONYA_FINAL_STRESS_LONG_A)
 from test_native_probe import IRAN
 from test_selected_probe import KEYS, set_probe
 
@@ -39,6 +40,8 @@ def main() -> None:
             ('final L before punctuation', 'sal?'),
             ('Iran, previous', IRAN),
             ('Iran, final stress and Finnish short-A', IRAN_FINAL_STRESS),
+            ('Iran, final stress and Finnish long-A', IRAN_FINAL_STRESS_LONG_A),
+            ('Donyā, final stress and Finnish long-A', DONYA_FINAL_STRESS_LONG_A),
             ('Donyā, first stress', '`[.1do.0nja]'),
             ('Donyā, final stress', '`[.0do.1nja]'),
             ('previous sentence', PERSIAN_PHRASE),
