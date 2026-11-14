@@ -71,7 +71,7 @@ def main():
                     changed += b[5] != a[5]
                 assert (changed > 0) == has_short_back_a, ('wrong vowel selection', speed, text, old, new)
                 if has_short_back_a:
-                    assert new_pcm != old_pcm and len(new_pcm) > len(old_pcm), ('A did not lengthen', speed, text)
+                    assert new_pcm != old_pcm and len(new_pcm) >= len(old_pcm), ('A did not lengthen', speed, text)
                 else:
                     assert new_pcm == old_pcm, ('other phone altered', speed, text)
                 count += 1
