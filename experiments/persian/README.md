@@ -403,3 +403,37 @@ python3 experiments/persian/test_pinglish_candidate.py
 python3 experiments/persian/compare_balanced_probe.py --library /tmp/fa-probe/libreloq_eci.so \
   --reference-dir /tmp/fa-reference --wav /tmp/persian-balanced.wav
 ```
+
+
+## Mixed L and contextual vowel-duration probe
+
+In the private listening build, `RELOQ_FA_PROBE_L=4` selects the adapted
+German rule for L inside a word and the adapted French rule for L at the end
+of a word. The Finnish phone scanner uses its word fence, so a following word
+does not turn a final L into an internal L, and a consonant within the same
+word does not make a preceding L final. The scanner state is restored before
+the acoustic rule runs. `L=2` and `L=3` remain available for comparison.
+H=5, A=1 and RISE=2 are unchanged.
+
+The Finnish kernel already adjusts nucleus duration for stress and phrase
+position. In one test at its default speed the nucleus for the back vowel in
+isolated Donyā was approximately 84 ms with the first syllable stressed and
+120 ms with the final syllable stressed. These are internal timing targets,
+not manually segmented acoustic measurements. Persian nouns generally take
+final stress, although exceptions depend on morphology. The new
+`PERSIAN_PHRASE_FINAL_STRESS` is an explicit phoneme test; the older
+`PERSIAN_PHRASE` remains for comparisons. These tags are not a complete
+Persian text analysis.
+
+Published evidence reports longer vowels in controlled conditions but
+strongly overlapping durations in spontaneous speech; it does not support a
+single universal A-vowel multiplier. No arbitrary long/short ratio is forced
+in this probe. The contextual evidence, eSpeak observations, limitations and
+next checks are documented in [timing_research.md](timing_research.md).
+
+```
+python3 experiments/persian/test_combined_l.py --baseline eci/libreloq_eci.so \
+  --probe /tmp/fa-probe/libreloq_eci.so
+python3 experiments/persian/compare_combined_l_timing.py --library /tmp/fa-probe/libreloq_eci.so \
+  --reference-dir /tmp/fa-reference --wav /tmp/persian-l-timing.wav
+```
