@@ -47,5 +47,21 @@ jobs:
         run: python3 experiments/persian/build_native_probe.py --work-dir "$RUNNER_TEMP/fa" --jobs 2
       - name: Observe word boundaries and nucleus timings
         run: python3 experiments/persian/trace_word_edges_timing.py --library "$RUNNER_TEMP/fa/libreloq_eci.so"
+      - name: Verify automatic L selection and isolation
+        run: python3 experiments/persian/test_combined_l.py --baseline eci/libreloq_eci.so --probe "$RUNNER_TEMP/fa/libreloq_eci.so"
+      - name: Install eSpeak NG for the comparison
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends espeak-ng
+      - name: Render the narrated listening sample
+        run: |
+          python3 experiments/persian/espeak_reference.py --output "$RUNNER_TEMP/reference"
+          python3 experiments/persian/compare_combined_l_timing.py --library "$RUNNER_TEMP/fa/libreloq_eci.so" --reference-dir "$RUNNER_TEMP/reference" --wav "out/persisch-l-vokallaenge.wav"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: persisch-l-vokallaenge
+          path: out/persisch-l-vokallaenge.wav
+          if-no-files-found: error
+          retention-days: 14
 
 # Reuse the ordinary Linux core; only the isolated test objects are rebuilt.
