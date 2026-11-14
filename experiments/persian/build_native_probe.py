@@ -43,7 +43,7 @@ static int persian_probe_source_q(void *state, int32_t position)
 static int persian_probe_setting(const char *name)
 {
     const char *value = getenv(name);
-    return value && value[0] >= '1' && value[0] <= '5' && !value[1]
+    return value && value[0] >= '1' && value[0] <= '6' && !value[1]
         ? value[0] - '0' : 0;
 }
 static int16_t persian_probe_lower(int16_t value, int offset, int minimum)
@@ -133,12 +133,39 @@ A_PATCH = r'''
         if (STATE(int16_t,s455)>0) STATE(int16_t,s455)+=f4;
         if (STATE(int16_t,s397)>0) STATE(int16_t,s397)+=b1;
     }
+    else if (fa_a_setting && fa_a_setting[0]=='7' && !fa_a_setting[1]) {
+        /* 0_3 middle-frame peaks 656/1000/2620/3040 Hz. Unlike the
+           earlier A=1 probe, also try the fourth peak. These are targets
+           for a different synthesizer, not a copied eSpeak spectrum. */
+        if (STATE(int16_t,s448)>0) STATE(int16_t,s448)+=31;
+        if (STATE(int16_t,s449)>0) STATE(int16_t,s449)+=31;
+        if (STATE(int16_t,s450)>0) STATE(int16_t,s450)-=50;
+        if (STATE(int16_t,s451)>0) STATE(int16_t,s451)-=50;
+        if (STATE(int16_t,s452)>0) STATE(int16_t,s452)+=20;
+        if (STATE(int16_t,s453)>0) STATE(int16_t,s453)+=20;
+        if (STATE(int16_t,s454)>0) STATE(int16_t,s454)-=460;
+        if (STATE(int16_t,s455)>0) STATE(int16_t,s455)-=460;
+    }
+'''
+
+L_PATCH = r'''
+    /* Test German's brighter /l/ targets in the Finnish trajectory. Keep
+       contextual offsets and negative inherited-value sentinels intact. */
+    const char *fa_l_setting=getenv("RELOQ_FA_PROBE_L");
+    if (fa_l_setting && fa_l_setting[0]=='1' && !fa_l_setting[1]) {
+        if (STATE(int16_t,s450)>0) STATE(int16_t,s450)+=400;
+        if (STATE(int16_t,s451)>0) STATE(int16_t,s451)+=400;
+        if (STATE(int16_t,s452)>0) STATE(int16_t,s452)+=400;
+        if (STATE(int16_t,s453)>0) STATE(int16_t,s453)+=400;
+        if (STATE(int16_t,s454)>0) STATE(int16_t,s454)+=450;
+        if (STATE(int16_t,s455)>0) STATE(int16_t,s455)+=450;
+    }
 '''
 
 Q_PATCH = r'''
     {
         int variant = persian_probe_setting("RELOQ_FA_PROBE_Q");
-        if (variant && persian_probe_source_q(state, STATE(int32_t,w61))) {
+        if (variant && (variant==6 || persian_probe_source_q(state, STATE(int32_t,w61)))) {
             /* Tentative lower resonances and reduced high-frequency burst.
                Different release and coarticulation from a velar K, but not
                yet a phonetically validated Persian uvular consonant. */
@@ -167,7 +194,7 @@ Q_PATCH = r'''
                    clear the first release's AF. The private uvular probe
                    still needs its own frication before the second stop. */
                 if (STATE(int16_t,s430)<=0) STATE(int16_t,s430)=60;
-                if (variant==5 && STATE(int16_t,s430)>3)
+                if (variant>=5 && STATE(int16_t,s430)>3)
                     STATE(int16_t,s430)-=3;
             }
         }
@@ -397,7 +424,7 @@ static int32_t persian_probe_h_phone(delta_state *d,int32_t at,int back)
 static int persian_probe_short_h(void *state,int32_t at)
 {
     const char *setting=getenv("RELOQ_FA_PROBE_H");
-    if (!setting || (setting[0]!='1' && setting[0]!='2' && setting[0]!='3') || setting[1]) return 0;
+    if (!setting || (setting[0]!='1' && setting[0]!='2' && setting[0]!='3' && setting[0]!='4') || setting[1]) return 0;
     delta_state *d=state;
     int32_t before=persian_probe_h_phone(d,at,1);
     int32_t after=persian_probe_h_phone(d,at,0);
@@ -418,9 +445,11 @@ static int persian_probe_short_h(void *state,int32_t at)
     if (persian_probe_short_h(state,AT(int32_t,-32))) {
         int16_t *duration=(int16_t *)(REG_P(p3)+2);
         const char *setting=getenv("RELOQ_FA_PROBE_H");
-        if (*duration>0) *duration=setting[0]=='3'
-            ? (int16_t)(((int)*duration*7+5)/10)
-            : (int16_t)(((int)*duration*4+2)/5);
+        if (*duration>0) {
+            if (setting[0]=='4') *duration=(int16_t)(((int)*duration+1)/2);
+            else if (setting[0]=='3') *duration=(int16_t)(((int)*duration*7+5)/10);
+            else *duration=(int16_t)(((int)*duration*4+2)/5);
+        }
     }
     r0 = reloq61_typed_succeed''', 1)
     text = (text[:start] + block + text[end:]).replace(include, include + helper, 1)
@@ -464,7 +493,7 @@ static int persian_auto_h_is_q(delta_state *d,int32_t at)
 static void persian_auto_h_insert(void *state)
 {
     const char *setting=getenv("RELOQ_FA_PROBE_H");
-    if (!setting || (setting[0]!='2' && setting[0]!='3') || setting[1]) return;
+    if (!setting || (setting[0]!='2' && setting[0]!='3' && setting[0]!='4') || setting[1]) return;
     delta_state *d=state;
     int32_t begin=STATE(int32_t,w60),end=STATE(int32_t,w61);
     int32_t previous=persian_auto_h_phone(d,begin,1);
@@ -473,7 +502,9 @@ static void persian_auto_h_insert(void *state)
     if (!stop || !vowel || persian_auto_h_field(vowel,1)!=1 ||
         (previous && persian_auto_h_field(previous,1)!=1)) return;
     unsigned phone=persian_auto_h_field(stop,0);
-    if (phone<1 || phone>3 || (phone==3 && persian_auto_h_is_q(d,end))) return;
+    const char *qsetting=getenv("RELOQ_FA_PROBE_Q");
+    int forced_q=qsetting && qsetting[0]=='6' && !qsetting[1];
+    if (phone<1 || phone>3 || (phone==3 && (forced_q || persian_auto_h_is_q(d,end)))) return;
     void *fields=TFLDS(EVV_AT(void *,vowel));
     if (*(const unsigned char *)delta_record_field(&vstmtbl[2],9,fields)!=0) return;
     const unsigned char after_h=1;
@@ -603,6 +634,7 @@ def main() -> None:
         work = Path(tempfile.mkdtemp(prefix='reloq-persian-probe-'))
     modified = [
         prepare('fifi', 'delta_rules_c17_fifi.c', 'stanfin_ph_a', 'L13086', A_PATCH, '', work),
+        prepare('fifi', 'delta_rules_c02_fifi.c', 'fin_ph_l', 'L24070', L_PATCH, '', work),
         prepare('fifi', 'delta_rules_c22_fifi.c', 'fin_ph_k', 'L5915', Q_PATCH, Q_HELPER, work),
         prepare('enus61', 'delta_rules_c06_enus61.c', 'ga_ph_a', 'L3010', US_A_PATCH, '', work),
     ]

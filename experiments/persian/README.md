@@ -276,6 +276,42 @@ python3 experiments/persian/compare_finetuned_probe.py --library /tmp/fa-probe/l
   --reference-dir /tmp/fa-reference --wav /tmp/persian-finetuned.wav
 ```
 
+## 50% Finnish H, German-informed L and eSpeak vowel targets
+
+`RELOQ_FA_PROBE_H=4` retains automatic native Finnish H after eligible /p t k/
+and sets that H to 50% of its original duration. A native 80-ms H becomes
+40 ms, compared with 56 ms at the earlier 70% setting. The actual H duration
+still depends on the native context and speed. Standalone H, stop clusters
+and selected Q are not aspirated by this test switch.
+
+`RELOQ_FA_PROBE_L=1` adjusts the Finnish L formant trajectories towards the
+German core's typical L targets (German nominal F2/F3/F4 1450/2900/3450 Hz;
+Finnish nominal 1050/2500/3000 Hz). It preserves native context adjustments
+and negative inheritance markers; this is an acoustic hypothesis, not a
+wholesale transfer of the German rule or a validated Persian L model.
+
+`RELOQ_FA_PROBE_A=7` applies the first three frequency offsets from `A=1`
+and additionally shifts the fourth Finnish /a/ target towards the eSpeak 0_3
+central frame. The nominal target is 656/1000/2620/3040 Hz. eSpeak's Swedish
+`A:` used in `jag` instead uses `aa_4`, whose central peaks are close, but not
+identical (664/1000/2720 Hz in its first marked nucleus). Neither this
+similarity nor matching four peak frequencies guarantees identical speech.
+
+The eSpeak `fa+klatt` and `fa+klatt2` samples can help inspect frame-to-Klatt
+parameter conversion. Their source waveforms, synthesis and tuning still
+differ from ReLoq's. They are diagnostic material and are not a target for
+matching overall voice quality; normal eSpeak Persian is the listening
+reference. `RELOQ_FA_PROBE_Q=6` is a deliberately restricted, private probe:
+it applies the selected Q=5 release to every manually entered Finnish /k/.
+The test example `QALAM` uses this to place the Q before two Finnish `ä`
+phones. Never enable it as a general language setting.
+
+To reproduce, build a private library as described above, then run
+`espeak_reference.py --include-klatt`, `test_light_l_probe.py` and
+`compare_light_l_probe.py`. The comparison script accepts `--swedish-reference`
+for the normal eSpeak `sv_jag.wav` sample. It requires the ordinary Persian
+reference clips via `--reference-dir`.
+
 ## Finnish/off mixture, shorter H and Salam
 
 `RELOQ_FA_PROBE_A=5` interpolates the Finnish /a/ and US `off` Klatt target
