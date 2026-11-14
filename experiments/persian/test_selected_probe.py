@@ -16,12 +16,12 @@ from test_native_probe import IRAN
 
 KEYS = ('RELOQ_FA_PROBE_A', 'RELOQ_FA_PROBE_Q', 'RELOQ_FA_PROBE_X',
         'RELOQ_FA_PROBE_US_A', 'RELOQ_FA_PROBE_RISE', 'RELOQ_FA_PROBE_STOPS',
-        'RELOQ_FA_PROBE_H', 'RELOQ_FA_PROBE_L')
+        'RELOQ_FA_PROBE_H', 'RELOQ_FA_PROBE_L', 'RELOQ_FA_PROBE_VOWEL')
 
 
 def set_probe(a: int = 0, q: int = 0, x: int = 0, rise: int = 0,
-              stops: int = 0, h: int = 0, l: int = 0) -> None:
-    for key, value in zip(KEYS, (a, q, x, 0, rise, stops, h, l)):
+              stops: int = 0, h: int = 0, l: int = 0, vowel: int = 0) -> None:
+    for key, value in zip(KEYS, (a, q, x, 0, rise, stops, h, l, vowel)):
         os.environ[key] = str(value)
 
 
