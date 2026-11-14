@@ -998,8 +998,24 @@ def prepare_vowel_duration_trace(work: Path) -> Path:
     if section.count(marker) != 1:
         raise RuntimeError('Cannot locate Finnish nucleus duration')
     section = section.replace(marker, marker + r'''
-    if (getenv("RELOQ_FA_TRACE_NUC"))
-        fprintf(stderr,"FA_NUC duration=%d\n",(int)STATE(int32_t,f33));
+    if (getenv("RELOQ_FA_TRACE_NUC")) {
+        delta_state *d=state;
+        int32_t at=STATE(int32_t,w26),node=0;
+        if (at) {
+            int32_t *point=vmover(d,EVV_AT(int32_t *,at),2);
+            if (point) node=vgetsc(d,0,0,EVV_REF(point),2);
+        }
+        int phone=-1,stress=-1,length=-1,cls=-1;
+        if (node && !(*EVV_AT(int32_t *,node)&2)) {
+            void *fields=TFLDS(EVV_AT(void *,node));
+            phone=*(const unsigned char *)delta_record_field(&vstmtbl[2],0,fields);
+            cls=*(const unsigned char *)delta_record_field(&vstmtbl[2],1,fields);
+            memcpy(&stress,delta_record_field(&vstmtbl[2],7,fields),sizeof(int16_t));
+            length=*(const unsigned char *)delta_record_field(&vstmtbl[2],11,fields);
+        }
+        fprintf(stderr,"FA_NUC phone=%d class=%d stress=%d length=%d duration=%d\n",
+                phone,cls,stress,length,(int)STATE(int32_t,f33));
+    }
 ''', 1)
     text = text[:begin] + section + text[end:]
     include = '#include "reloq61_rule_calls_fifi.h"\n'
