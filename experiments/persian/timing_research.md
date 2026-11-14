@@ -37,7 +37,7 @@ Finnish-based acoustic experiment, not a selectable Persian language.
    synthesizer. The two distributions overlap strongly; spontaneous speech
    is not a reason to ignore the controlled-speech result above.
 
-3. Sadeghi et al., “The phonetic realization of word stress in Persian”,
+3. Sadeghi, “Acoustic correlates of lexical stress in Persian”,
    ICPhS 2011,
    https://www.internationalphoneticassociation.org/icphs-proceedings/ICPhS2011/OnlineProceedings/RegularSession/Sadeghi/Sadeghi.pdf
    found stress-related effects on **syllable** duration. Their controlled
