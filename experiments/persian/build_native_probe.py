@@ -14,6 +14,7 @@ samples. This experiment is distributed under the project's GPL license.
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import os
 from pathlib import Path
 import re
@@ -1069,13 +1070,17 @@ def main() -> None:
     flags = ['-O3', '-flto=4', '-fPIC', '-std=gnu11', '-fno-strict-aliasing',
              '-ffp-contract=off', '-fvisibility=hidden', '-ffunction-sections', '-fdata-sections',
              '-DEVV_ARENA=1', '-DEVV_NO_BYTECODE', '-DEVV_ROM_JAJP', '-DRELOQ61_PARAMETERS_ONLY=1', '-Os']
-    compiled = []
-    for source in modified:
+    def compile_one(source: Path) -> Path:
         obj = work / (source.stem + '.o')
         print('Compiling', source.name, flush=True)
         subprocess.run(['cc', *flags, *['-I' + p for p in dirs], '-c', str(source), '-o', str(obj)],
                        cwd=PROVIDER, check=True)
-        compiled.append(obj)
+        return obj
+
+    # These disposable objects are independent. Keep archive updates and
+    # linking sequential, but avoid compiling every source in series.
+    with ThreadPoolExecutor(max_workers=args.jobs) as pool:
+        compiled = list(pool.map(compile_one, modified))
     private_archive = work / 'libreloq61.a'
     shutil.copyfile(archive, private_archive)
     subprocess.run(['gcc-ar', 'r', str(private_archive), *map(str, compiled)], check=True)
