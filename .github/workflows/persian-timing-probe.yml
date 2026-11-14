@@ -60,6 +60,8 @@ jobs:
         run: python3 experiments/persian/trace_word_edges_timing.py --library "$RUNNER_TEMP/fa/libreloq_eci.so"
       - name: Verify automatic L selection and isolation
         run: python3 experiments/persian/test_combined_l.py --baseline eci/libreloq_eci.so --probe "$RUNNER_TEMP/fa/libreloq_eci.so"
+      - name: Verify eSpeak-informed A duration
+        run: python3 experiments/persian/test_vowel_timing.py --baseline eci/libreloq_eci.so --probe "$RUNNER_TEMP/fa/libreloq_eci.so"
       - name: Install eSpeak NG for the comparison
         run: |
           sudo apt-get update -qq
