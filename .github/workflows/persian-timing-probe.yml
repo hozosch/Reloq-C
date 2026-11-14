@@ -1,0 +1,19 @@
+name: Persian focused listening probe
+on:
+  push:
+    branches: [codex/persian-timing-probe-20261114]
+    paths:
+      - experiments/persian/**
+      - .github/workflows/persian-timing-probe.yml
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check private probe source preparation
+        run: python3 experiments/persian/build_native_probe.py --dry-run
