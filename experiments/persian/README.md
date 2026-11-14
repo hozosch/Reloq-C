@@ -185,13 +185,13 @@ voice-onset-time rule or a complete transfer of the German consonants.
 Neither the private settings nor the later reference-stage Pinglish work
 constitute a selectable Persian voice.
 
-`RELOQ_FA_PROBE_RISE=1` selects the Spanish voice's low nuclear accent and
-high phrase and boundary tones for questions, retaining Finnish timing and
-the Finnish contour for statements. Its high boundary uses the Spanish
-10/30 pitch-unit increase according to break strength. This is a private
-approximation: Finnish currently classifies all example question marks
-alike. Persian yes/no questions often end high, while WH questions can fall;
-their distinction requires a Persian frontend and grammatical analysis. See
+`RELOQ_FA_PROBE_RISE=1` selects a low nuclear accent and high phrase and
+boundary tones for questions, retaining Finnish timing and the Finnish
+contour for statements. This was the first Spanish-inspired approximation;
+it did not reproduce the actual higher Spanish phrase target. Finnish
+currently classifies all example question marks alike. Persian yes/no
+questions often end high, while WH questions can fall; their distinction
+requires a Persian frontend and grammatical analysis. See
 [Sadat-Tehrani, Persian interrogatives](https://journals.dartmouth.edu/journals/xmlpage/1/article/389?htmlOnce=yes)
 and [Estebas-Vilaplana and Prieto, Castilian Spanish intonation](https://sp-tobi.upf.edu/sites/default/files/2024-07/estebas-prieto2010.pdf).
 
@@ -234,3 +234,36 @@ The corpus collector prints the installed eSpeak version; save it alongside a
 new corpus so that results from a different version are not confused with the
 1.51 references. The sound checks cover several rates and genders, disabled
 settings and language isolation; they are not a perceptual certification.
+
+## Later listening candidates
+
+In response to the listening feedback, `RELOQ_FA_PROBE_A=3` interpolates the
+US formant parameters at 20% `father` and 80% `off`, yielding nominal F1/F2/F3
+710/1080/2416 Hz and B1 184 Hz. `=4` uses the `off` endpoint for comparison,
+700/1050/2410 Hz and B1 200 Hz. Both retain the Finnish timing and
+coarticulation offsets, and are parameter interpolation rather than a mix of
+recorded sounds. The earlier `=2` remains available as a control.
+
+For `RELOQ_FA_PROBE_RISE=2`, the final Finnish phrase tone is moved to 70%
+of the target segment and raised by 70 native pitch units; the final boundary
+is adjusted separately. In the test phrase this yields the same 170/190
+native targets as the Spanish reference, and the terminal F0 can be measured
+against that voice. This is a transfer of two points in one test context, not
+a claim that Finnish and Spanish have identical pitch timing or that every
+Persian question should rise.
+
+`RELOQ_FA_PROBE_H=1` shortens the **native Finnish /h/** following /p t k/
+and before a vowel to 80% of its native duration. The hearing samples use
+explicit Finnish `pha`, `tha` and `kha` phoneme sequences; the user-facing
+Persian frontend does not yet insert these sequences automatically. This
+replaces neither existing Finnish speech nor the separate accepted Q and /x/
+experiments. The earlier German-informed `RELOQ_FA_PROBE_STOPS=1` remains as
+a comparison. Future Persian rules must select the intended allophones and
+map them to actual phones before this becomes a selectable voice.
+
+```
+python3 experiments/persian/test_finetuned_probe.py --previous /tmp/old-fa/libreloq_eci.so \
+  --probe /tmp/fa-probe/libreloq_eci.so
+python3 experiments/persian/compare_finetuned_probe.py --library /tmp/fa-probe/libreloq_eci.so \
+  --reference-dir /tmp/fa-reference --wav /tmp/persian-finetuned.wav
+```

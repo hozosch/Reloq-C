@@ -101,6 +101,23 @@ A_PATCH = r'''
         if (STATE(int16_t,s455)>0) STATE(int16_t,s455)+=100;
         if (STATE(int16_t,s397)>0) STATE(int16_t,s397)+=48;
     }
+    else if (fa_a_setting && !fa_a_setting[1] &&
+             (fa_a_setting[0]=='3' || fa_a_setting[0]=='4')) {
+        /* 20/80 father/off and pure off, respectively. Keep Finnish
+           contextual offsets and inherited-value markers, as above. */
+        int blended=fa_a_setting[0]=='3';
+        int f1=blended ? 85 : 75, f2=blended ? 30 : 0;
+        int f3=blended ? 184 : 190, b1=blended ? 64 : 80;
+        if (STATE(int16_t,s448)>0) STATE(int16_t,s448)+=f1;
+        if (STATE(int16_t,s449)>0) STATE(int16_t,s449)+=f1;
+        if (STATE(int16_t,s450)>0) STATE(int16_t,s450)+=f2;
+        if (STATE(int16_t,s451)>0) STATE(int16_t,s451)+=f2;
+        if (STATE(int16_t,s452)>0) STATE(int16_t,s452)-=f3;
+        if (STATE(int16_t,s453)>0) STATE(int16_t,s453)-=f3;
+        if (STATE(int16_t,s454)>0) STATE(int16_t,s454)+=100;
+        if (STATE(int16_t,s455)>0) STATE(int16_t,s455)+=100;
+        if (STATE(int16_t,s397)>0) STATE(int16_t,s397)+=b1;
+    }
 '''
 
 Q_PATCH = r'''
@@ -346,6 +363,54 @@ def prepare_q_cluster(work: Path) -> Path:
     return destination
 
 
+def prepare_finnish_h(work: Path) -> Path:
+    """Shorten a real Finnish /h/ after /p t k/ in the private comparison."""
+    name = 'delta_rules_c12_fifi.c'
+    text = (PROVIDER / 'lang' / 'fifi' / name).read_text(encoding='utf8')
+    include = '#include "reloq61_rule_calls_fifi.h"\n'
+    helper = r'''
+#include <stdlib.h>
+static int32_t persian_probe_h_phone(delta_state *d,int32_t at,int back)
+{
+    if (!at) return 0;
+    void *point=back ? (void *)vmovel(d,EVV_AT(delta_node *,at),2)
+                     : (void *)vmover(d,EVV_AT(int32_t *,at),2);
+    if (!point) return 0;
+    int32_t node=vgetsc(d,back,0,EVV_REF(point),2);
+    return node && !(*EVV_AT(int32_t *,node)&2) ? node : 0;
+}
+static int persian_probe_short_h(void *state,int32_t at)
+{
+    const char *setting=getenv("RELOQ_FA_PROBE_H");
+    if (!setting || setting[0]!='1' || setting[1]) return 0;
+    delta_state *d=state;
+    int32_t before=persian_probe_h_phone(d,at,1);
+    int32_t after=persian_probe_h_phone(d,at,0);
+    if (!before || !after) return 0;
+    void *a=TFLDS(EVV_AT(void *,before)),*b=TFLDS(EVV_AT(void *,after));
+    unsigned name=*(const unsigned char *)delta_record_field(&vstmtbl[2],0,a);
+    unsigned cls=*(const unsigned char *)delta_record_field(&vstmtbl[2],1,b);
+    return name>=1 && name<=3 && cls==1; /* /p t k/ before a vowel */
+}
+'''
+    start = text.index('int32_t reloq_fifi_get_h_dur(')
+    end = text.index('\nstatic int32_t evv_get_h_dur(', start)
+    block = text[start:end]
+    marker = 'L1996:;\n    r0 = reloq61_typed_succeed'
+    if block.count(marker) != 1 or text.count(include) != 1:
+        raise RuntimeError('Cannot locate unique Finnish H duration insertion')
+    block = block.replace(marker, r'''L1996:;
+    if (persian_probe_short_h(state,AT(int32_t,-32))) {
+        int16_t *duration=(int16_t *)(REG_P(p3)+2);
+        if (*duration>0) *duration=(int16_t)(((int)*duration*4+2)/5);
+    }
+    r0 = reloq61_typed_succeed''', 1)
+    text = (text[:start] + block + text[end:]).replace(include, include + helper, 1)
+    destination = work / name
+    destination.write_text(text, encoding='utf8')
+    return destination
+
+
 def prepare_question_rise(work: Path) -> list[Path]:
     """Transfer Spanish question tone choices into the private Finnish path."""
     outputs = []
@@ -356,8 +421,13 @@ extern int reloq61_english_is_question(void *, int32_t);
 static int persian_probe_question(void *state, int32_t phrase)
 {
     const char *setting=getenv("RELOQ_FA_PROBE_RISE");
-    return setting && setting[0]=='1' && !setting[1] &&
+    return setting && (setting[0]=='1' || setting[0]=='2') && !setting[1] &&
         reloq61_english_is_question(state,phrase);
+}
+static int persian_probe_spanish_rise(void)
+{
+    const char *setting=getenv("RELOQ_FA_PROBE_RISE");
+    return setting && setting[0]=='2' && !setting[1];
 }
 '''
     name = 'delta_rules_c29_fifi.c'
@@ -382,6 +452,33 @@ static int persian_probe_question(void *state, int32_t phrase)
     destination.write_text(text, encoding='utf8')
     outputs.append(destination)
 
+    # This copy already carries the independent Q patch. Extend it instead
+    # of replacing it from the original provider source.
+    name = 'delta_rules_c22_fifi.c'
+    destination = work / name
+    text = destination.read_text(encoding='utf8')
+    start = text.index('int32_t reloq_fifi_fin_phrase_tone(')
+    end = text.index('\nstatic int32_t evv_fin_phrase_tone(', start)
+    block = text[start:end]
+    phrase = 'L1809:;\n    r0 = reloq_call_fifi_insert_f0'
+    if block.count(phrase) != 1 or text.count(include) != 1:
+        raise RuntimeError('Cannot locate unique question phrase tone insertion')
+    block = block.replace(phrase, r'''L1809:;
+    if (persian_probe_spanish_rise() &&
+        persian_probe_question(state,STATE(int32_t,w52)) &&
+        STATE(int16_t,s280)==STATE(int16_t,s272)) {
+        /* Spanish's high phrase target occurs earlier and substantially
+           higher than Finnish's. In the reference phrase its targets are
+           170 at 70%, followed by 190 at 99%. */
+        AT(int16_t,-42)=70;
+        int target=AT(int16_t,-50)+70;
+        if (target>INT16_MAX) target=INT16_MAX;
+        AT(int16_t,-50)=(int16_t)target;
+    }
+    r0 = reloq_call_fifi_insert_f0''', 1)
+    text = (text[:start] + block + text[end:]).replace(include, include + helper, 1)
+    destination.write_text(text, encoding='utf8')
+
     name = 'delta_rules_c01_fifi.c'
     text = (PROVIDER / 'lang' / 'fifi' / name).read_text(encoding='utf8')
     start = text.index('int32_t reloq_fifi_fin_boundary_tone(')
@@ -397,9 +494,11 @@ static int persian_probe_question(void *state, int32_t phrase)
     block = block.replace(boundary, r'''L478:;
     if (persian_probe_question(state,STATE(int32_t,w52)) &&
         STATE(int16_t,s280)==STATE(int16_t,s273)) {
-        /* Spanish raises a high boundary by 10 or 30 pitch units according
-           to break strength. Preserve the Finnish position and timing. */
-        int target=persian_boundary_base+(STATE(int16_t,s274)>=2 ? 30 : 10);
+        /* Keep the earlier probe's 10/30 offsets for listening comparison.
+           The stronger probe follows the Spanish 10/20 boundary offsets. */
+        int increase=STATE(int16_t,s274)>=2 ?
+            (persian_probe_spanish_rise() ? 20 : 30) : 10;
+        int target=persian_boundary_base+increase;
         if (target>INT16_MAX) target=INT16_MAX;
         AT(int16_t,-34)=(int16_t)target;
     }
@@ -430,6 +529,7 @@ def main() -> None:
     modified.extend(prepare_x(work))
     modified.append(prepare_q_cluster(work))
     modified.extend(prepare_question_rise(work))
+    modified.append(prepare_finnish_h(work))
     if args.dry_run:
         print('Prepared isolated source files:', work)
         return
