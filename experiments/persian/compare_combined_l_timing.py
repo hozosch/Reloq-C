@@ -13,7 +13,8 @@ sys.path.insert(0, str(ROOT / 'nvda'))
 from _reloq_eci_direct import DirectEciEngine, PROCESS_TAGS, SAMPLE_RATE
 from listening import RATE, reference_audio, render
 from salam_samples import (SALAM, QALAM, PERSIAN_PHRASE,
-                           PERSIAN_PHRASE_FINAL_STRESS, DONYA_FINAL_STRESS, IRAN_FINAL_STRESS)
+                           PERSIAN_PHRASE_FINAL_STRESS, DONYA_FINAL_STRESS, IRAN_FINAL_STRESS,
+                           IRAN_FINAL_STRESS_LONG_A, DONYA_FINAL_STRESS_LONG_A)
 from test_native_probe import IRAN
 from test_selected_probe import KEYS, set_probe
 
@@ -66,7 +67,8 @@ def main() -> None:
 
         label('Donyâ einzeln. Vergleich der Betonung.')
         speak('Erste Silbe betont.', '`[.1do.0nja]')
-        speak('Letzte Silbe betont.', DONYA_FINAL_STRESS)
+        speak('Letzte Silbe betont, kürzere A Variante.', DONYA_FINAL_STRESS)
+        speak('Letzte Silbe betont, längere A Variante.', DONYA_FINAL_STRESS_LONG_A)
 
         label('L im Wortinneren.')
         speak('Salam.', SALAM)
@@ -78,7 +80,8 @@ def main() -> None:
         speak('Saal vor einem weiteren Wort.', '`[.1sal] `[.1sa]')
         reference('Iran, Espeak.', 'fa_iran')
         speak('Iran. Bisherige Länge und Betonung.', IRAN)
-        speak('Iran. Andere A Länge und Betonung auf der letzten Silbe.', IRAN_FINAL_STRESS)
+        speak('Iran. Bisheriges langes A, Betonung auf der letzten Silbe.', IRAN_FINAL_STRESS_LONG_A)
+        speak('Iran. Kürzere A Variante, Betonung auf der letzten Silbe.', IRAN_FINAL_STRESS)
         speak('Salam Donyâ als Frage.', PERSIAN_PHRASE_FINAL_STRESS + '?')
         label('Ende des Hörvergleichs.')
     finally:
