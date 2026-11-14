@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'nvda'))
 from _reloq_eci_direct import DirectEciEngine, GENDER, PROCESS_TAGS, SAMPLE_RATE
 from listening import render
-from salam_samples import SALAM, QALAM, PERSIAN_PHRASE
+from salam_samples import SALAM, QALAM, PERSIAN_PHRASE, IRAN_FINAL_STRESS
 from test_native_probe import IRAN
 from test_selected_probe import KEYS, set_probe
 
@@ -90,6 +90,7 @@ def main() -> None:
                             assert render(test, phrase + '?') == expected, ('question contour', phrase)
                             count += 1
                 if dialect == 0x90000:
+                    assert IRAN_FINAL_STRESS in test._phonemes_for_probe(IRAN_FINAL_STRESS), ('invalid Iran tag', IRAN_FINAL_STRESS)
                     test.set_parameter(SAMPLE_RATE, 3)
                     test.set_parameter(GENDER, 0)
                     for text, choices in (('sal sala', (3, 2)), ('sala sal', (2, 3))):
