@@ -45,7 +45,7 @@ def main() -> None:
                             for text in ('father', 'qalam', 'test?'):
                                 set_probe()
                                 expected = render(probe, text)
-                                set_probe(a=3, q=5, x=1, rise=2, h=1)
+                                set_probe(a=3, q=5, x=1, rise=2, h=2)
                                 assert render(probe, text) == expected, ('other language', language, rate, gender, text)
                                 checks += 1
                             continue
@@ -74,11 +74,38 @@ def main() -> None:
                             delta_ms = (len(full)-len(short))*500/SAMPLE_RATES[rate]
                             assert full != short and 12 <= delta_ms <= 20, ('short H', rate, gender, word, delta_ms)
                             checks += 1
+                        for phone in 'ptk':
+                            set_probe(a=3, h=1)
+                            explicit = render(probe, f'`[.1{phone}ha]')
+                            set_probe(a=3, h=2)
+                            automatic = render(probe, f'`[.1{phone}a]')
+                            assert automatic == explicit, ('automatic H', rate, gender, phone)
+                            checks += 1
                         for word in ('`[.1ha]', '`[.1spa]', '`[.1ta]', 'qalam', 'noqte'):
                             set_probe(a=3, q=5)
                             ordinary = render(probe, word)
                             set_probe(a=3, q=5, h=1)
                             assert render(probe, word) == ordinary, ('H control', rate, gender, word)
+                            checks += 1
+                        for word in ('`[.1ha]', '`[.1spa]', '`[.1akta]', 'qalam', 'noqte'):
+                            set_probe(a=3, q=5)
+                            ordinary = render(probe, word)
+                            set_probe(a=3, q=5, h=2)
+                            assert render(probe, word) == ordinary, ('automatic H control', rate, gender, word)
+                            checks += 1
+                        for word in ('`[.1apa]', '`[.1ata]', '`[.1aka]'):
+                            set_probe(a=3)
+                            ordinary = render(probe, word)
+                            set_probe(a=3, h=2)
+                            automatic = render(probe, word)
+                            assert automatic != ordinary and len(automatic) > len(ordinary), ('medial H', rate, gender, word)
+                            checks += 1
+                        for word in ('pata', 'talo', 'kala'):
+                            set_probe(a=3)
+                            ordinary = render(probe, word)
+                            set_probe(a=3, h=2)
+                            automatic = render(probe, word)
+                            assert automatic != ordinary and len(automatic) > len(ordinary), ('H in plain word', rate, gender, word)
                             checks += 1
                         for text in (PHRASE + '.', PHRASE + '?', 'salam donya.', 'salam donya?', 'Iran?'):
                             set_probe(a=3, rise=1)
@@ -124,17 +151,19 @@ def main() -> None:
                         shortened = render(probe, '`[.1tha]')
                         assert shortened != full and len(shortened) < len(full), ('H at speed', speed)
                         assert render(probe, PHRASE + '.') == statement, ('statement at speed', speed)
-                        checks += 2
+                        set_probe(a=3, h=2)
+                        assert render(probe, '`[.1ta]') == shortened, ('automatic H at speed', speed)
+                        checks += 3
                     probe.set_parameter(NATIVE_SPEED, 98)
                     for text, individually in (
                         ('noqte', dict(a=3, q=5)),
                         ('`[.1Ga]', dict(a=3, x=1)),
-                        ('`[.1tha]', dict(a=3, h=1)),
+                        ('`[.1ta]', dict(a=3, h=2)),
                         (PHRASE + '?', dict(a=3, rise=2)),
                     ):
                         set_probe(**individually)
                         expected = render(probe, text)
-                        set_probe(a=3, q=5, x=1, h=1, rise=2)
+                        set_probe(a=3, q=5, x=1, h=2, rise=2)
                         assert render(probe, text) == expected, ('combined probes', text)
                         checks += 1
             finally:

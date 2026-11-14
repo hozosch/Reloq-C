@@ -254,12 +254,17 @@ Persian question should rise.
 
 `RELOQ_FA_PROBE_H=1` shortens the **native Finnish /h/** following /p t k/
 and before a vowel to 80% of its native duration. The hearing samples use
-explicit Finnish `pha`, `tha` and `kha` phoneme sequences; the user-facing
-Persian frontend does not yet insert these sequences automatically. This
-replaces neither existing Finnish speech nor the separate accepted Q and /x/
-experiments. The earlier German-informed `RELOQ_FA_PROBE_STOPS=1` remains as
-a comparison. Future Persian rules must select the intended allophones and
-map them to actual phones before this becomes a selectable voice.
+explicit Finnish `pha`, `tha` and `kha` sequences for the full-length
+reference. In the private build, `RELOQ_FA_PROBE_H=2` automatically adds that
+shortened native H transition after a Finnish initial or intervocalic /p t k/
+followed by a vowel, excluding the experimental source-spelled Q. It leaves
+consonant clusters such as `noqte` alone. This is a narrow listening probe,
+not yet a Persian allophone system or a user-facing Persian frontend. It does
+not modify ordinary Finnish speech, Q or /x/ when the probe is disabled.
+The earlier German-informed `RELOQ_FA_PROBE_STOPS=1` remains as a comparison;
+do not combine it with the H probe. Future Persian rules must select the
+intended allophones and map them to actual phones before this becomes a
+selectable voice.
 
 ```
 python3 experiments/persian/test_finetuned_probe.py --previous /tmp/old-fa/libreloq_eci.so \

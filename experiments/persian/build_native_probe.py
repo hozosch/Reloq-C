@@ -382,7 +382,7 @@ static int32_t persian_probe_h_phone(delta_state *d,int32_t at,int back)
 static int persian_probe_short_h(void *state,int32_t at)
 {
     const char *setting=getenv("RELOQ_FA_PROBE_H");
-    if (!setting || setting[0]!='1' || setting[1]) return 0;
+    if (!setting || (setting[0]!='1' && setting[0]!='2') || setting[1]) return 0;
     delta_state *d=state;
     int32_t before=persian_probe_h_phone(d,at,1);
     int32_t after=persian_probe_h_phone(d,at,0);
@@ -406,6 +406,68 @@ static int persian_probe_short_h(void *state,int32_t at)
     }
     r0 = reloq61_typed_succeed''', 1)
     text = (text[:start] + block + text[end:]).replace(include, include + helper, 1)
+    destination = work / name
+    destination.write_text(text, encoding='utf8')
+    return destination
+
+
+def prepare_auto_finnish_h(work: Path) -> Path:
+    """Insert Finnish H as a native transition feature in a private probe."""
+    name = 'delta_rules_c16_fifi.c'
+    text = (PROVIDER / 'lang' / 'fifi' / name).read_text(encoding='utf8')
+    include = '#include "reloq61_rule_calls_fifi.h"\n'
+    helper = r'''
+#include <stdlib.h>
+static int32_t persian_auto_h_phone(delta_state *d,int32_t at,int back)
+{
+    if (!at) return 0;
+    void *point=back ? (void *)vmovel(d,EVV_AT(delta_node *,at),2)
+                     : (void *)vmover(d,EVV_AT(int32_t *,at),2);
+    if (!point) return 0;
+    int32_t node=vgetsc(d,back,0,EVV_REF(point),2);
+    return node && !(*EVV_AT(int32_t *,node)&2) ? node : 0;
+}
+static unsigned persian_auto_h_field(int32_t node,int field)
+{
+    return *(const unsigned char *)delta_record_field(
+        &vstmtbl[2],field,TFLDS(EVV_AT(void *,node)));
+}
+static int persian_auto_h_is_q(delta_state *d,int32_t at)
+{
+    if (!at) return 0;
+    delta_node *point=vmovel(d,EVV_AT(delta_node *,at),1);
+    if (!point) return 0;
+    int32_t node=vgetsc(d,1,0,EVV_REF(point),1);
+    if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
+    unsigned name=*(const unsigned char *)delta_record_field(
+        &vstmtbl[1],0,TFLDS(EVV_AT(void *,node)));
+    return name==25 || name==45;
+}
+static void persian_auto_h_insert(void *state)
+{
+    const char *setting=getenv("RELOQ_FA_PROBE_H");
+    if (!setting || setting[0]!='2' || setting[1]) return;
+    delta_state *d=state;
+    int32_t begin=STATE(int32_t,w60),end=STATE(int32_t,w61);
+    int32_t previous=persian_auto_h_phone(d,begin,1);
+    int32_t stop=persian_auto_h_phone(d,end,1);
+    int32_t vowel=persian_auto_h_phone(d,STATE(int32_t,w63),0);
+    if (!stop || !vowel || persian_auto_h_field(vowel,1)!=1 ||
+        (previous && persian_auto_h_field(previous,1)!=1)) return;
+    unsigned phone=persian_auto_h_field(stop,0);
+    if (phone<1 || phone>3 || (phone==3 && persian_auto_h_is_q(d,end))) return;
+    void *fields=TFLDS(EVV_AT(void *,vowel));
+    if (*(const unsigned char *)delta_record_field(&vstmtbl[2],9,fields)!=0) return;
+    const unsigned char after_h=1;
+    vstmtbl[2].put[9](fields,&after_h);
+    EVV_AT(delta_owner *,d->owner)->changed=1;
+}
+'''
+    marker = 'int32_t reloq_fifi_get_fin_trans_dur(void *state, int32_t p0, int32_t p1)\n{\n'
+    if text.count(include) != 1 or text.count(marker) != 1:
+        raise RuntimeError('Cannot locate Finnish H transition insertion')
+    text = text.replace(include, include + '#include <stdlib.h>\n', 1)
+    text = text.replace(marker, helper + '\n' + marker + '    persian_auto_h_insert(state);\n', 1)
     destination = work / name
     destination.write_text(text, encoding='utf8')
     return destination
@@ -530,6 +592,7 @@ def main() -> None:
     modified.append(prepare_q_cluster(work))
     modified.extend(prepare_question_rise(work))
     modified.append(prepare_finnish_h(work))
+    modified.append(prepare_auto_finnish_h(work))
     if args.dry_run:
         print('Prepared isolated source files:', work)
         return

@@ -67,15 +67,15 @@ def main() -> None:
         ref('Persisch, eSpeak.', 'fa_iran')
         native('Bisher, 40 Prozent father und 60 Prozent off.', finnish, IRAN, a=2)
         native('Neu, 20 Prozent father und 80 Prozent off.', finnish, IRAN, a=3)
-        native('Zum Vergleich, 100 Prozent off.', finnish, IRAN, a=4)
+        native('Zum Vergleich, die Formantwerte von off.', finnish, IRAN, a=4)
 
-        label('Zweitens. P, T und K. Die H-Laute sind einzeln in die Lautfolge eingesetzt.')
+        label('Zweitens. P, T und K mit finnischem H.')
         ref('Persisch, eSpeak.', 'fa_stop_sequence')
         bare = '`[.1pa] `[.1ta] `[.1ka]'
         with_h = '`[.1pha] `[.1tha] `[.1kha]'
         native('Bisheriger Behauchungsversuch.', finnish, bare, a=3, stops=1)
         native('Finnisches H, volle Länge.', finnish, with_h, a=3)
-        native('Finnisches H, leicht verkürzt auf 80 Prozent.', finnish, with_h, a=3, h=1)
+        native('Finnisches H, automatisch eingefügt und leicht verkürzt.', finnish, bare, a=3, h=2)
 
         label('Drittens. Frageanstieg. Der finnische und der spanische Vergleich verwenden dieselbe Lautfolge.')
         ref('Persisch, eSpeak.', 'fa_question')
