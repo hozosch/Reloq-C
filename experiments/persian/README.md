@@ -5,7 +5,7 @@
 For the future Persian voice, retain Finnish as the general source of vowel
 qualities and sentence melody, with the accepted Spanish-inspired question
 rise. The current listening choices use a 60%-duration native Finnish H
-after eligible /p t k/, the German Ach-laut and an adaptation of German L.
+after eligible /p t k/, the German Ach-laut and an adaptation of French L.
 The selected long back /A/ follows the earlier three-peak eSpeak-informed
 approximation in the Finnish path; short /æ/ uses Finnish ä. The selected
 uvular-release experiment still requires its own phoneme implementation.
@@ -276,6 +276,30 @@ python3 experiments/persian/test_finetuned_probe.py --previous /tmp/old-fa/libre
   --probe /tmp/fa-probe/libreloq_eci.so
 python3 experiments/persian/compare_finetuned_probe.py --library /tmp/fa-probe/libreloq_eci.so \
   --reference-dir /tmp/fa-reference --wav /tmp/persian-finetuned.wav
+```
+
+## French L rule in the Finnish listening probe
+
+`RELOQ_FA_PROBE_L=3` adapts the French France `fren_ph_l` rule and its
+`fren_lat_Fv` formant-transition rule to Finnish phoneme and feature records.
+The mapping distinguishes French acoustic fields, Finnish fields, and the
+French word-boundary fence. French short-front /E/ is matched to Finnish ä;
+the independently selected Finnish back A stays on `RELOQ_FA_PROBE_A=1`.
+The previous German L remains available as `L=2` for a fair listening contrast.
+
+This is a private listening probe with Finnish timing and voice settings.
+French's special voice-setting branch for L before /r/ is not transferred;
+Finnish has no equivalent to French /ɥ/ or nasal vowels in this experiment.
+The French /x/ context uses Finnish `G`, the temporary Persian /x/ slot:
+use `RELOQ_FA_PROBE_X=1` for such tests and do not interpret that slot as an
+ordinary Finnish /ŋ/ when the French L experiment is active.
+The user-confirmed native Finnish H remains `H=5`, or 60% of full H duration.
+
+```
+python3 experiments/persian/test_french_l_transfer.py --baseline eci/libreloq_eci.so \
+  --previous /tmp/old-fa/libreloq_eci.so --probe /tmp/fa-probe/libreloq_eci.so
+python3 experiments/persian/compare_french_l_transfer.py --library /tmp/fa-probe/libreloq_eci.so \
+  --reference-dir /tmp/fa-reference --wav /tmp/persian-french-l.wav
 ```
 
 ## German L rule in the Finnish listening probe

@@ -207,6 +207,74 @@ static unsigned persian_probe_l_next_phone(void *state)
 }
 '''
 
+FRENCH_L_ADAPTER = r'''
+/* Translate the French phone record's feature tests to Finnish records.
+   Phones unavailable in this private probe simply cannot match. */
+static int32_t persian_probe_fr_field(void *state, uint8_t st, uint8_t field, uint8_t value)
+{
+    if (st!=2) return reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq,state,st,field,value);
+    static const uint8_t names[]={
+        0,4,1,5,2,3,6,255,255,8,7,10,9,12,13,14,11,15,16,17,
+        255,255,255,19,21,22,23,255,34,34,29,31,27,24,28,25,33,
+        33,32,26,30,30,255,255,255,255,255,18,36
+    };
+    uint8_t tofield=field, target=value;
+    if (field==0) {
+        if (value>=sizeof(names) || names[value]==255) return 1;
+        /* Finnish G represents /x/ only when the private x probe is active. */
+        if (value==47) {
+            const char *x=getenv("RELOQ_FA_PROBE_X");
+            if (!x || x[0]!='1' || x[1]) return 1;
+        }
+        target=names[value];
+    } else if (field==4) {
+        static const uint8_t manner[]={1,2,255,3,4,5,6,7,0};
+        if (value>=sizeof(manner) || manner[value]==255) return 1;
+        target=manner[value];
+    } else if (field==5) {
+        static const uint8_t place[]={1,2,1,2,3,4,255,0};
+        if (value>=sizeof(place) || place[value]==255) return 1;
+        target=place[value];
+    } else if (field==6) {
+        /* Finnish ä is the Persian short front vowel, corresponding here
+           to French /E/ rather than French low /a/. */
+        int front_a=reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq,state,2,0,31)==0;
+        if (front_a && value==1) return 0;
+        if (front_a && value==2) return 1;
+        static const uint8_t height[]={5,6,7,0};
+        if (value>=sizeof(height)) return 1;
+        tofield=5; target=height[value];
+    } else if (field==7) {
+        /* The selected back A maps to French /a/ for L coarticulation. */
+        int back_a=reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq,state,2,0,34)==0;
+        if (back_a && value==0) return 0;
+        if (back_a && (value==1 || value==2)) return 1;
+        static const uint8_t back[]={1,255,2,0};
+        if (value>=sizeof(back) || back[value]==255) return 1;
+        tofield=6; target=back[value];
+    } else if (field==8) {
+        if (value>1) return 1;
+        tofield=11; target=value; /* French tense/lax ~ Finnish long/short */
+    } else if (field==9) {
+        if (value==0 || value>2) return 1;
+        tofield=10; target=value-1;
+    } else if (field==10) {
+        /* The mapped Persian vowel inventory here has no nasal vowels. */
+        if (value==1) return 1;
+        if (value==2) return reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq,state,2,1,1);
+        return 1;
+    } else if (field==12) {
+        tofield=8;
+    } else if (field==13) {
+        if (value==1) { tofield=9; target=3; }
+        else return 1;
+    } else if (field>10) {
+        return 1;
+    }
+    return reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq,state,st,tofield,target);
+}
+'''
+
 
 def phone_symbol_data(language: str) -> tuple[list[str], list[int]]:
     """Resolve this build's symbols to their first byte and possible phone name."""
@@ -316,6 +384,98 @@ def prepare_german_l(work: Path) -> list[Path]:
     native = prepare('dede61', 'delta_rules_c05_dede61.c', 'ger_ph_l',
                      'L2680', GERMAN_L_TRACE, '#include <stdio.h>\n', work)
     return [destination, native]
+
+
+def prepare_french_l(work: Path) -> list[Path]:
+    """Adapt the French lateral and its transition rule to Finnish phones."""
+    destination = work / 'delta_rules_c02_fifi.c'
+    text = destination.read_text(encoding='utf8')
+
+    def extract(filename: str, name: str, replacement: str) -> str:
+        src = (PROVIDER / 'lang' / 'frfr61' / filename).read_text(encoding='utf8')
+        start = src.index('int32_t reloq_frfr61_' + name + '(')
+        end = src.index('\nstatic int32_t evv_' + name + '(', start)
+        return src[start:end].replace('int32_t reloq_frfr61_' + name + '(',
+                                      'static int32_t ' + replacement + '(', 1)
+
+    french_names, french_bytes = phone_symbol_data('frfr61')
+    finnish_names, finnish_bytes = phone_symbol_data('fifi')
+    absent = next((i for i, value in enumerate(finnish_bytes) if value > 36), None)
+    if absent is None:
+        raise RuntimeError('No impossible Finnish phone symbol found')
+    # 2124 is a word fence, not the French /t/ phone; 2138 is /ɥ/,
+    # unavailable in Finnish; /x/ maps to the private Persian G slot.
+    symbols = {2065: 724, 2121: 724, 2122: 725, 2124: 726, 2134: 741,
+               2135: 740, 2138: absent, 2143: 745, 2145: 739, 2160: 728}
+    for source, target in symbols.items():
+        if source in (2065, 2121):
+            if french_bytes[source] != 0 or finnish_bytes[target] != 0:
+                raise RuntimeError('French L null fence changed')
+        elif source == 2124:
+            if french_bytes[source] != 4 or finnish_bytes[target] != 4:
+                raise RuntimeError('French L word fence changed')
+        elif source == 2138:
+            if french_names[source] != 'H' or finnish_bytes[target] <= 36:
+                raise RuntimeError('French /ɥ/ fallback changed')
+        else:
+            if source == 2145 and french_names[source] != 'x':
+                raise RuntimeError('French /x/ phone mapping changed')
+            name = 'G' if source == 2145 else french_names[source]
+            if finnish_names[target] != name:
+                raise RuntimeError(f'French L phone mapping changed: {source} -> {target}')
+    if (finnish_names[752], finnish_bytes[752], finnish_names[766], finnish_bytes[766]) != ('a', 34, 'A', 31):
+        raise RuntimeError('Finnish A/ä phone mapping changed')
+
+    average = extract('delta_rules_c17_frfr61.c', 'average', 'persian_probe_fr_average')
+    subval = extract('delta_rules_c04_frfr61.c', 'subval', 'persian_probe_fr_subval')
+    lateral = extract('delta_rules_c30_frfr61.c', 'fren_lat_Fv', 'persian_probe_fr_lateral')
+    rule = extract('delta_rules_c08_frfr61.c', 'fren_ph_l', 'persian_probe_fr_l')
+    # French special /r/ voice-setting logic depends on globals absent from
+    # Finnish. Keep its immediate L target but omit that language-specific
+    # postprocessing rather than reading unrelated Finnish state cells.
+    fr_only = ('    r1 = ((int32_t)STATE(uint16_t, s326));\n'
+               '    AT(int32_t, -28) = (r1);\n'
+               '    if (AT(int16_t, -28) == (int16_t)(STATE(int16_t, s319))) goto L3601;\n'
+               '    goto L4217;')
+    if rule.count(fr_only) != 1:
+        raise RuntimeError('Cannot locate French-specific R voice branch')
+    rule = rule.replace(fr_only, '    goto L4217;', 1)
+    blocks = [average, subval, lateral, rule]
+    used = {int(x) for block in blocks for x in re.findall(r'delta_sym_ref\[(\d+)\]', block)}
+    if used != set(symbols):
+        raise RuntimeError('French L symbol layout changed; review mappings')
+    mapped = []
+    for block in blocks:
+        block = re.sub(r'delta_sym_ref\[(\d+)\]',
+                       lambda m: f'delta_sym_ref[{symbols[int(m.group(1))]}]', block)
+        block = re.sub(r'STATE\((u?int16_t), s(\d+)\)',
+                       lambda m: f'STATE({m.group(1)}, s{int(m.group(2))-1})', block)
+        block = re.sub(r'STATE_AT\(s(\d+),',
+                       lambda m: f'STATE_AT(s{int(m.group(1))-1},', block)
+        block = block.replace('reloq_call_frfr61_average(', 'persian_probe_fr_average(')
+        block = block.replace('reloq_call_frfr61_subval(', 'persian_probe_fr_subval(')
+        block = block.replace('reloq_call_frfr61_fren_lat_Fv(', 'persian_probe_fr_lateral(')
+        block = block.replace('reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq, state,',
+                              'persian_probe_fr_field(state,')
+        mapped.append(block)
+    label = 'L4217:;\n    r0 = reloq61_typed_succeed'
+    if mapped[-1].count(label) != 1:
+        raise RuntimeError('Cannot locate French L exit')
+    mapped[-1] = mapped[-1].replace(label, 'L4217:;\n' + FINNISH_L_TRACE +
+                                    '    r0 = reloq61_typed_succeed', 1)
+    marker = 'int32_t reloq_fifi_fin_ph_l(void *state, int32_t p0)\n{\n'
+    if text.count(marker) != 1:
+        raise RuntimeError('Cannot locate Finnish L rule')
+    text = text.replace(marker, FRENCH_L_ADAPTER + '\n' + '\n'.join(mapped) + '\n' + marker, 1)
+    old = '    if (fa_l && fa_l[0]==\'2\' && !fa_l[1])\n        return persian_probe_german_l(state,p0);\n'
+    if text.count(old) != 1:
+        raise RuntimeError('Cannot locate the German L probe redirect')
+    text = text.replace(old, old + '    if (fa_l && fa_l[0]==\'3\' && !fa_l[1])\n'
+                        '        return persian_probe_fr_l(state,p0);\n', 1)
+    destination.write_text(text, encoding='utf8')
+    native = prepare('frfr61', 'delta_rules_c08_frfr61.c', 'fren_ph_l', 'L4217',
+                     GERMAN_L_TRACE.replace('DE_L', 'FR_L'), '#include <stdio.h>\n', work)
+    return [native]
 
 Q_PATCH = r'''
     {
@@ -796,6 +956,7 @@ def main() -> None:
         prepare('enus61', 'delta_rules_c06_enus61.c', 'ga_ph_a', 'L3010', US_A_PATCH, '', work),
     ]
     modified.extend(prepare_german_l(work))
+    modified.extend(prepare_french_l(work))
     modified.extend(prepare_x(work))
     modified.append(prepare_q_cluster(work))
     modified.extend(prepare_question_rise(work))
