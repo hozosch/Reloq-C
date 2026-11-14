@@ -14,6 +14,10 @@ PERSIAN_PHRASE = SALAM + ' `[.1do.0nja]'
 DONYA_FINAL_STRESS = '`[.0do.1nja]'
 PERSIAN_PHRASE_FINAL_STRESS = SALAM + ' ' + DONYA_FINAL_STRESS
 
+# Compare Iran without the Finnish long-A marker and with final noun stress.
+# Keep the previous long-A example separately for a controlled hearing test.
+IRAN_FINAL_STRESS = "`[.0'i:'.1r'a'n]"
+
 # The private Q=6 probe treats this manually specified Finnish /k/ as the
 # selected uvular experiment. Both uppercase A phones are Finnish /ä/.
 QALAM = '`[.0kA.1lAm]'
