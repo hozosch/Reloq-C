@@ -48,9 +48,9 @@ def main() -> None:
             set_probe()
             append(render(german, text))
 
-        def speak(title: str, text: str, *, l: int = 4, q: int = 5):
+        def speak(title: str, text: str, *, l: int = 4, q: int = 5, vowel: int = 1):
             label(title)
-            set_probe(a=1, q=q, x=1, h=5, l=l, rise=2)
+            set_probe(a=1, q=q, x=1, h=5, l=l, rise=2, vowel=vowel)
             append(render(finnish, text))
 
         def reference(title: str, name: str):
@@ -61,14 +61,15 @@ def main() -> None:
               'Das ist eine Lautprobe auf finnischer Basis, noch keine fertige persische Stimme.')
         reference('Espeak. Salam Donyâ.', 'fa_statement')
         speak('Bisher. Französisches L, und Donyâ auf der ersten Silbe betont.',
-              PERSIAN_PHRASE + '.', l=3)
+              PERSIAN_PHRASE + '.', l=3, vowel=0)
         speak('Neu. Deutsches L im Wort. Donyâ auf der letzten Silbe betont.',
               PERSIAN_PHRASE_FINAL_STRESS + '.')
 
         label('Donyâ einzeln. Vergleich der Betonung.')
-        speak('Erste Silbe betont.', '`[.1do.0nja]')
-        speak('Letzte Silbe betont, kürzere A Variante.', DONYA_FINAL_STRESS)
-        speak('Letzte Silbe betont, längere A Variante.', DONYA_FINAL_STRESS_LONG_A)
+        speak('Erste Silbe betont.', '`[.1do.0nja]', vowel=0)
+        speak('Letzte Silbe betont, kürzere A Variante.', DONYA_FINAL_STRESS, vowel=0)
+        speak('Letzte Silbe betont, mittlere A Länge nach Espeak-Grundverhältnis.', DONYA_FINAL_STRESS, vowel=1)
+        speak('Letzte Silbe betont, längere finnische A Variante.', DONYA_FINAL_STRESS_LONG_A, vowel=0)
 
         label('L im Wortinneren.')
         speak('Salam.', SALAM)
@@ -79,9 +80,10 @@ def main() -> None:
         speak('Saal einzeln.', '`[.1sal]')
         speak('Saal vor einem weiteren Wort.', '`[.1sal] `[.1sa]')
         reference('Iran, Espeak.', 'fa_iran')
-        speak('Iran. Bisherige Länge und Betonung.', IRAN)
-        speak('Iran. Bisheriges langes A, Betonung auf der letzten Silbe.', IRAN_FINAL_STRESS_LONG_A)
-        speak('Iran. Kürzere A Variante, Betonung auf der letzten Silbe.', IRAN_FINAL_STRESS)
+        speak('Iran. Bisherige Länge und Betonung.', IRAN, vowel=0)
+        speak('Iran. Bisheriges langes A, Betonung auf der letzten Silbe.', IRAN_FINAL_STRESS_LONG_A, vowel=0)
+        speak('Iran. Kürzere A Variante, Betonung auf der letzten Silbe.', IRAN_FINAL_STRESS, vowel=0)
+        speak('Iran. Mittlere A Länge nach Espeak-Grundverhältnis, mit Endbetonung.', IRAN_FINAL_STRESS, vowel=1)
         speak('Salam Donyâ als Frage.', PERSIAN_PHRASE_FINAL_STRESS + '?')
         label('Ende des Hörvergleichs.')
     finally:
