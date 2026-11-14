@@ -1,4 +1,4 @@
-name: Persian and Arabic eSpeak reference
+name: Persian eSpeak Klatt reference
 on:
   push:
     branches: [codex/persian-reference-20261113]
@@ -14,58 +14,31 @@ jobs:
           if [ -f /etc/apt/apt-mirrors.txt ]; then sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt; fi
           sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update -qq
           sudo apt-get -y --no-install-recommends install espeak-ng
-      - name: Generate reference speech and phonemes
+      - name: Render default and Klatt voice references
         env:
           LC_ALL: C.UTF-8
         run: |
           set -euo pipefail
           mkdir -p reference
           espeak-ng --version | tee reference/version.txt
-          for name in fa_noqte fa_qalam ar_qalam ar_noqta fa_statement fa_question fa_iran fa_stop_sequence fa_ta; do
+          for name in fa_iran fa_klatt_iran fa_klatt2_iran sv_jag sv_klatt_jag fa_klatt_statement fa_klatt_qalam; do
             case "$name" in
-              fa_noqte) lang=fa; text='نقطه' ;;
-              fa_qalam) lang=fa; text='قلم' ;;
-              ar_qalam) lang=ar; text='قَلَم' ;;
-              ar_noqta) lang=ar; text='نُقْطَة' ;;
-              fa_statement) lang=fa; text='سلام دنیا.' ;;
-              fa_question) lang=fa; text='سلام دنیا؟' ;;
               fa_iran) lang=fa; text='ایران' ;;
-              fa_stop_sequence) lang=fa; text='پا تا کار' ;;
-              fa_ta) lang=fa; text='تا' ;;
+              fa_klatt_iran) lang=fa+klatt; text='ایران' ;;
+              fa_klatt2_iran) lang=fa+klatt2; text='ایران' ;;
+              sv_jag) lang=sv; text='jag' ;;
+              sv_klatt_jag) lang=sv+klatt; text='jag' ;;
+              fa_klatt_statement) lang=fa+klatt; text='سلام دنیا.' ;;
+              fa_klatt_qalam) lang=fa+klatt; text='قلم' ;;
             esac
-            printf '%s: %s\n' "$name" "$text" >> reference/phonemes.txt
+            printf '%s [%s]: %s\n' "$name" "$lang" "$text" >> reference/phonemes.txt
             espeak-ng -v "$lang" -q --ipa=3 "$text" >> reference/phonemes.txt
             espeak-ng -v "$lang" -w "reference/$name.wav" "$text"
           done
           cat reference/phonemes.txt
-          python3 - <<'PYCODE'
-          import json, subprocess
-          cases = [
-              ('fa', s) for s in [
-                'ایران','تهران','سلام','دنیا','خدا','خوب','خانه','خواهر',
-                'خود','خواندن','خورشید','نقطه','قلم','قهوه','آقا','غذا',
-                'آغاز','باغ','مرد','امروز','کتاب','کار','پا','تا','ساعت',
-                'شما','کشور','فارسی','تنظیمات','انتخاب','دکمه','پنجره',
-                'پوشه','پرونده','جستجو','ویرایش','ذخیره','باز کردن','خروج',
-                'می‌روم','می روم','می‌خواهم','خانهٔ','خانۀ','ک','ق','خ',
-                '۱۲۳','۱۲','۰','سلام دنیا.','سلام دنیا؟','نسخه NVDA','Windows',
-              ]
-          ]
-          latin = ['salam','khane','khodahafez','iran','noqte','qalam','ghaza',
-                   'zendegi','ketab','khabar','shoma','cheshm','dust','man',
-                   'hello','Windows','father','off','open','NVDA']
-          cases += [(voice, text) for voice in ('fa','fa-latn','en-us') for text in latin]
-          with open('reference/phoneme-corpus.jsonl','w',encoding='utf8') as sink:
-              for voice,text in cases:
-                  args=['espeak-ng','-v',voice,'-q']
-                  ascii_ph=subprocess.check_output(args+['-x',text],text=True).strip()
-                  ipa_ph=subprocess.check_output(args+['--ipa=3',text],text=True).strip()
-                  sink.write(json.dumps({'voice':voice,'text':text,'phonemes':ascii_ph,'ipa':ipa_ph},ensure_ascii=False)+'\\n')
-          print('Wrote',len(cases),'Persian, Pinglish and English reference cases')
-          PYCODE
       - uses: actions/upload-artifact@v4
         with:
-          name: persian-espeak-reference
+          name: persian-espeak-klatt-reference
           path: reference/
           if-no-files-found: error
           retention-days: 7
