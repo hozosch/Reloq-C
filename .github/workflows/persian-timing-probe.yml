@@ -10,10 +10,40 @@ permissions:
 jobs:
   checks:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Check private probe source preparation
-        run: python3 experiments/persian/build_native_probe.py --dry-run
+        run: |
+          python3 -m py_compile experiments/persian/build_native_probe.py experiments/persian/trace_word_edges_timing.py
+          python3 experiments/persian/build_native_probe.py --dry-run
+      - uses: actions/cache/restore@v4
+        id: baseline
+        with:
+          path: |
+            vendor/openevv61/build/release
+            eci/build/posix
+            eci/libreloq_eci.so
+          key: persian-linux-gcc13-463c72658de0-v1
+      - name: Build ordinary Linux core when needed
+        if: steps.baseline.outputs.cache-hit != 'true'
+        run: make -C eci -j2 libreloq_eci.so
+      - uses: actions/cache/save@v4
+        if: steps.baseline.outputs.cache-hit != 'true'
+        with:
+          path: |
+            vendor/openevv61/build/release
+            eci/build/posix
+            eci/libreloq_eci.so
+          key: persian-linux-gcc13-463c72658de0-v1
+      - name: Install analysis dependencies
+        run: python3 -m pip install numpy scipy
+      - name: Build isolated acoustic probe
+        run: python3 experiments/persian/build_native_probe.py --work-dir "$RUNNER_TEMP/fa" --jobs 2
+      - name: Observe word boundaries and nucleus timings
+        run: python3 experiments/persian/trace_word_edges_timing.py --library "$RUNNER_TEMP/fa/libreloq_eci.so"
