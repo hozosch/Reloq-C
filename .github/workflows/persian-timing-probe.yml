@@ -47,3 +47,5 @@ jobs:
         run: python3 experiments/persian/build_native_probe.py --work-dir "$RUNNER_TEMP/fa" --jobs 2
       - name: Observe word boundaries and nucleus timings
         run: python3 experiments/persian/trace_word_edges_timing.py --library "$RUNNER_TEMP/fa/libreloq_eci.so"
+
+# Reuse the ordinary Linux core; only the isolated test objects are rebuilt.
