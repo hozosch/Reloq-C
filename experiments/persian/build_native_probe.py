@@ -207,6 +207,52 @@ static unsigned persian_probe_l_next_phone(void *state)
 }
 '''
 
+
+FINNISH_L_EDGE_TRACE = r'''
+/* Diagnostic only: observe the scanner and word fence, leaving all state as
+   found. The actual combined German/French L rule is not selected here. */
+static void persian_probe_trace_l_edges(void *state,int32_t ltok,int32_t rtok)
+{
+    if (!getenv("RELOQ_FA_TRACE_L_EDGES")) return;
+    delta_state *d=state;
+    if (!d || !d->vars || d->nstmts<5 || d->nstmts>256 || !ltok || !rtok) return;
+    delta_vars *v=EVV_AT(delta_vars *,d->vars);
+    delta_tpos left=d->lpta, right=d->rpta;
+    unsigned char scan[8],index[256],marks[256],chars[256];
+    int8_t compared=v->compared_equal, fences=v->fence_count, testing=v->testing;
+    memcpy(scan,&v->scan_ptr,sizeof scan);
+    memcpy(index,EVV_AT(const void *,d->fence_index),d->nstmts);
+    memcpy(marks,EVV_AT(const void *,d->fence_marks),d->nstmts);
+    memcpy(chars,EVV_AT(const void *,d->fence_chars),d->nstmts);
+    const uint8_t word_fence[]={4};
+    int32_t positions[]={ltok,rtok};
+    for (int p=0;p<2;p++) for (int rev=0;rev<2;rev++) {
+        d->lpta=left; d->rpta=right; memcpy(&v->scan_ptr,scan,sizeof scan);
+        v->compared_equal=compared; v->fence_count=fences; v->testing=0;
+        memcpy(EVV_AT(void *,d->fence_index),index,d->nstmts);
+        memcpy(EVV_AT(void *,d->fence_marks),marks,d->nstmts);
+        memcpy(EVV_AT(void *,d->fence_chars),chars,d->nstmts);
+        fence(d,1,word_fence);
+        memset(EVV_AT(void *,d->fence_marks),0,d->nstmts);
+        lpta_loadp(d,EVV_AT(const delta_token *,positions[p]));
+        int rc=rev ? setscan_r(d,2) : setscan_l(d,2);
+        int is_l=-1,step1=-1,step2=-1;
+        if (!rc) {
+            is_l=!testFldeq(d,2,0,21);
+            step1=advance_tok(d);
+            if (!step1) step2=advance_tok(d);
+        }
+        fprintf(stderr,"FA_EDGE p=%d dir=%d rc=%d L=%d step1=%d step2=%d\n",
+                p,rev,rc,is_l,step1,step2);
+    }
+    d->lpta=left; d->rpta=right; memcpy(&v->scan_ptr,scan,sizeof scan);
+    v->compared_equal=compared; v->fence_count=fences; v->testing=testing;
+    memcpy(EVV_AT(void *,d->fence_index),index,d->nstmts);
+    memcpy(EVV_AT(void *,d->fence_marks),marks,d->nstmts);
+    memcpy(EVV_AT(void *,d->fence_chars),chars,d->nstmts);
+}
+'''
+
 FRENCH_L_ADAPTER = r'''
 /* Translate the French phone record's feature tests to Finnish records.
    Phones unavailable in this private probe simply cannot match. */
@@ -374,12 +420,13 @@ def prepare_german_l(work: Path) -> list[Path]:
     marker = 'int32_t reloq_fifi_fin_ph_l(void *state, int32_t p0)\n{\n'
     if text.count(marker) != 1:
         raise RuntimeError('Cannot locate Finnish L rule')
-    redirect = r'''    const char *fa_l=getenv("RELOQ_FA_PROBE_L");
+    redirect = r'''    persian_probe_trace_l_edges(state,STATE_AT(w60,-4),STATE_AT(w61,-4));
+    const char *fa_l=getenv("RELOQ_FA_PROBE_L");
     if (fa_l && fa_l[0]=='2' && !fa_l[1])
         return persian_probe_german_l(state,p0);
 '''
     text = text.replace('#include <stdlib.h>\n', '#include <stdlib.h>\n#include <stdio.h>\n', 1)
-    text = text.replace(marker, FINNISH_L_CONTEXT + '\n' + rule + '\n' + marker + redirect, 1)
+    text = text.replace(marker, FINNISH_L_CONTEXT + '\n' + FINNISH_L_EDGE_TRACE + '\n' + rule + '\n' + marker + redirect, 1)
     destination.write_text(text, encoding='utf8')
     native = prepare('dede61', 'delta_rules_c05_dede61.c', 'ger_ph_l',
                      'L2680', GERMAN_L_TRACE, '#include <stdio.h>\n', work)
@@ -939,6 +986,31 @@ static int persian_probe_spanish_rise(void)
     return outputs
 
 
+
+def prepare_vowel_duration_trace(work: Path) -> Path:
+    """Print the existing Finnish nucleus duration without modifying it."""
+    name = 'delta_rules_c08_fifi.c'
+    text = (PROVIDER / 'lang' / 'fifi' / name).read_text(encoding='utf8')
+    begin = text.index('int32_t reloq_fifi_distribute_nucdur(')
+    end = text.index('\nstatic int32_t evv_distribute_nucdur(', begin)
+    section = text[begin:end]
+    marker = '    STATE(int32_t, f33) = ((int32_t)AT(int32_t, -12));'
+    if section.count(marker) != 1:
+        raise RuntimeError('Cannot locate Finnish nucleus duration')
+    section = section.replace(marker, marker + r'''
+    if (getenv("RELOQ_FA_TRACE_NUC"))
+        fprintf(stderr,"FA_NUC duration=%d\n",(int)STATE(int32_t,f33));
+''', 1)
+    text = text[:begin] + section + text[end:]
+    include = '#include "reloq61_rule_calls_fifi.h"\n'
+    if text.count(include) != 1:
+        raise RuntimeError('Cannot locate duration trace includes')
+    text = text.replace(include, include + '#include <stdlib.h>\n#include <stdio.h>\n', 1)
+    dest = work / name
+    dest.write_text(text, encoding='utf8')
+    return dest
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--work-dir', type=Path)
@@ -962,6 +1034,7 @@ def main() -> None:
     modified.extend(prepare_question_rise(work))
     modified.append(prepare_finnish_h(work))
     modified.append(prepare_auto_finnish_h(work))
+    modified.append(prepare_vowel_duration_trace(work))
     if args.dry_run:
         print('Prepared isolated source files:', work)
         return
