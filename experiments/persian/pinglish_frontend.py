@@ -33,6 +33,18 @@ LATIN_NAMES = {
 _LATIN = re.compile(r'[A-Za-z]+')
 
 
+def english_exception(word: str) -> bool:
+    """Match the fa-Latn rules that explicitly defer a word to English.
+
+    In the pinned fa_rules the Pinglish entries for ph and th are empty;
+    eSpeak falls back to English for the whole word in these cases. Known
+    Persian aliases take precedence, and spelling mode remains independent.
+    """
+    value = word.casefold()
+    return bool(_LATIN.fullmatch(word) and value not in ALIASES and
+                ('ph' in value or 'th' in value))
+
+
 def _connected(char: str) -> bool:
     return (char.isalnum() or unicodedata.category(char).startswith('M') or
             char in ('\u200c', '\u200d', "'", '’'))

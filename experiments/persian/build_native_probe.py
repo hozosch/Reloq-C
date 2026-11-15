@@ -1613,7 +1613,7 @@ FINNISH_S_TRACE = r'''
 
 
 def prepare_s_noise(work: Path) -> None:
-    """Apply the viisi noise targets before Finnish schedules its noise."""
+    """Select Persian S noise targets before Finnish schedules the noise."""
     destination = work / 'delta_rules_c13_fifi.c'
     text = destination.read_text(encoding='utf8')
     begin = text.index('int32_t reloq_fifi_fin_ph_s(')
@@ -1623,23 +1623,33 @@ def prepare_s_noise(work: Path) -> None:
     if section.count(marker) != 1:
         raise RuntimeError('Cannot locate the S noise target before scheduling')
     section = section.replace(marker, marker + r'''
-    /* Noise target observed in Finnish "viisi". Set before point_af or
-       modulate_noise schedules the actual noise stream; keep formants. */
-    if (getenv("RELOQ_FA_PROBE_S") &&
-        strcmp(getenv("RELOQ_FA_PROBE_S"), "1") == 0) {
-        STATE(int16_t,s404)=52;
-        STATE(int16_t,s409)=30;
-        STATE(int16_t,s410)=50;
-        STATE(int16_t,s411)=58;
-        STATE(int16_t,s412)=63;
-        STATE(int16_t,s413)=0;
+    /* Only source and spectral noise amplitudes: keep Finnish formants and
+       transitions. Mode 1 is the earlier Finnish "viisi" reference; mode 2
+       uses the US English S target before its normal noise modulation. */
+    {
+        const char *s=getenv("RELOQ_FA_PROBE_S");
+        if (s && s[0]=='1' && !s[1]) {
+            STATE(int16_t,s404)=52;
+            STATE(int16_t,s409)=30;
+            STATE(int16_t,s410)=50;
+            STATE(int16_t,s411)=58;
+            STATE(int16_t,s412)=63;
+            STATE(int16_t,s413)=0;
+        } else if (s && s[0]=='2' && !s[1]) {
+            STATE(int16_t,s404)=65;
+            STATE(int16_t,s409)=0;
+            STATE(int16_t,s410)=0;
+            STATE(int16_t,s411)=0;
+            STATE(int16_t,s412)=50;
+            STATE(int16_t,s413)=0;
+        }
     }
 ''', 1)
     destination.write_text(text[:begin] + section + text[end:], encoding='utf8')
 
 
 def prepare_z_noise(work: Path) -> None:
-    """Raise only the voiced sibilant's noise target in the Persian probe."""
+    """Select voiced-sibilant noise without changing voicing or formants."""
     destination = work / 'delta_rules_c16_fifi.c'
     text = destination.read_text(encoding='utf8')
     begin = text.index('int32_t reloq_fifi_fin_ph_z(')
@@ -1651,10 +1661,18 @@ def prepare_z_noise(work: Path) -> None:
     section = section.replace(marker, marker + r'''
     {
         const char *z=getenv("RELOQ_FA_PROBE_Z");
-        /* Retain Finnish voicing and transitions. Only the source noise
-           target changes; the two candidates need a listening comparison. */
+        /* Mode 3 retains the selected 49 source level and the noise bands
+           measured before i, independently of the neighboring vowels. */
         if (z && z[0]=='1' && !z[1]) STATE(int16_t,s404)=46;
         else if (z && z[0]=='2' && !z[1]) STATE(int16_t,s404)=49;
+        else if (z && z[0]=='3' && !z[1]) {
+            STATE(int16_t,s404)=49;
+            STATE(int16_t,s409)=30;
+            STATE(int16_t,s410)=50;
+            STATE(int16_t,s411)=58;
+            STATE(int16_t,s412)=63;
+            STATE(int16_t,s413)=0;
+        }
     }
 ''', 1)
     destination.write_text(text[:begin] + section + text[end:], encoding='utf8')

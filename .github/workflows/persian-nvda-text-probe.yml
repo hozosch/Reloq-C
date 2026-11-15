@@ -20,6 +20,9 @@ on:
       - experiments/persian/direct_fa_*.inc
       - experiments/persian/direct_fa_suffix_rules.py
       - experiments/persian/test_direct_fa_suffixes.py
+      - experiments/persian/direct_fa_extended_suffix_rules.py
+      - experiments/persian/test_direct_extended_suffixes.py
+      - experiments/persian/test_direct_pinglish_rules.py
       - experiments/persian/test_direct_fa.c
       - experiments/persian/test_direct_fa_numbers.py
       - experiments/persian/compile_direct_pause_words.py
@@ -71,7 +74,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Direct Persian components failed to compile' }
           .\fa-direct-test.exe
           if ($LASTEXITCODE -ne 0) { throw 'Direct Persian text smoke test failed' }
-          cmd.exe /d /c "`"$envcmd`" >nul && cl /nologo /O2 /W4 /std:c11 /utf-8 /LD /Iinclude /Fe:fa-direct.dll experiments\persian\direct_fa_lexicon.c experiments\persian\direct_fa_numbers.c experiments\persian\direct_fa_normalize.c experiments\persian\direct_fa_text.c experiments\persian\direct_fa_letters.c src\reloq_utf8.c /link /EXPORT:reloq_fa_direct_text /EXPORT:reloq_fa_direct_number /EXPORT:reloq_fa_direct_letter /EXPORT:reloq_fa_direct_free /EXPORT:reloq_fa_direct_context_word"
+          cmd.exe /d /c "`"$envcmd`" >nul && cl /nologo /O2 /W4 /std:c11 /utf-8 /LD /Iinclude /Fe:fa-direct.dll experiments\persian\direct_fa_lexicon.c experiments\persian\direct_fa_numbers.c experiments\persian\direct_fa_normalize.c experiments\persian\direct_fa_text.c experiments\persian\direct_fa_letters.c experiments\persian\direct_fa_pinglish.c src\reloq_utf8.c /link /EXPORT:reloq_fa_direct_text /EXPORT:reloq_fa_direct_number /EXPORT:reloq_fa_direct_letter /EXPORT:reloq_fa_direct_free /EXPORT:reloq_fa_direct_context_word /EXPORT:reloq_fa_pinglish_word"
           if ($LASTEXITCODE -ne 0) { throw 'Direct Persian DLL failed to compile' }
           python -B experiments/persian/test_direct_fa_sequence.py --native-library "$pwd/fa-direct.dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian source position projection failed' }
@@ -103,6 +106,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Direct Persian number test failed' }
           python -B experiments/persian/test_direct_fa_suffixes.py --library "$pwd/fa-direct.dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Direct Persian suffix test failed' }
+          python -B experiments/persian/test_direct_extended_suffixes.py --library "$pwd/fa-direct.dll" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'Extended direct Persian suffix test failed' }
+          python -B experiments/persian/test_direct_pinglish_rules.py --library "$pwd/fa-direct.dll" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'Direct Pinglish rules or English exceptions failed' }
           python -B experiments/persian/test_direct_pause_words.py --native-library "$pwd/fa-direct.dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Direct Persian internal-pause words failed' }
           python -B experiments/persian/test_hybrid_fa_frontend.py --native-library "$pwd/fa-direct.dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"

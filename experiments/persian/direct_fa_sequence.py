@@ -7,11 +7,13 @@ It fails before speech for uncovered input or unsafe controls.
 from __future__ import annotations
 
 import ctypes
+from collections import OrderedDict
 from dataclasses import replace
 from pathlib import Path
 import re
 import sys
 import threading
+import unicodedata
 from typing import Sequence
 
 if __package__:
@@ -144,6 +146,212 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
         raise UnsupportedPronunciation(str(error)) from error
 
 
+def project_resilient(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersian,
+                      *, pinglish: bool = False, validate=None, cancelled=None) -> ProjectedJob:
+    """Retain every input item when a complete reference alignment is unavailable.
+
+    Covered words and numbers still use the direct rules. An unknown word is
+    analysed on its own by the existing reference, with a following-word
+    context where appropriate. If that is unavailable, pronounce its letters;
+    unknown symbols use the existing Unicode names. Indexes inside one word
+    map to its beginning, as in the normal word-level source projection.
+    """
+    text, modes, events, length = [], [], [], 0
+    for part in parts:
+        if isinstance(part, (str, EciText)):
+            if isinstance(part, EciText) and part.speed_control:
+                events.append((length, part))
+                continue
+            value = part if isinstance(part, str) else part.text
+            # NUL cannot cross the native UTF-8 API; make it an identifiable
+            # control-picture symbol. Lone surrogates are not Unicode scalars.
+            value = ''.join('\u2400' if c == '\0' else '\ufffd' if 0xd800 <= ord(c) <= 0xdfff else c
+                            for c in value)
+            text.append(value)
+            modes.extend([isinstance(part, EciText) and part.character_mode] * len(value))
+            length += len(value)
+        elif isinstance(part, (EciIndex, EciPitch, EciPitchHz, EciProsody)):
+            events.append((length, part))
+        else:
+            raise TypeError('unsupported ECI job item')
+    source = ''.join(text)
+    # Keeping this cache on the worker-owned frontend avoids repeatedly
+    # launching the reference for the same unknown word after a stop.
+    cache = getattr(frontend, '_resilient_word_cache', None)
+    if cache is None:
+        cache = frontend._resilient_word_cache = OrderedDict()
+
+    def check():
+        if cancelled is not None and cancelled():
+            raise InterruptedError('Persian text processing was cancelled')
+
+    def accepted(tag):
+        if validate is None:
+            return True
+        try:
+            check()
+            native = tag.replace('~', ' ')
+            return native_sequence_accepted(native, validate(native))
+        except (ValueError, RuntimeError, OSError, UnicodeError):
+            check()
+            return False
+
+    def names(value):
+        pieces = []
+        for char in value:
+            check()
+            named = (frontend.analyze_pinglish_character(char) if pinglish
+                     else frontend.analyze_character(char))
+            if named is None or len(named.parts) != 1:
+                raise RuntimeError('Persian character name is unavailable')
+            pieces.append(named.parts[0].text)
+        return ' '.join(pieces)
+
+    def word_tag(value, follows):
+        check()
+        key = (value, follows, pinglish)
+        if key in cache:
+            cache.move_to_end(key)
+            return cache[key]
+        tag = None
+        try:
+            if pinglish:
+                analysis = frontend.analyze_pinglish(value, positioned=False, allow_fallback=False)
+            else:
+                trial = value + (' سلام' if follows else '')
+                analysis = frontend.analyze_direct(trial)
+                if analysis is not None and follows:
+                    cut = analysis.source_map[len(value.encode('utf8'))]
+                    analysis = replace(analysis, parts=(replace(analysis.parts[0], text=analysis.parts[0].text[:cut]),))
+            if analysis is not None and len(analysis.parts) == 1 and analysis.parts[0].language == 'fa':
+                tag = analysis.parts[0].text
+        except (ValueError, RuntimeError, OSError, UnicodeError):
+            check()
+        if tag is None:
+            try:
+                if pinglish:
+                    analysis = frontend.analyze_pinglish(value, positioned=False, allow_fallback=True)
+                else:
+                    analysis = frontend.analyze(value)
+                if analysis is not None and len(analysis.parts) == 1 and analysis.parts[0].language == 'fa':
+                    proposed = analysis.parts[0].text.lstrip('~')
+                    if proposed and accepted(proposed):
+                        tag = proposed
+            except (ValueError, RuntimeError, OSError, UnicodeError):
+                check()
+        if not tag:
+            tag = names(value)
+        cache[key] = tag
+        if len(cache) > 4096:
+            cache.popitem(last=False)
+        return tag
+
+    def word_char(char):
+        return unicodedata.category(char)[0] in ('L', 'M') or char in ('\u200c', '\u200d')
+
+    def next_word(end):
+        match = re.match(r'[ \t]+', source[end:])
+        at = end + len(match.group()) if match else end
+        return bool(match and at < len(source) and (word_char(source[at]) or source[at].isdecimal()))
+
+    mapping, pieces, used, at = [0] * (len(source) + 1), [], 0, 0
+    has_words = any(c.isalpha() or c.isdecimal() for c in source)
+
+    def emit(first, last, value, *, speech):
+        nonlocal used
+        if speech and pieces and pieces[-1] and not pieces[-1][-1].isspace() and pieces[-1][-1] not in '.,?!:;':
+            pieces.append(' ')
+            used += 1
+        for position in range(first, last):
+            mapping[position] = used
+        pieces.append(value)
+        used += len(value)
+        mapping[last] = used
+
+    while at < len(source):
+        check()
+        char = source[at]
+        if modes[at]:
+            emit(at, at + 1, names(char), speech=True)
+            at += 1
+            continue
+        if char.isspace():
+            end = at + 1
+            while end < len(source) and not modes[end] and source[end].isspace():
+                end += 1
+            value = source[at:end]
+            # Ordinary whitespace is passed to the native phrase predictor.
+            for index, value_char in enumerate(value):
+                emit(at + index, at + index + 1, value_char, speech=False)
+            at = end
+            continue
+        if char.isdecimal():
+            end = at + 1
+            while end < len(source) and not modes[end] and source[end].isdecimal():
+                end += 1
+            # Preserve valid decimal/grouped numbers when possible. Invalid
+            # versions and ranges are handled as individual readable pieces.
+            probe = end
+            while (probe + 1 < len(source) and not modes[probe] and source[probe] in '.,٫٬' and
+                   not modes[probe + 1] and source[probe + 1].isdecimal()):
+                probe += 1
+                while probe < len(source) and not modes[probe] and source[probe].isdecimal():
+                    probe += 1
+            candidate = source[at:probe]
+            try:
+                analysis = frontend.analyze_direct(candidate)
+            except (ValueError, RuntimeError, OSError, UnicodeError):
+                analysis = None
+                check()
+            if analysis is not None and analysis.parts:
+                emit(at, probe, analysis.parts[0].text, speech=True)
+                at = probe
+            else:
+                candidate = source[at:end]
+                try:
+                    analysis = frontend.analyze_direct(candidate)
+                except (ValueError, RuntimeError, OSError, UnicodeError):
+                    analysis = None
+                    check()
+                emit(at, end, analysis.parts[0].text if analysis is not None and analysis.parts else names(candidate),
+                     speech=True)
+                at = end
+            continue
+        if word_char(char):
+            end = at + 1
+            while end < len(source) and not modes[end] and word_char(source[end]):
+                end += 1
+            value = source[at:end]
+            # Non-Persian scripts are made identifiable by their character
+            # names when the Persian reference has no language mapping.
+            supported = all((ord(c) < 128 and c.isalpha() and pinglish) or
+                            0x0600 <= ord(c) <= 0x08ff or 0xfb50 <= ord(c) <= 0xfeff or
+                            c in ('\u200c', '\u200d') for c in value)
+            emit(at, end, word_tag(value, next_word(end)) if supported and any(c.isalpha() for c in value)
+                 else names(value), speech=True)
+            at = end
+            continue
+        punctuation = {'،': ',', '؛': ';', '؟': '?'}.get(char, char)
+        if has_words and punctuation in '.,?!:;':
+            emit(at, at + 1, punctuation, speech=False)
+        else:
+            emit(at, at + 1, names(char), speech=True)
+        at += 1
+    tagged = ''.join(pieces)
+    output, cursor = [], 0
+    for offset, command in events:
+        target = mapping[offset]
+        if target < cursor:
+            raise RuntimeError('Persian source positions are not ordered')
+        if target > cursor:
+            output.append(EciText(tagged[cursor:target], segmentation_guarded=True))
+        output.append(command)
+        cursor = target
+    if cursor < len(tagged):
+        output.append(EciText(tagged[cursor:], segmentation_guarded=True))
+    return ProjectedJob(source, tagged, tuple(output), False)
+
+
 _TAG = re.compile(r'`\[[^]]+\]')
 _DOUBLE_J = re.compile(r'J(\.[012])?J')
 
@@ -222,14 +430,36 @@ class ScopedDirectPersianEngine:
         if threading.get_ident() != self._owner:
             raise RuntimeError('Persian engine belongs to its creating worker')
         self._cancelled.clear()
+        recovered = False
         try:
             prepared = project(parts, self._frontend, allow_fallback=self._allow_fallback,
                                pinglish=self._pinglish)
-        except (RuntimeError, OSError):
+        except (ValueError, RuntimeError, OSError, UnicodeError):
             if self._cancelled.is_set():
                 return False
-            raise
-        return self._speak_prepared(prepared, on_pcm, on_index)
+            if not self._allow_fallback:
+                raise
+            try:
+                prepared = project_resilient(parts, self._frontend, pinglish=self._pinglish,
+                                             validate=self._voice._phonemes_for_probe,
+                                             cancelled=self._cancelled.is_set)
+                recovered = True
+            except InterruptedError:
+                return False
+        try:
+            return self._speak_prepared(prepared, on_pcm, on_index)
+        except UnsupportedPronunciation:
+            if recovered or not self._allow_fallback:
+                raise
+            if self._cancelled.is_set():
+                return False
+            try:
+                prepared = project_resilient(parts, self._frontend, pinglish=self._pinglish,
+                                             validate=self._voice._phonemes_for_probe,
+                                             cancelled=self._cancelled.is_set)
+            except InterruptedError:
+                return False
+            return self._speak_prepared(prepared, on_pcm, on_index)
 
     def _speak_prepared(self, prepared: ProjectedJob, on_pcm, on_index) -> bool:
         """Speak verified native tags with the same per-request selectors.

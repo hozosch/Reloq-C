@@ -36,7 +36,7 @@ def main():
         parser.error('work directory must not exist')
     work.mkdir(parents=True)
     sources = tuple(HERE / ('direct_fa_' + name + '.c')
-                    for name in ('lexicon', 'numbers', 'normalize', 'text', 'letters'))
+                    for name in ('lexicon', 'numbers', 'normalize', 'text', 'letters', 'pinglish'))
 
     def compile_one(source):
         output = work / (source.stem + '.o')

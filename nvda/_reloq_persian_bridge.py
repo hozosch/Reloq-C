@@ -29,7 +29,7 @@ def add_profiles(languages, library: Path):
             getattr(dll, name)
         text_dll = ctypes.CDLL(str(text_library.resolve()))
         for name in ('reloq_fa_direct_text', 'reloq_fa_direct_number',
-                     'reloq_fa_direct_letter', 'reloq_fa_direct_free'):
+                     'reloq_fa_direct_letter', 'reloq_fa_direct_free', 'reloq_fa_pinglish_word'):
             getattr(text_dll, name)
     except (OSError, AttributeError):
         return languages

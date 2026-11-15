@@ -124,7 +124,17 @@ def persian_proxy_for_english(text, en):
     return _TAG.sub(lambda _match: next(it), text)
 
 
-def _context(parts, language, en, fa, word_markers, source_marks=(), guarded_spans=()):
+def _spelling_proxy(text, segment, spelling_spans):
+    spans = [(start, end) for item, start, end in spelling_spans if item == segment]
+    if not spans:
+        return text
+    # The proxy only supplies timing and contour. Actual English characters
+    # are still sent to the English engine in its own spelling mode.
+    return ''.join(char + ' ' if any(a <= pos < b for a, b in spans) and not char.isspace() else char
+                   for pos, char in enumerate(text))
+
+
+def _context(parts, language, en, fa, word_markers, source_marks=(), guarded_spans=(), spelling_spans=()):
     result = []
     for i, part in enumerate(parts):
         if i:
@@ -138,15 +148,19 @@ def _context(parts, language, en, fa, word_markers, source_marks=(), guarded_spa
                                if word and (i, word) in word_markers)
             cursor = 0
             guarded = [(start, end) for segment, start, end in guarded_spans if segment == i]
+            spelled = [(start, end) for segment, start, end in spelling_spans if segment == i]
             def append_text(start, end):
-                if not guarded:
+                if not guarded and not spelled:
                     result.append(part.text[start:end])
                     return
-                cuts = sorted({start, end, *(p for a, b in guarded for p in (a, b) if start < p < end)})
+                cuts = sorted({start, end, *(p for a, b in (*guarded, *spelled) for p in (a, b)
+                                            if start < p < end)})
                 for left, right in zip(cuts, cuts[1:]):
                     piece = part.text[left:right]
                     protect = any(a <= left and right <= b for a, b in guarded)
-                    result.append(EciText(piece, segmentation_guarded=True) if protect else piece)
+                    spelling = any(a <= left and right <= b for a, b in spelled)
+                    result.append(EciText(piece, character_mode=spelling, segmentation_guarded=protect)
+                                  if protect or spelling else piece)
             for offset, _order, mark in sorted(inserts):
                 if offset < cursor or offset > len(part.text):
                     raise ValueError('invalid source index offset')
@@ -155,7 +169,7 @@ def _context(parts, language, en, fa, word_markers, source_marks=(), guarded_spa
                 cursor = offset
             append_text(cursor, len(part.text))
         elif language == 'fa':
-            result.append(english_phone_proxy(en, fa, part.text))
+            result.append(english_phone_proxy(en, fa, _spelling_proxy(part.text, i, spelling_spans)))
         else:
             result.append(persian_proxy_for_english(part.text, en))
     return result
@@ -234,30 +248,40 @@ def _edges(item, count):
 
 def _dense(item, column, check=None):
     values = [row.controls[column] for row in item.frames]
-    result = []
+    result, ticks, cursor = [], item.ticks, 0
     for i in range(item.ticks[-1] + 1):
         if check and not i % 1024:
             check()
-        result.append(_f32(_interp(i, item.ticks, values)))
+        while cursor < len(ticks) and ticks[cursor] <= i:
+            cursor += 1
+        if not cursor:
+            value = values[0]
+        elif cursor >= len(ticks):
+            value = values[-1]
+        else:
+            a, b = cursor - 1, cursor
+            value = float(values[a]) + (float(values[b]) - float(values[a])) * (i - ticks[a]) / (ticks[b] - ticks[a])
+        result.append(_f32(value))
     return result
 
 
 def _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate, check=None):
-    f0 = _dense(item, 1, check)
-    av = _dense(item, 2, check)
+    av = [row.controls[2] for row in item.frames]
     for i, part in enumerate(parts):
         if check:
             check()
         if part.language != language:
             continue
         start = round(bounds[i] * 1000 / rate)
-        end = min(round(bounds[i + 1] * 1000 / rate), len(f0))
-        if not 0 <= start < end <= len(f0):
+        end = min(round(bounds[i + 1] * 1000 / rate), item.ticks[-1] + 1)
+        if not 0 <= start < end <= item.ticks[-1] + 1:
             raise RuntimeError('invalid native pitch interval')
-        voiced = [j for j in range(start, end) if av[j] > 0]
-        if len(voiced) < 2:
+        # Only the first and last voiced milliseconds are needed. Search
+        # from each edge instead of allocating two dense sentence arrays.
+        first = next((j for j in range(start, end) if _interp(j, item.ticks, av) > 0), None)
+        last = next((j for j in range(end - 1, start - 1, -1) if _interp(j, item.ticks, av) > 0), None)
+        if first is None or last is None or first >= last:
             raise RuntimeError('no voiced pitch anchor')
-        first, last = voiced[0], voiced[-1]
         a, b = pilot_bounds[i], pilot_bounds[i + 1]
         if not 0 <= a < b < len(pilot_pitch):
             raise RuntimeError('invalid shared pitch interval')
@@ -269,10 +293,8 @@ def _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language,
                 continue
             t = a if tick < first else b if tick > last else a + (b - a) * (tick - first) / (last - first)
             lo = int(t)
-            f0[tick] = _f32(pilot_pitch[lo] if lo >= len(pilot_pitch) - 1 else
-                            pilot_pitch[lo] + (pilot_pitch[lo + 1] - pilot_pitch[lo]) * (t - lo))
-    for row in item.frames:
-        row.controls[1] = f0[row.tick]
+            row.controls[1] = _f32(pilot_pitch[lo] if lo >= len(pilot_pitch) - 1 else
+                                   pilot_pitch[lo] + (pilot_pitch[lo + 1] - pilot_pitch[lo]) * (t - lo))
 
 
 @dataclass
@@ -287,7 +309,8 @@ class SentencePlan:
     source_marks: tuple[tuple[int, int, int], ...] = ()
 
 
-def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarded_spans=(), check=None):
+def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarded_spans=(),
+                 spelling_spans=(), check=None):
     parts = tuple(parts)
     if not parts or len(parts) > 32 or {p.language for p in parts} != {'fa', 'en-us'}:
         raise ValueError('expected a bounded mixed English/Persian clause')
@@ -304,7 +327,8 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
     for index, part in enumerate(parts):
         if index:
             pilot_parts.extend((' ', EciIndex(index)))
-        proxy = part.text if part.language == 'fa' else english_proxy(en, part.text)
+        proxy = (part.text if part.language == 'fa' else
+                 english_proxy(en, _spelling_proxy(part.text, index, spelling_spans)))
         if any(not native_tag_accepted(m.group(), fa._phonemes_for_probe(m.group())) for m in _TAG.finditer(proxy)):
             raise ValueError('Persian proxy was rejected')
         pilot_parts.append(proxy)
@@ -317,9 +341,10 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
     word_markers = _word_markers(parts)
     source_events = tuple(source_events)
     guarded_spans = tuple(guarded_spans)
+    spelling_spans = tuple(spelling_spans)
     if any(type(segment) is not int or not 0 <= segment < len(parts) or
            type(start) is not int or type(end) is not int or not 0 <= start < end <= len(parts[segment].text)
-           for segment, start, end in guarded_spans):
+           for segment, start, end in (*guarded_spans, *spelling_spans)):
         raise ValueError('invalid protected text span')
     next_mark = max((len(parts) - 1, *word_markers.values())) + 1
     source_marks = []
@@ -331,7 +356,8 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
         source_marks.append((segment, offset, order, next_mark + order, value))
     contexts, edges = {}, {}
     for language, voice in (('fa', fa), ('en-us', en)):
-        item = get(voice, _context(parts, language, en, fa, word_markers, source_marks, guarded_spans))
+        item = get(voice, _context(parts, language, en, fa, word_markers, source_marks,
+                                   guarded_spans, spelling_spans))
         bounds = _edges(item, len(parts))
         _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate, check)
         contexts[language], edges[language] = item, bounds
@@ -457,6 +483,92 @@ def bridge_sonorants(plan, parts, rate, half_window_ms=25.0):
     return tuple(bridged)
 
 
+def bridge_remaining_voiced(plan, parts, bridged, cuts, window_ms=15.0):
+    """Smooth abrupt voiced joins when a contextual bridge was unavailable.
+
+    Only already voiced frames are reshaped, so stop closures are preserved.
+    Aspiration is tapered at a voiced join or bridged across a brief spurious
+    voiced onset. The selected A-to-Ach path and its established sonorant
+    bridges remain unchanged.
+    """
+    excluded = set(bridged) | {edge for edge, _ in cuts}
+    original, output = plan.frames, _copy_frames(plan.frames)
+    starts, bounds = _starts(original), _edges_by_count(plan.counts)
+    changed = []
+    for edge in range(1, len(parts)):
+        if edge in excluded:
+            continue
+        boundary = bounds[edge - 1]
+        left_limit = 0 if edge == 1 else bounds[edge - 2]
+        right_limit = bounds[edge]
+        left, right = original[boundary - 1].controls, original[boundary].controls
+        if left[2] <= 0 or right[2] <= 0:
+            continue
+        # Some contexts contribute only 1–4 ms of artificial voicing before
+        # a voiceless /h/. Bridge the existing aspiration through those rows
+        # instead of introducing an isolated voiced click or a noise hole.
+        short = boundary
+        while (short < right_limit and original[short].controls[2] > 0 and
+               starts[short] - starts[boundary] < 5.0):
+            short += 1
+        if (short > boundary and short < right_limit and original[short].controls[2] == 0 and
+                starts[short] - starts[boundary] <= 5.0 and left[2] <= 20 and
+                left[7] > 0 and original[short].controls[7] > 0):
+            destination = original[short].controls
+            width = short - boundary
+            for i in range(boundary, short):
+                fraction = (i - boundary + 1) / (width + 1)
+                output[i].controls[2] = round(left[2] * (1 - fraction))
+                output[i].controls[7] = round(left[7] + (destination[7] - left[7]) * fraction)
+                for column in (9, 13, 15):
+                    output[i].controls[column] = left[column] + (destination[column] - left[column]) * fraction
+            changed.append(edge)
+            continue
+        amplitude_jump = right[2] - left[2]
+        aspiration_jump = right[7] - left[7]
+        frequencies = (9, 13, 15)
+        if (abs(amplitude_jump) < 12 and abs(aspiration_jump) < 12 and
+                max(abs(right[c] - left[c]) for c in frequencies) < 100):
+            continue
+        first = max(left_limit, bisect_left(starts, starts[boundary] - window_ms))
+        last = min(right_limit, bisect_right(starts, starts[boundary] + window_ms))
+        while first < boundary and any(original[j].controls[2] <= 0 for j in range(first, boundary)):
+            first += 1
+        while last > boundary and any(original[j].controls[2] <= 0 for j in range(boundary, last)):
+            last -= 1
+        if boundary - first < 3 or last - boundary < 3 or starts[last - 1] <= starts[first]:
+            continue
+        span = starts[last - 1] - starts[first]
+        for column in frequencies:
+            a, b = original[first].controls[column], original[last - 1].controls[column]
+            for i in range(first, last):
+                weight = _ease((starts[i] - starts[first]) / span)
+                output[i].controls[column] = a + (b - a) * weight
+        if amplitude_jump >= 12 and starts[boundary - 1] > starts[first]:
+            duration = starts[boundary - 1] - starts[first]
+            for i in range(first, boundary):
+                weight = _ease((starts[i] - starts[first]) / duration)
+                output[i].controls[2] = min(80, round(original[i].controls[2] + amplitude_jump * weight))
+        elif amplitude_jump <= -12 and starts[last - 1] > starts[boundary]:
+            duration = starts[last - 1] - starts[boundary]
+            for i in range(boundary, last):
+                weight = 1 - _ease((starts[i] - starts[boundary]) / duration)
+                output[i].controls[2] = min(80, round(original[i].controls[2] - amplitude_jump * weight))
+        if left[7] > 0 and right[7] == 0 and starts[boundary - 1] > starts[first]:
+            duration = starts[boundary - 1] - starts[first]
+            for i in range(first, boundary):
+                weight = _ease((starts[i] - starts[first]) / duration)
+                output[i].controls[7] = round(original[i].controls[7] * (1 - weight))
+        elif left[7] == 0 and right[7] > 0 and starts[last - 1] > starts[boundary]:
+            duration = starts[last - 1] - starts[boundary]
+            for i in range(boundary, last):
+                weight = _ease((starts[i] - starts[boundary]) / duration)
+                output[i].controls[7] = round(original[i].controls[7] * weight)
+        changed.append(edge)
+    plan.frames = output
+    return tuple(changed)
+
+
 def direct_ach(plan, parts):
     """Remove a voiced X lead-in only where the selected fricative follows."""
     frames, boundaries = plan.frames, _edges_by_count(plan.counts)
@@ -508,6 +620,17 @@ class GermanAch:
 
 
 def german_ach_template(voice, *, maximum=60000):
+    owner = getattr(voice, 'owner', None)
+    cache_key = None
+    if owner is not None:
+        cache_key = (voice.key, owner._dictionary_path, tuple(sorted(owner._parameters.items())),
+                     owner._acoustic_clocks, voice.prefix)
+        cache = getattr(owner, '_persian_ach_cache', None)
+        if cache is None:
+            cache = owner._persian_ach_cache = {}
+        if cache_key in cache:
+            voice._check()
+            return cache[cache_key]
     tag = "`[.1'aj'x.0u]"
     if tag not in voice._phonemes_for_probe(tag):
         raise RuntimeError('German transition reference was rejected')
@@ -538,7 +661,12 @@ def german_ach_template(voice, *, maximum=60000):
         noise_times.append(noise_times[-1] + frames[i].controls[0])
     if noise_times[-1] <= 0:
         raise RuntimeError('invalid German X friction duration')
-    return GermanAch(tuple(times), rows, tuple(noise_times), noise)
+    result = GermanAch(tuple(times), rows, tuple(noise_times), noise)
+    if cache_key is not None:
+        if len(cache) >= 32:
+            cache.clear()
+        cache[cache_key] = result
+    return result
 
 
 def _english_final_a(en, text):
@@ -586,8 +714,7 @@ def apply_german_ach(plan, parts, cuts, template, en):
     starts, bounds = _starts(original), _edges_by_count(plan.counts)
     chosen = []
     for edge, _ in cuts:
-        if (parts[edge - 1].language != 'en-us' or
-                not _english_final_a(en, parts[edge - 1].text)):
+        if parts[edge - 1].language != 'en-us':
             continue
         boundary = bounds[edge - 1]
         left = 0 if edge == 1 else bounds[edge - 2]
@@ -691,8 +818,7 @@ def fade_english_voice(plan, parts, edges, en, window_ms=24.0, attenuation_db=12
     starts, bounds = _starts(original), _edges_by_count(plan.counts)
     changed = []
     for edge, _ in edges:
-        if (parts[edge - 1].language != 'en-us' or
-                not _english_final_a(en, parts[edge - 1].text)):
+        if parts[edge - 1].language != 'en-us':
             continue
         boundary = bounds[edge - 1]
         left = 0 if edge == 1 else bounds[edge - 2]
@@ -758,6 +884,8 @@ def selected_sentence(plan, parts, en, german, rate, *, check=None):
     bridged = bridge_sonorants(plan, parts, rate)
     if check: check()
     cuts = direct_ach(plan, parts)
+    if check: check()
+    bridge_remaining_voiced(plan, parts, bridged, cuts)
     if check: check()
     template = german_ach_template(german) if cuts else None
     if check: check()

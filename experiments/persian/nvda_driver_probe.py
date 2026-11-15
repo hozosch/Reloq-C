@@ -8,19 +8,22 @@ from __future__ import annotations
 
 from dataclasses import replace
 from pathlib import Path
+import re
 import unicodedata
 
 if __package__:
     from .direct_fa_sequence import ScopedDirectPersianEngine
     from .hybrid_fa_frontend import DirectFirstPersian
-    from .continuous_driver import sentence_jobs, try_continuous, try_persian_glides
+    from .pinglish_frontend import english_exception
+    from .continuous_driver import bounded_jobs, sentence_jobs, try_continuous, try_persian_glides
     from .._reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
                                      EciPitch, EciPitchHz, EciProsody, EciText)
     from .._reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
 else:
     from direct_fa_sequence import ScopedDirectPersianEngine
     from hybrid_fa_frontend import DirectFirstPersian
-    from continuous_driver import sentence_jobs, try_continuous, try_persian_glides
+    from pinglish_frontend import english_exception
+    from continuous_driver import bounded_jobs, sentence_jobs, try_continuous, try_persian_glides
     from _reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
                                   EciPitch, EciPitchHz, EciProsody, EciText)
     from _reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
@@ -75,10 +78,60 @@ def _script_runs(text):
     return tuple(runs)
 
 
+def _pinglish_part_runs(parts, home):
+    """Find English exceptions across text chunks without moving commands."""
+    result, entries, logical = {}, [], home
+
+    def flush():
+        if not entries:
+            return
+        text = ''.join(value for _, value in entries)
+        spans = tuple((m.start(), m.end()) for m in re.finditer(r'[A-Za-z]+', text)
+                      if english_exception(m.group()))
+        offset = 0
+        for index, value in entries:
+            end = offset + len(value)
+            cuts = sorted({offset, end, *(edge for a, b in spans for edge in (a, b)
+                                          if offset < edge < end)})
+            pieces = []
+            for a, b in zip(cuts, cuts[1:]):
+                english = any(left <= a and b <= right for left, right in spans)
+                pieces.append((english, value[a - offset:b - offset]))
+            if any(english for english, _ in pieces):
+                result[index] = tuple(pieces)
+            offset = end
+        entries.clear()
+
+    for index, part in enumerate(parts):
+        if isinstance(part, EciLanguage):
+            flush()
+            logical = (part.language, part.voice)
+        elif logical[0] == PINGLISH_PROBE.id and isinstance(part, (str, EciText)):
+            value = part if isinstance(part, str) else part.text
+            if ('`' in value or isinstance(part, EciText) and
+                    (part.character_mode or part.speed_control)):
+                flush()
+            else:
+                entries.append((index, value))
+        elif not isinstance(part, (EciIndex, EciPitch, EciPitchHz, EciProsody)):
+            flush()
+    flush()
+    return result
+
+
 class PersianProbeLanguageEngine(LanguageEngine):
     """Use English for explicit and clear Latin-script boundaries."""
     def speak(self, parts, on_pcm, on_index):
         self._assert_owner()
+        def valid_text(value):
+            return ''.join('\u2400' if char == '\0' else '\ufffd' if 0xd800 <= ord(char) <= 0xdfff
+                           else char for char in value)
+        # ECI's UTF-8 API cannot receive NUL or lone UTF-16 surrogates. Keep
+        # their positions as identifiable Unicode replacement characters.
+        parts = tuple(valid_text(part) if isinstance(part, str) else
+                      replace(part, text=valid_text(part.text)) if isinstance(part, EciText) else
+                      replace(part, original=valid_text(part.original), segmented=valid_text(part.segmented))
+                      if isinstance(part, EciCapitalWord) else part for part in parts)
         logical = actual = self._home
         output = []
 
@@ -94,7 +147,8 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 output.extend(reversed(events))
                 actual = key
 
-        for part in parts:
+        pinglish_runs = _pinglish_part_runs(parts, logical)
+        for position, part in enumerate(parts):
             if isinstance(part, EciLanguage):
                 logical = self._key(part.language, part.voice)
                 select(logical)
@@ -103,6 +157,12 @@ class PersianProbeLanguageEngine(LanguageEngine):
             ordinary_text = (text is not None and '`' not in text and
                              (not isinstance(part, EciText) or
                               not part.character_mode and not part.speed_control))
+            if position in pinglish_runs and logical[0] == PINGLISH_PROBE.id:
+                english = self._key(US_ENGLISH.id, logical[1])
+                for use_english, fragment in pinglish_runs[position]:
+                    select(english if use_english else logical)
+                    output.append(replace(part, text=fragment) if isinstance(part, EciText) else fragment)
+                continue
             if logical[0] == PERSIAN_PROBE.id and ordinary_text:
                 runs = _script_runs(text)
                 if any(kind == 'en' for kind, _ in runs):
@@ -117,6 +177,11 @@ class PersianProbeLanguageEngine(LanguageEngine):
                     select(self._key(US_ENGLISH.id, logical[1]))
                     output.append(part)
                     continue
+            if (isinstance(part, EciCapitalWord) and logical[0] == PINGLISH_PROBE.id and
+                    english_exception(part.original)):
+                select(self._key(US_ENGLISH.id, logical[1]))
+                output.append(part)
+                continue
             if text is not None or isinstance(part, EciCapitalWord):
                 select(logical)
             output.append(part)
@@ -138,6 +203,8 @@ class PersianProbeLanguageEngine(LanguageEngine):
             jobs = sentence_jobs(output, self._home) if mixed else ()
             if not jobs:
                 jobs = (tuple(output),)
+            if spoken & {PERSIAN_PROBE.id, PINGLISH_PROBE.id}:
+                jobs = tuple(chunk for job in jobs for chunk in bounded_jobs(job, self._home))
             self._cancelled.clear()
             for job in jobs:
                 if self._cancelled.is_set():

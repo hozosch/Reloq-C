@@ -11,6 +11,7 @@ struct fa_context_entry { const char *word, *final, *nonfinal; };
 #include "direct_fa_context.inc"
 #include "direct_fa_plural.inc"
 #include "direct_fa_suffixes.inc"
+#include "direct_fa_extended_suffixes.inc"
 #include "direct_fa_pause_words.inc"
 
 size_t reloq_fa_direct_word_count(void)
@@ -99,6 +100,87 @@ static int direct_suffix_word(const char *word,size_t bytes,char *output,size_t 
     return 0;
 }
 
+static int direct_extended_tag(const char *base,unsigned kind,unsigned mode,char *output,size_t capacity)
+{
+    static const char *const tails[13][3]={
+        {"tA","rin",NULL},{"ha","'i:'",NULL},{"ha","jAm",NULL},
+        {"ha","jAt",NULL},{"ha","jAS",NULL},{"ha","je","man"},
+        {"ha","je","tan"},{"ha","je","San"},{"haS",NULL,NULL},
+        {"ha","Sun",NULL},{NULL,"man",NULL},{NULL,"tan",NULL},{NULL,"San",NULL}
+    };
+    if(kind>=13 || mode>1)return -1;
+    size_t n=strlen(base);
+    if(n<5 || base[0]!='`' || base[1]!='[' || base[n-1]!=']')return -1;
+    size_t copy=n-1,stem=0,primary=0;char coda[3]={0,'e',0};
+    if(kind>=10) {
+        char last=base[n-2];
+        if(!strchr("bdfghjklmnprstvzSZGRCJ",last) || n<6)return -1;
+        coda[0]=last;--copy;
+    }
+    if(copy>=capacity)return -2;
+    memcpy(output,base,copy);
+    for(size_t i=2;i<copy;++i) {
+        if(output[i]=='.' && i+1<copy && output[i+1]>='0' && output[i+1]<='2') {
+            if(output[i+1]=='1')primary=stem;
+            ++stem;
+        }
+    }
+    if(!stem)return -1;
+    size_t tail_count=0;
+    while(tail_count<3 && (tails[kind][tail_count] || (kind>=10 && !tail_count)))++tail_count;
+    size_t total=stem+tail_count;
+    if(mode==1)primary=total>1?total-2:0;
+    size_t position=0;
+    if(mode==1) {
+        for(size_t i=2;i<copy;++i) {
+            if(output[i]!='.' || i+1>=copy || output[i+1]<'0' || output[i+1]>'2')continue;
+            output[i+1]=position==primary?'1':position==0 && primary>=2?'2':'0';
+            ++position;
+        }
+    }
+    for(size_t i=0;i<tail_count;++i) {
+        const char *body=(kind>=10 && !i)?coda:tails[kind][i];
+        size_t length=strlen(body),index=stem+i;
+        char stress;
+        if(mode==1)stress=index==primary?'1':index==0 && primary>=2?'2':'0';
+        else stress=index>=primary+2 && (index-primary)%2==0?'2':'0';
+        if(copy>capacity-1 || length+2>capacity-1-copy)return -2;
+        output[copy++]='.';output[copy++]=stress;
+        memcpy(output+copy,body,length);copy+=length;
+    }
+    if(copy+1>=capacity)return -2;
+    output[copy++]=']';output[copy]=0;
+    return 1;
+}
+
+static int direct_extended_word(const char *word,size_t bytes,char *output,size_t capacity)
+{
+    static const struct {const char *text;size_t bytes;} suffixes[]={
+        {"\xd8\xaa\xd8\xb1\xdb\x8c\xd9\x86",8}, /* ترین */
+        {"\xd9\x87\xd8\xa7\xdb\x8c\xdb\x8c",8}, /* هایی */
+        {"\xd9\x87\xd8\xa7\xdb\x8c\xd9\x85",8}, /* هایم */
+        {"\xd9\x87\xd8\xa7\xdb\x8c\xd8\xaa",8}, /* هایت */
+        {"\xd9\x87\xd8\xa7\xdb\x8c\xd8\xb4",8}, /* هایش */
+        {"\xd9\x87\xd8\xa7\xdb\x8c\xd9\x85\xd8\xa7\xd9\x86",12},
+        {"\xd9\x87\xd8\xa7\xdb\x8c\xd8\xaa\xd8\xa7\xd9\x86",12},
+        {"\xd9\x87\xd8\xa7\xdb\x8c\xd8\xb4\xd8\xa7\xd9\x86",12},
+        {"\xd9\x87\xd8\xa7\xd8\xb4",6},
+        {"\xd9\x87\xd8\xa7\xd8\xb4\xd9\x88\xd9\x86",10},
+        {"\xd9\x85\xd8\xa7\xd9\x86",6}, {"\xd8\xaa\xd8\xa7\xd9\x86",6},
+        {"\xd8\xb4\xd8\xa7\xd9\x86",6}
+    };
+    for(unsigned kind=0;kind<sizeof suffixes/sizeof suffixes[0];++kind) {
+        size_t n=suffixes[kind].bytes;
+        if(bytes<=n || memcmp(word+bytes-n,suffixes[kind].text,n))continue;
+        size_t index=direct_index(word,bytes-n);
+        if(index>=reloq_fa_direct_word_count() || index/8>=sizeof fa_extended_suffix_bases[0][0])continue;
+        for(unsigned mode=0;mode<2;++mode)
+            if(fa_extended_suffix_bases[kind][mode][index/8] & (1u<<(index%8)))
+                return direct_extended_tag(fa_direct_entries[index].tag,kind,mode,output,capacity);
+    }
+    return 0;
+}
+
 int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
                                  char *output,size_t capacity)
 {
@@ -157,5 +239,6 @@ int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
             return 1;
         }
     }
-    return direct_suffix_word(word,bytes,output,capacity);
+    result=direct_suffix_word(word,bytes,output,capacity);
+    return result?result:direct_extended_word(word,bytes,output,capacity);
 }

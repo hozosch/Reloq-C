@@ -2,25 +2,28 @@
 from __future__ import annotations
 
 import logging
+from collections import OrderedDict
 import re
 from bisect import bisect_left
 
 if __package__:
-    from .._reloq_eci_direct import (EciCapitalWord, EciIndex, EciLanguage, EciText,
+    from .._reloq_eci_direct import (EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciPitchHz,
+                                     EciProsody, EciText,
                                      SAMPLE_RATE, SAMPLE_RATES, PROCESS_TAGS)
     from .._reloq_persian_frames import FrameCapture, FrameReplay
     from .._reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from .._reloq_persian_projection import ProjectedJob
-    from .direct_fa_sequence import ScopedDirectPersianEngine, project
+    from .direct_fa_sequence import ScopedDirectPersianEngine, project, project_resilient
     from .continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence
     from .text_frontend import SpeechPart, UnsupportedPronunciation
 else:
-    from _reloq_eci_direct import (EciCapitalWord, EciIndex, EciLanguage, EciText,
+    from _reloq_eci_direct import (EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciPitchHz,
+                                    EciProsody, EciText,
                                     SAMPLE_RATE, SAMPLE_RATES, PROCESS_TAGS)
     from _reloq_persian_frames import FrameCapture, FrameReplay
     from _reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from _reloq_persian_projection import ProjectedJob
-    from direct_fa_sequence import ScopedDirectPersianEngine, project
+    from direct_fa_sequence import ScopedDirectPersianEngine, project, project_resilient
     from continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence
     from text_frontend import SpeechPart, UnsupportedPronunciation
 
@@ -32,8 +35,9 @@ _INITIAL_A = re.compile(r"^`\[\.[012](?:a|'a:')")
 
 class _PlanningVoice:
     """Activate the right owned handle before each private synthesis pass."""
-    def __init__(self, owner, key, engine, *, validate=False):
+    def __init__(self, owner, key, engine, *, validate=False, prefix=()):
         self.owner, self.key, self.engine, self.validate = owner, key, engine, validate
+        self.prefix = tuple(prefix)
         self.raw = engine._voice if isinstance(engine, ScopedDirectPersianEngine) else engine
         self._dll, self._handle = self.raw._dll, self.raw._handle
 
@@ -46,12 +50,25 @@ class _PlanningVoice:
 
     def _phonemes_for_probe(self, text):
         self._check()
+        cache = getattr(self.owner, '_persian_phoneme_cache', None)
+        if cache is None:
+            cache = self.owner._persian_phoneme_cache = OrderedDict()
+        key = (self.key, text, self.owner._dictionary_path,
+               tuple(sorted(self.owner._parameters.items())), self.owner._acoustic_clocks,
+               self._dll.eciGetParam(self._handle, PROCESS_TAGS))
+        if key in cache:
+            cache.move_to_end(key)
+            return cache[key]
         result = self.raw._phonemes_for_probe(text)
         self._check()
+        cache[key] = result
+        if len(cache) > 4096:
+            cache.popitem(last=False)
         return result
 
     def speak(self, parts, on_pcm, on_index):
         self._check()
+        parts = (*self.prefix, *parts)
         if isinstance(self.engine, ScopedDirectPersianEngine):
             tagged_parts = tuple(EciText(p, segmentation_guarded=True) if isinstance(p, str) else p
                                  for p in parts)
@@ -94,7 +111,7 @@ def _segments(owner, parts, fa_ids, english_id):
             part = EciText(part.segmented if spelled is False else part.original)
         if not isinstance(part, (str, EciText, EciIndex)):
             return None
-        if isinstance(part, EciText) and (part.character_mode or part.speed_control):
+        if isinstance(part, EciText) and part.speed_control:
             return None
         text = part if isinstance(part, str) else part.text if isinstance(part, EciText) else ''
         if '`' in text or key[0] not in (*fa_ids, english_id):
@@ -140,8 +157,16 @@ def _project_part(engine, items, *, follows):
     # A following English word is also a following word for Persian stress.
     # The known sentinel supplies that context and is removed after mapping.
     suffix = (' salam' if engine._pinglish else ' سلام') if follows else ''
-    prepared = project((*items, suffix) if suffix else items, engine._frontend,
-                       allow_fallback=engine._allow_fallback, pinglish=engine._pinglish)
+    source = (*items, suffix) if suffix else items
+    try:
+        prepared = project(source, engine._frontend,
+                           allow_fallback=engine._allow_fallback, pinglish=engine._pinglish)
+    except (ValueError, RuntimeError, OSError, UnicodeError):
+        if engine._cancelled.is_set():
+            raise InterruptedError('sentence planning was cancelled')
+        prepared = project_resilient(source, engine._frontend, pinglish=engine._pinglish,
+                                     validate=engine._voice._phonemes_for_probe,
+                                     cancelled=engine._cancelled.is_set)
     tagged = prepared.tagged
     limit = len(tagged)
     if suffix:
@@ -173,8 +198,21 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
     """Return None when this job must retain the established native route."""
     if reset_cancellation:
         owner._cancelled.clear()
+    prefix, ordinary, saw_text = [], [], False
+    for part in parts:
+        is_control = isinstance(part, (EciPitch, EciPitchHz, EciProsody)) or (
+            isinstance(part, EciText) and bool(part.speed_control))
+        if is_control:
+            if saw_text:
+                return None
+            prefix.append(part)
+        else:
+            ordinary.append(part)
+            if isinstance(part, (str, EciText, EciCapitalWord)):
+                value = part if isinstance(part, str) else part.text if isinstance(part, EciText) else part.original
+                saw_text |= bool(value.strip())
     try:
-        groups = _segments(owner, parts, fa_ids, english_id)
+        groups = _segments(owner, ordinary, fa_ids, english_id)
     except InterruptedError:
         return False
     if not groups:
@@ -189,7 +227,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
     fa_engine._cancelled.clear()
     restores = []
     try:
-        sentence, events, guarded, validate = [], [], [], False
+        sentence, events, guarded, spelling, validate = [], [], [], [], False
         for segment, (key, items) in enumerate(groups):
             if owner._cancelled.is_set():
                 return False
@@ -208,6 +246,8 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
                         text.append(value)
                         if isinstance(part, EciText) and part.segmentation_guarded and value:
                             guarded.append((segment, offset, offset + len(value)))
+                        if isinstance(part, EciText) and part.character_mode and value:
+                            spelling.append((segment, offset, offset + len(value)))
                         offset += len(value)
                 sentence.append(SpeechPart('en-us', ''.join(text)))
         if any(part.text.rstrip().endswith(('.', '?', '!', ',', ';', ':', '،', '؟', '؛'))
@@ -216,9 +256,9 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
         en_engine = owner._activate(en_key)
         german_key = owner._key(german_id, en_key[1])
         german_engine = owner._activate(german_key)
-        fa = _PlanningVoice(owner, fa_key, fa_engine, validate=validate)
-        en = _PlanningVoice(owner, en_key, en_engine)
-        german = _PlanningVoice(owner, german_key, german_engine)
+        fa = _PlanningVoice(owner, fa_key, fa_engine, validate=validate, prefix=prefix)
+        en = _PlanningVoice(owner, en_key, en_engine, prefix=prefix)
+        german = _PlanningVoice(owner, german_key, german_engine, prefix=prefix)
         for voice in (fa, en, german):
             voice.raw._cancelled.clear()
         if owner._cancelled.is_set():
@@ -239,7 +279,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
             if owner._cancelled.is_set():
                 raise InterruptedError('sentence planning was cancelled')
         plan = context_plan(sentence, fa, en, rate, maximum=30000, source_events=events,
-                            guarded_spans=guarded, check=check_cancel)
+                            guarded_spans=guarded, spelling_spans=spelling, check=check_cancel)
         original_counts = plan.counts
         selected_sentence(plan, sentence, en, german, rate, check=check_cancel)
         marks = replay_marks(plan, original_counts)
@@ -284,8 +324,15 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
     if owner._cancelled.is_set():
         return False
     try:
-        prepared = project(items, engine._frontend, allow_fallback=engine._allow_fallback,
-                           pinglish=engine._pinglish)
+        try:
+            prepared = project(items, engine._frontend, allow_fallback=engine._allow_fallback,
+                               pinglish=engine._pinglish)
+        except (ValueError, RuntimeError, OSError, UnicodeError):
+            if owner._cancelled.is_set():
+                return False
+            prepared = project_resilient(items, engine._frontend, pinglish=engine._pinglish,
+                                         validate=engine._voice._phonemes_for_probe,
+                                         cancelled=owner._cancelled.is_set)
         matches = tuple(_TAG.finditer(prepared.tagged))
         tags = tuple(match.group() for match in matches)
         separators = tuple(prepared.tagged[a.end():b.start()] for a, b in zip(matches, matches[1:]))
@@ -348,13 +395,13 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
 
 
 def sentence_jobs(parts, home):
-    """Split ordinary multi-sentence jobs at unambiguous full stops."""
+    """Split mixed speech at unambiguous native phrase punctuation."""
     if any(not isinstance(p, (str, EciText, EciIndex, EciLanguage, EciCapitalWord)) or
            isinstance(p, EciText) and (p.character_mode or p.speed_control) for p in parts):
         return ()
     full = ''.join(p if isinstance(p, str) else p.text if isinstance(p, EciText) else
                    p.original if isinstance(p, EciCapitalWord) else '' for p in parts)
-    if not any(c in full for c in '.!?؟\n'):
+    if not any(c in full for c in '.!?؟,;:،؛\n'):
         return ()
     jobs, pending, key, offset = [], [], home, 0
     for part in parts:
@@ -373,10 +420,10 @@ def sentence_jobs(parts, home):
         begin = 0
         for i, char in enumerate(value):
             absolute = offset + i
-            if char not in '.!?؟\n':
+            if char not in '.!?؟,;:،؛\n':
                 continue
             after = full[absolute + 1:absolute + 2]
-            if char == '.' and after and not after.isspace():
+            if char in '.,;:،؛' and after and not after.isspace():
                 continue
             if char == '.':
                 before = re.search(r'([A-Za-z]+)$', full[:absolute])
@@ -407,3 +454,76 @@ def sentence_jobs(parts, home):
     elif jobs:
         jobs[-1] += tuple(p for p in pending if isinstance(p, EciIndex))
     return tuple(jobs) if len(jobs) > 1 else ()
+
+
+def bounded_jobs(parts, home, *, maximum=1200, max_switches=24):
+    """Bound long requests while retaining source marks and active controls."""
+    total = sum(len(part if isinstance(part, str) else part.text if isinstance(part, EciText)
+                    and not part.speed_control else part.original if isinstance(part, EciCapitalWord) else '')
+                for part in parts)
+    switches = sum(isinstance(part, EciLanguage) for part in parts)
+    if total <= maximum and switches <= max_switches:
+        return (tuple(parts),)
+    if maximum < 64 or max_switches < 2:
+        raise ValueError('invalid bounded speech size')
+    jobs, pending, key, size, changes = [], [], home, 0, 0
+    controls = {}
+
+    def flush():
+        nonlocal pending, size, changes
+        if pending:
+            jobs.append(tuple(pending))
+        pending = [EciLanguage(*key), *controls.values()]
+        size, changes = 0, 0
+
+    for part in parts:
+        if isinstance(part, EciLanguage):
+            if changes >= max_switches and size:
+                flush()
+            key = (part.language, part.voice)
+            pending.append(part)
+            changes += 1
+            continue
+        if isinstance(part, (EciPitch, EciPitchHz, EciProsody)):
+            slot = ('pitch' if isinstance(part, (EciPitch, EciPitchHz)) else
+                    'speed' if part.parameter in (6, 8) else part.parameter)
+            controls.pop(slot, None)
+            controls[slot] = part
+            pending.append(part)
+            continue
+        if isinstance(part, EciText) and part.speed_control:
+            controls.pop('speed', None)
+            controls['speed'] = EciText(part.speed_control + ' ')
+            pending.append(part)
+            continue
+        if isinstance(part, EciCapitalWord):
+            if size and size + len(part.original) > maximum:
+                flush()
+            if len(part.original) <= maximum:
+                pending.append(part)
+                size += len(part.original)
+                continue
+            part = EciText(part.original)
+        if not isinstance(part, (str, EciText)):
+            pending.append(part)
+            continue
+        value = part if isinstance(part, str) else part.text
+        while value:
+            if size >= maximum:
+                flush()
+            room = maximum - size
+            if len(value) <= room:
+                take = len(value)
+            else:
+                take = max(value.rfind(' ', 0, room + 1), value.rfind('\n', 0, room + 1)) + 1
+                if take <= room // 3:
+                    take = room
+            piece, value = value[:take], value[take:]
+            pending.append(piece if isinstance(part, str) else EciText(
+                piece, part.character_mode, part.speed_control, part.segmentation_guarded))
+            size += len(piece)
+            if value:
+                flush()
+    if pending:
+        jobs.append(tuple(pending))
+    return tuple(jobs)

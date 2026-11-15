@@ -70,6 +70,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_Latn', 'badbakht soal?', False),
                           ('fa_Latn', 'salam khub?', False),
                           ('fa_Latn', 'salam khubtar?', False),
+                          ('fa_Latn', 'salam phone donya', False),
+                          ('fa_Latn', 'salam phone donya', 'english_exception'),
+                          ('fa_IR', 'سلام (دنیا) 🙂', False),
+                          ('fa_IR', 'عدد ۱۲-۱۵ است', False),
                           ('fa_Latn', 'w', True),
                           ('fa_Latn', 'NVDA', True),
                           ('fa_IR', 'ق', True),
@@ -107,6 +111,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     raise AssertionError('English home language changed the mixed sentence')
                 if self.audio['mixed'] == self.audio['english'] + self.audio['persian']:
                     raise AssertionError('mixed sentence was rendered as two disconnected sessions')
+                automatic = next(row for row in self.results
+                                 if row['text'] == 'salam phone donya' and row['spelling'] is False)
+                explicit = next(row for row in self.results if row['spelling'] == 'english_exception')
+                if automatic['pcm_sha256'] != explicit['pcm_sha256']:
+                    raise AssertionError('Pinglish English exception differs from explicit routing')
                 RESULT.write_text(json.dumps({'ok': True, 'cases': self.results}, ensure_ascii=True), encoding='utf8')
                 return
             locale, text, spelling = self.cases[self.index]
@@ -124,6 +133,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text]
             elif spelling == 'mixedspelling':
                 sequence = ['سلام ', self.character(True), '؟', self.character(False), ' دنیا']
+            elif spelling == 'english_exception':
+                sequence = ['salam ', self.language_command('en_US'), 'phone',
+                            self.language_command('fa_Latn'), ' donya']
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
             self.synth.speak([self.index_command(self.index + 1), *sequence])

@@ -12,6 +12,7 @@ on:
       - experiments/persian/continuous_frames.h
       - experiments/persian/continuous_replay.inc
       - experiments/persian/test_continuous_replay.py
+      - experiments/persian/test_sibilant_noise.py
       - nvda/_reloq_persian_frames.py
       - experiments/persian/test_windows_acoustics.py
       - .github/workflows/persian-windows-acoustic-probe.yml
@@ -68,6 +69,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Windows Persian acoustic isolation failed' }
           python -B experiments/persian/test_continuous_replay.py --probe persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Windows continuous replay failed' }
+          python -B experiments/persian/test_sibilant_noise.py --candidate persian-windows-probe/eci_persian_probe.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Persian sibilant targets failed' }
       - uses: actions/upload-artifact@v4
         with:
           name: persian-windows-acoustic-probe

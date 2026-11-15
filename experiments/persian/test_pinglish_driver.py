@@ -83,14 +83,18 @@ def analysis_tests(frontend):
         return tuple(events)
     worker.events = transient_events
     try:
-        check_mapping('salam khubtar', frontend.analyze_pinglish('salam khubtar', positioned=True,
-                                                                 allow_fallback=True))
+        check_mapping('salam zooon', frontend.analyze_pinglish('salam zooon', positioned=True,
+                                                               allow_fallback=True))
         assert len(calls) == 2
     finally:
         worker.events = original_events
 
     for source in ('salam khubtar?', 'khubtar salam', 'chetori', 'salam, khubtar.',
                    'salam 12 khubtar', 'khubtar ۳٫۱۴ donya?', 'khubtar 12 khubtar 34?'):
+        result = frontend.analyze_pinglish(source, positioned=True, allow_fallback=False)
+        check_mapping(source, result)
+        assert not result.used_fallback
+    for source in ('salam zooon?', 'zooon salam'):
         result = frontend.analyze_pinglish(source, positioned=True, allow_fallback=True)
         if result is None:
             normalized, _ = normalize_pinglish(source)
@@ -113,11 +117,11 @@ def analysis_tests(frontend):
     assert word.source_map[len('salam ')] == word.parts[0].text.index('`[', 1)
     parts = ('salam ', EciIndex(7), 'khubtar?', EciIndex(8))
     job = project(parts, frontend, pinglish=True, allow_fallback=True)
-    assert job.needs_native_validation and [p.value for p in job.parts if isinstance(p, EciIndex)] == [7, 8]
+    assert not job.needs_native_validation and [p.value for p in job.parts if isinstance(p, EciIndex)] == [7, 8]
     assert frontend.analyze_pinglish('salam father donya', positioned=False, allow_fallback=True) is None
     numbered = project(('salam ', EciIndex(9), '1', EciIndex(10), '2 khubtar'),
                        frontend, pinglish=True, allow_fallback=True)
-    assert numbered.needs_native_validation
+    assert not numbered.needs_native_validation
     assert [p.value for p in numbered.parts if isinstance(p, EciIndex)] == [9, 10]
     for parts in (('`vp80 salam',), ('salam father donya',)):
         try:

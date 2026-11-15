@@ -150,6 +150,10 @@ class DirectFirstPersian:
         self._dll.reloq_fa_direct_free.argtypes = (ctypes.c_void_p,)
         self._dll.reloq_fa_direct_letter.argtypes = (ctypes.c_uint32,)
         self._dll.reloq_fa_direct_letter.restype = ctypes.c_char_p
+        self._pinglish_word = getattr(self._dll, 'reloq_fa_pinglish_word', None)
+        if self._pinglish_word is not None:
+            self._pinglish_word.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t)
+            self._pinglish_word.restype = ctypes.c_int
         self._worker_paths = (worker, espeak_library, data_parent)
         self._worker = None
         self._guard = threading.Lock()
@@ -232,6 +236,66 @@ class DirectFirstPersian:
             raise ValueError('one Unicode character is required')
         return self.analyze_character(char)
 
+    def _direct_pinglish(self, text: str) -> PersianAnalysis | None:
+        """Run native Latin rules alongside verified Persian words and numbers."""
+        if self._pinglish_word is None:
+            return None
+        words = tuple(re.finditer(r'[A-Za-z]+', text))
+        if not words:
+            return None
+        source = text.encode('utf8')
+        offsets = [0]
+        for char in text:
+            offsets.append(offsets[-1] + len(char.encode('utf8')))
+        mapping = [0] * (len(source) + 1)
+        pieces, position, cursor = [], 0, 0
+
+        def ordinary(first, last, *, follows):
+            nonlocal position
+            if first == last:
+                return True
+            value = text[first:last]
+            # A known following Latin word is also a following word for the
+            # preceding Persian function-word stress.
+            trial = value + (' سلام' if follows else '')
+            status, tagged, local, _ = self._direct(trial)
+            if status != 0:
+                return False
+            count = offsets[last] - offsets[first]
+            end = local[count]
+            pieces.append(tagged[:end])
+            for i in range(count + 1):
+                mapping[offsets[first] + i] = position + local[i]
+            position += end
+            return True
+
+        for match in words:
+            if not ordinary(cursor, match.start(), follows=True):
+                return None
+            word = match.group()
+            if len(word) == 1:
+                named = latin_name(word)
+                if named is None:
+                    return None
+                tag = named.text
+            else:
+                encoded = word.encode('ascii')
+                buffer = ctypes.create_string_buffer(max(2048, len(encoded) * 12 + 16))
+                status = self._pinglish_word(encoded, len(encoded), buffer, len(buffer))
+                if status != 1:
+                    return None
+                tag = buffer.value.decode('ascii')
+            start, end = offsets[match.start()], offsets[match.end()]
+            for i in range(start, end):
+                mapping[i] = position
+            pieces.append(tag)
+            position += len(tag)
+            mapping[end] = position
+            cursor = match.end()
+        if not ordinary(cursor, len(text), follows=False):
+            return None
+        return PersianAnalysis((SpeechPart('fa', ''.join(pieces)),), tuple(mapping), False)
+
     def analyze_pinglish(self, text: str, *, positioned: bool,
                          allow_fallback: bool) -> PersianAnalysis | None:
         """Analyze explicit Pinglish, preserving confirmed Persian word sounds.
@@ -247,6 +311,8 @@ class DirectFirstPersian:
             return None
         normalized, original_to_normalized = normalize_pinglish(text)
         direct = self.analyze_direct(normalized)
+        if direct is None:
+            direct = self._direct_pinglish(normalized)
         if direct is not None:
             assert direct.source_map is not None
             mapping = tuple(direct.source_map[pos] for pos in original_to_normalized)
