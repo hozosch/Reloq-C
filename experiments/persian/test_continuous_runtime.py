@@ -53,6 +53,8 @@ def main():
     engine = create()
     try:
         native = engine._engines[PERSIAN_PROBE.id]
+        assert FrameCapture(native._voice._dll)._controls_only is not None, \
+            'the native control-only planning capability is not exported'
         assert native._frontend._worker is None
         assert render(engine, ('کتابم کتابت کتابش کتابها.',))[0]
         assert render(engine, ('من NVDA را دوست دارم.',))[0]
