@@ -189,7 +189,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
     fa_engine._cancelled.clear()
     restores = []
     try:
-        sentence, events, validate = [], [], False
+        sentence, events, guarded, validate = [], [], [], False
         for segment, (key, items) in enumerate(groups):
             if owner._cancelled.is_set():
                 return False
@@ -206,6 +206,8 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
                     else:
                         value = part if isinstance(part, str) else part.text
                         text.append(value)
+                        if isinstance(part, EciText) and part.segmentation_guarded and value:
+                            guarded.append((segment, offset, offset + len(value)))
                         offset += len(value)
                 sentence.append(SpeechPart('en-us', ''.join(text)))
         if any(part.text.rstrip().endswith(('.', '?', '!', ',', ';', ':', '،', '؟', '؛'))
@@ -236,7 +238,8 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
         def check_cancel():
             if owner._cancelled.is_set():
                 raise InterruptedError('sentence planning was cancelled')
-        plan = context_plan(sentence, fa, en, rate, maximum=30000, source_events=events, check=check_cancel)
+        plan = context_plan(sentence, fa, en, rate, maximum=30000, source_events=events,
+                            guarded_spans=guarded, check=check_cancel)
         original_counts = plan.counts
         selected_sentence(plan, sentence, en, german, rate, check=check_cancel)
         marks = replay_marks(plan, original_counts)

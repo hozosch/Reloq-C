@@ -8,8 +8,10 @@ import threading
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 from continuous_driver import _PlanningVoice
+from continuous_plan import _context
 from nvda_driver_probe import PERSIAN_PROBE, US_ENGLISH, make_language_engine
-from _reloq_eci_direct import EciCapitalWord, EciIndex, EciLanguage, GENDER, SAMPLE_RATE
+from _reloq_eci_direct import EciCapitalWord, EciIndex, EciLanguage, EciText, GENDER, SAMPLE_RATE
+from text_frontend import SpeechPart
 
 
 def main():
@@ -17,6 +19,11 @@ def main():
     for option in ('scope-probe', 'native-library', 'worker', 'espeak-library', 'data-parent'):
         parser.add_argument('--' + option, type=Path, required=True)
     args = parser.parse_args()
+
+    planned = _context((SpeechPart('en-us', 'swapfile again'),), 'en-us', None, None, {},
+                       ((0, 4, 0, 123, 8),), ((0, 0, 8),))
+    assert planned == [EciText('swap', segmentation_guarded=True), EciIndex(123),
+                       EciText('file', segmentation_guarded=True), ' again']
 
     def create():
         return make_language_engine(args.scope_probe, args.native_library, args.worker,
@@ -62,6 +69,9 @@ def main():
             assert explicit == mixed
             capital, _ = render(engine, (EciCapitalWord('NVDA', 'NV DA'), ' خوب است.'))
             assert capital and capital != english + persian
+            protected, indexes = render(engine, (EciText('swapfile ', segmentation_guarded=True),
+                                                  EciIndex(13), 'خوب است.'))
+            assert protected and indexes[0][0] == 13 and 0 < indexes[0][1] < len(protected)
 
             first, _ = render(engine, ('این یک آزمایش است.',))
             second, _ = render(engine, (' NVDA خوب است.',))

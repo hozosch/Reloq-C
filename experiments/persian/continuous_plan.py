@@ -13,12 +13,12 @@ import re
 import struct
 
 if __package__:
-    from .._reloq_eci_direct import EciIndex, SAMPLE_RATE, SAMPLE_RATES
+    from .._reloq_eci_direct import EciIndex, EciText, SAMPLE_RATE, SAMPLE_RATES
     from .._reloq_persian_frames import FrameCapture, NativeFrame
     from .._reloq_persian_glide import TRACT, apply_u_a_glides, plan_u_a_glides
     from .text_frontend import native_tag_accepted
 else:
-    from _reloq_eci_direct import EciIndex, SAMPLE_RATE, SAMPLE_RATES
+    from _reloq_eci_direct import EciIndex, EciText, SAMPLE_RATE, SAMPLE_RATES
     from _reloq_persian_frames import FrameCapture, NativeFrame
     from _reloq_persian_glide import TRACT, apply_u_a_glides, plan_u_a_glides
     from text_frontend import native_tag_accepted
@@ -124,7 +124,7 @@ def persian_proxy_for_english(text, en):
     return _TAG.sub(lambda _match: next(it), text)
 
 
-def _context(parts, language, en, fa, word_markers, source_marks=()):
+def _context(parts, language, en, fa, word_markers, source_marks=(), guarded_spans=()):
     result = []
     for i, part in enumerate(parts):
         if i:
@@ -137,12 +137,23 @@ def _context(parts, language, en, fa, word_markers, source_marks=()):
                                for word, match in enumerate(_TAG.finditer(part.text))
                                if word and (i, word) in word_markers)
             cursor = 0
+            guarded = [(start, end) for segment, start, end in guarded_spans if segment == i]
+            def append_text(start, end):
+                if not guarded:
+                    result.append(part.text[start:end])
+                    return
+                cuts = sorted({start, end, *(p for a, b in guarded for p in (a, b) if start < p < end)})
+                for left, right in zip(cuts, cuts[1:]):
+                    piece = part.text[left:right]
+                    protect = any(a <= left and right <= b for a, b in guarded)
+                    result.append(EciText(piece, segmentation_guarded=True) if protect else piece)
             for offset, _order, mark in sorted(inserts):
                 if offset < cursor or offset > len(part.text):
                     raise ValueError('invalid source index offset')
-                result.extend((part.text[cursor:offset], EciIndex(mark)))
+                append_text(cursor, offset)
+                result.append(EciIndex(mark))
                 cursor = offset
-            result.append(part.text[cursor:])
+            append_text(cursor, len(part.text))
         elif language == 'fa':
             result.append(english_phone_proxy(en, fa, part.text))
         else:
@@ -276,7 +287,7 @@ class SentencePlan:
     source_marks: tuple[tuple[int, int, int], ...] = ()
 
 
-def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), check=None):
+def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarded_spans=(), check=None):
     parts = tuple(parts)
     if not parts or len(parts) > 32 or {p.language for p in parts} != {'fa', 'en-us'}:
         raise ValueError('expected a bounded mixed English/Persian clause')
@@ -305,6 +316,11 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), check=
         raise RuntimeError('invalid shared sentence boundaries')
     word_markers = _word_markers(parts)
     source_events = tuple(source_events)
+    guarded_spans = tuple(guarded_spans)
+    if any(type(segment) is not int or not 0 <= segment < len(parts) or
+           type(start) is not int or type(end) is not int or not 0 <= start < end <= len(parts[segment].text)
+           for segment, start, end in guarded_spans):
+        raise ValueError('invalid protected text span')
     next_mark = max((len(parts) - 1, *word_markers.values())) + 1
     source_marks = []
     for order, (segment, offset, value) in enumerate(source_events):
@@ -315,7 +331,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), check=
         source_marks.append((segment, offset, order, next_mark + order, value))
     contexts, edges = {}, {}
     for language, voice in (('fa', fa), ('en-us', en)):
-        item = get(voice, _context(parts, language, en, fa, word_markers, source_marks))
+        item = get(voice, _context(parts, language, en, fa, word_markers, source_marks, guarded_spans))
         bounds = _edges(item, len(parts))
         _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate, check)
         contexts[language], edges[language] = item, bounds
