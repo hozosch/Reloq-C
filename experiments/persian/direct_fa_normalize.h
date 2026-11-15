@@ -8,4 +8,7 @@
  * caller frees both arrays with reloq_fa_direct_free(). No eSpeak runtime. */
 int reloq_fa_direct_normalize(const char *text,size_t length,char **output,
                               size_t **source_map,size_t *error_offset);
+/* Text analysis keeps U+066B and U+066C distinct for number parsing. */
+int reloq_fa_direct_normalize_text(const char *text,size_t length,char **output,
+                                   size_t **source_map,size_t *error_offset);
 #endif

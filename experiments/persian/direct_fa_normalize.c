@@ -20,8 +20,8 @@ static const char *replacement(uint32_t source)
     return NULL;
 }
 
-int reloq_fa_direct_normalize(const char *text,size_t length,char **output,
-                              size_t **source_map,size_t *error_offset)
+static int normalize(const char *text,size_t length,char **output,
+                     size_t **source_map,size_t *error_offset,int preserve_numbers)
 {
     if(output)*output=NULL;
     if(source_map)*source_map=NULL;
@@ -40,7 +40,7 @@ int reloq_fa_direct_normalize(const char *text,size_t length,char **output,
         if(reloq_utf8_next((const unsigned char *)text,length,&at,&cp)!=1) {
             *error_offset=begin;free(map);free(result);return -1;
         }
-        const char *value=replacement(cp);
+        const char *value=preserve_numbers && (cp==0x066b || cp==0x066c)?NULL:replacement(cp);
         size_t n=value?strlen(value):at-begin;
         if(n>capacity-used-1){free(map);free(result);return -2;}
         for(size_t i=begin;i<at;++i)map[i]=used;
@@ -49,3 +49,11 @@ int reloq_fa_direct_normalize(const char *text,size_t length,char **output,
     }
     result[used]=0;map[length]=used;*output=result;*source_map=map;return 0;
 }
+
+int reloq_fa_direct_normalize(const char *text,size_t length,char **output,
+                              size_t **source_map,size_t *error_offset)
+{ return normalize(text,length,output,source_map,error_offset,0); }
+
+int reloq_fa_direct_normalize_text(const char *text,size_t length,char **output,
+                                   size_t **source_map,size_t *error_offset)
+{ return normalize(text,length,output,source_map,error_offset,1); }

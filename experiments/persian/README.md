@@ -1303,10 +1303,26 @@ the existing base and suffix without starting eSpeak. A generated fingerprint
 prevents compiling the bitmap against a different lexicon. This does not
 cover unknown bases, suffix spelling without the non-joiner, or other
 morphology; those cases remain uncovered or use the reference fallback.
-The prototype `direct_fa_text.c` handles only supported words, whitespace and
-basic punctuation. It returns source mappings at **word** granularity; it
-does not supply precise within-word phoneme positions, numbers or Latin
-routing. The remaining native conditional pronunciation rules and morphology in
+`compile_direct_numbers.py` generates the 0–999 number groups from the
+pinned eSpeak dictionary and validates their tags in four contexts. The C
+number experiment composes groups up to 999,999,999,999, retaining exactly
+one connecting vowel between nonzero groups. It accepts ASCII, Persian and
+Arabic-Indic digits; ASCII comma and U+066C group thousands, while ASCII full
+stop and U+066B introduce a fractional part. Fraction digits are read
+individually; leading-zero integers are also read as individual digits.
+Ambiguous or malformed grouping, repeated decimal separators, integers above
+12 digits and fractions above 32 digits return a distinct unsupported status.
+Leading plus, hyphen-minus and Unicode minus receive Persian sign words;
+number ranges, times, dates, ordinals and currency-specific forms are not covered.
+The basic 0–999 groups are checked against eSpeak; stress in composed large
+numbers and decimal phrases is an approximation that still needs listening.
+Unlike eSpeak's double connective in some thousand-plus-unit cases, the
+composition uses one connecting vowel.
+
+The prototype `direct_fa_text.c` handles supported words, these number
+forms, whitespace and basic punctuation. It returns source mappings at
+**word or number** granularity; it does not supply precise within-word
+phoneme positions or direct Latin routing. The remaining native conditional pronunciation rules and morphology in
 `fa_rules` are still unimplemented, as are the streaming acoustic transitions
 and integration with NVDA. This is not a selectable voice or an add-on.
 For `او آمد`, the direct C output also feeds the existing private frame-replay
@@ -1318,21 +1334,25 @@ checks continuity of the chosen sound, not a real-time implementation.
 trial. It passes unambiguous English ASCII text unchanged to the English path
 and converts covered Persian text directly. Persian comma, semicolon and
 question marks become their ordinary native punctuation equivalents; other
-supported marks and whitespace remain intact. For uncovered inputs without
-numbers, the isolated eSpeak worker analyses punctuation-separated clauses,
-but the original punctuation is assigned to the preceding language core.
+supported marks and whitespace remain intact. For uncovered inputs, the
+isolated eSpeak worker analyses punctuation-separated clauses, but the
+original punctuation is assigned to the preceding language core. When
+supported numbers appear in an otherwise uncovered sentence, checked
+invariant Persian placeholder words retain clause context during reference
+analysis; those words are replaced with direct numeric tags only if alignment
+is unambiguous. This provides no fallback source map. Pinglish uses its
+separate reference mode with the same direct numeric substitutions.
 This prevents eSpeak from saying a comma name merely because there is no
-space after it. Pinglish uses the separate reference mode. This is a bounded
-experiment: clause splitting and English routing still need wider coverage,
-and numeric fallback has not adopted the native punctuation strategy.
+space after it. This is a bounded experiment: placeholder alignment, clause
+splitting and English routing still need wider coverage.
 In the offline shared-sentence planner, the inaudible planning proxies also
 retain punctuation inside Persian and English parts; this does not yet make
 that planner a streaming NVDA integration.
 
 The upstream orthographic replacements equate U+066B and U+066C with commas.
-Both the direct text converter and the hybrid experiment reject those two
-numeric separators until number parsing is implemented; they must not become
-sentence pauses. For symbol-only inputs the prototype still follows the old
+The text path preserves them before numeric analysis so neither is confused
+with a sentence pause; the independent normalization probe continues to
+reproduce the upstream replacements. For symbol-only inputs the prototype still follows the old
 reference behavior. Integration must preserve NVDA's own symbol-level and
 spoken-name decisions rather than deciding those here. The worker is started
 lazily, so covered Persian or English text does not start another process.
@@ -1350,9 +1370,17 @@ python3 experiments/persian/compile_direct_lexicon.py \
 python3 experiments/persian/compile_direct_plural.py \
   --probe /tmp/fa-internal/libreloq_eci.so --espeak-library /path/to/libespeak-ng.so \
   --data-parent /path/to/data-parent
+python3 experiments/persian/compile_direct_numbers.py \
+  --probe /tmp/fa-internal/libreloq_eci.so --espeak-library /path/to/libespeak-ng.so \
+  --data-parent /path/to/data-parent
 cc -std=c11 -O2 -Wall -Wextra -Werror -pedantic -fPIC -shared -Iinclude \
-  experiments/persian/direct_fa_lexicon.c experiments/persian/direct_fa_normalize.c \
+  experiments/persian/direct_fa_lexicon.c experiments/persian/direct_fa_numbers.c \
+  experiments/persian/direct_fa_normalize.c \
   experiments/persian/direct_fa_text.c src/reloq_utf8.c -o /tmp/fa-direct.so
+python3 experiments/persian/test_direct_fa_numbers.py --native-library /tmp/fa-direct.so \
+  --espeak-library /path/to/libespeak-ng.so --data-parent /path/to/data-parent
+python3 experiments/persian/test_direct_number_audio.py --native-library /tmp/fa-direct.so \
+  --probe /tmp/fa-internal/libreloq_eci.so --wav /tmp/persian-numbers.wav
 python3 experiments/persian/test_direct_fa_lexicon.py --library /tmp/fa-direct.so \
   --probe /tmp/fa-internal/libreloq_eci.so --espeak-library /path/to/libespeak-ng.so \
   --data-parent /path/to/data-parent

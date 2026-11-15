@@ -13,6 +13,7 @@ on:
       - experiments/persian/direct_fa_*.h
       - experiments/persian/direct_fa_*.inc
       - experiments/persian/test_direct_fa.c
+      - experiments/persian/test_direct_fa_numbers.py
       - experiments/persian/hybrid_fa_frontend.py
       - experiments/persian/test_hybrid_fa_frontend.py
       - include/reloq_utf8.h
@@ -44,11 +45,11 @@ jobs:
           $vs = & $vswhere -latest -products * -property installationPath
           if (!$vs) { throw 'Visual Studio C compiler was not found' }
           $envcmd = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
-          cmd.exe /d /c "`"$envcmd`" >nul && cl /nologo /O2 /W4 /std:c11 /utf-8 /Iinclude /Fe:fa-direct-test.exe experiments\persian\test_direct_fa.c experiments\persian\direct_fa_lexicon.c experiments\persian\direct_fa_normalize.c experiments\persian\direct_fa_text.c src\reloq_utf8.c"
+          cmd.exe /d /c "`"$envcmd`" >nul && cl /nologo /O2 /W4 /std:c11 /utf-8 /Iinclude /Fe:fa-direct-test.exe experiments\persian\test_direct_fa.c experiments\persian\direct_fa_lexicon.c experiments\persian\direct_fa_numbers.c experiments\persian\direct_fa_normalize.c experiments\persian\direct_fa_text.c src\reloq_utf8.c"
           if ($LASTEXITCODE -ne 0) { throw 'Direct Persian components failed to compile' }
           .\fa-direct-test.exe
           if ($LASTEXITCODE -ne 0) { throw 'Direct Persian text smoke test failed' }
-          cmd.exe /d /c "`"$envcmd`" >nul && cl /nologo /O2 /W4 /std:c11 /utf-8 /LD /Iinclude /Fe:fa-direct.dll experiments\persian\direct_fa_lexicon.c experiments\persian\direct_fa_normalize.c experiments\persian\direct_fa_text.c src\reloq_utf8.c /link /EXPORT:reloq_fa_direct_text /EXPORT:reloq_fa_direct_free"
+          cmd.exe /d /c "`"$envcmd`" >nul && cl /nologo /O2 /W4 /std:c11 /utf-8 /LD /Iinclude /Fe:fa-direct.dll experiments\persian\direct_fa_lexicon.c experiments\persian\direct_fa_numbers.c experiments\persian\direct_fa_normalize.c experiments\persian\direct_fa_text.c src\reloq_utf8.c /link /EXPORT:reloq_fa_direct_text /EXPORT:reloq_fa_direct_number /EXPORT:reloq_fa_direct_free"
           if ($LASTEXITCODE -ne 0) { throw 'Direct Persian DLL failed to compile' }
       - name: Obtain NVDA for its eSpeak library and data
         shell: pwsh
@@ -70,5 +71,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Text worker could not initialize NVDA eSpeak' }
           python -B experiments/persian/test_espeak_worker.py --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'NVDA eSpeak worker test failed' }
+          python -B experiments/persian/test_direct_fa_numbers.py --native-library "$pwd/fa-direct.dll" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'Direct Persian number test failed' }
           python -B experiments/persian/test_hybrid_fa_frontend.py --native-library "$pwd/fa-direct.dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Direct-first Persian frontend test failed' }

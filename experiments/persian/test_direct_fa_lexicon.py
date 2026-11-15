@@ -123,8 +123,8 @@ def main():
     assert mapping[0] == 0 and mapping[first_word] == len('`[.0sA.1lam]')
     assert mapping[first_word + 1] == len('`[.0sA.1lam] ')
     assert all(value == 0 for value in mapping[:first_word])
-    for text in ('سلام ٫ دنیا', 'سلام ٬ دنیا', '۳٫۱۴', '۱۲٬۳۴۵'):
-        assert phrase(text.encode('utf8'))[0] == 1, text
+    for text in ('سلام ٫ دنیا', 'سلام ٬ دنیا', '۳٫', '۱۲٬۳۴'):
+        assert phrase(text.encode('utf8'))[0] == 2, text
 
     fa = engine(args.probe, 0x90000)
     checks = 0

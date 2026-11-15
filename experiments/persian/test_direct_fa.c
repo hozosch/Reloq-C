@@ -17,6 +17,16 @@ static int check_text(const char *text,const char *expected)
     reloq_fa_direct_free(out);reloq_fa_direct_free(map);return 1;
 }
 
+static int same_text(const char *first,const char *second)
+{
+    char *a=NULL,*b=NULL;size_t *ma=NULL,*mb=NULL,ea=0,eb=0;
+    int ra=reloq_fa_direct_text(first,strlen(first),&a,&ma,&ea);
+    int rb=reloq_fa_direct_text(second,strlen(second),&b,&mb,&eb);
+    int same=ra==0 && rb==0 && a && b && !strcmp(a,b);
+    reloq_fa_direct_free(a);reloq_fa_direct_free(b);
+    reloq_fa_direct_free(ma);reloq_fa_direct_free(mb);return same;
+}
+
 int main(void)
 {
     if(reloq_fa_direct_word_count()<15000 ||
@@ -29,6 +39,15 @@ int main(void)
        !check_text("سلام؛ دنیا؟", "`[.0sA.1lam]; `[.1do.0nja]?") ||
        !check_text("کتاب‌ها آمد.", "`[.1ke.0tab.0ha] `[.1'a:'.0mAd].") ||
        !check_text("کتاب‌ها؟", "`[.1ke.0tab.1ha]?") ||
+       !check_text("۱۲", "`[.0dA.1vaz.0dAhw]") ||
+       !check_text("۳٫۱۴", "`[.2se] `[.0noR.2t'e:'] `[.0jek] `[.1Ca.0har]") ||
+       !check_text("1001", "`[.2jek] `[.0he.2za.0ro] `[.1jek]") ||
+       !check_text("−۳", "`[.1mAn.0fi] `[.1se]") ||
+       !check_text("+۳", "`[.1mos.0bAt] `[.1se]") ||
+       !check_text("012", "`[.0sefr] `[.0jek] `[.1do]") ||
+       !same_text("۱۲٬۳۴۵", "12,345") ||
+       !same_text("۱٬۲۳۴٫۵", "1,234.5") ||
+       !same_text("١٢٣٤٫٥", "1234.5") ||
        !check_text("او و آمد.", "`[.1'u:'] `[.1vA] `[.1'a:'.0mAd].") ||
        !check_text("من آمد.", "`[.0mAn] `[.1'a:'.0mAd].") ||
        !check_text("او من.", "`[.1'u:'] `[.1mAn].") ||
@@ -41,7 +60,7 @@ int main(void)
     if(reloq_fa_direct_text(symbol_only,strlen(symbol_only),&out,&map,&error)!=1 ||
        out || map || error!=1)return 1;
     const char *numeric_separator="سلام ٫ دنیا";
-    if(reloq_fa_direct_text(numeric_separator,strlen(numeric_separator),&out,&map,&error)!=1 ||
+    if(reloq_fa_direct_text(numeric_separator,strlen(numeric_separator),&out,&map,&error)!=2 ||
        out || map || error!=strlen("سلام "))return 1;
     const char *plural="کتاب‌ها";
     char tiny[4];
@@ -49,8 +68,11 @@ int main(void)
     const char *unknown_plural="ناموجودِمطمئن‌ها";
     if(reloq_fa_direct_text(unknown_plural,strlen(unknown_plural),&out,&map,&error)!=1 || out || map)return 1;
     numeric_separator="سلام ٬ دنیا";
-    if(reloq_fa_direct_text(numeric_separator,strlen(numeric_separator),&out,&map,&error)!=1 ||
+    if(reloq_fa_direct_text(numeric_separator,strlen(numeric_separator),&out,&map,&error)!=2 ||
        out || map || error!=strlen("سلام "))return 1;
+    const char *invalid_numbers[]={"3,14","3.1.4","۳٫","۱۲٬۳۴","1234567890123","۱۲-۳"};
+    for(size_t i=0;i<sizeof invalid_numbers/sizeof invalid_numbers[0];++i)
+        if(reloq_fa_direct_text(invalid_numbers[i],strlen(invalid_numbers[i]),&out,&map,&error)!=2 || out || map)return 1;
     puts("Passed Persian direct C lookup, normalization, source maps and rejection.");
     return 0;
 }

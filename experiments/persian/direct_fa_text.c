@@ -2,6 +2,7 @@
 #include "direct_fa_text.h"
 #include "direct_fa_lexicon.h"
 #include "direct_fa_normalize.h"
+#include "direct_fa_numbers.h"
 #include "reloq_utf8.h"
 #include <stdint.h>
 #include <stdlib.h>
@@ -40,8 +41,10 @@ static int follows_word_in_phrase(const char *text,size_t length,size_t at)
     while(at<length && (text[at]==' ' || text[at]=='\t')){++at;saw_space=1;}
     if(!saw_space || at==length)return 0;
     uint32_t cp;size_t next=at;
-    return reloq_utf8_next((const unsigned char *)text,length,&next,&cp)==1 &&
-           word_character(cp);
+    if(reloq_utf8_next((const unsigned char *)text,length,&next,&cp)!=1)return 0;
+    return word_character(cp) || (cp>='0' && cp<='9') ||
+           ((cp=='+' || cp=='-' || cp==0x2212) && next<length &&
+            text[next]>='0' && text[next]<='9');
 }
 
 void reloq_fa_direct_free(void *pointer) { free(pointer); }
@@ -64,7 +67,28 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
         size_t start=at,next=at;
         uint32_t cp;
         if(reloq_utf8_next((const unsigned char *)text,length,&next,&cp)!=1) {status=-1;break;}
-        if(word_character(cp)) {
+        int sign=(cp=='+' || cp=='-' || cp==0x2212) && next<length &&
+                 text[next]>='0' && text[next]<='9';
+        if(sign && start && text[start-1]!=' ' && text[start-1]!='\t' &&
+           text[start-1]!='\r' && text[start-1]!='\n' && text[start-1]!='(' &&
+           text[start-1]!='[' && text[start-1]!='=') {status=2;break;}
+        if((cp>='0' && cp<='9') || sign) {
+            char tag[2048];size_t count=0;
+            size_t number_start=sign?next:start;
+            int found=reloq_fa_direct_number(text+number_start,length-number_start,&count,tag,sizeof tag);
+            if(found){status=found;break;}
+            size_t tag_start=b.used;
+            if(sign) {
+                const char *name=cp=='+'?"`[.1mos.0bAt] ":"`[.1mAn.0fi] ";
+                if(append(&b,name,strlen(name))){status=-2;break;}
+            }
+            if(append(&b,tag,strlen(tag))){status=-2;break;}
+            size_t end=number_start+count;
+            for(size_t i=start;i<end;++i)map[i]=tag_start;
+            map[end]=b.used;at=end;
+        } else if(cp==0x066b || cp==0x066c) {
+            status=2;break;
+        } else if(word_character(cp)) {
             size_t end=next;
             while(end<length) {
                 size_t probe=end;uint32_t c;
@@ -109,20 +133,18 @@ int reloq_fa_direct_text(const char *text,size_t length,char **output,
     if(error_offset)*error_offset=0;
     if(!text || !output || !source_map || !error_offset || length==SIZE_MAX ||
        length+1>SIZE_MAX/sizeof(size_t) || memchr(text,0,length))return -1;
-    /* fa_rules maps both numeric separators to an Arabic comma. In this
-     * frontend they must not become clause boundaries before number support
-     * exists, even when they occur without a digit. */
+    /* Validate UTF-8 before normalizing. Numeric separators remain distinct
+     * through text normalization so they cannot become clause commas. */
     size_t at=0;
     while(at<length) {
         size_t start=at;uint32_t cp;
         if(reloq_utf8_next((const unsigned char *)text,length,&at,&cp)!=1) {
             *error_offset=start;return -1;
         }
-        if(cp==0x066b || cp==0x066c){*error_offset=start;return 1;}
     }
     char *normalized=NULL,*tagged=NULL;
     size_t *source_to_normalized=NULL,*normalized_to_tagged=NULL,offset=0;
-    int status=reloq_fa_direct_normalize(text,length,&normalized,&source_to_normalized,&offset);
+    int status=reloq_fa_direct_normalize_text(text,length,&normalized,&source_to_normalized,&offset);
     if(status){*error_offset=offset;return status;}
     /* A source containing only deleted tatweel is a symbol-only request,
      * not a successful silent utterance. Defer its spoken name to the

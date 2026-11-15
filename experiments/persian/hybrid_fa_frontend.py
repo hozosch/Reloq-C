@@ -35,6 +35,20 @@ def _native_english(text: str) -> bool:
 
 _BOUNDARIES = {',': ',', '،': ',', ';': ';', '؛': ';',
                '?': '?', '؟': '?', '.': '.', '!': '!', ':': ':'}
+_NUMBER_RUN = re.compile(r'[0-9\u0660-\u0669\u06f0-\u06f9][0-9\u0660-\u0669\u06f0-\u06f9.,\u066b\u066c]*')
+
+
+def _reference_numeric_spelling(text: str) -> str:
+    result = []
+    for char in text:
+        value = ord(char)
+        if 0x660 <= value <= 0x669:
+            result.append(chr(ord('0') + value - 0x660))
+        elif 0x6f0 <= value <= 0x6f9:
+            result.append(chr(ord('0') + value - 0x6f0))
+        else:
+            result.append('.' if char == '\u066b' else ',' if char == '\u066c' else char)
+    return ''.join(result)
 
 
 def _translate_with_native_punctuation(probe, text: str, *, pinglish: bool = False) -> tuple[SpeechPart, ...]:
@@ -104,6 +118,11 @@ class DirectFirstPersian:
             ctypes.POINTER(ctypes.POINTER(ctypes.c_size_t)), ctypes.POINTER(ctypes.c_size_t),
         )
         self._dll.reloq_fa_direct_text.restype = ctypes.c_int
+        self._dll.reloq_fa_direct_number.argtypes = (
+            ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t),
+            ctypes.c_void_p, ctypes.c_size_t,
+        )
+        self._dll.reloq_fa_direct_number.restype = ctypes.c_int
         self._dll.reloq_fa_direct_free.argtypes = (ctypes.c_void_p,)
         self._worker_paths = (worker, espeak_library, data_parent)
         self._worker = None
@@ -118,41 +137,117 @@ class DirectFirstPersian:
                 self._worker = EspeakWorker(*self._worker_paths)
             return self._worker
 
-    def analyze(self, text: str, *, pinglish: bool = False) -> PersianAnalysis:
-        if not isinstance(text, str) or '\0' in text:
-            raise ValueError('text must be a string without NUL')
-        with self._guard:
-            if self._closed:
-                raise RuntimeError('Persian text frontend is closed')
-        if '\u066b' in text or '\u066c' in text:
-            raise UnsupportedPronunciation('Persian decimal and grouping separators need numeric handling')
-        if not pinglish and _native_english(text):
-            # Pass the original text and punctuation to the English ECI path.
-            return PersianAnalysis((SpeechPart('en-us', text),), tuple(range(len(text) + 1)), False)
-        if pinglish:
-            return PersianAnalysis(_translate_with_native_punctuation(self._fallback(), text, pinglish=True), None, True)
-        if text and not any(char.isalpha() for char in text):
-            return PersianAnalysis(translate_text(self._fallback(), text), None, True)
+    def _direct(self, text: str):
         encoded = text.encode('utf8')
         output = ctypes.c_void_p()
         mapping = ctypes.POINTER(ctypes.c_size_t)()
         offset = ctypes.c_size_t()
         status = self._dll.reloq_fa_direct_text(encoded, len(encoded), ctypes.byref(output),
                                                  ctypes.byref(mapping), ctypes.byref(offset))
+        if status:
+            return status, '', None, offset.value
+        try:
+            tagged = ctypes.string_at(output).decode('ascii')
+            source_map = tuple(mapping[i] for i in range(len(encoded) + 1))
+        finally:
+            self._dll.reloq_fa_direct_free(output)
+            self._dll.reloq_fa_direct_free(mapping)
+        return 0, tagged, source_map, 0
+
+    def _numeric_spans(self, text: str) -> list[tuple[int, int, str]]:
+        """Find validated numbers without consuming sentence punctuation."""
+        spans = []
+        cursor = 0
+        for match in _NUMBER_RUN.finditer(text):
+            if any(mark in text[cursor:match.start()] for mark in ('\u066b', '\u066c')):
+                raise UnsupportedPronunciation('unattached Persian numeric separator')
+            canonical = _reference_numeric_spelling(match.group()).encode('ascii')
+            used = ctypes.c_size_t()
+            output = ctypes.create_string_buffer(2048)
+            status = self._dll.reloq_fa_direct_number(canonical, len(canonical),
+                                                       ctypes.byref(used), output, len(output))
+            if status != 0:
+                raise UnsupportedPronunciation('ambiguous or unsupported Persian number')
+            start, end = match.start(), match.start() + used.value
+            numeric_tag = output.value.decode('ascii')
+            if start and text[start - 1] in '+-\u2212':
+                start -= 1
+                status, numeric_tag, _, _ = self._direct(text[start:end])
+                if status != 0:
+                    raise UnsupportedPronunciation('unsupported signed Persian number')
+            if ((start and text[start - 1].isalpha()) or
+                (end < len(text) and text[end].isalpha())):
+                raise UnsupportedPronunciation('numbers attached to letters need separate analysis')
+            if start and text[start - 1].isdecimal():
+                raise UnsupportedPronunciation('a numeric range needs separate analysis')
+            spans.append((start, end, numeric_tag))
+            cursor = end
+        if any(mark in text[cursor:] for mark in ('\u066b', '\u066c')):
+            raise UnsupportedPronunciation('unattached Persian numeric separator')
+        return spans
+
+    def _fallback_with_numbers(self, text: str, *, pinglish: bool = False) -> tuple[SpeechPart, ...]:
+        """Keep numeric values direct while analysing surrounding whole clauses.
+
+        A checked invariant Persian word marks each number for eSpeak's
+        contextual analysis. The marker's tag is then replaced with native
+        numeric tags. Ambiguous marker alignment is never guessed. The source
+        map still belongs to future NVDA integration.
+        """
+        spans = self._numeric_spans(text)
+        if not spans:
+            return _translate_with_native_punctuation(self._fallback(), text, pinglish=pinglish)
+        for marker in ('سلام', 'ایران', 'نقطه', 'خوب', 'کتاب', 'دنیا'):
+            if marker in text:
+                continue
+            status, tag, _, _ = self._direct(marker)
+            if status or not tag:
+                continue
+            chunks, cursor = [], 0
+            for start, end, _ in spans:
+                chunks.extend((text[cursor:start], marker))
+                cursor = end
+            chunks.append(text[cursor:])
+            parts = _translate_with_native_punctuation(self._fallback(), ''.join(chunks), pinglish=pinglish)
+            if sum(part.text.count(tag) for part in parts if part.language == 'fa') != len(spans):
+                continue
+            values = iter(item[2] for item in spans)
+            output = []
+            for part in parts:
+                if part.language == 'fa':
+                    pieces = part.text.split(tag)
+                    content = pieces[0]
+                    for suffix in pieces[1:]:
+                        content += next(values) + suffix
+                    part = SpeechPart(part.language, content)
+                output.append(part)
+            return tuple(output)
+        raise UnsupportedPronunciation('could not align numbers with the reference text')
+
+    def analyze(self, text: str, *, pinglish: bool = False) -> PersianAnalysis:
+        if not isinstance(text, str) or '\0' in text:
+            raise ValueError('text must be a string without NUL')
+        with self._guard:
+            if self._closed:
+                raise RuntimeError('Persian text frontend is closed')
+        if not pinglish and _native_english(text):
+            # Pass the original text and punctuation to the English ECI path.
+            return PersianAnalysis((SpeechPart('en-us', text),), tuple(range(len(text) + 1)), False)
+        if pinglish:
+            return PersianAnalysis(self._fallback_with_numbers(text, pinglish=True), None, True)
+        if text and not any(char.isalpha() or char.isdecimal() for char in text):
+            return PersianAnalysis(translate_text(self._fallback(), text), None, True)
+        status, tagged, source_map, offset = self._direct(text)
         if status == 0:
-            try:
-                tagged = ctypes.string_at(output).decode('ascii')
-                source_map = tuple(mapping[i] for i in range(len(encoded) + 1))
-            finally:
-                self._dll.reloq_fa_direct_free(output)
-                self._dll.reloq_fa_direct_free(mapping)
             parts = (SpeechPart('fa', tagged),) if tagged else ()
             return PersianAnalysis(parts, source_map, False)
         if status == 1:
-            return PersianAnalysis(_translate_with_native_punctuation(self._fallback(), text), None, True)
+            return PersianAnalysis(self._fallback_with_numbers(text), None, True)
+        if status == 2:
+            raise UnsupportedPronunciation(f'ambiguous or unsupported Persian number at UTF-8 offset {offset}')
         if status == -2:
             raise MemoryError('native Persian text allocation failed')
-        raise ValueError(f'invalid native Persian input at UTF-8 offset {offset.value}')
+        raise ValueError(f'invalid native Persian input at UTF-8 offset {offset}')
 
     def cancel(self) -> None:
         with self._guard:
