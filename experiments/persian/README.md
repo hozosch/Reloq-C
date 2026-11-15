@@ -1464,6 +1464,15 @@ The combined probe passed the native queue test, all 98 direct pause-word
 comparisons, 54 selected-acoustic comparisons and concurrent Finnish/Persian
 isolation checks. This is an experimental link step, not a Windows/NVDA package.
 
+`build_windows_probe.py` prepares the same scope in a separate Windows DLL,
+replacing only the changed provider objects in a private copy of the ordinary
+provider archive. The dedicated Windows acoustic workflow builds the baseline
+archive once and caches it; focused text changes do not trigger that build.
+It checks Finnish, English and German against the unchanged DLL, tests the
+thread-scoped Persian sound, and compares direct Pinglish and Persian output.
+The DLL remains a private probe until those Windows checks have passed and the
+remaining streaming/NVDA work has been completed.
+
 ```
 python3 experiments/persian/compile_direct_replacements.py --check
 python3 experiments/persian/compile_direct_lexicon.py \

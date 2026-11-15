@@ -60,6 +60,11 @@ def analysis_tests(frontend):
     for source in ('salam khub?', 'khoob salam', 'yek', 'salam, khub.',
                    'salam 12 khub', 'khoob ۳٫۱۴ donya?', 'khoob 12 khub 34?'):
         result = frontend.analyze_pinglish(source, positioned=True, allow_fallback=True)
+        if result is None:
+            normalized, _ = normalize_pinglish(source)
+            print('Pinglish alignment diagnostic:', repr(normalized),
+                  worker.translate(normalized.rstrip('?!. ,'), voice='fa-latn', separator='|'),
+                  worker.events(normalized.rstrip('?!. ,'), voice='fa-latn'), flush=True)
         check_mapping(source, result)
         assert result.used_fallback
         assert result.parts == frontend.analyze_pinglish(source, positioned=False, allow_fallback=True).parts
