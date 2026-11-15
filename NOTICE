@@ -82,3 +82,10 @@ PCRE2
 The SAPI adapter uses PCRE2 10.45 for imported speech-dictionary patterns.
 The source and copyright/license terms are in vendor/pcre2/LICENSE; the SAPI
 packages include the same text in licenses/PCRE2-LICENSE.txt.
+
+eSpeak NG Persian text reference
+The experimental Persian frontend uses fa_rules and fa_list from eSpeak NG
+commit 688cb60368d6e0998f3632af8d1c3c2ad4191fc2. The original files and their
+attribution to Shadyar Khodayari and Ehsan Esmaili are retained under
+reference-espeak/persian. They are licensed under GPL-3.0-or-later; the GPL
+text is included in LICENSE. The generated C data uses those same terms.

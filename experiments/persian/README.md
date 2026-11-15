@@ -1270,6 +1270,46 @@ remaining `fa-latn` example contains an actual /w/, which must gain its own
 representation instead of reusing the private glottal-stop marker. The
 ordinary Persian-script mode routes the Latin `Windows` example to English.
 
+## Initial direct C text components
+
+The desired permanent direction is native Persian text analysis in the shared
+C engine. `reference-espeak/persian` preserves the pinned source files and
+their original GPL-3.0-or-later notices. `compile_direct_replacements.py`
+transfers all 174 `.replace` entries in `fa_rules` into a static native table;
+`direct_fa_normalize.c` applies them without eSpeak, including Arabic/Persian
+letter variants, character deletions and two-character ligatures.
+
+`compile_direct_lexicon.py` builds a first exact-word C table using the pinned
+eSpeak 1.53 reference and the selected Finnish-based probe *offline*. Each
+candidate must produce the same supported tag in four reference contexts and
+be accepted by the native phone parser. The generated C table contains 15,755
+words, including selected sample words whose pronunciation is derived from
+`fa_rules`. It does not start eSpeak or consult its data at runtime. A failed
+or absent entry is explicitly reported; the table does not guess. Four
+contexts are a useful filter, not a proof of correctness in every context.
+
+The current table excludes 34 words with context-dependent tags, 24 tags the
+Finnish parser changes, and 163 with unsupported phones or stress. The
+prototype `direct_fa_text.c` handles only supported words, whitespace and
+basic punctuation. It returns source mappings at **word** granularity; it
+does not supply precise within-word phoneme positions, numbers or Latin
+routing. The native conditional pronunciation rules and morphology in
+`fa_rules` are still unimplemented, as are the streaming acoustic transitions
+and integration with NVDA. This is not a selectable voice or an add-on.
+
+```
+python3 experiments/persian/compile_direct_replacements.py --check
+python3 experiments/persian/compile_direct_lexicon.py \
+  --probe /tmp/fa-internal/libreloq_eci.so --espeak-library /path/to/libespeak-ng.so \
+  --data-parent /path/to/data-parent
+cc -std=c11 -O2 -Wall -Wextra -Werror -pedantic -fPIC -shared -Iinclude \
+  experiments/persian/direct_fa_lexicon.c experiments/persian/direct_fa_normalize.c \
+  experiments/persian/direct_fa_text.c src/reloq_utf8.c -o /tmp/fa-direct.so
+python3 experiments/persian/test_direct_fa_lexicon.py --library /tmp/fa-direct.so \
+  --probe /tmp/fa-internal/libreloq_eci.so --espeak-library /path/to/libespeak-ng.so \
+  --data-parent /path/to/data-parent
+```
+
 ```
 python3 experiments/persian/test_vowel_glide.py \
   --probe /tmp/fa-internal/libreloq_eci.so --espeak-library /path/to/libespeak-ng.so \

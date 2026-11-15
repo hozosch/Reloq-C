@@ -1,4 +1,4 @@
-name: Persian NVDA text-worker probe
+name: Persian NVDA focused text probes
 on:
   push:
     branches: [codex/persian-nvda-prep-20261115]
@@ -9,6 +9,12 @@ on:
       - experiments/persian/test_espeak_worker.py
       - experiments/persian/text_frontend.py
       - experiments/persian/reference_espeak_1_51.jsonl
+      - experiments/persian/direct_fa_*.c
+      - experiments/persian/direct_fa_*.h
+      - experiments/persian/direct_fa_*.inc
+      - experiments/persian/test_direct_fa.c
+      - include/reloq_utf8.h
+      - src/reloq_utf8.c
       - .github/workflows/persian-nvda-text-probe.yml
 permissions:
   contents: read
@@ -29,6 +35,17 @@ jobs:
           $envcmd = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
           cmd.exe /d /c "`"$envcmd`" >nul && cl /nologo /O2 /W4 /std:c11 /Fe:fa-espeak-worker.exe experiments\persian\espeak_worker.c"
           if ($LASTEXITCODE -ne 0) { throw 'Text worker compilation failed' }
+      - name: Build and test direct Persian C text components
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vs = & $vswhere -latest -products * -property installationPath
+          if (!$vs) { throw 'Visual Studio C compiler was not found' }
+          $envcmd = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
+          cmd.exe /d /c "`"$envcmd`" >nul && cl /nologo /O2 /W4 /std:c11 /utf-8 /Iinclude /Fe:fa-direct-test.exe experiments\persian\test_direct_fa.c experiments\persian\direct_fa_lexicon.c experiments\persian\direct_fa_normalize.c experiments\persian\direct_fa_text.c src\reloq_utf8.c"
+          if ($LASTEXITCODE -ne 0) { throw 'Direct Persian components failed to compile' }
+          .\fa-direct-test.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Direct Persian text smoke test failed' }
       - name: Obtain NVDA for its eSpeak library and data
         shell: pwsh
         env:
