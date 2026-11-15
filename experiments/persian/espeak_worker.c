@@ -1,0 +1,149 @@
+/* Private text-analysis worker for the Persian NVDA integration experiment.
+ * eSpeak is loaded in a separate process so its global voice and decoder
+ * state cannot overwrite another speech engine in the host process. The
+ * protocol is private and length-prefixed; this is not an installable voice.
+ */
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#include <fcntl.h>
+#include <io.h>
+#else
+#include <dlfcn.h>
+#endif
+
+enum { MAX_REQUEST = 1024 * 1024, MAX_RESPONSE = 8 * 1024 * 1024,
+       MAX_CLAUSES = 65536 };
+
+typedef int (*initialize_fn)(int, int, const char *, int);
+typedef int (*set_voice_fn)(const char *);
+typedef const char *(*phonemes_fn)(const void **, int, int, int *);
+typedef int (*terminate_fn)(void);
+
+struct buffer { unsigned char *data; size_t size, capacity; };
+
+static int append(struct buffer *b,const void *p,size_t count)
+{
+    if(count>MAX_RESPONSE-b->size)return 0;
+    size_t need=b->size+count;
+    if(need>b->capacity) {
+        size_t cap=b->capacity?b->capacity:256;
+        while(cap<need)cap=cap>MAX_RESPONSE/2?MAX_RESPONSE:cap*2;
+        void *q=realloc(b->data,cap);
+        if(!q)return 0;
+        b->data=q;b->capacity=cap;
+    }
+    memcpy(b->data+b->size,p,count);b->size+=count;return 1;
+}
+
+static int append_u32(struct buffer *b,uint32_t value)
+{
+    unsigned char v[4]={(unsigned char)value,(unsigned char)(value>>8),
+                        (unsigned char)(value>>16),(unsigned char)(value>>24)};
+    return append(b,v,sizeof v);
+}
+
+static int read_u32(uint32_t *value)
+{
+    unsigned char b[4];
+    if(fread(b,1,sizeof b,stdin)!=sizeof b)return 0;
+    *value=(uint32_t)b[0]|((uint32_t)b[1]<<8)|((uint32_t)b[2]<<16)|((uint32_t)b[3]<<24);
+    return 1;
+}
+
+static int write_u32(uint32_t value)
+{
+    unsigned char b[4]={(unsigned char)value,(unsigned char)(value>>8),
+                        (unsigned char)(value>>16),(unsigned char)(value>>24)};
+    return fwrite(b,1,sizeof b,stdout)==sizeof b;
+}
+
+static int reply(uint32_t status,struct buffer *b)
+{
+    return write_u32(status)&&write_u32((uint32_t)b->size)&&
+           (!b->size||fwrite(b->data,1,b->size,stdout)==b->size)&&fflush(stdout)==0;
+}
+
+static int serve(set_voice_fn set_voice,phonemes_fn phonemes)
+{
+    static const char *voices[]={NULL,"fa","fa-latn","en-us"};
+    for(;;) {
+        uint32_t length;
+        if(!read_u32(&length))return feof(stdin)?0:1;
+        if(!length)return 0;
+        if(length>MAX_REQUEST)return 1;
+        unsigned char header[2];
+        if(fread(header,1,sizeof header,stdin)!=sizeof header)return 1;
+        unsigned voice=header[0], separator=header[1];
+        if(voice<1||voice>3||(separator&&(separator<0x21||separator>0x7e)))return 1;
+        char *input=malloc((size_t)length+1);
+        if(!input)return 1;
+        if(fread(input,1,length,stdin)!=length||memchr(input,0,length)) {free(input);return 1;}
+        input[length]=0;
+        struct buffer result={0};
+        int ok=set_voice(voices[voice])==0&&append_u32(&result,0);
+        const void *cursor=input;
+        uint32_t clauses=0;
+        while(ok&&cursor) {
+            const char *start=cursor;
+            int terminator=0;
+            const char *row=phonemes(&cursor,1,(int)(separator<<8),&terminator);
+            const char *stop=cursor?cursor:input+length;
+            if(!row||start<input||start>=stop||stop>input+length||clauses>=MAX_CLAUSES) {ok=0;break;}
+            size_t n=strlen(row);
+            if(n>MAX_RESPONSE||!append_u32(&result,(uint32_t)terminator)||
+               !append_u32(&result,(uint32_t)n)||!append(&result,row,n)) {ok=0;break;}
+            ++clauses;
+        }
+        free(input);
+        if(ok) {
+            result.data[0]=(unsigned char)clauses;result.data[1]=(unsigned char)(clauses>>8);
+            result.data[2]=(unsigned char)(clauses>>16);result.data[3]=(unsigned char)(clauses>>24);
+        } else result.size=0;
+        int sent=reply(ok?0:1,&result);
+        free(result.data);
+        if(!sent)return 1;
+    }
+}
+
+#ifdef _WIN32
+int wmain(int argc,wchar_t **argv)
+{
+    if(argc!=3)return 2;
+    _setmode(_fileno(stdin),_O_BINARY);_setmode(_fileno(stdout),_O_BINARY);
+    HMODULE library=LoadLibraryW(argv[1]);
+    if(!library)return 2;
+#define LOAD(name,type) (type)(void *)GetProcAddress(library,name)
+    int n=WideCharToMultiByte(CP_UTF8,0,argv[2],-1,NULL,0,NULL,NULL);
+    char *data=n>0?malloc((size_t)n):NULL;
+    if(!data||!WideCharToMultiByte(CP_UTF8,0,argv[2],-1,data,n,NULL,NULL))return 2;
+#else
+int main(int argc,char **argv)
+{
+    if(argc!=3)return 2;
+    void *library=dlopen(argv[1],RTLD_NOW|RTLD_LOCAL);
+    if(!library)return 2;
+#define LOAD(name,type) (type)dlsym(library,name)
+    const char *data=argv[2];
+#endif
+    initialize_fn initialize=LOAD("espeak_Initialize",initialize_fn);
+    set_voice_fn set_voice=LOAD("espeak_SetVoiceByName",set_voice_fn);
+    phonemes_fn phonemes=LOAD("espeak_TextToPhonemesWithTerminator",phonemes_fn);
+    terminate_fn terminate=LOAD("espeak_Terminate",terminate_fn);
+    if(!initialize||!set_voice||!phonemes||!terminate||initialize(2,0,data,0x8000)<=0)return 2;
+#ifdef _WIN32
+    free(data);
+#endif
+    int status=serve(set_voice,phonemes);
+    terminate();
+#ifdef _WIN32
+    FreeLibrary(library);
+#else
+    dlclose(library);
+#endif
+    return status;
+}
