@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import ctypes
 import json
+import os
 from pathlib import Path
 import sys
 
@@ -23,6 +24,15 @@ from _reloq_eci_direct import SAMPLE_RATE
 def entries():
     rows = []
     for line in (HERE / 'direct_fa_lexicon.inc').read_text(encoding='utf8').splitlines():
+        line = line.strip()
+        if line.startswith('{') and line.endswith('},'):
+            rows.append(tuple(json.loads('[' + line[1:-2] + ']')))
+    return rows
+
+
+def contextual_entries():
+    rows = []
+    for line in (HERE / 'direct_fa_context.inc').read_text(encoding='utf8').splitlines():
         line = line.strip()
         if line.startswith('{') and line.endswith('},'):
             rows.append(tuple(json.loads('[' + line[1:-2] + ']')))
@@ -83,6 +93,7 @@ def main():
             dll.reloq_fa_direct_free(mapping)
 
     rows = entries()
+    contexts = contextual_entries()
     assert (HERE / 'direct_fa_replacements.inc').read_text(encoding='utf8') == render_replacements(SOURCE)
     for cp, target in replacements(SOURCE):
         actual, mapping = normalize(chr(cp))
@@ -102,6 +113,8 @@ def main():
     assert mapping[0] == 0 and mapping[first_word] == len('`[.0sA.1lam]')
     assert mapping[first_word + 1] == len('`[.0sA.1lam] ')
     assert all(value == 0 for value in mapping[:first_word])
+    for text in ('سلام ٫ دنیا', 'سلام ٬ دنیا', '۳٫۱۴', '۱۲٬۳۴۵'):
+        assert phrase(text.encode('utf8'))[0] == 1, text
 
     fa = engine(args.probe, 0x90000)
     checks = 0
@@ -120,6 +133,19 @@ def main():
             for word, tag in rows[::79]:
                 shown = fa._phonemes_for_probe(tag)
                 assert native_tag_accepted(tag, shown), (word, tag, shown)
+            # Check all generated stress rules, including an alternative
+            # preceding word and sentence-final, standalone and medial forms.
+            for word, final, nonfinal in contexts:
+                assert final != nonfinal
+                for text in (word, word + ' آمد.', 'او ' + word + ' آمد.', 'او ' + word + '.',
+                             word + ' سلام؟', 'سلام ' + word + ' دنیا؟',
+                             word + '، سلام.', 'سلام، ' + word + '.'):
+                    status, _, actual, _ = phrase(text.encode('utf8'))
+                    expected = translate_text(api, text)
+                    assert status == 0 and len(expected) == 1 and actual == expected[0].text, \
+                        (word, text, actual, expected)
+                for tag in (final, nonfinal):
+                    assert native_tag_accepted(tag, fa._phonemes_for_probe(tag)), (word, tag)
             texts = ('سلام دنیا؟', 'او آمد.', 'ایران نقطه.', 'کاغذ آمد.', 'سلام خوب؟',
                      'ايران نقطه.', 'كاغذ آمد.', 'ﺳﻼﻡ دنیا؟', 'سلامـ دنیا؟')
             for text in texts:
@@ -129,6 +155,29 @@ def main():
                 assert status == 0 and actual == parts[0].text, (text, actual, parts)
                 assert offsets == tuple(sorted(offsets)) and offsets[-1] == len(actual.encode('utf8'))
                 assert render(fa, actual) == render(fa, parts[0].text)
+            # Punctuation is deliberately compared with native Finnish-based
+            # syntax, not with eSpeak's symbol-reading or clause conversion.
+            punctuation = {
+                'سلام،دنیا!': '`[.0sA.1lam],`[.1do.0nja]!',
+                'سلام؛ دنیا؟': '`[.0sA.1lam]; `[.1do.0nja]?',
+                'سلام  دنیا...': '`[.0sA.1lam]  `[.1do.0nja]...',
+                'من، آمد.': "`[.1mAn], `[.1'a:'.0mAd].",
+                'من آمد.': "`[.0mAn] `[.1'a:'.0mAd].",
+            }
+            for text, expected in punctuation.items():
+                status, _, actual, offsets = phrase(text.encode('utf8'))
+                assert status == 0 and actual == expected, (text, actual)
+                assert offsets == tuple(sorted(offsets)) and offsets[-1] == len(expected)
+                assert render(fa, actual) == render(fa, expected)
+            question = punctuation['سلام؛ دنیا؟']
+            selected_question = render(fa, question)
+            selected_statement = render(fa, question[:-1] + '.')
+            os.environ['RELOQ_FA_PROBE_RISE'] = '0'
+            ordinary_question = render(fa, question)
+            ordinary_statement = render(fa, question[:-1] + '.')
+            set_confirmed_persian_probe()
+            assert selected_question != ordinary_question and len(selected_question) == len(ordinary_question)
+            assert selected_statement == ordinary_statement
             status, _, tagged, _ = phrase('او آمد.'.encode('utf8'))
             assert status == 0 and tagged is not None
             old = compare_vowel_glide(api, fa, args.probe, 'او آمد.', 16000)
@@ -139,6 +188,7 @@ def main():
         fa.close()
     print(f'Passed {checks} native word comparisons, {len(rows[::79])} native tag checks, '
           f'{len(replacements(SOURCE))} direct replacement patterns, '
+          f'{len(contexts)} context-dependent words, {len(punctuation)} native punctuation cases, '
           f'{len(texts)} direct-text/audio comparisons, selected U-A glide and failure/index checks.')
 
 

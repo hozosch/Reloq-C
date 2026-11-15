@@ -31,6 +31,19 @@ static int word_character(uint32_t c)
     return (c>=0x600 && c<=0x6ff && c!=0x60c && c!=0x61b && c!=0x61f) || c==0x200c;
 }
 
+/* Phrase-final function words receive the reference's final stress.  Keep
+ * punctuation and line breaks as boundaries; a following word in the same
+ * phrase must be separated by spaces or tabs. */
+static int follows_word_in_phrase(const char *text,size_t length,size_t at)
+{
+    int saw_space=0;
+    while(at<length && (text[at]==' ' || text[at]=='\t')){++at;saw_space=1;}
+    if(!saw_space || at==length)return 0;
+    uint32_t cp;size_t next=at;
+    return reloq_utf8_next((const unsigned char *)text,length,&next,&cp)==1 &&
+           word_character(cp);
+}
+
 void reloq_fa_direct_free(void *pointer) { free(pointer); }
 
 static int direct_normalized_text(const char *text,size_t length,char **output,
@@ -61,7 +74,8 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             }
             if(status)break;
             char tag[2048];
-            int found=reloq_fa_direct_word(text+start,end-start,tag,sizeof tag);
+            int found=reloq_fa_direct_context_word(text+start,end-start,
+                         follows_word_in_phrase(text,length,end),tag,sizeof tag);
             if(found!=1){status=found==0?1:-1;break;}
             size_t tag_start=b.used;
             if(append(&b,tag,strlen(tag))){status=-2;break;}
@@ -70,8 +84,9 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
         } else {
             char punctuation=0;
             if(cp==' ' || cp=='\t' || cp=='\r' || cp=='\n' ||
-               cp=='.' || cp==',' || cp=='?' || cp=='!')punctuation=(char)cp;
+               cp=='.' || cp==',' || cp=='?' || cp=='!' || cp==':' || cp==';')punctuation=(char)cp;
             else if(cp==0x60c)punctuation=',';
+            else if(cp==0x61b)punctuation=';';
             else if(cp==0x61f)punctuation='?';
             else {status=1;break;}
             size_t point=b.used;
@@ -92,7 +107,19 @@ int reloq_fa_direct_text(const char *text,size_t length,char **output,
     if(output)*output=NULL;
     if(source_map)*source_map=NULL;
     if(error_offset)*error_offset=0;
-    if(!output || !source_map || !error_offset)return -1;
+    if(!text || !output || !source_map || !error_offset || length==SIZE_MAX ||
+       length+1>SIZE_MAX/sizeof(size_t) || memchr(text,0,length))return -1;
+    /* fa_rules maps both numeric separators to an Arabic comma. In this
+     * frontend they must not become clause boundaries before number support
+     * exists, even when they occur without a digit. */
+    size_t at=0;
+    while(at<length) {
+        size_t start=at;uint32_t cp;
+        if(reloq_utf8_next((const unsigned char *)text,length,&at,&cp)!=1) {
+            *error_offset=start;return -1;
+        }
+        if(cp==0x066b || cp==0x066c){*error_offset=start;return 1;}
+    }
     char *normalized=NULL,*tagged=NULL;
     size_t *source_to_normalized=NULL,*normalized_to_tagged=NULL,offset=0;
     int status=reloq_fa_direct_normalize(text,length,&normalized,&source_to_normalized,&offset);

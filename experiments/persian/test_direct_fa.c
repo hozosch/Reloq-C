@@ -24,10 +24,21 @@ int main(void)
        !check_text("ﺳﻼﻡ دنیا؟", "`[.0sA.1lam] `[.1do.0nja]?") ||
        !check_text("ايران نقطه.", "`[.1'i:'.0r'a:'n] `[.1noR.0t'e:'].") ||
        !check_text("كاغذ آمد.", "`[.1ka.0RAz] `[.1'a:'.0mAd].") ||
-       !check_text("او آمد.", "`[.1'u:'] `[.1'a:'.0mAd]."))return 1;
+       !check_text("او آمد.", "`[.1'u:'] `[.1'a:'.0mAd].") ||
+       !check_text("سلام،دنیا!", "`[.0sA.1lam],`[.1do.0nja]!") ||
+       !check_text("سلام؛ دنیا؟", "`[.0sA.1lam]; `[.1do.0nja]?") ||
+       !check_text("من آمد.", "`[.0mAn] `[.1'a:'.0mAd].") ||
+       !check_text("او من.", "`[.1'u:'] `[.1mAn].") ||
+       !check_text("من، آمد.", "`[.1mAn], `[.1'a:'.0mAd]."))return 1;
     char *out=NULL;size_t *map=NULL,error=0;
     const char *unknown="سلام NVDA";
     if(reloq_fa_direct_text(unknown,strlen(unknown),&out,&map,&error)!=1 ||
+       out || map || error!=strlen("سلام "))return 1;
+    const char *numeric_separator="سلام ٫ دنیا";
+    if(reloq_fa_direct_text(numeric_separator,strlen(numeric_separator),&out,&map,&error)!=1 ||
+       out || map || error!=strlen("سلام "))return 1;
+    numeric_separator="سلام ٬ دنیا";
+    if(reloq_fa_direct_text(numeric_separator,strlen(numeric_separator),&out,&map,&error)!=1 ||
        out || map || error!=strlen("سلام "))return 1;
     puts("Passed Persian direct C lookup, normalization, source maps and rejection.");
     return 0;

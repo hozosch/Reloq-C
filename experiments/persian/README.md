@@ -1288,12 +1288,16 @@ words, including selected sample words whose pronunciation is derived from
 or absent entry is explicitly reported; the table does not guess. Four
 contexts are a useful filter, not a proof of correctness in every context.
 
-The current table excludes 34 words with context-dependent tags, 24 tags the
-Finnish parser changes, and 163 with unsupported phones or stress. The
-prototype `direct_fa_text.c` handles only supported words, whitespace and
+An additional generated table covers 34 words whose reference tags differ
+between phrase-final and nonfinal position. The C converter applies those
+tags when a following Persian word is separated by spaces or tabs, and treats
+punctuation and line breaks as boundaries. This is a bounded position rule,
+not a complete implementation of contextual stress. Other exclusions include
+24 tags the Finnish parser changes and 163 with unsupported phones or stress.
+The prototype `direct_fa_text.c` handles only supported words, whitespace and
 basic punctuation. It returns source mappings at **word** granularity; it
 does not supply precise within-word phoneme positions, numbers or Latin
-routing. The native conditional pronunciation rules and morphology in
+routing. The remaining native conditional pronunciation rules and morphology in
 `fa_rules` are still unimplemented, as are the streaming acoustic transitions
 and integration with NVDA. This is not a selectable voice or an add-on.
 For `او آمد`, the direct C output also feeds the existing private frame-replay
@@ -1302,20 +1306,29 @@ byte-for-byte with the previously accepted eSpeak-analysed candidate. This
 checks continuity of the chosen sound, not a real-time implementation.
 
 `hybrid_fa_frontend.py` tests a direct-first route for a future early NVDA
-trial: it invokes the native C converter when the entire input is covered
-and the whitespace and punctuation follow the simple checked pattern;
-otherwise it sends the **whole input** to the isolated eSpeak worker. That
-avoids replacing individual unknown words in isolation and retains the
-reference frontend's English routing and sentence analysis. The worker is
-started lazily, so covered Persian text does not start another process.
-Pinglish continues to use the separate reference mode. This remains a private
-experiment: direct source maps are only word-granular, fallback has no
-verified source map, and neither the NVDA worker nor the accepted streaming
-acoustic transitions are connected yet. The direct route has not established
-equivalence for all combinations of punctuation, boundaries and stress.
-The focused Windows x64 job compiles the C lookup and tests the direct-first
-adapter's sample routing against the eSpeak included in NVDA
-2026.3.1. It does not test an installed Persian NVDA voice.
+trial. It passes unambiguous English ASCII text unchanged to the English path
+and converts covered Persian text directly. Persian comma, semicolon and
+question marks become their ordinary native punctuation equivalents; other
+supported marks and whitespace remain intact. For uncovered inputs without
+numbers, the isolated eSpeak worker analyses punctuation-separated clauses,
+but the original punctuation is assigned to the preceding language core.
+This prevents eSpeak from saying a comma name merely because there is no
+space after it. Pinglish uses the separate reference mode. This is a bounded
+experiment: clause splitting and English routing still need wider coverage,
+and numeric fallback has not adopted the native punctuation strategy.
+
+The upstream orthographic replacements equate U+066B and U+066C with commas.
+Both the direct text converter and the hybrid experiment reject those two
+numeric separators until number parsing is implemented; they must not become
+sentence pauses. For symbol-only inputs the prototype still follows the old
+reference behavior. Integration must preserve NVDA's own symbol-level and
+spoken-name decisions rather than deciding those here. The worker is started
+lazily, so covered Persian or English text does not start another process.
+Source maps remain word-granular, fallback has no verified source map, and
+neither the NVDA worker nor the accepted streaming acoustic transitions are
+connected yet. The focused Windows x64 job compiles the C lookup and tests
+sample routing against the eSpeak included in NVDA 2026.3.1. It does not test
+an installed Persian NVDA voice.
 
 ```
 python3 experiments/persian/compile_direct_replacements.py --check
