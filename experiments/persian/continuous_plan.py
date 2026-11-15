@@ -25,6 +25,8 @@ else:
 
 _TAG = re.compile(r'`\[([^]]+)\]')
 _SYLLABLE = re.compile(r'\.([012])([^.]+)')
+_FINAL_U = re.compile(r"(?:u|'u:')\]$")
+_INITIAL_A = re.compile(r"^`\[\.[012](?:a|'a:')")
 _EN_TO_FA = {**{c: c for c in 'aAeioubdfghjklmnoprstvzSZ'},
              'E': 'e', 'I': 'i', 'O': 'o', 'U': 'u', 'c': 'a',
              'H': 'A', 'x': 'A', 'X': 'e', 'Y': 'A', 'y': 'j',
@@ -928,6 +930,12 @@ def apply_persian_u_a(plan, parts, rate, original_counts):
         if len(words) < 2:
             offset += count
             continue
+        tags = tuple(match.group() for match in words)
+        separators = tuple(part.text[a.end():b.start()] for a, b in zip(words, words[1:]))
+        if not any(_FINAL_U.search(a) and _INITIAL_A.match(b) and 'w' not in a and 'w' not in b
+                   and separator.isspace() for a, b, separator in zip(tags, tags[1:], separators)):
+            offset += count
+            continue
         section = [plan.frames[offset + j].controls for j in range(count)]
         ticks = [0.0]
         for row in section[:-1]:
@@ -938,15 +946,24 @@ def apply_persian_u_a(plan, parts, rate, original_counts):
         if removed < 0:
             raise RuntimeError('invalid Persian frame mapping')
         boundaries = {}
+        missing = False
         for word in range(1, len(words)):
-            sample = item.indexes[plan.word_markers[i, word]]
+            marker = plan.word_markers.get((i, word))
+            sample = item.indexes.get(marker)
+            if sample is None:
+                missing = True
+                break
             source = bisect_left(item.ticks, round(sample * 1000 / rate))
             local = source - source_first - removed
             if not 0 <= local < len(ticks):
-                raise RuntimeError('Persian word mark is outside its context')
+                missing = True
+                break
             boundaries[word] = ticks[local]
-        tags = tuple(match.group() for match in words)
-        separators = tuple(part.text[a.end():b.start()] for a, b in zip(words, words[1:]))
+        if missing:
+            # Keep the connected sentence even when the optional glide's
+            # word markers cannot be established for this text segment.
+            offset += count
+            continue
         glides = plan_u_a_glides(section, ticks, tags, separators, boundaries)
         apply_u_a_glides(section, ticks, glides)
         changes.extend((i, *glide.summary) for glide in glides)

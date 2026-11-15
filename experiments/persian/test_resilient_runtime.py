@@ -118,6 +118,20 @@ def main():
         explicit, _ = render(('سلام (', EciLanguage(US_ENGLISH.id, '1'), 'hello) ',
                               EciLanguage(PERSIAN_PROBE.id, '1'), 'دنیا'))
         assert mixed == explicit
+        # An irrelevant unmappable Persian word marker must not discard an
+        # otherwise viable continuous mixed-language sentence.
+        original_replay = continuous_driver.FrameReplay.replay
+        replayed = []
+        def observe_replay(self, *items, **options):
+            result = original_replay(self, *items, **options)
+            if result:
+                replayed.append(1)
+            return result
+        continuous_driver.FrameReplay.replay = observe_replay
+        try:
+            assert render(('سلام ن۱š دنیا',))[0] and replayed
+        finally:
+            continuous_driver.FrameReplay.replay = original_replay
         before = len(plans)
         pcm, marks = render((EciIndex(20), EciPitch(80), 'NVDA خوب است.', EciIndex(21)))
         assert len(plans) > before and marks == [(20, 0), (21, len(pcm))]
