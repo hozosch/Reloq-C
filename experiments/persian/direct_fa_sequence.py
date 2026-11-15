@@ -13,16 +13,24 @@ import sys
 import threading
 from typing import Sequence
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / 'nvda'))
-from _reloq_eci_direct import (
-    DirectEciEngine, EciIndex, EciPitch, EciPitchHz, EciProsody, EciText,
-    PROCESS_TAGS,
-)
-from _reloq_persian_projection import Command, ProjectedJob, PersianProjectionError, project_persian
-from hybrid_fa_frontend import DirectFirstPersian
-from reference_alignment import unpositioned_reference_input
-from text_frontend import UnsupportedPronunciation, native_sequence_accepted
+if __package__:
+    from .._reloq_eci_direct import (
+        DirectEciEngine, EciIndex, EciPitch, EciPitchHz, EciProsody, EciText, PROCESS_TAGS,
+    )
+    from .._reloq_persian_projection import Command, ProjectedJob, PersianProjectionError, project_persian
+    from .hybrid_fa_frontend import DirectFirstPersian
+    from .reference_alignment import unpositioned_reference_input
+    from .text_frontend import UnsupportedPronunciation, native_sequence_accepted
+else:
+    ROOT = Path(__file__).resolve().parents[2]
+    sys.path.insert(0, str(ROOT / 'nvda'))
+    from _reloq_eci_direct import (
+        DirectEciEngine, EciIndex, EciPitch, EciPitchHz, EciProsody, EciText, PROCESS_TAGS,
+    )
+    from _reloq_persian_projection import Command, ProjectedJob, PersianProjectionError, project_persian
+    from hybrid_fa_frontend import DirectFirstPersian
+    from reference_alignment import unpositioned_reference_input
+    from text_frontend import UnsupportedPronunciation, native_sequence_accepted
 
 def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersian,
             *, allow_fallback: bool = False, pinglish: bool = False) -> ProjectedJob:

@@ -13,11 +13,18 @@ from pathlib import Path
 import re
 import threading
 
-from espeak_worker import EspeakWorker
-from pinglish_frontend import latin_name, normalize_pinglish
-from reference_alignment import (source_map_for_reference, unpositioned_pinglish_input,
-                                 unpositioned_reference_input)
-from text_frontend import SpeechPart, UnsupportedPronunciation, translate_text
+if __package__:
+    from .espeak_worker import EspeakWorker
+    from .pinglish_frontend import latin_name, normalize_pinglish
+    from .reference_alignment import (source_map_for_reference, unpositioned_pinglish_input,
+                                      unpositioned_reference_input)
+    from .text_frontend import SpeechPart, UnsupportedPronunciation, translate_text
+else:
+    from espeak_worker import EspeakWorker
+    from pinglish_frontend import latin_name, normalize_pinglish
+    from reference_alignment import (source_map_for_reference, unpositioned_pinglish_input,
+                                     unpositioned_reference_input)
+    from text_frontend import SpeechPart, UnsupportedPronunciation, translate_text
 
 
 @dataclass(frozen=True)
@@ -236,21 +243,26 @@ class DirectFirstPersian:
             return PersianAnalysis(direct.parts, mapping, False)
         if not allow_fallback or not any(c.isalpha() for c in normalized):
             return None
-        if positioned and any(c.isdecimal() for c in normalized):
-            aligned = self._positioned_numbers(normalized, pinglish=True)
-            if aligned is None or aligned.source_map is None:
-                return None
-            return PersianAnalysis(aligned.parts,
-                                   tuple(aligned.source_map[pos] for pos in original_to_normalized), True)
-        parts = self._fallback_with_numbers(normalized, pinglish=True)
-        if len(parts) != 1 or parts[0].language != 'fa':
-            return None
         if not positioned:
-            return PersianAnalysis(parts, None, True)
-        mapped = source_map_for_reference(normalized, parts, self._fallback(), pinglish=True)
-        if mapped is None:
-            return None
-        return PersianAnalysis(parts, tuple(mapped[pos] for pos in original_to_normalized), True)
+            parts = self._fallback_with_numbers(normalized, pinglish=True)
+            return PersianAnalysis(parts, None, True) if len(parts) == 1 and parts[0].language == 'fa' else None
+        # A preceding spelling-mode request can leave eSpeak's first event
+        # pass out of sync. Retry the complete analysis once; each attempt
+        # still has to verify every word and phoneme before it can be used.
+        for _ in range(2):
+            if any(c.isdecimal() for c in normalized):
+                aligned = self._positioned_numbers(normalized, pinglish=True)
+                if aligned is not None and aligned.source_map is not None:
+                    return PersianAnalysis(aligned.parts,
+                                           tuple(aligned.source_map[pos] for pos in original_to_normalized), True)
+            else:
+                parts = self._fallback_with_numbers(normalized, pinglish=True)
+                if len(parts) != 1 or parts[0].language != 'fa':
+                    return None
+                mapped = source_map_for_reference(normalized, parts, self._fallback(), pinglish=True)
+                if mapped is not None:
+                    return PersianAnalysis(parts, tuple(mapped[pos] for pos in original_to_normalized), True)
+        return None
 
     def _numeric_spans(self, text: str) -> list[tuple[int, int, str]]:
         """Find validated numbers without consuming sentence punctuation."""
@@ -406,11 +418,17 @@ class DirectFirstPersian:
             return None
         if not any(c.isalpha() for c in text):
             return None
-        if any(c.isdecimal() for c in text):
-            return self._positioned_numbers(text, pinglish=False)
-        parts = _translate_with_native_punctuation(self._fallback(), text)
-        mapping = source_map_for_reference(text, parts, self._fallback())
-        return PersianAnalysis(parts, mapping, True) if mapping is not None else None
+        for _ in range(2):
+            if any(c.isdecimal() for c in text):
+                result = self._positioned_numbers(text, pinglish=False)
+                if result is not None:
+                    return result
+            else:
+                parts = _translate_with_native_punctuation(self._fallback(), text)
+                mapping = source_map_for_reference(text, parts, self._fallback())
+                if mapping is not None:
+                    return PersianAnalysis(parts, mapping, True)
+        return None
 
     def cancel(self) -> None:
         with self._guard:

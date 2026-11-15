@@ -9,7 +9,10 @@ from __future__ import annotations
 import re
 import unicodedata
 
-from text_frontend import UnsupportedPronunciation, word_tag
+if __package__:
+    from .text_frontend import UnsupportedPronunciation, word_tag
+else:
+    from text_frontend import UnsupportedPronunciation, word_tag
 
 _FRAGMENT = re.compile(r'[^,.?!:;،؛؟]+')
 _PUNCTUATION = {'،': ',', '؛': ';', '؟': '?'}

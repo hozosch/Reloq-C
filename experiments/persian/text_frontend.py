@@ -11,7 +11,10 @@ from dataclasses import dataclass
 import re
 import unicodedata
 
-from espeak_ng_probe import EspeakPhonemeProbe
+if __package__:
+    from .espeak_ng_probe import EspeakPhonemeProbe
+else:
+    from espeak_ng_probe import EspeakPhonemeProbe
 
 
 class UnsupportedPronunciation(ValueError):

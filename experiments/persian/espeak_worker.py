@@ -8,7 +8,10 @@ import struct
 import subprocess
 import threading
 
-from espeak_ng_probe import Clause
+if __package__:
+    from .espeak_ng_probe import Clause
+else:
+    from espeak_ng_probe import Clause
 
 _U32 = struct.Struct('<I')
 _HEADER = struct.Struct('<IBB')

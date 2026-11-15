@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 from pathlib import Path
 import string
 
@@ -21,6 +22,7 @@ def check_mapping(text, result):
 
 def analysis_tests(frontend):
     pairs = {'salam donya?': 'سلام دنیا?', 'Salaam Donyaa!': 'سلام دنیا!',
+             'SALAM DONYA?': 'سلام دنیا?',
              'salam ۱۲ donya?': 'سلام ۱۲ دنیا?'}
     for source, expected in pairs.items():
         normalized, mapping = normalize_pinglish(source)
@@ -32,7 +34,7 @@ def analysis_tests(frontend):
         assert result is not None and result.parts == frontend.analyze_direct(expected).parts
         assert not result.used_fallback
         check_mapping(source, result)
-    for text in ('SALAM', 'salam2', 'xsalam', 'salam\u200c', 'salam\u0301', "salam's"):
+    for text in ('salam2', 'xsalam', 'salam\u200c', 'salam\u0301', "salam's"):
         assert normalize_pinglish(text)[0] == text
     for parts in ((), (EciIndex(1),), (' ', EciIndex(2))):
         job = project(parts, frontend, pinglish=True, allow_fallback=True)
@@ -57,6 +59,25 @@ def analysis_tests(frontend):
         words = [word for row in rows for word in row.phonemes.split()]
         assert len(words) == 1 and words[0].endswith('|_!'), (char, words)
         assert word_tag(words[0][:-3]) == LATIN_NAMES[char.lower()], (char, words)
+
+    # A transient wrong reference event may be retried, but never accepted
+    # until a complete new word/phoneme alignment has been checked.
+    original_events = worker.events
+    calls = []
+    def transient_events(text, *, voice='fa'):
+        events = list(original_events(text, voice=voice))
+        calls.append(1)
+        if len(calls) == 1:
+            first = next(i for i, event in enumerate(events) if event.kind == 1)
+            events[first] = replace(events[first], position=events[first].position + 1)
+        return tuple(events)
+    worker.events = transient_events
+    try:
+        check_mapping('salam khub', frontend.analyze_pinglish('salam khub', positioned=True,
+                                                              allow_fallback=True))
+        assert len(calls) == 2
+    finally:
+        worker.events = original_events
 
     for source in ('salam khub?', 'khoob salam', 'yek', 'salam, khub.',
                    'salam 12 khub', 'khoob ۳٫۱۴ donya?', 'khoob 12 khub 34?'):

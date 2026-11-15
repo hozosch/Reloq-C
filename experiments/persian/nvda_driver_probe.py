@@ -8,11 +8,18 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from direct_fa_sequence import ScopedDirectPersianEngine
-from hybrid_fa_frontend import DirectFirstPersian
-from text_frontend import UnsupportedPronunciation
-from _reloq_eci_direct import DirectEciEngine, EciCapitalWord, EciLanguage, EciText
-from _reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
+if __package__:
+    from .direct_fa_sequence import ScopedDirectPersianEngine
+    from .hybrid_fa_frontend import DirectFirstPersian
+    from .text_frontend import UnsupportedPronunciation
+    from .._reloq_eci_direct import DirectEciEngine, EciCapitalWord, EciLanguage, EciText
+    from .._reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
+else:
+    from direct_fa_sequence import ScopedDirectPersianEngine
+    from hybrid_fa_frontend import DirectFirstPersian
+    from text_frontend import UnsupportedPronunciation
+    from _reloq_eci_direct import DirectEciEngine, EciCapitalWord, EciLanguage, EciText
+    from _reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
 
 PERSIAN_PROBE = Language(0x7f0000, 'Persian test', 'fa_IR', 'utf-8', US_ENGLISH.voices)
 PINGLISH_PROBE = Language(0x7f0001, 'Persian (Pinglish) test', 'fa_Latn', 'utf-8', US_ENGLISH.voices)
@@ -63,7 +70,7 @@ class PersianProbeLanguageEngine(LanguageEngine):
 
 
 def make_language_engine(library, native_library, worker, espeak_library, data_parent,
-                         *, language=PERSIAN_PROBE.id, voice='1'):
+                         *, language=PERSIAN_PROBE.id, voice='1', languages=None):
     """Construct the regular LanguageEngine with a test-only Persian factory."""
     def factory(dll, *, dialect, encoding, native_voice):
         if dialect in (PERSIAN_PROBE.id, PINGLISH_PROBE.id):
@@ -73,4 +80,5 @@ def make_language_engine(library, native_library, worker, espeak_library, data_p
                                       pinglish=dialect == PINGLISH_PROBE.id)
         return DirectEciEngine(dll, dialect=dialect, encoding=encoding, native_voice=native_voice)
     return PersianProbeLanguageEngine(library, language=language, voice=voice,
-                                      languages=PROFILES, engine_factory=factory)
+                                      languages=PROFILES if languages is None else languages,
+                                      engine_factory=factory)

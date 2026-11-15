@@ -4,7 +4,10 @@ from __future__ import annotations
 import re
 import unicodedata
 
-from text_frontend import SpeechPart
+if __package__:
+    from .text_frontend import SpeechPart
+else:
+    from text_frontend import SpeechPart
 
 # These are spelling aliases for pronunciations already confirmed in the
 # Persian-script voice, not a general transliterator or English detection.
@@ -50,8 +53,7 @@ def normalize_pinglish(text: str) -> tuple[str, tuple[int, ...]]:
         source = match.group()
         before = text[match.start() - 1] if match.start() else ''
         after = text[match.end()] if match.end() < len(text) else ''
-        normal_case = source.islower() or (source[0].isupper() and source[1:].islower())
-        target = ALIASES.get(source.lower()) if normal_case else None
+        target = ALIASES.get(source.lower())
         if not target or (before and _connected(before)) or (after and _connected(after)):
             continue
         emit(source_pos, match.start())

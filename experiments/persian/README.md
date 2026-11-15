@@ -1473,6 +1473,16 @@ thread-scoped Persian sound, and compares direct Pinglish and Persian output.
 The DLL remains a private probe until those Windows checks have passed and the
 remaining streaming/NVDA work has been completed.
 
+`build_experimental_nvda.py` prepares a separately labelled test package
+using a verified Windows probe and an isolated worker. Its adapter extends
+the language choices only when the worker, NVDA eSpeak and the required native
+exports are present. The package still rejects mixed-language speech jobs
+because the accepted shared-contour and transition planners remain offline;
+it must not be treated as a finished Persian voice. The ordinary release
+builder and language catalog are unchanged. `test_nvda_package_probe.py`
+checks the packaged adapter's profiles and native playback locally;
+`test_nvda_real_plugin.py` is for a subsequent real NVDA smoke test.
+
 ```
 python3 experiments/persian/compile_direct_replacements.py --check
 python3 experiments/persian/compile_direct_lexicon.py \
