@@ -18,9 +18,10 @@ def configured(voice, rate, gender):
     voice.set_parameter(GENDER, gender)
 
 
-def manual(library, text, words):
+def manual(library, text, words, *, rate=3, gender=0):
     voice = engine(library, 0x90000)
     try:
+        configured(voice, rate, gender)
         scope = voice._dll.reloq_fa_acoustic_scope
         onset = voice._dll.reloq_fa_native_onsets
         scope.argtypes, scope.restype = (ctypes.c_int,), ctypes.c_int
@@ -48,7 +49,9 @@ def main():
     parser.add_argument('--data-parent', type=Path, required=True)
     args = parser.parse_args()
     samples = (('سوال', '`[.1so] `[.0al]'),
-               ('بنابراین', "`[.2bA.0n'a:'.1bAr] `[.0in]"))
+               ('بنابراین', "`[.2bA.0n'a:'.1bAr] `[.0in]"),
+               ('بدبخت سوال', '`[.1bAd] `[.0bAGt] `[.1so] `[.0al]'),
+               ('سوال سوال', '`[.1so] `[.0al] `[.1so] `[.0al]'))
     reference = engine(args.reference, 0x90000)
     with DirectFirstPersian(args.native_library, args.worker,
                             args.espeak_library, args.data_parent) as frontend:
@@ -87,7 +90,17 @@ def main():
                                    expected.extend, lambda _: None)
             assert candidate.speak(('سلام ', EciPitch(70), 'آیلار'), actual.extend, lambda _: None)
             assert actual == expected and actual
+            # Selecting one onset must not re-enable Finnish's automatic
+            # glottalization at a later unmarked word boundary.
+            configured(candidate, 3, 0)
+            tagged = "`[.1so] `[.0al] `[.1'a:'.0mAd]."
+            expected = manual(args.scope_probe, tagged, (2,))
+            unwanted = manual(args.scope_probe, tagged, (2, 3))
+            pcm = bytearray()
+            assert candidate.speak(('سوال آمد.',), pcm.extend, lambda _: None)
+            assert bytes(pcm) == expected and expected != unwanted
             # An explicit eSpeak glottal stop keeps the original custom phone.
+            configured(reference, 3, 0)
             set_confirmed_persian_probe(no_auto_glottal=1)
             expected = render(reference, '`[.1sa.0wAt]')
             pcm = bytearray()
