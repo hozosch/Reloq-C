@@ -14,7 +14,7 @@ from text_frontend import SpeechPart, UnsupportedPronunciation
 
 def check_mapping(frontend, text):
     result = frontend.analyze_positioned(text)
-    assert result and result.used_fallback and result.source_map is not None, text
+    assert result and result.source_map is not None, text
     assert result.parts == frontend.analyze(text).parts, text
     raw = text.encode('utf8')
     assert len(result.source_map) == len(raw) + 1
@@ -34,6 +34,14 @@ def alignment_tests(frontend):
         'من می‌خوانم.',
         'نرم‌افزارها خوبند.',
         'کامپیوترها کار می‌کنند.',
+        'من بدبخت آمد.',
+        'سلام آبگوشت آمد.',
+        'سلام آیلار آمد.',
+        'سلام،آیلار',
+        'اداء،سلام',
+        'اداء آیلار',
+        'اداء. آیلار',
+        'اداء،،سلام',
     )
     results = {text: check_mapping(frontend, text) for text in samples}
     one = results[samples[0]]
@@ -42,11 +50,12 @@ def alignment_tests(frontend):
     assert all(one.source_map[i] == 0 for i in range(len('ناموجودمطمئن'.encode('utf8'))))
     assert frontend.analyze_positioned('سلام NVDA') is None
     assert frontend.analyze_positioned('ناموجودمطمئن ۱۲') is None
-    try:
-        frontend.analyze_positioned('من بدبخت آمد.')
-        raise AssertionError('a reference word with an unrepresented short pause was accepted')
-    except UnsupportedPronunciation as error:
-        assert "phone '_'" in str(error)
+    assert results['من بدبخت آمد.'].parts[0].text == "`[.0mAn] `[.1bAd],`[.0bAGt] `[.1'a:'.0mAd]."
+    assert not results['من بدبخت آمد.'].used_fallback
+    for text in ('سلام،آیلار', 'اداء،سلام', 'اداء آیلار'):
+        assert results[text].parts[0].text.count(',') == 1, text
+    assert ',' not in results['اداء. آیلار'].parts[0].text
+    assert frontend.analyze_positioned('اداء،،سلام').parts[0].text.count(',') == 2
 
     worker = frontend._fallback()
     original_events = worker.events
@@ -104,12 +113,24 @@ def alignment_tests(frontend):
 def playback_tests(frontend, probe, reference, samples):
     from listening import render
     from test_selected_probe import engine, set_confirmed_persian_probe
-    from _reloq_eci_direct import GENDER, SAMPLE_RATE
+    from _reloq_eci_direct import GENDER, PHRASE_PREDICTION, SAMPLE_RATE
 
     voice = ScopedDirectPersianEngine(probe, frontend, allow_fallback=True)
     fa = engine(reference, 0x90000)
     set_confirmed_persian_probe()
     try:
+        # The internal boundary follows the same native punctuation path as
+        # an actual comma, regardless of the user's prediction setting.
+        explicit = "`[.0mAn] `[.1bAd],`[.0bAGt] `[.1'a:'.0mAd]."
+        for prediction in (0, 1):
+            for target in (voice, fa):
+                target.set_parameter(PHRASE_PREDICTION, prediction)
+            pcm = bytearray()
+            assert voice.speak(('من بدبخت آمد.',), pcm.extend, lambda _: None)
+            assert bytes(pcm) == render(fa, explicit)
+            assert bytes(pcm) != render(fa, explicit.replace(',', ' '))
+        for target in (voice, fa):
+            target.set_parameter(PHRASE_PREDICTION, 0)
         # Boundary-only indexes need no synthesized reference events, even
         # when a directly generated number occurs in the same fallback text.
         worker = frontend._fallback()
@@ -139,7 +160,7 @@ def playback_tests(frontend, probe, reference, samples):
                         split = text.index('،') + 1
                     parts = (EciIndex(1), text[:split], EciIndex(2), text[split:], EciIndex(3))
                     job = project(parts, frontend, allow_fallback=True)
-                    assert job.needs_native_validation
+                    assert job.needs_native_validation == frontend.analyze(text).used_fallback
                     expected = render(fa, job.tagged)
                     pcm, marks = bytearray(), []
                     assert voice.speak(parts, pcm.extend, lambda i: marks.append((i, len(pcm) // 2)))
@@ -159,6 +180,15 @@ def playback_tests(frontend, probe, reference, samples):
         try:
             voice.speak((samples[0],), pcm.extend, lambda _: None)
             raise AssertionError('an unaccepted fallback phoneme tag was spoken')
+        except UnsupportedPronunciation:
+            assert not pcm
+        finally:
+            voice._voice._phonemes_for_probe = original
+        voice._voice._phonemes_for_probe = lambda text: original(text).replace(',', '')
+        pcm = bytearray()
+        try:
+            voice.speak(('سلام آیلار آمد.',), pcm.extend, lambda _: None)
+            raise AssertionError('a lost internal comma was accepted')
         except UnsupportedPronunciation:
             assert not pcm
         finally:

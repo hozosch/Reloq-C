@@ -1393,9 +1393,9 @@ generated from the pinned eSpeak spelling mode and checked against the
 selected Finnish-based native parser, without an eSpeak process at runtime.
 For the names of ر and گ, the reference's long initial consonant is rendered
 as the corresponding ordinary consonant because the native tag cannot express
-eSpeak's length notation directly. This isolated single-character path is not yet connected to
-NVDA; punctuation, Latin letters, digits and multi-character spelling need
-their normal symbol/character handling rather than this letter table.
+eSpeak's length notation directly. This isolated single-character path is not
+yet connected to NVDA; punctuation, Latin letters, digits and multi-character
+spelling need their normal symbol/character handling rather than this table.
 
 The optional reference fallback can now project source indexes for a limited
 Persian-only case. The separate helper collects eSpeak word and phoneme events
@@ -1405,10 +1405,21 @@ then builds a monotone UTF-8 source map. The selected Eloquence parser also
 has to accept the resulting tags before the scoped experiment emits audio.
 This preserves word-level rather than character-level accuracy, and fails
 closed when alignment cannot be verified. Directly covered words and numbers
-do not start the helper. Reference fallback containing numbers, English,
-Pinglish or spelling commands is not yet projected.
-Some dictionary pronunciations contain eSpeak's word-internal short-pause
-phone `_`; this remains unsupported and is not silently removed.
+do not start the helper. A reference fallback with internal source marks
+containing numbers, English, Pinglish or spelling commands is not projected.
+
+The eSpeak short-pause phone `_` is converted to an internal comma boundary
+between complete native phone groups, using the same punctuation mechanism
+as the native sentence predictor. When a real punctuation mark or another
+inferred comma coincides with it, they share the boundary; explicit repeated
+source punctuation is retained for the native parser to interpret. The
+reference word mapping retains one source word even when its phone groups
+are separated by that comma. Other unrecognized pause phones remain rejected.
+The separate `direct_fa_pause_words.inc` table brings 98 source words with
+context-invariant internal boundaries into the native C route, without an
+eSpeak worker. Each was checked in four reference contexts and against the
+selected native phone parser. Boundaries at a source word's edge remain on
+the reference route, where they can be combined with written punctuation.
 
 If a job has no internal marks, including when it has only a start or end
 index, the reference words can be used without asking for events. This also
@@ -1419,6 +1430,17 @@ stops the helper and the next request starts a new one. This is a bridge
 towards testing, not a replacement for the planned native Persian text rules.
 The targeted Windows test checks its event alignment against NVDA's eSpeak
 DLL; only the Linux probe currently checks the selected acoustic PCM.
+
+`nvda_driver_probe.py` exercises the actual `LanguageEngine` and
+`EciTextTransport` contract with a private test-only Persian profile. Its
+owner-scoped frontend and acoustic handle support settings, dictionary
+selection, word indexes, isolated character names, cancellation and restart.
+The real native queue is tested locally; the portable Windows test checks the
+routing guard. The test profile does not register Persian in NVDA or bundle
+the Windows acoustic engine. Mixed English/Persian jobs are rejected before
+any audio because the accepted shared sentence contour and transitions are
+not yet connected to the streaming driver. This intentionally prevents a
+test from masquerading as the user's approved seamless transition.
 
 ```
 python3 experiments/persian/compile_direct_replacements.py --check
@@ -1447,6 +1469,12 @@ python3 experiments/persian/test_direct_fa_lexicon.py --library /tmp/fa-direct.s
   --probe /tmp/fa-internal/libreloq_eci.so --espeak-library /path/to/libespeak-ng.so \
   --data-parent /path/to/data-parent
 cc -std=c11 -O2 -Wall -Wextra -Werror experiments/persian/espeak_worker.c -ldl -o /tmp/fa-espeak-worker
+python3 experiments/persian/test_direct_pause_words.py --native-library /tmp/fa-direct.so \
+  --worker /tmp/fa-espeak-worker --espeak-library /path/to/libespeak-ng.so \
+  --data-parent /path/to/data-parent
+python3 experiments/persian/test_nvda_driver_probe.py --native-library /tmp/fa-direct.so \
+  --worker /tmp/fa-espeak-worker --espeak-library /path/to/libespeak-ng.so \
+  --data-parent /path/to/data-parent --scope-probe /tmp/fa-scoped/libreloq_eci_scoped.so
 python3 experiments/persian/test_hybrid_fa_frontend.py --native-library /tmp/fa-direct.so \
   --worker /tmp/fa-espeak-worker --espeak-library /path/to/libespeak-ng.so \
   --data-parent /path/to/data-parent

@@ -64,6 +64,7 @@ def _translate_with_native_punctuation(probe, text: str, *, pinglish: bool = Fal
         return translate_text(probe, text, pinglish=pinglish)
     parts: list[SpeechPart] = []
     pending = ''
+    trailing_internal = False
 
     def append(language: str, content: str) -> None:
         if not content:
@@ -79,9 +80,13 @@ def _translate_with_native_punctuation(probe, text: str, *, pinglish: bool = Fal
         if fragment in _BOUNDARIES:
             mark = _BOUNDARIES[fragment]
             if parts:
+                if trailing_internal:
+                    previous = parts[-1]
+                    parts[-1] = SpeechPart(previous.language, re.sub(r',([ \t]*)$', r'\1', previous.text))
                 append(parts[-1].language, mark)
             else:
                 pending += mark
+            trailing_internal = False
             continue
         core = fragment.strip()
         if not core:
@@ -102,7 +107,13 @@ def _translate_with_native_punctuation(probe, text: str, *, pinglish: bool = Fal
         for index, part in enumerate(translated):
             prefix = pending + leading if index == 0 else ''
             suffix = trailing if index == len(translated) - 1 else ''
-            append(part.language, prefix + part.text + suffix)
+            content = part.text
+            before = (parts[-1].text if parts and parts[-1].language == part.language else '') + prefix
+            if (part.language == 'fa' and content.startswith(',') and
+                    before.rstrip(' \t').endswith(tuple(',.?!:;'))):
+                content = content[1:]
+            append(part.language, prefix + content + suffix)
+            trailing_internal = part.language == 'fa' and content.endswith(',')
         pending = ''
     if pending:
         if not parts:

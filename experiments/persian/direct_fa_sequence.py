@@ -9,7 +9,6 @@ from __future__ import annotations
 import ctypes
 from dataclasses import replace
 from pathlib import Path
-import re
 import sys
 import threading
 from typing import Sequence
@@ -23,7 +22,7 @@ from _reloq_eci_direct import (
 from _reloq_persian_projection import Command, ProjectedJob, PersianProjectionError, project_persian
 from hybrid_fa_frontend import DirectFirstPersian
 from reference_alignment import unpositioned_reference_input
-from text_frontend import UnsupportedPronunciation, native_tag_accepted
+from text_frontend import UnsupportedPronunciation, native_sequence_accepted
 
 def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersian,
             *, allow_fallback: bool = False) -> ProjectedJob:
@@ -147,11 +146,7 @@ class ScopedDirectPersianEngine:
                     if self._cancelled.is_set():
                         return False
                     raise
-                requested = re.findall(r'`\[[^]]+\]', prepared.tagged)
-                actual = re.findall(r'`\[[^]]+\]', shown)
-                if (len(requested) != len(actual) or
-                        any(not native_tag_accepted(tag, parsed)
-                            for tag, parsed in zip(requested, actual))):
+                if not native_sequence_accepted(prepared.tagged, shown):
                     raise UnsupportedPronunciation('reference pronunciation is not accepted by the native parser')
                 if self._cancelled.is_set():
                     return False

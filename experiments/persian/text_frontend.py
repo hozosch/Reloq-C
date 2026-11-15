@@ -78,6 +78,22 @@ def parse_word(word: str) -> tuple[Phone, ...]:
 
 def word_tag(word: str) -> str:
     """Map the word to syllable-marked phones for the private acoustic probe."""
+    items = word.strip('|').split('|')
+    if '_' in items:
+        # Like native phrase prediction, place a comma boundary in the
+        # annotation stream. It is punctuation for the voice, not a spoken
+        # name and not an extra phoneme.
+        groups, group = [], []
+        for item in items:
+            if item == '_':
+                groups.append(group)
+                group = []
+            else:
+                group.append(item)
+        groups.append(group)
+        if any(not group for group in groups[1:-1]) or not any(groups):
+            raise UnsupportedPronunciation('ambiguous repeated reference pause')
+        return ','.join(word_tag('|'.join(group)) if group else '' for group in groups)
     phones = parse_word(word)
     vowel_indices = [i for i, p in enumerate(phones) if p.name in VOWELS]
     starts = [0]
@@ -184,15 +200,28 @@ def translate_text(probe: EspeakPhonemeProbe, text: str, *, pinglish: bool = Fal
         spans = english_spans
     cursor = 0
     parts: list[SpeechPart] = []
+    trailing_internal = False
 
-    def append(language: str, content: str, *, space: bool = True) -> None:
+    def append(language: str, content: str, *, space: bool = True,
+               internal_word: bool = False, punctuation: bool = False) -> None:
+        nonlocal trailing_internal
         if not content:
             return
+        if punctuation and trailing_internal and parts and parts[-1].language == language:
+            # The predictor also keeps a real punctuation boundary in
+            # preference to an inferred one at exactly the same location.
+            prev = parts[-1]
+            parts[-1] = SpeechPart(language, re.sub(r',([ \t]*)$', r'\1', prev.text))
+            trailing_internal = False
+        if internal_word and content.startswith(',') and parts and parts[-1].language == language:
+            if parts[-1].text.rstrip(' \t').endswith(tuple(',.?!:;')):
+                content = content[1:]
         if parts and parts[-1].language == language:
             prev = parts[-1]
             parts[-1] = SpeechPart(language, prev.text + (' ' if space else '') + content)
         else:
             parts.append(SpeechPart(language, content))
+        trailing_internal = internal_word and content.endswith(',')
 
     for clause in clauses:
         fragments = re.split(r'(\(en\)|\(fa\))', clause.phonemes)
@@ -209,7 +238,7 @@ def translate_text(probe: EspeakPhonemeProbe, text: str, *, pinglish: bool = Fal
             elif fragment.strip('| \t\r\n'):
                 if language == 'fa':
                     for word in fragment.strip('| \t\r\n').split():
-                        append('fa', word_tag(word))
+                        append('fa', word_tag(word), internal_word=True)
                 else:
                     wanted = _normal_english_phones(fragment)
                     found: tuple[str, ...] = ()
@@ -229,7 +258,7 @@ def translate_text(probe: EspeakPhonemeProbe, text: str, *, pinglish: bool = Fal
             raise UnsupportedPronunciation('unterminated English fallback')
         punctuation = _punctuation(clause.terminator)
         if punctuation and parts:
-            append(parts[-1].language, punctuation, space=False)
+            append(parts[-1].language, punctuation, space=False, punctuation=True)
     if cursor != len(spans):
         raise UnsupportedPronunciation('Latin text was not accounted for by eSpeak')
     return tuple(parts)
@@ -244,3 +273,21 @@ def native_tag_accepted(tag: str, native_phones: str) -> bool:
         return False
     displayed = tag[:vowel + 1] + tag[vowel + 1:].replace('h', '')
     return displayed != tag and displayed in native_phones
+
+
+def native_sequence_accepted(tagged: str, native_phones: str) -> bool:
+    """Check every phone group and comma boundary in the native reading."""
+    pattern = r'`\[[^]]+\]'
+    expected = tuple(re.finditer(pattern, tagged))
+    actual = tuple(re.finditer(pattern, native_phones))
+    if (len(expected) != len(actual) or
+            any(not native_tag_accepted(a.group(), b.group()) for a, b in zip(expected, actual))):
+        return False
+    for left, right, observed_left, observed_right in zip(expected, expected[1:], actual, actual[1:]):
+        # The native parser may coalesce repeated written commas. Preserve
+        # whether the boundary exists, while leaving its normal punctuation
+        # policy to the core.
+        if ((',' in tagged[left.end():right.start()]) !=
+                (',' in native_phones[observed_left.end():observed_right.start()])):
+            return False
+    return True

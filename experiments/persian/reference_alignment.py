@@ -11,7 +11,6 @@ import unicodedata
 
 from text_frontend import UnsupportedPronunciation, word_tag
 
-_TAG = re.compile(r'`\[[^]]+\]')
 _FRAGMENT = re.compile(r'[^,.?!:;،؛؟]+')
 _PUNCTUATION = {'،': ',', '؛': ';', '؟': '?'}
 
@@ -65,7 +64,11 @@ def _reference_words(worker, core: str, tokens: tuple[tuple[int, int], ...]) -> 
         if event.kind == 1:
             grouped.append((event.position - 1, []))
         elif event.kind == 7:
-            if event.phone in ('_', '_:'):
+            # Clause-final silence is outside the word. An underscore at the
+            # word's own position is an actual short-pause phone and must
+            # match the reference before becoming an internal comma.
+            if event.phone in ('_', '_:') and (
+                    not grouped or event.position - 1 != grouped[-1][0]):
                 continue
             if not grouped or event.position - 1 != grouped[-1][0]:
                 return None
@@ -91,7 +94,6 @@ def source_map_for_reference(text: str, parts, worker) -> tuple[int, ...] | None
     if len(parts) != 1 or parts[0].language != 'fa':
         return None
     tagged = parts[0].text
-    tags = tuple(_TAG.finditer(tagged))
     source_tokens = []
     reference_tags = []
     for fragment in _FRAGMENT.finditer(text):
@@ -112,8 +114,7 @@ def source_map_for_reference(text: str, parts, worker) -> tuple[int, ...] | None
             return None
         start = fragment.start() + leading
         source_tokens.extend((start + a, start + b) for a, b in tokens)
-    if (not source_tokens or len(source_tokens) != len(tags) or
-            tuple(match.group() for match in tags) != tuple(reference_tags)):
+    if not source_tokens or len(source_tokens) != len(reference_tags):
         return None
     byte_offsets = [0]
     for char in text:
@@ -152,13 +153,32 @@ def source_map_for_reference(text: str, parts, worker) -> tuple[int, ...] | None
         return out == out_end
 
     source_cursor = out_cursor = 0
-    for (start, end), tag in zip(source_tokens, tags):
-        if not gap(source_cursor, start, out_cursor, tag.start()):
+    for i, ((start, end), tag) in enumerate(zip(source_tokens, reference_tags)):
+        next_start = source_tokens[i + 1][0] if i + 1 < len(source_tokens) else len(text)
+        following = text[end:next_start].lstrip(' \t')
+        if tag.endswith(',') and following and following[0] in ',.?!:;،؛؟':
+            # The explicit source punctuation replaces the coincident
+            # inferred boundary and remains mapped to its own source bytes.
+            tag = tag[:-1]
+        candidates = (tag[1:], tag) if tag.startswith(',') else (tag,)
+        chosen = None
+        for candidate in candidates:
+            tag_start = tagged.find(candidate, out_cursor)
+            if tag_start < 0:
+                continue
+            if candidate != tag and not tagged[:tag_start].rstrip(' \t').endswith(tuple(',.?!:;')):
+                continue
+            if gap(source_cursor, start, out_cursor, tag_start):
+                chosen = (tag_start, candidate)
+                break
+        if chosen is None:
             return None
+        tag_start, tag = chosen
         for b in range(byte_offsets[start], byte_offsets[end]):
-            result[b] = tag.start()
-        result[byte_offsets[end]] = tag.end()
-        source_cursor, out_cursor = end, tag.end()
+            result[b] = tag_start
+        tag_end = tag_start + len(tag)
+        result[byte_offsets[end]] = tag_end
+        source_cursor, out_cursor = end, tag_end
     if not gap(source_cursor, len(text), out_cursor, len(tagged)):
         return None
     return tuple(result)

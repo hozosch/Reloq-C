@@ -93,6 +93,10 @@ def reference_tags(api: EspeakPhonemeProbe, word: str) -> tuple[str, ...]:
 def checked_tag(api: EspeakPhonemeProbe, word: str) -> str:
     """Reject misalignment, unsupported sounds, and differing stress forms."""
     tags = reference_tags(api, word)
+    # Comma-bearing words live in the separately generated pause table. The
+    # ordinary lexicon and its dependent plural bitmap remain unchanged.
+    if any(',' in tag for tag in tags):
+        raise UnsupportedPronunciation('unsupported eSpeak phone short pause')
     if any(tag != tags[0] for tag in tags[1:]):
         raise UnsupportedPronunciation('context-dependent pronunciation or stress')
     return tags[0]

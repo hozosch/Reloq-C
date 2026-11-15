@@ -10,6 +10,7 @@ struct fa_context_entry { const char *word, *final, *nonfinal; };
 #include "direct_fa_lexicon.inc"
 #include "direct_fa_context.inc"
 #include "direct_fa_plural.inc"
+#include "direct_fa_pause_words.inc"
 
 size_t reloq_fa_direct_word_count(void)
 { return sizeof fa_direct_entries / sizeof fa_direct_entries[0]; }
@@ -48,6 +49,23 @@ int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
 {
     int result=reloq_fa_direct_word(word,bytes,output,capacity);
     if(result)return result;
+    size_t pause_lo=0,pause_hi=sizeof fa_pause_entries / sizeof fa_pause_entries[0];
+    while(pause_lo<pause_hi) {
+        size_t m=pause_lo+(pause_hi-pause_lo)/2;
+        const char *key=fa_pause_entries[m].word;
+        size_t n=strlen(key),common=bytes<n?bytes:n;
+        int order=memcmp(word,key,common);
+        if(!order)order=bytes<n?-1:bytes>n?1:0;
+        if(order<0)pause_hi=m;
+        else if(order>0)pause_lo=m+1;
+        else {
+            const char *tag=fa_pause_entries[m].tag;
+            n=strlen(tag);
+            if(n>=capacity)return -2;
+            memcpy(output,tag,n+1);
+            return 1;
+        }
+    }
     size_t lo=0,hi=sizeof fa_context_entries / sizeof fa_context_entries[0];
     while(lo<hi) {
         size_t m=lo+(hi-lo)/2;
