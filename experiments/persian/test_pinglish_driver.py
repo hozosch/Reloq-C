@@ -141,6 +141,11 @@ def playback_tests(frontend, probe):
             pcm, marks = bytearray(), []
             assert voice.speak(parts, pcm.extend, marks.append) and pcm
             assert marks == [p.value for p in parts if isinstance(p, EciIndex)]
+        unmarked, marked, marks = bytearray(), bytearray(), []
+        assert voice.speak((EciText('NVDA', character_mode=True),), unmarked.extend, lambda _: None)
+        assert voice.speak((EciText('NV', character_mode=True), EciIndex(40),
+                            EciText('DA', character_mode=True)), marked.extend, marks.append)
+        assert unmarked == marked and marks == [40]
     finally:
         voice.close()
         fa.close()

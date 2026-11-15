@@ -8,6 +8,7 @@ on:
       - experiments/persian/test_nvda_package_probe.py
       - experiments/persian/test_nvda_real_plugin.py
       - experiments/persian/pinglish_frontend.py
+      - experiments/persian/test_pinglish_driver.py
       - experiments/persian/hybrid_fa_frontend.py
       - experiments/persian/direct_fa_sequence.py
       - experiments/persian/reference_alignment.py
