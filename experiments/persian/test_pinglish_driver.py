@@ -8,6 +8,7 @@ import string
 from direct_fa_sequence import EciIndex, EciText, ScopedDirectPersianEngine, project
 from hybrid_fa_frontend import DirectFirstPersian
 from pinglish_frontend import LATIN_NAMES, normalize_pinglish
+from reference_alignment import _reference_words, _tokens, source_map_for_reference
 from text_frontend import UnsupportedPronunciation, word_tag
 
 
@@ -66,6 +67,12 @@ def analysis_tests(frontend):
             print('Pinglish alignment diagnostic:', ascii(normalized),
                   ascii(worker.translate(core, voice='fa-latn', separator='|')),
                   ascii(worker.events(core, voice='fa-latn')), flush=True)
+            unpositioned = frontend.analyze_pinglish(source, positioned=False, allow_fallback=True)
+            tokens = _tokens(core, pinglish=True)
+            print('Pinglish tag and anchors:', ascii(unpositioned), ascii(tokens),
+                  ascii(_reference_words(worker, core, tokens, voice='fa-latn')),
+                  ascii(source_map_for_reference(normalized, unpositioned.parts, worker, pinglish=True)
+                        if unpositioned else None), flush=True)
         check_mapping(source, result)
         assert result.used_fallback
         assert result.parts == frontend.analyze_pinglish(source, positioned=False, allow_fallback=True).parts
