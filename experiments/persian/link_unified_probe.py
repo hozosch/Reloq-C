@@ -1,0 +1,57 @@
+"""Link Persian text analysis into an existing scoped Linux ECI probe.
+
+Reuses the already compiled provider archive and host objects. This is an
+experimental library, not an installed NVDA voice or a Windows build.
+"""
+from __future__ import annotations
+
+import argparse
+from concurrent.futures import ThreadPoolExecutor
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[2]
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / 'experiments/aragonese'))
+from build_native_probe import host_objects
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--scope-work', type=Path, required=True,
+                        help='completed build_scoped_acoustics_probe work directory')
+    parser.add_argument('--work', type=Path, required=True)
+    parser.add_argument('--jobs', type=int, choices=range(1, 9), default=4)
+    args = parser.parse_args()
+    archive = args.scope_work.resolve() / 'libreloq61.a'
+    scope = args.scope_work.resolve() / 'scoped_acoustics_probe.o'
+    if not archive.is_file() or not scope.is_file():
+        parser.error('the compiled scoped provider archive and scope object are required')
+    work = args.work.resolve()
+    if work.exists():
+        parser.error('work directory must not exist')
+    work.mkdir(parents=True)
+    sources = tuple(HERE / ('direct_fa_' + name + '.c')
+                    for name in ('lexicon', 'numbers', 'normalize', 'text', 'letters'))
+
+    def compile_one(source):
+        output = work / (source.stem + '.o')
+        subprocess.run(['cc', '-O2', '-std=c11', '-fPIC', '-ffunction-sections',
+                        '-fdata-sections', '-I' + str(ROOT / 'include'),
+                        '-c', str(source), '-o', str(output)], check=True)
+        return output
+
+    with ThreadPoolExecutor(max_workers=args.jobs) as pool:
+        objects = list(pool.map(compile_one, sources))
+    output = work / 'libreloq_eci_persian_probe.so'
+    subprocess.run(['cc', '-O3', f'-flto={args.jobs}', '-fno-strict-aliasing', '-ffp-contract=off',
+                    '-shared', *map(str, host_objects()), str(scope), *map(str, objects), str(archive),
+                    '-pthread', '-Wl,--gc-sections,--no-undefined', '-lm', '-o', str(output)],
+                   check=True, env={**os.environ, 'TMPDIR': str(work)})
+    print('Ready:', output)
+
+
+if __name__ == '__main__':
+    main()

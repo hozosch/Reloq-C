@@ -1442,6 +1442,16 @@ any audio because the accepted shared sentence contour and transitions are
 not yet connected to the streaming driver. This intentionally prevents a
 test from masquerading as the user's approved seamless transition.
 
+`link_unified_probe.py` links the direct Persian text components into the
+same private Linux ECI library as the scoped acoustics. It reuses the
+previous provider archive and host objects; the final link still performs
+link-time optimization over that archive. The resulting library can be
+passed as both `--native-library` and `--scope-probe` to the driver test,
+so directly covered text uses one native library and no reference process.
+The combined probe passed the native queue test, all 98 direct pause-word
+comparisons, 54 selected-acoustic comparisons and concurrent Finnish/Persian
+isolation checks. This is an experimental link step, not a Windows/NVDA package.
+
 ```
 python3 experiments/persian/compile_direct_replacements.py --check
 python3 experiments/persian/compile_direct_lexicon.py \
@@ -1475,6 +1485,8 @@ python3 experiments/persian/test_direct_pause_words.py --native-library /tmp/fa-
 python3 experiments/persian/test_nvda_driver_probe.py --native-library /tmp/fa-direct.so \
   --worker /tmp/fa-espeak-worker --espeak-library /path/to/libespeak-ng.so \
   --data-parent /path/to/data-parent --scope-probe /tmp/fa-scoped/libreloq_eci_scoped.so
+python3 experiments/persian/link_unified_probe.py --scope-work /tmp/fa-scoped \
+  --work /tmp/fa-unified
 python3 experiments/persian/test_hybrid_fa_frontend.py --native-library /tmp/fa-direct.so \
   --worker /tmp/fa-espeak-worker --espeak-library /path/to/libespeak-ng.so \
   --data-parent /path/to/data-parent

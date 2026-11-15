@@ -42,6 +42,7 @@ def alignment_tests(frontend):
         'اداء آیلار',
         'اداء. آیلار',
         'اداء،،سلام',
+        'بدبخت؟',
     )
     results = {text: check_mapping(frontend, text) for text in samples}
     one = results[samples[0]]
@@ -157,7 +158,8 @@ def playback_tests(frontend, probe, reference, samples):
                 for text in samples:
                     split = text.find(' ')
                     if split < 0:
-                        split = text.index('،') + 1
+                        comma = text.find('،')
+                        split = comma + 1 if comma >= 0 else 1
                     parts = (EciIndex(1), text[:split], EciIndex(2), text[split:], EciIndex(3))
                     job = project(parts, frontend, allow_fallback=True)
                     assert job.needs_native_validation == frontend.analyze(text).used_fallback
