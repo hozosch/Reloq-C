@@ -1296,6 +1296,10 @@ does not supply precise within-word phoneme positions, numbers or Latin
 routing. The native conditional pronunciation rules and morphology in
 `fa_rules` are still unimplemented, as are the streaming acoustic transitions
 and integration with NVDA. This is not a selectable voice or an add-on.
+For `او آمد`, the direct C output also feeds the existing private frame-replay
+glide through `compare_tagged_vowel_glide`; its selected candidate is compared
+byte-for-byte with the previously accepted eSpeak-analysed candidate. This
+checks continuity of the chosen sound, not a real-time implementation.
 
 `hybrid_fa_frontend.py` tests a direct-first route for a future early NVDA
 trial: it invokes the native C converter when the entire input is covered

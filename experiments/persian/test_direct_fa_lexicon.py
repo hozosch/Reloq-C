@@ -5,15 +5,19 @@ import argparse
 import ctypes
 import json
 from pathlib import Path
+import sys
 
 from compile_direct_replacements import SOURCE, replacements, render as render_replacements
 from espeak_ng_probe import EspeakPhonemeProbe
 from listening import render
 from test_selected_probe import engine, set_confirmed_persian_probe
 from text_frontend import native_tag_accepted, translate_text, word_tag
+from persian_vowel_glide import compare_tagged_vowel_glide, compare_vowel_glide
 
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parents[1] / 'nvda'))
+from _reloq_eci_direct import SAMPLE_RATE
 
 
 def entries():
@@ -103,6 +107,7 @@ def main():
     checks = 0
     try:
         set_confirmed_persian_probe()
+        fa.set_parameter(SAMPLE_RATE, 3)
         with EspeakPhonemeProbe(args.espeak_library, args.data_parent) as api:
             # Every seventeenth entry is spread over the full Persian alphabet.
             for word, expected in rows[::17]:
@@ -124,11 +129,17 @@ def main():
                 assert status == 0 and actual == parts[0].text, (text, actual, parts)
                 assert offsets == tuple(sorted(offsets)) and offsets[-1] == len(actual.encode('utf8'))
                 assert render(fa, actual) == render(fa, parts[0].text)
+            status, _, tagged, _ = phrase('او آمد.'.encode('utf8'))
+            assert status == 0 and tagged is not None
+            old = compare_vowel_glide(api, fa, args.probe, 'او آمد.', 16000)
+            direct = compare_tagged_vowel_glide(fa, args.probe, tagged, 16000)
+            assert direct.changed and direct.changed == old.changed
+            assert direct.selected == old.selected and direct.selected != direct.baseline
     finally:
         fa.close()
     print(f'Passed {checks} native word comparisons, {len(rows[::79])} native tag checks, '
           f'{len(replacements(SOURCE))} direct replacement patterns, '
-          f'{len(texts)} direct-text/audio comparisons and failure/index checks.')
+          f'{len(texts)} direct-text/audio comparisons, selected U-A glide and failure/index checks.')
 
 
 if __name__ == '__main__':

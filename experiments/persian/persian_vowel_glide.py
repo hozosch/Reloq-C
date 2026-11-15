@@ -74,13 +74,27 @@ def compare_vowel_glide(api: EspeakPhonemeProbe, fa: DirectEciEngine,
     existing tract interpolation, plus F0 for the second comparison. The
     initial and settled vowel targets and every frame duration are preserved.
     """
-    if not 0 < anticipation_ms <= 50 or not 15 <= pitch_window_ms <= 80:
-        raise ValueError('unsupported transition window')
-    _validate_replay_settings((fa,), rate, gender, head)
     parts = translate_text(api, text)
     if len(parts) != 1 or parts[0].language != 'fa':
         raise ValueError('vowel-glide experiment needs one Persian-only clause')
-    tagged = parts[0].text
+    return compare_tagged_vowel_glide(fa, library, parts[0].text, rate, gender=gender,
+                                      head=head, anticipation_ms=anticipation_ms,
+                                      pitch_window_ms=pitch_window_ms)
+
+
+def compare_tagged_vowel_glide(fa: DirectEciEngine, library: Path, tagged: str,
+                               rate: int, *, gender: int = 0, head: int = 50,
+                               anticipation_ms: float = 25.0,
+                               pitch_window_ms: float = 45.0) -> VowelGlideComparison:
+    """Apply both listening comparisons to already analysed Persian text.
+
+    This lets the direct C frontend feed the same accepted transition without
+    calling eSpeak for that text. It still uses the private offline frame
+    capture/replay path and is not an NVDA or streaming implementation.
+    """
+    if not 0 < anticipation_ms <= 50 or not 15 <= pitch_window_ms <= 80:
+        raise ValueError('unsupported transition window')
+    _validate_replay_settings((fa,), rate, gender, head)
     sequence, tags = _marked_words(tagged)
     with tempfile.TemporaryDirectory(prefix='reloq-fa-vowel-glide-') as name:
         folder = Path(name)
