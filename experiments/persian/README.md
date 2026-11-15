@@ -1291,4 +1291,3 @@ python3 experiments/persian/compare_vowel_glide.py \
   --espeak-binary /path/to/espeak-ng --data-parent /path/to/data-parent \
   --wav /tmp/persian-u-a-glide.wav
 ```
-
