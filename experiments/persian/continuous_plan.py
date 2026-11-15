@@ -264,6 +264,32 @@ def _interp_frame(t, item, column):
     return first + (last - first) * (t - item.ticks[a]) / (item.ticks[b] - item.ticks[a])
 
 
+def _frame_coordinates(item, positions):
+    """Locate shared interpolation intervals once for all formants."""
+    result = []
+    for t in positions:
+        index = bisect_right(item.ticks, t)
+        if not index:
+            result.append((0, 0, 0, 1))
+        elif index >= len(item.ticks):
+            last = len(item.ticks) - 1
+            result.append((last, last, 0, 1))
+        else:
+            first = index - 1
+            result.append((first, index, t - item.ticks[first], item.ticks[index] - item.ticks[first]))
+    return result
+
+
+def _frame_value(item, column, coordinates):
+    first, last, offset, span = coordinates
+    a = float(item.frames[first].controls[column])
+    if first == last:
+        return a
+    b = float(item.frames[last].controls[column])
+    # Keep the same evaluation order as the original native-frame bridge.
+    return a + (b - a) * offset / span
+
+
 @dataclass
 class CapturedRows:
     pcm: bytes
@@ -294,7 +320,16 @@ def _edges(item, count):
     return tuple(result)
 
 
-def _dense(item, column, check=None):
+def _dense(item, column, check=None, *, native=None):
+    if native is not None:
+        if check:
+            check()
+        result = (ctypes.c_float * (item.ticks[-1] + 1))()
+        if native(item.frames, len(item.frames), column, result, len(result)):
+            raise RuntimeError('invalid native dense contour')
+        if check:
+            check()
+        return result
     values = [row.controls[column] for row in item.frames]
     result, ticks, cursor = [], item.ticks, 0
     for i in range(item.ticks[-1] + 1):
@@ -320,8 +355,8 @@ def _bracket_boundary(parts, edge):
     return bool((left and left[-1] in '()[]{}') or (right and right[0] in '()[]{}'))
 
 
-def _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate, check=None):
-    av = [row.controls[2] for row in item.frames]
+def _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate, check=None, *, native=None):
+    av = [row.controls[2] for row in item.frames] if native is None else None
     for i, part in enumerate(parts):
         if check:
             check()
@@ -339,15 +374,22 @@ def _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language,
         end = min(round(bounds[i + 1] * 1000 / rate), item.ticks[-1] + 1)
         if not 0 <= start < end <= item.ticks[-1] + 1:
             raise RuntimeError('invalid native pitch interval')
+        a, b = pilot_bounds[i], pilot_bounds[i + 1]
+        if not 0 <= a < b < len(pilot_pitch):
+            raise RuntimeError('invalid shared pitch interval')
+        if native is not None:
+            status = native(item.frames, len(item.frames), pilot_pitch, len(pilot_pitch), start, end, a, b)
+            if status:
+                raise RuntimeError('no voiced pitch anchor' if status == 1 else 'invalid native pitch interval')
+            if check:
+                check()
+            continue
         # Only the first and last voiced milliseconds are needed. Search
         # from each edge instead of allocating two dense sentence arrays.
         first = next((j for j in range(start, end) if _interp(j, item.ticks, av) > 0), None)
         last = next((j for j in range(end - 1, start - 1, -1) if _interp(j, item.ticks, av) > 0), None)
         if first is None or last is None or first >= last:
             raise RuntimeError('no voiced pitch anchor')
-        a, b = pilot_bounds[i], pilot_bounds[i + 1]
-        if not 0 <= a < b < len(pilot_pitch):
-            raise RuntimeError('invalid shared pitch interval')
         for number, row in enumerate(item.frames):
             if check and not number % 1024:
                 check()
@@ -389,6 +431,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
     if any(SAMPLE_RATES.get(voice._dll.eciGetParam(voice._handle, SAMPLE_RATE)) != rate for voice in (fa, en)):
         raise ValueError('source rates do not match the replay clock')
     capture_api = FrameCapture(fa._dll)
+    native_pitch = capture_api.fit_pitch if capture_api.dense_curve is not None else None
     def get(voice, planned, *, audio=True):
         if check:
             check()
@@ -424,7 +467,11 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                 raise ValueError('invalid generated English proxy')
             pilot_parts.append(proxy)
         pilot = get(fa, pilot_parts)
-        pilot_pitch = _dense(pilot, 1, check)
+        if pilot.ticks[-1] > 60000:
+            # Keep regular cancellation checkpoints for unusually long or
+            # very slow utterances rather than one long native operation.
+            native_pitch = None
+        pilot_pitch = _dense(pilot, 1, check, native=capture_api.dense_curve if native_pitch else None)
         pilot_bounds = (0, *(round(pilot.indexes[i] * 1000 / rate) for i in range(1, len(parts))),
                         min(_last_audible(pilot.pcm, rate), len(pilot_pitch) - 1))
         if any(a >= b for a, b in zip(pilot_bounds, pilot_bounds[1:])):
@@ -450,7 +497,8 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
         item = get(voice, _context(parts, language, en, fa, word_markers, source_marks,
                                    guarded_spans, spelling_spans), audio=False)
         bounds = _edges(item, len(parts))
-        _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate, check)
+        _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate, check,
+                           native=native_pitch if item.ticks[-1] <= 60000 else None)
         contexts[language], edges[language] = item, bounds
     chunks, counts, firsts = [], [], []
     for i, part in enumerate(parts):
@@ -556,12 +604,11 @@ def bridge_sonorants(plan, parts, rate, half_window_ms=25.0):
             positions = [item.ticks[at_index] + x for x in relative]
             if positions[0] < item.ticks[0] or positions[-1] > item.ticks[-1]:
                 break
-            source_av = [row.controls[2] for row in item.frames]
-            source_af = [row.controls[8] for row in item.frames]
-            if any(_interp(t, item.ticks, source_av) <= 0 or _interp(t, item.ticks, source_af) != 0
-                   for t in positions):
+            coordinates = _frame_coordinates(item, positions)
+            if any(_frame_value(item, 2, c) <= 0 or _frame_value(item, 8, c) != 0
+                   for c in coordinates):
                 break
-            sources.append((item, positions))
+            sources.append((item, coordinates))
         if len(sources) != 2:
             continue
         if output is None:
@@ -571,8 +618,8 @@ def bridge_sonorants(plan, parts, rate, half_window_ms=25.0):
             b, pb = sources[1]
             for j, delta, ta, tb in zip(indexes, relative, pa, pb):
                 weight = _ease((delta + width) / (2 * width))
-                output[j].controls[column] = (_interp_frame(ta, a, column) * (1 - weight) +
-                                              _interp_frame(tb, b, column) * weight)
+                output[j].controls[column] = (_frame_value(a, column, ta) * (1 - weight) +
+                                              _frame_value(b, column, tb) * weight)
         bridged.append(i)
     if output is not None:
         plan.frames = output
@@ -789,8 +836,8 @@ def german_ach_template(voice, *, maximum=60000):
             voice._check()
             return cache[cache_key]
     tag = "`[.1'aj'x.0u]"
-    if tag not in voice._phonemes_for_probe(tag):
-        raise RuntimeError('German transition reference was rejected')
+    # This fixed internal tag is covered by the native transition tests; the
+    # captured voiced/noise boundaries below verify the actual result.
     item = CapturedRows.from_capture(FrameCapture(voice._dll).capture(voice, (tag,), maximum=maximum))
     frames = item.frames
     first = next((i for i, row in enumerate(frames)

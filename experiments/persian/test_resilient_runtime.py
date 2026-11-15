@@ -2,15 +2,18 @@
 from __future__ import annotations
 
 import argparse
+import itertools
 from pathlib import Path
 import random
+import string
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 import continuous_driver
-from direct_fa_sequence import ScopedDirectPersianEngine, project_resilient
+from direct_fa_sequence import ScopedDirectPersianEngine, project, project_resilient
 from nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, make_language_engine
 from persian_symbols import SYMBOL_TAGS, UNICODE_TAG
+from text_frontend import native_sequence_accepted
 from _reloq_eci_direct import EciIndex, EciLanguage, EciPitch, EciText
 from _reloq_languages import US_ENGLISH
 
@@ -208,6 +211,43 @@ def main():
         pcm, marks = render((EciIndex(26), 'سلام دنیا. ' * 130, EciIndex(27),
                              'سلام.', EciIndex(28)))
         assert pcm and [item[0] for item in marks] == [26, 27, 28]
+
+        # Exercise symbols in normal text and spelling mode through the
+        # actual native phoneme parser. Every expected tag must survive;
+        # additional Finnish symbol names or spelled tag syntax fail this.
+        count = 0
+        def check_symbol_projection(local, language, text, spelling=False):
+            item = EciText(text, character_mode=spelling)
+            try:
+                prepared = project((item,), local._frontend, pinglish=local._pinglish,
+                                   allow_fallback=True)
+            except (ValueError, RuntimeError, OSError, UnicodeError):
+                prepared = project_resilient((item,), local._frontend, pinglish=local._pinglish,
+                    validate=local._voice._phonemes_for_probe)
+            tagged = prepared.tagged.replace('~', ' ')
+            display = local._voice._phonemes_for_probe(tagged)
+            assert native_sequence_accepted(tagged, display), (language, text, spelling, tagged, display)
+        for language, word in ((PERSIAN_PROBE.id, 'سلام'), (PINGLISH_PROBE.id, 'salam')):
+            engine.select_voice(language, '1')
+            local = engine._engines[language]
+            for char in string.punctuation + '،؛؟٪٫٬…«»€°±×÷':
+                for text, spelling in ((char, False), (char + word, False),
+                                       (word + char, False), (word + char + word, False),
+                                       (char, True)):
+                    check_symbol_projection(local, language, text, spelling)
+                    count += 1
+            for length in (2, 3):
+                for marks in itertools.product('()-[]{}', repeat=length):
+                    check_symbol_projection(local, language, word + ''.join(marks) + word)
+                    count += 1
+            for brackets in ('()', '[]', '{}'):
+                a = word + brackets[0] + word + brackets[1] + word
+                b = word + ' ' + brackets[0] + ' ' + word + ' ' + brackets[1] + ' ' + word
+                assert render((a,))[0] == render((b,))[0], (language, brackets)
+            one, marks = render((EciIndex(200), word, EciIndex(201), '[', EciIndex(202),
+                                 word, EciIndex(203), ']', EciIndex(204), word, EciIndex(205)))
+            assert one and [value for value, _ in marks] == list(range(200, 206))
+        assert count == 1244
     finally:
         continuous_driver.selected_sentence = original
         engine.close()

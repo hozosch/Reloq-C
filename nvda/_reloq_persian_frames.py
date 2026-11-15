@@ -54,6 +54,20 @@ class FrameCapture:
         self._controls_only = getattr(dll, 'reloq_fa_capture_set_controls_only', None)
         if self._controls_only is not None:
             self._controls_only.argtypes, self._controls_only.restype = (ctypes.c_int,), ctypes.c_int
+        self._sample_count = getattr(dll, 'reloq_fa_capture_sample_count', None)
+        if self._sample_count is not None:
+            self._sample_count.argtypes, self._sample_count.restype = (), ctypes.c_size_t
+        self.dense_curve = getattr(dll, 'reloq_fa_dense_curve', None)
+        if self.dense_curve is not None:
+            self.dense_curve.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t, ctypes.c_uint,
+                                         ctypes.POINTER(ctypes.c_float), ctypes.c_size_t)
+            self.dense_curve.restype = ctypes.c_int
+        self.fit_pitch = getattr(dll, 'reloq_fa_fit_pitch', None)
+        if self.fit_pitch is not None:
+            self.fit_pitch.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
+                                       ctypes.POINTER(ctypes.c_float), ctypes.c_size_t,
+                                       ctypes.c_int64, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64)
+            self.fit_pitch.restype = ctypes.c_int
 
     def capture(self, voice, parts, *, maximum=60000, audio=True):
         if type(maximum) is not int or not 1 <= maximum <= 120000:
@@ -64,8 +78,10 @@ class FrameCapture:
         try:
             if not audio and self._controls_only is not None and self._controls_only(1):
                 raise RuntimeError('cannot enable control-only frame capture')
-            completed = voice.speak(parts, pcm.extend,
-                                    lambda value: indexes.append((value, len(pcm) // 2)))
+            silent_clock = not audio and self._controls_only is not None and self._sample_count is not None
+            completed = voice.speak(parts, pcm.extend, lambda value: indexes.append(
+                (value, self._sample_count() if silent_clock else len(pcm) // 2)))
+            sample_count = self._sample_count() if silent_clock else 0
             count, failed = ctypes.c_size_t(), ctypes.c_int()
             pointer = self._end(ctypes.byref(count), ctypes.byref(failed))
             if failed.value:
@@ -75,7 +91,7 @@ class FrameCapture:
             if count.value and not pointer:
                 raise RuntimeError('native frame buffer is missing')
             data = ctypes.string_at(pointer, count.value * ctypes.sizeof(NativeFrame)) if count.value else b''
-            return NativeCapture(bytes(pcm), tuple(indexes), data)
+            return NativeCapture(bytes(sample_count * 2) if silent_clock else bytes(pcm), tuple(indexes), data)
         finally:
             # release is valid after either a normal end or a failed synthesis.
             # An exception can leave capture active, but release clears it too.

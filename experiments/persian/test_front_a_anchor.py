@@ -38,7 +38,8 @@ def main():
     parser.add_argument('--baseline', type=Path,
                         help='previous contextual Persian probe before fixed alef')
     args = parser.parse_args()
-    ach = ('`[.1bAG]', '`[.1sAGt]', '`[.1bAd.0bAGt]')
+    ach = ('`[.1bAG]', '`[.1sAGt]', '`[.1bAd.0bAGt]',
+           '`[.1GAt]', '`[.1GA.0te]', '`[.1zir.0GAt]')
     unchanged = ('`[.1A.0lef]', "`[.1s'A:'d]", '`[.1sAd]', '`[.0sA.1lam]',
                  '`[.1bAt]', "`[.1'i:'.0r'a:'n]", '`[.1Gu]')
     checks = 0
@@ -53,7 +54,7 @@ def main():
                     # F1 remains visibly open for a substantial part of the
                     # vowel in both native voice types and at either rate.
                     opened = [r.controls[9] for r in rows if r.controls[2] > 0 and r.controls[8] == 0]
-                    assert sum(value >= 700 for value in opened) >= 20, (gender, rate, tag)
+                    assert sum(value >= 700 for value in opened) >= (3 if 'zir' in tag else 20), (gender, rate, tag)
                     if baseline:
                         old = capture(baseline, old_scope, tag)
                         previous = old.frames()

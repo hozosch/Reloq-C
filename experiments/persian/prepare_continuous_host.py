@@ -30,14 +30,10 @@ def prepare(work: Path) -> Path:
                sample and callback clock without rendering discarded audio. */
             long samples=reloq_core_frame_sample_count(frame.noise.duration_ms,1.0f,
                                       reloq_session_sample_rate(s->session)*0.001f);
-            static const int16_t silence[1024]={0};
             status=samples>0 ? RELOQ_SESSION_OK : RELOQ_SESSION_INVALID;
-            while(status==RELOQ_SESSION_OK && samples>0) {
-                if(reloq_session_cancelled(s->session)){status=RELOQ_SESSION_CANCELLED;break;}
-                size_t amount=(size_t)samples>1024?1024:(size_t)samples;
-                if(rule_pcm(&p->delivery,silence,amount)){status=RELOQ_SESSION_SINK;break;}
-                samples-=(long)amount;
-            }
+            if(reloq_session_cancelled(s->session))status=RELOQ_SESSION_CANCELLED;
+            else if(status==RELOQ_SESSION_OK && reloq_fa_capture_advance_samples((size_t)samples))
+                status=RELOQ_SESSION_INVALID;
         } else {
             status=reloq_session_render_frames(s->session,&frame,1,rule_pcm,&p->delivery,&completed);
         }''', 1)

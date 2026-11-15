@@ -2,16 +2,19 @@
 from __future__ import annotations
 
 import argparse
+import ctypes
 from pathlib import Path
+import random
+import struct
 import sys
 import threading
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 from continuous_driver import _PlanningVoice, continuation_comma
-from continuous_plan import _context, persian_proxy_for_english
+from continuous_plan import CapturedRows, _context, _dense, _fit_context_pitch, persian_proxy_for_english
 from nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, make_language_engine
 from _reloq_eci_direct import EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciText, GENDER, PAUSE_MODE, SAMPLE_RATE
-from _reloq_persian_frames import FrameCapture
+from _reloq_persian_frames import FrameCapture, NativeFrame
 from text_frontend import SpeechPart
 
 
@@ -53,8 +56,36 @@ def main():
     engine = create()
     try:
         native = engine._engines[PERSIAN_PROBE.id]
-        assert FrameCapture(native._voice._dll)._controls_only is not None, \
-            'the native control-only planning capability is not exported'
+        api = FrameCapture(native._voice._dll)
+        assert api._controls_only is not None and api._sample_count is not None and \
+            api.dense_curve is not None and api.fit_pitch is not None, \
+            'the native planning capabilities are not exported'
+        rng = random.Random(20261115)
+        for _ in range(40):
+            count = rng.randrange(100, 500)
+            rows, ticks, tick = (NativeFrame * count)(), [], 0
+            for row in rows:
+                tick += rng.randrange(1, 4)
+                row.tick = tick
+                row.controls[0] = 1
+                row.controls[1] = rng.uniform(70, 300)
+                row.controls[2] = rng.choice((0, 0, 25, 40, 60))
+                ticks.append(tick)
+            item = CapturedRows(b'', {}, rows, ticks)
+            reference = _dense(item, 1)
+            accelerated = _dense(item, 1, native=api.dense_curve)
+            assert len(reference) == len(accelerated) and all(
+                struct.pack('f', a) == struct.pack('f', b) for a, b in zip(reference, accelerated))
+            left = CapturedRows(b'', {}, (NativeFrame * count).from_buffer_copy(rows), ticks)
+            right = CapturedRows(b'', {}, (NativeFrame * count).from_buffer_copy(rows), ticks)
+            middle = (ticks[0] + ticks[-1] + 1) // 2
+            bounds, pilot_bounds = (ticks[0], middle, ticks[-1] + 1), (0, middle - 1, ticks[-1])
+            parts = (SpeechPart('fa', 'first'), SpeechPart('en-us', 'second'))
+            for language in ('fa', 'en-us'):
+                _fit_context_pitch(left, bounds, accelerated, pilot_bounds, parts, language, 1000)
+                _fit_context_pitch(right, bounds, accelerated, pilot_bounds, parts, language, 1000,
+                                   native=api.fit_pitch)
+            assert bytes(left.frames) == bytes(right.frames)
         assert native._frontend._worker is None
         assert render(engine, ('کتابم کتابت کتابش کتابها.',))[0]
         assert render(engine, ('من NVDA را دوست دارم.',))[0]
@@ -213,12 +244,12 @@ def main():
             return original_capture(self, voice, parts, maximum=maximum, audio=audio)
         class BlockedVoice:
             def speak(self, sequence, on_pcm, on_index):
-                def blocked_pcm(pcm):
+                def blocked_index(index):
                     started.set()
                     if not release.wait(5):
                         raise RuntimeError('control-only cancellation test timed out')
-                    on_pcm(pcm)
-                return voice.speak(sequence, blocked_pcm, on_index)
+                    on_index(index)
+                return voice.speak(sequence, on_pcm, blocked_index)
         return original_capture(self, BlockedVoice(), parts, maximum=maximum, audio=False)
     def capture_worker():
         instance = create()

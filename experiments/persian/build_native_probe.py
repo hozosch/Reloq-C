@@ -116,26 +116,28 @@ US_A_PATCH = r'''
 '''
 
 FRONT_A_HELPER = r'''
-/* Inspect the next Finnish phone without changing the native scanner. */
-static unsigned persian_probe_front_a_next(void *state,int32_t position)
+/* Inspect an adjacent Finnish phone without changing the native scanner. */
+static unsigned persian_probe_front_a_neighbour(void *state,int32_t position,int backwards)
 {
     delta_state *d=state;
     if(!d || !position)return 0;
-    void *point=vmover(d,EVV_AT(int32_t *,position),2);
-    int32_t node=point?vgetsc(d,0,0,EVV_REF(point),2):0;
+    void *point=backwards ? (void *)vmovel(d,EVV_AT(delta_node *,position),2) :
+                            (void *)vmover(d,EVV_AT(int32_t *,position),2);
+    int32_t node=point?vgetsc(d,backwards,0,EVV_REF(point),2):0;
     if(!node || (*EVV_AT(int32_t *,node)&2))return 0;
     return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node)));
 }
 '''
 
 FRONT_A_PATCH = r'''
-    /* Preserve Finnish's context-dependent front vowel. Before the private
-       German-shaped Ach phone (Finnish G, id 18), open F1 by 100 Hz while
-       keeping all native transitions, bandwidths and inheritance markers. */
+    /* Preserve Finnish's context-dependent front vowel. Adjacent to the
+       private German-shaped Ach phone (Finnish G, id 18), open F1 by 100 Hz
+       while keeping the native transitions and inheritance markers. */
     {
         const char *setting=getenv("RELOQ_FA_FRONT_A_ACH");
         if(setting && setting[0]=='1' && !setting[1] &&
-           persian_probe_front_a_next(state,STATE(int32_t,w61))==18) {
+           (persian_probe_front_a_neighbour(state,STATE(int32_t,w60),1)==18 ||
+            persian_probe_front_a_neighbour(state,STATE(int32_t,w61),0)==18)) {
             if(STATE(int16_t,s448)>0)STATE(int16_t,s448)+=100;
             if(STATE(int16_t,s449)>0)STATE(int16_t,s449)+=100;
         }

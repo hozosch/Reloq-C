@@ -1589,7 +1589,7 @@ python3 experiments/persian/compare_vowel_glide.py \
 ## Short front vowel and continuing bracket phrases
 
 The Persian short-front vowel retains the Finnish provider's contextual
-formants and transitions. Immediately before the Persian Ach phone, its
+formants and transitions. Immediately before or after the Persian Ach phone, its
 first-formant targets are raised by 100 Hz, keeping the other formants and
 native inheritance markers. The `alef` reference and non-Ach contexts remain
 unchanged from the earlier contextual probe, in both voice types; unscoped
@@ -1603,10 +1603,12 @@ handled by its own direct Persian job. Direct verified tags and the finite
 internal English proxy alphabet no longer require repeated parser probes;
 unverified reference pronunciations retain validation.
 
-The two contextual planning captures can skip discarded sample synthesis
-while retaining their exact native frame and source-index clocks. The pitch
+The two contextual planning captures can skip discarded sample synthesis and
+sample callbacks while retaining their exact native frame and source-index clocks. The pitch
 pilot still renders audio to locate its audible end, and final audio is
-rendered once from the selected frames. Captures fall back to full rendering
+rendered once from the selected frames. Bounded contour interpolation and
+pitch fitting are performed natively, with the Python calculation retained for
+older builds and unusually long utterances. Captures fall back to full rendering
 when the native control-only capability is absent. Canonically equivalent
 orders of Arabic vowel marks and shadda map to the same direct pronunciation.
 Reference fallback uses eSpeak's expected mark order without deleting marks.
@@ -1614,3 +1616,8 @@ For a `-دار` half-space compound, independently verified halves that exactly
 reproduce its phone and stress sequence receive separate native word units,
 restoring the checkbox state's phrase tone. Other compound forms retain their
 existing pronunciation and prosodic path.
+
+In both Persian and Pinglish, raw brackets adjacent to phoneme tags are
+separated before reaching the Finnish parser, and raw hyphens become word
+boundaries. Explicit symbol names and spelling are still passed as Persian
+phone tags; native punctuation and index ordering remain intact.

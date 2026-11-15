@@ -35,28 +35,43 @@ else:
     from reference_alignment import unpositioned_reference_input
     from text_frontend import UnsupportedPronunciation, native_sequence_accepted
 
-def _pinglish_hyphens(job: ProjectedJob) -> ProjectedJob:
-    """Keep a transliteration boundary from becoming a Finnish symbol name.
+def _safe_native_punctuation(job: ProjectedJob) -> ProjectedJob:
+    """Keep punctuation adjacent to private tags out of Finnish spelling.
 
-    A hyphen immediately before a private phoneme tag is interpreted by the
-    Finnish parser as the spoken word "tavumerkki". Replace only that raw
-    delimiter with one blank. Its length stays unchanged, so all projected
-    indices and inline controls retain their positions. Spelling requests
-    already contain an explicit Persian symbol-name tag and are untouched.
+    Brackets remain native punctuation, separated from neighbouring text and
+    punctuation; raw hyphens act as word boundaries. Explicit symbol names
+    already consist of tags and are never rewritten. Insertions belong to
+    the source punctuation's text item and preserve the order of ECI events.
     """
-    positions = {match.start() for match in re.finditer(r'-(?=`\[)', job.tagged)}
-    if not positions:
+    matches = tuple(re.finditer(r'`\[[^]]+\]', job.tagged))
+    changes = {}
+    cursor = 0
+    for match in (*matches, None):
+        end = match.start() if match is not None else len(job.tagged)
+        for index in range(cursor, end):
+            char = job.tagged[index]
+            if char == '-':
+                changes[index] = ' '
+            elif char in '()[]{}':
+                before = index > 0 and not job.tagged[index - 1].isspace()
+                after = index + 1 < len(job.tagged) and not job.tagged[index + 1].isspace()
+                if before or after:
+                    changes[index] = (' ' if before else '') + char + (' ' if after else '')
+        if match is not None:
+            cursor = match.end()
+    if not changes:
         return job
     offset, parts = 0, []
     for part in job.parts:
-        if isinstance(part, EciText):
-            value = ''.join(' ' if offset + index in positions else char
-                            for index, char in enumerate(part.text))
+        if isinstance(part, EciText) and not part.speed_control:
+            value = ''.join(changes.get(offset + index, char) for index, char in enumerate(part.text))
             parts.append(replace(part, text=value))
             offset += len(part.text)
         else:
             parts.append(part)
-    tagged = ''.join(' ' if index in positions else char for index, char in enumerate(job.tagged))
+    if offset != len(job.tagged):
+        raise PersianProjectionError('punctuation projection did not preserve text positions')
+    tagged = ''.join(changes.get(index, char) for index, char in enumerate(job.tagged))
     return replace(job, tagged=tagged, parts=tuple(parts))
 
 
@@ -167,7 +182,7 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
     try:
         result = project_persian(parts, analyze, allow_symbols=bool(spelled))
         result = replace(result, needs_native_validation=used_fallback)
-        return _pinglish_hyphens(result) if pinglish else result
+        return _safe_native_punctuation(result)
     except PersianProjectionError as error:
         raise UnsupportedPronunciation(str(error)) from error
 
@@ -382,7 +397,7 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
     if cursor < len(tagged):
         output.append(EciText(tagged[cursor:], segmentation_guarded=True))
     result = ProjectedJob(source, tagged, tuple(output), False)
-    return _pinglish_hyphens(result) if pinglish else result
+    return _safe_native_punctuation(result)
 
 
 _TAG = re.compile(r'`\[[^]]+\]')
