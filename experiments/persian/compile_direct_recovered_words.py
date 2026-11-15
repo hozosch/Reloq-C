@@ -39,6 +39,13 @@ def generate(api, native, dll):
             continue
         try:
             reference = reference_words(api, word)
+            phone_lists = [raw.strip('|').split('|') for raw in reference]
+            if any(phones[0] == '_' or phones[-1] == '_' for phones in phone_lists):
+                # A reference pause at a word edge can select a native
+                # glottal onset on the following word. Preserve that context
+                # through the reference route until direct rules encode it.
+                rejected['word-edge pause'] += 1
+                continue
             tags = tuple(word_tag(raw) for raw in reference)
             if any(tag.startswith('~') or tag.endswith('~') for tag in tags):
                 rejected['word-edge pause'] += 1

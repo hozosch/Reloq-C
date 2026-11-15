@@ -15,6 +15,9 @@ PATHS = ('eci/Makefile', 'src', 'include', 'vendor/openevv61',
          'experiments/persian/continuous_frames.h',
          'experiments/persian/continuous_replay.inc',
          'experiments/persian/scoped_acoustics_probe.c',
+         'experiments/persian/direct_fa_*.c',
+         'experiments/persian/direct_fa_*.h',
+         'experiments/persian/direct_fa_*.inc',
          '.github/workflows/persian-windows-acoustic-probe.yml')
 
 

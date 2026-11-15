@@ -7,6 +7,9 @@ on:
       - experiments/persian/build_native_probe.py
       - experiments/persian/build_windows_probe.py
       - experiments/persian/scoped_acoustics_probe.c
+      - experiments/persian/direct_fa_*.c
+      - experiments/persian/direct_fa_*.h
+      - experiments/persian/direct_fa_*.inc
       - experiments/persian/prepare_continuous_host.py
       - experiments/persian/continuous_frames.c
       - experiments/persian/continuous_frames.h
