@@ -124,6 +124,17 @@ int reloq_fa_direct_text(const char *text,size_t length,char **output,
     size_t *source_to_normalized=NULL,*normalized_to_tagged=NULL,offset=0;
     int status=reloq_fa_direct_normalize(text,length,&normalized,&source_to_normalized,&offset);
     if(status){*error_offset=offset;return status;}
+    /* A source containing only deleted tatweel is a symbol-only request,
+     * not a successful silent utterance. Defer its spoken name to the
+     * eventual symbol-processing path. Within a word it remains removable. */
+    if(normalized[strspn(normalized," \t\r\n")]==0) {
+        size_t first=0;
+        while(first<length && (text[first]==' ' || text[first]=='\t' ||
+                               text[first]=='\r' || text[first]=='\n'))++first;
+        if(first<length) {
+            *error_offset=first;free(source_to_normalized);free(normalized);return 1;
+        }
+    }
     status=direct_normalized_text(normalized,strlen(normalized),&tagged,&normalized_to_tagged,&offset);
     if(status) {
         size_t original=0;

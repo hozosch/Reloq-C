@@ -24,7 +24,7 @@ def main():
         'او،آمد.': (SpeechPart('fa', "`[.1'u:'],`[.1'a:'.0mAd]."),),
         'Hello, NVDA?': (SpeechPart('en-us', 'Hello, NVDA?'),),
     }
-    fallback = ('آیا NVDA خوب است؟', 'ده ۱۲ مهر', '؟')
+    fallback = ('آیا NVDA خوب است؟', 'ده ۱۲ مهر', '؟', 'ـ')
     mixed = {
         'NVDA،سلام دنیا؟': (SpeechPart('en-us', 'NVDA,'),
                             SpeechPart('fa', '`[.0sA.1lam] `[.1do.0nja]?')),

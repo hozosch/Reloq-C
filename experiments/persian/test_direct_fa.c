@@ -37,6 +37,9 @@ int main(void)
     const char *unknown="سلام NVDA";
     if(reloq_fa_direct_text(unknown,strlen(unknown),&out,&map,&error)!=1 ||
        out || map || error!=strlen("سلام "))return 1;
+    const char *symbol_only=" ـ ";
+    if(reloq_fa_direct_text(symbol_only,strlen(symbol_only),&out,&map,&error)!=1 ||
+       out || map || error!=1)return 1;
     const char *numeric_separator="سلام ٫ دنیا";
     if(reloq_fa_direct_text(numeric_separator,strlen(numeric_separator),&out,&map,&error)!=1 ||
        out || map || error!=strlen("سلام "))return 1;
