@@ -11,6 +11,7 @@ from continuous_driver import _PlanningVoice, continuation_comma
 from continuous_plan import _context, persian_proxy_for_english
 from nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, make_language_engine
 from _reloq_eci_direct import EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciText, GENDER, PAUSE_MODE, SAMPLE_RATE
+from _reloq_persian_frames import FrameCapture
 from text_frontend import SpeechPart
 
 
@@ -199,6 +200,53 @@ def main():
     finally:
         release.set()
         _PlanningVoice._phonemes_for_probe = original
+
+    # Also interrupt a control-only native context capture after it starts.
+    # No discarded planning audio may leak, and a subsequent job must work.
+    started, release, stopped = threading.Event(), threading.Event(), threading.Event()
+    shared, outcomes = {}, []
+    original_capture = FrameCapture.capture
+    def blocking_capture(self, voice, parts, *, maximum=60000, audio=True):
+        if audio or started.is_set():
+            return original_capture(self, voice, parts, maximum=maximum, audio=audio)
+        class BlockedVoice:
+            def speak(self, sequence, on_pcm, on_index):
+                def blocked_pcm(pcm):
+                    started.set()
+                    if not release.wait(5):
+                        raise RuntimeError('control-only cancellation test timed out')
+                    on_pcm(pcm)
+                return voice.speak(sequence, blocked_pcm, on_index)
+        return original_capture(self, BlockedVoice(), parts, maximum=maximum, audio=False)
+    def capture_worker():
+        instance = create()
+        shared['engine'] = instance
+        try:
+            abandoned = bytearray()
+            outcomes.append(instance.speak(('NVDA خوب است.',), abandoned.extend, lambda _: None))
+            outcomes.append(not abandoned)
+            recovered, _ = render(instance, ('سلام.',))
+            outcomes.append(bool(recovered))
+        finally:
+            instance.close()
+    FrameCapture.capture = blocking_capture
+    try:
+        thread = threading.Thread(target=capture_worker)
+        thread.start()
+        assert started.wait(10), 'control-only capture did not start'
+        def stop_capture():
+            shared['engine'].cancel()
+            stopped.set()
+        canceller = threading.Thread(target=stop_capture)
+        canceller.start()
+        assert stopped.wait(1), 'stop blocked on control-only capture'
+        release.set()
+        thread.join(10)
+        canceller.join(10)
+        assert not thread.is_alive() and outcomes == [False, True, True], outcomes
+    finally:
+        release.set()
+        FrameCapture.capture = original_capture
     print('Passed continuous Persian/English runtime, source indexes, glide and cancellation tests.')
 
 
