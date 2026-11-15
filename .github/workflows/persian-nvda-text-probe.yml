@@ -43,7 +43,9 @@ jobs:
       - name: Compare NVDA eSpeak analysis and cancellation
         shell: pwsh
         run: |
-          cmd.exe /d /c "fa-espeak-worker.exe `"$pwd/portable-nvda/synthDrivers/espeak.dll`" `"$pwd/portable-nvda/synthDrivers`" < NUL"
+          $espeak = (Resolve-Path portable-nvda/synthDrivers/espeak.dll).Path
+          $data = (Resolve-Path portable-nvda/synthDrivers).Path
+          cmd.exe /d /c "fa-espeak-worker.exe `"$espeak`" `"$data`" < NUL"
           if ($LASTEXITCODE -ne 0) { throw 'Text worker could not initialize NVDA eSpeak' }
-          python -B experiments/persian/test_espeak_worker.py --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$pwd/portable-nvda/synthDrivers/espeak.dll" --data-parent "$pwd/portable-nvda/synthDrivers"
+          python -B experiments/persian/test_espeak_worker.py --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'NVDA eSpeak worker test failed' }

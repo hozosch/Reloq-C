@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wchar.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -120,7 +121,7 @@ int wmain(int argc,wchar_t **argv)
      * ctypes loader does, without modifying the process-wide PATH. */
     HMODULE library=LoadLibraryExW(argv[1],NULL,
         LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR|LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
-    if(!library){fprintf(stderr,"Cannot load eSpeak DLL (Windows error %lu).\n",GetLastError());return 2;}
+    if(!library){fwprintf(stderr,L"Cannot load eSpeak DLL %ls (Windows error %lu).\n",argv[1],GetLastError());return 2;}
 #define LOAD(name,type) (type)(void *)GetProcAddress(library,name)
     int n=WideCharToMultiByte(CP_UTF8,0,argv[2],-1,NULL,0,NULL,NULL);
     char *data=n>0?malloc((size_t)n):NULL;
