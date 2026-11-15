@@ -39,13 +39,14 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
     DirectEciEngine._prepare(parts, 'utf-8')
     spelled = [part for part in parts if isinstance(part, EciText) and part.character_mode]
     if spelled:
-        texts = [part if isinstance(part, str) else part.text
-                 for part in parts if isinstance(part, (str, EciText))]
-        if len(spelled) != 1 or len(spelled[0].text) != 1 or ''.join(texts) != spelled[0].text:
-            raise UnsupportedPronunciation('only one Persian letter can be named at a time')
-        if spelled[0].speed_control:
+        texts = [part for part in parts if isinstance(part, (str, EciText))]
+        if any((isinstance(part, str) and part) or
+               (isinstance(part, EciText) and part.text and not part.character_mode)
+               for part in texts):
+            raise UnsupportedPronunciation('mixed spelling and text need separate handling')
+        if any(part.speed_control for part in spelled):
             raise UnsupportedPronunciation('inline controls need separate handling')
-        parts = tuple(replace(part, character_mode=False) if part is spelled[0] else part
+        parts = tuple(replace(part, character_mode=False) if isinstance(part, EciText) and part.character_mode else part
                       for part in parts)
     total = sum(len(part if isinstance(part, str) else part.text)
                 for part in parts if isinstance(part, (str, EciText)))
@@ -60,15 +61,37 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
     def analyze(text):
         nonlocal used_fallback
         if spelled:
-            analysis = (frontend.analyze_pinglish_character(text) if pinglish
-                        else frontend.analyze_character(text))
+            pieces, output_bytes = [], 0
+            mapping = [0] * (len(text.encode('utf8')) + 1)
+            source_bytes = 0
+            last_was_name = False
+            for char in text:
+                width = len(char.encode('utf8'))
+                if char in ' \t':
+                    value = char
+                    last_was_name = False
+                else:
+                    name = (frontend.analyze_pinglish_character(char) if pinglish
+                            else frontend.analyze_character(char))
+                    if name is None or len(name.parts) != 1:
+                        return None
+                    if last_was_name:
+                        pieces.append(' ')
+                        output_bytes += 1
+                    value = name.parts[0].text
+                    last_was_name = True
+                for index in range(source_bytes, source_bytes + width):
+                    mapping[index] = output_bytes
+                pieces.append(value)
+                output_bytes += len(value)
+                source_bytes += width
+                mapping[source_bytes] = output_bytes
+            return ''.join(pieces), tuple(mapping)
         elif pinglish:
             analysis = frontend.analyze_pinglish(text, positioned=internal_marks,
                                                 allow_fallback=allow_fallback)
         else:
             analysis = frontend.analyze_direct(text)
-        if spelled and analysis is None:
-            return None
         if analysis is None and allow_fallback and not pinglish:
             if internal_marks:
                 analysis = frontend.analyze_positioned(text)

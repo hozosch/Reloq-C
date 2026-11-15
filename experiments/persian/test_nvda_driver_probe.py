@@ -130,8 +130,10 @@ def real_transport_tests(args):
         assert roman == script and roman
         assert observed[-4:] == [('index', 32), ('index', 33), ('index', 34), ('done', third)]
         _, latin = run((EciText('w', character_mode=True), EciIndex(35)))
+        _, acronym = run((EciText('NV', character_mode=True), EciIndex(38),
+                          EciText('DA', character_mode=True)))
         _, unknown = run(('salam ', EciIndex(36), 'khubtar?', EciIndex(37)))
-        assert latin and unknown
+        assert latin and acronym and unknown
         transport.select_voice(PERSIAN_PROBE.id, '1')
 
         # Do not play the English prefix of a sentence whose cross-language

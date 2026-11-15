@@ -61,6 +61,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_Latn', 'salam khub?', False),
                           ('fa_Latn', 'salam khubtar?', False),
                           ('fa_Latn', 'w', True),
+                          ('fa_Latn', 'NVDA', True),
                           ('fa_IR', 'ق', True),
                           ('de_DE', 'Guten Tag.', False)]
             self.next()

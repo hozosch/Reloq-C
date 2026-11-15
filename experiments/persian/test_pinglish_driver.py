@@ -52,6 +52,11 @@ def analysis_tests(frontend):
         assert name is not None and name.parts[0].text == LATIN_NAMES[char.lower()]
         job = project((EciText(char, character_mode=True),), frontend, pinglish=True)
         assert job.tagged == name.parts[0].text and not job.needs_native_validation
+    letters = (EciText('N', character_mode=True), EciIndex(44),
+               EciText('VDA', character_mode=True), EciIndex(45))
+    job = project(letters, frontend, pinglish=True)
+    assert job.tagged == ' '.join(LATIN_NAMES[c] for c in 'nvda')
+    assert [p.value for p in job.parts if isinstance(p, EciIndex)] == [44, 45]
     assert frontend.analyze_pinglish_character('ق') == frontend.analyze_character('ق')
     assert frontend._worker is None
 
@@ -129,6 +134,8 @@ def playback_tests(frontend, probe):
             assert voice.speak((roman,), actual.extend, lambda _: None)
             assert expected and actual == expected
         for parts in ((EciText('w', character_mode=True),),
+                      (EciText('NV', character_mode=True), EciIndex(6),
+                       EciText('DA', character_mode=True)),
                       ('salam ', EciIndex(2), 'khubtar?', EciIndex(3)),
                       ('khubtar ', EciIndex(4), '۳٫۱۴ donya?', EciIndex(5))):
             pcm, marks = bytearray(), []

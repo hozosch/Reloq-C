@@ -7,6 +7,7 @@ progress. This script does not publish or replace a release.
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 import sys
 import zipfile
@@ -47,6 +48,11 @@ def add_persian(entries, worker: bytes):
     for name in MODULES:
         entries[PREFIX + '_persian/' + name + '.py'] = (HERE / (name + '.py')).read_bytes()
     entries[PREFIX + 'fa-espeak-worker.exe'] = worker
+    if 'doc/source.json' in entries:
+        metadata = json.loads(entries['doc/source.json'])
+        metadata['build'] = ('private Windows Persian acoustic probe followed by '
+                             'experiments/persian/build_experimental_nvda.py')
+        entries['doc/source.json'] = (json.dumps(metadata, indent=2) + '\n').encode('utf8')
     manifest = entries['manifest.ini'].decode('utf8')
     if manifest.count('version = "1.4.1"') != 1:
         raise ValueError('the normal version changed; choose an explicit test version')

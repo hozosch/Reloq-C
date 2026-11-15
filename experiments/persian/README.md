@@ -1372,9 +1372,8 @@ projects ECI indexes and boundary-local pitch, speed and volume commands
 through the native source map. It never cuts a generated phoneme tag. Since
 the map is word/number-granular, an index inside one maps to its beginning;
 an in-word prosody change is rejected instead of being placed inaccurately.
-Multi-character spelling mode, user inline controls, unsupported words and
-Latin switches are deliberately rejected without starting eSpeak in this
-direct route.
+User inline controls, unsupported words and unplanned language switches are
+deliberately rejected without starting eSpeak in this direct route.
 
 `direct_fa_sequence.py` connects this projection to the experimental
 thread-scoped Finnish-based acoustic engine in one native ECI utterance. The
@@ -1393,9 +1392,11 @@ generated from the pinned eSpeak spelling mode and checked against the
 selected Finnish-based native parser, without an eSpeak process at runtime.
 For the names of ر and گ, the reference's long initial consonant is rendered
 as the corresponding ordinary consonant because the native tag cannot express
-eSpeak's length notation directly. This isolated single-character path is not
-yet connected to NVDA; punctuation, Latin letters, digits and multi-character
-spelling need their normal symbol/character handling rather than this table.
+eSpeak's length notation directly. Multi-character spelling jobs can name
+sequences of supported Persian letters, with indexes at character boundaries;
+the Pinglish profile also names sequences of Latin letters. Punctuation and
+digits still need their normal NVDA symbol/character handling, and jobs mixing
+spelling and ordinary text are not yet supported by this adapter.
 
 The optional reference fallback can now project source indexes for a limited
 Persian-only case. The separate helper collects eSpeak word and phoneme events

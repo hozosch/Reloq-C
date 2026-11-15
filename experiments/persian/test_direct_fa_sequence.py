@@ -55,7 +55,7 @@ def projection_tests(frontend):
     boundary = project(('سلام', EciPitch(65), ' دنیا', EciProsody(6, 50), '؟'), frontend)
     assert [type(p) for p in boundary.parts if not isinstance(p, EciText)] == [EciPitch, EciProsody]
     for bad in (('سلام NVDA',), ('ناموجودمطمئن',), ('سل', EciPitch(65), 'ام.'),
-                (EciText('سلام', character_mode=True),), ('؟',), ('3,14',),
+                ('سلام ', EciText('ب', character_mode=True)), ('؟',), ('3,14',),
                 ('سلام\0',), ('`vp80 سلام',), (EciIndex(-1), 'سلام')):
         assert_rejected(bad, frontend)
     tag = '`[.1a]'

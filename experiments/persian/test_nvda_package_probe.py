@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import json
 from pathlib import Path
 import shutil
 import sys
@@ -22,8 +23,10 @@ def main():
     parser.add_argument('--data-parent', type=Path, required=True)
     args = parser.parse_args()
     base = {'manifest.ini': (ROOT / 'addon/synth/manifest.ini').read_bytes(),
-            PREFIX + '__init__.py': (ROOT / 'addon/synth/synthDrivers/reloqC/__init__.py').read_bytes()}
+            PREFIX + '__init__.py': (ROOT / 'addon/synth/synthDrivers/reloqC/__init__.py').read_bytes(),
+            'doc/source.json': b'{"build":"normal release"}'}
     entries = add_persian(base, args.worker.read_bytes())
+    assert 'Persian acoustic probe' in json.loads(entries['doc/source.json'])['build']
     assert b'1.5.0-dev91' in entries['manifest.ini']
     assert b'add_profiles(dict(LANGUAGES), DLL)' in entries[PREFIX + '__init__.py']
     assert b'lambda: make_engine(' in entries[PREFIX + '__init__.py']

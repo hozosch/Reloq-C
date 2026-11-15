@@ -23,6 +23,11 @@ def reference_tests(frontend, reference):
         assert job.tagged == tag and not job.needs_native_validation
         assert [part.value for part in job.parts if isinstance(part, EciIndex)] == [1, 2]
     assert frontend._worker is None, 'letter naming unexpectedly started eSpeak'
+    word = (EciText('سل', character_mode=True), EciIndex(3),
+            EciText('ام', character_mode=True), EciIndex(4))
+    job = project(word, frontend, allow_fallback=True)
+    assert job.tagged == ' '.join(frontend.analyze_character(c).parts[0].text for c in 'سلام')
+    assert [part.value for part in job.parts if isinstance(part, EciIndex)] == [3, 4]
     for char in ('A', '۱', '؟', 'ك'):
         assert frontend.analyze_character(char) is None
         try:
@@ -30,8 +35,7 @@ def reference_tests(frontend, reference):
             raise AssertionError('unsupported character was accepted')
         except UnsupportedPronunciation:
             pass
-    for parts in ((EciText('سلام', character_mode=True),),
-                  ('سلام ', EciText('ب', character_mode=True)),
+    for parts in (('سلام ', EciText('ب', character_mode=True)),
                   (EciText('ب', character_mode=True, speed_control='1'),)):
         try:
             project(parts, frontend, allow_fallback=True)
