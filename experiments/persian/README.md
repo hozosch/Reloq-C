@@ -1259,11 +1259,16 @@ not an ECI per-handle setting or an NVDA language.
 analysis experiment. They keep eSpeak's global decoder and voice state out
 of the host process and support cancelling a blocked request and starting a
 fresh worker. Their output is checked against the existing phoneme probe,
-including Persian, Pinglish, English, punctuation and mixed text. On Windows
-the executable needs to be built and tested against NVDA's actual bundled
-eSpeak DLL and data before it can be used by a driver. Text coverage,
+including Persian, Pinglish, English, punctuation and mixed text. A focused
+Windows x64 job builds the worker and compares it with the actual eSpeak DLL
+and language data included in NVDA 2026.3.1, including cancellation and
+restart. It is not yet used by a driver. Text coverage,
 source-to-speech indexes, and integration with the continuous acoustic
 planner are still required for an installable NVDA test.
+In the current 94-item reference corpus, 93 inputs map successfully; the
+remaining `fa-latn` example contains an actual /w/, which must gain its own
+representation instead of reusing the private glottal-stop marker. The
+ordinary Persian-script mode routes the Latin `Windows` example to English.
 
 ```
 python3 experiments/persian/test_vowel_glide.py \
@@ -1286,3 +1291,4 @@ python3 experiments/persian/compare_vowel_glide.py \
   --espeak-binary /path/to/espeak-ng --data-parent /path/to/data-parent \
   --wav /tmp/persian-u-a-glide.wav
 ```
+
