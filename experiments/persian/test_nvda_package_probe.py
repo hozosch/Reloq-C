@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--native-library', type=Path, required=True)
+    parser.add_argument('--text-library', type=Path)
     parser.add_argument('--worker', type=Path, required=True)
     parser.add_argument('--espeak-library', type=Path, required=True)
     parser.add_argument('--data-parent', type=Path, required=True)
@@ -25,7 +26,8 @@ def main():
     base = {'manifest.ini': (ROOT / 'addon/synth/manifest.ini').read_bytes(),
             PREFIX + '__init__.py': (ROOT / 'addon/synth/synthDrivers/reloqC/__init__.py').read_bytes(),
             'doc/source.json': b'{"build":"normal release"}'}
-    entries = add_persian(base, args.worker.read_bytes())
+    text_library = (args.text_library or args.native_library).resolve()
+    entries = add_persian(base, args.worker.read_bytes(), text_library.read_bytes())
     assert 'Persian acoustic probe' in json.loads(entries['doc/source.json'])['build']
     assert b'1.5.0-dev91' in entries['manifest.ini']
     assert b'add_profiles(dict(LANGUAGES), DLL)' in entries[PREFIX + '__init__.py']
@@ -38,7 +40,8 @@ def main():
         for module in ('_reloq_eci_direct.py', '_reloq_languages.py', '_reloq_persian_projection.py'):
             shutil.copyfile(ROOT / 'nvda' / module, package / module)
         for name, content in entries.items():
-            if not name.startswith(PREFIX) or name == PREFIX + '__init__.py':
+            if (not name.startswith(PREFIX) or name == PREFIX + '__init__.py' or
+                    name == PREFIX + 'fa-direct.dll'):
                 continue
             target = package / name[len(PREFIX):]
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -48,9 +51,6 @@ def main():
         library = args.native_library.resolve()
         installed = folder / 'nvda' / 'synthDrivers'
         installed.mkdir(parents=True)
-        shutil.copyfile(args.espeak_library, installed / 'espeak.dll')
-        data = args.data_parent / 'espeak-ng-data'
-        shutil.copytree(data, installed / 'espeak-ng-data')
         worker = package / 'fa-espeak-worker.exe'
         worker.chmod(0o755)
         sys.modules['globalVars'] = types.SimpleNamespace(appDir=str(installed.parent))
@@ -59,8 +59,12 @@ def main():
             bridge = importlib.import_module('probe_driver._reloq_persian_bridge')
             languages = importlib.import_module('probe_driver._reloq_languages')
             eci = importlib.import_module('probe_driver._reloq_eci_direct')
-            assert bridge._paths(package / 'eci.dll') == (worker, installed / 'espeak.dll', installed)
-            bridge._paths = lambda _library: (worker, installed / 'espeak.dll', installed)
+            assert bridge._paths(package / 'eci.dll') == (package / 'fa-direct.dll', worker,
+                                                           installed / 'espeak.dll', installed)
+            # Keep NVDA's eSpeak in its real directory alongside all of its
+            # Windows DLL dependencies; copying espeak.dll alone is not enough.
+            bridge._paths = lambda _library: (text_library, worker,
+                                               args.espeak_library.resolve(), args.data_parent.resolve())
             worker.rename(worker.with_suffix('.missing'))
             assert bridge.add_profiles(dict(languages.LANGUAGES), library) == languages.LANGUAGES
             worker.with_suffix('.missing').rename(worker)

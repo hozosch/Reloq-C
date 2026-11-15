@@ -10,9 +10,9 @@ import re
 import unicodedata
 
 if __package__:
-    from .text_frontend import UnsupportedPronunciation, word_tag
+    from .text_frontend import UnsupportedPronunciation, word_tags
 else:
-    from text_frontend import UnsupportedPronunciation, word_tag
+    from text_frontend import UnsupportedPronunciation, word_tags
 
 _FRAGMENT = re.compile(r'[^,.?!:;،؛؟]+')
 _PUNCTUATION = {'،': ',', '؛': ';', '؟': '?'}
@@ -121,7 +121,7 @@ def source_map_for_reference(text: str, parts, worker, *, pinglish: bool = False
         if words is None:
             return None
         try:
-            reference_tags.extend(word_tag(word) for word in words)
+            reference_tags.extend(word_tags(words))
         except UnsupportedPronunciation:
             return None
         start = fragment.start() + leading

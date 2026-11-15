@@ -76,8 +76,8 @@ def candidates(source: Path, corpus: Path) -> tuple[str, ...]:
     return tuple(sorted(words, key=lambda s: s.encode('utf8')))
 
 
-def reference_tags(api: EspeakPhonemeProbe, word: str) -> tuple[str, ...]:
-    """Return four word-aligned reference contexts, rejecting unsupported phones."""
+def reference_words(api: EspeakPhonemeProbe, word: str) -> tuple[str, ...]:
+    """Return the raw word-aligned phones in four reference contexts."""
     def at(text: str, count: int, index: int) -> str:
         clauses = api.translate(text, separator='|')
         if len(clauses) != 1:
@@ -85,18 +85,23 @@ def reference_tags(api: EspeakPhonemeProbe, word: str) -> tuple[str, ...]:
         words = clauses[0].phonemes.strip().split()
         if len(words) != count or '(en)' in words[index] or '(fa)' in words[index]:
             raise UnsupportedPronunciation('word alignment')
-        return word_tag(words[index])
+        return words[index]
     return (at(word, 1, 0), at(word + ' آمد.', 2, 0),
             at('من ' + word + ' آمد.', 3, 1), at('من ' + word + '.', 2, 1))
 
 
+def reference_tags(api: EspeakPhonemeProbe, word: str) -> tuple[str, ...]:
+    return tuple(word_tag(raw) for raw in reference_words(api, word))
+
+
 def checked_tag(api: EspeakPhonemeProbe, word: str) -> str:
     """Reject misalignment, unsupported sounds, and differing stress forms."""
-    tags = reference_tags(api, word)
-    # Comma-bearing words live in the separately generated pause table. The
-    # ordinary lexicon and its dependent plural bitmap remain unchanged.
-    if any(',' in tag for tag in tags):
+    words = reference_words(api, word)
+    # Explicit short pauses live in the separately generated pause table.
+    # Keep the ordinary lexicon and its dependent plural bitmap unchanged.
+    if any('_' in raw.strip('|').split('|') for raw in words):
         raise UnsupportedPronunciation('unsupported eSpeak phone short pause')
+    tags = tuple(word_tag(raw) for raw in words)
     if any(tag != tags[0] for tag in tags[1:]):
         raise UnsupportedPronunciation('context-dependent pronunciation or stress')
     return tags[0]

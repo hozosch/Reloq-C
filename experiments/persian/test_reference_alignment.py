@@ -37,6 +37,8 @@ def alignment_tests(frontend):
         'من بدبخت آمد.',
         'سلام آبگوشت آمد.',
         'سلام آیلار آمد.',
+        'آیلار',
+        'اداء آمد',
         'سلام،آیلار',
         'اداء،سلام',
         'اداء آیلار',
@@ -54,10 +56,16 @@ def alignment_tests(frontend):
     assert all(one.source_map[i] == 0 for i in range(len('ناموجودمطمئن'.encode('utf8'))))
     assert frontend.analyze_positioned('سلام NVDA') is None
     assert frontend.analyze_positioned('ناموجودمطمئن ۱۲') is not None
-    assert results['من بدبخت آمد.'].parts[0].text == "`[.0mAn] `[.1bAd],`[.0bAGt] `[.1'a:'.0mAd]."
+    assert results['من بدبخت آمد.'].parts[0].text == "`[.0mAn] `[.1bAd.0bAGt] `[.1'a:'.0mAd]."
     assert not results['من بدبخت آمد.'].used_fallback
-    for text in ('سلام،آیلار', 'اداء،سلام', 'اداء آیلار'):
+    for text in ('سلام،آیلار', 'اداء،سلام'):
         assert results[text].parts[0].text.count(',') == 1, text
+    assert ',' not in results['اداء آیلار'].parts[0].text
+    assert '`[.1waj.0lar]' in results['اداء آیلار'].parts[0].text
+    assert '`[.1aj.0lar]' in results['سلام،آیلار'].parts[0].text
+    assert results['آیلار'].parts[0].text == '`[.1aj.0lar]'
+    assert "`[.1w'a:'.0mAd]" in results['اداء آمد'].parts[0].text
+    assert 'w' not in frontend.analyze_direct('او آمد.').parts[0].text
     assert ',' not in results['اداء. آیلار'].parts[0].text
     assert frontend.analyze_positioned('اداء،،سلام').parts[0].text.count(',') == 2
 
@@ -138,16 +146,16 @@ def playback_tests(frontend, probe, reference, samples):
     fa = engine(reference, 0x90000)
     set_confirmed_persian_probe()
     try:
-        # The internal boundary follows the same native punctuation path as
-        # an actual comma, regardless of the user's prediction setting.
-        explicit = "`[.0mAn] `[.1bAd],`[.0bAGt] `[.1'a:'.0mAd]."
+        # A consonant before the next consonant does not introduce a comma,
+        # regardless of the user's phrase-prediction setting.
+        explicit = "`[.0mAn] `[.1bAd.0bAGt] `[.1'a:'.0mAd]."
         for prediction in (0, 1):
             for target in (voice, fa):
                 target.set_parameter(PHRASE_PREDICTION, prediction)
             pcm = bytearray()
             assert voice.speak(('من بدبخت آمد.',), pcm.extend, lambda _: None)
             assert bytes(pcm) == render(fa, explicit)
-            assert bytes(pcm) != render(fa, explicit.replace(',', ' '))
+            assert bytes(pcm) != render(fa, explicit.replace('bAd.0b', 'bAd],`[.0b'))
         for target in (voice, fa):
             target.set_parameter(PHRASE_PREDICTION, 0)
         # Boundary-only indexes need no synthesized reference events, even
@@ -204,11 +212,11 @@ def playback_tests(frontend, probe, reference, samples):
             assert not pcm
         finally:
             voice._voice._phonemes_for_probe = original
-        voice._voice._phonemes_for_probe = lambda text: original(text).replace(',', '')
+        voice._voice._phonemes_for_probe = lambda text: original(text).replace('waj', 'aj')
         pcm = bytearray()
         try:
             voice.speak(('سلام آیلار آمد.',), pcm.extend, lambda _: None)
-            raise AssertionError('a lost internal comma was accepted')
+            raise AssertionError('a lost glottal phone was accepted')
         except UnsupportedPronunciation:
             assert not pcm
         finally:

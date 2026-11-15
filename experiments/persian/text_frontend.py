@@ -79,24 +79,30 @@ def parse_word(word: str) -> tuple[Phone, ...]:
     return tuple(result)
 
 
-def word_tag(word: str) -> str:
+def _vowel_item(item: str) -> bool:
+    return item.lstrip("',").rstrip(':') in VOWELS
+
+
+def word_tag(word: str, *, initial_glottal: bool = False) -> str:
     """Map the word to syllable-marked phones for the private acoustic probe."""
     items = word.strip('|').split('|')
     if '_' in items:
-        # Like native phrase prediction, place a comma boundary in the
-        # annotation stream. It is punctuation for the voice, not a spoken
-        # name and not an extra phoneme.
-        groups, group = [], []
-        for item in items:
-            if item == '_':
-                groups.append(group)
-                group = []
-            else:
-                group.append(item)
-        groups.append(group)
-        if any(not group for group in groups[1:-1]) or not any(groups):
+        # The reference short pause is heard as a glottal onset before a
+        # vowel; it does not introduce a comma pause before a consonant.
+        if any(a == b == '_' for a, b in zip(items, items[1:])) or all(i == '_' for i in items):
             raise UnsupportedPronunciation('ambiguous repeated reference pause')
-        return ','.join(word_tag('|'.join(group)) if group else '' for group in groups)
+        phones = []
+        for index, item in enumerate(items):
+            if item == '_':
+                if (index + 1 < len(items) and _vowel_item(items[index + 1]) and
+                        (index > 0 or initial_glottal) and (not phones or phones[-1] != '?')):
+                    phones.append('?')
+            else:
+                phones.append(item)
+        return word_tag('|'.join(phones))
+    if initial_glottal and items and _vowel_item(items[0]):
+        items.insert(0, '?')
+        word = '|'.join(items)
     phones = parse_word(word)
     vowel_indices = [i for i, p in enumerate(phones) if p.name in VOWELS]
     starts = [0]
@@ -130,6 +136,22 @@ def word_tag(word: str) -> str:
                            else CONSONANTS[phone.name])
         syllables.append('.' + str(phones[vowel_index].stress) + ''.join(out))
     return '`[' + ''.join(syllables) + ']'
+
+
+def word_tags(words: tuple[str, ...] | list[str]) -> tuple[str, ...]:
+    """Apply explicit reference pauses across words, not across punctuation."""
+    result = []
+    trailing_pause = False
+    previous_glottal = False
+    for index, word in enumerate(words):
+        items = word.strip('|').split('|')
+        leading_pause = bool(items and items[0] == '_')
+        onset = index > 0 and (trailing_pause or leading_pause) and not previous_glottal
+        result.append(word_tag(word, initial_glottal=onset))
+        trailing_pause = bool(items and items[-1] == '_')
+        actual = [item for item in items if item != '_']
+        previous_glottal = bool(actual and actual[-1] == '?')
+    return tuple(result)
 
 
 def _latin_piece_spans(text: str) -> list[tuple[int, int]]:
@@ -240,8 +262,9 @@ def translate_text(probe: EspeakPhonemeProbe, text: str, *, pinglish: bool = Fal
                 language = 'fa'
             elif fragment.strip('| \t\r\n'):
                 if language == 'fa':
-                    for word in fragment.strip('| \t\r\n').split():
-                        append('fa', word_tag(word), internal_word=True)
+                    words = fragment.strip('| \t\r\n').split()
+                    for tag in word_tags(words):
+                        append('fa', tag, internal_word=True)
                 else:
                     wanted = _normal_english_phones(fragment)
                     found: tuple[str, ...] = ()

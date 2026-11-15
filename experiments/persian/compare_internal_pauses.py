@@ -1,4 +1,4 @@
-"""Compare eSpeak's short pauses with the Persian native comma boundary."""
+"""Compare eSpeak's short pauses with the revised Persian glottal onset."""
 from __future__ import annotations
 
 import argparse
@@ -27,8 +27,9 @@ def main():
     parser.add_argument('--data-parent', type=Path, required=True)
     parser.add_argument('--wav', type=Path, required=True)
     args = parser.parse_args()
-    samples = (('Erstes Wort.', 'بدبخت'), ('Zweites Wort.', 'آبگوشت'),
-               ('Drittes Wort, mit zwei Pausen.', 'بنابراین'))
+    samples = (('Erstes Wort, Konsonant vor Konsonant.', 'بدبخت', False),
+               ('Zweites Wort, Vokal vor Vokal.', 'سوال', True),
+               ('Drittes Wort, Konsonant vor Vokal.', 'بنابراین', True))
     audio = bytearray()
     narrator = engine(args.narrator, 0x40000)
     unused = Path('/nonexistent/reloq-reference')
@@ -49,22 +50,23 @@ def main():
                     set_probe()
                     append(render(narrator, text))
 
-                label('Kurze Pausen auf Persisch. Erst eSpeak, dann Eloquence.')
+                label('Kurze Pausen auf Persisch. Erst eSpeak, dann Eloquence mit neuem Übergang.')
                 with tempfile.TemporaryDirectory(prefix='reloq-fa-pause-reference-') as name:
                     reference = Path(name) / 'espeak.wav'
                     env = dict(os.environ, ESPEAK_DATA_PATH=str(args.data_parent.resolve()),
                                LD_LIBRARY_PATH=str(args.espeak_library.resolve().parent))
-                    for caption, text in samples:
+                    for caption, text, glottal in samples:
                         label(caption)
                         label('eSpeak.')
                         subprocess.run([str(args.espeak_binary.resolve()), '-v', 'fa', '-s', '175',
                                         '-w', str(reference), text],
                                        check=True, env=env, capture_output=True)
                         append(reference_audio(reference))
-                        label('Eloquence mit interner Kommapause.')
+                        label('Eloquence mit neuem Übergang.')
                         analysis = frontend.analyze_direct(text)
-                        if not analysis or ',' not in analysis.parts[0].text:
-                            raise RuntimeError('sample is not a direct internal-pause word')
+                        if (not analysis or ',' in analysis.parts[0].text or
+                                ('w' in analysis.parts[0].text) != glottal):
+                            raise RuntimeError('sample does not have the selected pause behavior')
                         pcm = bytearray()
                         if not voice.speak((text,), pcm.extend, lambda _: None):
                             raise RuntimeError('Persian sample was cancelled')

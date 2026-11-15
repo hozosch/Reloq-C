@@ -1412,18 +1412,17 @@ events must agree before the stand-in is replaced by the native number tag;
 each index inside a number maps to the beginning of that number. Mixed-language
 utterances still need the continuous planner.
 
-The eSpeak short-pause phone `_` is converted to an internal comma boundary
-between complete native phone groups, using the same punctuation mechanism
-as the native sentence predictor. When a real punctuation mark or another
-inferred comma coincides with it, they share the boundary; explicit repeated
-source punctuation is retained for the native parser to interpret. The
-reference word mapping retains one source word even when its phone groups
-are separated by that comma. Other unrecognized pause phones remain rejected.
-The separate `direct_fa_pause_words.inc` table brings 98 source words with
-context-invariant internal boundaries into the native C route, without an
-eSpeak worker. Each was checked in four reference contexts and against the
-selected native phone parser. Boundaries at a source word's edge remain on
-the reference route, where they can be combined with written punctuation.
+The eSpeak short-pause phone `_` becomes a glottal onset before a vowel and
+is otherwise omitted. An existing reference glottal phone is not doubled.
+An explicit pause at a word edge is carried to the next vowel inside the
+same phrase; a real punctuation mark remains a native phrase boundary and
+does not get an additional inferred stop. At the beginning of the phrase,
+the Finnish-based core retains its own selected glottal onset. The separate
+`direct_fa_pause_words.inc` table covers 98 source words with invariant
+internal behavior without an eSpeak worker. Each was checked in four
+reference contexts and against the selected native phone parser. Word-edge
+pauses stay on the context-aware reference route. Other unsupported pause
+phones remain rejected.
 
 If a job has no internal marks, including when it has only a start or end
 index, the reference words can be used without asking for events. This also
@@ -1476,9 +1475,11 @@ The DLL remains a private probe until those Windows checks have passed and the
 remaining streaming/NVDA work has been completed.
 
 `build_experimental_nvda.py` prepares a separately labelled test package
-using a verified Windows probe and an isolated worker. Its adapter extends
-the language choices only when the worker, NVDA eSpeak and the required native
-exports are present. The package still rejects mixed-language speech jobs
+using a verified Windows acoustic probe, a separately compiled direct-text
+DLL and an isolated worker. Text-only rule changes therefore do not require
+rebuilding the acoustic core. Its adapter extends the language choices only
+when the text DLL, worker, NVDA eSpeak and required acoustic export are present.
+The package still rejects mixed-language speech jobs
 because the accepted shared-contour and transition planners remain offline;
 it must not be treated as a finished Persian voice. The ordinary release
 builder and language catalog are unchanged. `test_nvda_package_probe.py`

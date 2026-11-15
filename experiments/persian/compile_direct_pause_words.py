@@ -1,4 +1,4 @@
-"""Generate direct Persian words with a verified internal comma boundary."""
+"""Generate direct Persian words with verified short-pause behavior."""
 from __future__ import annotations
 
 import argparse
@@ -7,10 +7,10 @@ import ctypes
 import json
 from pathlib import Path
 
-from compile_direct_lexicon import EXPECTED_DICT, EXPECTED_SOURCES, SOURCE, digest, is_persian_word, reference_tags
+from compile_direct_lexicon import EXPECTED_DICT, EXPECTED_SOURCES, SOURCE, digest, is_persian_word, reference_words
 from espeak_ng_probe import EspeakPhonemeProbe
 from test_selected_probe import engine, set_confirmed_persian_probe
-from text_frontend import UnsupportedPronunciation, native_sequence_accepted
+from text_frontend import UnsupportedPronunciation, native_sequence_accepted, word_tag
 
 HERE = Path(__file__).resolve().parent
 
@@ -48,15 +48,17 @@ def generate(api, native, dll) -> str:
             rejected['noncanonical spelling'] += 1
             continue
         try:
-            tags = reference_tags(api, word)
+            reference = reference_words(api, word)
+            phone_lists = [raw.strip('|').split('|') for raw in reference]
+            tags = tuple(word_tag(raw) for raw in reference)
             tag = tags[0]
             if any(value != tag for value in tags[1:]):
                 rejected['context-dependent'] += 1
-            elif ',' not in tag:
+            elif any('_' not in phones for phones in phone_lists):
                 rejected['no short pause'] += 1
-            elif tag.startswith(',') or tag.endswith(','):
-                # A boundary at a source word edge can coincide with real
-                # punctuation; leave that to the reference fallback.
+            elif any(phones[0] == '_' or phones[-1] == '_' for phones in phone_lists):
+                # Word-edge pauses need surrounding word and punctuation
+                # context; leave them to the verified reference fallback.
                 rejected['word-edge boundary'] += 1
             elif not native_sequence_accepted(tag, native._phonemes_for_probe(tag)):
                 rejected['native parser'] += 1
@@ -80,7 +82,7 @@ def generate(api, native, dll) -> str:
                 'rejected': dict(sorted(rejected.items()))}
     output = [
         '/* Generated from eSpeak NG Persian dictionary; GPL-3.0-or-later.\n',
-        ' * Only context-invariant internal short pauses are admitted.\n',
+        ' * Internal short pauses use a glottal onset before vowels and no comma.\n',
         ' * ' + json.dumps(metadata, sort_keys=True, ensure_ascii=True) + '\n',
         ' */\n',
         'static const struct fa_direct_entry fa_pause_entries[] = {\n',

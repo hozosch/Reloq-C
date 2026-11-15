@@ -23,7 +23,7 @@ MODULES = ('espeak_ng_probe', 'espeak_worker', 'text_frontend', 'pinglish_fronte
            'reference_alignment', 'hybrid_fa_frontend', 'direct_fa_sequence', 'nvda_driver_probe')
 
 
-def add_persian(entries, worker: bytes):
+def add_persian(entries, worker: bytes, text_library: bytes):
     """Extend a baseline package without changing the normal release builder."""
     entries = dict(entries)
     driver = PREFIX + '__init__.py'
@@ -48,6 +48,7 @@ def add_persian(entries, worker: bytes):
     for name in MODULES:
         entries[PREFIX + '_persian/' + name + '.py'] = (HERE / (name + '.py')).read_bytes()
     entries[PREFIX + 'fa-espeak-worker.exe'] = worker
+    entries[PREFIX + 'fa-direct.dll'] = text_library
     if 'doc/source.json' in entries:
         metadata = json.loads(entries['doc/source.json'])
         metadata['build'] = ('private Windows Persian acoustic probe followed by '
@@ -68,10 +69,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dll', type=Path, required=True)
     parser.add_argument('--worker', type=Path, required=True)
+    parser.add_argument('--text-dll', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     assert_x64_pe(args.worker.read_bytes())
-    entries = add_persian(make_entries(args.dll), args.worker.read_bytes())
+    assert_x64_pe(args.text_dll.read_bytes())
+    entries = add_persian(make_entries(args.dll), args.worker.read_bytes(), args.text_dll.read_bytes())
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(args.output, 'w') as archive:
         for name, data in sorted(entries.items()):

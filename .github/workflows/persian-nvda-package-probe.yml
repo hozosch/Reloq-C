@@ -12,6 +12,10 @@ on:
       - experiments/persian/hybrid_fa_frontend.py
       - experiments/persian/direct_fa_sequence.py
       - experiments/persian/reference_alignment.py
+      - experiments/persian/text_frontend.py
+      - experiments/persian/direct_fa_*.c
+      - experiments/persian/direct_fa_*.h
+      - experiments/persian/direct_fa_*.inc
       - experiments/persian/nvda_driver_probe.py
       - nvda/_reloq_persian_bridge.py
       - .github/workflows/persian-nvda-package-probe.yml
@@ -53,6 +57,8 @@ jobs:
           $envcmd = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
           cmd.exe /d /c "`"$envcmd`" >nul && cl /nologo /O2 /W4 /std:c11 /Fe:fa-espeak-worker.exe experiments\persian\espeak_worker.c"
           if ($LASTEXITCODE -ne 0) { throw 'Text worker compilation failed' }
+          cmd.exe /d /c "`"$envcmd`" >nul && cl /nologo /O2 /W4 /std:c11 /utf-8 /LD /Iinclude /Fe:fa-direct.dll experiments\persian\direct_fa_lexicon.c experiments\persian\direct_fa_numbers.c experiments\persian\direct_fa_normalize.c experiments\persian\direct_fa_text.c experiments\persian\direct_fa_letters.c src\reloq_utf8.c /link /EXPORT:reloq_fa_direct_text /EXPORT:reloq_fa_direct_number /EXPORT:reloq_fa_direct_letter /EXPORT:reloq_fa_direct_free"
+          if ($LASTEXITCODE -ne 0) { throw 'Direct Persian text DLL compilation failed' }
       - name: Obtain portable NVDA
         shell: pwsh
         env:
@@ -70,16 +76,16 @@ jobs:
           $dll = (Get-ChildItem candidate -Recurse -Filter eci_persian_probe.dll | Select-Object -First 1).FullName
           $espeak = (Resolve-Path portable-nvda/synthDrivers/espeak.dll).Path
           $data = (Resolve-Path portable-nvda/synthDrivers).Path
-          python -B experiments/persian/test_nvda_package_probe.py --native-library "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
+          python -B experiments/persian/test_nvda_package_probe.py --native-library "$dll" --text-library "$pwd/fa-direct.dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows package adapter failed' }
-          python -B experiments/persian/test_pinglish_driver.py --native-library "$dll" --scope-probe "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
+          python -B experiments/persian/test_pinglish_driver.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows Pinglish playback failed' }
       - name: Build the private NVDA test add-on
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci_persian_probe.dll -print -quit)
-          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --worker fa-espeak-worker.exe --output dist/reloq-c-persian-pinglish-1.5.0-dev91.nvda-addon
+          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --text-dll fa-direct.dll --worker fa-espeak-worker.exe --output dist/reloq-c-persian-pinglish-1.5.0-dev91.nvda-addon
       - name: Test both choices in real NVDA
         shell: pwsh
         run: |

@@ -33,14 +33,15 @@ def main():
     with DirectFirstPersian(args.native_library, args.worker, args.espeak_library, args.data_parent) as frontend:
         with EspeakWorker(args.worker, args.espeak_library, args.data_parent) as reference:
             for word, tag in rows:
-                assert ',' in tag and not tag.startswith(',') and not tag.endswith(',')
+                assert ',' not in tag
                 for prefix, suffix, index, count in (
                         ('', '', 0, 1), ('', ' آمد.', 0, 2),
                         ('من ', ' آمد.', 1, 3), ('من ', '.', 1, 2)):
                     text = prefix + word + suffix
                     clauses = reference.translate(text, separator='|')
                     words = [token for clause in clauses for token in clause.phonemes.split()]
-                    assert len(words) == count and word_tag(words[index]) == tag, (word, text)
+                    assert len(words) == count and '_' in words[index].strip('|').split('|'), (word, text)
+                    assert word_tag(words[index]) == tag, (word, text)
                     actual = frontend.analyze_direct(text)
                     assert actual and not actual.used_fallback and actual.source_map is not None, text
                     start = len(prefix.encode('utf8'))
