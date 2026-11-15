@@ -33,6 +33,23 @@ LATIN_NAMES = {
 _LATIN = re.compile(r'[A-Za-z]+')
 
 
+def latin_spans(text: str) -> tuple[tuple[int, int], ...]:
+    """Keep Latin letters and their combining marks in the same word."""
+    result, start = [], None
+    for index, char in enumerate(text):
+        latin = char.isalpha() and unicodedata.name(char, '').startswith('LATIN ')
+        mark = start is not None and unicodedata.category(char).startswith('M')
+        if latin or mark:
+            if start is None:
+                start = index
+        elif start is not None:
+            result.append((start, index))
+            start = None
+    if start is not None:
+        result.append((start, len(text)))
+    return tuple(result)
+
+
 def english_exception(word: str) -> bool:
     """Match the fa-Latn rules that explicitly defer a word to English.
 
@@ -40,9 +57,17 @@ def english_exception(word: str) -> bool:
     eSpeak falls back to English for the whole word in these cases. Known
     Persian aliases take precedence, and spelling mode remains independent.
     """
-    value = word.casefold()
-    return bool(_LATIN.fullmatch(word) and value not in ALIASES and
-                ('ph' in value or 'th' in value))
+    if latin_spans(word) != ((0, len(word)),):
+        return False
+    value = ''.join(char for char in word.casefold() if not unicodedata.category(char).startswith('M'))
+    if any(not char.isascii() and char.isalpha() for char in word):
+        return True
+    if value in ALIASES:
+        return False
+    # eSpeak's fa-Latn path sends most precomposed non-ASCII Latin words
+    # to English; do the same for unsupported Latin letters rather than
+    # spelling a whole word as individual characters.
+    return 'ph' in value or 'th' in value
 
 
 def _connected(char: str) -> bool:
@@ -52,6 +77,19 @@ def _connected(char: str) -> bool:
 
 def normalize_pinglish(text: str) -> tuple[str, tuple[int, ...]]:
     """Replace only known whole-word spellings, retaining a UTF-8 byte map."""
+    # eSpeak ignores combining accents attached to ASCII Latin letters in
+    # fa-Latn. Remove only those marks, preserving the source byte mapping.
+    source_to_plain, plain, at, latin = [0], [], 0, False
+    for char in text:
+        keep = not (latin and unicodedata.category(char).startswith('M'))
+        encoded_char = char.encode('utf8')
+        start = at
+        if keep:
+            plain.append(char)
+            latin = char.isascii() and char.isalpha()
+            at += len(encoded_char)
+        source_to_plain.extend(start + offset if keep else start for offset in range(1, len(encoded_char) + 1))
+    text = ''.join(plain)
     encoded = text.encode('utf8')
     char_to_byte = [0]
     for char in text:
@@ -81,7 +119,7 @@ def normalize_pinglish(text: str) -> tuple[str, tuple[int, ...]]:
         emit(match.start(), match.end(), target)
         source_pos = match.end()
     emit(source_pos, len(text))
-    return ''.join(chunks), tuple(mapping)
+    return ''.join(chunks), tuple(mapping[position] for position in source_to_plain)
 
 
 def latin_name(char: str) -> SpeechPart | None:

@@ -108,7 +108,8 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
         } else {
             char punctuation=0;
             if(cp==' ' || cp=='\t' || cp=='\r' || cp=='\n' ||
-               cp=='.' || cp==',' || cp=='?' || cp=='!' || cp==':' || cp==';')punctuation=(char)cp;
+               cp=='.' || cp==',' || cp=='?' || cp=='!' || cp==':' || cp==';' || cp=='-' ||
+               cp=='(' || cp==')' || cp=='[' || cp==']' || cp=='{' || cp=='}')punctuation=(char)cp;
             else if(cp==0x60c)punctuation=',';
             else if(cp==0x61b)punctuation=';';
             else if(cp==0x61f)punctuation='?';

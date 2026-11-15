@@ -13,6 +13,7 @@ struct fa_context_entry { const char *word, *final, *nonfinal; };
 #include "direct_fa_suffixes.inc"
 #include "direct_fa_extended_suffixes.inc"
 #include "direct_fa_pause_words.inc"
+#include "direct_fa_recovered_words.inc"
 
 size_t reloq_fa_direct_word_count(void)
 { return sizeof fa_direct_entries / sizeof fa_direct_entries[0]; }
@@ -240,5 +241,25 @@ int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
         }
     }
     result=direct_suffix_word(word,bytes,output,capacity);
-    return result?result:direct_extended_word(word,bytes,output,capacity);
+    if(result)return result;
+    result=direct_extended_word(word,bytes,output,capacity);
+    if(result)return result;
+    lo=0;hi=sizeof fa_recovered_entries / sizeof fa_recovered_entries[0];
+    while(lo<hi) {
+        size_t m=lo+(hi-lo)/2;
+        const char *key=fa_recovered_entries[m].word;
+        size_t n=strlen(key),common=bytes<n?bytes:n;
+        int order=memcmp(word,key,common);
+        if(!order)order=bytes<n?-1:bytes>n?1:0;
+        if(order<0)hi=m;
+        else if(order>0)lo=m+1;
+        else {
+            const char *tag=follows_word?fa_recovered_entries[m].nonfinal:fa_recovered_entries[m].final;
+            n=strlen(tag);
+            if(n>=capacity)return -2;
+            memcpy(output,tag,n+1);
+            return 1;
+        }
+    }
+    return 0;
 }

@@ -307,9 +307,9 @@ class DirectFirstPersian:
             raise ValueError('text must be a string without NUL')
         if not text:
             return self.analyze_direct(text)
-        if not unpositioned_pinglish_input(text):
-            return None
         normalized, original_to_normalized = normalize_pinglish(text)
+        if not unpositioned_pinglish_input(normalized):
+            return None
         direct = self.analyze_direct(normalized)
         if direct is None:
             direct = self._direct_pinglish(normalized)

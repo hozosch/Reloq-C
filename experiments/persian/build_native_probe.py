@@ -1625,7 +1625,8 @@ def prepare_s_noise(work: Path) -> None:
     section = section.replace(marker, marker + r'''
     /* Only source and spectral noise amplitudes: keep Finnish formants and
        transitions. Mode 1 is the earlier Finnish "viisi" reference; mode 2
-       uses the US English S target before its normal noise modulation. */
+       uses the US English S amplitudes before normal noise modulation.
+       Mode 3 also selects its dominant fifth noise-resonance target. */
     {
         const char *s=getenv("RELOQ_FA_PROBE_S");
         if (s && s[0]=='1' && !s[1]) {
@@ -1635,13 +1636,17 @@ def prepare_s_noise(work: Path) -> None:
             STATE(int16_t,s411)=58;
             STATE(int16_t,s412)=63;
             STATE(int16_t,s413)=0;
-        } else if (s && s[0]=='2' && !s[1]) {
+        } else if (s && (s[0]=='2' || s[0]=='3') && !s[1]) {
             STATE(int16_t,s404)=65;
             STATE(int16_t,s409)=0;
             STATE(int16_t,s410)=0;
             STATE(int16_t,s411)=0;
             STATE(int16_t,s412)=50;
             STATE(int16_t,s413)=0;
+            if (s[0]=='3') {
+                STATE(int16_t,s456)=4300;
+                STATE(int16_t,s457)=4300;
+            }
         }
     }
 ''', 1)

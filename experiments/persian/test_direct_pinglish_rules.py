@@ -52,6 +52,9 @@ def main():
         for word in ('father', 'phone', 'python', 'math', 'the', 'this', 'with', 'PHOTO'):
             assert english_exception(word) and run(word)[0] == 0
             assert '(en)' in reference.translate(word, voice='fa-latn', separator='|')[0].phonemes
+        for word in ('salām', 'šahr', 'khûb', 'irān', 'khodâhâfez'):
+            assert english_exception(word)
+            assert '(en)' in reference.translate(word, voice='fa-latn', separator='|')[0].phonemes
         for word in ('salam', 'khane', 'chetori', 'internet', 'computer'):
             assert not english_exception(word)
             assert '(en)' not in reference.translate(word, voice='fa-latn', separator='|')[0].phonemes

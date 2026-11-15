@@ -37,13 +37,13 @@ class Phone:
 # Lowercase r is Finnish's ordinary trill. Uppercase R is reserved *only in
 # the private Q=7 probe* for Persian q; Q=7 changes it into a marked stop.
 # G is the private X=1 German Ach-laut experiment; w is the private marker
-# for a glottal stop. An actual eSpeak w is rejected until it has its own
-# distinct private representation.
+# for a glottal stop. Reference /w/ uses the same available /v/ approximation
+# as the direct Pinglish path until a separate approximant is implemented.
 CONSONANTS = {
     'b': 'b', 'd': 'd', 'dZ': 'J', 'f': 'f', 'g': 'g', 'h': 'h',
     'j': 'j', 'k': 'k', 'l': 'l', 'm': 'm', 'n': 'n', 'p': 'p',
     'q1': 'R', 'R': 'r', 'r': 'r', 's': 's', 'S': 'S', 't': 't',
-    'tS': 'C', 'v': 'v', '?': 'w', 'x': 'G', 'z': 'z', 'Z': 'Z',
+    'tS': 'C', 'v': 'v', 'w': 'v', '?': 'w', 'x': 'G', 'z': 'z', 'Z': 'Z',
 }
 VOWELS = {'a': 'A', 'A': 'a', 'e': 'e', 'i': 'i', 'o': 'o', 'u': 'u'}
 
@@ -70,8 +70,8 @@ def parse_word(word: str) -> tuple[Phone, ...]:
             raise UnsupportedPronunciation(f'unsupported eSpeak phone {item!r} in {word!r}')
         if item == '?' and result and result[-1].name == 'h':
             raise UnsupportedPronunciation('H followed by a glottal stop needs separate markers')
-        if item not in VOWELS and (stress or long):
-            raise UnsupportedPronunciation(f'unexpected stress or length on {item!r}')
+        if item not in VOWELS and stress:
+            raise UnsupportedPronunciation(f'unexpected stress on {item!r}')
         result.append(Phone(item, stress, long))
         i += 1
     if not any(p.name in VOWELS for p in result):
@@ -142,8 +142,9 @@ def word_tag(word: str, *, initial_glottal: bool = False) -> str:
             else:
                 # Finnish otherwise loses a final H when another word follows.
                 # h+w marks a short silent carrier for the native H impulse.
-                out.append('hw' if phone.name == 'h' and position == len(phones) - 1
-                           else CONSONANTS[phone.name])
+                consonant = CONSONANTS[phone.name] * (2 if phone.long else 1)
+                out.append(consonant + 'w' if phone.name == 'h' and position == len(phones) - 1
+                           else consonant)
         syllables.append('.' + str(phones[vowel_index].stress) + ''.join(out))
     return '`[' + ''.join(syllables) + ']'
 
@@ -306,15 +307,64 @@ def translate_text(probe: EspeakPhonemeProbe, text: str, *, pinglish: bool = Fal
     return tuple(parts)
 
 
+def _tag_signature(tag: str):
+    """Separate phoneme order from the parser's movable syllable boundaries."""
+    if not tag.startswith('`[') or not tag.endswith(']'):
+        return None
+    body = tag[2:-1]
+    syllables = re.findall(r'\.([012])([^.]+)', body)
+    if not syllables or ''.join('.' + stress + phones for stress, phones in syllables) != body:
+        return None
+    stresses = tuple((phone, stress) for stress, phones in syllables
+                     for phone in phones if phone in 'Aaeiou')
+    if not stresses:
+        return None
+    return ''.join(phones for _, phones in syllables), stresses
+
+
+def _same_native_phones(expected: str, actual: str) -> bool:
+    """Allow only the Finnish display's hidden postvocalic coda H."""
+    left = right = 0
+    while left < len(expected):
+        if right < len(actual) and expected[left] == actual[right]:
+            left += 1
+            right += 1
+            continue
+        if expected[left] != 'h':
+            return False
+        before, after = left - 1, left + 1
+        while before >= 0 and expected[before] in "':":
+            before -= 1
+        while after < len(expected) and expected[after] in "':":
+            after += 1
+        if (before < 0 or expected[before] not in 'Aaeiou' or
+                after < len(expected) and expected[after] not in 'bcdfghjklmnprstvzSZGRCJw'):
+            return False
+        left += 1
+    return right == len(actual)
+
+
 def native_tag_accepted(tag: str, native_phones: str) -> bool:
-    """Finnish's phone display hides coda h although it renders its noise."""
+    """Keep phone order and vowel stress even when the native display differs.
+
+    Finnish can move H between adjacent syllables or omit coda H from the
+    display while still rendering it. Neither is a reason to spell the word.
+    Other missing or reordered phonemes and altered vowel stresses are errors.
+    """
     if tag in native_phones:
         return True
-    vowel = max((i for i, ch in enumerate(tag) if ch in 'Aaeiou'), default=-1)
-    if vowel < 0:
+    expected = _tag_signature(tag)
+    if expected is None:
         return False
+    for match in re.finditer(r'`\[[^]]+\]', native_phones):
+        actual = _tag_signature(match.group())
+        if actual is not None and expected[1] == actual[1] and _same_native_phones(expected[0], actual[0]):
+            return True
+    # Retain the previously accepted native display for final clusters such
+    # as vowel+r+h; Finnish still renders that final H even when hiding it.
+    vowel = max((i for i, ch in enumerate(tag) if ch in 'Aaeiou'), default=-1)
     displayed = tag[:vowel + 1] + tag[vowel + 1:].replace('h', '')
-    return displayed != tag and displayed in native_phones
+    return vowel >= 0 and displayed != tag and displayed in native_phones
 
 
 def native_sequence_accepted(tagged: str, native_phones: str) -> bool:

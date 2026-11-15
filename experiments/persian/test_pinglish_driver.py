@@ -39,8 +39,21 @@ def analysis_tests(frontend):
         assert result is not None and result.parts == frontend.analyze_direct(expected).parts
         assert not result.used_fallback
         check_mapping(source, result)
-    for text in ('salam2', 'xsalam', 'salam\u200c', 'salam\u0301', "salam's"):
+    for text in ('salam2', 'xsalam', 'salam\u200c', "salam's"):
         assert normalize_pinglish(text)[0] == text
+    for text, expected in (('fa\u0304rsi', 'فارسی'), ('salam\u0301', 'سلام'),
+                           ('خوب fa\u0304rsi', 'خوب فارسی')):
+        normalized, mapping = normalize_pinglish(text)
+        assert normalized == expected
+        assert len(mapping) == len(text.encode('utf8')) + 1
+        assert mapping[-1] == len(expected.encode('utf8'))
+        assert all(a <= b for a, b in zip(mapping, mapping[1:]))
+        result = frontend.analyze_pinglish(text, positioned=True, allow_fallback=False)
+        check_mapping(text, result)
+        assert not result.used_fallback
+    joined = frontend.analyze_pinglish('salam-e', positioned=True, allow_fallback=False)
+    check_mapping('salam-e', joined)
+    assert not joined.used_fallback and '-' in joined.parts[0].text
     for parts in ((), (EciIndex(1),), (' ', EciIndex(2))):
         job = project(parts, frontend, pinglish=True, allow_fallback=True)
         assert not job.tagged.strip()

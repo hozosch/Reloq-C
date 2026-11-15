@@ -75,7 +75,31 @@ def _punctuation(text):
     return found.group(1) if found else ''
 
 
+def _bracketed_proxy(text, convert):
+    """Keep the native bracket boundaries around each English proxy run."""
+    if not any(char in text for char in '()[]{}'):
+        return None
+    parts = []
+    for fragment in re.split(r'([()\[\]{}])', text):
+        if not fragment:
+            continue
+        if len(fragment) == 1 and fragment in '()[]{}':
+            parts.append(fragment)
+            continue
+        stripped = fragment.strip()
+        if not stripped or not any(char.isalnum() for char in stripped):
+            parts.append(fragment)
+            continue
+        left = len(fragment) - len(fragment.lstrip())
+        right = len(fragment.rstrip())
+        parts.extend((fragment[:left], convert(stripped), fragment[right:]))
+    return ''.join(parts)
+
+
 def english_proxy(en, text):
+    bracketed = _bracketed_proxy(text, lambda value: english_proxy(en, value))
+    if bracketed is not None:
+        return bracketed
     shown = en._phonemes_for_probe(text)
     result = []
     for match in _TAG.finditer(shown):
@@ -92,6 +116,9 @@ def english_proxy(en, text):
 
 
 def english_phone_proxy(en, fa, text):
+    bracketed = _bracketed_proxy(text, lambda value: english_phone_proxy(en, fa, value))
+    if bracketed is not None:
+        return bracketed
     shown = en._phonemes_for_probe(text)
     tags = _converted(shown, _EN_TO_FA)
     if tags and all(native_tag_accepted(tag, fa._phonemes_for_probe(tag)) for tag in tags):
@@ -569,6 +596,56 @@ def bridge_remaining_voiced(plan, parts, bridged, cuts, window_ms=15.0):
     return tuple(changed)
 
 
+def bridge_english_continuations(plan, parts, bridged, cuts, window_ms=30.0):
+    """Carry US vowel resonances into an unhandled Persian onset.
+
+    Native US word transitions retain the previous resonance at the boundary
+    and progress into the next sound. Keep the preceding word and all source
+    levels intact; decay only the initial resonance offset on the right.
+    Accepted sonorant/Ach bridges, punctuation and stop closures are excluded.
+    """
+    if not 0 < window_ms <= 50:
+        raise ValueError('invalid continuation window')
+    excluded = set(bridged) | {edge for edge, _ in cuts}
+    original, output = plan.frames, _copy_frames(plan.frames)
+    starts, bounds = _starts(original), _edges_by_count(plan.counts)
+    changed = []
+    for edge in range(1, len(parts)):
+        if (edge in excluded or parts[edge - 1].language != 'en-us' or
+                parts[edge].language != 'fa' or
+                re.search(r'[()\[\]{}]\s*$', parts[edge - 1].text) or
+                re.match(r'^\s*[()\[\]{}]', parts[edge].text)):
+            continue
+        boundary, right_limit = bounds[edge - 1], bounds[edge]
+        if boundary < 2 or boundary >= right_limit:
+            continue
+        left, first = original[boundary - 1].controls, original[boundary].controls
+        if left[2] <= 0 or original[boundary - 2].controls[2] <= 0:
+            continue
+        if first[2] <= 0 and first[7] == 0 and first[8] == 0:
+            continue
+        columns = (9, 13, 15)
+        offsets = tuple(left[c] - first[c] for c in columns)
+        if max(map(abs, offsets)) < 30:
+            continue
+        last = boundary
+        while last < right_limit and starts[last] - starts[boundary] <= window_ms:
+            c = original[last].controls
+            if c[2] <= 0 and c[7] == 0 and c[8] == 0:
+                break
+            last += 1
+        if last - boundary < 3 or starts[last - 1] - starts[boundary] < 5:
+            continue
+        duration = starts[last - 1] - starts[boundary]
+        for index in range(boundary, last):
+            weight = 1 - (starts[index] - starts[boundary]) / duration
+            for column, offset in zip(columns, offsets):
+                output[index].controls[column] = max(0, original[index].controls[column] + offset * weight)
+        changed.append(edge)
+    plan.frames = output
+    return tuple(changed)
+
+
 def direct_ach(plan, parts):
     """Remove a voiced X lead-in only where the selected fricative follows."""
     frames, boundaries = plan.frames, _edges_by_count(plan.counts)
@@ -885,7 +962,8 @@ def selected_sentence(plan, parts, en, german, rate, *, check=None):
     if check: check()
     cuts = direct_ach(plan, parts)
     if check: check()
-    bridge_remaining_voiced(plan, parts, bridged, cuts)
+    continued = bridge_english_continuations(plan, parts, bridged, cuts)
+    bridge_remaining_voiced(plan, parts, (*bridged, *continued), cuts)
     if check: check()
     template = german_ach_template(german) if cuts else None
     if check: check()

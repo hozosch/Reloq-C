@@ -39,6 +39,7 @@ def projection_tests(frontend):
         ('ﺳﻼﻡ ', EciIndex(9), 'دنیا؟'),
         (EciIndex(10), 'س', EciIndex(11), 'ل', EciIndex(12), 'ام.'),
         (EciIndex(13), 'کتابم ', EciIndex(14), 'کتابت ', EciIndex(15), 'کتابها.'),
+        (EciIndex(16), 'سلام (', EciIndex(17), 'دنیا) خوب', EciIndex(18)),
     )
     for parts in inputs:
         job = project(parts, frontend)
@@ -58,6 +59,9 @@ def projection_tests(frontend):
     spelled = project(('سلام ', EciText('ب', character_mode=True)), frontend)
     assert spelled.tagged == (frontend.analyze_direct('سلام ').parts[0].text +
                               frontend.analyze_character('ب').parts[0].text)
+    for char in '()[]{}':
+        spelled = project((EciText(char, character_mode=True),), frontend)
+        assert spelled.tagged == frontend.analyze_character(char).parts[0].text
     for bad in (('سلام NVDA',), ('ناموجودمطمئن',), ('سل', EciPitch(65), 'ام.'),
                 ('؟',), ('3,14',),
                 ('سلام\0',), ('`vp80 سلام',), (EciIndex(-1), 'سلام')):

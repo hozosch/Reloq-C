@@ -37,9 +37,24 @@ def main() -> None:
         "s|'o|_|A|l": '`[.1so]~`[.0al]',
         "b|,a|n|A:|_|b|'a|R|_|i|n": "`[.2bA.0n'a:'.1bAr]~`[.0in]",
         "t|a|?|_|'a|h|_|h|o|d": '`[.0tA.1wAh.0hod]',
+        "m|'o|?|e|d:": '`[.1mo.0wedd]',
+        "m|o|q|1|'a|?:|a|R": '`[.0mo.1RA.0wwAr]',
+        "w|'i|n|d|o|w|s": '`[.1vin.0dovs]',
     }
     for source, expected in cases.items():
         assert word_tag(source) == expected, (source, word_tag(source), expected)
+    for expected, displayed in (
+        ('`[.1e.0hja]', '`[.1eh.0ja]'),
+        ('`[.1mehr.0bod]', '`[.1mer.0bod]'),
+        ('`[.1dAhw]', '`[.1dAw]'),
+    ):
+        assert native_tag_accepted(expected, displayed), (expected, displayed)
+    for expected, displayed in (
+        ('`[.1e.0hja]', '`[.0eh.1ja]'),
+        ('`[.1mehr.0bod]', '`[.1meb.0bod]'),
+        ('`[.1mehr.0bod]', '`[.1me.0bod]'),
+    ):
+        assert not native_tag_accepted(expected, displayed), (expected, displayed)
     assert word_tags(["_|'A|j|l|A|R"]) == ('`[.1aj.0lar]',)
     assert word_tags(["s|a|l|'A|m", "_|'A|j|l|A|R"]) == (
         '`[.0sA.1lam]', '~`[.1aj.0lar]')
@@ -48,7 +63,7 @@ def main() -> None:
     assert word_tags(["'a|d|A|_", "s|a|l|'A|m"]) == (
         '`[.1A.0da]', '`[.0sA.1lam]')
     checks = len(cases)
-    for bad in ('s|?', 'x|@', 'q|2', 's||a', "s|q|'a", 's', "'k|a", 'w|a', 'a|h|?|a'):
+    for bad in ('s|?', 'x|@', 'q|2', 's||a', "s|q|'a", 's', "'k|a", 'a|h|?|a'):
         try:
             parse_word(bad)
         except UnsupportedPronunciation:

@@ -259,7 +259,7 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
 
     def emit(first, last, value, *, speech):
         nonlocal used
-        if speech and pieces and pieces[-1] and not pieces[-1][-1].isspace() and pieces[-1][-1] not in '.,?!:;':
+        if speech and pieces and pieces[-1] and not pieces[-1][-1].isspace() and pieces[-1][-1] not in '.,?!:;([{-':
             pieces.append(' ')
             used += 1
         for position in range(first, last):
@@ -325,6 +325,7 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
             # Non-Persian scripts are made identifiable by their character
             # names when the Persian reference has no language mapping.
             supported = all((ord(c) < 128 and c.isalpha() and pinglish) or
+                            (pinglish and unicodedata.category(c).startswith('M')) or
                             0x0600 <= ord(c) <= 0x08ff or 0xfb50 <= ord(c) <= 0xfeff or
                             c in ('\u200c', '\u200d') for c in value)
             emit(at, end, word_tag(value, next_word(end)) if supported and any(c.isalpha() for c in value)
@@ -332,7 +333,12 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
             at = end
             continue
         punctuation = {'،': ',', '؛': ';', '؟': '?'}.get(char, char)
-        if has_words and punctuation in '.,?!:;':
+        if (char == '-' and 0 < at < len(source) - 1 and
+                word_char(source[at - 1]) and word_char(source[at + 1])):
+            emit(at, at + 1, char, speech=False)
+            at += 1
+            continue
+        if has_words and punctuation in '.,?!:;()[]{}':
             emit(at, at + 1, punctuation, speech=False)
         else:
             emit(at, at + 1, names(char), speech=True)

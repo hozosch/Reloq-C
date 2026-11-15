@@ -8,13 +8,12 @@ from __future__ import annotations
 
 from dataclasses import replace
 from pathlib import Path
-import re
 import unicodedata
 
 if __package__:
     from .direct_fa_sequence import ScopedDirectPersianEngine
     from .hybrid_fa_frontend import DirectFirstPersian
-    from .pinglish_frontend import english_exception
+    from .pinglish_frontend import english_exception, latin_spans
     from .continuous_driver import bounded_jobs, sentence_jobs, try_continuous, try_persian_glides
     from .._reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
                                      EciPitch, EciPitchHz, EciProsody, EciText)
@@ -22,7 +21,7 @@ if __package__:
 else:
     from direct_fa_sequence import ScopedDirectPersianEngine
     from hybrid_fa_frontend import DirectFirstPersian
-    from pinglish_frontend import english_exception
+    from pinglish_frontend import english_exception, latin_spans
     from continuous_driver import bounded_jobs, sentence_jobs, try_continuous, try_persian_glides
     from _reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
                                   EciPitch, EciPitchHz, EciProsody, EciText)
@@ -86,8 +85,8 @@ def _pinglish_part_runs(parts, home):
         if not entries:
             return
         text = ''.join(value for _, value in entries)
-        spans = tuple((m.start(), m.end()) for m in re.finditer(r'[A-Za-z]+', text)
-                      if english_exception(m.group()))
+        spans = tuple((start, end) for start, end in latin_spans(text)
+                      if english_exception(text[start:end]))
         offset = 0
         for index, value in entries:
             end = offset + len(value)

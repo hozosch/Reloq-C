@@ -74,6 +74,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_Latn', 'salam phone donya', 'english_exception'),
                           ('fa_IR', 'سلام (دنیا) 🙂', False),
                           ('fa_IR', 'عدد ۱۲-۱۵ است', False),
+                          ('fa_IR', 'سلام (دنیا) خوب', False),
+                          ('fa_IR', 'سلام، دنیا، خوب', False),
+                          ('fa_Latn', 'salam (donya) khub', False),
+                          ('fa_Latn', 'salam, donya, khub', False),
+                          ('fa_IR', 'احیا مهربد معد معقر', False),
+                          ('fa_IR', 'سلام (hello) دنیا', False),
+                          ('fa_Latn', 'salam salām donya', False),
+                          ('fa_Latn', 'salam salām donya', 'accent_exception'),
+                          ('fa_Latn', 'fa\u0304rsi', False),
+                          ('fa_Latn', 'farsi', False),
+                          ('fa_Latn', 'salam-e', False),
                           ('fa_Latn', 'w', True),
                           ('fa_Latn', 'NVDA', True),
                           ('fa_IR', 'ق', True),
@@ -116,6 +127,22 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 explicit = next(row for row in self.results if row['spelling'] == 'english_exception')
                 if automatic['pcm_sha256'] != explicit['pcm_sha256']:
                     raise AssertionError('Pinglish English exception differs from explicit routing')
+                automatic = next(row for row in self.results
+                                 if row['text'] == 'salam salām donya' and row['spelling'] is False)
+                explicit = next(row for row in self.results if row['spelling'] == 'accent_exception')
+                if automatic['pcm_sha256'] != explicit['pcm_sha256']:
+                    raise AssertionError('accented Pinglish differs from explicit English routing')
+                combined = next(row for row in self.results if row['text'] == 'fa\u0304rsi')
+                ordinary = next(row for row in self.results if row['text'] == 'farsi')
+                if combined['pcm_sha256'] != ordinary['pcm_sha256']:
+                    raise AssertionError('combining Latin mark changed the Pinglish word')
+                for locale, brackets, commas in (
+                        ('fa_IR', 'سلام (دنیا) خوب', 'سلام، دنیا، خوب'),
+                        ('fa_Latn', 'salam (donya) khub', 'salam, donya, khub')):
+                    first = next(row for row in self.results if row['locale'] == locale and row['text'] == brackets)
+                    second = next(row for row in self.results if row['locale'] == locale and row['text'] == commas)
+                    if first['pcm_sha256'] != second['pcm_sha256']:
+                        raise AssertionError('native bracket melody differs for ' + locale)
                 RESULT.write_text(json.dumps({'ok': True, 'cases': self.results}, ensure_ascii=True), encoding='utf8')
                 return
             locale, text, spelling = self.cases[self.index]
@@ -135,6 +162,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = ['سلام ', self.character(True), '؟', self.character(False), ' دنیا']
             elif spelling == 'english_exception':
                 sequence = ['salam ', self.language_command('en_US'), 'phone',
+                            self.language_command('fa_Latn'), ' donya']
+            elif spelling == 'accent_exception':
+                sequence = ['salam ', self.language_command('en_US'), 'salām',
                             self.language_command('fa_Latn'), ' donya']
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])

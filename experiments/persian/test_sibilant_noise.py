@@ -5,6 +5,7 @@ import argparse
 import array
 import ctypes
 from pathlib import Path
+from statistics import median
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
@@ -57,13 +58,18 @@ def main():
                 assert any(tuple(round(x) for x in row.controls[36:41]) == expected_s for row in active), tag
                 assert abs(max(row.controls[8] for row in active) -
                            max(row.controls[8] for row in us_s)) <= 6, tag
+                # The active US noise band is F5. Its center matters as much
+                # as the band level, and previously differed by 200 Hz.
+                us_center = median(row.controls[19] for row in us_s if row.controls[8] >= 55)
+                fa_center = median(row.controls[19] for row in active if row.controls[8] >= 55)
+                assert abs(us_center - fa_center) <= 25, (tag, rate, gender, us_center, fa_center)
                 if args.previous:
                     previous = sample(args.previous, 0x90000, tag, rate, gender, True)
                     assert len(rows) == len(previous)
                     for a, b in zip(rows, previous):
                         assert a.tick == b.tick
                         assert all(a.controls[i] == b.controls[i] for i in range(62)
-                                   if i != 8 and not 36 <= i <= 40), (tag, rate, gender)
+                                   if i not in (8, 19) and not 36 <= i <= 40), (tag, rate, gender)
                 checks += 1
             for tag in ('`[.1zi]', '`[.1za]', '`[.1ze]', '`[.1zo]', '`[.1zu]', '`[.1Az]'):
                 rows = sample(args.candidate, 0x90000, tag, rate, gender, True)

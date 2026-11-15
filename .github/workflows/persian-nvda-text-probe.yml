@@ -23,6 +23,8 @@ on:
       - experiments/persian/direct_fa_extended_suffix_rules.py
       - experiments/persian/test_direct_extended_suffixes.py
       - experiments/persian/test_direct_pinglish_rules.py
+      - experiments/persian/compile_direct_recovered_words.py
+      - experiments/persian/test_direct_recovered_words.py
       - experiments/persian/test_direct_fa.c
       - experiments/persian/test_direct_fa_numbers.py
       - experiments/persian/compile_direct_pause_words.py
@@ -108,6 +110,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Direct Persian suffix test failed' }
           python -B experiments/persian/test_direct_extended_suffixes.py --library "$pwd/fa-direct.dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Extended direct Persian suffix test failed' }
+          python -B experiments/persian/test_direct_recovered_words.py --native-library "$pwd/fa-direct.dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'Recovered direct Persian words failed' }
           python -B experiments/persian/test_direct_pinglish_rules.py --library "$pwd/fa-direct.dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Direct Pinglish rules or English exceptions failed' }
           python -B experiments/persian/test_direct_pause_words.py --native-library "$pwd/fa-direct.dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"

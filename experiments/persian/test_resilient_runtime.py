@@ -38,8 +38,21 @@ def main():
     try:
         frontend = engine._engines[PERSIAN_PROBE.id]._frontend
         job = project_resilient(('سلام @ (🙂) دنیا',), frontend)
-        assert SYMBOL_TAGS['@'] in job.tagged and SYMBOL_TAGS['('] in job.tagged
-        assert UNICODE_TAG in job.tagged and SYMBOL_TAGS[')'] in job.tagged
+        assert SYMBOL_TAGS['@'] in job.tagged and '(' in job.tagged
+        assert UNICODE_TAG in job.tagged and ')' in job.tagged
+        for word, expected in (('احیا', '`[.1e.0hja]'), ('مهربد', '`[.1mehr.0bod]'),
+                               ('معد', '`[.1mo.0wedd]'), ('معقر', '`[.0mo.1RA.0wwAr]')):
+            recovered = project_resilient((word,), frontend,
+                validate=engine._engines[PERSIAN_PROBE.id]._voice._phonemes_for_probe)
+            assert recovered.tagged == expected, (word, recovered.tagged)
+        # A new inflection is deliberately outside the direct admission table.
+        # The native display hides its coda H, but the word must not be spelled.
+        inflected = 'دلرحمترین'
+        assert frontend.analyze_direct(inflected) is None
+        recovered = project_resilient((inflected,), frontend,
+            validate=engine._engines[PERSIAN_PROBE.id]._voice._phonemes_for_probe)
+        assert recovered.tagged == '`[.2del.0rAhm.1tA.0rin]'
+        assert render((EciIndex(90), inflected, EciIndex(91)))[0]
         cases = ('سلام @@@ دنیا', 'سلام 🙂 دنیا', 'سلام (دنیا) و خوب', 'عدد ۱۲-۱۵ است',
                  'نسخه 1.2.3', 'کتاب ۵/۳ روز', 'متن\nجدید', 'سلام\tدنیا', '!',
                  'سلام ❤️', '\u200c', '\0', 'دما ۳٫۱۴ درجه', '\u202e', '\ud800',
@@ -75,8 +88,36 @@ def main():
         assert pinglish._frontend._worker is None
         for word in ('chetori khane', 'khubtar salam', 'darya zaban'):
             assert render((word,))[0] and pinglish._frontend._worker is None
+        plain, _ = render(('farsi',))
+        combined, marks = render(('fa', EciIndex(70), '\u0304rsi'))
+        assert combined == plain and [value for value, _ in marks] == [70]
+        before = len(plans)
+        accented, marks = render((EciIndex(71), 'salam sa', EciIndex(72), 'lām donya', EciIndex(73)))
+        assert accented and len(plans) > before and [value for value, _ in marks] == [71, 72, 73]
+        explicit, _ = render(('salam ', EciLanguage(US_ENGLISH.id, '1'), 'salām',
+                              EciLanguage(PINGLISH_PROBE.id, '1'), ' donya'))
+        unmarked, _ = render(('salam salām donya',))
+        assert explicit == unmarked
+        hyphen = project_resilient(('salam-e',), pinglish._frontend, pinglish=True,
+                                   validate=pinglish._voice._phonemes_for_probe)
+        assert '-' in hyphen.tagged and SYMBOL_TAGS['-'] not in hyphen.tagged
+        assert render(('salam-e',))[0]
 
         engine.select_voice(PERSIAN_PROBE.id, '1')
+        bracketed, _ = render(('سلام (دنیا) خوب',))
+        native_comma, _ = render(('سلام، دنیا، خوب',))
+        assert bracketed == native_comma
+        engine.select_voice(PINGLISH_PROBE.id, '1')
+        bracketed, _ = render(('salam (donya) khub',))
+        native_comma, _ = render(('salam, donya, khub',))
+        assert bracketed == native_comma
+        engine.select_voice(PERSIAN_PROBE.id, '1')
+        before = len(plans)
+        mixed, _ = render(('سلام (hello) دنیا',))
+        assert mixed and len(plans) > before
+        explicit, _ = render(('سلام (', EciLanguage(US_ENGLISH.id, '1'), 'hello) ',
+                              EciLanguage(PERSIAN_PROBE.id, '1'), 'دنیا'))
+        assert mixed == explicit
         before = len(plans)
         pcm, marks = render((EciIndex(20), EciPitch(80), 'NVDA خوب است.', EciIndex(21)))
         assert len(plans) > before and marks == [(20, 0), (21, len(pcm))]
