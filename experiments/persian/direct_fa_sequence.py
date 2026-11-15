@@ -30,6 +30,16 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
     """Use direct analysis and, optionally, verified reference word anchors."""
     parts = tuple(parts)
     DirectEciEngine._prepare(parts, 'utf-8')
+    spelled = [part for part in parts if isinstance(part, EciText) and part.character_mode]
+    if spelled:
+        texts = [part if isinstance(part, str) else part.text
+                 for part in parts if isinstance(part, (str, EciText))]
+        if len(spelled) != 1 or len(spelled[0].text) != 1 or ''.join(texts) != spelled[0].text:
+            raise UnsupportedPronunciation('only one Persian letter can be named at a time')
+        if spelled[0].speed_control:
+            raise UnsupportedPronunciation('inline controls need separate handling')
+        parts = tuple(replace(part, character_mode=False) if part is spelled[0] else part
+                      for part in parts)
     total = sum(len(part if isinstance(part, str) else part.text)
                 for part in parts if isinstance(part, (str, EciText)))
     offset = 0
@@ -42,7 +52,9 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
     used_fallback = False
     def analyze(text):
         nonlocal used_fallback
-        analysis = frontend.analyze_direct(text)
+        analysis = frontend.analyze_character(text) if spelled else frontend.analyze_direct(text)
+        if spelled and analysis is None:
+            return None
         if analysis is None and allow_fallback:
             if internal_marks:
                 analysis = frontend.analyze_positioned(text)

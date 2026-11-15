@@ -125,6 +125,8 @@ class DirectFirstPersian:
         )
         self._dll.reloq_fa_direct_number.restype = ctypes.c_int
         self._dll.reloq_fa_direct_free.argtypes = (ctypes.c_void_p,)
+        self._dll.reloq_fa_direct_letter.argtypes = (ctypes.c_uint32,)
+        self._dll.reloq_fa_direct_letter.restype = ctypes.c_char_p
         self._worker_paths = (worker, espeak_library, data_parent)
         self._worker = None
         self._guard = threading.Lock()
@@ -173,6 +175,20 @@ class DirectFirstPersian:
         if status == -2:
             raise MemoryError('native Persian text allocation failed')
         raise ValueError(f'invalid native Persian input at UTF-8 offset {offset}')
+
+    def analyze_character(self, char: str) -> PersianAnalysis | None:
+        """Name one explicitly requested Persian letter without a worker."""
+        if not isinstance(char, str) or len(char) != 1 or char == '\0':
+            raise ValueError('one Unicode character is required')
+        with self._guard:
+            if self._closed:
+                raise RuntimeError('Persian text frontend is closed')
+        value = self._dll.reloq_fa_direct_letter(ord(char))
+        if value is None:
+            return None
+        tag = value.decode('ascii')
+        mapping = (0,) * len(char.encode('utf8')) + (len(tag),)
+        return PersianAnalysis((SpeechPart('fa', tag),), mapping, False)
 
     def _numeric_spans(self, text: str) -> list[tuple[int, int, str]]:
         """Find validated numbers without consuming sentence punctuation."""

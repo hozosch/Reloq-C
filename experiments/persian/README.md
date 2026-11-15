@@ -1372,8 +1372,9 @@ projects ECI indexes and boundary-local pitch, speed and volume commands
 through the native source map. It never cuts a generated phoneme tag. Since
 the map is word/number-granular, an index inside one maps to its beginning;
 an in-word prosody change is rejected instead of being placed inaccurately.
-Character mode, user inline controls, unsupported words and Latin switches
-are deliberately rejected without starting eSpeak in this direct route.
+Multi-character spelling mode, user inline controls, unsupported words and
+Latin switches are deliberately rejected without starting eSpeak in this
+direct route.
 
 `direct_fa_sequence.py` connects this projection to the experimental
 thread-scoped Finnish-based acoustic engine in one native ECI utterance. The
@@ -1385,6 +1386,16 @@ scope isolation, cancellation and restart. This validates the native
 projection and base sound: it does not yet implement the separately accepted
 streaming U-to-A or English-to-Ach transitions, nor does it wire Persian into
 the NVDA driver. The shared-sentence frame-replay experiment remains offline.
+
+`direct_fa_letters.c` adds 39 standalone Persian-script letter names,
+including the Persian alphabet and several additional forms. Their tags are
+generated from the pinned eSpeak spelling mode and checked against the
+selected Finnish-based native parser, without an eSpeak process at runtime.
+For the names of ر and گ, the reference's long initial consonant is rendered
+as the corresponding ordinary consonant because the native tag cannot express
+eSpeak's length notation directly. This isolated single-character path is not yet connected to
+NVDA; punctuation, Latin letters, digits and multi-character spelling need
+their normal symbol/character handling rather than this letter table.
 
 The optional reference fallback can now project source indexes for a limited
 Persian-only case. The separate helper collects eSpeak word and phoneme events
@@ -1423,7 +1434,8 @@ python3 experiments/persian/compile_direct_numbers.py \
 cc -std=c11 -O2 -Wall -Wextra -Werror -pedantic -fPIC -shared -Iinclude \
   experiments/persian/direct_fa_lexicon.c experiments/persian/direct_fa_numbers.c \
   experiments/persian/direct_fa_normalize.c \
-  experiments/persian/direct_fa_text.c src/reloq_utf8.c -o /tmp/fa-direct.so
+  experiments/persian/direct_fa_text.c experiments/persian/direct_fa_letters.c \
+  src/reloq_utf8.c -o /tmp/fa-direct.so
 python3 experiments/persian/test_direct_fa_numbers.py --native-library /tmp/fa-direct.so \
   --espeak-library /path/to/libespeak-ng.so --data-parent /path/to/data-parent
 python3 experiments/persian/test_direct_number_audio.py --native-library /tmp/fa-direct.so \

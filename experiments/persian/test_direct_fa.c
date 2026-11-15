@@ -1,5 +1,6 @@
 /* Focused portable C smoke test for the private Persian text components. */
 #include "direct_fa_lexicon.h"
+#include "direct_fa_letters.h"
 #include "direct_fa_text.h"
 #include <stdio.h>
 #include <string.h>
@@ -29,7 +30,12 @@ static int same_text(const char *first,const char *second)
 
 int main(void)
 {
-    if(reloq_fa_direct_word_count()<15000 ||
+    const char *alef=reloq_fa_direct_letter(0x0627u);
+    const char *qaf=reloq_fa_direct_letter(0x0642u);
+    if(!alef || strcmp(alef,"`[.1A.0lef]") ||
+       !qaf || strcmp(qaf,"`[.1Raf]") ||
+       reloq_fa_direct_letter(0x0041u) ||
+       reloq_fa_direct_word_count()<15000 ||
        !check_text("سلام دنیا؟", "`[.0sA.1lam] `[.1do.0nja]?") ||
        !check_text("ﺳﻼﻡ دنیا؟", "`[.0sA.1lam] `[.1do.0nja]?") ||
        !check_text("ايران نقطه.", "`[.1'i:'.0r'a:'n] `[.1noR.0t'e:'].") ||
