@@ -14,6 +14,10 @@ on:
       - experiments/persian/direct_fa_*.inc
       - experiments/persian/test_direct_fa.c
       - experiments/persian/test_direct_fa_numbers.py
+      - experiments/persian/direct_fa_sequence.py
+      - experiments/persian/test_direct_fa_sequence.py
+      - nvda/_reloq_eci_direct.py
+      - nvda/_reloq_persian_projection.py
       - experiments/persian/hybrid_fa_frontend.py
       - experiments/persian/test_hybrid_fa_frontend.py
       - include/reloq_utf8.h
@@ -51,6 +55,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Direct Persian text smoke test failed' }
           cmd.exe /d /c "`"$envcmd`" >nul && cl /nologo /O2 /W4 /std:c11 /utf-8 /LD /Iinclude /Fe:fa-direct.dll experiments\persian\direct_fa_lexicon.c experiments\persian\direct_fa_numbers.c experiments\persian\direct_fa_normalize.c experiments\persian\direct_fa_text.c src\reloq_utf8.c /link /EXPORT:reloq_fa_direct_text /EXPORT:reloq_fa_direct_number /EXPORT:reloq_fa_direct_free"
           if ($LASTEXITCODE -ne 0) { throw 'Direct Persian DLL failed to compile' }
+          python -B experiments/persian/test_direct_fa_sequence.py --native-library "$pwd/fa-direct.dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian source position projection failed' }
       - name: Obtain NVDA for its eSpeak library and data
         shell: pwsh
         env:

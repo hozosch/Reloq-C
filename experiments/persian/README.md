@@ -1315,9 +1315,11 @@ Ambiguous or malformed grouping, repeated decimal separators, integers above
 Leading plus, hyphen-minus and Unicode minus receive Persian sign words;
 number ranges, times, dates, ordinals and currency-specific forms are not covered.
 The basic 0–999 groups are checked against eSpeak; stress in composed large
-numbers and decimal phrases is an approximation that still needs listening.
+numbers and decimal phrases is an approximation.
 Unlike eSpeak's double connective in some thousand-plus-unit cases, the
 composition uses one connecting vowel.
+The user accepted the resulting eleven-example number listening probe on
+2026-11-15; wider word and context coverage still needs validation.
 
 The prototype `direct_fa_text.c` handles supported words, these number
 forms, whitespace and basic punctuation. It returns source mappings at
@@ -1362,6 +1364,28 @@ connected yet. The focused Windows x64 job compiles the C lookup and tests
 sample routing against the eSpeak included in NVDA 2026.3.1. It does not test
 an installed Persian NVDA voice.
 
+## Direct text with ECI position marks
+
+`nvda/_reloq_persian_projection.py` is a reusable, not yet registered NVDA
+component. It joins the pieces of one speech job before direct analysis, then
+projects ECI indexes and boundary-local pitch, speed and volume commands
+through the native source map. It never cuts a generated phoneme tag. Since
+the map is word/number-granular, an index inside one maps to its beginning;
+an in-word prosody change is rejected instead of being placed inaccurately.
+Character mode, user inline controls, unsupported words and Latin switches
+are deliberately rejected without starting eSpeak in this direct route.
+
+`direct_fa_sequence.py` connects this projection to the experimental
+thread-scoped Finnish-based acoustic engine in one native ECI utterance. The
+native engine keeps parsing its generated tags even when the user-facing tag
+setting is disabled; source-side user tags are rejected by direct preflight.
+The tests verify the output against the previously selected reference across
+three rates and two voice genders, position ordering, boundary controls,
+scope isolation, cancellation and restart. This validates the native
+projection and base sound: it does not yet implement the separately accepted
+streaming U-to-A or English-to-Ach transitions, nor does it wire Persian into
+the NVDA driver. The shared-sentence frame-replay experiment remains offline.
+
 ```
 python3 experiments/persian/compile_direct_replacements.py --check
 python3 experiments/persian/compile_direct_lexicon.py \
@@ -1381,6 +1405,9 @@ python3 experiments/persian/test_direct_fa_numbers.py --native-library /tmp/fa-d
   --espeak-library /path/to/libespeak-ng.so --data-parent /path/to/data-parent
 python3 experiments/persian/test_direct_number_audio.py --native-library /tmp/fa-direct.so \
   --probe /tmp/fa-internal/libreloq_eci.so --wav /tmp/persian-numbers.wav
+python3 experiments/persian/test_direct_fa_sequence.py --native-library /tmp/fa-direct.so \
+  --scope-probe /tmp/fa-scoped/libreloq_eci_scoped.so \
+  --reference /tmp/fa-internal/libreloq_eci.so
 python3 experiments/persian/test_direct_fa_lexicon.py --library /tmp/fa-direct.so \
   --probe /tmp/fa-internal/libreloq_eci.so --espeak-library /path/to/libespeak-ng.so \
   --data-parent /path/to/data-parent

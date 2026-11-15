@@ -154,6 +154,25 @@ class DirectFirstPersian:
             self._dll.reloq_fa_direct_free(mapping)
         return 0, tagged, source_map, 0
 
+    def analyze_direct(self, text: str) -> PersianAnalysis | None:
+        """Return only a fully covered native Persian analysis, without eSpeak."""
+        if not isinstance(text, str) or '\0' in text:
+            raise ValueError('text must be a string without NUL')
+        with self._guard:
+            if self._closed:
+                raise RuntimeError('Persian text frontend is closed')
+        status, tagged, source_map, offset = self._direct(text)
+        if status == 0:
+            parts = (SpeechPart('fa', tagged),) if tagged else ()
+            return PersianAnalysis(parts, source_map, False)
+        if status == 1:
+            return None
+        if status == 2:
+            raise UnsupportedPronunciation(f'ambiguous or unsupported Persian number at UTF-8 offset {offset}')
+        if status == -2:
+            raise MemoryError('native Persian text allocation failed')
+        raise ValueError(f'invalid native Persian input at UTF-8 offset {offset}')
+
     def _numeric_spans(self, text: str) -> list[tuple[int, int, str]]:
         """Find validated numbers without consuming sentence punctuation."""
         spans = []
@@ -237,17 +256,8 @@ class DirectFirstPersian:
             return PersianAnalysis(self._fallback_with_numbers(text, pinglish=True), None, True)
         if text and not any(char.isalpha() or char.isdecimal() for char in text):
             return PersianAnalysis(translate_text(self._fallback(), text), None, True)
-        status, tagged, source_map, offset = self._direct(text)
-        if status == 0:
-            parts = (SpeechPart('fa', tagged),) if tagged else ()
-            return PersianAnalysis(parts, source_map, False)
-        if status == 1:
-            return PersianAnalysis(self._fallback_with_numbers(text), None, True)
-        if status == 2:
-            raise UnsupportedPronunciation(f'ambiguous or unsupported Persian number at UTF-8 offset {offset}')
-        if status == -2:
-            raise MemoryError('native Persian text allocation failed')
-        raise ValueError(f'invalid native Persian input at UTF-8 offset {offset}')
+        direct = self.analyze_direct(text)
+        return direct if direct is not None else PersianAnalysis(self._fallback_with_numbers(text), None, True)
 
     def cancel(self) -> None:
         with self._guard:
