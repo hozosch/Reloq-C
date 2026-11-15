@@ -9,7 +9,7 @@ import threading
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 from continuous_driver import _PlanningVoice
 from continuous_plan import _context
-from nvda_driver_probe import PERSIAN_PROBE, US_ENGLISH, make_language_engine
+from nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, make_language_engine
 from _reloq_eci_direct import EciCapitalWord, EciIndex, EciLanguage, EciText, GENDER, SAMPLE_RATE
 from text_frontend import SpeechPart
 
@@ -41,6 +41,12 @@ def main():
         assert render(engine, ('کتابم کتابت کتابش کتابها.',))[0]
         assert render(engine, ('من NVDA را دوست دارم.',))[0]
         assert native._frontend._worker is None, 'covered text started the reference worker'
+        script, script_indexes = render(engine, (EciIndex(1), 'او ', EciIndex(2), 'آمد.', EciIndex(3)))
+        engine.select_voice(PINGLISH_PROBE.id, '1')
+        roman, roman_indexes = render(engine, (EciIndex(1), 'u ', EciIndex(2), 'amad.', EciIndex(3)))
+        assert roman == script and roman_indexes == script_indexes
+        assert engine._engines[PINGLISH_PROBE.id]._frontend._worker is None
+        engine.select_voice(PERSIAN_PROBE.id, '1')
         for rate, gender in ((3, 0), (6, 1)):
             engine.set_parameter(SAMPLE_RATE, rate)
             engine.set_parameter(GENDER, gender)

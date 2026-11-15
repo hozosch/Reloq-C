@@ -59,6 +59,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     raise AssertionError('Persian test profile is absent: ' + locale)
             self.cases = [('fa_IR', 'سلام دنیا؟', False),
                           ('fa_Latn', 'salam donya?', False),
+                          ('fa_IR', 'او آمد.', False),
+                          ('fa_Latn', 'u amad.', False),
                           ('fa_IR', 'بدبخت', False),
                           ('fa_IR', 'تعجب', False),
                           ('fa_IR', 'توجه', False),
@@ -90,6 +92,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if self.index == len(self.cases):
                 if self.results[0]['pcm_sha256'] != self.results[1]['pcm_sha256']:
                     raise AssertionError('confirmed script and Pinglish words differ')
+                script_glide = next(row for row in self.results if row['text'] == 'او آمد.')
+                roman_glide = next(row for row in self.results if row['text'] == 'u amad.')
+                if script_glide['pcm_sha256'] != roman_glide['pcm_sha256']:
+                    raise AssertionError('confirmed Persian and Pinglish vowel glides differ')
                 mixed = next(row for row in self.results if row['spelling'] == 'mixed')
                 plain = next(row for row in self.results
                              if row['text'] == 'NVDA خوب' and row['spelling'] is False)

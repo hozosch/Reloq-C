@@ -18,7 +18,8 @@ ALIASES = {
     'kaghaz': 'کاغذ', 'kakhaz': 'کاغذ', 'sefr': 'صفر', 'yek': 'یک',
     'soal': 'سوال', 'soaal': 'سوال', 'sual': 'سوال', 'badbakht': 'بدبخت', 'badbacht': 'بدبخت',
     'farsi': 'فارسی', 'faarsi': 'فارسی', 'ketab': 'کتاب', 'ketaab': 'کتاب',
-    'man': 'من',
+    'man': 'من', 'u': 'او', 'oo': 'او', 'ou': 'او',
+    'amad': 'آمد', 'aamad': 'آمد',
 }
 LATIN_NAMES = {
     'a': '`[.1ej]', 'b': '`[.1bi]', 'c': '`[.1si]', 'd': '`[.1di]',
