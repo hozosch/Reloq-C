@@ -30,6 +30,10 @@ def main():
     engine = create()
     try:
         native = engine._engines[PERSIAN_PROBE.id]
+        assert native._frontend._worker is None
+        assert render(engine, ('کتابم کتابت کتابش کتابها.',))[0]
+        assert render(engine, ('من NVDA را دوست دارم.',))[0]
+        assert native._frontend._worker is None, 'covered text started the reference worker'
         for rate, gender in ((3, 0), (6, 1)):
             engine.set_parameter(SAMPLE_RATE, rate)
             engine.set_parameter(GENDER, gender)
