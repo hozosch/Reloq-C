@@ -125,6 +125,25 @@ def capture(e: DirectEciEngine, parts: list, trace: Path, override: Path | None 
     return Captured(bytes(audio), f0, av, indexes, frame_rows)
 
 
+def _proxy_with_display_punctuation(display: str, tags: list[str]) -> str:
+    """Reinsert punctuation from the native phone display between proxy tags."""
+    matches = list(re.finditer(r'`\[[^]]+\]', display))
+    if len(matches) != len(tags):
+        raise ValueError('native phone and proxy tag counts differ')
+    pieces = []
+    previous = 0
+    for index, (match, tag) in enumerate(zip(matches, tags)):
+        marks = ''.join(char for char in display[previous:match.start()] if char in '.,?!:;')
+        if index:
+            pieces.append(marks + ' ')
+        else:
+            pieces.append(marks)
+        pieces.append(tag)
+        previous = match.end()
+    pieces.append(''.join(char for char in display[previous:] if char in '.,?!:;'))
+    return ''.join(pieces)
+
+
 def english_proxy(e: DirectEciEngine, text: str) -> str:
     """Preserve English syllable counts/stresses in an inaudible Finnish proxy.
 
@@ -148,6 +167,8 @@ def english_proxy(e: DirectEciEngine, text: str) -> str:
         result.append('`[' + ''.join(pieces) + ']')
     if not result:
         raise ValueError(f'English pronunciation has no phoneme tags: {text!r}')
+    if re.search(r'[.?!,;:]\s*\S', text):
+        return _proxy_with_display_punctuation(phonemes, result)
     punctuation = re.search(r'([.?!,;:])\s*$', text)
     return ' '.join(result) + (punctuation.group(1) if punctuation else '')
 

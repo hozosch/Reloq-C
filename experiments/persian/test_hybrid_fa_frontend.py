@@ -15,7 +15,7 @@ def main():
     parser.add_argument('--data-parent', type=Path, required=True)
     args = parser.parse_args()
     direct = ('سلام دنیا؟', 'او آمد.', 'ايران نقطه.', 'ﺳﻼﻡ دنیا؟',
-              'من ایران را دوست دارم.')
+              'من ایران را دوست دارم.', 'کتاب‌ها آمد.', 'کتاب‌ها؟', 'او و آمد.')
     native_marks = {
         'سلام،دنیا!': (SpeechPart('fa', '`[.0sA.1lam],`[.1do.0nja]!'),),
         'سلام؛ دنیا؟': (SpeechPart('fa', '`[.0sA.1lam]; `[.1do.0nja]?'),),

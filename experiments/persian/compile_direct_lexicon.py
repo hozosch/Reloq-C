@@ -12,6 +12,7 @@ from collections import Counter
 import hashlib
 import json
 from pathlib import Path
+import re
 import unicodedata
 
 from espeak_ng_probe import EspeakPhonemeProbe
@@ -34,15 +35,23 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def lexical_fingerprint(rows) -> str:
+    """Fingerprint both ordered keys and tags for generated dependent tables."""
+    encoded = json.dumps(rows, ensure_ascii=False, separators=(',', ':')).encode('utf8')
+    return hashlib.sha256(encoded).hexdigest()[:16]
+
+
 def is_persian_word(text: str) -> bool:
-    if not 2 <= len(text) <= 64:
+    if not 1 <= len(text) <= 64:
         return False
     return all((0x600 <= ord(c) <= 0x6ff and unicodedata.category(c)[0] in 'LM')
                or c == '\u200c' for c in text)
 
 
 def candidates(source: Path, corpus: Path) -> tuple[str, ...]:
-    words = set()
+    # The common conjunction و comes from fa_rules, not fa_list, and is not
+    # guaranteed to occur in the small reference-sentence corpus.
+    words = {'و'}
     for raw in source.read_text(encoding='utf8').splitlines():
         line = raw.split('//', 1)[0].strip()
         if not line:
@@ -128,6 +137,8 @@ def main() -> None:
                         # Do not generalize other context changes into a rule.
                         variants = reference_tags(api, word)
                         if (variants[0] == variants[3] and variants[1] == variants[2]
+                                and re.sub(r'\.[012]', '.', variants[0]) ==
+                                    re.sub(r'\.[012]', '.', variants[1])
                                 and all(native_tag_accepted(t, native._phonemes_for_probe(t))
                                         for t in set(variants))):
                             contextual.append((word, variants[0], variants[1]))
@@ -160,6 +171,7 @@ def main() -> None:
         ' * This experimental complete-word table does not implement fa_rules.\n',
         ' * Reference metadata: ' + json.dumps(metadata, sort_keys=True, ensure_ascii=True) + '\n',
         ' */\n',
+        '#define RELOQ_FA_LEXICON_FINGERPRINT 0x' + lexical_fingerprint(accepted) + 'ULL\n',
         'static const struct fa_direct_entry fa_direct_entries[] = {\n',
     ]
     for word, tag in accepted:

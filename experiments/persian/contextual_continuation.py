@@ -29,7 +29,7 @@ from german_ach_transition import (
     apply_german_ach, apply_german_f3, apply_german_flow, capture_german_ach,
     extend_english_a, fade_english_a_voice,
 )
-from shared_sentence_contour import Captured, Comparison, _fit_pitch, capture, compare, english_proxy
+from shared_sentence_contour import Captured, Comparison, _fit_pitch, capture, compare, english_proxy, _proxy_with_display_punctuation
 from text_frontend import SpeechPart
 from text_frontend import native_tag_accepted
 
@@ -69,8 +69,11 @@ def _punctuation(text: str) -> str:
 
 def english_phone_proxy(en: DirectEciEngine, fa: DirectEciEngine, text: str) -> str:
     """Represent English boundary consonants in the silent Persian plan."""
-    tags = _converted_tags(en._phonemes_for_probe(text), _EN_TO_FA)
+    phonemes = en._phonemes_for_probe(text)
+    tags = _converted_tags(phonemes, _EN_TO_FA)
     if tags and all(native_tag_accepted(tag, fa._phonemes_for_probe(tag)) for tag in tags):
+        if re.search(r'[.?!,;:]\s*\S', text):
+            return _proxy_with_display_punctuation(phonemes, tags)
         return ' '.join(tags) + _punctuation(text)
     return english_proxy(en, text)
 
@@ -92,7 +95,8 @@ def persian_proxy_for_english(text: str, en: DirectEciEngine | None = None) -> s
                     accepted = False
                     break
             if accepted:
-                return ' '.join(tags) + _punctuation(text)
+                replacements = iter(tags)
+                return re.sub(r'`\[[^]]+\]', lambda _match: next(replacements), text)
     tags = re.findall(r'`\[([^]]+)\]', text)
     vowels = {'A': 'A', 'a': 'a', 'e': 'E', 'i': 'i', 'o': 'o', 'u': 'u'}
     result = []
@@ -107,8 +111,8 @@ def persian_proxy_for_english(text: str, en: DirectEciEngine | None = None) -> s
         result.append('`[' + ''.join(pieces) + ']')
     if not result:
         raise ValueError(f'Persian planning part has no tags: {text!r}')
-    punctuation = re.search(r'([.?!,;:])\s*$', text)
-    return ' '.join(result) + (punctuation.group(1) if punctuation else '')
+    replacements = iter(result)
+    return re.sub(r'`\[[^]]+\]', lambda _match: next(replacements), text)
 
 
 def _context(parts: tuple[SpeechPart, ...], language: str,

@@ -11,7 +11,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'nvda'))
 from _reloq_eci_direct import GENDER, NATIVE_INFLECTION, NATIVE_PITCH, NATIVE_SPEED, SAMPLE_RATE, SAMPLE_RATES
 from _reloq_persian_glide import TRACT
-from contextual_continuation import accepted_persian_ach_compare, accepted_persian_sentence_compare
+from contextual_continuation import (accepted_persian_ach_compare, accepted_persian_sentence_compare,
+                                     english_phone_proxy, persian_proxy_for_english)
 from espeak_ng_probe import EspeakPhonemeProbe
 from test_selected_probe import engine, set_confirmed_persian_probe
 from text_frontend import translate_text
@@ -62,6 +63,12 @@ def main():
     checked = 0
     try:
         set_confirmed_persian_probe()
+        # An inaudible cross-language planning proxy must keep internal
+        # sentence marks, not just the mark at the end of the part.
+        proxy_fa = english_phone_proxy(en, fa, 'hello, world?')
+        assert ',' in proxy_fa and proxy_fa.endswith('?'), proxy_fa
+        proxy_en = persian_proxy_for_english('`[.0sA.1lam],`[.1do.0nja]?', en)
+        assert ',' in proxy_en and proxy_en.endswith('?'), proxy_en
         with EspeakPhonemeProbe(args.espeak_library, args.data_parent) as api:
             cases = (('او آمد و NVDA خوب است.', 1),
                      ('NVDA خوب است و او آمد.', 1),

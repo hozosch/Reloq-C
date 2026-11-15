@@ -1282,7 +1282,7 @@ letter variants, character deletions and two-character ligatures.
 `compile_direct_lexicon.py` builds a first exact-word C table using the pinned
 eSpeak 1.53 reference and the selected Finnish-based probe *offline*. Each
 candidate must produce the same supported tag in four reference contexts and
-be accepted by the native phone parser. The generated C table contains 15,755
+be accepted by the native phone parser. The generated C table contains 15,811
 words, including selected sample words whose pronunciation is derived from
 `fa_rules`. It does not start eSpeak or consult its data at runtime. A failed
 or absent entry is explicitly reported; the table does not guess. Four
@@ -1293,7 +1293,16 @@ between phrase-final and nonfinal position. The C converter applies those
 tags when a following Persian word is separated by spaces or tabs, and treats
 punctuation and line breaks as boundaries. This is a bounded position rule,
 not a complete implementation of contextual stress. Other exclusions include
-24 tags the Finnish parser changes and 163 with unsupported phones or stress.
+24 tags the Finnish parser changes and 169 with unsupported phones or stress;
+one further candidate cannot be aligned.
+`compile_direct_plural.py` also transfers a bounded productive pattern for a
+known word followed by a zero-width non-joiner and ها. A bitmap marks bases
+whose final and nonfinal tags match the reference in four positions and whose
+two outputs the Finnish parser accepts. At runtime C constructs the tag from
+the existing base and suffix without starting eSpeak. A generated fingerprint
+prevents compiling the bitmap against a different lexicon. This does not
+cover unknown bases, suffix spelling without the non-joiner, or other
+morphology; those cases remain uncovered or use the reference fallback.
 The prototype `direct_fa_text.c` handles only supported words, whitespace and
 basic punctuation. It returns source mappings at **word** granularity; it
 does not supply precise within-word phoneme positions, numbers or Latin
@@ -1316,6 +1325,9 @@ This prevents eSpeak from saying a comma name merely because there is no
 space after it. Pinglish uses the separate reference mode. This is a bounded
 experiment: clause splitting and English routing still need wider coverage,
 and numeric fallback has not adopted the native punctuation strategy.
+In the offline shared-sentence planner, the inaudible planning proxies also
+retain punctuation inside Persian and English parts; this does not yet make
+that planner a streaming NVDA integration.
 
 The upstream orthographic replacements equate U+066B and U+066C with commas.
 Both the direct text converter and the hybrid experiment reject those two
@@ -1333,6 +1345,9 @@ an installed Persian NVDA voice.
 ```
 python3 experiments/persian/compile_direct_replacements.py --check
 python3 experiments/persian/compile_direct_lexicon.py \
+  --probe /tmp/fa-internal/libreloq_eci.so --espeak-library /path/to/libespeak-ng.so \
+  --data-parent /path/to/data-parent
+python3 experiments/persian/compile_direct_plural.py \
   --probe /tmp/fa-internal/libreloq_eci.so --espeak-library /path/to/libespeak-ng.so \
   --data-parent /path/to/data-parent
 cc -std=c11 -O2 -Wall -Wextra -Werror -pedantic -fPIC -shared -Iinclude \

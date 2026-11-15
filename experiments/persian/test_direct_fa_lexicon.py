@@ -6,8 +6,10 @@ import ctypes
 import json
 import os
 from pathlib import Path
+import re
 import sys
 
+from compile_direct_lexicon import digest, lexical_fingerprint
 from compile_direct_replacements import SOURCE, replacements, render as render_replacements
 from espeak_ng_probe import EspeakPhonemeProbe
 from listening import render
@@ -94,6 +96,14 @@ def main():
 
     rows = entries()
     contexts = contextual_entries()
+    plural_source = (HERE / 'direct_fa_plural.inc').read_text(encoding='utf8')
+    metadata = json.loads(re.search(r'^ \* (\{.*\})$', plural_source, re.MULTILINE).group(1))
+    assert metadata['lexicon_sha256'] == digest(HERE / 'direct_fa_lexicon.inc')
+    assert lexical_fingerprint(rows) in plural_source
+    bits = bytes(int(piece, 16) for line in plural_source.splitlines()
+                 if line.strip().startswith('0x') for piece in line.strip().rstrip(',').split(', '))
+    assert len(bits) == (len(rows) + 7) // 8
+    assert sum(value.bit_count() for value in bits) == metadata['admitted']
     assert (HERE / 'direct_fa_replacements.inc').read_text(encoding='utf8') == render_replacements(SOURCE)
     for cp, target in replacements(SOURCE):
         actual, mapping = normalize(chr(cp))
@@ -146,6 +156,18 @@ def main():
                         (word, text, actual, expected)
                 for tag in (final, nonfinal):
                     assert native_tag_accepted(tag, fa._phonemes_for_probe(tag)), (word, tag)
+            plural_checks = 0
+            for i in range(0, len(rows), 79):
+                if not bits[i // 8] & (1 << (i % 8)):
+                    continue
+                plural = rows[i][0] + '\u200cها'
+                for text in (plural, plural + ' سلام؟', 'او ' + plural + '.',
+                             'سلام ' + plural + ' دنیا؟'):
+                    status, _, actual, _ = phrase(text.encode('utf8'))
+                    expected = translate_text(api, text)
+                    assert status == 0 and len(expected) == 1 and actual == expected[0].text, \
+                        (text, actual, expected)
+                plural_checks += 1
             texts = ('سلام دنیا؟', 'او آمد.', 'ایران نقطه.', 'کاغذ آمد.', 'سلام خوب؟',
                      'ايران نقطه.', 'كاغذ آمد.', 'ﺳﻼﻡ دنیا؟', 'سلامـ دنیا؟')
             for text in texts:
@@ -189,6 +211,7 @@ def main():
     print(f'Passed {checks} native word comparisons, {len(rows[::79])} native tag checks, '
           f'{len(replacements(SOURCE))} direct replacement patterns, '
           f'{len(contexts)} context-dependent words, {len(punctuation)} native punctuation cases, '
+          f'{plural_checks} productive suffix samples, '
           f'{len(texts)} direct-text/audio comparisons, selected U-A glide and failure/index checks.')
 
 
