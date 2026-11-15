@@ -58,6 +58,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     raise AssertionError('Persian test profile is absent: ' + locale)
             self.cases = [('fa_IR', 'سلام دنیا؟', False),
                           ('fa_Latn', 'salam donya?', False),
+                          ('fa_IR', 'بدبخت', False),
+                          ('fa_IR', 'سوال', False),
                           ('fa_Latn', 'salam khub?', False),
                           ('fa_Latn', 'salam khubtar?', False),
                           ('fa_Latn', 'w', True),

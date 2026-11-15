@@ -84,6 +84,9 @@ def main():
                 pcm.clear()
                 assert engine.speak(('سلام دنیا؟',), pcm.extend, lambda _: None)
                 assert bytes(pcm) == original
+                frontend = engine._engines[fa.id]._frontend
+                assert frontend.analyze_direct('بدبخت').parts[0].text == '`[.1bAd.0bAGt]'
+                assert frontend.analyze_direct('سوال').parts[0].text == '`[.1so.0wal]'
                 engine.select_voice(pinglish.id, '1')
                 pcm.clear()
                 assert engine.speak(('salam ', eci.EciIndex(4), 'khubtar?'), pcm.extend, lambda _: None)
