@@ -7,6 +7,8 @@ on:
       - experiments/persian/espeak_worker.py
       - experiments/persian/espeak_ng_probe.py
       - experiments/persian/test_espeak_worker.py
+      - experiments/persian/reference_alignment.py
+      - experiments/persian/test_reference_alignment.py
       - experiments/persian/text_frontend.py
       - experiments/persian/reference_espeak_1_51.jsonl
       - experiments/persian/direct_fa_*.c
@@ -81,3 +83,5 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Direct Persian number test failed' }
           python -B experiments/persian/test_hybrid_fa_frontend.py --native-library "$pwd/fa-direct.dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Direct-first Persian frontend test failed' }
+          python -B experiments/persian/test_reference_alignment.py --native-library "$pwd/fa-direct.dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian reference word alignment failed' }

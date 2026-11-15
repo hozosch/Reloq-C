@@ -1,6 +1,7 @@
 """Separate-process eSpeak text analysis for the private Persian prototype."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 import os
 import struct
@@ -12,9 +13,18 @@ from espeak_ng_probe import Clause
 _U32 = struct.Struct('<I')
 _HEADER = struct.Struct('<IBB')
 _REPLY = struct.Struct('<II')
+_EVENT = struct.Struct('<IIII')
 _MAX_REQUEST = 1024 * 1024
 _MAX_RESPONSE = 8 * 1024 * 1024
 _VOICES = {'fa': 1, 'fa-latn': 2, 'en-us': 3}
+
+
+@dataclass(frozen=True)
+class ReferenceEvent:
+    kind: int
+    position: int              # eSpeak's 1-based source character position
+    length: int
+    phone: str = ''
 
 
 def _read_exact(stream, count):
@@ -34,6 +44,47 @@ def _write_all(stream, data):
         if not count:
             raise RuntimeError('eSpeak text worker stopped while receiving text')
         remaining = remaining[count:]
+
+
+def _decode_clauses(body: bytes) -> tuple[Clause, ...]:
+    count = _U32.unpack_from(body)[0]
+    cursor = 4
+    clauses = []
+    for _ in range(count):
+        if cursor + 8 > len(body):
+            raise RuntimeError('truncated eSpeak worker response')
+        terminator, length = _REPLY.unpack_from(body, cursor)
+        cursor += 8
+        if cursor + length > len(body):
+            raise RuntimeError('truncated eSpeak worker phonemes')
+        clauses.append(Clause(body[cursor:cursor + length].decode('utf8'), terminator))
+        cursor += length
+    if cursor != len(body):
+        raise RuntimeError('unexpected eSpeak worker response data')
+    return tuple(clauses)
+
+
+def _decode_events(body: bytes) -> tuple[ReferenceEvent, ...]:
+    count = _U32.unpack_from(body)[0]
+    if count > 262144:
+        raise RuntimeError('invalid eSpeak event count')
+    cursor = 4
+    result = []
+    for _ in range(count):
+        if cursor + _EVENT.size > len(body):
+            raise RuntimeError('truncated eSpeak event response')
+        kind, position, length, name_length = _EVENT.unpack_from(body, cursor)
+        cursor += _EVENT.size
+        if kind not in (1, 7) or name_length > 8 or cursor + name_length > len(body):
+            raise RuntimeError('invalid eSpeak event')
+        name = body[cursor:cursor + name_length].decode('utf8')
+        cursor += name_length
+        if (kind == 1 and name) or (kind == 7 and not name):
+            raise RuntimeError('invalid eSpeak word or phoneme event')
+        result.append(ReferenceEvent(kind, position, length, name))
+    if cursor != len(body):
+        raise RuntimeError('unexpected eSpeak event data')
+    return tuple(result)
 
 
 class EspeakWorker:
@@ -82,7 +133,7 @@ class EspeakWorker:
                 self._process_generation = generation
             return self._process
 
-    def translate(self, text: str, *, voice: str = 'fa', separator: str = '') -> tuple[Clause, ...]:
+    def _request(self, text: str, *, voice: str, decode, separator: str = '', events: bool = False):
         if not isinstance(text, str) or '\0' in text:
             raise ValueError('text must be a string without NUL')
         if voice not in _VOICES:
@@ -94,7 +145,7 @@ class EspeakWorker:
                 raise RuntimeError('eSpeak worker is closed')
             generation = self._generation
         if not text:
-            return ()
+            return decode(_U32.pack(0))
         encoded = text.encode('utf8')
         if len(encoded) > _MAX_REQUEST:
             raise ValueError('text exceeds eSpeak worker request limit')
@@ -102,7 +153,8 @@ class EspeakWorker:
             proc = self._start(generation)
             try:
                 assert proc.stdin is not None and proc.stdout is not None
-                _write_all(proc.stdin, _HEADER.pack(len(encoded), _VOICES[voice], ord(separator) if separator else 0))
+                code = _VOICES[voice] | (0x80 if events else 0)
+                _write_all(proc.stdin, _HEADER.pack(len(encoded), code, ord(separator) if separator else 0))
                 _write_all(proc.stdin, encoded)
                 status, length = _REPLY.unpack(_read_exact(proc.stdout, _REPLY.size))
                 if length > _MAX_RESPONSE:
@@ -112,24 +164,17 @@ class EspeakWorker:
                     raise RuntimeError('eSpeak worker failed to translate the text')
                 if len(body) < 4:
                     raise RuntimeError('invalid eSpeak worker response')
-                count = _U32.unpack_from(body)[0]
-                cursor = 4
-                clauses = []
-                for _ in range(count):
-                    if cursor + 8 > len(body):
-                        raise RuntimeError('truncated eSpeak worker response')
-                    terminator, length = _REPLY.unpack_from(body, cursor)
-                    cursor += 8
-                    if cursor + length > len(body):
-                        raise RuntimeError('truncated eSpeak worker phonemes')
-                    clauses.append(Clause(body[cursor:cursor + length].decode('utf8'), terminator))
-                    cursor += length
-                if cursor != len(body):
-                    raise RuntimeError('unexpected eSpeak worker response data')
-                return tuple(clauses)
-            except (BrokenPipeError, OSError, UnicodeError, RuntimeError):
+                return decode(body)
+            except (BrokenPipeError, OSError, UnicodeError, RuntimeError, struct.error):
                 self.cancel()
                 raise
+
+    def translate(self, text: str, *, voice: str = 'fa', separator: str = '') -> tuple[Clause, ...]:
+        return self._request(text, voice=voice, separator=separator, decode=_decode_clauses)
+
+    def events(self, text: str, *, voice: str = 'fa') -> tuple[ReferenceEvent, ...]:
+        """Return word/phoneme evidence; eSpeak's audio is never played."""
+        return self._request(text, voice=voice, events=True, decode=_decode_events)
 
     def cancel(self):
         with self._guard:

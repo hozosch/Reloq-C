@@ -18,14 +18,28 @@
 #endif
 
 enum { MAX_REQUEST = 1024 * 1024, MAX_RESPONSE = 8 * 1024 * 1024,
-       MAX_CLAUSES = 65536 };
+       MAX_CLAUSES = 65536, MAX_EVENTS = 262144, EVENT_REQUEST = 0x80 };
 
 typedef int (*initialize_fn)(int, int, const char *, int);
 typedef int (*set_voice_fn)(const char *);
 typedef const char *(*phonemes_fn)(const void **, int, int, int *);
 typedef int (*terminate_fn)(void);
+/* Public speak_lib.h event layout. The helper and the loaded eSpeak DLL use
+ * the same architecture. This remains entirely inside the helper process. */
+struct speech_event {
+    int type; unsigned int identifier; int text_position, length, audio_position, sample;
+    void *user_data;
+    union { int number; const char *name; char string[8]; } id;
+};
+typedef int (*speech_callback)(short *,int,struct speech_event *);
+typedef void (*set_callback_fn)(speech_callback);
+typedef int (*synth_fn)(const void *,size_t,unsigned int,int,unsigned int,
+                        unsigned int,unsigned int *,void *);
 
 struct buffer { unsigned char *data; size_t size, capacity; };
+static struct buffer *event_output;
+static uint32_t event_count;
+static int event_failed;
 
 static int append(struct buffer *b,const void *p,size_t count)
 {
@@ -46,6 +60,32 @@ static int append_u32(struct buffer *b,uint32_t value)
     unsigned char v[4]={(unsigned char)value,(unsigned char)(value>>8),
                         (unsigned char)(value>>16),(unsigned char)(value>>24)};
     return append(b,v,sizeof v);
+}
+
+/* eSpeak supplies character-based word starts and corresponding phoneme
+ * events. Audio is discarded: the selected Eloquence core speaks the text.
+ * Events remain evidence to validate, not an unquestioned source map. */
+static int collect_events(short *audio,int samples,struct speech_event *events)
+{
+    (void)audio;(void)samples;
+    if(!events || !event_output)return 0;
+    for(;events->type;events++) {
+        if(events->type!=1 && events->type!=7)continue;
+        if(events->text_position<0 || events->length<0 || event_count>=MAX_EVENTS) {
+            event_failed=1;return 1;
+        }
+        size_t n=0;
+        if(events->type==7)while(n<sizeof events->id.string && events->id.string[n])++n;
+        if(!append_u32(event_output,(uint32_t)events->type) ||
+           !append_u32(event_output,(uint32_t)events->text_position) ||
+           !append_u32(event_output,(uint32_t)events->length) ||
+           !append_u32(event_output,(uint32_t)n) ||
+           !append(event_output,events->id.string,n)) {
+            event_failed=1;return 1;
+        }
+        ++event_count;
+    }
+    return 0;
 }
 
 static int read_u32(uint32_t *value)
@@ -69,7 +109,7 @@ static int reply(uint32_t status,struct buffer *b)
            (!b->size||fwrite(b->data,1,b->size,stdout)==b->size)&&fflush(stdout)==0;
 }
 
-static int serve(set_voice_fn set_voice,phonemes_fn phonemes)
+static int serve(set_voice_fn set_voice,phonemes_fn phonemes,synth_fn synth)
 {
     static const char *voices[]={NULL,"fa","fa-latn","en-us"};
     for(;;) {
@@ -79,8 +119,10 @@ static int serve(set_voice_fn set_voice,phonemes_fn phonemes)
         if(length>MAX_REQUEST)return 1;
         unsigned char header[2];
         if(fread(header,1,sizeof header,stdin)!=sizeof header)return 1;
-        unsigned voice=header[0], separator=header[1];
-        if(voice<1||voice>3||(separator&&(separator<0x21||separator>0x7e)))return 1;
+        unsigned voice=header[0], separator=header[1], want_events=voice&EVENT_REQUEST;
+        voice&=~EVENT_REQUEST;
+        if(voice<1||voice>3||(separator&&(separator<0x21||separator>0x7e)) ||
+           (want_events && separator))return 1;
         char *input=malloc((size_t)length+1);
         if(!input)return 1;
         if(fread(input,1,length,stdin)!=length||memchr(input,0,length)) {free(input);return 1;}
@@ -89,7 +131,15 @@ static int serve(set_voice_fn set_voice,phonemes_fn phonemes)
         int ok=set_voice(voices[voice])==0&&append_u32(&result,0);
         const void *cursor=input;
         uint32_t clauses=0;
-        while(ok&&cursor) {
+        if(ok && want_events) {
+            event_output=&result;event_count=0;event_failed=0;
+            /* Synchronous, UTF-8, no audio device. A cancelled request can
+             * always be interrupted by terminating this isolated helper. */
+            int status=synth(input,(size_t)length+1,0,1,0,1,NULL,NULL);
+            event_output=NULL;clauses=event_count;
+            if(status || event_failed)ok=0;
+        }
+        while(ok&&!want_events&&cursor) {
             const char *start=cursor;
             int terminator=0;
             const char *row=phonemes(&cursor,1,(int)(separator<<8),&terminator);
@@ -139,16 +189,19 @@ int main(int argc,char **argv)
     set_voice_fn set_voice=LOAD("espeak_SetVoiceByName",set_voice_fn);
     phonemes_fn phonemes=LOAD("espeak_TextToPhonemesWithTerminator",phonemes_fn);
     terminate_fn terminate=LOAD("espeak_Terminate",terminate_fn);
-    if(!initialize||!set_voice||!phonemes||!terminate) {
+    set_callback_fn set_callback=LOAD("espeak_SetSynthCallback",set_callback_fn);
+    synth_fn synth=LOAD("espeak_Synth",synth_fn);
+    if(!initialize||!set_voice||!phonemes||!terminate||!set_callback||!synth) {
         fprintf(stderr,"eSpeak DLL lacks a required text-analysis entry point.\n");return 2;
     }
-    if(initialize(2,0,data,0x8000)<=0) {
+    if(initialize(2,0,data,0x8001)<=0) {
         fprintf(stderr,"Cannot initialize eSpeak language data.\n");return 2;
     }
 #ifdef _WIN32
     free(data);
 #endif
-    int status=serve(set_voice,phonemes);
+    set_callback(collect_events);
+    int status=serve(set_voice,phonemes,synth);
     terminate();
 #ifdef _WIN32
     FreeLibrary(library);

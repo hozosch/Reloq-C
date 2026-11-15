@@ -1,13 +1,15 @@
 """Project a covered Persian text job and its ECI marks in one utterance.
 
-This is a focused experiment, not an NVDA language or a general fallback.
-It keeps the native frontend's word/number-level position accuracy and fails
-before synthesis for uncovered words, unsupported symbols or unsafe controls.
+This is a focused experiment, not an NVDA language. The optional reference
+fallback requires verified word positions and native-accepted phoneme tags.
+It fails before speech for uncovered input or unsafe controls.
 """
 from __future__ import annotations
 
 import ctypes
+from dataclasses import replace
 from pathlib import Path
+import re
 import sys
 import threading
 from typing import Sequence
@@ -20,19 +22,25 @@ from _reloq_eci_direct import (
 )
 from _reloq_persian_projection import Command, ProjectedJob, PersianProjectionError, project_persian
 from hybrid_fa_frontend import DirectFirstPersian
-from text_frontend import UnsupportedPronunciation
+from text_frontend import UnsupportedPronunciation, native_tag_accepted
 
-def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersian) -> ProjectedJob:
-    """Use the native-only frontend with the reusable NVDA projection code."""
+def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersian,
+            *, allow_fallback: bool = False) -> ProjectedJob:
+    """Use direct analysis and, optionally, verified reference word anchors."""
+    used_fallback = False
     def analyze(text):
-        analysis = frontend.analyze_direct(text)
+        nonlocal used_fallback
+        analysis = (frontend.analyze_positioned(text) if allow_fallback
+                    else frontend.analyze_direct(text))
         if analysis is None:
             return None
         if analysis.source_map is None or len(analysis.parts) > 1:
             raise PersianProjectionError('direct Persian source map is unavailable')
+        used_fallback = analysis.used_fallback
         return analysis.parts[0].text if analysis.parts else '', analysis.source_map
     try:
-        return project_persian(parts, analyze)
+        result = project_persian(parts, analyze)
+        return replace(result, needs_native_validation=used_fallback)
     except PersianProjectionError as error:
         raise UnsupportedPronunciation(str(error)) from error
 
@@ -40,9 +48,10 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
 class ScopedDirectPersianEngine:
     """Private synchronous ECI experiment with request-scoped Persian sound."""
 
-    def __init__(self, library: Path, frontend: DirectFirstPersian):
+    def __init__(self, library: Path, frontend: DirectFirstPersian, *, allow_fallback: bool = False):
         self._owner = threading.get_ident()
         self._frontend = frontend
+        self._allow_fallback = allow_fallback
         self._cancelled = threading.Event()
         self._voice = DirectEciEngine(library.resolve(), dialect=0x90000,
                                       encoding='utf8', native_voice=True)
@@ -69,7 +78,12 @@ class ScopedDirectPersianEngine:
         if threading.get_ident() != self._owner:
             raise RuntimeError('Persian engine belongs to its creating worker')
         self._cancelled.clear()
-        prepared = project(parts, self._frontend)
+        try:
+            prepared = project(parts, self._frontend, allow_fallback=self._allow_fallback)
+        except (RuntimeError, OSError):
+            if self._cancelled.is_set():
+                return False
+            raise
         if self._cancelled.is_set():
             return False
         previous = self._scope(1)
@@ -86,6 +100,26 @@ class ScopedDirectPersianEngine:
             else:
                 on_index(value)
         try:
+            if prepared.needs_native_validation:
+                # Unknown reference pronunciations must also be accepted by
+                # the actual Finnish-based phoneme parser before any audio.
+                self._voice._cancelled.clear()
+                if self._cancelled.is_set():
+                    return False
+                try:
+                    shown = self._voice._phonemes_for_probe(prepared.tagged)
+                except RuntimeError:
+                    if self._cancelled.is_set():
+                        return False
+                    raise
+                requested = re.findall(r'`\[[^]]+\]', prepared.tagged)
+                actual = re.findall(r'`\[[^]]+\]', shown)
+                if (len(requested) != len(actual) or
+                        any(not native_tag_accepted(tag, parsed)
+                            for tag, parsed in zip(requested, actual))):
+                    raise UnsupportedPronunciation('reference pronunciation is not accepted by the native parser')
+                if self._cancelled.is_set():
+                    return False
             return self._voice.speak(prepared.parts, pcm, index) and not self._cancelled.is_set()
         finally:
             if self._scope(previous) < 0:
@@ -93,6 +127,9 @@ class ScopedDirectPersianEngine:
 
     def cancel(self) -> None:
         self._cancelled.set()
+        cancel_frontend = getattr(self._frontend, 'cancel', None)
+        if cancel_frontend is not None:
+            cancel_frontend()
         self._voice.cancel()
 
     def close(self) -> None:

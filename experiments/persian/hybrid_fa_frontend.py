@@ -14,6 +14,7 @@ import re
 import threading
 
 from espeak_worker import EspeakWorker
+from reference_alignment import source_map_for_reference
 from text_frontend import SpeechPart, UnsupportedPronunciation, translate_text
 
 
@@ -258,6 +259,23 @@ class DirectFirstPersian:
             return PersianAnalysis(translate_text(self._fallback(), text), None, True)
         direct = self.analyze_direct(text)
         return direct if direct is not None else PersianAnalysis(self._fallback_with_numbers(text), None, True)
+
+    def analyze_positioned(self, text: str) -> PersianAnalysis | None:
+        """Direct analysis, or a reference result with verified word anchors.
+
+        The reference route currently accepts only Persian words and simple
+        punctuation. Unknown alignment is never inferred from word order.
+        """
+        direct = self.analyze_direct(text)
+        if direct is not None:
+            return direct
+        if any(c.isascii() and c.isalnum() or c.isdecimal() for c in text):
+            return None
+        if not any(c.isalpha() for c in text):
+            return None
+        parts = _translate_with_native_punctuation(self._fallback(), text)
+        mapping = source_map_for_reference(text, parts, self._fallback())
+        return PersianAnalysis(parts, mapping, True) if mapping is not None else None
 
     def cancel(self) -> None:
         with self._guard:

@@ -1386,6 +1386,26 @@ projection and base sound: it does not yet implement the separately accepted
 streaming U-to-A or English-to-Ach transitions, nor does it wire Persian into
 the NVDA driver. The shared-sentence frame-replay experiment remains offline.
 
+The optional reference fallback can now project source indexes for a limited
+Persian-only case. The separate helper collects eSpeak word and phoneme events
+while discarding its audio. `reference_alignment.py` checks each word start
+and the complete phoneme sequence against the independent eSpeak text result,
+then builds a monotone UTF-8 source map. The selected Eloquence parser also
+has to accept the resulting tags before the scoped experiment emits audio.
+This preserves word-level rather than character-level accuracy, and fails
+closed when alignment cannot be verified. Directly covered words and numbers
+do not start the helper. Reference fallback containing numbers, English,
+Pinglish or spelling commands is not yet projected.
+Some dictionary pronunciations contain eSpeak's word-internal short-pause
+phone `_`; this remains unsupported and is not silently removed.
+
+Obtaining reference events currently requires eSpeak to synthesize discarded
+audio in its helper, so the cost grows with text length. Cancellation stops
+the helper and the next request starts a new one. This is a bridge towards
+testing, not a replacement for the planned native Persian text rules. The
+targeted Windows test checks its event alignment against NVDA's eSpeak DLL;
+only the Linux probe currently checks the selected acoustic PCM.
+
 ```
 python3 experiments/persian/compile_direct_replacements.py --check
 python3 experiments/persian/compile_direct_lexicon.py \

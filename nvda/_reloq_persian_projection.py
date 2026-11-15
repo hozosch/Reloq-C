@@ -26,6 +26,7 @@ class ProjectedJob:
     source: str
     tagged: str
     parts: tuple[EciText | Command, ...]
+    needs_native_validation: bool = False
 
 
 def project_persian(parts: Sequence[str | EciText | Command],

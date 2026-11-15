@@ -1,0 +1,186 @@
+"""Test word-anchored Persian reference fallback without playing eSpeak."""
+from __future__ import annotations
+
+import argparse
+from dataclasses import replace
+from pathlib import Path
+import threading
+
+from direct_fa_sequence import EciIndex, ScopedDirectPersianEngine, project
+from hybrid_fa_frontend import DirectFirstPersian
+from reference_alignment import _reference_words, _tokens, source_map_for_reference
+from text_frontend import SpeechPart, UnsupportedPronunciation
+
+
+def check_mapping(frontend, text):
+    result = frontend.analyze_positioned(text)
+    assert result and result.used_fallback and result.source_map is not None, text
+    assert result.parts == frontend.analyze(text).parts, text
+    raw = text.encode('utf8')
+    assert len(result.source_map) == len(raw) + 1
+    assert result.source_map[-1] == len(result.parts[0].text)
+    assert all(a <= b for a, b in zip(result.source_map, result.source_map[1:]))
+    return result
+
+
+def alignment_tests(frontend):
+    samples = (
+        'ناموجودمطمئن سلام',
+        'سلام ناموجودمطمئن!',
+        'ناموجودمطمئن،سلام؟',
+        'سلام  ناموجودمطمئن',
+        'ساعت چنده',
+        'کاربرگ‌های دیجیتالی',
+        'من می‌خوانم.',
+        'نرم‌افزارها خوبند.',
+        'کامپیوترها کار می‌کنند.',
+    )
+    results = {text: check_mapping(frontend, text) for text in samples}
+    one = results[samples[0]]
+    second = len('ناموجودمطمئن '.encode('utf8'))
+    assert one.source_map[second] == one.parts[0].text.index('`[', 1)
+    assert all(one.source_map[i] == 0 for i in range(len('ناموجودمطمئن'.encode('utf8'))))
+    assert frontend.analyze_positioned('سلام NVDA') is None
+    assert frontend.analyze_positioned('ناموجودمطمئن ۱۲') is None
+    try:
+        frontend.analyze_positioned('من بدبخت آمد.')
+        raise AssertionError('a reference word with an unrepresented short pause was accepted')
+    except UnsupportedPronunciation as error:
+        assert "phone '_'" in str(error)
+
+    worker = frontend._fallback()
+    core = samples[0]
+    tokens = _tokens(core)
+    assert tokens
+    reference = worker.translate(core, separator='|')
+    events = worker.events(core)
+    assert _reference_words(worker, core, tokens)
+    assert worker.events('') == ()
+
+    class FakeWorker:
+        def __init__(self, altered):
+            self.altered = altered
+        def translate(self, text, *, separator):
+            assert text == core and separator == '|'
+            return reference
+        def events(self, text):
+            assert text == core
+            return self.altered
+
+    positions = [i for i, event in enumerate(events) if event.kind == 1]
+    assert len(positions) == 2
+    wrong_start = list(events)
+    wrong_start[positions[1]] = replace(wrong_start[positions[1]], position=2)
+    wrong_phone = list(events)
+    first_phone = next(i for i, event in enumerate(events) if event.kind == 7 and event.phone not in ('_', '_:'))
+    wrong_phone[first_phone] = replace(wrong_phone[first_phone], phone='z')
+    for altered in (events[:positions[1]] + events[positions[1] + 1:],
+                    tuple(wrong_start), tuple(wrong_phone)):
+        fake = FakeWorker(altered)
+        assert _reference_words(fake, core, tokens) is None
+        assert source_map_for_reference(core, one.parts, fake) is None
+    assert source_map_for_reference(core, (SpeechPart('en-us', 'wrong'),), worker) is None
+    return samples
+
+
+def playback_tests(frontend, probe, reference, samples):
+    from listening import render
+    from test_selected_probe import engine, set_confirmed_persian_probe
+    from _reloq_eci_direct import GENDER, SAMPLE_RATE
+
+    voice = ScopedDirectPersianEngine(probe, frontend, allow_fallback=True)
+    fa = engine(reference, 0x90000)
+    set_confirmed_persian_probe()
+    try:
+        for rate in (1, 3, 6):
+            for gender in (0, 1):
+                for target in (voice, fa):
+                    target.set_parameter(SAMPLE_RATE, rate)
+                    target.set_parameter(GENDER, gender)
+                for text in samples:
+                    split = text.find(' ')
+                    if split < 0:
+                        split = text.index('،') + 1
+                    parts = (EciIndex(1), text[:split], EciIndex(2), text[split:], EciIndex(3))
+                    job = project(parts, frontend, allow_fallback=True)
+                    assert job.needs_native_validation
+                    expected = render(fa, job.tagged)
+                    pcm, marks = bytearray(), []
+                    assert voice.speak(parts, pcm.extend, lambda i: marks.append((i, len(pcm) // 2)))
+                    assert bytes(pcm) == expected, (text, rate, gender)
+                    assert [index for index, _ in marks] == [1, 2, 3]
+                    assert marks[0][1] == 0 and marks[-1][1] == len(pcm) // 2
+                    assert marks[0][1] <= marks[1][1] <= marks[-1][1]
+        try:
+            voice.speak(('ناموجودمطمئن NVDA',), lambda _: None, lambda _: None)
+            raise AssertionError('unmapped mixed-language fallback was accepted')
+        except UnsupportedPronunciation:
+            pass
+        # A native parser mismatch must fail before any audio.
+        original = voice._voice._phonemes_for_probe
+        voice._voice._phonemes_for_probe = lambda _: '`[.1i]'
+        pcm = bytearray()
+        try:
+            voice.speak((samples[0],), pcm.extend, lambda _: None)
+            raise AssertionError('an unaccepted fallback phoneme tag was spoken')
+        except UnsupportedPronunciation:
+            assert not pcm
+        finally:
+            voice._voice._phonemes_for_probe = original
+        assert voice._scope(0) == 0
+    finally:
+        voice.close()
+        fa.close()
+
+    # The isolated eSpeak helper must unblock a cancelled fallback; the same
+    # frontend and ECI handle must be able to speak the next request.
+    worker = frontend._fallback()
+    original_events = worker.events
+    started = threading.Event()
+    shared, result, first, second = {}, [], bytearray(), bytearray()
+    def delayed_events(text, *, voice='fa'):
+        started.set()
+        return original_events(text, voice=voice)
+    worker.events = delayed_events
+    def run():
+        voice = ScopedDirectPersianEngine(probe, frontend, allow_fallback=True)
+        shared['voice'] = voice
+        try:
+            result.append(voice.speak(('ناموجودمطمئن سلام ' * 400,), first.extend, lambda _: None))
+            worker.events = original_events
+            result.append(voice.speak((samples[0],), second.extend, lambda _: None))
+        finally:
+            voice.close()
+    thread = threading.Thread(target=run)
+    thread.start()
+    try:
+        assert started.wait(15), 'reference event analysis did not start'
+        shared['voice'].cancel()
+        thread.join(15)
+        assert not thread.is_alive() and result == [False, True] and not first and second, result
+    finally:
+        worker.events = original_events
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--native-library', type=Path, required=True)
+    parser.add_argument('--worker', type=Path, required=True)
+    parser.add_argument('--espeak-library', type=Path, required=True)
+    parser.add_argument('--data-parent', type=Path, required=True)
+    parser.add_argument('--scope-probe', type=Path)
+    parser.add_argument('--reference', type=Path)
+    args = parser.parse_args()
+    if bool(args.scope_probe) != bool(args.reference):
+        parser.error('provide both acoustic libraries or neither')
+    with DirectFirstPersian(args.native_library, args.worker,
+                            args.espeak_library, args.data_parent) as frontend:
+        samples = alignment_tests(frontend)
+        if args.scope_probe:
+            playback_tests(frontend, args.scope_probe, args.reference, samples)
+    print('Passed reference word anchors, checked phonemes and fail-closed cases' +
+          (', native PCM and cancellation.' if args.scope_probe else '.'))
+
+
+if __name__ == '__main__':
+    main()
