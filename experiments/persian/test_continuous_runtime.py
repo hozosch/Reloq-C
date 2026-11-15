@@ -67,6 +67,12 @@ def main():
             explicit, _ = render(engine, (EciLanguage(US_ENGLISH.id, '1'), 'NVDA ',
                                           EciLanguage(PERSIAN_PROBE.id, '1'), 'خوب است.'))
             assert explicit == mixed
+            engine.select_voice(US_ENGLISH.id, '1')
+            engine.set_parameter(GENDER, gender)
+            from_english, _ = render(engine, ('NVDA ', EciLanguage(PERSIAN_PROBE.id, '1'), 'خوب است.'))
+            assert from_english == mixed
+            engine.select_voice(PERSIAN_PROBE.id, '1')
+            engine.set_parameter(GENDER, gender)
             capital, _ = render(engine, (EciCapitalWord('NVDA', 'NV DA'), ' خوب است.'))
             assert capital and capital != english + persian
             protected, indexes = render(engine, (EciText('swapfile ', segmentation_guarded=True),

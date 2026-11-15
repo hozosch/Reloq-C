@@ -79,6 +79,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'خوب', 'persian'),
                           ('fa_IR', 'NVDA خوب', 'mixed'),
                           ('fa_IR', 'NVDA خوب', False),
+                          ('en_US', 'NVDA خوب', 'mixed'),
                           ('de_DE', 'Guten Tag.', False)]
             self.next()
         except BaseException:
@@ -94,6 +95,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                              if row['text'] == 'NVDA خوب' and row['spelling'] is False)
                 if mixed['pcm_sha256'] != plain['pcm_sha256']:
                     raise AssertionError('unmarked mixed text differs from the explicit switch')
+                english_home = next(row for row in self.results
+                                    if row['locale'] == 'en_US' and row['spelling'] == 'mixed')
+                if mixed['pcm_sha256'] != english_home['pcm_sha256']:
+                    raise AssertionError('English home language changed the mixed sentence')
                 if self.audio['mixed'] == self.audio['english'] + self.audio['persian']:
                     raise AssertionError('mixed sentence was rendered as two disconnected sessions')
                 RESULT.write_text(json.dumps({'ok': True, 'cases': self.results}, ensure_ascii=True), encoding='utf8')
@@ -127,7 +132,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                              for chunk in player.chunks[self.before.get(id(player), 0):])
             if not audio:
                 raise RuntimeError('no actual NVDA audio for ' + ascii(text))
-            if spelling in ('english', 'persian', 'mixed'):
+            if spelling in ('english', 'persian') or spelling == 'mixed' and locale == 'fa_IR':
                 self.audio[spelling] = audio
             self.results.append({'locale': locale, 'text': text, 'spelling': spelling,
                                  'pcm_bytes': len(audio), 'pcm_sha256': hashlib.sha256(audio).hexdigest()})
