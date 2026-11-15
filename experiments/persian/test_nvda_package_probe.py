@@ -25,11 +25,13 @@ def main():
     args = parser.parse_args()
     base = {'manifest.ini': (ROOT / 'addon/synth/manifest.ini').read_bytes(),
             PREFIX + '__init__.py': (ROOT / 'addon/synth/synthDrivers/reloqC/__init__.py').read_bytes(),
-            'doc/source.json': b'{"build":"normal release"}'}
+            'doc/source.json': b'{"build":"normal release"}',
+            'locale/de/manifest.ini': b'summary = "Alt"\ndescription = "Alt"\n'}
     text_library = (args.text_library or args.native_library).resolve()
     entries = add_persian(base, args.worker.read_bytes(), text_library.read_bytes())
     assert 'Persian acoustic probe' in json.loads(entries['doc/source.json'])['build']
     assert b'1.5.0-dev91' in entries['manifest.ini']
+    assert 'Persisch- und Pinglish-Test' in entries['locale/de/manifest.ini'].decode('utf8')
     assert b'add_profiles(dict(LANGUAGES), DLL)' in entries[PREFIX + '__init__.py']
     assert b'lambda: make_engine(' in entries[PREFIX + '__init__.py']
     with tempfile.TemporaryDirectory(prefix='reloq-fa-package-') as temp:

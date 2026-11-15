@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import re
 import sys
 import zipfile
 
@@ -61,7 +62,20 @@ def add_persian(entries, worker: bytes, text_library: bytes):
     manifest = manifest.replace('version = "1.4.1"', 'version = "1.5.0-dev91"', 1)
     manifest = manifest.replace('summary = "Eloquence C: fifteen language variants"',
                                 'summary = "Eloquence C: Persian and Pinglish test"', 1)
+    manifest = re.sub(r'(?m)^description = .*$',
+                      'description = "Test build with Persian and Pinglish."', manifest)
     entries['manifest.ini'] = manifest.encode('utf8')
+    for name in tuple(entries):
+        if not name.startswith('locale/') or not name.endswith('/manifest.ini'):
+            continue
+        german = name.startswith('locale/de/')
+        summary = 'Eloquence C: Persisch- und Pinglish-Test' if german else 'Eloquence C: Persian and Pinglish test'
+        description = ('Testversion mit Persisch und Pinglish.' if german
+                       else 'Test build with Persian and Pinglish.')
+        localized = entries[name].decode('utf8')
+        localized = re.sub(r'(?m)^summary = .*$', 'summary = ' + json.dumps(summary, ensure_ascii=False), localized)
+        localized = re.sub(r'(?m)^description = .*$', 'description = ' + json.dumps(description, ensure_ascii=False), localized)
+        entries[name] = localized.encode('utf8')
     return entries
 
 
