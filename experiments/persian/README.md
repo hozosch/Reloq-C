@@ -1588,14 +1588,12 @@ python3 experiments/persian/compare_vowel_glide.py \
 
 ## Short front vowel and continuing bracket phrases
 
-The scoped Persian profile fixes all five Finnish short-front vowel formants
-and bandwidths to the values measured in the existing Persian letter name
-`alef` for the selected voice type, while retaining the adjacent consonants'
-trajectories. The higher, voice-default formants also match the `alef` sample.
-The previous `alef` itself is unchanged in both voice types;
-the long back vowel and unscoped Finnish remain separate. The generated
-provider has an opt-in `RELOQ_FA_FRONT_A_TARGET=alef-fixed` for isolated
-comparisons; the installed probe selects it only inside Persian synthesis.
+The Persian short-front vowel retains the Finnish provider's contextual
+formants and transitions. Immediately before the Persian Ach phone, its
+first-formant targets are raised by 100 Hz, keeping the other formants and
+native inheritance markers. The `alef` reference and non-Ach contexts remain
+unchanged from the earlier contextual probe, in both voice types; unscoped
+Finnish is unchanged. This is a listening candidate for the targeted context.
 
 For mixed speech, a bracket phrase with more speech following receives the
 native core's comma continuation tone and omits only excess end silence.
@@ -1604,3 +1602,14 @@ pass can also bound planning, so a following NVDA role or checkbox state is
 handled by its own direct Persian job. Direct verified tags and the finite
 internal English proxy alphabet no longer require repeated parser probes;
 unverified reference pronunciations retain validation.
+
+The two contextual planning captures can skip discarded sample synthesis
+while retaining their exact native frame and source-index clocks. The pitch
+pilot still renders audio to locate its audible end, and final audio is
+rendered once from the selected frames. Captures fall back to full rendering
+when the native control-only capability is absent. Canonically equivalent
+orders of Arabic vowel marks and shadda map to the same direct pronunciation.
+Reference fallback uses eSpeak's expected mark order without deleting marks.
+When independently verified halves of a half-space compound reproduce the
+same phone and stress sequence, native word units retain both accents; the
+established plural suffix stays on its existing path.

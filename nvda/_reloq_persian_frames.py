@@ -51,14 +51,19 @@ class FrameCapture:
         self._end.restype = ctypes.POINTER(NativeFrame)
         self._release = dll.reloq_fa_capture_release
         self._release.argtypes, self._release.restype = (), None
+        self._controls_only = getattr(dll, 'reloq_fa_capture_set_controls_only', None)
+        if self._controls_only is not None:
+            self._controls_only.argtypes, self._controls_only.restype = (ctypes.c_int,), ctypes.c_int
 
-    def capture(self, voice, parts, *, maximum=60000):
+    def capture(self, voice, parts, *, maximum=60000, audio=True):
         if type(maximum) is not int or not 1 <= maximum <= 120000:
             raise ValueError('invalid frame capture limit')
         pcm, indexes = bytearray(), []
         if self._begin(maximum):
             raise RuntimeError('cannot start nested or oversized frame capture')
         try:
+            if not audio and self._controls_only is not None and self._controls_only(1):
+                raise RuntimeError('cannot enable control-only frame capture')
             completed = voice.speak(parts, pcm.extend,
                                     lambda value: indexes.append((value, len(pcm) // 2)))
             count, failed = ctypes.c_size_t(), ctypes.c_int()

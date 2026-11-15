@@ -115,36 +115,30 @@ US_A_PATCH = r'''
     }
 '''
 
+FRONT_A_HELPER = r'''
+/* Inspect the next Finnish phone without changing the native scanner. */
+static unsigned persian_probe_front_a_next(void *state,int32_t position)
+{
+    delta_state *d=state;
+    if(!d || !position)return 0;
+    void *point=vmover(d,EVV_AT(int32_t *,position),2);
+    int32_t node=point?vgetsc(d,0,0,EVV_REF(point),2):0;
+    if(!node || (*EVV_AT(int32_t *,node)&2))return 0;
+    return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node)));
+}
+'''
+
 FRONT_A_PATCH = r'''
-    /* Keep the Persian short front vowel at the existing alef nucleus.
-       The surrounding consonants retain their own native trajectories. */
+    /* Preserve Finnish's context-dependent front vowel. Before the private
+       German-shaped Ach phone (Finnish G, id 18), open F1 by 100 Hz while
+       keeping all native transitions, bandwidths and inheritance markers. */
     {
-        const char *target=getenv("RELOQ_FA_FRONT_A_TARGET");
-        if (target && strcmp(target,"alef-fixed")==0) {
-            int female=STATE(int16_t,s456)>=4300;
-            STATE(int16_t,s448)=680;  STATE(int16_t,s449)=680;
-            STATE(int16_t,s450)=1500; STATE(int16_t,s451)=1450;
-            STATE(int16_t,s452)=2550; STATE(int16_t,s453)=2550;
-            /* Use the complete measured alef nucleus for the selected
-               native voice, including higher formants and bandwidths. */
-            STATE(int16_t,s454)=female ? 4200 : 3600;
-            STATE(int16_t,s455)=-1;
-            STATE(int16_t,s456)=female ? 4600 : 3900;
-            STATE(int16_t,s457)=-1;
-            STATE(int16_t,s397)=female ? 300 : 120;
-            STATE(int16_t,s398)=female ? 200 : 100;
-            STATE(int16_t,s399)=150;
-            STATE(int16_t,s400)=female ? 300 : 330;
-            STATE(int16_t,s401)=500;
+        const char *setting=getenv("RELOQ_FA_FRONT_A_ACH");
+        if(setting && setting[0]=='1' && !setting[1] &&
+           persian_probe_front_a_next(state,STATE(int32_t,w61))==18) {
+            if(STATE(int16_t,s448)>0)STATE(int16_t,s448)+=100;
+            if(STATE(int16_t,s449)>0)STATE(int16_t,s449)+=100;
         }
-        if (getenv("RELOQ_FA_TRACE_FRONT_A"))
-            fprintf(stderr,"FA_FRONT F=%d,%d,%d,%d,%d R=%d,%d,%d,%d,%d B=%d,%d,%d,%d,%d\n",
-                STATE(int16_t,s448),STATE(int16_t,s450),STATE(int16_t,s452),
-                STATE(int16_t,s454),STATE(int16_t,s456),
-                STATE(int16_t,s449),STATE(int16_t,s451),STATE(int16_t,s453),
-                STATE(int16_t,s455),STATE(int16_t,s457),
-                STATE(int16_t,s397),STATE(int16_t,s398),STATE(int16_t,s399),
-                STATE(int16_t,s400),STATE(int16_t,s401));
     }
 '''
 
@@ -1880,7 +1874,7 @@ def main() -> None:
         work = Path(tempfile.mkdtemp(prefix='reloq-persian-probe-'))
     modified = [
         prepare('fifi', 'delta_rules_c17_fifi.c', 'stanfin_ph_a', 'L13086', A_PATCH, '#include <stdio.h>\n', work),
-        prepare('fifi', 'delta_rules_c15_fifi.c', 'stanfin_ph_A', 'L13209', FRONT_A_PATCH, '#include <stdio.h>\n', work),
+        prepare('fifi', 'delta_rules_c15_fifi.c', 'stanfin_ph_A', 'L13209', FRONT_A_PATCH, FRONT_A_HELPER, work),
         prepare('fifi', 'delta_rules_c22_fifi.c', 'fin_ph_k', 'L5915', Q_PATCH, Q_HELPER, work),
         prepare('enus61', 'delta_rules_c06_enus61.c', 'ga_ph_a', 'L3010', US_A_PATCH, '', work),
         prepare('dede61', 'delta_rules_c07_dede61.c', 'ger_ph_k', 'L22634',

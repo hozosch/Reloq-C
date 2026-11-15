@@ -49,6 +49,16 @@ def _native_english(text: str) -> bool:
 _BOUNDARIES = {',': ',', '،': ',', ';': ';', '؛': ';',
                '?': '?', '؟': '?', '.': '.', '!': '!', ':': ':'}
 _NUMBER_RUN = re.compile(r'[0-9\u0660-\u0669\u06f0-\u06f9][0-9\u0660-\u0669\u06f0-\u06f9.,\u066b\u066c]*')
+_CANONICAL_SHADDA = re.compile(r'([\u064b-\u0650]+)(\u0651)')
+
+
+def _reference_mark_order(text: str) -> str:
+    """Keep canonical equivalents readable by the eSpeak fallback.
+
+    eSpeak expects shadda before the vowel marks. NFC puts it after them;
+    rearranging the same two-byte code points keeps word and byte offsets.
+    """
+    return _CANONICAL_SHADDA.sub(lambda match: match.group(2) + match.group(1), text)
 
 
 def _reference_numeric_spelling(text: str) -> str:
@@ -479,7 +489,8 @@ class DirectFirstPersian:
         if text and not any(char.isalpha() or char.isdecimal() for char in text):
             return PersianAnalysis(translate_text(self._fallback(), text), None, True)
         direct = self.analyze_direct(text)
-        return direct if direct is not None else PersianAnalysis(self._fallback_with_numbers(text), None, True)
+        return direct if direct is not None else PersianAnalysis(
+            self._fallback_with_numbers(_reference_mark_order(text)), None, True)
 
     def analyze_positioned(self, text: str) -> PersianAnalysis | None:
         """Direct analysis, or a reference result with verified word anchors.
@@ -490,6 +501,7 @@ class DirectFirstPersian:
         direct = self.analyze_direct(text)
         if direct is not None:
             return direct
+        text = _reference_mark_order(text)
         if not unpositioned_reference_input(text):
             return None
         if not any(c.isalpha() for c in text):

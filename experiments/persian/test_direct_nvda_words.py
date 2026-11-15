@@ -40,6 +40,7 @@ def main():
         sample.append(next(row for row in rows if row[0] == 'متوقف'))
         for word, final, nonfinal in sample:
             assert reference_tags(reference, word) == (final, nonfinal, nonfinal, final), word
+        assert reference_tags(reference, 'دار') == ('`[.1dar]',) * 4
     print(f'Passed {len(rows)} direct NVDA word readings and 201 four-context reference comparisons.')
 
 

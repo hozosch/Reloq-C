@@ -1,4 +1,4 @@
-"""Check the Persian short-A nucleus against the existing alef reference."""
+"""Check native contextual short-A and its targeted opening before Ach."""
 from __future__ import annotations
 
 import argparse
@@ -35,51 +35,48 @@ def capture(engine, scope, tag, enabled=True):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--probe', required=True, type=Path)
-    parser.add_argument('--baseline', type=Path)
+    parser.add_argument('--baseline', type=Path,
+                        help='previous contextual Persian probe before fixed alef')
     args = parser.parse_args()
+    ach = ('`[.1bAG]', '`[.1sAGt]', '`[.1bAd.0bAGt]')
+    unchanged = ('`[.1A.0lef]', "`[.1s'A:'d]", '`[.1sAd]', '`[.0sA.1lam]',
+                 '`[.1bAt]', "`[.1'i:'.0r'a:'n]", '`[.1Gu]')
     checks = 0
     for gender in (0, 1):
         for rate in (3, 6):
             current, scope = voice(args.probe, gender, rate)
             baseline, old_scope = voice(args.baseline, gender, rate) if args.baseline else (None, None)
             try:
-                alef = capture(current, scope, '`[.1A.0lef]')
-                rows = alef.frames()
-                first = next(row for row in rows if row.controls[2] > 0)
-                columns = (9, 15, 17, 19, 21, 23, 25, 10, 14, 16, 18, 20, 22, 24, 26)
-                target = tuple(first.controls[i] for i in columns)
-                def anchored(row):
-                    return (row.controls[2] > 0 and
-                            all(abs(row.controls[i] - ref) < .1 for i, ref in zip(columns, target)))
-                reference = [row.controls[13] for row in rows if anchored(row)]
-                assert len(reference) >= 20
-                lower, upper = min(reference) - 1, max(reference) + 1
-                for tag in ("`[.1s'A:'d]", '`[.1sAd]', '`[.0sA.1lam]', '`[.1bAd.0bAGt]'):
+                for tag in ach:
                     sample = capture(current, scope, tag)
-                    target_rows = [row for row in sample.frames() if anchored(row)]
-                    assert len(target_rows) >= 10, (gender, rate, tag)
-                    assert all(lower <= row.controls[13] <= upper for row in target_rows), (gender, rate, tag)
+                    rows = sample.frames()
+                    # F1 remains visibly open for a substantial part of the
+                    # vowel in both native voice types and at either rate.
+                    opened = [r.controls[9] for r in rows if r.controls[2] > 0 and r.controls[8] == 0]
+                    assert sum(value >= 700 for value in opened) >= 20, (gender, rate, tag)
                     if baseline:
-                        previous = capture(baseline, old_scope, tag)
-                        assert len(sample.pcm) == len(previous.pcm), (gender, rate, tag)
-                        assert [row.controls[1] for row in sample.frames()] == [
-                            row.controls[1] for row in previous.frames()], (gender, rate, tag)
+                        old = capture(baseline, old_scope, tag)
+                        previous = old.frames()
+                        assert len(sample.pcm) == len(old.pcm) and len(rows) == len(previous)
+                        assert sample.pcm != old.pcm, (gender, rate, tag)
+                        assert max(a.controls[9] - b.controls[9] for a, b in zip(rows, previous)) >= 95
+                        assert all(abs(a.controls[1] - b.controls[1]) < .01 for a, b in zip(rows, previous))
+                        # No change to F2/F3; the adjoining Ach transition is
+                        # allowed to follow the new F1.
+                        assert all(abs(a.controls[i] - b.controls[i]) < .01
+                                   for a, b in zip(rows, previous) for i in (13, 15))
                     checks += 1
                 if baseline:
-                    # The reference letter itself and the accepted back
-                    # vowel keep their sound, for both native voice types.
-                    assert alef.pcm == capture(baseline, old_scope, '`[.1A.0lef]').pcm
-                    for tag in ('`[.1Gu]', "`[.1'i:'.0r'a:'n]"):
-                        assert capture(current, scope, tag).pcm == capture(baseline, old_scope, tag).pcm
-                    # The Finnish voice outside the scoped Persian profile
-                    # must not acquire the Persian short-vowel target.
-                    tag = '`[.1sAd]'
-                    assert capture(current, scope, tag, False).pcm == capture(baseline, old_scope, tag, False).pcm
+                    for tag in unchanged:
+                        assert capture(current, scope, tag).pcm == capture(baseline, old_scope, tag).pcm, tag
+                    # The scoped adjustment must never affect ordinary Finnish.
+                    for tag in ach:
+                        assert capture(current, scope, tag, False).pcm == capture(baseline, old_scope, tag, False).pcm
             finally:
                 current.close()
                 if baseline:
                     baseline.close()
-    print(f'Passed {checks} short-A targets, voice/rate and isolation checks.')
+    print(f'Passed {checks} contextual short-A/Ach checks, voice/rate and isolation checks.')
 
 
 if __name__ == '__main__':

@@ -84,7 +84,7 @@ const char *reloq_fa_scoped_get(const char *name)
         {"RELOQ_FA_PROBE_X","1"}, {"RELOQ_FA_PROBE_RISE","2"},
         {"RELOQ_FA_PROBE_H","5"}, {"RELOQ_FA_PROBE_L","4"},
         {"RELOQ_FA_PROBE_VOWEL","1"}, {"RELOQ_FA_PROBE_S","3"},
-        {"RELOQ_FA_FRONT_A_TARGET","alef-fixed"},
+        {"RELOQ_FA_FRONT_A_ACH","1"},
         {"RELOQ_FA_PROBE_Z","3"}, {"RELOQ_FA_PROBE_D","2"},
         {"RELOQ_FA_PROBE_A_TARGET","salam-fixed"}, {"RELOQ_FA_PROBE_FINAL","1"},
         {"RELOQ_FA_PROBE_GLOTTAL","2"}, {"RELOQ_FA_PROBE_END_H","1"},

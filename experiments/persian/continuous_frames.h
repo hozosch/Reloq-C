@@ -23,5 +23,6 @@ struct reloq_fa_frame_mark {
 int reloq_fa_capture_append(int64_t tick, const float controls[62],
     float duration, float gain, int formants, int head, int gender,
     int s_frication, int limit_frication);
+int reloq_fa_capture_controls_only(void);
 
 #endif

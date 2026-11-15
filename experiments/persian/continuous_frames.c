@@ -14,7 +14,7 @@
 struct capture_state {
     struct reloq_fa_frame *frames;
     size_t count, capacity, maximum;
-    int active, failed;
+    int active, failed, controls_only;
 };
 static _Thread_local struct capture_state capture;
 
@@ -40,6 +40,16 @@ FA_EXPORT void reloq_fa_capture_release(void)
     free(capture.frames);
     capture=(struct capture_state){0};
 }
+
+FA_EXPORT int reloq_fa_capture_set_controls_only(int enabled)
+{
+    if(!capture.active || (enabled!=0 && enabled!=1))return -1;
+    capture.controls_only=enabled;
+    return 0;
+}
+
+int reloq_fa_capture_controls_only(void)
+{ return capture.active && capture.controls_only; }
 
 int reloq_fa_capture_append(int64_t tick,const float controls[62],
     float duration,float gain,int formants,int head,int gender,

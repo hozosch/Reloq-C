@@ -115,6 +115,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'استفاده از NVDA هنگامِ ورود به ویندوز (به اِختیاراتِ مدیریتی نیاز دارد)', 'checkbox_unchecked'),
                           ('fa_IR', 'استفاده از NVDA هنگامِ ورود به ویندوز (به اِختیاراتِ مدیریتی نیاز دارد)', 'checkbox_checked'),
                           ('fa_IR', 'استفاده از NVDA هنگامِ ورود به ویندوز (به اِختیاراتِ مدیریتی نیاز دارد)', 'checkbox_checked_most'),
+                          ('fa_IR', 'نمایشِ اِتِّفاقاتِ ثبت‌شده (Log)', 'pipeline_log'),
                           ('fa_Latn', 'w', True),
                           ('fa_Latn', 'NVDA', True),
                           ('fa_IR', 'ق', True),
@@ -205,12 +206,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 # NVDA speaks an object's name, role and state as separate
                 # sequence items; its real preprocessing adds the separators.
                 sequence = [text, 'کادرِ علامت‌زدنی', status]
-            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop'):
+            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
             self.started = time.perf_counter()
-            if spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most'):
+            if spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most'):
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
                                   symbolLevel=(self.symbols.SymbolLevel.MOST if spelling in ('pipeline_most', 'checkbox_checked_most')
                                                else self.symbols.SymbolLevel.NONE))
@@ -231,16 +232,19 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                      for value in player.times[self.before.get(id(player), 0):]]
             if not times:
                 raise RuntimeError('missing NVDA audio timing for ' + ascii(text))
-            if spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most'):
+            if spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most'):
                 tags = ' '.join(self.projected[self.before_projected:])
                 if spelling in ('pipeline', 'pipeline_most') and locale == 'fa_IR' and ('`[.0hen.1ga.0me]' not in tags or
                         "`[.1'e:'G.0tja.2ra.0te]" not in tags):
                     raise AssertionError('NVDA preprocessing lost the vocalized Persian words: ' + ascii(tags))
                 if spelling == 'pipeline_stop' and '`[.2mo.0te.1vAR.0Ref]' not in tags:
                     raise AssertionError('NVDA spelled the Persian word for stopped: ' + ascii(tags))
+                if spelling == 'pipeline_log' and ("`[.1'e:'t.0te.1fa.0Ra.2te]" not in tags or
+                        "`[.1sAbt] `[.1So.0d'e:']" not in tags):
+                    raise AssertionError('NVDA spelled part of the normalized log label: ' + ascii(tags))
                 if spelling in ('checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most'):
                     expected = ("`[.0'A:'.1la.0mAt]" if spelling == 'checkbox_unchecked' else
-                                "`[.0'A:'.1la.0mAt.1dar]")
+                                "`[.0'A:'.1la.0mAt] `[.1dar]")
                     if expected not in tags:
                         raise AssertionError('NVDA checkbox state was not spoken as a Persian word: ' + ascii(tags))
                 if locale == 'fa_Latn' and ('`[.1ta.0vu.2merk.0ki]' in tags or '-`[' in tags):

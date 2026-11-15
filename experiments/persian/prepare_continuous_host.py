@@ -11,7 +11,8 @@ ROOT = Path(__file__).resolve().parents[2]
 def prepare(work: Path) -> Path:
     text = (ROOT / 'src/reloq_rules61.c').read_text(encoding='utf8')
     include = '#include "reloq_rules61.h"\n'
-    call = '        size_t completed=0;\n        int status=reloq_session_render_frames('
+    call = ('        size_t completed=0;\n'
+            '        int status=reloq_session_render_frames(s->session,&frame,1,rule_pcm,&p->delivery,&completed);')
     if text.count(include) != 1 or text.count(call) != 1:
         raise RuntimeError('the native frame-render boundary changed')
     text = text.replace(include, include + '#include "continuous_frames.h"\n', 1)
@@ -23,7 +24,23 @@ def prepare(work: Path) -> Path:
             p->result=RELOQ_DE_UTTERANCE_MEMORY;return 1;
         }
         size_t completed=0;
-        int status=reloq_session_render_frames(''', 1)
+        int status;
+        if(reloq_fa_capture_controls_only()) {
+            /* The ECI text session uses duration_scale=1. Preserve its exact
+               sample and callback clock without rendering discarded audio. */
+            long samples=reloq_core_frame_sample_count(frame.noise.duration_ms,1.0f,
+                                      reloq_session_sample_rate(s->session)*0.001f);
+            static const int16_t silence[1024]={0};
+            status=samples>0 ? RELOQ_SESSION_OK : RELOQ_SESSION_INVALID;
+            while(status==RELOQ_SESSION_OK && samples>0) {
+                if(reloq_session_cancelled(s->session)){status=RELOQ_SESSION_CANCELLED;break;}
+                size_t amount=(size_t)samples>1024?1024:(size_t)samples;
+                if(rule_pcm(&p->delivery,silence,amount)){status=RELOQ_SESSION_SINK;break;}
+                samples-=(long)amount;
+            }
+        } else {
+            status=reloq_session_render_frames(s->session,&frame,1,rule_pcm,&p->delivery,&completed);
+        }''', 1)
     output = work / 'reloq_rules61_continuous.c'
     output.write_text(text, encoding='utf8')
     return output

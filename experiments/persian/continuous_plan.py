@@ -145,8 +145,16 @@ def persian_proxy_for_english(text, en):
     if tags:
         def sequence(value):
             return re.sub(r'\.[012]', '', value)
-        if all(len(shown := _TAG.findall(en._phonemes_for_probe(tag))) == 1 and
-               sequence(tag[2:-1]) == sequence(shown[0]) for tag in tags):
+        # Try one parser call for a whole Persian span. If native context
+        # changes any displayed phone, fall back to the established per-word
+        # checks rather than changing the proxy or accepting an unsafe tag.
+        shown = (_TAG.findall(en._phonemes_for_probe(' '.join(tags))) if len(tags) > 1 else ())
+        accepted = len(shown) == len(tags) and all(
+            sequence(tag[2:-1]) == sequence(item) for tag, item in zip(tags, shown))
+        if not accepted:
+            accepted = all(len(shown := _TAG.findall(en._phonemes_for_probe(tag))) == 1 and
+                           sequence(tag[2:-1]) == sequence(shown[0]) for tag in tags)
+        if accepted:
             it = iter(tags)
             return _TAG.sub(lambda _match: next(it), text)
     vowels = {'A': 'A', 'a': 'a', 'e': 'E', 'i': 'i', 'o': 'o', 'u': 'u'}
@@ -362,6 +370,13 @@ class SentencePlan:
     pilot: CapturedRows | None
     pilot_bounds: tuple[int, ...]
     source_marks: tuple[tuple[int, int, int], ...] = ()
+    _timeline: list[float] | None = None
+
+    def timeline(self):
+        """Reuse frame times while only resonance or source values change."""
+        if self._timeline is None:
+            self._timeline = _starts(self.frames)
+        return self._timeline
 
 
 def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarded_spans=(),
@@ -374,10 +389,10 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
     if any(SAMPLE_RATES.get(voice._dll.eciGetParam(voice._handle, SAMPLE_RATE)) != rate for voice in (fa, en)):
         raise ValueError('source rates do not match the replay clock')
     capture_api = FrameCapture(fa._dll)
-    def get(voice, planned):
+    def get(voice, planned, *, audio=True):
         if check:
             check()
-        return CapturedRows.from_capture(capture_api.capture(voice, planned, maximum=maximum))
+        return CapturedRows.from_capture(capture_api.capture(voice, planned, maximum=maximum, audio=audio))
     all_bracketed = all(_bracket_boundary(parts, edge) for edge in range(1, len(parts)))
     pilot, pilot_pitch, pilot_bounds = None, (), ()
     if all_bracketed:
@@ -433,7 +448,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
     contexts, edges = {}, {}
     for language, voice in (('fa', fa), ('en-us', en)):
         item = get(voice, _context(parts, language, en, fa, word_markers, source_marks,
-                                   guarded_spans, spelling_spans))
+                                   guarded_spans, spelling_spans), audio=False)
         bounds = _edges(item, len(parts))
         _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate, check)
         contexts[language], edges[language] = item, bounds
@@ -512,8 +527,8 @@ def bridge_sonorants(plan, parts, rate, half_window_ms=25.0):
     if not 0 < half_window_ms <= 50:
         raise ValueError('invalid sonorant bridge window')
     original = plan.frames
-    output = _copy_frames(original)
-    starts, frame_edges = _starts(original), _edges_by_count(plan.counts)
+    output = None
+    starts, frame_edges = plan.timeline(), _edges_by_count(plan.counts)
     bridged = []
     for i in range(1, len(parts)):
         if _bracket_boundary(parts, i):
@@ -549,6 +564,8 @@ def bridge_sonorants(plan, parts, rate, half_window_ms=25.0):
             sources.append((item, positions))
         if len(sources) != 2:
             continue
+        if output is None:
+            output = _copy_frames(original)
         for column in TRACT:
             a, pa = sources[0]
             b, pb = sources[1]
@@ -557,7 +574,8 @@ def bridge_sonorants(plan, parts, rate, half_window_ms=25.0):
                 output[j].controls[column] = (_interp_frame(ta, a, column) * (1 - weight) +
                                               _interp_frame(tb, b, column) * weight)
         bridged.append(i)
-    plan.frames = output
+    if output is not None:
+        plan.frames = output
     return tuple(bridged)
 
 
@@ -570,8 +588,8 @@ def bridge_remaining_voiced(plan, parts, bridged, cuts, window_ms=15.0):
     bridges remain unchanged.
     """
     excluded = set(bridged) | {edge for edge, _ in cuts}
-    original, output = plan.frames, _copy_frames(plan.frames)
-    starts, bounds = _starts(original), _edges_by_count(plan.counts)
+    original, output = plan.frames, None
+    starts, bounds = plan.timeline(), _edges_by_count(plan.counts)
     changed = []
     for edge in range(1, len(parts)):
         if edge in excluded or _bracket_boundary(parts, edge):
@@ -594,6 +612,8 @@ def bridge_remaining_voiced(plan, parts, bridged, cuts, window_ms=15.0):
                 left[7] > 0 and original[short].controls[7] > 0):
             destination = original[short].controls
             width = short - boundary
+            if output is None:
+                output = _copy_frames(original)
             for i in range(boundary, short):
                 fraction = (i - boundary + 1) / (width + 1)
                 output[i].controls[2] = round(left[2] * (1 - fraction))
@@ -617,6 +637,8 @@ def bridge_remaining_voiced(plan, parts, bridged, cuts, window_ms=15.0):
         if boundary - first < 3 or last - boundary < 3 or starts[last - 1] <= starts[first]:
             continue
         span = starts[last - 1] - starts[first]
+        if output is None:
+            output = _copy_frames(original)
         for column in frequencies:
             a, b = original[first].controls[column], original[last - 1].controls[column]
             for i in range(first, last):
@@ -643,7 +665,8 @@ def bridge_remaining_voiced(plan, parts, bridged, cuts, window_ms=15.0):
                 weight = _ease((starts[i] - starts[boundary]) / duration)
                 output[i].controls[7] = round(original[i].controls[7] * weight)
         changed.append(edge)
-    plan.frames = output
+    if output is not None:
+        plan.frames = output
     return tuple(changed)
 
 
@@ -658,8 +681,8 @@ def bridge_english_continuations(plan, parts, bridged, cuts, window_ms=30.0):
     if not 0 < window_ms <= 50:
         raise ValueError('invalid continuation window')
     excluded = set(bridged) | {edge for edge, _ in cuts}
-    original, output = plan.frames, _copy_frames(plan.frames)
-    starts, bounds = _starts(original), _edges_by_count(plan.counts)
+    original, output = plan.frames, None
+    starts, bounds = plan.timeline(), _edges_by_count(plan.counts)
     changed = []
     for edge in range(1, len(parts)):
         if (edge in excluded or parts[edge - 1].language != 'en-us' or
@@ -688,12 +711,15 @@ def bridge_english_continuations(plan, parts, bridged, cuts, window_ms=30.0):
         if last - boundary < 3 or starts[last - 1] - starts[boundary] < 5:
             continue
         duration = starts[last - 1] - starts[boundary]
+        if output is None:
+            output = _copy_frames(original)
         for index in range(boundary, last):
             weight = 1 - (starts[index] - starts[boundary]) / duration
             for column, offset in zip(columns, offsets):
                 output[index].controls[column] = max(0, original[index].controls[column] + offset * weight)
         changed.append(edge)
-    plan.frames = output
+    if output is not None:
+        plan.frames = output
     return tuple(changed)
 
 
@@ -738,6 +764,7 @@ def direct_ach(plan, parts):
                 target += count
             previous = b
         plan.frames, plan.counts = output, tuple(counts)
+        plan._timeline = None
     return tuple(cuts)
 
 
@@ -809,7 +836,7 @@ def extend_english_a(plan, parts, cuts, en, factor=1.15):
     if not 1.0 < factor <= 1.5:
         raise ValueError('invalid A extension')
     original, output = plan.frames, _copy_frames(plan.frames)
-    starts, bounds = _starts(original), _edges_by_count(plan.counts)
+    starts, bounds = plan.timeline(), _edges_by_count(plan.counts)
     extended = []
     for edge, _ in cuts:
         if (parts[edge - 1].language != 'en-us' or
@@ -835,13 +862,15 @@ def extend_english_a(plan, parts, cuts, en, factor=1.15):
             output[i].controls[0] = original[i].controls[0] * factor
         extended.append((edge, duration * (factor - 1)))
     plan.frames = output
+    if extended:
+        plan._timeline = None
     return tuple(extended)
 
 
 def apply_german_ach(plan, parts, cuts, template, en):
     """Apply the accepted German-guided noise and resonance at A-to-X."""
     original, output = plan.frames, _copy_frames(plan.frames)
-    starts, bounds = _starts(original), _edges_by_count(plan.counts)
+    starts, bounds = plan.timeline(), _edges_by_count(plan.counts)
     chosen = []
     for edge, _ in cuts:
         if parts[edge - 1].language != 'en-us':
@@ -889,7 +918,7 @@ def apply_german_ach(plan, parts, cuts, template, en):
 
 def smooth_ach_release(plan, cuts):
     original, output = plan.frames, _copy_frames(plan.frames)
-    starts, bounds = _starts(original), _edges_by_count(plan.counts)
+    starts, bounds = plan.timeline(), _edges_by_count(plan.counts)
     changed = []
     for edge, _ in cuts:
         boundary, end = bounds[edge - 1], bounds[edge]
@@ -918,7 +947,7 @@ def smooth_ach_release(plan, cuts):
 
 def apply_german_f3(plan, edges, template):
     original, output = plan.frames, _copy_frames(plan.frames)
-    starts, bounds = _starts(original), _edges_by_count(plan.counts)
+    starts, bounds = plan.timeline(), _edges_by_count(plan.counts)
     changed = []
     for edge, _ in edges:
         boundary, end = bounds[edge - 1], bounds[edge]
@@ -945,7 +974,7 @@ def apply_german_f3(plan, edges, template):
 
 def fade_english_voice(plan, parts, edges, en, window_ms=24.0, attenuation_db=12.0):
     original, output = plan.frames, _copy_frames(plan.frames)
-    starts, bounds = _starts(original), _edges_by_count(plan.counts)
+    starts, bounds = plan.timeline(), _edges_by_count(plan.counts)
     changed = []
     for edge, _ in edges:
         if parts[edge - 1].language != 'en-us':

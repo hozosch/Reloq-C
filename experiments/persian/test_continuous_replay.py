@@ -43,16 +43,25 @@ def main():
                         voice.set_parameter(parameter, value)
                     previous = scope(int(dialect == 0x90000))
                     try:
-                        captured = FrameCapture(voice._dll).capture(voice, (EciIndex(8), text, EciIndex(9)))
+                        split = text.find(' ') + 1
+                        parts = (EciIndex(8), text[:split], EciIndex(10), text[split:], EciIndex(9))
+                        api = FrameCapture(voice._dll)
+                        captured = api.capture(voice, parts)
+                        controls_only = api.capture(voice, parts, audio=False)
                     finally:
                         assert scope(previous) == int(dialect == 0x90000)
                     assert captured and captured.pcm
+                    assert controls_only and len(controls_only.pcm) == len(captured.pcm)
+                    assert controls_only.indexes == captured.indexes
+                    assert controls_only.frame_bytes == captured.frame_bytes
                     rows = captured.frames()
                     audio, indexes = bytearray(), []
+                    # Endpoints are replayed here; the intermediate mark was
+                    # compared on the two native capture paths above.
                     assert FrameReplay(voice._dll).replay(
                         voice, rows, ((0, 8), (len(rows), 9)), audio.extend,
                         lambda index: indexes.append((index, len(audio) // 2)))
-                    assert captured.indexes == tuple(indexes), (dialect, rate, gender, captured.indexes, indexes)
+                    assert (captured.indexes[0], captured.indexes[-1]) == tuple(indexes), (dialect, rate, gender, captured.indexes, indexes)
                     assert captured.pcm == audio, (dialect, rate, gender, head, len(captured.pcm), len(audio))
                     checks += 1
         finally:

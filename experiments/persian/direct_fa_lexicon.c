@@ -3,6 +3,8 @@
  * is used at runtime. The underlying data remains GPL-3.0-or-later.
  */
 #include "direct_fa_lexicon.h"
+#include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 struct fa_direct_entry { const char *word, *tag; };
@@ -243,8 +245,8 @@ static int direct_vocalized_word(const char *word,size_t bytes,char *output,size
     return 1;
 }
 
-int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
-                                 char *output,size_t capacity)
+static int direct_context_word_exact(const char *word,size_t bytes,int follows_word,
+                                     char *output,size_t capacity)
 {
     int result=reloq_fa_direct_word(word,bytes,output,capacity);
     if(result)return result;
@@ -341,5 +343,40 @@ int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
             return 1;
         }
     }
+    /* Reference-checked independent form used in the common NVDA state
+       علامت‌دار. Keep it available to the native compound predictor. */
+    static const char dar[]="\xd8\xaf\xd8\xa7\xd8\xb1";
+    if(bytes==sizeof dar-1 && !memcmp(word,dar,sizeof dar-1)) {
+        static const char tag[]="`[.1dar]";
+        if(sizeof tag>capacity)return -2;
+        memcpy(output,tag,sizeof tag);return 1;
+    }
     return 0;
+}
+
+int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
+                                 char *output,size_t capacity)
+{
+    int result=direct_context_word_exact(word,bytes,follows_word,output,capacity);
+    if(result || !word || bytes==SIZE_MAX)return result;
+
+    /* NFC/NFKC places Arabic vowel marks before shadda, while the eSpeak
+       dictionary and input commonly place shadda first. They are canonically
+       equivalent; try the reference order without dropping either mark.
+       The caller projects the complete word as one source span, so its
+       indexes are unaffected by this equal-length rearrangement. */
+    char *variant=malloc(bytes+1);
+    if(!variant)return -2;
+    memcpy(variant,word,bytes);variant[bytes]=0;
+    int changed=0;
+    for(size_t i=0;i+3<bytes;) {
+        unsigned char *p=(unsigned char *)variant+i;
+        if(p[0]==0xd9 && p[1]>=0x8b && p[1]<=0x90 && p[2]==0xd9 && p[3]==0x91) {
+            unsigned char mark=p[1];p[1]=0x91;p[3]=mark;
+            changed=1;i=i>=2?i-2:i+2;
+        } else ++i;
+    }
+    if(changed)result=direct_context_word_exact(variant,bytes,follows_word,output,capacity);
+    free(variant);
+    return result;
 }

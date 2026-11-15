@@ -47,6 +47,36 @@ static int follows_word_in_phrase(const char *text,size_t length,size_t at)
             text[next]>='0' && text[next]<='9');
 }
 
+/* eSpeak can mark both halves of a half-space compound as stressed in one
+ * phone string. Give Eloquence two native word units only when independently
+ * verified parts reproduce that entire string exactly; otherwise retain the
+ * original word. This restores native phrase prediction without guessing
+ * either the phones or the stress of a compound. */
+static void retain_compound_prosody(const char *word,size_t bytes,int follows,
+                                    char *tag,size_t capacity)
+{
+    static const char joiner[]="\xe2\x80\x8c";
+    size_t at=0;
+    while(at+sizeof joiner-1<=bytes && memcmp(word+at,joiner,sizeof joiner-1))++at;
+    if(!at || at+sizeof joiner-1>=bytes)return;
+    size_t right_at=at+sizeof joiner-1;
+    /* The productive plural suffix stays in its established single-word
+       prosodic form, even though ها can also be pronounced in isolation. */
+    if(bytes-right_at>=4 && !memcmp(word+right_at,"\xd9\x87\xd8\xa7",4))return;
+    for(size_t i=right_at;i+sizeof joiner-1<=bytes;++i)
+        if(!memcmp(word+i,joiner,sizeof joiner-1))return;
+    char left[2048],right[2048];
+    if(reloq_fa_direct_context_word(word,at,1,left,sizeof left)!=1 ||
+       reloq_fa_direct_context_word(word+right_at,bytes-right_at,follows,right,sizeof right)!=1 ||
+       !strstr(left,".1") || !strstr(right,".1"))return;
+    size_t ln=strlen(left),rn=strlen(right);
+    if(ln<4 || rn<4 || left[ln-1]!=']' || right[0]!='`' || right[1]!='[' ||
+       strncmp(tag,left,ln-1) || strcmp(tag+ln-1,right+2))return;
+    if(ln+1+rn>=capacity)return;
+    memcpy(tag,left,ln);tag[ln]=' ';
+    memcpy(tag+ln+1,right,rn+1);
+}
+
 void reloq_fa_direct_free(void *pointer) { free(pointer); }
 
 static int direct_normalized_text(const char *text,size_t length,char **output,
@@ -98,9 +128,10 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             }
             if(status)break;
             char tag[2048];
-            int found=reloq_fa_direct_context_word(text+start,end-start,
-                         follows_word_in_phrase(text,length,end),tag,sizeof tag);
+            int follows=follows_word_in_phrase(text,length,end);
+            int found=reloq_fa_direct_context_word(text+start,end-start,follows,tag,sizeof tag);
             if(found!=1){status=found==0?1:-1;break;}
+            retain_compound_prosody(text+start,end-start,follows,tag,sizeof tag);
             size_t tag_start=b.used;
             if(append(&b,tag,strlen(tag))){status=-2;break;}
             for(size_t i=start;i<end;++i)map[i]=tag_start;

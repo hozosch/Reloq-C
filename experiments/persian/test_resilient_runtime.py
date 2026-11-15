@@ -53,7 +53,7 @@ def main():
         ScopedDirectPersianEngine._speak_prepared = watch_status
         try:
             for status, expected in (('بدونِ علامت', "`[.0'A:'.1la.0mAt]"),
-                                     ('علامت‌دار', "`[.0'A:'.1la.0mAt.1dar]")):
+                                     ('علامت‌دار', "`[.0'A:'.1la.0mAt] `[.1dar]")):
                 observed.clear()
                 pcm, marks = render((EciIndex(83), EciText(exact + '  '), EciIndex(84),
                     EciText('کادرِ علامت‌زدنی  '), EciIndex(85), EciText(status + '  '), EciIndex(86)))
@@ -63,6 +63,10 @@ def main():
                 # Persian job, not from a bilingual proxy's final frames.
                 direct_pcm, _ = render(('کادرِ علامت‌زدنی  ' + status + '  ',))
                 assert pcm[marks[1][1]:] == direct_pcm, status
+                if status == 'علامت‌دار':
+                    # The original orthographic word and the two verified
+                    # constituent words use the same native phrase tone.
+                    assert direct_pcm == render(('کادرِ علامت‌زدنی  علامت دار  ',))[0]
                 assert frontend._worker is None
         finally:
             ScopedDirectPersianEngine._speak_prepared = previous_prepared
@@ -74,6 +78,19 @@ def main():
             assert render((text,))[0]
             assert frontend._worker is None, text
         assert frontend.analyze_direct('متوقف').parts[0].text == '`[.2mo.0te.1vAR.0Ref]'
+        import unicodedata
+        log_label = 'نمایشِ اِتِّفاقاتِ ثبت‌شده (Log)'
+        normalized = unicodedata.normalize('NFC', log_label)
+        target = "`[.1'e:'t.0te.1fa.0Ra.2te]"
+        for label in (log_label, normalized):
+            part = frontend.analyze_direct(label.split(' (')[0])
+            assert part and target in part.parts[0].text
+            assert '`[.1sAbt] `[.1So.0d\'e:\']' in part.parts[0].text
+            assert render((EciIndex(92), label, EciIndex(93)))[0]
+        assert frontend._worker is None, 'the normalized NVDA label should use direct text rules'
+        unlisted = 'اِتِّفاقات'
+        assert frontend.analyze_direct(unlisted) is None
+        assert frontend.analyze(unlisted).parts == frontend.analyze(unicodedata.normalize('NFC', unlisted)).parts
         job = project_resilient(('سلام @ (🙂) دنیا',), frontend)
         assert SYMBOL_TAGS['@'] in job.tagged and '(' in job.tagged
         assert UNICODE_TAG in job.tagged and ')' in job.tagged

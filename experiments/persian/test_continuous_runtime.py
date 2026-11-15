@@ -8,7 +8,7 @@ import threading
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 from continuous_driver import _PlanningVoice, continuation_comma
-from continuous_plan import _context
+from continuous_plan import _context, persian_proxy_for_english
 from nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, make_language_engine
 from _reloq_eci_direct import EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciText, GENDER, PAUSE_MODE, SAMPLE_RATE
 from text_frontend import SpeechPart
@@ -26,6 +26,19 @@ def main():
                        EciText('file', segmentation_guarded=True), ' again']
     assert continuation_comma(('hello?', ')', EciIndex(1))) == ('hello?', ')', EciIndex(1))
     assert continuation_comma(('hello', ')', EciIndex(1))) == ('hello', ')', ',', EciIndex(1))
+    class ProxyProbe:
+        def __init__(self, alter_context=False):
+            self.calls, self.alter_context = [], alter_context
+        def _phonemes_for_probe(self, value):
+            self.calls.append(value)
+            return value.replace('.1do', '.1to') if self.alter_context and ' ' in value else value
+    proxy_source = '`[.1sA] `[.1do]'
+    ordinary = ProxyProbe()
+    assert persian_proxy_for_english(proxy_source, ordinary) == proxy_source
+    assert len(ordinary.calls) == 1
+    contextual = ProxyProbe(alter_context=True)
+    assert persian_proxy_for_english(proxy_source, contextual) == proxy_source
+    assert len(contextual.calls) == 3
 
     def create():
         return make_language_engine(args.scope_probe, args.native_library, args.worker,
