@@ -10,6 +10,7 @@ on:
       - experiments/persian/reference_alignment.py
       - experiments/persian/test_reference_alignment.py
       - experiments/persian/pinglish_frontend.py
+      - experiments/persian/persian_symbols.py
       - experiments/persian/test_pinglish_driver.py
       - experiments/persian/text_frontend.py
       - experiments/persian/test_text_frontend.py

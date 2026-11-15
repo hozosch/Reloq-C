@@ -54,8 +54,11 @@ def projection_tests(frontend):
     assert [p.value for p in long_projection.parts if isinstance(p, EciIndex)] == list(range(512))
     boundary = project(('سلام', EciPitch(65), ' دنیا', EciProsody(6, 50), '؟'), frontend)
     assert [type(p) for p in boundary.parts if not isinstance(p, EciText)] == [EciPitch, EciProsody]
+    spelled = project(('سلام ', EciText('ب', character_mode=True)), frontend)
+    assert spelled.tagged == (frontend.analyze_direct('سلام ').parts[0].text +
+                              frontend.analyze_character('ب').parts[0].text)
     for bad in (('سلام NVDA',), ('ناموجودمطمئن',), ('سل', EciPitch(65), 'ام.'),
-                ('سلام ', EciText('ب', character_mode=True)), ('؟',), ('3,14',),
+                ('؟',), ('3,14',),
                 ('سلام\0',), ('`vp80 سلام',), (EciIndex(-1), 'سلام')):
         assert_rejected(bad, frontend)
     tag = '`[.1a]'
@@ -74,7 +77,7 @@ def playback_tests(frontend, probe, reference, inputs):
     from test_selected_probe import engine, set_confirmed_persian_probe
     voice = ScopedDirectPersianEngine(probe, frontend)
     fa = engine(reference, 0x90000)
-    set_confirmed_persian_probe()
+    set_confirmed_persian_probe(d=1, z=1)
     try:
         # NVDA can disable user tags without disabling our generated tags.
         voice.set_parameter(PROCESS_TAGS, 0)

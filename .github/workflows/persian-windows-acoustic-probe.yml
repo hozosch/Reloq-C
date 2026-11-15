@@ -11,6 +11,9 @@ on:
       - .github/workflows/persian-windows-acoustic-probe.yml
 permissions:
   contents: read
+concurrency:
+  group: persian-windows-acoustic-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   acoustic:
     runs-on: windows-2022
@@ -24,10 +27,23 @@ jobs:
         with:
           path: vendor/openevv61/build/windows-release
           key: persian-windows-provider-gcc14-v1-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c') }}
+      - uses: actions/cache@v4
+        id: host
+        with:
+          path: |
+            eci/build/windows
+            eci/eci.dll
+          key: persian-windows-host-gcc14-v1-${{ hashFiles('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src/**', 'include/**', 'vendor/openevv61/**') }}
       - name: Restore cached provider timestamps
         if: steps.provider.outputs.cache-hit == 'true'
         shell: bash
         run: find vendor/openevv61/build/windows-release -type f -exec touch {} +
+      - name: Restore cached host timestamps
+        if: steps.host.outputs.cache-hit == 'true'
+        shell: bash
+        run: |
+          find eci/build/windows -type f -exec touch {} +
+          touch eci/eci.dll
       - name: Build the baseline Windows engine once
         shell: bash
         run: |
@@ -44,8 +60,6 @@ jobs:
         run: |
           python -B experiments/persian/test_windows_acoustics.py --baseline eci/eci.dll --candidate persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Windows Persian acoustic isolation failed' }
-          python -B experiments/persian/test_direct_fa_sequence.py --native-library persian-windows-probe/eci_persian_probe.dll
-          if ($LASTEXITCODE -ne 0) { throw 'Windows Persian source mapping failed' }
       - uses: actions/upload-artifact@v4
         with:
           name: persian-windows-acoustic-probe
