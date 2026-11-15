@@ -16,13 +16,47 @@ from test_native_probe import IRAN
 
 KEYS = ('RELOQ_FA_PROBE_A', 'RELOQ_FA_PROBE_Q', 'RELOQ_FA_PROBE_X',
         'RELOQ_FA_PROBE_US_A', 'RELOQ_FA_PROBE_RISE', 'RELOQ_FA_PROBE_STOPS',
-        'RELOQ_FA_PROBE_H', 'RELOQ_FA_PROBE_L', 'RELOQ_FA_PROBE_VOWEL')
+        'RELOQ_FA_PROBE_H', 'RELOQ_FA_PROBE_L', 'RELOQ_FA_PROBE_VOWEL',
+        'RELOQ_FA_PROBE_S', 'RELOQ_FA_PROBE_A_TARGET', 'RELOQ_FA_PROBE_FINAL',
+        'RELOQ_FA_PROBE_GLOTTAL', 'RELOQ_FA_PROBE_END_H', 'RELOQ_FA_PROBE_A_NASAL',
+        'RELOQ_FA_PROBE_GLOT_ONSET', 'RELOQ_FA_PROBE_END_H_DB', 'RELOQ_FA_PROBE_K_NOISE',
+        'RELOQ_FA_PROBE_K_SHAPE', 'RELOQ_FA_E_MODE', 'RELOQ_FA_E_CONTEXT', 'RELOQ_FA_E_TARGET',
+        'RELOQ_FA_PROBE_NO_AUTO_GLOTTAL')
 
 
 def set_probe(a: int = 0, q: int = 0, x: int = 0, rise: int = 0,
-              stops: int = 0, h: int = 0, l: int = 0, vowel: int = 0) -> None:
-    for key, value in zip(KEYS, (a, q, x, 0, rise, stops, h, l, vowel)):
+              stops: int = 0, h: int = 0, l: int = 0, vowel: int = 0,
+              s: int = 0, a_target: str = '', final: int = 0,
+              glottal: int = 0, end_h: int = 0, nasal: int = 0,
+              glot_onset: int = 1, end_h_db: int = 0, k_noise: str = '', k_shape: int = 0,
+              e_mode: int = 0, e_context: int = 0, e_target: str = '',
+              no_auto_glottal: int = 0) -> None:
+    for key, value in zip(KEYS, (a, q, x, 0, rise, stops, h, l, vowel, s, a_target, final,
+                                  glottal, end_h, nasal, glot_onset, end_h_db, k_noise, k_shape,
+                                  e_mode, e_context, e_target, no_auto_glottal)):
         os.environ[key] = str(value)
+
+
+def set_confirmed_persian_probe(*, end_h_db: int = 9, k_noise: str = '', k_shape: int = 3,
+                                 e_mode: int = 1, e_context: int = 22,
+                                 e_target: str = '450,1875,2525', no_auto_glottal: int = 1) -> None:
+    """Select the accepted Persian acoustics in the private probe."""
+    set_probe(a=1, q=7, x=1, rise=2, h=5, l=4, vowel=1, s=1,
+              a_target='salam-fixed', final=1, glottal=2, end_h=1, nasal=1,
+              end_h_db=end_h_db, k_noise=k_noise, k_shape=k_shape,
+              e_mode=e_mode, e_context=e_context, e_target=e_target,
+              no_auto_glottal=no_auto_glottal)
+
+
+def set_candidate_persian_probe() -> None:
+    """Compatibility helper for the now-confirmed K and H selection."""
+    set_confirmed_persian_probe()
+
+
+def set_persian_probe(*, final: int = 1) -> None:
+    """Select the current private Persian candidate with the accepted S noise."""
+    set_probe(a=1, q=5, x=1, rise=2, h=5, l=4, vowel=1, s=1,
+              a_target='salam-fixed', final=final)
 
 
 def engine(path: Path, language: int) -> DirectEciEngine:

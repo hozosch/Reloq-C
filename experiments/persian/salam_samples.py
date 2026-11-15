@@ -7,7 +7,22 @@ Finnish `a`. The uppercase letters are ECI phoneme names, not spelling.
 
 SALAM = '`[.0sA.1lam]'
 SALAM_PREVIOUS = '`[.0sa.1lam]'
-PERSIAN_PHRASE = SALAM + ' `[.1do.0nja]'
+DONYA_ESPEAK = '`[.1do.0nja]'
+PERSIAN_PHRASE = SALAM + ' ' + DONYA_ESPEAK
+
+# eSpeak 1.51 gives Persian Iran as 'i:RAn: initial stress, long i, back A.
+# Finnish a is deliberately left without its own long mark so the selected
+# eSpeak-informed 125% back-A duration applies instead of Finnish quantity.
+IRAN_ESPEAK = "`[.1'i:'.0ran]"
+
+# The earlier long Finnish-A Iran example is preferred for its duration.
+# Its stress is still the eSpeak 1.51 initial stress. These explicit length
+# marks are listening mappings, not a rule for all Persian word endings.
+IRAN_PREFERRED = "`[.1'i:'.0r'a:'n]"
+NO_TE_SHORT = '`[.1no.0te]'
+NO_TE_LONG = "`[.1no.0t'e:']"
+TA_SHORT = '`[.1ta]'
+TA_LONG = "`[.1t'a:']"
 
 # A separate comparison keeps the previous eSpeak-stressed sample intact.
 # For a simple Persian noun, final syllable stress is the usual pattern.
@@ -16,7 +31,7 @@ PERSIAN_PHRASE_FINAL_STRESS = SALAM + ' ' + DONYA_FINAL_STRESS
 
 # Compare Iran without the Finnish long-A marker and with final noun stress.
 # Keep the previous long-A example separately for a controlled hearing test.
-IRAN_FINAL_STRESS = "`[.0'i:'.1r'a'n]"
+IRAN_FINAL_STRESS = "`[.0'i:'.1ran]"
 IRAN_FINAL_STRESS_LONG_A = "`[.0'i:'.1r'a:'n]"
 DONYA_FINAL_STRESS_LONG_A = "`[.0do.1nj'a:']"
 

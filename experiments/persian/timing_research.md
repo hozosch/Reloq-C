@@ -1,9 +1,11 @@
 # Persian listening probe: L and vowel-duration notes
 
-Status: the mixed L rule is implemented in a private listening candidate;
-its focused tests and listening comparison are pending. Donyā and Iran now
-have additional explicit final-stress test examples. No general Persian text
-analysis or selectable Persian language is implemented.
+Status: the user accepted the stable Salam-based A, the intermediate final
+E/A durations, the Finnish viisi S noise, the mixed German/French L and the
+60% Finnish H transition in the private listening build. The selected examples
+use eSpeak 1.51's stress on Donyā and Iran; alternative final-stress examples
+remain available for research. No general Persian text analysis or selectable
+Persian language is implemented.
 
 ## Decisions already made for the next probe
 
@@ -17,6 +19,64 @@ analysis or selectable Persian language is implemented.
   the earlier sharp formant-offset experiment as a substitute.
 - The exact duration of each vowel is to be measured and compared in context;
   no universally fixed ratio has been established by these sources.
+
+  eSpeak's [Persian phoneme source](https://github.com/espeak-ng/espeak-ng/blob/688cb60368d6e0998f3632af8d1c3c2ad4191fc2/phsource/ph_farsi)
+  gives the long back A a nominal length of 200 units and the front A 160.
+  The optional `RELOQ_FA_PROBE_VOWEL=1` uses their ratio, 125%, as a
+  multiplier of the Finnish short back-A nucleus, after normalizing its
+  default starting value to that of Finnish front A. The same mode matches
+  ordinary E to the front-A starting value (eSpeak assigns both 160). Native
+  context, stress, speed and phrase-position adjustments are retained; the
+  original Finnish long-A marker is left alone for comparisons. These
+  nominal values are not absolute milliseconds and do not establish a
+  universal 125% ratio in running speech or in a different engine.
+
+- In the earlier probe, `RELOQ_FA_PROBE_S=1` copied S resonance targets from
+  Finnish `viisi`. The subsequent listening feedback asked instead for its
+  noise. The revised candidate copies the S noise amplitudes from `viisi`
+  and leaves the native formant transitions and timing intact. The user
+  accepted it for Persian S in all positions. It remains a private setting,
+  not a completed Persian language rule.
+
+- The accepted back A in `salām` is the reference for a new context-stability
+  candidate. Its measured F1/F2/F3 centres can be supplied using the private
+  `RELOQ_FA_PROBE_A_TARGET` setting. The rule shifts positive endpoints by a
+  common amount to preserve the existing endpoint differences and sentinel
+  markers. A matching numerical centre is not proof of matching sound; it
+  must be checked by ear in multiple contexts. The accepted Salam example
+  itself must remain unchanged. For the default listening voice, the traced
+  centres are 656, 1000 and 2620 Hz. In the shorter Iran example before the
+  candidate, F2 moves from 1150 to 1250 Hz; this demonstrates a real native
+  context difference, not a claim that the 200-Hz centre shift explains every
+  perceptual difference.
+
+- The centre-only adjustment was still perceived as changing the A quality.
+  The accepted listening setting holds the first four formant targets and
+  bandwidths of the accepted Salam nucleus, while the adjacent phonemes keep
+  their own native trajectories. That is stronger than averaging each pair
+  of endpoints. The user accepted this stabilized sound.
+
+- At word-final E and back A, the accepted midpoint candidate moves both the
+  native short and long Finnish comparison towards the middle. In the tested
+  contexts, E uses 1.566 times the short or 0.734 times the long nucleus; A
+  uses 1.28 or 0.82. Across the tested speeds these are within a few percent
+  of the midpoint, not an exact general duration law. A word fence confines
+  this to the end of the word: e.g. A before /n/ in Iran and E in sefr should
+  remain unchanged. This uses explicit test phones, not a completed Persian
+  text frontend.
+
+- The short vs Finnish-long phoneme tests are distinct from the eSpeak base
+  ratio. `fa_noqte` has a final eSpeak `e:` and `fa_ta` has `A:` in the 1.51
+  reference. Compare each explicitly long Finnish phone with its shorter
+  version; do not blindly mark all word-final vowels long. The user prefers
+  the previous long-phone A in Iran, which is before /n/, so preserve that
+  separate example too. Measured nucleus targets are engine scheduling
+  values, not identical to eSpeak event positions or acoustic boundaries.
+
+- For the examples in this probe, follow eSpeak 1.51's stress: `s a l ˈA m`,
+  `ˈd o n j A`, and `ˈiː r A n`. These are explicitly annotated example
+  phones, not an implementation of eSpeak's complete stress or dictionary
+  rules; an actual Persian frontend must provide those for arbitrary input.
 
 ## Evidence
 
@@ -99,3 +159,15 @@ phonemes and yielded an A nucleus target of approximately 183 ms; it also
 places stress on the first syllable. A second Iran example retains the vowel
 colour, removes the explicit Finnish long-A marker and places stress on the
 last syllable. These are listening probes, not a universal Persian rule.
+
+In the earlier probe, before back-A's starting value was normalized to the
+front-A base, with final stress in each isolated test at the default native
+speed, the internal back-A nucleus targets were:
+
+| Example | Finnish short A | 125% candidate | Finnish long A |
+| --- | ---: | ---: | ---: |
+| Donyā | 119.7 ms | 149.6 ms | 210.0 ms |
+| Iran | 158.6 ms | 198.2 ms | 207.9 ms |
+
+These are scheduling targets from the Finnish core, not measured acoustic
+vowel boundaries. They cannot be directly equated with eSpeak's event times.

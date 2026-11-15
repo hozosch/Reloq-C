@@ -13,15 +13,16 @@ sys.path.insert(0, str(ROOT / 'nvda'))
 from _reloq_eci_direct import DirectEciEngine, GENDER, NATIVE_SPEED, PROCESS_TAGS, SAMPLE_RATE
 from listening import render
 from salam_samples import (SALAM, DONYA_FINAL_STRESS, DONYA_FINAL_STRESS_LONG_A,
-                           IRAN_FINAL_STRESS, IRAN_FINAL_STRESS_LONG_A)
+                           IRAN_FINAL_STRESS, IRAN_FINAL_STRESS_LONG_A,
+                           PERSIAN_PHRASE_FINAL_STRESS)
 from test_selected_probe import KEYS, set_probe
 
 PATTERN = re.compile(r'FA_NUC phone=(-?\d+) class=(-?\d+) stress=(-?\d+) '
                      r'length=(-?\d+) before=(-?\d+) duration=(-?\d+)')
 
 
-def capture(engine, text: str, vowel: int):
-    set_probe(a=1, q=5, h=5, l=4, rise=2, vowel=vowel)
+def capture(engine, text: str, vowel: int, final: int = 0):
+    set_probe(a=1, q=5, h=5, l=4, rise=2, vowel=vowel, final=final)
     os.environ['RELOQ_FA_TRACE_NUC'] = '1'
     saved = os.dup(2)
     with tempfile.TemporaryFile() as f:
@@ -64,9 +65,14 @@ def main():
                 assert len(old) == len(new), ('nucleus count changed', speed, text, old, new)
                 changed = 0
                 for a, b in zip(old, new):
-                    assert a[:4] == b[:4] and a[4] == b[4] and a[4] == a[5], (
+                    assert a[:4] == b[:4] and a[4] == a[5], (
                         'nucleus context changed', speed, text, a, b)
-                    expected = (b[4]*5+2)//4 if b[0] == 34 and b[1] == 1 and b[3] == 1 and b[4] > 0 else b[4]
+                    back_a = b[0] == 34 and b[1] == 1 and b[3] == 1 and b[4] > 0
+                    if back_a:
+                        assert b[4] >= a[4], ('back-A starting value shortened', speed, text, a, b)
+                    else:
+                        assert b[4] == a[4], ('other starting value changed', speed, text, a, b)
+                    expected = (b[4]*5+2)//4 if back_a else b[4]
                     assert b[5] == expected, ('unexpected duration', speed, text, a, b)
                     changed += b[5] != a[5]
                 assert (changed > 0) == has_short_back_a, ('wrong vowel selection', speed, text, old, new)
@@ -75,6 +81,28 @@ def main():
                 else:
                     assert new_pcm == old_pcm, ('other phone altered', speed, text)
                 count += 1
+        test.set_parameter(NATIVE_SPEED, 98)
+        for suffix in ('.', '?'):
+            set_probe(a=1, h=5, l=4, vowel=1, rise=0)
+            ordinary = render(test, PERSIAN_PHRASE_FINAL_STRESS + suffix)
+            set_probe(a=1, h=5, l=4, vowel=1, rise=2)
+            raised = render(test, PERSIAN_PHRASE_FINAL_STRESS + suffix)
+            assert len(ordinary) == len(raised) and (ordinary != raised) == (suffix == '?'), (
+                'question rise with vowel timing', suffix)
+            count += 1
+        for phone in 'ptk':
+            bare, explicit = f'`[.1{phone}A]', f'`[.1{phone}hA]'
+            set_probe(a=1, h=0, l=4, vowel=1, rise=2)
+            no_h, full_h = render(test, bare), render(test, explicit)
+            set_probe(a=1, h=4, l=4, vowel=1, rise=2)
+            h50 = render(test, bare)
+            set_probe(a=1, h=5, l=4, vowel=1, rise=2)
+            h60 = render(test, bare)
+            assert len(full_h) > len(no_h)
+            fraction = (len(h60) - len(no_h)) / (len(full_h) - len(no_h))
+            assert len(h50) < len(h60) and .56 <= fraction <= .64 and h60 == render(test, explicit), (
+                '60% H with vowel timing', phone, fraction)
+            count += 1
     finally:
         test.close()
 
