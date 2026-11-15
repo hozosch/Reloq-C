@@ -144,6 +144,43 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
         raise UnsupportedPronunciation(str(error)) from error
 
 
+_TAG = re.compile(r'`\[[^]]+\]')
+_DOUBLE_J = re.compile(r'J(\.[012])?J')
+
+
+def _mark_geminated_affricates(parts):
+    """Keep one J per geminate and identify its native word/phone ordinal.
+
+    Projected events can occur between tags but never inside a tag. A literal
+    D followed by ZH can resemble native J after phoneme expansion, so leave
+    such ambiguous words on the old route instead of changing a single J.
+    """
+    selected, word, output = [], 0, []
+
+    def change(match):
+        nonlocal word
+        word += 1
+        tag = match.group()
+        if word > 32767 or re.search(r'd(?:\.[012])?Z', tag):
+            return tag
+        pos, ordinal, pieces = 0, 0, []
+        for doubled in _DOUBLE_J.finditer(tag):
+            prefix = tag[pos:doubled.start()]
+            ordinal += prefix.count('J') + 1
+            if ordinal > 65535 or len(selected) >= 32767:
+                # Reject rather than silently selecting a different phone.
+                raise UnsupportedPronunciation('too many marked affricates')
+            pieces.extend((prefix, doubled.group(1) or '', 'J'))
+            selected.append((word << 16) | ordinal)
+            pos = doubled.end()
+        return ''.join(pieces) + tag[pos:] if pieces else tag
+
+    for part in parts:
+        output.append(replace(part, text=_TAG.sub(change, part.text))
+                      if isinstance(part, EciText) else part)
+    return tuple(output), tuple(selected)
+
+
 class ScopedDirectPersianEngine:
     """Private synchronous ECI experiment with request-scoped Persian sound."""
 
@@ -164,6 +201,9 @@ class ScopedDirectPersianEngine:
             self._onsets = self._voice._dll.reloq_fa_native_onsets
             self._onsets.argtypes = (ctypes.POINTER(ctypes.c_uint32), ctypes.c_size_t)
             self._onsets.restype = ctypes.c_int
+            self._geminates = self._voice._dll.reloq_fa_native_geminates
+            self._geminates.argtypes = (ctypes.POINTER(ctypes.c_uint32), ctypes.c_size_t)
+            self._geminates.restype = ctypes.c_int
         except BaseException:
             self._voice.close()
             raise
@@ -204,7 +244,8 @@ class ScopedDirectPersianEngine:
             raise UnsupportedPronunciation('native onset positions are unavailable')
         native_parts = tuple(replace(part, text=part.text.replace('~', ' '))
                              if isinstance(part, EciText) else part for part in prepared.parts)
-        native_tagged = prepared.tagged.replace('~', ' ')
+        native_parts, geminates = _mark_geminated_affricates(native_parts)
+        native_tagged = ''.join(part.text for part in native_parts if isinstance(part, EciText))
         previous = self._scope(1)
         if previous < 0:
             raise RuntimeError('cannot enable Persian acoustic scope')
@@ -222,6 +263,9 @@ class ScopedDirectPersianEngine:
             selected = (ctypes.c_uint32 * len(marked))(*marked) if marked else None
             if self._onsets(selected, len(marked)) < 0:
                 raise RuntimeError('cannot select Finnish vowel onsets')
+            selected_geminates = (ctypes.c_uint32 * len(geminates))(*geminates) if geminates else None
+            if self._geminates(selected_geminates, len(geminates)) < 0:
+                raise RuntimeError('cannot select Persian geminated affricates')
             if prepared.needs_native_validation:
                 # Unknown reference pronunciations must also be accepted by
                 # the actual Finnish-based phoneme parser before any audio.
@@ -241,7 +285,8 @@ class ScopedDirectPersianEngine:
             return self._voice.speak(native_parts, pcm, index) and not self._cancelled.is_set()
         finally:
             reset = self._onsets(None, 0)
-            if self._scope(previous) < 0 or reset < 0:
+            reset_geminates = self._geminates(None, 0)
+            if self._scope(previous) < 0 or reset < 0 or reset_geminates < 0:
                 raise RuntimeError('cannot restore Persian acoustic scope')
 
     def cancel(self) -> None:

@@ -1120,6 +1120,48 @@ static unsigned persian_probe_previous_cons(void *state,int32_t position)
     if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
     return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node)));
 }
+#ifdef RELOQ_FA_SCOPED_ONSETS
+extern int reloq_fa_scoped_has_geminates(void);
+extern int reloq_fa_scoped_native_geminate(unsigned,unsigned);
+
+/* Find this J's native word and J ordinal without changing the provider's
+   scan registers or fences. Native J is represented by consecutive D, ZH
+   phone records. Return no match when that projection cannot be verified. */
+static int persian_probe_selected_j(void *state,int32_t position)
+{
+    delta_state *d=state;
+    if(!d || !d->vars || !position || !reloq_fa_scoped_has_geminates())return 0;
+    int32_t begin=vgetsc(d,1,1,position,4);
+    if(!begin)return 0;
+    int32_t word_pos=EVV_REF(vmover(d,EVV_AT(int32_t *,begin),4));
+    int32_t word_node=word_pos?vgetsc(d,0,0,word_pos,4):0;
+    if(!word_node || (*EVV_AT(int32_t *,word_node)&2))return 0;
+    int16_t number=0;
+    memcpy(&number,TFLDS(EVV_AT(void *,word_node)),sizeof number);
+    if(number<=0)return 0;
+    int32_t target_pos=EVV_REF(vmover(d,EVV_AT(int32_t *,position),2));
+    int32_t target=target_pos?vgetsc(d,0,0,target_pos,2):0;
+    int32_t at=EVV_REF(vmover(d,EVV_AT(int32_t *,begin),2));
+    unsigned ordinal=0;
+    for(unsigned guard=0;at && guard<4096;++guard) {
+        int32_t node=vgetsc(d,0,0,at,2);
+        if(!node || (*EVV_AT(int32_t *,node)&2))return 0;
+        unsigned name=*(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node)));
+        int32_t next=EVV_AT(int32_t *,node)[1]&~3;
+        if(!next || next==at)return 0;
+        next=EVV_REF(vmover(d,EVV_AT(int32_t *,next),2));
+        int32_t after=next?vgetsc(d,0,0,next,2):0;
+        unsigned next_name=after && !(*EVV_AT(int32_t *,after)&2)
+            ? *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,after))):0;
+        if(name==5 && next_name==12)++ordinal;
+        if(node==target)
+            return name==5 && next_name==12 &&
+                   reloq_fa_scoped_native_geminate((unsigned)number,ordinal);
+        at=next;
+    }
+    return 0;
+}
+#endif
 '''
     helper += FINNISH_L_WORD_FINAL.replace('persian_probe_l_word_final', 'persian_probe_d_word_final').replace(
         'testFldeq(d,2,0,21)', 'testFldeq(d,2,0,5)')
@@ -1162,14 +1204,21 @@ static unsigned persian_probe_previous_cons(void *state,int32_t position)
            one D followed by voiced ZH. Lengthen those native components
            together instead of inserting a second, separate D. */
         const char *mode=getenv("RELOQ_FA_GEMINATE_J");
-        if (mode && (mode[0]=='1' || mode[0]=='2' || mode[0]=='3') && !mode[1]) {
+        int offline=mode && (mode[0]=='1' || mode[0]=='2' || mode[0]=='3') && !mode[1];
+#ifdef RELOQ_FA_SCOPED_ONSETS
+        int scoped=persian_probe_selected_j(state,STATE(int32_t,w60));
+#else
+        int scoped=0;
+#endif
+        if (offline || scoped) {
             int32_t at=STATE(int32_t,w60), after=STATE(int32_t,w61);
             unsigned current=persian_probe_cons_name(state,at);
             unsigned next=persian_probe_cons_name(state,after);
             unsigned previous=persian_probe_previous_cons(state,at);
             int factor=100;
-            if (current==5 && next==12) factor=mode[0]=='2' ? 150 : 200;
-            else if (current==12 && previous==5 && mode[0]!='1') factor=150;
+            if (scoped && current==5 && next==12) factor=200;
+            else if (offline && current==5 && next==12) factor=mode[0]=='2' ? 150 : 200;
+            else if (offline && current==12 && previous==5 && mode[0]!='1') factor=150;
             if (getenv("RELOQ_FA_TRACE_GEM") && factor!=100)
                 fprintf(stderr,"FA_GEM phone=%u before=%u after=%u factor=%d duration=%d\n",
                         current,previous,next,factor,(int)STATE(int32_t,f20));
@@ -1343,7 +1392,12 @@ static void persian_auto_h_insert(void *state)
     if (getenv("RELOQ_FA_TRACE_H_START"))
         fprintf(stderr,"FA_H phone=%u prev=%u initial=%d\n",phone,
                 previous ? persian_auto_h_field(previous,0) : 0,initial);
-    if (previous && persian_auto_h_field(previous,1)!=1 && !initial) return;
+    /* Persian stops after /m/ or /n/ need the same selected Finnish H
+       impulse before the following vowel. Do not extend this to /s/+stop,
+       the Persian /x/ slot, or the marked uvular/glottal consonants. */
+    unsigned previous_name=previous ? persian_auto_h_field(previous,0) : 0;
+    int after_nasal=previous_name==16 || previous_name==17;
+    if (previous && persian_auto_h_field(previous,1)!=1 && !initial && !after_nasal) return;
     const char *qsetting=getenv("RELOQ_FA_PROBE_Q");
     int forced_q=qsetting && qsetting[0]=='6' && !qsetting[1];
     int marked_q=qsetting && qsetting[0]=='7' && !qsetting[1] &&

@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #ifdef _WIN32
 #define FA_EXPORT __declspec(dllexport)
@@ -15,6 +16,9 @@ static _Thread_local int fa_acoustics;
 /* Word ordinals with a reference-pause onset, private to the calling
  * synthesis thread. The Finnish word record uses a signed 16-bit ordinal. */
 static _Thread_local unsigned char fa_onsets[4096];
+/* Sorted word/affricate ordinals, owned by the calling synthesis thread. */
+static _Thread_local uint32_t *fa_geminates;
+static _Thread_local size_t fa_geminate_count;
 
 FA_EXPORT int reloq_fa_acoustic_scope(int active)
 {
@@ -39,6 +43,36 @@ int reloq_fa_scoped_native_onset(int word)
 {
     return fa_acoustics && word>0 && word<=32767 &&
            (fa_onsets[(unsigned)word>>3] & (1u<<((unsigned)word&7)))!=0;
+}
+
+FA_EXPORT int reloq_fa_native_geminates(const uint32_t *pairs,size_t count)
+{
+    if(!fa_acoustics || (count && !pairs) || count>32767)return -1;
+    for(size_t i=0;i<count;++i) {
+        unsigned word=pairs[i]>>16,phone=pairs[i]&65535u;
+        if(!word || word>32767 || !phone || (i && pairs[i]<=pairs[i-1]))return -1;
+    }
+    uint32_t *copy=count?malloc(count*sizeof *copy):NULL;
+    if(count&&!copy)return -1;
+    if(count)memcpy(copy,pairs,count*sizeof *copy);
+    free(fa_geminates);
+    fa_geminates=copy;fa_geminate_count=count;
+    return 0;
+}
+
+int reloq_fa_scoped_has_geminates(void)
+{return fa_acoustics && fa_geminate_count>0;}
+
+int reloq_fa_scoped_native_geminate(unsigned word,unsigned phone)
+{
+    if(!fa_acoustics || !word || word>32767 || !phone || phone>65535)return 0;
+    uint32_t key=(word<<16)|phone;
+    size_t lo=0,hi=fa_geminate_count;
+    while(lo<hi) {
+        size_t mid=lo+(hi-lo)/2;
+        if(fa_geminates[mid]<key)lo=mid+1;else hi=mid;
+    }
+    return lo<fa_geminate_count && fa_geminates[lo]==key;
 }
 
 /* The generated provider sources ask for their existing probe keys through

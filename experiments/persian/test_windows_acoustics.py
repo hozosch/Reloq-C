@@ -13,7 +13,7 @@ from direct_fa_sequence import ScopedDirectPersianEngine
 from hybrid_fa_frontend import DirectFirstPersian
 
 
-def render(library, dialect, text, *, scoped=None, rate=3, gender=0, onsets=()):
+def render(library, dialect, text, *, scoped=None, rate=3, gender=0, onsets=(), geminates=()):
     voice = DirectEciEngine(library.resolve(), dialect=dialect, encoding='utf8', native_voice=True)
     try:
         voice.set_parameter(PROCESS_TAGS, 1)
@@ -30,11 +30,17 @@ def render(library, dialect, text, *, scoped=None, rate=3, gender=0, onsets=()):
                 onset.argtypes, onset.restype = (ctypes.POINTER(ctypes.c_uint32), ctypes.c_size_t), ctypes.c_int
                 selected = (ctypes.c_uint32 * len(onsets))(*onsets) if onsets else None
                 assert onset(selected, len(onsets)) == 0
+                geminate = voice._dll.reloq_fa_native_geminates
+                geminate.argtypes = (ctypes.POINTER(ctypes.c_uint32), ctypes.c_size_t)
+                geminate.restype = ctypes.c_int
+                selected = (ctypes.c_uint32 * len(geminates))(*geminates) if geminates else None
+                assert geminate(selected, len(geminates)) == 0
         pcm = bytearray()
         assert voice.speak((text,), pcm.extend, lambda _: None) and pcm
         if scoped is not None:
             if scoped:
                 assert onset(None, 0) == 0
+                assert geminate(None, 0) == 0
             assert scope(previous) == int(scoped)
         return bytes(pcm)
     finally:
@@ -66,6 +72,24 @@ def main():
     marked = render(args.candidate, 0x90000, onset_text, scoped=True, onsets=(2,))
     assert plain != marked
     assert render(args.candidate, 0x90000, onset_text, scoped=True) == plain
+    j_text = '`[.0tA.1wA.0Job]'
+    single_j = render(args.candidate, 0x90000, j_text, scoped=True)
+    long_j = render(args.candidate, 0x90000, j_text, scoped=True, geminates=((1 << 16) | 1,))
+    assert len(long_j) > len(single_j)
+    assert render(args.candidate, 0x90000, j_text, scoped=True,
+                  geminates=((1 << 16) | 2,)) == single_j
+    # An explicit H uses the already accepted 60% native Finnish impulse.
+    # After a nasal, the automatic route must produce exactly that same H.
+    for automatic, explicit in (
+        ('`[.1am.0per]', '`[.1am.0pher]'),
+        ('`[.0em.1te.0han]', '`[.0em.1the.0han]'),
+        ('`[.1em.0kan]', '`[.1em.0khan]'),
+        ('`[.0ran.1pa]', '`[.0ran.1pha]'),
+        ('`[.0en.1te.0Gab]', '`[.0en.1the.0Gab]'),
+        ('`[.1en.0kar]', '`[.1en.0khar]'),
+    ):
+        assert render(args.candidate, 0x90000, automatic, scoped=True) == \
+               render(args.candidate, 0x90000, explicit, scoped=True), automatic
     with ThreadPoolExecutor(max_workers=2) as pool:
         jobs = [pool.submit(render, args.candidate, 0x90000, tagged, scoped=active)
                 for active in (False, True)]
@@ -81,6 +105,11 @@ def main():
                 assert voice.speak((text,), pcm.extend, lambda _: None) and pcm
                 outputs.append(bytes(pcm))
             assert outputs[0] == outputs[1] and frontend._worker is None
+            pcm = bytearray()
+            voices[0].set_parameter(SAMPLE_RATE, 3)
+            voices[0].set_parameter(GENDER, 0)
+            assert voices[0].speak(('تعجب',), pcm.extend, lambda _: None)
+            assert bytes(pcm) == long_j
         finally:
             for voice in voices:
                 voice.close()

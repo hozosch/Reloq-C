@@ -23,6 +23,7 @@ def add_profiles(languages, library: Path):
         dll = ctypes.CDLL(str(library.resolve()))
         getattr(dll, 'reloq_fa_acoustic_scope')
         getattr(dll, 'reloq_fa_native_onsets')
+        getattr(dll, 'reloq_fa_native_geminates')
         text_dll = ctypes.CDLL(str(text_library.resolve()))
         for name in ('reloq_fa_direct_text', 'reloq_fa_direct_number',
                      'reloq_fa_direct_letter', 'reloq_fa_direct_free'):

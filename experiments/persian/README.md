@@ -1492,12 +1492,25 @@ checks the packaged adapter's profiles and native playback locally;
 `test_nvda_real_plugin.py` is for a subsequent real NVDA smoke test.
 
 An initial geminated /dʒ/ candidate used a separate D followed by J, but the
-user heard insufficiently continuous voicing and did not accept it. The test
-driver therefore retains the earlier eSpeak-derived doubled J while a longer
-single voiced affricate is investigated. The selected voiced-S setting
+user heard insufficiently continuous voicing and did not accept it. The
+user selected the first longer single-J candidate: its native closure is
+extended, followed by one voiced affricate release. The test driver collapses
+eSpeak-derived doubled J's and selects the corresponding native word and J
+ordinal on the synthesis thread. Ordinary single J's are unchanged; ambiguous
+literal D+ZH contexts retain their old pronunciation. The selected voiced-S setting
 changes only the frication target, retaining its voiced source and the
 accepted voiceless S. The D and Z choices are listening decisions, not
 universal duration or intensity rules.
+
+The comparison contains `تعجب` and `توجه`, each with eSpeak, the earlier
+doubled J, and three candidates extending one native J. Across three sample
+rates and both voice genders, frame checks show a shorter unvoiced gap than
+either rejected doubling. The user selected candidate 1.
+
+The selected Finnish H impulse after P/T/K before a vowel now also applies
+when the stop follows /m/ or /n/ inside a word. Its established 60% duration
+is unchanged. Other consonant clusters, the special uvular stop, and ordinary
+Finnish remain on their previous paths.
 
 Character mode names Persian and Latin letters, Persian/Arabic/ASCII digits,
 and common symbols directly, including an explicit space. Other valid Unicode
