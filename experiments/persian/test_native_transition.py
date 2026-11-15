@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 from bisect import bisect_left
 from pathlib import Path
+import re
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
@@ -39,6 +40,17 @@ def main():
                 assert native_tag_accepted(tag, fa._phonemes_for_probe(tag)), tag
         for tag in ('`[.1mA.0mi.0me]', '`[.2ma.0mo.1mu.0mi]', '`[.0mi.0mA.1me]'):
             assert native_tag_accepted(tag, fa._phonemes_for_probe(tag)), tag
+        for text in ('NVDA', 'hello', 'open settings', 'use Eloquence acoustic timing',
+                     'screen reader', 'hello, world', 'unfamiliar transcript'):
+            shown = en._phonemes_for_probe(text)
+            tags = continuous_plan._converted(shown, continuous_plan._EN_TO_FA)
+            if tags and all(native_tag_accepted(tag, fa._phonemes_for_probe(tag)) for tag in tags):
+                expected = (continuous_plan._display_punctuation(shown, tags)
+                            if re.search(r'[.?!,;:]\s*\S', text)
+                            else ' '.join(tags) + continuous_plan._punctuation(text))
+            else:
+                expected = english_proxy(en, text)
+            assert english_phone_proxy(en, fa, text) == expected, text
         assert ')' in english_proxy(en, 'hello) ')
         assert ')' in english_phone_proxy(en, fa, 'hello) ')
         for rate in (3, 6):

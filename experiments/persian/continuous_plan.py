@@ -16,12 +16,12 @@ if __package__:
     from .._reloq_eci_direct import EciIndex, EciText, SAMPLE_RATE, SAMPLE_RATES
     from .._reloq_persian_frames import FrameCapture, NativeFrame
     from .._reloq_persian_glide import TRACT, apply_u_a_glides, plan_u_a_glides
-    from .text_frontend import native_tag_accepted
+    from .text_frontend import native_sequence_accepted, native_tag_accepted
 else:
     from _reloq_eci_direct import EciIndex, EciText, SAMPLE_RATE, SAMPLE_RATES
     from _reloq_persian_frames import FrameCapture, NativeFrame
     from _reloq_persian_glide import TRACT, apply_u_a_glides, plan_u_a_glides
-    from text_frontend import native_tag_accepted
+    from text_frontend import native_sequence_accepted, native_tag_accepted
 
 _TAG = re.compile(r'`\[([^]]+)\]')
 _SYLLABLE = re.compile(r'\.([012])([^.]+)')
@@ -124,7 +124,17 @@ def english_phone_proxy(en, fa, text):
         return bracketed
     shown = en._phonemes_for_probe(text)
     tags = _converted(shown, _EN_TO_FA)
-    if tags and all(native_tag_accepted(tag, fa._phonemes_for_probe(tag)) for tag in tags):
+    if tags:
+        # One native parse can verify a whole generated proxy, avoiding a
+        # separate synthesis for every letter of acronyms such as NVDA.
+        # If context changes a display, retain the established per-tag test.
+        combined = ' '.join(tags)
+        accepted = native_sequence_accepted(combined, fa._phonemes_for_probe(combined))
+        if not accepted:
+            accepted = all(native_tag_accepted(tag, fa._phonemes_for_probe(tag)) for tag in tags)
+    else:
+        accepted = False
+    if accepted:
         return (_display_punctuation(shown, tags) if re.search(r'[.?!,;:]\s*\S', text)
                 else ' '.join(tags) + _punctuation(text))
     return english_proxy(en, text)
