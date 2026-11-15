@@ -43,6 +43,14 @@ def _tokens(text: str) -> tuple[tuple[int, int], ...] | None:
     return tuple(result)
 
 
+def unpositioned_reference_input(text: str) -> bool:
+    """Admit only simple Persian/number text, without raw engine controls."""
+    digits = '0123456789۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩'
+    punctuation = ' \t,.?!:;،؛؟٫٬+-−'
+    return bool(text) and all(_word_character(char) or char in digits or
+                              char in punctuation for char in text)
+
+
 def _reference_words(worker, core: str, tokens: tuple[tuple[int, int], ...]) -> tuple[str, ...] | None:
     """Require eSpeak's phoneme sequence and word events to agree exactly.
 

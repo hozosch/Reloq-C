@@ -49,6 +49,24 @@ def alignment_tests(frontend):
         assert "phone '_'" in str(error)
 
     worker = frontend._fallback()
+    original_events = worker.events
+    def unexpected_events(*_args, **_kwargs):
+        raise AssertionError('unneeded eSpeak event synthesis')
+    worker.events = unexpected_events
+    try:
+        for text in ('من می‌خوانم.', 'من می‌خوانم ۱۲.'):
+            job = project((EciIndex(20), text, EciIndex(21)), frontend, allow_fallback=True)
+            assert job.needs_native_validation
+            assert job.tagged == frontend.analyze(text).parts[0].text
+    finally:
+        worker.events = original_events
+    for parts in (('من می‌خوانم ', EciIndex(22), '۱۲.'),
+                  ('`vp80 من می‌خوانم.',), ('من NVDA می‌خوانم.',)):
+        try:
+            project(parts, frontend, allow_fallback=True)
+            raise AssertionError('unsafe or unmapped source was accepted')
+        except UnsupportedPronunciation:
+            pass
     core = samples[0]
     tokens = _tokens(core)
     assert tokens
@@ -92,6 +110,24 @@ def playback_tests(frontend, probe, reference, samples):
     fa = engine(reference, 0x90000)
     set_confirmed_persian_probe()
     try:
+        # Boundary-only indexes need no synthesized reference events, even
+        # when a directly generated number occurs in the same fallback text.
+        worker = frontend._fallback()
+        previous_events = worker.events
+        def forbidden_events(*_args, **_kwargs):
+            raise AssertionError('unneeded eSpeak event synthesis')
+        worker.events = forbidden_events
+        try:
+            for text in ('من می‌خوانم.', 'من می‌خوانم ۱۲.'):
+                parts = (EciIndex(20), text, EciIndex(21))
+                job = project(parts, frontend, allow_fallback=True)
+                assert job.needs_native_validation
+                pcm, marks = bytearray(), []
+                assert voice.speak(parts, pcm.extend, lambda i: marks.append((i, len(pcm) // 2)))
+                assert bytes(pcm) == render(fa, job.tagged)
+                assert marks == [(20, 0), (21, len(pcm) // 2)]
+        finally:
+            worker.events = previous_events
         for rate in (1, 3, 6):
             for gender in (0, 1):
                 for target in (voice, fa):
@@ -146,7 +182,8 @@ def playback_tests(frontend, probe, reference, samples):
         voice = ScopedDirectPersianEngine(probe, frontend, allow_fallback=True)
         shared['voice'] = voice
         try:
-            result.append(voice.speak(('ناموجودمطمئن سلام ' * 400,), first.extend, lambda _: None))
+            long_parts = ('ناموجودمطمئن ', EciIndex(99), 'سلام ناموجودمطمئن ' * 400)
+            result.append(voice.speak(long_parts, first.extend, lambda _: None))
             worker.events = original_events
             result.append(voice.speak((samples[0],), second.extend, lambda _: None))
         finally:

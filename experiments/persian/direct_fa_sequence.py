@@ -22,16 +22,39 @@ from _reloq_eci_direct import (
 )
 from _reloq_persian_projection import Command, ProjectedJob, PersianProjectionError, project_persian
 from hybrid_fa_frontend import DirectFirstPersian
+from reference_alignment import unpositioned_reference_input
 from text_frontend import UnsupportedPronunciation, native_tag_accepted
 
 def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersian,
             *, allow_fallback: bool = False) -> ProjectedJob:
     """Use direct analysis and, optionally, verified reference word anchors."""
+    parts = tuple(parts)
+    DirectEciEngine._prepare(parts, 'utf-8')
+    total = sum(len(part if isinstance(part, str) else part.text)
+                for part in parts if isinstance(part, (str, EciText)))
+    offset = 0
+    internal_marks = False
+    for part in parts:
+        if isinstance(part, (str, EciText)):
+            offset += len(part if isinstance(part, str) else part.text)
+        elif 0 < offset < total:
+            internal_marks = True
     used_fallback = False
     def analyze(text):
         nonlocal used_fallback
-        analysis = (frontend.analyze_positioned(text) if allow_fallback
-                    else frontend.analyze_direct(text))
+        analysis = frontend.analyze_direct(text)
+        if analysis is None and allow_fallback:
+            if internal_marks:
+                analysis = frontend.analyze_positioned(text)
+            elif unpositioned_reference_input(text):
+                # With marks only at the beginning/end, no word alignment is
+                # required. Avoid synthesizing discarded eSpeak audio.
+                analysis = frontend.analyze(text)
+                if len(analysis.parts) != 1 or analysis.parts[0].language != 'fa':
+                    return None
+                tagged = analysis.parts[0].text
+                used_fallback = analysis.used_fallback
+                return tagged, (0,) * len(text.encode('utf8')) + (len(tagged),)
         if analysis is None:
             return None
         if analysis.source_map is None or len(analysis.parts) > 1:

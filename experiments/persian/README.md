@@ -1399,12 +1399,15 @@ Pinglish or spelling commands is not yet projected.
 Some dictionary pronunciations contain eSpeak's word-internal short-pause
 phone `_`; this remains unsupported and is not silently removed.
 
-Obtaining reference events currently requires eSpeak to synthesize discarded
-audio in its helper, so the cost grows with text length. Cancellation stops
-the helper and the next request starts a new one. This is a bridge towards
-testing, not a replacement for the planned native Persian text rules. The
-targeted Windows test checks its event alignment against NVDA's eSpeak DLL;
-only the Linux probe currently checks the selected acoustic PCM.
+If a job has no internal marks, including when it has only a start or end
+index, the reference words can be used without asking for events. This also
+allows supported direct numbers in a Persian reference phrase. Obtaining
+events for internal positions currently requires eSpeak to synthesize
+discarded audio in its helper, so the cost grows with text length. Cancellation
+stops the helper and the next request starts a new one. This is a bridge
+towards testing, not a replacement for the planned native Persian text rules.
+The targeted Windows test checks its event alignment against NVDA's eSpeak
+DLL; only the Linux probe currently checks the selected acoustic PCM.
 
 ```
 python3 experiments/persian/compile_direct_replacements.py --check
