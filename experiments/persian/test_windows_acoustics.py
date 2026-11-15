@@ -93,10 +93,16 @@ def main():
     # The same selected impulse must now be present after voiced consonants,
     # including liquids, while voiceless fricative clusters keep their
     # previous treatment. The Q and glottal carriers remain separate.
-    for previous in ('l', 'r', 'j', 'v', 'z', 'Z', 'b', 'd', 'g'):
+    for previous in ('l', 'r', 'j', 'v', 'z', 'Z', 'b', 'd', 'g', 'p', 't', 'k'):
         for stop in 'ptk':
             automatic = f'`[.1a{previous}.0{stop}a]'
             explicit = f'`[.1a{previous}.0{stop}ha]'
+            assert render(args.candidate, 0x90000, automatic, scoped=True) == \
+                   render(args.candidate, 0x90000, explicit, scoped=True), automatic
+    for before, after in (('(', ')'), (') ', ''), ('[', ']'), ('{', '}')):
+        for stop in 'ptk':
+            automatic = f'`[.0sA.1lam] {before}`[.1{stop}a]{after}'
+            explicit = f'`[.0sA.1lam] {before}`[.1{stop}ha]{after}'
             assert render(args.candidate, 0x90000, automatic, scoped=True) == \
                    render(args.candidate, 0x90000, explicit, scoped=True), automatic
     for previous in ('f', 's', 'S', 'G'):

@@ -1392,17 +1392,22 @@ static void persian_auto_h_insert(void *state)
     if (getenv("RELOQ_FA_TRACE_H_START"))
         fprintf(stderr,"FA_H phone=%u prev=%u initial=%d\n",phone,
                 previous ? persian_auto_h_field(previous,0) : 0,initial);
-    /* Onsets after voiced consonants need the same selected Finnish H
-       impulse as onsets after vowels and nasals. Some descriptions of
-       Persian report deaspiration after voiceless fricatives; keep those
-       clusters on their existing path. Uvular and glottal carriers are
-       checked separately below and must never acquire stop aspiration. */
+    /* Onsets after voiced consonants and after a preceding stop need the
+       same selected Finnish H impulse as onsets after vowels and nasals.
+       The native pause phone (36), including at bracket boundaries, can
+       precede a word without presenting a normal word fence. Some Persian
+       descriptions report deaspiration after voiceless fricatives; keep
+       those clusters on their existing path. Uvular and glottal carriers
+       are checked separately below and must never acquire stop aspiration. */
     unsigned previous_name=previous ? persian_auto_h_field(previous,0) : 0;
     int after_voiced=previous_name==4 || previous_name==5 || previous_name==6 ||
                      previous_name==8 || previous_name==10 || previous_name==12 ||
                      previous_name==16 || previous_name==17 || previous_name==19 ||
                      previous_name==21 || previous_name==22;
-    if (previous && persian_auto_h_field(previous,1)!=1 && !initial && !after_voiced) return;
+    int after_stop=previous_name>=1 && previous_name<=3;
+    int after_pause=previous_name==36;
+    if (previous && persian_auto_h_field(previous,1)!=1 && !initial &&
+        !after_voiced && !after_stop && !after_pause) return;
     const char *qsetting=getenv("RELOQ_FA_PROBE_Q");
     int forced_q=qsetting && qsetting[0]=='6' && !qsetting[1];
     int marked_q=qsetting && qsetting[0]=='7' && !qsetting[1] &&
