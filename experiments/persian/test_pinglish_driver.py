@@ -62,9 +62,10 @@ def analysis_tests(frontend):
         result = frontend.analyze_pinglish(source, positioned=True, allow_fallback=True)
         if result is None:
             normalized, _ = normalize_pinglish(source)
-            print('Pinglish alignment diagnostic:', repr(normalized),
-                  worker.translate(normalized.rstrip('?!. ,'), voice='fa-latn', separator='|'),
-                  worker.events(normalized.rstrip('?!. ,'), voice='fa-latn'), flush=True)
+            core = normalized.rstrip('?!. ,')
+            print('Pinglish alignment diagnostic:', ascii(normalized),
+                  ascii(worker.translate(core, voice='fa-latn', separator='|')),
+                  ascii(worker.events(core, voice='fa-latn')), flush=True)
         check_mapping(source, result)
         assert result.used_fallback
         assert result.parts == frontend.analyze_pinglish(source, positioned=False, allow_fallback=True).parts
