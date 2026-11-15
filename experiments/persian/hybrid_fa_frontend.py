@@ -14,7 +14,9 @@ import re
 import threading
 
 from espeak_worker import EspeakWorker
-from reference_alignment import source_map_for_reference
+from pinglish_frontend import latin_name, normalize_pinglish
+from reference_alignment import (source_map_for_reference, unpositioned_pinglish_input,
+                                 unpositioned_reference_input)
 from text_frontend import SpeechPart, UnsupportedPronunciation, translate_text
 
 
@@ -201,6 +203,55 @@ class DirectFirstPersian:
         mapping = (0,) * len(char.encode('utf8')) + (len(tag),)
         return PersianAnalysis((SpeechPart('fa', tag),), mapping, False)
 
+    def analyze_pinglish_character(self, char: str) -> PersianAnalysis | None:
+        """Use Persian names for Latin letters in the explicit Pinglish profile."""
+        if not isinstance(char, str) or len(char) != 1 or char == '\0':
+            raise ValueError('one Unicode character is required')
+        part = latin_name(char)
+        if part is None:
+            return self.analyze_character(char)
+        with self._guard:
+            if self._closed:
+                raise RuntimeError('Persian text frontend is closed')
+        return PersianAnalysis((part,), (0,) * len(char.encode('utf8')) + (len(part.text),), False)
+
+    def analyze_pinglish(self, text: str, *, positioned: bool,
+                         allow_fallback: bool) -> PersianAnalysis | None:
+        """Analyze explicit Pinglish, preserving confirmed Persian word sounds.
+
+        Marks are mapped through whole-word aliases and, when necessary,
+        verified reference events. Unknown mixed languages are not guessed.
+        """
+        if not isinstance(text, str) or '\0' in text:
+            raise ValueError('text must be a string without NUL')
+        if not text:
+            return self.analyze_direct(text)
+        if not unpositioned_pinglish_input(text):
+            return None
+        normalized, original_to_normalized = normalize_pinglish(text)
+        direct = self.analyze_direct(normalized)
+        if direct is not None:
+            assert direct.source_map is not None
+            mapping = tuple(direct.source_map[pos] for pos in original_to_normalized)
+            return PersianAnalysis(direct.parts, mapping, False)
+        if not allow_fallback or not any(c.isalpha() for c in normalized):
+            return None
+        if positioned and any(c.isdecimal() for c in normalized):
+            aligned = self._positioned_numbers(normalized, pinglish=True)
+            if aligned is None or aligned.source_map is None:
+                return None
+            return PersianAnalysis(aligned.parts,
+                                   tuple(aligned.source_map[pos] for pos in original_to_normalized), True)
+        parts = self._fallback_with_numbers(normalized, pinglish=True)
+        if len(parts) != 1 or parts[0].language != 'fa':
+            return None
+        if not positioned:
+            return PersianAnalysis(parts, None, True)
+        mapped = source_map_for_reference(normalized, parts, self._fallback(), pinglish=True)
+        if mapped is None:
+            return None
+        return PersianAnalysis(parts, tuple(mapped[pos] for pos in original_to_normalized), True)
+
     def _numeric_spans(self, text: str) -> list[tuple[int, int, str]]:
         """Find validated numbers without consuming sentence punctuation."""
         spans = []
@@ -233,17 +284,8 @@ class DirectFirstPersian:
             raise UnsupportedPronunciation('unattached Persian numeric separator')
         return spans
 
-    def _fallback_with_numbers(self, text: str, *, pinglish: bool = False) -> tuple[SpeechPart, ...]:
-        """Keep numeric values direct while analysing surrounding whole clauses.
-
-        A checked invariant Persian word marks each number for eSpeak's
-        contextual analysis. The marker's tag is then replaced with native
-        numeric tags. Ambiguous marker alignment is never guessed. The source
-        map still belongs to future NVDA integration.
-        """
-        spans = self._numeric_spans(text)
-        if not spans:
-            return _translate_with_native_punctuation(self._fallback(), text, pinglish=pinglish)
+    def _number_template(self, text, spans, *, pinglish):
+        """Use a known word as a checked stand-in for contextual analysis."""
         for marker in ('سلام', 'ایران', 'نقطه', 'خوب', 'کتاب', 'دنیا'):
             if marker in text:
                 continue
@@ -255,21 +297,85 @@ class DirectFirstPersian:
                 chunks.extend((text[cursor:start], marker))
                 cursor = end
             chunks.append(text[cursor:])
-            parts = _translate_with_native_punctuation(self._fallback(), ''.join(chunks), pinglish=pinglish)
+            template = ''.join(chunks)
+            parts = _translate_with_native_punctuation(self._fallback(), template, pinglish=pinglish)
             if sum(part.text.count(tag) for part in parts if part.language == 'fa') != len(spans):
                 continue
-            values = iter(item[2] for item in spans)
-            output = []
-            for part in parts:
-                if part.language == 'fa':
-                    pieces = part.text.split(tag)
-                    content = pieces[0]
-                    for suffix in pieces[1:]:
-                        content += next(values) + suffix
-                    part = SpeechPart(part.language, content)
-                output.append(part)
-            return tuple(output)
+            return marker, tag, template, parts
         raise UnsupportedPronunciation('could not align numbers with the reference text')
+
+    def _fallback_with_numbers(self, text: str, *, pinglish: bool = False) -> tuple[SpeechPart, ...]:
+        """Keep numeric values direct while analysing surrounding whole clauses."""
+        spans = self._numeric_spans(text)
+        if not spans:
+            return _translate_with_native_punctuation(self._fallback(), text, pinglish=pinglish)
+        _, tag, _, parts = self._number_template(text, spans, pinglish=pinglish)
+        values = iter(item[2] for item in spans)
+        output = []
+        for part in parts:
+            if part.language == 'fa':
+                pieces = part.text.split(tag)
+                content = pieces[0]
+                for suffix in pieces[1:]:
+                    content += next(values) + suffix
+                part = SpeechPart(part.language, content)
+            output.append(part)
+        return tuple(output)
+
+    def _positioned_numbers(self, text: str, *, pinglish: bool) -> PersianAnalysis | None:
+        """Verify each stand-in's word events before mapping native numbers."""
+        spans = self._numeric_spans(text)
+        if not spans:
+            return None
+        marker, tag, template, parts = self._number_template(text, spans, pinglish=pinglish)
+        if len(parts) != 1 or parts[0].language != 'fa':
+            return None
+        template_map = source_map_for_reference(template, parts, self._fallback(), pinglish=pinglish)
+        if template_map is None:
+            return None
+        raw = text.encode('utf8')
+        original_to_template = [0] * (len(raw) + 1)
+        template_position = original_position = 0
+        intervals = []
+        for start, end, numeric_tag in spans:
+            first = len(text[:start].encode('utf8'))
+            last = len(text[:end].encode('utf8'))
+            for i in range(original_position, first):
+                original_to_template[i] = template_position + i - original_position
+            template_position += first - original_position
+            mark_first = template_position
+            for i in range(first, last):
+                original_to_template[i] = mark_first
+            template_position += len(marker.encode('utf8'))
+            original_to_template[last] = template_position
+            intervals.append((template_map[mark_first], template_map[template_position], numeric_tag))
+            original_position = last
+        for i in range(original_position, len(raw) + 1):
+            original_to_template[i] = template_position + i - original_position
+        if original_to_template[-1] != len(template.encode('utf8')):
+            return None
+        tagged = parts[0].text
+        target_map = [0] * (len(tagged) + 1)
+        chunks, source_position, target_position = [], 0, 0
+        for first, last, numeric_tag in intervals:
+            if first < source_position or tagged[first:last] != tag:
+                return None
+            chunks.append(tagged[source_position:first])
+            for i in range(source_position, first):
+                target_map[i] = target_position + i - source_position
+            target_position += first - source_position
+            for i in range(first, last):
+                target_map[i] = target_position
+            chunks.append(numeric_tag)
+            target_position += len(numeric_tag)
+            target_map[last] = target_position
+            source_position = last
+        chunks.append(tagged[source_position:])
+        for i in range(source_position, len(tagged) + 1):
+            target_map[i] = target_position + i - source_position
+        final = ''.join(chunks)
+        mapping = tuple(target_map[template_map[i]] for i in original_to_template)
+        return PersianAnalysis((SpeechPart('fa', final),), mapping, True)
 
     def analyze(self, text: str, *, pinglish: bool = False) -> PersianAnalysis:
         if not isinstance(text, str) or '\0' in text:
@@ -296,10 +402,12 @@ class DirectFirstPersian:
         direct = self.analyze_direct(text)
         if direct is not None:
             return direct
-        if any(c.isascii() and c.isalnum() or c.isdecimal() for c in text):
+        if not unpositioned_reference_input(text):
             return None
         if not any(c.isalpha() for c in text):
             return None
+        if any(c.isdecimal() for c in text):
+            return self._positioned_numbers(text, pinglish=False)
         parts = _translate_with_native_punctuation(self._fallback(), text)
         mapping = source_map_for_reference(text, parts, self._fallback())
         return PersianAnalysis(parts, mapping, True) if mapping is not None else None

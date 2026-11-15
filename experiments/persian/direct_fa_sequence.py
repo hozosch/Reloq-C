@@ -25,7 +25,7 @@ from reference_alignment import unpositioned_reference_input
 from text_frontend import UnsupportedPronunciation, native_sequence_accepted
 
 def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersian,
-            *, allow_fallback: bool = False) -> ProjectedJob:
+            *, allow_fallback: bool = False, pinglish: bool = False) -> ProjectedJob:
     """Use direct analysis and, optionally, verified reference word anchors."""
     parts = tuple(parts)
     DirectEciEngine._prepare(parts, 'utf-8')
@@ -51,10 +51,17 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
     used_fallback = False
     def analyze(text):
         nonlocal used_fallback
-        analysis = frontend.analyze_character(text) if spelled else frontend.analyze_direct(text)
+        if spelled:
+            analysis = (frontend.analyze_pinglish_character(text) if pinglish
+                        else frontend.analyze_character(text))
+        elif pinglish:
+            analysis = frontend.analyze_pinglish(text, positioned=internal_marks,
+                                                allow_fallback=allow_fallback)
+        else:
+            analysis = frontend.analyze_direct(text)
         if spelled and analysis is None:
             return None
-        if analysis is None and allow_fallback:
+        if analysis is None and allow_fallback and not pinglish:
             if internal_marks:
                 analysis = frontend.analyze_positioned(text)
             elif unpositioned_reference_input(text):
@@ -68,6 +75,12 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
                 return tagged, (0,) * len(text.encode('utf8')) + (len(tagged),)
         if analysis is None:
             return None
+        if pinglish and analysis.source_map is None and not internal_marks:
+            if len(analysis.parts) != 1 or analysis.parts[0].language != 'fa':
+                return None
+            tagged = analysis.parts[0].text
+            used_fallback = analysis.used_fallback
+            return tagged, (0,) * len(text.encode('utf8')) + (len(tagged),)
         if analysis.source_map is None or len(analysis.parts) > 1:
             raise PersianProjectionError('direct Persian source map is unavailable')
         used_fallback = analysis.used_fallback
@@ -82,10 +95,12 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
 class ScopedDirectPersianEngine:
     """Private synchronous ECI experiment with request-scoped Persian sound."""
 
-    def __init__(self, library: Path, frontend: DirectFirstPersian, *, allow_fallback: bool = False):
+    def __init__(self, library: Path, frontend: DirectFirstPersian, *, allow_fallback: bool = False,
+                 pinglish: bool = False):
         self._owner = threading.get_ident()
         self._frontend = frontend
         self._allow_fallback = allow_fallback
+        self._pinglish = pinglish
         self._cancelled = threading.Event()
         self._voice = DirectEciEngine(library.resolve(), dialect=0x90000,
                                       encoding='utf8', native_voice=True)
@@ -113,7 +128,8 @@ class ScopedDirectPersianEngine:
             raise RuntimeError('Persian engine belongs to its creating worker')
         self._cancelled.clear()
         try:
-            prepared = project(parts, self._frontend, allow_fallback=self._allow_fallback)
+            prepared = project(parts, self._frontend, allow_fallback=self._allow_fallback,
+                               pinglish=self._pinglish)
         except (RuntimeError, OSError):
             if self._cancelled.is_set():
                 return False

@@ -15,15 +15,17 @@ from _reloq_eci_direct import DirectEciEngine, EciCapitalWord, EciLanguage, EciT
 from _reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
 
 PERSIAN_PROBE = Language(0x7f0000, 'Persian test', 'fa_IR', 'utf-8', US_ENGLISH.voices)
-PROFILES = {profile.id: profile for profile in (PERSIAN_PROBE, US_ENGLISH, GERMAN, FINNISH)}
+PINGLISH_PROBE = Language(0x7f0001, 'Persian (Pinglish) test', 'fa_Latn', 'utf-8', US_ENGLISH.voices)
+PROFILES = {profile.id: profile for profile in
+            (PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, GERMAN, FINNISH)}
 
 
 class OwnedPersianEngine(ScopedDirectPersianEngine):
     """One worker owns the acoustic handle and optional isolated reader."""
-    def __init__(self, library, native_library, worker, espeak_library, data_parent):
+    def __init__(self, library, native_library, worker, espeak_library, data_parent, *, pinglish=False):
         frontend = DirectFirstPersian(native_library, worker, espeak_library, data_parent)
         try:
-            super().__init__(Path(library), frontend, allow_fallback=True)
+            super().__init__(Path(library), frontend, allow_fallback=True, pinglish=pinglish)
         except BaseException:
             frontend.close()
             raise
@@ -55,7 +57,7 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 text = part if isinstance(part, str) else part.text
                 if text:
                     languages.add(key[0])
-        if PERSIAN_PROBE.id in languages and len(languages) > 1:
+        if languages.intersection((PERSIAN_PROBE.id, PINGLISH_PROBE.id)) and len(languages) > 1:
             raise UnsupportedPronunciation('continuous Persian language switching is not integrated')
         return super().speak(parts, on_pcm, on_index)
 
@@ -64,10 +66,11 @@ def make_language_engine(library, native_library, worker, espeak_library, data_p
                          *, language=PERSIAN_PROBE.id, voice='1'):
     """Construct the regular LanguageEngine with a test-only Persian factory."""
     def factory(dll, *, dialect, encoding, native_voice):
-        if dialect == PERSIAN_PROBE.id:
+        if dialect in (PERSIAN_PROBE.id, PINGLISH_PROBE.id):
             if encoding != 'utf-8' or not native_voice:
                 raise ValueError('the Persian test requires a native UTF-8 voice')
-            return OwnedPersianEngine(dll, native_library, worker, espeak_library, data_parent)
+            return OwnedPersianEngine(dll, native_library, worker, espeak_library, data_parent,
+                                      pinglish=dialect == PINGLISH_PROBE.id)
         return DirectEciEngine(dll, dialect=dialect, encoding=encoding, native_voice=native_voice)
     return PersianProbeLanguageEngine(library, language=language, voice=voice,
                                       languages=PROFILES, engine_factory=factory)

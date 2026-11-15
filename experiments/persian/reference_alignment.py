@@ -25,18 +25,20 @@ def _word_character(char: str) -> bool:
     return arabic and unicodedata.category(char)[0] in ('L', 'M')
 
 
-def _tokens(text: str) -> tuple[tuple[int, int], ...] | None:
-    """Recognize only simple Persian words separated by spaces or tabs."""
+def _tokens(text: str, *, pinglish: bool = False) -> tuple[tuple[int, int], ...] | None:
+    """Recognize simple Persian or explicit Pinglish words."""
+    def word_character(char: str) -> bool:
+        return _word_character(char) or (pinglish and char.isascii() and char.isalpha())
     result = []
     position = 0
     while position < len(text):
         if text[position] in ' \t':
             position += 1
             continue
-        if not _word_character(text[position]) or not text[position].isalpha():
+        if not word_character(text[position]) or not text[position].isalpha():
             return None
         start = position
-        while position < len(text) and _word_character(text[position]):
+        while position < len(text) and word_character(text[position]):
             position += 1
         result.append((start, position))
     return tuple(result)
@@ -50,15 +52,22 @@ def unpositioned_reference_input(text: str) -> bool:
                               char in punctuation for char in text)
 
 
-def _reference_words(worker, core: str, tokens: tuple[tuple[int, int], ...]) -> tuple[str, ...] | None:
+def unpositioned_pinglish_input(text: str) -> bool:
+    """Allow simple transliteration, numbers and punctuation without tags."""
+    return bool(text) and all(unpositioned_reference_input(char) or
+                              (char.isascii() and char.isalpha()) for char in text)
+
+
+def _reference_words(worker, core: str, tokens: tuple[tuple[int, int], ...],
+                     *, voice: str = 'fa') -> tuple[str, ...] | None:
     """Require eSpeak's phoneme sequence and word events to agree exactly.
 
     Synthesis events omit some vowel length colons; length comes only from
     the independently retained text-to-phonemes pronunciation.
     """
-    clauses = worker.translate(core, separator='|')
+    clauses = worker.translate(core, voice=voice, separator='|')
     words = tuple(word for clause in clauses for word in clause.phonemes.split())
-    events = worker.events(core)
+    events = worker.events(core, voice=voice)
     grouped: list[tuple[int, list[str]]] = []
     for event in events:
         if event.kind == 1:
@@ -84,11 +93,11 @@ def _reference_words(worker, core: str, tokens: tuple[tuple[int, int], ...]) -> 
     return words
 
 
-def source_map_for_reference(text: str, parts, worker) -> tuple[int, ...] | None:
+def source_map_for_reference(text: str, parts, worker, *, pinglish: bool = False) -> tuple[int, ...] | None:
     """Return a verified UTF-8-byte to tag-byte map or decline the input.
 
-    This deliberately covers Persian-only words and simple punctuation, not
-    numbers, spelling mode, Pinglish or mixed-language speech. It never
+    This deliberately covers simple Persian or Pinglish words and punctuation,
+    not numbers, spelling mode or mixed-language speech. It never
     changes a pronunciation when an alignment cannot be established.
     """
     if len(parts) != 1 or parts[0].language != 'fa':
@@ -102,10 +111,10 @@ def source_map_for_reference(text: str, parts, worker) -> tuple[int, ...] | None
         if not core:
             continue
         leading = len(raw) - len(raw.lstrip(' \t'))
-        tokens = _tokens(core)
+        tokens = _tokens(core, pinglish=pinglish)
         if not tokens:
             return None
-        words = _reference_words(worker, core, tokens)
+        words = _reference_words(worker, core, tokens, voice='fa-latn' if pinglish else 'fa')
         if words is None:
             return None
         try:

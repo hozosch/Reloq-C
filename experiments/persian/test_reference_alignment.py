@@ -43,6 +43,9 @@ def alignment_tests(frontend):
         'اداء. آیلار',
         'اداء،،سلام',
         'بدبخت؟',
+        'من می‌خوانم ۱۲.',
+        'ناموجودمطمئن ۳٫۱۴ سلام.',
+        'ناموجودمطمئن 12، ۳۴ خوب؟',
     )
     results = {text: check_mapping(frontend, text) for text in samples}
     one = results[samples[0]]
@@ -50,7 +53,7 @@ def alignment_tests(frontend):
     assert one.source_map[second] == one.parts[0].text.index('`[', 1)
     assert all(one.source_map[i] == 0 for i in range(len('ناموجودمطمئن'.encode('utf8'))))
     assert frontend.analyze_positioned('سلام NVDA') is None
-    assert frontend.analyze_positioned('ناموجودمطمئن ۱۲') is None
+    assert frontend.analyze_positioned('ناموجودمطمئن ۱۲') is not None
     assert results['من بدبخت آمد.'].parts[0].text == "`[.0mAn] `[.1bAd],`[.0bAGt] `[.1'a:'.0mAd]."
     assert not results['من بدبخت آمد.'].used_fallback
     for text in ('سلام،آیلار', 'اداء،سلام', 'اداء آیلار'):
@@ -70,8 +73,11 @@ def alignment_tests(frontend):
             assert job.tagged == frontend.analyze(text).parts[0].text
     finally:
         worker.events = original_events
-    for parts in (('من می‌خوانم ', EciIndex(22), '۱۲.'),
-                  ('`vp80 من می‌خوانم.',), ('من NVDA می‌خوانم.',)):
+    numbered = project(('من می‌خوانم ', EciIndex(22), '۱', EciIndex(23), '۲.'),
+                       frontend, allow_fallback=True)
+    assert numbered.needs_native_validation
+    assert [p.value for p in numbered.parts if isinstance(p, EciIndex)] == [22, 23]
+    for parts in (('`vp80 من می‌خوانم.',), ('من NVDA می‌خوانم.',)):
         try:
             project(parts, frontend, allow_fallback=True)
             raise AssertionError('unsafe or unmapped source was accepted')
@@ -88,11 +94,11 @@ def alignment_tests(frontend):
     class FakeWorker:
         def __init__(self, altered):
             self.altered = altered
-        def translate(self, text, *, separator):
-            assert text == core and separator == '|'
+        def translate(self, text, *, voice='fa', separator):
+            assert text == core and voice == 'fa' and separator == '|'
             return reference
-        def events(self, text):
-            assert text == core
+        def events(self, text, *, voice='fa'):
+            assert text == core and voice == 'fa'
             return self.altered
 
     positions = [i for i, event in enumerate(events) if event.kind == 1]
@@ -108,6 +114,18 @@ def alignment_tests(frontend):
         assert _reference_words(fake, core, tokens) is None
         assert source_map_for_reference(core, one.parts, fake) is None
     assert source_map_for_reference(core, (SpeechPart('en-us', 'wrong'),), worker) is None
+    # A wrong word anchor must also reject a number surrounded by fallback
+    # text, even when the stand-in word has the expected phones.
+    def wrong_number_events(text, *, voice='fa'):
+        found = list(original_events(text, voice=voice))
+        first = next(i for i, event in enumerate(found) if event.kind == 1)
+        found[first] = replace(found[first], position=found[first].position + 1)
+        return tuple(found)
+    worker.events = wrong_number_events
+    try:
+        assert frontend.analyze_positioned('ناموجودمطمئن ۱۲') is None
+    finally:
+        worker.events = original_events
     return samples
 
 

@@ -1405,8 +1405,11 @@ then builds a monotone UTF-8 source map. The selected Eloquence parser also
 has to accept the resulting tags before the scoped experiment emits audio.
 This preserves word-level rather than character-level accuracy, and fails
 closed when alignment cannot be verified. Directly covered words and numbers
-do not start the helper. A reference fallback with internal source marks
-containing numbers, English, Pinglish or spelling commands is not projected.
+do not start the helper. In a Persian-only fallback with numbers, a checked
+stand-in word provides each number's reference position. Its word and phone
+events must agree before the stand-in is replaced by the native number tag;
+each index inside a number maps to the beginning of that number. Mixed-language
+utterances still need the continuous planner.
 
 The eSpeak short-pause phone `_` is converted to an internal comma boundary
 between complete native phone groups, using the same punctuation mechanism
@@ -1432,7 +1435,7 @@ The targeted Windows test checks its event alignment against NVDA's eSpeak
 DLL; only the Linux probe currently checks the selected acoustic PCM.
 
 `nvda_driver_probe.py` exercises the actual `LanguageEngine` and
-`EciTextTransport` contract with a private test-only Persian profile. Its
+`EciTextTransport` contract with private test-only Persian and Pinglish profiles. Its
 owner-scoped frontend and acoustic handle support settings, dictionary
 selection, word indexes, isolated character names, cancellation and restart.
 The real native queue is tested locally; the portable Windows test checks the
@@ -1441,6 +1444,15 @@ the Windows acoustic engine. Mixed English/Persian jobs are rejected before
 any audio because the accepted shared sentence contour and transitions are
 not yet connected to the streaming driver. This intentionally prevents a
 test from masquerading as the user's approved seamless transition.
+
+The explicit Pinglish test profile sends general Romanized words to the
+`fa-latn` reference and gives all 26 Latin letters their eSpeak spelling names.
+The spellings `salam`, `salaam`, `donya`, and `donyaa` use the already accepted
+Persian-script word sounds and stress, including their vowel colours. Their
+source maps preserve word-level NVDA indexes, including when a reference word
+or direct number occurs in the same phrase. A raw phoneme or source position
+that cannot be verified is rejected. This is a selectable profile in the test
+factory, not yet a language choice in an installable NVDA add-on.
 
 `link_unified_probe.py` links the direct Persian text components into the
 same private Linux ECI library as the scoped acoustics. It reuses the

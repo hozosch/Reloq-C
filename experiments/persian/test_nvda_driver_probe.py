@@ -8,7 +8,8 @@ import threading
 import time
 
 from direct_fa_sequence import EciIndex, EciText
-from nvda_driver_probe import PERSIAN_PROBE, PROFILES, PersianProbeLanguageEngine, make_language_engine
+from nvda_driver_probe import (PERSIAN_PROBE, PINGLISH_PROBE, PROFILES,
+                               PersianProbeLanguageEngine, make_language_engine)
 from text_frontend import UnsupportedPronunciation
 from _reloq_eci_direct import EciLanguage, PROCESS_TAGS
 from _reloq_eci_transport import EciTextTransport
@@ -34,12 +35,18 @@ def fake_routing_test():
         def close(self): self.closed = True
 
     assert language_for('fa-IR', US_ENGLISH.id, PROFILES) == PERSIAN_PROBE.id
+    assert language_for('fa-Latn', US_ENGLISH.id, PROFILES) == PINGLISH_PROBE.id
+    assert language_for('fa', PINGLISH_PROBE.id, PROFILES) == PINGLISH_PROBE.id
     engine = PersianProbeLanguageEngine(Path('/unused'), language=PERSIAN_PROBE.id,
                                         languages=PROFILES, engine_factory=FakeEngine)
     try:
         pcm, indexes = bytearray(), []
         assert engine.speak((EciIndex(4), 'سلام', EciIndex(5)), pcm.extend, indexes.append)
         assert bytes(pcm) == b'\x7f' and indexes == [4, 5]
+        pcm.clear()
+        engine.select_voice(PINGLISH_PROBE.id, '1')
+        assert engine.speak((EciIndex(14), 'salam', EciIndex(15)), pcm.extend, indexes.append)
+        assert bytes(pcm) == b'\x7f' and indexes[-2:] == [14, 15]
         pcm.clear()
         try:
             engine.speak((EciLanguage(US_ENGLISH.id, '1'), 'NVDA ',
@@ -114,6 +121,18 @@ def real_transport_tests(args):
         transport.select_voice(PERSIAN_PROBE.id, '1')
         _, again = run(('من بدبخت آمد.', EciIndex(7)))
         assert finnish and again and again == speech
+
+        # The two test profiles produce the same selected acoustics for a
+        # directly covered pair, while retaining original Pinglish indexes.
+        _, script = run(('سلام دنیا؟', EciIndex(31)))
+        transport.select_voice(PINGLISH_PROBE.id, '1')
+        third, roman = run((EciIndex(32), 'salam ', EciIndex(33), 'donya?', EciIndex(34)))
+        assert roman == script and roman
+        assert observed[-4:] == [('index', 32), ('index', 33), ('index', 34), ('done', third)]
+        _, latin = run((EciText('w', character_mode=True), EciIndex(35)))
+        _, unknown = run(('salam ', EciIndex(36), 'khub?', EciIndex(37)))
+        assert latin and unknown
+        transport.select_voice(PERSIAN_PROBE.id, '1')
 
         # Do not play the English prefix of a sentence whose cross-language
         # contour has not yet been implemented.
