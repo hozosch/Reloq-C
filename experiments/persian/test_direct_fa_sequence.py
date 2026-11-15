@@ -77,7 +77,7 @@ def playback_tests(frontend, probe, reference, inputs):
     from test_selected_probe import engine, set_confirmed_persian_probe
     voice = ScopedDirectPersianEngine(probe, frontend)
     fa = engine(reference, 0x90000)
-    set_confirmed_persian_probe(d=1, z=1)
+    set_confirmed_persian_probe(d=2, z=2)
     try:
         # NVDA can disable user tags without disabling our generated tags.
         voice.set_parameter(PROCESS_TAGS, 0)

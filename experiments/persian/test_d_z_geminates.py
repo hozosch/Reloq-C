@@ -42,7 +42,7 @@ def main():
             bad = frontend.analyze_direct('بدبخت').parts[0].text
             geminate = frontend.analyze_direct('تعجب').parts[0].text
             assert bad == '`[.1bAd.0bAGt]'
-            assert geminate == '`[.0tA.1wAd.0Job]'
+            assert geminate == '`[.0tA.1wAJ.0Job]'
             for tag in (bad, geminate):
                 assert native_tag_accepted(tag, voice._phonemes_for_probe(tag))
             with tempfile.TemporaryDirectory(prefix='reloq-fa-d-z-') as name:
@@ -64,18 +64,18 @@ def main():
                         assert len(old.pcm) < len(longer.pcm) < len(longest.pcm)
                         assert old.pcm != longer.pcm != longest.pcm
                         for text in ("`[.1s'A:'d]", '`[.1bAd] `[.1bA]', '`[.0sA.1lam]'):
-                            assert sample(text, d=0).pcm == sample(text, d=1).pcm, text
+                            assert sample(text, d=0).pcm == sample(text, d=2).pcm, text
                         for text in ('`[.1zA]', '`[.0A.1zA]', '`[.1Az]'):
-                            base, revised = sample(text), sample(text, z=1)
+                            base, revised = sample(text), sample(text, z=2)
                             assert len(base.pcm) == len(revised.pcm) and base.pcm != revised.pcm
                             a, b = base.frames['controls'], revised.frames['controls']
                             assert a.shape == b.shape
                             assert np.array_equal(a[:, np.arange(62) != 8], b[:, np.arange(62) != 8])
                             assert b[:, 8].max() > a[:, 8].max()
-                        assert sample('`[.1sA]', z=0).pcm == sample('`[.1sA]', z=1).pcm
+                        assert sample('`[.1sA]', z=0).pcm == sample('`[.1sA]', z=2).pcm
                         single = sample('`[.0tA.1wA.0Job]')
-                        twice = sample('`[.0tA.1wAJ.0Job]')
-                        joined = sample(geminate)
+                        twice = sample(geminate)
+                        joined = sample('`[.0tA.1wAd.0Job]')
                         assert len(single.pcm) < len(joined.pcm)
                         old_runs, new_runs = friction_runs(twice), friction_runs(joined)
                         assert len(old_runs) == len(new_runs) + 1, (rate, gender, old_runs, new_runs)

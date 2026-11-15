@@ -64,12 +64,12 @@ def main():
                     for source, tagged in samples:
                         # This is the exact ordinary Finnish onset rule with
                         # no custom glottal-stop carrier in the phone stream.
-                        set_confirmed_persian_probe(no_auto_glottal=0, d=1, z=1)
+                        set_confirmed_persian_probe(no_auto_glottal=0, d=2, z=2)
                         expected = render(reference, tagged)
                         pcm, indices = bytearray(), []
                         assert candidate.speak((EciIndex(1), source, EciIndex(2)), pcm.extend, indices.append)
                         assert bytes(pcm) == expected and indices == [1, 2], (source, rate, gender)
-                        set_confirmed_persian_probe(no_auto_glottal=1, d=1, z=1)
+                        set_confirmed_persian_probe(no_auto_glottal=1, d=2, z=2)
                         assert expected != render(reference, tagged), (source, rate, gender)
             # An onset selection cannot leak into the following request.
             first, second = bytearray(), bytearray()
@@ -84,7 +84,7 @@ def main():
                 assert candidate.speak((source,), plain.extend, lambda _: None)
                 assert candidate.speak(parts, indexed.extend, observed.append)
                 assert plain == indexed and observed == [parts[1].value], source
-            set_confirmed_persian_probe(no_auto_glottal=0, d=1, z=1)
+            set_confirmed_persian_probe(no_auto_glottal=0, d=2, z=2)
             expected, actual = bytearray(), bytearray()
             assert reference.speak(('`[.0sA.1lam] ', EciPitch(70), '`[.1aj.0lar]'),
                                    expected.extend, lambda _: None)
@@ -101,7 +101,7 @@ def main():
             assert bytes(pcm) == expected and expected != unwanted
             # An explicit eSpeak glottal stop keeps the original custom phone.
             configured(reference, 3, 0)
-            set_confirmed_persian_probe(no_auto_glottal=1, d=1, z=1)
+            set_confirmed_persian_probe(no_auto_glottal=1, d=2, z=2)
             expected = render(reference, '`[.1sa.0wAt]')
             pcm = bytearray()
             assert candidate.speak(('ساعت',), pcm.extend, lambda _: None)
@@ -116,7 +116,7 @@ def main():
             candidate.close()
             reference.close()
     text = '`[.1so] `[.0al]'
-    set_confirmed_persian_probe(no_auto_glottal=1, d=1, z=1)
+    set_confirmed_persian_probe(no_auto_glottal=1, d=2, z=2)
     plain, marked = manual(args.scope_probe, text, ()), manual(args.scope_probe, text, (2,))
     assert plain != marked
     with ThreadPoolExecutor(max_workers=2) as pool:

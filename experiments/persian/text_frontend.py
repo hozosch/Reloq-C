@@ -140,13 +140,6 @@ def word_tag(word: str, *, initial_glottal: bool = False) -> str:
                 long = phone.long or (iran and position == 2)
                 out.append(f"'{name}:'" if long else name)
             else:
-                if (phone.name == 'dZ' and position + 1 < len(phones) and
-                        phones[position + 1].name == 'dZ'):
-                    # A geminate affricate has a prolonged closure and one
-                    # release, not two successive affricate releases. The
-                    # native Finnish d + J supplies that timing and release.
-                    out.append('d')
-                    continue
                 # Finnish otherwise loses a final H when another word follows.
                 # h+w marks a short silent carrier for the native H impulse.
                 out.append('hw' if phone.name == 'h' and position == len(phones) - 1

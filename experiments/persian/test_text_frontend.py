@@ -32,7 +32,7 @@ def main() -> None:
         "d|'a|h": '`[.1dAhw]',
         "m|'e:|h|R": "`[.1m'e:'hr]",
         "b|'a|d|_|b|a|x|t": '`[.1bAd.0bAGt]',
-        "t|a|?|'a|dZ|dZ|o|b": '`[.0tA.1wAd.0Job]',
+        "t|a|?|'a|dZ|dZ|o|b": '`[.0tA.1wAJ.0Job]',
         "t|a|dZ|R|'o|b|e:": "`[.0tAJ.1ro.0b'e:']",
         "s|'o|_|A|l": '`[.1so]~`[.0al]',
         "b|,a|n|A:|_|b|'a|R|_|i|n": "`[.2bA.0n'a:'.1bAr]~`[.0in]",

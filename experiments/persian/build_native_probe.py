@@ -1111,6 +1111,15 @@ static unsigned persian_probe_cons_name(void *state,int32_t position)
     if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
     return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node)));
 }
+static unsigned persian_probe_previous_cons(void *state,int32_t position)
+{
+    delta_state *d=state;
+    if (!d || !position) return 0;
+    delta_node *point=vmovel(d,EVV_AT(delta_node *,position),2);
+    int32_t node=point ? vgetsc(d,1,0,EVV_REF(point),2) : 0;
+    if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
+    return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node)));
+}
 '''
     helper += FINNISH_L_WORD_FINAL.replace('persian_probe_l_word_final', 'persian_probe_d_word_final').replace(
         'testFldeq(d,2,0,21)', 'testFldeq(d,2,0,5)')
@@ -1143,6 +1152,28 @@ static unsigned persian_probe_cons_name(void *state,int32_t position)
                native voicing, release, stress and the next consonant. */
             if (within_word && mode && (mode[0]=='1' || mode[0]=='2') && !mode[1] && STATE(int32_t,f20)>0) {
                 int factor=mode[0]=='1' ? 150 : 200;
+                int64_t scaled=((int64_t)STATE(int32_t,f20)*factor+50)/100;
+                STATE(int32_t,f20)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
+            }
+        }
+    }
+    {
+        /* Offline-only hearing candidates: the native J is expanded into
+           one D followed by voiced ZH. Lengthen those native components
+           together instead of inserting a second, separate D. */
+        const char *mode=getenv("RELOQ_FA_GEMINATE_J");
+        if (mode && (mode[0]=='1' || mode[0]=='2' || mode[0]=='3') && !mode[1]) {
+            int32_t at=STATE(int32_t,w60), after=STATE(int32_t,w61);
+            unsigned current=persian_probe_cons_name(state,at);
+            unsigned next=persian_probe_cons_name(state,after);
+            unsigned previous=persian_probe_previous_cons(state,at);
+            int factor=100;
+            if (current==5 && next==12) factor=mode[0]=='2' ? 150 : 200;
+            else if (current==12 && previous==5 && mode[0]!='1') factor=150;
+            if (getenv("RELOQ_FA_TRACE_GEM") && factor!=100)
+                fprintf(stderr,"FA_GEM phone=%u before=%u after=%u factor=%d duration=%d\n",
+                        current,previous,next,factor,(int)STATE(int32_t,f20));
+            if (factor!=100 && STATE(int32_t,f20)>0) {
                 int64_t scaled=((int64_t)STATE(int32_t,f20)*factor+50)/100;
                 STATE(int32_t,f20)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }

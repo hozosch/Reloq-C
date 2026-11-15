@@ -47,7 +47,7 @@ def main():
     parser.add_argument('--espeak-library', type=Path, required=True)
     parser.add_argument('--data-parent', type=Path, required=True)
     args = parser.parse_args()
-    set_confirmed_persian_probe(d=1, z=1)
+    set_confirmed_persian_probe(d=2, z=2)
     with EspeakPhonemeProbe(args.espeak_library, args.data_parent) as api:
         tagged = []
         for source in ('سلام.', 'ایران.', 'نقطه.', 'کاغذ.', 'یک.',

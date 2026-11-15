@@ -1418,7 +1418,7 @@ The selection is scoped to the relevant word on the synthesis thread; it is
 cleared after every job. An existing reference glottal phone is not doubled.
 The earlier native word boundary after `d` in `بدبخت` changed its prosody
 and did not preserve its D perceptually, so it has been removed. A scoped
-hearing candidate lengthens native D by 50% only before B inside one word;
+selected second candidate doubles the native D duration only before B inside one word;
 its native release and the whole word's stress remain intact. Consonant
 boundaries have no extra punctuation. An explicit pause at a word edge is carried to the next
 vowel inside the same phrase; a real punctuation mark remains a native
@@ -1491,14 +1491,13 @@ builder and language catalog are unchanged. `test_nvda_package_probe.py`
 checks the packaged adapter's profiles and native playback locally;
 `test_nvda_real_plugin.py` is for a subsequent real NVDA smoke test.
 
-When eSpeak supplies doubled /dʒ/, the frontend represents it as a D closure
-followed by one native J release, rather than two complete affricates. The
-46 affected direct entries and their plural admissions were checked against
-the pinned reference and native parser. An acoustic frame test checks the
-longer constriction and the single frication release in `تعجب`.
-The scoped voiced-S candidate changes only the frication target, retaining
-its voiced source and the accepted voiceless S. The D and Z settings remain
-hearing candidates, not universal duration or intensity rules.
+An initial geminated /dʒ/ candidate used a separate D followed by J, but the
+user heard insufficiently continuous voicing and did not accept it. The test
+driver therefore retains the earlier eSpeak-derived doubled J while a longer
+single voiced affricate is investigated. The selected voiced-S setting
+changes only the frication target, retaining its voiced source and the
+accepted voiceless S. The D and Z choices are listening decisions, not
+universal duration or intensity rules.
 
 Character mode names Persian and Latin letters, Persian/Arabic/ASCII digits,
 and common symbols directly, including an explicit space. Other valid Unicode

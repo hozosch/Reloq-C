@@ -21,7 +21,8 @@ KEYS = ('RELOQ_FA_PROBE_A', 'RELOQ_FA_PROBE_Q', 'RELOQ_FA_PROBE_X',
         'RELOQ_FA_PROBE_GLOTTAL', 'RELOQ_FA_PROBE_END_H', 'RELOQ_FA_PROBE_A_NASAL',
         'RELOQ_FA_PROBE_GLOT_ONSET', 'RELOQ_FA_PROBE_END_H_DB', 'RELOQ_FA_PROBE_K_NOISE',
         'RELOQ_FA_PROBE_K_SHAPE', 'RELOQ_FA_E_MODE', 'RELOQ_FA_E_CONTEXT', 'RELOQ_FA_E_TARGET',
-        'RELOQ_FA_PROBE_NO_AUTO_GLOTTAL', 'RELOQ_FA_PROBE_Z', 'RELOQ_FA_PROBE_D')
+        'RELOQ_FA_PROBE_NO_AUTO_GLOTTAL', 'RELOQ_FA_PROBE_Z', 'RELOQ_FA_PROBE_D',
+        'RELOQ_FA_GEMINATE_J')
 
 
 def set_probe(a: int = 0, q: int = 0, x: int = 0, rise: int = 0,
@@ -30,23 +31,23 @@ def set_probe(a: int = 0, q: int = 0, x: int = 0, rise: int = 0,
               glottal: int = 0, end_h: int = 0, nasal: int = 0,
               glot_onset: int = 1, end_h_db: int = 0, k_noise: str = '', k_shape: int = 0,
               e_mode: int = 0, e_context: int = 0, e_target: str = '',
-              no_auto_glottal: int = 0, z: int = 0, d: int = 0) -> None:
+              no_auto_glottal: int = 0, z: int = 0, d: int = 0, gem: int = 0) -> None:
     for key, value in zip(KEYS, (a, q, x, 0, rise, stops, h, l, vowel, s, a_target, final,
                                   glottal, end_h, nasal, glot_onset, end_h_db, k_noise, k_shape,
-                                  e_mode, e_context, e_target, no_auto_glottal, z, d)):
+                                  e_mode, e_context, e_target, no_auto_glottal, z, d, gem)):
         os.environ[key] = str(value)
 
 
 def set_confirmed_persian_probe(*, end_h_db: int = 9, k_noise: str = '', k_shape: int = 3,
                                  e_mode: int = 1, e_context: int = 22,
                                  e_target: str = '450,1875,2525', no_auto_glottal: int = 1,
-                                 z: int = 0, d: int = 0) -> None:
+                                 z: int = 0, d: int = 0, gem: int = 0) -> None:
     """Select the accepted Persian acoustics in the private probe."""
     set_probe(a=1, q=7, x=1, rise=2, h=5, l=4, vowel=1, s=1,
               a_target='salam-fixed', final=1, glottal=2, end_h=1, nasal=1,
               end_h_db=end_h_db, k_noise=k_noise, k_shape=k_shape,
               e_mode=e_mode, e_context=e_context, e_target=e_target,
-              no_auto_glottal=no_auto_glottal, z=z, d=d)
+              no_auto_glottal=no_auto_glottal, z=z, d=d, gem=gem)
 
 
 def set_candidate_persian_probe() -> None:

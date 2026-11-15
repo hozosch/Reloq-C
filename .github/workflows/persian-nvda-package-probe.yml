@@ -15,6 +15,7 @@ on:
       - experiments/persian/persian_symbols.py
       - experiments/persian/test_pinglish_driver.py
       - experiments/persian/test_direct_fa_letters.py
+      - experiments/persian/test_direct_fa_sequence.py
       - experiments/persian/hybrid_fa_frontend.py
       - experiments/persian/direct_fa_sequence.py
       - experiments/persian/reference_alignment.py
@@ -26,6 +27,7 @@ on:
       - nvda/_reloq_persian_bridge.py
       - nvda/_reloq_persian_projection.py
       - .github/workflows/persian-nvda-package-probe.yml
+      - .github/workflows/persian-windows-acoustic-probe.yml
 permissions:
   contents: read
   actions: read

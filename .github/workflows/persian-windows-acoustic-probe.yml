@@ -33,7 +33,7 @@ jobs:
           path: |
             eci/build/windows
             eci/eci.dll
-          key: persian-windows-host-gcc14-v1-${{ hashFiles('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src/**', 'include/**', 'vendor/openevv61/**') }}
+          key: persian-windows-host-gcc14-v1-${{ hashFiles('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src/**', 'include/**', 'vendor/openevv61/**', '!vendor/openevv61/build/**') }}
       - name: Restore cached provider timestamps
         if: steps.provider.outputs.cache-hit == 'true'
         shell: bash

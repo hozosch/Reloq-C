@@ -72,7 +72,7 @@ def main():
             label('Bisher.')
             persian('`[.0tA.1wAJ.0Job]')
             label('Neu.')
-            persian(frontend.analyze_direct('تعجب').parts[0].text)
+            persian('`[.0tA.1wAd.0Job]')
             label('Das stimmhafte S. Drei Wörter, jeweils erst eSpeak, dann bisher, Variante eins und Variante zwei.')
             for text in ('زمان', 'دوازده', 'روز'):
                 reference(text)

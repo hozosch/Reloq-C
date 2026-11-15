@@ -62,7 +62,7 @@ def playback_tests(frontend, probe, reference):
 
     voice = ScopedDirectPersianEngine(probe, frontend, allow_fallback=True)
     fa = engine(reference, 0x90000)
-    set_confirmed_persian_probe(d=1, z=1)
+    set_confirmed_persian_probe(d=2, z=2)
     previous = voice._scope(1)
     try:
         for char in LETTERS:
