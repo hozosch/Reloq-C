@@ -25,6 +25,20 @@ class PersianAnalysis:
     used_fallback: bool
 
 
+def _simple_phrase(text: str) -> bool:
+    """Only use the direct path for the sentence shapes checked so far."""
+    if not text:
+        return True
+    if (text != text.strip(' ') or '  ' in text or
+            any(char.isspace() and char != ' ' for char in text) or
+            not any(char.isalpha() for char in text)):
+        return False
+    punctuation = ',،.?!؟'
+    if any(char in punctuation for char in text[:-1]) or text[-1] in ',،':
+        return False
+    return True
+
+
 class DirectFirstPersian:
     def __init__(self, native_library: Path, worker: Path, espeak_library: Path, data_parent: Path):
         self._dll = ctypes.CDLL(str(native_library.resolve()))
@@ -53,8 +67,8 @@ class DirectFirstPersian:
         with self._guard:
             if self._closed:
                 raise RuntimeError('Persian text frontend is closed')
-        if pinglish:
-            return PersianAnalysis(translate_text(self._fallback(), text, pinglish=True), None, True)
+        if pinglish or not _simple_phrase(text):
+            return PersianAnalysis(translate_text(self._fallback(), text, pinglish=pinglish), None, True)
         encoded = text.encode('utf8')
         output = ctypes.c_void_p()
         mapping = ctypes.POINTER(ctypes.c_size_t)()

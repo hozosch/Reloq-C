@@ -15,7 +15,8 @@ def main():
     parser.add_argument('--data-parent', type=Path, required=True)
     args = parser.parse_args()
     direct = ('سلام دنیا؟', 'او آمد.', 'ايران نقطه.', 'ﺳﻼﻡ دنیا؟')
-    fallback = ('من ایران را دوست دارم.', 'آیا NVDA خوب است؟', 'ده ۱۲ مهر')
+    fallback = ('من ایران را دوست دارم.', 'آیا NVDA خوب است؟', 'ده ۱۲ مهر',
+                'سلام،دنیا!', 'سلام  دنیا.', 'سلام دنیا...', '؟', 'او،آمد.')
     with EspeakPhonemeProbe(args.espeak_library, args.data_parent) as reference:
         expected = {text: translate_text(reference, text) for text in (*direct, *fallback)}
         pinglish = translate_text(reference, 'salam donya?', pinglish=True)

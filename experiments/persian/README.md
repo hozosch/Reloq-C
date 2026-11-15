@@ -1298,7 +1298,8 @@ routing. The native conditional pronunciation rules and morphology in
 and integration with NVDA. This is not a selectable voice or an add-on.
 
 `hybrid_fa_frontend.py` tests a direct-first route for a future early NVDA
-trial: it invokes the native C converter when the entire input is covered;
+trial: it invokes the native C converter when the entire input is covered
+and the whitespace and punctuation follow the simple checked pattern;
 otherwise it sends the **whole input** to the isolated eSpeak worker. That
 avoids replacing individual unknown words in isolation and retains the
 reference frontend's English routing and sentence analysis. The worker is
