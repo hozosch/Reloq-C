@@ -25,6 +25,7 @@ def analysis_tests(frontend):
              'SALAM DONYA?': 'سلام دنیا?',
              'salam ۱۲ donya?': 'سلام ۱۲ دنیا?',
              'iran nokte kaghaz?': 'ایران نقطه کاغذ?',
+             'badbakht soal?': 'بدبخت سوال?',
              'khoob yek sefr farsi ketab man': 'خوب یک صفر فارسی کتاب من'}
     for source, expected in pairs.items():
         normalized, mapping = normalize_pinglish(source)
@@ -128,7 +129,8 @@ def playback_tests(frontend, probe):
     voice = ScopedDirectPersianEngine(probe, frontend, allow_fallback=True, pinglish=True)
     fa = ScopedDirectPersianEngine(probe, frontend, allow_fallback=True)
     try:
-        for roman, script in (('salam donya?', 'سلام دنیا؟'), ('Salaam Donyaa!', 'سلام دنیا!')):
+        for roman, script in (('salam donya?', 'سلام دنیا؟'), ('Salaam Donyaa!', 'سلام دنیا!'),
+                              ('badbakht soal?', 'بدبخت سوال؟')):
             expected, actual = bytearray(), bytearray()
             assert fa.speak((script,), expected.extend, lambda _: None)
             assert voice.speak((roman,), actual.extend, lambda _: None)

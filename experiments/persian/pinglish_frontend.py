@@ -16,6 +16,7 @@ ALIASES = {
     'iran': 'ایران', 'iraan': 'ایران', 'khub': 'خوب', 'khoob': 'خوب',
     'nokte': 'نقطه', 'nokteh': 'نقطه', 'noghte': 'نقطه', 'noghteh': 'نقطه',
     'kaghaz': 'کاغذ', 'kakhaz': 'کاغذ', 'sefr': 'صفر', 'yek': 'یک',
+    'soal': 'سوال', 'soaal': 'سوال', 'sual': 'سوال', 'badbakht': 'بدبخت',
     'farsi': 'فارسی', 'faarsi': 'فارسی', 'ketab': 'کتاب', 'ketaab': 'کتاب',
     'man': 'من',
 }

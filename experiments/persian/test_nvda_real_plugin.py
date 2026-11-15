@@ -60,6 +60,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_Latn', 'salam donya?', False),
                           ('fa_IR', 'بدبخت', False),
                           ('fa_IR', 'سوال', False),
+                          ('fa_Latn', 'badbakht soal?', False),
                           ('fa_Latn', 'salam khub?', False),
                           ('fa_Latn', 'salam khubtar?', False),
                           ('fa_Latn', 'w', True),
