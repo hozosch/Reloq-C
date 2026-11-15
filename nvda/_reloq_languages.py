@@ -282,13 +282,14 @@ class LanguageEngine:
             self._engine_parameters[language][parameter] = adapted
         self._parameters[parameter] = value
 
-    def speak(self, parts, on_pcm, on_index):
+    def speak(self, parts, on_pcm, on_index, *, reset_cancellation=True):
         self._assert_owner()
         # Validate all selections before any speech escapes this job.
         for part in parts:
             if isinstance(part, EciLanguage):
                 self._key(part.language, part.voice)
-        self._cancelled.clear()
+        if reset_cancellation:
+            self._cancelled.clear()
         key = self._home
         pending = []
         prosody = {}

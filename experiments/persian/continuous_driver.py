@@ -3,26 +3,31 @@ from __future__ import annotations
 
 import logging
 import re
+from bisect import bisect_left
 
 if __package__:
     from .._reloq_eci_direct import (EciCapitalWord, EciIndex, EciLanguage, EciText,
                                      SAMPLE_RATE, SAMPLE_RATES, PROCESS_TAGS)
-    from .._reloq_persian_frames import FrameReplay
+    from .._reloq_persian_frames import FrameCapture, FrameReplay
+    from .._reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from .._reloq_persian_projection import ProjectedJob
     from .direct_fa_sequence import ScopedDirectPersianEngine, project
-    from .continuous_plan import context_plan, replay_marks, selected_sentence
+    from .continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence
     from .text_frontend import SpeechPart, UnsupportedPronunciation
 else:
     from _reloq_eci_direct import (EciCapitalWord, EciIndex, EciLanguage, EciText,
                                     SAMPLE_RATE, SAMPLE_RATES, PROCESS_TAGS)
-    from _reloq_persian_frames import FrameReplay
+    from _reloq_persian_frames import FrameCapture, FrameReplay
+    from _reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from _reloq_persian_projection import ProjectedJob
     from direct_fa_sequence import ScopedDirectPersianEngine, project
-    from continuous_plan import context_plan, replay_marks, selected_sentence
+    from continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence
     from text_frontend import SpeechPart, UnsupportedPronunciation
 
 _log = logging.getLogger(__name__)
 _TAG = re.compile(r'`\[[^]]+\]')
+_FINAL_U = re.compile(r"(?:u|'u:')\]$")
+_INITIAL_A = re.compile(r"^`\[\.[012](?:a|'a:')")
 
 
 class _PlanningVoice:
@@ -98,6 +103,20 @@ def _segments(owner, parts, fa_ids, english_id):
             result[-1][1].append(part)
         else:
             result.append((key, [part]))
+    # Whitespace at a language boundary belongs to the adjacent speech, not
+    # to a separate empty acoustic segment.
+    i = 0
+    while i < len(result):
+        _key, items = result[i]
+        value = ''.join(p if isinstance(p, str) else p.text if isinstance(p, EciText) else '' for p in items)
+        if not value.strip() and len(result) > 1:
+            if i:
+                result[i - 1][1].extend(items)
+            else:
+                result[i + 1][1][:0] = items
+            del result[i]
+        else:
+            i += 1
     if not 2 <= len(result) <= 32 or {key[0] for key, _ in result}.isdisjoint(fa_ids):
         return None
     if not any(key[0] == english_id for key, _ in result):
@@ -149,9 +168,11 @@ def _project_part(engine, items, *, follows):
     return tagged, marks, prepared.needs_native_validation
 
 
-def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german_id):
+def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german_id,
+                   reset_cancellation=True):
     """Return None when this job must retain the established native route."""
-    owner._cancelled.clear()
+    if reset_cancellation:
+        owner._cancelled.clear()
     try:
         groups = _segments(owner, parts, fa_ids, english_id)
     except InterruptedError:
@@ -212,9 +233,12 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
         rate = SAMPLE_RATES.get(fa._dll.eciGetParam(fa._handle, SAMPLE_RATE))
         if rate is None:
             raise ValueError('invalid sentence sample rate')
-        plan = context_plan(sentence, fa, en, rate, maximum=30000, source_events=events)
+        def check_cancel():
+            if owner._cancelled.is_set():
+                raise InterruptedError('sentence planning was cancelled')
+        plan = context_plan(sentence, fa, en, rate, maximum=30000, source_events=events, check=check_cancel)
         original_counts = plan.counts
-        selected_sentence(plan, sentence, en, german, rate)
+        selected_sentence(plan, sentence, en, german, rate, check=check_cancel)
         marks = replay_marks(plan, original_counts)
     except InterruptedError:
         return False
@@ -231,3 +255,152 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
     owner._activate(fa_key)
     return FrameReplay(fa._dll).replay(fa.raw, plan.frames, marks, on_pcm, on_index,
                                       cancelled=owner._cancelled)
+
+
+def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
+    """Apply the selected U-to-A glide inside an otherwise Persian job."""
+    key, items = owner._home, []
+    for part in parts:
+        if isinstance(part, EciLanguage):
+            next_key = owner._key(part.language, part.voice)
+            if items and next_key != key:
+                return None
+            key = next_key
+        elif isinstance(part, (str, EciText, EciIndex)):
+            if isinstance(part, EciText) and (part.character_mode or part.speed_control):
+                return None
+            items.append(part)
+        else:
+            return None
+    if key[0] not in fa_ids or not items:
+        return None
+    engine = owner._activate(key)
+    if not isinstance(engine, ScopedDirectPersianEngine) or not hasattr(engine._voice._dll, 'reloq_fa_replay_frames'):
+        return None
+    engine._cancelled.clear()
+    if owner._cancelled.is_set():
+        return False
+    try:
+        prepared = project(items, engine._frontend, allow_fallback=engine._allow_fallback,
+                           pinglish=engine._pinglish)
+        matches = tuple(_TAG.finditer(prepared.tagged))
+        tags = tuple(match.group() for match in matches)
+        separators = tuple(prepared.tagged[a.end():b.start()] for a, b in zip(matches, matches[1:]))
+        if not any(_FINAL_U.search(a) and _INITIAL_A.match(b) and 'w' not in a and 'w' not in b and sep.isspace()
+                   for a, b, sep in zip(tags, tags[1:], separators)):
+            return engine._speak_prepared(prepared, on_pcm, on_index)
+        inserts, source, offset, next_mark = [], [], 0, 1
+        for part in prepared.parts:
+            if isinstance(part, EciText):
+                offset += len(part.text)
+            elif isinstance(part, EciIndex):
+                inserts.append((offset, len(inserts), next_mark))
+                source.append((next_mark, offset, part.value))
+                next_mark += 1
+            else:
+                return None
+        words = {}
+        for word, match in enumerate(matches):
+            if word:
+                inserts.append((match.start(), -1, next_mark))
+                words[word] = next_mark
+                next_mark += 1
+        sequence, position = [], 0
+        for at, _order, mark in sorted(inserts):
+            sequence.extend((prepared.tagged[position:at], EciIndex(mark)))
+            position = at
+        sequence.append(prepared.tagged[position:])
+        voice = _PlanningVoice(owner, key, engine, validate=prepared.needs_native_validation)
+        voice.raw._cancelled.clear()
+        if owner._cancelled.is_set():
+            return False
+        captured = FrameCapture(voice._dll).capture(voice, sequence, maximum=30000)
+        item = CapturedRows.from_capture(captured)
+        rate = SAMPLE_RATES.get(voice._dll.eciGetParam(voice._handle, SAMPLE_RATE))
+        if rate is None:
+            raise ValueError('invalid Persian sample rate')
+        boundaries = {word: round(item.indexes[mark] * 1000 / rate) for word, mark in words.items()}
+        controls = [row.controls for row in item.frames]
+        glides = plan_u_a_glides(controls, item.ticks, tags, separators, boundaries)
+        if not glides:
+            return engine._speak_prepared(prepared, on_pcm, on_index)
+        apply_u_a_glides(controls, item.ticks, glides)
+        marks = []
+        for mark, offset, value in source:
+            frame = (0 if offset == 0 else len(item.frames) if offset == len(prepared.tagged) else
+                     min(len(item.frames), bisect_left(item.ticks, round(item.indexes[mark] * 1000 / rate))))
+            marks.append((frame, value))
+    except InterruptedError:
+        return False
+    except (ValueError, RuntimeError, OSError) as error:
+        if owner._cancelled.is_set():
+            return False
+        _log.debug('Persian vowel glide unavailable: %s', error)
+        return None
+    if owner._cancelled.is_set():
+        return False
+    owner._activate(key)
+    return FrameReplay(voice._dll).replay(voice.raw, item.frames, marks, on_pcm, on_index,
+                                         cancelled=owner._cancelled)
+
+
+def sentence_jobs(parts, home):
+    """Split ordinary multi-sentence jobs at unambiguous full stops."""
+    if any(not isinstance(p, (str, EciText, EciIndex, EciLanguage, EciCapitalWord)) or
+           isinstance(p, EciText) and (p.character_mode or p.speed_control) for p in parts):
+        return ()
+    full = ''.join(p if isinstance(p, str) else p.text if isinstance(p, EciText) else
+                   p.original if isinstance(p, EciCapitalWord) else '' for p in parts)
+    if not any(c in full for c in '.!?؟\n'):
+        return ()
+    jobs, pending, key, offset = [], [], home, 0
+    for part in parts:
+        if isinstance(part, EciLanguage):
+            key = (part.language, part.voice)
+            pending.append(part)
+            continue
+        if isinstance(part, EciIndex):
+            pending.append(part)
+            continue
+        if isinstance(part, EciCapitalWord):
+            pending.append(part)
+            offset += len(part.original)
+            continue
+        value = part if isinstance(part, str) else part.text
+        begin = 0
+        for i, char in enumerate(value):
+            absolute = offset + i
+            if char not in '.!?؟\n':
+                continue
+            after = full[absolute + 1:absolute + 2]
+            if char == '.' and after and not after.isspace():
+                continue
+            if char == '.':
+                before = re.search(r'([A-Za-z]+)$', full[:absolute])
+                # Do not break common abbreviations into separate synthesis
+                # requests; the native language core interprets them.
+                if before and (len(before.group(1)) == 1 or
+                               before.group(1).casefold() in ('dr', 'mr', 'mrs', 'ms', 'prof', 'etc')):
+                    continue
+            fragment = value[begin:i + 1]
+            if fragment:
+                pending.append(fragment if isinstance(part, str) else EciText(
+                    fragment, segmentation_guarded=part.segmentation_guarded))
+            if any(isinstance(p, (str, EciText, EciCapitalWord)) and
+                   (p if isinstance(p, str) else p.text if isinstance(p, EciText) else p.original).strip()
+                   for p in pending):
+                jobs.append(tuple(pending))
+                pending = [EciLanguage(*key)]
+            begin = i + 1
+        fragment = value[begin:]
+        if fragment:
+            pending.append(fragment if isinstance(part, str) else EciText(
+                fragment, segmentation_guarded=part.segmentation_guarded))
+        offset += len(value)
+    if any(isinstance(p, (str, EciText, EciCapitalWord)) and
+           (p if isinstance(p, str) else p.text if isinstance(p, EciText) else p.original).strip()
+           for p in pending):
+        jobs.append(tuple(pending))
+    elif jobs:
+        jobs[-1] += tuple(p for p in pending if isinstance(p, EciIndex))
+    return tuple(jobs) if len(jobs) > 1 else ()

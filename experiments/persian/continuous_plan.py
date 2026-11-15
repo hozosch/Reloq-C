@@ -2,8 +2,7 @@
 
 The native frame capture and replay own cancellation and voice settings. This
 module has no NumPy, temporary files, global environment changes or helper
-processes. It is still an isolated planner until the driver supplies verified
-source positions and selected Persian text tags.
+processes. The driver supplies verified source positions and Persian tags.
 """
 from __future__ import annotations
 
@@ -222,15 +221,22 @@ def _edges(item, count):
     return tuple(result)
 
 
-def _dense(item, column):
+def _dense(item, column, check=None):
     values = [row.controls[column] for row in item.frames]
-    return [_f32(_interp(i, item.ticks, values)) for i in range(item.ticks[-1] + 1)]
+    result = []
+    for i in range(item.ticks[-1] + 1):
+        if check and not i % 1024:
+            check()
+        result.append(_f32(_interp(i, item.ticks, values)))
+    return result
 
 
-def _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate):
-    f0 = _dense(item, 1)
-    av = _dense(item, 2)
+def _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate, check=None):
+    f0 = _dense(item, 1, check)
+    av = _dense(item, 2, check)
     for i, part in enumerate(parts):
+        if check:
+            check()
         if part.language != language:
             continue
         start = round(bounds[i] * 1000 / rate)
@@ -244,7 +250,9 @@ def _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language,
         a, b = pilot_bounds[i], pilot_bounds[i + 1]
         if not 0 <= a < b < len(pilot_pitch):
             raise RuntimeError('invalid shared pitch interval')
-        for row in item.frames:
+        for number, row in enumerate(item.frames):
+            if check and not number % 1024:
+                check()
             tick = row.tick
             if tick < start or tick >= end:
                 continue
@@ -268,7 +276,7 @@ class SentencePlan:
     source_marks: tuple[tuple[int, int, int], ...] = ()
 
 
-def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=()):
+def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), check=None):
     parts = tuple(parts)
     if not parts or len(parts) > 32 or {p.language for p in parts} != {'fa', 'en-us'}:
         raise ValueError('expected a bounded mixed English/Persian clause')
@@ -278,6 +286,8 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=()):
         raise ValueError('source rates do not match the replay clock')
     capture_api = FrameCapture(fa._dll)
     def get(voice, planned):
+        if check:
+            check()
         return CapturedRows.from_capture(capture_api.capture(voice, planned, maximum=maximum))
     pilot_parts = []
     for index, part in enumerate(parts):
@@ -288,7 +298,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=()):
             raise ValueError('Persian proxy was rejected')
         pilot_parts.append(proxy)
     pilot = get(fa, pilot_parts)
-    pilot_pitch = _dense(pilot, 1)
+    pilot_pitch = _dense(pilot, 1, check)
     pilot_bounds = (0, *(round(pilot.indexes[i] * 1000 / rate) for i in range(1, len(parts))),
                     min(_last_audible(pilot.pcm, rate), len(pilot_pitch) - 1))
     if any(a >= b for a, b in zip(pilot_bounds, pilot_bounds[1:])):
@@ -307,7 +317,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=()):
     for language, voice in (('fa', fa), ('en-us', en)):
         item = get(voice, _context(parts, language, en, fa, word_markers, source_marks))
         bounds = _edges(item, len(parts))
-        _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate)
+        _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate, check)
         contexts[language], edges[language] = item, bounds
     chunks, counts, firsts = [], [], []
     for i, part in enumerate(parts):
@@ -327,10 +337,11 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=()):
                        ctypes.addressof(source) + first * ctypes.sizeof(NativeFrame), length)
         offset += last - first
     replay_marks = []
-    for segment, _offset, _order, mark, value in source_marks:
+    for segment, offset, _order, mark, value in source_marks:
         item = contexts[parts[segment].language]
         source = bisect_left(item.ticks, round(item.indexes[mark] * 1000 / rate))
-        local = max(0, min(counts[segment], source - firsts[segment]))
+        local = (0 if offset == 0 else counts[segment] if offset == len(parts[segment].text) else
+                 max(0, min(counts[segment], source - firsts[segment])))
         replay_marks.append((segment, local, value))
     if any(a[:2] > b[:2] for a, b in zip(replay_marks, replay_marks[1:])):
         raise RuntimeError('source indexes are not ordered')
@@ -724,18 +735,24 @@ def apply_persian_u_a(plan, parts, rate, original_counts):
     return tuple(changes)
 
 
-def selected_sentence(plan, parts, en, german, rate):
+def selected_sentence(plan, parts, en, german, rate, *, check=None):
     """Apply the user's selected sentence and A-to-Ach transition."""
     original_counts = plan.counts
+    if check: check()
     bridged = bridge_sonorants(plan, parts, rate)
+    if check: check()
     cuts = direct_ach(plan, parts)
+    if check: check()
     template = german_ach_template(german) if cuts else None
+    if check: check()
     extended = extend_english_a(plan, parts, cuts, en) if cuts else ()
     ach = apply_german_ach(plan, parts, cuts, template, en) if template else ()
+    if check: check()
     released = smooth_ach_release(plan, cuts) if cuts else ()
     f3 = apply_german_f3(plan, ach, template) if ach else ()
     faded = fade_english_voice(plan, parts, ach, en) if ach else ()
     glides = apply_persian_u_a(plan, parts, rate, original_counts)
+    if check: check()
     # Source filters depend on the edited noise-band values, not on the
     # values from the unmodified context capture.
     for row in plan.frames:

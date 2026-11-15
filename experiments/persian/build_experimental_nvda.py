@@ -1,8 +1,9 @@
 """Build an explicitly labelled Persian/Pinglish NVDA test package.
 
 Only use a Windows DLL and worker which have passed the focused tests. The
-streaming cross-language contour and the complete native rules remain work in
-progress. This script does not publish or replace a release.
+bounded sentence planner uses the selected cross-language transition; some
+uncovered text still needs the isolated reference worker. This script does
+not publish or replace a release.
 """
 from __future__ import annotations
 

@@ -20,6 +20,8 @@ on:
       - experiments/persian/direct_fa_sequence.py
       - experiments/persian/continuous_driver.py
       - experiments/persian/continuous_plan.py
+      - experiments/persian/test_continuous_runtime.py
+      - experiments/persian/test_nvda_driver_probe.py
       - experiments/persian/continuous_frames.c
       - experiments/persian/continuous_frames.h
       - experiments/persian/continuous_replay.inc
@@ -34,6 +36,7 @@ on:
       - nvda/_reloq_persian_projection.py
       - nvda/_reloq_persian_frames.py
       - nvda/_reloq_persian_glide.py
+      - nvda/_reloq_languages.py
       - .github/workflows/persian-nvda-package-probe.yml
       - .github/workflows/persian-windows-acoustic-probe.yml
 permissions:
@@ -108,6 +111,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Windows Pinglish playback failed' }
           python -B experiments/persian/test_nvda_driver_probe.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows Persian language switching failed' }
+          python -B experiments/persian/test_continuous_runtime.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'Windows continuous sentence and source indexes failed' }
           python -B experiments/persian/test_direct_fa_letters.py --native-library "$pwd/fa-direct.dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows Persian spelling failed' }
       - name: Build the private NVDA test add-on

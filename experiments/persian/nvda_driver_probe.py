@@ -13,14 +13,14 @@ import unicodedata
 if __package__:
     from .direct_fa_sequence import ScopedDirectPersianEngine
     from .hybrid_fa_frontend import DirectFirstPersian
-    from .continuous_driver import try_continuous
+    from .continuous_driver import sentence_jobs, try_continuous, try_persian_glides
     from .._reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
                                      EciPitch, EciPitchHz, EciProsody, EciText)
     from .._reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
 else:
     from direct_fa_sequence import ScopedDirectPersianEngine
     from hybrid_fa_frontend import DirectFirstPersian
-    from continuous_driver import try_continuous
+    from continuous_driver import sentence_jobs, try_continuous, try_persian_glides
     from _reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
                                   EciPitch, EciPitchHz, EciProsody, EciText)
     from _reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
@@ -121,10 +121,39 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 select(logical)
             output.append(part)
         try:
-            result = try_continuous(self, output, on_pcm, on_index,
-                                    fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id),
-                                    english_id=US_ENGLISH.id, german_id=GERMAN.id)
-            return super().speak(output, on_pcm, on_index) if result is None else result
+            # Sentence splitting is needed only when this request contains a
+            # Persian/English switch. Keep unrelated languages on their
+            # original native utterance path.
+            key, spoken = self._home, set()
+            for item in output:
+                if isinstance(item, EciLanguage):
+                    key = self._key(item.language, item.voice)
+                elif isinstance(item, (str, EciText, EciCapitalWord)):
+                    value = item if isinstance(item, str) else item.text if isinstance(item, EciText) else item.original
+                    if value.strip():
+                        spoken.add(key[0])
+            allowed = {US_ENGLISH.id, PERSIAN_PROBE.id, PINGLISH_PROBE.id}
+            mixed = (spoken <= allowed and US_ENGLISH.id in spoken and
+                     bool(spoken & {PERSIAN_PROBE.id, PINGLISH_PROBE.id}))
+            jobs = sentence_jobs(output, self._home) if mixed else ()
+            if not jobs:
+                jobs = (tuple(output),)
+            self._cancelled.clear()
+            for job in jobs:
+                if self._cancelled.is_set():
+                    return False
+                result = try_continuous(self, job, on_pcm, on_index,
+                                        fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id),
+                                        english_id=US_ENGLISH.id, german_id=GERMAN.id,
+                                        reset_cancellation=False)
+                if result is None and not self._cancelled.is_set():
+                    result = try_persian_glides(self, job, on_pcm, on_index,
+                                                fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id))
+                if result is None and not self._cancelled.is_set():
+                    result = super().speak(job, on_pcm, on_index, reset_cancellation=False)
+                if not result or self._cancelled.is_set():
+                    return False
+            return True
         finally:
             self._activate(self._home)
 
