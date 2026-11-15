@@ -85,7 +85,7 @@ def main():
         for label in (log_label, normalized):
             part = frontend.analyze_direct(label.split(' (')[0])
             assert part and target in part.parts[0].text
-            assert '`[.1sAbt] `[.1So.0d\'e:\']' in part.parts[0].text
+            assert '`[.1sAbt.1So.0d\'e:\']' in part.parts[0].text
             assert render((EciIndex(92), label, EciIndex(93)))[0]
         assert frontend._worker is None, 'the normalized NVDA label should use direct text rules'
         unlisted = 'اِتِّفاقات'

@@ -47,11 +47,9 @@ static int follows_word_in_phrase(const char *text,size_t length,size_t at)
             text[next]>='0' && text[next]<='9');
 }
 
-/* eSpeak can mark both halves of a half-space compound as stressed in one
- * phone string. Give Eloquence two native word units only when independently
- * verified parts reproduce that entire string exactly; otherwise retain the
- * original word. This restores native phrase prediction without guessing
- * either the phones or the stress of a compound. */
+/* Restore the native phrase prediction of verified -دار compounds such as
+ * the NVDA checkbox state علامت‌دار. Both halves must independently reproduce
+ * the entire original phone and stress sequence; otherwise keep one word. */
 static void retain_compound_prosody(const char *word,size_t bytes,int follows,
                                     char *tag,size_t capacity)
 {
@@ -60,9 +58,8 @@ static void retain_compound_prosody(const char *word,size_t bytes,int follows,
     while(at+sizeof joiner-1<=bytes && memcmp(word+at,joiner,sizeof joiner-1))++at;
     if(!at || at+sizeof joiner-1>=bytes)return;
     size_t right_at=at+sizeof joiner-1;
-    /* The productive plural suffix stays in its established single-word
-       prosodic form, even though ها can also be pronounced in isolation. */
-    if(bytes-right_at>=4 && !memcmp(word+right_at,"\xd9\x87\xd8\xa7",4))return;
+    static const char dar[]="\xd8\xaf\xd8\xa7\xd8\xb1";
+    if(bytes-right_at!=sizeof dar-1 || memcmp(word+right_at,dar,sizeof dar-1))return;
     for(size_t i=right_at;i+sizeof joiner-1<=bytes;++i)
         if(!memcmp(word+i,joiner,sizeof joiner-1))return;
     char left[2048],right[2048];

@@ -1610,6 +1610,7 @@ rendered once from the selected frames. Captures fall back to full rendering
 when the native control-only capability is absent. Canonically equivalent
 orders of Arabic vowel marks and shadda map to the same direct pronunciation.
 Reference fallback uses eSpeak's expected mark order without deleting marks.
-When independently verified halves of a half-space compound reproduce the
-same phone and stress sequence, native word units retain both accents; the
-established plural suffix stays on its existing path.
+For a `-دار` half-space compound, independently verified halves that exactly
+reproduce its phone and stress sequence receive separate native word units,
+restoring the checkbox state's phrase tone. Other compound forms retain their
+existing pronunciation and prosodic path.

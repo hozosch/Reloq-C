@@ -240,7 +240,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if spelling == 'pipeline_stop' and '`[.2mo.0te.1vAR.0Ref]' not in tags:
                     raise AssertionError('NVDA spelled the Persian word for stopped: ' + ascii(tags))
                 if spelling == 'pipeline_log' and ("`[.1'e:'t.0te.1fa.0Ra.2te]" not in tags or
-                        "`[.1sAbt] `[.1So.0d'e:']" not in tags):
+                        "`[.1sAbt.1So.0d'e:']" not in tags):
                     raise AssertionError('NVDA spelled part of the normalized log label: ' + ascii(tags))
                 if spelling in ('checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most'):
                     expected = ("`[.0'A:'.1la.0mAt]" if spelling == 'checkbox_unchecked' else
