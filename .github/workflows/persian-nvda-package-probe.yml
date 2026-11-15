@@ -93,6 +93,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Windows package adapter failed' }
           python -B experiments/persian/test_pinglish_driver.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows Pinglish playback failed' }
+          python -B experiments/persian/test_nvda_driver_probe.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'Windows Persian language switching failed' }
       - name: Build the private NVDA test add-on
         shell: bash
         run: |

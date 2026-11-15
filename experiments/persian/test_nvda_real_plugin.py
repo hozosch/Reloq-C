@@ -43,10 +43,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         try:
             import nvwave
             import speech
-            from speech.commands import CharacterModeCommand, IndexCommand
+            from speech.commands import CharacterModeCommand, IndexCommand, LangChangeCommand
             import synthDriverHandler
             import synthDrivers.reloqC as reloq
             self.speech, self.character, self.index_command = speech, CharacterModeCommand, IndexCommand
+            self.language_command = LangChangeCommand
             nvwave.WavePlayer = self.player
             reloq.SynthDriver._make_player = staticmethod(self.player)
             speech.cancelSpeech()
@@ -66,6 +67,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_Latn', 'w', True),
                           ('fa_Latn', 'NVDA', True),
                           ('fa_IR', 'ق', True),
+                          ('fa_IR', 'NVDA خوب', 'mixed'),
                           ('de_DE', 'Guten Tag.', False)]
             self.next()
         except BaseException:
@@ -84,7 +86,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if self.synth.language != locale:
                 raise AssertionError('language selection did not stick: ' + locale)
             self.before = {id(player): len(player.chunks) for player in self.players}
-            sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
+            if spelling == 'mixed':
+                sequence = [self.language_command('en_US'), 'NVDA ',
+                            self.language_command('fa_IR'), 'خوب']
+            else:
+                sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
             self.synth.speak([self.index_command(self.index + 1), *sequence])
             wx.CallLater(1600, self.capture)
         except BaseException:

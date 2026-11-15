@@ -1,8 +1,8 @@
 """Exercise the real NVDA language/queue contract with a private FA voice.
 
-This factory is only for tests. Its Persian ID is not a public ECI dialect,
-and it deliberately rejects mixed-language jobs until the accepted shared
-sentence contour and acoustic transitions are available online.
+This factory is only for tests. Its Persian IDs are not public ECI dialects.
+Explicit NVDA language switches use the regular per-language engines. The
+accepted shared sentence contour and transitions are not integrated yet.
 """
 from __future__ import annotations
 
@@ -11,14 +11,12 @@ from pathlib import Path
 if __package__:
     from .direct_fa_sequence import ScopedDirectPersianEngine
     from .hybrid_fa_frontend import DirectFirstPersian
-    from .text_frontend import UnsupportedPronunciation
-    from .._reloq_eci_direct import DirectEciEngine, EciCapitalWord, EciLanguage, EciText
+    from .._reloq_eci_direct import DirectEciEngine
     from .._reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
 else:
     from direct_fa_sequence import ScopedDirectPersianEngine
     from hybrid_fa_frontend import DirectFirstPersian
-    from text_frontend import UnsupportedPronunciation
-    from _reloq_eci_direct import DirectEciEngine, EciCapitalWord, EciLanguage, EciText
+    from _reloq_eci_direct import DirectEciEngine
     from _reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
 
 PERSIAN_PROBE = Language(0x7f0000, 'Persian test', 'fa_IR', 'utf-8', US_ENGLISH.voices)
@@ -48,25 +46,7 @@ class OwnedPersianEngine(ScopedDirectPersianEngine):
 
 
 class PersianProbeLanguageEngine(LanguageEngine):
-    """Do not play a partially planned sentence across language switches."""
-    def speak(self, parts, on_pcm, on_index):
-        self._assert_owner()
-        parts = tuple(parts)
-        key = self._home
-        languages = set()
-        for part in parts:
-            if isinstance(part, EciLanguage):
-                key = self._key(part.language, part.voice)
-            elif isinstance(part, EciCapitalWord):
-                if part.original:
-                    languages.add(key[0])
-            elif isinstance(part, (str, EciText)):
-                text = part if isinstance(part, str) else part.text
-                if text:
-                    languages.add(key[0])
-        if languages.intersection((PERSIAN_PROBE.id, PINGLISH_PROBE.id)) and len(languages) > 1:
-            raise UnsupportedPronunciation('continuous Persian language switching is not integrated')
-        return super().speak(parts, on_pcm, on_index)
+    """Use ordinary language switches until continuous contour is integrated."""
 
 
 def make_language_engine(library, native_library, worker, espeak_library, data_parent,

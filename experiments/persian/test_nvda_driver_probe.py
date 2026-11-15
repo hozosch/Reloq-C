@@ -10,7 +10,6 @@ import time
 from direct_fa_sequence import EciIndex, EciText
 from nvda_driver_probe import (PERSIAN_PROBE, PINGLISH_PROBE, PROFILES,
                                PersianProbeLanguageEngine, make_language_engine)
-from text_frontend import UnsupportedPronunciation
 from _reloq_eci_direct import EciLanguage, PROCESS_TAGS
 from _reloq_eci_transport import EciTextTransport
 from _reloq_languages import FINNISH, US_ENGLISH, language_for
@@ -48,13 +47,11 @@ def fake_routing_test():
         assert engine.speak((EciIndex(14), 'salam', EciIndex(15)), pcm.extend, indexes.append)
         assert bytes(pcm) == b'\x7f' and indexes[-2:] == [14, 15]
         pcm.clear()
-        try:
-            engine.speak((EciLanguage(US_ENGLISH.id, '1'), 'NVDA ',
-                          EciLanguage(PERSIAN_PROBE.id, '1'), 'خوب'),
-                         pcm.extend, indexes.append)
-            raise AssertionError('mixed language was played without continuous context')
-        except UnsupportedPronunciation:
-            assert not pcm
+        assert engine.speak((EciLanguage(US_ENGLISH.id, '1'), EciIndex(16), 'NVDA ',
+                             EciLanguage(PERSIAN_PROBE.id, '1'), EciIndex(17), 'خوب', EciIndex(18)),
+                            pcm.extend, indexes.append)
+        assert bytes(pcm) == b'\x01\x7f' and indexes[-3:] == [16, 17, 18]
+        pcm.clear()
         assert engine.speak((EciLanguage(US_ENGLISH.id, '1'), 'Hello'),
                             pcm.extend, lambda _: None)
         assert bytes(pcm) == b'\x01'
@@ -136,14 +133,14 @@ def real_transport_tests(args):
         assert latin and acronym and unknown
         transport.select_voice(PERSIAN_PROBE.id, '1')
 
-        # Do not play the English prefix of a sentence whose cross-language
-        # contour has not yet been implemented.
-        previous_feeds = len(player.pcm)
-        failed = transport.submit((EciLanguage(US_ENGLISH.id, '1'), 'NVDA ',
-                                   EciLanguage(PERSIAN_PROBE.id, '1'), 'خوب'))
-        drain_until(lambda: ('done', failed) in observed and bool(errors))
-        assert len(player.pcm) == previous_feeds
-        assert isinstance(errors.pop(), UnsupportedPronunciation)
+        # Explicit language switches must speak both parts, even before the
+        # continuous cross-language contour becomes available to the driver.
+        _, english = run((EciLanguage(US_ENGLISH.id, '1'), 'NVDA ', EciIndex(40)))
+        _, persian = run(('خوب', EciIndex(41)))
+        mixed_job, mixed = run((EciLanguage(US_ENGLISH.id, '1'), EciIndex(42), 'NVDA ',
+                                EciLanguage(PERSIAN_PROBE.id, '1'), EciIndex(43), 'خوب', EciIndex(44)))
+        assert english and persian and mixed == english + persian
+        assert observed[-4:] == [('index', 42), ('index', 43), ('index', 44), ('done', mixed_job)]
         _, recovered = run(('سلام.', EciIndex(8)))
         assert recovered
 
@@ -175,7 +172,7 @@ def main():
     fake_routing_test()
     if all(paths):
         real_transport_tests(args)
-    print('Passed Persian NVDA language-routing guard' +
+    print('Passed Persian NVDA language routing' +
           (', native playback queue and cancellation.' if all(paths) else '.'))
 
 
