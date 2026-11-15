@@ -1588,10 +1588,11 @@ python3 experiments/persian/compare_vowel_glide.py \
 
 ## Short front vowel and continuing bracket phrases
 
-The scoped Persian profile fixes the Finnish short-front vowel nucleus to
-the values measured in the existing Persian letter name `alef`, while keeping
-the selected native voice's F5 and bandwidths and the adjacent consonants'
-trajectories. The previous `alef` itself is unchanged in both voice types;
+The scoped Persian profile fixes all five Finnish short-front vowel formants
+and bandwidths to the values measured in the existing Persian letter name
+`alef` for the selected voice type, while retaining the adjacent consonants'
+trajectories. The higher, voice-default formants also match the `alef` sample.
+The previous `alef` itself is unchanged in both voice types;
 the long back vowel and unscoped Finnish remain separate. The generated
 provider has an opt-in `RELOQ_FA_FRONT_A_TARGET=alef-fixed` for isolated
 comparisons; the installed probe selects it only inside Persian synthesis.

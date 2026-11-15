@@ -39,16 +39,40 @@ def add_persian(entries, worker: bytes, text_library: bytes):
     if any(source.count(value) != 1 for value in (old_import, old_languages, old_factory)):
         raise ValueError('the NVDA driver changed; its Persian adapter must be reviewed')
     source = source.replace(old_import,
-                            'from ._reloq_persian_bridge import add_profiles, make_engine\n' + old_import, 1)
+                            'from ._reloq_persian_bridge import add_profiles, make_engine\n'
+                            'from ._reloq_persian_joiners import (ReloqPersianJoinerGuard, joiner_pending,\n'
+                            '    protect_joiners, restore_joiners)\n' + old_import, 1)
     source = source.replace(old_languages, 'self._languages = add_profiles(dict(LANGUAGES), DLL)', 1)
     source = source.replace(old_factory,
                             'lambda: make_engine(DLL, languages=self._languages,\n'
                             '                language=initial_language, voice=initial_voice)', 1)
+    substitutions = (
+        ('    segmentation_guarded = False\n    last_text_alnum = False',
+         '    segmentation_guarded = False\n    persian_joiners = False\n    last_text_alnum = False'),
+        ('            said = item\n', '            said = restore_joiners(item) if persian_joiners else item\n'),
+        ('        elif isinstance(item, SegmentationGuard):\n',
+         '        elif isinstance(item, ReloqPersianJoinerGuard):\n'
+         '            persian_joiners = item.enabled\n'
+         '        elif isinstance(item, SegmentationGuard):\n'),
+        ('NativeDictionaryWord, CapitalWordCommand}',
+         'NativeDictionaryWord, CapitalWordCommand, ReloqPersianJoinerGuard}'),
+        ('any(isinstance(item, str) and _BUILTIN_BOUNDARY.search(item) for item in sequence))',
+         'any(isinstance(item, str) and _BUILTIN_BOUNDARY.search(item) for item in sequence) or\n'
+         '                            joiner_pending(sequence))'),
+        ('        speechSequence[:] = self._protect_tags(prepared, symbolLevel=symbolLevel)',
+         '        prepared = self._protect_tags(prepared, symbolLevel=symbolLevel)\n'
+         '        speechSequence[:] = protect_joiners(self, prepared, symbol_level=symbolLevel)'),
+    )
+    for old, new in substitutions:
+        if source.count(old) != 1:
+            raise ValueError('the NVDA Persian joiner adapter must be reviewed')
+        source = source.replace(old, new, 1)
     entries[driver] = source.encode('utf8')
     entries[PREFIX + '_reloq_persian_projection.py'] = (ROOT / 'nvda/_reloq_persian_projection.py').read_bytes()
     entries[PREFIX + '_reloq_persian_frames.py'] = (ROOT / 'nvda/_reloq_persian_frames.py').read_bytes()
     entries[PREFIX + '_reloq_persian_glide.py'] = (ROOT / 'nvda/_reloq_persian_glide.py').read_bytes()
     entries[PREFIX + '_reloq_persian_bridge.py'] = (ROOT / 'nvda/_reloq_persian_bridge.py').read_bytes()
+    entries[PREFIX + '_reloq_persian_joiners.py'] = (ROOT / 'nvda/_reloq_persian_joiners.py').read_bytes()
     entries[PREFIX + '_persian/__init__.py'] = b'"""Private Persian test frontend."""\n'
     for name in MODULES:
         entries[PREFIX + '_persian/' + name + '.py'] = (HERE / (name + '.py')).read_bytes()

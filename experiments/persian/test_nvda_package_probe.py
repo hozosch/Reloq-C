@@ -34,6 +34,8 @@ def main():
     assert 'Persisch- und Pinglish-Test' in entries['locale/de/manifest.ini'].decode('utf8')
     assert b'add_profiles(dict(LANGUAGES), DLL)' in entries[PREFIX + '__init__.py']
     assert b'lambda: make_engine(' in entries[PREFIX + '__init__.py']
+    assert b'protect_joiners(self, prepared' in entries[PREFIX + '__init__.py']
+    assert PREFIX + '_reloq_persian_joiners.py' in entries
     with tempfile.TemporaryDirectory(prefix='reloq-fa-package-') as temp:
         folder = Path(temp)
         package = folder / 'probe_driver'

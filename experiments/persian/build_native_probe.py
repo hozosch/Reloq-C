@@ -121,13 +121,21 @@ FRONT_A_PATCH = r'''
     {
         const char *target=getenv("RELOQ_FA_FRONT_A_TARGET");
         if (target && strcmp(target,"alef-fixed")==0) {
+            int female=STATE(int16_t,s456)>=4300;
             STATE(int16_t,s448)=680;  STATE(int16_t,s449)=680;
             STATE(int16_t,s450)=1500; STATE(int16_t,s451)=1450;
             STATE(int16_t,s452)=2550; STATE(int16_t,s453)=2550;
-            /* F5 and bandwidths retain the selected native voice's values.
-               Its F5 distinguishes the two recorded alef F4 targets. */
-            STATE(int16_t,s454)=STATE(int16_t,s456)>=4300 ? 4200 : 3600;
+            /* Use the complete measured alef nucleus for the selected
+               native voice, including higher formants and bandwidths. */
+            STATE(int16_t,s454)=female ? 4200 : 3600;
             STATE(int16_t,s455)=-1;
+            STATE(int16_t,s456)=female ? 4600 : 3900;
+            STATE(int16_t,s457)=-1;
+            STATE(int16_t,s397)=female ? 300 : 120;
+            STATE(int16_t,s398)=female ? 200 : 100;
+            STATE(int16_t,s399)=150;
+            STATE(int16_t,s400)=female ? 300 : 330;
+            STATE(int16_t,s401)=500;
         }
         if (getenv("RELOQ_FA_TRACE_FRONT_A"))
             fprintf(stderr,"FA_FRONT F=%d,%d,%d,%d,%d R=%d,%d,%d,%d,%d B=%d,%d,%d,%d,%d\n",

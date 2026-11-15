@@ -46,7 +46,7 @@ def main():
                 alef = capture(current, scope, '`[.1A.0lef]')
                 rows = alef.frames()
                 first = next(row for row in rows if row.controls[2] > 0)
-                columns = (9, 15, 17, 19)
+                columns = (9, 15, 17, 19, 21, 23, 25, 10, 14, 16, 18, 20, 22, 24, 26)
                 target = tuple(first.controls[i] for i in columns)
                 def anchored(row):
                     return (row.controls[2] > 0 and

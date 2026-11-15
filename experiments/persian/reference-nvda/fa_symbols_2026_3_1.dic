@@ -1,0 +1,5 @@
+﻿# Persian joiner entries from NVDA release-2026.3.1, GPL-2.0-or-later.
+# Source: source/locale/fa/symbols.dic
+symbols:
+‍	نیم‌اتصال	char	never
+‌	نیم‌فاصله	char	never
