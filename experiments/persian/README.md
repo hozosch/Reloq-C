@@ -1447,8 +1447,9 @@ test from masquerading as the user's approved seamless transition.
 
 The explicit Pinglish test profile sends general Romanized words to the
 `fa-latn` reference and gives all 26 Latin letters their eSpeak spelling names.
-The spellings `salam`, `salaam`, `donya`, and `donyaa` use the already accepted
-Persian-script word sounds and stress, including their vowel colours. Their
+Common spellings of selected words such as `salam`, `iran`, `khub`, `nokte`,
+`kaghaz` and `farsi` use their accepted Persian-script sounds and stress,
+including the selected vowels and uvular consonant. Their
 source maps preserve word-level NVDA indexes, including when a reference word
 or direct number occurs in the same phrase. A raw phoneme or source position
 that cannot be verified is rejected. This is a selectable profile in the test

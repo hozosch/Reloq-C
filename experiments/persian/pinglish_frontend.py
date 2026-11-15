@@ -11,7 +11,14 @@ else:
 
 # These are spelling aliases for pronunciations already confirmed in the
 # Persian-script voice, not a general transliterator or English detection.
-ALIASES = {'salam': 'سلام', 'salaam': 'سلام', 'donya': 'دنیا', 'donyaa': 'دنیا'}
+ALIASES = {
+    'salam': 'سلام', 'salaam': 'سلام', 'donya': 'دنیا', 'donyaa': 'دنیا',
+    'iran': 'ایران', 'iraan': 'ایران', 'khub': 'خوب', 'khoob': 'خوب',
+    'nokte': 'نقطه', 'nokteh': 'نقطه', 'noghte': 'نقطه', 'noghteh': 'نقطه',
+    'kaghaz': 'کاغذ', 'kakhaz': 'کاغذ', 'sefr': 'صفر', 'yek': 'یک',
+    'farsi': 'فارسی', 'faarsi': 'فارسی', 'ketab': 'کتاب', 'ketaab': 'کتاب',
+    'man': 'من',
+}
 LATIN_NAMES = {
     'a': '`[.1ej]', 'b': '`[.1bi]', 'c': '`[.1si]', 'd': '`[.1di]',
     'e': '`[.1i]', 'f': '`[.1ef]', 'g': '`[.1Ji]', 'h': '`[.1ejC]',

@@ -40,8 +40,9 @@ def main():
             target = package / name[len(PREFIX):]
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(content)
-        library = package / 'eci.dll'
-        shutil.copyfile(args.native_library, library)
+        # Keep the loaded native DLL outside the temporary package: Windows
+        # cannot remove a DLL while Python still owns its loaded module.
+        library = args.native_library.resolve()
         installed = folder / 'nvda' / 'synthDrivers'
         installed.mkdir(parents=True)
         shutil.copyfile(args.espeak_library, installed / 'espeak.dll')
@@ -55,6 +56,8 @@ def main():
             bridge = importlib.import_module('probe_driver._reloq_persian_bridge')
             languages = importlib.import_module('probe_driver._reloq_languages')
             eci = importlib.import_module('probe_driver._reloq_eci_direct')
+            assert bridge._paths(package / 'eci.dll') == (worker, installed / 'espeak.dll', installed)
+            bridge._paths = lambda _library: (worker, installed / 'espeak.dll', installed)
             worker.rename(worker.with_suffix('.missing'))
             assert bridge.add_profiles(dict(languages.LANGUAGES), library) == languages.LANGUAGES
             worker.with_suffix('.missing').rename(worker)
@@ -76,7 +79,7 @@ def main():
                 assert bytes(pcm) == original
                 engine.select_voice(pinglish.id, '1')
                 pcm.clear()
-                assert engine.speak(('salam ', eci.EciIndex(4), 'khub?'), pcm.extend, lambda _: None)
+                assert engine.speak(('salam ', eci.EciIndex(4), 'khubtar?'), pcm.extend, lambda _: None)
                 assert pcm
             finally:
                 engine.close()

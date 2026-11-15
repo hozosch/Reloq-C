@@ -23,7 +23,9 @@ def check_mapping(text, result):
 def analysis_tests(frontend):
     pairs = {'salam donya?': 'سلام دنیا?', 'Salaam Donyaa!': 'سلام دنیا!',
              'SALAM DONYA?': 'سلام دنیا?',
-             'salam ۱۲ donya?': 'سلام ۱۲ دنیا?'}
+             'salam ۱۲ donya?': 'سلام ۱۲ دنیا?',
+             'iran nokte kaghaz?': 'ایران نقطه کاغذ?',
+             'khoob yek sefr farsi ketab man': 'خوب یک صفر فارسی کتاب من'}
     for source, expected in pairs.items():
         normalized, mapping = normalize_pinglish(source)
         assert normalized == expected
@@ -73,14 +75,14 @@ def analysis_tests(frontend):
         return tuple(events)
     worker.events = transient_events
     try:
-        check_mapping('salam khub', frontend.analyze_pinglish('salam khub', positioned=True,
-                                                              allow_fallback=True))
+        check_mapping('salam khubtar', frontend.analyze_pinglish('salam khubtar', positioned=True,
+                                                                 allow_fallback=True))
         assert len(calls) == 2
     finally:
         worker.events = original_events
 
-    for source in ('salam khub?', 'khoob salam', 'yek', 'salam, khub.',
-                   'salam 12 khub', 'khoob ۳٫۱۴ donya?', 'khoob 12 khub 34?'):
+    for source in ('salam khubtar?', 'khubtar salam', 'chetori', 'salam, khubtar.',
+                   'salam 12 khubtar', 'khubtar ۳٫۱۴ donya?', 'khubtar 12 khubtar 34?'):
         result = frontend.analyze_pinglish(source, positioned=True, allow_fallback=True)
         if result is None:
             normalized, _ = normalize_pinglish(source)
@@ -98,14 +100,14 @@ def analysis_tests(frontend):
         assert result.used_fallback
         assert result.parts == frontend.analyze_pinglish(source, positioned=False, allow_fallback=True).parts
         assert not frontend.analyze_pinglish(source, positioned=False, allow_fallback=False)
-    word = frontend.analyze_pinglish('salam khub', positioned=True, allow_fallback=True)
+    word = frontend.analyze_pinglish('salam khubtar', positioned=True, allow_fallback=True)
     assert word.parts[0].text.startswith(frontend.analyze_direct('سلام').parts[0].text)
     assert word.source_map[len('salam ')] == word.parts[0].text.index('`[', 1)
-    parts = ('salam ', EciIndex(7), 'khub?', EciIndex(8))
+    parts = ('salam ', EciIndex(7), 'khubtar?', EciIndex(8))
     job = project(parts, frontend, pinglish=True, allow_fallback=True)
     assert job.needs_native_validation and [p.value for p in job.parts if isinstance(p, EciIndex)] == [7, 8]
     assert frontend.analyze_pinglish('salam father donya', positioned=False, allow_fallback=True) is None
-    numbered = project(('salam ', EciIndex(9), '1', EciIndex(10), '2 khub'),
+    numbered = project(('salam ', EciIndex(9), '1', EciIndex(10), '2 khubtar'),
                        frontend, pinglish=True, allow_fallback=True)
     assert numbered.needs_native_validation
     assert [p.value for p in numbered.parts if isinstance(p, EciIndex)] == [9, 10]
@@ -127,8 +129,8 @@ def playback_tests(frontend, probe):
             assert voice.speak((roman,), actual.extend, lambda _: None)
             assert expected and actual == expected
         for parts in ((EciText('w', character_mode=True),),
-                      ('salam ', EciIndex(2), 'khub?', EciIndex(3)),
-                      ('khoob ', EciIndex(4), '۳٫۱۴ donya?', EciIndex(5))):
+                      ('salam ', EciIndex(2), 'khubtar?', EciIndex(3)),
+                      ('khubtar ', EciIndex(4), '۳٫۱۴ donya?', EciIndex(5))):
             pcm, marks = bytearray(), []
             assert voice.speak(parts, pcm.extend, marks.append) and pcm
             assert marks == [p.value for p in parts if isinstance(p, EciIndex)]

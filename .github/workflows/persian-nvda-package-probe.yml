@@ -1,0 +1,101 @@
+name: Persian and Pinglish NVDA test package
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/persian-nvda-prep-20261115]
+    paths:
+      - experiments/persian/build_experimental_nvda.py
+      - experiments/persian/test_nvda_package_probe.py
+      - experiments/persian/test_nvda_real_plugin.py
+      - experiments/persian/pinglish_frontend.py
+      - experiments/persian/hybrid_fa_frontend.py
+      - experiments/persian/direct_fa_sequence.py
+      - experiments/persian/reference_alignment.py
+      - experiments/persian/nvda_driver_probe.py
+      - nvda/_reloq_persian_bridge.py
+      - .github/workflows/persian-nvda-package-probe.yml
+permissions:
+  contents: read
+  actions: read
+  checks: read
+concurrency:
+  group: persian-nvda-package-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  package:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Wait for the selected Windows acoustic probe
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run watch 43705131259 --exit-status --interval 15 --repo "$GITHUB_REPOSITORY"
+          git diff --exit-code 1415f06939f3c09b0cb1f498f42cd13233966249 HEAD -- eci/Makefile src include vendor/openevv61 experiments/persian/build_native_probe.py experiments/persian/build_windows_probe.py experiments/persian/scoped_acoustics_probe.c
+      - uses: actions/download-artifact@v4
+        with:
+          name: persian-windows-acoustic-probe
+          run-id: 43705131259
+          github-token: ${{ github.token }}
+          path: candidate
+      - name: Build the isolated eSpeak text worker
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vs = & $vswhere -latest -products * -property installationPath
+          if (!$vs) { throw 'Visual Studio C compiler was not found' }
+          $envcmd = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
+          cmd.exe /d /c "`"$envcmd`" >nul && cl /nologo /O2 /W4 /std:c11 /Fe:fa-espeak-worker.exe experiments\persian\espeak_worker.c"
+          if ($LASTEXITCODE -ne 0) { throw 'Text worker compilation failed' }
+      - name: Obtain portable NVDA
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download release-2026.3.1 --repo nvaccess/nvda --pattern nvda_2026.3.1.exe --dir candidate
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA download failed' }
+          if ((Get-FileHash candidate/nvda_2026.3.1.exe -Algorithm SHA256).Hash -ne '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052') { throw 'Unexpected NVDA installer' }
+          $portable = Join-Path $pwd 'portable-nvda'
+          $p = Start-Process (Get-Item candidate/nvda_2026.3.1.exe).FullName -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/synthDrivers/espeak.dll")) { throw 'NVDA portable installation failed' }
+      - name: Verify the package adapter with the real Windows DLL
+        shell: pwsh
+        run: |
+          $dll = (Get-ChildItem candidate -Recurse -Filter eci_persian_probe.dll | Select-Object -First 1).FullName
+          $espeak = (Resolve-Path portable-nvda/synthDrivers/espeak.dll).Path
+          $data = (Resolve-Path portable-nvda/synthDrivers).Path
+          python -B experiments/persian/test_nvda_package_probe.py --native-library "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'Windows package adapter failed' }
+          python -B experiments/persian/test_pinglish_driver.py --native-library "$dll" --scope-probe "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'Windows Pinglish playback failed' }
+      - name: Build the private NVDA test add-on
+        shell: bash
+        run: |
+          export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
+          dll=$(find candidate -name eci_persian_probe.dll -print -quit)
+          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --worker fa-espeak-worker.exe --output dist/reloq-c-persian-pinglish-1.5.0-dev91.nvda-addon
+      - name: Test both choices in real NVDA
+        shell: pwsh
+        run: |
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon dist/reloq-c-persian-pinglish-1.5.0-dev91.nvda-addon --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
+          if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA Persian profile test failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: persian-pinglish-nvda-test
+          path: dist/reloq-c-persian-pinglish-1.5.0-dev91.nvda-addon
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: persian-pinglish-nvda-test-results
+          path: |
+            persian-nvda-results/result.json
+            persian-nvda-results/nvda.log
+          if-no-files-found: ignore
+          retention-days: 7
