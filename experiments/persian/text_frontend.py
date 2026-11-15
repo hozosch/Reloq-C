@@ -63,7 +63,16 @@ def parse_word(word: str) -> tuple[Phone, ...]:
         long = item.endswith(':')
         if long:
             item = item[:-1]
-        if item == 'q' and i + 1 < len(items) and items[i + 1] == '1':
+        if (item == 'q' and long and i + 2 < len(items) and
+                items[i + 1:i + 3] == ['q', '1']):
+            # eSpeak can realize a geminated Persian uvular as a long /q/
+            # closure followed by /q1/. Both share our Persian uvular slot;
+            # retain the two uvular portions rather than spelling the word.
+            result.append(Phone('q1'))
+            item = 'q1'
+            i += 2
+            long = False
+        elif item == 'q' and i + 1 < len(items) and items[i + 1] == '1':
             item = 'q1'
             i += 1
         if item not in VOWELS and item not in CONSONANTS:

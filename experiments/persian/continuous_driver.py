@@ -6,6 +6,7 @@ from collections import OrderedDict
 import ctypes
 import re
 from bisect import bisect_left
+from dataclasses import replace
 
 if __package__:
     from .._reloq_eci_direct import (EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciPitchHz,
@@ -332,7 +333,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
 
 def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
     """Apply the selected U-to-A glide inside an otherwise Persian job."""
-    key, items = owner._home, []
+    key, items, prefix, saw_text = owner._home, [], [], False
     for part in parts:
         if isinstance(part, EciLanguage):
             next_key = owner._key(part.language, part.voice)
@@ -343,6 +344,10 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             if isinstance(part, EciText) and (part.character_mode or part.speed_control):
                 return None
             items.append(part)
+            if isinstance(part, (str, EciText)):
+                saw_text = True
+        elif isinstance(part, (EciPitch, EciPitchHz, EciProsody)) and not saw_text:
+            prefix.append(part)
         else:
             return None
     if key[0] not in fa_ids or not items:
@@ -363,6 +368,8 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             prepared = project_resilient(items, engine._frontend, pinglish=engine._pinglish,
                                          validate=engine._voice._phonemes_for_probe,
                                          cancelled=owner._cancelled.is_set)
+        if prefix:
+            prepared = replace(prepared, parts=tuple(prefix) + tuple(prepared.parts))
         matches = tuple(_TAG.finditer(prepared.tagged))
         tags = tuple(match.group() for match in matches)
         separators = tuple(prepared.tagged[a.end():b.start()] for a, b in zip(matches, matches[1:]))
@@ -377,7 +384,7 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                 inserts.append((offset, len(inserts), next_mark))
                 source.append((next_mark, offset, part.value))
                 next_mark += 1
-            else:
+            elif not isinstance(part, (EciPitch, EciPitchHz, EciProsody)):
                 return None
         words = {}
         for word, match in enumerate(matches):
@@ -390,7 +397,8 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             sequence.extend((prepared.tagged[position:at], EciIndex(mark)))
             position = at
         sequence.append(prepared.tagged[position:])
-        voice = _PlanningVoice(owner, key, engine, validate=prepared.needs_native_validation)
+        voice = _PlanningVoice(owner, key, engine, validate=prepared.needs_native_validation,
+                               prefix=prefix)
         voice.raw._cancelled.clear()
         if owner._cancelled.is_set():
             return False
@@ -484,6 +492,71 @@ def sentence_jobs(parts, home):
     elif jobs:
         jobs[-1] += tuple(p for p in pending if isinstance(p, EciIndex))
     return tuple(jobs) if len(jobs) > 1 else ()
+
+
+def bracket_jobs(parts, home, *, fa_ids, english_id):
+    """Separate language cores at explicit bracket phrase boundaries.
+
+    Native index callbacks do not always mark the acoustic start of the
+    following word. At a real bracket boundary, a separate native job keeps
+    the entire next word in its own voice and avoids proxy synthesis. Marks
+    remain in source order and active inline controls are copied forward.
+    """
+    parts = tuple(parts)
+    result, pending, controls, key = [], [], OrderedDict(), home
+    segment = []
+
+    def text_and_mode(item):
+        if isinstance(item, str):
+            return item, False
+        if isinstance(item, EciText) and not item.speed_control:
+            return item.text, item.character_mode
+        if isinstance(item, EciCapitalWord):
+            return item.original, False
+        return '', False
+
+    def edge(items, backwards):
+        for item in reversed(items) if backwards else items:
+            value, spelled = text_and_mode(item)
+            value = value.strip()
+            if value:
+                return (value[-1] if backwards else value[0]), spelled
+        return '', False
+
+    for index, part in enumerate(parts):
+        if isinstance(part, EciLanguage):
+            selected = (part.language, part.voice)
+            right = []
+            for following in parts[index + 1:]:
+                if isinstance(following, EciLanguage):
+                    break
+                right.append(following)
+            left_char, left_spelled = edge(segment, True)
+            right_char, right_spelled = edge(right, False)
+            changed = selected != key and {selected[0], key[0]} <= {english_id, *fa_ids}
+            has_both = (selected[0] == english_id and key[0] in fa_ids or
+                        key[0] == english_id and selected[0] in fa_ids)
+            bracket = ((left_char in '()[]{}' and left_char and not left_spelled) or
+                       (right_char in '()[]{}' and right_char and not right_spelled))
+            if changed and has_both and left_char and right_char and bracket:
+                result.append((tuple(pending), True))
+                pending = [part, *controls.values()]
+            else:
+                pending.append(part)
+            key, segment = selected, []
+            continue
+        pending.append(part)
+        segment.append(part)
+        if isinstance(part, (EciPitch, EciPitchHz, EciProsody)):
+            slot = ('pitch' if isinstance(part, (EciPitch, EciPitchHz)) else
+                    'speed' if part.parameter in (6, 8) else part.parameter)
+            controls.pop(slot, None)
+            controls[slot] = part
+        elif isinstance(part, EciText) and part.speed_control:
+            controls.pop('speed', None)
+            controls['speed'] = EciText(part.speed_control + ' ')
+    result.append((tuple(pending), False))
+    return tuple(result)
 
 
 def bounded_jobs(parts, home, *, maximum=1200, max_switches=24):

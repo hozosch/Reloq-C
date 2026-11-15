@@ -39,6 +39,7 @@ def main() -> None:
         "t|a|?|_|'a|h|_|h|o|d": '`[.0tA.1wAh.0hod]',
         "m|'o|?|e|d:": '`[.1mo.0wedd]',
         "m|o|q|1|'a|?:|a|R": '`[.0mo.1RA.0wwAr]',
+        "m|,o|t|e|v|'a|q:|q|1|e|f": '`[.2mo.0te.1vAR.0Ref]',
         "w|'i|n|d|o|w|s": '`[.1vin.0dovs]',
     }
     for source, expected in cases.items():
@@ -82,6 +83,7 @@ def main() -> None:
             ('ایران نقطه قلم کاغذ', (SpeechPart('fa',
              "`[.1'i:'.0r'a:'n] `[.1noR.0t'e:'] `[.0RA.1lAm] `[.1ka.0RAz]"),)),
             ('ساعت', (SpeechPart('fa', '`[.1sa.0wAt]'),)),
+            ('متوقف', (SpeechPart('fa', '`[.2mo.0te.1vAR.0Ref]'),)),
             ('ده ۱۲ مهر', (SpeechPart('fa', "`[.1dAhw] `[.0dA.1vaz.0dAhw] `[.1m'e:'hr]"),)),
             ('من NVDA را دوست دارم.', (SpeechPart('fa', '`[.0mAn]'),
              SpeechPart('en-us', 'NVDA'),

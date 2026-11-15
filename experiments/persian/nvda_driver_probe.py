@@ -14,17 +14,17 @@ if __package__:
     from .direct_fa_sequence import ScopedDirectPersianEngine
     from .hybrid_fa_frontend import DirectFirstPersian
     from .pinglish_frontend import english_exception, latin_spans
-    from .continuous_driver import bounded_jobs, sentence_jobs, try_continuous, try_persian_glides
+    from .continuous_driver import bounded_jobs, bracket_jobs, sentence_jobs, try_continuous, try_persian_glides
     from .._reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
-                                     EciPitch, EciPitchHz, EciProsody, EciText)
+                                     EciPitch, EciPitchHz, EciProsody, EciText, PAUSE_MODE)
     from .._reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
 else:
     from direct_fa_sequence import ScopedDirectPersianEngine
     from hybrid_fa_frontend import DirectFirstPersian
     from pinglish_frontend import english_exception, latin_spans
-    from continuous_driver import bounded_jobs, sentence_jobs, try_continuous, try_persian_glides
+    from continuous_driver import bounded_jobs, bracket_jobs, sentence_jobs, try_continuous, try_persian_glides
     from _reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
-                                  EciPitch, EciPitchHz, EciProsody, EciText)
+                                  EciPitch, EciPitchHz, EciProsody, EciText, PAUSE_MODE)
     from _reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
 
 PERSIAN_PROBE = Language(0x7f0000, 'Persian test', 'fa_IR', 'utf-8', US_ENGLISH.voices)
@@ -214,21 +214,45 @@ class PersianProbeLanguageEngine(LanguageEngine):
             jobs = sentence_jobs(output, self._home) if mixed else ()
             if not jobs:
                 jobs = (tuple(output),)
-            if spoken & {PERSIAN_PROBE.id, PINGLISH_PROBE.id}:
-                jobs = tuple(chunk for job in jobs for chunk in bounded_jobs(job, self._home))
+            split = tuple(piece for job in jobs for piece in bracket_jobs(
+                job, self._home, fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id),
+                english_id=US_ENGLISH.id)) if mixed else tuple((job, False) for job in jobs)
+            jobs = []
+            for job, shortened_end in split:
+                chunks = bounded_jobs(job, self._home) if spoken & {PERSIAN_PROBE.id, PINGLISH_PROBE.id} else (job,)
+                jobs.extend((chunk, shortened_end and i == len(chunks) - 1)
+                            for i, chunk in enumerate(chunks))
             self._cancelled.clear()
-            for job in jobs:
+            for job, shortened_end in jobs:
                 if self._cancelled.is_set():
                     return False
-                result = try_continuous(self, job, on_pcm, on_index,
-                                        fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id),
-                                        english_id=US_ENGLISH.id, german_id=GERMAN.id,
-                                        reset_cancellation=False)
-                if result is None and not self._cancelled.is_set():
-                    result = try_persian_glides(self, job, on_pcm, on_index,
-                                                fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id))
-                if result is None and not self._cancelled.is_set():
-                    result = super().speak(job, on_pcm, on_index, reset_cancellation=False)
+                raw, old_pause = None, None
+                if shortened_end:
+                    ending = self._home
+                    for item in job:
+                        if isinstance(item, EciLanguage):
+                            ending = self._key(item.language, item.voice)
+                    ending_engine = self._activate(ending)
+                    raw = ending_engine._voice if isinstance(ending_engine, ScopedDirectPersianEngine) else ending_engine
+                    dll, handle = getattr(raw, '_dll', None), getattr(raw, '_handle', None)
+                    old_pause = dll.eciGetParam(handle, PAUSE_MODE) if dll and handle else None
+                    if old_pause == 0:
+                        # Suppress only the native end-of-utterance silence;
+                        # the bracket's actual speech and melody are intact.
+                        raw.set_parameter(PAUSE_MODE, 1)
+                try:
+                    result = try_continuous(self, job, on_pcm, on_index,
+                                            fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id),
+                                            english_id=US_ENGLISH.id, german_id=GERMAN.id,
+                                            reset_cancellation=False)
+                    if result is None and not self._cancelled.is_set():
+                        result = try_persian_glides(self, job, on_pcm, on_index,
+                                                    fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id))
+                    if result is None and not self._cancelled.is_set():
+                        result = super().speak(job, on_pcm, on_index, reset_cancellation=False)
+                finally:
+                    if old_pause == 0:
+                        raw.set_parameter(PAUSE_MODE, old_pause)
                 if not result or self._cancelled.is_set():
                     return False
             return True

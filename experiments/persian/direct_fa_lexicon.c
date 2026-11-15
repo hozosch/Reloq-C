@@ -15,6 +15,7 @@ struct fa_context_entry { const char *word, *final, *nonfinal; };
 #include "direct_fa_pause_words.inc"
 #include "direct_fa_recovered_words.inc"
 #include "direct_fa_vocalized.inc"
+#include "direct_fa_nvda_words.inc"
 
 size_t reloq_fa_direct_word_count(void)
 { return sizeof fa_direct_entries / sizeof fa_direct_entries[0]; }
@@ -317,6 +318,23 @@ int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
         else if(order>0)lo=m+1;
         else {
             const char *tag=follows_word?fa_recovered_entries[m].nonfinal:fa_recovered_entries[m].final;
+            n=strlen(tag);
+            if(n>=capacity)return -2;
+            memcpy(output,tag,n+1);
+            return 1;
+        }
+    }
+    lo=0;hi=sizeof fa_nvda_entries / sizeof fa_nvda_entries[0];
+    while(lo<hi) {
+        size_t m=lo+(hi-lo)/2;
+        const char *key=fa_nvda_entries[m].word;
+        size_t n=strlen(key),common=bytes<n?bytes:n;
+        int order=memcmp(word,key,common);
+        if(!order)order=bytes<n?-1:bytes>n?1:0;
+        if(order<0)hi=m;
+        else if(order>0)lo=m+1;
+        else {
+            const char *tag=follows_word?fa_nvda_entries[m].nonfinal:fa_nvda_entries[m].final;
             n=strlen(tag);
             if(n>=capacity)return -2;
             memcpy(output,tag,n+1);

@@ -45,6 +45,14 @@ def main():
         pcm, indexes = render((EciIndex(80), exact[:24], EciIndex(81), exact[24:], EciIndex(82)))
         assert pcm and [value for value, _ in indexes] == [80, 81, 82]
         assert frontend._worker is None, 'the NVDA label should use the direct text path'
+        for text, tag in (('حالتِ بومیِ انتخاب را فعال یا غیرفعال می‌کند', '`[.0mi.1ko.0nAd]'),
+                          ('ذره بین به دلیلِ بُروزِ خطا متوقف شد.', '`[.2mo.0te.1vAR.0Ref]')):
+            assert frontend.analyze_direct(text), text
+            job = project_resilient((text,), frontend)
+            assert tag in job.tagged, text
+            assert render((text,))[0]
+            assert frontend._worker is None, text
+        assert frontend.analyze_direct('متوقف').parts[0].text == '`[.2mo.0te.1vAR.0Ref]'
         job = project_resilient(('سلام @ (🙂) دنیا',), frontend)
         assert SYMBOL_TAGS['@'] in job.tagged and '(' in job.tagged
         assert UNICODE_TAG in job.tagged and ')' in job.tagged
@@ -127,7 +135,9 @@ def main():
         engine.select_voice(PERSIAN_PROBE.id, '1')
         before = len(plans)
         mixed, _ = render(('سلام (hello) دنیا',))
-        assert mixed and len(plans) > before
+        # A bracketed language boundary is rendered by each native core;
+        # it must never give the start of the following word to a proxy.
+        assert mixed and len(plans) == before
         explicit, _ = render(('سلام (', EciLanguage(US_ENGLISH.id, '1'), 'hello) ',
                               EciLanguage(PERSIAN_PROBE.id, '1'), 'دنیا'))
         assert mixed == explicit
