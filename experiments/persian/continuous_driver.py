@@ -15,7 +15,7 @@ if __package__:
     from .._reloq_persian_frames import FrameCapture, FrameReplay, NativeFrame
     from .._reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from .._reloq_persian_projection import ProjectedJob
-    from .direct_fa_sequence import ScopedDirectPersianEngine, project, project_resilient
+    from .direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient
     from .continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence
     from .text_frontend import SpeechPart, UnsupportedPronunciation
 else:
@@ -25,7 +25,7 @@ else:
     from _reloq_persian_frames import FrameCapture, FrameReplay, NativeFrame
     from _reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from _reloq_persian_projection import ProjectedJob
-    from direct_fa_sequence import ScopedDirectPersianEngine, project, project_resilient
+    from direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient
     from continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence
     from text_frontend import SpeechPart, UnsupportedPronunciation
 
@@ -74,8 +74,8 @@ class _PlanningVoice:
         if isinstance(self.engine, ScopedDirectPersianEngine):
             tagged_parts = tuple(EciText(p, segmentation_guarded=True) if isinstance(p, str) else p
                                  for p in parts)
-            tagged = ''.join(p.text for p in tagged_parts if isinstance(p, EciText))
-            prepared = ProjectedJob('', tagged, tagged_parts, self.validate)
+            tagged = ''.join(p.text for p in tagged_parts if isinstance(p, EciText) and not p.speed_control)
+            prepared = _safe_native_punctuation(ProjectedJob('', tagged, tagged_parts, self.validate))
             completed = self.engine._speak_prepared(prepared, on_pcm, on_index)
         else:
             completed = self.raw.speak(parts, on_pcm, on_index)

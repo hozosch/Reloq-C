@@ -5,6 +5,7 @@ import argparse
 import itertools
 from pathlib import Path
 import random
+import re
 import string
 import sys
 
@@ -248,6 +249,29 @@ def main():
                                  word, EciIndex(203), ']', EciIndex(204), word, EciIndex(205)))
             assert one and [value for value, _ in marks] == list(range(200, 206))
         assert count == 1244
+
+        # Punctuation can also occur in the private Persian proxy for an
+        # English segment, including empty brackets at a split boundary.
+        # Verify those planning inputs with the actual Finnish parser too.
+        old_prepared = ScopedDirectPersianEngine._speak_prepared
+        internal_brackets = []
+        def check_internal(instance, prepared, *items, **options):
+            if not prepared.source and any(c in re.sub(r'`\[[^]]+\]', '', prepared.tagged) for c in '[]{}'):
+                tagged = prepared.tagged.replace('~', ' ')
+                shown = instance._voice._phonemes_for_probe(tagged)
+                assert native_sequence_accepted(tagged, shown), (tagged, shown)
+                internal_brackets.append(1)
+            return old_prepared(instance, prepared, *items, **options)
+        ScopedDirectPersianEngine._speak_prepared = check_internal
+        try:
+            for language, text in ((PERSIAN_PROBE.id, 'سلام NVDA[]سلام'),
+                                   (PERSIAN_PROBE.id, 'سلام NVDA{}سلام'),
+                                   (PINGLISH_PROBE.id, 'salam phone[]salam')):
+                engine.select_voice(language, '1')
+                assert render((EciIndex(210), text, EciIndex(211)))[0]
+            assert internal_brackets
+        finally:
+            ScopedDirectPersianEngine._speak_prepared = old_prepared
     finally:
         continuous_driver.selected_sentence = original
         engine.close()
