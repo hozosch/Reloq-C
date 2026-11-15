@@ -303,7 +303,8 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
             if owner._cancelled.is_set():
                 raise InterruptedError('sentence planning was cancelled')
         plan = context_plan(sentence, fa, en, rate, maximum=30000, source_events=events,
-                            guarded_spans=guarded, spelling_spans=spelling, check=check_cancel)
+                            guarded_spans=guarded, spelling_spans=spelling, check=check_cancel,
+                            trusted_fa=not validate)
         original_counts = plan.counts
         selected_sentence(plan, sentence, en, german, rate, check=check_cancel)
         marks = replay_marks(plan, original_counts)
@@ -506,6 +507,7 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
     parts = tuple(parts)
     result, pending, controls, key = [], [], OrderedDict(), home
     segment = []
+    split_started = False
 
     def text_and_mode(item):
         if isinstance(item, str):
@@ -523,6 +525,19 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
             if value:
                 return (value[-1] if backwards else value[0]), spelled
         return '', False
+
+    def has_speech(items):
+        return any(any(not c.isspace() and c not in '()[]{}.,;:!?؟،؛' for c in text_and_mode(item)[0])
+                   for item in items)
+
+    def has_mixed_speech(items):
+        active, spoken = home, set()
+        for item in items:
+            if isinstance(item, EciLanguage):
+                active = (item.language, item.voice)
+            elif has_speech((item,)):
+                spoken.add(active[0])
+        return english_id in spoken and bool(spoken.intersection(fa_ids))
 
     for index, part in enumerate(parts):
         if isinstance(part, EciLanguage):
@@ -542,9 +557,42 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
             if changed and has_both and left_char and right_char and bracket:
                 result.append((tuple(pending), True))
                 pending = [part, *controls.values()]
+                split_started = True
             else:
                 pending.append(part)
             key, segment = selected, []
+            continue
+        # Parentheses already mark a short native phrase boundary even when
+        # both sides use the same language. In a mixed request, stop planning
+        # at that boundary so later NVDA role/status text is rendered by its
+        # own core and does not delay the beginning of the sentence.
+        value, spelled = text_and_mode(part)
+        if (isinstance(part, (str, EciText)) and value and not spelled and '`' not in value and
+                any(c in value for c in '()[]{}')):
+            start = 0
+            for position, char in enumerate(value):
+                if position < start or char not in '()[]{}':
+                    continue
+                end = position + 1
+                while end < len(value) and value[end].isspace():
+                    end += 1
+                fragment = value[start:end]
+                item = replace(part, text=fragment) if isinstance(part, EciText) else fragment
+                pending.append(item)
+                segment.append(item)
+                following = [value[end:], *parts[index + 1:]]
+                if ((split_started or has_mixed_speech(pending)) and
+                        has_speech(segment) and has_speech(following)):
+                    result.append((tuple(pending), True))
+                    pending = [EciLanguage(*key), *controls.values()]
+                    segment = []
+                    split_started = True
+                start = end
+            if start < len(value):
+                fragment = value[start:]
+                item = replace(part, text=fragment) if isinstance(part, EciText) else fragment
+                pending.append(item)
+                segment.append(item)
             continue
         pending.append(part)
         segment.append(part)
@@ -558,6 +606,27 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
             controls['speed'] = EciText(part.speed_control + ' ')
     result.append((tuple(pending), False))
     return tuple(result)
+
+
+def continuation_comma(parts):
+    """Ask the current native core for a nonfinal bracket phrase tone."""
+    parts = tuple(parts)
+    def visible(part):
+        return (part if isinstance(part, str) else part.text if isinstance(part, EciText) and
+                not part.speed_control and not part.character_mode else
+                part.original if isinstance(part, EciCapitalWord) else '')
+    tail = ''.join(visible(part) for part in parts).rstrip().rstrip('()[]{}').rstrip()
+    if tail.endswith(('.', '!', '?', '؟')):
+        return parts
+    for index in range(len(parts) - 1, -1, -1):
+        part = parts[index]
+        value = visible(part)
+        if not value.strip():
+            continue
+        # Do not override an explicit sentence or question ending inside a
+        # closing bracket. The comma is internal, not spoken text.
+        return parts[:index + 1] + (',',) + parts[index + 1:]
+    return parts
 
 
 def bounded_jobs(parts, home, *, maximum=1200, max_switches=24):

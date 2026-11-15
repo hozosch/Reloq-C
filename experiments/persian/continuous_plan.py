@@ -36,6 +36,7 @@ _FA_TO_EN = {**{c: c for c in 'aAioubdfghklmnprstvzSZ'},
 _EN_VOWELS = {'i': 'i', 'I': 'i', 'e': 'e', 'E': 'A', 'a': 'a', 'A': 'a',
               'o': 'o', 'O': 'o', 'u': 'u', 'U': 'u', 'x': 'A', 'X': 'A',
               'y': 'i', 'Y': 'a', '@': 'A', 'V': 'A'}
+_GENERATED_FA_PROXY = re.compile(r'`\[(?:\.[012]m[Aaeiou])+\]')
 
 
 def _f32(value):
@@ -354,7 +355,7 @@ class SentencePlan:
 
 
 def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarded_spans=(),
-                 spelling_spans=(), check=None):
+                 spelling_spans=(), check=None, trusted_fa=False):
     parts = tuple(parts)
     if not parts or len(parts) > 32 or {p.language for p in parts} != {'fa', 'en-us'}:
         raise ValueError('expected a bounded mixed English/Persian clause')
@@ -374,7 +375,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
         # bracket boundary. Avoid synthesizing the entire sentence a third
         # time, but retain the usual native validation of Persian tags.
         for part in parts:
-            if part.language == 'fa' and any(
+            if part.language == 'fa' and not trusted_fa and any(
                     not native_tag_accepted(m.group(), fa._phonemes_for_probe(m.group()))
                     for m in _TAG.finditer(part.text)):
                 raise ValueError('Persian proxy was rejected')
@@ -385,8 +386,17 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                 pilot_parts.extend((' ', EciIndex(index)))
             proxy = (part.text if part.language == 'fa' else
                      english_proxy(en, _spelling_proxy(part.text, index, spelling_spans)))
-            if any(not native_tag_accepted(m.group(), fa._phonemes_for_probe(m.group())) for m in _TAG.finditer(proxy)):
-                raise ValueError('Persian proxy was rejected')
+            if part.language == 'fa':
+                # Direct Persian tags were validated when their rules were
+                # compiled. Unverified reference text still needs the check.
+                if not trusted_fa and any(
+                        not native_tag_accepted(m.group(), fa._phonemes_for_probe(m.group()))
+                        for m in _TAG.finditer(proxy)):
+                    raise ValueError('Persian proxy was rejected')
+            elif any(not _GENERATED_FA_PROXY.fullmatch(m.group()) for m in _TAG.finditer(proxy)):
+                # english_proxy constructs only m+vowel syllables from this
+                # finite, tested native alphabet. Reject unexpected syntax.
+                raise ValueError('invalid generated English proxy')
             pilot_parts.append(proxy)
         pilot = get(fa, pilot_parts)
         pilot_pitch = _dense(pilot, 1, check)

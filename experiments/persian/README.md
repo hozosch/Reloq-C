@@ -1585,3 +1585,21 @@ python3 experiments/persian/compare_vowel_glide.py \
   --espeak-binary /path/to/espeak-ng --data-parent /path/to/data-parent \
   --wav /tmp/persian-u-a-glide.wav
 ```
+
+## Short front vowel and continuing bracket phrases
+
+The scoped Persian profile fixes the Finnish short-front vowel nucleus to
+the values measured in the existing Persian letter name `alef`, while keeping
+the selected native voice's F5 and bandwidths and the adjacent consonants'
+trajectories. The previous `alef` itself is unchanged in both voice types;
+the long back vowel and unscoped Finnish remain separate. The generated
+provider has an opt-in `RELOQ_FA_FRONT_A_TARGET=alef-fixed` for isolated
+comparisons; the installed probe selects it only inside Persian synthesis.
+
+For mixed speech, a bracket phrase with more speech following receives the
+native core's comma continuation tone and omits only excess end silence.
+Explicit sentence and question endings stay intact. Parentheses after a mixed
+pass can also bound planning, so a following NVDA role or checkbox state is
+handled by its own direct Persian job. Direct verified tags and the finite
+internal English proxy alphabet no longer require repeated parser probes;
+unverified reference pronunciations retain validation.

@@ -13,7 +13,7 @@ from _reloq_persian_frames import FrameCapture, FrameReplay
 import continuous_plan
 from continuous_plan import (bridge_english_continuations, context_plan, english_phone_proxy,
                              english_proxy, _copy_frames, _edges_by_count, _starts)
-from text_frontend import SpeechPart
+from text_frontend import SpeechPart, native_tag_accepted
 
 
 def voice(path, dialect):
@@ -31,6 +31,14 @@ def main():
     checks = 0
     try:
         assert scope(1) == 0
+        # english_proxy constructs these syllables itself; they are not
+        # arbitrary source-side phoneme tags. Verify its complete alphabet.
+        for stress in '012':
+            for vowel in 'Aaeiou':
+                tag = f'`[.{stress}m{vowel}]'
+                assert native_tag_accepted(tag, fa._phonemes_for_probe(tag)), tag
+        for tag in ('`[.1mA.0mi.0me]', '`[.2ma.0mo.1mu.0mi]', '`[.0mi.0mA.1me]'):
+            assert native_tag_accepted(tag, fa._phonemes_for_probe(tag)), tag
         assert ')' in english_proxy(en, 'hello) ')
         assert ')' in english_phone_proxy(en, fa, 'hello) ')
         for rate in (3, 6):

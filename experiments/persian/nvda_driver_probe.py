@@ -14,7 +14,7 @@ if __package__:
     from .direct_fa_sequence import ScopedDirectPersianEngine
     from .hybrid_fa_frontend import DirectFirstPersian
     from .pinglish_frontend import english_exception, latin_spans
-    from .continuous_driver import bounded_jobs, bracket_jobs, sentence_jobs, try_continuous, try_persian_glides
+    from .continuous_driver import bounded_jobs, bracket_jobs, continuation_comma, sentence_jobs, try_continuous, try_persian_glides
     from .._reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
                                      EciPitch, EciPitchHz, EciProsody, EciText, PAUSE_MODE)
     from .._reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
@@ -22,7 +22,7 @@ else:
     from direct_fa_sequence import ScopedDirectPersianEngine
     from hybrid_fa_frontend import DirectFirstPersian
     from pinglish_frontend import english_exception, latin_spans
-    from continuous_driver import bounded_jobs, bracket_jobs, sentence_jobs, try_continuous, try_persian_glides
+    from continuous_driver import bounded_jobs, bracket_jobs, continuation_comma, sentence_jobs, try_continuous, try_persian_glides
     from _reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
                                   EciPitch, EciPitchHz, EciProsody, EciText, PAUSE_MODE)
     from _reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
@@ -228,6 +228,7 @@ class PersianProbeLanguageEngine(LanguageEngine):
                     return False
                 raw, old_pause = None, None
                 if shortened_end:
+                    job = continuation_comma(job)
                     ending = self._home
                     for item in job:
                         if isinstance(item, EciLanguage):

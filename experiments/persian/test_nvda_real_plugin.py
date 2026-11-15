@@ -109,6 +109,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_Latn', 'salam-e', 'pipeline_most'),
                           ('fa_IR', 'استفاده از NVDA هنگامِ ورود به ویندوز (به اِختیاراتِ مدیریتی نیاز دارد)', 'pipeline'),
                           ('fa_IR', 'استفاده از NVDA هنگامِ ورود به ویندوز (به اِختیاراتِ مدیریتی نیاز دارد)', 'pipeline_most'),
+                          ('fa_IR', 'استفاده از NVDA هنگامِ ورود به ویندوز (به اِختیاراتِ مدیریتی نیاز دارد)', 'checkbox_unchecked'),
+                          ('fa_IR', 'استفاده از NVDA هنگامِ ورود به ویندوز (به اِختیاراتِ مدیریتی نیاز دارد)', 'checkbox_checked'),
                           ('fa_Latn', 'w', True),
                           ('fa_Latn', 'NVDA', True),
                           ('fa_IR', 'ق', True),
@@ -191,11 +193,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             elif spelling == 'accent_exception':
                 sequence = ['salam ', self.language_command('en_US'), 'salām',
                             self.language_command('fa_Latn'), ' donya']
+            elif spelling in ('checkbox_unchecked', 'checkbox_checked'):
+                status = 'بدونِ علامت' if spelling == 'checkbox_unchecked' else 'علامت‌دار'
+                # NVDA speaks an object's name, role and state as separate
+                # sequence items; its real preprocessing adds the separators.
+                sequence = [text, 'کادرِ علامت‌زدنی', status]
             elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
-            if spelling in ('pipeline', 'pipeline_most', 'pipeline_stop'):
+            if spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'checkbox_unchecked', 'checkbox_checked'):
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
                                   symbolLevel=(self.symbols.SymbolLevel.MOST if spelling == 'pipeline_most'
                                                else self.symbols.SymbolLevel.NONE))
@@ -212,13 +219,18 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                              for chunk in player.chunks[self.before.get(id(player), 0):])
             if not audio:
                 raise RuntimeError('no actual NVDA audio for ' + ascii(text))
-            if spelling in ('pipeline', 'pipeline_most', 'pipeline_stop'):
+            if spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'checkbox_unchecked', 'checkbox_checked'):
                 tags = ' '.join(self.projected[self.before_projected:])
                 if spelling in ('pipeline', 'pipeline_most') and locale == 'fa_IR' and ('`[.0hen.1ga.0me]' not in tags or
                         "`[.1'e:'G.0tja.2ra.0te]" not in tags):
                     raise AssertionError('NVDA preprocessing lost the vocalized Persian words: ' + ascii(tags))
                 if spelling == 'pipeline_stop' and '`[.2mo.0te.1vAR.0Ref]' not in tags:
                     raise AssertionError('NVDA spelled the Persian word for stopped: ' + ascii(tags))
+                if spelling in ('checkbox_unchecked', 'checkbox_checked'):
+                    expected = ("`[.0'A:'.1la.0mAt]" if spelling == 'checkbox_unchecked' else
+                                "`[.0'A:'.1la.0mAt.1dar]")
+                    if expected not in tags:
+                        raise AssertionError('NVDA checkbox state was not spoken as a Persian word: ' + ascii(tags))
                 if locale == 'fa_Latn' and ('`[.1ta.0vu.2merk.0ki]' in tags or '-`[' in tags):
                     raise AssertionError('Finnish hyphen name leaked into Pinglish')
             if spelling in ('english', 'persian') or spelling == 'mixed' and locale == 'fa_IR':

@@ -115,6 +115,31 @@ US_A_PATCH = r'''
     }
 '''
 
+FRONT_A_PATCH = r'''
+    /* Keep the Persian short front vowel at the existing alef nucleus.
+       The surrounding consonants retain their own native trajectories. */
+    {
+        const char *target=getenv("RELOQ_FA_FRONT_A_TARGET");
+        if (target && strcmp(target,"alef-fixed")==0) {
+            STATE(int16_t,s448)=680;  STATE(int16_t,s449)=680;
+            STATE(int16_t,s450)=1500; STATE(int16_t,s451)=1450;
+            STATE(int16_t,s452)=2550; STATE(int16_t,s453)=2550;
+            /* F5 and bandwidths retain the selected native voice's values.
+               Its F5 distinguishes the two recorded alef F4 targets. */
+            STATE(int16_t,s454)=STATE(int16_t,s456)>=4300 ? 4200 : 3600;
+            STATE(int16_t,s455)=-1;
+        }
+        if (getenv("RELOQ_FA_TRACE_FRONT_A"))
+            fprintf(stderr,"FA_FRONT F=%d,%d,%d,%d,%d R=%d,%d,%d,%d,%d B=%d,%d,%d,%d,%d\n",
+                STATE(int16_t,s448),STATE(int16_t,s450),STATE(int16_t,s452),
+                STATE(int16_t,s454),STATE(int16_t,s456),
+                STATE(int16_t,s449),STATE(int16_t,s451),STATE(int16_t,s453),
+                STATE(int16_t,s455),STATE(int16_t,s457),
+                STATE(int16_t,s397),STATE(int16_t,s398),STATE(int16_t,s399),
+                STATE(int16_t,s400),STATE(int16_t,s401));
+    }
+'''
+
 A_PATCH = r'''
     /* Preserve coarticulation and the native inheritance markers.  This is
        an approximation of the eSpeak 0_3 nucleus, not an imported spectrum. */
@@ -1847,6 +1872,7 @@ def main() -> None:
         work = Path(tempfile.mkdtemp(prefix='reloq-persian-probe-'))
     modified = [
         prepare('fifi', 'delta_rules_c17_fifi.c', 'stanfin_ph_a', 'L13086', A_PATCH, '#include <stdio.h>\n', work),
+        prepare('fifi', 'delta_rules_c15_fifi.c', 'stanfin_ph_A', 'L13209', FRONT_A_PATCH, '#include <stdio.h>\n', work),
         prepare('fifi', 'delta_rules_c22_fifi.c', 'fin_ph_k', 'L5915', Q_PATCH, Q_HELPER, work),
         prepare('enus61', 'delta_rules_c06_enus61.c', 'ga_ph_a', 'L3010', US_A_PATCH, '', work),
         prepare('dede61', 'delta_rules_c07_dede61.c', 'ger_ph_k', 'L22634',

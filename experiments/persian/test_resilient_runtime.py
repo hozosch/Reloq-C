@@ -8,7 +8,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 import continuous_driver
-from direct_fa_sequence import project_resilient
+from direct_fa_sequence import ScopedDirectPersianEngine, project_resilient
 from nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, make_language_engine
 from persian_symbols import SYMBOL_TAGS, UNICODE_TAG
 from _reloq_eci_direct import EciIndex, EciLanguage, EciPitch, EciText
@@ -45,6 +45,23 @@ def main():
         pcm, indexes = render((EciIndex(80), exact[:24], EciIndex(81), exact[24:], EciIndex(82)))
         assert pcm and [value for value, _ in indexes] == [80, 81, 82]
         assert frontend._worker is None, 'the NVDA label should use the direct text path'
+        observed, previous_prepared = [], ScopedDirectPersianEngine._speak_prepared
+        def watch_status(instance, prepared, *items, **options):
+            if prepared.source:
+                observed.append((prepared.source, prepared.tagged))
+            return previous_prepared(instance, prepared, *items, **options)
+        ScopedDirectPersianEngine._speak_prepared = watch_status
+        try:
+            for status, expected in (('بدونِ علامت', "`[.0'A:'.1la.0mAt]"),
+                                     ('علامت‌دار', "`[.0'A:'.1la.0mAt.1dar]")):
+                observed.clear()
+                pcm, marks = render((EciIndex(83), EciText(exact + '  '), EciIndex(84),
+                    EciText('کادرِ علامت‌زدنی  '), EciIndex(85), EciText(status + '  '), EciIndex(86)))
+                assert pcm and [value for value, _ in marks] == [83, 84, 85, 86]
+                assert any(status in source and expected in tags for source, tags in observed), observed
+                assert frontend._worker is None
+        finally:
+            ScopedDirectPersianEngine._speak_prepared = previous_prepared
         for text, tag in (('حالتِ بومیِ انتخاب را فعال یا غیرفعال می‌کند', '`[.0mi.1ko.0nAd]'),
                           ('ذره بین به دلیلِ بُروزِ خطا متوقف شد.', '`[.2mo.0te.1vAR.0Ref]')):
             assert frontend.analyze_direct(text), text

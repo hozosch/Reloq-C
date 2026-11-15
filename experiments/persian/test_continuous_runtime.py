@@ -7,7 +7,7 @@ import sys
 import threading
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
-from continuous_driver import _PlanningVoice
+from continuous_driver import _PlanningVoice, continuation_comma
 from continuous_plan import _context
 from nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, make_language_engine
 from _reloq_eci_direct import EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciText, GENDER, PAUSE_MODE, SAMPLE_RATE
@@ -24,6 +24,8 @@ def main():
                        ((0, 4, 0, 123, 8),), ((0, 0, 8),))
     assert planned == [EciText('swap', segmentation_guarded=True), EciIndex(123),
                        EciText('file', segmentation_guarded=True), ' again']
+    assert continuation_comma(('hello?', ')', EciIndex(1))) == ('hello?', ')', EciIndex(1))
+    assert continuation_comma(('hello', ')', EciIndex(1))) == ('hello', ')', ',', EciIndex(1))
 
     def create():
         return make_language_engine(args.scope_probe, args.native_library, args.worker,
@@ -73,7 +75,9 @@ def main():
             # English job with end silence suppressed; the following audio is
             # exactly the Persian job, including its first sound.
             engine.set_parameter(PAUSE_MODE, 1)
-            english_bracket, _ = render(engine, (EciLanguage(US_ENGLISH.id, '1'), 'hello) '))
+            english_bracket, _ = render(engine, (EciLanguage(US_ENGLISH.id, '1'), 'hello) ,'))
+            english_final, _ = render(engine, (EciLanguage(US_ENGLISH.id, '1'), 'hello) '))
+            assert english_bracket != english_final, 'the bracket tone fell back to sentence-final'
             engine.set_parameter(PAUSE_MODE, 0)
             persian_after, _ = render(engine, ('دنیا',))
             bracket, bracket_marks = render(engine, (EciIndex(30), 'hello) ', EciIndex(31),
@@ -85,7 +89,7 @@ def main():
 
             controlled, _ = render(engine, (EciPitch(80), 'hello) ', 'او آمد.'))
             engine.set_parameter(PAUSE_MODE, 1)
-            expected_english, _ = render(engine, (EciLanguage(US_ENGLISH.id, '1'), EciPitch(80), 'hello) '))
+            expected_english, _ = render(engine, (EciLanguage(US_ENGLISH.id, '1'), EciPitch(80), 'hello) ,'))
             engine.set_parameter(PAUSE_MODE, 0)
             expected_persian, _ = render(engine, (EciPitch(80), 'او آمد.'))
             assert controlled == expected_english + expected_persian
