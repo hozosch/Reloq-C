@@ -52,7 +52,8 @@ def main():
     dirs += ['lang/' + name for name in languages]
     flags = ['-O3', '-flto=2', '-std=gnu11', '-fno-strict-aliasing', '-ffp-contract=off',
              '-fvisibility=hidden', '-ffunction-sections', '-fdata-sections', '-DEVV_ARENA=1',
-             '-DEVV_NO_BYTECODE', '-DEVV_ROM_JAJP', '-DRELOQ61_PARAMETERS_ONLY=1', '-Os']
+             '-DEVV_NO_BYTECODE', '-DEVV_ROM_JAJP', '-DRELOQ61_PARAMETERS_ONLY=1',
+             '-DRELOQ_FA_SCOPED_ONSETS=1', '-Os']
 
     def compile_one(source):
         output = work / (source.stem + '.o')

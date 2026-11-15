@@ -1412,12 +1412,16 @@ events must agree before the stand-in is replaced by the native number tag;
 each index inside a number maps to the beginning of that number. Mixed-language
 utterances still need the continuous planner.
 
-The eSpeak short-pause phone `_` becomes a glottal onset before a vowel and
-is otherwise omitted. An existing reference glottal phone is not doubled.
-An explicit pause at a word edge is carried to the next vowel inside the
-same phrase; a real punctuation mark remains a native phrase boundary and
-does not get an additional inferred stop. At the beginning of the phrase,
-the Finnish-based core retains its own selected glottal onset. The separate
+The eSpeak short-pause phone `_` before a vowel selects Finnish's own
+glottal-onset rule without inserting the separate Persian glottal phone.
+The selection is scoped to the relevant word on the synthesis thread; it is
+cleared after every job. An existing reference glottal phone is not doubled.
+After `d` before another consonant, a normal native word boundary retains
+the D release, as in the word for 100. Other consonant boundaries have no
+extra punctuation. An explicit pause at a word edge is carried to the next
+vowel inside the same phrase; a real punctuation mark remains a native
+phrase boundary and does not get an additional inferred stop. At the
+beginning of the phrase, the Finnish-based core retains its normal onset. The separate
 `direct_fa_pause_words.inc` table covers 98 source words with invariant
 internal behavior without an eSpeak worker. Each was checked in four
 reference contexts and against the selected native phone parser. Word-edge

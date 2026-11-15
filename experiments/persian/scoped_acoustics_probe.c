@@ -2,6 +2,8 @@
  * acoustic probe. It is not an ECI language or an NVDA integration. The
  * caller must restore the returned previous scope even after an error. */
 #include <string.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #ifdef _WIN32
 #define FA_EXPORT __declspec(dllexport)
@@ -10,6 +12,9 @@
 #endif
 
 static _Thread_local int fa_acoustics;
+/* Word ordinals with a reference-pause onset, private to the calling
+ * synthesis thread. The Finnish word record uses a signed 16-bit ordinal. */
+static _Thread_local unsigned char fa_onsets[4096];
 
 FA_EXPORT int reloq_fa_acoustic_scope(int active)
 {
@@ -17,6 +22,23 @@ FA_EXPORT int reloq_fa_acoustic_scope(int active)
     int previous=fa_acoustics;
     fa_acoustics=active;
     return previous;
+}
+
+FA_EXPORT int reloq_fa_native_onsets(const uint32_t *words,size_t count)
+{
+    if(!fa_acoustics || (count && !words) || count>32767)return -1;
+    for(size_t i=0;i<count;++i)
+        if(words[i]==0 || words[i]>32767)return -1;
+    memset(fa_onsets,0,sizeof fa_onsets);
+    for(size_t i=0;i<count;++i)
+        fa_onsets[words[i]>>3]|=(unsigned char)(1u<<(words[i]&7));
+    return 0;
+}
+
+int reloq_fa_scoped_native_onset(int word)
+{
+    return fa_acoustics && word>0 && word<=32767 &&
+           (fa_onsets[(unsigned)word>>3] & (1u<<((unsigned)word&7)))!=0;
 }
 
 /* The generated provider sources ask for their existing probe keys through

@@ -57,10 +57,10 @@ int main(void)
        !check_text("او و آمد.", "`[.1'u:'] `[.1vA] `[.1'a:'.0mAd].") ||
        !check_text("من آمد.", "`[.0mAn] `[.1'a:'.0mAd].") ||
        !check_text("او من.", "`[.1'u:'] `[.1mAn].") ||
-       !check_text("من بدبخت آمد.", "`[.0mAn] `[.1bAd.0bAGt] `[.1'a:'.0mAd].") ||
+       !check_text("من بدبخت آمد.", "`[.0mAn] `[.1bAd] `[.0bAGt] `[.1'a:'.0mAd].") ||
        !check_text("آبگوشت،سلام", "`[.1ab.0guSt],`[.0sA.1lam]") ||
-       !check_text("سوال", "`[.1so.0wal]") ||
-       !check_text("بنابراین", "`[.2bA.0n'a:'.1bAr.0win]") ||
+       !check_text("سوال", "`[.1so]~`[.0al]") ||
+       !check_text("بنابراین", "`[.2bA.0n'a:'.1bAr]~`[.0in]") ||
        !check_text("من، آمد.", "`[.1mAn], `[.1'a:'.0mAd]."))return 1;
     char *out=NULL;size_t *map=NULL,error=0;
     const char *unknown="سلام NVDA";

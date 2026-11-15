@@ -31,18 +31,18 @@ def main() -> None:
         "s|'A|?|a|t": '`[.1sa.0wAt]',
         "d|'a|h": '`[.1dAhw]',
         "m|'e:|h|R": "`[.1m'e:'hr]",
-        "b|'a|d|_|b|a|x|t": '`[.1bAd.0bAGt]',
-        "s|'o|_|A|l": '`[.1so.0wal]',
-        "b|,a|n|A:|_|b|'a|R|_|i|n": "`[.2bA.0n'a:'.1bAr.0win]",
+        "b|'a|d|_|b|a|x|t": '`[.1bAd] `[.0bAGt]',
+        "s|'o|_|A|l": '`[.1so]~`[.0al]',
+        "b|,a|n|A:|_|b|'a|R|_|i|n": "`[.2bA.0n'a:'.1bAr]~`[.0in]",
         "t|a|?|_|'a|h|_|h|o|d": '`[.0tA.1wAh.0hod]',
     }
     for source, expected in cases.items():
         assert word_tag(source) == expected, (source, word_tag(source), expected)
     assert word_tags(["_|'A|j|l|A|R"]) == ('`[.1aj.0lar]',)
     assert word_tags(["s|a|l|'A|m", "_|'A|j|l|A|R"]) == (
-        '`[.0sA.1lam]', '`[.1waj.0lar]')
+        '`[.0sA.1lam]', '~`[.1aj.0lar]')
     assert word_tags(["'a|d|A|_", "'A:|m|a|d"]) == (
-        '`[.1A.0da]', "`[.1w'a:'.0mAd]")
+        '`[.1A.0da]', "~`[.1'a:'.0mAd]")
     assert word_tags(["'a|d|A|_", "s|a|l|'A|m"]) == (
         '`[.1A.0da]', '`[.0sA.1lam]')
     checks = len(cases)

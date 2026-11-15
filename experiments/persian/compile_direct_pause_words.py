@@ -60,7 +60,8 @@ def generate(api, native, dll) -> str:
                 # Word-edge pauses need surrounding word and punctuation
                 # context; leave them to the verified reference fallback.
                 rejected['word-edge boundary'] += 1
-            elif not native_sequence_accepted(tag, native._phonemes_for_probe(tag)):
+            elif not native_sequence_accepted(tag.replace('~', ' '),
+                                               native._phonemes_for_probe(tag.replace('~', ' '))):
                 rejected['native parser'] += 1
             else:
                 rows.append((word, tag))
@@ -82,7 +83,7 @@ def generate(api, native, dll) -> str:
                 'rejected': dict(sorted(rejected.items()))}
     output = [
         '/* Generated from eSpeak NG Persian dictionary; GPL-3.0-or-later.\n',
-        ' * Internal short pauses use a glottal onset before vowels and no comma.\n',
+        ' * A private separator marks a native Finnish vowel onset after a short pause.\n',
         ' * ' + json.dumps(metadata, sort_keys=True, ensure_ascii=True) + '\n',
         ' */\n',
         'static const struct fa_direct_entry fa_pause_entries[] = {\n',

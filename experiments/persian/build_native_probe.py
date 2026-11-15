@@ -1003,6 +1003,9 @@ def prepare_q_cluster(work: Path) -> Path:
     helper = r'''
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef RELOQ_FA_SCOPED_ONSETS
+extern int reloq_fa_scoped_native_onset(int);
+#endif
 static int persian_glottal_word_number(void *state,int32_t token_ref)
 {
     delta_state *d=state;
@@ -1034,7 +1037,11 @@ static int persian_glottal_word_number(void *state,int32_t token_ref)
         const char *fa_no_auto_glottal=getenv("RELOQ_FA_PROBE_NO_AUTO_GLOTTAL");
         int word=fa_no_auto_glottal && fa_no_auto_glottal[0]=='1' && !fa_no_auto_glottal[1]
             ? persian_glottal_word_number(state,(int32_t)AT(int32_t,-40)) : 0;
-        if (!fa_no_auto_glottal || fa_no_auto_glottal[0]!='1' || fa_no_auto_glottal[1] || word<=1)
+        int marked=0;
+#ifdef RELOQ_FA_SCOPED_ONSETS
+        if (word>1) marked=reloq_fa_scoped_native_onset(word);
+#endif
+        if (!fa_no_auto_glottal || fa_no_auto_glottal[0]!='1' || fa_no_auto_glottal[1] || word<=1 || marked)
             r0 = reloq_call_fifi_glottalize_vow(state, (int32_t)(FIELD(0)), (int32_t)((int32_t)AT(int32_t, -40)));
         else
             r0 = 0;

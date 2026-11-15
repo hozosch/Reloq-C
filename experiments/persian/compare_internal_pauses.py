@@ -62,10 +62,10 @@ def main():
                                         '-w', str(reference), text],
                                        check=True, env=env, capture_output=True)
                         append(reference_audio(reference))
-                        label('Eloquence mit neuem Übergang.')
+                        label('Eloquence mit finnischem Vokaleinsatz.')
                         analysis = frontend.analyze_direct(text)
                         if (not analysis or ',' in analysis.parts[0].text or
-                                ('w' in analysis.parts[0].text) != glottal):
+                                ('~' in analysis.parts[0].text) != glottal):
                             raise RuntimeError('sample does not have the selected pause behavior')
                         pcm = bytearray()
                         if not voice.speak((text,), pcm.extend, lambda _: None):

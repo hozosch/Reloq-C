@@ -9,6 +9,7 @@ from __future__ import annotations
 import ctypes
 from dataclasses import replace
 from pathlib import Path
+import re
 import sys
 import threading
 from typing import Sequence
@@ -140,6 +141,9 @@ class ScopedDirectPersianEngine:
             self._scope = self._voice._dll.reloq_fa_acoustic_scope
             self._scope.argtypes = (ctypes.c_int,)
             self._scope.restype = ctypes.c_int
+            self._onsets = self._voice._dll.reloq_fa_native_onsets
+            self._onsets.argtypes = (ctypes.POINTER(ctypes.c_uint32), ctypes.c_size_t)
+            self._onsets.restype = ctypes.c_int
         except BaseException:
             self._voice.close()
             raise
@@ -167,6 +171,20 @@ class ScopedDirectPersianEngine:
             raise
         if self._cancelled.is_set():
             return False
+        tags = tuple(re.finditer(r'`\[[^]]+\]', prepared.tagged))
+        marked, checked = [], 0
+        for index, (left, right) in enumerate(zip(tags, tags[1:]), start=2):
+            between = prepared.tagged[left.end():right.start()]
+            if '~' in between:
+                if between != '~':
+                    raise UnsupportedPronunciation('ambiguous native onset boundary')
+                marked.append(index)
+                checked += 1
+        if checked != prepared.tagged.count('~') or any(word > 32767 for word in marked):
+            raise UnsupportedPronunciation('native onset positions are unavailable')
+        native_parts = tuple(replace(part, text=part.text.replace('~', ' '))
+                             if isinstance(part, EciText) else part for part in prepared.parts)
+        native_tagged = prepared.tagged.replace('~', ' ')
         previous = self._scope(1)
         if previous < 0:
             raise RuntimeError('cannot enable Persian acoustic scope')
@@ -181,6 +199,9 @@ class ScopedDirectPersianEngine:
             else:
                 on_index(value)
         try:
+            selected = (ctypes.c_uint32 * len(marked))(*marked) if marked else None
+            if self._onsets(selected, len(marked)) < 0:
+                raise RuntimeError('cannot select Finnish vowel onsets')
             if prepared.needs_native_validation:
                 # Unknown reference pronunciations must also be accepted by
                 # the actual Finnish-based phoneme parser before any audio.
@@ -188,18 +209,19 @@ class ScopedDirectPersianEngine:
                 if self._cancelled.is_set():
                     return False
                 try:
-                    shown = self._voice._phonemes_for_probe(prepared.tagged)
+                    shown = self._voice._phonemes_for_probe(native_tagged)
                 except RuntimeError:
                     if self._cancelled.is_set():
                         return False
                     raise
-                if not native_sequence_accepted(prepared.tagged, shown):
+                if not native_sequence_accepted(native_tagged, shown):
                     raise UnsupportedPronunciation('reference pronunciation is not accepted by the native parser')
                 if self._cancelled.is_set():
                     return False
-            return self._voice.speak(prepared.parts, pcm, index) and not self._cancelled.is_set()
+            return self._voice.speak(native_parts, pcm, index) and not self._cancelled.is_set()
         finally:
-            if self._scope(previous) < 0:
+            reset = self._onsets(None, 0)
+            if self._scope(previous) < 0 or reset < 0:
                 raise RuntimeError('cannot restore Persian acoustic scope')
 
     def cancel(self) -> None:

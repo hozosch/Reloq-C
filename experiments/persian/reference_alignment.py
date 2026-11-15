@@ -144,7 +144,7 @@ def source_map_for_reference(text: str, parts, worker, *, pinglish: bool = False
                 while source_end < end and text[source_end] in ' \t':
                     source_end += 1
                 target_end = out
-                while target_end < out_end and tagged[target_end] in ' \t':
+                while target_end < out_end and tagged[target_end] in ' \t~':
                     target_end += 1
                 if target_end == out:
                     return False
@@ -166,6 +166,9 @@ def source_map_for_reference(text: str, parts, worker, *, pinglish: bool = False
 
     source_cursor = out_cursor = 0
     for i, ((start, end), tag) in enumerate(zip(source_tokens, reference_tags)):
+        if tag.startswith('~'):
+            # The private onset marker maps to the intervening source space.
+            tag = tag[1:]
         next_start = source_tokens[i + 1][0] if i + 1 < len(source_tokens) else len(text)
         following = text[end:next_start].lstrip(' \t')
         if tag.endswith(',') and following and following[0] in ',.?!:;،؛؟':

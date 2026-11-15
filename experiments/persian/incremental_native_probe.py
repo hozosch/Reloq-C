@@ -29,6 +29,8 @@ def main() -> None:
     parser.add_argument('--jobs', type=int, default=4)
     parser.add_argument('--archive-only', action='store_true',
                         help='prepare the updated archive without an intermediate library link')
+    parser.add_argument('--scoped-onsets', action='store_true',
+                        help='enable the private, thread-scoped native-onset table')
     args = parser.parse_args()
     previous, work = args.previous.resolve(), args.work.resolve()
     if previous == work or not 1 <= args.jobs <= 64:
@@ -53,6 +55,8 @@ def main() -> None:
     flags = ['-O3', f'-flto={args.jobs}', '-fPIC', '-std=gnu11', '-fno-strict-aliasing',
              '-ffp-contract=off', '-fvisibility=hidden', '-ffunction-sections', '-fdata-sections',
              '-DEVV_ARENA=1', '-DEVV_NO_BYTECODE', '-DEVV_ROM_JAJP', '-DRELOQ61_PARAMETERS_ONLY=1', '-Os']
+    if args.scoped_onsets:
+        flags.append('-DRELOQ_FA_SCOPED_ONSETS=1')
 
     def compile_one(name: str) -> Path:
         source = work / name

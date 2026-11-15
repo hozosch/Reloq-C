@@ -87,22 +87,38 @@ def word_tag(word: str, *, initial_glottal: bool = False) -> str:
     """Map the word to syllable-marked phones for the private acoustic probe."""
     items = word.strip('|').split('|')
     if '_' in items:
-        # The reference short pause is heard as a glottal onset before a
-        # vowel; it does not introduce a comma pause before a consonant.
+        # A private separator marks a Finnish vowel onset after the reference
+        # pause. It is replaced by a space before the native parser sees it.
         if any(a == b == '_' for a, b in zip(items, items[1:])) or all(i == '_' for i in items):
             raise UnsupportedPronunciation('ambiguous repeated reference pause')
-        phones = []
+        groups = [[]]
+        separators = []
+        leading = False
         for index, item in enumerate(items):
             if item == '_':
                 if (index + 1 < len(items) and _vowel_item(items[index + 1]) and
-                        (index > 0 or initial_glottal) and (not phones or phones[-1] != '?')):
-                    phones.append('?')
+                        (index > 0 or initial_glottal) and
+                        (not groups[-1] or groups[-1][-1] != '?')):
+                    if groups[-1]:
+                        separators.append('~')
+                        groups.append([])
+                    else:
+                        leading = True
+                elif (index + 1 < len(items) and groups[-1] and groups[-1][-1] == 'd' and
+                      items[index + 1] != '_' and not _vowel_item(items[index + 1])):
+                    # Preserve Finnish's ordinary word-final D release, as
+                    # in the Persian word for 100, at this explicit pause.
+                    separators.append(' ')
+                    groups.append([])
             else:
-                phones.append(item)
-        return word_tag('|'.join(phones))
+                groups[-1].append(item)
+        tags = [word_tag('|'.join(group)) for group in groups]
+        result = tags[0]
+        for separator, tag in zip(separators, tags[1:]):
+            result += separator + tag
+        return ('~' if leading else '') + result
     if initial_glottal and items and _vowel_item(items[0]):
-        items.insert(0, '?')
-        word = '|'.join(items)
+        return '~' + word_tag(word)
     phones = parse_word(word)
     vowel_indices = [i for i, p in enumerate(phones) if p.name in VOWELS]
     starts = [0]
@@ -232,6 +248,12 @@ def translate_text(probe: EspeakPhonemeProbe, text: str, *, pinglish: bool = Fal
         nonlocal trailing_internal
         if not content:
             return
+        if internal_word and content.startswith('~'):
+            if parts and parts[-1].language == language:
+                # The marker itself becomes the one native word separator.
+                space = False
+            else:
+                content = content[1:]
         if punctuation and trailing_internal and parts and parts[-1].language == language:
             # The predictor also keeps a real punctuation boundary in
             # preference to an inferred one at exactly the same location.

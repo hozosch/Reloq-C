@@ -13,7 +13,7 @@ from direct_fa_sequence import ScopedDirectPersianEngine
 from hybrid_fa_frontend import DirectFirstPersian
 
 
-def render(library, dialect, text, *, scoped=None, rate=3, gender=0):
+def render(library, dialect, text, *, scoped=None, rate=3, gender=0, onsets=()):
     voice = DirectEciEngine(library.resolve(), dialect=dialect, encoding='utf8', native_voice=True)
     try:
         voice.set_parameter(PROCESS_TAGS, 1)
@@ -25,9 +25,16 @@ def render(library, dialect, text, *, scoped=None, rate=3, gender=0):
             scope.argtypes, scope.restype = (ctypes.c_int,), ctypes.c_int
             previous = scope(int(scoped))
             assert previous == 0
+            if scoped:
+                onset = voice._dll.reloq_fa_native_onsets
+                onset.argtypes, onset.restype = (ctypes.POINTER(ctypes.c_uint32), ctypes.c_size_t), ctypes.c_int
+                selected = (ctypes.c_uint32 * len(onsets))(*onsets) if onsets else None
+                assert onset(selected, len(onsets)) == 0
         pcm = bytearray()
         assert voice.speak((text,), pcm.extend, lambda _: None) and pcm
         if scoped is not None:
+            if scoped:
+                assert onset(None, 0) == 0
             assert scope(previous) == int(scoped)
         return bytes(pcm)
     finally:
@@ -54,6 +61,11 @@ def main():
     finnish = render(args.candidate, 0x90000, tagged, scoped=False)
     persian = render(args.candidate, 0x90000, tagged, scoped=True)
     assert finnish != persian
+    onset_text = '`[.1so] `[.0al]'
+    plain = render(args.candidate, 0x90000, onset_text, scoped=True)
+    marked = render(args.candidate, 0x90000, onset_text, scoped=True, onsets=(2,))
+    assert plain != marked
+    assert render(args.candidate, 0x90000, onset_text, scoped=True) == plain
     with ThreadPoolExecutor(max_workers=2) as pool:
         jobs = [pool.submit(render, args.candidate, 0x90000, tagged, scoped=active)
                 for active in (False, True)]
