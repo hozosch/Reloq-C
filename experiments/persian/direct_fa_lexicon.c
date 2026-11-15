@@ -14,6 +14,7 @@ struct fa_context_entry { const char *word, *final, *nonfinal; };
 #include "direct_fa_extended_suffixes.inc"
 #include "direct_fa_pause_words.inc"
 #include "direct_fa_recovered_words.inc"
+#include "direct_fa_vocalized.inc"
 
 size_t reloq_fa_direct_word_count(void)
 { return sizeof fa_direct_entries / sizeof fa_direct_entries[0]; }
@@ -182,10 +183,71 @@ static int direct_extended_word(const char *word,size_t bytes,char *output,size_
     return 0;
 }
 
+/* Produce only reference-verified ezafe forms. The bitmaps are tied to the
+ * base lexicon fingerprint; uncommon results are stored as exact entries. */
+static int direct_vocalized_word(const char *word,size_t bytes,char *output,size_t capacity)
+{
+    size_t lo=0,hi=sizeof fa_vocalized_entries/sizeof fa_vocalized_entries[0];
+    while(lo<hi) {
+        size_t m=lo+(hi-lo)/2;
+        const char *key=fa_vocalized_entries[m].word;
+        size_t n=strlen(key),common=bytes<n?bytes:n;
+        int order=memcmp(word,key,common);
+        if(!order)order=bytes<n?-1:bytes>n?1:0;
+        if(order<0)hi=m;
+        else if(order>0)lo=m+1;
+        else {
+            const char *tag=fa_vocalized_entries[m].tag;
+            n=strlen(tag);if(n>=capacity)return -2;
+            memcpy(output,tag,n+1);return 1;
+        }
+    }
+    static const char kasra[]="\xd9\x90";
+    if(bytes<=2 || memcmp(word+bytes-2,kasra,2))return 0;
+    size_t index=direct_index(word,bytes-2);
+    if(index>=reloq_fa_direct_word_count() || index/8>=sizeof fa_vocalized_modes[0])return 0;
+    unsigned bit=1u<<(index%8),mode;
+    if(fa_vocalized_modes[0][index/8]&bit)mode=0;
+    else if(fa_vocalized_modes[1][index/8]&bit)mode=1;
+    else return 0;
+    const char *base=fa_direct_entries[index].tag;
+    size_t n=strlen(base);
+    if(n<5 || base[0]!='`' || base[1]!='[' || base[n-1]!=']')return -1;
+    char last=base[n-2];
+    int coda=strchr("bdfghjklmnprstvzSZGRCJ",last)!=NULL;
+    size_t copy=n-1-(size_t)coda;
+    if(copy+6>capacity)return -2;
+    memcpy(output,base,copy);
+    unsigned syllables=0,primary=0;
+    for(size_t i=2;i<copy;++i) {
+        if(output[i]=='.' && i+1<copy && output[i+1]>='0' && output[i+1]<='2') {
+            if(output[i+1]=='1')primary=syllables;
+            ++syllables;
+        }
+    }
+    if(!syllables)return -1;
+    if(mode) {
+        primary=syllables-1;
+        unsigned position=0;
+        for(size_t i=2;i<copy;++i) {
+            if(output[i]!='.' || i+1>=copy || output[i+1]<'0' || output[i+1]>'2')continue;
+            output[i+1]=position==primary?'1':position==0 && primary>=2?'2':'0';
+            ++position;
+        }
+    }
+    output[copy++]='.';
+    output[copy++]=!mode && syllables>=primary+2 && (syllables-primary)%2==0?'2':'0';
+    if(coda)output[copy++]=last;
+    output[copy++]='e';output[copy++]=']';output[copy]=0;
+    return 1;
+}
+
 int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
                                  char *output,size_t capacity)
 {
     int result=reloq_fa_direct_word(word,bytes,output,capacity);
+    if(result)return result;
+    result=direct_vocalized_word(word,bytes,output,capacity);
     if(result)return result;
     size_t pause_lo=0,pause_hi=sizeof fa_pause_entries / sizeof fa_pause_entries[0];
     while(pause_lo<pause_hi) {

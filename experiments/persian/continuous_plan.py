@@ -294,12 +294,27 @@ def _dense(item, column, check=None):
     return result
 
 
+def _bracket_boundary(parts, edge):
+    """Recognize source brackets without confusing them with phone tags."""
+    left = _TAG.sub('x', parts[edge - 1].text).rstrip()
+    right = _TAG.sub('x', parts[edge].text).lstrip()
+    return bool((left and left[-1] in '()[]{}') or (right and right[0] in '()[]{}'))
+
+
 def _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate, check=None):
     av = [row.controls[2] for row in item.frames]
     for i, part in enumerate(parts):
         if check:
             check()
         if part.language != language:
+            continue
+        # Brackets already supply native phrase boundaries and pauses. When
+        # both of this segment's language boundaries are bracket boundaries,
+        # retain its own language's native pitch rather than fitting it to
+        # the other language. A connected edge continues to use the shared
+        # contour, including the previously selected NVDA-to-Ach transition.
+        adjoining = tuple(edge for edge in (i, i + 1) if 0 < edge < len(parts))
+        if adjoining and all(_bracket_boundary(parts, edge) for edge in adjoining):
             continue
         start = round(bounds[i] * 1000 / rate)
         end = min(round(bounds[i + 1] * 1000 / rate), item.ticks[-1] + 1)
@@ -469,6 +484,8 @@ def bridge_sonorants(plan, parts, rate, half_window_ms=25.0):
     starts, frame_edges = _starts(original), _edges_by_count(plan.counts)
     bridged = []
     for i in range(1, len(parts)):
+        if _bracket_boundary(parts, i):
+            continue
         boundary = frame_edges[i - 1]
         at = starts[boundary]
         left = starts[0 if i == 1 else frame_edges[i - 2]]
@@ -525,7 +542,7 @@ def bridge_remaining_voiced(plan, parts, bridged, cuts, window_ms=15.0):
     starts, bounds = _starts(original), _edges_by_count(plan.counts)
     changed = []
     for edge in range(1, len(parts)):
-        if edge in excluded:
+        if edge in excluded or _bracket_boundary(parts, edge):
             continue
         boundary = bounds[edge - 1]
         left_limit = 0 if edge == 1 else bounds[edge - 2]
@@ -653,6 +670,8 @@ def direct_ach(plan, parts):
     frames, boundaries = plan.frames, _edges_by_count(plan.counts)
     cuts, ranges, counts = [], [], list(plan.counts)
     for i in range(1, len(parts)):
+        if _bracket_boundary(parts, i):
+            continue
         if (parts[i - 1].language != 'en-us' or parts[i].language != 'fa' or
                 not re.match(r'^\s*`\[\.[012]G', parts[i].text)):
             continue

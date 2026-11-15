@@ -120,6 +120,18 @@ def _pinglish_part_runs(parts, home):
 
 class PersianProbeLanguageEngine(LanguageEngine):
     """Use English for explicit and clear Latin-script boundaries."""
+    def set_dictionary_path(self, path):
+        # NVDA passes immutable, content-addressed snapshots. Repeated
+        # notifications for the same snapshot must not defeat the cache.
+        previous = self._dictionary_path
+        result = super().set_dictionary_path(path)
+        if self._dictionary_path != previous:
+            for name in ('_persian_plan_cache', '_persian_phoneme_cache', '_persian_ach_cache'):
+                cache = getattr(self, name, None)
+                if cache is not None:
+                    cache.clear()
+        return result
+
     def speak(self, parts, on_pcm, on_index):
         self._assert_owner()
         def valid_text(value):

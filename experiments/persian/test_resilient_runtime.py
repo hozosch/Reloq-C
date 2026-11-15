@@ -37,6 +37,14 @@ def main():
 
     try:
         frontend = engine._engines[PERSIAN_PROBE.id]._frontend
+        exact = 'استفاده از NVDA هنگامِ ورود به ویندوز (به اِختیاراتِ مدیریتی نیاز دارد)'
+        after = 'هنگامِ ورود به ویندوز (به اِختیاراتِ مدیریتی نیاز دارد)'
+        direct = frontend.analyze_direct(after)
+        assert direct and "`[.0hen.1ga.0me]" in direct.parts[0].text
+        assert "`[.1'e:'G.0tja.2ra.0te]" in direct.parts[0].text
+        pcm, indexes = render((EciIndex(80), exact[:24], EciIndex(81), exact[24:], EciIndex(82)))
+        assert pcm and [value for value, _ in indexes] == [80, 81, 82]
+        assert frontend._worker is None, 'the NVDA label should use the direct text path'
         job = project_resilient(('سلام @ (🙂) دنیا',), frontend)
         assert SYMBOL_TAGS['@'] in job.tagged and '(' in job.tagged
         assert UNICODE_TAG in job.tagged and ')' in job.tagged
@@ -100,8 +108,13 @@ def main():
         assert explicit == unmarked
         hyphen = project_resilient(('salam-e',), pinglish._frontend, pinglish=True,
                                    validate=pinglish._voice._phonemes_for_probe)
-        assert '-' in hyphen.tagged and SYMBOL_TAGS['-'] not in hyphen.tagged
-        assert render(('salam-e',))[0]
+        assert '-' not in hyphen.tagged and SYMBOL_TAGS['-'] not in hyphen.tagged
+        assert '`[.1ta.0vu.2merk.0ki]' not in pinglish._voice._phonemes_for_probe(hyphen.tagged)
+        for word in ('salam-e', 'salam-donya', 'salam -e'):
+            prepared = project_resilient((word,), pinglish._frontend, pinglish=True,
+                                         validate=pinglish._voice._phonemes_for_probe)
+            assert '`[.1ta.0vu.2merk.0ki]' not in pinglish._voice._phonemes_for_probe(prepared.tagged)
+            assert render((word,))[0]
 
         engine.select_voice(PERSIAN_PROBE.id, '1')
         bracketed, _ = render(('سلام (دنیا) خوب',))

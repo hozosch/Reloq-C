@@ -35,6 +35,31 @@ else:
     from reference_alignment import unpositioned_reference_input
     from text_frontend import UnsupportedPronunciation, native_sequence_accepted
 
+def _pinglish_hyphens(job: ProjectedJob) -> ProjectedJob:
+    """Keep a transliteration boundary from becoming a Finnish symbol name.
+
+    A hyphen immediately before a private phoneme tag is interpreted by the
+    Finnish parser as the spoken word "tavumerkki". Replace only that raw
+    delimiter with one blank. Its length stays unchanged, so all projected
+    indices and inline controls retain their positions. Spelling requests
+    already contain an explicit Persian symbol-name tag and are untouched.
+    """
+    positions = {match.start() for match in re.finditer(r'-(?=`\[)', job.tagged)}
+    if not positions:
+        return job
+    offset, parts = 0, []
+    for part in job.parts:
+        if isinstance(part, EciText):
+            value = ''.join(' ' if offset + index in positions else char
+                            for index, char in enumerate(part.text))
+            parts.append(replace(part, text=value))
+            offset += len(part.text)
+        else:
+            parts.append(part)
+    tagged = ''.join(' ' if index in positions else char for index, char in enumerate(job.tagged))
+    return replace(job, tagged=tagged, parts=tuple(parts))
+
+
 def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersian,
             *, allow_fallback: bool = False, pinglish: bool = False) -> ProjectedJob:
     """Use direct analysis and, optionally, verified reference word anchors."""
@@ -141,7 +166,8 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
         return ''.join(pieces), tuple(mapping)
     try:
         result = project_persian(parts, analyze, allow_symbols=bool(spelled))
-        return replace(result, needs_native_validation=used_fallback)
+        result = replace(result, needs_native_validation=used_fallback)
+        return _pinglish_hyphens(result) if pinglish else result
     except PersianProjectionError as error:
         raise UnsupportedPronunciation(str(error)) from error
 
@@ -355,7 +381,8 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
         cursor = target
     if cursor < len(tagged):
         output.append(EciText(tagged[cursor:], segmentation_guarded=True))
-    return ProjectedJob(source, tagged, tuple(output), False)
+    result = ProjectedJob(source, tagged, tuple(output), False)
+    return _pinglish_hyphens(result) if pinglish else result
 
 
 _TAG = re.compile(r'`\[[^]]+\]')

@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 from _reloq_eci_direct import (DirectEciEngine, EciIndex, GENDER, PROCESS_TAGS,
                                SAMPLE_RATE, SAMPLE_RATES)
 from _reloq_persian_frames import FrameCapture, FrameReplay
+import continuous_plan
 from continuous_plan import (bridge_english_continuations, context_plan, english_phone_proxy,
                              english_proxy, _copy_frames, _edges_by_count, _starts)
 from text_frontend import SpeechPart
@@ -37,6 +38,23 @@ def main():
                 for item in (fa, en):
                     item.set_parameter(SAMPLE_RATE, rate)
                     item.set_parameter(GENDER, gender)
+                # Parenthesized language changes have native pauses: keep
+                # each language's captured F0 throughout its own segment.
+                bracketed = (SpeechPart('en-us', 'hello) '), SpeechPart('fa', '`[.1do.0nja]'))
+                own = {}
+                fit = continuous_plan._fit_context_pitch
+                def observe(item, *items, **options):
+                    before = tuple(row.controls[1] for row in item.frames)
+                    fit(item, *items, **options)
+                    own[items[4]] = before == tuple(row.controls[1] for row in item.frames)
+                continuous_plan._fit_context_pitch = observe
+                try:
+                    context_plan(bracketed, fa, en, SAMPLE_RATES[rate])
+                finally:
+                    continuous_plan._fit_context_pitch = fit
+                assert own == {'fa': True, 'en-us': True}, own
+                assert not continuous_plan._bracket_boundary(
+                    (SpeechPart('en-us', 'NVDA '), SpeechPart('fa', '`[.1Gu]')), 1)
                 # Observe the original English /vowel/ -> /s/ boundary.
                 native = FrameCapture(en._dll).capture(en, ('say ', EciIndex(42), 'see'))
                 frames = native.frames()

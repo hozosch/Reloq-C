@@ -46,7 +46,23 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             from speech.commands import CharacterModeCommand, IndexCommand, LangChangeCommand
             import synthDriverHandler
             import synthDrivers.reloqC as reloq
+            import characterProcessing
+            from synthDrivers.reloqC._persian import continuous_driver, direct_fa_sequence
             self.speech, self.character, self.index_command = speech, CharacterModeCommand, IndexCommand
+            self.symbols = characterProcessing
+            self.projected = []
+            old_project_part = continuous_driver._project_part
+            old_prepared = direct_fa_sequence.ScopedDirectPersianEngine._speak_prepared
+            def observe_project(*args, **kwargs):
+                result = old_project_part(*args, **kwargs)
+                self.projected.append(result[0])
+                return result
+            def observe_prepared(instance, prepared, *args, **kwargs):
+                if prepared.source:
+                    self.projected.append(prepared.tagged)
+                return old_prepared(instance, prepared, *args, **kwargs)
+            continuous_driver._project_part = observe_project
+            direct_fa_sequence.ScopedDirectPersianEngine._speak_prepared = observe_prepared
             self.language_command = LangChangeCommand
             nvwave.WavePlayer = self.player
             reloq.SynthDriver._make_player = staticmethod(self.player)
@@ -85,6 +101,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_Latn', 'fa\u0304rsi', False),
                           ('fa_Latn', 'farsi', False),
                           ('fa_Latn', 'salam-e', False),
+                          ('fa_Latn', 'salam-e', 'pipeline'),
+                          ('fa_Latn', 'salam-e', 'pipeline_most'),
+                          ('fa_IR', 'استفاده از NVDA هنگامِ ورود به ویندوز (به اِختیاراتِ مدیریتی نیاز دارد)', 'pipeline'),
+                          ('fa_IR', 'استفاده از NVDA هنگامِ ورود به ویندوز (به اِختیاراتِ مدیریتی نیاز دارد)', 'pipeline_most'),
                           ('fa_Latn', 'w', True),
                           ('fa_Latn', 'NVDA', True),
                           ('fa_IR', 'ق', True),
@@ -151,6 +171,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if self.synth.language != locale:
                 raise AssertionError('language selection did not stick: ' + locale)
             self.before = {id(player): len(player.chunks) for player in self.players}
+            self.before_projected = len(self.projected)
             if spelling == 'mixed':
                 sequence = [self.language_command('en_US'), 'NVDA ',
                             self.language_command('fa_IR'), 'خوب']
@@ -166,9 +187,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             elif spelling == 'accent_exception':
                 sequence = ['salam ', self.language_command('en_US'), 'salām',
                             self.language_command('fa_Latn'), ' donya']
+            elif spelling in ('pipeline', 'pipeline_most'):
+                sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
-            self.synth.speak([self.index_command(self.index + 1), *sequence])
+            if spelling in ('pipeline', 'pipeline_most'):
+                self.speech.speak([self.index_command(self.index + 1), *sequence],
+                                  symbolLevel=(self.symbols.SymbolLevel.MOST if spelling == 'pipeline_most'
+                                               else self.symbols.SymbolLevel.NONE))
+            else:
+                self.synth.speak([self.index_command(self.index + 1), *sequence])
             wx.CallLater(1600, self.capture)
         except BaseException:
             self.fail()
@@ -180,6 +208,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                              for chunk in player.chunks[self.before.get(id(player), 0):])
             if not audio:
                 raise RuntimeError('no actual NVDA audio for ' + ascii(text))
+            if spelling in ('pipeline', 'pipeline_most'):
+                tags = ' '.join(self.projected[self.before_projected:])
+                if locale == 'fa_IR' and ('`[.0hen.1ga.0me]' not in tags or
+                        "`[.1'e:'G.0tja.2ra.0te]" not in tags):
+                    raise AssertionError('NVDA preprocessing lost the vocalized Persian words: ' + ascii(tags))
+                if locale == 'fa_Latn' and ('`[.1ta.0vu.2merk.0ki]' in tags or '-`[' in tags):
+                    raise AssertionError('Finnish hyphen name leaked into Pinglish')
             if spelling in ('english', 'persian') or spelling == 'mixed' and locale == 'fa_IR':
                 self.audio[spelling] = audio
             self.results.append({'locale': locale, 'text': text, 'spelling': spelling,

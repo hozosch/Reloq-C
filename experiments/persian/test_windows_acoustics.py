@@ -90,6 +90,21 @@ def main():
     ):
         assert render(args.candidate, 0x90000, automatic, scoped=True) == \
                render(args.candidate, 0x90000, explicit, scoped=True), automatic
+    # The same selected impulse must now be present after voiced consonants,
+    # including liquids, while voiceless fricative clusters keep their
+    # previous treatment. The Q and glottal carriers remain separate.
+    for previous in ('l', 'r', 'j', 'v', 'z', 'Z', 'b', 'd', 'g'):
+        for stop in 'ptk':
+            automatic = f'`[.1a{previous}.0{stop}a]'
+            explicit = f'`[.1a{previous}.0{stop}ha]'
+            assert render(args.candidate, 0x90000, automatic, scoped=True) == \
+                   render(args.candidate, 0x90000, explicit, scoped=True), automatic
+    for previous in ('f', 's', 'S', 'G'):
+        for stop in 'ptk':
+            automatic = f'`[.1a{previous}.0{stop}a]'
+            explicit = f'`[.1a{previous}.0{stop}ha]'
+            assert render(args.candidate, 0x90000, automatic, scoped=True) != \
+                   render(args.candidate, 0x90000, explicit, scoped=True), automatic
     with ThreadPoolExecutor(max_workers=2) as pool:
         jobs = [pool.submit(render, args.candidate, 0x90000, tagged, scoped=active)
                 for active in (False, True)]

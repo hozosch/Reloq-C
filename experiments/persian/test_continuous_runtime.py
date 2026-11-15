@@ -70,6 +70,17 @@ def main():
             assert mixed != english + persian
             assert marks[0] == (10, 0) and marks[-1] == (12, len(mixed))
             assert 0 < marks[1][1] < len(mixed) and marks[1][0] == 11
+            # The second request has new NVDA index values but the same text
+            # and settings. It must reuse control frames and remap marks.
+            cache = engine._persian_plan_cache
+            before = tuple(cache.items())
+            repeated, remapped = render(engine, (EciIndex(110), 'NVDA ', EciIndex(111),
+                                                  'خوب است.', EciIndex(112)))
+            assert repeated == mixed
+            assert remapped == [(110, marks[0][1]), (111, marks[1][1]), (112, marks[2][1])]
+            assert len(cache) == len(before) and cache[next(reversed(cache))] is before[-1][1]
+            engine.set_dictionary_path(engine._dictionary_path)
+            assert cache, 'same immutable dictionary snapshot discarded the frame cache'
             explicit, _ = render(engine, (EciLanguage(US_ENGLISH.id, '1'), 'NVDA ',
                                           EciLanguage(PERSIAN_PROBE.id, '1'), 'خوب است.'))
             assert explicit == mixed
