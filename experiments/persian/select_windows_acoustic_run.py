@@ -10,6 +10,10 @@ PATHS = ('eci/Makefile', 'src', 'include', 'vendor/openevv61',
          'experiments/aragonese/build_native_probe.py',
          'experiments/persian/build_native_probe.py',
          'experiments/persian/build_windows_probe.py',
+         'experiments/persian/prepare_continuous_host.py',
+         'experiments/persian/continuous_frames.c',
+         'experiments/persian/continuous_frames.h',
+         'experiments/persian/continuous_replay.inc',
          'experiments/persian/scoped_acoustics_probe.c',
          '.github/workflows/persian-windows-acoustic-probe.yml')
 

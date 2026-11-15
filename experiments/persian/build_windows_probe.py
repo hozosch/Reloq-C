@@ -12,6 +12,8 @@ import shutil
 import subprocess
 import sys
 
+from prepare_continuous_host import prepare, prepare_eci
+
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 PROVIDER = ROOT / 'vendor/openevv61'
@@ -69,12 +71,24 @@ def main():
     subprocess.run([args.ar, 'r', str(private_archive), *map(str, modified)], check=True)
     direct_sources = [HERE / ('direct_fa_' + name + '.c')
                       for name in ('lexicon', 'numbers', 'normalize', 'text', 'letters')]
-    direct_sources.append(HERE / 'scoped_acoustics_probe.c')
+    direct_sources.extend((HERE / 'scoped_acoustics_probe.c', HERE / 'continuous_frames.c'))
     direct = []
     for source in direct_sources:
         obj = work / (source.stem + '.o')
         subprocess.run([args.cc, '-O2', '-std=c11', '-ffunction-sections', '-fdata-sections',
                         '-I' + str(ROOT / 'include'), '-c', str(source), '-o', str(obj)], check=True)
+        direct.append(obj)
+    # Only the private Persian DLL gains frame capture and continuous replay.
+    # All other host objects and the baseline release remain unchanged.
+    objects = [obj for obj in objects if obj.name not in ('reloq_rules61.o', 'reloq_eci.o')]
+    for source in (prepare(work), prepare_eci(work)):
+        obj = work / (source.stem + '.o')
+        subprocess.run([args.cc, '-O2', '-std=c11', '-Wall', '-Wextra', '-Werror', '-pedantic',
+                        '-ffunction-sections', '-fdata-sections', '-ffp-contract=off',
+                        '-fvisibility=hidden', '-I' + str(ROOT / 'include'),
+                        '-I' + str(ROOT / 'src'), '-I' + str(HERE),
+                        '-I' + str(PROVIDER / 'include'),
+                        '-c', str(source), '-o', str(obj)], check=True)
         direct.append(obj)
     exports = work / 'persian.def'
     exports.write_text('EXPORTS\nreloq_fa_direct_text\nreloq_fa_direct_number\n'

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import ctypes
 from pathlib import Path
 import tempfile
 import threading
@@ -138,13 +139,14 @@ def real_transport_tests(args):
         assert latin and acronym and unknown
         transport.select_voice(PERSIAN_PROBE.id, '1')
 
-        # Explicit language switches must speak both parts, even before the
-        # continuous cross-language contour becomes available to the driver.
+        # Explicit and automatic switches use the same continuous sentence.
         _, english = run((EciLanguage(US_ENGLISH.id, '1'), 'NVDA ', EciIndex(40)))
         _, persian = run(('خوب', EciIndex(41)))
         mixed_job, mixed = run((EciLanguage(US_ENGLISH.id, '1'), EciIndex(42), 'NVDA ',
                                 EciLanguage(PERSIAN_PROBE.id, '1'), EciIndex(43), 'خوب', EciIndex(44)))
-        assert english and persian and mixed == english + persian
+        continuous = hasattr(ctypes.CDLL(str(args.scope_probe.resolve())), 'reloq_fa_replay_frames')
+        assert english and persian and mixed
+        assert (mixed != english + persian) if continuous else (mixed == english + persian)
         assert observed[-4:] == [('index', 42), ('index', 43), ('index', 44), ('done', mixed_job)]
         plain_job, plain_mixed = run((EciIndex(45), 'NVDA ', EciIndex(46), 'خوب', EciIndex(47)))
         assert plain_mixed == mixed

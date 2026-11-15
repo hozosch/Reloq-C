@@ -27,7 +27,7 @@ class Player:
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     def __init__(self):
         super().__init__()
-        self.players, self.results, self.index = [], [], 0
+        self.players, self.results, self.index, self.audio = [], [], 0, {}
         wx.CallLater(1500, self.setup)
 
     def fail(self):
@@ -75,6 +75,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', '🙂', True),
                           ('fa_Latn', '5?', True),
                           ('fa_IR', 'سلام ؟ دنیا', 'mixedspelling'),
+                          ('fa_IR', 'NVDA ', 'english'),
+                          ('fa_IR', 'خوب', 'persian'),
                           ('fa_IR', 'NVDA خوب', 'mixed'),
                           ('fa_IR', 'NVDA خوب', False),
                           ('de_DE', 'Guten Tag.', False)]
@@ -92,6 +94,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                              if row['text'] == 'NVDA خوب' and row['spelling'] is False)
                 if mixed['pcm_sha256'] != plain['pcm_sha256']:
                     raise AssertionError('unmarked mixed text differs from the explicit switch')
+                if self.audio['mixed'] == self.audio['english'] + self.audio['persian']:
+                    raise AssertionError('mixed sentence was rendered as two disconnected sessions')
                 RESULT.write_text(json.dumps({'ok': True, 'cases': self.results}, ensure_ascii=True), encoding='utf8')
                 return
             locale, text, spelling = self.cases[self.index]
@@ -103,6 +107,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if spelling == 'mixed':
                 sequence = [self.language_command('en_US'), 'NVDA ',
                             self.language_command('fa_IR'), 'خوب']
+            elif spelling == 'english':
+                sequence = [self.language_command('en_US'), text]
+            elif spelling == 'persian':
+                sequence = [text]
             elif spelling == 'mixedspelling':
                 sequence = ['سلام ', self.character(True), '؟', self.character(False), ' دنیا']
             else:
@@ -119,6 +127,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                              for chunk in player.chunks[self.before.get(id(player), 0):])
             if not audio:
                 raise RuntimeError('no actual NVDA audio for ' + ascii(text))
+            if spelling in ('english', 'persian', 'mixed'):
+                self.audio[spelling] = audio
             self.results.append({'locale': locale, 'text': text, 'spelling': spelling,
                                  'pcm_bytes': len(audio), 'pcm_sha256': hashlib.sha256(audio).hexdigest()})
             self.index += 1

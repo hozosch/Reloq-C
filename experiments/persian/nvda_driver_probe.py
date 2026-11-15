@@ -1,8 +1,8 @@
 """Exercise the real NVDA language/queue contract with a private FA voice.
 
 This factory is only for tests. Its Persian IDs are not public ECI dialects.
-Explicit NVDA language switches use the regular per-language engines. The
-accepted shared sentence contour and transitions are not integrated yet.
+Explicit and automatic English switches can use the selected continuous
+sentence plan when the private host exposes frame capture and replay.
 """
 from __future__ import annotations
 
@@ -13,12 +13,14 @@ import unicodedata
 if __package__:
     from .direct_fa_sequence import ScopedDirectPersianEngine
     from .hybrid_fa_frontend import DirectFirstPersian
+    from .continuous_driver import try_continuous
     from .._reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
                                      EciPitch, EciPitchHz, EciProsody, EciText)
     from .._reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
 else:
     from direct_fa_sequence import ScopedDirectPersianEngine
     from hybrid_fa_frontend import DirectFirstPersian
+    from continuous_driver import try_continuous
     from _reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
                                   EciPitch, EciPitchHz, EciProsody, EciText)
     from _reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
@@ -74,11 +76,7 @@ def _script_runs(text):
 
 
 class PersianProbeLanguageEngine(LanguageEngine):
-    """Use ordinary switches for explicit and clear Latin-script boundaries.
-
-    Pinglish remains Persian. Shared cross-language contour is not available
-    online yet; this route preserves speech while it is implemented.
-    """
+    """Use English for explicit and clear Latin-script boundaries."""
     def speak(self, parts, on_pcm, on_index):
         self._assert_owner()
         logical = actual = self._home
@@ -122,7 +120,13 @@ class PersianProbeLanguageEngine(LanguageEngine):
             if text is not None or isinstance(part, EciCapitalWord):
                 select(logical)
             output.append(part)
-        return super().speak(output, on_pcm, on_index)
+        try:
+            result = try_continuous(self, output, on_pcm, on_index,
+                                    fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id),
+                                    english_id=US_ENGLISH.id, german_id=GERMAN.id)
+            return super().speak(output, on_pcm, on_index) if result is None else result
+        finally:
+            self._activate(self._home)
 
 
 def make_language_engine(library, native_library, worker, espeak_library, data_parent,

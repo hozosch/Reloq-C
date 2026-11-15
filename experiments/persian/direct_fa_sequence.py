@@ -229,6 +229,17 @@ class ScopedDirectPersianEngine:
             if self._cancelled.is_set():
                 return False
             raise
+        return self._speak_prepared(prepared, on_pcm, on_index)
+
+    def _speak_prepared(self, prepared: ProjectedJob, on_pcm, on_index) -> bool:
+        """Speak verified native tags with the same per-request selectors.
+
+        The caller owns job cancellation and must never pass user-supplied
+        raw tags. This entry also lets the sentence planner supply its private
+        phoneme proxies while keeping pauses and geminate marks scoped.
+        """
+        if threading.get_ident() != self._owner:
+            raise RuntimeError('Persian engine belongs to its creating worker')
         if self._cancelled.is_set():
             return False
         tags = tuple(re.finditer(r'`\[[^]]+\]', prepared.tagged))

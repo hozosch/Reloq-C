@@ -24,6 +24,8 @@ def main():
                         help='completed build_scoped_acoustics_probe work directory')
     parser.add_argument('--work', type=Path, required=True)
     parser.add_argument('--jobs', type=int, choices=range(1, 9), default=4)
+    parser.add_argument('--continuous-capture', action='store_true',
+                        help='add private request-scoped frame capture')
     args = parser.parse_args()
     archive = args.scope_work.resolve() / 'libreloq61.a'
     scope = args.scope_work.resolve() / 'scoped_acoustics_probe.o'
@@ -45,9 +47,22 @@ def main():
 
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
         objects = list(pool.map(compile_one, sources))
+    hosts = host_objects()
+    if args.continuous_capture:
+        from prepare_continuous_host import prepare, prepare_eci
+        source = prepare(work)
+        continuous = (source, prepare_eci(work), HERE / 'continuous_frames.c')
+        flags = ['-O2', '-std=c11', '-fPIC', '-ffunction-sections', '-fdata-sections',
+                 '-ffp-contract=off', '-fvisibility=hidden', '-I' + str(ROOT / 'include'),
+                 '-I' + str(ROOT / 'src'), '-I' + str(HERE)]
+        for item in continuous:
+            output = work / (item.stem + '.o')
+            subprocess.run(['cc', *flags, '-c', str(item), '-o', str(output)], check=True)
+            objects.append(output)
+        hosts = [obj for obj in hosts if obj.name not in ('reloq_rules61.o', 'reloq_eci.o')]
     output = work / 'libreloq_eci_persian_probe.so'
     subprocess.run(['cc', '-O3', f'-flto={args.jobs}', '-fno-strict-aliasing', '-ffp-contract=off',
-                    '-shared', *map(str, host_objects()), str(scope), *map(str, objects), str(archive),
+                    '-shared', *map(str, hosts), str(scope), *map(str, objects), str(archive),
                     '-pthread', '-Wl,--gc-sections,--no-undefined', '-lm', '-o', str(output)],
                    check=True, env={**os.environ, 'TMPDIR': str(work)})
     print('Ready:', output)

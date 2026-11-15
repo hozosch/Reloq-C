@@ -21,7 +21,8 @@ from pe_format import assert_x64_pe
 
 PREFIX = 'synthDrivers/reloqC/'
 MODULES = ('espeak_ng_probe', 'espeak_worker', 'text_frontend', 'pinglish_frontend', 'persian_symbols',
-           'reference_alignment', 'hybrid_fa_frontend', 'direct_fa_sequence', 'nvda_driver_probe')
+           'reference_alignment', 'hybrid_fa_frontend', 'direct_fa_sequence', 'continuous_plan',
+           'continuous_driver', 'nvda_driver_probe')
 
 
 def add_persian(entries, worker: bytes, text_library: bytes):
@@ -44,6 +45,8 @@ def add_persian(entries, worker: bytes, text_library: bytes):
                             '                language=initial_language, voice=initial_voice)', 1)
     entries[driver] = source.encode('utf8')
     entries[PREFIX + '_reloq_persian_projection.py'] = (ROOT / 'nvda/_reloq_persian_projection.py').read_bytes()
+    entries[PREFIX + '_reloq_persian_frames.py'] = (ROOT / 'nvda/_reloq_persian_frames.py').read_bytes()
+    entries[PREFIX + '_reloq_persian_glide.py'] = (ROOT / 'nvda/_reloq_persian_glide.py').read_bytes()
     entries[PREFIX + '_reloq_persian_bridge.py'] = (ROOT / 'nvda/_reloq_persian_bridge.py').read_bytes()
     entries[PREFIX + '_persian/__init__.py'] = b'"""Private Persian test frontend."""\n'
     for name in MODULES:
@@ -59,7 +62,7 @@ def add_persian(entries, worker: bytes, text_library: bytes):
     if manifest.count('version = "1.4.1"') != 1:
         raise ValueError('the normal version changed; choose an explicit test version')
     # Keep the existing updater's recognized dev-version grammar.
-    manifest = manifest.replace('version = "1.4.1"', 'version = "1.5.0-dev94"', 1)
+    manifest = manifest.replace('version = "1.4.1"', 'version = "1.5.0-dev95"', 1)
     manifest = manifest.replace('summary = "Eloquence C: fifteen language variants"',
                                 'summary = "Eloquence C: Persian and Pinglish test"', 1)
     manifest = re.sub(r'(?m)^description = .*$',
