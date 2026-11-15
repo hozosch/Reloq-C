@@ -12,6 +12,7 @@ import sys
 import threading
 import types
 from typing import Generic, TypeVar
+import unicodedata
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'addon'))
@@ -79,6 +80,7 @@ def main():
         assert len(guarded) == 3 and guarded[0].enabled and not guarded[2].enabled
         processed = processor.processText(guarded[1], kind)
         assert joiners.restore_joiners(processed) == word
+        assert joiners.restore_joiners(unicodedata.normalize('NFKC', processed)) == word
     assert joiners.protect_joiners(driver, [word], symbol_level=level.CHAR) == [word]
     spelled = [CharacterModeCommand(True), word, CharacterModeCommand(False)]
     assert joiners.protect_joiners(driver, spelled) == spelled
