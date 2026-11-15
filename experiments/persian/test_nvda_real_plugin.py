@@ -68,6 +68,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_Latn', 'NVDA', True),
                           ('fa_IR', 'ق', True),
                           ('fa_IR', 'NVDA خوب', 'mixed'),
+                          ('fa_IR', 'NVDA خوب', False),
                           ('de_DE', 'Guten Tag.', False)]
             self.next()
         except BaseException:
@@ -78,6 +79,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if self.index == len(self.cases):
                 if self.results[0]['pcm_sha256'] != self.results[1]['pcm_sha256']:
                     raise AssertionError('confirmed script and Pinglish words differ')
+                mixed = next(row for row in self.results if row['spelling'] == 'mixed')
+                plain = next(row for row in self.results
+                             if row['text'] == 'NVDA خوب' and row['spelling'] is False)
+                if mixed['pcm_sha256'] != plain['pcm_sha256']:
+                    raise AssertionError('unmarked mixed text differs from the explicit switch')
                 RESULT.write_text(json.dumps({'ok': True, 'cases': self.results}, ensure_ascii=True), encoding='utf8')
                 return
             locale, text, spelling = self.cases[self.index]

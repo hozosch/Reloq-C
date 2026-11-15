@@ -52,6 +52,11 @@ def fake_routing_test():
                             pcm.extend, indexes.append)
         assert bytes(pcm) == b'\x01\x7f' and indexes[-3:] == [16, 17, 18]
         pcm.clear()
+        engine.select_voice(PERSIAN_PROBE.id, '1')
+        assert engine.speak((EciIndex(19), 'NVDA ', EciIndex(20), 'خوب', EciIndex(21)),
+                            pcm.extend, indexes.append)
+        assert bytes(pcm) == b'\x01\x7f' and indexes[-3:] == [19, 20, 21]
+        pcm.clear()
         assert engine.speak((EciLanguage(US_ENGLISH.id, '1'), 'Hello'),
                             pcm.extend, lambda _: None)
         assert bytes(pcm) == b'\x01'
@@ -141,6 +146,16 @@ def real_transport_tests(args):
                                 EciLanguage(PERSIAN_PROBE.id, '1'), EciIndex(43), 'خوب', EciIndex(44)))
         assert english and persian and mixed == english + persian
         assert observed[-4:] == [('index', 42), ('index', 43), ('index', 44), ('done', mixed_job)]
+        plain_job, plain_mixed = run((EciIndex(45), 'NVDA ', EciIndex(46), 'خوب', EciIndex(47)))
+        assert plain_mixed == mixed
+        assert observed[-4:] == [('index', 45), ('index', 46), ('index', 47), ('done', plain_job)]
+        _, explicit_roundtrip = run(('سلام ', EciLanguage(US_ENGLISH.id, '1'), 'NVDA ',
+                                     EciLanguage(PERSIAN_PROBE.id, '1'), 'خوب'))
+        roundtrip_job, plain_roundtrip = run((EciIndex(48), 'سلام ', EciIndex(49), 'NVDA ',
+                                              EciIndex(50), 'خوب', EciIndex(51)))
+        assert plain_roundtrip == explicit_roundtrip
+        assert observed[-5:] == [('index', 48), ('index', 49), ('index', 50),
+                                 ('index', 51), ('done', roundtrip_job)]
         _, recovered = run(('سلام.', EciIndex(8)))
         assert recovered
 
