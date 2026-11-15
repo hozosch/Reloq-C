@@ -10,6 +10,7 @@ struct fa_context_entry { const char *word, *final, *nonfinal; };
 #include "direct_fa_lexicon.inc"
 #include "direct_fa_context.inc"
 #include "direct_fa_plural.inc"
+#include "direct_fa_suffixes.inc"
 #include "direct_fa_pause_words.inc"
 
 size_t reloq_fa_direct_word_count(void)
@@ -42,6 +43,60 @@ int reloq_fa_direct_word(const char *word,size_t bytes,char *output,size_t capac
     if(n>=capacity)return -2;
     memcpy(output,tag,n+1);
     return 1;
+}
+
+/* This transform is enabled only by the generated per-stem admission bits.
+ * It mirrors direct_fa_suffix_rules.candidate, preserving every native phone
+ * and length marker while assigning the reference's syllable stresses. */
+static int direct_suffix_tag(const char *base,unsigned kind,char *output,size_t capacity)
+{
+    size_t n=strlen(base);
+    if(n<5 || base[0]!='`' || base[1]!='[' || base[n-1]!=']' || kind>=6)return -1;
+    char last=base[n-2];
+    if(kind==2 && strchr("aAeEiou",last)) {
+        if(n+1>=capacity)return -2;
+        memcpy(output,base,n-1);output[n-1]='m';output[n]=']';output[n+1]=0;
+        return 1;
+    }
+    int coda=kind>=2;
+    if(coda && !strchr("bdfghjklmnprstvzSZGRCJ",last))return -1;
+    size_t copy=n-1-(size_t)coda;
+    const char *tail=kind==0?".0ha]":kind==1?".0tAr]":
+                     kind==2?"Am]":kind==3?"At]":kind==4?"AS]":"i]";
+    size_t tail_bytes=strlen(tail),extra=coda?3:0;
+    if(copy>capacity-1 || extra+tail_bytes>capacity-1-copy)return -2;
+    memcpy(output,base,copy);
+    unsigned syllables=0;
+    for(size_t i=2;i<copy;++i)
+        if(output[i]=='.' && i+1<copy && output[i+1]>='0' && output[i+1]<='2')++syllables;
+    if(!syllables)return -1;
+    unsigned position=0;
+    for(size_t i=2;i<copy;++i) {
+        if(output[i]!='.' || i+1>=copy || output[i+1]<'0' || output[i+1]>'2')continue;
+        ++position;
+        output[i+1]=position==syllables?'1':position==1 && syllables>2?'2':'0';
+    }
+    if(coda){output[copy++]='.';output[copy++]='0';output[copy++]=last;}
+    memcpy(output+copy,tail,tail_bytes+1);
+    return 1;
+}
+
+static int direct_suffix_word(const char *word,size_t bytes,char *output,size_t capacity)
+{
+    static const struct {const char *text;size_t bytes;} suffixes[]={
+        {"\xd9\x87\xd8\xa7",4}, /* ها */
+        {"\xd8\xaa\xd8\xb1",4}, /* تر */
+        {"\xd9\x85",2}, {"\xd8\xaa",2}, {"\xd8\xb4",2}, {"\xdb\x8c",2},
+    };
+    for(unsigned kind=0;kind<sizeof suffixes/sizeof suffixes[0];++kind) {
+        size_t n=suffixes[kind].bytes;
+        if(bytes<=n || memcmp(word+bytes-n,suffixes[kind].text,n))continue;
+        size_t index=direct_index(word,bytes-n);
+        if(index>=reloq_fa_direct_word_count() || index/8>=sizeof fa_direct_suffix_bases[0] ||
+           !(fa_direct_suffix_bases[kind][index/8] & (1u<<(index%8))))continue;
+        return direct_suffix_tag(fa_direct_entries[index].tag,kind,output,capacity);
+    }
+    return 0;
 }
 
 int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
@@ -102,5 +157,5 @@ int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
             return 1;
         }
     }
-    return 0;
+    return direct_suffix_word(word,bytes,output,capacity);
 }

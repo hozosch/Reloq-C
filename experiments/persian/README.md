@@ -1300,9 +1300,16 @@ known word followed by a zero-width non-joiner and ها. A bitmap marks bases
 whose final and nonfinal tags match the reference in four positions and whose
 two outputs the Finnish parser accepts. At runtime C constructs the tag from
 the existing base and suffix without starting eSpeak. A generated fingerprint
-prevents compiling the bitmap against a different lexicon. This does not
-cover unknown bases, suffix spelling without the non-joiner, or other
-morphology; those cases remain uncovered or use the reference fallback.
+prevents compiling the bitmap against a different lexicon. This particular
+pattern does not cover unknown bases or other forms of morphology.
+`compile_direct_suffixes.py` adds six more direct suffix patterns: ها, تر,
+م, ت, ش and ی without a non-joiner. Each candidate stem is admitted only
+when its generated tag matches eSpeak in four positions and the native
+phoneme parser accepts it. The resulting six compact bitmaps contain 71,203
+admissions, representing about 70,853 distinct forms not previously covered.
+Existing whole-word and context entries keep precedence. Unknown stems and
+unadmitted transformations still use the reference fallback; these bounded
+rules are not a complete transcription of the 6,104-line `fa_rules` file.
 `compile_direct_numbers.py` generates the 0–999 number groups from the
 pinned eSpeak dictionary and validates their tags in four contexts. The C
 number experiment composes groups up to 999,999,999,999, retaining exactly

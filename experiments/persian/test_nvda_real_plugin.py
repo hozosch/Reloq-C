@@ -63,6 +63,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'تعجب', False),
                           ('fa_IR', 'توجه', False),
                           ('fa_IR', 'امتحان امکان آمپر', False),
+                          ('fa_IR', 'کتابم کتابت کتابش کتابها', False),
                           ('fa_IR', 'سوال', False),
                           ('fa_Latn', 'badbakht soal?', False),
                           ('fa_Latn', 'salam khub?', False),

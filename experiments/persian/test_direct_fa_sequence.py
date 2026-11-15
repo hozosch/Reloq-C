@@ -38,6 +38,7 @@ def projection_tests(frontend):
         ('من', EciIndex(8), ' ۱۲ آمد.'),
         ('ﺳﻼﻡ ', EciIndex(9), 'دنیا؟'),
         (EciIndex(10), 'س', EciIndex(11), 'ل', EciIndex(12), 'ام.'),
+        (EciIndex(13), 'کتابم ', EciIndex(14), 'کتابت ', EciIndex(15), 'کتابها.'),
     )
     for parts in inputs:
         job = project(parts, frontend)
