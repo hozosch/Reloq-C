@@ -59,6 +59,10 @@ def main():
                     EciText('کادرِ علامت‌زدنی  '), EciIndex(85), EciText(status + '  '), EciIndex(86)))
                 assert pcm and [value for value, _ in marks] == [83, 84, 85, 86]
                 assert any(status in source and expected in tags for source, tags in observed), observed
+                # The entire role and status must come from the native
+                # Persian job, not from a bilingual proxy's final frames.
+                direct_pcm, _ = render(('کادرِ علامت‌زدنی  ' + status + '  ',))
+                assert pcm[marks[1][1]:] == direct_pcm, status
                 assert frontend._worker is None
         finally:
             ScopedDirectPersianEngine._speak_prepared = previous_prepared
