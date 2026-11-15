@@ -90,6 +90,15 @@ def main():
             expected_persian, _ = render(engine, (EciPitch(80), 'او آمد.'))
             assert controlled == expected_english + expected_persian
 
+            # The same mixed fragment can also appear at the end of a job.
+            # Its cached frames must not be reused with the other pause mode.
+            engine._persian_plan_cache.clear()
+            standalone, _ = render(engine, ('NVDA خوب (',))
+            assert len(engine._persian_plan_cache) == 1
+            assert render(engine, ('NVDA خوب (hello) دنیا',))[0]
+            assert len(engine._persian_plan_cache) == 2
+            assert render(engine, ('NVDA خوب (',))[0] == standalone
+
             english, _ = render(engine, (EciLanguage(US_ENGLISH.id, '1'), 'NVDA '))
             persian, _ = render(engine, ('خوب است.',))
             mixed, marks = render(engine, (EciIndex(10), 'NVDA ', EciIndex(11),

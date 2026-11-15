@@ -244,7 +244,7 @@ class PersianProbeLanguageEngine(LanguageEngine):
                     result = try_continuous(self, job, on_pcm, on_index,
                                             fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id),
                                             english_id=US_ENGLISH.id, german_id=GERMAN.id,
-                                            reset_cancellation=False)
+                                            reset_cancellation=False, end_pause_shortened=old_pause == 0)
                     if result is None and not self._cancelled.is_set():
                         result = try_persian_glides(self, job, on_pcm, on_index,
                                                     fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id))

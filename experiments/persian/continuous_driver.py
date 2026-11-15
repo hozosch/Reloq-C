@@ -196,7 +196,7 @@ def _project_part(engine, items, *, follows):
 
 
 def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german_id,
-                   reset_cancellation=True):
+                   reset_cancellation=True, end_pause_shortened=False):
     """Return None when this job must retain the established native route."""
     if reset_cancellation:
         owner._cancelled.clear()
@@ -264,7 +264,8 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
             cache = owner._persian_plan_cache = OrderedDict()
         key = (fa_key, en_key, tuple(sentence), tuple((a, b) for a, b, _ in events),
                tuple(guarded), tuple(spelling), tuple(prefix), validate,
-               owner._dictionary_path, tuple(sorted(owner._parameters.items())), owner._acoustic_clocks)
+               owner._dictionary_path, tuple(sorted(owner._parameters.items())), owner._acoustic_clocks,
+               end_pause_shortened)
         cached = cache.get(key)
         if cached is not None:
             cache.move_to_end(key)
