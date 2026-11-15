@@ -39,14 +39,19 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
     parts = tuple(parts)
     DirectEciEngine._prepare(parts, 'utf-8')
     spelled = [part for part in parts if isinstance(part, EciText) and part.character_mode]
+    runs = []
     if spelled:
-        texts = [part for part in parts if isinstance(part, (str, EciText))]
-        if any((isinstance(part, str) and part) or
-               (isinstance(part, EciText) and part.text and not part.character_mode)
-               for part in texts):
-            raise UnsupportedPronunciation('mixed spelling and text need separate handling')
-        if any(part.speed_control for part in spelled):
+        if any(isinstance(part, EciText) and part.speed_control for part in parts):
             raise UnsupportedPronunciation('inline controls need separate handling')
+        for part in parts:
+            if not isinstance(part, (str, EciText)):
+                continue
+            value = part if isinstance(part, str) else part.text
+            mode = isinstance(part, EciText) and part.character_mode
+            if runs and runs[-1][0] == mode:
+                runs[-1] = (mode, runs[-1][1] + value)
+            elif value:
+                runs.append((mode, value))
         parts = tuple(replace(part, character_mode=False) if isinstance(part, EciText) and part.character_mode else part
                       for part in parts)
     total = sum(len(part if isinstance(part, str) else part.text)
@@ -59,36 +64,31 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
         elif 0 < offset < total:
             internal_marks = True
     used_fallback = False
-    def analyze(text):
+    def analyze_spelled(text):
+        pieces, output_bytes = [], 0
+        mapping = [0] * (len(text.encode('utf8')) + 1)
+        source_bytes = 0
+        for char in text:
+            width = len(char.encode('utf8'))
+            name = (frontend.analyze_pinglish_character(char) if pinglish
+                    else frontend.analyze_character(char))
+            if name is None or len(name.parts) != 1:
+                return None
+            if pieces:
+                pieces.append(' ')
+                output_bytes += 1
+            value = name.parts[0].text
+            for index in range(source_bytes, source_bytes + width):
+                mapping[index] = output_bytes
+            pieces.append(value)
+            output_bytes += len(value)
+            source_bytes += width
+            mapping[source_bytes] = output_bytes
+        return ''.join(pieces), tuple(mapping)
+
+    def analyze_regular(text):
         nonlocal used_fallback
-        if spelled:
-            pieces, output_bytes = [], 0
-            mapping = [0] * (len(text.encode('utf8')) + 1)
-            source_bytes = 0
-            last_was_name = False
-            for char in text:
-                width = len(char.encode('utf8'))
-                if char in ' \t':
-                    value = char
-                    last_was_name = False
-                else:
-                    name = (frontend.analyze_pinglish_character(char) if pinglish
-                            else frontend.analyze_character(char))
-                    if name is None or len(name.parts) != 1:
-                        return None
-                    if last_was_name:
-                        pieces.append(' ')
-                        output_bytes += 1
-                    value = name.parts[0].text
-                    last_was_name = True
-                for index in range(source_bytes, source_bytes + width):
-                    mapping[index] = output_bytes
-                pieces.append(value)
-                output_bytes += len(value)
-                source_bytes += width
-                mapping[source_bytes] = output_bytes
-            return ''.join(pieces), tuple(mapping)
-        elif pinglish:
+        if pinglish:
             analysis = frontend.analyze_pinglish(text, positioned=internal_marks,
                                                 allow_fallback=allow_fallback)
         else:
@@ -103,7 +103,7 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
                 if len(analysis.parts) != 1 or analysis.parts[0].language != 'fa':
                     return None
                 tagged = analysis.parts[0].text
-                used_fallback = analysis.used_fallback
+                used_fallback = used_fallback or analysis.used_fallback
                 return tagged, (0,) * len(text.encode('utf8')) + (len(tagged),)
         if analysis is None:
             return None
@@ -111,14 +111,34 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
             if len(analysis.parts) != 1 or analysis.parts[0].language != 'fa':
                 return None
             tagged = analysis.parts[0].text
-            used_fallback = analysis.used_fallback
+            used_fallback = used_fallback or analysis.used_fallback
             return tagged, (0,) * len(text.encode('utf8')) + (len(tagged),)
         if analysis.source_map is None or len(analysis.parts) > 1:
             raise PersianProjectionError('direct Persian source map is unavailable')
-        used_fallback = analysis.used_fallback
+        used_fallback = used_fallback or analysis.used_fallback
         return analysis.parts[0].text if analysis.parts else '', analysis.source_map
+
+    def analyze(text):
+        if not spelled:
+            return analyze_regular(text)
+        if ''.join(value for _, value in runs) != text:
+            raise PersianProjectionError('spelling runs do not match the source')
+        pieces, mapping, position = [], [0], 0
+        for mode, value in runs:
+            result = analyze_spelled(value) if mode else analyze_regular(value)
+            if result is None:
+                return None
+            tagged, local = result
+            if pieces and tagged and pieces[-1] and not pieces[-1][-1].isspace() and not tagged[0].isspace():
+                pieces.append(' ')
+                position += 1
+                mapping[-1] = position
+            pieces.append(tagged)
+            mapping.extend(position + item for item in local[1:])
+            position += len(tagged)
+        return ''.join(pieces), tuple(mapping)
     try:
-        result = project_persian(parts, analyze)
+        result = project_persian(parts, analyze, allow_symbols=bool(spelled))
         return replace(result, needs_native_validation=used_fallback)
     except PersianProjectionError as error:
         raise UnsupportedPronunciation(str(error)) from error

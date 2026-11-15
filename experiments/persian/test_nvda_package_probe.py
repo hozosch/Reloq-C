@@ -30,7 +30,7 @@ def main():
     text_library = (args.text_library or args.native_library).resolve()
     entries = add_persian(base, args.worker.read_bytes(), text_library.read_bytes())
     assert 'Persian acoustic probe' in json.loads(entries['doc/source.json'])['build']
-    assert b'1.5.0-dev91' in entries['manifest.ini']
+    assert b'1.5.0-dev92' in entries['manifest.ini']
     assert 'Persisch- und Pinglish-Test' in entries['locale/de/manifest.ini'].decode('utf8')
     assert b'add_profiles(dict(LANGUAGES), DLL)' in entries[PREFIX + '__init__.py']
     assert b'lambda: make_engine(' in entries[PREFIX + '__init__.py']
@@ -87,8 +87,13 @@ def main():
                 assert engine.speak(('سلام دنیا؟',), pcm.extend, lambda _: None)
                 assert bytes(pcm) == original
                 frontend = engine._engines[fa.id]._frontend
-                assert frontend.analyze_direct('بدبخت').parts[0].text == '`[.1bAd] `[.0bAGt]'
+                assert frontend.analyze_direct('بدبخت').parts[0].text == '`[.1bAd.0bAGt]'
                 assert frontend.analyze_direct('سوال').parts[0].text == '`[.1so]~`[.0al]'
+                assert frontend.analyze_direct('تعجب').parts[0].text == '`[.0tA.1wAd.0Job]'
+                for symbol in ('؟', '۱', '🙂'):
+                    pcm.clear()
+                    assert engine.speak((eci.EciText(symbol, character_mode=True),), pcm.extend, lambda _: None)
+                    assert pcm
                 engine.select_voice(pinglish.id, '1')
                 pcm.clear()
                 assert engine.speak(('salam ', eci.EciIndex(4), 'khubtar?'), pcm.extend, lambda _: None)

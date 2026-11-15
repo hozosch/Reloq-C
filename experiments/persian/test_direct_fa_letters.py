@@ -7,6 +7,7 @@ from pathlib import Path
 from direct_fa_sequence import EciIndex, EciText, ScopedDirectPersianEngine, project
 from espeak_worker import EspeakWorker
 from hybrid_fa_frontend import DirectFirstPersian
+from persian_symbols import SYMBOL_TAGS, UNICODE_TAG
 from reference_letter_names import LETTERS, reference_tag
 from text_frontend import UnsupportedPronunciation, native_tag_accepted
 
@@ -28,15 +29,25 @@ def reference_tests(frontend, reference):
     job = project(word, frontend, allow_fallback=True)
     assert job.tagged == ' '.join(frontend.analyze_character(c).parts[0].text for c in 'سلام')
     assert [part.value for part in job.parts if isinstance(part, EciIndex)] == [3, 4]
-    for char in ('A', '۱', '؟', 'ك'):
-        assert frontend.analyze_character(char) is None
-        try:
-            project((EciText(char, character_mode=True),), frontend, allow_fallback=True)
-            raise AssertionError('unsupported character was accepted')
-        except UnsupportedPronunciation:
-            pass
-    for parts in (('سلام ', EciText('ب', character_mode=True)),
-                  (EciText('ب', character_mode=True, speed_control='1'),)):
+    for char in (*SYMBOL_TAGS, 'A', 'ك', '🙂'):
+        name = frontend.analyze_character(char)
+        assert name is not None and name.parts[0].text
+        if char in SYMBOL_TAGS:
+            assert name.parts[0].text == SYMBOL_TAGS[char]
+        assert name.source_map == (0,) * len(char.encode('utf8')) + (len(name.parts[0].text),)
+        job = project((EciIndex(5), EciText(char, character_mode=True), EciIndex(6)),
+                      frontend, allow_fallback=True)
+        assert job.tagged == name.parts[0].text
+        assert [part.value for part in job.parts if isinstance(part, EciIndex)] == [5, 6]
+    assert frontend.analyze_character('ك').parts == frontend.analyze_character('ک').parts
+    assert frontend.analyze_character('🙂').parts[0].text.startswith(UNICODE_TAG)
+    mixed = project(('سلام ', EciIndex(7), EciText('؟', character_mode=True),
+                     EciIndex(8), ' دنیا'), frontend, allow_fallback=True)
+    assert mixed.tagged == (frontend.analyze_direct('سلام ').parts[0].text +
+                            frontend.analyze_character('؟').parts[0].text +
+                            frontend.analyze_direct(' دنیا').parts[0].text)
+    assert [part.value for part in mixed.parts if isinstance(part, EciIndex)] == [7, 8]
+    for parts in ((EciText('ب', character_mode=True, speed_control='1'),),):
         try:
             project(parts, frontend, allow_fallback=True)
             raise AssertionError('unsupported spelling job was accepted')
@@ -51,7 +62,7 @@ def playback_tests(frontend, probe, reference):
 
     voice = ScopedDirectPersianEngine(probe, frontend, allow_fallback=True)
     fa = engine(reference, 0x90000)
-    set_confirmed_persian_probe()
+    set_confirmed_persian_probe(d=1, z=1)
     previous = voice._scope(1)
     try:
         for char in LETTERS:
@@ -72,6 +83,17 @@ def playback_tests(frontend, probe, reference):
                     parts = (EciIndex(1), EciText(char, character_mode=True), EciIndex(2))
                     assert voice.speak(parts, pcm.extend, lambda i: marks.append((i, len(pcm) // 2)))
                     assert bytes(pcm) == expected and marks == [(1, 0), (2, len(pcm) // 2)], char
+                for char in ('؟', '۱', ' ', '🙂'):
+                    pcm, marks = bytearray(), []
+                    assert voice.speak((EciIndex(3), EciText(char, character_mode=True), EciIndex(4)),
+                                       pcm.extend, marks.append) and pcm
+                    assert marks == [3, 4]
+        unmarked, marked, marks = bytearray(), bytearray(), []
+        assert voice.speak(('سلام ', EciText('؟', character_mode=True), ' دنیا'),
+                           unmarked.extend, lambda _: None)
+        assert voice.speak(('سلام ', EciIndex(8), EciText('؟', character_mode=True),
+                            EciIndex(9), ' دنیا'), marked.extend, marks.append)
+        assert marked == unmarked and marks == [8, 9]
         assert frontend._worker is None
     finally:
         voice.close()

@@ -56,7 +56,7 @@ def alignment_tests(frontend):
     assert all(one.source_map[i] == 0 for i in range(len('ناموجودمطمئن'.encode('utf8'))))
     assert frontend.analyze_positioned('سلام NVDA') is None
     assert frontend.analyze_positioned('ناموجودمطمئن ۱۲') is not None
-    assert results['من بدبخت آمد.'].parts[0].text == "`[.0mAn] `[.1bAd] `[.0bAGt] `[.1'a:'.0mAd]."
+    assert results['من بدبخت آمد.'].parts[0].text == "`[.0mAn] `[.1bAd.0bAGt] `[.1'a:'.0mAd]."
     assert not results['من بدبخت آمد.'].used_fallback
     for text in ('سلام،آیلار', 'اداء،سلام'):
         assert results[text].parts[0].text.count(',') == 1, text
@@ -148,7 +148,7 @@ def playback_tests(frontend, probe, reference, samples):
     try:
         # A consonant before the next consonant does not introduce a comma,
         # regardless of the user's phrase-prediction setting.
-        explicit = "`[.0mAn] `[.1bAd] `[.0bAGt] `[.1'a:'.0mAd]."
+        explicit = "`[.0mAn] `[.1bAd.0bAGt] `[.1'a:'.0mAd]."
         for prediction in (0, 1):
             for target in (voice, fa):
                 target.set_parameter(PHRASE_PREDICTION, prediction)

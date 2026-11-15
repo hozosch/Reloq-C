@@ -80,6 +80,25 @@ Persian language is implemented.
 
 ## Evidence
 
+The exact acoustic target still needs context-matched recordings rather than
+treating synthesizer scheduling units as measured vowel boundaries. A 2017
+two-speaker colloquial-speech pilot found that average durations did not match
+traditional long/short pairings; this small sample is not a universal table.
+Sadeghi's controlled 12-speaker study found differences for its selected
+vowel groups. An earlier multi-speaker automatic-alignment study reported
+variation by vowel and syllable structure, while the small 2017 pilot found
+no notable coda-structure effect. These differences argue against one fixed
+ratio for all vowels and contexts. Another controlled study found that stress
+affects syllable duration with and without accent; it does not establish a
+precise vowel-only multiplier.
+
+- Aronow et al. (2017), colloquial-speech pilot:
+  https://doi.org/10.3765/plsa.v2i0.4059
+- Gharavian et al. (2000), automatic-alignment study:
+  https://assta.org/proceedings/sst/SST-00/cache/SST-00-Chapter7-p8.pdf
+- Sadeghi (2017), word-level prominence:
+  https://doi.org/10.1177/0023830916684862
+
 1. Sadeghi, “The timing of pre-nuclear pitch accents in Persian” (2017),
    https://www.cambridge.org/core/journals/journal-of-the-international-phonetic-association/article/timing-of-prenuclear-pitch-accents-in-persian/C7CA7887F69ACE368ED7126741F695C5
    reports significantly longer phonologically long than short vowels in

@@ -1102,7 +1102,18 @@ static unsigned persian_probe_special_stop(void *state,int32_t position)
     unsigned marker=*(const unsigned char *)delta_record_field(&vstmtbl[2],12,fields);
     return marker==4 || marker==5 ? marker : 0;
 }
+static unsigned persian_probe_cons_name(void *state,int32_t position)
+{
+    delta_state *d=state;
+    if (!d || !position) return 0;
+    int32_t *point=vmover(d,EVV_AT(int32_t *,position),2);
+    int32_t node=point ? vgetsc(d,0,0,EVV_REF(point),2) : 0;
+    if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
+    return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node)));
+}
 '''
+    helper += FINNISH_L_WORD_FINAL.replace('persian_probe_l_word_final', 'persian_probe_d_word_final').replace(
+        'testFldeq(d,2,0,21)', 'testFldeq(d,2,0,5)')
     section = section.replace(marker, 'L485:;\n    persian_probe_convert_q_phone(state,STATE(int32_t,w60));\n'
                               '    STATE(int16_t, s458)', 1)
     duration = 'L2614:;\n    r0 = reloq_call_fifi_insert_dur'
@@ -1118,9 +1129,28 @@ static unsigned persian_probe_special_stop(void *state,int32_t position)
         STATE(int32_t,f20)=fa_special_stop==5 || (glottal && glottal[0]=='2') ? 50000 : 200000;
         STATE(int16_t,s458)=0;
     }
+    {
+        const char *mode=getenv("RELOQ_FA_PROBE_D");
+        int trace=getenv("RELOQ_FA_TRACE_DB")!=NULL;
+        if (trace || (mode && (mode[0]=='1' || mode[0]=='2') && !mode[1])) {
+            int32_t at=STATE(int32_t,w60), after=STATE(int32_t,w61);
+            unsigned current=persian_probe_cons_name(state,at);
+            unsigned next=persian_probe_cons_name(state,after);
+            int within_word=current==5 && next==4 && !persian_probe_d_word_final(state,at);
+            if (trace && current==5)
+                fprintf(stderr,"FA_D next=%u within=%d duration=%d\n",next,within_word,(int)STATE(int32_t,f20));
+            /* Hearing candidates for a D before B inside one word. Retain
+               native voicing, release, stress and the next consonant. */
+            if (within_word && mode && (mode[0]=='1' || mode[0]=='2') && !mode[1] && STATE(int32_t,f20)>0) {
+                int factor=mode[0]=='1' ? 150 : 200;
+                int64_t scaled=((int64_t)STATE(int32_t,f20)*factor+50)/100;
+                STATE(int32_t,f20)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
+            }
+        }
+    }
     r0 = reloq_call_fifi_insert_dur''', 1)
     text = text[:begin] + helper + '\n' + section + text[end:]
-    text = text.replace(include, include + '#include <stdlib.h>\n', 1)
+    text = text.replace(include, include + '#include <stdlib.h>\n#include <stdio.h>\n#include <stdint.h>\n', 1)
     destination = work / name
     destination.write_text(text, encoding='utf8')
     return destination
@@ -1523,6 +1553,28 @@ def prepare_s_noise(work: Path) -> None:
     destination.write_text(text[:begin] + section + text[end:], encoding='utf8')
 
 
+def prepare_z_noise(work: Path) -> None:
+    """Raise only the voiced sibilant's noise target in the Persian probe."""
+    destination = work / 'delta_rules_c16_fifi.c'
+    text = destination.read_text(encoding='utf8')
+    begin = text.index('int32_t reloq_fifi_fin_ph_z(')
+    end = text.index('\nstatic int32_t evv_fin_ph_z(', begin)
+    section = text[begin:end]
+    marker = '    STATE(int16_t, s404) = (40);\n'
+    if section.count(marker) != 1:
+        raise RuntimeError('Cannot locate the voiced S noise target')
+    section = section.replace(marker, marker + r'''
+    {
+        const char *z=getenv("RELOQ_FA_PROBE_Z");
+        /* Retain Finnish voicing and transitions. Only the source noise
+           target changes; the two candidates need a listening comparison. */
+        if (z && z[0]=='1' && !z[1]) STATE(int16_t,s404)=46;
+        else if (z && z[0]=='2' && !z[1]) STATE(int16_t,s404)=49;
+    }
+''', 1)
+    destination.write_text(text[:begin] + section + text[end:], encoding='utf8')
+
+
 def prepare_vowel_duration_probe(work: Path) -> Path:
     """Trace Finnish timing and try eSpeak's relative A base in this probe."""
     name = 'delta_rules_c08_fifi.c'
@@ -1695,6 +1747,7 @@ def main() -> None:
     prepare_s_noise(work)
     modified.append(prepare_finnish_h(work))
     modified.append(prepare_auto_finnish_h(work))
+    prepare_z_noise(work)
     modified.append(prepare_vowel_duration_probe(work))
     if args.dry_run:
         print('Prepared isolated source files:', work)

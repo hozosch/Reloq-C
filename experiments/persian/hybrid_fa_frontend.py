@@ -12,16 +12,19 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 import threading
+import unicodedata
 
 if __package__:
     from .espeak_worker import EspeakWorker
     from .pinglish_frontend import latin_name, normalize_pinglish
+    from .persian_symbols import SYMBOL_TAGS, UNICODE_TAG
     from .reference_alignment import (source_map_for_reference, unpositioned_pinglish_input,
                                       unpositioned_reference_input)
     from .text_frontend import SpeechPart, UnsupportedPronunciation, translate_text
 else:
     from espeak_worker import EspeakWorker
     from pinglish_frontend import latin_name, normalize_pinglish
+    from persian_symbols import SYMBOL_TAGS, UNICODE_TAG
     from reference_alignment import (source_map_for_reference, unpositioned_pinglish_input,
                                      unpositioned_reference_input)
     from text_frontend import SpeechPart, UnsupportedPronunciation, translate_text
@@ -203,10 +206,23 @@ class DirectFirstPersian:
         with self._guard:
             if self._closed:
                 raise RuntimeError('Persian text frontend is closed')
-        value = self._dll.reloq_fa_direct_letter(ord(char))
-        if value is None:
-            return None
-        tag = value.decode('ascii')
+        normalized = unicodedata.normalize('NFKC', char)
+        normalized = {'ك': 'ک', 'ي': 'ی', 'ى': 'ی'}.get(normalized, normalized)
+        value = self._dll.reloq_fa_direct_letter(ord(normalized)) if len(normalized) == 1 else None
+        tag = value.decode('ascii') if value is not None else SYMBOL_TAGS.get(char)
+        if tag is None:
+            name = latin_name(char)
+            if name is not None:
+                tag = name.text
+        if tag is None:
+            # Keep unsupported Unicode identifiable in explicit spelling
+            # instead of dropping the entire speech job. Hex letters use the
+            # same Latin names as Pinglish; digits use Persian digit names.
+            pieces = [UNICODE_TAG, SYMBOL_TAGS['+']]
+            for digit in format(ord(char), 'X'):
+                name = latin_name(digit)
+                pieces.append(SYMBOL_TAGS[digit] if name is None else name.text)
+            tag = ' '.join(pieces)
         mapping = (0,) * len(char.encode('utf8')) + (len(tag),)
         return PersianAnalysis((SpeechPart('fa', tag),), mapping, False)
 
@@ -214,13 +230,7 @@ class DirectFirstPersian:
         """Use Persian names for Latin letters in the explicit Pinglish profile."""
         if not isinstance(char, str) or len(char) != 1 or char == '\0':
             raise ValueError('one Unicode character is required')
-        part = latin_name(char)
-        if part is None:
-            return self.analyze_character(char)
-        with self._guard:
-            if self._closed:
-                raise RuntimeError('Persian text frontend is closed')
-        return PersianAnalysis((part,), (0,) * len(char.encode('utf8')) + (len(part.text),), False)
+        return self.analyze_character(char)
 
     def analyze_pinglish(self, text: str, *, positioned: bool,
                          allow_fallback: bool) -> PersianAnalysis | None:

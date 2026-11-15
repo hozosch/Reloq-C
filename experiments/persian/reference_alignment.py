@@ -78,7 +78,7 @@ def _reference_words(worker, core: str, tokens: tuple[tuple[int, int], ...],
         elif event.kind == 7:
             # Clause-final silence is outside the word. An underscore at the
             # word's own position is an actual short-pause phone and must
-            # match the reference before becoming an internal comma.
+            # match the reference before its native onset is selected.
             if event.phone in ('_', '_:') and (
                     not grouped or event.position - 1 != grouped[-1][0]):
                 continue

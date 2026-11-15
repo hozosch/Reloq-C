@@ -67,6 +67,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_Latn', 'w', True),
                           ('fa_Latn', 'NVDA', True),
                           ('fa_IR', 'ق', True),
+                          ('fa_IR', '؟', True),
+                          ('fa_IR', '🙂', True),
+                          ('fa_Latn', '5?', True),
+                          ('fa_IR', 'سلام ؟ دنیا', 'mixedspelling'),
                           ('fa_IR', 'NVDA خوب', 'mixed'),
                           ('fa_IR', 'NVDA خوب', False),
                           ('de_DE', 'Guten Tag.', False)]
@@ -95,6 +99,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if spelling == 'mixed':
                 sequence = [self.language_command('en_US'), 'NVDA ',
                             self.language_command('fa_IR'), 'خوب']
+            elif spelling == 'mixedspelling':
+                sequence = ['سلام ', self.character(True), '؟', self.character(False), ' دنیا']
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
             self.synth.speak([self.index_command(self.index + 1), *sequence])

@@ -26,6 +26,7 @@ def analysis_tests(frontend):
              'salam ۱۲ donya?': 'سلام ۱۲ دنیا?',
              'iran nokte kaghaz?': 'ایران نقطه کاغذ?',
              'badbakht soal?': 'بدبخت سوال?',
+             'badbacht': 'بدبخت',
              'khoob yek sefr farsi ketab man': 'خوب یک صفر فارسی کتاب من'}
     for source, expected in pairs.items():
         normalized, mapping = normalize_pinglish(source)

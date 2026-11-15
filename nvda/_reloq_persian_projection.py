@@ -30,7 +30,8 @@ class ProjectedJob:
 
 
 def project_persian(parts: Sequence[str | EciText | Command],
-                    analyze: Callable[[str], tuple[str, tuple[int, ...]] | None]) -> ProjectedJob:
+                    analyze: Callable[[str], tuple[str, tuple[int, ...]] | None], *,
+                    allow_symbols: bool = False) -> ProjectedJob:
     """Project a single ECI job without starting a reference worker.
 
     An index inside a word maps to that word's start, in original event order.
@@ -57,7 +58,7 @@ def project_persian(parts: Sequence[str | EciText | Command],
         else:
             raise TypeError('unsupported ECI job item')
     source = ''.join(source_parts)
-    if source.strip() and not any(c.isalpha() or c.isdecimal() for c in source):
+    if not allow_symbols and source.strip() and not any(c.isalpha() or c.isdecimal() for c in source):
         raise PersianProjectionError('standalone symbol names require NVDA integration')
     result = analyze(source)
     if result is None:

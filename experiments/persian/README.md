@@ -1416,9 +1416,11 @@ The eSpeak short-pause phone `_` before a vowel selects Finnish's own
 glottal-onset rule without inserting the separate Persian glottal phone.
 The selection is scoped to the relevant word on the synthesis thread; it is
 cleared after every job. An existing reference glottal phone is not doubled.
-After `d` before another consonant, a normal native word boundary retains
-the D release, as in the word for 100. Other consonant boundaries have no
-extra punctuation. An explicit pause at a word edge is carried to the next
+The earlier native word boundary after `d` in `بدبخت` changed its prosody
+and did not preserve its D perceptually, so it has been removed. A scoped
+hearing candidate lengthens native D by 50% only before B inside one word;
+its native release and the whole word's stress remain intact. Consonant
+boundaries have no extra punctuation. An explicit pause at a word edge is carried to the next
 vowel inside the same phrase; a real punctuation mark remains a native
 phrase boundary and does not get an additional inferred stop. At the
 beginning of the phrase, the Finnish-based core retains its normal onset. The separate
@@ -1442,12 +1444,11 @@ DLL; only the Linux probe currently checks the selected acoustic PCM.
 `EciTextTransport` contract with private test-only Persian and Pinglish profiles. Its
 owner-scoped frontend and acoustic handle support settings, dictionary
 selection, word indexes, isolated character names, cancellation and restart.
-The real native queue is tested locally; the portable Windows test checks the
-routing guard. The test profile does not register Persian in NVDA or bundle
-the Windows acoustic engine. Mixed English/Persian jobs are rejected before
-any audio because the accepted shared sentence contour and transitions are
-not yet connected to the streaming driver. This intentionally prevents a
-test from masquerading as the user's approved seamless transition.
+The native queue is tested locally and in a portable Windows NVDA. The test
+profile registers Persian and Pinglish in the explicitly labelled private
+add-on. Explicit NVDA language changes and clear Latin runs in Persian text
+are spoken with the ordinary language handles. The accepted shared contour
+and transitions remain offline, so those switches can still have pauses.
 
 The explicit Pinglish test profile sends general Romanized words to the
 `fa-latn` reference and gives all 26 Latin letters their eSpeak spelling names.
@@ -1456,8 +1457,8 @@ Common spellings of selected words such as `salam`, `iran`, `khub`, `nokte`,
 including the selected vowels and uvular consonant. Their
 source maps preserve word-level NVDA indexes, including when a reference word
 or direct number occurs in the same phrase. A raw phoneme or source position
-that cannot be verified is rejected. This is a selectable profile in the test
-factory, not yet a language choice in an installable NVDA add-on.
+that cannot be verified is rejected. The profile is selectable in the
+experimental NVDA add-on.
 
 `link_unified_probe.py` links the direct Persian text components into the
 same private Linux ECI library as the scoped acoustics. It reuses the
@@ -1483,12 +1484,26 @@ using a verified Windows acoustic probe, a separately compiled direct-text
 DLL and an isolated worker. Text-only rule changes therefore do not require
 rebuilding the acoustic core. Its adapter extends the language choices only
 when the text DLL, worker, NVDA eSpeak and required acoustic export are present.
-The package still rejects mixed-language speech jobs
-because the accepted shared-contour and transition planners remain offline;
-it must not be treated as a finished Persian voice. The ordinary release
+The package uses separate handles for mixed-language speech because the
+accepted shared-contour and transition planners remain offline; it must not
+be treated as a finished Persian voice. The ordinary release
 builder and language catalog are unchanged. `test_nvda_package_probe.py`
 checks the packaged adapter's profiles and native playback locally;
 `test_nvda_real_plugin.py` is for a subsequent real NVDA smoke test.
+
+When eSpeak supplies doubled /dʒ/, the frontend represents it as a D closure
+followed by one native J release, rather than two complete affricates. The
+46 affected direct entries and their plural admissions were checked against
+the pinned reference and native parser. An acoustic frame test checks the
+longer constriction and the single frication release in `تعجب`.
+The scoped voiced-S candidate changes only the frication target, retaining
+its voiced source and the accepted voiceless S. The D and Z settings remain
+hearing candidates, not universal duration or intensity rules.
+
+Character mode names Persian and Latin letters, Persian/Arabic/ASCII digits,
+and common symbols directly, including an explicit space. Other valid Unicode
+characters are identified by their code point. Ordinary text and spelling
+segments can be combined while preserving NVDA indexes.
 
 ```
 python3 experiments/persian/compile_direct_replacements.py --check
