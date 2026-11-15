@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import time
 import traceback
 
 import globalPluginHandler
@@ -12,9 +13,10 @@ RESULT = Path(os.environ['RELOQ_SEGMENTATION_PROBE_RESULT'])
 
 
 class Player:
-    def __init__(self): self.chunks = []
+    def __init__(self): self.chunks, self.times = [], []
     def feed(self, data, size=None, onDone=None):
         if callable(size) and onDone is None: onDone = size
+        self.times.append(time.perf_counter())
         self.chunks.append(bytes(data))
         if onDone: onDone()
     def idle(self): pass
@@ -123,6 +125,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'NVDA خوب', 'mixed'),
                           ('fa_IR', 'NVDA خوب', False),
                           ('en_US', 'NVDA خوب', 'mixed'),
+                          ('fa_IR', 'تنظیمات را باز کنید', False),
+                          ('en_US', 'Open settings', False),
                           ('de_DE', 'Guten Tag.', False)]
             self.next()
         except BaseException:
@@ -202,6 +206,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
+            self.started = time.perf_counter()
             if spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'checkbox_unchecked', 'checkbox_checked'):
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
                                   symbolLevel=(self.symbols.SymbolLevel.MOST if spelling == 'pipeline_most'
@@ -219,6 +224,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                              for chunk in player.chunks[self.before.get(id(player), 0):])
             if not audio:
                 raise RuntimeError('no actual NVDA audio for ' + ascii(text))
+            times = [value for player in self.players
+                     for value in player.times[self.before.get(id(player), 0):]]
+            if not times:
+                raise RuntimeError('missing NVDA audio timing for ' + ascii(text))
             if spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'checkbox_unchecked', 'checkbox_checked'):
                 tags = ' '.join(self.projected[self.before_projected:])
                 if spelling in ('pipeline', 'pipeline_most') and locale == 'fa_IR' and ('`[.0hen.1ga.0me]' not in tags or
@@ -236,7 +245,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if spelling in ('english', 'persian') or spelling == 'mixed' and locale == 'fa_IR':
                 self.audio[spelling] = audio
             self.results.append({'locale': locale, 'text': text, 'spelling': spelling,
-                                 'pcm_bytes': len(audio), 'pcm_sha256': hashlib.sha256(audio).hexdigest()})
+                                 'pcm_bytes': len(audio), 'pcm_sha256': hashlib.sha256(audio).hexdigest(),
+                                 'first_audio_ms': round((min(times) - self.started) * 1000, 1)})
             self.index += 1
             self.next()
         except BaseException:
