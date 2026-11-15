@@ -1313,6 +1313,9 @@ experiment: direct source maps are only word-granular, fallback has no
 verified source map, and neither the NVDA worker nor the accepted streaming
 acoustic transitions are connected yet. The direct route has not established
 equivalence for all combinations of punctuation, boundaries and stress.
+The focused Windows x64 job compiles the C lookup and tests the direct-first
+adapter's sample routing against the eSpeak included in NVDA
+2026.3.1. It does not test an installed Persian NVDA voice.
 
 ```
 python3 experiments/persian/compile_direct_replacements.py --check
