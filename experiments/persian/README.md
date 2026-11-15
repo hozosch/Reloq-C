@@ -1297,6 +1297,18 @@ routing. The native conditional pronunciation rules and morphology in
 `fa_rules` are still unimplemented, as are the streaming acoustic transitions
 and integration with NVDA. This is not a selectable voice or an add-on.
 
+`hybrid_fa_frontend.py` tests a direct-first route for a future early NVDA
+trial: it invokes the native C converter when the entire input is covered;
+otherwise it sends the **whole input** to the isolated eSpeak worker. That
+avoids replacing individual unknown words in isolation and retains the
+reference frontend's English routing and sentence analysis. The worker is
+started lazily, so covered Persian text does not start another process.
+Pinglish continues to use the separate reference mode. This remains a private
+experiment: direct source maps are only word-granular, fallback has no
+verified source map, and neither the NVDA worker nor the accepted streaming
+acoustic transitions are connected yet. The direct route has not established
+equivalence for all combinations of punctuation, boundaries and stress.
+
 ```
 python3 experiments/persian/compile_direct_replacements.py --check
 python3 experiments/persian/compile_direct_lexicon.py \
@@ -1307,6 +1319,10 @@ cc -std=c11 -O2 -Wall -Wextra -Werror -pedantic -fPIC -shared -Iinclude \
   experiments/persian/direct_fa_text.c src/reloq_utf8.c -o /tmp/fa-direct.so
 python3 experiments/persian/test_direct_fa_lexicon.py --library /tmp/fa-direct.so \
   --probe /tmp/fa-internal/libreloq_eci.so --espeak-library /path/to/libespeak-ng.so \
+  --data-parent /path/to/data-parent
+cc -std=c11 -O2 -Wall -Wextra -Werror experiments/persian/espeak_worker.c -ldl -o /tmp/fa-espeak-worker
+python3 experiments/persian/test_hybrid_fa_frontend.py --native-library /tmp/fa-direct.so \
+  --worker /tmp/fa-espeak-worker --espeak-library /path/to/libespeak-ng.so \
   --data-parent /path/to/data-parent
 ```
 
