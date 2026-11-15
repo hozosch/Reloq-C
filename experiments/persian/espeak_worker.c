@@ -115,8 +115,12 @@ int wmain(int argc,wchar_t **argv)
 {
     if(argc!=3)return 2;
     _setmode(_fileno(stdin),_O_BINARY);_setmode(_fileno(stdout),_O_BINARY);
-    HMODULE library=LoadLibraryW(argv[1]);
-    if(!library)return 2;
+    /* NVDA's eSpeak DLL can have dependencies alongside it, not alongside
+     * this helper. Search the DLL's own directory just as Python's modern
+     * ctypes loader does, without modifying the process-wide PATH. */
+    HMODULE library=LoadLibraryExW(argv[1],NULL,
+        LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR|LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+    if(!library){fprintf(stderr,"Cannot load eSpeak DLL (Windows error %lu).\n",GetLastError());return 2;}
 #define LOAD(name,type) (type)(void *)GetProcAddress(library,name)
     int n=WideCharToMultiByte(CP_UTF8,0,argv[2],-1,NULL,0,NULL,NULL);
     char *data=n>0?malloc((size_t)n):NULL;
@@ -134,7 +138,12 @@ int main(int argc,char **argv)
     set_voice_fn set_voice=LOAD("espeak_SetVoiceByName",set_voice_fn);
     phonemes_fn phonemes=LOAD("espeak_TextToPhonemesWithTerminator",phonemes_fn);
     terminate_fn terminate=LOAD("espeak_Terminate",terminate_fn);
-    if(!initialize||!set_voice||!phonemes||!terminate||initialize(2,0,data,0x8000)<=0)return 2;
+    if(!initialize||!set_voice||!phonemes||!terminate) {
+        fprintf(stderr,"eSpeak DLL lacks a required text-analysis entry point.\n");return 2;
+    }
+    if(initialize(2,0,data,0x8000)<=0) {
+        fprintf(stderr,"Cannot initialize eSpeak language data.\n");return 2;
+    }
 #ifdef _WIN32
     free(data);
 #endif
