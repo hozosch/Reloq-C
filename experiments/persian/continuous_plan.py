@@ -348,7 +348,7 @@ class SentencePlan:
     contexts: dict[str, CapturedRows]
     edges: dict[str, tuple[int, ...]]
     word_markers: dict[tuple[int, int], int]
-    pilot: CapturedRows
+    pilot: CapturedRows | None
     pilot_bounds: tuple[int, ...]
     source_marks: tuple[tuple[int, int, int], ...] = ()
 
@@ -367,21 +367,33 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
         if check:
             check()
         return CapturedRows.from_capture(capture_api.capture(voice, planned, maximum=maximum))
-    pilot_parts = []
-    for index, part in enumerate(parts):
-        if index:
-            pilot_parts.extend((' ', EciIndex(index)))
-        proxy = (part.text if part.language == 'fa' else
-                 english_proxy(en, _spelling_proxy(part.text, index, spelling_spans)))
-        if any(not native_tag_accepted(m.group(), fa._phonemes_for_probe(m.group())) for m in _TAG.finditer(proxy)):
-            raise ValueError('Persian proxy was rejected')
-        pilot_parts.append(proxy)
-    pilot = get(fa, pilot_parts)
-    pilot_pitch = _dense(pilot, 1, check)
-    pilot_bounds = (0, *(round(pilot.indexes[i] * 1000 / rate) for i in range(1, len(parts))),
-                    min(_last_audible(pilot.pcm, rate), len(pilot_pitch) - 1))
-    if any(a >= b for a, b in zip(pilot_bounds, pilot_bounds[1:])):
-        raise RuntimeError('invalid shared sentence boundaries')
+    all_bracketed = all(_bracket_boundary(parts, edge) for edge in range(1, len(parts)))
+    pilot, pilot_pitch, pilot_bounds = None, (), ()
+    if all_bracketed:
+        # No segment uses the shared pitch when every switch has a native
+        # bracket boundary. Avoid synthesizing the entire sentence a third
+        # time, but retain the usual native validation of Persian tags.
+        for part in parts:
+            if part.language == 'fa' and any(
+                    not native_tag_accepted(m.group(), fa._phonemes_for_probe(m.group()))
+                    for m in _TAG.finditer(part.text)):
+                raise ValueError('Persian proxy was rejected')
+    else:
+        pilot_parts = []
+        for index, part in enumerate(parts):
+            if index:
+                pilot_parts.extend((' ', EciIndex(index)))
+            proxy = (part.text if part.language == 'fa' else
+                     english_proxy(en, _spelling_proxy(part.text, index, spelling_spans)))
+            if any(not native_tag_accepted(m.group(), fa._phonemes_for_probe(m.group())) for m in _TAG.finditer(proxy)):
+                raise ValueError('Persian proxy was rejected')
+            pilot_parts.append(proxy)
+        pilot = get(fa, pilot_parts)
+        pilot_pitch = _dense(pilot, 1, check)
+        pilot_bounds = (0, *(round(pilot.indexes[i] * 1000 / rate) for i in range(1, len(parts))),
+                        min(_last_audible(pilot.pcm, rate), len(pilot_pitch) - 1))
+        if any(a >= b for a, b in zip(pilot_bounds, pilot_bounds[1:])):
+            raise RuntimeError('invalid shared sentence boundaries')
     word_markers = _word_markers(parts)
     source_events = tuple(source_events)
     guarded_spans = tuple(guarded_spans)

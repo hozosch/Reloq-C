@@ -49,10 +49,11 @@ def main():
                     own[items[4]] = before == tuple(row.controls[1] for row in item.frames)
                 continuous_plan._fit_context_pitch = observe
                 try:
-                    context_plan(bracketed, fa, en, SAMPLE_RATES[rate])
+                    bracket_plan = context_plan(bracketed, fa, en, SAMPLE_RATES[rate])
                 finally:
                     continuous_plan._fit_context_pitch = fit
                 assert own == {'fa': True, 'en-us': True}, own
+                assert bracket_plan.pilot is None, 'a separated phrase needs no shared-pitch synthesis'
                 assert not continuous_plan._bracket_boundary(
                     (SpeechPart('en-us', 'NVDA '), SpeechPart('fa', '`[.1Gu]')), 1)
                 # Observe the original English /vowel/ -> /s/ boundary.
