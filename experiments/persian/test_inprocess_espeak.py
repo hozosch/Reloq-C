@@ -65,9 +65,15 @@ def main():
                         assert first.events(text, voice=voice, normal_speed=slow) == events[voice, text, slow]
                     assert host._dll.espeak_GetCurrentVoice() == host_voice
                     assert host._dll.espeak_GetParameter(1, 1) == 235
+                event_differences = []
                 for voice, text in corpus:
                     assert first.translate(text, voice=voice, separator='|') == corpus_phones[voice, text]
-                    assert first.events(text, voice=voice) == corpus_events[voice, text]
+                    observed = first.events(text, voice=voice)
+                    if observed != corpus_events[voice, text]:
+                        event_differences.append((voice, text, repr(observed), repr(corpus_events[voice, text])))
+                if event_differences:
+                    print('Different reference events:', repr(event_differences[:6]), flush=True)
+                    raise AssertionError(f'{len(event_differences)} in-process event comparisons differed')
                 sentence = ctypes.create_string_buffer(b'Testing the host eSpeak callback.\0')
                 assert host._dll.espeak_Synth(sentence, len(sentence), 0, 1, 0, 1, None, None) == 0
                 assert host_callbacks, 'the private callback replaced the host callback'
