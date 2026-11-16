@@ -141,23 +141,18 @@ FRONT_A_PATCH = r'''
             if(STATE(int16_t,s448)>0)STATE(int16_t,s448)+=100;
             if(STATE(int16_t,s449)>0)STATE(int16_t,s449)+=100;
         }
-        /* Shape the complete upper response, retaining the native F1/F2.
-           The earlier F3-only change was reported as more muffled. This
-           candidate compares individual harmonics at three matched F0s as
-           well as the energy of each upper band, for both tract models. */
+        /* Restore the dev121 front vowel after dev122 was reported to sound
+           wrong. Keep its context-dependent endpoints and F1/F2 unchanged. */
         const char *f3=getenv("RELOQ_FA_FRONT_A_F3");
         if(f3 && f3[0]=='1' && !f3[1]) {
             int16_t female=0;
             memcpy(&female,(const unsigned char *)state+DG_BASE+3092+12,sizeof female);
-            int delta=female ? -153 : -125;
+            int delta=female ? -150 : 50;
             if(STATE(int16_t,s452)>150)STATE(int16_t,s452)+=delta;
             if(STATE(int16_t,s453)>150)STATE(int16_t,s453)+=delta;
-            int f4=female ? 0 : 60;
-            if(STATE(int16_t,s454)>0)STATE(int16_t,s454)+=f4;
-            if(STATE(int16_t,s455)>0)STATE(int16_t,s455)+=f4;
-            if(STATE(int16_t,s399)>0)STATE(int16_t,s399)=female ? 115 : 60;
-            if(STATE(int16_t,s400)>0)STATE(int16_t,s400)=female ? 317 : 250;
-            if(STATE(int16_t,s401)>0)STATE(int16_t,s401)=female ? 475 : 200;
+            if(STATE(int16_t,s399)>0)
+                STATE(int16_t,s399)=(int16_t)((2*(int)STATE(int16_t,s399)+1)/3);
+            if(!female && STATE(int16_t,s401)>260)STATE(int16_t,s401)=260;
         }
     }
 '''
@@ -1301,19 +1296,20 @@ static int persian_probe_selected_j(void *state,int32_t position)
         }
     }
     r0 = reloq_call_fifi_insert_dur''', 1)
-    for phone in 'ptkbdgfvszSZ':
+    for phone in 'ptkbdgfvszSZmn':
         call = f'    r0 = reloq_call_fifi_fin_ph_{phone}_dur(state, (int32_t)(FIELD(0)));\n'
         if section.count(call) != 1:
             raise RuntimeError('Cannot locate Finnish stop-duration dispatch: ' + phone)
         special = (' && persian_probe_current_k_marker(state,STATE(int32_t,w60))<3'
                    if phone == 'k' else '')
-        key = 'RELOQ_FA_US_STOPS' if phone in 'ptkbdg' else 'RELOQ_FA_US_FRICATIVES'
+        key = ('RELOQ_FA_US_STOPS' if phone in 'ptkbdg' else
+               'RELOQ_FA_US_NASALS' if phone in 'mn' else 'RELOQ_FA_US_FRICATIVES')
         section = section.replace(call, '    {\n' + f'        const char *us=getenv("{key}");\n' +
             f"        if (us && us[0]=='1' && !us[1]{special})\n" +
             f'            r0=persian_us_eng_ph_{phone}_dur(state,(int32_t)(FIELD(0)));\n' +
             '        else\n' + call + '    }\n', 1)
     prototypes = ''.join(f'extern int32_t persian_us_eng_ph_{phone}_dur(void *,int32_t);\n'
-                         for phone in 'ptkbdgfvszSZ')
+                         for phone in 'ptkbdgfvszSZmn')
     text = text[:begin] + prototypes + helper + '\n' + section + text[end:]
     text = text.replace(include, include + '#include <stdlib.h>\n#include <stdio.h>\n#include <stdint.h>\n', 1)
     destination = work / name
@@ -1519,6 +1515,7 @@ static void persian_auto_h_insert(void *state)
     text = text.replace(include, include +
                         'extern int32_t persian_us_get_eng_stop_trans_dur(void *,int32_t,int32_t);\n'
                         'extern int32_t persian_us_get_eng_fric_trans_dur(void *,int32_t,int32_t);\n'
+                        'extern int32_t persian_us_get_eng_nas_trans_dur(void *,int32_t,int32_t);\n'
                         'extern int32_t persian_us_eng_trans_features(void *,int32_t);\n', 1)
     trans_call = '    r0 = reloq_call_fifi_fin_trans_features(state, (int32_t)(FIELD(0)));\n'
     if text.count(trans_call) != 1:
@@ -1564,6 +1561,20 @@ static void persian_auto_h_insert(void *state)
                       (int32_t)(RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,192)));
         else
 ''' + fric_call + '    }\n', 1)
+    nas_call = ('    r0 = reloq_call_fifi_get_fin_nas_trans_dur(state, (int32_t)(FIELD(0)), '
+                '(int32_t)(RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 192)));\n')
+    if text.count(nas_call) != 1:
+        raise RuntimeError('Cannot locate the Finnish nasal transition duration')
+    text = text.replace(nas_call, r'''    {
+        const char *us=getenv("RELOQ_FA_US_NASALS");
+        delta_state *d=state;
+        int32_t current=persian_auto_h_phone(d,STATE(int32_t,w61),1);
+        unsigned phone=current ? persian_auto_h_field(current,0) : 0;
+        if (us && us[0]=='1' && !us[1] && (phone==16 || phone==17))
+            r0=persian_us_get_eng_nas_trans_dur(state,(int32_t)(FIELD(0)),
+                      (int32_t)(RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,192)));
+        else
+''' + nas_call + '    }\n', 1)
     begin = text.index('int32_t reloq_fifi_do_fin_h_amps(')
     end = text.index('\nstatic int32_t evv_do_fin_h_amps(', begin)
     section = text[begin:end]
@@ -2034,7 +2045,7 @@ static unsigned persian_probe_e_neighbour(void *state,int32_t position,int backw
 
 
 def us_consonant_rules() -> str:
-    """Adapt US stop and fricative rules to the Persian phone records.
+    """Adapt US stop, fricative and nasal rules to Persian phone records.
 
     Keep the donor control flow and source targets.  English's phone and
     feature enums differ from Finnish's even when their names match, so
@@ -2050,11 +2061,12 @@ def us_consonant_rules() -> str:
     table = table.split('enus61_delta_rule_sym[] = {', 1)[1].split('};', 1)[0]
     offsets = [int(value) for value in
                re.findall(r'enus61_evv_authored_data \+ (\d+)', table)]
-    first, last, width = 2106, 2246, 32
-    if len(offsets) <= last or any(offsets[i] + width > len(raw) for i in range(first, last+1)):
+    indices, width = tuple(range(2106, 2247)) + tuple(range(4007, 4029)), 32
+    index_map = {value: index for index, value in enumerate(indices)}
+    if len(offsets) <= max(indices) or any(offsets[i] + width > len(raw) for i in indices):
         raise RuntimeError('US stop symbol storage changed')
     constants = ',\n'.join('    {' + ','.join(str(x) for x in raw[offsets[i]:offsets[i]+width]) + '}'
-                           for i in range(first, last+1))
+                           for i in indices)
     helper = r'''
 #include <stdatomic.h>
 extern delta_stmt enus61_vstmtbl[];
@@ -2155,11 +2167,12 @@ static int32_t persian_us_mark(void *state,uint8_t st,uint8_t field,uint8_t valu
 }
 '''.replace('__CONSTANTS__', constants)
     helpers = ('eng_lab_Fv', 'eng_alv_Fv', 'eng_vel_Fv', 'eng_pal_Fv')
-    acoustic = tuple('eng_ph_' + phone for phone in 'ptkbdgfvszSZ')
-    durations = tuple('eng_ph_' + phone + '_dur' for phone in 'ptkbdgfvszSZ')
+    nasal_formants = ('ga_ph_m', 'ga_ph_n')
+    acoustic = tuple('eng_ph_' + phone for phone in 'ptkbdgfvszSZmn')
+    durations = tuple('eng_ph_' + phone + '_dur' for phone in 'ptkbdgfvszSZmn')
     exported = durations + ('get_eng_stop_trans_dur', 'get_eng_fric_trans_dur',
-                            'eng_trans_features')
-    names = helpers + acoustic + exported
+                            'get_eng_nas_trans_dur', 'eng_trans_features')
+    names = helpers + nasal_formants + acoustic + exported
     pieces = []
     for name in names:
         matches = []
@@ -2175,10 +2188,10 @@ static int32_t persian_us_mark(void *state,uint8_t st,uint8_t field,uint8_t valu
         block = matches[0].replace('int32_t reloq_enus61_' + name + '(',
                                    visibility + 'int32_t persian_us_' + name + '(', 1)
         used = {int(x) for x in re.findall(r'delta_sym_ref\[(\d+)\]', block)}
-        if not used or min(used) < first or max(used) > last:
+        if not used or not used <= index_map.keys():
             raise RuntimeError('US stop symbol range changed: ' + name)
         block = re.sub(r'delta_sym_ref\[(\d+)\]',
-                       lambda m: f'(persian_us_refs + {(int(m.group(1))-first)*width})', block)
+                       lambda m: f'(persian_us_refs + {index_map[int(m.group(1))]*width})', block)
         marker = '    unsigned char *frame = evv_frame_push('
         if block.count(marker) != 1:
             raise RuntimeError('Cannot locate US stop frame ' + name)
@@ -2193,12 +2206,24 @@ static int32_t persian_us_mark(void *state,uint8_t st,uint8_t field,uint8_t valu
                               'persian_us_npush_field(state,')
         block = block.replace('reloq61_typed_mark_s(DELTA_ENTRY_mark_s, state,',
                               'persian_us_mark(state,')
+        if name == 'get_eng_nas_trans_dur':
+            # English has two language-specific state values for this one
+            # contextual branch. Finnish/Persian has neither; choose the
+            # donor's ordinary alternative rather than reading unrelated
+            # bytes from the Finnish state layout.
+            absent = ('    r1 = ((int32_t)STATE(uint16_t, s322));\n'
+                      '    AT(int32_t, -20) = (r1);\n'
+                      '    if (AT(int16_t, -20) == (int16_t)(STATE(int16_t, s318))) goto L1991;\n'
+                      '    goto L3865;\n')
+            if block.count(absent) != 1:
+                raise RuntimeError('Cannot isolate the English-only nasal context')
+            block = block.replace(absent, '    goto L3865;\n', 1)
         for helper_name in helpers:
             block = block.replace('reloq_call_enus61_' + helper_name + '(',
                                   'persian_us_' + helper_name + '(')
         # These three f61_06 helpers have equivalent Finnish implementations;
         # use their local scheduler and feature enums for the shared streams.
-        for helper_name in ('modulate_noise', 'final_voiced_release'):
+        for helper_name in ('modulate_noise', 'modulate_nas_AV', 'final_voiced_release'):
             block = block.replace('reloq_call_enus61_' + helper_name + '(',
                                   'reloq_call_fifi_' + helper_name + '(')
         block = block.replace('reloq_call_enus61_do_voice_bar(', 'reloq_fifi_do_voice_bar(')
@@ -2241,24 +2266,41 @@ def prepare_us_articulation(work: Path) -> None:
     # These are listening candidates from matched-F0 spectral comparisons,
     # not a global EQ or a substitution of English vowel identities.
     vowel_helper = r'''
+static unsigned persian_open_vowel_next(void *state,int32_t position)
+{
+    delta_state *d=state;
+    if (!d || !position) return 0;
+    void *point=(void *)vmover(d,EVV_AT(int32_t *,position),2);
+    int32_t node=point ? vgetsc(d,0,0,EVV_REF(point),2) : 0;
+    if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
+    return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node)));
+}
 static void persian_open_vowel(void *state,int phone)
 {
     const char *us=getenv("RELOQ_FA_US_ARTICULATION");
     if (!us || us[0]!='1' || us[1]) return;
     int16_t female=0;
     memcpy(&female,(const unsigned char *)state+DG_BASE+3092+12,sizeof female);
-    int f2=0,f3=0,f4=0,b3=0,b5=0;
+    int f2=0,f3=0,f4=0,f5=0,b1=0,b3=0,b5=0;
+    /* /o/ before /n/, as in donyā: retain its F1/F2 centres, while
+       opening its source-to-upper-formant balance. /n/ is Finnish id 17. */
+    int o_before_n=phone=='o' && persian_open_vowel_next(state,STATE(int32_t,w61))==17;
     if (phone=='a') { f3=female ? -100 : 0; f4=150; b3=100; }
-    else if (phone=='e') { f3=female ? -80 : 0; b3=200; }
+    else if (phone=='e') { f3=female ? -80 : 0; b1=35; b3=150; }
     else if (phone=='i') { f3=female ? -80 : 0; b3=100; }
-    else if (phone=='o') { f2=60; f4=200; b3=120; }
+    else if (phone=='o') { f2=60; f4=200; b3=o_before_n ? 100 : 120;
+                           if (o_before_n) { b1=60; f5=female ? 0 : 120; } }
     else if (phone=='u') { f2=100; f3=100; f4=100; b3=150; b5=260; }
+    if (b1 && STATE(int16_t,s397)>0 && STATE(int16_t,s397)<3000)
+        STATE(int16_t,s397)+=b1;
     if (STATE(int16_t,s450)>0) STATE(int16_t,s450)+=f2;
     if (STATE(int16_t,s451)>0) STATE(int16_t,s451)+=f2;
     if (STATE(int16_t,s452)>150) STATE(int16_t,s452)+=f3;
     if (STATE(int16_t,s453)>150) STATE(int16_t,s453)+=f3;
     if (STATE(int16_t,s454)>0) STATE(int16_t,s454)+=f4;
     if (STATE(int16_t,s455)>0) STATE(int16_t,s455)+=f4;
+    if (STATE(int16_t,s456)>0) STATE(int16_t,s456)+=f5;
+    if (STATE(int16_t,s457)>0) STATE(int16_t,s457)+=f5;
     if (b3 && STATE(int16_t,s399)>0) STATE(int16_t,s399)=b3;
     if (b5 && STATE(int16_t,s401)>0) STATE(int16_t,s401)=b5;
 }
@@ -2319,6 +2361,16 @@ static int persian_articulation_special_k(void *state)
     unsigned marker=*(const unsigned char *)delta_record_field(&vstmtbl[2],12,fields);
     return phone!=3 || marker==3 || marker==4 || marker==5;
 }
+static unsigned persian_articulation_following(void *state)
+{
+    delta_state *d=state;
+    int32_t position=STATE(int32_t,w61);
+    if (!d || !position) return 0;
+    void *point=(void *)vmover(d,EVV_AT(int32_t *,position),2);
+    int32_t node=point ? vgetsc(d,0,0,EVV_REF(point),2) : 0;
+    if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
+    return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node)));
+}
 static int16_t persian_articulation_toward(int16_t value,int target)
 {
     /* Preserve native inheritance markers and two thirds of each contextual
@@ -2366,8 +2418,29 @@ static void persian_articulation_nasal(void *state,int second_formant)
         call = f'    r0 = reloq_call_fifi_fin_ph_{phone}(state, (int32_t)(FIELD(0)));\n'
         if text.count(call) != 1:
             raise RuntimeError(f'Cannot locate Persian nasal dispatcher for {phone}')
-        text = text.replace(call, call +
-            f'    if (!r0) persian_articulation_nasal(state,{target});\n', 1)
+        replacement = r'''    {
+        const char *us=getenv("RELOQ_FA_US_NASALS");
+        if (us && us[0]=='1' && !us[1]) {
+''' + f'            r0=persian_us_ga_ph_{phone}(state,(int32_t)(FIELD(0)));\n' + \
+            f'            if (!r0) r0=persian_us_eng_ph_{phone}(state,(int32_t)(FIELD(0)));\n' + \
+            (r'''            if (!r0) {
+                /* The Finnish scheduler leaves the nasal F1 too high in
+                   these contexts. US /m/ before non-high vowels instead
+                   keeps its original higher F1. */
+                unsigned next=persian_articulation_following(state);
+                int shift=(next==29 || next==31 || next==33 || next==34) ? 0 : 50;
+                if (STATE(int16_t,s448)>150) STATE(int16_t,s448)-=shift;
+                if (STATE(int16_t,s449)>150) STATE(int16_t,s449)-=shift;
+            }
+''' if phone == 'm' else r'''            if (!r0) {
+                if (STATE(int16_t,s448)>150) STATE(int16_t,s448)-=50;
+                if (STATE(int16_t,s449)>150) STATE(int16_t,s449)-=50;
+            }
+''') + \
+            '        } else {\n' + call + \
+            f'            if (!r0) persian_articulation_nasal(state,{target});\n' + \
+            '        }\n    }\n'
+        text = text.replace(call, replacement, 1)
     consonant_file.write_text(text, encoding='utf8')
 
 

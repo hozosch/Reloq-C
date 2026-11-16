@@ -86,7 +86,11 @@ def main():
                     distances.append(got)
                     checks += 1
                 if prior:
-                    assert sum(distances) < sum(prior), (gender, fa_text, distances, prior)
+                    # These figures aid comparison but cannot decide which
+                    # vowel sounds right. In dev123 the accepted dev121 vowel
+                    # is restored after the user rejected the closer match.
+                    print('front vowel harmonic distance', gender, fa_text,
+                          'candidate', sum(distances), 'previous', sum(prior))
     finally:
         fa.close()
         us.close()

@@ -43,7 +43,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--candidate', required=True, type=Path)
     parser.add_argument('--previous', type=Path,
-                        help='optional dev118 library for sample and frame comparison')
+                        help='optional dev122 library for sample and frame comparison')
     args = parser.parse_args()
     candidate, scope = voice(args.candidate, 0x90000)
     previous, old_scope = voice(args.previous, 0x90000) if args.previous else (None, None)
@@ -62,6 +62,8 @@ def main():
                     first = first_audible(rows)
                     if phone == 'a':
                         expected = (150, 125)
+                    elif phone == 'e':
+                        expected = (335, 200) if gender else (155, 100)
                     elif phone == 'u':
                         expected = (140, 160) if gender else (70, 80)
                     else:
@@ -70,11 +72,12 @@ def main():
                         rate, gender, phone)
                     if previous:
                         before, old_rows = capture(previous, old_scope, tag, True)
-                        assert actual.pcm != before.pcm, phone
+                        if phone in 'Ae':
+                            assert actual.pcm != before.pcm, phone
                         # Vowel identity and the accepted back-A damping are
                         # retained; only rounded O/U move F2 modestly.
                         old_first = first_audible(old_rows)
-                        for column in (9, 10, 14):
+                        for column in ((9, 14) if phone == 'e' else (9, 10, 14)):
                             assert abs(first.controls[column] - old_first.controls[column]) < 1, (
                                 rate, gender, phone, column)
                         if phone not in 'ou':

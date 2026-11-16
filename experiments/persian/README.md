@@ -17,6 +17,27 @@ checks the common native components, not end-to-end Persian playback.
 
 ## Issue 49: listening candidates
 
+The dev123 listening candidate restores the isolated Persian front /æ/ to
+the dev121 rule after the dev122 shape was reported as wrong. It keeps the
+dev122 US stop, affricate and fricative rules. The short Persian /o/ before
+/n/ gets a modestly broader F1 and a reshaped upper response; the back /aː/
+in Iran is a different phone and is not the target. A smaller adjustment
+also opens /e/ while retaining its first two formant centres. These are
+listening candidates, not claims of perceptual equivalence to US /æ/.
+
+The /m/ and /n/ paths use the US duration, acoustic and nasal-transition
+rules adapted to Persian records, with a correction for the differing native
+F1 scheduling. The separate vowel-nasality experiment remains disabled. L,
+the language-specific /x/, uvular and glottal carriers and the shared
+sentence-melody planner are not retuned.
+
+`compare_word_stress.py` produces a German-labelled audio comparison of the
+current eSpeak-derived stress, a possible final-syllable stress, and no
+explicit stress in a few nouns and a short sentence. It is a listening probe,
+not an automatic rule: Persian stress depends on grammatical structure,
+including prefixed verbs and enclitics. The production text stress remains
+unchanged until those cases and native-speaker feedback are addressed.
+
 The dev122 candidate transfers the US consonant control flow, duration and
 transition calculations for ordinary /p t k b d g f v s z ʃ ʒ/. The native
 affricate expansions for /tʃ dʒ/ use those same US stop and fricative rules.
