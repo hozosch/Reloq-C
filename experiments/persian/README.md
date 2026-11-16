@@ -38,6 +38,14 @@ setting. It is an A/B probe of one possible cause of the muffled quality, not
 an adopted new vowel target. Other vowels and L are not retuned. Neither
 candidate asserts that this single contrast resolves the reported issue.
 
+`compare_us_persian_melody.py` creates a German-labelled offline WAV with
+Persian statements and questions, each followed by the same Persian frames
+with a US-derived pitch contour. The proxy preserves the selected Persian
+word stress and fits its contour word by word. The script verifies that
+replaying the original frames is sample-identical and that the candidate
+has the same duration. It is a listening experiment, not an adopted Persian
+intonation model or an NVDA implementation.
+
 The notes below record the original experiments and may describe older
 private builds or earlier stages of implementation.
 
