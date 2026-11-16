@@ -263,7 +263,8 @@ def main():
         # PCM can now stay inside the C capture instead of arriving through
         # a Python callback. Wait for the actual native synthesis to become
         # busy and stop it there, then verify that the next request is clean.
-        if getattr(engine._dll, 'eciPersianCaptureSetPcmStorage', None) is not None:
+        fa_voice = engine._engines[PERSIAN_PROBE.id]._voice
+        if getattr(fa_voice._dll, 'eciPersianCaptureSetPcmStorage', None) is not None:
             started, done, stale, captured_voice, busy_seen = (threading.Event(), threading.Event(),
                                                                 bytearray(), [], [])
             def long_native(voice, parts, on_pcm, on_index):
