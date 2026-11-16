@@ -622,7 +622,7 @@ class ScopedDirectPersianEngine:
                 return False
             return self._speak_prepared(prepared, on_pcm, on_index)
 
-    def _speak_prepared(self, prepared: ProjectedJob, on_pcm, on_index, *, neutralize_stress=True) -> bool:
+    def _speak_prepared(self, prepared: ProjectedJob, on_pcm, on_index, *, neutralize_stress=False) -> bool:
         """Speak verified native tags with the same per-request selectors.
 
         The caller owns job cancellation and must never pass user-supplied

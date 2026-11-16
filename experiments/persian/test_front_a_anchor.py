@@ -17,7 +17,8 @@ def voice(path, gender, rate):
     engine.set_parameter(PAUSE_MODE, 1)
     engine.set_parameter(GENDER, gender)
     engine.set_parameter(SAMPLE_RATE, rate)
-    scope = engine._dll.reloq_fa_acoustic_scope
+    scope = (getattr(engine._dll, 'eciPersianAcousticScope', None) or
+             engine._dll.reloq_fa_acoustic_scope)
     scope.argtypes, scope.restype = (ctypes.c_int,), ctypes.c_int
     return engine, scope
 

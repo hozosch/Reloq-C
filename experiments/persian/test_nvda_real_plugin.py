@@ -69,7 +69,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 self.user_controls.extend(part.tag_control for part in prepared.parts
                                           if getattr(part, 'tag_control', None))
                 if prepared.source:
-                    self.projected.append(direct_fa_sequence.without_generated_stress(prepared).tagged)
+                    self.projected.append(prepared.tagged)
                     self.projected_sources.append((prepared.source, prepared.tagged))
                 return old_prepared(instance, prepared, *args, **kwargs)
             def observe_continuous(*args, **kwargs):
@@ -443,49 +443,49 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 raise AssertionError('NVDA lost the separated language boundary around a hyphen: ' + ascii(text))
             if spelling in ('issue49_hyphen', 'issue49_unknown'):
                 tags = ' '.join(self.projected[self.before_projected:])
-                expected = ("`[.0do.0ros.0t'e:']" if 'درسته' in text else '`[.0a.0li]')
+                expected = ("`[.0do.1ros.0t'e:']" if 'درسته' in text else '`[.1a.0li]')
                 if expected not in tags:
                     details = self.projected_sources[self.before_projected_sources:]
                     raise AssertionError('NVDA spelled a Persian word: ' + ascii(details))
             if spelling is True and text in 'ًٌٍَُِّْٰ':
-                expected = {'ً':'`[.0An]', 'ٌ':'`[.0on]', 'ٍ':'`[.0en]',
-                            'َ':"`[.0'A:']", 'ُ':"`[.0'o:']", 'ِ':"`[.0'e:']",
-                            'ّ':'`[.0tAS.0did]', 'ْ':'`[.0sa.0ken]',
-                            'ٰ':"`[.0A.0lef.0mAR.0su.0r'e:']"}[text]
+                expected = {'ً':'`[.1An]', 'ٌ':'`[.1on]', 'ٍ':'`[.1en]',
+                            'َ':"`[.1'A:']", 'ُ':"`[.1'o:']", 'ِ':"`[.1'e:']",
+                            'ّ':'`[.1tAS.0did]', 'ْ':'`[.1sa.0ken]',
+                            'ٰ':"`[.1A.0lef.1mAR.0su.2r'e:']"}[text]
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags:
                     raise AssertionError('NVDA lost the Persian character name: ' + ascii(tags))
             if text in ('به علاوه', 'بعلاوه', '+'):
                 tags = ' '.join(self.projected[self.before_projected:])
-                expected = ("`[.0be.0A.0la.0v'e:']" if text == 'بعلاوه' else
-                            "`[.0b'e:'] `[.0A.0la.0v'e:']")
+                expected = ("`[.0be.0A.1la.0v'e:']" if text == 'بعلاوه' else
+                            "`[.0b'e:'] `[.0A.1la.0v'e:']")
                 if expected not in tags:
                     raise AssertionError('NVDA lost the corrected alāve reading: ' + ascii(tags))
             if spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most'):
                 tags = ' '.join(self.projected[self.before_projected:])
-                if spelling in ('pipeline', 'pipeline_most') and locale == 'fa_IR' and ('`[.0hen.0ga.0me]' not in tags or
-                        "`[.0'e:'G.0tja.0ra.0te]" not in tags):
+                if spelling in ('pipeline', 'pipeline_most') and locale == 'fa_IR' and ('`[.0hen.1ga.0me]' not in tags or
+                        "`[.1'e:'G.0tja.2ra.0te]" not in tags):
                     raise AssertionError('NVDA preprocessing lost the vocalized Persian words: ' + ascii(tags))
-                if spelling == 'pipeline_stop' and '`[.0mo.0te.0vAR.0Ref]' not in tags:
+                if spelling == 'pipeline_stop' and '`[.2mo.0te.1vAR.0Ref]' not in tags:
                     raise AssertionError('NVDA spelled the Persian word for stopped: ' + ascii(tags))
-                if spelling == 'pipeline_log' and ("`[.0'e:'t.0te.0fa.0Ra.0te]" not in tags or
-                        "`[.0sAbt.0So.0d'e:']" not in tags):
+                if spelling == 'pipeline_log' and ("`[.1'e:'t.0te.1fa.0Ra.2te]" not in tags or
+                        "`[.1sAbt.1So.0d'e:']" not in tags):
                     raise AssertionError('NVDA spelled part of the normalized log label: ' + ascii(tags))
                 if spelling == 'pipeline_user_latency' and any(tag not in tags for tag in (
-                        '`[.0ne.0San]', '`[.0da.0dA.0ne]', '`[.0hen.0ga.0me]', '`[.0Ga.0reJ]')):
+                        '`[.1ne.0San]', '`[.1da.0dA.2ne]', '`[.0hen.1ga.0me]', '`[.1Ga.0reJ]')):
                     raise AssertionError('NVDA spelled part of the reported latency example: ' + ascii(tags))
-                if spelling == 'pipeline_symbols' and ('`[.0sA.0lam]' not in tags or
-                        '`[.0do.0nja]' not in tags or '`[.0ta.0vu.0merk.0ki]' in tags):
+                if spelling == 'pipeline_symbols' and ('`[.0sA.1lam]' not in tags or
+                        '`[.1do.0nja]' not in tags or '`[.1ta.0vu.2merk.0ki]' in tags):
                     raise AssertionError('NVDA punctuation damaged a Persian word: ' + ascii(tags))
-                if spelling == 'pipeline_mixed_symbols' and ('`[.0sA.0lam]' not in tags or
-                        '`[.0ta.0vu.0merk.0ki]' in tags):
+                if spelling == 'pipeline_mixed_symbols' and ('`[.0sA.1lam]' not in tags or
+                        '`[.1ta.0vu.2merk.0ki]' in tags):
                     raise AssertionError('NVDA mixed punctuation damaged Persian speech: ' + ascii(tags))
                 if spelling in ('checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most'):
-                    expected = ("`[.0A.0la.0mAt]" if spelling == 'checkbox_unchecked' else
-                                "`[.0A.0la.0mAt] `[.0dar]")
+                    expected = ("`[.0A.1la.0mAt]" if spelling == 'checkbox_unchecked' else
+                                "`[.0A.1la.0mAt] `[.1dar]")
                     if expected not in tags:
                         raise AssertionError('NVDA checkbox state was not spoken as a Persian word: ' + ascii(tags))
-                if locale == 'fa_Latn' and ('`[.0ta.0vu.0merk.0ki]' in tags or '-`[' in tags):
+                if locale == 'fa_Latn' and ('`[.1ta.0vu.2merk.0ki]' in tags or '-`[' in tags):
                     raise AssertionError('Finnish hyphen name leaked into Pinglish')
             if spelling in ('english', 'persian') or spelling == 'mixed' and locale == 'fa_IR':
                 self.audio[spelling] = audio

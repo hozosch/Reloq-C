@@ -29,7 +29,8 @@ def main():
     parser.add_argument('--probe', required=True, type=Path)
     args = parser.parse_args()
     fa, en = voice(args.probe, 0x90000), voice(args.probe, 0x10000)
-    scope = fa._dll.reloq_fa_acoustic_scope
+    scope = (getattr(fa._dll, 'eciPersianAcousticScope', None) or
+             fa._dll.reloq_fa_acoustic_scope)
     assert FrameCapture(fa._dll).bridge_continuation is not None, 'native transition export is missing'
     checks = 0
     try:

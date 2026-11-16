@@ -1954,11 +1954,20 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                 int factor=100;
                 if (ordinary && length==1 && phone==31) factor=130;
                 else if (ordinary && length==1 && phone==29) factor=118;
-                else if (ordinary && length==0 && (phone==27 || phone==32 || phone==34)) factor=87;
                 if (factor!=100) {
                     int64_t scaled=((int64_t)STATE(int32_t,f33)*factor+50)/100;
                     STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
                 }
+            }
+            /* Listening candidate after the US consonant replacement:
+               give Persian vowel nuclei 20% more time at every speed, while
+               retaining the native short/long, stress and phrase mechanisms.
+               The separate short-unstressed and US long-vowel reductions are
+               disabled for this candidate. This is not a universal Persian
+               duration ratio. */
+            if (us_timing && node && cls==1 && STATE(int32_t,f33)>0) {
+                int64_t scaled=((int64_t)STATE(int32_t,f33)*6+2)/5;
+                STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
             if (tracing)
                 fprintf(stderr,"FA_NUC phone=%d class=%d stress=%d length=%d before=%d duration=%d final=%d\n",

@@ -9,7 +9,6 @@ import threading
 
 from direct_fa_sequence import (
     EciIndex, EciPitch, EciPitchHz, EciProsody, EciText, ScopedDirectPersianEngine, project,
-    without_generated_stress,
 )
 from hybrid_fa_frontend import DirectFirstPersian
 from text_frontend import UnsupportedPronunciation
@@ -137,7 +136,7 @@ def playback_tests(frontend, probe, reference, inputs):
                     target.set_parameter(SAMPLE_RATE, rate)
                     target.set_parameter(GENDER, gender)
                 for parts in inputs:
-                    job = without_generated_stress(project(parts, frontend))
+                    job = project(parts, frontend)
                     expected = render(fa, job.tagged)
                     pcm, indexes = bytearray(), []
                     assert voice.speak(parts, pcm.extend, lambda i: indexes.append((i, len(pcm) // 2)))
@@ -155,13 +154,13 @@ def playback_tests(frontend, probe, reference, inputs):
         # the same ECI queue as the unmarked native reference.
         controls = ('سلام', EciPitch(75), ' دنیا', EciProsody(6, 70),
                     ' ۱۲', EciProsody(7, 80), ' آمد.')
-        job = without_generated_stress(project(controls, frontend))
+        job = project(controls, frontend)
         expected, actual = bytearray(), bytearray()
         assert fa.speak(job.parts, expected.extend, lambda _: None)
         assert voice.speak(controls, actual.extend, lambda _: None)
         assert bytes(actual) == bytes(expected) and actual
         # Temporary controls must not leak into the next utterance.
-        plain = without_generated_stress(project(('سلام دنیا.',), frontend))
+        plain = project(('سلام دنیا.',), frontend)
         expected, actual = bytearray(), bytearray()
         assert fa.speak(plain.parts, expected.extend, lambda _: None)
         assert voice.speak(('سلام دنیا.',), actual.extend, lambda _: None)
@@ -170,7 +169,7 @@ def playback_tests(frontend, probe, reference, inputs):
             target.set_parameter(PITCH_HZ, 130)
         hz_controls = ('سلام', EciPitchHz(180), ' دنیا.', EciPitchHz(130))
         expected, actual = bytearray(), bytearray()
-        assert fa.speak(without_generated_stress(project(hz_controls, frontend)).parts, expected.extend, lambda _: None)
+        assert fa.speak(project(hz_controls, frontend).parts, expected.extend, lambda _: None)
         assert voice.speak(hz_controls, actual.extend, lambda _: None)
         assert bytes(actual) == bytes(expected) and actual
         expected, actual = bytearray(), bytearray()

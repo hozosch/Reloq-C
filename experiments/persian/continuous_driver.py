@@ -16,7 +16,7 @@ if __package__:
     from .._reloq_persian_frames import FrameCapture, FrameReplay, FrameStream, NativeFrame
     from .._reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from .._reloq_persian_projection import ProjectedJob
-    from .direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient, without_generated_stress
+    from .direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient
     from .continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence
     from .text_frontend import SpeechPart, UnsupportedPronunciation
 else:
@@ -26,7 +26,7 @@ else:
     from _reloq_persian_frames import FrameCapture, FrameReplay, FrameStream, NativeFrame
     from _reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from _reloq_persian_projection import ProjectedJob
-    from direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient, without_generated_stress
+    from direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient
     from continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence
     from text_frontend import SpeechPart, UnsupportedPronunciation
 
@@ -185,7 +185,6 @@ def _project_part(engine, items, *, follows):
         if limit and tagged[limit - 1] == ' ':
             limit -= 1
         tagged = tagged[:limit]
-    tagged = without_generated_stress(replace(prepared, tagged=tagged, parts=())).tagged
     marks, offset = [], 0
     for part in prepared.parts:
         if isinstance(part, EciText):
@@ -489,7 +488,6 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                                          cancelled=owner._cancelled.is_set)
         if prefix:
             prepared = replace(prepared, parts=tuple(prefix) + tuple(prepared.parts))
-        prepared = without_generated_stress(prepared)
         matches = tuple(_TAG.finditer(prepared.tagged))
         tags = tuple(match.group() for match in matches)
         separators = tuple(prepared.tagged[a.end():b.start()] for a, b in zip(matches, matches[1:]))

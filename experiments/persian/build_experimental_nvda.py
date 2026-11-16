@@ -25,7 +25,7 @@ MODULES = ('espeak_ng_probe', 'inprocess_espeak', 'text_frontend', 'pinglish_fro
            'continuous_driver', 'parallel_pilot', 'nvda_driver_probe')
 
 
-def add_persian(entries, *, version='1.5.0-dev124'):
+def add_persian(entries, *, version='1.5.0-dev125'):
     """Extend a baseline package without changing the normal release builder."""
     entries = dict(entries)
     driver = PREFIX + '__init__.py'
@@ -121,7 +121,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dll', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--version', default='1.5.0-dev124')
+    parser.add_argument('--version', default='1.5.0-dev125')
     args = parser.parse_args()
     entries = add_persian(make_entries(args.dll), version=args.version)
     args.output.parent.mkdir(parents=True, exist_ok=True)

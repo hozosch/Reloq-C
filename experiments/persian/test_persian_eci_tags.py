@@ -1,4 +1,4 @@
-"""Exercise protected user ECI tags and unmarked Persian stress end to end."""
+"""Exercise protected ECI tags and preservation of Persian word stress."""
 from __future__ import annotations
 
 import argparse
@@ -59,6 +59,17 @@ def main():
             assert any(isinstance(item, EciText) and item.tag_control == '`[.1sAd]' and
                        item.text == '`[.1sAd]' for item in unmarked.parts)
             assert render(words[0], control('`[.1sAd]'), EciIndex(11), words[1])[0]
+            observed, previous_speak = [], current._speak_prepared
+            def observe(job, *args, **kwargs):
+                if job.source:
+                    observed.append(job.tagged)
+                return previous_speak(job, *args, **kwargs)
+            current._speak_prepared = observe
+            try:
+                assert render(*words)[0]
+            finally:
+                current._speak_prepared = previous_speak
+            assert any(re.search(r'\.[12]', value) for value in observed), (language, observed)
 
         engine.select_voice(PERSIAN_PROBE.id, '1')
         # A persistent pitch/speed control crosses an explicit or automatic
@@ -80,7 +91,7 @@ def main():
         assert fa._voice._dll.eciGetParam(fa._voice._handle, PROCESS_TAGS) == 1
     finally:
         engine.close()
-    print('Passed Persian/Pinglish ECI controls, explicit phonemes and unmarked stress.')
+    print('Passed Persian/Pinglish ECI controls, explicit phonemes and retained word stress.')
 
 
 if __name__ == '__main__':

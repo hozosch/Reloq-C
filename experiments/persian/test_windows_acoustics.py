@@ -21,16 +21,19 @@ def render(library, dialect, text, *, scoped=None, rate=3, gender=0, onsets=(), 
         voice.set_parameter(GENDER, gender)
         if scoped is not None:
             import ctypes
-            scope = voice._dll.reloq_fa_acoustic_scope
+            scope = (getattr(voice._dll, 'eciPersianAcousticScope', None) or
+                     voice._dll.reloq_fa_acoustic_scope)
             scope.argtypes, scope.restype = (ctypes.c_int,), ctypes.c_int
             previous = scope(int(scoped))
             assert previous == 0
             if scoped:
-                onset = voice._dll.reloq_fa_native_onsets
+                onset = (getattr(voice._dll, 'eciPersianNativeOnsets', None) or
+                         voice._dll.reloq_fa_native_onsets)
                 onset.argtypes, onset.restype = (ctypes.POINTER(ctypes.c_uint32), ctypes.c_size_t), ctypes.c_int
                 selected = (ctypes.c_uint32 * len(onsets))(*onsets) if onsets else None
                 assert onset(selected, len(onsets)) == 0
-                geminate = voice._dll.reloq_fa_native_geminates
+                geminate = (getattr(voice._dll, 'eciPersianNativeGeminates', None) or
+                            voice._dll.reloq_fa_native_geminates)
                 geminate.argtypes = (ctypes.POINTER(ctypes.c_uint32), ctypes.c_size_t)
                 geminate.restype = ctypes.c_int
                 selected = (ctypes.c_uint32 * len(geminates))(*geminates) if geminates else None
