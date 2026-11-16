@@ -22,11 +22,12 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'nvda'))
 from _reloq_eci_direct import NATIVE_SPEED
 from nvda_driver_probe import PERSIAN_PROBE, make_language_engine
-from test_vowel_timing import PATTERN
 from trace_espeak_events import Event
 
 PHONE_CODES = {'a': 31, 'A': 34, 'e': 29, 'i': 27, 'o': 33, 'u': 32}
 _TAG = re.compile(r'`\[[^]]+\]')
+PATTERN = re.compile(r'FA_NUC phone=(-?\d+) class=(-?\d+) stress=(-?\d+) '
+                     r'length=(-?\d+) before=(-?\d+) duration=(-?\d+)')
 _CALLBACK = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.POINTER(ctypes.c_short),
                              ctypes.c_int, ctypes.POINTER(Event))
 
