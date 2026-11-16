@@ -6,6 +6,7 @@ on:
     paths:
       - experiments/persian/build_experimental_nvda.py
       - experiments/persian/select_windows_acoustic_run.py
+      - experiments/persian/test_acoustic_run_selection.py
       - experiments/persian/build_native_probe.py
       - experiments/persian/build_windows_probe.py
       - experiments/persian/scoped_acoustics_probe.c
@@ -85,7 +86,7 @@ jobs:
           selected=""
           for attempt in $(seq 1 60); do
             gh api "repos/$GITHUB_REPOSITORY/actions/workflows/persian-windows-acoustic-probe.yml/runs?branch=codex%2Fpersian-nvda-prep-20261115&per_page=40" > windows-runs.json
-            selected=$(python -B experiments/persian/select_windows_acoustic_run.py windows-runs.json)
+            selected=$(python -B experiments/persian/select_windows_acoustic_run.py windows-runs.json --audio-only)
             if [ -n "$selected" ]; then break; fi
             sleep 5
           done
@@ -132,6 +133,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'In-process eSpeak isolation, cancellation or parity failed' }
           python -B experiments/persian/test_persian_decimals.py
           if ($LASTEXITCODE -ne 0) { throw 'Persian NVDA decimal preprocessing failed' }
+          python -B experiments/persian/test_acoustic_run_selection.py
+          if ($LASTEXITCODE -ne 0) { throw 'Windows acoustic reuse selection failed' }
           python -B experiments/persian/test_compare_vowel_corpus.py
           if ($LASTEXITCODE -ne 0) { throw 'Persian vowel corpus pairing failed' }
           python -B experiments/persian/compare_vowel_corpus.py --espeak-only --native-library "$pwd/fa-direct.dll" --espeak-library "$espeak" --data-parent "$data" --output persian-timing/espeak-vowels.json

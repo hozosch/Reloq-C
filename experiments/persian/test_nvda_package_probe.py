@@ -93,6 +93,7 @@ def main():
                 assert engine.speak(('سلام دنیا؟',), pcm.extend, lambda _: None)
                 assert bytes(pcm) == original
                 frontend = engine._engines[fa.id]._frontend
+                assert frontend.analyze_direct('علامت').parts[0].text == '`[.0A.1la.0mAt]'
                 assert frontend.analyze_direct('بدبخت').parts[0].text == '`[.1bAd.0bAGt]'
                 assert frontend.analyze_direct('سوال').parts[0].text == '`[.1so]~`[.0al]'
                 assert frontend.analyze_direct('تعجب').parts[0].text == '`[.0tA.1wAJ.0Job]'
