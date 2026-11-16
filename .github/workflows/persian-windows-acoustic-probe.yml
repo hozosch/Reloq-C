@@ -69,7 +69,7 @@ jobs:
         shell: bash
         run: find vendor/openevv61/build/windows-release -type f -exec touch {} +
       - name: Reuse compatible provider objects
-        if: steps.provider.outputs.cache-hit != 'true' && steps.provider.outputs.cache-matched-key == 'persian-windows-provider-gcc14-v1-eafb701ff0daa266b36f21741a91cf44935fe7d1d5fc200e54f509f1b878b075'
+        if: steps.provider.outputs.cache-hit != 'true'
         shell: bash
         run: python -B tools/reuse_persian_provider_cache.py
       - name: Restore cached host timestamps
