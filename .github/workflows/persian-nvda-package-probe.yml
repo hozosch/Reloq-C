@@ -25,6 +25,8 @@ on:
       - experiments/persian/test_unvoiced_switch.py
       - experiments/persian/test_decimal_routing.py
       - experiments/persian/benchmark_uncached.py
+      - experiments/persian/compare_vowel_corpus.py
+      - experiments/persian/test_compare_vowel_corpus.py
       - experiments/persian/test_native_transition.py
       - experiments/persian/test_front_a_anchor.py
       - experiments/persian/test_resilient_runtime.py
@@ -126,6 +128,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'In-process eSpeak isolation, cancellation or parity failed' }
           python -B experiments/persian/test_persian_decimals.py
           if ($LASTEXITCODE -ne 0) { throw 'Persian NVDA decimal preprocessing failed' }
+          python -B experiments/persian/test_compare_vowel_corpus.py
+          if ($LASTEXITCODE -ne 0) { throw 'Persian vowel corpus pairing failed' }
           python -B experiments/persian/test_nvda_package_probe.py --native-library "$dll" --text-library "$pwd/fa-direct.dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows package adapter failed' }
           python -B experiments/persian/test_pinglish_driver.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
@@ -155,18 +159,18 @@ jobs:
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci_persian_probe.dll -print -quit)
-          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --text-dll fa-direct.dll --output dist/reloq-c-persian-pinglish-1.5.0-dev107.nvda-addon
+          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --text-dll fa-direct.dll --output dist/reloq-c-persian-pinglish-1.5.0-dev108.nvda-addon
       - name: Test both choices in real NVDA
         shell: pwsh
         env:
           PYTHONIOENCODING: utf-8
         run: |
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon dist/reloq-c-persian-pinglish-1.5.0-dev107.nvda-addon --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon dist/reloq-c-persian-pinglish-1.5.0-dev108.nvda-addon --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
           if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA Persian profile test failed' }
       - uses: actions/upload-artifact@v4
         with:
           name: persian-pinglish-nvda-test
-          path: dist/reloq-c-persian-pinglish-1.5.0-dev107.nvda-addon
+          path: dist/reloq-c-persian-pinglish-1.5.0-dev108.nvda-addon
           if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@v4

@@ -178,18 +178,6 @@ def _pinglish_part_runs(parts, home):
 
 class PersianProbeLanguageEngine(LanguageEngine):
     """Use English for explicit and clear Latin-script boundaries."""
-    def set_dictionary_path(self, path):
-        # NVDA passes immutable, content-addressed snapshots. Repeated
-        # notifications for the same snapshot must not defeat the cache.
-        previous = self._dictionary_path
-        result = super().set_dictionary_path(path)
-        if self._dictionary_path != previous:
-            for name in ('_persian_plan_cache', '_persian_phoneme_cache', '_persian_ach_cache'):
-                cache = getattr(self, name, None)
-                if cache is not None:
-                    cache.clear()
-        return result
-
     def speak(self, parts, on_pcm, on_index):
         self._assert_owner()
         def valid_text(value):
@@ -261,6 +249,7 @@ class PersianProbeLanguageEngine(LanguageEngine):
             if text is not None or isinstance(part, EciCapitalWord):
                 select(logical)
             output.append(part)
+        prior_uppercase = None
         try:
             # Sentence splitting is needed only when this request contains a
             # Persian/English switch. Keep unrelated languages on their
@@ -274,6 +263,12 @@ class PersianProbeLanguageEngine(LanguageEngine):
                     if value.strip():
                         spoken.add(key[0])
             allowed = {US_ENGLISH.id, PERSIAN_PROBE.id, PINGLISH_PROBE.id}
+            if self._home[0] in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) or spoken & {PERSIAN_PROBE.id, PINGLISH_PROBE.id}:
+                # The shared language engine also serves Chinese and other
+                # voices. Preserve their cache while using a fresh, temporary
+                # capitalization table for each Persian-containing request.
+                prior_uppercase = self._uppercase_cache
+                self._uppercase_cache = type(prior_uppercase)()
             mixed = (spoken <= allowed and US_ENGLISH.id in spoken and
                      bool(spoken & {PERSIAN_PROBE.id, PINGLISH_PROBE.id}))
             jobs = sentence_jobs(output, self._home) if mixed else ()
@@ -323,7 +318,11 @@ class PersianProbeLanguageEngine(LanguageEngine):
                     return False
             return True
         finally:
-            self._activate(self._home)
+            try:
+                self._activate(self._home)
+            finally:
+                if prior_uppercase is not None:
+                    self._uppercase_cache = prior_uppercase
 
 
 def make_language_engine(library, native_library, worker, espeak_library, data_parent,

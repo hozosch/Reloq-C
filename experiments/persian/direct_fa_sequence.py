@@ -7,7 +7,6 @@ It fails before speech for uncovered input or unsafe controls.
 from __future__ import annotations
 
 import ctypes
-from collections import OrderedDict
 from dataclasses import replace
 from pathlib import Path
 import re
@@ -216,11 +215,9 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
         else:
             raise TypeError('unsupported ECI job item')
     source = ''.join(text)
-    # Keeping this cache on the worker-owned frontend avoids repeatedly
-    # launching the reference for the same unknown word after a stop.
-    cache = getattr(frontend, '_resilient_word_cache', None)
-    if cache is None:
-        cache = frontend._resilient_word_cache = OrderedDict()
+    # Reuse a repeated word only during this request. No pronunciation is
+    # retained for a later NVDA utterance.
+    current_words = {}
 
     def check():
         if cancelled is not None and cancelled():
@@ -251,9 +248,8 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
     def word_tag(value, follows):
         check()
         key = (value, follows, pinglish)
-        if key in cache:
-            cache.move_to_end(key)
-            return cache[key]
+        if key in current_words:
+            return current_words[key]
         tag = None
         try:
             if pinglish:
@@ -282,9 +278,7 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
                 check()
         if not tag:
             tag = names(value)
-        cache[key] = tag
-        if len(cache) > 4096:
-            cache.popitem(last=False)
+        current_words[key] = tag
         return tag
 
     def word_char(char):

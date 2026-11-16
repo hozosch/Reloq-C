@@ -1,11 +1,12 @@
 # Persian listening probe: L and vowel-duration notes
 
-Status: the user accepted the stable Salam-based A, the intermediate final
+Historical probe notes: the user accepted the stable Salam-based A, the intermediate final
 E/A durations, the Finnish viisi S noise, the mixed German/French L and the
 60% Finnish H transition in the private listening build. The selected examples
 use eSpeak 1.51's stress on Donyā and Iran; alternative final-stress examples
-remain available for research. No general Persian text analysis or selectable
-Persian language is implemented.
+remain available for research. At the time these notes were first written,
+general Persian text analysis and a selectable Persian language were not yet
+implemented; both are now available in the private test add-on.
 
 ## Decisions already made for the next probe
 
@@ -76,7 +77,7 @@ Persian language is implemented.
 - For the examples in this probe, follow eSpeak 1.51's stress: `s a l ˈA m`,
   `ˈd o n j A`, and `ˈiː r A n`. These are explicitly annotated example
   phones, not an implementation of eSpeak's complete stress or dictionary
-  rules; an actual Persian frontend must provide those for arbitrary input.
+rules; an actual Persian frontend must provide those for arbitrary input.
 
 ## Evidence
 
@@ -190,3 +191,55 @@ speed, the internal back-A nucleus targets were:
 
 These are scheduling targets from the Finnish core, not measured acoustic
 vowel boundaries. They cannot be directly equated with eSpeak's event times.
+
+## Automated context screening, 2026-11-16
+
+`compare_vowel_corpus.py` compares each directly supported Persian word in
+the reference corpus alone and before `سلام`, at three native speeds and
+three eSpeak rates. It retains a comparison only when the first word's
+native tags, vowel sequence and stress match across conditions and both
+synthesizers. It reports source-unit durations for inspection, but scores
+only a *within-engine* ratio between the two positions. Contexts with
+unmatched pronunciations, stress or vowel counts are explicitly excluded.
+Candidates are ranked when the ratio difference has the same direction and
+exceeds 0.15 at all three speeds. This is a screening heuristic, not an
+acoustically measured vowel duration or an instruction to change a rule.
+The native and eSpeak rate values are representative; the two scales are not
+assumed to be equivalent.
+
+On the local diagnostic build with eSpeak NG **1.53.0**, 46 direct word
+candidates produced 261 matched vowel observations across three rates; nine
+word/rate comparisons were excluded. This is not a measurement of NVDA's
+eSpeak 1.51 or a human-speech corpus. At native speed 98 and eSpeak 175 WPM,
+the first-word-before-another-word / isolated-word ratios were:
+
+| Vowel and word | Native nucleus target | eSpeak event interval |
+| --- | ---: | ---: |
+| back A in `سلام` | 0.669 | 0.596 |
+| back A in `ایران` | 0.821 | 0.821 |
+| final E in `نقطه` | 0.903 | 0.614 |
+
+These figures identify contexts for more precise study, not equivalent
+physical vowel boundaries. In particular, the already accepted intermediate
+word-final E and A and the Iran anchor must not be replaced by blindly
+applying the eSpeak event ratio. A short, representative listening check
+remains useful for proposed changes, rather than requiring hundreds of
+isolated examples. For an acoustic measurement, record audio and use a
+validated boundary/aligner on both engines under matched conditions first.
+
+Reproduce with a completed `build_scoped_acoustics_probe.py` work directory
+from the same source checkout. The tracing switch is forwarded only by a
+separately linked diagnostic library; it is absent from the add-on:
+
+```sh
+python3 -B experiments/persian/link_unified_probe.py \
+  --scope-work SCOPE_WORK --work TIMING_WORK --continuous-capture --timing-trace
+python3 -B experiments/persian/compare_vowel_corpus.py \
+  --scope-probe TIMING_WORK/libreloq_eci_persian_probe.so \
+  --native-library FA_DIRECT_LIBRARY --espeak-library ESPEAK_LIBRARY \
+  --data-parent ESPEAK_DATA_PARENT --output vowel-comparison.json
+```
+
+The diagnostic scope differed from the production scope only in its trace
+selector. With tracing disabled, 72 combinations of mixed Persian/English
+texts, rates and voices produced bit-identical PCM and source indexes.

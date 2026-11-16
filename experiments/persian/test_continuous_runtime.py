@@ -158,13 +158,10 @@ def main():
             expected_persian, _ = render(engine, (EciPitch(80), 'او آمد.'))
             assert controlled == expected_english + expected_persian
 
-            # The same mixed fragment can also appear at the end of a job.
-            # Its cached frames must not be reused with the other pause mode.
-            engine._persian_plan_cache.clear()
+            # The same mixed fragment can appear with different pause modes;
+            # each request must be independently planned.
             standalone, _ = render(engine, ('NVDA خوب (',))
-            assert len(engine._persian_plan_cache) == 1
             assert render(engine, ('NVDA خوب (hello) دنیا',))[0]
-            assert len(engine._persian_plan_cache) == 2
             assert render(engine, ('NVDA خوب (',))[0] == standalone
 
             english, _ = render(engine, (EciLanguage(US_ENGLISH.id, '1'), 'NVDA '))
@@ -174,17 +171,26 @@ def main():
             assert mixed != english + persian
             assert marks[0] == (10, 0) and marks[-1] == (12, len(mixed))
             assert 0 < marks[1][1] < len(mixed) and marks[1][0] == 11
-            # The second request has new NVDA index values but the same text
-            # and settings. It must reuse control frames and remap marks.
-            cache = engine._persian_plan_cache
-            before = tuple(cache.items())
-            repeated, remapped = render(engine, (EciIndex(110), 'NVDA ', EciIndex(111),
-                                                  'خوب است.', EciIndex(112)))
+            # New marks for the same text must be calculated again, with the
+            # same sound and positions and no retained sentence result.
+            captures, original_capture = [], FrameCapture.capture
+            def observe_capture(self, *args, **kwargs):
+                captures.append(1)
+                return original_capture(self, *args, **kwargs)
+            FrameCapture.capture = observe_capture
+            try:
+                repeated, remapped = render(engine, (EciIndex(110), 'NVDA ', EciIndex(111),
+                                                      'خوب است.', EciIndex(112)))
+            finally:
+                FrameCapture.capture = original_capture
             assert repeated == mixed
             assert remapped == [(110, marks[0][1]), (111, marks[1][1]), (112, marks[2][1])]
-            assert len(cache) == len(before) and cache[next(reversed(cache))] is before[-1][1]
+            assert captures, 'repeated sentence bypassed the native planner'
+            for name in ('_persian_plan_cache', '_persian_phoneme_cache', '_persian_ach_cache'):
+                assert not hasattr(engine, name), name
             engine.set_dictionary_path(engine._dictionary_path)
-            assert cache, 'same immutable dictionary snapshot discarded the frame cache'
+            assert render(engine, (EciIndex(110), 'NVDA ', EciIndex(111),
+                                   'خوب است.', EciIndex(112))) == (repeated, remapped)
             explicit, _ = render(engine, (EciLanguage(US_ENGLISH.id, '1'), 'NVDA ',
                                           EciLanguage(PERSIAN_PROBE.id, '1'), 'خوب است.'))
             assert explicit == mixed
@@ -196,6 +202,20 @@ def main():
             engine.set_parameter(GENDER, gender)
             capital, _ = render(engine, (EciCapitalWord('NVDA', 'NV DA'), ' خوب است.'))
             assert capital and capital != english + persian
+            shared_cache = engine._uppercase_cache
+            previous_entries = tuple(shared_cache.items())
+            capital_probes, original_probe = [], english_voice.spells_uppercase
+            def observe_capital(value):
+                capital_probes.append(value)
+                return original_probe(value)
+            english_voice.spells_uppercase = observe_capital
+            try:
+                for _ in range(2):
+                    assert render(engine, (EciCapitalWord('NVDA', 'NV DA'), ' خوب است.'))[0] == capital
+            finally:
+                english_voice.spells_uppercase = original_probe
+            assert len(capital_probes) >= 2, 'capitalization was retained between Persian requests'
+            assert engine._uppercase_cache is shared_cache and tuple(shared_cache.items()) == previous_entries
             protected, indexes = render(engine, (EciText('swapfile ', segmentation_guarded=True),
                                                   EciIndex(13), 'خوب است.'))
             assert protected and indexes[0][0] == 13 and 0 < indexes[0][1] < len(protected)

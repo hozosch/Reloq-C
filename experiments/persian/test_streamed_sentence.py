@@ -28,17 +28,12 @@ def main():
         return original_append(self, frames, first, end, marks)
     FrameStream.append = track
     def clear():
-        # Cross-request plan, phone, template and uppercase caches are all
-        # emptied. Initialised voice handles and rule tables remain loaded.
+        # The Persian path must not retain sentence, phone or word results.
         for name in ('_persian_plan_cache', '_persian_phoneme_cache',
-                     '_persian_ach_cache', '_uppercase_cache'):
-            cache = getattr(engine, name, None)
-            if cache is not None:
-                cache.clear()
+                     '_persian_ach_cache'):
+            assert not hasattr(engine, name), name
         for voice in engine._engines.values():
-            cache = getattr(getattr(voice, '_frontend', None), '_resilient_word_cache', None)
-            if cache is not None:
-                cache.clear()
+            assert not hasattr(getattr(voice, '_frontend', None), '_resilient_word_cache')
     def render(parts):
         pcm, indexes = bytearray(), []
         assert engine.speak(parts, pcm.extend, lambda value: indexes.append((value, len(pcm))))
@@ -60,6 +55,15 @@ def main():
         # These words need reference analysis and an internal word anchor.
         (EciIndex(39), 'NVDA ', EciIndex(40), 'پژوهشگر ', EciIndex(41), 'سلام', EciIndex(42)),
         (EciIndex(43), 'سلام ', EciIndex(44), 'پژوهشگر ', EciIndex(45), 'window', EciIndex(46)),
+        # Short first segments can now start while the second context is
+        # still being planned, without changing any transition frames.
+        (EciIndex(50), 'go ', EciIndex(51), 'سلام', EciIndex(52)),
+        (EciIndex(53), 'hi ', EciIndex(54), 'دنیا', EciIndex(55)),
+        (EciIndex(56), 'file ', EciIndex(57), 'خوب', EciIndex(58)),
+        (EciIndex(59), 'سلام ', EciIndex(60), 'go', EciIndex(61)),
+        (EciIndex(62), 'خوب ', EciIndex(63), 'hi', EciIndex(64)),
+        (EciIndex(65), 'we ', EciIndex(66), 'پژوهشگر', EciIndex(67)),
+        (EciIndex(68), 'stop ', EciIndex(69), 'خط', EciIndex(70)),
     )
     compared = streamed = 0
     try:

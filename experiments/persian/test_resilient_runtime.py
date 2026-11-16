@@ -110,6 +110,21 @@ def main():
         recovered = project_resilient((inflected,), frontend,
             validate=engine._engines[PERSIAN_PROBE.id]._voice._phonemes_for_probe)
         assert recovered.tagged == '`[.2del.0rAhm.1tA.0rin]'
+        worker = frontend._fallback()
+        reference_calls, original_translate = [], worker.translate
+        def observe_translate(text, **kwargs):
+            reference_calls.append(text)
+            return original_translate(text, **kwargs)
+        worker.translate = observe_translate
+        try:
+            for _ in range(2):
+                before = len(reference_calls)
+                again = project_resilient((inflected,), frontend,
+                    validate=engine._engines[PERSIAN_PROBE.id]._voice._phonemes_for_probe)
+                assert again.tagged == recovered.tagged and len(reference_calls) > before
+        finally:
+            worker.translate = original_translate
+        assert not hasattr(frontend, '_resilient_word_cache')
         assert render((EciIndex(90), inflected, EciIndex(91)))[0]
         cases = ('سلام @@@ دنیا', 'سلام 🙂 دنیا', 'سلام (دنیا) و خوب', 'عدد ۱۲-۱۵ است',
                  'نسخه 1.2.3', 'کتاب ۵/۳ روز', 'متن\nجدید', 'سلام\tدنیا', '!',

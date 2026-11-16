@@ -26,6 +26,8 @@ def main():
     parser.add_argument('--jobs', type=int, choices=range(1, 9), default=4)
     parser.add_argument('--continuous-capture', action='store_true',
                         help='add private request-scoped frame capture')
+    parser.add_argument('--timing-trace', action='store_true',
+                        help='build a diagnostic-only scope that forwards RELOQ_FA_TRACE_NUC')
     args = parser.parse_args()
     archive = args.scope_work.resolve() / 'libreloq61.a'
     scope = args.scope_work.resolve() / 'scoped_acoustics_probe.o'
@@ -35,6 +37,23 @@ def main():
     if work.exists():
         parser.error('work directory must not exist')
     work.mkdir(parents=True)
+    if args.timing_trace:
+        # Keep the regular and NVDA scope independent of process environment.
+        # This temporary scope forwards only the existing tracing switch and
+        # retains the exact same selected acoustic values.
+        text = (HERE / 'scoped_acoustics_probe.c').read_text(encoding='utf8')
+        marker = '    if(!fa_acoustics || !name)return 0;\n'
+        if text.count(marker) != 1:
+            raise ValueError('the scoped acoustic selector changed; inspect it before tracing')
+        text = text.replace(marker, marker +
+                            '    if(!strcmp(name,"RELOQ_FA_TRACE_NUC"))return getenv(name);\n', 1)
+        source = work / 'scoped_acoustics_timing.c'
+        source.write_text(text, encoding='utf8')
+        scope = work / 'scoped_acoustics_timing.o'
+        subprocess.run(['cc', '-O3', f'-flto={args.jobs}', '-fPIC', '-std=gnu11',
+                        '-fno-strict-aliasing', '-ffp-contract=off', '-fvisibility=hidden',
+                        '-ffunction-sections', '-fdata-sections', '-Os', '-c', str(source),
+                        '-o', str(scope)], check=True)
     sources = tuple(HERE / ('direct_fa_' + name + '.c')
                     for name in ('lexicon', 'numbers', 'normalize', 'text', 'letters', 'pinglish'))
 

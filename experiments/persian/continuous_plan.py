@@ -923,17 +923,6 @@ class GermanAch:
 
 
 def german_ach_template(voice, *, maximum=60000):
-    owner = getattr(voice, 'owner', None)
-    cache_key = None
-    if owner is not None:
-        cache_key = (voice.key, owner._dictionary_path, tuple(sorted(owner._parameters.items())),
-                     owner._acoustic_clocks, voice.prefix)
-        cache = getattr(owner, '_persian_ach_cache', None)
-        if cache is None:
-            cache = owner._persian_ach_cache = {}
-        if cache_key in cache:
-            voice._check()
-            return cache[cache_key]
     tag = "`[.1'aj'x.0u]"
     # This fixed internal tag is covered by the native transition tests; the
     # captured voiced/noise boundaries below verify the actual result.
@@ -966,12 +955,7 @@ def german_ach_template(voice, *, maximum=60000):
         noise_times.append(noise_times[-1] + frames[i].controls[0])
     if noise_times[-1] <= 0:
         raise RuntimeError('invalid German X friction duration')
-    result = GermanAch(tuple(times), rows, tuple(noise_times), noise)
-    if cache_key is not None:
-        if len(cache) >= 32:
-            cache.clear()
-        cache[cache_key] = result
-    return result
+    return GermanAch(tuple(times), rows, tuple(noise_times), noise)
 
 
 def _english_final_a(en, text):

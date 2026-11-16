@@ -1,8 +1,8 @@
-"""Measure first playback feed with different texts and cleared result caches.
+"""Measure first playback feed without retaining Persian speech results.
 
 This uses the actual NVDA transport and a nonblocking test player. It is not a
-measurement of the user's sound device, NVDA event dispatch, or eSpeak cold
-start. Compare both modes on the same machine and build.
+measurement of the user's sound device or NVDA event dispatch. The first
+request is reported separately from warmed voice handles and reference data.
 """
 from __future__ import annotations
 
@@ -33,6 +33,8 @@ FALLBACK_WORDS = ('پژوهشگر', 'پیش‌نمایش', 'همگام‌ساز�
                   'الکترونیکی', 'پردازشگر')
 FALLBACK = tuple(('NVDA ', EciIndex(100 + i), word, EciIndex(200 + i), ' سلام')
                  for i, word in enumerate(FALLBACK_WORDS))
+SHORT_MIXED = ('go سلام', 'hi دنیا', 'file خوب', 'خوب hi', 'سلام go',
+               'open کتاب', 'window کتاب', 'hello سلام', 'stop خط')
 
 
 class Player:
@@ -50,26 +52,23 @@ class Player:
 
 
 class Uncached:
-    """Clear cross-request result caches on the actual owning worker."""
+    """Check that the actual Persian worker does not keep result caches."""
     def __init__(self, engine):
         self.engine = engine
     def __getattr__(self, name):
         return getattr(self.engine, name)
     def speak(self, parts, on_pcm, on_index):
-        for name in ('_persian_plan_cache', '_persian_phoneme_cache',
-                     '_persian_ach_cache', '_uppercase_cache'):
-            cache = getattr(self.engine, name, None)
-            if cache is not None:
-                cache.clear()
+        for name in ('_persian_plan_cache', '_persian_phoneme_cache', '_persian_ach_cache'):
+            if hasattr(self.engine, name):
+                raise AssertionError('unexpected persistent Persian result cache: ' + name)
         for voice in self.engine._engines.values():
             frontend = getattr(voice, '_frontend', None)
-            cache = getattr(frontend, '_resilient_word_cache', None)
-            if cache is not None:
-                cache.clear()
+            if hasattr(frontend, '_resilient_word_cache'):
+                raise AssertionError('unexpected persistent Persian word cache')
         return self.engine.speak(parts, on_pcm, on_index)
 
 
-def measure(args, *, streaming, english=False, fallback=False, cancel_before=False):
+def measure(args, *, streaming, english=False, fallback=False, cancel_before=False, short=False, repeated=False):
     FrameStream.available = staticmethod(args.available if streaming else lambda _dll: False)
     player, done, errors = Player(), threading.Event(), []
     def factory():
@@ -90,7 +89,9 @@ def measure(args, *, streaming, english=False, fallback=False, cancel_before=Fal
         return round((player.first - start) / 1e6, 3)
     try:
         cold = run('one simple label' if english else FALLBACK[0] if fallback else 'NVDA خوب است.')
-        texts = ENGLISH if english else FALLBACK if fallback else MIXED
+        texts = ENGLISH if english else FALLBACK if fallback else SHORT_MIXED if short else MIXED
+        if repeated:
+            texts = (texts[0],) * len(texts)
         timings = []
         for text in texts:
             if cancel_before:
@@ -114,16 +115,19 @@ def main():
     try:
         result = {'uncached_no_stream': measure(args, streaming=False),
                   'uncached_stream': measure(args, streaming=True),
+                  'uncached_short': measure(args, streaming=True, short=True),
+                  'uncached_short_repeated': measure(args, streaming=True, short=True, repeated=True),
                   'uncached_fallback': measure(args, streaming=True, fallback=True),
+                  'uncached_fallback_repeated': measure(args, streaming=True, fallback=True, repeated=True),
                   'uncached_fallback_after_stop': measure(args, streaming=True, fallback=True, cancel_before=True),
                   'native_english': measure(args, streaming=False, english=True)}
     finally:
         FrameStream.available = staticmethod(args.available)
     result['reference_backend'] = 'worker' if args.worker is not None else 'in-process'
     result['method'] = ('first fake WavePlayer feed through the real NVDA transport; '
-                        'different texts with plan, pronunciation and fallback-word result caches '
-                        'cleared before every request; handles warmed after the separate first request; '
-                        'fallback cases contain internal source indexes')
+                        'Persian sentence, pronunciation, and fallback-word results are not cached; '
+                        'different and repeated texts are measured with warmed handles after the separate '
+                        'first request; fallback cases contain internal source indexes')
     encoded = json.dumps(result, ensure_ascii=False, indent=2)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)

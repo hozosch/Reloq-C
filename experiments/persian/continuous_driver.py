@@ -57,20 +57,9 @@ class _PlanningVoice:
                 raise InterruptedError('sentence planning was cancelled')
             return self._request_phones[text]
         self._check()
-        cache = getattr(self.owner, '_persian_phoneme_cache', None)
-        if cache is None:
-            cache = self.owner._persian_phoneme_cache = OrderedDict()
-        key = (self.key, text, self.owner._dictionary_path,
-               tuple(sorted(self.owner._parameters.items())), self.owner._acoustic_clocks,
-               self._dll.eciGetParam(self._handle, PROCESS_TAGS))
-        if key in cache:
-            cache.move_to_end(key)
-            return cache[key]
         result = self.raw._phonemes_for_probe(text)
         self._check()
-        cache[key] = result
-        if len(cache) > 4096:
-            cache.popitem(last=False)
+        self._request_phones[text] = result
         return result
 
     def speak(self, parts, on_pcm, on_index):
@@ -260,28 +249,6 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
         if any(part.text.rstrip().endswith(('.', '?', '!', ',', ';', ':', '،', '؟', '؛'))
                for part in sentence[:-1]):
             return None
-        # Repeated NVDA labels usually differ only in their index values.
-        # Cache bounded *control frames*, never rendered audio, and remap the
-        # fresh indices on replay. Voice settings and dictionary changes
-        # are part of the key; the owning worker alone accesses this cache.
-        cache = getattr(owner, '_persian_plan_cache', None)
-        if cache is None:
-            cache = owner._persian_plan_cache = OrderedDict()
-        key = (fa_key, en_key, tuple(sentence), tuple((a, b) for a, b, _ in events),
-               tuple(guarded), tuple(spelling), tuple(prefix), validate,
-               owner._dictionary_path, tuple(sorted(owner._parameters.items())), owner._acoustic_clocks,
-               end_pause_shortened)
-        cached = cache.get(key)
-        if cached is not None:
-            cache.move_to_end(key)
-            data, count, points = cached
-            frames = (NativeFrame * count).from_buffer_copy(data)
-            marks = tuple((position, events[ordinal][2]) for position, ordinal in points)
-            if owner._cancelled.is_set():
-                return False
-            owner._activate(fa_key)
-            return FrameReplay(fa_engine._voice._dll).replay(fa_engine._voice, frames, marks,
-                on_pcm, on_index, cancelled=owner._cancelled)
         en_engine = owner._activate(en_key)
         german_key = owner._key(german_id, en_key[1])
         fa = _PlanningVoice(owner, fa_key, fa_engine, validate=validate, prefix=prefix)
@@ -315,16 +282,17 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
             if owner._cancelled.is_set():
                 raise InterruptedError('sentence planning was cancelled')
         def start_prefix(item, bounds, source_marks, capture_api):
-            # The furthest selected edit reaches 200 ms back from a switch.
-            # Reserve 250 ms, and use this path only when the initial
-            # segment leaves at least 160 ms of audio before that reserve.
-            # NVDA batches 40 ms initially and then 80 ms, retaining a final
-            # 40 ms, so this supplies a useful playback reserve while the
-            # other native context is planned.
+            # Only the selected English-to-Ach transition can reach as far
+            # as 200 ms back into the first segment. Other switch edits stay
+            # within 30 ms; keep a 60-ms safety margin for those and start
+            # short labels without changing any frames near their boundary.
+            ach_boundary = (sentence[0].language == 'en-us' and sentence[1].language == 'fa' and
+                            re.match(r'^\s*`\[\.[012]G', sentence[1].text) is not None)
+            reserve = 250 if ach_boundary else 60
             boundary_ms = round(bounds[1] * 1000 / rate)
             first_end = bisect_left(item.ticks, boundary_ms)
-            first = bisect_left(item.ticks, max(0, boundary_ms - 250))
-            if first < 20 or first >= first_end or item.ticks[first] - item.ticks[0] < 160:
+            first = bisect_left(item.ticks, max(0, boundary_ms - reserve))
+            if first < 6 or first >= first_end or item.ticks[first] - item.ticks[0] < 60:
                 return
             positions = []
             for segment, offset, _order, mark, value in source_marks:
@@ -368,14 +336,6 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
         original_counts = plan.counts
         selected_sentence(plan, sentence, en, german, rate, check=check_cancel)
         marks = replay_marks(plan, original_counts)
-        if len(marks) == len(events):
-            size = len(plan.frames) * ctypes.sizeof(NativeFrame)
-            if size <= 4 * 1024 * 1024:
-                data = ctypes.string_at(plan.frames, size)
-                cache[key] = (data, len(plan.frames), tuple((position, i) for i, (position, _) in enumerate(marks)))
-                # Put an upper bound on captured control-frame memory.
-                while len(cache) > 12 or sum(len(value[0]) for value in cache.values()) > 12 * 1024 * 1024:
-                    cache.popitem(last=False)
         if stream_state:
             first = stream_state['first']
             size = first * ctypes.sizeof(NativeFrame)
