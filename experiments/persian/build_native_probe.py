@@ -141,15 +141,24 @@ FRONT_A_PATCH = r'''
             if(STATE(int16_t,s448)>0)STATE(int16_t,s448)+=100;
             if(STATE(int16_t,s449)>0)STATE(int16_t,s449)+=100;
         }
-        /* The eSpeak Persian short-a source has an approximate central F3
-           peak of 2500 Hz, versus the Finnish default of 2550 Hz. Try that
-           small F3 change separately from any F1/F2 bandwidth adjustment.
-           It is a listening hypothesis across different synthesizers, not a
-           claim that their spectra or Persian formants are interchangeable. */
+        /* UK "sad" uses F3 2350 Hz in its main vowel, compared with the
+           Finnish front-A default 2550 Hz. Move 140 Hz toward that target,
+           retaining the native context-dependent endpoints and sentinels.
+           The exact target is a listening candidate, not a rule for all
+           Persian /ae/ contexts. Do not alter F1 or F2 here. */
         const char *f3=getenv("RELOQ_FA_FRONT_A_F3");
         if(f3 && f3[0]=='1' && !f3[1]) {
-            if(STATE(int16_t,s452)>50)STATE(int16_t,s452)-=50;
-            if(STATE(int16_t,s453)>50)STATE(int16_t,s453)-=50;
+            if(STATE(int16_t,s452)>140)STATE(int16_t,s452)-=140;
+            if(STATE(int16_t,s453)>140)STATE(int16_t,s453)-=140;
+            /* Finnish front A sets B5=500. In the matched male UK example
+               the fifth-formant bandwidth is 260, while the female example
+               already has 500. Blend the male target halfway and retain the
+               existing female target. Read the same voice parameter used by
+               fifi/acoustic_rules_fifi.c; this is not a sample-rate filter. */
+            int16_t female=0;
+            memcpy(&female,(const unsigned char *)state+DG_BASE+3092+12,sizeof female);
+            if(!female && STATE(int16_t,s401)>260)
+                STATE(int16_t,s401)=(int16_t)((STATE(int16_t,s401)+261)/2);
         }
     }
 '''

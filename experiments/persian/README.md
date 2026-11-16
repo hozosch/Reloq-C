@@ -32,12 +32,17 @@ times. Word-final vowels, explicitly long or stressed vowels, L, consonant
 rules and sample-rate filters stay as before. This needs native-speaker and
 NVDA listening feedback.
 
-The dev117 listening candidate keeps the back-A nasal correction disabled.
+The dev118 listening candidate keeps the back-A nasal correction disabled.
 It broadens the first two *back-A* resonance bandwidths by 25% when they are
 explicit positive values, retaining the formant centres and inherited values.
-For the short-front /æ/, it leaves those two bandwidths alone and tries an
-independent, 50 Hz reduction to explicit F3 targets, informed by the eSpeak
-Persian short-a source; the two synthesizers do not have equivalent spectra.
+For the short-front /æ/, it leaves those two bandwidths alone and moves
+positive F3 targets 140 Hz toward the British "sad" vowel, preserving native
+contextual endpoint differences. The corresponding Persian number 100 has an
+explicit long-front-A marker, while the written word صد uses short A; both
+are covered. For the male voice, B5 moves halfway from 500 to the British
+example's 260 Hz; the female B5 is already 500 in both and remains unchanged.
+These are listening candidates, not claims that all Persian and British vowel
+contexts should have identical acoustic targets.
 It blends selected stop release levels and the /m/ and /n/ targets toward
 US-English values, while keeping the existing L, contextual transitions and
 marked uvular/glottal carriers. These limited changes are listening

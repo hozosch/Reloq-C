@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Safely migrate the verified pre-Persian Windows provider build cache.
+"""Safely reuse a verified Windows provider build cache.
 
-The old archive cannot be linked unchanged: the selected Persian translation
-units and the two initialization fixes need new objects. Reuse the unaffected
-language objects only when the exact historical cache and its known source
-transition have been verified. Any unexpected change falls back to a clean
+The selected Persian translation units must be rebuilt after a generator
+change. Reuse unaffected objects only for a specifically named cache whose
+source transition has been checked. Any other change falls back to a clean
 provider build. No synthesized text, phones or audio are cached here.
 """
 from __future__ import annotations
@@ -19,6 +18,11 @@ ROOT = Path(__file__).resolve().parents[1]
 PROVIDER = ROOT / 'vendor/openevv61'
 BUILD = PROVIDER / 'build/windows-release'
 BASE = '0218903296e1828d468933fad04d7745779b5629'
+PREVIOUS_TREE = '793dbb8050ec00f2d8c6ef1e442f2e1e55b9c27f'
+PREVIOUS_KEY = ('persian-windows-provider-gcc14-v2-'
+                '77254c7f7c92a3f5ebf4ef4b51615051f2a0c58884dc7441d9b61e940ba9aaf2')
+MIGRATION_KEY = ('persian-windows-provider-gcc14-v1-'
+                 'eafb701ff0daa266b36f21741a91cf44935fe7d1d5fc200e54f509f1b878b075')
 EXPECTED = {
     'include/reloq_eci.h',
     'vendor/openevv61/Makefile.native',
@@ -36,7 +40,9 @@ CHECKED = {
 }
 INPUTS = ('vendor/openevv61', 'include', 'src/reloq_voice_filter.c',
           'src/reloq_orthography.c', 'src/reloq_german_word_edges.c',
-          'src/reloq_english_word_edges.c', 'experiments/aragonese/build_native_probe.py',
+          'src/reloq_english_word_edges.c', 'src/reloq_persian_acoustics.c',
+          'src/reloq_persian_acoustics.h', 'tools/prepare_persian_provider.py',
+          'experiments/aragonese/build_native_probe.py',
           'experiments/persian/build_native_probe.py')
 
 
@@ -46,12 +52,25 @@ def git(*arguments):
 
 def main():
     try:
-        changed = set(git('diff', '--name-only', BASE, 'HEAD', '--', *INPUTS).splitlines())
-        if changed != EXPECTED:
-            raise ValueError('provider sources differ from the verified migration')
-        for path, expected in CHECKED.items():
-            if git('rev-parse', 'HEAD:' + path) != expected:
-                raise ValueError('provider build instructions changed')
+        key = os.environ.get('PERSIAN_PROVIDER_CACHE_KEY', '')
+        if key == PREVIOUS_KEY:
+            changed = set(git('diff', '--name-only', PREVIOUS_TREE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != {'experiments/persian/build_native_probe.py'}:
+                raise ValueError('provider sources differ from the verified previous build')
+        elif key == MIGRATION_KEY:
+            # This older cache predates the Persian provider and requires the
+            # originally verified, more substantial migration.
+            migration_inputs = tuple(path for path in INPUTS if path not in (
+                'src/reloq_persian_acoustics.c', 'src/reloq_persian_acoustics.h',
+                'tools/prepare_persian_provider.py'))
+            changed = set(git('diff', '--name-only', BASE, 'HEAD', '--', *migration_inputs).splitlines())
+            if changed != EXPECTED:
+                raise ValueError('provider sources differ from the verified migration')
+            for path, expected in CHECKED.items():
+                if git('rev-parse', 'HEAD:' + path) != expected:
+                    raise ValueError('provider build instructions changed')
+        else:
+            raise ValueError('the restored cache is not one of the verified keys')
         makefile = (PROVIDER / 'Makefile.native').read_text(encoding='utf8')
         names = re.search(r'^PERSIAN_NAMES := (.+)$', makefile, re.MULTILINE)
         if names is None or len(names.group(1).split()) != 18 or not BUILD.is_dir():

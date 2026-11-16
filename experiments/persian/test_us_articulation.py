@@ -74,7 +74,7 @@ def main():
                         assert (actual.pcm != before.pcm) == (phone in 'aA'), phone
                         for a, b in zip(rows, old_rows):
                             assert a.tick == b.tick
-                            changed = (10, 14) if phone == 'a' else (15,) if phone == 'A' else ()
+                            changed = (10, 14) if phone == 'a' else (15, 20) if phone == 'A' else ()
                             assert all(a.controls[i] == b.controls[i] for i in range(62)
                                        if i not in changed), (rate, gender, phone)
                         if phone == 'A':
