@@ -87,6 +87,31 @@ def main():
     marked = protected(sequence)
     assert [item.text for item in marked if isinstance(item, native_word)] == ['3', '.', '5'], pieces(marked)
     assert [item.index for item in marked if isinstance(item, IndexCommand)] == [1, 2]
+
+    # Execute the generated driver's actual conversion after the same NVDA
+    # symbol processor and chunk separators used by speech.speak.
+    from build_experimental_nvda import PREFIX, add_persian
+    base = {'manifest.ini': (ROOT / 'addon/synth/manifest.ini').read_bytes(),
+            PREFIX + '__init__.py': (ROOT / 'addon/synth/synthDrivers/reloqC/__init__.py').read_bytes()}
+    tree = ast.parse(add_persian(base, b'dll')[PREFIX + '__init__.py'].decode('utf8'))
+    function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == '_parts')
+    eci = importlib.import_module('probe_driver._reloq_eci_direct')
+    namespace = {'GERMAN': profiles[fa_id], 'LANGUAGES': profiles, 'EciText': eci.EciText,
+                 'EciIndex': eci.EciIndex, 'IndexCommand': IndexCommand,
+                 'CharacterModeCommand': CharacterModeCommand, 'LangChangeCommand': LangChangeCommand,
+                 'NativeDictionaryWord': native_word,
+                 'ReloqPersianJoinerGuard': importlib.import_module('probe_driver._reloq_persian_joiners').ReloqPersianJoinerGuard,
+                 'restore_joiners': lambda value: value}
+    for name in ('PitchCommand', 'RateCommand', 'VolumeCommand', 'EciTagCommand', 'SegmentationGuard',
+                 'CapitalWordCommand', 'BreakCommand', 'PhonemeCommand'):
+        namespace[name] = type(name, (), {})
+    module = ast.fix_missing_locations(ast.Module(body=[function], type_ignores=[]))
+    exec(compile(module, 'generated-nvda-driver', 'exec'), namespace)
+    nvda_sequence = [processors['fa'].processText(item, level.NONE) + '  ' if isinstance(item, str) else item
+                     for item in marked]
+    parts = namespace['_parts'](nvda_sequence, language=profiles[fa_id], languages=profiles)
+    assert ''.join(part.text for part in parts if isinstance(part, eci.EciText)) == 'version   3.5'
+    assert [part.value for part in parts if isinstance(part, eci.EciIndex)] == [1, 2]
     explicit = ['version ', LangChangeCommand('fa_IR'), '3.5']
     assert protected(explicit) == explicit
     spelled = [CharacterModeCommand(True), 'version 3.5', CharacterModeCommand(False)]

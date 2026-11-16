@@ -1,7 +1,6 @@
 """Separate-process eSpeak text analysis for the private Persian prototype."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 import os
 import struct
@@ -9,9 +8,9 @@ import subprocess
 import threading
 
 if __package__:
-    from .espeak_ng_probe import Clause
+    from .espeak_ng_probe import Clause, ReferenceEvent
 else:
-    from espeak_ng_probe import Clause
+    from espeak_ng_probe import Clause, ReferenceEvent
 
 _U32 = struct.Struct('<I')
 _HEADER = struct.Struct('<IBB')
@@ -20,14 +19,6 @@ _EVENT = struct.Struct('<IIII')
 _MAX_REQUEST = 1024 * 1024
 _MAX_RESPONSE = 8 * 1024 * 1024
 _VOICES = {'fa': 1, 'fa-latn': 2, 'en-us': 3}
-
-
-@dataclass(frozen=True)
-class ReferenceEvent:
-    kind: int
-    position: int              # eSpeak's 1-based source character position
-    length: int
-    phone: str = ''
 
 
 def _read_exact(stream, count):

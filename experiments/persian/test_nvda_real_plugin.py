@@ -30,6 +30,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     def __init__(self):
         super().__init__()
         self.players, self.results, self.index, self.audio = [], [], 0, {}
+        self.done_for_case = -1
         wx.CallLater(1500, self.setup)
 
     def fail(self):
@@ -72,6 +73,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if not synthDriverHandler.setSynth('reloqC'):
                 raise RuntimeError('could not select ReLoq C')
             self.synth = synthDriverHandler.getSynth()
+            self.done_signal = synthDriverHandler.synthDoneSpeaking
+            self.done_signal.register(self.speech_done)
+            from speech import speech as speech_module
+            self.speech_manager = getattr(speech_module, '_manager', None)
             for locale in ('fa_IR', 'fa_Latn'):
                 if locale not in self.synth.availableLanguages:
                     raise AssertionError('Persian test profile is absent: ' + locale)
@@ -199,6 +204,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     second = next(row for row in self.results if row['locale'] == locale and row['text'] == commas)
                     if first['pcm_sha256'] != second['pcm_sha256']:
                         raise AssertionError('native bracket melody differs for ' + locale)
+                self.done_signal.unregister(self.speech_done)
                 RESULT.write_text(json.dumps({'ok': True, 'cases': self.results}, ensure_ascii=True), encoding='utf8')
                 return
             locale, text, spelling = self.cases[self.index]
@@ -243,13 +249,35 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
             self.started = time.perf_counter()
-            if spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline'):
+            self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline')
+            if self.pipeline:
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
                                   symbolLevel=(self.symbols.SymbolLevel.MOST if spelling in ('pipeline_most', 'checkbox_checked_most')
                                                else self.symbols.SymbolLevel.NONE))
             else:
                 self.synth.speak([self.index_command(self.index + 1), *sequence])
-            wx.CallLater(1600, self.capture)
+            # Prefer the real completion signal, retaining the original
+            # 1.6-second bound if an NVDA version does not expose it.
+            wx.CallLater(35, self.wait_for_completion, self.index, time.monotonic() + 1.6)
+        except BaseException:
+            self.fail()
+
+    def speech_done(self, synth=None, **_kwargs):
+        if synth is self.synth:
+            self.done_for_case = self.index
+
+    def wait_for_completion(self, index, deadline):
+        try:
+            if index != self.index:
+                return
+            idle = not self.pipeline
+            if self.pipeline and self.speech_manager is not None:
+                idle = (self.speech_manager._hasNoMoreSpeech() and
+                        not self.speech_manager._synthStillSpeaking())
+            if (self.done_for_case == index and idle) or time.monotonic() >= deadline:
+                self.capture()
+            else:
+                wx.CallLater(35, self.wait_for_completion, index, deadline)
         except BaseException:
             self.fail()
 

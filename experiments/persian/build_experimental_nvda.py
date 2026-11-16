@@ -21,7 +21,7 @@ from build_synth import make_entries
 from pe_format import assert_x64_pe
 
 PREFIX = 'synthDrivers/reloqC/'
-MODULES = ('espeak_ng_probe', 'espeak_worker', 'inprocess_espeak', 'text_frontend', 'pinglish_frontend', 'persian_symbols',
+MODULES = ('espeak_ng_probe', 'inprocess_espeak', 'text_frontend', 'pinglish_frontend', 'persian_symbols',
            'reference_alignment', 'hybrid_fa_frontend', 'direct_fa_sequence', 'continuous_plan',
            'continuous_driver', 'nvda_driver_probe')
 
@@ -89,7 +89,7 @@ def add_persian(entries, text_library: bytes):
     if manifest.count('version = "1.4.1"') != 1:
         raise ValueError('the normal version changed; choose an explicit test version')
     # Keep the existing updater's recognized dev-version grammar.
-    manifest = manifest.replace('version = "1.4.1"', 'version = "1.5.0-dev105"', 1)
+    manifest = manifest.replace('version = "1.4.1"', 'version = "1.5.0-dev106"', 1)
     manifest = manifest.replace('summary = "Eloquence C: fifteen language variants"',
                                 'summary = "Eloquence C: Persian and Pinglish test"', 1)
     manifest = re.sub(r'(?m)^description = .*$',

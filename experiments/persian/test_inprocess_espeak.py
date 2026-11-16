@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import ctypes
+import json
 from pathlib import Path
 import sys
 import threading
@@ -26,12 +27,18 @@ def main():
              ('fa', 'آیا NVDA خوب است؟'), ('fa', 'ناموجودمطمئن،سلام؟'),
              ('fa-latn', 'salam donya'), ('fa-latn', 'khubtar'),
              ('en-us', 'NVDA is reading English.'), ('en-us', 'one, two, three?'))
+    corpus = tuple((row['voice'], row['text']) for row in
+                   (json.loads(line) for line in Path(__file__).with_name('reference_espeak_1_51.jsonl')
+                    .read_text(encoding='utf8').splitlines()) if row['voice'] in ('fa', 'fa-latn'))
     with EspeakPhonemeProbe(args.espeak_library, args.data_parent) as host, \
          EspeakWorker(args.worker, args.espeak_library, args.data_parent) as isolated:
         expected = {(voice, text, sep): isolated.translate(text, voice=voice, separator=sep)
                     for voice, text in cases for sep in ('', '|')}
         events = {(voice, text, slow): isolated.events(text, voice=voice, normal_speed=slow)
                   for voice, text in cases for slow in (False, True)}
+        corpus_phones = {(voice, text): isolated.translate(text, voice=voice, separator='|')
+                         for voice, text in corpus}
+        corpus_events = {(voice, text): isolated.events(text, voice=voice) for voice, text in corpus}
         host._dll.espeak_SetParameter(1, 235, 0)
         host._dll.espeak_GetCurrentVoice.restype = ctypes.c_void_p
         host._dll.espeak_SetSynthCallback.argtypes = (_Callback,)
@@ -58,6 +65,9 @@ def main():
                         assert first.events(text, voice=voice, normal_speed=slow) == events[voice, text, slow]
                     assert host._dll.espeak_GetCurrentVoice() == host_voice
                     assert host._dll.espeak_GetParameter(1, 1) == 235
+                for voice, text in corpus:
+                    assert first.translate(text, voice=voice, separator='|') == corpus_phones[voice, text]
+                    assert first.events(text, voice=voice) == corpus_events[voice, text]
                 sentence = ctypes.create_string_buffer(b'Testing the host eSpeak callback.\0')
                 assert host._dll.espeak_Synth(sentence, len(sentence), 0, 1, 0, 1, None, None) == 0
                 assert host_callbacks, 'the private callback replaced the host callback'

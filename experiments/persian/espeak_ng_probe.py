@@ -1,9 +1,8 @@
 """Isolated eSpeak NG text-to-phoneme probe for Persian frontend research.
 
-Run this in a separate process, not inside NVDA: eSpeak's voice and decoder
-state are process-global.  This deliberately returns eSpeak phoneme strings
-and clause flags; mapping to Finnish phones and routing embedded Latin to
-ReLoq US English are separate, unfinished steps.
+The public data types are also used by the private in-process adapter.
+EspeakPhonemeProbe itself loads the original library directly and is for
+standalone comparison only: its voice and decoder state are process-global.
 """
 from __future__ import annotations
 
@@ -18,6 +17,14 @@ import threading
 class Clause:
     phonemes: str
     terminator: int
+
+
+@dataclass(frozen=True)
+class ReferenceEvent:
+    kind: int
+    position: int              # eSpeak's 1-based source character position
+    length: int
+    phone: str = ''
 
 
 class EspeakPhonemeProbe:

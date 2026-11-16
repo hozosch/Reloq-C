@@ -15,7 +15,6 @@ import threading
 import unicodedata
 
 if __package__:
-    from .espeak_worker import EspeakWorker
     from .inprocess_espeak import InProcessEspeak
     from .pinglish_frontend import latin_name, normalize_pinglish
     from .persian_symbols import SYMBOL_TAGS, UNICODE_TAG
@@ -23,7 +22,6 @@ if __package__:
                                       unpositioned_reference_input)
     from .text_frontend import SpeechPart, UnsupportedPronunciation, translate_text
 else:
-    from espeak_worker import EspeakWorker
     from inprocess_espeak import InProcessEspeak
     from pinglish_frontend import latin_name, normalize_pinglish
     from persian_symbols import SYMBOL_TAGS, UNICODE_TAG
@@ -193,8 +191,15 @@ class DirectFirstPersian:
                 raise RuntimeError('Persian text frontend is closed')
             if self._worker is None:
                 worker, library, data_parent = self._worker_paths
-                self._worker = (InProcessEspeak(library, data_parent) if worker is None
-                                else EspeakWorker(worker, library, data_parent))
+                if worker is None:
+                    self._worker = InProcessEspeak(library, data_parent)
+                else:
+                    # Only the comparison tests request the old process path.
+                    if __package__:
+                        from .espeak_worker import EspeakWorker
+                    else:
+                        from espeak_worker import EspeakWorker
+                    self._worker = EspeakWorker(worker, library, data_parent)
             return self._worker
 
     def _direct(self, text: str):

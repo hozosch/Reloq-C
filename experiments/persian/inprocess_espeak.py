@@ -14,11 +14,9 @@ import tempfile
 import threading
 
 if __package__:
-    from .espeak_ng_probe import Clause
-    from .espeak_worker import ReferenceEvent
+    from .espeak_ng_probe import Clause, ReferenceEvent
 else:
-    from espeak_ng_probe import Clause
-    from espeak_worker import ReferenceEvent
+    from espeak_ng_probe import Clause, ReferenceEvent
 
 
 _MAX_REQUEST = 1024 * 1024
