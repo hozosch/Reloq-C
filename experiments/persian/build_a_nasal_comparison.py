@@ -7,6 +7,7 @@ the default source or expose a user-facing control.
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -65,7 +66,9 @@ def main():
     else:
         link.append('-pthread')
     link += ['-Wl,--gc-sections,--no-undefined', '-lm', '-o', str(output)]
-    subprocess.run(link, check=True)
+    # LTO creates temporary files and jobserver pipes. Keep concurrent Linux
+    # and Windows comparison links in their own work directories.
+    subprocess.run(link, check=True, env={**os.environ, 'TMPDIR': str(work)})
     print('Comparison engine:', output, flush=True)
 
 
