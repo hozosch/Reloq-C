@@ -19,8 +19,10 @@ on:
       - src/reloq_persian_direct.h
       - include/reloq_eci.h
       - vendor/openevv61/Makefile.native
+      - vendor/openevv61/src/eci/lang/eci_voicetable.c
       - eci/Makefile
       - eci/test_persian_acoustics.py
+      - eci/test_concurrent_startup.py
       - experiments/persian/test_nvda_package_probe.py
       - experiments/persian/test_nvda_real_plugin.py
       - experiments/persian/pinglish_frontend.py
