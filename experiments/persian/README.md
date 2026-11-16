@@ -17,6 +17,27 @@ checks the common native components, not end-to-end Persian playback.
 
 ## Issue 49: listening candidates
 
+The dev122 candidate transfers the US consonant control flow, duration and
+transition calculations for ordinary /p t k b d g f v s z ʃ ʒ/. The native
+affricate expansions for /tʃ dʒ/ use those same US stop and fricative rules.
+US phone and feature names are mapped to Persian's existing phone records;
+the marked uvular and glottal carriers and the Persian /x/ remain separate.
+The former automatic Finnish H impulse after /p t k/ is disabled. American
+transition features instead schedule aspiration, including after final
+/p t k/. The existing Persian L and sentence-melody selection are unchanged.
+The earlier selected D-before-B and explicitly marked affricate-gemination
+rules remain context-specific exceptions.
+
+The short front vowel now shapes F3 through F5 and their bandwidths together,
+while retaining its F1/F2. Its comparison covers individual harmonics at
+multiple matched fundamental frequencies, not just summed frequency bands.
+The other five vowel rules also receive upper-resonance adjustments; /o/ and
+/u/ move F2 slightly as well. The accepted back-A F1/F2 damping is retained,
+and its nasal correction stays off. This is a listening candidate, not proof
+of perceived openness or a claim that every vowel is identical to English.
+`test_us_consonants.py` compares actual consonant frame trajectories, including
+initial and final /tʃ dʒ/ and /p t k/ across all six neighboring vowels.
+
 The dev115 candidate preserves the US-English pitch contour within an English
 segment of a Persian/English utterance. Only its first and/or last 45 ms of
 voicing blend towards the existing Persian pilot at an actual language switch;

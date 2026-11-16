@@ -78,39 +78,14 @@ def main():
     assert len(long_j) > len(single_j)
     assert render(args.candidate, 0x90000, j_text, scoped=True,
                   geminates=((1 << 16) | 2,)) == single_j
-    # An explicit H uses the already accepted 60% native Finnish impulse.
-    # After a nasal, the automatic route must produce exactly that same H.
-    for automatic, explicit in (
-        ('`[.1am.0per]', '`[.1am.0pher]'),
-        ('`[.0em.1te.0han]', '`[.0em.1the.0han]'),
-        ('`[.1em.0kan]', '`[.1em.0khan]'),
-        ('`[.0ran.1pa]', '`[.0ran.1pha]'),
-        ('`[.0en.1te.0Gab]', '`[.0en.1the.0Gab]'),
-        ('`[.1en.0kar]', '`[.1en.0khar]'),
-    ):
-        assert render(args.candidate, 0x90000, automatic, scoped=True) == \
-               render(args.candidate, 0x90000, explicit, scoped=True), automatic
-    # The same selected impulse must now be present after voiced consonants,
-    # including liquids, while voiceless fricative clusters keep their
-    # previous treatment. The Q and glottal carriers remain separate.
-    for previous in ('l', 'r', 'j', 'v', 'z', 'Z', 'b', 'd', 'g', 'p', 't', 'k'):
-        for stop in 'ptk':
-            automatic = f'`[.1a{previous}.0{stop}a]'
-            explicit = f'`[.1a{previous}.0{stop}ha]'
-            assert render(args.candidate, 0x90000, automatic, scoped=True) == \
-                   render(args.candidate, 0x90000, explicit, scoped=True), automatic
-    for before, after in (('(', ')'), (') ', ''), ('[', ']'), ('{', '}')):
-        for stop in 'ptk':
-            automatic = f'`[.0sA.1lam] {before}`[.1{stop}a]{after}'
-            explicit = f'`[.0sA.1lam] {before}`[.1{stop}ha]{after}'
-            assert render(args.candidate, 0x90000, automatic, scoped=True) == \
-                   render(args.candidate, 0x90000, explicit, scoped=True), automatic
-    for previous in ('f', 's', 'S', 'G'):
-        for stop in 'ptk':
-            automatic = f'`[.1a{previous}.0{stop}a]'
-            explicit = f'`[.1a{previous}.0{stop}ha]'
-            assert render(args.candidate, 0x90000, automatic, scoped=True) != \
-                   render(args.candidate, 0x90000, explicit, scoped=True), automatic
+    # Stop aspiration is now produced by the US-derived stop path, without
+    # automatically inserting the older separate Finnish H impulse. An
+    # explicitly written H remains a separate phoneme.
+    for stop in 'ptk':
+        ordinary = f'`[.1a{stop}.0a]'
+        explicit_h = f'`[.1a{stop}.0ha]'
+        assert render(args.candidate, 0x90000, ordinary, scoped=True) != \
+               render(args.candidate, 0x90000, explicit_h, scoped=True), stop
     with ThreadPoolExecutor(max_workers=2) as pool:
         jobs = [pool.submit(render, args.candidate, 0x90000, tagged, scoped=active)
                 for active in (False, True)]

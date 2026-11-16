@@ -55,7 +55,12 @@ def main():
         key = os.environ.get('PERSIAN_PROVIDER_CACHE_KEY', '')
         if key == PREVIOUS_KEY:
             changed = set(git('diff', '--name-only', PREVIOUS_TREE, 'HEAD', '--', *INPUTS).splitlines())
-            if changed != {'experiments/persian/build_native_probe.py'}:
+            # Both of these inputs are rebuilt below. The scope-selection C
+            # file is its own object; it is not part of the other language
+            # objects in this verified provider cache.
+            allowed = {'experiments/persian/build_native_probe.py',
+                       'src/reloq_persian_acoustics.c'}
+            if not changed or not changed <= allowed:
                 raise ValueError('provider sources differ from the verified previous build')
         elif key == MIGRATION_KEY:
             # This older cache predates the Persian provider and requires the

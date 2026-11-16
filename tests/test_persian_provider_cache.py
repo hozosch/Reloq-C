@@ -25,6 +25,8 @@ class CacheReuseTests(unittest.TestCase):
     def test_rebuilds_selected_objects_or_rejects_unverified_cache(self):
         for key, diff, reusable in (
             (cache.PREVIOUS_KEY, 'experiments/persian/build_native_probe.py', True),
+            (cache.PREVIOUS_KEY, 'experiments/persian/build_native_probe.py\nsrc/reloq_persian_acoustics.c', True),
+            (cache.PREVIOUS_KEY, 'src/reloq_persian_acoustics.h', False),
             (cache.PREVIOUS_KEY, 'include/reloq_eci.h', False),
             ('unverified-key', 'experiments/persian/build_native_probe.py', False),
         ):
@@ -42,6 +44,8 @@ class CacheReuseTests(unittest.TestCase):
                     (build / 'lang' / 'fifi' / Path(name).with_suffix('.o')).touch()
                 untouched = build / 'lang' / 'fifi' / 'unrelated.o'
                 untouched.touch()
+                scope_object = build / 'reloq_persian_acoustics.o'
+                scope_object.touch()
                 (build / 'libreloq61.a').touch()
                 (build / 'persian-provider').mkdir()
                 with patch.object(cache, 'PROVIDER', provider), patch.object(cache, 'BUILD', build), \
@@ -52,6 +56,7 @@ class CacheReuseTests(unittest.TestCase):
                 if reusable:
                     self.assertTrue(untouched.exists())
                     self.assertFalse((build / 'libreloq61.a').exists())
+                    self.assertFalse(scope_object.exists())
                     self.assertFalse((build / 'persian-provider').exists())
                     self.assertFalse(any((build / 'lang' / 'fifi' /
                                           Path(name).with_suffix('.o')).exists() for name in names))

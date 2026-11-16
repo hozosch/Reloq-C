@@ -83,7 +83,7 @@ const char *reloq_fa_scoped_get(const char *name)
     static const struct {const char *key,*value;} selected[]={
         {"RELOQ_FA_PROBE_A","1"}, {"RELOQ_FA_PROBE_Q","7"},
         {"RELOQ_FA_PROBE_X","1"}, {"RELOQ_FA_PROBE_RISE","2"},
-        {"RELOQ_FA_PROBE_H","5"}, {"RELOQ_FA_PROBE_L","4"},
+        {"RELOQ_FA_PROBE_H","0"}, {"RELOQ_FA_PROBE_L","4"},
         {"RELOQ_FA_PROBE_VOWEL","1"}, {"RELOQ_FA_PROBE_S","3"},
         {"RELOQ_FA_PROBE_TIMING","1"},
         {"RELOQ_FA_FRONT_A_ACH","1"},
@@ -92,7 +92,8 @@ const char *reloq_fa_scoped_get(const char *name)
         {"RELOQ_FA_PROBE_GLOTTAL","2"}, {"RELOQ_FA_PROBE_END_H","1"},
         {"RELOQ_FA_PROBE_A_NASAL","0"}, {"RELOQ_FA_PROBE_GLOT_ONSET","1"},
         {"RELOQ_FA_VOWEL_DAMPING","1"}, {"RELOQ_FA_FRONT_A_F3","1"},
-        {"RELOQ_FA_US_ARTICULATION","1"},
+        {"RELOQ_FA_US_ARTICULATION","1"}, {"RELOQ_FA_US_STOPS","1"},
+        {"RELOQ_FA_US_FRICATIVES","1"},
         {"RELOQ_FA_PROBE_END_H_DB","9"}, {"RELOQ_FA_PROBE_K_SHAPE","3"},
         {"RELOQ_FA_E_MODE","1"}, {"RELOQ_FA_E_CONTEXT","22"},
         {"RELOQ_FA_E_TARGET","450,1875,2525"},
