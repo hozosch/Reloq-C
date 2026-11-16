@@ -28,7 +28,7 @@ transition features instead schedule aspiration, including after final
 The earlier selected D-before-B and explicitly marked affricate-gemination
 rules remain context-specific exceptions.
 
-The short front vowel now shapes F3 through F5 and their bandwidths together,
+The short front vowel now shapes F3, F4 and the F3–F5 bandwidths together,
 while retaining its F1/F2. Its comparison covers individual harmonics at
 multiple matched fundamental frequencies, not just summed frequency bands.
 The other five vowel rules also receive upper-resonance adjustments; /o/ and

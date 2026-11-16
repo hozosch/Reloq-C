@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor
+from itertools import groupby
 from pathlib import Path
 import threading
 
@@ -42,11 +43,32 @@ def consonant(engine, scope, phone: str, onset: bool, persian: bool, context='i'
     assert runs, ('cannot locate vowel nucleus', tag)
     begin, end = max(runs, key=lambda pair: pair[1] - pair[0])
     side = list(frames[:begin] if onset else frames[end:])
-    noise = [r for r in side if r.controls[8] > 5]
-    assert noise, ('missing consonant noise', tag)
-    peak = max(noise, key=lambda row: row.controls[8])
+    noise_indices = [i for i, row in enumerate(side) if row.controls[8] > 5]
+    assert noise_indices, ('missing consonant noise', tag)
+    peak = max((side[i] for i in noise_indices), key=lambda row: row.controls[8])
     aspiration = sum(row.controls[7] > 10 and row.controls[2] < 5 for row in side)
-    return len(noise), aspiration, tuple(peak.controls)
+    phases = ()
+    if phone in 'CJ':
+        first, last = noise_indices[0], noise_indices[-1]
+        closure = 0 if onset else first
+        while not onset and closure and side[closure - 1].controls[2] <= 10 and \
+                side[closure - 1].controls[7] <= 10:
+            closure -= 1
+        def phase(row):
+            c = row.controls
+            return c[2] > 10, c[7] > 10, c[8] > 5
+        phases = tuple((kind, sum(1 for _ in group))
+                       for kind, group in groupby(side[closure:last + 1], phase))
+    return len(noise_indices), aspiration, tuple(peak.controls), phases
+
+
+def compare_affricate(a, b, context):
+    # Compare closure and all voicing, aspiration and frication phases. The
+    # neighboring vowel itself is outside this interval.
+    assert len(a[3]) == len(b[3]), (context, a[3], b[3])
+    for actual, reference in zip(a[3], b[3]):
+        assert actual[0] == reference[0] and abs(actual[1] - reference[1]) <= 3, (
+            context, a[3], b[3])
 
 
 def main():
@@ -91,6 +113,8 @@ def main():
                             fraction = .25 if phone == 'g' and onset else .20
                             tolerance = 3 if phone in 'CJ' else max(8, int(b[0] * fraction))
                             assert abs(a[0] - b[0]) <= tolerance, context
+                            if phone in 'CJ':
+                                compare_affricate(a, b, context)
                             for column in (8, 35, 36, 37, 38, 39, 40, 43):
                                 assert abs(a[2][column] - b[2][column]) <= 7, (context, column)
                             if phone in 'ptk':
@@ -116,6 +140,7 @@ def main():
                             desc = (gender, speed, phone, context, onset)
                             assert abs(a[0] - b[0]) <= 3, (desc, a[:2], b[:2])
                             if phone in 'CJ':
+                                compare_affricate(a, b, desc)
                                 for column in (8, 35, 36, 37, 38, 39, 40, 43):
                                     assert abs(a[2][column] - b[2][column]) <= 3, (desc, column)
                             else:

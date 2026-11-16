@@ -45,6 +45,9 @@ on:
       - experiments/persian/test_mixed_pitch_edges.py
       - experiments/persian/test_streamed_sentence.py
       - experiments/persian/test_fricative_identity.py
+      - experiments/persian/test_us_consonants.py
+      - experiments/persian/test_british_front_a.py
+      - experiments/persian/test_front_a_harmonics.py
       - experiments/persian/test_unvoiced_switch.py
       - experiments/persian/test_decimal_routing.py
       - experiments/persian/benchmark_uncached.py
