@@ -1092,6 +1092,7 @@ static int generate_core_impl(const struct reloq61_request *q,struct reloq61_res
     dl->device->index_cb=(void *)index_at;dl->device->index_data=&c;
     eo_registerCallback(h,(void *)message,&c);
     ok=prepared?1:configure(h,q,worker?worker->pcm:pcm);
+    int configured=ok;
     n=strlen(q->text);
     int metadata=!(q->phonemes_only&&q->phoneme_indices);
     for(size_t j=0;j<q->mark_count;++j) {
@@ -1161,10 +1162,15 @@ static int generate_core_impl(const struct reloq61_request *q,struct reloq61_res
         ELOQ_CB(d,0x14)=(void *)stb_staticWordCallback;
         ELOQ_CB(d,0x18)=((ECIinstance *)h->fresh)->thread;
     }
+    int queued=ok;
     if(ok) {
         if(q->phonemes_only)ok=ev_generatePhonemes(h,sizeof c.phon,c.phon);
         else ok=et_synthesize(h)&&es_synchronize(h);
     }
+    if((!ok||r->error||dl->unsupported61) && getenv("RELOQ_RULE_DEBUG"))
+        fprintf(stderr,"provider language=%x phonemes=%d configured=%d queued=%d "
+                "ok=%d error=%d unsupported=%d engine=%d\n",q->language,q->phonemes_only,
+                configured,queued,ok,r->error,dl->unsupported61,getEngsynError(d));
     if(ok&&c.metadata&&q->index)
         while(c.next_mark<q->mark_count) {
             size_t ordinal=c.next_mark++;

@@ -1197,6 +1197,9 @@ int reloq_rules61_phonemes(int language,const unsigned char *text,size_t length,
     memcpy(q.voice,voice,sizeof q.voice);
     struct reloq61_result result={0};
     status=reloq61_generate_phonemes(&q,&result,sink,context);
+    if(status && getenv("RELOQ_RULE_DEBUG"))
+        fprintf(stderr,"rules61 phonemes language=%x status=%d unsupported=%d error=%d\n",
+                language,status,result.unsupported,result.error);
     free(input);free(map);free(marks);return status;
 }
 
