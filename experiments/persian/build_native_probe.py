@@ -1309,18 +1309,14 @@ static int persian_probe_selected_j(void *state,int32_t position)
             int final=persian_probe_cons_word_final(state,at,phone);
             int factor=100;
             /* Phone durations are adjusted independently of the sentence
-               contour. J expands to D+ZH; do not alter its marked geminate. */
+               contour. J expands to D+ZH. Scale every J's ZH alike: the
+               separate D rule must continue to select only marked geminates. */
             if (phone==2) factor=125;
             else if (phone==3 && marker!=3 && marker!=4 && marker!=5) factor=125;
             else if (phone==7) factor=final ? 125 : 110;
             else if (phone==9) factor=final ? 145 : 125;
             else if (phone==11) factor=final ? 140 : 125;
-            else if (phone==12 && previous==5) {
-#ifdef RELOQ_FA_SCOPED_ONSETS
-                if (!reloq_fa_scoped_has_geminates())
-#endif
-                    factor=final ? 135 : 120;
-            }
+            else if (phone==12 && previous==5) factor=final ? 135 : 120;
             if (factor!=100) {
                 int64_t scaled=((int64_t)STATE(int32_t,f20)*factor+50)/100;
                 STATE(int32_t,f20)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;

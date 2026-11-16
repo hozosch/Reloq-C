@@ -140,6 +140,26 @@ def main():
                             old_other.close()
                             new_other.close()
                         checks += 1
+        # A geminate marker naming a nonexistent J must not affect another
+        # J's timing. A valid marker must still lengthen the selected J.
+        for parameter, value in ((SAMPLE_RATE, 3), (GENDER, 0), (NATIVE_SPEED, 98)):
+            candidate.set_parameter(parameter, value)
+        gems = candidate._dll.eciPersianNativeGeminates
+        gems.argtypes, gems.restype = (ctypes.POINTER(ctypes.c_uint32), ctypes.c_size_t), ctypes.c_int
+        prior_scope = scope(1)
+        try:
+            def with_markers(values):
+                selected = (ctypes.c_uint32 * len(values))(*values) if values else None
+                assert gems(selected, len(values)) == 0
+                result, _ = capture(candidate, scope, '`[.0tA.1wA.0Job]', True)
+                return result.pcm
+            plain = with_markers(())
+            assert with_markers(((1 << 16) | 2,)) == plain
+            assert len(with_markers(((1 << 16) | 1,))) > len(plain)
+            checks += 2
+        finally:
+            assert gems(None, 0) == 0
+            scope(prior_scope)
     finally:
         candidate.close()
         us.close()
