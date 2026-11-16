@@ -113,6 +113,29 @@ def main():
             assert [item.value for item in split.parts if isinstance(item, EciIndex)] == [1, 2, 3]
             pcm, marks = render(parts)
             assert pcm and [value for value, _ in marks] == [1, 2, 3]
+            # Some eSpeak versions return valid tags which spell a nearby
+            # word instead of reporting an error for a whole hyphenated
+            # clause. Such a result must never be requested in the first place.
+            original_analyze = frontend.analyze
+            def checked_analyze(value, **kwargs):
+                assert '-' not in value, ('whole hyphenated reference clause', value)
+                return original_analyze(value, **kwargs)
+            frontend.analyze = checked_analyze
+            try:
+                observed = []
+                previous_speak = ScopedDirectPersianEngine._speak_prepared
+                def inspect_speak(instance, prepared, *args, **kwargs):
+                    if prepared.source:
+                        observed.append(prepared.tagged)
+                    return previous_speak(instance, prepared, *args, **kwargs)
+                ScopedDirectPersianEngine._speak_prepared = inspect_speak
+                try:
+                    assert render(parts)[0]
+                finally:
+                    ScopedDirectPersianEngine._speak_prepared = previous_speak
+                assert any(expected in tags for tags in observed), (text, observed)
+            finally:
+                frontend.analyze = original_analyze
         direct_dash = frontend.analyze_direct('سلام-دنیا')
         assert direct_dash and '-' not in direct_dash.parts[0].text
         named_dash = project((EciText('-', character_mode=True),), frontend, allow_fallback=True)

@@ -108,6 +108,35 @@ def _project_direct_native(parts, frontend):
     return ProjectedJob(source, tagged, tuple(result))
 
 
+def _persian_word_hyphen(parts):
+    """Find a non-spelled word hyphen, including across text/index items."""
+    chars = []
+    for part in parts:
+        if isinstance(part, str):
+            chars.extend((char, True) for char in part)
+        elif isinstance(part, EciText) and not part.speed_control:
+            chars.extend((char, not part.character_mode) for char in part.text)
+    def persian_word(item):
+        char, normal = item
+        code = ord(char)
+        return (normal and (0x0600 <= code <= 0x08ff or 0xfb50 <= code <= 0xfeff) and
+                unicodedata.category(char)[0] in ('L', 'M'))
+    for index, (char, normal) in enumerate(chars):
+        if char != '-' or not normal:
+            continue
+        left, right = index - 1, index + 1
+        while left >= 0 and chars[left][1] and chars[left][0] in ' \t':
+            left -= 1
+        while right < len(chars) and chars[right][1] and chars[right][0] in ' \t':
+            right += 1
+        if right < len(chars) and chars[right][0].isdecimal():
+            continue
+        if ((left >= 0 and persian_word(chars[left])) or
+                (right < len(chars) and persian_word(chars[right]))):
+            return True
+    return False
+
+
 def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersian,
             *, allow_fallback: bool = False, pinglish: bool = False) -> ProjectedJob:
     """Use direct analysis and, optionally, verified reference word anchors."""
@@ -117,6 +146,12 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
         projected = _project_direct_native(parts, frontend)
         if projected is not None:
             return _safe_native_punctuation(projected)
+        if allow_fallback and _persian_word_hyphen(parts):
+            # A full reference clause can legally return letter names for a
+            # neighbouring word, so validation of its phone tags alone does
+            # not reveal the error. Let the existing per-word fallback do
+            # the lookup, preserving source indexes and spelling controls.
+            raise UnsupportedPronunciation('Persian word hyphen requires per-word reference analysis')
     spelled = [part for part in parts if isinstance(part, EciText) and part.character_mode]
     runs = []
     if spelled:
