@@ -83,6 +83,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             self.stage.setdefault(name + '_end', time.perf_counter())
                 return observed
             reloq.SynthDriver._protect_before_speech = trace(reloq.SynthDriver._protect_before_speech, 'protect')
+            reloq.SynthDriver._protect_tags = trace(reloq.SynthDriver._protect_tags, 'tags')
+            reloq.protect_joiners = trace(reloq.protect_joiners, 'joiners')
+            reloq.protect_decimals = trace(reloq.protect_decimals, 'decimals')
+            characterProcessing.processSpeechSymbols = trace(characterProcessing.processSpeechSymbols, 'symbols')
             reloq.SynthDriver.speak = trace(reloq.SynthDriver.speak, 'driver')
             EciTextTransport._run_job = trace(EciTextTransport._run_job, 'job')
             nvda_driver_probe.PersianProbeLanguageEngine.speak = trace(
