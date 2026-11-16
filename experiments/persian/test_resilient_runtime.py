@@ -185,10 +185,31 @@ def main():
         bracketed, _ = render(('سلام (دنیا) خوب',))
         native_comma, _ = render(('سلام، دنیا، خوب',))
         assert bracketed == native_comma
+        for bracketed, comma in (('سلام (دنیا)', 'سلام (دنیا),'),
+                                 ('سلام (دنیا):', 'سلام (دنیا:'),
+                                 ('سلام (NVDA)', 'سلام (NVDA),'),
+                                 ('سلام (NVDA):', 'سلام (NVDA:'),
+                                 ('سلام (NVDA): خوب', 'سلام (NVDA: خوب'),
+                                 ('NVDA (سلام)', 'NVDA (سلام),'),
+                                 ('NVDA (سلام): خوب', 'NVDA (سلام: خوب')):
+            actual, marks = render((EciIndex(70), bracketed, EciIndex(71)))
+            expected, expected_marks = render((EciIndex(70), comma, EciIndex(71)))
+            assert actual == expected and marks == expected_marks, bracketed
+        for prefix in ('سلام (دنیا', 'سلام (NVDA'):
+            colon = render((prefix + '):',))[0]
+            comma = render((prefix + '),',))[0]
+            assert colon != comma, 'the following colon must not become a comma contour'
+        for opening, closing in ('()', '[]', '{}'):
+            bracket = 'سلام ' + opening + 'دنیا' + closing
+            assert render((bracket,))[0] == render((bracket + ',',))[0]
+            assert render((bracket + ':',))[0] == render(('سلام ' + opening + 'دنیا:',))[0]
         engine.select_voice(PINGLISH_PROBE.id, '1')
         bracketed, _ = render(('salam (donya) khub',))
         native_comma, _ = render(('salam, donya, khub',))
         assert bracketed == native_comma
+        assert render(('salam (donya)',))[0] == render(('salam (donya),',))[0]
+        assert render(('salam (donya):',))[0] == render(('salam (donya:',))[0]
+        assert render(('salam (donya):',))[0] != render(('salam (donya),',))[0]
         engine.select_voice(PERSIAN_PROBE.id, '1')
         before = len(plans)
         mixed, _ = render(('سلام (hello) دنیا',))

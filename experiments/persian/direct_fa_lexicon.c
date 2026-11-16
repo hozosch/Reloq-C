@@ -250,6 +250,20 @@ static int direct_context_word_exact(const char *word,size_t bytes,int follows_w
 {
     int result=reloq_fa_direct_word(word,bytes,output,capacity);
     if(result)return result;
+    /* Common independent forms of ʿalāve use the same verified reading in
+       all four reference contexts. Keep them direct so "به علاوه" need not
+       initialize the reference engine on first use. */
+    const char *alave=NULL;
+    if(bytes==sizeof "علاوه"-1 && !memcmp(word,"علاوه",bytes))
+        alave="`[.0A.1la.0v'e:']";
+    else if(bytes==sizeof "علاوه‌ی"-1 && !memcmp(word,"علاوه‌ی",bytes))
+        alave="`[.0A.1la.0v'e:'.1j'e:']";
+    if(alave) {
+        size_t n=strlen(alave);
+        if(n>=capacity)return -2;
+        memcpy(output,alave,n+1);
+        return 1;
+    }
     result=direct_vocalized_word(word,bytes,output,capacity);
     if(result)return result;
     size_t pause_lo=0,pause_hi=sizeof fa_pause_entries / sizeof fa_pause_entries[0];

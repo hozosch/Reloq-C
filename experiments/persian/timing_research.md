@@ -317,3 +317,36 @@ exclude the sound device. They establish the location of the first-load cost,
 not a guaranteed improvement on every computer or parity with the native
 English path. NVDA continues to own and invalidate its symbol data; no text,
 phoneme or sentence result is cached by this preparation.
+
+## Initial /æ/ in alāve, 2026-11-16
+
+The pinned eSpeak 1.53 reference gives `علاوه` as `a: l 'A v e:`.
+At 175 WPM, the first front-vowel event interval is 92 ms and the stressed
+back-vowel interval is 124 ms. Those are event intervals, not measured vowel
+boundaries. The former Finnish long-vowel mapping inverted the relationship:
+at native speed 98, the diagnostic nucleus targets were 69.04 and 42.19 ms.
+Using the ordinary front vowel for this word reduces its target to 31.14 ms
+without changing the back vowel, its stress or its accepted formant targets.
+The two within-engine ratios are about 0.74; event intervals and native
+nucleus targets are not directly interchangeable. Before another word, the
+reference's ratio differs, so this does not establish a universal duration
+rule. The correction is limited to `علاوه`, `بعلاوه` and their verified forms.
+
+## Early control-only contour, 2026-11-16
+
+For a long initial segment, the pitch fitted to that segment needs the
+control frames and its internal boundary mark, but not the pilot's final
+audible-sample position. On multicore systems an independently owned Persian
+handle can capture those identical controls without synthesizing discarded
+audio. Once at least 300 ms of safe first-segment audio is available, replay
+starts; the full audible-EOF pilot is then computed for the rest of the
+sentence. Short or unsupported cases keep the existing complete route.
+
+Five alternating local runs using the NVDA transport and fake player gave
+medians of 12.76 ms before and 8.71 ms after for the previously reported
+Persian-first mixed sentence, with loaded handles and no speech-result cache.
+The medians for the first request were 56.74 and 52.17 ms respectively.
+These are not hardware or end-to-end NVDA measurements. Exact PCM and source
+index comparisons, cancellation and fallback checks remain the acceptance
+criteria; the 300-ms reserve is a lower bound, not a guarantee against
+underruns on every device.

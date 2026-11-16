@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from dataclasses import replace
 from pathlib import Path
+from bisect import bisect_right
+import os
 import re
 import unicodedata
 
@@ -176,8 +178,102 @@ def _pinglish_part_runs(parts, home):
     return result
 
 
+_BRACKET_CONTINUATION = re.compile(r'[)\]}](?=\s*(?::|$))')
+
+
+def _bracket_continuations(parts):
+    """Apply native punctuation precedence to a closing bracket.
+
+    A bare closing bracket at EOF receives the native comma contour. Before
+    a colon, let the colon itself determine the contour; remove the intervening
+    closing bracket only from the internal synthesis input. Character mode,
+    explicit sentence endings and user-supplied ECI tags are untouched.
+    """
+    if not any(any(char in (part if isinstance(part, str) else part.text
+                            if isinstance(part, EciText) else '') for char in ')]}')
+               for part in parts):
+        return parts
+    text, spans, length = [], [], 0
+    for index, part in enumerate(parts):
+        value = (part if isinstance(part, str) else part.text if isinstance(part, EciText) else
+                 part.original if isinstance(part, EciCapitalWord) else None)
+        if value is None or isinstance(part, EciText) and part.speed_control:
+            continue
+        spelled = isinstance(part, EciText) and part.character_mode
+        text.append(value)
+        spans.append((length, length + len(value), index, spelled or isinstance(part, EciCapitalWord)))
+        length += len(value)
+    value = ''.join(text)
+    # Raw ECI tags can contain brackets or control their own prosody.
+    if '`' in value or not any(char.isalnum() for char in value):
+        return parts
+    edits = {}
+    ends = [end for _start, end, _index, _spelled in spans]
+    def position(offset):
+        index = bisect_right(ends, offset)
+        if index >= len(spans):
+            return None
+        start, _end, part_index, spelled = spans[index]
+        return part_index, offset - start, spelled
+    span_index = 0
+    for match in _BRACKET_CONTINUATION.finditer(value):
+        offset = match.start()
+        while span_index < len(spans) and spans[span_index][1] <= offset:
+            span_index += 1
+        if span_index == len(spans):
+            break
+        start, _end, index, spelled = spans[span_index]
+        if spelled:
+            continue
+        previous = offset - 1
+        while previous >= 0 and (value[previous].isspace() or value[previous] in ')]}'):
+            previous -= 1
+        if previous < 0 or value[previous] in '.!?؟':
+            continue
+        following = offset + 1
+        while following < len(value) and value[following].isspace():
+            following += 1
+        if following < len(value) and value[following] == ':':
+            # Remove only the closing-bracket cluster and adjacent spaces;
+            # keep the colon and any source indexes in their original order.
+            selected = [position(i) for i in range(previous + 1, following)]
+            if not selected or any(item is None or item[2] for item in selected):
+                continue
+            for part_index, local, _ in selected:
+                edits.setdefault(part_index, {})[local] = ''
+        else:
+            edits.setdefault(index, {})[offset - start] = value[offset] + ','
+    if not edits:
+        return parts
+    result = list(parts)
+    for index, changes in edits.items():
+        part = result[index]
+        value = part if isinstance(part, str) else part.text
+        value = ''.join(changes.get(offset, char) for offset, char in enumerate(value))
+        result[index] = value if isinstance(part, str) else replace(part, text=value)
+    return tuple(result)
+
+
 class PersianProbeLanguageEngine(LanguageEngine):
     """Use English for explicit and clear Latin-script boundaries."""
+
+    def select_voice(self, language, voice):
+        super().select_voice(language, voice)
+        if (self._home[0] not in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) or
+                not isinstance(self._engines.get(self._home[0]), ScopedDirectPersianEngine) or
+                getattr(self, '_persian_contour_worker', None) is not None or
+                (os.cpu_count() or 1) < 2):
+            return
+        if __package__:
+            from .parallel_pilot import ParallelPilot
+        else:
+            from parallel_pilot import ParallelPilot
+        try:
+            # Load a second voice handle in its own thread while NVDA is
+            # selecting the voice. No word, sentence or PCM is retained.
+            self._persian_contour_worker = ParallelPilot(self._dll)
+        except (RuntimeError, OSError):
+            pass
 
     def cancel(self):
         super().cancel()
@@ -277,6 +373,8 @@ class PersianProbeLanguageEngine(LanguageEngine):
                     if value.strip():
                         spoken.add(key[0])
             allowed = {US_ENGLISH.id, PERSIAN_PROBE.id, PINGLISH_PROBE.id}
+            if spoken & {PERSIAN_PROBE.id, PINGLISH_PROBE.id}:
+                output = _bracket_continuations(output)
             if self._home[0] in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) or spoken & {PERSIAN_PROBE.id, PINGLISH_PROBE.id}:
                 # The shared language engine also serves Chinese and other
                 # voices. Preserve their cache while using a fresh, temporary

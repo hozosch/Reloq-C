@@ -10,7 +10,7 @@ import time
 
 from direct_fa_sequence import EciIndex, EciText
 from nvda_driver_probe import (PERSIAN_PROBE, PINGLISH_PROBE, PROFILES,
-                               PersianProbeLanguageEngine, make_language_engine)
+                               PersianProbeLanguageEngine, _bracket_continuations, make_language_engine)
 from _reloq_eci_direct import EciLanguage, PROCESS_TAGS
 from _reloq_eci_transport import EciTextTransport
 from _reloq_languages import FINNISH, US_ENGLISH, language_for
@@ -18,6 +18,15 @@ from test_eci_transport import Player
 
 
 def fake_routing_test():
+    source = (EciText('سلام (NVDA)'), EciIndex(5), EciText(': خوب'))
+    assert _bracket_continuations(source) == (
+        EciText('سلام (NVDA'), EciIndex(5), EciText(': خوب'))
+    assert _bracket_continuations(('سلام (دنیا)',)) == ('سلام (دنیا),',)
+    assert _bracket_continuations(('سلام (دنیا) : خوب',)) == ('سلام (دنیا: خوب',)
+    for source in ((EciText('word '), EciText(')', character_mode=True)),
+                   ('سلام (دنیا؟)',), ('سلام (دنیا).',), (')',),
+                   ('`[.1abc]',), ('سلام (دنیا) خوب',)):
+        assert _bracket_continuations(source) == source, source
     class FakeEngine:
         def __init__(self, _dll, *, dialect, encoding, native_voice):
             self.dialect = dialect

@@ -41,6 +41,14 @@ def main():
         for word, final, nonfinal in sample:
             assert reference_tags(reference, word) == (final, nonfinal, nonfinal, final), word
         assert reference_tags(reference, 'دار') == ('`[.1dar]',) * 4
+        for word, tag in (('علاوه', "`[.0A.1la.0v'e:']"),
+                          ('علاوه‌ی', "`[.0A.1la.0v'e:'.1j'e:']")):
+            assert reference_tags(reference, word) == (tag,) * 4
+            encoded = word.encode('utf8')
+            for follows in (0, 1):
+                result = ctypes.create_string_buffer(2048)
+                assert lookup(encoded, len(encoded), follows, result, len(result)) == 1
+                assert result.value.decode('ascii') == tag
     print(f'Passed {len(rows)} direct NVDA word readings and 201 four-context reference comparisons.')
 
 

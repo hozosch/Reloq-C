@@ -126,6 +126,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', '۱۰۰', False),
                           ('fa_IR', 'متوقف', False),
                           ('fa_IR', 'علامت', False),
+                          ('fa_IR', 'به علاوه', False),
+                          ('fa_IR', 'بعلاوه', False),
+                          ('fa_IR', '+', True),
                           ('fa_IR', 'نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA', 'pipeline_user_latency'),
                           ('fa_IR', 'نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA', 'pipeline_user_latency'),
                           ('fa_IR', 'اکنون نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA', 'pipeline_user_latency'),
@@ -148,6 +151,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'سلام، دنیا، خوب', False),
                           ('fa_Latn', 'salam (donya) khub', False),
                           ('fa_Latn', 'salam, donya, khub', False),
+                          ('fa_IR', 'سلام (دنیا)', 'pipeline_bracket'),
+                          ('fa_IR', 'سلام (دنیا),', 'pipeline_bracket'),
+                          ('fa_IR', 'سلام (NVDA): خوب', 'pipeline_bracket'),
+                          ('fa_IR', 'سلام (NVDA: خوب', 'pipeline_bracket'),
+                          ('fa_IR', 'سلام (دنیا):', 'pipeline_bracket'),
+                          ('fa_IR', 'سلام (دنیا:', 'pipeline_bracket'),
+                          ('fa_Latn', 'salam (donya)', 'pipeline_bracket'),
+                          ('fa_Latn', 'salam (donya),', 'pipeline_bracket'),
                           ('fa_IR', 'احیا مهربد معد معقر', False),
                           ('fa_IR', 'سلام (hello) دنیا', False),
                           ('fa_Latn', 'salam salām donya', False),
@@ -249,6 +260,23 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     second = next(row for row in self.results if row['locale'] == locale and row['text'] == commas)
                     if first['pcm_sha256'] != second['pcm_sha256']:
                         raise AssertionError('native bracket melody differs for ' + locale)
+                for locale, brackets, comma in (
+                        ('fa_IR', 'سلام (دنیا)', 'سلام (دنیا),'),
+                        ('fa_IR', 'سلام (NVDA): خوب', 'سلام (NVDA: خوب'),
+                        ('fa_IR', 'سلام (دنیا):', 'سلام (دنیا:'),
+                        ('fa_Latn', 'salam (donya)', 'salam (donya),')):
+                    first = next(row for row in self.results if row['locale'] == locale and
+                                 row['text'] == brackets and row['spelling'] == 'pipeline_bracket')
+                    second = next(row for row in self.results if row['locale'] == locale and
+                                  row['text'] == comma and row['spelling'] == 'pipeline_bracket')
+                    if first['pcm_sha256'] != second['pcm_sha256']:
+                        raise AssertionError('NVDA lost the continuing bracket tone for ' + locale)
+                fa_colon = next(row for row in self.results if row['text'] == 'سلام (دنیا):' and
+                                row['spelling'] == 'pipeline_bracket')
+                fa_comma = next(row for row in self.results if row['text'] == 'سلام (دنیا),' and
+                                row['spelling'] == 'pipeline_bracket')
+                if fa_colon['pcm_sha256'] == fa_comma['pcm_sha256']:
+                    raise AssertionError('NVDA replaced the colon contour with a comma contour')
                 self.done_signal.unregister(self.speech_done)
                 RESULT.write_text(json.dumps({'ok': True, 'cases': self.results,
                     'first_symbol_preparations': self.symbol_preparations[:4]}, ensure_ascii=True), encoding='utf8')
@@ -292,14 +320,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 # NVDA speaks an object's name, role and state as separate
                 # sequence items; its real preprocessing adds the separators.
                 sequence = [text, 'کادرِ علامت‌زدنی', status]
-            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency'):
+            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_bracket'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
             self.profile_case = spelling in ('pipeline_user_latency', 'driver_user_latency')
             self.stage = {}
             self.started = time.perf_counter()
-            self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
+            self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_bracket', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
             if self.pipeline:
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
                                   symbolLevel=(self.symbols.SymbolLevel.MOST if spelling in ('pipeline_most', 'checkbox_checked_most')
@@ -342,6 +370,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                      for value in player.times[self.before.get(id(player), 0):]]
             if not times:
                 raise RuntimeError('missing NVDA audio timing for ' + ascii(text))
+            if text in ('به علاوه', 'بعلاوه', '+'):
+                tags = ' '.join(self.projected[self.before_projected:])
+                expected = ("`[.0be.0A.1la.0v'e:']" if text == 'بعلاوه' else
+                            "`[.0b'e:'] `[.0A.1la.0v'e:']")
+                if expected not in tags:
+                    raise AssertionError('NVDA lost the corrected alāve reading: ' + ascii(tags))
             if spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most'):
                 tags = ' '.join(self.projected[self.before_projected:])
                 if spelling in ('pipeline', 'pipeline_most') and locale == 'fa_IR' and ('`[.0hen.1ga.0me]' not in tags or
@@ -376,6 +410,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if self.profile_case:
                 result['stage_ms'] = {name: round((value - self.started) * 1000, 1)
                                       for name, value in self.stage.items()}
+            if spelling == 'pipeline_bracket':
+                result['projection'] = ' '.join(self.projected[self.before_projected:])
             self.results.append(result)
             self.index += 1
             self.next()

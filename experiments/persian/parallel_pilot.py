@@ -68,14 +68,14 @@ class ParallelPilot:
                 raise InterruptedError('Persian contour worker closed')
             self._engine = engine
 
-    def submit(self, *, parts, prefix, validate, parameters, dictionary, cancelled, maximum):
+    def submit(self, *, parts, prefix, validate, parameters, dictionary, cancelled, maximum, audio=True):
         with self._guard:
             if self._closed:
                 raise RuntimeError('Persian contour worker is closed')
             return self._executor.submit(self._capture, tuple(parts), tuple(prefix), validate,
-                                         dict(parameters), dictionary, cancelled, maximum)
+                                         dict(parameters), dictionary, cancelled, maximum, audio)
 
-    def _capture(self, parts, prefix, validate, parameters, dictionary, cancelled, maximum):
+    def _capture(self, parts, prefix, validate, parameters, dictionary, cancelled, maximum, audio):
         if cancelled.is_set():
             raise InterruptedError('sentence planning was cancelled')
         if self._engine is None:
@@ -95,7 +95,7 @@ class ParallelPilot:
         if cancelled.is_set():
             raise InterruptedError('sentence planning was cancelled')
         voice = _CaptureVoice(engine, prefix, validate, cancelled)
-        result = FrameCapture(voice._dll).capture(voice, parts, maximum=maximum, audio=True)
+        result = FrameCapture(voice._dll).capture(voice, parts, maximum=maximum, audio=audio)
         if cancelled.is_set() or result is None:
             raise InterruptedError('sentence planning was cancelled')
         return result

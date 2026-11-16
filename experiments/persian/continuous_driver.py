@@ -35,6 +35,7 @@ _TAG = re.compile(r'`\[[^]]+\]')
 _FINAL_U = re.compile(r"(?:u|'u:')\]$")
 _INITIAL_A = re.compile(r"^`\[\.[012](?:a|'a:')")
 _PARALLEL_MIN = 96
+_FAST_PILOT_MIN = 80
 
 
 class _PlanningVoice:
@@ -297,7 +298,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
         def check_cancel():
             if owner._cancelled.is_set():
                 raise InterruptedError('sentence planning was cancelled')
-        def start_prefix(item, bounds, source_marks, capture_api):
+        def start_prefix(item, bounds, source_marks, capture_api, *, minimum_ms=60):
             # Only the selected English-to-Ach transition can reach as far
             # as 200 ms back into the first segment. Other switch edits stay
             # within 30 ms; keep a 60-ms safety margin for those and start
@@ -308,8 +309,8 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
             boundary_ms = round(bounds[1] * 1000 / rate)
             first_end = bisect_left(item.ticks, boundary_ms)
             first = bisect_left(item.ticks, max(0, boundary_ms - reserve))
-            if first < 6 or first >= first_end or item.ticks[first] - item.ticks[0] < 60:
-                return
+            if first < 6 or first >= first_end or item.ticks[first] - item.ticks[0] < minimum_ms:
+                return False
             positions = []
             for segment, offset, _order, mark, value in source_marks:
                 if segment:
@@ -345,6 +346,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
             # has been delivered, then use it for later uncached requests.
             if item.ticks[first] - item.ticks[0] >= 250:
                 warm_parallel()
+            return True
         tags = tuple(_TAG.finditer(sentence[0].text)) if sentence[0].language == 'fa' else ()
         first_has_glide = any(_FINAL_U.search(left.group()) and _INITIAL_A.match(right.group()) and
                               sentence[0].text[left.end():right.start()].isspace()
@@ -353,7 +355,9 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
         plan = context_plan(sentence, fa, en, rate, maximum=30000, source_events=events,
                             guarded_spans=guarded, spelling_spans=spelling, check=check_cancel,
                             trusted_fa=not validate, validate_in_capture=validate,
-                            start_prefix=start_prefix if can_stream else None, parallel_pilot=parallel_pilot)
+                            start_prefix=start_prefix if can_stream else None, parallel_pilot=parallel_pilot,
+                            fast_initial=bool(parallel_pilot and can_stream and
+                                              len(sentence[0].text) >= _FAST_PILOT_MIN))
         original_counts = plan.counts
         selected_sentence(plan, sentence, en, german, rate, check=check_cancel)
         marks = replay_marks(plan, original_counts)

@@ -132,6 +132,14 @@ def word_tag(word: str, *, initial_glottal: bool = False) -> str:
     # not impose a general /æ/ duration rule on other words.
     alamat = (len(phones) >= 6 and phones[0].name == 'a' and phones[0].long and
               tuple(phone.name for phone in phones[:6]) == ('a', 'l', 'A', 'm', 'a', 't'))
+    # In ʿalāve, the eSpeak a: annotation likewise does not mean that
+    # Finnish's long front vowel should be used. Preserve the stressed back
+    # vowel and final E, including the spelling with an attached be-prefix.
+    names = tuple(phone.name for phone in phones)
+    alave_start = (0 if names[:5] == ('a', 'l', 'A', 'v', 'e') else
+                   2 if names[:7] == ('b', 'e', 'a', 'l', 'A', 'v', 'e') else None)
+    if alave_start is not None and not phones[alave_start].long:
+        alave_start = None
     starts = [0]
     for previous, current in zip(vowel_indices, vowel_indices[1:]):
         # Retain the last consonant as the next onset, and also retain a
@@ -154,7 +162,8 @@ def word_tag(word: str, *, initial_glottal: bool = False) -> str:
             phone = phones[position]
             if phone.name in VOWELS:
                 name = VOWELS[phone.name]
-                long = (phone.long and not (alamat and position == 0)) or (iran and position == 2)
+                long = (phone.long and not (alamat and position == 0) and
+                        position != alave_start) or (iran and position == 2)
                 out.append(f"'{name}:'" if long else name)
             else:
                 # Finnish otherwise loses a final H when another word follows.
