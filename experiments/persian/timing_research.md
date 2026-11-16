@@ -422,3 +422,22 @@ intervals, not a guarantee of perceived loudness or clarity. The existing
 source classifier can also include S-like stop releases; the selected /f/
 and vowel checks remain unchanged. Listening at the user's actual output
 device is required before adopting the candidate.
+
+## Remaining mixed-sentence cost, 2026-11-16
+
+The Windows x64 package check for dev112 measured a first fake player feed of
+36.6 ms on its initial request and a median of 11.5 ms for the reported long
+Persian-first mixed sentence with warm handles and no retained speech results.
+The separate native-English examples had a 1.0 ms median after warmup. These
+measurements use different texts and exclude real audio hardware; they do not
+establish the user's end-to-end latency or quantify a universal language gap.
+
+A local profile of mixed cases placed much of the remaining pre-playback work
+in the shared-contour pilot and native context captures. The existing first
+segment can already stream in some cases, but moving only text-event mapping
+or forcing parallel planning for short examples did not remove this work;
+forcing those short cases to use the early pilot sometimes increased startup
+time. Neither that experiment nor the request-local benchmark stores user
+text or pronunciation results. The remaining native port must address the
+sentence planner and its repeated captures while preserving the verified
+prosody, transitions, source indexes, cancellation and fallbacks.
