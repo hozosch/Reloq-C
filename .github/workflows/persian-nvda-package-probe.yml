@@ -123,6 +123,12 @@ jobs:
           run-id: ${{ steps.acoustic.outputs.run_id }}
           github-token: ${{ github.token }}
           path: candidate
+      - uses: actions/download-artifact@v4
+        with:
+          name: persian-a-nasal-comparison
+          run-id: ${{ steps.acoustic.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: comparison
       - name: Build the isolated eSpeak text worker
         shell: pwsh
         run: |
@@ -210,6 +216,8 @@ jobs:
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci.dll -print -quit)
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --output dist/reloq-c-persian-pinglish-1.5.0-dev115.nvda-addon
+          compare=$(find comparison -name eci.dll -print -quit)
+          python -B experiments/persian/build_experimental_nvda.py --dll "$compare" --version 1.5.0-dev116 --output dist/reloq-c-persian-pinglish-1.5.0-dev116.nvda-addon
       - name: Test both choices in real NVDA
         shell: pwsh
         env:
@@ -217,10 +225,12 @@ jobs:
         run: |
           python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon dist/reloq-c-persian-pinglish-1.5.0-dev115.nvda-addon --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
           if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA Persian profile test failed' }
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon dist/reloq-c-persian-pinglish-1.5.0-dev116.nvda-addon --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-comparison-results
+          if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA back-A comparison profile test failed' }
       - uses: actions/upload-artifact@v4
         with:
           name: persian-pinglish-nvda-test
-          path: dist/reloq-c-persian-pinglish-1.5.0-dev115.nvda-addon
+          path: dist/*.nvda-addon
           if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@v4
@@ -230,6 +240,8 @@ jobs:
           path: |
             persian-nvda-results/result.json
             persian-nvda-results/nvda.log
+            persian-nvda-comparison-results/result.json
+            persian-nvda-comparison-results/nvda.log
             persian-timing/uncached-timing.json
             persian-timing/uncached-shared-core.json
             persian-timing/espeak-vowels.json
