@@ -186,6 +186,8 @@ def main():
         # An irrelevant unmappable Persian word marker must not discard an
         # otherwise viable continuous mixed-language sentence.
         original_replay = continuous_driver.FrameReplay.replay
+        original_stream = continuous_driver.FrameStream.available
+        continuous_driver.FrameStream.available = staticmethod(lambda _dll: False)
         replayed = []
         def observe_replay(self, *items, **options):
             result = original_replay(self, *items, **options)
@@ -197,6 +199,7 @@ def main():
             assert render(('سلام ن۱š دنیا',))[0] and replayed
         finally:
             continuous_driver.FrameReplay.replay = original_replay
+            continuous_driver.FrameStream.available = staticmethod(original_stream)
         before = len(plans)
         pcm, marks = render((EciIndex(20), EciPitch(80), 'NVDA خوب است.', EciIndex(21)))
         assert len(plans) > before and marks == [(20, 0), (21, len(pcm))]

@@ -12,7 +12,7 @@ from _reloq_eci_direct import (
     BREATHINESS, EQ_LOW, EciIndex, GENDER, HEAD_SIZE, MELLOW_MODE,
     NATIVE_VOLUME, ROUGHNESS, SAMPLE_RATE, DirectEciEngine, PROCESS_TAGS,
 )
-from _reloq_persian_frames import FrameCapture, FrameReplay
+from _reloq_persian_frames import FrameCapture, FrameReplay, FrameStream
 
 
 def engine(library, dialect):
@@ -63,6 +63,26 @@ def main():
                         lambda index: indexes.append((index, len(audio) // 2)))
                     assert (captured.indexes[0], captured.indexes[-1]) == tuple(indexes), (dialect, rate, gender, captured.indexes, indexes)
                     assert captured.pcm == audio, (dialect, rate, gender, head, len(captured.pcm), len(audio))
+                    # Splitting replay must not reset the Klatt state, alter
+                    # PCM or shift marks at the exact split frame.
+                    assert FrameStream.available(voice._dll)
+                    split = len(rows) // 2
+                    wanted, wanted_marks = bytearray(), []
+                    points = ((0, 41), (split, 42), (len(rows), 43))
+                    assert FrameReplay(voice._dll).replay(
+                        voice, rows, points, wanted.extend,
+                        lambda value: wanted_marks.append((value, len(wanted))))
+                    streamed, streamed_marks = bytearray(), []
+                    stream = FrameStream(voice, streamed.extend,
+                                         lambda value: streamed_marks.append((value, len(streamed))))
+                    try:
+                        stream.append(rows, 0, split, ((0, 41),))
+                        stream.append(rows, split, len(rows), ((0, 42), (len(rows) - split, 43)))
+                        stream.close(flush=True)
+                    finally:
+                        if stream.state:
+                            stream.close()
+                    assert streamed == wanted and streamed_marks == wanted_marks, (dialect, rate, gender, head)
                     checks += 1
         finally:
             voice.close()

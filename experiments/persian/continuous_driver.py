@@ -12,7 +12,7 @@ if __package__:
     from .._reloq_eci_direct import (EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciPitchHz,
                                      EciProsody, EciText,
                                      SAMPLE_RATE, SAMPLE_RATES, PROCESS_TAGS)
-    from .._reloq_persian_frames import FrameCapture, FrameReplay, NativeFrame
+    from .._reloq_persian_frames import FrameCapture, FrameReplay, FrameStream, NativeFrame
     from .._reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from .._reloq_persian_projection import ProjectedJob
     from .direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient
@@ -22,7 +22,7 @@ else:
     from _reloq_eci_direct import (EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciPitchHz,
                                     EciProsody, EciText,
                                     SAMPLE_RATE, SAMPLE_RATES, PROCESS_TAGS)
-    from _reloq_persian_frames import FrameCapture, FrameReplay, NativeFrame
+    from _reloq_persian_frames import FrameCapture, FrameReplay, FrameStream, NativeFrame
     from _reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from _reloq_persian_projection import ProjectedJob
     from direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient
@@ -40,6 +40,7 @@ class _PlanningVoice:
     def __init__(self, owner, key, engine, *, validate=False, prefix=()):
         self.owner, self.key, self.engine, self.validate = owner, key, engine, validate
         self.prefix = tuple(prefix)
+        self._request_phones = {}
         self.raw = engine._voice if isinstance(engine, ScopedDirectPersianEngine) else engine
         self._dll, self._handle = self.raw._dll, self.raw._handle
 
@@ -51,6 +52,10 @@ class _PlanningVoice:
             raise InterruptedError('sentence planning was cancelled')
 
     def _phonemes_for_probe(self, text):
+        if text in self._request_phones:
+            if self.owner._cancelled.is_set():
+                raise InterruptedError('sentence planning was cancelled')
+            return self._request_phones[text]
         self._check()
         cache = getattr(self.owner, '_persian_phoneme_cache', None)
         if cache is None:
@@ -227,7 +232,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
     if not hasattr(fa_engine._voice._dll, 'reloq_fa_replay_frames'):
         return None
     fa_engine._cancelled.clear()
-    restores = []
+    restores, stream_state = [], {}
     try:
         sentence, events, guarded, spelling, validate = [], [], [], [], False
         for segment, (key, items) in enumerate(groups):
@@ -279,32 +284,86 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
                 on_pcm, on_index, cancelled=owner._cancelled)
         en_engine = owner._activate(en_key)
         german_key = owner._key(german_id, en_key[1])
-        german_engine = owner._activate(german_key)
         fa = _PlanningVoice(owner, fa_key, fa_engine, validate=validate, prefix=prefix)
         en = _PlanningVoice(owner, en_key, en_engine, prefix=prefix)
-        german = _PlanningVoice(owner, german_key, german_engine, prefix=prefix)
-        for voice in (fa, en, german):
+        for voice in (fa, en):
             voice.raw._cancelled.clear()
         if owner._cancelled.is_set():
             return False
         # The planner uses private phoneme tags even when the user disables
         # source-side tags. Restore the user's setting before leaving.
-        for voice in (en, german):
+        def enable_tags(voice):
             previous = voice._dll.eciGetParam(voice._handle, PROCESS_TAGS)
             if previous < 0:
                 raise RuntimeError('cannot read native tag setting')
             if previous != 1:
                 voice.raw.set_parameter(PROCESS_TAGS, 1)
                 restores.append((voice.raw, previous))
+        enable_tags(en)
+        german_voice = []
+        def german():
+            if not german_voice:
+                voice = _PlanningVoice(owner, german_key, owner._activate(german_key), prefix=prefix)
+                voice.raw._cancelled.clear()
+                enable_tags(voice)
+                german_voice.append(voice)
+            return german_voice[0]
         rate = SAMPLE_RATES.get(fa._dll.eciGetParam(fa._handle, SAMPLE_RATE))
         if rate is None:
             raise ValueError('invalid sentence sample rate')
         def check_cancel():
             if owner._cancelled.is_set():
                 raise InterruptedError('sentence planning was cancelled')
+        def start_prefix(item, bounds, source_marks, capture_api):
+            # The furthest selected edit reaches 200 ms back from a switch.
+            # Reserve 250 ms, and use this path only when the initial
+            # segment leaves at least 160 ms of audio before that reserve.
+            # NVDA batches 40 ms initially and then 80 ms, retaining a final
+            # 40 ms, so this supplies a useful playback reserve while the
+            # other native context is planned.
+            boundary_ms = round(bounds[1] * 1000 / rate)
+            first_end = bisect_left(item.ticks, boundary_ms)
+            first = bisect_left(item.ticks, max(0, boundary_ms - 250))
+            if first < 20 or first >= first_end or item.ticks[first] - item.ticks[0] < 160:
+                return
+            positions = []
+            for segment, offset, _order, mark, value in source_marks:
+                if segment:
+                    continue
+                source = bisect_left(item.ticks, round(item.indexes[mark] * 1000 / rate))
+                local = (0 if offset == 0 else first_end if offset == len(sentence[0].text) else
+                         max(0, min(first_end, source)))
+                positions.append((local, value))
+            if any(a[0] > b[0] for a, b in zip(positions, positions[1:])):
+                raise RuntimeError('initial source indexes are not ordered')
+            if capture_api.recompute_frication is not None:
+                capture_api.recompute_frication(item.frames, first_end)
+            else:
+                for row in item.frames[:first_end]:
+                    c = row.controls
+                    row.s_frication = int(c[8] > 0 and (c[38] > c[37] + 10 or c[39] > c[37] + 10))
+            first_voice = en if sentence[0].language == 'en-us' else fa
+            first_key = en_key if first_voice is en else fa_key
+            if first_voice is en:
+                # All later English-phone lookups must happen before this
+                # same handle enters replay. These values are request-local.
+                for part in sentence:
+                    if part.language == 'en-us':
+                        en._request_phones[part.text] = en._phonemes_for_probe(part.text)
+            owner._activate(first_key)
+            stream = FrameStream(first_voice.raw, on_pcm, on_index, cancelled=owner._cancelled)
+            stream_state.update(stream=stream, item=item, end=first_end, first=first,
+                                positions=positions, prefix_complete=False, finishing=False)
+            stream.append(item.frames, 0, first, tuple((at, value) for at, value in positions if at < first))
+            stream_state['prefix_complete'] = True
+        tags = tuple(_TAG.finditer(sentence[0].text)) if sentence[0].language == 'fa' else ()
+        first_has_glide = any(_FINAL_U.search(left.group()) and _INITIAL_A.match(right.group()) and
+                              sentence[0].text[left.end():right.start()].isspace()
+                              for left, right in zip(tags, tags[1:]))
+        can_stream = (not first_has_glide and not spelling and FrameStream.available(en._dll))
         plan = context_plan(sentence, fa, en, rate, maximum=30000, source_events=events,
                             guarded_spans=guarded, spelling_spans=spelling, check=check_cancel,
-                            trusted_fa=not validate)
+                            trusted_fa=not validate, start_prefix=start_prefix if can_stream else None)
         original_counts = plan.counts
         selected_sentence(plan, sentence, en, german, rate, check=check_cancel)
         marks = replay_marks(plan, original_counts)
@@ -316,16 +375,55 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
                 # Put an upper bound on captured control-frame memory.
                 while len(cache) > 12 or sum(len(value[0]) for value in cache.values()) > 12 * 1024 * 1024:
                     cache.popitem(last=False)
+        if stream_state:
+            first = stream_state['first']
+            size = first * ctypes.sizeof(NativeFrame)
+            if ctypes.string_at(plan.frames, size) != ctypes.string_at(stream_state['item'].frames, size):
+                _log.warning('The streamed prefix differed from the completed sentence plan')
+            remaining = tuple((at - first, value) for at, value in marks if at >= first)
+            stream_state['finishing'] = True
+            stream_state['stream'].append(plan.frames, first, len(plan.frames), remaining)
+            stream_state['stream'].close(flush=True)
+            return True
     except InterruptedError:
         return False
     except (ValueError, RuntimeError, OSError) as error:
         if owner._cancelled.is_set():
             return False
         _log.warning('Cannot plan a continuous Persian sentence: %s', error)
+        if stream_state:
+            if not stream_state['prefix_complete'] or stream_state['finishing']:
+                # A replay failure may already have emitted part of this
+                # slice. Never restart it or duplicate audible speech.
+                raise
+            # Once the initial audio has escaped, never repeat it by falling
+            # back to the whole job. Complete the first native context, then
+            # speak the remaining original text with its own language engine.
+            stream = stream_state['stream']
+            if stream.voice._callback_error is not None:
+                raise stream.voice._callback_error
+            first = stream_state['first']
+            tail = tuple((at - first, value) for at, value in stream_state['positions'] if at >= first)
+            stream.append(stream_state['item'].frames, first, stream_state['end'], tail)
+            stream.close(flush=True)
+            for group_key, items in groups[1:]:
+                if owner._cancelled.is_set():
+                    return False
+                engine = owner._activate(group_key)
+                if not engine.speak((*prefix, *items), on_pcm, on_index):
+                    return False
+            return True
         return None
     finally:
-        for voice, previous in reversed(restores):
-            voice.set_parameter(PROCESS_TAGS, previous)
+        try:
+            if stream_state and stream_state['stream'].state:
+                try:
+                    stream_state['stream'].close()
+                except InterruptedError:
+                    pass
+        finally:
+            for voice, previous in reversed(restores):
+                voice.set_parameter(PROCESS_TAGS, previous)
     if owner._cancelled.is_set():
         return False
     owner._activate(fa_key)

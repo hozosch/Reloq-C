@@ -1621,3 +1621,41 @@ In both Persian and Pinglish, raw brackets adjacent to phoneme tags are
 separated before reaching the Finnish parser, and raw hyphens become word
 boundaries. Explicit symbol names and spelling are still passed as Persian
 phone tags; native punctuation and index ordering remain intact.
+
+## Uncached mixed-language response and decimal routing
+
+The mixed-sentence planner still captures the established shared contour and
+both native language contexts. Its tick extraction, timeline, pilot audible-end
+scan and frication flags can use private native routines with the previous
+Python implementations retained for older probes. The German Ach reference
+capture no longer renders discarded samples. The German handle is opened only
+when that selected transition is needed.
+
+When the first native context leaves at least 160 ms of audio ahead of a
+250-ms boundary reserve, replay begins while the other context is planned.
+Both frame slices use one uninterrupted native synthesis session. Requests
+that cannot meet the reserve, and first Persian segments containing the
+selected U-to-A glide, keep complete planning before playback. If later
+planning fails after playback starts, the first native context is completed
+and the original remaining segments are spoken through their own engines;
+they are not restarted or dropped. Cancellation releases the replay handle.
+The audible-prefix route does not require a previous sentence-result cache.
+It does not yet make mixed input equivalent in latency to a single native
+language, since the shared contour and language contexts are still planned.
+
+At a language boundary, a bounded inherited voiced carrier is removed before a
+verified voiceless fricative, H or stop only if the corresponding unvoiced
+native frames follow. Stops retain their closure and aspiration. The selected
+NVDA-to-Ach treatment and voiced consonants retain their existing paths.
+
+Neutral number fragments inherit the script context across NVDA text and
+index commands. Thus an English decimal split across several pieces stays in
+the English core, while a standalone number or one in Persian remains Persian.
+The same applies to numbers adjoining a known English exception in Pinglish.
+Explicit language and spelling commands continue to delimit the decision.
+
+`benchmark_uncached.py` measures the first fake WavePlayer feed through the
+actual NVDA transport, separately from the first request with cold handles.
+It clears cross-request plan, phone, Ach and capitalization result caches
+before every utterance, uses different inputs and reports a native-English
+comparison. Its timings do not include a real device or NVDA event dispatch.

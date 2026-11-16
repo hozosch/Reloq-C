@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from pathlib import Path
+import re
 import unicodedata
 
 if __package__:
@@ -77,6 +78,54 @@ def _script_runs(text):
     return tuple(runs)
 
 
+def _persian_part_runs(parts, home):
+    """Keep neutral fragments with their script across NVDA text/index pieces."""
+    result, entries, logical = {}, [], home
+
+    def flush():
+        if not entries:
+            return
+        text = ''.join(value for _, value, _ in entries)
+        runs = _script_runs(text)
+        if runs:
+            spans, at = [], 0
+            for kind, value in runs:
+                spans.append((at, at + len(value), kind))
+                at += len(value)
+            position = 0
+            for index, value, ordinary in entries:
+                end = position + len(value)
+                if ordinary:
+                    pieces = tuple((kind, value[max(a, position) - position:min(b, end) - position])
+                                   for a, b, kind in spans if a < end and b > position)
+                    if pieces:
+                        result[index] = pieces
+                position = end
+        entries.clear()
+
+    for index, part in enumerate(parts):
+        if isinstance(part, EciLanguage):
+            flush()
+            logical = (part.language, part.voice)
+        elif logical[0] == PERSIAN_PROBE.id and isinstance(part, (str, EciText)):
+            text = part if isinstance(part, str) else part.text
+            if ('`' in text or isinstance(part, EciText) and
+                    (part.character_mode or part.speed_control)):
+                flush()
+            else:
+                entries.append((index, text, True))
+        elif logical[0] == PERSIAN_PROBE.id and isinstance(part, EciCapitalWord):
+            runs = _script_runs(part.original)
+            if runs and all(kind == 'en' for kind, _ in runs):
+                entries.append((index, part.original, False))
+            else:
+                flush()
+        elif not isinstance(part, (EciIndex, EciPitch, EciPitchHz, EciProsody)):
+            flush()
+    flush()
+    return result
+
+
 def _pinglish_part_runs(parts, home):
     """Find English exceptions across text chunks without moving commands."""
     result, entries, logical = {}, [], home
@@ -85,8 +134,17 @@ def _pinglish_part_runs(parts, home):
         if not entries:
             return
         text = ''.join(value for _, value in entries)
-        spans = tuple((start, end) for start, end in latin_spans(text)
-                      if english_exception(text[start:end]))
+        words = tuple(latin_spans(text))
+        spans = [(start, end) for start, end in words if english_exception(text[start:end])]
+        for number in re.finditer(r'[+\-−]?[0-9]+(?:[.,][0-9]+)*', text):
+            previous = next(((a, b) for a, b in reversed(words) if b <= number.start()), None)
+            following = next(((a, b) for a, b in words if a >= number.end()), None)
+            if (previous and english_exception(text[previous[0]:previous[1]]) and
+                    not text[previous[1]:number.start()].strip()):
+                spans.append((previous[1], number.end()))
+            elif (previous is None and following and english_exception(text[following[0]:following[1]]) and
+                  not text[number.end():following[0]].strip()):
+                spans.append((number.start(), following[0]))
         offset = 0
         for index, value in entries:
             end = offset + len(value)
@@ -158,6 +216,7 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 output.extend(reversed(events))
                 actual = key
 
+        persian_runs = _persian_part_runs(parts, logical)
         pinglish_runs = _pinglish_part_runs(parts, logical)
         for position, part in enumerate(parts):
             if isinstance(part, EciLanguage):
@@ -172,6 +231,12 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 english = self._key(US_ENGLISH.id, logical[1])
                 for use_english, fragment in pinglish_runs[position]:
                     select(english if use_english else logical)
+                    output.append(replace(part, text=fragment) if isinstance(part, EciText) else fragment)
+                continue
+            if position in persian_runs and logical[0] == PERSIAN_PROBE.id:
+                english = self._key(US_ENGLISH.id, logical[1])
+                for kind, fragment in persian_runs[position]:
+                    select(english if kind == 'en' else logical)
                     output.append(replace(part, text=fragment) if isinstance(part, EciText) else fragment)
                 continue
             if logical[0] == PERSIAN_PROBE.id and ordinary_text:

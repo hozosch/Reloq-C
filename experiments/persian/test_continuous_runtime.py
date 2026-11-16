@@ -11,7 +11,8 @@ import threading
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 from continuous_driver import _PlanningVoice, continuation_comma
-from continuous_plan import CapturedRows, _context, _dense, _fit_context_pitch, persian_proxy_for_english
+from continuous_plan import (CapturedRows, _context, _dense, _fit_context_pitch, _last_audible,
+                             _starts, persian_proxy_for_english)
 from nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, make_language_engine
 from _reloq_eci_direct import EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciText, GENDER, PAUSE_MODE, SAMPLE_RATE
 from _reloq_persian_frames import FrameCapture, NativeFrame
@@ -60,6 +61,7 @@ def main():
         assert api._controls_only is not None and api._sample_count is not None and \
             api.dense_curve is not None and api.fit_pitch is not None, \
             'the native planning capabilities are not exported'
+        assert all((api.last_audible_sample, api.frame_ticks, api.frame_timeline, api.recompute_frication))
         rng = random.Random(20261115)
         for _ in range(40):
             count = rng.randrange(100, 500)
@@ -67,11 +69,26 @@ def main():
             for row in rows:
                 tick += rng.randrange(1, 4)
                 row.tick = tick
-                row.controls[0] = 1
+                row.controls[0] = rng.choice((.5, 1, 1.5, 2.5))
                 row.controls[1] = rng.uniform(70, 300)
                 row.controls[2] = rng.choice((0, 0, 25, 40, 60))
+                row.controls[8] = rng.choice((0, 25, 50))
+                for col in (37, 38, 39):
+                    row.controls[col] = rng.uniform(0, 70)
                 ticks.append(tick)
             item = CapturedRows(b'', {}, rows, ticks)
+            native_ticks = (ctypes.c_int64 * count)()
+            assert api.frame_ticks(rows, count, native_ticks) == 0 and list(native_ticks) == ticks
+            times = (ctypes.c_double * (count + 1))()
+            assert api.frame_timeline(rows, count, times) == 0 and list(times) == _starts(rows)
+            expected_flags = [int(c[8] > 0 and (c[38] > c[37] + 10 or c[39] > c[37] + 10))
+                              for c in (row.controls for row in rows)]
+            api.recompute_frication(rows, count)
+            assert [row.s_frication for row in rows] == expected_flags
+            samples = [rng.randrange(-32768, 32768) for _ in range(count)] + [0, -4, 4, 0] * 20
+            pcm = struct.pack('<' + 'h' * len(samples), *samples)
+            for rate in (8000, 11025, 16000, 22050, 48000):
+                assert _last_audible(pcm, rate, native=api.last_audible_sample) == _last_audible(pcm, rate)
             reference = _dense(item, 1)
             accelerated = _dense(item, 1, native=api.dense_curve)
             assert len(reference) == len(accelerated) and all(

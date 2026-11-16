@@ -68,6 +68,24 @@ class FrameCapture:
                                        ctypes.POINTER(ctypes.c_float), ctypes.c_size_t,
                                        ctypes.c_int64, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64)
             self.fit_pitch.restype = ctypes.c_int
+        self.last_audible_sample = getattr(dll, 'reloq_fa_last_audible_sample', None)
+        if self.last_audible_sample is not None:
+            self.last_audible_sample.argtypes = (ctypes.c_char_p, ctypes.c_size_t)
+            self.last_audible_sample.restype = ctypes.c_int64
+        self.frame_ticks = getattr(dll, 'reloq_fa_frame_ticks', None)
+        if self.frame_ticks is not None:
+            self.frame_ticks.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
+                                         ctypes.POINTER(ctypes.c_int64))
+            self.frame_ticks.restype = ctypes.c_int
+        self.frame_timeline = getattr(dll, 'reloq_fa_frame_timeline', None)
+        if self.frame_timeline is not None:
+            self.frame_timeline.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
+                                            ctypes.POINTER(ctypes.c_double))
+            self.frame_timeline.restype = ctypes.c_int
+        self.recompute_frication = getattr(dll, 'reloq_fa_recompute_frication', None)
+        if self.recompute_frication is not None:
+            self.recompute_frication.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t)
+            self.recompute_frication.restype = None
 
     def capture(self, voice, parts, *, maximum=60000, audio=True):
         if type(maximum) is not int or not 1 <= maximum <= 120000:
@@ -141,3 +159,83 @@ class FrameReplay:
             return True
         finally:
             voice._on_pcm = voice._on_index = None
+
+
+class FrameStream:
+    """Replay consecutive frame slices without resetting the native session."""
+
+    @staticmethod
+    def available(dll):
+        return all(hasattr(dll, name) for name in
+                   ('reloq_fa_replay_begin', 'reloq_fa_replay_append', 'reloq_fa_replay_end'))
+
+    def __init__(self, voice, on_pcm, on_index, *, cancelled=None):
+        voice._assert_owner()
+        self.voice, self.cancelled, self.state = voice, cancelled, ctypes.c_void_p()
+        dll = voice._dll
+        self._begin, self._append, self._end = (dll.reloq_fa_replay_begin,
+                                               dll.reloq_fa_replay_append,
+                                               dll.reloq_fa_replay_end)
+        self._begin.argtypes = (ctypes.c_void_p, ctypes.c_uint32, ctypes.POINTER(ctypes.c_void_p))
+        self._begin.restype = ctypes.c_int
+        self._append.argtypes = (ctypes.c_void_p, ctypes.POINTER(NativeFrame), ctypes.c_size_t,
+                                 ctypes.POINTER(FrameMark), ctypes.c_size_t)
+        self._append.restype = ctypes.c_int
+        self._end.argtypes, self._end.restype = (ctypes.c_void_p, ctypes.c_int), ctypes.c_int
+        if not voice._handle or (cancelled is not None and cancelled.is_set()):
+            raise InterruptedError('native frame stream was cancelled')
+        voice._cancelled.clear()
+        epoch = FrameReplay(dll)._epoch(voice._handle)
+        voice._callback_error = None
+        voice._on_pcm, voice._on_index = on_pcm, on_index
+        try:
+            status = self._begin(voice._handle, epoch, ctypes.byref(self.state))
+            if status == 1 or voice._cancelled.is_set() or (cancelled is not None and cancelled.is_set()):
+                raise InterruptedError('native frame stream was cancelled')
+            if status or not self.state:
+                raise RuntimeError(f'cannot start native frame stream: {status}')
+        except BaseException:
+            if self.state:
+                self._end(self.state, 0)
+                self.state = ctypes.c_void_p()
+            voice._on_pcm = voice._on_index = None
+            raise
+
+    def append(self, frames, first, end, marks=()):
+        if not self.state:
+            raise RuntimeError('native frame stream is closed')
+        if self.cancelled is not None and self.cancelled.is_set():
+            raise InterruptedError('native frame stream was cancelled')
+        if (not isinstance(frames, ctypes.Array) or getattr(frames, '_type_', None) is not NativeFrame
+                or type(first) is not int or type(end) is not int or not 0 <= first <= end <= len(frames)):
+            raise ValueError('invalid native frame slice')
+        marks = tuple(marks)
+        if (any(type(at) is not int or type(value) is not int or not 0 <= at <= end - first
+                or not 0 <= value <= 0x7fffffff for at, value in marks) or
+                any(a[0] > b[0] for a, b in zip(marks, marks[1:]))):
+            raise ValueError('invalid native frame marks')
+        native_marks = (FrameMark * len(marks))(*(FrameMark(*mark) for mark in marks)) if marks else None
+        pointer = ctypes.cast(ctypes.byref(frames, first * ctypes.sizeof(NativeFrame)),
+                              ctypes.POINTER(NativeFrame)) if first < end else None
+        status = self._append(self.state, pointer, end - first, native_marks, len(marks))
+        if self.voice._callback_error is not None:
+            raise self.voice._callback_error
+        if status == 1 or self.voice._cancelled.is_set() or (self.cancelled and self.cancelled.is_set()):
+            raise InterruptedError('native frame stream was cancelled')
+        if status:
+            raise RuntimeError(f'native frame stream failed: {status}')
+
+    def close(self, *, flush=False):
+        if not self.state:
+            return
+        state, self.state = self.state, ctypes.c_void_p()
+        try:
+            status = self._end(state, int(bool(flush)))
+            if self.voice._callback_error is not None:
+                raise self.voice._callback_error
+            if status == 1 or self.voice._cancelled.is_set() or (self.cancelled and self.cancelled.is_set()):
+                raise InterruptedError('native frame stream was cancelled')
+            if status:
+                raise RuntimeError(f'native frame stream ended with error: {status}')
+        finally:
+            self.voice._on_pcm = self.voice._on_index = None

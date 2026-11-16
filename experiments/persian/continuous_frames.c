@@ -61,6 +61,49 @@ int reloq_fa_capture_advance_samples(size_t count)
 FA_EXPORT size_t reloq_fa_capture_sample_count(void)
 { return capture.active && capture.controls_only ? capture.samples : SIZE_MAX; }
 
+/* Scan the already-rendered pilot in native code. Keep the exact threshold
+ * and sample position used by the planner; this does not cache audio. */
+FA_EXPORT int64_t reloq_fa_last_audible_sample(const unsigned char *pcm,size_t bytes)
+{
+    if(!pcm || (bytes & 1) || bytes/2>(size_t)INT64_MAX)return -1;
+    for(size_t i=bytes; i>=2; i-=2) {
+        unsigned sample=(unsigned)pcm[i-2] | ((unsigned)pcm[i-1]<<8);
+        int value=sample>=32768 ? (int)sample-65536 : (int)sample;
+        if(value>4 || value< -4)return (int64_t)(i/2);
+    }
+    return -1;
+}
+
+/* These arrays are request-local; extracting them here avoids one Python
+ * object per control frame while preserving the original order and clock. */
+FA_EXPORT int reloq_fa_frame_ticks(const struct reloq_fa_frame *rows,size_t count,int64_t *ticks)
+{
+    if(!rows || !count || !ticks)return -1;
+    for(size_t i=0;i<count;++i) {
+        if(rows[i].tick<0 || (i && rows[i].tick<=rows[i-1].tick))return -1;
+        ticks[i]=rows[i].tick;
+    }
+    return 0;
+}
+
+FA_EXPORT int reloq_fa_frame_timeline(const struct reloq_fa_frame *rows,size_t count,double *times)
+{
+    if((count && !rows) || !times)return -1;
+    times[0]=0.0;
+    for(size_t i=0;i<count;++i)times[i+1]=times[i]+(double)rows[i].controls[0];
+    return 0;
+}
+
+FA_EXPORT void reloq_fa_recompute_frication(struct reloq_fa_frame *rows,size_t count)
+{
+    if(!rows)return;
+    for(size_t i=0;i<count;++i) {
+        const float *c=rows[i].controls;
+        rows[i].s_frication=c[8]>0 && ((double)c[38]>(double)c[37]+10.0 ||
+                                       (double)c[39]>(double)c[37]+10.0);
+    }
+}
+
 /* The pilot contour and its voiced anchors are request-local. Perform the
  * same interpolation as the Python planner without a Python callback per
  * millisecond or per frame. All arithmetic between stored floats is double. */

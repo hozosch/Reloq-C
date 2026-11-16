@@ -21,6 +21,10 @@ on:
       - experiments/persian/continuous_driver.py
       - experiments/persian/continuous_plan.py
       - experiments/persian/test_continuous_runtime.py
+      - experiments/persian/test_streamed_sentence.py
+      - experiments/persian/test_unvoiced_switch.py
+      - experiments/persian/test_decimal_routing.py
+      - experiments/persian/benchmark_uncached.py
       - experiments/persian/test_native_transition.py
       - experiments/persian/test_front_a_anchor.py
       - experiments/persian/test_resilient_runtime.py
@@ -117,6 +121,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Windows Persian language switching failed' }
           python -B experiments/persian/test_continuous_runtime.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows continuous sentence and source indexes failed' }
+          python -B experiments/persian/test_streamed_sentence.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'Windows incremental sentence, recovery or cancellation failed' }
+          python -B experiments/persian/test_unvoiced_switch.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'Windows voiceless language transitions failed' }
+          python -B experiments/persian/test_decimal_routing.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'English and Pinglish decimal routing failed' }
+          python -B experiments/persian/benchmark_uncached.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data" --output persian-timing/uncached-timing.json
+          if ($LASTEXITCODE -ne 0) { throw 'Windows uncached response benchmark failed' }
           python -B experiments/persian/test_native_transition.py --probe "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'US-guided Persian continuation failed' }
           python -B experiments/persian/test_front_a_anchor.py --probe "$dll"
@@ -130,18 +142,18 @@ jobs:
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci_persian_probe.dll -print -quit)
-          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --text-dll fa-direct.dll --worker fa-espeak-worker.exe --output dist/reloq-c-persian-pinglish-1.5.0-dev102.nvda-addon
+          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --text-dll fa-direct.dll --worker fa-espeak-worker.exe --output dist/reloq-c-persian-pinglish-1.5.0-dev103.nvda-addon
       - name: Test both choices in real NVDA
         shell: pwsh
         env:
           PYTHONIOENCODING: utf-8
         run: |
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon dist/reloq-c-persian-pinglish-1.5.0-dev102.nvda-addon --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon dist/reloq-c-persian-pinglish-1.5.0-dev103.nvda-addon --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
           if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA Persian profile test failed' }
       - uses: actions/upload-artifact@v4
         with:
           name: persian-pinglish-nvda-test
-          path: dist/reloq-c-persian-pinglish-1.5.0-dev102.nvda-addon
+          path: dist/reloq-c-persian-pinglish-1.5.0-dev103.nvda-addon
           if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@v4
@@ -151,5 +163,6 @@ jobs:
           path: |
             persian-nvda-results/result.json
             persian-nvda-results/nvda.log
+            persian-timing/uncached-timing.json
           if-no-files-found: ignore
           retention-days: 7

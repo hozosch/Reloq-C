@@ -234,7 +234,12 @@ def _word_markers(parts):
     return markers
 
 
-def _last_audible(pcm, rate):
+def _last_audible(pcm, rate, *, native=None):
+    if native is not None:
+        sample = native(pcm, len(pcm))
+        if sample < 0:
+            raise ValueError('silent or invalid planning pass')
+        return round(sample * 1000 / rate)
     for pos in range(len(pcm) - 2, -1, -2):
         if abs(struct.unpack_from('<h', pcm, pos)[0]) > 4:
             return round((pos // 2 + 1) * 1000 / rate)
@@ -298,13 +303,18 @@ class CapturedRows:
     ticks: list[int]
 
     @classmethod
-    def from_capture(cls, value):
+    def from_capture(cls, value, *, native=None):
         if value is None:
             raise RuntimeError('native planning was cancelled')
         frames = value.frames()
-        ticks = [row.tick for row in frames]
-        if not ticks or ticks[0] < 0 or any(a >= b for a, b in zip(ticks, ticks[1:])):
-            raise RuntimeError('invalid native planning clock')
+        if native is not None and frames:
+            ticks = (ctypes.c_int64 * len(frames))()
+            if native(frames, len(frames), ticks):
+                raise RuntimeError('invalid native planning clock')
+        else:
+            ticks = [row.tick for row in frames]
+            if not ticks or ticks[0] < 0 or any(a >= b for a, b in zip(ticks, ticks[1:])):
+                raise RuntimeError('invalid native planning clock')
         indexes = {}
         for index, sample in value.indexes:
             if index in indexes:
@@ -413,16 +423,24 @@ class SentencePlan:
     pilot_bounds: tuple[int, ...]
     source_marks: tuple[tuple[int, int, int], ...] = ()
     _timeline: list[float] | None = None
+    _native_timeline: object = None
+    _native_frication: object = None
 
     def timeline(self):
         """Reuse frame times while only resonance or source values change."""
         if self._timeline is None:
-            self._timeline = _starts(self.frames)
+            if self._native_timeline is not None:
+                times = (ctypes.c_double * (len(self.frames) + 1))()
+                if self._native_timeline(self.frames, len(self.frames), times):
+                    raise RuntimeError('invalid native frame timeline')
+                self._timeline = times
+            else:
+                self._timeline = _starts(self.frames)
         return self._timeline
 
 
 def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarded_spans=(),
-                 spelling_spans=(), check=None, trusted_fa=False):
+                 spelling_spans=(), check=None, trusted_fa=False, start_prefix=None):
     parts = tuple(parts)
     if not parts or len(parts) > 32 or {p.language for p in parts} != {'fa', 'en-us'}:
         raise ValueError('expected a bounded mixed English/Persian clause')
@@ -435,7 +453,8 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
     def get(voice, planned, *, audio=True):
         if check:
             check()
-        return CapturedRows.from_capture(capture_api.capture(voice, planned, maximum=maximum, audio=audio))
+        return CapturedRows.from_capture(capture_api.capture(voice, planned, maximum=maximum, audio=audio),
+                                         native=capture_api.frame_ticks)
     all_bracketed = all(_bracket_boundary(parts, edge) for edge in range(1, len(parts)))
     pilot, pilot_pitch, pilot_bounds = None, (), ()
     if all_bracketed:
@@ -473,7 +492,8 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
             native_pitch = None
         pilot_pitch = _dense(pilot, 1, check, native=capture_api.dense_curve if native_pitch else None)
         pilot_bounds = (0, *(round(pilot.indexes[i] * 1000 / rate) for i in range(1, len(parts))),
-                        min(_last_audible(pilot.pcm, rate), len(pilot_pitch) - 1))
+                        min(_last_audible(pilot.pcm, rate, native=capture_api.last_audible_sample),
+                            len(pilot_pitch) - 1))
         if any(a >= b for a, b in zip(pilot_bounds, pilot_bounds[1:])):
             raise RuntimeError('invalid shared sentence boundaries')
     word_markers = _word_markers(parts)
@@ -493,13 +513,26 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
             raise ValueError('invalid source index')
         source_marks.append((segment, offset, order, next_mark + order, value))
     contexts, edges = {}, {}
-    for language, voice in (('fa', fa), ('en-us', en)):
-        item = get(voice, _context(parts, language, en, fa, word_markers, source_marks,
-                                   guarded_spans, spelling_spans), audio=False)
+    voices = (('fa', fa), ('en-us', en))
+    prepared = {}
+    if start_prefix is not None:
+        # Complete all cross-language phoneme probes before the first voice
+        # starts replaying. The other native context can then be captured on
+        # its own handle while that already-safe prefix is playing.
+        prepared = {language: _context(parts, language, en, fa, word_markers, source_marks,
+                                       guarded_spans, spelling_spans)
+                    for language, _ in voices}
+        voices = tuple(sorted(voices, key=lambda pair: pair[0] != parts[0].language))
+    for language, voice in voices:
+        planned = prepared[language] if prepared else _context(
+            parts, language, en, fa, word_markers, source_marks, guarded_spans, spelling_spans)
+        item = get(voice, planned, audio=False)
         bounds = _edges(item, len(parts))
         _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate, check,
                            native=native_pitch if item.ticks[-1] <= 60000 else None)
         contexts[language], edges[language] = item, bounds
+        if start_prefix is not None and language == parts[0].language:
+            start_prefix(item, bounds, source_marks, capture_api)
     chunks, counts, firsts = [], [], []
     for i, part in enumerate(parts):
         item, bounds = contexts[part.language], edges[part.language]
@@ -527,7 +560,9 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
     if any(a[:2] > b[:2] for a, b in zip(replay_marks, replay_marks[1:])):
         raise RuntimeError('source indexes are not ordered')
     return SentencePlan(frames, tuple(counts), contexts, edges, word_markers, pilot,
-                        tuple(pilot_bounds), tuple(replay_marks))
+                        tuple(pilot_bounds), tuple(replay_marks),
+                        _native_timeline=capture_api.frame_timeline,
+                        _native_frication=capture_api.recompute_frication)
 
 
 def replay_marks(plan, original_counts):
@@ -815,6 +850,69 @@ def direct_ach(plan, parts):
     return tuple(cuts)
 
 
+def direct_unvoiced_onsets(plan, parts, en):
+    """Remove inherited voiced carrier before a confirmed voiceless onset.
+
+    The two native context captures can carry the preceding language's vowel
+    into the beginning of the next segment. Keep the preceding vowel intact
+    and remove only a bounded all-voiced lead-in when the following native
+    frames actually contain the expected frication, aspiration or closure.
+    The separately selected Ach transition and voiced consonants are left to
+    their existing paths.
+    """
+    frames, boundaries = plan.frames, _edges_by_count(plan.counts)
+    ranges, counts, cuts = [], list(plan.counts), []
+    for edge in range(1, len(parts)):
+        if _bracket_boundary(parts, edge):
+            continue
+        part = parts[edge]
+        if part.language == 'fa':
+            source = part.text
+        else:
+            try:
+                source = en._phonemes_for_probe(part.text)
+            except (ValueError, RuntimeError, OSError, UnicodeError):
+                continue
+        first_tag = _TAG.search(source)
+        onset = re.match(r'\.[012]([fstpkSh])', first_tag.group(1)) if first_tag else None
+        if onset is None:
+            continue
+        phone = onset.group(1)
+        boundary, end = boundaries[edge - 1], boundaries[edge]
+        if boundary < 1 or boundary >= end or frames[boundary - 1].controls[2] <= 0:
+            continue
+        elapsed, cut = 0.0, None
+        for pos in range(boundary, end):
+            c = frames[pos].controls
+            if c[2] <= 0:
+                expected = (c[8] >= 20 if phone in 'fsS' else
+                            c[7] > 0 if phone == 'h' else c[7] == 0 and c[8] == 0)
+                if expected and 8.0 <= elapsed <= 120.0:
+                    cut = pos
+                break
+            elapsed += float(c[0])
+            if elapsed > 120.0:
+                break
+        if cut is None or cut == boundary:
+            continue
+        ranges.append((boundary, cut))
+        counts[edge] -= cut - boundary
+        cuts.append((edge, elapsed))
+    if ranges:
+        output = (NativeFrame * (len(frames) - sum(b - a for a, b in ranges)))()
+        target, previous = 0, 0
+        for a, b in (*ranges, (len(frames), len(frames))):
+            count = a - previous
+            if count:
+                ctypes.memmove(ctypes.addressof(output) + target * ctypes.sizeof(NativeFrame),
+                               ctypes.addressof(frames) + previous * ctypes.sizeof(NativeFrame),
+                               count * ctypes.sizeof(NativeFrame))
+                target += count
+            previous = b
+        plan.frames, plan.counts, plan._timeline = output, tuple(counts), None
+    return tuple(cuts)
+
+
 @dataclass(frozen=True)
 class GermanAch:
     times: tuple[float, ...]
@@ -838,7 +936,9 @@ def german_ach_template(voice, *, maximum=60000):
     tag = "`[.1'aj'x.0u]"
     # This fixed internal tag is covered by the native transition tests; the
     # captured voiced/noise boundaries below verify the actual result.
-    item = CapturedRows.from_capture(FrameCapture(voice._dll).capture(voice, (tag,), maximum=maximum))
+    capture = FrameCapture(voice._dll)
+    item = CapturedRows.from_capture(capture.capture(voice, (tag,), maximum=maximum, audio=False),
+                                     native=capture.frame_ticks)
     frames = item.frames
     first = next((i for i, row in enumerate(frames)
                   if row.controls[2] > 0 and row.controls[8] > 0 and
@@ -1102,6 +1202,8 @@ def selected_sentence(plan, parts, en, german, rate, *, check=None):
     """Apply the user's selected sentence and A-to-Ach transition."""
     original_counts = plan.counts
     if check: check()
+    direct_unvoiced_onsets(plan, parts, en)
+    if check: check()
     bridged = bridge_sonorants(plan, parts, rate)
     if check: check()
     cuts = direct_ach(plan, parts)
@@ -1109,7 +1211,7 @@ def selected_sentence(plan, parts, en, german, rate, *, check=None):
     continued = bridge_english_continuations(plan, parts, bridged, cuts)
     bridge_remaining_voiced(plan, parts, (*bridged, *continued), cuts)
     if check: check()
-    template = german_ach_template(german) if cuts else None
+    template = german_ach_template(german() if callable(german) else german) if cuts else None
     if check: check()
     extended = extend_english_a(plan, parts, cuts, en) if cuts else ()
     ach = apply_german_ach(plan, parts, cuts, template, en) if template else ()
@@ -1121,7 +1223,10 @@ def selected_sentence(plan, parts, en, german, rate, *, check=None):
     if check: check()
     # Source filters depend on the edited noise-band values, not on the
     # values from the unmodified context capture.
-    for row in plan.frames:
-        c = row.controls
-        row.s_frication = int(c[8] > 0 and (c[38] > c[37] + 10 or c[39] > c[37] + 10))
+    if plan._native_frication is not None:
+        plan._native_frication(plan.frames, len(plan.frames))
+    else:
+        for row in plan.frames:
+            c = row.controls
+            row.s_frication = int(c[8] > 0 and (c[38] > c[37] + 10 or c[39] > c[37] + 10))
     return bridged, cuts, extended, ach, released, f3, faded, glides
