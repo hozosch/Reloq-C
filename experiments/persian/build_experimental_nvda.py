@@ -42,12 +42,19 @@ def add_persian(entries, text_library: bytes):
                             'from ._reloq_persian_bridge import add_profiles, make_engine\n'
                             'from ._reloq_persian_decimals import decimal_pending, protect_decimals\n'
                             'from ._reloq_persian_joiners import (ReloqPersianJoinerGuard, joiner_pending,\n'
-                            '    protect_joiners, restore_joiners)\n' + old_import, 1)
+                            '    prepare_persian_symbols, protect_joiners, restore_joiners)\n' + old_import, 1)
     source = source.replace(old_languages, 'self._languages = add_profiles(dict(LANGUAGES), DLL)', 1)
     source = source.replace(old_factory,
                             'lambda: make_engine(DLL, languages=self._languages,\n'
                             '                language=initial_language, voice=initial_voice)', 1)
     substitutions = (
+        ('        initial_language, initial_voice = self._selectedLanguage, self._voice\n',
+         '        initial_language, initial_voice = self._selectedLanguage, self._voice\n'
+         '        prepare_persian_symbols(self._languages[initial_language].locale)\n'),
+        ('        if selected is not None:\n            self._select_language(selected)\n',
+         '        if selected is not None:\n'
+         '            prepare_persian_symbols(self._languages[selected].locale)\n'
+         '            self._select_language(selected)\n'),
         ('    segmentation_guarded = False\n    last_text_alnum = False',
          '    segmentation_guarded = False\n    persian_joiners = False\n    last_text_alnum = False'),
         ('            said = item\n', '            said = restore_joiners(item) if persian_joiners else item\n'),

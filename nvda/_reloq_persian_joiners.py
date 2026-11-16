@@ -34,6 +34,23 @@ def joiner_pending(sequence):
     return any(isinstance(item, str) and ('\u200c' in item or '\u200d' in item) for item in sequence)
 
 
+def prepare_persian_symbols(locale):
+    """Let NVDA load its locale data when a Persian voice is selected.
+
+    This stores no speech results: NVDA owns and invalidates the symbol
+    processor, including custom symbol definitions, in the usual way.
+    """
+    if locale not in ('fa_IR', 'fa_Latn'):
+        return
+    try:
+        import characterProcessing
+        characterProcessing.processSpeechSymbols(locale, '', characterProcessing.SymbolLevel.NONE)
+    except Exception:
+        # A missing or broken NVDA symbol dictionary must not prevent voice
+        # selection. The ordinary speech path still handles it normally.
+        pass
+
+
 def _persian_letter(char):
     cp = ord(char)
     return ((0x0600 <= cp <= 0x08ff or 0xfb50 <= cp <= 0xfeff) and

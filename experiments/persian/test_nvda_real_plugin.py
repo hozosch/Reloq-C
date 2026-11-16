@@ -72,6 +72,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             # using the same real driver and per-request text processing.
             self.profile_case = False
             self.stage = {}
+            self.symbol_preparations = []
+            original_prepare = reloq.prepare_persian_symbols
+            def observe_prepare(locale):
+                start = time.perf_counter()
+                result = original_prepare(locale)
+                if locale in ('fa_IR', 'fa_Latn'):
+                    self.symbol_preparations.append({'locale': locale,
+                        'milliseconds': round((time.perf_counter() - start) * 1000, 1)})
+                return result
+            reloq.prepare_persian_symbols = observe_prepare
             def trace(method, name):
                 def observed(*args, **kwargs):
                     if self.profile_case:
@@ -229,6 +239,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 ordinary = next(row for row in self.results if row['text'] == 'farsi')
                 if combined['pcm_sha256'] != ordinary['pcm_sha256']:
                     raise AssertionError('combining Latin mark changed the Pinglish word')
+                if not {'fa_IR', 'fa_Latn'}.issubset(
+                        {item['locale'] for item in self.symbol_preparations}):
+                    raise AssertionError('Persian symbol data was not prepared on voice selection')
                 for locale, brackets, commas in (
                         ('fa_IR', 'سلام (دنیا) خوب', 'سلام، دنیا، خوب'),
                         ('fa_Latn', 'salam (donya) khub', 'salam, donya, khub')):
@@ -237,7 +250,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     if first['pcm_sha256'] != second['pcm_sha256']:
                         raise AssertionError('native bracket melody differs for ' + locale)
                 self.done_signal.unregister(self.speech_done)
-                RESULT.write_text(json.dumps({'ok': True, 'cases': self.results}, ensure_ascii=True), encoding='utf8')
+                RESULT.write_text(json.dumps({'ok': True, 'cases': self.results,
+                    'first_symbol_preparations': self.symbol_preparations[:4]}, ensure_ascii=True), encoding='utf8')
                 return
             locale, text, spelling = self.cases[self.index]
             self.speech.cancelSpeech()
