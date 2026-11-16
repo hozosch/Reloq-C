@@ -183,7 +183,7 @@ def main():
     parser.add_argument('--data-parent', type=Path)
     parser.add_argument('--scope-probe', type=Path)
     args = parser.parse_args()
-    paths = (args.native_library, args.worker, args.espeak_library, args.data_parent, args.scope_probe)
+    paths = (args.native_library, args.espeak_library, args.data_parent, args.scope_probe)
     if any(paths) and not all(paths):
         parser.error('provide all acoustic and reference paths, or none')
     fake_routing_test()

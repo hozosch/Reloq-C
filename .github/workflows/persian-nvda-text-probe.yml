@@ -23,6 +23,9 @@ on:
       - experiments/persian/test_direct_nvda_words.py
       - experiments/persian/test_persian_joiners.py
       - nvda/_reloq_persian_joiners.py
+      - nvda/_reloq_persian_decimals.py
+      - experiments/persian/test_persian_decimals.py
+      - experiments/persian/inprocess_espeak.py
       - experiments/persian/reference-nvda/**
       - experiments/persian/direct_fa_extended_suffix_rules.py
       - experiments/persian/test_direct_extended_suffixes.py
@@ -91,6 +94,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian NVDA language routing test failed' }
           python -B experiments/persian/test_persian_joiners.py
           if ($LASTEXITCODE -ne 0) { throw 'Persian joiner symbol-processing test failed' }
+          python -B experiments/persian/test_persian_decimals.py
+          if ($LASTEXITCODE -ne 0) { throw 'Persian English decimal symbol-processing test failed' }
       - name: Obtain NVDA for its eSpeak library and data
         shell: pwsh
         env:

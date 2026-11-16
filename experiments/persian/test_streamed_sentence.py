@@ -16,7 +16,7 @@ from nvda_driver_probe import PERSIAN_PROBE, US_ENGLISH, make_language_engine
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for option in ('scope-probe', 'native-library', 'worker', 'espeak-library', 'data-parent'):
-        parser.add_argument('--' + option, type=Path, required=True)
+        parser.add_argument('--' + option, type=Path, required=option != 'worker')
     args = parser.parse_args()
     engine = make_language_engine(args.scope_probe, args.native_library, args.worker,
                                   args.espeak_library, args.data_parent)

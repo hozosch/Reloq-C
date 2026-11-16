@@ -107,7 +107,7 @@ def measure(args, *, streaming, english=False, fallback=False, cancel_before=Fal
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for option in ('scope-probe', 'native-library', 'worker', 'espeak-library', 'data-parent'):
-        parser.add_argument('--' + option, type=Path, required=True)
+        parser.add_argument('--' + option, type=Path, required=option != 'worker')
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()
     args.available = FrameStream.available
@@ -119,6 +119,7 @@ def main():
                   'native_english': measure(args, streaming=False, english=True)}
     finally:
         FrameStream.available = staticmethod(args.available)
+    result['reference_backend'] = 'worker' if args.worker is not None else 'in-process'
     result['method'] = ('first fake WavePlayer feed through the real NVDA transport; '
                         'different texts with plan, pronunciation and fallback-word result caches '
                         'cleared before every request; handles warmed after the separate first request; '

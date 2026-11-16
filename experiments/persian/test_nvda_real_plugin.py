@@ -139,6 +139,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('en_US', 'version 3.5 is available.', 'decimal_split'),
                           ('fa_IR', 'version 3.5 is available.', 'decimal_pipeline'),
                           ('en_US', 'version 3.5 is available.', 'decimal_pipeline'),
+                          ('fa_IR', 'version 3.5 is available.', 'decimal_indexed_pipeline'),
+                          ('fa_IR', 'version 1,234.5 is available.', 'decimal_grouped_pipeline'),
+                          ('en_US', 'version 1,234.5 is available.', 'decimal_grouped_pipeline'),
                           ('fa_IR', 'تنظیمات را باز کنید', False),
                           ('en_US', 'Open settings', False),
                           ('de_DE', 'Guten Tag.', False)]
@@ -166,11 +169,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     raise AssertionError('English home language changed the mixed sentence')
                 if self.audio['mixed'] == self.audio['english'] + self.audio['persian']:
                     raise AssertionError('mixed sentence was rendered as two disconnected sessions')
-                for mode in ('decimal_split', 'decimal_pipeline'):
+                for mode in ('decimal_split', 'decimal_pipeline', 'decimal_grouped_pipeline'):
                     persian = next(row for row in self.results if row['locale'] == 'fa_IR' and row['spelling'] == mode)
                     english = next(row for row in self.results if row['locale'] == 'en_US' and row['spelling'] == mode)
                     if persian['pcm_sha256'] != english['pcm_sha256']:
                         raise AssertionError('English decimal changed language in the ' + mode + ' case')
+                ordinary = next(row for row in self.results if row['locale'] == 'fa_IR' and row['spelling'] == 'decimal_pipeline')
+                indexed = next(row for row in self.results if row['locale'] == 'fa_IR' and row['spelling'] == 'decimal_indexed_pipeline')
+                if ordinary['pcm_sha256'] != indexed['pcm_sha256']:
+                    raise AssertionError('NVDA indexes changed the English decimal')
                 automatic = next(row for row in self.results
                                  if row['text'] == 'salam phone donya' and row['spelling'] is False)
                 explicit = next(row for row in self.results if row['spelling'] == 'english_exception')
@@ -221,6 +228,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             self.index_command(2000 + self.index), '.', '5 is available.']
             elif spelling == 'decimal_pipeline':
                 sequence = ['version ', '3.5 is available.']
+            elif spelling == 'decimal_indexed_pipeline':
+                sequence = ['version ', '3', self.index_command(3000 + self.index), '.',
+                            self.index_command(4000 + self.index), '5 is available.']
+            elif spelling == 'decimal_grouped_pipeline':
+                sequence = ['version ', '1,234.5 is available.']
             elif spelling in ('checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most'):
                 status = 'بدونِ علامت' if spelling == 'checkbox_unchecked' else 'علامت‌دار'
                 # NVDA speaks an object's name, role and state as separate
@@ -231,7 +243,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
             self.started = time.perf_counter()
-            if spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline'):
+            if spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline'):
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
                                   symbolLevel=(self.symbols.SymbolLevel.MOST if spelling in ('pipeline_most', 'checkbox_checked_most')
                                                else self.symbols.SymbolLevel.NONE))

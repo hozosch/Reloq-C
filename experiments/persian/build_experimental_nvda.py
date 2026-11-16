@@ -1,8 +1,8 @@
 """Build an explicitly labelled Persian/Pinglish NVDA test package.
 
-Only use a Windows DLL and worker which have passed the focused tests. The
-bounded sentence planner uses the selected cross-language transition; some
-uncovered text still needs the isolated reference worker. This script does
+Only use Windows DLLs which have passed the focused tests. The bounded
+sentence planner uses the selected cross-language transition; some uncovered
+text still needs an independently loaded eSpeak reference. This script does
 not publish or replace a release.
 """
 from __future__ import annotations
@@ -21,12 +21,12 @@ from build_synth import make_entries
 from pe_format import assert_x64_pe
 
 PREFIX = 'synthDrivers/reloqC/'
-MODULES = ('espeak_ng_probe', 'espeak_worker', 'text_frontend', 'pinglish_frontend', 'persian_symbols',
+MODULES = ('espeak_ng_probe', 'espeak_worker', 'inprocess_espeak', 'text_frontend', 'pinglish_frontend', 'persian_symbols',
            'reference_alignment', 'hybrid_fa_frontend', 'direct_fa_sequence', 'continuous_plan',
            'continuous_driver', 'nvda_driver_probe')
 
 
-def add_persian(entries, worker: bytes, text_library: bytes):
+def add_persian(entries, text_library: bytes):
     """Extend a baseline package without changing the normal release builder."""
     entries = dict(entries)
     driver = PREFIX + '__init__.py'
@@ -40,6 +40,7 @@ def add_persian(entries, worker: bytes, text_library: bytes):
         raise ValueError('the NVDA driver changed; its Persian adapter must be reviewed')
     source = source.replace(old_import,
                             'from ._reloq_persian_bridge import add_profiles, make_engine\n'
+                            'from ._reloq_persian_decimals import decimal_pending, protect_decimals\n'
                             'from ._reloq_persian_joiners import (ReloqPersianJoinerGuard, joiner_pending,\n'
                             '    protect_joiners, restore_joiners)\n' + old_import, 1)
     source = source.replace(old_languages, 'self._languages = add_profiles(dict(LANGUAGES), DLL)', 1)
@@ -58,9 +59,10 @@ def add_persian(entries, worker: bytes, text_library: bytes):
          'NativeDictionaryWord, CapitalWordCommand, ReloqPersianJoinerGuard}'),
         ('any(isinstance(item, str) and _BUILTIN_BOUNDARY.search(item) for item in sequence))',
          'any(isinstance(item, str) and _BUILTIN_BOUNDARY.search(item) for item in sequence) or\n'
-         '                            joiner_pending(sequence))'),
+         '                            joiner_pending(sequence) or decimal_pending(sequence))'),
         ('        speechSequence[:] = self._protect_tags(prepared, symbolLevel=symbolLevel)',
          '        prepared = self._protect_tags(prepared, symbolLevel=symbolLevel)\n'
+         '        prepared = protect_decimals(self, prepared, symbol_level=symbolLevel)\n'
          '        speechSequence[:] = protect_joiners(self, prepared, symbol_level=symbolLevel)'),
     )
     for old, new in substitutions:
@@ -73,10 +75,10 @@ def add_persian(entries, worker: bytes, text_library: bytes):
     entries[PREFIX + '_reloq_persian_glide.py'] = (ROOT / 'nvda/_reloq_persian_glide.py').read_bytes()
     entries[PREFIX + '_reloq_persian_bridge.py'] = (ROOT / 'nvda/_reloq_persian_bridge.py').read_bytes()
     entries[PREFIX + '_reloq_persian_joiners.py'] = (ROOT / 'nvda/_reloq_persian_joiners.py').read_bytes()
+    entries[PREFIX + '_reloq_persian_decimals.py'] = (ROOT / 'nvda/_reloq_persian_decimals.py').read_bytes()
     entries[PREFIX + '_persian/__init__.py'] = b'"""Private Persian test frontend."""\n'
     for name in MODULES:
         entries[PREFIX + '_persian/' + name + '.py'] = (HERE / (name + '.py')).read_bytes()
-    entries[PREFIX + 'fa-espeak-worker.exe'] = worker
     entries[PREFIX + 'fa-direct.dll'] = text_library
     if 'doc/source.json' in entries:
         metadata = json.loads(entries['doc/source.json'])
@@ -87,7 +89,7 @@ def add_persian(entries, worker: bytes, text_library: bytes):
     if manifest.count('version = "1.4.1"') != 1:
         raise ValueError('the normal version changed; choose an explicit test version')
     # Keep the existing updater's recognized dev-version grammar.
-    manifest = manifest.replace('version = "1.4.1"', 'version = "1.5.0-dev104"', 1)
+    manifest = manifest.replace('version = "1.4.1"', 'version = "1.5.0-dev105"', 1)
     manifest = manifest.replace('summary = "Eloquence C: fifteen language variants"',
                                 'summary = "Eloquence C: Persian and Pinglish test"', 1)
     manifest = re.sub(r'(?m)^description = .*$',
@@ -110,13 +112,11 @@ def add_persian(entries, worker: bytes, text_library: bytes):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dll', type=Path, required=True)
-    parser.add_argument('--worker', type=Path, required=True)
     parser.add_argument('--text-dll', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    assert_x64_pe(args.worker.read_bytes())
     assert_x64_pe(args.text_dll.read_bytes())
-    entries = add_persian(make_entries(args.dll), args.worker.read_bytes(), args.text_dll.read_bytes())
+    entries = add_persian(make_entries(args.dll), args.text_dll.read_bytes())
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(args.output, 'w') as archive:
         for name, data in sorted(entries.items()):

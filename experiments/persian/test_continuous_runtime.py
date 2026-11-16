@@ -22,7 +22,7 @@ from text_frontend import SpeechPart
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for option in ('scope-probe', 'native-library', 'worker', 'espeak-library', 'data-parent'):
-        parser.add_argument('--' + option, type=Path, required=True)
+        parser.add_argument('--' + option, type=Path, required=option != 'worker')
     args = parser.parse_args()
 
     planned = _context((SpeechPart('en-us', 'swapfile again'),), 'en-us', None, None, {},

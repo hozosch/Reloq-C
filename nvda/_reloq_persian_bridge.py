@@ -10,14 +10,14 @@ from ._persian.nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, make_lang
 def _paths(library: Path):
     import globalVars
     parent = Path(globalVars.appDir) / 'synthDrivers'
-    return (library.with_name('fa-direct.dll'), library.with_name('fa-espeak-worker.exe'),
+    return (library.with_name('fa-direct.dll'), None,
             parent / 'espeak.dll', parent)
 
 
 def add_profiles(languages, library: Path):
     """Do not expose test profiles if their private components are absent."""
     text_library, worker, reference, _ = _paths(library)
-    if not all(path.is_file() for path in (text_library, worker, reference, library)):
+    if not all(path.is_file() for path in (text_library, reference, library)):
         return languages
     try:
         dll = ctypes.CDLL(str(library.resolve()))

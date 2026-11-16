@@ -1,9 +1,9 @@
 """Private direct-first Persian analysis with isolated eSpeak fallback.
 
-This experiment has no NVDA integration. Native complete-word rules are used
-when a whole input is covered. In other inputs, retain native punctuation
-boundaries while using the reference worker to analyse each clause. This is
-still a research frontend, not the NVDA speech or symbol-processing API.
+Native complete-word rules are used when a whole input is covered. In other
+inputs, retain native punctuation boundaries while using the isolated
+reference to analyse each clause. The NVDA adapter handles speech and symbols
+separately from this experimental text frontend.
 """
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ import unicodedata
 
 if __package__:
     from .espeak_worker import EspeakWorker
+    from .inprocess_espeak import InProcessEspeak
     from .pinglish_frontend import latin_name, normalize_pinglish
     from .persian_symbols import SYMBOL_TAGS, UNICODE_TAG
     from .reference_alignment import (source_map_for_reference, unpositioned_pinglish_input,
@@ -23,6 +24,7 @@ if __package__:
     from .text_frontend import SpeechPart, UnsupportedPronunciation, translate_text
 else:
     from espeak_worker import EspeakWorker
+    from inprocess_espeak import InProcessEspeak
     from pinglish_frontend import latin_name, normalize_pinglish
     from persian_symbols import SYMBOL_TAGS, UNICODE_TAG
     from reference_alignment import (source_map_for_reference, unpositioned_pinglish_input,
@@ -185,12 +187,14 @@ class DirectFirstPersian:
         self._guard = threading.Lock()
         self._closed = False
 
-    def _fallback(self) -> EspeakWorker:
+    def _fallback(self):
         with self._guard:
             if self._closed:
                 raise RuntimeError('Persian text frontend is closed')
             if self._worker is None:
-                self._worker = EspeakWorker(*self._worker_paths)
+                worker, library, data_parent = self._worker_paths
+                self._worker = (InProcessEspeak(library, data_parent) if worker is None
+                                else EspeakWorker(worker, library, data_parent))
             return self._worker
 
     def _direct(self, text: str):

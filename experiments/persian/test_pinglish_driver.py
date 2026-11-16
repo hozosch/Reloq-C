@@ -175,7 +175,7 @@ def playback_tests(frontend, probe):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--native-library', type=Path, required=True)
-    parser.add_argument('--worker', type=Path, required=True)
+    parser.add_argument('--worker', type=Path)
     parser.add_argument('--espeak-library', type=Path, required=True)
     parser.add_argument('--data-parent', type=Path, required=True)
     parser.add_argument('--scope-probe', type=Path)

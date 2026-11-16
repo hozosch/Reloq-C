@@ -1663,13 +1663,25 @@ native-English comparison. It includes separate indexed reference-fallback
 cases both with and without an intervening stop. Its timings do not include a
 real device or NVDA event dispatch.
 
-The reference helper retains its loaded language tables after an idle stop,
-but an active request remains immediately cancellable. Identical text analysis
-is reused only within an individual alignment attempt; event evidence remains
-checked against the ordinary reference phonemes and positions. Where eSpeak
+The NVDA test package loads a private copy of NVDA's eSpeak library in the
+same process, rather than starting a reference helper process. Its voice and
+callback state remain independent from NVDA's own eSpeak. An idle stop keeps
+the copy loaded; after an interrupted analysis, the private copy is reloaded
+before the next request so no incomplete parser state is reused. The direct
+Persian rules still avoid the reference altogether when they cover a text.
+Identical text analysis is reused only within an individual alignment attempt;
+event evidence remains checked against the ordinary reference phonemes and
+positions. Where eSpeak
 supports it, discarded event audio is generated at a faster rate and restored
 afterward; if its evidence differs, alignment retries at the original rate.
 The audible Eloquence voice and its speech rate are unaffected. The sentence
 planner checks fallback pronunciations during its complete pilot capture before
 streaming, instead of first checking every tag individually; bracket-only
 plans retain the earlier preflight before their first streamed audio.
+
+Before NVDA's Persian symbol processing, English decimal runs are preserved
+as native text commands, so the Persian symbol dictionary cannot replace the
+period with its Persian name. Explicit language boundaries, spelling mode,
+NVDA dictionary matches, and ordinary Persian numbers retain their own paths.
+The same rule applies to Pinglish words already identified as English
+exceptions. The normal native English decimal processing remains in charge.

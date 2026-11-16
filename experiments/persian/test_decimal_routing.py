@@ -13,7 +13,7 @@ from nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, make_la
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for option in ('scope-probe', 'native-library', 'worker', 'espeak-library', 'data-parent'):
-        parser.add_argument('--' + option, type=Path, required=True)
+        parser.add_argument('--' + option, type=Path, required=option != 'worker')
     args = parser.parse_args()
     engine = make_language_engine(args.scope_probe, args.native_library, args.worker,
                                   args.espeak_library, args.data_parent)
@@ -41,6 +41,14 @@ def main():
             actual = render(PERSIAN_PROBE.id, parts)
             expected = render(US_ENGLISH.id, parts)
             assert actual == expected, (parts, len(actual[0]), len(expected[0]), actual[1], expected[1])
+        # NVDA's Persian symbol processor normally turns the decimal point
+        # into a Persian word. The preprocessor passes just the number as a
+        # native text command, preserving the same English output and indexes.
+        processed = ('version   ', EciText('3.5'), ' is available.  ')
+        assert render(PERSIAN_PROBE.id, processed) == render(US_ENGLISH.id, ('version   3.5 is available.  ',))
+        processed_split = ('version   ', EciText('3'), EciIndex(31), EciText('.'),
+                           EciIndex(32), EciText('5'), ' available.  ')
+        assert render(PERSIAN_PROBE.id, processed_split) == render(US_ENGLISH.id, processed_split)
         # A number on its own or next to Persian remains Persian, including
         # when the number was delivered in several indexed fragments.
         assert render(PERSIAN_PROBE.id, ('3.5',))[0] != render(US_ENGLISH.id, ('3.5',))[0]

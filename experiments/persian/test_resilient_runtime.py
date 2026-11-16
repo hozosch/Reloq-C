@@ -22,7 +22,7 @@ from _reloq_languages import US_ENGLISH
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('scope-probe', 'native-library', 'worker', 'espeak-library', 'data-parent'):
-        parser.add_argument('--' + name, type=Path, required=True)
+        parser.add_argument('--' + name, type=Path, required=name != 'worker')
     args = parser.parse_args()
     engine = make_language_engine(args.scope_probe, args.native_library, args.worker,
                                   args.espeak_library, args.data_parent)

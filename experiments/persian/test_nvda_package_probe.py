@@ -9,6 +9,7 @@ import shutil
 import sys
 import tempfile
 import types
+from unittest.mock import patch
 
 from build_experimental_nvda import PREFIX, add_persian
 
@@ -28,14 +29,17 @@ def main():
             'doc/source.json': b'{"build":"normal release"}',
             'locale/de/manifest.ini': b'summary = "Alt"\ndescription = "Alt"\n'}
     text_library = (args.text_library or args.native_library).resolve()
-    entries = add_persian(base, args.worker.read_bytes(), text_library.read_bytes())
+    entries = add_persian(base, text_library.read_bytes())
     assert 'Persian acoustic probe' in json.loads(entries['doc/source.json'])['build']
-    assert b'1.5.0-dev104' in entries['manifest.ini']
+    assert b'1.5.0-dev105' in entries['manifest.ini']
     assert 'Persisch- und Pinglish-Test' in entries['locale/de/manifest.ini'].decode('utf8')
     assert b'add_profiles(dict(LANGUAGES), DLL)' in entries[PREFIX + '__init__.py']
     assert b'lambda: make_engine(' in entries[PREFIX + '__init__.py']
     assert b'protect_joiners(self, prepared' in entries[PREFIX + '__init__.py']
     assert PREFIX + '_reloq_persian_joiners.py' in entries
+    assert PREFIX + '_reloq_persian_decimals.py' in entries
+    assert PREFIX + '_persian/inprocess_espeak.py' in entries
+    assert PREFIX + 'fa-espeak-worker.exe' not in entries
     with tempfile.TemporaryDirectory(prefix='reloq-fa-package-') as temp:
         folder = Path(temp)
         package = folder / 'probe_driver'
@@ -55,23 +59,21 @@ def main():
         library = args.native_library.resolve()
         installed = folder / 'nvda' / 'synthDrivers'
         installed.mkdir(parents=True)
-        worker = package / 'fa-espeak-worker.exe'
-        worker.chmod(0o755)
         sys.modules['globalVars'] = types.SimpleNamespace(appDir=str(installed.parent))
         sys.path.insert(0, str(folder))
         try:
             bridge = importlib.import_module('probe_driver._reloq_persian_bridge')
             languages = importlib.import_module('probe_driver._reloq_languages')
             eci = importlib.import_module('probe_driver._reloq_eci_direct')
-            assert bridge._paths(package / 'eci.dll') == (package / 'fa-direct.dll', worker,
+            assert bridge._paths(package / 'eci.dll') == (package / 'fa-direct.dll', None,
                                                            installed / 'espeak.dll', installed)
             # Keep NVDA's eSpeak in its real directory alongside all of its
             # Windows DLL dependencies; copying espeak.dll alone is not enough.
-            bridge._paths = lambda _library: (text_library, worker,
-                                               args.espeak_library.resolve(), args.data_parent.resolve())
-            worker.rename(worker.with_suffix('.missing'))
+            bridge._paths = lambda _library: (text_library, None,
+                                               installed / 'missing-espeak.dll', args.data_parent.resolve())
             assert bridge.add_profiles(dict(languages.LANGUAGES), library) == languages.LANGUAGES
-            worker.with_suffix('.missing').rename(worker)
+            bridge._paths = lambda _library: (text_library, None,
+                                               args.espeak_library.resolve(), args.data_parent.resolve())
             profiles = bridge.add_profiles(dict(languages.LANGUAGES), library)
             fa, pinglish = bridge.PERSIAN_PROBE, bridge.PINGLISH_PROBE
             assert languages.language_for('fa-IR', languages.GERMAN.id, profiles) == fa.id
@@ -100,6 +102,14 @@ def main():
                 pcm.clear()
                 assert engine.speak(('salam ', eci.EciIndex(4), 'khubtar?'), pcm.extend, lambda _: None)
                 assert pcm
+                engine.select_voice(fa.id, '1')
+                assert frontend.analyze_direct('پژوهشگر') is None
+                with patch('subprocess.Popen', side_effect=AssertionError('unexpected helper process')):
+                    pcm.clear()
+                    assert engine.speak(('NVDA پژوهشگر سلام',), pcm.extend, lambda _: None)
+                    assert pcm
+                inprocess = importlib.import_module('probe_driver._persian.inprocess_espeak')
+                assert isinstance(frontend._worker, inprocess.InProcessEspeak)
             finally:
                 engine.close()
         finally:
