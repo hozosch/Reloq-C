@@ -222,6 +222,10 @@ the first-word-before-another-word / isolated-word ratios were:
 | back A in `ایران` | 0.821 | 0.821 |
 | final E in `نقطه` | 0.903 | 0.614 |
 
+The full matched observations and the screened candidate list are recorded
+in `vowel_timing_reference_1_52.json` for further analysis. This is offline
+research data; the NVDA driver does not load it or use it as a speech cache.
+
 These figures identify contexts for more precise study, not equivalent
 physical vowel boundaries. In particular, the already accepted intermediate
 word-final E and A and the Iran anchor must not be replaced by blindly
