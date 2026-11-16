@@ -350,3 +350,14 @@ These are not hardware or end-to-end NVDA measurements. Exact PCM and source
 index comparisons, cancellation and fallback checks remain the acceptance
 criteria; the 300-ms reserve is a lower bound, not a guarantee against
 underruns on every device.
+
+The English handle's rule parser also performs one-time work on its first
+phoneme request. Selecting a Persian voice now initializes that parser on the
+owning native worker using a neutral discarded probe; no probe result or user
+text is retained. In five alternating local direct-engine comparisons, the
+first reported mixed sentence after voice construction reached its first PCM
+callback at medians of 56.63 ms before and 31.13 ms after. The initialization
+cost is moved into voice selection; it is not eliminated, and a caller that
+speaks immediately may still wait for it. Later uncached requests and the
+audio device have separate costs. Cancellation, dictionaries, restored voice
+settings and speech output must still be tested independently.

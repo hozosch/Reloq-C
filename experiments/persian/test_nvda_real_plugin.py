@@ -73,6 +73,19 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.profile_case = False
             self.stage = {}
             self.symbol_preparations = []
+            self.native_preparations = []
+            old_select = nvda_driver_probe.PersianProbeLanguageEngine.select_voice
+            def observe_select(instance, language, voice):
+                start = time.perf_counter()
+                try:
+                    return old_select(instance, language, voice)
+                finally:
+                    if language in (nvda_driver_probe.PERSIAN_PROBE.id, nvda_driver_probe.PINGLISH_PROBE.id):
+                        self.native_preparations.append({
+                            'language': language,
+                            'milliseconds': round((time.perf_counter() - start) * 1000, 1),
+                            'english_ready': bool(getattr(instance, '_persian_english_prepared', False))})
+            nvda_driver_probe.PersianProbeLanguageEngine.select_voice = observe_select
             original_prepare = reloq.prepare_persian_symbols
             def observe_prepare(locale):
                 start = time.perf_counter()
@@ -279,7 +292,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     raise AssertionError('NVDA replaced the colon contour with a comma contour')
                 self.done_signal.unregister(self.speech_done)
                 RESULT.write_text(json.dumps({'ok': True, 'cases': self.results,
-                    'first_symbol_preparations': self.symbol_preparations[:4]}, ensure_ascii=True), encoding='utf8')
+                    'first_symbol_preparations': self.symbol_preparations[:4],
+                    'first_native_preparations': self.native_preparations[:4]}, ensure_ascii=True), encoding='utf8')
                 return
             locale, text, spelling = self.cases[self.index]
             self.speech.cancelSpeech()

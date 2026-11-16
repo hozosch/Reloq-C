@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 import continuous_driver
 from _reloq_eci_direct import EciIndex, EciPitch, EciProsody, GENDER, HEAD_SIZE, NATIVE_SPEED, SAMPLE_RATE
 from _reloq_persian_frames import FrameCapture
-from nvda_driver_probe import make_language_engine
+from nvda_driver_probe import PERSIAN_PROBE, US_ENGLISH, make_language_engine
 from parallel_pilot import ParallelPilot, _CaptureVoice
 
 
@@ -44,6 +44,17 @@ def main():
         (EciProsody(6, 80), 'او آمد و پنجره را باز کرد و ', EciIndex(10), 'window'),
     )
     try:
+        switched = make_language_engine(args.scope_probe, args.native_library, args.worker,
+                                        args.espeak_library, args.data_parent,
+                                        language=US_ENGLISH.id)
+        try:
+            switched.cancel()
+            switched.select_voice(PERSIAN_PROBE.id, '1')
+            assert switched._persian_english_prepared
+            switched_pcm = bytearray()
+            assert switched.speak(examples[0], switched_pcm.extend, lambda _: None) and switched_pcm
+        finally:
+            switched.close()
         continuous_driver.os.cpu_count = lambda: 1
         single = make_language_engine(args.scope_probe, args.native_library, args.worker,
                                       args.espeak_library, args.data_parent)
@@ -58,6 +69,7 @@ def main():
         # Selecting Persian initializes only the extra voice handle, without
         # retaining a previous text, phone sequence, contour or audio.
         assert engine._persian_contour_worker is not None
+        assert engine._persian_english_prepared and US_ENGLISH.id in engine._engines
         initial_pcm = bytearray()
         assert engine.speak(examples[0], initial_pcm.extend, lambda _: None)
         assert initial_pcm

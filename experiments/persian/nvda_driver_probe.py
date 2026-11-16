@@ -260,20 +260,39 @@ class PersianProbeLanguageEngine(LanguageEngine):
     def select_voice(self, language, voice):
         super().select_voice(language, voice)
         if (self._home[0] not in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) or
-                not isinstance(self._engines.get(self._home[0]), ScopedDirectPersianEngine) or
-                getattr(self, '_persian_contour_worker', None) is not None or
-                (os.cpu_count() or 1) < 2):
+                not isinstance(self._engines.get(self._home[0]), ScopedDirectPersianEngine)):
             return
-        if __package__:
-            from .parallel_pilot import ParallelPilot
-        else:
-            from parallel_pilot import ParallelPilot
-        try:
-            # Load a second voice handle in its own thread while NVDA is
-            # selecting the voice. No word, sentence or PCM is retained.
-            self._persian_contour_worker = ParallelPilot(self._dll)
-        except (RuntimeError, OSError):
-            pass
+        if (getattr(self, '_persian_contour_worker', None) is None and
+                (os.cpu_count() or 1) > 1):
+            if __package__:
+                from .parallel_pilot import ParallelPilot
+            else:
+                from parallel_pilot import ParallelPilot
+            try:
+                # Load a second voice handle in its own thread while NVDA is
+                # selecting the voice. No speech results are retained.
+                self._persian_contour_worker = ParallelPilot(self._dll)
+            except (RuntimeError, OSError):
+                pass
+        if (US_ENGLISH.id in self._languages and
+                not getattr(self, '_persian_english_prepared', False)):
+            home = self._home
+            try:
+                english = self._activate(self._key(US_ENGLISH.id, home[1]))
+                # Trigger the native rules' one-time initialization while
+                # this voice is selected. Discard the neutral probe entirely;
+                # every real text is analyzed again with current dictionaries.
+                # Selection runs on the owning queue after earlier speech has
+                # stopped. Clear a previous stop on this idle handle; a new
+                # stop can still interrupt the probe through the same guard.
+                with self._guard:
+                    english._cancelled.clear()
+                english._phonemes_for_probe('hello')
+                self._persian_english_prepared = True
+            except (AttributeError, OSError, RuntimeError, UnicodeError, ValueError):
+                pass
+            finally:
+                self._activate(home)
 
     def cancel(self):
         super().cancel()
