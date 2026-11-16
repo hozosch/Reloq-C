@@ -1,5 +1,23 @@
 # Persian: first listening comparison
 
+## Current implementation status
+
+The normal native provider now contains the selected thread-scoped Persian
+acoustics, and the shared ECI core exposes text projection, acoustic scope,
+frame capture and replay. The development NVDA package uses that same ECI
+library for its Persian and Pinglish choices. Other languages keep their
+ordinary acoustics while the Persian scope is off.
+
+The language is **not yet fully implemented in the native core**. Mixed-text
+segmentation and sentence planning still run in the NVDA adapter, and words
+outside the direct rules may use an in-process eSpeak text fallback. Persian
+and Pinglish have not yet been registered as native ECI languages or exposed
+as selectable voices in SAPI5 and Android. An Android cross-compilation test
+checks the common native components, not end-to-end Persian playback.
+
+The notes below record the original experiments and may describe older
+private builds or earlier stages of implementation.
+
 ## Target architecture
 
 For the future Persian voice, retain Finnish as the general source of vowel

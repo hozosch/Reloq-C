@@ -22,8 +22,27 @@
  */
 
 #include <stdio.h>
+#include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
+
+#if defined(_WIN32)
+#include <windows.h>
+static SRWLOCK region_lock = SRWLOCK_INIT;
+static SRWLOCK bind_lock = SRWLOCK_INIT;
+static void region_take(void) { AcquireSRWLockExclusive(&region_lock); }
+static void region_drop(void) { ReleaseSRWLockExclusive(&region_lock); }
+static void bind_take(void) { AcquireSRWLockExclusive(&bind_lock); }
+static void bind_drop(void) { ReleaseSRWLockExclusive(&bind_lock); }
+#else
+#include <pthread.h>
+static pthread_mutex_t region_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t bind_lock = PTHREAD_MUTEX_INITIALIZER;
+static void region_take(void) { pthread_mutex_lock(&region_lock); }
+static void region_drop(void) { pthread_mutex_unlock(&region_lock); }
+static void bind_take(void) { pthread_mutex_lock(&bind_lock); }
+static void bind_drop(void) { pthread_mutex_unlock(&bind_lock); }
+#endif
 
 #include "delta.h"
 #include "delta_prov.h"
@@ -62,7 +81,9 @@ static struct {
     unsigned char       *copy;
 } region[REGIONS];
 
-static int regions;
+/* Entries are immutable once published. Readers can scan without taking a
+ * lock while a different language registers more stores. */
+static atomic_int regions;
 
 static void *low_alloc(size_t bytes, const char *what)
 {
@@ -87,21 +108,26 @@ void delta_low_region(const void *at, size_t bytes)
     if (at == 0 || bytes == 0)
         return;
 
-    for (i = 0; i < regions; i++)
-        if (region[i].at == c && region[i].bytes == bytes)
+    region_take();
+    int count = atomic_load_explicit(&regions, memory_order_relaxed);
+    for (i = 0; i < count; i++)
+        if (region[i].at == c && region[i].bytes == bytes) {
+            region_drop();
             return;
+        }
 
-    if (regions >= REGIONS) {
+    if (count >= REGIONS) {
         fprintf(stderr, "evv: more stores of language data than there is room"
                 " to copy\n");
         abort();
     }
 
-    region[regions].at = c;
-    region[regions].bytes = bytes;
-    region[regions].copy = low_alloc(ROUND16(bytes), "the language");
-    memcpy(region[regions].copy, c, bytes);
-    regions++;
+    region[count].at = c;
+    region[count].bytes = bytes;
+    region[count].copy = low_alloc(ROUND16(bytes), "the language");
+    memcpy(region[count].copy, c, bytes);
+    atomic_store_explicit(&regions, count + 1, memory_order_release);
+    region_drop();
 }
 
 /* The same address, in the copy. Anything the machine is handed an address of
@@ -123,14 +149,15 @@ void *delta_low_at(const void *p)
     if (p == 0)
         return 0;
 
-    for (i = 0; i < regions; i++)
+    int count = atomic_load_explicit(&regions, memory_order_acquire);
+    for (i = 0; i < count; i++)
         if (c >= region[i].at && c < region[i].at + region[i].bytes)
             return region[i].copy + (c - region[i].at);
 
     /* Only now the byte after a store, because an address that is one past the
        end of one store and inside another belongs to the one it is inside, and
        the linker is free to put two stores next to each other. */
-    for (i = 0; i < regions; i++)
+    for (i = 0; i < count; i++)
         if (c == region[i].at + region[i].bytes)
             return region[i].copy + region[i].bytes;
 
@@ -148,14 +175,15 @@ void *delta_low_at(const void *p)
    store from another and to count them. */
 const char *delta_low_store_of(const void *p)
 {
-    static char said[32];
+    static _Thread_local char said[32];
     const unsigned char *c = p;
     int i;
 
     if (p == 0)
         return 0;
 
-    for (i = 0; i < regions; i++)
+    int count = atomic_load_explicit(&regions, memory_order_acquire);
+    for (i = 0; i < count; i++)
         if (c >= region[i].copy && c < region[i].copy + region[i].bytes) {
             snprintf(said, sizeof said, "store%d", i);
             return said;
@@ -183,9 +211,12 @@ void *delta_low_copy(const void *what, size_t bytes)
     if (what == 0 || bytes == 0)
         return 0;
 
+    region_take();
     for (i = 0; i < mades; i++)
-        if (made[i].what == what)
+        if (made[i].what == what) {
+            region_drop();
             return made[i].copy;
+        }
 
     copy = low_alloc(bytes, "a table of the language's");
     memcpy(copy, what, bytes);
@@ -195,6 +226,7 @@ void *delta_low_copy(const void *what, size_t bytes)
         made[mades].copy = copy;
         mades++;
     }
+    region_drop();
     return copy;
 }
 
@@ -205,8 +237,14 @@ void delta_syms_bind(void)
     int32_t           *ref;
     int                i;
 
-    if (delta_sym_ref != 0)
+    /* The same language can be initialized by several ECI handles at once.
+     * Serialize binding as well as store registration; otherwise another
+     * thread can observe partially copied stores or publish a second table. */
+    bind_take();
+    if (delta_sym_ref != 0) {
+        bind_drop();
         return;
+    }
 
     for (s = delta_const_store; s->at != 0; s++)
         delta_low_region(s->at, s->bytes);
@@ -219,4 +257,5 @@ void delta_syms_bind(void)
         ref[i] = EVV_REF(delta_low_at(delta_rule_sym[i]));
 
     delta_sym_ref = ref;
+    bind_drop();
 }

@@ -467,3 +467,20 @@ of approximately 7–33 ms before and 1–2 ms after separation. The phrases now
 use independent language contours, so their PCM is intentionally different.
 These are direct-engine measurements without a speech-result cache or an
 audio device; they do not predict end-to-end latency on a specific system.
+
+## Shared provider and native PCM capture
+
+The accepted Persian adaptations are now built into the normal native
+provider, selected per synthesis thread. The shared ECI frame API can also
+retain a planning pass's PCM in C instead of issuing a Python callback for
+each frame; the data is released when the request ends. The earlier callback
+path remains available for older libraries. Regression tests compare samples,
+source indexes, voice isolation, streamed playback and cancellation.
+
+In local timing trials this removed hundreds of Python callbacks from a
+longer planning pass, but did not produce a reliable large reduction in
+first-audio latency: native synthesis and the remaining multiple sentence
+passes still dominate. Mixed-language routing and the contour planner remain
+in the NVDA adapter, and uncovered Persian text may still use in-process
+eSpeak analysis. These measurements should not be presented as native ECI
+voice integration or as an end-to-end Windows, SAPI5 or Android latency result.

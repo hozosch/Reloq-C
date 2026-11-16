@@ -34,6 +34,14 @@ jobs:
           log-accepted-android-sdk-licenses: false
       - name: Install the native Android toolchain
         run: sdkmanager 'ndk;30.0.16248370'
+      - uses: actions/cache@v4
+        id: provider
+        with:
+          path: vendor/openevv61/build/android-arm64
+          key: persian-android-provider-ndk30-v1-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c', 'src/reloq_persian_acoustics.c', 'src/reloq_persian_acoustics.h', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
+      - name: Restore cached provider timestamps
+        if: steps.provider.outputs.cache-hit == 'true'
+        run: find vendor/openevv61/build/android-arm64 -type f -exec touch {} +
       - name: Compile the shared arm64 C engine
         shell: bash
         run: |
@@ -41,6 +49,7 @@ jobs:
           make -C eci -j2 libreloq_android.so \
             ANDROID_CC="$toolchain/aarch64-linux-android26-clang" \
             ANDROID_AR="$toolchain/llvm-ar"
-          "$toolchain/llvm-nm" -D eci/libreloq_android.so | grep -q 'eciPersianAcousticScope'
-          "$toolchain/llvm-nm" -D eci/libreloq_android.so | grep -q 'eciPersianProjectUtf8'
-          "$toolchain/llvm-nm" -D eci/libreloq_android.so | grep -q 'eciPersianCapturePcm'
+          "$toolchain/llvm-nm" -D eci/libreloq_android.so > android-symbols.txt
+          grep -q 'eciPersianAcousticScope' android-symbols.txt
+          grep -q 'eciPersianProjectUtf8' android-symbols.txt
+          grep -q 'eciPersianCapturePcm' android-symbols.txt

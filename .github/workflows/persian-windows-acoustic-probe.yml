@@ -18,6 +18,7 @@ on:
       - vendor/openevv61/Makefile.native
       - eci/Makefile
       - eci/test_persian_acoustics.py
+      - eci/test_concurrent_startup.py
       - experiments/persian/direct_fa_*.c
       - experiments/persian/direct_fa_*.h
       - experiments/persian/direct_fa_*.inc
@@ -76,11 +77,11 @@ jobs:
           make -C eci -j2 eci.dll SHELL=C:/msys64/usr/bin/bash.exe PROVIDER_LTO=-flto=2 WINDOWS_CC=gcc WINDOWS_OBJDUMP=objdump > windows-baseline-build.log 2>&1 || { tail -n 120 windows-baseline-build.log; exit 1; }
           python eci/verify_pe_exports.py eci/eci.dll --objdump objdump --header include/reloq_eci.h
           make -C eci eci_classic_noise_probe.exe SHELL=C:/msys64/usr/bin/bash.exe WINDOWS_CC=gcc WINDOWS_OBJDUMP=objdump
-      - name: Build only the changed Persian provider objects
+      - name: Build the diagnostic DLL from the shared provider
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          python -B experiments/persian/build_windows_probe.py --work persian-windows-probe --jobs 2
+          python -B experiments/persian/build_windows_probe.py --work persian-windows-probe --jobs 2 --use-shared-provider
       - name: Check scoped playback and isolation
         shell: pwsh
         run: |
@@ -96,6 +97,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian text projection failed' }
           python -B eci/test_persian_frames.py --library eci/eci.dll --standard
           if ($LASTEXITCODE -ne 0) { throw 'Common ECI frame capture or replay failed' }
+          python -B eci/test_concurrent_startup.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Concurrent cold multilingual voice initialization failed' }
           python -B eci/test_persian_frames.py --library persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian probe frame capture or replay failed' }
           python -B experiments/persian/test_continuous_replay.py --probe persian-windows-probe/eci_persian_probe.dll

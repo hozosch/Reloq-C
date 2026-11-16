@@ -26,6 +26,8 @@ def main():
     parser.add_argument('--ar', default='gcc-ar')
     parser.add_argument('--jobs', type=int, choices=range(1, 9), default=2)
     parser.add_argument('--prepare-only', action='store_true')
+    parser.add_argument('--use-shared-provider', action='store_true',
+                        help='reuse the already-built scoped Persian provider')
     args = parser.parse_args()
     work = args.work.resolve()
     if work.exists():
@@ -34,41 +36,51 @@ def main():
     objects = sorted((ROOT / 'eci/build/windows').glob('*.o'))
     if not args.prepare_only and (not archive.is_file() or not objects):
         parser.error('build the ordinary Windows ECI core and provider first')
-    subprocess.run([sys.executable, str(HERE / 'build_native_probe.py'),
+    if args.prepare_only and args.use_shared_provider:
+        parser.error('--prepare-only cannot reuse compiled provider objects')
+    if args.use_shared_provider:
+        members = subprocess.check_output([args.ar, 't', str(archive)], text=True).splitlines()
+        if 'reloq_persian_acoustics.o' not in members:
+            parser.error('the ordinary provider lacks the scoped Persian rules')
+        work.mkdir(parents=True)
+        private_archive = archive
+        print('Reusing the shared Persian provider', flush=True)
+    else:
+        subprocess.run([sys.executable, str(HERE / 'build_native_probe.py'),
                     '--dry-run', '--work-dir', str(work)], check=True)
-    sources = sorted(work.glob('*.c'))
-    for source in sources:
-        text = source.read_text(encoding='utf8')
-        if 'getenv(' in text:
-            text = 'extern const char *reloq_fa_scoped_get(const char *);\n' + text.replace(
-                'getenv(', 'reloq_fa_scoped_get(')
-            source.write_text(text, encoding='utf8')
-    if args.prepare_only:
-        print('Prepared scoped Windows probe sources:', work)
-        return
-    languages = ('enus61 dede61 ptbr fifi engb61 eses61 esmx61 frfr61 frca61 '
-                 'itit61 jajp61 kokr61 zhcn61 zhtw61 elgr61').split()
-    dirs = ['include', '../../include', 'rom/jajp', 'rom/cjk', 'rom/greek', 'src']
-    dirs += [str(p.relative_to(PROVIDER)) for p in sorted((PROVIDER / 'src').glob('*')) if p.is_dir()]
-    dirs += [str(p.relative_to(PROVIDER)) for p in sorted((PROVIDER / 'src').glob('*/*')) if p.is_dir()]
-    dirs += ['lang/' + name for name in languages]
-    flags = ['-O3', '-flto=2', '-std=gnu11', '-fno-strict-aliasing', '-ffp-contract=off',
-             '-fvisibility=hidden', '-ffunction-sections', '-fdata-sections', '-DEVV_ARENA=1',
-             '-DEVV_NO_BYTECODE', '-DEVV_ROM_JAJP', '-DRELOQ61_PARAMETERS_ONLY=1',
-             '-DRELOQ_FA_SCOPED_ONSETS=1', '-Os']
+        sources = sorted(work.glob('*.c'))
+        for source in sources:
+            text = source.read_text(encoding='utf8')
+            if 'getenv(' in text:
+                text = 'extern const char *reloq_fa_scoped_get(const char *);\n' + text.replace(
+                    'getenv(', 'reloq_fa_scoped_get(')
+                source.write_text(text, encoding='utf8')
+        if args.prepare_only:
+            print('Prepared scoped Windows probe sources:', work)
+            return
+        languages = ('enus61 dede61 ptbr fifi engb61 eses61 esmx61 frfr61 frca61 '
+                     'itit61 jajp61 kokr61 zhcn61 zhtw61 elgr61').split()
+        dirs = ['include', '../../include', 'rom/jajp', 'rom/cjk', 'rom/greek', 'src']
+        dirs += [str(p.relative_to(PROVIDER)) for p in sorted((PROVIDER / 'src').glob('*')) if p.is_dir()]
+        dirs += [str(p.relative_to(PROVIDER)) for p in sorted((PROVIDER / 'src').glob('*/*')) if p.is_dir()]
+        dirs += ['lang/' + name for name in languages]
+        flags = ['-O3', '-flto=2', '-std=gnu11', '-fno-strict-aliasing', '-ffp-contract=off',
+                 '-fvisibility=hidden', '-ffunction-sections', '-fdata-sections', '-DEVV_ARENA=1',
+                 '-DEVV_NO_BYTECODE', '-DEVV_ROM_JAJP', '-DRELOQ61_PARAMETERS_ONLY=1',
+                 '-DRELOQ_FA_SCOPED_ONSETS=1', '-Os']
 
-    def compile_one(source):
-        output = work / (source.stem + '.o')
-        print('Compiling', source.name, flush=True)
-        subprocess.run([args.cc, *flags, *['-I' + d for d in dirs], '-c', str(source),
-                        '-o', str(output)], cwd=PROVIDER, check=True)
-        return output
+        def compile_one(source):
+            output = work / (source.stem + '.o')
+            print('Compiling', source.name, flush=True)
+            subprocess.run([args.cc, *flags, *['-I' + d for d in dirs], '-c', str(source),
+                            '-o', str(output)], cwd=PROVIDER, check=True)
+            return output
 
-    with ThreadPoolExecutor(max_workers=args.jobs) as pool:
-        modified = list(pool.map(compile_one, sources))
-    private_archive = work / 'libreloq61.a'
-    shutil.copyfile(archive, private_archive)
-    subprocess.run([args.ar, 'r', str(private_archive), *map(str, modified)], check=True)
+        with ThreadPoolExecutor(max_workers=args.jobs) as pool:
+            modified = list(pool.map(compile_one, sources))
+        private_archive = work / 'libreloq61.a'
+        shutil.copyfile(archive, private_archive)
+        subprocess.run([args.ar, 'r', str(private_archive), *map(str, modified)], check=True)
     direct_sources = [HERE / ('direct_fa_' + name + '.c')
                       for name in ('lexicon', 'numbers', 'normalize', 'text', 'letters', 'pinglish')]
     direct_sources.extend((HERE / 'scoped_acoustics_probe.c', HERE / 'continuous_frames.c'))
