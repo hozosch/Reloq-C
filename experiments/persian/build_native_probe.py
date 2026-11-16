@@ -149,15 +149,15 @@ FRONT_A_PATCH = r'''
         if(f3 && f3[0]=='1' && !f3[1]) {
             int16_t female=0;
             memcpy(&female,(const unsigned char *)state+DG_BASE+3092+12,sizeof female);
-            int delta=female ? -160 : -125;
+            int delta=female ? -153 : -125;
             if(STATE(int16_t,s452)>150)STATE(int16_t,s452)+=delta;
             if(STATE(int16_t,s453)>150)STATE(int16_t,s453)+=delta;
-            int f4=female ? -40 : 60;
+            int f4=female ? 0 : 60;
             if(STATE(int16_t,s454)>0)STATE(int16_t,s454)+=f4;
             if(STATE(int16_t,s455)>0)STATE(int16_t,s455)+=f4;
-            if(STATE(int16_t,s399)>0)STATE(int16_t,s399)=female ? 130 : 60;
-            if(STATE(int16_t,s400)>0)STATE(int16_t,s400)=female ? 305 : 250;
-            if(STATE(int16_t,s401)>0)STATE(int16_t,s401)=female ? 410 : 200;
+            if(STATE(int16_t,s399)>0)STATE(int16_t,s399)=female ? 115 : 60;
+            if(STATE(int16_t,s400)>0)STATE(int16_t,s400)=female ? 317 : 250;
+            if(STATE(int16_t,s401)>0)STATE(int16_t,s401)=female ? 475 : 200;
         }
     }
 '''
