@@ -124,6 +124,14 @@ def word_tag(word: str, *, initial_glottal: bool = False) -> str:
         return '~' + word_tag(word)
     phones = parse_word(word)
     vowel_indices = [i for i, p in enumerate(phones) if p.name in VOWELS]
+    # eSpeak represents the first /æ/ of alāmat with its own long-phone
+    # marker. Mapping that marker to a Finnish long vowel more than doubles
+    # the initial nucleus relative to the later /æ/. Preserve the reference
+    # phones and stress but use the ordinary Persian front vowel for this
+    # word family, including its inflected and compounded forms. This does
+    # not impose a general /æ/ duration rule on other words.
+    alamat = (len(phones) >= 6 and phones[0].name == 'a' and phones[0].long and
+              tuple(phone.name for phone in phones[:6]) == ('a', 'l', 'A', 'm', 'a', 't'))
     starts = [0]
     for previous, current in zip(vowel_indices, vowel_indices[1:]):
         # Retain the last consonant as the next onset, and also retain a
@@ -146,7 +154,7 @@ def word_tag(word: str, *, initial_glottal: bool = False) -> str:
             phone = phones[position]
             if phone.name in VOWELS:
                 name = VOWELS[phone.name]
-                long = phone.long or (iran and position == 2)
+                long = (phone.long and not (alamat and position == 0)) or (iran and position == 2)
                 out.append(f"'{name}:'" if long else name)
             else:
                 # Finnish otherwise loses a final H when another word follows.

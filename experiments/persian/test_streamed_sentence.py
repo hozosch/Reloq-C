@@ -10,6 +10,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 from _reloq_eci_direct import EciIndex, EciLanguage, EciPitch, GENDER, HEAD_SIZE, SAMPLE_RATE
 from _reloq_persian_frames import FrameCapture, FrameStream
 import direct_fa_sequence
+import continuous_driver
+import continuous_plan
 from nvda_driver_probe import PERSIAN_PROBE, US_ENGLISH, make_language_engine
 
 
@@ -22,6 +24,7 @@ def main():
                                   args.espeak_library, args.data_parent)
     original_available, original_append = FrameStream.available, FrameStream.append
     original_capture = FrameCapture.capture
+    original_parallel_min = continuous_driver._PARALLEL_MIN
     counts = []
     def track(self, frames, first, end, marks=()):
         counts.append(end - first)
@@ -64,6 +67,8 @@ def main():
         (EciIndex(62), 'خوب ', EciIndex(63), 'hi', EciIndex(64)),
         (EciIndex(65), 'we ', EciIndex(66), 'پژوهشگر', EciIndex(67)),
         (EciIndex(68), 'stop ', EciIndex(69), 'خط', EciIndex(70)),
+        (EciIndex(71), 'نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از ',
+         EciIndex(72), 'NVDA', EciIndex(73)),
     )
     compared = streamed = 0
     try:
@@ -72,9 +77,11 @@ def main():
                 engine.set_parameter(key, value)
             for parts in examples:
                 clear()
+                continuous_driver._PARALLEL_MIN = 10**9
                 FrameStream.available = staticmethod(lambda _dll: False)
                 full = render(parts)
                 clear()
+                continuous_driver._PARALLEL_MIN = original_parallel_min
                 FrameStream.available = staticmethod(original_available)
                 before = len(counts)
                 incremental = render(parts)
@@ -84,6 +91,21 @@ def main():
                 compared += 1
                 streamed += len(counts) > before
         assert streamed >= 12, (compared, streamed)
+
+        # For a long Persian-first phrase, English proxy preparation can use
+        # its own handle while the unchanged Persian prefix is already being
+        # delivered. This explicitly checks the user's reported latency case.
+        pcm, english_context_started = bytearray(), []
+        original_proxy = continuous_plan.persian_proxy_for_english
+        def observe_proxy(text, voice):
+            english_context_started.append(len(pcm))
+            return original_proxy(text, voice)
+        continuous_plan.persian_proxy_for_english = observe_proxy
+        try:
+            assert engine.speak((examples[-1]), pcm.extend, lambda _: None)
+        finally:
+            continuous_plan.persian_proxy_for_english = original_proxy
+        assert english_context_started and english_context_started[0] > 0, english_context_started
 
         # A reference fallback must still be rejected by the complete native
         # pilot before the English prefix can start playing.
@@ -140,6 +162,7 @@ def main():
         FrameStream.available = staticmethod(original_available)
         FrameStream.append = original_append
         FrameCapture.capture = original_capture
+        continuous_driver._PARALLEL_MIN = original_parallel_min
         engine.close()
     print(f'Passed {compared} uncached PCM/index comparisons ({streamed} streamed), failure recovery and cancellation.')
 

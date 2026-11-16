@@ -800,7 +800,7 @@ static const struct fa_direct_entry fa_vocalized_entries[] = {
     {"عبداللهِ", "`[.2Ab.0dol.1la.0he]"},
     {"عبداِ", "`[.1eb.0da.2we]"},
     {"عضوِ", "`[.0oz.1ve]"},
-    {"علامتِ", "`[.0'A:'.1la.0mA.2te]"},
+    {"علامتِ", "`[.0A.1la.0mA.2te]"},
     {"علی", "`[.1'A:'.0li]"},
     {"علیاحضرتِ", "`[.2wo.0li.2j'a:'.0hAz.1rA.0te]"},
     {"علیالسویهِ", "`[.2wA.0lAs.2sA.0vi.1j'e:'.0e]"},

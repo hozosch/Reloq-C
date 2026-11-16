@@ -35,6 +35,7 @@ FALLBACK = tuple(('NVDA ', EciIndex(100 + i), word, EciIndex(200 + i), ' سلا�
                  for i, word in enumerate(FALLBACK_WORDS))
 SHORT_MIXED = ('go سلام', 'hi دنیا', 'file خوب', 'خوب hi', 'سلام go',
                'open کتاب', 'window کتاب', 'hello سلام', 'stop خط')
+LONG_PERSIAN_FIRST = ('نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA',)
 
 
 class Player:
@@ -68,7 +69,8 @@ class Uncached:
         return self.engine.speak(parts, on_pcm, on_index)
 
 
-def measure(args, *, streaming, english=False, fallback=False, cancel_before=False, short=False, repeated=False):
+def measure(args, *, streaming, english=False, fallback=False, cancel_before=False,
+            short=False, long_first=False, repeated=False):
     FrameStream.available = staticmethod(args.available if streaming else lambda _dll: False)
     player, done, errors = Player(), threading.Event(), []
     def factory():
@@ -89,9 +91,10 @@ def measure(args, *, streaming, english=False, fallback=False, cancel_before=Fal
         return round((player.first - start) / 1e6, 3)
     try:
         cold = run('one simple label' if english else FALLBACK[0] if fallback else 'NVDA خوب است.')
-        texts = ENGLISH if english else FALLBACK if fallback else SHORT_MIXED if short else MIXED
+        texts = (ENGLISH if english else FALLBACK if fallback else LONG_PERSIAN_FIRST
+                 if long_first else SHORT_MIXED if short else MIXED)
         if repeated:
-            texts = (texts[0],) * len(texts)
+            texts = (texts[0],) * max(6, len(texts))
         timings = []
         for text in texts:
             if cancel_before:
@@ -117,6 +120,7 @@ def main():
                   'uncached_stream': measure(args, streaming=True),
                   'uncached_short': measure(args, streaming=True, short=True),
                   'uncached_short_repeated': measure(args, streaming=True, short=True, repeated=True),
+                  'uncached_long_persian_first': measure(args, streaming=True, long_first=True, repeated=True),
                   'uncached_fallback': measure(args, streaming=True, fallback=True),
                   'uncached_fallback_repeated': measure(args, streaming=True, fallback=True, repeated=True),
                   'uncached_fallback_after_stop': measure(args, streaming=True, fallback=True, cancel_before=True),

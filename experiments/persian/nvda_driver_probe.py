@@ -178,6 +178,20 @@ def _pinglish_part_runs(parts, home):
 
 class PersianProbeLanguageEngine(LanguageEngine):
     """Use English for explicit and clear Latin-script boundaries."""
+
+    def cancel(self):
+        super().cancel()
+        worker = getattr(self, '_persian_contour_worker', None)
+        if worker is not None:
+            worker.cancel()
+
+    def close(self):
+        worker = getattr(self, '_persian_contour_worker', None)
+        if worker is not None:
+            self._persian_contour_worker = None
+            worker.close()
+        super().close()
+
     def speak(self, parts, on_pcm, on_index):
         self._assert_owner()
         def valid_text(value):

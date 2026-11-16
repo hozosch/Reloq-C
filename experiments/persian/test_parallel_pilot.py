@@ -1,0 +1,125 @@
+"""Check independent contour planning, settings, fallback and cancellation."""
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+import sys
+import threading
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
+import continuous_driver
+from _reloq_eci_direct import EciIndex, EciPitch, EciProsody, GENDER, HEAD_SIZE, NATIVE_SPEED, SAMPLE_RATE
+from nvda_driver_probe import make_language_engine
+from parallel_pilot import ParallelPilot, _CaptureVoice
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    for option in ('scope-probe', 'native-library', 'worker', 'espeak-library', 'data-parent'):
+        parser.add_argument('--' + option, type=Path, required=option != 'worker')
+    args = parser.parse_args()
+    engine = make_language_engine(args.scope_probe, args.native_library, args.worker,
+                                  args.espeak_library, args.data_parent)
+    old_min = continuous_driver._PARALLEL_MIN
+    old_cpu_count = continuous_driver.os.cpu_count
+    continuous_driver.os.cpu_count = lambda: 2
+    old_init, old_submit, old_capture, old_speak = (ParallelPilot.__init__, ParallelPilot.submit,
+                                                    ParallelPilot._capture, _CaptureVoice.speak)
+    submissions = []
+    def submit(self, **kwargs):
+        submissions.append(1)
+        return old_submit(self, **kwargs)
+    ParallelPilot.submit = submit
+    def render(parts):
+        pcm, marks = bytearray(), []
+        assert engine.speak(parts, pcm.extend, lambda value: marks.append((value, len(pcm))))
+        return bytes(pcm), marks
+    examples = (
+        (EciIndex(1), 'نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از ', EciIndex(2), 'NVDA', EciIndex(3)),
+        (EciIndex(4), EciPitch(75), 'این یک آزمایش تعجب دیگر است و ', EciIndex(5), 'NVDA خوب است.', EciIndex(6)),
+        (EciIndex(7), 'NVDA ', EciIndex(8), 'پژوهشگر و دانشگاه خانه دوست', EciIndex(9)),
+        (EciProsody(6, 80), 'او آمد و پنجره را باز کرد و ', EciIndex(10), 'window'),
+    )
+    try:
+        # The first long sentence must start before its extra handle is
+        # initialized; this avoids regressing a cold start or caching audio.
+        initial_pcm, creations = bytearray(), []
+        def observe_init(worker, *args, **kwargs):
+            creations.append(len(initial_pcm))
+            return old_init(worker, *args, **kwargs)
+        ParallelPilot.__init__ = observe_init
+        try:
+            assert engine.speak(examples[0], initial_pcm.extend, lambda _: None)
+        finally:
+            ParallelPilot.__init__ = old_init
+        assert creations and creations[0] > 0, creations
+        checks = 0
+        for rate, gender, head, speed in ((1, 0, 50, 40), (3, 0, 50, 98),
+                                          (6, 1, 22, 140), (3, 1, 86, 200)):
+            for key, value in ((SAMPLE_RATE, rate), (GENDER, gender), (HEAD_SIZE, head),
+                               (NATIVE_SPEED, speed)):
+                engine.set_parameter(key, value)
+            for parts in examples:
+                continuous_driver._PARALLEL_MIN = 10**9
+                baseline = render(parts)
+                continuous_driver._PARALLEL_MIN = 1
+                before = len(submissions)
+                candidate = render(parts)
+                assert candidate == baseline, (rate, gender, head, speed, parts)
+                assert len(submissions) > before, 'the independent contour was not used'
+                checks += 1
+
+        # A worker failure must fall back before any audio or source index is
+        # released, with exactly the same speech as the serial planner.
+        continuous_driver._PARALLEL_MIN = 10**9
+        expected = render(examples[0])
+        continuous_driver._PARALLEL_MIN = 1
+        def fail(_self, *args, **kwargs):
+            raise RuntimeError('injected contour worker failure')
+        ParallelPilot._capture = fail
+        try:
+            assert render(examples[0]) == expected
+        finally:
+            ParallelPilot._capture = old_capture
+        def fail_submit(_self, **kwargs):
+            raise OSError('injected worker submission failure')
+        ParallelPilot.submit = fail_submit
+        try:
+            assert render(examples[0]) == expected
+        finally:
+            ParallelPilot.submit = submit
+
+        # Stop while the other thread is inside its pilot request. Neither
+        # stale audio nor a blocked worker may affect the next utterance.
+        started, done, stale = threading.Event(), threading.Event(), bytearray()
+        def blocked(voice, parts, on_pcm, on_index):
+            started.set()
+            while not voice.cancelled.wait(.01):
+                pass
+            return False
+        _CaptureVoice.speak = blocked
+        def stop():
+            if started.wait(5):
+                engine.cancel()
+            done.set()
+        stopper = threading.Thread(target=stop, daemon=True)
+        stopper.start()
+        try:
+            assert not engine.speak(examples[0], stale.extend, lambda _: None)
+            assert done.wait(5) and started.is_set() and not stale
+        finally:
+            _CaptureVoice.speak = old_speak
+            stopper.join(5)
+        assert not stopper.is_alive()
+        assert render(examples[0]) == expected
+    finally:
+        continuous_driver._PARALLEL_MIN = old_min
+        continuous_driver.os.cpu_count = old_cpu_count
+        ParallelPilot.__init__ = old_init
+        ParallelPilot.submit, ParallelPilot._capture, _CaptureVoice.speak = old_submit, old_capture, old_speak
+        engine.close()
+    print(f'Passed {checks} serial/parallel PCM and source-index comparisons, failure recovery and cancellation.')
+
+
+if __name__ == '__main__':
+    main()

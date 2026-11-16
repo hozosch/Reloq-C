@@ -31,7 +31,7 @@ def main():
     text_library = (args.text_library or args.native_library).resolve()
     entries = add_persian(base, text_library.read_bytes())
     assert 'Persian acoustic probe' in json.loads(entries['doc/source.json'])['build']
-    assert b'1.5.0-dev108' in entries['manifest.ini']
+    assert b'1.5.0-dev109' in entries['manifest.ini']
     assert 'Persisch- und Pinglish-Test' in entries['locale/de/manifest.ini'].decode('utf8')
     assert b'add_profiles(dict(LANGUAGES), DLL)' in entries[PREFIX + '__init__.py']
     assert b'lambda: make_engine(' in entries[PREFIX + '__init__.py']
@@ -39,6 +39,7 @@ def main():
     assert PREFIX + '_reloq_persian_joiners.py' in entries
     assert PREFIX + '_reloq_persian_decimals.py' in entries
     assert PREFIX + '_persian/inprocess_espeak.py' in entries
+    assert PREFIX + '_persian/parallel_pilot.py' in entries
     assert PREFIX + '_persian/espeak_worker.py' not in entries
     assert PREFIX + 'fa-espeak-worker.exe' not in entries
     with tempfile.TemporaryDirectory(prefix='reloq-fa-package-') as temp:

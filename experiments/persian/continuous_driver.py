@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 from collections import OrderedDict
 import ctypes
+import os
 import re
 from bisect import bisect_left
 from dataclasses import replace
@@ -33,6 +34,7 @@ _log = logging.getLogger(__name__)
 _TAG = re.compile(r'`\[[^]]+\]')
 _FINAL_U = re.compile(r"(?:u|'u:')\]$")
 _INITIAL_A = re.compile(r"^`\[\.[012](?:a|'a:')")
+_PARALLEL_MIN = 96
 
 
 class _PlanningVoice:
@@ -278,6 +280,20 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
         rate = SAMPLE_RATES.get(fa._dll.eciGetParam(fa._handle, SAMPLE_RATE))
         if rate is None:
             raise ValueError('invalid sentence sample rate')
+        parallel_worthy = sum(len(part.text) for part in sentence) >= _PARALLEL_MIN and (os.cpu_count() or 1) > 1
+        parallel_pilot = getattr(owner, '_persian_contour_worker', None) if parallel_worthy else None
+        def warm_parallel():
+            if not parallel_worthy or getattr(owner, '_persian_contour_worker', None) is not None:
+                return
+            if __package__:
+                from .parallel_pilot import ParallelPilot
+            else:
+                from parallel_pilot import ParallelPilot
+            try:
+                owner._persian_contour_worker = ParallelPilot(owner._dll)
+            except (RuntimeError, OSError):
+                # Thread allocation failure retains the serial planner.
+                pass
         def check_cancel():
             if owner._cancelled.is_set():
                 raise InterruptedError('sentence planning was cancelled')
@@ -324,6 +340,10 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
                                 positions=positions, prefix_complete=False, finishing=False)
             stream.append(item.frames, 0, first, tuple((at, value) for at, value in positions if at < first))
             stream_state['prefix_complete'] = True
+            # The very first long utterance should not wait for a second
+            # native handle to load. Prepare it only after its safe prefix
+            # has been delivered, then use it for later uncached requests.
+            warm_parallel()
         tags = tuple(_TAG.finditer(sentence[0].text)) if sentence[0].language == 'fa' else ()
         first_has_glide = any(_FINAL_U.search(left.group()) and _INITIAL_A.match(right.group()) and
                               sentence[0].text[left.end():right.start()].isspace()
@@ -332,7 +352,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
         plan = context_plan(sentence, fa, en, rate, maximum=30000, source_events=events,
                             guarded_spans=guarded, spelling_spans=spelling, check=check_cancel,
                             trusted_fa=not validate, validate_in_capture=validate,
-                            start_prefix=start_prefix if can_stream else None)
+                            start_prefix=start_prefix if can_stream else None, parallel_pilot=parallel_pilot)
         original_counts = plan.counts
         selected_sentence(plan, sentence, en, german, rate, check=check_cancel)
         marks = replay_marks(plan, original_counts)

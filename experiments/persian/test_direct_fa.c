@@ -59,7 +59,7 @@ int main(void)
        !check_text("او من.", "`[.1'u:'] `[.1mAn].") ||
        !check_text("من بدبخت آمد.", "`[.0mAn] `[.1bAd.0bAGt] `[.1'a:'.0mAd].") ||
        !same_text("اِتِّفاقاتِ", "اِتِّفاقاتِ") ||
-       !check_text("علامت‌دار", "`[.0'A:'.1la.0mAt] `[.1dar]") ||
+       !check_text("علامت‌دار", "`[.0A.1la.0mAt] `[.1dar]") ||
        !check_text("ثبت‌شده", "`[.1sAbt.1So.0d'e:']") ||
        !check_text("آبگوشت،سلام", "`[.1ab.0guSt],`[.0sA.1lam]") ||
        !check_text("سوال", "`[.1so]~`[.0al]") ||

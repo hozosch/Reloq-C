@@ -267,3 +267,32 @@ boundaries differently.
 The diagnostic scope differed from the production scope only in its trace
 selector. With tracing disabled, 72 combinations of mixed Persian/English
 texts, rates and voices produced bit-identical PCM and source indexes.
+
+## Initial /æ/ in alāmat, 2026-11-16
+
+For `علامت` (alāmat, “mark”), eSpeak NG 1.53 emits the phoneme string
+`a: l 'A m a t`. The first vowel's eSpeak event-to-next-event interval is
+92 ms at 175 WPM, compared with 100 ms for the last /æ/ in the isolated word
+(92 ms versus 94 ms before `دار`). These are event intervals, not manually
+aligned acoustic boundaries. The `a:` marker has a meaning inside eSpeak;
+copying it as a Finnish long-vowel tag is not an equivalent duration rule.
+
+At native speed 98, the selected Persian scope's old isolated-word nucleus
+targets were 69.04 ms for the initial /æ/ and 31.83 ms for the last /æ/.
+Using the ordinary short front-A phone for just the initial vowel changes the
+first target to 31.14 ms while leaving the later two targets unchanged in
+this explicit-phone experiment. The same direction held at native speeds 40
+and 200 and before a following word. Targets and eSpeak events have different
+boundaries and rate scales; the within-word comparison motivates a targeted
+listening candidate rather than a claim of exact physical duration.
+
+Sadeghi's controlled study describes /æ/ as a phonologically short vowel and
+finds shorter /æ/ and /e/ than /aː/ and /uː/ in its accented material (12
+speakers). Stress and context still affect duration; a small conversational
+pilot by Aronow et al. found different aggregate patterns. Neither study
+specifies an exact duration for this word. The candidate therefore changes
+only the first vowel in the alāmat family, keeps the existing stress and
+other vowel targets, and leaves unrelated /æ/ and the accepted Iran A alone.
+
+- https://www.cambridge.org/core/journals/journal-of-the-international-phonetic-association/article/timing-of-prenuclear-pitch-accents-in-persian/C7CA7887F69ACE368ED7126741F695C5
+- https://doi.org/10.3765/plsa.v2i0.4059

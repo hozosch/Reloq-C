@@ -441,7 +441,7 @@ class SentencePlan:
 
 def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarded_spans=(),
                  spelling_spans=(), check=None, trusted_fa=False, validate_in_capture=False,
-                 start_prefix=None):
+                 start_prefix=None, parallel_pilot=None):
     parts = tuple(parts)
     if not parts or len(parts) > 32 or {p.language for p in parts} != {'fa', 'en-us'}:
         raise ValueError('expected a bounded mixed English/Persian clause')
@@ -457,7 +457,17 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
         return CapturedRows.from_capture(capture_api.capture(voice, planned, maximum=maximum, audio=audio),
                                          native=capture_api.frame_ticks)
     all_bracketed = all(_bracket_boundary(parts, edge) for edge in range(1, len(parts)))
-    pilot, pilot_pitch, pilot_bounds = None, (), ()
+    pilot, pilot_parts, pilot_pitch, pilot_bounds = None, [], (), ()
+    def contour(item):
+        nonlocal native_pitch
+        if item.ticks[-1] > 60000:
+            native_pitch = None
+        pitch = _dense(item, 1, check, native=capture_api.dense_curve if native_pitch else None)
+        bounds = (0, *(round(item.indexes[i] * 1000 / rate) for i in range(1, len(parts))),
+                  min(_last_audible(item.pcm, rate, native=capture_api.last_audible_sample), len(pitch) - 1))
+        if any(a >= b for a, b in zip(bounds, bounds[1:])):
+            raise RuntimeError('invalid shared sentence boundaries')
+        return pitch, bounds
     if all_bracketed:
         # No segment uses the shared pitch when every switch has a native
         # bracket boundary. Avoid synthesizing the entire sentence a third
@@ -468,7 +478,6 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                     for m in _TAG.finditer(part.text)):
                 raise ValueError('Persian proxy was rejected')
     else:
-        pilot_parts = []
         for index, part in enumerate(parts):
             if index:
                 pilot_parts.extend((' ', EciIndex(index)))
@@ -486,17 +495,9 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                 # finite, tested native alphabet. Reject unexpected syntax.
                 raise ValueError('invalid generated English proxy')
             pilot_parts.append(proxy)
-        pilot = get(fa, pilot_parts)
-        if pilot.ticks[-1] > 60000:
-            # Keep regular cancellation checkpoints for unusually long or
-            # very slow utterances rather than one long native operation.
-            native_pitch = None
-        pilot_pitch = _dense(pilot, 1, check, native=capture_api.dense_curve if native_pitch else None)
-        pilot_bounds = (0, *(round(pilot.indexes[i] * 1000 / rate) for i in range(1, len(parts))),
-                        min(_last_audible(pilot.pcm, rate, native=capture_api.last_audible_sample),
-                            len(pilot_pitch) - 1))
-        if any(a >= b for a, b in zip(pilot_bounds, pilot_bounds[1:])):
-            raise RuntimeError('invalid shared sentence boundaries')
+        if parallel_pilot is None:
+            pilot = get(fa, pilot_parts)
+            pilot_pitch, pilot_bounds = contour(pilot)
     word_markers = _word_markers(parts)
     source_events = tuple(source_events)
     guarded_spans = tuple(guarded_spans)
@@ -517,17 +518,59 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
     voices = (('fa', fa), ('en-us', en))
     prepared = {}
     if start_prefix is not None:
-        # Complete all cross-language phoneme probes before the first voice
-        # starts replaying. The other native context can then be captured on
-        # its own handle while that already-safe prefix is playing.
+        # An English-first replay keeps the English handle occupied, so both
+        # contexts must be prepared before it starts. For Persian-first text,
+        # the remaining English context probes only the separate English
+        # handle: it can be prepared after the safe Persian prefix starts.
+        # This avoids delaying the beginning of a long Persian phrase while
+        # converting every word into an English context proxy.
+        before_replay = ('fa', 'en-us') if parts[0].language == 'en-us' else ('fa',)
         prepared = {language: _context(parts, language, en, fa, word_markers, source_marks,
                                        guarded_spans, spelling_spans)
-                    for language, _ in voices}
+                    for language in before_replay}
         voices = tuple(sorted(voices, key=lambda pair: pair[0] != parts[0].language))
+    pending = None
+    if parallel_pilot is not None and not all_bracketed:
+        if check:
+            check()
+        try:
+            pending = parallel_pilot.submit(parts=pilot_parts, prefix=fa.prefix, validate=fa.validate,
+                                            parameters=fa.owner._engine_parameters[fa.key[0]],
+                                            dictionary=fa.owner._dictionary_path,
+                                            cancelled=fa.owner._cancelled, maximum=maximum)
+        except (RuntimeError, OSError):
+            if check:
+                check()
+            pilot = get(fa, pilot_parts)
+            pilot_pitch, pilot_bounds = contour(pilot)
     for language, voice in voices:
-        planned = prepared[language] if prepared else _context(
-            parts, language, en, fa, word_markers, source_marks, guarded_spans, spelling_spans)
-        item = get(voice, planned, audio=False)
+        try:
+            planned = prepared[language] if language in prepared else _context(
+                parts, language, en, fa, word_markers, source_marks, guarded_spans, spelling_spans)
+            item = get(voice, planned, audio=False)
+        except BaseException:
+            if pending is not None:
+                parallel_pilot.cancel()
+                try:
+                    pending.result()
+                except BaseException:
+                    pass
+            raise
+        if pending is not None:
+            try:
+                captured = pending.result()
+                pilot = CapturedRows.from_capture(captured, native=capture_api.frame_ticks)
+            except InterruptedError:
+                raise
+            except (ValueError, RuntimeError, OSError):
+                if check:
+                    check()
+                # A failed optional worker cannot change speech. Recalculate
+                # the complete pilot on the original owning handle.
+                pilot = get(fa, pilot_parts)
+            finally:
+                pending = None
+            pilot_pitch, pilot_bounds = contour(pilot)
         bounds = _edges(item, len(parts))
         _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate, check,
                            native=native_pitch if item.ticks[-1] <= 60000 else None)

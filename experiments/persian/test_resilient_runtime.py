@@ -56,8 +56,8 @@ def main():
             return previous_prepared(instance, prepared, *items, **options)
         ScopedDirectPersianEngine._speak_prepared = watch_status
         try:
-            for status, expected in (('بدونِ علامت', "`[.0'A:'.1la.0mAt]"),
-                                     ('علامت‌دار', "`[.0'A:'.1la.0mAt] `[.1dar]")):
+            for status, expected in (('بدونِ علامت', "`[.0A.1la.0mAt]"),
+                                     ('علامت‌دار', "`[.0A.1la.0mAt] `[.1dar]")):
                 observed.clear()
                 pcm, marks = render((EciIndex(83), EciText(exact + '  '), EciIndex(84),
                     EciText('کادرِ علامت‌زدنی  '), EciIndex(85), EciText(status + '  '), EciIndex(86)))
