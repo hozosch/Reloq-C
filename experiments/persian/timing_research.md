@@ -296,3 +296,24 @@ other vowel targets, and leaves unrelated /æ/ and the accepted Iran A alone.
 
 - https://www.cambridge.org/core/journals/journal-of-the-international-phonetic-association/article/timing-of-prenuclear-pitch-accents-in-persian/C7CA7887F69ACE368ED7126741F695C5
 - https://doi.org/10.3765/plsa.v2i0.4059
+
+## NVDA symbol-data initialization, 2026-11-16
+
+In an instrumented portable NVDA 2026.3.1 run, the first speech-pipeline
+request for `نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA` took
+81.3 ms to the first fake player feed. Its in-word half-space triggered the
+initial load of NVDA's Persian symbol processor; the symbol call itself took
+47.5 ms. Repeating the text took 24.6 ms in that run. Persian speech results
+were not retained between requests.
+
+The Persian test add-on now asks NVDA to load its own symbol data at Persian
+voice/profile selection. In a subsequent run on a separate Windows CI
+runner, that selection took 27.5 ms for its first Persian preparation, while
+the first request of the same mixed sentence reached the fake player in
+24.6 ms; its symbol call took 0.3 ms. A changed sentence then took 12.8 ms.
+The repeated sentence's PCM hash matched the earlier run. These are separate
+shared runners rather than a controlled benchmark, and fake player timings
+exclude the sound device. They establish the location of the first-load cost,
+not a guaranteed improvement on every computer or parity with the native
+English path. NVDA continues to own and invalidate its symbol data; no text,
+phoneme or sentence result is cached by this preparation.
