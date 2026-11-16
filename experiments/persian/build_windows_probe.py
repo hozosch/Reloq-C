@@ -80,7 +80,8 @@ def main():
         direct.append(obj)
     # Only the private Persian DLL gains frame capture and continuous replay.
     # All other host objects and the baseline release remain unchanged.
-    objects = [obj for obj in objects if obj.name not in ('reloq_rules61.o', 'reloq_eci.o')
+    objects = [obj for obj in objects if obj.name not in ('reloq_rules61.o', 'reloq_eci.o',
+                                                          'reloq_persian_frames.o')
                and not obj.name.startswith('reloq_fa_direct_')]
     for source in (prepare(work), prepare_eci(work)):
         obj = work / (source.stem + '.o')

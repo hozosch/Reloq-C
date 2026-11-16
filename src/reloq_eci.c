@@ -1881,3 +1881,29 @@ int reloq_eci_last_error(ECIHand handle)
     struct reloq_eci_engine *e = handle;
     return e && !epoch_get(&e->busy) ? e->error : RELOQ_ECI_INVALID;
 }
+
+#include "reloq_persian_replay.inc"
+
+int ECICALL eciPersianCaptureBegin(size_t maximum)
+{return reloq_fa_capture_begin(maximum);}
+const struct reloq_fa_frame *ECICALL eciPersianCaptureEnd(size_t *count,int *failed)
+{return reloq_fa_capture_end(count,failed);}
+void ECICALL eciPersianCaptureRelease(void)
+{reloq_fa_capture_release();}
+int ECICALL eciPersianCaptureSetControlsOnly(int enabled)
+{return reloq_fa_capture_set_controls_only(enabled);}
+size_t ECICALL eciPersianCaptureSampleCount(void)
+{return reloq_fa_capture_sample_count();}
+uint32_t ECICALL eciPersianReplayEpoch(ECIHand handle)
+{return reloq_fa_replay_epoch(handle);}
+int ECICALL eciPersianReplayBegin(ECIHand handle,uint32_t epoch,void **stream)
+{return reloq_fa_replay_begin(handle,epoch,stream);}
+int ECICALL eciPersianReplayAppend(void *stream,const struct reloq_fa_frame *frames,
+    size_t frame_count,const struct reloq_fa_frame_mark *marks,size_t mark_count)
+{return reloq_fa_replay_append(stream,frames,frame_count,marks,mark_count);}
+int ECICALL eciPersianReplayEnd(void *stream,int flush)
+{return reloq_fa_replay_end(stream,flush);}
+int ECICALL eciPersianReplayFrames(ECIHand handle,uint32_t epoch,
+    const struct reloq_fa_frame *frames,size_t frame_count,
+    const struct reloq_fa_frame_mark *marks,size_t mark_count)
+{return reloq_fa_replay_frames(handle,epoch,frames,frame_count,marks,mark_count);}

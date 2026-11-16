@@ -5,19 +5,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
-
-struct reloq_fa_frame {
-    int64_t tick;
-    float controls[62];
-    float gain;
-    int32_t formants, head, gender;
-    int32_t s_frication, limit_frication;
-};
-
-struct reloq_fa_frame_mark {
-    uint32_t frame;
-    int32_t value;
-};
+#include "reloq_persian_frames.h"
 
 /* ends contains one cumulative frame count per segment, times contains
  * frame_count+1 cumulative times, and skip/changed contain segment_count

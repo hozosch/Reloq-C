@@ -151,6 +151,44 @@ def main():
             english_voice = engine._engines[US_ENGLISH.id]
             assert english_voice._dll.eciGetParam(english_voice._handle, PAUSE_MODE) == 0
 
+            # At a hyphen which coincides with a script switch, keep each
+            # language's own nonfinal melody and its complete first sound.
+            # An English-internal compound is still a single native segment.
+            engine.set_parameter(PAUSE_MODE, 1)
+            english_dash, _ = render(engine, (EciLanguage(US_ENGLISH.id, '1'), 'NVDA-,'))
+            persian_dash, _ = render(engine, ('سلام-,',))
+            engine.set_parameter(PAUSE_MODE, 0)
+            english_after, _ = render(engine, (EciLanguage(US_ENGLISH.id, '1'), 'NVDA'))
+            persian_after, _ = render(engine, ('خوب',))
+            dashed, marks = render(engine, (EciIndex(130), 'NVDA-', EciIndex(131),
+                                             'خوب', EciIndex(132)))
+            assert dashed == english_dash + persian_after
+            assert marks == [(130, 0), (131, len(english_dash)), (132, len(dashed))]
+            dashed, marks = render(engine, (EciIndex(133), 'سلام-', EciIndex(134),
+                                             'NVDA', EciIndex(135)))
+            assert dashed == persian_dash + english_after
+            assert marks == [(133, 0), (134, len(persian_dash)), (135, len(dashed))]
+            assert render(engine, ('سلام-NVDA-خوب',))[0] == persian_dash + english_dash + persian_after
+            explicit, _ = render(engine, ('سلام-', EciLanguage(US_ENGLISH.id, '1'), 'NVDA-',
+                                          EciLanguage(PERSIAN_PROBE.id, '1'), 'خوب'))
+            assert explicit == persian_dash + english_dash + persian_after
+            assert english_voice._dll.eciGetParam(english_voice._handle, PAUSE_MODE) == 0
+
+            # English with a spaced dash has its own native pause even when
+            # the following English word precedes a later Persian switch.
+            engine.set_parameter(PAUSE_MODE, 1)
+            spaced_prefix, _ = render(engine, (EciLanguage(US_ENGLISH.id, '1'), 'NVDA - ,'))
+            engine.set_parameter(PAUSE_MODE, 0)
+            mixed_suffix, _ = render(engine, ('Text خوب',))
+            spaced, marks = render(engine, (EciIndex(140), 'NVDA - ', EciIndex(141),
+                                             'Text خوب', EciIndex(142)))
+            assert spaced == spaced_prefix + mixed_suffix
+            assert marks == [(140, 0), (141, len(spaced_prefix)), (142, len(spaced))]
+            # Markers may divide the three characters around the dash.
+            divided, _ = render(engine, ('NVDA ', EciIndex(143), '-', EciIndex(144),
+                                         ' Text خوب'))
+            assert divided == spaced
+
             controlled, _ = render(engine, (EciPitch(80), 'hello) ', 'او آمد.'))
             engine.set_parameter(PAUSE_MODE, 1)
             expected_english, _ = render(engine, (EciLanguage(US_ENGLISH.id, '1'), EciPitch(80), 'hello) ,'))

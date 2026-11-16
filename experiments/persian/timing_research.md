@@ -441,3 +441,29 @@ time. Neither that experiment nor the request-local benchmark stores user
 text or pronunciation results. The remaining native port must address the
 sentence planner and its repeated captures while preserving the verified
 prosody, transitions, source indexes, cancellation and fallbacks.
+
+## Shared capture/replay and paused English boundaries, 2026-11-16
+
+The previously probe-only frame capture and replay are now compiled into the
+common ECI host, with a request-local C interface for native consumers. The
+NVDA test voice uses this common interface; its private exports remain as a
+compatibility fallback. Capture storage is thread-local and freed after the
+request. Ordinary synthesis does not turn on capture or retain speech data.
+The remaining script routing, shared-contour planner and Persian acoustic
+provider are still experimental; merely exposing these primitives does not
+register Persian for SAPI5 or Android or complete their language integration.
+
+A hyphen exactly at a Persian/English language switch is now an explicit
+short phrase boundary, like a bracket. A spaced hyphen inside an English
+segment is treated the same way when a mixed request has speech on both
+sides. Each separated part uses its own language's native contour. Bare
+hyphens inside English words, Pinglish suffixes, signed numbers and character
+spelling do not receive this treatment. Source indexes and inline controls
+remain ordered across the boundary.
+
+In ten alternating warmed local trials at 16 kHz and 220 WPM, four mixed
+examples containing such hyphens reached their first PCM callback at medians
+of approximately 7–33 ms before and 1–2 ms after separation. The phrases now
+use independent language contours, so their PCM is intentionally different.
+These are direct-engine measurements without a speech-result cache or an
+audio device; they do not predict end-to-end latency on a specific system.

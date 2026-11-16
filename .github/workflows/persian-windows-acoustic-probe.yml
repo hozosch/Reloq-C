@@ -18,6 +18,7 @@ on:
       - experiments/persian/test_sibilant_noise.py
       - experiments/persian/test_embedded_text_rules.py
       - eci/test_persian_project.py
+      - eci/test_persian_frames.py
       - tests/test_reloq_classic_noise.c
       - nvda/_reloq_persian_frames.py
       - experiments/persian/test_windows_acoustics.py
@@ -80,6 +81,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Embedded Persian text rules are stale or missing' }
           python -B eci/test_persian_project.py --library persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian text projection failed' }
+          python -B eci/test_persian_frames.py --library eci/eci.dll --standard
+          if ($LASTEXITCODE -ne 0) { throw 'Common ECI frame capture or replay failed' }
+          python -B eci/test_persian_frames.py --library persian-windows-probe/eci_persian_probe.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Persian probe frame capture or replay failed' }
           python -B experiments/persian/test_continuous_replay.py --probe persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Windows continuous replay failed' }
           python -B experiments/persian/test_sibilant_noise.py --candidate persian-windows-probe/eci_persian_probe.dll

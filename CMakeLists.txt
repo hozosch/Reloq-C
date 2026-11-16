@@ -81,6 +81,7 @@ target_sources(reloq_core PRIVATE
     src/reloq_german_connected_words.c)
 target_sources(reloq_core PRIVATE
     src/reloq_noise_profile.c
+    src/reloq_persian_frames.c
     src/reloq_persian_transition.c
     src/reloq_fa_direct_lexicon.c
     src/reloq_fa_direct_numbers.c

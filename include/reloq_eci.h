@@ -293,6 +293,31 @@ ECIAPI int ECICALL eciPersianProjectUtf8(const char *text,size_t bytes,
     char **output,size_t *target_offsets,size_t *error_offset);
 ECIAPI void ECICALL eciPersianRelease(void *pointer);
 
+/* Request-local frame capture/replay for a future native mixed-language
+ * planner. Frame definitions are in reloq_persian_frames.h. Begin, capture,
+ * end and release must run on the same synthesis thread. The returned rows
+ * remain valid only until the next begin or release; no text is retained.
+ * Capture applies to the next synthesis on that thread, not to an ECI
+ * handle globally. The caller must release it on both success and failure. */
+struct reloq_fa_frame;
+struct reloq_fa_frame_mark;
+ECIAPI int ECICALL eciPersianCaptureBegin(size_t maximum);
+ECIAPI const struct reloq_fa_frame *ECICALL eciPersianCaptureEnd(size_t *count,int *failed);
+ECIAPI void ECICALL eciPersianCaptureRelease(void);
+ECIAPI int ECICALL eciPersianCaptureSetControlsOnly(int enabled);
+ECIAPI size_t ECICALL eciPersianCaptureSampleCount(void);
+/* Replay uses the handle's output callbacks and stop epoch. An incremental
+ * stream owns the handle until End and must always be ended on its owner
+ * thread. It returns the normal RELOQ_ECI_* status codes. */
+ECIAPI uint32_t ECICALL eciPersianReplayEpoch(ECIHand handle);
+ECIAPI int ECICALL eciPersianReplayBegin(ECIHand handle,uint32_t epoch,void **stream);
+ECIAPI int ECICALL eciPersianReplayAppend(void *stream,const struct reloq_fa_frame *frames,
+    size_t frame_count,const struct reloq_fa_frame_mark *marks,size_t mark_count);
+ECIAPI int ECICALL eciPersianReplayEnd(void *stream,int flush);
+ECIAPI int ECICALL eciPersianReplayFrames(ECIHand handle,uint32_t epoch,
+    const struct reloq_fa_frame *frames,size_t frame_count,
+    const struct reloq_fa_frame_mark *marks,size_t mark_count);
+
 ECIAPI int ECICALL eciLoadLexicon(ECIHand handle, const char *utf8_path);
 /* Optional native main/root/abbreviation volumes. NULL disables them.
  * The UTF-8 directory is immutable while active; changes commit atomically. */

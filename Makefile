@@ -528,10 +528,12 @@ libreloq_core.a: reloq_core.o reloq_annotation.o reloq_parameter_stream.o reloq_
 	printf 'open %s\naddlib %s\nsave\nend\n' '$@' '$(RULES61)' | $(AR) -M
 
 libreloq_core.a: reloq_german_within_word_f0.o reloq_german_within_word_landmarks.o reloq_german_within_word_tract.o reloq_german_within_word_source.o reloq_german_within_word_composer.o reloq_german_stop_vowel_interaction.o
-libreloq_core.a: reloq_rules61.o reloq_german_rules61.o $(RULES61)
+libreloq_core.a: reloq_rules61.o reloq_german_rules61.o reloq_persian_frames.o $(RULES61)
+reloq_persian_frames.o: src/reloq_persian_frames.c src/reloq_persian_frame_internal.h src/reloq_persian_transition.h include/reloq_persian_frames.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) -ffp-contract=off -Iinclude -c $< -o $@
 reloq_german_rules61.o: src/reloq_german_rules61.c include/reloq_rules61.h include/reloq61.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -ffp-contract=off -Iinclude -c $< -o $@
-reloq_rules61.o: src/reloq_rules61.c include/reloq_rules61.h include/reloq61.h
+reloq_rules61.o: src/reloq_rules61.c include/reloq_rules61.h include/reloq61.h src/reloq_persian_frame_internal.h include/reloq_persian_frames.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -c $< -o $@
 libreloq_core.a: reloq_german_generic_voice.o reloq_german_generic_point_budget.o reloq_german_generic_noise.o reloq_german_generic_prosody.o reloq_german_generic_tract.o reloq_german_generic_nasal_coda.o reloq_german_generic_transition.o reloq_german_generic_melody.o reloq_german_generic_coarticulation.o reloq_german_generic_timing.o reloq_german_generic_index.o reloq_german_generic_diphthong.o reloq_german_generic_stop_connection.o reloq_german_voice_model.o reloq_voice_controls.o reloq_german_best_effort_text.o
 libreloq_core.a: reloq_german_reduced_landmarks.o reloq_german_reduced_source.o reloq_german_reduced_tract.o reloq_german_reduced_open_first_tract.o reloq_german_reduced_open_source.o reloq_german_reduced_open_composer.o reloq_german_reduced_closed_first_tract.o reloq_german_reduced_closed_composer.o

@@ -66,7 +66,9 @@ def main():
 
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
         objects = list(pool.map(compile_one, sources))
-    hosts = host_objects()
+    # The host now contains the same direct text objects. This probe compiles
+    # them locally so that its optional legacy exports remain available.
+    hosts = [obj for obj in host_objects() if not obj.name.startswith('reloq_fa_direct_')]
     if args.continuous_capture:
         from prepare_continuous_host import prepare, prepare_eci
         source = prepare(work)
@@ -78,7 +80,8 @@ def main():
             output = work / (item.stem + '.o')
             subprocess.run(['cc', *flags, '-c', str(item), '-o', str(output)], check=True)
             objects.append(output)
-        hosts = [obj for obj in hosts if obj.name not in ('reloq_rules61.o', 'reloq_eci.o')]
+        hosts = [obj for obj in hosts if obj.name not in ('reloq_rules61.o', 'reloq_eci.o',
+                                                          'reloq_persian_frames.o')]
     output = work / 'libreloq_eci_persian_probe.so'
     subprocess.run(['cc', '-O3', f'-flto={args.jobs}', '-fno-strict-aliasing', '-ffp-contract=off',
                     '-shared', *map(str, hosts), str(scope), *map(str, objects), str(archive),

@@ -9,6 +9,12 @@ import ctypes
 from dataclasses import dataclass
 
 
+def _native_function(dll, public, legacy):
+    """Prefer the shared ECI API, retaining older private test libraries."""
+    function = getattr(dll, public, None)
+    return function if function is not None else getattr(dll, legacy, None)
+
+
 class NativeFrame(ctypes.Structure):
     _fields_ = (
         ('tick', ctypes.c_int64),
@@ -44,17 +50,21 @@ class FrameCapture:
     """Capture one voice's synthesis without modifying another thread's plan."""
 
     def __init__(self, dll):
-        self._begin = dll.reloq_fa_capture_begin
+        self._begin = _native_function(dll, 'eciPersianCaptureBegin', 'reloq_fa_capture_begin')
+        if self._begin is None:
+            raise AttributeError('native frame capture is not available')
         self._begin.argtypes, self._begin.restype = (ctypes.c_size_t,), ctypes.c_int
-        self._end = dll.reloq_fa_capture_end
+        self._end = _native_function(dll, 'eciPersianCaptureEnd', 'reloq_fa_capture_end')
         self._end.argtypes = (ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_int))
         self._end.restype = ctypes.POINTER(NativeFrame)
-        self._release = dll.reloq_fa_capture_release
+        self._release = _native_function(dll, 'eciPersianCaptureRelease', 'reloq_fa_capture_release')
         self._release.argtypes, self._release.restype = (), None
-        self._controls_only = getattr(dll, 'reloq_fa_capture_set_controls_only', None)
+        self._controls_only = _native_function(dll, 'eciPersianCaptureSetControlsOnly',
+                                               'reloq_fa_capture_set_controls_only')
         if self._controls_only is not None:
             self._controls_only.argtypes, self._controls_only.restype = (ctypes.c_int,), ctypes.c_int
-        self._sample_count = getattr(dll, 'reloq_fa_capture_sample_count', None)
+        self._sample_count = _native_function(dll, 'eciPersianCaptureSampleCount',
+                                              'reloq_fa_capture_sample_count')
         if self._sample_count is not None:
             self._sample_count.argtypes, self._sample_count.restype = (), ctypes.c_size_t
         self.dense_curve = getattr(dll, 'reloq_fa_dense_curve', None)
@@ -126,10 +136,16 @@ class FrameCapture:
 class FrameReplay:
     """Replay planned rows through the configured ECI text session once."""
 
+    @staticmethod
+    def available(dll):
+        return all(_native_function(dll, public, legacy) is not None for public, legacy in (
+            ('eciPersianReplayEpoch', 'reloq_fa_replay_epoch'),
+            ('eciPersianReplayFrames', 'reloq_fa_replay_frames')))
+
     def __init__(self, dll):
-        self._epoch = dll.reloq_fa_replay_epoch
+        self._epoch = _native_function(dll, 'eciPersianReplayEpoch', 'reloq_fa_replay_epoch')
         self._epoch.argtypes, self._epoch.restype = (ctypes.c_void_p,), ctypes.c_uint32
-        self._play = dll.reloq_fa_replay_frames
+        self._play = _native_function(dll, 'eciPersianReplayFrames', 'reloq_fa_replay_frames')
         self._play.argtypes = (ctypes.c_void_p, ctypes.c_uint32, ctypes.POINTER(NativeFrame),
                                ctypes.c_size_t, ctypes.POINTER(FrameMark), ctypes.c_size_t)
         self._play.restype = ctypes.c_int
@@ -173,16 +189,18 @@ class FrameStream:
 
     @staticmethod
     def available(dll):
-        return all(hasattr(dll, name) for name in
-                   ('reloq_fa_replay_begin', 'reloq_fa_replay_append', 'reloq_fa_replay_end'))
+        return all(_native_function(dll, public, legacy) is not None for public, legacy in (
+            ('eciPersianReplayBegin', 'reloq_fa_replay_begin'),
+            ('eciPersianReplayAppend', 'reloq_fa_replay_append'),
+            ('eciPersianReplayEnd', 'reloq_fa_replay_end')))
 
     def __init__(self, voice, on_pcm, on_index, *, cancelled=None):
         voice._assert_owner()
         self.voice, self.cancelled, self.state = voice, cancelled, ctypes.c_void_p()
         dll = voice._dll
-        self._begin, self._append, self._end = (dll.reloq_fa_replay_begin,
-                                               dll.reloq_fa_replay_append,
-                                               dll.reloq_fa_replay_end)
+        self._begin = _native_function(dll, 'eciPersianReplayBegin', 'reloq_fa_replay_begin')
+        self._append = _native_function(dll, 'eciPersianReplayAppend', 'reloq_fa_replay_append')
+        self._end = _native_function(dll, 'eciPersianReplayEnd', 'reloq_fa_replay_end')
         self._begin.argtypes = (ctypes.c_void_p, ctypes.c_uint32, ctypes.POINTER(ctypes.c_void_p))
         self._begin.restype = ctypes.c_int
         self._append.argtypes = (ctypes.c_void_p, ctypes.POINTER(NativeFrame), ctypes.c_size_t,

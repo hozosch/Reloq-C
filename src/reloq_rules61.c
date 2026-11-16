@@ -13,6 +13,7 @@
 #include "reloq_voice_filter.h"
 #include "reloq_wordseg.h"
 #include "reloq_eci.h"
+#include "reloq_persian_frame_internal.h"
 #include <limits.h>
 #include <math.h>
 #include <stdint.h>
@@ -1641,8 +1642,28 @@ static int render_until(struct rule_plan *s,int64_t limit)
             if(!milliseconds)continue;
             frame.noise.duration_ms=(float)milliseconds;
         }
+        int capturing=reloq_fa_capture_active();
+        if(capturing && reloq_fa_capture_append(tick,controls,frame.noise.duration_ms,
+                (float)(p->settings->volume/100.0*reloq_voice_volume_gain(voice->volume)),
+                (int)reloq_german_voice_model_formants(&p->model),
+                p->model.head_size,p->model.gender,frame.noise.s_frication,
+                frame.noise.limit_frication_extension)) {
+            p->result=RELOQ_DE_UTTERANCE_MEMORY;return 1;
+        }
         size_t completed=0;
-        int status=reloq_session_render_frames(s->session,&frame,1,rule_pcm,&p->delivery,&completed);
+        int status;
+        if(capturing && reloq_fa_capture_controls_only()) {
+            /* Preserve the original sample clock without synthesizing audio
+             * that is only needed as context for a later native replay. */
+            long samples=reloq_core_frame_sample_count(frame.noise.duration_ms,1.0f,
+                                      reloq_session_sample_rate(s->session)*0.001f);
+            status=samples>0 ? RELOQ_SESSION_OK : RELOQ_SESSION_INVALID;
+            if(reloq_session_cancelled(s->session))status=RELOQ_SESSION_CANCELLED;
+            else if(status==RELOQ_SESSION_OK && reloq_fa_capture_advance_samples((size_t)samples))
+                status=RELOQ_SESSION_INVALID;
+        } else {
+            status=reloq_session_render_frames(s->session,&frame,1,rule_pcm,&p->delivery,&completed);
+        }
         if(status) {
             p->result=status==RELOQ_SESSION_CANCELLED?RELOQ_DE_UTTERANCE_CANCELLED:RELOQ_DE_UTTERANCE_SINK;
             return 1;

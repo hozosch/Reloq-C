@@ -222,7 +222,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
     fa_engine = owner._activate(fa_key)
     if not isinstance(fa_engine, ScopedDirectPersianEngine):
         return None
-    if not hasattr(fa_engine._voice._dll, 'reloq_fa_replay_frames'):
+    if not FrameReplay.available(fa_engine._voice._dll):
         return None
     fa_engine._cancelled.clear()
     restores, stream_state = [], {}
@@ -462,7 +462,7 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
     if key[0] not in fa_ids or not items:
         return None
     engine = owner._activate(key)
-    if not isinstance(engine, ScopedDirectPersianEngine) or not hasattr(engine._voice._dll, 'reloq_fa_replay_frames'):
+    if not isinstance(engine, ScopedDirectPersianEngine) or not FrameReplay.available(engine._voice._dll):
         return None
     engine._cancelled.clear()
     if owner._cancelled.is_set():
@@ -604,10 +604,10 @@ def sentence_jobs(parts, home):
 
 
 def bracket_jobs(parts, home, *, fa_ids, english_id):
-    """Separate language cores at explicit bracket phrase boundaries.
+    """Separate language cores at explicit bracket and dash boundaries.
 
     Native index callbacks do not always mark the acoustic start of the
-    following word. At a real bracket boundary, a separate native job keeps
+    following word. At a real boundary, a separate native job keeps
     the entire next word in its own voice and avoids proxy synthesis. Marks
     remain in source order and active inline controls are copied forward.
     """
@@ -634,7 +634,7 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
         return '', False
 
     def has_speech(items):
-        return any(any(not c.isspace() and c not in '()[]{}.,;:!?؟،؛' for c in text_and_mode(item)[0])
+        return any(any(not c.isspace() and c not in '()[]{}-.,;:!?؟،؛' for c in text_and_mode(item)[0])
                    for item in items)
 
     def has_mixed_speech(items):
@@ -646,6 +646,16 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
                 spoken.add(active[0])
         return english_id in spoken and bool(spoken.intersection(fa_ids))
 
+    def neighbour(items, backwards):
+        for item in reversed(items) if backwards else items:
+            if isinstance(item, EciLanguage):
+                break
+            value, spelled = text_and_mode(item)
+            if value:
+                return (value[-1] if backwards else value[0]), spelled
+        return '', False
+
+    mixed_request = has_mixed_speech(parts)
     for index, part in enumerate(parts):
         if isinstance(part, EciLanguage):
             selected = (part.language, part.voice)
@@ -659,9 +669,9 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
             changed = selected != key and {selected[0], key[0]} <= {english_id, *fa_ids}
             has_both = (selected[0] == english_id and key[0] in fa_ids or
                         key[0] == english_id and selected[0] in fa_ids)
-            bracket = ((left_char in '()[]{}' and left_char and not left_spelled) or
-                       (right_char in '()[]{}' and right_char and not right_spelled))
-            if changed and has_both and left_char and right_char and bracket:
+            boundary = ((left_char in '()[]{}-' and left_char and not left_spelled) or
+                        (right_char in '()[]{}-' and right_char and not right_spelled))
+            if changed and has_both and left_char and right_char and boundary:
                 result.append((tuple(pending), True))
                 pending = [part, *controls.values()]
                 split_started = True
@@ -675,11 +685,21 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
         # own core and does not delay the beginning of the sentence.
         value, spelled = text_and_mode(part)
         if (isinstance(part, (str, EciText)) and value and not spelled and '`' not in value and
-                any(c in value for c in '()[]{}')):
+                any(c in value for c in '()[]{}-')):
             start = 0
             for position, char in enumerate(value):
-                if position < start or char not in '()[]{}':
+                if position < start or char not in '()[]{}-':
                     continue
+                if char == '-':
+                    # A spaced dash inside an English run already makes a
+                    # native pause. Do not split English compounds (or
+                    # Pinglish suffixes and signed numbers) at bare hyphens.
+                    left, left_spelled = (value[position - 1], False) if position else neighbour(segment, True)
+                    right, right_spelled = ((value[position + 1], False) if position + 1 < len(value)
+                                            else neighbour(parts[index + 1:], False))
+                    if (key[0] != english_id or not left.isspace() or not right.isspace() or
+                            left_spelled or right_spelled):
+                        continue
                 end = position + 1
                 while end < len(value) and value[end].isspace():
                     end += 1
@@ -688,7 +708,8 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
                 pending.append(item)
                 segment.append(item)
                 following = [value[end:], *parts[index + 1:]]
-                if ((split_started or has_mixed_speech(pending)) and
+                if ((split_started or has_mixed_speech(pending) or
+                     char == '-' and mixed_request) and
                         has_speech(segment) and has_speech(following)):
                     result.append((tuple(pending), True))
                     pending = [EciLanguage(*key), *controls.values()]
@@ -716,7 +737,7 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
 
 
 def continuation_comma(parts):
-    """Ask the current native core for a nonfinal bracket phrase tone."""
+    """Ask the current native core for a nonfinal separated phrase tone."""
     parts = tuple(parts)
     def visible(part):
         return (part if isinstance(part, str) else part.text if isinstance(part, EciText) and
