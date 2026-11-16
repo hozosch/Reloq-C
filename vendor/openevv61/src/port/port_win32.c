@@ -183,12 +183,26 @@ evv_task *evv_task_start(void (*entry)(void *), void *arg, int stack_bytes)
        handle back. */
     s->self = t;
 
-    /* Reserved rather than committed, or a megabyte would be charged to
-       every thread up front. */
+    /* A task may finish as soon as it is created. Hold it suspended until
+       its handle has been stored, otherwise the trampoline can free t while
+       this thread is still assigning t->h. Reserve rather than commit the
+       stack, or every thread would be charged a megabyte up front. */
     t->h = CreateThread(NULL, (SIZE_T)(stack_bytes > 0 ? stack_bytes : 0),
-                        evv_trampoline, s, STACK_SIZE_PARAM_IS_A_RESERVATION,
+                        evv_trampoline, s,
+                        STACK_SIZE_PARAM_IS_A_RESERVATION | CREATE_SUSPENDED,
                         NULL);
     if (t->h == NULL) {
+        free(s);
+        free(t);
+        return NULL;
+    }
+    /* ResumeThread can return after the task has already freed t. Keep the
+       handle in a local variable and touch t only on a failed resume, when
+       the newly created task has never executed. */
+    HANDLE thread = t->h;
+    if (ResumeThread(thread) == (DWORD)-1) {
+        TerminateThread(thread, 1);
+        CloseHandle(thread);
         free(s);
         free(t);
         return NULL;

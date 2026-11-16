@@ -23,8 +23,10 @@ on:
       - eci/test_concurrent_startup.py
       - tests/test_low_arena_concurrent.c
       - vendor/openevv61/src/port/evv_arena.c
+      - vendor/openevv61/src/port/port_win32.c
       - vendor/openevv61/src/delta/delta_low.c
       - vendor/openevv61/src/eci/lang/eci_voicetable.c
+      - vendor/openevv61/src/eci/api/eci_dllobj.c
       - vendor/openevv61/src/reloq61_bridge.c
       - experiments/persian/direct_fa_*.c
       - experiments/persian/direct_fa_*.h
@@ -96,7 +98,7 @@ jobs:
         env:
           RELOQ_RULE_DEBUG: '1'
         run: |
-          python -B eci/test_concurrent_startup.py --library eci/eci.dll
+          python -B eci/test_concurrent_startup.py --library eci/eci.dll --rounds 40
           if ($LASTEXITCODE -ne 0) { throw 'Concurrent cold multilingual voice initialization failed' }
       - name: Build the diagnostic DLL from the shared provider
         shell: bash
