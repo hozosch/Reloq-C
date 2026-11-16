@@ -53,7 +53,15 @@ def analysis_tests(frontend):
         assert not result.used_fallback
     joined = frontend.analyze_pinglish('salam-e', positioned=True, allow_fallback=False)
     check_mapping('salam-e', joined)
-    assert not joined.used_fallback and '-' in joined.parts[0].text
+    # The shared C projector now resolves a hyphen to a word boundary.
+    # Check the spoken words and projected marks instead of expecting its
+    # former intermediate literal hyphen.
+    expected = frontend.analyze_direct('سلام').parts[0].text + ' ' + LATIN_NAMES['e']
+    assert not joined.used_fallback and joined.parts[0].text == expected
+    joined_job = project(('salam', EciIndex(101), '-', EciIndex(102), 'e'),
+                         frontend, pinglish=True, allow_fallback=False)
+    assert joined_job.tagged == expected
+    assert [part.value for part in joined_job.parts if isinstance(part, EciIndex)] == [101, 102]
     for parts in ((), (EciIndex(1),), (' ', EciIndex(2))):
         job = project(parts, frontend, pinglish=True, allow_fallback=True)
         assert not job.tagged.strip()
