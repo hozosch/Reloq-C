@@ -86,6 +86,13 @@ class FrameCapture:
         if self.recompute_frication is not None:
             self.recompute_frication.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t)
             self.recompute_frication.restype = None
+        self.bridge_continuation = getattr(dll, 'reloq_fa_bridge_continuation', None)
+        if self.bridge_continuation is not None:
+            self.bridge_continuation.argtypes = (ctypes.POINTER(NativeFrame), ctypes.POINTER(NativeFrame),
+                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_size_t),
+                ctypes.POINTER(ctypes.c_ubyte), ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double,
+                ctypes.POINTER(ctypes.c_ubyte))
+            self.bridge_continuation.restype = ctypes.c_int
 
     def capture(self, voice, parts, *, maximum=60000, audio=True):
         if type(maximum) is not int or not 1 <= maximum <= 120000:

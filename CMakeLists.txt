@@ -81,6 +81,13 @@ target_sources(reloq_core PRIVATE
     src/reloq_german_connected_words.c)
 target_sources(reloq_core PRIVATE
     src/reloq_noise_profile.c
+    src/reloq_persian_transition.c
+    src/reloq_fa_direct_lexicon.c
+    src/reloq_fa_direct_numbers.c
+    src/reloq_fa_direct_normalize.c
+    src/reloq_fa_direct_text.c
+    src/reloq_fa_direct_letters.c
+    src/reloq_fa_direct_pinglish.c
     src/reloq_rate_transfer.c
     src/reloq_german_voice_model.c
     src/reloq_german_coda_timing.c

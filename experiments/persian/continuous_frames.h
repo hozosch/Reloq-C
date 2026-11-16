@@ -2,21 +2,7 @@
 #ifndef RELOQ_PERSIAN_CONTINUOUS_FRAMES_H
 #define RELOQ_PERSIAN_CONTINUOUS_FRAMES_H
 
-#include <stddef.h>
-#include <stdint.h>
-
-struct reloq_fa_frame {
-    int64_t tick;
-    float controls[62];
-    float gain;
-    int32_t formants, head, gender;
-    int32_t s_frication, limit_frication;
-};
-
-struct reloq_fa_frame_mark {
-    uint32_t frame;
-    int32_t value;
-};
+#include "../../src/reloq_persian_transition.h"
 
 /* The capture is private to the current synthesis thread. No callbacks cross
  * the language boundary; rows remain valid until the next begin/release. */

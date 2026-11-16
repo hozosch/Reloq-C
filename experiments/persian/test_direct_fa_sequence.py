@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import random
+import re
 import threading
 
 from direct_fa_sequence import (
@@ -41,6 +43,38 @@ def projection_tests(frontend):
         (EciIndex(13), 'کتابم ', EciIndex(14), 'کتابت ', EciIndex(15), 'کتابها.'),
         (EciIndex(16), 'سلام (', EciIndex(17), 'دنیا) خوب', EciIndex(18)),
     )
+    if frontend._project_direct is not None:
+        # The native path and established source-map path must preserve all
+        # text, punctuation, in-word indexes and controls byte for byte.
+        native = frontend._project_direct
+        comparisons = (*inputs, (), (EciIndex(90),), (' ', EciIndex(91)),
+                       ('سلام', EciPitch(65), ' دنیا', EciProsody(6, 50), '؟'),
+                       ('سلام ', EciText('ب', character_mode=True)))
+        for parts in comparisons:
+            frontend._project_direct = None
+            try:
+                expected = project(parts, frontend)
+            finally:
+                frontend._project_direct = native
+            assert project(parts, frontend) == expected, parts
+        # A rejected control must not be partially mapped or emitted.
+        assert frontend.project_direct('سلام', ((2, False),)) is None
+        assert frontend.project_direct('ناموجودمطمئن', ()) is None
+        lexicon = Path(__file__).with_name('direct_fa_lexicon.inc').read_text(encoding='utf8')
+        words = re.findall(r'^\s*\{"([^"\\]+)",\s*"', lexicon, re.M)
+        assert len(words) > 10000
+        rng = random.Random(112)
+        for i in range(512):
+            text = rng.choice((' ', '، ', '-')).join(rng.sample(words, rng.randint(1, 4)))
+            text = rng.choice(('', '(', '[')) + text + rng.choice(('', '.', '؟', ')', ':'))
+            at = rng.randrange(len(text) + 1)
+            parts = (EciIndex(i), text[:at], EciIndex(i + 1000), text[at:], EciIndex(i + 2000))
+            frontend._project_direct = None
+            try:
+                expected = project(parts, frontend)
+            finally:
+                frontend._project_direct = native
+            assert project(parts, frontend) == expected, (i, text, at)
     for parts in inputs:
         job = project(parts, frontend)
         assert only_text(job.parts) == job.tagged

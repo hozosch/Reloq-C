@@ -425,6 +425,7 @@ class SentencePlan:
     _timeline: list[float] | None = None
     _native_timeline: object = None
     _native_frication: object = None
+    _native_bridge_continuation: object = None
 
     def timeline(self):
         """Reuse frame times while only resonance or source values change."""
@@ -648,7 +649,8 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
     return SentencePlan(frames, tuple(counts), contexts, edges, word_markers, pilot,
                         tuple(pilot_bounds), tuple(replay_marks),
                         _native_timeline=capture_api.frame_timeline,
-                        _native_frication=capture_api.recompute_frication)
+                        _native_frication=capture_api.recompute_frication,
+                        _native_bridge_continuation=capture_api.bridge_continuation)
 
 
 def replay_marks(plan, original_counts):
@@ -851,6 +853,27 @@ def bridge_english_continuations(plan, parts, bridged, cuts, window_ms=30.0):
     excluded = set(bridged) | {edge for edge, _ in cuts}
     original, output = plan.frames, None
     starts, bounds = plan.timeline(), _edges_by_count(plan.counts)
+    if plan._native_bridge_continuation is not None:
+        skip = (ctypes.c_ubyte * len(parts))()
+        for edge in range(1, len(parts)):
+            skip[edge] = int(edge in excluded or parts[edge - 1].language != 'en-us' or
+                parts[edge].language != 'fa' or
+                bool(re.search(r'[()\[\]{}]\s*$', parts[edge - 1].text)) or
+                bool(re.match(r'^\s*[()\[\]{}]', parts[edge].text)))
+        if all(skip[1:]):
+            return ()
+        frame_times = ((ctypes.c_double * len(starts))(*starts)
+                       if not isinstance(starts, ctypes.Array) else starts)
+        frame_ends = (ctypes.c_size_t * len(bounds))(*bounds)
+        changed = (ctypes.c_ubyte * len(parts))()
+        output = (NativeFrame * len(original))()
+        if plan._native_bridge_continuation(original, output, frame_times, frame_ends, skip,
+                                             len(original), len(parts), window_ms, changed):
+            raise RuntimeError('invalid native continuation frames')
+        selected = tuple(edge for edge in range(1, len(parts)) if changed[edge])
+        if selected:
+            plan.frames = output
+        return selected
     changed = []
     for edge in range(1, len(parts)):
         if (edge in excluded or parts[edge - 1].language != 'en-us' or

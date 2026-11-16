@@ -104,6 +104,17 @@ FA_EXPORT void reloq_fa_recompute_frication(struct reloq_fa_frame *rows,size_t c
     }
 }
 
+/* The same bounded transition calculation is compiled into the common C
+ * source tree. This private export lets the NVDA prototype use it too. */
+FA_EXPORT int reloq_fa_bridge_continuation(const struct reloq_fa_frame *input,
+    struct reloq_fa_frame *output,const double *times,const size_t *ends,
+    const unsigned char *skip,size_t frame_count,size_t segment_count,
+    double window_ms,unsigned char *changed)
+{
+    return reloq_persian_bridge_continuation(input,output,times,ends,skip,
+                                             frame_count,segment_count,window_ms,changed);
+}
+
 /* The pilot contour and its voiced anchors are request-local. Perform the
  * same interpolation as the Python planner without a Python callback per
  * millisecond or per frame. All arithmetic between stored floats is double. */

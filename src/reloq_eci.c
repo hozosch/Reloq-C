@@ -21,6 +21,7 @@
 #include "reloq_voice_controls.h"
 #include "reloq_equalizer.h"
 #include "reloq_wordseg.h"
+#include "reloq_persian_direct.h"
 
 #include <limits.h>
 #include <math.h>
@@ -861,6 +862,17 @@ int ECICALL eciAddText(ECIHand handle, const void *text)
     eci_error(e,RELOQ_ECI_OK);
     return 1;
 }
+
+int ECICALL eciPersianProjectUtf8(const char *text,size_t bytes,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset)
+{
+    return reloq_fa_direct_project(text,bytes,source_offsets,is_index,event_count,
+                                   output,target_offsets,error_offset);
+}
+
+void ECICALL eciPersianRelease(void *pointer)
+{reloq_fa_direct_free(pointer);}
 
 int ECICALL eciAddTextUtf8(ECIHand handle,const void *text,size_t bytes,int mode)
 {

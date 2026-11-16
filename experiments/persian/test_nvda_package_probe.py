@@ -29,7 +29,7 @@ def main():
             'locale/de/manifest.ini': b'summary = "Alt"\ndescription = "Alt"\n'}
     entries = add_persian(base)
     assert 'Persian acoustic probe' in json.loads(entries['doc/source.json'])['build']
-    assert b'1.5.0-dev111' in entries['manifest.ini']
+    assert b'1.5.0-dev112' in entries['manifest.ini']
     assert 'Persisch- und Pinglish-Test' in entries['locale/de/manifest.ini'].decode('utf8')
     assert b'add_profiles(dict(LANGUAGES), DLL)' in entries[PREFIX + '__init__.py']
     assert b'lambda: make_engine(' in entries[PREFIX + '__init__.py']
@@ -91,6 +91,8 @@ def main():
                 assert engine.speak(('سلام دنیا؟',), pcm.extend, lambda _: None)
                 assert bytes(pcm) == original
                 frontend = engine._engines[fa.id]._frontend
+                assert frontend._project_direct is not None
+                assert frontend._project_direct.__name__ == 'eciPersianProjectUtf8'
                 assert frontend.analyze_direct('علامت').parts[0].text == '`[.0A.1la.0mAt]'
                 assert frontend.analyze_direct('بدبخت').parts[0].text == '`[.1bAd.0bAGt]'
                 assert frontend.analyze_direct('سوال').parts[0].text == '`[.1so]~`[.0al]'

@@ -37,6 +37,15 @@ CORE_DEPFILES := $(CORE_OBJECTS:.o=.d)
 $(CORE_OBJECTS): private CFLAGS += -MMD -MP
 -include $(CORE_DEPFILES)
 
+# The direct Persian text and boundary routines are shared C components;
+# they do not by themselves register a Persian speech language.
+PERSIAN_CORE_OBJECTS := reloq_persian_transition.o reloq_fa_direct_lexicon.o \
+    reloq_fa_direct_numbers.o reloq_fa_direct_normalize.o reloq_fa_direct_text.o \
+    reloq_fa_direct_letters.o reloq_fa_direct_pinglish.o
+libreloq_core.a: $(PERSIAN_CORE_OBJECTS)
+$(PERSIAN_CORE_OBJECTS): %.o: src/%.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -ffp-contract=off -Iinclude -c $< -o $@
+
 
 test_reloq_german_morphology: tests/test_reloq_german_morphology.c libreloq_core.a
 	$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude $< libreloq_core.a -lm -o $@

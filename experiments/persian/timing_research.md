@@ -392,3 +392,33 @@ and embedded text sources to match the checked-out revision, and a dedicated
 test checks the confirmed `alāve`, `alāmat` and other readings in that same
 DLL. This removes a duplicate library load; it does not yet move the Python
 language-switch and shared-contour planner into the native rules engine.
+
+## Shared C projection and high-rate S listening candidate, 2026-11-16
+
+The common ECI library now exposes request-local Persian text and source-event
+projection through `eciPersianProjectUtf8` and `eciPersianRelease`. Its direct
+rules and the selected English-to-Persian resonance bridge are portable C
+sources used in the NVDA test path. The existing fallback still handles text
+outside the direct rules. The remaining sentence planner and language routing
+are not yet native, and Persian is not yet registered as an ECI, SAPI or
+Android language. This is groundwork for those hosts, not a completed port.
+
+For four repetitions of a local projection microbenchmark, medians for a
+40-word job with source marks were approximately 0.51–0.53 ms in the previous
+Python mapping and 0.22–0.23 ms with C mapping. This is not an NVDA or device
+latency measurement and does not establish equal responsiveness to other
+languages. The text and source marks are request-local; no utterance results
+are retained. The C and former Python transition outputs are also compared
+frame-for-frame and as completed speech.
+
+At 32, 44.1 and 48 kHz, the high-rate S-like frication extension is reduced
+and gently rolled off above the main band, but a high-frequency extension is
+retained. The previous Castilian/Greek narrower mode and rates at or below
+22.05 kHz are unchanged. On sustained /s/ frames from English `see`, German
+`Kasse` and Persian `/sa/`, with two genders, a local PCM comparison found
+changes between +0.03 and +0.08 dB below 5 kHz, about -2.6 to -2.7 dB in
+8–11 kHz, and about -3.2 to -3.5 dB above 11 kHz. These bands are measurement
+intervals, not a guarantee of perceived loudness or clarity. The existing
+source classifier can also include S-like stop releases; the selected /f/
+and vowel checks remain unchanged. Listening at the user's actual output
+device is required before adopting the candidate.

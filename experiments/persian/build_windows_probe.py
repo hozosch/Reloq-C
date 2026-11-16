@@ -80,7 +80,8 @@ def main():
         direct.append(obj)
     # Only the private Persian DLL gains frame capture and continuous replay.
     # All other host objects and the baseline release remain unchanged.
-    objects = [obj for obj in objects if obj.name not in ('reloq_rules61.o', 'reloq_eci.o')]
+    objects = [obj for obj in objects if obj.name not in ('reloq_rules61.o', 'reloq_eci.o')
+               and not obj.name.startswith('reloq_fa_direct_')]
     for source in (prepare(work), prepare_eci(work)):
         obj = work / (source.stem + '.o')
         subprocess.run([args.cc, '-O2', '-std=c11', '-Wall', '-Wextra', '-Werror', '-pedantic',
@@ -91,7 +92,7 @@ def main():
                         '-c', str(source), '-o', str(obj)], check=True)
         direct.append(obj)
     exports = work / 'persian.def'
-    exports.write_text('EXPORTS\nreloq_fa_direct_text\nreloq_fa_direct_number\n'
+    exports.write_text('EXPORTS\nreloq_fa_direct_text\nreloq_fa_direct_project\nreloq_fa_direct_number\n'
                        'reloq_fa_direct_letter\nreloq_fa_direct_free\n'
                        'reloq_fa_pinglish_word\n', encoding='ascii')
     output = work / 'eci_persian_probe.dll'

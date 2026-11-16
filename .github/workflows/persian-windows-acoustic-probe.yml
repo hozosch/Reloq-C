@@ -17,6 +17,8 @@ on:
       - experiments/persian/test_continuous_replay.py
       - experiments/persian/test_sibilant_noise.py
       - experiments/persian/test_embedded_text_rules.py
+      - eci/test_persian_project.py
+      - tests/test_reloq_classic_noise.c
       - nvda/_reloq_persian_frames.py
       - experiments/persian/test_windows_acoustics.py
       - .github/workflows/persian-windows-acoustic-probe.yml
@@ -61,6 +63,7 @@ jobs:
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           make -C eci -j2 eci.dll SHELL=C:/msys64/usr/bin/bash.exe PROVIDER_LTO=-flto=2 WINDOWS_CC=gcc WINDOWS_OBJDUMP=objdump
           python eci/verify_pe_exports.py eci/eci.dll --objdump objdump --header include/reloq_eci.h
+          make -C eci eci_classic_noise_probe.exe SHELL=C:/msys64/usr/bin/bash.exe WINDOWS_CC=gcc
       - name: Build only the changed Persian provider objects
         shell: bash
         run: |
@@ -71,8 +74,12 @@ jobs:
         run: |
           python -B experiments/persian/test_windows_acoustics.py --baseline eci/eci.dll --candidate persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Windows Persian acoustic isolation failed' }
+          & eci/eci_classic_noise_probe.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Windows high-rate sibilant spectrum test failed' }
           python -B experiments/persian/test_embedded_text_rules.py --library persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Embedded Persian text rules are stale or missing' }
+          python -B eci/test_persian_project.py --library persian-windows-probe/eci_persian_probe.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Native Persian text projection failed' }
           python -B experiments/persian/test_continuous_replay.py --probe persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Windows continuous replay failed' }
           python -B experiments/persian/test_sibilant_noise.py --candidate persian-windows-probe/eci_persian_probe.dll

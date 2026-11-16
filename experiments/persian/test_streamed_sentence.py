@@ -23,8 +23,15 @@ def main():
     engine = make_language_engine(args.scope_probe, args.native_library, args.worker,
                                   args.espeak_library, args.data_parent)
     original_available, original_append = FrameStream.available, FrameStream.append
+    original_capture_init = FrameCapture.__init__
     original_capture = FrameCapture.capture
     original_parallel_min = continuous_driver._PARALLEL_MIN
+    native_transition = [False]
+    def capture_init(self, dll):
+        original_capture_init(self, dll)
+        if not native_transition[0]:
+            self.bridge_continuation = None
+    FrameCapture.__init__ = capture_init
     counts = []
     def track(self, frames, first, end, marks=()):
         counts.append(end - first)
@@ -78,10 +85,12 @@ def main():
             for parts in examples:
                 clear()
                 continuous_driver._PARALLEL_MIN = 10**9
+                native_transition[0] = False
                 FrameStream.available = staticmethod(lambda _dll: False)
                 full = render(parts)
                 clear()
                 continuous_driver._PARALLEL_MIN = original_parallel_min
+                native_transition[0] = True
                 FrameStream.available = staticmethod(original_available)
                 before = len(counts)
                 incremental = render(parts)
@@ -161,6 +170,7 @@ def main():
     finally:
         FrameStream.available = staticmethod(original_available)
         FrameStream.append = original_append
+        FrameCapture.__init__ = original_capture_init
         FrameCapture.capture = original_capture
         continuous_driver._PARALLEL_MIN = original_parallel_min
         engine.close()

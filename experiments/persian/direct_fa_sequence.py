@@ -74,11 +74,49 @@ def _safe_native_punctuation(job: ProjectedJob) -> ProjectedJob:
     return replace(job, tagged=tagged, parts=tuple(parts))
 
 
+def _project_direct_native(parts, frontend):
+    """Keep covered text and source-event projection in the shared C path."""
+    if frontend._project_direct is None:
+        return None
+    text, events, offset = [], [], 0
+    for part in parts:
+        if isinstance(part, (str, EciText)):
+            if isinstance(part, EciText) and (part.character_mode or part.speed_control):
+                return None
+            value = part if isinstance(part, str) else part.text
+            text.append(value)
+            offset += len(value.encode('utf8'))
+        elif isinstance(part, (EciIndex, EciPitch, EciPitchHz, EciProsody)):
+            events.append((offset, part))
+        else:
+            return None
+    source = ''.join(text)
+    if source.strip() and not any(c.isalpha() or c.isdecimal() for c in source):
+        return None
+    analyzed = frontend.project_direct(source, ((at, isinstance(command, EciIndex)) for at, command in events))
+    if analyzed is None:
+        return None
+    tagged, targets = analyzed
+    result, previous = [], 0
+    for target, (_source, command) in zip(targets, events):
+        if target > previous:
+            result.append(EciText(tagged[previous:target], segmentation_guarded=True))
+        result.append(command)
+        previous = target
+    if previous < len(tagged):
+        result.append(EciText(tagged[previous:], segmentation_guarded=True))
+    return ProjectedJob(source, tagged, tuple(result))
+
+
 def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersian,
             *, allow_fallback: bool = False, pinglish: bool = False) -> ProjectedJob:
     """Use direct analysis and, optionally, verified reference word anchors."""
     parts = tuple(parts)
     DirectEciEngine._prepare(parts, 'utf-8')
+    if not pinglish:
+        projected = _project_direct_native(parts, frontend)
+        if projected is not None:
+            return _safe_native_punctuation(projected)
     spelled = [part for part in parts if isinstance(part, EciText) and part.character_mode]
     runs = []
     if spelled:

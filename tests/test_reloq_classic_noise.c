@@ -78,6 +78,19 @@ int main(void) {
     assert(fabs(10*log10(cast.total/anchor.total))<.12);
    }
   }
+  if(kind==0 && rates[r]>=32000) {
+   /* The softer high-rate S extension must retain its upper energy while
+    * leaving the clarity-bearing lower band nearly unchanged. */
+   s.sibilant_extension=1;
+   assert(reloq_rate_transfer_prepare_classic(&s,&ref,&cur,&p,rates[r]));
+   struct bands retracted=measure(&s,&ref,&cur,&p,rates[r]);
+   s.sibilant_extension=2;
+   assert(reloq_rate_transfer_prepare_classic(&s,&ref,&cur,&p,rates[r]));
+   struct bands softened=measure(&s,&ref,&cur,&p,rates[r]);
+   assert(softened.upper<full.upper && softened.upper>retracted.upper);
+   assert(fabs(10*log10(softened.main/full.main))<.25);
+   assert(fabs(10*log10(softened.total/anchor.total))<.12);
+  }
   ++checks;
  }
  printf("Classic noise: %u cases; main-band shape error <=%.3f dB; total power error <=%.3f dB; largest main-band compensation %.3f dB\n",checks,worst,total_error,largest_reduction);

@@ -11,7 +11,8 @@ def main():
     parser.add_argument('--library', required=True, type=Path)
     args = parser.parse_args()
     dll = ctypes.CDLL(str(args.library.resolve()))
-    for name in ('reloq_fa_direct_text', 'reloq_fa_direct_number', 'reloq_fa_direct_letter',
+    for name in ('eciPersianProjectUtf8', 'eciPersianRelease', 'reloq_fa_direct_text',
+                 'reloq_fa_direct_project', 'reloq_fa_direct_number', 'reloq_fa_direct_letter',
                  'reloq_fa_direct_free', 'reloq_fa_pinglish_word'):
         getattr(dll, name)
     direct, free = dll.reloq_fa_direct_text, dll.reloq_fa_direct_free

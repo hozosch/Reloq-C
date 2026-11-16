@@ -197,3 +197,44 @@ int reloq_fa_direct_text(const char *text,size_t length,char **output,
     free(normalized_to_tagged);free(normalized);
     *output=tagged;*source_map=source_to_normalized;return 0;
 }
+
+int reloq_fa_direct_project(const char *text,size_t length,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset)
+{
+    if(output)*output=NULL;
+    if(error_offset)*error_offset=0;
+    if(!output || !error_offset || (event_count && (!source_offsets || !is_index || !target_offsets)) ||
+       event_count>SIZE_MAX/sizeof(size_t))return -1;
+    size_t *map=NULL,*mapped=event_count?malloc(event_count*sizeof *mapped):NULL;
+    if(event_count&&!mapped)return -2;
+    char *tagged=NULL;
+    int status=reloq_fa_direct_text(text,length,&tagged,&map,error_offset);
+    if(status){free(mapped);return status;}
+    size_t tagged_length=strlen(tagged),previous=0,cursor=0,tag_start=0,tag_end=0;
+    if(map[length]!=tagged_length){status=-1;goto done;}
+    for(size_t i=0;i<event_count;++i) {
+        size_t offset=source_offsets[i];
+        if(offset>length || (i && offset<previous) || is_index[i]>1) {status=3;goto done;}
+        size_t target=map[offset];
+        if(target>tagged_length || (i && target<mapped[i-1])){status=-1;goto done;}
+        if(!is_index[i] && offset>0 && offset<length && map[offset]==map[offset-1]) {
+            status=3;*error_offset=offset;goto done;
+        }
+        while(cursor<tagged_length) {
+            if(tag_end>target)break;
+            while(cursor<tagged_length && !(tagged[cursor]=='`' && cursor+1<tagged_length && tagged[cursor+1]=='['))++cursor;
+            if(cursor==tagged_length)break;
+            tag_start=cursor;
+            while(cursor<tagged_length && tagged[cursor]!=']')++cursor;
+            if(cursor==tagged_length){status=-1;goto done;}
+            tag_end=++cursor;
+        }
+        if(tag_start<target && target<tag_end){status=3;*error_offset=offset;goto done;}
+        mapped[i]=target;previous=offset;
+    }
+    if(event_count)memcpy(target_offsets,mapped,event_count*sizeof *mapped);
+    *output=tagged;tagged=NULL;
+done:
+    free(tagged);free(map);free(mapped);return status;
+}

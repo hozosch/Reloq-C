@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 from bisect import bisect_left
+import ctypes
 from pathlib import Path
 import re
 import sys
@@ -29,6 +30,7 @@ def main():
     args = parser.parse_args()
     fa, en = voice(args.probe, 0x90000), voice(args.probe, 0x10000)
     scope = fa._dll.reloq_fa_acoustic_scope
+    assert FrameCapture(fa._dll).bridge_continuation is not None, 'native transition export is missing'
     checks = 0
     try:
         assert scope(1) == 0
@@ -92,7 +94,14 @@ def main():
                     original = _copy_frames(plan.frames)
                     boundary = _edges_by_count(plan.counts)[0]
                     starts = _starts(original)
-                    assert bridge_english_continuations(plan, parts, (), ()) == (1,)
+                    native = plan._native_bridge_continuation
+                    plan._native_bridge_continuation = None
+                    expected_changes = bridge_english_continuations(plan, parts, (), ())
+                    expected = ctypes.string_at(plan.frames, ctypes.sizeof(plan.frames))
+                    plan.frames = _copy_frames(original)
+                    plan._native_bridge_continuation = native
+                    assert bridge_english_continuations(plan, parts, (), ()) == expected_changes == (1,)
+                    assert ctypes.string_at(plan.frames, ctypes.sizeof(plan.frames)) == expected, (rate, gender, left, tag)
                     assert len(plan.frames) == len(original)
                     for index, (before, after) in enumerate(zip(original, plan.frames)):
                         # Never alter the preceding word, source levels,

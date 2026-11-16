@@ -168,6 +168,17 @@ class DirectFirstPersian:
             ctypes.POINTER(ctypes.POINTER(ctypes.c_size_t)), ctypes.POINTER(ctypes.c_size_t),
         )
         self._dll.reloq_fa_direct_text.restype = ctypes.c_int
+        self._project_direct = getattr(self._dll, 'eciPersianProjectUtf8', None)
+        self._free_projected = getattr(self._dll, 'eciPersianRelease', None)
+        if self._project_direct is None or self._free_projected is None:
+            self._project_direct = getattr(self._dll, 'reloq_fa_direct_project', None)
+            self._free_projected = self._dll.reloq_fa_direct_free
+        if self._project_direct is not None:
+            self._project_direct.argtypes = (ctypes.c_char_p, ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_ubyte), ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_size_t))
+            self._project_direct.restype = ctypes.c_int
+            self._free_projected.argtypes, self._free_projected.restype = (ctypes.c_void_p,), None
         self._dll.reloq_fa_direct_number.argtypes = (
             ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t),
             ctypes.c_void_p, ctypes.c_size_t,
@@ -218,6 +229,30 @@ class DirectFirstPersian:
             self._dll.reloq_fa_direct_free(output)
             self._dll.reloq_fa_direct_free(mapping)
         return 0, tagged, source_map, 0
+
+    def project_direct(self, text: str, events):
+        """Project direct source indices in C; return None for other paths."""
+        if self._project_direct is None:
+            return None
+        with self._guard:
+            if self._closed:
+                raise RuntimeError('Persian text frontend is closed')
+        encoded = text.encode('utf8')
+        events = tuple(events)
+        offsets = (ctypes.c_size_t * len(events))(*(item[0] for item in events)) if events else None
+        indices = (ctypes.c_ubyte * len(events))(*(int(item[1]) for item in events)) if events else None
+        targets = (ctypes.c_size_t * len(events))() if events else None
+        output, error = ctypes.c_void_p(), ctypes.c_size_t()
+        status = self._project_direct(encoded, len(encoded), offsets, indices, len(events),
+                                      ctypes.byref(output), targets, ctypes.byref(error))
+        if status == -2:
+            raise MemoryError('native Persian projection allocation failed')
+        if status:
+            return None
+        try:
+            return ctypes.string_at(output).decode('ascii'), tuple(targets) if targets is not None else ()
+        finally:
+            self._free_projected(output)
 
     def analyze_direct(self, text: str) -> PersianAnalysis | None:
         """Return only a fully covered native Persian analysis, without eSpeak."""

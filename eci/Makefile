@@ -87,6 +87,11 @@ $(WINDOWS_BUILD)/reloq_eci_fixed_math.o: reloq_eci_fixed_math.c
 	@mkdir -p $(dir $@)
 	$(WINDOWS_CC) $(CPPFLAGS) $(WINDOWS_CFLAGS) $(SECTIONS) -c $< -o $@
 ANDROID_OBJECTS := $(patsubst ../src/%.c,$(ANDROID_BUILD)/%.o,$(SOURCE))
+PERSIAN_COMPONENTS := reloq_fa_direct_lexicon reloq_fa_direct_numbers reloq_fa_direct_normalize reloq_fa_direct_text reloq_fa_direct_letters reloq_fa_direct_pinglish
+PERSIAN_INPUTS := $(wildcard ../experiments/persian/direct_fa_*.c ../experiments/persian/direct_fa_*.h ../experiments/persian/direct_fa_*.inc)
+$(addprefix build/posix/,$(addsuffix .o,$(PERSIAN_COMPONENTS))) $(addprefix $(WINDOWS_BUILD)/,$(addsuffix .o,$(PERSIAN_COMPONENTS))) $(addprefix $(ANDROID_BUILD)/,$(addsuffix .o,$(PERSIAN_COMPONENTS))): $(PERSIAN_INPUTS)
+build/posix/reloq_persian_transition.o $(WINDOWS_BUILD)/reloq_persian_transition.o $(ANDROID_BUILD)/reloq_persian_transition.o: ../src/reloq_persian_transition.h
+build/posix/reloq_eci.o $(WINDOWS_BUILD)/reloq_eci.o $(ANDROID_BUILD)/reloq_eci.o: ../src/reloq_persian_direct.h ../experiments/persian/direct_fa_text.h
 $(ANDROID_BUILD)/%.o: ../src/%.c $(HEADERS)
 	@mkdir -p $(dir $@)
 	$(ANDROID_CC) $(CPPFLAGS) $(ANDROID_CFLAGS) $(SECTIONS) -ffp-contract=off -fPIC -fvisibility=hidden -I../include -c $< -o $@
@@ -177,6 +182,9 @@ test_reloq_classic_frame: ../tests/test_reloq_classic_frame.c build/posix/reloq_
 test_reloq_classic_noise: ../tests/test_reloq_classic_noise.c ../src/reloq_rate_transfer.c $(HEADERS) build/posix/reloq_core.o build/posix/reloq_noise_profile.o
 	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< build/posix/reloq_core.o build/posix/reloq_noise_profile.o -Wl,--gc-sections -lm -o $@
 
+eci_classic_noise_probe.exe: ../tests/test_reloq_classic_noise.c ../src/reloq_rate_transfer.c $(HEADERS) $(WINDOWS_BUILD)/reloq_core.o $(WINDOWS_BUILD)/reloq_noise_profile.o
+	$(WINDOWS_CC) $(WINDOWS_CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< $(WINDOWS_BUILD)/reloq_core.o $(WINDOWS_BUILD)/reloq_noise_profile.o $(WINDOWS_LDFLAGS) -Wl,--gc-sections -lm -o $@
+
 build/posix/reloq_session_float_diagnostic.o: ../tools/reloq_session_float_diagnostic.c ../src/reloq_session.c $(HEADERS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -fvisibility=hidden -I../include -c $< -o $@
 
@@ -204,6 +212,7 @@ test: test_reloq_eci test_reloq_german_context test_reloq_german_cancel test_rel
 	./test_reloq_silence_cut
 	./test_reloq_classic_source
 	python3 test_public_abi.py libreloq_eci.so --header ../include/reloq_eci.h
+	python3 -B test_persian_project.py --library libreloq_eci.so
 	python3 ../nvda/test_eci_standard_api.py --library libreloq_eci.so
 	python3 ../nvda/test_eci_extended_standard_api.py --library libreloq_eci.so
 	python3 ../nvda/test_eci_pitch_hz.py --library libreloq_eci.so

@@ -281,6 +281,18 @@ ECIAPI int ECICALL eciUpdateDictA(ECIHand handle,ECIDictHand dictionary,int volu
  * optional word/CamelCase segmenter (for host-side dictionary substitutions). */
 ECIAPI int ECICALL eciAddTextUtf8(ECIHand handle, const void *text, size_t bytes, int character_mode);
 
+/* Project directly covered Persian UTF-8 text and ordered source-byte
+ * positions to internal phoneme-tag boundaries. For each event, is_index is
+ * 1 for a text index and 0 for another control. Returns 0 on success, 1 for
+ * uncovered input, 2 for unsupported number syntax, 3 for an unsafe event,
+ * -1 for invalid input, and -2 on allocation failure. The output must be
+ * released with eciPersianRelease; mapped offsets are written only on
+ * success. This does not select a Persian dialect or synthesize speech. */
+ECIAPI int ECICALL eciPersianProjectUtf8(const char *text,size_t bytes,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset);
+ECIAPI void ECICALL eciPersianRelease(void *pointer);
+
 ECIAPI int ECICALL eciLoadLexicon(ECIHand handle, const char *utf8_path);
 /* Optional native main/root/abbreviation volumes. NULL disables them.
  * The UTF-8 directory is immutable while active; changes commit atomically. */
