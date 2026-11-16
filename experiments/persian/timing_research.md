@@ -209,8 +209,11 @@ assumed to be equivalent.
 
 On the local diagnostic build with eSpeak NG **1.53.0**, 46 direct word
 candidates produced 261 matched vowel observations across three rates; nine
-word/rate comparisons were excluded. This is not a measurement of NVDA's
-eSpeak 1.51 or a human-speech corpus. At native speed 98 and eSpeak 175 WPM,
+word/rate comparisons were excluded. The matching event intervals were then
+replaced by those from the **1.52.0** eSpeak DLL in the portable NVDA
+2026.3.1 Windows test. All 261 observations retained a compatible vowel and
+stress; none of these matched intervals changed between the two reference
+builds. These are not human-speech measurements. At native speed 98 and eSpeak 175 WPM,
 the first-word-before-another-word / isolated-word ratios were:
 
 | Vowel and word | Native nucleus target | eSpeak event interval |
@@ -239,6 +242,23 @@ python3 -B experiments/persian/compare_vowel_corpus.py \
   --native-library FA_DIRECT_LIBRARY --espeak-library ESPEAK_LIBRARY \
   --data-parent ESPEAK_DATA_PARENT --output vowel-comparison.json
 ```
+
+To compare against the eSpeak library packaged by a particular Windows NVDA,
+`compare_vowel_corpus.py --espeak-only` exports that library's events without
+the diagnostic acoustic library. The Windows package test writes the result
+as `persian-timing/espeak-vowels.json`. Combine it with the local diagnostic
+report, rejecting incompatible corpus hashes or vowel identities:
+
+```sh
+python3 -B experiments/persian/compare_saved_vowels.py \
+  --native vowel-comparison.json --espeak espeak-vowels.json \
+  --output nvda-vowel-comparison.json
+```
+
+The native report has already been screened against its local reference, so
+this cross-platform comparison is the conservative intersection of both
+screens. Different synthesis cores and platforms still define the measured
+boundaries differently.
 
 The diagnostic scope differed from the production scope only in its trace
 selector. With tracing disabled, 72 combinations of mixed Persian/English
