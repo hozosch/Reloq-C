@@ -26,6 +26,9 @@ int reloq_fa_dense_curve(const struct reloq_fa_frame *rows,size_t count,
     unsigned column,float *out,size_t length);
 int reloq_fa_fit_pitch(struct reloq_fa_frame *rows,size_t count,const float *pilot,
     size_t length,int64_t start,int64_t end,int64_t a,int64_t b);
+int reloq_fa_fit_pitch_edges(struct reloq_fa_frame *rows,size_t count,const float *pilot,
+    size_t length,const float *original,int64_t start,int64_t end,int64_t a,int64_t b,
+    unsigned edges,int64_t window);
 int reloq_fa_capture_controls_only(void);
 int reloq_fa_capture_active(void);
 int reloq_fa_capture_advance_samples(size_t count);

@@ -2,7 +2,7 @@ name: Persian shared core on Android
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-nvda-prep-20261115]
+    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116]
     paths:
       - .github/workflows/persian-android-core.yml
       - eci/Makefile

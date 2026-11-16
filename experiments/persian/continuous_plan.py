@@ -301,6 +301,7 @@ class CapturedRows:
     indexes: dict[int, int]
     frames: object
     ticks: list[int]
+    original_pitch: object = None
 
     @classmethod
     def from_capture(cls, value, *, native=None):
@@ -365,8 +366,9 @@ def _bracket_boundary(parts, edge):
     return bool((left and left[-1] in '()[]{}') or (right and right[0] in '()[]{}'))
 
 
-def _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate, check=None, *, native=None, only=None):
-    av = [row.controls[2] for row in item.frames] if native is None else None
+def _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate, check=None, *,
+                       native=None, native_edges=None, only=None):
+    av = None
     for i, part in enumerate(parts):
         if check:
             check()
@@ -387,7 +389,25 @@ def _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language,
         a, b = pilot_bounds[i], pilot_bounds[i + 1]
         if not 0 <= a < b < len(pilot_pitch):
             raise RuntimeError('invalid shared pitch interval')
-        if native is not None:
+        # The Finnish-based pilot remains the Persian contour. Keep English's
+        # own word accents and blend only around actual, unbracketed switches.
+        edges = 0
+        if language == 'en-us':
+            if i and parts[i - 1].language != language and not _bracket_boundary(parts, i):
+                edges |= 1
+            if i + 1 < len(parts) and parts[i + 1].language != language and not _bracket_boundary(parts, i + 1):
+                edges |= 2
+        if edges and item.original_pitch is None:
+            item.original_pitch = (ctypes.c_float * len(item.frames))(*(row.controls[1] for row in item.frames))
+        if edges and native_edges is not None:
+            status = native_edges(item.frames, len(item.frames), pilot_pitch, len(pilot_pitch),
+                                  item.original_pitch, start, end, a, b, edges, 45)
+            if status:
+                raise RuntimeError('no voiced pitch anchor' if status == 1 else 'invalid native pitch interval')
+            if check:
+                check()
+            continue
+        if native is not None and not edges:
             status = native(item.frames, len(item.frames), pilot_pitch, len(pilot_pitch), start, end, a, b)
             if status:
                 raise RuntimeError('no voiced pitch anchor' if status == 1 else 'invalid native pitch interval')
@@ -396,6 +416,8 @@ def _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language,
             continue
         # Only the first and last voiced milliseconds are needed. Search
         # from each edge instead of allocating two dense sentence arrays.
+        if av is None:
+            av = [row.controls[2] for row in item.frames]
         first = next((j for j in range(start, end) if _interp(j, item.ticks, av) > 0), None)
         last = next((j for j in range(end - 1, start - 1, -1) if _interp(j, item.ticks, av) > 0), None)
         if first is None or last is None or first >= last:
@@ -408,8 +430,19 @@ def _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language,
                 continue
             t = a if tick < first else b if tick > last else a + (b - a) * (tick - first) / (last - first)
             lo = int(t)
-            row.controls[1] = _f32(pilot_pitch[lo] if lo >= len(pilot_pitch) - 1 else
-                                   pilot_pitch[lo] + (pilot_pitch[lo + 1] - pilot_pitch[lo]) * (t - lo))
+            target = (pilot_pitch[lo] if lo >= len(pilot_pitch) - 1 else
+                      pilot_pitch[lo] + (pilot_pitch[lo + 1] - pilot_pitch[lo]) * (t - lo))
+            if edges:
+                weight = 0.0
+                if edges & 1:
+                    x = min(1.0, max(0.0, (tick - first) / 45))
+                    weight = 1.0 - x * x * (3.0 - 2.0 * x)
+                if edges & 2:
+                    x = min(1.0, max(0.0, (last - tick) / 45))
+                    weight = max(weight, 1.0 - x * x * (3.0 - 2.0 * x))
+                original = item.original_pitch[number]
+                target = original + weight * (target - original)
+            row.controls[1] = _f32(target)
 
 
 @dataclass
@@ -452,6 +485,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
         raise ValueError('source rates do not match the replay clock')
     capture_api = FrameCapture(fa._dll)
     native_pitch = capture_api.fit_pitch if capture_api.dense_curve is not None else None
+    native_edges = capture_api.fit_pitch_edges if capture_api.dense_curve is not None else None
     def get(voice, planned, *, audio=True):
         if check:
             check()
@@ -585,6 +619,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                     quick_pitch, quick_bounds = contour(quick, controls_only=True)
                     _fit_context_pitch(item, bounds, quick_pitch, quick_bounds, parts, language,
                                        rate, check, native=native_pitch if item.ticks[-1] <= 60000 else None,
+                                       native_edges=native_edges if item.ticks[-1] <= 60000 else None,
                                        only=(0,))
                     if start_prefix(item, bounds, source_marks, capture_api, minimum_ms=fast_minimum_ms):
                         early = (language, item, bounds)
@@ -607,9 +642,11 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                     early_language, early_item, early_bounds = early
                     _fit_context_pitch(early_item, early_bounds, pilot_pitch, pilot_bounds, parts,
                                        early_language, rate, check,
-                                       native=native_pitch if early_item.ticks[-1] <= 60000 else None)
+                                       native=native_pitch if early_item.ticks[-1] <= 60000 else None,
+                                       native_edges=native_edges if early_item.ticks[-1] <= 60000 else None)
             _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate, check,
-                               native=native_pitch if item.ticks[-1] <= 60000 else None)
+                               native=native_pitch if item.ticks[-1] <= 60000 else None,
+                               native_edges=native_edges if item.ticks[-1] <= 60000 else None)
             contexts[language], edges[language] = item, bounds
             if start_prefix is not None and language == parts[0].language and early is None:
                 start_prefix(item, bounds, source_marks, capture_api)

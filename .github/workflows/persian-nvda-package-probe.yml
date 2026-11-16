@@ -2,7 +2,7 @@ name: Persian and Pinglish NVDA test package
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-nvda-prep-20261115]
+    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116]
     paths:
       - experiments/persian/build_experimental_nvda.py
       - experiments/persian/select_windows_acoustic_run.py
@@ -42,6 +42,7 @@ on:
       - experiments/persian/continuous_driver.py
       - experiments/persian/continuous_plan.py
       - experiments/persian/test_continuous_runtime.py
+      - experiments/persian/test_mixed_pitch_edges.py
       - experiments/persian/test_streamed_sentence.py
       - experiments/persian/test_fricative_identity.py
       - experiments/persian/test_unvoiced_switch.py
@@ -108,7 +109,7 @@ jobs:
         run: |
           selected=""
           for attempt in $(seq 1 60); do
-            gh api "repos/$GITHUB_REPOSITORY/actions/workflows/persian-windows-acoustic-probe.yml/runs?branch=codex%2Fpersian-nvda-prep-20261115&per_page=40" > windows-runs.json
+            gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/persian-windows-acoustic-probe.yml/runs" -f branch="$GITHUB_REF_NAME" -F per_page=40 > windows-runs.json
             selected=$(python -B experiments/persian/select_windows_acoustic_run.py windows-runs.json)
             if [ -n "$selected" ]; then break; fi
             sleep 5
@@ -177,6 +178,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Windows Persian language switching failed' }
           python -B experiments/persian/test_continuous_runtime.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows continuous sentence and source indexes failed' }
+          python -B experiments/persian/test_mixed_pitch_edges.py --library "$common"
+          if ($LASTEXITCODE -ne 0) { throw 'English pitch preservation failed' }
           python -B experiments/persian/test_streamed_sentence.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows incremental sentence, recovery or cancellation failed' }
           python -B experiments/persian/test_parallel_pilot.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
@@ -206,18 +209,18 @@ jobs:
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci.dll -print -quit)
-          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --output dist/reloq-c-persian-pinglish-1.5.0-dev114.nvda-addon
+          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --output dist/reloq-c-persian-pinglish-1.5.0-dev115.nvda-addon
       - name: Test both choices in real NVDA
         shell: pwsh
         env:
           PYTHONIOENCODING: utf-8
         run: |
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon dist/reloq-c-persian-pinglish-1.5.0-dev114.nvda-addon --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon dist/reloq-c-persian-pinglish-1.5.0-dev115.nvda-addon --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
           if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA Persian profile test failed' }
       - uses: actions/upload-artifact@v4
         with:
           name: persian-pinglish-nvda-test
-          path: dist/reloq-c-persian-pinglish-1.5.0-dev114.nvda-addon
+          path: dist/reloq-c-persian-pinglish-1.5.0-dev115.nvda-addon
           if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@v4

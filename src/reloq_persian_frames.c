@@ -224,6 +224,47 @@ FA_EXPORT int reloq_fa_fit_pitch(struct reloq_fa_frame *rows,size_t count,
     return 0;
 }
 
+/* Preserve each English word's native pitch shape. Blend to the shared
+ * sentence contour only at the voiced edges adjoining a Persian segment.
+ * original is a request-local snapshot, so a streamed prefix and a later
+ * full re-plan do not apply the blend twice. */
+FA_EXPORT int reloq_fa_fit_pitch_edges(struct reloq_fa_frame *rows,size_t count,
+    const float *pilot,size_t length,const float *original,int64_t start,int64_t end,
+    int64_t a,int64_t b,unsigned edges,int64_t window)
+{
+    if(!rows || !count || !pilot || !length || !original || start<0 || start>=end ||
+       rows[count-1].tick<0 || rows[count-1].tick==INT64_MAX || end>rows[count-1].tick+1 ||
+       a<0 || a>=b || (uint64_t)b>=length || !edges || (edges&~3u) ||
+       window<=0 || window>1000)return -1;
+    int64_t first=start,last=end-1;
+    while(first<end && fa_interpolated_voice(rows,count,first)<=0)++first;
+    while(last>=start && fa_interpolated_voice(rows,count,last)<=0)--last;
+    if(first>=end || last<start || first>=last)return 1;
+    for(size_t i=0;i<count;++i) {
+        int64_t tick=rows[i].tick;
+        if(tick<start || tick>=end)continue;
+        double t=tick<first?(double)a:tick>last?(double)b:
+                 (double)a+(double)(b-a)*(double)(tick-first)/(double)(last-first);
+        size_t lower=(size_t)t;
+        double target=pilot[lower];
+        if(lower+1<length)target+=((double)pilot[lower+1]-target)*(t-(double)lower);
+        double weight=0.0;
+        if(edges&1u) {
+            double x=(double)(tick-first)/(double)window;
+            if(x<0)x=0;else if(x>1)x=1;
+            weight=1.0-x*x*(3.0-2.0*x);
+        }
+        if(edges&2u) {
+            double x=(double)(last-tick)/(double)window;
+            if(x<0)x=0;else if(x>1)x=1;
+            double other=1.0-x*x*(3.0-2.0*x);
+            if(other>weight)weight=other;
+        }
+        rows[i].controls[1]=(float)((double)original[i]+weight*(target-(double)original[i]));
+    }
+    return 0;
+}
+
 int reloq_fa_capture_append(int64_t tick,const float controls[62],
     float duration,float gain,int formants,int head,int gender,
     int s_frication,int limit_frication)

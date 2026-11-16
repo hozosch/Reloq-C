@@ -112,7 +112,7 @@ def main():
             for language in ('fa', 'en-us'):
                 _fit_context_pitch(left, bounds, accelerated, pilot_bounds, parts, language, 1000)
                 _fit_context_pitch(right, bounds, accelerated, pilot_bounds, parts, language, 1000,
-                                   native=api.fit_pitch)
+                                   native=api.fit_pitch, native_edges=api.fit_pitch_edges)
             assert bytes(left.frames) == bytes(right.frames)
         assert native._frontend._worker is None
         assert render(engine, ('کتابم کتابت کتابش کتابها.',))[0]

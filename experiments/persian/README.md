@@ -15,6 +15,29 @@ and Pinglish have not yet been registered as native ECI languages or exposed
 as selectable voices in SAPI5 and Android. An Android cross-compilation test
 checks the common native components, not end-to-end Persian playback.
 
+## Issue 49: listening candidates
+
+The dev115 candidate preserves the US-English pitch contour within an English
+segment of a Persian/English utterance. Only its first and/or last 45 ms of
+voicing blend towards the existing Persian pilot at an actual language switch;
+brackets still use their native boundaries. The calculation is in the common C
+frame layer, and the NVDA adapter retains a request-local copy of the original
+pitch for repeat planning and streaming. Persian-only and English-only text do
+not use this cross-language pitch change.
+
+For a controlled timing comparison, the Persian acoustic scope also shortens
+short, unstressed, word-internal vowel nuclei by 10%. The choice is a listening
+hypothesis, not a general Persian duration rule or a copy of eSpeak event
+times. Word-final vowels, explicitly long or stressed vowels, L, consonant
+rules and sample-rate filters stay as before. This needs native-speaker and
+NVDA listening feedback.
+
+The separately built A comparison (`build_a_nasal_comparison.py`) keeps the
+same melody and timing and temporarily restores the earlier back-A nasal
+setting. It is an A/B probe of one possible cause of the muffled quality, not
+an adopted new vowel target. Other vowels and L are not retuned. Neither
+candidate asserts that this single contrast resolves the reported issue.
+
 The notes below record the original experiments and may describe older
 private builds or earlier stages of implementation.
 

@@ -2,7 +2,7 @@ name: Persian Windows acoustic probe
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-nvda-prep-20261115]
+    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116]
     paths:
       - experiments/persian/build_native_probe.py
       - experiments/persian/build_windows_probe.py
@@ -37,6 +37,7 @@ on:
       - experiments/persian/continuous_replay.inc
       - experiments/persian/test_continuous_replay.py
       - experiments/persian/test_sibilant_noise.py
+      - experiments/persian/test_mixed_pitch_edges.py
       - experiments/persian/test_embedded_text_rules.py
       - eci/test_persian_project.py
       - eci/test_persian_frames.py
@@ -120,6 +121,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian text projection failed' }
           python -B eci/test_persian_frames.py --library eci/eci.dll --standard
           if ($LASTEXITCODE -ne 0) { throw 'Common ECI frame capture or replay failed' }
+          python -B experiments/persian/test_mixed_pitch_edges.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'English pitch preservation failed' }
           python -B eci/test_persian_frames.py --library persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian probe frame capture or replay failed' }
           python -B experiments/persian/test_continuous_replay.py --probe persian-windows-probe/eci_persian_probe.dll

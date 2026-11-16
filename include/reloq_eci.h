@@ -341,6 +341,11 @@ ECIAPI int ECICALL eciPersianDenseCurve(const struct reloq_fa_frame *rows,size_t
     unsigned column,float *out,size_t length);
 ECIAPI int ECICALL eciPersianFitPitch(struct reloq_fa_frame *rows,size_t count,
     const float *pilot,size_t length,int64_t start,int64_t end,int64_t a,int64_t b);
+/* Keep the original pitch except near language-switch edges. Bit 0 selects
+ * the beginning and bit 1 the end; window is in the frame clock's ms. */
+ECIAPI int ECICALL eciPersianFitPitchEdges(struct reloq_fa_frame *rows,size_t count,
+    const float *pilot,size_t length,const float *original,int64_t start,int64_t end,
+    int64_t a,int64_t b,unsigned edges,int64_t window);
 /* Replay uses the handle's output callbacks and stop epoch. An incremental
  * stream owns the handle until End and must always be ended on its owner
  * thread. It returns the normal RELOQ_ECI_* status codes. */

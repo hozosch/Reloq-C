@@ -1736,10 +1736,12 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
     {
         const char *mode=getenv("RELOQ_FA_PROBE_VOWEL");
         int enabled=mode && mode[0]=='1' && !mode[1];
+        const char *timing=getenv("RELOQ_FA_PROBE_TIMING");
+        int short_unstressed=timing && timing[0]=='1' && !timing[1];
         int tracing=getenv("RELOQ_FA_TRACE_NUC")!=NULL;
         const char *end_mode=getenv("RELOQ_FA_PROBE_FINAL");
         int medium=end_mode && end_mode[0]=='1' && !end_mode[1];
-        if (enabled || tracing || medium) {
+        if (enabled || tracing || medium || short_unstressed) {
             delta_state *d=state;
             int32_t at=STATE(int32_t,w26),node=0;
             if (at) {
@@ -1776,6 +1778,17 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                 int factor=phone==29 ? (length==0 ? 734 : 1566)
                                      : (length==0 ? 820 : 1280);
                 int64_t scaled=((int64_t)STATE(int32_t,f33)*factor+500)/1000;
+                STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
+            }
+            /* Listening candidate, not a universal Persian duration rule:
+               shorten only short, unstressed, word-internal vowels by 10%.
+               Leave accepted word-final vowels, long markers, stressed vowels
+               and every consonant's own timing untouched. */
+            if (short_unstressed && cls==1 && stress==0 && length==1 &&
+                (phone==27 || phone==29 || phone==31 || phone==32 || phone==33 || phone==34) &&
+                STATE(int32_t,f33)>0 &&
+                !persian_probe_vowel_word_final(state,STATE_AT(w26,-4),(unsigned)phone)) {
+                int64_t scaled=((int64_t)STATE(int32_t,f33)*9+5)/10;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
             if (tracing)

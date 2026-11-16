@@ -1946,6 +1946,10 @@ int ECICALL eciPersianDenseCurve(const struct reloq_fa_frame *rows,size_t count,
 int ECICALL eciPersianFitPitch(struct reloq_fa_frame *rows,size_t count,
     const float *pilot,size_t length,int64_t start,int64_t end,int64_t a,int64_t b)
 {return reloq_fa_fit_pitch(rows,count,pilot,length,start,end,a,b);}
+int ECICALL eciPersianFitPitchEdges(struct reloq_fa_frame *rows,size_t count,
+    const float *pilot,size_t length,const float *original,int64_t start,int64_t end,
+    int64_t a,int64_t b,unsigned edges,int64_t window)
+{return reloq_fa_fit_pitch_edges(rows,count,pilot,length,original,start,end,a,b,edges,window);}
 uint32_t ECICALL eciPersianReplayEpoch(ECIHand handle)
 {return reloq_fa_replay_epoch(handle);}
 int ECICALL eciPersianReplayBegin(ECIHand handle,uint32_t epoch,void **stream)

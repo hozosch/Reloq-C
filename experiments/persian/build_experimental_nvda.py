@@ -25,7 +25,7 @@ MODULES = ('espeak_ng_probe', 'inprocess_espeak', 'text_frontend', 'pinglish_fro
            'continuous_driver', 'parallel_pilot', 'nvda_driver_probe')
 
 
-def add_persian(entries):
+def add_persian(entries, *, version='1.5.0-dev115'):
     """Extend a baseline package without changing the normal release builder."""
     entries = dict(entries)
     driver = PREFIX + '__init__.py'
@@ -95,7 +95,9 @@ def add_persian(entries):
     if manifest.count('version = "1.4.1"') != 1:
         raise ValueError('the normal version changed; choose an explicit test version')
     # Keep the existing updater's recognized dev-version grammar.
-    manifest = manifest.replace('version = "1.4.1"', 'version = "1.5.0-dev114"', 1)
+    if not re.fullmatch(r'1\.5\.0-dev[0-9]+', version):
+        raise ValueError('the Persian test version must use the 1.5.0-devN form')
+    manifest = manifest.replace('version = "1.4.1"', f'version = "{version}"', 1)
     manifest = manifest.replace('summary = "Eloquence C: fifteen language variants"',
                                 'summary = "Eloquence C: Persian and Pinglish test"', 1)
     manifest = re.sub(r'(?m)^description = .*$',
@@ -119,8 +121,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dll', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--version', default='1.5.0-dev115')
     args = parser.parse_args()
-    entries = add_persian(make_entries(args.dll))
+    entries = add_persian(make_entries(args.dll), version=args.version)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(args.output, 'w') as archive:
         for name, data in sorted(entries.items()):
