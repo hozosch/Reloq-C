@@ -49,6 +49,8 @@ def main():
         processed_split = ('version   ', EciText('3'), EciIndex(31), EciText('.'),
                            EciIndex(32), EciText('5'), ' available.  ')
         assert render(PERSIAN_PROBE.id, processed_split) == render(US_ENGLISH.id, processed_split)
+        signed = ('version   ', EciText(' minus '), EciText('3.5'), ' is available.  ')
+        assert render(PERSIAN_PROBE.id, signed) == render(US_ENGLISH.id, ('version    minus 3.5 is available.  ',))
         # A number on its own or next to Persian remains Persian, including
         # when the number was delivered in several indexed fragments.
         assert render(PERSIAN_PROBE.id, ('3.5',))[0] != render(US_ENGLISH.id, ('3.5',))[0]

@@ -12,7 +12,7 @@ from ._speech_tags import NativeDictionaryWord
 from ._persian.pinglish_frontend import english_exception, latin_spans
 
 _FA, _PINGLISH = 0x7f0000, 0x7f0001
-_DECIMAL = re.compile(r'(?<![0-9_])(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]+)+')
+_DECIMAL = re.compile(r'(?<![0-9_])[+\-−]?(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]+)+')
 
 
 def decimal_pending(sequence):
@@ -70,16 +70,34 @@ def protect_decimals(driver, sequence, *, symbol_level=None):
             if not _english_number(text, match.start(), match.end(), selected):
                 continue
             try:
-                if characterProcessing.processSpeechSymbols('en_US', match.group(), level) != match.group():
+                raw = match.group()
+                signed = raw[0] in '+-−'
+                number = raw[1:] if signed else raw
+                # English treats a hyphen after a word character differently
+                # from a leading minus sign. Supply that immediate context.
+                prior = text[match.start() - 1:match.start()] if match.start() else ''
+                prior = prior if prior and (prior.isalnum() or prior == '_') else ''
+                processed = characterProcessing.processSpeechSymbols('en_US', prior + raw, level)
+                if prior:
+                    if not processed.startswith(prior):
+                        continue
+                    processed = processed[len(prior):]
+                if not processed.endswith(number) or (not signed and processed != number):
                     continue
             except (AttributeError, KeyError, LookupError, TypeError, ValueError):
                 continue
+            # Keep NVDA's English handling of signs (e.g. "minus"), while
+            # retaining the untouched decimal across intervening indexes.
+            sign_end = match.start() + int(signed)
+            regions = ([(match.start(), sign_end, processed[:-len(number)])] if signed else [])
+            regions.append((sign_end, match.end(), None))
             position = 0
             for item_index, value, is_text in group:
                 end = position + len(value)
-                left, right = max(position, match.start()), min(end, match.end())
-                if is_text and left < right:
-                    intervals.setdefault(item_index, []).append((left - position, right - position))
+                for region_start, region_end, replacement in regions:
+                    left, right = max(position, region_start), min(end, region_end)
+                    if is_text and left < right:
+                        intervals.setdefault(item_index, []).append((left - position, right - position, replacement))
                 position = end
         group.clear()
 
@@ -106,10 +124,12 @@ def protect_decimals(driver, sequence, *, symbol_level=None):
             result.append(item)
             continue
         cursor = 0
-        for left, right in intervals[index]:
+        for left, right, replacement in intervals[index]:
             if left > cursor:
                 result.append(item[cursor:left])
-            result.append(NativeDictionaryWord(item[left:right]))
+            protected = item[left:right] if replacement is None else replacement
+            if protected:
+                result.append(NativeDictionaryWord(protected))
             cursor = right
         if cursor < len(item):
             result.append(item[cursor:])

@@ -89,7 +89,7 @@ def add_persian(entries, text_library: bytes):
     if manifest.count('version = "1.4.1"') != 1:
         raise ValueError('the normal version changed; choose an explicit test version')
     # Keep the existing updater's recognized dev-version grammar.
-    manifest = manifest.replace('version = "1.4.1"', 'version = "1.5.0-dev106"', 1)
+    manifest = manifest.replace('version = "1.4.1"', 'version = "1.5.0-dev107"', 1)
     manifest = manifest.replace('summary = "Eloquence C: fifteen language variants"',
                                 'summary = "Eloquence C: Persian and Pinglish test"', 1)
     manifest = re.sub(r'(?m)^description = .*$',

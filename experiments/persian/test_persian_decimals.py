@@ -81,6 +81,14 @@ def main():
     for text in ('version 3.5 is available.', 'سلام version 3.5', '3.5 version', 'version 1,234.5',
                  'NVDA 2026.3.1', 'version v1.5'):
         assert any(isinstance(item, native_word) and '.' in item.text for item in protected([text])), text
+    negative = protected(['version -3.5'])
+    assert [item.text for item in negative if isinstance(item, native_word)] == [' minus ', '3.5']
+    positive = protected(['version +3.5'])
+    assert [item.text for item in positive if isinstance(item, native_word)] == [' ', '3.5']
+    hyphenated = protected(['version v-1.5'])
+    assert [item.text for item in hyphenated if isinstance(item, native_word)] == ['-', '1.5'], pieces(hyphenated)
+    signed_split = protected(['version -', IndexCommand(9), '3.5'])
+    assert [item.text for item in signed_split if isinstance(item, native_word)] == [' minus ', '3.5']
     for text in ('3.5', 'نسخه 3.5', 'version 3,5', 'نسخه ۳٫۵'):
         assert protected([text]) == [text], text
     sequence = ['version ', '3', IndexCommand(1), '.', IndexCommand(2), '5']

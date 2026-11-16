@@ -1,8 +1,8 @@
 """Conservatively align reference Persian words to their source positions.
 
-Only the isolated reference helper is involved. Its synthesized audio is
-discarded; the returned pronunciations still use the selected Eloquence
-phones. Ambiguous expansions, languages or punctuation fail closed.
+Only the private reference is involved. Its synthesized audio is discarded;
+the returned pronunciations still use the selected Eloquence phones.
+Ambiguous expansions, languages or punctuation fail closed.
 """
 from __future__ import annotations
 
