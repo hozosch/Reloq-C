@@ -130,6 +130,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian NVDA decimal preprocessing failed' }
           python -B experiments/persian/test_compare_vowel_corpus.py
           if ($LASTEXITCODE -ne 0) { throw 'Persian vowel corpus pairing failed' }
+          python -B experiments/persian/compare_vowel_corpus.py --espeak-only --native-library "$pwd/fa-direct.dll" --espeak-library "$espeak" --data-parent "$data" --output persian-timing/espeak-vowels.json
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA eSpeak vowel reference measurement failed' }
           python -B experiments/persian/test_nvda_package_probe.py --native-library "$dll" --text-library "$pwd/fa-direct.dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows package adapter failed' }
           python -B experiments/persian/test_pinglish_driver.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
@@ -181,5 +183,6 @@ jobs:
             persian-nvda-results/result.json
             persian-nvda-results/nvda.log
             persian-timing/uncached-timing.json
+            persian-timing/espeak-vowels.json
           if-no-files-found: ignore
           retention-days: 7

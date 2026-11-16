@@ -21,6 +21,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'nvda'))
 from _reloq_eci_direct import NATIVE_SPEED
+from hybrid_fa_frontend import DirectFirstPersian
 from nvda_driver_probe import PERSIAN_PROBE, make_language_engine
 from trace_espeak_events import Event
 
@@ -34,7 +35,11 @@ _CALLBACK = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.POINTER(ctypes.c_short),
 
 class EspeakEvents:
     def __init__(self, library: Path, data_parent: Path):
-        self.lib = lib = ctypes.CDLL(str(library.resolve()))
+        if os.name == 'nt':
+            with os.add_dll_directory(str(library.resolve().parent)):
+                self.lib = lib = ctypes.CDLL(str(library.resolve()))
+        else:
+            self.lib = lib = ctypes.CDLL(str(library.resolve()))
         lib.espeak_Initialize.argtypes = (ctypes.c_int, ctypes.c_int, ctypes.c_char_p, ctypes.c_int)
         lib.espeak_SetSynthCallback.argtypes = (_CALLBACK,)
         lib.espeak_SetVoiceByName.argtypes = (ctypes.c_char_p,)
@@ -137,6 +142,50 @@ def first_tag(analysis):
     return tag.group() if tag else None
 
 
+def directly_supported_words(frontend, corpus):
+    words = []
+    for word in corpus_words(corpus):
+        a = first_tag(frontend.analyze_direct(word))
+        b = first_tag(frontend.analyze_direct(word + ' سلام'))
+        if a and a == b:
+            words.append(word)
+    return words
+
+
+def export_espeak_events(args):
+    """Measure the exact NVDA eSpeak build without an acoustic debug DLL."""
+    frontend = DirectFirstPersian(args.native_library, None, args.espeak_library, args.data_parent)
+    reference = None
+    try:
+        words = directly_supported_words(frontend, args.corpus)
+        reference = EspeakEvents(args.espeak_library, args.data_parent)
+        rows, rejected = [], []
+        for wpm in (150, 175, 220):
+            for word in words:
+                a, b = reference.vowels(word, wpm), reference.vowels(word + ' سلام', wpm)
+                if len(a) != len(b) or any(x[:2] != y[:2] for x, y in zip(a, b)):
+                    rejected.append({'word': word, 'espeak_wpm': wpm})
+                    continue
+                for index, (x, y) in enumerate(zip(a, b), start=1):
+                    rows.append({'word': word, 'vowel_index': index, 'phone': x[0],
+                                 'stress': x[1], 'espeak_wpm': wpm,
+                                 'espeak_alone_ms': x[2], 'espeak_before_word_ms': y[2],
+                                 'espeak_ratio': round(y[2] / x[2], 4)})
+        output = {'espeak_version': reference.version, 'corpus_candidates': len(words),
+                  'corpus_sha256': hashlib.sha256(args.corpus.read_bytes()).hexdigest(),
+                  'method': 'First-word vowel event to the next phoneme or word event; '
+                            'these intervals are not acoustic vowel boundaries.',
+                  'rows': rows, 'rejected': rejected}
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(output, ensure_ascii=False, indent=2) + '\n', encoding='utf8')
+        print(f'eSpeak {reference.version}: {len(words)} direct candidates, '
+              f'{len(rows)} vowel observations, {len(rejected)} excluded; {args.output}')
+    finally:
+        if reference:
+            reference.close()
+        frontend.close()
+
+
 def paired_rows(word, native_a, native_b, ref_a, ref_b):
     """Reject rather than guess when pronunciation, stress, or count differs."""
     if len(native_a) != len(ref_a) or len(ref_a) > len(native_b) or len(ref_b) != len(ref_a):
@@ -157,21 +206,26 @@ def paired_rows(word, native_a, native_b, ref_a, ref_b):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    for name in ('scope-probe', 'native-library', 'espeak-library', 'data-parent'):
+    for name in ('native-library', 'espeak-library', 'data-parent'):
         ap.add_argument('--' + name, type=Path, required=True)
+    ap.add_argument('--scope-probe', type=Path,
+                    help='diagnostic scoped acoustic library, required unless using --espeak-only')
+    ap.add_argument('--espeak-only', action='store_true',
+                    help='export eSpeak reference events without an acoustic debug library')
     ap.add_argument('--corpus', type=Path, default=Path(__file__).with_name('reference_espeak_1_51.jsonl'))
     ap.add_argument('--output', type=Path, required=True)
     args = ap.parse_args()
+    if args.espeak_only:
+        export_espeak_events(args)
+        return
+    if args.scope_probe is None:
+        ap.error('--scope-probe is required for a native/eSpeak comparison')
     engine = make_language_engine(args.scope_probe, args.native_library, None,
                                   args.espeak_library, args.data_parent)
     reference = None
     try:
         frontend = engine._engines[PERSIAN_PROBE.id]._frontend
-        words = []
-        for word in corpus_words(args.corpus):
-            a, b = first_tag(frontend.analyze_direct(word)), first_tag(frontend.analyze_direct(word + ' سلام'))
-            if a and a == b:
-                words.append(word)
+        words = directly_supported_words(frontend, args.corpus)
         reference = EspeakEvents(args.espeak_library, args.data_parent)
         rows, rejected = [], []
         for native_speed, wpm in ((40, 150), (98, 175), (200, 220)):
