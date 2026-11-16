@@ -1,6 +1,6 @@
-"""Build a listening-only comparison with the prior back-A nasal setting.
+"""Build a listening-only comparison that restores back-A nasal correction.
 
-All other provider objects, including the accepted L and the 1.5.0-dev115
+All other provider objects, including the accepted L and current
 timing candidate, are reused unchanged. This deliberately does not alter
 the default source or expose a user-facing control.
 """
@@ -33,11 +33,11 @@ def main():
     if not archive.is_file() or not host.is_dir():
         parser.error('build the standard matching C engine first')
     source = (ROOT / 'src/reloq_persian_acoustics.c').read_text(encoding='utf8')
-    marker = '{"RELOQ_FA_PROBE_A_NASAL","1"}'
+    marker = '{"RELOQ_FA_PROBE_A_NASAL","0"}'
     if source.count(marker) != 1:
         raise RuntimeError('the accepted back-A nasal selection changed')
     modified = work / 'reloq_persian_acoustics.c'
-    modified.write_text(source.replace(marker, '{"RELOQ_FA_PROBE_A_NASAL","0"}'), encoding='utf8')
+    modified.write_text(source.replace(marker, '{"RELOQ_FA_PROBE_A_NASAL","1"}'), encoding='utf8')
     obj = work / 'reloq_persian_acoustics.o'
     flags = ['-O3', '-flto=4', '-std=gnu11', '-fno-strict-aliasing', '-ffp-contract=off',
              '-fvisibility=hidden', '-ffunction-sections', '-fdata-sections']

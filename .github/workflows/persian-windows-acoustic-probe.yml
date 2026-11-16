@@ -131,24 +131,6 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Windows continuous replay failed' }
           python -B experiments/persian/test_sibilant_noise.py --candidate persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian sibilant targets failed' }
-      - name: Build the back-A listening comparison
-        shell: bash
-        run: |
-          export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          python -B experiments/persian/build_a_nasal_comparison.py --windows --cc gcc --ar gcc-ar --work persian-a-comparison
-          python -B eci/verify_pe_exports.py persian-a-comparison/eci.dll --objdump objdump --header include/reloq_eci.h
-      - name: Check back-A contrast and voice isolation
-        shell: pwsh
-        run: |
-          python -B experiments/persian/test_a_nasal_comparison.py --previous eci/eci.dll --candidate persian-a-comparison/eci.dll
-          if ($LASTEXITCODE -ne 0) { throw 'Back-A comparison or voice isolation failed' }
-      - uses: actions/upload-artifact@v4
-        with:
-          name: persian-a-nasal-comparison
-          path: persian-a-comparison/eci.dll
-          if-no-files-found: error
-          compression-level: 0
-          retention-days: 7
       - uses: actions/upload-artifact@v4
         if: always()
         with:

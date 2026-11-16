@@ -1876,6 +1876,112 @@ static unsigned persian_probe_e_neighbour(void *state,int32_t position,int backw
     return destination
 
 
+def prepare_us_articulation(work: Path) -> None:
+    """Adapt selected Persian sounds, retaining Finnish context and L."""
+    vowel_file = work / 'delta_rules_c08_fifi.c'
+    text = vowel_file.read_text(encoding='utf8')
+    # Apply this after the vowel-specific rules, including the accepted back-A
+    # and short-A rules. B1/B2 are bandwidths, not formant frequencies: a
+    # modest increase broadens/damps the two resonances without shifting their
+    # centres. Keep non-positive native inheritance markers unchanged.
+    for phone in ('i', 'e', 'A', 'a', 'u', 'o'):
+        call = f'    r0 = reloq_call_fifi_stanfin_ph_{phone}(state, (int32_t)(FIELD(0)));\n'
+        # A few rules can call a vowel outside the normal vowel dispatcher.
+        # Restrict this insertion to the dispatch function itself.
+        begin = text.index('int32_t reloq_fifi_stanfin_vals(')
+        end = text.index('\nstatic int32_t evv_stanfin_vals(', begin)
+        section = text[begin:end]
+        if section.count(call) != 1:
+            raise RuntimeError(f'Cannot locate Persian vowel dispatcher for {phone}')
+        section = section.replace(call, call + r'''    {
+        const char *fa_damp=getenv("RELOQ_FA_VOWEL_DAMPING");
+        if (!r0 && fa_damp && fa_damp[0]=='1' && !fa_damp[1]) {
+            if (STATE(int16_t,s397)>0 && STATE(int16_t,s397)<3000)
+                STATE(int16_t,s397)=(int16_t)((5*STATE(int16_t,s397)+2)/4);
+            if (STATE(int16_t,s398)>0 && STATE(int16_t,s398)<3000)
+                STATE(int16_t,s398)=(int16_t)((5*STATE(int16_t,s398)+2)/4);
+        }
+    }
+''', 1)
+        text = text[:begin] + section + text[end:]
+    vowel_file.write_text(text, encoding='utf8')
+
+    consonant_file = work / 'delta_rules_c02_fifi.c'
+    text = consonant_file.read_text(encoding='utf8')
+    include = '#include "reloq61_rule_calls_fifi.h"\n'
+    helper = r'''
+/* Current K can also carry Persian uvular or glottal phones. Do not modify
+   those carriers while adapting the ordinary velar stop. */
+static int persian_articulation_special_k(void *state)
+{
+    delta_state *d=state;
+    int32_t position=STATE(int32_t,w61);
+    if (!d || !position) return 1;
+    delta_node *point=vmovel(d,EVV_AT(delta_node *,position),2);
+    int32_t node=point ? vgetsc(d,1,0,EVV_REF(point),2) : 0;
+    if (!node || (*EVV_AT(int32_t *,node)&2)) return 1;
+    void *fields=TFLDS(EVV_AT(void *,node));
+    unsigned phone=*(const unsigned char *)delta_record_field(&vstmtbl[2],0,fields);
+    unsigned marker=*(const unsigned char *)delta_record_field(&vstmtbl[2],12,fields);
+    return phone!=3 || marker==3 || marker==4 || marker==5;
+}
+static int16_t persian_articulation_toward(int16_t value,int target)
+{
+    /* Preserve native inheritance markers and two thirds of each contextual
+       target; this is an auditable listening candidate, not a rule that all
+       Persian allophones equal the English allophones. */
+    return value>0 ? (int16_t)((2*(int)value+target+1)/3) : value;
+}
+static void persian_articulation_stop(void *state,int target,int is_k)
+{
+    const char *mode=getenv("RELOQ_FA_US_ARTICULATION");
+    if (!mode || mode[0]!='1' || mode[1] ||
+        (is_k && persian_articulation_special_k(state))) return;
+    /* AF release levels sampled from the native US /i/ onset; keep the
+       Finnish closure, transition, existing K shaping and aspiration. */
+    STATE(int16_t,s430)=persian_articulation_toward(STATE(int16_t,s430),target);
+}
+static void persian_articulation_nasal(void *state,int second_formant)
+{
+    const char *mode=getenv("RELOQ_FA_US_ARTICULATION");
+    if (!mode || mode[0]!='1' || mode[1]) return;
+    /* US ga_ph_m/n: F1 300, F2 1200/1600, B2 200 and nasal pole/zero
+       200/320. Blend only explicit positive values so Finnish's contextual
+       endpoints and inheritance remain meaningful. The separate back-A
+       nasal experiment is not enabled by this nasal-consonant adjustment. */
+    STATE(int16_t,s448)=persian_articulation_toward(STATE(int16_t,s448),300);
+    STATE(int16_t,s449)=persian_articulation_toward(STATE(int16_t,s449),300);
+    STATE(int16_t,s450)=persian_articulation_toward(STATE(int16_t,s450),second_formant);
+    STATE(int16_t,s451)=persian_articulation_toward(STATE(int16_t,s451),second_formant);
+    STATE(int16_t,s398)=persian_articulation_toward(STATE(int16_t,s398),200);
+    STATE(int16_t,s406)=persian_articulation_toward(STATE(int16_t,s406),200);
+    STATE(int16_t,s407)=persian_articulation_toward(STATE(int16_t,s407),320);
+}
+'''
+    if text.count(include) != 1:
+        raise RuntimeError('Cannot locate consonant dispatcher includes')
+    text = text.replace(include, include + '#include <stdlib.h>\n', 1)
+    marker = 'int32_t reloq_fifi_fin_con_vals(void *state, int32_t p0)\n{\n'
+    if text.count(marker) != 1:
+        raise RuntimeError('Cannot locate consonant dispatcher')
+    # STATE offsets are declared after the includes in generated sources.
+    text = text.replace(marker, helper + '\n' + marker, 1)
+    for phone, target in (('p', 60), ('t', 65), ('k', 67),
+                          ('b', 56), ('d', 53), ('g', 62)):
+        call = f'    r0 = reloq_call_fifi_fin_ph_{phone}(state, (int32_t)(FIELD(0)));\n'
+        if text.count(call) != 1:
+            raise RuntimeError(f'Cannot locate Persian stop dispatcher for {phone}')
+        text = text.replace(call, call +
+            f'    if (!r0) persian_articulation_stop(state,{target},{int(phone == "k")});\n', 1)
+    for phone, target in (('m', 1200), ('n', 1600)):
+        call = f'    r0 = reloq_call_fifi_fin_ph_{phone}(state, (int32_t)(FIELD(0)));\n'
+        if text.count(call) != 1:
+            raise RuntimeError(f'Cannot locate Persian nasal dispatcher for {phone}')
+        text = text.replace(call, call +
+            f'    if (!r0) persian_articulation_nasal(state,{target});\n', 1)
+    consonant_file.write_text(text, encoding='utf8')
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--work-dir', type=Path)
@@ -1910,6 +2016,7 @@ def main() -> None:
     modified.append(prepare_auto_finnish_h(work))
     prepare_z_noise(work)
     modified.append(prepare_vowel_duration_probe(work))
+    prepare_us_articulation(work)
     if args.dry_run:
         print('Prepared isolated source files:', work)
         return

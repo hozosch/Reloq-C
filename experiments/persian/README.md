@@ -32,11 +32,15 @@ times. Word-final vowels, explicitly long or stressed vowels, L, consonant
 rules and sample-rate filters stay as before. This needs native-speaker and
 NVDA listening feedback.
 
-The separately built A comparison (`build_a_nasal_comparison.py`) keeps the
-same melody and timing and temporarily restores the earlier back-A nasal
-setting. It is an A/B probe of one possible cause of the muffled quality, not
-an adopted new vowel target. Other vowels and L are not retuned. Neither
-candidate asserts that this single contrast resolves the reported issue.
+The dev117 listening candidate keeps the back-A nasal correction disabled.
+It broadens the first two vowel resonance bandwidths by 25% when they are
+explicit positive values, retaining the formant centres and inherited values.
+It blends selected stop release levels and the /m/ and /n/ targets toward
+US-English values, while keeping the existing L, contextual transitions and
+marked uvular/glottal carriers. These limited changes are listening
+hypotheses; they do not establish that the result sounds more natural.
+`build_a_nasal_comparison.py` can still make a separate comparison that
+re-enables the former back-A correction without changing the default.
 
 `compare_us_persian_melody.py` creates a German-labelled offline WAV with
 Persian statements and questions, each followed by the same Persian frames
