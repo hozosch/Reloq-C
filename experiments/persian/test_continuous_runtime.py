@@ -10,7 +10,7 @@ import sys
 import threading
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
-from continuous_driver import _PlanningVoice, continuation_comma
+from continuous_driver import _PlanningVoice, bracket_jobs, continuation_comma
 from continuous_plan import (CapturedRows, _context, _dense, _fit_context_pitch, _last_audible,
                              _starts, persian_proxy_for_english)
 from nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, make_language_engine
@@ -31,6 +31,17 @@ def main():
                        EciText('file', segmentation_guarded=True), ' again']
     assert continuation_comma(('hello?', ')', EciIndex(1))) == ('hello?', ')', EciIndex(1))
     assert continuation_comma(('hello', ')', EciIndex(1))) == ('hello', ')', ',', EciIndex(1))
+    for text in ('version 3 - 5 ', 'version 3 – 5 ', 'well-known '):
+        parts = (EciLanguage(US_ENGLISH.id, '1'), text,
+                 EciLanguage(PERSIAN_PROBE.id, '1'), 'خوب')
+        assert len(bracket_jobs(parts, (PERSIAN_PROBE.id, '1'),
+                                fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id),
+                                english_id=US_ENGLISH.id)) == 1, text
+    spelled = (EciLanguage(US_ENGLISH.id, '1'), EciText('-', character_mode=True),
+               EciLanguage(PERSIAN_PROBE.id, '1'), 'خوب')
+    assert len(bracket_jobs(spelled, (PERSIAN_PROBE.id, '1'),
+                            fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id),
+                            english_id=US_ENGLISH.id)) == 1
     class ProxyProbe:
         def __init__(self, alter_context=False):
             self.calls, self.alter_context = [], alter_context
@@ -169,6 +180,9 @@ def main():
             assert dashed == persian_dash + english_after
             assert marks == [(133, 0), (134, len(persian_dash)), (135, len(dashed))]
             assert render(engine, ('سلام-NVDA-خوب',))[0] == persian_dash + english_dash + persian_after
+            for dash in ('‐', '–', '—'):
+                assert render(engine, ('سلام' + dash + 'NVDA' + dash + 'خوب',))[0] == \
+                    persian_dash + english_dash + persian_after, dash
             explicit, _ = render(engine, ('سلام-', EciLanguage(US_ENGLISH.id, '1'), 'NVDA-',
                                           EciLanguage(PERSIAN_PROBE.id, '1'), 'خوب'))
             assert explicit == persian_dash + english_dash + persian_after
@@ -188,6 +202,8 @@ def main():
             divided, _ = render(engine, ('NVDA ', EciIndex(143), '-', EciIndex(144),
                                          ' Text خوب'))
             assert divided == spaced
+            for dash in ('‐', '–', '—'):
+                assert render(engine, ('NVDA ' + dash + ' Text خوب',))[0] == spaced, dash
 
             controlled, _ = render(engine, (EciPitch(80), 'hello) ', 'او آمد.'))
             engine.set_parameter(PAUSE_MODE, 1)

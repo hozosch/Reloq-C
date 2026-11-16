@@ -34,6 +34,8 @@ _log = logging.getLogger(__name__)
 _TAG = re.compile(r'`\[[^]]+\]')
 _FINAL_U = re.compile(r"(?:u|'u:')\]$")
 _INITIAL_A = re.compile(r"^`\[\.[012](?:a|'a:')")
+_DASHES = '-‐–—'
+_UNICODE_DASHES = '‐–—'
 _PARALLEL_MIN = 96
 _FAST_PILOT_MIN = 80
 _FAST_ENGLISH_PREFIX_MIN_MS = 200
@@ -611,7 +613,7 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
     the entire next word in its own voice and avoids proxy synthesis. Marks
     remain in source order and active inline controls are copied forward.
     """
-    parts = tuple(parts)
+    parts = list(parts)
     result, pending, controls, key = [], [], OrderedDict(), home
     segment = []
     split_started = False
@@ -634,7 +636,7 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
         return '', False
 
     def has_speech(items):
-        return any(any(not c.isspace() and c not in '()[]{}-.,;:!?؟،؛' for c in text_and_mode(item)[0])
+        return any(any(not c.isspace() and c not in '()[]{}-‐–—.,;:!?؟،؛' for c in text_and_mode(item)[0])
                    for item in items)
 
     def has_mixed_speech(items):
@@ -655,6 +657,35 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
                 return (value[-1] if backwards else value[0]), spelled
         return '', False
 
+    def normalise_persian_dash(items, backwards):
+        # Direct Persian word projection treats ASCII hyphen as a boundary;
+        # map other silent dash marks at a language edge to the same route.
+        positions = range(len(items) - 1, -1, -1) if backwards else range(len(items))
+        for position in positions:
+            item = items[position]
+            if isinstance(item, EciLanguage):
+                break
+            value, spelled = text_and_mode(item)
+            if not value.strip():
+                continue
+            if spelled or not isinstance(item, (str, EciText)):
+                return False
+            offset = len(value.rstrip()) - 1 if backwards else len(value) - len(value.lstrip())
+            if value[offset] in _UNICODE_DASHES:
+                value = value[:offset] + '-' + value[offset + 1:]
+                items[position] = value if isinstance(item, str) else replace(item, text=value)
+            return True
+        return False
+
+    def next_nonspace(items, backwards):
+        for item in reversed(items) if backwards else items:
+            if isinstance(item, EciLanguage):
+                break
+            value, spelled = text_and_mode(item)
+            if value.strip():
+                return (value.rstrip()[-1] if backwards else value.lstrip()[0]), spelled
+        return '', False
+
     mixed_request = has_mixed_speech(parts)
     for index, part in enumerate(parts):
         if isinstance(part, EciLanguage):
@@ -669,10 +700,22 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
             changed = selected != key and {selected[0], key[0]} <= {english_id, *fa_ids}
             has_both = (selected[0] == english_id and key[0] in fa_ids or
                         key[0] == english_id and selected[0] in fa_ids)
-            boundary = ((left_char in '()[]{}-' and left_char and not left_spelled) or
-                        (right_char in '()[]{}-' and right_char and not right_spelled))
+            boundary = ((left_char in '()[]{}' + _DASHES and left_char and not left_spelled) or
+                        (right_char in '()[]{}' + _DASHES and right_char and not right_spelled))
             if changed and has_both and left_char and right_char and boundary:
-                result.append((tuple(pending), True))
+                split_pending, rest = list(pending), parts[index + 1:]
+                if left_char in _UNICODE_DASHES and key[0] in fa_ids:
+                    if not normalise_persian_dash(split_pending, True):
+                        pending.append(part)
+                        key, segment = selected, []
+                        continue
+                if right_char in _UNICODE_DASHES and selected[0] in fa_ids:
+                    if not normalise_persian_dash(rest, False):
+                        pending.append(part)
+                        key, segment = selected, []
+                        continue
+                parts[index + 1:] = rest
+                result.append((tuple(split_pending), True))
                 pending = [part, *controls.values()]
                 split_started = True
             else:
@@ -685,12 +728,12 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
         # own core and does not delay the beginning of the sentence.
         value, spelled = text_and_mode(part)
         if (isinstance(part, (str, EciText)) and value and not spelled and '`' not in value and
-                any(c in value for c in '()[]{}-')):
+                any(c in value for c in '()[]{}' + _DASHES)):
             start = 0
             for position, char in enumerate(value):
-                if position < start or char not in '()[]{}-':
+                if position < start or char not in '()[]{}' + _DASHES:
                     continue
-                if char == '-':
+                if char in _DASHES:
                     # A spaced dash inside an English run already makes a
                     # native pause. Do not split English compounds (or
                     # Pinglish suffixes and signed numbers) at bare hyphens.
@@ -699,6 +742,12 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
                                             else neighbour(parts[index + 1:], False))
                     if (key[0] != english_id or not left.isspace() or not right.isspace() or
                             left_spelled or right_spelled):
+                        continue
+                    before = [*segment, value[:position]]
+                    after = [value[position + 1:], *parts[index + 1:]]
+                    left_word, _ = next_nonspace(before, True)
+                    right_word, _ = next_nonspace(after, False)
+                    if left_word.isdigit() and right_word.isdigit():
                         continue
                 end = position + 1
                 while end < len(value) and value[end].isspace():
@@ -709,7 +758,7 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
                 segment.append(item)
                 following = [value[end:], *parts[index + 1:]]
                 if ((split_started or has_mixed_speech(pending) or
-                     char == '-' and mixed_request) and
+                     char in _DASHES and mixed_request) and
                         has_speech(segment) and has_speech(following)):
                     result.append((tuple(pending), True))
                     pending = [EciLanguage(*key), *controls.values()]

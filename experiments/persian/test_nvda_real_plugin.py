@@ -191,6 +191,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'NVDA-خوب', 'pipeline_dash'),
                           ('fa_IR', 'سلام-NVDA-خوب', 'pipeline_dash'),
                           ('fa_Latn', 'salam-phone-khub', 'pipeline_dash'),
+                          ('fa_IR', 'سلام–NVDA—خوب', 'pipeline_dash'),
+                          ('fa_Latn', 'salam–phone–khub', 'pipeline_dash'),
                           ('fa_Latn', 'salam salām donya', False),
                           ('fa_Latn', 'salam salām donya', 'accent_exception'),
                           ('fa_Latn', 'fa\u0304rsi', False),

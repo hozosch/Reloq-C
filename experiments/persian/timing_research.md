@@ -453,13 +453,13 @@ The remaining script routing, shared-contour planner and Persian acoustic
 provider are still experimental; merely exposing these primitives does not
 register Persian for SAPI5 or Android or complete their language integration.
 
-A hyphen exactly at a Persian/English language switch is now an explicit
-short phrase boundary, like a bracket. A spaced hyphen inside an English
-segment is treated the same way when a mixed request has speech on both
-sides. Each separated part uses its own language's native contour. Bare
-hyphens inside English words, Pinglish suffixes, signed numbers and character
-spelling do not receive this treatment. Source indexes and inline controls
-remain ordered across the boundary.
+A hyphen, short or long dash exactly at a Persian/English language switch is
+now an explicit short phrase boundary, like a bracket. A spaced dash inside
+an English segment is treated the same way when a mixed request has speech on
+both sides. Each separated part uses its own language's native contour. Bare
+hyphens inside English words, Pinglish suffixes, numeric ranges, signed numbers
+and character spelling do not receive this treatment. Source indexes and
+inline controls remain ordered across the boundary.
 
 In ten alternating warmed local trials at 16 kHz and 220 WPM, four mixed
 examples containing such hyphens reached their first PCM callback at medians
