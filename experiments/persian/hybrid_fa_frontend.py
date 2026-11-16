@@ -39,6 +39,22 @@ class PersianAnalysis:
     used_fallback: bool
 
 
+class _ReferenceRequest:
+    """Reuse an identical translation only within one alignment attempt."""
+    def __init__(self, worker):
+        self._worker = worker
+        self._translations = {}
+
+    def translate(self, text, *, voice='fa', separator=''):
+        key = (text, voice, separator)
+        if key not in self._translations:
+            self._translations[key] = self._worker.translate(text, voice=voice, separator=separator)
+        return self._translations[key]
+
+    def events(self, *args, **kwargs):
+        return self._worker.events(*args, **kwargs)
+
+
 def _native_english(text: str) -> bool:
     """Only route unambiguously English ASCII directly to the English core."""
     return (any('a' <= c.lower() <= 'z' for c in text)
@@ -336,16 +352,17 @@ class DirectFirstPersian:
         # pass out of sync. Retry the complete analysis once; each attempt
         # still has to verify every word and phoneme before it can be used.
         for _ in range(2):
+            reference = _ReferenceRequest(self._fallback())
             if any(c.isdecimal() for c in normalized):
-                aligned = self._positioned_numbers(normalized, pinglish=True)
+                aligned = self._positioned_numbers(normalized, pinglish=True, reference=reference)
                 if aligned is not None and aligned.source_map is not None:
                     return PersianAnalysis(aligned.parts,
                                            tuple(aligned.source_map[pos] for pos in original_to_normalized), True)
             else:
-                parts = self._fallback_with_numbers(normalized, pinglish=True)
+                parts = self._fallback_with_numbers(normalized, pinglish=True, reference=reference)
                 if len(parts) != 1 or parts[0].language != 'fa':
                     return None
-                mapped = source_map_for_reference(normalized, parts, self._fallback(), pinglish=True)
+                mapped = source_map_for_reference(normalized, parts, reference, pinglish=True)
                 if mapped is not None:
                     return PersianAnalysis(parts, tuple(mapped[pos] for pos in original_to_normalized), True)
         return None
@@ -382,7 +399,7 @@ class DirectFirstPersian:
             raise UnsupportedPronunciation('unattached Persian numeric separator')
         return spans
 
-    def _number_template(self, text, spans, *, pinglish):
+    def _number_template(self, text, spans, *, pinglish, reference=None):
         """Use a known word as a checked stand-in for contextual analysis."""
         for marker in ('سلام', 'ایران', 'نقطه', 'خوب', 'کتاب', 'دنیا'):
             if marker in text:
@@ -396,18 +413,18 @@ class DirectFirstPersian:
                 cursor = end
             chunks.append(text[cursor:])
             template = ''.join(chunks)
-            parts = _translate_with_native_punctuation(self._fallback(), template, pinglish=pinglish)
+            parts = _translate_with_native_punctuation(reference or self._fallback(), template, pinglish=pinglish)
             if sum(part.text.count(tag) for part in parts if part.language == 'fa') != len(spans):
                 continue
             return marker, tag, template, parts
         raise UnsupportedPronunciation('could not align numbers with the reference text')
 
-    def _fallback_with_numbers(self, text: str, *, pinglish: bool = False) -> tuple[SpeechPart, ...]:
+    def _fallback_with_numbers(self, text: str, *, pinglish: bool = False, reference=None) -> tuple[SpeechPart, ...]:
         """Keep numeric values direct while analysing surrounding whole clauses."""
         spans = self._numeric_spans(text)
         if not spans:
-            return _translate_with_native_punctuation(self._fallback(), text, pinglish=pinglish)
-        _, tag, _, parts = self._number_template(text, spans, pinglish=pinglish)
+            return _translate_with_native_punctuation(reference or self._fallback(), text, pinglish=pinglish)
+        _, tag, _, parts = self._number_template(text, spans, pinglish=pinglish, reference=reference)
         values = iter(item[2] for item in spans)
         output = []
         for part in parts:
@@ -420,15 +437,16 @@ class DirectFirstPersian:
             output.append(part)
         return tuple(output)
 
-    def _positioned_numbers(self, text: str, *, pinglish: bool) -> PersianAnalysis | None:
+    def _positioned_numbers(self, text: str, *, pinglish: bool, reference=None) -> PersianAnalysis | None:
         """Verify each stand-in's word events before mapping native numbers."""
         spans = self._numeric_spans(text)
         if not spans:
             return None
-        marker, tag, template, parts = self._number_template(text, spans, pinglish=pinglish)
+        reference = reference or self._fallback()
+        marker, tag, template, parts = self._number_template(text, spans, pinglish=pinglish, reference=reference)
         if len(parts) != 1 or parts[0].language != 'fa':
             return None
-        template_map = source_map_for_reference(template, parts, self._fallback(), pinglish=pinglish)
+        template_map = source_map_for_reference(template, parts, reference, pinglish=pinglish)
         if template_map is None:
             return None
         raw = text.encode('utf8')
@@ -507,13 +525,14 @@ class DirectFirstPersian:
         if not any(c.isalpha() for c in text):
             return None
         for _ in range(2):
+            reference = _ReferenceRequest(self._fallback())
             if any(c.isdecimal() for c in text):
-                result = self._positioned_numbers(text, pinglish=False)
+                result = self._positioned_numbers(text, pinglish=False, reference=reference)
                 if result is not None:
                     return result
             else:
-                parts = _translate_with_native_punctuation(self._fallback(), text)
-                mapping = source_map_for_reference(text, parts, self._fallback())
+                parts = _translate_with_native_punctuation(reference, text)
+                mapping = source_map_for_reference(text, parts, reference)
                 if mapping is not None:
                     return PersianAnalysis(parts, mapping, True)
         return None

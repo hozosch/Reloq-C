@@ -18,12 +18,15 @@
 #endif
 
 enum { MAX_REQUEST = 1024 * 1024, MAX_RESPONSE = 8 * 1024 * 1024,
-       MAX_CLAUSES = 65536, MAX_EVENTS = 262144, EVENT_REQUEST = 0x80 };
+       MAX_CLAUSES = 65536, MAX_EVENTS = 262144,
+       EVENT_REQUEST = 0x80, EVENT_NORMAL_SPEED = 0x40 };
 
 typedef int (*initialize_fn)(int, int, const char *, int);
 typedef int (*set_voice_fn)(const char *);
 typedef const char *(*phonemes_fn)(const void **, int, int, int *);
 typedef int (*terminate_fn)(void);
+typedef int (*set_parameter_fn)(int,int,int);
+typedef int (*get_parameter_fn)(int,int);
 /* Public speak_lib.h event layout. The helper and the loaded eSpeak DLL use
  * the same architecture. This remains entirely inside the helper process. */
 struct speech_event {
@@ -109,7 +112,8 @@ static int reply(uint32_t status,struct buffer *b)
            (!b->size||fwrite(b->data,1,b->size,stdout)==b->size)&&fflush(stdout)==0;
 }
 
-static int serve(set_voice_fn set_voice,phonemes_fn phonemes,synth_fn synth)
+static int serve(set_voice_fn set_voice,phonemes_fn phonemes,synth_fn synth,
+                 set_parameter_fn set_parameter,get_parameter_fn get_parameter)
 {
     static const char *voices[]={NULL,"fa","fa-latn","en-us"};
     for(;;) {
@@ -120,9 +124,10 @@ static int serve(set_voice_fn set_voice,phonemes_fn phonemes,synth_fn synth)
         unsigned char header[2];
         if(fread(header,1,sizeof header,stdin)!=sizeof header)return 1;
         unsigned voice=header[0], separator=header[1], want_events=voice&EVENT_REQUEST;
-        voice&=~EVENT_REQUEST;
+        unsigned normal_speed=voice&EVENT_NORMAL_SPEED;
+        voice&=~(EVENT_REQUEST|EVENT_NORMAL_SPEED);
         if(voice<1||voice>3||(separator&&(separator<0x21||separator>0x7e)) ||
-           (want_events && separator))return 1;
+           (want_events && separator) || (normal_speed && !want_events))return 1;
         char *input=malloc((size_t)length+1);
         if(!input)return 1;
         if(fread(input,1,length,stdin)!=length||memchr(input,0,length)) {free(input);return 1;}
@@ -134,8 +139,18 @@ static int serve(set_voice_fn set_voice,phonemes_fn phonemes,synth_fn synth)
         if(ok && want_events) {
             event_output=&result;event_count=0;event_failed=0;
             /* Synchronous, UTF-8, no audio device. A cancelled request can
-             * always be interrupted by terminating this isolated helper. */
+             * always be interrupted by terminating this isolated helper.
+             * The sound is discarded. For event collection only, synthesize
+             * it faster and restore the original rate before the next call.
+             * The caller checks event phones/positions against normal text
+             * analysis and retries at the original rate if they differ. */
+            int previous_rate=0,changed_rate=0;
+            if(!normal_speed && set_parameter && get_parameter) {
+                previous_rate=get_parameter(1,1); /* espeakRATE, current */
+                if(previous_rate>0 && !set_parameter(1,450,0))changed_rate=1;
+            }
             int status=synth(input,(size_t)length+1,0,1,0,1,NULL,NULL);
+            if(changed_rate && set_parameter(1,previous_rate,0))status=1;
             event_output=NULL;clauses=event_count;
             if(status || event_failed)ok=0;
         }
@@ -191,6 +206,8 @@ int main(int argc,char **argv)
     terminate_fn terminate=LOAD("espeak_Terminate",terminate_fn);
     set_callback_fn set_callback=LOAD("espeak_SetSynthCallback",set_callback_fn);
     synth_fn synth=LOAD("espeak_Synth",synth_fn);
+    set_parameter_fn set_parameter=LOAD("espeak_SetParameter",set_parameter_fn);
+    get_parameter_fn get_parameter=LOAD("espeak_GetParameter",get_parameter_fn);
     if(!initialize||!set_voice||!phonemes||!terminate||!set_callback||!synth) {
         fprintf(stderr,"eSpeak DLL lacks a required text-analysis entry point.\n");return 2;
     }
@@ -201,7 +218,7 @@ int main(int argc,char **argv)
     free(data);
 #endif
     set_callback(collect_events);
-    int status=serve(set_voice,phonemes,synth);
+    int status=serve(set_voice,phonemes,synth,set_parameter,get_parameter);
     terminate();
 #ifdef _WIN32
     FreeLibrary(library);

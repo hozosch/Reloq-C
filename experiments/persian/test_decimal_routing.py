@@ -33,6 +33,10 @@ def main():
         ('version ', EciIndex(10), '3', EciIndex(11), '.', EciIndex(12), '5', EciIndex(13), ' released'),
     )
     try:
+        # The English decimal separator is a point; the English core says it
+        # as "point", rather than merely matching two identically wrong paths.
+        english = engine._activate(engine._key(US_ENGLISH.id, '1'))
+        assert english._phonemes_for_probe('3.5') == english._phonemes_for_probe('three point five')
         for parts in cases:
             actual = render(PERSIAN_PROBE.id, parts)
             expected = render(US_ENGLISH.id, parts)

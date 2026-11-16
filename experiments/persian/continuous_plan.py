@@ -440,7 +440,8 @@ class SentencePlan:
 
 
 def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarded_spans=(),
-                 spelling_spans=(), check=None, trusted_fa=False, start_prefix=None):
+                 spelling_spans=(), check=None, trusted_fa=False, validate_in_capture=False,
+                 start_prefix=None):
     parts = tuple(parts)
     if not parts or len(parts) > 32 or {p.language for p in parts} != {'fa', 'en-us'}:
         raise ValueError('expected a bounded mixed English/Persian clause')
@@ -474,9 +475,9 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
             proxy = (part.text if part.language == 'fa' else
                      english_proxy(en, _spelling_proxy(part.text, index, spelling_spans)))
             if part.language == 'fa':
-                # Direct Persian tags were validated when their rules were
-                # compiled. Unverified reference text still needs the check.
-                if not trusted_fa and any(
+                # The scoped capture validates the entire pilot before any
+                # audio can start. Other callers still need the per-tag check.
+                if not trusted_fa and not validate_in_capture and any(
                         not native_tag_accepted(m.group(), fa._phonemes_for_probe(m.group()))
                         for m in _TAG.finditer(proxy)):
                     raise ValueError('Persian proxy was rejected')

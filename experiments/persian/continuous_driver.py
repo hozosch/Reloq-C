@@ -363,7 +363,8 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
         can_stream = (not first_has_glide and not spelling and FrameStream.available(en._dll))
         plan = context_plan(sentence, fa, en, rate, maximum=30000, source_events=events,
                             guarded_spans=guarded, spelling_spans=spelling, check=check_cancel,
-                            trusted_fa=not validate, start_prefix=start_prefix if can_stream else None)
+                            trusted_fa=not validate, validate_in_capture=validate,
+                            start_prefix=start_prefix if can_stream else None)
         original_counts = plan.counts
         selected_sentence(plan, sentence, en, german, rate, check=check_cancel)
         marks = replay_marks(plan, original_counts)

@@ -70,6 +70,19 @@ def alignment_tests(frontend):
     assert frontend.analyze_positioned('اداء،،سلام').parts[0].text.count(',') == 2
 
     worker = frontend._fallback()
+    original_translate = worker.translate
+    calls = []
+    def counted_translate(text, *, voice='fa', separator=''):
+        calls.append((text, voice, separator))
+        return original_translate(text, voice=voice, separator=separator)
+    worker.translate = counted_translate
+    try:
+        for _ in range(2):
+            calls.clear()
+            assert frontend.analyze_positioned(samples[0]) == one
+            assert calls.count((samples[0], 'fa', '|')) == 1, calls
+    finally:
+        worker.translate = original_translate
     original_events = worker.events
     def unexpected_events(*_args, **_kwargs):
         raise AssertionError('unneeded eSpeak event synthesis')
@@ -121,6 +134,15 @@ def alignment_tests(frontend):
         fake = FakeWorker(altered)
         assert _reference_words(fake, core, tokens) is None
         assert source_map_for_reference(core, one.parts, fake) is None
+    class RetryWorker(FakeWorker):
+        def __init__(self):
+            super().__init__(tuple(wrong_phone))
+            self.calls = []
+        def events(self, text, *, voice='fa', normal_speed=False):
+            self.calls.append(normal_speed)
+            return events if normal_speed else self.altered
+    retry = RetryWorker()
+    assert _reference_words(retry, core, tokens) is not None and retry.calls == [False, True]
     assert source_map_for_reference(core, (SpeechPart('en-us', 'wrong'),), worker) is None
     # A wrong word anchor must also reject a number surrounded by fallback
     # text, even when the stand-in word has the expected phones.

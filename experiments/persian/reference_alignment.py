@@ -70,28 +70,37 @@ def _reference_words(worker, core: str, tokens: tuple[tuple[int, int], ...],
     """
     clauses = worker.translate(core, voice=voice, separator='|')
     words = tuple(word for clause in clauses for word in clause.phonemes.split())
-    events = worker.events(core, voice=voice)
-    grouped: list[tuple[int, list[str]]] = []
-    for event in events:
-        if event.kind == 1:
-            grouped.append((event.position - 1, []))
-        elif event.kind == 7:
-            # Clause-final silence is outside the word. An underscore at the
-            # word's own position is an actual short-pause phone and must
-            # match the reference before its native onset is selected.
-            if event.phone in ('_', '_:') and (
-                    not grouped or event.position - 1 != grouped[-1][0]):
-                continue
-            if not grouped or event.position - 1 != grouped[-1][0]:
+    def matches(events):
+        grouped: list[tuple[int, list[str]]] = []
+        for event in events:
+            if event.kind == 1:
+                grouped.append((event.position - 1, []))
+            elif event.kind == 7:
+                # Clause-final silence is outside the word. An underscore at
+                # the word's own position is an actual short-pause phone.
+                if event.phone in ('_', '_:') and (
+                        not grouped or event.position - 1 != grouped[-1][0]):
+                    continue
+                if not grouped or event.position - 1 != grouped[-1][0]:
+                    return False
+                grouped[-1][1].append(event.phone.rstrip(':'))
+            else:
+                return False
+        if len(tokens) != len(words) or len(grouped) != len(words):
+            return False
+        for (source_start, _), word, (event_start, phones) in zip(tokens, words, grouped):
+            reference = tuple(phone.rstrip(':') for phone in word.strip('|').split('|'))
+            if event_start != source_start or tuple(phones) != reference:
+                return False
+        return True
+    if not matches(worker.events(core, voice=voice)):
+        # An unusually fast event pass may not match this voice/version's
+        # ordinary pronunciation. Retry the original-rate synthesis before
+        # declining alignment; no unverified event is ever accepted.
+        try:
+            if not matches(worker.events(core, voice=voice, normal_speed=True)):
                 return None
-            grouped[-1][1].append(event.phone.rstrip(':'))
-        else:
-            return None
-    if len(tokens) != len(words) or len(grouped) != len(words):
-        return None
-    for (source_start, _), word, (event_start, phones) in zip(tokens, words, grouped):
-        reference = tuple(phone.rstrip(':') for phone in word.strip('|').split('|'))
-        if event_start != source_start or tuple(phones) != reference:
+        except TypeError:
             return None
     return words
 

@@ -1650,12 +1650,26 @@ NVDA-to-Ach treatment and voiced consonants retain their existing paths.
 
 Neutral number fragments inherit the script context across NVDA text and
 index commands. Thus an English decimal split across several pieces stays in
-the English core, while a standalone number or one in Persian remains Persian.
+the English core, where a period is spoken as the English decimal point,
+while a standalone number or one in Persian remains Persian.
 The same applies to numbers adjoining a known English exception in Pinglish.
 Explicit language and spelling commands continue to delimit the decision.
 
 `benchmark_uncached.py` measures the first fake WavePlayer feed through the
 actual NVDA transport, separately from the first request with cold handles.
-It clears cross-request plan, phone, Ach and capitalization result caches
-before every utterance, uses different inputs and reports a native-English
-comparison. Its timings do not include a real device or NVDA event dispatch.
+It clears cross-request plan, phone, Ach, capitalization and fallback-word
+result caches before every utterance, uses different inputs and reports a
+native-English comparison. It includes separate indexed reference-fallback
+cases both with and without an intervening stop. Its timings do not include a
+real device or NVDA event dispatch.
+
+The reference helper retains its loaded language tables after an idle stop,
+but an active request remains immediately cancellable. Identical text analysis
+is reused only within an individual alignment attempt; event evidence remains
+checked against the ordinary reference phonemes and positions. Where eSpeak
+supports it, discarded event audio is generated at a faster rate and restored
+afterward; if its evidence differs, alignment retries at the original rate.
+The audible Eloquence voice and its speech rate are unaffected. The sentence
+planner checks fallback pronunciations during its complete pilot capture before
+streaming, instead of first checking every tag individually; bracket-only
+plans retain the earlier preflight before their first streamed audio.

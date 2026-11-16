@@ -3,11 +3,13 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import re
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 from _reloq_eci_direct import EciIndex, EciLanguage, EciPitch, GENDER, HEAD_SIZE, SAMPLE_RATE
 from _reloq_persian_frames import FrameCapture, FrameStream
+import direct_fa_sequence
 from nvda_driver_probe import PERSIAN_PROBE, US_ENGLISH, make_language_engine
 
 
@@ -33,6 +35,10 @@ def main():
             cache = getattr(engine, name, None)
             if cache is not None:
                 cache.clear()
+        for voice in engine._engines.values():
+            cache = getattr(getattr(voice, '_frontend', None), '_resilient_word_cache', None)
+            if cache is not None:
+                cache.clear()
     def render(parts):
         pcm, indexes = bytearray(), []
         assert engine.speak(parts, pcm.extend, lambda value: indexes.append((value, len(pcm))))
@@ -51,6 +57,9 @@ def main():
         (EciIndex(33), 'NVDA خوب ', EciIndex(34), 'window سلام', EciIndex(35)),
         # A selected within-Persian U-to-A glide stays on the complete route.
         (EciIndex(36), 'او آمد و ', EciIndex(37), 'NVDA خوب است.', EciIndex(38)),
+        # These words need reference analysis and an internal word anchor.
+        (EciIndex(39), 'NVDA ', EciIndex(40), 'پژوهشگر ', EciIndex(41), 'سلام', EciIndex(42)),
+        (EciIndex(43), 'سلام ', EciIndex(44), 'پژوهشگر ', EciIndex(45), 'window', EciIndex(46)),
     )
     compared = streamed = 0
     try:
@@ -71,6 +80,24 @@ def main():
                 compared += 1
                 streamed += len(counts) > before
         assert streamed >= 12, (compared, streamed)
+
+        # A reference fallback must still be rejected by the complete native
+        # pilot before the English prefix can start playing.
+        clear()
+        pcm, rejected = bytearray(), []
+        original_validator = direct_fa_sequence.native_sequence_accepted
+        def reject_pilot(tagged, shown):
+            if not rejected and len(re.findall(r'`\[[^]]+\]', tagged)) > 2:
+                rejected.append(len(pcm))
+                return False
+            return original_validator(tagged, shown)
+        direct_fa_sequence.native_sequence_accepted = reject_pilot
+        try:
+            assert engine.speak(('NVDA ', EciIndex(47), 'پژوهشگر ', EciIndex(48), 'سلام'),
+                                pcm.extend, lambda _: None)
+        finally:
+            direct_fa_sequence.native_sequence_accepted = original_validator
+        assert rejected == [0] and pcm, (rejected, len(pcm))
 
         # Deliberately fail the second context only after the English prefix
         # has started. The remaining English and Persian text and all NVDA
