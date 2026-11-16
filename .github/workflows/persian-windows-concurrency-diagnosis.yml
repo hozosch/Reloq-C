@@ -1,0 +1,42 @@
+name: Persian Windows concurrency diagnosis
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/persian-nvda-prep-20261115]
+    paths:
+      - .github/workflows/persian-windows-concurrency-diagnosis.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnose:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: persian-windows-acoustic-probe
+          run-id: 43910143287
+          github-token: ${{ github.token }}
+          path: candidate
+      - name: Trace concurrent cold starts
+        shell: pwsh
+        env:
+          RAL_TRACE: '1'
+          EVV_ARENA_TRACE: '1'
+          PYTHONIOENCODING: utf-8
+        run: |
+          python -B eci/test_concurrent_startup.py --library candidate/eci/eci.dll --rounds 100 *> startup-debug.log
+          $result = $LASTEXITCODE
+          $lines = Get-Content startup-debug.log
+          $lines | Where-Object { $_ -match 'evv:|log\[|error|Error|failed|Traceback|Passed|RuntimeError|Exception' } | Select-Object -Last 100
+          $lines | Select-Object -Last 100
+          if ($result -ne 0) { throw 'Concurrent startup diagnostic reproduced the failure' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: persian-windows-concurrency-diagnosis
+          path: startup-debug.log
+          if-no-files-found: warn
+          retention-days: 7
