@@ -141,6 +141,16 @@ FRONT_A_PATCH = r'''
             if(STATE(int16_t,s448)>0)STATE(int16_t,s448)+=100;
             if(STATE(int16_t,s449)>0)STATE(int16_t,s449)+=100;
         }
+        /* The eSpeak Persian short-a source has an approximate central F3
+           peak of 2500 Hz, versus the Finnish default of 2550 Hz. Try that
+           small F3 change separately from any F1/F2 bandwidth adjustment.
+           It is a listening hypothesis across different synthesizers, not a
+           claim that their spectra or Persian formants are interchangeable. */
+        const char *f3=getenv("RELOQ_FA_FRONT_A_F3");
+        if(f3 && f3[0]=='1' && !f3[1]) {
+            if(STATE(int16_t,s452)>50)STATE(int16_t,s452)-=50;
+            if(STATE(int16_t,s453)>50)STATE(int16_t,s453)-=50;
+        }
     }
 '''
 
@@ -1880,11 +1890,11 @@ def prepare_us_articulation(work: Path) -> None:
     """Adapt selected Persian sounds, retaining Finnish context and L."""
     vowel_file = work / 'delta_rules_c08_fifi.c'
     text = vowel_file.read_text(encoding='utf8')
-    # Apply this after the vowel-specific rules, including the accepted back-A
-    # and short-A rules. B1/B2 are bandwidths, not formant frequencies: a
+    # Apply this only to the accepted long back-A rule. B1/B2 are bandwidths,
+    # not formant frequencies: a
     # modest increase broadens/damps the two resonances without shifting their
     # centres. Keep non-positive native inheritance markers unchanged.
-    for phone in ('i', 'e', 'A', 'a', 'u', 'o'):
+    for phone in ('a',):
         call = f'    r0 = reloq_call_fifi_stanfin_ph_{phone}(state, (int32_t)(FIELD(0)));\n'
         # A few rules can call a vowel outside the normal vowel dispatcher.
         # Restrict this insertion to the dispatch function itself.

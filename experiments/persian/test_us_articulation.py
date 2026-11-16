@@ -63,19 +63,23 @@ def main():
                     if phone == 'a':
                         expected = (150, 125)
                     elif phone == 'u':
-                        expected = (175, 200) if gender else (88, 100)
+                        expected = (140, 160) if gender else (70, 80)
                     else:
-                        expected = (375, 250) if gender else (150, 125)
+                        expected = (300, 200) if gender else (120, 100)
                     assert tuple(round(first.controls[i]) for i in (10, 14)) == expected, (
                         rate, gender, phone)
                     if previous:
                         before, old_rows = capture(previous, old_scope, tag, True)
                         assert len(actual.pcm) == len(before.pcm) and len(rows) == len(old_rows)
-                        assert actual.pcm != before.pcm
+                        assert (actual.pcm != before.pcm) == (phone in 'aA'), phone
                         for a, b in zip(rows, old_rows):
                             assert a.tick == b.tick
+                            changed = (10, 14) if phone == 'a' else (15,) if phone == 'A' else ()
                             assert all(a.controls[i] == b.controls[i] for i in range(62)
-                                       if i not in (10, 14)), (rate, gender, phone)
+                                       if i not in changed), (rate, gender, phone)
+                        if phone == 'A':
+                            assert any(abs(a.controls[15] - b.controls[15]) >= 49
+                                       for a, b in zip(rows, old_rows)), (rate, gender, phone)
                     checks += 1
                 for phone in 'ptkbdgmn':
                     tag = f'`[.1{phone}i]'
@@ -98,15 +102,15 @@ def main():
                                 rate, gender, phone, old_af, new_af, us_af)
                     checks += 1
                 if previous:
-                    # L and the special Q/X carriers retain all their targets;
-                    # the following vowel can change B1/B2 and its transitions.
+                    # L and the special Q/X carriers retain their targets;
+                    # the following i is unchanged as well.
                     for tag in ('`[.1li]', '`[.1Ri]', '`[.1Gi]'):
                         _, rows = capture(candidate, scope, tag, True)
                         _, old_rows = capture(previous, old_scope, tag, True)
                         assert len(rows) == len(old_rows)
                         assert all(a.controls[i] == b.controls[i]
                                    for a, b in zip(rows, old_rows)
-                                   for i in range(62) if i not in (10, 14)), (rate, gender, tag)
+                                   for i in range(62)), (rate, gender, tag)
                         checks += 1
                     # No effect on normal Finnish, US English or German.
                     for dialect, text in ((0x90000, '`[.1li]'),

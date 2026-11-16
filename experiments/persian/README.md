@@ -33,8 +33,11 @@ rules and sample-rate filters stay as before. This needs native-speaker and
 NVDA listening feedback.
 
 The dev117 listening candidate keeps the back-A nasal correction disabled.
-It broadens the first two vowel resonance bandwidths by 25% when they are
+It broadens the first two *back-A* resonance bandwidths by 25% when they are
 explicit positive values, retaining the formant centres and inherited values.
+For the short-front /æ/, it leaves those two bandwidths alone and tries an
+independent, 50 Hz reduction to explicit F3 targets, informed by the eSpeak
+Persian short-a source; the two synthesizers do not have equivalent spectra.
 It blends selected stop release levels and the /m/ and /n/ targets toward
 US-English values, while keeping the existing L, contextual transitions and
 marked uvular/glottal carriers. These limited changes are listening
