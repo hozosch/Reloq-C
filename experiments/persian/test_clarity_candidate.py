@@ -47,7 +47,8 @@ def main():
                 if dialect == 0x90000:
                     # Preserve a stressed L context, a stressed standalone
                     # vowel and a word-final unstressed vowel exactly.
-                    for text in ('`[.1lam]', '`[.1pA]', '`[.1do.0nja]'):
+                    for text in ('`[.1lam]', '`[.1pA]', '`[.1do.0nja]',
+                                 '`[.1do.0nja] `[.1pa]', '`[.1lam] `[.1li]'):
                         assert render(old, text, persian=True) == render(new, text, persian=True), (
                             'protected scoped context changed', rate, gender, speed, text)
                         checks += 1
