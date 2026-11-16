@@ -343,7 +343,8 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
             # The very first long utterance should not wait for a second
             # native handle to load. Prepare it only after its safe prefix
             # has been delivered, then use it for later uncached requests.
-            warm_parallel()
+            if item.ticks[first] - item.ticks[0] >= 250:
+                warm_parallel()
         tags = tuple(_TAG.finditer(sentence[0].text)) if sentence[0].language == 'fa' else ()
         first_has_glide = any(_FINAL_U.search(left.group()) and _INITIAL_A.match(right.group()) and
                               sentence[0].text[left.end():right.start()].isspace()

@@ -52,7 +52,11 @@ class ParallelPilot:
         # Load only the handle, never speech results, while the owning thread
         # prepares this first long request. The queued capture still verifies
         # cancellation and settings before using the handle.
-        self._executor.submit(self._open)
+        try:
+            self._executor.submit(self._open)
+        except BaseException:
+            self._executor.shutdown(wait=False)
+            raise
 
     def _open(self):
         if self._engine is not None:
