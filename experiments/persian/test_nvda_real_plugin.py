@@ -145,6 +145,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA', 'pipeline_user_latency'),
                           ('fa_IR', 'نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA', 'pipeline_user_latency'),
                           ('fa_IR', 'اکنون نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA', 'pipeline_user_latency'),
+                          ('fa_IR', 'NVDA نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از', 'pipeline_mixed_latency'),
+                          ('fa_IR', 'NVDA سلام دنیا', 'pipeline_mixed_latency'),
+                          ('fa_IR', 'NVDA خوب', 'pipeline_mixed_latency'),
                           ('fa_IR', 'نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA', 'driver_user_latency'),
                           ('fa_IR', 'ذره بین به دلیلِ بُروزِ خطا متوقف شد.', 'pipeline_stop'),
                           ('fa_IR', 'حالتِ بومیِ انتخاب را فعال یا غیرفعال می‌کند', False),
@@ -334,14 +337,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 # NVDA speaks an object's name, role and state as separate
                 # sequence items; its real preprocessing adds the separators.
                 sequence = [text, 'کادرِ علامت‌زدنی', status]
-            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_bracket'):
+            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
-            self.profile_case = spelling in ('pipeline_user_latency', 'driver_user_latency')
+            self.profile_case = spelling in ('pipeline_user_latency', 'pipeline_mixed_latency', 'driver_user_latency')
             self.stage = {}
             self.started = time.perf_counter()
-            self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_bracket', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
+            self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
             if self.pipeline:
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
                                   symbolLevel=(self.symbols.SymbolLevel.MOST if spelling in ('pipeline_most', 'checkbox_checked_most')

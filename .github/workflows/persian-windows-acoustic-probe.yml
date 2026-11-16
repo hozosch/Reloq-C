@@ -16,6 +16,7 @@ on:
       - experiments/persian/continuous_replay.inc
       - experiments/persian/test_continuous_replay.py
       - experiments/persian/test_sibilant_noise.py
+      - experiments/persian/test_embedded_text_rules.py
       - nvda/_reloq_persian_frames.py
       - experiments/persian/test_windows_acoustics.py
       - .github/workflows/persian-windows-acoustic-probe.yml
@@ -70,6 +71,8 @@ jobs:
         run: |
           python -B experiments/persian/test_windows_acoustics.py --baseline eci/eci.dll --candidate persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Windows Persian acoustic isolation failed' }
+          python -B experiments/persian/test_embedded_text_rules.py --library persian-windows-probe/eci_persian_probe.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Embedded Persian text rules are stale or missing' }
           python -B experiments/persian/test_continuous_replay.py --probe persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Windows continuous replay failed' }
           python -B experiments/persian/test_sibilant_noise.py --candidate persian-windows-probe/eci_persian_probe.dll

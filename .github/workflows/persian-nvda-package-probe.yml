@@ -32,6 +32,7 @@ on:
       - experiments/persian/test_parallel_pilot.py
       - experiments/persian/test_alamat_vowel.py
       - experiments/persian/test_alave_vowel.py
+      - experiments/persian/test_embedded_text_rules.py
       - experiments/persian/reference_alamat_timing.jsonl
       - experiments/persian/test_native_transition.py
       - experiments/persian/test_front_a_anchor.py
@@ -87,7 +88,7 @@ jobs:
           selected=""
           for attempt in $(seq 1 60); do
             gh api "repos/$GITHUB_REPOSITORY/actions/workflows/persian-windows-acoustic-probe.yml/runs?branch=codex%2Fpersian-nvda-prep-20261115&per_page=40" > windows-runs.json
-            selected=$(python -B experiments/persian/select_windows_acoustic_run.py windows-runs.json --audio-only)
+            selected=$(python -B experiments/persian/select_windows_acoustic_run.py windows-runs.json)
             if [ -n "$selected" ]; then break; fi
             sleep 5
           done
@@ -109,8 +110,6 @@ jobs:
           $envcmd = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
           cmd.exe /d /c "`"$envcmd`" >nul && cl /nologo /O2 /W4 /std:c11 /Fe:fa-espeak-worker.exe experiments\persian\espeak_worker.c"
           if ($LASTEXITCODE -ne 0) { throw 'Text worker compilation failed' }
-          cmd.exe /d /c "`"$envcmd`" >nul && cl /nologo /O2 /W4 /std:c11 /utf-8 /LD /Iinclude /Fe:fa-direct.dll experiments\persian\direct_fa_lexicon.c experiments\persian\direct_fa_numbers.c experiments\persian\direct_fa_normalize.c experiments\persian\direct_fa_text.c experiments\persian\direct_fa_letters.c experiments\persian\direct_fa_pinglish.c src\reloq_utf8.c /link /EXPORT:reloq_fa_direct_text /EXPORT:reloq_fa_direct_number /EXPORT:reloq_fa_direct_letter /EXPORT:reloq_fa_direct_free /EXPORT:reloq_fa_pinglish_word"
-          if ($LASTEXITCODE -ne 0) { throw 'Direct Persian text DLL compilation failed' }
       - name: Obtain portable NVDA
         shell: pwsh
         env:
@@ -130,7 +129,7 @@ jobs:
           $dll = (Get-ChildItem candidate -Recurse -Filter eci_persian_probe.dll | Select-Object -First 1).FullName
           $espeak = (Resolve-Path portable-nvda/synthDrivers/espeak.dll).Path
           $data = (Resolve-Path portable-nvda/synthDrivers).Path
-          python -B experiments/persian/test_inprocess_espeak.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
+          python -B experiments/persian/test_inprocess_espeak.py --native-library "$dll" --scope-probe "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'In-process eSpeak isolation, cancellation or parity failed' }
           python -B experiments/persian/test_persian_decimals.py
           if ($LASTEXITCODE -ne 0) { throw 'Persian NVDA decimal preprocessing failed' }
@@ -138,57 +137,57 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Windows acoustic reuse selection failed' }
           python -B experiments/persian/test_compare_vowel_corpus.py
           if ($LASTEXITCODE -ne 0) { throw 'Persian vowel corpus pairing failed' }
-          python -B experiments/persian/compare_vowel_corpus.py --espeak-only --native-library "$pwd/fa-direct.dll" --espeak-library "$espeak" --data-parent "$data" --output persian-timing/espeak-vowels.json
+          python -B experiments/persian/compare_vowel_corpus.py --espeak-only --native-library "$dll" --espeak-library "$espeak" --data-parent "$data" --output persian-timing/espeak-vowels.json
           if ($LASTEXITCODE -ne 0) { throw 'NVDA eSpeak vowel reference measurement failed' }
-          python -B experiments/persian/compare_vowel_corpus.py --espeak-only --native-library "$pwd/fa-direct.dll" --espeak-library "$espeak" --data-parent "$data" --corpus experiments/persian/reference_alamat_timing.jsonl --output persian-timing/espeak-alamat.json
+          python -B experiments/persian/compare_vowel_corpus.py --espeak-only --native-library "$dll" --espeak-library "$espeak" --data-parent "$data" --corpus experiments/persian/reference_alamat_timing.jsonl --output persian-timing/espeak-alamat.json
           if ($LASTEXITCODE -ne 0) { throw 'NVDA eSpeak alāmat measurement failed' }
-          python -B experiments/persian/test_nvda_package_probe.py --native-library "$dll" --text-library "$pwd/fa-direct.dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
+          python -B experiments/persian/test_nvda_package_probe.py --native-library "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows package adapter failed' }
-          python -B experiments/persian/test_pinglish_driver.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
+          python -B experiments/persian/test_pinglish_driver.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows Pinglish playback failed' }
-          python -B experiments/persian/test_nvda_driver_probe.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
+          python -B experiments/persian/test_nvda_driver_probe.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows Persian language switching failed' }
-          python -B experiments/persian/test_continuous_runtime.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
+          python -B experiments/persian/test_continuous_runtime.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows continuous sentence and source indexes failed' }
-          python -B experiments/persian/test_streamed_sentence.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
+          python -B experiments/persian/test_streamed_sentence.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows incremental sentence, recovery or cancellation failed' }
-          python -B experiments/persian/test_parallel_pilot.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
+          python -B experiments/persian/test_parallel_pilot.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows parallel contour, settings or cancellation failed' }
-          python -B experiments/persian/test_alamat_vowel.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
+          python -B experiments/persian/test_alamat_vowel.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows alāmat vowel and spelling checks failed' }
-          python -B experiments/persian/test_alave_vowel.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
+          python -B experiments/persian/test_alave_vowel.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows alāve vowel and spelling checks failed' }
-          python -B experiments/persian/test_unvoiced_switch.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
+          python -B experiments/persian/test_unvoiced_switch.py --native-library "$dll" --scope-probe "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows voiceless language transitions failed' }
-          python -B experiments/persian/test_decimal_routing.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
+          python -B experiments/persian/test_decimal_routing.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'English and Pinglish decimal routing failed' }
-          python -B experiments/persian/benchmark_uncached.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data" --output persian-timing/uncached-timing.json
+          python -B experiments/persian/benchmark_uncached.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data" --output persian-timing/uncached-timing.json
           if ($LASTEXITCODE -ne 0) { throw 'Windows uncached response benchmark failed' }
           python -B experiments/persian/test_native_transition.py --probe "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'US-guided Persian continuation failed' }
           python -B experiments/persian/test_front_a_anchor.py --probe "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian short-front vowel anchor failed' }
-          python -B experiments/persian/test_resilient_runtime.py --native-library "$pwd/fa-direct.dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
+          python -B experiments/persian/test_resilient_runtime.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows resilient input and English exceptions failed' }
-          python -B experiments/persian/test_direct_fa_letters.py --native-library "$pwd/fa-direct.dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
+          python -B experiments/persian/test_direct_fa_letters.py --native-library "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows Persian spelling failed' }
       - name: Build the private NVDA test add-on
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci_persian_probe.dll -print -quit)
-          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --text-dll fa-direct.dll --output dist/reloq-c-persian-pinglish-1.5.0-dev110.nvda-addon
+          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --output dist/reloq-c-persian-pinglish-1.5.0-dev111.nvda-addon
       - name: Test both choices in real NVDA
         shell: pwsh
         env:
           PYTHONIOENCODING: utf-8
         run: |
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon dist/reloq-c-persian-pinglish-1.5.0-dev110.nvda-addon --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon dist/reloq-c-persian-pinglish-1.5.0-dev111.nvda-addon --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
           if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA Persian profile test failed' }
       - uses: actions/upload-artifact@v4
         with:
           name: persian-pinglish-nvda-test
-          path: dist/reloq-c-persian-pinglish-1.5.0-dev110.nvda-addon
+          path: dist/reloq-c-persian-pinglish-1.5.0-dev111.nvda-addon
           if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@v4

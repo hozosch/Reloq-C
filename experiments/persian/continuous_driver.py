@@ -12,7 +12,7 @@ from dataclasses import replace
 if __package__:
     from .._reloq_eci_direct import (EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciPitchHz,
                                      EciProsody, EciText,
-                                     SAMPLE_RATE, SAMPLE_RATES, PROCESS_TAGS)
+                                     SAMPLE_RATE, SAMPLE_RATES, PROCESS_TAGS, NATIVE_SPEED, NATIVE_WPM)
     from .._reloq_persian_frames import FrameCapture, FrameReplay, FrameStream, NativeFrame
     from .._reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from .._reloq_persian_projection import ProjectedJob
@@ -22,7 +22,7 @@ if __package__:
 else:
     from _reloq_eci_direct import (EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciPitchHz,
                                     EciProsody, EciText,
-                                    SAMPLE_RATE, SAMPLE_RATES, PROCESS_TAGS)
+                                    SAMPLE_RATE, SAMPLE_RATES, PROCESS_TAGS, NATIVE_SPEED, NATIVE_WPM)
     from _reloq_persian_frames import FrameCapture, FrameReplay, FrameStream, NativeFrame
     from _reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from _reloq_persian_projection import ProjectedJob
@@ -36,6 +36,7 @@ _FINAL_U = re.compile(r"(?:u|'u:')\]$")
 _INITIAL_A = re.compile(r"^`\[\.[012](?:a|'a:')")
 _PARALLEL_MIN = 96
 _FAST_PILOT_MIN = 80
+_FAST_ENGLISH_PREFIX_MIN_MS = 200
 
 
 class _PlanningVoice:
@@ -281,8 +282,10 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
         rate = SAMPLE_RATES.get(fa._dll.eciGetParam(fa._handle, SAMPLE_RATE))
         if rate is None:
             raise ValueError('invalid sentence sample rate')
-        parallel_worthy = sum(len(part.text) for part in sentence) >= _PARALLEL_MIN and (os.cpu_count() or 1) > 1
-        parallel_pilot = getattr(owner, '_persian_contour_worker', None) if parallel_worthy else None
+        multicore = (os.cpu_count() or 1) > 1
+        parallel_worthy = sum(len(part.text) for part in sentence) >= _PARALLEL_MIN and multicore
+        available_pilot = getattr(owner, '_persian_contour_worker', None) if multicore else None
+        parallel_pilot = available_pilot if parallel_worthy else None
         def warm_parallel():
             if not parallel_worthy or getattr(owner, '_persian_contour_worker', None) is not None:
                 return
@@ -352,12 +355,32 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
                               sentence[0].text[left.end():right.start()].isspace()
                               for left, right in zip(tags, tags[1:]))
         can_stream = (not first_has_glide and not spelling and FrameStream.available(en._dll))
+        fast_english = False
+        if (available_pilot and can_stream and sentence[0].language == 'en-us' and
+                not any(isinstance(item, EciProsody) and item.parameter in (6, 8) or
+                        isinstance(item, EciText) and item.speed_control for item in prefix)):
+            # Predict only long English openings for which an early prefix
+            # is likely to leave the required audio reserve. Reuse the same
+            # per-request phone lookup later when forming the pilot proxy.
+            speed = en._dll.eciGetParam(en._handle, NATIVE_SPEED)
+            wpm = en._dll.eciGetParam(en._handle, NATIVE_WPM)
+            ach = (sentence[1].language == 'fa' and
+                   re.match(r'^\s*`\[\.[012]G', sentence[1].text) is not None)
+            estimated_usable = (0 < wpm <= (250 if ach else 350) if wpm else
+                                0 < speed <= (75 if ach else 100))
+            if estimated_usable:
+                displayed = en._phonemes_for_probe(sentence[0].text)
+                syllables = sum(len(re.findall(r'\.[012]', match.group())) for match in _TAG.finditer(displayed))
+                fast_english = syllables >= 4
+                if fast_english:
+                    parallel_pilot = available_pilot
         plan = context_plan(sentence, fa, en, rate, maximum=30000, source_events=events,
                             guarded_spans=guarded, spelling_spans=spelling, check=check_cancel,
                             trusted_fa=not validate, validate_in_capture=validate,
                             start_prefix=start_prefix if can_stream else None, parallel_pilot=parallel_pilot,
                             fast_initial=bool(parallel_pilot and can_stream and
-                                              len(sentence[0].text) >= _FAST_PILOT_MIN))
+                                              (len(sentence[0].text) >= _FAST_PILOT_MIN or fast_english)),
+                            fast_minimum_ms=(_FAST_ENGLISH_PREFIX_MIN_MS if fast_english else 300))
         original_counts = plan.counts
         selected_sentence(plan, sentence, en, german, rate, check=check_cancel)
         marks = replay_marks(plan, original_counts)

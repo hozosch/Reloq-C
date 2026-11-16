@@ -15,6 +15,7 @@ PATHS = ('eci/Makefile', 'src', 'include', 'vendor/openevv61',
          'experiments/persian/continuous_frames.h',
          'experiments/persian/continuous_replay.inc',
          'experiments/persian/scoped_acoustics_probe.c',
+         'experiments/persian/test_embedded_text_rules.py',
          'experiments/persian/direct_fa_*.c',
          'experiments/persian/direct_fa_*.h',
          'experiments/persian/direct_fa_*.inc',
@@ -27,20 +28,17 @@ def main():
     parser.add_argument('--audio-only', action='store_true',
                         help='ignore embedded text helpers when the package builds its own text DLL')
     args = parser.parse_args()
-    # The NVDA package builds and tests fa-direct.dll from the current text
-    # sources separately; it uses this artifact only for its acoustic ECI
-    # handle. Keep the stricter full-source match as the default for anyone
-    # using the probe DLL's own experimental text exports.
+    # The NVDA package uses the probe's own text exports, so it must use the
+    # default full-source match. Audio-only remains useful for comparisons
+    # that explicitly supply a separate text library.
     paths = tuple(p for p in PATHS if not (args.audio_only and
                                            p.startswith('experiments/persian/direct_fa_')))
     runs = json.loads(args.runs.read_text(encoding='utf8'))['workflow_runs']
     pending = None
     for run in runs:
-        # Prefer an already verified acoustic artifact over a newer build
-        # whose only changes concern the separately built text DLL. If no
-        # compatible completed build exists, return an in-flight match so the
-        # package workflow can watch it for as long as the build needs.
-        if args.audio_only and run.get('status') == 'completed' and run.get('conclusion') != 'success':
+        # Prefer an already verified compatible artifact. If none exists,
+        # return an in-flight match so the caller can wait for its tests.
+        if run.get('status') == 'completed' and run.get('conclusion') != 'success':
             continue
         sha = run['head_sha']
         if len(sha) != 40 or any(c not in '0123456789abcdef' for c in sha):
@@ -48,7 +46,7 @@ def main():
         result = subprocess.run(['git', 'diff', '--quiet', sha, 'HEAD', '--', *paths],
                                 check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if result.returncode == 0:
-            if not args.audio_only or run.get('status') == 'completed':
+            if run.get('status') == 'completed':
                 print(int(run['id']))
                 return
             if pending is None:

@@ -116,7 +116,7 @@ def main():
     from build_experimental_nvda import PREFIX, add_persian
     base = {'manifest.ini': (ROOT / 'addon/synth/manifest.ini').read_bytes(),
             PREFIX + '__init__.py': (ROOT / 'addon/synth/synthDrivers/reloqC/__init__.py').read_bytes()}
-    source = add_persian(base, b'dll')[PREFIX + '__init__.py'].decode('utf8')
+    source = add_persian(base)[PREFIX + '__init__.py'].decode('utf8')
     assert source.count('prepare_persian_symbols(self._languages[') == 2
     tree = ast.parse(source)
     part_function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == '_parts')

@@ -49,6 +49,11 @@ def main():
             {'id': 1, 'head_sha': base, 'status': 'completed', 'conclusion': 'success'},
         ]}))
         assert select('--audio-only') == '3', 'a compatible in-flight build could not be watched'
+        runs.write_text(json.dumps({'workflow_runs': [
+            {'id': 4, 'head_sha': newest, 'status': 'completed', 'conclusion': 'failure'},
+            {'id': 3, 'head_sha': newest, 'status': 'in_progress', 'conclusion': None},
+        ]}))
+        assert select() == '3', 'a failed embedded-text build was selected'
     print('Passed verified acoustic reuse for text-only changes and acoustic-change rejection.')
 
 

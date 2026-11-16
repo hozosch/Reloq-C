@@ -441,7 +441,7 @@ class SentencePlan:
 
 def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarded_spans=(),
                  spelling_spans=(), check=None, trusted_fa=False, validate_in_capture=False,
-                 start_prefix=None, parallel_pilot=None, fast_initial=False):
+                 start_prefix=None, parallel_pilot=None, fast_initial=False, fast_minimum_ms=300):
     parts = tuple(parts)
     if not parts or len(parts) > 32 or {p.language for p in parts} != {'fa', 'en-us'}:
         raise ValueError('expected a bounded mixed English/Persian clause')
@@ -580,12 +580,12 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                     # The first segment ends at an internal mark. Its pitch
                     # needs no audible-EOF scan, so the identical control
                     # capture can start that segment before rendering the
-                    # full pilot. Keep at least 300 ms of playable speech.
+                    # full pilot. Keep the caller's required playable reserve.
                     quick_pitch, quick_bounds = contour(quick, controls_only=True)
                     _fit_context_pitch(item, bounds, quick_pitch, quick_bounds, parts, language,
                                        rate, check, native=native_pitch if item.ticks[-1] <= 60000 else None,
                                        only=(0,))
-                    if start_prefix(item, bounds, source_marks, capture_api, minimum_ms=300):
+                    if start_prefix(item, bounds, source_marks, capture_api, minimum_ms=fast_minimum_ms):
                         early = (language, item, bounds)
                         contexts[language], edges[language] = item, bounds
                     try:

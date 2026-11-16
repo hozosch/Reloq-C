@@ -5,10 +5,11 @@ import argparse
 from pathlib import Path
 import sys
 import threading
+import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 import continuous_driver
-from _reloq_eci_direct import EciIndex, EciPitch, EciProsody, GENDER, HEAD_SIZE, NATIVE_SPEED, SAMPLE_RATE
+from _reloq_eci_direct import EciIndex, EciPitch, EciProsody, GENDER, HEAD_SIZE, NATIVE_SPEED, NATIVE_WPM, SAMPLE_RATE, SAMPLE_RATES
 from _reloq_persian_frames import FrameCapture
 from nvda_driver_probe import PERSIAN_PROBE, US_ENGLISH, make_language_engine
 from parallel_pilot import ParallelPilot, _CaptureVoice
@@ -37,6 +38,13 @@ def main():
         pcm, marks = bytearray(), []
         assert engine.speak(parts, pcm.extend, lambda value: marks.append((value, len(pcm))))
         return bytes(pcm), marks
+    def render_serial(parts):
+        cpu_count = continuous_driver.os.cpu_count
+        continuous_driver.os.cpu_count = lambda: 1
+        try:
+            return render(parts)
+        finally:
+            continuous_driver.os.cpu_count = cpu_count
     examples = (
         (EciIndex(1), 'نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از ', EciIndex(2), 'NVDA', EciIndex(3)),
         (EciIndex(4), EciPitch(75), 'این یک آزمایش تعجب دیگر است و ', EciIndex(5), 'NVDA خوب است.', EciIndex(6)),
@@ -81,7 +89,7 @@ def main():
                 engine.set_parameter(key, value)
             for parts in examples:
                 continuous_driver._PARALLEL_MIN = 10**9
-                baseline = render(parts)
+                baseline = render_serial(parts)
                 continuous_driver._PARALLEL_MIN = 1
                 before = len(submissions)
                 candidate = render(parts)
@@ -145,6 +153,68 @@ def main():
             ParallelPilot.submit = submit
         assert (bytes(audio), marks) == expected
         assert len(progress) == 2 and progress[0] == (False, 0) and progress[1][0] and progress[1][1] > 0, progress
+
+        # English openings such as NVDA may start before the full pilot too,
+        # provided that their playable prefix meets the separate safety
+        # threshold. Compare every sample and source index even when the
+        # second capture is deliberately delayed.
+        english_first = (EciIndex(11), 'NVDA ', EciIndex(12), 'سلام دنیا و پنجره', EciIndex(13))
+        engine.set_parameter(SAMPLE_RATE, 1)
+        continuous_driver._FAST_PILOT_MIN = old_fast_min
+        continuous_driver._PARALLEL_MIN = 10**9
+        english_expected = render_serial(english_first)
+        continuous_driver._PARALLEL_MIN = 1
+        progress, audio, marks = [], bytearray(), []
+        def slow_full_pilot(worker, *args):
+            if args[-1] is True:
+                time.sleep(.08)
+            return old_capture(worker, *args)
+        ParallelPilot.submit, ParallelPilot._capture = observe_submit, slow_full_pilot
+        try:
+            assert engine.speak(english_first, audio.extend, lambda value: marks.append((value, len(audio))))
+        finally:
+            ParallelPilot.submit, ParallelPilot._capture = submit, old_capture
+        assert (bytes(audio), marks) == english_expected
+        assert len(progress) == 2 and progress[0] == (False, 0) and progress[1][0], progress
+        prefix_ms = 1000 * progress[1][1] / (2 * SAMPLE_RATES[1])
+        assert prefix_ms >= continuous_driver._FAST_ENGLISH_PREFIX_MIN_MS - 1, prefix_ms
+
+        # A short English-to-Ach prefix has insufficient safe audio at this
+        # speed. It must submit only the complete pilot, not the quick one.
+        short_ach = (EciIndex(14), 'NVDA ', EciIndex(15), 'خوب', EciIndex(16))
+        continuous_driver._PARALLEL_MIN = 10**9
+        short_expected = render_serial(short_ach)
+        continuous_driver._PARALLEL_MIN = 1
+        progress, audio, marks = [], bytearray(), []
+        ParallelPilot.submit = observe_submit
+        try:
+            assert engine.speak(short_ach, audio.extend, lambda value: marks.append((value, len(audio))))
+        finally:
+            ParallelPilot.submit = submit
+        assert (bytes(audio), marks) == short_expected
+        assert len(progress) == 1 and progress[0] == (True, 0), progress
+
+        # A moderate WPM setting uses its own conservative threshold. Very
+        # fast WPM and per-utterance speed controls retain the complete pilot.
+        for mode in ('wpm', 'fast_wpm', 'inline'):
+            engine.set_parameter(NATIVE_WPM, 180 if mode == 'wpm' else 600 if mode == 'fast_wpm' else 0)
+            parts = ((EciProsody(6, 70), *english_first) if mode == 'inline' else english_first)
+            reference = render_serial(parts)
+            progress, audio, marks = [], bytearray(), []
+            ParallelPilot.submit = observe_submit
+            try:
+                assert engine.speak(parts, audio.extend, lambda value: marks.append((value, len(audio))))
+            finally:
+                ParallelPilot.submit = submit
+            assert (bytes(audio), marks) == reference
+            if mode == 'wpm':
+                assert len(progress) == 2 and progress[0] == (False, 0) and progress[1][0], (mode, progress)
+                assert 1000 * progress[1][1] / (2 * SAMPLE_RATES[1]) >= 199, (mode, progress)
+            else:
+                assert len(progress) == 1 and progress[0] == (True, 0), (mode, progress)
+        engine.set_parameter(NATIVE_WPM, 0)
+        engine.set_parameter(SAMPLE_RATE, 3)
+        continuous_driver._FAST_PILOT_MIN = 1
 
         # If the second capture fails after audio has started, complete the
         # first source segment and route the remaining words once. Never

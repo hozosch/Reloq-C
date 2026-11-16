@@ -18,7 +18,6 @@ ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / 'addon'))
 from build_synth import make_entries
-from pe_format import assert_x64_pe
 
 PREFIX = 'synthDrivers/reloqC/'
 MODULES = ('espeak_ng_probe', 'inprocess_espeak', 'text_frontend', 'pinglish_frontend', 'persian_symbols',
@@ -26,7 +25,7 @@ MODULES = ('espeak_ng_probe', 'inprocess_espeak', 'text_frontend', 'pinglish_fro
            'continuous_driver', 'parallel_pilot', 'nvda_driver_probe')
 
 
-def add_persian(entries, text_library: bytes):
+def add_persian(entries):
     """Extend a baseline package without changing the normal release builder."""
     entries = dict(entries)
     driver = PREFIX + '__init__.py'
@@ -87,7 +86,6 @@ def add_persian(entries, text_library: bytes):
     entries[PREFIX + '_persian/__init__.py'] = b'"""Private Persian test frontend."""\n'
     for name in MODULES:
         entries[PREFIX + '_persian/' + name + '.py'] = (HERE / (name + '.py')).read_bytes()
-    entries[PREFIX + 'fa-direct.dll'] = text_library
     if 'doc/source.json' in entries:
         metadata = json.loads(entries['doc/source.json'])
         metadata['build'] = ('private Windows Persian acoustic probe followed by '
@@ -97,7 +95,7 @@ def add_persian(entries, text_library: bytes):
     if manifest.count('version = "1.4.1"') != 1:
         raise ValueError('the normal version changed; choose an explicit test version')
     # Keep the existing updater's recognized dev-version grammar.
-    manifest = manifest.replace('version = "1.4.1"', 'version = "1.5.0-dev110"', 1)
+    manifest = manifest.replace('version = "1.4.1"', 'version = "1.5.0-dev111"', 1)
     manifest = manifest.replace('summary = "Eloquence C: fifteen language variants"',
                                 'summary = "Eloquence C: Persian and Pinglish test"', 1)
     manifest = re.sub(r'(?m)^description = .*$',
@@ -120,11 +118,9 @@ def add_persian(entries, text_library: bytes):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dll', type=Path, required=True)
-    parser.add_argument('--text-dll', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    assert_x64_pe(args.text_dll.read_bytes())
-    entries = add_persian(make_entries(args.dll), args.text_dll.read_bytes())
+    entries = add_persian(make_entries(args.dll))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(args.output, 'w') as archive:
         for name, data in sorted(entries.items()):

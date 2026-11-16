@@ -17,7 +17,7 @@ import time
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 from _reloq_eci_transport import EciTextTransport
 from _reloq_persian_frames import FrameStream
-from _reloq_eci_direct import EciIndex
+from _reloq_eci_direct import EciIndex, NATIVE_SPEED, NATIVE_WPM, SAMPLE_RATE
 from nvda_driver_probe import US_ENGLISH, make_language_engine
 
 
@@ -36,6 +36,9 @@ FALLBACK = tuple(('NVDA ', EciIndex(100 + i), word, EciIndex(200 + i), ' سلا�
 SHORT_MIXED = ('go سلام', 'hi دنیا', 'file خوب', 'خوب hi', 'سلام go',
                'open کتاب', 'window کتاب', 'hello سلام', 'stop خط')
 LONG_PERSIAN_FIRST = ('نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA',)
+LONG_ENGLISH_FIRST = ('NVDA نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از',
+                      'NVDA سیستم نمایش تنظیمات گفتار را فعال کنید',
+                      'NVDA پژوهشگر سلام', 'NVDA سلام دنیا')
 
 
 class Player:
@@ -70,13 +73,21 @@ class Uncached:
 
 
 def measure(args, *, streaming, english=False, fallback=False, cancel_before=False,
-            short=False, long_first=False, repeated=False):
+            short=False, long_first=False, long_english_first=False, repeated=False,
+            native_speed=None, native_wpm=None, sample_rate=None):
     FrameStream.available = staticmethod(args.available if streaming else lambda _dll: False)
     player, done, errors = Player(), threading.Event(), []
     def factory():
         options = {'language': US_ENGLISH.id} if english else {}
-        return Uncached(make_language_engine(args.scope_probe, args.native_library, args.worker,
-                                            args.espeak_library, args.data_parent, **options))
+        engine = make_language_engine(args.scope_probe, args.native_library, args.worker,
+                                      args.espeak_library, args.data_parent, **options)
+        if native_speed is not None:
+            engine.set_parameter(NATIVE_SPEED, native_speed)
+        if native_wpm is not None:
+            engine.set_parameter(NATIVE_WPM, native_wpm)
+        if sample_rate is not None:
+            engine.set_parameter(SAMPLE_RATE, sample_rate)
+        return Uncached(engine)
     transport = EciTextTransport(factory, player, lambda _value: None, lambda _value: done.set(),
                                  lambda error: (errors.append(str(error)), done.set()))
     def run(parts):
@@ -92,7 +103,7 @@ def measure(args, *, streaming, english=False, fallback=False, cancel_before=Fal
     try:
         cold = run('one simple label' if english else FALLBACK[0] if fallback else 'NVDA خوب است.')
         texts = (ENGLISH if english else FALLBACK if fallback else LONG_PERSIAN_FIRST
-                 if long_first else SHORT_MIXED if short else MIXED)
+                 if long_first else LONG_ENGLISH_FIRST if long_english_first else SHORT_MIXED if short else MIXED)
         if repeated:
             texts = (texts[0],) * max(6, len(texts))
         timings = []
@@ -121,6 +132,10 @@ def main():
                   'uncached_short': measure(args, streaming=True, short=True),
                   'uncached_short_repeated': measure(args, streaming=True, short=True, repeated=True),
                   'uncached_long_persian_first': measure(args, streaming=True, long_first=True, repeated=True),
+                  'uncached_long_english_first_16khz': measure(args, streaming=True, long_english_first=True,
+                                                               native_speed=98, sample_rate=3),
+                  'uncached_long_english_first_wpm_220_16khz': measure(args, streaming=True, long_english_first=True,
+                                                                       native_wpm=220, sample_rate=3),
                   'uncached_fallback': measure(args, streaming=True, fallback=True),
                   'uncached_fallback_repeated': measure(args, streaming=True, fallback=True, repeated=True),
                   'uncached_fallback_after_stop': measure(args, streaming=True, fallback=True, cancel_before=True),

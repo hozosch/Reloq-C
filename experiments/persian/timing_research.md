@@ -361,3 +361,34 @@ cost is moved into voice selection; it is not eliminated, and a caller that
 speaks immediately may still wait for it. Later uncached requests and the
 audio device have separate costs. Cancellation, dictionaries, restored voice
 settings and speech output must still be tested independently.
+
+## English-first prefixes and a unified DLL, 2026-11-16
+
+Some English openings contain enough speech for the same early control-only
+contour path even when the first segment is far shorter than 80 characters.
+The planner estimates eligibility using the English phoneme count and active
+speed or WPM; an inline speed command, a rapid setting or an insufficient
+prefix keeps the complete-pilot route. The actual prefix is checked again
+before audio is sent. English-first candidates require at least 200 ms of
+planned audio, in addition to the existing 60 ms boundary reserve (250 ms for
+an English-to-Persian /x/ transition); the previously enabled long-prefix
+route retains its 300 ms requirement. Neither reserve guarantees against
+dropouts on every machine.
+
+For an alternating local comparison of the warmed, uncached engine at 16 kHz
+and native speed 98, `NVDA نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از`
+reached its first PCM callback at approximately 43 ms before and 11 ms
+after. In the real transport with a fake player, four different English-first
+sentences had median first-feed times of about 30 ms and 10 ms respectively.
+These are local test-system measurements, not an end-to-end NVDA or device
+latency guarantee. Full PCM and NVDA index positions were identical in the
+comparison. The full contour still runs after playback starts; an injected
+80-ms delay and cancellation are tested explicitly.
+
+The acoustic probe already embeds the direct Persian text sources. The test
+add-on now uses those exports from its acoustic DLL instead of loading a
+second copy in `fa-direct.dll`. The artifact selector requires the acoustic
+and embedded text sources to match the checked-out revision, and a dedicated
+test checks the confirmed `alāve`, `alāmat` and other readings in that same
+DLL. This removes a duplicate library load; it does not yet move the Python
+language-switch and shared-contour planner into the native rules engine.
