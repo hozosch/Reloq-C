@@ -40,6 +40,7 @@ on:
       - experiments/persian/test_mixed_pitch_edges.py
       - experiments/persian/build_a_nasal_comparison.py
       - experiments/persian/test_a_nasal_comparison.py
+      - experiments/persian/test_us_articulation.py
       - experiments/persian/test_embedded_text_rules.py
       - eci/test_persian_project.py
       - eci/test_persian_frames.py
@@ -125,6 +126,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Common ECI frame capture or replay failed' }
           python -B experiments/persian/test_mixed_pitch_edges.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'English pitch preservation failed' }
+          python -B experiments/persian/test_us_articulation.py --candidate eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Persian vowel or articulation candidate failed' }
           python -B eci/test_persian_frames.py --library persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian probe frame capture or replay failed' }
           python -B experiments/persian/test_continuous_replay.py --probe persian-windows-probe/eci_persian_probe.dll
