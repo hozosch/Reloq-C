@@ -170,7 +170,7 @@ def _project_part(engine, items, *, follows):
         if engine._cancelled.is_set():
             raise InterruptedError('sentence planning was cancelled')
         prepared = project_resilient(source, engine._frontend, pinglish=engine._pinglish,
-                                     validate=engine._voice._phonemes_for_probe,
+                                     validate=engine._phonemes_for_validation,
                                      cancelled=engine._cancelled.is_set)
     tagged = prepared.tagged
     limit = len(tagged)
@@ -480,7 +480,7 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             if owner._cancelled.is_set():
                 return False
             prepared = project_resilient(items, engine._frontend, pinglish=engine._pinglish,
-                                         validate=engine._voice._phonemes_for_probe,
+                                         validate=engine._phonemes_for_validation,
                                          cancelled=owner._cancelled.is_set)
         if prefix:
             prepared = replace(prepared, parts=tuple(prefix) + tuple(prepared.parts))

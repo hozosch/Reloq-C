@@ -130,12 +130,25 @@ def main():
                     return previous_speak(instance, prepared, *args, **kwargs)
                 ScopedDirectPersianEngine._speak_prepared = inspect_speak
                 try:
+                    # NVDA cancels the preceding utterance before a new
+                    # navigation item. Its stale native stop must not make
+                    # reference validation spell an otherwise valid word.
+                    engine.cancel()
                     assert render(parts)[0]
                 finally:
                     ScopedDirectPersianEngine._speak_prepared = previous_speak
                 assert any(expected in tags for tags in observed), (text, observed)
             finally:
                 frontend.analyze = original_analyze
+        # Mixed-language planning projects the Persian segment before it
+        # starts playback, and must reset the same stale native stop.
+        engine.cancel()
+        persian = engine._engines[PERSIAN_PROBE.id]
+        persian._cancelled.clear()
+        assert persian._voice._cancelled.is_set()
+        tagged, _marks, _needs_validation = continuous_driver._project_part(
+            persian, ('بله این حرف شما - درسته حتما',), follows=True)
+        assert "`[.0do.1ros.0t'e:']" in tagged, tagged
         direct_dash = frontend.analyze_direct('سلام-دنیا')
         assert direct_dash and '-' not in direct_dash.parts[0].text
         named_dash = project((EciText('-', character_mode=True),), frontend, allow_fallback=True)

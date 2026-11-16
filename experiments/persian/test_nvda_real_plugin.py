@@ -56,7 +56,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.symbols = characterProcessing
             self.projected = []
             self.projected_sources = []
-            self.reference_debug = []
             self.continuous = []
             old_project_part = continuous_driver._project_part
             old_prepared = direct_fa_sequence.ScopedDirectPersianEngine._speak_prepared
@@ -69,21 +68,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if prepared.source:
                     self.projected.append(prepared.tagged)
                     self.projected_sources.append((prepared.source, prepared.tagged))
-                    if 'درسته' in prepared.source:
-                        try:
-                            front = instance._frontend
-                            direct = front.analyze_direct('درسته')
-                            analysis = front.analyze('درسته')
-                            tag = analysis.parts[0].text if analysis.parts else ''
-                            phones = instance._voice._phonemes_for_probe(tag) if tag else ''
-                            from synthDrivers.reloqC._persian.text_frontend import native_sequence_accepted
-                            accepted = native_sequence_accepted(tag, phones) if tag else False
-                            retry = direct_fa_sequence.project_resilient(
-                                (prepared.source,), front,
-                                validate=instance._voice._phonemes_for_probe).tagged
-                            self.reference_debug.append((repr(direct), repr(analysis), phones, accepted, retry))
-                        except BaseException as error:
-                            self.reference_debug.append(('error', repr(error), traceback.format_exc()))
                 return old_prepared(instance, prepared, *args, **kwargs)
             def observe_continuous(*args, **kwargs):
                 result = old_continuous(*args, **kwargs)
@@ -227,7 +211,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'سلام[دنیا]سلام', 'pipeline_symbols'),
                           ('fa_IR', 'سلام-دنیا', 'pipeline_symbols'),
                           ('fa_IR', 'بله این حرف شما - درسته حتما', 'issue49_hyphen'),
-                          ('fa_IR', 'ما عالی هستیم - خخخخخ', 'issue49_hyphen'),
+                          ('fa_IR', 'ما عالی هستیم - خخخخ', 'issue49_hyphen'),
+                          ('fa_IR', 'درسته', 'issue49_unknown'),
                           ('fa_Latn', 'salam(donya)salam', 'pipeline_symbols'),
                           ('fa_IR', 'سلام NVDA[]سلام', 'pipeline_mixed_symbols'),
                           ('fa_Latn', 'w', True),
@@ -375,14 +360,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 # NVDA speaks an object's name, role and state as separate
                 # sequence items; its real preprocessing adds the separators.
                 sequence = [text, 'کادرِ علامت‌زدنی', status]
-            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen'):
+            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
             self.profile_case = spelling in ('pipeline_user_latency', 'pipeline_mixed_latency', 'driver_user_latency')
             self.stage = {}
             self.started = time.perf_counter()
-            self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
+            self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
             self.before_continuous = len(self.continuous)
             if self.pipeline:
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
@@ -428,13 +413,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 raise RuntimeError('missing NVDA audio timing for ' + ascii(text))
             if spelling == 'pipeline_dash' and len(self.continuous) != self.before_continuous:
                 raise AssertionError('NVDA lost the separated language boundary around a hyphen: ' + ascii(text))
-            if spelling == 'issue49_hyphen':
+            if spelling in ('issue49_hyphen', 'issue49_unknown'):
                 tags = ' '.join(self.projected[self.before_projected:])
                 expected = ("`[.0do.1ros.0t'e:']" if 'درسته' in text else '`[.1a.0li]')
                 if expected not in tags:
                     details = self.projected_sources[self.before_projected_sources:]
-                    raise AssertionError('NVDA spelled a word around the hyphen: ' +
-                                         ascii(details) + ' reference=' + ascii(self.reference_debug))
+                    raise AssertionError('NVDA spelled a Persian word: ' + ascii(details))
             if spelling is True and text in 'ًٌٍَُِّْٰ':
                 expected = {'ً':'`[.1An]', 'ٌ':'`[.1on]', 'ٍ':'`[.1en]',
                             'َ':"`[.1'A:']", 'ُ':"`[.1'o:']", 'ِ':"`[.1'e:']",

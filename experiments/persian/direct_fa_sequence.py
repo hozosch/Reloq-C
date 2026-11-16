@@ -557,6 +557,16 @@ class ScopedDirectPersianEngine:
             return
         self._voice.set_parameter(parameter, value)
 
+    def _phonemes_for_validation(self, text: str) -> str:
+        """Validate a new job without retaining an earlier native stop."""
+        # NVDA commonly stops the preceding job before submitting the next.
+        # Reset the underlying voice's stop flag just as _speak_prepared does
+        # before its own probe, while still honoring a concurrent new stop.
+        self._voice._cancelled.clear()
+        if self._cancelled.is_set():
+            raise InterruptedError('Persian text processing was cancelled')
+        return self._voice._phonemes_for_probe(text)
+
     def speak(self, parts: Sequence[str | EciText | Command], on_pcm, on_index) -> bool:
         if threading.get_ident() != self._owner:
             raise RuntimeError('Persian engine belongs to its creating worker')
@@ -572,7 +582,7 @@ class ScopedDirectPersianEngine:
                 raise
             try:
                 prepared = project_resilient(parts, self._frontend, pinglish=self._pinglish,
-                                             validate=self._voice._phonemes_for_probe,
+                                             validate=self._phonemes_for_validation,
                                              cancelled=self._cancelled.is_set)
                 recovered = True
             except InterruptedError:
@@ -586,7 +596,7 @@ class ScopedDirectPersianEngine:
                 return False
             try:
                 prepared = project_resilient(parts, self._frontend, pinglish=self._pinglish,
-                                             validate=self._voice._phonemes_for_probe,
+                                             validate=self._phonemes_for_validation,
                                              cancelled=self._cancelled.is_set)
             except InterruptedError:
                 return False

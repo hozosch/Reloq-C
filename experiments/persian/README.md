@@ -1764,6 +1764,13 @@ to be spelled out. The fallback tests use both reported examples with text and
 index events split at different positions, and the real NVDA test exercises
 both examples and the nine individual marks.
 
+NVDA commonly stops the previous utterance before submitting a new one. A
+stale native stop flag used to abort the phoneme validation of an otherwise
+valid reference pronunciation, which made the fallback spell its letters.
+Before reference validation the Persian engine clears that old native stop,
+then checks for a new cancellation. Standalone and mixed-language projections
+share this guarded validation path; the sentence-melody algorithm is unchanged.
+
 The front-A listening candidate was revised after the earlier British-F3
 adjustment was reported as more muffled. Analysis compares native control
 trajectories and rendered vowels from Persian, British and US voices with
