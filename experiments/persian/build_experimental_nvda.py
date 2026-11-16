@@ -51,10 +51,11 @@ def add_persian(entries, text_library: bytes):
         ('        initial_language, initial_voice = self._selectedLanguage, self._voice\n',
          '        initial_language, initial_voice = self._selectedLanguage, self._voice\n'
          '        prepare_persian_symbols(self._languages[initial_language].locale)\n'),
-        ('        if selected is not None:\n            self._select_language(selected)\n',
-         '        if selected is not None:\n'
+        ('    def _select_language(self, selected):\n        with self._submit_lock:\n',
+         '    def _select_language(self, selected):\n'
+         '        if selected in self._languages:\n'
          '            prepare_persian_symbols(self._languages[selected].locale)\n'
-         '            self._select_language(selected)\n'),
+         '        with self._submit_lock:\n'),
         ('    segmentation_guarded = False\n    last_text_alnum = False',
          '    segmentation_guarded = False\n    persian_joiners = False\n    last_text_alnum = False'),
         ('            said = item\n', '            said = restore_joiners(item) if persian_joiners else item\n'),
