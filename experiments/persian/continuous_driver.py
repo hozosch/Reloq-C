@@ -11,22 +11,22 @@ from dataclasses import replace
 
 if __package__:
     from .._reloq_eci_direct import (EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciPitchHz,
-                                     EciProsody, EciText,
+                                     EciProsody, EciText, persistent_tag_control,
                                      SAMPLE_RATE, SAMPLE_RATES, PROCESS_TAGS, NATIVE_SPEED, NATIVE_WPM)
     from .._reloq_persian_frames import FrameCapture, FrameReplay, FrameStream, NativeFrame
     from .._reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from .._reloq_persian_projection import ProjectedJob
-    from .direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient
+    from .direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient, without_generated_stress
     from .continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence
     from .text_frontend import SpeechPart, UnsupportedPronunciation
 else:
     from _reloq_eci_direct import (EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciPitchHz,
-                                    EciProsody, EciText,
+                                    EciProsody, EciText, persistent_tag_control,
                                     SAMPLE_RATE, SAMPLE_RATES, PROCESS_TAGS, NATIVE_SPEED, NATIVE_WPM)
     from _reloq_persian_frames import FrameCapture, FrameReplay, FrameStream, NativeFrame
     from _reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from _reloq_persian_projection import ProjectedJob
-    from direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient
+    from direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient, without_generated_stress
     from continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence
     from text_frontend import SpeechPart, UnsupportedPronunciation
 
@@ -79,7 +79,7 @@ class _PlanningVoice:
                                  for p in parts)
             tagged = ''.join(p.text for p in tagged_parts if isinstance(p, EciText) and not p.speed_control)
             prepared = _safe_native_punctuation(ProjectedJob('', tagged, tagged_parts, self.validate))
-            completed = self.engine._speak_prepared(prepared, on_pcm, on_index)
+            completed = self.engine._speak_prepared(prepared, on_pcm, on_index, neutralize_stress=False)
         else:
             completed = self.raw.speak(parts, on_pcm, on_index)
         if self.owner._cancelled.is_set():
@@ -116,7 +116,7 @@ def _segments(owner, parts, fa_ids, english_id):
             part = EciText(part.segmented if spelled is False else part.original)
         if not isinstance(part, (str, EciText, EciIndex)):
             return None
-        if isinstance(part, EciText) and part.speed_control:
+        if isinstance(part, EciText) and part.is_control:
             return None
         text = part if isinstance(part, str) else part.text if isinstance(part, EciText) else ''
         if '`' in text or key[0] not in (*fa_ids, english_id):
@@ -185,6 +185,7 @@ def _project_part(engine, items, *, follows):
         if limit and tagged[limit - 1] == ' ':
             limit -= 1
         tagged = tagged[:limit]
+    tagged = without_generated_stress(replace(prepared, tagged=tagged, parts=())).tagged
     marks, offset = [], 0
     for part in prepared.parts:
         if isinstance(part, EciText):
@@ -201,6 +202,10 @@ def _project_part(engine, items, *, follows):
 def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german_id,
                    reset_cancellation=True, end_pause_shortened=False):
     """Return None when this job must retain the established native route."""
+    # One-shot ECI controls must be played exactly once, not separately in
+    # the two voices used by the joint contour pilot.
+    if any(isinstance(part, EciText) and part.tag_control for part in parts):
+        return None
     if reset_cancellation:
         owner._cancelled.clear()
     prefix, ordinary, saw_text = [], [], False
@@ -455,7 +460,7 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                 return None
             key = next_key
         elif isinstance(part, (str, EciText, EciIndex)):
-            if isinstance(part, EciText) and (part.character_mode or part.speed_control):
+            if isinstance(part, EciText) and (part.character_mode or part.is_control):
                 return None
             items.append(part)
             if isinstance(part, (str, EciText)):
@@ -484,6 +489,7 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                                          cancelled=owner._cancelled.is_set)
         if prefix:
             prepared = replace(prepared, parts=tuple(prefix) + tuple(prepared.parts))
+        prepared = without_generated_stress(prepared)
         matches = tuple(_TAG.finditer(prepared.tagged))
         tags = tuple(match.group() for match in matches)
         separators = tuple(prepared.tagged[a.end():b.start()] for a, b in zip(matches, matches[1:]))
@@ -549,7 +555,7 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
 def sentence_jobs(parts, home):
     """Split mixed speech at unambiguous native phrase punctuation."""
     if any(not isinstance(p, (str, EciText, EciIndex, EciLanguage, EciCapitalWord)) or
-           isinstance(p, EciText) and (p.character_mode or p.speed_control) for p in parts):
+           isinstance(p, EciText) and (p.character_mode or p.is_control) for p in parts):
         return ()
     full = ''.join(p if isinstance(p, str) else p.text if isinstance(p, EciText) else
                    p.original if isinstance(p, EciCapitalWord) else '' for p in parts)
@@ -624,7 +630,7 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
     def text_and_mode(item):
         if isinstance(item, str):
             return item, False
-        if isinstance(item, EciText) and not item.speed_control:
+        if isinstance(item, EciText) and not item.is_control:
             return item.text, item.character_mode
         if isinstance(item, EciCapitalWord):
             return item.original, False
@@ -783,7 +789,13 @@ def bracket_jobs(parts, home, *, fa_ids, english_id):
             controls[slot] = part
         elif isinstance(part, EciText) and part.speed_control:
             controls.pop('speed', None)
-            controls['speed'] = EciText(part.speed_control + ' ')
+            controls['speed'] = EciText(part.speed_control + ' ', speed_control=part.speed_control)
+        elif isinstance(part, EciText):
+            replay = persistent_tag_control(part)
+            if replay is not None:
+                slot, control = replay
+                controls.pop(slot, None)
+                controls[slot] = control
     result.append((tuple(pending), False))
     return tuple(result)
 
@@ -793,7 +805,7 @@ def continuation_comma(parts):
     parts = tuple(parts)
     def visible(part):
         return (part if isinstance(part, str) else part.text if isinstance(part, EciText) and
-                not part.speed_control and not part.character_mode else
+                not part.is_control and not part.character_mode else
                 part.original if isinstance(part, EciCapitalWord) else '')
     tail = ''.join(visible(part) for part in parts).rstrip().rstrip('()[]{}').rstrip()
     if tail.endswith(('.', '!', '?', '؟')):
@@ -812,7 +824,7 @@ def continuation_comma(parts):
 def bounded_jobs(parts, home, *, maximum=1200, max_switches=24):
     """Bound long requests while retaining source marks and active controls."""
     total = sum(len(part if isinstance(part, str) else part.text if isinstance(part, EciText)
-                    and not part.speed_control else part.original if isinstance(part, EciCapitalWord) else '')
+                    and not part.is_control else part.original if isinstance(part, EciCapitalWord) else '')
                 for part in parts)
     switches = sum(isinstance(part, EciLanguage) for part in parts)
     if total <= maximum and switches <= max_switches:
@@ -846,7 +858,15 @@ def bounded_jobs(parts, home, *, maximum=1200, max_switches=24):
             continue
         if isinstance(part, EciText) and part.speed_control:
             controls.pop('speed', None)
-            controls['speed'] = EciText(part.speed_control + ' ')
+            controls['speed'] = EciText(part.speed_control + ' ', speed_control=part.speed_control)
+            pending.append(part)
+            continue
+        if isinstance(part, EciText) and part.tag_control:
+            replay = persistent_tag_control(part)
+            if replay is not None:
+                slot, control = replay
+                controls.pop(slot, None)
+                controls[slot] = control
             pending.append(part)
             continue
         if isinstance(part, EciCapitalWord):
@@ -872,8 +892,7 @@ def bounded_jobs(parts, home, *, maximum=1200, max_switches=24):
                 if take <= room // 3:
                     take = room
             piece, value = value[:take], value[take:]
-            pending.append(piece if isinstance(part, str) else EciText(
-                piece, part.character_mode, part.speed_control, part.segmentation_guarded))
+            pending.append(piece if isinstance(part, str) else replace(part, text=piece))
             size += len(piece)
             if value:
                 flush()

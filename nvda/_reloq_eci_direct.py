@@ -76,6 +76,29 @@ class EciText:
     speed_control: str | None = None
     # Host dictionary substitutions take precedence over the native splitter.
     segmentation_guarded: bool = False
+    # An explicitly supplied ECI control, protected by the NVDA filter.
+    # It is not ordinary source text and must never enter the FA translator.
+    tag_control: str | None = None
+
+    @property
+    def is_control(self) -> bool:
+        return bool(self.speed_control or self.tag_control)
+
+
+def persistent_tag_control(part):
+    """Return the slot for a voice tag that survives a language boundary.
+
+    Pauses, phonetic text and other one-shot commands must not be replayed.
+    The speed/preset path has its own established compatibility handling.
+    """
+    if not isinstance(part, EciText) or not part.tag_control:
+        return None
+    match = re.fullmatch(r'`(vbhz|v[bfghryv])([0-9]+)', part.tag_control)
+    if match is None:
+        return None
+    name = match.group(1)
+    slot = 'pitch' if name in ('vb', 'vbhz') else 7 if name == 'vv' else name
+    return slot, EciText(part.tag_control + ' ', tag_control=part.tag_control)
 
 
 @dataclass(frozen=True)

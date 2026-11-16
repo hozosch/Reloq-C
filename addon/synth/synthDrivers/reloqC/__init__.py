@@ -181,11 +181,11 @@ def _parts(speech_sequence, *, base_pitch=50, base_pitch_hz=0, base_rate=50, bas
                 elif re.fullmatch(r"`v[1-9]", item.text):
                     preset_speeds = (50, 50, 50, 50, 70, 70, 50, 50, 50)
                     speed = f"`vs{preset_speeds[int(item.text[-1]) - 1]}"
-            if speed is None:
+            if not voice_tags or spelling:
                 pieces.append((item.text, spelling))
             else:
                 flush()
-                parts.append(EciText(item.text, False, speed))
+                parts.append(EciText(item.text, False, speed, tag_control=item.text))
         elif isinstance(item, CharacterModeCommand):
             next_spelling = bool(item.state)
             if next_spelling != spelling and last_text_alnum:

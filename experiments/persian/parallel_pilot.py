@@ -37,7 +37,8 @@ class _CaptureVoice:
         tagged = ''.join(item.text for item in tagged_parts
                          if isinstance(item, EciText) and not item.speed_control)
         prepared = _safe_native_punctuation(ProjectedJob('', tagged, tagged_parts, self.validate))
-        return self.engine._speak_prepared(prepared, on_pcm, on_index) and not self.cancelled.is_set()
+        return self.engine._speak_prepared(prepared, on_pcm, on_index,
+                                           neutralize_stress=False) and not self.cancelled.is_set()
 
 
 class ParallelPilot:

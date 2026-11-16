@@ -46,7 +46,7 @@ def project_persian(parts: Sequence[str | EciText | Command],
     offset = 0
     for part in parts:
         if isinstance(part, (str, EciText)):
-            if isinstance(part, EciText) and (part.character_mode or part.speed_control):
+            if isinstance(part, EciText) and (part.character_mode or part.is_control):
                 raise PersianProjectionError('character and inline-control modes need separate handling')
             text = part if isinstance(part, str) else part.text
             if '\0' in text:

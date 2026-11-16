@@ -11,7 +11,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 import continuous_driver
-from direct_fa_sequence import ScopedDirectPersianEngine, project, project_resilient
+from direct_fa_sequence import ScopedDirectPersianEngine, project, project_resilient, without_generated_stress
 from nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, make_language_engine
 from persian_symbols import SYMBOL_TAGS, UNICODE_TAG
 from text_frontend import native_sequence_accepted
@@ -52,7 +52,7 @@ def main():
         observed, previous_prepared = [], ScopedDirectPersianEngine._speak_prepared
         def watch_status(instance, prepared, *items, **options):
             if prepared.source:
-                observed.append((prepared.source, prepared.tagged))
+                observed.append((prepared.source, without_generated_stress(prepared).tagged))
             return previous_prepared(instance, prepared, *items, **options)
         ScopedDirectPersianEngine._speak_prepared = watch_status
         try:
@@ -62,6 +62,7 @@ def main():
                 pcm, marks = render((EciIndex(83), EciText(exact + '  '), EciIndex(84),
                     EciText('کادرِ علامت‌زدنی  '), EciIndex(85), EciText(status + '  '), EciIndex(86)))
                 assert pcm and [value for value, _ in marks] == [83, 84, 85, 86]
+                expected = re.sub(r'\.[12]', '.0', expected)
                 assert any(status in source and expected in tags for source, tags in observed), observed
                 # The entire role and status must come from the native
                 # Persian job, not from a bilingual proxy's final frames.
@@ -126,7 +127,7 @@ def main():
                 previous_speak = ScopedDirectPersianEngine._speak_prepared
                 def inspect_speak(instance, prepared, *args, **kwargs):
                     if prepared.source:
-                        observed.append(prepared.tagged)
+                        observed.append(without_generated_stress(prepared).tagged)
                     return previous_speak(instance, prepared, *args, **kwargs)
                 ScopedDirectPersianEngine._speak_prepared = inspect_speak
                 try:
@@ -137,7 +138,8 @@ def main():
                     assert render(parts)[0]
                 finally:
                     ScopedDirectPersianEngine._speak_prepared = previous_speak
-                assert any(expected in tags for tags in observed), (text, observed)
+                expected_unmarked = re.sub(r'\.[12]', '.0', expected)
+                assert any(expected_unmarked in tags for tags in observed), (text, observed)
             finally:
                 frontend.analyze = original_analyze
         # Mixed-language planning projects the Persian segment before it
@@ -148,7 +150,7 @@ def main():
         assert persian._voice._cancelled.is_set()
         tagged, _marks, _needs_validation = continuous_driver._project_part(
             persian, ('بله این حرف شما - درسته حتما',), follows=True)
-        assert "`[.0do.1ros.0t'e:']" in tagged, tagged
+        assert "`[.0do.0ros.0t'e:']" in tagged, tagged
         direct_dash = frontend.analyze_direct('سلام-دنیا')
         assert direct_dash and '-' not in direct_dash.parts[0].text
         named_dash = project((EciText('-', character_mode=True),), frontend, allow_fallback=True)

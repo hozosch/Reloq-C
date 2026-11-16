@@ -141,8 +141,9 @@ FRONT_A_PATCH = r'''
             if(STATE(int16_t,s448)>0)STATE(int16_t,s448)+=100;
             if(STATE(int16_t,s449)>0)STATE(int16_t,s449)+=100;
         }
-        /* Restore the dev121 front vowel after dev122 was reported to sound
-           wrong. Keep its context-dependent endpoints and F1/F2 unchanged. */
+        /* Retain dev121's formant centres and F1/F2. Its third resonance
+           is considerably narrower than the US reference; reduce that
+           narrowing cautiously without forcing the English vowel identity. */
         const char *f3=getenv("RELOQ_FA_FRONT_A_F3");
         if(f3 && f3[0]=='1' && !f3[1]) {
             int16_t female=0;
@@ -151,7 +152,7 @@ FRONT_A_PATCH = r'''
             if(STATE(int16_t,s452)>150)STATE(int16_t,s452)+=delta;
             if(STATE(int16_t,s453)>150)STATE(int16_t,s453)+=delta;
             if(STATE(int16_t,s399)>0)
-                STATE(int16_t,s399)=(int16_t)((2*(int)STATE(int16_t,s399)+1)/3);
+                STATE(int16_t,s399)=(int16_t)((5*(int)STATE(int16_t,s399)+3)/6);
             if(!female && STATE(int16_t,s401)>260)STATE(int16_t,s401)=260;
         }
     }
@@ -2266,12 +2267,12 @@ def prepare_us_articulation(work: Path) -> None:
     # These are listening candidates from matched-F0 spectral comparisons,
     # not a global EQ or a substitution of English vowel identities.
     vowel_helper = r'''
-static unsigned persian_open_vowel_next(void *state,int32_t position)
+static unsigned persian_open_vowel_previous(void *state,int32_t position)
 {
     delta_state *d=state;
     if (!d || !position) return 0;
-    void *point=(void *)vmover(d,EVV_AT(int32_t *,position),2);
-    int32_t node=point ? vgetsc(d,0,0,EVV_REF(point),2) : 0;
+    void *point=(void *)vmovel(d,EVV_AT(delta_node *,position),2);
+    int32_t node=point ? vgetsc(d,1,0,EVV_REF(point),2) : 0;
     if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
     return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node)));
 }
@@ -2282,15 +2283,23 @@ static void persian_open_vowel(void *state,int phone)
     int16_t female=0;
     memcpy(&female,(const unsigned char *)state+DG_BASE+3092+12,sizeof female);
     int f2=0,f3=0,f4=0,f5=0,b1=0,b3=0,b5=0;
-    /* /o/ before /n/, as in donyā: retain its F1/F2 centres, while
-       opening its source-to-upper-formant balance. /n/ is Finnish id 17. */
-    int o_before_n=phone=='o' && persian_open_vowel_next(state,STATE(int32_t,w61))==17;
-    if (phone=='a') { f3=female ? -100 : 0; f4=150; b3=100; }
-    else if (phone=='e') { f3=female ? -80 : 0; b1=35; b3=150; }
-    else if (phone=='i') { f3=female ? -80 : 0; b3=100; }
-    else if (phone=='o') { f2=60; f4=200; b3=o_before_n ? 100 : 120;
-                           if (o_before_n) { b1=60; f5=female ? 0 : 120; } }
-    else if (phone=='u') { f2=100; f3=100; f4=100; b3=150; b5=260; }
+    /* /o/ after /m/ or /n/ must not inherit the nasal's stronger source
+       tilt. Keep the nasal itself intact and restore the /o/ source target.
+       After /n/, restore the higher F4 target seen in "two" as well.
+       Other vowels get an upper adjustment without copying /o/'s F1/F2.
+       Restore /u/'s dev121 F2/F3 centres, then shape only its upper range. */
+    if (phone=='a') { f3=female ? -100 : 0; f4=200; b3=100; }
+    else if (phone=='e') { f3=female ? -80 : 0; f4=50; b1=35; b3=125; }
+    else if (phone=='i') { f3=female ? -80 : 0; f4=50; b3=100; }
+    else if (phone=='o') {
+        unsigned previous=persian_open_vowel_previous(state,STATE(int32_t,w60));
+        f2=60; f4=previous==17 ? 400 : 200; b3=120;
+        if (previous==16 || previous==17) {
+            STATE(int16_t,s405)=0; /* TL target */
+            STATE(int16_t,s436)=0; /* emit the vowel's own TL target */
+        }
+    }
+    else if (phone=='u') { f4=200; b3=120; b5=260; }
     if (b1 && STATE(int16_t,s397)>0 && STATE(int16_t,s397)<3000)
         STATE(int16_t,s397)+=b1;
     if (STATE(int16_t,s450)>0) STATE(int16_t,s450)+=f2;

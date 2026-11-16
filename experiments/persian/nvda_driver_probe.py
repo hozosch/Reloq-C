@@ -112,7 +112,7 @@ def _persian_part_runs(parts, home):
         elif logical[0] == PERSIAN_PROBE.id and isinstance(part, (str, EciText)):
             text = part if isinstance(part, str) else part.text
             if ('`' in text or isinstance(part, EciText) and
-                    (part.character_mode or part.speed_control)):
+                    (part.character_mode or part.is_control)):
                 flush()
             else:
                 entries.append((index, text, True))
@@ -168,7 +168,7 @@ def _pinglish_part_runs(parts, home):
         elif logical[0] == PINGLISH_PROBE.id and isinstance(part, (str, EciText)):
             value = part if isinstance(part, str) else part.text
             if ('`' in value or isinstance(part, EciText) and
-                    (part.character_mode or part.speed_control)):
+                    (part.character_mode or part.is_control)):
                 flush()
             else:
                 entries.append((index, value))
@@ -197,7 +197,7 @@ def _bracket_continuations(parts):
     for index, part in enumerate(parts):
         value = (part if isinstance(part, str) else part.text if isinstance(part, EciText) else
                  part.original if isinstance(part, EciCapitalWord) else None)
-        if value is None or isinstance(part, EciText) and part.speed_control:
+        if value is None or isinstance(part, EciText) and part.is_control:
             continue
         spelled = isinstance(part, EciText) and part.character_mode
         text.append(value)
@@ -343,7 +343,7 @@ class PersianProbeLanguageEngine(LanguageEngine):
             text = part if isinstance(part, str) else part.text if isinstance(part, EciText) else None
             ordinary_text = (text is not None and '`' not in text and
                              (not isinstance(part, EciText) or
-                              not part.character_mode and not part.speed_control))
+                              not part.character_mode and not part.is_control))
             if position in pinglish_runs and logical[0] == PINGLISH_PROBE.id:
                 english = self._key(US_ENGLISH.id, logical[1])
                 for use_english, fragment in pinglish_runs[position]:
@@ -387,7 +387,8 @@ class PersianProbeLanguageEngine(LanguageEngine):
             for item in output:
                 if isinstance(item, EciLanguage):
                     key = self._key(item.language, item.voice)
-                elif isinstance(item, (str, EciText, EciCapitalWord)):
+                elif isinstance(item, (str, EciText, EciCapitalWord)) and not (
+                        isinstance(item, EciText) and item.is_control):
                     value = item if isinstance(item, str) else item.text if isinstance(item, EciText) else item.original
                     if value.strip():
                         spoken.add(key[0])

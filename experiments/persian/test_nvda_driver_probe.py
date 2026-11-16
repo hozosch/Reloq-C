@@ -153,7 +153,8 @@ def real_transport_tests(args):
         _, persian = run(('خوب', EciIndex(41)))
         mixed_job, mixed = run((EciLanguage(US_ENGLISH.id, '1'), EciIndex(42), 'NVDA ',
                                 EciLanguage(PERSIAN_PROBE.id, '1'), EciIndex(43), 'خوب', EciIndex(44)))
-        continuous = hasattr(ctypes.CDLL(str(args.scope_probe.resolve())), 'reloq_fa_replay_frames')
+        dll = ctypes.CDLL(str(args.scope_probe.resolve()))
+        continuous = hasattr(dll, 'eciPersianReplayFrames') or hasattr(dll, 'reloq_fa_replay_frames')
         assert english and persian and mixed
         assert (mixed != english + persian) if continuous else (mixed == english + persian)
         assert observed[-4:] == [('index', 42), ('index', 43), ('index', 44), ('done', mixed_job)]

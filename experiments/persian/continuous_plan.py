@@ -141,6 +141,12 @@ def english_phone_proxy(en, fa, text):
 
 
 def persian_proxy_for_english(text, en):
+    # The English pilot cannot time long spans composed entirely of .0
+    # syllables reliably: they can stretch manyfold or fail synthesis. Give
+    # each pilot-only word a uniform anchor. The separately captured Persian
+    # speech keeps its unmarked syllables and its own timing.
+    if _TAG.search(text) and not re.search(r'\.[12]', text):
+        text = _TAG.sub(lambda match: match.group().replace('.0', '.1', 1), text)
     tags = _converted(text, _FA_TO_EN)
     if tags:
         def sequence(value):

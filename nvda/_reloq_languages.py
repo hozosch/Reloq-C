@@ -23,9 +23,9 @@ def N_(message: str) -> str:
     return message
 
 if __package__:
-    from ._reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, ORIGINAL_ACOUSTIC_CLOCK
+    from ._reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, persistent_tag_control, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, ORIGINAL_ACOUSTIC_CLOCK
 else:
-    from _reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, ORIGINAL_ACOUSTIC_CLOCK
+    from _reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, persistent_tag_control, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, ORIGINAL_ACOUSTIC_CLOCK
 
 
 @dataclass(frozen=True)
@@ -354,7 +354,14 @@ class LanguageEngine:
                         # filter. Keep its effective speed across real NVDA
                         # language switches without altering saved settings.
                         prosody.pop("speed", None)
-                        prosody["speed"] = EciText(part.speed_control + " ")
+                        prosody["speed"] = EciText(part.speed_control + " ",
+                                                   speed_control=part.speed_control)
+                    elif isinstance(part, EciText):
+                        replay = persistent_tag_control(part)
+                        if replay is not None:
+                            slot, control = replay
+                            prosody.pop(slot, None)
+                            prosody[slot] = control
                     pending.append(part)
             return flush()
         finally:

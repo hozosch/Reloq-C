@@ -765,6 +765,14 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 entered, release = threading.Event(), threading.Event()
                 assert driver_module._parts(["Hallo `vb80 Welt."], voice_tags=True) == [
                     driver_module.EciText("Hallo `vb80 Welt.")]
+                protected = driver_module.protect_sequence(['سلام `vb80 دنیا `p250'])
+                tagged = driver_module._parts(protected, voice_tags=True)
+                controls = [item for item in tagged if isinstance(item, driver_module.EciText)
+                            and item.tag_control]
+                assert [item.tag_control for item in controls] == ['`vb80', '`p250']
+                literal = driver_module._parts(protected, voice_tags=False)
+                assert all(not item.tag_control for item in literal
+                           if isinstance(item, driver_module.EciText))
                 assert driver_module._parts([CharacterModeCommand(True), "\uf6ecЖΩ`"],
                     voice_tags=True) == [driver_module.EciText("\uf6ecЖΩ`", True)]
                 assert driver_module._parts(["Hallo `vb80 Welt."])[0].text == "Hallo `vb80 Welt."

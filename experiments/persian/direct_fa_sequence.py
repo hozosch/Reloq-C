@@ -62,7 +62,7 @@ def _safe_native_punctuation(job: ProjectedJob) -> ProjectedJob:
         return job
     offset, parts = 0, []
     for part in job.parts:
-        if isinstance(part, EciText) and not part.speed_control:
+        if isinstance(part, EciText) and not part.is_control:
             value = ''.join(changes.get(offset + index, char) for index, char in enumerate(part.text))
             parts.append(replace(part, text=value))
             offset += len(part.text)
@@ -81,7 +81,7 @@ def _project_direct_native(parts, frontend):
     text, events, offset = [], [], 0
     for part in parts:
         if isinstance(part, (str, EciText)):
-            if isinstance(part, EciText) and (part.character_mode or part.speed_control):
+            if isinstance(part, EciText) and (part.character_mode or part.is_control):
                 return None
             value = part if isinstance(part, str) else part.text
             text.append(value)
@@ -114,7 +114,7 @@ def _persian_word_hyphen(parts):
     for part in parts:
         if isinstance(part, str):
             chars.extend((char, True) for char in part)
-        elif isinstance(part, EciText) and not part.speed_control:
+        elif isinstance(part, EciText) and not part.is_control:
             chars.extend((char, not part.character_mode) for char in part.text)
     def persian_word(item):
         char, normal = item
@@ -155,7 +155,7 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
     spelled = [part for part in parts if isinstance(part, EciText) and part.character_mode]
     runs = []
     if spelled:
-        if any(isinstance(part, EciText) and part.speed_control for part in parts):
+        if any(isinstance(part, EciText) and part.is_control for part in parts):
             raise UnsupportedPronunciation('inline controls need separate handling')
         for part in parts:
             if not isinstance(part, (str, EciText)):
@@ -272,7 +272,7 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
     text, modes, events, length = [], [], [], 0
     for part in parts:
         if isinstance(part, (str, EciText)):
-            if isinstance(part, EciText) and part.speed_control:
+            if isinstance(part, EciText) and part.is_control:
                 events.append((length, part))
                 continue
             value = part if isinstance(part, str) else part.text
@@ -484,6 +484,20 @@ _TAG = re.compile(r'`\[[^]]+\]')
 _DOUBLE_J = re.compile(r'J(\.[012])?J')
 
 
+def without_generated_stress(job):
+    """Leave the ordinary Persian pronunciation's syllables unmarked.
+
+    Replacing a digit preserves source/event offsets. Explicit phoneme tags
+    supplied by the user are controls and retain their requested stress.
+    """
+    def neutralize(text):
+        return _TAG.sub(lambda match: re.sub(r'\.[12]', '.0', match.group()), text)
+    return replace(job, tagged=neutralize(job.tagged), parts=tuple(
+        replace(part, text=neutralize(part.text))
+        if isinstance(part, EciText) and not part.is_control else part
+        for part in job.parts))
+
+
 def _mark_geminated_affricates(parts):
     """Keep one J per geminate and identify its native word/phone ordinal.
 
@@ -512,8 +526,14 @@ def _mark_geminated_affricates(parts):
         return ''.join(pieces) + tag[pos:] if pieces else tag
 
     for part in parts:
-        output.append(replace(part, text=_TAG.sub(change, part.text))
-                      if isinstance(part, EciText) else part)
+        if isinstance(part, EciText) and part.is_control:
+            # Explicit phonetic tags count in the native word order, but
+            # must not be rewritten as automatically detected geminates.
+            word += len(_TAG.findall(part.text))
+            output.append(part)
+        else:
+            output.append(replace(part, text=_TAG.sub(change, part.text))
+                          if isinstance(part, EciText) else part)
     return tuple(output), tuple(selected)
 
 
@@ -602,7 +622,7 @@ class ScopedDirectPersianEngine:
                 return False
             return self._speak_prepared(prepared, on_pcm, on_index)
 
-    def _speak_prepared(self, prepared: ProjectedJob, on_pcm, on_index) -> bool:
+    def _speak_prepared(self, prepared: ProjectedJob, on_pcm, on_index, *, neutralize_stress=True) -> bool:
         """Speak verified native tags with the same per-request selectors.
 
         The caller owns job cancellation and must never pass user-supplied
@@ -613,6 +633,8 @@ class ScopedDirectPersianEngine:
             raise RuntimeError('Persian engine belongs to its creating worker')
         if self._cancelled.is_set():
             return False
+        if neutralize_stress:
+            prepared = without_generated_stress(prepared)
         tags = tuple(re.finditer(r'`\[[^]]+\]', prepared.tagged))
         marked, checked = [], 0
         for index, (left, right) in enumerate(zip(tags, tags[1:]), start=2):
@@ -624,6 +646,19 @@ class ScopedDirectPersianEngine:
                 checked += 1
         if checked != prepared.tagged.count('~') or any(word > 32767 for word in marked):
             raise UnsupportedPronunciation('native onset positions are unavailable')
+        # An explicit phoneme control also occupies a native word slot. The
+        # source map deliberately excludes control bytes, so account for its
+        # position when addressing generated onset marks.
+        controls, offset = [], 0
+        for part in prepared.parts:
+            if isinstance(part, EciText) and part.is_control:
+                controls.append((offset, len(_TAG.findall(part.text))))
+            elif isinstance(part, EciText):
+                offset += len(part.text)
+        marked = [word + sum(count for at, count in controls if at <= tags[word - 1].start())
+                  for word in marked]
+        if any(word > 32767 for word in marked):
+            raise UnsupportedPronunciation('too many native onset positions')
         native_parts = tuple(replace(part, text=part.text.replace('~', ' '))
                              if isinstance(part, EciText) else part for part in prepared.parts)
         native_parts, geminates = _mark_geminated_affricates(native_parts)
