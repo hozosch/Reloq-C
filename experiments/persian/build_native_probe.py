@@ -130,14 +130,14 @@ static unsigned persian_probe_front_a_neighbour(void *state,int32_t position,int
 '''
 
 FRONT_A_PATCH = r'''
-    /* Preserve Finnish's context-dependent front vowel. Adjacent to the
-       private German-shaped Ach phone (Finnish G, id 18), open F1 by 100 Hz
-       while keeping the native transitions and inheritance markers. */
+    /* Keep the earlier opening before the private Ach phone, but not after
+       it: the latter was judged too open. Prioritize a preceding Ach when
+       the vowel is between two of them. Preserve inheritance markers. */
     {
         const char *setting=getenv("RELOQ_FA_FRONT_A_ACH");
         if(setting && setting[0]=='1' && !setting[1] &&
-           (persian_probe_front_a_neighbour(state,STATE(int32_t,w60),1)==18 ||
-            persian_probe_front_a_neighbour(state,STATE(int32_t,w61),0)==18)) {
+           persian_probe_front_a_neighbour(state,STATE(int32_t,w60),1)!=18 &&
+           persian_probe_front_a_neighbour(state,STATE(int32_t,w61),0)==18) {
             if(STATE(int16_t,s448)>0)STATE(int16_t,s448)+=100;
             if(STATE(int16_t,s449)>0)STATE(int16_t,s449)+=100;
         }
@@ -1937,6 +1937,7 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                 int64_t scaled=((int64_t)STATE(int32_t,f33)*9+5)/10;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
+            int short_yek=0;
             if (us_timing && node && cls==1 && STATE(int32_t,f33)>0 &&
                 !persian_probe_vowel_word_final(state,STATE_AT(w26,-4),(unsigned)phone)) {
                 int32_t next_ref=EVV_AT(int32_t *,node)[1]&~3;
@@ -1951,6 +1952,19 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                 int ordinary=next_phone==1 || next_phone==2 || next_phone==7 ||
                     next_phone==9 || next_phone==11 ||
                     (next_phone==3 && next_marker!=3 && next_marker!=4 && next_marker!=5);
+                /* The short vowel in yek (one), followed by an ordinary
+                   word-final /k/, sounded too long. Do not change its stop
+                   or the same vowel when a syllable follows, as in yeki. */
+                if (phone==29 && length==1 && ordinary && next_phone==3 && at) {
+                    delta_node *previous_point=vmovel(d,EVV_AT(delta_node *,at),2);
+                    int32_t previous=previous_point ?
+                        vgetsc(d,1,0,EVV_REF(previous_point),2) : 0;
+                    unsigned previous_phone=previous && !(*EVV_AT(int32_t *,previous)&2) ?
+                        *(const unsigned char *)delta_record_field(&vstmtbl[2],0,
+                            TFLDS(EVV_AT(void *,previous))) : 0;
+                    short_yek=previous_phone==22 &&
+                        persian_probe_next_phone_word_final(state,next_ref,3);
+                }
                 int factor=100;
                 if (ordinary && length==1 && phone==31) factor=130;
                 else if (ordinary && length==1 && phone==29) factor=118;
@@ -1959,19 +1973,20 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                     STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
                 }
             }
-            /* Listening candidate after the US consonant replacement:
-               give Persian vowel nuclei 20% more time at every speed, while
-               retaining the native short/long, stress and phrase mechanisms.
-               The separate short-unstressed and US long-vowel reductions are
-               disabled for this candidate. This is not a universal Persian
-               duration ratio. */
+            /* Keep most of the listener-approved duration extension, but
+               bound its absolute contribution so longer vowels are less
+               mechanically stretched. Give the yek context a smaller boost.
+               These are listening candidates, not a Persian timing law. */
             if (us_timing && node && cls==1 && STATE(int32_t,f33)>0) {
-                int64_t scaled=((int64_t)STATE(int32_t,f33)*6+2)/5;
+                int64_t duration=STATE(int32_t,f33);
+                int64_t extra=short_yek ? (duration+10)/20 : (duration+2)/5;
+                if (extra>150000) extra=150000;
+                int64_t scaled=duration+extra;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
             if (tracing)
-                fprintf(stderr,"FA_NUC phone=%d class=%d stress=%d length=%d before=%d duration=%d final=%d\n",
-                        phone,cls,stress,length,(int)before,(int)STATE(int32_t,f33),final);
+                fprintf(stderr,"FA_NUC phone=%d class=%d stress=%d length=%d before=%d duration=%d final=%d yek=%d\n",
+                        phone,cls,stress,length,(int)before,(int)STATE(int32_t,f33),final,short_yek);
         }
     }
 ''', 1)
@@ -1979,7 +1994,14 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
         'persian_probe_l_word_final(void *state,int32_t token_ref)',
         'persian_probe_vowel_word_final(void *state,int32_t token_ref,unsigned phone)'
     ).replace('testFldeq(d,2,0,21)', 'testFldeq(d,2,0,phone)')
-    text = text[:begin] + helper + '\n' + section + text[end:]
+    # next_ref is the scanner node value, not the address of a delta_token.
+    # Construct an actual token so lpta_loadp reads the intended /k/ node.
+    next_helper = helper.replace(
+        'persian_probe_vowel_word_final(void *state,int32_t token_ref,unsigned phone)',
+        'persian_probe_next_phone_word_final(void *state,int32_t token_ref,unsigned phone)'
+    ).replace('    lpta_loadp(d,EVV_AT(const delta_token *,token_ref));',
+              '    const delta_token token={0,token_ref};\n    lpta_loadp(d,&token);')
+    text = text[:begin] + helper + '\n' + next_helper + '\n' + section + text[end:]
     include = '#include "reloq61_rule_calls_fifi.h"\n'
     if text.count(include) != 1:
         raise RuntimeError('Cannot locate duration probe includes')
@@ -2276,15 +2298,6 @@ def prepare_us_articulation(work: Path) -> None:
     # These are listening candidates from matched-F0 spectral comparisons,
     # not a global EQ or a substitution of English vowel identities.
     vowel_helper = r'''
-static unsigned persian_open_vowel_previous(void *state,int32_t position)
-{
-    delta_state *d=state;
-    if (!d || !position) return 0;
-    void *point=(void *)vmovel(d,EVV_AT(delta_node *,position),2);
-    int32_t node=point ? vgetsc(d,1,0,EVV_REF(point),2) : 0;
-    if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
-    return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node)));
-}
 static void persian_open_vowel(void *state,int phone)
 {
     const char *us=getenv("RELOQ_FA_US_ARTICULATION");
@@ -2292,21 +2305,25 @@ static void persian_open_vowel(void *state,int phone)
     int16_t female=0;
     memcpy(&female,(const unsigned char *)state+DG_BASE+3092+12,sizeof female);
     int f2=0,f3=0,f4=0,f5=0,b1=0,b3=0,b5=0;
-    /* /o/ after /m/ or /n/ must not inherit the nasal's stronger source
-       tilt. Keep the nasal itself intact and restore the /o/ source target.
-       After /n/, restore the higher F4 target seen in "two" as well.
-       Other vowels get an upper adjustment without copying /o/'s F1/F2.
-       Restore /u/'s dev121 F2/F3 centres, then shape only its upper range. */
+    /* Use the /o/ nucleus and source targets from "two" in every context.
+       Do not replace inheritance sentinels: the acoustic engine still
+       interpolates into and out of neighbouring consonants. Other vowels
+       retain their own centres, and /u/ keeps its restored dev121 centres. */
     if (phone=='a') { f3=female ? -100 : 0; f4=200; b3=100; }
     else if (phone=='e') { f3=female ? -80 : 0; f4=50; b1=35; b3=125; }
     else if (phone=='i') { f3=female ? -80 : 0; f4=50; b3=100; }
     else if (phone=='o') {
-        unsigned previous=persian_open_vowel_previous(state,STATE(int32_t,w60));
-        f2=60; f4=previous==17 ? 400 : 200; b3=120;
-        if (previous==16 || previous==17) {
-            STATE(int16_t,s405)=0; /* TL target */
-            STATE(int16_t,s436)=0; /* emit the vowel's own TL target */
-        }
+        if (STATE(int16_t,s448)>0) STATE(int16_t,s448)=440;
+        if (STATE(int16_t,s449)>0) STATE(int16_t,s449)=440;
+        if (STATE(int16_t,s450)>0) STATE(int16_t,s450)=900;
+        if (STATE(int16_t,s451)>0) STATE(int16_t,s451)=900;
+        if (STATE(int16_t,s452)>0) STATE(int16_t,s452)=2400;
+        if (STATE(int16_t,s453)>0) STATE(int16_t,s453)=2400;
+        if (STATE(int16_t,s454)>0) STATE(int16_t,s454)=3500;
+        if (STATE(int16_t,s455)>0) STATE(int16_t,s455)=3500;
+        b3=120;
+        STATE(int16_t,s405)=0; /* TL target from "two" */
+        STATE(int16_t,s436)=0; /* emit the vowel's own TL target */
     }
     else if (phone=='u') { f4=200; b3=120; b5=260; }
     if (b1 && STATE(int16_t,s397)>0 && STATE(int16_t,s397)<3000)

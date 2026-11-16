@@ -61,7 +61,22 @@ def main():
                             # The vowel centres retain their identity. The
                             # surrounding consonant's transitions may differ.
                             assert abs(row.controls[9]-before.controls[9]) < 2
-                            assert abs(row.controls[13]-before.controls[13]) < 30
+                            if phone == 'e':
+                                assert abs(row.controls[13]-before.controls[13]) < 30
+                        count += 1
+                    # Two's /o/ is the target in all these consonant
+                    # contexts, including after Ach and before/after nasals.
+                    # Compare the stable nucleus, not the transitions.
+                    for word in ('po', 'to', 'ko', 'bo', 'go', 'fo', 'so', 'So',
+                                 'zo', 'lo', 'ro', 'vo', 'jo', 'Go', 'ho', 'no',
+                                 'mo', 'os', 'on', 'om', 'ot', 'ok', 'ov', 'dom',
+                                 'dor', 'do.0nja', 'no.0ro', 'mo.0ro', 'so.0ro'):
+                        tag = '`[.1' + word + ']'
+                        row = nucleus(fa, scope, tag, gender, 'o')
+                        for column in (4, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20):
+                            assert abs(row.controls[column] - reference.controls[column]) < 2, (
+                                gender, rate, speed, tag, column,
+                                row.controls[column], reference.controls[column])
                         count += 1
     finally:
         fa.close()

@@ -44,6 +44,7 @@ on:
       - experiments/persian/test_us_consonants.py
       - experiments/persian/test_us_nasals.py
       - experiments/persian/test_open_vowels.py
+      - experiments/persian/test_yek_duration.py
       - experiments/persian/test_british_front_a.py
       - experiments/persian/test_front_a_harmonics.py
       - tests/test_persian_provider_cache.py
@@ -148,6 +149,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'US nasal alignment failed' }
           python -B experiments/persian/test_open_vowels.py --candidate eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian short vowel shaping failed' }
+          python -B experiments/persian/test_yek_duration.py --candidate eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Persian yek timing failed' }
           python -B experiments/persian/test_british_front_a.py --candidate eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'British/Persian front-vowel comparison failed' }
           python -B experiments/persian/test_front_a_harmonics.py --candidate eci/eci.dll
