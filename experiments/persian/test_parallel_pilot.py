@@ -9,6 +9,7 @@ import threading
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 import continuous_driver
 from _reloq_eci_direct import EciIndex, EciPitch, EciProsody, GENDER, HEAD_SIZE, NATIVE_SPEED, SAMPLE_RATE
+from _reloq_persian_frames import FrameCapture
 from nvda_driver_probe import make_language_engine
 from parallel_pilot import ParallelPilot, _CaptureVoice
 
@@ -25,6 +26,7 @@ def main():
     continuous_driver.os.cpu_count = lambda: 2
     old_init, old_submit, old_capture, old_speak = (ParallelPilot.__init__, ParallelPilot.submit,
                                                     ParallelPilot._capture, _CaptureVoice.speak)
+    old_frame_capture = FrameCapture.capture
     submissions = []
     def submit(self, **kwargs):
         submissions.append(1)
@@ -74,6 +76,22 @@ def main():
         continuous_driver._PARALLEL_MIN = 10**9
         expected = render(examples[0])
         continuous_driver._PARALLEL_MIN = 1
+        worker_started, main_started = threading.Event(), threading.Event()
+        def barrier_worker(voice, parts, on_pcm, on_index):
+            worker_started.set()
+            if not main_started.wait(5):
+                raise RuntimeError('main contour capture did not start concurrently')
+            return old_speak(voice, parts, on_pcm, on_index)
+        def barrier_main(capture, voice, parts, **kwargs):
+            if not kwargs.get('audio', True):
+                assert worker_started.wait(5), 'parallel contour capture did not start'
+                main_started.set()
+            return old_frame_capture(capture, voice, parts, **kwargs)
+        _CaptureVoice.speak, FrameCapture.capture = barrier_worker, barrier_main
+        try:
+            assert render(examples[0]) == expected and worker_started.is_set() and main_started.is_set()
+        finally:
+            _CaptureVoice.speak, FrameCapture.capture = old_speak, old_frame_capture
         def fail(_self, *args, **kwargs):
             raise RuntimeError('injected contour worker failure')
         ParallelPilot._capture = fail
@@ -116,6 +134,7 @@ def main():
         continuous_driver._PARALLEL_MIN = old_min
         continuous_driver.os.cpu_count = old_cpu_count
         ParallelPilot.__init__ = old_init
+        FrameCapture.capture = old_frame_capture
         ParallelPilot.submit, ParallelPilot._capture, _CaptureVoice.speak = old_submit, old_capture, old_speak
         engine.close()
     print(f'Passed {checks} serial/parallel PCM and source-index comparisons, failure recovery and cancellation.')
