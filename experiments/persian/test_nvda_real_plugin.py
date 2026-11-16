@@ -50,7 +50,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             import synthDriverHandler
             import synthDrivers.reloqC as reloq
             import characterProcessing
-            from synthDrivers.reloqC._persian import continuous_driver, direct_fa_sequence
+            from synthDrivers.reloqC._persian import continuous_driver, direct_fa_sequence, nvda_driver_probe
+            from synthDrivers.reloqC._reloq_eci_transport import EciTextTransport
             self.speech, self.character, self.index_command = speech, CharacterModeCommand, IndexCommand
             self.symbols = characterProcessing
             self.projected = []
@@ -66,6 +67,26 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 return old_prepared(instance, prepared, *args, **kwargs)
             continuous_driver._project_part = observe_project
             direct_fa_sequence.ScopedDirectPersianEngine._speak_prepared = observe_prepared
+            # Keep these measurements in the test plugin, not in the voice.
+            # They separate NVDA preprocessing, queueing and synthesis while
+            # using the same real driver and per-request text processing.
+            self.profile_case = False
+            self.stage = {}
+            def trace(method, name):
+                def observed(*args, **kwargs):
+                    if self.profile_case:
+                        self.stage.setdefault(name + '_begin', time.perf_counter())
+                    try:
+                        return method(*args, **kwargs)
+                    finally:
+                        if self.profile_case:
+                            self.stage.setdefault(name + '_end', time.perf_counter())
+                return observed
+            reloq.SynthDriver._protect_before_speech = trace(reloq.SynthDriver._protect_before_speech, 'protect')
+            reloq.SynthDriver.speak = trace(reloq.SynthDriver.speak, 'driver')
+            EciTextTransport._run_job = trace(EciTextTransport._run_job, 'job')
+            nvda_driver_probe.PersianProbeLanguageEngine.speak = trace(
+                nvda_driver_probe.PersianProbeLanguageEngine.speak, 'engine')
             self.language_command = LangChangeCommand
             nvwave.WavePlayer = self.player
             reloq.SynthDriver._make_player = staticmethod(self.player)
@@ -92,6 +113,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'متوقف', False),
                           ('fa_IR', 'علامت', False),
                           ('fa_IR', 'نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA', 'pipeline_user_latency'),
+                          ('fa_IR', 'نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA', 'pipeline_user_latency'),
+                          ('fa_IR', 'اکنون نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA', 'pipeline_user_latency'),
+                          ('fa_IR', 'نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA', 'driver_user_latency'),
                           ('fa_IR', 'ذره بین به دلیلِ بُروزِ خطا متوقف شد.', 'pipeline_stop'),
                           ('fa_IR', 'حالتِ بومیِ انتخاب را فعال یا غیرفعال می‌کند', False),
                           ('fa_IR', 'ذره بین به دلیلِ بُروزِ خطا متوقف شد.', False),
@@ -223,7 +247,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             self.language_command('fa_IR'), 'خوب']
             elif spelling == 'english':
                 sequence = [self.language_command('en_US'), text]
-            elif spelling == 'persian':
+            elif spelling in ('persian', 'driver_user_latency'):
                 sequence = [text]
             elif spelling == 'mixedspelling':
                 sequence = ['سلام ', self.character(True), '؟', self.character(False), ' دنیا']
@@ -254,6 +278,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
+            self.profile_case = spelling in ('pipeline_user_latency', 'driver_user_latency')
+            self.stage = {}
             self.started = time.perf_counter()
             self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
             if self.pipeline:
@@ -326,9 +352,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     raise AssertionError('Finnish hyphen name leaked into Pinglish')
             if spelling in ('english', 'persian') or spelling == 'mixed' and locale == 'fa_IR':
                 self.audio[spelling] = audio
-            self.results.append({'locale': locale, 'text': text, 'spelling': spelling,
-                                 'pcm_bytes': len(audio), 'pcm_sha256': hashlib.sha256(audio).hexdigest(),
-                                 'first_audio_ms': round((min(times) - self.started) * 1000, 1)})
+            result = {'locale': locale, 'text': text, 'spelling': spelling,
+                      'pcm_bytes': len(audio), 'pcm_sha256': hashlib.sha256(audio).hexdigest(),
+                      'first_audio_ms': round((min(times) - self.started) * 1000, 1)}
+            if self.profile_case:
+                result['stage_ms'] = {name: round((value - self.started) * 1000, 1)
+                                      for name, value in self.stage.items()}
+            self.results.append(result)
             self.index += 1
             self.next()
         except BaseException:

@@ -130,6 +130,29 @@ def main():
             stopper.join(5)
         assert not stopper.is_alive()
         assert render(examples[0]) == expected
+
+        # Also stop while the native contour synthesizer is inside its PCM
+        # callback, not merely before synthesis starts. The owner must not
+        # leak a stale prefix, deadlock, or poison the next request.
+        started, done, stale = threading.Event(), threading.Event(), bytearray()
+        def during_native(voice, parts, on_pcm, on_index):
+            def pcm(data):
+                started.set()
+                if not done.wait(5):
+                    raise RuntimeError('native contour stop did not complete')
+                on_pcm(data)
+            return old_speak(voice, parts, pcm, on_index)
+        _CaptureVoice.speak = during_native
+        stopper = threading.Thread(target=stop, daemon=True)
+        stopper.start()
+        try:
+            assert not engine.speak(examples[0], stale.extend, lambda _: None)
+            assert done.wait(5) and started.is_set() and not stale
+        finally:
+            _CaptureVoice.speak = old_speak
+            stopper.join(5)
+        assert not stopper.is_alive()
+        assert render(examples[0]) == expected
     finally:
         continuous_driver._PARALLEL_MIN = old_min
         continuous_driver.os.cpu_count = old_cpu_count
