@@ -56,6 +56,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.symbols = characterProcessing
             self.projected = []
             self.projected_sources = []
+            self.reference_debug = []
             self.continuous = []
             old_project_part = continuous_driver._project_part
             old_prepared = direct_fa_sequence.ScopedDirectPersianEngine._speak_prepared
@@ -68,6 +69,21 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if prepared.source:
                     self.projected.append(prepared.tagged)
                     self.projected_sources.append((prepared.source, prepared.tagged))
+                    if 'درسته' in prepared.source:
+                        try:
+                            front = instance._frontend
+                            direct = front.analyze_direct('درسته')
+                            analysis = front.analyze('درسته')
+                            tag = analysis.parts[0].text if analysis.parts else ''
+                            phones = instance._voice._phonemes_for_probe(tag) if tag else ''
+                            from synthDrivers.reloqC._persian.text_frontend import native_sequence_accepted
+                            accepted = native_sequence_accepted(tag, phones) if tag else False
+                            retry = direct_fa_sequence.project_resilient(
+                                (prepared.source,), front,
+                                validate=instance._voice._phonemes_for_probe).tagged
+                            self.reference_debug.append((repr(direct), repr(analysis), phones, accepted, retry))
+                        except BaseException as error:
+                            self.reference_debug.append(('error', repr(error), traceback.format_exc()))
                 return old_prepared(instance, prepared, *args, **kwargs)
             def observe_continuous(*args, **kwargs):
                 result = old_continuous(*args, **kwargs)
@@ -417,7 +433,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 expected = ("`[.0do.1ros.0t'e:']" if 'درسته' in text else '`[.1a.0li]')
                 if expected not in tags:
                     details = self.projected_sources[self.before_projected_sources:]
-                    raise AssertionError('NVDA spelled a word around the hyphen: ' + ascii(details))
+                    raise AssertionError('NVDA spelled a word around the hyphen: ' +
+                                         ascii(details) + ' reference=' + ascii(self.reference_debug))
             if spelling is True and text in 'ًٌٍَُِّْٰ':
                 expected = {'ً':'`[.1An]', 'ٌ':'`[.1on]', 'ٍ':'`[.1en]',
                             'َ':"`[.1'A:']", 'ُ':"`[.1'o:']", 'ِ':"`[.1'e:']",
