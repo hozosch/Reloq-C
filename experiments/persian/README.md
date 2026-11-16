@@ -1480,23 +1480,25 @@ isolation checks. This is an experimental link step, not a Windows/NVDA package.
 `build_windows_probe.py` prepares the same scope in a separate Windows DLL,
 replacing only the changed provider objects in a private copy of the ordinary
 provider archive. The dedicated Windows acoustic workflow builds the baseline
-archive once and caches it; focused text changes do not trigger that build.
+archive once and caches it. Direct text changes require a matching private
+probe because its embedded rules are used by the test add-on.
 It checks Finnish, English and German against the unchanged DLL, tests the
 thread-scoped Persian sound, and compares direct Pinglish and Persian output.
 The DLL remains a private probe until those Windows checks have passed and the
 remaining streaming/NVDA work has been completed.
 
 `build_experimental_nvda.py` prepares a separately labelled test package
-using a verified Windows acoustic probe, a separately compiled direct-text
-DLL and an isolated worker. Text-only rule changes therefore do not require
-rebuilding the acoustic core. Its adapter extends the language choices only
-when the text DLL, worker, NVDA eSpeak and required acoustic export are present.
-The package uses separate handles for mixed-language speech because the
-accepted shared-contour and transition planners remain offline; it must not
-be treated as a finished Persian voice. The ordinary release
-builder and language catalog are unchanged. `test_nvda_package_probe.py`
-checks the packaged adapter's profiles and native playback locally;
-`test_nvda_real_plugin.py` is for a subsequent real NVDA smoke test.
+using a verified Windows acoustic probe with its own direct Persian text
+exports. The add-on loads those rules from the same DLL as the acoustic core.
+For words not covered directly, it uses an independently loaded in-process
+copy of NVDA's eSpeak library; no helper process is packaged. Its adapter
+exposes Persian and Pinglish only when the required exports and NVDA eSpeak
+are present. Mixed-language sentences use the accepted shared-contour and
+transition planner, with separate handles and bounded streaming; this test
+implementation is not yet a native single-pass Persian language module. The
+ordinary release builder and language catalog are unchanged.
+`test_nvda_package_probe.py` checks the packaged adapter's profiles and native
+playback; `test_nvda_real_plugin.py` also exercises it in portable NVDA.
 
 An initial geminated /dʒ/ candidate used a separate D followed by J, but the
 user heard insufficiently continuous voicing and did not accept it. The
