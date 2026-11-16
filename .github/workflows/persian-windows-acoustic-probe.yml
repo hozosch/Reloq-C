@@ -61,9 +61,9 @@ jobs:
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          make -C eci -j2 eci.dll SHELL=C:/msys64/usr/bin/bash.exe PROVIDER_LTO=-flto=2 WINDOWS_CC=gcc WINDOWS_OBJDUMP=objdump
+          make -C eci -j2 eci.dll SHELL=C:/msys64/usr/bin/bash.exe PROVIDER_LTO=-flto=2 WINDOWS_CC=gcc WINDOWS_OBJDUMP=objdump > windows-baseline-build.log 2>&1 || { tail -n 120 windows-baseline-build.log; exit 1; }
           python eci/verify_pe_exports.py eci/eci.dll --objdump objdump --header include/reloq_eci.h
-          make -C eci eci_classic_noise_probe.exe SHELL=C:/msys64/usr/bin/bash.exe WINDOWS_CC=gcc
+          make -C eci eci_classic_noise_probe.exe SHELL=C:/msys64/usr/bin/bash.exe WINDOWS_CC=gcc WINDOWS_OBJDUMP=objdump
       - name: Build only the changed Persian provider objects
         shell: bash
         run: |
