@@ -43,7 +43,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--candidate', required=True, type=Path)
     parser.add_argument('--previous', type=Path,
-                        help='optional dev116 library for sample and frame comparison')
+                        help='optional dev118 library for sample and frame comparison')
     args = parser.parse_args()
     candidate, scope = voice(args.candidate, 0x90000)
     previous, old_scope = voice(args.previous, 0x90000) if args.previous else (None, None)
@@ -71,14 +71,14 @@ def main():
                     if previous:
                         before, old_rows = capture(previous, old_scope, tag, True)
                         assert len(actual.pcm) == len(before.pcm) and len(rows) == len(old_rows)
-                        assert (actual.pcm != before.pcm) == (phone in 'aA'), phone
+                        assert (actual.pcm != before.pcm) == (phone == 'A'), phone
                         for a, b in zip(rows, old_rows):
                             assert a.tick == b.tick
-                            changed = (10, 14) if phone == 'a' else (15, 20) if phone == 'A' else ()
+                            changed = (15, 16, 20) if phone == 'A' else ()
                             assert all(a.controls[i] == b.controls[i] for i in range(62)
                                        if i not in changed), (rate, gender, phone)
                         if phone == 'A':
-                            assert any(abs(a.controls[15] - b.controls[15]) >= 49
+                            assert any(any(a.controls[i] != b.controls[i] for i in changed)
                                        for a, b in zip(rows, old_rows)), (rate, gender, phone)
                     checks += 1
                 for phone in 'ptkbdgmn':
@@ -87,19 +87,30 @@ def main():
                     if previous:
                         before, old_rows = capture(previous, old_scope, tag, True)
                         _, us_rows = capture(us, us_scope, tag, False)
-                        assert len(actual.pcm) == len(before.pcm) and len(rows) == len(old_rows)
-                        if phone in 'mn':
-                            old_f2 = first_audible(old_rows).controls[13]
-                            new_f2 = first_audible(rows).controls[13]
-                            us_f2 = first_audible(us_rows).controls[13]
-                            assert abs(new_f2-us_f2) < abs(old_f2-us_f2), (
-                                rate, gender, phone, old_f2, new_f2, us_f2)
-                        else:
+                        if phone in 'bdgmn':
+                            assert actual.pcm == before.pcm, (rate, gender, phone)
+                        elif phone == 'p':
                             old_af = max(row.controls[8] for row in old_rows)
                             new_af = max(row.controls[8] for row in rows)
                             us_af = max(row.controls[8] for row in us_rows)
                             assert abs(new_af-us_af) <= abs(old_af-us_af), (
                                 rate, gender, phone, old_af, new_af, us_af)
+                    checks += 1
+                # SH and the SH component of TSH should actually carry the
+                # US-like spectrum during frication; testing only dispatcher
+                # variables misses the native rule's later backtracking.
+                for tag in ('`[.1Si]', '`[.1Ci]', '`[.1iS]', '`[.1iC]'):
+                    _, rows = capture(candidate, scope, tag, True)
+                    selected = [r for r in rows if r.controls[8] >= 35 and
+                                r.controls[36] < 5 and r.controls[37] >= 58 and
+                                r.controls[38] >= 55]
+                    assert len(selected) >= 5, (rate, gender, tag)
+                    checks += 1
+                for tag in ('`[.1fi]', '`[.1if]'):
+                    _, rows = capture(candidate, scope, tag, True)
+                    selected = [r for r in rows if r.controls[8] >= 35 and
+                                r.controls[35] >= 50 and r.controls[36] >= 50]
+                    assert len(selected) >= 5, (rate, gender, tag)
                     checks += 1
                 if previous:
                     # L and the special Q/X carriers retain their targets;

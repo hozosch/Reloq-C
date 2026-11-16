@@ -141,24 +141,22 @@ FRONT_A_PATCH = r'''
             if(STATE(int16_t,s448)>0)STATE(int16_t,s448)+=100;
             if(STATE(int16_t,s449)>0)STATE(int16_t,s449)+=100;
         }
-        /* UK "sad" uses F3 2350 Hz in its main vowel, compared with the
-           Finnish front-A default 2550 Hz. Move 140 Hz toward that target,
-           retaining the native context-dependent endpoints and sentinels.
-           The exact target is a listening candidate, not a rule for all
-           Persian /ae/ contexts. Do not alter F1 or F2 here. */
+        /* The earlier UK-F3-only candidate reduced the measured upper-band
+           energy and was reported as more muffled. Use the US/UK spectral
+           comparison at matched F0 to shape the whole upper resonance:
+           preserve the two endpoints, narrow B3 and adjust F3/B5 separately
+           for the two native vocal-tract models. This is a listening
+           candidate, not a claim of an exact Persian formant target. */
         const char *f3=getenv("RELOQ_FA_FRONT_A_F3");
         if(f3 && f3[0]=='1' && !f3[1]) {
-            if(STATE(int16_t,s452)>140)STATE(int16_t,s452)-=140;
-            if(STATE(int16_t,s453)>140)STATE(int16_t,s453)-=140;
-            /* Finnish front A sets B5=500. In the matched male UK example
-               the fifth-formant bandwidth is 260, while the female example
-               already has 500. Blend the male target halfway and retain the
-               existing female target. Read the same voice parameter used by
-               fifi/acoustic_rules_fifi.c; this is not a sample-rate filter. */
             int16_t female=0;
             memcpy(&female,(const unsigned char *)state+DG_BASE+3092+12,sizeof female);
-            if(!female && STATE(int16_t,s401)>260)
-                STATE(int16_t,s401)=(int16_t)((STATE(int16_t,s401)+261)/2);
+            int delta=female ? -150 : 50;
+            if(STATE(int16_t,s452)>150)STATE(int16_t,s452)+=delta;
+            if(STATE(int16_t,s453)>150)STATE(int16_t,s453)+=delta;
+            if(STATE(int16_t,s399)>0)
+                STATE(int16_t,s399)=(int16_t)((2*(int)STATE(int16_t,s399)+1)/3);
+            if(!female && STATE(int16_t,s401)>260)STATE(int16_t,s401)=260;
         }
     }
 '''
@@ -857,6 +855,16 @@ X_FRICTION = r'''
         STATE(int16_t,s448)=300; STATE(int16_t,s449)=300;
         STATE(int16_t,s450)=1350; STATE(int16_t,s451)=1350;
         STATE(int16_t,s452)=1400; STATE(int16_t,s453)=2200;
+    } else {
+        const char *mode=getenv("RELOQ_FA_US_ARTICULATION");
+        if (mode && mode[0]=='1' && !mode[1]) {
+            /* The SH rule can backtrack and rebuild its targets multiple
+               times, so select the US-shaped bands at each actual target
+               construction, not only after its dispatch returns. */
+            STATE(int16_t,s408)=0; STATE(int16_t,s409)=0;
+            STATE(int16_t,s410)=62; STATE(int16_t,s411)=59;
+            STATE(int16_t,s412)=0; STATE(int16_t,s413)=0;
+        }
     }
 '''
 
@@ -1168,6 +1176,17 @@ static unsigned persian_probe_previous_cons(void *state,int32_t position)
     if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
     return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node)));
 }
+static unsigned persian_probe_current_k_marker(void *state,int32_t position)
+{
+    delta_state *d=state;
+    if (!d || !position) return 0;
+    int32_t *point=vmover(d,EVV_AT(int32_t *,position),2);
+    int32_t node=point ? vgetsc(d,0,0,EVV_REF(point),2) : 0;
+    if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
+    void *fields=TFLDS(EVV_AT(void *,node));
+    return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,fields)==3
+        ? *(const unsigned char *)delta_record_field(&vstmtbl[2],12,fields) : 0;
+}
 #ifdef RELOQ_FA_SCOPED_ONSETS
 extern int reloq_fa_scoped_has_geminates(void);
 extern int reloq_fa_scoped_native_geminate(unsigned,unsigned);
@@ -1213,6 +1232,10 @@ static int persian_probe_selected_j(void *state,int32_t position)
 '''
     helper += FINNISH_L_WORD_FINAL.replace('persian_probe_l_word_final', 'persian_probe_d_word_final').replace(
         'testFldeq(d,2,0,21)', 'testFldeq(d,2,0,5)')
+    helper += FINNISH_L_WORD_FINAL.replace(
+        'persian_probe_l_word_final(void *state,int32_t token_ref)',
+        'persian_probe_cons_word_final(void *state,int32_t token_ref,unsigned phone)'
+    ).replace('testFldeq(d,2,0,21)', 'testFldeq(d,2,0,phone)')
     section = section.replace(marker, 'L485:;\n    persian_probe_convert_q_phone(state,STATE(int32_t,w60));\n'
                               '    STATE(int16_t, s458)', 1)
     duration = 'L2614:;\n    r0 = reloq_call_fifi_insert_dur'
@@ -1271,6 +1294,34 @@ static int persian_probe_selected_j(void *state,int32_t position)
                 fprintf(stderr,"FA_GEM phone=%u before=%u after=%u factor=%d duration=%d\n",
                         current,previous,next,factor,(int)STATE(int32_t,f20));
             if (factor!=100 && STATE(int32_t,f20)>0) {
+                int64_t scaled=((int64_t)STATE(int32_t,f20)*factor+50)/100;
+                STATE(int32_t,f20)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
+            }
+        }
+    }
+    {
+        const char *mode=getenv("RELOQ_FA_US_ARTICULATION");
+        if (mode && mode[0]=='1' && !mode[1] && STATE(int32_t,f20)>0) {
+            int32_t at=STATE(int32_t,w60);
+            unsigned phone=persian_probe_cons_name(state,at);
+            unsigned previous=persian_probe_previous_cons(state,at);
+            unsigned marker=phone==3 ? persian_probe_current_k_marker(state,at) : 0;
+            int final=persian_probe_cons_word_final(state,at,phone);
+            int factor=100;
+            /* Phone durations are adjusted independently of the sentence
+               contour. J expands to D+ZH; do not alter its marked geminate. */
+            if (phone==2) factor=125;
+            else if (phone==3 && marker!=3 && marker!=4 && marker!=5) factor=125;
+            else if (phone==7) factor=final ? 125 : 110;
+            else if (phone==9) factor=final ? 145 : 125;
+            else if (phone==11) factor=final ? 140 : 125;
+            else if (phone==12 && previous==5) {
+#ifdef RELOQ_FA_SCOPED_ONSETS
+                if (!reloq_fa_scoped_has_geminates())
+#endif
+                    factor=final ? 135 : 120;
+            }
+            if (factor!=100) {
                 int64_t scaled=((int64_t)STATE(int32_t,f20)*factor+50)/100;
                 STATE(int32_t,f20)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
@@ -1475,6 +1526,24 @@ static void persian_auto_h_insert(void *state)
         raise RuntimeError('Cannot locate Finnish H transition insertion')
     text = text.replace(include, include + '#include <stdlib.h>\n', 1)
     text = text.replace(marker, helper + '\n' + marker + '    persian_auto_h_insert(state);\n', 1)
+    stop_call = ('    r0 = reloq_call_fifi_get_fin_stop_trans_dur(state, (int32_t)(FIELD(0)), '
+                 '(int32_t)(RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 192)));\n')
+    if text.count(stop_call) != 1:
+        raise RuntimeError('Cannot locate the Finnish stop-transition duration')
+    text = text.replace(stop_call, stop_call + r'''    {
+        const char *mode=getenv("RELOQ_FA_US_ARTICULATION");
+        delta_state *d=state;
+        int32_t current=persian_auto_h_phone(d,STATE(int32_t,w61),1);
+        unsigned phone=current ? persian_auto_h_field(current,0) : 0;
+        unsigned mark=current ? persian_auto_h_field(current,12) : 0;
+        if (!r0 && mode && mode[0]=='1' && !mode[1] && AT(int16_t,-18)>0 &&
+            (phone==2 || (phone==3 && mark!=3 && mark!=4 && mark!=5 &&
+                           !persian_auto_h_is_q(d,STATE(int32_t,w61))))) {
+            int scaled=((int)AT(int16_t,-18)*5+2)/4;
+            AT(int16_t,-18)=(int16_t)(scaled>32767 ? 32767 : scaled);
+        }
+    }
+''', 1)
     begin = text.index('int32_t reloq_fifi_do_fin_h_amps(')
     end = text.index('\nstatic int32_t evv_do_fin_h_amps(', begin)
     section = text[begin:end]
@@ -1757,10 +1826,12 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
         int enabled=mode && mode[0]=='1' && !mode[1];
         const char *timing=getenv("RELOQ_FA_PROBE_TIMING");
         int short_unstressed=timing && timing[0]=='1' && !timing[1];
+        const char *us=getenv("RELOQ_FA_US_ARTICULATION");
+        int us_timing=us && us[0]=='1' && !us[1];
         int tracing=getenv("RELOQ_FA_TRACE_NUC")!=NULL;
         const char *end_mode=getenv("RELOQ_FA_PROBE_FINAL");
         int medium=end_mode && end_mode[0]=='1' && !end_mode[1];
-        if (enabled || tracing || medium || short_unstressed) {
+        if (enabled || tracing || medium || short_unstressed || us_timing) {
             delta_state *d=state;
             int32_t at=STATE(int32_t,w26),node=0;
             if (at) {
@@ -1809,6 +1880,29 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                 !persian_probe_vowel_word_final(state,STATE_AT(w26,-4),(unsigned)phone)) {
                 int64_t scaled=((int64_t)STATE(int32_t,f33)*9+5)/10;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
+            }
+            if (us_timing && node && cls==1 && STATE(int32_t,f33)>0 &&
+                !persian_probe_vowel_word_final(state,STATE_AT(w26,-4),(unsigned)phone)) {
+                int32_t next_ref=EVV_AT(int32_t *,node)[1]&~3;
+                int32_t *point=next_ref ? vmover(d,EVV_AT(int32_t *,next_ref),2) : NULL;
+                int32_t next=point ? vgetsc(d,0,0,EVV_REF(point),2) : 0;
+                unsigned next_phone=0,next_marker=0;
+                if (next && !(*EVV_AT(int32_t *,next)&2)) {
+                    void *fields=TFLDS(EVV_AT(void *,next));
+                    next_phone=*(const unsigned char *)delta_record_field(&vstmtbl[2],0,fields);
+                    next_marker=*(const unsigned char *)delta_record_field(&vstmtbl[2],12,fields);
+                }
+                int ordinary=next_phone==1 || next_phone==2 || next_phone==7 ||
+                    next_phone==9 || next_phone==11 ||
+                    (next_phone==3 && next_marker!=3 && next_marker!=4 && next_marker!=5);
+                int factor=100;
+                if (ordinary && length==1 && phone==31) factor=130;
+                else if (ordinary && length==1 && phone==29) factor=118;
+                else if (ordinary && length==0 && (phone==27 || phone==32 || phone==34)) factor=87;
+                if (factor!=100) {
+                    int64_t scaled=((int64_t)STATE(int32_t,f33)*factor+50)/100;
+                    STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
+                }
             }
             if (tracing)
                 fprintf(stderr,"FA_NUC phone=%d class=%d stress=%d length=%d before=%d duration=%d final=%d\n",
@@ -1951,14 +2045,32 @@ static int16_t persian_articulation_toward(int16_t value,int target)
        Persian allophones equal the English allophones. */
     return value>0 ? (int16_t)((2*(int)value+target+1)/3) : value;
 }
-static void persian_articulation_stop(void *state,int target,int is_k)
+static void persian_articulation_stop(void *state,int target,int phone)
 {
     const char *mode=getenv("RELOQ_FA_US_ARTICULATION");
     if (!mode || mode[0]!='1' || mode[1] ||
-        (is_k && persian_articulation_special_k(state))) return;
+        (phone==3 && persian_articulation_special_k(state))) return;
     /* AF release levels sampled from the native US /i/ onset; keep the
        Finnish closure, transition, existing K shaping and aspiration. */
     STATE(int16_t,s430)=persian_articulation_toward(STATE(int16_t,s430),target);
+    /* US parallel release bands. Voiced stops keep their earlier blend. */
+    if (phone==1) STATE(int16_t,s442)=70;
+    else if (phone==2 || phone==3) {
+        STATE(int16_t,s437)=0; STATE(int16_t,s438)=0;
+        STATE(int16_t,s439)=phone==3 ? 60 : 0;
+        STATE(int16_t,s440)=0; STATE(int16_t,s441)=phone==2 ? 50 : 0;
+        STATE(int16_t,s442)=0;
+    }
+}
+static void persian_articulation_fricative(void *state,int phone)
+{
+    const char *mode=getenv("RELOQ_FA_US_ARTICULATION");
+    if (!mode || mode[0]!='1' || mode[1]) return;
+    if (phone==7) {
+        STATE(int16_t,s448)=400; STATE(int16_t,s449)=400;
+        STATE(int16_t,s408)=55; STATE(int16_t,s409)=55;
+        STATE(int16_t,s413)=65;
+    }
 }
 static void persian_articulation_nasal(void *state,int second_formant)
 {
@@ -1985,13 +2097,19 @@ static void persian_articulation_nasal(void *state,int second_formant)
         raise RuntimeError('Cannot locate consonant dispatcher')
     # STATE offsets are declared after the includes in generated sources.
     text = text.replace(marker, helper + '\n' + marker, 1)
-    for phone, target in (('p', 60), ('t', 65), ('k', 67),
-                          ('b', 56), ('d', 53), ('g', 62)):
+    for phone, target, identity in (('p', 60, 1), ('t', 65, 2), ('k', 67, 3),
+                                    ('b', 56, 4), ('d', 53, 5), ('g', 62, 6)):
         call = f'    r0 = reloq_call_fifi_fin_ph_{phone}(state, (int32_t)(FIELD(0)));\n'
         if text.count(call) != 1:
             raise RuntimeError(f'Cannot locate Persian stop dispatcher for {phone}')
         text = text.replace(call, call +
-            f'    if (!r0) persian_articulation_stop(state,{target},{int(phone == "k")});\n', 1)
+            f'    if (!r0) persian_articulation_stop(state,{target},{identity});\n', 1)
+    for phone, identity in (('f', 7),):
+        call = f'    r0 = reloq_call_fifi_fin_ph_{phone}(state, (int32_t)(FIELD(0)));\n'
+        if text.count(call) != 1:
+            raise RuntimeError(f'Cannot locate Persian fricative dispatcher for {phone}')
+        text = text.replace(call, call +
+            f'    if (!r0) persian_articulation_fricative(state,{identity});\n', 1)
     for phone, target in (('m', 1200), ('n', 1600)):
         call = f'    r0 = reloq_call_fifi_fin_ph_{phone}(state, (int32_t)(FIELD(0)));\n'
         if text.count(call) != 1:

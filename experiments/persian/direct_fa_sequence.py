@@ -406,11 +406,24 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
             at = end
             continue
         punctuation = {'،': ',', '؛': ';', '؟': '?'}.get(char, char)
-        if (char == '-' and 0 < at < len(source) - 1 and
-                word_char(source[at - 1]) and word_char(source[at + 1])):
-            emit(at, at + 1, char, speech=False)
-            at += 1
-            continue
+        if char == '-' and has_words:
+            # A Persian word boundary remains a boundary even when spaces or
+            # separate NVDA text/index items surround the hyphen.  In the
+            # reference path a literal hyphen can yield unsupported pause
+            # phones; naming it here also differs from the direct C path.
+            # Leave numeric signs/ranges to their existing handling.
+            left, right = at - 1, at + 1
+            while left >= 0 and source[left] in ' \t':
+                left -= 1
+            while right < len(source) and source[right] in ' \t':
+                right += 1
+            adjacent_word = ((left >= 0 and word_char(source[left])) or
+                             (right < len(source) and word_char(source[right])))
+            numeric_right = right < len(source) and source[right].isdecimal()
+            if adjacent_word and not numeric_right:
+                emit(at, at + 1, ' ', speech=False)
+                at += 1
+                continue
         if has_words and punctuation in '.,?!:;()[]{}':
             emit(at, at + 1, punctuation, speech=False)
         else:

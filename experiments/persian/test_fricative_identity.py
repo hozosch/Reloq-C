@@ -22,7 +22,10 @@ def bands(rows):
             continue
         if c[36] >= 65 and c[37] <= 5 and c[38] >= 50:
             found['x'] += 1
-        if c[36] >= 50 and c[37] >= 55 and c[38] >= 55:
+        # Both the original Finnish SH and the selected US-shaped SH have
+        # energy in the third and fourth parallel bands; the special X has
+        # its energy in the second and fourth bands instead.
+        if c[37] >= 55 and c[38] >= 55 and c[36] < 65:
             found['sh'] += 1
     return found
 

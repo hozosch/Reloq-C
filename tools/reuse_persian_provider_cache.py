@@ -18,9 +18,9 @@ ROOT = Path(__file__).resolve().parents[1]
 PROVIDER = ROOT / 'vendor/openevv61'
 BUILD = PROVIDER / 'build/windows-release'
 BASE = '0218903296e1828d468933fad04d7745779b5629'
-PREVIOUS_TREE = '793dbb8050ec00f2d8c6ef1e442f2e1e55b9c27f'
+PREVIOUS_TREE = 'caf3eaa2e08ac9fbd58dfcc9c532aab19405911e'
 PREVIOUS_KEY = ('persian-windows-provider-gcc14-v2-'
-                '77254c7f7c92a3f5ebf4ef4b51615051f2a0c58884dc7441d9b61e940ba9aaf2')
+                'f106c4723d7f6e32a226c721308d5e5b0f676a41f86a43f7a3c940b0ef20f128')
 MIGRATION_KEY = ('persian-windows-provider-gcc14-v1-'
                  'eafb701ff0daa266b36f21741a91cf44935fe7d1d5fc200e54f509f1b878b075')
 EXPECTED = {

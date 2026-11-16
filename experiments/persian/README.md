@@ -1748,3 +1748,31 @@ period with its Persian name. Explicit language boundaries, spelling mode,
 NVDA dictionary matches, and ordinary Persian numbers retain their own paths.
 The same rule applies to Pinglish words already identified as English
 exceptions. The normal native English decimal processing remains in charge.
+
+## Issue 49: character names, hyphens and articulation comparison
+
+The standalone Arabic vowel marks and related signs reported in issue 49 have
+Persian character names in the C-backed letter table. They use the pinned
+Persian eSpeak character pronunciations, including the multi-syllable name of
+U+0670. Combining marks within an ordinary word continue through normal word
+analysis. Explicitly spelling a hyphen still speaks its Persian name.
+
+The native word projection treats a hyphen between words as a word boundary.
+When an unknown Persian word requires reference fallback, spaced and unspaced
+word hyphens also remain boundaries; they do not cause the surrounding words
+to be spelled out. The fallback tests use both reported examples with text and
+index events split at different positions, and the real NVDA test exercises
+both examples and the nine individual marks.
+
+The front-A listening candidate was revised after the earlier British-F3
+adjustment was reported as more muffled. Analysis compares native control
+trajectories and rendered vowels from Persian, British and US voices with
+matched source pitch; F3, B3 and B5 are considered together. In the measured
+male 100/sad example, upper-band energy moves closer to US English, but this
+measurement alone cannot establish perceived clarity or Persian naturalness.
+The unchanged F1/F2 and the language-specific Q, X and L are separately
+checked. The articulation candidate also transfers selected US stop and
+frication targets, adjusts consonant durations and stop transitions, and
+changes short/long vowel timing before selected voiceless consonants. These
+are listening candidates, not claims that every Persian sound should have
+English timing. The shared sentence-melody planner is unchanged.

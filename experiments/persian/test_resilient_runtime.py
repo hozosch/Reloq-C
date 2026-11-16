@@ -98,6 +98,25 @@ def main():
         job = project_resilient(('سلام @ (🙂) دنیا',), frontend)
         assert SYMBOL_TAGS['@'] in job.tagged and '(' in job.tagged
         assert UNICODE_TAG in job.tagged and ')' in job.tagged
+        # Issue 49: both examples contain words outside the direct lexicon.
+        # Test the actual fallback with and without NVDA text/index splits.
+        for text, expected in (('بله این حرف شما - درسته حتما', "`[.0do.1ros.0t'e:']"),
+                               ('ما عالی هستیم - خخخخ', '`[.1a.0li]')):
+            parts = (EciIndex(1), text[:len(text)//2], EciIndex(2),
+                     text[len(text)//2:], EciIndex(3))
+            plain = project_resilient((text,), frontend,
+                validate=engine._engines[PERSIAN_PROBE.id]._voice._phonemes_for_probe)
+            split = project_resilient(parts, frontend,
+                validate=engine._engines[PERSIAN_PROBE.id]._voice._phonemes_for_probe)
+            assert expected in plain.tagged and plain.tagged == split.tagged, (text, split.tagged)
+            assert SYMBOL_TAGS['-'] not in split.tagged, (text, split.tagged)
+            assert [item.value for item in split.parts if isinstance(item, EciIndex)] == [1, 2, 3]
+            pcm, marks = render(parts)
+            assert pcm and [value for value, _ in marks] == [1, 2, 3]
+        direct_dash = frontend.analyze_direct('سلام-دنیا')
+        assert direct_dash and '-' not in direct_dash.parts[0].text
+        named_dash = project((EciText('-', character_mode=True),), frontend, allow_fallback=True)
+        assert named_dash.tagged == SYMBOL_TAGS['-']
         for word, expected in (('احیا', '`[.1e.0hja]'), ('مهربد', '`[.1mehr.0bod]'),
                                ('معد', '`[.1mo.0wedd]'), ('معقر', '`[.0mo.1RA.0wwAr]')):
             recovered = project_resilient((word,), frontend,

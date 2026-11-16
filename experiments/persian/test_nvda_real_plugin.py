@@ -208,6 +208,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'نمایشِ اِتِّفاقاتِ ثبت‌شده (Log)', 'pipeline_log'),
                           ('fa_IR', 'سلام[دنیا]سلام', 'pipeline_symbols'),
                           ('fa_IR', 'سلام-دنیا', 'pipeline_symbols'),
+                          ('fa_IR', 'بله این حرف شما - درسته حتما', 'issue49_hyphen'),
+                          ('fa_IR', 'ما عالی هستیم - خخخخخ', 'issue49_hyphen'),
                           ('fa_Latn', 'salam(donya)salam', 'pipeline_symbols'),
                           ('fa_IR', 'سلام NVDA[]سلام', 'pipeline_mixed_symbols'),
                           ('fa_Latn', 'w', True),
@@ -215,6 +217,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'ق', True),
                           ('fa_IR', 'ا', True),
                           ('fa_IR', '؟', True),
+                          *(( 'fa_IR', mark, True) for mark in 'ًٌٍَُِّْٰ'),
                           ('fa_IR', '🙂', True),
                           ('fa_Latn', '5?', True),
                           ('fa_IR', 'سلام ؟ دنیا', 'mixedspelling'),
@@ -353,14 +356,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 # NVDA speaks an object's name, role and state as separate
                 # sequence items; its real preprocessing adds the separators.
                 sequence = [text, 'کادرِ علامت‌زدنی', status]
-            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash'):
+            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
             self.profile_case = spelling in ('pipeline_user_latency', 'pipeline_mixed_latency', 'driver_user_latency')
             self.stage = {}
             self.started = time.perf_counter()
-            self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
+            self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
             self.before_continuous = len(self.continuous)
             if self.pipeline:
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
@@ -406,6 +409,19 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 raise RuntimeError('missing NVDA audio timing for ' + ascii(text))
             if spelling == 'pipeline_dash' and len(self.continuous) != self.before_continuous:
                 raise AssertionError('NVDA lost the separated language boundary around a hyphen: ' + ascii(text))
+            if spelling == 'issue49_hyphen':
+                tags = ' '.join(self.projected[self.before_projected:])
+                expected = ("`[.0do.1ros.0t'e:']" if 'درسته' in text else '`[.1a.0li]')
+                if expected not in tags:
+                    raise AssertionError('NVDA spelled a word around the hyphen: ' + ascii(tags))
+            if spelling is True and text in 'ًٌٍَُِّْٰ':
+                expected = {'ً':'`[.1An]', 'ٌ':'`[.1on]', 'ٍ':'`[.1en]',
+                            'َ':"`[.1'A:']", 'ُ':"`[.1'o:']", 'ِ':"`[.1'e:']",
+                            'ّ':'`[.1tAS.0did]', 'ْ':'`[.1sa.0ken]',
+                            'ٰ':"`[.1A.0lef.1mAR.0su.2r'e:']"}[text]
+                tags = ' '.join(self.projected[self.before_projected:])
+                if expected not in tags:
+                    raise AssertionError('NVDA lost the Persian character name: ' + ascii(tags))
             if text in ('به علاوه', 'بعلاوه', '+'):
                 tags = ' '.join(self.projected[self.before_projected:])
                 expected = ("`[.0be.0A.1la.0v'e:']" if text == 'بعلاوه' else

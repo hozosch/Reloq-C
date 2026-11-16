@@ -15,6 +15,13 @@ import reuse_persian_provider_cache as cache
 
 
 class CacheReuseTests(unittest.TestCase):
+    def test_host_cache_tracks_embedded_persian_inputs(self):
+        workflow = (Path(__file__).resolve().parents[1] /
+                    '.github/workflows/persian-windows-acoustic-probe.yml').read_text(encoding='utf8')
+        host_key = next(line for line in workflow.splitlines() if 'key: persian-windows-host-' in line)
+        for extension in ('c', 'h', 'inc'):
+            self.assertIn('experiments/persian/direct_fa_*.' + extension, host_key)
+
     def test_rebuilds_selected_objects_or_rejects_unverified_cache(self):
         for key, diff, reusable in (
             (cache.PREVIOUS_KEY, 'experiments/persian/build_native_probe.py', True),

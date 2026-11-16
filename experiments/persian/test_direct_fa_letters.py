@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from direct_fa_sequence import EciIndex, EciText, ScopedDirectPersianEngine, project
+from direct_fa_sequence import EciIndex, EciText, ScopedDirectPersianEngine, project, project_resilient
 from espeak_worker import EspeakWorker
 from hybrid_fa_frontend import DirectFirstPersian
 from persian_symbols import SYMBOL_TAGS, UNICODE_TAG
@@ -23,6 +23,10 @@ def reference_tests(frontend, reference):
                       frontend, allow_fallback=True)
         assert job.tagged == tag and not job.needs_native_validation
         assert [part.value for part in job.parts if isinstance(part, EciIndex)] == [1, 2]
+        if char in 'ًٌٍَُِّْٰ':
+            # A combining mark sent alone must also be named if the caller
+            # did not explicitly select character mode.
+            assert project_resilient((char,), frontend).tagged == tag, char
     assert frontend._worker is None, 'letter naming unexpectedly started eSpeak'
     word = (EciText('سل', character_mode=True), EciIndex(3),
             EciText('ام', character_mode=True), EciIndex(4))
