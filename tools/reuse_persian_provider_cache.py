@@ -24,6 +24,7 @@ EXPECTED = {
     'vendor/openevv61/Makefile.native',
     'vendor/openevv61/src/delta/delta_low.c',
     'vendor/openevv61/src/eci/lang/eci_voicetable.c',
+    'vendor/openevv61/src/port/evv_arena.c',
     'experiments/aragonese/build_native_probe.py',
 }
 CHECKED = {
@@ -60,6 +61,7 @@ def main():
             objects.append(BUILD / sources[0].relative_to(PROVIDER).with_suffix('.o'))
         objects.extend((BUILD / 'src/delta/delta_low.o',
                         BUILD / 'src/eci/lang/eci_voicetable.o',
+                        BUILD / 'src/port/evv_arena.o',
                         BUILD / 'reloq_persian_acoustics.o', BUILD / 'libreloq61.a'))
         # No provider object should depend on the changed public ECI header.
         # If one does, rebuilding that object is safer than assuming this.

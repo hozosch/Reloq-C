@@ -47,9 +47,12 @@
 #include <windows.h>
 
 static SRWLOCK arena_lock = SRWLOCK_INIT;
+static SRWLOCK low_lock = SRWLOCK_INIT;
 
 static void arena_take(void) { AcquireSRWLockExclusive(&arena_lock); }
 static void arena_drop(void) { ReleaseSRWLockExclusive(&arena_lock); }
+static void low_take(void) { AcquireSRWLockExclusive(&low_lock); }
+static void low_drop(void) { ReleaseSRWLockExclusive(&low_lock); }
 
 #else
 
@@ -58,9 +61,12 @@ static void arena_drop(void) { ReleaseSRWLockExclusive(&arena_lock); }
 #include <unistd.h>
 
 static pthread_mutex_t arena_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t low_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void arena_take(void) { pthread_mutex_lock(&arena_lock); }
 static void arena_drop(void) { pthread_mutex_unlock(&arena_lock); }
+static void low_take(void) { pthread_mutex_lock(&low_lock); }
+static void low_drop(void) { pthread_mutex_unlock(&low_lock); }
 
 #endif
 
@@ -679,6 +685,9 @@ typedef struct low_head {
     int              used;
 } low_head;
 
+/* Phoneme reports and named indexes can be produced concurrently by
+ * different voices. Both opening the region and its free list require the
+ * low_lock; it is separate from the main Delta arena lock. */
 static unsigned char *low_base;
 static low_head      *low_free;
 
@@ -715,8 +724,13 @@ void *evv_low_alloc(size_t n)
     size_t    want;
     low_head *b;
 
-    if (n == 0 || !low_open())
+    if (n == 0)
         return 0;
+    low_take();
+    if (!low_open()) {
+        low_drop();
+        return 0;
+    }
 
     want = (n + 7u) & ~(size_t)7u;
     for (b = low_free; b != 0; b = b->next) {
@@ -733,8 +747,11 @@ void *evv_low_alloc(size_t n)
             b->size = want;
         }
         b->used = 1;
-        return (void *)(b + 1);
+        void *result = (void *)(b + 1);
+        low_drop();
+        return result;
     }
+    low_drop();
     return 0;
 }
 
@@ -756,6 +773,7 @@ void evv_low_free(void *p)
 
     if (p == 0)
         return;
+    low_take();
     if ((unsigned char *)p < low_base
         || (unsigned char *)p >= low_base + LOW_BYTES) {
         fprintf(stderr, "evv: %p was given back to the low region and did not"
@@ -764,6 +782,7 @@ void evv_low_free(void *p)
     }
     b = (low_head *)p - 1;
     b->used = 0;
+    low_drop();
 }
 
 int32_t evv_ref_checked(const void *p)

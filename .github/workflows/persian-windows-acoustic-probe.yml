@@ -20,6 +20,8 @@ on:
       - eci/Makefile
       - eci/test_persian_acoustics.py
       - eci/test_concurrent_startup.py
+      - tests/test_low_arena_concurrent.c
+      - vendor/openevv61/src/port/evv_arena.c
       - experiments/persian/direct_fa_*.c
       - experiments/persian/direct_fa_*.h
       - experiments/persian/direct_fa_*.inc

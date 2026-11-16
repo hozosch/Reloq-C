@@ -147,6 +147,9 @@ eci_converter_failure_probe.exe: ../tests/test_reloq_converter_failure.c $(WINDO
 test_reloq_hash_delete: ../tests/test_reloq_hash_delete.c $(RULES61)
 	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -DEVV_ARENA=1 -I../vendor/openevv61/src/port $< $(RULES61) -pthread -lm -o $@
 
+test_low_arena_concurrent: ../tests/test_low_arena_concurrent.c ../vendor/openevv61/src/port/evv_arena.c
+	$(CC) $(CFLAGS) $(SECTIONS) -DEVV_ARENA=1 -I../vendor/openevv61/src/port $^ -pthread -Wl,--gc-sections -o $@
+
 test_reloq_native_rules: ../tests/test_reloq_native_rules.c $(OBJECTS) $(RULES61)
 	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -I../vendor/openevv61/include $< $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections -lm -o $@
 
