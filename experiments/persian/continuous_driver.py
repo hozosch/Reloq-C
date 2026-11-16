@@ -36,7 +36,10 @@ _FINAL_U = re.compile(r"(?:u|'u:')\]$")
 _INITIAL_A = re.compile(r"^`\[\.[012](?:a|'a:')")
 _DASHES = '-‐–—'
 _UNICODE_DASHES = '‐–—'
-_PARALLEL_MIN = 96
+# Even short mixed labels benefit from planning the independent contour on
+# the already prepared second voice. Nothing from an utterance is retained;
+# the single-core and unavailable-worker paths still use serial planning.
+_PARALLEL_MIN = 1
 _FAST_PILOT_MIN = 80
 _FAST_ENGLISH_PREFIX_MIN_MS = 200
 

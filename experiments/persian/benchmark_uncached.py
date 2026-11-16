@@ -19,6 +19,7 @@ from _reloq_eci_transport import EciTextTransport
 from _reloq_persian_frames import FrameStream
 from _reloq_eci_direct import EciIndex, NATIVE_SPEED, NATIVE_WPM, SAMPLE_RATE
 from nvda_driver_probe import US_ENGLISH, make_language_engine
+import continuous_driver
 
 
 MIXED = (
@@ -140,6 +141,18 @@ def main():
                   'uncached_fallback_repeated': measure(args, streaming=True, fallback=True, repeated=True),
                   'uncached_fallback_after_stop': measure(args, streaming=True, fallback=True, cancel_before=True),
                   'native_english': measure(args, streaming=False, english=True)}
+        # Compare the old long-only threshold and the current shorter-label
+        # threshold in this same environment. Each measurement creates fresh
+        # handles and renders every text again; it is not a speech cache.
+        original_parallel_min = continuous_driver._PARALLEL_MIN
+        try:
+            comparisons = {}
+            for threshold in (96, 1, 1, 96):
+                continuous_driver._PARALLEL_MIN = threshold
+                comparisons.setdefault(str(threshold), []).append(measure(args, streaming=True, short=True))
+            result['parallel_threshold_comparison'] = comparisons
+        finally:
+            continuous_driver._PARALLEL_MIN = original_parallel_min
     finally:
         FrameStream.available = staticmethod(args.available)
     result['reference_backend'] = 'worker' if args.worker is not None else 'in-process'
