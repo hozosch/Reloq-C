@@ -228,6 +228,7 @@ jobs:
             persian-nvda-results/result.json
             persian-nvda-results/nvda.log
             persian-timing/uncached-timing.json
+            persian-timing/uncached-shared-core.json
             persian-timing/espeak-vowels.json
             persian-timing/espeak-alamat.json
           if-no-files-found: ignore
