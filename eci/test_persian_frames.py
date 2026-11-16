@@ -38,8 +38,17 @@ def main():
                 assert voice.speak(parts, rendered.extend,
                                    lambda value: rendered_marks.append((value, len(rendered) // 2)))
                 captured = capture.capture(voice, parts)
+                # Compare the native PCM path with the former per-frame
+                # Python callback, including exact source-index positions.
+                storage = capture._store_pcm
+                capture._store_pcm = None
+                try:
+                    callbacks = capture.capture(voice, parts)
+                finally:
+                    capture._store_pcm = storage
                 silent = capture.capture(voice, parts, audio=False)
-                assert captured and silent and captured.pcm == rendered
+                assert captured and callbacks and silent and captured.pcm == callbacks.pcm == rendered
+                assert captured.frame_bytes == callbacks.frame_bytes and captured.indexes == callbacks.indexes
                 assert captured.indexes == tuple(rendered_marks) == silent.indexes
                 assert len(silent.pcm) == len(captured.pcm) and silent.frame_bytes == captured.frame_bytes
                 rows, replayed, indexes = captured.frames(), bytearray(), []

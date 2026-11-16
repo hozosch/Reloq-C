@@ -21,16 +21,25 @@ def add_profiles(languages, library: Path):
         return languages
     try:
         dll = ctypes.CDLL(str(library.resolve()))
-        getattr(dll, 'reloq_fa_acoustic_scope')
-        getattr(dll, 'reloq_fa_native_onsets')
-        getattr(dll, 'reloq_fa_native_geminates')
-        for name in ('reloq_fa_capture_begin', 'reloq_fa_capture_end', 'reloq_fa_capture_release',
-                     'reloq_fa_replay_epoch', 'reloq_fa_replay_frames'):
-            getattr(dll, name)
+        def require(handle, public, legacy):
+            if getattr(handle, public, None) is None:
+                getattr(handle, legacy)
+        for public, legacy in (('eciPersianAcousticScope', 'reloq_fa_acoustic_scope'),
+                               ('eciPersianNativeOnsets', 'reloq_fa_native_onsets'),
+                               ('eciPersianNativeGeminates', 'reloq_fa_native_geminates'),
+                               ('eciPersianCaptureBegin', 'reloq_fa_capture_begin'),
+                               ('eciPersianCaptureEnd', 'reloq_fa_capture_end'),
+                               ('eciPersianCaptureRelease', 'reloq_fa_capture_release'),
+                               ('eciPersianReplayEpoch', 'reloq_fa_replay_epoch'),
+                               ('eciPersianReplayFrames', 'reloq_fa_replay_frames')):
+            require(dll, public, legacy)
         text_dll = dll if text_library.resolve() == library.resolve() else ctypes.CDLL(str(text_library.resolve()))
-        for name in ('reloq_fa_direct_text', 'reloq_fa_direct_number',
-                     'reloq_fa_direct_letter', 'reloq_fa_direct_free', 'reloq_fa_pinglish_word'):
-            getattr(text_dll, name)
+        for public, legacy in (('eciPersianTranslateUtf8', 'reloq_fa_direct_text'),
+                               ('eciPersianNumber', 'reloq_fa_direct_number'),
+                               ('eciPersianLetter', 'reloq_fa_direct_letter'),
+                               ('eciPersianRelease', 'reloq_fa_direct_free'),
+                               ('eciPersianPinglishWord', 'reloq_fa_pinglish_word')):
+            require(text_dll, public, legacy)
     except (OSError, AttributeError):
         return languages
     return {**languages, PERSIAN_PROBE.id: PERSIAN_PROBE, PINGLISH_PROBE.id: PINGLISH_PROBE}

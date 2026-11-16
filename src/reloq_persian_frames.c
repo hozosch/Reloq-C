@@ -16,8 +16,10 @@
 
 struct capture_state {
     struct reloq_fa_frame *frames;
+    int16_t *pcm;
     size_t count, capacity, maximum, samples;
-    int active, failed, controls_only;
+    size_t pcm_capacity;
+    int active, failed, controls_only, store_pcm;
 };
 static _Thread_local struct capture_state capture;
 
@@ -26,6 +28,7 @@ FA_EXPORT int reloq_fa_capture_begin(size_t maximum)
     if(capture.active || !maximum || maximum>120000 ||
        maximum>SIZE_MAX/sizeof *capture.frames)return -1;
     free(capture.frames);
+    free(capture.pcm);
     capture=(struct capture_state){.maximum=maximum,.active=1};
     return 0;
 }
@@ -41,14 +44,51 @@ FA_EXPORT const struct reloq_fa_frame *reloq_fa_capture_end(size_t *count, int *
 FA_EXPORT void reloq_fa_capture_release(void)
 {
     free(capture.frames);
+    free(capture.pcm);
     capture=(struct capture_state){0};
 }
 
 FA_EXPORT int reloq_fa_capture_set_controls_only(int enabled)
 {
-    if(!capture.active || (enabled!=0 && enabled!=1))return -1;
+    if(!capture.active || (enabled!=0 && enabled!=1) || (enabled && capture.store_pcm))return -1;
     capture.controls_only=enabled;
     return 0;
+}
+
+FA_EXPORT int reloq_fa_capture_set_pcm_storage(int enabled)
+{
+    if(!capture.active || (enabled!=0 && enabled!=1) || (enabled && capture.controls_only))return -1;
+    capture.store_pcm=enabled;
+    return 0;
+}
+
+int reloq_fa_capture_pcm_storage(void)
+{return capture.active && capture.store_pcm;}
+
+int reloq_fa_capture_append_pcm(const int16_t *samples,size_t count)
+{
+    /* Bound per-request memory independently of the frame count. */
+    const size_t limit=(size_t)64*1024*1024;
+    if(!capture.active || !capture.store_pcm || (!samples && count) ||
+       count>limit-capture.samples) {capture.failed=1;return -1;}
+    size_t needed=capture.samples+count;
+    if(needed>capture.pcm_capacity) {
+        size_t next=capture.pcm_capacity?capture.pcm_capacity:4096;
+        while(next<needed)next=next>limit/2?limit:next*2;
+        void *data=realloc(capture.pcm,next*sizeof *capture.pcm);
+        if(!data){capture.failed=1;return -1;}
+        capture.pcm=data;capture.pcm_capacity=next;
+    }
+    if(count)memcpy(capture.pcm+capture.samples,samples,count*sizeof *samples);
+    capture.samples=needed;
+    return 0;
+}
+
+FA_EXPORT const int16_t *reloq_fa_capture_pcm(size_t *count)
+{
+    if(!count || capture.active || !capture.store_pcm)return NULL;
+    *count=capture.samples;
+    return capture.pcm;
 }
 
 int reloq_fa_capture_controls_only(void)
@@ -65,7 +105,7 @@ int reloq_fa_capture_advance_samples(size_t count)
 }
 
 FA_EXPORT size_t reloq_fa_capture_sample_count(void)
-{ return capture.active && capture.controls_only ? capture.samples : SIZE_MAX; }
+{ return capture.active && (capture.controls_only || capture.store_pcm) ? capture.samples : SIZE_MAX; }
 
 /* Scan the already-rendered pilot in native code. Keep the exact threshold
  * and sample position used by the planner; this does not cache audio. */

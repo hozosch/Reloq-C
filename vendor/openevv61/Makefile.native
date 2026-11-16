@@ -3,6 +3,7 @@
 # ReLoq private native-C rule provider. No bytecode or interpreter build.
 CC ?= cc
 AR ?= ar
+PYTHON ?= $(if $(filter win32,$(PORT)),python,python3)
 OPT ?= -O2
 # Rule functions walk records once per utterance. Avoid duplicating their
 # large decision trees for speed; the per-sample DSP keeps OPT unchanged.
@@ -27,6 +28,7 @@ OBJECTS += $(BUILD)/reloq_voice_filter.o
 OBJECTS += $(BUILD)/reloq_orthography.o
 OBJECTS += $(BUILD)/reloq_german_word_edges.o
 OBJECTS += $(BUILD)/reloq_english_word_edges.o
+OBJECTS += $(BUILD)/reloq_persian_acoustics.o
 $(filter $(BUILD)/lang/%,$(OBJECTS)): Makefile.native
 HEADERS := $(foreach d,$(DIRS),$(wildcard $(d)/*.h)) $(wildcard include/*.h) $(foreach lang,$(LANGUAGES),$(wildcard lang/$(lang)/*.h))
 HEADERS += ../../include/reloq_voice_filter.h
@@ -34,6 +36,23 @@ HEADERS += ../../include/reloq_voice_controls.h
 CFLAGS_NATIVE := $(OPT) $(if $(filter posix,$(PORT)),-fPIC) -std=gnu11 -fno-strict-aliasing -ffp-contract=off -fvisibility=hidden -ffunction-sections -fdata-sections -MMD -MP -DEVV_ARENA=1 -DEVV_NO_BYTECODE -DEVV_ROM_JAJP $(INCLUDES)
 CFLAGS_NATIVE += $(if $(filter 1,$(RULE_DIAGNOSTICS)),-DEVV_RULE_DIAGNOSTICS=1)
 CFLAGS_NATIVE += $(if $(filter 1,$(PARAMETERS_ONLY)),-DRELOQ61_PARAMETERS_ONLY=1)
+
+# Compile the accepted Persian adaptations into the same provider used by
+# Windows and Android. They are selected only in a request-local scope;
+# the normal Finnish and donor language rules remain the default.
+PERSIAN_NAMES := delta_rules_c01_fifi.c delta_rules_c02_fifi.c delta_rules_c05_dede61.c delta_rules_c06_enus61.c delta_rules_c07_dede61.c delta_rules_c08_fifi.c delta_rules_c08_frfr61.c delta_rules_c12_fifi.c delta_rules_c13_fifi.c delta_rules_c15_fifi.c delta_rules_c16_fifi.c delta_rules_c17_fifi.c delta_rules_c22_fifi.c delta_rules_c23_fifi.c delta_rules_c26_fifi.c delta_rules_c28_fifi.c delta_rules_c29_fifi.c delta_rules_c30_fifi.c
+PERSIAN_SOURCES := $(filter $(addprefix %/,$(PERSIAN_NAMES)),$(SOURCES))
+PERSIAN_PREP := $(BUILD)/persian-provider
+$(PERSIAN_PREP)/.stamp: $(PERSIAN_SOURCES) ../../experiments/persian/build_native_probe.py ../../experiments/aragonese/build_native_probe.py ../../tools/prepare_persian_provider.py
+	$(PYTHON) ../../tools/prepare_persian_provider.py $(PERSIAN_PREP)
+$(PERSIAN_PREP)/%.c: $(PERSIAN_PREP)/.stamp
+	@test -f $@
+define persian_rule
+$(BUILD)/$(1:.c=.o): $(PERSIAN_PREP)/$(notdir $(1))
+	@mkdir -p $$(dir $$@)
+	$$(CC) $$(CFLAGS_NATIVE) $$(RULE_OPT) -DRELOQ_FA_SCOPED_ONSETS=1 -c $(PERSIAN_PREP)/$(notdir $(1)) -o $$@
+endef
+$(foreach source,$(PERSIAN_SOURCES),$(eval $(call persian_rule,$(source))))
 .PHONY: all clean
 all: $(BUILD)/libreloq61.a
 probe: $(BUILD)/reloq61-probe
@@ -60,6 +79,9 @@ $(BUILD)/reloq_german_word_edges.o: ../../src/reloq_german_word_edges.c ../../in
 $(BUILD)/src/reloq61_word_edges.o: src/reloq61_german_alphabet.inc ../../include/reloq_german_word_edges.h
 $(BUILD)/lang/enus61/text_rules_enus61.o $(BUILD)/lang/dede61/text_rules_dede61.o: src/reloq61_text_case.inc
 $(BUILD)/reloq_english_word_edges.o: ../../src/reloq_english_word_edges.c ../../include/reloq_english_word_edges.h
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS_NATIVE) -c $< -o $@
+$(BUILD)/reloq_persian_acoustics.o: ../../src/reloq_persian_acoustics.c ../../src/reloq_persian_acoustics.h
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS_NATIVE) -c $< -o $@
 $(BUILD)/src/reloq61_english_word_edges.o: src/reloq61_english_alphabet.inc ../../include/reloq_english_word_edges.h

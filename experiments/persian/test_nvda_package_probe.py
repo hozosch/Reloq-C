@@ -28,8 +28,8 @@ def main():
             'doc/source.json': b'{"build":"normal release"}',
             'locale/de/manifest.ini': b'summary = "Alt"\ndescription = "Alt"\n'}
     entries = add_persian(base)
-    assert 'Persian acoustic probe' in json.loads(entries['doc/source.json'])['build']
-    assert b'1.5.0-dev113' in entries['manifest.ini']
+    assert 'Persian acoustic core' in json.loads(entries['doc/source.json'])['build']
+    assert b'1.5.0-dev114' in entries['manifest.ini']
     assert 'Persisch- und Pinglish-Test' in entries['locale/de/manifest.ini'].decode('utf8')
     assert b'add_profiles(dict(LANGUAGES), DLL)' in entries[PREFIX + '__init__.py']
     assert b'lambda: make_engine(' in entries[PREFIX + '__init__.py']
@@ -97,6 +97,9 @@ def main():
                 assert frame_api.FrameReplay(dll)._play.__name__ == 'eciPersianReplayFrames'
                 assert frontend._project_direct is not None
                 assert frontend._project_direct.__name__ == 'eciPersianProjectUtf8'
+                assert frontend._translate.__name__ == 'eciPersianTranslateUtf8'
+                assert frontend._number.__name__ == 'eciPersianNumber'
+                assert frontend._letter.__name__ == 'eciPersianLetter'
                 assert frontend.analyze_direct('علامت').parts[0].text == '`[.0A.1la.0mAt]'
                 assert frontend.analyze_direct('بدبخت').parts[0].text == '`[.1bAd.0bAGt]'
                 assert frontend.analyze_direct('سوال').parts[0].text == '`[.1so]~`[.0al]'

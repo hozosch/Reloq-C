@@ -7,6 +7,17 @@ on:
       - experiments/persian/build_native_probe.py
       - experiments/persian/build_windows_probe.py
       - experiments/persian/scoped_acoustics_probe.c
+      - tools/prepare_persian_provider.py
+      - src/reloq_persian_acoustics.c
+      - src/reloq_persian_acoustics.h
+      - src/reloq_persian_frames.c
+      - src/reloq_persian_frame_internal.h
+      - src/reloq_eci.c
+      - src/reloq_persian_direct.h
+      - include/reloq_eci.h
+      - vendor/openevv61/Makefile.native
+      - eci/Makefile
+      - eci/test_persian_acoustics.py
       - experiments/persian/direct_fa_*.c
       - experiments/persian/direct_fa_*.h
       - experiments/persian/direct_fa_*.inc
@@ -40,7 +51,7 @@ jobs:
         id: provider
         with:
           path: vendor/openevv61/build/windows-release
-          key: persian-windows-provider-gcc14-v1-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c') }}
+          key: persian-windows-provider-gcc14-v2-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c', 'src/reloq_persian_acoustics.c', 'src/reloq_persian_acoustics.h', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
       - uses: actions/cache@v4
         id: host
         with:
@@ -75,6 +86,8 @@ jobs:
         run: |
           python -B experiments/persian/test_windows_acoustics.py --baseline eci/eci.dll --candidate persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Windows Persian acoustic isolation failed' }
+          python -B eci/test_persian_acoustics.py --library eci/eci.dll --reference persian-windows-probe/eci_persian_probe.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Shared Windows provider does not match the accepted Persian acoustics' }
           & eci/eci_classic_noise_probe.exe
           if ($LASTEXITCODE -ne 0) { throw 'Windows high-rate sibilant spectrum test failed' }
           python -B experiments/persian/test_embedded_text_rules.py --library persian-windows-probe/eci_persian_probe.dll

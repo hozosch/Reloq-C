@@ -38,6 +38,8 @@ RULES61_SOURCES += ../src/reloq_german_word_edges.c ../include/reloq_german_word
 RULES61_SOURCES += ../vendor/openevv61/src/reloq61_german_alphabet.inc
 RULES61_SOURCES += ../vendor/openevv61/src/reloq61_duration_math.h
 RULES61_SOURCES += ../src/reloq_english_word_edges.c ../include/reloq_english_word_edges.h
+RULES61_SOURCES += ../src/reloq_persian_acoustics.c ../src/reloq_persian_acoustics.h
+RULES61_SOURCES += ../tools/prepare_persian_provider.py ../experiments/persian/build_native_probe.py ../experiments/aragonese/build_native_probe.py
 RULES61_SOURCES += ../vendor/openevv61/src/reloq61_english_alphabet.inc
 RULES61_SOURCES += ../vendor/openevv61/src/reloq61_latin_data.inc
 RULES61_SOURCES += ../vendor/openevv61/src/reloq61_text_case.inc
@@ -58,7 +60,7 @@ libreloq_eci.so test_reloq_eci $(WINDOWS_OUTPUT): Makefile
 # process is needed by this target.
 # The scalar endpoint filter is compiled once, with its provider adapter,
 # so ordinary LTO can remove the temporary language-cell boundary as well.
-SOURCE := $(filter-out ../src/reloq_host.c ../src/reloq_voice_filter.c ../src/reloq_orthography.c ../src/reloq_german_word_edges.c ../src/reloq_english%.c,$(wildcard ../src/*.c))
+SOURCE := $(filter-out ../src/reloq_host.c ../src/reloq_voice_filter.c ../src/reloq_orthography.c ../src/reloq_german_word_edges.c ../src/reloq_persian_acoustics.c ../src/reloq_english%.c,$(wildcard ../src/*.c))
 SOURCE += ../src/reloq_english_spr.c
 HEADERS := $(wildcard ../src/reloq_english*.inc ../src/reloq_english*.h) ../src/reloq_unicode_data.inc
 HEADERS += ../src/reloq_character_data.inc
@@ -93,7 +95,7 @@ $(addprefix build/posix/,$(addsuffix .o,$(PERSIAN_COMPONENTS))) $(addprefix $(WI
 build/posix/reloq_persian_transition.o $(WINDOWS_BUILD)/reloq_persian_transition.o $(ANDROID_BUILD)/reloq_persian_transition.o: ../src/reloq_persian_transition.h
 build/posix/reloq_persian_frames.o $(WINDOWS_BUILD)/reloq_persian_frames.o $(ANDROID_BUILD)/reloq_persian_frames.o: ../src/reloq_persian_frame_internal.h ../src/reloq_persian_transition.h
 build/posix/reloq_rules61.o $(WINDOWS_BUILD)/reloq_rules61.o $(ANDROID_BUILD)/reloq_rules61.o: ../src/reloq_persian_frame_internal.h
-build/posix/reloq_eci.o $(WINDOWS_BUILD)/reloq_eci.o $(ANDROID_BUILD)/reloq_eci.o: ../src/reloq_persian_direct.h ../src/reloq_persian_frame_internal.h ../experiments/persian/direct_fa_text.h
+build/posix/reloq_eci.o $(WINDOWS_BUILD)/reloq_eci.o $(ANDROID_BUILD)/reloq_eci.o: ../src/reloq_persian_direct.h ../src/reloq_persian_acoustics.h ../src/reloq_persian_frame_internal.h ../experiments/persian/direct_fa_text.h
 $(ANDROID_BUILD)/%.o: ../src/%.c $(HEADERS)
 	@mkdir -p $(dir $@)
 	$(ANDROID_CC) $(CPPFLAGS) $(ANDROID_CFLAGS) $(SECTIONS) -ffp-contract=off -fPIC -fvisibility=hidden -I../include -c $< -o $@

@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 
 PATHS = ('eci/Makefile', 'src', 'include', 'vendor/openevv61',
+         'tools/prepare_persian_provider.py',
          'experiments/aragonese/build_native_probe.py',
          'experiments/persian/build_native_probe.py',
          'experiments/persian/build_windows_probe.py',
@@ -16,7 +17,8 @@ PATHS = ('eci/Makefile', 'src', 'include', 'vendor/openevv61',
          'experiments/persian/continuous_replay.inc',
          'experiments/persian/scoped_acoustics_probe.c',
          'experiments/persian/test_embedded_text_rules.py',
-         'eci/test_persian_project.py', 'eci/test_persian_frames.py', 'tests/test_reloq_classic_noise.c',
+         'eci/test_persian_project.py', 'eci/test_persian_frames.py', 'eci/test_persian_acoustics.py',
+         'tests/test_reloq_classic_noise.c',
          'experiments/persian/direct_fa_*.c',
          'experiments/persian/direct_fa_*.h',
          'experiments/persian/direct_fa_*.inc',

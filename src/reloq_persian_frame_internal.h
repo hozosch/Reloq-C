@@ -10,6 +10,22 @@ int reloq_fa_capture_begin(size_t maximum);
 const struct reloq_fa_frame *reloq_fa_capture_end(size_t *count, int *failed);
 void reloq_fa_capture_release(void);
 int reloq_fa_capture_set_controls_only(int enabled);
+int reloq_fa_capture_set_pcm_storage(int enabled);
+int reloq_fa_capture_pcm_storage(void);
+int reloq_fa_capture_append_pcm(const int16_t *samples,size_t count);
+const int16_t *reloq_fa_capture_pcm(size_t *count);
+int64_t reloq_fa_last_audible_sample(const unsigned char *pcm,size_t bytes);
+int reloq_fa_frame_ticks(const struct reloq_fa_frame *rows,size_t count,int64_t *ticks);
+int reloq_fa_frame_timeline(const struct reloq_fa_frame *rows,size_t count,double *times);
+void reloq_fa_recompute_frication(struct reloq_fa_frame *rows,size_t count);
+int reloq_fa_bridge_continuation(const struct reloq_fa_frame *input,
+    struct reloq_fa_frame *output,const double *times,const size_t *ends,
+    const unsigned char *skip,size_t frame_count,size_t segment_count,
+    double window_ms,unsigned char *changed);
+int reloq_fa_dense_curve(const struct reloq_fa_frame *rows,size_t count,
+    unsigned column,float *out,size_t length);
+int reloq_fa_fit_pitch(struct reloq_fa_frame *rows,size_t count,const float *pilot,
+    size_t length,int64_t start,int64_t end,int64_t a,int64_t b);
 int reloq_fa_capture_controls_only(void);
 int reloq_fa_capture_active(void);
 int reloq_fa_capture_advance_samples(size_t count);

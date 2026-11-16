@@ -22,6 +22,8 @@
 #include "reloq_equalizer.h"
 #include "reloq_wordseg.h"
 #include "reloq_persian_direct.h"
+#include "reloq_persian_acoustics.h"
+#include "reloq_persian_frame_internal.h"
 
 #include <limits.h>
 #include <math.h>
@@ -873,6 +875,29 @@ int ECICALL eciPersianProjectUtf8(const char *text,size_t bytes,
 
 void ECICALL eciPersianRelease(void *pointer)
 {reloq_fa_direct_free(pointer);}
+
+int ECICALL eciPersianTranslateUtf8(const char *text,size_t bytes,char **output,
+    size_t **source_map,size_t *error_offset)
+{return reloq_fa_direct_text(text,bytes,output,source_map,error_offset);}
+
+int ECICALL eciPersianNumber(const char *text,size_t bytes,size_t *consumed,
+    char *output,size_t capacity)
+{return reloq_fa_direct_number(text,bytes,consumed,output,capacity);}
+
+const char *ECICALL eciPersianLetter(uint32_t codepoint)
+{return reloq_fa_direct_letter(codepoint);}
+
+int ECICALL eciPersianPinglishWord(const char *word,size_t bytes,char *output,size_t capacity)
+{return reloq_fa_pinglish_word(word,bytes,output,capacity);}
+
+int ECICALL eciPersianAcousticScope(int active)
+{return reloq_fa_acoustic_scope(active);}
+
+int ECICALL eciPersianNativeOnsets(const uint32_t *words,size_t count)
+{return reloq_fa_native_onsets(words,count);}
+
+int ECICALL eciPersianNativeGeminates(const uint32_t *pairs,size_t count)
+{return reloq_fa_native_geminates(pairs,count);}
 
 int ECICALL eciAddTextUtf8(ECIHand handle,const void *text,size_t bytes,int mode)
 {
@@ -1751,7 +1776,9 @@ static int flush_pcm(struct pcm_bridge *b)
     size_t count = b->pcm_used;
     b->pcm_used = 0;
     struct reloq_eci_engine *e = b->engine;
-    int status=notify_callback(e,RELOQ_ECI_WAVEFORM_BUFFER,(int)count);
+    int status=reloq_fa_capture_pcm_storage() ?
+        (reloq_fa_capture_append_pcm(e->output,count) ? RELOQ_ECI_MEMORY : RELOQ_ECI_OK) :
+        notify_callback(e,RELOQ_ECI_WAVEFORM_BUFFER,(int)count);
     if(status!=RELOQ_ECI_OK) {
         b->callback_refused=status==RELOQ_ECI_CALLBACK;
         return -1;
@@ -1796,7 +1823,9 @@ static int send_pcm(void *context, const int16_t *pcm, size_t samples)
             b->equalizer_initialized=1;
         }
         reloq_equalizer_process(&b->equalizer,e->output,count);
-        int status=notify_callback(e,RELOQ_ECI_WAVEFORM_BUFFER,(int)count);
+        int status=reloq_fa_capture_pcm_storage() ?
+            (reloq_fa_capture_append_pcm(e->output,count) ? RELOQ_ECI_MEMORY : RELOQ_ECI_OK) :
+            notify_callback(e,RELOQ_ECI_WAVEFORM_BUFFER,(int)count);
         if(status!=RELOQ_ECI_OK) {
             b->callback_refused=status==RELOQ_ECI_CALLBACK;
             return -1;
@@ -1894,6 +1923,29 @@ int ECICALL eciPersianCaptureSetControlsOnly(int enabled)
 {return reloq_fa_capture_set_controls_only(enabled);}
 size_t ECICALL eciPersianCaptureSampleCount(void)
 {return reloq_fa_capture_sample_count();}
+int ECICALL eciPersianCaptureSetPcmStorage(int enabled)
+{return reloq_fa_capture_set_pcm_storage(enabled);}
+const int16_t *ECICALL eciPersianCapturePcm(size_t *count)
+{return reloq_fa_capture_pcm(count);}
+int64_t ECICALL eciPersianLastAudibleSample(const unsigned char *pcm,size_t bytes)
+{return reloq_fa_last_audible_sample(pcm,bytes);}
+int ECICALL eciPersianFrameTicks(const struct reloq_fa_frame *rows,size_t count,int64_t *ticks)
+{return reloq_fa_frame_ticks(rows,count,ticks);}
+int ECICALL eciPersianFrameTimeline(const struct reloq_fa_frame *rows,size_t count,double *times)
+{return reloq_fa_frame_timeline(rows,count,times);}
+void ECICALL eciPersianRecomputeFrication(struct reloq_fa_frame *rows,size_t count)
+{reloq_fa_recompute_frication(rows,count);}
+int ECICALL eciPersianBridgeContinuation(const struct reloq_fa_frame *input,
+    struct reloq_fa_frame *output,const double *times,const size_t *ends,
+    const unsigned char *skip,size_t frame_count,size_t segment_count,
+    double window_ms,unsigned char *changed)
+{return reloq_fa_bridge_continuation(input,output,times,ends,skip,frame_count,segment_count,window_ms,changed);}
+int ECICALL eciPersianDenseCurve(const struct reloq_fa_frame *rows,size_t count,
+    unsigned column,float *out,size_t length)
+{return reloq_fa_dense_curve(rows,count,column,out,length);}
+int ECICALL eciPersianFitPitch(struct reloq_fa_frame *rows,size_t count,
+    const float *pilot,size_t length,int64_t start,int64_t end,int64_t a,int64_t b)
+{return reloq_fa_fit_pitch(rows,count,pilot,length,start,end,a,b);}
 uint32_t ECICALL eciPersianReplayEpoch(ECIHand handle)
 {return reloq_fa_replay_epoch(handle);}
 int ECICALL eciPersianReplayBegin(ECIHand handle,uint32_t epoch,void **stream)

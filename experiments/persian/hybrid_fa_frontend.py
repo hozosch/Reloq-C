@@ -163,31 +163,38 @@ def _translate_with_native_punctuation(probe, text: str, *, pinglish: bool = Fal
 class DirectFirstPersian:
     def __init__(self, native_library: Path, worker: Path, espeak_library: Path, data_parent: Path):
         self._dll = ctypes.CDLL(str(native_library.resolve()))
-        self._dll.reloq_fa_direct_text.argtypes = (
+        def function(public, legacy):
+            return getattr(self._dll, public, None) or getattr(self._dll, legacy)
+        self._translate = function('eciPersianTranslateUtf8', 'reloq_fa_direct_text')
+        self._free_direct = function('eciPersianRelease', 'reloq_fa_direct_free')
+        self._number = function('eciPersianNumber', 'reloq_fa_direct_number')
+        self._letter = function('eciPersianLetter', 'reloq_fa_direct_letter')
+        self._translate.argtypes = (
             ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_void_p),
             ctypes.POINTER(ctypes.POINTER(ctypes.c_size_t)), ctypes.POINTER(ctypes.c_size_t),
         )
-        self._dll.reloq_fa_direct_text.restype = ctypes.c_int
+        self._translate.restype = ctypes.c_int
         self._project_direct = getattr(self._dll, 'eciPersianProjectUtf8', None)
         self._free_projected = getattr(self._dll, 'eciPersianRelease', None)
         if self._project_direct is None or self._free_projected is None:
             self._project_direct = getattr(self._dll, 'reloq_fa_direct_project', None)
-            self._free_projected = self._dll.reloq_fa_direct_free
+            self._free_projected = self._free_direct
         if self._project_direct is not None:
             self._project_direct.argtypes = (ctypes.c_char_p, ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_ubyte), ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_size_t))
             self._project_direct.restype = ctypes.c_int
             self._free_projected.argtypes, self._free_projected.restype = (ctypes.c_void_p,), None
-        self._dll.reloq_fa_direct_number.argtypes = (
+        self._number.argtypes = (
             ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t),
             ctypes.c_void_p, ctypes.c_size_t,
         )
-        self._dll.reloq_fa_direct_number.restype = ctypes.c_int
-        self._dll.reloq_fa_direct_free.argtypes = (ctypes.c_void_p,)
-        self._dll.reloq_fa_direct_letter.argtypes = (ctypes.c_uint32,)
-        self._dll.reloq_fa_direct_letter.restype = ctypes.c_char_p
-        self._pinglish_word = getattr(self._dll, 'reloq_fa_pinglish_word', None)
+        self._number.restype = ctypes.c_int
+        self._free_direct.argtypes, self._free_direct.restype = (ctypes.c_void_p,), None
+        self._letter.argtypes = (ctypes.c_uint32,)
+        self._letter.restype = ctypes.c_char_p
+        self._pinglish_word = (getattr(self._dll, 'eciPersianPinglishWord', None) or
+                               getattr(self._dll, 'reloq_fa_pinglish_word', None))
         if self._pinglish_word is not None:
             self._pinglish_word.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t)
             self._pinglish_word.restype = ctypes.c_int
@@ -218,7 +225,7 @@ class DirectFirstPersian:
         output = ctypes.c_void_p()
         mapping = ctypes.POINTER(ctypes.c_size_t)()
         offset = ctypes.c_size_t()
-        status = self._dll.reloq_fa_direct_text(encoded, len(encoded), ctypes.byref(output),
+        status = self._translate(encoded, len(encoded), ctypes.byref(output),
                                                  ctypes.byref(mapping), ctypes.byref(offset))
         if status:
             return status, '', None, offset.value
@@ -226,8 +233,8 @@ class DirectFirstPersian:
             tagged = ctypes.string_at(output).decode('ascii')
             source_map = tuple(mapping[i] for i in range(len(encoded) + 1))
         finally:
-            self._dll.reloq_fa_direct_free(output)
-            self._dll.reloq_fa_direct_free(mapping)
+            self._free_direct(output)
+            self._free_direct(mapping)
         return 0, tagged, source_map, 0
 
     def project_direct(self, text: str, events):
@@ -282,7 +289,7 @@ class DirectFirstPersian:
                 raise RuntimeError('Persian text frontend is closed')
         normalized = unicodedata.normalize('NFKC', char)
         normalized = {'ك': 'ک', 'ي': 'ی', 'ى': 'ی'}.get(normalized, normalized)
-        value = self._dll.reloq_fa_direct_letter(ord(normalized)) if len(normalized) == 1 else None
+        value = self._letter(ord(normalized)) if len(normalized) == 1 else None
         tag = value.decode('ascii') if value is not None else SYMBOL_TAGS.get(char)
         if tag is None:
             name = latin_name(char)
@@ -421,7 +428,7 @@ class DirectFirstPersian:
             canonical = _reference_numeric_spelling(match.group()).encode('ascii')
             used = ctypes.c_size_t()
             output = ctypes.create_string_buffer(2048)
-            status = self._dll.reloq_fa_direct_number(canonical, len(canonical),
+            status = self._number(canonical, len(canonical),
                                                        ctypes.byref(used), output, len(output))
             if status != 0:
                 raise UnsupportedPronunciation('ambiguous or unsupported Persian number')

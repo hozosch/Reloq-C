@@ -67,36 +67,44 @@ class FrameCapture:
                                               'reloq_fa_capture_sample_count')
         if self._sample_count is not None:
             self._sample_count.argtypes, self._sample_count.restype = (), ctypes.c_size_t
-        self.dense_curve = getattr(dll, 'reloq_fa_dense_curve', None)
+        self._store_pcm = _native_function(dll, 'eciPersianCaptureSetPcmStorage',
+                                           'reloq_fa_capture_set_pcm_storage')
+        self._stored_pcm = _native_function(dll, 'eciPersianCapturePcm', 'reloq_fa_capture_pcm')
+        if self._store_pcm is not None:
+            self._store_pcm.argtypes, self._store_pcm.restype = (ctypes.c_int,), ctypes.c_int
+        if self._stored_pcm is not None:
+            self._stored_pcm.argtypes = (ctypes.POINTER(ctypes.c_size_t),)
+            self._stored_pcm.restype = ctypes.POINTER(ctypes.c_int16)
+        self.dense_curve = _native_function(dll, 'eciPersianDenseCurve', 'reloq_fa_dense_curve')
         if self.dense_curve is not None:
             self.dense_curve.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t, ctypes.c_uint,
                                          ctypes.POINTER(ctypes.c_float), ctypes.c_size_t)
             self.dense_curve.restype = ctypes.c_int
-        self.fit_pitch = getattr(dll, 'reloq_fa_fit_pitch', None)
+        self.fit_pitch = _native_function(dll, 'eciPersianFitPitch', 'reloq_fa_fit_pitch')
         if self.fit_pitch is not None:
             self.fit_pitch.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
                                        ctypes.POINTER(ctypes.c_float), ctypes.c_size_t,
                                        ctypes.c_int64, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64)
             self.fit_pitch.restype = ctypes.c_int
-        self.last_audible_sample = getattr(dll, 'reloq_fa_last_audible_sample', None)
+        self.last_audible_sample = _native_function(dll, 'eciPersianLastAudibleSample', 'reloq_fa_last_audible_sample')
         if self.last_audible_sample is not None:
             self.last_audible_sample.argtypes = (ctypes.c_char_p, ctypes.c_size_t)
             self.last_audible_sample.restype = ctypes.c_int64
-        self.frame_ticks = getattr(dll, 'reloq_fa_frame_ticks', None)
+        self.frame_ticks = _native_function(dll, 'eciPersianFrameTicks', 'reloq_fa_frame_ticks')
         if self.frame_ticks is not None:
             self.frame_ticks.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
                                          ctypes.POINTER(ctypes.c_int64))
             self.frame_ticks.restype = ctypes.c_int
-        self.frame_timeline = getattr(dll, 'reloq_fa_frame_timeline', None)
+        self.frame_timeline = _native_function(dll, 'eciPersianFrameTimeline', 'reloq_fa_frame_timeline')
         if self.frame_timeline is not None:
             self.frame_timeline.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
                                             ctypes.POINTER(ctypes.c_double))
             self.frame_timeline.restype = ctypes.c_int
-        self.recompute_frication = getattr(dll, 'reloq_fa_recompute_frication', None)
+        self.recompute_frication = _native_function(dll, 'eciPersianRecomputeFrication', 'reloq_fa_recompute_frication')
         if self.recompute_frication is not None:
             self.recompute_frication.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t)
             self.recompute_frication.restype = None
-        self.bridge_continuation = getattr(dll, 'reloq_fa_bridge_continuation', None)
+        self.bridge_continuation = _native_function(dll, 'eciPersianBridgeContinuation', 'reloq_fa_bridge_continuation')
         if self.bridge_continuation is not None:
             self.bridge_continuation.argtypes = (ctypes.POINTER(NativeFrame), ctypes.POINTER(NativeFrame),
                 ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_size_t),
@@ -114,8 +122,13 @@ class FrameCapture:
             if not audio and self._controls_only is not None and self._controls_only(1):
                 raise RuntimeError('cannot enable control-only frame capture')
             silent_clock = not audio and self._controls_only is not None and self._sample_count is not None
+            native_pcm = bool(audio and self._store_pcm is not None and self._stored_pcm is not None and
+                              self._sample_count is not None)
+            if native_pcm and self._store_pcm(1):
+                raise RuntimeError('cannot enable native PCM capture')
+            native_clock = silent_clock or native_pcm
             completed = voice.speak(parts, pcm.extend, lambda value: indexes.append(
-                (value, self._sample_count() if silent_clock else len(pcm) // 2)))
+                (value, self._sample_count() if native_clock else len(pcm) // 2)))
             sample_count = self._sample_count() if silent_clock else 0
             count, failed = ctypes.c_size_t(), ctypes.c_int()
             pointer = self._end(ctypes.byref(count), ctypes.byref(failed))
@@ -126,7 +139,15 @@ class FrameCapture:
             if count.value and not pointer:
                 raise RuntimeError('native frame buffer is missing')
             data = ctypes.string_at(pointer, count.value * ctypes.sizeof(NativeFrame)) if count.value else b''
-            return NativeCapture(bytes(sample_count * 2) if silent_clock else bytes(pcm), tuple(indexes), data)
+            if native_pcm:
+                stored_count = ctypes.c_size_t()
+                stored = self._stored_pcm(ctypes.byref(stored_count))
+                if stored_count.value and not stored:
+                    raise RuntimeError('native PCM capture is missing')
+                sound = ctypes.string_at(stored, stored_count.value * 2) if stored_count.value else b''
+            else:
+                sound = bytes(sample_count * 2) if silent_clock else bytes(pcm)
+            return NativeCapture(sound, tuple(indexes), data)
         finally:
             # release is valid after either a normal end or a failed synthesis.
             # An exception can leave capture active, but release clears it too.

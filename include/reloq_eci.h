@@ -293,6 +293,25 @@ ECIAPI int ECICALL eciPersianProjectUtf8(const char *text,size_t bytes,
     char **output,size_t *target_offsets,size_t *error_offset);
 ECIAPI void ECICALL eciPersianRelease(void *pointer);
 
+/* Direct text, number, character and Pinglish building blocks. Text and
+ * offset arrays are caller-owned and must be released with PersianRelease.
+ * Uncovered input is reported to the caller for an appropriate fallback. */
+ECIAPI int ECICALL eciPersianTranslateUtf8(const char *text,size_t bytes,
+    char **output,size_t **source_map,size_t *error_offset);
+ECIAPI int ECICALL eciPersianNumber(const char *text,size_t bytes,size_t *consumed,
+    char *output,size_t capacity);
+ECIAPI const char *ECICALL eciPersianLetter(uint32_t codepoint);
+ECIAPI int ECICALL eciPersianPinglishWord(const char *word,size_t bytes,
+    char *output,size_t capacity);
+
+/* Select the approved Finnish-based Persian acoustic rules for the current
+ * synthesis thread. Restore the returned previous state on every exit.
+ * Word and affricate ordinals are request-local; clear both lists after use.
+ * These low-level functions do not register a Persian voice or handle text. */
+ECIAPI int ECICALL eciPersianAcousticScope(int active);
+ECIAPI int ECICALL eciPersianNativeOnsets(const uint32_t *words,size_t count);
+ECIAPI int ECICALL eciPersianNativeGeminates(const uint32_t *pairs,size_t count);
+
 /* Request-local frame capture/replay for a future native mixed-language
  * planner. Frame definitions are in reloq_persian_frames.h. Begin, capture,
  * end and release must run on the same synthesis thread. The returned rows
@@ -306,6 +325,22 @@ ECIAPI const struct reloq_fa_frame *ECICALL eciPersianCaptureEnd(size_t *count,i
 ECIAPI void ECICALL eciPersianCaptureRelease(void);
 ECIAPI int ECICALL eciPersianCaptureSetControlsOnly(int enabled);
 ECIAPI size_t ECICALL eciPersianCaptureSampleCount(void);
+/* Optional request-local PCM capture avoids callbacks for each tiny frame.
+ * Retrieve the samples after CaptureEnd and before CaptureRelease. */
+ECIAPI int ECICALL eciPersianCaptureSetPcmStorage(int enabled);
+ECIAPI const int16_t *ECICALL eciPersianCapturePcm(size_t *count);
+ECIAPI int64_t ECICALL eciPersianLastAudibleSample(const unsigned char *pcm,size_t bytes);
+ECIAPI int ECICALL eciPersianFrameTicks(const struct reloq_fa_frame *rows,size_t count,int64_t *ticks);
+ECIAPI int ECICALL eciPersianFrameTimeline(const struct reloq_fa_frame *rows,size_t count,double *times);
+ECIAPI void ECICALL eciPersianRecomputeFrication(struct reloq_fa_frame *rows,size_t count);
+ECIAPI int ECICALL eciPersianBridgeContinuation(const struct reloq_fa_frame *input,
+    struct reloq_fa_frame *output,const double *times,const size_t *ends,
+    const unsigned char *skip,size_t frame_count,size_t segment_count,
+    double window_ms,unsigned char *changed);
+ECIAPI int ECICALL eciPersianDenseCurve(const struct reloq_fa_frame *rows,size_t count,
+    unsigned column,float *out,size_t length);
+ECIAPI int ECICALL eciPersianFitPitch(struct reloq_fa_frame *rows,size_t count,
+    const float *pilot,size_t length,int64_t start,int64_t end,int64_t a,int64_t b);
 /* Replay uses the handle's output callbacks and stop epoch. An incremental
  * stream owns the handle until End and must always be ended on its owner
  * thread. It returns the normal RELOQ_ECI_* status codes. */

@@ -88,14 +88,14 @@ def add_persian(entries):
         entries[PREFIX + '_persian/' + name + '.py'] = (HERE / (name + '.py')).read_bytes()
     if 'doc/source.json' in entries:
         metadata = json.loads(entries['doc/source.json'])
-        metadata['build'] = ('private Windows Persian acoustic probe followed by '
+        metadata['build'] = ('shared Windows Persian acoustic core followed by '
                              'experiments/persian/build_experimental_nvda.py')
         entries['doc/source.json'] = (json.dumps(metadata, indent=2) + '\n').encode('utf8')
     manifest = entries['manifest.ini'].decode('utf8')
     if manifest.count('version = "1.4.1"') != 1:
         raise ValueError('the normal version changed; choose an explicit test version')
     # Keep the existing updater's recognized dev-version grammar.
-    manifest = manifest.replace('version = "1.4.1"', 'version = "1.5.0-dev113"', 1)
+    manifest = manifest.replace('version = "1.4.1"', 'version = "1.5.0-dev114"', 1)
     manifest = manifest.replace('summary = "Eloquence C: fifteen language variants"',
                                 'summary = "Eloquence C: Persian and Pinglish test"', 1)
     manifest = re.sub(r'(?m)^description = .*$',

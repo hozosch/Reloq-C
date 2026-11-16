@@ -1,0 +1,46 @@
+name: Persian shared core on Android
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/persian-nvda-prep-20261115]
+    paths:
+      - .github/workflows/persian-android-core.yml
+      - eci/Makefile
+      - include/**
+      - src/**
+      - vendor/openevv61/**
+      - tools/prepare_persian_provider.py
+      - experiments/aragonese/build_native_probe.py
+      - experiments/persian/build_native_probe.py
+      - experiments/persian/direct_fa_*.c
+      - experiments/persian/direct_fa_*.h
+      - experiments/persian/direct_fa_*.inc
+permissions:
+  contents: read
+concurrency:
+  group: persian-android-core-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Install the native Android toolchain
+        run: sdkmanager 'ndk;30.0.16248370'
+      - name: Compile the shared arm64 C engine
+        shell: bash
+        run: |
+          toolchain="$ANDROID_HOME/ndk/30.0.16248370/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          make -C eci -j2 libreloq_android.so \
+            ANDROID_CC="$toolchain/aarch64-linux-android26-clang" \
+            ANDROID_AR="$toolchain/llvm-ar"
+          "$toolchain/llvm-nm" -D eci/libreloq_android.so | grep -q 'eciPersianAcousticScope'
+          "$toolchain/llvm-nm" -D eci/libreloq_android.so | grep -q 'eciPersianProjectUtf8'
+          "$toolchain/llvm-nm" -D eci/libreloq_android.so | grep -q 'eciPersianCapturePcm'

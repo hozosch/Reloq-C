@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import ctypes
 from pathlib import Path
 import sys
 import threading
@@ -9,7 +10,7 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 import continuous_driver
-from _reloq_eci_direct import EciIndex, EciPitch, EciProsody, GENDER, HEAD_SIZE, NATIVE_SPEED, NATIVE_WPM, SAMPLE_RATE, SAMPLE_RATES
+from _reloq_eci_direct import EciIndex, EciPitch, EciProsody, EciText, GENDER, HEAD_SIZE, NATIVE_SPEED, NATIVE_WPM, SAMPLE_RATE, SAMPLE_RATES
 from _reloq_persian_frames import FrameCapture
 from nvda_driver_probe import PERSIAN_PROBE, US_ENGLISH, make_language_engine
 from parallel_pilot import ParallelPilot, _CaptureVoice
@@ -259,9 +260,56 @@ def main():
         assert not stopper.is_alive()
         assert render(examples[0]) == expected
 
+        # PCM can now stay inside the C capture instead of arriving through
+        # a Python callback. Wait for the actual native synthesis to become
+        # busy and stop it there, then verify that the next request is clean.
+        if getattr(engine._dll, 'eciPersianCaptureSetPcmStorage', None) is not None:
+            started, done, stale, captured_voice, busy_seen = (threading.Event(), threading.Event(),
+                                                                bytearray(), [], [])
+            def long_native(voice, parts, on_pcm, on_index):
+                captured_voice.append(voice)
+                started.set()
+                # Give the stop thread enough time to observe native busy.
+                extended = (*parts, EciText(' '.join(['`[.1sA.0lam]'] * 200),
+                                            segmentation_guarded=True))
+                return old_speak(voice, extended, on_pcm, on_index)
+            _CaptureVoice.speak = long_native
+            def stop_stored_pcm():
+                if started.wait(5):
+                    raw = captured_voice[0].engine._voice
+                    query = raw._dll.eciIsBeingReentered
+                    query.argtypes, query.restype = (ctypes.c_void_p,), ctypes.c_int
+                    deadline = time.monotonic() + 5
+                    while time.monotonic() < deadline:
+                        if query(raw._handle):
+                            busy_seen.append(True)
+                            engine.cancel()
+                            break
+                        time.sleep(.0001)
+                done.set()
+            stopper = threading.Thread(target=stop_stored_pcm, daemon=True)
+            stopper.start()
+            try:
+                assert not engine.speak(examples[0], stale.extend, lambda _: None)
+                assert done.wait(5) and busy_seen and not stale
+            finally:
+                _CaptureVoice.speak = old_speak
+                stopper.join(5)
+            assert not stopper.is_alive()
+            assert render(examples[0]) == expected
+
         # Also stop while the native contour synthesizer is inside its PCM
         # callback, not merely before synthesis starts. The owner must not
         # leak a stale prefix, deadlock, or poison the next request.
+        # Force the compatibility path for this callback-specific test.
+        def callback_capture(capture, *args, **kwargs):
+            storage = capture._store_pcm
+            capture._store_pcm = None
+            try:
+                return old_frame_capture(capture, *args, **kwargs)
+            finally:
+                capture._store_pcm = storage
+        FrameCapture.capture = callback_capture
         started, done, stale = threading.Event(), threading.Event(), bytearray()
         def during_native(voice, parts, on_pcm, on_index):
             def pcm(data):
@@ -281,7 +329,6 @@ def main():
             stopper.join(5)
         assert not stopper.is_alive()
         assert render(examples[0]) == expected
-
         # On the early path cancellation may follow a valid emitted prefix;
         # no samples may be emitted after cancellation while its full pilot
         # is running in the other thread.
@@ -304,6 +351,7 @@ def main():
             stopper.join(5)
         assert not stopper.is_alive()
         assert render(examples[0]) == expected
+        FrameCapture.capture = old_frame_capture
     finally:
         continuous_driver._PARALLEL_MIN = old_min
         continuous_driver._FAST_PILOT_MIN = old_fast_min

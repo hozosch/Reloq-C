@@ -483,13 +483,16 @@ class ScopedDirectPersianEngine:
                                       encoding='utf8', native_voice=True)
         try:
             self._voice.set_parameter(PROCESS_TAGS, 1)
-            self._scope = self._voice._dll.reloq_fa_acoustic_scope
+            self._scope = (getattr(self._voice._dll, 'eciPersianAcousticScope', None) or
+                           self._voice._dll.reloq_fa_acoustic_scope)
             self._scope.argtypes = (ctypes.c_int,)
             self._scope.restype = ctypes.c_int
-            self._onsets = self._voice._dll.reloq_fa_native_onsets
+            self._onsets = (getattr(self._voice._dll, 'eciPersianNativeOnsets', None) or
+                            self._voice._dll.reloq_fa_native_onsets)
             self._onsets.argtypes = (ctypes.POINTER(ctypes.c_uint32), ctypes.c_size_t)
             self._onsets.restype = ctypes.c_int
-            self._geminates = self._voice._dll.reloq_fa_native_geminates
+            self._geminates = (getattr(self._voice._dll, 'eciPersianNativeGeminates', None) or
+                               self._voice._dll.reloq_fa_native_geminates)
             self._geminates.argtypes = (ctypes.POINTER(ctypes.c_uint32), ctypes.c_size_t)
             self._geminates.restype = ctypes.c_int
         except BaseException:

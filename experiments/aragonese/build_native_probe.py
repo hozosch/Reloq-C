@@ -340,7 +340,8 @@ def split_patches(source: str):
 
 def host_objects():
     excluded = {'reloq_host.c', 'reloq_voice_filter.c', 'reloq_orthography.c',
-                'reloq_german_word_edges.c', 'reloq_english_word_edges.c'}
+                'reloq_german_word_edges.c', 'reloq_english_word_edges.c',
+                'reloq_persian_acoustics.c'}
     sources = [p for p in (ROOT / 'src').glob('*.c')
                if p.name not in excluded and not p.name.startswith('reloq_english')]
     sources.append(ROOT / 'src' / 'reloq_english_spr.c')
