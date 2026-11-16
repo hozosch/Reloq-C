@@ -87,6 +87,11 @@ jobs:
           make -C eci -j2 eci.dll SHELL=C:/msys64/usr/bin/bash.exe PROVIDER_LTO=-flto=2 WINDOWS_CC=gcc WINDOWS_OBJDUMP=objdump > windows-baseline-build.log 2>&1 || { tail -n 120 windows-baseline-build.log; exit 1; }
           python eci/verify_pe_exports.py eci/eci.dll --objdump objdump --header include/reloq_eci.h
           make -C eci eci_classic_noise_probe.exe SHELL=C:/msys64/usr/bin/bash.exe WINDOWS_CC=gcc WINDOWS_OBJDUMP=objdump
+      - name: Check concurrent voice initialization
+        shell: pwsh
+        run: |
+          python -B eci/test_concurrent_startup.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Concurrent cold multilingual voice initialization failed' }
       - name: Build the diagnostic DLL from the shared provider
         shell: bash
         run: |
@@ -107,8 +112,6 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian text projection failed' }
           python -B eci/test_persian_frames.py --library eci/eci.dll --standard
           if ($LASTEXITCODE -ne 0) { throw 'Common ECI frame capture or replay failed' }
-          python -B eci/test_concurrent_startup.py --library eci/eci.dll
-          if ($LASTEXITCODE -ne 0) { throw 'Concurrent cold multilingual voice initialization failed' }
           python -B eci/test_persian_frames.py --library persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian probe frame capture or replay failed' }
           python -B experiments/persian/test_continuous_replay.py --probe persian-windows-probe/eci_persian_probe.dll
