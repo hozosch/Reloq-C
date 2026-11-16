@@ -43,6 +43,12 @@ def main():
         git('add', '.')
         git('commit', '-qm', 'acoustic')
         assert select('--audio-only') == '', 'an outdated acoustic build was accepted'
+        newest = git('rev-parse', 'HEAD')
+        runs.write_text(json.dumps({'workflow_runs': [
+            {'id': 3, 'head_sha': newest, 'status': 'in_progress', 'conclusion': None},
+            {'id': 1, 'head_sha': base, 'status': 'completed', 'conclusion': 'success'},
+        ]}))
+        assert select('--audio-only') == '3', 'a compatible in-flight build could not be watched'
     print('Passed verified acoustic reuse for text-only changes and acoustic-change rejection.')
 
 

@@ -34,10 +34,13 @@ def main():
     paths = tuple(p for p in PATHS if not (args.audio_only and
                                            p.startswith('experiments/persian/direct_fa_')))
     runs = json.loads(args.runs.read_text(encoding='utf8'))['workflow_runs']
+    pending = None
     for run in runs:
         # Prefer an already verified acoustic artifact over a newer build
-        # whose only changes concern the separately built text DLL.
-        if args.audio_only and (run.get('status') != 'completed' or run.get('conclusion') != 'success'):
+        # whose only changes concern the separately built text DLL. If no
+        # compatible completed build exists, return an in-flight match so the
+        # package workflow can watch it for as long as the build needs.
+        if args.audio_only and run.get('status') == 'completed' and run.get('conclusion') != 'success':
             continue
         sha = run['head_sha']
         if len(sha) != 40 or any(c not in '0123456789abcdef' for c in sha):
@@ -45,10 +48,15 @@ def main():
         result = subprocess.run(['git', 'diff', '--quiet', sha, 'HEAD', '--', *paths],
                                 check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if result.returncode == 0:
-            print(int(run['id']))
-            return
-        if result.returncode != 1:
+            if not args.audio_only or run.get('status') == 'completed':
+                print(int(run['id']))
+                return
+            if pending is None:
+                pending = int(run['id'])
+        if result.returncode not in (0, 1):
             raise RuntimeError('cannot compare an acoustic workflow revision')
+    if pending is not None:
+        print(pending)
 
 
 if __name__ == '__main__':
