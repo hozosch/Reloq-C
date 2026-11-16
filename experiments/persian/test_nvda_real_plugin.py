@@ -55,6 +55,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.speech, self.character, self.index_command = speech, CharacterModeCommand, IndexCommand
             self.symbols = characterProcessing
             self.projected = []
+            self.projected_sources = []
             self.continuous = []
             old_project_part = continuous_driver._project_part
             old_prepared = direct_fa_sequence.ScopedDirectPersianEngine._speak_prepared
@@ -66,6 +67,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             def observe_prepared(instance, prepared, *args, **kwargs):
                 if prepared.source:
                     self.projected.append(prepared.tagged)
+                    self.projected_sources.append((prepared.source, prepared.tagged))
                 return old_prepared(instance, prepared, *args, **kwargs)
             def observe_continuous(*args, **kwargs):
                 result = old_continuous(*args, **kwargs)
@@ -324,6 +326,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 raise AssertionError('language selection did not stick: ' + locale)
             self.before = {id(player): len(player.chunks) for player in self.players}
             self.before_projected = len(self.projected)
+            self.before_projected_sources = len(self.projected_sources)
             if spelling == 'mixed':
                 sequence = [self.language_command('en_US'), 'NVDA ',
                             self.language_command('fa_IR'), 'خوب']
@@ -413,7 +416,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 tags = ' '.join(self.projected[self.before_projected:])
                 expected = ("`[.0do.1ros.0t'e:']" if 'درسته' in text else '`[.1a.0li]')
                 if expected not in tags:
-                    raise AssertionError('NVDA spelled a word around the hyphen: ' + ascii(tags))
+                    details = self.projected_sources[self.before_projected_sources:]
+                    raise AssertionError('NVDA spelled a word around the hyphen: ' + ascii(details))
             if spelling is True and text in 'ًٌٍَُِّْٰ':
                 expected = {'ً':'`[.1An]', 'ٌ':'`[.1on]', 'ٍ':'`[.1en]',
                             'َ':"`[.1'A:']", 'ُ':"`[.1'o:']", 'ِ':"`[.1'e:']",
