@@ -55,8 +55,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.speech, self.character, self.index_command = speech, CharacterModeCommand, IndexCommand
             self.symbols = characterProcessing
             self.projected = []
+            self.continuous = []
             old_project_part = continuous_driver._project_part
             old_prepared = direct_fa_sequence.ScopedDirectPersianEngine._speak_prepared
+            old_continuous = nvda_driver_probe.try_continuous
             def observe_project(*args, **kwargs):
                 result = old_project_part(*args, **kwargs)
                 self.projected.append(result[0])
@@ -65,8 +67,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if prepared.source:
                     self.projected.append(prepared.tagged)
                 return old_prepared(instance, prepared, *args, **kwargs)
+            def observe_continuous(*args, **kwargs):
+                result = old_continuous(*args, **kwargs)
+                if result is not None:
+                    self.continuous.append(result)
+                return result
             continuous_driver._project_part = observe_project
             direct_fa_sequence.ScopedDirectPersianEngine._speak_prepared = observe_prepared
+            nvda_driver_probe.try_continuous = observe_continuous
             # Keep these measurements in the test plugin, not in the voice.
             # They separate NVDA preprocessing, queueing and synthesis while
             # using the same real driver and per-request text processing.
@@ -180,6 +188,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'NVDA-خوب', False),
                           ('fa_IR', 'سلام-NVDA-خوب', False),
                           ('fa_Latn', 'salam-phone-khub', False),
+                          ('fa_IR', 'NVDA-خوب', 'pipeline_dash'),
+                          ('fa_IR', 'سلام-NVDA-خوب', 'pipeline_dash'),
+                          ('fa_Latn', 'salam-phone-khub', 'pipeline_dash'),
                           ('fa_Latn', 'salam salām donya', False),
                           ('fa_Latn', 'salam salām donya', 'accent_exception'),
                           ('fa_Latn', 'fa\u0304rsi', False),
@@ -340,14 +351,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 # NVDA speaks an object's name, role and state as separate
                 # sequence items; its real preprocessing adds the separators.
                 sequence = [text, 'کادرِ علامت‌زدنی', status]
-            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket'):
+            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
             self.profile_case = spelling in ('pipeline_user_latency', 'pipeline_mixed_latency', 'driver_user_latency')
             self.stage = {}
             self.started = time.perf_counter()
-            self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
+            self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
+            self.before_continuous = len(self.continuous)
             if self.pipeline:
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
                                   symbolLevel=(self.symbols.SymbolLevel.MOST if spelling in ('pipeline_most', 'checkbox_checked_most')
@@ -390,6 +402,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                      for value in player.times[self.before.get(id(player), 0):]]
             if not times:
                 raise RuntimeError('missing NVDA audio timing for ' + ascii(text))
+            if spelling == 'pipeline_dash' and len(self.continuous) != self.before_continuous:
+                raise AssertionError('NVDA lost the separated language boundary around a hyphen: ' + ascii(text))
             if text in ('به علاوه', 'بعلاوه', '+'):
                 tags = ' '.join(self.projected[self.before_projected:])
                 expected = ("`[.0be.0A.1la.0v'e:']" if text == 'بعلاوه' else
