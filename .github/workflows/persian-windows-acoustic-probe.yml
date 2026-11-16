@@ -8,6 +8,7 @@ on:
       - experiments/persian/build_windows_probe.py
       - experiments/persian/scoped_acoustics_probe.c
       - tools/prepare_persian_provider.py
+      - tools/reuse_persian_provider_cache.py
       - src/reloq_persian_acoustics.c
       - src/reloq_persian_acoustics.h
       - src/reloq_persian_frames.c
@@ -48,11 +49,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/cache@v4
         id: provider
         with:
           path: vendor/openevv61/build/windows-release
           key: persian-windows-provider-gcc14-v2-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c', 'src/reloq_persian_acoustics.c', 'src/reloq_persian_acoustics.h', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
+          restore-keys: |
+            persian-windows-provider-gcc14-v1-eafb701ff0daa266b36f21741a91cf44935fe7d1d5fc200e54f509f1b878b075
       - uses: actions/cache@v4
         id: host
         with:
@@ -64,6 +68,10 @@ jobs:
         if: steps.provider.outputs.cache-hit == 'true'
         shell: bash
         run: find vendor/openevv61/build/windows-release -type f -exec touch {} +
+      - name: Reuse compatible provider objects
+        if: steps.provider.outputs.cache-hit != 'true' && steps.provider.outputs.cache-matched-key == 'persian-windows-provider-gcc14-v1-eafb701ff0daa266b36f21741a91cf44935fe7d1d5fc200e54f509f1b878b075'
+        shell: bash
+        run: python -B tools/reuse_persian_provider_cache.py
       - name: Restore cached host timestamps
         if: steps.host.outputs.cache-hit == 'true'
         shell: bash
@@ -106,6 +114,7 @@ jobs:
           python -B experiments/persian/test_sibilant_noise.py --candidate persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian sibilant targets failed' }
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: persian-windows-acoustic-probe
           path: |

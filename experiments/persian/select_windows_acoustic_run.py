@@ -8,6 +8,7 @@ import subprocess
 
 PATHS = ('eci/Makefile', 'src', 'include', 'vendor/openevv61',
          'tools/prepare_persian_provider.py',
+         'tools/reuse_persian_provider_cache.py',
          'experiments/aragonese/build_native_probe.py',
          'experiments/persian/build_native_probe.py',
          'experiments/persian/build_windows_probe.py',
