@@ -63,8 +63,8 @@ def main():
         # A selected within-Persian U-to-A glide stays on the complete route.
         (EciIndex(36), 'او آمد و ', EciIndex(37), 'NVDA خوب است.', EciIndex(38)),
         # These words need reference analysis and an internal word anchor.
-        (EciIndex(39), 'NVDA ', EciIndex(40), 'پژوهشگر ', EciIndex(41), 'سلام', EciIndex(42)),
-        (EciIndex(43), 'سلام ', EciIndex(44), 'پژوهشگر ', EciIndex(45), 'window', EciIndex(46)),
+        (EciIndex(39), 'NVDA ', EciIndex(40), 'همگام‌سازی ', EciIndex(41), 'سلام', EciIndex(42)),
+        (EciIndex(43), 'سلام ', EciIndex(44), 'همگام‌سازی ', EciIndex(45), 'window', EciIndex(46)),
         # Short first segments can now start while the second context is
         # still being planned, without changing any transition frames.
         (EciIndex(50), 'go ', EciIndex(51), 'سلام', EciIndex(52)),
@@ -128,7 +128,7 @@ def main():
             return original_validator(tagged, shown)
         direct_fa_sequence.native_sequence_accepted = reject_pilot
         try:
-            assert engine.speak(('NVDA ', EciIndex(47), 'پژوهشگر ', EciIndex(48), 'سلام'),
+            assert engine.speak(('NVDA ', EciIndex(47), 'همگام‌سازی ', EciIndex(48), 'سلام'),
                                 pcm.extend, lambda _: None)
         finally:
             direct_fa_sequence.native_sequence_accepted = original_validator

@@ -169,6 +169,11 @@ class DirectFirstPersian:
         self._free_direct = function('eciPersianRelease', 'reloq_fa_direct_free')
         self._number = function('eciPersianNumber', 'reloq_fa_direct_number')
         self._letter = function('eciPersianLetter', 'reloq_fa_direct_letter')
+        self._character = (getattr(self._dll, 'eciPersianCharacter', None) or
+                           getattr(self._dll, 'reloq_fa_direct_character', None))
+        if self._character is not None:
+            self._character.argtypes = (ctypes.c_uint32, ctypes.c_void_p, ctypes.c_size_t)
+            self._character.restype = ctypes.c_int
         self._translate.argtypes = (
             ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_void_p),
             ctypes.POINTER(ctypes.POINTER(ctypes.c_size_t)), ctypes.POINTER(ctypes.c_size_t),
@@ -287,6 +292,14 @@ class DirectFirstPersian:
         with self._guard:
             if self._closed:
                 raise RuntimeError('Persian text frontend is closed')
+        if self._character is not None:
+            output = ctypes.create_string_buffer(2048)
+            status = self._character(ord(char), output, len(output))
+            if status != 1:
+                raise ValueError('native Persian character spelling failed')
+            tag = output.value.decode('ascii')
+            mapping = (0,) * len(char.encode('utf8')) + (len(tag),)
+            return PersianAnalysis((SpeechPart('fa', tag),), mapping, False)
         normalized = unicodedata.normalize('NFKC', char)
         normalized = {'ك': 'ک', 'ي': 'ی', 'ى': 'ی'}.get(normalized, normalized)
         value = self._letter(ord(normalized)) if len(normalized) == 1 else None

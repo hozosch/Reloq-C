@@ -81,6 +81,19 @@ def main():
     for text in ('version 3.5 is available.', 'سلام version 3.5', '3.5 version', 'version 1,234.5',
                  'NVDA 2026.3.1', 'version v1.5'):
         assert any(isinstance(item, native_word) and '.' in item.text for item in protected([text])), text
+    # Amir's actual version strings must survive every ordinary symbol level,
+    # including when NVDA places an index on either side of a decimal point.
+    for whole, version in (('Google Chrome, version 157.0.8103.79 (AMD64)', '157.0.8103.79'),
+                           ('BlindRadio, version 0.2.100', '0.2.100')):
+        start = whole.index(version)
+        for kind in (level.NONE, level.SOME, level.MOST, level.ALL):
+            for cut in range(1, len(version)):
+                sequence = [whole[:start] + version[:cut], IndexCommand(100 + cut),
+                            version[cut:] + whole[start + len(version):]]
+                guarded = decimals.protect_decimals(driver, sequence, symbol_level=kind)
+                actual = ''.join(item.text for item in guarded if isinstance(item, native_word))
+                assert actual == version, (kind, cut, whole, actual)
+                assert [item.index for item in guarded if isinstance(item, IndexCommand)] == [100 + cut]
     negative = protected(['version -3.5'])
     assert [item.text for item in negative if isinstance(item, native_word)] == [' minus ', '3.5']
     positive = protected(['version +3.5'])

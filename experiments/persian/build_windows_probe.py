@@ -82,7 +82,7 @@ def main():
         shutil.copyfile(archive, private_archive)
         subprocess.run([args.ar, 'r', str(private_archive), *map(str, modified)], check=True)
     direct_sources = [HERE / ('direct_fa_' + name + '.c')
-                      for name in ('lexicon', 'numbers', 'normalize', 'text', 'letters', 'pinglish')]
+                      for name in ('lexicon', 'numbers', 'normalize', 'text', 'letters', 'characters', 'pinglish')]
     direct_sources.extend((HERE / 'scoped_acoustics_probe.c', HERE / 'continuous_frames.c'))
     direct = []
     for source in direct_sources:
@@ -105,8 +105,8 @@ def main():
                         '-c', str(source), '-o', str(obj)], check=True)
         direct.append(obj)
     exports = work / 'persian.def'
-    exports.write_text('EXPORTS\nreloq_fa_direct_text\nreloq_fa_direct_project\nreloq_fa_direct_number\n'
-                       'reloq_fa_direct_letter\nreloq_fa_direct_free\n'
+    exports.write_text('EXPORTS\nreloq_fa_direct_text\nreloq_fa_direct_project\nreloq_fa_direct_context_word\nreloq_fa_direct_number\n'
+                       'reloq_fa_direct_letter\nreloq_fa_direct_character\nreloq_fa_direct_free\n'
                        'reloq_fa_pinglish_word\n', encoding='ascii')
     output = work / 'eci_persian_probe.dll'
     print('Linking private Windows acoustic and text probe', flush=True)

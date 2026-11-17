@@ -89,7 +89,7 @@ $(WINDOWS_BUILD)/reloq_eci_fixed_math.o: reloq_eci_fixed_math.c
 	@mkdir -p $(dir $@)
 	$(WINDOWS_CC) $(CPPFLAGS) $(WINDOWS_CFLAGS) $(SECTIONS) -c $< -o $@
 ANDROID_OBJECTS := $(patsubst ../src/%.c,$(ANDROID_BUILD)/%.o,$(SOURCE))
-PERSIAN_COMPONENTS := reloq_fa_direct_lexicon reloq_fa_direct_numbers reloq_fa_direct_normalize reloq_fa_direct_text reloq_fa_direct_letters reloq_fa_direct_pinglish
+PERSIAN_COMPONENTS := reloq_fa_direct_lexicon reloq_fa_direct_numbers reloq_fa_direct_normalize reloq_fa_direct_text reloq_fa_direct_letters reloq_fa_direct_characters reloq_fa_direct_pinglish
 PERSIAN_INPUTS := $(wildcard ../experiments/persian/direct_fa_*.c ../experiments/persian/direct_fa_*.h ../experiments/persian/direct_fa_*.inc)
 $(addprefix build/posix/,$(addsuffix .o,$(PERSIAN_COMPONENTS))) $(addprefix $(WINDOWS_BUILD)/,$(addsuffix .o,$(PERSIAN_COMPONENTS))) $(addprefix $(ANDROID_BUILD)/,$(addsuffix .o,$(PERSIAN_COMPONENTS))): $(PERSIAN_INPUTS)
 build/posix/reloq_persian_transition.o $(WINDOWS_BUILD)/reloq_persian_transition.o $(ANDROID_BUILD)/reloq_persian_transition.o: ../src/reloq_persian_transition.h

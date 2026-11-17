@@ -68,4 +68,5 @@ jobs:
           "$toolchain/llvm-nm" -D eci/libreloq_android.so > android-symbols.txt
           grep -q 'eciPersianAcousticScope' android-symbols.txt
           grep -q 'eciPersianProjectUtf8' android-symbols.txt
+          grep -q 'eciPersianCharacter' android-symbols.txt
           grep -q 'eciPersianCapturePcm' android-symbols.txt

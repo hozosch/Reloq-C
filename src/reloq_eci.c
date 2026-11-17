@@ -887,6 +887,9 @@ int ECICALL eciPersianNumber(const char *text,size_t bytes,size_t *consumed,
 const char *ECICALL eciPersianLetter(uint32_t codepoint)
 {return reloq_fa_direct_letter(codepoint);}
 
+int ECICALL eciPersianCharacter(uint32_t codepoint,char *output,size_t capacity)
+{return reloq_fa_direct_character(codepoint,output,capacity);}
+
 int ECICALL eciPersianPinglishWord(const char *word,size_t bytes,char *output,size_t capacity)
 {return reloq_fa_pinglish_word(word,bytes,output,capacity);}
 

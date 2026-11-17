@@ -4,7 +4,7 @@ from __future__ import annotations
 import unicodedata
 
 import speech.commands as commands
-from speech.commands import CharacterModeCommand, LangChangeCommand, SynthCommand
+from speech.commands import CharacterModeCommand, IndexCommand, LangChangeCommand, SynthCommand
 
 from ._reloq_languages import language_for
 
@@ -58,31 +58,57 @@ def protect_emoji_selectors(driver, sequence, *, symbol_level=None):
             home, languages = driver._selectedLanguage, driver._languages
     except (ImportError, AttributeError, KeyError, TypeError, ValueError):
         return sequence
-    selected, spelling, result = home, False, []
-    for item in sequence:
+    selected, spelling, result, group = home, False, list(sequence), []
+
+    def flush():
+        if not group:
+            return
+        text = ''.join(value for _, value in group)
+        # Index commands do not interrupt the logical text. Keep them in
+        # place while recognizing a base and its selector across fragments.
+        chars = list(text)
+        for i in range(1, len(chars)):
+            code = ord(chars[i - 1]) if chars[i - 1] else 0
+            if chars[i] == '\ufe0f' and (0x2600 <= code <= 0x27bf or 0x1f000 <= code <= 0x1faff):
+                chars[i] = ''
+        stripped = ''.join(chars)
+        if stripped == text or not _dictionary_untouched(text, stripped):
+            group.clear()
+            return
+        try:
+            locale = languages[selected].locale
+            at, changed = 0, []
+            for index, value in group:
+                replacement = ''.join(chars[at:at + len(value)])
+                at += len(value)
+                if value == replacement:
+                    continue
+                before = characterProcessing.processSpeechSymbols(locale, value, level)
+                after = characterProcessing.processSpeechSymbols(locale, replacement, level)
+                if before.replace('\ufe0f', '') != after:
+                    group.clear()
+                    return
+                changed.append((index, replacement))
+            for index, replacement in changed:
+                result[index] = replacement
+        except (AttributeError, KeyError, LookupError, TypeError, ValueError):
+            pass
+        group.clear()
+
+    for index, item in enumerate(sequence):
         if isinstance(item, LangChangeCommand):
+            flush()
             chosen = language_for(item.lang, home, languages)
             if chosen is not None:
                 selected = chosen
         elif isinstance(item, CharacterModeCommand):
+            flush()
             spelling = bool(item.state)
-        elif isinstance(item, str) and not spelling and selected in _FA_PROFILES and '\ufe0f' in item:
-            chars = list(item)
-            for i in range(1, len(chars)):
-                code = ord(chars[i - 1]) if chars[i - 1] else 0
-                if chars[i] == '\ufe0f' and (0x2600 <= code <= 0x27bf or 0x1f000 <= code <= 0x1faff):
-                    chars[i] = ''
-            stripped = ''.join(chars)
-            if stripped != item and _dictionary_untouched(item, stripped):
-                try:
-                    locale = languages[selected].locale
-                    before = characterProcessing.processSpeechSymbols(locale, item, level)
-                    after = characterProcessing.processSpeechSymbols(locale, stripped, level)
-                    if before.replace('\ufe0f', '') == after:
-                        item = stripped
-                except (AttributeError, KeyError, LookupError, TypeError, ValueError):
-                    pass
-        result.append(item)
+        elif isinstance(item, str) and not spelling and selected in _FA_PROFILES:
+            group.append((index, item))
+        elif not isinstance(item, IndexCommand):
+            flush()
+    flush()
     return result
 
 

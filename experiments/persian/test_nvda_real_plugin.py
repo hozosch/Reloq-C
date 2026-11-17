@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import time
 import traceback
 
@@ -56,6 +57,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.symbols = characterProcessing
             self.projected = []
             self.projected_sources = []
+            self.emoji_submissions = []
+            self.emoji_case = False
             self.user_controls = []
             self.continuous = []
             old_project_part = continuous_driver._project_part
@@ -123,7 +126,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             reloq.protect_joiners = trace(reloq.protect_joiners, 'joiners')
             reloq.protect_decimals = trace(reloq.protect_decimals, 'decimals')
             characterProcessing.processSpeechSymbols = trace(characterProcessing.processSpeechSymbols, 'symbols')
-            reloq.SynthDriver.speak = trace(reloq.SynthDriver.speak, 'driver')
+            original_synth_speak = reloq.SynthDriver.speak
+            def observe_synth_speech(instance, sequence):
+                if self.emoji_case:
+                    self.emoji_submissions.append(tuple(item for item in sequence if isinstance(item, str)))
+                return original_synth_speak(instance, sequence)
+            reloq.SynthDriver.speak = trace(observe_synth_speech, 'driver')
             EciTextTransport._run_job = trace(EciTextTransport._run_job, 'job')
             nvda_driver_probe.PersianProbeLanguageEngine.speak = trace(
                 nvda_driver_probe.PersianProbeLanguageEngine.speak, 'engine')
@@ -189,6 +197,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'سلام (دنیا) خوب', 'issue49_quotes'),
                           ('fa_IR', '4 of 14', 'issue49_numeric'),
                           ('en_US', '4 of 14', 'issue49_numeric'),
+                          *((locale, text, mode) for text in (
+                              'Google Chrome, version 157.0.8103.79 (AMD64)',
+                              'BlindRadio, version 0.2.100')
+                            for locale, mode in (('fa_IR', 'issue49_version_some'),
+                                                 ('en_US', 'issue49_version_some'),
+                                                 ('fa_IR', 'issue49_version_split'))),
+                          *(( 'fa_IR', emoji, mode) for emoji in ('⚽️', '⚡️', '❤️')
+                            for mode in ('issue49_emoji_some', 'issue49_emoji_split')),
                           ('fa_Latn', 'salam (donya) khub', False),
                           ('fa_Latn', 'salam, donya, khub', False),
                           ('fa_IR', 'سلام (دنیا)', 'pipeline_bracket'),
@@ -280,6 +296,18 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                  row['spelling'] == 'issue49_numeric')
                 if fa_number['pcm_sha256'] != en_number['pcm_sha256']:
                     raise AssertionError('English number phrase was split between languages')
+                for text in ('Google Chrome, version 157.0.8103.79 (AMD64)',
+                             'BlindRadio, version 0.2.100'):
+                    fa_version = next(row for row in self.results if row['locale'] == 'fa_IR' and
+                                      row['text'] == text and row['spelling'] == 'issue49_version_some')
+                    en_version = next(row for row in self.results if row['locale'] == 'en_US' and
+                                      row['text'] == text and row['spelling'] == 'issue49_version_some')
+                    split_version = next(row for row in self.results if row['locale'] == 'fa_IR' and
+                                         row['text'] == text and row['spelling'] == 'issue49_version_split')
+                    if fa_version['pcm_sha256'] != en_version['pcm_sha256']:
+                        raise AssertionError('English version number changed language: ' + text)
+                    if fa_version['pcm_sha256'] != split_version['pcm_sha256']:
+                        raise AssertionError('NVDA indexes changed the English version: ' + text)
                 plain = next(row for row in self.results if row['spelling'] == 'tags_plain')
                 pitch = next(row for row in self.results if row['spelling'] == 'tags_pitch')
                 if plain['pcm_sha256'] == pitch['pcm_sha256']:
@@ -391,6 +419,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = ['version ', '1,234.5 is available.']
             elif spelling == 'decimal_signed_pipeline':
                 sequence = ['version ', '-3.5 is available.']
+            elif spelling == 'issue49_version_split':
+                number = re.search(r'[0-9]+(?:\.[0-9]+)+', text)
+                if number is None:
+                    raise AssertionError('missing issue 49 version number')
+                value = number.group()
+                sequence = [text[:number.start()], value[:1], self.index_command(7000 + self.index),
+                            value[1:3], self.index_command(8000 + self.index), value[3:] + text[number.end():]]
+            elif spelling == 'issue49_emoji_split':
+                sequence = [text[0], self.index_command(9000 + self.index), text[1:]]
             elif spelling in ('checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most'):
                 status = 'بدونِ علامت' if spelling == 'checkbox_unchecked' else 'علامت‌دار'
                 # NVDA speaks an object's name, role and state as separate
@@ -398,7 +435,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text, 'کادرِ علامت‌زدنی', status]
             elif isinstance(spelling, str) and spelling.startswith('tags_'):
                 sequence = [text]
-            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric'):
+            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
@@ -408,10 +445,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('tags_'))
             self.pipeline = self.pipeline or spelling in ('issue49_quotes', 'issue49_numeric')
+            self.pipeline = self.pipeline or spelling in ('issue49_version_some', 'issue49_version_split',
+                                                           'issue49_emoji_some', 'issue49_emoji_split')
+            self.emoji_case = spelling in ('issue49_emoji_some', 'issue49_emoji_split')
+            self.before_emoji = len(self.emoji_submissions)
             self.before_continuous = len(self.continuous)
             if self.pipeline:
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
-                                  symbolLevel=(self.symbols.SymbolLevel.SOME if spelling == 'issue49_quotes' else
+                                  symbolLevel=(self.symbols.SymbolLevel.SOME if spelling in (
+                                               'issue49_quotes', 'issue49_version_some', 'issue49_version_split',
+                                               'issue49_emoji_some', 'issue49_emoji_split') else
                                                self.symbols.SymbolLevel.MOST if spelling in ('pipeline_most', 'checkbox_checked_most')
                                                else self.symbols.SymbolLevel.NONE))
             else:
@@ -444,6 +487,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     def capture(self):
         try:
             locale, text, spelling = self.cases[self.index]
+            if self.emoji_case:
+                submitted = self.emoji_submissions[self.before_emoji:]
+                if not submitted or any('\ufe0f' in part for sequence in submitted for part in sequence):
+                    raise AssertionError('emoji presentation selector leaked to the synthesizer: ' + ascii(text))
             audio = b''.join(chunk for player in self.players
                              for chunk in player.chunks[self.before.get(id(player), 0):])
             if not audio:

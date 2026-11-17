@@ -8,6 +8,12 @@ frame capture and replay. The development NVDA package uses that same ECI
 library for its Persian and Pinglish choices. Other languages keep their
 ordinary acoustics while the Persian scope is off.
 
+Native text support includes character names, common words, and selected
+compound endings. Each admitted compound stem is checked against the
+existing reference in several contexts; unknown forms retain the fallback.
+The NVDA adapter also suppresses redundant emoji presentation selectors split
+by source indexes, while letting NVDA's symbol level and dictionaries take precedence.
+
 The language is **not yet fully implemented in the native core**. Mixed-text
 segmentation and sentence planning still run in the NVDA adapter, and words
 outside the direct rules may use an in-process eSpeak text fallback. Persian

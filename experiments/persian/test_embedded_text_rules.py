@@ -13,6 +13,7 @@ def main():
     dll = ctypes.CDLL(str(args.library.resolve()))
     for name in ('eciPersianProjectUtf8', 'eciPersianRelease', 'reloq_fa_direct_text',
                  'reloq_fa_direct_project', 'reloq_fa_direct_number', 'reloq_fa_direct_letter',
+                 'eciPersianCharacter', 'reloq_fa_direct_character',
                  'reloq_fa_direct_free', 'reloq_fa_pinglish_word'):
         getattr(dll, name)
     direct, free = dll.reloq_fa_direct_text, dll.reloq_fa_direct_free

@@ -28,6 +28,11 @@ class CharacterModeCommand(SynthCommand):
         self.state = state
 
 
+class IndexCommand(SynthCommand):
+    def __init__(self, index):
+        self.index = index
+
+
 class LangChangeCommand(SynthCommand):
     def __init__(self, lang):
         self.lang = lang
@@ -39,6 +44,7 @@ def main():
     commands = types.ModuleType('speech.commands')
     commands.SynthCommand = SynthCommand
     commands.CharacterModeCommand = CharacterModeCommand
+    commands.IndexCommand = IndexCommand
     commands.LangChangeCommand = LangChangeCommand
     speech.commands = commands
     sys.modules['speech'], sys.modules['speech.commands'] = speech, commands
@@ -96,6 +102,19 @@ def main():
                                           symbol_level=level.NONE)[1] == emoji
     assert joiners.protect_emoji_selectors(driver, ['\ufe0f'], symbol_level=level.NONE) == ['\ufe0f']
     assert joiners.protect_emoji_selectors(driver, ['A\ufe0f'], symbol_level=level.NONE) == ['A\ufe0f']
+    for kind in (level.NONE, level.SOME, level.MOST, level.ALL):
+        split = ['⚽', IndexCommand(7), '\ufe0f', ' ⚡', IndexCommand(8), '\ufe0f']
+        guarded = joiners.protect_emoji_selectors(driver, split, symbol_level=kind)
+        assert ''.join(item for item in guarded if isinstance(item, str)) == '⚽ ⚡'
+        assert [item.index for item in guarded if isinstance(item, IndexCommand)] == [7, 8]
+    explicit_break = ['⚽', CharacterModeCommand(True), '\ufe0f']
+    assert joiners.protect_emoji_selectors(driver, explicit_break, symbol_level=level.NONE) == explicit_break
+    language_break = ['⚽', LangChangeCommand('en_US'), '\ufe0f']
+    assert joiners.protect_emoji_selectors(driver, language_break, symbol_level=level.NONE) == language_break
+    split_dictionary = ['⚽', IndexCommand(9), '\ufe0f']
+    dictionaries.dictionaries['user'] = [types.SimpleNamespace(compiled=re.compile('⚽️'))]
+    assert joiners.protect_emoji_selectors(driver, split_dictionary, symbol_level=level.NONE) == split_dictionary
+    dictionaries.dictionaries['user'] = []
     dictionaries.dictionaries['user'] = [types.SimpleNamespace(compiled=re.compile('❤️'))]
     assert joiners.protect_emoji_selectors(driver, [emoji], symbol_level=level.NONE) == [emoji]
     dictionaries.dictionaries['user'] = []
@@ -145,9 +164,10 @@ def main():
                  'CharacterModeCommand': CharacterModeCommand, 'LangChangeCommand': LangChangeCommand,
                  'ReloqPersianJoinerGuard': joiners.ReloqPersianJoinerGuard,
                  'restore_joiners': joiners.restore_joiners}
-    for name in ('IndexCommand', 'PitchCommand', 'RateCommand', 'VolumeCommand', 'EciTagCommand',
+    for name in ('PitchCommand', 'RateCommand', 'VolumeCommand', 'EciTagCommand',
                  'SegmentationGuard', 'NativeDictionaryWord', 'CapitalWordCommand', 'BreakCommand', 'PhonemeCommand'):
         namespace[name] = type(name, (), {})
+    namespace['IndexCommand'] = IndexCommand
     module = ast.fix_missing_locations(ast.Module(body=[part_function], type_ignores=[]))
     exec(compile(module, 'generated-nvda-driver', 'exec'), namespace)
     guarded = joiners.protect_joiners(types.SimpleNamespace(_selectedLanguage=fa_id, _languages=profiles,

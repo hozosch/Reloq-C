@@ -9,6 +9,7 @@
 
 struct fa_direct_entry { const char *word, *tag; };
 struct fa_context_entry { const char *word, *final, *nonfinal; };
+struct fa_compound_extra { const char *word, *tag; unsigned char mask; };
 #include "direct_fa_lexicon.inc"
 #include "direct_fa_context.inc"
 #include "direct_fa_plural.inc"
@@ -18,6 +19,10 @@ struct fa_context_entry { const char *word, *final, *nonfinal; };
 #include "direct_fa_recovered_words.inc"
 #include "direct_fa_vocalized.inc"
 #include "direct_fa_nvda_words.inc"
+#include "direct_fa_compounds.inc"
+
+_Static_assert(sizeof fa_compound_main_masks == sizeof fa_direct_entries / sizeof fa_direct_entries[0],
+               "Persian compound admissions must match the direct lexicon");
 
 size_t reloq_fa_direct_word_count(void)
 { return sizeof fa_direct_entries / sizeof fa_direct_entries[0]; }
@@ -245,6 +250,64 @@ static int direct_vocalized_word(const char *word,size_t bytes,char *output,size
     return 1;
 }
 
+/* Productive, reference-admitted compounds. Existing full-word and suffix
+ * rules take precedence; no unverified stem is guessed. */
+static int direct_compound_word(const char *word,size_t bytes,int follows_word,
+                                char *output,size_t capacity)
+{
+    static const struct {const char *suffix;size_t bytes;unsigned kind;} endings[]={
+        {"\xe2\x80\x8c\xda\xaf\xd8\xb1",7,1},
+        {"\xe2\x80\x8c\xd9\x86\xd9\x85\xd8\xa7\xdb\x8c\xd8\xb4",13,2},
+        {"\xe2\x80\x8c\xda\xaf\xd8\xb0\xd8\xa7\xd8\xb1\xdb\x8c",13,3},
+        {"\xe2\x80\x8c\xd8\xb3\xd8\xa7\xd8\xb2\xdb\x8c",11,4},
+        {"\xda\xaf\xd8\xb1",4,0},
+    };
+    for(size_t k=0;k<sizeof endings/sizeof endings[0];++k) {
+        size_t suffix_bytes=endings[k].bytes;
+        if(bytes<=suffix_bytes || memcmp(word+bytes-suffix_bytes,endings[k].suffix,suffix_bytes))continue;
+        size_t stem_bytes=bytes-suffix_bytes,index=direct_index(word,stem_bytes);
+        unsigned mask=0;const char *base=NULL;
+        if(index<reloq_fa_direct_word_count()) {
+            mask=fa_compound_main_masks[index];base=fa_direct_entries[index].tag;
+        } else {
+            size_t lo=0,hi=sizeof fa_compound_extra_stems/sizeof fa_compound_extra_stems[0];
+            while(lo<hi) {
+                size_t mid=lo+(hi-lo)/2,n=strlen(fa_compound_extra_stems[mid].word);
+                size_t common=stem_bytes<n?stem_bytes:n;
+                int order=memcmp(word,fa_compound_extra_stems[mid].word,common);
+                if(!order)order=stem_bytes<n?-1:stem_bytes>n?1:0;
+                if(order<0)hi=mid;
+                else if(order>0)lo=mid+1;
+                else {mask=fa_compound_extra_stems[mid].mask;base=fa_compound_extra_stems[mid].tag;break;}
+            }
+        }
+        unsigned kind=endings[k].kind;
+        if(!base || !(mask & (1u<<kind)))continue;
+        static const char *const tails[]={".0gAr]",NULL,".0nA.1ma.0jeS]",
+                                          ".0go.1za.0ri]",".1sa.0zi]"};
+        const char *tail=kind==1?(follows_word?".0gAr]":".1gAr]"):tails[kind];
+        size_t n=strlen(base),end=strlen(tail);
+        if(n<4 || base[0]!='`' || base[1]!='[' || base[n-1]!=']')return -1;
+        if(n-1>=capacity || end>=capacity-(n-1))return -2;
+        memcpy(output,base,n-1);
+        if(kind==0) {
+            size_t syllables=0;
+            for(size_t i=2;i+1<n-1;++i)
+                if(output[i]=='.' && output[i+1]>='0' && output[i+1]<='2')++syllables;
+            if(!syllables)return -1;
+            size_t position=0;
+            for(size_t i=2;i+1<n-1;++i) {
+                if(output[i]!='.' || output[i+1]<'0' || output[i+1]>'2')continue;
+                output[i+1]=position+1==syllables?'1':position==0 && syllables>2?'2':'0';
+                ++position;
+            }
+        }
+        memcpy(output+n-1,tail,end+1);
+        return 1;
+    }
+    return 0;
+}
+
 static int direct_context_word_exact(const char *word,size_t bytes,int follows_word,
                                      char *output,size_t capacity)
 {
@@ -357,6 +420,8 @@ static int direct_context_word_exact(const char *word,size_t bytes,int follows_w
             return 1;
         }
     }
+    result=direct_compound_word(word,bytes,follows_word,output,capacity);
+    if(result)return result;
     /* Reference-checked independent form used in the common NVDA state
        علامت‌دار. Keep it available to the native compound predictor. */
     static const char dar[]="\xd8\xaf\xd8\xa7\xd8\xb1";

@@ -301,6 +301,9 @@ ECIAPI int ECICALL eciPersianTranslateUtf8(const char *text,size_t bytes,
 ECIAPI int ECICALL eciPersianNumber(const char *text,size_t bytes,size_t *consumed,
     char *output,size_t capacity);
 ECIAPI const char *ECICALL eciPersianLetter(uint32_t codepoint);
+/* Write the native Persian spelling of one Unicode scalar. Returns 1 on
+ * success, 0 for an invalid scalar, and -1 for an inadequate destination. */
+ECIAPI int ECICALL eciPersianCharacter(uint32_t codepoint,char *output,size_t capacity);
 ECIAPI int ECICALL eciPersianPinglishWord(const char *word,size_t bytes,
     char *output,size_t capacity);
 

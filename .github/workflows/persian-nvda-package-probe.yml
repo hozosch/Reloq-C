@@ -36,6 +36,9 @@ on:
       - experiments/persian/persian_symbols.py
       - experiments/persian/test_pinglish_driver.py
       - experiments/persian/test_direct_fa_letters.py
+      - experiments/persian/test_direct_fa_characters.py
+      - experiments/persian/test_direct_fa_compounds.py
+      - experiments/persian/test_persian_joiners.py
       - experiments/persian/test_direct_fa_sequence.py
       - experiments/persian/hybrid_fa_frontend.py
       - experiments/persian/direct_fa_sequence.py
@@ -162,6 +165,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'In-process eSpeak isolation, cancellation or parity failed' }
           python -B experiments/persian/test_persian_decimals.py
           if ($LASTEXITCODE -ne 0) { throw 'Persian NVDA decimal preprocessing failed' }
+          python -B experiments/persian/test_persian_joiners.py
+          if ($LASTEXITCODE -ne 0) { throw 'Persian NVDA emoji and joiner preprocessing failed' }
+          python -B experiments/persian/test_direct_fa_characters.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian native character names failed' }
+          python -B experiments/persian/test_direct_fa_compounds.py --library "$dll" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian native compound rules failed' }
           python -B experiments/persian/test_acoustic_run_selection.py
           if ($LASTEXITCODE -ne 0) { throw 'Windows acoustic reuse selection failed' }
           python -B experiments/persian/test_compare_vowel_corpus.py
@@ -173,6 +182,8 @@ jobs:
           python -B experiments/persian/test_nvda_package_probe.py --native-library "$dll" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Windows package adapter failed' }
           $common = (Get-ChildItem candidate -Recurse -Filter eci.dll | Select-Object -First 1).FullName
+          python -B experiments/persian/test_direct_fa_characters.py --library "$common"
+          if ($LASTEXITCODE -ne 0) { throw 'Shared ECI Persian character names failed' }
           python -B experiments/persian/test_nvda_package_probe.py --native-library "$common" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Shared Windows ECI package adapter failed' }
           python -B experiments/persian/test_streamed_sentence.py --native-library "$common" --scope-probe "$common" --espeak-library "$espeak" --data-parent "$data"
@@ -220,13 +231,13 @@ jobs:
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci.dll -print -quit)
-          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --output dist/reloq-c-persian-pinglish-1.5.0-dev128.nvda-addon
+          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --output dist/reloq-c-persian-pinglish-1.5.0-dev129.nvda-addon
       - name: Test the candidate in real NVDA
         shell: pwsh
         env:
           PYTHONIOENCODING: utf-8
         run: |
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon dist/reloq-c-persian-pinglish-1.5.0-dev128.nvda-addon --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon dist/reloq-c-persian-pinglish-1.5.0-dev129.nvda-addon --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
           if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA Persian profile test failed' }
       - uses: actions/upload-artifact@v4
         with:

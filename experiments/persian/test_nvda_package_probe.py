@@ -29,7 +29,7 @@ def main():
             'locale/de/manifest.ini': b'summary = "Alt"\ndescription = "Alt"\n'}
     entries = add_persian(base)
     assert 'Persian acoustic core' in json.loads(entries['doc/source.json'])['build']
-    assert b'1.5.0-dev128' in entries['manifest.ini']
+    assert b'1.5.0-dev129' in entries['manifest.ini']
     assert 'Persisch- und Pinglish-Test' in entries['locale/de/manifest.ini'].decode('utf8')
     assert b'add_profiles(dict(LANGUAGES), DLL)' in entries[PREFIX + '__init__.py']
     assert b'lambda: make_engine(' in entries[PREFIX + '__init__.py']
@@ -100,6 +100,7 @@ def main():
                 assert frontend._translate.__name__ == 'eciPersianTranslateUtf8'
                 assert frontend._number.__name__ == 'eciPersianNumber'
                 assert frontend._letter.__name__ == 'eciPersianLetter'
+                assert frontend._character.__name__ == 'eciPersianCharacter'
                 assert frontend.analyze_direct('علامت').parts[0].text == '`[.0A.1la.0mAt]'
                 assert frontend.analyze_direct('بدبخت').parts[0].text == '`[.1bAd.0bAGt]'
                 assert frontend.analyze_direct('سوال').parts[0].text == '`[.1so]~`[.0al]'
@@ -113,10 +114,11 @@ def main():
                 assert engine.speak(('salam ', eci.EciIndex(4), 'khubtar?'), pcm.extend, lambda _: None)
                 assert pcm
                 engine.select_voice(fa.id, '1')
-                assert frontend.analyze_direct('پژوهشگر') is None
+                assert frontend.analyze_direct('پژوهشگر') is not None
+                assert frontend.analyze_direct('همگام‌سازی') is None
                 with patch('subprocess.Popen', side_effect=AssertionError('unexpected helper process')):
                     pcm.clear()
-                    assert engine.speak(('NVDA پژوهشگر سلام',), pcm.extend, lambda _: None)
+                    assert engine.speak(('NVDA همگام‌سازی سلام',), pcm.extend, lambda _: None)
                     assert pcm
                 inprocess = importlib.import_module('probe_driver._persian.inprocess_espeak')
                 assert isinstance(frontend._worker, inprocess.InProcessEspeak)
