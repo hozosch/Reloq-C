@@ -93,6 +93,12 @@ class FrameCapture:
                 ctypes.c_int64, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64,
                 ctypes.c_uint, ctypes.c_int64)
             self.fit_pitch_edges.restype = ctypes.c_int
+        self.transfer_korean_pitch = _native_function(
+            dll, 'eciPersianTransferKoreanPitch', 'reloq_fa_transfer_korean_pitch')
+        if self.transfer_korean_pitch is not None:
+            self.transfer_korean_pitch.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
+                ctypes.POINTER(NativeFrame), ctypes.c_size_t, ctypes.c_uint, ctypes.c_int64)
+            self.transfer_korean_pitch.restype = ctypes.c_int
         self.last_audible_sample = _native_function(dll, 'eciPersianLastAudibleSample', 'reloq_fa_last_audible_sample')
         if self.last_audible_sample is not None:
             self.last_audible_sample.argtypes = (ctypes.c_char_p, ctypes.c_size_t)

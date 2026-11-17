@@ -17,7 +17,8 @@ if __package__:
     from .._reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from .._reloq_persian_projection import ProjectedJob
     from .direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient
-    from .continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence
+    from .continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence, _bracket_boundary
+    from .korean_contour import align_english_edges, contour
     from .text_frontend import SpeechPart, UnsupportedPronunciation
 else:
     from _reloq_eci_direct import (EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciPitchHz,
@@ -27,7 +28,8 @@ else:
     from _reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from _reloq_persian_projection import ProjectedJob
     from direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient
-    from continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence
+    from continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence, _bracket_boundary
+    from korean_contour import align_english_edges, contour
     from text_frontend import SpeechPart, UnsupportedPronunciation
 
 _log = logging.getLogger(__name__)
@@ -46,9 +48,10 @@ _FAST_ENGLISH_PREFIX_MIN_MS = 200
 
 class _PlanningVoice:
     """Activate the right owned handle before each private synthesis pass."""
-    def __init__(self, owner, key, engine, *, validate=False, prefix=()):
+    def __init__(self, owner, key, engine, *, validate=False, prefix=(), source=''):
         self.owner, self.key, self.engine, self.validate = owner, key, engine, validate
         self.prefix = tuple(prefix)
+        self.source = source
         self._request_phones = {}
         self.raw = engine._voice if isinstance(engine, ScopedDirectPersianEngine) else engine
         self._dll, self._handle = self.raw._dll, self.raw._handle
@@ -77,8 +80,8 @@ class _PlanningVoice:
         if isinstance(self.engine, ScopedDirectPersianEngine):
             tagged_parts = tuple(EciText(p, segmentation_guarded=True) if isinstance(p, str) else p
                                  for p in parts)
-            tagged = ''.join(p.text for p in tagged_parts if isinstance(p, EciText) and not p.speed_control)
-            prepared = _safe_native_punctuation(ProjectedJob('', tagged, tagged_parts, self.validate))
+            tagged = ''.join(p.text for p in tagged_parts if isinstance(p, EciText) and not p.is_control)
+            prepared = _safe_native_punctuation(ProjectedJob(self.source, tagged, tagged_parts, self.validate))
             completed = self.engine._speak_prepared(prepared, on_pcm, on_index, neutralize_stress=False)
         else:
             completed = self.raw.speak(parts, on_pcm, on_index)
@@ -291,6 +294,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
         rate = SAMPLE_RATES.get(fa._dll.eciGetParam(fa._handle, SAMPLE_RATE))
         if rate is None:
             raise ValueError('invalid sentence sample rate')
+        korean_available = FrameCapture(fa._dll).transfer_korean_pitch is not None
         multicore = (os.cpu_count() or 1) > 1
         parallel_worthy = sum(len(part.text) for part in sentence) >= _PARALLEL_MIN and multicore
         available_pilot = getattr(owner, '_persian_contour_worker', None) if multicore else None
@@ -321,6 +325,14 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
             boundary_ms = round(bounds[1] * 1000 / rate)
             first_end = bisect_left(item.ticks, boundary_ms)
             first = bisect_left(item.ticks, max(0, boundary_ms - reserve))
+            if korean_available and sentence[0].language == 'en-us':
+                # The last voiced English frame can precede the language
+                # boundary by more than the usual 60-ms reserve. Do not
+                # stream any frame that may need the Korean edge blend.
+                voiced = next((item.frames[i].tick for i in range(first_end - 1, -1, -1)
+                               if item.frames[i].controls[2] > 10 and item.frames[i].controls[1] > 0), None)
+                if voiced is not None:
+                    first = min(first, bisect_left(item.ticks, max(0, voiced - 45)))
             if first < 6 or first >= first_end or item.ticks[first] - item.ticks[0] < minimum_ms:
                 return False
             positions = []
@@ -339,6 +351,13 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
                 for row in item.frames[:first_end]:
                     c = row.controls
                     row.s_frication = int(c[8] > 0 and (c[38] > c[37] + 10 or c[39] > c[37] + 10))
+            if korean_available and sentence[0].language == 'fa':
+                if bisect_left(item.ticks, round(bounds[0] * 1000 / rate)) != 0:
+                    return False
+                pointer = ctypes.cast(item.frames, ctypes.POINTER(NativeFrame))
+                if contour(owner).apply(pointer, first_end, sentence[0].text, fa.raw,
+                                        owner._cancelled, continuation=True):
+                    stream_state['korean_first'] = tuple(item.frames[i].controls[1] for i in range(first_end))
             first_voice = en if sentence[0].language == 'en-us' else fa
             first_key = en_key if first_voice is en else fa_key
             if first_voice is en:
@@ -350,7 +369,8 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
             owner._activate(first_key)
             stream = FrameStream(first_voice.raw, on_pcm, on_index, cancelled=owner._cancelled)
             stream_state.update(stream=stream, item=item, end=first_end, first=first,
-                                positions=positions, prefix_complete=False, finishing=False)
+                                positions=positions, prefix_complete=False, finishing=False,
+                                prefix_bytes=ctypes.string_at(item.frames, first * ctypes.sizeof(NativeFrame)))
             stream.append(item.frames, 0, first, tuple((at, value) for at, value in positions if at < first))
             stream_state['prefix_complete'] = True
             # The very first long utterance should not wait for a second
@@ -363,7 +383,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
         first_has_glide = any(_FINAL_U.search(left.group()) and _INITIAL_A.match(right.group()) and
                               sentence[0].text[left.end():right.start()].isspace()
                               for left, right in zip(tags, tags[1:]))
-        can_stream = (not first_has_glide and not spelling and FrameStream.available(en._dll))
+        can_stream = not first_has_glide and not spelling and FrameStream.available(en._dll)
         fast_english = False
         if (available_pilot and can_stream and sentence[0].language == 'en-us' and
                 not any(isinstance(item, EciProsody) and item.parameter in (6, 8) or
@@ -391,12 +411,48 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
                                               (len(sentence[0].text) >= _FAST_PILOT_MIN or fast_english)),
                             fast_minimum_ms=(_FAST_ENGLISH_PREFIX_MIN_MS if fast_english else 300))
         original_counts = plan.counts
+        if korean_available:
+            # The existing planner retains the English context's untouched
+            # pitch before it blends switch edges to the Finnish pilot.
+            # Restore it, then fit only those edges to the Korean-derived
+            # Persian contour after the normal acoustic transitions.
+            english_context = plan.contexts['en-us']
+            original_pitch = english_context.original_pitch
+            if original_pitch is not None:
+                offset = 0
+                for i, (part, count) in enumerate(zip(sentence, plan.counts)):
+                    if part.language == 'en-us':
+                        first = bisect_left(english_context.ticks, round(plan.edges['en-us'][i] * 1000 / rate))
+                        last = bisect_left(english_context.ticks, round(plan.edges['en-us'][i + 1] * 1000 / rate))
+                        if last - first != count:
+                            raise RuntimeError('English original pitch length changed')
+                        for local in range(count):
+                            plan.frames[offset + local].controls[1] = original_pitch[first + local]
+                    offset += count
         selected_sentence(plan, sentence, en, german, rate, check=check_cancel)
+        if korean_available:
+            offset = 0
+            for i, (part, count) in enumerate(zip(sentence, plan.counts)):
+                if part.language == 'fa' and count:
+                    check_cancel()
+                    if i == 0 and 'korean_first' in stream_state:
+                        pitches = stream_state['korean_first']
+                        if len(pitches) != count:
+                            raise RuntimeError('streamed Persian pitch length changed')
+                        for frame, pitch in enumerate(pitches):
+                            plan.frames[frame].controls[1] = pitch
+                    else:
+                        pointer = ctypes.cast(ctypes.byref(plan.frames, offset * ctypes.sizeof(NativeFrame)),
+                                              ctypes.POINTER(NativeFrame))
+                        contour(owner).apply(pointer, count, part.text, fa.raw, owner._cancelled,
+                                             continuation=i + 1 < len(sentence))
+                offset += count
+            align_english_edges(plan, sentence, _bracket_boundary)
         marks = replay_marks(plan, original_counts)
         if stream_state:
             first = stream_state['first']
             size = first * ctypes.sizeof(NativeFrame)
-            if ctypes.string_at(plan.frames, size) != ctypes.string_at(stream_state['item'].frames, size):
+            if ctypes.string_at(plan.frames, size) != stream_state['prefix_bytes']:
                 _log.warning('The streamed prefix differed from the completed sentence plan')
             remaining = tuple((at - first, value) for at, value in marks if at >= first)
             stream_state['finishing'] = True
@@ -450,7 +506,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
 
 
 def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
-    """Apply the selected U-to-A glide inside an otherwise Persian job."""
+    """Apply Persian U-to-A glides and the Korean-derived pitch pilot."""
     key, items, prefix, saw_text = owner._home, [], [], False
     for part in parts:
         if isinstance(part, EciLanguage):
@@ -458,6 +514,10 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             if items and next_key != key:
                 return None
             key = next_key
+        elif isinstance(part, EciText) and part.is_control and not saw_text:
+            if not part.speed_control and persistent_tag_control(part) is None:
+                return None
+            prefix.append(part)
         elif isinstance(part, (str, EciText, EciIndex)):
             if isinstance(part, EciText) and (part.character_mode or part.is_control):
                 return None
@@ -491,8 +551,10 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
         matches = tuple(_TAG.finditer(prepared.tagged))
         tags = tuple(match.group() for match in matches)
         separators = tuple(prepared.tagged[a.end():b.start()] for a, b in zip(matches, matches[1:]))
-        if not any(_FINAL_U.search(a) and _INITIAL_A.match(b) and 'w' not in a and 'w' not in b and sep.isspace()
-                   for a, b, sep in zip(tags, tags[1:], separators)):
+        has_glide = any(_FINAL_U.search(a) and _INITIAL_A.match(b) and 'w' not in a and 'w' not in b and sep.isspace()
+                        for a, b, sep in zip(tags, tags[1:], separators))
+        korean_available = FrameCapture(engine._voice._dll).transfer_korean_pitch is not None
+        if not has_glide and not korean_available:
             return engine._speak_prepared(prepared, on_pcm, on_index)
         inserts, source, offset, next_mark = [], [], 0, 1
         for part in prepared.parts:
@@ -516,11 +578,11 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             position = at
         sequence.append(prepared.tagged[position:])
         voice = _PlanningVoice(owner, key, engine, validate=prepared.needs_native_validation,
-                               prefix=prefix)
+                               prefix=prefix, source=prepared.source)
         voice.raw._cancelled.clear()
         if owner._cancelled.is_set():
             return False
-        captured = FrameCapture(voice._dll).capture(voice, sequence, maximum=30000)
+        captured = FrameCapture(voice._dll).capture(voice, sequence, maximum=30000, audio=False)
         item = CapturedRows.from_capture(captured)
         rate = SAMPLE_RATES.get(voice._dll.eciGetParam(voice._handle, SAMPLE_RATE))
         if rate is None:
@@ -528,9 +590,26 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
         boundaries = {word: round(item.indexes[mark] * 1000 / rate) for word, mark in words.items()}
         controls = [row.controls for row in item.frames]
         glides = plan_u_a_glides(controls, item.ticks, tags, separators, boundaries)
-        if not glides:
+        if not glides and not korean_available:
             return engine._speak_prepared(prepared, on_pcm, on_index)
         apply_u_a_glides(controls, item.ticks, glides)
+        transferred = False
+        if korean_available and matches:
+            # The reviewed long-text sample used a separate Korean contour
+            # for each sentence. Reuse the existing word-boundary marks so
+            # sentence changes cannot drift across a long Persian passage.
+            starts = [0] + [i + 1 for i, gap in enumerate(separators) if any(c in gap for c in '.!?')]
+            text_edges = [0] + [matches[index].start() for index in starts[1:]] + [len(prepared.tagged)]
+            frame_edges = [0] + [bisect_left(item.ticks, boundaries[index]) for index in starts[1:]] + [len(item.frames)]
+            for i, (first, last) in enumerate(zip(frame_edges, frame_edges[1:])):
+                if first >= last:
+                    continue
+                pointer = ctypes.cast(ctypes.byref(item.frames, first * ctypes.sizeof(NativeFrame)),
+                                      ctypes.POINTER(NativeFrame))
+                tagged = prepared.tagged[text_edges[i]:text_edges[i + 1]]
+                transferred |= contour(owner).apply(pointer, last - first, tagged, voice.raw, owner._cancelled)
+        if not glides and not transferred:
+            return engine._speak_prepared(prepared, on_pcm, on_index)
         marks = []
         for mark, offset, value in source:
             frame = (0 if offset == 0 else len(item.frames) if offset == len(prepared.tagged) else

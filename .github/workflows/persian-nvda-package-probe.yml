@@ -60,6 +60,9 @@ on:
       - experiments/persian/compare_vowel_corpus.py
       - experiments/persian/test_compare_vowel_corpus.py
       - experiments/persian/parallel_pilot.py
+      - experiments/persian/korean_contour.py
+      - experiments/persian/test_korean_pitch_transfer.py
+      - experiments/persian/test_korean_contour_runtime.py
       - experiments/persian/test_parallel_pilot.py
       - experiments/persian/test_alamat_vowel.py
       - experiments/persian/test_alave_vowel.py
@@ -174,6 +177,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian native compound rules failed' }
           python -B experiments/persian/test_persian_number_boundaries.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian numeric boundary pronunciation failed' }
+          python -B experiments/persian/test_korean_pitch_transfer.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Korean contour transfer failed' }
+          python -B experiments/persian/test_korean_contour_runtime.py --library "$dll" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'Korean contour runtime failed' }
           python -B experiments/persian/test_acoustic_run_selection.py
           if ($LASTEXITCODE -ne 0) { throw 'Windows acoustic reuse selection failed' }
           python -B experiments/persian/test_compare_vowel_corpus.py
@@ -189,6 +196,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Shared ECI Persian character names failed' }
           python -B experiments/persian/test_persian_number_boundaries.py --library "$common"
           if ($LASTEXITCODE -ne 0) { throw 'Shared ECI Persian numeric boundary pronunciation failed' }
+          python -B experiments/persian/test_korean_contour_runtime.py --library "$common" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'Shared ECI Korean contour runtime failed' }
           python -B experiments/persian/test_nvda_package_probe.py --native-library "$common" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Shared Windows ECI package adapter failed' }
           python -B experiments/persian/test_streamed_sentence.py --native-library "$common" --scope-probe "$common" --espeak-library "$espeak" --data-parent "$data"
@@ -236,13 +245,13 @@ jobs:
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci.dll -print -quit)
-          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --output dist/reloq-c-persian-pinglish-1.5.0-dev130.nvda-addon
+          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --output dist/reloq-c-persian-pinglish-1.5.0-dev131.nvda-addon
       - name: Test the candidate in real NVDA
         shell: pwsh
         env:
           PYTHONIOENCODING: utf-8
         run: |
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon dist/reloq-c-persian-pinglish-1.5.0-dev130.nvda-addon --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon dist/reloq-c-persian-pinglish-1.5.0-dev131.nvda-addon --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
           if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA Persian profile test failed' }
       - uses: actions/upload-artifact@v4
         with:

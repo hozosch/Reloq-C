@@ -349,6 +349,11 @@ ECIAPI int ECICALL eciPersianFitPitch(struct reloq_fa_frame *rows,size_t count,
 ECIAPI int ECICALL eciPersianFitPitchEdges(struct reloq_fa_frame *rows,size_t count,
     const float *pilot,size_t length,const float *original,int64_t start,int64_t end,
     int64_t a,int64_t b,unsigned edges,int64_t window);
+/* Transfer a voiced donor contour, preserving the target's median pitch.
+ * Edge bits fade the transfer near an adjoining language switch. Returns 1
+ * when voiced material is insufficient, without changing the frames. */
+ECIAPI int ECICALL eciPersianTransferKoreanPitch(struct reloq_fa_frame *rows,size_t count,
+    const struct reloq_fa_frame *donor,size_t donor_count,unsigned edges,int64_t window);
 /* Replay uses the handle's output callbacks and stop epoch. An incremental
  * stream owns the handle until End and must always be ended on its owner
  * thread. It returns the normal RELOQ_ECI_* status codes. */

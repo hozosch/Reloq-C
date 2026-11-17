@@ -6,7 +6,7 @@ from pathlib import Path
 
 from direct_fa_sequence import EciIndex, EciText, project
 from hybrid_fa_frontend import DirectFirstPersian
-from test_selected_probe import engine, set_confirmed_persian_probe
+from test_us_articulation import voice as make_voice
 from text_frontend import native_sequence_accepted
 
 
@@ -21,8 +21,8 @@ def main():
     examples += [f'سرنوشتارِ سطحِ {n}ِ بعدی‌ای نیست' for n in '۱۲۳۴۵۶']
     examples += ['1ِ', '12ِ', '1َ', '2ُ', 'سلام2', '2سلام', 'سلام 1ِ سلام']
     frontend = DirectFirstPersian(args.library, None, None, None)
-    voice = engine(args.library, 0x90000)
-    set_confirmed_persian_probe()
+    voice, scope = make_voice(args.library, 0x90000)
+    previous_scope = scope(1)
     try:
         for text in examples:
             analysis = frontend.analyze_direct(text)
@@ -44,6 +44,7 @@ def main():
         assert frontend._worker is None
     finally:
         frontend.close()
+        scope(previous_scope)
         voice.close()
     print(f'Passed {len(examples)} Persian number/mark boundaries and native phoneme checks.')
 

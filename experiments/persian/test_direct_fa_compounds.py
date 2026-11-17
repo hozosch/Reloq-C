@@ -4,20 +4,23 @@ from __future__ import annotations
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import ctypes
+import hashlib
 import json
 from pathlib import Path
 import random
 import re
 
-from compile_direct_lexicon import digest
-from compile_direct_plural import entries
 from direct_fa_compound_rules import SUFFIXES, candidate
 from espeak_ng_probe import EspeakPhonemeProbe
 from hybrid_fa_frontend import DirectFirstPersian
-from test_direct_fa_suffixes import reference_tags
+from test_direct_fa_suffixes import entries, reference_tags
 
 HERE = Path(__file__).resolve().parent
 EXAMPLES = ('پژوهشگر', 'پیش‌نمایش', 'اشتراک‌گذاری', 'پردازشگر')
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def table():

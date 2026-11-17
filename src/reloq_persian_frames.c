@@ -2,6 +2,7 @@
 #include "reloq_persian_frame_internal.h"
 #include "reloq_persian_transition.h"
 
+#include <float.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -198,6 +199,104 @@ static double fa_interpolated_voice(const struct reloq_fa_frame *rows,size_t cou
     size_t a=lo-1,b=lo;
     double x=rows[a].controls[2],y=rows[b].controls[2];
     return x+(y-x)*(double)(tick-rows[a].tick)/(double)(rows[b].tick-rows[a].tick);
+}
+
+struct fa_pitch_point { int64_t tick; double pitch; };
+
+static int fa_pitch_order(const void *left,const void *right)
+{
+    double a=*(const double *)left,b=*(const double *)right;
+    return a<b?-1:a>b?1:0;
+}
+
+static double fa_pitch_median(double *values,size_t count)
+{
+    qsort(values,count,sizeof *values,fa_pitch_order);
+    return count&1 ? values[count/2] : (values[count/2-1]+values[count/2])/2.0;
+}
+
+static double fa_pitch_interpolate(const struct fa_pitch_point *points,size_t count,double tick)
+{
+    if(tick<=points[0].tick)return points[0].pitch;
+    if(tick>=points[count-1].tick)return points[count-1].pitch;
+    size_t lo=0,hi=count-1;
+    while(lo+1<hi) {
+        size_t mid=lo+(hi-lo)/2;
+        if(points[mid].tick<=tick)lo=mid;else hi=mid;
+    }
+    double part=(tick-points[lo].tick)/(double)(points[hi].tick-points[lo].tick);
+    return points[lo].pitch+part*(points[hi].pitch-points[lo].pitch);
+}
+
+/* Match the voiced-curve transfer used by the reviewed listening sample.
+ * Work only on this request's Persian frames; the Korean donor remains
+ * untouched. In mixed text, fade the transfer at actual language edges. */
+FA_EXPORT int reloq_fa_transfer_korean_pitch(struct reloq_fa_frame *rows,size_t count,
+    const struct reloq_fa_frame *donor,size_t donor_count,unsigned edges,int64_t window)
+{
+    if(!rows || !donor || !count || !donor_count || count>120000 || donor_count>120000 ||
+       edges>3 || window<0)return -1;
+    size_t voiced=0,donor_voiced=0,first=0,last=0;
+    for(size_t i=0;i<count;++i) {
+        if(rows[i].tick<0 || (i && rows[i].tick<=rows[i-1].tick) ||
+           !isfinite(rows[i].controls[1]) || !isfinite(rows[i].controls[2]))return -1;
+        if(rows[i].controls[2]>10 && rows[i].controls[1]>0) {
+            if(!voiced)first=i;
+            last=i;++voiced;
+        }
+    }
+    for(size_t i=0;i<donor_count;++i) {
+        if(donor[i].tick<0 || (i && donor[i].tick<=donor[i-1].tick) ||
+           !isfinite(donor[i].controls[1]) || !isfinite(donor[i].controls[2]))return -1;
+        if(donor[i].controls[2]>10 && donor[i].controls[1]>0)++donor_voiced;
+    }
+    if(voiced<10 || donor_voiced<10 || rows[first].tick>=rows[last].tick)return 1;
+    struct fa_pitch_point *points=malloc(donor_voiced*sizeof *points);
+    double *original=malloc(voiced*sizeof *original),*mapped=malloc(voiced*sizeof *mapped);
+    if(!points || !original || !mapped){free(points);free(original);free(mapped);return -2;}
+    size_t at=0;
+    for(size_t i=0;i<donor_count;++i)if(donor[i].controls[2]>10 && donor[i].controls[1]>0)
+        points[at++]=(struct fa_pitch_point){donor[i].tick,donor[i].controls[1]};
+    if(points[0].tick>=points[donor_voiced-1].tick){free(points);free(original);free(mapped);return 1;}
+    double span=(double)(rows[last].tick-rows[first].tick);
+    double donor_span=(double)(points[donor_voiced-1].tick-points[0].tick);
+    at=0;
+    for(size_t i=0;i<count;++i)if(rows[i].controls[2]>10 && rows[i].controls[1]>0) {
+        double fraction=(double)(rows[i].tick-rows[first].tick)/span;
+        original[at]=rows[i].controls[1];
+        mapped[at++]=fa_pitch_interpolate(points,donor_voiced,points[0].tick+fraction*donor_span);
+    }
+    double target_median=fa_pitch_median(original,voiced),donor_median=fa_pitch_median(mapped,voiced);
+    free(original);free(mapped);
+    if(!isfinite(target_median) || !isfinite(donor_median) || donor_median<=0) {free(points);return -1;}
+    double scale=target_median/donor_median;
+    if(!isfinite(scale) || scale<=0){free(points);return -1;}
+    /* Reject overflow before writing any of the caller's frames. */
+    for(size_t i=0;i<count;++i)if(rows[i].controls[1]>0) {
+        double fraction=(double)(rows[i].tick-rows[first].tick)/span;
+        if(fraction<0)fraction=0;else if(fraction>1)fraction=1;
+        double value=scale*fa_pitch_interpolate(points,donor_voiced,points[0].tick+fraction*donor_span);
+        if(!isfinite(value) || value>FLT_MAX){free(points);return -1;}
+    }
+    for(size_t i=0;i<count;++i)if(rows[i].controls[1]>0) {
+        double fraction=(double)(rows[i].tick-rows[first].tick)/span;
+        if(fraction<0)fraction=0;else if(fraction>1)fraction=1;
+        double value=scale*fa_pitch_interpolate(points,donor_voiced,points[0].tick+fraction*donor_span);
+        double weight=1;
+        if(window && (edges&1u)) {
+            double x=(double)(rows[i].tick-rows[first].tick)/(double)window;
+            if(x<0)x=0;else if(x>1)x=1;
+            weight*=x*x*(3-2*x);
+        }
+        if(window && (edges&2u)) {
+            double x=(double)(rows[last].tick-rows[i].tick)/(double)window;
+            if(x<0)x=0;else if(x>1)x=1;
+            weight*=x*x*(3-2*x);
+        }
+        rows[i].controls[1]=(float)(rows[i].controls[1]+weight*(value-rows[i].controls[1]));
+    }
+    free(points);
+    return 0;
 }
 
 FA_EXPORT int reloq_fa_fit_pitch(struct reloq_fa_frame *rows,size_t count,

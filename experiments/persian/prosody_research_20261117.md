@@ -133,12 +133,12 @@ for the alignment of phrase-level rises with prominence, morphology, focus,
 and question type, rather than assuming that a different contour corrects
 the lexical stress automatically.
 
-The optional Korean listening comparison captures actual Korean-core pitch
+The original Korean listening comparison captures actual Korean-core pitch
 curves, stretches each one to the duration of the corresponding Persian
 utterance, and matches its median to the Persian baseline. It changes only F0
 in a replay of the same Persian frames. The transplant is not aligned by word
-or syllable, and it is neither a Persian prosody model nor enabled in the
-voice. Each example includes statement/question punctuation as appropriate.
+or syllable, and it was neither a Persian prosody model nor enabled in the
+voice at that stage. Each example includes statement/question punctuation as appropriate.
 
 For the longer comparison the Persian passage is captured continuously with
 sentence indexes. The corresponding Korean sentences are synthesized
@@ -148,6 +148,19 @@ of its Persian sentence, then normalized over the whole passage. Captured
 non-F0 controls and all frame timings are checked for exact identity. This
 avoids drifting across sentence boundaries, but still does not claim
 syllable-level alignment or preserve cross-sentence Korean prosodic context.
+
+Following the native-speaker preference for that sample, dev131 uses a
+request-local Korean donor for ordinary Persian and Pinglish speech. Because
+the sample's hand-translated Korean sentences cannot be supplied for
+arbitrary text, the donor is a Hangul syllable-count proxy with phrase
+punctuation. Its contour is an approximation to the reviewed sample, not
+the same seven stored curves. The native C transfer changes F0 only and
+normalizes median pitch; the NVDA adapter still owns proxy generation,
+language segmentation and capture/replay. English word interiors use their
+own native pitch; only actual switch edges are fit to Persian. Inflection
+remains controlled by the user's setting. Inline controls that cannot be
+safely planned retain the earlier route. The candidate needs new listening
+feedback for arbitrary text, questions and mixed-language switches.
 
 The separate eSpeak-F0 comparison estimates periodic pitch from the eSpeak
 waveform, interpolates through unvoiced gaps, aligns the two engines at word

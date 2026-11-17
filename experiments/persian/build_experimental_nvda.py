@@ -22,10 +22,10 @@ from build_synth import make_entries
 PREFIX = 'synthDrivers/reloqC/'
 MODULES = ('espeak_ng_probe', 'inprocess_espeak', 'text_frontend', 'pinglish_frontend', 'persian_symbols',
            'reference_alignment', 'hybrid_fa_frontend', 'direct_fa_sequence', 'continuous_plan',
-           'continuous_driver', 'parallel_pilot', 'nvda_driver_probe')
+           'continuous_driver', 'parallel_pilot', 'korean_contour', 'nvda_driver_probe')
 
 
-def add_persian(entries, *, version='1.5.0-dev130'):
+def add_persian(entries, *, version='1.5.0-dev131'):
     """Extend a baseline package without changing the normal release builder."""
     entries = dict(entries)
     driver = PREFIX + '__init__.py'
@@ -124,7 +124,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dll', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--version', default='1.5.0-dev130')
+    parser.add_argument('--version', default='1.5.0-dev131')
     args = parser.parse_args()
     entries = add_persian(make_entries(args.dll), version=args.version)
     args.output.parent.mkdir(parents=True, exist_ok=True)

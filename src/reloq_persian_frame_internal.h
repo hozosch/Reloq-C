@@ -29,6 +29,8 @@ int reloq_fa_fit_pitch(struct reloq_fa_frame *rows,size_t count,const float *pil
 int reloq_fa_fit_pitch_edges(struct reloq_fa_frame *rows,size_t count,const float *pilot,
     size_t length,const float *original,int64_t start,int64_t end,int64_t a,int64_t b,
     unsigned edges,int64_t window);
+int reloq_fa_transfer_korean_pitch(struct reloq_fa_frame *rows,size_t count,
+    const struct reloq_fa_frame *donor,size_t donor_count,unsigned edges,int64_t window);
 int reloq_fa_capture_controls_only(void);
 int reloq_fa_capture_active(void);
 int reloq_fa_capture_advance_samples(size_t count);

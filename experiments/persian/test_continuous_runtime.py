@@ -142,7 +142,9 @@ def main():
             assert marked == unmarked and indexes[0] == (3, 0) and indexes[-1] == (5, len(marked))
             assert 0 < indexes[1][1] < len(marked) and indexes[1][0] == 4
             for text in ('سلام دنیا.', 'بدبخت', 'تعجب', 'کتابم کتابها', 'او، آمد.'):
-                assert render(engine, (text,))[0] == render(native, (text,))[0], text
+                output, baseline = render(engine, (text,))[0], render(native, (text,))[0]
+                assert len(output) == len(baseline), text
+                assert (output != baseline) if api.transfer_korean_pitch is not None else (output == baseline), text
             # Inline pitch preceding a split job must not bypass the selected
             # Persian vowel-to-vowel transition.
             pitched, pitched_marks = render(engine, (EciIndex(6), EciPitch(80), 'او آمد.', EciIndex(7)))

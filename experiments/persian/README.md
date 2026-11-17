@@ -14,6 +14,16 @@ existing reference in several contexts; unknown forms retain the fallback.
 The NVDA adapter also suppresses redundant emoji presentation selectors split
 by source indexes, while letting NVDA's symbol level and dictionaries take precedence.
 
+The dev131 candidate transfers a Korean-core pitch contour to ordinary
+Persian and Pinglish speech. A short Hangul proxy follows the Persian phone
+tags' syllable counts and phrase punctuation; it is not a translation and
+is an approximation of the Korean sentences used in the listening sample.
+The shared C layer transfers F0 without changing the other acoustic frames.
+In mixed speech, English keeps its own word contour and only its switch edges
+are aligned to the neighboring Persian pitch. Bracket boundaries keep their
+existing separate treatment. Some unusual inline controls and spelling paths
+still use their earlier contour. This candidate requires native-speaker review.
+
 The language is **not yet fully implemented in the native core**. Mixed-text
 segmentation and sentence planning still run in the NVDA adapter, and words
 outside the direct rules may use an in-process eSpeak text fallback. Persian

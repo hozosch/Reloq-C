@@ -51,19 +51,27 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             import synthDriverHandler
             import synthDrivers.reloqC as reloq
             import characterProcessing
-            from synthDrivers.reloqC._persian import continuous_driver, direct_fa_sequence, nvda_driver_probe
+            from synthDrivers.reloqC._persian import continuous_driver, direct_fa_sequence, korean_contour, nvda_driver_probe
             from synthDrivers.reloqC._reloq_eci_transport import EciTextTransport
             self.speech, self.character, self.index_command = speech, CharacterModeCommand, IndexCommand
             self.symbols = characterProcessing
             self.projected = []
             self.projected_sources = []
             self.emoji_submissions = []
+            self.korean_calls = []
             self.emoji_case = False
             self.user_controls = []
             self.continuous = []
             old_project_part = continuous_driver._project_part
             old_prepared = direct_fa_sequence.ScopedDirectPersianEngine._speak_prepared
             old_continuous = nvda_driver_probe.try_continuous
+            old_korean = korean_contour.KoreanContour.apply
+            def observe_korean(instance, rows, count, tagged, *args, **kwargs):
+                result = old_korean(instance, rows, count, tagged, *args, **kwargs)
+                if result:
+                    self.korean_calls.append(tagged)
+                return result
+            korean_contour.KoreanContour.apply = observe_korean
             def observe_project(*args, **kwargs):
                 result = old_project_part(*args, **kwargs)
                 self.projected.append(result[0])
@@ -208,6 +216,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           *(('fa_IR', f'سرنوشتارِ سطحِ {level}ِ بعدی‌ای نیست', 'issue49_heading')
                             for level in range(1, 7)),
                           ('fa_IR', 'سرنوشتارِ سطحِ 2ِ قبلی‌ای نیست', 'issue49_heading_split'),
+                          ('fa_IR', 'سلام دنیا. این یک آزمایش است؟', 'issue49_korean'),
+                          ('fa_IR', 'NVDA سلام دنیا', 'issue49_korean'),
+                          ('fa_IR', 'This is an English test.', 'issue49_korean_english'),
                           ('fa_Latn', 'salam (donya) khub', False),
                           ('fa_Latn', 'salam, donya, khub', False),
                           ('fa_IR', 'سلام (دنیا)', 'pipeline_bracket'),
@@ -444,7 +455,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text, 'کادرِ علامت‌زدنی', status]
             elif isinstance(spelling, str) and spelling.startswith('tags_'):
                 sequence = [text]
-            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading'):
+            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading', 'issue49_korean', 'issue49_korean_english'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
@@ -456,16 +467,19 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.pipeline = self.pipeline or spelling in ('issue49_quotes', 'issue49_numeric')
             self.pipeline = self.pipeline or spelling in ('issue49_version_some', 'issue49_version_split',
                                                            'issue49_emoji_some', 'issue49_emoji_split',
-                                                           'issue49_heading', 'issue49_heading_split')
+                                                           'issue49_heading', 'issue49_heading_split',
+                                                           'issue49_korean', 'issue49_korean_english')
             self.emoji_case = spelling in ('issue49_emoji_some', 'issue49_emoji_split')
             self.before_emoji = len(self.emoji_submissions)
+            self.before_korean = len(self.korean_calls)
             self.before_continuous = len(self.continuous)
             if self.pipeline:
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
                                   symbolLevel=(self.symbols.SymbolLevel.SOME if spelling in (
                                                'issue49_quotes', 'issue49_version_some', 'issue49_version_split',
                                                'issue49_emoji_some', 'issue49_emoji_split',
-                                               'issue49_heading', 'issue49_heading_split') else
+                                               'issue49_heading', 'issue49_heading_split',
+                                               'issue49_korean', 'issue49_korean_english') else
                                                self.symbols.SymbolLevel.MOST if spelling in ('pipeline_most', 'checkbox_checked_most')
                                                else self.symbols.SymbolLevel.NONE))
             else:
@@ -502,6 +516,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 submitted = self.emoji_submissions[self.before_emoji:]
                 if not submitted or any('\ufe0f' in part for sequence in submitted for part in sequence):
                     raise AssertionError('emoji presentation selector leaked to the synthesizer: ' + ascii(text))
+            if spelling == 'issue49_korean' and len(self.korean_calls) == self.before_korean:
+                raise AssertionError('NVDA did not apply the Korean-derived Persian pitch: ' + ascii(text))
+            if spelling == 'issue49_korean_english' and len(self.korean_calls) != self.before_korean:
+                raise AssertionError('Korean-derived pitch changed English-only speech')
             audio = b''.join(chunk for player in self.players
                              for chunk in player.chunks[self.before.get(id(player), 0):])
             if not audio:
