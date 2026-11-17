@@ -34,15 +34,13 @@ monotonic mapping preserves both slider endpoints and responsiveness. The
 original long comparison used Korean inflection 30. This candidate requires
 native-speaker review.
 
-In the synthetic donor, a two-syllable neutral word at an ordinary statement
-ending gave a notably deeper Korean final pitch than the longer Korean
-sentences in the original experiment. Dev134 adds one donor-only syllable in
-that situation, so the same Korean core plans the ending with a longer word.
-The actual Persian pronunciation and duration are unchanged. Explicit
-questions, comma endings and English continuations keep their previous donor
-structure. This is a listening hypothesis, not a claim about correct Persian
-intonation. The comparison audio is captured from NVDA's real speech pipeline
-with the old and new donor rules at the same explicit settings.
+The donor keeps the Persian word and syllable counts; it does not insert a
+special final syllable or fit particular reference pitch patterns. The Korean
+core plans each donor with the supplied punctuation and inflection. Additional
+context at a language switch prevents the Korean planner from treating an
+unfinished phrase as a sentence ending. This remains a syllable proxy, not a
+Korean translation or a claim about correct Persian intonation. The listening
+comparison is captured from NVDA's real speech pipeline at explicit settings.
 
 The language is **not yet fully implemented in the native core**. Mixed-text
 segmentation and sentence planning still run in the NVDA adapter, and words

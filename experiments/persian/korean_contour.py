@@ -39,21 +39,9 @@ def _punctuation(text):
     return explicit or (',' if any(char in '()[]{}' for char in text) else '')
 
 
-def _donor_syllables(matches, tagged, *, continuation=False):
-    """Choose syllables for the Korean pitch donor, never for Persian speech.
-
-    The neutral two-syllable final word produces an exceptionally deep final
-    fall in this Korean voice, unlike the longer Korean sentences used in the
-    listening experiment. Give that synthetic final word one extra syllable
-    of Korean context. Questions, explicit continuation and non-final marks
-    retain their own Korean contour. Persian phones and timing are untouched.
-    """
-    counts = [max(1, len(_SYLLABLE.findall(match.group()))) for match in matches]
-    if counts and counts[-1] == 2 and not continuation:
-        ending = _punctuation(tagged[matches[-1].end():])
-        if not ending or set(ending) == {'.'}:
-            counts[-1] += 1
-    return tuple(counts)
+def _donor_syllables(matches):
+    """Preserve Persian word and syllable counts in the Korean donor."""
+    return tuple(max(1, len(_SYLLABLE.findall(match.group()))) for match in matches)
 
 
 def proxy(tagged: str, *, continuation: bool = False) -> str | None:
@@ -61,7 +49,7 @@ def proxy(tagged: str, *, continuation: bool = False) -> str | None:
     matches = tuple(_TAG.finditer(tagged))
     if not matches:
         return None
-    syllables = _donor_syllables(matches, tagged, continuation=continuation)
+    syllables = _donor_syllables(matches)
     parts = []
     for index, match in enumerate(matches):
         count = syllables[index]
@@ -141,7 +129,7 @@ class KoreanContour:
         if self.voice._pitch_hz != pitch_hz:
             self.voice.set_parameter(PITCH_HZ, pitch_hz)
         matches = tuple(_TAG.finditer(tagged))
-        syllable_counts = _donor_syllables(matches, tagged, continuation=continuation)
+        syllable_counts = _donor_syllables(matches)
         # Synthesize a little Korean context on either side of an embedded
         # Persian span. Otherwise the final Persian word is pronounced as a
         # Korean sentence ending just before English, producing a large fall.

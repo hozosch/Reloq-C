@@ -54,9 +54,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             import characterProcessing
             from synthDrivers.reloqC._persian import continuous_driver, direct_fa_sequence, korean_contour, nvda_driver_probe
             from synthDrivers.reloqC._reloq_eci_transport import EciTextTransport
+            from synthDrivers.reloqC._reloq_persian_frames import FrameCapture
             self.speech, self.character, self.index_command = speech, CharacterModeCommand, IndexCommand
-            self.korean_module = korean_contour
-            self.candidate_donor_syllables = korean_contour._donor_syllables
+            self.sample_finnish = False
+            original_capture_init = FrameCapture.__init__
+            self.frame_capture_class, self.original_capture_init = FrameCapture, original_capture_init
+            def comparison_capture_init(instance, dll):
+                original_capture_init(instance, dll)
+                if self.sample_finnish:
+                    instance.transfer_korean_pitch = None
+            FrameCapture.__init__ = comparison_capture_init
             self.pitch_command = PitchCommand
             self.symbols = characterProcessing
             self.projected = []
@@ -318,9 +325,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'تنظیمات را باز کنید', False),
                           ('en_US', 'Open settings', False),
                           ('de_DE', 'Guten Tag.', False)]
-            # Capture comparable samples through NVDA's real preprocessing,
-            # speech manager, driver and packaged Windows DLL. The old donor
-            # is the dev133 rule, switched only in this test plugin.
+            # Capture samples through NVDA's real preprocessing, speech
+            # manager, driver and packaged Windows DLL. The Finnish example
+            # only disables pitch transfer in this test plugin.
             passage = ('سلام دوستان. امروز می‌خواهم درباره یک کتاب صحبت کنم. '
                        'این کتاب درباره دو دوست است. آن‌ها هر روز با هم به مدرسه می‌روند. '
                        'در راه به مردم سلام می‌کنند و درباره زندگی صحبت می‌کنند. '
@@ -328,8 +335,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                        'شما هم کتاب خواندن را دوست دارید؟')
             samples = (('word', 'سلام'), ('passage', passage),
                        ('switch', 'سلام NVDA دنیا. Hello. سلام دنیا. این یک آزمایش است.'))
-            self.cases.extend(('fa_IR', text, 'comparison_' + version + '_' + name)
-                              for name, text in samples for version in ('old', 'new'))
+            self.cases.extend(('fa_IR', text, 'comparison_korean_' + name) for name, text in samples)
+            self.cases.extend(('fa_IR', 'سلام دنیا خوب.', 'comparison_' + kind + '_pitch')
+                              for kind in ('finnish', 'korean'))
             self.next()
         except BaseException:
             self.fail()
@@ -436,12 +444,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                 row['spelling'] == 'pipeline_bracket')
                 if fa_colon['pcm_sha256'] == fa_comma['pcm_sha256']:
                     raise AssertionError('NVDA replaced the colon contour with a comma contour')
-                for name in ('word', 'passage', 'switch'):
-                    old = next(row for row in self.results if row['spelling'] == 'comparison_old_' + name)
-                    new = next(row for row in self.results if row['spelling'] == 'comparison_new_' + name)
-                    if old['pcm_bytes'] != new['pcm_bytes'] or old['pcm_sha256'] == new['pcm_sha256']:
-                        raise AssertionError('NVDA contour comparison changed duration or not pitch: ' + name)
-                self.korean_module._donor_syllables = self.candidate_donor_syllables
+                old = next(row for row in self.results if row['spelling'] == 'comparison_finnish_pitch')
+                new = next(row for row in self.results if row['spelling'] == 'comparison_korean_pitch')
+                if old['pcm_bytes'] != new['pcm_bytes'] or old['pcm_sha256'] == new['pcm_sha256']:
+                    raise AssertionError('NVDA pitch-command comparison changed duration or not melody')
+                self.frame_capture_class.__init__ = self.original_capture_init
                 self.done_signal.unregister(self.speech_done)
                 RESULT.write_text(json.dumps({'ok': True, 'cases': self.results,
                     'first_symbol_preparations': self.symbol_preparations[:4],
@@ -451,19 +458,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.speech.cancelSpeech()
             self.synth.language = locale
             self.sample_case = isinstance(spelling, str) and spelling.startswith('comparison_')
+            self.sample_finnish = spelling == 'comparison_finnish_pitch'
             if self.sample_case:
                 self.synth.sampleRate = '3'  # 16 kHz, like the first listening experiment
                 self.synth.rateBoost = False
                 self.synth.rate = 23  # the driver's unboosted ECI speed 65
                 self.synth.pitch = 65
                 self.synth.inflection = 30
-                if spelling.startswith('comparison_old_'):
-                    def old_syllables(matches, _tagged, *, continuation=False):
-                        return tuple(max(1, len(self.korean_module._SYLLABLE.findall(match.group())))
-                                     for match in matches)
-                    self.korean_module._donor_syllables = old_syllables
-                else:
-                    self.korean_module._donor_syllables = self.candidate_donor_syllables
             self.synth.voiceTags = isinstance(spelling, str) and spelling.startswith('tags_')
             if self.synth.language != locale:
                 raise AssertionError('language selection did not stick: ' + locale)
@@ -484,6 +485,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [self.pitch_command(multiplier=1.2), text, self.pitch_command()]
             elif spelling == 'issue49_korean_mid_pitch':
                 sequence = ['سلام ', self.pitch_command(multiplier=1.2), 'دنیا', self.pitch_command()]
+            elif spelling in ('comparison_finnish_pitch', 'comparison_korean_pitch'):
+                sequence = ['سلام ', self.pitch_command(multiplier=1.2), 'دنیا ', self.pitch_command(), 'خوب.']
             elif spelling == 'issue49_korean_spelling':
                 sequence = [self.character(True), text, self.character(False)]
             elif spelling == 'english_exception':
@@ -614,8 +617,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if not audio:
                 raise RuntimeError('no actual NVDA audio for ' + ascii(text))
             if self.sample_case:
-                if len(self.korean_calls) == self.before_korean:
+                if not self.sample_finnish and len(self.korean_calls) == self.before_korean:
                     raise AssertionError('real NVDA comparison missed the Korean donor: ' + spelling)
+                if self.sample_finnish and len(self.korean_calls) != self.before_korean:
+                    raise AssertionError('Finnish comparison unexpectedly used a Korean donor')
                 with wave.open(str(RESULT.parent / (spelling + '.wav')), 'wb') as output:
                     output.setnchannels(1)
                     output.setsampwidth(2)

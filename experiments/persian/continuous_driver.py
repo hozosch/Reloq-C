@@ -514,7 +514,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
 
 def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
     """Apply Persian U-to-A glides and the Korean-derived pitch pilot."""
-    key, items, prefix, trailing, saw_text = owner._home, [], [], [], False
+    key, items, prefix, saw_text = owner._home, [], [], False
     for part in parts:
         if isinstance(part, EciLanguage):
             next_key = owner._key(part.language, part.voice)
@@ -528,21 +528,15 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
         elif isinstance(part, (str, EciText, EciIndex)):
             if isinstance(part, EciText) and part.is_control:
                 return None
-            if trailing and isinstance(part, (str, EciText)) and (part if isinstance(part, str) else part.text):
-                # A control between words still needs a piecewise donor.
-                return None
             items.append(part)
             if isinstance(part, (str, EciText)):
                 saw_text = True
-        elif isinstance(part, EciPitch) and saw_text:
-            # Pitch insertions are queued at a text boundary. Keep them in
-            # the one native capture instead of dropping the entire Korean
-            # plan when NVDA changes pitch inside a Persian utterance.
+        elif isinstance(part, (EciPitch, EciPitchHz, EciProsody)) and saw_text:
+            # Keep controls in the native capture instead of dropping the
+            # Korean plan when NVDA changes pitch or speed inside Persian.
             items.append(part)
         elif isinstance(part, (EciPitch, EciPitchHz, EciProsody)) and not saw_text:
             prefix.append(part)
-        elif isinstance(part, (EciPitch, EciPitchHz, EciProsody)):
-            trailing.append(part)
         else:
             return None
     if key[0] not in fa_ids or not items:
@@ -579,10 +573,10 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                 inserts.append((offset, len(inserts), next_mark))
                 source.append((next_mark, offset, part.value))
                 next_mark += 1
-            elif isinstance(part, EciPitch):
+            elif isinstance(part, (EciPitch, EciPitchHz, EciProsody)):
                 inserts.append((offset, len(inserts), part))
-                internal_pitch |= offset < len(prepared.tagged)
-            elif not isinstance(part, (EciPitch, EciPitchHz, EciProsody)):
+                internal_pitch |= isinstance(part, EciPitch) and offset < len(prepared.tagged)
+            else:
                 return None
         words = {}
         for word, match in enumerate(matches):
@@ -595,12 +589,11 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             sequence.extend((prepared.tagged[position:at], EciIndex(mark) if isinstance(mark, int) else mark))
             position = at
         sequence.append(prepared.tagged[position:])
-        sequence.extend(trailing)
         # DirectEciEngine applies Hertz pitch and speed/volume controls to
         # the whole queued utterance, even if supplied at its end. Match
         # that established behavior in the donor. EciPitch is queued and
         # its trailing reset must not change the preceding word.
-        donor_prefix = (*prefix, *(part for part in trailing if isinstance(part, (EciPitchHz, EciProsody))))
+        donor_prefix = (*prefix, *(part for part in items if isinstance(part, (EciPitchHz, EciProsody))))
         voice = _PlanningVoice(owner, key, engine, validate=prepared.needs_native_validation,
                                prefix=prefix, source=prepared.source)
         voice.raw._cancelled.clear()
