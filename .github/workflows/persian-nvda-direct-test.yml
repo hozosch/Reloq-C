@@ -20,6 +20,8 @@ on:
       - experiments/persian/test_nvda_real_plugin.py
       - experiments/persian/test_unicode_fallback_routing.py
       - experiments/persian/test_us_contour_runtime.py
+      - experiments/persian/test_embedded_text_rules.py
+      - experiments/persian/select_windows_acoustic_run.py
 permissions:
   contents: read
   actions: read

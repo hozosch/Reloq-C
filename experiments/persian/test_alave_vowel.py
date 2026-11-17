@@ -22,7 +22,7 @@ def main():
                                   args.espeak_library, args.data_parent)
     try:
         frontend = engine._engines[PERSIAN_PROBE.id]._frontend
-        phones = lambda value: re.sub(r'\.[012]', '.#', value)
+        phones = lambda value: re.sub(r'\.[012]', '.#', re.sub(r'`00\s*', '', value))
         expected = {
             'علاوه': "`[.0A.1la.0v'e:']",
             'علاوه‌ی': "`[.0A.1la.0v'e:'.1j'e:']",
