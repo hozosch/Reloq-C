@@ -97,7 +97,7 @@ def main():
         assert frontend.analyze(unlisted).parts == frontend.analyze(unicodedata.normalize('NFC', unlisted)).parts
         job = project_resilient(('سلام @ (🙂) دنیا',), frontend)
         assert SYMBOL_TAGS['@'] in job.tagged and '(' in job.tagged
-        assert UNICODE_TAG in job.tagged and ')' in job.tagged
+        assert SYMBOL_TAGS['🙂'] in job.tagged and UNICODE_TAG not in job.tagged and ')' in job.tagged
         # Issue 49: both examples contain words outside the direct lexicon.
         # Test the actual fallback with and without NVDA text/index splits.
         for text, expected in (('بله این حرف شما - درسته حتما', "`[.0do.1ros.0t'e:']"),
