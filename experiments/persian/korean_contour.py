@@ -9,14 +9,15 @@ from __future__ import annotations
 
 import ctypes
 from bisect import bisect_left, bisect_right
+from dataclasses import replace
 import re
 
 if __package__:
-    from .._reloq_eci_direct import (DirectEciEngine, GENDER, NATIVE_INFLECTION, NATIVE_PITCH,
+    from .._reloq_eci_direct import (DirectEciEngine, EciPitch, EciText, GENDER, NATIVE_INFLECTION, NATIVE_PITCH,
                                      NATIVE_SPEED, NATIVE_WPM, PITCH_HZ, PROCESS_TAGS, SAMPLE_RATE)
     from .._reloq_persian_frames import FrameCapture, NativeFrame
 else:
-    from _reloq_eci_direct import (DirectEciEngine, GENDER, NATIVE_INFLECTION, NATIVE_PITCH,
+    from _reloq_eci_direct import (DirectEciEngine, EciPitch, EciText, GENDER, NATIVE_INFLECTION, NATIVE_PITCH,
                                    NATIVE_SPEED, NATIVE_WPM, PITCH_HZ, PROCESS_TAGS, SAMPLE_RATE)
     from _reloq_persian_frames import FrameCapture, NativeFrame
 
@@ -25,13 +26,38 @@ _SYLLABLE = re.compile(r'\.[012]')
 _PUNCTUATION = ',;:.!?'
 
 
-def korean_inflection(value: int) -> int:
-    """Map NVDA 30 to Korean 37 while retaining the full slider range."""
+def _anchored(value: int, source: int, target: int) -> int:
+    """Map one anchor while keeping both ends of a 0..100 setting."""
     if not 0 <= value <= 100:
-        raise ValueError('inflection must be between 0 and 100')
-    if value <= 30:
-        return (value * 37 + 15) // 30
-    return 37 + ((value - 30) * 63 + 35) // 70
+        raise ValueError('setting must be between 0 and 100')
+    if value <= source:
+        return (value * target + source // 2) // source
+    return target + ((value - source) * (100 - target) + (100 - source) // 2) // (100 - source)
+
+
+def korean_pitch(value: int) -> int:
+    """Make Persian pitch 65 use the donor pitch previously used at 68."""
+    return _anchored(value, 65, 68)
+
+
+def korean_inflection(value: int) -> int:
+    """Make Persian 30 use the donor contour previously selected at 37."""
+    old_user_setting = _anchored(value, 30, 37)
+    return _anchored(old_user_setting, 30, 37)
+
+
+def _donor_control(part):
+    """Apply the same calibration to explicit VB/VF controls in the donor."""
+    if isinstance(part, EciPitch):
+        return EciPitch(korean_pitch(part.value))
+    if isinstance(part, EciText) and part.tag_control:
+        match = re.fullmatch(r'`v([bf])([0-9]+)', part.tag_control)
+        if match and int(match.group(2)) <= 100:
+            value = int(match.group(2))
+            value = korean_pitch(value) if match.group(1) == 'b' else korean_inflection(value)
+            new_tag = f'`v{match.group(1)}{value}'
+            return replace(part, text=part.text.replace(part.tag_control, new_tag, 1), tag_control=new_tag)
+    return part
 
 
 def _punctuation(text):
@@ -102,7 +128,9 @@ def proxy(tagged: str, *, continuation: bool = False) -> str | None:
         accented = int(not marked or bool(re.search(r'\.[12]', match.group())))
         phrase.append((syllables[index], accented))
     last = tagged[matches[-1].end():]
-    ending = _punctuation(last)
+    # A colon ending a Persian prosodic segment has the same donor ending as
+    # a period. Colons inside a segment (for example in a time) remain intact.
+    ending = _punctuation(last).replace(':', '.')
     flush(ending or (',' if continuation else '.'))
     return ' '.join(parts)
 
@@ -161,14 +189,16 @@ class KoreanContour:
             return False
         if cancelled.is_set():
             raise InterruptedError('Korean pitch planning cancelled')
+        pitch_hz = getattr(target_voice, '_pitch_hz', 0)
         for parameter in (SAMPLE_RATE, NATIVE_SPEED, NATIVE_WPM, NATIVE_PITCH, NATIVE_INFLECTION, GENDER):
             value = target_voice._dll.eciGetParam(target_voice._handle, parameter)
             if parameter == NATIVE_INFLECTION and value >= 0:
                 value = korean_inflection(value)
+            elif parameter == NATIVE_PITCH and value >= 0 and not pitch_hz:
+                value = korean_pitch(value)
             if value >= 0 and self.parameters.get(parameter) != value:
                 self.voice.set_parameter(parameter, value)
                 self.parameters[parameter] = value
-        pitch_hz = getattr(target_voice, '_pitch_hz', 0)
         if self.voice._pitch_hz != pitch_hz:
             self.voice.set_parameter(PITCH_HZ, pitch_hz)
         matches = tuple(_TAG.finditer(tagged))
@@ -181,7 +211,7 @@ class KoreanContour:
             pilot = pilot[:-1]  # remove the proxy's implicit full stop
         pilot = ('가가 ' if leading else '') + pilot + (' 가가.' if trailing else '')
         self.voice._cancelled.clear()
-        donor = api.capture(self.voice, (*prefix, pilot), maximum=30000, audio=False)
+        donor = api.capture(self.voice, (*(map(_donor_control, prefix)), pilot), maximum=30000, audio=False)
         if cancelled.is_set() or donor is None:
             raise InterruptedError('Korean pitch planning cancelled')
         frames = donor.frames()

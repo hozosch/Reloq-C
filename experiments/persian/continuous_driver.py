@@ -46,6 +46,43 @@ _FAST_PILOT_MIN = 80
 _FAST_ENGLISH_PREFIX_MIN_MS = 200
 
 
+def _colon_ends_sentence(text, index):
+    """Treat prose colons as boundaries, but preserve times and URL schemes."""
+    before, after = index - 1, index + 1
+    while before >= 0 and text[before].isspace():
+        before -= 1
+    while after < len(text) and text[after].isspace():
+        after += 1
+    if before >= 0 and after < len(text) and text[before].isdecimal() and text[after].isdecimal():
+        return False
+    return after == len(text) or text[after] not in ('/', '\\')
+
+
+def _plain_colons(text):
+    """Locate punctuation colons without inspecting phoneme-tag contents."""
+    return [match.start() for match in re.finditer(r'`\[[^]]+\]|:', text)
+            if match.group() == ':']
+
+
+def _persian_sentence_starts(tagged, source, matches, separators):
+    """Find sentence words, resolving colons against the original text."""
+    source_colons, tagged_colons = _plain_colons(source), _plain_colons(tagged)
+    if len(source_colons) == len(tagged_colons):
+        boundaries = {target for original, target in zip(source_colons, tagged_colons)
+                      if _colon_ends_sentence(source, original)}
+    else:
+        # A rare projection may omit punctuation. Be conservative rather than
+        # split a clock or an address when source-to-tag pairing is unclear.
+        boundaries = set()
+    result = [0]
+    for i, gap in enumerate(separators):
+        start = matches[i].end()
+        if (any(char in gap for char in '.!?') or
+                any(start + offset in boundaries for offset, char in enumerate(gap) if char == ':')):
+            result.append(i + 1)
+    return result
+
+
 class _PlanningVoice:
     """Activate the right owned handle before each private synthesis pass."""
     def __init__(self, owner, key, engine, *, validate=False, prefix=(), source=''):
@@ -580,7 +617,7 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                 internal_pitch |= isinstance(part, EciPitch) and offset < len(prepared.tagged)
             else:
                 return None
-        starts = ([0] + [i + 1 for i, gap in enumerate(separators) if any(c in gap for c in '.!?')]
+        starts = (_persian_sentence_starts(prepared.tagged, prepared.source, matches, separators)
                   if korean_available and matches else [])
         sentence_words = set(starts[1:])
         # A glide needs its own start and neighbouring word boundaries.
@@ -728,7 +765,9 @@ def sentence_jobs(parts, home):
             if char not in '.!?؟,;:،؛\n':
                 continue
             after = full[absolute + 1:absolute + 2]
-            if char in '.,;:،؛' and after and not after.isspace():
+            if char == ':' and not _colon_ends_sentence(full, absolute):
+                continue
+            if char in '.,;،؛' and after and not after.isspace():
                 continue
             if char == '.':
                 before = re.search(r'([A-Za-z]+)$', full[:absolute])

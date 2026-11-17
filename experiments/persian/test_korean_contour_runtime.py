@@ -8,9 +8,10 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
-from _reloq_eci_direct import EciIndex, EciLanguage, EciPitch, EciPitchHz, EciProsody, EciText, NATIVE_INFLECTION, PITCH_HZ, SAMPLE_RATE, SAMPLE_RATES
+from _reloq_eci_direct import EciIndex, EciLanguage, EciPitch, EciPitchHz, EciProsody, EciText, GENDER, NATIVE_INFLECTION, NATIVE_PITCH, PITCH_HZ, SAMPLE_RATE, SAMPLE_RATES
 from _reloq_persian_frames import FrameCapture, NativeFrame
-from korean_contour import KoreanContour, align_english_edges, korean_inflection, proxy
+from korean_contour import KoreanContour, align_english_edges, korean_inflection, korean_pitch, proxy
+import korean_contour
 from nvda_driver_probe import PERSIAN_PROBE, US_ENGLISH, make_language_engine
 from text_frontend import SpeechPart
 from compare_korean_long import SENTENCES
@@ -28,6 +29,7 @@ def main():
     assert proxy('`[.1sA.0lam]') == '가가.'
     assert proxy('`[.1sA.0lam]', continuation=True) == '가가,'
     assert proxy('`[.1sA.0lam],') == '가가,'
+    assert proxy('`[.1sA.0lam]:') == proxy('`[.1sA.0lam].')
     assert proxy('`[salam]') == '가.'
     for tagged, count, punctuation in (
             ('`[.1sa.0lam] `[.1do.0nja].', 4, '.'),
@@ -37,8 +39,15 @@ def main():
         result = proxy(tagged)
         assert result.count('가') == count and ''.join(c for c in result if c in ',.!?') == punctuation
     mapped = [korean_inflection(value) for value in range(101)]
-    assert mapped[0] == 0 and mapped[30] == 37 and mapped[100] == 100
+    assert mapped[0] == 0 and mapped[30] == 43 and mapped[100] == 100
     assert all(a <= b for a, b in zip(mapped, mapped[1:]))
+    pitches = [korean_pitch(value) for value in range(101)]
+    assert pitches[0] == 0 and pitches[65] == 68 and pitches[100] == 100
+    assert all(a <= b for a, b in zip(pitches, pitches[1:]))
+    for text, boundary in (('سلام:دنیا', True), ('سلام: دنیا', True),
+                           ('12:30', False), ('۱۲ : ۳۰', False),
+                           ('https://example.org', False), ('C:\\\\file', False)):
+        assert continuous_driver._colon_ends_sentence(text, text.index(':')) == boundary, text
     assert proxy('plain English') is None
     for languages in (('en-us', 'fa'), ('fa', 'en-us')):
         rows = (NativeFrame * 240)()
@@ -110,6 +119,47 @@ def main():
         assert speak(english, False) == speak(english, True), 'English-only speech changed'
         assert voice._home[0] == PERSIAN_PROBE.id
         assert getattr(voice, '_persian_korean_contour', None) is not None
+        # Match the previous candidate at the user's actual slider settings,
+        # not merely at the donor's internal Korean inflection value.
+        def old_inflection(value):
+            return ((value * 37 + 15) // 30 if value <= 30 else
+                    37 + ((value - 30) * 63 + 35) // 70)
+        for sample_rate in (1, 3, 6):
+            voice.set_parameter(SAMPLE_RATE, sample_rate)
+            for gender in (0, 1):
+                voice.set_parameter(GENDER, gender)
+                voice.set_parameter(NATIVE_PITCH, 68)
+                voice.set_parameter(NATIVE_INFLECTION, 37)
+                with (patch.object(korean_contour, 'korean_pitch', lambda value: value),
+                      patch.object(korean_contour, 'korean_inflection', old_inflection)):
+                    reference, _ = speak(('سلام دنیا. این یک آزمایش است؟',), True)
+                voice.set_parameter(NATIVE_PITCH, 65)
+                voice.set_parameter(NATIVE_INFLECTION, 30)
+                current, _ = speak(('سلام دنیا. این یک آزمایش است؟',), True)
+                assert current == reference, ('65/30 differs from previous 68/37', sample_rate, gender)
+        voice.set_parameter(SAMPLE_RATE, 3)
+        voice.set_parameter(GENDER, 0)
+        plain, _ = speak(('سلام دنیا.',), True)
+        for prefix in (EciPitch(65), EciText('`vb65 ', tag_control='`vb65'),
+                       EciText('`vf30 ', tag_control='`vf30')):
+            assert speak((prefix, 'سلام دنیا.'), True)[0] == plain, prefix
+        pitch_examples = []
+        for value in (50, 65, 80):
+            voice.set_parameter(NATIVE_PITCH, value)
+            pitch_examples.append(speak(('سلام دنیا.',), True)[0])
+        assert len(set(pitch_examples)) == len(pitch_examples), 'pitch slider stopped affecting Persian'
+        voice.set_parameter(NATIVE_PITCH, 68)
+        voice.set_parameter(NATIVE_INFLECTION, 37)
+        voice.set_parameter(PITCH_HZ, 180)
+        with (patch.object(korean_contour, 'korean_pitch', lambda value: value),
+              patch.object(korean_contour, 'korean_inflection', old_inflection)):
+            old_hertz, _ = speak(('سلام دنیا.',), True)
+        voice.set_parameter(NATIVE_PITCH, 65)
+        voice.set_parameter(NATIVE_INFLECTION, 30)
+        voice.set_parameter(PITCH_HZ, 180)
+        assert speak(('سلام دنیا.',), True)[0] == old_hertz, 'exact Hertz pitch changed'
+        voice.set_parameter(PITCH_HZ, 0)
+        voice.set_parameter(NATIVE_PITCH, 65)
         # Verify a real mixed plan, not just the synthetic frame case: only
         # the English edge moves and its voiced endpoint meets Persian F0.
         seen = []
@@ -151,6 +201,36 @@ def main():
         with patch.object(KoreanContour, 'apply', observe_sentence):
             speak(('سلام دنیا. این یک آزمایش است؟',), True)
         assert len(sentences) == 2 and sentences[0].rstrip().endswith('.') and sentences[1].endswith('?'), sentences
+        # A colon in prose must restart the Korean planner like a full stop,
+        # including without spaces and through real Persian/English routing.
+        # Compare real output, not only the generated donor text.
+        for sample_rate in (1, 3, 6):
+            voice.set_parameter(SAMPLE_RATE, sample_rate)
+            for colon, full_stop in (
+                    ('سلام دنیا: این یک آزمایش است؟', 'سلام دنیا. این یک آزمایش است؟'),
+                    ('سلام:دنیا', 'سلام.دنیا'),
+                    ('سلام دنیا: NVDA سلام.', 'سلام دنیا. NVDA سلام.')):
+                recordings, donors = [], []
+                for text in (colon, full_stop):
+                    sentences.clear()
+                    with patch.object(KoreanContour, 'apply', observe_sentence):
+                        recordings.append(speak((text,), True)[0])
+                    donors.append(tuple(proxy(tagged) for tagged in sentences))
+                assert len(donors[0]) == 2 and donors[0] == donors[1], (colon, donors)
+                assert recordings[0] == recordings[1], (sample_rate, colon)
+        voice.set_parameter(SAMPLE_RATE, 3)
+        for text in ('ساعت 12:30 است.', 'ساعت ۱۲:۳۰ است.'):
+            sentences.clear()
+            with patch.object(KoreanContour, 'apply', observe_sentence):
+                speak((text,), True)
+            assert len(sentences) == 1, ('time was split into sentences', text, sentences)
+        colon_parts = (EciIndex(41), 'سلام دنیا:', EciIndex(42), ' این ',
+                       EciIndex(43), 'یک آزمایش است؟', EciIndex(44))
+        sentences.clear()
+        with patch.object(KoreanContour, 'apply', observe_sentence):
+            colon_indexed, marks = speak(colon_parts, True)
+        assert len(sentences) == 2 and [mark for mark, _ in marks] == [41, 42, 43, 44]
+        assert colon_indexed == speak(('سلام دنیا: این یک آزمایش است؟',), True)[0]
         # The original accepted listening sample inserted a mark only at
         # each sentence boundary. With a mark before every word, the native
         # callback can report some sentence starts inside the previous word.

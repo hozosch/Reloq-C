@@ -14,7 +14,7 @@ existing reference in several contexts; unknown forms retain the fallback.
 The NVDA adapter also suppresses redundant emoji presentation selectors split
 by source indexes, while letting NVDA's symbol level and dictionaries take precedence.
 
-The dev136 candidate transfers the Korean core's own pitch to ordinary
+The dev137 candidate transfers the Korean core's own pitch to ordinary
 Persian and Pinglish speech. An experimental Hangul proxy groups Persian
 syllables into approximate Korean accentual phrases, using the existing stress
 marks and respecting punctuation. It is not a translation and cannot reproduce
@@ -34,10 +34,13 @@ pitch change inside a Persian utterance retains the Korean sentence contour;
 the relative pitch adjustment is measured from native frames. Bracket
 boundaries retain their separate treatment. Some other unusual mid-utterance
 ECI controls still use the earlier route. Pitch, Hertz pitch, speed and inflection
-remain adjustable. NVDA inflection 30 now selects Korean inflection 37; a
-monotonic mapping preserves both slider endpoints and responsiveness. The
-original long comparison used Korean inflection 30. This candidate requires
-native-speaker review.
+remain adjustable. Persian at NVDA pitch 65 and inflection 30 now selects
+the same Korean donor settings as dev136 did at NVDA pitch 68 and inflection
+37 (Korean pitch 68 and inflection 43). Monotonic maps preserve both slider
+endpoints; explicit Hertz values remain exact. A prose colon restarts the
+Korean sentence planner like a full stop, while numeric time colons and URL
+schemes are not treated as sentence breaks. The original long comparison
+used Korean inflection 30. This candidate requires native-speaker review.
 
 The donor retains Persian syllable counts while grouping some adjacent words;
 it does not insert a special final syllable or fit reference pitch patterns. The Korean
@@ -56,7 +59,8 @@ the new candidate requires native-speaker evaluation and comparison with dev135.
 `compare_korean_grouping.py` produces a controlled comparison of the earlier
 translated Korean source, the previous word-by-word donor and the grouped
 donor, all at Korean inflection 37 and with the same Persian synthesis frames.
-Its `--check-runtime` and optional `--old-pcm` verify the two runtime sections.
+It also includes the original comparison and the calibrated current runtime.
+Its `--check-runtime` and optional `--old-pcm` verify the respective runtime sections.
 
 For the reviewed long passage, a dense sequence of word marks previously
 placed the final question's contour 890 ms before the sentence mark used by

@@ -56,6 +56,20 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             from synthDrivers.reloqC._reloq_eci_transport import EciTextTransport
             from synthDrivers.reloqC._reloq_persian_frames import FrameCapture
             self.speech, self.character, self.index_command = speech, CharacterModeCommand, IndexCommand
+            # Reproduce dev136's donor mapping inside the same real NVDA
+            # driver to compare the user's old and new slider settings.
+            self.reference_calibration = False
+            calibrated_pitch = korean_contour.korean_pitch
+            calibrated_inflection = korean_contour.korean_inflection
+            def comparison_pitch(value):
+                return value if self.reference_calibration else calibrated_pitch(value)
+            def comparison_inflection(value):
+                if self.reference_calibration:
+                    return ((value * 37 + 15) // 30 if value <= 30 else
+                            37 + ((value - 30) * 63 + 35) // 70)
+                return calibrated_inflection(value)
+            korean_contour.korean_pitch = comparison_pitch
+            korean_contour.korean_inflection = comparison_inflection
             self.sample_finnish = False
             original_capture_init = FrameCapture.__init__
             self.frame_capture_class, self.original_capture_init = FrameCapture, original_capture_init
@@ -337,6 +351,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                        ('switch', 'سلام NVDA دنیا. Hello. سلام دنیا. این یک آزمایش است.'))
             self.cases.extend(('fa_IR', text, 'comparison_korean_' + name) for name, text in samples)
             self.cases.append(('fa_IR', passage, 'comparison_korean_dense'))
+            self.cases.extend(('fa_IR', passage, 'comparison_' + name + '_calibration')
+                              for name in ('old', 'new'))
+            self.cases.extend((('fa_IR', 'سلام دنیا: این یک آزمایش است؟', 'comparison_colon'),
+                               ('fa_IR', 'سلام دنیا. این یک آزمایش است؟', 'comparison_period')))
             self.cases.extend(('fa_IR', 'سلام دنیا خوب.', 'comparison_' + kind + '_pitch')
                               for kind in ('finnish', 'korean'))
             self.next()
@@ -453,6 +471,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 dense = next(row for row in self.results if row['spelling'] == 'comparison_korean_dense')
                 if plain['pcm_sha256'] != dense['pcm_sha256']:
                     raise AssertionError('NVDA word indexes changed the Korean sentence melody')
+                old = next(row for row in self.results if row['spelling'] == 'comparison_old_calibration')
+                new = next(row for row in self.results if row['spelling'] == 'comparison_new_calibration')
+                if old['pcm_sha256'] != new['pcm_sha256']:
+                    raise AssertionError('NVDA 65/30 differs from the previous 68/37 reference')
+                colon = next(row for row in self.results if row['spelling'] == 'comparison_colon')
+                period = next(row for row in self.results if row['spelling'] == 'comparison_period')
+                if colon['pcm_sha256'] != period['pcm_sha256']:
+                    raise AssertionError('NVDA colon melody differs from the full-stop melody')
                 self.frame_capture_class.__init__ = self.original_capture_init
                 self.done_signal.unregister(self.speech_done)
                 RESULT.write_text(json.dumps({'ok': True, 'cases': self.results,
@@ -464,12 +490,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.synth.language = locale
             self.sample_case = isinstance(spelling, str) and spelling.startswith('comparison_')
             self.sample_finnish = spelling == 'comparison_finnish_pitch'
+            self.reference_calibration = spelling == 'comparison_old_calibration'
             if self.sample_case:
                 self.synth.sampleRate = '3'  # 16 kHz, like the first listening experiment
                 self.synth.rateBoost = False
                 self.synth.rate = 23  # the driver's unboosted ECI speed 65
-                self.synth.pitch = 65
-                self.synth.inflection = 30
+                self.synth.pitch = 68 if self.reference_calibration else 65
+                self.synth.inflection = 37 if self.reference_calibration else 30
             self.synth.voiceTags = isinstance(spelling, str) and spelling.startswith('tags_')
             if self.synth.language != locale:
                 raise AssertionError('language selection did not stick: ' + locale)

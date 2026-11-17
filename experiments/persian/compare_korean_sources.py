@@ -2,9 +2,10 @@
 
 All four sections replay one identical Persian frame capture. They compare
 translated Korean at inflection 30 with the neutral syllable proxy at the same
-inflection, translated Korean at 37, and the current proxy at 37. The first
-three share one passage-wide pitch scale; the last uses the unscaled Korean
-pitch, as in the current runtime. This is a diagnostic, not a Persian model.
+inflection, translated Korean at 37, and the earlier proxy at 37. The first
+three share one passage-wide pitch scale; the fourth uses unscaled Korean
+pitch. The fifth checks the calibrated runtime. This is a diagnostic, not a
+Persian model.
 """
 from __future__ import annotations
 
@@ -22,7 +23,7 @@ from _reloq_eci_direct import GENDER, NATIVE_INFLECTION, NATIVE_PITCH, NATIVE_SP
 from compare_korean_long import SENTENCES, indexed_capture, replay, transfer
 from direct_fa_sequence import EciIndex, project_resilient
 from hybrid_fa_frontend import DirectFirstPersian
-from korean_contour import proxy
+from korean_contour import korean_inflection, korean_pitch, proxy
 from nvda_driver_probe import make_language_engine
 from test_us_articulation import voice
 
@@ -155,6 +156,14 @@ def main():
             if len(pcm) != len(target.pcm):
                 raise AssertionError('Persian duration changed')
             variants[name, inflection] = pcm
+        ko.set_parameter(NATIVE_PITCH, korean_pitch(65))
+        ko.set_parameter(NATIVE_INFLECTION, korean_inflection(30))
+        calibrated = [indexed_capture(ko, ko_scope, (row[1],), False) for row in donor_text]
+        values, _ = mapped_pitch(target, calibrated)
+        frames = target.frames()
+        for index, value in values:
+            frames[index].controls[1] = value
+        current = replay(fa, fa_scope, frames)
         if args.check_runtime:
             engine = make_language_engine(args.candidate, args.candidate, None, args.espeak_library, args.data_parent)
             try:
@@ -164,7 +173,7 @@ def main():
                 actual = bytearray()
                 if not engine.speak((' '.join(text for text, _ in SENTENCES),), actual.extend, lambda _: None):
                     raise RuntimeError('runtime synthesis failed')
-                if bytes(actual) != variants['neutral', 37]:
+                if bytes(actual) != current:
                     raise AssertionError('the current runtime does not match its comparison section')
             finally:
                 engine.close()
@@ -176,8 +185,10 @@ def main():
         play(variants['neutral', 30])
         say('Three: the original Korean translations, inflection thirty seven.')
         play(variants['translated', 37])
-        say('Four: current neutral Korean syllables, inflection thirty seven, without pitch normalization.')
+        say('Four: earlier neutral Korean syllables, inflection thirty seven, without pitch normalization.')
         play(variants['neutral', 37])
+        say('Five: the current calibrated Persian settings, pitch sixty five, inflection thirty.')
+        play(current)
         say('End of comparison.')
     finally:
         frontend.close()

@@ -2,8 +2,8 @@
 
 The translated Korean source, the previous word-by-word donor and the new
 phrase-grouped donor all use Korean inflection 37 and the same Persian frame
-capture. A final section recreates the earlier translated-Korean sample at 30.
-The optional checks verify both live runtime and a previous raw PCM capture.
+capture. The fourth section recreates the earlier translated-Korean sample
+at 30; the fifth checks the current calibrated runtime.
 """
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from compare_korean_long import SENTENCES, indexed_capture, replay, transfer
 from compare_korean_sources import mapped_pitch, original_clip, without_boundary_silence
 from direct_fa_sequence import EciIndex, project_resilient
 from hybrid_fa_frontend import DirectFirstPersian
-from korean_contour import _TAG, _SYLLABLE, _punctuation, proxy
+from korean_contour import _TAG, _SYLLABLE, _punctuation, korean_inflection, korean_pitch, proxy
 from nvda_driver_probe import make_language_engine
 from test_us_articulation import voice
 
@@ -44,7 +44,7 @@ def main():
         parser.add_argument('--' + name, required=True, type=Path)
     parser.add_argument('--original', type=Path, help='verify the earlier English listening sample')
     parser.add_argument('--old-pcm', type=Path, help='verify the earlier runtime PCM for this passage')
-    parser.add_argument('--check-runtime', action='store_true', help='verify the new section against live runtime PCM')
+    parser.add_argument('--check-runtime', action='store_true', help='verify the final section against live runtime PCM')
     args = parser.parse_args()
     frontend = DirectFirstPersian(args.candidate, None, args.espeak_library, args.data_parent)
     fa, fa_scope = voice(args.candidate, 0x90000)
@@ -101,6 +101,14 @@ def main():
             raise AssertionError('the earlier Korean section was not reproduced')
         if args.old_pcm and variants['previous'] != args.old_pcm.read_bytes():
             raise AssertionError('the previous donor does not match the previous runtime PCM')
+        ko.set_parameter(NATIVE_PITCH, korean_pitch(65))
+        ko.set_parameter(NATIVE_INFLECTION, korean_inflection(30))
+        calibrated = [indexed_capture(ko, ko_scope, (text,), False) for text in donor_text['grouped']]
+        values, _ = mapped_pitch(target, calibrated)
+        frames = target.frames()
+        for index, value in values:
+            frames[index].controls[1] = value
+        variants['current'] = replay(fa, fa_scope, frames)
         if args.check_runtime:
             engine = make_language_engine(args.candidate, args.candidate, None, args.espeak_library, args.data_parent)
             try:
@@ -110,8 +118,8 @@ def main():
                 actual = bytearray()
                 if not engine.speak((' '.join(text for text, _ in SENTENCES),), actual.extend, lambda _: None):
                     raise RuntimeError('runtime synthesis failed')
-                if bytes(actual) != variants['grouped']:
-                    raise AssertionError('the grouped donor does not match the live runtime PCM')
+                if bytes(actual) != variants['current']:
+                    raise AssertionError('the calibrated donor does not match the live runtime PCM')
             finally:
                 engine.close()
         say('A controlled listening comparison. Every section uses the same Persian words, sounds and timing.')
@@ -123,6 +131,8 @@ def main():
         play(variants['grouped'])
         say('Fourth: the original listening experiment, translated Korean at inflection thirty.')
         play(original)
+        say('Fifth: the current calibrated Persian settings, pitch sixty five, inflection thirty.')
+        play(variants['current'])
         say('End of comparison.')
     finally:
         frontend.close()
