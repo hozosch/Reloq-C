@@ -205,6 +205,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                                  ('fa_IR', 'issue49_version_split'))),
                           *(( 'fa_IR', emoji, mode) for emoji in ('⚽️', '⚡️', '❤️')
                             for mode in ('issue49_emoji_some', 'issue49_emoji_split')),
+                          *(('fa_IR', f'سرنوشتارِ سطحِ {level}ِ بعدی‌ای نیست', 'issue49_heading')
+                            for level in range(1, 7)),
+                          ('fa_IR', 'سرنوشتارِ سطحِ 2ِ قبلی‌ای نیست', 'issue49_heading_split'),
                           ('fa_Latn', 'salam (donya) khub', False),
                           ('fa_Latn', 'salam, donya, khub', False),
                           ('fa_IR', 'سلام (دنیا)', 'pipeline_bracket'),
@@ -428,6 +431,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             value[1:3], self.index_command(8000 + self.index), value[3:] + text[number.end():]]
             elif spelling == 'issue49_emoji_split':
                 sequence = [text[0], self.index_command(9000 + self.index), text[1:]]
+            elif spelling == 'issue49_heading_split':
+                number = re.search('[0-9]', text)
+                if number is None:
+                    raise AssertionError('missing heading level')
+                at = number.end()
+                sequence = [text[:at], self.index_command(10000 + self.index), text[at:]]
             elif spelling in ('checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most'):
                 status = 'بدونِ علامت' if spelling == 'checkbox_unchecked' else 'علامت‌دار'
                 # NVDA speaks an object's name, role and state as separate
@@ -435,7 +444,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text, 'کادرِ علامت‌زدنی', status]
             elif isinstance(spelling, str) and spelling.startswith('tags_'):
                 sequence = [text]
-            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some'):
+            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
@@ -446,7 +455,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('tags_'))
             self.pipeline = self.pipeline or spelling in ('issue49_quotes', 'issue49_numeric')
             self.pipeline = self.pipeline or spelling in ('issue49_version_some', 'issue49_version_split',
-                                                           'issue49_emoji_some', 'issue49_emoji_split')
+                                                           'issue49_emoji_some', 'issue49_emoji_split',
+                                                           'issue49_heading', 'issue49_heading_split')
             self.emoji_case = spelling in ('issue49_emoji_some', 'issue49_emoji_split')
             self.before_emoji = len(self.emoji_submissions)
             self.before_continuous = len(self.continuous)
@@ -454,7 +464,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
                                   symbolLevel=(self.symbols.SymbolLevel.SOME if spelling in (
                                                'issue49_quotes', 'issue49_version_some', 'issue49_version_split',
-                                               'issue49_emoji_some', 'issue49_emoji_split') else
+                                               'issue49_emoji_some', 'issue49_emoji_split',
+                                               'issue49_heading', 'issue49_heading_split') else
                                                self.symbols.SymbolLevel.MOST if spelling in ('pipeline_most', 'checkbox_checked_most')
                                                else self.symbols.SymbolLevel.NONE))
             else:
@@ -511,6 +522,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if expected not in tags:
                     details = self.projected_sources[self.before_projected_sources:]
                     raise AssertionError('NVDA spelled a Persian word: ' + ascii(details))
+            if spelling in ('issue49_heading', 'issue49_heading_split'):
+                tags = ' '.join(self.projected[self.before_projected:])
+                if not tags or ']`[' in tags:
+                    raise AssertionError('NVDA joined Persian number and vowel tags: ' + ascii(tags))
             if spelling is True and text in 'ًٌٍَُِّْٰ':
                 expected = {'ً':'`[.1An]', 'ٌ':'`[.1on]', 'ٍ':'`[.1en]',
                             'َ':"`[.1'A:']", 'ُ':"`[.1'o:']", 'ِ':"`[.1'e:']",

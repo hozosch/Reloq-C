@@ -45,6 +45,16 @@ def main():
     assert status == 1 and text is None
     status, text, _events, _error = run('3,14', (), ())
     assert status == 2 and text is None
+    # Adjacent source tokens must not concatenate two phoneme controls into
+    # one malformed tag. The combining kasra belongs to NVDA's Persian
+    # announcement "No next heading at level {i}".
+    status, text, events, _error = run('1ِ', (0, 1, 3), (1, 1, 1))
+    assert status == 0 and text == "`[.1jek] `[.1'e:']"
+    assert events == (0, len('`[.1jek] '), len(text)), events
+    status, text, _events, _error = run('سلام2', (), ())
+    assert status == 0 and text == '`[.0sA.1lam] `[.1do]'
+    status, text, _events, _error = run('2سلام', (), ())
+    assert status == 0 and text == '`[.1do] `[.0sA.1lam]'
     status, text, events, _error = run('', (0,), (1,))
     assert status == 0 and text == '' and events == (0,)
     print('Passed native ECI Persian text, source indexes and safe rejection.')

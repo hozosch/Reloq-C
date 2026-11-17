@@ -25,6 +25,15 @@ static int append(struct output_buffer *b,const char *s,size_t n)
     return 0;
 }
 
+/* Two independently generated ECI phoneme tags must not touch: the
+ * provider otherwise reads their punctuation and spelling as ordinary
+ * Finnish. This can occur when a Persian combining mark follows a digit,
+ * or when a word and a number are adjacent in the source. */
+static int separate_adjacent_tags(struct output_buffer *b)
+{
+    return b->used && b->data[b->used-1]==']' ? append(b," ",1) : 0;
+}
+
 static int word_character(uint32_t c)
 {
     /* The lexical lookup makes the final decision. Digits and symbols in
@@ -104,6 +113,7 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             size_t number_start=sign?next:start;
             int found=reloq_fa_direct_number(text+number_start,length-number_start,&count,tag,sizeof tag);
             if(found){status=found;break;}
+            if(separate_adjacent_tags(&b)){status=-2;break;}
             size_t tag_start=b.used;
             if(sign) {
                 const char *name=cp=='+'?"`[.1mos.0bAt] ":"`[.1mAn.0fi] ";
@@ -129,6 +139,7 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             int found=reloq_fa_direct_context_word(text+start,end-start,follows,tag,sizeof tag);
             if(found!=1){status=found==0?1:-1;break;}
             retain_compound_prosody(text+start,end-start,follows,tag,sizeof tag);
+            if(separate_adjacent_tags(&b)){status=-2;break;}
             size_t tag_start=b.used;
             if(append(&b,tag,strlen(tag))){status=-2;break;}
             for(size_t i=start;i<end;++i)map[i]=tag_start;
