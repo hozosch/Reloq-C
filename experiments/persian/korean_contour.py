@@ -8,6 +8,7 @@ No speech result or pitch curve is cached across requests.
 from __future__ import annotations
 
 import ctypes
+from bisect import bisect_left, bisect_right
 import re
 
 if __package__:
@@ -50,6 +51,37 @@ def proxy(tagged: str, *, continuation: bool = False) -> str | None:
     return ''.join(parts)
 
 
+def _donor_span(frames, leading, syllables, trailing):
+    """Select the actual Persian segment from a contextual Korean donor.
+
+    Each proxy syllable normally yields one voiced run. If the Korean core
+    merges runs, fall back to a proportional slice of the voiced interval;
+    both routes keep the donor's surrounding phrase context during synthesis.
+    """
+    if not leading and not trailing:
+        return 0, len(frames)
+    runs, start = [], None
+    for i, row in enumerate(frames):
+        active = row.controls[2] > 10 and row.controls[1] > 0
+        if active and start is None:
+            start = i
+        elif not active and start is not None:
+            runs.append((start, i))
+            start = None
+    if start is not None:
+        runs.append((start, len(frames)))
+    if len(runs) == leading + syllables + trailing:
+        return runs[leading][0], runs[leading + syllables - 1][1]
+    if not runs:
+        return 0, 0
+    total = leading + syllables + trailing
+    first, last = frames[runs[0][0]].tick, frames[runs[-1][1] - 1].tick
+    ticks = [row.tick for row in frames]
+    begin = first + (last - first) * leading / total
+    end = first + (last - first) * (leading + syllables) / total
+    return bisect_left(ticks, begin), bisect_right(ticks, end)
+
+
 class KoreanContour:
     """Own a private Korean donor handle on the existing speech worker."""
 
@@ -66,8 +98,8 @@ class KoreanContour:
         self.voice.close()
 
     def apply(self, rows, count, tagged, target_voice, cancelled, *, edges=0, continuation=False,
-              word_ticks=None, prefix=()):
-        pilot = proxy(tagged, continuation=continuation)
+              preceded=False, prefix=()):
+        pilot = proxy(tagged)
         api = self.api
         if pilot is None or api.transfer_korean_pitch is None:
             return False
@@ -81,29 +113,35 @@ class KoreanContour:
         pitch_hz = getattr(target_voice, '_pitch_hz', 0)
         if self.voice._pitch_hz != pitch_hz:
             self.voice.set_parameter(PITCH_HZ, pitch_hz)
+        matches = tuple(_TAG.finditer(tagged))
+        syllable_counts = tuple(max(1, len(_SYLLABLE.findall(match.group()))) for match in matches)
+        # Synthesize a little Korean context on either side of an embedded
+        # Persian span. Otherwise the final Persian word is pronounced as a
+        # Korean sentence ending just before English, producing a large fall.
+        leading, trailing = (2 if preceded else 0), (2 if continuation else 0)
+        if continuation and not _punctuation(tagged[matches[-1].end():]):
+            pilot = pilot[:-1]  # remove the proxy's implicit full stop
+        pilot = ('가가 ' if leading else '') + pilot + (' 가가.' if trailing else '')
         self.voice._cancelled.clear()
         donor = api.capture(self.voice, (*prefix, pilot), maximum=30000, audio=False)
         if cancelled.is_set() or donor is None:
             raise InterruptedError('Korean pitch planning cancelled')
         frames = donor.frames()
+        first, last = _donor_span(frames, leading, sum(syllable_counts), trailing)
+        if first >= last:
+            return False
+        donor_pointer = ctypes.cast(ctypes.byref(frames, first * ctypes.sizeof(NativeFrame)),
+                                    ctypes.POINTER(NativeFrame))
         pointer = ctypes.cast(rows, ctypes.POINTER(NativeFrame))
         if api.transfer_korean_aligned is not None and not edges:
-            matches = tuple(_TAG.finditer(tagged))
-            syllables = (ctypes.c_uint32 * len(matches))(
-                *(max(1, len(_SYLLABLE.findall(match.group()))) for match in matches))
-            ticks = None
-            # In the Finnish capture, indexes adjoining punctuation can be
-            # reported one word late. Brackets and commas can sound exactly
-            # alike despite producing different index positions. In that
-            # case use the continuous Korean phrase instead of a bad anchor.
-            safe_gaps = all(not tagged[a.end():b.start()].strip(' \t\r\n~')
-                            for a, b in zip(matches, matches[1:]))
-            if safe_gaps and word_ticks is not None and len(word_ticks) == len(matches) - 1:
-                ticks = (ctypes.c_int64 * len(word_ticks))(*word_ticks) if word_ticks else None
-            status = api.transfer_korean_aligned(pointer, count, frames, len(frames), ticks,
+            syllables = (ctypes.c_uint32 * len(matches))(*syllable_counts)
+            # The accepted original listening sample mapped the whole
+            # Korean phrase continuously. Word-by-word time warping changed
+            # that melody and proved distracting in the NVDA candidate.
+            status = api.transfer_korean_aligned(pointer, count, donor_pointer, last - first, None,
                                                   syllables, len(matches))
         else:
-            status = api.transfer_korean_pitch(pointer, count, frames, len(frames), edges, 45)
+            status = api.transfer_korean_pitch(pointer, count, donor_pointer, last - first, edges, 45)
         if status < 0:
             raise RuntimeError('Korean pitch transfer failed: ' + str(status))
         return status == 0
@@ -136,7 +174,13 @@ def align_english_edges(plan, parts, is_bracket_boundary):
         english_boundary = li if left == 'en-us' else ri
         target_boundary = ri if left == 'en-us' else li
         anchor = plan.frames[english_boundary]
-        delta = plan.frames[target_boundary].controls[1] - anchor.controls[1]
+        target = plan.frames[target_boundary].controls[1]
+        # Keep the English word's own contour. A large target mismatch used
+        # to drag its first or last 45 ms by almost an octave; constrain the
+        # correction to two semitones instead of forcing exact equality.
+        limit = 2 ** (2 / 12)
+        target = max(anchor.controls[1] / limit, min(anchor.controls[1] * limit, target))
+        delta = target - anchor.controls[1]
         indexes = range(li, a - 1, -1) if left == 'en-us' else range(ri, c)
         for index in indexes:
             row = plan.frames[index]

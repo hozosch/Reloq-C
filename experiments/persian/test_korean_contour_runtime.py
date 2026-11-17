@@ -39,7 +39,8 @@ def main():
         align_english_edges(plan, parts, lambda _parts, _edge: False)
         english_first = 0 if languages[0] == 'en-us' else 120
         assert rows[english_first + (0 if english_first == 0 else 119)].controls[1] == 120
-        assert rows[119 if languages[0] == 'en-us' else 120].controls[1] == 160
+        boundary_pitch = rows[119 if languages[0] == 'en-us' else 120].controls[1]
+        assert 120 < boundary_pitch <= 120 * 2 ** (2 / 12) + 0.001
         persian_first = 120 if languages[1] == 'fa' else 0
         assert all(row.controls[1] == 160 for row in rows[persian_first:persian_first + 120])
         assert all(row.controls[9] == 400 for row in rows)
@@ -115,7 +116,12 @@ def main():
                               if plan.frames[i].controls[2] > 10 and plan.frames[i].controls[1] > 0), None)
                 if left is None or right is None:
                     continue
-                assert abs(plan.frames[left].controls[1] - plan.frames[right].controls[1]) < 0.001
+                english = left if parts[edge - 1].language == 'en-us' else right
+                persian = right if english == left else left
+                fitted = plan.frames[english].controls[1]
+                assert abs(fitted - before[english]) <= before[english] * (2 ** (2 / 12) - 1) + 0.001
+                assert abs(fitted - plan.frames[persian].controls[1]) <= abs(
+                    before[english] - plan.frames[persian].controls[1]) + 0.001
                 for i in range(a, c):
                     if (parts[edge - 1].language if i < b else parts[edge].language) == 'fa':
                         assert plan.frames[i].controls[1] == before[i]
@@ -131,10 +137,43 @@ def main():
         with patch.object(KoreanContour, 'apply', observe_sentence):
             speak(('سلام دنیا. این یک آزمایش است؟',), True)
         assert len(sentences) == 2 and sentences[0].rstrip().endswith('.') and sentences[1].endswith('?'), sentences
-        voice.set_parameter(NATIVE_INFLECTION, 70)
-        speak(('سلام دنیا.',), True)
+        # Sentence punctuation and inline pitch can force the separated
+        # multilingual route. Its Persian engine must still use Korean pitch.
+        fallback_cases = (
+            ('Hello. سلام دنیا',),
+            ('Hello، سلام دنیا',),
+            (EciText('Hello '), EciPitch(80), EciText('سلام'), EciPitch(65)),
+            ('Hello ', EciLanguage(0x40000, '1'), 'Hallo ',
+             EciLanguage(PERSIAN_PROBE.id, '1'), 'سلام دنیا'),
+        )
+        for parts in fallback_cases:
+            sentences.clear()
+            with patch.object(KoreanContour, 'apply', observe_sentence):
+                audio, _ = speak(parts, True)
+            assert audio and sentences, ('separated Persian lost Korean contour', parts)
+        # A Persian span followed by English must retain a continuation
+        # contour rather than acquiring a Korean phrase-final fall.
+        endings = []
+        def observe_end(instance, rows, count, tagged, *args, **kwargs):
+            result = real_apply(instance, rows, count, tagged, *args, **kwargs)
+            if result:
+                pitches = [rows[i].controls[1] for i in range(count)
+                           if rows[i].controls[2] > 10 and rows[i].controls[1] > 0]
+                endings.append((bool(kwargs.get('continuation')), pitches[-1]))
+            return result
+        with patch.object(KoreanContour, 'apply', observe_end):
+            speak(('سلام',), True)
+            speak(('سلام NVDA',), True)
+        normal = next(pitch for continuation, pitch in endings if not continuation)
+        continuing = next(pitch for continuation, pitch in endings if continuation)
+        assert continuing > normal * 1.1, endings
         donor = voice._persian_korean_contour.voice
-        assert donor._dll.eciGetParam(donor._handle, NATIVE_INFLECTION) == 70
+        examples = []
+        for inflection in (30, 37, 47, 70):
+            voice.set_parameter(NATIVE_INFLECTION, inflection)
+            examples.append(speak(('سلام دنیا.',), True)[0])
+            assert donor._dll.eciGetParam(donor._handle, NATIVE_INFLECTION) == inflection
+        assert len(set(examples)) == len(examples), 'the Korean donor ignored an inflection setting'
         # Request-local pitch controls and the persistent Hertz mode must
         # reach the Korean donor; a following ordinary request must reset.
         neutral, _ = speak(('سلام',), True)

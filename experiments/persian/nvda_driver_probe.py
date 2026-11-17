@@ -49,6 +49,17 @@ class OwnedPersianEngine(ScopedDirectPersianEngine):
     def set_dictionary_path(self, path):
         self._voice.set_dictionary_path(path)
 
+    def speak(self, parts, on_pcm, on_index):
+        # LanguageEngine's separated fallback flushes each language through
+        # its own engine. It must not bypass Persian contour planning after
+        # punctuation, inline controls, or an unrelated language switch.
+        planner = getattr(self, '_contour_fallback', None)
+        if planner is not None:
+            result = planner(parts, on_pcm, on_index)
+            if result is not None:
+                return result
+        return super().speak(parts, on_pcm, on_index)
+
     def close(self):
         try:
             super().close()
@@ -265,6 +276,19 @@ def _bracket_continuations(parts):
 class PersianProbeLanguageEngine(LanguageEngine):
     """Use English for explicit and clear Latin-script boundaries."""
 
+    def _activate(self, key):
+        engine = super()._activate(key)
+        if isinstance(engine, OwnedPersianEngine):
+            def plan_segment(parts, on_pcm, on_index):
+                if not getattr(self, '_fallback_contour_enabled', False):
+                    return None
+                if self._cancelled.is_set():
+                    return False
+                return try_persian_glides(self, (EciLanguage(*key), *parts), on_pcm, on_index,
+                                          fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id))
+            engine._contour_fallback = plan_segment
+        return engine
+
     def select_voice(self, language, voice):
         super().select_voice(language, voice)
         if (self._home[0] not in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) or
@@ -471,7 +495,12 @@ class PersianProbeLanguageEngine(LanguageEngine):
                         result = try_persian_glides(self, job, on_pcm, on_index,
                                                     fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id))
                     if result is None and not self._cancelled.is_set():
-                        result = super().speak(job, on_pcm, on_index, reset_cancellation=False)
+                        previous = getattr(self, '_fallback_contour_enabled', False)
+                        self._fallback_contour_enabled = True
+                        try:
+                            result = super().speak(job, on_pcm, on_index, reset_cancellation=False)
+                        finally:
+                            self._fallback_contour_enabled = previous
                 finally:
                     if old_pause == 0:
                         raw.set_parameter(PAUSE_MODE, old_pause)

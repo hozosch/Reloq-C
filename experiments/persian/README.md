@@ -14,20 +14,22 @@ existing reference in several contexts; unknown forms retain the fallback.
 The NVDA adapter also suppresses redundant emoji presentation selectors split
 by source indexes, while letting NVDA's symbol level and dictionaries take precedence.
 
-The dev132 candidate transfers the Korean core's own pitch to ordinary
-Persian and Pinglish speech, instead of matching each utterance to its old
-Finnish pitch median. A short Hangul proxy follows the Persian phone tags'
-syllable counts and phrase punctuation; it is not a translation and remains
-an approximation of the Korean sentences used in the listening sample. The
-shared C layer aligns unpunctuated Persian word markers with the Korean
-syllables without changing any other acoustic frames. Where punctuation
-makes native word marks unreliable, it retains a continuous phrase mapping.
-In mixed speech, English keeps its own word contour and only its switch edges
-are aligned to the neighboring Persian pitch. Bracket boundaries keep their
-existing separate treatment. Spelling names also receive the Korean contour;
-some unusual mid-utterance ECI controls still use their earlier route. The
-user's pitch, Hertz pitch, speed and inflection remain adjustable. This
-candidate requires native-speaker review.
+The dev133 candidate transfers the Korean core's own pitch to ordinary
+Persian and Pinglish speech. A Hangul syllable-count proxy approximates the
+longer comparison's manually translated Korean sentences; it is not a
+translation and cannot reproduce their phrasing exactly. As in the original
+comparison, the pitch curve is mapped continuously across a sentence, rather
+than being warped separately at every Persian word boundary. At a language
+switch the Korean donor includes adjacent proxy context, so a Persian phrase
+does not acquire a spurious sentence-final fall before English. English keeps
+its own contour with switch-edge correction limited to two semitones.
+Separated Persian segments after punctuation or inline controls go through
+the same Korean planner instead of silently falling back to Finnish. Bracket
+boundaries retain their separate treatment. Some unusual mid-utterance ECI
+controls still use the earlier route. Pitch, Hertz pitch, speed and inflection
+remain adjustable; a comparison at inflection 37 is available for review.
+The original long comparison used inflection 30. This candidate requires
+native-speaker review.
 
 The language is **not yet fully implemented in the native core**. Mixed-text
 segmentation and sentence planning still run in the NVDA adapter, and words
