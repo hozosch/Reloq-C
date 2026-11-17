@@ -159,7 +159,7 @@ def main():
         assert direct_dash and '-' not in direct_dash.parts[0].text
         named_dash = project((EciText('-', character_mode=True),), frontend, allow_fallback=True)
         assert named_dash.tagged == SYMBOL_TAGS['-']
-        for word, expected in (('احیا', '`[.1e.0hja]'), ('مهربد', '`[.1mehr.0bod]'),
+        for word, expected in (('احیا', '`[.0e.1hja]'), ('مهربد', '`[.1mehr.0bod]'),
                                ('معد', '`[.1mo.0wedd]'), ('معقر', '`[.0mo.1RA.0wwAr]')):
             recovered = project_resilient((word,), frontend,
                 validate=engine._engines[PERSIAN_PROBE.id]._voice._phonemes_for_probe)

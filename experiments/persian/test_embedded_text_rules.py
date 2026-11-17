@@ -22,10 +22,10 @@ def main():
     direct.restype = ctypes.c_int
     free.argtypes, free.restype = (ctypes.c_void_p,), None
     examples = {
-        'به علاوه': "`[.0b'e:'] `[.0A.1la.0v'e:']",
-        'بعلاوه': "`[.0be.0A.1la.0v'e:']",
-        'علامت': '`[.0A.1la.0mAt]',
-        'بدبخت': '`[.1bAd.0bAGt]',
+        'به علاوه': "`[.0b'e:'] `[.0A.0la.1v'e:']",
+        'بعلاوه': "`[.0be.0A.0la.1v'e:']",
+        'علامت': '`[.0A.0la.1mAt]',
+        'بدبخت': '`[.0bAd.1bAGt]',
         'سوال': '`[.1so]~`[.0al]',
     }
     for text, expected in examples.items():

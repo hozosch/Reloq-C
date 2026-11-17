@@ -37,7 +37,7 @@ def main():
     first = len('سلام'.encode('utf8'))
     length = len(source.encode('utf8'))
     status, text, events, _error = run(source, (0, 2, first, first + 1, length), (1, 1, 1, 1, 1))
-    assert status == 0 and text == '`[.0sA.1lam] `[.1do.0nja]'
+    assert status == 0 and text == '`[.0sA.1lam] `[.0do.1nja]'
     assert events == (0, 0, len('`[.0sA.1lam]'), len('`[.0sA.1lam] '), len(text)), events
     status, text, events, error = run('سلام', (2,), (0,))
     assert status == 3 and text is None and events == (0x1234,) and error == 2

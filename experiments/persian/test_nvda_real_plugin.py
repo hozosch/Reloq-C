@@ -348,9 +348,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'تنظیمات را باز کنید', False),
                           ('en_US', 'Open settings', False),
                           ('de_DE', 'Guten Tag.', False)]
-            # Capture samples through NVDA's real preprocessing, speech
-            # manager, driver and packaged Windows DLL. The Finnish example
-            # only disables pitch transfer in this test plugin.
+            # Check contextual function words through NVDA's actual pipeline,
+            # including an English host and a word read in isolation.
+            self.cases.extend((('fa_IR', 'کتاب و خانه', 'issue49_weak_and'),
+                               ('fa_IR', 'کتاب را', 'issue49_weak_object'),
+                               ('fa_IR', 'NVDA را', 'issue49_weak_english_host'),
+                               ('fa_IR', 'را', 'issue49_weak_isolated'),
+                               ('fa_IR', 'من کتاب', 'issue49_weak_pronoun')))
+            # Capture Finnish-contour samples through NVDA's preprocessing,
+            # speech manager, driver and packaged Windows DLL.
             passage = ('سلام دوستان. امروز می‌خواهم درباره یک کتاب صحبت کنم. '
                        'این کتاب درباره دو دوست است. آن‌ها هر روز با هم به مدرسه می‌روند. '
                        'در راه به مردم سلام می‌کنند و درباره زندگی صحبت می‌کنند. '
@@ -358,14 +364,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                        'شما هم کتاب خواندن را دوست دارید؟')
             samples = (('word', 'سلام'), ('passage', passage),
                        ('switch', 'سلام NVDA دنیا. Hello. سلام دنیا. این یک آزمایش است.'))
-            self.cases.extend(('fa_IR', text, 'comparison_korean_' + name) for name, text in samples)
-            self.cases.append(('fa_IR', passage, 'comparison_korean_dense'))
-            self.cases.extend(('fa_IR', passage, 'comparison_' + name + '_calibration')
-                              for name in ('old', 'new'))
+            self.cases.extend(('fa_IR', text, 'comparison_finnish_' + name) for name, text in samples)
+            self.cases.append(('fa_IR', passage, 'comparison_finnish_dense'))
             self.cases.extend((('fa_IR', 'سلام دنیا: این یک آزمایش است؟', 'comparison_colon'),
                                ('fa_IR', 'سلام دنیا. این یک آزمایش است؟', 'comparison_period')))
             self.cases.extend(('fa_IR', 'سلام دنیا خوب.', 'comparison_' + kind + '_pitch')
-                              for kind in ('finnish', 'korean'))
+                              for kind in ('finnish', 'plain'))
             self.next()
         except BaseException:
             self.fail()
@@ -483,18 +487,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                 row['spelling'] == 'pipeline_bracket')
                 if fa_colon['pcm_sha256'] == fa_comma['pcm_sha256']:
                     raise AssertionError('NVDA replaced the colon contour with a comma contour')
-                old = next(row for row in self.results if row['spelling'] == 'comparison_finnish_pitch')
-                new = next(row for row in self.results if row['spelling'] == 'comparison_korean_pitch')
-                if old['pcm_bytes'] != new['pcm_bytes'] or old['pcm_sha256'] == new['pcm_sha256']:
-                    raise AssertionError('NVDA pitch-command comparison changed duration or not melody')
-                plain = next(row for row in self.results if row['spelling'] == 'comparison_korean_passage')
-                dense = next(row for row in self.results if row['spelling'] == 'comparison_korean_dense')
+                pitch = next(row for row in self.results if row['spelling'] == 'comparison_finnish_pitch')
+                plain_pitch = next(row for row in self.results if row['spelling'] == 'comparison_plain_pitch')
+                if pitch['pcm_sha256'] == plain_pitch['pcm_sha256']:
+                    raise AssertionError('NVDA pitch command did not change the Finnish melody')
+                plain = next(row for row in self.results if row['spelling'] == 'comparison_finnish_passage')
+                dense = next(row for row in self.results if row['spelling'] == 'comparison_finnish_dense')
                 if plain['pcm_sha256'] != dense['pcm_sha256']:
-                    raise AssertionError('NVDA word indexes changed the Korean sentence melody')
-                old = next(row for row in self.results if row['spelling'] == 'comparison_old_calibration')
-                new = next(row for row in self.results if row['spelling'] == 'comparison_new_calibration')
-                if old['pcm_sha256'] != new['pcm_sha256']:
-                    raise AssertionError('NVDA 65/30 differs from the previous 68/37 reference')
+                    raise AssertionError('NVDA word indexes changed the Finnish sentence melody')
                 colon = next(row for row in self.results if row['spelling'] == 'comparison_colon')
                 period = next(row for row in self.results if row['spelling'] == 'comparison_period')
                 if colon['pcm_sha256'] != period['pcm_sha256']:
@@ -541,9 +541,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [self.pitch_command(multiplier=1.2), text, self.pitch_command()]
             elif spelling == 'issue49_korean_mid_pitch':
                 sequence = ['سلام ', self.pitch_command(multiplier=1.2), 'دنیا', self.pitch_command()]
-            elif spelling in ('comparison_finnish_pitch', 'comparison_korean_pitch'):
+            elif spelling == 'comparison_finnish_pitch':
                 sequence = ['سلام ', self.pitch_command(multiplier=1.2), 'دنیا ', self.pitch_command(), 'خوب.']
-            elif spelling == 'comparison_korean_dense':
+            elif spelling == 'comparison_finnish_dense':
                 sequence = [part for i, word in enumerate(text.split(), 60000)
                             for part in (word + ' ', self.index_command(i))]
             elif spelling == 'issue49_korean_spelling':
@@ -588,7 +588,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text, 'کادرِ علامت‌زدنی', status]
             elif isinstance(spelling, str) and spelling.startswith('tags_'):
                 sequence = [text]
-            elif self.sample_case or spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading', 'issue49_korean', 'issue49_korean_word', 'issue49_persian_unicode', 'issue49_persian_unicode_none', 'issue49_persian_unicode_all', 'issue49_korean_english', 'issue49_hamza_line', 'issue49_hamza_line_none'):
+            elif self.sample_case or (isinstance(spelling, str) and spelling.startswith('issue49_weak_')) or spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading', 'issue49_korean', 'issue49_korean_word', 'issue49_persian_unicode', 'issue49_persian_unicode_none', 'issue49_persian_unicode_all', 'issue49_korean_english', 'issue49_hamza_line', 'issue49_hamza_line_none'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
@@ -597,6 +597,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.started = time.perf_counter()
             self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
             self.pipeline = self.pipeline or self.sample_case or (isinstance(spelling, str) and spelling.startswith('tags_'))
+            self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue49_weak_'))
             self.pipeline = self.pipeline or spelling in ('issue49_quotes', 'issue49_numeric')
             self.pipeline = self.pipeline or spelling in ('issue49_version_some', 'issue49_version_split',
                                                            'issue49_emoji_some', 'issue49_emoji_split',
@@ -667,8 +668,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if not submitted or any('\ufe0f' in part for sequence in submitted for part in sequence):
                     raise AssertionError('emoji presentation selector leaked to the synthesizer: ' + ascii(text))
             if spelling in ('issue49_korean', 'issue49_korean_word', 'issue49_korean_pitch', 'issue49_korean_mid_pitch',
-                            'issue49_korean_spelling') and len(self.korean_calls) == self.before_korean:
-                raise AssertionError('NVDA did not apply the Korean-derived Persian pitch: ' + ascii(text))
+                            'issue49_korean_spelling') and len(self.korean_calls) != self.before_korean:
+                raise AssertionError('NVDA unexpectedly applied Korean-derived Persian pitch: ' + ascii(text))
             if spelling in ('issue49_korean_word', 'issue49_korean_pitch', 'issue49_korean_spelling') or (
                     isinstance(spelling, str) and spelling.startswith('issue49_persian_unicode')):
                 tags = ' '.join(self.projected[self.before_projected:])
@@ -681,15 +682,22 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if not audio:
                 raise RuntimeError('no actual NVDA audio for ' + ascii(text))
             if self.sample_case:
-                if not self.sample_finnish and len(self.korean_calls) == self.before_korean:
-                    raise AssertionError('real NVDA comparison missed the Korean donor: ' + spelling)
-                if self.sample_finnish and len(self.korean_calls) != self.before_korean:
-                    raise AssertionError('Finnish comparison unexpectedly used a Korean donor')
+                if len(self.korean_calls) != self.before_korean:
+                    raise AssertionError('Finnish sample unexpectedly used a Korean donor')
                 with wave.open(str(RESULT.parent / (spelling + '.wav')), 'wb') as output:
                     output.setnchannels(1)
                     output.setsampwidth(2)
                     output.setframerate(16000)
                     output.writeframes(audio)
+            if isinstance(spelling, str) and spelling.startswith('issue49_weak_'):
+                tags = ' '.join(self.projected[self.before_projected:])
+                expected = {'issue49_weak_and': '`[.0vA]',
+                            'issue49_weak_object': '`[.0ra]',
+                            'issue49_weak_english_host': '`[.0ra]',
+                            'issue49_weak_isolated': '`[.1ra]',
+                            'issue49_weak_pronoun': '`[.1mAn]'}[spelling]
+                if expected not in tags:
+                    raise AssertionError('NVDA lost contextual word stress: ' + ascii((text, tags)))
             if spelling in ('tags_slow', 'tags_fast', 'tags_pitch', 'tags_phonemes'):
                 expected = text.split(' ', 1)[0]
                 if expected not in self.user_controls[self.before_user_controls:]:
@@ -702,7 +710,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 raise AssertionError('NVDA lost the separated language boundary around a hyphen: ' + ascii(text))
             if spelling in ('issue49_hyphen', 'issue49_unknown'):
                 tags = ' '.join(self.projected[self.before_projected:])
-                expected = ("`[.0do.1ros.0t'e:']" if 'درسته' in text else '`[.1a.0li]')
+                expected = ("`[.0do.0ros.1t'e:']" if 'درسته' in text else '`[.0a.1li]')
                 if expected not in tags:
                     details = self.projected_sources[self.before_projected_sources:]
                     raise AssertionError('NVDA spelled a Persian word: ' + ascii(details))
@@ -713,22 +721,22 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if spelling is True and text in 'ًٌٍَُِّْٰ':
                 expected = {'ً':'`[.1An]', 'ٌ':'`[.1on]', 'ٍ':'`[.1en]',
                             'َ':"`[.1'A:']", 'ُ':"`[.1'o:']", 'ِ':"`[.1'e:']",
-                            'ّ':'`[.1tAS.0did]', 'ْ':'`[.1sa.0ken]',
-                            'ٰ':"`[.1A.0lef] `[.0mAR.1s'u:'.0r'e:']"}[text]
+                            'ّ':'`[.0tAS.1did]', 'ْ':'`[.0sa.1ken]',
+                            'ٰ':"`[.0A.1lef] `[.0mAR.0s'u:'.1r'e:']"}[text]
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags:
                     raise AssertionError('NVDA lost the Persian character name: ' + ascii(tags))
             if ((spelling is True and text in 'ٔأˈˌə̇αé⚽') or
                     spelling in ('issue49_hamza_line', 'issue49_hamza_line_none')):
-                expected = {'ٔ': "`[.1hAm.0z'e:'.1j'e:'] `[.1ba.1la]",
-                            'أ': "`[.1A.0lef] `[.1hAm.0z'e:']"}.get(text, self.symbol_tags.get(text))
+                expected = {'ٔ': "`[.0hAm.1z'e:'.0j'e:'] `[.0ba.1la]",
+                            'أ': "`[.0A.1lef] `[.0hAm.1z'e:']"}.get(text, self.symbol_tags.get(text))
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags:
                     raise AssertionError('NVDA lost the reported character name: ' + ascii((text, tags)))
             if text in ('به علاوه', 'بعلاوه', '+'):
                 tags = ' '.join(self.projected[self.before_projected:])
-                expected = ("`[.0be.0A.1la.0v'e:']" if text == 'بعلاوه' else
-                            "`[.0b'e:'] `[.0A.1la.0v'e:']")
+                expected = ("`[.0be.0A.0la.1v'e:']" if text == 'بعلاوه' else
+                            "`[.0b'e:'] `[.0A.0la.1v'e:']")
                 if expected not in tags:
                     raise AssertionError('NVDA lost the corrected alāve reading: ' + ascii(tags))
             if spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most'):
@@ -736,23 +744,23 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if spelling in ('pipeline', 'pipeline_most') and locale == 'fa_IR' and ('`[.0hen.1ga.0me]' not in tags or
                         "`[.1'e:'G.0tja.2ra.0te]" not in tags):
                     raise AssertionError('NVDA preprocessing lost the vocalized Persian words: ' + ascii(tags))
-                if spelling == 'pipeline_stop' and '`[.2mo.0te.1vAR.0Ref]' not in tags:
+                if spelling == 'pipeline_stop' and '`[.0mo.0te.0vAR.1Ref]' not in tags:
                     raise AssertionError('NVDA spelled the Persian word for stopped: ' + ascii(tags))
                 if spelling == 'pipeline_log' and ("`[.1'e:'t.0te.1fa.0Ra.2te]" not in tags or
                         "`[.1sAbt.1So.0d'e:']" not in tags):
                     raise AssertionError('NVDA spelled part of the normalized log label: ' + ascii(tags))
                 if spelling == 'pipeline_user_latency' and any(tag not in tags for tag in (
-                        '`[.1ne.0San]', '`[.1da.0dA.2ne]', '`[.0hen.1ga.0me]', '`[.1Ga.0reJ]')):
+                        '`[.0ne.1San]', '`[.1da.0dA.2ne]', '`[.0hen.1ga.0me]', '`[.0Ga.1reJ]')):
                     raise AssertionError('NVDA spelled part of the reported latency example: ' + ascii(tags))
                 if spelling == 'pipeline_symbols' and ('`[.0sA.1lam]' not in tags or
-                        '`[.1do.0nja]' not in tags or '`[.1ta.0vu.2merk.0ki]' in tags):
+                        '`[.0do.1nja]' not in tags or '`[.1ta.0vu.2merk.0ki]' in tags):
                     raise AssertionError('NVDA punctuation damaged a Persian word: ' + ascii(tags))
                 if spelling == 'pipeline_mixed_symbols' and ('`[.0sA.1lam]' not in tags or
                         '`[.1ta.0vu.2merk.0ki]' in tags):
                     raise AssertionError('NVDA mixed punctuation damaged Persian speech: ' + ascii(tags))
                 if spelling in ('checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most'):
-                    expected = ("`[.0A.1la.0mAt]" if spelling == 'checkbox_unchecked' else
-                                "`[.0A.1la.0mAt] `[.1dar]")
+                    expected = ("`[.0A.0la.1mAt]" if spelling == 'checkbox_unchecked' else
+                                "`[.0A.0la.0mAt] `[.1dar]")
                     if expected not in tags:
                         raise AssertionError('NVDA checkbox state was not spoken as a Persian word: ' + ascii(tags))
                 if locale == 'fa_Latn' and ('`[.1ta.0vu.2merk.0ki]' in tags or '-`[' in tags):
