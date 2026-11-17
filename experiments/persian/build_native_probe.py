@@ -136,22 +136,11 @@ FRONT_A_PATCH = r'''
     {
         const char *british=getenv("RELOQ_FA_BRITISH_FRONT_A");
         if (british && british[0]=='1' && !british[1]) {
-            int16_t female=0;
-            memcpy(&female,(const unsigned char *)state+DG_BASE+3092+12,sizeof female);
             STATE(int16_t,s448)=675;  STATE(int16_t,s449)=675;
             STATE(int16_t,s450)=1475; STATE(int16_t,s451)=1475;
             STATE(int16_t,s452)=2350; STATE(int16_t,s453)=2350;
-            if (female) {
-                /* The female Finnish source's tilt is one unit higher than
-                   British at matched voice parameters. Keep the voice's
-                   own baseline, but use the British target for this vowel. */
-                int16_t tilt=STATE(int16_t,s444);
-                STATE(int16_t,s405)=tilt>0 ? tilt-1 : tilt;
-                STATE(int16_t,s436)=1;
-            } else {
-                STATE(int16_t,s405)=0;
-                STATE(int16_t,s436)=0;
-            }
+            STATE(int16_t,s405)=0;
+            STATE(int16_t,s436)=0;
         } else {
         /* Keep the earlier private alternatives for comparisons with the
            old Finnish-shaped front vowel outside the selected FA scope. */
@@ -2425,6 +2414,39 @@ static void persian_open_vowel(void *state,int phone)
 ''', 1)
     text = text[:begin] + section + text[end:]
     vowel_file.write_text(text, encoding='utf8')
+
+    # Source tilt is scheduled later than the vowel formants. Correct the
+    # female tilt at the point where the current sonorant is emitted; changing
+    # it inside the vowel target rule is overwritten before this call. Keep
+    # the voice-dependent baseline and restore the surrounding state afterward.
+    sonorant_file = work / 'delta_rules_c13_fifi.c'
+    text = sonorant_file.read_text(encoding='utf8')
+    helper_point = 'int32_t reloq_fifi_insert_acoustic_vals(void *state, int32_t p0)\n{\n'
+    if text.count(helper_point) != 1:
+        raise RuntimeError('Cannot locate Persian acoustic-value scheduler')
+    text = text.replace(helper_point, FRONT_A_HELPER + '\n' + helper_point, 1)
+    son_call = '    r0 = reloq_call_fifi_do_son_amps(state, (int32_t)(FIELD(0)));\n'
+    if text.count(son_call) != 1:
+        raise RuntimeError('Cannot locate Persian sonorant source scheduler')
+    text = text.replace(son_call, r'''    {
+        const char *british=getenv("RELOQ_FA_BRITISH_FRONT_A");
+        int16_t female=0;
+        memcpy(&female,(const unsigned char *)state+DG_BASE+3092+12,sizeof female);
+        int selected=british && british[0]=='1' && !british[1] && female &&
+            persian_probe_front_a_neighbour(state,STATE(int32_t,w61),1)==31;
+        int16_t old_target=STATE(int16_t,s405),old_mode=STATE(int16_t,s436);
+        if (selected) {
+            STATE(int16_t,s405)=STATE(int16_t,s444);
+            STATE(int16_t,s436)=1;
+        }
+        r0 = reloq_call_fifi_do_son_amps(state, (int32_t)(FIELD(0)));
+        if (selected) {
+            STATE(int16_t,s405)=old_target;
+            STATE(int16_t,s436)=old_mode;
+        }
+    }
+''', 1)
+    sonorant_file.write_text(text, encoding='utf8')
 
     consonant_file = work / 'delta_rules_c02_fifi.c'
     text = consonant_file.read_text(encoding='utf8')

@@ -112,3 +112,5 @@ The earlier audio comparisons explicitly used native speed 98, independent
 of the listener's NVDA setting. New spoken comparisons default to 60 and
 retain an adjustable command-line speed. They separate a previous/new front
 vowel comparison from the previously proposed paired F0-contour comparison.
+Both comparisons can be generated with German or English spoken labels; the
+Persian samples and comparison conditions stay the same.

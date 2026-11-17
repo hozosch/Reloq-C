@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 from _reloq_eci_direct import DirectEciEngine, GENDER, PAUSE_MODE, PROCESS_TAGS, SAMPLE_RATE
 from _reloq_persian_frames import FrameCapture
 from test_british_front_a import vowel
+from test_open_vowels import nucleus
 
 
 def voice(path, gender, rate, dialect=0x90000):
@@ -82,6 +83,15 @@ def main():
                 if baseline:
                     for tag in unchanged:
                         assert capture(current, scope, tag).pcm == capture(baseline, old_scope, tag).pcm, tag
+                    # The source override is local to /ae/, including when a
+                    # different vowel follows in the same spoken sequence.
+                    for tag, phone in (('`[.1A.0e]', 'e'), ('`[.1A.0do]', 'o'),
+                                       ('`[.1A.0no]', 'o')):
+                        after = nucleus(current, scope, tag, gender, phone)
+                        before = nucleus(baseline, old_scope, tag, gender, phone)
+                        for column in (4, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20):
+                            assert abs(after.controls[column] - before.controls[column]) < .5, (
+                                tag, gender, rate, column)
                     # The scoped adjustment must never affect ordinary Finnish.
                     for tag in ach:
                         assert capture(current, scope, tag, False).pcm == capture(baseline, old_scope, tag, False).pcm

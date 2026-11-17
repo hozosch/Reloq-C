@@ -17,12 +17,12 @@ from _reloq_persian_frames import FrameReplay
 
 
 CASES = (
-    ('Hallo Welt, Aussage.', 'سلام دنیا.'),
-    ('Hallo Welt, Frage.', 'سلام دنیا؟'),
-    ('Ich spreche.', 'صحبت می‌کنم.'),
-    ('Ihr Buch ist gut.', 'کتاب شما خوب است.'),
-    ('Das ist ein Test, Aussage.', 'این یک آزمایش است.'),
-    ('Ist das ein Test, Frage.', 'این یک آزمایش است؟'),
+    ('Hallo Welt, Aussage.', 'Hello world, statement.', 'سلام دنیا.'),
+    ('Hallo Welt, Frage.', 'Hello world, question.', 'سلام دنیا؟'),
+    ('Ich spreche.', 'I am speaking.', 'صحبت می‌کنم.'),
+    ('Ihr Buch ist gut.', 'Your book is good.', 'کتاب شما خوب است.'),
+    ('Das ist ein Test, Aussage.', 'This is a test, statement.', 'این یک آزمایش است.'),
+    ('Ist das ein Test, Frage.', 'Is this a test, question.', 'این یک آزمایش است؟'),
 )
 
 
@@ -65,13 +65,15 @@ def main():
         parser.add_argument('--' + name, required=True, type=Path)
     parser.add_argument('--speed', type=int, default=60,
                         help='native speech speed (default: 60 for intelligible examples)')
+    parser.add_argument('--labels', choices=('de', 'en'), default='de',
+                        help='spoken labels in German or English')
     args = parser.parse_args()
     if not 0 <= args.speed <= 250:
         parser.error('--speed must be between 0 and 250')
     frontend = DirectFirstPersian(args.candidate, None, args.espeak_library, args.data_parent)
     fa, scope = voice(args.candidate, 0x90000)
-    de, de_scope = voice(args.candidate, 0x40000)
-    for engine in (fa, de):
+    label_voice, label_scope = voice(args.candidate, 0x40000 if args.labels == 'de' else 0x10000)
+    for engine in (fa, label_voice):
         for setting, value in ((SAMPLE_RATE, 3), (NATIVE_SPEED, args.speed), (GENDER, 0)):
             engine.set_parameter(setting, value)
     audio = bytearray()
@@ -82,28 +84,34 @@ def main():
         audio.extend(bytes(9600))  # 0.3 seconds at 16 kHz, mono 16-bit
 
     def say(text):
-        sample, _ = capture(de, de_scope, text, False)
+        sample, _ = capture(label_voice, label_scope, text, False)
         append(sample.pcm)
 
     try:
-        say('Persisch. Vergleich der Satzmelodie. Erst bisher, dann ein Versuch '
-            'mit geringeren Tonhöhenbewegungen. Laute und Wortbetonungen sind '
-            'in beiden Beispielen gleich. Die Grundtonhöhe wurde angenähert.')
-        for number, (description, text) in enumerate(CASES, 1):
+        if args.labels == 'de':
+            say('Persisch. Vergleich der Satzmelodie. Erst bisher, dann ein Versuch '
+                'mit geringeren Tonhöhenbewegungen. Laute und Wortbetonungen sind '
+                'in beiden Beispielen gleich. Die Grundtonhöhe wurde angenähert.')
+        else:
+            say('Persian intonation comparison. First the current contour, then a '
+                'version with less pitch movement. Both have the same sounds, word '
+                'stress and timing. Overall pitch is approximately matched.')
+        for number, (german, english, text) in enumerate(CASES, 1):
             result = frontend.analyze_direct(text)
             if result is None or len(result.parts) != 1 or result.parts[0].language != 'fa':
                 raise ValueError('No directly covered Persian sentence: ' + text)
             before, after = contour_pair(fa, scope, result.parts[0].text)
-            say(f'Beispiel {number}. {description} Bisher.')
+            say(f'Beispiel {number}. {german} Bisher.' if args.labels == 'de'
+                else f'Example {number}. {english} Current.')
             append(before)
-            say('Weniger Bewegung.')
+            say('Weniger Bewegung.' if args.labels == 'de' else 'Less pitch movement.')
             append(after)
             print(number, text, result.parts[0].text, len(before), flush=True)
-        say('Ende des Vergleichs.')
+        say('Ende des Vergleichs.' if args.labels == 'de' else 'End of comparison.')
     finally:
         frontend.close()
         fa.close()
-        de.close()
+        label_voice.close()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with wave.open(str(args.output), 'wb') as out:
         out.setnchannels(1)
