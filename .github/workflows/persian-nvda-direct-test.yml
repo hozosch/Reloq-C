@@ -7,6 +7,16 @@ on:
       - .github/workflows/persian-nvda-direct-test.yml
       - experiments/persian/nvda_driver_probe.py
       - experiments/persian/direct_fa_sequence.py
+      - experiments/persian/continuous_driver.py
+      - experiments/persian/continuous_plan.py
+      - experiments/persian/parallel_pilot.py
+      - experiments/persian/persian_symbols.py
+      - experiments/persian/direct_fa_*.c
+      - experiments/persian/direct_fa_*.h
+      - experiments/persian/direct_fa_*.inc
+      - src/reloq_persian_*.c
+      - src/reloq_persian_*.h
+      - .github/workflows/persian-windows-acoustic-probe.yml
       - experiments/persian/test_nvda_real_plugin.py
       - experiments/persian/test_unicode_fallback_routing.py
       - experiments/persian/test_us_contour_runtime.py

@@ -106,15 +106,15 @@ def main():
         # delivered. This explicitly checks the user's reported latency case.
         pcm, english_context_started = bytearray(), []
         original_proxy = continuous_plan.persian_proxy_for_english
-        def observe_proxy(text, voice):
+        def observe_proxy(text, voice, **kwargs):
             english_context_started.append(len(pcm))
-            return original_proxy(text, voice)
+            return original_proxy(text, voice, **kwargs)
         continuous_plan.persian_proxy_for_english = observe_proxy
         try:
             assert engine.speak((examples[-1]), pcm.extend, lambda _: None)
         finally:
             continuous_plan.persian_proxy_for_english = original_proxy
-        assert english_context_started and english_context_started[0] > 0, english_context_started
+        assert any(started > 0 for started in english_context_started), english_context_started
 
         # A reference fallback must still be rejected by the complete native
         # pilot before the English prefix can start playing.

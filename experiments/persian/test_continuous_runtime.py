@@ -144,7 +144,7 @@ def main():
             for text in ('سلام دنیا.', 'بدبخت', 'تعجب', 'کتابم کتابها', 'او، آمد.'):
                 output, baseline = render(engine, (text,))[0], render(native, (text,))[0]
                 assert len(output) == len(baseline), text
-                assert output == baseline, text  # native Finnish-based contour
+                assert output != baseline, text  # US pitch over unchanged Persian frame timing
             # Inline pitch preceding a split job must not bypass the selected
             # Persian vowel-to-vowel transition.
             pitched, pitched_marks = render(engine, (EciIndex(6), EciPitch(80), 'او آمد.', EciIndex(7)))

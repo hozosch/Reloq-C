@@ -129,7 +129,12 @@ class _PlanningVoice:
         self._check()
         parts = (*self.prefix, *parts)
         if isinstance(self.engine, ScopedDirectPersianEngine):
-            tagged_parts = tuple(EciText(p, segmentation_guarded=True) if isinstance(p, str) else p
+            def normalized_space(value):
+                return ''.join(' ' if ord(char) > 127 and char.isspace() else char for char in value)
+            tagged_parts = tuple(EciText(normalized_space(p), segmentation_guarded=True)
+                                 if isinstance(p, str) else
+                                 replace(p, text=normalized_space(p.text))
+                                 if isinstance(p, EciText) and not p.is_control else p
                                  for p in parts)
             tagged = ''.join(p.text for p in tagged_parts if isinstance(p, EciText) and not p.is_control)
             prepared = _safe_native_punctuation(ProjectedJob(self.source, tagged, tagged_parts, self.validate))

@@ -277,7 +277,8 @@ def main():
             _CaptureVoice.speak = long_native
             def stop_stored_pcm():
                 if started.wait(5):
-                    raw = captured_voice[0].engine._voice
+                    selected = captured_voice[0].engine
+                    raw = getattr(selected, '_voice', selected)
                     query = raw._dll.eciIsBeingReentered
                     query.argtypes, query.restype = (ctypes.c_void_p,), ctypes.c_int
                     deadline = time.monotonic() + 5

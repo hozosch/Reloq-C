@@ -275,6 +275,9 @@ def _word_markers(parts):
 def indexed_us_proxy(tagged, en, marks):
     """Make a US prosody proxy with marks before whole Persian words."""
     proxy = persian_proxy_for_english(tagged, en, mark_weak=True)
+    # Some Unicode spaces are preserved by the Persian text projection but
+    # named by the English parser. They are ordinary word gaps in a pilot.
+    proxy = ''.join(' ' if char.isspace() and char not in '\t\r\n' else char for char in proxy)
     # The Persian voice's bracket pauses intentionally share the comma
     # contour. Preserve that choice in the US pilot without touching tags.
     proxy = re.sub(r'`\[[^]]+\]|[()\[\]{}]',
@@ -599,6 +602,12 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
     all_bracketed = (not us_pilot and
                      all(_bracket_boundary(parts, edge) for edge in range(1, len(parts))))
     word_markers = _word_markers(parts)
+    if us_pilot and validate_in_capture and not trusted_fa:
+        # A US pilot cannot validate eSpeak-derived Persian phones. Validate
+        # the complete Persian context before any English prefix can stream.
+        validation = _context(parts, 'fa', en, fa, word_markers,
+                              guarded_spans=guarded_spans, spelling_spans=spelling_spans)
+        get(fa, validation, audio=False)
     pilot, pilot_parts, pilot_pitch, pilot_bounds = None, [], (), ()
     def contour(item, *, controls_only=False):
         nonlocal native_pitch
