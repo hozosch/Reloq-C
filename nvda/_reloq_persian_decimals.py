@@ -21,6 +21,45 @@ def decimal_pending(sequence):
     return '.' in text and any('0' <= char <= '9' for char in text)
 
 
+def _builtin_split_unchanged(text, intervals):
+    """Ensure NVDA's builtin dictionary has the same result after splitting."""
+    try:
+        import speechDictHandler
+        try:
+            import globalVars
+            if not getattr(globalVars, 'speechDictionaryProcessing', True):
+                return True
+        except ImportError:
+            pass
+        if hasattr(speechDictHandler, 'listAvailableSpeechDictDefinitions'):
+            dictionaries = tuple(definition.dictionary for definition in
+                speechDictHandler.listAvailableSpeechDictDefinitions() if definition.enabled and
+                getattr(definition.source, 'value', definition.source) == 'builtin')
+        else:
+            dictionaries = (speechDictHandler.dictionaries.get('builtin', ()),)
+        if not any(dictionaries):
+            return True
+        def process(value):
+            for dictionary in dictionaries:
+                for entry in dictionary:
+                    if hasattr(entry, 'sub'):
+                        value = entry.sub(value)
+                    elif entry.compiled.search(value):
+                        raise ValueError('dictionary replacement unavailable')
+            return value
+        expected, pieces, cursor = process(text), [], 0
+        for left, right, _replacement in sorted(intervals):
+            if left < cursor or right < left:
+                return False
+            pieces.extend((process(text[cursor:left]), text[left:right]))
+            cursor = right
+        pieces.append(process(text[cursor:]))
+        return ''.join(pieces) == expected
+    except Exception:
+        # An unavailable or invalid NVDA dictionary must not block speech.
+        return False
+
+
 def _english_number(text, start, end, language):
     if language == _FA:
         letters = [(index, unicodedata.name(char, '').startswith('LATIN '))
@@ -63,9 +102,10 @@ def protect_decimals(driver, sequence, *, symbol_level=None):
             group.clear()
             return
         text = ''.join(value for _, value, _ in group)
-        if not _dictionary_untouched(text, text):
+        if not _dictionary_untouched(text, text, ignored_sources=('builtin',)):
             group.clear()
             return
+        group_intervals = {}
         for match in _DECIMAL.finditer(text):
             if not _english_number(text, match.start(), match.end(), selected):
                 continue
@@ -97,8 +137,14 @@ def protect_decimals(driver, sequence, *, symbol_level=None):
                 for region_start, region_end, replacement in regions:
                     left, right = max(position, region_start), min(end, region_end)
                     if is_text and left < right:
-                        intervals.setdefault(item_index, []).append((left - position, right - position, replacement))
+                        group_intervals.setdefault(item_index, []).append((left - position, right - position, replacement))
                 position = end
+        for item_index, value, is_text in group:
+            if is_text and item_index in group_intervals and not _builtin_split_unchanged(value, group_intervals[item_index]):
+                group.clear()
+                return
+        for item_index, selected_intervals in group_intervals.items():
+            intervals.setdefault(item_index, []).extend(selected_intervals)
         group.clear()
 
     for index, item in enumerate(sequence):

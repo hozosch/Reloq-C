@@ -141,6 +141,53 @@ def main():
     dictionaries.dictionaries['user'] = [types.SimpleNamespace(compiled=re.compile(r'3\.5'))]
     assert protected(['version 3.5']) == ['version 3.5']
     dictionaries.dictionaries['user'] = []
+    # NVDA's mandatory built-in dictionary can match a CamelCase word far
+    # from the version. It must still run on that word without preventing
+    # safe protection of the unrelated number.
+    class BuiltinEntry:
+        def __init__(self, pattern):
+            self.compiled = re.compile(pattern)
+        def sub(self, value):
+            return self.compiled.sub(' ', value)
+    class BuiltinDictionary(list):
+        def sub(self, value):
+            for entry in self:
+                value = entry.sub(value)
+            return value
+    builtin = BuiltinDictionary((BuiltinEntry(r'(?=[A-Z])(?<=[a-z])'),
+                                 BuiltinEntry(r'(?=\d)(?<=[^\W\d])')))
+    dictionaries.dictionaries['builtin'] = builtin
+    whole = 'BlindRadio, version 0.2.100'
+    guarded = protected([whole])
+    assert any(isinstance(item, native_word) and item.text == '0.2.100' for item in guarded)
+    processed = ''.join(item.text if isinstance(item, native_word) else builtin.sub(item)
+                        for item in guarded if isinstance(item, (str, native_word)))
+    assert processed == builtin.sub(whole)
+    for kind in (level.NONE, level.SOME, level.MOST, level.ALL):
+        split = ['BlindRadio, version 0', IndexCommand(100), '.2', IndexCommand(101), '.100']
+        output = decimals.protect_decimals(driver, split, symbol_level=kind)
+        assert ''.join(item.text for item in output if isinstance(item, native_word)) == '0.2.100'
+        assert [item.index for item in output if isinstance(item, IndexCommand)] == [100, 101]
+    # The builtin dictionary must keep its letter-to-number boundary too.
+    adjacent = 'version v1.5'
+    assert protected([adjacent]) == [adjacent]
+    # A user dictionary spanning the version is always left to NVDA.
+    dictionaries.dictionaries['user'] = [types.SimpleNamespace(compiled=re.compile(r'0\.2\.100'))]
+    assert protected([whole]) == [whole]
+    dictionaries.dictionaries['user'] = []
+    # NVDA 2026.3 exposes dictionaries through enabled definitions instead
+    # of the legacy dictionary map.
+    builtin_definition = types.SimpleNamespace(enabled=True, source=types.SimpleNamespace(value='builtin'),
+                                               dictionary=builtin)
+    user_definition = types.SimpleNamespace(enabled=True, source=types.SimpleNamespace(value='user'),
+                                            dictionary=[])
+    dictionaries.listAvailableSpeechDictDefinitions = lambda: [builtin_definition, user_definition]
+    assert any(isinstance(item, native_word) for item in protected([whole]))
+    assert protected([adjacent]) == [adjacent]
+    user_definition.dictionary = [types.SimpleNamespace(compiled=re.compile(r'0\.2\.100'))]
+    assert protected([whole]) == [whole]
+    del dictionaries.listAvailableSpeechDictDefinitions
+    dictionaries.dictionaries['builtin'] = []
     driver._selectedLanguage = pinglish_id
     assert any(isinstance(item, native_word) for item in protected(['phone 3.5']))
     assert protected(['salam 3.5']) == ['salam 3.5']

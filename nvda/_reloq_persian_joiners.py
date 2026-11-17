@@ -147,15 +147,18 @@ def _escape(text):
     return ''.join(chars)
 
 
-def _dictionary_untouched(original, escaped):
+def _dictionary_untouched(original, escaped, *, ignored_sources=()):
     """Avoid hiding either a user dictionary match or a new marker match."""
     try:
         import speechDictHandler
         if hasattr(speechDictHandler, 'listAvailableSpeechDictDefinitions'):
             dictionaries = (entry.dictionary for entry in speechDictHandler.listAvailableSpeechDictDefinitions()
-                            if entry.enabled)
+                            if entry.enabled and (not ignored_sources or
+                               getattr(getattr(entry, 'source', None), 'value',
+                                       getattr(entry, 'source', None)) not in ignored_sources))
         else:
-            dictionaries = speechDictHandler.dictionaries.values()
+            dictionaries = (dictionary for name, dictionary in speechDictHandler.dictionaries.items()
+                            if name not in ignored_sources)
         for dictionary in dictionaries:
             if not dictionary:
                 continue
