@@ -50,6 +50,7 @@ on:
       - experiments/persian/test_direct_fa_characters.py
       - experiments/persian/test_fa_stress_policy.py
       - experiments/persian/test_fa_stress_fallback.py
+      - experiments/persian/test_unicode_fallback_routing.py
       - experiments/persian/test_fa_finnish_contour.py
       - experiments/persian/compile_fa_stress_classes.py
       - reference-lilak/persian/**
@@ -231,6 +232,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian word stress failed' }
           python -B experiments/persian/test_fa_stress_fallback.py --library "$common"
           if ($LASTEXITCODE -ne 0) { throw 'Persian fallback stress failed' }
+          python -B experiments/persian/test_unicode_fallback_routing.py --native-library "$common" --scope-probe "$common" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian Unicode name routing failed' }
           python -B experiments/persian/test_nvda_package_probe.py --native-library "$common" --worker "$pwd/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Shared Windows ECI package adapter failed' }
           python -B experiments/persian/test_streamed_sentence.py --native-library "$common" --scope-probe "$common" --espeak-library "$espeak" --data-parent "$data"

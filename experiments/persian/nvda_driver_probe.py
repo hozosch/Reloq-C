@@ -357,6 +357,50 @@ class PersianProbeLanguageEngine(LanguageEngine):
                       replace(part, text=valid_text(part.text)) if isinstance(part, EciText) else
                       replace(part, original=valid_text(part.original), segmented=valid_text(part.segmented))
                       if isinstance(part, EciCapitalWord) else part for part in parts)
+        # Names without a Persian translation belong to the real English
+        # engine, including when they occur inside a larger Persian run. Do
+        # this before script routing so indexes and the surrounding text keep
+        # their normal language boundaries. Do not reinterpret ordinary letters,
+        # numbers, Arabic-script text, joiners, or explicit ECI controls.
+        expanded, logical, names = [], self._home, {}
+        for part in parts:
+            if isinstance(part, EciLanguage):
+                logical = self._key(part.language, part.voice)
+                expanded.append(part)
+                continue
+            text = part if isinstance(part, str) else part.text if isinstance(part, EciText) else None
+            if (logical[0] not in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) or not text or '`' in text or
+                    isinstance(part, EciText) and (part.character_mode or part.is_control)):
+                expanded.append(part)
+                continue
+            positions = []
+            for at, char in enumerate(text):
+                cp = ord(char)
+                if (cp < 128 or 0x600 <= cp <= 0x6ff or char in '\u200c\u200d\ufe0f' or
+                        char.isalpha() or char.isdecimal()):
+                    continue
+                if char not in names:
+                    engine = self._activate(logical)
+                    if not isinstance(engine, OwnedPersianEngine):
+                        names[char] = None
+                    else:
+                        tag = engine._frontend.analyze_character(char).parts[0].text
+                        names[char] = (tag[len('`l1.0 '):-len(' `l9.0')]
+                                       if tag.startswith('`l1.0 ') and tag.endswith(' `l9.0') else None)
+                if names[char] is not None:
+                    positions.append((at, names[char]))
+            if not positions:
+                expanded.append(part)
+                continue
+            start = 0
+            for at, name in positions:
+                if at > start:
+                    expanded.append(replace(part, text=text[start:at]) if isinstance(part, EciText) else text[start:at])
+                expanded.extend((EciLanguage(US_ENGLISH.id, logical[1]), name, EciLanguage(*logical)))
+                start = at + 1
+            if start < len(text):
+                expanded.append(replace(part, text=text[start:]) if isinstance(part, EciText) else text[start:])
+        parts = tuple(expanded)
         logical = actual = self._home
         output = []
 

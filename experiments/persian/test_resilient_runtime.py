@@ -225,7 +225,10 @@ def main():
             engine.select_voice(language, '1')
             for index, text in enumerate(cases):
                 split = len(text) // 2
-                pcm, marks = render((EciIndex(1), text[:split], EciIndex(2), text[split:], EciIndex(3)))
+                try:
+                    pcm, marks = render((EciIndex(1), text[:split], EciIndex(2), text[split:], EciIndex(3)))
+                except Exception as error:
+                    raise AssertionError((language, index, ascii(text))) from error
                 assert pcm and [value for value, _ in marks] == [1, 2, 3], (language, index, repr(text), marks)
                 assert 0 <= marks[0][1] <= marks[1][1] <= marks[2][1] <= len(pcm)
 
