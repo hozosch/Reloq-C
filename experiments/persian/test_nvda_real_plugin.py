@@ -59,12 +59,21 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.projected_sources = []
             self.emoji_submissions = []
             self.korean_calls = []
+            self.version_case = False
+            self.version_debug = []
             self.emoji_case = False
             self.user_controls = []
             self.continuous = []
             old_project_part = continuous_driver._project_part
             old_prepared = direct_fa_sequence.ScopedDirectPersianEngine._speak_prepared
             old_continuous = nvda_driver_probe.try_continuous
+            old_runs = nvda_driver_probe._script_runs
+            def observe_runs(text):
+                result = old_runs(text)
+                if self.version_case:
+                    self.version_debug.append(('runs', text, result))
+                return result
+            nvda_driver_probe._script_runs = observe_runs
             old_korean = korean_contour.KoreanContour.apply
             def observe_korean(instance, rows, count, tagged, *args, **kwargs):
                 result = old_korean(instance, rows, count, tagged, *args, **kwargs)
@@ -132,12 +141,20 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             reloq.SynthDriver._protect_before_speech = trace(reloq.SynthDriver._protect_before_speech, 'protect')
             reloq.SynthDriver._protect_tags = trace(reloq.SynthDriver._protect_tags, 'tags')
             reloq.protect_joiners = trace(reloq.protect_joiners, 'joiners')
-            reloq.protect_decimals = trace(reloq.protect_decimals, 'decimals')
+            original_decimals = reloq.protect_decimals
+            def observe_decimals(driver, sequence, **kwargs):
+                result = original_decimals(driver, sequence, **kwargs)
+                if self.version_case:
+                    self.version_debug.append(('decimals', repr(sequence), repr(result)))
+                return result
+            reloq.protect_decimals = trace(observe_decimals, 'decimals')
             characterProcessing.processSpeechSymbols = trace(characterProcessing.processSpeechSymbols, 'symbols')
             original_synth_speak = reloq.SynthDriver.speak
             def observe_synth_speech(instance, sequence):
                 if self.emoji_case:
                     self.emoji_submissions.append(tuple(item for item in sequence if isinstance(item, str)))
+                if self.version_case:
+                    self.version_debug.append(('synth', repr(sequence)))
                 return original_synth_speak(instance, sequence)
             reloq.SynthDriver.speak = trace(observe_synth_speech, 'driver')
             EciTextTransport._run_job = trace(EciTextTransport._run_job, 'job')
@@ -470,6 +487,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                                            'issue49_heading', 'issue49_heading_split',
                                                            'issue49_korean', 'issue49_korean_english')
             self.emoji_case = spelling in ('issue49_emoji_some', 'issue49_emoji_split')
+            self.version_case = spelling in ('issue49_version_some', 'issue49_version_split')
+            self.before_version_debug = len(self.version_debug)
             self.before_emoji = len(self.emoji_submissions)
             self.before_korean = len(self.korean_calls)
             self.before_continuous = len(self.continuous)
@@ -594,6 +613,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                       for name, value in self.stage.items()}
             if spelling == 'pipeline_bracket':
                 result['projection'] = ' '.join(self.projected[self.before_projected:])
+            if self.version_case:
+                result['version_debug'] = self.version_debug[self.before_version_debug:]
             self.results.append(result)
             self.index += 1
             self.next()
