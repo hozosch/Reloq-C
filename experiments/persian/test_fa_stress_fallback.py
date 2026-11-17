@@ -49,6 +49,22 @@ def main():
         assert separated.tagged.endswith(', `[.1ra]'), separated.tagged
         assert '`[.0vA]' in conjunction.tagged, conjunction.tagged
         assert [part.value for part in object_marker.parts if isinstance(part, EciIndex)] == [10]
+        # A transient reference error gets one whole-word retry, while an
+        # interrupted job must not start that retry.
+        with patch.object(frontend, 'analyze', side_effect=(RuntimeError('transient'), reference)) as fallback:
+            recovered = project_resilient(('نمی‌روم',), frontend)
+        assert recovered.tagged == '`[.1nA.0mi.0rA.0vAm]' and fallback.call_count == 2
+        cancelled = [False]
+        def fail_and_cancel(_word):
+            cancelled[0] = True
+            raise RuntimeError('cancelled reference')
+        with patch.object(frontend, 'analyze', side_effect=fail_and_cancel) as fallback:
+            try:
+                project_resilient(('نمی‌روم',), frontend, cancelled=lambda: cancelled[0])
+                raise AssertionError('cancelled reference was retried')
+            except InterruptedError:
+                pass
+        assert fallback.call_count == 1
     print('Passed mixed native/reference Persian stress and index projection.')
 
 
