@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import time
 import traceback
+import wave
 
 import globalPluginHandler
 import wx
@@ -54,6 +55,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             from synthDrivers.reloqC._persian import continuous_driver, direct_fa_sequence, korean_contour, nvda_driver_probe
             from synthDrivers.reloqC._reloq_eci_transport import EciTextTransport
             self.speech, self.character, self.index_command = speech, CharacterModeCommand, IndexCommand
+            self.korean_module = korean_contour
+            self.candidate_donor_syllables = korean_contour._donor_syllables
             self.pitch_command = PitchCommand
             self.symbols = characterProcessing
             self.projected = []
@@ -314,6 +317,18 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'تنظیمات را باز کنید', False),
                           ('en_US', 'Open settings', False),
                           ('de_DE', 'Guten Tag.', False)]
+            # Capture comparable samples through NVDA's real preprocessing,
+            # speech manager, driver and packaged Windows DLL. The old donor
+            # is the dev133 rule, switched only in this test plugin.
+            passage = ('سلام دوستان. امروز می‌خواهم درباره یک کتاب صحبت کنم. '
+                       'این کتاب درباره دو دوست است. آن‌ها هر روز با هم به مدرسه می‌روند. '
+                       'در راه به مردم سلام می‌کنند و درباره زندگی صحبت می‌کنند. '
+                       'وقتی به خانه برمی‌گردند، کتاب می‌خوانند و به موسیقی گوش می‌دهند. '
+                       'شما هم کتاب خواندن را دوست دارید؟')
+            samples = (('word', 'سلام'), ('passage', passage),
+                       ('switch', 'سلام NVDA دنیا. Hello. سلام دنیا. این یک آزمایش است.'))
+            self.cases.extend(('fa_IR', text, 'comparison_' + version + '_' + name)
+                              for name, text in samples for version in ('old', 'new'))
             self.next()
         except BaseException:
             self.fail()
@@ -420,6 +435,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                 row['spelling'] == 'pipeline_bracket')
                 if fa_colon['pcm_sha256'] == fa_comma['pcm_sha256']:
                     raise AssertionError('NVDA replaced the colon contour with a comma contour')
+                for name in ('word', 'passage', 'switch'):
+                    old = next(row for row in self.results if row['spelling'] == 'comparison_old_' + name)
+                    new = next(row for row in self.results if row['spelling'] == 'comparison_new_' + name)
+                    if old['pcm_bytes'] != new['pcm_bytes'] or old['pcm_sha256'] == new['pcm_sha256']:
+                        raise AssertionError('NVDA contour comparison changed duration or not pitch: ' + name)
+                self.korean_module._donor_syllables = self.candidate_donor_syllables
                 self.done_signal.unregister(self.speech_done)
                 RESULT.write_text(json.dumps({'ok': True, 'cases': self.results,
                     'first_symbol_preparations': self.symbol_preparations[:4],
@@ -428,6 +449,20 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             locale, text, spelling = self.cases[self.index]
             self.speech.cancelSpeech()
             self.synth.language = locale
+            self.sample_case = isinstance(spelling, str) and spelling.startswith('comparison_')
+            if self.sample_case:
+                self.synth.sampleRate = '3'  # 16 kHz, like the first listening experiment
+                self.synth.rateBoost = False
+                self.synth.rate = 23  # the driver's unboosted ECI speed 65
+                self.synth.pitch = 65
+                self.synth.inflection = 30
+                if spelling.startswith('comparison_old_'):
+                    def old_syllables(matches, _tagged, *, continuation=False):
+                        return tuple(max(1, len(self.korean_module._SYLLABLE.findall(match.group())))
+                                     for match in matches)
+                    self.korean_module._donor_syllables = old_syllables
+                else:
+                    self.korean_module._donor_syllables = self.candidate_donor_syllables
             self.synth.voiceTags = isinstance(spelling, str) and spelling.startswith('tags_')
             if self.synth.language != locale:
                 raise AssertionError('language selection did not stick: ' + locale)
@@ -488,7 +523,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text, 'کادرِ علامت‌زدنی', status]
             elif isinstance(spelling, str) and spelling.startswith('tags_'):
                 sequence = [text]
-            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading', 'issue49_korean', 'issue49_korean_word', 'issue49_persian_unicode', 'issue49_persian_unicode_none', 'issue49_persian_unicode_all', 'issue49_korean_english'):
+            elif self.sample_case or spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading', 'issue49_korean', 'issue49_korean_word', 'issue49_persian_unicode', 'issue49_persian_unicode_none', 'issue49_persian_unicode_all', 'issue49_korean_english'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
@@ -496,7 +531,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.stage = {}
             self.started = time.perf_counter()
             self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
-            self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('tags_'))
+            self.pipeline = self.pipeline or self.sample_case or (isinstance(spelling, str) and spelling.startswith('tags_'))
             self.pipeline = self.pipeline or spelling in ('issue49_quotes', 'issue49_numeric')
             self.pipeline = self.pipeline or spelling in ('issue49_version_some', 'issue49_version_split',
                                                            'issue49_emoji_some', 'issue49_emoji_split',
@@ -513,7 +548,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.before_continuous = len(self.continuous)
             if self.pipeline:
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
-                                  symbolLevel=(self.symbols.SymbolLevel.SOME if spelling in (
+                                  symbolLevel=(self.symbols.SymbolLevel.SOME if self.sample_case or spelling in (
                                                'issue49_quotes', 'issue49_version_some', 'issue49_version_split',
                                                'issue49_emoji_some', 'issue49_emoji_split',
                                                'issue49_heading', 'issue49_heading_split',
@@ -527,7 +562,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 self.synth.speak([self.index_command(self.index + 1), *sequence])
             # Prefer the real completion signal, retaining the original
             # 1.6-second bound if an NVDA version does not expose it.
-            wx.CallLater(35, self.wait_for_completion, self.index, time.monotonic() + 1.6)
+            wx.CallLater(35, self.wait_for_completion, self.index,
+                         time.monotonic() + (12 if self.sample_case else 1.6))
         except BaseException:
             self.fail()
 
@@ -543,7 +579,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if self.pipeline and self.speech_manager is not None:
                 idle = (self.speech_manager._hasNoMoreSpeech() and
                         not self.speech_manager._synthStillSpeaking())
-            if (self.done_for_case == index and idle) or time.monotonic() >= deadline:
+            completed = self.done_for_case == index and idle
+            if self.sample_case and not completed and time.monotonic() >= deadline:
+                raise TimeoutError('NVDA comparison did not finish: ' + self.cases[index][2])
+            if completed or time.monotonic() >= deadline:
                 self.capture()
             else:
                 wx.CallLater(35, self.wait_for_completion, index, deadline)
@@ -571,6 +610,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                              for chunk in player.chunks[self.before.get(id(player), 0):])
             if not audio:
                 raise RuntimeError('no actual NVDA audio for ' + ascii(text))
+            if self.sample_case:
+                if len(self.korean_calls) == self.before_korean:
+                    raise AssertionError('real NVDA comparison missed the Korean donor: ' + spelling)
+                with wave.open(str(RESULT.parent / (spelling + '.wav')), 'wb') as output:
+                    output.setnchannels(1)
+                    output.setsampwidth(2)
+                    output.setframerate(16000)
+                    output.writeframes(audio)
             if spelling in ('tags_slow', 'tags_fast', 'tags_pitch', 'tags_phonemes'):
                 expected = text.split(' ', 1)[0]
                 if expected not in self.user_controls[self.before_user_controls:]:

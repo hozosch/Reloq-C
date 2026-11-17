@@ -39,16 +39,32 @@ def _punctuation(text):
     return explicit or (',' if any(char in '()[]{}' for char in text) else '')
 
 
+def _donor_syllables(matches, tagged, *, continuation=False):
+    """Choose syllables for the Korean pitch donor, never for Persian speech.
+
+    The neutral two-syllable final word produces an exceptionally deep final
+    fall in this Korean voice, unlike the longer Korean sentences used in the
+    listening experiment. Give that synthetic final word one extra syllable
+    of Korean context. Questions, explicit continuation and non-final marks
+    retain their own Korean contour. Persian phones and timing are untouched.
+    """
+    counts = [max(1, len(_SYLLABLE.findall(match.group()))) for match in matches]
+    if counts and counts[-1] == 2 and not continuation:
+        ending = _punctuation(tagged[matches[-1].end():])
+        if not ending or set(ending) == {'.'}:
+            counts[-1] += 1
+    return tuple(counts)
+
+
 def proxy(tagged: str, *, continuation: bool = False) -> str | None:
     """Keep syllable counts and phrase punctuation without Korean words."""
     matches = tuple(_TAG.finditer(tagged))
     if not matches:
         return None
+    syllables = _donor_syllables(matches, tagged, continuation=continuation)
     parts = []
     for index, match in enumerate(matches):
-        # Some explicit phone tags have no syllable marker. They still need
-        # a Korean word, rather than dropping the whole sentence's contour.
-        count = max(1, len(_SYLLABLE.findall(match.group())))
+        count = syllables[index]
         if index:
             gap = tagged[matches[index - 1].end():match.start()]
             punctuation = _punctuation(gap)
@@ -108,7 +124,7 @@ class KoreanContour:
 
     def apply(self, rows, count, tagged, target_voice, cancelled, *, edges=0, continuation=False,
               preceded=False, prefix=()):
-        pilot = proxy(tagged)
+        pilot = proxy(tagged, continuation=continuation)
         api = self.api
         if pilot is None or api.transfer_korean_pitch is None:
             return False
@@ -125,7 +141,7 @@ class KoreanContour:
         if self.voice._pitch_hz != pitch_hz:
             self.voice.set_parameter(PITCH_HZ, pitch_hz)
         matches = tuple(_TAG.finditer(tagged))
-        syllable_counts = tuple(max(1, len(_SYLLABLE.findall(match.group()))) for match in matches)
+        syllable_counts = _donor_syllables(matches, tagged, continuation=continuation)
         # Synthesize a little Korean context on either side of an embedded
         # Persian span. Otherwise the final Persian word is pronounced as a
         # Korean sentence ending just before English, producing a large fall.

@@ -14,7 +14,7 @@ existing reference in several contexts; unknown forms retain the fallback.
 The NVDA adapter also suppresses redundant emoji presentation selectors split
 by source indexes, while letting NVDA's symbol level and dictionaries take precedence.
 
-The dev133 candidate transfers the Korean core's own pitch to ordinary
+The dev134 candidate transfers the Korean core's own pitch to ordinary
 Persian and Pinglish speech. A Hangul syllable-count proxy approximates the
 longer comparison's manually translated Korean sentences; it is not a
 translation and cannot reproduce their phrasing exactly. As in the original
@@ -31,6 +31,16 @@ remain adjustable. NVDA inflection 30 now selects Korean inflection 37; a
 monotonic mapping preserves both slider endpoints and responsiveness. The
 original long comparison used Korean inflection 30. This candidate requires
 native-speaker review.
+
+In the synthetic donor, a two-syllable neutral word at an ordinary statement
+ending gave a notably deeper Korean final pitch than the longer Korean
+sentences in the original experiment. Dev134 adds one donor-only syllable in
+that situation, so the same Korean core plans the ending with a longer word.
+The actual Persian pronunciation and duration are unchanged. Explicit
+questions, comma endings and English continuations keep their previous donor
+structure. This is a listening hypothesis, not a claim about correct Persian
+intonation. The comparison audio is captured from NVDA's real speech pipeline
+with the old and new donor rules at the same explicit settings.
 
 The language is **not yet fully implemented in the native core**. Mixed-text
 segmentation and sentence planning still run in the NVDA adapter, and words

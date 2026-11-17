@@ -10,6 +10,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 from _reloq_eci_direct import EciIndex, EciLanguage, EciPitch, EciPitchHz, EciText, NATIVE_INFLECTION, PITCH_HZ, SAMPLE_RATE
 from _reloq_persian_frames import FrameCapture, NativeFrame
+import korean_contour
 from korean_contour import KoreanContour, align_english_edges, korean_inflection, proxy
 from nvda_driver_probe import PERSIAN_PROBE, US_ENGLISH, make_language_engine
 from text_frontend import SpeechPart
@@ -22,8 +23,10 @@ def main():
         parser.add_argument('--' + option, required=True, type=Path)
     args = parser.parse_args()
     assert proxy('`[.1sA.0lam] `[.1do.0nja]?') == '가가 가가?'
-    assert proxy('`[.1sA.0lam], `[.1do.0nja]') == '가가, 가가.'
+    assert proxy('`[.1sA.0lam], `[.1do.0nja]') == '가가, 가가가.'
+    assert proxy('`[.1sA.0lam]') == '가가가.'
     assert proxy('`[.1sA.0lam]', continuation=True) == '가가,'
+    assert proxy('`[.1sA.0lam],') == '가가,'
     assert proxy('`[salam]') == '가.'
     mapped = [korean_inflection(value) for value in range(101)]
     assert mapped[0] == 0 and mapped[30] == 37 and mapped[100] == 100
@@ -177,6 +180,35 @@ def main():
             examples.append(speak(('سلام دنیا.',), True)[0])
             assert donor._dll.eciGetParam(donor._handle, NATIVE_INFLECTION) == korean_inflection(inflection)
         assert len(set(examples)) == len(examples), 'the Korean donor ignored an inflection setting'
+        # Check the actual Korean donor and replay, rather than only checking
+        # that the planner was called. The old two-syllable synthetic ending
+        # dipped sharply; the contextual donor must change pitch, not length,
+        # while questions and an English continuation retain their old PCM.
+        def old_syllables(matches, _tagged, *, continuation=False):
+            return tuple(max(1, len(korean_contour._SYLLABLE.findall(match.group()))) for match in matches)
+        voice.set_parameter(NATIVE_INFLECTION, 30)
+        for parts in (('سلام',), ('سلام دنیا.',)):
+            with patch.object(korean_contour, '_donor_syllables', old_syllables):
+                old, old_marks = speak(parts, True)
+            new, new_marks = speak(parts, True)
+            assert old != new and len(old) == len(new) and old_marks == new_marks, parts
+        for parts in (('سلام؟',), ('سلام NVDA',)):
+            with patch.object(korean_contour, '_donor_syllables', old_syllables):
+                old, old_marks = speak(parts, True)
+            assert speak(parts, True) == (old, old_marks), parts
+        for inflection in (0, 30, 70, 100):
+            voice.set_parameter(NATIVE_INFLECTION, inflection)
+            final_pitches = []
+            def observe_final(instance, rows, count, tagged, *args, **kwargs):
+                result = real_apply(instance, rows, count, tagged, *args, **kwargs)
+                if result:
+                    final_pitches.extend(rows[i].controls[1] for i in range(count)
+                                         if rows[i].controls[2] > 10 and rows[i].controls[1] > 0)
+                return result
+            with patch.object(KoreanContour, 'apply', observe_final):
+                speak(('سلام',), True)
+            assert final_pitches and donor._dll.eciGetParam(donor._handle, NATIVE_INFLECTION) == korean_inflection(inflection)
+        voice.set_parameter(NATIVE_INFLECTION, 47)
         # Request-local pitch controls and the persistent Hertz mode must
         # reach the Korean donor; a following ordinary request must reset.
         neutral, _ = speak(('سلام',), True)
