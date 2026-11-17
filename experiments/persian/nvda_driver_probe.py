@@ -376,8 +376,9 @@ class PersianProbeLanguageEngine(LanguageEngine):
             positions = []
             for at, char in enumerate(text):
                 cp = ord(char)
-                if (cp < 128 or 0x600 <= cp <= 0x6ff or char in '\u200c\u200d\ufe0f' or
-                        char.isalpha() or char.isdecimal()):
+                if (cp < 128 or 0x600 <= cp <= 0x6ff or char in '\u200c\u200d\ufe0e\ufe0f' or
+                        char.isspace() or char.isalpha() or char.isdecimal() or
+                        unicodedata.category(char).startswith('M')):
                     continue
                 if char not in names:
                     engine = self._activate(logical)

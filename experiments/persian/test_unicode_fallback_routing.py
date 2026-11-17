@@ -41,7 +41,9 @@ def main():
                         EciLanguage(US_ENGLISH.id, '1'), name,
                         EciLanguage(PERSIAN_PROBE.id, '1'), ' سلام', EciIndex(3))
             assert render(before) == render(explicit), ascii(char)
+        assert render(('سلام\u00a0دنیا',)) == render(('سلام دنیا',))
         engine.select_voice(PINGLISH_PROBE.id, '1')
+        assert render(('fa\u0304rsi',)) == render(('farsi',))
         before = (EciIndex(4), 'salam ', EciIndex(5), '\0 donya', EciIndex(6))
         explicit = (EciIndex(4), 'salam ', EciIndex(5),
                     EciLanguage(US_ENGLISH.id, '1'), 'symbol for null',
