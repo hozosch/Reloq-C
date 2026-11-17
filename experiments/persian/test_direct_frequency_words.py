@@ -49,7 +49,11 @@ def main():
                 if word in named_characters:
                     tag = frontend.analyze_character(named_characters[word]).parts[0].text
                 phones = lambda value: re.sub(r'\.[012]', '.#', value)
-                assert phones(actual.parts[0].text[at:at + len(tag)]) == phones(tag), (word, text, actual.parts)
+                # A weak word's source position intentionally points to its
+                # control, so that indexed playback includes the control.
+                # It is not part of the word's reference phonemes.
+                output = re.sub(r'^`00\s+', '', actual.parts[0].text[at:])
+                assert phones(output[:len(tag)]) == phones(tag), (word, text, actual.parts)
                 assert all(position == at for position in actual.source_map[start:end]), text
             if number % 5000 == 0:
                 print(f'Checked {number}/{len(rows)} words', flush=True)
