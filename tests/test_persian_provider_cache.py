@@ -21,6 +21,10 @@ class CacheReuseTests(unittest.TestCase):
         host_key = next(line for line in workflow.splitlines() if 'key: persian-windows-host-' in line)
         for extension in ('c', 'h', 'inc'):
             self.assertIn('experiments/persian/direct_fa_*.' + extension, host_key)
+        for source in ('tools/prepare_persian_provider.py',
+                       'experiments/persian/build_native_probe.py',
+                       'experiments/aragonese/build_native_probe.py'):
+            self.assertIn(source, host_key)
 
     def test_rebuilds_selected_objects_or_rejects_unverified_cache(self):
         for key, diff, reusable in (
