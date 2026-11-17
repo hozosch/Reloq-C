@@ -29,7 +29,7 @@ def main():
             'locale/de/manifest.ini': b'summary = "Alt"\ndescription = "Alt"\n'}
     entries = add_persian(base)
     assert 'Persian acoustic core' in json.loads(entries['doc/source.json'])['build']
-    assert b'1.5.0-dev131' in entries['manifest.ini']
+    assert b'1.5.0-dev132' in entries['manifest.ini']
     assert PREFIX + '_persian/korean_contour.py' in entries
     assert 'Persisch- und Pinglish-Test' in entries['locale/de/manifest.ini'].decode('utf8')
     assert b'add_profiles(dict(LANGUAGES), DLL)' in entries[PREFIX + '__init__.py']
