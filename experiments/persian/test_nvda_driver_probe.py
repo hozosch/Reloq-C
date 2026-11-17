@@ -86,18 +86,21 @@ def fake_routing_test():
 def real_transport_tests(args):
     player, observed, errors = Player(), [], []
     event_started = threading.Event()
+    reference_release = threading.Event()
 
     def create():
         engine = make_language_engine(args.scope_probe, args.native_library, args.worker,
                                       args.espeak_library, args.data_parent)
         persian = engine._engines[PERSIAN_PROBE.id]
         reference = persian._frontend._fallback()
-        original = reference.events
-        def marked_events(text, *, voice='fa'):
-            if len(text) > 1000:
+        original = reference.translate
+        def marked_translate(text, *, voice='fa', separator=''):
+            if 'ناموجودمطمئن' in text:
                 event_started.set()
-            return original(text, voice=voice)
-        reference.events = marked_events
+                if not reference_release.wait(15):
+                    raise TimeoutError('reference cancellation test was not released')
+            return original(text, voice=voice, separator=separator)
+        reference.translate = marked_translate
         return engine
 
     transport = EciTextTransport(create, player, lambda value: observed.append(('index', value)),
@@ -180,11 +183,16 @@ def real_transport_tests(args):
         _, recovered = run(('سلام.', EciIndex(8)))
         assert recovered
 
-        # Interrupt real helper work, discard its callbacks, then speak again.
+        # Hold an actual unknown-word reference request, cancel its transport
+        # job, then release it. The reference is now requested per word, not
+        # necessarily as one large events call; stale callbacks must vanish.
         abandoned = transport.submit(('ناموجودمطمئن ', EciIndex(9),
                                       'سلام ناموجودمطمئن ' * 400))
-        assert event_started.wait(15), 'reference events did not start'
-        transport.cancel()
+        try:
+            assert event_started.wait(15), 'reference translation did not start'
+            transport.cancel()
+        finally:
+            reference_release.set()
         current, recovered = run(('سلام.', EciIndex(10)))
         assert recovered and ('done', abandoned) not in observed
         assert observed[-2:] == [('index', 10), ('done', current)]
