@@ -10,7 +10,8 @@ import time
 
 from direct_fa_sequence import EciIndex, EciText
 from nvda_driver_probe import (PERSIAN_PROBE, PINGLISH_PROBE, PROFILES,
-                               PersianProbeLanguageEngine, _bracket_continuations, make_language_engine)
+                               PersianProbeLanguageEngine, _bracket_continuations, _persian_part_runs,
+                               _script_runs, make_language_engine)
 from _reloq_eci_direct import EciLanguage, PROCESS_TAGS
 from _reloq_eci_transport import EciTextTransport
 from _reloq_languages import FINNISH, US_ENGLISH, language_for
@@ -18,6 +19,14 @@ from test_eci_transport import Player
 
 
 def fake_routing_test():
+    assert _script_runs('سلام 4 of 14') == (('fa', 'سلام '), ('en', '4 of 14'))
+    assert _script_runs('4 of 14 خوب') == (('en', '4 of 14 '), ('fa', 'خوب'))
+    assert _script_runs('سلام ˌchi-kən-ˈgu̇n-yə خوب') == (
+        ('fa', 'سلام '), ('en', 'ˌchi-kən-ˈgu̇n-yə '), ('fa', 'خوب'))
+    split = ('سلام 4', EciIndex(101), ' of ', EciIndex(102), '14 خوب')
+    mapped = _persian_part_runs(split, (PERSIAN_PROBE.id, '1'))
+    assert mapped == {0: (('fa', 'سلام '), ('en', '4')), 2: (('en', ' of '),),
+                      4: (('en', '14 '), ('fa', 'خوب'))}
     source = (EciText('سلام (NVDA)'), EciIndex(5), EciText(': خوب'))
     assert _bracket_continuations(source) == (
         EciText('سلام (NVDA'), EciIndex(5), EciText(': خوب'))

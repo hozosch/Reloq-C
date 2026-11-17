@@ -100,6 +100,14 @@ def projection_tests(frontend):
     for char in '()[]{}':
         spelled = project((EciText(char, character_mode=True),), frontend)
         assert spelled.tagged == frontend.analyze_character(char).parts[0].text
+    # Silent French angle quotes at lower symbol levels retain the native
+    # bracket contour; explicit character reading still names each symbol.
+    quoted = project(('سلام «دنیا» خوب',), frontend)
+    bracketed = project(('سلام (دنیا) خوب',), frontend)
+    assert quoted.tagged == bracketed.tagged
+    for char in '«»':
+        spelled = project((EciText(char, character_mode=True),), frontend)
+        assert spelled.tagged == frontend.analyze_character(char).parts[0].text
     for bad in (('سلام NVDA',), ('ناموجودمطمئن',), ('سل', EciPitch(65), 'ام.'),
                 ('؟',), ('3,14',),
                 ('سلام\0',), ('`vp80 سلام',), (EciIndex(-1), 'سلام')):

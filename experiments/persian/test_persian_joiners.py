@@ -89,6 +89,26 @@ def main():
                 en_id: types.SimpleNamespace(id=en_id, locale='en_US')}
     driver = types.SimpleNamespace(_selectedLanguage=fa_id, _languages=profiles, _submit_lock=threading.Lock())
 
+    emoji = '⚽️ ⚡️ ❤️'
+    assert joiners.protect_emoji_selectors(driver, [emoji], symbol_level=level.NONE) == ['⚽ ⚡ ❤']
+    assert joiners.protect_emoji_selectors(driver, [emoji], symbol_level=level.CHAR) == [emoji]
+    assert joiners.protect_emoji_selectors(driver, [CharacterModeCommand(True), emoji],
+                                          symbol_level=level.NONE)[1] == emoji
+    assert joiners.protect_emoji_selectors(driver, ['\ufe0f'], symbol_level=level.NONE) == ['\ufe0f']
+    assert joiners.protect_emoji_selectors(driver, ['A\ufe0f'], symbol_level=level.NONE) == ['A\ufe0f']
+    dictionaries.dictionaries['user'] = [types.SimpleNamespace(compiled=re.compile('❤️'))]
+    assert joiners.protect_emoji_selectors(driver, [emoji], symbol_level=level.NONE) == [emoji]
+    dictionaries.dictionaries['user'] = []
+    driver._selectedLanguage = en_id
+    assert joiners.protect_emoji_selectors(driver, [emoji], symbol_level=level.NONE) == [emoji]
+    driver._selectedLanguage = fa_id
+    # If NVDA recognises the entire sequence rather than leaving the selector
+    # behind, do not disrupt the user's preferred emoji description.
+    sys.modules['characterProcessing'].processSpeechSymbols = (
+        lambda locale, text, kind: 'heart' if text == '❤️' else text)
+    assert joiners.protect_emoji_selectors(driver, ['❤️'], symbol_level=level.NONE) == ['❤️']
+    sys.modules['characterProcessing'].processSpeechSymbols = observe_symbols
+
     word = 'علامت‌دار'
     assert processor.processText(word, level.NONE) == 'علامت دار'
     for kind in (level.NONE, level.SOME, level.MOST, level.ALL):

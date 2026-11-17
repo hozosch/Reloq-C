@@ -142,6 +142,8 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             else if(cp==0x60c)punctuation=',';
             else if(cp==0x61b)punctuation=';';
             else if(cp==0x61f)punctuation='?';
+            else if(cp==0x00ab)punctuation='(';
+            else if(cp==0x00bb)punctuation=')';
             else {status=1;break;}
             size_t point=b.used;
             if(append(&b,&punctuation,1)){status=-2;break;}

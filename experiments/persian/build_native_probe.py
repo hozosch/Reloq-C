@@ -2303,6 +2303,18 @@ def prepare_us_articulation(work: Path) -> None:
             STATE(int16_t,s399)=b3; STATE(int16_t,s400)=b4; STATE(int16_t,s401)=b5;
             STATE(int16_t,s454)=f4; STATE(int16_t,s455)=f4_end;
             STATE(int16_t,s456)=f5; STATE(int16_t,s457)=f5_end;
+            /* A small, vowel-local head-size adjustment: raise all five
+               resonance targets by two percent, without changing the
+               speaker's head-size setting, duration, source, or bandwidths.
+               Native negative inheritance markers must remain untouched. */
+            int16_t *frequencies[]={&STATE(int16_t,s448),&STATE(int16_t,s449),
+                &STATE(int16_t,s450),&STATE(int16_t,s451),
+                &STATE(int16_t,s452),&STATE(int16_t,s453),
+                &STATE(int16_t,s454),&STATE(int16_t,s455),
+                &STATE(int16_t,s456),&STATE(int16_t,s457)};
+            for (unsigned i=0;i<sizeof frequencies/sizeof frequencies[0];++i)
+                if (*frequencies[i]>0)
+                    *frequencies[i]=(int16_t)((102*(int)*frequencies[i]+50)/100);
         }
     }
 ''', 1)

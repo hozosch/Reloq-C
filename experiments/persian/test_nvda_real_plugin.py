@@ -185,6 +185,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'عدد ۱۲-۱۵ است', False),
                           ('fa_IR', 'سلام (دنیا) خوب', False),
                           ('fa_IR', 'سلام، دنیا، خوب', False),
+                          ('fa_IR', 'سلام «دنیا» خوب', 'issue49_quotes'),
+                          ('fa_IR', 'سلام (دنیا) خوب', 'issue49_quotes'),
+                          ('fa_IR', '4 of 14', 'issue49_numeric'),
+                          ('en_US', '4 of 14', 'issue49_numeric'),
                           ('fa_Latn', 'salam (donya) khub', False),
                           ('fa_Latn', 'salam, donya, khub', False),
                           ('fa_IR', 'سلام (دنیا)', 'pipeline_bracket'),
@@ -265,6 +269,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     fast = next(row for row in self.results if row['locale'] == locale and row['spelling'] == 'tags_fast')
                     if slow['pcm_bytes'] <= fast['pcm_bytes'] * 1.5:
                         raise AssertionError('NVDA did not apply Persian ECI speed tags: ' + locale)
+                quoted = next(row for row in self.results if row['text'] == 'سلام «دنیا» خوب')
+                bracketed = next(row for row in self.results if row['text'] == 'سلام (دنیا) خوب' and
+                                 row['spelling'] == 'issue49_quotes')
+                if quoted['pcm_sha256'] != bracketed['pcm_sha256']:
+                    raise AssertionError('angle quotes were spoken at the SOME punctuation level')
+                fa_number = next(row for row in self.results if row['locale'] == 'fa_IR' and
+                                 row['spelling'] == 'issue49_numeric')
+                en_number = next(row for row in self.results if row['locale'] == 'en_US' and
+                                 row['spelling'] == 'issue49_numeric')
+                if fa_number['pcm_sha256'] != en_number['pcm_sha256']:
+                    raise AssertionError('English number phrase was split between languages')
                 plain = next(row for row in self.results if row['spelling'] == 'tags_plain')
                 pitch = next(row for row in self.results if row['spelling'] == 'tags_pitch')
                 if plain['pcm_sha256'] == pitch['pcm_sha256']:
@@ -383,7 +398,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text, 'کادرِ علامت‌زدنی', status]
             elif isinstance(spelling, str) and spelling.startswith('tags_'):
                 sequence = [text]
-            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown'):
+            elif spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
@@ -392,10 +407,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.started = time.perf_counter()
             self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('tags_'))
+            self.pipeline = self.pipeline or spelling in ('issue49_quotes', 'issue49_numeric')
             self.before_continuous = len(self.continuous)
             if self.pipeline:
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
-                                  symbolLevel=(self.symbols.SymbolLevel.MOST if spelling in ('pipeline_most', 'checkbox_checked_most')
+                                  symbolLevel=(self.symbols.SymbolLevel.SOME if spelling == 'issue49_quotes' else
+                                               self.symbols.SymbolLevel.MOST if spelling in ('pipeline_most', 'checkbox_checked_most')
                                                else self.symbols.SymbolLevel.NONE))
             else:
                 self.synth.speak([self.index_command(self.index + 1), *sequence])

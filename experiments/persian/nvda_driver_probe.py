@@ -58,9 +58,17 @@ class OwnedPersianEngine(ScopedDirectPersianEngine):
 
 def _script_runs(text):
     """Preserve every character while separating Latin from other letters."""
+    # An English "4 of 14" is one phrase, even if the preceding Persian
+    # text or an NVDA index ends immediately before its first digit.
+    english_numbers = [(match.start(), match.end()) for match in
+                       re.finditer(r'(?<![\w.])[0-9]+[ \t]+of[ \t]+[0-9]+(?![\w.])',
+                                   text, re.IGNORECASE)]
     runs, prefix, current, kind = [], '', '', None
-    for char in text:
-        strong = ('en' if unicodedata.name(char, '').startswith('LATIN ') else
+    for index, char in enumerate(text):
+        in_number = any(start <= index < end for start, end in english_numbers)
+        ipa_stress = (char in ('\u02c8', '\u02cc') and index + 1 < len(text) and
+                      unicodedata.name(text[index + 1], '').startswith('LATIN '))
+        strong = ('en' if in_number or ipa_stress or unicodedata.name(char, '').startswith('LATIN ') else
                   'fa' if char.isalpha() else None)
         if strong is None:
             if kind is None:

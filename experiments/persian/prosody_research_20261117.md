@@ -114,3 +114,28 @@ retain an adjustable command-line speed. They separate a previous/new front
 vowel comparison from the previously proposed paired F0-contour comparison.
 Both comparisons can be generated with German or English spoken labels; the
 Persian samples and comparison conditions stay the same.
+
+## Follow-up listening candidate: dev128
+
+At the listener's request, the British-derived front vowel receives a local
+two-percent increase of its positive formant targets, similar to reducing the
+donor's head size by about four points around the default setting. Native
+voice-dependent transforms and frequency ceilings still apply. No global
+head-size, duration, or source controls are changed; the direction is a
+listening hypothesis rather than a measurement of a correct Persian vowel.
+
+The same eSpeak build produces first-syllable stress for `کتاب` and `خانه`,
+and middle-syllable stress for `مدرسه`, which is also how the current
+generated tags for those individual words mark them. This is an observation
+about the two implementations, not evidence that these stress positions are
+always linguistically correct. A Persian intonation model must still account
+for the alignment of phrase-level rises with prominence, morphology, focus,
+and question type, rather than assuming that a different contour corrects
+the lexical stress automatically.
+
+The optional Korean listening comparison captures actual Korean-core pitch
+curves, stretches each one to the duration of the corresponding Persian
+utterance, and matches its median to the Persian baseline. It changes only F0
+in a replay of the same Persian frames. The transplant is not aligned by word
+or syllable, and it is neither a Persian prosody model nor enabled in the
+voice. Each example includes statement/question punctuation as appropriate.

@@ -24,6 +24,11 @@ def main():
         return bytes(pcm), marks
     cases = (
         ('version 3.5 is available.',),
+        ('Google Chrome, version 157.0.8103.79 (AMD64)',),
+        ('BlindRadio, version 0.2.100',),
+        ('4 of 14',),
+        ('4', EciIndex(29), ' of ', EciIndex(30), '14'),
+        ('ˌchi-kən-ˈgu̇n-yə',),
         ('version ', EciIndex(1), '3.5', EciIndex(2), ' available.'),
         ('version ', EciIndex(3), '3', EciIndex(4), '.', EciIndex(5), '5'),
         ('3.5 ', EciIndex(6), 'version'),
@@ -55,6 +60,7 @@ def main():
         # when the number was delivered in several indexed fragments.
         assert render(PERSIAN_PROBE.id, ('3.5',))[0] != render(US_ENGLISH.id, ('3.5',))[0]
         assert render(PERSIAN_PROBE.id, ('سلام ', '3.5'))[0] == render(PERSIAN_PROBE.id, ('سلام 3.5',))[0]
+        assert render(PERSIAN_PROBE.id, ('سلام 4 of 14',))[0]
         explicit = ('version ', EciLanguage(PERSIAN_PROBE.id, '1'), '3.5')
         assert render(PERSIAN_PROBE.id, explicit)[0] != render(US_ENGLISH.id, ('version 3.5',))[0]
         for parts in (('phone 3.5',), ('phone ', EciIndex(20), '3', EciIndex(21), '.', '5'),

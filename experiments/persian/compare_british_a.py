@@ -50,10 +50,12 @@ def main():
     try:
         if args.labels == 'de':
             say('Persisch. Ä im Vergleich. Zuerst das britische Wort sad als Klangreferenz. '
-                'Danach pro Beispiel erst die bisherige, dann die britische Klangfarbe.')
+                'Danach pro Beispiel erst die bisherige Fassung, dann der Versuch mit '
+                'etwas kleinerer Kopfgröße für diesen Vokal.')
         else:
             say('Persian vowel comparison. First the British word sad as a sound reference. '
-                'For each Persian word, first the previous sound, then the British vowel sound.')
+                'For each Persian word, first the previous version, then the version '
+                'with a slightly smaller head size for this vowel.')
         reference, _ = capture(gb, gb_scope, 'sad', False)
         append(reference.pcm)
         for number, (german, english, text) in enumerate(CASES, 1):
@@ -69,7 +71,7 @@ def main():
             say(f'Beispiel {number}. {german} Bisher.' if args.labels == 'de'
                 else f'Example {number}. {english} Previous.')
             append(previous.pcm)
-            say('Britische Klangfarbe.' if args.labels == 'de' else 'British vowel sound.')
+            say('Etwas kleinere Kopfgröße.' if args.labels == 'de' else 'Slightly smaller head size.')
             append(current.pcm)
             print(number, text, tag, len(previous.pcm), flush=True)
         say('Ende des Vergleichs.' if args.labels == 'de' else 'End of comparison.')

@@ -440,7 +440,7 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
                  else names(value), speech=True)
             at = end
             continue
-        punctuation = {'،': ',', '؛': ';', '؟': '?'}.get(char, char)
+        punctuation = {'،': ',', '؛': ';', '؟': '?', '«': '(', '»': ')'}.get(char, char)
         if char == '-' and has_words:
             # A Persian word boundary remains a boundary even when spaces or
             # separate NVDA text/index items surround the hyphen.  In the

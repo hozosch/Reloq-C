@@ -9,7 +9,7 @@ from pathlib import Path
 
 from test_us_articulation import capture, voice
 from test_british_front_a import vowel
-from _reloq_eci_direct import GENDER, NATIVE_SPEED, SAMPLE_RATE
+from _reloq_eci_direct import GENDER, HEAD_SIZE, NATIVE_SPEED, SAMPLE_RATE
 from _reloq_persian_frames import FrameReplay, NativeFrame
 
 
@@ -68,6 +68,7 @@ def main():
                 if engine:
                     for param, value in ((SAMPLE_RATE, 3), (NATIVE_SPEED, 98), (GENDER, gender)):
                         engine.set_parameter(param, value)
+            british.set_parameter(HEAD_SIZE, 46)
             for fa_text in ("`[.1s'A:'d]", '`[.1bAt]', '`[.1GAt]', '`[.1sAGt]'):
                 _, fa_rows = capture(fa, scope, fa_text, True)
                 _, gb_rows = capture(british, british_scope, 'sad', False)

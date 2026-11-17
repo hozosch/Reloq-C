@@ -34,6 +34,58 @@ def joiner_pending(sequence):
     return any(isinstance(item, str) and ('\u200c' in item or '\u200d' in item) for item in sequence)
 
 
+def emoji_selector_pending(sequence):
+    return any(isinstance(item, str) and '\ufe0f' in item for item in sequence)
+
+
+def protect_emoji_selectors(driver, sequence, *, symbol_level=None):
+    """Avoid announcing a redundant emoji presentation selector in speech.
+
+    Preserve the original if NVDA treats the whole emoji sequence specially,
+    a speech dictionary matches, or the user is examining characters.
+    """
+    if not emoji_selector_pending(sequence):
+        return sequence
+    try:
+        import characterProcessing
+        import config
+        level = symbol_level
+        if level is None or level == characterProcessing.SymbolLevel.UNCHANGED:
+            level = characterProcessing.SymbolLevel(config.conf['speech']['symbolLevel'])
+        if level == characterProcessing.SymbolLevel.CHAR:
+            return sequence
+        with driver._submit_lock:
+            home, languages = driver._selectedLanguage, driver._languages
+    except (ImportError, AttributeError, KeyError, TypeError, ValueError):
+        return sequence
+    selected, spelling, result = home, False, []
+    for item in sequence:
+        if isinstance(item, LangChangeCommand):
+            chosen = language_for(item.lang, home, languages)
+            if chosen is not None:
+                selected = chosen
+        elif isinstance(item, CharacterModeCommand):
+            spelling = bool(item.state)
+        elif isinstance(item, str) and not spelling and selected in _FA_PROFILES and '\ufe0f' in item:
+            chars = list(item)
+            for i in range(1, len(chars)):
+                code = ord(chars[i - 1]) if chars[i - 1] else 0
+                if chars[i] == '\ufe0f' and (0x2600 <= code <= 0x27bf or 0x1f000 <= code <= 0x1faff):
+                    chars[i] = ''
+            stripped = ''.join(chars)
+            if stripped != item and _dictionary_untouched(item, stripped):
+                try:
+                    locale = languages[selected].locale
+                    before = characterProcessing.processSpeechSymbols(locale, item, level)
+                    after = characterProcessing.processSpeechSymbols(locale, stripped, level)
+                    if before.replace('\ufe0f', '') == after:
+                        item = stripped
+                except (AttributeError, KeyError, LookupError, TypeError, ValueError):
+                    pass
+        result.append(item)
+    return result
+
+
 def prepare_persian_symbols(locale):
     """Let NVDA load its locale data when a Persian voice is selected.
 

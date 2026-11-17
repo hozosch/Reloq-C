@@ -25,7 +25,7 @@ MODULES = ('espeak_ng_probe', 'inprocess_espeak', 'text_frontend', 'pinglish_fro
            'continuous_driver', 'parallel_pilot', 'nvda_driver_probe')
 
 
-def add_persian(entries, *, version='1.5.0-dev127'):
+def add_persian(entries, *, version='1.5.0-dev128'):
     """Extend a baseline package without changing the normal release builder."""
     entries = dict(entries)
     driver = PREFIX + '__init__.py'
@@ -41,7 +41,8 @@ def add_persian(entries, *, version='1.5.0-dev127'):
                             'from ._reloq_persian_bridge import add_profiles, make_engine\n'
                             'from ._reloq_persian_decimals import decimal_pending, protect_decimals\n'
                             'from ._reloq_persian_joiners import (ReloqPersianJoinerGuard, joiner_pending,\n'
-                            '    prepare_persian_symbols, protect_joiners, restore_joiners)\n' + old_import, 1)
+                            '    emoji_selector_pending, prepare_persian_symbols, protect_joiners,\n'
+                            '    protect_emoji_selectors, restore_joiners)\n' + old_import, 1)
     source = source.replace(old_languages, 'self._languages = add_profiles(dict(LANGUAGES), DLL)', 1)
     source = source.replace(old_factory,
                             'lambda: make_engine(DLL, languages=self._languages,\n'
@@ -66,10 +67,12 @@ def add_persian(entries, *, version='1.5.0-dev127'):
          'NativeDictionaryWord, CapitalWordCommand, ReloqPersianJoinerGuard}'),
         ('any(isinstance(item, str) and _BUILTIN_BOUNDARY.search(item) for item in sequence))',
          'any(isinstance(item, str) and _BUILTIN_BOUNDARY.search(item) for item in sequence) or\n'
-         '                            joiner_pending(sequence) or decimal_pending(sequence))'),
+         '                            joiner_pending(sequence) or decimal_pending(sequence) or\n'
+         '                            emoji_selector_pending(sequence))'),
         ('        speechSequence[:] = self._protect_tags(prepared, symbolLevel=symbolLevel)',
          '        prepared = self._protect_tags(prepared, symbolLevel=symbolLevel)\n'
          '        prepared = protect_decimals(self, prepared, symbol_level=symbolLevel)\n'
+         '        prepared = protect_emoji_selectors(self, prepared, symbol_level=symbolLevel)\n'
          '        speechSequence[:] = protect_joiners(self, prepared, symbol_level=symbolLevel)'),
     )
     for old, new in substitutions:
@@ -121,7 +124,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dll', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--version', default='1.5.0-dev127')
+    parser.add_argument('--version', default='1.5.0-dev128')
     args = parser.parse_args()
     entries = add_persian(make_entries(args.dll), version=args.version)
     args.output.parent.mkdir(parents=True, exist_ok=True)

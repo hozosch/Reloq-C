@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
-from _reloq_eci_direct import DirectEciEngine, GENDER, PAUSE_MODE, PROCESS_TAGS, SAMPLE_RATE
+from _reloq_eci_direct import DirectEciEngine, GENDER, HEAD_SIZE, PAUSE_MODE, PROCESS_TAGS, SAMPLE_RATE
 from _reloq_persian_frames import FrameCapture
 from test_british_front_a import vowel
 from test_open_vowels import nucleus
@@ -64,6 +64,7 @@ def main():
             british, british_scope = voice(args.probe, gender, rate, 0x10001)
             baseline, old_scope = voice(args.baseline, gender, rate) if args.baseline else (None, None)
             try:
+                british.set_parameter(HEAD_SIZE, 46)
                 reference = vowel(capture(british, british_scope, 'sad', False).frames())
                 for tag in contexts:
                     sample = capture(current, scope, tag)
