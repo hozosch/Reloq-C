@@ -98,8 +98,8 @@ def main():
         job = project_resilient(('سلام @ (🙂) دنیا',), frontend)
         assert SYMBOL_TAGS['@'] in job.tagged and '(' in job.tagged
         assert SYMBOL_TAGS['🙂'] in job.tagged and UNICODE_TAG not in job.tagged and ')' in job.tagged
-        # Issue 49: both examples contain words outside the direct lexicon.
-        # Test the actual fallback with and without NVDA text/index splits.
+        # Issue 49: retain these readings with and without NVDA text/index
+        # splits, regardless of whether each word is now handled directly.
         for text, expected in (('بله این حرف شما - درسته حتما', "`[.0do.1ros.0t'e:']"),
                                ('ما عالی هستیم - خخخخ', '`[.1a.0li]')):
             parts = (EciIndex(1), text[:len(text)//2], EciIndex(2),
