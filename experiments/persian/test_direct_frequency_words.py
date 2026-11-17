@@ -9,6 +9,7 @@ from pathlib import Path
 from compile_direct_lexicon import reference_words
 from espeak_ng_probe import EspeakPhonemeProbe
 from hybrid_fa_frontend import DirectFirstPersian
+from reference_letter_names import NVDA_SPOKEN_NAMES
 from text_frontend import word_tag
 
 
@@ -30,6 +31,7 @@ def main():
     assert len(rows) >= 1000 and keys == sorted(set(keys))
     with DirectFirstPersian(args.native_library, None, None, None) as frontend, \
          EspeakPhonemeProbe(args.espeak_library, args.data_parent) as reference:
+        named_characters = {name: char for char, name in NVDA_SPOKEN_NAMES.items()}
         for number, (word, final, nonfinal) in enumerate(rows, 1):
             expected = (final, nonfinal, nonfinal, final)
             assert tuple(word_tag(raw) for raw in reference_words(reference, word)) == expected, word
@@ -41,6 +43,11 @@ def main():
                 start = len(prefix.encode('utf8'))
                 end = start + len(word.encode('utf8'))
                 at = actual.source_map[start]
+                # An explicitly corrected NVDA character label has priority
+                # over a frequency entry admitted before that correction.
+                # It must still match the isolated character in every context.
+                if word in named_characters:
+                    tag = frontend.analyze_character(named_characters[word]).parts[0].text
                 phones = lambda value: re.sub(r'\.[012]', '.#', value)
                 assert phones(actual.parts[0].text[at:at + len(tag)]) == phones(tag), (word, text, actual.parts)
                 assert all(position == at for position in actual.source_map[start:end]), text
