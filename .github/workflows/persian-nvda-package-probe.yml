@@ -267,7 +267,7 @@ jobs:
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci.dll -print -quit)
-          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --output dist/reloq-c-persian-pinglish-1.5.0-dev139.nvda-addon
+          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version 1.5.0-dev139 --output dist/reloq-c-persian-pinglish-1.5.0-dev139.nvda-addon
       - name: Test the candidate in real NVDA
         shell: pwsh
         env:
