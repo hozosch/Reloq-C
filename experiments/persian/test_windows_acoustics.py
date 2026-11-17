@@ -75,7 +75,9 @@ def main():
     marked = render(args.candidate, 0x90000, onset_text, scoped=True, onsets=(2,))
     assert plain != marked
     assert render(args.candidate, 0x90000, onset_text, scoped=True) == plain
-    j_text = '`[.0tA.1wA.0Job]'
+    # The current lexical stress for تعجب is on the final syllable. The
+    # native geminate marker collapses the written double J to this tag.
+    j_text = '`[.0tA.0wA.1Job]'
     single_j = render(args.candidate, 0x90000, j_text, scoped=True)
     long_j = render(args.candidate, 0x90000, j_text, scoped=True, geminates=((1 << 16) | 1,))
     assert len(long_j) > len(single_j)
