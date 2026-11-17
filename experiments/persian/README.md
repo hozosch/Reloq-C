@@ -24,9 +24,11 @@ switch the Korean donor includes adjacent proxy context, so a Persian phrase
 does not acquire a spurious sentence-final fall before English. English keeps
 its own contour with switch-edge correction limited to two semitones.
 Separated Persian segments after punctuation or inline controls go through
-the same Korean planner instead of silently falling back to Finnish. Bracket
-boundaries retain their separate treatment. Some unusual mid-utterance ECI
-controls still use the earlier route. Pitch, Hertz pitch, speed and inflection
+the same Korean planner instead of silently falling back to Finnish. An NVDA
+pitch change inside a Persian utterance retains the Korean sentence contour;
+the relative pitch adjustment is measured from native frames. Bracket
+boundaries retain their separate treatment. Some other unusual mid-utterance
+ECI controls still use the earlier route. Pitch, Hertz pitch, speed and inflection
 remain adjustable. NVDA inflection 30 now selects Korean inflection 37; a
 monotonic mapping preserves both slider endpoints and responsiveness. The
 original long comparison used Korean inflection 30. This candidate requires

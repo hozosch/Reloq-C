@@ -534,6 +534,11 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             items.append(part)
             if isinstance(part, (str, EciText)):
                 saw_text = True
+        elif isinstance(part, EciPitch) and saw_text:
+            # Pitch insertions are queued at a text boundary. Keep them in
+            # the one native capture instead of dropping the entire Korean
+            # plan when NVDA changes pitch inside a Persian utterance.
+            items.append(part)
         elif isinstance(part, (EciPitch, EciPitchHz, EciProsody)) and not saw_text:
             prefix.append(part)
         elif isinstance(part, (EciPitch, EciPitchHz, EciProsody)):
@@ -566,7 +571,7 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
         korean_available = FrameCapture(engine._voice._dll).transfer_korean_pitch is not None
         if not has_glide and not korean_available:
             return engine._speak_prepared(prepared, on_pcm, on_index)
-        inserts, source, offset, next_mark = [], [], 0, 1
+        inserts, source, offset, next_mark, internal_pitch = [], [], 0, 1, False
         for part in prepared.parts:
             if isinstance(part, EciText):
                 offset += len(part.text)
@@ -574,6 +579,9 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                 inserts.append((offset, len(inserts), next_mark))
                 source.append((next_mark, offset, part.value))
                 next_mark += 1
+            elif isinstance(part, EciPitch):
+                inserts.append((offset, len(inserts), part))
+                internal_pitch |= offset < len(prepared.tagged)
             elif not isinstance(part, (EciPitch, EciPitchHz, EciProsody)):
                 return None
         words = {}
@@ -583,8 +591,8 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                 words[word] = next_mark
                 next_mark += 1
         sequence, position = [], 0
-        for at, _order, mark in sorted(inserts):
-            sequence.extend((prepared.tagged[position:at], EciIndex(mark)))
+        for at, _order, mark in sorted(inserts, key=lambda entry: entry[:2]):
+            sequence.extend((prepared.tagged[position:at], EciIndex(mark) if isinstance(mark, int) else mark))
             position = at
         sequence.append(prepared.tagged[position:])
         sequence.extend(trailing)
@@ -600,6 +608,21 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             return False
         captured = FrameCapture(voice._dll).capture(voice, sequence, maximum=30000, audio=False)
         item = CapturedRows.from_capture(captured)
+        pitch_ratios = None
+        if internal_pitch and korean_available:
+            # Measure only the native effect of the queued pitch commands.
+            # With those commands removed, the same phonemes must have an
+            # identical frame clock; their pitch ratio can then be applied
+            # to the Korean contour without restoring the Finnish melody.
+            plain = FrameCapture(voice._dll).capture(
+                voice, tuple(part for part in sequence if not isinstance(part, EciPitch)),
+                maximum=30000, audio=False)
+            reference = CapturedRows.from_capture(plain)
+            if item.ticks != reference.ticks:
+                raise ValueError('inline pitch changed the native frame clock')
+            pitch_ratios = tuple(a.controls[1] / b.controls[1]
+                                 if a.controls[1] > 0 and b.controls[1] > 0 else 1.0
+                                 for a, b in zip(item.frames, reference.frames))
         rate = SAMPLE_RATES.get(voice._dll.eciGetParam(voice._handle, SAMPLE_RATE))
         if rate is None:
             raise ValueError('invalid Persian sample rate')
@@ -623,8 +646,13 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                 pointer = ctypes.cast(ctypes.byref(item.frames, first * ctypes.sizeof(NativeFrame)),
                                       ctypes.POINTER(NativeFrame))
                 tagged = prepared.tagged[text_edges[i]:text_edges[i + 1]]
-                transferred |= contour(owner).apply(pointer, last - first, tagged, voice.raw, owner._cancelled,
-                                                    prefix=donor_prefix)
+                applied = contour(owner).apply(pointer, last - first, tagged, voice.raw, owner._cancelled,
+                                               prefix=donor_prefix)
+                if applied and pitch_ratios is not None:
+                    for frame in range(first, last):
+                        if item.frames[frame].controls[1] > 0:
+                            item.frames[frame].controls[1] *= pitch_ratios[frame]
+                transferred |= applied
         if not glides and not transferred:
             return engine._speak_prepared(prepared, on_pcm, on_index)
         marks = []

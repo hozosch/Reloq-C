@@ -209,6 +209,41 @@ def main():
                 speak(('سلام',), True)
             assert final_pitches and donor._dll.eciGetParam(donor._handle, NATIVE_INFLECTION) == korean_inflection(inflection)
         voice.set_parameter(NATIVE_INFLECTION, 47)
+        # An NVDA pitch command inside Persian used to bypass the Korean
+        # planner for the entire utterance. Check its actual replayed F0 and
+        # non-pitch controls against an otherwise identical neutral request.
+        replayed = []
+        native_replay = continuous_driver.FrameReplay.replay
+        def observe_replay(instance, source_voice, frames, marks, *args, **kwargs):
+            replayed.append(tuple((row.tick, tuple(row.controls)) for row in frames))
+            return native_replay(instance, source_voice, frames, marks, *args, **kwargs)
+        plain_parts = (EciText('سلام '), EciText('دنیا.'))
+        raised_parts = (EciText('سلام '), EciPitch(80), EciText('دنیا.'), EciPitch(65))
+        with patch.object(continuous_driver.FrameReplay, 'replay', observe_replay):
+            normal_pcm, _ = speak(plain_parts, True)
+            raised_pcm, _ = speak(raised_parts, True)
+        assert len(replayed) == 2 and len(normal_pcm) == len(raised_pcm) and normal_pcm != raised_pcm
+        normal_rows, raised_rows = replayed
+        assert len(normal_rows) == len(raised_rows)
+        assert all(a[0] == b[0] and all(a[1][i] == b[1][i] for i in range(62) if i != 1)
+                   for a, b in zip(normal_rows, raised_rows))
+        assert abs(normal_rows[150][1][1] - raised_rows[150][1][1]) < 0.01
+        assert raised_rows[450][1][1] > normal_rows[450][1][1] * 1.3
+        for parts in ((EciIndex(90), EciText('سلام '), EciIndex(91), EciPitch(80),
+                       EciText('دنیا '), EciPitch(65), EciIndex(92), EciText('خوب.')),
+                      (EciText('سلام '), EciPitch(80), EciText('دنیا.'), EciPitch(65))):
+            calls = []
+            def observe_inline(instance, rows, count, tagged, *args, **kwargs):
+                result = real_apply(instance, rows, count, tagged, *args, **kwargs)
+                if result:
+                    calls.append(tagged)
+                return result
+            with patch.object(KoreanContour, 'apply', observe_inline):
+                actual, marks = speak(parts, True)
+            original, original_marks = speak(parts, False)
+            assert calls and len(actual) == len(original) and actual != original, parts
+            assert [value for value, _ in marks] == [value for value, _ in original_marks]
+            assert all(abs(a[1] - b[1]) <= 55 for a, b in zip(marks, original_marks))
         # Request-local pitch controls and the persistent Hertz mode must
         # reach the Korean donor; a following ordinary request must reset.
         neutral, _ = speak(('سلام',), True)

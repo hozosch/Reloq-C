@@ -246,6 +246,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'یک', 'issue49_korean_word'),
                           ('fa_Latn', 'salam', 'issue49_korean_word'),
                           ('fa_IR', 'سلام', 'issue49_korean_pitch'),
+                          ('fa_IR', 'سلام دنیا', 'issue49_korean_mid_pitch'),
                           ('fa_IR', 'سلام', 'issue49_korean_spelling'),
                           ('fa_IR', 'می‌خواهم درسته', 'issue49_persian_unicode'),
                           ('fa_IR', 'می‌خواهم درسته', 'issue49_persian_unicode_none'),
@@ -481,6 +482,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = ['سلام ', self.character(True), '؟', self.character(False), ' دنیا']
             elif spelling == 'issue49_korean_pitch':
                 sequence = [self.pitch_command(multiplier=1.2), text, self.pitch_command()]
+            elif spelling == 'issue49_korean_mid_pitch':
+                sequence = ['سلام ', self.pitch_command(multiplier=1.2), 'دنیا', self.pitch_command()]
             elif spelling == 'issue49_korean_spelling':
                 sequence = [self.character(True), text, self.character(False)]
             elif spelling == 'english_exception':
@@ -537,7 +540,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                                            'issue49_emoji_some', 'issue49_emoji_split',
                                                            'issue49_heading', 'issue49_heading_split',
                                                            'issue49_korean', 'issue49_korean_word',
-                                                           'issue49_korean_pitch', 'issue49_korean_spelling',
+                                                           'issue49_korean_pitch', 'issue49_korean_mid_pitch', 'issue49_korean_spelling',
                                                            'issue49_persian_unicode', 'issue49_persian_unicode_none',
                                                            'issue49_persian_unicode_all', 'issue49_korean_english')
             self.emoji_case = spelling in ('issue49_emoji_some', 'issue49_emoji_split')
@@ -553,7 +556,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                                'issue49_emoji_some', 'issue49_emoji_split',
                                                'issue49_heading', 'issue49_heading_split',
                                                'issue49_korean', 'issue49_korean_word',
-                                               'issue49_korean_pitch', 'issue49_korean_spelling',
+                                               'issue49_korean_pitch', 'issue49_korean_mid_pitch', 'issue49_korean_spelling',
                                                'issue49_persian_unicode', 'issue49_korean_english') else
                                                self.symbols.SymbolLevel.ALL if spelling == 'issue49_persian_unicode_all' else
                                                self.symbols.SymbolLevel.MOST if spelling in ('pipeline_most', 'checkbox_checked_most')
@@ -596,7 +599,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 submitted = self.emoji_submissions[self.before_emoji:]
                 if not submitted or any('\ufe0f' in part for sequence in submitted for part in sequence):
                     raise AssertionError('emoji presentation selector leaked to the synthesizer: ' + ascii(text))
-            if spelling in ('issue49_korean', 'issue49_korean_word', 'issue49_korean_pitch',
+            if spelling in ('issue49_korean', 'issue49_korean_word', 'issue49_korean_pitch', 'issue49_korean_mid_pitch',
                             'issue49_korean_spelling') and len(self.korean_calls) == self.before_korean:
                 raise AssertionError('NVDA did not apply the Korean-derived Persian pitch: ' + ascii(text))
             if spelling in ('issue49_korean_word', 'issue49_korean_pitch', 'issue49_korean_spelling') or (
