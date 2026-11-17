@@ -643,15 +643,19 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             for i, (first, last) in enumerate(zip(frame_edges, frame_edges[1:])):
                 if first >= last:
                     continue
-                pointer = ctypes.cast(ctypes.byref(item.frames, first * ctypes.sizeof(NativeFrame)),
+                # The older transfer API normalizes its donor to the target's
+                # median. Use the no-command reference as that target so a
+                # queued pitch change is applied exactly once in either API.
+                target = reference.frames if pitch_ratios is not None else item.frames
+                pointer = ctypes.cast(ctypes.byref(target, first * ctypes.sizeof(NativeFrame)),
                                       ctypes.POINTER(NativeFrame))
                 tagged = prepared.tagged[text_edges[i]:text_edges[i + 1]]
                 applied = contour(owner).apply(pointer, last - first, tagged, voice.raw, owner._cancelled,
                                                prefix=donor_prefix)
                 if applied and pitch_ratios is not None:
                     for frame in range(first, last):
-                        if item.frames[frame].controls[1] > 0:
-                            item.frames[frame].controls[1] *= pitch_ratios[frame]
+                        if item.frames[frame].controls[1] > 0 and target[frame].controls[1] > 0:
+                            item.frames[frame].controls[1] = target[frame].controls[1] * pitch_ratios[frame]
                 transferred |= applied
         if not glides and not transferred:
             return engine._speak_prepared(prepared, on_pcm, on_index)

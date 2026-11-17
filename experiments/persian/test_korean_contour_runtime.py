@@ -229,6 +229,16 @@ def main():
                    for a, b in zip(normal_rows, raised_rows))
         assert abs(normal_rows[150][1][1] - raised_rows[150][1][1]) < 0.01
         assert raised_rows[450][1][1] > normal_rows[450][1][1] * 1.3
+        # Older ECI libraries normalize the transferred pitch to the target
+        # median. They must not count the inline pitch adjustment twice.
+        replayed.clear()
+        with patch.object(voice._persian_korean_contour.api, 'transfer_korean_aligned', None), \
+             patch.object(continuous_driver.FrameReplay, 'replay', observe_replay):
+            speak(plain_parts, True)
+            speak(raised_parts, True)
+        assert len(replayed) == 2
+        assert abs(replayed[0][150][1][1] - replayed[1][150][1][1]) < 0.01
+        assert replayed[1][450][1][1] > replayed[0][450][1][1] * 1.3
         for parts in ((EciIndex(90), EciText('سلام '), EciIndex(91), EciPitch(80),
                        EciText('دنیا '), EciPitch(65), EciIndex(92), EciText('خوب.')),
                       (EciText('سلام '), EciPitch(80), EciText('دنیا.'), EciPitch(65))):
