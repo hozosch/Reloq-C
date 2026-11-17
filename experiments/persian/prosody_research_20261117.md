@@ -139,3 +139,13 @@ utterance, and matches its median to the Persian baseline. It changes only F0
 in a replay of the same Persian frames. The transplant is not aligned by word
 or syllable, and it is neither a Persian prosody model nor enabled in the
 voice. Each example includes statement/question punctuation as appropriate.
+
+The separate eSpeak-F0 comparison estimates periodic pitch from the eSpeak
+waveform, interpolates through unvoiced gaps, aligns the two engines at word
+boundaries, and matches median F0. It leaves the Persian frames' sounds,
+stress markers, and durations intact. The estimate and within-word timing
+are approximate; do not treat it as a direct eSpeak prosody implementation.
+The word-stress comparison instead changes the markers for a small set of
+noun, plural and prefixed-verb examples. This can also change native syllable
+durations. These are listening alternatives for native-speaker review, not
+rules enabled in the shipping voice.
