@@ -46,6 +46,7 @@ on:
       - experiments/persian/test_pinglish_driver.py
       - experiments/persian/test_direct_fa_letters.py
       - experiments/persian/test_direct_frequency_words.py
+      - experiments/persian/compile_direct_lexicon.py
       - experiments/persian/test_direct_fa_characters.py
       - experiments/persian/test_direct_fa_compounds.py
       - experiments/persian/test_persian_joiners.py

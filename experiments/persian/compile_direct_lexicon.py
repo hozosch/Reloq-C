@@ -17,7 +17,6 @@ import unicodedata
 
 from espeak_ng_probe import EspeakPhonemeProbe
 from text_frontend import UnsupportedPronunciation, native_tag_accepted, word_tag
-from test_selected_probe import engine, set_confirmed_persian_probe
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / 'reference-espeak/persian'
@@ -108,6 +107,9 @@ def checked_tag(api: EspeakPhonemeProbe, word: str) -> str:
 
 
 def main() -> None:
+    # The reference-word helper is also used by lightweight runtime tests.
+    # NumPy is needed for the acoustic probe, not for those text checks.
+    from test_selected_probe import engine, set_confirmed_persian_probe
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--espeak-library', type=Path, required=True)
     parser.add_argument('--data-parent', type=Path, required=True)
