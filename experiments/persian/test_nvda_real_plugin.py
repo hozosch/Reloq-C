@@ -336,6 +336,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             samples = (('word', 'سلام'), ('passage', passage),
                        ('switch', 'سلام NVDA دنیا. Hello. سلام دنیا. این یک آزمایش است.'))
             self.cases.extend(('fa_IR', text, 'comparison_korean_' + name) for name, text in samples)
+            self.cases.append(('fa_IR', passage, 'comparison_korean_dense'))
             self.cases.extend(('fa_IR', 'سلام دنیا خوب.', 'comparison_' + kind + '_pitch')
                               for kind in ('finnish', 'korean'))
             self.next()
@@ -448,6 +449,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 new = next(row for row in self.results if row['spelling'] == 'comparison_korean_pitch')
                 if old['pcm_bytes'] != new['pcm_bytes'] or old['pcm_sha256'] == new['pcm_sha256']:
                     raise AssertionError('NVDA pitch-command comparison changed duration or not melody')
+                plain = next(row for row in self.results if row['spelling'] == 'comparison_korean_passage')
+                dense = next(row for row in self.results if row['spelling'] == 'comparison_korean_dense')
+                if plain['pcm_sha256'] != dense['pcm_sha256']:
+                    raise AssertionError('NVDA word indexes changed the Korean sentence melody')
                 self.frame_capture_class.__init__ = self.original_capture_init
                 self.done_signal.unregister(self.speech_done)
                 RESULT.write_text(json.dumps({'ok': True, 'cases': self.results,
@@ -487,6 +492,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = ['سلام ', self.pitch_command(multiplier=1.2), 'دنیا', self.pitch_command()]
             elif spelling in ('comparison_finnish_pitch', 'comparison_korean_pitch'):
                 sequence = ['سلام ', self.pitch_command(multiplier=1.2), 'دنیا ', self.pitch_command(), 'خوب.']
+            elif spelling == 'comparison_korean_dense':
+                sequence = [part for i, word in enumerate(text.split(), 60000)
+                            for part in (word + ' ', self.index_command(i))]
             elif spelling == 'issue49_korean_spelling':
                 sequence = [self.character(True), text, self.character(False)]
             elif spelling == 'english_exception':

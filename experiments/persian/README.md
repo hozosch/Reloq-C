@@ -14,12 +14,16 @@ existing reference in several contexts; unknown forms retain the fallback.
 The NVDA adapter also suppresses redundant emoji presentation selectors split
 by source indexes, while letting NVDA's symbol level and dictionaries take precedence.
 
-The dev134 candidate transfers the Korean core's own pitch to ordinary
+The dev135 candidate transfers the Korean core's own pitch to ordinary
 Persian and Pinglish speech. A Hangul syllable-count proxy approximates the
 longer comparison's manually translated Korean sentences; it is not a
 translation and cannot reproduce their phrasing exactly. As in the original
 comparison, the pitch curve is mapped continuously across a sentence, rather
-than being warped separately at every Persian word boundary. At a language
+than being warped separately at every Persian word boundary. Native index
+callbacks can report sentence changes too early when many word indexes are
+inserted. Sentence planning therefore uses sentence-only marks and, when
+needed, a separate controls-only capture with a verified matching frame clock.
+At a language
 switch the Korean donor includes adjacent proxy context, so a Persian phrase
 does not acquire a spurious sentence-final fall before English. English keeps
 its own contour with switch-edge correction limited to two semitones.
@@ -41,6 +45,20 @@ context at a language switch prevents the Korean planner from treating an
 unfinished phrase as a sentence ending. This remains a syllable proxy, not a
 Korean translation or a claim about correct Persian intonation. The listening
 comparison is captured from NVDA's real speech pipeline at explicit settings.
+
+For the reviewed long passage, a dense sequence of word marks previously
+placed the final question's contour 890 ms before the sentence mark used by
+the original experiment, crossing about 497 ms of voiced speech. The dev135
+sentence-only marks reproduce all original sentence boundaries; source marks,
+glides, inline pitch and multiple sample rates have regression checks. This
+does not make the neutral-syllable donor equivalent to translated Korean: in
+the reviewed passage, changing the donor at the same Korean inflection causes
+larger F0 differences than the original passage-wide pitch normalization.
+This is an acoustic observation, not a naturalness or intelligibility score.
+`compare_korean_sources.py` creates a controlled English-labelled comparison
+from one shared Persian frame capture. Its `--check-runtime` option checks
+that the current proxy section matches the live language-engine PCM; an
+optional `--original` checks the original approved recording's Korean section.
 
 The language is **not yet fully implemented in the native core**. Mixed-text
 segmentation and sentence planning still run in the NVDA adapter, and words

@@ -8,11 +8,13 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
-from _reloq_eci_direct import EciIndex, EciLanguage, EciPitch, EciPitchHz, EciProsody, EciText, NATIVE_INFLECTION, PITCH_HZ, SAMPLE_RATE
+from _reloq_eci_direct import EciIndex, EciLanguage, EciPitch, EciPitchHz, EciProsody, EciText, NATIVE_INFLECTION, PITCH_HZ, SAMPLE_RATE, SAMPLE_RATES
 from _reloq_persian_frames import FrameCapture, NativeFrame
 from korean_contour import KoreanContour, align_english_edges, korean_inflection, proxy
 from nvda_driver_probe import PERSIAN_PROBE, US_ENGLISH, make_language_engine
 from text_frontend import SpeechPart
+from compare_korean_long import SENTENCES
+from direct_fa_sequence import project_resilient
 import continuous_driver
 
 
@@ -142,6 +144,60 @@ def main():
         with patch.object(KoreanContour, 'apply', observe_sentence):
             speak(('سلام دنیا. این یک آزمایش است؟',), True)
         assert len(sentences) == 2 and sentences[0].rstrip().endswith('.') and sentences[1].endswith('?'), sentences
+        # The original accepted listening sample inserted a mark only at
+        # each sentence boundary. With a mark before every word, the native
+        # callback can report some sentence starts inside the previous word.
+        # Compare real target frame spans, including densely indexed NVDA
+        # input and a U-to-A glide, against independently captured sentence
+        # marks instead of merely checking which tags reached the planner.
+        voice.set_parameter(NATIVE_INFLECTION, 30)
+        engine = voice._activate(voice._home)
+        def sentence_reference(texts):
+            parts = tuple(part for i, text in enumerate(texts, 1)
+                          for part in (EciIndex(i), text + ' '))
+            job = project_resilient(parts, engine._frontend, pinglish=engine._pinglish)
+            target = continuous_driver._PlanningVoice(voice, voice._home, engine, source=job.source)
+            captured = FrameCapture(target._dll).capture(target, job.parts, maximum=30000, audio=False)
+            assert captured and len(captured.indexes) == len(texts)
+            return [round(sample * 1000 / SAMPLE_RATES[sample_rate]) for _, sample in captured.indexes]
+        def sentence_spans(parts):
+            found = []
+            def observe_span(instance, rows, count, tagged, *args, **kwargs):
+                result = real_apply(instance, rows, count, tagged, *args, **kwargs)
+                if result:
+                    found.append((rows[0].tick, rows[count - 1].tick, tagged))
+                return result
+            with patch.object(KoreanContour, 'apply', observe_span):
+                pcm, positions = speak(parts, True)
+            assert pcm
+            return found, positions, pcm
+        long_text = tuple(text for text, _ in SENTENCES)
+        for sample_rate in (1, 3, 6):
+            voice.set_parameter(SAMPLE_RATE, sample_rate)
+            for texts in ((long_text, ('او آمد.', *long_text)) if sample_rate == 3 else (long_text,)):
+                expected = sentence_reference(texts)
+                full = ' '.join(texts)
+                spans, _, plain_pcm = sentence_spans((full,))
+                assert [row[0] for row in spans] == expected, (sample_rate, expected, spans)
+                dense = []
+                for index, word in enumerate(full.split(), 100):
+                    dense.extend((EciIndex(index), word + ' '))
+                spans, marks, dense_pcm = sentence_spans(tuple(dense))
+                assert [row[0] for row in spans] == expected, (sample_rate, expected, spans)
+                assert dense_pcm == plain_pcm, 'source indexes changed the Korean sentence melody'
+                assert [number for number, _ in marks] == list(range(100, 100 + len(dense) // 2))
+                assert [sample for _, sample in marks] == sorted(sample for _, sample in marks)
+                if sample_rate == 3 and texts == long_text:
+                    pitched = []
+                    for index, word in enumerate(full.split(), 100):
+                        if index in (105, 112):
+                            pitched.append(EciPitch(80 if index == 105 else 65))
+                        pitched.extend((EciIndex(index), word + ' '))
+                    spans, marks, _ = sentence_spans(tuple(pitched))
+                    assert [row[0] for row in spans] == expected, (expected, spans)
+                    assert [number for number, _ in marks] == list(range(100, 100 + len(dense) // 2))
+        voice.set_parameter(SAMPLE_RATE, 6)
+        voice.set_parameter(NATIVE_INFLECTION, 47)
         # Sentence punctuation and inline pitch can force the separated
         # multilingual route. Its Persian engine must still use Korean pitch.
         fallback_cases = (

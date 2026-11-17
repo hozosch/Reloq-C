@@ -560,8 +560,10 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
         matches = tuple(_TAG.finditer(prepared.tagged))
         tags = tuple(match.group() for match in matches)
         separators = tuple(prepared.tagged[a.end():b.start()] for a, b in zip(matches, matches[1:]))
-        has_glide = any(_FINAL_U.search(a) and _INITIAL_A.match(b) and 'w' not in a and 'w' not in b and sep.isspace()
-                        for a, b, sep in zip(tags, tags[1:], separators))
+        glide_words = tuple(i + 1 for i, (a, b, sep) in enumerate(zip(tags, tags[1:], separators))
+                            if _FINAL_U.search(a) and _INITIAL_A.match(b) and 'w' not in a and
+                            'w' not in b and sep.isspace())
+        has_glide = bool(glide_words)
         korean_available = FrameCapture(engine._voice._dll).transfer_korean_pitch is not None
         if not has_glide and not korean_available:
             return engine._speak_prepared(prepared, on_pcm, on_index)
@@ -578,12 +580,18 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                 internal_pitch |= isinstance(part, EciPitch) and offset < len(prepared.tagged)
             else:
                 return None
+        starts = ([0] + [i + 1 for i, gap in enumerate(separators) if any(c in gap for c in '.!?')]
+                  if korean_available and matches else [])
+        sentence_words = set(starts[1:])
+        # A glide needs its own start and neighbouring word boundaries.
+        # Unrelated word marks can make the native callback report later
+        # sentence marks before the preceding sentence has actually ended.
+        glide_boundaries = {j for i in glide_words for j in (i - 1, i, i + 1) if 0 < j < len(matches)}
         words = {}
-        for word, match in enumerate(matches):
-            if word:
-                inserts.append((match.start(), -1, next_mark))
-                words[word] = next_mark
-                next_mark += 1
+        for word in sorted(sentence_words | glide_boundaries):
+            inserts.append((matches[word].start(), -1, next_mark))
+            words[word] = next_mark
+            next_mark += 1
         sequence, position = [], 0
         for at, _order, mark in sorted(inserts, key=lambda entry: entry[:2]):
             sequence.extend((prepared.tagged[position:at], EciIndex(mark) if isinstance(mark, int) else mark))
@@ -601,6 +609,26 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             return False
         captured = FrameCapture(voice._dll).capture(voice, sequence, maximum=30000, audio=False)
         item = CapturedRows.from_capture(captured)
+        sentence_item = item
+        if sentence_words and (glide_boundaries - sentence_words or
+                               any(0 < offset < len(prepared.tagged) for _, offset, _ in source)):
+            # Obtain sentence marks without the extra source/glide indexes:
+            # they can shift native callbacks by an entire preceding word.
+            # Keep all controls, and only use the second pass if its native
+            # frame clock agrees with the actual captured utterance.
+            clean_inserts = [(matches[word].start(), -1, words[word]) for word in starts[1:]]
+            clean_inserts.extend((at, order, event) for at, order, event in inserts
+                                 if isinstance(event, (EciPitch, EciPitchHz, EciProsody)))
+            clean_sequence, position = [], 0
+            for at, _order, event in sorted(clean_inserts, key=lambda entry: entry[:2]):
+                clean_sequence.extend((prepared.tagged[position:at],
+                                       EciIndex(event) if isinstance(event, int) else event))
+                position = at
+            clean_sequence.append(prepared.tagged[position:])
+            clean_capture = FrameCapture(voice._dll).capture(voice, clean_sequence, maximum=30000, audio=False)
+            sentence_item = CapturedRows.from_capture(clean_capture)
+            if sentence_item.ticks != item.ticks:
+                raise ValueError('sentence-only capture changed the native frame clock')
         pitch_ratios = None
         if internal_pitch and korean_available:
             # Measure only the native effect of the queued pitch commands.
@@ -620,6 +648,8 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
         if rate is None:
             raise ValueError('invalid Persian sample rate')
         boundaries = {word: round(item.indexes[mark] * 1000 / rate) for word, mark in words.items()}
+        sentence_boundaries = {word: round(sentence_item.indexes[words[word]] * 1000 / rate)
+                               for word in starts[1:]}
         controls = [row.controls for row in item.frames]
         glides = plan_u_a_glides(controls, item.ticks, tags, separators, boundaries)
         if not glides and not korean_available:
@@ -627,12 +657,10 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
         apply_u_a_glides(controls, item.ticks, glides)
         transferred = False
         if korean_available and matches:
-            # The reviewed long-text sample used a separate Korean contour
-            # for each sentence. Reuse the existing word-boundary marks so
-            # sentence changes cannot drift across a long Persian passage.
-            starts = [0] + [i + 1 for i, gap in enumerate(separators) if any(c in gap for c in '.!?')]
+            # Plan each sentence over its own validated native frame span.
             text_edges = [0] + [matches[index].start() for index in starts[1:]] + [len(prepared.tagged)]
-            frame_edges = [0] + [bisect_left(item.ticks, boundaries[index]) for index in starts[1:]] + [len(item.frames)]
+            frame_edges = [0] + [bisect_left(item.ticks, sentence_boundaries[index])
+                                 for index in starts[1:]] + [len(item.frames)]
             for i, (first, last) in enumerate(zip(frame_edges, frame_edges[1:])):
                 if first >= last:
                     continue
