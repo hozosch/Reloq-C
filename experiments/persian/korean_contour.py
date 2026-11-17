@@ -25,6 +25,15 @@ _SYLLABLE = re.compile(r'\.[012]')
 _PUNCTUATION = ',;:.!?'
 
 
+def korean_inflection(value: int) -> int:
+    """Map NVDA 30 to Korean 37 while retaining the full slider range."""
+    if not 0 <= value <= 100:
+        raise ValueError('inflection must be between 0 and 100')
+    if value <= 30:
+        return (value * 37 + 15) // 30
+    return 37 + ((value - 30) * 63 + 35) // 70
+
+
 def _punctuation(text):
     explicit = ''.join(char for char in text if char in _PUNCTUATION)
     return explicit or (',' if any(char in '()[]{}' for char in text) else '')
@@ -107,6 +116,8 @@ class KoreanContour:
             raise InterruptedError('Korean pitch planning cancelled')
         for parameter in (SAMPLE_RATE, NATIVE_SPEED, NATIVE_WPM, NATIVE_PITCH, NATIVE_INFLECTION, GENDER):
             value = target_voice._dll.eciGetParam(target_voice._handle, parameter)
+            if parameter == NATIVE_INFLECTION and value >= 0:
+                value = korean_inflection(value)
             if value >= 0 and self.parameters.get(parameter) != value:
                 self.voice.set_parameter(parameter, value)
                 self.parameters[parameter] = value

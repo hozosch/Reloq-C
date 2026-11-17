@@ -10,7 +10,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 from _reloq_eci_direct import EciIndex, EciLanguage, EciPitch, EciPitchHz, EciText, NATIVE_INFLECTION, PITCH_HZ, SAMPLE_RATE
 from _reloq_persian_frames import FrameCapture, NativeFrame
-from korean_contour import KoreanContour, align_english_edges, proxy
+from korean_contour import KoreanContour, align_english_edges, korean_inflection, proxy
 from nvda_driver_probe import PERSIAN_PROBE, US_ENGLISH, make_language_engine
 from text_frontend import SpeechPart
 import continuous_driver
@@ -25,6 +25,9 @@ def main():
     assert proxy('`[.1sA.0lam], `[.1do.0nja]') == '가가, 가가.'
     assert proxy('`[.1sA.0lam]', continuation=True) == '가가,'
     assert proxy('`[salam]') == '가.'
+    mapped = [korean_inflection(value) for value in range(101)]
+    assert mapped[0] == 0 and mapped[30] == 37 and mapped[100] == 100
+    assert all(a <= b for a, b in zip(mapped, mapped[1:]))
     assert proxy('plain English') is None
     for languages in (('en-us', 'fa'), ('fa', 'en-us')):
         rows = (NativeFrame * 240)()
@@ -172,7 +175,7 @@ def main():
         for inflection in (30, 37, 47, 70):
             voice.set_parameter(NATIVE_INFLECTION, inflection)
             examples.append(speak(('سلام دنیا.',), True)[0])
-            assert donor._dll.eciGetParam(donor._handle, NATIVE_INFLECTION) == inflection
+            assert donor._dll.eciGetParam(donor._handle, NATIVE_INFLECTION) == korean_inflection(inflection)
         assert len(set(examples)) == len(examples), 'the Korean donor ignored an inflection setting'
         # Request-local pitch controls and the persistent Hertz mode must
         # reach the Korean donor; a following ordinary request must reset.

@@ -27,8 +27,9 @@ Separated Persian segments after punctuation or inline controls go through
 the same Korean planner instead of silently falling back to Finnish. Bracket
 boundaries retain their separate treatment. Some unusual mid-utterance ECI
 controls still use the earlier route. Pitch, Hertz pitch, speed and inflection
-remain adjustable; a comparison at inflection 37 is available for review.
-The original long comparison used inflection 30. This candidate requires
+remain adjustable. NVDA inflection 30 now selects Korean inflection 37; a
+monotonic mapping preserves both slider endpoints and responsiveness. The
+original long comparison used Korean inflection 30. This candidate requires
 native-speaker review.
 
 The language is **not yet fully implemented in the native core**. Mixed-text
