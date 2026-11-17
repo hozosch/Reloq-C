@@ -197,12 +197,17 @@ def _segments(owner, parts, fa_ids, english_id):
     return result
 
 
-def _project_part(engine, items, *, follows):
+def _project_part(engine, items, *, follows, preceded=False):
     original = ''.join(p if isinstance(p, str) else p.text if isinstance(p, EciText) else '' for p in items)
     # A following English word is also a following word for Persian stress.
     # The known sentinel supplies that context and is removed after mapping.
     suffix = (' salam' if engine._pinglish else ' سلام') if follows else ''
-    source = (*items, suffix) if suffix else items
+    # A Persian enclitic following an English word has a left host even
+    # though script routing has placed that host in a separate segment.
+    prefix = ('salam ' if engine._pinglish else 'سلام ') if (
+        preceded and re.match(r'^[ \t]*را(?=$|[ \t.,?!:;،؟؛])', original)) else ''
+    source = ((*((prefix,) if prefix else ()), *items, *((suffix,) if suffix else ()))
+              if prefix or suffix else items)
     try:
         prepared = project(source, engine._frontend,
                            allow_fallback=engine._allow_fallback, pinglish=engine._pinglish)
@@ -214,6 +219,14 @@ def _project_part(engine, items, *, follows):
                                      cancelled=engine._cancelled.is_set)
     tagged = prepared.tagged
     limit = len(tagged)
+    start = 0
+    if prefix:
+        sentinel = project((prefix.strip(),), engine._frontend,
+                           allow_fallback=engine._allow_fallback, pinglish=engine._pinglish)
+        first = sentinel.tagged.strip()
+        if not tagged.startswith(first + ' '):
+            raise UnsupportedPronunciation('preceding-word context could not be removed')
+        start = len(first) + 1
     if suffix:
         sentinel = project((suffix.strip(),), engine._frontend,
                            allow_fallback=engine._allow_fallback, pinglish=engine._pinglish)
@@ -224,13 +237,13 @@ def _project_part(engine, items, *, follows):
         # Remove only the blank introduced with the sentinel.
         if limit and tagged[limit - 1] == ' ':
             limit -= 1
-        tagged = tagged[:limit]
+    tagged = tagged[start:limit]
     marks, offset = [], 0
     for part in prepared.parts:
         if isinstance(part, EciText):
             offset += len(part.text)
         elif isinstance(part, EciIndex):
-            marks.append((min(offset, limit), part.value))
+            marks.append((max(0, min(offset, limit) - start), part.value))
         else:
             raise UnsupportedPronunciation('unsupported sentence event')
     if not tagged or not original.strip():
@@ -281,7 +294,8 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
             if owner._cancelled.is_set():
                 return False
             if key[0] in fa_ids:
-                tagged, marks, checked = _project_part(fa_engine, items, follows=segment < len(groups) - 1)
+                tagged, marks, checked = _project_part(fa_engine, items, follows=segment < len(groups) - 1,
+                                                       preceded=segment > 0)
                 sentence.append(SpeechPart('fa', tagged))
                 events.extend((segment, offset, value) for offset, value in marks)
                 validate |= checked

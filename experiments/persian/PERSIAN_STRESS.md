@@ -14,6 +14,7 @@ prominence. The following primary studies explain these distinctions:
 * https://www.cambridge.org/core/journals/journal-of-the-international-phonetic-association/article/timing-of-prenuclear-pitch-accents-in-persian/C7CA7887F69ACE368ED7126741F695C5
 * https://www.isca-archive.org/tal_2018/rahmani18_tal.pdf
 * https://www.isca-archive.org/speechprosody_2010/zadeh10_speechprosody.pdf
+* https://uu.diva-portal.org/smash/get/diva2:641228/FULLTEXT01.pdf
 
 The native implementation uses Lilak's word-class labels, not its
 pronunciations, to apply final accent to an unambiguous lexical word. It
@@ -27,6 +28,15 @@ number-phrase weakening is retained. Previously generated character names
 are updated only when their phones match a known written name.
 Pronunciation tags with multiple separately analyzed segments and words
 with conflicting word-class labels retain their previous treatment.
+
+The common conjunction va and the usual complementizer ke are weak before
+a following word; the object marker ra is weak after its host, including at
+the end of a phrase. Citation forms and punctuation boundaries are retained.
+Several prepositions and ya already have context-sensitive readings. Free
+personal and demonstrative pronouns can carry their own lexical accent; the
+provider remains responsible for phrase-level pitch and emphasis. Mixed
+Persian/English segments and the word-level reference fallback retain these
+bounded context rules without introducing extra audible words.
 
 Unvowelled Persian spelling and context can leave grammatical analyses
 ambiguous. The current bounded analyzer cannot determine compound verbs,

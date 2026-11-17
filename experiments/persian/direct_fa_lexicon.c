@@ -545,6 +545,32 @@ static void stress_primary(char *tag,size_t target)
     }
 }
 
+static void stress_unaccent(char *tag)
+{
+    if(!stress_syllables(tag))return;
+    for(size_t i=2;tag[i] && tag[i]!=']';++i)
+        if(tag[i]=='.' && tag[i+1]>='0' && tag[i+1]<='2')tag[i+1]='0';
+}
+
+static int stress_word_is(const char *word,size_t bytes,const char *value)
+{ return strlen(value)==bytes && !memcmp(word,value,bytes); }
+
+/* The provider can still shape the phrase; these digits only describe the
+ * lexical accent. A word named alone retains its ordinary citation stress. */
+static void apply_function_word_context(const char *word,size_t bytes,int follows_word,char *tag)
+{
+    static const char *const independent_pronouns[]={"من", "ما", "این", "آن", "خود"};
+    for(size_t i=0;i<sizeof independent_pronouns/sizeof independent_pronouns[0];++i) {
+        if(stress_word_is(word,bytes,independent_pronouns[i])) {
+            stress_primary(tag,0);return;
+        }
+    }
+    /* va and the common complementizer/relative ke lean on a following
+     * word. Without a following word, keep the citation pronunciation. */
+    if(follows_word && (stress_word_is(word,bytes,"و") || stress_word_is(word,bytes,"که")))
+        stress_unaccent(tag);
+}
+
 /* Recognize a finite inflection only when the independently listed stem
  * is also a verb and already has an available native pronunciation. */
 static size_t verb_stem_syllables(const char *word,size_t bytes)
@@ -686,7 +712,10 @@ int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
                                  char *output,size_t capacity)
 {
     int result=direct_context_word_exact(word,bytes,follows_word,output,capacity);
-    if(result==1)apply_persian_stress(word,bytes,output);
+    if(result==1) {
+        apply_persian_stress(word,bytes,output);
+        apply_function_word_context(word,bytes,follows_word,output);
+    }
     if(result || !word || bytes==SIZE_MAX)return result;
 
     /* NFC/NFKC places Arabic vowel marks before shadda, while the eSpeak
@@ -713,7 +742,10 @@ int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
         } else ++i;
     }
     result=direct_context_word_exact(variant,bytes,follows_word,output,capacity);
-    if(result==1)apply_persian_stress(variant,bytes,output);
+    if(result==1) {
+        apply_persian_stress(variant,bytes,output);
+        apply_function_word_context(variant,bytes,follows_word,output);
+    }
     free(variant);
     return result;
 }

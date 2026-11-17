@@ -437,6 +437,18 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
             tag = None
             if pending_pair is not None and at == pending_pair[0]:
                 tag, pending_pair = pending_pair[1], None
+            elif not pinglish and value == 'را':
+                before = at
+                while before and source[before - 1] in ' \t':
+                    before -= 1
+                if before < at and before and word_char(source[before - 1]):
+                    # The previous word may itself require the reference;
+                    # use a known host solely to obtain the native enclitic
+                    # stress without changing source positions or phones.
+                    host = 'سلام '
+                    pair = frontend.analyze_direct(host + value)
+                    if pair is not None and pair.source_map is not None and len(pair.parts) == 1:
+                        tag = pair.parts[0].text[pair.source_map[len(host.encode('utf8'))]:]
             elif not pinglish and value in ('می', 'نمی', 'علامت'):
                 # Preserve the native two-word context even if an unrelated
                 # later word made the whole sentence use the resilient path.

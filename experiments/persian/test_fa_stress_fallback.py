@@ -41,6 +41,14 @@ def main():
         assert compound.tagged.startswith('`[.0A.0la.0mAt] `[.1dar] '), compound.tagged
         assert [part.value for part in prefix.parts if isinstance(part, EciIndex)] == [8]
         assert [part.value for part in compound.parts if isinstance(part, EciIndex)] == [9]
+        with patch.object(frontend, 'analyze', return_value=reference):
+            object_marker = project_resilient(('پدیده‌ای ', EciIndex(10), 'را'), frontend)
+            separated = project_resilient(('پدیده‌ای، ', EciIndex(11), 'را'), frontend)
+            conjunction = project_resilient(('کتاب و ', EciIndex(12), 'پدیده‌ای'), frontend)
+        assert object_marker.tagged.endswith(' `[.0ra]'), object_marker.tagged
+        assert separated.tagged.endswith(', `[.1ra]'), separated.tagged
+        assert '`[.0vA]' in conjunction.tagged, conjunction.tagged
+        assert [part.value for part in object_marker.parts if isinstance(part, EciIndex)] == [10]
     print('Passed mixed native/reference Persian stress and index projection.')
 
 

@@ -157,7 +157,7 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
     if(!map)return -2;
     struct output_buffer b={0};
     if(append(&b,"",0)){free(map);return -2;}
-    int status=0;
+    int status=0,preceding_word=0;
     size_t at=0,prefixed_verb=SIZE_MAX;
     while(at<length) {
         size_t start=at,next=at;
@@ -183,6 +183,7 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             size_t end=number_start+count;
             for(size_t i=start;i<end;++i)map[i]=tag_start;
             map[end]=b.used;at=end;
+            preceding_word=1;
         } else if(cp==0x066b || cp==0x066c) {
             status=2;break;
         } else if(word_character(cp)) {
@@ -198,6 +199,10 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             int follows=follows_word_in_phrase(text,length,end);
             int found=reloq_fa_direct_context_word(text+start,end-start,follows,tag,sizeof tag);
             if(found!=1){status=found==0?1:-1;break;}
+            /* The object marker is an enclitic even at the end of a phrase.
+             * A punctuation boundary resets preceding_word below. */
+            if(preceding_word && end-start==sizeof "را"-1 && !memcmp(text+start,"را",end-start))
+                prefixed_tag_stress(tag,0);
             if(end-start==sizeof "علامت"-1 && !memcmp(text+start,"علامت",end-start) &&
                followed_by_dar(text,length,end))prefixed_tag_stress(tag,0);
             if(start==prefixed_verb) {
@@ -217,6 +222,7 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             if(append(&b,tag,strlen(tag))){status=-2;break;}
             for(size_t i=start;i<end;++i)map[i]=tag_start;
             map[end]=b.used;at=end;
+            preceding_word=1;
         } else {
             char punctuation=0;
             if(cp==' ' || cp=='\t' || cp=='\r' || cp=='\n' ||
@@ -233,6 +239,7 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             if(append(&b,&punctuation,1)){status=-2;break;}
             for(size_t i=start;i<next;++i)map[i]=point;
             map[next]=b.used;at=next;
+            if(cp!=' ' && cp!='\t')preceding_word=0;
         }
     }
     if(status) {

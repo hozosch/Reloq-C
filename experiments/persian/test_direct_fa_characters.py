@@ -60,6 +60,9 @@ def main() -> None:
         for char in 'ˈˌə\u0307αé⚽🙂':
             assert native_text(ord(char)) == SYMBOL_TAGS[char], char
         assert native_text(ord('Ж')) == '`l1.0 cyrillic capital letter zhe `l9.0'
+        linked = frontend.analyze_direct('پیکان به سمت بالا و پایین با پایه')
+        assert linked and native_text(ord('↨')) == linked.parts[0].text
+        assert '`[.0vA]' in linked.parts[0].text
         assert native_text(0x12550) == '`l1.0 cuneiform numeric sign one n01 `l9.0'
         assert native_text(0x18cff) == '`l1.0 khitan small script character 18cff `l9.0'
         assert native_text(0x3d000) == '`l1.0 small seal character 3d000 `l9.0'

@@ -108,6 +108,14 @@ def restress_known_names(values, names, frontend):
         name = names.get(char)
         if not name:
             continue
+        # Prefer the same native phrase analysis used for an explicitly
+        # written label, including weak conjunctions. Reuse it only when
+        # every phone and boundary agrees with the existing symbol reading.
+        phrase = frontend.analyze_direct(name)
+        if (phrase is not None and len(phrase.parts) == 1 and
+                unaccent(phrase.parts[0].text) == unaccent(original)):
+            output[char] = phrase.parts[0].text
+            continue
         words = name.split()
         tags = tuple(tag_pattern.finditer(original))
         if len(words) != len(tags) or tag_pattern.sub('', original).strip():
