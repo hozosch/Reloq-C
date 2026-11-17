@@ -1,0 +1,81 @@
+name: Persian NVDA direct test
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117]
+    paths:
+      - .github/workflows/persian-nvda-direct-test.yml
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: persian-nvda-direct-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  nvda:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Select verified Windows acoustics
+        id: acoustic
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/persian-windows-acoustic-probe.yml/runs" -f branch="$GITHUB_REF_NAME" -F per_page=40 > windows-runs.json
+          selected=$(python -B experiments/persian/select_windows_acoustic_run.py windows-runs.json)
+          if [ -z "$selected" ]; then echo 'No compatible Windows acoustic build' >&2; exit 1; fi
+          gh run watch "$selected" --exit-status --interval 15 --repo "$GITHUB_REPOSITORY"
+          echo "run_id=$selected" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v4
+        with:
+          name: persian-windows-acoustic-probe
+          run-id: ${{ steps.acoustic.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: candidate
+      - name: Obtain portable NVDA
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download release-2026.3.1 --repo nvaccess/nvda --pattern nvda_2026.3.1.exe --dir candidate
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA download failed' }
+          if ((Get-FileHash candidate/nvda_2026.3.1.exe -Algorithm SHA256).Hash -ne '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052') { throw 'Unexpected NVDA installer' }
+          $portable = Join-Path $pwd 'portable-nvda'
+          $p = Start-Process (Get-Item candidate/nvda_2026.3.1.exe).FullName -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/synthDrivers/espeak.dll")) { throw 'NVDA portable installation failed' }
+      - name: Build private NVDA test add-on
+        shell: bash
+        run: |
+          export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
+          if [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
+          dll=$(find candidate -name eci.dll -print -quit)
+          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
+      - name: Test in real NVDA
+        shell: pwsh
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          $addon = (Get-ChildItem dist -Filter *.nvda-addon | Select-Object -First 1).FullName
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon "$addon" --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
+          if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA Persian profile test failed' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: persian-nvda-direct-package
+          path: dist/*.nvda-addon
+          if-no-files-found: warn
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: persian-nvda-direct-results
+          path: |
+            persian-nvda-results/result.json
+            persian-nvda-results/nvda.log
+          if-no-files-found: ignore
+          retention-days: 7
