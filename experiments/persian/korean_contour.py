@@ -12,11 +12,11 @@ import re
 
 if __package__:
     from .._reloq_eci_direct import (DirectEciEngine, GENDER, NATIVE_INFLECTION, NATIVE_PITCH,
-                                     NATIVE_SPEED, NATIVE_WPM, SAMPLE_RATE)
+                                     NATIVE_SPEED, NATIVE_WPM, PITCH_HZ, PROCESS_TAGS, SAMPLE_RATE)
     from .._reloq_persian_frames import FrameCapture, NativeFrame
 else:
     from _reloq_eci_direct import (DirectEciEngine, GENDER, NATIVE_INFLECTION, NATIVE_PITCH,
-                                   NATIVE_SPEED, NATIVE_WPM, SAMPLE_RATE)
+                                   NATIVE_SPEED, NATIVE_WPM, PITCH_HZ, PROCESS_TAGS, SAMPLE_RATE)
     from _reloq_persian_frames import FrameCapture, NativeFrame
 
 _TAG = re.compile(r'`\[[^]]+\]')
@@ -36,9 +36,9 @@ def proxy(tagged: str, *, continuation: bool = False) -> str | None:
         return None
     parts = []
     for index, match in enumerate(matches):
-        count = len(_SYLLABLE.findall(match.group()))
-        if not count:
-            return None
+        # Some explicit phone tags have no syllable marker. They still need
+        # a Korean word, rather than dropping the whole sentence's contour.
+        count = max(1, len(_SYLLABLE.findall(match.group())))
         if index:
             gap = tagged[matches[index - 1].end():match.start()]
             punctuation = _punctuation(gap)
@@ -55,6 +55,7 @@ class KoreanContour:
 
     def __init__(self, library):
         self.voice = DirectEciEngine(library, dialect=0xa0000, encoding='utf8', native_voice=True)
+        self.voice.set_parameter(PROCESS_TAGS, 1)
         self.api = FrameCapture(self.voice._dll)
         self.parameters = {}
 
@@ -64,7 +65,8 @@ class KoreanContour:
     def close(self):
         self.voice.close()
 
-    def apply(self, rows, count, tagged, target_voice, cancelled, *, edges=0, continuation=False):
+    def apply(self, rows, count, tagged, target_voice, cancelled, *, edges=0, continuation=False,
+              word_ticks=None, prefix=()):
         pilot = proxy(tagged, continuation=continuation)
         api = self.api
         if pilot is None or api.transfer_korean_pitch is None:
@@ -76,13 +78,32 @@ class KoreanContour:
             if value >= 0 and self.parameters.get(parameter) != value:
                 self.voice.set_parameter(parameter, value)
                 self.parameters[parameter] = value
+        pitch_hz = getattr(target_voice, '_pitch_hz', 0)
+        if self.voice._pitch_hz != pitch_hz:
+            self.voice.set_parameter(PITCH_HZ, pitch_hz)
         self.voice._cancelled.clear()
-        donor = api.capture(self.voice, (pilot,), maximum=30000, audio=False)
+        donor = api.capture(self.voice, (*prefix, pilot), maximum=30000, audio=False)
         if cancelled.is_set() or donor is None:
             raise InterruptedError('Korean pitch planning cancelled')
         frames = donor.frames()
         pointer = ctypes.cast(rows, ctypes.POINTER(NativeFrame))
-        status = api.transfer_korean_pitch(pointer, count, frames, len(frames), edges, 45)
+        if api.transfer_korean_aligned is not None and not edges:
+            matches = tuple(_TAG.finditer(tagged))
+            syllables = (ctypes.c_uint32 * len(matches))(
+                *(max(1, len(_SYLLABLE.findall(match.group()))) for match in matches))
+            ticks = None
+            # In the Finnish capture, indexes adjoining punctuation can be
+            # reported one word late. Brackets and commas can sound exactly
+            # alike despite producing different index positions. In that
+            # case use the continuous Korean phrase instead of a bad anchor.
+            safe_gaps = all(not tagged[a.end():b.start()].strip(' \t\r\n~')
+                            for a, b in zip(matches, matches[1:]))
+            if safe_gaps and word_ticks is not None and len(word_ticks) == len(matches) - 1:
+                ticks = (ctypes.c_int64 * len(word_ticks))(*word_ticks) if word_ticks else None
+            status = api.transfer_korean_aligned(pointer, count, frames, len(frames), ticks,
+                                                  syllables, len(matches))
+        else:
+            status = api.transfer_korean_pitch(pointer, count, frames, len(frames), edges, 45)
         if status < 0:
             raise RuntimeError('Korean pitch transfer failed: ' + str(status))
         return status == 0

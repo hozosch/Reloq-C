@@ -299,6 +299,83 @@ FA_EXPORT int reloq_fa_transfer_korean_pitch(struct reloq_fa_frame *rows,size_t 
     return 0;
 }
 
+/* Transfer the Korean donor's pitch without inheriting the Finnish sentence
+ * median. Where Persian word markers are available, align word boundaries
+ * against the donor's syllable voicing runs. If those cannot be identified,
+ * use syllable proportions; if Persian markers are unavailable, keep one
+ * monotonic phrase-wide mapping. No caller-owned rows change on an error. */
+FA_EXPORT int reloq_fa_transfer_korean_aligned(struct reloq_fa_frame *rows,size_t count,
+    const struct reloq_fa_frame *donor,size_t donor_count,const int64_t *word_ticks,
+    const uint32_t *syllables,size_t word_count)
+{
+    if(!rows || !donor || !count || !donor_count || count>120000 || donor_count>120000 ||
+       !syllables || !word_count || word_count>4096)return -1;
+    size_t syllable_count=0,voiced=0,first=0,last=0;
+    for(size_t i=0;i<word_count;++i) {
+        if(!syllables[i] || syllables[i]>120000-syllable_count)return -1;
+        syllable_count+=syllables[i];
+    }
+    for(size_t i=0;i<count;++i) {
+        if(rows[i].tick<0 || (i && rows[i].tick<=rows[i-1].tick) ||
+           !isfinite(rows[i].controls[1]) || !isfinite(rows[i].controls[2]))return -1;
+        if(rows[i].controls[2]>10 && rows[i].controls[1]>0) {
+            if(!voiced)first=i;
+            last=i;++voiced;
+        }
+    }
+    if(voiced<2 || rows[first].tick>=rows[last].tick)return 1;
+    struct fa_pitch_point *points=malloc(donor_count*sizeof *points);
+    size_t *run_start=malloc(donor_count*sizeof *run_start),*run_end=malloc(donor_count*sizeof *run_end);
+    double *target=malloc((word_count+1)*sizeof *target),*source=malloc((word_count+1)*sizeof *source);
+    if(!points || !run_start || !run_end || !target || !source) {
+        free(points);free(run_start);free(run_end);free(target);free(source);return -2;
+    }
+    size_t n=0,runs=0;int active=0,status=0;
+    for(size_t i=0;i<donor_count;++i) {
+        if(donor[i].tick<0 || (i && donor[i].tick<=donor[i-1].tick) ||
+           !isfinite(donor[i].controls[1]) || !isfinite(donor[i].controls[2])) {status=-1;goto done;}
+        if(donor[i].controls[2]>10 && donor[i].controls[1]>0) {
+            if(!active){run_start[runs]=n;active=1;}
+            points[n++]=(struct fa_pitch_point){donor[i].tick,donor[i].controls[1]};
+        } else if(active) {
+            run_end[runs++]=n-1;active=0;
+        }
+    }
+    if(active)run_end[runs++]=n-1;
+    if(n<2 || points[0].tick>=points[n-1].tick){status=1;goto done;}
+    target[0]=(double)rows[first].tick;source[0]=(double)points[0].tick;
+    size_t intervals=1,used=0;
+    if(word_ticks && word_count>1) {
+        int valid=1;
+        for(size_t i=1;i<word_count;++i) {
+            used+=syllables[i-1];
+            target[i]=(double)word_ticks[i-1];
+            source[i]=(runs==syllable_count)
+                ? ((double)points[run_end[used-1]].tick+(double)points[run_start[used]].tick)/2.0
+                : source[0]+(double)(points[n-1].tick-points[0].tick)*(double)used/(double)syllable_count;
+            if(target[i]<=target[i-1] || target[i]>=rows[last].tick ||
+               source[i]<=source[i-1] || source[i]>=points[n-1].tick)valid=0;
+        }
+        if(valid)intervals=word_count;
+    }
+    target[intervals]=(double)rows[last].tick;source[intervals]=(double)points[n-1].tick;
+    /* Validate every result before writing, preserving the target on error. */
+    for(int pass=0;pass<2;++pass)for(size_t i=0;i<count;++i)if(rows[i].controls[1]>0) {
+        double tick=(double)rows[i].tick;
+        size_t lo=0,hi=intervals;
+        if(tick<target[0])tick=target[0];
+        if(tick>target[intervals])tick=target[intervals];
+        while(lo+1<hi){size_t mid=lo+(hi-lo)/2;if(target[mid]<=tick)lo=mid;else hi=mid;}
+        double position=source[lo]+(source[lo+1]-source[lo])*(tick-target[lo])/(target[lo+1]-target[lo]);
+        double value=fa_pitch_interpolate(points,n,position);
+        if(!isfinite(value) || value<=0 || value>FLT_MAX){status=-1;goto done;}
+        if(pass)rows[i].controls[1]=(float)value;
+    }
+done:
+    free(points);free(run_start);free(run_end);free(target);free(source);
+    return status;
+}
+
 FA_EXPORT int reloq_fa_fit_pitch(struct reloq_fa_frame *rows,size_t count,
     const float *pilot,size_t length,int64_t start,int64_t end,int64_t a,int64_t b)
 {

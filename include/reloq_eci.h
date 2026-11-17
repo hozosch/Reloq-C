@@ -354,6 +354,12 @@ ECIAPI int ECICALL eciPersianFitPitchEdges(struct reloq_fa_frame *rows,size_t co
  * when voiced material is insufficient, without changing the frames. */
 ECIAPI int ECICALL eciPersianTransferKoreanPitch(struct reloq_fa_frame *rows,size_t count,
     const struct reloq_fa_frame *donor,size_t donor_count,unsigned edges,int64_t window);
+/* Use the donor's absolute pitch and align its word breaks to Persian word
+ * ticks. The optional word_ticks contains word_count-1 increasing ticks;
+ * syllables contains a positive syllable count for each word. */
+ECIAPI int ECICALL eciPersianTransferKoreanAligned(struct reloq_fa_frame *rows,size_t count,
+    const struct reloq_fa_frame *donor,size_t donor_count,const int64_t *word_ticks,
+    const uint32_t *syllables,size_t word_count);
 /* Replay uses the handle's output callbacks and stop epoch. An incremental
  * stream owns the handle until End and must always be ended on its owner
  * thread. It returns the normal RELOQ_ECI_* status codes. */

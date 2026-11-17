@@ -70,4 +70,5 @@ jobs:
           grep -q 'eciPersianProjectUtf8' android-symbols.txt
           grep -q 'eciPersianCharacter' android-symbols.txt
           grep -q 'eciPersianTransferKoreanPitch' android-symbols.txt
+          grep -q 'eciPersianTransferKoreanAligned' android-symbols.txt
           grep -q 'eciPersianCapturePcm' android-symbols.txt

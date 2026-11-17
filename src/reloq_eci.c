@@ -1956,6 +1956,10 @@ int ECICALL eciPersianFitPitchEdges(struct reloq_fa_frame *rows,size_t count,
 int ECICALL eciPersianTransferKoreanPitch(struct reloq_fa_frame *rows,size_t count,
     const struct reloq_fa_frame *donor,size_t donor_count,unsigned edges,int64_t window)
 {return reloq_fa_transfer_korean_pitch(rows,count,donor,donor_count,edges,window);}
+int ECICALL eciPersianTransferKoreanAligned(struct reloq_fa_frame *rows,size_t count,
+    const struct reloq_fa_frame *donor,size_t donor_count,const int64_t *word_ticks,
+    const uint32_t *syllables,size_t word_count)
+{return reloq_fa_transfer_korean_aligned(rows,count,donor,donor_count,word_ticks,syllables,word_count);}
 uint32_t ECICALL eciPersianReplayEpoch(ECIHand handle)
 {return reloq_fa_replay_epoch(handle);}
 int ECICALL eciPersianReplayBegin(ECIHand handle,uint32_t epoch,void **stream)

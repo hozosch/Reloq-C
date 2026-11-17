@@ -46,6 +46,38 @@ def main():
     transfer.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
                          ctypes.POINTER(NativeFrame), ctypes.c_size_t, ctypes.c_uint, ctypes.c_int64)
     transfer.restype = ctypes.c_int
+    aligned = (getattr(dll, 'eciPersianTransferKoreanAligned', None) or
+               getattr(dll, 'reloq_fa_transfer_korean_aligned'))
+    aligned.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
+                        ctypes.POINTER(NativeFrame), ctypes.c_size_t,
+                        ctypes.POINTER(ctypes.c_int64), ctypes.POINTER(ctypes.c_uint32), ctypes.c_size_t)
+    aligned.restype = ctypes.c_int
+    # Two equally syllabic donor words have a break at tick 100. The first
+    # Persian word is deliberately twice as long as the second: its word
+    # break must meet the donor break, not two thirds of the donor phrase.
+    donor = (NativeFrame * 201)()
+    for i, row in enumerate(donor):
+        row.tick = i
+        row.controls[1] = 800.0 + i
+        row.controls[2] = 40.0 if i < 90 or i > 110 else 0.0
+    ticks = (ctypes.c_int64 * 1)(200)
+    syllables = (ctypes.c_uint32 * 2)(1, 1)
+    targets = []
+    for initial_pitch in (500.0, 1600.0):
+        rows = (NativeFrame * 301)()
+        for i, row in enumerate(rows):
+            row.tick = i
+            row.controls[1], row.controls[2], row.controls[9] = initial_pitch, 40.0, 432.0
+        assert aligned(rows, len(rows), donor, len(donor), ticks, syllables, 2) == 0
+        assert abs(rows[200].controls[1] - 900.0) < 0.001
+        assert all(800 <= row.controls[1] <= 1000 and row.controls[9] == 432 for row in rows)
+        targets.append(bytes(rows))
+    assert targets[0] == targets[1], 'Finnish pitch leaked into the Korean transfer'
+    invalid = (NativeFrame * 2)()
+    invalid[0].tick, invalid[1].tick = 1, 1
+    original_invalid = bytes(invalid)
+    assert aligned(invalid, 2, donor, len(donor), None, syllables, 2) < 0
+    assert bytes(invalid) == original_invalid
     frontend = DirectFirstPersian(args.library, None, None, None)
     fa, fa_scope = voice(args.library, 0x90000)
     ko, ko_scope = voice(args.library, 0xa0000)

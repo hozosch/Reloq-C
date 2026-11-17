@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
-from _reloq_eci_direct import EciIndex, EciLanguage, NATIVE_INFLECTION, SAMPLE_RATE
+from _reloq_eci_direct import EciIndex, EciLanguage, EciPitch, EciPitchHz, EciText, NATIVE_INFLECTION, PITCH_HZ, SAMPLE_RATE
 from _reloq_persian_frames import FrameCapture, NativeFrame
 from korean_contour import KoreanContour, align_english_edges, proxy
 from nvda_driver_probe import PERSIAN_PROBE, US_ENGLISH, make_language_engine
@@ -24,6 +24,7 @@ def main():
     assert proxy('`[.1sA.0lam] `[.1do.0nja]?') == '가가 가가?'
     assert proxy('`[.1sA.0lam], `[.1do.0nja]') == '가가, 가가.'
     assert proxy('`[.1sA.0lam]', continuation=True) == '가가,'
+    assert proxy('`[salam]') == '가.'
     assert proxy('plain English') is None
     for languages in (('en-us', 'fa'), ('fa', 'en-us')):
         rows = (NativeFrame * 240)()
@@ -54,6 +55,10 @@ def main():
 
     voice = make_language_engine(args.library, args.library, None, args.espeak_library, args.data_parent)
     cases = (
+        ('سلام',),
+        ('کتاب',),
+        ('یک',),
+        (EciText('سلام', character_mode=True),),
         ('سلام دنیا.',),
         ('سلام دنیا. این یک آزمایش است؟',),
         (EciIndex(1), 'سلام ', EciIndex(2), 'دنیا؟', EciIndex(3)),
@@ -130,6 +135,19 @@ def main():
         speak(('سلام دنیا.',), True)
         donor = voice._persian_korean_contour.voice
         assert donor._dll.eciGetParam(donor._handle, NATIVE_INFLECTION) == 70
+        # Request-local pitch controls and the persistent Hertz mode must
+        # reach the Korean donor; a following ordinary request must reset.
+        neutral, _ = speak(('سلام',), True)
+        high, _ = speak((EciPitch(85), 'سلام'), True)
+        assert neutral != high
+        assert speak((EciPitch(85), 'سلام', EciPitch(65)), True)[0] == high
+        assert speak(('سلام',), True)[0] == neutral
+        voice.set_parameter(PITCH_HZ, 180)
+        hertz, _ = speak(('سلام',), True)
+        assert hertz != neutral and donor._pitch_hz == 180
+        inline, _ = speak((EciPitchHz(240), 'سلام'), True)
+        assert inline != hertz and speak(('سلام',), True)[0] == hertz
+        voice.set_parameter(PITCH_HZ, 0)
     finally:
         voice.close()
     print('Passed Korean-derived Persian pitch, English isolation, lengths and NVDA positions.')

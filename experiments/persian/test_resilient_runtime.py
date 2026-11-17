@@ -181,6 +181,32 @@ def main():
             worker.translate = original_translate
         assert not hasattr(frontend, '_resilient_word_cache')
         assert render((EciIndex(90), inflected, EciIndex(91)))[0]
+        # A temporary failure during the mixed native/eSpeak analysis must
+        # retry the unknown whole word rather than announce Unicode for its
+        # joiner. This reproduces a possible fallback failure, not a claim
+        # about the cause of a particular user's intermittent report.
+        unknown_joined = 'پدیده‌ای'
+        assert frontend.analyze_direct(unknown_joined) is None
+        previous_analyze, previous_prepared = frontend.analyze, ScopedDirectPersianEngine._speak_prepared
+        failed_once, observed = [False], []
+        def transient_analyze(text, **kwargs):
+            if not failed_once[0]:
+                failed_once[0] = True
+                raise RuntimeError('injected transient reference failure')
+            return previous_analyze(text, **kwargs)
+        def observe_transient(instance, prepared, *items, **options):
+            if prepared.source:
+                observed.append(prepared.tagged)
+            return previous_prepared(instance, prepared, *items, **options)
+        frontend.analyze = transient_analyze
+        ScopedDirectPersianEngine._speak_prepared = observe_transient
+        try:
+            assert render((unknown_joined,))[0]
+            assert failed_once[0] and any("`[.0pA.1di.0d'e:'.1'i:']" in tag and
+                                           UNICODE_TAG not in tag for tag in observed), observed
+        finally:
+            frontend.analyze = previous_analyze
+            ScopedDirectPersianEngine._speak_prepared = previous_prepared
         cases = ('سلام @@@ دنیا', 'سلام 🙂 دنیا', 'سلام (دنیا) و خوب', 'عدد ۱۲-۱۵ است',
                  'نسخه 1.2.3', 'کتاب ۵/۳ روز', 'متن\nجدید', 'سلام\tدنیا', '!',
                  'سلام ❤️', '\u200c', '\0', 'دما ۳٫۱۴ درجه', '\u202e', '\ud800',

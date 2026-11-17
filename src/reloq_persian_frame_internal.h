@@ -31,6 +31,9 @@ int reloq_fa_fit_pitch_edges(struct reloq_fa_frame *rows,size_t count,const floa
     unsigned edges,int64_t window);
 int reloq_fa_transfer_korean_pitch(struct reloq_fa_frame *rows,size_t count,
     const struct reloq_fa_frame *donor,size_t donor_count,unsigned edges,int64_t window);
+int reloq_fa_transfer_korean_aligned(struct reloq_fa_frame *rows,size_t count,
+    const struct reloq_fa_frame *donor,size_t donor_count,const int64_t *word_ticks,
+    const uint32_t *syllables,size_t word_count);
 int reloq_fa_capture_controls_only(void);
 int reloq_fa_capture_active(void);
 int reloq_fa_capture_advance_samples(size_t count);

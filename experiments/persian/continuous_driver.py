@@ -17,7 +17,7 @@ if __package__:
     from .._reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from .._reloq_persian_projection import ProjectedJob
     from .direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient
-    from .continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence, _bracket_boundary
+    from .continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence, _bracket_boundary, _word_markers
     from .korean_contour import align_english_edges, contour
     from .text_frontend import SpeechPart, UnsupportedPronunciation
 else:
@@ -28,7 +28,7 @@ else:
     from _reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from _reloq_persian_projection import ProjectedJob
     from direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient
-    from continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence, _bracket_boundary
+    from continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence, _bracket_boundary, _word_markers
     from korean_contour import align_english_edges, contour
     from text_frontend import SpeechPart, UnsupportedPronunciation
 
@@ -295,6 +295,11 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
         if rate is None:
             raise ValueError('invalid sentence sample rate')
         korean_available = FrameCapture(fa._dll).transfer_korean_pitch is not None
+        word_markers = _word_markers(sentence)
+        def word_ticks(item, segment):
+            total = len(tuple(_TAG.finditer(sentence[segment].text)))
+            marks = [item.indexes.get(word_markers.get((segment, word))) for word in range(1, total)]
+            return None if any(mark is None for mark in marks) else tuple(round(mark * 1000 / rate) for mark in marks)
         multicore = (os.cpu_count() or 1) > 1
         parallel_worthy = sum(len(part.text) for part in sentence) >= _PARALLEL_MIN and multicore
         available_pilot = getattr(owner, '_persian_contour_worker', None) if multicore else None
@@ -356,7 +361,8 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
                     return False
                 pointer = ctypes.cast(item.frames, ctypes.POINTER(NativeFrame))
                 if contour(owner).apply(pointer, first_end, sentence[0].text, fa.raw,
-                                        owner._cancelled, continuation=True):
+                                        owner._cancelled, continuation=True,
+                                        word_ticks=word_ticks(item, 0), prefix=prefix):
                     stream_state['korean_first'] = tuple(item.frames[i].controls[1] for i in range(first_end))
             first_voice = en if sentence[0].language == 'en-us' else fa
             first_key = en_key if first_voice is en else fa_key
@@ -445,7 +451,8 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
                         pointer = ctypes.cast(ctypes.byref(plan.frames, offset * ctypes.sizeof(NativeFrame)),
                                               ctypes.POINTER(NativeFrame))
                         contour(owner).apply(pointer, count, part.text, fa.raw, owner._cancelled,
-                                             continuation=i + 1 < len(sentence))
+                                             continuation=i + 1 < len(sentence),
+                                             word_ticks=word_ticks(plan.contexts['fa'], i), prefix=prefix)
                 offset += count
             align_english_edges(plan, sentence, _bracket_boundary)
         marks = replay_marks(plan, original_counts)
@@ -507,7 +514,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
 
 def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
     """Apply Persian U-to-A glides and the Korean-derived pitch pilot."""
-    key, items, prefix, saw_text = owner._home, [], [], False
+    key, items, prefix, trailing, saw_text = owner._home, [], [], [], False
     for part in parts:
         if isinstance(part, EciLanguage):
             next_key = owner._key(part.language, part.voice)
@@ -519,13 +526,18 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                 return None
             prefix.append(part)
         elif isinstance(part, (str, EciText, EciIndex)):
-            if isinstance(part, EciText) and (part.character_mode or part.is_control):
+            if isinstance(part, EciText) and part.is_control:
+                return None
+            if trailing and isinstance(part, (str, EciText)) and (part if isinstance(part, str) else part.text):
+                # A control between words still needs a piecewise donor.
                 return None
             items.append(part)
             if isinstance(part, (str, EciText)):
                 saw_text = True
         elif isinstance(part, (EciPitch, EciPitchHz, EciProsody)) and not saw_text:
             prefix.append(part)
+        elif isinstance(part, (EciPitch, EciPitchHz, EciProsody)):
+            trailing.append(part)
         else:
             return None
     if key[0] not in fa_ids or not items:
@@ -546,8 +558,6 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             prepared = project_resilient(items, engine._frontend, pinglish=engine._pinglish,
                                          validate=engine._phonemes_for_validation,
                                          cancelled=owner._cancelled.is_set)
-        if prefix:
-            prepared = replace(prepared, parts=tuple(prefix) + tuple(prepared.parts))
         matches = tuple(_TAG.finditer(prepared.tagged))
         tags = tuple(match.group() for match in matches)
         separators = tuple(prepared.tagged[a.end():b.start()] for a, b in zip(matches, matches[1:]))
@@ -577,6 +587,12 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             sequence.extend((prepared.tagged[position:at], EciIndex(mark)))
             position = at
         sequence.append(prepared.tagged[position:])
+        sequence.extend(trailing)
+        # DirectEciEngine applies Hertz pitch and speed/volume controls to
+        # the whole queued utterance, even if supplied at its end. Match
+        # that established behavior in the donor. EciPitch is queued and
+        # its trailing reset must not change the preceding word.
+        donor_prefix = (*prefix, *(part for part in trailing if isinstance(part, (EciPitchHz, EciProsody))))
         voice = _PlanningVoice(owner, key, engine, validate=prepared.needs_native_validation,
                                prefix=prefix, source=prepared.source)
         voice.raw._cancelled.clear()
@@ -607,7 +623,10 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                 pointer = ctypes.cast(ctypes.byref(item.frames, first * ctypes.sizeof(NativeFrame)),
                                       ctypes.POINTER(NativeFrame))
                 tagged = prepared.tagged[text_edges[i]:text_edges[i + 1]]
-                transferred |= contour(owner).apply(pointer, last - first, tagged, voice.raw, owner._cancelled)
+                word_end = starts[i + 1] if i + 1 < len(starts) else len(matches)
+                ticks = tuple(boundaries[word] for word in range(starts[i] + 1, word_end))
+                transferred |= contour(owner).apply(pointer, last - first, tagged, voice.raw, owner._cancelled,
+                                                    word_ticks=ticks, prefix=donor_prefix)
         if not glides and not transferred:
             return engine._speak_prepared(prepared, on_pcm, on_index)
         marks = []
