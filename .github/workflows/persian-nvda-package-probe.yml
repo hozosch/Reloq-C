@@ -65,6 +65,7 @@ on:
       - experiments/persian/test_streamed_sentence.py
       - experiments/persian/test_fricative_identity.py
       - experiments/persian/test_us_consonants.py
+      - experiments/persian/test_windows_acoustics.py
       - experiments/persian/test_us_nasals.py
       - experiments/persian/test_open_vowels.py
       - experiments/persian/test_yek_duration.py
