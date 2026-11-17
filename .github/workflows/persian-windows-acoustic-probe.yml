@@ -2,7 +2,7 @@ name: Persian Windows acoustic probe
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117]
+    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117]
     paths:
       - experiments/persian/build_native_probe.py
       - experiments/persian/build_windows_probe.py
@@ -50,6 +50,7 @@ on:
       - experiments/persian/test_yek_duration.py
       - experiments/persian/test_british_front_a.py
       - experiments/persian/test_front_a_harmonics.py
+      - experiments/persian/test_german_vowel_blend.py
       - tests/test_persian_provider_cache.py
       - experiments/persian/test_embedded_text_rules.py
       - eci/test_persian_project.py
@@ -158,6 +159,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'British/Persian front-vowel comparison failed' }
           python -B experiments/persian/test_front_a_harmonics.py --candidate eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian front-vowel harmonic comparison failed' }
+          python -B experiments/persian/test_german_vowel_blend.py --candidate eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'German-guided Persian vowel comparison failed' }
           python -B eci/test_persian_frames.py --library persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian probe frame capture or replay failed' }
           python -B experiments/persian/test_continuous_replay.py --probe persian-windows-probe/eci_persian_probe.dll

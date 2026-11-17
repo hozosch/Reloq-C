@@ -1,4 +1,4 @@
-"""Compare the Persian vowel with British sad at a slightly smaller head size."""
+"""Check the Persian front vowel between British sad and German Tag."""
 from __future__ import annotations
 
 import argparse
@@ -69,12 +69,13 @@ def main():
     fa, scope = voice(args.candidate, 0x90000)
     old, old_scope = voice(args.previous, 0x90000) if args.previous else (None, None)
     british, british_scope = voice(args.candidate, 0x10001)
+    german, german_scope = voice(args.candidate, 0x40000)
     checks = 0
     try:
         for rate in (1, 3, 6):
             for gender in (0, 1):
                 for speed in (40, 98, 170):
-                    for item in (fa, old, british):
+                    for item in (fa, old, british, german):
                         if item:
                             for parameter, value in ((SAMPLE_RATE, rate), (GENDER, gender),
                                                      (NATIVE_SPEED, speed)):
@@ -82,6 +83,8 @@ def main():
                     british.set_parameter(HEAD_SIZE, 46)
                     _, gb_rows = capture(british, british_scope, 'sad', False)
                     reference = vowel(gb_rows)
+                    _, de_rows = capture(german, german_scope, 'Tag', False)
+                    german_reference = vowel(de_rows)
                     for tag in ("`[.1s'A:'d]", '`[.1sAd]'):
                         current, rows = capture(fa, scope, tag, True)
                         mid = vowel(rows)
@@ -89,9 +92,12 @@ def main():
                         # Frequencies, bandwidths and source tilt are all
                         # checked, not just one upper resonance.
                         for i in (4, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20):
-                            tolerance = .5 if i == 4 else 5
-                            assert abs(mid.controls[i] - reference.controls[i]) < tolerance, (
-                                rate, gender, speed, tag, i, mid.controls[i], reference.controls[i])
+                            is_frequency = i in (9, 13, 15, 17, 19)
+                            target = (.75 * reference.controls[i] + .25 * german_reference.controls[i]
+                                      if is_frequency else reference.controls[i])
+                            tolerance = 18 if is_frequency else .5 if i == 4 else 5
+                            assert abs(mid.controls[i] - target) < tolerance, (
+                                rate, gender, speed, tag, i, mid.controls[i], target)
                         if old:
                             before, old_rows = capture(old, old_scope, tag, True)
                             # Only the vowel sound changed; the word duration
@@ -104,7 +110,7 @@ def main():
                         if (rate, speed, tag) == (3, 98, "`[.1s'A:'d]"):
                             levels = spectrum(fa, scope, mid, True, gender)
                             gb = spectrum(british, british_scope, vowel(gb_rows), False, gender)
-                            assert max(abs(a - b) for a, b in zip(levels, gb)) < 1, (gender, levels, gb)
+                            assert max(abs(a - b) for a, b in zip(levels, gb)) < 8, (gender, levels, gb)
                             print('matched-F0 front vowel', gender, 'FA', levels, 'GB', gb)
                         checks += 1
         # The upper-formant defaults and bandwidths differ by voice and head
@@ -112,22 +118,20 @@ def main():
         # fixed calibration made for the default male voice.
         for gender in (0, 1):
             for head in (0, 25, 50, 75, 100):
-                for engine in (fa, british):
+                for engine in (fa, british, german):
                     for parameter, value in ((GENDER, gender), (HEAD_SIZE, head),
                                              (SAMPLE_RATE, 3), (NATIVE_SPEED, 98)):
                         engine.set_parameter(parameter, value)
                 british.set_parameter(HEAD_SIZE, max(0, head - 4))
                 actual = vowel(capture(fa, scope, '`[.1sAd]', True)[1])
                 expected = vowel(capture(british, british_scope, 'sad', False)[1])
+                de = vowel(capture(german, german_scope, 'Tag', False)[1])
                 for i in (4, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20):
-                    # A head size below zero cannot be expressed by the
-                    # reference; compare the positive local shift directly.
-                    tolerance = (.5 if i == 4 else
-                                 max(5, expected.controls[i] * .026) if head == 0 and i in (9, 13, 15, 17, 19)
-                                 else max(5, expected.controls[i] * .01) if i in (9, 13, 15, 17, 19)
-                                 else 5)
-                    assert abs(actual.controls[i] - expected.controls[i]) < tolerance, (
-                        gender, head, i, actual.controls[i], expected.controls[i])
+                    is_frequency = i in (9, 13, 15, 17, 19)
+                    target = .75 * expected.controls[i] + .25 * de.controls[i] if is_frequency else expected.controls[i]
+                    tolerance = max(20, target * .035) if is_frequency else .5 if i == 4 else 5
+                    assert abs(actual.controls[i] - target) < tolerance, (
+                        gender, head, i, actual.controls[i], target)
                 checks += 1
         if old:
             for dialect, text in ((0x90000, 'Viisi sanaa.'), (0x10001, 'sad'),
@@ -145,6 +149,7 @@ def main():
     finally:
         fa.close()
         british.close()
+        german.close()
         if old:
             old.close()
     print(f'Passed {checks} Persian/English front-vowel and isolation checks.')

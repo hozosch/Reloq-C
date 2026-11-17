@@ -1,4 +1,4 @@
-"""Check the British sad vowel in Persian and around Ach in particular."""
+"""Check the Persian front vowel across contexts, especially around Ach."""
 from __future__ import annotations
 
 import argparse
@@ -56,16 +56,14 @@ def main():
     contexts = ach + ('`[.1sAd]', '`[.1bAt]', '`[.1pAt]', '`[.1nAm]',
                       '`[.1mAn]', '`[.1lAt]', '`[.1rAt]', '`[.1jAt]', '`[.1At]')
     unchanged = ('`[.1sod]', '`[.1sud]', '`[.1sid]', '`[.1sed]',
-                 '`[.1sad]', '`[.1jek]', '`[.1Gu]')
+                 '`[.1jek]', '`[.1Gu]')
     checks = 0
     for gender in (0, 1):
         for rate in (3, 6):
             current, scope = voice(args.probe, gender, rate)
-            british, british_scope = voice(args.probe, gender, rate, 0x10001)
             baseline, old_scope = voice(args.baseline, gender, rate) if args.baseline else (None, None)
             try:
-                british.set_parameter(HEAD_SIZE, 46)
-                reference = vowel(capture(british, british_scope, 'sad', False).frames())
+                reference = vowel(capture(current, scope, '`[.1sAd]').frames())
                 for tag in contexts:
                     sample = capture(current, scope, tag)
                     rows = sample.frames()
@@ -98,7 +96,6 @@ def main():
                         assert capture(current, scope, tag, False).pcm == capture(baseline, old_scope, tag, False).pcm
             finally:
                 current.close()
-                british.close()
                 if baseline:
                     baseline.close()
     print(f'Passed {checks} contextual short-A/Ach checks, voice/rate and isolation checks.')

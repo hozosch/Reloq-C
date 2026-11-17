@@ -130,15 +130,15 @@ static unsigned persian_probe_front_a_neighbour(void *state,int32_t position,int
 '''
 
 FRONT_A_PATCH = r'''
-    /* Match the vowel nucleus in the actual British "sad" reference. Keep
-       the Finnish/Persian duration, stress and the neighbouring consonants;
-       their native transitions still enter and leave the replacement core. */
+    /* Keep the British "sad" vowel as a base, but move the first three
+       resonance targets one quarter of the way towards German long /a/ in
+       "Tag". Native duration, stress and neighbouring transitions remain. */
     {
         const char *british=getenv("RELOQ_FA_BRITISH_FRONT_A");
         if (british && british[0]=='1' && !british[1]) {
-            STATE(int16_t,s448)=675;  STATE(int16_t,s449)=675;
-            STATE(int16_t,s450)=1475; STATE(int16_t,s451)=1475;
-            STATE(int16_t,s452)=2350; STATE(int16_t,s453)=2350;
+            STATE(int16_t,s448)=702;  STATE(int16_t,s449)=702;
+            STATE(int16_t,s450)=1408; STATE(int16_t,s451)=1408;
+            STATE(int16_t,s452)=2375; STATE(int16_t,s453)=2375;
             STATE(int16_t,s405)=0;
             STATE(int16_t,s436)=0;
         } else {
@@ -250,12 +250,17 @@ A_PATCH = r'''
         int targets[3];
         if (fa_a_setting && fa_a_setting[0]=='1' && !fa_a_setting[1] && anchor &&
             strcmp(anchor,"salam-fixed")==0) {
-            /* Hold the accepted Salam nucleus itself rather than merely its
-               average. Adjacent phones retain their own native trajectories. */
-            STATE(int16_t,s448)=656;  STATE(int16_t,s449)=656;
-            STATE(int16_t,s450)=1000; STATE(int16_t,s451)=1000;
-            STATE(int16_t,s452)=2620; STATE(int16_t,s453)=2620;
-            STATE(int16_t,s454)=3500; STATE(int16_t,s455)=3500;
+            /* A conservative quarter step from the accepted Salam/Iran
+               nucleus towards the German /o/ in "oft". Account for the
+               different female upper-formant trajectory before the later
+               voice-specific adjustment; retain bandwidths and timing. */
+            int16_t female=0;
+            memcpy(&female,(const unsigned char *)state+DG_BASE+3092+12,sizeof female);
+            STATE(int16_t,s448)=634;  STATE(int16_t,s449)=634;
+            STATE(int16_t,s450)=975;  STATE(int16_t,s451)=975;
+            STATE(int16_t,s452)=female?2615:2590;
+            STATE(int16_t,s453)=female?2615:2590;
+            STATE(int16_t,s454)=3475; STATE(int16_t,s455)=3475;
             STATE(int16_t,s456)=3900; STATE(int16_t,s457)=-1;
             STATE(int16_t,s397)=120;  STATE(int16_t,s398)=100;
             STATE(int16_t,s399)=150;  STATE(int16_t,s400)=330;
@@ -2303,8 +2308,10 @@ def prepare_us_articulation(work: Path) -> None:
             STATE(int16_t,s399)=b3; STATE(int16_t,s400)=b4; STATE(int16_t,s401)=b5;
             STATE(int16_t,s454)=f4; STATE(int16_t,s455)=f4_end;
             STATE(int16_t,s456)=f5; STATE(int16_t,s457)=f5_end;
-            /* A small, vowel-local head-size adjustment: raise all five
-               resonance targets by two percent, without changing the
+            /* A small, vowel-local head-size adjustment: raise the first
+               three targets by two percent and the upper two by 1.5 percent,
+               retaining three quarters of the previous upper resonance
+               shift while moving towards German long /a/. Avoid changing the
                speaker's head-size setting, duration, source, or bandwidths.
                Native negative inheritance markers must remain untouched. */
             int16_t *frequencies[]={&STATE(int16_t,s448),&STATE(int16_t,s449),
@@ -2313,8 +2320,10 @@ def prepare_us_articulation(work: Path) -> None:
                 &STATE(int16_t,s454),&STATE(int16_t,s455),
                 &STATE(int16_t,s456),&STATE(int16_t,s457)};
             for (unsigned i=0;i<sizeof frequencies/sizeof frequencies[0];++i)
-                if (*frequencies[i]>0)
-                    *frequencies[i]=(int16_t)((102*(int)*frequencies[i]+50)/100);
+                if (*frequencies[i]>0) {
+                    int scale=i<6 ? 1020 : 1015;
+                    *frequencies[i]=(int16_t)((scale*(int)*frequencies[i]+500)/1000);
+                }
         }
     }
 ''', 1)
