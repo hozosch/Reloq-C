@@ -31,6 +31,14 @@ def main():
     assert proxy('`[.1sA.0lam],') == '가가,'
     assert proxy('`[.1sA.0lam]:') == proxy('`[.1sA.0lam].')
     assert proxy('`[salam]') == '가.'
+    opening = '`[.0pa.0ra.1an.0tes] `[.1bAs]'
+    closing = '`[.0pa.0ra.1an.0tes] `[.1bAs.0te]'
+    assert proxy(opening) == '가가가가 가.'
+    assert proxy(closing) == '가가가가 가가.'
+    assert proxy(opening, continuation=True) == '가가가가가,'
+    assert proxy(opening + '?') == '가가가가가?'
+    assert proxy('`[.0a.1b.0c]') == '가 가가.'
+    assert proxy('`[.0a.2b.0c]') == '가 가가.'
     for tagged, count, punctuation in (
             ('`[.1sa.0lam] `[.1do.0nja].', 4, '.'),
             ('`[.0be] `[.1mAr.0dom], `[.1sA.0lam]?', 5, ',?'),
@@ -117,6 +125,16 @@ def main():
                     rate, parts, old_marks, new_marks)
         english = (EciLanguage(US_ENGLISH.id, '1'), 'This is an English sentence.')
         assert speak(english, False) == speak(english, True), 'English-only speech changed'
+        # An individual unsupported character uses its real English name,
+        # with the same language boundaries and indexes as an explicit switch.
+        rare = (EciIndex(50), 'سلام ', EciIndex(51), EciText('Ж', character_mode=True),
+                EciIndex(52), ' دنیا.', EciIndex(53))
+        named = (EciIndex(50), 'سلام ', EciIndex(51), EciLanguage(US_ENGLISH.id, '1'),
+                 'cyrillic capital letter zhe', EciIndex(52),
+                 EciLanguage(PERSIAN_PROBE.id, '1'), ' دنیا.', EciIndex(53))
+        assert speak(rare, True) == speak(named, True), 'character fallback changed language routing or indexes'
+        assert speak((EciText('Ж', character_mode=True),), True)[0] == speak(
+            (EciLanguage(US_ENGLISH.id, '1'), 'cyrillic capital letter zhe'), True)[0]
         assert voice._home[0] == PERSIAN_PROBE.id
         assert getattr(voice, '_persian_korean_contour', None) is not None
         # Match the previous candidate at the user's actual slider settings,
@@ -336,7 +354,7 @@ def main():
             return result
         with patch.object(KoreanContour, 'apply', observe_direct):
             speak(('سلام دنیا.',), True)
-        native = FrameCapture(donor._dll).capture(donor, ('가가가가.',), audio=False)
+        native = FrameCapture(donor._dll).capture(donor, ('가가 가가.',), audio=False)
         values = [row.controls[1] for row in native.frames()
                   if row.controls[2] > 10 and row.controls[1] > 0]
         assert len(endpoints) == 1 and values

@@ -1060,7 +1060,7 @@ libreloq_core.a: reloq_unicode.o
 libreloq_core.a: reloq_unicode_names.o
 reloq_unicode_names.o: src/reloq_unicode_names.c $(wildcard src/reloq_unicode_names*.inc)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -c $< -o $@
-reloq_unicode.o: src/reloq_unicode.c src/reloq_unicode_data.inc src/reloq_unicode_multilingual.inc src/reloq_unicode_greek.inc src/reloq_unicode_emoji.inc include/reloq_unicode.h
+reloq_unicode.o: src/reloq_unicode.c src/reloq_unicode_data.inc src/reloq_unicode_multilingual.inc src/reloq_unicode_greek.inc src/reloq_unicode_emoji.inc src/reloq_unicode_official.inc include/reloq_unicode.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude -c $< -o $@
 test_reloq_unicode: tests/test_reloq_unicode.c libreloq_core.a
 	$(CC) $(CPPFLAGS) $(CFLAGS) -Iinclude $< libreloq_core.a -lm -o $@

@@ -3,6 +3,10 @@
 #include <stddef.h>
 #include <stdint.h>
 uint32_t reloq_unicode_compose(uint32_t base,uint32_t combining_mark);
+/* Read the standard English Unicode character name as lowercase ASCII.
+ * Return 1 for a name, 0 for an unnamed/invalid scalar and -1 for an
+ * insufficient buffer. The destination remains unchanged on failure. */
+int reloq_unicode_name_english(uint32_t codepoint, char *output, size_t capacity);
 /* Complete-utterance admission. Modes are one byte per input byte (0 text,
  * 1 character). Map has length+1 source boundary entries. Output reserves
  * two trailing bytes for the ECI implicit terminal mark and NUL. Language

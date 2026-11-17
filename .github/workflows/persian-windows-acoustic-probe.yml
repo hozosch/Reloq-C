@@ -15,6 +15,9 @@ on:
       - src/reloq_persian_frame_internal.h
       - src/reloq_eci.c
       - src/reloq_rules61.c
+      - src/reloq_unicode.c
+      - src/reloq_unicode_official.inc
+      - include/reloq_unicode.h
       - src/reloq_persian_direct.h
       - include/reloq_eci.h
       - vendor/openevv61/Makefile.native

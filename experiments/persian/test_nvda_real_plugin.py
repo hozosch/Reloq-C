@@ -53,9 +53,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             import synthDrivers.reloqC as reloq
             import characterProcessing
             from synthDrivers.reloqC._persian import continuous_driver, direct_fa_sequence, korean_contour, nvda_driver_probe
+            from synthDrivers.reloqC._persian.persian_symbols import SYMBOL_TAGS
             from synthDrivers.reloqC._reloq_eci_transport import EciTextTransport
             from synthDrivers.reloqC._reloq_persian_frames import FrameCapture
             self.speech, self.character, self.index_command = speech, CharacterModeCommand, IndexCommand
+            self.symbol_tags = SYMBOL_TAGS
             # Reproduce dev136's donor mapping inside the same real NVDA
             # driver to compare the user's old and new slider settings.
             self.reference_calibration = False
@@ -319,6 +321,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'ا', True),
                           ('fa_IR', '؟', True),
                           *(( 'fa_IR', mark, True) for mark in 'ًٌٍَُِّْٰ'),
+                          *((locale, mark, True) for locale in ('fa_IR', 'fa_Latn')
+                            for mark in 'ٔأˈˌə̇αé⚽'),
+                          ('fa_IR', 'ٔ', 'issue49_hamza_line'),
+                          ('fa_IR', 'ٔ', 'issue49_hamza_line_none'),
                           ('fa_IR', '🙂', True),
                           ('fa_Latn', '5?', True),
                           ('fa_IR', 'سلام ؟ دنیا', 'mixedspelling'),
@@ -564,7 +570,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text, 'کادرِ علامت‌زدنی', status]
             elif isinstance(spelling, str) and spelling.startswith('tags_'):
                 sequence = [text]
-            elif self.sample_case or spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading', 'issue49_korean', 'issue49_korean_word', 'issue49_persian_unicode', 'issue49_persian_unicode_none', 'issue49_persian_unicode_all', 'issue49_korean_english'):
+            elif self.sample_case or spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading', 'issue49_korean', 'issue49_korean_word', 'issue49_persian_unicode', 'issue49_persian_unicode_none', 'issue49_persian_unicode_all', 'issue49_korean_english', 'issue49_hamza_line', 'issue49_hamza_line_none'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
@@ -580,7 +586,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                                            'issue49_korean', 'issue49_korean_word',
                                                            'issue49_korean_pitch', 'issue49_korean_mid_pitch', 'issue49_korean_spelling',
                                                            'issue49_persian_unicode', 'issue49_persian_unicode_none',
-                                                           'issue49_persian_unicode_all', 'issue49_korean_english')
+                                                           'issue49_persian_unicode_all', 'issue49_korean_english',
+                                                           'issue49_hamza_line', 'issue49_hamza_line_none')
             self.emoji_case = spelling in ('issue49_emoji_some', 'issue49_emoji_split')
             self.version_case = spelling in ('issue49_version_some', 'issue49_version_split')
             self.before_version_debug = len(self.version_debug)
@@ -595,7 +602,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                                'issue49_heading', 'issue49_heading_split',
                                                'issue49_korean', 'issue49_korean_word',
                                                'issue49_korean_pitch', 'issue49_korean_mid_pitch', 'issue49_korean_spelling',
-                                               'issue49_persian_unicode', 'issue49_korean_english') else
+                                               'issue49_persian_unicode', 'issue49_korean_english', 'issue49_hamza_line') else
                                                self.symbols.SymbolLevel.ALL if spelling == 'issue49_persian_unicode_all' else
                                                self.symbols.SymbolLevel.MOST if spelling in ('pipeline_most', 'checkbox_checked_most')
                                                else self.symbols.SymbolLevel.NONE))
@@ -689,6 +696,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags:
                     raise AssertionError('NVDA lost the Persian character name: ' + ascii(tags))
+            if ((spelling is True and text in 'ٔأˈˌə̇αé⚽') or
+                    spelling in ('issue49_hamza_line', 'issue49_hamza_line_none')):
+                expected = {'ٔ': '`[.2hAm.0ze.0je.1ba.0la]',
+                            'أ': "`[.1A.0lef.2hAm.0z'e:']"}.get(text, self.symbol_tags.get(text))
+                tags = ' '.join(self.projected[self.before_projected:])
+                if expected not in tags:
+                    raise AssertionError('NVDA lost the reported character name: ' + ascii((text, tags)))
             if text in ('به علاوه', 'بعلاوه', '+'):
                 tags = ' '.join(self.projected[self.before_projected:])
                 expected = ("`[.0be.0A.1la.0v'e:']" if text == 'بعلاوه' else

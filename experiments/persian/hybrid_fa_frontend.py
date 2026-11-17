@@ -309,9 +309,19 @@ class DirectFirstPersian:
             if name is not None:
                 tag = name.text
         if tag is None:
-            # Keep unsupported Unicode identifiable in explicit spelling
-            # instead of dropping the entire speech job. Hex letters use the
-            # same Latin names as Pinglish; digits use Persian digit names.
+            # CLDR and the Persian alphabet provide localized names first.
+            # For any other assigned scalar, retain its standard name and
+            # speak it through the English voice rather than hexadecimal.
+            if __package__:
+                from .persian_unicode_names import official_name
+            else:
+                from persian_unicode_names import official_name
+            name = official_name(char)
+            if name:
+                tag = '`l1.0 ' + name + ' `l9.0'
+        if tag is None:
+            # Unnamed or unassigned scalars have no standard name. Keep them
+            # identifiable without dropping the rest of the speech job.
             pieces = [UNICODE_TAG, SYMBOL_TAGS['+']]
             for digit in format(ord(char), 'X'):
                 name = latin_name(digit)

@@ -105,10 +105,19 @@ def _accent_phrases(words):
 
 
 def proxy(tagged: str, *, continuation: bool = False) -> str | None:
-    """Use Korean prosody on grouped Persian syllables and punctuation."""
+    """Use Korean prosody on grouped Persian syllables and punctuation.
+
+    In a completed declarative phrase, start a donor phrase at the final
+    word's last primary stress (or secondary stress if no primary is marked).
+    This preserves the stressed ending in the listening comparison accepted
+    by the native speaker. Questions and continuing language switches retain
+    their existing grouping, and no Persian syllables are added or removed.
+    """
     matches = tuple(_TAG.finditer(tagged))
     if not matches:
         return None
+    ending_text = tagged[matches[-1].end():]
+    stressed_ending = not continuation and not re.search(r'[?؟][)\]}\s]*$', ending_text)
     syllables = _donor_syllables(matches)
     parts, phrase = [], []
     def flush(mark=''):
@@ -126,11 +135,22 @@ def proxy(tagged: str, *, continuation: bool = False) -> str | None:
         # being incorrectly classified as unstressed function words.
         marked = _SYLLABLE.findall(match.group())
         accented = int(not marked or bool(re.search(r'\.[12]', match.group())))
+        if stressed_ending and index == len(matches) - 1 and marked:
+            positions = [i for i, value in enumerate(marked) if value == '.1']
+            if not positions:
+                positions = [i for i, value in enumerate(marked) if value == '.2']
+            if positions:
+                boundary = positions[-1]
+                if boundary:
+                    prior_accent = int(any(value in ('.1', '.2') for value in marked[:boundary]))
+                    phrase.append((boundary, prior_accent))
+                flush()
+                phrase.append((syllables[index] - boundary, True))
+                continue
         phrase.append((syllables[index], accented))
-    last = tagged[matches[-1].end():]
     # A colon ending a Persian prosodic segment has the same donor ending as
     # a period. Colons inside a segment (for example in a time) remain intact.
-    ending = _punctuation(last).replace(':', '.')
+    ending = _punctuation(ending_text).replace(':', '.')
     flush(ending or (',' if continuation else '.'))
     return ' '.join(parts)
 

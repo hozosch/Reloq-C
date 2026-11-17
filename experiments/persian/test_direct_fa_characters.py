@@ -8,9 +8,10 @@ from pathlib import Path
 import random
 import re
 import string
+import unicodedata
 
 from hybrid_fa_frontend import DirectFirstPersian
-from persian_symbols import SYMBOL_TAGS
+from persian_symbols import SYMBOL_TAGS, UNICODE_TAG
 
 HERE = Path(__file__).resolve().parent
 
@@ -26,6 +27,8 @@ def main() -> None:
     values.update(map(ord, string.ascii_letters))
     values.update((0x0621, 0x0622, 0x0627, 0x0634, 0x0643, 0x0649, 0x064a,
                    0x06a9, 0x06cc, 0x200c, 0x200d, 0x02c8, 0x02cc, 0xfe0f,
+                   0x0654, 0x0623, 0x0307, 0x0259, 0x03b1, 0x00e9, 0x0416,
+                   0x12550, 0x13460, 0x18cff, 0x18e00, 0x2b81e, 0x3d000,
                    0x1f642, 0x1f1e9, 0x10ffff, 0xfb56, 0xfe8e))
     aliases = (HERE / 'direct_fa_characters.inc').read_text(encoding='ascii')
     values.update(int(cp, 16) for cp in re.findall(r'\{0x([0-9a-f]+)u, 0x[0-9a-f]+u\}', aliases))
@@ -54,6 +57,13 @@ def main() -> None:
             untouched = ctypes.create_string_buffer(b'keep', 5)
             assert native(invalid, untouched, len(untouched)) == 0
             assert untouched.value == b'keep'
+        for char in 'ˈˌə\u0307αé⚽🙂':
+            assert native_text(ord(char)) == SYMBOL_TAGS[char], char
+        assert native_text(ord('Ж')) == '`l1.0 cyrillic capital letter zhe `l9.0'
+        assert native_text(0x12550) == '`l1.0 cuneiform numeric sign one n01 `l9.0'
+        assert native_text(0x18cff) == '`l1.0 khitan small script character 18cff `l9.0'
+        assert native_text(0x3d000) == '`l1.0 small seal character 3d000 `l9.0'
+        assert native_text(0x0378).startswith(UNICODE_TAG) and not unicodedata.name('\u0378', '')
         untouched = ctypes.create_string_buffer(b'keep', 5)
         assert native(0x1f642, untouched, 3) == -1 and untouched.value == b'keep'
         assert native(0x1f642, None, 0) == -1

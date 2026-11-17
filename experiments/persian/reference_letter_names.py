@@ -4,8 +4,8 @@ from __future__ import annotations
 from espeak_worker import EspeakWorker
 from text_frontend import UnsupportedPronunciation, word_tag
 
-LETTERS = tuple(sorted('اآبپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیءۀةئؤإ'
-                       '\u064b\u064c\u064d\u064e\u064f\u0650\u0651\u0652\u0670', key=ord))
+LETTERS = tuple(sorted('اآأبپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیءۀةئؤإ'
+                       '\u064b\u064c\u064d\u064e\u064f\u0650\u0651\u0652\u0654\u0670', key=ord))
 
 
 def reference_tag(worker: EspeakWorker, char: str) -> str:

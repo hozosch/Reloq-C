@@ -1,6 +1,7 @@
 /* Persian standalone character naming in the shared, cross-platform core. */
 #include "direct_fa_characters.h"
 #include "direct_fa_letters.h"
+#include "reloq_unicode.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -57,16 +58,28 @@ int reloq_fa_direct_character(uint32_t codepoint,char *output,size_t capacity)
     if(name) {
         if(append(result,sizeof result,&used,name))return -1;
     } else {
-        char digits[9];
-        if(snprintf(digits,sizeof digits,"%X",(unsigned)codepoint)<1)return -1;
-        if(append(result,sizeof result,&used,fa_unicode_name) ||
-           append(result,sizeof result,&used," ") ||
-           append(result,sizeof result,&used,symbol_name('+')))return -1;
-        for(const char *digit=digits;*digit;++digit) {
-            const char *part=latin_name((unsigned char)*digit);
-            if(!part)part=symbol_name((unsigned char)*digit);
-            if(!part || append(result,sizeof result,&used," ") ||
-               append(result,sizeof result,&used,part))return -1;
+        /* Persian CLDR/letter names take priority. If Unicode assigns an
+         * English name but no Persian label is available, speak that name
+         * in the English core rather than reduce it to an opaque number. */
+        char english[512];
+        int named=reloq_unicode_name_english(codepoint,english,sizeof english);
+        if(named<0)return -1;
+        if(named>0) {
+            if(append(result,sizeof result,&used,"`l1.0 ") ||
+               append(result,sizeof result,&used,english) ||
+               append(result,sizeof result,&used," `l9.0"))return -1;
+        } else {
+            char digits[9];
+            if(snprintf(digits,sizeof digits,"%X",(unsigned)codepoint)<1)return -1;
+            if(append(result,sizeof result,&used,fa_unicode_name) ||
+               append(result,sizeof result,&used," ") ||
+               append(result,sizeof result,&used,symbol_name('+')))return -1;
+            for(const char *digit=digits;*digit;++digit) {
+                const char *part=latin_name((unsigned char)*digit);
+                if(!part)part=symbol_name((unsigned char)*digit);
+                if(!part || append(result,sizeof result,&used," ") ||
+                   append(result,sizeof result,&used,part))return -1;
+            }
         }
     }
     if(used>=capacity)return -1;

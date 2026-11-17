@@ -2,11 +2,15 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 import pprint
+import re
+import unicodedata
 
 from espeak_ng_probe import EspeakPhonemeProbe
 from espeak_worker import EspeakWorker
+from pinglish_frontend import LATIN_NAMES
 from test_selected_probe import engine, set_confirmed_persian_probe
 from text_frontend import native_sequence_accepted, translate_text, word_tag
 
@@ -30,7 +34,63 @@ NAMES = {
     '\u200f': 'نشانه راست به چپ', '■': 'مربع', '●': 'دایره',
     '°': 'درجه', '×': 'ضرب در', '÷': 'تقسیم بر', '±': 'مثبت منفی',
     '^': 'علامت کرت', '`': 'علامت گراو', '~': 'تیلدا',
+    # The reported dictionary pronunciation uses IPA stress, schwa and
+    # combining-dot marks. Keep their names useful in character navigation.
+    'ˈ': 'تکیه اصلی', 'ˌ': 'تکیه فرعی', 'ə': 'شوا', 'Ə': 'شوای بزرگ',
+    'ː': 'علامت کشش صدا', 'ˑ': 'علامت نیم کشش صدا',
+    '\u0300': 'اکسان گراو', '\u0301': 'اکسان تیز',
+    '\u0302': 'اکسان سیرکومفلکس', '\u0303': 'علامت تیلدا',
+    '\u0304': 'خط بالا', '\u0306': 'علامت بریو', '\u0307': 'نقطه بالا',
+    '\u0308': 'دو نقطه بالا', '\u030a': 'حلقه بالا', '\u030b': 'دو اکسان تیز',
+    '\u030c': 'علامت کارون', '\u031b': 'شاخ', '\u0323': 'نقطه پایین',
+    '\u0327': 'سدی زیر', '\u0328': 'اوگونک', '\u032f': 'علامت غیر هجایی',
+    '\u0331': 'خط پایین', '\u0338': 'خط مورب روی حرف',
+    '\u0655': 'همزه پایین',
 }
+
+GREEK = (
+    ('Α', 'α', 'آلفا'), ('Β', 'β', 'بتا'), ('Γ', 'γ', 'گاما'),
+    ('Δ', 'δ', 'دلتا'), ('Ε', 'ε', 'اپسیلون'), ('Ζ', 'ζ', 'زتا'),
+    ('Η', 'η', 'اتا'), ('Θ', 'θ', 'تتا'), ('Ι', 'ι', 'یوتا'),
+    ('Κ', 'κ', 'کاپا'), ('Λ', 'λ', 'لامبدا'), ('Μ', 'μ', 'مو'),
+    ('Ν', 'ν', 'نو'), ('Ξ', 'ξ', 'کسی'), ('Ο', 'ο', 'امیکرون'),
+    ('Π', 'π', 'پی'), ('Ρ', 'ρ', 'رو'), ('Σ', 'σ', 'سیگما'),
+    ('Τ', 'τ', 'تاو'), ('Υ', 'υ', 'اوپسیلون'), ('Φ', 'φ', 'فی'),
+    ('Χ', 'χ', 'خی'), ('Ψ', 'ψ', 'پسی'), ('Ω', 'ω', 'اُمگا'),
+)
+
+CLDR_OVERRIDES = {
+    '∏': 'حاصل ضرب چندتایی', '∑': 'حاصل جمع چندتایی',
+    '⋁': 'یا چندتایی', '⋂': 'اشتراک چندتایی', '⋃': 'اجتماع چندتایی',
+    '🅰': 'دکمه گروه خونی ای', '🅱': 'دکمه گروه خونی بی',
+    '🆎': 'دکمه گروه خونی ای بی', '🅾': 'دکمه گروه خونی او',
+    '🆑': 'دکمه سی ال', '🆒': 'دکمه کول', '🆓': 'دکمه رایگان',
+    '🆕': 'دکمه جدید', '🆖': 'دکمه ان جی', '🆗': 'دکمه اوکی',
+    '🆙': 'دکمه بالا', '🆚': 'دکمه در برابر',
+}
+
+
+def named_symbols():
+    """Prefer familiar explicit names; use pinned CLDR names for the rest."""
+    source = Path(__file__).resolve().parents[2] / 'reference-cldr/persian/fa-annotations-single.json'
+    data = json.loads(source.read_text(encoding='utf8'))
+    if data.get('release') != '48' or data.get('license') != 'Unicode-3.0':
+        raise RuntimeError('unexpected Persian CLDR source')
+    names = {}
+    for item in data['entries']:
+        char = item['char']
+        if len(char) != 1 or char in names:
+            raise ValueError('invalid or duplicate single-character annotation')
+        text = CLDR_OVERRIDES.get(char, item['name'])
+        # Quotation/parenthesis marks in descriptive labels are not spoken
+        # as literal symbols; they can also insert unsupported pause phones.
+        names[char] = ' '.join(re.sub(r'[«»()!]', ' ', text).split())
+    names.update(NAMES)
+    for upper, lower, name in GREEK:
+        names.setdefault(upper, 'حرف بزرگ یونانی ' + name)
+        names.setdefault(lower, 'حرف کوچک یونانی ' + name)
+    names.setdefault('ς', 'حرف کوچک یونانی سیگمای پایانی')
+    return names
 
 
 def main():
@@ -40,6 +100,7 @@ def main():
     parser.add_argument('--data-parent', type=Path, required=True)
     parser.add_argument('--probe', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=Path(__file__).with_name('persian_symbols.py'))
+    parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
     set_confirmed_persian_probe()
     native = engine(args.probe, 0x90000)
@@ -49,11 +110,37 @@ def main():
             if api.version != '1.53.0':
                 raise RuntimeError('this table requires eSpeak NG 1.53.0')
             values = {}
-            for char, name in NAMES.items():
+            for char, name in named_symbols().items():
                 parts = translate_text(api, name)
                 if len(parts) != 1 or parts[0].language != 'fa':
                     raise RuntimeError(f'unsupported symbol name {name!r}: {parts!r}')
                 values[char] = parts[0].text
+            def fa_phrase(text):
+                parts = translate_text(api, text)
+                if len(parts) != 1 or parts[0].language != 'fa':
+                    raise RuntimeError(f'unsupported Persian descriptor {text!r}')
+                return parts[0].text
+            prefixes = {True: fa_phrase('حرف بزرگ لاتین'), False: fa_phrase('حرف کوچک لاتین')}
+            with_mark, conjunction = fa_phrase('با'), fa_phrase('و')
+            accents = frozenset('\u0300\u0301\u0302\u0303\u0304\u0306\u0307\u0308'
+                                '\u030a\u030b\u030c\u031b\u0323\u0327\u0328\u0331')
+            # Canonical Unicode decomposition gives an accurate, distinct
+            # description of accented Latin letters even without a CLDR label.
+            for codepoint in range(1, 0x110000):
+                char = chr(codepoint)
+                name = unicodedata.name(char, '')
+                if char in values or not name.startswith(('LATIN SMALL LETTER ', 'LATIN CAPITAL LETTER ')):
+                    continue
+                decomp = unicodedata.normalize('NFD', char)
+                if (len(decomp) < 2 or not decomp[0].isascii() or not decomp[0].isalpha() or
+                        any(mark not in accents for mark in decomp[1:])):
+                    continue
+                tags = [prefixes[name.startswith('LATIN CAPITAL')], LATIN_NAMES[decomp[0].lower()], with_mark]
+                for i, mark in enumerate(decomp[1:]):
+                    if i:
+                        tags.append(conjunction)
+                    tags.append(values[mark])
+                values[char] = ' '.join(tags)
             for start in (ord('0'), 0x0660, 0x06f0):
                 for code in range(start, start + 10):
                     char = chr(code)
@@ -78,8 +165,12 @@ def main():
               'SYMBOL_TAGS = ' + pprint.pformat(dict(sorted(values.items(), key=lambda x: ord(x[0]))),
                                                 width=100, sort_dicts=False) + '\n'
               'UNICODE_TAG = ' + repr(unicode_name) + '\n')
-    args.output.write_text(output, encoding='utf8', newline='\n')
-    print(f'Generated {len(values)} validated Persian symbol and digit names.')
+    if args.check:
+        if args.output.read_text(encoding='utf8') != output:
+            raise SystemExit('Persian symbol names need regeneration')
+    else:
+        args.output.write_text(output, encoding='utf8', newline='\n')
+    print(f'{"Checked" if args.check else "Generated"} {len(values)} validated Persian symbol and digit names.')
 
 
 if __name__ == '__main__':

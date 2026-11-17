@@ -397,6 +397,23 @@ class PersianProbeLanguageEngine(LanguageEngine):
             ordinary_text = (text is not None and '`' not in text and
                              (not isinstance(part, EciText) or
                               not part.character_mode and not part.is_control))
+            # Name an individually navigated character with the real English
+            # engine when no Persian label exists. Routing it as a language
+            # run also keeps Korean pitch planning away from the English name
+            # and preserves indexes around the switch.
+            if (logical[0] in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) and
+                    text is not None and len(text) == 1 and ord(text) > 127 and
+                    not (isinstance(part, EciText) and part.is_control)):
+                engine = self._activate(logical)
+                if isinstance(engine, OwnedPersianEngine):
+                    analysis = engine._frontend.analyze_character(text)
+                    tag = analysis.parts[0].text
+                    if tag.startswith('`l1.0 ') and tag.endswith(' `l9.0'):
+                        select(self._key(US_ENGLISH.id, logical[1]))
+                        name = tag[len('`l1.0 '):-len(' `l9.0')]
+                        output.append(replace(part, text=name, character_mode=False)
+                                      if isinstance(part, EciText) else name)
+                        continue
             if position in pinglish_runs and logical[0] == PINGLISH_PROBE.id:
                 english = self._key(US_ENGLISH.id, logical[1])
                 for use_english, fragment in pinglish_runs[position]:

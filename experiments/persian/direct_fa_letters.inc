@@ -2,6 +2,7 @@
  * See reference-espeak/persian and compile_direct_letters.py. */
     {0x0621u, "`[.1hAm.0z'e:']"},
     {0x0622u, "`[.1a]"},
+    {0x0623u, "`[.1A.0lef.2hAm.0z'e:']"},
     {0x0624u, "`[.1vav.2hAm.0z'e:']"},
     {0x0625u, "`[.1A.0lef.2hAm.0ze.2je.0zir]"},
     {0x0626u, "`[.1je.2hAm.0z'e:']"},
@@ -40,6 +41,7 @@
     {0x0650u, "`[.1'e:']"},
     {0x0651u, "`[.1tAS.0did]"},
     {0x0652u, "`[.1sa.0ken]"},
+    {0x0654u, "`[.2hAm.0ze.0je.1ba.0la]"},
     {0x0670u, "`[.1A.0lef.1mAR.0su.2r'e:']"},
     {0x067eu, "`[.1p'e:']"},
     {0x0686u, "`[.1C'e:']"},

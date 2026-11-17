@@ -10,6 +10,7 @@
 #include "reloq_unicode_multilingual.inc"
 #include "reloq_unicode_greek.inc"
 #include "reloq_unicode_emoji.inc"
+#include "reloq_unicode_official.inc"
 #define COUNT(a) (sizeof(a)/sizeof *(a))
 #define STR(i) ((const char *)unicode_strings+(i))
 #define NAME_CAPACITY 1024
@@ -231,6 +232,43 @@ static const char *name(uint32_t c,char tmp[NAME_CAPACITY],int en)
         c-=0xac00;snprintf(tmp,NAME_CAPACITY,"%s %s%s%s",en?"hangul syllable":"Hangul Silbe",l[c/588],v[c%588/28],t[c%28]);return tmp;
     }
     return NULL;
+}
+
+int reloq_unicode_name_english(uint32_t cp,char *output,size_t capacity)
+{
+    if(!cp || cp>0x10ffffu || (cp>=0xd800u && cp<=0xdfffu))return 0;
+    if(!output || !capacity)return -1;
+    char temporary[NAME_CAPACITY],clean[NAME_CAPACITY];
+    temporary[0]=0;
+    for(size_t i=0;i<COUNT(unicode_official_ranges);++i) {
+        if(cp>=unicode_official_ranges[i].first && cp<=unicode_official_ranges[i].last) {
+            snprintf(temporary,sizeof temporary,"%s %X",unicode_official_ranges[i].prefix,cp);
+            break;
+        }
+    }
+    size_t lo=0,hi=COUNT(unicode_official_names);
+    while(lo<hi){size_t mid=lo+(hi-lo)/2;if(unicode_official_names[mid].cp<cp)lo=mid+1;else hi=mid;}
+    const char *value=lo<COUNT(unicode_official_names)&&unicode_official_names[lo].cp==cp?
+        unicode_official_names[lo].name:temporary[0]?temporary:name(cp,temporary,1);
+    if(!value)return 0;
+    size_t used=0;
+    for(;*value;++value) {
+        unsigned char c=(unsigned char)*value;
+        if(c>='A' && c<='Z')c=(unsigned char)(c+'a'-'A');
+        if(c=='-')c=' ';
+        /* Standard Unicode names contain only ASCII letters, digits,
+         * spaces and hyphens. Do not introduce arbitrary inline ECI tags. */
+        if(!((c>='a'&&c<='z')||(c>='0'&&c<='9')||c==' '))return 0;
+        if(c==' ' && (!used || clean[used-1]==' '))continue;
+        if(used+1>=sizeof clean)return -1;
+        clean[used++]=(char)c;
+    }
+    if(used && clean[used-1]==' ')--used;
+    if(!used)return 0;
+    if(used>=capacity)return -1;
+    clean[used]=0;
+    memcpy(output,clean,used+1);
+    return 1;
 }
 static const char *language_name(uint32_t cp,int locale,char tmp[NAME_CAPACITY])
 {

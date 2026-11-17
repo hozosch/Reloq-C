@@ -23,7 +23,7 @@ def reference_tests(frontend, reference):
                       frontend, allow_fallback=True)
         assert job.tagged == tag and not job.needs_native_validation
         assert [part.value for part in job.parts if isinstance(part, EciIndex)] == [1, 2]
-        if char in 'ًٌٍَُِّْٰ':
+        if char in 'ًٌٍَُِّْٰٔ':
             # A combining mark sent alone must also be named if the caller
             # did not explicitly select character mode.
             assert project_resilient((char,), frontend).tagged == tag, char
@@ -44,7 +44,7 @@ def reference_tests(frontend, reference):
         assert job.tagged == name.parts[0].text
         assert [part.value for part in job.parts if isinstance(part, EciIndex)] == [5, 6]
     assert frontend.analyze_character('ك').parts == frontend.analyze_character('ک').parts
-    assert frontend.analyze_character('🙂').parts[0].text.startswith(UNICODE_TAG)
+    assert frontend.analyze_character('🙂').parts[0].text == SYMBOL_TAGS['🙂']
     mixed = project(('سلام ', EciIndex(7), EciText('؟', character_mode=True),
                      EciIndex(8), ' دنیا'), frontend, allow_fallback=True)
     assert mixed.tagged == (frontend.analyze_direct('سلام ').parts[0].text +
