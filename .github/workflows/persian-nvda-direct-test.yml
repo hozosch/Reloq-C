@@ -2,13 +2,14 @@ name: Persian NVDA direct test
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117]
+    branches: [codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117]
     paths:
       - .github/workflows/persian-nvda-direct-test.yml
       - experiments/persian/nvda_driver_probe.py
       - experiments/persian/direct_fa_sequence.py
       - experiments/persian/test_nvda_real_plugin.py
       - experiments/persian/test_unicode_fallback_routing.py
+      - experiments/persian/test_us_contour_runtime.py
 permissions:
   contents: read
   actions: read
@@ -62,11 +63,13 @@ jobs:
           $data = (Resolve-Path portable-nvda/synthDrivers).Path
           python -B experiments/persian/test_unicode_fallback_routing.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Mixed Unicode name routing failed' }
+          python -B experiments/persian/test_us_contour_runtime.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian US contour, weak words or final vowels failed' }
       - name: Build private NVDA test add-on
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          if [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
           dll=$(find candidate -name eci.dll -print -quit)
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
       - name: Test in real NVDA

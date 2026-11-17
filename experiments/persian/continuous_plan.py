@@ -39,6 +39,16 @@ _EN_VOWELS = {'i': 'i', 'I': 'i', 'e': 'e', 'E': 'A', 'a': 'a', 'A': 'a',
 _GENERATED_FA_PROXY = re.compile(r'`\[(?:\.[012]m[Aaeiou])+\]')
 
 
+def word_boundary(text, matches, word):
+    """Place private word marks before weak controls or punctuation gaps."""
+    start, end = matches[word - 1].end(), matches[word].start()
+    gap = text[start:end]
+    if any(char in gap for char in '.,?!:;()[]{}'):
+        return start
+    weak = re.search(r'`00\s*$', gap)
+    return start + weak.start() if weak else end
+
+
 def _f32(value):
     return struct.unpack('=f', struct.pack('=f', value))[0]
 
@@ -140,13 +150,29 @@ def english_phone_proxy(en, fa, text):
     return english_proxy(en, text)
 
 
-def persian_proxy_for_english(text, en):
+def persian_proxy_for_english(text, en, *, mark_weak=False):
     # The English pilot cannot time long spans composed entirely of .0
     # syllables reliably: they can stretch manyfold or fail synthesis. Give
     # each pilot-only word a uniform anchor. The separately captured Persian
     # speech keeps its unmarked syllables and its own timing.
-    if _TAG.search(text) and not re.search(r'\.[12]', text):
+    if not mark_weak and _TAG.search(text) and not re.search(r'\.[12]', text):
         text = _TAG.sub(lambda match: match.group().replace('.0', '.1', 1), text)
+    def word_controls(value):
+        if not mark_weak:
+            return value
+        # The US parser otherwise promotes an all-zero tag to a stressed
+        # word. Its own weak-word control preserves the Persian phrase role.
+        output, cursor = [], 0
+        for match in _TAG.finditer(value):
+            output.append(value[cursor:match.start()])
+            marks = _SYLLABLE.findall(match.group(1))
+            if marks and all(stress == '0' for stress, _ in marks) and not re.search(
+                    r'`00\s*$', value[:match.start()]):
+                output.append('`00 ')
+            output.append(match.group())
+            cursor = match.end()
+        output.append(value[cursor:])
+        return ''.join(output)
     tags = _converted(text, _FA_TO_EN)
     if tags:
         def sequence(value):
@@ -162,7 +188,7 @@ def persian_proxy_for_english(text, en):
                            sequence(tag[2:-1]) == sequence(shown[0]) for tag in tags)
         if accepted:
             it = iter(tags)
-            return _TAG.sub(lambda _match: next(it), text)
+            return word_controls(_TAG.sub(lambda _match: next(it), text))
     vowels = {'A': 'A', 'a': 'a', 'e': 'E', 'i': 'i', 'o': 'o', 'u': 'u'}
     result = []
     for match in _TAG.finditer(text):
@@ -175,7 +201,7 @@ def persian_proxy_for_english(text, en):
     if not result:
         raise ValueError('Persian proxy has no words')
     it = iter(result)
-    return _TAG.sub(lambda _match: next(it), text)
+    return word_controls(_TAG.sub(lambda _match: next(it), text))
 
 
 def _spelling_proxy(text, segment, spelling_spans):
@@ -197,9 +223,12 @@ def _context(parts, language, en, fa, word_markers, source_marks=(), guarded_spa
             inserts = [(offset, order, mark) for segment, offset, order, mark, _ in source_marks
                        if segment == i]
             if language == 'fa':
-                inserts.extend((match.start(), -1, word_markers[i, word])
-                               for word, match in enumerate(_TAG.finditer(part.text))
-                               if word and (i, word) in word_markers)
+                matches = tuple(_TAG.finditer(part.text))
+                for word, match in enumerate(matches):
+                    if not word or (i, word) not in word_markers:
+                        continue
+                    boundary = word_boundary(part.text, matches, word)
+                    inserts.append((boundary, -1, word_markers[i, word]))
             cursor = 0
             guarded = [(start, end) for segment, start, end in guarded_spans if segment == i]
             spelled = [(start, end) for segment, start, end in spelling_spans if segment == i]
@@ -220,6 +249,9 @@ def _context(parts, language, en, fa, word_markers, source_marks=(), guarded_spa
                     raise ValueError('invalid source index offset')
                 append_text(cursor, offset)
                 result.append(EciIndex(mark))
+                if (language == 'fa' and mark in word_markers.values() and offset < len(part.text) and
+                        part.text[offset] in '.,?!:;()[]{}'):
+                    result.append(' ')
                 cursor = offset
             append_text(cursor, len(part.text))
         elif language == 'fa':
@@ -238,6 +270,29 @@ def _word_markers(parts):
                     markers[i, word] = next_index
                     next_index += 1
     return markers
+
+
+def indexed_us_proxy(tagged, en, marks):
+    """Make a US prosody proxy with marks before whole Persian words."""
+    proxy = persian_proxy_for_english(tagged, en, mark_weak=True)
+    # The Persian voice's bracket pauses intentionally share the comma
+    # contour. Preserve that choice in the US pilot without touching tags.
+    proxy = re.sub(r'`\[[^]]+\]|[()\[\]{}]',
+                   lambda match: match.group() if match.group().startswith('`[') else ',', proxy)
+    matches = tuple(_TAG.finditer(proxy))
+    if len(matches) != len(marks) + 1:
+        raise ValueError('US proxy changed the Persian word count')
+    result, previous = [], 0
+    for i, (match, mark) in enumerate(zip(matches[1:], marks), 1):
+        boundary = word_boundary(proxy, matches, i)
+        result.extend((proxy[previous:boundary], EciIndex(mark)))
+        if boundary < len(proxy) and proxy[boundary] in '.,?!:;()[]{}':
+            # A space before punctuation leaves the sound unchanged but
+            # keeps the provider's index callback at the preceding word.
+            result.append(' ')
+        previous = boundary
+    result.append(proxy[previous:])
+    return tuple(result)
 
 
 def _last_audible(pcm, rate, *, native=None):
@@ -373,7 +428,7 @@ def _bracket_boundary(parts, edge):
 
 
 def _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate, check=None, *,
-                       native=None, native_edges=None, only=None):
+                       native=None, native_edges=None, only=None, retain_brackets=True):
     av = None
     for i, part in enumerate(parts):
         if check:
@@ -386,7 +441,7 @@ def _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language,
         # the other language. A connected edge continues to use the shared
         # contour, including the previously selected NVDA-to-Ach transition.
         adjoining = tuple(edge for edge in (i, i + 1) if 0 < edge < len(parts))
-        if adjoining and all(_bracket_boundary(parts, edge) for edge in adjoining):
+        if retain_brackets and adjoining and all(_bracket_boundary(parts, edge) for edge in adjoining):
             continue
         start = round(bounds[i] * 1000 / rate)
         end = min(round(bounds[i + 1] * 1000 / rate), item.ticks[-1] + 1)
@@ -451,6 +506,49 @@ def _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language,
             row.controls[1] = _f32(target)
 
 
+def fit_us_word_pitch(item, bounds, donor, donor_bounds, target_markers, donor_markers,
+                      rate, capture_api, check=None):
+    """Fit complete US word contours, including each final voiced vowel.
+
+    Markers belong to the same generated Persian words in both captures.
+    The source language supplies the frame timing and all acoustic controls
+    other than F0. If a word boundary is unavailable, leave the caller's
+    existing phrase-level fit intact rather than guessing an alignment.
+    """
+    if capture_api.fit_pitch is None or capture_api.dense_curve is None:
+        return False
+    count = len(target_markers) + 1
+    if len(donor_markers) + 1 != count:
+        raise ValueError('US/Persian word markers differ')
+    target = [round(bounds[0] * 1000 / rate)]
+    target.extend(round(item.indexes[m] * 1000 / rate) for m in target_markers)
+    target.append(min(round(bounds[1] * 1000 / rate), item.ticks[-1] + 1))
+    source = [round(donor_bounds[0] * 1000 / rate)]
+    source.extend(round(donor.indexes[m] * 1000 / rate) for m in donor_markers)
+    source.append(min(round(donor_bounds[1] * 1000 / rate), donor.ticks[-1] + 1))
+    if (any(a >= b for a, b in zip(target, target[1:])) or
+            any(a >= b for a, b in zip(source, source[1:]))):
+        return False
+    curve = _dense(donor, 1, check, native=capture_api.dense_curve)
+    planned = []
+    for i in range(count):
+        left = bisect_left(donor.ticks, source[i])
+        right = bisect_left(donor.ticks, source[i + 1])
+        voiced = [row.tick for row in donor.frames[left:right]
+                  if row.controls[2] > 0 and row.controls[1] > 0]
+        if len(voiced) < 2 or voiced[0] >= voiced[-1]:
+            return False
+        planned.append((target[i], target[i + 1], voiced[0], voiced[-1]))
+    for start, end, first, last in planned:
+        if check:
+            check()
+        status = capture_api.fit_pitch(item.frames, len(item.frames), curve, len(curve),
+                                       start, end, first, last)
+        if status:
+            raise RuntimeError('could not align US pitch to Persian word')
+    return True
+
+
 @dataclass
 class SentencePlan:
     frames: object
@@ -481,7 +579,8 @@ class SentencePlan:
 
 def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarded_spans=(),
                  spelling_spans=(), check=None, trusted_fa=False, validate_in_capture=False,
-                 start_prefix=None, parallel_pilot=None, fast_initial=False, fast_minimum_ms=300):
+                 start_prefix=None, parallel_pilot=None, fast_initial=False, fast_minimum_ms=300,
+                 us_pilot=False):
     parts = tuple(parts)
     if not parts or len(parts) > 32 or {p.language for p in parts} != {'fa', 'en-us'}:
         raise ValueError('expected a bounded mixed English/Persian clause')
@@ -497,7 +596,9 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
             check()
         return CapturedRows.from_capture(capture_api.capture(voice, planned, maximum=maximum, audio=audio),
                                          native=capture_api.frame_ticks)
-    all_bracketed = all(_bracket_boundary(parts, edge) for edge in range(1, len(parts)))
+    all_bracketed = (not us_pilot and
+                     all(_bracket_boundary(parts, edge) for edge in range(1, len(parts))))
+    word_markers = _word_markers(parts)
     pilot, pilot_parts, pilot_pitch, pilot_bounds = None, [], (), ()
     def contour(item, *, controls_only=False):
         nonlocal native_pitch
@@ -523,6 +624,21 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
         for index, part in enumerate(parts):
             if index:
                 pilot_parts.extend((' ', EciIndex(index)))
+            if us_pilot:
+                if part.language == 'fa':
+                    if not trusted_fa and any(
+                            not native_tag_accepted(m.group(), fa._phonemes_for_probe(m.group()))
+                            for m in _TAG.finditer(part.text)):
+                        raise ValueError('Persian proxy was rejected')
+                    marks = tuple(word_markers[index, word]
+                                  for word in range(1, len(tuple(_TAG.finditer(part.text)))))
+                    # Mixed jobs are split at a prose colon; keep the
+                    # established full-stop contour for that boundary.
+                    marked = re.sub(r':(?=\s*$)', '.', part.text)
+                    pilot_parts.extend(indexed_us_proxy(marked, en, marks))
+                else:
+                    pilot_parts.append(_spelling_proxy(part.text, index, spelling_spans))
+                continue
             proxy = (part.text if part.language == 'fa' else
                      english_proxy(en, _spelling_proxy(part.text, index, spelling_spans)))
             if part.language == 'fa':
@@ -538,9 +654,8 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                 raise ValueError('invalid generated English proxy')
             pilot_parts.append(proxy)
         if parallel_pilot is None:
-            pilot = get(fa, pilot_parts)
+            pilot = get(en if us_pilot else fa, pilot_parts)
             pilot_pitch, pilot_bounds = contour(pilot)
-    word_markers = _word_markers(parts)
     source_events = tuple(source_events)
     guarded_spans = tuple(guarded_spans)
     spelling_spans = tuple(spelling_spans)
@@ -557,6 +672,17 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
             raise ValueError('invalid source index')
         source_marks.append((segment, offset, order, next_mark + order, value))
     contexts, edges = {}, {}
+    def fit_us_segments(item, bounds, donor, *, only=None):
+        for segment, part in enumerate(parts):
+            if part.language != 'fa' or only is not None and segment not in only:
+                continue
+            marks = tuple(word_markers[segment, word]
+                          for word in range(1, len(tuple(_TAG.finditer(part.text)))))
+            donor_start = 0 if segment == 0 else donor.indexes[segment]
+            donor_end = (len(donor.pcm) // 2 if segment + 1 == len(parts)
+                         else donor.indexes[segment + 1])
+            fit_us_word_pitch(item, (bounds[segment], bounds[segment + 1]), donor,
+                              (donor_start, donor_end), marks, marks, rate, capture_api, check)
     voices = (('fa', fa), ('en-us', en))
     prepared = {}
     if start_prefix is not None:
@@ -576,8 +702,10 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                       capture_api._controls_only is not None and capture_api._sample_count is not None and
                       not all_bracketed)
     def submit_pilot(*, audio):
-        return parallel_pilot.submit(parts=pilot_parts, prefix=fa.prefix, validate=fa.validate,
-                                     parameters=fa.owner._engine_parameters[fa.key[0]],
+        pilot_voice = en if us_pilot else fa
+        return parallel_pilot.submit(parts=pilot_parts, prefix=pilot_voice.prefix,
+                                     validate=False if us_pilot else fa.validate,
+                                     parameters=pilot_voice.owner._engine_parameters[pilot_voice.key[0]],
                                      dictionary=fa.owner._dictionary_path,
                                      cancelled=fa.owner._cancelled, maximum=maximum, audio=audio)
     def collect_pilot(*, can_fallback):
@@ -593,7 +721,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                 raise
             if check:
                 check()
-            return get(fa, pilot_parts), True
+            return get(en if us_pilot else fa, pilot_parts), True
     if parallel_pilot is not None and not all_bracketed:
         if check:
             check()
@@ -602,7 +730,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
         except (RuntimeError, OSError):
             if check:
                 check()
-            pilot = get(fa, pilot_parts)
+            pilot = get(en if us_pilot else fa, pilot_parts)
             pilot_pitch, pilot_bounds = contour(pilot)
             fast_pilot = False
     try:
@@ -626,7 +754,9 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                     _fit_context_pitch(item, bounds, quick_pitch, quick_bounds, parts, language,
                                        rate, check, native=native_pitch if item.ticks[-1] <= 60000 else None,
                                        native_edges=native_edges if item.ticks[-1] <= 60000 else None,
-                                       only=(0,))
+                                       only=(0,), retain_brackets=not (us_pilot and language == 'fa'))
+                    if us_pilot and language == 'fa':
+                        fit_us_segments(item, bounds, quick, only=(0,))
                     if start_prefix(item, bounds, source_marks, capture_api, minimum_ms=fast_minimum_ms):
                         early = (language, item, bounds)
                         contexts[language], edges[language] = item, bounds
@@ -637,7 +767,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                             raise
                         if check:
                             check()
-                        pilot = get(fa, pilot_parts)
+                        pilot = get(en if us_pilot else fa, pilot_parts)
                         pilot_pitch, pilot_bounds = contour(pilot)
                     if early is not None:
                         continue
@@ -649,10 +779,16 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                     _fit_context_pitch(early_item, early_bounds, pilot_pitch, pilot_bounds, parts,
                                        early_language, rate, check,
                                        native=native_pitch if early_item.ticks[-1] <= 60000 else None,
-                                       native_edges=native_edges if early_item.ticks[-1] <= 60000 else None)
+                                       native_edges=native_edges if early_item.ticks[-1] <= 60000 else None,
+                                       retain_brackets=not (us_pilot and early_language == 'fa'))
+                    if us_pilot and early_language == 'fa':
+                        fit_us_segments(early_item, early_bounds, pilot)
             _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language, rate, check,
                                native=native_pitch if item.ticks[-1] <= 60000 else None,
-                               native_edges=native_edges if item.ticks[-1] <= 60000 else None)
+                               native_edges=native_edges if item.ticks[-1] <= 60000 else None,
+                               retain_brackets=not (us_pilot and language == 'fa'))
+            if us_pilot and language == 'fa':
+                fit_us_segments(item, bounds, pilot)
             contexts[language], edges[language] = item, bounds
             if start_prefix is not None and language == parts[0].language and early is None:
                 start_prefix(item, bounds, source_marks, capture_api)

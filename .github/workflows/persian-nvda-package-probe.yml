@@ -2,7 +2,7 @@ name: Persian and Pinglish NVDA test package
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117]
+    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117]
     paths:
       - experiments/persian/build_experimental_nvda.py
       - experiments/persian/select_windows_acoustic_run.py
@@ -52,6 +52,7 @@ on:
       - experiments/persian/test_fa_stress_fallback.py
       - experiments/persian/test_unicode_fallback_routing.py
       - experiments/persian/test_fa_finnish_contour.py
+      - experiments/persian/test_us_contour_runtime.py
       - experiments/persian/compile_fa_stress_classes.py
       - reference-lilak/persian/**
       - experiments/persian/test_direct_fa_compounds.py
@@ -204,7 +205,9 @@ jobs:
           python -B experiments/persian/test_korean_donor_span.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Native Korean donor selection failed' }
           python -B experiments/persian/test_fa_finnish_contour.py --library "$dll"
-          if ($LASTEXITCODE -ne 0) { throw 'Persian Finnish contour or controls failed' }
+          if ($LASTEXITCODE -ne 0) { throw 'Persian US contour or controls failed' }
+          python -B experiments/persian/test_us_contour_runtime.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian US contour, weak words or final vowels failed' }
           python -B experiments/persian/compare_korean_sources.py --candidate "$dll" --espeak-library "$espeak" --data-parent "$data" --output persian-timing/korean-source-comparison.wav
           if ($LASTEXITCODE -ne 0) { throw 'Korean reference and runtime comparison failed' }
           python -B experiments/persian/compare_korean_grouping.py --candidate "$dll" --espeak-library "$espeak" --data-parent "$data" --output persian-timing/korean-grouping-comparison.wav
@@ -227,7 +230,9 @@ jobs:
           python -B experiments/persian/test_persian_number_boundaries.py --library "$common"
           if ($LASTEXITCODE -ne 0) { throw 'Shared ECI Persian numeric boundary pronunciation failed' }
           python -B experiments/persian/test_fa_finnish_contour.py --library "$common"
-          if ($LASTEXITCODE -ne 0) { throw 'Shared ECI Persian Finnish contour failed' }
+          if ($LASTEXITCODE -ne 0) { throw 'Shared ECI Persian US contour failed' }
+          python -B experiments/persian/test_us_contour_runtime.py --library "$common"
+          if ($LASTEXITCODE -ne 0) { throw 'Shared ECI Persian US contour failed' }
           python -B experiments/persian/test_fa_stress_policy.py --library "$common"
           if ($LASTEXITCODE -ne 0) { throw 'Persian word stress failed' }
           python -B experiments/persian/test_fa_stress_fallback.py --library "$common"
@@ -281,13 +286,15 @@ jobs:
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci.dll -print -quit)
-          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version 1.5.0-dev142 --output dist/reloq-c-persian-pinglish-1.5.0-dev142.nvda-addon
+          if [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; else version=1.5.0-dev142; fi
+          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
       - name: Test the candidate in real NVDA
         shell: pwsh
         env:
           PYTHONIOENCODING: utf-8
         run: |
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon dist/reloq-c-persian-pinglish-1.5.0-dev142.nvda-addon --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
+          $addon = (Get-ChildItem dist -Filter *.nvda-addon | Select-Object -First 1).FullName
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon "$addon" --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
           if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA Persian profile test failed' }
       - uses: actions/upload-artifact@v4
         with:

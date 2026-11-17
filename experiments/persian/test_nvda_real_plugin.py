@@ -354,7 +354,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                ('fa_IR', 'کتاب را', 'issue49_weak_object'),
                                ('fa_IR', 'NVDA را', 'issue49_weak_english_host'),
                                ('fa_IR', 'را', 'issue49_weak_isolated'),
-                               ('fa_IR', 'من کتاب', 'issue49_weak_pronoun')))
+                               ('fa_IR', 'من کتاب', 'issue49_weak_pronoun'),
+                               ('fa_IR', 'اسلش', 'issue49_weak_eslash'),
+                               ('fa_Latn', 'eslash', 'issue49_weak_eslash')))
             # Capture Finnish-contour samples through NVDA's preprocessing,
             # speech manager, driver and packaged Windows DLL.
             passage = ('سلام دوستان. امروز می‌خواهم درباره یک کتاب صحبت کنم. '
@@ -695,7 +697,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             'issue49_weak_object': '`[.0ra]',
                             'issue49_weak_english_host': '`[.0ra]',
                             'issue49_weak_isolated': '`[.1ra]',
-                            'issue49_weak_pronoun': '`[.1mAn]'}[spelling]
+                            'issue49_weak_pronoun': '`[.1mAn]',
+                            'issue49_weak_eslash': '`[.0es.1lAS]'}[spelling]
                 if expected not in tags:
                     raise AssertionError('NVDA lost contextual word stress: ' + ascii((text, tags)))
             if spelling in ('tags_slow', 'tags_fast', 'tags_pitch', 'tags_phonemes'):

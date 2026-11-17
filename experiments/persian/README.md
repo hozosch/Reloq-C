@@ -14,12 +14,12 @@ existing reference in several contexts; unknown forms retain the fallback.
 The NVDA adapter also suppresses redundant emoji presentation selectors split
 by source indexes, while letting NVDA's symbol level and dictionaries take precedence.
 
-### Current melody and word stress (dev141 and later)
+### Current melody and word stress (dev143 experiment)
 
-The Persian and Pinglish test voices now use the shared Finnish-based melody
-planner; the Korean donor described below is retained as historical research
-and is not applied by the current driver. Pitch and inflection controls remain
-active. The native text core assigns default Persian word stress using bounded
+The Persian and Pinglish test voices use a US-English pitch pilot while
+retaining Persian acoustic frames. Unusual inputs can still use the older
+Finnish route; the Korean donor described below is historical research.
+Pitch and inflection controls remain active. The native text core assigns word stress using bounded
 word-class and morphological rules, handles common weak function words in
 context, and retains the previous analysis where a form is ambiguous. See
 [PERSIAN_STRESS.md](PERSIAN_STRESS.md) for the supporting studies and limits.
@@ -27,7 +27,7 @@ context, and retains the previous analysis where a form is ambiguous. See
 The dev142 listening branch additionally moves the long back vowel partly
 towards German short /o/ as in *oft* and the front vowel partly towards German
 long /a/ as in *Tag*. This is an experimental comparison, not a claim that
-the resulting vowels or the Finnish melody have been validated by speakers.
+the resulting vowels or the US-derived melody have been validated by speakers.
 
 The language is **not yet fully implemented in the native core**. Mixed-text
 segmentation and sentence planning still run in the NVDA adapter, and words

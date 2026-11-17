@@ -1,4 +1,4 @@
-"""Independent, cancellable Persian contour capture for a single request.
+"""Independent, cancellable US contour capture for a Persian request.
 
 The worker owns one ordinary acoustic handle and no text or speech results
 between requests. Its thread-local scope and capture are independent of the
@@ -12,12 +12,12 @@ from pathlib import Path
 import threading
 
 if __package__:
-    from .._reloq_eci_direct import EciText
+    from .._reloq_eci_direct import DirectEciEngine, EciText, PROCESS_TAGS
     from .._reloq_persian_frames import FrameCapture
     from .._reloq_persian_projection import ProjectedJob
     from .direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation
 else:
-    from _reloq_eci_direct import EciText
+    from _reloq_eci_direct import DirectEciEngine, EciText, PROCESS_TAGS
     from _reloq_persian_frames import FrameCapture
     from _reloq_persian_projection import ProjectedJob
     from direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation
@@ -26,12 +26,15 @@ else:
 class _CaptureVoice:
     def __init__(self, engine, prefix, validate, cancelled):
         self.engine, self.prefix, self.validate, self.cancelled = engine, prefix, validate, cancelled
-        self._dll, self._handle = engine._voice._dll, engine._voice._handle
+        raw = engine._voice if isinstance(engine, ScopedDirectPersianEngine) else engine
+        self._dll, self._handle = raw._dll, raw._handle
 
     def speak(self, parts, on_pcm, on_index):
         if self.cancelled.is_set():
             return False
         parts = (*self.prefix, *parts)
+        if not isinstance(self.engine, ScopedDirectPersianEngine):
+            return self.engine.speak(parts, on_pcm, on_index) and not self.cancelled.is_set()
         tagged_parts = tuple(EciText(item, segmentation_guarded=True) if isinstance(item, str) else item
                              for item in parts)
         tagged = ''.join(item.text for item in tagged_parts
@@ -62,7 +65,8 @@ class ParallelPilot:
     def _open(self):
         if self._engine is not None:
             return
-        engine = ScopedDirectPersianEngine(self._library, None)
+        engine = DirectEciEngine(self._library, dialect=0x10000, encoding='utf8', native_voice=True)
+        engine.set_parameter(PROCESS_TAGS, 1)
         with self._guard:
             if self._closed:
                 engine.close()
@@ -83,13 +87,14 @@ class ParallelPilot:
             self._open()
         engine = self._engine
         engine._cancelled.clear()
-        engine._voice._cancelled.clear()
         if cancelled.is_set():
             raise InterruptedError('sentence planning was cancelled')
         if dictionary != self._dictionary:
-            engine._voice.set_dictionary_path(dictionary)
+            engine.set_dictionary_path(dictionary)
             self._dictionary = dictionary
         for parameter, value in parameters.items():
+            if parameter == PROCESS_TAGS:
+                continue  # The generated proxy always uses private phoneme tags.
             if self._parameters.get(parameter) != value:
                 engine.set_parameter(parameter, value)
                 self._parameters[parameter] = value

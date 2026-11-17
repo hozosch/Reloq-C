@@ -86,6 +86,26 @@ static void prefixed_tag_stress(char *tag,int prefix)
     }
 }
 
+/* An all-zero syllable sequence is a deliberately unstressed component,
+ * not a request for the provider to select a new sentence accent there.
+ * Pass the native weak-word control as well as the syllable marks. Restrict
+ * this to one generated word; explicit user tags are handled elsewhere. */
+static int tag_is_weak_word(const char *tag)
+{
+    if(tag[0]!='`' || tag[1]!='[')return 0;
+    int syllables=0;
+    for(size_t i=2;tag[i];++i) {
+        if(tag[i]==']')return syllables &&
+            (tag[i+1]==0 || (tag[i+1]==' ' && tag[i+2]=='`' && tag[i+3]=='['));
+        if(tag[i]=='`' || tag[i]=='[' || tag[i]=='~')return 0;
+        if(tag[i]=='.' && tag[i+1]>='0' && tag[i+1]<='2') {
+            if(tag[i+1]!='0')return 0;
+            ++syllables;++i;
+        }
+    }
+    return 0;
+}
+
 static int followed_by_dar(const char *text,size_t length,size_t at)
 {
     size_t start=at;
@@ -219,6 +239,7 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             retain_compound_prosody(text+start,end-start,follows,tag,sizeof tag);
             if(separate_adjacent_tags(&b)){status=-2;break;}
             size_t tag_start=b.used;
+            if(tag_is_weak_word(tag) && append(&b,"`00 ",4)){status=-2;break;}
             if(append(&b,tag,strlen(tag))){status=-2;break;}
             for(size_t i=start;i<end;++i)map[i]=tag_start;
             map[end]=b.used;at=end;

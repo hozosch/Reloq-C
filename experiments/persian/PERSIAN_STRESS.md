@@ -1,8 +1,12 @@
 # Persian stress and contour
 
-The Persian voice uses the existing Finnish-based native contour. A Korean
-donor exported by the native library is not selected by the Persian driver.
-The user's pitch and inflection controls continue to apply.
+The dev143 NVDA experiment uses the native US English contour as its pitch
+pilot, mapped to the existing Persian frame timing and vowel sound. It maps
+the end of a word's voiced portion to the donor's voiced end instead of
+dropping the final vowel's pitch movement. A Korean donor is not selected.
+Pitch and inflection controls continue to apply. Some unsupported input or
+planning failures can still fall back to the previous Finnish path; this is
+an experiment to be judged by listeners, not a claimed Persian model.
 
 For word prominence, Iranian Persian generally accents the final syllable
 of nouns, adjectives, most adverbs and nominal derivational/inflectional
@@ -31,7 +35,10 @@ with conflicting word-class labels retain their previous treatment.
 
 The common conjunction va and the usual complementizer ke are weak before
 a following word; the object marker ra is weak after its host, including at
-the end of a phrase. Citation forms and punctuation boundaries are retained.
+the end of a phrase. A native weak-word control also prevents those unaccented
+words from automatically attracting the phrase accent. Citation forms and
+punctuation boundaries are retained. The computer term اسلش is accented on
+its final syllable in both written-word and slash-character readings.
 Several prepositions and ya already have context-sensitive readings. Free
 personal and demonstrative pronouns can carry their own lexical accent; the
 provider remains responsible for phrase-level pitch and emphasis. Mixed
@@ -41,6 +48,6 @@ bounded context rules without introducing extra audible words.
 Unvowelled Persian spelling and context can leave grammatical analyses
 ambiguous. The current bounded analyzer cannot determine compound verbs,
 every clitic, or the intended reading of every homograph. In particular,
-this is not a claim that Finnish intonation is a scientific Persian prosody
+this is not a claim that US English intonation is a scientific Persian prosody
 model, nor that every Persian word or fallback pronunciation is resolved.
 Native-speaker listening remains necessary for the resulting synthesis.

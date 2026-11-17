@@ -17,7 +17,9 @@ if __package__:
     from .._reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from .._reloq_persian_projection import ProjectedJob
     from .direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient
-    from .continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence, _bracket_boundary
+    from .continuous_plan import (CapturedRows, context_plan, replay_marks, selected_sentence,
+                                  _bracket_boundary, fit_us_word_pitch, indexed_us_proxy, word_boundary)
+    from .._reloq_languages import US_ENGLISH
     from .korean_contour import align_english_edges, contour
     from .text_frontend import SpeechPart, UnsupportedPronunciation
 else:
@@ -28,7 +30,9 @@ else:
     from _reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from _reloq_persian_projection import ProjectedJob
     from direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient
-    from continuous_plan import CapturedRows, context_plan, replay_marks, selected_sentence, _bracket_boundary
+    from continuous_plan import (CapturedRows, context_plan, replay_marks, selected_sentence,
+                                 _bracket_boundary, fit_us_word_pitch, indexed_us_proxy, word_boundary)
+    from _reloq_languages import US_ENGLISH
     from korean_contour import align_english_edges, contour
     from text_frontend import SpeechPart, UnsupportedPronunciation
 
@@ -62,6 +66,16 @@ def _plain_colons(text):
     """Locate punctuation colons without inspecting phoneme-tag contents."""
     return [match.start() for match in re.finditer(r'`\[[^]]+\]|:', text)
             if match.group() == ':']
+
+
+def _sentence_colons_as_periods(tagged, source):
+    """Use the agreed full-stop contour after prose colons, not clock colons."""
+    source_colons, tagged_colons = _plain_colons(source), _plain_colons(tagged)
+    if len(source_colons) != len(tagged_colons):
+        return tagged
+    replace_at = {target for original, target in zip(source_colons, tagged_colons)
+                  if _colon_ends_sentence(source, original)}
+    return ''.join('.' if index in replace_at else char for index, char in enumerate(tagged))
 
 
 def _persian_sentence_starts(tagged, source, matches, separators):
@@ -345,9 +359,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
         rate = SAMPLE_RATES.get(fa._dll.eciGetParam(fa._handle, SAMPLE_RATE))
         if rate is None:
             raise ValueError('invalid sentence sample rate')
-        # Persian uses the native Finnish-based contour. A Korean transfer
-        # API may still be exported by the DLL for other experiments, but
-        # its availability must not silently select that contour here.
+        # The request-local parallel worker owns a separate US pilot handle.
         korean_available = False
         multicore = (os.cpu_count() or 1) > 1
         parallel_worthy = sum(len(part.text) for part in sentence) >= _PARALLEL_MIN and multicore
@@ -463,7 +475,8 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
                             start_prefix=start_prefix if can_stream else None, parallel_pilot=parallel_pilot,
                             fast_initial=bool(parallel_pilot and can_stream and
                                               (len(sentence[0].text) >= _FAST_PILOT_MIN or fast_english)),
-                            fast_minimum_ms=(_FAST_ENGLISH_PREFIX_MIN_MS if fast_english else 300))
+                            fast_minimum_ms=(_FAST_ENGLISH_PREFIX_MIN_MS if fast_english else 300),
+                            us_pilot=True)
         original_counts = plan.counts
         if korean_available:
             # The existing planner retains the English context's untouched
@@ -567,7 +580,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
 
 
 def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
-    """Apply Persian U-to-A glides while retaining the native contour."""
+    """Apply Persian glides and an experimental US-derived pitch contour."""
     key, items, prefix, saw_text = owner._home, [], [], False
     for part in parts:
         if isinstance(part, EciLanguage):
@@ -618,8 +631,9 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                             if _FINAL_U.search(a) and _INITIAL_A.match(b) and 'w' not in a and
                             'w' not in b and sep.isspace())
         has_glide = bool(glide_words)
-        korean_available = False  # keep the native Persian/Finnish contour
-        if not has_glide and not korean_available:
+        korean_available = False
+        us_available = bool(matches)
+        if not has_glide and not korean_available and not us_available:
             return engine._speak_prepared(replace(prepared, parts=(*prefix, *prepared.parts)), on_pcm, on_index)
         inserts, source, offset, next_mark, internal_pitch = [], [], 0, 1, False
         for part in prepared.parts:
@@ -642,13 +656,19 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
         # sentence marks before the preceding sentence has actually ended.
         glide_boundaries = {j for i in glide_words for j in (i - 1, i, i + 1) if 0 < j < len(matches)}
         words = {}
-        for word in sorted(sentence_words | glide_boundaries):
-            inserts.append((matches[word].start(), -1, next_mark))
+        us_boundaries = set(range(1, len(matches))) if us_available else set()
+        for word in sorted(sentence_words | glide_boundaries | us_boundaries):
+            boundary = word_boundary(prepared.tagged, matches, word)
+            inserts.append((boundary, -1, next_mark))
             words[word] = next_mark
             next_mark += 1
         sequence, position = [], 0
+        us_marks = set(words.values()) if us_available else set()
         for at, _order, mark in sorted(inserts, key=lambda entry: entry[:2]):
             sequence.extend((prepared.tagged[position:at], EciIndex(mark) if isinstance(mark, int) else mark))
+            if (isinstance(mark, int) and mark in us_marks and at < len(prepared.tagged) and
+                    prepared.tagged[at] in '.,?!:;()[]{}'):
+                sequence.append(' ')
             position = at
         sequence.append(prepared.tagged[position:])
         # DirectEciEngine applies Hertz pitch and speed/volume controls to
@@ -684,7 +704,7 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             if sentence_item.ticks != item.ticks:
                 raise ValueError('sentence-only capture changed the native frame clock')
         pitch_ratios = None
-        if internal_pitch and korean_available:
+        if internal_pitch and (korean_available or us_available):
             # Measure only the native effect of the queued pitch commands.
             # With those commands removed, the same phonemes must have an
             # identical frame clock; their pitch ratio can then be applied
@@ -706,10 +726,37 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                                for word in starts[1:]}
         controls = [row.controls for row in item.frames]
         glides = plan_u_a_glides(controls, item.ticks, tags, separators, boundaries)
-        if not glides and not korean_available:
+        if not glides and not korean_available and not us_available:
             return engine._speak_prepared(replace(prepared, parts=(*prefix, *prepared.parts)), on_pcm, on_index)
         apply_u_a_glides(controls, item.ticks, glides)
         transferred = False
+        if us_available:
+            english_key = owner._key(US_ENGLISH.id, key[1])
+            english_engine = owner._activate(english_key)
+            english = _PlanningVoice(owner, english_key, english_engine, prefix=donor_prefix)
+            previous_tags = english._dll.eciGetParam(english._handle, PROCESS_TAGS)
+            if previous_tags < 0:
+                raise RuntimeError('cannot read US tag setting')
+            if previous_tags != 1:
+                english.raw.set_parameter(PROCESS_TAGS, 1)
+            try:
+                word_marks = tuple(words[word] for word in range(1, len(matches)))
+                proxy = indexed_us_proxy(_sentence_colons_as_periods(prepared.tagged, prepared.source),
+                                         english, word_marks)
+                donor = CapturedRows.from_capture(
+                    FrameCapture(english._dll).capture(english, proxy, maximum=30000, audio=False))
+            finally:
+                if previous_tags != 1:
+                    english.raw.set_parameter(PROCESS_TAGS, previous_tags)
+            target = reference if pitch_ratios is not None else item
+            transferred = fit_us_word_pitch(
+                target, (0, len(target.pcm) // 2), donor, (0, len(donor.pcm) // 2),
+                word_marks, word_marks, rate, FrameCapture(voice._dll),
+                check=lambda: (_ for _ in ()).throw(InterruptedError()) if owner._cancelled.is_set() else None)
+            if transferred and pitch_ratios is not None:
+                for frame in range(len(item.frames)):
+                    if item.frames[frame].controls[1] > 0 and target.frames[frame].controls[1] > 0:
+                        item.frames[frame].controls[1] = target.frames[frame].controls[1] * pitch_ratios[frame]
         if korean_available and matches:
             # Plan each sentence over its own validated native frame span.
             text_edges = [0] + [matches[index].start() for index in starts[1:]] + [len(prepared.tagged)]

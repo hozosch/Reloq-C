@@ -52,27 +52,30 @@ def main():
         'نوشتم': '`[.0ne.1veS.0tAm]',
         'نوشت': '`[.0ne.1veSt]',
         'آمد': "`[.0'a:'.1mAd]",
-        'می روم': '`[.1mi] `[.0rA.0vAm]',
-        'نمی روم': '`[.1ne.0mi] `[.0rA.0vAm]',
+        'می روم': '`[.1mi] `00 `[.0rA.0vAm]',
+        'نمی روم': '`[.1ne.0mi] `00 `[.0rA.0vAm]',
         'اَ': "`[.1'A:']", 'اُ': "`[.1'o:']", 'اِ': "`[.1'e:']",
         'اَن': '`[.1An]', 'اُن': '`[.1on]', 'اِن': '`[.1en]',
         'و': '`[.1vA]',
-        'و کتاب': '`[.0vA] `[.0ke.1tab]',
-        'کتاب و خانه': "`[.0ke.1tab] `[.0vA] `[.0Ga.1n'e:']",
+        'و کتاب': '`00 `[.0vA] `[.0ke.1tab]',
+        'کتاب و خانه': "`[.0ke.1tab] `00 `[.0vA] `[.0Ga.1n'e:']",
         'و، کتاب': '`[.1vA], `[.0ke.1tab]',
         'که': "`[.1k'e:']",
-        'که کتاب': "`[.0k'e:'] `[.0ke.1tab]",
+        'که کتاب': "`00 `[.0k'e:'] `[.0ke.1tab]",
         'را': '`[.1ra]',
-        'کتاب را': '`[.0ke.1tab] `[.0ra]',
-        'کتاب را، خانه': "`[.0ke.1tab] `[.0ra], `[.0Ga.1n'e:']",
+        'کتاب را': '`[.0ke.1tab] `00 `[.0ra]',
+        'کتاب را، خانه': "`[.0ke.1tab] `00 `[.0ra], `[.0Ga.1n'e:']",
         'کتاب، را': '`[.0ke.1tab], `[.1ra]',
         'من کتاب': '`[.1mAn] `[.0ke.1tab]',
         'ما کتاب': '`[.1ma] `[.0ke.1tab]',
-        'از کتاب': '`[.0Az] `[.0ke.1tab]',
+        'از کتاب': '`00 `[.0Az] `[.0ke.1tab]',
+        'اسلش': '`[.0es.1lAS]',
+        'اسلش کتاب': '`[.0es.1lAS] `[.0ke.1tab]',
+        'کتاب اسلش': '`[.0ke.1tab] `[.0es.1lAS]',
     }
     for word, expected in examples.items():
         assert project(word) == expected, (word, project(word), expected)
-    assert project('می خانه').startswith('`[.0mi] '), 'a noun was mistaken for a verb'
+    assert project('می خانه').startswith('`00 `[.0mi] '), 'a noun was mistaken for a verb'
     assert project('علامت‌دار') == project('علامت دار')
 
     def fallback(word, tag):

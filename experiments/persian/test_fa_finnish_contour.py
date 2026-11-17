@@ -1,4 +1,4 @@
-"""Exercise the selected Persian contour and pitch controls through the driver."""
+"""Exercise the experimental Persian US contour and pitch controls."""
 from __future__ import annotations
 
 import argparse
@@ -33,12 +33,13 @@ def main():
         # following Persian object marker still keeps the weak reading.
         joined, marks, _ = _project_part(persian, (EciIndex(6), 'را'), follows=False, preceded=True)
         isolated, _, _ = _project_part(persian, ('را',), follows=False)
-        assert joined == '`[.0ra]' and marks == [(0, 6)] and isolated == '`[.1ra]'
+        assert joined == '`00 `[.0ra]' and marks == [(0, 6)] and isolated == '`[.1ra]'
         with patch('continuous_driver.contour', side_effect=AssertionError('Korean donor was used')):
             for text in ('کتاب', 'سلام دنیا.', 'امروز من یک کتاب خوب دارم.'):
                 selected, marks = render(voice, (EciIndex(1), text, EciIndex(2)))
                 direct, _ = render(persian, (text,))
-                assert selected == direct and marks == [(1, 0), (2, len(selected))], text
+                assert selected != direct and len(selected) == len(direct), text
+                assert marks == [(1, 0), (2, len(selected))], text
             mixed, marks = render(voice, (EciIndex(3), 'NVDA ', EciIndex(4), 'کتاب', EciIndex(5)))
             assert marks[0] == (3, 0) and marks[-1] == (5, len(mixed)) and 0 < marks[1][1] < len(mixed)
             mixed, marks = render(voice, (EciIndex(3), 'NVDA ', EciIndex(4), 'را', EciIndex(5)))
@@ -58,7 +59,7 @@ def main():
             assert baseline != pitched and baseline != inflected
     finally:
         voice.close()
-    print('Passed Persian Finnish contour, language switches, indexes and pitch controls.')
+    print('Passed Persian US contour, language switches, indexes and pitch controls.')
 
 
 if __name__ == '__main__':

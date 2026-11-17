@@ -592,6 +592,11 @@ static void apply_persian_stress(const char *word,size_t bytes,char *tag)
 {
     size_t syllables=stress_syllables(tag),stem=0;
     if(!syllables || syllables==1)return;
+    /* This common computer term is absent from the grammatical class list.
+     * It is also used as NVDA's Persian name for slash and backslash. */
+    if(stress_word_is(word,bytes,"اسلش")) {
+        stress_primary(tag,syllables-1);return;
+    }
     unsigned kind=stress_class(word,bytes);
 
     /* Verbal prefixes bear the accent. The common written half-space

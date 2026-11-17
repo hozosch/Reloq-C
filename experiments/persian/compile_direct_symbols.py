@@ -102,7 +102,10 @@ def restress_known_names(values, names, frontend):
     left intact instead of guessing their grammatical interpretation.
     """
     tag_pattern = re.compile(r'`\[[^]]+\]')
-    unaccent = lambda value: re.sub(r'\.[012]', '.#', value)
+    def unaccent(value):
+        # Generated weak-word controls affect phrase prominence, not phones.
+        # Include them in the result when the known phrase otherwise agrees.
+        return re.sub(r'\.[012]', '.#', re.sub(r'`00\s*', '', value))
     output = dict(values)
     for char, original in values.items():
         name = names.get(char)

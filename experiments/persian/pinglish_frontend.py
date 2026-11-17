@@ -18,6 +18,7 @@ ALIASES = {
     'kaghaz': 'کاغذ', 'kakhaz': 'کاغذ', 'sefr': 'صفر', 'yek': 'یک',
     'soal': 'سوال', 'soaal': 'سوال', 'sual': 'سوال', 'badbakht': 'بدبخت', 'badbacht': 'بدبخت',
     'farsi': 'فارسی', 'faarsi': 'فارسی', 'ketab': 'کتاب', 'ketaab': 'کتاب',
+    'eslash': 'اسلش',
     'man': 'من', 'u': 'او', 'oo': 'او', 'ou': 'او',
     'amad': 'آمد', 'aamad': 'آمد',
 }
