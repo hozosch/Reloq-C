@@ -22,7 +22,7 @@ def main():
                                   args.espeak_library, args.data_parent)
     try:
         frontend = engine._engines[PERSIAN_PROBE.id]._frontend
-        phones = lambda value: re.sub(r'\.[012]', '.#', value)
+        phones = lambda value: re.sub(r'\.[012]', '.#', re.sub(r'`00\s*', '', value))
         for word in ('علامت', 'علامتِ', 'علامتهای', 'علامت‌دار', 'علامت‌زدنی', 'علامت‌گذاری'):
             analysis = frontend.analyze_direct(word)
             assert analysis and phones(analysis.parts[0].text).startswith('`[.#A.#la.#mA'), (word, analysis)
