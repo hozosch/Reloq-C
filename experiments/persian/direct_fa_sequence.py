@@ -332,20 +332,27 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
         except (ValueError, RuntimeError, OSError, UnicodeError):
             check()
         if tag is None:
-            try:
-                if pinglish:
-                    analysis = frontend.analyze_pinglish(value, positioned=False, allow_fallback=True)
-                else:
-                    analysis = frontend.analyze(value)
-                if analysis is not None and len(analysis.parts) == 1 and analysis.parts[0].language == 'fa':
-                    proposed = analysis.parts[0].text.lstrip('~')
-                    if not pinglish:
-                        proposed = frontend.reference_stress(value, proposed)
-                    if proposed and accepted(proposed):
-                        tag = proposed
-                        used_reference = used_reference or analysis.used_fallback
-            except (ValueError, RuntimeError, OSError, UnicodeError):
-                check()
+            # A temporary reference failure must not immediately turn a
+            # whole word into character names. Retry once, checking job
+            # cancellation before another potentially expensive request.
+            for attempt in range(2):
+                try:
+                    if pinglish:
+                        analysis = frontend.analyze_pinglish(value, positioned=False, allow_fallback=True)
+                    else:
+                        analysis = frontend.analyze(value)
+                    if analysis is not None and len(analysis.parts) == 1 and analysis.parts[0].language == 'fa':
+                        proposed = analysis.parts[0].text.lstrip('~')
+                        if not pinglish:
+                            proposed = frontend.reference_stress(value, proposed)
+                        if proposed and accepted(proposed):
+                            tag = proposed
+                            used_reference = used_reference or analysis.used_fallback
+                except (ValueError, RuntimeError, OSError, UnicodeError):
+                    check()
+                    if not attempt:
+                        continue
+                break
         if not tag:
             tag = names(value)
         current_words[key] = tag
