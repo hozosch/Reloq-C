@@ -325,6 +325,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             for mark in 'ٔأˈˌə̇αé⚽'),
                           ('fa_IR', 'ٔ', 'issue49_hamza_line'),
                           ('fa_IR', 'ٔ', 'issue49_hamza_line_none'),
+                          ('fa_IR', 'ٔ', 'issue49_hamza_spelling'),
+                          *(( 'fa_IR', mark, mode) for mark in 'ًٌٍَُِّْٰ'
+                            for mode in ('issue49_original_line', 'issue49_original_spelling')),
                           ('fa_IR', '🙂', True),
                           ('fa_Latn', '5?', True),
                           ('fa_IR', 'سلام ؟ دنیا', 'mixedspelling'),
@@ -372,6 +375,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if self.index == len(self.cases):
                 if self.results[0]['pcm_sha256'] != self.results[1]['pcm_sha256']:
                     raise AssertionError('confirmed script and Pinglish words differ')
+                for mark in 'ًٌٍَُِّْٰ':
+                    line = next(row for row in self.results if row['text'] == mark and
+                                row['spelling'] == 'issue49_original_line')
+                    spelled = next(row for row in self.results if row['text'] == mark and
+                                   row['spelling'] == 'issue49_original_spelling')
+                    if line['pcm_sha256'] != spelled['pcm_sha256']:
+                        raise AssertionError('NVDA line and character navigation differ: ' + ascii(mark))
+                line = next(row for row in self.results if row['spelling'] == 'issue49_hamza_line')
+                spelled = next(row for row in self.results if row['spelling'] == 'issue49_hamza_spelling')
+                if line['pcm_sha256'] != spelled['pcm_sha256']:
+                    raise AssertionError('NVDA line and spelling name differ for combining hamza')
                 for locale in ('fa_IR', 'fa_Latn'):
                     slow = next(row for row in self.results if row['locale'] == locale and row['spelling'] == 'tags_slow')
                     fast = next(row for row in self.results if row['locale'] == locale and row['spelling'] == 'tags_fast')
@@ -519,6 +533,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text]
             elif spelling == 'mixedspelling':
                 sequence = ['سلام ', self.character(True), '؟', self.character(False), ' دنیا']
+            elif spelling in ('issue49_hamza_spelling', 'issue49_original_spelling'):
+                sequence = list(self.speech.getSpellingSpeech(text, locale=locale, endsUtterance=False))
+            elif spelling == 'issue49_original_line':
+                sequence = [text]
             elif spelling == 'issue49_korean_pitch':
                 sequence = [self.pitch_command(multiplier=1.2), text, self.pitch_command()]
             elif spelling == 'issue49_korean_mid_pitch':
@@ -587,7 +605,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                                            'issue49_korean_pitch', 'issue49_korean_mid_pitch', 'issue49_korean_spelling',
                                                            'issue49_persian_unicode', 'issue49_persian_unicode_none',
                                                            'issue49_persian_unicode_all', 'issue49_korean_english',
-                                                           'issue49_hamza_line', 'issue49_hamza_line_none')
+                                                           'issue49_hamza_line', 'issue49_hamza_line_none',
+                                                           'issue49_hamza_spelling', 'issue49_original_line',
+                                                           'issue49_original_spelling')
             self.emoji_case = spelling in ('issue49_emoji_some', 'issue49_emoji_split')
             self.version_case = spelling in ('issue49_version_some', 'issue49_version_split')
             self.before_version_debug = len(self.version_debug)
@@ -602,7 +622,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                                'issue49_heading', 'issue49_heading_split',
                                                'issue49_korean', 'issue49_korean_word',
                                                'issue49_korean_pitch', 'issue49_korean_mid_pitch', 'issue49_korean_spelling',
-                                               'issue49_persian_unicode', 'issue49_korean_english', 'issue49_hamza_line') else
+                                               'issue49_persian_unicode', 'issue49_korean_english', 'issue49_hamza_line',
+                                               'issue49_hamza_spelling', 'issue49_original_line',
+                                               'issue49_original_spelling') else
                                                self.symbols.SymbolLevel.ALL if spelling == 'issue49_persian_unicode_all' else
                                                self.symbols.SymbolLevel.MOST if spelling in ('pipeline_most', 'checkbox_checked_most')
                                                else self.symbols.SymbolLevel.NONE))
@@ -692,14 +714,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 expected = {'ً':'`[.1An]', 'ٌ':'`[.1on]', 'ٍ':'`[.1en]',
                             'َ':"`[.1'A:']", 'ُ':"`[.1'o:']", 'ِ':"`[.1'e:']",
                             'ّ':'`[.1tAS.0did]', 'ْ':'`[.1sa.0ken]',
-                            'ٰ':"`[.1A.0lef.1mAR.0su.2r'e:']"}[text]
+                            'ٰ':"`[.1A.0lef] `[.0mAR.1s'u:'.0r'e:']"}[text]
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags:
                     raise AssertionError('NVDA lost the Persian character name: ' + ascii(tags))
             if ((spelling is True and text in 'ٔأˈˌə̇αé⚽') or
                     spelling in ('issue49_hamza_line', 'issue49_hamza_line_none')):
-                expected = {'ٔ': '`[.2hAm.0ze.0je.1ba.0la]',
-                            'أ': "`[.1A.0lef.2hAm.0z'e:']"}.get(text, self.symbol_tags.get(text))
+                expected = {'ٔ': "`[.1hAm.0z'e:'.1j'e:'] `[.1ba.1la]",
+                            'أ': "`[.1A.0lef] `[.1hAm.0z'e:']"}.get(text, self.symbol_tags.get(text))
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags:
                     raise AssertionError('NVDA lost the reported character name: ' + ascii((text, tags)))

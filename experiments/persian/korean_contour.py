@@ -235,7 +235,14 @@ class KoreanContour:
         if cancelled.is_set() or donor is None:
             raise InterruptedError('Korean pitch planning cancelled')
         frames = donor.frames()
-        first, last = _donor_span(frames, leading, sum(syllable_counts), trailing)
+        syllable_count = sum(syllable_counts)
+        first, last = ctypes.c_size_t(), ctypes.c_size_t()
+        if (api.donor_span is not None and
+                api.donor_span(frames, len(frames), leading, syllable_count, trailing,
+                               ctypes.byref(first), ctypes.byref(last)) == 0):
+            first, last = first.value, last.value
+        else:
+            first, last = _donor_span(frames, leading, syllable_count, trailing)
         if first >= last:
             return False
         donor_pointer = ctypes.cast(ctypes.byref(frames, first * ctypes.sizeof(NativeFrame)),

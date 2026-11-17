@@ -108,6 +108,51 @@ int reloq_fa_capture_advance_samples(size_t count)
 FA_EXPORT size_t reloq_fa_capture_sample_count(void)
 { return capture.active && (capture.controls_only || capture.store_pcm) ? capture.samples : SIZE_MAX; }
 
+/* Select the same voiced donor interval as the request-local Python planner.
+ * Real captures are bounded and use small frame ticks; unusual values return
+ * an error so older/general callers can retain their own reference algorithm. */
+FA_EXPORT int reloq_fa_donor_span(const struct reloq_fa_frame *rows,size_t count,
+    size_t leading,size_t syllables,size_t trailing,size_t *first,size_t *last)
+{
+    if(!first || !last || (!rows && count) || count>120000 || leading>120000 ||
+       syllables>120000 || trailing>120000)return -1;
+    if(!leading && !trailing){*first=0;*last=count;return 0;}
+    if(!syllables)return -1;
+    size_t total=leading+syllables+trailing,runs=0,start=0,wanted_first=0,wanted_last=0;
+    size_t first_active=0,last_active=0;
+    int active=0;
+    for(size_t i=0;i<=count;++i) {
+        if(i<count && (rows[i].tick<INT32_MIN || rows[i].tick>INT32_MAX))return -1;
+        int voiced=i<count && rows[i].controls[2]>10 && rows[i].controls[1]>0;
+        if(voiced && !active){start=i;active=1;}
+        else if(!voiced && active) {
+            if(!runs)first_active=start;
+            last_active=i-1;
+            if(runs==leading)wanted_first=start;
+            if(runs==leading+syllables-1)wanted_last=i;
+            ++runs;active=0;
+        }
+    }
+    if(!runs){*first=*last=0;return 0;}
+    if(runs==total){*first=wanted_first;*last=wanted_last;return 0;}
+    int64_t begin_tick=rows[first_active].tick,end_tick=rows[last_active].tick;
+    double width=(double)(end_tick-begin_tick);
+    double begin=(double)begin_tick+width*(double)leading/(double)total;
+    double end=(double)begin_tick+width*(double)(leading+syllables)/(double)total;
+    size_t lo=0,hi=count;
+    while(lo<hi) {
+        size_t mid=lo+(hi-lo)/2;
+        if((double)rows[mid].tick<begin)lo=mid+1;else hi=mid;
+    }
+    *first=lo;lo=0;hi=count;
+    while(lo<hi) {
+        size_t mid=lo+(hi-lo)/2;
+        if((double)rows[mid].tick<=end)lo=mid+1;else hi=mid;
+    }
+    *last=lo;
+    return 0;
+}
+
 /* Scan the already-rendered pilot in native code. Keep the exact threshold
  * and sample position used by the planner; this does not cache audio. */
 FA_EXPORT int64_t reloq_fa_last_audible_sample(const unsigned char *pcm,size_t bytes)

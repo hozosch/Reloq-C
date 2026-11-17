@@ -149,6 +149,12 @@ def main():
         tagged, _marks, _needs_validation = continuous_driver._project_part(
             persian, ('بله این حرف شما - درسته حتما',), follows=True)
         assert "`[.0do.1ros.0t'e:']" in tagged, tagged
+        # The original sentence is now fully native, so also exercise a
+        # genuinely unknown inflection after the stale stop. This must take
+        # the validation path and recover the whole word without spelling it.
+        tagged, _marks, _needs_validation = continuous_driver._project_part(
+            persian, ('بله - دلرحمترین حتما',), follows=True)
+        assert '`[.2del.0rAhm.1tA.0rin]' in tagged, tagged
         direct_dash = frontend.analyze_direct('سلام-دنیا')
         assert direct_dash and '-' not in direct_dash.parts[0].text
         named_dash = project((EciText('-', character_mode=True),), frontend, allow_fallback=True)

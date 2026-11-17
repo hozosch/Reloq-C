@@ -1936,6 +1936,9 @@ int ECICALL eciPersianFrameTicks(const struct reloq_fa_frame *rows,size_t count,
 {return reloq_fa_frame_ticks(rows,count,ticks);}
 int ECICALL eciPersianFrameTimeline(const struct reloq_fa_frame *rows,size_t count,double *times)
 {return reloq_fa_frame_timeline(rows,count,times);}
+int ECICALL eciPersianDonorSpan(const struct reloq_fa_frame *rows,size_t count,
+    size_t leading,size_t syllables,size_t trailing,size_t *first,size_t *last)
+{return reloq_fa_donor_span(rows,count,leading,syllables,trailing,first,last);}
 void ECICALL eciPersianRecomputeFrication(struct reloq_fa_frame *rows,size_t count)
 {reloq_fa_recompute_frication(rows,count);}
 int ECICALL eciPersianBridgeContinuation(const struct reloq_fa_frame *input,

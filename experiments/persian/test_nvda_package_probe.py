@@ -116,10 +116,17 @@ def main():
                 assert pcm
                 engine.select_voice(fa.id, '1')
                 assert frontend.analyze_direct('پژوهشگر') is not None
-                assert frontend.analyze_direct('همگام‌سازی') is None
+                assert frontend.analyze_direct('همگام‌سازی') is not None
                 with patch('subprocess.Popen', side_effect=AssertionError('unexpected helper process')):
                     pcm.clear()
                     assert engine.speak(('NVDA همگام‌سازی سلام',), pcm.extend, lambda _: None)
+                    assert pcm
+                    assert frontend._worker is None
+                    # This genuinely unadmitted form continues to exercise
+                    # the in-process fallback and source-index routing.
+                    assert frontend.analyze_direct('پدیده‌ای') is None
+                    pcm.clear()
+                    assert engine.speak(('NVDA پدیده‌ای سلام',), pcm.extend, lambda _: None)
                     assert pcm
                 inprocess = importlib.import_module('probe_driver._persian.inprocess_espeak')
                 assert isinstance(frontend._worker, inprocess.InProcessEspeak)

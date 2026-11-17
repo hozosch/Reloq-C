@@ -17,6 +17,10 @@ from text_frontend import UnsupportedPronunciation, native_sequence_accepted, wo
 
 HERE = Path(__file__).resolve().parent
 
+# The words form Persian diacritic names reported in issue 49 and NVDA's
+# existing symbol replacement. They also need to work without the reader.
+EXTRA_SYMBOL_NAME_WORDS = {'همزه‌ی', 'همزه', 'مقصوره', 'تشدید'}
+
 
 def existing_words():
     words = set()
@@ -31,7 +35,8 @@ def existing_words():
 def generate(api, native, dll):
     existing = existing_words()
     rows, rejected = [], Counter()
-    for word in candidates(SOURCE / 'fa_list', CORPUS):
+    for word in sorted(set(candidates(SOURCE / 'fa_list', CORPUS)) | EXTRA_SYMBOL_NAME_WORDS,
+                       key=lambda value: value.encode('utf8')):
         if word in existing:
             continue
         if normalized(dll, word) != word:
@@ -63,6 +68,8 @@ def generate(api, native, dll):
             rejected['unsupported'] += 1
     if len(rows) < 20:
         raise RuntimeError('unexpectedly few verified recovered words')
+    if not EXTRA_SYMBOL_NAME_WORDS <= existing | {word for word, _, _ in rows}:
+        raise RuntimeError('a required symbol name failed reference validation')
     meta = {'fa_list_sha256': EXPECTED_SOURCES['fa_list'], 'fa_rules_sha256': EXPECTED_SOURCES['fa_rules'],
             'fa_dict_sha256': EXPECTED_DICT, 'admitted': len(rows), 'rejected': dict(sorted(rejected.items()))}
     lines = ['/* Generated from eSpeak NG Persian sources, GPL-3.0-or-later.\n',

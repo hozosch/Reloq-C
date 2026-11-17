@@ -13,6 +13,7 @@ from _reloq_persian_frames import FrameCapture, NativeFrame
 from korean_contour import KoreanContour, align_english_edges, korean_inflection, korean_pitch, proxy
 import korean_contour
 from nvda_driver_probe import PERSIAN_PROBE, US_ENGLISH, make_language_engine
+from reference_letter_names import NVDA_SPOKEN_NAMES
 from text_frontend import SpeechPart
 from compare_korean_long import SENTENCES
 from direct_fa_sequence import project_resilient
@@ -110,6 +111,36 @@ def main():
         return bytes(pcm), marks
 
     try:
+        for rate in (1, 3, 6):
+            voice.set_parameter(SAMPLE_RATE, rate)
+            voice.set_parameter(NATIVE_PITCH, 65)
+            voice.set_parameter(NATIVE_INFLECTION, 30)
+            for char, name in NVDA_SPOKEN_NAMES.items():
+                spelled = speak((EciText(char, character_mode=True),), True)[0]
+                expanded = speak((name,), True)[0]
+                assert spelled and spelled == expanded, (rate, char, name)
+        # Both the native and original interval selector must preserve every
+        # sample and index, including a Persian/English context switch.
+        donor_api = voice._persian_korean_contour.api
+        donor_select = donor_api.donor_span
+        assert donor_select is not None
+        for parts in (('سلام دنیا.',), ('NVDA برگزیده سلام',),
+                      ('سلام window خوب است.',)):
+            for rate in (1, 3, 6):
+                voice.set_parameter(SAMPLE_RATE, rate)
+                calls = []
+                def observe(*values):
+                    calls.append(1)
+                    return donor_select(*values)
+                donor_api.donor_span = observe
+                native = speak(parts, True)
+                assert calls, parts
+                donor_api.donor_span = None
+                try:
+                    previous = speak(parts, True)
+                finally:
+                    donor_api.donor_span = donor_select
+                assert native == previous, (rate, parts)
         for rate in (1, 3, 6):
             voice.set_parameter(SAMPLE_RATE, rate)
             voice.set_parameter(NATIVE_INFLECTION, 47)

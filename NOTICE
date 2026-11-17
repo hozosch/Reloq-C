@@ -88,4 +88,16 @@ The experimental Persian frontend uses fa_rules and fa_list from eSpeak NG
 commit 688cb60368d6e0998f3632af8d1c3c2ad4191fc2. The original files and their
 attribution to Shadyar Khodayari and Ehsan Esmaili are retained under
 reference-espeak/persian. They are licensed under GPL-3.0-or-later; the GPL
-text is included in LICENSE. The generated C data uses those same terms.
+text is included in LICENSE. Generated data retains those terms, except for
+the frequency-based table described below, which is licensed under GPL-3.0.
+
+Persian frequency inventory
+The candidate words and compound stems in the generated Persian frequency
+tables were selected from the 2018 OpenSubtitles frequency inventory of
+FrequencyWords, by Hermit Dave and contributors:
+https://github.com/hermitdave/FrequencyWords
+The original inventory is licensed CC BY-SA 4.0 and is retained unchanged in
+reference-frequency/persian with its attribution and source URL. The derived
+table is licensed under GPL version 3, a designated compatible license.
+Consequently the combined binary including this table is available under GPL
+version 3; the original ReLoq C code retains its GPL-3.0-or-later terms.

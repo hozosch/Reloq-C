@@ -1,9 +1,10 @@
 /* Generated from eSpeak NG Persian sources, GPL-3.0-or-later.
- * {"admitted": 27, "fa_dict_sha256": "5e9830a37191dc958767407a8e515dbde9901710033a012a7b2336136855e4ac", "fa_list_sha256": "33b451d3bbe0ed6cc84eb03428277be35e90bfaaa511fbb6ce15d699232a5843", "fa_rules_sha256": "6a5d75f7bddeb9634a11eb6a5a5aa1ad2e8b170be32c6a322930bc5874138203", "rejected": {"context-dependent": 1, "noncanonical": 2, "word-edge pause": 66}}
+ * {"admitted": 31, "fa_dict_sha256": "5e9830a37191dc958767407a8e515dbde9901710033a012a7b2336136855e4ac", "fa_list_sha256": "33b451d3bbe0ed6cc84eb03428277be35e90bfaaa511fbb6ce15d699232a5843", "fa_rules_sha256": "6a5d75f7bddeb9634a11eb6a5a5aa1ad2e8b170be32c6a322930bc5874138203", "rejected": {"context-dependent": 1, "noncanonical": 2, "word-edge pause": 66}}
  */
 static const struct fa_context_entry fa_recovered_entries[] = {
     {"احیا", "`[.1e.0hja]", "`[.1e.0hja]"},
     {"احیانا", "`[.0A.1hja.0nAn]", "`[.0A.1hja.0nAn]"},
+    {"تشدید", "`[.1tAS.0did]", "`[.1tAS.0did]"},
     {"دهیار", "`[.1de.0hjar]", "`[.1de.0hjar]"},
     {"زهرخند", "`[.1zAhr.0GAnd]", "`[.1zAhr.0GAnd]"},
     {"زهرخورد", "`[.1zAhr.0Gord]", "`[.1zAhr.0Gord]"},
@@ -14,6 +15,7 @@ static const struct fa_context_entry fa_recovered_entries[] = {
     {"محیا", "`[.1mA.0hja]", "`[.1mA.0hja]"},
     {"معد", "`[.1mo.0wedd]", "`[.1mo.0wedd]"},
     {"معقر", "`[.0mo.1RA.0wwAr]", "`[.0mo.1RA.0wwAr]"},
+    {"مقصوره", "`[.0mAR.1s'u:'.0r'e:']", "`[.0mAR.1s'u:'.0r'e:']"},
     {"مهربد", "`[.1mehr.0bod]", "`[.1mehr.0bod]"},
     {"مهرتاش", "`[.1mehr.0taS]", "`[.1mehr.0taS]"},
     {"مهرسام", "`[.1mehr.0sam]", "`[.1mehr.0sam]"},
@@ -25,6 +27,8 @@ static const struct fa_context_entry fa_recovered_entries[] = {
     {"نهرکن", "`[.1nAhr.0kAn]", "`[.1nAhr.0kAn]"},
     {"نهیت", "`[.1nA.0hjAt]", "`[.1nA.0hjAt]"},
     {"نهیش", "`[.1nA.0hjAS]", "`[.1nA.0hjAS]"},
+    {"همزه", "`[.1hAm.0z'e:']", "`[.1hAm.0z'e:']"},
+    {"همزه‌ی", "`[.1hAm.0z'e:'.1j'e:']", "`[.1hAm.0z'e:'.1j'e:']"},
     {"پهنرفت", "`[.1pAhn.0rAft]", "`[.1pAhn.0rAft]"},
     {"گ", "`[.1ggaf]", "`[.1ggaf]"},
     {"یحیوی", "`[.0jA.1hjA.0vi]", "`[.0jA.1hjA.0vi]"},

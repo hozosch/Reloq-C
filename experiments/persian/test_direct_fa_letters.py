@@ -8,15 +8,15 @@ from direct_fa_sequence import EciIndex, EciText, ScopedDirectPersianEngine, pro
 from espeak_worker import EspeakWorker
 from hybrid_fa_frontend import DirectFirstPersian
 from persian_symbols import SYMBOL_TAGS, UNICODE_TAG
-from reference_letter_names import LETTERS, reference_tag
-from text_frontend import UnsupportedPronunciation, native_tag_accepted
+from reference_letter_names import LETTERS, NVDA_SPOKEN_NAMES, effective_name_tag
+from text_frontend import UnsupportedPronunciation, native_sequence_accepted
 
 
 def reference_tests(frontend, reference):
     for char in LETTERS:
         analysis = frontend.analyze_character(char)
         assert analysis and not analysis.used_fallback and analysis.source_map is not None
-        tag = reference_tag(reference, char)
+        tag = effective_name_tag(reference, char)
         assert analysis.parts[0].text == tag, char
         assert analysis.source_map == (0,) * len(char.encode('utf8')) + (len(tag),)
         job = project((EciIndex(1), EciText(char, character_mode=True), EciIndex(2)),
@@ -28,6 +28,14 @@ def reference_tests(frontend, reference):
             # did not explicitly select character mode.
             assert project_resilient((char,), frontend).tagged == tag, char
     assert frontend._worker is None, 'letter naming unexpectedly started eSpeak'
+    for char, name in NVDA_SPOKEN_NAMES.items():
+        # NVDA may replace a single character with its spoken label before it
+        # reaches the driver; both inputs must produce the same Persian tags.
+        literal = project((EciText(char, character_mode=True),), frontend, allow_fallback=True)
+        expanded = project((name,), frontend, allow_fallback=True)
+        assert literal.tagged == expanded.tagged, (char, name)
+        assert not literal.needs_native_validation and not expanded.needs_native_validation
+    assert frontend._worker is None, 'character labels unexpectedly started eSpeak'
     word = (EciText('سل', character_mode=True), EciIndex(3),
             EciText('ام', character_mode=True), EciIndex(4))
     job = project(word, frontend, allow_fallback=True)
@@ -71,7 +79,7 @@ def playback_tests(frontend, probe, reference):
     try:
         for char in LETTERS:
             tag = frontend.analyze_character(char).parts[0].text
-            assert native_tag_accepted(tag, voice._voice._phonemes_for_probe(tag)), char
+            assert native_sequence_accepted(tag, voice._voice._phonemes_for_probe(tag)), char
     finally:
         voice._scope(previous)
     try:

@@ -2,10 +2,17 @@
 from __future__ import annotations
 
 from espeak_worker import EspeakWorker
-from text_frontend import UnsupportedPronunciation, word_tag
+from text_frontend import UnsupportedPronunciation, word_tag, word_tags
 
 LETTERS = tuple(sorted('اآأبپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیءۀةئؤإ'
                        '\u064b\u064c\u064d\u064e\u064f\u0650\u0651\u0652\u0654\u0670', key=ord))
+
+# NVDA replaces U+0654 with this name when navigating by character. The
+# other two names are the explicit Persian names reported by the native
+# speaker. Pronounce their words as ordinary Persian rather than combining
+# them into a single differently stressed word.
+NVDA_SPOKEN_NAMES = {'\u0654': 'همزه‌ی بالا', '\u0670': 'الف مقصوره',
+                     '\u0623': 'الف همزه'}
 
 
 def reference_tag(worker: EspeakWorker, char: str) -> str:
@@ -23,3 +30,15 @@ def reference_tag(worker: EspeakWorker, char: str) -> str:
     elif char == 'گ' and phones[0] == 'g:':
         phones[0] = 'g'
     return word_tag('|'.join(phones))
+
+
+def effective_name_tag(worker: EspeakWorker, char: str) -> str:
+    """Match NVDA's existing spoken symbol names; otherwise use spell mode."""
+    name = NVDA_SPOKEN_NAMES.get(char)
+    if name is None:
+        return reference_tag(worker, char)
+    rows = worker.translate(name, separator='|')
+    words = tuple(word for row in rows for word in row.phonemes.split())
+    if len(words) != len(name.split()) or any('_' in word.strip('|').split('|') for word in words):
+        raise UnsupportedPronunciation('NVDA symbol name has an unsupported word structure')
+    return ' '.join(word_tags(words))

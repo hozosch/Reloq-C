@@ -335,6 +335,9 @@ ECIAPI const int16_t *ECICALL eciPersianCapturePcm(size_t *count);
 ECIAPI int64_t ECICALL eciPersianLastAudibleSample(const unsigned char *pcm,size_t bytes);
 ECIAPI int ECICALL eciPersianFrameTicks(const struct reloq_fa_frame *rows,size_t count,int64_t *ticks);
 ECIAPI int ECICALL eciPersianFrameTimeline(const struct reloq_fa_frame *rows,size_t count,double *times);
+/* Find the contextual Korean donor interval without changing frame data. */
+ECIAPI int ECICALL eciPersianDonorSpan(const struct reloq_fa_frame *rows,size_t count,
+    size_t leading,size_t syllables,size_t trailing,size_t *first,size_t *last);
 ECIAPI void ECICALL eciPersianRecomputeFrication(struct reloq_fa_frame *rows,size_t count);
 ECIAPI int ECICALL eciPersianBridgeContinuation(const struct reloq_fa_frame *input,
     struct reloq_fa_frame *output,const double *times,const size_t *ends,

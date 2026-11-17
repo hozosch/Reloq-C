@@ -7,9 +7,9 @@ from pathlib import Path
 from compile_direct_lexicon import EXPECTED_DICT, digest
 from espeak_ng_probe import EspeakPhonemeProbe
 from espeak_worker import EspeakWorker
-from reference_letter_names import LETTERS, reference_tag
+from reference_letter_names import LETTERS, effective_name_tag
 from test_selected_probe import engine, set_confirmed_persian_probe
-from text_frontend import native_tag_accepted
+from text_frontend import native_sequence_accepted
 
 HERE = Path(__file__).resolve().parent
 
@@ -20,8 +20,8 @@ def generate(worker, native) -> str:
         ' * See reference-espeak/persian and compile_direct_letters.py. */\n',
     ]
     for char in LETTERS:
-        tag = reference_tag(worker, char)
-        if not native_tag_accepted(tag, native._phonemes_for_probe(tag)):
+        tag = effective_name_tag(worker, char)
+        if not native_sequence_accepted(tag, native._phonemes_for_probe(tag)):
             raise RuntimeError(f'native parser changed the name of U+{ord(char):04X}')
         output.append(f'    {{0x{ord(char):04x}u, "{tag}"}},\n')
     return ''.join(output)

@@ -2,7 +2,7 @@ name: Persian Windows acoustic probe
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116]
+    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117]
     paths:
       - experiments/persian/build_native_probe.py
       - experiments/persian/build_windows_probe.py

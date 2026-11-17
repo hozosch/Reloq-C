@@ -120,6 +120,12 @@ class FrameCapture:
             self.frame_timeline.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
                                             ctypes.POINTER(ctypes.c_double))
             self.frame_timeline.restype = ctypes.c_int
+        self.donor_span = _native_function(dll, 'eciPersianDonorSpan', 'reloq_fa_donor_span')
+        if self.donor_span is not None:
+            self.donor_span.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
+                ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_size_t))
+            self.donor_span.restype = ctypes.c_int
         self.recompute_frication = _native_function(dll, 'eciPersianRecomputeFrication', 'reloq_fa_recompute_frication')
         if self.recompute_frication is not None:
             self.recompute_frication.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t)

@@ -1,6 +1,6 @@
 /* Direct C lookup of an experimental generated Persian lexicon.
  * No eSpeak process, library, environment variable or global mutable state
- * is used at runtime. The underlying data remains GPL-3.0-or-later.
+ * is used at runtime. Generated tables retain their individual licenses.
  */
 #include "direct_fa_lexicon.h"
 #include <stdint.h>
@@ -20,6 +20,13 @@ struct fa_compound_extra { const char *word, *tag; unsigned char mask; };
 #include "direct_fa_vocalized.inc"
 #include "direct_fa_nvda_words.inc"
 #include "direct_fa_compounds.inc"
+#ifndef RELOQ_FA_EXCLUDE_FREQUENCY_WORDS
+#include "direct_fa_frequency_words.inc"
+#include "direct_fa_frequency_compounds.inc"
+_Static_assert(sizeof fa_frequency_compound_masks ==
+               sizeof fa_frequency_entries / sizeof fa_frequency_entries[0],
+               "Persian compound admissions must match the frequency table");
+#endif
 
 _Static_assert(sizeof fa_compound_main_masks == sizeof fa_direct_entries / sizeof fa_direct_entries[0],
                "Persian compound admissions must match the direct lexicon");
@@ -42,6 +49,24 @@ static size_t direct_index(const char *word,size_t bytes)
     }
     return reloq_fa_direct_word_count();
 }
+
+#ifndef RELOQ_FA_EXCLUDE_FREQUENCY_WORDS
+static size_t direct_frequency_index(const char *word,size_t bytes)
+{
+    size_t lo=0,hi=sizeof fa_frequency_entries / sizeof fa_frequency_entries[0];
+    while(lo<hi) {
+        size_t m=lo+(hi-lo)/2;
+        const char *key=fa_frequency_entries[m].word;
+        size_t n=strlen(key),common=bytes<n?bytes:n;
+        int order=memcmp(word,key,common);
+        if(!order)order=bytes<n?-1:bytes>n?1:0;
+        if(order<0)hi=m;
+        else if(order>0)lo=m+1;
+        else return m;
+    }
+    return sizeof fa_frequency_entries / sizeof fa_frequency_entries[0];
+}
+#endif
 
 int reloq_fa_direct_word(const char *word,size_t bytes,char *output,size_t capacity)
 {
@@ -281,6 +306,15 @@ static int direct_compound_word(const char *word,size_t bytes,int follows_word,
                 else {mask=fa_compound_extra_stems[mid].mask;base=fa_compound_extra_stems[mid].tag;break;}
             }
         }
+#ifndef RELOQ_FA_EXCLUDE_FREQUENCY_WORDS
+        if(!base) {
+            size_t frequency=direct_frequency_index(word,stem_bytes);
+            if(frequency<sizeof fa_frequency_entries / sizeof fa_frequency_entries[0]) {
+                mask=fa_frequency_compound_masks[frequency];
+                base=fa_frequency_entries[frequency].final;
+            }
+        }
+#endif
         unsigned kind=endings[k].kind;
         if(!base || !(mask & (1u<<kind)))continue;
         static const char *const tails[]={".0gAr]",NULL,".0nA.1ma.0jeS]",
@@ -430,6 +464,19 @@ static int direct_context_word_exact(const char *word,size_t bytes,int follows_w
         if(sizeof tag>capacity)return -2;
         memcpy(output,tag,sizeof tag);return 1;
     }
+#ifndef RELOQ_FA_EXCLUDE_FREQUENCY_WORDS
+    /* Keep the previously verified exact forms and productive rules above
+       authoritative. This independently checked inventory only handles a
+       word that would otherwise need the reference engine. */
+    size_t frequency=direct_frequency_index(word,bytes);
+    if(frequency<sizeof fa_frequency_entries / sizeof fa_frequency_entries[0]) {
+        const char *tag=follows_word?fa_frequency_entries[frequency].nonfinal:fa_frequency_entries[frequency].final;
+        size_t n=strlen(tag);
+        if(n>=capacity)return -2;
+        memcpy(output,tag,n+1);
+        return 1;
+    }
+#endif
     return 0;
 }
 
@@ -444,18 +491,25 @@ int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
        equivalent; try the reference order without dropping either mark.
        The caller projects the complete word as one source span, so its
        indexes are unaffected by this equal-length rearrangement. */
+    const unsigned char *input=(const unsigned char *)word;
+    size_t first=0;
+    if(bytes<4)return 0;
+    for(;first<=bytes-4;++first) {
+        if(input[first]==0xd9 && input[first+1]>=0x8b && input[first+1]<=0x90 &&
+           input[first+2]==0xd9 && input[first+3]==0x91)break;
+    }
+    if(first>bytes-4)return 0;
     char *variant=malloc(bytes+1);
     if(!variant)return -2;
     memcpy(variant,word,bytes);variant[bytes]=0;
-    int changed=0;
-    for(size_t i=0;i+3<bytes;) {
+    for(size_t i=first;i+3<bytes;) {
         unsigned char *p=(unsigned char *)variant+i;
         if(p[0]==0xd9 && p[1]>=0x8b && p[1]<=0x90 && p[2]==0xd9 && p[3]==0x91) {
             unsigned char mark=p[1];p[1]=0x91;p[3]=mark;
-            changed=1;i=i>=2?i-2:i+2;
+            i=i>=2?i-2:i+2;
         } else ++i;
     }
-    if(changed)result=direct_context_word_exact(variant,bytes,follows_word,output,capacity);
+    result=direct_context_word_exact(variant,bytes,follows_word,output,capacity);
     free(variant);
     return result;
 }

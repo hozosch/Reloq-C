@@ -17,6 +17,8 @@ const int16_t *reloq_fa_capture_pcm(size_t *count);
 int64_t reloq_fa_last_audible_sample(const unsigned char *pcm,size_t bytes);
 int reloq_fa_frame_ticks(const struct reloq_fa_frame *rows,size_t count,int64_t *ticks);
 int reloq_fa_frame_timeline(const struct reloq_fa_frame *rows,size_t count,double *times);
+int reloq_fa_donor_span(const struct reloq_fa_frame *rows,size_t count,
+    size_t leading,size_t syllables,size_t trailing,size_t *first,size_t *last);
 void reloq_fa_recompute_frication(struct reloq_fa_frame *rows,size_t count);
 int reloq_fa_bridge_continuation(const struct reloq_fa_frame *input,
     struct reloq_fa_frame *output,const double *times,const size_t *ends,
