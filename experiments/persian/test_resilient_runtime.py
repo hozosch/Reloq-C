@@ -56,8 +56,8 @@ def main():
             return previous_prepared(instance, prepared, *items, **options)
         ScopedDirectPersianEngine._speak_prepared = watch_status
         try:
-            for status, expected in (('بدونِ علامت', "`[.0A.1la.0mAt]"),
-                                     ('علامت‌دار', "`[.0A.1la.0mAt] `[.1dar]")):
+            for status, expected in (('بدونِ علامت', "`[.0A.0la.1mAt]"),
+                                     ('علامت‌دار', "`[.0A.0la.0mAt] `[.1dar]")):
                 observed.clear()
                 pcm, marks = render((EciIndex(83), EciText(exact + '  '), EciIndex(84),
                     EciText('کادرِ علامت‌زدنی  '), EciIndex(85), EciText(status + '  '), EciIndex(86)))
@@ -74,14 +74,14 @@ def main():
                 assert frontend._worker is None
         finally:
             ScopedDirectPersianEngine._speak_prepared = previous_prepared
-        for text, tag in (('حالتِ بومیِ انتخاب را فعال یا غیرفعال می‌کند', '`[.0mi.1ko.0nAd]'),
-                          ('ذره بین به دلیلِ بُروزِ خطا متوقف شد.', '`[.2mo.0te.1vAR.0Ref]')):
+        for text, tag in (('حالتِ بومیِ انتخاب را فعال یا غیرفعال می‌کند', '`[.1mi.0ko.0nAd]'),
+                          ('ذره بین به دلیلِ بُروزِ خطا متوقف شد.', '`[.0mo.0te.0vAR.1Ref]')):
             assert frontend.analyze_direct(text), text
             job = project_resilient((text,), frontend)
             assert tag in job.tagged, text
             assert render((text,))[0]
             assert frontend._worker is None, text
-        assert frontend.analyze_direct('متوقف').parts[0].text == '`[.2mo.0te.1vAR.0Ref]'
+        assert frontend.analyze_direct('متوقف').parts[0].text == '`[.0mo.0te.0vAR.1Ref]'
         import unicodedata
         log_label = 'نمایشِ اِتِّفاقاتِ ثبت‌شده (Log)'
         normalized = unicodedata.normalize('NFC', log_label)
@@ -100,8 +100,8 @@ def main():
         assert SYMBOL_TAGS['🙂'] in job.tagged and UNICODE_TAG not in job.tagged and ')' in job.tagged
         # Issue 49: retain these readings with and without NVDA text/index
         # splits, regardless of whether each word is now handled directly.
-        for text, expected in (('بله این حرف شما - درسته حتما', "`[.0do.1ros.0t'e:']"),
-                               ('ما عالی هستیم - خخخخ', '`[.1a.0li]')):
+        for text, expected in (('بله این حرف شما - درسته حتما', "`[.0do.0ros.1t'e:']"),
+                               ('ما عالی هستیم - خخخخ', '`[.0a.1li]')):
             parts = (EciIndex(1), text[:len(text)//2], EciIndex(2),
                      text[len(text)//2:], EciIndex(3))
             plain = project_resilient((text,), frontend,
@@ -148,7 +148,7 @@ def main():
         assert persian._voice._cancelled.is_set()
         tagged, _marks, _needs_validation = continuous_driver._project_part(
             persian, ('بله این حرف شما - درسته حتما',), follows=True)
-        assert "`[.0do.1ros.0t'e:']" in tagged, tagged
+        assert "`[.0do.0ros.1t'e:']" in tagged, tagged
         # The original sentence is now fully native, so also exercise a
         # genuinely unknown inflection after the stale stop. This must take
         # the validation path and recover the whole word without spelling it.

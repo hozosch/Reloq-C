@@ -102,10 +102,10 @@ def main():
                 assert frontend._number.__name__ == 'eciPersianNumber'
                 assert frontend._letter.__name__ == 'eciPersianLetter'
                 assert frontend._character.__name__ == 'eciPersianCharacter'
-                assert frontend.analyze_direct('علامت').parts[0].text == '`[.0A.1la.0mAt]'
-                assert frontend.analyze_direct('بدبخت').parts[0].text == '`[.1bAd.0bAGt]'
+                assert frontend.analyze_direct('علامت').parts[0].text == '`[.0A.0la.1mAt]'
+                assert frontend.analyze_direct('بدبخت').parts[0].text == '`[.0bAd.1bAGt]'
                 assert frontend.analyze_direct('سوال').parts[0].text == '`[.1so]~`[.0al]'
-                assert frontend.analyze_direct('تعجب').parts[0].text == '`[.0tA.1wAJ.0Job]'
+                assert frontend.analyze_direct('تعجب').parts[0].text == '`[.0tA.0wAJ.1Job]'
                 for symbol in ('؟', '۱', '🙂'):
                     pcm.clear()
                     assert engine.speak((eci.EciText(symbol, character_mode=True),), pcm.extend, lambda _: None)

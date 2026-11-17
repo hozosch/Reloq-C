@@ -60,6 +60,7 @@ def main():
     for word, expected in examples.items():
         assert project(word) == expected, (word, project(word), expected)
     assert project('می خانه').startswith('`[.0mi] '), 'a noun was mistaken for a verb'
+    assert project('علامت‌دار') == project('علامت دار')
 
     def fallback(word, tag):
         source = word.encode('utf8')

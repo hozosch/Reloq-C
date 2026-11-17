@@ -86,6 +86,18 @@ static void prefixed_tag_stress(char *tag,int prefix)
     }
 }
 
+static int followed_by_dar(const char *text,size_t length,size_t at)
+{
+    size_t start=at;
+    while(at<length && (text[at]==' ' || text[at]=='\t'))++at;
+    static const char dar[]="دار";
+    if(at==start || length-at<sizeof dar-1 || memcmp(text+at,dar,sizeof dar-1))return 0;
+    at+=sizeof dar-1;
+    if(at==length)return 1;
+    uint32_t cp;size_t next=at;
+    return reloq_utf8_next((const unsigned char *)text,length,&next,&cp)==1 && !word_character(cp);
+}
+
 /* Restore the native phrase prediction of verified -دار compounds such as
  * the NVDA checkbox state علامت‌دار. Both halves must independently reproduce
  * the entire original phone and stress sequence; otherwise keep one word. */
@@ -107,7 +119,25 @@ static void retain_compound_prosody(const char *word,size_t bytes,int follows,
        !strstr(left,".1") || !strstr(right,".1"))return;
     size_t ln=strlen(left),rn=strlen(right);
     if(ln<4 || rn<4 || left[ln-1]!=']' || right[0]!='`' || right[1]!='[' ||
-       strncmp(tag,left,ln-1) || strcmp(tag+ln-1,right+2))return;
+       strlen(tag)!=ln+rn-3)return;
+    /* The compound's newly assigned accent can differ from its separate
+     * constituents. Verify every phone, then carry the compound's stress
+     * into the equivalent two-tag representation. */
+    for(size_t i=0;i<ln-1;++i) {
+        if(i && left[i-1]=='.' && left[i]>='0' && left[i]<='2' &&
+           tag[i]>='0' && tag[i]<='2')continue;
+        if(left[i]!=tag[i])return;
+    }
+    for(size_t i=2;i<rn;++i) {
+        size_t at=ln-1+i-2;
+        if(i && right[i-1]=='.' && right[i]>='0' && right[i]<='2' &&
+           tag[at]>='0' && tag[at]<='2')continue;
+        if(right[i]!=tag[at])return;
+    }
+    for(size_t i=1;i<ln-1;++i)
+        if(left[i-1]=='.' && left[i]>='0' && left[i]<='2')left[i]=tag[i];
+    for(size_t i=2;i<rn;++i)
+        if(right[i-1]=='.' && right[i]>='0' && right[i]<='2')right[i]=tag[ln-1+i-2];
     if(ln+1+rn>=capacity)return;
     memcpy(tag,left,ln);tag[ln]=' ';
     memcpy(tag+ln+1,right,rn+1);
@@ -168,6 +198,8 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             int follows=follows_word_in_phrase(text,length,end);
             int found=reloq_fa_direct_context_word(text+start,end-start,follows,tag,sizeof tag);
             if(found!=1){status=found==0?1:-1;break;}
+            if(end-start==sizeof "علامت"-1 && !memcmp(text+start,"علامت",end-start) &&
+               followed_by_dar(text,length,end))prefixed_tag_stress(tag,0);
             if(start==prefixed_verb) {
                 prefixed_tag_stress(tag,0);
                 prefixed_verb=SIZE_MAX;
