@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 from compile_direct_lexicon import reference_words
@@ -40,7 +41,8 @@ def main():
                 start = len(prefix.encode('utf8'))
                 end = start + len(word.encode('utf8'))
                 at = actual.source_map[start]
-                assert actual.parts[0].text[at:at + len(tag)] == tag, (word, text, actual.parts)
+                phones = lambda value: re.sub(r'\.[012]', '.#', value)
+                assert phones(actual.parts[0].text[at:at + len(tag)]) == phones(tag), (word, text, actual.parts)
                 assert all(position == at for position in actual.source_map[start:end]), text
             if number % 5000 == 0:
                 print(f'Checked {number}/{len(rows)} words', flush=True)

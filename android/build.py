@@ -85,6 +85,7 @@ def main():
     for name in (*FILES,"manifest.json"):shutil.copyfile(ROOT/"data/community"/name,community/name)
     licenses={"ReLoq-C-LICENSE.txt":ROOT/"LICENSE",
               "ReLoq-C-NOTICE.txt":ROOT/"NOTICE",
+              "Lilak-Apache-2.0.txt":ROOT/"reference-lilak/persian/LICENSE",
               "Dictionaries-CC0.txt":ROOT/"data/community/LICENSE.md",
               "OpenEVV-LICENSE.txt":ROOT/"vendor/openevv61/LICENSE",
               "OpenEVV-NOTICE.txt":ROOT/"vendor/openevv61/NOTICE",

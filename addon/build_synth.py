@@ -107,6 +107,7 @@ def make_entries(dll_path: Path) -> dict[str, bytes]:
     entries["doc/licenses/OpenEVV-wordseg-LICENSE.txt"] = (ROOT / "nvda" / "wordseg-data" / "LICENSE").read_bytes()
     entries["doc/licenses/ReLoq-C-LICENSE.txt"] = (ROOT / "LICENSE").read_bytes()
     entries["doc/licenses/ReLoq-C-NOTICE.txt"] = (ROOT / "NOTICE").read_bytes()
+    entries["doc/licenses/Lilak-Apache-2.0.txt"] = (ROOT / "reference-lilak/persian/LICENSE").read_bytes()
     entries["doc/licenses/Dictionaries-CC0.txt"] = (ROOT / "data/community/LICENSE.md").read_bytes()
     entries["doc/licenses/Unicode-LICENSE.txt"] = (ROOT / "reference-apple/behavior-0.2.82/unicode-input/LICENSE.txt").read_bytes()
     entries["doc/licenses/SCOWL-Copyright.txt"] = (ROOT / "reference-apple/behavior-0.2.83/input/SCOWL-Copyright.txt").read_bytes()

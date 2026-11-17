@@ -166,6 +166,10 @@ class DirectFirstPersian:
         def function(public, legacy):
             return getattr(self._dll, public, None) or getattr(self._dll, legacy)
         self._translate = function('eciPersianTranslateUtf8', 'reloq_fa_direct_text')
+        self._stress = getattr(self._dll, 'eciPersianStressUtf8', None)
+        if self._stress is not None:
+            self._stress.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t)
+            self._stress.restype = ctypes.c_int
         self._free_direct = function('eciPersianRelease', 'reloq_fa_direct_free')
         self._number = function('eciPersianNumber', 'reloq_fa_direct_number')
         self._letter = function('eciPersianLetter', 'reloq_fa_direct_letter')
@@ -207,6 +211,17 @@ class DirectFirstPersian:
         self._worker = None
         self._guard = threading.Lock()
         self._closed = False
+
+    def reference_stress(self, word: str, tag: str) -> str:
+        """Apply native stress to one fallback word without changing phones."""
+        if self._stress is None:
+            return tag
+        source = word.encode('utf8')
+        value = tag.encode('ascii')
+        output = ctypes.create_string_buffer(value, len(value) + 1)
+        if self._stress(source, len(source), output, len(output)) != 0:
+            return tag
+        return output.value.decode('ascii')
 
     def _fallback(self):
         with self._guard:

@@ -10,13 +10,23 @@ static int digit(char c) { return c>='0' && c<='9'; }
 static size_t arabic_mark(const char *text,size_t length,size_t at,unsigned char last)
 { return at+1<length && (unsigned char)text[at]==0xd9 && (unsigned char)text[at+1]==last ? 2:0; }
 
-static int emit(struct number_output *b,const char *text,int weaken)
+/* A cardinal group has final lexical prominence, including a group made of
+ * several native tags (e.g. one hundred and one). Keep the reference's
+ * secondary stresses and phones, then apply its existing phrase weakening. */
+static int emit(struct number_output *b,const char *text,int weaken,int final_stress)
 {
     size_t n=strlen(text),space=b->used?1:0;
     if(n>SIZE_MAX-b->used-space-1 || b->used+space+n>=b->capacity)return -2;
     if(space)b->out[b->used++]=' ';
+    size_t last=SIZE_MAX;
+    if(final_stress)for(size_t i=1;i<n;++i)
+        if(text[i-1]=='.' && text[i]>='0' && text[i]<='2')last=i;
     for(size_t i=0;i<n;++i) {
         char value=text[i];
+        if(last!=SIZE_MAX && i && text[i-1]=='.' && value>='0' && value<='2') {
+            if(i==last)value='1';
+            else if(value=='1')value='0';
+        }
         if(weaken && value=='1' && i && text[i-1]=='.')value=weaken==1?'0':'2';
         b->out[b->used++]=value;
     }
@@ -28,7 +38,7 @@ static int emit_cardinal(struct number_output *b,const char *digits,size_t n,int
     if(n>1 && digits[0]=='0') {
         /* Preserve leading zeroes (identifiers and phone-like strings). */
         for(size_t i=0;i<n;++i)
-            if(emit(b,fa_number_groups[digits[i]-'0'],i+1<n?1:following?2:0))return -2;
+            if(emit(b,fa_number_groups[digits[i]-'0'],i+1<n?1:following?2:0,1))return -2;
         return 0;
     }
     unsigned groups[4]={0};size_t group=0;
@@ -37,14 +47,15 @@ static int emit_cardinal(struct number_output *b,const char *digits,size_t n,int
         for(size_t i=first;i<n;++i)value=value*10+(unsigned)(digits[i]-'0');
         groups[group++]=value;n=first;
     }
-    if(group==1 && groups[0]==0)return emit(b,fa_number_groups[0],following?2:0);
+    if(group==1 && groups[0]==0)return emit(b,fa_number_groups[0],following?2:0,1);
     while(group) {
         size_t position=--group;
         if(!groups[position])continue;
         int lower=0;
         for(size_t j=0;j<position;++j)if(groups[j])lower=1;
-        if(emit(b,fa_number_groups[groups[position]],position?(lower?2:1):(following?2:0)))return -2;
-        if(position && emit(b,fa_number_scales[position-1][lower?1:0],following&&!lower?2:0))return -2;
+        if(emit(b,fa_number_groups[groups[position]],position?(lower?2:1):(following?2:0),1))return -2;
+        /* The linked form has an unstressed final linking vowel. */
+        if(position && emit(b,fa_number_scales[position-1][lower?1:0],following&&!lower?2:0,!lower))return -2;
     }
     return 0;
 }
@@ -99,9 +110,9 @@ int reloq_fa_direct_number(const char *text,size_t length,size_t *consumed,
     struct number_output b={output,0,capacity};
     if(emit_cardinal(&b,integer,ni,nf!=0))return -2;
     if(nf) {
-        if(emit(&b,fa_number_decimal,0))return -2;
+        if(emit(&b,fa_number_decimal,0,0))return -2;
         for(size_t i=0;i<nf;++i)
-            if(emit(&b,fa_number_groups[fraction[i]-'0'],i+1<nf?1:0))return -2;
+            if(emit(&b,fa_number_groups[fraction[i]-'0'],i+1<nf?1:0,1))return -2;
     }
     *consumed=at;return 0;
 }

@@ -10,6 +10,7 @@
 struct fa_direct_entry { const char *word, *tag; };
 struct fa_context_entry { const char *word, *final, *nonfinal; };
 struct fa_compound_extra { const char *word, *tag; unsigned char mask; };
+struct fa_stress_class { uint16_t bank,offset; unsigned char flags; };
 #include "direct_fa_lexicon.inc"
 #include "direct_fa_context.inc"
 #include "direct_fa_plural.inc"
@@ -20,6 +21,7 @@ struct fa_compound_extra { const char *word, *tag; unsigned char mask; };
 #include "direct_fa_vocalized.inc"
 #include "direct_fa_nvda_words.inc"
 #include "direct_fa_compounds.inc"
+#include "direct_fa_stress_classes.inc"
 #ifndef RELOQ_FA_EXCLUDE_FREQUENCY_WORDS
 #include "direct_fa_frequency_words.inc"
 #include "direct_fa_frequency_compounds.inc"
@@ -345,6 +347,21 @@ static int direct_compound_word(const char *word,size_t bytes,int follows_word,
 static int direct_context_word_exact(const char *word,size_t bytes,int follows_word,
                                      char *output,size_t capacity)
 {
+    if(output && capacity)output[0]=0;
+    if(!word || !bytes || !output || !capacity || memchr(word,0,bytes))return -1;
+    /* These isolated vowel-mark names were reported as different when NVDA
+     * supplied the written label instead of the combining character. They
+     * are complete labels here, never substitutions inside a longer word. */
+    static const struct fa_direct_entry vowel_names[]={
+        {"اَ", "`[.1'A:']"}, {"اُ", "`[.1'o:']"}, {"اِ", "`[.1'e:']"},
+        {"اَن", "`[.1An]"}, {"اُن", "`[.1on]"}, {"اِن", "`[.1en]"},
+    };
+    for(size_t i=0;i<sizeof vowel_names/sizeof vowel_names[0];++i) {
+        if(strlen(vowel_names[i].word)!=bytes || memcmp(vowel_names[i].word,word,bytes))continue;
+        size_t n=strlen(vowel_names[i].tag);
+        if(n>=capacity)return -2;
+        memcpy(output,vowel_names[i].tag,n+1);return 1;
+    }
     int result=reloq_fa_direct_word(word,bytes,output,capacity);
     if(result)return result;
     /* Common independent forms of ʿalāve use the same verified reading in
@@ -480,10 +497,196 @@ static int direct_context_word_exact(const char *word,size_t bytes,int follows_w
     return 0;
 }
 
+/* Lilak is used only to recognize word classes, never as a pronunciation
+ * source. Multiple classes are retained so homographs can be left alone. */
+static unsigned stress_class(const char *word,size_t bytes)
+{
+    size_t lo=0,hi=sizeof fa_stress_classes/sizeof fa_stress_classes[0];
+    while(lo<hi) {
+        size_t m=lo+(hi-lo)/2;
+        const char *key=fa_stress_banks[fa_stress_classes[m].bank]+fa_stress_classes[m].offset;
+        size_t n=strlen(key),common=bytes<n?bytes:n;
+        int order=memcmp(word,key,common);
+        if(!order)order=bytes<n?-1:bytes>n?1:0;
+        if(order<0)hi=m;
+        else if(order>0)lo=m+1;
+        else return fa_stress_classes[m].flags;
+    }
+    return 0;
+}
+
+int reloq_fa_direct_is_verb(const char *word,size_t bytes)
+{
+    return word && bytes && !memchr(word,0,bytes) && (stress_class(word,bytes)&2u)!=0;
+}
+
+/* Only change a single generated phone tag. A tilde or another tag may
+ * denote a separately analyzed word and must not be flattened. */
+static size_t stress_syllables(const char *tag)
+{
+    size_t n=strlen(tag),count=0;
+    if(n<4 || tag[0]!='`' || tag[1]!='[' || tag[n-1]!=']')return 0;
+    for(size_t i=2;i+1<n;++i) {
+        if(tag[i]==']' || tag[i]=='[' || tag[i]=='`' || tag[i]=='~')return 0;
+        if(tag[i]=='.' && tag[i+1]>='0' && tag[i+1]<='2')++count;
+    }
+    return count;
+}
+
+static void stress_primary(char *tag,size_t target)
+{
+    size_t n=stress_syllables(tag),at=0;
+    if(!n || target>=n)return;
+    for(size_t i=2;tag[i] && tag[i]!=']';++i) {
+        if(tag[i]=='.' && tag[i+1]>='0' && tag[i+1]<='2') {
+            tag[i+1]=at==target?'1':'0';
+            ++at;
+        }
+    }
+}
+
+/* Recognize a finite inflection only when the independently listed stem
+ * is also a verb and already has an available native pronunciation. */
+static size_t verb_stem_syllables(const char *word,size_t bytes)
+{
+    if(!(stress_class(word,bytes)&2u))return 0;
+    char stem[2048];
+    if(direct_context_word_exact(word,bytes,0,stem,sizeof stem)!=1)return 0;
+    return stress_syllables(stem);
+}
+
+static int ends_with(const char *word,size_t bytes,const char *suffix,size_t *stem)
+{
+    size_t n=strlen(suffix);
+    if(bytes<=n || memcmp(word+bytes-n,suffix,n))return 0;
+    *stem=bytes-n;return 1;
+}
+
+static void apply_persian_stress(const char *word,size_t bytes,char *tag)
+{
+    size_t syllables=stress_syllables(tag),stem=0;
+    if(!syllables || syllables==1)return;
+    unsigned kind=stress_class(word,bytes);
+
+    /* Verbal prefixes bear the accent. The common written half-space
+     * makes می/نمی unambiguous; without it, require a known verb remainder. */
+    if(kind==2u) {
+        static const char *const prefixes[]={"نمی", "می"};
+        for(size_t i=0;i<sizeof prefixes/sizeof prefixes[0];++i) {
+            size_t n=strlen(prefixes[i]);
+            if(bytes<=n || memcmp(word,prefixes[i],n))continue;
+            static const char join[]="\xe2\x80\x8c";
+            if(bytes>n+sizeof join-1 && !memcmp(word+n,join,sizeof join-1)) {
+                stress_primary(tag,0);return;
+            }
+            if(stress_class(word+n,bytes-n)&2u) {stress_primary(tag,0);return;}
+        }
+        /* Imperative/subjunctive be- and negative na- need a recognized
+         * unprefixed verb; otherwise the initial letter may be the stem. */
+        if(bytes>2 && (!memcmp(word,"ب",2) || !memcmp(word,"ن",2)) &&
+           (stress_class(word+2,bytes-2)&2u)) {
+            stress_primary(tag,0);return;
+        }
+        static const char *const perfect[]={"‌ایم", "‌اید", "‌اند", "‌است", "‌ام", "‌ای"};
+        for(size_t i=0;i<sizeof perfect/sizeof perfect[0];++i) {
+            if(!ends_with(word,bytes,perfect[i],&stem))continue;
+            char base[2048];
+            if(direct_context_word_exact(word,stem,0,base,sizeof base)==1) {
+                size_t count=stress_syllables(base);
+                if(count && count<=syllables){stress_primary(tag,count-1);return;}
+            }
+        }
+        static const char *const endings[]={"یم", "ید", "ند", "م", "ی", "د"};
+        for(size_t i=0;i<sizeof endings/sizeof endings[0];++i) {
+            if(!ends_with(word,bytes,endings[i],&stem))continue;
+            size_t count=verb_stem_syllables(word,stem);
+            if(count && count<=syllables){stress_primary(tag,count-1);return;}
+        }
+        /* A recognized first-person counterpart establishes that this
+         * spelling is itself a bare past stem, e.g. نوشت / نوشتم. */
+        if(bytes+3<2048) {
+            char inflected[2048];
+            memcpy(inflected,word,bytes);
+            memcpy(inflected+bytes,"م",3);
+            if(stress_class(inflected,bytes+2)&2u) {
+                stress_primary(tag,syllables-1);return;
+            }
+        }
+        /* If an inflection or bare stem was not identified, retain the
+         * reference instead of accenting a possible person ending. */
+        return;
+    }
+
+    /* A word classified only as a noun, adjective, adverb or numeral is
+     * stressed on its last syllable. Verb/function-word homographs are not
+     * silently treated as nouns. */
+    if(kind==1u) {
+        /* The spelling -ی can be an unstressed indefinite clitic or a
+         * stressed derivational suffix (کتابی is a standard example).
+         * Do not override a reference form admitted as the former. */
+        if(ends_with(word,bytes,"ی",&stem) && stress_class(word,stem)==1u) {
+            size_t index=direct_index(word,stem);
+            if(index<reloq_fa_direct_word_count() && index/8<sizeof fa_direct_suffix_bases[5] &&
+               (fa_direct_suffix_bases[5][index/8] & (1u<<(index%8))))return;
+        }
+        stress_primary(tag,syllables-1);return;
+    }
+    if(kind)return;
+
+    /* Productive plural/comparative endings are accented. Check the same
+     * per-stem admission bits used by the pronunciation generator. */
+    static const char *const productive[]={"ها", "تر"};
+    for(unsigned i=0;i<2;++i) {
+        if(!ends_with(word,bytes,productive[i],&stem))continue;
+        static const char join[]="\xe2\x80\x8c";
+        int joined=stem>=sizeof join-1 && !memcmp(word+stem-(sizeof join-1),join,sizeof join-1);
+        if(joined)stem-=sizeof join-1;
+        size_t index=direct_index(word,stem);
+        if(index>=reloq_fa_direct_word_count())continue;
+        int admitted=joined ? i==0 && index/8<sizeof fa_plural_zwnj_bases &&
+                              (fa_plural_zwnj_bases[index/8] & (1u<<(index%8))) :
+                              index/8<sizeof fa_direct_suffix_bases[0] &&
+                              (fa_direct_suffix_bases[i][index/8] & (1u<<(index%8)));
+        if(admitted){stress_primary(tag,syllables-1);return;}
+    }
+
+    /* Explicit ezafe marks retain the stress of the preceding known noun. */
+    static const char *const ezafe[]={"‌ی", "ٔ", "ِ"};
+    for(size_t i=0;i<sizeof ezafe/sizeof ezafe[0];++i) {
+        if(!ends_with(word,bytes,ezafe[i],&stem) || stress_class(word,stem)!=1u)continue;
+        char base[2048];
+        if(direct_context_word_exact(word,stem,0,base,sizeof base)==1) {
+            size_t count=stress_syllables(base);
+            if(count && count<=syllables){stress_primary(tag,count-1);return;}
+        }
+    }
+
+    /* The productive possessive endings are applied only to stems whose
+     * existing direct rule was admitted against four reference contexts. */
+    static const char *const possessive[]={"م", "ت", "ش"};
+    for(unsigned i=0;i<3;++i) {
+        if(!ends_with(word,bytes,possessive[i],&stem) || stress_class(word,stem)!=1u)continue;
+        size_t index=direct_index(word,stem),which=i+2;
+        if(index>=reloq_fa_direct_word_count() || index/8>=sizeof fa_direct_suffix_bases[0] ||
+           !(fa_direct_suffix_bases[which][index/8] & (1u<<(index%8))))continue;
+        size_t count=stress_syllables(fa_direct_entries[index].tag);
+        if(count && count<=syllables){stress_primary(tag,count-1);return;}
+    }
+}
+
+int reloq_fa_direct_stress(const char *word,size_t bytes,char *tag,size_t capacity)
+{
+    if(!word || !bytes || memchr(word,0,bytes) || !tag || !capacity ||
+       !memchr(tag,0,capacity))return -1;
+    apply_persian_stress(word,bytes,tag);
+    return 0;
+}
+
 int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
                                  char *output,size_t capacity)
 {
     int result=direct_context_word_exact(word,bytes,follows_word,output,capacity);
+    if(result==1)apply_persian_stress(word,bytes,output);
     if(result || !word || bytes==SIZE_MAX)return result;
 
     /* NFC/NFKC places Arabic vowel marks before shadda, while the eSpeak
@@ -510,6 +713,7 @@ int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
         } else ++i;
     }
     result=direct_context_word_exact(variant,bytes,follows_word,output,capacity);
+    if(result==1)apply_persian_stress(variant,bytes,output);
     free(variant);
     return result;
 }

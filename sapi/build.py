@@ -52,6 +52,7 @@ def main():
         'OpenEVV-wordseg-LICENSE.txt': 'nvda/wordseg-data/LICENSE',
         'OpenEVV-wordseg-NOTICE.txt': 'nvda/wordseg-data/NOTICE',
         'Dictionaries-CC0.txt': 'data/community/LICENSE.md',
+        'Lilak-Apache-2.0.txt': 'reference-lilak/persian/LICENSE',
         'Unicode-LICENSE.txt': 'reference-apple/behavior-0.2.82/unicode-input/LICENSE.txt',
         'SCOWL-Copyright.txt': 'reference-apple/behavior-0.2.83/input/SCOWL-Copyright.txt',
         'PCRE2-LICENSE.txt': 'vendor/pcre2/LICENSE',

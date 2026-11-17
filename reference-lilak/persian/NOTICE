@@ -1,0 +1,12 @@
+Persian stress word classes
+
+The generated spelling and part-of-speech table is derived from the Lilak
+Persian Spell Checking Dictionary, lexicon blob
+f73cb5aa877e3ea56333711db10797175b8dd318:
+https://github.com/b00f/lilak
+
+Copyright 2015 Mostafa Sedaghat Joo. Licensed under the Apache License,
+Version 2.0; see LICENSE in this directory. The generated table combines
+duplicate entries and normalizes selected Persian spelling variants. It
+contains no pronunciation from Lilak. To regenerate it, supply the original
+lexicon to experiments/persian/compile_fa_stress_classes.py.

@@ -21,7 +21,6 @@ if __package__:
     )
     from .._reloq_persian_projection import Command, ProjectedJob, PersianProjectionError, project_persian
     from .hybrid_fa_frontend import DirectFirstPersian
-    from .reference_alignment import unpositioned_reference_input
     from .text_frontend import UnsupportedPronunciation, native_sequence_accepted
 else:
     ROOT = Path(__file__).resolve().parents[2]
@@ -31,7 +30,6 @@ else:
     )
     from _reloq_persian_projection import Command, ProjectedJob, PersianProjectionError, project_persian
     from hybrid_fa_frontend import DirectFirstPersian
-    from reference_alignment import unpositioned_reference_input
     from text_frontend import UnsupportedPronunciation, native_sequence_accepted
 
 def _safe_native_punctuation(job: ProjectedJob) -> ProjectedJob:
@@ -208,17 +206,11 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
         else:
             analysis = frontend.analyze_direct(text)
         if analysis is None and allow_fallback and not pinglish:
-            if internal_marks:
-                analysis = frontend.analyze_positioned(text)
-            elif unpositioned_reference_input(text):
-                # With marks only at the beginning/end, no word alignment is
-                # required. Avoid synthesizing discarded eSpeak audio.
-                analysis = frontend.analyze(text)
-                if len(analysis.parts) != 1 or analysis.parts[0].language != 'fa':
-                    return None
-                tagged = analysis.parts[0].text
-                used_fallback = used_fallback or analysis.used_fallback
-                return tagged, (0,) * len(text.encode('utf8')) + (len(tagged),)
+            # Falling back for a whole sentence would discard the native
+            # word-stress rules even for words already covered. The existing
+            # resilient projection keeps known words native and analyzes only
+            # uncovered words through the reference, with source marks intact.
+            raise UnsupportedPronunciation('a Persian word needs reference analysis')
         if analysis is None:
             return None
         if pinglish and analysis.source_map is None and not internal_marks:
@@ -291,6 +283,7 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
     # Reuse a repeated word only during this request. No pronunciation is
     # retained for a later NVDA utterance.
     current_words = {}
+    used_reference = False
 
     def check():
         if cancelled is not None and cancelled():
@@ -319,6 +312,7 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
         return ' '.join(pieces)
 
     def word_tag(value, follows):
+        nonlocal used_reference
         check()
         key = (value, follows, pinglish)
         if key in current_words:
@@ -345,8 +339,11 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
                     analysis = frontend.analyze(value)
                 if analysis is not None and len(analysis.parts) == 1 and analysis.parts[0].language == 'fa':
                     proposed = analysis.parts[0].text.lstrip('~')
+                    if not pinglish:
+                        proposed = frontend.reference_stress(value, proposed)
                     if proposed and accepted(proposed):
                         tag = proposed
+                        used_reference = used_reference or analysis.used_fallback
             except (ValueError, RuntimeError, OSError, UnicodeError):
                 check()
         if not tag:
@@ -476,7 +473,7 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
         cursor = target
     if cursor < len(tagged):
         output.append(EciText(tagged[cursor:], segmentation_guarded=True))
-    result = ProjectedJob(source, tagged, tuple(output), False)
+    result = ProjectedJob(source, tagged, tuple(output), used_reference)
     return _safe_native_punctuation(result)
 
 

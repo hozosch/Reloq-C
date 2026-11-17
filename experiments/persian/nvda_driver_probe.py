@@ -294,20 +294,6 @@ class PersianProbeLanguageEngine(LanguageEngine):
         if (self._home[0] not in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) or
                 not isinstance(self._engines.get(self._home[0]), ScopedDirectPersianEngine)):
             return
-        raw = self._engines[self._home[0]]._voice
-        if (getattr(self, '_persian_korean_contour', None) is None and
-                (getattr(raw._dll, 'eciPersianTransferKoreanPitch', None) or
-                 getattr(raw._dll, 'reloq_fa_transfer_korean_pitch', None))):
-            if __package__:
-                from .korean_contour import contour
-            else:
-                from korean_contour import contour
-            try:
-                # Prepare the independent donor handle once at voice
-                # selection; real contours remain request-local.
-                contour(self)
-            except (RuntimeError, OSError):
-                pass
         if (getattr(self, '_persian_contour_worker', None) is None and
                 (os.cpu_count() or 1) > 1):
             if __package__:

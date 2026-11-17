@@ -331,7 +331,10 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
         rate = SAMPLE_RATES.get(fa._dll.eciGetParam(fa._handle, SAMPLE_RATE))
         if rate is None:
             raise ValueError('invalid sentence sample rate')
-        korean_available = FrameCapture(fa._dll).transfer_korean_pitch is not None
+        # Persian uses the native Finnish-based contour. A Korean transfer
+        # API may still be exported by the DLL for other experiments, but
+        # its availability must not silently select that contour here.
+        korean_available = False
         multicore = (os.cpu_count() or 1) > 1
         parallel_worthy = sum(len(part.text) for part in sentence) >= _PARALLEL_MIN and multicore
         available_pilot = getattr(owner, '_persian_contour_worker', None) if multicore else None
@@ -550,7 +553,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
 
 
 def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
-    """Apply Persian U-to-A glides and the Korean-derived pitch pilot."""
+    """Apply Persian U-to-A glides while retaining the native contour."""
     key, items, prefix, saw_text = owner._home, [], [], False
     for part in parts:
         if isinstance(part, EciLanguage):
@@ -569,8 +572,8 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             if isinstance(part, (str, EciText)):
                 saw_text = True
         elif isinstance(part, (EciPitch, EciPitchHz, EciProsody)) and saw_text:
-            # Keep controls in the native capture instead of dropping the
-            # Korean plan when NVDA changes pitch or speed inside Persian.
+            # Keep controls in the native capture when NVDA changes pitch or
+            # speed inside the Persian part of a sentence.
             items.append(part)
         elif isinstance(part, (EciPitch, EciPitchHz, EciProsody)) and not saw_text:
             prefix.append(part)
@@ -601,9 +604,9 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                             if _FINAL_U.search(a) and _INITIAL_A.match(b) and 'w' not in a and
                             'w' not in b and sep.isspace())
         has_glide = bool(glide_words)
-        korean_available = FrameCapture(engine._voice._dll).transfer_korean_pitch is not None
+        korean_available = False  # keep the native Persian/Finnish contour
         if not has_glide and not korean_available:
-            return engine._speak_prepared(prepared, on_pcm, on_index)
+            return engine._speak_prepared(replace(prepared, parts=(*prefix, *prepared.parts)), on_pcm, on_index)
         inserts, source, offset, next_mark, internal_pitch = [], [], 0, 1, False
         for part in prepared.parts:
             if isinstance(part, EciText):
@@ -690,7 +693,7 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
         controls = [row.controls for row in item.frames]
         glides = plan_u_a_glides(controls, item.ticks, tags, separators, boundaries)
         if not glides and not korean_available:
-            return engine._speak_prepared(prepared, on_pcm, on_index)
+            return engine._speak_prepared(replace(prepared, parts=(*prefix, *prepared.parts)), on_pcm, on_index)
         apply_u_a_glides(controls, item.ticks, glides)
         transferred = False
         if korean_available and matches:
@@ -716,7 +719,7 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                             item.frames[frame].controls[1] = target[frame].controls[1] * pitch_ratios[frame]
                 transferred |= applied
         if not glides and not transferred:
-            return engine._speak_prepared(prepared, on_pcm, on_index)
+            return engine._speak_prepared(replace(prepared, parts=(*prefix, *prepared.parts)), on_pcm, on_index)
         marks = []
         for mark, offset, value in source:
             frame = (0 if offset == 0 else len(item.frames) if offset == len(prepared.tagged) else

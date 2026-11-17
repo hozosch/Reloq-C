@@ -12,7 +12,10 @@ LETTERS = tuple(sorted('اآأبپتثجچحخدذرزژسشصضطظعغفقکگ
 # speaker. Pronounce their words as ordinary Persian rather than combining
 # them into a single differently stressed word.
 NVDA_SPOKEN_NAMES = {'\u0654': 'همزه‌ی بالا', '\u0670': 'الف مقصوره',
-                     '\u0623': 'الف همزه'}
+                     '\u0623': 'الف همزه', '\u0627': 'الف',
+                     '\u0652': 'ساکن', '\u0651': 'تشدید',
+                     '\u064e': 'اَ', '\u064f': 'اُ', '\u0650': 'اِ',
+                     '\u064b': 'اَن', '\u064c': 'اُن', '\u064d': 'اِن'}
 
 
 def reference_tag(worker: EspeakWorker, char: str) -> str:

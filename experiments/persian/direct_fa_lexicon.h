@@ -14,4 +14,8 @@ int reloq_fa_direct_word(const char *word, size_t bytes, char *output, size_t ca
 int reloq_fa_direct_context_word(const char *word, size_t bytes, int follows_word,
                                  char *output, size_t capacity);
 size_t reloq_fa_direct_word_count(void);
+/* Apply conservative stress rules to a single generated reference tag.
+ * The spelling must already be in the native normalized form. */
+int reloq_fa_direct_stress(const char *word,size_t bytes,char *tag,size_t capacity);
+int reloq_fa_direct_is_verb(const char *word,size_t bytes);
 #endif

@@ -101,3 +101,11 @@ reference-frequency/persian with its attribution and source URL. The derived
 table is licensed under GPL version 3, a designated compatible license.
 Consequently the combined binary including this table is available under GPL
 version 3; the original ReLoq C code retains its GPL-3.0-or-later terms.
+
+Persian stress word classes
+The Persian spelling and part-of-speech table was derived from Lilak, the
+Persian Spell Checking Dictionary, Copyright 2015 Mostafa Sedaghat Joo:
+https://github.com/b00f/lilak (lexicon blob f73cb5aa877e3ea56333711db10797175b8dd318).
+It is licensed under the Apache License, Version 2.0. The full license and
+details of the transformation are in reference-lilak/persian. Copies of the
+license are included in installable packages.

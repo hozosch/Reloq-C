@@ -880,6 +880,15 @@ int ECICALL eciPersianTranslateUtf8(const char *text,size_t bytes,char **output,
     size_t **source_map,size_t *error_offset)
 {return reloq_fa_direct_text(text,bytes,output,source_map,error_offset);}
 
+int ECICALL eciPersianStressUtf8(const char *word,size_t bytes,char *tag,size_t capacity)
+{
+    char *normalized=NULL;size_t *map=NULL,error=0;
+    int status=reloq_fa_direct_normalize(word,bytes,&normalized,&map,&error);
+    if(status)return status;
+    status=reloq_fa_direct_stress(normalized,strlen(normalized),tag,capacity);
+    free(normalized);free(map);return status;
+}
+
 int ECICALL eciPersianNumber(const char *text,size_t bytes,size_t *consumed,
     char *output,size_t capacity)
 {return reloq_fa_direct_number(text,bytes,consumed,output,capacity);}

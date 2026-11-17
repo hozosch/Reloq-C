@@ -298,6 +298,7 @@ ECIAPI void ECICALL eciPersianRelease(void *pointer);
  * Uncovered input is reported to the caller for an appropriate fallback. */
 ECIAPI int ECICALL eciPersianTranslateUtf8(const char *text,size_t bytes,
     char **output,size_t **source_map,size_t *error_offset);
+ECIAPI int ECICALL eciPersianStressUtf8(const char *word,size_t bytes,char *tag,size_t capacity);
 ECIAPI int ECICALL eciPersianNumber(const char *text,size_t bytes,size_t *consumed,
     char *output,size_t capacity);
 ECIAPI const char *ECICALL eciPersianLetter(uint32_t codepoint);

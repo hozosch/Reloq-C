@@ -17,6 +17,10 @@ def reference_tests(frontend, reference):
         analysis = frontend.analyze_character(char)
         assert analysis and not analysis.used_fallback and analysis.source_map is not None
         tag = effective_name_tag(reference, char)
+        if char in NVDA_SPOKEN_NAMES:
+            expanded = frontend.analyze_direct(NVDA_SPOKEN_NAMES[char])
+            if expanded is not None and len(expanded.parts) == 1:
+                tag = expanded.parts[0].text
         assert analysis.parts[0].text == tag, char
         assert analysis.source_map == (0,) * len(char.encode('utf8')) + (len(tag),)
         job = project((EciIndex(1), EciText(char, character_mode=True), EciIndex(2)),

@@ -56,6 +56,36 @@ static int follows_word_in_phrase(const char *text,size_t length,size_t at)
             text[next]>='0' && text[next]<='9');
 }
 
+/* Spacing is a common spelling of the same verbal prefix otherwise joined
+ * with U+200C. Require a recognized following verb before moving stress. */
+static size_t following_prefixed_verb(const char *text,size_t length,size_t at)
+{
+    size_t start=at;
+    while(at<length && (text[at]==' ' || text[at]=='\t'))++at;
+    if(at==start || at==length)return SIZE_MAX;
+    size_t first=at;
+    while(at<length) {
+        size_t next=at;uint32_t cp;
+        if(reloq_utf8_next((const unsigned char *)text,length,&next,&cp)!=1 || !word_character(cp))break;
+        at=next;
+    }
+    return at>first && reloq_fa_direct_is_verb(text+first,at-first)?first:SIZE_MAX;
+}
+
+static void prefixed_tag_stress(char *tag,int prefix)
+{
+    size_t n=strlen(tag),syllable=0;
+    if(n<4 || tag[0]!='`' || tag[1]!='[' || tag[n-1]!=']')return;
+    for(size_t i=2;i+1<n;++i)
+        if(tag[i]==']' || tag[i]=='[' || tag[i]=='`' || tag[i]=='~')return;
+    for(size_t i=2;i+1<n;++i) {
+        if(tag[i]=='.' && tag[i+1]>='0' && tag[i+1]<='2') {
+            tag[i+1]=prefix && !syllable?'1':'0';
+            ++syllable;
+        }
+    }
+}
+
 /* Restore the native phrase prediction of verified -دار compounds such as
  * the NVDA checkbox state علامت‌دار. Both halves must independently reproduce
  * the entire original phone and stress sequence; otherwise keep one word. */
@@ -98,7 +128,7 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
     struct output_buffer b={0};
     if(append(&b,"",0)){free(map);return -2;}
     int status=0;
-    size_t at=0;
+    size_t at=0,prefixed_verb=SIZE_MAX;
     while(at<length) {
         size_t start=at,next=at;
         uint32_t cp;
@@ -116,7 +146,7 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             if(separate_adjacent_tags(&b)){status=-2;break;}
             size_t tag_start=b.used;
             if(sign) {
-                const char *name=cp=='+'?"`[.1mos.0bAt] ":"`[.1mAn.0fi] ";
+                const char *name=cp=='+'?"`[.0mos.1bAt] ":"`[.0mAn.1fi] ";
                 if(append(&b,name,strlen(name))){status=-2;break;}
             }
             if(append(&b,tag,strlen(tag))){status=-2;break;}
@@ -138,6 +168,17 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             int follows=follows_word_in_phrase(text,length,end);
             int found=reloq_fa_direct_context_word(text+start,end-start,follows,tag,sizeof tag);
             if(found!=1){status=found==0?1:-1;break;}
+            if(start==prefixed_verb) {
+                prefixed_tag_stress(tag,0);
+                prefixed_verb=SIZE_MAX;
+            } else if((end-start==sizeof "می"-1 && !memcmp(text+start,"می",end-start)) ||
+                      (end-start==sizeof "نمی"-1 && !memcmp(text+start,"نمی",end-start))) {
+                size_t next=following_prefixed_verb(text,length,end);
+                if(next!=SIZE_MAX) {
+                    prefixed_tag_stress(tag,1);
+                    prefixed_verb=next;
+                }
+            }
             retain_compound_prosody(text+start,end-start,follows,tag,sizeof tag);
             if(separate_adjacent_tags(&b)){status=-2;break;}
             size_t tag_start=b.used;

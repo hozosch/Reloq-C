@@ -10,6 +10,7 @@ import unicodedata
 
 from espeak_ng_probe import EspeakPhonemeProbe
 from espeak_worker import EspeakWorker
+from hybrid_fa_frontend import DirectFirstPersian
 from pinglish_frontend import LATIN_NAMES
 from test_selected_probe import engine, set_confirmed_persian_probe
 from text_frontend import native_sequence_accepted, translate_text, word_tag
@@ -93,6 +94,39 @@ def named_symbols():
     return names
 
 
+def restress_known_names(values, names, frontend):
+    """Retain each symbol's phones while matching known written names.
+
+    Only one-to-one Persian word/tag alignments whose phone sequences match
+    the native spelling are changed. Unclear labels and deaccented words are
+    left intact instead of guessing their grammatical interpretation.
+    """
+    tag_pattern = re.compile(r'`\[[^]]+\]')
+    unaccent = lambda value: re.sub(r'\.[012]', '.#', value)
+    output = dict(values)
+    for char, original in values.items():
+        name = names.get(char)
+        if not name:
+            continue
+        words = name.split()
+        tags = tuple(tag_pattern.finditer(original))
+        if len(words) != len(tags) or tag_pattern.sub('', original).strip():
+            continue
+        pieces, cursor = [], 0
+        for word, match in zip(words, tags):
+            pieces.append(original[cursor:match.start()])
+            tag = match.group()
+            native = frontend.analyze_direct(word)
+            if (tag.count('.1') == 1 and native is not None and len(native.parts) == 1 and
+                unaccent(native.parts[0].text) == unaccent(tag)):
+                tag = native.parts[0].text
+            pieces.append(tag)
+            cursor = match.end()
+        pieces.append(original[cursor:])
+        output[char] = ''.join(pieces)
+    return output
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--worker', type=Path, required=True)
@@ -153,6 +187,13 @@ def main():
             if len(unicode_parts) != 1 or unicode_parts[0].language != 'fa':
                 raise RuntimeError('unsupported Unicode fallback name')
             unicode_name = unicode_parts[0].text
+            names = named_symbols()
+            for start in (ord('0'), 0x0660, 0x06f0):
+                for i, word in enumerate(('صفر', 'یک', 'دو', 'سه', 'چهار',
+                                           'پنج', 'شش', 'هفت', 'هشت', 'نه')):
+                    names[chr(start + i)] = word
+            with DirectFirstPersian(args.probe, None, None, None) as frontend:
+                values = restress_known_names(values, names, frontend)
             for name, tag in [*values.items(), ('unicode', unicode_name)]:
                 native_text = tag.replace('~', ' ')
                 if not native_sequence_accepted(native_text, native._phonemes_for_probe(native_text)):

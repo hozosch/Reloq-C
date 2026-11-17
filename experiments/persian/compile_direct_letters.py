@@ -7,20 +7,25 @@ from pathlib import Path
 from compile_direct_lexicon import EXPECTED_DICT, digest
 from espeak_ng_probe import EspeakPhonemeProbe
 from espeak_worker import EspeakWorker
-from reference_letter_names import LETTERS, effective_name_tag
+from reference_letter_names import LETTERS, NVDA_SPOKEN_NAMES, effective_name_tag
+from hybrid_fa_frontend import DirectFirstPersian
 from test_selected_probe import engine, set_confirmed_persian_probe
 from text_frontend import native_sequence_accepted
 
 HERE = Path(__file__).resolve().parent
 
 
-def generate(worker, native) -> str:
+def generate(worker, native, frontend) -> str:
     output = [
         '/* Generated from eSpeak NG Persian character names; GPL-3.0-or-later.\n',
         ' * See reference-espeak/persian and compile_direct_letters.py. */\n',
     ]
     for char in LETTERS:
         tag = effective_name_tag(worker, char)
+        if char in NVDA_SPOKEN_NAMES:
+            expanded = frontend.analyze_direct(NVDA_SPOKEN_NAMES[char])
+            if expanded is not None and len(expanded.parts) == 1:
+                tag = expanded.parts[0].text
         if not native_sequence_accepted(tag, native._phonemes_for_probe(tag)):
             raise RuntimeError(f'native parser changed the name of U+{ord(char):04X}')
         output.append(f'    {{0x{ord(char):04x}u, "{tag}"}},\n')
@@ -44,8 +49,9 @@ def main():
     set_confirmed_persian_probe()
     native = engine(args.probe, 0x90000)
     try:
-        with EspeakWorker(args.worker, args.espeak_library, args.data_parent) as worker:
-            value = generate(worker, native)
+        with EspeakWorker(args.worker, args.espeak_library, args.data_parent) as worker, \
+             DirectFirstPersian(args.probe, None, None, None) as frontend:
+            value = generate(worker, native, frontend)
     finally:
         native.close()
     if args.check:
