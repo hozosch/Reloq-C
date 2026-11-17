@@ -1,8 +1,8 @@
 """Request-local Korean pitch pilot for ordinary Persian speech.
 
 The listening comparison used translated Korean sentences. For arbitrary
-Persian input, a syllable-count proxy supplies Korean sentence structure;
-it is an approximation that still needs native-speaker listening feedback.
+Persian input, an experimental syllable-and-stress grouping approximates
+Korean accentual phrases; it still needs native-speaker listening feedback.
 No speech result or pitch curve is cached across requests.
 """
 from __future__ import annotations
@@ -44,24 +44,67 @@ def _donor_syllables(matches):
     return tuple(max(1, len(_SYLLABLE.findall(match.group()))) for match in matches)
 
 
+def _accent_phrases(words):
+    """Group whole words into short donor phrases, without adding syllables.
+
+    Korean accentual phrases often contain a few syllables and roughly one
+    content word. This approximation uses existing Persian stress markers;
+    it never fits or stores pitch points from a particular listening sample.
+    A long word remains intact, and explicit punctuation is handled outside.
+    """
+    cost = [(0, 0)] + [None] * len(words)
+    previous = [0] * (len(words) + 1)
+    for end in range(1, len(words) + 1):
+        syllables = accented = 0
+        for begin in range(end - 1, -1, -1):
+            count, has_accent = words[begin]
+            syllables += count
+            accented += has_accent
+            if begin < end - 1 and (syllables > 5 or accented > 3):
+                break
+            # Integer version of (syllables - 3.2)^2, plus an increasing
+            # cost for combining accents. Break equal-cost ties using the
+            # more balanced phrase lengths. No pitch data enters the choice.
+            shape = (5 * syllables - 16) ** 2
+            score = (cost[begin][0] + shape + 25 * max(0, accented - 1) ** 2,
+                     cost[begin][1] + shape)
+            if cost[end] is None or score < cost[end]:
+                cost[end], previous[end] = score, begin
+    result, end = [], len(words)
+    while end:
+        begin = previous[end]
+        result.append(sum(count for count, _ in words[begin:end]))
+        end = begin
+    return tuple(reversed(result))
+
+
 def proxy(tagged: str, *, continuation: bool = False) -> str | None:
-    """Keep syllable counts and phrase punctuation without Korean words."""
+    """Use Korean prosody on grouped Persian syllables and punctuation."""
     matches = tuple(_TAG.finditer(tagged))
     if not matches:
         return None
     syllables = _donor_syllables(matches)
-    parts = []
+    parts, phrase = [], []
+    def flush(mark=''):
+        if phrase:
+            parts.extend('가' * count for count in _accent_phrases(phrase))
+            phrase.clear()
+            parts[-1] += mark
     for index, match in enumerate(matches):
-        count = syllables[index]
         if index:
             gap = tagged[matches[index - 1].end():match.start()]
             punctuation = _punctuation(gap)
-            parts.append((punctuation if punctuation else '') + ' ')
-        parts.append('가' * count)
+            if punctuation:
+                flush(punctuation)
+        # Unmarked explicit phone tags retain a word-like accent rather than
+        # being incorrectly classified as unstressed function words.
+        marked = _SYLLABLE.findall(match.group())
+        accented = int(not marked or bool(re.search(r'\.[12]', match.group())))
+        phrase.append((syllables[index], accented))
     last = tagged[matches[-1].end():]
     ending = _punctuation(last)
-    parts.append(ending or (',' if continuation else '.'))
-    return ''.join(parts)
+    flush(ending or (',' if continuation else '.'))
+    return ' '.join(parts)
 
 
 def _donor_span(frames, leading, syllables, trailing):

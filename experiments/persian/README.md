@@ -14,10 +14,11 @@ existing reference in several contexts; unknown forms retain the fallback.
 The NVDA adapter also suppresses redundant emoji presentation selectors split
 by source indexes, while letting NVDA's symbol level and dictionaries take precedence.
 
-The dev135 candidate transfers the Korean core's own pitch to ordinary
-Persian and Pinglish speech. A Hangul syllable-count proxy approximates the
-longer comparison's manually translated Korean sentences; it is not a
-translation and cannot reproduce their phrasing exactly. As in the original
+The dev136 candidate transfers the Korean core's own pitch to ordinary
+Persian and Pinglish speech. An experimental Hangul proxy groups Persian
+syllables into approximate Korean accentual phrases, using the existing stress
+marks and respecting punctuation. It is not a translation and cannot reproduce
+the longer comparison's manually translated Korean sentences exactly. As in the original
 comparison, the pitch curve is mapped continuously across a sentence, rather
 than being warped separately at every Persian word boundary. Native index
 callbacks can report sentence changes too early when many word indexes are
@@ -38,13 +39,24 @@ monotonic mapping preserves both slider endpoints and responsiveness. The
 original long comparison used Korean inflection 30. This candidate requires
 native-speaker review.
 
-The donor keeps the Persian word and syllable counts; it does not insert a
-special final syllable or fit particular reference pitch patterns. The Korean
+The donor retains Persian syllable counts while grouping some adjacent words;
+it does not insert a special final syllable or fit reference pitch patterns. The Korean
 core plans each donor with the supplied punctuation and inflection. Additional
 context at a language switch prevents the Korean planner from treating an
 unfinished phrase as a sentence ending. This remains a syllable proxy, not a
 Korean translation or a claim about correct Persian intonation. The listening
 comparison is captured from NVDA's real speech pipeline at explicit settings.
+
+The grouping is an experimental approximation, not a claim that its boundaries
+are correct Persian prosody. It prefers short groups and increasingly penalizes
+merging marked accents; neither the original listening sample nor measured F0
+values enter the algorithm. Korean accentual phrases commonly have two to five
+syllables ([Jun 1998](https://linguistics.ucla.edu/people/jun/papers%20in%20pdf/Jun-Phonology1998.pdf));
+the new candidate requires native-speaker evaluation and comparison with dev135.
+`compare_korean_grouping.py` produces a controlled comparison of the earlier
+translated Korean source, the previous word-by-word donor and the grouped
+donor, all at Korean inflection 37 and with the same Persian synthesis frames.
+Its `--check-runtime` and optional `--old-pcm` verify the two runtime sections.
 
 For the reviewed long passage, a dense sequence of word marks previously
 placed the final question's contour 890 ms before the sentence mark used by

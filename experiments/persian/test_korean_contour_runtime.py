@@ -23,12 +23,19 @@ def main():
     for option in ('library', 'espeak-library', 'data-parent'):
         parser.add_argument('--' + option, required=True, type=Path)
     args = parser.parse_args()
-    assert proxy('`[.1sA.0lam] `[.1do.0nja]?') == '가가 가가?'
+    assert proxy('`[.1sA.0lam] `[.1do.0nja]?') == '가가가가?'
     assert proxy('`[.1sA.0lam], `[.1do.0nja]') == '가가, 가가.'
     assert proxy('`[.1sA.0lam]') == '가가.'
     assert proxy('`[.1sA.0lam]', continuation=True) == '가가,'
     assert proxy('`[.1sA.0lam],') == '가가,'
     assert proxy('`[salam]') == '가.'
+    for tagged, count, punctuation in (
+            ('`[.1sa.0lam] `[.1do.0nja].', 4, '.'),
+            ('`[.0be] `[.1mAr.0dom], `[.1sA.0lam]?', 5, ',?'),
+            ('`[.0a.0b.1c.0d.0e.0f] `[.1g]', 7, '.'),
+            ('`[foo] `[.1bar]!', 2, '!')):
+        result = proxy(tagged)
+        assert result.count('가') == count and ''.join(c for c in result if c in ',.!?') == punctuation
     mapped = [korean_inflection(value) for value in range(101)]
     assert mapped[0] == 0 and mapped[30] == 37 and mapped[100] == 100
     assert all(a <= b for a, b in zip(mapped, mapped[1:]))
@@ -249,7 +256,7 @@ def main():
             return result
         with patch.object(KoreanContour, 'apply', observe_direct):
             speak(('سلام دنیا.',), True)
-        native = FrameCapture(donor._dll).capture(donor, ('가가 가가.',), audio=False)
+        native = FrameCapture(donor._dll).capture(donor, ('가가가가.',), audio=False)
         values = [row.controls[1] for row in native.frames()
                   if row.controls[2] > 10 and row.controls[1] > 0]
         assert len(endpoints) == 1 and values
