@@ -1,4 +1,4 @@
-"""Check native contextual short-A and its targeted opening before Ach."""
+"""Check the British sad vowel in Persian and around Ach in particular."""
 from __future__ import annotations
 
 import argparse
@@ -9,10 +9,11 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 from _reloq_eci_direct import DirectEciEngine, GENDER, PAUSE_MODE, PROCESS_TAGS, SAMPLE_RATE
 from _reloq_persian_frames import FrameCapture
+from test_british_front_a import vowel
 
 
-def voice(path, gender, rate):
-    engine = DirectEciEngine(path.resolve(), dialect=0x90000, encoding='utf8', native_voice=True)
+def voice(path, gender, rate, dialect=0x90000):
+    engine = DirectEciEngine(path.resolve(), dialect=dialect, encoding='utf8', native_voice=True)
     engine.set_parameter(PROCESS_TAGS, 1)
     engine.set_parameter(PAUSE_MODE, 1)
     engine.set_parameter(GENDER, gender)
@@ -33,59 +34,60 @@ def capture(engine, scope, tag, enabled=True):
         assert scope(previous) == int(enabled)
 
 
+def front_nucleus(rows, reference):
+    # Some examples contain two /ae/ vowels and an intervening consonant.
+    # Select actual target-like voiced frames rather than the midpoint of the
+    # whole utterance, which could land on a consonant transition.
+    matches = [row for row in rows if row.controls[2] > 25 and row.controls[8] < 1 and
+               abs(row.controls[9] - reference.controls[9]) < 4 and
+               abs(row.controls[13] - reference.controls[13]) < 4]
+    assert len(matches) >= 2, 'no settled front-vowel frames'
+    return matches[len(matches) // 2]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--probe', required=True, type=Path)
-    parser.add_argument('--baseline', type=Path,
-                        help='previous contextual Persian probe before fixed alef')
+    parser.add_argument('--baseline', type=Path, help='optional previous Persian build')
     args = parser.parse_args()
     ach = ('`[.1bAG]', '`[.1sAGt]', '`[.1bAd.0bAGt]',
            '`[.1GAt]', '`[.1GA.0te]', '`[.1zir.0GAt]', '`[.1GAG]')
-    before_ach = set(ach[:3])
-    unchanged = ('`[.1A.0lef]', "`[.1s'A:'d]", '`[.1sAd]', '`[.0sA.1lam]',
-                 '`[.1bAt]', "`[.1'i:'.0r'a:'n]", '`[.1Gu]')
+    contexts = ach + ('`[.1sAd]', '`[.1bAt]', '`[.1pAt]', '`[.1nAm]',
+                      '`[.1mAn]', '`[.1lAt]', '`[.1rAt]', '`[.1jAt]', '`[.1At]')
+    unchanged = ('`[.1sod]', '`[.1sud]', '`[.1sid]', '`[.1sed]',
+                 '`[.1sad]', '`[.1jek]', '`[.1Gu]')
     checks = 0
     for gender in (0, 1):
         for rate in (3, 6):
             current, scope = voice(args.probe, gender, rate)
+            british, british_scope = voice(args.probe, gender, rate, 0x10001)
             baseline, old_scope = voice(args.baseline, gender, rate) if args.baseline else (None, None)
             try:
-                for tag in ach:
+                reference = vowel(capture(british, british_scope, 'sad', False).frames())
+                for tag in contexts:
                     sample = capture(current, scope, tag)
                     rows = sample.frames()
-                    # The earlier opening is retained before Ach, but is not
-                    # applied to a vowel immediately after it.
-                    opened = [r.controls[9] for r in rows if r.controls[2] > 0 and r.controls[8] == 0]
-                    threshold = (770 if gender else 700) if tag in before_ach else (660 if gender else 600)
-                    assert sum(value >= threshold for value in opened) >= (3 if 'zir' in tag else 15), (gender, rate, tag)
+                    mid = front_nucleus(rows, reference)
+                    for column in (4, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20):
+                        assert abs(mid.controls[column] - reference.controls[column]) < 5, (
+                            gender, rate, tag, column, mid.controls[column], reference.controls[column])
                     if baseline:
                         old = capture(baseline, old_scope, tag)
                         previous = old.frames()
-                        prior = [r.controls[9] for r in previous if r.controls[2] > 0 and r.controls[8] == 0]
-                        # Duration differences can change the number of frames;
-                        # compare the vowel targets rather than aligned times.
-                        delta = max(opened) - max(prior)
-                        if tag in before_ach:
-                            assert abs(delta) < 2, (tag, delta)
-                        elif tag == '`[.1GAG]':
-                            # Both surrounding fricatives can obscure the
-                            # exact F1 peak of this very short vowel.
-                            assert -220 < delta < -60, (tag, delta)
-                        else:
-                            expected = -125 if gender else -100
-                            assert abs(delta - expected) < 3, (tag, delta)
+                        assert len(sample.pcm) == len(old.pcm) and len(rows) == len(previous)
+                        assert sample.pcm != old.pcm
+                        assert all(a.tick == b.tick and abs(a.controls[1]-b.controls[1]) < .01
+                                   for a, b in zip(rows, previous))
                     checks += 1
                 if baseline:
                     for tag in unchanged:
-                        # Other vowels may receive a bounded duration change.
-                        now = capture(current, scope, tag).frames()
-                        old = capture(baseline, old_scope, tag).frames()
-                        assert abs(max(r.controls[9] for r in now) - max(r.controls[9] for r in old)) < 2, tag
+                        assert capture(current, scope, tag).pcm == capture(baseline, old_scope, tag).pcm, tag
                     # The scoped adjustment must never affect ordinary Finnish.
                     for tag in ach:
                         assert capture(current, scope, tag, False).pcm == capture(baseline, old_scope, tag, False).pcm
             finally:
                 current.close()
+                british.close()
                 if baseline:
                     baseline.close()
     print(f'Passed {checks} contextual short-A/Ach checks, voice/rate and isolation checks.')

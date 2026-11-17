@@ -220,13 +220,13 @@ jobs:
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci.dll -print -quit)
-          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --output dist/reloq-c-persian-pinglish-1.5.0-dev126.nvda-addon
+          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --output dist/reloq-c-persian-pinglish-1.5.0-dev127.nvda-addon
       - name: Test the candidate in real NVDA
         shell: pwsh
         env:
           PYTHONIOENCODING: utf-8
         run: |
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon dist/reloq-c-persian-pinglish-1.5.0-dev126.nvda-addon --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon dist/reloq-c-persian-pinglish-1.5.0-dev127.nvda-addon --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
           if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA Persian profile test failed' }
       - uses: actions/upload-artifact@v4
         with:

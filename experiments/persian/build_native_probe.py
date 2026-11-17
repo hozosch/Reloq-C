@@ -130,10 +130,31 @@ static unsigned persian_probe_front_a_neighbour(void *state,int32_t position,int
 '''
 
 FRONT_A_PATCH = r'''
-    /* Keep the earlier opening before the private Ach phone, but not after
-       it: the latter was judged too open. Prioritize a preceding Ach when
-       the vowel is between two of them. Preserve inheritance markers. */
+    /* Match the vowel nucleus in the actual British "sad" reference. Keep
+       the Finnish/Persian duration, stress and the neighbouring consonants;
+       their native transitions still enter and leave the replacement core. */
     {
+        const char *british=getenv("RELOQ_FA_BRITISH_FRONT_A");
+        if (british && british[0]=='1' && !british[1]) {
+            int16_t female=0;
+            memcpy(&female,(const unsigned char *)state+DG_BASE+3092+12,sizeof female);
+            STATE(int16_t,s448)=675;  STATE(int16_t,s449)=675;
+            STATE(int16_t,s450)=1475; STATE(int16_t,s451)=1475;
+            STATE(int16_t,s452)=2350; STATE(int16_t,s453)=2350;
+            if (female) {
+                /* The female Finnish source's tilt is one unit higher than
+                   British at matched voice parameters. Keep the voice's
+                   own baseline, but use the British target for this vowel. */
+                int16_t tilt=STATE(int16_t,s444);
+                STATE(int16_t,s405)=tilt>0 ? tilt-1 : tilt;
+                STATE(int16_t,s436)=1;
+            } else {
+                STATE(int16_t,s405)=0;
+                STATE(int16_t,s436)=0;
+            }
+        } else {
+        /* Keep the earlier private alternatives for comparisons with the
+           old Finnish-shaped front vowel outside the selected FA scope. */
         const char *setting=getenv("RELOQ_FA_FRONT_A_ACH");
         if(setting && setting[0]=='1' && !setting[1] &&
            persian_probe_front_a_neighbour(state,STATE(int32_t,w60),1)!=18 &&
@@ -154,6 +175,7 @@ FRONT_A_PATCH = r'''
             if(STATE(int16_t,s399)>0)
                 STATE(int16_t,s399)=(int16_t)((5*(int)STATE(int16_t,s399)+3)/6);
             if(!female && STATE(int16_t,s401)>260)STATE(int16_t,s401)=260;
+        }
         }
     }
 '''
@@ -2269,6 +2291,33 @@ def prepare_us_articulation(work: Path) -> None:
     """Adapt Persian vowel resonances and ordinary US-like consonants."""
     vowel_file = work / 'delta_rules_c08_fifi.c'
     text = vowel_file.read_text(encoding='utf8')
+    # The British sad rule sets F1-F3 but inherits the voice's higher
+    # formants and bandwidths. Save those defaults before Finnish's /A/
+    # rule can overwrite them, then restore them for the Persian candidate.
+    # This also preserves the way the donor adapts to gender and head size.
+    begin = text.index('int32_t reloq_fifi_stanfin_vals(')
+    end = text.index('\nstatic int32_t evv_stanfin_vals(', begin)
+    section = text[begin:end]
+    front_call = '    r0 = reloq_call_fifi_stanfin_ph_A(state, (int32_t)(FIELD(0)));\n'
+    if section.count(front_call) != 1:
+        raise RuntimeError('Cannot locate Persian front-vowel dispatcher')
+    section = section.replace(front_call, r'''    {
+        const char *british=getenv("RELOQ_FA_BRITISH_FRONT_A");
+        int selected=british && british[0]=='1' && !british[1];
+        int16_t b1=STATE(int16_t,s397),b2=STATE(int16_t,s398),b3=STATE(int16_t,s399);
+        int16_t b4=STATE(int16_t,s400),b5=STATE(int16_t,s401);
+        int16_t f4=STATE(int16_t,s454),f4_end=STATE(int16_t,s455);
+        int16_t f5=STATE(int16_t,s456),f5_end=STATE(int16_t,s457);
+        r0 = reloq_call_fifi_stanfin_ph_A(state, (int32_t)(FIELD(0)));
+        if (selected && !r0) {
+            STATE(int16_t,s397)=b1; STATE(int16_t,s398)=b2;
+            STATE(int16_t,s399)=b3; STATE(int16_t,s400)=b4; STATE(int16_t,s401)=b5;
+            STATE(int16_t,s454)=f4; STATE(int16_t,s455)=f4_end;
+            STATE(int16_t,s456)=f5; STATE(int16_t,s457)=f5_end;
+        }
+    }
+''', 1)
+    text = text[:begin] + section + text[end:]
     # Apply this only to the accepted long back-A rule. B1/B2 are bandwidths,
     # not formant frequencies: a
     # modest increase broadens/damps the two resonances without shifting their

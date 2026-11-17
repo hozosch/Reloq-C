@@ -97,3 +97,18 @@ audible, controlled comparison but does not establish that either contour is
 a correct Persian model. The experimental contour is not enabled in the
 test add-on. Native speaker feedback, lexical morphology, focus and question
 type are still needed before designing a more realistic default.
+
+## Follow-up listening candidate: dev127
+
+The listener requested the timbre of the British voice's vowel in `sad` for
+the Persian front vowel in all contexts. The candidate uses the donor's
+F1/F2/F3 centre targets and inherited upper formants and bandwidths, while
+retaining Persian duration, lexical stress and consonant transitions. This
+is a requested timbral comparison, not a claim that British /æ/ is an exact
+phonetic model for every Persian speaker. Compare the rendered spectra at
+matched F0 and test different voices, head sizes and neighbouring phones.
+
+The earlier audio comparisons explicitly used native speed 98, independent
+of the listener's NVDA setting. New spoken comparisons default to 60 and
+retain an adjustable command-line speed. They separate a previous/new front
+vowel comparison from the previously proposed paired F0-contour comparison.

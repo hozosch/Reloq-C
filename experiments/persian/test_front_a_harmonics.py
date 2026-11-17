@@ -60,29 +60,29 @@ def main():
     args = parser.parse_args()
     fa, scope = voice(args.candidate, 0x90000)
     old, old_scope = voice(args.previous, 0x90000) if args.previous else (None, None)
-    us, us_scope = voice(args.candidate, 0x10000)
+    british, british_scope = voice(args.candidate, 0x10001)
     checks = 0
     try:
         for gender in (0, 1):
-            for engine in (fa, old, us):
+            for engine in (fa, old, british):
                 if engine:
                     for param, value in ((SAMPLE_RATE, 3), (NATIVE_SPEED, 98), (GENDER, gender)):
                         engine.set_parameter(param, value)
-            for fa_text, us_text in (("`[.1s'A:'d]", 'sad'), ('`[.1bAt]', '`[.1bAt]')):
+            for fa_text in ("`[.1s'A:'d]", '`[.1bAt]', '`[.1GAt]', '`[.1sAGt]'):
                 _, fa_rows = capture(fa, scope, fa_text, True)
-                _, us_rows = capture(us, us_scope, us_text, False)
+                _, gb_rows = capture(british, british_scope, 'sad', False)
                 old_row = None
                 if old:
                     _, old_rows = capture(old, old_scope, fa_text, True)
                     old_row = vowel(old_rows)
                 distances, prior = [], []
                 for pitch in ((100, 120, 140) if not gender else (180, 200, 220)):
-                    ref = harmonics(us, us_scope, vowel(us_rows), False, pitch)
+                    ref = harmonics(british, british_scope, vowel(gb_rows), False, pitch)
                     got = distance(harmonics(fa, scope, vowel(fa_rows), True, pitch), ref)
                     if old_row is not None:
                         before = distance(harmonics(old, old_scope, old_row, True, pitch), ref)
                         prior.append(before)
-                    assert got < 30, (gender, fa_text, pitch, got)
+                    assert got < 5, (gender, fa_text, pitch, got)
                     distances.append(got)
                     checks += 1
                 if prior:
@@ -93,7 +93,7 @@ def main():
                           'candidate', sum(distances), 'previous', sum(prior))
     finally:
         fa.close()
-        us.close()
+        british.close()
         if old:
             old.close()
     print(f'Passed {checks} matched-pitch front-vowel harmonic comparisons.')

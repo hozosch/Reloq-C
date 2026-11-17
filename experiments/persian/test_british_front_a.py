@@ -1,9 +1,4 @@
-"""Measure the Persian front vowel against British and US references.
-
-The previous test equated a closer F3 value with a clearer vowel.  The
-listening feedback disproved that assumption, so this test examines the
-rendered upper spectrum as well as the native vowel and scope boundaries.
-"""
+"""Compare the Persian front-vowel nucleus with the British sad reference."""
 from __future__ import annotations
 
 import argparse
@@ -13,7 +8,7 @@ import math
 from pathlib import Path
 
 from test_us_articulation import capture, voice
-from _reloq_eci_direct import GENDER, NATIVE_SPEED, SAMPLE_RATE
+from _reloq_eci_direct import GENDER, HEAD_SIZE, NATIVE_SPEED, SAMPLE_RATE
 from _reloq_persian_frames import FrameReplay, NativeFrame
 
 
@@ -74,46 +69,59 @@ def main():
     fa, scope = voice(args.candidate, 0x90000)
     old, old_scope = voice(args.previous, 0x90000) if args.previous else (None, None)
     british, british_scope = voice(args.candidate, 0x10001)
-    us, us_scope = voice(args.candidate, 0x10000)
     checks = 0
     try:
         for rate in (1, 3, 6):
             for gender in (0, 1):
                 for speed in (40, 98, 170):
-                    for item in (fa, old, british, us):
+                    for item in (fa, old, british):
                         if item:
                             for parameter, value in ((SAMPLE_RATE, rate), (GENDER, gender),
                                                      (NATIVE_SPEED, speed)):
                                 item.set_parameter(parameter, value)
                     _, gb_rows = capture(british, british_scope, 'sad', False)
-                    _, us_rows = capture(us, us_scope, 'sad', False)
+                    reference = vowel(gb_rows)
                     for tag in ("`[.1s'A:'d]", '`[.1sAd]'):
                         current, rows = capture(fa, scope, tag, True)
                         mid = vowel(rows)
                         assert all(mid.controls[i] > 0 for i in (9, 10, 13, 14, 15, 16, 19, 20))
+                        # Frequencies, bandwidths and source tilt are all
+                        # checked, not just one upper resonance.
+                        for i in (4, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20):
+                            tolerance = .5 if i == 4 else 5
+                            assert abs(mid.controls[i] - reference.controls[i]) < tolerance, (
+                                rate, gender, speed, tag, i, mid.controls[i], reference.controls[i])
                         if old:
                             before, old_rows = capture(old, old_scope, tag, True)
-                            old_mid = vowel(old_rows)
-                            # F1/F2 frequencies and damping are outside this
-                            # upper-resonance adjustment.
-                            assert all(abs(mid.controls[i] - old_mid.controls[i]) < 1
-                                       for i in (9, 10, 13, 14)), (rate, gender, speed, tag)
+                            # Only the vowel sound changed; the word duration
+                            # and the pitch plan retain the Persian baseline.
+                            assert len(current.pcm) == len(before.pcm)
+                            assert len(rows) == len(old_rows)
+                            assert all(a.tick == b.tick and abs(a.controls[1] - b.controls[1]) < .01
+                                       for a, b in zip(rows, old_rows))
                             assert current.pcm != before.pcm
                         if (rate, speed, tag) == (3, 98, "`[.1s'A:'d]"):
                             levels = spectrum(fa, scope, mid, True, gender)
                             gb = spectrum(british, british_scope, vowel(gb_rows), False, gender)
-                            target = spectrum(us, us_scope, vowel(us_rows), False, gender)
-                            if old:
-                                previous_levels = spectrum(old, old_scope, vowel(old_rows), True, gender)
-                                # Guard against losing upper-band energy, but
-                                # judge spectral shape with the independent
-                                # multi-pitch harmonic test rather than a
-                                # single broad-band distance.
-                                assert all(levels[i] >= previous_levels[i] - 1 for i in (3, 4, 5)), (
-                                    gender, levels, previous_levels, target, gb)
-                            print('matched-F0 front vowel', gender, 'FA', levels,
-                                  'GB', gb, 'US', target)
+                            assert max(abs(a - b) for a, b in zip(levels, gb)) < 1, (gender, levels, gb)
+                            print('matched-F0 front vowel', gender, 'FA', levels, 'GB', gb)
                         checks += 1
+        # The upper-formant defaults and bandwidths differ by voice and head
+        # size. They must follow the British reference, not a single fixed
+        # calibration made for the default male voice.
+        for gender in (0, 1):
+            for head in (0, 25, 50, 75, 100):
+                for engine in (fa, british):
+                    for parameter, value in ((GENDER, gender), (HEAD_SIZE, head),
+                                             (SAMPLE_RATE, 3), (NATIVE_SPEED, 98)):
+                        engine.set_parameter(parameter, value)
+                actual = vowel(capture(fa, scope, '`[.1sAd]', True)[1])
+                expected = vowel(capture(british, british_scope, 'sad', False)[1])
+                for i in (4, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20):
+                    tolerance = .5 if i == 4 else 5
+                    assert abs(actual.controls[i] - expected.controls[i]) < tolerance, (
+                        gender, head, i, actual.controls[i], expected.controls[i])
+                checks += 1
         if old:
             for dialect, text in ((0x90000, 'Viisi sanaa.'), (0x10001, 'sad'),
                                   (0x10000, 'sad'), (0x40000, 'Ein deutscher Satz.')):
@@ -130,7 +138,6 @@ def main():
     finally:
         fa.close()
         british.close()
-        us.close()
         if old:
             old.close()
     print(f'Passed {checks} Persian/English front-vowel and isolation checks.')
