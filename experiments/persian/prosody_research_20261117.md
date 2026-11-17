@@ -140,6 +140,15 @@ in a replay of the same Persian frames. The transplant is not aligned by word
 or syllable, and it is neither a Persian prosody model nor enabled in the
 voice. Each example includes statement/question punctuation as appropriate.
 
+For the longer comparison the Persian passage is captured continuously with
+sentence indexes. The corresponding Korean sentences are synthesized
+individually because that provider can emit intermediate ECI indexes only
+at the end of its utterance. Each donor F0 curve is mapped to the voiced span
+of its Persian sentence, then normalized over the whole passage. Captured
+non-F0 controls and all frame timings are checked for exact identity. This
+avoids drifting across sentence boundaries, but still does not claim
+syllable-level alignment or preserve cross-sentence Korean prosodic context.
+
 The separate eSpeak-F0 comparison estimates periodic pitch from the eSpeak
 waveform, interpolates through unvoiced gaps, aligns the two engines at word
 boundaries, and matches median F0. It leaves the Persian frames' sounds,
