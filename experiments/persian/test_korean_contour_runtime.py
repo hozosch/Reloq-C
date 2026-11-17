@@ -135,6 +135,11 @@ def main():
         assert speak(rare, True) == speak(named, True), 'character fallback changed language routing or indexes'
         assert speak((EciText('Ж', character_mode=True),), True)[0] == speak(
             (EciLanguage(US_ENGLISH.id, '1'), 'cyrillic capital letter zhe'), True)[0]
+        multi = (EciIndex(54), EciText('Ж؟', character_mode=True), EciIndex(55))
+        multi_named = (EciIndex(54), EciLanguage(US_ENGLISH.id, '1'),
+                       EciText('cyrillic capital letter zhe'), EciLanguage(PERSIAN_PROBE.id, '1'),
+                       EciText('؟', character_mode=True), EciIndex(55))
+        assert speak(multi, True) == speak(multi_named, True), 'mixed character spelling changed'
         assert voice._home[0] == PERSIAN_PROBE.id
         assert getattr(voice, '_persian_korean_contour', None) is not None
         # Match the previous candidate at the user's actual slider settings,

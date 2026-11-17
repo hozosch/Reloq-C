@@ -401,18 +401,25 @@ class PersianProbeLanguageEngine(LanguageEngine):
             # engine when no Persian label exists. Routing it as a language
             # run also keeps Korean pitch planning away from the English name
             # and preserves indexes around the switch.
-            if (logical[0] in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) and
-                    text is not None and len(text) == 1 and ord(text) > 127 and
+            if (logical[0] in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) and text and
+                    (len(text) == 1 or isinstance(part, EciText) and part.character_mode) and
+                    any(ord(char) > 127 for char in text) and
                     not (isinstance(part, EciText) and part.is_control)):
                 engine = self._activate(logical)
                 if isinstance(engine, OwnedPersianEngine):
-                    analysis = engine._frontend.analyze_character(text)
-                    tag = analysis.parts[0].text
-                    if tag.startswith('`l1.0 ') and tag.endswith(' `l9.0'):
-                        select(self._key(US_ENGLISH.id, logical[1]))
-                        name = tag[len('`l1.0 '):-len(' `l9.0')]
-                        output.append(replace(part, text=name, character_mode=False)
-                                      if isinstance(part, EciText) else name)
+                    named = []
+                    for char in text:
+                        tag = (engine._frontend.analyze_character(char).parts[0].text
+                               if ord(char) > 127 else '')
+                        name = (tag[len('`l1.0 '):-len(' `l9.0')]
+                                if tag.startswith('`l1.0 ') and tag.endswith(' `l9.0') else None)
+                        named.append((char, name))
+                    if any(name is not None for _, name in named):
+                        for char, name in named:
+                            select(self._key(US_ENGLISH.id, logical[1]) if name is not None else logical)
+                            fragment = char if name is None else name
+                            output.append(replace(part, text=fragment, character_mode=name is None)
+                                          if isinstance(part, EciText) else fragment)
                         continue
             if position in pinglish_runs and logical[0] == PINGLISH_PROBE.id:
                 english = self._key(US_ENGLISH.id, logical[1])
