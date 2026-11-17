@@ -222,6 +222,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'به علاوه', False),
                           ('fa_IR', 'بعلاوه', False),
                           ('fa_IR', '+', True),
+                          ('fa_IR', '/', True),
+                          ('fa_IR', '\\', True),
                           ('fa_IR', 'نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA', 'pipeline_user_latency'),
                           ('fa_IR', 'نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA', 'pipeline_user_latency'),
                           ('fa_IR', 'اکنون نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA', 'pipeline_user_latency'),
@@ -729,7 +731,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags:
                     raise AssertionError('NVDA lost the Persian character name: ' + ascii(tags))
-            if ((spelling is True and text in 'ٔأˈˌə̇αé⚽') or
+            if ((spelling is True and text in 'ٔأˈˌə̇αé⚽/\\') or
                     spelling in ('issue49_hamza_line', 'issue49_hamza_line_none')):
                 expected = {'ٔ': "`[.0hAm.1z'e:'.0j'e:'] `[.0ba.1la]",
                             'أ': "`[.0A.1lef] `[.0hAm.1z'e:']"}.get(text, self.symbol_tags.get(text))
