@@ -1,4 +1,4 @@
-# Persian: first listening comparison
+# Persian development and listening comparisons
 
 ## Current implementation status
 
@@ -13,6 +13,30 @@ compound endings. Each admitted compound stem is checked against the
 existing reference in several contexts; unknown forms retain the fallback.
 The NVDA adapter also suppresses redundant emoji presentation selectors split
 by source indexes, while letting NVDA's symbol level and dictionaries take precedence.
+
+### Current melody and word stress (dev141 and later)
+
+The Persian and Pinglish test voices now use the shared Finnish-based melody
+planner; the Korean donor described below is retained as historical research
+and is not applied by the current driver. Pitch and inflection controls remain
+active. The native text core assigns default Persian word stress using bounded
+word-class and morphological rules, handles common weak function words in
+context, and retains the previous analysis where a form is ambiguous. See
+[PERSIAN_STRESS.md](PERSIAN_STRESS.md) for the supporting studies and limits.
+
+The dev142 listening branch additionally moves the long back vowel partly
+towards German short /o/ as in *oft* and the front vowel partly towards German
+long /a/ as in *Tag*. This is an experimental comparison, not a claim that
+the resulting vowels or the Finnish melody have been validated by speakers.
+
+The language is **not yet fully implemented in the native core**. Mixed-text
+segmentation and sentence planning still run in the NVDA adapter, and words
+outside the direct rules may use an in-process eSpeak text fallback. Persian
+and Pinglish have not yet been registered as native ECI languages or exposed
+as selectable voices in SAPI5 and Android. An Android cross-compilation test
+checks the common native components, not end-to-end Persian playback.
+
+### Historical Korean contour experiments (dev137)
 
 The dev137 candidate transfers the Korean core's own pitch to ordinary
 Persian and Pinglish speech. An experimental Hangul proxy groups Persian
@@ -76,14 +100,7 @@ from one shared Persian frame capture. Its `--check-runtime` option checks
 that the current proxy section matches the live language-engine PCM; an
 optional `--original` checks the original approved recording's Korean section.
 
-The language is **not yet fully implemented in the native core**. Mixed-text
-segmentation and sentence planning still run in the NVDA adapter, and words
-outside the direct rules may use an in-process eSpeak text fallback. Persian
-and Pinglish have not yet been registered as native ECI languages or exposed
-as selectable voices in SAPI5 and Android. An Android cross-compilation test
-checks the common native components, not end-to-end Persian playback.
-
-## Issue 49: listening candidates
+## Issue 49: earlier listening candidates
 
 The dev123 listening candidate restores the isolated Persian front /æ/ to
 the dev121 rule after the dev122 shape was reported as wrong. It keeps the
@@ -103,8 +120,8 @@ sentence-melody planner are not retuned.
 current eSpeak-derived stress, a possible final-syllable stress, and no
 explicit stress in a few nouns and a short sentence. It is a listening probe,
 not an automatic rule: Persian stress depends on grammatical structure,
-including prefixed verbs and enclitics. The production text stress remains
-unchanged until those cases and native-speaker feedback are addressed.
+including prefixed verbs and enclitics. At that time, production text stress remained unchanged until those cases
+were addressed. The current bounded rules are described above.
 
 The dev122 candidate transfers the US consonant control flow, duration and
 transition calculations for ordinary /p t k b d g f v s z ʃ ʒ/. The native
