@@ -5,6 +5,10 @@ on:
     branches: [codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117]
     paths:
       - .github/workflows/persian-nvda-direct-test.yml
+      - experiments/persian/nvda_driver_probe.py
+      - experiments/persian/direct_fa_sequence.py
+      - experiments/persian/test_nvda_real_plugin.py
+      - experiments/persian/test_unicode_fallback_routing.py
 permissions:
   contents: read
   actions: read
@@ -48,6 +52,16 @@ jobs:
           $portable = Join-Path $pwd 'portable-nvda'
           $p = Start-Process (Get-Item candidate/nvda_2026.3.1.exe).FullName -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
           if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/synthDrivers/espeak.dll")) { throw 'NVDA portable installation failed' }
+      - name: Check mixed Unicode name routing
+        shell: pwsh
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          $dll = (Get-ChildItem candidate -Recurse -Filter eci.dll | Select-Object -First 1).FullName
+          $espeak = (Resolve-Path portable-nvda/synthDrivers/espeak.dll).Path
+          $data = (Resolve-Path portable-nvda/synthDrivers).Path
+          python -B experiments/persian/test_unicode_fallback_routing.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'Mixed Unicode name routing failed' }
       - name: Build private NVDA test add-on
         shell: bash
         run: |
