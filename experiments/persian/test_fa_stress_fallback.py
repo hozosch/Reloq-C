@@ -32,6 +32,15 @@ def main():
         assert result.needs_native_validation
         assert [part.value for part in result.parts if isinstance(part, EciIndex)] == [7]
         fallback.assert_called_once_with('نمی‌روم')
+        # One unrelated fallback word must not lose a two-word verbal prefix
+        # or the verified split form of علامت‌دار.
+        with patch.object(frontend, 'analyze', return_value=reference):
+            prefix = project_resilient(('می ', EciIndex(8), 'روم پدیده‌ای'), frontend)
+            compound = project_resilient(('علامت ', EciIndex(9), 'دار پدیده‌ای'), frontend)
+        assert prefix.tagged.startswith('`[.1mi] `[.0rA.0vAm] '), prefix.tagged
+        assert compound.tagged.startswith('`[.0A.0la.0mAt] `[.1dar] '), compound.tagged
+        assert [part.value for part in prefix.parts if isinstance(part, EciIndex)] == [8]
+        assert [part.value for part in compound.parts if isinstance(part, EciIndex)] == [9]
     print('Passed mixed native/reference Persian stress and index projection.')
 
 

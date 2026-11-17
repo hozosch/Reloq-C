@@ -360,6 +360,7 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
         return bool(match and at < len(source) and (word_char(source[at]) or source[at].isdecimal()))
 
     mapping, pieces, used, at = [0] * (len(source) + 1), [], 0, 0
+    pending_pair = None
     has_words = any(c.isalpha() or c.isdecimal() for c in source)
 
     def emit(first, last, value, *, speech):
@@ -433,8 +434,33 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
                             (pinglish and unicodedata.category(c).startswith('M')) or
                             0x0600 <= ord(c) <= 0x08ff or 0xfb50 <= ord(c) <= 0xfeff or
                             c in ('\u200c', '\u200d') for c in value)
-            emit(at, end, word_tag(value, next_word(end)) if supported and any(c.isalpha() for c in value)
-                 else names(value), speech=True)
+            tag = None
+            if pending_pair is not None and at == pending_pair[0]:
+                tag, pending_pair = pending_pair[1], None
+            elif not pinglish and value in ('می', 'نمی', 'علامت'):
+                # Preserve the native two-word context even if an unrelated
+                # later word made the whole sentence use the resilient path.
+                gap = re.match(r'[ \t]+', source[end:])
+                following = end + len(gap.group()) if gap else end
+                last = following
+                while last < len(source) and not modes[last] and word_char(source[last]):
+                    last += 1
+                if gap and last > following:
+                    pair = source[at:last]
+                    analysis = frontend.analyze_direct(pair)
+                    if analysis is not None and analysis.source_map is not None and len(analysis.parts) == 1:
+                        rendered = analysis.parts[0].text
+                        first_end = analysis.source_map[len(value.encode('utf8'))]
+                        second_start = analysis.source_map[len(source[at:following].encode('utf8'))]
+                        first, second = rendered[:first_end], rendered[second_start:]
+                        prefix_pair = value in ('می', 'نمی') and '.1' in first and '.1' not in second
+                        compound_pair = value == 'علامت' and source[following:last] == 'دار' and '.1' not in first
+                        if prefix_pair or compound_pair:
+                            tag, pending_pair = first, (following, second)
+            if tag is None:
+                tag = (word_tag(value, next_word(end)) if supported and any(c.isalpha() for c in value)
+                       else names(value))
+            emit(at, end, tag, speech=True)
             at = end
             continue
         punctuation = {'،': ',', '؛': ';', '؟': '?', '«': '(', '»': ')'}.get(char, char)
