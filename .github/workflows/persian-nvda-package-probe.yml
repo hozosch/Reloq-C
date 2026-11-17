@@ -2,7 +2,7 @@ name: Persian and Pinglish NVDA test package
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117]
+    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117]
     paths:
       - experiments/persian/build_experimental_nvda.py
       - experiments/persian/select_windows_acoustic_run.py
@@ -286,7 +286,7 @@ jobs:
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci.dll -print -quit)
-          if [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; else version=1.5.0-dev142; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev144; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; else version=1.5.0-dev142; fi
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
       - name: Test the candidate in real NVDA
         shell: pwsh

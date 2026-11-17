@@ -72,6 +72,10 @@ def main():
         'اسلش': '`[.0es.1lAS]',
         'اسلش کتاب': '`[.0es.1lAS] `[.0ke.1tab]',
         'کتاب اسلش': '`[.0ke.1tab] `[.0es.1lAS]',
+        'یونانی': '`[.0ju.0na.1ni]',
+        'ژاپنی': '`[.0Za.0po.1ni]',
+        'آلمانی': '`[.0al.0ma.1ni]',
+        'انگلیسی': '`[.0en.0ge.0li.1si]',
     }
     for word, expected in examples.items():
         assert project(word) == expected, (word, project(word), expected)
@@ -86,6 +90,7 @@ def main():
 
     assert fallback('نمی‌روم', '`[.0nA.0mi.1rA.0vAm]') == '`[.1nA.0mi.0rA.0vAm]'
     assert fallback('کتابی', '`[.0ke.1ta.0bi]') == '`[.0ke.1ta.0bi]'
+    assert fallback('یونانی', '`[.0ju.1na.0ni]') == '`[.0ju.0na.1ni]'
     assert fallback('ولی', '`[.1vA.0li]') == '`[.1vA.0li]'
     # Multi-tag fallback output has no safe one-word alignment.
     multi = '`[.1ke.0tab] `[.1Ga.0ne]'

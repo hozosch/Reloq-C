@@ -79,6 +79,8 @@ def main():
             part for part in indexed_us_proxy(weak, en, (1,)) if isinstance(part, str)))
         assert project(('را',), fa_engine._frontend, allow_fallback=False).tagged == '`[.1ra]'
         assert project(('اسلش',), fa_engine._frontend, allow_fallback=False).tagged == '`[.0es.1lAS]'
+        assert project(('یونانی',), fa_engine._frontend, allow_fallback=False).tagged == '`[.0ju.0na.1ni]'
+        assert '`[.0ju.0na.1ni]' in fa_engine._frontend.analyze_character('α').parts[0].text
         assert fa_engine._frontend.analyze_character('/').parts[0].text == '`[.0es.1lAS]'
         assert fa_engine._frontend.analyze_character('\\').parts[0].text.endswith('`[.0es.1lAS]')
         pinglish = voice._activate(voice._key(PINGLISH_PROBE.id, '1'))

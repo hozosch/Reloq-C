@@ -22,6 +22,11 @@ struct fa_stress_class { uint16_t bank,offset; unsigned char flags; };
 #include "direct_fa_nvda_words.inc"
 #include "direct_fa_compounds.inc"
 #include "direct_fa_stress_classes.inc"
+#include "direct_fa_adjective_final_y.inc"
+
+_Static_assert(sizeof fa_stress_adjective_final_y ==
+               (sizeof fa_stress_classes / sizeof fa_stress_classes[0] + 7u) / 8u,
+               "adjective stress bits must match the class table");
 #ifndef RELOQ_FA_EXCLUDE_FREQUENCY_WORDS
 #include "direct_fa_frequency_words.inc"
 #include "direct_fa_frequency_compounds.inc"
@@ -499,9 +504,10 @@ static int direct_context_word_exact(const char *word,size_t bytes,int follows_w
 
 /* Lilak is used only to recognize word classes, never as a pronunciation
  * source. Multiple classes are retained so homographs can be left alone. */
-static unsigned stress_class(const char *word,size_t bytes)
+static size_t stress_class_index(const char *word,size_t bytes)
 {
-    size_t lo=0,hi=sizeof fa_stress_classes/sizeof fa_stress_classes[0];
+    const size_t count=sizeof fa_stress_classes/sizeof fa_stress_classes[0];
+    size_t lo=0,hi=count;
     while(lo<hi) {
         size_t m=lo+(hi-lo)/2;
         const char *key=fa_stress_banks[fa_stress_classes[m].bank]+fa_stress_classes[m].offset;
@@ -510,9 +516,23 @@ static unsigned stress_class(const char *word,size_t bytes)
         if(!order)order=bytes<n?-1:bytes>n?1:0;
         if(order<0)hi=m;
         else if(order>0)lo=m+1;
-        else return fa_stress_classes[m].flags;
+        else return m;
     }
-    return 0;
+    return count;
+}
+
+static unsigned stress_class(const char *word,size_t bytes)
+{
+    size_t index=stress_class_index(word,bytes);
+    return index<sizeof fa_stress_classes/sizeof fa_stress_classes[0]
+        ? fa_stress_classes[index].flags : 0;
+}
+
+static int stress_adjective_final_y(const char *word,size_t bytes)
+{
+    size_t index=stress_class_index(word,bytes);
+    return index<sizeof fa_stress_classes/sizeof fa_stress_classes[0] &&
+           (fa_stress_adjective_final_y[index/8] & (1u<<(index%8)))!=0;
 }
 
 int reloq_fa_direct_is_verb(const char *word,size_t bytes)
@@ -658,7 +678,8 @@ static void apply_persian_stress(const char *word,size_t bytes,char *tag)
         if(ends_with(word,bytes,"ی",&stem) && stress_class(word,stem)==1u) {
             size_t index=direct_index(word,stem);
             if(index<reloq_fa_direct_word_count() && index/8<sizeof fa_direct_suffix_bases[5] &&
-               (fa_direct_suffix_bases[5][index/8] & (1u<<(index%8))))return;
+               (fa_direct_suffix_bases[5][index/8] & (1u<<(index%8))) &&
+               !stress_adjective_final_y(word,bytes))return;
         }
         stress_primary(tag,syllables-1);return;
     }

@@ -1,6 +1,6 @@
 # Persian stress and contour
 
-The dev143 NVDA experiment uses the native US English contour as its pitch
+The dev144 NVDA experiment uses the native US English contour as its pitch
 pilot, mapped to the existing Persian frame timing and vowel sound. It maps
 the end of a word's voiced portion to the donor's voiced end instead of
 dropping the final vowel's pitch movement. A Korean donor is not selected.
@@ -39,6 +39,9 @@ the end of a phrase. A native weak-word control also prevents those unaccented
 words from automatically attracting the phrase accent. Citation forms and
 punctuation boundaries are retained. The computer term اسلش is accented on
 its final syllable in both written-word and slash-character readings.
+Adjectives ending in -i retain final stress when Lilak classifies the word
+only as an adjective (or adjective and adverb). Words also classified as
+nouns are not reinterpreted, since -i can be an unstressed indefinite clitic.
 Several prepositions and ya already have context-sensitive readings. Free
 personal and demonstrative pronouns can carry their own lexical accent; the
 provider remains responsible for phrase-level pitch and emphasis. Mixed

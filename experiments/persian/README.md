@@ -14,7 +14,7 @@ existing reference in several contexts; unknown forms retain the fallback.
 The NVDA adapter also suppresses redundant emoji presentation selectors split
 by source indexes, while letting NVDA's symbol level and dictionaries take precedence.
 
-### Current melody and word stress (dev143 experiment)
+### Current melody and word stress (dev144 experiment)
 
 The Persian and Pinglish test voices use a US-English pitch pilot while
 retaining Persian acoustic frames. Unusual inputs can still use the older
