@@ -40,7 +40,7 @@ def add_persian(entries, *, version='1.5.0-dev142'):
         raise ValueError('the NVDA driver changed; its Persian adapter must be reviewed')
     source = source.replace(old_import,
                             'from ._reloq_persian_bridge import add_profiles, make_engine\n'
-                            'from ._reloq_persian_decimals import decimal_pending, protect_decimals\n'
+                            'from ._reloq_persian_decimals import decimal_pending, dotted_version_word, protect_decimals\n'
                             'from ._reloq_persian_joiners import (ReloqPersianJoinerGuard, joiner_pending,\n'
                             '    emoji_selector_pending, prepare_persian_symbols, protect_joiners,\n'
                             '    protect_emoji_selectors, restore_joiners)\n' + old_import, 1)
@@ -70,6 +70,10 @@ def add_persian(entries, *, version='1.5.0-dev142'):
          'any(isinstance(item, str) and _BUILTIN_BOUNDARY.search(item) for item in sequence) or\n'
          '                            joiner_pending(sequence) or decimal_pending(sequence) or\n'
          '                            emoji_selector_pending(sequence))'),
+        ('                        if protect and not any(left < end and right > start for left, right in personal) and not any(\n',
+         '                        if dotted_version_word(selected, item, start, end):\n'
+         '                            protect = False\n'
+         '                        if protect and not any(left < end and right > start for left, right in personal) and not any(\n'),
         ('        speechSequence[:] = self._protect_tags(prepared, symbolLevel=symbolLevel)',
          '        prepared = self._protect_tags(prepared, symbolLevel=symbolLevel)\n'
          '        prepared = protect_decimals(self, prepared, symbol_level=symbolLevel)\n'

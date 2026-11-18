@@ -16,7 +16,7 @@ import unicodedata
 if __package__:
     from .direct_fa_sequence import ScopedDirectPersianEngine
     from .hybrid_fa_frontend import DirectFirstPersian
-    from .pinglish_frontend import english_exception, latin_spans
+    from .pinglish_frontend import english_exception, latin_spans, technical_version_prefix
     from .continuous_driver import bounded_jobs, bracket_jobs, continuation_comma, sentence_jobs, try_continuous, try_persian_glides
     from .._reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
                                      EciPitch, EciPitchHz, EciProsody, EciText, PAUSE_MODE)
@@ -24,7 +24,7 @@ if __package__:
 else:
     from direct_fa_sequence import ScopedDirectPersianEngine
     from hybrid_fa_frontend import DirectFirstPersian
-    from pinglish_frontend import english_exception, latin_spans
+    from pinglish_frontend import english_exception, latin_spans, technical_version_prefix
     from continuous_driver import bounded_jobs, bracket_jobs, continuation_comma, sentence_jobs, try_continuous, try_persian_glides
     from _reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
                                   EciPitch, EciPitchHz, EciProsody, EciText, PAUSE_MODE)
@@ -157,11 +157,11 @@ def _pinglish_part_runs(parts, home):
         text = ''.join(value for _, value in entries)
         words = tuple(latin_spans(text))
         spans = [(start, end) for start, end in words if english_exception(text[start:end])]
-        # A Latin v directly attached to a dotted version is a technical
-        # label, not a Pinglish word. NVDA's builtin dictionary may have
-        # inserted spaces between that v and the first digit.
+        # NVDA's builtin dictionary may insert spaces after a technical
+        # version prefix. Do not generalize this to ordinary Pinglish words.
         spans.extend((match.start(), match.end()) for match in re.finditer(
-            r'(?<!\w)v[ \t]*[0-9]+(?:\.[0-9]+)+(?![\w.])', text, re.IGNORECASE))
+            r'(?<!\w)([A-Za-z]+)[ \t]*[0-9]+(?:\.[0-9]+)+(?![\w.])', text)
+            if technical_version_prefix(match.group(1)))
         for number in re.finditer(r'[+\-−]?[0-9]+(?:[.,][0-9]+)*', text):
             previous = next(((a, b) for a, b in reversed(words) if b <= number.start()), None)
             following = next(((a, b) for a, b in words if a >= number.end()), None)

@@ -27,6 +27,7 @@ def main():
         ('Google Chrome, version 157.0.8103.79 (AMD64)',),
         ('BlindRadio, version 0.2.100',),
         ('v1.5.0',),
+        ('NVDA1.5.0',),
         ('4 of 14',),
         ('4', EciIndex(29), ' of ', EciIndex(30), '14'),
         ('ˌchi-kən-ˈgu̇n-yə',),
@@ -69,6 +70,10 @@ def main():
         assert runs[1] == (('en', ' 1.5.0'),), runs
         assert render(PINGLISH_PROBE.id, version) == render(US_ENGLISH.id, version)
         assert render(PINGLISH_PROBE.id, version_indexed) == render(US_ENGLISH.id, version_indexed)
+        initialism_version = ('NVDA  ', EciText(' 1.5.0'))
+        assert render(PERSIAN_PROBE.id, initialism_version) == render(US_ENGLISH.id, initialism_version)
+        assert render(PINGLISH_PROBE.id, initialism_version) == render(US_ENGLISH.id, initialism_version)
+        assert render(PERSIAN_PROBE.id, initialism_version) == render(US_ENGLISH.id, ('NVDA1.5.0',))
         # A number on its own or next to Persian remains Persian, including
         # when the number was delivered in several indexed fragments.
         assert render(PERSIAN_PROBE.id, ('3.5',))[0] != render(US_ENGLISH.id, ('3.5',))[0]

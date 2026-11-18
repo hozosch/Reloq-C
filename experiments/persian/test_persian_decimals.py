@@ -146,6 +146,7 @@ def main():
     # safe protection of the unrelated number.
     class BuiltinEntry:
         def __init__(self, pattern):
+            self.pattern, self.replacement, self.type, self.caseSensitive = pattern, ' ', 1, True
             self.compiled = re.compile(pattern)
         def sub(self, value):
             return self.compiled.sub(' ', value)
@@ -155,6 +156,7 @@ def main():
                 value = entry.sub(value)
             return value
     builtin = BuiltinDictionary((BuiltinEntry(r'(?=[A-Z])(?<=[a-z])'),
+                                 BuiltinEntry(r'(?=[A-Z][a-z])(?<=[A-Z])'),
                                  BuiltinEntry(r'(?=\d)(?<=[^\W\d])')))
     dictionaries.dictionaries['builtin'] = builtin
     whole = 'BlindRadio, version 0.2.100'
@@ -222,9 +224,53 @@ def main():
     dictionaries.dictionaries['builtin'] = builtin
     assert any(isinstance(item, native_word) and item.text.endswith('1.5.0')
                for item in protected(['v1.5.0']))
+    assert any(isinstance(item, native_word) and item.text.endswith('1.5.0')
+               for item in protected(['NVDA1.5.0']))
     assert protected(['salam1.5']) == ['salam1.5']
     driver._selectedLanguage = en_id
     assert protected(['version 3.5']) == ['version 3.5']
+    # Run the normal driver's earlier acronym guard too: an initialism
+    # directly followed by a version must not lose the numeric point before
+    # the Persian decimal guard sees it.
+    from bisect import bisect_left
+    wordseg = importlib.import_module('probe_driver._reloq_wordseg')
+    tags = importlib.import_module('probe_driver._speech_tags')
+    normal_source = tree  # The driver generated for the Persian test add-on.
+    normal_class = next(node for node in normal_source.body if isinstance(node, ast.ClassDef) and node.name == 'SynthDriver')
+    methods = [node for node in normal_class.body if isinstance(node, ast.FunctionDef) and node.name in (
+        '_protect_tags', '_native_following_boundary', '_nvda_builtin_splits_acronym',
+        '_nvda_dictionary_matches', '_nvda_personal_word_ranges')]
+    namespace = dict(bisect_left=bisect_left, re=re, config=sys.modules['config'],
+                     LangChangeCommand=LangChangeCommand, CharacterModeCommand=CharacterModeCommand,
+                     NativeDictionaryWord=native_word, SegmentationGuard=tags.SegmentationGuard,
+                     protect_sequence=tags.protect_sequence, dotted_version_word=decimals.dotted_version_word,
+                     language_for=importlib.import_module('probe_driver._reloq_languages').language_for,
+                     _BUILTIN_BOUNDARY=re.compile(r'(?=[A-Z])(?<=[a-z])|(?=[A-Z][a-z])(?<=[A-Z])|(?=\d)(?<=[^\W\d])'))
+    for name in ('protected_native_spans', 'word_runs', 'camel_word', 'builtin_acronym'):
+        namespace[name] = getattr(wordseg, name)
+    module = ast.Module(body=[ast.ClassDef(name='SynthDriver', bases=[], keywords=[], body=methods, decorator_list=[])],
+                        type_ignores=[])
+    exec(compile(ast.fix_missing_locations(module), 'real-reloq-protection', 'exec'), namespace)
+    normal = namespace['SynthDriver']()
+    normal._terminating, normal._voiceTags = False, False
+    normal._selectedLanguage, normal._voice = fa_id, '1'
+    normal._languages, normal._submit_lock = profiles, threading.Lock()
+    normal._wordSegmentation = normal._camelCase = False
+    normal._wordseg_keys = None
+    normal._imported_dictionaries = types.SimpleNamespace(matches=lambda *_: False, process=lambda text, *_: text)
+    sys.modules['synthDriverHandler'] = types.SimpleNamespace(getSynth=lambda: normal)
+    sys.modules['globalVars'] = types.SimpleNamespace(speechDictionaryProcessing=True)
+    dictionaries.dictionaries['builtin'] = builtin
+    for text in ('v1.5.0', 'NVDA1.5.0'):
+        after_acronyms = normal._protect_tags([text], symbolLevel=level.NONE)
+        after_decimals = decimals.protect_decimals(normal, after_acronyms, symbol_level=level.NONE)
+        guarded = ''.join(item.text for item in after_decimals if isinstance(item, native_word))
+        assert '1.5.0' in guarded, (text, pieces(after_acronyms), pieces(after_decimals))
+    dictionaries.dictionaries['user'] = [types.SimpleNamespace(compiled=re.compile(r'NVDA1\.5\.0'),
+                                                              pattern='NVDA1.5.0', replacement='custom', type=0)]
+    original = ['NVDA1.5.0']
+    assert decimals.protect_decimals(normal, normal._protect_tags(original, symbolLevel=level.NONE),
+                                    symbol_level=level.NONE) == original
     print('Passed English decimal points through Persian NVDA symbols, indexes, spelling and dictionaries.')
 
 

@@ -9,10 +9,19 @@ from speech.commands import CharacterModeCommand, IndexCommand, LangChangeComman
 from ._reloq_languages import language_for
 from ._reloq_persian_joiners import _dictionary_untouched
 from ._speech_tags import NativeDictionaryWord
-from ._persian.pinglish_frontend import english_exception, latin_spans
+from ._persian.pinglish_frontend import english_exception, latin_spans, technical_version_prefix
 
 _FA, _PINGLISH = 0x7f0000, 0x7f0001
 _DECIMAL = re.compile(r'(?<![0-9_])[+\-−]?(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]+)+')
+
+
+def dotted_version_word(selected, text, start, end):
+    """Leave an acronym attached to a version for the decimal guard."""
+    if selected not in (_FA, _PINGLISH) or not re.match(r'\.[0-9]', text[end:]):
+        return False
+    word = text[start:end]
+    match = re.fullmatch(r'([A-Za-z]+)[0-9]+', word)
+    return bool(match and (selected == _FA or technical_version_prefix(match.group(1))))
 
 
 def decimal_pending(sequence):
@@ -93,7 +102,7 @@ def _english_number(text, start, end, language):
         previous = next(((left, right) for left, right in reversed(words) if right <= start), None)
         following = next(((left, right) for left, right in words if left >= end), None)
         return bool((previous and (english_exception(text[previous[0]:previous[1]]) or
-                     (text[previous[0]:previous[1]].lower() == 'v' and previous[1] == start)) and
+                     (technical_version_prefix(text[previous[0]:previous[1]]) and previous[1] == start)) and
                      not text[previous[1]:start].strip()) or
                     (previous is None and following and english_exception(text[following[0]:following[1]]) and
                      not text[end:following[0]].strip()))

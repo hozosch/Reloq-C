@@ -77,6 +77,12 @@ def english_exception(word: str) -> bool:
     return 'ph' in value or 'th' in value
 
 
+def technical_version_prefix(word: str) -> bool:
+    """Recognize a version marker or Latin initialism, not a Pinglish word."""
+    return (word.lower() == 'v' or english_exception(word) or
+            len(word) >= 2 and word.isascii() and word.isalpha() and word.isupper())
+
+
 def _connected(char: str) -> bool:
     return (char.isalnum() or unicodedata.category(char).startswith('M') or
             char in ('\u200c', '\u200d', "'", '’'))

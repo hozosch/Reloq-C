@@ -284,12 +284,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           *((locale, text, mode) for text in (
                               'Google Chrome, version 157.0.8103.79 (AMD64)',
                               'BlindRadio, version 0.2.100',
-                              'v1.5.0')
+                              'v1.5.0', 'NVDA1.5.0')
                             for locale, mode in (('fa_IR', 'issue49_version_some'),
                                                  ('en_US', 'issue49_version_some'),
                                                  ('fa_IR', 'issue49_version_split'))),
                           ('fa_Latn', 'v1.5.0', 'issue49_version_some'),
                           ('fa_Latn', 'v1.5.0', 'issue49_version_split'),
+                          ('fa_Latn', 'NVDA1.5.0', 'issue49_version_some'),
+                          ('fa_Latn', 'NVDA1.5.0', 'issue49_version_split'),
                           *(( 'fa_IR', emoji, mode) for emoji in ('⚽️', '⚡️', '❤️')
                             for mode in ('issue49_emoji_some', 'issue49_emoji_split')),
                           *(('fa_IR', f'سرنوشتارِ سطحِ {level}ِ بعدی‌ای نیست', 'issue49_heading')
@@ -451,7 +453,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if fa_number['pcm_sha256'] != en_number['pcm_sha256']:
                     raise AssertionError('English number phrase was split between languages')
                 for text in ('Google Chrome, version 157.0.8103.79 (AMD64)',
-                             'BlindRadio, version 0.2.100', 'v1.5.0'):
+                             'BlindRadio, version 0.2.100', 'v1.5.0', 'NVDA1.5.0'):
                     fa_version = next(row for row in self.results if row['locale'] == 'fa_IR' and
                                       row['text'] == text and row['spelling'] == 'issue49_version_some')
                     en_version = next(row for row in self.results if row['locale'] == 'en_US' and
@@ -462,7 +464,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                         raise AssertionError('English version number changed language: ' + text)
                     if fa_version['pcm_sha256'] != split_version['pcm_sha256']:
                         raise AssertionError('NVDA indexes changed the English version: ' + text)
-                    if text == 'v1.5.0':
+                    if text in ('v1.5.0', 'NVDA1.5.0'):
                         for mode in ('issue49_version_some', 'issue49_version_split'):
                             pinglish = next(row for row in self.results if row['locale'] == 'fa_Latn' and
                                             row['text'] == text and row['spelling'] == mode)
