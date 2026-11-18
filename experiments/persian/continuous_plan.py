@@ -173,35 +173,69 @@ def persian_proxy_for_english(text, en, *, mark_weak=False):
             cursor = match.end()
         output.append(value[cursor:])
         return ''.join(output)
-    tags = _converted(text, _FA_TO_EN)
-    if tags:
-        def sequence(value):
-            return re.sub(r'\.[012]', '', value)
-        # Try one parser call for a whole Persian span. If native context
-        # changes any displayed phone, fall back to the established per-word
-        # checks rather than changing the proxy or accepting an unsafe tag.
-        shown = (_TAG.findall(en._phonemes_for_probe(' '.join(tags))) if len(tags) > 1 else ())
-        accepted = len(shown) == len(tags) and all(
-            sequence(tag[2:-1]) == sequence(item) for tag, item in zip(tags, shown))
-        if not accepted:
-            accepted = all(len(shown := _TAG.findall(en._phonemes_for_probe(tag))) == 1 and
-                           sequence(tag[2:-1]) == sequence(shown[0]) for tag in tags)
-        if accepted:
-            it = iter(tags)
-            return word_controls(_TAG.sub(lambda _match: next(it), text))
+    matches = tuple(_TAG.finditer(text))
+    if not matches:
+        raise ValueError('Persian proxy has no words')
+    def compatible(tag, displayed):
+        expected = _SYLLABLE.findall(tag[2:-1])
+        actual = _SYLLABLE.findall(displayed)
+        if not expected or len(expected) != len(actual):
+            return False
+        for (stress, phones), (seen_stress, seen) in zip(expected, actual):
+            # The native US reader may turn an intervocalic /d/ or /t/ into
+            # its flap F. This keeps the same syllable and a stop-like timing;
+            # it is the silent contour pilot, never the Persian pronunciation.
+            if stress == '1' and seen_stress != '1':
+                return False
+            if len(phones) != len(seen) or any(a != b and not (a in 'dt' and b == 'F')
+                                                for a, b in zip(phones, seen)):
+                return False
+        return True
+
+    converted = []
+    for match in matches:
+        value = _converted(match.group(), _FA_TO_EN)
+        converted.append(value[0] if value else None)
+    # Keep each safe consonant-bearing word independently. One unsupported
+    # word must not make every neighbouring word use a neutral m-vowel proxy.
+    shown = (_TAG.findall(en._phonemes_for_probe(' '.join(converted)))
+             if all(converted) else ())
+    batch_ok = len(shown) == len(converted) and all(
+        compatible(tag, item) for tag, item in zip(converted, shown))
     vowels = {'A': 'A', 'a': 'a', 'e': 'E', 'i': 'i', 'o': 'o', 'u': 'u'}
-    result = []
-    for match in _TAG.finditer(text):
+    result, weak_fallback = [], []
+    for index, match in enumerate(matches):
         syllables = _SYLLABLE.findall(match.group(1))
         if not syllables:
             raise ValueError('Persian proxy has no syllables')
-        result.append('`[' + ''.join('.' + stress + 'm' +
-                                     next((vowels[c] for c in body if c in vowels), 'A')
-                                     for stress, body in syllables) + ']')
-    if not result:
-        raise ValueError('Persian proxy has no words')
-    it = iter(result)
-    return word_controls(_TAG.sub(lambda _match: next(it), text))
+        tag = converted[index]
+        if tag is not None and not batch_ok:
+            display = _TAG.findall(en._phonemes_for_probe(tag))
+            if len(display) != 1 or not compatible(tag, display[0]):
+                tag = None
+        if tag is None:
+            # The US parser spells a multi-syllable tag which has no primary
+            # stress, including a secondary-only number group. Promote one
+            # pilot-only syllable to make the control syntactically valid;
+            # a weak-word control retains its role in the phrase.
+            needs_anchor = len(syllables) > 1 and not any(s == '1' for s, _ in syllables)
+            anchor = next((i for i, (s, _) in enumerate(syllables) if s == '2'), 0)
+            tag = '`[' + ''.join('.' + ('1' if needs_anchor and i == anchor else stress) + 'm' +
+                                  next((vowels[c] for c in body if c in vowels), 'A')
+                                  for i, (stress, body) in enumerate(syllables)) + ']'
+            weak_fallback.append(needs_anchor)
+        else:
+            weak_fallback.append(False)
+        result.append(tag)
+    cursor, output = 0, []
+    for match, tag, weak in zip(matches, result, weak_fallback):
+        output.append(text[cursor:match.start()])
+        if weak and mark_weak and not re.search(r'`00\s*$', text[:match.start()]):
+            output.append('`00 ')
+        output.append(tag)
+        cursor = match.end()
+    output.append(text[cursor:])
+    return word_controls(''.join(output))
 
 
 def _spelling_proxy(text, segment, spelling_spans):
@@ -515,11 +549,15 @@ def _syllable_edges(item, start, end, expected):
     if expected < 2 or not item.syllables:
         return ()
     spans = item.syllables
-    # Some providers reset their local syllable clock at a sentence boundary.
-    # Such captures are deliberately left on the existing word-level fit.
-    if any(a < 0 or a >= b or (i and a < spans[i-1][1])
-           for i, (a, b) in enumerate(spans)):
-        return ()
+    # A later sentence can reset the provider's local clock. Its ambiguous
+    # offset must not invalidate the already verified first sentence, whose
+    # syllables retain the original request clock.
+    for i, (a, b) in enumerate(spans):
+        if a < 0 or a >= b:
+            return ()
+        if i and a < spans[i-1][1]:
+            spans = spans[:i]
+            break
     selected = [(a, b) for a, b in spans if start * 20000 <= a + b < end * 20000]
     if len(selected) != expected:
         return ()

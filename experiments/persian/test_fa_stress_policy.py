@@ -43,6 +43,11 @@ def main():
         'کتاب‌ها': '`[.0ke.0tab.1ha]',
         'کتابها': '`[.0ke.0tab.1ha]',
         'خانه‌ها': "`[.0Ga.0n'e:'.1ha]",
+        'افزونه‌ها': "`[.0'A:'f.0z'u:'.0n'e:'.1ha]",
+        'افزونه‌های': "`[.0'A:'f.0z'u:'.0n'e:'.1ha.0je]",
+        'افزونه‌هایی': "`[.0'A:'f.0z'u:'.0n'e:'.1ha.0'i:']",
+        'برنامه‌های': "`[.0bAr.0na.0m'e:'.1ha.0je]",
+        'انتخاب‌های': '`[.0en.0te.0Gab.1ha.0je]',
         'کتابم': '`[.0ke.1ta.0bAm]',
         'کتابی': '`[.0ke.1ta.0bi]',
         'خانهٔ': "`[.0Ga.1n'e:'.0je]",
@@ -114,6 +119,7 @@ def main():
     assert fallback('ولی', '`[.1vA.0li]') == '`[.1vA.0li]'
     # A suffix alone does not establish the analysis of an unknown fallback.
     assert fallback('ناشناخته‌سازی', '`[.1sa.0zi]') == '`[.1sa.0zi]'
+    assert fallback('ناشناخته‌ها', '`[.1sa.1ha]') == '`[.1sa.1ha]'
     # Multi-tag fallback output has no safe one-word alignment.
     multi = '`[.1ke.0tab] `[.1Ga.0ne]'
     assert fallback('کتاب', multi) == multi

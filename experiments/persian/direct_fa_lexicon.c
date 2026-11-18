@@ -708,6 +708,30 @@ static size_t nominal_compound_primary(const char *word,size_t bytes,const char 
     return SIZE_MAX;
 }
 
+/* A directly recognized noun with the written plural -hâ carries its
+ * accent on that suffix; following ezafe -ye and indefinite -i are weak.
+ * Require the half-space and the exact expected suffix phones so an
+ * unrelated spelling or an unrecognized reference word is not guessed. */
+static size_t plural_suffix_primary(const char *word,size_t bytes,const char *tag,
+                                    size_t syllables)
+{
+    size_t stem=0,back=0;
+    const char *last_phone=NULL,*previous_phone=NULL;
+    if(ends_with(word,bytes,"‌هایی",&stem) || ends_with(word,bytes,"‌های",&stem))back=1;
+    else if(!ends_with(word,bytes,"‌ها",&stem))return SIZE_MAX;
+    if(!stem || syllables<=back)return SIZE_MAX;
+    for(size_t i=2;tag[i] && tag[i]!=']';++i)
+        if(tag[i]=='.' && tag[i+1]>='0' && tag[i+1]<='2') {
+            previous_phone=last_phone;last_phone=tag+i+2;
+        }
+    if(!last_phone)return SIZE_MAX;
+    if(!back)return strcmp(last_phone,"ha]")?SIZE_MAX:syllables-1;
+    if(!previous_phone || previous_phone[0]!='h' || previous_phone[1]!='a' ||
+       previous_phone[2]!='.')return SIZE_MAX;
+    if(strcmp(last_phone,"je]") && strcmp(last_phone,"'i:']"))return SIZE_MAX;
+    return syllables-2;
+}
+
 static void apply_persian_stress(const char *word,size_t bytes,char *tag,int direct)
 {
     size_t syllables=stress_syllables(tag),stem=0;
@@ -721,6 +745,8 @@ static void apply_persian_stress(const char *word,size_t bytes,char *tag,int dir
 
     if(direct && !(kind&2u)) {
         size_t target=nominal_compound_primary(word,bytes,tag,syllables);
+        if(target!=SIZE_MAX){stress_primary(tag,target);return;}
+        target=plural_suffix_primary(word,bytes,tag,syllables);
         if(target!=SIZE_MAX){stress_primary(tag,target);return;}
     }
 

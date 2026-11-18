@@ -1114,7 +1114,7 @@ int32_t reloq_enus61_generate_durations(void *state,int32_t machine)
  int32_t result=reloq_enus61_duration_core(state,machine);
  if(!result)reloq61_english_bank_timing(state);
  if(!result && !reloq61_english_bank_active())
-  reloq61_syllable_trace_emit(STATE(int32_t,f13),STATE(int32_t,f14));
+  reloq61_syllable_trace_emit(state,STATE(int32_t,f13),STATE(int32_t,f14));
  return result;
 }
 

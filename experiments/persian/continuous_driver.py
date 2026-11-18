@@ -51,15 +51,19 @@ _FAST_ENGLISH_PREFIX_MIN_MS = 200
 
 
 def _colon_ends_sentence(text, index):
-    """Treat prose colons as boundaries, but preserve times and URL schemes."""
+    """Separate prose colons; keep adjoining clock, URL and drive syntax."""
     before, after = index - 1, index + 1
-    while before >= 0 and text[before].isspace():
-        before -= 1
-    while after < len(text) and text[after].isspace():
-        after += 1
     if before >= 0 and after < len(text) and text[before].isdecimal() and text[after].isdecimal():
         return False
-    return after == len(text) or text[after] not in ('/', '\\')
+    if after < len(text) and text[after] in ('/', '\\'):
+        prefix = re.search(r'(?<![A-Za-z0-9+.-])([A-Za-z][A-Za-z0-9+.-]*)$', text[:index])
+        if prefix and (len(prefix.group(1)) == 1 or text[after:after + 2] == '//' or
+                       after + 1 < len(text) and not text[after + 1].isspace() or
+                       prefix.group(1).casefold() in ('file', 'http', 'https', 'ftp')):
+            return False
+    # A slash separated by whitespace is content after the colon, not a URI
+    # scheme. The old lookahead accidentally suppressed the sentence break.
+    return True
 
 
 def _plain_colons(text):

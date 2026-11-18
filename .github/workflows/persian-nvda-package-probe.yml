@@ -58,6 +58,7 @@ on:
       - experiments/persian/test_fa_finnish_contour.py
       - experiments/persian/test_us_contour_runtime.py
       - experiments/persian/test_persian_syllable_pitch.py
+      - experiments/persian/test_fa_sentence_flow.py
       - experiments/persian/compile_fa_stress_classes.py
       - reference-lilak/persian/**
       - experiments/persian/test_direct_fa_compounds.py
@@ -246,6 +247,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Shared ECI Persian US contour failed' }
           python -B experiments/persian/test_persian_syllable_pitch.py --library "$common"
           if ($LASTEXITCODE -ne 0) { throw 'Shared Persian syllable pitch alignment failed' }
+          python -B experiments/persian/test_fa_sentence_flow.py --library "$common"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian sentence boundaries or number timing failed' }
           python -B experiments/persian/test_fa_stress_policy.py --library "$common"
           if ($LASTEXITCODE -ne 0) { throw 'Persian word stress failed' }
           python -B experiments/persian/test_fa_stress_fallback.py --library "$common"
@@ -299,7 +302,7 @@ jobs:
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci.dll -print -quit)
-          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev149; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; else version=1.5.0-dev142; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev150; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; else version=1.5.0-dev142; fi
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
       - name: Test the candidate in real NVDA
         shell: pwsh

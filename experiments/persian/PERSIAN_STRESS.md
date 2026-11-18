@@ -1,5 +1,34 @@
 # Persian stress and contour
 
+## dev150: sentence clocks, numbers and plural endings
+
+The provider's syllable clock can restart after sentence punctuation. The
+trace now adds the actual elapsed synthesis clock at a reset, giving both
+the Persian carrier and the US donor utterance-relative boundaries. If the
+clock or a boundary cannot be verified, the optional trace is rejected and
+the existing word-level transfer is used instead. This allows syllable-level
+alignment in later sentences, including a number after a colon.
+
+The US pilot now preserves consonants in each verified phonetic word, even
+when the US phoneme display legitimately changes an intervocalic d or t to a
+flap. In particular, ۹۶ retains its long final /ʃ/ onset in the pilot. The
+unchanged Persian audio still supplies the sound; only its pitch transfer is
+guided by this silent donor. Unusable pilot words fall back individually to
+safe syllables, and multisyllabic unaccented pilot tags are made acceptable
+to the US parser without changing the Persian phonemes or lexical stress.
+
+Sentence colons before spaced slashes are treated as prose boundaries even
+in mixed-language text. Contiguous numeric times, URL schemes and drive
+paths retain their existing interpretation, as do standalone symbol names.
+
+For directly recognized half-space plural forms ending in ‌ها, ‌های or
+‌هایی, the native lexicon places the primary accent on -hâ when the expected
+pronunciation matches and no verb classification contradicts it. The ezafe
+or indefinite -i remains unstressed; unsupported readings remain unchanged.
+Persian grammar and stress references for these suffixes:
+https://assets.cambridge.org/97805210/91244/excerpt/9780521091244_excerpt.pdf
+and https://zaspil.leibniz-zas.de/article/download/70/69.
+
 ## dev149: observed syllable timing and compound nominals
 
 The US pitch pilot now records the native syllable boundaries of both the

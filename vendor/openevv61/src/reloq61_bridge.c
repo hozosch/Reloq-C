@@ -23,10 +23,18 @@
 
 static _Thread_local reloq_syllable_sink syllable_sink;
 static _Thread_local void *syllable_context;
+static _Thread_local int32_t syllable_previous_to;
+static _Thread_local int64_t syllable_origin;
 void reloq61_syllable_trace_set(reloq_syllable_sink sink,void *context)
-{syllable_sink=sink;syllable_context=context;}
-void reloq61_syllable_trace_emit(int32_t from,int32_t to)
-{if(syllable_sink)syllable_sink(syllable_context,from,to);}
+{syllable_sink=sink;syllable_context=context;syllable_previous_to=-1;syllable_origin=0;}
+static int trace_absolute(void *state,int32_t from,int32_t to,int32_t *start,int32_t *end);
+void reloq61_syllable_trace_emit(void *state,int32_t from,int32_t to)
+{
+    if(!syllable_sink)return;
+    int32_t start,end;
+    if(trace_absolute(state,from,to,&start,&end))syllable_sink(syllable_context,-1,-1);
+    else syllable_sink(syllable_context,start,end);
+}
 extern void evvRunStaticInitialisers(void);
 extern OldInst *STDCALL eo_newEx(int32_t);
 extern int STDCALL es_delete(OldInst *);
@@ -198,6 +206,28 @@ struct capture {
     int32_t *aragonese_elisions;
     size_t aragonese_elision_count,aragonese_elision_capacity;
 };
+
+/* The provider restarts its local syllable clock after a sentence pause.
+ * At that reset, the synthesis result already holds the exact elapsed frame
+ * clock. Normalize before handing timings to the shared host; ambiguous
+ * overlaps or arithmetic overflow invalidate only the optional trace. */
+static int trace_absolute(void *state,int32_t from,int32_t to,int32_t *start,int32_t *end)
+{
+    delta_state *d=state;DeltaLang *dl=d?EVV_AT(DeltaLang *,d->dlang):NULL;
+    struct capture *c=dl?dl->reloq_context:NULL;
+    if(!c || !c->r || from<0 || to<=from || c->r->ticks<0)return -1;
+    if(syllable_previous_to<0 || from<syllable_previous_to) {
+        if(syllable_previous_to>=0 && (int64_t)syllable_previous_to-from<=500000)return -1;
+        if(c->r->ticks>INT32_MAX/10000)return -1;
+        int64_t next_origin=c->r->ticks*10000;
+        if(syllable_previous_to>=0 && next_origin+from<syllable_origin+syllable_previous_to)return -1;
+        syllable_origin=next_origin;
+    }
+    if(syllable_origin+to>INT32_MAX)return -1;
+    syllable_previous_to=to;
+    *start=(int32_t)(syllable_origin+from);*end=(int32_t)(syllable_origin+to);
+    return 0;
+}
 
 int reloq61_an_note_elision(void *state,int32_t input_node)
 {

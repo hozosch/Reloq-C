@@ -27,6 +27,15 @@ RECENT_KEY = ('persian-windows-provider-gcc14-v2-'
 TRACE_BASE = '14bfa3132c9936d2798d3281ac5693b550f002cb'
 TRACE_KEY = ('persian-windows-provider-gcc14-v2-'
              'eb978682e83612fa0fef1940e0c321d3072f9cf8db4b6d11c243532189d602cc')
+DEV149_BASE = 'ccdc6680e8d698c6cf4834556706021aa0027f25'
+DEV149_KEY = ('persian-windows-provider-gcc14-v2-'
+              'cab206af509e0977cc552bd0723a1a6d2f8c9b886d82357a931432e54d7a0047')
+DEV149_ALLOWED = {
+    'include/reloq_syllable_trace.h',
+    'vendor/openevv61/src/reloq61_bridge.c',
+    'vendor/openevv61/lang/fifi/delta_rules_c30_fifi.c',
+    'vendor/openevv61/lang/enus61/delta_rules_c29_enus61.c',
+}
 TRACE_ALLOWED = {
     'include/reloq_eci.h', 'include/reloq_persian_frames.h', 'include/reloq_syllable_trace.h',
     'vendor/openevv61/src/reloq61_bridge.c',
@@ -92,7 +101,11 @@ def main():
                     os.utime(path, None)
             print('Reused verified provider cache for the additive public API change.')
             return
-        if key == TRACE_KEY:
+        if key == DEV149_KEY:
+            changed = set(git('diff', '--name-only', DEV149_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV149_ALLOWED:
+                raise ValueError('absolute syllable clock changes differ from the verified scope')
+        elif key == TRACE_KEY:
             changed = set(git('diff', '--name-only', TRACE_BASE, 'HEAD', '--', *INPUTS).splitlines())
             if changed != TRACE_ALLOWED:
                 raise ValueError('syllable trace provider changes differ from the verified scope')
@@ -136,13 +149,13 @@ def main():
                         BUILD / 'src/port/port_win32.o',
                         BUILD / 'src/reloq61_bridge.o',
                         BUILD / 'reloq_persian_acoustics.o', BUILD / 'libreloq61.a'))
-        if key == TRACE_KEY:
+        if key in (TRACE_KEY, DEV149_KEY):
             objects.append(BUILD / 'lang/enus61/delta_rules_c29_enus61.o')
         # No provider object should depend on the changed public ECI header.
         # If one does, rebuilding that object is safer than assuming this.
         for dep in BUILD.rglob('*.d'):
             value = dep.read_text(encoding='utf8', errors='replace')
-            if ('reloq_eci.h' in value or key == TRACE_KEY and
+            if ('reloq_eci.h' in value or key in (TRACE_KEY, DEV149_KEY) and
                     ('reloq_persian_frames.h' in value or 'reloq_syllable_trace.h' in value)):
                 objects.append(dep.with_suffix('.o'))
         for path in BUILD.rglob('*'):
