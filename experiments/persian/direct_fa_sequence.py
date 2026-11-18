@@ -21,6 +21,7 @@ if __package__:
     )
     from .._reloq_persian_projection import Command, ProjectedJob, PersianProjectionError, project_persian
     from .hybrid_fa_frontend import DirectFirstPersian
+    from .pinglish_frontend import latin_fold
     from .text_frontend import UnsupportedPronunciation, native_sequence_accepted
 else:
     ROOT = Path(__file__).resolve().parents[2]
@@ -30,6 +31,7 @@ else:
     )
     from _reloq_persian_projection import Command, ProjectedJob, PersianProjectionError, project_persian
     from hybrid_fa_frontend import DirectFirstPersian
+    from pinglish_frontend import latin_fold
     from text_frontend import UnsupportedPronunciation, native_sequence_accepted
 
 def _safe_native_punctuation(job: ProjectedJob) -> ProjectedJob:
@@ -460,7 +462,7 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
                 continue
             # Non-Persian scripts are made identifiable by their character
             # names when the Persian reference has no language mapping.
-            supported = all((ord(c) < 128 and c.isalpha() and pinglish) or
+            supported = all((pinglish and latin_fold(c) is not None) or
                             (pinglish and unicodedata.category(c).startswith('M')) or
                             0x0600 <= ord(c) <= 0x08ff or 0xfb50 <= ord(c) <= 0xfeff or
                             c in ('\u200c', '\u200d') for c in value)

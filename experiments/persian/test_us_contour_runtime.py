@@ -130,6 +130,10 @@ def main():
                 return bytes(pcm), marks
             for original, folded in (('Straße', 'Strasse'), ('salām', 'salam'), ('šahr', 'shahr')):
                 assert ping((original,))[0] == ping((folded,))[0], original
+                frontend = pinglish._activate(pinglish._key(PINGLISH_PROBE.id, '1'))._frontend
+                direct = project((original,), frontend, pinglish=True, allow_fallback=False)
+                resilient = project_resilient((original,), frontend, pinglish=True)
+                assert resilient.tagged == direct.tagged, (original, resilient.tagged, direct.tagged)
             assert ping((EciText('ß', character_mode=True),))[0] == ping((EciText('s', character_mode=True),))[0]
             sound, marks = ping((EciIndex(11), 'Stra', EciIndex(12), 'ße', EciIndex(13)))
             assert sound and marks == [11, 12, 13]
