@@ -64,6 +64,10 @@ def main():
                             # Back A moves F2 only; all other vowels restore
                             # their prior output exactly.
                             new, old = nucleus(rows), nucleus(old_rows)
+                            if vowel == 'u':
+                                # The new German-shaped U is tested separately.
+                                assert pcm.pcm != old_pcm.pcm
+                                continue
                             if vowel == 'a':
                                 assert pcm.pcm != old_pcm.pcm
                                 assert abs(new[13] - old[13] - (53 if gender else 50)) < 4, (gender, vowel, new[13], old[13])

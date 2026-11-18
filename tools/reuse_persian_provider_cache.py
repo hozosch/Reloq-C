@@ -92,6 +92,10 @@ DEV159_BASE = '0198909fe09a5a36c00d68b7276ef3f76f5fdb42'
 DEV159_KEY = ('persian-windows-provider-gcc14-v2-'
               '98cc861ef9a63604715dadff216057d477c5b383e8294ff0f3cb15b039e13f95')
 DEV159_ALLOWED = {'experiments/persian/build_native_probe.py'}
+DEV160_BASE = 'ae05979e72f5b2b5b695b23900abc9a02f84f1fd'
+DEV160_KEY = ('persian-windows-provider-gcc14-v2-'
+              'e3b0c0705f2669e50c58e625f82d06b0fda92981bf36f8ee3b669c199a958820')
+DEV160_ALLOWED = {'experiments/persian/build_native_probe.py'}
 TRACE_ALLOWED = {
     'include/reloq_eci.h', 'include/reloq_persian_frames.h', 'include/reloq_syllable_trace.h',
     'vendor/openevv61/src/reloq61_bridge.c',
@@ -189,6 +193,12 @@ def main():
                 if path.is_file():
                     os.utime(path, None)
             print('Reused verified provider cache for the additive public API change.')
+            return
+        if key == DEV160_KEY:
+            changed = set(git('diff', '--name-only', DEV160_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV160_ALLOWED:
+                raise ValueError('Persian R and German-U provider change differs from the verified scope')
+            reuse_dev156_generated(frozenset({'delta_rules_c02_fifi.c', 'delta_rules_c08_fifi.c'}))
             return
         if key == DEV159_KEY:
             changed = set(git('diff', '--name-only', DEV159_BASE, 'HEAD', '--', *INPUTS).splitlines())

@@ -56,7 +56,7 @@ def main():
                         tag='`[.1'+vowel+'r]'
                         alone=r_frames(capture(v,scope,tag,True)[1]); assert len(alone)>=5,(gender,rate,speed,tag)
                         base=alone[len(alone)//2].controls
-                        for following in ('`[.1da]','`[.1pa]','`[.1a]'):
+                        for following in ('`[.1da]','`[.1pa]'):
                             connected=r_frames(capture(v,scope,tag+' '+following,True)[1])
                             assert len(connected)>=5,(gender,rate,speed,tag,following,'no final R')
                             actual=connected[len(connected)//2].controls

@@ -65,7 +65,7 @@ def main():
                     elif phone == 'e':
                         expected = (335, 200) if gender else (155, 100)
                     elif phone == 'u':
-                        expected = (140, 160) if gender else (70, 80)
+                        expected = (300, 200) if gender else (120, 100)
                     else:
                         expected = (300, 200) if gender else (120, 100)
                     assert tuple(round(first.controls[i]) for i in (10, 14)) == expected, (
@@ -77,7 +77,9 @@ def main():
                         # Vowel identity and the accepted back-A damping are
                         # retained; only rounded O/U move F2 modestly.
                         old_first = first_audible(old_rows)
-                        for column in ((9, 14) if phone == 'e' else (9, 10, 14)):
+                        # U now intentionally follows the German targets.
+                        columns = () if phone == 'u' else ((9, 14) if phone == 'e' else (9, 10, 14))
+                        for column in columns:
                             assert abs(first.controls[column] - old_first.controls[column]) < 1, (
                                 rate, gender, phone, column)
                         if phone not in 'ou':

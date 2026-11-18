@@ -2763,9 +2763,48 @@ static void persian_open_vowel(void *state,int phone)
         call = f'    r0 = reloq_call_fifi_stanfin_ph_{phone}(state, (int32_t)(FIELD(0)));\n'
         if section.count(call) != 1:
             raise RuntimeError(f'Cannot locate Persian vowel dispatcher for {phone}')
-        section = section.replace(call, call +
-            f"    if (!r0) persian_open_vowel(state,'{phone}');\n" +
-            (f"    if (!r0) persian_smaller_vowel(state,'{phone}');\n" if phone != 'e' else ''), 1)
+        if phone == 'u':
+            section = section.replace(call, r'''    {
+        int16_t defaults[]={STATE(int16_t,s397),STATE(int16_t,s398),STATE(int16_t,s399),
+            STATE(int16_t,s400),STATE(int16_t,s401),STATE(int16_t,s454),
+            STATE(int16_t,s455),STATE(int16_t,s456),STATE(int16_t,s457)};
+        r0 = reloq_call_fifi_stanfin_ph_u(state, (int32_t)(FIELD(0)));
+        if (!r0) {
+            persian_open_vowel(state,'u');
+            const char *us=getenv("RELOQ_FA_US_ARTICULATION");
+            if (us && us[0]=='1' && !us[1]) {
+                /* German long /u/: 250/750/2400 Hz, compared to the
+                   native 280/700/2150. Shift the contextual endpoints by
+                   the same amount and retain inheritance markers. Restore
+                   the voice's own German-like bandwidths and upper targets. */
+                int16_t *f1[]={&STATE(int16_t,s448),&STATE(int16_t,s449)};
+                int16_t *f2[]={&STATE(int16_t,s450),&STATE(int16_t,s451)};
+                int16_t *f3[]={&STATE(int16_t,s452),&STATE(int16_t,s453)};
+                for (unsigned i=0;i<2;i++) {
+                    if (*f1[i]>30) *f1[i]-=30;
+                    if (*f2[i]>0) *f2[i]+=50;
+                    if (*f3[i]>0) *f3[i]+=250;
+                }
+                /* These saved bandwidths have already gone through the
+                   voice transformation. The German first bandwidth is
+                   120 Hz for male voices and 300 Hz for female voices,
+                   including small female head sizes. */
+                int16_t female=0;
+                memcpy(&female,(const unsigned char *)state+DG_BASE+3092+12,sizeof female);
+                STATE(int16_t,s397)=female?300:120; STATE(int16_t,s398)=defaults[1];
+                STATE(int16_t,s399)=defaults[2]; STATE(int16_t,s400)=defaults[3];
+                STATE(int16_t,s401)=defaults[4]; STATE(int16_t,s454)=defaults[5];
+                STATE(int16_t,s455)=defaults[6]; STATE(int16_t,s456)=defaults[7];
+                STATE(int16_t,s457)=defaults[8];
+            }
+            persian_smaller_vowel(state,'u');
+        }
+    }
+''', 1)
+        else:
+            section = section.replace(call, call +
+                f"    if (!r0) persian_open_vowel(state,'{phone}');\n" +
+                (f"    if (!r0) persian_smaller_vowel(state,'{phone}');\n" if phone != 'e' else ''), 1)
     text = text[:begin] + section + text[end:]
 
     # /v/ is constructed repeatedly during native backtracking. Its noise
@@ -2852,6 +2891,35 @@ static unsigned persian_articulation_following(void *state)
     if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
     return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node)));
 }
+static int persian_direct_following_vowel(void *state)
+{
+    delta_state *d=state;
+    int32_t position=STATE(int32_t,w61);
+    if (!d || !position) return 0;
+    int32_t *point=vmover(d,EVV_AT(int32_t *,position),2);
+    int32_t node=point?vgetsc(d,0,0,EVV_REF(point),2):0;
+    if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
+    void *fields=TFLDS(EVV_AT(void *,node));
+    unsigned cls=*(const unsigned char *)delta_record_field(&vstmtbl[2],1,fields);
+    unsigned onset=*(const unsigned char *)delta_record_field(&vstmtbl[2],9,fields);
+    /* Native H can be represented as an onset feature of the next vowel,
+       rather than a separate phone. Such a word starts with a consonant. */
+    return cls==1 && onset!=1 && onset!=2;
+}
+static int persian_r_follows_h(void *state)
+{
+    delta_state *d=state;
+    int32_t position=STATE(int32_t,w61);
+    if (!d || !position) return 0;
+    delta_node *point=vmovel(d,EVV_AT(delta_node *,position),2);
+    int32_t node=point?vgetsc(d,1,0,EVV_REF(point),2):0;
+    if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
+    void *fields=TFLDS(EVV_AT(void *,node));
+    unsigned phone=*(const unsigned char *)delta_record_field(&vstmtbl[2],0,fields);
+    unsigned onset=*(const unsigned char *)delta_record_field(&vstmtbl[2],9,fields);
+    /* The native mapper folds H into this R's onset feature. */
+    return phone==19 && (onset==1 || onset==2);
+}
 /* Restrict the US /y/ donor to the first actual phone of each word. Use the
    provider's native word fence, and restore every scanner register: looking
    at a preceding phone alone would confuse the preceding word with this one. */
@@ -2893,8 +2961,14 @@ int persian_pt_coda_r_selected(void *state)
     delta_node *point=vmovel(d,EVV_AT(delta_node *,begin),2);
     int32_t node=point?vgetsc(d,1,0,EVV_REF(point),2):0;
     if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
-    return *(const unsigned char *)delta_record_field(&vstmtbl[2],1,
-                                                       TFLDS(EVV_AT(void *,node)))==1;
+    if (*(const unsigned char *)delta_record_field(&vstmtbl[2],1,
+                                                    TFLDS(EVV_AT(void *,node)))!=1) return 0;
+    unsigned following=persian_articulation_following(state);
+    if (persian_r_follows_h(state) && following && following!=36) return 0;
+    /* A directly following vowel begins the next word. In that position
+       the R joins the vowel instead of taking the word-final fricative.
+       A pause/phrase boundary is phone 36, so it keeps the final R. */
+    return !persian_direct_following_vowel(state);
 }
 /* The unvoiced final R may also follow a stop within the same word. */
 int persian_f_coda_r_selected(void *state)
@@ -2910,7 +2984,11 @@ int persian_f_coda_r_selected(void *state)
     if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
     unsigned phone=*(const unsigned char *)delta_record_field(&vstmtbl[2],0,
                                                                TFLDS(EVV_AT(void *,node)));
-    return phone>=1 && phone<=7; /* p,t,k,b,d,g,f */
+    if (phone>=1 && phone<=7) return 1; /* preserve p,t,k,b,d,g,f */
+    /* The same unvoiced coda can follow other consonants when another
+       word continues directly. Keep isolated words and pauses unchanged. */
+    unsigned next=persian_articulation_following(state);
+    return next && next!=36 && ((phone>=8 && phone<=23) || persian_r_follows_h(state));
 }
 static void persian_r_less_retroflex(void *state)
 {
@@ -2930,18 +3008,20 @@ static void persian_r_less_retroflex(void *state)
     if (!d || !begin) return;
     delta_node *point=vmovel(d,EVV_AT(delta_node *,begin),2);
     int32_t node=point?vgetsc(d,1,0,EVV_REF(point),2):0;
-    if (!node || (*EVV_AT(int32_t *,node)&2) ||
-        *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node)))!=27) return;
-    if (persian_articulation_word_initial(state,STATE_AT(w60,-4))) return;
-    if (persian_articulation_following(state)==33) return; /* Finnish R before /o/. */
-    /* The earlier 150 Hz adjustment was barely audible. Move the R's low
-       F3 target by up to 350 Hz only after /i/, keeping F4, source, timing
-       and the two vowel targets intact. A word-final R after a vowel still
-       uses the Brazilian donor and never enters this branch. */
+    unsigned previous=node && !(*EVV_AT(int32_t *,node)&2) ?
+        *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node))) : 0;
+    unsigned following=persian_articulation_following(state);
+    if (following==33) return; /* Finnish R before /o/. */
+    if (previous!=27 && following!=27) return;
+    if (previous==27 && following!=27 &&
+        persian_articulation_word_initial(state,STATE_AT(w60,-4))) return;
+    /* The low F3 of Finnish R can sound retroflex near /i/. Before I,
+       bring the R targets to 2700 Hz; after I, retain the accepted gentler
+       adjustment. The vowels' own targets, F4, source and timing stay intact. */
     if (STATE(int16_t,s452)>0 && STATE(int16_t,s452)<2700)
-        STATE(int16_t,s452)=STATE(int16_t,s452)>2350?2700:STATE(int16_t,s452)+350;
+        STATE(int16_t,s452)=(following==27 || STATE(int16_t,s452)>2350)?2700:STATE(int16_t,s452)+350;
     if (STATE(int16_t,s453)>0 && STATE(int16_t,s453)<2700)
-        STATE(int16_t,s453)=STATE(int16_t,s453)>2350?2700:STATE(int16_t,s453)+350;
+        STATE(int16_t,s453)=(following==27 || STATE(int16_t,s453)>2350)?2700:STATE(int16_t,s453)+350;
 }
 static int16_t persian_articulation_toward(int16_t value,int target)
 {
