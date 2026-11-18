@@ -17,6 +17,7 @@ from continuous_plan import CapturedRows, _dense, _syllable_edges, _syllable_wor
 from direct_fa_sequence import project
 from nvda_driver_probe import make_language_engine, PERSIAN_PROBE, US_ENGLISH
 import continuous_driver
+import continuous_plan
 
 
 class ObservedApi:
@@ -63,7 +64,7 @@ def main():
         return matches, marks, tuple(parts)
 
     try:
-        for sample_rate in (2, 3, 4):
+        for sample_rate in (0, 1, 2, 3, 4, 5, 6):
             voice.set_parameter(SAMPLE_RATE, sample_rate)
             rate = SAMPLE_RATES[sample_rate]
             for speed in (45, 65, 90):
@@ -124,9 +125,17 @@ def main():
         with patch.object(continuous_driver, 'fit_us_word_pitch', side_effect=track):
             assert voice.speak(('راه‌اندازی',), audio.extend, lambda _: None)
         assert audio and any(seen), seen
+        with patch.object(continuous_driver, 'fit_us_word_pitch', side_effect=track), \
+             patch.object(continuous_plan, 'fit_us_word_pitch', side_effect=track):
+            for text in ('NVDA راه‌اندازی', 'راه‌اندازی NVDA', 'سلام NVDA راه‌اندازی',
+                         'راه‌اندازی NVDA مجدد'):
+                seen.clear()
+                audio.clear()
+                assert voice.speak((text,), audio.extend, lambda _: None)
+                assert audio and any(seen), (text, seen)
     finally:
         voice.close()
-    print('Passed observed Persian/US syllable pitch alignment at three rates and speeds.')
+    print('Passed observed Persian/US syllable pitch alignment at seven rates and three speeds.')
 
 
 if __name__ == '__main__':
