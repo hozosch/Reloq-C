@@ -88,6 +88,10 @@ DEV158_KEY = ('persian-windows-provider-gcc14-v2-'
               'be733d61324b2458660cc3e350ba0adcbc40c08815a63d50a498199bbd8dfb41')
 DEV158_ALLOWED = {'experiments/persian/build_native_probe.py',
                   'src/reloq_persian_acoustics.c'}
+DEV159_BASE = '0198909fe09a5a36c00d68b7276ef3f76f5fdb42'
+DEV159_KEY = ('persian-windows-provider-gcc14-v2-'
+              '98cc861ef9a63604715dadff216057d477c5b383e8294ff0f3cb15b039e13f95')
+DEV159_ALLOWED = {'experiments/persian/build_native_probe.py'}
 TRACE_ALLOWED = {
     'include/reloq_eci.h', 'include/reloq_persian_frames.h', 'include/reloq_syllable_trace.h',
     'vendor/openevv61/src/reloq61_bridge.c',
@@ -186,11 +190,17 @@ def main():
                     os.utime(path, None)
             print('Reused verified provider cache for the additive public API change.')
             return
+        if key == DEV159_KEY:
+            changed = set(git('diff', '--name-only', DEV159_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV159_ALLOWED:
+                raise ValueError('Persian final-R provider change differs from the verified scope')
+            reuse_dev156_generated(frozenset({'delta_rules_c02_fifi.c'}))
+            return
         if key == DEV158_KEY:
             changed = set(git('diff', '--name-only', DEV158_BASE, 'HEAD', '--', *INPUTS).splitlines())
             if changed != DEV158_ALLOWED:
                 raise ValueError('Persian vowel provider changes differ from the verified scope')
-            reuse_dev156_generated(frozenset({'delta_rules_c08_fifi.c'}))
+            reuse_dev156_generated(frozenset({'delta_rules_c02_fifi.c', 'delta_rules_c08_fifi.c'}))
             return
         if key == DEV157_KEY:
             changed = set(git('diff', '--name-only', DEV157_BASE, 'HEAD', '--', *INPUTS).splitlines())

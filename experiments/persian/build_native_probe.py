@@ -2452,6 +2452,45 @@ static int32_t persian_pt_push_field(void *state,uint8_t st,uint8_t field)
                                       ('setscan_r', 'right'), ('npush_fld', 'push_field')):
             block = block.replace('reloq61_typed_' + original_name + '(DELTA_ENTRY_' + original_name + ', state,',
                                   'persian_pt_' + target + '(state,')
+        if name in ('por_ph_r', 'por_ph_r_dur'):
+            # The dispatcher selects this donor only for a verified Persian
+            # word-final R following a vowel. Keep its scan within that word,
+            # without adding a pause or touching the sentence pitch plan.
+            pattern = (r'    r0 = reloq61_typed_fence\(DELTA_ENTRY_fence, state, '
+                       r'\(int8_t\)\(0\), EVV_AT\(const uint8_t \*, \(persian_pt_refs \+ \d+\)\)\);')
+            replacement = ('    { const uint8_t word_fence[]={4};\n'
+                           '      delta_state *d=state;\n'
+                           '      r0=reloq61_typed_fence(DELTA_ENTRY_fence,state,1,word_fence);\n'
+                           '      memset(EVV_AT(void *,d->fence_marks),0,d->nstmts); }')
+            block, count = re.subn(pattern, replacement, block)
+            if count != 1:
+                raise RuntimeError('Cannot isolate Brazilian final-R word fence: ' + name)
+        if name == 'por_ph_r_dur':
+            # The donor normally checks for a phrase-ending sentinel here.
+            # The Persian selector has already established the word end.
+            start, end = block.index('L207:;'), block.index('L280:;')
+            part = block[start:end]
+            call = '    AT(int32_t, -48) = (r0);\n'
+            if part.count(call) != 1:
+                raise RuntimeError('Cannot locate Brazilian final-R duration decision')
+            part = part.replace(call, '    AT(int32_t, -48) = (0); /* word final */\n', 1)
+            block = block[:start] + part + block[end:]
+        if name == 'por_ph_r':
+            # At a following word, the donor's sentence-wide synchronization
+            # may fail even though the R is word-final. Create the same
+            # backtracking checkpoint at the current word boundary for its
+            # tract targets and source scheduling.
+            for first, last, tag in (('L10493:;', 'L10566:;', 15),
+                                     ('L2791:;', 'L2858:;', 32),
+                                     ('L3860:;', 'L3972:;', 36)):
+                start, end = block.index(first), block.index(last)
+                part = block[start:end]
+                call = '    AT(int32_t, -48) = (r0);\n'
+                if part.count(call) != 1:
+                    raise RuntimeError('Cannot locate Brazilian final-R synchronization')
+                part = part.replace(call,
+                    f'    if (r0) r0=reloq61_typed_test_synch(DELTA_ENTRY_test_synch,state,{tag},0,0);\n' + call, 1)
+                block = block[:start] + part + block[end:]
         block = block.replace('reloq_call_ptbr_add_TL_to_trill(', 'persian_pt_add_TL_to_trill(')
         for local in ('doAV', 'doAF', 'addStreamArraySsVal'):
             block = block.replace('reloq_call_ptbr_' + local + '(', 'reloq_call_fifi_' + local + '(')
