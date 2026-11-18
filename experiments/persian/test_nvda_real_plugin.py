@@ -797,6 +797,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 tags = ' '.join(self.projected[self.before_projected:])
                 if not tags or ']`[' in tags:
                     raise AssertionError('NVDA joined Persian number and vowel tags: ' + ascii(tags))
+            if self.version_case and locale == 'fa_Latn':
+                tags = ' '.join(self.projected[self.before_projected:])
+                if ']`[' in tags or any(value not in tags for value in ('jek', 'pAnJ', 'sefr')):
+                    raise AssertionError('NVDA lost Pinglish version numbers or joined tags: ' + ascii(tags))
             if spelling is True and text in 'ًٌٍَُِّْٰ':
                 expected = {'ً':'`[.1An]', 'ٌ':'`[.1on]', 'ٍ':'`[.1en]',
                             'َ':"`[.1'A:']", 'ُ':"`[.1'o:']", 'ِ':"`[.1'e:']",
