@@ -63,8 +63,11 @@ https://pmc.ncbi.nlm.nih.gov/articles/PMC6814645/.
 
 The ordinary copula است / Pinglish ast is unaccented after its host, with
 citation and punctuation boundaries retained. This also applies after an
-English host. The existing US contour and vowel timing are otherwise kept;
-the pronunciation and timing remain subject to listening tests.
+English host. When an unknown Pinglish word needs the temporary reference,
+its known neighbors now retain their own contextual stress instead of being
+replaced by the reference's whole-sentence stress. The existing US contour
+and vowel timing are otherwise kept; the pronunciation and timing remain
+subject to listening tests.
 
 ### Historical Korean contour experiments (dev137)
 

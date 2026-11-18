@@ -49,6 +49,29 @@ def main():
         assert separated.tagged.endswith(', `[.1ra]'), separated.tagged
         assert '`[.0vA]' in conjunction.tagged, conjunction.tagged
         assert [part.value for part in object_marker.parts if isinstance(part, EciIndex)] == [10]
+        # An uncovered Pinglish word must not let a whole-clause reference
+        # replace the native weak copula, object marker or conjunction.
+        original_pinglish = frontend.analyze_pinglish
+        unknown = PersianAnalysis((SpeechPart('fa', '`[.1zon]'),), None, True)
+        def pinglish_reference(text, *, positioned, allow_fallback):
+            if text.startswith('zooon'):
+                return unknown if text == 'zooon' and allow_fallback else None
+            return original_pinglish(text, positioned=positioned, allow_fallback=allow_fallback)
+        with patch.object(frontend, 'analyze_pinglish', side_effect=pinglish_reference):
+            try:
+                project(('zooon ', EciIndex(13), 'ast'), frontend, pinglish=True, allow_fallback=True)
+                raise AssertionError('Pinglish whole-clause fallback discarded native stress')
+            except UnsupportedPronunciation:
+                pass
+            copula = project_resilient(('zooon ', EciIndex(13), 'ast'), frontend, pinglish=True)
+            object_marker = project_resilient(('zooon ', EciIndex(14), 'ra'), frontend, pinglish=True)
+            separated = project_resilient(('zooon, ', EciIndex(15), 'ast'), frontend, pinglish=True)
+            conjunction = project_resilient(('ketab va ', EciIndex(16), 'zooon'), frontend, pinglish=True)
+        assert copula.tagged.endswith(' `00 `[.0Ast]'), copula.tagged
+        assert object_marker.tagged.endswith(' `00 `[.0ra]'), object_marker.tagged
+        assert separated.tagged.endswith(', `[.1Ast]'), separated.tagged
+        assert '`[.0vA]' in conjunction.tagged, conjunction.tagged
+        assert [part.value for part in copula.parts if isinstance(part, EciIndex)] == [13]
         # A transient reference error gets one whole-word retry, while an
         # interrupted job must not start that retry.
         with patch.object(frontend, 'analyze', side_effect=(RuntimeError('transient'), reference)) as fallback:

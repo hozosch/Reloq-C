@@ -204,14 +204,15 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
         nonlocal used_fallback
         if pinglish:
             analysis = frontend.analyze_pinglish(text, positioned=internal_marks,
-                                                allow_fallback=allow_fallback)
+                                                allow_fallback=False)
         else:
             analysis = frontend.analyze_direct(text)
-        if analysis is None and allow_fallback and not pinglish:
+        if analysis is None and allow_fallback:
             # Falling back for a whole sentence would discard the native
-            # word-stress rules even for words already covered. The existing
-            # resilient projection keeps known words native and analyzes only
-            # uncovered words through the reference, with source marks intact.
+            # word-stress rules even for words already covered, in both
+            # Persian script and Pinglish. The resilient projection keeps
+            # known words native and analyzes only uncovered words through
+            # the reference, with source marks intact.
             raise UnsupportedPronunciation('a Persian word needs reference analysis')
         if analysis is None:
             return None
