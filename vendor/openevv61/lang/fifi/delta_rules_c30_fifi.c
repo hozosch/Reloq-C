@@ -24,6 +24,7 @@
 #include "evv_arena.h"
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
+#include "reloq_syllable_trace.h"
 #include "reloq61_rule_calls_fifi.h"
 
 /* Where each global the rules touch lands in the state,
@@ -1178,6 +1179,7 @@ int32_t reloq_fifi_generate_durations(void *state, int32_t p0)
     r0 = reloq_call_fifi_find_acoustic_nuc(state, (int32_t)(FIELD(0)));
     r0 = reloq_call_fifi_assign_phone_durs(state, (int32_t)(FIELD(0)));
     r0 = reloq_call_fifi_set_syll_offset_vals(state, (int32_t)(FIELD(0)));
+    reloq61_syllable_trace_emit(STATE(int32_t,f13),STATE(int32_t,f14));
     goto L187;
 L168:;
     r0 = reloq61_typed_vretproc(DELTA_ENTRY_vretproc, state, (int32_t)(94));

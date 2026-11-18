@@ -16,6 +16,14 @@ by source indexes, while letting NVDA's symbol level and dictionaries take prece
 
 ### Current melody and word stress (dev145 experiment)
 
+The dev149 test adds observed syllable anchors to the US pitch transfer when
+both native syllable clocks and the analyzed word agree. Ambiguous clocks
+fall back to the earlier word-level alignment. It also introduces a
+bounded accent rule for directly recognized compound nominalizations, such as
+راه‌اندازی and ذخیره‌سازی. See [PERSIAN_STRESS.md](PERSIAN_STRESS.md) for
+the limits and supporting linguistic references. Neither change constitutes
+a complete independent Persian language frontend.
+
 The Persian and Pinglish test voices use a US-English pitch pilot while
 retaining Persian acoustic frames. Stale cancellation and coincident word
 boundaries no longer silently discard this pilot; some unsupported raw

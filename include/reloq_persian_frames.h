@@ -17,4 +17,9 @@ struct reloq_fa_frame_mark {
     int32_t value;
 };
 
+/* Provider syllable edges, in the native 1/10000-ms clock. */
+struct reloq_fa_syllable {
+    int32_t from, to;
+};
+
 #endif

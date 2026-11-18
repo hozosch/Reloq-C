@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "reloq61.h"
+#include "reloq_syllable_trace.h"
 #include "reloq61_english_plan.h"
 #include "reloq61_english_bank.h"
 #include "reloq61_parameter_names.h"
@@ -19,6 +20,13 @@
 #include "reloq61_english_clock.h"
 #include "reloq61_german_clock.h"
 #include "reloq61_german_final.h"
+
+static _Thread_local reloq_syllable_sink syllable_sink;
+static _Thread_local void *syllable_context;
+void reloq61_syllable_trace_set(reloq_syllable_sink sink,void *context)
+{syllable_sink=sink;syllable_context=context;}
+void reloq61_syllable_trace_emit(int32_t from,int32_t to)
+{if(syllable_sink)syllable_sink(syllable_context,from,to);}
 extern void evvRunStaticInitialisers(void);
 extern OldInst *STDCALL eo_newEx(int32_t);
 extern int STDCALL es_delete(OldInst *);

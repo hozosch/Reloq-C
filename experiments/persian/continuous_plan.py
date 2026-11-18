@@ -366,6 +366,7 @@ class CapturedRows:
     frames: object
     ticks: list[int]
     original_pitch: object = None
+    syllables: tuple[tuple[int, int], ...] = ()
 
     @classmethod
     def from_capture(cls, value, *, native=None):
@@ -385,7 +386,7 @@ class CapturedRows:
             if index in indexes:
                 raise RuntimeError('duplicate planning mark')
             indexes[index] = sample
-        return cls(value.pcm, indexes, frames, ticks)
+        return cls(value.pcm, indexes, frames, ticks, syllables=value.syllables)
 
 
 def _edges(item, count):
@@ -509,8 +510,58 @@ def _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language,
             row.controls[1] = _f32(target)
 
 
+def _syllable_edges(item, start, end, expected):
+    """Return observed internal boundaries only for a verifiable word span."""
+    if expected < 2 or not item.syllables:
+        return ()
+    spans = item.syllables
+    # Some providers reset their local syllable clock at a sentence boundary.
+    # Such captures are deliberately left on the existing word-level fit.
+    if any(a < 0 or a >= b or (i and a < spans[i-1][1])
+           for i, (a, b) in enumerate(spans)):
+        return ()
+    selected = [(a, b) for a, b in spans if start * 20000 <= a + b < end * 20000]
+    if len(selected) != expected:
+        return ()
+    return tuple(round((left[1] + right[0]) / 20000)
+                 for left, right in zip(selected, selected[1:]))
+
+
+def _syllable_word_edges(item, bounds, counts):
+    """Resolve sentence-local clocks against independently captured word marks."""
+    if (not item.syllables or len(bounds) != len(counts) + 1 or
+            any(n < 1 for n in counts) or sum(counts) != len(item.syllables)):
+        return None
+    groups, pos, offset, previous = [], 0, 0, None
+    for i, count in enumerate(counts):
+        group = []
+        for j, (a, b) in enumerate(item.syllables[pos:pos + count]):
+            if a < 0 or a >= b:
+                return None
+            if previous is not None and a < previous:
+                if j or i + 1 >= len(counts):
+                    return None
+                # A mark before punctuation can precede the inter-sentence
+                # pause, not the following word. The next word boundary and
+                # the measured end of this first word locate the new clock.
+                # A final single-word sentence has no such mark and falls
+                # back to the established word-level transfer.
+                offset = bounds[i + 1] * 10000 - item.syllables[pos + count - 1][1]
+                if offset < 0:
+                    return None
+            previous = b
+            a, b = a + offset, b + offset
+            if not bounds[i] * 20000 <= a + b < bounds[i + 1] * 20000:
+                return None
+            group.append((a, b))
+        groups.append(tuple(round((left[1] + right[0]) / 20000)
+                            for left, right in zip(group, group[1:])))
+        pos += count
+    return tuple(groups)
+
+
 def fit_us_word_pitch(item, bounds, donor, donor_bounds, target_markers, donor_markers,
-                      rate, capture_api, check=None):
+                      rate, capture_api, check=None, *, syllable_counts=()):
     """Fit complete US word contours, including each final voiced vowel.
 
     Markers belong to the same generated Persian words in both captures.
@@ -542,9 +593,30 @@ def fit_us_word_pitch(item, bounds, donor, donor_bounds, target_markers, donor_m
         if len(voiced) < 2 or voiced[0] >= voiced[-1]:
             return False
         planned.append((target[i], target[i + 1], voiced[0], voiced[-1]))
-    for start, end, first, last in planned:
+    if len(syllable_counts) != count:
+        syllable_counts = ()
+    target_groups = _syllable_word_edges(item, target, syllable_counts) if syllable_counts else None
+    source_groups = _syllable_word_edges(donor, source, syllable_counts) if syllable_counts else None
+    for i, (start, end, first, last) in enumerate(planned):
         if check:
             check()
+        fitter = getattr(capture_api, 'fit_pitch_anchors', None)
+        if fitter is not None and syllable_counts:
+            expected = syllable_counts[i]
+            target_edges = (target_groups[i] if target_groups is not None else
+                            _syllable_edges(item, start, end, expected))
+            donor_edges = (source_groups[i] if source_groups is not None else
+                           _syllable_edges(donor, source[i], source[i+1], expected))
+            if target_edges and len(target_edges) == len(donor_edges):
+                n = len(target_edges)
+                target_array = (ctypes.c_int64 * n)(*target_edges)
+                donor_array = (ctypes.c_int64 * n)(*donor_edges)
+                status = fitter(item.frames, len(item.frames), curve, len(curve), start, end,
+                                first, last, target_array, donor_array, n)
+                if status == 0:
+                    continue
+                if status < 0:
+                    raise RuntimeError('invalid native syllable pitch alignment')
         status = capture_api.fit_pitch(item.frames, len(item.frames), curve, len(curve),
                                        start, end, first, last)
         if status:
@@ -691,7 +763,9 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
             donor_end = (len(donor.pcm) // 2 if segment + 1 == len(parts)
                          else donor.indexes[segment + 1])
             fit_us_word_pitch(item, (bounds[segment], bounds[segment + 1]), donor,
-                              (donor_start, donor_end), marks, marks, rate, capture_api, check)
+                              (donor_start, donor_end), marks, marks, rate, capture_api, check,
+                              syllable_counts=tuple(len(_SYLLABLE.findall(m.group(1)))
+                                                    for m in _TAG.finditer(part.text)))
     voices = (('fa', fa), ('en-us', en))
     prepared = {}
     if start_prefix is not None:

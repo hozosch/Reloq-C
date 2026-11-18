@@ -24,6 +24,15 @@ PREVIOUS_KEY = ('persian-windows-provider-gcc14-v2-'
 RECENT_BASE = '5675c59f29e690b2e15ba7ba9c209934a09632c9'
 RECENT_KEY = ('persian-windows-provider-gcc14-v2-'
               '258cf46181dbfeb1b6d1f9c2e9146e82d09ebaa88f092c1c1ac5e757e1fe95fc')
+TRACE_BASE = '14bfa3132c9936d2798d3281ac5693b550f002cb'
+TRACE_KEY = ('persian-windows-provider-gcc14-v2-'
+             'eb978682e83612fa0fef1940e0c321d3072f9cf8db4b6d11c243532189d602cc')
+TRACE_ALLOWED = {
+    'include/reloq_eci.h', 'include/reloq_persian_frames.h', 'include/reloq_syllable_trace.h',
+    'vendor/openevv61/src/reloq61_bridge.c',
+    'vendor/openevv61/lang/fifi/delta_rules_c30_fifi.c',
+    'vendor/openevv61/lang/enus61/delta_rules_c29_enus61.c',
+}
 RECENT_HEADERS = {
     'include/reloq_eci.h': 'f568cdd0b995f7ed7229cbe91f405cb0165b61f9',
     'include/reloq_persian_numbers.h': '5704f39488eec88d9095191df7dc64d151cfd6d8',
@@ -83,7 +92,11 @@ def main():
                     os.utime(path, None)
             print('Reused verified provider cache for the additive public API change.')
             return
-        if key == PREVIOUS_KEY:
+        if key == TRACE_KEY:
+            changed = set(git('diff', '--name-only', TRACE_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != TRACE_ALLOWED:
+                raise ValueError('syllable trace provider changes differ from the verified scope')
+        elif key == PREVIOUS_KEY:
             changed = set(git('diff', '--name-only', PREVIOUS_TREE, 'HEAD', '--', *INPUTS).splitlines())
             # Both of these inputs are rebuilt below. The scope-selection C
             # file is its own object; it is not part of the other language
@@ -123,10 +136,14 @@ def main():
                         BUILD / 'src/port/port_win32.o',
                         BUILD / 'src/reloq61_bridge.o',
                         BUILD / 'reloq_persian_acoustics.o', BUILD / 'libreloq61.a'))
+        if key == TRACE_KEY:
+            objects.append(BUILD / 'lang/enus61/delta_rules_c29_enus61.o')
         # No provider object should depend on the changed public ECI header.
         # If one does, rebuilding that object is safer than assuming this.
         for dep in BUILD.rglob('*.d'):
-            if 'reloq_eci.h' in dep.read_text(encoding='utf8', errors='replace'):
+            value = dep.read_text(encoding='utf8', errors='replace')
+            if ('reloq_eci.h' in value or key == TRACE_KEY and
+                    ('reloq_persian_frames.h' in value or 'reloq_syllable_trace.h' in value)):
                 objects.append(dep.with_suffix('.o'))
         for path in BUILD.rglob('*'):
             if path.is_file():

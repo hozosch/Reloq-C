@@ -336,8 +336,10 @@ ECIAPI int ECICALL eciPersianNativeGeminates(const uint32_t *pairs,size_t count)
  * handle globally. The caller must release it on both success and failure. */
 struct reloq_fa_frame;
 struct reloq_fa_frame_mark;
+struct reloq_fa_syllable;
 ECIAPI int ECICALL eciPersianCaptureBegin(size_t maximum);
 ECIAPI const struct reloq_fa_frame *ECICALL eciPersianCaptureEnd(size_t *count,int *failed);
+ECIAPI const struct reloq_fa_syllable *ECICALL eciPersianCaptureSyllables(size_t *count,int *failed);
 ECIAPI void ECICALL eciPersianCaptureRelease(void);
 ECIAPI int ECICALL eciPersianCaptureSetControlsOnly(int enabled);
 ECIAPI size_t ECICALL eciPersianCaptureSampleCount(void);
@@ -360,6 +362,9 @@ ECIAPI int ECICALL eciPersianDenseCurve(const struct reloq_fa_frame *rows,size_t
     unsigned column,float *out,size_t length);
 ECIAPI int ECICALL eciPersianFitPitch(struct reloq_fa_frame *rows,size_t count,
     const float *pilot,size_t length,int64_t start,int64_t end,int64_t a,int64_t b);
+ECIAPI int ECICALL eciPersianFitPitchAnchors(struct reloq_fa_frame *rows,size_t count,
+    const float *pilot,size_t length,int64_t start,int64_t end,int64_t a,int64_t b,
+    const int64_t *target,const int64_t *source,size_t anchors);
 /* Keep the original pitch except near language-switch edges. Bit 0 selects
  * the beginning and bit 1 the end; window is in the frame clock's ms. */
 ECIAPI int ECICALL eciPersianFitPitchEdges(struct reloq_fa_frame *rows,size_t count,

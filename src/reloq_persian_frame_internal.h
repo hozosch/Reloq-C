@@ -9,6 +9,8 @@
 int reloq_fa_capture_begin(size_t maximum);
 const struct reloq_fa_frame *reloq_fa_capture_end(size_t *count, int *failed);
 void reloq_fa_capture_release(void);
+void reloq_fa_capture_syllable(void *context,int32_t from,int32_t to);
+const struct reloq_fa_syllable *reloq_fa_capture_syllables(size_t *count,int *failed);
 int reloq_fa_capture_set_controls_only(int enabled);
 int reloq_fa_capture_set_pcm_storage(int enabled);
 int reloq_fa_capture_pcm_storage(void);
@@ -28,6 +30,9 @@ int reloq_fa_dense_curve(const struct reloq_fa_frame *rows,size_t count,
     unsigned column,float *out,size_t length);
 int reloq_fa_fit_pitch(struct reloq_fa_frame *rows,size_t count,const float *pilot,
     size_t length,int64_t start,int64_t end,int64_t a,int64_t b);
+int reloq_fa_fit_pitch_anchors(struct reloq_fa_frame *rows,size_t count,const float *pilot,
+    size_t length,int64_t start,int64_t end,int64_t a,int64_t b,
+    const int64_t *target,const int64_t *source,size_t anchors);
 int reloq_fa_fit_pitch_edges(struct reloq_fa_frame *rows,size_t count,const float *pilot,
     size_t length,const float *original,int64_t start,int64_t end,int64_t a,int64_t b,
     unsigned edges,int64_t window);

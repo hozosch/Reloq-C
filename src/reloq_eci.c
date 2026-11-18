@@ -24,6 +24,7 @@
 #include "reloq_persian_direct.h"
 #include "reloq_persian_acoustics.h"
 #include "reloq_persian_frame_internal.h"
+#include "reloq_syllable_trace.h"
 
 #include <limits.h>
 #include <math.h>
@@ -1964,11 +1965,17 @@ int reloq_eci_last_error(ECIHand handle)
 #include "reloq_persian_replay.inc"
 
 int ECICALL eciPersianCaptureBegin(size_t maximum)
-{return reloq_fa_capture_begin(maximum);}
+{
+    int status=reloq_fa_capture_begin(maximum);
+    if(!status)reloq61_syllable_trace_set(reloq_fa_capture_syllable,NULL);
+    return status;
+}
 const struct reloq_fa_frame *ECICALL eciPersianCaptureEnd(size_t *count,int *failed)
-{return reloq_fa_capture_end(count,failed);}
+{reloq61_syllable_trace_set(NULL,NULL);return reloq_fa_capture_end(count,failed);}
+const struct reloq_fa_syllable *ECICALL eciPersianCaptureSyllables(size_t *count,int *failed)
+{return reloq_fa_capture_syllables(count,failed);}
 void ECICALL eciPersianCaptureRelease(void)
-{reloq_fa_capture_release();}
+{reloq61_syllable_trace_set(NULL,NULL);reloq_fa_capture_release();}
 int ECICALL eciPersianCaptureSetControlsOnly(int enabled)
 {return reloq_fa_capture_set_controls_only(enabled);}
 size_t ECICALL eciPersianCaptureSampleCount(void)
@@ -1999,6 +2006,10 @@ int ECICALL eciPersianDenseCurve(const struct reloq_fa_frame *rows,size_t count,
 int ECICALL eciPersianFitPitch(struct reloq_fa_frame *rows,size_t count,
     const float *pilot,size_t length,int64_t start,int64_t end,int64_t a,int64_t b)
 {return reloq_fa_fit_pitch(rows,count,pilot,length,start,end,a,b);}
+int ECICALL eciPersianFitPitchAnchors(struct reloq_fa_frame *rows,size_t count,
+    const float *pilot,size_t length,int64_t start,int64_t end,int64_t a,int64_t b,
+    const int64_t *target,const int64_t *source,size_t anchors)
+{return reloq_fa_fit_pitch_anchors(rows,count,pilot,length,start,end,a,b,target,source,anchors);}
 int ECICALL eciPersianFitPitchEdges(struct reloq_fa_frame *rows,size_t count,
     const float *pilot,size_t length,const float *original,int64_t start,int64_t end,
     int64_t a,int64_t b,unsigned edges,int64_t window)

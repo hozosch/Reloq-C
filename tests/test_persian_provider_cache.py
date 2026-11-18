@@ -38,6 +38,8 @@ class CacheReuseTests(unittest.TestCase):
 
     def test_rebuilds_selected_objects_or_rejects_unverified_cache(self):
         for key, diff, reusable in (
+            (cache.TRACE_KEY, '\n'.join(cache.TRACE_ALLOWED), True),
+            (cache.TRACE_KEY, '\n'.join(cache.TRACE_ALLOWED | {'vendor/openevv61/Makefile.native'}), False),
             (cache.PREVIOUS_KEY, 'experiments/persian/build_native_probe.py', True),
             (cache.PREVIOUS_KEY, 'experiments/persian/build_native_probe.py\nsrc/reloq_persian_acoustics.c', True),
             (cache.PREVIOUS_KEY, 'src/reloq_persian_acoustics.h', False),

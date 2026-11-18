@@ -685,7 +685,30 @@ static int ends_with(const char *word,size_t bytes,const char *suffix,size_t *st
     *stem=bytes-n;return 1;
 }
 
-static void apply_persian_stress(const char *word,size_t bytes,char *tag)
+/* Written compound nominalizations such as راه‌اندازی and ذخیره‌سازی
+ * normally have their principal accent on the derivational -i. Only apply
+ * this to a pronunciation already admitted by the direct lexicon; the
+ * half-space and a nonempty first component distinguish this from an
+ * independently written finite verb. An explicitly written ezafe is an
+ * unstressed following syllable, not part of the derivation. */
+static size_t nominal_compound_primary(const char *word,size_t bytes,const char *tag,
+                                       size_t syllables)
+{
+    size_t end=bytes,stem=0;
+    int ezafe=ends_with(word,bytes,"ِ",&end);
+    if(ezafe) {
+        size_t n=strlen(tag);
+        if(syllables<2 || n<4 || tag[n-1]!=']' || tag[n-2]!='e' ||
+           tag[n-4]!='.' || tag[n-3]<'0' || tag[n-3]>'2')return SIZE_MAX;
+    }
+    static const char *const suffixes[]={"‌اندازی", "‌سازی", "‌یابی", "‌نویسی"};
+    for(size_t i=0;i<sizeof suffixes/sizeof suffixes[0];++i)
+        if(ends_with(word,end,suffixes[i],&stem) && stem)
+            return syllables-(ezafe?2u:1u);
+    return SIZE_MAX;
+}
+
+static void apply_persian_stress(const char *word,size_t bytes,char *tag,int direct)
 {
     size_t syllables=stress_syllables(tag),stem=0;
     if(!syllables || syllables==1)return;
@@ -695,6 +718,11 @@ static void apply_persian_stress(const char *word,size_t bytes,char *tag)
         stress_primary(tag,syllables-1);return;
     }
     unsigned kind=stress_class(word,bytes);
+
+    if(direct && !(kind&2u)) {
+        size_t target=nominal_compound_primary(word,bytes,tag,syllables);
+        if(target!=SIZE_MAX){stress_primary(tag,target);return;}
+    }
 
     /* Verbal prefixes bear the accent. The common written half-space
      * makes می/نمی unambiguous; without it, require a known verb remainder. */
@@ -807,7 +835,7 @@ int reloq_fa_direct_stress(const char *word,size_t bytes,char *tag,size_t capaci
 {
     if(!word || !bytes || memchr(word,0,bytes) || !tag || !capacity ||
        !memchr(tag,0,capacity))return -1;
-    apply_persian_stress(word,bytes,tag);
+    apply_persian_stress(word,bytes,tag,0);
     return 0;
 }
 
@@ -824,7 +852,7 @@ int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
     if(result<0)return result;
     result=direct_context_word_exact(word,bytes,follows_word,output,capacity);
     if(result==1) {
-        apply_persian_stress(word,bytes,output);
+        apply_persian_stress(word,bytes,output,1);
         apply_function_word_context(word,bytes,follows_word,output);
     }
     if(result || !word || bytes==SIZE_MAX)return result;
@@ -854,7 +882,7 @@ int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
     }
     result=direct_context_word_exact(variant,bytes,follows_word,output,capacity);
     if(result==1) {
-        apply_persian_stress(variant,bytes,output);
+        apply_persian_stress(variant,bytes,output,1);
         apply_function_word_context(variant,bytes,follows_word,output);
     }
     free(variant);

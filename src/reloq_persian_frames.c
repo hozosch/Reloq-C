@@ -17,9 +17,12 @@
 
 struct capture_state {
     struct reloq_fa_frame *frames;
+    struct reloq_fa_syllable *syllables;
     int16_t *pcm;
     size_t count, capacity, maximum, samples;
     size_t pcm_capacity;
+    size_t syllable_count, syllable_capacity;
+    int syllable_failed;
     int active, failed, controls_only, store_pcm;
 };
 static _Thread_local struct capture_state capture;
@@ -30,6 +33,7 @@ FA_EXPORT int reloq_fa_capture_begin(size_t maximum)
        maximum>SIZE_MAX/sizeof *capture.frames)return -1;
     free(capture.frames);
     free(capture.pcm);
+    free(capture.syllables);
     capture=(struct capture_state){.maximum=maximum,.active=1};
     return 0;
 }
@@ -46,7 +50,32 @@ FA_EXPORT void reloq_fa_capture_release(void)
 {
     free(capture.frames);
     free(capture.pcm);
+    free(capture.syllables);
     capture=(struct capture_state){0};
+}
+
+void reloq_fa_capture_syllable(void *context,int32_t from,int32_t to)
+{
+    (void)context;
+    if(!capture.active || capture.syllable_failed)return;
+    if(from<0 || to<=from || capture.syllable_count>=4096) {
+        capture.syllable_failed=1;return;
+    }
+    if(capture.syllable_count==capture.syllable_capacity) {
+        size_t next=capture.syllable_capacity?capture.syllable_capacity*2:32;
+        if(next>4096)next=4096;
+        void *buffer=realloc(capture.syllables,next*sizeof *capture.syllables);
+        if(!buffer){capture.syllable_failed=1;return;}
+        capture.syllables=buffer;capture.syllable_capacity=next;
+    }
+    capture.syllables[capture.syllable_count++]=(struct reloq_fa_syllable){from,to};
+}
+
+FA_EXPORT const struct reloq_fa_syllable *reloq_fa_capture_syllables(size_t *count,int *failed)
+{
+    if(!count || !failed || capture.active)return NULL;
+    *count=capture.syllable_count;*failed=capture.syllable_failed;
+    return capture.syllables;
 }
 
 FA_EXPORT int reloq_fa_capture_set_controls_only(int enabled)
@@ -438,6 +467,47 @@ FA_EXPORT int reloq_fa_fit_pitch(struct reloq_fa_frame *rows,size_t count,
                  (double)a+(double)(b-a)*(double)(tick-first)/(double)(last-first);
         size_t lower=(size_t)t;
         if(lower>=length)return -1;
+        double value=pilot[lower];
+        if(lower+1<length)value+=((double)pilot[lower+1]-value)*(t-(double)lower);
+        rows[i].controls[1]=(float)value;
+    }
+    return 0;
+}
+
+/* Warp a donor word through real corresponding syllable boundaries. The
+ * target retains its own complete frame clock and acoustic controls. Invalid
+ * or unvoiced anchors return without modifying any frame, allowing the caller
+ * to use the established whole-word transfer. */
+FA_EXPORT int reloq_fa_fit_pitch_anchors(struct reloq_fa_frame *rows,size_t count,
+    const float *pilot,size_t length,int64_t start,int64_t end,int64_t a,int64_t b,
+    const int64_t *target,const int64_t *source,size_t anchors)
+{
+    if(!rows || !count || !pilot || !length || !target || !source || !anchors || anchors>255 ||
+       start<0 || start>=end || rows[count-1].tick<0 || rows[count-1].tick==INT64_MAX ||
+       end>rows[count-1].tick+1 || a<0 || a>=b || (uint64_t)b>=length)return -1;
+    int64_t first=start,last=end-1;
+    while(first<end && fa_interpolated_voice(rows,count,first)<=0)++first;
+    while(last>=start && fa_interpolated_voice(rows,count,last)<=0)--last;
+    if(first>=last)return 1;
+    int64_t pt=first,ps=a;
+    for(size_t i=0;i<anchors;++i) {
+        if(target[i]<=pt || target[i]>=last || source[i]<=ps || source[i]>=b)return 1;
+        pt=target[i];ps=source[i];
+    }
+    for(size_t i=0;i<count;++i) {
+        int64_t tick=rows[i].tick;
+        if(tick<start || tick>=end)continue;
+        double t;
+        if(tick<=first)t=(double)a;
+        else if(tick>=last)t=(double)b;
+        else {
+            size_t j=0;
+            while(j<anchors && tick>target[j])++j;
+            int64_t tl=j?target[j-1]:first, sl=j?source[j-1]:a;
+            int64_t tr=j<anchors?target[j]:last, sr=j<anchors?source[j]:b;
+            t=(double)sl+(double)(sr-sl)*(double)(tick-tl)/(double)(tr-tl);
+        }
+        size_t lower=(size_t)t;
         double value=pilot[lower];
         if(lower+1<length)value+=((double)pilot[lower+1]-value)*(t-(double)lower);
         rows[i].controls[1]=(float)value;

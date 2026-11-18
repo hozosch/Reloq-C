@@ -32,11 +32,16 @@ class FrameMark(ctypes.Structure):
     _fields_ = (('frame', ctypes.c_uint32), ('value', ctypes.c_int32))
 
 
+class NativeSyllable(ctypes.Structure):
+    _fields_ = (('from_', ctypes.c_int32), ('to', ctypes.c_int32))
+
+
 @dataclass(frozen=True)
 class NativeCapture:
     pcm: bytes
     indexes: tuple[tuple[int, int], ...]
     frame_bytes: bytes
+    syllables: tuple[tuple[int, int], ...] = ()
 
     def frames(self):
         """Return an owned, mutable native row array in its original order."""
@@ -57,6 +62,10 @@ class FrameCapture:
         self._end = _native_function(dll, 'eciPersianCaptureEnd', 'reloq_fa_capture_end')
         self._end.argtypes = (ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_int))
         self._end.restype = ctypes.POINTER(NativeFrame)
+        self._syllables = _native_function(dll, 'eciPersianCaptureSyllables', 'reloq_fa_capture_syllables')
+        if self._syllables is not None:
+            self._syllables.argtypes = (ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_int))
+            self._syllables.restype = ctypes.POINTER(NativeSyllable)
         self._release = _native_function(dll, 'eciPersianCaptureRelease', 'reloq_fa_capture_release')
         self._release.argtypes, self._release.restype = (), None
         self._controls_only = _native_function(dll, 'eciPersianCaptureSetControlsOnly',
@@ -86,6 +95,13 @@ class FrameCapture:
                                        ctypes.POINTER(ctypes.c_float), ctypes.c_size_t,
                                        ctypes.c_int64, ctypes.c_int64, ctypes.c_int64, ctypes.c_int64)
             self.fit_pitch.restype = ctypes.c_int
+        self.fit_pitch_anchors = _native_function(dll, 'eciPersianFitPitchAnchors', 'reloq_fa_fit_pitch_anchors')
+        if self.fit_pitch_anchors is not None:
+            self.fit_pitch_anchors.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_float), ctypes.c_size_t, ctypes.c_int64, ctypes.c_int64,
+                ctypes.c_int64, ctypes.c_int64, ctypes.POINTER(ctypes.c_int64),
+                ctypes.POINTER(ctypes.c_int64), ctypes.c_size_t)
+            self.fit_pitch_anchors.restype = ctypes.c_int
         self.fit_pitch_edges = _native_function(dll, 'eciPersianFitPitchEdges', 'reloq_fa_fit_pitch_edges')
         if self.fit_pitch_edges is not None:
             self.fit_pitch_edges.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
@@ -173,7 +189,14 @@ class FrameCapture:
                 sound = ctypes.string_at(stored, stored_count.value * 2) if stored_count.value else b''
             else:
                 sound = bytes(sample_count * 2) if silent_clock else bytes(pcm)
-            return NativeCapture(sound, tuple(indexes), data)
+            syllables = ()
+            if self._syllables is not None:
+                syllable_count, syllable_failed = ctypes.c_size_t(), ctypes.c_int()
+                syllable_pointer = self._syllables(ctypes.byref(syllable_count), ctypes.byref(syllable_failed))
+                if not syllable_failed.value and syllable_pointer:
+                    syllables = tuple((syllable_pointer[i].from_, syllable_pointer[i].to)
+                                      for i in range(syllable_count.value))
+            return NativeCapture(sound, tuple(indexes), data, syllables)
         finally:
             # release is valid after either a normal end or a failed synthesis.
             # An exception can leave capture active, but release clears it too.

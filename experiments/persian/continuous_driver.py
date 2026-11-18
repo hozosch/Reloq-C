@@ -767,7 +767,8 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             transferred = fit_us_word_pitch(
                 target, (0, len(target.pcm) // 2), donor, (0, len(donor.pcm) // 2),
                 word_marks, word_marks, rate, FrameCapture(voice._dll),
-                check=lambda: (_ for _ in ()).throw(InterruptedError()) if owner._cancelled.is_set() else None)
+                check=lambda: (_ for _ in ()).throw(InterruptedError()) if owner._cancelled.is_set() else None,
+                syllable_counts=tuple(len(re.findall(r'\.[012]', tag)) for tag in tags))
             if not transferred and word_marks:
                 # Closely spaced NVDA indexes can coincide with a native
                 # word boundary. Keep the same US donor over the whole

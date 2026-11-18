@@ -1,5 +1,28 @@
 # Persian stress and contour
 
+## dev149: observed syllable timing and compound nominals
+
+The US pitch pilot now records the native syllable boundaries of both the
+Persian acoustic carrier and the US donor. Within a word, corresponding
+observed syllable boundaries anchor the transfer rather than stretching the
+whole voiced word uniformly. Other acoustic controls and the original
+Persian time axis remain untouched. Sentence-local clock resets can be
+resolved when independently captured word marks and all syllable counts
+agree. For a different count, an unvoiced anchor, or another ambiguous
+boundary, the previous word-level transfer remains in use. The result is a listening
+candidate, not proof of natural Iranian Persian intonation.
+
+For an existing, directly recognized compound nominal ending in ‌اندازی,
+‌سازی, ‌یابی or ‌نویسی, native lexical stress now falls on the final
+derivational syllable. A separately marked ezafe remains unstressed, and a
+known verbal classification is not overwritten. Thus راه‌اندازی no longer
+receives three primary accents. The rule does not assign this analysis to
+unknown fallback words or to separately written words. The independent
+motivation for final stress in Persian nouns, including compounds, is
+documented at https://sites.la.utexas.edu/persian_online_resources/nouns/.
+ZWNJ can mark a compound boundary, but is not an infallible grammatical
+classifier: https://aclanthology.org/2020.coling-main.406/.
+
 The dev145 NVDA experiment uses the native US English contour as its pitch
 pilot, mapped to the existing Persian frame timing and vowel sound. It maps
 the end of a word's voiced portion to the donor's voiced end instead of

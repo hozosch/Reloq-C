@@ -80,6 +80,11 @@ def main():
         'ژاپنی': '`[.0Za.0po.1ni]',
         'آلمانی': '`[.0al.0ma.1ni]',
         'انگلیسی': '`[.0en.0ge.0li.1si]',
+        'راه‌اندازی': "`[.0ra.0h'A:'n.0da.1zi]",
+        'راه‌اندازیِ': "`[.0ra.0h'A:'n.0da.1zi.0e]",
+        'آسیب‌یابی': '`[.0a.0si.0bja.1bi]',
+        'آماده‌سازی': "`[.0a.0ma.0d'e:'.0sa.1zi]",
+        'ذخیره‌سازیِ': "`[.0zA.0Gi.0r'e:'.0sa.1zi.0e]",
     }
     for word, expected in examples.items():
         assert project(word) == expected, (word, project(word), expected)
@@ -107,6 +112,8 @@ def main():
     assert fallback('کتابی', '`[.0ke.1ta.0bi]') == '`[.0ke.1ta.0bi]'
     assert fallback('یونانی', '`[.0ju.1na.0ni]') == '`[.0ju.0na.1ni]'
     assert fallback('ولی', '`[.1vA.0li]') == '`[.1vA.0li]'
+    # A suffix alone does not establish the analysis of an unknown fallback.
+    assert fallback('ناشناخته‌سازی', '`[.1sa.0zi]') == '`[.1sa.0zi]'
     # Multi-tag fallback output has no safe one-word alignment.
     multi = '`[.1ke.0tab] `[.1Ga.0ne]'
     assert fallback('کتاب', multi) == multi
