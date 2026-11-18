@@ -5,6 +5,7 @@ import contextlib
 import io
 import os
 from pathlib import Path
+import shutil
 import sys
 import tempfile
 import unittest
@@ -15,6 +16,58 @@ import reuse_persian_provider_cache as cache
 
 
 class CacheReuseTests(unittest.TestCase):
+    def test_incremental_generator_reuse_checks_each_source(self):
+        for altered in (False, True):
+            with self.subTest(altered=altered), tempfile.TemporaryDirectory() as tmp:
+                build = Path(tmp) / 'windows-release'
+                generated = build / 'persian-provider'
+                generated.mkdir(parents=True)
+                names = [f'delta_rules_c{i:02}_fifi.c' for i in range(21)]
+                for name in names:
+                    (generated / name).write_text('original:' + name, encoding='utf8')
+                (generated / '.stamp').touch()
+                objs = build / 'lang/fifi'
+                objs.mkdir(parents=True)
+                unchanged, changed = objs / 'delta_rules_c01_fifi.o', objs / 'delta_rules_c02_fifi.o'
+                unchanged.touch(); changed.touch()
+                (build / 'reloq_persian_acoustics.o').touch()
+                (build / 'libreloq61.a').touch()
+                def generate(command, check):
+                    target = Path(command[-1])
+                    shutil.copytree(generated, target)
+                    (target / 'delta_rules_c02_fifi.c').write_text('new R', encoding='utf8')
+                    if altered:
+                        (target / 'delta_rules_c01_fifi.c').write_text('unexpected', encoding='utf8')
+                with patch.object(cache, 'BUILD', build), patch.object(cache.subprocess, 'run', side_effect=generate), \
+                        contextlib.redirect_stdout(io.StringIO()):
+                    if altered:
+                        with self.assertRaises(ValueError):
+                            cache.reuse_dev156_generated()
+                    else:
+                        cache.reuse_dev156_generated()
+                        self.assertTrue(unchanged.exists())
+                        self.assertFalse(changed.exists())
+                        self.assertFalse((build / 'libreloq61.a').exists())
+                        self.assertFalse((build / 'reloq_persian_acoustics.o').exists())
+                        self.assertEqual((generated / 'delta_rules_c02_fifi.c').read_text(), 'new R')
+                        self.assertGreaterEqual(unchanged.stat().st_mtime_ns,
+                                                (generated / 'delta_rules_c01_fifi.c').stat().st_mtime_ns)
+
+    def test_dev156_reuse_requires_exact_inputs(self):
+        for changed, accepted in ((cache.DEV156_ALLOWED, True),
+                                  (cache.DEV156_ALLOWED | {'include/reloq_eci.h'}, False),
+                                  ({'src/reloq_persian_acoustics.c'}, False)):
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as tmp:
+                build = Path(tmp) / 'windows-release'
+                build.mkdir()
+                with patch.object(cache, 'BUILD', build), patch.object(cache, 'git', return_value='\n'.join(changed)), \
+                        patch.object(cache, 'reuse_dev156_generated') as reuse, \
+                        patch.dict(os.environ, {'PERSIAN_PROVIDER_CACHE_KEY': cache.DEV156_KEY}), \
+                        contextlib.redirect_stdout(io.StringIO()):
+                    cache.main()
+                self.assertEqual(reuse.called, accepted)
+                self.assertEqual(build.exists(), accepted)
+
     def test_dev153_cache_rejects_modified_build_recipe(self):
         with tempfile.TemporaryDirectory() as tmp:
             build = Path(tmp) / 'windows-release'
@@ -61,9 +114,6 @@ class CacheReuseTests(unittest.TestCase):
 
     def test_rebuilds_selected_objects_or_rejects_unverified_cache(self):
         for key, diff, reusable in (
-            (cache.DEV156_KEY, '\n'.join(cache.DEV156_ALLOWED), True),
-            (cache.DEV156_KEY, '\n'.join(cache.DEV156_ALLOWED | {'include/reloq_eci.h'}), False),
-            (cache.DEV156_KEY, 'src/reloq_persian_acoustics.c', False),
             (cache.DEV155_KEY, '\n'.join(cache.DEV155_ALLOWED), True),
             (cache.DEV155_KEY, '\n'.join(cache.DEV155_ALLOWED | {'include/reloq_eci.h'}), False),
             (cache.DEV155_KEY, '', False),

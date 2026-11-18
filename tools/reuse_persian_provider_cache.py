@@ -13,6 +13,8 @@ import os
 import re
 import shutil
 import subprocess
+import sys
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 PROVIDER = ROOT / 'vendor/openevv61'
@@ -120,6 +122,38 @@ def eligible_recent(key, changed, blobs):
             blobs == RECENT_HEADERS)
 
 
+def reuse_dev156_generated():
+    """Regenerate, compare every source byte, and rebuild only the changed unit."""
+    cached = BUILD / 'persian-provider'
+    old = {path.name: path for path in cached.glob('*.c')}
+    if len(old) != 21 or not (cached / '.stamp').is_file():
+        raise ValueError('cached Persian source set is incomplete')
+    with tempfile.TemporaryDirectory(prefix='persian-recheck-', dir=BUILD.parent) as temp:
+        regenerated = Path(temp) / 'generated'
+        subprocess.run([sys.executable, str(ROOT / 'tools/prepare_persian_provider.py'),
+                        str(regenerated)], check=True)
+        new = {path.name: path for path in regenerated.glob('*.c')}
+        if old.keys() != new.keys():
+            raise ValueError('generated Persian source set changed')
+        differences = {name for name in old if old[name].read_bytes() != new[name].read_bytes()}
+        if differences != {'delta_rules_c02_fifi.c'}:
+            raise ValueError('unexpected generated provider source changes')
+        shutil.copyfile(new['delta_rules_c02_fifi.c'], old['delta_rules_c02_fifi.c'])
+    # The preparation stamp is newer than checkout inputs. Each generated
+    # source is newer than the stamp, and every reusable object is newer than
+    # its unchanged source. The changed source and scope objects are removed.
+    os.utime(cached / '.stamp', None)
+    for source in old.values():
+        os.utime(source, None)
+    for path in BUILD.rglob('*'):
+        if path.is_file() and path.parent != cached:
+            os.utime(path, None)
+    for path in (BUILD / 'lang/fifi/delta_rules_c02_fifi.o',
+                 BUILD / 'reloq_persian_acoustics.o', BUILD / 'libreloq61.a'):
+        path.unlink(missing_ok=True)
+    print('Reused byte-verified generated rules; rebuilding the after-I R and scope objects.')
+
+
 def main():
     try:
         key = os.environ.get('PERSIAN_PROVIDER_CACHE_KEY', '')
@@ -145,6 +179,8 @@ def main():
             changed = set(git('diff', '--name-only', DEV156_BASE, 'HEAD', '--', *INPUTS).splitlines())
             if changed != DEV156_ALLOWED:
                 raise ValueError('Persian after-I R provider changes differ from the verified scope')
+            reuse_dev156_generated()
+            return
         elif key == DEV155_KEY:
             changed = set(git('diff', '--name-only', DEV155_BASE, 'HEAD', '--', *INPUTS).splitlines())
             if changed != DEV155_ALLOWED:
