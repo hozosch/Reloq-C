@@ -12,6 +12,7 @@ on:
       - experiments/persian/test_persian_number_events.py
       - experiments/persian/build_experimental_nvda.py
       - experiments/persian/test_persian_decimals.py
+      - experiments/persian/test_persian_joiners.py
       - experiments/persian/test_decimal_routing.py
       - experiments/persian/test_direct_fa_numbers.py
       - experiments/persian/test_fa_orthography.py
@@ -98,6 +99,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian sentence boundaries or number timing failed' }
           python -B experiments/persian/test_persian_decimals.py
           if ($LASTEXITCODE -ne 0) { throw 'Persian NVDA version and dictionary processing failed' }
+          python -B experiments/persian/test_persian_joiners.py
+          if ($LASTEXITCODE -ne 0) { throw 'Persian NVDA punctuation and joiner preprocessing failed' }
           python -B experiments/persian/test_persian_number_events.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Structured native Persian number analysis failed' }
           python -B experiments/persian/test_fa_orthography.py --library "$dll"

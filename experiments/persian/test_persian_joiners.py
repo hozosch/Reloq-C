@@ -150,6 +150,40 @@ def main():
     assert joiners.protect_joiners(driver, [word]) == [word]
     switched = joiners.protect_joiners(driver, [LangChangeCommand('fa_IR'), word])
     assert len(switched) == 4 and joiners.restore_joiners(processor.processText(switched[2], level.NONE)) == word
+
+    driver._selectedLanguage = fa_id
+    question = 'سلام دنیا؟'
+    for kind in (level.NONE, level.SOME, level.MOST):
+        assert not processor.processText('؟', kind).strip()
+        guarded = joiners.protect_joiners(driver, [question], symbol_level=kind)
+        assert len(guarded) == 3 and guarded[0].enabled and not guarded[2].enabled
+        assert joiners.restore_joiners(processor.processText(guarded[1], kind)) == question
+    # Explicit punctuation names and character navigation remain NVDA's.
+    assert joiners.protect_joiners(driver, [question], symbol_level=level.ALL) == [question]
+    assert joiners.protect_joiners(driver, ['؟'], symbol_level=level.NONE) == ['؟']
+    spelling_question = [CharacterModeCommand(True), question]
+    assert joiners.protect_joiners(driver, spelling_question, symbol_level=level.NONE) == spelling_question
+    split_question = ['سلام دنیا', IndexCommand(41), '؟']
+    split = joiners.protect_joiners(driver, split_question, symbol_level=level.SOME)
+    assert split[:2] == split_question[:2] and len(split) == 5
+    assert joiners.restore_joiners(processor.processText(split[3], level.SOME)) == '؟'
+    assert joiners.protect_joiners(driver, [question + '\ue072'], symbol_level=level.NONE) == [question + '\ue072']
+    sys.modules['characterProcessing'].processSpeechSymbols = (
+        lambda locale, text, kind: 'custom question' if text == '؟' else processor.processText(text, kind))
+    assert joiners.protect_joiners(driver, [question], symbol_level=level.NONE) == [question]
+    sys.modules['characterProcessing'].processSpeechSymbols = observe_symbols
+    # A user can also define a context-sensitive symbol rule.
+    sys.modules['characterProcessing'].processSpeechSymbols = (
+        lambda locale, text, kind: 'سلام دنیا custom question' if text == question else processor.processText(text, kind))
+    assert joiners.protect_joiners(driver, [question], symbol_level=level.NONE) == [question]
+    sys.modules['characterProcessing'].processSpeechSymbols = observe_symbols
+    dictionaries.dictionaries['user'] = [types.SimpleNamespace(compiled=re.compile('؟'))]
+    assert joiners.protect_joiners(driver, [question], symbol_level=level.NONE) == [question]
+    dictionaries.dictionaries['user'] = []
+    driver._selectedLanguage = en_id
+    assert joiners.protect_joiners(driver, [question], symbol_level=level.NONE) == [question]
+    driver._selectedLanguage = fa_id
+
     # Execute the actual generated driver's _parts implementation, including
     # its restoration guards, rather than only testing the helper in isolation.
     from build_experimental_nvda import PREFIX, add_persian
@@ -175,6 +209,9 @@ def main():
     guarded[1] = processor.processText(guarded[1], level.NONE) + '  '
     parts = namespace['_parts'](guarded, language=profiles[fa_id], languages=profiles)
     assert parts == [eci.EciText(word + '  ')]
+    guarded = joiners.protect_joiners(driver, [question], symbol_level=level.SOME)
+    guarded[1] = processor.processText(guarded[1], level.SOME)
+    assert namespace['_parts'](guarded, language=profiles[fa_id], languages=profiles) == [eci.EciText(question)]
     parts = namespace['_parts']([original_pua], language=profiles[fa_id], languages=profiles)
     assert parts == [eci.EciText(original_pua)]
     print('Passed real NVDA symbol levels, dictionaries, spelling, literal PUA and language-switch checks.')

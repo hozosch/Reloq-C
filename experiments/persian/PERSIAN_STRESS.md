@@ -20,6 +20,11 @@ to the US parser without changing the Persian phonemes or lexical stress.
 Sentence colons before spaced slashes are treated as prose boundaries even
 in mixed-language text. Contiguous numeric times, URL schemes and drive
 paths retain their existing interpretation, as do standalone symbol names.
+NVDA normally removes the Persian question mark at silent punctuation
+levels. In ordinary Persian speech, a guarded question boundary now survives
+that preprocessing so the native core can request the question contour. A
+character-navigation request, an explicitly spoken or custom symbol, and a
+matching speech dictionary retain their normal NVDA behavior.
 
 For directly recognized half-space plural forms ending in ‌ها, ‌های or
 ‌هایی, the native lexicon places the primary accent on -hâ when the expected

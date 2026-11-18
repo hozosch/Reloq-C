@@ -428,6 +428,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                ('fa_IR', 'NVDA. / دنیا', 'issue50_colon_mixed_none'),
                                ('fa_IR', 'افزونه‌های', 'issue50_plural'),
                                ('fa_IR', 'برنامه‌های', 'issue50_plural'),
+                               ('fa_IR', 'سلام دنیا؟', 'issue50_question_some'),
+                               ('fa_IR', 'سلام دنیا?', 'issue50_question_ascii_some'),
+                               ('fa_IR', 'سلام دنیا؟', 'issue50_question_split'),
+                               ('fa_IR', 'سلام دنیا؟', 'issue50_question_none'),
+                               ('fa_IR', 'سلام دنیا?', 'issue50_question_ascii_none'),
+                               ('fa_IR', 'سلام دنیا؟', 'issue50_question_most'),
+                               ('fa_IR', 'سلام دنیا?', 'issue50_question_ascii_most'),
                                ('fa_IR', 'من کتاب', 'issue49_weak_pronoun'),
                                ('fa_IR', 'اسلش', 'issue49_weak_eslash'),
                                ('fa_Latn', 'eslash', 'issue49_weak_eslash'),
@@ -615,6 +622,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                    row['spelling'] == 'issue50_colon_mixed_none')
                 if colon_none['pcm_sha256'] != period_none['pcm_sha256']:
                     raise AssertionError('NVDA lost the sentence boundary at symbol level NONE')
+                for level in ('some', 'none', 'most'):
+                    arabic = next(row for row in self.results if row['spelling'] == 'issue50_question_' + level)
+                    ascii_mark = next(row for row in self.results if row['spelling'] == 'issue50_question_ascii_' + level)
+                    if arabic['pcm_sha256'] != ascii_mark['pcm_sha256']:
+                        raise AssertionError('NVDA lost Persian question intonation at ' + level)
+                split = next(row for row in self.results if row['spelling'] == 'issue50_question_split')
+                ordinary = next(row for row in self.results if row['spelling'] == 'issue50_question_some')
+                if split['pcm_sha256'] != ordinary['pcm_sha256']:
+                    raise AssertionError('NVDA index changed the Persian question contour')
                 self.frame_capture_class.__init__ = self.original_capture_init
                 self.done_signal.unregister(self.speech_done)
                 RESULT.write_text(json.dumps({'ok': True, 'cases': self.results,
@@ -701,6 +717,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     raise AssertionError('missing heading level')
                 at = number.end()
                 sequence = [text[:at], self.index_command(10000 + self.index), text[at:]]
+            elif spelling == 'issue50_question_split':
+                sequence = [text[:-1], self.index_command(12000 + self.index), text[-1:]]
             elif spelling in ('checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most'):
                 status = 'بدونِ علامت' if spelling == 'checkbox_unchecked' else 'علامت‌دار'
                 # NVDA speaks an object's name, role and state as separate
@@ -738,7 +756,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.before_continuous = len(self.continuous)
             if self.pipeline:
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
-                                  symbolLevel=(self.symbols.SymbolLevel.SOME if self.sample_case or (isinstance(spelling, str) and spelling.startswith('issue50_') and not spelling.endswith('_none')) or spelling in (
+                                  symbolLevel=(self.symbols.SymbolLevel.MOST if isinstance(spelling, str) and spelling.startswith('issue50_') and spelling.endswith('_most') else
+                                               self.symbols.SymbolLevel.SOME if self.sample_case or (isinstance(spelling, str) and spelling.startswith('issue50_') and not spelling.endswith('_none')) or spelling in (
                                                'issue49_quotes', 'issue49_version_some', 'issue49_version_split',
                                                'issue49_emoji_some', 'issue49_emoji_split',
                                                'issue49_heading', 'issue49_heading_split',

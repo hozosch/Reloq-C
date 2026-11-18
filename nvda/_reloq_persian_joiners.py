@@ -1,4 +1,4 @@
-"""Preserve Persian in-word joiners through NVDA's symbol processing."""
+"""Preserve Persian joiners and silent question boundaries through NVDA."""
 from __future__ import annotations
 
 import unicodedata
@@ -9,7 +9,7 @@ from speech.commands import CharacterModeCommand, IndexCommand, LangChangeComman
 from ._reloq_languages import language_for
 
 _FA_PROFILES = frozenset((0x7f0000, 0x7f0001))
-_MARKERS = {'\u200c': '\ue070', '\u200d': '\ue071'}
+_MARKERS = {'\u200c': '\ue070', '\u200d': '\ue071', '\u061f': '\ue072'}
 _RESTORE = str.maketrans({value: key for key, value in _MARKERS.items()})
 
 
@@ -31,7 +31,7 @@ def restore_joiners(text):
 
 
 def joiner_pending(sequence):
-    return any(isinstance(item, str) and ('\u200c' in item or '\u200d' in item) for item in sequence)
+    return any(isinstance(item, str) and any(char in item for char in _MARKERS) for item in sequence)
 
 
 def emoji_selector_pending(sequence):
@@ -135,15 +135,22 @@ def _persian_letter(char):
             unicodedata.category(char)[0] in ('L', 'M'))
 
 
-def _escape(text):
+def _escape(text, *, question=False, previous=''):
     # Literal private-use characters remain user text, never metadata.
     if any(marker in text for marker in _MARKERS.values()):
         return text
     chars = list(text)
-    for index in range(1, len(chars) - 1):
-        if (chars[index] in _MARKERS and _persian_letter(chars[index - 1]) and
-                _persian_letter(chars[index + 1])):
+    for index in range(len(chars)):
+        if (chars[index] in ('\u200c', '\u200d') and 0 < index < len(chars) - 1 and
+                _persian_letter(chars[index - 1]) and _persian_letter(chars[index + 1])):
             chars[index] = _MARKERS[chars[index]]
+        elif question and chars[index] == '\u061f':
+            before = chars[index - 1] if index else previous[-1:]
+            after = chars[index + 1] if index + 1 < len(chars) else ''
+            if (before and (before.isalnum() or unicodedata.category(before).startswith('M') or
+                            before in ')]}»') and
+                    (not after or after.isspace() or after in ')]}»')):
+                chars[index] = _MARKERS[chars[index]]
     return ''.join(chars)
 
 
@@ -171,7 +178,7 @@ def _dictionary_untouched(original, escaped, *, ignored_sources=()):
 
 
 def protect_joiners(driver, sequence, *, symbol_level=None):
-    """Protect only internal Persian joiners, retaining NVDA dictionaries."""
+    """Preserve in-word joiners and otherwise silent sentence questions."""
     if not joiner_pending(sequence):
         return sequence
     try:
@@ -187,16 +194,33 @@ def protect_joiners(driver, sequence, *, symbol_level=None):
             languages = driver._languages
     except (ImportError, AttributeError, KeyError, TypeError, ValueError):
         return sequence
-    selected, spelling, result = home, False, []
+    selected, spelling, result, previous = home, False, [], ''
     for item in sequence:
         if isinstance(item, LangChangeCommand):
             chosen = language_for(item.lang, home, languages)
             if chosen is not None:
                 selected = chosen
+            previous = ''
         elif isinstance(item, CharacterModeCommand):
             spelling = bool(item.state)
+            previous = ''
         elif isinstance(item, str) and not spelling and selected in _FA_PROFILES:
-            escaped = _escape(item)
+            try:
+                # Only intervene when the active NVDA symbol settings would
+                # remove the question mark silently. A custom spoken name or
+                # preserved character must retain the user's own setting.
+                question = False
+                if '\u061f' in item:
+                    locale = languages[selected].locale
+                    silent = not characterProcessing.processSpeechSymbols(locale, '\u061f', level).strip()
+                    if silent:
+                        processed = characterProcessing.processSpeechSymbols(locale, item, level)
+                        without = characterProcessing.processSpeechSymbols(locale, item.replace('\u061f', ''), level)
+                        question = ' '.join(processed.split()) == ' '.join(without.split())
+            except (AttributeError, KeyError, LookupError, TypeError, ValueError):
+                question = False
+            escaped = _escape(item, question=question, previous=previous)
+            previous = item[-1:] or previous
             if escaped != item and _dictionary_untouched(item, escaped):
                 try:
                     processed = characterProcessing.processSpeechSymbols(languages[selected].locale, escaped, level)
@@ -206,5 +230,7 @@ def protect_joiners(driver, sequence, *, symbol_level=None):
                 if stable:
                     result.extend((ReloqPersianJoinerGuard(True), escaped, ReloqPersianJoinerGuard(False)))
                     continue
+        elif not isinstance(item, IndexCommand):
+            previous = ''
         result.append(item)
     return result
