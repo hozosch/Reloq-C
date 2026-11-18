@@ -96,6 +96,7 @@ const char *reloq_fa_scoped_get(const char *name)
         {"RELOQ_FA_US_ARTICULATION","1"}, {"RELOQ_FA_US_STOPS","1"},
         {"RELOQ_FA_US_FRICATIVES","1"}, {"RELOQ_FA_US_NASALS","1"},
         {"RELOQ_FA_US_GLIDE","1"},
+        {"RELOQ_FA_JAPANESE_TAP","1"},
         {"RELOQ_FA_PROBE_END_H_DB","9"}, {"RELOQ_FA_PROBE_K_SHAPE","3"},
         /* Reproduce the previous "se" (three) E trajectory, including its
          * darker onset. Preserve the inherited upper formants and timing. */

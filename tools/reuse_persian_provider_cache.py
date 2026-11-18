@@ -46,6 +46,11 @@ DEV151_KEY = ('persian-windows-provider-gcc14-v2-'
               '0b0acae8031297dc4ce2baa29429934bf1d6f52250760b7380ab0759babb3356')
 DEV151_ALLOWED = {'experiments/persian/build_native_probe.py',
                   'src/reloq_persian_acoustics.c'}
+DEV152_BASE = '812e03b4fe7f0a8331b7a433c352a86a34710498'
+DEV152_KEY = ('persian-windows-provider-gcc14-v2-'
+              '910f15fd293dbd45854c54fe6b3907d1b381bf561b04cd64dfd5690d86db9ea1')
+DEV152_ALLOWED = {'experiments/persian/build_native_probe.py',
+                  'src/reloq_persian_acoustics.c'}
 TRACE_ALLOWED = {
     'include/reloq_eci.h', 'include/reloq_persian_frames.h', 'include/reloq_syllable_trace.h',
     'vendor/openevv61/src/reloq61_bridge.c',
@@ -111,7 +116,11 @@ def main():
                     os.utime(path, None)
             print('Reused verified provider cache for the additive public API change.')
             return
-        if key == DEV151_KEY:
+        if key == DEV152_KEY:
+            changed = set(git('diff', '--name-only', DEV152_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV152_ALLOWED:
+                raise ValueError('Persian R changes differ from the verified scope')
+        elif key == DEV151_KEY:
             changed = set(git('diff', '--name-only', DEV151_BASE, 'HEAD', '--', *INPUTS).splitlines())
             if changed != DEV151_ALLOWED:
                 raise ValueError('Persian glide and vowel changes differ from the verified scope')
