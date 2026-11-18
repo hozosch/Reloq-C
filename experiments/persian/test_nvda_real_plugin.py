@@ -400,6 +400,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                ('fa_Latn', 'khub ast', 'issue49_weak_copula'),
                                ('fa_Latn', 'ast', 'issue49_weak_copula_isolated'),
                                ('fa_Latn', 'NVDA ast', 'issue49_weak_copula_english_host'),
+                               ('fa_IR', 'پَر', 'issue49_own_vowel'),
+                               ('fa_IR', 'پِر', 'issue49_own_vowel'),
+                               ('fa_IR', 'پُر', 'issue49_own_vowel'),
                                ('fa_IR', 'من کتاب', 'issue49_weak_pronoun'),
                                ('fa_IR', 'اسلش', 'issue49_weak_eslash'),
                                ('fa_Latn', 'eslash', 'issue49_weak_eslash'),
@@ -665,7 +668,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text, 'کادرِ علامت‌زدنی', status]
             elif isinstance(spelling, str) and spelling.startswith('tags_'):
                 sequence = [text]
-            elif self.sample_case or (isinstance(spelling, str) and spelling.startswith('issue49_weak_')) or spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading', 'issue49_korean', 'issue49_korean_word', 'issue49_persian_unicode', 'issue49_persian_unicode_none', 'issue49_persian_unicode_all', 'issue49_korean_english', 'issue49_hamza_line', 'issue49_hamza_line_none'):
+            elif self.sample_case or (isinstance(spelling, str) and spelling.startswith('issue49_weak_')) or spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading', 'issue49_korean', 'issue49_korean_word', 'issue49_persian_unicode', 'issue49_persian_unicode_none', 'issue49_persian_unicode_all', 'issue49_korean_english', 'issue49_hamza_line', 'issue49_hamza_line_none', 'issue49_own_vowel'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
@@ -675,7 +678,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
             self.pipeline = self.pipeline or self.sample_case or (isinstance(spelling, str) and spelling.startswith('tags_'))
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue49_weak_'))
-            self.pipeline = self.pipeline or spelling in ('issue49_quotes', 'issue49_numeric')
+            self.pipeline = self.pipeline or spelling in ('issue49_quotes', 'issue49_numeric', 'issue49_own_vowel')
             self.pipeline = self.pipeline or spelling in ('issue49_version_some', 'issue49_version_split',
                                                            'issue49_emoji_some', 'issue49_emoji_split',
                                                            'issue49_heading', 'issue49_heading_split',
@@ -700,7 +703,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                                'issue49_heading', 'issue49_heading_split',
                                                'issue49_korean', 'issue49_korean_word',
                                                'issue49_korean_pitch', 'issue49_korean_mid_pitch', 'issue49_korean_spelling',
-                                               'issue49_persian_unicode', 'issue49_korean_english', 'issue49_hamza_line',
+                                               'issue49_persian_unicode', 'issue49_korean_english', 'issue49_hamza_line', 'issue49_own_vowel',
                                                'issue49_hamza_spelling', 'issue49_original_line',
                                                'issue49_original_spelling') else
                                                self.symbols.SymbolLevel.ALL if spelling == 'issue49_persian_unicode_all' else
@@ -786,6 +789,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if spelling == 'issue49_weak_us_stale' and (
                         not self.nav_stale_injected or not any(self.us_fits[self.before_us_fits:])):
                     raise AssertionError('NVDA lost US pitch after cancelling the previous English job')
+            if spelling == 'issue49_own_vowel':
+                expected = {'پَر': '`[.1pAr]', 'پِر': '`[.1per]', 'پُر': '`[.1por]'}[text]
+                tags = ' '.join(self.projected[self.before_projected:])
+                if expected not in tags:
+                    raise AssertionError('NVDA lost an explicitly marked Persian vowel: ' + ascii((text, tags)))
             if spelling in ('tags_slow', 'tags_fast', 'tags_pitch', 'tags_phonemes'):
                 expected = text.split(' ', 1)[0]
                 if expected not in self.user_controls[self.before_user_controls:]:
