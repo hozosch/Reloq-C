@@ -9,12 +9,15 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / 'experiments/persian'), str(ROOT / 'nvda')]
-from _reloq_eci_direct import EciIndex, EciPitch, NATIVE_INFLECTION, NATIVE_PITCH, PROCESS_TAGS, SAMPLE_RATE
+from _reloq_eci_direct import (EciIndex, EciLanguage, EciPitch, EciText, NATIVE_INFLECTION,
+                               NATIVE_PITCH, PROCESS_TAGS, SAMPLE_RATE)
 from _reloq_persian_frames import FrameCapture
 from continuous_driver import _PlanningVoice, _project_part, _sentence_colons_as_periods
 from continuous_plan import CapturedRows, fit_us_word_pitch, indexed_us_proxy
 from direct_fa_sequence import project, project_resilient
+from hybrid_fa_frontend import PersianAnalysis
 from nvda_driver_probe import make_language_engine, PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH
+from text_frontend import SpeechPart
 import continuous_driver
 import continuous_plan
 
@@ -85,6 +88,54 @@ def main():
         assert '`[.0ju.0na.1ni]' in fa_engine._frontend.analyze_character('α').parts[0].text
         assert fa_engine._frontend.analyze_character('/').parts[0].text == '`[.0es.1lAS]'
         assert fa_engine._frontend.analyze_character('\\').parts[0].text.endswith('`[.0es.1lAS]')
+        # The actual NVDA labels, including ezafe and the single compound,
+        # must be pronounced identically in word and character navigation.
+        for symbol, label in (('-', 'خطِ تیره'), ('_', 'زیرخط')):
+            written = project((label,), fa_engine._frontend, allow_fallback=False)
+            named = project((EciText(symbol, character_mode=True),),
+                            fa_engine._frontend, allow_fallback=False)
+            assert named.tagged == written.tagged, (symbol, named.tagged, written.tagged)
+            assert render((EciText(symbol, character_mode=True),))[0] == render((label,))[0], symbol
+        # Character navigation uses the same English engine and voice as an
+        # explicit English language event, including indexes and mixed text.
+        for value in ('a', 'A', 'z', 'NVDA', 'aZ'):
+            part = EciText(value, character_mode=True)
+            automatic = render((EciIndex(90), part, EciIndex(91)))
+            explicit = render((EciLanguage(US_ENGLISH.id, '1'), EciIndex(90), part, EciIndex(91)))
+            assert automatic == explicit, value
+        mixed = EciText('Aبz', character_mode=True)
+        explicit = (EciLanguage(US_ENGLISH.id, '1'), EciText('A', character_mode=True),
+                    EciLanguage(PERSIAN_PROBE.id, '1'), EciText('ب', character_mode=True),
+                    EciLanguage(US_ENGLISH.id, '1'), EciText('z', character_mode=True))
+        assert render((mixed,)) == render(explicit)
+        # A non-Persian Unicode name in the same spelled fragment still takes
+        # the regular English-name route, not the Persian character path.
+        foreign = fa_engine._frontend.analyze_character('Ж').parts[0]
+        assert foreign.language == 'en-us'
+        mixed = EciText('AЖz', character_mode=True)
+        explicit = (EciLanguage(US_ENGLISH.id, '1'), EciText('A', character_mode=True),
+                    EciText(foreign.text), EciText('z', character_mode=True))
+        assert render((mixed,)) == render(explicit)
+        for word in ('طور', 'سوی', 'طرف', 'خاطر', 'گفته', 'دیدن', 'دلیل'):
+            joined = project(('به\u200c' + word,), fa_engine._frontend, allow_fallback=False)
+            spaced = project(('به ' + word,), fa_engine._frontend, allow_fallback=False)
+            assert joined.tagged == spaced.tagged
+            assert render(('به\u200c' + word,))[0] == render(('به ' + word,))[0]
+        # If a later unrelated word still needs the reference, do not lose
+        # the native preposition or NVDA index ordering in the fallback path.
+        unknown = 'ناموجودواژهتفکیک'
+        assert fa_engine._frontend.analyze_direct(unknown) is None
+        requests = []
+        def reference(value):
+            requests.append(value)
+            assert value == unknown
+            return PersianAnalysis((SpeechPart('fa', '`[.0na.0mo.1jud]'),), None, True)
+        with patch.object(fa_engine._frontend, 'analyze', side_effect=reference):
+            joined = project_resilient(('به', EciIndex(51), '\u200c', EciIndex(52),
+                                        'طور ', EciIndex(53), unknown), fa_engine._frontend)
+            spaced = project_resilient(('به طور ' + unknown,), fa_engine._frontend)
+        assert joined.tagged == spaced.tagged and requests == [unknown, unknown]
+        assert [part.value for part in joined.parts if isinstance(part, EciIndex)] == [51, 52, 53]
         pinglish = voice._activate(voice._key(PINGLISH_PROBE.id, '1'))
         assert project(('eslash',), pinglish._frontend, pinglish=True).tagged == '`[.0es.1lAS]'
         for text in ('ketab va khub', 'az ketab', 'joz iran', 'ketab ra', 'ya ketab', 'khub ast'):

@@ -92,7 +92,9 @@ For a separately written mi-/nemi- prefix, the native sentence path checks
 that the following word is a recognized verb before moving the accent to the
 prefix. Numeric groups receive final lexical prominence while the existing
 number-phrase weakening is retained. Previously generated character names
-are updated only when their phones match a known written name.
+are normally updated only when their phones match a known written name. The
+hyphen and underscore are explicit exceptions: their complete NVDA names
+خطِ تیره and زیرخط use exactly the same native analysis as the written words.
 Pronunciation tags with multiple separately analyzed segments and words
 with conflicting word-class labels retain their previous treatment.
 
@@ -111,6 +113,13 @@ its final syllable in both written-word and slash-character readings.
 Adjectives ending in -i retain final stress when Lilak classifies the word
 only as an adjective (or adjective and adverb). Words also classified as
 nouns are not reinterpreted, since -i can be an unstressed indefinite clitic.
+The specifically reported lexical names and derivatives حجازی، بردباری،
+سلامتی، کثیریان، عباسی، منچستریونایتد، سایبری and زمستانی take final
+stress; the conservative indefinite reading کتابی is unchanged. In the
+reported prepositional expressions به‌طور، به‌سوی، به‌طرف، به‌خاطر،
+به‌گفته، به‌دیدن and به‌دلیل, the half-space is treated like a word
+boundary so the weak به keeps the timing of the spaced spelling. Lexical
+compounds such as به‌روز and به‌روزرسانی are left intact.
 The ambiguous spelling تو can be an independent pronoun or a preposition and
 is not unconditionally weakened. Free personal and demonstrative pronouns
 can carry their own lexical accent; the

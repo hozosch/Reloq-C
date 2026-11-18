@@ -85,6 +85,21 @@ def main():
         'ژاپنی': '`[.0Za.0po.1ni]',
         'آلمانی': '`[.0al.0ma.1ni]',
         'انگلیسی': '`[.0en.0ge.0li.1si]',
+        'حجازی': '`[.0he.0Ja.1zi]',
+        'بردباری': '`[.0bord.0ba.1ri]',
+        'سلامتی': '`[.0sA.0la.0mA.1ti]',
+        'کثیریان': '`[.0kA.0si.0ri.1jan]',
+        'عباسی': '`[.0Ab.0ba.1si]',
+        'منچستریونایتد': '`[.0mAn.0Ces.0te.0rju.0naj.1ted]',
+        'سایبری': '`[.0saj.0be.1ri]',
+        'زمستانی': '`[.0ze.0mes.0ta.1ni]',
+        'عنوان': '`[.0on.1van]',
+        'عنوانِ': '`[.0on.1va.0ne]',
+        'عمودی': '`[.0A.0mu.1di]',
+        'عمودیِ': '`[.0A.0mu.1di.0je]',
+        'عمل': '`[.0A.1mAl]',
+        'عملِ': '`[.0A.1mA.0le]',
+        'عملی': '`[.0A.0mA.1li]',
         'راه‌اندازی': "`[.0ra.0h'A:'n.0da.1zi]",
         'راه‌اندازیِ': "`[.0ra.0h'A:'n.0da.1zi.0e]",
         'آسیب‌یابی': '`[.0a.0si.0bja.1bi]',
@@ -95,6 +110,13 @@ def main():
         assert project(word) == expected, (word, project(word), expected)
     assert project('می خانه').startswith('`[.1mi] '), 'an independent noun was mistaken for a verb'
     assert project('علامت‌دار') == project('علامت دار')
+    for word in ('طور', 'سوی', 'طرف', 'خاطر', 'گفته', 'دیدن', 'دلیل', 'طورِ'):
+        joined, spaced = 'به\u200c' + word, 'به ' + word
+        assert project(joined) == project(spaced), (joined, project(joined), project(spaced))
+    assert project('به‌روز') == "`[.0b'e:'.1r'u:'z]"
+    assert project('به‌روزرسانی') == "`[.0b'e:'.2r'u:'z.0re.1sa.0ni]"
+    assert project('به‌روزرسانی‌های') == "`[.0b'e:'.0r'u:'z.0re.0sa.0ni.1ha.0je]"
+    assert project('گزینه زمستانی ما او بود.').find('`[.0ze.0mes.0ta.1ni]') >= 0
 
     # Neutral prepositions and conjunctions attach to the next word, but
     # citation forms, punctuation, and independent pronouns keep an accent.
@@ -116,6 +138,9 @@ def main():
     assert fallback('نمی‌روم', '`[.0nA.0mi.1rA.0vAm]') == '`[.1nA.0mi.0rA.0vAm]'
     assert fallback('کتابی', '`[.0ke.1ta.0bi]') == '`[.0ke.1ta.0bi]'
     assert fallback('یونانی', '`[.0ju.1na.0ni]') == '`[.0ju.0na.1ni]'
+    for word in ('حجازی', 'بردباری', 'سلامتی', 'کثیریان', 'عباسی',
+                 'منچستریونایتد', 'سایبری', 'زمستانی'):
+        assert fallback(word, '`[.0sa.1ma.0ni]') == '`[.0sa.0ma.1ni]', word
     assert fallback('ولی', '`[.1vA.0li]') == '`[.1vA.0li]'
     # A suffix alone does not establish the analysis of an unknown fallback.
     assert fallback('ناشناخته‌سازی', '`[.1sa.0zi]') == '`[.1sa.0zi]'

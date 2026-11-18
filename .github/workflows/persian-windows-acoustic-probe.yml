@@ -93,6 +93,7 @@ jobs:
           path: vendor/openevv61/build/windows-release
           key: persian-windows-provider-gcc14-v2-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c', 'src/reloq_persian_acoustics.c', 'src/reloq_persian_acoustics.h', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-provider-gcc14-v2-c83463169692296a905dc6098785f24b7577e72820b955b60437ebfc5e5c420b
             persian-windows-provider-gcc14-v2-c76d65b3e35168941848c062148a2ad922b4949b8ce8c9293883666c1055f88f
             persian-windows-provider-gcc14-v2-c50e521eab044c336168b3ce125379a2f21d61f9d8cc49cee89e3447c0632f28
             persian-windows-provider-gcc14-v2-910f15fd293dbd45854c54fe6b3907d1b381bf561b04cd64dfd5690d86db9ea1
@@ -101,7 +102,6 @@ jobs:
             persian-windows-provider-gcc14-v2-cab206af509e0977cc552bd0723a1a6d2f8c9b886d82357a931432e54d7a0047
             persian-windows-provider-gcc14-v2-eb978682e83612fa0fef1940e0c321d3072f9cf8db4b6d11c243532189d602cc
             persian-windows-provider-gcc14-v2-258cf46181dbfeb1b6d1f9c2e9146e82d09ebaa88f092c1c1ac5e757e1fe95fc
-            persian-windows-provider-gcc14-v2-f106c4723d7f6e32a226c721308d5e5b0f676a41f86a43f7a3c940b0ef20f128
       - uses: actions/cache/restore@v4
         id: host
         with:
@@ -110,6 +110,7 @@ jobs:
             eci/eci.dll
           key: persian-windows-host-gcc14-v2-${{ hashFiles('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src/**', 'include/**', 'vendor/openevv61/**', '!vendor/openevv61/build/**', 'experiments/persian/direct_fa_*.c', 'experiments/persian/direct_fa_*.h', 'experiments/persian/direct_fa_*.inc', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-host-gcc14-v2-d60887a553bd146e3d780f72638facb392f554e616ff3c8ce78dc1982edd5417
             persian-windows-host-gcc14-v2-28334eae4866b95529b1c12304a1fbb6cb2012e9886ee8436249506ffa838835
             persian-windows-host-gcc14-v2-9334727f647864f5d57874fced644ee7c81c02f472b7147f391038ea8999ee37
             persian-windows-host-gcc14-v2-56a9101fabd669ff59d3badaef2dc36a73677c46a44d562608d88877b274f13a
@@ -118,7 +119,6 @@ jobs:
             persian-windows-host-gcc14-v2-4419e090258b54c489fe7ecfba709236760771647c2b523f2865fd3ebe3fd944
             persian-windows-host-gcc14-v2-9fbaf447f57f00e8aa4e28add7806baf049e17728506d6b7be26561f5313afaa
             persian-windows-host-gcc14-v2-f4aa931982b6b718f119c59251c1b630a0645e043c0d790f358088e893c079a6
-            persian-windows-host-gcc14-v2-e69d174816ad2c632f7786280780e6d8f87ca561fcef6adc1212928b2e58f6b6
       - name: Restore cached provider timestamps
         if: steps.provider.outputs.cache-hit == 'true'
         shell: bash

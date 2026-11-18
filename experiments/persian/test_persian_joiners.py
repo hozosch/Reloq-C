@@ -137,6 +137,12 @@ def main():
         processed = processor.processText(guarded[1], kind)
         assert joiners.restore_joiners(processed) == word
         assert joiners.restore_joiners(unicodedata.normalize('NFKC', processed)) == word
+    for example in ('به‌طور', 'به‌سوی', 'به‌طرف', 'به‌خاطر', 'به‌گفته', 'به‌دیدن', 'به‌دلیل',
+                    'به‌روزرسانی‌های'):
+        for kind in (level.NONE, level.SOME, level.MOST):
+            guarded = joiners.protect_joiners(driver, [example], symbol_level=kind)
+            assert len(guarded) == 3
+            assert joiners.restore_joiners(processor.processText(guarded[1], kind)) == example
     assert joiners.protect_joiners(driver, [word], symbol_level=level.CHAR) == [word]
     spelled = [CharacterModeCommand(True), word, CharacterModeCommand(False)]
     assert joiners.protect_joiners(driver, spelled) == spelled

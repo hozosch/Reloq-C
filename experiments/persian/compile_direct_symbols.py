@@ -24,8 +24,8 @@ NAMES = {
     ';': 'نقطه ویرگول', '؛': 'نقطه ویرگول', '(': 'پرانتز باز',
     ')': 'پرانتز بسته', '[': 'کروشه باز', ']': 'کروشه بسته',
     '{': 'آکولاد باز', '}': 'آکولاد بسته', '*': 'ستاره',
-    '+': 'به علاوه', '-': 'خط تیره', '/': 'اسلش', '\\': 'بک اسلش',
-    '=': 'مساوی', '<': 'کوچکتر', '>': 'بزرگتر', '_': 'زیر خط',
+    '+': 'به علاوه', '-': 'خطِ تیره', '/': 'اسلش', '\\': 'بک اسلش',
+    '=': 'مساوی', '<': 'کوچکتر', '>': 'بزرگتر', '_': 'زیرخط',
     '|': 'خط عمودی', '%': 'درصد', '٪': 'درصد', '#': 'شماره',
     '$': 'دلار', '€': 'یورو', '£': 'پوند', '«': 'گیومه باز',
     '»': 'گیومه بسته', '٫': 'ممیز', '٬': 'هزارگان', '﷼': 'ریال',
@@ -95,11 +95,13 @@ def named_symbols():
 
 
 def restress_known_names(values, names, frontend):
-    """Retain each symbol's phones while matching known written names.
+    """Match symbol names to reliable native written-name pronunciations.
 
     Only one-to-one Persian word/tag alignments whose phone sequences match
     the native spelling are changed. Unclear labels and deaccented words are
-    left intact instead of guessing their grammatical interpretation.
+    left intact instead of guessing their grammatical interpretation. For
+    the two NVDA labels explicitly corrected here, also use the native phone
+    sequence so the ezafe and compound boundaries match the written words.
     """
     tag_pattern = re.compile(r'`\[[^]]+\]')
     def unaccent(value):
@@ -116,7 +118,7 @@ def restress_known_names(values, names, frontend):
         # every phone and boundary agrees with the existing symbol reading.
         phrase = frontend.analyze_direct(name)
         if (phrase is not None and len(phrase.parts) == 1 and
-                unaccent(phrase.parts[0].text) == unaccent(original)):
+                (char in ('-', '_') or unaccent(phrase.parts[0].text) == unaccent(original))):
             output[char] = phrase.parts[0].text
             continue
         words = name.split()

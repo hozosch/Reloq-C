@@ -254,6 +254,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'بدبخت', False),
                           ('fa_IR', 'خطِ تیره', False),
                           ('fa_IR', 'زیرخط', False),
+                          ('fa_IR', '-', True),
+                          ('fa_IR', '_', True),
+                          *(( 'fa_IR', text, 'issue49_character_navigation') for text in ('-', '_')),
+                          *(( locale, text, 'issue49_character_navigation') for text in ('a', 'z')
+                            for locale in ('fa_IR', 'en_US')),
+                          *((locale, text, True) for text in ('a', 'A', 'z', 'NVDA')
+                            for locale in ('fa_IR', 'en_US')),
+                          *(( 'fa_IR', 'به' + separator + word, 'issue49_preposition')
+                            for word in ('طور', 'سوی', 'طرف', 'خاطر', 'گفته', 'دیدن', 'دلیل')
+                            for separator in ('\u200c', ' ')),
                           ('fa_IR', 'تعجب', False),
                           ('fa_IR', '۱۰۰', False),
                           ('fa_IR', 'متوقف', False),
@@ -642,6 +652,23 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     raise AssertionError('NVDA lost the sentence contour after an announced colon')
                 if compact_split['pcm_sha256'] != compact['pcm_sha256']:
                     raise AssertionError('NVDA index changed the announced-colon contour')
+                def sound(locale, text, mode):
+                    return next(row['pcm_sha256'] for row in self.results
+                                if row['locale'] == locale and row['text'] == text and row['spelling'] == mode)
+                for symbol, label in (('-', 'خطِ تیره'), ('_', 'زیرخط')):
+                    if sound('fa_IR', symbol, True) != sound('fa_IR', label, False):
+                        raise AssertionError('NVDA symbol differs from its written Persian name: ' + symbol)
+                for text in ('a', 'A', 'z', 'NVDA'):
+                    if sound('fa_IR', text, True) != sound('en_US', text, True):
+                        raise AssertionError('NVDA English character does not use the US voice: ' + text)
+                for text in ('a', 'z'):
+                    if sound('fa_IR', text, 'issue49_character_navigation') != sound(
+                            'en_US', text, 'issue49_character_navigation'):
+                        raise AssertionError('NVDA navigation did not use the US letter voice: ' + text)
+                for word in ('طور', 'سوی', 'طرف', 'خاطر', 'گفته', 'دیدن', 'دلیل'):
+                    if sound('fa_IR', 'به\u200c' + word, 'issue49_preposition') != sound(
+                            'fa_IR', 'به ' + word, 'issue49_preposition'):
+                        raise AssertionError('NVDA pronounced a joined preposition differently: ' + word)
                 self.frame_capture_class.__init__ = self.original_capture_init
                 self.done_signal.unregister(self.speech_done)
                 RESULT.write_text(json.dumps({'ok': True, 'cases': self.results,
@@ -680,8 +707,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text]
             elif spelling == 'mixedspelling':
                 sequence = ['سلام ', self.character(True), '؟', self.character(False), ' دنیا']
-            elif spelling in ('issue49_hamza_spelling', 'issue49_original_spelling'):
+            elif spelling in ('issue49_hamza_spelling', 'issue49_original_spelling', 'issue49_character_navigation'):
                 sequence = list(self.speech.getSpellingSpeech(text, locale=locale, endsUtterance=False))
+            elif spelling == 'issue49_preposition':
+                sequence = [text]
             elif spelling == 'issue49_original_line':
                 sequence = [text]
             elif spelling == 'issue49_korean_pitch':
@@ -752,6 +781,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue49_weak_'))
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue50_'))
             self.pipeline = self.pipeline or spelling in ('issue49_quotes', 'issue49_numeric', 'issue49_own_vowel', 'issue49_nominal_compound')
+            self.pipeline = self.pipeline or spelling in ('issue49_preposition', 'issue49_character_navigation')
             self.pipeline = self.pipeline or spelling in ('issue49_version_some', 'issue49_version_split',
                                                            'issue49_emoji_some', 'issue49_emoji_split',
                                                            'issue49_heading', 'issue49_heading_split',
@@ -773,7 +803,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
                                   symbolLevel=(self.symbols.SymbolLevel.MOST if isinstance(spelling, str) and spelling.startswith('issue50_') and spelling.endswith('_most') else
                                                self.symbols.SymbolLevel.SOME if self.sample_case or (isinstance(spelling, str) and spelling.startswith('issue50_') and not spelling.endswith('_none')) or spelling in (
-                                               'issue49_quotes', 'issue49_version_some', 'issue49_version_split',
+                                               'issue49_quotes', 'issue49_preposition', 'issue49_character_navigation', 'issue49_version_some', 'issue49_version_split',
                                                'issue49_emoji_some', 'issue49_emoji_split',
                                                'issue49_heading', 'issue49_heading_split',
                                                'issue49_korean', 'issue49_korean_word',
@@ -869,6 +899,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags:
                     raise AssertionError('NVDA lost an explicitly marked Persian vowel: ' + ascii((text, tags)))
+            if spelling == 'issue49_character_navigation' and text in ('-', '_'):
+                tags = ' '.join(self.projected[self.before_projected:])
+                if self.symbol_tags[text] not in tags:
+                    raise AssertionError('NVDA navigation lost the written symbol name: ' + ascii((text, tags)))
             if spelling == 'issue49_nominal_compound':
                 expected = ("`[.0ra.0h'A:'n.0da.1zi.0e]" if text.endswith('ِ') else
                             "`[.0ra.0h'A:'n.0da.1zi]")

@@ -447,6 +447,17 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
             while end < len(source) and not modes[end] and word_char(source[end]):
                 end += 1
             value = source[at:end]
+            if (not pinglish and value.startswith('به\u200c') and
+                    ''.join(c for c in value[3:] if not (0x064b <= ord(c) <= 0x065f or ord(c) == 0x0670)) in
+                    ('طور', 'سوی', 'طرف', 'خاطر', 'گفته', 'دیدن', 'دلیل')):
+                # Keep the preposition on its native weak-word path even
+                # when an unknown following word needs resilient analysis.
+                # Its half-space maps to the same phrase boundary as a
+                # normal space, preserving marks on both sides.
+                emit(at, at + 2, word_tag('به', True), speech=True)
+                emit(at + 2, at + 3, ' ', speech=False)
+                at += 3
+                continue
             # Non-Persian scripts are made identifiable by their character
             # names when the Persian reference has no language mapping.
             supported = all((ord(c) < 128 and c.isalpha() and pinglish) or

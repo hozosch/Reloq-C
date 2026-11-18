@@ -105,19 +105,20 @@ def main():
                     assert len(r_noise) >= 5, (gender, rate, speed, 'missing F-R frication')
                     assert all(c[2] == 0 and c[7] == 0 for c in r_noise), (gender, rate, speed, 'voiced F-R')
                     checks += 1
-                    # Change only the R's upper resonances, preserving its
-                    # source, first two formants and native clock.
+                    # The rejected global R resonance adjustment is removed.
+                    # Keep the complete onset identical to the accepted
+                    # pre-change Persian R, including both upper formants.
                     _, current = capture(fa, scope, '`[.1ra]', True)
-                    assert current[0].controls[15] >= 2400 and current[0].controls[17] >= 3100, (
-                        gender, rate, speed, 'R upper resonances')
+                    for col, low, high in ((15, 1900, 2300 if not gender else 2800),
+                                           (17, 2300, 2900 if not gender else 3400)):
+                        assert low <= current[0].controls[col] < high, (
+                            gender, rate, speed, 'restored R', col)
                     if old:
                         _, before = capture(old, old_scope, '`[.1ra]', True)
                         assert len(current) == len(before)
                         for a, b in zip(current[:5], before[:5]):
-                            for col in (2, 7, 8, 9, 13):
+                            for col in (2, 7, 8, 9, 13, 15, 17):
                                 assert abs(a.controls[col]-b.controls[col]) < 1
-                            for col in (15, 17):
-                                assert a.controls[col] > b.controls[col], (gender, rate, speed, col)
                         _, current = capture(fa, scope, '`[.1sefr]', True)
                         _, before = capture(old, old_scope, '`[.1sefr]', True)
                         assert len(current) == len(before)

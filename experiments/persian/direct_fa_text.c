@@ -41,6 +41,30 @@ static int word_character(uint32_t c)
     return (c>=0x600 && c<=0x6ff && c!=0x60c && c!=0x61b && c!=0x61f) || c==0x200c;
 }
 
+/* These attested prepositional expressions permit a half-space without
+ * becoming lexical compounds. In particular, do not split به‌روز or the
+ * compound به‌روزرسانی: their first element is not this construction. */
+static int joined_be_preposition(const char *word,size_t bytes)
+{
+    static const char prefix[]="به\xe2\x80\x8c";
+    static const char *const names[]={"طور","سوی","طرف","خاطر","گفته","دیدن","دلیل"};
+    const size_t prefix_bytes=sizeof prefix-1;
+    if(bytes<=prefix_bytes || memcmp(word,prefix,prefix_bytes))return 0;
+    word+=prefix_bytes;bytes-=prefix_bytes;
+    for(size_t i=0;i<sizeof names/sizeof names[0];++i) {
+        size_t n=strlen(names[i]);
+        if(bytes<n || memcmp(word,names[i],n))continue;
+        size_t at=n;int valid=1;
+        while(at<bytes) {
+            uint32_t cp;
+            if(reloq_utf8_next((const unsigned char *)word,bytes,&at,&cp)!=1 ||
+               !((cp>=0x064b && cp<=0x065f) || cp==0x0670)){valid=0;break;}
+        }
+        if(valid && at==bytes)return 1;
+    }
+    return 0;
+}
+
 /* Phrase-final function words receive the reference's final stress.  Keep
  * punctuation and line breaks as boundaries; a following word in the same
  * phrase must be separated by spaces or tabs. */
@@ -215,8 +239,13 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
                 end=probe;
             }
             if(status)break;
+            /* The documented prepositional expressions take the same weak
+             * form and timing as the corresponding spaced phrases. */
+            const size_t be_bytes=sizeof "به"-1, join_bytes=3;
+            int joined_be=joined_be_preposition(text+start,end-start);
+            if(joined_be)end=start+be_bytes;
             char tag[2048];
-            int follows=follows_word_in_phrase(text,length,end);
+            int follows=joined_be || follows_word_in_phrase(text,length,end);
             int found=reloq_fa_direct_context_word(text+start,end-start,follows,tag,sizeof tag);
             if(found!=1){status=found==0?1:-1;break;}
             int weak_component=0;
@@ -263,6 +292,13 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             for(size_t i=start;i<end;++i)map[i]=tag_start;
             map[end]=b.used;at=end;
             preceding_word=1;
+            if(joined_be) {
+                size_t point=b.used;
+                if(append(&b," ",1)){status=-2;break;}
+                for(size_t i=end;i<end+join_bytes;++i)map[i]=point;
+                at=end+join_bytes;
+                map[at]=b.used;
+            }
         } else {
             char punctuation=0;
             if(cp==' ' || cp=='\t' || cp=='\r' || cp=='\n' ||

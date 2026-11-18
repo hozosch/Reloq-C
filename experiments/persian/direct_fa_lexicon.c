@@ -421,6 +421,29 @@ static int direct_context_word_exact(const char *word,size_t bytes,int follows_w
         if(n>=capacity)return -2;
         memcpy(output,vowel_names[i].tag,n+1);return 1;
     }
+    /* Reported surname, absent from the direct lexicon. The root is the
+     * same /kasi:r/ found in the existing کثیر compounds; the final -یان
+     * is the separately syllabified family-name ending. */
+    if(bytes==sizeof "کثیریان"-1 && !memcmp(word,"کثیریان",bytes)) {
+        static const char reading[]="`[.0kA.0si.0ri.1jan]";
+        if(sizeof reading>capacity)return -2;
+        memcpy(output,reading,sizeof reading);return 1;
+    }
+    /* Frequent NVDA labels missing from the direct lexicon. Their vowels
+     * and explicit ezafe forms are specified here rather than requesting a
+     * reference analysis on every first encounter. */
+    static const struct fa_direct_entry native_nvda_words[]={
+        {"عنوان", "`[.0on.1van]"}, {"عنوانِ", "`[.0on.1va.0ne]"},
+        {"عمودی", "`[.0A.0mu.1di]"}, {"عمودیِ", "`[.0A.0mu.1di.0je]"},
+        {"عمل", "`[.0A.1mAl]"}, {"عملِ", "`[.0A.1mA.0le]"},
+        {"عملی", "`[.0A.0mA.1li]"},
+    };
+    for(size_t i=0;i<sizeof native_nvda_words/sizeof native_nvda_words[0];++i) {
+        if(strlen(native_nvda_words[i].word)!=bytes || memcmp(native_nvda_words[i].word,word,bytes))continue;
+        size_t n=strlen(native_nvda_words[i].tag);
+        if(n>=capacity)return -2;
+        memcpy(output,native_nvda_words[i].tag,n+1);return 1;
+    }
     int result=reloq_fa_direct_word(word,bytes,output,capacity);
     if(result)return result;
     /* Common independent forms of ʿalāve use the same verified reading in
@@ -741,6 +764,16 @@ static void apply_persian_stress(const char *word,size_t bytes,char *tag,int dir
     if(stress_word_is(word,bytes,"اسلش")) {
         stress_primary(tag,syllables-1);return;
     }
+    /* In these independently reported lexical derivatives and names, the
+     * final syllable belongs to the word. In particular, the written -ی is
+     * derivational, not an unstressed indefinite clitic as in کتابی. Keep
+     * genuinely ambiguous unlisted forms on the existing conservative path. */
+    static const char *const final_accent[]={"حجازی", "بردباری", "سلامتی", "کثیریان",
+        "عباسی", "منچستریونایتد", "سایبری", "زمستانی"};
+    for(size_t i=0;i<sizeof final_accent/sizeof final_accent[0];++i)
+        if(stress_word_is(word,bytes,final_accent[i])) {
+            stress_primary(tag,syllables-1);return;
+        }
     unsigned kind=stress_class(word,bytes);
 
     if(direct && !(kind&2u)) {

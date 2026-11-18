@@ -419,6 +419,34 @@ class PersianProbeLanguageEngine(LanguageEngine):
             ordinary_text = (text is not None and '`' not in text and
                              (not isinstance(part, EciText) or
                               not part.character_mode and not part.is_control))
+            # Explicitly spelled Latin letters in the Persian-script voice
+            # use the real US-English letter names and acoustics. Keep each
+            # surrounding Persian fragment, character mode and indexes in
+            # place. Pinglish deliberately retains its Persian letter names.
+            if (logical[0] == PERSIAN_PROBE.id and isinstance(part, EciText) and
+                    part.character_mode and not part.is_control and text and
+                    any('A' <= ch <= 'Z' or 'a' <= ch <= 'z' for ch in text)):
+                english = self._key(US_ENGLISH.id, logical[1])
+                engine = self._activate(logical)
+                segments = []
+                for char in text:
+                    key, fragment, mode = logical, char, True
+                    if 'A' <= char <= 'Z' or 'a' <= char <= 'z':
+                        key = english
+                    elif ord(char) > 127 and isinstance(engine, OwnedPersianEngine):
+                        named = engine._frontend.analyze_character(char).parts[0]
+                        if named.language == 'en-us':
+                            key, fragment, mode = english, named.text, False
+                    # Keep English Unicode names as separate words, while
+                    # retaining native spelling of adjacent plain letters.
+                    if mode and segments and segments[-1][0] == key and segments[-1][2]:
+                        segments[-1] = (key, segments[-1][1] + fragment, mode)
+                    else:
+                        segments.append((key, fragment, mode))
+                for key, fragment, mode in segments:
+                    select(key)
+                    output.append(replace(part, text=fragment, character_mode=mode))
+                continue
             # Name an individually navigated character with the real English
             # engine when no Persian label exists. Routing it as a language
             # run also keeps Korean pitch planning away from the English name
