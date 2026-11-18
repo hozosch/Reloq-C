@@ -209,7 +209,7 @@ jobs:
           python -B experiments/persian/test_persian_r.py --candidate eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian R, vowel isolation or Brazilian final R failed' }
           python -B experiments/persian/test_persian_r_after_i.py --candidate eci/eci.dll
-          if ($LASTEXITCODE -ne 0) { throw 'Persian R after I failed' }
+          if ($LASTEXITCODE -ne 0) { throw 'Persian R after I or before O failed' }
           python -B experiments/persian/test_japanese_nasal_aspiration.py --candidate eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Japanese nasal aspiration or H preservation failed' }
           python -B experiments/persian/test_british_front_a.py --candidate eci/eci.dll
