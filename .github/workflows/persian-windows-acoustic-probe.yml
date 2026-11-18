@@ -10,6 +10,7 @@ on:
       - tools/prepare_persian_provider.py
       - tools/reuse_persian_provider_cache.py
       - src/reloq_persian_acoustics.c
+      - src/reloq_noise_profile.c
       - src/reloq_persian_acoustics.h
       - src/reloq_persian_frames.c
       - src/reloq_persian_frame_internal.h
@@ -60,6 +61,7 @@ on:
       - experiments/persian/test_glide_e_reference.py
       - experiments/persian/test_persian_r.py
       - experiments/persian/test_persian_r_after_i.py
+      - experiments/persian/test_female_small_head_whistle.py
       - experiments/persian/test_japanese_nasal_aspiration.py
       - experiments/persian/test_british_front_a.py
       - experiments/persian/test_front_a_harmonics.py
@@ -94,6 +96,7 @@ jobs:
           path: vendor/openevv61/build/windows-release
           key: persian-windows-provider-gcc14-v2-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c', 'src/reloq_persian_acoustics.c', 'src/reloq_persian_acoustics.h', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-provider-gcc14-v2-be733d61324b2458660cc3e350ba0adcbc40c08815a63d50a498199bbd8dfb41
             persian-windows-provider-gcc14-v2-5c7b318e963e7da4e3e4e6f187a269fd38fe568deacd3e797893bee1e66e9637
             persian-windows-provider-gcc14-v2-9b855d4adb0b666637fabc804ec1064b9c59ff6e5ba10c28da3b9a4e3a634282
             persian-windows-provider-gcc14-v2-c83463169692296a905dc6098785f24b7577e72820b955b60437ebfc5e5c420b
@@ -102,7 +105,6 @@ jobs:
             persian-windows-provider-gcc14-v2-910f15fd293dbd45854c54fe6b3907d1b381bf561b04cd64dfd5690d86db9ea1
             persian-windows-provider-gcc14-v2-0b0acae8031297dc4ce2baa29429934bf1d6f52250760b7380ab0759babb3356
             persian-windows-provider-gcc14-v2-0b8cb1dd6f2d585d653cae4a821bb432b804501524673c7444edc72155df053e
-            persian-windows-provider-gcc14-v2-cab206af509e0977cc552bd0723a1a6d2f8c9b886d82357a931432e54d7a0047
       - uses: actions/cache/restore@v4
         id: host
         with:
@@ -111,6 +113,7 @@ jobs:
             eci/eci.dll
           key: persian-windows-host-gcc14-v2-${{ hashFiles('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src/**', 'include/**', 'vendor/openevv61/**', '!vendor/openevv61/build/**', 'experiments/persian/direct_fa_*.c', 'experiments/persian/direct_fa_*.h', 'experiments/persian/direct_fa_*.inc', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-host-gcc14-v2-f8652d8ddfddfd4d3df0334cd6c65a2b5be31cdb60fb2238c0834176d3c57902
             persian-windows-host-gcc14-v2-6484c46e5ee8e46a391f4360c8036e02a5cecc9033d4ce66b167a9703f0a4b1f
             persian-windows-host-gcc14-v2-f9388dd3e51b71dced57f8f35bbd18bc125d4abba4535fbfcf772d72be27a199
             persian-windows-host-gcc14-v2-d60887a553bd146e3d780f72638facb392f554e616ff3c8ce78dc1982edd5417
@@ -119,7 +122,6 @@ jobs:
             persian-windows-host-gcc14-v2-56a9101fabd669ff59d3badaef2dc36a73677c46a44d562608d88877b274f13a
             persian-windows-host-gcc14-v2-a9bee5067b5866b06b93d8cc979749e88a6150b3e977d397276e2e911f96023e
             persian-windows-host-gcc14-v2-dac446486a22d19a77d825d49f9646341087763174c54ba85cd8cda4c8791601
-            persian-windows-host-gcc14-v2-4419e090258b54c489fe7ecfba709236760771647c2b523f2865fd3ebe3fd944
       - name: Restore cached provider timestamps
         if: steps.provider.outputs.cache-hit == 'true'
         shell: bash
@@ -210,6 +212,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian R, vowel isolation or Brazilian final R failed' }
           python -B experiments/persian/test_persian_r_after_i.py --candidate eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian R after I or before O failed' }
+          python -B experiments/persian/test_female_small_head_whistle.py --candidate eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Small-head German or Japanese sibilant whistle failed' }
           python -B experiments/persian/test_japanese_nasal_aspiration.py --candidate eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Japanese nasal aspiration or H preservation failed' }
           python -B experiments/persian/test_british_front_a.py --candidate eci/eci.dll

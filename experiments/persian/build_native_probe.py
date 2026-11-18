@@ -2608,6 +2608,33 @@ static void persian_smaller_vowel(void *state,int phone)
         if (*values[i]>0 && *values[i]<30000)
             *values[i]=(int16_t)((103*(int)*values[i]+50)/100);
 }
+static void persian_back_a_f2(void *state,int16_t *target,int delta)
+{
+    if (*target<=0 || !delta) return;
+    int16_t female=0,head=50,scale=100;
+    memcpy(&female,(const unsigned char *)state+DG_BASE+3092+12,sizeof female);
+    memcpy(&head,(const unsigned char *)state+DG_BASE+3092+14,sizeof head);
+    memcpy(&scale,(const unsigned char *)state+DG_BASE+3070,sizeof scale);
+    if (head==50) scale=100;
+    if (female && scale>0) {
+        /* The female voice's F2 mapping has abrupt jumps at these edges.
+           Stay below a crossed edge rather than turning a small requested
+           shift into a much larger one for some head sizes. */
+        const int limits[]={1100,1300,1700};
+        int before=*target*scale/100;
+        int after=(*target+delta)*scale/100;
+        for (unsigned i=0;i<sizeof limits/sizeof limits[0];++i) {
+            if (before<=limits[i] && after>limits[i]) {
+                int maximum=((limits[i]+1)*100-1)/scale-*target;
+                if (maximum<0) maximum=0;
+                if (delta>maximum) delta=maximum;
+                break;
+            }
+        }
+    }
+    *target+=(int16_t)delta;
+}
+
 static void persian_open_vowel(void *state,int phone)
 {
     const char *us=getenv("RELOQ_FA_US_ARTICULATION");
@@ -2644,7 +2671,13 @@ static void persian_open_vowel(void *state,int phone)
        Do not replace inheritance sentinels: the acoustic engine still
        interpolates into and out of neighbouring consonants. Other vowels
        retain their own centres, and /u/ keeps its restored dev121 centres. */
-    if (phone=='a') { f3=female ? -100 : 0; f4=200; b3=100; }
+    if (phone=='a') {
+        const char *adjust=getenv("RELOQ_FA_BACK_A_F2");
+        /* A small frontward F2-only listening candidate for the vowel in
+           Iran. Keep F1, the other resonances, timing and source unchanged. */
+        if (adjust && adjust[0]=='1' && !adjust[1]) f2=50;
+        f3=female ? -100 : 0; f4=200; b3=100;
+    }
     else if (phone=='e') { f3=female ? -80 : 0; f4=50; b1=35; b3=125; }
     else if (phone=='i') { f3=female ? -80 : 0; f4=50; b3=100; }
     else if (phone=='o') {
@@ -2663,8 +2696,13 @@ static void persian_open_vowel(void *state,int phone)
     else if (phone=='u') { f4=200; b3=120; b5=260; }
     if (b1 && STATE(int16_t,s397)>0 && STATE(int16_t,s397)<3000)
         STATE(int16_t,s397)+=b1;
-    if (STATE(int16_t,s450)>0) STATE(int16_t,s450)+=f2;
-    if (STATE(int16_t,s451)>0) STATE(int16_t,s451)+=f2;
+    if (phone=='a') {
+        persian_back_a_f2(state,&STATE(int16_t,s450),f2);
+        persian_back_a_f2(state,&STATE(int16_t,s451),f2);
+    } else {
+        if (STATE(int16_t,s450)>0) STATE(int16_t,s450)+=f2;
+        if (STATE(int16_t,s451)>0) STATE(int16_t,s451)+=f2;
+    }
     if (STATE(int16_t,s452)>150) STATE(int16_t,s452)+=f3;
     if (STATE(int16_t,s453)>150) STATE(int16_t,s453)+=f3;
     if (STATE(int16_t,s454)>0) STATE(int16_t,s454)+=f4;

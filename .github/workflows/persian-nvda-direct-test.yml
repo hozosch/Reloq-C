@@ -42,6 +42,10 @@ on:
       - experiments/persian/test_fa_sentence_flow.py
       - experiments/persian/test_embedded_text_rules.py
       - experiments/persian/select_windows_acoustic_run.py
+      - experiments/persian/build_soundlab_nvda.py
+      - experiments/persian/test_soundlab_nvda.py
+      - experiments/persian/test_soundlab_real_plugin.py
+      - addon/soundlab/**
 permissions:
   contents: read
   actions: read
@@ -132,17 +136,24 @@ jobs:
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev158; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev159; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
           dll=$(find candidate -name eci.dll -print -quit)
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
+          python -B experiments/persian/build_soundlab_nvda.py --output dist/reloq-c-lautlabor-0.1.0.nvda-addon
       - name: Test in real NVDA
         shell: pwsh
         env:
           PYTHONIOENCODING: utf-8
         run: |
-          $addon = (Get-ChildItem dist -Filter *.nvda-addon | Select-Object -First 1).FullName
+          $addon = (Get-ChildItem dist -Filter 'reloq-c-persian-pinglish-*.nvda-addon' | Select-Object -First 1).FullName
+          $lab = (Get-ChildItem dist -Filter 'reloq-c-lautlabor-*.nvda-addon' | Select-Object -First 1).FullName
+          $dll = (Get-ChildItem candidate -Recurse -Filter eci.dll | Select-Object -First 1).FullName
+          python -B experiments/persian/test_soundlab_nvda.py --dll "$dll" --espeak portable-nvda/synthDrivers/espeak.dll --data portable-nvda/synthDrivers
+          if ($LASTEXITCODE -ne 0) { throw 'Sound laboratory frame and language test failed' }
           python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon "$addon" --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
           if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA Persian profile test failed' }
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon "$addon" --extra-addon "$lab" --plugin experiments/persian/test_soundlab_real_plugin.py --work soundlab-nvda-results
+          if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA sound laboratory test failed' }
       - name: Confirm the full acoustic test
         shell: bash
         env:
@@ -162,5 +173,7 @@ jobs:
           path: |
             persian-nvda-results/result.json
             persian-nvda-results/nvda.log
+            soundlab-nvda-results/result.json
+            soundlab-nvda-results/nvda.log
           if-no-files-found: ignore
           retention-days: 7

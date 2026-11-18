@@ -1,11 +1,11 @@
-"""Check the isolated R after I and the vowel-local head-size experiment."""
+"""Check the isolated R after I and the restored Persian vowel sizes."""
 from __future__ import annotations
 
 import argparse
 from pathlib import Path
 
 from test_us_articulation import capture, voice
-from _reloq_eci_direct import GENDER, NATIVE_SPEED, SAMPLE_RATE
+from _reloq_eci_direct import GENDER, HEAD_SIZE, NATIVE_SPEED, SAMPLE_RATE
 
 
 def nucleus(rows):
@@ -60,22 +60,43 @@ def main():
                         pcm, rows = capture(current, scope, '`[.1' + vowel + ']', True)
                         if previous:
                             old_pcm, old_rows = capture(previous, old_scope, '`[.1' + vowel + ']', True)
-                            assert pcm.pcm != old_pcm.pcm and len(rows) == len(old_rows), vowel
-                            # F2 moves by three percent; F0, amplitude, noise,
-                            # frame timing and bandwidths are unaffected.
+                            assert len(rows) == len(old_rows), vowel
+                            # Back A moves F2 only; all other vowels restore
+                            # their prior output exactly.
                             new, old = nucleus(rows), nucleus(old_rows)
-                            assert abs(new[13] / old[13] - 1.03) < .005, (gender, vowel, new[13], old[13])
+                            if vowel == 'a':
+                                assert pcm.pcm != old_pcm.pcm
+                                assert abs(new[13] - old[13] - (53 if gender else 50)) < 4, (gender, vowel, new[13], old[13])
+                            else:
+                                assert pcm.pcm == old_pcm.pcm, vowel
                             for a, b in zip(rows, old_rows):
                                 assert a.tick == b.tick
-                                for col in (1, 2, 7, 8, 10, 14, 16, 18, 20):
+                                for col in (1, 2, 7, 8, 9, 10, 14, 15, 16, 17, 18, 19, 20):
                                     assert abs(a.controls[col] - b.controls[col]) < 1, (gender, vowel, col)
                         checks += 1
+                    checks += 1
+        if previous:
+            # The female voice's native F2 transform has discontinuities.
+            # Test every head setting so a small raw shift cannot jump into
+            # another anatomical range and become a large audible change.
+            for gender in (0, 1):
+                for head in range(101):
+                    for engine in (current, previous):
+                        for key, value in ((GENDER, gender), (HEAD_SIZE, head),
+                                           (SAMPLE_RATE, 3), (NATIVE_SPEED, 65)):
+                            engine.set_parameter(key, value)
+                    _, new_rows = capture(current, scope, '`[.1a]', True)
+                    _, old_rows = capture(previous, old_scope, '`[.1a]', True)
+                    new, old = nucleus(new_rows), nucleus(old_rows)
+                    assert 0 <= new[13] - old[13] <= 80, (gender, head, new[13], old[13])
+                    for col in (9, 10, 14, 15, 16, 17, 18, 19, 20):
+                        assert abs(new[col] - old[col]) < 1, (gender, head, col)
                     checks += 1
     finally:
         current.close()
         if previous:
             previous.close()
-    print(f'Passed {checks} contextual R and vowel-local head-size checks.')
+    print(f'Passed {checks} contextual R and restored-vowel checks.')
 
 
 if __name__ == '__main__':

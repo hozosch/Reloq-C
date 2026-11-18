@@ -55,10 +55,8 @@ def main():
                     for column, before in zip(columns, baseline[gender]):
                         share = 0 if column == 19 else 0.5 if gender and column == 9 else 0.25
                         target = (1 - share) * before + share * de.controls[column]
-                        if not (gender and column == 9):
-                            target *= 1.03
-                        if gender and column in (17, 19):
-                            target = min(target, 4200 if column == 17 else 4600)
+                        if column == 13:
+                            target += 53 if gender else 50
                         expected.append(target)
                     for tag in ('`[.1a]', '`[.1sad]', '`[.1ran]', '`[.1nam]',
                                 '`[.1i.0ran]'):
@@ -75,7 +73,7 @@ def main():
                                        for a, b in zip(rows, before_rows))
                         checks += 1
                     if old:
-                        # The E vowel remains unchanged by the head-size trial.
+                        # The E vowel remains unchanged by the F2 adjustment.
                         assert capture(fa, scope, '`[.1e]', True)[0].pcm == \
                                capture(old, old_scope, '`[.1e]', True)[0].pcm
         if old:

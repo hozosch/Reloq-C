@@ -13,6 +13,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--nvda', type=Path, required=True)
     parser.add_argument('--addon', type=Path, required=True)
+    parser.add_argument('--extra-addon', type=Path, help='additional independently installed add-on')
     parser.add_argument('--driver', type=Path,
                         help='use this candidate driver with the packaged native DLL')
     parser.add_argument('--plugin', type=Path,
@@ -33,6 +34,12 @@ def main():
     with zipfile.ZipFile(args.addon) as bundle:
         if bundle.testzip() is not None: raise RuntimeError('corrupt add-on')
         bundle.extractall(target)
+    if args.extra_addon:
+        extra_target = profile / 'addons' / 'reloqSoundLab'
+        extra_target.mkdir(parents=True)
+        with zipfile.ZipFile(args.extra_addon) as bundle:
+            if bundle.testzip() is not None: raise RuntimeError('corrupt extra add-on')
+            bundle.extractall(extra_target)
     if args.driver:
         shutil.copy2(args.driver, target / 'synthDrivers' / 'reloqC' / '__init__.py')
     shutil.copy2(args.plugin, target / 'globalPlugins' / 'reloqSegmentationProbe.py')

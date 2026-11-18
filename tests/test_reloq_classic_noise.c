@@ -26,6 +26,24 @@ int main(void) {
  const float rates[]={16000,22050,32000,44100,48000};
  const long all_levels[4][8]={{0,0,0,0,50,0,0,0},{0,52,60,59,0,0,0,0},{0,45,0,0,0,0,0,0},{0}};
  unsigned checks=0;double worst=0,largest_reduction=0,total_error=0;
+ /* A pole outside the reference bank can carry a stale level and a zero
+  * bandwidth. High-rate expansion must not activate it, but it must keep
+  * the broad added bands and any valid reference/expanded pole. */
+ for(unsigned r=0;r<5;++r)for(int scenario=0;scenario<4;++scenario){
+  float f[8]={300,1500,3643,4200,4600,0,0,0};
+  float b[8]={100,200,1000,1000,scenario==1?500:0,0,0,0};
+  long a[8]={0,0,50,50,50,0,0,0},count=scenario==2?5:4;
+  if(scenario==3)a[4]=0;
+  struct reloq_noise_profile p={0};
+  reloq_noise_profile_prepare(&p,rates[r],0,65,0,f,b,a,&count);
+  if(r==0){assert(count==(scenario==2?5:4));assert(a[4]==(scenario==3?0:50));}
+  else {
+   assert(count==(rates[r]>=32000?8:7));
+   assert(a[4]==(scenario==0||scenario==3?0:50));
+   assert(a[5]>0&&b[5]>0&&a[6]>0&&b[6]>0);
+   if(rates[r]>=32000)assert(a[7]>0&&b[7]>0);
+  }
+ }
  for(int small=0;small<2;++small)for(int kind=0;kind<4;++kind)for(unsigned r=0;r<5;++r){
   float centers[8]={300,1500,2600,3400,4400,5500,6500,7500};
   float widths[8]={100,200,350,500,500,1000,1500,1500},f[8],b[8];long a[8],base[8];

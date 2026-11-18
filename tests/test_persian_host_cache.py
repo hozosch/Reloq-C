@@ -9,7 +9,7 @@ from reuse_persian_host_cache import (ALLOWED, EXPECTED_KEY, RECENT_ALLOWED, REC
                                       DEV151_ALLOWED, DEV151_KEY, DEV152_ALLOWED, DEV152_KEY,
                                       DEV153_ALLOWED, DEV153_KEY, DEV154_ALLOWED, DEV154_KEY,
                                       DEV155_ALLOWED, DEV155_KEY, DEV156_ALLOWED, DEV156_KEY,
-                                      DEV157_ALLOWED, DEV157_KEY, eligible)
+                                      DEV157_ALLOWED, DEV157_KEY, DEV158_ALLOWED, DEV158_KEY, eligible)
 
 assert eligible(EXPECTED_KEY, ALLOWED)
 assert not eligible(EXPECTED_KEY, ())
@@ -64,4 +64,8 @@ assert eligible(DEV157_KEY, DEV157_ALLOWED)
 assert not eligible(DEV157_KEY, ())
 assert not eligible(DEV157_KEY, DEV157_ALLOWED | {'src/reloq_core.c'})
 assert not eligible(DEV157_KEY, {'src/reloq_persian_acoustics.c'})
+assert eligible(DEV158_KEY, DEV158_ALLOWED)
+assert not eligible(DEV158_KEY, ())
+assert not eligible(DEV158_KEY, DEV158_ALLOWED | {'src/reloq_core.c'})
+assert not eligible(DEV158_KEY, DEV158_ALLOWED - {'src/reloq_noise_profile.c'})
 print('Passed verified Windows host cache safeguards.')

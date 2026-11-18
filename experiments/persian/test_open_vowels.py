@@ -9,9 +9,9 @@ from test_us_articulation import capture, voice
 from _reloq_eci_direct import GENDER, NATIVE_SPEED, SAMPLE_RATE
 
 
-def nucleus(engine, scope, tag, gender, phone, *, scaled=True):
+def nucleus(engine, scope, tag, gender, phone):
     _, frames = capture(engine, scope, tag, True)
-    f1 = ((498 if gender else 453) if scaled else (484 if gender else 440)) if phone == 'o' else (495 if gender else 450)
+    f1 = (484 if gender else 440) if phone == 'o' else (495 if gender else 450)
     def matches(row):
         c = row.controls
         f2 = 700 < c[13] < 1550 if phone == 'o' else c[13] > 1700
@@ -57,10 +57,10 @@ def main():
                             assert abs(row.controls[10]-(335 if gender else 155)) < 2, tag
                             assert abs(row.controls[16]-125) < 2, tag
                         if old:
-                            before = nucleus(old, old_scope, tag, gender, phone, scaled=False)
+                            before = nucleus(old, old_scope, tag, gender, phone)
                             # The vowel centres retain their identity. The
                             # surrounding consonant's transitions may differ.
-                            assert abs(row.controls[9]-before.controls[9] * (1.03 if phone == 'o' else 1)) < 3
+                            assert abs(row.controls[9]-before.controls[9]) < 3
                             if phone == 'e':
                                 assert abs(row.controls[13]-before.controls[13]) < 30
                         count += 1

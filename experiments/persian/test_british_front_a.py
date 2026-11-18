@@ -95,10 +95,6 @@ def main():
                             is_frequency = i in (9, 13, 15, 17, 19)
                             target = (.75 * reference.controls[i] + .25 * german_reference.controls[i]
                                       if is_frequency else reference.controls[i])
-                            if is_frequency:
-                                target *= 1.03
-                                if gender and i in (17, 19):
-                                    target = min(target, 4200 if i == 17 else 4600)
                             tolerance = 18 if is_frequency else .5 if i == 4 else 5
                             assert abs(mid.controls[i] - target) < tolerance, (
                                 rate, gender, speed, tag, i, mid.controls[i], target)
@@ -138,7 +134,7 @@ def main():
                         # measured reference voices, with a small allowance
                         # for the unavailable negative British head setting.
                         low, high = sorted((expected.controls[i], de.controls[i]))
-                        margin = max(12, expected.controls[i] * .06)
+                        margin = max(12, expected.controls[i] * .026)
                         assert low - margin <= actual.controls[i] <= high + margin, (
                             gender, head, i, actual.controls[i], low, high)
                     else:
