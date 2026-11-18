@@ -30,7 +30,20 @@ jobs:
           gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/persian-windows-acoustic-probe.yml/runs" -f branch="$GITHUB_REF_NAME" -F per_page=40 --jq '.workflow_runs[] | select(.status == "completed") | "\(.id) \(.head_sha)"' > acoustic-runs.txt
           selected=""
           while read -r run sha; do
-            if ! git diff --quiet "$sha" HEAD -- eci/Makefile src include vendor/openevv61 tools/prepare_persian_provider.py experiments/aragonese/build_native_probe.py experiments/persian/build_native_probe.py experiments/persian/build_windows_probe.py 'experiments/persian/direct_fa_*.c' 'experiments/persian/direct_fa_*.h' 'experiments/persian/direct_fa_*.inc'; then continue; fi
+            if ! git diff --quiet "$sha" HEAD -- \
+                eci/Makefile src include vendor/openevv61 \
+                tools/prepare_persian_provider.py tools/reuse_persian_provider_cache.py \
+                experiments/aragonese/build_native_probe.py experiments/persian/build_native_probe.py \
+                experiments/persian/build_windows_probe.py experiments/persian/prepare_continuous_host.py \
+                experiments/persian/continuous_frames.c experiments/persian/continuous_frames.h \
+                experiments/persian/continuous_replay.inc experiments/persian/scoped_acoustics_probe.c \
+                experiments/persian/test_embedded_text_rules.py eci/test_persian_project.py \
+                eci/test_persian_frames.py eci/test_persian_acoustics.py eci/test_concurrent_startup.py \
+                tests/test_low_arena_concurrent.c tests/test_reloq_classic_noise.c \
+                'experiments/persian/direct_fa_*.c' 'experiments/persian/direct_fa_*.h' \
+                'experiments/persian/direct_fa_*.inc' .github/workflows/persian-windows-acoustic-probe.yml; then
+              continue
+            fi
             artifact=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run/artifacts?per_page=100" --jq '.artifacts[] | select(.name == "persian-windows-acoustic-probe" and .expired == false) | .id')
             if [ -n "$artifact" ]; then selected="$run"; break; fi
           done < acoustic-runs.txt
