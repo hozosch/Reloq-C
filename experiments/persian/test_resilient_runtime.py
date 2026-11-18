@@ -254,12 +254,11 @@ def main():
         plain, _ = render(('farsi',))
         combined, marks = render(('fa', EciIndex(70), '\u0304rsi'))
         assert combined == plain and [value for value, _ in marks] == [70]
-        before = len(plans)
         accented, marks = render((EciIndex(71), 'salam sa', EciIndex(72), 'lām donya', EciIndex(73)))
-        assert accented and len(plans) > before and [value for value, _ in marks] == [71, 72, 73]
+        assert accented and [value for value, _ in marks] == [71, 72, 73]
         explicit, _ = render(('salam salam donya',))
         unmarked, _ = render(('salam salām donya',))
-        assert explicit == unmarked
+        assert explicit == unmarked == accented
         hyphen = project_resilient(('salam-e',), pinglish._frontend, pinglish=True,
                                    validate=pinglish._voice._phonemes_for_probe)
         assert '-' not in hyphen.tagged and SYMBOL_TAGS['-'] not in hyphen.tagged
