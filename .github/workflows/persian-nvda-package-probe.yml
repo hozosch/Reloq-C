@@ -63,6 +63,7 @@ on:
       - reference-lilak/persian/**
       - experiments/persian/test_direct_fa_compounds.py
       - experiments/persian/test_persian_joiners.py
+      - experiments/persian/reference-nvda/fa_symbols_2026_3_1.dic
       - experiments/persian/test_direct_fa_sequence.py
       - experiments/persian/hybrid_fa_frontend.py
       - experiments/persian/direct_fa_sequence.py

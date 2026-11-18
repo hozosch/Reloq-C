@@ -438,7 +438,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                ('fa_IR', 'سلام دنیا?', 'issue50_question_ascii_most'),
                                ('fa_IR', 'سلام:دنیا', 'issue50_compact_colon_most'),
                                ('fa_IR', 'سلام:دنیا', 'issue50_compact_colon_split_most'),
-                               ('fa_IR', 'سلام colon. دنیا', 'issue50_compact_colon_reference_none'),
+                               ('fa_IR', 'سلام دونقطه. دنیا', 'issue50_compact_colon_reference_none'),
                                ('fa_IR', 'من کتاب', 'issue49_weak_pronoun'),
                                ('fa_IR', 'اسلش', 'issue49_weak_eslash'),
                                ('fa_Latn', 'eslash', 'issue49_weak_eslash'),

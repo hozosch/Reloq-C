@@ -64,6 +64,7 @@ def main():
         'LocaleDataMap', 'SymbolLevel', 'SpeechSymbol', 'SpeechSymbols', 'SpeechSymbolProcessor'), ns)
     fa, en = ns['SpeechSymbols'](), ns['SpeechSymbols']()
     fa.load(str(ROOT / 'experiments/persian/reference-nvda/fa_symbols_2026_3_1.dic'))
+    assert ' ' in fa.symbols  # The source's literal-space identifier is escaped in this fixture.
     en.load(str(nvda / 'locale/en/symbols.dic'))
     sources = {'fa': (fa, ns['SpeechSymbols']()), 'en': (en, ns['SpeechSymbols']())}
     ns['SpeechSymbolProcessor'].localeSymbols = ns['LocaleDataMap'](lambda locale: sources[locale])
@@ -154,35 +155,15 @@ def main():
     driver._selectedLanguage = fa_id
     question = 'سلام دنیا؟'
     for kind in (level.NONE, level.SOME, level.MOST):
-        assert not processor.processText('؟', kind).strip()
-        guarded = joiners.protect_joiners(driver, [question], symbol_level=kind)
-        assert len(guarded) == 3 and guarded[0].enabled and not guarded[2].enabled
-        assert joiners.restore_joiners(processor.processText(guarded[1], kind)) == question
-    # Explicit punctuation names and character navigation remain NVDA's.
+        assert processor.processText(question, kind) == question
+        assert joiners.protect_joiners(driver, [question], symbol_level=kind) == [question]
     assert joiners.protect_joiners(driver, [question], symbol_level=level.ALL) == [question]
     assert joiners.protect_joiners(driver, ['؟'], symbol_level=level.NONE) == ['؟']
     spelling_question = [CharacterModeCommand(True), question]
     assert joiners.protect_joiners(driver, spelling_question, symbol_level=level.NONE) == spelling_question
     split_question = ['سلام دنیا', IndexCommand(41), '؟']
-    split = joiners.protect_joiners(driver, split_question, symbol_level=level.SOME)
-    assert split[:2] == split_question[:2] and len(split) == 5
-    assert joiners.restore_joiners(processor.processText(split[3], level.SOME)) == '؟'
-    assert joiners.protect_joiners(driver, [question + '\ue072'], symbol_level=level.NONE) == [question + '\ue072']
-    sys.modules['characterProcessing'].processSpeechSymbols = (
-        lambda locale, text, kind: 'custom question' if text == '؟' else processor.processText(text, kind))
-    assert joiners.protect_joiners(driver, [question], symbol_level=level.NONE) == [question]
-    sys.modules['characterProcessing'].processSpeechSymbols = observe_symbols
-    # A user can also define a context-sensitive symbol rule.
-    sys.modules['characterProcessing'].processSpeechSymbols = (
-        lambda locale, text, kind: 'سلام دنیا custom question' if text == question else processor.processText(text, kind))
-    assert joiners.protect_joiners(driver, [question], symbol_level=level.NONE) == [question]
-    sys.modules['characterProcessing'].processSpeechSymbols = observe_symbols
-    dictionaries.dictionaries['user'] = [types.SimpleNamespace(compiled=re.compile('؟'))]
-    assert joiners.protect_joiners(driver, [question], symbol_level=level.NONE) == [question]
-    dictionaries.dictionaries['user'] = []
-    driver._selectedLanguage = en_id
-    assert joiners.protect_joiners(driver, [question], symbol_level=level.NONE) == [question]
-    driver._selectedLanguage = fa_id
+    assert joiners.protect_joiners(driver, split_question, symbol_level=level.SOME) == split_question
+    assert processor.processText('؟', level.SOME) == '؟'
 
     # NVDA announces a non-spaced colon at MOST but does not retain its
     # punctuation. Preserve its spoken name and add the sentence boundary.
@@ -190,12 +171,12 @@ def main():
     assert joiners.protect_joiners(driver, [compact_colon], symbol_level=level.SOME) == [compact_colon]
     for kind in (level.MOST, level.ALL):
         original = processor.processText(compact_colon, kind)
-        assert ':' not in original and 'colon' in original
+        assert ':' not in original and 'دونقطه' in original
         guarded = joiners.protect_joiners(driver, [compact_colon], symbol_level=kind)
         assert len(guarded) == 3
         processed = processor.processText(guarded[1], kind)
         assert ' '.join(processed.replace('\ue073', '').split()) == ' '.join(original.split())
-        assert 'colon :' in joiners.restore_joiners(processed)
+        assert 'دونقطه :' in joiners.restore_joiners(processed)
     for value in ('12:30', '۱۲:۳۰', 'https://nvaccess.org', 'custom:/path', 'C:\\Windows', ':'):
         assert joiners.protect_joiners(driver, [value], symbol_level=level.MOST) == [value]
     split_colon = ['سلام', IndexCommand(42), ':دنیا']
@@ -237,9 +218,10 @@ def main():
     guarded[1] = processor.processText(guarded[1], level.NONE) + '  '
     parts = namespace['_parts'](guarded, language=profiles[fa_id], languages=profiles)
     assert parts == [eci.EciText(word + '  ')]
-    guarded = joiners.protect_joiners(driver, [question], symbol_level=level.SOME)
-    guarded[1] = processor.processText(guarded[1], level.SOME)
-    assert namespace['_parts'](guarded, language=profiles[fa_id], languages=profiles) == [eci.EciText(question)]
+    guarded = joiners.protect_joiners(driver, [compact_colon], symbol_level=level.MOST)
+    guarded[1] = processor.processText(guarded[1], level.MOST)
+    parts = namespace['_parts'](guarded, language=profiles[fa_id], languages=profiles)
+    assert parts == [eci.EciText(joiners.restore_joiners(guarded[1]))]
     parts = namespace['_parts']([original_pua], language=profiles[fa_id], languages=profiles)
     assert parts == [eci.EciText(original_pua)]
     print('Passed real NVDA symbol levels, dictionaries, spelling, literal PUA and language-switch checks.')

@@ -25,11 +25,9 @@ verified guard retains its configured spoken name and adds the missing
 sentence boundary. Clock and address colons, custom symbol rules that would
 change under the guard, character navigation and speech dictionaries are
 left to NVDA.
-NVDA normally removes the Persian question mark at silent punctuation
-levels. In ordinary Persian speech, a guarded question boundary now survives
-that preprocessing so the native core can request the question contour. A
-character-navigation request, an explicitly spoken or custom symbol, and a
-matching speech dictionary retain their normal NVDA behavior.
+NVDA's complete Persian symbol table already preserves Persian question
+marks at the usual silent punctuation levels; those marks continue to reach
+the native question contour without special preprocessing.
 
 For directly recognized half-space plural forms ending in ‌ها, ‌های or
 ‌هایی, the native lexicon places the primary accent on -hâ when the expected
