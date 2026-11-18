@@ -40,7 +40,7 @@ CFLAGS_NATIVE += $(if $(filter 1,$(PARAMETERS_ONLY)),-DRELOQ61_PARAMETERS_ONLY=1
 # Compile the accepted Persian adaptations into the same provider used by
 # Windows and Android. They are selected only in a request-local scope;
 # the normal Finnish and donor language rules remain the default.
-PERSIAN_NAMES := delta_rules_c01_fifi.c delta_rules_c02_fifi.c delta_rules_c05_dede61.c delta_rules_c06_enus61.c delta_rules_c07_dede61.c delta_rules_c08_fifi.c delta_rules_c08_frfr61.c delta_rules_c12_fifi.c delta_rules_c13_fifi.c delta_rules_c15_fifi.c delta_rules_c16_fifi.c delta_rules_c17_fifi.c delta_rules_c22_fifi.c delta_rules_c23_fifi.c delta_rules_c26_fifi.c delta_rules_c28_fifi.c delta_rules_c29_fifi.c delta_rules_c30_fifi.c
+PERSIAN_NAMES := delta_rules_c01_fifi.c delta_rules_c02_fifi.c delta_rules_c05_dede61.c delta_rules_c06_enus61.c delta_rules_c07_dede61.c delta_rules_c08_fifi.c delta_rules_c08_frfr61.c delta_rules_c12_fifi.c delta_rules_c13_fifi.c delta_rules_c15_fifi.c delta_rules_c16_fifi.c delta_rules_c17_fifi.c delta_rules_c19_fifi.c delta_rules_c21_fifi.c delta_rules_c22_fifi.c delta_rules_c23_fifi.c delta_rules_c26_fifi.c delta_rules_c27_fifi.c delta_rules_c28_fifi.c delta_rules_c29_fifi.c delta_rules_c30_fifi.c
 PERSIAN_SOURCES := $(filter $(addprefix %/,$(PERSIAN_NAMES)),$(SOURCES))
 PERSIAN_PREP := $(BUILD)/persian-provider
 $(PERSIAN_PREP)/.stamp: $(PERSIAN_SOURCES) ../../experiments/persian/build_native_probe.py ../../experiments/aragonese/build_native_probe.py ../../tools/prepare_persian_provider.py

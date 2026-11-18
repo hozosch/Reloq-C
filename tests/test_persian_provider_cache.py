@@ -15,6 +15,20 @@ import reuse_persian_provider_cache as cache
 
 
 class CacheReuseTests(unittest.TestCase):
+    def test_dev153_cache_rejects_modified_build_recipe(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            build = Path(tmp) / 'windows-release'
+            build.mkdir()
+            def git_result(*args):
+                if args[0] == 'rev-parse':
+                    return 'unverified-blob'
+                return '\n'.join(cache.DEV153_ALLOWED)
+            with patch.object(cache, 'BUILD', build), patch.object(cache, 'git', side_effect=git_result), \
+                    patch.dict(os.environ, {'PERSIAN_PROVIDER_CACHE_KEY': cache.DEV153_KEY}), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                cache.main()
+            self.assertFalse(build.exists())
+
     def test_recent_cache_requires_exactly_checked_headers(self):
         self.assertTrue(cache.eligible_recent(cache.RECENT_KEY, cache.RECENT_HEADERS,
                                               cache.RECENT_HEADERS))
@@ -38,6 +52,9 @@ class CacheReuseTests(unittest.TestCase):
 
     def test_rebuilds_selected_objects_or_rejects_unverified_cache(self):
         for key, diff, reusable in (
+            (cache.DEV153_KEY, '\n'.join(cache.DEV153_ALLOWED), True),
+            (cache.DEV153_KEY, '\n'.join(cache.DEV153_ALLOWED | {'include/reloq_eci.h'}), False),
+            (cache.DEV153_KEY, 'src/reloq_persian_acoustics.c', False),
             (cache.DEV152_KEY, '\n'.join(cache.DEV152_ALLOWED), True),
             (cache.DEV152_KEY, '\n'.join(cache.DEV152_ALLOWED | {'vendor/openevv61/Makefile.native'}), False),
             (cache.DEV152_KEY, 'src/reloq_persian_acoustics.c', False),
@@ -62,7 +79,7 @@ class CacheReuseTests(unittest.TestCase):
                 root = Path(tmp)
                 provider = root / 'vendor'
                 build = provider / 'build' / 'windows-release'
-                names = [f'delta_rules_c{i:02}_fifi.c' for i in range(18)]
+                names = [f'delta_rules_c{i:02}_fifi.c' for i in range(21)]
                 (provider / 'lang' / 'fifi').mkdir(parents=True)
                 (provider / 'Makefile.native').write_text(
                     'PERSIAN_NAMES := ' + ' '.join(names) + '\n', encoding='utf8')
@@ -81,8 +98,12 @@ class CacheReuseTests(unittest.TestCase):
                     obj.touch()
                 (build / 'libreloq61.a').touch()
                 (build / 'persian-provider').mkdir()
+                def git_result(*args):
+                    if args[0] == 'rev-parse':
+                        return cache.DEV153_CHECKED[args[1].removeprefix('HEAD:')]
+                    return diff
                 with patch.object(cache, 'PROVIDER', provider), patch.object(cache, 'BUILD', build), \
-                        patch.object(cache, 'git', return_value=diff), \
+                        patch.object(cache, 'git', side_effect=git_result), \
                         patch.dict(os.environ, {'PERSIAN_PROVIDER_CACHE_KEY': key}), \
                         contextlib.redirect_stdout(io.StringIO()):
                     cache.main()

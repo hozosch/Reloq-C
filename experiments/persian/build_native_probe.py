@@ -2312,132 +2312,201 @@ static int32_t persian_us_mark(void *state,uint8_t st,uint8_t field,uint8_t valu
     return helper + '\n' + '\n'.join(pieces)
 
 
-def japanese_r_rules() -> str:
-    """Adapt the Japanese tap rule to Persian phone records.
 
-    The generated providers do not share numeric phone or acoustic-state
-    indexes. Translate feature values by name and use the corresponding local
-    stream helpers instead of calling Japanese code against a Finnish state.
+def brazilian_r_rules() -> str:
+    """Use the actual Portuguese /r/ and duration rules on Persian records.
+
+    Portuguese and Finnish order their word and phone statement types
+    differently. Translate statement, field and enum names at the boundary;
+    never call a Portuguese rule directly on a Finnish runtime state.
     """
-    root = PROVIDER / 'lang' / 'jajp61'
-    source = (root / 'delta_authored_jajp61.c').read_text(encoding='utf8')
-    source = source.split('uint8_t jajp61_evv_authored_data[] = {', 1)[1].split('};', 1)[0]
+    root = PROVIDER / 'lang' / 'ptbr'
+    source = (root / 'delta_authored_ptbr.c').read_text(encoding='utf8')
+    source = source.split('uint8_t ptbr_evv_authored_data[] = {', 1)[1].split('};', 1)[0]
     source = re.sub(r'/\*.*?\*/', '', source, flags=re.S)
     raw = bytes(int(value, 0) for value in
                 re.findall(r'(?<![A-Za-z_])(?:0[xX][0-9a-fA-F]+|[0-9]+)', source))
-    table = (root / 'delta_rules_jajp61.c').read_text(encoding='utf8')
-    table = table.split('jajp61_delta_rule_sym[] = {', 1)[1].split('};', 1)[0]
-    offsets = [int(value) for value in re.findall(r'jajp61_evv_authored_data \+ (\d+)', table)]
-    names = ('is_retroflex_d', 'jap_ph_r')
+    table = (root / 'delta_rules_ptbr.c').read_text(encoding='utf8')
+    table = table.split('ptbr_delta_rule_sym[] = {', 1)[1].split('};', 1)[0]
+    offsets = [int(value) for value in re.findall(r'ptbr_evv_authored_data \+ (\d+)', table)]
+    names = ('add_TL_to_trill', 'por_ph_r', 'por_ph_r_dur')
     blocks = []
     for name in names:
         matches = []
         for path in root.glob('delta_rules_c*.c'):
             data = path.read_text(encoding='utf8')
-            start = data.find('int32_t reloq_jajp61_' + name + '(')
+            start = data.find('int32_t reloq_ptbr_' + name + '(')
             if start >= 0:
                 end = data.index('\nstatic int32_t evv_' + name + '(', start)
                 matches.append(data[start:end])
         if len(matches) != 1:
-            raise RuntimeError('Cannot locate Japanese R donor ' + name)
+            raise RuntimeError('Cannot locate Brazilian R donor ' + name)
         blocks.append(matches[0])
     indices = sorted({int(x) for block in blocks for x in re.findall(r'delta_sym_ref\[(\d+)\]', block)})
     width = 32
     if not indices or len(offsets) <= max(indices) or any(offsets[i] + width > len(raw) for i in indices):
-        raise RuntimeError('Japanese R symbol storage changed')
+        raise RuntimeError('Brazilian R symbol storage changed')
     index_map = {value: index for index, value in enumerate(indices)}
     constants = ',\n'.join('    {' + ','.join(str(x) for x in raw[offsets[i]:offsets[i]+width]) + '}'
                            for i in indices)
     helper = r'''
-extern delta_stmt jajp61_vstmtbl[];
-static const unsigned char persian_jap_constants[][32]={
+extern delta_stmt ptbr_vstmtbl[];
+static const unsigned char persian_pt_constants[][32]={
 __CONSTANTS__
 };
-static _Atomic int32_t persian_jap_constants_ref;
-static int32_t persian_jap_symbols(void)
+static _Atomic int32_t persian_pt_constants_ref;
+static int32_t persian_pt_symbols(void)
 {
-    int32_t result=atomic_load_explicit(&persian_jap_constants_ref,memory_order_acquire);
+    int32_t result=atomic_load_explicit(&persian_pt_constants_ref,memory_order_acquire);
     if (result) return result;
-    void *copy=evv_arena_alloc(sizeof persian_jap_constants);
+    void *copy=evv_arena_alloc(sizeof persian_pt_constants);
     if (!copy) return 0;
-    memcpy(copy,persian_jap_constants,sizeof persian_jap_constants);
+    memcpy(copy,persian_pt_constants,sizeof persian_pt_constants);
     int32_t made=EVV_REF(copy),expected=0;
-    if (!atomic_compare_exchange_strong_explicit(&persian_jap_constants_ref,&expected,made,
+    if (!atomic_compare_exchange_strong_explicit(&persian_pt_constants_ref,&expected,made,
                                                   memory_order_release,memory_order_acquire)) {
         evv_arena_free(copy);
         return expected;
     }
     return made;
 }
-static int persian_jap_field_number(unsigned st,unsigned field)
+static unsigned persian_pt_type(unsigned st)
+{ return st==2 ? 4 : st==4 ? 2 : st; }
+static int persian_pt_field_number(unsigned st,unsigned field)
 {
-    if (st>8 || field>=(unsigned)jajp61_vstmtbl[st].nfields) return -1;
-    const char *name=jajp61_vstmtbl[st].fields[field].name;
+    unsigned local_st=persian_pt_type(st);
+    if (st>8 || field>=(unsigned)ptbr_vstmtbl[st].nfields) return -1;
+    const char *name=ptbr_vstmtbl[st].fields[field].name;
     if (!name) return -1;
-    for (int i=0;i<vstmtbl[st].nfields;i++)
-        if (vstmtbl[st].fields[i].name && !strcmp(name,vstmtbl[st].fields[i].name)) return i;
+    for (int i=0;i<vstmtbl[local_st].nfields;i++)
+        if (vstmtbl[local_st].fields[i].name && !strcmp(name,vstmtbl[local_st].fields[i].name)) return i;
     return -1;
 }
-static int persian_jap_value(unsigned st,unsigned field,unsigned value,int local)
+static int persian_pt_value(unsigned st,unsigned field,unsigned value,int local)
 {
-    const delta_fielddesc *src=&jajp61_vstmtbl[st].fields[field];
-    const delta_fielddesc *dst=&vstmtbl[st].fields[local];
+    const delta_fielddesc *src=&ptbr_vstmtbl[st].fields[field];
+    const delta_fielddesc *dst=&vstmtbl[persian_pt_type(st)].fields[local];
     if (!src->values || !dst->values) return (int)value;
     if (value>=(unsigned)src->nvalues) return -1;
     const char *name=((const char *const *)src->values)[value];
     if (!name) return -1;
-    if (st==2 && field==0 && !strcmp(name,"y")) name="j";
     for (int i=0;i<dst->nvalues;i++) {
         const char *candidate=((const char *const *)dst->values)[i];
         if (candidate && !strcmp(name,candidate)) return i;
     }
     return -1;
 }
-static int32_t persian_jap_field(void *state,uint8_t st,uint8_t field,uint8_t value)
+static int32_t persian_pt_field(void *state,uint8_t st,uint8_t field,uint8_t value)
 {
-    if (st>8 || field>=(unsigned)jajp61_vstmtbl[st].nfields) return 1;
-    int local=persian_jap_field_number(st,field);
+    if (st>8 || field>=(unsigned)ptbr_vstmtbl[st].nfields) return 1;
+    int local=persian_pt_field_number(st,field);
     if (local<0) return 1;
-    int mapped=persian_jap_value(st,field,value,local);
-    return mapped<0 ? 1 : reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq,state,st,(uint8_t)local,(uint8_t)mapped);
+    int mapped=persian_pt_value(st,field,value,local);
+    return mapped<0 ? 1 : reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq,state,(uint8_t)persian_pt_type(st),(uint8_t)local,(uint8_t)mapped);
 }
-static int32_t persian_jap_string(void *state,uint8_t st,uint8_t count,const uint8_t *source)
+static int32_t persian_pt_string(void *state,uint8_t st,uint8_t count,const uint8_t *source)
 {
-    if (st>8 || !source || count>32 || persian_jap_field_number(st,0)!=0) return 1;
+    if (st>8 || !source || count>32 || persian_pt_field_number(st,0)!=0) return 1;
     uint8_t mapped[32];
     for (unsigned i=0;i<count;i++) {
-        int value=persian_jap_value(st,0,source[i],0);
+        int value=persian_pt_value(st,0,source[i],0);
         if (value<0 || value>255) return 1;
         mapped[i]=(uint8_t)value;
     }
-    return test_string_s(state,st,count,mapped);
+    return test_string_s(state,(uint8_t)persian_pt_type(st),count,mapped);
+}
+static int32_t persian_pt_synch(void *state,int16_t tag,uint8_t count,const uint8_t *source)
+{
+    if (!source || count>32) return 1;
+    uint8_t mapped[32];
+    for (unsigned i=0;i<count;i++) {
+        if (source[i]>8) return 1;
+        mapped[i]=(uint8_t)persian_pt_type(source[i]);
+    }
+    return reloq61_typed_test_synch(DELTA_ENTRY_test_synch,state,tag,count,mapped);
+}
+static int32_t persian_pt_left(void *state,uint8_t st)
+{ return reloq61_typed_setscan_l(DELTA_ENTRY_setscan_l,state,(uint8_t)persian_pt_type(st)); }
+static int32_t persian_pt_right(void *state,uint8_t st)
+{ return reloq61_typed_setscan_r(DELTA_ENTRY_setscan_r,state,(uint8_t)persian_pt_type(st)); }
+static int32_t persian_pt_push_field(void *state,uint8_t st,uint8_t field)
+{
+    int local=persian_pt_field_number(st,field);
+    return local<0 ? 1 : reloq61_typed_npush_fld(DELTA_ENTRY_npush_fld,state,(uint8_t)persian_pt_type(st),(uint8_t)local);
 }
 '''.replace('__CONSTANTS__', constants)
     pieces = []
     for name, original in zip(names, blocks):
-        block = original.replace('int32_t reloq_jajp61_' + name + '(',
-                                 'static int32_t persian_jap_' + name + '(', 1)
+        visibility = '' if name == 'por_ph_r_dur' else 'static '
+        block = original.replace('int32_t reloq_ptbr_' + name + '(',
+                                 visibility + 'int32_t persian_pt_' + name + '(', 1)
         block = re.sub(r'delta_sym_ref\[(\d+)\]',
-                       lambda m: f'(persian_jap_refs + {index_map[int(m.group(1))]*width})', block)
+                       lambda m: f'(persian_pt_refs + {index_map[int(m.group(1))]*width})', block)
         marker = '    unsigned char *frame = evv_frame_push('
         if block.count(marker) != 1:
-            raise RuntimeError('Cannot locate Japanese R workspace: ' + name)
-        block = block.replace(marker, '    const int32_t persian_jap_refs=persian_jap_symbols();\n'
-                              '    if (!persian_jap_refs) return 94;\n' + marker, 1)
-        block = block.replace('reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq, state,',
-                              'persian_jap_field(state,')
-        block = block.replace('reloq61_typed_test_string_s(DELTA_ENTRY_test_string_s, state,',
-                              'persian_jap_string(state,')
-        # Japanese's shared acoustic cells are numbered two positions after
-        # their Finnish/Persian equivalents, including the oral formants.
-        block = re.sub(r'\bs(4\d\d)\b', lambda m: 's' + str(int(m.group(1)) - 2), block)
-        block = block.replace('reloq_call_jajp61_is_retroflex_d(', 'persian_jap_is_retroflex_d(')
-        for local in ('doAV', 'doAF', 'add_tilt', 'addStreamArraySsVal'):
-            block = block.replace('reloq_call_jajp61_' + local + '(', 'reloq_call_fifi_' + local + '(')
-        if 'reloq_call_jajp61_' in block:
-            raise RuntimeError('Unmapped Japanese R dependency: ' + name)
+            raise RuntimeError('Cannot locate Brazilian R workspace: ' + name)
+        block = block.replace(marker, '    const int32_t persian_pt_refs=persian_pt_symbols();\n'
+                              '    if (!persian_pt_refs) return 94;\n' + marker, 1)
+        for original_name, target in (('testFldeq', 'field'), ('test_string_s', 'string'),
+                                      ('test_synch', 'synch'), ('setscan_l', 'left'),
+                                      ('setscan_r', 'right'), ('npush_fld', 'push_field')):
+            block = block.replace('reloq61_typed_' + original_name + '(DELTA_ENTRY_' + original_name + ', state,',
+                                  'persian_pt_' + target + '(state,')
+        block = block.replace('reloq_call_ptbr_add_TL_to_trill(', 'persian_pt_add_TL_to_trill(')
+        for local in ('doAV', 'doAF', 'addStreamArraySsVal'):
+            block = block.replace('reloq_call_ptbr_' + local + '(', 'reloq_call_fifi_' + local + '(')
+        if 'reloq_call_ptbr_' in block:
+            raise RuntimeError('Unmapped Brazilian R dependency: ' + name)
         pieces.append(block)
     return helper + '\n' + '\n'.join(pieces)
+
+
+def prepare_uncolored_r_vowels(work: Path) -> None:
+    """Do not let Finnish /r/-specific vowel allophones color Persian vowels."""
+    files = {'delta_rules_c17_fifi.c': ('a', 'e'),
+             'delta_rules_c15_fifi.c': ('A',),
+             'delta_rules_c27_fifi.c': ('o',),
+             'delta_rules_c19_fifi.c': ('i',),
+             'delta_rules_c21_fifi.c': ('u',)}
+    helper = r'''
+static int32_t persian_uncolored_vowel_field(void *state,uint8_t st,uint8_t field,uint8_t value)
+{
+    const char *mode=getenv("RELOQ_FA_UNCOLORED_R");
+    if (mode && mode[0]=='1' && !mode[1] && st==2 && field==0 && value==19)
+        return 1;
+    return reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq,state,st,field,value);
+}
+static int32_t persian_uncolored_vowel_string(void *state,uint8_t st,uint8_t count,const uint8_t *source)
+{
+    const char *mode=getenv("RELOQ_FA_UNCOLORED_R");
+    if (!mode || mode[0]!='1' || mode[1] || st!=2 || !source || count>32)
+        return reloq61_typed_test_string_s(DELTA_ENTRY_test_string_s,state,st,count,source);
+    uint8_t mapped[32];
+    for (unsigned i=0;i<count;i++) mapped[i]=source[i]==19 ? 255 : source[i];
+    return test_string_s(state,st,count,mapped);
+}
+'''
+    for filename, phones in files.items():
+        path = work / filename
+        text = path.read_text(encoding='utf8')
+        for phone in phones:
+            marker = f'int32_t reloq_fifi_stanfin_ph_{phone}('
+            start = text.index(marker)
+            end = text.index(f'\nstatic int32_t evv_stanfin_ph_{phone}(', start)
+            block = text[start:end]
+            for name, target in (('testFldeq', 'field'), ('test_string_s', 'string')):
+                block = block.replace('reloq61_typed_' + name + '(DELTA_ENTRY_' + name + ', state,',
+                                      'persian_uncolored_vowel_' + target + '(state,')
+            text = text[:start] + block + text[end:]
+        first = min(phones, key=lambda phone: text.index(f'int32_t reloq_fifi_stanfin_ph_{phone}('))
+        marker = f'int32_t reloq_fifi_stanfin_ph_{first}('
+        text = text.replace(marker, helper + '\n' + marker, 1)
+        include = '#include "reloq61_rule_calls_fifi.h"\n'
+        if text.count(include) != 1:
+            raise RuntimeError('Cannot locate Persian vowel rule imports')
+        if '#include <stdlib.h>' not in text:
+            text = text.replace(include, include + '#include <stdlib.h>\n', 1)
+        path.write_text(text, encoding='utf8')
 
 
 def prepare_us_articulation(work: Path) -> None:
@@ -2522,6 +2591,31 @@ static void persian_open_vowel(void *state,int phone)
     if (!us || us[0]!='1' || us[1]) return;
     int16_t female=0;
     memcpy(&female,(const unsigned char *)state+DG_BASE+3092+12,sizeof female);
+    const char *neutral_r=getenv("RELOQ_FA_UNCOLORED_R");
+    int after_r=0,before_r=0;
+    if (neutral_r && neutral_r[0]=='1' && !neutral_r[1]) {
+        after_r=persian_probe_front_a_neighbour(state,STATE(int32_t,w60),1)==19;
+        before_r=persian_probe_front_a_neighbour(state,STATE(int32_t,w61),0)==19;
+    }
+    if (after_r || before_r) {
+        /* Keep each high vowel's own neutral target at the R-facing edge.
+           The opposite edge can still respond to its own neighboring phone. */
+        if (phone=='i' || phone=='u') {
+            int f1=phone=='i' ? 250 : 280;
+            int f2=phone=='i' ? 2170 : 700;
+            int f3=phone=='i' ? 2900 : 2150;
+            if (after_r) {
+                STATE(int16_t,s448)=f1; STATE(int16_t,s450)=f2; STATE(int16_t,s452)=f3;
+            }
+            if (before_r) {
+                STATE(int16_t,s449)=f1; STATE(int16_t,s451)=f2; STATE(int16_t,s453)=f3;
+            }
+        }
+        /* The Finnish high-vowel rule can inherit F4 from the R. Keep the
+           current speaker's neutral F4 instead, before vowel-local shaping. */
+        if (after_r && STATE(int16_t,s454)==-2) STATE(int16_t,s454)=STATE(int16_t,s391);
+        if (before_r && STATE(int16_t,s455)==-2) STATE(int16_t,s455)=STATE(int16_t,s391);
+    }
     int f2=0,f3=0,f4=0,f5=0,b1=0,b3=0,b5=0;
     /* Use the /o/ nucleus and source targets from "two" in every context.
        Do not replace inheritance sentinels: the acoustic engine still
@@ -2561,7 +2655,7 @@ static void persian_open_vowel(void *state,int phone)
     dispatcher = 'int32_t reloq_fifi_stanfin_vals(void *state, int32_t p0)\n{\n'
     if text.count(dispatcher) != 1:
         raise RuntimeError('Cannot locate the Persian vowel dispatcher')
-    text = text.replace(dispatcher, vowel_helper + '\n' + dispatcher, 1)
+    text = text.replace(dispatcher, FRONT_A_HELPER + '\n' + vowel_helper + '\n' + dispatcher, 1)
     begin = text.index(dispatcher)
     end = text.index('\nstatic int32_t evv_stanfin_vals(', begin)
     section = text[begin:end]
@@ -2685,28 +2779,21 @@ static int persian_articulation_word_initial(void *state,int32_t token_ref)
     memcpy(EVV_AT(void *,d->fence_chars),chars,d->nstmts);
     return initial;
 }
-/* Keep explicit geminates and the old trill path while long-R listening
-   candidates are being assessed. Do not merge phones across word fences. */
-static int persian_articulation_long_r(void *state,int final)
+/* The Brazilian word-final R is selected only immediately after a vowel in
+   the same word. Consonant clusters retain the earlier Persian R for now. */
+int persian_pt_coda_r_selected(void *state)
 {
+    const char *mode=getenv("RELOQ_FA_BRAZILIAN_CODA_R");
+    if (!mode || mode[0]!='1' || mode[1]) return 0;
     delta_state *d=state;
-    int32_t begin=STATE(int32_t,w60),end=STATE(int32_t,w61);
-    if (!d || !begin || !end) return 1;
-    delta_node *point=vmovel(d,EVV_AT(delta_node *,end),2);
+    int32_t begin=STATE(int32_t,w60);
+    if (!d || !begin || !persian_probe_r_word_final(state,STATE_AT(w60,-4)) ||
+        persian_articulation_word_initial(state,STATE_AT(w60,-4))) return 0;
+    delta_node *point=vmovel(d,EVV_AT(delta_node *,begin),2);
     int32_t node=point?vgetsc(d,1,0,EVV_REF(point),2):0;
-    if (!node || (*EVV_AT(int32_t *,node)&2)) return 1;
-    void *fields=TFLDS(EVV_AT(void *,node));
-    if (*(const unsigned char *)delta_record_field(&vstmtbl[2],0,fields)!=19) return 1;
-    if (*(const unsigned char *)delta_record_field(&vstmtbl[2],11,fields)==0) return 1;
-    if (!final && persian_articulation_following(state)==19) return 1;
-    if (!persian_articulation_word_initial(state,STATE_AT(w60,-4))) {
-        point=vmovel(d,EVV_AT(delta_node *,begin),2);
-        node=point?vgetsc(d,1,0,EVV_REF(point),2):0;
-        if (node && !(*EVV_AT(int32_t *,node)&2) &&
-            *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node)))==19)
-            return 1;
-    }
-    return 0;
+    if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
+    return *(const unsigned char *)delta_record_field(&vstmtbl[2],1,
+                                                       TFLDS(EVV_AT(void *,node)))==1;
 }
 static int16_t persian_articulation_toward(int16_t value,int target)
 {
@@ -2742,7 +2829,7 @@ static void persian_articulation_nasal(void *state,int second_formant)
     final_r = FINNISH_L_WORD_FINAL.replace('persian_probe_l_word_final',
                                            'persian_probe_r_word_final').replace(
                                                'testFldeq(d,2,0,21)', 'testFldeq(d,2,0,19)')
-    text = text.replace(marker, us_consonant_rules() + '\n' + japanese_r_rules() +
+    text = text.replace(marker, us_consonant_rules() + '\n' + brazilian_r_rules() +
                         '\n' + final_r + '\n' + helper + '\n' + marker, 1)
     for phone in 'ptkbdgfvszSZ':
         call = f'    r0 = reloq_call_fifi_fin_ph_{phone}(state, (int32_t)(FIELD(0)));\n'
@@ -2770,14 +2857,8 @@ static void persian_articulation_nasal(void *state,int second_formant)
     if text.count(call) != 1:
         raise RuntimeError('Cannot locate Persian /r/ dispatcher')
     text = text.replace(call, r'''    {
-        const char *jp=getenv("RELOQ_FA_JAPANESE_TAP");
-        int selected=0;
-        if (jp && jp[0]=='1' && !jp[1]) {
-            int final=persian_probe_r_word_final(state,STATE_AT(w60,-4));
-            selected=!final && !persian_articulation_long_r(state,final);
-        }
-        if (selected)
-            r0=persian_jap_jap_ph_r(state,(int32_t)(FIELD(0)));
+        if (persian_pt_coda_r_selected(state))
+            r0=persian_pt_por_ph_r(state,(int32_t)(FIELD(0)));
         else
 ''' + call + '    }\n', 1)
     for phone, target in (('m', 1200), ('n', 1600)):
@@ -2808,6 +2889,20 @@ static void persian_articulation_nasal(void *state,int second_formant)
             '        }\n    }\n'
         text = text.replace(call, replacement, 1)
     consonant_file.write_text(text, encoding='utf8')
+    duration_file = work / 'delta_rules_c23_fifi.c'
+    text = duration_file.read_text(encoding='utf8')
+    include = '#include "reloq61_rule_calls_fifi.h"\n'
+    call = '    r0 = reloq_call_fifi_fin_ph_r_dur(state, (int32_t)(FIELD(0)));\n'
+    if text.count(include) != 1 or text.count(call) != 1:
+        raise RuntimeError('Cannot locate Persian R duration dispatcher')
+    text = text.replace(include, include +
+                        'extern int persian_pt_coda_r_selected(void *);\n'
+                        'extern int32_t persian_pt_por_ph_r_dur(void *,int32_t);\n', 1)
+    text = text.replace(call,
+                        '    if (persian_pt_coda_r_selected(state))\n'
+                        '        r0=persian_pt_por_ph_r_dur(state,(int32_t)(FIELD(0)));\n'
+                        '    else\n' + call, 1)
+    duration_file.write_text(text, encoding='utf8')
 
 
 def main() -> None:
@@ -2844,6 +2939,12 @@ def main() -> None:
     modified.append(prepare_auto_finnish_h(work))
     prepare_z_noise(work)
     modified.append(prepare_vowel_duration_probe(work))
+    for filename in ('delta_rules_c19_fifi.c', 'delta_rules_c21_fifi.c', 'delta_rules_c27_fifi.c'):
+        dest = work / filename
+        if not dest.exists():
+            shutil.copyfile(PROVIDER / 'lang' / 'fifi' / filename, dest)
+        modified.append(dest)
+    prepare_uncolored_r_vowels(work)
     prepare_us_articulation(work)
     if args.dry_run:
         print('Prepared isolated source files:', work)

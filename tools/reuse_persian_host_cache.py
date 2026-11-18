@@ -52,6 +52,14 @@ DEV152_ALLOWED = {'experiments/persian/build_native_probe.py',
                   'src/reloq_persian_acoustics.c',
                   'vendor/openevv61/lang/jajp61/delta_rules_c17_jajp61.c',
                   'vendor/openevv61/lang/jajp61/delta_rules_c30_jajp61.c'}
+DEV153_BASE = '0d8ccd6e773bcd9e1af0a3ecbd4b3ddc956fbd82'
+DEV153_KEY = ('persian-windows-host-gcc14-v2-'
+              '9334727f647864f5d57874fced644ee7c81c02f472b7147f391038ea8999ee37')
+DEV153_ALLOWED = {'experiments/persian/build_native_probe.py',
+                  'src/reloq_persian_acoustics.c',
+                  'vendor/openevv61/Makefile.native', 'tools/prepare_persian_provider.py'}
+DEV153_CHECKED = {'vendor/openevv61/Makefile.native': '0a483b13d681dfcb0e61f886cc677259d40b0ba9',
+                  'tools/prepare_persian_provider.py': 'b384362ec6ba15c0fd412b6f4f94201d738c2470'}
 TRACE_ALLOWED = {'include/reloq_eci.h', 'include/reloq_persian_frames.h',
                  'include/reloq_syllable_trace.h', 'src/reloq_eci.c',
                  'src/reloq_persian_frames.c', 'src/reloq_persian_frame_internal.h',
@@ -78,18 +86,24 @@ def eligible(key, changed):
                               (key == DEV149_KEY and set(changed) == DEV149_ALLOWED) or
                               (key == DEV150_KEY and set(changed) == DEV150_ALLOWED) or
                               (key == DEV151_KEY and set(changed) == DEV151_ALLOWED) or
-                              (key == DEV152_KEY and set(changed) == DEV152_ALLOWED))
+                              (key == DEV152_KEY and set(changed) == DEV152_ALLOWED) or
+                              (key == DEV153_KEY and set(changed) == DEV153_ALLOWED))
 
 
 def main():
     build, dll = ROOT / 'eci/build/windows', ROOT / 'eci/eci.dll'
     try:
         key = os.environ.get('PERSIAN_HOST_CACHE_KEY', '')
-        base = DEV152_BASE if key == DEV152_KEY else DEV151_BASE if key == DEV151_KEY else DEV150_BASE if key == DEV150_KEY else DEV149_BASE if key == DEV149_KEY else TRACE_BASE if key == TRACE_KEY else NEWEST_BASE if key == NEWEST_KEY else RECENT_BASE if key == RECENT_KEY else BASE
+        base = DEV153_BASE if key == DEV153_KEY else DEV152_BASE if key == DEV152_KEY else DEV151_BASE if key == DEV151_KEY else DEV150_BASE if key == DEV150_KEY else DEV149_BASE if key == DEV149_KEY else TRACE_BASE if key == TRACE_KEY else NEWEST_BASE if key == NEWEST_KEY else RECENT_BASE if key == RECENT_KEY else BASE
         changed = subprocess.check_output(['git', 'diff', '--name-only', base, 'HEAD', '--', *INPUTS],
                                           cwd=ROOT, text=True).splitlines()
         if not eligible(key, changed):
             raise ValueError('cached host source transition was not verified')
+        if key == DEV153_KEY:
+            for path, blob in DEV153_CHECKED.items():
+                current = subprocess.check_output(['git', 'rev-parse', 'HEAD:' + path], cwd=ROOT, text=True).strip()
+                if current != blob:
+                    raise ValueError('Persian provider build instructions changed')
         if not build.is_dir() or not dll.is_file():
             raise ValueError('cached host objects or DLL are missing')
         for path in build.rglob('*'):
@@ -99,7 +113,7 @@ def main():
         # All native Persian direct components depend on direct_fa_*.h.
         for obj in build.glob('reloq_fa_direct_*.o'):
             obj.unlink()
-        if key in (RECENT_KEY, TRACE_KEY, DEV149_KEY, DEV150_KEY, DEV151_KEY, DEV152_KEY):
+        if key in (RECENT_KEY, TRACE_KEY, DEV149_KEY, DEV150_KEY, DEV151_KEY, DEV152_KEY, DEV153_KEY):
             # These are the only host sources which include reloq_eci.h;
             # direct Persian objects also cover the changed private headers.
             for name in ('reloq_eci.o', 'reloq_rules61.o'):

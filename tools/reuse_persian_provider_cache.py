@@ -53,6 +53,14 @@ DEV152_ALLOWED = {'experiments/persian/build_native_probe.py',
                   'src/reloq_persian_acoustics.c',
                   'vendor/openevv61/lang/jajp61/delta_rules_c17_jajp61.c',
                   'vendor/openevv61/lang/jajp61/delta_rules_c30_jajp61.c'}
+DEV153_BASE = '0d8ccd6e773bcd9e1af0a3ecbd4b3ddc956fbd82'
+DEV153_KEY = ('persian-windows-provider-gcc14-v2-'
+              'c50e521eab044c336168b3ce125379a2f21d61f9d8cc49cee89e3447c0632f28')
+DEV153_ALLOWED = {'experiments/persian/build_native_probe.py',
+                  'src/reloq_persian_acoustics.c',
+                  'vendor/openevv61/Makefile.native', 'tools/prepare_persian_provider.py'}
+DEV153_CHECKED = {'vendor/openevv61/Makefile.native': '0a483b13d681dfcb0e61f886cc677259d40b0ba9',
+                  'tools/prepare_persian_provider.py': 'b384362ec6ba15c0fd412b6f4f94201d738c2470'}
 TRACE_ALLOWED = {
     'include/reloq_eci.h', 'include/reloq_persian_frames.h', 'include/reloq_syllable_trace.h',
     'vendor/openevv61/src/reloq61_bridge.c',
@@ -118,7 +126,12 @@ def main():
                     os.utime(path, None)
             print('Reused verified provider cache for the additive public API change.')
             return
-        if key == DEV152_KEY:
+        if key == DEV153_KEY:
+            changed = set(git('diff', '--name-only', DEV153_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV153_ALLOWED or any(git('rev-parse', 'HEAD:' + path) != blob
+                                                 for path, blob in DEV153_CHECKED.items()):
+                raise ValueError('Brazilian R provider changes differ from the verified scope')
+        elif key == DEV152_KEY:
             changed = set(git('diff', '--name-only', DEV152_BASE, 'HEAD', '--', *INPUTS).splitlines())
             if changed != DEV152_ALLOWED:
                 raise ValueError('Persian R changes differ from the verified scope')
@@ -163,7 +176,7 @@ def main():
             raise ValueError('the restored cache is not one of the verified keys')
         makefile = (PROVIDER / 'Makefile.native').read_text(encoding='utf8')
         names = re.search(r'^PERSIAN_NAMES := (.+)$', makefile, re.MULTILINE)
-        if names is None or len(names.group(1).split()) != 18 or not BUILD.is_dir():
+        if names is None or len(names.group(1).split()) != 21 or not BUILD.is_dir():
             raise ValueError('cached provider has an unexpected layout')
         objects = []
         for name in names.group(1).split():
@@ -180,6 +193,9 @@ def main():
                         BUILD / 'reloq_persian_acoustics.o', BUILD / 'libreloq61.a'))
         if key in (TRACE_KEY, DEV149_KEY):
             objects.append(BUILD / 'lang/enus61/delta_rules_c29_enus61.o')
+        if key == DEV153_KEY:
+            objects.extend(BUILD / f'src/reloq61_{name}.o'
+                           for name in ('acoustic_output', 'spr_output', 'input_counts'))
         if key == DEV152_KEY:
             objects.extend(BUILD / f'lang/jajp61/delta_rules_c{part}_jajp61.o'
                            for part in ('17', '30'))
