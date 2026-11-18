@@ -3,14 +3,16 @@ from __future__ import annotations
 
 import argparse
 from bisect import bisect_left
+import ctypes
 from pathlib import Path
 import re
 import sys
+import threading
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / 'experiments/persian'), str(ROOT / 'nvda')]
-from _reloq_eci_direct import EciIndex, NATIVE_INFLECTION, NATIVE_PITCH, NATIVE_SPEED, PROCESS_TAGS, SAMPLE_RATE, SAMPLE_RATES
+from _reloq_eci_direct import DirectEciEngine, EciIndex, NATIVE_INFLECTION, NATIVE_PITCH, NATIVE_SPEED, PROCESS_TAGS, SAMPLE_RATE, SAMPLE_RATES
 from _reloq_persian_frames import FrameCapture
 from continuous_driver import _PlanningVoice
 from continuous_plan import CapturedRows, _dense, _syllable_edges, _syllable_word_edges, fit_us_word_pitch, indexed_us_proxy, word_boundary
@@ -133,8 +135,49 @@ def main():
                 audio.clear()
                 assert voice.speak((text,), audio.extend, lambda _: None)
                 assert audio and any(seen), (text, seen)
+
+        # Invalid or unvoiced anchors must leave the prior contour intact.
+        tagged = project(('راه‌اندازی',), engine._frontend, allow_fallback=False).tagged
+        target = CapturedRows.from_capture(api.capture(fa, (tagged,), audio=False))
+        donor = CapturedRows.from_capture(api.capture(en, indexed_us_proxy(tagged, en, ()), audio=False))
+        curve = _dense(donor, 1, native=api.dense_curve)
+        voiced = [r.tick for r in donor.frames if r.controls[2] > 0 and r.controls[1] > 0]
+        first, last = voiced[0], voiced[-1]
+        initial = bytes(target.frames)
+        bad_target = (ctypes.c_int64 * 1)(0)
+        source = (ctypes.c_int64 * 1)(first + 1)
+        end = min(round(len(target.pcm) * 1000 / (2 * 16000)), target.ticks[-1] + 1)
+        assert api.fit_pitch_anchors(target.frames, len(target.frames), curve, len(curve),
+                                     0, end, first, last, bad_target, source, 1) == 1
+        assert bytes(target.frames) == initial
+        assert api.fit_pitch_anchors(target.frames, len(target.frames), curve, len(curve),
+                                     0, end, first, last, None, source, 1) == -1
+        assert bytes(target.frames) == initial
     finally:
         voice.close()
+
+    barrier, errors = threading.Barrier(2), []
+    def worker(dialect, text, expected):
+        raw_voice = None
+        try:
+            raw_voice = DirectEciEngine(args.library, dialect=dialect, encoding='utf8', native_voice=True)
+            capture = FrameCapture(raw_voice._dll)
+            for _ in range(10):
+                barrier.wait(timeout=10)
+                result = capture.capture(raw_voice, (text,), audio=False)
+                assert result and bool(result.syllables) == expected, (text, result.syllables)
+        except BaseException as error:
+            errors.append(error)
+        finally:
+            if raw_voice is not None:
+                raw_voice.close()
+    threads = (threading.Thread(target=worker, args=(0x10000, 'hello radio', True)),
+               threading.Thread(target=worker, args=(0x40000, 'guten tag', False)))
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=20)
+    assert all(not thread.is_alive() for thread in threads) and not errors, errors
     print('Passed observed Persian/US syllable pitch alignment at seven rates and three speeds.')
 
 
