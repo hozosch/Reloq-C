@@ -70,8 +70,10 @@ def add_persian(entries, *, version='1.5.0-dev142'):
          'any(isinstance(item, str) and _BUILTIN_BOUNDARY.search(item) for item in sequence) or\n'
          '                            joiner_pending(sequence) or decimal_pending(sequence) or\n'
          '                            emoji_selector_pending(sequence))'),
+        ('        for item in sequence:\n            if isinstance(item, LangChangeCommand):',
+         '        for _sequence_index, item in enumerate(sequence):\n            if isinstance(item, LangChangeCommand):'),
         ('                        if protect and not any(left < end and right > start for left, right in personal) and not any(\n',
-         '                        if dotted_version_word(selected, item, start, end):\n'
+         '                        if dotted_version_word(selected, item, start, end, sequence, _sequence_index):\n'
          '                            protect = False\n'
          '                        if protect and not any(left < end and right > start for left, right in personal) and not any(\n'),
         ('        speechSequence[:] = self._protect_tags(prepared, symbolLevel=symbolLevel)',

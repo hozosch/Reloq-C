@@ -15,9 +15,25 @@ _FA, _PINGLISH = 0x7f0000, 0x7f0001
 _DECIMAL = re.compile(r'(?<![0-9_])[+\-−]?(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]+)+')
 
 
-def dotted_version_word(selected, text, start, end):
+def dotted_version_word(selected, text, start, end, sequence=(), item_index=0):
     """Leave an acronym attached to a version for the decimal guard."""
-    if selected not in (_FA, _PINGLISH) or not re.match(r'\.[0-9]', text[end:]):
+    if selected not in (_FA, _PINGLISH):
+        return False
+    suffix = text[end:]
+    if len(suffix) < 2:
+        # NVDA may put an index inside the version. Look across indexes but
+        # never a language, spelling, prosody or other command boundary.
+        saw_index = False
+        for item in sequence[item_index + 1:]:
+            if isinstance(item, IndexCommand):
+                saw_index = True
+            elif isinstance(item, str) and saw_index:
+                suffix += item
+                if len(suffix) >= 2:
+                    break
+            else:
+                break
+    if not re.match(r'\.[0-9]', suffix):
         return False
     word = text[start:end]
     match = re.fullmatch(r'([A-Za-z]+)[0-9]+', word)

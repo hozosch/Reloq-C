@@ -266,6 +266,18 @@ def main():
         after_decimals = decimals.protect_decimals(normal, after_acronyms, symbol_level=level.NONE)
         guarded = ''.join(item.text for item in after_decimals if isinstance(item, native_word))
         assert '1.5.0' in guarded, (text, pieces(after_acronyms), pieces(after_decimals))
+    for text in ('v1.5.0', 'NVDA1.5.0'):
+        for cut in range(1, len(text)):
+            sequence = [text[:cut], IndexCommand(100 + cut), text[cut:]]
+            after_acronyms = normal._protect_tags(sequence, symbolLevel=level.NONE)
+            after_decimals = decimals.protect_decimals(normal, after_acronyms, symbol_level=level.NONE)
+            guarded = ''.join(item.text for item in after_decimals if isinstance(item, native_word)).replace(' ', '')
+            assert guarded == '1.5.0', (text, cut, pieces(after_acronyms), pieces(after_decimals))
+            assert [item.index for item in after_decimals if isinstance(item, IndexCommand)] == [100 + cut]
+    split = ['NVDA1', IndexCommand(1), '.', IndexCommand(2), '5.0']
+    result = decimals.protect_decimals(normal, normal._protect_tags(split, symbolLevel=level.NONE),
+                                       symbol_level=level.NONE)
+    assert ''.join(item.text for item in result if isinstance(item, native_word)).replace(' ', '') == '1.5.0'
     dictionaries.dictionaries['user'] = [types.SimpleNamespace(compiled=re.compile(r'NVDA1\.5\.0'),
                                                               pattern='NVDA1.5.0', replacement='custom', type=0)]
     original = ['NVDA1.5.0']

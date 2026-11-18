@@ -626,7 +626,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if number is None:
                     raise AssertionError('missing issue 49 version number')
                 value = number.group()
-                sequence = [text[:number.start()], value[:1], self.index_command(7000 + self.index),
+                sequence = [text[:number.start()] + value[:1], self.index_command(7000 + self.index),
                             value[1:3], self.index_command(8000 + self.index), value[3:] + text[number.end():]]
             elif spelling == 'issue49_emoji_split':
                 sequence = [text[0], self.index_command(9000 + self.index), text[1:]]
