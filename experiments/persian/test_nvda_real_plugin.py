@@ -435,6 +435,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                ('fa_IR', 'سلام دنیا?', 'issue50_question_ascii_none'),
                                ('fa_IR', 'سلام دنیا؟', 'issue50_question_most'),
                                ('fa_IR', 'سلام دنیا?', 'issue50_question_ascii_most'),
+                               ('fa_IR', 'سلام:دنیا', 'issue50_compact_colon_most'),
+                               ('fa_IR', 'سلام:دنیا', 'issue50_compact_colon_split_most'),
+                               ('fa_IR', 'سلام colon. دنیا', 'issue50_compact_colon_reference_none'),
                                ('fa_IR', 'من کتاب', 'issue49_weak_pronoun'),
                                ('fa_IR', 'اسلش', 'issue49_weak_eslash'),
                                ('fa_Latn', 'eslash', 'issue49_weak_eslash'),
@@ -631,6 +634,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 ordinary = next(row for row in self.results if row['spelling'] == 'issue50_question_some')
                 if split['pcm_sha256'] != ordinary['pcm_sha256']:
                     raise AssertionError('NVDA index changed the Persian question contour')
+                compact = next(row for row in self.results if row['spelling'] == 'issue50_compact_colon_most')
+                compact_split = next(row for row in self.results if row['spelling'] == 'issue50_compact_colon_split_most')
+                reference = next(row for row in self.results if row['spelling'] == 'issue50_compact_colon_reference_none')
+                if compact['pcm_sha256'] != reference['pcm_sha256']:
+                    raise AssertionError('NVDA lost the sentence contour after an announced colon')
+                if compact_split['pcm_sha256'] != compact['pcm_sha256']:
+                    raise AssertionError('NVDA index changed the announced-colon contour')
                 self.frame_capture_class.__init__ = self.original_capture_init
                 self.done_signal.unregister(self.speech_done)
                 RESULT.write_text(json.dumps({'ok': True, 'cases': self.results,
@@ -719,6 +729,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text[:at], self.index_command(10000 + self.index), text[at:]]
             elif spelling == 'issue50_question_split':
                 sequence = [text[:-1], self.index_command(12000 + self.index), text[-1:]]
+            elif spelling == 'issue50_compact_colon_split_most':
+                position = text.index(':')
+                sequence = [text[:position], self.index_command(13000 + self.index), text[position:]]
             elif spelling in ('checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most'):
                 status = 'بدونِ علامت' if spelling == 'checkbox_unchecked' else 'علامت‌دار'
                 # NVDA speaks an object's name, role and state as separate

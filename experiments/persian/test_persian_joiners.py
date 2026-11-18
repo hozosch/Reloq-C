@@ -184,6 +184,34 @@ def main():
     assert joiners.protect_joiners(driver, [question], symbol_level=level.NONE) == [question]
     driver._selectedLanguage = fa_id
 
+    # NVDA announces a non-spaced colon at MOST but does not retain its
+    # punctuation. Preserve its spoken name and add the sentence boundary.
+    compact_colon = 'سلام:دنیا'
+    assert joiners.protect_joiners(driver, [compact_colon], symbol_level=level.SOME) == [compact_colon]
+    for kind in (level.MOST, level.ALL):
+        original = processor.processText(compact_colon, kind)
+        assert ':' not in original and 'colon' in original
+        guarded = joiners.protect_joiners(driver, [compact_colon], symbol_level=kind)
+        assert len(guarded) == 3
+        processed = processor.processText(guarded[1], kind)
+        assert ' '.join(processed.replace('\ue073', '').split()) == ' '.join(original.split())
+        assert 'colon :' in joiners.restore_joiners(processed)
+    for value in ('12:30', '۱۲:۳۰', 'https://nvaccess.org', 'custom:/path', 'C:\\Windows', ':'):
+        assert joiners.protect_joiners(driver, [value], symbol_level=level.MOST) == [value]
+    split_colon = ['سلام', IndexCommand(42), ':دنیا']
+    guarded = joiners.protect_joiners(driver, split_colon, symbol_level=level.MOST)
+    assert guarded[:2] == split_colon[:2] and len(guarded) == 5
+    assert ':' in joiners.restore_joiners(processor.processText(guarded[3], level.MOST))
+    split_clock = ['12', IndexCommand(43), ':', IndexCommand(44), '30']
+    assert joiners.protect_joiners(driver, split_clock, symbol_level=level.MOST) == split_clock
+    dictionaries.dictionaries['user'] = [types.SimpleNamespace(compiled=re.compile(':'))]
+    assert joiners.protect_joiners(driver, [compact_colon], symbol_level=level.MOST) == [compact_colon]
+    dictionaries.dictionaries['user'] = []
+    sys.modules['characterProcessing'].processSpeechSymbols = (
+        lambda locale, text, kind: 'custom' if text == compact_colon else processor.processText(text, kind))
+    assert joiners.protect_joiners(driver, [compact_colon], symbol_level=level.MOST) == [compact_colon]
+    sys.modules['characterProcessing'].processSpeechSymbols = observe_symbols
+
     # Execute the actual generated driver's _parts implementation, including
     # its restoration guards, rather than only testing the helper in isolation.
     from build_experimental_nvda import PREFIX, add_persian

@@ -1,6 +1,7 @@
-"""Preserve Persian joiners and silent question boundaries through NVDA."""
+"""Preserve Persian joiners and sentence boundaries through NVDA."""
 from __future__ import annotations
 
+import re
 import unicodedata
 
 import speech.commands as commands
@@ -9,7 +10,7 @@ from speech.commands import CharacterModeCommand, IndexCommand, LangChangeComman
 from ._reloq_languages import language_for
 
 _FA_PROFILES = frozenset((0x7f0000, 0x7f0001))
-_MARKERS = {'\u200c': '\ue070', '\u200d': '\ue071', '\u061f': '\ue072'}
+_MARKERS = {'\u200c': '\ue070', '\u200d': '\ue071', '\u061f': '\ue072', ':': '\ue073'}
 _RESTORE = str.maketrans({value: key for key, value in _MARKERS.items()})
 
 
@@ -135,22 +136,45 @@ def _persian_letter(char):
             unicodedata.category(char)[0] in ('L', 'M'))
 
 
-def _escape(text, *, question=False, previous=''):
+def _colon_is_prose(text, index, previous, following):
+    """Match the driver's sentence-colon exclusions across NVDA indexes."""
+    left = previous + text[:index]
+    if not left.strip():
+        return False
+    before = left[-1:]
+    after = (text[index + 1:] or following)[:1]
+    if before and after and before.isdecimal() and after.isdecimal():
+        return False
+    if after in ('/', '\\'):
+        prefix = re.search(r'(?<![A-Za-z0-9+.-])([A-Za-z][A-Za-z0-9+.-]*)$', left)
+        tail = text[index + 1:] or following
+        if prefix and (len(prefix.group(1)) == 1 or tail[:2] == '//' or
+                       len(tail) > 1 and not tail[1].isspace() or
+                       prefix.group(1).casefold() in ('file', 'http', 'https', 'ftp')):
+            return False
+    return True
+
+
+def _escape(text, *, question=False, colon=False, previous=''):
     # Literal private-use characters remain user text, never metadata.
     if any(marker in text for marker in _MARKERS.values()):
         return text
     chars = list(text)
     for index in range(len(chars)):
         if (chars[index] in ('\u200c', '\u200d') and 0 < index < len(chars) - 1 and
-                _persian_letter(chars[index - 1]) and _persian_letter(chars[index + 1])):
+                _persian_letter(text[index - 1]) and _persian_letter(text[index + 1])):
             chars[index] = _MARKERS[chars[index]]
         elif question and chars[index] == '\u061f':
-            before = chars[index - 1] if index else previous[-1:]
-            after = chars[index + 1] if index + 1 < len(chars) else ''
+            before = text[index - 1] if index else previous[-1:]
+            after = text[index + 1] if index + 1 < len(chars) else ''
             if (before and (before.isalnum() or unicodedata.category(before).startswith('M') or
                             before in ')]}»') and
                     (not after or after.isspace() or after in ')]}»')):
                 chars[index] = _MARKERS[chars[index]]
+        elif colon and chars[index] == ':':
+            # Let NVDA speak its configured name, then restore a separate
+            # punctuation mark for the core's sentence contour.
+            chars[index] = ':' + _MARKERS[':']
     return ''.join(chars)
 
 
@@ -195,7 +219,7 @@ def protect_joiners(driver, sequence, *, symbol_level=None):
     except (ImportError, AttributeError, KeyError, TypeError, ValueError):
         return sequence
     selected, spelling, result, previous = home, False, [], ''
-    for item in sequence:
+    for item_index, item in enumerate(sequence):
         if isinstance(item, LangChangeCommand):
             chosen = language_for(item.lang, home, languages)
             if chosen is not None:
@@ -205,22 +229,40 @@ def protect_joiners(driver, sequence, *, symbol_level=None):
             spelling = bool(item.state)
             previous = ''
         elif isinstance(item, str) and not spelling and selected in _FA_PROFILES:
+            following = ''
+            for later in sequence[item_index + 1:]:
+                if isinstance(later, str) and later:
+                    following = later
+                    break
+                if not isinstance(later, IndexCommand):
+                    break
             try:
                 # Only intervene when the active NVDA symbol settings would
                 # remove the question mark silently. A custom spoken name or
                 # preserved character must retain the user's own setting.
-                question = False
+                question, colon = False, False
+                locale = languages[selected].locale
                 if '\u061f' in item:
-                    locale = languages[selected].locale
                     silent = not characterProcessing.processSpeechSymbols(locale, '\u061f', level).strip()
                     if silent:
                         processed = characterProcessing.processSpeechSymbols(locale, item, level)
                         without = characterProcessing.processSpeechSymbols(locale, item.replace('\u061f', ''), level)
                         question = ' '.join(processed.split()) == ' '.join(without.split())
+                if item.count(':') == 1 and _colon_is_prose(item, item.index(':'), previous, following):
+                    original = characterProcessing.processSpeechSymbols(locale, item, level)
+                    if ':' not in original:
+                        at = item.index(':') + 1
+                        trial = item[:at] + _MARKERS[':'] + item[at:]
+                        processed = characterProcessing.processSpeechSymbols(locale, trial, level)
+                        # A context-sensitive custom symbol rule must see the
+                        # same text and produce the same spoken description.
+                        colon = (processed.count(_MARKERS[':']) == 1 and
+                                 ' '.join(processed.replace(_MARKERS[':'], '').split()) ==
+                                 ' '.join(original.split()))
             except (AttributeError, KeyError, LookupError, TypeError, ValueError):
-                question = False
-            escaped = _escape(item, question=question, previous=previous)
-            previous = item[-1:] or previous
+                question, colon = False, False
+            escaped = _escape(item, question=question, colon=colon, previous=previous)
+            previous = (previous + item)[-256:]
             if escaped != item and _dictionary_untouched(item, escaped):
                 try:
                     processed = characterProcessing.processSpeechSymbols(languages[selected].locale, escaped, level)

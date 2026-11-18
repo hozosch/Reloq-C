@@ -20,6 +20,11 @@ to the US parser without changing the Persian phonemes or lexical stress.
 Sentence colons before spaced slashes are treated as prose boundaries even
 in mixed-language text. Contiguous numeric times, URL schemes and drive
 paths retain their existing interpretation, as do standalone symbol names.
+When NVDA announces a non-spaced prose colon but drops the punctuation, a
+verified guard retains its configured spoken name and adds the missing
+sentence boundary. Clock and address colons, custom symbol rules that would
+change under the guard, character navigation and speech dictionaries are
+left to NVDA.
 NVDA normally removes the Persian question mark at silent punctuation
 levels. In ordinary Persian speech, a guarded question boundary now survives
 that preprocessing so the native core can request the question contour. A
