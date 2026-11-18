@@ -9,7 +9,6 @@ import threading
 
 from test_us_articulation import capture, voice
 from _reloq_eci_direct import GENDER, NATIVE_SPEED, SAMPLE_RATE
-from compare_r_context import r_interval
 
 
 def frication(rows):
@@ -23,6 +22,24 @@ def nucleus(rows):
                r.controls[7] < 40 and r.controls[8] < 1]
     assert len(indices) >= 12
     return rows[indices[(2 * len(indices)) // 3]].controls
+
+
+def r_after_f_interval(rows):
+    # Locate the old voiced R immediately after the final unvoiced F. Keep
+    # this test independent of optional audio-comparison packages such as
+    # numpy, which are not installed on the Windows test runner.
+    end = 1 + max(i for i, row in enumerate(rows)
+                  if row.controls[2] > 1 or row.controls[7] > 5 or row.controls[8] > 5)
+    noise = [i for i in range(end) if rows[i].controls[8] > 20 and rows[i].controls[2] < 15]
+    runs = []
+    for _, group in groupby(enumerate(noise), lambda p: p[1] - p[0]):
+        values = [value for _, value in group]
+        if len(values) >= 4:
+            runs.append((values[0], values[-1] + 1))
+    assert len(runs) >= 2
+    start = next(i for i in range(runs[-1][1], end) if rows[i].controls[2] > 15)
+    assert end - start >= 5
+    return start, end
 
 
 def main():
@@ -104,7 +121,7 @@ def main():
                         _, current = capture(fa, scope, '`[.1sefr]', True)
                         _, before = capture(old, old_scope, '`[.1sefr]', True)
                         assert len(current) == len(before)
-                        start, end = r_interval(before, 'cluster', min_duration=5)
+                        start, end = r_after_f_interval(before)
                         for i in range(start, end):
                             c = current[i].controls
                             assert c[2] == 0 and c[7] == 0, (gender, rate, speed, i, c[2], c[7])
