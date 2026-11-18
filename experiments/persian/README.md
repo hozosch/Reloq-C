@@ -50,6 +50,22 @@ backend. Unicode character resolution also returns an explicit language for
 names without a Persian translation, so the adapter can send an English name
 to the English engine without handing inline language controls to Finnish.
 
+### Independent orthographic and copula rules (dev148 experiment)
+
+The shared C text frontend has its own narrowly bounded rule for a
+consonant–vowel–consonant word with an explicitly written short-vowel mark.
+For example, پَر and پُر remain distinct even without an eSpeak lookup.
+Unmarked, partially marked, geminated or vowel-carrier spellings are not
+guessed by this rule; the established dictionary and reference fallback still
+handle them. Persian spelling omits most short vowels in normal texts, so
+additional independent lexical and morphological analysis is still needed:
+https://pmc.ncbi.nlm.nih.gov/articles/PMC6814645/.
+
+The ordinary copula است / Pinglish ast is unaccented after its host, with
+citation and punctuation boundaries retained. This also applies after an
+English host. The existing US contour and vowel timing are otherwise kept;
+the pronunciation and timing remain subject to listening tests.
+
 ### Historical Korean contour experiments (dev137)
 
 The dev137 candidate transfers the Korean core's own pitch to ordinary

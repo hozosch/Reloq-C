@@ -220,9 +220,12 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             int found=reloq_fa_direct_context_word(text+start,end-start,follows,tag,sizeof tag);
             if(found!=1){status=found==0?1:-1;break;}
             int weak_component=0;
-            /* The object marker is an enclitic even at the end of a phrase.
-             * A punctuation boundary resets preceding_word below. */
-            if(preceding_word && end-start==sizeof "را"-1 && !memcmp(text+start,"را",end-start)) {
+            /* The object marker and ordinary copula are enclitic even at
+             * the end of a phrase. Their isolated citation forms remain
+             * accented; punctuation resets preceding_word below. */
+            int enclitic=(end-start==sizeof "را"-1 && !memcmp(text+start,"را",end-start)) ||
+                         (end-start==sizeof "است"-1 && !memcmp(text+start,"است",end-start));
+            if(preceding_word && enclitic) {
                 prefixed_tag_stress(tag,0);
                 weak_component=1;
             }

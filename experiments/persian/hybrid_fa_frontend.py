@@ -396,17 +396,23 @@ class DirectFirstPersian:
             value = text[first:last]
             # A known following Latin word is also a following word for the
             # preceding Persian function-word stress.
-            trial = value + (' سلام' if follows else '')
+            # Likewise, an enclitic immediately after a Latin word has a
+            # left host even though this direct fragment starts with it.
+            before = ('سلام' if first and re.match(r'^[ \t]+(?:را|است)(?=$|[ \t.,?!:;،؟؛)\]}])', value)
+                      else '')
+            trial = before + value + (' سلام' if follows else '')
             status, tagged, local, _ = self._direct(trial)
             if status != 0:
                 return False
             count = offsets[last] - offsets[first]
-            end = local[count]
-            separate(tagged[:end])
-            pieces.append(tagged[:end])
+            base = len(before.encode('utf8'))
+            begin, end = local[base], local[base + count]
+            fragment = tagged[begin:end]
+            separate(fragment)
+            pieces.append(fragment)
             for i in range(count + 1):
-                mapping[offsets[first] + i] = position + local[i]
-            position += end
+                mapping[offsets[first] + i] = position + local[base + i] - begin
+            position += len(fragment)
             return True
 
         for match in words:

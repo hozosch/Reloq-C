@@ -455,7 +455,8 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
             tag = None
             if pending_pair is not None and at == pending_pair[0]:
                 tag, pending_pair = pending_pair[1], None
-            elif (not pinglish and value == 'را') or (pinglish and value.lower() in ('ra', 'raa')):
+            elif ((not pinglish and value in ('را', 'است')) or
+                  (pinglish and value.lower() in ('ra', 'raa', 'ast', 'را', 'است'))):
                 before = at
                 while before and source[before - 1] in ' \t':
                     before -= 1

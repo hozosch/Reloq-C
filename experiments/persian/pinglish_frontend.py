@@ -19,6 +19,7 @@ ALIASES = {
     'soal': 'سوال', 'soaal': 'سوال', 'sual': 'سوال', 'badbakht': 'بدبخت', 'badbacht': 'بدبخت',
     'farsi': 'فارسی', 'faarsi': 'فارسی', 'ketab': 'کتاب', 'ketaab': 'کتاب',
     'eslash': 'اسلش',
+    'ast': 'است',
     'man': 'من', 'u': 'او', 'oo': 'او', 'ou': 'او',
     'amad': 'آمد', 'aamad': 'آمد',
     # Whole-word spellings of the same native contextual function words.

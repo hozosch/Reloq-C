@@ -3,7 +3,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
-from reuse_persian_host_cache import ALLOWED, EXPECTED_KEY, RECENT_ALLOWED, RECENT_KEY, eligible
+from reuse_persian_host_cache import (ALLOWED, EXPECTED_KEY, RECENT_ALLOWED, RECENT_KEY,
+                                      NEWEST_ALLOWED, NEWEST_KEY, eligible)
 
 assert eligible(EXPECTED_KEY, ALLOWED)
 assert not eligible(EXPECTED_KEY, ())
@@ -14,4 +15,8 @@ assert eligible(RECENT_KEY, RECENT_ALLOWED)
 assert not eligible(RECENT_KEY, ())
 assert not eligible(RECENT_KEY, RECENT_ALLOWED | {'src/reloq_rules61.c'})
 assert not eligible(RECENT_KEY + '-other', RECENT_ALLOWED)
+assert eligible(NEWEST_KEY, NEWEST_ALLOWED)
+assert not eligible(NEWEST_KEY, ())
+assert not eligible(NEWEST_KEY, NEWEST_ALLOWED | {'src/reloq_rules61.c'})
+assert not eligible(NEWEST_KEY + '-other', NEWEST_ALLOWED)
 print('Passed verified Windows host cache safeguards.')

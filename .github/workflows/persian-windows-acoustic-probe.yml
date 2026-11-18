@@ -22,6 +22,7 @@ on:
       - include/reloq_eci.h
       - include/reloq_persian_numbers.h
       - experiments/persian/test_persian_number_events.py
+      - experiments/persian/test_fa_orthography.py
       - vendor/openevv61/Makefile.native
       - eci/Makefile
       - eci/test_persian_acoustics.py
@@ -86,7 +87,7 @@ jobs:
             persian-windows-provider-gcc14-v2-258cf46181dbfeb1b6d1f9c2e9146e82d09ebaa88f092c1c1ac5e757e1fe95fc
             persian-windows-provider-gcc14-v2-f106c4723d7f6e32a226c721308d5e5b0f676a41f86a43f7a3c940b0ef20f128
             persian-windows-provider-gcc14-v1-eafb701ff0daa266b36f21741a91cf44935fe7d1d5fc200e54f509f1b878b075
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
         id: host
         with:
           path: |
@@ -94,6 +95,7 @@ jobs:
             eci/eci.dll
           key: persian-windows-host-gcc14-v2-${{ hashFiles('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src/**', 'include/**', 'vendor/openevv61/**', '!vendor/openevv61/build/**', 'experiments/persian/direct_fa_*.c', 'experiments/persian/direct_fa_*.h', 'experiments/persian/direct_fa_*.inc', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-host-gcc14-v2-f4aa931982b6b718f119c59251c1b630a0645e043c0d790f358088e893c079a6
             persian-windows-host-gcc14-v2-e69d174816ad2c632f7786280780e6d8f87ca561fcef6adc1212928b2e58f6b6
             persian-windows-host-gcc14-v2-095ec9297122d7ae23141480a61b623ca85d47fc13ed7e5a61e180300e5207bf
       - name: Restore cached provider timestamps
@@ -185,6 +187,13 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Windows continuous replay failed' }
           python -B experiments/persian/test_sibilant_noise.py --candidate persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian sibilant targets failed' }
+      - uses: actions/cache/save@v4
+        if: steps.host.outputs.cache-hit != 'true'
+        with:
+          path: |
+            eci/build/windows
+            eci/eci.dll
+          key: ${{ steps.host.outputs.cache-primary-key }}
       - uses: actions/cache/save@v4
         if: success() && steps.provider.outputs.cache-hit != 'true'
         with:

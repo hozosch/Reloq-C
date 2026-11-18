@@ -58,6 +58,19 @@ provider remains responsible for phrase-level pitch and emphasis. Mixed
 Persian/English segments and the word-level reference fallback retain these
 bounded context rules without introducing extra audible words.
 
+In dev148, written است / Pinglish ast is treated as an unstressed copula
+after a preceding host in an ordinary phrase, including when the host is an
+English segment. Its isolated citation form and a form after punctuation
+retain their accent. This is a neutral-context approximation: information
+structure or exceptional syntax can require prominence, and a general
+syntactic parser is not yet present. Independent work on Persian accent
+illustrates the unaccented copula after the lexical predicate:
+https://pmc.ncbi.nlm.nih.gov/articles/PMC4671725/
+
+The current duration rules remain unchanged. Persian stress can affect
+syllable duration, but a controlled study does not specify a safe universal
+multiplier for this synthesizer: https://pubmed.ncbi.nlm.nih.gov/28112017/.
+
 Unvowelled Persian spelling and context can leave grammatical analyses
 ambiguous. The current bounded analyzer cannot determine compound verbs,
 every clitic, or the intended reading of every homograph. In particular,

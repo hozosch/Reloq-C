@@ -88,6 +88,60 @@ int reloq_fa_direct_word(const char *word,size_t bytes,char *output,size_t capac
     return 1;
 }
 
+/* Independent Persian orthographic rule for an explicitly vowelled CVC
+ * syllable. Persian normally omits short vowels, so unmarked text must not
+ * enter this rule. Exclude ambiguous vowel carriers, silent final heh,
+ * shadda, extra consonants and additional marks rather than guessing them.
+ * The phone symbols here belong to the existing Persian acoustic bridge. */
+static char explicit_consonant(uint32_t cp)
+{
+    switch(cp) {
+    case 0x0628:return 'b'; case 0x067e:return 'p';
+    case 0x062a:case 0x0637:return 't';
+    case 0x062b:case 0x0633:case 0x0635:return 's';
+    case 0x062c:return 'J'; case 0x0686:return 'C';
+    case 0x062d:return 'h'; case 0x062e:return 'G';
+    case 0x062f:return 'd';
+    case 0x0630:case 0x0632:case 0x0636:case 0x0638:return 'z';
+    case 0x0631:return 'r'; case 0x0698:return 'Z'; case 0x0634:return 'S';
+    case 0x063a:case 0x0642:return 'R'; case 0x0641:return 'f';
+    case 0x0643:case 0x06a9:return 'k'; case 0x06af:return 'g';
+    case 0x0644:return 'l'; case 0x0645:return 'm'; case 0x0646:return 'n';
+    default:return 0;
+    }
+}
+
+static uint32_t explicit_arabic_scalar(const unsigned char *input,size_t bytes,size_t *at)
+{
+    if(*at+1>=bytes || input[*at]<0xd8 || input[*at]>0xdb ||
+       (input[*at+1]&0xc0)!=0x80)return 0;
+    uint32_t cp=((uint32_t)(input[*at]&0x1f)<<6) | (input[*at+1]&0x3f);
+    *at+=2;return cp;
+}
+
+static int explicit_vowelled_cvc(const char *word,size_t bytes,char *output,size_t capacity,
+                                 char bare[5])
+{
+    if(!word || !bytes || !output || !capacity || !bare)return -1;
+    const unsigned char *text=(const unsigned char *)word;
+    size_t at=0;
+    char onset=explicit_consonant(explicit_arabic_scalar(text,bytes,&at));
+    if(!onset)return 0;
+    uint32_t vowel=explicit_arabic_scalar(text,bytes,&at);
+    char nucleus=vowel==0x064e?'A':vowel==0x0650?'e':vowel==0x064f?'o':0;
+    if(!nucleus)return 0;
+    size_t coda_at=at;
+    char coda=explicit_consonant(explicit_arabic_scalar(text,bytes,&at));
+    if(!coda)return 0;
+    if(at<bytes && explicit_arabic_scalar(text,bytes,&at)!=0x0652)return 0;
+    if(at!=bytes)return 0;
+    const char tag[]={'`','[','.','1',onset,nucleus,coda,']',0};
+    if(capacity<sizeof tag)return -2;
+    memcpy(output,tag,sizeof tag);
+    memcpy(bare,word,2);memcpy(bare+2,word+coda_at,2);bare[4]=0;
+    return 1;
+}
+
 /* This transform is enabled only by the generated per-stem admission bits.
  * It mirrors direct_fa_suffix_rules.candidate, preserving every native phone
  * and length marker while assigning the reference's syllable stresses. */
@@ -584,6 +638,12 @@ int reloq_fa_direct_is_proclitic(const char *word,size_t bytes)
     if(!word || !bytes || memchr(word,0,bytes))return 0;
     for(size_t i=0;i<sizeof words/sizeof words[0];++i)
         if(stress_word_is(word,bytes,words[i]))return 1;
+    /* Preserve the same phrase role when the preposition's short vowel is
+     * explicitly written, e.g. دَر before a following content word. */
+    char bare[5],tag[16];
+    if(explicit_vowelled_cvc(word,bytes,tag,sizeof tag,bare)==1)
+        for(size_t i=0;i<sizeof words/sizeof words[0];++i)
+            if(stress_word_is(bare,4,words[i]))return 1;
     return 0;
 }
 
@@ -754,7 +814,15 @@ int reloq_fa_direct_stress(const char *word,size_t bytes,char *tag,size_t capaci
 int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
                                  char *output,size_t capacity)
 {
-    int result=direct_context_word_exact(word,bytes,follows_word,output,capacity);
+    if(output && capacity)output[0]=0;
+    char bare[5];
+    int result=explicit_vowelled_cvc(word,bytes,output,capacity,bare);
+    if(result==1) {
+        apply_function_word_context(bare,4,follows_word,output);
+        return 1;
+    }
+    if(result<0)return result;
+    result=direct_context_word_exact(word,bytes,follows_word,output,capacity);
     if(result==1) {
         apply_persian_stress(word,bytes,output);
         apply_function_word_context(word,bytes,follows_word,output);

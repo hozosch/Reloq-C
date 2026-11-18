@@ -14,6 +14,7 @@ on:
       - experiments/persian/test_persian_decimals.py
       - experiments/persian/test_decimal_routing.py
       - experiments/persian/test_direct_fa_numbers.py
+      - experiments/persian/test_fa_orthography.py
       - nvda/_reloq_persian_decimals.py
       - nvda/_reloq_persian_joiners.py
       - experiments/persian/direct_fa_sequence.py
@@ -92,6 +93,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian NVDA version and dictionary processing failed' }
           python -B experiments/persian/test_persian_number_events.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Structured native Persian number analysis failed' }
+          python -B experiments/persian/test_fa_orthography.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Independent Persian orthography rules failed' }
           python -B experiments/persian/test_decimal_routing.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'English and Pinglish number routing failed' }
           python -B experiments/persian/test_resilient_runtime.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
@@ -100,7 +103,7 @@ jobs:
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev147; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev148; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
           dll=$(find candidate -name eci.dll -print -quit)
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
       - name: Test in real NVDA

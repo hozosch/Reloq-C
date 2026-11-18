@@ -19,6 +19,11 @@ RECENT_ALLOWED = {'include/reloq_eci.h', 'include/reloq_persian_numbers.h',
                   'experiments/persian/direct_fa_numbers.h',
                   'experiments/persian/direct_fa_characters.c',
                   'experiments/persian/direct_fa_characters.h'}
+NEWEST_BASE = 'ca30814b6041007ecbe94c7681ef2e39a2ec09d9'
+NEWEST_KEY = ('persian-windows-host-gcc14-v2-'
+              'f4aa931982b6b718f119c59251c1b630a0645e043c0d790f358088e893c079a6')
+NEWEST_ALLOWED = {'experiments/persian/direct_fa_lexicon.c',
+                  'experiments/persian/direct_fa_text.c'}
 ALLOWED = {'experiments/persian/direct_fa_lexicon.c',
            'experiments/persian/direct_fa_lexicon.h',
            'experiments/persian/direct_fa_text.c'}
@@ -32,14 +37,15 @@ INPUTS = ('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src', 'include',
 
 def eligible(key, changed):
     return bool(changed) and ((key == EXPECTED_KEY and set(changed) <= ALLOWED) or
-                              (key == RECENT_KEY and set(changed) <= RECENT_ALLOWED))
+                              (key == RECENT_KEY and set(changed) <= RECENT_ALLOWED) or
+                              (key == NEWEST_KEY and set(changed) <= NEWEST_ALLOWED))
 
 
 def main():
     build, dll = ROOT / 'eci/build/windows', ROOT / 'eci/eci.dll'
     try:
         key = os.environ.get('PERSIAN_HOST_CACHE_KEY', '')
-        base = RECENT_BASE if key == RECENT_KEY else BASE
+        base = NEWEST_BASE if key == NEWEST_KEY else RECENT_BASE if key == RECENT_KEY else BASE
         changed = subprocess.check_output(['git', 'diff', '--name-only', base, 'HEAD', '--', *INPUTS],
                                           cwd=ROOT, text=True).splitlines()
         if not eligible(key, changed):

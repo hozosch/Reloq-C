@@ -223,9 +223,9 @@ def _project_part(engine, items, *, follows, preceded=False):
     suffix = (' salam' if engine._pinglish else ' سلام') if follows else ''
     # A Persian enclitic following an English word has a left host even
     # though script routing has placed that host in a separate segment.
-    enclitic = (r'(?:را|ra{1,2})' if engine._pinglish else r'را')
+    enclitic = (r'(?:را|است|ra{1,2}|ast)' if engine._pinglish else r'(?:را|است)')
     prefix = ('salam ' if engine._pinglish else 'سلام ') if (
-        preceded and re.match(r'^[ \t]*' + enclitic + r'(?=$|[ \t.,?!:;،؟؛])',
+        preceded and re.match(r'^[ \t]*' + enclitic + r'(?=$|[ \t.,?!:;،؟؛)\]}])',
                               original, re.IGNORECASE)) else ''
     source = ((*((prefix,) if prefix else ()), *items, *((suffix,) if suffix else ()))
               if prefix or suffix else items)

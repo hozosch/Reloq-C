@@ -55,7 +55,7 @@ def main():
     try:
         # In every tested word, only F0 changes; the US end value reaches
         # the very last voiced frame, including an open final vowel.
-        for text in ('دو.', 'دو؟', 'خانه.', 'سلام دنیا.', 'کتاب و خانه.', 'کتاب را.'):
+        for text in ('دو.', 'دو؟', 'خانه.', 'سلام دنیا.', 'کتاب و خانه.', 'کتاب را.', 'خوب است.'):
             tagged = project((text,), fa_engine._frontend, allow_fallback=False).tagged
             count = len(re.findall(r'`\[[^]]+\]', tagged))
             marks = tuple(range(1, count))
@@ -78,6 +78,8 @@ def main():
         assert '`00' in en._phonemes_for_probe(''.join(
             part for part in indexed_us_proxy(weak, en, (1,)) if isinstance(part, str)))
         assert project(('را',), fa_engine._frontend, allow_fallback=False).tagged == '`[.1ra]'
+        assert '`00 `[.0Ast]' in project(('خوب است',), fa_engine._frontend, allow_fallback=False).tagged
+        assert project(('است',), fa_engine._frontend, allow_fallback=False).tagged == '`[.1Ast]'
         assert project(('اسلش',), fa_engine._frontend, allow_fallback=False).tagged == '`[.0es.1lAS]'
         assert project(('یونانی',), fa_engine._frontend, allow_fallback=False).tagged == '`[.0ju.0na.1ni]'
         assert '`[.0ju.0na.1ni]' in fa_engine._frontend.analyze_character('α').parts[0].text
@@ -85,13 +87,21 @@ def main():
         assert fa_engine._frontend.analyze_character('\\').parts[0].text.endswith('`[.0es.1lAS]')
         pinglish = voice._activate(voice._key(PINGLISH_PROBE.id, '1'))
         assert project(('eslash',), pinglish._frontend, pinglish=True).tagged == '`[.0es.1lAS]'
-        for text in ('ketab va khub', 'az ketab', 'joz iran', 'ketab ra', 'ya ketab'):
+        for text in ('ketab va khub', 'az ketab', 'joz iran', 'ketab ra', 'ya ketab', 'khub ast'):
             item = project((text,), pinglish._frontend, pinglish=True, allow_fallback=False)
             assert '`00 ' in item.tagged, (text, item.tagged)
         isolated = project(('ra',), pinglish._frontend, pinglish=True, allow_fallback=False)
         assert isolated.tagged == '`[.1ra]'
         after_english, _, _ = _project_part(pinglish, ('ra',), follows=False, preceded=True)
         assert after_english == '`00 `[.0ra]', after_english
+        after_english, _, _ = _project_part(pinglish, ('ast',), follows=False, preceded=True)
+        assert after_english == '`00 `[.0Ast]', after_english
+        after_english, _, _ = _project_part(fa_engine, ('است',), follows=False, preceded=True)
+        assert after_english == '`00 `[.0Ast]', after_english
+        for text in ('NVDA ast', 'chetori ast', 'khub ast'):
+            item = project((text,), pinglish._frontend, pinglish=True, allow_fallback=False)
+            assert '`00 `[.0Ast]' in item.tagged, (text, item.tagged)
+        assert project(('khub, ast',), pinglish._frontend, pinglish=True).tagged.endswith('`[.1Ast]')
         for text in ('ketab va khub', 'ketab ra', 'az ketab'):
             resilient = project_resilient((text,), pinglish._frontend, pinglish=True)
             assert '`00 ' in resilient.tagged, (text, resilient.tagged)
