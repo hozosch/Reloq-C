@@ -10,6 +10,7 @@ from _reloq_eci_direct import EciCapitalWord, EciIndex, EciLanguage, EciText
 from direct_fa_sequence import project
 from nvda_driver_probe import (PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, make_language_engine,
                                _persian_part_runs, _pinglish_part_runs)
+from text_frontend import native_sequence_accepted
 
 
 def main():
@@ -87,10 +88,17 @@ def main():
             assert all(not english or not any(char.isdigit() for char in text)
                        for spans in runs.values() for english, text in spans), (parts, runs)
             assert render(PINGLISH_PROBE.id, parts)[0] != render(US_ENGLISH.id, parts)[0], parts
-        pinglish_frontend = engine._engines[PINGLISH_PROBE.id]._frontend
-        for text in ('v1.5.0', 'v 1.5.0', 'NVDA1.5.0', 'NVDA 1.5.0'):
-            job = project((text,), pinglish_frontend, pinglish=True, allow_fallback=False)
-            assert job.tagged.count('noR') == 2 and not job.needs_native_validation, (text, job.tagged)
+        pinglish_engine = engine._engines[PINGLISH_PROBE.id]
+        pinglish_frontend = pinglish_engine._frontend
+        scope = pinglish_engine._scope(1)
+        try:
+            for text in ('v1.5.0', 'v 1.5.0', 'NVDA1.5.0', 'NVDA 1.5.0', '1.5.0v'):
+                job = project((text,), pinglish_frontend, pinglish=True, allow_fallback=False)
+                shown = pinglish_engine._voice._phonemes_for_probe(job.tagged)
+                assert job.tagged.count('noR') == 2 and not job.needs_native_validation, (text, job.tagged)
+                assert native_sequence_accepted(job.tagged, shown), (text, job.tagged, shown)
+        finally:
+            pinglish_engine._scope(scope)
         split_job = project(('v 1', EciIndex(35), '.', EciIndex(36), '5.0'),
                             pinglish_frontend, pinglish=True, allow_fallback=False)
         assert split_job.tagged.count('noR') == 2

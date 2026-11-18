@@ -380,6 +380,15 @@ class DirectFirstPersian:
         mapping = [0] * (len(source) + 1)
         pieces, position, cursor = [], 0, 0
 
+        def separate(value):
+            nonlocal position
+            # A word and a number can meet without source whitespace. Their
+            # independently generated SPR groups still need a boundary, or
+            # the native parser spells both tags as ordinary Finnish text.
+            if value.startswith('`[') and pieces and pieces[-1].endswith(']'):
+                pieces.append(' ')
+                position += 1
+
         def ordinary(first, last, *, follows):
             nonlocal position
             if first == last:
@@ -393,6 +402,7 @@ class DirectFirstPersian:
                 return False
             count = offsets[last] - offsets[first]
             end = local[count]
+            separate(tagged[:end])
             pieces.append(tagged[:end])
             for i in range(count + 1):
                 mapping[offsets[first] + i] = position + local[i]
@@ -415,6 +425,7 @@ class DirectFirstPersian:
                 if status != 1:
                     return None
                 tag = buffer.value.decode('ascii')
+            separate(tag)
             start, end = offsets[match.start()], offsets[match.end()]
             for i in range(start, end):
                 mapping[i] = position
