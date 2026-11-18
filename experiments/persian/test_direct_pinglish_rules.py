@@ -23,7 +23,7 @@ def main():
     native.restype = ctypes.c_int
 
     def run(word, capacity=2048):
-        encoded = word.encode('ascii')
+        encoded = word.encode('utf8')
         output = ctypes.create_string_buffer(capacity)
         status = native(encoded, len(encoded), output, capacity)
         return status, output.value.decode('ascii')
@@ -52,9 +52,12 @@ def main():
         for word in ('father', 'phone', 'python', 'math', 'the', 'this', 'with', 'PHOTO'):
             assert english_exception(word) and run(word)[0] == 0
             assert '(en)' in reference.translate(word, voice='fa-latn', separator='|')[0].phonemes
-        for word in ('salām', 'šahr', 'khûb', 'irān', 'khodâhâfez'):
-            assert english_exception(word)
-            assert '(en)' in reference.translate(word, voice='fa-latn', separator='|')[0].phonemes
+        for word, folded in (('salām', 'salam'), ('šahr', 'shahr'),
+                             ('khûb', 'khub'), ('irān', 'iran'),
+                             ('khodâhâfez', 'khodahafez'), ('Straße', 'Strasse'),
+                             ('STRAẞE', 'STRASSE')):
+            assert not english_exception(word)
+            assert run(word) == run(folded) and run(word)[0] == 1, word
         for word in ('salam', 'khane', 'chetori', 'internet', 'computer'):
             assert not english_exception(word)
             assert '(en)' not in reference.translate(word, voice='fa-latn', separator='|')[0].phonemes

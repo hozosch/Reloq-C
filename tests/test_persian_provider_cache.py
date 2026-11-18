@@ -16,6 +16,23 @@ import reuse_persian_provider_cache as cache
 
 
 class CacheReuseTests(unittest.TestCase):
+    def test_dev157_cache_requires_checked_two_source_rebuild(self):
+        for changed, accepted in ((cache.DEV157_ALLOWED, True),
+                                  (cache.DEV157_ALLOWED | {'include/reloq_eci.h'}, False),
+                                  ({'src/reloq_persian_acoustics.c'}, False)):
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as tmp:
+                build = Path(tmp) / 'windows-release'
+                build.mkdir()
+                with patch.object(cache, 'BUILD', build), patch.object(cache, 'git', return_value='\n'.join(changed)), \
+                        patch.object(cache, 'reuse_dev156_generated') as reuse, \
+                        patch.dict(os.environ, {'PERSIAN_PROVIDER_CACHE_KEY': cache.DEV157_KEY}), \
+                        contextlib.redirect_stdout(io.StringIO()):
+                    cache.main()
+                self.assertEqual(reuse.called, accepted)
+                self.assertEqual(build.exists(), accepted)
+                if accepted:
+                    reuse.assert_called_once_with(frozenset({'delta_rules_c02_fifi.c', 'delta_rules_c08_fifi.c'}))
+
     def test_incremental_generator_reuse_checks_each_source(self):
         for altered in (False, True):
             with self.subTest(altered=altered), tempfile.TemporaryDirectory() as tmp:

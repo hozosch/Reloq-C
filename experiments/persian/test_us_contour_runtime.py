@@ -58,7 +58,8 @@ def main():
     try:
         # In every tested word, only F0 changes; the US end value reaches
         # the very last voiced frame, including an open final vowel.
-        for text in ('دو.', 'دو؟', 'خانه.', 'سلام دنیا.', 'کتاب و خانه.', 'کتاب را.', 'خوب است.'):
+        for text in ('دو.', 'دو؟', 'خانه.', 'سلام دنیا.', 'کتاب و خانه.', 'کتاب را.', 'خوب است.',
+                     'صفر.', 'صفر، یک، دو.', 'این عدد صفر است.', 'قدر.'):
             tagged = project((text,), fa_engine._frontend, allow_fallback=False).tagged
             count = len(re.findall(r'`\[[^]]+\]', tagged))
             marks = tuple(range(1, count))
@@ -75,6 +76,13 @@ def main():
             donor_end = next(row.controls[1] for row in reversed(donor.frames)
                              if row.controls[2] > 0 and row.controls[1] > 0)
             assert abs(target_end - donor_end) < 3, (text, target_end, donor_end)
+
+        for tag, expected in (('`[.1sefr]', '`[.1sEfs]'),
+                              ('`[.1sAdr]', '`[.1sAds]')):
+            proxy = ''.join(part for part in indexed_us_proxy(tag, en, ()) if isinstance(part, str))
+            assert expected in proxy, (tag, proxy)
+        assert '`[.1f' in ''.join(part for part in indexed_us_proxy('`[.1fra]', en, ())
+                                 if isinstance(part, str))
 
         weak = project(('کتاب را.',), fa_engine._frontend, allow_fallback=False).tagged
         assert '`00 `[.0ra]' in weak
@@ -103,6 +111,31 @@ def main():
             automatic = render((EciIndex(90), part, EciIndex(91)))
             explicit = render((EciLanguage(US_ENGLISH.id, '1'), EciIndex(90), part, EciIndex(91)))
             assert automatic == explicit, value
+        # Native English understands these Latin sounds itself, including
+        # inside a word. Pinglish uses its own Persian phoneme analysis.
+        for value in ('Straße', 'café', 'ß', 'Aßz'):
+            for spelling in ((False, True) if value in ('ß', 'Aßz') else (False,)):
+                part = EciText(value, character_mode=spelling)
+                automatic = render((EciIndex(90), part, EciIndex(91)))
+                explicit = render((EciLanguage(US_ENGLISH.id, '1'), EciIndex(90), part, EciIndex(91)))
+                assert automatic == explicit, (value, spelling)
+        pinglish = make_language_engine(args.library, args.library, None,
+                                        Path('/unavailable-espeak'), Path('/unavailable'),
+                                        language=PINGLISH_PROBE.id)
+        try:
+            def ping(parts):
+                pcm, marks = bytearray(), []
+                assert pinglish.speak(parts, pcm.extend, marks.append)
+                assert pcm
+                return bytes(pcm), marks
+            for original, folded in (('Straße', 'Strasse'), ('salām', 'salam'), ('šahr', 'shahr')):
+                assert ping((original,))[0] == ping((folded,))[0], original
+            assert ping((EciText('ß', character_mode=True),))[0] == ping((EciText('s', character_mode=True),))[0]
+            sound, marks = ping((EciIndex(11), 'Stra', EciIndex(12), 'ße', EciIndex(13)))
+            assert sound and marks == [11, 12, 13]
+            assert pinglish._activate(pinglish._key(PINGLISH_PROBE.id, '1'))._frontend._worker is None
+        finally:
+            pinglish.close()
         mixed = EciText('Aبz', character_mode=True)
         explicit = (EciLanguage(US_ENGLISH.id, '1'), EciText('A', character_mode=True),
                     EciLanguage(PERSIAN_PROBE.id, '1'), EciText('ب', character_mode=True),

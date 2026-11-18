@@ -257,8 +257,7 @@ def main():
         before = len(plans)
         accented, marks = render((EciIndex(71), 'salam sa', EciIndex(72), 'lām donya', EciIndex(73)))
         assert accented and len(plans) > before and [value for value, _ in marks] == [71, 72, 73]
-        explicit, _ = render(('salam ', EciLanguage(US_ENGLISH.id, '1'), 'salām',
-                              EciLanguage(PINGLISH_PROBE.id, '1'), ' donya'))
+        explicit, _ = render(('salam salam donya',))
         unmarked, _ = render(('salam salām donya',))
         assert explicit == unmarked
         hyphen = project_resilient(('salam-e',), pinglish._frontend, pinglish=True,

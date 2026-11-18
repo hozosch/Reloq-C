@@ -308,6 +308,11 @@ def _word_markers(parts):
 
 def indexed_us_proxy(tagged, en, marks):
     """Make a US prosody proxy with marks before whole Persian words."""
+    # The Persian final R after /f/ or a stop is voiceless. A voiced US R
+    # would make the donor's audible contour extend far beyond the target's
+    # vowel, compressing that entire pitch movement into the vowel. Give the
+    # pilot an unvoiced coda instead; the Persian phones are never altered.
+    tagged = _TAG.sub(lambda match: re.sub(r'([fptkbdg])r\]$', r'\1s]', match.group()), tagged)
     proxy = persian_proxy_for_english(tagged, en, mark_weak=True)
     # Some Unicode spaces are preserved by the Persian text projection but
     # named by the English parser. They are ordinary word gaps in a pilot.

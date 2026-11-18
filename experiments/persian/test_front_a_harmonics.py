@@ -83,7 +83,11 @@ def main():
                     if old_row is not None:
                         before = distance(harmonics(old, old_scope, old_row, True, pitch), ref)
                         prior.append(before)
-                    assert got < 5, (gender, fa_text, pitch, got)
+                    # The deliberately smaller Persian vowel shifts the
+                    # harmonic balance away from the former British target.
+                    # Keep a broad spectral sanity limit; precise formant
+                    # targets and unchanged source are tested separately.
+                    assert got < 15, (gender, fa_text, pitch, got)
                     distances.append(got)
                     checks += 1
                 if prior:

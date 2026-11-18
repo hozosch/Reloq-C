@@ -98,7 +98,7 @@ const char *reloq_fa_scoped_get(const char *name)
         {"RELOQ_FA_US_GLIDE","1"},
         {"RELOQ_FA_BRAZILIAN_CODA_R","1"},
         {"RELOQ_FA_VOICELESS_F_R","1"},
-        {"RELOQ_FA_R_AFTER_I","1"},
+        {"RELOQ_FA_SMALLER_VOWELS","1"},
         {"RELOQ_FA_UNCOLORED_R","1"},
         {"RELOQ_FA_PROBE_END_H_DB","9"}, {"RELOQ_FA_PROBE_K_SHAPE","3"},
         /* Reproduce the previous "se" (three) E trajectory, including its

@@ -41,6 +41,21 @@ LATIN_NAMES = {
 _LATIN = re.compile(r'[A-Za-z]+')
 
 
+def latin_fold(char: str) -> str | None:
+    """Return a pronounceable Pinglish spelling for a known Latin letter."""
+    if len(char) != 1 or not unicodedata.name(char, '').startswith('LATIN '):
+        return None
+    special = {'ß': 'ss', 'ẞ': 'SS', 'æ': 'ae', 'Æ': 'AE', 'œ': 'oe', 'Œ': 'OE',
+               'ø': 'o', 'Ø': 'O', 'ł': 'l', 'Ł': 'L', 'ð': 'd', 'Ð': 'D',
+               'þ': 't', 'Þ': 'T', 'ı': 'i', 'š': 'sh', 'Š': 'Sh',
+               'ž': 'jh', 'Ž': 'Jh', 'č': 'ch', 'Č': 'Ch'}
+    if char in special:
+        return special[char]
+    decomposed = unicodedata.normalize('NFKD', char)
+    letters = ''.join(c for c in decomposed if c.isascii() and c.isalpha())
+    return letters or None
+
+
 def latin_spans(text: str) -> tuple[tuple[int, int], ...]:
     """Keep Latin letters and their combining marks in the same word."""
     result, start = [], None
@@ -67,14 +82,13 @@ def english_exception(word: str) -> bool:
     """
     if latin_spans(word) != ((0, len(word)),):
         return False
-    value = ''.join(char for char in word.casefold() if not unicodedata.category(char).startswith('M'))
     if any(not char.isascii() and char.isalpha() for char in word):
-        return True
+        # Known Latin sounds belong to the Persian Pinglish analysis. Truly
+        # unsupported Latin letters still take the established fallback.
+        return any(latin_fold(char) is None for char in word if char.isalpha())
+    value = ''.join(char for char in word.casefold() if not unicodedata.category(char).startswith('M'))
     if value in ALIASES:
         return False
-    # eSpeak's fa-Latn path sends most precomposed non-ASCII Latin words
-    # to English; do the same for unsupported Latin letters rather than
-    # spelling a whole word as individual characters.
     return 'ph' in value or 'th' in value
 
 
@@ -85,18 +99,25 @@ def _connected(char: str) -> bool:
 
 def normalize_pinglish(text: str) -> tuple[str, tuple[int, ...]]:
     """Replace only known whole-word spellings, retaining a UTF-8 byte map."""
-    # eSpeak ignores combining accents attached to ASCII Latin letters in
-    # fa-Latn. Remove only those marks, preserving the source byte mapping.
+    # Fold recognized Latin sounds before word/alias analysis. Keep a byte
+    # map for NVDA indexes, including expansions such as ß -> ss.
     source_to_plain, plain, at, latin = [0], [], 0, False
     for char in text:
         keep = not (latin and unicodedata.category(char).startswith('M'))
         encoded_char = char.encode('utf8')
         start = at
         if keep:
-            plain.append(char)
-            latin = char.isascii() and char.isalpha()
-            at += len(encoded_char)
-        source_to_plain.extend(start + offset if keep else start for offset in range(1, len(encoded_char) + 1))
+            folded = latin_fold(char) if not char.isascii() else None
+            replacement = folded if folded is not None else char
+            plain.append(replacement)
+            latin = bool(latin_fold(char))
+            at += len(replacement.encode('utf8'))
+            if replacement == char:
+                source_to_plain.extend(start + offset for offset in range(1, len(encoded_char) + 1))
+            else:
+                source_to_plain.extend([start] * (len(encoded_char) - 1) + [at])
+        else:
+            source_to_plain.extend([start] * len(encoded_char))
     text = ''.join(plain)
     encoded = text.encode('utf8')
     char_to_byte = [0]
@@ -131,7 +152,14 @@ def normalize_pinglish(text: str) -> tuple[str, tuple[int, ...]]:
 
 
 def latin_name(char: str) -> SpeechPart | None:
-    if len(char) != 1 or not char.isascii() or not char.isalpha():
+    value = latin_fold(char)
+    if value is None:
         return None
-    tag = LATIN_NAMES.get(char.lower())
-    return SpeechPart('fa', tag) if tag is not None else None
+    # Expansions describe their components using the existing Persian
+    # Latin-letter readings; no English Unicode-name announcement is needed.
+    tags = [LATIN_NAMES.get(c.lower()) for c in value]
+    if not tags or any(tag is None for tag in tags):
+        return None
+    if char in ('ß', 'ẞ'):
+        tags = tags[:1]
+    return SpeechPart('fa', ' '.join(tags))

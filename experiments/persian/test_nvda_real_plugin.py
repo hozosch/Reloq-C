@@ -356,6 +356,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_Latn', 'salam–phone–khub', 'pipeline_dash'),
                           ('fa_Latn', 'salam salām donya', False),
                           ('fa_Latn', 'salam salām donya', 'accent_exception'),
+                          ('fa_Latn', 'salam Straße donya', False),
+                          ('fa_Latn', 'salam Strasse donya', False),
+                          ('fa_IR', 'Straße', False),
+                          ('en_US', 'Straße', False),
                           ('fa_Latn', 'fa\u0304rsi', False),
                           ('fa_Latn', 'farsi', False),
                           ('fa_Latn', 'salam-e', False),
@@ -583,7 +587,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                  if row['text'] == 'salam salām donya' and row['spelling'] is False)
                 explicit = next(row for row in self.results if row['spelling'] == 'accent_exception')
                 if automatic['pcm_sha256'] != explicit['pcm_sha256']:
-                    raise AssertionError('accented Pinglish differs from explicit English routing')
+                    raise AssertionError('accented Pinglish differs from its Persian spelling')
+                sharp = next(row for row in self.results
+                             if row['text'] == 'salam Straße donya' and row['spelling'] is False)
+                folded = next(row for row in self.results
+                              if row['text'] == 'salam Strasse donya' and row['spelling'] is False)
+                if sharp['pcm_sha256'] != folded['pcm_sha256']:
+                    raise AssertionError('Pinglish sharp s was not analyzed as Persian ss')
+                english_word = [row for row in self.results if row['text'] == 'Straße'
+                                and row['spelling'] is False and row['locale'] in ('fa_IR', 'en_US')]
+                if len(english_word) != 2 or english_word[0]['pcm_sha256'] != english_word[1]['pcm_sha256']:
+                    raise AssertionError('English sharp s did not reach the native English analysis')
                 combined = next(row for row in self.results if row['text'] == 'fa\u0304rsi')
                 ordinary = next(row for row in self.results if row['text'] == 'farsi')
                 if combined['pcm_sha256'] != ordinary['pcm_sha256']:
@@ -731,8 +745,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = ['salam ', self.language_command('en_US'), 'phone',
                             self.language_command('fa_Latn'), ' donya']
             elif spelling == 'accent_exception':
-                sequence = ['salam ', self.language_command('en_US'), 'salām',
-                            self.language_command('fa_Latn'), ' donya']
+                sequence = ['salam salam donya']
             elif spelling == 'decimal_split':
                 sequence = ['version ', self.index_command(1000 + self.index), '3',
                             self.index_command(2000 + self.index), '.', '5 is available.']

@@ -78,6 +78,11 @@ DEV156_KEY = ('persian-windows-provider-gcc14-v2-'
               '9b855d4adb0b666637fabc804ec1064b9c59ff6e5ba10c28da3b9a4e3a634282')
 DEV156_ALLOWED = {'experiments/persian/build_native_probe.py',
                   'src/reloq_persian_acoustics.c'}
+DEV157_BASE = 'd6cf01188733063aacbd0637f00e9643cec0cfc9'
+DEV157_KEY = ('persian-windows-provider-gcc14-v2-'
+              '5c7b318e963e7da4e3e4e6f187a269fd38fe568deacd3e797893bee1e66e9637')
+DEV157_ALLOWED = {'experiments/persian/build_native_probe.py',
+                  'src/reloq_persian_acoustics.c'}
 TRACE_ALLOWED = {
     'include/reloq_eci.h', 'include/reloq_persian_frames.h', 'include/reloq_syllable_trace.h',
     'vendor/openevv61/src/reloq61_bridge.c',
@@ -122,8 +127,8 @@ def eligible_recent(key, changed, blobs):
             blobs == RECENT_HEADERS)
 
 
-def reuse_dev156_generated():
-    """Regenerate, compare every source byte, and rebuild only the changed unit."""
+def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'})):
+    """Regenerate and byte-check every source, rebuilding only expected units."""
     cached = BUILD / 'persian-provider'
     old = {path.name: path for path in cached.glob('*.c')}
     if len(old) != 21 or not (cached / '.stamp').is_file():
@@ -136,9 +141,10 @@ def reuse_dev156_generated():
         if old.keys() != new.keys():
             raise ValueError('generated Persian source set changed')
         differences = {name for name in old if old[name].read_bytes() != new[name].read_bytes()}
-        if differences != {'delta_rules_c02_fifi.c'}:
+        if differences != set(expected):
             raise ValueError('unexpected generated provider source changes')
-        shutil.copyfile(new['delta_rules_c02_fifi.c'], old['delta_rules_c02_fifi.c'])
+        for name in differences:
+            shutil.copyfile(new[name], old[name])
     # The preparation stamp is newer than checkout inputs. Each generated
     # source is newer than the stamp, and every reusable object is newer than
     # its unchanged source. The changed source and scope objects are removed.
@@ -148,7 +154,7 @@ def reuse_dev156_generated():
     for path in BUILD.rglob('*'):
         if path.is_file() and path.parent != cached:
             os.utime(path, None)
-    for path in (BUILD / 'lang/fifi/delta_rules_c02_fifi.o',
+    for path in (*(BUILD / 'lang/fifi' / (Path(name).stem + '.o') for name in expected),
                  BUILD / 'reloq_persian_acoustics.o', BUILD / 'libreloq61.a'):
         path.unlink(missing_ok=True)
     print('Reused byte-verified generated rules; rebuilding the after-I R and scope objects.')
@@ -174,6 +180,12 @@ def main():
                 if path.is_file():
                     os.utime(path, None)
             print('Reused verified provider cache for the additive public API change.')
+            return
+        if key == DEV157_KEY:
+            changed = set(git('diff', '--name-only', DEV157_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV157_ALLOWED:
+                raise ValueError('Persian vowel and R provider changes differ from the verified scope')
+            reuse_dev156_generated(frozenset({'delta_rules_c02_fifi.c', 'delta_rules_c08_fifi.c'}))
             return
         if key == DEV156_KEY:
             changed = set(git('diff', '--name-only', DEV156_BASE, 'HEAD', '--', *INPUTS).splitlines())

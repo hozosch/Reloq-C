@@ -16,7 +16,7 @@ import unicodedata
 if __package__:
     from .direct_fa_sequence import ScopedDirectPersianEngine
     from .hybrid_fa_frontend import DirectFirstPersian
-    from .pinglish_frontend import english_exception, latin_spans
+    from .pinglish_frontend import english_exception, latin_fold, latin_spans
     from .continuous_driver import bounded_jobs, bracket_jobs, continuation_comma, sentence_jobs, try_continuous, try_persian_glides
     from .._reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
                                      EciPitch, EciPitchHz, EciProsody, EciText, PAUSE_MODE)
@@ -24,7 +24,7 @@ if __package__:
 else:
     from direct_fa_sequence import ScopedDirectPersianEngine
     from hybrid_fa_frontend import DirectFirstPersian
-    from pinglish_frontend import english_exception, latin_spans
+    from pinglish_frontend import english_exception, latin_fold, latin_spans
     from continuous_driver import bounded_jobs, bracket_jobs, continuation_comma, sentence_jobs, try_continuous, try_persian_glides
     from _reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
                                   EciPitch, EciPitchHz, EciProsody, EciText, PAUSE_MODE)
@@ -370,6 +370,7 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 if (cp < 128 or 0x600 <= cp <= 0x8ff or 0xfb50 <= cp <= 0xfeff or
                         char in '\u200c\u200d\ufe0e\ufe0f' or
                         char.isspace() or char.isdecimal() or
+                        latin_fold(char) is not None or
                         logical[0] == PINGLISH_PROBE.id and unicodedata.category(char).startswith('M')):
                     continue
                 if char not in names:
@@ -431,7 +432,7 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 segments = []
                 for char in text:
                     key, fragment, mode = logical, char, True
-                    if 'A' <= char <= 'Z' or 'a' <= char <= 'z':
+                    if latin_fold(char) is not None:
                         key = english
                     elif ord(char) > 127 and isinstance(engine, OwnedPersianEngine):
                         named = engine._frontend.analyze_character(char).parts[0]
@@ -461,6 +462,9 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 if isinstance(engine, OwnedPersianEngine):
                     named = []
                     for char in text:
+                        if latin_fold(char) is not None:
+                            named.append((char, None if logical[0] == PINGLISH_PROBE.id else char))
+                            continue
                         named_part = (engine._frontend.analyze_character(char).parts[0]
                                       if ord(char) > 127 else None)
                         name = (named_part.text if named_part and named_part.language == 'en-us' else None)
@@ -469,7 +473,8 @@ class PersianProbeLanguageEngine(LanguageEngine):
                         for char, name in named:
                             select(self._key(US_ENGLISH.id, logical[1]) if name is not None else logical)
                             fragment = char if name is None else name
-                            output.append(replace(part, text=fragment, character_mode=name is None)
+                            output.append(replace(part, text=fragment,
+                                                  character_mode=name is None or fragment == char)
                                           if isinstance(part, EciText) else fragment)
                         continue
             if position in pinglish_runs and logical[0] == PINGLISH_PROBE.id:

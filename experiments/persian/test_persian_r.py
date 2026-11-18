@@ -105,6 +105,18 @@ def main():
                     assert len(r_noise) >= 5, (gender, rate, speed, 'missing F-R frication')
                     assert all(c[2] == 0 and c[7] == 0 for c in r_noise), (gender, rate, speed, 'voiced F-R')
                     checks += 1
+                    # A final R following any stop receives the same
+                    # voiceless frication, including voiced /d/ and /b/.
+                    for stop in 'ptkbdg':
+                        _, cluster = capture(fa, scope, '`[.1se' + stop + 'r]', True)
+                        r_noise = [row.controls for row in cluster
+                                   if row.controls[8] >= 35 and row.controls[35] < 5
+                                   and row.controls[36] < 5 and row.controls[37] >= 55
+                                   and 30 <= row.controls[38] < 55
+                                   and row.controls[2] == 0 and row.controls[7] == 0]
+                        assert len(r_noise) >= 5 and all(c[2] == 0 and c[7] == 0 for c in r_noise), (
+                            gender, rate, speed, stop, 'missing or voiced stop-R')
+                        checks += 1
                     # The rejected global R resonance adjustment is removed.
                     # Keep the complete onset identical to the accepted
                     # pre-change Persian R, including both upper formants.

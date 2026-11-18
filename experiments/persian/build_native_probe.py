@@ -2553,6 +2553,7 @@ def prepare_us_articulation(work: Path) -> None:
                     *frequencies[i]=(int16_t)((scale*(int)*frequencies[i]+500)/1000);
                 }
         }
+        if (!r0) persian_smaller_vowel(state,'A');
     }
 ''', 1)
     text = text[:begin] + section + text[end:]
@@ -2585,6 +2586,28 @@ def prepare_us_articulation(work: Path) -> None:
     # These are listening candidates from matched-F0 spectral comparisons,
     # not a global EQ or a substitution of English vowel identities.
     vowel_helper = r'''
+static void persian_smaller_vowel(void *state,int phone)
+{
+    const char *mode=getenv("RELOQ_FA_SMALLER_VOWELS");
+    if (!mode || mode[0]!='1' || mode[1]) return;
+    /* A three-percent shift corresponds to a modest head-size reduction.
+       Only positive vowel targets are changed: inherited endpoints, source,
+       timing and the speaker's global head-size setting remain intact. */
+    int16_t *values[]={&STATE(int16_t,s448),&STATE(int16_t,s449),
+        &STATE(int16_t,s450),&STATE(int16_t,s451),
+        &STATE(int16_t,s452),&STATE(int16_t,s453),
+        &STATE(int16_t,s454),&STATE(int16_t,s455),
+        &STATE(int16_t,s456),&STATE(int16_t,s457)};
+    int16_t female=0;
+    memcpy(&female,(const unsigned char *)state+DG_BASE+3092+12,sizeof female);
+    for (unsigned i=0;i<sizeof values/sizeof values[0];++i)
+        /* On the female back-A, moving F1 across a native threshold changes
+           voicing and causes a disproportionate extra jump. Leave that one
+           target alone; its other formants still receive the adjustment. */
+        if (!(female && phone=='a' && i<2))
+        if (*values[i]>0 && *values[i]<30000)
+            *values[i]=(int16_t)((103*(int)*values[i]+50)/100);
+}
 static void persian_open_vowel(void *state,int phone)
 {
     const char *us=getenv("RELOQ_FA_US_ARTICULATION");
@@ -2664,7 +2687,8 @@ static void persian_open_vowel(void *state,int phone)
         if section.count(call) != 1:
             raise RuntimeError(f'Cannot locate Persian vowel dispatcher for {phone}')
         section = section.replace(call, call +
-            f"    if (!r0) persian_open_vowel(state,'{phone}');\n", 1)
+            f"    if (!r0) persian_open_vowel(state,'{phone}');\n" +
+            (f"    if (!r0) persian_smaller_vowel(state,'{phone}');\n" if phone != 'e' else ''), 1)
     text = text[:begin] + section + text[end:]
 
     # /v/ is constructed repeatedly during native backtracking. Its noise
@@ -2795,8 +2819,7 @@ int persian_pt_coda_r_selected(void *state)
     return *(const unsigned char *)delta_record_field(&vstmtbl[2],1,
                                                        TFLDS(EVV_AT(void *,node)))==1;
 }
-/* A final /r/ immediately following /f/ belongs to the same word. Keep this
-   narrow until listening establishes what other consonant clusters need. */
+/* The unvoiced final R may also follow a stop within the same word. */
 int persian_f_coda_r_selected(void *state)
 {
     const char *mode=getenv("RELOQ_FA_VOICELESS_F_R");
@@ -2808,8 +2831,9 @@ int persian_f_coda_r_selected(void *state)
     delta_node *point=vmovel(d,EVV_AT(delta_node *,begin),2);
     int32_t node=point?vgetsc(d,1,0,EVV_REF(point),2):0;
     if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
-    return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,
-                                                       TFLDS(EVV_AT(void *,node)))==7;
+    unsigned phone=*(const unsigned char *)delta_record_field(&vstmtbl[2],0,
+                                                               TFLDS(EVV_AT(void *,node)));
+    return phone>=1 && phone<=7; /* p,t,k,b,d,g,f */
 }
 static void persian_r_less_retroflex(void *state)
 {
