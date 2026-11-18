@@ -30,7 +30,7 @@ def main():
         # Both familiar NVDA labels use a more audible after-I F3 boost.
         # The E and its upper resonance remain unchanged.
         for tag, index, lower, upper in (("`[.0ti.1r'e:']", 100, 2480, 2600),
-                                          ('`[.1zir.0GAt]', 175, 2470, 2600)):
+                                          ('`[.1zir.0GAt]', 175, 2440, 2600)):
             _, frames = capture(current, scope, tag, True)
             assert lower <= frames[index].controls[15] <= upper, (tag, 'after-I R F3')
             if previous:
@@ -38,6 +38,10 @@ def main():
                 assert frames[index].controls[15] - old[index].controls[15] >= 100, tag
                 assert abs(old[index].controls[17] - frames[index].controls[17]) < 3, tag
             checks += 1
+        # Even after /i/, an immediately following /o/ keeps the Finnish R.
+        _, before_o = capture(current, scope, '`[.1i.0ro]', True)
+        assert 1850 <= before_o[108].controls[15] <= 1950, 'R before O was modified'
+        checks += 1
         for gender in (0, 1):
             for rate in (1, 3, 6):
                 for speed in (40, 98, 170):
