@@ -41,37 +41,42 @@ class SoundLabDialog(wx.Dialog):
             page.SetSizer(layout)
             self.pages[key] = (page, layout)
         root.Add(book, 1, wx.ALL | wx.EXPAND, 8)
-        def add(page_key, label, control):
+        def add(page_key, label, factory):
             page, layout = self.pages[page_key]
-            layout.Add(wx.StaticText(page, label=label), 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)
+            # Windows derives an accessible name from the immediately
+            # preceding label window. Create the label before its control;
+            # adding an already-created control to a sizer is too late.
+            caption = wx.StaticText(page, label=label)
+            control = factory(page)
+            layout.Add(caption, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)
             control.SetName(label)
             layout.Add(control, 1, wx.EXPAND | wx.RIGHT, 8)
             return control
-        base = self.pages['base'][0]
-        self.text = add('base', 'Testtext', wx.TextCtrl(base, value='ایران'))
-        self.language = add('base', 'Sprache', wx.Choice(base, choices=list(lab.LANGUAGES)))
+        self.text = add('base', 'Testtext', lambda page: wx.TextCtrl(page, value='ایران'))
+        self.language = add('base', 'Sprache', lambda page: wx.Choice(page, choices=list(lab.LANGUAGES)))
         self.language.SetSelection(0)
-        self.gender = add('base', 'Stimme', wx.Choice(base, choices=['Männlich', 'Weiblich']))
+        self.gender = add('base', 'Stimme', lambda page: wx.Choice(page, choices=['Männlich', 'Weiblich']))
         self.gender.SetSelection(0)
-        self.rate = add('base', 'Abtastrate', wx.Choice(base, choices=RATE_LABELS))
+        self.rate = add('base', 'Abtastrate', lambda page: wx.Choice(page, choices=RATE_LABELS))
         self.rate.SetSelection(0)
         def spin(key, label, low, high, value):
-            return add(key, label, wx.SpinCtrl(self.pages[key][0], min=low, max=high, initial=value))
+            return add(key, label, lambda page: wx.SpinCtrl(page, min=low, max=high, initial=value))
         self.head = spin('base', 'Kopfgröße', 0, 100, 50)
         self.speed = spin('base', 'Geschwindigkeit', 0, 100, 65)
         self.pitch = spin('base', 'Tonhöhe', 0, 100, 65)
         self.start = spin('base', 'Beginn des Abschnitts in Millisekunden', 0, 60000, 0)
         self.end = spin('base', 'Ende in Millisekunden; 0 bedeutet bis zum Ende', 0, 60000, 0)
-        self.voiced = add('base', 'Abschnitte', wx.Choice(base, choices=['Stimmhafte', 'Alle']))
+        self.voiced = add('base', 'Abschnitte', lambda page: wx.Choice(page, choices=['Stimmhafte', 'Alle']))
         self.voiced.SetSelection(0)
         self.controls = {}
         for key, prefix in (('frequencies', 'Frequenz F'), ('bandwidths', 'Bandbreite B'),
                             ('noise_widths', 'Rauschbandbreite B')):
             self.controls[key] = [spin(key, prefix + str(i) + ': Änderung in Hz', -2000, 2000, 0)
                                   for i in range(1, 6)]
+        readout_label = wx.StaticText(self, label='Gemessene Resonanzen der letzten Probe')
         self.readout = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_READONLY, size=(-1, 65))
         self.readout.SetName('Gemessene Resonanzen der letzten Probe')
-        root.Add(wx.StaticText(self, label='Gemessene Resonanzen der letzten Probe'), 0, wx.LEFT | wx.RIGHT, 10)
+        root.Add(readout_label, 0, wx.LEFT | wx.RIGHT, 10)
         root.Add(self.readout, 0, wx.ALL | wx.EXPAND, 8)
         buttons = wx.BoxSizer(wx.HORIZONTAL)
         self.buttons = []
