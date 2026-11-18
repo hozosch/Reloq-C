@@ -5,9 +5,10 @@ import argparse
 import ctypes
 from pathlib import Path
 import random
+import re
 
 from espeak_ng_probe import EspeakPhonemeProbe
-from text_frontend import translate_text, word_tag
+from text_frontend import word_tag
 
 
 def main():
@@ -17,16 +18,18 @@ def main():
     parser.add_argument('--data-parent', type=Path, required=True)
     args = parser.parse_args()
     dll = ctypes.CDLL(str(args.native_library.resolve()))
-    dll.reloq_fa_direct_text.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_void_p),
-                                         ctypes.POINTER(ctypes.POINTER(ctypes.c_size_t)), ctypes.POINTER(ctypes.c_size_t))
-    dll.reloq_fa_direct_text.restype = ctypes.c_int
-    dll.reloq_fa_direct_free.argtypes = (ctypes.c_void_p,)
+    convert_text = getattr(dll, 'eciPersianTranslateUtf8', None) or dll.reloq_fa_direct_text
+    release = getattr(dll, 'eciPersianRelease', None) or dll.reloq_fa_direct_free
+    convert_text.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_void_p),
+                             ctypes.POINTER(ctypes.POINTER(ctypes.c_size_t)), ctypes.POINTER(ctypes.c_size_t))
+    convert_text.restype = ctypes.c_int
+    release.argtypes = (ctypes.c_void_p,)
 
     def convert(text):
         encoded = text.encode('utf8')
         output, mapping, offset = ctypes.c_void_p(), ctypes.POINTER(ctypes.c_size_t)(), ctypes.c_size_t()
-        status = dll.reloq_fa_direct_text(encoded, len(encoded), ctypes.byref(output),
-                                           ctypes.byref(mapping), ctypes.byref(offset))
+        status = convert_text(encoded, len(encoded), ctypes.byref(output),
+                              ctypes.byref(mapping), ctypes.byref(offset))
         if status:
             assert not output.value and not bool(mapping)
             return status, None
@@ -36,27 +39,40 @@ def main():
             assert indexes == tuple(sorted(indexes)) and indexes[-1] == len(result)
             return status, result
         finally:
-            dll.reloq_fa_direct_free(output)
-            dll.reloq_fa_direct_free(mapping)
+            release(output)
+            release(mapping)
 
     fa_digits = str.maketrans('0123456789,.', '۰۱۲۳۴۵۶۷۸۹٬٫')
     arabic_digits = str.maketrans('0123456789,.', '٠١٢٣٤٥٦٧٨٩٬٫')
+    def phones(value):
+        # Persian lexical stress is now assigned by our own rules rather
+        # than copied from eSpeak; compare the underlying phones separately.
+        return re.sub(r'\.[012]', '.0', value)
     with EspeakPhonemeProbe(args.espeak_library, args.data_parent) as reference:
         for number in range(1000):
             source = str(number)
             clauses = reference.translate(source, separator='|')
             expected = ' '.join(word_tag(token) for token in clauses[0].phonemes.strip().split())
             for script in (source, source.translate(fa_digits), source.translate(arabic_digits)):
-                assert convert(script) == (0, expected), (number, script)
+                status, tagged = convert(script)
+                assert status == 0 and phones(tagged) == phones(expected), (number, script, tagged, expected)
             if number % 17 == 0:
                 text = 'من ' + source + ' آمد.'
-                assert convert(text) == (0, translate_text(reference, text)[0].text), text
+                # Surrounding words now follow our own contextual stress
+                # rules and need not match eSpeak's sentence intonation.
+                # The number itself must retain its checked cardinal phones.
+                status, tagged = convert(text)
+                assert status == 0 and phones(expected) in phones(tagged), (text, tagged, expected)
+    for text in ('4', '12', '101', '999'):
+        status, tagged = convert(text)
+        accents = re.findall(r'\.([012])', tagged)
+        assert status == 0 and accents and accents[-1] == '1', (text, tagged)
     examples = {
         '1001': "`[.2jek] `[.0he.2za.0ro] `[.1jek]",
         '003': "`[.0sefr] `[.0sefr] `[.1se]",
-        '۳٫۱۴': "`[.2se] `[.0noR.2t'e:'] `[.0jek] `[.1Ca.0har]",
-        '−۳': "`[.1mAn.0fi] `[.1se]",
-        '+۳': "`[.1mos.0bAt] `[.1se]",
+        '۳٫۱۴': "`[.2se] `[.0noR.2t'e:'] `[.0jek] `[.0Ca.1har]",
+        '−۳': "`[.0mAn.1fi] `[.1se]",
+        '+۳': "`[.0mos.1bAt] `[.1se]",
     }
     for text, expected in examples.items():
         assert convert(text) == (0, expected), text
