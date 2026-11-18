@@ -214,6 +214,11 @@ def main():
     dictionaries.listAvailableSpeechDictDefinitions = lambda: [builtin_definition, user_definition]
     assert any(isinstance(item, native_word) for item in protected([whole]))
     assert any(isinstance(item, native_word) and item.text.endswith('1.5.0') for item in protected([adjacent]))
+    # An add-on dictionary after builtin can match the new separated spelling
+    # even though it did not match the original text. It must retain priority.
+    after_builtin = NumberReplacement(r'v 1\.5\.0')
+    user_definition.dictionary = [after_builtin]
+    assert protected([adjacent]) == [adjacent]
     user_definition.dictionary = [types.SimpleNamespace(compiled=re.compile(r'0\.2\.100'))]
     assert protected([whole]) == [whole]
     del dictionaries.listAvailableSpeechDictDefinitions

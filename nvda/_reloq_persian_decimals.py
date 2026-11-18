@@ -47,7 +47,7 @@ def decimal_pending(sequence):
 
 
 def _builtin_split_prefixes(text, intervals):
-    """Preserve NVDA's builtin result when guarding a decimal.
+    """Preserve the complete NVDA dictionary result when guarding a decimal.
 
     A stock builtin rule inserts a space between a letter and a digit. Once
     the number is carried as a command that zero-width match would disappear;
@@ -64,10 +64,15 @@ def _builtin_split_prefixes(text, intervals):
             pass
         if hasattr(speechDictHandler, 'listAvailableSpeechDictDefinitions'):
             dictionaries = tuple(definition.dictionary for definition in
-                speechDictHandler.listAvailableSpeechDictDefinitions() if definition.enabled and
-                getattr(definition.source, 'value', definition.source) == 'builtin')
+                speechDictHandler.listAvailableSpeechDictDefinitions() if definition.enabled)
         else:
-            dictionaries = (speechDictHandler.dictionaries.get('builtin', ()),)
+            definitions = speechDictHandler.dictionaries
+            # Legacy APIs do not expose the position of add-on dictionaries.
+            # Without a trustworthy order, do not hide text from them.
+            if any(name not in ('builtin', 'default', 'voice', 'temp') and dictionary
+                   for name, dictionary in definitions.items()):
+                return None
+            dictionaries = tuple(definitions.values())
         if not any(dictionaries):
             return {}
         def process(value):
