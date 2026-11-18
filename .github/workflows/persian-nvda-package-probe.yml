@@ -12,6 +12,7 @@ on:
       - experiments/persian/build_windows_probe.py
       - experiments/persian/scoped_acoustics_probe.c
       - tools/prepare_persian_provider.py
+      - tools/reuse_persian_provider_cache.py
       - src/reloq_persian_acoustics.c
       - src/reloq_persian_acoustics.h
       - src/reloq_persian_frames.c

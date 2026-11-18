@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/persian-nvda-direct-test.yml
       - .github/workflows/persian-windows-acoustic-probe.yml
+      - tools/reuse_persian_provider_cache.py
       - experiments/persian/nvda_driver_probe.py
       - experiments/persian/hybrid_fa_frontend.py
       - experiments/persian/pinglish_frontend.py
