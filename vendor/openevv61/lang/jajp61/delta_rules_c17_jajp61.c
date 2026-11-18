@@ -2725,7 +2725,10 @@ L369:;
     r1 = ((int32_t)STATE(uint16_t, s404));
     AT(int32_t, -28) = (r1);
     AT(int32_t, -28) = ((int32_t)((uint32_t)((int32_t)AT(int32_t, -28)) + (uint32_t)(-2)));
-    STATE(int16_t, s422) = ((int32_t)AT(int16_t, -28));
+    /* The moraic nasal has a voiced closure, but its release must not
+       become a separate breathy /h/.  A negative release level requests
+       an explicit silent AH target, distinct from the default release. */
+    STATE(int16_t, s422) = INT16_MIN;
 L398:;
     AT(int32_t, -28) = (STATE_AT(s404, -2));
     AT(int32_t, -40) = (STATE_AT(s404, -2));

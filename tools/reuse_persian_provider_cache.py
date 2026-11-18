@@ -50,7 +50,9 @@ DEV152_BASE = '812e03b4fe7f0a8331b7a433c352a86a34710498'
 DEV152_KEY = ('persian-windows-provider-gcc14-v2-'
               '910f15fd293dbd45854c54fe6b3907d1b381bf561b04cd64dfd5690d86db9ea1')
 DEV152_ALLOWED = {'experiments/persian/build_native_probe.py',
-                  'src/reloq_persian_acoustics.c'}
+                  'src/reloq_persian_acoustics.c',
+                  'vendor/openevv61/lang/jajp61/delta_rules_c17_jajp61.c',
+                  'vendor/openevv61/lang/jajp61/delta_rules_c30_jajp61.c'}
 TRACE_ALLOWED = {
     'include/reloq_eci.h', 'include/reloq_persian_frames.h', 'include/reloq_syllable_trace.h',
     'vendor/openevv61/src/reloq61_bridge.c',
@@ -178,6 +180,9 @@ def main():
                         BUILD / 'reloq_persian_acoustics.o', BUILD / 'libreloq61.a'))
         if key in (TRACE_KEY, DEV149_KEY):
             objects.append(BUILD / 'lang/enus61/delta_rules_c29_enus61.o')
+        if key == DEV152_KEY:
+            objects.extend(BUILD / f'lang/jajp61/delta_rules_c{part}_jajp61.o'
+                           for part in ('17', '30'))
         # No provider object should depend on the changed public ECI header.
         # If one does, rebuilding that object is safer than assuming this.
         for dep in BUILD.rglob('*.d'):

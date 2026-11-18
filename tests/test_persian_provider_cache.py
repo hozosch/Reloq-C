@@ -74,6 +74,11 @@ class CacheReuseTests(unittest.TestCase):
                 untouched.touch()
                 scope_object = build / 'reloq_persian_acoustics.o'
                 scope_object.touch()
+                japanese_objects = [build / 'lang' / 'jajp61' / f'delta_rules_c{part}_jajp61.o'
+                                    for part in ('17', '30')]
+                japanese_objects[0].parent.mkdir(parents=True)
+                for obj in japanese_objects:
+                    obj.touch()
                 (build / 'libreloq61.a').touch()
                 (build / 'persian-provider').mkdir()
                 with patch.object(cache, 'PROVIDER', provider), patch.object(cache, 'BUILD', build), \
@@ -86,6 +91,8 @@ class CacheReuseTests(unittest.TestCase):
                     self.assertFalse((build / 'libreloq61.a').exists())
                     self.assertFalse(scope_object.exists())
                     self.assertFalse((build / 'persian-provider').exists())
+                    self.assertEqual([obj.exists() for obj in japanese_objects],
+                                     [key != cache.DEV152_KEY] * 2)
                     self.assertFalse(any((build / 'lang' / 'fifi' /
                                           Path(name).with_suffix('.o')).exists() for name in names))
                 else:

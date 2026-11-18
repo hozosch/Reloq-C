@@ -38,6 +38,8 @@ on:
       - vendor/openevv61/src/reloq61_bridge.c
       - vendor/openevv61/lang/fifi/delta_rules_c30_fifi.c
       - vendor/openevv61/lang/enus61/delta_rules_c29_enus61.c
+      - vendor/openevv61/lang/jajp61/delta_rules_c17_jajp61.c
+      - vendor/openevv61/lang/jajp61/delta_rules_c30_jajp61.c
       - experiments/persian/direct_fa_*.c
       - experiments/persian/direct_fa_*.h
       - experiments/persian/direct_fa_*.inc
@@ -57,6 +59,7 @@ on:
       - experiments/persian/test_yek_duration.py
       - experiments/persian/test_glide_e_reference.py
       - experiments/persian/test_japanese_r.py
+      - experiments/persian/test_japanese_nasal_aspiration.py
       - experiments/persian/test_british_front_a.py
       - experiments/persian/test_front_a_harmonics.py
       - experiments/persian/test_german_vowel_blend.py
@@ -202,6 +205,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian glide or reference E failed' }
           python -B experiments/persian/test_japanese_r.py --candidate eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian Japanese R or isolation failed' }
+          python -B experiments/persian/test_japanese_nasal_aspiration.py --candidate eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Japanese nasal aspiration or H preservation failed' }
           python -B experiments/persian/test_british_front_a.py --candidate eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'British/Persian front-vowel comparison failed' }
           python -B experiments/persian/test_front_a_harmonics.py --candidate eci/eci.dll

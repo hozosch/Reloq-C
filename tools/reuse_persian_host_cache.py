@@ -49,7 +49,9 @@ DEV152_BASE = '812e03b4fe7f0a8331b7a433c352a86a34710498'
 DEV152_KEY = ('persian-windows-host-gcc14-v2-'
               '56a9101fabd669ff59d3badaef2dc36a73677c46a44d562608d88877b274f13a')
 DEV152_ALLOWED = {'experiments/persian/build_native_probe.py',
-                  'src/reloq_persian_acoustics.c'}
+                  'src/reloq_persian_acoustics.c',
+                  'vendor/openevv61/lang/jajp61/delta_rules_c17_jajp61.c',
+                  'vendor/openevv61/lang/jajp61/delta_rules_c30_jajp61.c'}
 TRACE_ALLOWED = {'include/reloq_eci.h', 'include/reloq_persian_frames.h',
                  'include/reloq_syllable_trace.h', 'src/reloq_eci.c',
                  'src/reloq_persian_frames.c', 'src/reloq_persian_frame_internal.h',
