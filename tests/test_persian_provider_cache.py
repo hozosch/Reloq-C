@@ -50,6 +50,15 @@ class CacheReuseTests(unittest.TestCase):
                        'experiments/aragonese/build_native_probe.py'):
             self.assertIn(source, host_key)
 
+    def test_restore_key_count_fits_actions_cache_limit(self):
+        workflow = (Path(__file__).resolve().parents[1] /
+                    '.github/workflows/persian-windows-acoustic-probe.yml').read_text(encoding='utf8')
+        for kind in ('provider', 'host'):
+            keys = [line for line in workflow.splitlines()
+                    if line.strip().startswith('persian-windows-' + kind + '-')]
+            # The primary key also counts toward the service limit of ten.
+            self.assertLessEqual(len(keys), 9, kind)
+
     def test_rebuilds_selected_objects_or_rejects_unverified_cache(self):
         for key, diff, reusable in (
             (cache.DEV154_KEY, '\n'.join(cache.DEV154_ALLOWED), True),

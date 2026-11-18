@@ -5,6 +5,7 @@ on:
     branches: [codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117]
     paths:
       - .github/workflows/persian-nvda-direct-test.yml
+      - .github/workflows/persian-windows-acoustic-probe.yml
       - experiments/persian/nvda_driver_probe.py
       - experiments/persian/hybrid_fa_frontend.py
       - experiments/persian/pinglish_frontend.py

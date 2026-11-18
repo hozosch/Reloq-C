@@ -102,7 +102,6 @@ jobs:
             persian-windows-provider-gcc14-v2-eb978682e83612fa0fef1940e0c321d3072f9cf8db4b6d11c243532189d602cc
             persian-windows-provider-gcc14-v2-258cf46181dbfeb1b6d1f9c2e9146e82d09ebaa88f092c1c1ac5e757e1fe95fc
             persian-windows-provider-gcc14-v2-f106c4723d7f6e32a226c721308d5e5b0f676a41f86a43f7a3c940b0ef20f128
-            persian-windows-provider-gcc14-v1-eafb701ff0daa266b36f21741a91cf44935fe7d1d5fc200e54f509f1b878b075
       - uses: actions/cache/restore@v4
         id: host
         with:
@@ -120,7 +119,6 @@ jobs:
             persian-windows-host-gcc14-v2-9fbaf447f57f00e8aa4e28add7806baf049e17728506d6b7be26561f5313afaa
             persian-windows-host-gcc14-v2-f4aa931982b6b718f119c59251c1b630a0645e043c0d790f358088e893c079a6
             persian-windows-host-gcc14-v2-e69d174816ad2c632f7786280780e6d8f87ca561fcef6adc1212928b2e58f6b6
-            persian-windows-host-gcc14-v2-095ec9297122d7ae23141480a61b623ca85d47fc13ed7e5a61e180300e5207bf
       - name: Restore cached provider timestamps
         if: steps.provider.outputs.cache-hit == 'true'
         shell: bash

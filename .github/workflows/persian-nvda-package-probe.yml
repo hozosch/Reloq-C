@@ -4,6 +4,7 @@ on:
   push:
     branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117]
     paths:
+      - .github/workflows/persian-windows-acoustic-probe.yml
       - experiments/persian/build_experimental_nvda.py
       - experiments/persian/select_windows_acoustic_run.py
       - experiments/persian/test_acoustic_run_selection.py
