@@ -68,11 +68,19 @@ jobs:
             sleep 5
           done
           if [ -z "$selected" ]; then echo 'No compatible Windows acoustic build' >&2; exit 1; fi
-          gh run watch "$selected" --exit-status --interval 15 --repo "$GITHUB_REPOSITORY"
+          available=""
+          for attempt in $(seq 1 240); do
+            available=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$selected/artifacts?per_page=100" --jq '.artifacts[] | select(.name == "persian-windows-baseline-early" and .expired == false) | .id')
+            if [ -n "$available" ]; then break; fi
+            state=$(gh run view "$selected" --repo "$GITHUB_REPOSITORY" --json status --jq '.status')
+            if [ "$state" = "completed" ]; then echo 'Acoustic job ended before the baseline was available' >&2; exit 1; fi
+            sleep 5
+          done
+          if [ -z "$available" ]; then echo 'Timed out waiting for the Windows baseline' >&2; exit 1; fi
           echo "run_id=$selected" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@v4
         with:
-          name: persian-windows-acoustic-probe
+          name: persian-windows-baseline-early
           run-id: ${{ steps.acoustic.outputs.run_id }}
           github-token: ${{ github.token }}
           path: candidate
@@ -121,7 +129,7 @@ jobs:
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev151; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev152; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
           dll=$(find candidate -name eci.dll -print -quit)
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
       - name: Test in real NVDA
@@ -132,6 +140,11 @@ jobs:
           $addon = (Get-ChildItem dist -Filter *.nvda-addon | Select-Object -First 1).FullName
           python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon "$addon" --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
           if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA Persian profile test failed' }
+      - name: Confirm the full acoustic test
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run watch "${{ steps.acoustic.outputs.run_id }}" --exit-status --interval 15 --repo "$GITHUB_REPOSITORY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

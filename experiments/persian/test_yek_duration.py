@@ -15,10 +15,10 @@ def e_duration(rows):
 
 def e_nucleus_duration(rows, gender):
     """Measure the stable E nucleus, excluding the voiced US-like /j/."""
-    f1, f2 = ((495, 2420) if gender else (450, 2000))
+    f1, f2 = ((495, 2360) if gender else (450, 1950))
     return sum(row.controls[0] for row in rows if row.controls[2] > 25 and
                row.controls[8] < 5 and abs(row.controls[9] - f1) < 20 and
-               abs(row.controls[13] - f2) < 60)
+               abs(row.controls[13] - f2) < 70)
 
 
 def main():

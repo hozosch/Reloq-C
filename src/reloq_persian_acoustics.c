@@ -97,10 +97,10 @@ const char *reloq_fa_scoped_get(const char *name)
         {"RELOQ_FA_US_FRICATIVES","1"}, {"RELOQ_FA_US_NASALS","1"},
         {"RELOQ_FA_US_GLIDE","1"},
         {"RELOQ_FA_PROBE_END_H_DB","9"}, {"RELOQ_FA_PROBE_K_SHAPE","3"},
-        /* The /e/ nucleus in "se" (three), irrespective of its neighbours.
-         * Consonant transitions and short/long vowel timing remain separate. */
-        {"RELOQ_FA_E_MODE","1"}, {"RELOQ_FA_E_CONTEXT","0"},
-        {"RELOQ_FA_E_TARGET","450,2000,2700,3650,3900"},
+        /* Reproduce the previous "se" (three) E trajectory, including its
+         * darker onset. Preserve the inherited upper formants and timing. */
+        {"RELOQ_FA_E_MODE","3"}, {"RELOQ_FA_E_CONTEXT","0"},
+        {"RELOQ_FA_E_TARGET","450,1900,2000,2550,2700"},
         {"RELOQ_FA_PROBE_NO_AUTO_GLOTTAL","1"},
     };
     if(!fa_acoustics || !name)return 0;

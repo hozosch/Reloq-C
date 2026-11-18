@@ -5,7 +5,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 from reuse_persian_host_cache import (ALLOWED, EXPECTED_KEY, RECENT_ALLOWED, RECENT_KEY,
                                       NEWEST_ALLOWED, NEWEST_KEY, TRACE_ALLOWED, TRACE_KEY,
-                                      DEV149_ALLOWED, DEV149_KEY, DEV150_ALLOWED, DEV150_KEY, eligible)
+                                      DEV149_ALLOWED, DEV149_KEY, DEV150_ALLOWED, DEV150_KEY,
+                                      DEV151_ALLOWED, DEV151_KEY, eligible)
 
 assert eligible(EXPECTED_KEY, ALLOWED)
 assert not eligible(EXPECTED_KEY, ())
@@ -32,4 +33,8 @@ assert eligible(DEV150_KEY, DEV150_ALLOWED)
 assert not eligible(DEV150_KEY, ())
 assert not eligible(DEV150_KEY, DEV150_ALLOWED | {'src/reloq_core.c'})
 assert not eligible(DEV150_KEY, {'src/reloq_persian_acoustics.c'})
+assert eligible(DEV151_KEY, DEV151_ALLOWED)
+assert not eligible(DEV151_KEY, ())
+assert not eligible(DEV151_KEY, DEV151_ALLOWED | {'src/reloq_core.c'})
+assert not eligible(DEV151_KEY, {'src/reloq_persian_acoustics.c'})
 print('Passed verified Windows host cache safeguards.')

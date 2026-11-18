@@ -2078,7 +2078,20 @@ static unsigned persian_probe_e_neighbour(void *state,int32_t position,int backw
         }
         int selected=neighbour==0 || (neighbour>0 && neighbour<=255 &&
                      (before==(unsigned)neighbour || after==(unsigned)neighbour));
-        if(mode && !mode[1] && (mode[0]=='1' || mode[0]=='2') && selected && target &&
+        if(mode && mode[0]=='3' && !mode[1] && selected && target &&
+           count==5 && !target[end] && f[0]>=200 && f[0]<=1200 &&
+           f[1]>=500 && f[1]<=3000 && f[2]>=500 && f[2]<=3000 &&
+           f[3]>=1500 && f[3]<=4000 && f[4]>=1500 && f[4]<=4000) {
+            /* The earlier "se" E traverses the darker-to-brighter endpoints
+               1900->2000 and 2550->2700. Do not flatten that trajectory or
+               overwrite voice-specific F4/F5 and their inheritance. */
+            STATE(int16_t,s448)=(int16_t)f[0];
+            STATE(int16_t,s449)=(int16_t)f[0];
+            STATE(int16_t,s450)=(int16_t)f[1];
+            STATE(int16_t,s451)=(int16_t)f[2];
+            STATE(int16_t,s452)=(int16_t)f[3];
+            STATE(int16_t,s453)=(int16_t)f[4];
+        } else if(mode && !mode[1] && (mode[0]=='1' || mode[0]=='2') && selected && target &&
            (count==3 || count==5) && !target[end] &&
            f[0]>=200 && f[0]<=1200 && f[1]>=500 && f[1]<=3000 &&
            f[2]>=1500 && f[2]<=4000 &&
@@ -2516,6 +2529,34 @@ static unsigned persian_articulation_following(void *state)
     if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
     return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node)));
 }
+/* Restrict the US /y/ donor to the first actual phone of each word. Use the
+   provider's native word fence, and restore every scanner register: looking
+   at a preceding phone alone would confuse the preceding word with this one. */
+static int persian_articulation_word_initial(void *state,int32_t token_ref)
+{
+    delta_state *d=state;
+    if (!d || !d->vars || d->nstmts<5 || d->nstmts>256 || !token_ref) return 0;
+    delta_vars *v=EVV_AT(delta_vars *,d->vars);
+    delta_tpos left=d->lpta,right=d->rpta;
+    unsigned char scan[8],index[256],marks[256],chars[256];
+    int8_t compared=v->compared_equal,fences=v->fence_count,testing=v->testing;
+    memcpy(scan,&v->scan_ptr,sizeof scan);
+    memcpy(index,EVV_AT(const void *,d->fence_index),d->nstmts);
+    memcpy(marks,EVV_AT(const void *,d->fence_marks),d->nstmts);
+    memcpy(chars,EVV_AT(const void *,d->fence_chars),d->nstmts);
+    v->testing=0;
+    const uint8_t word_fence[]={4};
+    fence(d,1,word_fence);
+    memset(EVV_AT(void *,d->fence_marks),0,d->nstmts);
+    lpta_loadp(d,EVV_AT(const delta_token *,token_ref));
+    int initial=!setscan_l(d,2) && advance_tok(d);
+    d->lpta=left; d->rpta=right; memcpy(&v->scan_ptr,scan,sizeof scan);
+    v->compared_equal=compared; v->fence_count=fences; v->testing=testing;
+    memcpy(EVV_AT(void *,d->fence_index),index,d->nstmts);
+    memcpy(EVV_AT(void *,d->fence_marks),marks,d->nstmts);
+    memcpy(EVV_AT(void *,d->fence_chars),chars,d->nstmts);
+    return initial;
+}
 static int16_t persian_articulation_toward(int16_t value,int target)
 {
     /* Preserve native inheritance markers and two thirds of each contextual
@@ -2564,7 +2605,8 @@ static void persian_articulation_nasal(void *state,int second_formant)
         raise RuntimeError('Cannot locate Persian /j/ dispatcher')
     text = text.replace(call, r'''    {
         const char *us=getenv("RELOQ_FA_US_GLIDE");
-        if (us && us[0]=='1' && !us[1]) {
+        if (us && us[0]=='1' && !us[1] &&
+            persian_articulation_word_initial(state,STATE_AT(w60,-4))) {
             r0=persian_us_ga_ph_y(state,(int32_t)(FIELD(0)));
             if (!r0) r0=persian_us_eng_ph_y(state,(int32_t)(FIELD(0)));
         } else {
