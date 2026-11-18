@@ -1,4 +1,4 @@
-"""Check the restored R and the vowel-local head-size experiment."""
+"""Check the isolated R after I and the vowel-local head-size experiment."""
 from __future__ import annotations
 
 import argparse
@@ -27,15 +27,15 @@ def main():
             if engine:
                 for key, value in ((GENDER, 0), (SAMPLE_RATE, 3), (NATIVE_SPEED, 65)):
                     engine.set_parameter(key, value)
-        # Both familiar NVDA labels use the earlier R instead of the rejected
-        # after-I F3 boost. The E and its upper resonance are still unchanged.
-        for tag, index, lower, upper in (("`[.0ti.1r'e:']", 100, 2140, 2200),
-                                          ('`[.1zir.0GAt]', 175, 2135, 2200)):
+        # Both familiar NVDA labels use a more audible after-I F3 boost.
+        # The E and its upper resonance remain unchanged.
+        for tag, index, lower, upper in (("`[.0ti.1r'e:']", 100, 2480, 2600),
+                                          ('`[.1zir.0GAt]', 175, 2470, 2600)):
             _, frames = capture(current, scope, tag, True)
-            assert lower <= frames[index].controls[15] <= upper, (tag, 'restored R F3')
+            assert lower <= frames[index].controls[15] <= upper, (tag, 'after-I R F3')
             if previous:
                 _, old = capture(previous, old_scope, tag, True)
-                assert old[index].controls[15] - frames[index].controls[15] >= 90, tag
+                assert frames[index].controls[15] - old[index].controls[15] >= 100, tag
                 assert abs(old[index].controls[17] - frames[index].controls[17]) < 3, tag
             checks += 1
         for gender in (0, 1):
@@ -71,7 +71,7 @@ def main():
         current.close()
         if previous:
             previous.close()
-    print(f'Passed {checks} restored-R and vowel-local head-size checks.')
+    print(f'Passed {checks} contextual R and vowel-local head-size checks.')
 
 
 if __name__ == '__main__':
