@@ -11,9 +11,9 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / 'experiments/persian'), str(ROOT / 'nvda')]
 from _reloq_eci_direct import EciIndex, EciPitch, NATIVE_INFLECTION, NATIVE_PITCH, PROCESS_TAGS, SAMPLE_RATE
 from _reloq_persian_frames import FrameCapture
-from continuous_driver import _PlanningVoice, _sentence_colons_as_periods
+from continuous_driver import _PlanningVoice, _project_part, _sentence_colons_as_periods
 from continuous_plan import CapturedRows, fit_us_word_pitch, indexed_us_proxy
-from direct_fa_sequence import project
+from direct_fa_sequence import project, project_resilient
 from nvda_driver_probe import make_language_engine, PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH
 import continuous_driver
 import continuous_plan
@@ -85,6 +85,16 @@ def main():
         assert fa_engine._frontend.analyze_character('\\').parts[0].text.endswith('`[.0es.1lAS]')
         pinglish = voice._activate(voice._key(PINGLISH_PROBE.id, '1'))
         assert project(('eslash',), pinglish._frontend, pinglish=True).tagged == '`[.0es.1lAS]'
+        for text in ('ketab va khub', 'az ketab', 'joz iran', 'ketab ra', 'ya ketab'):
+            item = project((text,), pinglish._frontend, pinglish=True, allow_fallback=False)
+            assert '`00 ' in item.tagged, (text, item.tagged)
+        isolated = project(('ra',), pinglish._frontend, pinglish=True, allow_fallback=False)
+        assert isolated.tagged == '`[.1ra]'
+        after_english, _, _ = _project_part(pinglish, ('ra',), follows=False, preceded=True)
+        assert after_english == '`00 `[.0ra]', after_english
+        for text in ('ketab va khub', 'ketab ra', 'az ketab'):
+            resilient = project_resilient((text,), pinglish._frontend, pinglish=True)
+            assert '`00 ' in resilient.tagged, (text, resilient.tagged)
         assert _sentence_colons_as_periods('`[.1do]: `[.1se]', 'دو: سه') == '`[.1do]. `[.1se]'
         assert _sentence_colons_as_periods('`[.1do]:`[.1se]', '2:3') == '`[.1do]:`[.1se]'
         assert render(('سلام (دنیا) خوب',))[0] == render(('سلام، دنیا، خوب',))[0]
@@ -109,6 +119,56 @@ def main():
                 pcm, indexes = render(parts)
                 assert calls and all(calls), (parts, calls)
                 assert indexes[0] == (1, 0) and indexes[-1] == (2, len(pcm)), (parts, indexes)
+
+            # NVDA often interrupts an English segment immediately before a
+            # new Persian word. A stopped US handle must be reset before its
+            # phoneme probe; every new utterance must still receive US pitch.
+            expected, _ = render(('سلام دنیا.',))
+            for _ in range(25):
+                voice._activate(en_key)
+                voice.cancel()
+                assert en.raw._cancelled.is_set()
+                calls.clear()
+                pcm, _ = render(('سلام دنیا.',))
+                assert calls and all(calls), calls
+                assert pcm == expected, 'rapid navigation changed the contour'
+
+        # Resetting a stale stop must not discard a new stop delivered
+        # while the US handle is being prepared.
+        saved_probe = en.raw._phonemes_for_probe
+        def cancel_probe(text):
+            voice.cancel()
+            return saved_probe(text)
+        audio = bytearray()
+        with patch.object(en.raw, '_phonemes_for_probe', side_effect=cancel_probe):
+            assert not voice.speak(('سلام دنیا.',), audio.extend, lambda _: None)
+        assert not audio, 'a cancelled request emitted stale audio'
+
+        # If adjacent source indexes collapse a word boundary, fit the
+        # original US donor over the phrase instead of using Finnish F0.
+        attempts = []
+        def reject_word_marks(*args, **kwargs):
+            if args[4]:
+                attempts.append('words')
+                return False
+            result = fit_us_word_pitch(*args, **kwargs)
+            attempts.append('phrase' if result else 'failed')
+            return result
+        with patch.object(continuous_driver, 'fit_us_word_pitch', side_effect=reject_word_marks):
+            render(('سلام دنیا.',))
+            assert attempts == ['words', 'phrase'], attempts
+
+        attempts = []
+        def reject_initial_donor(*args, **kwargs):
+            if len(attempts) < 2:
+                attempts.append('unavailable')
+                return False
+            result = fit_us_word_pitch(*args, **kwargs)
+            attempts.append('rescue' if result else 'failed')
+            return result
+        with patch.object(continuous_driver, 'fit_us_word_pitch', side_effect=reject_initial_donor):
+            render(('سلام دنیا.',))
+            assert attempts == ['unavailable', 'unavailable', 'rescue'], attempts
     finally:
         voice.close()
     print('Passed US/Persian final-vowel pitch, weak words, word names and NVDA routing.')

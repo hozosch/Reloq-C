@@ -219,14 +219,21 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             int follows=follows_word_in_phrase(text,length,end);
             int found=reloq_fa_direct_context_word(text+start,end-start,follows,tag,sizeof tag);
             if(found!=1){status=found==0?1:-1;break;}
+            int weak_component=0;
             /* The object marker is an enclitic even at the end of a phrase.
              * A punctuation boundary resets preceding_word below. */
-            if(preceding_word && end-start==sizeof "را"-1 && !memcmp(text+start,"را",end-start))
+            if(preceding_word && end-start==sizeof "را"-1 && !memcmp(text+start,"را",end-start)) {
                 prefixed_tag_stress(tag,0);
+                weak_component=1;
+            }
             if(end-start==sizeof "علامت"-1 && !memcmp(text+start,"علامت",end-start) &&
-               followed_by_dar(text,length,end))prefixed_tag_stress(tag,0);
+               followed_by_dar(text,length,end)) {
+                prefixed_tag_stress(tag,0);
+                weak_component=1;
+            }
             if(start==prefixed_verb) {
                 prefixed_tag_stress(tag,0);
+                weak_component=1;
                 prefixed_verb=SIZE_MAX;
             } else if((end-start==sizeof "می"-1 && !memcmp(text+start,"می",end-start)) ||
                       (end-start==sizeof "نمی"-1 && !memcmp(text+start,"نمی",end-start))) {
@@ -234,12 +241,21 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
                 if(next!=SIZE_MAX) {
                     prefixed_tag_stress(tag,1);
                     prefixed_verb=next;
+                } else if(end-start==sizeof "می"-1 && !memcmp(text+start,"می",end-start)) {
+                    /* Independent می can be the noun "wine". A following
+                     * non-verb is no reason to suppress its lexical accent. */
+                    prefixed_tag_stress(tag,1);
                 }
             }
             retain_compound_prosody(text+start,end-start,follows,tag,sizeof tag);
             if(separate_adjacent_tags(&b)){status=-2;break;}
             size_t tag_start=b.used;
-            if(tag_is_weak_word(tag) && append(&b,"`00 ",4)){status=-2;break;}
+            /* Only intentionally weak forms receive the phrase control.
+             * A zero digit copied from a reference entry alone is not
+             * evidence that an arbitrary content word is a clitic. */
+            if(tag_is_weak_word(tag) &&
+               (weak_component || (follows && reloq_fa_direct_is_proclitic(text+start,end-start)) ||
+                strstr(tag,"] `[")!=NULL) && append(&b,"`00 ",4)){status=-2;break;}
             if(append(&b,tag,strlen(tag))){status=-2;break;}
             for(size_t i=start;i<end;++i)map[i]=tag_start;
             map[end]=b.used;at=end;

@@ -21,6 +21,12 @@ ALIASES = {
     'eslash': 'اسلش',
     'man': 'من', 'u': 'او', 'oo': 'او', 'ou': 'او',
     'amad': 'آمد', 'aamad': 'آمد',
+    # Whole-word spellings of the same native contextual function words.
+    # Keep a lone "o" as the Latin letter: it is ambiguous with colloquial
+    # conjunction -o and is also used when a user navigates by character.
+    'va': 'و', 'ya': 'یا', 'yaa': 'یا', 'ke': 'که',
+    'ra': 'را', 'raa': 'را', 'az': 'از', 'be': 'به', 'ba': 'با',
+    'dar': 'در', 'ta': 'تا', 'taa': 'تا', 'joz': 'جز',
 }
 LATIN_NAMES = {
     'a': '`[.1ej]', 'b': '`[.1bi]', 'c': '`[.1si]', 'd': '`[.1di]',

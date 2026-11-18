@@ -14,11 +14,13 @@ existing reference in several contexts; unknown forms retain the fallback.
 The NVDA adapter also suppresses redundant emoji presentation selectors split
 by source indexes, while letting NVDA's symbol level and dictionaries take precedence.
 
-### Current melody and word stress (dev144 experiment)
+### Current melody and word stress (dev145 experiment)
 
 The Persian and Pinglish test voices use a US-English pitch pilot while
-retaining Persian acoustic frames. Unusual inputs can still use the older
-Finnish route; the Korean donor described below is historical research.
+retaining Persian acoustic frames. Stale cancellation and coincident word
+boundaries no longer silently discard this pilot; some unsupported raw
+controls or unrecoverable native errors can still use the older route. The
+Korean donor described below is historical research.
 Pitch and inflection controls remain active. The native text core assigns word stress using bounded
 word-class and morphological rules, handles common weak function words in
 context, and retains the previous analysis where a form is ambiguous. See

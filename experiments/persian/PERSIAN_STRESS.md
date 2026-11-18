@@ -1,12 +1,15 @@
 # Persian stress and contour
 
-The dev144 NVDA experiment uses the native US English contour as its pitch
+The dev145 NVDA experiment uses the native US English contour as its pitch
 pilot, mapped to the existing Persian frame timing and vowel sound. It maps
 the end of a word's voiced portion to the donor's voiced end instead of
 dropping the final vowel's pitch movement. A Korean donor is not selected.
-Pitch and inflection controls continue to apply. Some unsupported input or
-planning failures can still fall back to the previous Finnish path; this is
-an experiment to be judged by listeners, not a claimed Persian model.
+Pitch and inflection controls continue to apply. A stale stop on the English
+handle is cleared safely before planning a new request, and unavailable word
+boundaries use the US phrase contour instead of discarding the donor. An
+emergency voiced US proxy handles an otherwise unusable donor. Certain raw
+controls and unrecoverable native failures can still use the old path; this
+is an experiment to be judged by listeners, not a claimed Persian model.
 
 For word prominence, Iranian Persian generally accents the final syllable
 of nouns, adjectives, most adverbs and nominal derivational/inflectional
@@ -33,17 +36,24 @@ are updated only when their phones match a known written name.
 Pronunciation tags with multiple separately analyzed segments and words
 with conflicting word-class labels retain their previous treatment.
 
-The common conjunction va and the usual complementizer ke are weak before
-a following word; the object marker ra is weak after its host, including at
-the end of a phrase. A native weak-word control also prevents those unaccented
-words from automatically attracting the phrase accent. Citation forms and
+An explicit native neutral-context list covers va, ya, ke, az, be, ba, dar,
+ta, and joz before a following word. The object marker ra is weak after its
+host, including at the end of a phrase. These categories, the possibility of
+focus, and contrasting stressed pronouns are discussed in Hosseini (2012):
+https://uu.diva-portal.org/smash/get/diva2:641228/FULLTEXT01.pdf
+The policy is separate from the reference-derived phone table. It also works
+for the corresponding Pinglish aliases and across an English host boundary.
+A native weak-word control prevents those deliberately unaccented words from
+automatically attracting the phrase accent. An all-zero reference tag alone
+does not force arbitrary content words to be weak. Citation forms and
 punctuation boundaries are retained. The computer term اسلش is accented on
 its final syllable in both written-word and slash-character readings.
 Adjectives ending in -i retain final stress when Lilak classifies the word
 only as an adjective (or adjective and adverb). Words also classified as
 nouns are not reinterpreted, since -i can be an unstressed indefinite clitic.
-Several prepositions and ya already have context-sensitive readings. Free
-personal and demonstrative pronouns can carry their own lexical accent; the
+The ambiguous spelling تو can be an independent pronoun or a preposition and
+is not unconditionally weakened. Free personal and demonstrative pronouns
+can carry their own lexical accent; the
 provider remains responsible for phrase-level pitch and emphasis. Mixed
 Persian/English segments and the word-level reference fallback retain these
 bounded context rules without introducing extra audible words.

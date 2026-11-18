@@ -18,4 +18,6 @@ size_t reloq_fa_direct_word_count(void);
  * The spelling must already be in the native normalized form. */
 int reloq_fa_direct_stress(const char *word,size_t bytes,char *tag,size_t capacity);
 int reloq_fa_direct_is_verb(const char *word,size_t bytes);
+/* Unambiguous common proclitics before a following word in the same phrase. */
+int reloq_fa_direct_is_proclitic(const char *word,size_t bytes);
 #endif

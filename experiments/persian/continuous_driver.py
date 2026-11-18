@@ -223,8 +223,10 @@ def _project_part(engine, items, *, follows, preceded=False):
     suffix = (' salam' if engine._pinglish else ' سلام') if follows else ''
     # A Persian enclitic following an English word has a left host even
     # though script routing has placed that host in a separate segment.
+    enclitic = (r'(?:را|ra{1,2})' if engine._pinglish else r'را')
     prefix = ('salam ' if engine._pinglish else 'سلام ') if (
-        preceded and re.match(r'^[ \t]*را(?=$|[ \t.,?!:;،؟؛])', original)) else ''
+        preceded and re.match(r'^[ \t]*' + enclitic + r'(?=$|[ \t.,?!:;،؟؛])',
+                              original, re.IGNORECASE)) else ''
     source = ((*((prefix,) if prefix else ()), *items, *((suffix,) if suffix else ()))
               if prefix or suffix else items)
     try:
@@ -739,6 +741,14 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             english_key = owner._key(US_ENGLISH.id, key[1])
             english_engine = owner._activate(english_key)
             english = _PlanningVoice(owner, english_key, english_engine, prefix=donor_prefix)
+            # A previous navigation request may have been cancelled while
+            # its US handle was active. Phoneme probes run before speak(),
+            # so they do not reset that stale stop themselves. Synchronize
+            # with cancellation and never clear a new stop for this request.
+            with owner._guard:
+                if owner._cancelled.is_set():
+                    return False
+                english.raw._cancelled.clear()
             previous_tags = english._dll.eciGetParam(english._handle, PROCESS_TAGS)
             if previous_tags < 0:
                 raise RuntimeError('cannot read US tag setting')
@@ -758,6 +768,37 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                 target, (0, len(target.pcm) // 2), donor, (0, len(donor.pcm) // 2),
                 word_marks, word_marks, rate, FrameCapture(voice._dll),
                 check=lambda: (_ for _ in ()).throw(InterruptedError()) if owner._cancelled.is_set() else None)
+            if not transferred and word_marks:
+                # Closely spaced NVDA indexes can coincide with a native
+                # word boundary. Keep the same US donor over the whole
+                # phrase if its per-word alignment cannot be trusted.
+                transferred = fit_us_word_pitch(
+                    target, (0, len(target.pcm) // 2), donor, (0, len(donor.pcm) // 2),
+                    (), (), rate, FrameCapture(voice._dll),
+                    check=lambda: (_ for _ in ()).throw(InterruptedError()) if owner._cancelled.is_set() else None)
+            if not transferred and not any(row.controls[2] > 0 and row.controls[1] > 0
+                                           for row in target.frames):
+                # An entirely unvoiced sound has no audible pitch to fit.
+                transferred = True
+            if not transferred:
+                # Some very short or weak proxies do not yield two voiced
+                # US frames. Use a single voiced US syllable for this rare
+                # emergency contour, preserving the ending's punctuation.
+                # This affects only pitch, never the Persian phones or timing.
+                ending = prepared.source.rstrip()[-1:]
+                punctuation = '?' if ending in ('?', '؟') else ',' if ending in (',', '،') else '.'
+                if previous_tags != 1:
+                    english.raw.set_parameter(PROCESS_TAGS, 1)
+                try:
+                    rescue = CapturedRows.from_capture(FrameCapture(english._dll).capture(
+                        english, ('`[.1ma]' + punctuation,), maximum=30000, audio=False))
+                finally:
+                    if previous_tags != 1:
+                        english.raw.set_parameter(PROCESS_TAGS, previous_tags)
+                transferred = fit_us_word_pitch(
+                    target, (0, len(target.pcm) // 2), rescue, (0, len(rescue.pcm) // 2),
+                    (), (), rate, FrameCapture(voice._dll),
+                    check=lambda: (_ for _ in ()).throw(InterruptedError()) if owner._cancelled.is_set() else None)
             if transferred and pitch_ratios is not None:
                 for frame in range(len(item.frames)):
                     if item.frames[frame].controls[1] > 0 and target.frames[frame].controls[1] > 0:

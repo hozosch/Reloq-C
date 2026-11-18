@@ -79,8 +79,19 @@ def main():
     }
     for word, expected in examples.items():
         assert project(word) == expected, (word, project(word), expected)
-    assert project('می خانه').startswith('`00 `[.0mi] '), 'a noun was mistaken for a verb'
+    assert project('می خانه').startswith('`[.1mi] '), 'an independent noun was mistaken for a verb'
     assert project('علامت‌دار') == project('علامت دار')
+
+    # Neutral prepositions and conjunctions attach to the next word, but
+    # citation forms, punctuation, and independent pronouns keep an accent.
+    for word in ('و', 'یا', 'که', 'از', 'به', 'با', 'در', 'تا', 'جز'):
+        tagged = project(word + ' خانه')
+        assert tagged.startswith('`00 `[.0'), (word, tagged)
+        assert project(word).startswith('`[.1'), (word, project(word))
+        assert project(word + '، خانه').startswith('`[.1'), (word, project(word + '، خانه'))
+    assert project('جز از ایران').count('`00 ') == 2
+    assert project('تو خانه').startswith('`[.1to] '), 'independent pronoun was weakened'
+    assert not project('بیست کتاب').startswith('`00 '), 'a content word was treated as a clitic'
 
     def fallback(word, tag):
         source = word.encode('utf8')

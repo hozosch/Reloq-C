@@ -320,13 +320,14 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
         tag = None
         try:
             if pinglish:
-                analysis = frontend.analyze_pinglish(value, positioned=False, allow_fallback=False)
+                trial = value + (' salam' if follows else '')
+                analysis = frontend.analyze_pinglish(trial, positioned=True, allow_fallback=False)
             else:
                 trial = value + (' سلام' if follows else '')
                 analysis = frontend.analyze_direct(trial)
-                if analysis is not None and follows:
-                    cut = analysis.source_map[len(value.encode('utf8'))]
-                    analysis = replace(analysis, parts=(replace(analysis.parts[0], text=analysis.parts[0].text[:cut]),))
+            if analysis is not None and follows and analysis.source_map is not None:
+                cut = analysis.source_map[len(value.encode('utf8'))]
+                analysis = replace(analysis, parts=(replace(analysis.parts[0], text=analysis.parts[0].text[:cut]),))
             if analysis is not None and len(analysis.parts) == 1 and analysis.parts[0].language == 'fa':
                 tag = analysis.parts[0].text
         except (ValueError, RuntimeError, OSError, UnicodeError):
@@ -444,7 +445,7 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
             tag = None
             if pending_pair is not None and at == pending_pair[0]:
                 tag, pending_pair = pending_pair[1], None
-            elif not pinglish and value == 'را':
+            elif (not pinglish and value == 'را') or (pinglish and value.lower() in ('ra', 'raa')):
                 before = at
                 while before and source[before - 1] in ' \t':
                     before -= 1
@@ -452,8 +453,9 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
                     # The previous word may itself require the reference;
                     # use a known host solely to obtain the native enclitic
                     # stress without changing source positions or phones.
-                    host = 'سلام '
-                    pair = frontend.analyze_direct(host + value)
+                    host = 'salam ' if pinglish else 'سلام '
+                    pair = (frontend.analyze_pinglish(host + value, positioned=True, allow_fallback=False)
+                            if pinglish else frontend.analyze_direct(host + value))
                     if pair is not None and pair.source_map is not None and len(pair.parts) == 1:
                         tag = pair.parts[0].text[pair.source_map[len(host.encode('utf8'))]:]
             elif not pinglish and value in ('می', 'نمی', 'علامت'):

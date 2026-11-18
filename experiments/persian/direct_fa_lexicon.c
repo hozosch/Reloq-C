@@ -575,6 +575,18 @@ static void stress_unaccent(char *tag)
 static int stress_word_is(const char *word,size_t bytes,const char *value)
 { return strlen(value)==bytes && !memcmp(word,value,bytes); }
 
+/* Explicit neutral-context policy, independent of the reference engine's
+ * final/nonfinal digits. Do not include ambiguous prepositions such as تو,
+ * which can also be the independent, accented pronoun "you". */
+int reloq_fa_direct_is_proclitic(const char *word,size_t bytes)
+{
+    static const char *const words[]={"و", "یا", "که", "از", "به", "با", "در", "تا", "جز"};
+    if(!word || !bytes || memchr(word,0,bytes))return 0;
+    for(size_t i=0;i<sizeof words/sizeof words[0];++i)
+        if(stress_word_is(word,bytes,words[i]))return 1;
+    return 0;
+}
+
 /* The provider can still shape the phrase; these digits only describe the
  * lexical accent. A word named alone retains its ordinary citation stress. */
 static void apply_function_word_context(const char *word,size_t bytes,int follows_word,char *tag)
@@ -585,10 +597,15 @@ static void apply_function_word_context(const char *word,size_t bytes,int follow
             stress_primary(tag,0);return;
         }
     }
-    /* va and the common complementizer/relative ke lean on a following
-     * word. Without a following word, keep the citation pronunciation. */
-    if(follows_word && (stress_word_is(word,bytes,"و") || stress_word_is(word,bytes,"که")))
-        stress_unaccent(tag);
+    /* Proclitics lean on a following word. When quoted or read alone, keep
+     * the ordinary citation accent; punctuation is a phrase boundary. */
+    if(reloq_fa_direct_is_proclitic(word,bytes)) {
+        if(follows_word)stress_unaccent(tag);
+        else {
+            size_t syllables=stress_syllables(tag);
+            if(syllables)stress_primary(tag,syllables-1);
+        }
+    }
 }
 
 /* Recognize a finite inflection only when the independently listed stem

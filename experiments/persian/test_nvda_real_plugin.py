@@ -91,9 +91,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.emoji_case = False
             self.user_controls = []
             self.continuous = []
+            self.us_fits = []
+            self.nav_stale_case = False
+            self.nav_stale_injected = False
             old_project_part = continuous_driver._project_part
             old_prepared = direct_fa_sequence.ScopedDirectPersianEngine._speak_prepared
             old_continuous = nvda_driver_probe.try_continuous
+            old_glides = nvda_driver_probe.try_persian_glides
+            old_us_fit = continuous_driver.fit_us_word_pitch
             old_runs = nvda_driver_probe._script_runs
             def observe_runs(text):
                 result = old_runs(text)
@@ -124,9 +129,24 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if result is not None:
                     self.continuous.append(result)
                 return result
+            def observe_us_fit(*args, **kwargs):
+                result = old_us_fit(*args, **kwargs)
+                self.us_fits.append(result)
+                return result
+            def inject_stale_us_stop(owner, *args, **kwargs):
+                if self.nav_stale_case and not self.nav_stale_injected:
+                    # The previous job was stopped on the English handle;
+                    # the next request itself is not cancelled.
+                    english = owner._activate(owner._key(nvda_driver_probe.US_ENGLISH.id,
+                                                         owner._home[1]))
+                    english.cancel()
+                    self.nav_stale_injected = True
+                return old_glides(owner, *args, **kwargs)
             continuous_driver._project_part = observe_project
+            continuous_driver.fit_us_word_pitch = observe_us_fit
             direct_fa_sequence.ScopedDirectPersianEngine._speak_prepared = observe_prepared
             nvda_driver_probe.try_continuous = observe_continuous
+            nvda_driver_probe.try_persian_glides = inject_stale_us_stop
             # Keep these measurements in the test plugin, not in the voice.
             # They separate NVDA preprocessing, queueing and synthesis while
             # using the same real driver and per-request text processing.
@@ -359,6 +379,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                ('fa_IR', 'من کتاب', 'issue49_weak_pronoun'),
                                ('fa_IR', 'اسلش', 'issue49_weak_eslash'),
                                ('fa_Latn', 'eslash', 'issue49_weak_eslash'),
+                               ('fa_IR', 'جز از ایران', 'issue49_weak_except'),
+                               ('fa_Latn', 'joz iran', 'issue49_weak_except'),
+                               ('fa_Latn', 'ketab ra', 'issue49_weak_object'),
+                               ('fa_IR', 'سلام دنیا', 'issue49_weak_us_stale'),
+                               ('fa_Latn', 'salam donya', 'issue49_weak_us_stale'),
                                ('fa_IR', 'یونانی', 'issue49_weak_greek_adjective'),
                                ('fa_IR', 'ژاپنی', 'issue49_weak_japanese_adjective')))
             # Capture Finnish-contour samples through NVDA's preprocessing,
@@ -514,6 +539,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             locale, text, spelling = self.cases[self.index]
             self.speech.cancelSpeech()
             self.synth.language = locale
+            self.nav_stale_case = spelling == 'issue49_weak_us_stale'
+            self.nav_stale_injected = False
+            self.before_us_fits = len(self.us_fits)
             self.sample_case = isinstance(spelling, str) and spelling.startswith('comparison_')
             self.sample_finnish = spelling == 'comparison_finnish_pitch'
             self.reference_calibration = spelling == 'comparison_old_calibration'
@@ -703,10 +731,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             'issue49_weak_isolated': '`[.1ra]',
                             'issue49_weak_pronoun': '`[.1mAn]',
                             'issue49_weak_eslash': '`[.0es.1lAS]',
+                            'issue49_weak_except': '`00 `[.0Joz]',
+                            'issue49_weak_us_stale': '`[.0sA.1lam]',
                             'issue49_weak_greek_adjective': '`[.0ju.0na.1ni]',
                             'issue49_weak_japanese_adjective': '`[.0Za.0po.1ni]'}[spelling]
                 if expected not in tags:
                     raise AssertionError('NVDA lost contextual word stress: ' + ascii((text, tags)))
+                if spelling == 'issue49_weak_us_stale' and (
+                        not self.nav_stale_injected or not any(self.us_fits[self.before_us_fits:])):
+                    raise AssertionError('NVDA lost US pitch after cancelling the previous English job')
             if spelling in ('tags_slow', 'tags_fast', 'tags_pitch', 'tags_phonemes'):
                 expected = text.split(' ', 1)[0]
                 if expected not in self.user_controls[self.before_user_controls:]:
