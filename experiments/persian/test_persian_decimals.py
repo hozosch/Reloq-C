@@ -168,13 +168,41 @@ def main():
         output = decimals.protect_decimals(driver, split, symbol_level=kind)
         assert ''.join(item.text for item in output if isinstance(item, native_word)) == '0.2.100'
         assert [item.index for item in output if isinstance(item, IndexCommand)] == [100, 101]
-    # The builtin dictionary must keep its letter-to-number boundary too.
-    adjacent = 'version v1.5'
-    assert protected([adjacent]) == [adjacent]
+    # The stock builtin's letter-to-number separator must be retained while
+    # the following full decimal survives the Persian symbol processor.
+    for adjacent, number in (('version v1.5.0', '1.5.0'),
+                             ('سلام v1.5.0 خوب', '1.5.0'),
+                             ('NVDA1.5.0', '1.5.0'),
+                             ('version a1.2 and b3.4.5', None)):
+        guarded = protected([adjacent])
+        rebuilt = ''.join(item.text if isinstance(item, native_word) else builtin.sub(item)
+                          for item in guarded if isinstance(item, (str, native_word)))
+        assert rebuilt == builtin.sub(adjacent), (adjacent, pieces(guarded), rebuilt)
+        assert any(isinstance(item, native_word) and '.' in item.text for item in guarded), adjacent
+        if number is not None:
+            assert any(isinstance(item, native_word) and item.text.endswith(number) for item in guarded), adjacent
+    adjacent = 'version v1.5.0'
+    for kind in (level.NONE, level.SOME, level.MOST, level.ALL):
+        for cut in range(1, len(adjacent)):
+            sequence = [adjacent[:cut], IndexCommand(cut), adjacent[cut:]]
+            guarded = decimals.protect_decimals(driver, sequence, symbol_level=kind)
+            output = ''.join(item.text if isinstance(item, native_word) else builtin.sub(item)
+                             for item in guarded if isinstance(item, (str, native_word)))
+            expected = builtin.sub(adjacent[:cut]) + builtin.sub(adjacent[cut:])
+            assert output == expected, (kind, cut, pieces(guarded), output, expected)
+            assert [item.index for item in guarded if isinstance(item, IndexCommand)] == [cut]
+            assert ''.join(item.text for item in guarded if isinstance(item, native_word)).replace(' ', '') == '1.5.0'
     # A user dictionary spanning the version is always left to NVDA.
     dictionaries.dictionaries['user'] = [types.SimpleNamespace(compiled=re.compile(r'0\.2\.100'))]
     assert protected([whole]) == [whole]
     dictionaries.dictionaries['user'] = []
+    # A customized builtin rule that changes the number must retain control.
+    class NumberReplacement(BuiltinEntry):
+        def sub(self, value):
+            return self.compiled.sub('custom', value)
+    builtin.append(NumberReplacement(r'1\.5\.0'))
+    assert protected(['version v1.5.0']) == ['version v1.5.0']
+    builtin.pop()
     # NVDA 2026.3 exposes dictionaries through enabled definitions instead
     # of the legacy dictionary map.
     builtin_definition = types.SimpleNamespace(enabled=True, source=types.SimpleNamespace(value='builtin'),
@@ -183,7 +211,7 @@ def main():
                                             dictionary=[])
     dictionaries.listAvailableSpeechDictDefinitions = lambda: [builtin_definition, user_definition]
     assert any(isinstance(item, native_word) for item in protected([whole]))
-    assert protected([adjacent]) == [adjacent]
+    assert any(isinstance(item, native_word) and item.text.endswith('1.5.0') for item in protected([adjacent]))
     user_definition.dictionary = [types.SimpleNamespace(compiled=re.compile(r'0\.2\.100'))]
     assert protected([whole]) == [whole]
     del dictionaries.listAvailableSpeechDictDefinitions
@@ -191,6 +219,10 @@ def main():
     driver._selectedLanguage = pinglish_id
     assert any(isinstance(item, native_word) for item in protected(['phone 3.5']))
     assert protected(['salam 3.5']) == ['salam 3.5']
+    dictionaries.dictionaries['builtin'] = builtin
+    assert any(isinstance(item, native_word) and item.text.endswith('1.5.0')
+               for item in protected(['v1.5.0']))
+    assert protected(['salam1.5']) == ['salam1.5']
     driver._selectedLanguage = en_id
     assert protected(['version 3.5']) == ['version 3.5']
     print('Passed English decimal points through Persian NVDA symbols, indexes, spelling and dictionaries.')

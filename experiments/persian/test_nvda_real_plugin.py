@@ -214,6 +214,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if not synthDriverHandler.setSynth('reloqC'):
                 raise RuntimeError('could not select ReLoq C')
             self.synth = synthDriverHandler.getSynth()
+            import speechDictHandler
+            builtin = next(d for d in speechDictHandler.listAvailableSpeechDictDefinitions()
+                           if getattr(d.source, 'value', d.source) == 'builtin')
+            if not builtin.enabled or not builtin.dictionary:
+                raise RuntimeError('NVDA builtin dictionary must be enabled for the version tests')
+            builtin_version = 'v1.5.0'
+            for entry in builtin.dictionary:
+                builtin_version = entry.sub(builtin_version)
+            if builtin_version != 'v 1.5.0':
+                raise RuntimeError('NVDA builtin dictionary did not split the version fixture')
             self.done_signal = synthDriverHandler.synthDoneSpeaking
             self.done_signal.register(self.speech_done)
             from speech import speech as speech_module
@@ -273,10 +283,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('en_US', '4 of 14', 'issue49_numeric'),
                           *((locale, text, mode) for text in (
                               'Google Chrome, version 157.0.8103.79 (AMD64)',
-                              'BlindRadio, version 0.2.100')
+                              'BlindRadio, version 0.2.100',
+                              'v1.5.0')
                             for locale, mode in (('fa_IR', 'issue49_version_some'),
                                                  ('en_US', 'issue49_version_some'),
                                                  ('fa_IR', 'issue49_version_split'))),
+                          ('fa_Latn', 'v1.5.0', 'issue49_version_some'),
+                          ('fa_Latn', 'v1.5.0', 'issue49_version_split'),
                           *(( 'fa_IR', emoji, mode) for emoji in ('⚽️', '⚡️', '❤️')
                             for mode in ('issue49_emoji_some', 'issue49_emoji_split')),
                           *(('fa_IR', f'سرنوشتارِ سطحِ {level}ِ بعدی‌ای نیست', 'issue49_heading')
@@ -438,7 +451,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if fa_number['pcm_sha256'] != en_number['pcm_sha256']:
                     raise AssertionError('English number phrase was split between languages')
                 for text in ('Google Chrome, version 157.0.8103.79 (AMD64)',
-                             'BlindRadio, version 0.2.100'):
+                             'BlindRadio, version 0.2.100', 'v1.5.0'):
                     fa_version = next(row for row in self.results if row['locale'] == 'fa_IR' and
                                       row['text'] == text and row['spelling'] == 'issue49_version_some')
                     en_version = next(row for row in self.results if row['locale'] == 'en_US' and
@@ -449,6 +462,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                         raise AssertionError('English version number changed language: ' + text)
                     if fa_version['pcm_sha256'] != split_version['pcm_sha256']:
                         raise AssertionError('NVDA indexes changed the English version: ' + text)
+                    if text == 'v1.5.0':
+                        for mode in ('issue49_version_some', 'issue49_version_split'):
+                            pinglish = next(row for row in self.results if row['locale'] == 'fa_Latn' and
+                                            row['text'] == text and row['spelling'] == mode)
+                            if pinglish['pcm_sha256'] != en_version['pcm_sha256']:
+                                raise AssertionError('Pinglish changed the English version: ' + mode)
                 plain = next(row for row in self.results if row['spelling'] == 'tags_plain')
                 pitch = next(row for row in self.results if row['spelling'] == 'tags_pitch')
                 if plain['pcm_sha256'] == pitch['pcm_sha256']:

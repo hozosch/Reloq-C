@@ -7,7 +7,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 from _reloq_eci_direct import EciCapitalWord, EciIndex, EciLanguage, EciText
-from nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, make_language_engine
+from nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, make_language_engine, _persian_part_runs
 
 
 def main():
@@ -26,6 +26,7 @@ def main():
         ('version 3.5 is available.',),
         ('Google Chrome, version 157.0.8103.79 (AMD64)',),
         ('BlindRadio, version 0.2.100',),
+        ('v1.5.0',),
         ('4 of 14',),
         ('4', EciIndex(29), ' of ', EciIndex(30), '14'),
         ('ˌchi-kən-ˈgu̇n-yə',),
@@ -56,6 +57,18 @@ def main():
         assert render(PERSIAN_PROBE.id, processed_split) == render(US_ENGLISH.id, processed_split)
         signed = ('version   ', EciText(' minus '), EciText('3.5'), ' is available.  ')
         assert render(PERSIAN_PROBE.id, signed) == render(US_ENGLISH.id, ('version    minus 3.5 is available.  ',))
+        # With NVDA's builtin rule, the prefix is processed as ordinary text
+        # and the decimal is a native command beginning with its inserted
+        # separator. The complete result must still be the English version.
+        version = ('v  ', EciText(' 1.5.0'))
+        assert render(PERSIAN_PROBE.id, version) == render(US_ENGLISH.id, ('v 1.5.0  ',))
+        version_indexed = ('v  ', EciText(' 1'), EciIndex(33), EciText('.5.0'))
+        assert render(PERSIAN_PROBE.id, version_indexed) == render(US_ENGLISH.id, version_indexed)
+        mixed = ('سلام v  ', EciText(' 1.5.0'), ' خوب')
+        runs = _persian_part_runs(mixed, (PERSIAN_PROBE.id, '1'))
+        assert runs[1] == (('en', ' 1.5.0'),), runs
+        assert render(PINGLISH_PROBE.id, version) == render(US_ENGLISH.id, version)
+        assert render(PINGLISH_PROBE.id, version_indexed) == render(US_ENGLISH.id, version_indexed)
         # A number on its own or next to Persian remains Persian, including
         # when the number was delivered in several indexed fragments.
         assert render(PERSIAN_PROBE.id, ('3.5',))[0] != render(US_ENGLISH.id, ('3.5',))[0]

@@ -21,14 +21,20 @@ def decimal_pending(sequence):
     return '.' in text and any('0' <= char <= '9' for char in text)
 
 
-def _builtin_split_unchanged(text, intervals):
-    """Ensure NVDA's builtin dictionary has the same result after splitting."""
+def _builtin_split_prefixes(text, intervals):
+    """Preserve NVDA's builtin result when guarding a decimal.
+
+    A stock builtin rule inserts a space between a letter and a digit. Once
+    the number is carried as a command that zero-width match would disappear;
+    reproduce its space only if the complete dictionary result stays identical.
+    Return None when an arbitrary rule cannot be preserved safely.
+    """
     try:
         import speechDictHandler
         try:
             import globalVars
             if not getattr(globalVars, 'speechDictionaryProcessing', True):
-                return True
+                return {}
         except ImportError:
             pass
         if hasattr(speechDictHandler, 'listAvailableSpeechDictDefinitions'):
@@ -38,7 +44,7 @@ def _builtin_split_unchanged(text, intervals):
         else:
             dictionaries = (speechDictHandler.dictionaries.get('builtin', ()),)
         if not any(dictionaries):
-            return True
+            return {}
         def process(value):
             for dictionary in dictionaries:
                 for entry in dictionary:
@@ -48,16 +54,31 @@ def _builtin_split_unchanged(text, intervals):
                         raise ValueError('dictionary replacement unavailable')
             return value
         expected, pieces, cursor = process(text), [], 0
-        for left, right, _replacement in sorted(intervals):
+        candidates = set()
+        for left, right, replacement in sorted(intervals):
             if left < cursor or right < left:
-                return False
+                return None
+            if (replacement is None and left and left < right and
+                    re.fullmatch(r'[^\W\d]', text[left - 1]) and
+                    '0' <= text[left] <= '9'):
+                candidates.add(left)
             pieces.extend((process(text[cursor:left]), text[left:right]))
             cursor = right
         pieces.append(process(text[cursor:]))
-        return ''.join(pieces) == expected
+        if ''.join(pieces) == expected:
+            return {}
+        if candidates:
+            pieces, cursor = [], 0
+            for left, right, _replacement in sorted(intervals):
+                pieces.extend((process(text[cursor:left]), ' ' if left in candidates else '', text[left:right]))
+                cursor = right
+            pieces.append(process(text[cursor:]))
+            if ''.join(pieces) == expected:
+                return {left: ' ' for left in candidates}
+        return None
     except Exception:
         # An unavailable or invalid NVDA dictionary must not block speech.
-        return False
+        return None
 
 
 def _english_number(text, start, end, language):
@@ -71,7 +92,8 @@ def _english_number(text, start, end, language):
         words = latin_spans(text)
         previous = next(((left, right) for left, right in reversed(words) if right <= start), None)
         following = next(((left, right) for left, right in words if left >= end), None)
-        return bool((previous and english_exception(text[previous[0]:previous[1]]) and
+        return bool((previous and (english_exception(text[previous[0]:previous[1]]) or
+                     (text[previous[0]:previous[1]].lower() == 'v' and previous[1] == start)) and
                      not text[previous[1]:start].strip()) or
                     (previous is None and following and english_exception(text[following[0]:following[1]]) and
                      not text[end:following[0]].strip()))
@@ -95,7 +117,7 @@ def protect_decimals(driver, sequence, *, symbol_level=None):
     except (ImportError, AttributeError, KeyError, TypeError, ValueError):
         return sequence
 
-    selected, spelling, group, intervals = home, False, [], {}
+    selected, spelling, group, intervals, prefixes = home, False, [], {}, {}
 
     def flush():
         if not group or spelling or selected not in (_FA, _PINGLISH):
@@ -139,12 +161,17 @@ def protect_decimals(driver, sequence, *, symbol_level=None):
                     if is_text and left < right:
                         group_intervals.setdefault(item_index, []).append((left - position, right - position, replacement))
                 position = end
+        group_prefixes = {}
         for item_index, value, is_text in group:
-            if is_text and item_index in group_intervals and not _builtin_split_unchanged(value, group_intervals[item_index]):
-                group.clear()
-                return
+            if is_text and item_index in group_intervals:
+                found = _builtin_split_prefixes(value, group_intervals[item_index])
+                if found is None:
+                    group.clear()
+                    return
+                group_prefixes[item_index] = found
         for item_index, selected_intervals in group_intervals.items():
             intervals.setdefault(item_index, []).extend(selected_intervals)
+        prefixes.update(group_prefixes)
         group.clear()
 
     for index, item in enumerate(sequence):
@@ -174,6 +201,7 @@ def protect_decimals(driver, sequence, *, symbol_level=None):
             if left > cursor:
                 result.append(item[cursor:left])
             protected = item[left:right] if replacement is None else replacement
+            protected = prefixes.get(index, {}).get(left, '') + protected
             if protected:
                 result.append(NativeDictionaryWord(protected))
             cursor = right
