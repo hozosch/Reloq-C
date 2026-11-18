@@ -76,14 +76,18 @@ def main():
                 assert len(target.syllables) == len(donor.syllables) == 4
                 assert abs(vowel_start(target, -1) - vowel_start(donor, -1)) <= 15, (sample_rate, speed)
 
-        for number in ('196', '296', '1996'):
+        # Check the whole 0..999 range, not just the originally reported 96.
+        # Each numeral's silent pilot must retain its word and syllable count.
+        for number in (*map(str, range(1000)), '1996'):
             tagged = project((number,), engine._frontend, allow_fallback=False).tagged
-            expected = len(re.findall(r'`\[[^]]+\]', tagged))
-            proxy = indexed_us_proxy(tagged, en, tuple(range(1, expected)))
+            expected = re.findall(r'`\[([^]]+)\]', tagged)
+            proxy = indexed_us_proxy(tagged, en, tuple(range(1, len(expected))))
             displayed = en._phonemes_for_probe(''.join(p for p in proxy if isinstance(p, str)))
             # Invalid no-primary donor tags used to be spelled as many
             # English letter names inside the otherwise silent pitch pilot.
-            assert len(re.findall(r'`\[[^]]+\]', displayed)) == expected, (number, proxy, displayed)
+            actual = re.findall(r'`\[([^]]+)\]', displayed)
+            counts = lambda values: [len(re.findall(r'\.[012]', value)) for value in values]
+            assert counts(expected) == counts(actual), (number, proxy, displayed)
         pinglish = voice._activate(voice._key(PINGLISH_PROBE.id, '1'))
         tags = [project((value,), engine._frontend, allow_fallback=False).tagged
                 for value in ('96', '۹۶', '٩٦')]
