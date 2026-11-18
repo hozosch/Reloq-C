@@ -95,6 +95,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.emoji_submissions = []
             self.korean_calls = []
             self.version_case = False
+            self.compact_case = False
             self.version_debug = []
             self.emoji_case = False
             self.user_controls = []
@@ -110,7 +111,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             old_runs = nvda_driver_probe._script_runs
             def observe_runs(text):
                 result = old_runs(text)
-                if self.version_case:
+                if self.version_case or self.compact_case:
                     self.version_debug.append(('runs', text, result))
                 return result
             nvda_driver_probe._script_runs = observe_runs
@@ -208,7 +209,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             def observe_synth_speech(instance, sequence):
                 if self.emoji_case:
                     self.emoji_submissions.append(tuple(item for item in sequence if isinstance(item, str)))
-                if self.version_case:
+                if self.version_case or self.compact_case:
                     self.version_debug.append(('synth', repr(sequence)))
                 return original_synth_speak(instance, sequence)
             reloq.SynthDriver.speak = trace(observe_synth_speech, 'driver')
@@ -763,6 +764,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                                            'issue49_original_spelling')
             self.emoji_case = spelling in ('issue49_emoji_some', 'issue49_emoji_split')
             self.version_case = spelling in ('issue49_version_some', 'issue49_version_split')
+            self.compact_case = isinstance(spelling, str) and spelling.startswith('issue50_compact_colon_')
             self.before_version_debug = len(self.version_debug)
             self.before_emoji = len(self.emoji_submissions)
             self.before_korean = len(self.korean_calls)
@@ -970,6 +972,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 result['projection'] = ' '.join(self.projected[self.before_projected:])
             if self.version_case:
                 result['version_debug'] = self.version_debug[self.before_version_debug:]
+            if self.compact_case:
+                result['compact_debug'] = self.version_debug[self.before_version_debug:]
+                result['projection'] = self.projected_sources[self.before_projected_sources:]
             self.results.append(result)
             self.index += 1
             self.next()
