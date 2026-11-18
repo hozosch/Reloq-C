@@ -119,6 +119,12 @@ def main():
                 automatic = render((EciIndex(90), part, EciIndex(91)))
                 explicit = render((EciLanguage(US_ENGLISH.id, '1'), EciIndex(90), part, EciIndex(91)))
                 assert automatic == explicit, (value, spelling)
+        # Existing Persian character names, unlike English running text,
+        # remain available when a character is explicitly spelled.
+        named_e = fa_engine._frontend.analyze_character('é')
+        assert named_e.parts[0].language == 'fa'
+        assert project((EciText('é', character_mode=True),), fa_engine._frontend,
+                       allow_fallback=False).tagged == named_e.parts[0].text
         pinglish = make_language_engine(args.library, args.library, None,
                                         Path('/unavailable-espeak'), Path('/unavailable'),
                                         language=PINGLISH_PROBE.id)
@@ -135,6 +141,7 @@ def main():
                 resilient = project_resilient((original,), frontend, pinglish=True)
                 assert resilient.tagged == direct.tagged, (original, resilient.tagged, direct.tagged)
             assert ping((EciText('ß', character_mode=True),))[0] == ping((EciText('s', character_mode=True),))[0]
+            assert frontend.analyze_pinglish_character('é') == frontend.analyze_character('é')
             sound, marks = ping((EciIndex(11), 'Stra', EciIndex(12), 'ße', EciIndex(13)))
             assert sound and marks == [11, 12, 13]
             assert pinglish._activate(pinglish._key(PINGLISH_PROBE.id, '1'))._frontend._worker is None

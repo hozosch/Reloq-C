@@ -432,12 +432,15 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 segments = []
                 for char in text:
                     key, fragment, mode = logical, char, True
-                    if latin_fold(char) is not None:
+                    if 'A' <= char <= 'Z' or 'a' <= char <= 'z':
                         key = english
                     elif ord(char) > 127 and isinstance(engine, OwnedPersianEngine):
                         named = engine._frontend.analyze_character(char).parts[0]
                         if named.language == 'en-us':
-                            key, fragment, mode = english, named.text, False
+                            if latin_fold(char) is not None:
+                                key = english
+                            else:
+                                key, fragment, mode = english, named.text, False
                     # Keep English Unicode names as separate words, while
                     # retaining native spelling of adjacent plain letters.
                     if mode and segments and segments[-1][0] == key and segments[-1][2]:
@@ -462,12 +465,12 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 if isinstance(engine, OwnedPersianEngine):
                     named = []
                     for char in text:
-                        if latin_fold(char) is not None:
-                            named.append((char, None if logical[0] == PINGLISH_PROBE.id else char))
-                            continue
                         named_part = (engine._frontend.analyze_character(char).parts[0]
                                       if ord(char) > 127 else None)
-                        name = (named_part.text if named_part and named_part.language == 'en-us' else None)
+                        if named_part and named_part.language == 'en-us' and latin_fold(char) is not None:
+                            name = char if logical[0] == PERSIAN_PROBE.id else None
+                        else:
+                            name = (named_part.text if named_part and named_part.language == 'en-us' else None)
                         named.append((char, name))
                     if any(name is not None for _, name in named):
                         for char, name in named:

@@ -364,11 +364,14 @@ class DirectFirstPersian:
         """Use Persian names for Latin letters in the explicit Pinglish profile."""
         if not isinstance(char, str) or len(char) != 1 or char == '\0':
             raise ValueError('one Unicode character is required')
+        existing = self.analyze_character(char)
+        if existing is not None and existing.parts and existing.parts[0].language == 'fa':
+            return existing
         named = latin_name(char)
         if named is not None:
             mapping = (0,) * len(char.encode('utf8')) + (len(named.text),)
             return PersianAnalysis((named,), mapping, False)
-        return self.analyze_character(char)
+        return existing
 
     def _direct_pinglish(self, text: str) -> PersianAnalysis | None:
         """Run native Latin rules alongside verified Persian words and numbers."""
