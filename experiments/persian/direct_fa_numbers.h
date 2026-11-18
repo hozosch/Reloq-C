@@ -2,6 +2,11 @@
 #ifndef RELOQ_DIRECT_FA_NUMBERS_H
 #define RELOQ_DIRECT_FA_NUMBERS_H
 #include <stddef.h>
+#include "reloq_persian_numbers.h"
+
+/* Analyze a normalized number without committing to a phonetic backend. */
+int reloq_fa_number_events(const char *text,size_t length,size_t *consumed,
+    struct reloq_fa_number_event *events,size_t capacity,size_t *count);
 
 /* Read a number at the beginning of already-normalized UTF-8 text. Persian
  * and Arabic-Indic digits have become ASCII; U+066B/U+066C stay distinct.

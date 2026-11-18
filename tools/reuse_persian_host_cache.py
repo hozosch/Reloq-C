@@ -11,6 +11,14 @@ ROOT = Path(__file__).resolve().parents[1]
 BASE = '3c3d3f27635e48974487d6c8769a2b98dd97ae0c'
 EXPECTED_KEY = ('persian-windows-host-gcc14-v2-'
                 '095ec9297122d7ae23141480a61b623ca85d47fc13ed7e5a61e180300e5207bf')
+RECENT_BASE = '5675c59f29e690b2e15ba7ba9c209934a09632c9'
+RECENT_KEY = ('persian-windows-host-gcc14-v2-'
+              'e69d174816ad2c632f7786280780e6d8f87ca561fcef6adc1212928b2e58f6b6')
+RECENT_ALLOWED = {'include/reloq_eci.h', 'include/reloq_persian_numbers.h',
+                  'src/reloq_eci.c', 'experiments/persian/direct_fa_numbers.c',
+                  'experiments/persian/direct_fa_numbers.h',
+                  'experiments/persian/direct_fa_characters.c',
+                  'experiments/persian/direct_fa_characters.h'}
 ALLOWED = {'experiments/persian/direct_fa_lexicon.c',
            'experiments/persian/direct_fa_lexicon.h',
            'experiments/persian/direct_fa_text.c'}
@@ -23,15 +31,18 @@ INPUTS = ('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src', 'include',
 
 
 def eligible(key, changed):
-    return key == EXPECTED_KEY and bool(changed) and set(changed) <= ALLOWED
+    return bool(changed) and ((key == EXPECTED_KEY and set(changed) <= ALLOWED) or
+                              (key == RECENT_KEY and set(changed) <= RECENT_ALLOWED))
 
 
 def main():
     build, dll = ROOT / 'eci/build/windows', ROOT / 'eci/eci.dll'
     try:
-        changed = subprocess.check_output(['git', 'diff', '--name-only', BASE, 'HEAD', '--', *INPUTS],
+        key = os.environ.get('PERSIAN_HOST_CACHE_KEY', '')
+        base = RECENT_BASE if key == RECENT_KEY else BASE
+        changed = subprocess.check_output(['git', 'diff', '--name-only', base, 'HEAD', '--', *INPUTS],
                                           cwd=ROOT, text=True).splitlines()
-        if not eligible(os.environ.get('PERSIAN_HOST_CACHE_KEY', ''), changed):
+        if not eligible(key, changed):
             raise ValueError('cached host source transition was not verified')
         if not build.is_dir() or not dll.is_file():
             raise ValueError('cached host objects or DLL are missing')
@@ -42,6 +53,12 @@ def main():
         # All native Persian direct components depend on direct_fa_*.h.
         for obj in build.glob('reloq_fa_direct_*.o'):
             obj.unlink()
+        if key == RECENT_KEY:
+            # These are the only host sources which include reloq_eci.h;
+            # direct Persian objects also cover the changed private headers.
+            for name in ('reloq_eci.o', 'reloq_rules61.o'):
+                (build / name).unlink(missing_ok=True)
+            dll.unlink()
         print('Reused verified Windows host objects; rebuilding Persian text components.')
     except (OSError, ValueError, subprocess.CalledProcessError) as exc:
         print(f'Cannot safely reuse host cache ({exc}); rebuilding the host cleanly.')

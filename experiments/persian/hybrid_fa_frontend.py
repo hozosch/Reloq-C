@@ -175,6 +175,12 @@ class DirectFirstPersian:
         self._letter = function('eciPersianLetter', 'reloq_fa_direct_letter')
         self._character = (getattr(self._dll, 'eciPersianCharacter', None) or
                            getattr(self._dll, 'reloq_fa_direct_character', None))
+        self._character_info = (getattr(self._dll, 'eciPersianCharacterResolve', None) or
+                                getattr(self._dll, 'reloq_fa_character_resolve', None))
+        if self._character_info is not None:
+            self._character_info.argtypes = (ctypes.c_uint32, ctypes.c_void_p, ctypes.c_size_t,
+                                             ctypes.POINTER(ctypes.c_int))
+            self._character_info.restype = ctypes.c_int
         if self._character is not None:
             self._character.argtypes = (ctypes.c_uint32, ctypes.c_void_p, ctypes.c_size_t)
             self._character.restype = ctypes.c_int
@@ -309,12 +315,20 @@ class DirectFirstPersian:
                 raise RuntimeError('Persian text frontend is closed')
         if self._character is not None:
             output = ctypes.create_string_buffer(2048)
-            status = self._character(ord(char), output, len(output))
+            kind = ctypes.c_int(0)
+            status = (self._character_info(ord(char), output, len(output), ctypes.byref(kind))
+                      if self._character_info is not None else self._character(ord(char), output, len(output)))
             if status != 1:
                 raise ValueError('native Persian character spelling failed')
             tag = output.value.decode('ascii')
+            if self._character_info is None and tag.startswith('`l1.0 ') and tag.endswith(' `l9.0'):
+                # Compatibility with older test DLLs; never forward these
+                # control strings to the Persian acoustic engine as text.
+                kind.value, tag = 1, tag[len('`l1.0 '):-len(' `l9.0')]
+            if kind.value not in (0, 1):
+                raise ValueError('unknown native Persian character language')
             mapping = (0,) * len(char.encode('utf8')) + (len(tag),)
-            return PersianAnalysis((SpeechPart('fa', tag),), mapping, False)
+            return PersianAnalysis((SpeechPart('en-us' if kind.value else 'fa', tag),), mapping, False)
         normalized = unicodedata.normalize('NFKC', char)
         normalized = {'ك': 'ک', 'ي': 'ی', 'ى': 'ی'}.get(normalized, normalized)
         value = self._letter(ord(normalized)) if len(normalized) == 1 else None
@@ -333,7 +347,8 @@ class DirectFirstPersian:
                 from persian_unicode_names import official_name
             name = official_name(char)
             if name:
-                tag = '`l1.0 ' + name + ' `l9.0'
+                mapping = (0,) * len(char.encode('utf8')) + (len(name),)
+                return PersianAnalysis((SpeechPart('en-us', name),), mapping, False)
         if tag is None:
             # Unnamed or unassigned scalars have no standard name. Keep them
             # identifiable without dropping the rest of the speech job.

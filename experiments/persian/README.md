@@ -38,6 +38,18 @@ and Pinglish have not yet been registered as native ECI languages or exposed
 as selectable voices in SAPI5 and Android. An Android cross-compilation test
 checks the common native components, not end-to-end Persian playback.
 
+### Numbers and character names (dev147 experiment)
+
+The English decimal/version preprocessing applies only to English text in the
+Persian-script voice, not to Pinglish. Native Persian number analysis now
+exposes structured cardinal, scale, separator and sign events and recognizes
+each component of dotted versions, including Persian and Arabic-Indic digits.
+The current speech adapter still renders those events through the existing
+Finnish-based phoneme bridge; the new event API is not an independent speech
+backend. Unicode character resolution also returns an explicit language for
+names without a Persian translation, so the adapter can send an English name
+to the English engine without handing inline language controls to Finnish.
+
 ### Historical Korean contour experiments (dev137)
 
 The dev137 candidate transfers the Korean core's own pitch to ordinary

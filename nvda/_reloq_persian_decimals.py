@@ -9,15 +9,13 @@ from speech.commands import CharacterModeCommand, IndexCommand, LangChangeComman
 from ._reloq_languages import language_for
 from ._reloq_persian_joiners import _dictionary_untouched
 from ._speech_tags import NativeDictionaryWord
-from ._persian.pinglish_frontend import english_exception, latin_spans, technical_version_prefix
-
 _FA, _PINGLISH = 0x7f0000, 0x7f0001
 _DECIMAL = re.compile(r'(?<![0-9_])[+\-−]?(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]+)+')
 
 
 def dotted_version_word(selected, text, start, end, sequence=(), item_index=0):
     """Leave an acronym attached to a version for the decimal guard."""
-    if selected not in (_FA, _PINGLISH):
+    if selected != _FA:
         return False
     suffix = text[end:]
     if len(suffix) < 2:
@@ -37,7 +35,7 @@ def dotted_version_word(selected, text, start, end, sequence=(), item_index=0):
         return False
     word = text[start:end]
     match = re.fullmatch(r'([A-Za-z]+)[0-9]+', word)
-    return bool(match and (selected == _FA or technical_version_prefix(match.group(1))))
+    return bool(match)
 
 
 def decimal_pending(sequence):
@@ -118,15 +116,6 @@ def _english_number(text, start, end, language):
         previous = next((english for index, english in reversed(letters) if index < start), None)
         following = next((english for index, english in letters if index >= end), None)
         return previous if previous is not None else bool(following)
-    if language == _PINGLISH:
-        words = latin_spans(text)
-        previous = next(((left, right) for left, right in reversed(words) if right <= start), None)
-        following = next(((left, right) for left, right in words if left >= end), None)
-        return bool((previous and (english_exception(text[previous[0]:previous[1]]) or
-                     (technical_version_prefix(text[previous[0]:previous[1]]) and previous[1] == start)) and
-                     not text[previous[1]:start].strip()) or
-                    (previous is None and following and english_exception(text[following[0]:following[1]]) and
-                     not text[end:following[0]].strip()))
     return False
 
 
@@ -150,7 +139,7 @@ def protect_decimals(driver, sequence, *, symbol_level=None):
     selected, spelling, group, intervals, prefixes = home, False, [], {}, {}
 
     def flush():
-        if not group or spelling or selected not in (_FA, _PINGLISH):
+        if not group or spelling or selected != _FA:
             group.clear()
             return
         text = ''.join(value for _, value, _ in group)

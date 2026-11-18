@@ -19,6 +19,8 @@ on:
       - src/reloq_rules61.c
       - src/reloq_persian_direct.h
       - include/reloq_eci.h
+      - include/reloq_persian_numbers.h
+      - experiments/persian/test_persian_number_events.py
       - vendor/openevv61/Makefile.native
       - vendor/openevv61/src/eci/lang/eci_voicetable.c
       - vendor/openevv61/src/eci/api/eci_dllobj.c
@@ -48,6 +50,7 @@ on:
       - experiments/persian/test_direct_frequency_words.py
       - experiments/persian/compile_direct_lexicon.py
       - experiments/persian/test_direct_fa_characters.py
+      - experiments/persian/test_direct_fa_numbers.py
       - experiments/persian/test_fa_stress_policy.py
       - experiments/persian/test_fa_stress_fallback.py
       - experiments/persian/test_unicode_fallback_routing.py
@@ -196,10 +199,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian NVDA emoji and joiner preprocessing failed' }
           python -B experiments/persian/test_direct_fa_characters.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian native character names failed' }
+          python -B experiments/persian/test_direct_fa_numbers.py --native-library "$dll" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian native numbers failed' }
           python -B experiments/persian/test_direct_fa_compounds.py --library "$dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Persian native compound rules failed' }
           python -B experiments/persian/test_persian_number_boundaries.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian numeric boundary pronunciation failed' }
+          python -B experiments/persian/test_persian_number_events.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Structured native Persian number analysis failed' }
           python -B experiments/persian/test_korean_pitch_transfer.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Korean contour transfer failed' }
           python -B experiments/persian/test_korean_donor_span.py --library "$dll"
@@ -286,7 +293,7 @@ jobs:
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci.dll -print -quit)
-          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev146; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; else version=1.5.0-dev142; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev147; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; else version=1.5.0-dev142; fi
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
       - name: Test the candidate in real NVDA
         shell: pwsh

@@ -3,11 +3,15 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
-from reuse_persian_host_cache import ALLOWED, EXPECTED_KEY, eligible
+from reuse_persian_host_cache import ALLOWED, EXPECTED_KEY, RECENT_ALLOWED, RECENT_KEY, eligible
 
 assert eligible(EXPECTED_KEY, ALLOWED)
 assert not eligible(EXPECTED_KEY, ())
 assert not eligible(EXPECTED_KEY + '-other', ALLOWED)
 assert not eligible(EXPECTED_KEY, ALLOWED | {'src/reloq_eci.c'})
 assert not eligible(EXPECTED_KEY, ALLOWED | {'experiments/persian/direct_fa_numbers.c'})
+assert eligible(RECENT_KEY, RECENT_ALLOWED)
+assert not eligible(RECENT_KEY, ())
+assert not eligible(RECENT_KEY, RECENT_ALLOWED | {'src/reloq_rules61.c'})
+assert not eligible(RECENT_KEY + '-other', RECENT_ALLOWED)
 print('Passed verified Windows host cache safeguards.')

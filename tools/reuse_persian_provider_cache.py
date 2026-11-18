@@ -21,6 +21,13 @@ BASE = '0218903296e1828d468933fad04d7745779b5629'
 PREVIOUS_TREE = 'caf3eaa2e08ac9fbd58dfcc9c532aab19405911e'
 PREVIOUS_KEY = ('persian-windows-provider-gcc14-v2-'
                 'f106c4723d7f6e32a226c721308d5e5b0f676a41f86a43f7a3c940b0ef20f128')
+RECENT_BASE = '5675c59f29e690b2e15ba7ba9c209934a09632c9'
+RECENT_KEY = ('persian-windows-provider-gcc14-v2-'
+              '258cf46181dbfeb1b6d1f9c2e9146e82d09ebaa88f092c1c1ac5e757e1fe95fc')
+RECENT_HEADERS = {
+    'include/reloq_eci.h': 'f568cdd0b995f7ed7229cbe91f405cb0165b61f9',
+    'include/reloq_persian_numbers.h': '5704f39488eec88d9095191df7dc64d151cfd6d8',
+}
 MIGRATION_KEY = ('persian-windows-provider-gcc14-v1-'
                  'eafb701ff0daa266b36f21741a91cf44935fe7d1d5fc200e54f509f1b878b075')
 EXPECTED = {
@@ -50,9 +57,32 @@ def git(*arguments):
     return subprocess.check_output(['git', *arguments], cwd=ROOT, text=True).strip()
 
 
+def eligible_recent(key, changed, blobs):
+    return (key == RECENT_KEY and set(changed) == set(RECENT_HEADERS) and
+            blobs == RECENT_HEADERS)
+
+
 def main():
     try:
         key = os.environ.get('PERSIAN_PROVIDER_CACHE_KEY', '')
+        if key == RECENT_KEY:
+            changed = set(git('diff', '--name-only', RECENT_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            blobs = {path: git('rev-parse', 'HEAD:' + path) for path in RECENT_HEADERS}
+            if not eligible_recent(key, changed, blobs):
+                raise ValueError('provider headers differ from the verified additive API change')
+            if not BUILD.is_dir() or not (BUILD / 'libreloq61.a').is_file():
+                raise ValueError('cached provider archive is missing')
+            # The provider source does not include these headers. Reject the
+            # cache if dependency files contradict that checked relationship.
+            for dep in BUILD.rglob('*.d'):
+                value = dep.read_text(encoding='utf8', errors='replace')
+                if any(Path(path).name in value for path in RECENT_HEADERS):
+                    raise ValueError('a provider object depends on a changed public header')
+            for path in BUILD.rglob('*'):
+                if path.is_file():
+                    os.utime(path, None)
+            print('Reused verified provider cache for the additive public API change.')
+            return
         if key == PREVIOUS_KEY:
             changed = set(git('diff', '--name-only', PREVIOUS_TREE, 'HEAD', '--', *INPUTS).splitlines())
             # Both of these inputs are rebuilt below. The scope-selection C

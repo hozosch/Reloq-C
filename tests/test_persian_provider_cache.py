@@ -15,6 +15,16 @@ import reuse_persian_provider_cache as cache
 
 
 class CacheReuseTests(unittest.TestCase):
+    def test_recent_cache_requires_exactly_checked_headers(self):
+        self.assertTrue(cache.eligible_recent(cache.RECENT_KEY, cache.RECENT_HEADERS,
+                                              cache.RECENT_HEADERS))
+        self.assertFalse(cache.eligible_recent(cache.RECENT_KEY, (), cache.RECENT_HEADERS))
+        self.assertFalse(cache.eligible_recent(cache.RECENT_KEY,
+                         set(cache.RECENT_HEADERS) | {'vendor/openevv61/Makefile.native'},
+                         cache.RECENT_HEADERS))
+        self.assertFalse(cache.eligible_recent(cache.RECENT_KEY, cache.RECENT_HEADERS,
+                         {**cache.RECENT_HEADERS, 'include/reloq_eci.h': 'different'}))
+
     def test_host_cache_tracks_embedded_persian_inputs(self):
         workflow = (Path(__file__).resolve().parents[1] /
                     '.github/workflows/persian-windows-acoustic-probe.yml').read_text(encoding='utf8')

@@ -16,7 +16,7 @@ import unicodedata
 if __package__:
     from .direct_fa_sequence import ScopedDirectPersianEngine
     from .hybrid_fa_frontend import DirectFirstPersian
-    from .pinglish_frontend import english_exception, latin_spans, technical_version_prefix
+    from .pinglish_frontend import english_exception, latin_spans
     from .continuous_driver import bounded_jobs, bracket_jobs, continuation_comma, sentence_jobs, try_continuous, try_persian_glides
     from .._reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
                                      EciPitch, EciPitchHz, EciProsody, EciText, PAUSE_MODE)
@@ -24,7 +24,7 @@ if __package__:
 else:
     from direct_fa_sequence import ScopedDirectPersianEngine
     from hybrid_fa_frontend import DirectFirstPersian
-    from pinglish_frontend import english_exception, latin_spans, technical_version_prefix
+    from pinglish_frontend import english_exception, latin_spans
     from continuous_driver import bounded_jobs, bracket_jobs, continuation_comma, sentence_jobs, try_continuous, try_persian_glides
     from _reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
                                   EciPitch, EciPitchHz, EciProsody, EciText, PAUSE_MODE)
@@ -157,20 +157,6 @@ def _pinglish_part_runs(parts, home):
         text = ''.join(value for _, value in entries)
         words = tuple(latin_spans(text))
         spans = [(start, end) for start, end in words if english_exception(text[start:end])]
-        # NVDA's builtin dictionary may insert spaces after a technical
-        # version prefix. Do not generalize this to ordinary Pinglish words.
-        spans.extend((match.start(), match.end()) for match in re.finditer(
-            r'(?<!\w)([A-Za-z]+)[ \t]*[0-9]+(?:\.[0-9]+)+(?![\w.])', text)
-            if technical_version_prefix(match.group(1)))
-        for number in re.finditer(r'[+\-−]?[0-9]+(?:[.,][0-9]+)*', text):
-            previous = next(((a, b) for a, b in reversed(words) if b <= number.start()), None)
-            following = next(((a, b) for a, b in words if a >= number.end()), None)
-            if (previous and english_exception(text[previous[0]:previous[1]]) and
-                    not text[previous[1]:number.start()].strip()):
-                spans.append((previous[1], number.end()))
-            elif (previous is None and following and english_exception(text[following[0]:following[1]]) and
-                  not text[number.end():following[0]].strip()):
-                spans.append((number.start(), following[0]))
         offset = 0
         for index, value in entries:
             end = offset + len(value)
@@ -365,7 +351,7 @@ class PersianProbeLanguageEngine(LanguageEngine):
         # Names without a Persian translation belong to the real English
         # engine, including when they occur inside a larger Persian run. Do
         # this before script routing so indexes and the surrounding text keep
-        # their normal language boundaries. Do not reinterpret ordinary letters,
+        # their normal language boundaries. Do not reinterpret ASCII letters,
         # numbers, Arabic-script text, joiners, or explicit ECI controls.
         expanded, logical, names = [], self._home, {}
         for part in parts:
@@ -381,18 +367,18 @@ class PersianProbeLanguageEngine(LanguageEngine):
             positions = []
             for at, char in enumerate(text):
                 cp = ord(char)
-                if (cp < 128 or 0x600 <= cp <= 0x6ff or char in '\u200c\u200d\ufe0e\ufe0f' or
-                        char.isspace() or char.isalpha() or char.isdecimal() or
-                        unicodedata.category(char).startswith('M')):
+                if (cp < 128 or 0x600 <= cp <= 0x8ff or 0xfb50 <= cp <= 0xfeff or
+                        char in '\u200c\u200d\ufe0e\ufe0f' or
+                        char.isspace() or char.isdecimal() or
+                        logical[0] == PINGLISH_PROBE.id and unicodedata.category(char).startswith('M')):
                     continue
                 if char not in names:
                     engine = self._activate(logical)
                     if not isinstance(engine, OwnedPersianEngine):
                         names[char] = None
                     else:
-                        tag = engine._frontend.analyze_character(char).parts[0].text
-                        names[char] = (tag[len('`l1.0 '):-len(' `l9.0')]
-                                       if tag.startswith('`l1.0 ') and tag.endswith(' `l9.0') else None)
+                        named = engine._frontend.analyze_character(char).parts[0]
+                        names[char] = named.text if named.language == 'en-us' else None
                 if names[char] is not None:
                     positions.append((at, names[char]))
             if not positions:
@@ -440,15 +426,16 @@ class PersianProbeLanguageEngine(LanguageEngine):
             if (logical[0] in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) and text and
                     (len(text) == 1 or isinstance(part, EciText) and part.character_mode) and
                     any(ord(char) > 127 for char in text) and
+                    not (text in ('\ufe0e', '\ufe0f') and
+                         not (isinstance(part, EciText) and part.character_mode)) and
                     not (isinstance(part, EciText) and part.is_control)):
                 engine = self._activate(logical)
                 if isinstance(engine, OwnedPersianEngine):
                     named = []
                     for char in text:
-                        tag = (engine._frontend.analyze_character(char).parts[0].text
-                               if ord(char) > 127 else '')
-                        name = (tag[len('`l1.0 '):-len(' `l9.0')]
-                                if tag.startswith('`l1.0 ') and tag.endswith(' `l9.0') else None)
+                        named_part = (engine._frontend.analyze_character(char).parts[0]
+                                      if ord(char) > 127 else None)
+                        name = (named_part.text if named_part and named_part.language == 'en-us' else None)
                         named.append((char, name))
                     if any(name is not None for _, name in named):
                         for char, name in named:

@@ -224,14 +224,11 @@ def main():
     del dictionaries.listAvailableSpeechDictDefinitions
     dictionaries.dictionaries['builtin'] = []
     driver._selectedLanguage = pinglish_id
-    assert any(isinstance(item, native_word) for item in protected(['phone 3.5']))
-    assert protected(['salam 3.5']) == ['salam 3.5']
+    for text in ('phone 3.5', 'salam 3.5', 'v1.5.0', 'NVDA1.5.0', 'salam1.5'):
+        assert protected([text]) == [text], text
     dictionaries.dictionaries['builtin'] = builtin
-    assert any(isinstance(item, native_word) and item.text.endswith('1.5.0')
-               for item in protected(['v1.5.0']))
-    assert any(isinstance(item, native_word) and item.text.endswith('1.5.0')
-               for item in protected(['NVDA1.5.0']))
-    assert protected(['salam1.5']) == ['salam1.5']
+    for text in ('phone 3.5', 'v1.5.0', 'NVDA1.5.0', 'salam1.5'):
+        assert protected([text]) == [text], text
     driver._selectedLanguage = en_id
     assert protected(['version 3.5']) == ['version 3.5']
     # Run the normal driver's earlier acronym guard too: an initialism

@@ -360,6 +360,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           *(( 'fa_IR', mark, True) for mark in 'ًٌٍَُِّْٰ'),
                           *((locale, mark, True) for locale in ('fa_IR', 'fa_Latn')
                             for mark in 'ٔأˈˌə̇αé⚽'),
+                          *((locale, 'Ж', spelling) for locale in ('fa_IR', 'fa_Latn')
+                            for spelling in (False, True)),
+                          ('en_US', 'cyrillic capital letter zhe', False),
                           ('fa_IR', 'ٔ', 'issue49_hamza_line'),
                           ('fa_IR', 'ٔ', 'issue49_hamza_line_none'),
                           ('fa_IR', 'ٔ', 'issue49_hamza_spelling'),
@@ -425,6 +428,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if self.index == len(self.cases):
                 if self.results[0]['pcm_sha256'] != self.results[1]['pcm_sha256']:
                     raise AssertionError('confirmed script and Pinglish words differ')
+                unicode_reference = next(row for row in self.results
+                                         if row['locale'] == 'en_US' and
+                                         row['text'] == 'cyrillic capital letter zhe')
+                for locale in ('fa_IR', 'fa_Latn'):
+                    for spelling in (False, True):
+                        named = next(row for row in self.results if row['locale'] == locale and
+                                     row['text'] == 'Ж' and row['spelling'] is spelling)
+                        if named['pcm_sha256'] != unicode_reference['pcm_sha256']:
+                            raise AssertionError('Unicode name was not routed to English: ' + locale)
                 for mark in 'ًٌٍَُِّْٰ':
                     line = next(row for row in self.results if row['text'] == mark and
                                 row['spelling'] == 'issue49_original_line')
@@ -465,11 +477,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     if fa_version['pcm_sha256'] != split_version['pcm_sha256']:
                         raise AssertionError('NVDA indexes changed the English version: ' + text)
                     if text in ('v1.5.0', 'NVDA1.5.0'):
+                        pinglish_results = []
                         for mode in ('issue49_version_some', 'issue49_version_split'):
                             pinglish = next(row for row in self.results if row['locale'] == 'fa_Latn' and
                                             row['text'] == text and row['spelling'] == mode)
-                            if pinglish['pcm_sha256'] != en_version['pcm_sha256']:
-                                raise AssertionError('Pinglish changed the English version: ' + mode)
+                            if pinglish['pcm_sha256'] == en_version['pcm_sha256']:
+                                raise AssertionError('Pinglish incorrectly used the English version reading: ' + mode)
+                            pinglish_results.append(pinglish['pcm_sha256'])
+                        if pinglish_results[0] != pinglish_results[1]:
+                            raise AssertionError('NVDA indexes changed the Pinglish version: ' + text)
                 plain = next(row for row in self.results if row['spelling'] == 'tags_plain')
                 pitch = next(row for row in self.results if row['spelling'] == 'tags_pitch')
                 if plain['pcm_sha256'] == pitch['pcm_sha256']:

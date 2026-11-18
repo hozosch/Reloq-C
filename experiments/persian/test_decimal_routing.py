@@ -7,7 +7,9 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 from _reloq_eci_direct import EciCapitalWord, EciIndex, EciLanguage, EciText
-from nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, make_language_engine, _persian_part_runs
+from direct_fa_sequence import project
+from nvda_driver_probe import (PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, make_language_engine,
+                               _persian_part_runs, _pinglish_part_runs)
 
 
 def main():
@@ -68,11 +70,8 @@ def main():
         mixed = ('سلام v  ', EciText(' 1.5.0'), ' خوب')
         runs = _persian_part_runs(mixed, (PERSIAN_PROBE.id, '1'))
         assert runs[1] == (('en', ' 1.5.0'),), runs
-        assert render(PINGLISH_PROBE.id, version) == render(US_ENGLISH.id, version)
-        assert render(PINGLISH_PROBE.id, version_indexed) == render(US_ENGLISH.id, version_indexed)
         initialism_version = ('NVDA  ', EciText(' 1.5.0'))
         assert render(PERSIAN_PROBE.id, initialism_version) == render(US_ENGLISH.id, initialism_version)
-        assert render(PINGLISH_PROBE.id, initialism_version) == render(US_ENGLISH.id, initialism_version)
         assert render(PERSIAN_PROBE.id, initialism_version) == render(US_ENGLISH.id, ('NVDA1.5.0',))
         # A number on its own or next to Persian remains Persian, including
         # when the number was delivered in several indexed fragments.
@@ -82,8 +81,22 @@ def main():
         explicit = ('version ', EciLanguage(PERSIAN_PROBE.id, '1'), '3.5')
         assert render(PERSIAN_PROBE.id, explicit)[0] != render(US_ENGLISH.id, ('version 3.5',))[0]
         for parts in (('phone 3.5',), ('phone ', EciIndex(20), '3', EciIndex(21), '.', '5'),
-                      ('3.5 ', EciIndex(22), 'phone'), ('phone ', EciIndex(23), '-1.5')):
-            assert render(PINGLISH_PROBE.id, parts) == render(US_ENGLISH.id, parts), parts
+                      ('3.5 ', EciIndex(22), 'phone'), ('phone ', EciIndex(23), '-1.5'),
+                      ('v1.5.0',), ('NVDA1.5.0',)):
+            runs = _pinglish_part_runs(parts, (PINGLISH_PROBE.id, '1'))
+            assert all(not english or not any(char.isdigit() for char in text)
+                       for spans in runs.values() for english, text in spans), (parts, runs)
+            assert render(PINGLISH_PROBE.id, parts)[0] != render(US_ENGLISH.id, parts)[0], parts
+        pinglish_frontend = engine._engines[PINGLISH_PROBE.id]._frontend
+        for text in ('v1.5.0', 'v 1.5.0', 'NVDA1.5.0', 'NVDA 1.5.0'):
+            job = project((text,), pinglish_frontend, pinglish=True, allow_fallback=False)
+            assert job.tagged.count('noR') == 2 and not job.needs_native_validation, (text, job.tagged)
+        split_job = project(('v 1', EciIndex(35), '.', EciIndex(36), '5.0'),
+                            pinglish_frontend, pinglish=True, allow_fallback=False)
+        assert split_job.tagged.count('noR') == 2
+        assert [part.value for part in split_job.parts if isinstance(part, EciIndex)] == [35, 36]
+        assert render(PINGLISH_PROBE.id, ('v 1.5.0',))[0] == render(
+            PINGLISH_PROBE.id, ('v 1', EciIndex(35), '.', EciIndex(36), '5.0'))[0]
         assert render(PINGLISH_PROBE.id, ('salam 3.5',))[0] != render(US_ENGLISH.id, ('salam 3.5',))[0]
         assert render(PERSIAN_PROBE.id, ('version ', EciText('3.5', character_mode=True)))[0]
     finally:

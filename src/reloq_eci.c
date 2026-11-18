@@ -893,11 +893,49 @@ int ECICALL eciPersianNumber(const char *text,size_t bytes,size_t *consumed,
     char *output,size_t capacity)
 {return reloq_fa_direct_number(text,bytes,consumed,output,capacity);}
 
+int ECICALL eciPersianNumberEvents(const char *text,size_t bytes,size_t *consumed,
+    struct reloq_fa_number_event *events,size_t capacity,size_t *count)
+{
+    if(consumed)*consumed=0;
+    if(count)*count=0;
+    if(!text || !bytes || !consumed || !count || (!events && capacity))return -1;
+    char *normalized=NULL;size_t *map=NULL,error=0;
+    int status=reloq_fa_direct_normalize_text(text,bytes,&normalized,&map,&error);
+    if(status)return status;
+    size_t length=strlen(normalized),offset=0,used=0,number_count=0;
+    int sign=-1;
+    if(length && (normalized[0]=='+' || normalized[0]=='-')) {
+        sign=normalized[0]=='+';offset=1;
+    } else if(length>=3 && !memcmp(normalized,"\xe2\x88\x92",3)) {
+        sign=0;offset=3;
+    }
+    struct reloq_fa_number_event result[49];
+    status=reloq_fa_number_events(normalized+offset,length-offset,&used,
+                                  result+(sign>=0),48,&number_count);
+    if(!status) {
+        size_t total=number_count+(sign>=0),source_end=0;
+        if(events && capacity<total)status=-2;
+        else {
+            if(sign>=0)result[0]=(struct reloq_fa_number_event){RELOQ_FA_NUMBER_SIGN,(uint32_t)sign,0,0,0};
+            while(source_end<bytes && map[source_end]<offset+used)++source_end;
+            if(map[source_end]!=offset+used)status=-1;
+            else {
+                if(events)memcpy(events,result,total*sizeof *events);
+                *count=total;*consumed=source_end;
+            }
+        }
+    }
+    free(normalized);free(map);return status;
+}
+
 const char *ECICALL eciPersianLetter(uint32_t codepoint)
 {return reloq_fa_direct_letter(codepoint);}
 
 int ECICALL eciPersianCharacter(uint32_t codepoint,char *output,size_t capacity)
 {return reloq_fa_direct_character(codepoint,output,capacity);}
+
+int ECICALL eciPersianCharacterResolve(uint32_t codepoint,char *output,size_t capacity,int *kind)
+{return reloq_fa_character_resolve(codepoint,output,capacity,kind);}
 
 int ECICALL eciPersianPinglishWord(const char *word,size_t bytes,char *output,size_t capacity)
 {return reloq_fa_pinglish_word(word,bytes,output,capacity);}

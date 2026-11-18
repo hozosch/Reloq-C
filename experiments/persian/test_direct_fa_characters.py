@@ -22,7 +22,9 @@ def main() -> None:
     args = parser.parse_args()
     frontend = DirectFirstPersian(args.library, None, None, None)
     native = frontend._character
+    resolved = frontend._character_info
     assert native is not None, 'the shared native character API is missing'
+    assert resolved is not None, 'the structured Persian character API is missing'
     values = set(map(ord, SYMBOL_TAGS))
     values.update(map(ord, string.ascii_letters))
     values.update((0x0621, 0x0622, 0x0627, 0x0634, 0x0643, 0x0649, 0x064a,
@@ -51,7 +53,11 @@ def main() -> None:
             frontend._character = native
             actual = frontend.analyze_character(char)
             assert actual == expected, (hex(cp), expected, actual)
-            assert native_text(cp) == expected.parts[0].text, hex(cp)
+            legacy = native_text(cp)
+            if expected.parts[0].language == 'en-us':
+                assert legacy == '`l1.0 ' + expected.parts[0].text + ' `l9.0', hex(cp)
+            else:
+                assert legacy == expected.parts[0].text, hex(cp)
             assert actual.source_map == (0,) * len(char.encode('utf8')) + (len(actual.parts[0].text),)
         for invalid in (0, 0xd800, 0xdfff, 0x110000, 0xffffffff):
             untouched = ctypes.create_string_buffer(b'keep', 5)
@@ -60,6 +66,18 @@ def main() -> None:
         for char in 'ˈˌə\u0307αé⚽🙂':
             assert native_text(ord(char)) == SYMBOL_TAGS[char], char
         assert native_text(ord('Ж')) == '`l1.0 cyrillic capital letter zhe `l9.0'
+        for char, name in (('Ж', 'cyrillic capital letter zhe'),
+                           ('\U00012550', 'cuneiform numeric sign one n01')):
+            output, kind = ctypes.create_string_buffer(2048), ctypes.c_int(-1)
+            assert resolved(ord(char), output, len(output), ctypes.byref(kind)) == 1
+            assert kind.value == 1 and output.value.decode('ascii') == name
+            result = frontend.analyze_character(char)
+            assert result.parts[0].language == 'en-us' and result.parts[0].text == name
+        output, kind = ctypes.create_string_buffer(2048), ctypes.c_int(-1)
+        assert resolved(ord('+'), output, len(output), ctypes.byref(kind)) == 1 and kind.value == 0
+        untouched, kind = ctypes.create_string_buffer(b'keep', 5), ctypes.c_int(42)
+        assert resolved(ord('Ж'), untouched, len(untouched), ctypes.byref(kind)) == -1
+        assert untouched.value == b'keep' and kind.value == 42
         linked = frontend.analyze_direct('پیکان به سمت بالا و پایین با پایه')
         assert linked and native_text(ord('↨')) == linked.parts[0].text
         assert '`[.0vA]' in linked.parts[0].text

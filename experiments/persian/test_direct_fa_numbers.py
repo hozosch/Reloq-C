@@ -60,7 +60,10 @@ def main():
     }
     for text, expected in examples.items():
         assert convert(text) == (0, expected), text
-    for text in ('3,14', '3.1.4', '۳٫', '۱٬۲۳', '۱٬۲۳۴٬۵۶', '1234567890123',
+    for text in ('3.1.4', '۳٫۱٫۴', '٣٫١٫٤'):
+        status, version = convert(text)
+        assert status == 0 and version.count('noR') == 2, text
+    for text in ('3,14', '3.1.4,5', '۳٫', '۱٬۲۳', '۱٬۲۳۴٬۵۶', '1234567890123',
                  'سلام ٫ دنیا', 'سلام ٬ دنیا', '۱۲-۳'):
         assert convert(text)[0] == 2, text
     randomizer = random.Random(71899)

@@ -20,6 +20,7 @@ def main():
                 for n in '123456' for direction in ('بعدی', 'قبلی')]
     examples += [f'سرنوشتارِ سطحِ {n}ِ بعدی‌ای نیست' for n in '۱۲۳۴۵۶']
     examples += ['1ِ', '12ِ', '1َ', '2ُ', 'سلام2', '2سلام', 'سلام 1ِ سلام']
+    examples += ['1.5.0', '۱۲.۵.۰', '۱۲٫۵٫۰', 'سلام 1.5.0 خوب']
     frontend = DirectFirstPersian(args.library, None, None, None)
     voice, scope = make_voice(args.library, 0x90000)
     previous_scope = scope(1)
@@ -33,6 +34,8 @@ def main():
             assert native_sequence_accepted(tag, shown), (text, tag, shown)
             assert len(analysis.source_map) == len(text.encode('utf8')) + 1
             assert all(a <= b for a, b in zip(analysis.source_map, analysis.source_map[1:])), text
+        version = frontend.analyze_direct('1.5.0').parts[0].text
+        assert version.count('noR') == 2 and version.count('`[') >= 5, version
         # An NVDA index between the number and vowel mark must preserve both
         # controls and produce the same sound text as an unsplit utterance.
         text = examples[0]

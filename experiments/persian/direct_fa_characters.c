@@ -46,14 +46,15 @@ static int append(char *buffer,size_t capacity,size_t *used,const char *value)
     memcpy(buffer+*used,value,length+1);*used+=length;return 0;
 }
 
-int reloq_fa_direct_character(uint32_t codepoint,char *output,size_t capacity)
+static int character_resolve(uint32_t codepoint,char *output,size_t capacity,
+                             int *kind,int legacy)
 {
     if(!codepoint || codepoint>0x10ffffu || (codepoint>=0xd800u && codepoint<=0xdfffu))return 0;
-    if(!output || !capacity)return -1;
+    if(!output || !capacity || !kind)return -1;
     const char *name=reloq_fa_direct_letter(compatibility_letter(codepoint));
     if(!name)name=symbol_name(codepoint);
     if(!name)name=latin_name(codepoint);
-    char result[1024];size_t used=0;
+    char result[1024];size_t used=0;int selected=0;
     result[0]=0;
     if(name) {
         if(append(result,sizeof result,&used,name))return -1;
@@ -65,9 +66,10 @@ int reloq_fa_direct_character(uint32_t codepoint,char *output,size_t capacity)
         int named=reloq_unicode_name_english(codepoint,english,sizeof english);
         if(named<0)return -1;
         if(named>0) {
-            if(append(result,sizeof result,&used,"`l1.0 ") ||
+            selected=1;
+            if((legacy && append(result,sizeof result,&used,"`l1.0 ")) ||
                append(result,sizeof result,&used,english) ||
-               append(result,sizeof result,&used," `l9.0"))return -1;
+               (legacy && append(result,sizeof result,&used," `l9.0")))return -1;
         } else {
             char digits[9];
             if(snprintf(digits,sizeof digits,"%X",(unsigned)codepoint)<1)return -1;
@@ -84,5 +86,12 @@ int reloq_fa_direct_character(uint32_t codepoint,char *output,size_t capacity)
     }
     if(used>=capacity)return -1;
     memcpy(output,result,used+1);
+    *kind=selected;
     return 1;
 }
+
+int reloq_fa_character_resolve(uint32_t codepoint,char *output,size_t capacity,int *kind)
+{return character_resolve(codepoint,output,capacity,kind,0);}
+
+int reloq_fa_direct_character(uint32_t codepoint,char *output,size_t capacity)
+{int kind=0;return character_resolve(codepoint,output,capacity,&kind,1);}

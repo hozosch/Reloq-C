@@ -20,6 +20,8 @@ on:
       - include/reloq_unicode.h
       - src/reloq_persian_direct.h
       - include/reloq_eci.h
+      - include/reloq_persian_numbers.h
+      - experiments/persian/test_persian_number_events.py
       - vendor/openevv61/Makefile.native
       - eci/Makefile
       - eci/test_persian_acoustics.py
@@ -81,6 +83,7 @@ jobs:
           path: vendor/openevv61/build/windows-release
           key: persian-windows-provider-gcc14-v2-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c', 'src/reloq_persian_acoustics.c', 'src/reloq_persian_acoustics.h', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-provider-gcc14-v2-258cf46181dbfeb1b6d1f9c2e9146e82d09ebaa88f092c1c1ac5e757e1fe95fc
             persian-windows-provider-gcc14-v2-f106c4723d7f6e32a226c721308d5e5b0f676a41f86a43f7a3c940b0ef20f128
             persian-windows-provider-gcc14-v1-eafb701ff0daa266b36f21741a91cf44935fe7d1d5fc200e54f509f1b878b075
       - uses: actions/cache@v4
@@ -91,6 +94,7 @@ jobs:
             eci/eci.dll
           key: persian-windows-host-gcc14-v2-${{ hashFiles('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src/**', 'include/**', 'vendor/openevv61/**', '!vendor/openevv61/build/**', 'experiments/persian/direct_fa_*.c', 'experiments/persian/direct_fa_*.h', 'experiments/persian/direct_fa_*.inc', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-host-gcc14-v2-e69d174816ad2c632f7786280780e6d8f87ca561fcef6adc1212928b2e58f6b6
             persian-windows-host-gcc14-v2-095ec9297122d7ae23141480a61b623ca85d47fc13ed7e5a61e180300e5207bf
       - name: Restore cached provider timestamps
         if: steps.provider.outputs.cache-hit == 'true'

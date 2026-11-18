@@ -2,7 +2,7 @@ name: Persian shared core on Android
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117]
+    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-adjectives-20261117]
     paths:
       - .github/workflows/persian-android-core.yml
       - eci/Makefile
@@ -69,6 +69,8 @@ jobs:
           grep -q 'eciPersianAcousticScope' android-symbols.txt
           grep -q 'eciPersianProjectUtf8' android-symbols.txt
           grep -q 'eciPersianCharacter' android-symbols.txt
+          grep -q 'eciPersianCharacterResolve' android-symbols.txt
+          grep -q 'eciPersianNumberEvents' android-symbols.txt
           grep -q 'eciPersianTransferKoreanPitch' android-symbols.txt
           grep -q 'eciPersianTransferKoreanAligned' android-symbols.txt
           grep -q 'eciPersianDonorSpan' android-symbols.txt

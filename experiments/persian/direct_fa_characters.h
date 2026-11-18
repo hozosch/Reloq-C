@@ -10,4 +10,9 @@
  * absent or too small. On failure, the destination is unchanged. */
 int reloq_fa_direct_character(uint32_t codepoint, char *output, size_t capacity);
 
+/* Resolve a character without embedding language-switch controls in text.
+ * On success, kind is 0 for Persian pronunciation and 1 for an English
+ * Unicode name. Output and kind are unchanged on failure. */
+int reloq_fa_character_resolve(uint32_t codepoint, char *output, size_t capacity, int *kind);
+
 #endif

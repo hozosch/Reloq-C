@@ -301,10 +301,22 @@ ECIAPI int ECICALL eciPersianTranslateUtf8(const char *text,size_t bytes,
 ECIAPI int ECICALL eciPersianStressUtf8(const char *word,size_t bytes,char *tag,size_t capacity);
 ECIAPI int ECICALL eciPersianNumber(const char *text,size_t bytes,size_t *consumed,
     char *output,size_t capacity);
+/* Structured Persian number analysis; events contain no printable ECI tags.
+ * Accepts ASCII, Persian or Arabic-Indic digits, decimal/group separators,
+ * dotted versions and an optional sign. A NULL events pointer and capacity
+ * zero queries the required count. Returns 0 on success, 2 on unsupported
+ * syntax, -1 on invalid input, or -2 for insufficient capacity. On failure,
+ * the array is unchanged and count and consumed are set to zero. */
+#include "reloq_persian_numbers.h"
+ECIAPI int ECICALL eciPersianNumberEvents(const char *text,size_t bytes,size_t *consumed,
+    struct reloq_fa_number_event *events,size_t capacity,size_t *count);
 ECIAPI const char *ECICALL eciPersianLetter(uint32_t codepoint);
 /* Write the native Persian spelling of one Unicode scalar. Returns 1 on
  * success, 0 for an invalid scalar, and -1 for an inadequate destination. */
 ECIAPI int ECICALL eciPersianCharacter(uint32_t codepoint,char *output,size_t capacity);
+/* Resolve a character and its language without inline language controls.
+ * On success, kind is 0 for Persian or 1 for a plain English Unicode name. */
+ECIAPI int ECICALL eciPersianCharacterResolve(uint32_t codepoint,char *output,size_t capacity,int *kind);
 ECIAPI int ECICALL eciPersianPinglishWord(const char *word,size_t bytes,
     char *output,size_t capacity);
 

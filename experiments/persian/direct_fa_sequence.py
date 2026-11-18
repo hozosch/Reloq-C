@@ -186,6 +186,8 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
                     else frontend.analyze_character(char))
             if name is None or len(name.parts) != 1:
                 return None
+            if name.parts[0].language != 'fa':
+                raise UnsupportedPronunciation('Unicode character requires a separate language event')
             if pieces:
                 pieces.append(' ')
                 output_bytes += 1
@@ -308,6 +310,8 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
                      else frontend.analyze_character(char))
             if named is None or len(named.parts) != 1:
                 raise RuntimeError('Persian character name is unavailable')
+            if named.parts[0].language != 'fa':
+                raise UnsupportedPronunciation('Unicode character requires a separate language event')
             pieces.append(named.parts[0].text)
         return ' '.join(pieces)
 
@@ -387,6 +391,12 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
         char = source[at]
         if modes[at]:
             emit(at, at + 1, names(char), speech=True)
+            at += 1
+            continue
+        if char in ('\ufe0e', '\ufe0f'):
+            # Emoji presentation selectors alter display, not pronunciation.
+            # They can be split from their base by NVDA index commands.
+            emit(at, at + 1, '', speech=False)
             at += 1
             continue
         if char.isspace():
