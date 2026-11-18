@@ -15,6 +15,7 @@ on:
       - experiments/persian/test_decimal_routing.py
       - experiments/persian/test_direct_fa_numbers.py
       - experiments/persian/test_fa_orthography.py
+      - experiments/persian/test_fa_stress_fallback.py
       - nvda/_reloq_persian_decimals.py
       - nvda/_reloq_persian_joiners.py
       - experiments/persian/direct_fa_sequence.py
@@ -95,6 +96,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Structured native Persian number analysis failed' }
           python -B experiments/persian/test_fa_orthography.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Independent Persian orthography rules failed' }
+          python -B experiments/persian/test_fa_stress_fallback.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian native and fallback stress isolation failed' }
           python -B experiments/persian/test_decimal_routing.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'English and Pinglish number routing failed' }
           python -B experiments/persian/test_resilient_runtime.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"

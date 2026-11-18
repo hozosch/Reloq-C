@@ -43,9 +43,11 @@ def main():
         assert [part.value for part in compound.parts if isinstance(part, EciIndex)] == [9]
         with patch.object(frontend, 'analyze', return_value=reference):
             object_marker = project_resilient(('پدیده‌ای ', EciIndex(10), 'را'), frontend)
+            copula_after_reference = project_resilient(('پدیده‌ای ', EciIndex(17), 'است'), frontend)
             separated = project_resilient(('پدیده‌ای، ', EciIndex(11), 'را'), frontend)
             conjunction = project_resilient(('کتاب و ', EciIndex(12), 'پدیده‌ای'), frontend)
         assert object_marker.tagged.endswith(' `00 `[.0ra]'), object_marker.tagged
+        assert copula_after_reference.tagged.endswith(' `00 `[.0Ast]'), copula_after_reference.tagged
         assert separated.tagged.endswith(', `[.1ra]'), separated.tagged
         assert '`[.0vA]' in conjunction.tagged, conjunction.tagged
         assert [part.value for part in object_marker.parts if isinstance(part, EciIndex)] == [10]
