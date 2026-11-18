@@ -36,6 +36,11 @@ DEV149_ALLOWED = {
     'vendor/openevv61/lang/fifi/delta_rules_c30_fifi.c',
     'vendor/openevv61/lang/enus61/delta_rules_c29_enus61.c',
 }
+DEV150_BASE = '0c2120cc341b6f9034564df99539f3c16e94e51c'
+DEV150_KEY = ('persian-windows-provider-gcc14-v2-'
+              '0b8cb1dd6f2d585d653cae4a821bb432b804501524673c7444edc72155df053e')
+DEV150_ALLOWED = {'experiments/persian/build_native_probe.py',
+                  'src/reloq_persian_acoustics.c'}
 TRACE_ALLOWED = {
     'include/reloq_eci.h', 'include/reloq_persian_frames.h', 'include/reloq_syllable_trace.h',
     'vendor/openevv61/src/reloq61_bridge.c',
@@ -101,7 +106,11 @@ def main():
                     os.utime(path, None)
             print('Reused verified provider cache for the additive public API change.')
             return
-        if key == DEV149_KEY:
+        if key == DEV150_KEY:
+            changed = set(git('diff', '--name-only', DEV150_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV150_ALLOWED:
+                raise ValueError('Persian glide and vowel changes differ from the verified scope')
+        elif key == DEV149_KEY:
             changed = set(git('diff', '--name-only', DEV149_BASE, 'HEAD', '--', *INPUTS).splitlines())
             if changed != DEV149_ALLOWED:
                 raise ValueError('absolute syllable clock changes differ from the verified scope')

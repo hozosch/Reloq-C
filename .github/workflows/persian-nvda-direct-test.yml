@@ -60,8 +60,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/persian-windows-acoustic-probe.yml/runs" -f branch="$GITHUB_REF_NAME" -F per_page=40 > windows-runs.json
-          selected=$(python -B experiments/persian/select_windows_acoustic_run.py windows-runs.json)
+          selected=""
+          for attempt in $(seq 1 60); do
+            gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/persian-windows-acoustic-probe.yml/runs" -f branch="$GITHUB_REF_NAME" -F per_page=40 > windows-runs.json
+            selected=$(python -B experiments/persian/select_windows_acoustic_run.py windows-runs.json)
+            if [ -n "$selected" ]; then break; fi
+            sleep 5
+          done
           if [ -z "$selected" ]; then echo 'No compatible Windows acoustic build' >&2; exit 1; fi
           gh run watch "$selected" --exit-status --interval 15 --repo "$GITHUB_REPOSITORY"
           echo "run_id=$selected" >> "$GITHUB_OUTPUT"
@@ -116,7 +121,7 @@ jobs:
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev150; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev151; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
           dll=$(find candidate -name eci.dll -print -quit)
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
       - name: Test in real NVDA

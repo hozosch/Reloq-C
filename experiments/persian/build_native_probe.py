@@ -2070,18 +2070,26 @@ static unsigned persian_probe_e_neighbour(void *state,int32_t position,int backw
                 STATE(int16_t,s453),STATE(int16_t,s455),STATE(int16_t,s457),
                 STATE(int16_t,s397),STATE(int16_t,s398),STATE(int16_t,s399),
                 STATE(int16_t,s400),STATE(int16_t,s401));
-        int f1,f2,f3,end=0,neighbour=context ? atoi(context) : 0;
+        int f[5]={0,0,0,0,0},end=0,neighbour=context ? atoi(context) : 0;
+        int count=target ? sscanf(target,"%d,%d,%d,%d,%d%n",f,f+1,f+2,f+3,f+4,&end) : 0;
+        if (target && (count!=5 || target[end])) {
+            end=0;
+            count=sscanf(target,"%d,%d,%d%n",f,f+1,f+2,&end);
+        }
         int selected=neighbour==0 || (neighbour>0 && neighbour<=255 &&
                      (before==(unsigned)neighbour || after==(unsigned)neighbour));
         if(mode && !mode[1] && (mode[0]=='1' || mode[0]=='2') && selected && target &&
-           sscanf(target,"%d,%d,%d%n",&f1,&f2,&f3,&end)==3 && !target[end] &&
-           f1>=200 && f1<=1200 && f2>=500 && f2<=3000 && f3>=1500 && f3<=4000) {
-            int values[3]={f1,f2,f3};
-            int16_t *ends[6]={&STATE(int16_t,s448),&STATE(int16_t,s449),
+           (count==3 || count==5) && !target[end] &&
+           f[0]>=200 && f[0]<=1200 && f[1]>=500 && f[1]<=3000 &&
+           f[2]>=1500 && f[2]<=4000 &&
+           (count==3 || (f[3]>=2500 && f[3]<=5000 && f[4]>=3000 && f[4]<=6000))) {
+            int16_t *ends[10]={&STATE(int16_t,s448),&STATE(int16_t,s449),
                               &STATE(int16_t,s450),&STATE(int16_t,s451),
-                              &STATE(int16_t,s452),&STATE(int16_t,s453)};
-            for(int i=0;i<6;i++) {
-                int goal=values[i/2],current=*ends[i];
+                              &STATE(int16_t,s452),&STATE(int16_t,s453),
+                              &STATE(int16_t,s454),&STATE(int16_t,s455),
+                              &STATE(int16_t,s456),&STATE(int16_t,s457)};
+            for(int i=0;i<2*count;i++) {
+                int goal=f[i/2],current=*ends[i];
                 if(mode[0]=='1') *ends[i]=(int16_t)goal;
                 else if(current>0) *ends[i]=(int16_t)((current+goal+1)/2);
             }
@@ -2214,9 +2222,10 @@ static int32_t persian_us_mark(void *state,uint8_t st,uint8_t field,uint8_t valu
                                                 (uint8_t)local,(uint8_t)mapped,where);
 }
 '''.replace('__CONSTANTS__', constants)
-    helpers = ('eng_lab_Fv', 'eng_alv_Fv', 'eng_vel_Fv', 'eng_pal_Fv')
-    nasal_formants = ('ga_ph_m', 'ga_ph_n')
-    acoustic = tuple('eng_ph_' + phone for phone in 'ptkbdgfvszSZmn')
+    helpers = ('eng_high_pal_Fv', 'adjust_eng_female_breathiness',
+               'eng_lab_Fv', 'eng_alv_Fv', 'eng_vel_Fv', 'eng_pal_Fv')
+    nasal_formants = ('ga_ph_m', 'ga_ph_n', 'ga_ph_y')
+    acoustic = tuple('eng_ph_' + phone for phone in 'ptkbdgfvszSZmny')
     durations = tuple('eng_ph_' + phone + '_dur' for phone in 'ptkbdgfvszSZmn')
     exported = durations + ('get_eng_stop_trans_dur', 'get_eng_fric_trans_dur',
                             'get_eng_nas_trans_dur', 'eng_trans_features')
@@ -2254,6 +2263,15 @@ static int32_t persian_us_mark(void *state,uint8_t st,uint8_t field,uint8_t valu
                               'persian_us_npush_field(state,')
         block = block.replace('reloq61_typed_mark_s(DELTA_ENTRY_mark_s, state,',
                               'persian_us_mark(state,')
+        if name == 'eng_ph_y':
+            # These US-only state cells do not exist in the Persian provider.
+            # The dispatcher already calls ga_ph_y (and its high-palatal
+            # rule), so the second conditional call is unnecessary here.
+            conditional = ('    if ((int16_t)(STATE(int16_t, s319)) == (int16_t)(STATE(int16_t, s318))) goto L116;\n'
+                           '    goto L127;\n')
+            if block.count(conditional) != 1:
+                raise RuntimeError('Cannot isolate the English-only glide context')
+            block = block.replace(conditional, '    goto L127;\n', 1)
         if name == 'get_eng_nas_trans_dur':
             # English has two language-specific state values for this one
             # contextual branch. Finnish/Persian has neither; choose the
@@ -2541,6 +2559,16 @@ static void persian_articulation_nasal(void *state,int second_formant)
                        f'            r0=persian_us_eng_ph_{phone}(state,(int32_t)(FIELD(0)));\n' +
                        '        else\n' + call + '    }\n')
         text = text.replace(call, replacement, 1)
+    call = '    r0 = reloq_call_fifi_fin_ph_j(state, (int32_t)(FIELD(0)));\n'
+    if text.count(call) != 1:
+        raise RuntimeError('Cannot locate Persian /j/ dispatcher')
+    text = text.replace(call, r'''    {
+        const char *us=getenv("RELOQ_FA_US_GLIDE");
+        if (us && us[0]=='1' && !us[1]) {
+            r0=persian_us_ga_ph_y(state,(int32_t)(FIELD(0)));
+            if (!r0) r0=persian_us_eng_ph_y(state,(int32_t)(FIELD(0)));
+        } else {
+''' + call + '        }\n    }\n', 1)
     for phone, target in (('m', 1200), ('n', 1600)):
         call = f'    r0 = reloq_call_fifi_fin_ph_{phone}(state, (int32_t)(FIELD(0)));\n'
         if text.count(call) != 1:

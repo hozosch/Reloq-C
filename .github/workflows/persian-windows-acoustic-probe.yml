@@ -55,6 +55,7 @@ on:
       - experiments/persian/test_us_nasals.py
       - experiments/persian/test_open_vowels.py
       - experiments/persian/test_yek_duration.py
+      - experiments/persian/test_glide_e_reference.py
       - experiments/persian/test_british_front_a.py
       - experiments/persian/test_front_a_harmonics.py
       - experiments/persian/test_german_vowel_blend.py
@@ -88,6 +89,7 @@ jobs:
           path: vendor/openevv61/build/windows-release
           key: persian-windows-provider-gcc14-v2-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c', 'src/reloq_persian_acoustics.c', 'src/reloq_persian_acoustics.h', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-provider-gcc14-v2-0b8cb1dd6f2d585d653cae4a821bb432b804501524673c7444edc72155df053e
             persian-windows-provider-gcc14-v2-cab206af509e0977cc552bd0723a1a6d2f8c9b886d82357a931432e54d7a0047
             persian-windows-provider-gcc14-v2-eb978682e83612fa0fef1940e0c321d3072f9cf8db4b6d11c243532189d602cc
             persian-windows-provider-gcc14-v2-258cf46181dbfeb1b6d1f9c2e9146e82d09ebaa88f092c1c1ac5e757e1fe95fc
@@ -101,6 +103,7 @@ jobs:
             eci/eci.dll
           key: persian-windows-host-gcc14-v2-${{ hashFiles('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src/**', 'include/**', 'vendor/openevv61/**', '!vendor/openevv61/build/**', 'experiments/persian/direct_fa_*.c', 'experiments/persian/direct_fa_*.h', 'experiments/persian/direct_fa_*.inc', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-host-gcc14-v2-dac446486a22d19a77d825d49f9646341087763174c54ba85cd8cda4c8791601
             persian-windows-host-gcc14-v2-4419e090258b54c489fe7ecfba709236760771647c2b523f2865fd3ebe3fd944
             persian-windows-host-gcc14-v2-9fbaf447f57f00e8aa4e28add7806baf049e17728506d6b7be26561f5313afaa
             persian-windows-host-gcc14-v2-f4aa931982b6b718f119c59251c1b630a0645e043c0d790f358088e893c079a6
@@ -183,6 +186,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian short vowel shaping failed' }
           python -B experiments/persian/test_yek_duration.py --candidate eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian yek timing failed' }
+          python -B experiments/persian/test_glide_e_reference.py --candidate eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Persian glide or reference E failed' }
           python -B experiments/persian/test_british_front_a.py --candidate eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'British/Persian front-vowel comparison failed' }
           python -B experiments/persian/test_front_a_harmonics.py --candidate eci/eci.dll

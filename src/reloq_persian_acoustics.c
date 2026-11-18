@@ -95,9 +95,12 @@ const char *reloq_fa_scoped_get(const char *name)
         {"RELOQ_FA_VOWEL_DAMPING","1"}, {"RELOQ_FA_FRONT_A_F3","1"},
         {"RELOQ_FA_US_ARTICULATION","1"}, {"RELOQ_FA_US_STOPS","1"},
         {"RELOQ_FA_US_FRICATIVES","1"}, {"RELOQ_FA_US_NASALS","1"},
+        {"RELOQ_FA_US_GLIDE","1"},
         {"RELOQ_FA_PROBE_END_H_DB","9"}, {"RELOQ_FA_PROBE_K_SHAPE","3"},
-        {"RELOQ_FA_E_MODE","1"}, {"RELOQ_FA_E_CONTEXT","22"},
-        {"RELOQ_FA_E_TARGET","450,1875,2525"},
+        /* The /e/ nucleus in "se" (three), irrespective of its neighbours.
+         * Consonant transitions and short/long vowel timing remain separate. */
+        {"RELOQ_FA_E_MODE","1"}, {"RELOQ_FA_E_CONTEXT","0"},
+        {"RELOQ_FA_E_TARGET","450,2000,2700,3650,3900"},
         {"RELOQ_FA_PROBE_NO_AUTO_GLOTTAL","1"},
     };
     if(!fa_acoustics || !name)return 0;

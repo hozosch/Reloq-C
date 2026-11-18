@@ -38,6 +38,9 @@ class CacheReuseTests(unittest.TestCase):
 
     def test_rebuilds_selected_objects_or_rejects_unverified_cache(self):
         for key, diff, reusable in (
+            (cache.DEV150_KEY, '\n'.join(cache.DEV150_ALLOWED), True),
+            (cache.DEV150_KEY, '\n'.join(cache.DEV150_ALLOWED | {'vendor/openevv61/Makefile.native'}), False),
+            (cache.DEV150_KEY, 'src/reloq_persian_acoustics.c', False),
             (cache.DEV149_KEY, '\n'.join(cache.DEV149_ALLOWED), True),
             (cache.DEV149_KEY, '\n'.join(cache.DEV149_ALLOWED | {'vendor/openevv61/Makefile.native'}), False),
             (cache.DEV149_KEY, 'include/reloq_syllable_trace.h', False),
