@@ -61,6 +61,9 @@ class CacheReuseTests(unittest.TestCase):
 
     def test_rebuilds_selected_objects_or_rejects_unverified_cache(self):
         for key, diff, reusable in (
+            (cache.DEV156_KEY, '\n'.join(cache.DEV156_ALLOWED), True),
+            (cache.DEV156_KEY, '\n'.join(cache.DEV156_ALLOWED | {'include/reloq_eci.h'}), False),
+            (cache.DEV156_KEY, 'src/reloq_persian_acoustics.c', False),
             (cache.DEV155_KEY, '\n'.join(cache.DEV155_ALLOWED), True),
             (cache.DEV155_KEY, '\n'.join(cache.DEV155_ALLOWED | {'include/reloq_eci.h'}), False),
             (cache.DEV155_KEY, '', False),

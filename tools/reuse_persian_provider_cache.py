@@ -71,6 +71,11 @@ DEV155_BASE = 'b434e5cb96f9f824cc4d0287d1e1427a96853f41'
 DEV155_KEY = ('persian-windows-provider-gcc14-v2-'
               'c83463169692296a905dc6098785f24b7577e72820b955b60437ebfc5e5c420b')
 DEV155_ALLOWED = {'src/reloq_persian_acoustics.c'}
+DEV156_BASE = '2228cec2756a974b3a939d0a20fd24807cfa9795'
+DEV156_KEY = ('persian-windows-provider-gcc14-v2-'
+              '9b855d4adb0b666637fabc804ec1064b9c59ff6e5ba10c28da3b9a4e3a634282')
+DEV156_ALLOWED = {'experiments/persian/build_native_probe.py',
+                  'src/reloq_persian_acoustics.c'}
 TRACE_ALLOWED = {
     'include/reloq_eci.h', 'include/reloq_persian_frames.h', 'include/reloq_syllable_trace.h',
     'vendor/openevv61/src/reloq61_bridge.c',
@@ -136,7 +141,11 @@ def main():
                     os.utime(path, None)
             print('Reused verified provider cache for the additive public API change.')
             return
-        if key == DEV155_KEY:
+        if key == DEV156_KEY:
+            changed = set(git('diff', '--name-only', DEV156_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV156_ALLOWED:
+                raise ValueError('Persian after-I R provider changes differ from the verified scope')
+        elif key == DEV155_KEY:
             changed = set(git('diff', '--name-only', DEV155_BASE, 'HEAD', '--', *INPUTS).splitlines())
             if changed != DEV155_ALLOWED:
                 raise ValueError('restored Persian R provider changes differ from the verified scope')

@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/persian-windows-acoustic-retest.yml
       - experiments/persian/test_persian_r.py
+      - experiments/persian/test_persian_r_after_i.py
 permissions:
   contents: read
   actions: read
@@ -62,6 +63,8 @@ jobs:
           $probe = 'candidate/persian-windows-probe/eci_persian_probe.dll'
           python -B experiments/persian/test_persian_r.py --candidate $native
           if ($LASTEXITCODE -ne 0) { throw 'Persian R failed' }
+          python -B experiments/persian/test_persian_r_after_i.py --candidate $native
+          if ($LASTEXITCODE -ne 0) { throw 'Persian R after I failed' }
           python -B experiments/persian/test_japanese_nasal_aspiration.py --candidate $native
           if ($LASTEXITCODE -ne 0) { throw 'Japanese nasal failed' }
           python -B experiments/persian/test_british_front_a.py --candidate $native

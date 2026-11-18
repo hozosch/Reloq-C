@@ -2814,13 +2814,31 @@ int persian_f_coda_r_selected(void *state)
 static void persian_r_less_retroflex(void *state)
 {
     const char *mode=getenv("RELOQ_FA_R_ALVEOLAR");
+    if (mode && mode[0]=='1' && !mode[1]) {
+        /* Legacy experimental all-R trial; not selected by the Persian core. */
+        if (STATE(int16_t,s452)>0 && STATE(int16_t,s452)<2450) STATE(int16_t,s452)=2450;
+        if (STATE(int16_t,s453)>0 && STATE(int16_t,s453)<2450) STATE(int16_t,s453)=2450;
+        if (STATE(int16_t,s454)>0 && STATE(int16_t,s454)<3150) STATE(int16_t,s454)=3150;
+        if (STATE(int16_t,s455)>0 && STATE(int16_t,s455)<3150) STATE(int16_t,s455)=3150;
+        return;
+    }
+    mode=getenv("RELOQ_FA_R_AFTER_I");
     if (!mode || mode[0]!='1' || mode[1]) return;
-    /* Raise explicit R resonances, but leave contextual inheritance markers
-       and the vowel's own acoustic targets intact. */
-    if (STATE(int16_t,s452)>0 && STATE(int16_t,s452)<2450) STATE(int16_t,s452)=2450;
-    if (STATE(int16_t,s453)>0 && STATE(int16_t,s453)<2450) STATE(int16_t,s453)=2450;
-    if (STATE(int16_t,s454)>0 && STATE(int16_t,s454)<3150) STATE(int16_t,s454)=3150;
-    if (STATE(int16_t,s455)>0 && STATE(int16_t,s455)<3150) STATE(int16_t,s455)=3150;
+    delta_state *d=state;
+    int32_t begin=STATE(int32_t,w60);
+    if (!d || !begin) return;
+    delta_node *point=vmovel(d,EVV_AT(delta_node *,begin),2);
+    int32_t node=point?vgetsc(d,1,0,EVV_REF(point),2):0;
+    if (!node || (*EVV_AT(int32_t *,node)&2) ||
+        *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node)))!=27) return;
+    if (persian_articulation_word_initial(state,STATE_AT(w60,-4))) return;
+    /* After Persian /i/ only, soften the low F3 target on the R itself.
+       Leave F4, source, duration and both vowels' own targets untouched. A
+       word-final post-vocalic R still uses the Brazilian donor above. */
+    if (STATE(int16_t,s452)>0 && STATE(int16_t,s452)<2450)
+        STATE(int16_t,s452)=STATE(int16_t,s452)>2300?2450:STATE(int16_t,s452)+150;
+    if (STATE(int16_t,s453)>0 && STATE(int16_t,s453)<2450)
+        STATE(int16_t,s453)=STATE(int16_t,s453)>2300?2450:STATE(int16_t,s453)+150;
 }
 static int16_t persian_articulation_toward(int16_t value,int target)
 {

@@ -264,6 +264,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           *(( 'fa_IR', 'به' + separator + word, 'issue49_preposition')
                             for word in ('طور', 'سوی', 'طرف', 'خاطر', 'گفته', 'دیدن', 'دلیل')
                             for separator in ('\u200c', ' ')),
+                          *(( 'fa_IR', text, 'issue49_final_accent') for text in (
+                              'حجازی', 'بردباری', 'سلامتی', 'کثیریان', 'عباسی',
+                              'منچستریونایتد', 'سایبری', 'گزینه زمستانی ما او بود.')),
                           ('fa_IR', 'تعجب', False),
                           ('fa_IR', '۱۰۰', False),
                           ('fa_IR', 'متوقف', False),
@@ -709,7 +712,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = ['سلام ', self.character(True), '؟', self.character(False), ' دنیا']
             elif spelling in ('issue49_hamza_spelling', 'issue49_original_spelling', 'issue49_character_navigation'):
                 sequence = list(self.speech.getSpellingSpeech(text, locale=locale, endsUtterance=False))
-            elif spelling == 'issue49_preposition':
+            elif spelling in ('issue49_preposition', 'issue49_final_accent'):
                 sequence = [text]
             elif spelling == 'issue49_original_line':
                 sequence = [text]
@@ -781,7 +784,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue49_weak_'))
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue50_'))
             self.pipeline = self.pipeline or spelling in ('issue49_quotes', 'issue49_numeric', 'issue49_own_vowel', 'issue49_nominal_compound')
-            self.pipeline = self.pipeline or spelling in ('issue49_preposition', 'issue49_character_navigation')
+            self.pipeline = self.pipeline or spelling in ('issue49_preposition', 'issue49_final_accent',
+                                                          'issue49_character_navigation')
             self.pipeline = self.pipeline or spelling in ('issue49_version_some', 'issue49_version_split',
                                                            'issue49_emoji_some', 'issue49_emoji_split',
                                                            'issue49_heading', 'issue49_heading_split',
@@ -803,7 +807,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
                                   symbolLevel=(self.symbols.SymbolLevel.MOST if isinstance(spelling, str) and spelling.startswith('issue50_') and spelling.endswith('_most') else
                                                self.symbols.SymbolLevel.SOME if self.sample_case or (isinstance(spelling, str) and spelling.startswith('issue50_') and not spelling.endswith('_none')) or spelling in (
-                                               'issue49_quotes', 'issue49_preposition', 'issue49_character_navigation', 'issue49_version_some', 'issue49_version_split',
+                                               'issue49_quotes', 'issue49_preposition', 'issue49_final_accent', 'issue49_character_navigation', 'issue49_version_some', 'issue49_version_split',
                                                'issue49_emoji_some', 'issue49_emoji_split',
                                                'issue49_heading', 'issue49_heading_split',
                                                'issue49_korean', 'issue49_korean_word',
@@ -903,6 +907,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 tags = ' '.join(self.projected[self.before_projected:])
                 if self.symbol_tags[text] not in tags:
                     raise AssertionError('NVDA navigation lost the written symbol name: ' + ascii((text, tags)))
+            if spelling == 'issue49_final_accent':
+                expected = {'حجازی': '`[.0he.0Ja.1zi]', 'بردباری': '`[.0bord.0ba.1ri]',
+                            'سلامتی': '`[.0sA.0la.0mA.1ti]', 'کثیریان': '`[.0kA.0si.0ri.1jan]',
+                            'عباسی': '`[.0Ab.0ba.1si]',
+                            'منچستریونایتد': '`[.0mAn.0Ces.0te.0rju.0naj.1ted]',
+                            'سایبری': '`[.0saj.0be.1ri]',
+                            'گزینه زمستانی ما او بود.': '`[.0ze.0mes.0ta.1ni]'}[text]
+                tags = ' '.join(self.projected[self.before_projected:])
+                if expected not in tags:
+                    raise AssertionError('NVDA lost a reported final word accent: ' + ascii((text, tags)))
             if spelling == 'issue49_nominal_compound':
                 expected = ("`[.0ra.0h'A:'n.0da.1zi.0e]" if text.endswith('ِ') else
                             "`[.0ra.0h'A:'n.0da.1zi]")
