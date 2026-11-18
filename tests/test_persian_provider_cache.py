@@ -52,6 +52,9 @@ class CacheReuseTests(unittest.TestCase):
 
     def test_rebuilds_selected_objects_or_rejects_unverified_cache(self):
         for key, diff, reusable in (
+            (cache.DEV154_KEY, '\n'.join(cache.DEV154_ALLOWED), True),
+            (cache.DEV154_KEY, '\n'.join(cache.DEV154_ALLOWED | {'include/reloq_eci.h'}), False),
+            (cache.DEV154_KEY, 'src/reloq_persian_acoustics.c', False),
             (cache.DEV153_KEY, '\n'.join(cache.DEV153_ALLOWED), True),
             (cache.DEV153_KEY, '\n'.join(cache.DEV153_ALLOWED | {'include/reloq_eci.h'}), False),
             (cache.DEV153_KEY, 'src/reloq_persian_acoustics.c', False),
@@ -91,6 +94,9 @@ class CacheReuseTests(unittest.TestCase):
                 untouched.touch()
                 scope_object = build / 'reloq_persian_acoustics.o'
                 scope_object.touch()
+                stream_object = build / 'src' / 'eci' / 'bridge' / 'eci_stmarray.o'
+                stream_object.parent.mkdir(parents=True)
+                stream_object.touch()
                 japanese_objects = [build / 'lang' / 'jajp61' / f'delta_rules_c{part}_jajp61.o'
                                     for part in ('17', '30')]
                 japanese_objects[0].parent.mkdir(parents=True)
@@ -111,6 +117,7 @@ class CacheReuseTests(unittest.TestCase):
                     self.assertTrue(untouched.exists())
                     self.assertFalse((build / 'libreloq61.a').exists())
                     self.assertFalse(scope_object.exists())
+                    self.assertEqual(stream_object.exists(), key != cache.DEV154_KEY)
                     self.assertFalse((build / 'persian-provider').exists())
                     self.assertEqual([obj.exists() for obj in japanese_objects],
                                      [key != cache.DEV152_KEY] * 2)

@@ -2795,6 +2795,33 @@ int persian_pt_coda_r_selected(void *state)
     return *(const unsigned char *)delta_record_field(&vstmtbl[2],1,
                                                        TFLDS(EVV_AT(void *,node)))==1;
 }
+/* A final /r/ immediately following /f/ belongs to the same word. Keep this
+   narrow until listening establishes what other consonant clusters need. */
+int persian_f_coda_r_selected(void *state)
+{
+    const char *mode=getenv("RELOQ_FA_VOICELESS_F_R");
+    if (!mode || mode[0]!='1' || mode[1]) return 0;
+    delta_state *d=state;
+    int32_t begin=STATE(int32_t,w60);
+    if (!d || !begin || !persian_probe_r_word_final(state,STATE_AT(w60,-4)) ||
+        persian_articulation_word_initial(state,STATE_AT(w60,-4))) return 0;
+    delta_node *point=vmovel(d,EVV_AT(delta_node *,begin),2);
+    int32_t node=point?vgetsc(d,1,0,EVV_REF(point),2):0;
+    if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
+    return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,
+                                                       TFLDS(EVV_AT(void *,node)))==7;
+}
+static void persian_r_less_retroflex(void *state)
+{
+    const char *mode=getenv("RELOQ_FA_R_ALVEOLAR");
+    if (!mode || mode[0]!='1' || mode[1]) return;
+    /* Raise explicit R resonances, but leave contextual inheritance markers
+       and the vowel's own acoustic targets intact. */
+    if (STATE(int16_t,s452)>0 && STATE(int16_t,s452)<2450) STATE(int16_t,s452)=2450;
+    if (STATE(int16_t,s453)>0 && STATE(int16_t,s453)<2450) STATE(int16_t,s453)=2450;
+    if (STATE(int16_t,s454)>0 && STATE(int16_t,s454)<3150) STATE(int16_t,s454)=3150;
+    if (STATE(int16_t,s455)>0 && STATE(int16_t,s455)<3150) STATE(int16_t,s455)=3150;
+}
 static int16_t persian_articulation_toward(int16_t value,int target)
 {
     /* Preserve native inheritance markers and two thirds of each contextual
@@ -2859,8 +2886,24 @@ static void persian_articulation_nasal(void *state,int second_formant)
     text = text.replace(call, r'''    {
         if (persian_pt_coda_r_selected(state))
             r0=persian_pt_por_ph_r(state,(int32_t)(FIELD(0)));
-        else
-''' + call + '    }\n', 1)
+        else {
+''' + call + r'''            if (!r0) {
+                persian_r_less_retroflex(state);
+                if (persian_f_coda_r_selected(state)) {
+                    /* Brazilian R-style frication bands, without voicing.
+                       The scheduler treats this R as a non-sonorant below. */
+                    STATE(int16_t,s402)=0; STATE(int16_t,s403)=0;
+                    STATE(int16_t,s405)=0; STATE(int16_t,s404)=50;
+                    STATE(int16_t,s408)=0; STATE(int16_t,s409)=0;
+                    STATE(int16_t,s410)=65; STATE(int16_t,s411)=45;
+                    STATE(int16_t,s412)=0; STATE(int16_t,s413)=0;
+                    STATE(int16_t,s432)=0; STATE(int16_t,s433)=0;
+                    STATE(int16_t,s434)=0; STATE(int16_t,s436)=0;
+                }
+            }
+        }
+    }
+''', 1)
     for phone, target in (('m', 1200), ('n', 1600)):
         call = f'    r0 = reloq_call_fifi_fin_ph_{phone}(state, (int32_t)(FIELD(0)));\n'
         if text.count(call) != 1:
@@ -2889,6 +2932,34 @@ static void persian_articulation_nasal(void *state,int second_formant)
             '        }\n    }\n'
         text = text.replace(call, replacement, 1)
     consonant_file.write_text(text, encoding='utf8')
+    scheduler_file = work / 'delta_rules_c13_fifi.c'
+    text = scheduler_file.read_text(encoding='utf8')
+    include = '#include "reloq61_rule_calls_fifi.h"\n'
+    call = '    r0 = reloq_call_fifi_do_son_amps(state, (int32_t)(FIELD(0)));\n'
+    if text.count(include) != 1 or text.count(call) != 1:
+        raise RuntimeError('Cannot locate Persian sonorant scheduler')
+    text = text.replace(include, include + 'extern int persian_f_coda_r_selected(void *);\n'
+                        'extern int reloq61_array_bank_zero_segment(void *,int,int32_t,int32_t);\n', 1)
+    # Voicing points may already be planned ahead while visiting the vowel.
+    # Replace only this phone's points before emitting its frication.
+    silent_source = r'''    if (persian_f_coda_r_selected(state)) {
+        STATE(int16_t,s402)=0; STATE(int16_t,s403)=0; STATE(int16_t,s405)=0;
+        int32_t from=delta_fixed_int(STATE(int32_t,f10));
+        int32_t to=delta_fixed_int(STATE(int32_t,f11));
+        (void)reloq61_array_bank_zero_segment(state,STATE(int16_t,s64),from,to);
+        (void)reloq61_array_bank_zero_segment(state,STATE(int16_t,s65),from,to);
+        (void)reloq61_array_bank_zero_segment(state,STATE(int16_t,s60),from,to);
+        STATE(int16_t,s432)=1; STATE(int16_t,s433)=1; STATE(int16_t,s436)=1;
+        r0 = reloq_call_fifi_do_non_son_amps(state, (int32_t)(FIELD(0)));
+    } else
+'''
+    text = text.replace(call, silent_source + call, 1)
+    fallback = 'L972:;\n    r0 = reloq_call_fifi_do_non_son_amps(state, (int32_t)(FIELD(0)));\n'
+    if text.count(fallback) != 1:
+        raise RuntimeError('Cannot locate Persian non-sonorant scheduler')
+    text = text.replace(fallback, 'L972:;\n' + silent_source +
+                        '    r0 = reloq_call_fifi_do_non_son_amps(state, (int32_t)(FIELD(0)));\n', 1)
+    scheduler_file.write_text(text, encoding='utf8')
     duration_file = work / 'delta_rules_c23_fifi.c'
     text = duration_file.read_text(encoding='utf8')
     include = '#include "reloq61_rule_calls_fifi.h"\n'

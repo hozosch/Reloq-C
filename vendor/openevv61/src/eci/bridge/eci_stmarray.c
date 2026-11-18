@@ -439,6 +439,59 @@ int reloq61_array_bank_put(void*d,int stream,int32_t when,int32_t value)
  return sa_appendValue(&GEN_LIST(d)->streams[stream],(uint32_t)when,(int16_t)value)!=0;
 }
 
+/* Replace already-planned source points within one phone, without disturbing
+ * earlier/later points or the consumer's clock. Sonorant planning can put
+ * those points into the queue before the phone's own acoustic rule runs.
+ * Build a separate queue first, so an allocation failure leaves the original
+ * stream untouched. All times here are the stream's whole milliseconds. */
+int reloq61_array_bank_zero_segment(void *d,int stream,int32_t start,int32_t end)
+{
+    if (!d || stream<0 || stream>=GEN_LIST(d)->count || start<0 || end<start)
+        return 0;
+    StreamArray *s=&GEN_LIST(d)->streams[stream];
+    if (!s->queue.buf || !s->queue.room || (uint32_t)start<s->read) return 0;
+    StreamArray out={0};
+    tvq_ctor(&out.queue,s->queue.want);
+    if (!out.queue.buf) return 0;
+    out.read=s->read;
+    out.written=s->read;
+    uint16_t index=s->queue.head;
+    uint32_t time=s->read;
+    int started=0,ended=0,ok=1;
+    while (index!=s->queue.tail && ok) {
+        TimeValuePair p=s->queue.buf[index];
+        index=(uint16_t)((index+1u)%s->queue.room);
+        uint32_t when;
+        int16_t value=p.value;
+        if (p.time==ESCAPE) {
+            if (index==s->queue.tail) {ok=0;break;}
+            p=s->queue.buf[index];
+            index=(uint16_t)((index+1u)%s->queue.room);
+            when=((uint32_t)p.time<<16)|(uint16_t)p.value;
+        } else {
+            when=time+p.time;
+            if (when<time) {ok=0;break;}
+        }
+        if (when<time || when>s->written) {ok=0;break;}
+        time=when;
+        if (when<(uint32_t)start) {
+            ok=sa_appendValue(&out,when,value);
+            continue;
+        }
+        if (!started) {ok=sa_appendValue(&out,(uint32_t)start,0);started=1;}
+        if (when<=(uint32_t)end) continue;
+        if (ok && !ended) {ok=sa_appendValue(&out,(uint32_t)end,0);ended=1;}
+        if (ok) ok=sa_appendValue(&out,when,value);
+    }
+    if (ok && !started) {ok=sa_appendValue(&out,(uint32_t)start,0);started=1;}
+    if (ok && !ended) ok=sa_appendValue(&out,(uint32_t)end,0);
+    if (!ok) {tvq_dtor(&out.queue);return 0;}
+    tvq_dtor(&s->queue);
+    s->queue=out.queue;
+    s->written=out.written;
+    return 1;
+}
+
 /* Bank targets use absolute host times. Both sides of a delta-coded queue
  * must share that boundary; the ordinary clear operation reads from zero. */
 void reloq61_array_bank_reset(void*d,int32_t at)

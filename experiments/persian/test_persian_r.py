@@ -9,6 +9,7 @@ import threading
 
 from test_us_articulation import capture, voice
 from _reloq_eci_direct import GENDER, NATIVE_SPEED, SAMPLE_RATE
+from compare_r_context import r_interval
 
 
 def frication(rows):
@@ -65,31 +66,99 @@ def main():
                         for left, right in zip(current, reference):
                             for col in (2, 7, 8, 9, 13, 15, 17, 35, 36, 37, 38):
                                 assert abs(left[col]-right[col]) <= 2, (gender, rate, speed, tag, col)
+                        if old:
+                            after_pcm, _ = capture(fa, scope, tag, True)
+                            before_pcm, _ = capture(old, old_scope, tag, True)
+                            assert after_pcm.pcm == before_pcm.pcm, (gender, rate, speed, tag)
                         checks += 1
-                    for text in ('`[.1sefr]', '`[.1pa]', '`[.1i]', '`[.1u]'):
+                    for text in ('`[.1pa]', '`[.1i]', '`[.1u]'):
                         current, _ = capture(fa, scope, text, True)
                         if old:
                             before, _ = capture(old, old_scope, text, True)
                             assert current.pcm == before.pcm, (gender, rate, speed, text)
                         checks += 1
-                    # R initial stays the previous R; its adjacent vowel has
-                    # its own neutral targets, checked independently below.
+                    # The final R after F is a distinct mid-band fricative;
+                    # neither periodic voicing nor voiced aspiration may be
+                    # present, including in a build with no old reference.
+                    _, cluster = capture(fa, scope, '`[.1sefr]', True)
+                    r_noise = [row.controls for row in cluster
+                               if row.controls[8] >= 35 and row.controls[35] < 5
+                               and row.controls[36] < 5 and row.controls[37] >= 55
+                               and 30 <= row.controls[38] < 55]
+                    assert len(r_noise) >= 5, (gender, rate, speed, 'missing F-R frication')
+                    assert all(c[2] == 0 and c[7] == 0 for c in r_noise), (gender, rate, speed, 'voiced F-R')
+                    checks += 1
+                    # Change only the R's upper resonances, preserving its
+                    # source, first two formants and native clock.
                     _, current = capture(fa, scope, '`[.1ra]', True)
+                    assert current[0].controls[15] >= 2400 and current[0].controls[17] >= 3100, (
+                        gender, rate, speed, 'R upper resonances')
                     if old:
                         _, before = capture(old, old_scope, '`[.1ra]', True)
+                        assert len(current) == len(before)
                         for a, b in zip(current[:5], before[:5]):
-                            for col in (2, 7, 8, 9, 13, 15, 17):
+                            for col in (2, 7, 8, 9, 13):
                                 assert abs(a.controls[col]-b.controls[col]) < 1
+                            for col in (15, 17):
+                                assert a.controls[col] > b.controls[col], (gender, rate, speed, col)
+                        _, current = capture(fa, scope, '`[.1sefr]', True)
+                        _, before = capture(old, old_scope, '`[.1sefr]', True)
+                        assert len(current) == len(before)
+                        start, end = r_interval(before, 'cluster', min_duration=5)
+                        for i in range(start, end):
+                            c = current[i].controls
+                            assert c[2] == 0 and c[7] == 0, (gender, rate, speed, i, c[2], c[7])
+                            assert c[8] > 0, (gender, rate, speed, i, 'missing frication')
+                        # The F remains its own unvoiced consonant.
+                        for i in range(max(0, start-12), start):
+                            for col in (2, 7, 8, 35, 36, 37, 38, 39, 40):
+                                assert current[i].controls[col] == before[i].controls[col], (gender, rate, speed, i, col)
+                        # An /f/ at the end of one word must not devoice the
+                        # initial R of the next; nor may a non-final /fr/.
+                        for tag in ('`[.1sef] `[.1ra]', '`[.1se.0fra]'):
+                            _, a = capture(fa, scope, tag, True)
+                            _, b = capture(old, old_scope, tag, True)
+                            assert len(a) == len(b), (gender, rate, speed, tag)
+                            for x, y in zip(a, b):
+                                for col in (2, 7, 8):
+                                    assert x.controls[col] == y.controls[col], (gender, rate, speed, tag, col)
+                        # Rewriting the already-queued R must not remove the
+                        # source or stable vowel in the following word.
+                        for tag in ('`[.1sefr] `[.1a]', '`[.1sefr] `[.1ra]'):
+                            _, a = capture(fa, scope, tag, True)
+                            _, b = capture(old, old_scope, tag, True)
+                            assert len(a) == len(b), (gender, rate, speed, tag)
+                            i = next(i for i in range(len(b)-1, -1, -1)
+                                     if b[i].controls[2] >= 45 and b[i].controls[7] < 40
+                                     and b[i].controls[8] < 1)
+                            for col in (2, 7, 8, 9, 13, 15, 17):
+                                assert abs(a[i].controls[col]-b[i].controls[col]) < 1, (
+                                    gender, rate, speed, tag, i, col)
                     checks += 1
         for gender in (0, 1):
             for engine in (fa, old):
                 if engine:
                     for key, value in ((GENDER, gender), (SAMPLE_RATE, 3), (NATIVE_SPEED, 65)):
                         engine.set_parameter(key, value)
+            if old:
+                # Vowel centers remain identical to the pre-change engine;
+                # only the adjacent R and its transition may be modified.
+                for vowel in 'aeiou':
+                    _, now = capture(fa, scope, '`[.1r' + vowel + ']', True)
+                    _, before = capture(old, old_scope, '`[.1r' + vowel + ']', True)
+                    left, right = nucleus(now), nucleus(before)
+                    for col in (9, 13, 15, 17):
+                        assert abs(left[col]-right[col]) < 1, (gender, vowel, col)
+                    checks += 1
             for vowel in 'iu':
                 _, plain = capture(fa, scope, '`[.1' + vowel + ']', True)
                 _, after = capture(fa, scope, '`[.1r' + vowel + ']', True)
                 target, actual = nucleus(plain), nucleus(after)
+                if old:
+                    _, old_after = capture(old, old_scope, '`[.1r' + vowel + ']', True)
+                    previous_nucleus = nucleus(old_after)
+                    for col in (9, 13, 15, 17):
+                        assert abs(previous_nucleus[col]-actual[col]) < 1, (gender, vowel, col)
                 for col, tolerance in ((9, 30), (13, 100), (15, 150), (17, 200)):
                     assert abs(target[col]-actual[col]) <= tolerance, (gender, vowel, col, target[col], actual[col])
                 checks += 1

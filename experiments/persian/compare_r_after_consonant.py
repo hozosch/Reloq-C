@@ -1,4 +1,4 @@
-"""Listen to Persian consonant-final R experiments based on Portuguese /ar/.
+"""Historical raw-frame R probe; its CLI is disabled because it used Finnish F0.
 
 This is an offline frame comparison, not an installed pronunciation rule.
 The preceding /f/, timing, pitch and controls outside the R interval remain
@@ -59,6 +59,8 @@ def trial(rows, donor, mode):
 
 
 def main():
+    raise RuntimeError('This historical probe bypassed the US contour planner. '
+                       'Use compare_persian_r_us_contour.py instead.')
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)

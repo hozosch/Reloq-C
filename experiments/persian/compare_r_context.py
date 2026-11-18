@@ -1,4 +1,4 @@
-"""Make isolated Persian R listening comparisons; do not install the trials.
+"""Historical raw-frame R probe; its CLI is disabled because it used Finnish F0.
 
 The Japanese short-R candidate comes from the actual scoped provider rule.
 For the long and final R comparisons, replay the same Persian control frames
@@ -42,7 +42,7 @@ def groups(indices):
             yield part[0], part[-1] + 1
 
 
-def r_interval(rows, kind):
+def r_interval(rows, kind, min_duration=20):
     end = active_end(rows)
     if kind == 'cluster':
         noise = [i for i in range(end) if rows[i].controls[8] > 20 and rows[i].controls[2] < 15]
@@ -66,7 +66,7 @@ def r_interval(rows, kind):
         start, end = max(0, runs[0][0] - 12), min(end, runs[1][1] + 12)
     else:
         raise ValueError('unknown R context')
-    if end - start < 20:
+    if end - start < min_duration:
         raise RuntimeError('The controlled R interval is too short')
     return start, end
 
@@ -114,6 +114,8 @@ def adjust(rows, kind, mode):
 
 
 def main():
+    raise RuntimeError('This historical probe bypassed the US contour planner. '
+                       'Use compare_persian_r_us_contour.py instead.')
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', type=Path, required=True)
     parser.add_argument('--previous', type=Path, required=True)
