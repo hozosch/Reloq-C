@@ -3472,6 +3472,21 @@ static void persian_r_separate_upper_resonances(void *state)
     if (f3>0 && f4>0 && f4<f3+600) STATE(int16_t,s454)=(int16_t)(f3+600);
     if (f3_end>0 && f4_end>0 && f4_end<f3_end+600) STATE(int16_t,s455)=(int16_t)(f3_end+600);
 }
+/* The accepted back-A has a much higher F3/F4 than Finnish R. Move only
+   the release end of the R towards that vowel before its own targets are
+   emitted; the beginning of the R, the A nucleus, timing, and excitation
+   stay intact. This follows the actual neighbouring phone, including across
+   a word boundary, and never changes an R before another vowel or pause. */
+static void persian_r_release_to_back_a(void *state)
+{
+    const char *mode=getenv("RELOQ_FA_UNCOLORED_R");
+    if (!mode || mode[0]!='1' || mode[1] ||
+        persian_articulation_following(state)!=34 ||
+        !persian_direct_following_vowel(state)) return;
+    int f3=STATE(int16_t,s453),f4=STATE(int16_t,s455);
+    if (f3>0 && f3<2500) STATE(int16_t,s453)=(int16_t)((f3+2*2500+1)/3);
+    if (f4>0 && f4<3400) STATE(int16_t,s455)=(int16_t)((f4+2*3400+1)/3);
+}
 static int16_t persian_articulation_toward(int16_t value,int target)
 {
     /* Preserve native inheritance markers and two thirds of each contextual
@@ -3570,7 +3585,10 @@ static void persian_articulation_nasal(void *state,int second_formant)
                     STATE(int16_t,s412)=0; STATE(int16_t,s413)=0;
                     STATE(int16_t,s432)=0; STATE(int16_t,s433)=0;
                     STATE(int16_t,s434)=0; STATE(int16_t,s436)=0;
-                } else persian_r_separate_upper_resonances(state);
+                } else {
+                    persian_r_separate_upper_resonances(state);
+                    persian_r_release_to_back_a(state);
+                }
             }
         }
     }

@@ -1,10 +1,11 @@
-"""Compare native Pinglish rules and English exceptions with eSpeak."""
+"""Compare unresolved native Pinglish rules and English exceptions with eSpeak."""
 from __future__ import annotations
 
 import argparse
 import ctypes
 from pathlib import Path
 import random
+import re
 
 from espeak_ng_probe import EspeakPhonemeProbe
 from pinglish_frontend import english_exception
@@ -34,6 +35,18 @@ def main():
               'a', 'e', 'i', 'o', 'u', 'aa', 'oo')
     words += [''.join(randomizer.choice(pieces) for _ in range(randomizer.randrange(2, 8)))
               for _ in range(2000)]
+    # Known words deliberately use the independent Persian word/stress path,
+    # checked exhaustively in test_pinglish_native_words.py. This reference
+    # check remains useful for the unrecognized grapheme-rule fallback.
+    table = Path(__file__).with_name('direct_fa_pinglish_lexicon.inc').read_text(encoding='utf8')
+    known = set(re.findall(r'^\s*\{"([a-z]+)", "', table, re.M))
+    def potentially_known(word):
+        key = re.sub(r'aa|ee|oo|ou|jh', lambda m: {
+            'aa': 'a', 'ee': 'i', 'oo': 'u', 'ou': 'u', 'jh': 'zh'}[m.group()], word.lower())
+        if key in known or (key.endswith('eh') and key[:-1] in known):
+            return True
+        return any(key.endswith(suffix) and key[:-len(suffix)] in known
+                   for suffix in ('ash', 'tar', 'am', 'at', 'ha', 'ye'))
     checked = 0
     with EspeakPhonemeProbe(args.espeak_library, args.data_parent) as reference:
         for word in words:
@@ -41,6 +54,8 @@ def main():
             if status == 0:
                 continue
             assert status == 1
+            if potentially_known(word):
+                continue
             phones = reference.translate(word, voice='fa-latn', separator='|')[0].phonemes
             try:
                 expected = word_tag(phones)

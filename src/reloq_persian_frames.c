@@ -229,7 +229,10 @@ int reloq_fa_capture_append_pcm(const int16_t *samples,size_t count)
 
 FA_EXPORT const int16_t *reloq_fa_capture_pcm(size_t *count)
 {
-    if(!count || capture.active || !capture.store_pcm)return NULL;
+    /* As with capture_current, a callback may inspect an in-progress
+     * request on its owning thread. Copy this pointer before synthesis
+     * resumes: the next frame may reallocate the underlying buffer. */
+    if(!count || !capture.store_pcm)return NULL;
     *count=capture.samples;
     return capture.pcm;
 }

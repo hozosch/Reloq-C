@@ -189,7 +189,7 @@ class FrameCapture:
                 indexes.append((value, sample))
                 if on_snapshot is not None and value == snapshot_at:
                     callback, on_snapshot = on_snapshot, None
-                    if self._current is None or not silent_clock:
+                    if self._current is None or not native_clock:
                         return
                     count, failed = ctypes.c_size_t(), ctypes.c_int()
                     pointer = self._current(ctypes.byref(count), ctypes.byref(failed))
@@ -202,7 +202,15 @@ class FrameCapture:
                         data = self._syllables(ctypes.byref(count), ctypes.byref(failed))
                         if not failed.value and data:
                             syllables = tuple((data[i].from_, data[i].to) for i in range(count.value))
-                    callback(NativeCapture(bytes(sample * 2), tuple(indexes), rows, syllables))
+                    if native_pcm:
+                        count = ctypes.c_size_t()
+                        stored = self._stored_pcm(ctypes.byref(count))
+                        if count.value != sample or (count.value and not stored):
+                            return
+                        sound = ctypes.string_at(stored, count.value * 2) if count.value else b''
+                    else:
+                        sound = bytes(sample * 2)
+                    callback(NativeCapture(sound, tuple(indexes), rows, syllables))
             completed = voice.speak(parts, pcm.extend, index)
             sample_count = self._sample_count() if silent_clock else 0
             count, failed = ctypes.c_size_t(), ctypes.c_int()

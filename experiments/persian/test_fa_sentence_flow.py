@@ -92,7 +92,7 @@ def main():
                         ('66', fa, engine._frontend, False, '`[.0SAs.0to.1SES]'),
                         ('پرانتز باز', fa, engine._frontend, False, '`[.0pA.0ran.1tEz]'),
                         ('parantez baaz', pinglish_voice, pinglish_engine._frontend, True,
-                         '`[.0pA.1rAn.0tEz]')):
+                         '`[.0pA.0ran.1tEz]')):
                     tagged = project((text,), frontend, allow_fallback=False, pinglish=latin).tagged
                     matches = tuple(re.finditer(r'`\[[^]]+\]', tagged))
                     marks = tuple(range(1, len(matches)))

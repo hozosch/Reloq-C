@@ -353,6 +353,8 @@ ECIAPI size_t ECICALL eciPersianCaptureSampleCount(void);
 /* Optional request-local PCM capture avoids callbacks for each tiny frame.
  * Retrieve the samples after CaptureEnd and before CaptureRelease. */
 ECIAPI int ECICALL eciPersianCaptureSetPcmStorage(int enabled);
+/* During an active capture this pointer is valid only until synthesis
+ * resumes; copy it in the owning callback before returning. */
 ECIAPI const int16_t *ECICALL eciPersianCapturePcm(size_t *count);
 ECIAPI int64_t ECICALL eciPersianLastAudibleSample(const unsigned char *pcm,size_t bytes);
 ECIAPI int ECICALL eciPersianFrameTicks(const struct reloq_fa_frame *rows,size_t count,int64_t *ticks);

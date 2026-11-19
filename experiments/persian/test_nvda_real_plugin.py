@@ -1025,12 +1025,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 tags = ' '.join(self.projected[self.before_projected:])
                 if spelling == 'issue50_contour_66':
                     expected = '`[.0SAs.0to.1SeS]'
-                elif locale == 'fa_IR':
-                    expected = '`[.0pA.0ran.1tez] `[.1baz]'
-                elif text == 'paraantez baaz':
-                    expected = '`[.0pA.1ran.0tez] `[.1baz]'
                 else:
-                    expected = '`[.0pA.1rAn.0tez] `[.1baz]'
+                    expected = '`[.0pA.0ran.1tez] `[.1baz]'
                 if expected not in tags or not any(self.syllable_fits[self.before_syllable_fits:]):
                     raise AssertionError('NVDA lost the reported contour or syllable alignment: ' + ascii((text, tags)))
             if spelling == 'issue50_hundred_short':

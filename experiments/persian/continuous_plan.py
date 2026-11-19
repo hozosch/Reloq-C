@@ -9,8 +9,10 @@ from __future__ import annotations
 from bisect import bisect_left, bisect_right
 import ctypes
 from dataclasses import dataclass
+import queue
 import re
 import struct
+import threading
 
 if __package__:
     from .._reloq_eci_direct import EciIndex, EciText, SAMPLE_RATE, SAMPLE_RATES
@@ -821,6 +823,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
         source_marks.append((segment, offset, order, next_mark + order, value))
     contexts, edges = {}, {}
     def fit_us_segments(item, bounds, donor, *, only=None):
+        fitted = []
         for segment, part in enumerate(parts):
             if part.language != 'fa' or only is not None and segment not in only:
                 continue
@@ -829,10 +832,12 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
             donor_start = 0 if segment == 0 else donor.indexes[segment]
             donor_end = (len(donor.pcm) // 2 if segment + 1 == len(parts)
                          else donor.indexes[segment + 1])
-            fit_us_word_pitch(item, (bounds[segment], bounds[segment + 1]), donor,
-                              (donor_start, donor_end), marks, marks, rate, capture_api, check,
-                              syllable_counts=tuple(len(_SYLLABLE.findall(m.group(1)))
-                                                    for m in _TAG.finditer(part.text)))
+            fitted.append(fit_us_word_pitch(
+                item, (bounds[segment], bounds[segment + 1]), donor,
+                (donor_start, donor_end), marks, marks, rate, capture_api, check,
+                syllable_counts=tuple(len(_SYLLABLE.findall(m.group(1)))
+                                      for m in _TAG.finditer(part.text))))
+        return bool(fitted) and all(fitted)
     voices = (('fa', fa), ('en-us', en))
     prepared = {}
     if start_prefix is not None:
@@ -849,7 +854,8 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
         voices = tuple(sorted(voices, key=lambda pair: pair[0] != parts[0].language))
     pending, early = None, None
     fast_pilot = bool(fast_initial and start_prefix is not None and parallel_pilot is not None and
-                      capture_api._controls_only is not None and capture_api._sample_count is not None and
+                      capture_api._current is not None and capture_api._store_pcm is not None and
+                      capture_api._stored_pcm is not None and capture_api._sample_count is not None and
                       not all_bracketed)
     def submit_pilot(*, audio):
         pilot_voice = en if us_pilot else fa
@@ -872,11 +878,31 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
             if check:
                 check()
             return get(en if us_pilot else fa, pilot_parts), True
+    snapshot_queue = queue.Queue() if fast_pilot else None
+    snapshot_release = threading.Event() if fast_pilot else None
+    def publish_snapshot(value):
+        # Let the requesting thread replay the safe prefix before this
+        # audio-producing worker continues and reacquires the GIL for PCM
+        # callbacks. Otherwise the snapshot can sit in the queue until the
+        # entire pilot has already been synthesized.
+        snapshot_queue.put(value)
+        while not snapshot_release.wait(.01):
+            if fa.owner._cancelled.is_set():
+                break
     if parallel_pilot is not None and not all_bracketed:
         if check:
             check()
         try:
-            pending = submit_pilot(audio=not fast_pilot)
+            if fast_pilot:
+                pilot_voice = en if us_pilot else fa
+                pending = parallel_pilot.submit_snapshot(
+                    parts=pilot_parts, prefix=pilot_voice.prefix,
+                    validate=False if us_pilot else fa.validate, source='',
+                    parameters=pilot_voice.owner._engine_parameters[pilot_voice.key[0]],
+                    dictionary=fa.owner._dictionary_path, cancelled=fa.owner._cancelled,
+                    maximum=maximum, snapshot_at=1, on_snapshot=publish_snapshot, audio=True)
+            else:
+                pending = submit_pilot(audio=True)
         except (RuntimeError, OSError):
             if check:
                 check()
@@ -890,37 +916,60 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
             item = get(voice, planned, audio=False)
             bounds = _edges(item, len(parts))
             if pending is not None and fast_pilot:
-                quick, fallback = collect_pilot(can_fallback=True)
                 fast_pilot = False
-                if fallback:
-                    pilot = quick
-                    pilot_pitch, pilot_bounds = contour(pilot)
-                else:
-                    # The first segment ends at an internal mark. Its pitch
-                    # needs no audible-EOF scan, so the identical control
-                    # capture can start that segment before rendering the
-                    # full pilot. Keep the caller's required playable reserve.
-                    quick_pitch, quick_bounds = contour(quick, controls_only=True)
-                    _fit_context_pitch(item, bounds, quick_pitch, quick_bounds, parts, language,
-                                       rate, check, native=native_pitch if item.ticks[-1] <= 60000 else None,
-                                       native_edges=native_edges if item.ticks[-1] <= 60000 else None,
-                                       only=(0,), retain_brackets=not (us_pilot and language == 'fa'))
-                    if us_pilot and language == 'fa':
-                        fit_us_segments(item, bounds, quick, only=(0,))
-                    if start_prefix(item, bounds, source_marks, capture_api, minimum_ms=fast_minimum_ms):
-                        early = (language, item, bounds)
-                        contexts[language], edges[language] = item, bounds
+                snapshot = None
+                while snapshot is None:
+                    if check:
+                        check()
                     try:
-                        pending = submit_pilot(audio=True)
-                    except (RuntimeError, OSError):
-                        if early is not None:
-                            raise
-                        if check:
-                            check()
-                        pilot = get(en if us_pilot else fa, pilot_parts)
-                        pilot_pitch, pilot_bounds = contour(pilot)
-                    if early is not None:
-                        continue
+                        snapshot = snapshot_queue.get(timeout=.01)
+                    except queue.Empty:
+                        if pending.done():
+                            break
+                try:
+                    if snapshot is not None and snapshot.frame_bytes:
+                        quick = CapturedRows.from_capture(snapshot, native=capture_api.frame_ticks)
+                        quick_pitch = _dense(quick, 1, check,
+                                             native=capture_api.dense_curve if native_pitch else None)
+                        boundary = round(quick.indexes.get(1, 0) * 1000 / rate)
+                        # The callback can arrive exactly one millisecond
+                        # beyond the last captured frame. Extend its final
+                        # value for the phrase-level fit; verified word
+                        # contours below overwrite the audible prefix.
+                        padded_boundary = boundary == len(quick_pitch) and boundary > 0
+                        if padded_boundary:
+                            padded = (ctypes.c_float * (boundary + 1))()
+                            for i, value in enumerate(quick_pitch):
+                                padded[i] = value
+                            padded[boundary] = quick_pitch[-1]
+                            quick_pitch = padded
+                        first_word_marks = tuple(word_markers[0, word]
+                                                 for word in range(1, len(tuple(_TAG.finditer(parts[0].text))))) \
+                                           if parts[0].language == 'fa' else ()
+                        # Only the first segment is fitted here. Its end is an
+                        # internal source mark, so no full-sentence EOF estimate
+                        # is needed. The same pilot continues to capture audio
+                        # and is reused for the rest of the sentence.
+                        if 0 < boundary < len(quick_pitch) and all(mark in quick.indexes for mark in first_word_marks):
+                            quick_bounds = (0, boundary)
+                            _fit_context_pitch(item, bounds, quick_pitch, quick_bounds, parts, language,
+                                               rate, check, native=native_pitch if item.ticks[-1] <= 60000 else None,
+                                               native_edges=native_edges if item.ticks[-1] <= 60000 else None,
+                                               only=(0,), retain_brackets=not (us_pilot and language == 'fa'))
+                            word_fit = (fit_us_segments(item, bounds, quick, only=(0,))
+                                        if us_pilot and language == 'fa' else False)
+                            # A padded endpoint is only safe when every
+                            # word's verified contour replaced the temporary
+                            # phrase-level approximation.
+                            if ((not padded_boundary or word_fit) and
+                                    start_prefix(item, bounds, source_marks, capture_api,
+                                                 minimum_ms=fast_minimum_ms)):
+                                early = (language, item, bounds)
+                                contexts[language], edges[language] = item, bounds
+                finally:
+                    snapshot_release.set()
+                if early is not None:
+                    continue
             if pending is not None:
                 pilot, _fallback = collect_pilot(can_fallback=early is None)
                 pilot_pitch, pilot_bounds = contour(pilot)
@@ -943,6 +992,8 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
             if start_prefix is not None and language == parts[0].language and early is None:
                 start_prefix(item, bounds, source_marks, capture_api)
     finally:
+        if snapshot_release is not None:
+            snapshot_release.set()
         if pending is not None:
             parallel_pilot.cancel()
             try:

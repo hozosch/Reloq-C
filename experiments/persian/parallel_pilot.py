@@ -109,12 +109,12 @@ class ParallelPilot:
                                          dict(parameters), dictionary, cancelled, maximum)
 
     def submit_snapshot(self, *, parts, prefix, validate, source, parameters, dictionary,
-                        cancelled, maximum, snapshot_at, on_snapshot):
+                        cancelled, maximum, snapshot_at, on_snapshot, audio=False):
         with self._guard:
             if self._closed:
                 raise RuntimeError('Persian contour worker is closed')
             return self._executor.submit(self._capture, tuple(parts), tuple(prefix), validate,
-                                         dict(parameters), dictionary, cancelled, maximum, False,
+                                         dict(parameters), dictionary, cancelled, maximum, audio,
                                          snapshot_at, on_snapshot, source)
 
     def submit_proxy_snapshot(self, *, tagged, marks, prefix, parameters, dictionary,

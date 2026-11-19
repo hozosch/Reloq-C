@@ -78,6 +78,14 @@ def main():
             assert partial.frame_bytes and complete.frame_bytes.startswith(partial.frame_bytes)
             assert partial.indexes == complete.indexes[:len(partial.indexes)]
             assert partial.indexes[-1][0] == 11 and len(partial.pcm) <= len(complete.pcm)
+            audible_snapshots = []
+            audible = capture.capture(voice, parts, audio=True, snapshot_at=11,
+                                      on_snapshot=audible_snapshots.append)
+            assert audible and len(audible_snapshots) == 1
+            partial_audio = audible_snapshots[0]
+            assert partial_audio.pcm and audible.pcm.startswith(partial_audio.pcm)
+            assert audible.frame_bytes.startswith(partial_audio.frame_bytes)
+            assert partial_audio.indexes == audible.indexes[:len(partial_audio.indexes)]
             # Begin/end are request-local and reject nesting and bad bounds.
             assert capture._begin(0) != 0
             assert capture._begin(8) == 0 and capture._begin(8) != 0

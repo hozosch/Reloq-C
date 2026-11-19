@@ -519,9 +519,11 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
                             guarded_spans=guarded, spelling_spans=spelling, check=check_cancel,
                             trusted_fa=not validate, validate_in_capture=validate,
                             start_prefix=start_prefix if can_stream else None, parallel_pilot=parallel_pilot,
-                            fast_initial=bool(parallel_pilot and can_stream and
-                                              (len(sentence[0].text) >= _FAST_PILOT_MIN or fast_english)),
-                            fast_minimum_ms=(_FAST_ENGLISH_PREFIX_MIN_MS if fast_english else 300),
+                            fast_initial=bool(os.environ.get('RELOQ_FA_STREAM_PREFIX', '1') == '1' and
+                                              parallel_pilot and can_stream and
+                                              (sentence[0].language == 'fa' or
+                                               len(sentence[0].text) >= _FAST_PILOT_MIN or fast_english)),
+                            fast_minimum_ms=(_FAST_ENGLISH_PREFIX_MIN_MS if fast_english else 60),
                             us_pilot=True)
         original_counts = plan.counts
         if korean_available:
