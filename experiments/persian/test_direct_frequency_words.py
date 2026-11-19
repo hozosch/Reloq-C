@@ -53,7 +53,20 @@ def main():
                 # control, so that indexed playback includes the control.
                 # It is not part of the word's reference phonemes.
                 output = re.sub(r'^`00\s+', '', actual.parts[0].text[at:])
-                assert phones(output[:len(tag)]) == phones(tag), (word, text, actual.parts)
+                if phones(output[:len(tag)]) != phones(tag):
+                    # The native enclitic rule can replace an old reference
+                    # that inserted a vowel in front of written هم. Verify
+                    # every resulting phone against the independently
+                    # pronounced host and particle, rather than accept an
+                    # arbitrary change to a reference entry.
+                    assert word not in named_characters and word.endswith('هم'), (word, text, actual.parts)
+                    host = frontend.analyze_direct(word[:-2])
+                    particle = frontend.analyze_direct('هم')
+                    assert host and particle, (word, text)
+                    left, right = host.parts[0].text, particle.parts[0].text
+                    assert left.startswith('`[') and left.endswith(']') and right.startswith('`['), word
+                    combined = left[:-1] + right[2:]
+                    assert phones(output[:len(combined)]) == phones(combined), (word, text, actual.parts)
                 assert all(position == at for position in actual.source_map[start:end]), text
             if number % 5000 == 0:
                 print(f'Checked {number}/{len(rows)} words', flush=True)

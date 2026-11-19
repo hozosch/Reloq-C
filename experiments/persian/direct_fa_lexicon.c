@@ -1058,7 +1058,9 @@ static int joined_ham_word(const char *word,size_t bytes,char *output,size_t cap
     if(!ends_with(word,bytes,ham,&stem))return 0;
     if(stem>=sizeof join-1 && !memcmp(word+stem-(sizeof join-1),join,sizeof join-1))
         stem-=sizeof join-1;
-    if(!stem)return 0;
+    /* A single-letter host makes a false split especially likely: وهم is
+     * one noun, for example, not و + هم. */
+    if(stem<4)return 0;
     /* A finite verb or a separately recorded full lexeme may merely end in
      * these letters (e.g. an inflection), not contain the particle. */
     if((stress_class(word,bytes)&2u) ||

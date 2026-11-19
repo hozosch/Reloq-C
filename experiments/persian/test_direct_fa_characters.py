@@ -79,7 +79,9 @@ def main() -> None:
         assert resolved(ord('Ж'), untouched, len(untouched), ctypes.byref(kind)) == -1
         assert untouched.value == b'keep' and kind.value == 42
         linked = frontend.analyze_direct('پیکان به سمت بالا و پایین با پایه')
-        assert linked and native_text(ord('↨')) == linked.parts[0].text
+        # Character names keep their accepted symbol pronunciation; direct
+        # connected text now shortens the weak preposition before a word.
+        assert linked and native_text(ord('↨')) == linked.parts[0].text.replace("`[.0be]", "`[.0b'e:']")
         assert '`[.0vA]' in linked.parts[0].text
         assert native_text(0x12550) == '`l1.0 cuneiform numeric sign one n01 `l9.0'
         assert native_text(0x18cff) == '`l1.0 khitan small script character 18cff `l9.0'
