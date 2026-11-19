@@ -1972,7 +1972,7 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                 int64_t scaled=((int64_t)STATE(int32_t,f33)*9+5)/10;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
-            int short_yek=0,short_u_cluster=0;
+            int short_yek=0,short_u_cluster=0,short_initial=0;
             if (us_timing && node && cls==1 && STATE(int32_t,f33)>0 &&
                 !persian_probe_vowel_word_final(state,STATE_AT(w26,-4),(unsigned)phone)) {
                 int32_t next_ref=EVV_AT(int32_t *,node)[1]&~3;
@@ -2014,6 +2014,15 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                         short_u_cluster=following>=4 && following<=6;
                     }
                 }
+                /* The inherited Finnish long-vowel marker can make an
+                   unstressed first /æ/ or /u/ stand out in multisyllabic
+                   Persian words. Adjust duration only, and keep the already
+                   tuned /u:t/ + voiced-stop timing unchanged. The scanner
+                   requires a later vowel in the same word. */
+                if ((phone==31 || phone==32) && length==0 && stress==0 &&
+                    !short_u_cluster &&
+                    persian_probe_first_of_multiple_vowels(state,STATE_AT(w26,-4)))
+                    short_initial=1;
                 int factor=100;
                 if (ordinary && length==1 && phone==31) factor=130;
                 else if (ordinary && length==1 && phone==29) factor=118;
@@ -2032,6 +2041,7 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                 if (extra>150000) extra=150000;
                 int64_t scaled=duration+extra;
                 if(short_u_cluster)scaled=(scaled*9+5)/10;
+                else if(short_initial)scaled=(scaled*85+50)/100;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
             if (tracing)
@@ -2051,7 +2061,38 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
         'persian_probe_next_phone_word_final(void *state,int32_t token_ref,unsigned phone)'
     ).replace('    lpta_loadp(d,EVV_AT(const delta_token *,token_ref));',
               '    const delta_token token={0,token_ref};\n    lpta_loadp(d,&token);')
-    text = text[:begin] + helper + '\n' + next_helper + '\n' + section + text[end:]
+    first_helper = FINNISH_L_WORD_FINAL.replace(
+        'persian_probe_l_word_final', 'persian_probe_first_of_multiple_vowels')
+    original_scan = ('    int final=!setscan_r(d,2) && !testFldeq(d,2,0,21) &&\n'
+                     '              !advance_tok(d) && advance_tok(d);')
+    if first_helper.count(original_scan) != 1:
+        raise RuntimeError('Cannot locate vowel word-fence scan')
+    first_helper = first_helper.replace(original_scan, r'''    int first=0,later=0;
+    if (!setscan_l(d,2)) {
+        first=1;
+        for (;;) {
+            /* testFldeq inspects the next token, whereas advance_tok also
+               enforces the word fence. Check both in that order so a vowel
+               from the previous word is never mistaken for this one. */
+            int vowel=!testFldeq(d,2,1,1);
+            if (advance_tok(d)) break;
+            if (vowel) { first=0; break; }
+        }
+    }
+    if (first) {
+        memset(EVV_AT(void *,d->fence_marks),0,d->nstmts);
+        lpta_loadp(d,EVV_AT(const delta_token *,token_ref));
+        if (!setscan_r(d,2)) {
+            /* The right register starts on the current vowel. Move past it
+               before testing for the next one, or a single-syllable word
+               would incorrectly look as if it had a later vowel. */
+            while (!advance_tok(d)) {
+                if (!testFldeq(d,2,1,1)) { later=1; break; }
+            }
+        }
+    }
+    int final=first && later;''', 1)
+    text = text[:begin] + helper + '\n' + next_helper + '\n' + first_helper + '\n' + section + text[end:]
     include = '#include "reloq61_rule_calls_fifi.h"\n'
     if text.count(include) != 1:
         raise RuntimeError('Cannot locate duration probe includes')

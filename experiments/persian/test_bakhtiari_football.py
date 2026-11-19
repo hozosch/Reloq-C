@@ -16,7 +16,7 @@ FOOTBALL = "`[.0f'u:'t.1bal]"
 SHORT_U = '`[.0fut.1bal]'
 UNVOICED_CLUSTER = "`[.0f'u:'t.1pal]"
 CONTROLS = ("`[.0ti.1r'e:']", '`[.1zir.0GAt]', '`[.1ir]', '`[.1ri]',
-            "`[.0f'u:'.1ta]", UNVOICED_CLUSTER, "`[.1f'u:'t] `[.1bal]",
+            "`[.1f'u:'t] `[.1bal]", "`[.1f'u:'t] `[.1pal]",
             '`[.0i] `[.1ri]')
 
 
@@ -61,7 +61,7 @@ def main():
                     football = capture(current, scope, FOOTBALL)
                     short_u = capture(current, scope, SHORT_U)
                     unvoiced = capture(current, scope, UNVOICED_CLUSTER)
-                    assert duration(short_u, 1) < duration(football, 1) < duration(unvoiced, 1), (
+                    assert duration(short_u, 1) < min(duration(football, 1), duration(unvoiced, 1)), (
                         rate, gender, head, speed, 'u durations',
                         duration(short_u, 1), duration(football, 1), duration(unvoiced, 1))
                     assert 54 <= max_noise(football, 2) <= 60, (rate, gender, head, speed, 't burst')

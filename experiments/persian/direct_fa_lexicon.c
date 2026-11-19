@@ -1097,6 +1097,33 @@ static int derived_zade_word(const char *word,size_t bytes,char *output,size_t c
     return 1;
 }
 
+/* Productive -ان and -ی after an independently recognized -گر noun.
+ * Resyllabify its final /r/ before the new vowel, and require evidence for
+ * both spellings so unmarked homographs and verbs are not guessed. Existing
+ * full-word readings take precedence over this fallback rule. */
+static int derived_agent_r_word(const char *word,size_t bytes,char *output,size_t capacity,unsigned depth)
+{
+    size_t stem=0,base=0;
+    int plural=ends_with(word,bytes,"ان",&stem);
+    if(!plural && !ends_with(word,bytes,"ی",&stem))return 0;
+    if(!ends_with(word,stem,"گر",&base) || stress_class(word,bytes)!=1u ||
+       stress_class(word,stem)!=1u)return 0;
+    char root[2048];
+    int result=direct_context_depth(word,stem,0,root,sizeof root,depth+1);
+    if(result!=1)return result;
+    size_t n=strlen(root);
+    if(n<5 || memcmp(root+n-4,"gAr]",4) || !single_phone_tag(root))return 0;
+    const char *tail=plural ? ".1ran]" : ".1ri]";
+    size_t suffix=strlen(tail);
+    if(n-2>capacity || suffix+1>capacity-(n-2))return -2;
+    memcpy(output,root,n-2);
+    memcpy(output+n-2,tail,suffix+1);
+    size_t count=stress_syllables(output);
+    if(!count)return 0;
+    stress_primary(output,count-1);
+    return 1;
+}
+
 static int same_phones(const char *a,const char *b)
 {
     size_t n=strlen(a);
@@ -1224,6 +1251,29 @@ static int joined_suffix_word(const char *word,size_t bytes,int follows_word,
         (void)shorten_written_final_e(word,stem,left);
         stress_unaccent(left);
         return append_phone_tags(left,endings[i].spoken,output,capacity);
+    }
+    return 0;
+}
+
+/* The plural of a known -گر agent noun is also commonly written without
+ * a half-space. Reuse the established joined suffix analysis so both
+ * spellings have the same phones and suffix stress. Restrict this to a
+ * classified noun stem and exclude explicitly classified verbal forms. */
+static int unspaced_agent_plural(const char *word,size_t bytes,int follows_word,
+                                 char *output,size_t capacity,unsigned depth)
+{
+    static const char *const endings[]={"هایی", "های", "ها"};
+    size_t stem=0,agent=0;
+    for(size_t i=0;i<sizeof endings/sizeof endings[0];++i) {
+        if(!ends_with(word,bytes,endings[i],&stem) ||
+           !ends_with(word,stem,"گر",&agent) || stress_class(word,stem)!=1u ||
+           (stress_class(word,bytes)&2u))continue;
+        if(bytes>2048u-4u)return 0;
+        char joined[2048];
+        memcpy(joined,word,stem);
+        memcpy(joined+stem,"\xe2\x80\x8c",3);
+        memcpy(joined+stem+3,word+stem,bytes-stem);
+        return joined_suffix_word(joined,bytes+3,follows_word,output,capacity,depth+1);
     }
     return 0;
 }
@@ -1365,6 +1415,8 @@ static int direct_context_depth(const char *word,size_t bytes,int follows_word,
     if(result)return result;
     result=joined_suffix_word(word,bytes,follows_word,output,capacity,depth);
     if(result)return result;
+    result=unspaced_agent_plural(word,bytes,follows_word,output,capacity,depth);
+    if(result)return result;
     result=direct_context_word_exact(word,bytes,follows_word,output,capacity);
     if(result==1) {
         apply_persian_stress(word,bytes,output,1);
@@ -1378,6 +1430,8 @@ static int direct_context_depth(const char *word,size_t bytes,int follows_word,
     result=derived_kht_yar(word,bytes,output,capacity,depth);
     if(result)return result;
     result=derived_zade_word(word,bytes,output,capacity,depth);
+    if(result)return result;
+    result=derived_agent_r_word(word,bytes,output,capacity,depth);
     if(result)return result;
     result=joined_compound_word(word,bytes,output,capacity,depth);
     if(result)return result;

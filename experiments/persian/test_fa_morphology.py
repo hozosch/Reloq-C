@@ -73,6 +73,17 @@ def main():
     assert project('علی‌زاده')=="`[.0'A:'.0li.0za.1d'e:']"
     project('کتابزاده',covered=False)
     project('زختیار',covered=False)
+    # Classified forms of a known -گر agent noun are composed with plural
+    # -ان or noun-forming -ی. Unclassified spellings must still fall back.
+    assert project('پژوهشگران')=='`[.0pA.0Zu.0heS.0gA.1ran]'
+    assert project('پژوهشگری')=='`[.0pA.0Zu.0heS.0gA.1ri]'
+    assert project('کارگران')=='`[.0kar.0gA.1ran]'
+    assert project('کارگری')=='`[.0kar.0gA.1ri]'
+    assert project('پژوهشگرها')==project('پژوهشگر‌ها')=="`[.0pA.0Zu.0heS.0gAr.1ha]"
+    assert project('پژوهشگرهای')==project('پژوهشگر‌های')=="`[.0pA.0Zu.0heS.0gAr.1ha.0je]"
+    assert project('پژوهشگرهایی')==project('پژوهشگر‌هایی')=="`[.0pA.0Zu.0heS.0gAr.1ha.0'i:']"
+    assert project('کارگرها')==project('کارگر‌ها')=='`[.0kar.0gAr.1ha]'
+    project('پردازشگری',covered=False)
     # NVDA's fa symbols.dic supplies slash names with vowel marks. Reuse a
     # known spelling only when every written vowel agrees with its phones.
     slash=project('اسلش')

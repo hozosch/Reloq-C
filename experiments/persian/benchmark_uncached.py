@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 from _reloq_eci_transport import EciTextTransport
 from _reloq_persian_frames import FrameStream
 from _reloq_eci_direct import EciIndex, NATIVE_SPEED, NATIVE_WPM, SAMPLE_RATE
-from nvda_driver_probe import US_ENGLISH, make_language_engine
+from nvda_driver_probe import PERSIAN_PROBE, US_ENGLISH, make_language_engine
 import continuous_driver
 
 
@@ -30,8 +30,11 @@ MIXED = (
 )
 ENGLISH = ('one simple label', 'this is a test', 'hello world', 'keyboard window',
            'listen to settings', 'system information', 'open the file', 'weather forecast')
-FALLBACK_WORDS = ('پژوهشگر', 'پیش‌نمایش', 'همگام‌سازی', 'برگزیده', 'اشتراک‌گذاری',
-                  'الکترونیکی', 'پردازشگر')
+# These were checked against the native lexicon. Keep varied real Persian
+# words here: once a rule covers one, the assertion below forces this
+# benchmark to be updated instead of silently measuring native speech.
+FALLBACK_WORDS = ('پژوهشگرانه', 'پردازشگری', 'تهرانگردی', 'نرم‌افزارشناسی',
+                  'آموزگاران', 'هوشمندسازی', 'دانش‌پژوهی')
 FALLBACK = tuple(('NVDA ', EciIndex(100 + i), word, EciIndex(200 + i), ' سلام')
                  for i, word in enumerate(FALLBACK_WORDS))
 SHORT_MIXED = ('go سلام', 'hi دنیا', 'file خوب', 'خوب hi', 'سلام go',
@@ -58,8 +61,8 @@ class Player:
 
 class Uncached:
     """Check that the actual Persian worker does not keep result caches."""
-    def __init__(self, engine):
-        self.engine = engine
+    def __init__(self, engine, expect_reference=False):
+        self.engine, self.expect_reference = engine, expect_reference
     def __getattr__(self, name):
         return getattr(self.engine, name)
     def speak(self, parts, on_pcm, on_index):
@@ -70,7 +73,24 @@ class Uncached:
             frontend = getattr(voice, '_frontend', None)
             if hasattr(frontend, '_resilient_word_cache'):
                 raise AssertionError('unexpected persistent Persian word cache')
-        return self.engine.speak(parts, on_pcm, on_index)
+        if not self.expect_reference:
+            return self.engine.speak(parts, on_pcm, on_index)
+        persian = self.engine._engines[PERSIAN_PROBE.id]
+        frontend = persian._frontend
+        original, used = frontend.analyze, []
+        def observe(*args, **kwargs):
+            result = original(*args, **kwargs)
+            if result is not None and result.used_fallback:
+                used.append(True)
+            return result
+        frontend.analyze = observe
+        try:
+            result = self.engine.speak(parts, on_pcm, on_index)
+        finally:
+            frontend.analyze = original
+        if result and not used:
+            raise AssertionError('fallback benchmark did not invoke the reference reader')
+        return result
 
 
 def measure(args, *, streaming, english=False, fallback=False, cancel_before=False,
@@ -88,7 +108,7 @@ def measure(args, *, streaming, english=False, fallback=False, cancel_before=Fal
             engine.set_parameter(NATIVE_WPM, native_wpm)
         if sample_rate is not None:
             engine.set_parameter(SAMPLE_RATE, sample_rate)
-        return Uncached(engine)
+        return Uncached(engine, expect_reference=fallback)
     transport = EciTextTransport(factory, player, lambda _value: None, lambda _value: done.set(),
                                  lambda error: (errors.append(str(error)), done.set()))
     def run(parts):

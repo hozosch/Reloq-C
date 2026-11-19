@@ -117,6 +117,10 @@ DEV168_BASE = '629f88e138a2189e65bfb4c167db94853b43e106'
 DEV168_KEY = ('persian-windows-provider-gcc14-v2-'
               '0c10a06526b641297356b228a95a40bad91c9e8b9b7e613eed1188ac96286aa9')
 DEV168_ALLOWED = {'experiments/persian/build_native_probe.py'}
+DEV169_BASE = 'f25d48db9d0192d95fa6cda79feecfabaee0ddb1'
+DEV169_KEY = ('persian-windows-provider-gcc14-v2-'
+              '04cc9a755afeb7ef13a3aebfa7900e2fcef9ceaa6dec69c8d88257a01ecfdbac')
+DEV169_ALLOWED = {'experiments/persian/build_native_probe.py'}
 DEV161_ALLOWED = {
     'experiments/persian/build_native_probe.py',
     'include/reloq_eci.h', 'include/reloq_syllable_trace.h',
@@ -223,6 +227,12 @@ def main():
                 if path.is_file():
                     os.utime(path, None)
             print('Reused verified provider cache for the additive public API change.')
+            return
+        if key == DEV169_KEY:
+            changed = set(git('diff', '--name-only', DEV169_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV169_ALLOWED:
+                raise ValueError('Persian first-vowel timing inputs differ from the verified scope')
+            reuse_dev156_generated(frozenset({'delta_rules_c08_fifi.c'}))
             return
         if key == DEV168_KEY:
             changed = set(git('diff', '--name-only', DEV168_BASE, 'HEAD', '--', *INPUTS).splitlines())
