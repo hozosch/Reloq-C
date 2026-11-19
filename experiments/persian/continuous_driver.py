@@ -971,7 +971,7 @@ def sentence_jobs(parts, home, *, hard_only=False):
             if char not in punctuation:
                 continue
             after = full[absolute + 1:absolute + 2]
-            if hard_only and char != '\n' and after and not after.isspace():
+            if hard_only and char not in ':\n' and after and not after.isspace():
                 continue
             if char == ':' and not _colon_ends_sentence(full, absolute):
                 continue

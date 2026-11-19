@@ -19,7 +19,8 @@ def main():
     text = 'سلام دنیا. این یک آزمایش است. شما کتاب دارید؟'
     jobs = continuous_driver.sentence_jobs((text,), home, hard_only=True)
     assert len(jobs) == 3, jobs
-    for uninterrupted in ('عدد 1.5.0 خوب است', 'ساعت 12:30 است', 'سلام، دوست من؛ خوب هستی',
+    for uninterrupted in ('عدد 1.5.0 خوب است', 'ساعت 12:30 است', 'https://example.com/path',
+                          'C:/windows', 'سلام، دوست من؛ خوب هستی',
                           '`[.1sA.0lAm] دنیا. بخش بعدی', 'سلام!دنیا'):
         assert not continuous_driver.sentence_jobs((uninterrupted,), home, hard_only=True), uninterrupted
     assert not continuous_driver.sentence_jobs((EciPitch(75), text), home, hard_only=True)
@@ -27,6 +28,7 @@ def main():
     version = continuous_driver.sentence_jobs(('نسخه 1.5.0 آمد. بعد می‌رویم.',), home, hard_only=True)
     assert len(version) == 2, version
     assert len(continuous_driver.sentence_jobs(('سلام: دنیا',), home, hard_only=True)) == 2
+    assert len(continuous_driver.sentence_jobs(('سلام:دنیا',), home, hard_only=True)) == 2
 
     engine = make_language_engine(args.library, args.library, None, Path('/unavailable'), Path('/unavailable'))
     engine.set_parameter(SAMPLE_RATE, 3)
@@ -41,6 +43,9 @@ def main():
         events.append('project')
         return original(parts, *args, **kwargs)
     try:
+        # NVDA can announce a compact colon as a word immediately followed
+        # by the protected punctuation. It has the same full-stop contour.
+        assert render(('سلام دونقطه :دنیا',))[0] == render(('سلام دونقطه. دنیا',))[0]
         expected = b''.join(render(job)[0] for job in jobs)
         continuous_driver.project = observe
         pcm, marks = bytearray(), []
