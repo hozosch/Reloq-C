@@ -5,6 +5,9 @@
 #include <stdint.h>
 #include "reloq_persian_frames.h"
 
+struct reloq_fa_tuning_filter;
+void reloq_fa_tuning_prepare_revision(struct reloq_fa_tuning_filter *,const float controls[62],int rate);
+
 /* Capture storage is thread-local and released after each request. */
 int reloq_fa_capture_begin(size_t maximum);
 const struct reloq_fa_frame *reloq_fa_capture_end(size_t *count, int *failed);

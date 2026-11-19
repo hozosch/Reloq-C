@@ -11,7 +11,8 @@
 static _Thread_local int fa_tuning_on=1;
 int reloq_fa_tuning_scope(int active)
 {
-    if(active!=0 && active!=1)return -1;
+    /* 2 is the previous saved project, retained for a controlled A/B test. */
+    if(active!=0 && active!=1 && active!=2)return -1;
     int previous=fa_tuning_on;fa_tuning_on=active;return previous;
 }
 int reloq_fa_tuning_enabled(void)
@@ -34,24 +35,34 @@ void reloq_fa_tuning_targets(float c[62],unsigned phone,double from,double to,
         double v=c[columns[i]]+shifts[phone][i]*w;
         c[columns[i]]=(float)fmax(40.0,fmin(rate*.475,v));
     }
+    /* The newer long-a project was edited on top of the saved project, not
+     * on the unmodified core. Apply its deltas as a second editor step. */
+    static const int revised_a[4]={100,150,-75,-50};
+    if(fa_tuning_on==1 && phone==RELOQ_FA_TUNE_BACK_A)
+        for(unsigned i=0;i<4;++i)if(revised_a[i] && c[columns[i]]>0 && w>0) {
+            double v=c[columns[i]]+revised_a[i]*w;
+            c[columns[i]]=(float)fmax(40.0,fmin(rate*.475,v));
+        }
     double centre=at+duration/2.0,gain=1.0;
     if(from>0)gain=fmin(gain,fmax(0.0,(centre-from)/8.0));
     gain=fmin(gain,fmax(0.0,(to-centre)/8.0));
     if(gain>0){c[11]=(float)(RELOQ_FA_TUNING_MARKER+phone);c[12]=(float)gain;}
 }
 
-void reloq_fa_tuning_prepare(struct reloq_fa_tuning_filter *f,const float c[62],int rate)
+static void tuning_prepare(struct reloq_fa_tuning_filter *f,const float c[62],int rate,int revision)
 {
     static const int gains[6][5]={
         {0,0,0,0,0},{0,0,0,-9,0},{1,-1,-3,-4,0},
         {0,0,0,0,0},{0,0,0,0,0},{0,0,-4,-2,0}};
     static const unsigned centres[5]={9,13,15,17,19};
+    static const int revised_a_gains[5]={1,1,-1,2,0};
     if(!f || !c)return;
     int marker=isfinite(c[11]) && c[11]>=RELOQ_FA_TUNING_MARKER+1 &&
                c[11]<=RELOQ_FA_TUNING_MARKER+5 ? (int)c[11]-RELOQ_FA_TUNING_MARKER:0;
     unsigned phone=marker>=1 && marker<=5 && c[11]==(float)(RELOQ_FA_TUNING_MARKER+marker) ? (unsigned)marker:0;
     double weight=c[12];
     if(!fa_tuning_on || rate<8000 || rate>48000 || !isfinite(weight) || weight<=0 || weight>1)phone=0;
+    if(revision && (fa_tuning_on!=1 || phone!=RELOQ_FA_TUNE_BACK_A))phone=0;
     if(!phone) {
         if(f->phone || f->active)memset(f,0,sizeof *f);
         return;
@@ -63,7 +74,8 @@ void reloq_fa_tuning_prepare(struct reloq_fa_tuning_filter *f,const float c[62],
     f->active=0;
     for(unsigned i=0;i<5;++i) {
         struct reloq_fa_tuning_band *b=f->bands+i;
-        double frequency=c[centres[i]],width=c[centres[i]+1],gain=gains[phone][i]*weight;
+        double frequency=c[centres[i]],width=c[centres[i]+1];
+        double gain=(revision?revised_a_gains[i]:gains[phone][i])*weight;
         b->active=0;
         if(!gain || !isfinite(frequency) || !isfinite(width) || frequency<30 || frequency>=rate*.475)continue;
         width=fmax(50.0,width);
@@ -79,6 +91,12 @@ void reloq_fa_tuning_prepare(struct reloq_fa_tuning_filter *f,const float c[62],
         b->active=1;f->active=1;
     }
 }
+
+void reloq_fa_tuning_prepare(struct reloq_fa_tuning_filter *f,const float c[62],int rate)
+{tuning_prepare(f,c,rate,0);}
+
+void reloq_fa_tuning_prepare_revision(struct reloq_fa_tuning_filter *f,const float c[62],int rate)
+{tuning_prepare(f,c,rate,1);}
 
 double reloq_fa_tuning_sample(struct reloq_fa_tuning_filter *f,double x)
 {

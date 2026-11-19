@@ -118,6 +118,10 @@ DEV164_KEY = ('persian-windows-host-gcc14-v2-'
 DEV164_ALLOWED = {'experiments/persian/direct_fa_lexicon.c',
                   'experiments/persian/direct_fa_lexicon.h',
                   'experiments/persian/direct_fa_text.c'}
+DEV165_ALLOWED = DEV164_ALLOWED | {'src/reloq_persian_frame_internal.h',
+                                  'src/reloq_persian_frames.c',
+                                  'src/reloq_persian_replay.inc',
+                                  'src/reloq_rules61.c'}
 DEV161_ALLOWED = {
     'experiments/persian/build_native_probe.py',
     'include/reloq_eci.h', 'include/reloq_syllable_trace.h', 'src/reloq_eci.c',
@@ -165,7 +169,7 @@ def eligible(key, changed):
                               (key == DEV161_KEY and set(changed) == DEV161_ALLOWED) or
                               (key == DEV162_KEY and set(changed) == DEV162_ALLOWED) or
                               (key == DEV163_KEY and set(changed) == DEV163_ALLOWED) or
-                              (key == DEV164_KEY and set(changed) == DEV164_ALLOWED))
+                              (key == DEV164_KEY and set(changed) in (DEV164_ALLOWED, DEV165_ALLOWED)))
 
 
 def main():
@@ -196,7 +200,7 @@ def main():
             # direct Persian objects also cover the changed private headers.
             for name in ('reloq_eci.o', 'reloq_rules61.o'):
                 (build / name).unlink(missing_ok=True)
-            if key in (TRACE_KEY, DEV149_KEY, DEV163_KEY):
+            if key in (TRACE_KEY, DEV149_KEY, DEV163_KEY, DEV164_KEY):
                 (build / 'reloq_persian_frames.o').unlink(missing_ok=True)
             if key == DEV158_KEY:
                 (build / 'reloq_noise_profile.o').unlink(missing_ok=True)

@@ -191,8 +191,13 @@ def main():
         # retry the unknown whole word rather than announce Unicode for its
         # joiner. This reproduces a possible fallback failure, not a claim
         # about the cause of a particular user's intermittent report.
-        unknown_joined = 'پدیده‌ای'
+        # پدیده‌ای is now recognized by the productive compound rule; use a
+        # different joined form whose verb still needs the reference path.
+        unknown_joined = 'نمی‌پذیرد'
         assert frontend.analyze_direct(unknown_joined) is None
+        reference = project_resilient((unknown_joined,), frontend,
+            validate=engine._engines[PERSIAN_PROBE.id]._voice._phonemes_for_probe)
+        assert reference.needs_native_validation and reference.tagged
         previous_analyze, previous_prepared = frontend.analyze, ScopedDirectPersianEngine._speak_prepared
         failed_once, observed = [False], []
         def transient_analyze(text, **kwargs):
@@ -208,7 +213,7 @@ def main():
         ScopedDirectPersianEngine._speak_prepared = observe_transient
         try:
             assert render((unknown_joined,))[0]
-            assert failed_once[0] and any("`[.0pA.1di.0d'e:'.1'i:']" in tag and
+            assert failed_once[0] and any(reference.tagged in tag and
                                            UNICODE_TAG not in tag for tag in observed), observed
         finally:
             frontend.analyze = previous_analyze

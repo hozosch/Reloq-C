@@ -1451,6 +1451,7 @@ struct rule_delivery {
     reloq_session_pcm_sink sink;void *context;double gain;
     int16_t pending[1024];size_t used,limit,next_limit;
     struct reloq_fa_tuning_filter fa_filter;
+    struct reloq_fa_tuning_filter fa_revision_filter;
 };
 static int rule_flush(struct rule_delivery *d)
 {
@@ -1463,9 +1464,12 @@ static int rule_pcm(void *context,const int16_t *pcm,size_t count)
     struct rule_delivery *d=context;
     while(count) {
         size_t n=d->limit-d->used;if(n>count)n=count;
-        if(d->fa_filter.active) {
+        if(d->fa_filter.active || d->fa_revision_filter.active) {
             for(size_t i=0;i<n;++i) {
-                long x=lround(reloq_fa_tuning_sample(&d->fa_filter,pcm[i]*d->gain));
+                double sample=pcm[i]*d->gain;
+                if(d->fa_filter.active)sample=reloq_fa_tuning_sample(&d->fa_filter,sample);
+                if(d->fa_revision_filter.active)sample=reloq_fa_tuning_sample(&d->fa_revision_filter,sample);
+                long x=lround(sample);
                 d->pending[d->used+i]=(int16_t)(x>32767?32767:x< -32768?-32768:x);
             }
         } else for(size_t i=0;i<n;++i) {
@@ -1657,6 +1661,7 @@ static int render_until(struct rule_plan *s,int64_t limit)
         reloq_german_voice_model_frame(&p->model,controls);
         tune_fa_frame(s,tick,controls,(float)f->step);
         reloq_fa_tuning_prepare(&p->delivery.fa_filter,controls,reloq_session_sample_rate(s->session));
+        reloq_fa_tuning_prepare_revision(&p->delivery.fa_revision_filter,controls,reloq_session_sample_rate(s->session));
         struct reloq_core_voiced_frame frame;
         if(reloq_frame_adapter_map(controls,reloq_german_voice_model_formants(&p->model),&frame)) {
             p->result=RELOQ_DE_UTTERANCE_INVALID;return 1;

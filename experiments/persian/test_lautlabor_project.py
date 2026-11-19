@@ -25,6 +25,9 @@ EDITS = {
     'o': ([0,0,50,425,0], [0,0,0,0,0]),
     'r_i': ([0,0,0,0,0], [0,0,-4,-2,0]),
 }
+# The newer project was saved while the earlier project was active; these
+# are therefore additional edits relative to that earlier voice.
+BACK_A_REVISION = ([100,150,-75,-50,0], [1,1,-1,2,0])
 
 
 def tuning(library):
@@ -52,7 +55,7 @@ def main():
     original=switch(1);assert original in (0,1)
     try:
         # A temporary bypass is request-thread scoped and restores correctly.
-        assert switch(0)==1 and switch(0)==0 and switch(-1)==-1
+        assert switch(0)==1 and switch(0)==0 and switch(-1)==-1 and switch(3)==-1
         def another_thread():
             _, local=tuning(library)
             first=local(0);second=local(1)
@@ -75,7 +78,10 @@ def main():
                                 p=eng.defaults();p.update(language='Persisch',phone=phone,gender=gender,
                                     head=head,rate=rate,clock=clock,context=True,
                                     frequencies=list(frequencies),gains_db=list(gains))
-                                assert switch(0)==1
+                                previous_project=phone=='a'
+                                if previous_project:
+                                    p['frequencies'],p['gains_db']=map(list,BACK_A_REVISION)
+                                assert switch(2 if previous_project else 0)==1
                                 try:
                                     old=eng.load(library,p)
                                     try: expected, normalized=eng.render(library,p,old,modified=True)
@@ -84,7 +90,7 @@ def main():
                                         if 'außerhalb des hörbaren Bereichs' not in str(error): raise
                                         continue
                                 finally:
-                                    assert switch(1)==0
+                                    assert switch(1)==(2 if previous_project else 0)
                                 new=eng.load(library,p);obtained,_=eng.render(library,p,new,modified=False)
                                 error,corr=audio_error(expected,obtained)
                                 if normalized:
@@ -92,6 +98,20 @@ def main():
                                 else:
                                     assert error<.03 and corr>.998,(phone,gender,head,rate,clock,error,corr)
                                 checks+=1
+
+            # Reproduce the exact saved editor settings as well as the
+            # connected and cross-voice cases above.
+            p=eng.defaults();p.update(language='Persisch',phone='a',gender=0,
+                head=50,rate=3,speed=65,pitch=65,clock=0,context=False,
+                frequencies=list(BACK_A_REVISION[0]),gains_db=list(BACK_A_REVISION[1]))
+            assert switch(2)==1
+            try:
+                old=eng.load(library,p);expected,normalized=eng.render(library,p,old,modified=True)
+            finally:assert switch(1)==2
+            new=eng.load(library,p);obtained,_=eng.render(library,p,new,modified=False)
+            error,corr=audio_error(expected,obtained)
+            assert error<(.15 if normalized else .03) and corr>(.99 if normalized else .998),(error,corr)
+            checks+=1
 
         # R is edited only for the actual R before I, never a final R or R
         # before another vowel. The neighbouring vowel remains its own phone.
