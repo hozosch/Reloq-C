@@ -2,7 +2,7 @@ name: Persian Windows acoustic probe
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, codex/persian-ra-pinglish-20261119, codex/persian-core-20261119, codex/persian-phones-20261119]
+    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, codex/persian-ra-pinglish-20261119, codex/persian-core-20261119, codex/persian-phones-20261119, codex/persian-native-20261120]
     paths:
       - experiments/persian/build_native_probe.py
       - experiments/persian/build_windows_probe.py
@@ -14,6 +14,8 @@ on:
       - src/reloq_persian_acoustics.h
       - src/reloq_persian_frames.c
       - src/reloq_persian_phones.c
+      - src/reloq_persian_pinglish_phrase.c
+      - src/reloq_persian_glides.c
       - src/reloq_persian_prosody.c
       - experiments/persian/test_native_us_word_contour.py
       - experiments/persian/test_persian_final_h_after_consonant.py
@@ -33,6 +35,7 @@ on:
       - include/reloq_persian_phones.h
       - experiments/persian/test_persian_phone_inventory.py
       - experiments/persian/test_persian_phone_audio.py
+      - experiments/persian/test_native_persian_glides.py
       - experiments/persian/test_persian_number_events.py
       - experiments/persian/test_persian_hundred.py
       - experiments/persian/test_persian_h_after_l.py
@@ -223,6 +226,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian phone inventory or its existing sound bridge failed' }
           python -B experiments/persian/test_persian_phone_audio.py --candidate eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian phonetic characters changed their audio' }
+          python -B experiments/persian/test_native_persian_glides.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Native Persian glide differs from the accepted planner' }
           python -B experiments/persian/test_fa_morphology.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian morphology and stress failed' }
           python -B experiments/persian/test_persian_hundred.py --library eci/eci.dll

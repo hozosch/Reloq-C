@@ -1,11 +1,10 @@
 # Persische Lautschrifteingabe: bestehende Zeichen
 
-Diese Übersicht beschreibt die **gegenwärtige interne** Zeichenfolge, die der
-persische Testpfad an die finnisch basierte Eloquence-C-Klangerzeugung
-übergibt. Die persischen Akustikanpassungen müssen dabei aktiv sein. Sie ist
-keine neue, allgemein zugesicherte Wörterbuchschnittstelle. Groß- und
-Kleinschreibung sind entscheidend. Die gewählten Klänge und Übergänge bleiben
-unverändert; die folgende Tabelle ist keine Neuprogrammierung der Stimmen.
+Diese Übersicht beschreibt die explizite persische Lautschrifteingabe und
+ihre aktuelle Übergabe an die Eloquence-C-Klangerzeugung. Die persischen
+Akustikanpassungen müssen aktiv sein. Groß- und Kleinschreibung sind
+entscheidend. Die gewählten Klänge und Übergänge bleiben unverändert. Die
+gesamte Wörterbuch- und Plattformintegration ist noch nicht abgeschlossen.
 
 ## Vokale
 
@@ -42,9 +41,9 @@ Ng statt für den persischen Ach-Laut.
 | `Z` (groß) | stimmhaftes Sch | etwa wie das J in „Journal“ |
 | `C` (groß) | Tsch | ein Laut mit Verschluss und anschließendem Reibelaut |
 | `J` (groß) | Dsch | stimmhaftes Gegenstück zu `C`; nicht mit kleinem `j` verwechseln |
-| `G` (groß) | Ach-Laut | der finnische Platz für Ng wird im persischen Akustikbereich umbelegt |
-| `R` (groß) | persischer Zäpfchenlaut | gesondert vom normalen `k` und `r`; die vorhandene Realisierung ist eine abgestimmte Annäherung |
-| `w` (klein) | gesonderter Glottis-/Trägerplatz | im persischen Pfad eine technische Belegung; kein englisches W |
+| `x` (klein) | Ach-Laut | analog zum deutschen Lautschriftzeichen; die Übergabe verwendet vorerst den internen Platz `G` |
+| `q` (klein) | persischer Zäpfchenlaut | gesondert von `k` und `r`; die vorhandene Realisierung ist eine abgestimmte Annäherung und wird intern vorerst als `R` übergeben |
+| `?` | Glottisschlag | nur innerhalb einer persischen Lautschriftgruppe; wird intern vorerst als `w` übergeben |
 
 `h`, `C` und `J` akzeptiert der tatsächliche Lautschriftparser, obwohl sie in
 der statischen Liste `fifi.settings` nicht als einzelne `Phoneme`-Einträge
@@ -67,14 +66,18 @@ Dies ist die bestehende interne Aussprache von `سلام` / „salam“: S, gro�
 L, kleines A, M. Die zweite Silbe ist betont. Diese Schreibweise ist weder
 IPA noch eine beliebige Pinglish-Umschrift.
 
-Wortfinales H erhält momentan den stillen technischen Träger `w`, etwa
-`` `[.1solhw] ``. Das `w` ist hier kein zusätzlich gesprochener persischer
-Laut: Es ermöglicht den normalen H-Impuls auch bei verbundenen Wörtern. An
-anderer Stelle wird `w` im bisherigen internen Pfad als Marker für einen
-Glottisverschluss verwendet. Deshalb lässt sich ein H unmittelbar vor einem
-separaten Glottisverschluss mit dieser Zwischenform nicht eindeutig ausdrücken.
-Außerdem benötigen einige Kontexte weitere Angaben außerhalb der reinen
-Zeichenkette, zum Beispiel die besondere Behandlung eines gedehnten Dsch.
+Wortfinales H erhält intern den stillen technischen Träger `w`. Die explizite
+Eingabe `` `[.1solh] `` wird dafür als `` `[.1solhw] `` übergeben. Das `w`
+ist hier kein zusätzlich gesprochener persischer Laut: Es erhält den normalen
+H-Impuls auch bei verbundenen Wörtern. Ein Fragezeichen außerhalb einer
+Lautschriftgruppe bleibt ein Satzzeichen. Die bisherigen `G`, `R` und `w`
+werden für vorhandene Eingaben weiterhin akzeptiert. Da `w` in der alten
+Zwischenform auch einen Glottisverschluss markiert, wird H vor einem
+Glottisverschluss vor folgendem Vokal unterstützt. Ein unmittelbar nach H
+endender Glottisverschluss ist dort noch nicht eindeutig auszudrücken. Der
+Kern weist diesen Fall zurück, statt einen Laut zu verschlucken.
+Einige Kontexte benötigen weitere Angaben außerhalb der reinen Zeichenkette,
+zum Beispiel die besondere Behandlung eines gedehnten Dsch.
 
 ## Konsequenzen für den Umbau
 
@@ -92,9 +95,18 @@ Zeichenkette, zum Beispiel die besondere Behandlung eines gedehnten Dsch.
   Textanalyse bleibt unterschiedlich: Beide Schreibweisen können mehrdeutig
   sein. Insbesondere werden kurze Vokale im Persischen oft nicht geschrieben.
   Wörterbücher und Wortbildungsregeln bleiben deshalb wichtig.
+* Die direkte Pinglish-Analyse für abgedeckte ASCII-Sätze, ihre Wortregeln,
+  Betonung und die Projektion von Textmarken stehen im gemeinsamen C-Kern.
+  Nicht abgedeckte oder nicht lateinisch-ASCII geschriebene Fälle verwenden
+  vorerst weiterhin den bisherigen Weg. Der bestätigte U–A-Übergang kann im
+  C-Kern geplant werden; einige gemischte Satzpfade verwenden noch den
+  bisherigen Planer.
 * Die bestehenden Nutzerwörterbücher ersetzen bereits Text beziehungsweise
   verarbeiten ihre jeweiligen Ausspracheangaben. Dass sie beliebige neue
   persische Lautdaten in jeder Plattform übernehmen, ist noch nicht belegt.
-* Satzmelodie, Satzzeichen, Sprachwechsel, Indizes, Fallback und die echte
-  native Sprachauswahl sind mit dieser Zeichentabelle allein nicht umgesetzt.
-  Diese Übersicht verspricht auch keinen bereits messbaren Reaktionsgewinn.
+* Die akzeptierte Satzmelodie wird weiterhin aus einem englischen Pilotlauf
+  übertragen und noch im Treiber koordiniert. Einfache explizite persische
+  Lautschriftgruppen erhalten diese Kontur ebenfalls. Eine eigenständige
+  persische Melodieplanung, vollständige Textanalyse ohne Fallback und echte
+  native Sprachauswahl sind damit noch nicht umgesetzt. Ein großer Gewinn
+  der Reaktionszeit ist damit noch nicht belegt.

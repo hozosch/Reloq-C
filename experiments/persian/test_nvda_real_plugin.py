@@ -306,6 +306,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', '`[.1sAd] سلام', 'tags_phonemes'),
                           ('fa_Latn', '`vs30 salam donya', 'tags_slow'),
                           ('fa_Latn', '`vs180 salam donya', 'tags_fast'),
+                          *((locale, tag, 'tags_phoneme_own')
+                            for locale in ('fa_IR', 'fa_Latn')
+                            for tag in ('`[.1qa]', '`[.1Ra]', '`[.1xa]', '`[.1Ga]',
+                                        '`[.1?a]', '`[.1wa]', '`[.1h?a]', '`[.1hwa]',
+                                        '`[.1solh]', '`[.1solhw]')),
                           ('fa_IR', 'او آمد.', False),
                           ('fa_Latn', 'u amad.', False),
                           ('fa_IR', 'بدبخت', False),
@@ -591,6 +596,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if self.index == len(self.cases):
                 if self.results[0]['pcm_sha256'] != self.results[1]['pcm_sha256']:
                     raise AssertionError('confirmed script and Pinglish words differ')
+                for locale in ('fa_IR', 'fa_Latn'):
+                    for requested, prior in (('`[.1qa]', '`[.1Ra]'), ('`[.1xa]', '`[.1Ga]'),
+                                             ('`[.1?a]', '`[.1wa]'), ('`[.1h?a]', '`[.1hwa]'),
+                                             ('`[.1solh]', '`[.1solhw]')):
+                        def item(text):
+                            return next(row for row in self.results if row['locale']==locale and
+                                        row['text']==text and row['spelling']=='tags_phoneme_own')
+                        if item(requested)['pcm_sha256'] != item(prior)['pcm_sha256']:
+                            raise AssertionError('Persian user phoneme changed the selected sound: '+locale+' '+requested)
                 unicode_reference = next(row for row in self.results
                                          if row['locale'] == 'en_US' and
                                          row['text'] == 'cyrillic capital letter zhe')
@@ -1118,6 +1132,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 expected = text.split(' ', 1)[0]
                 if expected not in self.user_controls[self.before_user_controls:]:
                     raise AssertionError('NVDA lost the ECI tag: ' + expected)
+            if spelling == 'tags_phoneme_own' and not any(self.us_fits[self.before_us_fits:]):
+                raise AssertionError('NVDA explicit phonetics lost the chosen Persian contour: '+ascii(text))
             times = [value for player in self.players
                      for value in player.times[self.before.get(id(player), 0):]]
             if not times:

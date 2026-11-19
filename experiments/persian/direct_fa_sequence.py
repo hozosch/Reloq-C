@@ -74,9 +74,9 @@ def _safe_native_punctuation(job: ProjectedJob) -> ProjectedJob:
     return replace(job, tagged=tagged, parts=tuple(parts))
 
 
-def _project_direct_native(parts, frontend):
+def _project_direct_native(parts, frontend, *, pinglish=False):
     """Keep covered text and source-event projection in the shared C path."""
-    if frontend._project_direct is None:
+    if getattr(frontend, '_project_pinglish' if pinglish else '_project_direct', None) is None:
         return None
     text, events, offset = [], [], 0
     for part in parts:
@@ -93,7 +93,9 @@ def _project_direct_native(parts, frontend):
     source = ''.join(text)
     if source.strip() and not any(c.isalpha() or c.isdecimal() for c in source):
         return None
-    analyzed = frontend.project_direct(source, ((at, isinstance(command, EciIndex)) for at, command in events))
+    event_positions = ((at, isinstance(command, EciIndex)) for at, command in events)
+    analyzed = (frontend.project_direct(source, event_positions, pinglish=True) if pinglish
+                else frontend.project_direct(source, event_positions))
     if analyzed is None:
         return None
     tagged, targets = analyzed
@@ -142,10 +144,10 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
     """Use direct analysis and, optionally, verified reference word anchors."""
     parts = tuple(parts)
     DirectEciEngine._prepare(parts, 'utf-8')
+    projected = _project_direct_native(parts, frontend, pinglish=pinglish)
+    if projected is not None:
+        return _safe_native_punctuation(projected)
     if not pinglish:
-        projected = _project_direct_native(parts, frontend)
-        if projected is not None:
-            return _safe_native_punctuation(projected)
         if allow_fallback and _persian_word_hyphen(parts):
             # A full reference clause can legally return letter names for a
             # neighbouring word, so validation of its phone tags alone does
@@ -632,6 +634,12 @@ class ScopedDirectPersianEngine:
                                self._voice._dll.reloq_fa_native_geminates)
             self._geminates.argtypes = (ctypes.POINTER(ctypes.c_uint32), ctypes.c_size_t)
             self._geminates.restype = ctypes.c_int
+            self._phonetic_input = getattr(self._voice._dll, 'eciPersianInputToLegacy', None)
+            if self._phonetic_input is not None:
+                self._phonetic_input.argtypes = (ctypes.c_char_p, ctypes.c_size_t,
+                    ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t),
+                    ctypes.POINTER(ctypes.c_size_t))
+                self._phonetic_input.restype = ctypes.c_int
         except BaseException:
             self._voice.close()
             raise
@@ -655,6 +663,25 @@ class ScopedDirectPersianEngine:
         if self._cancelled.is_set():
             raise InterruptedError('Persian text processing was cancelled')
         return self._voice._phonemes_for_probe(text)
+
+    def _convert_user_phonetic(self, part: EciText) -> EciText:
+        """Convert a protected Persian phonetic group without touching text."""
+        tag = part.tag_control
+        if not tag or not tag.startswith('`[') or not tag.endswith(']'):
+            return part
+        if not (any(char in tag[2:-1] for char in 'qx?') or tag.endswith('h]')):
+            return part
+        if self._phonetic_input is None:
+            raise RuntimeError('Persische Lautschrift benötigt einen neueren Sprachkern.')
+        raw = tag.encode('utf8')
+        result = ctypes.create_string_buffer(len(raw) + 2)
+        written, error = ctypes.c_size_t(), ctypes.c_size_t()
+        status = self._phonetic_input(raw, len(raw), result, len(result),
+                                      ctypes.byref(written), ctypes.byref(error))
+        if status:
+            raise ValueError(f'Persische Lautschrift kann an Position {error.value + 1} '
+                             'noch nicht wiedergegeben werden.')
+        return replace(part, text=part.text.replace(tag, result.value.decode('ascii'), 1))
 
     def speak(self, parts: Sequence[str | EciText | Command], on_pcm, on_index) -> bool:
         if threading.get_ident() != self._owner:
@@ -728,8 +755,17 @@ class ScopedDirectPersianEngine:
                   for word in marked]
         if any(word > 32767 for word in marked):
             raise UnsupportedPronunciation('too many native onset positions')
-        native_parts = tuple(replace(part, text=part.text.replace('~', ' '))
-                             if isinstance(part, EciText) else part for part in prepared.parts)
+        native_parts = []
+        for part in prepared.parts:
+            if not isinstance(part, EciText):
+                native_parts.append(part)
+                continue
+            if part.is_control:
+                # Only explicit user phonetics use the new alphabet.
+                native_parts.append(self._convert_user_phonetic(part))
+            else:
+                native_parts.append(replace(part, text=part.text.replace('~', ' ')))
+        native_parts = tuple(native_parts)
         native_parts, geminates = _mark_geminated_affricates(native_parts)
         native_tagged = ''.join(part.text for part in native_parts if isinstance(part, EciText))
         previous = self._scope(1)

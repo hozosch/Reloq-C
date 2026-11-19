@@ -14,7 +14,7 @@ if __package__:
     from .._reloq_eci_direct import (EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciPitchHz,
                                      EciProsody, EciText, persistent_tag_control,
                                      SAMPLE_RATE, SAMPLE_RATES, PROCESS_TAGS, NATIVE_SPEED, NATIVE_WPM, ORIGINAL_ACOUSTIC_CLOCK)
-    from .._reloq_persian_frames import FrameCapture, FrameReplay, FrameStream, NativeFrame
+    from .._reloq_persian_frames import FrameCapture, FrameReplay, FrameStream, NativeFrame, NativeGlideCandidate
     from .._reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from .._reloq_persian_projection import ProjectedJob
     from .direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient
@@ -27,7 +27,7 @@ else:
     from _reloq_eci_direct import (EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciPitchHz,
                                     EciProsody, EciText, persistent_tag_control,
                                     SAMPLE_RATE, SAMPLE_RATES, PROCESS_TAGS, NATIVE_SPEED, NATIVE_WPM, ORIGINAL_ACOUSTIC_CLOCK)
-    from _reloq_persian_frames import FrameCapture, FrameReplay, FrameStream, NativeFrame
+    from _reloq_persian_frames import FrameCapture, FrameReplay, FrameStream, NativeFrame, NativeGlideCandidate
     from _reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from _reloq_persian_projection import ProjectedJob
     from direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient
@@ -638,20 +638,22 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
 
 def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
     """Apply Persian glides and an experimental US-derived pitch contour."""
-    key, items, prefix, saw_text = owner._home, [], [], False
+    key, items, prefix, saw_text, explicit = owner._home, [], [], False, False
     for part in parts:
         if isinstance(part, EciLanguage):
             next_key = owner._key(part.language, part.voice)
             if items and next_key != key:
                 return None
             key = next_key
-        elif isinstance(part, EciText) and part.is_control and not saw_text:
-            if not part.speed_control and persistent_tag_control(part) is None:
+        elif isinstance(part, EciText) and part.is_control:
+            if part.tag_control and _TAG.fullmatch(part.tag_control):
+                items.append(part)
+                explicit = saw_text = True
+            elif not saw_text and (part.speed_control or persistent_tag_control(part) is not None):
+                prefix.append(part)
+            else:
                 return None
-            prefix.append(part)
         elif isinstance(part, (str, EciText, EciIndex)):
-            if isinstance(part, EciText) and part.is_control:
-                return None
             items.append(part)
             if isinstance(part, (str, EciText)):
                 saw_text = True
@@ -679,15 +681,46 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
     streamed_frames = 0
     streamed_marks = ()
     try:
-        try:
-            prepared = project(items, engine._frontend, allow_fallback=engine._allow_fallback,
-                               pinglish=engine._pinglish)
-        except (ValueError, RuntimeError, OSError, UnicodeError):
-            if owner._cancelled.is_set():
-                return False
-            prepared = project_resilient(items, engine._frontend, pinglish=engine._pinglish,
-                                         validate=engine._phonemes_for_validation,
-                                         cancelled=owner._cancelled.is_set)
+        if explicit:
+            # For explicit phonetic-only requests, plan the same selected
+            # contour as ordinary Persian speech. One-shot controls are
+            # converted once, then carried as immutable pronunciation text;
+            # normal words and ambiguous geminated J keep the established
+            # fallback until their event projection is implemented.
+            prepared_parts, source_text, tagged_text = [], [], []
+            for part in items:
+                if isinstance(part, EciText) and part.is_control:
+                    if re.search(r'J(?:\.[012])?J', part.text):
+                        return None
+                    converted = engine._convert_user_phonetic(part)
+                    part = replace(converted, tag_control=None, speed_control=None,
+                                   segmentation_guarded=True)
+                    prepared_parts.append(part)
+                    tagged_text.append(part.text)
+                elif isinstance(part, (str, EciText)):
+                    value = part if isinstance(part, str) else part.text
+                    if any(c not in ' \t\r\n.,?!:;()[]{}،؛؟' for c in value):
+                        return None
+                    value = value.replace('،', ',').replace('؛', ';').replace('؟', '?')
+                    prepared_parts.append(EciText(value, segmentation_guarded=True))
+                    source_text.append(value)
+                    tagged_text.append(value)
+                else:
+                    prepared_parts.append(part)
+            tagged = ''.join(tagged_text)
+            if re.search(r'\]`\[', tagged):
+                return None
+            prepared = ProjectedJob(''.join(source_text), tagged, tuple(prepared_parts), False)
+        else:
+            try:
+                prepared = project(items, engine._frontend, allow_fallback=engine._allow_fallback,
+                                   pinglish=engine._pinglish)
+            except (ValueError, RuntimeError, OSError, UnicodeError):
+                if owner._cancelled.is_set():
+                    return False
+                prepared = project_resilient(items, engine._frontend, pinglish=engine._pinglish,
+                                             validate=engine._phonemes_for_validation,
+                                             cancelled=owner._cancelled.is_set)
         matches = tuple(_TAG.finditer(prepared.tagged))
         tags = tuple(match.group() for match in matches)
         separators = tuple(prepared.tagged[a.end():b.start()] for a, b in zip(matches, matches[1:]))
@@ -908,9 +941,25 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                                for word in starts[1:]}
         glides = ()
         if has_glide:
-            controls = [row.controls for row in item.frames]
-            glides = plan_u_a_glides(controls, item.ticks, tags, separators, boundaries)
-            apply_u_a_glides(controls, item.ticks, glides)
+            applied = ctypes.c_size_t()
+            native_glides = getattr(capture_api, 'apply_glides', None)
+            if native_glides is not None and all(word in boundaries and
+                    (word == 1 or word - 1 in boundaries) for word in glide_words):
+                candidates = (NativeGlideCandidate * len(glide_words))(*(
+                    NativeGlideCandidate(word, boundaries.get(word - 1, 0), boundaries[word],
+                        boundaries.get(word + 1, item.ticks[-1] + 1)) for word in glide_words))
+                status = native_glides(item.frames, len(item.frames), candidates, len(candidates),
+                                       1, ctypes.byref(applied))
+            else:
+                status = -1
+            if status == 0:
+                glides = applied.value
+            else:
+                # Old libraries or unverified boundary clocks retain the
+                # previous planner. The native function fails before edits.
+                controls = [row.controls for row in item.frames]
+                glides = plan_u_a_glides(controls, item.ticks, tags, separators, boundaries)
+                apply_u_a_glides(controls, item.ticks, glides)
         if not glides and not korean_available and not us_available:
             return engine._speak_prepared(replace(prepared, parts=(*prefix, *prepared.parts)), on_pcm, on_index)
         transferred = False

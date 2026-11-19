@@ -293,6 +293,13 @@ ECIAPI int ECICALL eciPersianProjectUtf8(const char *text,size_t bytes,
     char **output,size_t *target_offsets,size_t *error_offset);
 ECIAPI void ECICALL eciPersianRelease(void *pointer);
 
+/* Conservative ASCII Pinglish phrase projection with the same status and
+ * memory ownership as eciPersianProjectUtf8. Uncovered or non-ASCII input
+ * return 1 so the caller retains its established fallback. */
+ECIAPI int ECICALL eciPersianPinglishProjectUtf8(const char *text,size_t bytes,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset);
+
 /* Direct text, number, character and Pinglish building blocks. Text and
  * offset arrays are caller-owned and must be released with PersianRelease.
  * Uncovered input is reported to the caller for an appropriate fallback. */
@@ -329,6 +336,11 @@ ECIAPI int ECICALL eciPersianPhonesFromLegacy(const char *text,size_t bytes,
     struct reloq_fa_phone *phones,size_t capacity,size_t *count,size_t *error_offset);
 ECIAPI int ECICALL eciPersianPhonesToLegacy(const struct reloq_fa_phone *phones,size_t count,
     char *output,size_t capacity,size_t *bytes,size_t *error_index);
+/* One explicitly supplied Persian phonetic group; q=uvular, x=Ach, ?=glottal.
+ * It preserves legacy input and the existing sound backend. Do not use for
+ * ordinary punctuation or for another language. See reloq_persian_phones.h. */
+ECIAPI int ECICALL eciPersianInputToLegacy(const char *text,size_t bytes,char *output,
+    size_t capacity,size_t *written,size_t *error_offset);
 /* Convert one directly covered word to the same identities. pinglish must be
  * 0 (Persian script) or 1 (Latin transcription). No dictionary handle or
  * fallback is used. Returns 0 success, 1 uncovered/unsupported, -1 invalid
@@ -359,6 +371,7 @@ ECIAPI int ECICALL eciPersianNativeGeminates(const uint32_t *pairs,size_t count)
 struct reloq_fa_frame;
 struct reloq_fa_frame_mark;
 struct reloq_fa_syllable;
+struct reloq_fa_glide_candidate;
 ECIAPI int ECICALL eciPersianCaptureBegin(size_t maximum);
 ECIAPI const struct reloq_fa_frame *ECICALL eciPersianCaptureEnd(size_t *count,int *failed);
 ECIAPI const struct reloq_fa_frame *ECICALL eciPersianCaptureCurrent(size_t *count,int *failed);
@@ -368,6 +381,11 @@ ECIAPI int ECICALL eciPersianCaptureSetControlsOnly(int enabled);
 /* Select phone timing instead of syllable timing for an active capture.
  * This optional diagnostic is request-local and does not alter speech. */
 ECIAPI int ECICALL eciPersianCaptureSetPhoneTrace(int enabled);
+/* Apply verified U-to-A word-boundary transitions to request-local frames.
+ * Returns 0 on success, -1 for invalid inputs, -2 for allocation failure. */
+ECIAPI int ECICALL eciPersianApplyGlides(struct reloq_fa_frame *rows,size_t count,
+    const struct reloq_fa_glide_candidate *candidates,size_t candidate_count,
+    int pitch,size_t *applied);
 ECIAPI size_t ECICALL eciPersianCaptureSampleCount(void);
 /* Optional request-local PCM capture avoids callbacks for each tiny frame.
  * Retrieve the samples after CaptureEnd and before CaptureRelease. */

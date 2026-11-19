@@ -185,3 +185,43 @@ int reloq_fa_phones_to_legacy(const struct reloq_fa_phone *phones,size_t count,
     output[at++]=']';output[at]=0;
     return at==needed?0:-1;
 }
+
+int reloq_fa_input_to_legacy(const char *text,size_t bytes,char *output,
+    size_t capacity,size_t *written,size_t *error_offset)
+{
+    if(written)*written=0;
+    if(error_offset)*error_offset=0;
+    if(!text || !written || (!output && capacity) || bytes<4 || bytes>8192 ||
+       memchr(text,0,bytes) || text[0]!='`' || text[1]!='[' || text[bytes-1]!=']')return -1;
+    char previous=0;
+    for(size_t i=2;i+1<bytes;++i) {
+        char c=text[i];
+        if(c=='`' || c=='[' || c==']') {if(error_offset)*error_offset=i;return -1;}
+        if(c=='?' && previous=='h') {
+            /* h+w before a following vowel retains both events in the
+             * provider. A final hw is indistinguishable from the silent
+             * final-H carrier and must not silently lose the glottal. */
+            size_t next=i+1;
+            while(next+1<bytes && (text[next]=='.' || text[next]=='0' ||
+                  text[next]=='1' || text[next]=='2' || text[next]=='\'' || text[next]==':'))++next;
+            if(next+1>=bytes || !strchr("Aaeiou",text[next])) {
+                if(error_offset)*error_offset=i;
+                return 1;
+            }
+        }
+        /* Stress and length annotations are not phones. */
+        if(c!='.' && c!='0' && c!='1' && c!='2' && c!='\'' && c!=':')previous=c;
+    }
+    size_t carrier=text[bytes-2]=='h';
+    if(bytes+carrier>8192)return -1;
+    *written=bytes+carrier;
+    if(!output)return 0;
+    if(capacity<=*written)return -2;
+    for(size_t i=0;i+1<bytes;++i) {
+        char c=text[i];
+        output[i]=i>=2 && c=='q'?'R':i>=2 && c=='x'?'G':i>=2 && c=='?'?'w':c;
+    }
+    if(carrier)output[bytes-1]='w';
+    output[bytes-1+carrier]=']';output[bytes+carrier]=0;
+    return 0;
+}

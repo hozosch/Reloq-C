@@ -36,6 +36,11 @@ class NativeSyllable(ctypes.Structure):
     _fields_ = (('from_', ctypes.c_int32), ('to', ctypes.c_int32))
 
 
+class NativeGlideCandidate(ctypes.Structure):
+    _fields_ = (('word', ctypes.c_uint32), ('left', ctypes.c_int64),
+                ('boundary', ctypes.c_int64), ('right', ctypes.c_int64))
+
+
 @dataclass(frozen=True)
 class NativeCapture:
     pcm: bytes
@@ -142,6 +147,12 @@ class FrameCapture:
         if self._phone_trace is not None:
             self._phone_trace.argtypes = (ctypes.c_int,)
             self._phone_trace.restype = ctypes.c_int
+        self.apply_glides = getattr(dll, 'eciPersianApplyGlides', None)
+        if self.apply_glides is not None:
+            self.apply_glides.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
+                ctypes.POINTER(NativeGlideCandidate), ctypes.c_size_t, ctypes.c_int,
+                ctypes.POINTER(ctypes.c_size_t))
+            self.apply_glides.restype = ctypes.c_int
         self.frame_ticks = _native_function(dll, 'eciPersianFrameTicks', 'reloq_fa_frame_ticks')
         if self.frame_ticks is not None:
             self.frame_ticks.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,

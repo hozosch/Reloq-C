@@ -875,6 +875,14 @@ int ECICALL eciPersianProjectUtf8(const char *text,size_t bytes,
                                    output,target_offsets,error_offset);
 }
 
+int ECICALL eciPersianPinglishProjectUtf8(const char *text,size_t bytes,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset)
+{
+    return reloq_fa_pinglish_project(text,bytes,source_offsets,is_index,event_count,
+                                    output,target_offsets,error_offset);
+}
+
 void ECICALL eciPersianRelease(void *pointer)
 {reloq_fa_direct_free(pointer);}
 
@@ -952,6 +960,10 @@ int ECICALL eciPersianPhonesFromLegacy(const char *text,size_t bytes,
 int ECICALL eciPersianPhonesToLegacy(const struct reloq_fa_phone *phones,size_t count,
     char *output,size_t capacity,size_t *bytes,size_t *error_index)
 {return reloq_fa_phones_to_legacy(phones,count,output,capacity,bytes,error_index);}
+
+int ECICALL eciPersianInputToLegacy(const char *text,size_t bytes,char *output,
+    size_t capacity,size_t *written,size_t *error_offset)
+{return reloq_fa_input_to_legacy(text,bytes,output,capacity,written,error_offset);}
 
 int ECICALL eciPersianWordPhonesUtf8(const char *word,size_t bytes,int pinglish,
     struct reloq_fa_phone *phones,size_t capacity,size_t *count,size_t *error_offset)
@@ -2031,6 +2043,10 @@ int ECICALL eciPersianCaptureSetPhoneTrace(int enabled)
     reloq61_syllable_trace_phone_mode(enabled);
     return 0;
 }
+int ECICALL eciPersianApplyGlides(struct reloq_fa_frame *rows,size_t count,
+    const struct reloq_fa_glide_candidate *candidates,size_t candidate_count,
+    int pitch,size_t *applied)
+{return reloq_fa_apply_glides(rows,count,candidates,candidate_count,pitch,applied);}
 size_t ECICALL eciPersianCaptureSampleCount(void)
 {return reloq_fa_capture_sample_count();}
 int ECICALL eciPersianCaptureSetPcmStorage(int enabled)

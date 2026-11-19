@@ -2,7 +2,7 @@ name: Persian NVDA direct test
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, codex/persian-ra-pinglish-20261119, codex/persian-core-20261119]
+    branches: [codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, codex/persian-ra-pinglish-20261119, codex/persian-core-20261119, codex/persian-native-20261120]
     paths:
       - .github/workflows/persian-nvda-direct-test.yml
       - .github/workflows/persian-windows-acoustic-probe.yml
@@ -55,6 +55,10 @@ on:
       - experiments/persian/test_prefix_streaming.py
       - experiments/persian/test_mixed_early_snapshot.py
       - experiments/persian/test_pinglish_native_words.py
+      - experiments/persian/test_pinglish_phrase_projection.py
+      - experiments/persian/test_persian_phonetic_input.py
+      - experiments/persian/test_persian_phonetic_contour.py
+      - experiments/persian/test_native_glide_runtime.py
       - experiments/persian/test_r_metallic_edge.py
       - experiments/persian/test_persian_final_r_connected.py
       - experiments/persian/test_persian_r_liaison.py
@@ -169,6 +173,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Mixed incremental playback or cancellation failed' }
           python -B experiments/persian/test_pinglish_native_words.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Native Pinglish pronunciation mismatch' }
+          python -B experiments/persian/test_pinglish_phrase_projection.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Native Pinglish phrase or event projection differed' }
+          python -B experiments/persian/test_persian_phonetic_input.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian phonetic input failed' }
+          python -B experiments/persian/test_persian_phonetic_contour.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian explicit phonetics lost the chosen contour' }
+          python -B experiments/persian/test_native_glide_runtime.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Shared native glide changed Persian playback' }
           python -B experiments/persian/test_pure_parallel_pilot.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian parallel contour or cancellation failed' }
           python -B experiments/persian/test_persian_decimals.py
@@ -209,7 +221,7 @@ jobs:
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          if [ "$GITHUB_REF_NAME" = "codex/persian-core-20261119" ]; then version=1.5.0-dev174; elif [ "$GITHUB_REF_NAME" = "codex/persian-ra-pinglish-20261119" ]; then version=1.5.0-dev173; elif [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev172; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-native-20261120" ]; then version=1.5.0-dev175; elif [ "$GITHUB_REF_NAME" = "codex/persian-core-20261119" ]; then version=1.5.0-dev174; elif [ "$GITHUB_REF_NAME" = "codex/persian-ra-pinglish-20261119" ]; then version=1.5.0-dev173; elif [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev172; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
           dll=$(find candidate -name eci.dll -print -quit)
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
           python -B experiments/persian/build_soundlab_nvda.py --output dist/reloq-c-lautlabor-0.2.0.nvda-addon

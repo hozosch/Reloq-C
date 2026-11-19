@@ -74,6 +74,17 @@ int reloq_fa_phones_from_legacy(const char *text,size_t bytes,
 int reloq_fa_phones_to_legacy(const struct reloq_fa_phone *phones,size_t count,
     char *output,size_t capacity,size_t *bytes,size_t *error_index);
 
+/* Convert one explicit Persian phonetic input group to the existing scoped
+ * acoustic backend: q=uvular, x=Ach, ?=glottal stop. This is not ordinary
+ * text normalization and must not be applied to sentence punctuation or
+ * another language's tags. Existing legacy symbols remain accepted. A final
+ * h obtains its silent carrier. H+glottal is accepted before a vowel;
+ * an ambiguous final H+glottal returns 1. Output is
+ * unchanged on failure; a NULL/zero output queries the size without NUL.
+ * Return 0 success, 1 unsupported, -1 invalid, -2 too little capacity. */
+int reloq_fa_input_to_legacy(const char *text,size_t bytes,char *output,
+    size_t capacity,size_t *written,size_t *error_offset);
+
 #ifdef __cplusplus
 }
 #endif
