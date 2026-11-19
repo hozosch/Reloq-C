@@ -245,16 +245,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             saved_language, saved_mask = self.synth.language, self.synth._acousticClockMask
             try:
                 self.synth.language = 'fa_IR'; self.synth.originalAcousticClock = True
-                assert self.synth.originalAcousticClock, 'Persian clock checkbox did not enable'
+                if not self.synth.originalAcousticClock: raise AssertionError('Persian clock checkbox did not enable')
                 self.synth.language = 'fa_Latn'; self.synth.originalAcousticClock = False
-                assert not self.synth.originalAcousticClock, 'Pinglish clock checkbox did not disable'
+                if self.synth.originalAcousticClock: raise AssertionError('Pinglish clock checkbox did not disable')
                 self.synth.language = 'fa_IR'
-                assert self.synth.originalAcousticClock, 'Persian clock was lost on switch'
+                if not self.synth.originalAcousticClock: raise AssertionError('Persian clock was lost on switch')
                 self.synth.language = 'fa_Latn'; self.synth.originalAcousticClock = True
-                assert self.synth.originalAcousticClock, 'Pinglish clock checkbox did not enable'
+                if not self.synth.originalAcousticClock: raise AssertionError('Pinglish clock checkbox did not enable')
                 self.synth.language = 'fa_IR'; self.synth.originalAcousticClock = False
                 self.synth.language = 'fa_Latn'
-                assert self.synth.originalAcousticClock, 'Pinglish clock was lost on switch'
+                if not self.synth.originalAcousticClock: raise AssertionError('Pinglish clock was lost on switch')
             finally:
                 self.synth._acousticClockMask = saved_mask
                 self.synth.language = saved_language

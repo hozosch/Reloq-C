@@ -12,6 +12,13 @@ import wx
 RESULT=Path(os.environ['RELOQ_SEGMENTATION_PROBE_RESULT'])
 
 
+def require(condition, detail):
+    # NVDA's frozen Python can run with assertions optimized out. Explicit
+    # checks also ensure event dispatch is never skipped by optimization.
+    if not condition:
+        raise AssertionError(detail)
+
+
 class Player:
     def __init__(self,*args,**kwargs):self.chunks=[]
     def feed(self,data):self.chunks.append(bytes(data))
@@ -40,7 +47,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             import globalPlugins.reloqSoundLab as soundlab
             from globalPlugins.reloqSoundLab.editor import PhonemeEditorDialog
             active=[p for p in globalPluginHandler.runningPlugins if isinstance(p,soundlab.GlobalPlugin)]
-            assert active and active[0].item,'editor menu missing'
+            require(active and active[0].item,'editor menu missing')
             self.players=[]
             def make(*a,**kw):
                 player=Player(*a,**kw);self.players.append(player);return player
@@ -65,7 +72,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 for handle in handles:
                     obj=getNVDAObjectFromEvent(handle,-4,0)
                     if obj is not None:names.append(obj.name)
-                self.names.append((label,names));assert label in names,(label,names)
+                self.names.append((label,names));require(label in names,(label,names))
             self.dialog.on_prepare(None);self.phase=0;self.deadline=time.monotonic()+60
             wx.CallLater(100,self.check)
         except Exception:self.fail()
@@ -73,19 +80,19 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     def check(self):
         try:
             if self.dialog._busy:
-                assert time.monotonic()<self.deadline,'phoneme editor timed out'
+                require(time.monotonic()<self.deadline,'phoneme editor timed out')
                 wx.CallLater(100,self.check);return
-            assert not self.errors,self.errors
+            require(not self.errors,self.errors)
             if self.phase==0:
-                assert self.dialog._loaded and self.dialog._loaded.key=='i'
+                require(self.dialog._loaded and self.dialog._loaded.key=='i','Persian I was not loaded')
                 self.dialog.area.SetFocus();wx.YieldIfNeeded()
-                assert wx.Window.FindFocus() is self.dialog.area,'editor keyboard focus missing'
+                require(wx.Window.FindFocus() is self.dialog.area,'editor keyboard focus missing')
                 # Real wx key-event routing uses the dialog's char hook.
                 for code in (ord('2'),wx.WXK_RIGHT,wx.WXK_UP):
                     event=wx.KeyEvent(wx.wxEVT_CHAR_HOOK);event.m_keyCode=code
-                    assert self.dialog.GetEventHandler().ProcessEvent(event),'key not handled'
-                assert self.dialog.selected_formant==1
-                assert self.dialog.frequencies[1]==25 and self.dialog.gains_db[1]==1
+                    require(self.dialog.GetEventHandler().ProcessEvent(event),'key not handled')
+                require(self.dialog.selected_formant==1,'formant selection failed')
+                require(self.dialog.frequencies[1]==25 and self.dialog.gains_db[1]==1,'arrow edits failed')
                 from globalPlugins.reloqSoundLab import phonemes
                 options=phonemes.PHONES['Persisch']
                 def choose(key):
@@ -93,32 +100,32 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     self.dialog.on_phone(Key(0))
                 choose('u');self.dialog.frequencies[2]=75;self.dialog.gains_db[2]=-2;self.dialog._remember()
                 choose('i')
-                assert self.dialog.frequencies[1]==25 and self.dialog.gains_db[1]==1
+                require(self.dialog.frequencies[1]==25 and self.dialog.gains_db[1]==1,'sound switch lost I')
                 project=self.dialog.project();self.dialog.on_reset(None)
-                assert not any(self.dialog.frequencies) and not any(self.dialog.gains_db)
+                require(not any(self.dialog.frequencies) and not any(self.dialog.gains_db),'reset failed')
                 self.dialog.restore_project(project)
-                assert self.dialog.frequencies[1]==25 and self.dialog.gains_db[1]==1
-                choose('u');assert self.dialog.frequencies[2]==75 and self.dialog.gains_db[2]==-2
-                choose('i');assert self.dialog.frequencies[1]==25 and self.dialog.gains_db[1]==1
+                require(self.dialog.frequencies[1]==25 and self.dialog.gains_db[1]==1,'project lost I')
+                choose('u');require(self.dialog.frequencies[2]==75 and self.dialog.gains_db[2]==-2,'project lost U')
+                choose('i');require(self.dialog.frequencies[1]==25 and self.dialog.gains_db[1]==1,'project lost I after U')
                 # F2 on the sound list loads the probe, then hands focus to
                 # the edit field so number/arrow controls are immediately usable.
                 self.dialog.phone.SetFocus();wx.YieldIfNeeded()
                 self.phase=1
                 event=wx.KeyEvent(wx.wxEVT_CHAR_HOOK);event.m_keyCode=wx.WXK_F2
-                assert self.dialog.GetEventHandler().ProcessEvent(event),'F2 not handled'
+                require(self.dialog.GetEventHandler().ProcessEvent(event),'F2 not handled')
                 wx.CallLater(100,self.check);return
-            assert self.players and self.players[-1].chunks,'editor did not play audio'
+            require(self.players and self.players[-1].chunks,'editor did not play audio')
             if self.phase==1:
-                assert wx.Window.FindFocus() is self.dialog.area,'F2 did not focus the formant editor'
+                require(wx.Window.FindFocus() is self.dialog.area,'F2 did not focus the formant editor')
                 self.modified=b''.join(self.players[-1].chunks);self.phase=2
                 event=wx.KeyEvent(wx.wxEVT_CHAR_HOOK);event.m_keyCode=wx.WXK_F3
-                assert self.dialog.GetEventHandler().ProcessEvent(event),'F3 not handled'
+                require(self.dialog.GetEventHandler().ProcessEvent(event),'F3 not handled')
                 wx.CallLater(100,self.check);return
             original=b''.join(self.players[-1].chunks)
-            assert self.modified!=original and len(self.modified)==len(original),'edited phone not audible'
+            require(self.modified!=original and len(self.modified)==len(original),'edited phone not audible')
             self.dialog.phone.SetFocus();wx.YieldIfNeeded()
             event=Key(wx.WXK_RIGHT);self.dialog.on_key(event)
-            assert event.skipped,'arrow was swallowed outside editor'
+            require(event.skipped,'arrow was swallowed outside editor')
             self.dialog._closed=True;self.dialog.Destroy()
             RESULT.write_text(json.dumps({'ok':True,'labels':self.names,'f2_f3_audio':True,
                                           'keyboard_formant_2':True,'project_roundtrip':True}),encoding='utf8')
