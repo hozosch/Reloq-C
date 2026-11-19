@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from test_us_articulation import capture, voice
 from _reloq_eci_direct import GENDER, NATIVE_PITCH, NATIVE_SPEED, SAMPLE_RATE
-from _reloq_persian_frames import FrameReplay, NativeFrame
+from _reloq_persian_frames import FrameReplay, FrameStream, NativeFrame
 from nvda_driver_probe import make_language_engine, PERSIAN_PROBE
 from direct_fa_sequence import project
 import continuous_driver
@@ -27,14 +27,21 @@ def actual_sentence(library, text):
     project((text,), engine._frontend, allow_fallback=False)
     traces, fits, audio = [], [], bytearray()
     original = FrameReplay.replay
+    original_append = FrameStream.append
     fit = continuous_driver.fit_us_word_pitch
     def replay(self, voice, rows, marks, *args, **kwargs):
         traces.append(bytes(rows))
         return original(self, voice, rows, marks, *args, **kwargs)
     def fitted(*args, **kwargs):
         result=fit(*args, **kwargs); fits.append(result); return result
+    def streamed(self, rows, first, last, marks=()):
+        if first < last:
+            traces.append(ctypes.string_at(ctypes.byref(rows, first * ctypes.sizeof(NativeFrame)),
+                                           (last - first) * ctypes.sizeof(NativeFrame)))
+        return original_append(self, rows, first, last, marks)
     try:
-        with patch.object(FrameReplay,'replay',new=replay), patch.object(continuous_driver,'fit_us_word_pitch',new=fitted):
+        with patch.object(FrameReplay,'replay',new=replay), patch.object(FrameStream,'append',new=streamed), \
+             patch.object(continuous_driver,'fit_us_word_pitch',new=fitted):
             assert owner.speak((text,),audio.extend,lambda _:None)
     finally:
         owner.close()
