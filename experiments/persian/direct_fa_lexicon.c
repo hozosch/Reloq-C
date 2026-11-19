@@ -919,6 +919,17 @@ static void apply_persian_stress(const char *word,size_t bytes,char *tag,int dir
      * stressed on its last syllable. Verb/function-word homographs are not
      * silently treated as nouns. */
     if(kind==1u) {
+        /* A classified lexical form in -انی usually derives from an -ان
+         * base, rather than being only an unstressed indefinite -ی. Keep
+         * this evidence separate from unknown forms and verbal homographs. */
+        size_t an_stem=0;
+        if(ends_with(word,bytes,"ی",&stem) && ends_with(word,stem,"ان",&an_stem) &&
+           stress_class(word,stem)==1u) {
+            size_t n=strlen(tag);
+            if(n>=3 && !memcmp(tag+n-3,"ni]",3)) {
+                stress_primary(tag,syllables-1);return;
+            }
+        }
         /* The spelling -ی can be an unstressed indefinite clitic or a
          * stressed derivational suffix. If the full spelling is already an
          * independent lexical entry, prefer its citation accent; otherwise

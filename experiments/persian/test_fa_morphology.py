@@ -68,6 +68,8 @@ def main():
     # independent pronouns and a known indefinite -i form.
     expected={
         'فارسی':'`[.0far.1si]', 'صندلی':'`[.0sAn.0dA.1li]',
+        'قربانی':'`[.0Ror.0ba.1ni]', 'انسانی':'`[.0en.0sa.1ni]',
+        'تهرانی':'`[.0teh.0ra.1ni]',
         'درباره':"`[.0dAr.0ba.1r'e:']", 'درمورد':"`[.0dAr.0m'o:'.1red]",
         'اگرچه':'`[.0A.0gAr.1Ce]', 'همچنین':'`[.0hAm.0Ce.1nin]',
         'مربیان':'`[.0mo.0rAb.0bi.1jan]', 'بازهم':'`[.1baz.0hAm]',
@@ -80,6 +82,8 @@ def main():
     for word,tag in expected.items():assert project(word)==tag,(word,project(word),tag)
     assert project('خدمات تخصصی').endswith('`[.0tA.0GAs.0so.1si]')
     assert project('خدماتِ تخصصی').endswith('`[.0tA.0GAs.0so.1si]')
+    assert project('خدمات اختصاصی').endswith('`[.0eG.0te.0sa.1si]')
+    assert project('خدمات انضباطی').endswith('`[.0en.0ze.0ba.1ti]')
     unchanged=project('تخصصی')
     assert project('یک تخصصی').endswith(unchanged)
     assert project('کتاب، تخصصی').endswith(unchanged)
