@@ -51,11 +51,14 @@ def projection_tests(frontend):
                        ('سلام', EciPitch(65), ' دنیا', EciProsody(6, 50), '؟'),
                        ('سلام ', EciText('ب', character_mode=True)))
         for parts in comparisons:
+            shared = frontend._project_text
+            frontend._project_text = None
             frontend._project_direct = None
             try:
                 expected = project(parts, frontend)
             finally:
                 frontend._project_direct = native
+                frontend._project_text = shared
             assert project(parts, frontend) == expected, parts
         # A rejected control must not be partially mapped or emitted.
         assert frontend.project_direct('سلام', ((2, False),)) is None
@@ -69,11 +72,14 @@ def projection_tests(frontend):
             text = rng.choice(('', '(', '[')) + text + rng.choice(('', '.', '؟', ')', ':'))
             at = rng.randrange(len(text) + 1)
             parts = (EciIndex(i), text[:at], EciIndex(i + 1000), text[at:], EciIndex(i + 2000))
+            shared = frontend._project_text
+            frontend._project_text = None
             frontend._project_direct = None
             try:
                 expected = project(parts, frontend)
             finally:
                 frontend._project_direct = native
+                frontend._project_text = shared
             assert project(parts, frontend) == expected, (i, text, at)
     for parts in inputs:
         job = project(parts, frontend)

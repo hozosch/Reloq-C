@@ -206,6 +206,12 @@ class DirectFirstPersian:
                 ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_ubyte), ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_size_t))
             self._project_pinglish.restype = ctypes.c_int
+        self._project_text = getattr(self._dll, 'eciPersianProjectTextUtf8', None)
+        if self._project_text is not None:
+            self._project_text.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.c_int,
+                ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_ubyte), ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_size_t))
+            self._project_text.restype = ctypes.c_int
         self._number.argtypes = (
             ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t),
             ctypes.c_void_p, ctypes.c_size_t,
@@ -271,7 +277,7 @@ class DirectFirstPersian:
 
     def project_direct(self, text: str, events, *, pinglish=False):
         """Project direct source indices in C; return None for other paths."""
-        function = self._project_pinglish if pinglish else self._project_direct
+        function = self._project_text or (self._project_pinglish if pinglish else self._project_direct)
         if function is None:
             return None
         with self._guard:
@@ -283,8 +289,12 @@ class DirectFirstPersian:
         indices = (ctypes.c_ubyte * len(events))(*(int(item[1]) for item in events)) if events else None
         targets = (ctypes.c_size_t * len(events))() if events else None
         output, error = ctypes.c_void_p(), ctypes.c_size_t()
-        status = function(encoded, len(encoded), offsets, indices, len(events),
-                          ctypes.byref(output), targets, ctypes.byref(error))
+        if function is self._project_text:
+            status = function(encoded, len(encoded), int(pinglish), offsets, indices, len(events),
+                              ctypes.byref(output), targets, ctypes.byref(error))
+        else:
+            status = function(encoded, len(encoded), offsets, indices, len(events),
+                              ctypes.byref(output), targets, ctypes.byref(error))
         if status == -2:
             raise MemoryError('native Persian projection allocation failed')
         if status:

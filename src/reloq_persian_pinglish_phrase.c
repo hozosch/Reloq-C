@@ -1,8 +1,8 @@
-/* Native, conservative ASCII Pinglish phrase projection. Apply established
- * aliases, word rules and the previously admitted punctuation; uncovered
- * input is returned untouched to the caller's fallback. The existing Persian
- * lexical/stress rules remain authoritative. */
+/* Native Persian phrase projection with an optional Pinglish input mode.
+ * Script words and Latin words share the same Persian lexical/stress rules;
+ * uncovered input is returned untouched to the caller's existing fallback. */
 #include "reloq_persian_direct.h"
+#include "reloq_utf8.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,6 +26,17 @@ static int ascii_letter(unsigned char c)
 {return (c>='a' && c<='z') || (c>='A' && c<='Z');}
 static int ascii_digit(unsigned char c)
 {return c>='0' && c<='9';}
+static int persian_scalar(uint32_t c)
+{
+    return (c>=0x0600 && c<=0x06ff) || (c>=0x0750 && c<=0x077f) ||
+           (c>=0x08a0 && c<=0x08ff) || (c>=0xfb50 && c<=0xfdff) ||
+           (c>=0xfe70 && c<=0xfeff) || c==0x200c || c==0x200d;
+}
+static int connected_scalar(uint32_t c)
+{
+    return persian_scalar(c) && c!=0x060c && c!=0x061b && c!=0x061f &&
+           c!=0x066b && c!=0x066c && c!=0x066a;
+}
 static const char *alias(const char *word,size_t n)
 {
     for(size_t i=0;i<sizeof aliases/sizeof aliases[0];++i) {
@@ -73,6 +84,9 @@ static int enclitic_start(const char *text,size_t bytes)
         if(n>bytes-at || memcmp(text+at,words[i],n))continue;
         size_t end=at+n;
         if(end==bytes || strchr(" \t.,?!:;)]}",text[end]))return 1;
+        if(end+1<bytes && (unsigned char)text[end]==0xd8 &&
+           ((unsigned char)text[end+1]==0x8c || (unsigned char)text[end+1]==0x9b ||
+            (unsigned char)text[end+1]==0x9f))return 1;
     }
     return 0;
 }
@@ -171,6 +185,24 @@ int reloq_fa_pinglish_project(const char *text,size_t length,
             while(at<length && ascii_letter((unsigned char)text[at]))++at;
             int connected=(start && ascii_digit((unsigned char)text[start-1])) ||
                           (at<length && ascii_digit((unsigned char)text[at]));
+            if(start && (unsigned char)text[start-1]>=0x80) {
+                size_t left=start-1;
+                while(left && ((unsigned char)text[left]&0xc0)==0x80)--left;
+                size_t end=left;uint32_t cp=0;
+                if(reloq_utf8_next((const unsigned char *)text,length,&end,&cp)!=1 || end!=start)
+                    {status=-1;at=left;break;}
+                connected|=connected_scalar(cp);
+            }
+            if(at<length && (unsigned char)text[at]>=0x80) {
+                size_t end=at;uint32_t cp=0;
+                if(reloq_utf8_next((const unsigned char *)text,length,&end,&cp)!=1)
+                    {status=-1;break;}
+                connected|=connected_scalar(cp);
+            }
+            /* A Latin run joined to Persian letters needs the existing
+             * mixed-word analysis; do not silently split that token. */
+            if(connected && ((start && (unsigned char)text[start-1]>=0x80) ||
+               (at<length && (unsigned char)text[at]>=0x80))) {status=1;at=start;break;}
             const char *replacement=connected?NULL:alias(text+start,at-start);
             if(replacement) {
                 for(size_t i=start;i<at;++i)positions[i]=used;
@@ -181,13 +213,22 @@ int reloq_fa_pinglish_project(const char *text,size_t length,
                 memcpy(normalized+used,text+start,at-start);used+=at-start;positions[at]=used;
             }
             saw_word=1;
+        } else if(c>=0x80) {
+            size_t first=at,next=at;uint32_t cp=0;
+            if(reloq_utf8_next((const unsigned char *)text,length,&next,&cp)!=1)
+                {status=-1;break;}
+            if(!persian_scalar(cp)){status=1;break;}
+            for(size_t i=first;i<next;++i)positions[i]=used+i-first;
+            memcpy(normalized+used,text+first,next-first);used+=next-first;at=next;
+            positions[at]=used;saw_word=1;
         } else {
-            /* Do not admit raw controls, brackets, Unicode, or punctuation
-             * that was not admitted by the previous Pinglish frontend. */
+            /* Do not admit raw controls, brackets, or punctuation that was
+             * not admitted by the previous Pinglish frontend. */
             if(!(ascii_digit(c) || c==' ' || c=='\t' || c==',' || c=='.' ||
                  c=='?' || c=='!' || c==':' || c==';' || c=='+' || c=='-'))
                 {status=1;break;}
             normalized[used++]=(char)c;positions[++at]=used;
+            if(ascii_digit(c))saw_word=1;
         }
     }
     if(!status && !saw_word)status=1;

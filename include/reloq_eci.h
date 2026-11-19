@@ -293,9 +293,14 @@ ECIAPI int ECICALL eciPersianProjectUtf8(const char *text,size_t bytes,
     char **output,size_t *target_offsets,size_t *error_offset);
 ECIAPI void ECICALL eciPersianRelease(void *pointer);
 
-/* Conservative ASCII Pinglish phrase projection with the same status and
- * memory ownership as eciPersianProjectUtf8. Uncovered or non-ASCII input
- * return 1 so the caller retains its established fallback. */
+/* Shared Persian text frontend. mode 0 reads Persian script; mode 1 accepts
+ * Persian script and Pinglish. Both use the same lexical/stress rules and
+ * source-event projection. Other modes are invalid. Ownership and status are
+ * the same as eciPersianProjectUtf8; uncovered input returns 1. */
+ECIAPI int ECICALL eciPersianProjectTextUtf8(const char *text,size_t bytes,int mode,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset);
+/* Backward-compatible Pinglish-mode entry point. */
 ECIAPI int ECICALL eciPersianPinglishProjectUtf8(const char *text,size_t bytes,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
     char **output,size_t *target_offsets,size_t *error_offset);

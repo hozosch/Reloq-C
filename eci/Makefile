@@ -96,6 +96,7 @@ build/posix/reloq_persian_transition.o $(WINDOWS_BUILD)/reloq_persian_transition
 build/posix/reloq_persian_frames.o $(WINDOWS_BUILD)/reloq_persian_frames.o $(ANDROID_BUILD)/reloq_persian_frames.o: ../src/reloq_persian_frame_internal.h ../src/reloq_persian_transition.h
 build/posix/reloq_rules61.o $(WINDOWS_BUILD)/reloq_rules61.o $(ANDROID_BUILD)/reloq_rules61.o: ../src/reloq_persian_frame_internal.h
 build/posix/reloq_eci.o $(WINDOWS_BUILD)/reloq_eci.o $(ANDROID_BUILD)/reloq_eci.o: ../src/reloq_persian_direct.h ../src/reloq_persian_acoustics.h ../src/reloq_persian_frame_internal.h ../experiments/persian/direct_fa_text.h
+build/posix/reloq_persian_pinglish_phrase.o $(WINDOWS_BUILD)/reloq_persian_pinglish_phrase.o $(ANDROID_BUILD)/reloq_persian_pinglish_phrase.o: ../src/reloq_persian_direct.h ../experiments/persian/direct_fa_text.h
 $(ANDROID_BUILD)/%.o: ../src/%.c $(HEADERS)
 	@mkdir -p $(dir $@)
 	$(ANDROID_CC) $(CPPFLAGS) $(ANDROID_CFLAGS) $(SECTIONS) -ffp-contract=off -fPIC -fvisibility=hidden -I../include -c $< -o $@

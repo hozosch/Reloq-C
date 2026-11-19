@@ -867,20 +867,33 @@ int ECICALL eciAddText(ECIHand handle, const void *text)
     return 1;
 }
 
+int ECICALL eciPersianProjectTextUtf8(const char *text,size_t bytes,int mode,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset)
+{
+    if(mode==0)return reloq_fa_direct_project(text,bytes,source_offsets,is_index,event_count,
+                                             output,target_offsets,error_offset);
+    if(mode==1)return reloq_fa_pinglish_project(text,bytes,source_offsets,is_index,event_count,
+                                                output,target_offsets,error_offset);
+    if(output)*output=NULL;
+    if(error_offset)*error_offset=0;
+    return -1;
+}
+
 int ECICALL eciPersianProjectUtf8(const char *text,size_t bytes,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
     char **output,size_t *target_offsets,size_t *error_offset)
 {
-    return reloq_fa_direct_project(text,bytes,source_offsets,is_index,event_count,
-                                   output,target_offsets,error_offset);
+    return eciPersianProjectTextUtf8(text,bytes,0,source_offsets,is_index,event_count,
+                                     output,target_offsets,error_offset);
 }
 
 int ECICALL eciPersianPinglishProjectUtf8(const char *text,size_t bytes,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
     char **output,size_t *target_offsets,size_t *error_offset)
 {
-    return reloq_fa_pinglish_project(text,bytes,source_offsets,is_index,event_count,
-                                    output,target_offsets,error_offset);
+    return eciPersianProjectTextUtf8(text,bytes,1,source_offsets,is_index,event_count,
+                                     output,target_offsets,error_offset);
 }
 
 void ECICALL eciPersianRelease(void *pointer)

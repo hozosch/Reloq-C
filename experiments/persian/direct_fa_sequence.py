@@ -76,7 +76,8 @@ def _safe_native_punctuation(job: ProjectedJob) -> ProjectedJob:
 
 def _project_direct_native(parts, frontend, *, pinglish=False):
     """Keep covered text and source-event projection in the shared C path."""
-    if getattr(frontend, '_project_pinglish' if pinglish else '_project_direct', None) is None:
+    if (getattr(frontend, '_project_text', None) is None and
+            getattr(frontend, '_project_pinglish' if pinglish else '_project_direct', None) is None):
         return None
     text, events, offset = [], [], 0
     for part in parts:

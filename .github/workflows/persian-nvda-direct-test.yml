@@ -56,6 +56,7 @@ on:
       - experiments/persian/test_mixed_early_snapshot.py
       - experiments/persian/test_pinglish_native_words.py
       - experiments/persian/test_pinglish_phrase_projection.py
+      - experiments/persian/test_persian_text_modes.py
       - experiments/persian/test_persian_phonetic_input.py
       - experiments/persian/test_persian_phonetic_contour.py
       - experiments/persian/test_native_glide_runtime.py
@@ -175,6 +176,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Native Pinglish pronunciation mismatch' }
           python -B experiments/persian/test_pinglish_phrase_projection.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Native Pinglish phrase or event projection differed' }
+          python -B experiments/persian/test_persian_text_modes.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian and Pinglish shared frontend differed' }
           python -B experiments/persian/test_persian_phonetic_input.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian phonetic input failed' }
           python -B experiments/persian/test_persian_phonetic_contour.py --library "$dll"

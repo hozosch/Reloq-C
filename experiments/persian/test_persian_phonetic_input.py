@@ -34,8 +34,8 @@ def main():
                           ('`[.1solh]','`[.1solhw]'),('`[.1solhw]','`[.1solhw]'),
                           ('`[.1qa.0xi.0?u]','`[.1Ra.0Gi.0wu]')):
         assert convert(source)[:2]==(0,target),(source,convert(source))
-    # Transactional failure: h followed by a glottal stop is ambiguous in
-    # the temporary Finn-backed H carrier and is never silently collapsed.
+    # Transactional failure: a final h followed by a glottal stop is
+    # ambiguous in the temporary carrier and is never silently collapsed.
     raw=b'`[.1Ah?]';buf=C.create_string_buffer(b'unchanged',30);n=C.c_size_t();err=C.c_size_t()
     assert fn(raw,len(raw),buf,len(buf),C.byref(n),C.byref(err))==1 and buf.value==b'unchanged'
     def render(parts):

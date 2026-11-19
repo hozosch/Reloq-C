@@ -95,12 +95,13 @@ zum Beispiel die besondere Behandlung eines gedehnten Dsch.
   Textanalyse bleibt unterschiedlich: Beide Schreibweisen können mehrdeutig
   sein. Insbesondere werden kurze Vokale im Persischen oft nicht geschrieben.
   Wörterbücher und Wortbildungsregeln bleiben deshalb wichtig.
-* Die direkte Pinglish-Analyse für abgedeckte ASCII-Sätze, ihre Wortregeln,
-  Betonung und die Projektion von Textmarken stehen im gemeinsamen C-Kern.
-  Nicht abgedeckte oder nicht lateinisch-ASCII geschriebene Fälle verwenden
-  vorerst weiterhin den bisherigen Weg. Der bestätigte U–A-Übergang kann im
-  C-Kern geplant werden; einige gemischte Satzpfade verwenden noch den
-  bisherigen Planer.
+* Eine gemeinsame C-Schnittstelle verarbeitet persische Schrift und kann
+  zusätzlich Pinglish als Eingabemodus einschalten. Auch Sätze mit beiden
+  Schriften können darüber laufen. Für abgedeckte Eingaben teilen sich beide
+  Modi die persischen Wortregeln, die Betonung und die Projektion von
+  Textmarken. Nicht abgedeckte Fälle verwenden vorerst den bisherigen Weg.
+  Der bestätigte U–A-Übergang kann im C-Kern geplant werden; einige gemischte
+  Satzpfade verwenden noch den bisherigen Planer.
 * Die bestehenden Nutzerwörterbücher ersetzen bereits Text beziehungsweise
   verarbeiten ihre jeweiligen Ausspracheangaben. Dass sie beliebige neue
   persische Lautdaten in jeder Plattform übernehmen, ist noch nicht belegt.
