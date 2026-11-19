@@ -64,7 +64,7 @@ def main():
         fast_en=_PlanningVoice(voice,en_key,en.engine)
         with patch.object(en.raw,'_phonemes_for_probe',wraps=en.raw._phonemes_for_probe) as native_probe:
             latency_proxy=indexed_us_proxy(latency_tag,fast_en,tuple(range(1,8)))
-        expected_proxy=('`[.0mA.1ma.0mE] `[.0ra.0hAn.0da.1zi] `[.0ra.0ya.1nE] '
+        expected_proxy=('`[.0bA.1ra.0yE] `[.0ra.0hAn.0da.1zi] `[.0ra.0ya.1nE] '
                         '`[.0ba.1yAd] `[.1in] `[.0go.0zi.1nE] `[.0En.0tE.1hab] `[.0SA.1vAd].')
         assert ''.join(part for part in latency_proxy if isinstance(part,str))==expected_proxy
         assert [part.value for part in latency_proxy if isinstance(part,EciIndex)]==list(range(1,8))

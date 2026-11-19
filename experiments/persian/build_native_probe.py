@@ -1902,14 +1902,26 @@ def prepare_z_noise(work: Path) -> None:
 
 
 def prepare_short_initial_timing(work: Path, first_helper: str, next_helper: str) -> Path:
-    """Use the short nucleus timing while retaining the long phone's sound."""
+    """Use short nucleus timing in selected contexts without replacing its sound."""
     name = 'delta_rules_c04_fifi.c'
     text = (PROVIDER / 'lang' / 'fifi' / name).read_text(encoding='utf8')
     marker = 'int32_t reloq_fifi_assign_fin_nuc_durs(void *state, int32_t p0)\n{\n'
+    medial_helper = FINNISH_L_WORD_FINAL.replace('persian_probe_l_word_final',
+                                                 'persian_probe_between_e_and_stressed_a')
+    original_scan = ('    int final=!setscan_r(d,2) && !testFldeq(d,2,0,21) &&\n'
+                     '              !advance_tok(d) && advance_tok(d);')
+    if medial_helper.count(original_scan) != 1:
+        raise RuntimeError('Cannot locate medial vowel word-fence scan')
+    medial_helper = medial_helper.replace(original_scan, r'''    int left_e=!setscan_l(d,2) && !testFldeq(d,2,0,29) && !advance_tok(d);
+    memset(EVV_AT(void *,d->fence_marks),0,d->nstmts);
+    lpta_loadp(d,EVV_AT(const delta_token *,token_ref));
+    int right_a=!setscan_r(d,2) && !advance_tok(d) && !testFldeq(d,2,0,34) &&
+                !testFldeq(d,2,7,1) && !advance_tok(d);
+    int final=left_e && right_a;''', 1)
     helper = r'''
-/* A Persian first vowel marked long can nevertheless require the timing of
-   its short counterpart. Change only the duration-planning record and put
-   it back before the phonetic targets are generated. */
+/* A long marker can require short timing at an unstressed word onset, or
+   between /e/ and a stressed /a/ as in names ending in -e-i-an. Change
+   only the duration-planning record, then restore the phonetic target. */
 static int32_t persian_short_initial_begin(void *state)
 {
     const char *us=getenv("RELOQ_FA_US_ARTICULATION");
@@ -1925,8 +1937,12 @@ static int32_t persian_short_initial_begin(void *state)
     unsigned char *length=(unsigned char *)delta_record_field(&vstmtbl[2],11,fields);
     int16_t stress=0;
     memcpy(&stress,delta_record_field(&vstmtbl[2],7,fields),sizeof stress);
-    if (cls!=1 || (phone!=31 && phone!=32) || *length!=0 || stress!=0 ||
-        !persian_probe_first_of_multiple_vowels(state,STATE_AT(w26,-4))) return 0;
+    if (cls!=1 || *length!=0 || stress!=0) return 0;
+    int selected=(phone==31 || phone==32) &&
+        persian_probe_first_of_multiple_vowels(state,STATE_AT(w26,-4));
+    if (phone==27)
+        selected=persian_probe_between_e_and_stressed_a(state,STATE_AT(w26,-4));
+    if (!selected) return 0;
     if (phone==32) {
         int32_t next_ref=EVV_AT(int32_t *,node)[1]&~3;
         point=next_ref ? vmover(d,EVV_AT(int32_t *,next_ref),2) : NULL;
@@ -1959,7 +1975,7 @@ static void persian_short_initial_end(int32_t node)
 '''
     if text.count(marker) != 1:
         raise RuntimeError('Cannot locate Finnish nucleus timing dispatcher')
-    text = text.replace(marker, first_helper + '\n' + next_helper + '\n' + helper + '\n' + marker, 1)
+    text = text.replace(marker, first_helper + '\n' + next_helper + '\n' + medial_helper + '\n' + helper + '\n' + marker, 1)
     begin = text.index(marker)
     end = text.index('\nstatic int32_t evv_assign_fin_nuc_durs(', begin)
     section = text[begin:end]

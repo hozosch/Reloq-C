@@ -9,10 +9,10 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / 'experiments/persian'), str(ROOT / 'nvda')]
-from _reloq_eci_direct import EciIndex, NATIVE_INFLECTION, NATIVE_PITCH, NATIVE_SPEED, PROCESS_TAGS, SAMPLE_RATE
+from _reloq_eci_direct import EciIndex, NATIVE_INFLECTION, NATIVE_PITCH, NATIVE_SPEED, PROCESS_TAGS, SAMPLE_RATE, SAMPLE_RATES
 from _reloq_persian_frames import FrameCapture
 from continuous_driver import _PlanningVoice, _colon_ends_sentence, sentence_jobs
-from continuous_plan import CapturedRows, fit_us_word_pitch, indexed_us_proxy, persian_proxy_for_english
+from continuous_plan import CapturedRows, fit_us_word_pitch, indexed_us_proxy, persian_proxy_for_english, word_boundary
 from direct_fa_sequence import project
 from nvda_driver_probe import make_language_engine, PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH
 from test_persian_syllable_pitch import ObservedApi
@@ -75,6 +75,46 @@ def main():
                 donor = CapturedRows.from_capture(api.capture(en, proxy, audio=False))
                 assert len(target.syllables) == len(donor.syllables) == 4
                 assert abs(vowel_start(target, -1) - vowel_start(donor, -1)) <= 15, (sample_rate, speed)
+
+        # The US parser moves one /s/ to the next syllable in 66 and changes
+        # the first unstressed vowel of parantez. Neither is a reason to
+        # replace the whole silent pilot word with unrelated /m/ syllables.
+        # Its stop/fricative intervals must remain aligned with the Persian
+        # vowels, and the observed syllable anchors must actually be used.
+        pinglish_key = voice._key(PINGLISH_PROBE.id, '1')
+        pinglish_engine = voice._activate(pinglish_key)
+        pinglish_voice = _PlanningVoice(voice, pinglish_key, pinglish_engine)
+        for sample_rate in (0, 3, 6):
+            voice.set_parameter(SAMPLE_RATE, sample_rate)
+            for speed in (45, 82, 90):
+                voice.set_parameter(NATIVE_SPEED, speed)
+                for text, carrier, frontend, latin, expected in (
+                        ('66', fa, engine._frontend, False, '`[.0SAs.0to.1SES]'),
+                        ('پرانتز باز', fa, engine._frontend, False, '`[.0pA.0ran.1tEz]'),
+                        ('parantez baaz', pinglish_voice, pinglish_engine._frontend, True,
+                         '`[.0pA.1rAn.0tEz]')):
+                    tagged = project((text,), frontend, allow_fallback=False, pinglish=latin).tagged
+                    matches = tuple(re.finditer(r'`\[[^]]+\]', tagged))
+                    marks = tuple(range(1, len(matches)))
+                    proxy = indexed_us_proxy(tagged, en, marks)
+                    assert expected in ''.join(p for p in proxy if isinstance(p, str)), (text, proxy)
+                    sequence, position = [], 0
+                    for i, mark in enumerate(marks, 1):
+                        boundary = word_boundary(tagged, matches, i)
+                        sequence.extend((tagged[position:boundary], EciIndex(mark)))
+                        position = boundary
+                    sequence.append(tagged[position:])
+                    target = CapturedRows.from_capture(api.capture(carrier, sequence, audio=False))
+                    donor = CapturedRows.from_capture(api.capture(en, proxy, audio=False))
+                    counts = tuple(len(re.findall(r'\.[012]', m.group())) for m in matches)
+                    assert len(target.syllables) == len(donor.syllables) == sum(counts), text
+                    assert abs(vowel_start(target, 2) - vowel_start(donor, 2)) <= 15, (text, speed)
+                    observed = ObservedApi(api)
+                    assert fit_us_word_pitch(target, (0, len(target.pcm)//2), donor,
+                                             (0, len(donor.pcm)//2), marks, marks,
+                                             SAMPLE_RATES[sample_rate], observed,
+                                             syllable_counts=counts), text
+                    assert observed.anchored >= 1, (text, counts)
 
         # Check the whole 0..999 range, not just the originally reported 96.
         # Each numeral's silent pilot must retain its word and syllable count.

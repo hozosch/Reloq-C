@@ -70,6 +70,17 @@ def main():
     mixed_source = '`[.1do] `[.1ka]'
     assert persian_proxy_for_english(mixed_source, mixed) == mixed_source
     assert mixed.calls == [mixed_source, '`[.1ka]']
+    class MovedCodaProbe:
+        def _phonemes_for_probe(self, value):
+            return value.replace('.0SAs.0to', '.0SA.0sto')
+    # A coda moved to the next onset keeps the same phones and vowels in
+    # the same syllables; it must not collapse a contour pilot to /m/.
+    assert persian_proxy_for_english('`[.0SAs.0to.1SeS]', MovedCodaProbe()) == '`[.0SAs.0to.1SES]'
+    class ChangedVowelProbe:
+        def _phonemes_for_probe(self, value):
+            return value.replace('.1pA', '.1pe')
+    # A different stressed vowel is still unsafe and uses the neutral pilot.
+    assert persian_proxy_for_english('`[.1pA.0te]', ChangedVowelProbe()) == '`[.1mA.0mE]'
     unmarked = '`[.0sA.0lam] `[.0do.0nja]'
     uniform_pilot = persian_proxy_for_english(unmarked, ProxyProbe())
     assert uniform_pilot == '`[.1sA.0lam] `[.1do.0nya]'

@@ -21,11 +21,14 @@ CASES = (
     ('اخگر', "`[.0'A:'G.1gAr]", '`[.0AG.1gAr]', 0),
     ('احمد', "`[.0'A:'h.1mAd]", '`[.0Ah.1mAd]', 0),
     ('علی', "`[.0'A:'.1li]", '`[.0A.1li]', 0),
+    ('خواجه‌ئیان', "`[.1Ga.0J'e:'.0'i:'.1an]", "`[.1Ga.0J'e:'.0i.1an]", 5),
 )
 CONTROLS = ("`[.0f'u:'t.1bal]", '`[.0ma.1dAr]', "`[.1'A:'s.0RAr]",
             "`[.1k'u:'.0CAk]", "`[.1k'u:'k]", "`[.0k'u:'k]",
             "`[.0k'u:'k] `[.1da]", "`[.0ka.0m'u:'.1dAr]",
-            "`[.1f'u:'t] `[.1bal]", "`[.0ti.1r'e:']", '`[.1ir]')
+            "`[.1f'u:'t] `[.1bal]", "`[.0ti.1r'e:']", '`[.1ir]',
+            "`[.1Ga.0J'e:'.1'i:'.0an]", "`[.1Ga.0J'e:'.0'i:'.1on]",
+            "`[.1Ga.0J'e:'] `[.0'i:'.1an]")
 
 
 def vowel_duration(result, index):
@@ -91,9 +94,10 @@ def main():
                             b = capture(current, scope, tag)
                             assert a.pcm == b.pcm and a.frame_bytes == b.frame_bytes, (
                                 tag, rate, gender, head, speed, clock, 'outside timing context changed')
-                        a = capture(old, old_scope, CASES[0][1], False)
-                        b = capture(current, scope, CASES[0][1], False)
-                        assert a.pcm == b.pcm and a.frame_bytes == b.frame_bytes
+                        for item in (CASES[0], CASES[-1]):
+                            a = capture(old, old_scope, item[1], False)
+                            b = capture(current, scope, item[1], False)
+                            assert a.pcm == b.pcm and a.frame_bytes == b.frame_bytes
     finally:
         current.close()
         if old:

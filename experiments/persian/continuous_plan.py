@@ -181,16 +181,29 @@ def persian_proxy_for_english(text, en, *, mark_weak=False):
         actual = _SYLLABLE.findall(displayed)
         if not expected or len(expected) != len(actual):
             return False
+        expected_phones, actual_phones = [], []
         for (stress, phones), (seen_stress, seen) in zip(expected, actual):
             # The native US reader may turn an intervocalic /d/ or /t/ into
             # its flap F. This keeps the same syllable and a stop-like timing;
             # it is the silent contour pilot, never the Persian pronunciation.
             if stress == '1' and seen_stress != '1':
                 return False
-            if len(phones) != len(seen) or any(a != b and not (a in 'dt' and b == 'F')
-                                                for a, b in zip(phones, seen)):
+            # The US parser sometimes moves an existing coda consonant to
+            # the following onset, and may render an unstressed /A/ as /e/.
+            # Retain the real consonants in the silent pilot if each vowel
+            # stays in its syllable and the complete phone sequence is intact.
+            vowels = 'AaEeiou'
+            v1 = [c for c in phones if c in vowels]
+            v2 = [c for c in seen if c in vowels]
+            if len(v1) != len(v2) or any(a != b and not (stress == '0' and a == 'A' and b == 'e')
+                                         for a, b in zip(v1, v2)):
                 return False
-        return True
+            expected_phones.extend((c, stress) for c in phones)
+            actual_phones.extend(seen)
+        if len(expected_phones) != len(actual_phones):
+            return False
+        return all(a == b or a in 'dt' and b == 'F' or stress == '0' and a == 'A' and b == 'e'
+                   for (a, stress), b in zip(expected_phones, actual_phones))
 
     converted = []
     for match in matches:

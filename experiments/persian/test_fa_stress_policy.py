@@ -111,6 +111,9 @@ def main():
         'ثبت‌شده‌ی': '`[.0sAbt.0So.1de.0je]',
         'نصب‌شده‌ی': '`[.0nAsb.0So.1de.0je]',
         'معرفی': '`[.0mo.0wAr.0re.1fi]',
+        'خواجه‌ئیان': "`[.1Ga.0J'e:'.0'i:'.1an]",
+        'خواجهئیان': "`[.1Ga.0J'e:'.0'i:'.1an]",
+        'خانه‌ئیان': "`[.1Ga.0n'e:'.0'i:'.1an]",
     }
     for word, expected in examples.items():
         assert project(word) == expected, (word, project(word), expected)

@@ -1296,6 +1296,23 @@ static int joined_participle_word(const char *word,size_t bytes,
     return 0;
 }
 
+/* A productive surname ending after written final heh, as in
+ * خواجه‌ئیان. Preserve a known stem's established phones and accent;
+ * the ending contributes an unstressed /i/ and a final accented /an/.
+ * Unknown stems and endings with a different stem vowel remain unresolved. */
+static int joined_eian_name(const char *word,size_t bytes,char *output,size_t capacity)
+{
+    size_t stem=0,heh=0;
+    if((!ends_with(word,bytes,"‌ئیان",&stem) && !ends_with(word,bytes,"ئیان",&stem)) || !stem ||
+       !ends_with(word,stem,"ه",&heh))return 0;
+    char left[2048];
+    int result=direct_context_word_exact(word,stem,0,left,sizeof left);
+    if(result!=1)return result<0?result:0;
+    size_t n=strlen(left);
+    if(!single_phone_tag(left) || n<5 || memcmp(left+n-5,"'e:']",5))return 0;
+    return append_phone_tags(left,"`[.0'i:'.1an]",output,capacity);
+}
+
 /* The plural of a known -گر agent noun is also commonly written without
  * a half-space. Reuse the established joined suffix analysis so both
  * spellings have the same phones and suffix stress. Restrict this to a
@@ -1457,6 +1474,8 @@ static int direct_context_depth(const char *word,size_t bytes,int follows_word,
     result=joined_suffix_word(word,bytes,follows_word,output,capacity,depth);
     if(result)return result;
     result=joined_participle_word(word,bytes,output,capacity,depth);
+    if(result)return result;
+    result=joined_eian_name(word,bytes,output,capacity);
     if(result)return result;
     result=unspaced_agent_plural(word,bytes,follows_word,output,capacity,depth);
     if(result)return result;

@@ -460,6 +460,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                ('fa_IR', '96', 'issue50_number'),
                                ('fa_IR', '۹۶', 'issue50_number'),
                                ('fa_Latn', '96', 'issue50_number'),
+                               ('fa_IR', '66', 'issue50_contour_66'),
+                               ('fa_IR', '۶۶', 'issue50_contour_66'),
+                               ('fa_Latn', '66', 'issue50_contour_66'),
+                               ('fa_IR', 'پرانتز باز', 'issue50_contour_parantez'),
+                               ('fa_Latn', 'parantez baaz', 'issue50_contour_parantez'),
+                               ('fa_Latn', 'paraantez baaz', 'issue50_contour_parantez'),
                                ('fa_IR', '196', 'issue50_number_group'),
                                *(( 'fa_IR', value, 'issue50_hundred_short')
                                  for value in ('100', '101', '123', '167', '۱۹۹', '۱۲۰', '۱۷۱')),
@@ -497,6 +503,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                ('fa_IR', 'دو کودک', 'issue49_native_new_compound'),
                                ('fa_IR', 'مادر کودک', 'issue49_native_new_compound'),
                                ('fa_IR', 'معرفی', 'issue49_native_new_compound'),
+                               ('fa_IR', 'خواجه‌ئیان', 'issue49_native_new_compound'),
                                ('fa_IR', 'سلام دنیا؟', 'issue50_question_some'),
                                ('fa_IR', 'سلام دنیا?', 'issue50_question_ascii_some'),
                                ('fa_IR', 'سلام دنیا؟', 'issue50_question_split'),
@@ -1011,6 +1018,18 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     raise AssertionError('NVDA lost Persian 96 pronunciation: ' + ascii((text, tags)))
                 if not any(self.syllable_fits[self.before_syllable_fits:]):
                     raise AssertionError('NVDA missed the number syllable timing: ' + ascii(text))
+            if spelling in ('issue50_contour_66', 'issue50_contour_parantez'):
+                tags = ' '.join(self.projected[self.before_projected:])
+                if spelling == 'issue50_contour_66':
+                    expected = '`[.0SAs.0to.1SeS]'
+                elif locale == 'fa_IR':
+                    expected = '`[.0pA.0ran.1tez] `[.1baz]'
+                elif text == 'paraantez baaz':
+                    expected = '`[.0pA.1ran.0tez] `[.1baz]'
+                else:
+                    expected = '`[.0pA.1rAn.0tez] `[.1baz]'
+                if expected not in tags or not any(self.syllable_fits[self.before_syllable_fits:]):
+                    raise AssertionError('NVDA lost the reported contour or syllable alignment: ' + ascii((text, tags)))
             if spelling == 'issue50_hundred_short':
                 tags = ' '.join(self.projected[self.before_projected:])
                 if not re.search(r'\.[012]sA', tags) or "s'A:'" in tags:
@@ -1052,7 +1071,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           'کودک':"`[.0k'u:'.1dAk]",
                           'دو کودک':"`[.1do] `[.0k'u:'.1dAk]",
                           'مادر کودک':"`[.0ma.1dAr] `[.0k'u:'.1dAk]",
-                          'معرفی':'`[.0mo.0wAr.0re.1fi]'}[text]
+                          'معرفی':'`[.0mo.0wAr.0re.1fi]',
+                          'خواجه‌ئیان':"`[.1Ga.0J'e:'.0'i:'.1an]"}[text]
                 tags=' '.join(self.projected[self.before_projected:])
                 if expected not in tags or not any(self.us_fits[self.before_us_fits:]):
                     raise AssertionError('NVDA lost native word rules or US contour: '+ascii((text,tags)))
