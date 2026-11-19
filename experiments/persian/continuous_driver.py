@@ -59,6 +59,11 @@ def _hold_acoustic_clock(rows, first=0, last=None):
             held = tuple(row.controls[i] for i in range(1, 62))
         else:
             for i, value in enumerate(held, 1):
+                # These otherwise-unused tracks carry exact phone boundaries
+                # for the local resonance filters. Do not smear that metadata
+                # into an adjacent phone when holding acoustic parameters.
+                if i in (11, 12):
+                    continue
                 row.controls[i] = value
 
 

@@ -1,11 +1,96 @@
 /* Bounded, thread-local capture of native Persian/English frames. */
 #include "reloq_persian_frame_internal.h"
 #include "reloq_persian_transition.h"
+#include "reloq_persian_tuning.h"
 
 #include <float.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+
+static _Thread_local int fa_tuning_on=1;
+int reloq_fa_tuning_scope(int active)
+{
+    if(active!=0 && active!=1)return -1;
+    int previous=fa_tuning_on;fa_tuning_on=active;return previous;
+}
+int reloq_fa_tuning_enabled(void)
+{return fa_tuning_on;}
+
+/* The listener's saved Lautlabor project: frequency shifts are applied to
+ * the voice-transformed controls, as in the editor, rather than to the raw
+ * language targets. The level edits are the same formant-following peaking
+ * filters used in its audition, not guessed native formant amplitudes. */
+void reloq_fa_tuning_targets(float c[62],unsigned phone,double from,double to,
+                             double at,double duration,int rate)
+{
+    static const int shifts[6][4]={
+        {0,0,0,0},{25,-50,25,75},{0,-25,50,25},{0,0,-25,75},
+        {0,0,50,425},{0,0,0,0}};
+    static const unsigned columns[4]={9,13,15,17};
+    if(!fa_tuning_on || !c || phone<1 || phone>5 || from<0 || to<=from || at<from || at>=to || rate<8000)return;
+    double w=fmin(1.0,fmin(fmax(0.0,(at-from)/3.0),fmax(0.0,(to-at)/3.0)));
+    for(unsigned i=0;i<4;++i)if(shifts[phone][i] && c[columns[i]]>0 && w>0) {
+        double v=c[columns[i]]+shifts[phone][i]*w;
+        c[columns[i]]=(float)fmax(40.0,fmin(rate*.475,v));
+    }
+    double centre=at+duration/2.0,gain=1.0;
+    if(from>0)gain=fmin(gain,fmax(0.0,(centre-from)/8.0));
+    gain=fmin(gain,fmax(0.0,(to-centre)/8.0));
+    if(gain>0){c[11]=(float)(RELOQ_FA_TUNING_MARKER+phone);c[12]=(float)gain;}
+}
+
+void reloq_fa_tuning_prepare(struct reloq_fa_tuning_filter *f,const float c[62],int rate)
+{
+    static const int gains[6][5]={
+        {0,0,0,0,0},{0,0,0,-9,0},{1,-1,-3,-4,0},
+        {0,0,0,0,0},{0,0,0,0,0},{0,0,-4,-2,0}};
+    static const unsigned centres[5]={9,13,15,17,19};
+    if(!f || !c)return;
+    int marker=isfinite(c[11]) && c[11]>=RELOQ_FA_TUNING_MARKER+1 &&
+               c[11]<=RELOQ_FA_TUNING_MARKER+5 ? (int)c[11]-RELOQ_FA_TUNING_MARKER:0;
+    unsigned phone=marker>=1 && marker<=5 && c[11]==(float)(RELOQ_FA_TUNING_MARKER+marker) ? (unsigned)marker:0;
+    double weight=c[12];
+    if(!fa_tuning_on || rate<8000 || rate>48000 || !isfinite(weight) || weight<=0 || weight>1)phone=0;
+    if(!phone) {
+        if(f->phone || f->active)memset(f,0,sizeof *f);
+        return;
+    }
+    if(phone!=f->phone || rate!=f->rate) {
+        memset(f,0,sizeof *f);
+        f->phone=phone;f->rate=rate;
+    }
+    f->active=0;
+    for(unsigned i=0;i<5;++i) {
+        struct reloq_fa_tuning_band *b=f->bands+i;
+        double frequency=c[centres[i]],width=c[centres[i]+1],gain=gains[phone][i]*weight;
+        b->active=0;
+        if(!gain || !isfinite(frequency) || !isfinite(width) || frequency<30 || frequency>=rate*.475)continue;
+        width=fmax(50.0,width);
+        if(frequency!=b->frequency || width!=b->width || gain!=b->gain) {
+            double q=fmax(.5,fmin(12.0,frequency/width));
+            double omega=6.2831853071795864769*frequency/rate;
+            double alpha=sin(omega)/(2*q),a=pow(10.0,gain/40.0),den=1+alpha/a;
+            double middle=-2*cos(omega);
+            b->b0=(1+alpha*a)/den;b->b1=middle/den;b->b2=(1-alpha*a)/den;
+            b->a1=middle/den;b->a2=(1-alpha/a)/den;
+            b->frequency=frequency;b->width=width;b->gain=gain;
+        }
+        b->active=1;f->active=1;
+    }
+}
+
+double reloq_fa_tuning_sample(struct reloq_fa_tuning_filter *f,double x)
+{
+    if(!f || !f->active)return x;
+    for(unsigned i=0;i<5;++i) {
+        struct reloq_fa_tuning_band *b=f->bands+i;
+        if(!b->active)continue;
+        double y=b->b0*x+b->b1*b->x1+b->b2*b->x2-b->a1*b->y1-b->a2*b->y2;
+        b->x2=b->x1;b->x1=x;b->y2=b->y1;b->y1=y;x=y;
+    }
+    return x;
+}
 
 #if defined(RELOQ_FA_PROBE_EXPORT) && defined(_WIN32)
 #define FA_EXPORT __declspec(dllexport)

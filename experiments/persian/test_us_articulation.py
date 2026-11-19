@@ -35,6 +35,23 @@ def capture(engine, scope, tag, selected):
         assert scope(previous) == int(selected)
 
 
+def disable_lautlabor_tuning(engine):
+    """Test an older base-vowel invariant separately from the new preset."""
+    function = getattr(engine._dll, 'eciPersianTuningScope', None)
+    if function is None:
+        return None
+    function.argtypes, function.restype = (ctypes.c_int,), ctypes.c_int
+    previous = function(0)
+    if previous < 0:
+        raise RuntimeError('cannot disable the project tuning for comparison')
+    return function, previous
+
+
+def restore_lautlabor_tuning(saved):
+    if saved is not None and saved[0](saved[1]) < 0:
+        raise RuntimeError('cannot restore the project tuning')
+
+
 def first_audible(rows):
     return next(row for row in rows if row.controls[2] > 0 or row.controls[8] > 0)
 

@@ -1,6 +1,7 @@
 /* Included in the ECI host. It shares the handle's configured
  * text session, EQ, callback, output device and cancellation epoch. */
 #include "reloq_persian_frame_internal.h"
+#include "reloq_persian_tuning.h"
 
 #if defined(RELOQ_FA_PROBE_EXPORT) && defined(_WIN32)
 #define RELOQ_FA_EXPORT __declspec(dllexport)
@@ -14,6 +15,7 @@ struct reloq_fa_replay_delivery {
     struct pcm_bridge bridge;
     int16_t pending[1024];
     size_t used,limit,next_limit;
+    struct reloq_fa_tuning_filter fa_filter;
 };
 
 static int reloq_fa_replay_flush(struct reloq_fa_replay_delivery *delivery)
@@ -29,7 +31,12 @@ static int reloq_fa_replay_pcm(void *context,const int16_t *pcm,size_t count)
     struct reloq_fa_replay_delivery *delivery=context;
     while(count) {
         size_t n=delivery->limit-delivery->used;if(n>count)n=count;
-        memcpy(delivery->pending+delivery->used,pcm,n*sizeof *pcm);
+        if(delivery->fa_filter.active) {
+            for(size_t i=0;i<n;++i) {
+                long value=lrint(reloq_fa_tuning_sample(&delivery->fa_filter,pcm[i]));
+                delivery->pending[delivery->used+i]=(int16_t)(value>32767?32767:value< -32768?-32768:value);
+            }
+        } else memcpy(delivery->pending+delivery->used,pcm,n*sizeof *pcm);
         delivery->used+=n;pcm+=n;count-=n;
         if(delivery->used==delivery->limit && reloq_fa_replay_flush(delivery))return -1;
     }
@@ -121,6 +128,7 @@ RELOQ_FA_EXPORT int reloq_fa_replay_append(void *stream,const struct reloq_fa_fr
         if(reloq_session_linear_gain(e->text_session,row->gain))return s->result=RELOQ_ECI_INVALID;
         struct reloq_core_voiced_frame frame;
         if(reloq_frame_adapter_map(row->controls,row->formants,&frame))return s->result=RELOQ_ECI_INVALID;
+        reloq_fa_tuning_prepare(&s->delivery.fa_filter,row->controls,sample_hz(e->sample_rate_code));
         frame.noise.s_frication=row->s_frication;
         frame.noise.limit_frication_extension=row->limit_frication;
         int status=reloq_session_render_frames(e->text_session,&frame,1,
@@ -199,6 +207,7 @@ RELOQ_FA_EXPORT int reloq_fa_replay_frames(ECIHand handle,uint32_t expected_epoc
         if(reloq_session_linear_gain(e->text_session,row->gain)) {result=RELOQ_ECI_INVALID;break;}
         struct reloq_core_voiced_frame frame;
         if(reloq_frame_adapter_map(row->controls,row->formants,&frame)) {result=RELOQ_ECI_INVALID;break;}
+        reloq_fa_tuning_prepare(&delivery.fa_filter,row->controls,sample_hz(e->sample_rate_code));
         frame.noise.s_frication=row->s_frication;
         frame.noise.limit_frication_extension=row->limit_frication;
         int status=reloq_session_render_frames(e->text_session,&frame,1,

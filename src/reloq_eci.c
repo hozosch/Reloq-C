@@ -24,6 +24,7 @@
 #include "reloq_persian_direct.h"
 #include "reloq_persian_acoustics.h"
 #include "reloq_persian_frame_internal.h"
+#include "reloq_persian_tuning.h"
 #include "reloq_syllable_trace.h"
 
 #include <limits.h>
@@ -943,6 +944,9 @@ int ECICALL eciPersianPinglishWord(const char *word,size_t bytes,char *output,si
 
 int ECICALL eciPersianAcousticScope(int active)
 {return reloq_fa_acoustic_scope(active);}
+
+int ECICALL eciPersianTuningScope(int active)
+{return reloq_fa_tuning_scope(active);}
 
 int ECICALL eciPersianNativeOnsets(const uint32_t *words,size_t count)
 {return reloq_fa_native_onsets(words,count);}

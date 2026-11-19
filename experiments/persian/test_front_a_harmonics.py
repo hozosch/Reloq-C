@@ -7,7 +7,7 @@ import ctypes
 import math
 from pathlib import Path
 
-from test_us_articulation import capture, voice
+from test_us_articulation import capture, voice, disable_lautlabor_tuning, restore_lautlabor_tuning
 from test_british_front_a import vowel
 from _reloq_eci_direct import GENDER, HEAD_SIZE, NATIVE_SPEED, SAMPLE_RATE
 from _reloq_persian_frames import FrameReplay, NativeFrame
@@ -59,6 +59,7 @@ def main():
     parser.add_argument('--previous', type=Path)
     args = parser.parse_args()
     fa, scope = voice(args.candidate, 0x90000)
+    untuned = disable_lautlabor_tuning(fa)
     old, old_scope = voice(args.previous, 0x90000) if args.previous else (None, None)
     british, british_scope = voice(args.candidate, 0x10001)
     checks = 0
@@ -93,6 +94,7 @@ def main():
                     print('front vowel harmonic distance', gender, fa_text,
                           'candidate', sum(distances), 'previous', sum(prior))
     finally:
+        restore_lautlabor_tuning(untuned)
         fa.close()
         british.close()
         if old:

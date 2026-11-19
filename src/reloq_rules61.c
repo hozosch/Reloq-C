@@ -14,6 +14,7 @@
 #include "reloq_wordseg.h"
 #include "reloq_eci.h"
 #include "reloq_persian_frame_internal.h"
+#include "reloq_persian_tuning.h"
 #include <limits.h>
 #include <math.h>
 #include <stdint.h>
@@ -1244,6 +1245,7 @@ struct rule_span {
 };
 struct quiet_cut { int64_t from,to,after; };
 struct rule_control { int64_t tick;size_t ordinal;int parameter,value; };
+struct rule_fa_phone {int32_t from,to;unsigned phone;};
 extern int reloq61_generate_with_pauses(const struct reloq61_request *,struct reloq61_result *,
     int,void (*)(void *,int64_t,int64_t,int64_t),void *);
 struct rule_playback;
@@ -1254,6 +1256,8 @@ struct rule_plan {
     int64_t pitch_tick;
     const size_t *control_sources;size_t pitch_source;
     struct rule_control *controls;size_t control_count,control_capacity;
+    struct rule_fa_phone *fa_phones;size_t fa_phone_count,fa_phone_capacity,fa_phone_next;
+    int fa_phone_failed;
     struct reloq_session *session;
     int memory,retracted_filter,retracted_st,word_volume,cjk_volume,managed_voice_controls,word_pitch,native_pitch,word_speed,german_af_markers,original_clock;
     struct reloq_german_voice_model word_model;
@@ -1262,6 +1266,40 @@ struct rule_plan {
 };
 static int process_spans(struct rule_plan *,int final);
 static void release_spans(struct rule_plan *);
+static void take_fa_phone(void *context,int32_t from,int32_t to,unsigned phone)
+{
+    struct rule_plan *s=context;
+    if(s->fa_phone_failed)return;
+    if(from<0 || to<=from || phone>RELOQ_FA_TUNE_R_BEFORE_I ||
+       (s->fa_phone_count && from<s->fa_phones[s->fa_phone_count-1].from)) {
+        s->fa_phone_failed=1;return;
+    }
+    if(s->fa_phone_count==s->fa_phone_capacity) {
+        size_t cap=s->fa_phone_capacity?s->fa_phone_capacity*2:32;
+        if(cap>120000 || cap>SIZE_MAX/sizeof *s->fa_phones){s->fa_phone_failed=1;return;}
+        void *next=realloc(s->fa_phones,cap*sizeof *s->fa_phones);
+        if(!next){s->fa_phone_failed=1;return;}
+        s->fa_phones=next;s->fa_phone_capacity=cap;
+    }
+    if(s->fa_phone_count)s->fa_phones[s->fa_phone_count-1].to=from;
+    s->fa_phones[s->fa_phone_count++]=(struct rule_fa_phone){from,to,phone};
+}
+static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],float duration)
+{
+    if(!s->fa_phone_count || tick<0 || !reloq_fa_tuning_enabled())return;
+    int64_t native=tick*10000;
+    while(s->fa_phone_next+1<s->fa_phone_count &&
+          s->fa_phones[s->fa_phone_next+1].from<=native)++s->fa_phone_next;
+    const struct rule_fa_phone *p=s->fa_phones+s->fa_phone_next;
+    /* The provider's provisional end may precede the actual next phone by
+     * several milliseconds. Only fade toward an end after the next phone has
+     * established it; otherwise a transient fade would colour the middle of
+     * a vowel. The next event usually arrives ahead of its acoustic start. */
+    int32_t to=s->fa_phone_next+1<s->fa_phone_count?p->to:INT32_MAX;
+    if(p->phone && native>=p->from && native<to)
+        reloq_fa_tuning_targets(controls,p->phone,p->from/10000.0,to/10000.0,
+                                (double)tick,duration,reloq_session_sample_rate(s->session));
+}
 static struct rule_span *new_span(struct rule_plan *s)
 {
     if(reloq_session_cancelled(s->session))return NULL;
@@ -1412,6 +1450,7 @@ static size_t annotation_boundary(const unsigned char *a,size_t n,const size_t *
 struct rule_delivery {
     reloq_session_pcm_sink sink;void *context;double gain;
     int16_t pending[1024];size_t used,limit,next_limit;
+    struct reloq_fa_tuning_filter fa_filter;
 };
 static int rule_flush(struct rule_delivery *d)
 {
@@ -1424,7 +1463,12 @@ static int rule_pcm(void *context,const int16_t *pcm,size_t count)
     struct rule_delivery *d=context;
     while(count) {
         size_t n=d->limit-d->used;if(n>count)n=count;
-        for(size_t i=0;i<n;++i) {
+        if(d->fa_filter.active) {
+            for(size_t i=0;i<n;++i) {
+                long x=lround(reloq_fa_tuning_sample(&d->fa_filter,pcm[i]*d->gain));
+                d->pending[d->used+i]=(int16_t)(x>32767?32767:x< -32768?-32768:x);
+            }
+        } else for(size_t i=0;i<n;++i) {
             long x=lround(pcm[i]*d->gain);
             d->pending[d->used+i]=(int16_t)(x>32767?32767:x< -32768?-32768:x);
         }
@@ -1611,6 +1655,8 @@ static int render_until(struct rule_plan *s,int64_t limit)
             }
         }
         reloq_german_voice_model_frame(&p->model,controls);
+        tune_fa_frame(s,tick,controls,(float)f->step);
+        reloq_fa_tuning_prepare(&p->delivery.fa_filter,controls,reloq_session_sample_rate(s->session));
         struct reloq_core_voiced_frame frame;
         if(reloq_frame_adapter_map(controls,reloq_german_voice_model_formants(&p->model),&frame)) {
             p->result=RELOQ_DE_UTTERANCE_INVALID;return 1;
@@ -1957,8 +2003,12 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     struct reloq61_cancel_check previous_cancel=reloq61_cancel_scope(
         (struct reloq61_cancel_check){rule_cancelled,session});
     int previous_dictionary_scope=language==0x40000?reloq61_dictionary_text_scope(1):0;
+    struct reloq_fa_phone_trace previous_fa_phone=reloq61_fa_phone_scope(
+        (struct reloq_fa_phone_trace){.sink=language==0x90000?take_fa_phone:NULL,
+                                      .context=&plan,.previous_to=-1});
     int status=reloq61_generate_with_pauses(&q,&r,settings->pause_mode,
         playback.pause_mode?take_pause:NULL,&plan);
+    reloq61_fa_phone_scope(previous_fa_phone);
     if(language==0x40000)reloq61_dictionary_text_scope(previous_dictionary_scope);
     reloq61_cancel_scope(previous_cancel);
     if(reloq_session_cancelled(session)){result=RELOQ_DE_UTTERANCE_CANCELLED;goto done;}
@@ -1983,7 +2033,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     }
     result=RELOQ_DE_UTTERANCE_OK;goto done;
 memory:result=RELOQ_DE_UTTERANCE_MEMORY;
-done:free(a);free(map);free(marks);free(volumes);free(control_sources);free(plan.controls);free(plan.spans);free(plan.cuts);free(plan.indices);return result;
+done:free(a);free(map);free(marks);free(volumes);free(control_sources);free(plan.controls);free(plan.spans);free(plan.cuts);free(plan.indices);free(plan.fa_phones);return result;
 }
 
 int reloq_english_rules_render(const unsigned char *text,size_t length,int tags,int native_volume,

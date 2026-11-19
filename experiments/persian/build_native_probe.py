@@ -2838,7 +2838,20 @@ static void persian_open_vowel(void *state,int phone)
     helper_point = 'int32_t reloq_fifi_insert_acoustic_vals(void *state, int32_t p0)\n{\n'
     if text.count(helper_point) != 1:
         raise RuntimeError('Cannot locate Persian acoustic-value scheduler')
-    text = text.replace(helper_point, FRONT_A_HELPER + '\n' + helper_point, 1)
+    text = text.replace(helper_point, FRONT_A_HELPER + '\n' + helper_point + r'''    {
+        const char *selected=getenv("RELOQ_FA_US_ARTICULATION");
+        if (selected && selected[0]=='1' && !selected[1]) {
+            unsigned current=persian_probe_front_a_neighbour(state,STATE(int32_t,w61),1);
+            unsigned following=persian_probe_front_a_neighbour(state,STATE(int32_t,w61),0);
+            unsigned target=current==31?RELOQ_FA_TUNE_FRONT_A:current==34?RELOQ_FA_TUNE_BACK_A:
+                current==29?RELOQ_FA_TUNE_E:current==33?RELOQ_FA_TUNE_O:
+                current==19 && following==27?RELOQ_FA_TUNE_R_BEFORE_I:RELOQ_FA_TUNE_OTHER;
+            reloq61_fa_phone_emit(state,STATE(int32_t,f10),STATE(int32_t,f11),target);
+        }
+    }
+''', 1)
+    text = text.replace('#include "reloq_syllable_trace.h"',
+                        '#include "reloq_syllable_trace.h"\n#include "reloq_persian_tuning.h"', 1)
     son_call = '    r0 = reloq_call_fifi_do_son_amps(state, (int32_t)(FIELD(0)));\n'
     if text.count(son_call) != 1:
         raise RuntimeError('Cannot locate Persian sonorant source scheduler')

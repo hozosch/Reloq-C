@@ -325,6 +325,9 @@ ECIAPI int ECICALL eciPersianPinglishWord(const char *word,size_t bytes,
  * Word and affricate ordinals are request-local; clear both lists after use.
  * These low-level functions do not register a Persian voice or handle text. */
 ECIAPI int ECICALL eciPersianAcousticScope(int active);
+/* Temporarily bypass the saved Persian sound tuning for a comparison on the
+ * current synthesis thread. Returns the previous state; restore it on exit. */
+ECIAPI int ECICALL eciPersianTuningScope(int active);
 ECIAPI int ECICALL eciPersianNativeOnsets(const uint32_t *words,size_t count);
 ECIAPI int ECICALL eciPersianNativeGeminates(const uint32_t *pairs,size_t count);
 

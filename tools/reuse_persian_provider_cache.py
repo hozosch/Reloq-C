@@ -103,6 +103,12 @@ DEV162_BASE = 'dcb158357f9327bf20a3f9dc7ea84e0616c16878'
 DEV162_KEY = ('persian-windows-provider-gcc14-v2-'
               'cc24acb2a55e9cfd8247aa179c9d4431deee377eebc2ae9bc72e3e96d58ae3cd')
 DEV162_ALLOWED = {'experiments/persian/build_native_probe.py'}
+DEV163_BASE = '573598d47a37057e183fde20c8dad97482fe2bb6'
+DEV163_KEY = ('persian-windows-provider-gcc14-v2-'
+              '108f6310f0a376348d7bac35eaebf7a872b82a8ec8f60f00a8908c506f022e55')
+DEV163_ALLOWED = {'experiments/persian/build_native_probe.py',
+                  'include/reloq_eci.h', 'include/reloq_persian_tuning.h',
+                  'vendor/openevv61/src/reloq61_bridge.c'}
 DEV161_ALLOWED = {
     'experiments/persian/build_native_probe.py',
     'include/reloq_eci.h', 'include/reloq_syllable_trace.h',
@@ -209,6 +215,17 @@ def main():
                 if path.is_file():
                     os.utime(path, None)
             print('Reused verified provider cache for the additive public API change.')
+            return
+        if key == DEV163_KEY:
+            changed = set(git('diff', '--name-only', DEV163_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV163_ALLOWED:
+                raise ValueError('Persian sound project inputs differ from the verified scope')
+            reuse_dev156_generated(frozenset({'delta_rules_c13_fifi.c'}))
+            (BUILD / 'src/reloq61_bridge.o').unlink(missing_ok=True)
+            for dep in BUILD.rglob('*.d'):
+                contents=dep.read_text(encoding='utf8', errors='replace')
+                if 'reloq_eci.h' in contents or 'reloq_persian_tuning.h' in contents:
+                    dep.with_suffix('.o').unlink(missing_ok=True)
             return
         if key == DEV162_KEY:
             changed = set(git('diff', '--name-only', DEV162_BASE, 'HEAD', '--', *INPUTS).splitlines())

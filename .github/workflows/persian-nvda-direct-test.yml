@@ -52,6 +52,7 @@ on:
       - experiments/persian/test_phoneme_editor.py
       - experiments/persian/test_phoneme_editor_real_plugin.py
       - experiments/persian/test_persian_acoustic_clock.py
+      - experiments/persian/test_lautlabor_project.py
       - addon/soundlab/**
 permissions:
   contents: read
@@ -123,6 +124,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian US contour, weak words or final vowels failed' }
           python -B experiments/persian/test_persian_acoustic_clock.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian and Pinglish acoustic clock failed' }
+          python -B experiments/persian/test_lautlabor_project.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Saved Persian sound project differed from the laboratory' }
           python -B experiments/persian/test_persian_syllable_pitch.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian US syllable pitch alignment failed' }
           python -B experiments/persian/test_fa_sentence_flow.py --library "$dll"
@@ -145,7 +148,7 @@ jobs:
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev162; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev163; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
           dll=$(find candidate -name eci.dll -print -quit)
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
           python -B experiments/persian/build_soundlab_nvda.py --output dist/reloq-c-lautlabor-0.2.0.nvda-addon
