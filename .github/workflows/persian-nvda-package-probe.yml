@@ -24,6 +24,7 @@ on:
       - include/reloq_persian_numbers.h
       - experiments/persian/test_persian_number_events.py
       - experiments/persian/test_persian_hundred.py
+      - experiments/persian/test_persian_h_after_l.py
       - vendor/openevv61/Makefile.native
       - vendor/openevv61/src/eci/lang/eci_voicetable.c
       - vendor/openevv61/src/eci/api/eci_dllobj.c
@@ -220,6 +221,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Structured native Persian number analysis failed' }
           python -B experiments/persian/test_persian_hundred.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian hundred-group timing failed' }
+          python -B experiments/persian/test_persian_h_after_l.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian h after l is not audible' }
           python -B experiments/persian/test_korean_pitch_transfer.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Korean contour transfer failed' }
           python -B experiments/persian/test_korean_donor_span.py --library "$dll"
@@ -312,7 +315,7 @@ jobs:
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci.dll -print -quit)
-          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev165; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; else version=1.5.0-dev142; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev166; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; else version=1.5.0-dev142; fi
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
       - name: Test the candidate in real NVDA
         shell: pwsh

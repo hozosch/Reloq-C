@@ -71,7 +71,8 @@ def main():
             rate = SAMPLE_RATES[sample_rate]
             for speed in (45, 65, 90):
                 voice.set_parameter(NATIVE_SPEED, speed)
-                for text in ('راه‌اندازی', 'راه‌اندازی مجدد', 'سیستم راه‌اندازی شد', 'خانه‌ها', '123', '۱۷۱',
+                for text in ('راه‌اندازی', 'راه‌اندازی مجدد', 'سیستم راه‌اندازی شد', 'خانه‌ها',
+                             'کانال‌ها', 'بازهم', '123', '۱۷۱',
                              'راه‌اندازی. سیستم راه‌اندازی شد.'):
                     tagged = project((text,), engine._frontend, allow_fallback=False).tagged
                     matches, marks, parts = sequence(tagged)

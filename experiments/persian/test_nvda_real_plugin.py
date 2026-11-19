@@ -274,7 +274,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'زیرخط', False),
                           ('fa_IR', '-', True),
                           ('fa_IR', '_', True),
-                          *(( 'fa_IR', text, 'issue49_character_navigation') for text in ('-', '_')),
+                          *(( 'fa_IR', text, 'issue49_character_navigation') for text in ('-', '_', '/', '\\')),
+                          ('fa_IR', '/', 'issue50_slash_some'),
+                          ('fa_IR', '\\', 'issue50_slash_most'),
+                          ('fa_IR', 'سلام / دنیا', 'issue50_slash_some'),
+                          ('fa_IR', 'سلام \\ دنیا', 'issue50_slash_most'),
                           *(( locale, text, 'issue49_character_navigation') for text in ('a', 'z')
                             for locale in ('fa_IR', 'en_US')),
                           *((locale, text, True) for text in ('a', 'A', 'z', 'NVDA')
@@ -466,6 +470,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                ('fa_IR', 'NVDA. / دنیا', 'issue50_colon_mixed_none'),
                                ('fa_IR', 'افزونه‌های', 'issue50_plural'),
                                ('fa_IR', 'برنامه‌های', 'issue50_plural'),
+                               ('fa_IR', 'کانال‌ها', 'issue50_l_h'),
+                               ('fa_IR', 'پاتیل‌ها', 'issue50_l_h'),
                                ('fa_IR', 'سلام دنیا؟', 'issue50_question_some'),
                                ('fa_IR', 'سلام دنیا?', 'issue50_question_ascii_some'),
                                ('fa_IR', 'سلام دنیا؟', 'issue50_question_split'),
@@ -940,6 +946,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 tags = ' '.join(self.projected[self.before_projected:])
                 if self.symbol_tags[text] not in tags:
                     raise AssertionError('NVDA navigation lost the written symbol name: ' + ascii((text, tags)))
+            if ((spelling == 'issue49_character_navigation' and text in ('/', '\\')) or
+                    spelling in ('issue50_slash_some', 'issue50_slash_most')):
+                tags = ' '.join(self.projected[self.before_projected:])
+                if self.symbol_tags['/'] not in tags:
+                    raise AssertionError('NVDA slash label lost its short e or final stress: ' + ascii((text, tags)))
+                if '\\' in text and '`[.1bAk]' not in tags:
+                    raise AssertionError('NVDA backslash label lost its first word: ' + ascii((text, tags)))
             if spelling == 'issue49_final_accent':
                 expected = {'حجازی': '`[.0he.0Ja.1zi]', 'بردباری': '`[.0bord.0ba.1ri]',
                             'سلامتی': '`[.0sA.0la.0mA.1ti]', 'کثیریان': '`[.0kA.0si.0ri.1jan]',
@@ -974,6 +987,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags:
                     raise AssertionError('NVDA lost plural/ezafe stress: ' + ascii((text, tags)))
+            if spelling == 'issue50_l_h':
+                expected = {'کانال‌ها': '`[.0ka.0nal.1ha]',
+                            'پاتیل‌ها': '`[.0pa.0til.1ha]'}[text]
+                tags = ' '.join(self.projected[self.before_projected:])
+                if expected not in tags or not any(self.us_fits[self.before_us_fits:]):
+                    raise AssertionError('NVDA lost the plural h or US contour: ' + ascii((text, tags)))
             if spelling in ('tags_slow', 'tags_fast', 'tags_pitch', 'tags_phonemes'):
                 expected = text.split(' ', 1)[0]
                 if expected not in self.user_controls[self.before_user_controls:]:

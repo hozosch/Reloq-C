@@ -27,6 +27,7 @@ on:
       - include/reloq_persian_numbers.h
       - experiments/persian/test_persian_number_events.py
       - experiments/persian/test_persian_hundred.py
+      - experiments/persian/test_persian_h_after_l.py
       - experiments/persian/test_fa_orthography.py
       - experiments/persian/test_fa_morphology.py
       - vendor/openevv61/Makefile.native
@@ -107,6 +108,7 @@ jobs:
           path: vendor/openevv61/build/windows-release
           key: persian-windows-provider-gcc14-v2-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c', 'src/reloq_persian_acoustics.c', 'src/reloq_persian_acoustics.h', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-provider-gcc14-v2-f67c1d2ffe98915df1e66caa287666526b8a4547bbb0dd70135ef814bfb61d72
             persian-windows-provider-gcc14-v2-108f6310f0a376348d7bac35eaebf7a872b82a8ec8f60f00a8908c506f022e55
             persian-windows-provider-gcc14-v2-cc24acb2a55e9cfd8247aa179c9d4431deee377eebc2ae9bc72e3e96d58ae3cd
             persian-windows-provider-gcc14-v2-be6164f9e92b715a8bcc78fec5fb2876c51a1bbf469da873cee700a850c9d9b9
@@ -115,7 +117,6 @@ jobs:
             persian-windows-provider-gcc14-v2-be733d61324b2458660cc3e350ba0adcbc40c08815a63d50a498199bbd8dfb41
             persian-windows-provider-gcc14-v2-5c7b318e963e7da4e3e4e6f187a269fd38fe568deacd3e797893bee1e66e9637
             persian-windows-provider-gcc14-v2-9b855d4adb0b666637fabc804ec1064b9c59ff6e5ba10c28da3b9a4e3a634282
-            persian-windows-provider-gcc14-v2-c83463169692296a905dc6098785f24b7577e72820b955b60437ebfc5e5c420b
       - uses: actions/cache/restore@v4
         id: host
         with:
@@ -124,6 +125,7 @@ jobs:
             eci/eci.dll
           key: persian-windows-host-gcc14-v2-${{ hashFiles('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src/**', 'include/**', 'vendor/openevv61/**', '!vendor/openevv61/build/**', 'experiments/persian/direct_fa_*.c', 'experiments/persian/direct_fa_*.h', 'experiments/persian/direct_fa_*.inc', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-host-gcc14-v2-278f51539cb847a4e95abe4bc1fc20ee9a8d0949090162e7ede927b0fa2834ba
             persian-windows-host-gcc14-v2-de500316e8c7bfea087b7eb9bdd6965ce21ea030dfedbb4def6c30f111d52d42
             persian-windows-host-gcc14-v2-64655db88d9d2921c335cc3fce13b44126d168864cfffa3fc0b453bfc582b492
             persian-windows-host-gcc14-v2-dc698865629915348179f0cd6d7ee667fb27457cb4aba0a9f3961eb660d5d42b
@@ -132,7 +134,6 @@ jobs:
             persian-windows-host-gcc14-v2-ea351e41abbbd5cf7f9bf3b9aac8bbeeb04e6730c38512719e4ca99030a93b76
             persian-windows-host-gcc14-v2-f8652d8ddfddfd4d3df0334cd6c65a2b5be31cdb60fb2238c0834176d3c57902
             persian-windows-host-gcc14-v2-6484c46e5ee8e46a391f4360c8036e02a5cecc9033d4ce66b167a9703f0a4b1f
-            persian-windows-host-gcc14-v2-f9388dd3e51b71dced57f8f35bbd18bc125d4abba4535fbfcf772d72be27a199
       - name: Restore cached provider timestamps
         if: steps.provider.outputs.cache-hit == 'true'
         shell: bash
@@ -209,6 +210,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian morphology and stress failed' }
           python -B experiments/persian/test_persian_hundred.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian hundred-group timing failed' }
+          python -B experiments/persian/test_persian_h_after_l.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Persian h after l is not audible' }
           python -B experiments/persian/test_mixed_pitch_edges.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'English pitch preservation failed' }
           python -B experiments/persian/test_us_articulation.py --candidate eci/eci.dll

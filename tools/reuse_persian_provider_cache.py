@@ -109,6 +109,10 @@ DEV163_KEY = ('persian-windows-provider-gcc14-v2-'
 DEV163_ALLOWED = {'experiments/persian/build_native_probe.py',
                   'include/reloq_eci.h', 'include/reloq_persian_tuning.h',
                   'vendor/openevv61/src/reloq61_bridge.c'}
+DEV166_BASE = '2b20c1c385f9412a1c22e32a18efe9308d82401c'
+DEV166_KEY = ('persian-windows-provider-gcc14-v2-'
+              'f67c1d2ffe98915df1e66caa287666526b8a4547bbb0dd70135ef814bfb61d72')
+DEV166_ALLOWED = {'experiments/persian/build_native_probe.py'}
 DEV161_ALLOWED = {
     'experiments/persian/build_native_probe.py',
     'include/reloq_eci.h', 'include/reloq_syllable_trace.h',
@@ -192,7 +196,7 @@ def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'})):
     for path in (*(BUILD / 'lang/fifi' / (Path(name).stem + '.o') for name in expected),
                  BUILD / 'reloq_persian_acoustics.o', BUILD / 'libreloq61.a'):
         path.unlink(missing_ok=True)
-    print('Reused byte-verified generated rules; rebuilding the after-I R and scope objects.')
+    print('Reused byte-verified generated rules; rebuilding changed provider and scope objects.')
 
 
 def main():
@@ -215,6 +219,12 @@ def main():
                 if path.is_file():
                     os.utime(path, None)
             print('Reused verified provider cache for the additive public API change.')
+            return
+        if key == DEV166_KEY:
+            changed = set(git('diff', '--name-only', DEV166_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV166_ALLOWED:
+                raise ValueError('Persian l-h provider inputs differ from the verified scope')
+            reuse_dev156_generated(frozenset({'delta_rules_c02_fifi.c'}))
             return
         if key == DEV163_KEY:
             changed = set(git('diff', '--name-only', DEV163_BASE, 'HEAD', '--', *INPUTS).splitlines())

@@ -64,6 +64,16 @@ def main():
     assert project('نیم‌فاصله').endswith(".0fa.0se.1l'e:']")
     assert project('نیم‌اتصال').endswith('.0et.0te.1sal]')
     assert project('بک‌اسلش')=='`[.0bAk.0es.1lAS]'
+    # NVDA's fa symbols.dic supplies slash names with vowel marks. Reuse a
+    # known spelling only when every written vowel agrees with its phones.
+    slash=project('اسلش')
+    for marked in ('اِسلَش','اِسلش','اسلَش'):
+        assert project(marked)==slash,(marked,project(marked),slash)
+    assert project('بک اِسلش')==project('بک اسلش')
+    assert project('اِسم')==project('اسم')
+    assert project('اَسَد')==project('اسد')
+    project('اَسلش',covered=False)
+    project('اِسلُش',covered=False)
     assert project('نمی‌روم')=='`[.1ne.0mi.0rA.0vAm]'
     assert project('نمی‌خورم')=='`[.1ne.0mi.0Go.0rAm]'
 

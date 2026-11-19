@@ -16,6 +16,22 @@ import reuse_persian_provider_cache as cache
 
 
 class CacheReuseTests(unittest.TestCase):
+    def test_dev166_rebuilds_only_l_h_rule(self):
+        for changed, accepted in ((cache.DEV166_ALLOWED, True),
+                                  (cache.DEV166_ALLOWED | {'include/reloq_eci.h'}, False),
+                                  (set(), False)):
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as tmp:
+                build = Path(tmp) / 'windows-release'; build.mkdir()
+                with patch.object(cache, 'BUILD', build), patch.object(cache, 'git', return_value='\n'.join(changed)), \
+                        patch.object(cache, 'reuse_dev156_generated') as reuse, \
+                        patch.dict(os.environ, {'PERSIAN_PROVIDER_CACHE_KEY': cache.DEV166_KEY}), \
+                        contextlib.redirect_stdout(io.StringIO()):
+                    cache.main()
+                self.assertEqual(reuse.called, accepted)
+                self.assertEqual(build.exists(), accepted)
+                if accepted:
+                    reuse.assert_called_once_with(frozenset({'delta_rules_c02_fifi.c'}))
+
     def test_dev163_rebuilds_phone_tuning_and_header_dependants(self):
         for changed, accepted in ((cache.DEV163_ALLOWED, True),
                                   (cache.DEV163_ALLOWED | {'include/reloq_syllable_trace.h'}, False),

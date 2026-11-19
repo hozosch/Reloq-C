@@ -1236,6 +1236,67 @@ static int joined_compound_word(const char *word,size_t bytes,char *output,size_
     return 1;
 }
 
+/* NVDA's symbol names and other text can spell short vowels explicitly even
+ * when the known lexical form omits them. Accept the marked form only when a
+ * simple consonant-by-consonant alignment proves every supplied vowel agrees
+ * with that pronunciation. Reject long vowels, shadda, silent letters and
+ * ambiguous spellings rather than silently discarding a meaningful mark. */
+static int marked_known_initial_vowel(const char *word,size_t bytes,int follows_word,
+                                      char *output,size_t capacity)
+{
+    struct unit {char consonant,vowel;} units[128];
+    char bare[257],tag[2048],phones[2048];
+    const unsigned char *input=(const unsigned char *)word;
+    size_t at=0,count=0,bare_bytes=0,phone_count=0;
+    int marked=0;
+    if(!word || !bytes || bytes>sizeof bare-1)return 0;
+    while(at<bytes) {
+        if(count==sizeof units/sizeof units[0])return 0;
+        size_t begin=at;
+        uint32_t cp=explicit_arabic_scalar(input,bytes,&at);
+        char consonant=count?explicit_consonant(cp):0;
+        if((!count && cp!=0x0627) || (count && !consonant))return 0;
+        if(at-begin>sizeof bare-1-bare_bytes)return 0;
+        memcpy(bare+bare_bytes,word+begin,at-begin);bare_bytes+=at-begin;
+        struct unit unit={consonant,0};
+        if(at<bytes) {
+            size_t next=at;uint32_t mark=explicit_arabic_scalar(input,bytes,&next);
+            if(mark==0x064e || mark==0x0650 || mark==0x064f) {
+                unit.vowel=mark==0x064e?'A':mark==0x0650?'e':'o';
+                marked=1;at=next;
+            }
+        }
+        units[count++]=unit;
+    }
+    if(!marked || count<2)return 0;
+    bare[bare_bytes]=0;
+    int status=direct_context_word_exact(bare,bare_bytes,follows_word,tag,sizeof tag);
+    if(status!=1)return status<0?status:0;
+    apply_persian_stress(bare,bare_bytes,tag,1);
+    apply_function_word_context(bare,bare_bytes,follows_word,tag);
+    if(tag[0]!='`' || tag[1]!='[')return 0;
+    size_t i=2;
+    for(;tag[i] && tag[i]!=']';++i) {
+        if(tag[i]=='.' && tag[i+1]>='0' && tag[i+1]<='2'){++i;continue;}
+        if(!strchr("Aaeiou bptdkgfsvzSZCJrmnRlG",tag[i]) || tag[i]==' ' ||
+           phone_count==sizeof phones)return 0;
+        phones[phone_count++]=tag[i];
+    }
+    if(tag[i]!=']' || tag[i+1] || !phone_count || !strchr("Aeo",phones[0]))return 0;
+    size_t phone=1;
+    if(units[0].vowel && units[0].vowel!=phones[0])return 0;
+    for(size_t u=1;u<count;++u) {
+        while(phone<phone_count && strchr("Aaeiou",phones[phone]))++phone;
+        if(phone==phone_count || phones[phone++]!=units[u].consonant)return 0;
+        if(units[u].vowel && (phone==phone_count || phones[phone++]!=units[u].vowel))return 0;
+    }
+    while(phone<phone_count && strchr("Aaeiou",phones[phone]))++phone;
+    if(phone!=phone_count)return 0;
+    size_t n=strlen(tag);
+    if(n>=capacity)return -2;
+    memcpy(output,tag,n+1);return 1;
+}
+
 static int direct_context_depth(const char *word,size_t bytes,int follows_word,
                                 char *output,size_t capacity,unsigned depth)
 {
@@ -1262,6 +1323,8 @@ static int direct_context_depth(const char *word,size_t bytes,int follows_word,
         stress_fused_function_compound(word,bytes,output,depth);
         shorten_verified_compound(word,bytes,output,depth);
     }
+    if(result)return result;
+    result=marked_known_initial_vowel(word,bytes,follows_word,output,capacity);
     if(result)return result;
     result=joined_compound_word(word,bytes,output,capacity,depth);
     if(result)return result;
