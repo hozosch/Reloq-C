@@ -68,17 +68,33 @@ def main():
                         # Last phone segment is a pause, the preceding one is
                         # the vowel, and the phone before that is the medial r.
                         r=middle(changed,-3,(15,17));native_r=middle(native,-3,(15,17))
-                        assert 60 <= r[0]-native_r[0] <= 350, (tag,rate,gender,head,speed,r,native_r)
-                        # Disabling the full Persian scope also changes phone
-                        # timing. With the 5-ms clock a median can land on an
-                        # adjacent frame even when the F4 rule is unchanged.
-                        # The exact pre-change comparison below checks F4.
-                        assert abs(r[1]-native_r[1])<=50, (tag,rate,gender,head,speed,'R F4 outside reference',r,native_r)
+                        back_a = tag == '`[.0pi.1ra]'
+                        if back_a:
+                            # The newer R-to-back-A transition intentionally
+                            # moves both upper R resonances towards the vowel.
+                            # Check that improvement instead of imposing the
+                            # old requirement that its F4 stay unchanged.
+                            for index,column in enumerate((15,17)):
+                                target=at_fraction(changed,-2,.05,column)
+                                assert abs(r[index]-target)+50 <= abs(native_r[index]-target), (
+                                    tag,rate,gender,head,speed,column,r,native_r,target)
+                        else:
+                            assert 60 <= r[0]-native_r[0] <= 350, (tag,rate,gender,head,speed,r,native_r)
+                            # Disabling the full Persian scope also changes
+                            # timing, so allow an adjacent-frame difference.
+                            assert abs(r[1]-native_r[1])<=50, (tag,rate,gender,head,speed,'R F4 outside reference',r,native_r)
                         if old:
                             before=capture(old,old_scope,tag)
                             prior=middle(before,-3,(15,17))
-                            assert changed.syllables==before.syllables and r[0]<prior[0] and abs(r[1]-prior[1])<=1, (
-                                tag,rate,gender,head,speed,r,prior)
+                            assert changed.syllables==before.syllables, (tag,rate,gender,head,speed)
+                            if back_a:
+                                for index,column in enumerate((15,17)):
+                                    target=at_fraction(changed,-2,.05,column)
+                                    assert abs(r[index]-target)<=abs(prior[index]-target)+1, (
+                                        tag,rate,gender,head,speed,column,r,prior,target)
+                            else:
+                                assert r[0]<prior[0] and abs(r[1]-prior[1])<=1, (
+                                    tag,rate,gender,head,speed,r,prior)
                             assert middle(changed,-2,(9,13,15,17)) == middle(before,-2,(9,13,15,17)), (
                                 tag,rate,gender,head,speed,'vowel nucleus changed')
                         checks+=1
