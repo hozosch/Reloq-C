@@ -33,6 +33,8 @@ def main():
     parser.add_argument('runs', type=Path)
     parser.add_argument('--audio-only', action='store_true',
                         help='ignore embedded text helpers when the package builds its own text DLL')
+    parser.add_argument('--include-cancelled', action='store_true',
+                        help='allow a source-matching cancelled run for its early artifact only')
     args = parser.parse_args()
     # The NVDA package uses the probe's own text exports, so it must use the
     # default full-source match. Audio-only remains useful for comparisons
@@ -44,7 +46,8 @@ def main():
     for run in runs:
         # Prefer an already verified compatible artifact. If none exists,
         # return an in-flight match so the caller can wait for its tests.
-        if run.get('status') == 'completed' and run.get('conclusion') != 'success':
+        if (run.get('status') == 'completed' and run.get('conclusion') != 'success' and
+                not (args.include_cancelled and run.get('conclusion') == 'cancelled')):
             continue
         sha = run['head_sha']
         if len(sha) != 40 or any(c not in '0123456789abcdef' for c in sha):

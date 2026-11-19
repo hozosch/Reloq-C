@@ -54,6 +54,12 @@ def main():
             {'id': 3, 'head_sha': newest, 'status': 'in_progress', 'conclusion': None},
         ]}))
         assert select() == '3', 'a failed embedded-text build was selected'
+        runs.write_text(json.dumps({'workflow_runs': [
+            {'id': 3, 'head_sha': newest, 'status': 'in_progress', 'conclusion': None},
+            {'id': 5, 'head_sha': newest, 'status': 'completed', 'conclusion': 'cancelled'},
+        ]}))
+        assert select() == '3', 'a cancelled build was accepted as fully verified'
+        assert select('--include-cancelled') == '5', 'a compatible early artifact was not considered'
     print('Passed verified acoustic reuse for text-only changes and acoustic-change rejection.')
 
 
