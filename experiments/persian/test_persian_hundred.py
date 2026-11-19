@@ -87,7 +87,13 @@ def main():
                     previous, _ = capture(engine, scope, long, True)
                     c0, c1 = current.syllables[0]
                     p0, p1 = previous.syllables[0]
-                    assert c1 - c0 < p1 - p0, (gender, speed, text, current.syllables, previous.syllables)
+                    if short.startswith('`[.0sA'):
+                        # An unstressed initial long marker is now planned
+                        # with the same duration as the short phone. Both
+                        # tags must therefore produce exactly the same span.
+                        assert c1 - c0 == p1 - p0, (gender, speed, text, current.syllables, previous.syllables)
+                    else:
+                        assert c1 - c0 < p1 - p0, (gender, speed, text, current.syllables, previous.syllables)
                     comparisons += 1
     finally:
         engine.close()
