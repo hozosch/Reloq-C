@@ -202,19 +202,19 @@ class PhonemeEditorDialog(wx.Dialog):
                                                  bitsPerSample=16,outputDevice=device)
                         try:player.feed(pcm);player.idle()
                         finally:player.close()
-                wx.CallAfter(self._completed,kind,p,result,normalized,None)
+                wx.CallAfter(self._completed,kind,p,result,normalized,None,loaded is None)
             except Exception as exc:
                 log.exception('Eloquence phoneme editor failed')
-                wx.CallAfter(self._completed,kind,p,None,False,str(exc))
+                wx.CallAfter(self._completed,kind,p,None,False,str(exc),False)
         threading.Thread(target=work,daemon=True,name='ReloqPhonemeEditor').start()
 
-    def _completed(self,kind,p,result,normalized,error):
+    def _completed(self,kind,p,result,normalized,error,loaded_now=False):
         if self._closed:return
         self._busy=False
         if error:self.error(error);return
         if self._compatible(self.values(),result):
             self._loaded=result;self._refresh()
-            if kind=='load':
+            if kind=='load' or loaded_now:
                 self.area.SetFocus();ui.message(self._name()+' geladen. '+self._status(self.selected_formant))
         if normalized:ui.message('Die Hörprobe wurde gegen Übersteuerung abgesenkt.')
 

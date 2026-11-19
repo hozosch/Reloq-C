@@ -100,13 +100,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 assert self.dialog.frequencies[1]==25 and self.dialog.gains_db[1]==1
                 choose('u');assert self.dialog.frequencies[2]==75 and self.dialog.gains_db[2]==-2
                 choose('i');assert self.dialog.frequencies[1]==25 and self.dialog.gains_db[1]==1
-                self.dialog.area.SetFocus();wx.YieldIfNeeded()
+                # F2 on the sound list loads the probe, then hands focus to
+                # the edit field so number/arrow controls are immediately usable.
+                self.dialog.phone.SetFocus();wx.YieldIfNeeded()
                 self.phase=1
                 event=wx.KeyEvent(wx.wxEVT_CHAR_HOOK);event.m_keyCode=wx.WXK_F2
                 assert self.dialog.GetEventHandler().ProcessEvent(event),'F2 not handled'
                 wx.CallLater(100,self.check);return
             assert self.players and self.players[-1].chunks,'editor did not play audio'
             if self.phase==1:
+                assert wx.Window.FindFocus() is self.dialog.area,'F2 did not focus the formant editor'
                 self.modified=b''.join(self.players[-1].chunks);self.phase=2
                 event=wx.KeyEvent(wx.wxEVT_CHAR_HOOK);event.m_keyCode=wx.WXK_F3
                 assert self.dialog.GetEventHandler().ProcessEvent(event),'F3 not handled'
