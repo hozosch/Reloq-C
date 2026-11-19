@@ -484,6 +484,9 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
                                 positions=positions, prefix_complete=False, finishing=False,
                                 prefix_bytes=ctypes.string_at(item.frames, first * ctypes.sizeof(NativeFrame)))
             stream.append(item.frames, 0, first, tuple((at, value) for at, value in positions if at < first))
+            flush_prefix = getattr(on_pcm, 'flush_prefix', None)
+            if flush_prefix is not None:
+                flush_prefix()
             stream_state['prefix_complete'] = True
             # The very first long utterance should not wait for a second
             # native handle to load. Prepare it only after its safe prefix

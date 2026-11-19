@@ -38,6 +38,43 @@ class BlockedPlayer(Player):
         super().stop()
 
 
+def early_prefix_reserve():
+    class PrefixEngine(Engine):
+        def __init__(self):
+            super().__init__()
+            self.release = threading.Event()
+        def speak(self, parts, on_pcm, on_index):
+            on_pcm(b'a' * 882)
+            on_pcm(b'b' * 441)
+            on_pcm.flush_prefix()
+            assert self.release.wait(2)
+            on_pcm(b'c' * 882)
+            on_index(71)
+            return True
+        def cancel(self):
+            self.release.set()
+            super().cancel()
+    engine, player, events = PrefixEngine(), Player(), []
+    transport = EciTextTransport(lambda: engine, player,
+                                 lambda n: events.append(('index', n)),
+                                 lambda n: events.append(('done', n)))
+    try:
+        job = transport.submit(['speech'])
+        assert player.wait_for_pcm(2), 'early reserve was held back'
+        assert player.pcm == [b'a' * 882, b'b' * 441]
+        assert not events
+        engine.release.set()
+        assert player.wait_for_pcm(3)
+        while player.callbacks:
+            player.finish_next()
+        until(lambda: ('done', job) in events)
+        assert events == [('index', 71), ('done', job)]
+        assert b''.join(player.pcm) == b'a' * 882 + b'b' * 441 + b'c' * 882
+    finally:
+        engine.release.set()
+        assert transport.shutdown()
+
+
 def overlap_and_handoff():
     engine, player = StreamingEngine(8), BlockedPlayer()
     events = []
@@ -112,6 +149,7 @@ def cancelled_feed_before_format_switch():
 
 
 if __name__ == '__main__':
+    early_prefix_reserve()
     overlap_and_handoff()
     bounded_cancel()
     cancelled_feed_before_format_switch()

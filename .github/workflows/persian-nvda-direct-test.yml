@@ -27,6 +27,8 @@ on:
       - nvda/_reloq_persian_joiners.py
       - nvda/_reloq_languages.py
       - nvda/_reloq_persian_frames.py
+      - nvda/_reloq_eci_transport.py
+      - nvda/test_eci_playback_queue.py
       - experiments/persian/direct_fa_sequence.py
       - experiments/persian/continuous_driver.py
       - experiments/persian/continuous_plan.py
@@ -148,6 +150,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian sentence streaming or source indexes failed' }
           python -B experiments/persian/test_prefix_streaming.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian incremental playback or cancellation failed' }
+          python -B nvda/test_eci_playback_queue.py
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA playback reserve or queue failed' }
           python -B experiments/persian/test_mixed_early_snapshot.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Mixed incremental playback or cancellation failed' }
           python -B experiments/persian/test_pinglish_native_words.py --library "$dll"
