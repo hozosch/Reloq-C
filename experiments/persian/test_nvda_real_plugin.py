@@ -963,8 +963,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if not any(self.syllable_fits[self.before_syllable_fits:]):
                     raise AssertionError('NVDA missed the number syllable timing: ' + ascii(text))
             if spelling == 'issue50_plural':
-                expected = ("`[.0'A:'f.0z'u:'.0n'e:'.1ha.0je]" if text == 'افزونه‌های' else
-                            "`[.0bAr.0na.0m'e:'.1ha.0je]")
+                expected = ("`[.0'A:'f.0z'u:'.0ne.1ha.0je]" if text == 'افزونه‌های' else
+                            "`[.0bAr.0na.0me.1ha.0je]")
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags:
                     raise AssertionError('NVDA lost plural/ezafe stress: ' + ascii((text, tags)))
@@ -1009,8 +1009,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     raise AssertionError('NVDA lost the reported character name: ' + ascii((text, tags)))
             if text in ('به علاوه', 'بعلاوه', '+'):
                 tags = ' '.join(self.projected[self.before_projected:])
-                expected = ("`[.0be.0A.0la.1v'e:']" if text == 'بعلاوه' else
-                            "`[.0b'e:'] `[.0A.0la.1v'e:']")
+                expected = {"بعلاوه": "`[.0be.0A.0la.1v'e:']",
+                            "به علاوه": "`[.0be] `[.0A.0la.1v'e:']",
+                            "+": "`[.0b'e:'] `[.0A.0la.1v'e:']"}[text]
                 if expected not in tags:
                     raise AssertionError('NVDA lost the corrected alāve reading: ' + ascii(tags))
             if spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most'):

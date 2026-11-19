@@ -25,17 +25,21 @@ def main():
         phones = lambda value: re.sub(r'\.[012]', '.#', re.sub(r'`00\s*', '', value))
         expected = {
             'علاوه': "`[.0A.1la.0v'e:']",
-            'علاوه‌ی': "`[.0A.1la.0v'e:'.1j'e:']",
+            'علاوه‌ی': "`[.0A.1la.0ve.1j'e:']",
             'بعلاوه': "`[.0be.0A.1la.0v'e:']",
-            'بعلاوه‌ی': "`[.0be.0A.1la.0v'e:'.1j'e:']",
-            'به علاوه': "`[.0b'e:'] `[.0A.1la.0v'e:']",
+            'بعلاوه‌ی': "`[.0be.0A.1la.0ve.1j'e:']",
+            'به علاوه': "`[.0be] `[.0A.1la.0v'e:']",
         }
         for word, tag in expected.items():
             analysis = frontend.analyze_direct(word)
             assert analysis and phones(analysis.parts[0].text) == phones(tag), (word, analysis)
         assert word_tag("a:|l|'A|v|e:") == expected['علاوه']
         assert word_tag("b|e|a:|l|'A|v|e:") == expected['بعلاوه']
-        assert phones(SYMBOL_TAGS['+']) == phones(expected['به علاوه'])
+        # Existing symbol names retain their own preposition pronunciation;
+        # both paths must still preserve the intended vowel in alāve.
+        symbol = frontend.analyze_character('+')
+        assert symbol and phones(symbol.parts[0].text) == phones(SYMBOL_TAGS['+'])
+        assert phones(SYMBOL_TAGS['+']).endswith(phones(expected['علاوه']))
 
         for part in ('به علاوه', 'بعلاوه', EciText('+', character_mode=True)):
             pcm, marks = bytearray(), []
