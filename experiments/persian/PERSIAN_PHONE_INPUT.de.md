@@ -102,9 +102,12 @@ zum Beispiel die besondere Behandlung eines gedehnten Dsch.
   Textmarken. Nicht abgedeckte Fälle verwenden vorerst den bisherigen Weg.
   Der bestätigte U–A-Übergang kann im C-Kern geplant werden; einige gemischte
   Satzpfade verwenden noch den bisherigen Planer.
-* Die bestehenden Nutzerwörterbücher ersetzen bereits Text beziehungsweise
-  verarbeiten ihre jeweiligen Ausspracheangaben. Dass sie beliebige neue
-  persische Lautdaten in jeder Plattform übernehmen, ist noch nicht belegt.
+* Ein eigener persischer Wörterbuchpfad ist noch nicht eingebunden. Ein Test
+  mit einem Eintrag `salam` → `donya` im Wörterbuch des verwendeten finnischen
+  Kerns änderte die Pinglish-Ausgabe nicht: Die persische Analyse hatte den
+  Text bereits in Lautgruppen umgesetzt. Externe Textersetzungen, die vorher
+  wirken, und die vollständige Einbindung persischer Lautdaten in Wörterbücher
+  müssen gesondert geprüft werden.
 * Die akzeptierte Satzmelodie wird weiterhin aus einem englischen Pilotlauf
   übertragen und noch im Treiber koordiniert. Einfache explizite persische
   Lautschriftgruppen erhalten diese Kontur ebenfalls. Eine eigenständige
