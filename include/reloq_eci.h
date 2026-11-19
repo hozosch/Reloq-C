@@ -342,6 +342,9 @@ ECIAPI const struct reloq_fa_frame *ECICALL eciPersianCaptureEnd(size_t *count,i
 ECIAPI const struct reloq_fa_syllable *ECICALL eciPersianCaptureSyllables(size_t *count,int *failed);
 ECIAPI void ECICALL eciPersianCaptureRelease(void);
 ECIAPI int ECICALL eciPersianCaptureSetControlsOnly(int enabled);
+/* Select phone timing instead of syllable timing for an active capture.
+ * This optional diagnostic is request-local and does not alter speech. */
+ECIAPI int ECICALL eciPersianCaptureSetPhoneTrace(int enabled);
 ECIAPI size_t ECICALL eciPersianCaptureSampleCount(void);
 /* Optional request-local PCM capture avoids callbacks for each tiny frame.
  * Retrieve the samples after CaptureEnd and before CaptureRelease. */

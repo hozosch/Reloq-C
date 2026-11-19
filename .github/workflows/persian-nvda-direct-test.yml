@@ -22,6 +22,8 @@ on:
       - experiments/persian/test_fa_stress_fallback.py
       - nvda/_reloq_persian_decimals.py
       - nvda/_reloq_persian_joiners.py
+      - nvda/_reloq_languages.py
+      - nvda/_reloq_persian_frames.py
       - experiments/persian/direct_fa_sequence.py
       - experiments/persian/continuous_driver.py
       - experiments/persian/continuous_plan.py
@@ -47,6 +49,9 @@ on:
       - experiments/persian/build_soundlab_nvda.py
       - experiments/persian/test_soundlab_nvda.py
       - experiments/persian/test_soundlab_real_plugin.py
+      - experiments/persian/test_phoneme_editor.py
+      - experiments/persian/test_phoneme_editor_real_plugin.py
+      - experiments/persian/test_persian_acoustic_clock.py
       - addon/soundlab/**
 permissions:
   contents: read
@@ -116,6 +121,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Mixed Unicode name routing failed' }
           python -B experiments/persian/test_us_contour_runtime.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian US contour, weak words or final vowels failed' }
+          python -B experiments/persian/test_persian_acoustic_clock.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian and Pinglish acoustic clock failed' }
           python -B experiments/persian/test_persian_syllable_pitch.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian US syllable pitch alignment failed' }
           python -B experiments/persian/test_fa_sentence_flow.py --library "$dll"
@@ -138,10 +145,10 @@ jobs:
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev161; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev162; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
           dll=$(find candidate -name eci.dll -print -quit)
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
-          python -B experiments/persian/build_soundlab_nvda.py --output dist/reloq-c-lautlabor-0.1.1.nvda-addon
+          python -B experiments/persian/build_soundlab_nvda.py --output dist/reloq-c-lautlabor-0.2.0.nvda-addon
       - name: Test in real NVDA
         shell: pwsh
         env:
@@ -152,10 +159,14 @@ jobs:
           $dll = (Get-ChildItem candidate -Recurse -Filter eci.dll | Select-Object -First 1).FullName
           python -B experiments/persian/test_soundlab_nvda.py --dll "$dll" --espeak portable-nvda/synthDrivers/espeak.dll --data portable-nvda/synthDrivers
           if ($LASTEXITCODE -ne 0) { throw 'Sound laboratory frame and language test failed' }
+          python -B experiments/persian/test_phoneme_editor.py --dll "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Native phoneme editor and resonance filters failed' }
           python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon "$addon" --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
           if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA Persian profile test failed' }
           python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon "$addon" --extra-addon "$lab" --plugin experiments/persian/test_soundlab_real_plugin.py --work soundlab-nvda-results
           if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA sound laboratory test failed' }
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon "$addon" --extra-addon "$lab" --plugin experiments/persian/test_phoneme_editor_real_plugin.py --work phoneme-editor-nvda-results
+          if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA phoneme editor keyboard test failed' }
       - name: Confirm the full acoustic test
         shell: bash
         env:
@@ -177,5 +188,7 @@ jobs:
             persian-nvda-results/nvda.log
             soundlab-nvda-results/result.json
             soundlab-nvda-results/nvda.log
+            phoneme-editor-nvda-results/result.json
+            phoneme-editor-nvda-results/nvda.log
           if-no-files-found: ignore
           retention-days: 7

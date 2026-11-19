@@ -25,6 +25,7 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_jajp61.h"
+#include "reloq_syllable_trace.h"
 #include "reloq61_duration_math.h"
 
 /* Where each global the rules touch lands in the state,
@@ -930,6 +931,7 @@ static int32_t evv_size_filter(void *state, const int32_t *args, int nargs)
 /* insert_acoustic_vals, from f61_06.obj */
 int32_t reloq_jajp61_insert_acoustic_vals(void *state, int32_t p0)
 {
+    reloq61_phone_trace_emit(state,STATE(int32_t,f10),STATE(int32_t,f11));
     const int32_t reloq_machine_ref=
         EVV_AT(void *,p0)==state?p0:REG_REF(state);
     const int reloq_landing_mark=evv_land_mark();

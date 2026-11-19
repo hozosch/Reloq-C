@@ -96,6 +96,17 @@ DEV160_BASE = 'ae05979e72f5b2b5b695b23900abc9a02f84f1fd'
 DEV160_KEY = ('persian-windows-provider-gcc14-v2-'
               'e3b0c0705f2669e50c58e625f82d06b0fda92981bf36f8ee3b669c199a958820')
 DEV160_ALLOWED = {'experiments/persian/build_native_probe.py'}
+DEV161_BASE = '3ed3f000f9cddf54db0560d7efe7b805f422f7f6'
+DEV161_KEY = ('persian-windows-provider-gcc14-v2-'
+              'be6164f9e92b715a8bcc78fec5fb2876c51a1bbf469da873cee700a850c9d9b9')
+DEV161_ALLOWED = {
+    'include/reloq_eci.h', 'include/reloq_syllable_trace.h',
+    'vendor/openevv61/src/reloq61_bridge.c',
+    'vendor/openevv61/lang/fifi/delta_rules_c13_fifi.c',
+    'vendor/openevv61/lang/dede61/delta_rules_c24_dede61.c',
+    'vendor/openevv61/lang/enus61/delta_rules_c31_enus61.c',
+    'vendor/openevv61/lang/jajp61/delta_rules_c25_jajp61.c',
+}
 TRACE_ALLOWED = {
     'include/reloq_eci.h', 'include/reloq_persian_frames.h', 'include/reloq_syllable_trace.h',
     'vendor/openevv61/src/reloq61_bridge.c',
@@ -193,6 +204,23 @@ def main():
                 if path.is_file():
                     os.utime(path, None)
             print('Reused verified provider cache for the additive public API change.')
+            return
+        if key == DEV161_KEY:
+            changed = set(git('diff', '--name-only', DEV161_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV161_ALLOWED:
+                raise ValueError('phoneme tracing provider inputs differ from the verified scope')
+            reuse_dev156_generated(frozenset({'delta_rules_c13_fifi.c'}))
+            # Rebuild the explicitly changed native rules and bridge. Also
+            # rebuild every cached object that includes either changed header.
+            for name in ('src/reloq61_bridge.o',
+                         'lang/dede61/delta_rules_c24_dede61.o',
+                         'lang/enus61/delta_rules_c31_enus61.o',
+                         'lang/jajp61/delta_rules_c25_jajp61.o'):
+                (BUILD / name).unlink(missing_ok=True)
+            for dep in BUILD.rglob('*.d'):
+                contents=dep.read_text(encoding='utf8', errors='replace')
+                if 'reloq_eci.h' in contents or 'reloq_syllable_trace.h' in contents:
+                    dep.with_suffix('.o').unlink(missing_ok=True)
             return
         if key == DEV160_KEY:
             changed = set(git('diff', '--name-only', DEV160_BASE, 'HEAD', '--', *INPUTS).splitlines())

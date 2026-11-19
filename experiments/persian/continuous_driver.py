@@ -12,7 +12,7 @@ from dataclasses import replace
 if __package__:
     from .._reloq_eci_direct import (EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciPitchHz,
                                      EciProsody, EciText, persistent_tag_control,
-                                     SAMPLE_RATE, SAMPLE_RATES, PROCESS_TAGS, NATIVE_SPEED, NATIVE_WPM)
+                                     SAMPLE_RATE, SAMPLE_RATES, PROCESS_TAGS, NATIVE_SPEED, NATIVE_WPM, ORIGINAL_ACOUSTIC_CLOCK)
     from .._reloq_persian_frames import FrameCapture, FrameReplay, FrameStream, NativeFrame
     from .._reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from .._reloq_persian_projection import ProjectedJob
@@ -25,7 +25,7 @@ if __package__:
 else:
     from _reloq_eci_direct import (EciCapitalWord, EciIndex, EciLanguage, EciPitch, EciPitchHz,
                                     EciProsody, EciText, persistent_tag_control,
-                                    SAMPLE_RATE, SAMPLE_RATES, PROCESS_TAGS, NATIVE_SPEED, NATIVE_WPM)
+                                    SAMPLE_RATE, SAMPLE_RATES, PROCESS_TAGS, NATIVE_SPEED, NATIVE_WPM, ORIGINAL_ACOUSTIC_CLOCK)
     from _reloq_persian_frames import FrameCapture, FrameReplay, FrameStream, NativeFrame
     from _reloq_persian_glide import apply_u_a_glides, plan_u_a_glides
     from _reloq_persian_projection import ProjectedJob
@@ -35,6 +35,32 @@ else:
     from _reloq_languages import US_ENGLISH
     from korean_contour import align_english_edges, contour
     from text_frontend import SpeechPart, UnsupportedPronunciation
+
+def _original_persian_clock(voice):
+    # Persian/Pinglish use the Finnish native handle, where automatic mode 2
+    # is the fine clock. A user-selected original clock is represented by 1.
+    return voice._dll.eciGetParam(voice._handle, ORIGINAL_ACOUSTIC_CLOCK) == 1
+
+
+def _hold_acoustic_clock(rows, first=0, last=None):
+    """Keep planned Persian controls on the original five-ms grid.
+
+    The US contour and cross-phone bridges are applied after native capture;
+    without this step they silently restore one-ms changes to selected tracks.
+    Frame durations, indexes and the selected US contour itself stay intact.
+    """
+    last = len(rows) if last is None else last
+    group, held = None, None
+    for index in range(first, last):
+        row = rows[index]
+        current = int(row.tick) // 5
+        if current != group:
+            group = current
+            held = tuple(row.controls[i] for i in range(1, 62))
+        else:
+            for i, value in enumerate(held, 1):
+                row.controls[i] = value
+
 
 _log = logging.getLogger(__name__)
 _TAG = re.compile(r'`\[[^]]+\]')
@@ -367,6 +393,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
                 enable_tags(voice)
                 german_voice.append(voice)
             return german_voice[0]
+        original_fa_clock = _original_persian_clock(fa.raw)
         rate = SAMPLE_RATES.get(fa._dll.eciGetParam(fa._handle, SAMPLE_RATE))
         if rate is None:
             raise ValueError('invalid sentence sample rate')
@@ -436,6 +463,8 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
                                         owner._cancelled, continuation=True, prefix=prefix):
                     stream_state['korean_first'] = tuple(item.frames[i].controls[1] for i in range(first_end))
             first_voice = en if sentence[0].language == 'en-us' else fa
+            if first_voice is fa and original_fa_clock:
+                _hold_acoustic_clock(item.frames, 0, first_end)
             first_key = en_key if first_voice is en else fa_key
             if first_voice is en:
                 # All later English-phone lookups must happen before this
@@ -527,6 +556,12 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
                                              preceded=i > 0, prefix=prefix)
                 offset += count
             align_english_edges(plan, sentence, _bracket_boundary)
+        if original_fa_clock:
+            offset = 0
+            for part, count in zip(sentence, plan.counts):
+                if part.language == 'fa' and count:
+                    _hold_acoustic_clock(plan.frames, offset, offset + count)
+                offset += count
         marks = replay_marks(plan, original_counts)
         if stream_state:
             first = stream_state['first']
@@ -832,6 +867,8 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                 transferred |= applied
         if not glides and not transferred:
             return engine._speak_prepared(replace(prepared, parts=(*prefix, *prepared.parts)), on_pcm, on_index)
+        if _original_persian_clock(voice.raw):
+            _hold_acoustic_clock(item.frames)
         marks = []
         for mark, offset, value in source:
             frame = (0 if offset == 0 else len(item.frames) if offset == len(prepared.tagged) else

@@ -25,12 +25,22 @@ static _Thread_local reloq_syllable_sink syllable_sink;
 static _Thread_local void *syllable_context;
 static _Thread_local int32_t syllable_previous_to;
 static _Thread_local int64_t syllable_origin;
+static _Thread_local int phone_trace_mode;
 void reloq61_syllable_trace_set(reloq_syllable_sink sink,void *context)
-{syllable_sink=sink;syllable_context=context;syllable_previous_to=-1;syllable_origin=0;}
+{syllable_sink=sink;syllable_context=context;syllable_previous_to=-1;syllable_origin=0;phone_trace_mode=0;}
+void reloq61_syllable_trace_phone_mode(int enabled)
+{phone_trace_mode=enabled!=0;syllable_previous_to=-1;syllable_origin=0;}
 static int trace_absolute(void *state,int32_t from,int32_t to,int32_t *start,int32_t *end);
 void reloq61_syllable_trace_emit(void *state,int32_t from,int32_t to)
 {
-    if(!syllable_sink)return;
+    if(!syllable_sink || phone_trace_mode)return;
+    int32_t start,end;
+    if(trace_absolute(state,from,to,&start,&end))syllable_sink(syllable_context,-1,-1);
+    else syllable_sink(syllable_context,start,end);
+}
+void reloq61_phone_trace_emit(void *state,int32_t from,int32_t to)
+{
+    if(!syllable_sink || !phone_trace_mode || from<0 || to<=from)return;
     int32_t start,end;
     if(trace_absolute(state,from,to,&start,&end))syllable_sink(syllable_context,-1,-1);
     else syllable_sink(syllable_context,start,end);

@@ -97,6 +97,17 @@ DEV160_BASE = 'ae05979e72f5b2b5b695b23900abc9a02f84f1fd'
 DEV160_KEY = ('persian-windows-host-gcc14-v2-'
               '26f76276c275cb8c4eab548c53efc73c3145f7f77fbb53825d928cf75af24a3e')
 DEV160_ALLOWED = {'experiments/persian/build_native_probe.py'}
+DEV161_BASE = '3ed3f000f9cddf54db0560d7efe7b805f422f7f6'
+DEV161_KEY = ('persian-windows-host-gcc14-v2-'
+              '8e622f843ed25aaf518c3edf2bc09060bcde28cefcbc1866dbf2f570c2d7b8c8')
+DEV161_ALLOWED = {
+    'include/reloq_eci.h', 'include/reloq_syllable_trace.h', 'src/reloq_eci.c',
+    'vendor/openevv61/src/reloq61_bridge.c',
+    'vendor/openevv61/lang/fifi/delta_rules_c13_fifi.c',
+    'vendor/openevv61/lang/dede61/delta_rules_c24_dede61.c',
+    'vendor/openevv61/lang/enus61/delta_rules_c31_enus61.c',
+    'vendor/openevv61/lang/jajp61/delta_rules_c25_jajp61.c',
+}
 TRACE_ALLOWED = {'include/reloq_eci.h', 'include/reloq_persian_frames.h',
                  'include/reloq_syllable_trace.h', 'src/reloq_eci.c',
                  'src/reloq_persian_frames.c', 'src/reloq_persian_frame_internal.h',
@@ -131,14 +142,15 @@ def eligible(key, changed):
                               (key == DEV157_KEY and set(changed) == DEV157_ALLOWED) or
                               (key == DEV158_KEY and set(changed) == DEV158_ALLOWED) or
                               (key == DEV159_KEY and set(changed) == DEV159_ALLOWED) or
-                              (key == DEV160_KEY and set(changed) == DEV160_ALLOWED))
+                              (key == DEV160_KEY and set(changed) == DEV160_ALLOWED) or
+                              (key == DEV161_KEY and set(changed) == DEV161_ALLOWED))
 
 
 def main():
     build, dll = ROOT / 'eci/build/windows', ROOT / 'eci/eci.dll'
     try:
         key = os.environ.get('PERSIAN_HOST_CACHE_KEY', '')
-        base = DEV160_BASE if key == DEV160_KEY else DEV159_BASE if key == DEV159_KEY else DEV158_BASE if key == DEV158_KEY else DEV157_BASE if key == DEV157_KEY else DEV156_BASE if key == DEV156_KEY else DEV155_BASE if key == DEV155_KEY else DEV154_BASE if key == DEV154_KEY else DEV153_BASE if key == DEV153_KEY else DEV152_BASE if key == DEV152_KEY else DEV151_BASE if key == DEV151_KEY else DEV150_BASE if key == DEV150_KEY else DEV149_BASE if key == DEV149_KEY else TRACE_BASE if key == TRACE_KEY else NEWEST_BASE if key == NEWEST_KEY else RECENT_BASE if key == RECENT_KEY else BASE
+        base = DEV161_BASE if key == DEV161_KEY else DEV160_BASE if key == DEV160_KEY else DEV159_BASE if key == DEV159_KEY else DEV158_BASE if key == DEV158_KEY else DEV157_BASE if key == DEV157_KEY else DEV156_BASE if key == DEV156_KEY else DEV155_BASE if key == DEV155_KEY else DEV154_BASE if key == DEV154_KEY else DEV153_BASE if key == DEV153_KEY else DEV152_BASE if key == DEV152_KEY else DEV151_BASE if key == DEV151_KEY else DEV150_BASE if key == DEV150_KEY else DEV149_BASE if key == DEV149_KEY else TRACE_BASE if key == TRACE_KEY else NEWEST_BASE if key == NEWEST_KEY else RECENT_BASE if key == RECENT_KEY else BASE
         changed = subprocess.check_output(['git', 'diff', '--name-only', base, 'HEAD', '--', *INPUTS],
                                           cwd=ROOT, text=True).splitlines()
         if not eligible(key, changed):
@@ -157,7 +169,7 @@ def main():
         # All native Persian direct components depend on direct_fa_*.h.
         for obj in build.glob('reloq_fa_direct_*.o'):
             obj.unlink()
-        if key in (RECENT_KEY, TRACE_KEY, DEV149_KEY, DEV150_KEY, DEV151_KEY, DEV152_KEY, DEV153_KEY, DEV154_KEY, DEV155_KEY, DEV156_KEY, DEV157_KEY, DEV158_KEY, DEV159_KEY, DEV160_KEY):
+        if key in (RECENT_KEY, TRACE_KEY, DEV149_KEY, DEV150_KEY, DEV151_KEY, DEV152_KEY, DEV153_KEY, DEV154_KEY, DEV155_KEY, DEV156_KEY, DEV157_KEY, DEV158_KEY, DEV159_KEY, DEV160_KEY, DEV161_KEY):
             # These are the only host sources which include reloq_eci.h;
             # direct Persian objects also cover the changed private headers.
             for name in ('reloq_eci.o', 'reloq_rules61.o'):
@@ -166,6 +178,11 @@ def main():
                 (build / 'reloq_persian_frames.o').unlink(missing_ok=True)
             if key == DEV158_KEY:
                 (build / 'reloq_noise_profile.o').unlink(missing_ok=True)
+            if key == DEV161_KEY:
+                for dep in build.glob('*.d'):
+                    contents=dep.read_text(encoding='utf8', errors='replace')
+                    if 'reloq_eci.h' in contents or 'reloq_syllable_trace.h' in contents:
+                        dep.with_suffix('.o').unlink(missing_ok=True)
             dll.unlink()
         print('Reused verified Windows host objects; rebuilding Persian text components.')
     except (OSError, ValueError, subprocess.CalledProcessError) as exc:

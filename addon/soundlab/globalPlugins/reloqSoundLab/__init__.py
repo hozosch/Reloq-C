@@ -199,6 +199,9 @@ class SoundLabDialog(wx.Dialog):
         self.EndModal(wx.ID_CANCEL)
 
 
+from .editor import PhonemeEditorDialog
+
+
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -215,7 +218,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         if self.dialog is not None: return
         gui.mainFrame.prePopup()
         try:
-            self.dialog = SoundLabDialog(gui.mainFrame)
+            self.dialog = PhonemeEditorDialog(gui.mainFrame)
             self.dialog.ShowModal()
         finally:
             if self.dialog:

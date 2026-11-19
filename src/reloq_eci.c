@@ -1978,6 +1978,12 @@ void ECICALL eciPersianCaptureRelease(void)
 {reloq61_syllable_trace_set(NULL,NULL);reloq_fa_capture_release();}
 int ECICALL eciPersianCaptureSetControlsOnly(int enabled)
 {return reloq_fa_capture_set_controls_only(enabled);}
+int ECICALL eciPersianCaptureSetPhoneTrace(int enabled)
+{
+    if(!reloq_fa_capture_active() || (enabled!=0 && enabled!=1))return -1;
+    reloq61_syllable_trace_phone_mode(enabled);
+    return 0;
+}
 size_t ECICALL eciPersianCaptureSampleCount(void)
 {return reloq_fa_capture_sample_count();}
 int ECICALL eciPersianCaptureSetPcmStorage(int enabled)

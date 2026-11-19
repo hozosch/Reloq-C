@@ -126,6 +126,10 @@ class FrameCapture:
         if self.last_audible_sample is not None:
             self.last_audible_sample.argtypes = (ctypes.c_char_p, ctypes.c_size_t)
             self.last_audible_sample.restype = ctypes.c_int64
+        self._phone_trace = getattr(dll, 'eciPersianCaptureSetPhoneTrace', None)
+        if self._phone_trace is not None:
+            self._phone_trace.argtypes = (ctypes.c_int,)
+            self._phone_trace.restype = ctypes.c_int
         self.frame_ticks = _native_function(dll, 'eciPersianFrameTicks', 'reloq_fa_frame_ticks')
         if self.frame_ticks is not None:
             self.frame_ticks.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
@@ -154,13 +158,18 @@ class FrameCapture:
                 ctypes.POINTER(ctypes.c_ubyte))
             self.bridge_continuation.restype = ctypes.c_int
 
-    def capture(self, voice, parts, *, maximum=60000, audio=True):
+    def capture(self, voice, parts, *, maximum=60000, audio=True, phone_segments=False):
         if type(maximum) is not int or not 1 <= maximum <= 120000:
             raise ValueError('invalid frame capture limit')
         pcm, indexes = bytearray(), []
         if self._begin(maximum):
             raise RuntimeError('cannot start nested or oversized frame capture')
         try:
+            if phone_segments:
+                if self._phone_trace is None:
+                    raise RuntimeError('Der Lauteditor benötigt ein neueres Eloquence-C-Add-on.')
+                if self._phone_trace(1):
+                    raise RuntimeError('Die Lautgrenzen konnten nicht aktiviert werden.')
             if not audio and self._controls_only is not None and self._controls_only(1):
                 raise RuntimeError('cannot enable control-only frame capture')
             silent_clock = not audio and self._controls_only is not None and self._sample_count is not None
