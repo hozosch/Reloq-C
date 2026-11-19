@@ -31,14 +31,15 @@ def main():
         return bytes(pcm), indexes
 
     try:
+        assert frontend.analyze_direct('نمی‌پذیرد') is None
         for char, name in (('\0', 'symbol for null'),
                            ('\ud800', 'replacement character'),
                            ('\u202e', 'right-to-left override'),
                            ('Ж', 'cyrillic capital letter zhe')):
             # An uncovered Persian word requires reference validation. The
             # Unicode name must not be passed into the Persian phone parser.
-            before = (EciIndex(1), 'پدیده‌ای ', EciIndex(2), char + ' سلام', EciIndex(3))
-            explicit = (EciIndex(1), 'پدیده‌ای ', EciIndex(2),
+            before = (EciIndex(1), 'نمی‌پذیرد ', EciIndex(2), char + ' سلام', EciIndex(3))
+            explicit = (EciIndex(1), 'نمی‌پذیرد ', EciIndex(2),
                         EciLanguage(US_ENGLISH.id, '1'), name,
                         EciLanguage(PERSIAN_PROBE.id, '1'), ' سلام', EciIndex(3))
             assert render(before) == render(explicit), ascii(char)

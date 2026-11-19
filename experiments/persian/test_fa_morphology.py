@@ -56,6 +56,9 @@ def main():
     assert project('خانه‌ها')=='`[.0Ga.0ne.1ha]'
     assert project('دیوانه‌ها')=='`[.0di.0va.0ne.1ha]'
     assert project('نیمه‌راه')=='`[.0ni.0me.1rahw]'
+    assert project('خانه‌ای')=="`[.0Ga.1ne.0'i:']"
+    assert project('پدیده‌ای')=="`[.0pA.0di.1de.0'i:']"
+    assert project('پدیده‌ی')=="`[.0pA.0di.1de.0j'e:']"
     assert project('آماده‌سازی')=='`[.0a.0ma.0de.0sa.1zi]'
     assert project('عجیب‌ترین').endswith('.0tA.1rin]')
     assert project('نیم‌فاصله').endswith(".0fa.0se.1l'e:']")

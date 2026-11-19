@@ -1216,16 +1216,23 @@ static int joined_compound_word(const char *word,size_t bytes,char *output,size_
     const char *tail=word+split+3;size_t tail_bytes=bytes-split-3;
     int verb_prefix=stress_word_is(word,split,"می") || stress_word_is(word,split,"نمی");
     if(verb_prefix && !(stress_class(tail,tail_bytes)&2u))return 0;
+    /* After final ه, an attached ای or ی can be an unstressed indefinite
+     * or ezafe ending. Do not treat it as a new accented content word. A
+     * separately recorded complete lexeme has already taken precedence. */
+    size_t heh_stem=0;
+    int enclitic=ends_with(word,split,"ه",&heh_stem) &&
+                 (stress_word_is(tail,tail_bytes,"ای") || stress_word_is(tail,tail_bytes,"ی"));
     char left[2048],right[2048];
     int a=direct_context_depth(word,split,0,left,sizeof left,depth+1);
     int b=direct_context_depth(tail,tail_bytes,0,right,sizeof right,depth+1);
     if(a<0 || b<0)return a<0?a:b;
     if(a!=1 || b!=1 || !single_phone_tag(left) || !single_phone_tag(right))return 0;
     (void)shorten_written_final_e(word,split,left);
+    if(enclitic)stress_unaccent(right);
     int result=append_phone_tags(left,right,output,capacity);
     if(result!=1)return result;
     size_t count=stress_syllables(output);
-    if(count)stress_primary(output,verb_prefix?0:count-1);
+    if(count && !enclitic)stress_primary(output,verb_prefix?0:count-1);
     return 1;
 }
 

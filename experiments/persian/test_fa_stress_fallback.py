@@ -36,17 +36,17 @@ def main():
         # One unrelated fallback word must not lose a two-word verbal prefix
         # or the verified split form of علامت‌دار.
         with patch.object(frontend, 'analyze', return_value=reference):
-            prefix = project_resilient(('می ', EciIndex(8), 'روم پدیده‌ای'), frontend)
-            compound = project_resilient(('علامت ', EciIndex(9), 'دار پدیده‌ای'), frontend)
+            prefix = project_resilient(('می ', EciIndex(8), 'روم نمی‌پذیرد'), frontend)
+            compound = project_resilient(('علامت ', EciIndex(9), 'دار نمی‌پذیرد'), frontend)
         assert prefix.tagged.startswith('`[.1mi] `00 `[.0rA.0vAm] '), prefix.tagged
         assert compound.tagged.startswith('`00 `[.0A.0la.0mAt] `[.1dar] '), compound.tagged
         assert [part.value for part in prefix.parts if isinstance(part, EciIndex)] == [8]
         assert [part.value for part in compound.parts if isinstance(part, EciIndex)] == [9]
         with patch.object(frontend, 'analyze', return_value=reference):
-            object_marker = project_resilient(('پدیده‌ای ', EciIndex(10), 'را'), frontend)
-            copula_after_reference = project_resilient(('پدیده‌ای ', EciIndex(17), 'است'), frontend)
-            separated = project_resilient(('پدیده‌ای، ', EciIndex(11), 'را'), frontend)
-            conjunction = project_resilient(('کتاب و ', EciIndex(12), 'پدیده‌ای'), frontend)
+            object_marker = project_resilient(('نمی‌پذیرد ', EciIndex(10), 'را'), frontend)
+            copula_after_reference = project_resilient(('نمی‌پذیرد ', EciIndex(17), 'است'), frontend)
+            separated = project_resilient(('نمی‌پذیرد، ', EciIndex(11), 'را'), frontend)
+            conjunction = project_resilient(('کتاب و ', EciIndex(12), 'نمی‌پذیرد'), frontend)
         assert object_marker.tagged.endswith(' `00 `[.0ra]'), object_marker.tagged
         assert copula_after_reference.tagged.endswith(' `00 `[.0Ast]'), copula_after_reference.tagged
         assert separated.tagged.endswith(', `[.1ra]'), separated.tagged

@@ -63,8 +63,8 @@ def main():
         # A selected within-Persian U-to-A glide stays on the complete route.
         (EciIndex(36), 'او آمد و ', EciIndex(37), 'NVDA خوب است.', EciIndex(38)),
         # These words need reference analysis and an internal word anchor.
-        (EciIndex(39), 'NVDA ', EciIndex(40), 'پدیده‌ای ', EciIndex(41), 'سلام', EciIndex(42)),
-        (EciIndex(43), 'سلام ', EciIndex(44), 'پدیده‌ای ', EciIndex(45), 'window', EciIndex(46)),
+        (EciIndex(39), 'NVDA ', EciIndex(40), 'نمی‌پذیرد ', EciIndex(41), 'سلام', EciIndex(42)),
+        (EciIndex(43), 'سلام ', EciIndex(44), 'نمی‌پذیرد ', EciIndex(45), 'window', EciIndex(46)),
         # Short first segments can now start while the second context is
         # still being planned, without changing any transition frames.
         (EciIndex(50), 'go ', EciIndex(51), 'سلام', EciIndex(52)),
@@ -119,7 +119,7 @@ def main():
         # A reference fallback must still be rejected by the complete native
         # pilot before the English prefix can start playing.
         clear()
-        assert engine._engines[PERSIAN_PROBE.id]._frontend.analyze_direct('پدیده‌ای') is None
+        assert engine._engines[PERSIAN_PROBE.id]._frontend.analyze_direct('نمی‌پذیرد') is None
         pcm, rejected = bytearray(), []
         original_validator = direct_fa_sequence.native_sequence_accepted
         def reject_pilot(tagged, shown):
@@ -129,7 +129,7 @@ def main():
             return original_validator(tagged, shown)
         direct_fa_sequence.native_sequence_accepted = reject_pilot
         try:
-            assert engine.speak(('NVDA ', EciIndex(47), 'پدیده‌ای ', EciIndex(48), 'سلام'),
+            assert engine.speak(('NVDA ', EciIndex(47), 'نمی‌پذیرد ', EciIndex(48), 'سلام'),
                                 pcm.extend, lambda _: None)
         finally:
             direct_fa_sequence.native_sequence_accepted = original_validator
