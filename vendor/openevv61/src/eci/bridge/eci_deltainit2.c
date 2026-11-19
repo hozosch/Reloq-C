@@ -101,6 +101,62 @@ void setnonseqIndex(delta_state *d, int8_t field)
 /* Say which statement types may run out of order. Everything is cleared
    first, so this says what the whole set is rather than adding to it. The
    count comes in a token and the types follow it one to an argument. */
+#if defined(__APPLE__) && defined(__aarch64__)
+/* Apple's arm64 passes a variadic function's variable arguments on the stack,
+   not in registers. Every call to an entry is made through a fixed prototype
+   (delta_call_N and call_entry in src/delta/delta_rules.c), which puts the
+   first eight in registers, so the va_arg in the version below reads whatever
+   is on the stack: a token out of nothing. On an iPhone the first US English
+   instance faulted (EXC_BAD_ACCESS in setNonSequential under
+   reloq_enus61_init_platform, at the arena base plus the low half of a stale
+   pointer); where the garbage did not fault, the wrong statement types were
+   marked. AAPCS64 (Android, Linux) and x86-64 pass a variadic argument where a
+   fixed one goes, so there the variadic version reads what was passed. Here it
+   takes them as fixed arguments, in the registers they arrive in: every call
+   site in every language passes four (the state, the count token, two types),
+   and the six slots cover any count up to eight arguments, read in the order
+   the variadic version reads them. */
+#define NSQ_SLOTS 6
+int32_t setNonSequential(delta_state *d, const void *count_tok,
+                         uintptr_t t0, uintptr_t t1, uintptr_t t2,
+                         uintptr_t t3, uintptr_t t4, uintptr_t t5)
+{
+    const uintptr_t slot[NSQ_SLOTS] = { t0, t1, t2, t3, t4, t5 };
+    int          next = 0;
+    const void  *one;
+    int32_t      i, left;
+
+    for (i = 0; i < (int32_t)d->nstmts; i++)
+        EVV_AT(int8_t *, EVV_AT(delta_vars *, d->vars)->nsq_marks)[i] = 0;
+    clearnonseqIndex(d);
+
+    left = TOKEN_VALUE(count_tok);
+    if (left <= 0)
+        return 0;
+
+    one = EVV_AT(const void *, (int32_t)slot[next++]);
+
+    while (left != 0 && one != 0) {
+        int32_t stm;
+
+        if (TOKEN_KIND(one) == KIND_INDIRECT)
+            stm = TOKEN_VALUE(one);
+        else
+            stm = TOKEN_KIND(one);
+
+        if (stm >= 0 && stm < (int32_t)d->nstmts) {
+            EVV_AT(int8_t *, EVV_AT(delta_vars *, d->vars)->nsq_marks)[stm] = 1;
+            setnonseqIndex(d, (int8_t)stm);
+        }
+
+        left--;
+        if (left == 0 || next == NSQ_SLOTS)
+            break;
+        one = EVV_AT(const void *, (int32_t)slot[next++]);
+    }
+    return 0;
+}
+#else
 int32_t setNonSequential(delta_state *d, const void *count_tok, ...)
 {
     va_list      ap;
@@ -140,6 +196,7 @@ int32_t setNonSequential(delta_state *d, const void *count_tok, ...)
     va_end(ap);
     return 0;
 }
+#endif
 
 /* Undo the last rule, and answer what the unwinding said. The machine can
    be told to skip one of these, which is what the flag is for: it is spent
