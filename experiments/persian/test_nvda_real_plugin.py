@@ -1,11 +1,13 @@
 """Check both Persian test profiles in a running portable NVDA instance."""
 import hashlib
+from bisect import bisect_left
 import json
 import os
 from pathlib import Path
 import re
 import time
 import traceback
+from types import SimpleNamespace
 import wave
 
 import globalPluginHandler
@@ -52,7 +54,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             import synthDriverHandler
             import synthDrivers.reloqC as reloq
             import characterProcessing
-            from synthDrivers.reloqC._persian import continuous_driver, direct_fa_sequence, korean_contour, nvda_driver_probe
+            from synthDrivers.reloqC._persian import continuous_driver, continuous_plan, direct_fa_sequence, korean_contour, nvda_driver_probe
             from synthDrivers.reloqC._persian.persian_symbols import SYMBOL_TAGS
             from synthDrivers.reloqC._reloq_eci_transport import EciTextTransport
             from synthDrivers.reloqC._reloq_persian_frames import FrameCapture
@@ -85,6 +87,43 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                         self.syllable_fits.append(result == 0)
                         return result
                     instance.fit_pitch_anchors = observe_syllables
+                if instance.transfer_us_words is not None:
+                    original_transfer = instance.transfer_us_words
+                    def observe_native_syllables(target, nt, donor, nd, tb, db, words,
+                                                 ts, nts, ds, nds, counts):
+                        result = original_transfer(target, nt, donor, nd, tb, db, words,
+                                                   ts, nts, ds, nds, counts)
+                        observed = False
+                        if result == 0 and counts is not None and ts is not None and ds is not None:
+                            count = tuple(counts[i] for i in range(words))
+                            if any(n > 1 for n in count):
+                                target_item = SimpleNamespace(syllables=tuple((ts[i].from_, ts[i].to) for i in range(nts)))
+                                donor_item = SimpleNamespace(syllables=tuple((ds[i].from_, ds[i].to) for i in range(nds)))
+                                target_bounds = tuple(tb[i] for i in range(words + 1))
+                                donor_bounds = tuple(db[i] for i in range(words + 1))
+                                tg = continuous_plan._syllable_word_edges(target_item, target_bounds, count)
+                                dg = continuous_plan._syllable_word_edges(donor_item, donor_bounds, count)
+                                target_ticks = [target[i].tick for i in range(nt)]
+                                donor_ticks = [donor[i].tick for i in range(nd)]
+                                donor_pitch = [donor[i].controls[1] for i in range(nd)]
+                                for i, n in enumerate(count):
+                                    if n < 2:
+                                        continue
+                                    left = tg[i] if tg is not None else continuous_plan._syllable_edges(
+                                        target_item, target_bounds[i], target_bounds[i+1], n)
+                                    right = dg[i] if dg is not None else continuous_plan._syllable_edges(
+                                        donor_item, donor_bounds[i], donor_bounds[i+1], n)
+                                    for t, d in zip(left, right):
+                                        at = bisect_left(target_ticks, t)
+                                        if at < nt and target_ticks[at] == t and abs(
+                                                target[at].controls[1] - continuous_plan._interp(d, donor_ticks, donor_pitch)) < .01:
+                                            observed = True
+                                            break
+                                    if observed:
+                                        break
+                        self.syllable_fits.append(observed)
+                        return result
+                    instance.transfer_us_words = observe_native_syllables
                 if self.sample_finnish:
                     instance.transfer_korean_pitch = None
             FrameCapture.__init__ = comparison_capture_init
