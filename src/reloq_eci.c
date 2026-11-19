@@ -942,6 +942,47 @@ int ECICALL eciPersianCharacterResolve(uint32_t codepoint,char *output,size_t ca
 int ECICALL eciPersianPinglishWord(const char *word,size_t bytes,char *output,size_t capacity)
 {return reloq_fa_pinglish_word(word,bytes,output,capacity);}
 
+const struct reloq_fa_phone_info *ECICALL eciPersianPhoneInventory(size_t *count)
+{return reloq_fa_phone_inventory(count);}
+
+int ECICALL eciPersianPhonesFromLegacy(const char *text,size_t bytes,
+    struct reloq_fa_phone *phones,size_t capacity,size_t *count,size_t *error_offset)
+{return reloq_fa_phones_from_legacy(text,bytes,phones,capacity,count,error_offset);}
+
+int ECICALL eciPersianPhonesToLegacy(const struct reloq_fa_phone *phones,size_t count,
+    char *output,size_t capacity,size_t *bytes,size_t *error_index)
+{return reloq_fa_phones_to_legacy(phones,count,output,capacity,bytes,error_index);}
+
+int ECICALL eciPersianWordPhonesUtf8(const char *word,size_t bytes,int pinglish,
+    struct reloq_fa_phone *phones,size_t capacity,size_t *count,size_t *error_offset)
+{
+    if(count)*count=0;
+    if(error_offset)*error_offset=0;
+    if(!word || !bytes || !count || (!phones && capacity) ||
+       (pinglish!=0 && pinglish!=1))return -1;
+    char latin_tag[8193],*owned_tag=NULL;size_t *map=NULL,source_error=0;
+    const char *tag;
+    int status;
+    if(pinglish) {
+        status=reloq_fa_pinglish_word(word,bytes,latin_tag,sizeof latin_tag);
+        if(status!=1)return status==0?1:status;
+        tag=latin_tag;
+    } else {
+        status=reloq_fa_direct_text(word,bytes,&owned_tag,&map,&source_error);
+        if(status) {
+            if(error_offset)*error_offset=source_error;
+            return status>0?1:status;
+        }
+        tag=owned_tag;
+    }
+    size_t bridge_error=0;
+    status=reloq_fa_phones_from_legacy(tag,strlen(tag),phones,capacity,count,&bridge_error);
+    free(owned_tag);free(map);
+    /* A valid text result can contain multiple groups or controls: these are
+       currently outside the single-word adapter, not invalid UTF-8 input. */
+    return status==-1?1:status;
+}
+
 int ECICALL eciPersianAcousticScope(int active)
 {return reloq_fa_acoustic_scope(active);}
 

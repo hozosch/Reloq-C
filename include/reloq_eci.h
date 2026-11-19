@@ -320,6 +320,25 @@ ECIAPI int ECICALL eciPersianCharacterResolve(uint32_t codepoint,char *output,si
 ECIAPI int ECICALL eciPersianPinglishWord(const char *word,size_t bytes,
     char *output,size_t capacity);
 
+/* Experimental language-independent phone identities for Iranian Persian.
+ * The legacy adapters preserve the existing acoustic realization and are
+ * not a public dictionary syntax. They accept exactly one phone group. */
+#include "reloq_persian_phones.h"
+ECIAPI const struct reloq_fa_phone_info *ECICALL eciPersianPhoneInventory(size_t *count);
+ECIAPI int ECICALL eciPersianPhonesFromLegacy(const char *text,size_t bytes,
+    struct reloq_fa_phone *phones,size_t capacity,size_t *count,size_t *error_offset);
+ECIAPI int ECICALL eciPersianPhonesToLegacy(const struct reloq_fa_phone *phones,size_t count,
+    char *output,size_t capacity,size_t *bytes,size_t *error_index);
+/* Convert one directly covered word to the same identities. pinglish must be
+ * 0 (Persian script) or 1 (Latin transcription). No dictionary handle or
+ * fallback is used. Returns 0 success, 1 uncovered/unsupported, -1 invalid
+ * input, -2 insufficient capacity/allocation failure. A NULL phones pointer
+ * and zero capacity queries the required number. On failure the caller's
+ * array remains unchanged. error_offset is a source UTF-8 byte offset when
+ * known, otherwise zero. This function does not select or synthesize a voice. */
+ECIAPI int ECICALL eciPersianWordPhonesUtf8(const char *word,size_t bytes,int pinglish,
+    struct reloq_fa_phone *phones,size_t capacity,size_t *count,size_t *error_offset);
+
 /* Select the approved Finnish-based Persian acoustic rules for the current
  * synthesis thread. Restore the returned previous state on every exit.
  * Word and affricate ordinals are request-local; clear both lists after use.
