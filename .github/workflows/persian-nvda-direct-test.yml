@@ -50,6 +50,7 @@ on:
       - experiments/persian/test_persian_vowel_hiatus.py
       - experiments/persian/test_pure_parallel_pilot.py
       - experiments/persian/test_pure_sentence_streaming.py
+      - experiments/persian/test_prefix_streaming.py
       - experiments/persian/test_r_metallic_edge.py
       - experiments/persian/test_persian_final_r_connected.py
       - experiments/persian/test_persian_r_liaison.py
@@ -143,6 +144,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian sentence boundaries or number timing failed' }
           python -B experiments/persian/test_pure_sentence_streaming.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian sentence streaming or source indexes failed' }
+          python -B experiments/persian/test_prefix_streaming.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian incremental playback or cancellation failed' }
           python -B experiments/persian/test_pure_parallel_pilot.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian parallel contour or cancellation failed' }
           python -B experiments/persian/test_persian_decimals.py
@@ -181,7 +184,7 @@ jobs:
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev171; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev172; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
           dll=$(find candidate -name eci.dll -print -quit)
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
           python -B experiments/persian/build_soundlab_nvda.py --output dist/reloq-c-lautlabor-0.2.0.nvda-addon

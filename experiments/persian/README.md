@@ -1951,3 +1951,23 @@ frication targets, adjusts consonant durations and stop transitions, and
 changes short/long vowel timing before selected voiceless consonants. These
 are listening candidates, not claims that every Persian sound should have
 English timing. The shared sentence-melody planner is unchanged.
+
+#### Incremental Persian prefix playback
+
+For a covered Persian or Pinglish phrase, independent native handles can
+capture the Persian acoustics and US contour concurrently. Each capture may
+publish a copied snapshot after two word marks; the NVDA worker fits the first
+word and starts replaying its stable prefix while the remaining capture is
+completed. Replay retains its native session across the two slices. Weak-word
+controls and bracket/comma boundaries are included. Source indexes inside a
+phrase, inline pitch changes, unvalidated reference-reader output, and an
+initial cross-word vowel glide retain the complete-plan path. The snapshot API
+is thread-local; callers copy the rows before returning to native synthesis.
+Cancellation stops both capture workers and the replay handle.
+
+`test_prefix_streaming.py` compares PCM and NVDA index positions against the
+complete plan over multiple voices, clocks, sample rates, randomized native
+words, Persian and Pinglish, and interrupted speech. `benchmark_uncached.py`
+records a separate complete/incremental first-feed comparison; this uses a
+nonblocking test player and does not measure an actual device or NVDA event
+loop. No synthesized audio or sentence result is cached.

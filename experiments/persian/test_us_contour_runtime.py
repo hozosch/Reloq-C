@@ -259,7 +259,10 @@ def main():
             voice.cancel()
             return saved_probe(text)
         audio = bytearray()
-        with patch.object(en.raw, '_phonemes_for_probe', side_effect=cancel_probe):
+        # Exercise the serial fallback explicitly; ordinary short requests
+        # now use the independently cancellable parallel US worker.
+        with patch.object(continuous_driver.os, 'cpu_count', return_value=1), \
+             patch.object(en.raw, '_phonemes_for_probe', side_effect=cancel_probe):
             assert not voice.speak(('سلام دنیا.',), audio.extend, lambda _: None)
         assert not audio, 'a cancelled request emitted stale audio'
 

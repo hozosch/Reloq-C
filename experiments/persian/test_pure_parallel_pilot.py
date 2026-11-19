@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 import sys
 import threading
@@ -19,6 +20,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', type=Path, required=True)
     args = parser.parse_args()
+    previous_stream = os.environ.get('RELOQ_FA_STREAM_PREFIX')
+    os.environ['RELOQ_FA_STREAM_PREFIX'] = '0'
     cpu_count = continuous_driver.os.cpu_count
     continuous_driver.os.cpu_count = lambda: 2
     engine = make_language_engine(args.library, args.library, None, Path('/unavailable'), Path('/unavailable'))
@@ -29,6 +32,7 @@ def main():
         'برای راه‌اندازی رایانه باید این گزینه انتخاب شود.',
         'او آمد و او آمد و پنجره را باز کرد.',
         'من یک کتاب و یک مداد دارم.',
+        'یک', 'سلام دنیا', 'پرانتز باز', '۶۶',
     )
     def render(parts, parallel=True):
         continuous_driver.os.cpu_count = (lambda: 2) if parallel else (lambda: 1)
@@ -108,6 +112,10 @@ def main():
         _CaptureVoice._phonemes_for_probe, FrameCapture.capture = probe, capture
         continuous_driver.os.cpu_count = cpu_count
         engine.close()
+        if previous_stream is None:
+            os.environ.pop('RELOQ_FA_STREAM_PREFIX', None)
+        else:
+            os.environ['RELOQ_FA_STREAM_PREFIX'] = previous_stream
     print(f'Passed {count} exact parallel/serial comparisons, fallback and cancellation.')
 
 

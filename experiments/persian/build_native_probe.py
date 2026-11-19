@@ -2492,6 +2492,144 @@ static int32_t persian_us_mark(void *state,uint8_t st,uint8_t field,uint8_t valu
 
 
 
+def german_j_rules() -> str:
+    """Adapt the German onset /j/ rules to the Persian phone records.
+
+    German and Finnish use different field and enum numbers. The German
+    rules retain their decisions and targets, but comparisons are translated
+    by name before they inspect a Finnish/Persian record.
+    """
+    root = PROVIDER / 'lang' / 'dede61'
+    source = (root / 'delta_authored_dede61.c').read_text(encoding='utf8')
+    source = source.split('uint8_t dede61_evv_authored_data[] = {', 1)[1].split('};', 1)[0]
+    source = re.sub(r'/\*.*?\*/', '', source, flags=re.S)
+    raw = bytes(int(value, 0) for value in
+                re.findall(r'(?<![A-Za-z_])(?:0[xX][0-9a-fA-F]+|[0-9]+)', source))
+    table = (root / 'delta_rules_dede61.c').read_text(encoding='utf8')
+    table = table.split('dede61_delta_rule_sym[] = {', 1)[1].split('};', 1)[0]
+    offsets = [int(value) for value in re.findall(r'dede61_evv_authored_data \+ (\d+)', table)]
+    names = ('stanger_ph_j', 'ger_ph_j')
+    blocks = []
+    for name in names:
+        found = []
+        for path in root.glob('delta_rules_c*.c'):
+            data = path.read_text(encoding='utf8')
+            start = data.find('int32_t reloq_dede61_' + name + '(')
+            if start >= 0:
+                end = data.index('\nstatic int32_t evv_' + name + '(', start)
+                found.append(data[start:end])
+        if len(found) != 1:
+            raise RuntimeError('Cannot locate German J donor ' + name)
+        blocks.append(found[0])
+    indices = sorted({int(x) for block in blocks for x in re.findall(r'delta_sym_ref\[(\d+)\]', block)})
+    width = 32
+    if not indices or len(offsets) <= max(indices) or any(offsets[i] + width > len(raw) for i in indices):
+        raise RuntimeError('German J symbol storage changed')
+    mapping = {index: position for position, index in enumerate(indices)}
+    constants = ',\n'.join('    {' + ','.join(str(x) for x in raw[offsets[i]:offsets[i]+width]) + '}'
+                           for i in indices)
+    helper = r'''
+extern delta_stmt dede61_vstmtbl[];
+static int persian_de_small_female(void *state)
+{
+    int16_t female=0,head=50;
+    memcpy(&female,(const unsigned char *)state+DG_BASE+3092+12,sizeof female);
+    memcpy(&head,(const unsigned char *)state+DG_BASE+3092+14,sizeof head);
+    return female && head<30;
+}
+static const unsigned char persian_de_constants[][32]={
+__CONSTANTS__
+};
+static _Atomic int32_t persian_de_constants_ref;
+static int32_t persian_de_symbols(void)
+{
+    int32_t result=atomic_load_explicit(&persian_de_constants_ref,memory_order_acquire);
+    if (result) return result;
+    void *copy=evv_arena_alloc(sizeof persian_de_constants);
+    if (!copy) return 0;
+    memcpy(copy,persian_de_constants,sizeof persian_de_constants);
+    int32_t made=EVV_REF(copy),expected=0;
+    if (!atomic_compare_exchange_strong_explicit(&persian_de_constants_ref,&expected,made,
+                                                  memory_order_release,memory_order_acquire)) {
+        evv_arena_free(copy);
+        return expected;
+    }
+    return made;
+}
+static int persian_de_field_number(unsigned st,unsigned field)
+{
+    if (st>8 || field>=(unsigned)dede61_vstmtbl[st].nfields) return -1;
+    const char *name=dede61_vstmtbl[st].fields[field].name;
+    if (!name) return -1;
+    for (int i=0;i<vstmtbl[st].nfields;i++)
+        if (vstmtbl[st].fields[i].name && !strcmp(name,vstmtbl[st].fields[i].name)) return i;
+    return -1;
+}
+static int persian_de_value(unsigned st,unsigned field,unsigned value,int local)
+{
+    const delta_fielddesc *src=&dede61_vstmtbl[st].fields[field];
+    const delta_fielddesc *dst=&vstmtbl[st].fields[local];
+    if (!src->values || !dst->values) return (int)value;
+    if (value>=(unsigned)src->nvalues) return -1;
+    const char *name=((const char *const *)src->values)[value];
+    if (!name) return -1;
+    if (st==2 && field==0 && !strcmp(name,"O")) name="o";
+    for (int i=0;i<dst->nvalues;i++) {
+        const char *candidate=((const char *const *)dst->values)[i];
+        if (candidate && !strcmp(name,candidate)) return i;
+    }
+    return -1;
+}
+static int32_t persian_de_field(void *state,uint8_t st,uint8_t field,uint8_t value)
+{
+    int local=persian_de_field_number(st,field);
+    int mapped=local<0 ? -1 : persian_de_value(st,field,value,local);
+    return mapped<0 ? 1 : reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq,state,st,(uint8_t)local,(uint8_t)mapped);
+}
+static int32_t persian_de_string(void *state,uint8_t st,uint8_t count,const uint8_t *source)
+{
+    if (st>8 || !source || count>32 || persian_de_field_number(st,0)!=0) return 1;
+    uint8_t mapped[32];
+    for (unsigned i=0;i<count;i++) {
+        int value=persian_de_value(st,0,source[i],0);
+        if (value<0 || value>255) return 1;
+        mapped[i]=(uint8_t)value;
+    }
+    return test_string_s(state,st,count,mapped);
+}
+'''.replace('__CONSTANTS__', constants)
+    fields = {399: 398, 400: 399, 403: 402, 449: 448, 451: 450,
+              453: 452, 455: 454, 457: 456}
+    pieces = []
+    for name, block in zip(names, blocks):
+        block = block.replace('int32_t reloq_dede61_' + name + '(',
+                              'static int32_t persian_de_' + name + '(', 1)
+        used = {int(x) for x in re.findall(r'STATE\(int16_t, s(\d+)\)', block)}
+        if not used <= (fields.keys() | {367}):
+            raise RuntimeError('German J state layout changed: ' + name)
+        # German's s367 is its small-female-voice flag, rather than the
+        # unrelated Finnish state cell with the same name. The German voice
+        # setup selects it only when the female head size is below 30.
+        block = block.replace('STATE(int16_t, s367)', 'persian_de_small_female(state)')
+        block = re.sub(r'STATE\(int16_t, s(\d+)\)',
+                       lambda m: f'STATE(int16_t, s{fields[int(m.group(1))]})', block)
+        block = re.sub(r'delta_sym_ref\[(\d+)\]',
+                       lambda m: f'(persian_de_refs + {mapping[int(m.group(1))]*width})', block)
+        marker = '    unsigned char *frame = evv_frame_push('
+        if block.count(marker) != 1:
+            raise RuntimeError('Cannot locate German J frame: ' + name)
+        block = block.replace(marker, '    const int32_t persian_de_refs=persian_de_symbols();\n'
+                              '    if (!persian_de_refs) return 94;\n' + marker, 1)
+        block = block.replace('reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq, state,',
+                              'persian_de_field(state,')
+        block = block.replace('reloq61_typed_test_string_s(DELTA_ENTRY_test_string_s, state,',
+                              'persian_de_string(state,')
+        if 'reloq_call_dede61_' in block:
+            raise RuntimeError('Unmapped German J dependency: ' + name)
+        pieces.append(block)
+    return helper + '\n' + '\n'.join(pieces)
+
+
 def brazilian_r_rules() -> str:
     """Use the actual Portuguese /r/ and duration rules on Persian records.
 
@@ -3371,7 +3509,7 @@ static void persian_articulation_nasal(void *state,int second_formant)
     final_t = FINNISH_L_WORD_FINAL.replace('persian_probe_l_word_final',
                                            'persian_probe_t_word_final').replace(
                                                'testFldeq(d,2,0,21)', 'testFldeq(d,2,0,2)')
-    text = text.replace(marker, us_consonant_rules() + '\n' + brazilian_r_rules() +
+    text = text.replace(marker, us_consonant_rules() + '\n' + german_j_rules() + '\n' + brazilian_r_rules() +
                         '\n' + final_r + '\n' + final_t + '\n' + helper + '\n' + marker, 1)
     for phone in 'ptkbdgfvszSZ':
         call = f'    r0 = reloq_call_fifi_fin_ph_{phone}(state, (int32_t)(FIELD(0)));\n'
@@ -3409,8 +3547,8 @@ static void persian_articulation_nasal(void *state,int second_formant)
         const char *us=getenv("RELOQ_FA_US_GLIDE");
         if (us && us[0]=='1' && !us[1] &&
             persian_articulation_word_initial(state,STATE_AT(w60,-4))) {
-            r0=persian_us_ga_ph_y(state,(int32_t)(FIELD(0)));
-            if (!r0) r0=persian_us_eng_ph_y(state,(int32_t)(FIELD(0)));
+            r0=persian_de_stanger_ph_j(state,(int32_t)(FIELD(0)));
+            if (!r0) r0=persian_de_ger_ph_j(state,(int32_t)(FIELD(0)));
         } else {
 ''' + call + '        }\n    }\n', 1)
     call = '    r0 = reloq_call_fifi_fin_ph_r(state, (int32_t)(FIELD(0)));\n'

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from dataclasses import replace
 import threading
 
 if __package__:
@@ -24,8 +25,9 @@ else:
 
 
 class _CaptureVoice:
-    def __init__(self, engine, prefix, validate, cancelled):
+    def __init__(self, engine, prefix, validate, cancelled, source=''):
         self.engine, self.prefix, self.validate, self.cancelled = engine, prefix, validate, cancelled
+        self.source = source
         self._request_phones = {}
         raw = engine._voice if isinstance(engine, ScopedDirectPersianEngine) else engine
         self._dll, self._handle = raw._dll, raw._handle
@@ -47,18 +49,23 @@ class _CaptureVoice:
         parts = (*self.prefix, *parts)
         if not isinstance(self.engine, ScopedDirectPersianEngine):
             return self.engine.speak(parts, on_pcm, on_index) and not self.cancelled.is_set()
-        tagged_parts = tuple(EciText(item, segmentation_guarded=True) if isinstance(item, str) else item
-                             for item in parts)
+        def normalized_space(value):
+            return ''.join(' ' if ord(char) > 127 and char.isspace() else char for char in value)
+        tagged_parts = tuple(EciText(normalized_space(item), segmentation_guarded=True)
+                             if isinstance(item, str) else
+                             replace(item, text=normalized_space(item.text))
+                             if isinstance(item, EciText) and not item.is_control else item for item in parts)
         tagged = ''.join(item.text for item in tagged_parts
-                         if isinstance(item, EciText) and not item.speed_control)
-        prepared = _safe_native_punctuation(ProjectedJob('', tagged, tagged_parts, self.validate))
+                         if isinstance(item, EciText) and not item.is_control)
+        prepared = _safe_native_punctuation(ProjectedJob(self.source, tagged, tagged_parts, self.validate))
         return self.engine._speak_prepared(prepared, on_pcm, on_index,
                                            neutralize_stress=False) and not self.cancelled.is_set()
 
 
 class ParallelPilot:
-    def __init__(self, library):
+    def __init__(self, library, *, persian=False):
         self._library = Path(library)
+        self._persian = persian
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='reloq.fa-contour')
         self._guard = threading.Lock()
         self._engine = None
@@ -77,7 +84,8 @@ class ParallelPilot:
     def _open(self):
         if self._engine is not None:
             return
-        engine = DirectEciEngine(self._library, dialect=0x10000, encoding='utf8', native_voice=True)
+        engine = (ScopedDirectPersianEngine(self._library, None) if self._persian else
+                  DirectEciEngine(self._library, dialect=0x10000, encoding='utf8', native_voice=True))
         engine.set_parameter(PROCESS_TAGS, 1)
         with self._guard:
             if self._closed:
@@ -100,6 +108,24 @@ class ParallelPilot:
             return self._executor.submit(self._capture_proxy, tagged, tuple(marks), tuple(prefix),
                                          dict(parameters), dictionary, cancelled, maximum)
 
+    def submit_snapshot(self, *, parts, prefix, validate, source, parameters, dictionary,
+                        cancelled, maximum, snapshot_at, on_snapshot):
+        with self._guard:
+            if self._closed:
+                raise RuntimeError('Persian contour worker is closed')
+            return self._executor.submit(self._capture, tuple(parts), tuple(prefix), validate,
+                                         dict(parameters), dictionary, cancelled, maximum, False,
+                                         snapshot_at, on_snapshot, source)
+
+    def submit_proxy_snapshot(self, *, tagged, marks, prefix, parameters, dictionary,
+                              cancelled, maximum, snapshot_at, on_snapshot):
+        with self._guard:
+            if self._closed:
+                raise RuntimeError('Persian contour worker is closed')
+            return self._executor.submit(self._capture_proxy, tagged, tuple(marks), tuple(prefix),
+                                         dict(parameters), dictionary, cancelled, maximum,
+                                         snapshot_at, on_snapshot)
+
     def _prepare_engine(self, parameters, dictionary, cancelled):
         if cancelled.is_set():
             raise InterruptedError('sentence planning was cancelled')
@@ -107,10 +133,12 @@ class ParallelPilot:
             self._open()
         engine = self._engine
         engine._cancelled.clear()
+        if isinstance(engine, ScopedDirectPersianEngine):
+            engine._voice._cancelled.clear()
         if cancelled.is_set():
             raise InterruptedError('sentence planning was cancelled')
         if dictionary != self._dictionary:
-            engine.set_dictionary_path(dictionary)
+            (engine._voice if isinstance(engine, ScopedDirectPersianEngine) else engine).set_dictionary_path(dictionary)
             self._dictionary = dictionary
         for parameter, value in parameters.items():
             if parameter == PROCESS_TAGS:
@@ -122,7 +150,8 @@ class ParallelPilot:
             raise InterruptedError('sentence planning was cancelled')
         return engine
 
-    def _capture_proxy(self, tagged, marks, prefix, parameters, dictionary, cancelled, maximum):
+    def _capture_proxy(self, tagged, marks, prefix, parameters, dictionary, cancelled, maximum,
+                       snapshot_at=None, on_snapshot=None):
         engine = self._prepare_engine(parameters, dictionary, cancelled)
         if __package__:
             from .continuous_plan import indexed_us_proxy
@@ -130,12 +159,17 @@ class ParallelPilot:
             from continuous_plan import indexed_us_proxy
         voice = _CaptureVoice(engine, (), False, cancelled)
         proxy = indexed_us_proxy(tagged, voice, marks)
-        return self._capture(proxy, prefix, False, parameters, dictionary, cancelled, maximum, False)
+        return self._capture(proxy, prefix, False, parameters, dictionary, cancelled, maximum, False,
+                             snapshot_at, on_snapshot)
 
-    def _capture(self, parts, prefix, validate, parameters, dictionary, cancelled, maximum, audio):
+    def _capture(self, parts, prefix, validate, parameters, dictionary, cancelled, maximum, audio,
+                 snapshot_at=None, on_snapshot=None, source=''):
         engine = self._prepare_engine(parameters, dictionary, cancelled)
-        voice = _CaptureVoice(engine, prefix, validate, cancelled)
-        result = FrameCapture(voice._dll).capture(voice, parts, maximum=maximum, audio=audio)
+        voice = _CaptureVoice(engine, prefix, validate, cancelled, source)
+        options = {'maximum': maximum, 'audio': audio}
+        if snapshot_at is not None:
+            options.update(snapshot_at=snapshot_at, on_snapshot=on_snapshot)
+        result = FrameCapture(voice._dll).capture(voice, parts, **options)
         if cancelled.is_set() or result is None:
             raise InterruptedError('sentence planning was cancelled')
         return result

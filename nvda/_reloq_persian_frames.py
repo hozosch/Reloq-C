@@ -62,6 +62,10 @@ class FrameCapture:
         self._end = _native_function(dll, 'eciPersianCaptureEnd', 'reloq_fa_capture_end')
         self._end.argtypes = (ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_int))
         self._end.restype = ctypes.POINTER(NativeFrame)
+        self._current = getattr(dll, 'eciPersianCaptureCurrent', None)
+        if self._current is not None:
+            self._current.argtypes = (ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_int))
+            self._current.restype = ctypes.POINTER(NativeFrame)
         self._syllables = _native_function(dll, 'eciPersianCaptureSyllables', 'reloq_fa_capture_syllables')
         if self._syllables is not None:
             self._syllables.argtypes = (ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_int))
@@ -158,7 +162,8 @@ class FrameCapture:
                 ctypes.POINTER(ctypes.c_ubyte))
             self.bridge_continuation.restype = ctypes.c_int
 
-    def capture(self, voice, parts, *, maximum=60000, audio=True, phone_segments=False):
+    def capture(self, voice, parts, *, maximum=60000, audio=True, phone_segments=False,
+                snapshot_at=None, on_snapshot=None):
         if type(maximum) is not int or not 1 <= maximum <= 120000:
             raise ValueError('invalid frame capture limit')
         pcm, indexes = bytearray(), []
@@ -178,8 +183,27 @@ class FrameCapture:
             if native_pcm and self._store_pcm(1):
                 raise RuntimeError('cannot enable native PCM capture')
             native_clock = silent_clock or native_pcm
-            completed = voice.speak(parts, pcm.extend, lambda value: indexes.append(
-                (value, self._sample_count() if native_clock else len(pcm) // 2)))
+            def index(value):
+                nonlocal on_snapshot
+                sample = self._sample_count() if native_clock else len(pcm) // 2
+                indexes.append((value, sample))
+                if on_snapshot is not None and value == snapshot_at:
+                    callback, on_snapshot = on_snapshot, None
+                    if self._current is None or not silent_clock:
+                        return
+                    count, failed = ctypes.c_size_t(), ctypes.c_int()
+                    pointer = self._current(ctypes.byref(count), ctypes.byref(failed))
+                    if failed.value or (count.value and not pointer):
+                        return
+                    rows = ctypes.string_at(pointer, count.value * ctypes.sizeof(NativeFrame)) if count.value else b''
+                    syllables = ()
+                    if self._syllables is not None:
+                        count, failed = ctypes.c_size_t(), ctypes.c_int()
+                        data = self._syllables(ctypes.byref(count), ctypes.byref(failed))
+                        if not failed.value and data:
+                            syllables = tuple((data[i].from_, data[i].to) for i in range(count.value))
+                    callback(NativeCapture(bytes(sample * 2), tuple(indexes), rows, syllables))
+            completed = voice.speak(parts, pcm.extend, index)
             sample_count = self._sample_count() if silent_clock else 0
             count, failed = ctypes.c_size_t(), ctypes.c_int()
             pointer = self._end(ctypes.byref(count), ctypes.byref(failed))

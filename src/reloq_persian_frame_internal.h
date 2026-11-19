@@ -11,6 +11,7 @@ void reloq_fa_tuning_prepare_revision(struct reloq_fa_tuning_filter *,const floa
 /* Capture storage is thread-local and released after each request. */
 int reloq_fa_capture_begin(size_t maximum);
 const struct reloq_fa_frame *reloq_fa_capture_end(size_t *count, int *failed);
+const struct reloq_fa_frame *reloq_fa_capture_current(size_t *count, int *failed);
 void reloq_fa_capture_release(void);
 void reloq_fa_capture_syllable(void *context,int32_t from,int32_t to);
 const struct reloq_fa_syllable *reloq_fa_capture_syllables(size_t *count,int *failed);

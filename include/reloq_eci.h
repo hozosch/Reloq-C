@@ -342,6 +342,7 @@ struct reloq_fa_frame_mark;
 struct reloq_fa_syllable;
 ECIAPI int ECICALL eciPersianCaptureBegin(size_t maximum);
 ECIAPI const struct reloq_fa_frame *ECICALL eciPersianCaptureEnd(size_t *count,int *failed);
+ECIAPI const struct reloq_fa_frame *ECICALL eciPersianCaptureCurrent(size_t *count,int *failed);
 ECIAPI const struct reloq_fa_syllable *ECICALL eciPersianCaptureSyllables(size_t *count,int *failed);
 ECIAPI void ECICALL eciPersianCaptureRelease(void);
 ECIAPI int ECICALL eciPersianCaptureSetControlsOnly(int enabled);

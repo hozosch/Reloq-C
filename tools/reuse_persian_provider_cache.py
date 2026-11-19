@@ -128,6 +128,10 @@ DEV171_BASE = '47556f94145392ee16adf706b40ebab347ba1df6'
 DEV171_KEY = ('persian-windows-provider-gcc14-v2-'
               '02eff3929fd30e8fdebed50f38e28587951afe693dc8f0aa800f0512c3cf5f6b')
 DEV171_ALLOWED = {'experiments/persian/build_native_probe.py'}
+DEV172_BASE = '63fc7704d1c04d7c4ea2989608fb965d46383840'
+DEV172_KEY = ('persian-windows-provider-gcc14-v2-'
+              '4edfcf5f09f279de3e60241a807f6da8ee0269a801e9ce9fa6db6de9eba9a7ea')
+DEV172_ALLOWED = {'experiments/persian/build_native_probe.py', 'include/reloq_eci.h'}
 DEV170_ALLOWED = {'experiments/persian/build_native_probe.py',
                   'vendor/openevv61/Makefile.native', 'tools/prepare_persian_provider.py'}
 DEV161_ALLOWED = {
@@ -223,6 +227,12 @@ def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'}), added
 def main():
     try:
         key = os.environ.get('PERSIAN_PROVIDER_CACHE_KEY', '')
+        if key == DEV172_KEY:
+            changed = set(git('diff', '--name-only', DEV172_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV172_ALLOWED:
+                raise ValueError('German onset and capture API inputs differ from the verified scope')
+            reuse_dev156_generated(frozenset({'delta_rules_c02_fifi.c'}), original_count=22)
+            return
         if key == DEV171_KEY:
             changed = set(git('diff', '--name-only', DEV171_BASE, 'HEAD', '--', *INPUTS).splitlines())
             if changed != DEV171_ALLOWED:

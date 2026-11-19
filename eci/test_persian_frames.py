@@ -30,6 +30,7 @@ def main():
                              'reloq_fa_acoustic_scope'):
                     assert not hasattr(voice._dll, name), name
             assert FrameStream.available(voice._dll)
+            assert capture._current is not None
             for rate, gender in ((1, 0), (3, 0), (6, 1)):
                 voice.set_parameter(SAMPLE_RATE, rate)
                 voice.set_parameter(GENDER, gender)
@@ -68,6 +69,15 @@ def main():
                     stream.close()
                 assert streamed == rendered and indexes == rendered_marks
                 checks += 1
+            snapshots = []
+            parts = (EciIndex(10), text, EciIndex(11), text, EciIndex(12))
+            complete = capture.capture(voice, parts, audio=False, snapshot_at=11,
+                                       on_snapshot=snapshots.append)
+            assert complete and len(snapshots) == 1
+            partial = snapshots[0]
+            assert partial.frame_bytes and complete.frame_bytes.startswith(partial.frame_bytes)
+            assert partial.indexes == complete.indexes[:len(partial.indexes)]
+            assert partial.indexes[-1][0] == 11 and len(partial.pcm) <= len(complete.pcm)
             # Begin/end are request-local and reject nesting and bad bounds.
             assert capture._begin(0) != 0
             assert capture._begin(8) == 0 and capture._begin(8) != 0

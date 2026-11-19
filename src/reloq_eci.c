@@ -1976,6 +1976,8 @@ int ECICALL eciPersianCaptureBegin(size_t maximum)
 }
 const struct reloq_fa_frame *ECICALL eciPersianCaptureEnd(size_t *count,int *failed)
 {reloq61_syllable_trace_set(NULL,NULL);return reloq_fa_capture_end(count,failed);}
+const struct reloq_fa_frame *ECICALL eciPersianCaptureCurrent(size_t *count,int *failed)
+{return reloq_fa_capture_current(count,failed);}
 const struct reloq_fa_syllable *ECICALL eciPersianCaptureSyllables(size_t *count,int *failed)
 {return reloq_fa_capture_syllables(count,failed);}
 void ECICALL eciPersianCaptureRelease(void)

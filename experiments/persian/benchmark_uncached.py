@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import statistics
 import sys
@@ -43,6 +44,8 @@ LONG_PERSIAN_FIRST = ('نشان دادَنِ گزینه‌های خروج هنگ
 LONG_ENGLISH_FIRST = ('NVDA نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از',
                       'NVDA سیستم نمایش تنظیمات گفتار را فعال کنید',
                       'NVDA پژوهشگر سلام', 'NVDA سلام دنیا')
+LONG_PURE = ('استفاده از تنظیماتِ ذخیره‌شده‌ی فعلی هنگامِ ورود به ویندوز و دیگر صفحاتِ امن '
+             '(به اِختیاراتِ مدیریتی نیاز دارد)',) * 12
 
 
 class Player:
@@ -95,7 +98,7 @@ class Uncached:
 
 def measure(args, *, streaming, english=False, fallback=False, cancel_before=False,
             short=False, long_first=False, long_english_first=False, repeated=False,
-            native_speed=None, native_wpm=None, sample_rate=None):
+            native_speed=None, native_wpm=None, sample_rate=None, pure=False):
     FrameStream.available = staticmethod(args.available if streaming else lambda _dll: False)
     player, done, errors = Player(), threading.Event(), []
     def factory():
@@ -122,8 +125,9 @@ def measure(args, *, streaming, english=False, fallback=False, cancel_before=Fal
             raise RuntimeError('transport benchmark failed: ' + repr(errors))
         return round((player.first - start) / 1e6, 3)
     try:
-        cold = run('one simple label' if english else FALLBACK[0] if fallback else 'NVDA خوب است.')
-        texts = (ENGLISH if english else FALLBACK if fallback else LONG_PERSIAN_FIRST
+        cold = run('one simple label' if english else FALLBACK[0] if fallback else LONG_PURE[0]
+                   if pure else 'NVDA خوب است.')
+        texts = (ENGLISH if english else FALLBACK if fallback else LONG_PURE if pure else LONG_PERSIAN_FIRST
                  if long_first else LONG_ENGLISH_FIRST if long_english_first else SHORT_MIXED if short else MIXED)
         if repeated:
             texts = (texts[0],) * max(6, len(texts))
@@ -161,6 +165,22 @@ def main():
                   'uncached_fallback_repeated': measure(args, streaming=True, fallback=True, repeated=True),
                   'uncached_fallback_after_stop': measure(args, streaming=True, fallback=True, cancel_before=True),
                   'native_english': measure(args, streaming=False, english=True)}
+        # Alternate complete and incremental Persian planning using the same
+        # nonblocking playback model. This is CPU-to-feed latency, not the
+        # user's sound device or NVDA event-loop latency.
+        previous_prefix = os.environ.get('RELOQ_FA_STREAM_PREFIX')
+        try:
+            pure_comparisons = {}
+            for enabled in (False, True):
+                os.environ['RELOQ_FA_STREAM_PREFIX'] = '1' if enabled else '0'
+                pure_comparisons['incremental' if enabled else 'complete'] = measure(
+                    args, streaming=True, pure=True, native_speed=82, sample_rate=3)
+            result['pure_prefix_comparison'] = pure_comparisons
+        finally:
+            if previous_prefix is None:
+                os.environ.pop('RELOQ_FA_STREAM_PREFIX', None)
+            else:
+                os.environ['RELOQ_FA_STREAM_PREFIX'] = previous_prefix
         # Compare the old long-only threshold and the current shorter-label
         # threshold in this same environment. Each measurement creates fresh
         # handles and renders every text again; it is not a speech cache.

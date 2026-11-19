@@ -295,6 +295,8 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 # Load a second voice handle in its own thread while NVDA is
                 # selecting the voice. No speech results are retained.
                 self._persian_contour_worker = ParallelPilot(self._dll)
+                if os.environ.get('RELOQ_FA_STREAM_PREFIX', '1') == '1':
+                    self._persian_capture_worker = ParallelPilot(self._dll, persian=True)
             except (RuntimeError, OSError):
                 pass
         if (US_ENGLISH.id in self._languages and
@@ -325,6 +327,9 @@ class PersianProbeLanguageEngine(LanguageEngine):
         worker = getattr(self, '_persian_contour_worker', None)
         if worker is not None:
             worker.cancel()
+        worker = getattr(self, '_persian_capture_worker', None)
+        if worker is not None:
+            worker.cancel()
 
     def close(self):
         korean = getattr(self, '_persian_korean_contour', None)
@@ -334,6 +339,10 @@ class PersianProbeLanguageEngine(LanguageEngine):
         worker = getattr(self, '_persian_contour_worker', None)
         if worker is not None:
             self._persian_contour_worker = None
+            worker.close()
+        worker = getattr(self, '_persian_capture_worker', None)
+        if worker is not None:
+            self._persian_capture_worker = None
             worker.close()
         super().close()
 

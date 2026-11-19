@@ -1,11 +1,11 @@
-"""Check initial US /j/, earlier medial /j/, and the original 'three' E."""
+"""Check German initial /j/, unchanged medial /j/, and the 'three' E."""
 from __future__ import annotations
 
 import argparse
 from pathlib import Path
 
 from test_us_articulation import capture, voice
-from _reloq_eci_direct import GENDER, NATIVE_SPEED, SAMPLE_RATE
+from _reloq_eci_direct import GENDER, HEAD_SIZE, NATIVE_SPEED, SAMPLE_RATE
 
 
 def first_voiced(rows):
@@ -33,7 +33,7 @@ def main():
     parser.add_argument('--older', type=Path, help='optional dev150 library')
     args = parser.parse_args()
     fa, scope = voice(args.candidate, 0x90000)
-    us, us_scope = voice(args.candidate, 0x10000)
+    german, german_scope = voice(args.candidate, 0x40000)
     previous, previous_scope = voice(args.previous, 0x90000) if args.previous else (None, None)
     old, old_scope = voice(args.older, 0x90000) if args.older else (None, None)
     checks = 0
@@ -41,23 +41,25 @@ def main():
         for gender in (0, 1):
             for rate in (1, 3, 6):
                 for speed in (40, 98, 170):
-                    for engine in (fa, us, previous, old):
+                    for engine in (fa, german, previous, old):
                         if engine:
                             for key, value in ((GENDER, gender), (SAMPLE_RATE, rate), (NATIVE_SPEED, speed)):
                                 engine.set_parameter(key, value)
                     for vowel in 'aAeio u'.replace(' ', ''):
                         a, ar = capture(fa, scope, '`[.1j' + vowel + ']', True)
-                        _, br = capture(us, us_scope, '`[.1y' + ('E' if vowel == 'e' else vowel) + ']', False)
+                        _, br = capture(german, german_scope, '`[.1j' + vowel + ']', False)
                         left, right = first_voiced(ar), first_voiced(br)
-                        for column in (2, 7, 9, 13, 15, 16):
+                        # Compare the first three resonances and their widths.
+                        # Source loudness, pitch, and upper resonances also
+                        # depend on the surrounding language and voice.
+                        for column in (9, 10, 13, 14, 15, 16):
                             assert abs(left[column] - right[column]) <= 1, (
                                 gender, rate, speed, vowel, column, left[column], right[column])
                         if previous:
                             earlier, before = capture(previous, previous_scope, '`[.1j' + vowel + ']', True)
                             assert len(a.pcm) == len(earlier.pcm) and len(ar) == len(before), (
                                 gender, rate, speed, vowel, 'changed phone timing')
-                            if vowel != 'e':
-                                assert a.pcm == earlier.pcm, (gender, rate, speed, vowel, 'initial J changed')
+                            assert a.pcm != earlier.pcm, (gender, rate, speed, vowel, 'initial J unchanged')
                         checks += 1
                     for tag, initial in (('`[.1aja]', False), ('`[.1aj]', False),
                                          ('`[.0mi.1jan.0gin]', False),
@@ -72,11 +74,8 @@ def main():
                                  r.controls[13] > (1950 if gender else 1700)]
                         assert any(c[16] >= 450 if initial else 145 <= c[16] <= 155
                                    for c in glide), (gender, rate, speed, tag)
-                        if initial and previous:
+                        if not initial and previous:
                             earlier, _ = capture(previous, previous_scope, tag, True)
-                            assert current.pcm == earlier.pcm, (gender, rate, speed, tag)
-                        if not initial and old:
-                            earlier, _ = capture(old, old_scope, tag, True)
                             assert current.pcm == earlier.pcm, (gender, rate, speed, tag)
                         checks += 1
                     tags = ('`[.1se]', '`[.1jek]', '`[.1pe]', '`[.1te]', '`[.1ke]',
@@ -98,8 +97,21 @@ def main():
                             if tag == '`[.1se]':
                                 assert current.pcm == earlier.pcm, (gender, rate, speed, 'three reference changed')
                         checks += 1
+        # The German core reduces the onset voice for very small female
+        # heads. Verify the threshold on both sides rather than reading the
+        # unrelated Finnish state flag with the same generated name.
+        for gender in (0, 1):
+            for head in (22, 29, 30, 50):
+                for engine in (fa, german):
+                    for key, value in ((GENDER, gender), (HEAD_SIZE, head),
+                                       (SAMPLE_RATE, 3), (NATIVE_SPEED, 82)):
+                        engine.set_parameter(key, value)
+                _, actual = capture(fa, scope, '`[.1je]', True)
+                _, reference = capture(german, german_scope, '`[.1je]', False)
+                assert abs(first_voiced(actual)[2] - first_voiced(reference)[2]) <= 1, (gender, head)
+                checks += 1
     finally:
-        fa.close(); us.close()
+        fa.close(); german.close()
         if old:
             old.close()
         if previous:

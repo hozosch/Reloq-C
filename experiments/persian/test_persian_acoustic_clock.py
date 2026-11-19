@@ -6,19 +6,23 @@ from unittest.mock import patch
 from nvda_driver_probe import make_language_engine,PERSIAN_PROBE,PINGLISH_PROBE
 from _reloq_languages import ACOUSTIC_CLOCK_BITS,FINNISH,US_ENGLISH
 from _reloq_eci_direct import GENDER,NATIVE_SPEED,ORIGINAL_ACOUSTIC_CLOCK,SAMPLE_RATE
-from _reloq_persian_frames import FrameReplay
+from _reloq_persian_frames import FrameReplay,FrameStream
 import continuous_driver
 
 
 def actual(engine,text):
     samples=bytearray();frames=[];fitted=[]
-    original=FrameReplay.replay;fit=continuous_driver.fit_us_word_pitch
+    original=FrameReplay.replay;append=FrameStream.append;fit=continuous_driver.fit_us_word_pitch
     def replay(self,voice,rows,marks,*args,**kwargs):
         frames.extend((int(r.tick),tuple(r.controls)) for r in rows)
         return original(self,voice,rows,marks,*args,**kwargs)
     def fitted_call(*args,**kwargs):
         result=fit(*args,**kwargs);fitted.append(result);return result
-    with patch.object(FrameReplay,'replay',new=replay),patch.object(continuous_driver,'fit_us_word_pitch',new=fitted_call):
+    def streamed(self,rows,first,last,marks=()):
+        frames.extend((int(rows[i].tick),tuple(rows[i].controls)) for i in range(first,last))
+        return append(self,rows,first,last,marks)
+    with patch.object(FrameReplay,'replay',new=replay),patch.object(FrameStream,'append',new=streamed), \
+         patch.object(continuous_driver,'fit_us_word_pitch',new=fitted_call):
         assert engine.speak((text,),samples.extend,lambda _:None)
     assert samples and frames and any(fitted),'Persian US pitch planning missing'
     return bytes(samples),frames

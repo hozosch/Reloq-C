@@ -149,6 +149,16 @@ FA_EXPORT const struct reloq_fa_frame *reloq_fa_capture_end(size_t *count, int *
     return capture.frames;
 }
 
+/* Called by the capture's own callback thread. The caller must copy the
+ * returned rows before returning to the synthesizer, which can reallocate
+ * the capture on its next frame. */
+const struct reloq_fa_frame *reloq_fa_capture_current(size_t *count, int *failed)
+{
+    if(!count || !failed || !capture.active)return NULL;
+    *count=capture.count;*failed=capture.failed;
+    return capture.frames;
+}
+
 FA_EXPORT void reloq_fa_capture_release(void)
 {
     free(capture.frames);
@@ -176,7 +186,7 @@ void reloq_fa_capture_syllable(void *context,int32_t from,int32_t to)
 
 FA_EXPORT const struct reloq_fa_syllable *reloq_fa_capture_syllables(size_t *count,int *failed)
 {
-    if(!count || !failed || capture.active)return NULL;
+    if(!count || !failed)return NULL;
     *count=capture.syllable_count;*failed=capture.syllable_failed;
     return capture.syllables;
 }

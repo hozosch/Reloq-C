@@ -5,6 +5,7 @@ import logging
 from collections import OrderedDict
 import ctypes
 import os
+import queue
 import re
 from bisect import bisect_left
 from dataclasses import replace
@@ -666,7 +667,12 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
     if owner._cancelled.is_set():
         return False
     pending_pilot = None
+    pending_target = None
     pilot_worker = None
+    target_worker = None
+    stream = None
+    streamed_frames = 0
+    streamed_marks = ()
     try:
         try:
             prepared = project(items, engine._frontend, allow_fallback=engine._allow_fallback,
@@ -738,6 +744,18 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
         previous_tags = 1
         word_marks = tuple(words[word] for word in range(1, len(matches)))
         tagged_donor = _sentence_colons_as_periods(prepared.tagged, prepared.source)
+        stream_candidate = (os.environ.get('RELOQ_FA_STREAM_PREFIX', '1') == '1' and
+                            (os.cpu_count() or 1) > 1 and len(matches) >= 4 and
+                            not prepared.needs_native_validation and
+                            not internal_pitch and 1 not in glide_words and
+                            all(offset in (0, len(prepared.tagged)) for _, offset, _ in source) and
+                            all(re.fullmatch(r'\s*(?:`00\s*)?(?:[()\[\]{},،]\s*(?:`00\s*)?)*', sep)
+                                for sep in separators) and
+                            bool(word_marks) and
+                            FrameStream.available(voice._dll) and
+                            getattr(voice._dll, 'eciPersianCaptureCurrent', None) is not None and
+                            getattr(owner, '_persian_capture_worker', None) is not None and
+                            getattr(owner, '_persian_contour_worker', None) is not None)
         if us_available:
             english_key = owner._key(US_ENGLISH.id, key[1])
             english_engine = owner._activate(english_key)
@@ -754,10 +772,11 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             # The US pilot owns a separate handle. Begin its full capture
             # while the Persian handle captures the very same request; the
             # result is still fitted before any audio or index is emitted.
-            # Short labels stay serial to avoid thread scheduling overhead.
-            if len(matches) >= 4 and (os.cpu_count() or 1) > 1:
+            # Short labels and single numbers benefit too: their target and
+            # donor planning otherwise add up on the navigation path.
+            if matches and (os.cpu_count() or 1) > 1:
                 pilot_worker = getattr(owner, '_persian_contour_worker', None)
-                if pilot_worker is not None:
+                if pilot_worker is not None and not stream_candidate:
                     try:
                         pending_pilot = pilot_worker.submit_proxy(
                             tagged=tagged_donor, marks=word_marks, prefix=donor_prefix,
@@ -767,7 +786,79 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                     except (RuntimeError, OSError):
                         pending_pilot = None
         capture_api = FrameCapture(voice._dll)
-        captured = capture_api.capture(voice, sequence, maximum=30000, audio=False)
+        captured_rate = SAMPLE_RATES.get(voice._dll.eciGetParam(voice._handle, SAMPLE_RATE))
+        original_clock = _original_persian_clock(voice.raw)
+        captured = None
+        # A verified prefix can be replayed while two independent captures
+        # continue. Do not use this path for source marks inside a
+        # phrase, inline pitch, reference validation, or a glide across the
+        # first word: those need the complete established plan first.
+        stream_ok = stream_candidate
+        target_worker = getattr(owner, '_persian_capture_worker', None)
+        if stream_ok and target_worker is not None and pilot_worker is not None:
+            ready = queue.Queue()
+            snapshot_at = word_marks[1]
+            def publish(kind):
+                return lambda value: ready.put((kind, value))
+            pending_target = target_worker.submit_snapshot(
+                parts=sequence, prefix=prefix, validate=False, source=prepared.source,
+                parameters=owner._engine_parameters[key[0]], dictionary=owner._dictionary_path,
+                cancelled=owner._cancelled, maximum=30000, snapshot_at=snapshot_at,
+                on_snapshot=publish('target'))
+            pending_pilot = pilot_worker.submit_proxy_snapshot(
+                tagged=tagged_donor, marks=word_marks, prefix=donor_prefix,
+                parameters=owner._engine_parameters[english_key[0]], dictionary=owner._dictionary_path,
+                cancelled=owner._cancelled, maximum=30000, snapshot_at=snapshot_at,
+                on_snapshot=publish('donor'))
+            pending_target.add_done_callback(lambda _future: ready.put(('target_done', None)))
+            pending_pilot.add_done_callback(lambda _future: ready.put(('donor_done', None)))
+            snapshots, finished = {}, set()
+            while len(snapshots) < 2 and not any(name + '_done' in finished and name not in snapshots
+                                                 for name in ('target', 'donor')):
+                if owner._cancelled.is_set():
+                    raise InterruptedError('sentence planning was cancelled')
+                try:
+                    which, value = ready.get(timeout=.05)
+                except queue.Empty:
+                    continue
+                if value is None:
+                    finished.add(which)
+                else:
+                    snapshots[which] = value
+            if len(snapshots) == 2:
+                partial = CapturedRows.from_capture(snapshots['target'], native=capture_api.frame_ticks)
+                donor_partial = CapturedRows.from_capture(snapshots['donor'], native=capture_api.frame_ticks)
+                rate = captured_rate
+                if rate and word_marks[0] in partial.indexes and word_marks[0] in donor_partial.indexes:
+                    fit = fit_us_word_pitch(partial, (0, partial.indexes[word_marks[0]]),
+                                            donor_partial, (0, donor_partial.indexes[word_marks[0]]),
+                                            (), (), rate, capture_api,
+                                            syllable_counts=(len(re.findall(r'\.[012]', tags[0])),))
+                    boundary = round(partial.indexes[word_marks[0]] * 1000 / rate)
+                    end = bisect_left(partial.ticks, max(0, boundary - 25))
+                    if fit and end > 8:
+                        if original_clock:
+                            _hold_acoustic_clock(partial.frames)
+                        streamed_marks = tuple((0, value) for _, offset, value in source if offset == 0)
+                        owner._activate(key)
+                        stream = FrameStream(voice.raw, on_pcm, on_index, cancelled=owner._cancelled)
+                        stream.append(partial.frames, 0, end, streamed_marks)
+                        streamed_frames = end
+            try:
+                captured = pending_target.result()
+            except (ValueError, RuntimeError, OSError):
+                if stream is None or owner._cancelled.is_set():
+                    raise
+                # If a worker failed after handing off the first prefix,
+                # retry its full capture without replaying the prefix.
+                pending_target = target_worker.submit(
+                    parts=sequence, prefix=prefix, validate=False,
+                    parameters=owner._engine_parameters[key[0]], dictionary=owner._dictionary_path,
+                    cancelled=owner._cancelled, maximum=30000, audio=False)
+                captured = pending_target.result()
+            pending_target = None
+        if captured is None:
+            captured = capture_api.capture(voice, sequence, maximum=30000, audio=False)
         item = CapturedRows.from_capture(captured, native=capture_api.frame_ticks)
         sentence_item = item
         if sentence_words and (glide_boundaries - sentence_words or
@@ -804,7 +895,7 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             pitch_ratios = tuple(a.controls[1] / b.controls[1]
                                  if a.controls[1] > 0 and b.controls[1] > 0 else 1.0
                                  for a, b in zip(item.frames, reference.frames))
-        rate = SAMPLE_RATES.get(voice._dll.eciGetParam(voice._handle, SAMPLE_RATE))
+        rate = captured_rate
         if rate is None:
             raise ValueError('invalid Persian sample rate')
         boundaries = {word: round(item.indexes[mark] * 1000 / rate) for word, mark in words.items()}
@@ -904,8 +995,12 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                             item.frames[frame].controls[1] = target[frame].controls[1] * pitch_ratios[frame]
                 transferred |= applied
         if not glides and not transferred:
+            if stream is not None:
+                stream.close(flush=False)
+                stream = None
+                return False
             return engine._speak_prepared(replace(prepared, parts=(*prefix, *prepared.parts)), on_pcm, on_index)
-        if _original_persian_clock(voice.raw):
+        if original_clock:
             _hold_acoustic_clock(item.frames)
         marks = []
         for mark, offset, value in source:
@@ -913,13 +1008,37 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                      min(len(item.frames), bisect_left(item.ticks, round(item.indexes[mark] * 1000 / rate))))
             marks.append((frame, value))
     except InterruptedError:
+        if stream is not None:
+            try:
+                stream.close(flush=False)
+            except (InterruptedError, RuntimeError):
+                pass
         return False
     except (ValueError, RuntimeError, OSError) as error:
+        if stream is not None:
+            try:
+                stream.close(flush=False)
+            except (InterruptedError, RuntimeError):
+                pass
         if owner._cancelled.is_set():
             return False
         _log.debug('Persian vowel glide unavailable: %s', error)
-        return None
+        return False if streamed_frames else None
+    except BaseException:
+        if stream is not None:
+            try:
+                stream.close(flush=False)
+            except (InterruptedError, RuntimeError):
+                pass
+        raise
     finally:
+        if pending_target is not None:
+            if not pending_target.cancel():
+                target_worker.cancel()
+            try:
+                pending_target.result()
+            except BaseException:
+                pass
         if pending_pilot is not None:
             if not pending_pilot.cancel():
                 pilot_worker.cancel()
@@ -928,8 +1047,24 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             except BaseException:
                 pass
     if owner._cancelled.is_set():
+        if stream is not None:
+            try:
+                stream.close(flush=False)
+            except (InterruptedError, RuntimeError):
+                pass
         return False
     owner._activate(key)
+    if stream is not None:
+        try:
+            remaining = tuple((at - streamed_frames, value) for at, value in marks
+                              if at >= streamed_frames)
+            stream.append(item.frames, streamed_frames, len(item.frames), remaining)
+            stream.close(flush=True)
+            stream = None
+            return True
+        finally:
+            if stream is not None:
+                stream.close(flush=False)
     return FrameReplay(voice._dll).replay(voice.raw, item.frames, marks, on_pcm, on_index,
                                          cancelled=owner._cancelled)
 
