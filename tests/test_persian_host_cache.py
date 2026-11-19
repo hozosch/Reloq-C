@@ -10,7 +10,8 @@ from reuse_persian_host_cache import (ALLOWED, EXPECTED_KEY, RECENT_ALLOWED, REC
                                       DEV153_ALLOWED, DEV153_KEY, DEV154_ALLOWED, DEV154_KEY,
                                       DEV155_ALLOWED, DEV155_KEY, DEV156_ALLOWED, DEV156_KEY,
                                       DEV157_ALLOWED, DEV157_KEY, DEV158_ALLOWED, DEV158_KEY,
-                                      DEV159_ALLOWED, DEV159_KEY, DEV160_ALLOWED, DEV160_KEY, DEV161_ALLOWED, DEV161_KEY, eligible)
+                                      DEV159_ALLOWED, DEV159_KEY, DEV160_ALLOWED, DEV160_KEY, DEV161_ALLOWED, DEV161_KEY,
+                                      DEV162_ALLOWED, DEV162_KEY, eligible)
 
 assert eligible(EXPECTED_KEY, ALLOWED)
 assert not eligible(EXPECTED_KEY, ())
@@ -78,4 +79,7 @@ assert not eligible(DEV160_KEY, DEV160_ALLOWED | {'src/reloq_core.c'})
 assert eligible(DEV161_KEY, DEV161_ALLOWED)
 assert not eligible(DEV161_KEY, ())
 assert not eligible(DEV161_KEY, DEV161_ALLOWED | {'src/reloq_core.c'})
+assert eligible(DEV162_KEY, DEV162_ALLOWED)
+assert not eligible(DEV162_KEY, ())
+assert not eligible(DEV162_KEY, DEV162_ALLOWED | {'src/reloq_core.c'})
 print('Passed verified Windows host cache safeguards.')

@@ -16,6 +16,22 @@ import reuse_persian_provider_cache as cache
 
 
 class CacheReuseTests(unittest.TestCase):
+    def test_dev162_rebuilds_only_the_checked_u_source(self):
+        for changed, accepted in ((cache.DEV162_ALLOWED, True),
+                                  (cache.DEV162_ALLOWED | {'include/reloq_eci.h'}, False),
+                                  (set(), False)):
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as tmp:
+                build = Path(tmp) / 'windows-release'; build.mkdir()
+                with patch.object(cache, 'BUILD', build), patch.object(cache, 'git', return_value='\n'.join(changed)), \
+                        patch.object(cache, 'reuse_dev156_generated') as reuse, \
+                        patch.dict(os.environ, {'PERSIAN_PROVIDER_CACHE_KEY': cache.DEV162_KEY}), \
+                        contextlib.redirect_stdout(io.StringIO()):
+                    cache.main()
+                self.assertEqual(reuse.called, accepted)
+                self.assertEqual(build.exists(), accepted)
+                if accepted:
+                    reuse.assert_called_once_with(frozenset({'delta_rules_c15_fifi.c'}))
+
     def test_dev161_rebuilds_phone_tracing_and_header_dependants(self):
         for changed, accepted in ((cache.DEV161_ALLOWED,True),
                                   (cache.DEV161_ALLOWED|{'include/reloq_persian_frames.h'},False),
@@ -36,7 +52,7 @@ class CacheReuseTests(unittest.TestCase):
                 self.assertEqual(reuse.called,accepted)
                 self.assertEqual(build.exists(),accepted)
                 if accepted:
-                    reuse.assert_called_once_with(frozenset({'delta_rules_c13_fifi.c'}))
+                    reuse.assert_called_once_with(frozenset({'delta_rules_c13_fifi.c', 'delta_rules_c15_fifi.c'}))
                     self.assertTrue(all(not (build/name).exists() for name in names))
 
     def test_dev160_cache_requires_verified_liaison_rebuild(self):

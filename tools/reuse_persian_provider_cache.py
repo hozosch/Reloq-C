@@ -99,7 +99,12 @@ DEV160_ALLOWED = {'experiments/persian/build_native_probe.py'}
 DEV161_BASE = '3ed3f000f9cddf54db0560d7efe7b805f422f7f6'
 DEV161_KEY = ('persian-windows-provider-gcc14-v2-'
               'be6164f9e92b715a8bcc78fec5fb2876c51a1bbf469da873cee700a850c9d9b9')
+DEV162_BASE = 'dcb158357f9327bf20a3f9dc7ea84e0616c16878'
+DEV162_KEY = ('persian-windows-provider-gcc14-v2-'
+              'cc24acb2a55e9cfd8247aa179c9d4431deee377eebc2ae9bc72e3e96d58ae3cd')
+DEV162_ALLOWED = {'experiments/persian/build_native_probe.py'}
 DEV161_ALLOWED = {
+    'experiments/persian/build_native_probe.py',
     'include/reloq_eci.h', 'include/reloq_syllable_trace.h',
     'vendor/openevv61/src/reloq61_bridge.c',
     'vendor/openevv61/lang/fifi/delta_rules_c13_fifi.c',
@@ -205,11 +210,17 @@ def main():
                     os.utime(path, None)
             print('Reused verified provider cache for the additive public API change.')
             return
+        if key == DEV162_KEY:
+            changed = set(git('diff', '--name-only', DEV162_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV162_ALLOWED:
+                raise ValueError('female Persian U provider change differs from the verified scope')
+            reuse_dev156_generated(frozenset({'delta_rules_c15_fifi.c'}))
+            return
         if key == DEV161_KEY:
             changed = set(git('diff', '--name-only', DEV161_BASE, 'HEAD', '--', *INPUTS).splitlines())
             if changed != DEV161_ALLOWED:
                 raise ValueError('phoneme tracing provider inputs differ from the verified scope')
-            reuse_dev156_generated(frozenset({'delta_rules_c13_fifi.c'}))
+            reuse_dev156_generated(frozenset({'delta_rules_c13_fifi.c', 'delta_rules_c15_fifi.c'}))
             # Rebuild the explicitly changed native rules and bridge. Also
             # rebuild every cached object that includes either changed header.
             for name in ('src/reloq61_bridge.o',

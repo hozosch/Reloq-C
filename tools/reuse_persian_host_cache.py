@@ -100,7 +100,12 @@ DEV160_ALLOWED = {'experiments/persian/build_native_probe.py'}
 DEV161_BASE = '3ed3f000f9cddf54db0560d7efe7b805f422f7f6'
 DEV161_KEY = ('persian-windows-host-gcc14-v2-'
               '8e622f843ed25aaf518c3edf2bc09060bcde28cefcbc1866dbf2f570c2d7b8c8')
+DEV162_BASE = 'dcb158357f9327bf20a3f9dc7ea84e0616c16878'
+DEV162_KEY = ('persian-windows-host-gcc14-v2-'
+              'dc698865629915348179f0cd6d7ee667fb27457cb4aba0a9f3961eb660d5d42b')
+DEV162_ALLOWED = {'experiments/persian/build_native_probe.py'}
 DEV161_ALLOWED = {
+    'experiments/persian/build_native_probe.py',
     'include/reloq_eci.h', 'include/reloq_syllable_trace.h', 'src/reloq_eci.c',
     'vendor/openevv61/src/reloq61_bridge.c',
     'vendor/openevv61/lang/fifi/delta_rules_c13_fifi.c',
@@ -143,14 +148,15 @@ def eligible(key, changed):
                               (key == DEV158_KEY and set(changed) == DEV158_ALLOWED) or
                               (key == DEV159_KEY and set(changed) == DEV159_ALLOWED) or
                               (key == DEV160_KEY and set(changed) == DEV160_ALLOWED) or
-                              (key == DEV161_KEY and set(changed) == DEV161_ALLOWED))
+                              (key == DEV161_KEY and set(changed) == DEV161_ALLOWED) or
+                              (key == DEV162_KEY and set(changed) == DEV162_ALLOWED))
 
 
 def main():
     build, dll = ROOT / 'eci/build/windows', ROOT / 'eci/eci.dll'
     try:
         key = os.environ.get('PERSIAN_HOST_CACHE_KEY', '')
-        base = DEV161_BASE if key == DEV161_KEY else DEV160_BASE if key == DEV160_KEY else DEV159_BASE if key == DEV159_KEY else DEV158_BASE if key == DEV158_KEY else DEV157_BASE if key == DEV157_KEY else DEV156_BASE if key == DEV156_KEY else DEV155_BASE if key == DEV155_KEY else DEV154_BASE if key == DEV154_KEY else DEV153_BASE if key == DEV153_KEY else DEV152_BASE if key == DEV152_KEY else DEV151_BASE if key == DEV151_KEY else DEV150_BASE if key == DEV150_KEY else DEV149_BASE if key == DEV149_KEY else TRACE_BASE if key == TRACE_KEY else NEWEST_BASE if key == NEWEST_KEY else RECENT_BASE if key == RECENT_KEY else BASE
+        base = DEV162_BASE if key == DEV162_KEY else DEV161_BASE if key == DEV161_KEY else DEV160_BASE if key == DEV160_KEY else DEV159_BASE if key == DEV159_KEY else DEV158_BASE if key == DEV158_KEY else DEV157_BASE if key == DEV157_KEY else DEV156_BASE if key == DEV156_KEY else DEV155_BASE if key == DEV155_KEY else DEV154_BASE if key == DEV154_KEY else DEV153_BASE if key == DEV153_KEY else DEV152_BASE if key == DEV152_KEY else DEV151_BASE if key == DEV151_KEY else DEV150_BASE if key == DEV150_KEY else DEV149_BASE if key == DEV149_KEY else TRACE_BASE if key == TRACE_KEY else NEWEST_BASE if key == NEWEST_KEY else RECENT_BASE if key == RECENT_KEY else BASE
         changed = subprocess.check_output(['git', 'diff', '--name-only', base, 'HEAD', '--', *INPUTS],
                                           cwd=ROOT, text=True).splitlines()
         if not eligible(key, changed):
@@ -169,7 +175,7 @@ def main():
         # All native Persian direct components depend on direct_fa_*.h.
         for obj in build.glob('reloq_fa_direct_*.o'):
             obj.unlink()
-        if key in (RECENT_KEY, TRACE_KEY, DEV149_KEY, DEV150_KEY, DEV151_KEY, DEV152_KEY, DEV153_KEY, DEV154_KEY, DEV155_KEY, DEV156_KEY, DEV157_KEY, DEV158_KEY, DEV159_KEY, DEV160_KEY, DEV161_KEY):
+        if key in (RECENT_KEY, TRACE_KEY, DEV149_KEY, DEV150_KEY, DEV151_KEY, DEV152_KEY, DEV153_KEY, DEV154_KEY, DEV155_KEY, DEV156_KEY, DEV157_KEY, DEV158_KEY, DEV159_KEY, DEV160_KEY, DEV161_KEY, DEV162_KEY):
             # These are the only host sources which include reloq_eci.h;
             # direct Persian objects also cover the changed private headers.
             for name in ('reloq_eci.o', 'reloq_rules61.o'):

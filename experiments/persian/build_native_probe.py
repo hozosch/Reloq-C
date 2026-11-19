@@ -2862,6 +2862,51 @@ static void persian_open_vowel(void *state,int phone)
 ''', 1)
     sonorant_file.write_text(text, encoding='utf8')
 
+    # The nucleus AV is recalculated *inside* the sonorant scheduler, after
+    # the U formants are selected. Its Finnish female target is about 5 dB
+    # below the German U, making otherwise matching resonances too quiet.
+    # Apply the measured source correction only to this vowel and voice;
+    # retain native stress/dynamics, consonant transitions and the male voice.
+    # Restore the calculated source values after the acoustic points are added.
+    source_file = work / 'delta_rules_c15_fifi.c'
+    text = source_file.read_text(encoding='utf8')
+    if 'static unsigned persian_probe_front_a_neighbour(' not in text:
+        raise RuntimeError('Cannot locate Persian sonorant phone selector')
+    entry = 'int32_t reloq_fifi_do_son_amps(void *state, int32_t p0)\n{\n'
+    if text.count(entry) != 1:
+        raise RuntimeError('Cannot locate Persian sonorant source rule')
+    begin = text.index(entry)
+    end = text.index('\nstatic int32_t evv_do_son_amps(', begin)
+    section = text[begin:end]
+    section = section.replace(entry, entry +
+        '    volatile int16_t saved_u_av=0, saved_u_avs=0;\n    volatile int restore_u_av=0;\n', 1)
+    nuc = '    r0 = reloq_call_fifi_get_nuc_AV(state, (int32_t)(FIELD(0)));\n'
+    if section.count(nuc) != 1:
+        raise RuntimeError('Cannot locate Persian vowel source target')
+    section = section.replace(nuc, nuc + r'''    {
+        const char *us=getenv("RELOQ_FA_US_ARTICULATION");
+        int16_t female=0;
+        memcpy(&female,(const unsigned char *)state+DG_BASE+3092+12,sizeof female);
+        if (us && us[0]=='1' && !us[1] && female &&
+            persian_probe_front_a_neighbour(state,STATE(int32_t,w61),1)==32) {
+            saved_u_av=STATE(int16_t,s394); saved_u_avs=STATE(int16_t,s395);
+            restore_u_av=1;
+            if (STATE(int16_t,s394)>0 && STATE(int16_t,s394)<=75) STATE(int16_t,s394)+=5;
+            if (STATE(int16_t,s395)>0 && STATE(int16_t,s395)<=75) STATE(int16_t,s395)+=5;
+        }
+    }
+''', 1)
+    for label in ('L5185:;', 'L5204:;'):
+        if section.count(label) != 1:
+            raise RuntimeError('Cannot locate Persian sonorant rule exit')
+        section = section.replace(label, label + r'''
+    if (restore_u_av) {
+        STATE(int16_t,s394)=saved_u_av;
+        STATE(int16_t,s395)=saved_u_avs;
+    }''', 1)
+    text = text[:begin] + section + text[end:]
+    source_file.write_text(text, encoding='utf8')
+
     consonant_file = work / 'delta_rules_c02_fifi.c'
     text = consonant_file.read_text(encoding='utf8')
     include = '#include "reloq61_rule_calls_fifi.h"\n'
