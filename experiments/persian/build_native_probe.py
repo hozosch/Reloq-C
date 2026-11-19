@@ -3025,6 +3025,38 @@ static int persian_articulation_word_initial(void *state,int32_t token_ref)
     memcpy(EVV_AT(void *,d->fence_chars),chars,d->nstmts);
     return initial;
 }
+/* Check the two phones before /x/ within the same native word. The word
+   fence is essential: an /i r/ ending one word must not change /x/ in the
+   next. As with the other context probes, leave all scanner state intact. */
+static int persian_x_after_ir(void *state,int32_t token_ref)
+{
+    const char *x=getenv("RELOQ_FA_PROBE_X");
+    const char *tuning=getenv("RELOQ_FA_R_AFTER_I");
+    delta_state *d=state;
+    if (!x || x[0]!='1' || x[1] || !tuning || tuning[0]!='1' || tuning[1] ||
+        !d || !d->vars || d->nstmts<5 || d->nstmts>256 || !token_ref) return 0;
+    delta_vars *v=EVV_AT(delta_vars *,d->vars);
+    delta_tpos left=d->lpta,right=d->rpta;
+    unsigned char scan[8],index[256],marks[256],chars[256];
+    int8_t compared=v->compared_equal,fences=v->fence_count,testing=v->testing;
+    memcpy(scan,&v->scan_ptr,sizeof scan);
+    memcpy(index,EVV_AT(const void *,d->fence_index),d->nstmts);
+    memcpy(marks,EVV_AT(const void *,d->fence_marks),d->nstmts);
+    memcpy(chars,EVV_AT(const void *,d->fence_chars),d->nstmts);
+    v->testing=0;
+    const uint8_t word_fence[]={4};
+    fence(d,1,word_fence);
+    memset(EVV_AT(void *,d->fence_marks),0,d->nstmts);
+    lpta_loadp(d,EVV_AT(const delta_token *,token_ref));
+    int selected=!setscan_l(d,2) && !testFldeq(d,2,0,19) && !advance_tok(d) &&
+                 !testFldeq(d,2,0,27) && !advance_tok(d);
+    d->lpta=left; d->rpta=right; memcpy(&v->scan_ptr,scan,sizeof scan);
+    v->compared_equal=compared; v->fence_count=fences; v->testing=testing;
+    memcpy(EVV_AT(void *,d->fence_index),index,d->nstmts);
+    memcpy(EVV_AT(void *,d->fence_marks),marks,d->nstmts);
+    memcpy(EVV_AT(void *,d->fence_chars),chars,d->nstmts);
+    return selected;
+}
 /* The Brazilian word-final R is selected only immediately after a vowel in
    the same word. Consonant clusters retain the earlier Persian R for now. */
 int persian_pt_coda_r_selected(void *state)
@@ -3092,6 +3124,23 @@ static void persian_r_less_retroflex(void *state)
     if (previous!=27 && following!=27) return;
     if (previous==27 && following!=27 &&
         persian_articulation_word_initial(state,STATE_AT(w60,-4))) return;
+    /* After /i/ inside the word and directly before a vowel, retain some
+       of the anti-retroflex adjustment without the previous sharp F3 jump.
+       Word-final R, consonant clusters and ordinary R before /i/ keep their
+       existing paths. Finnish's accepted R before /o/ remains above. */
+    if (previous==27 && persian_direct_following_vowel(state) &&
+        !persian_articulation_word_initial(state,STATE_AT(w60,-4)) &&
+        !persian_probe_r_word_final(state,STATE_AT(w60,-4))) {
+        if (STATE(int16_t,s452)>0 && STATE(int16_t,s452)<2700) {
+            int value=STATE(int16_t,s452)+175;
+            STATE(int16_t,s452)=(int16_t)(value<2700?value:2700);
+        }
+        if (STATE(int16_t,s453)>0 && STATE(int16_t,s453)<2700) {
+            int value=STATE(int16_t,s453)+175;
+            STATE(int16_t,s453)=(int16_t)(value<2700?value:2700);
+        }
+        return;
+    }
     /* The low F3 of Finnish R can sound retroflex near /i/. Before I,
        bring the R targets to 2700 Hz; after I, retain the accepted gentler
        adjustment. The vowels' own targets, F4, source and timing stay intact. */
@@ -3147,6 +3196,15 @@ static void persian_articulation_nasal(void *state,int second_formant)
                        f'            r0=persian_us_eng_ph_{phone}(state,(int32_t)(FIELD(0)));\n' +
                        '        else\n' + call + '    }\n')
         text = text.replace(call, replacement, 1)
+    call = '    r0 = reloq_call_fifi_fin_ph_G(state, (int32_t)(FIELD(0)));\n'
+    if text.count(call) != 1:
+        raise RuntimeError('Cannot locate Persian /x/ dispatcher')
+    text = text.replace(call, call + r'''    if (!r0 && persian_x_after_ir(state,STATE_AT(w60,-4))) {
+        /* Do not pull the voiced r toward the very low /x/ starting F3.
+           Keep /x/'s existing end target, noise bands, source and timing. */
+        STATE(int16_t,s452)=2200;
+    }
+''', 1)
     call = '    r0 = reloq_call_fifi_fin_ph_j(state, (int32_t)(FIELD(0)));\n'
     if text.count(call) != 1:
         raise RuntimeError('Cannot locate Persian /j/ dispatcher')

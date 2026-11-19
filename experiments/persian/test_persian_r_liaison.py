@@ -52,7 +52,8 @@ def main():
                     if old:
                         # Ordinary R and the accepted isolated/stop+R remain
                         # byte-identical to the preceding build.
-                        for tag in ('`[.1ra]','`[.1i.0ra]','`[.1sefr]','`[.1sedr]','`[.1sehr]','`[.1ir]'):
+                        for tag in ('`[.1ra]','`[.1sefr]','`[.1sedr]','`[.1sehr]','`[.1ir]',
+                                    '`[.1ir] `[.1a]','`[.1ir] `[.1GAt]'):
                             assert capture(v,scope,tag,True)[0].pcm==capture(old,old_scope,tag,True)[0].pcm,(gender,rate,speed,tag)
                             checks+=1
         for text in ('تغییر است','تغییر آمد'):

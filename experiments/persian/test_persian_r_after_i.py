@@ -27,9 +27,9 @@ def main():
             if engine:
                 for key, value in ((GENDER, 0), (SAMPLE_RATE, 3), (NATIVE_SPEED, 65)):
                     engine.set_parameter(key, value)
-        # Both familiar NVDA labels use a more audible after-I F3 boost.
-        # The E and its upper resonance remain unchanged.
-        for tag, index, lower, upper in (("`[.0ti.1r'e:']", 100, 2480, 2600),
+        # The after-I R before a vowel is softened; zirkhat keeps its R
+        # onset target while the R-to-Ach transition is tested separately.
+        for tag, index, lower, upper in (("`[.0ti.1r'e:']", 100, 2300, 2450),
                                           ('`[.1zir.0GAt]', 175, 2440, 2600)):
             _, frames = capture(current, scope, tag, True)
             assert lower <= frames[index].controls[15] <= upper, (tag, 'after-I R F3')

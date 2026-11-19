@@ -472,6 +472,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                ('fa_IR', 'برنامه‌های', 'issue50_plural'),
                                ('fa_IR', 'کانال‌ها', 'issue50_l_h'),
                                ('fa_IR', 'پاتیل‌ها', 'issue50_l_h'),
+                               ('fa_IR', 'تیره', 'issue50_r_after_i_vowel'),
+                               ('fa_IR', 'ایران', 'issue50_r_after_i_vowel'),
+                               ('fa_IR', 'سیری', 'issue50_r_after_i_vowel'),
+                               ('fa_IR', 'زیرخط', 'issue50_r_after_i_x_speed38'),
                                ('fa_IR', 'سلام دنیا؟', 'issue50_question_some'),
                                ('fa_IR', 'سلام دنیا?', 'issue50_question_ascii_some'),
                                ('fa_IR', 'سلام دنیا؟', 'issue50_question_split'),
@@ -720,6 +724,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 return
             locale, text, spelling = self.cases[self.index]
             self.speech.cancelSpeech()
+            if getattr(self, 'saved_rate_for_r_test', None) is not None:
+                old_rate, old_boost = self.saved_rate_for_r_test
+                self.synth.rateBoost = old_boost
+                self.synth.rate = old_rate
+                self.saved_rate_for_r_test = None
             self.synth.language = locale
             self.nav_stale_case = spelling == 'issue49_weak_us_stale'
             self.nav_stale_injected = False
@@ -734,6 +743,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 self.synth.rate = 23  # the driver's unboosted ECI speed 65
                 self.synth.pitch = 68 if self.reference_calibration else 65
                 self.synth.inflection = 37 if self.reference_calibration else 30
+            if spelling == 'issue50_r_after_i_x_speed38':
+                self.saved_rate_for_r_test = (self.synth.rate, self.synth.rateBoost)
+                self.synth.rateBoost = False
+                self.synth.rate = 38
             self.synth.voiceTags = isinstance(spelling, str) and spelling.startswith('tags_')
             if self.synth.language != locale:
                 raise AssertionError('language selection did not stick: ' + locale)
@@ -993,6 +1006,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags or not any(self.us_fits[self.before_us_fits:]):
                     raise AssertionError('NVDA lost the plural h or US contour: ' + ascii((text, tags)))
+            if spelling == 'issue50_r_after_i_vowel':
+                expected = {'تیره': "`[.0ti.1r'e:']", 'ایران': "`[.0'i:'.1r'a:'n]",
+                            'سیری': '`[.0si.1ri]'}[text]
+                tags = ' '.join(self.projected[self.before_projected:])
+                if expected not in tags or not any(self.us_fits[self.before_us_fits:]):
+                    raise AssertionError('NVDA lost the medial r or US contour: ' + ascii((text, tags)))
+            if spelling == 'issue50_r_after_i_x_speed38':
+                tags = ' '.join(self.projected[self.before_projected:])
+                if self.synth.rate != 38 or '`[.1zir.0GAt]' not in tags or not any(self.us_fits[self.before_us_fits:]):
+                    raise AssertionError('NVDA lost zirkhat or its US contour at speed 38: ' + ascii(tags))
             if spelling in ('tags_slow', 'tags_fast', 'tags_pitch', 'tags_phonemes'):
                 expected = text.split(' ', 1)[0]
                 if expected not in self.user_controls[self.before_user_controls:]:
