@@ -28,7 +28,8 @@ def main():
             assert analysis and phones(analysis.parts[0].text).startswith('`[.#A.#la.#mA'), (word, analysis)
         assert word_tag("a:|l|'A|m|a|t") == '`[.0A.1la.0mAt]'
         assert word_tag("a:|l|'A|m|a|t|d|'A|R") == '`[.0A.1la.0mAt.1dar]'
-        # Another long /æ/ and the user's accepted long back A are unaffected.
+        # Reference phoneme parsing remains intact; the number grammar fixes
+        # the vowel of صد separately without changing arbitrary long /æ/.
         assert word_tag("s|,a:|d|o") == "`[.2s'A:'.0do]"
         assert word_tag("'i:|R|A|n") == "`[.1'i:'.0r'a:'n]"
         for symbol in ('!', '?', '@', '^', '`', '؟'):

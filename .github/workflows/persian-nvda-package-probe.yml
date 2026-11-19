@@ -23,6 +23,7 @@ on:
       - include/reloq_eci.h
       - include/reloq_persian_numbers.h
       - experiments/persian/test_persian_number_events.py
+      - experiments/persian/test_persian_hundred.py
       - vendor/openevv61/Makefile.native
       - vendor/openevv61/src/eci/lang/eci_voicetable.c
       - vendor/openevv61/src/eci/api/eci_dllobj.c
@@ -217,6 +218,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian numeric boundary pronunciation failed' }
           python -B experiments/persian/test_persian_number_events.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Structured native Persian number analysis failed' }
+          python -B experiments/persian/test_persian_hundred.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian hundred-group timing failed' }
           python -B experiments/persian/test_korean_pitch_transfer.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Korean contour transfer failed' }
           python -B experiments/persian/test_korean_donor_span.py --library "$dll"

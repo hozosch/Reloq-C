@@ -12,6 +12,7 @@ on:
       - experiments/persian/pinglish_frontend.py
       - include/reloq_persian_numbers.h
       - experiments/persian/test_persian_number_events.py
+      - experiments/persian/test_persian_hundred.py
       - experiments/persian/build_experimental_nvda.py
       - experiments/persian/test_persian_decimals.py
       - experiments/persian/test_persian_joiners.py
@@ -137,6 +138,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian NVDA punctuation and joiner preprocessing failed' }
           python -B experiments/persian/test_persian_number_events.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Structured native Persian number analysis failed' }
+          python -B experiments/persian/test_persian_hundred.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian hundred-group timing failed' }
           python -B experiments/persian/test_fa_orthography.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Independent Persian orthography rules failed' }
           python -B experiments/persian/test_fa_morphology.py --library "$dll"

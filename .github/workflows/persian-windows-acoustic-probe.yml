@@ -26,6 +26,7 @@ on:
       - include/reloq_syllable_trace.h
       - include/reloq_persian_numbers.h
       - experiments/persian/test_persian_number_events.py
+      - experiments/persian/test_persian_hundred.py
       - experiments/persian/test_fa_orthography.py
       - experiments/persian/test_fa_morphology.py
       - vendor/openevv61/Makefile.native
@@ -206,6 +207,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Common ECI frame capture or replay failed' }
           python -B experiments/persian/test_fa_morphology.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian morphology and stress failed' }
+          python -B experiments/persian/test_persian_hundred.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Persian hundred-group timing failed' }
           python -B experiments/persian/test_mixed_pitch_edges.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'English pitch preservation failed' }
           python -B experiments/persian/test_us_articulation.py --candidate eci/eci.dll

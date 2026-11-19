@@ -53,6 +53,11 @@ def main():
             source = str(number)
             clauses = reference.translate(source, separator='|')
             expected = ' '.join(word_tag(token) for token in clauses[0].phonemes.strip().split())
+            if 100 <= number < 200:
+                # Our number grammar deliberately uses short /æ/ for صد,
+                # including the connected first syllable of 101–199.
+                assert "s'A:'" in expected, number
+                expected = expected.replace("s'A:'", 'sA', 1)
             for script in (source, source.translate(fa_digits), source.translate(arabic_digits)):
                 status, tagged = convert(script)
                 assert status == 0 and phones(tagged) == phones(expected), (number, script, tagged, expected)

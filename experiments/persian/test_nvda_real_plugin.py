@@ -456,6 +456,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                ('fa_IR', '۹۶', 'issue50_number'),
                                ('fa_Latn', '96', 'issue50_number'),
                                ('fa_IR', '196', 'issue50_number_group'),
+                               *(( 'fa_IR', value, 'issue50_hundred_short')
+                                 for value in ('100', '101', '123', '167', '۱۹۹', '۱۲۰', '۱۷۱')),
                                ('fa_IR', '96: سلام', 'issue50_colon_number'),
                                ('fa_IR', 'سلام: 96', 'issue50_colon_number'),
                                ('fa_IR', 'NVDA: / دنیا', 'issue50_colon_mixed'),
@@ -962,6 +964,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     raise AssertionError('NVDA lost Persian 96 pronunciation: ' + ascii((text, tags)))
                 if not any(self.syllable_fits[self.before_syllable_fits:]):
                     raise AssertionError('NVDA missed the number syllable timing: ' + ascii(text))
+            if spelling == 'issue50_hundred_short':
+                tags = ' '.join(self.projected[self.before_projected:])
+                if not re.search(r'\.[012]sA', tags) or "s'A:'" in tags:
+                    raise AssertionError('NVDA elongated the hundred-group vowel: ' + ascii((text, tags)))
             if spelling == 'issue50_plural':
                 expected = ("`[.0'A:'f.0z'u:'.0ne.1ha.0je]" if text == 'افزونه‌های' else
                             "`[.0bAr.0na.0me.1ha.0je]")
