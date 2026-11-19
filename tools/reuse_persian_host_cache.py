@@ -121,7 +121,8 @@ DEV164_ALLOWED = {'experiments/persian/direct_fa_lexicon.c',
 DEV165_ALLOWED = DEV164_ALLOWED | {'src/reloq_persian_frame_internal.h',
                                   'src/reloq_persian_frames.c',
                                   'src/reloq_persian_replay.inc',
-                                  'src/reloq_rules61.c'}
+                                  'src/reloq_rules61.c',
+                                  'experiments/persian/direct_fa_letters.inc'}
 DEV161_ALLOWED = {
     'experiments/persian/build_native_probe.py',
     'include/reloq_eci.h', 'include/reloq_syllable_trace.h', 'src/reloq_eci.c',

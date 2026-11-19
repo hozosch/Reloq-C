@@ -1002,7 +1002,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     raise AssertionError('NVDA lost the Persian character name: ' + ascii(tags))
             if ((spelling is True and text in 'ٔأˈˌə̇αé⚽/\\') or
                     spelling in ('issue49_hamza_line', 'issue49_hamza_line_none')):
-                expected = {'ٔ': "`[.0hAm.1z'e:'.0j'e:'] `[.0ba.1la]",
+                expected = {'ٔ': "`[.0hAm.1ze.0j'e:'] `[.0ba.1la]",
                             'أ': "`[.0A.1lef] `[.0hAm.1z'e:']"}.get(text, self.symbol_tags.get(text))
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags:

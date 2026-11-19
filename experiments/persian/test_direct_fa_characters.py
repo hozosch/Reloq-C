@@ -83,6 +83,8 @@ def main() -> None:
         # connected text now shortens the weak preposition before a word.
         assert linked and native_text(ord('↨')) == linked.parts[0].text.replace("`[.0be]", "`[.0b'e:']")
         assert '`[.0vA]' in linked.parts[0].text
+        hamza_name = frontend.analyze_direct('همزه‌ی بالا')
+        assert hamza_name and native_text(ord('ٔ')) == hamza_name.parts[0].text
         assert native_text(0x12550) == '`l1.0 cuneiform numeric sign one n01 `l9.0'
         assert native_text(0x18cff) == '`l1.0 khitan small script character 18cff `l9.0'
         assert native_text(0x3d000) == '`l1.0 small seal character 3d000 `l9.0'
