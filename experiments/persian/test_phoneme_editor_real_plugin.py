@@ -87,10 +87,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 require(self.dialog._loaded and self.dialog._loaded.key=='i','Persian I was not loaded')
                 self.dialog.area.SetFocus();wx.YieldIfNeeded()
                 require(wx.Window.FindFocus() is self.dialog.area,'editor keyboard focus missing')
-                # Real wx key-event routing uses the dialog's char hook.
+                # Send actual key presses to the focused window. Constructed
+                # wx.KeyEvent objects don't carry a native event source and
+                # aren't delivered to the dialog's char hook on Windows.
+                self.keys=wx.UIActionSimulator()
                 for code in (ord('2'),wx.WXK_RIGHT,wx.WXK_UP):
-                    event=wx.KeyEvent(wx.wxEVT_CHAR_HOOK);event.m_keyCode=code
-                    require(self.dialog.GetEventHandler().ProcessEvent(event),'key not handled')
+                    require(self.keys.Char(code),'could not send a key')
+                    wx.YieldIfNeeded()
                 require(self.dialog.selected_formant==1,'formant selection failed')
                 require(self.dialog.frequencies[1]==25 and self.dialog.gains_db[1]==1,'arrow edits failed')
                 from globalPlugins.reloqSoundLab import phonemes
@@ -111,16 +114,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 # the edit field so number/arrow controls are immediately usable.
                 self.dialog.phone.SetFocus();wx.YieldIfNeeded()
                 self.phase=1
-                event=wx.KeyEvent(wx.wxEVT_CHAR_HOOK);event.m_keyCode=wx.WXK_F2
-                require(self.dialog.GetEventHandler().ProcessEvent(event),'F2 not handled')
-                wx.CallLater(100,self.check);return
+                require(self.keys.Char(wx.WXK_F2),'could not send F2')
+                wx.CallLater(250,self.check);return
             require(self.players and self.players[-1].chunks,'editor did not play audio')
             if self.phase==1:
                 require(wx.Window.FindFocus() is self.dialog.area,'F2 did not focus the formant editor')
                 self.modified=b''.join(self.players[-1].chunks);self.phase=2
-                event=wx.KeyEvent(wx.wxEVT_CHAR_HOOK);event.m_keyCode=wx.WXK_F3
-                require(self.dialog.GetEventHandler().ProcessEvent(event),'F3 not handled')
-                wx.CallLater(100,self.check);return
+                require(self.keys.Char(wx.WXK_F3),'could not send F3')
+                wx.CallLater(250,self.check);return
             original=b''.join(self.players[-1].chunks)
             require(self.modified!=original and len(self.modified)==len(original),'edited phone not audible')
             self.dialog.phone.SetFocus();wx.YieldIfNeeded()
