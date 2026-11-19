@@ -37,9 +37,11 @@ def main():
         assert weak.startswith('`00 `[.0dAr] '), weak
         assert frontend.analyze_direct('دَر').parts[0].text == '`[.1dAr]'
         assert frontend.analyze_direct('دَر، خانه').parts[0].text.startswith('`[.1dAr],')
-        # Never pretend that a partially marked or geminated spelling is
-        # covered by this narrowly bounded orthographic rule.
-        assert frontend.analyze_direct('پَرَپ') is None
+        # Fully marked multisyllabic words now have a native rule. Still do
+        # not guess an internal vowel that has not been marked, or shadda.
+        marked_word=frontend.analyze_direct('پَرَپ')
+        assert marked_word and marked_word.parts[0].text=='`[.0pA.1rAp]'
+        assert frontend.analyze_direct('پَرپَپ') is None
         assert frontend.analyze_direct('پَرّ') is None
         marked = ('دَ', EciIndex(7), 'ر ', EciIndex(8), 'خانه')
         job = project(marked, frontend, allow_fallback=False)

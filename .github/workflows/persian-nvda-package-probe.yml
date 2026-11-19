@@ -54,6 +54,7 @@ on:
       - experiments/persian/test_direct_fa_characters.py
       - experiments/persian/test_direct_fa_numbers.py
       - experiments/persian/test_fa_orthography.py
+      - experiments/persian/test_fa_morphology.py
       - experiments/persian/test_fa_stress_policy.py
       - experiments/persian/test_fa_stress_fallback.py
       - experiments/persian/test_unicode_fallback_routing.py
@@ -255,6 +256,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian sentence boundaries or number timing failed' }
           python -B experiments/persian/test_fa_stress_policy.py --library "$common"
           if ($LASTEXITCODE -ne 0) { throw 'Persian word stress failed' }
+          python -B experiments/persian/test_fa_morphology.py --library "$common"
+          if ($LASTEXITCODE -ne 0) { throw 'Shared Persian morphology and stress failed' }
           python -B experiments/persian/test_fa_stress_fallback.py --library "$common"
           if ($LASTEXITCODE -ne 0) { throw 'Persian fallback stress failed' }
           python -B experiments/persian/test_unicode_fallback_routing.py --native-library "$common" --scope-probe "$common" --espeak-library "$espeak" --data-parent "$data"
@@ -306,7 +309,7 @@ jobs:
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci.dll -print -quit)
-          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev163; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; else version=1.5.0-dev142; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev164; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; else version=1.5.0-dev142; fi
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
       - name: Test the candidate in real NVDA
         shell: pwsh

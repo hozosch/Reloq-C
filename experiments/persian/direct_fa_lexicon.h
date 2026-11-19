@@ -18,6 +18,12 @@ size_t reloq_fa_direct_word_count(void);
  * The spelling must already be in the native normalized form. */
 int reloq_fa_direct_stress(const char *word,size_t bytes,char *tag,size_t capacity);
 int reloq_fa_direct_is_verb(const char *word,size_t bytes);
+/* Coarse lexical (1), verbal (2), and other/function (4) evidence; bits may
+ * coexist for a homograph. Zero means the spelling is not classified. */
+unsigned reloq_fa_direct_word_classes(const char *word,size_t bytes);
+/* Apply a bounded noun + derived-adjective stress hint to an existing tag. */
+void reloq_fa_direct_stress_after_word(const char *previous,size_t previous_bytes,
+                                       const char *word,size_t bytes,char *tag);
 /* Unambiguous common proclitics before a following word in the same phrase. */
 int reloq_fa_direct_is_proclitic(const char *word,size_t bytes);
 #endif

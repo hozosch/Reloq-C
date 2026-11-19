@@ -27,6 +27,7 @@ on:
       - include/reloq_persian_numbers.h
       - experiments/persian/test_persian_number_events.py
       - experiments/persian/test_fa_orthography.py
+      - experiments/persian/test_fa_morphology.py
       - vendor/openevv61/Makefile.native
       - eci/Makefile
       - eci/test_persian_acoustics.py
@@ -122,6 +123,7 @@ jobs:
             eci/eci.dll
           key: persian-windows-host-gcc14-v2-${{ hashFiles('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src/**', 'include/**', 'vendor/openevv61/**', '!vendor/openevv61/build/**', 'experiments/persian/direct_fa_*.c', 'experiments/persian/direct_fa_*.h', 'experiments/persian/direct_fa_*.inc', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-host-gcc14-v2-de500316e8c7bfea087b7eb9bdd6965ce21ea030dfedbb4def6c30f111d52d42
             persian-windows-host-gcc14-v2-64655db88d9d2921c335cc3fce13b44126d168864cfffa3fc0b453bfc582b492
             persian-windows-host-gcc14-v2-dc698865629915348179f0cd6d7ee667fb27457cb4aba0a9f3961eb660d5d42b
             persian-windows-host-gcc14-v2-8e622f843ed25aaf518c3edf2bc09060bcde28cefcbc1866dbf2f570c2d7b8c8
@@ -203,6 +205,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian text projection failed' }
           python -B eci/test_persian_frames.py --library eci/eci.dll --standard
           if ($LASTEXITCODE -ne 0) { throw 'Common ECI frame capture or replay failed' }
+          python -B experiments/persian/test_fa_morphology.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Persian morphology and stress failed' }
           python -B experiments/persian/test_mixed_pitch_edges.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'English pitch preservation failed' }
           python -B experiments/persian/test_us_articulation.py --candidate eci/eci.dll

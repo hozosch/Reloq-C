@@ -17,10 +17,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', type=Path, required=True)
     args = parser.parse_args()
-    reference = PersianAnalysis((SpeechPart('fa', '`[.0nA.0mi.1rA.0vAm]'),), None, True)
+    reference = PersianAnalysis((SpeechPart('fa', '`[.0nA.0mi.1pA.0zi.0rAd]'),), None, True)
     with DirectFirstPersian(args.library, None, None, None) as frontend:
-        assert frontend.analyze_direct('نمی‌روم') is None
-        parts = ('کتاب ', EciIndex(7), 'نمی‌روم سلام.')
+        assert frontend.analyze_direct('نمی‌روم') is not None
+        assert frontend.analyze_direct('نمی‌پذیرد') is None
+        parts = ('کتاب ', EciIndex(7), 'نمی‌پذیرد سلام.')
         with patch.object(frontend, 'analyze', return_value=reference) as fallback:
             try:
                 project(parts, frontend, allow_fallback=True)
@@ -28,10 +29,10 @@ def main():
             except UnsupportedPronunciation:
                 pass
             result = project_resilient(parts, frontend)
-        assert result.tagged == '`[.0ke.1tab] `[.1nA.0mi.0rA.0vAm] `[.0sA.1lam].', result.tagged
+        assert result.tagged == '`[.0ke.1tab] `[.1nA.0mi.0pA.0zi.0rAd] `[.0sA.1lam].', result.tagged
         assert result.needs_native_validation
         assert [part.value for part in result.parts if isinstance(part, EciIndex)] == [7]
-        fallback.assert_called_once_with('نمی‌روم')
+        fallback.assert_called_once_with('نمی‌پذیرد')
         # One unrelated fallback word must not lose a two-word verbal prefix
         # or the verified split form of علامت‌دار.
         with patch.object(frontend, 'analyze', return_value=reference):
@@ -77,15 +78,15 @@ def main():
         # A transient reference error gets one whole-word retry, while an
         # interrupted job must not start that retry.
         with patch.object(frontend, 'analyze', side_effect=(RuntimeError('transient'), reference)) as fallback:
-            recovered = project_resilient(('نمی‌روم',), frontend)
-        assert recovered.tagged == '`[.1nA.0mi.0rA.0vAm]' and fallback.call_count == 2
+            recovered = project_resilient(('نمی‌پذیرد',), frontend)
+        assert recovered.tagged == '`[.1nA.0mi.0pA.0zi.0rAd]' and fallback.call_count == 2
         cancelled = [False]
         def fail_and_cancel(_word):
             cancelled[0] = True
             raise RuntimeError('cancelled reference')
         with patch.object(frontend, 'analyze', side_effect=fail_and_cancel) as fallback:
             try:
-                project_resilient(('نمی‌روم',), frontend, cancelled=lambda: cancelled[0])
+                project_resilient(('نمی‌پذیرد',), frontend, cancelled=lambda: cancelled[0])
                 raise AssertionError('cancelled reference was retried')
             except InterruptedError:
                 pass

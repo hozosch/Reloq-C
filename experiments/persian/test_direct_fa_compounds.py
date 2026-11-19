@@ -111,7 +111,15 @@ def main():
                 expected = candidate(base, kind, follows)
                 status, actual = lookup_word(lookup, word, follows)
                 phones = lambda value: re.sub(r'\.[012]', '.#', value)
-                assert expected and status == 1 and phones(actual) == phones(expected), (word, follows)
+                # Our connected final-heh rule shortens only the stem's final
+                # e before a written half-space. Other phones must still be
+                # identical to the reference-admitted compound.
+                permitted = expected
+                if suffix.startswith('\u200c') and stem.endswith('ه') and base.endswith("'e:']"):
+                    position = len(base) - 5
+                    if expected[position:position + 4] == "'e:'":
+                        permitted = expected[:position] + 'e' + expected[position + 4:]
+                assert expected and status == 1 and phones(actual) in (phones(expected), phones(permitted)), (word, follows, actual, expected)
                 if old:
                     status, previous = lookup_word(old, word, follows)
                     assert status == 0 or (status == 1 and previous == expected), (word, follows, previous, expected)

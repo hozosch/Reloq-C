@@ -142,6 +142,55 @@ static int explicit_vowelled_cvc(const char *word,size_t bytes,char *output,size
     return 1;
 }
 
+/* Read fully marked multi-syllable words without a pronunciation table.
+ * An unmarked internal consonant could conceal a short vowel, so accept it
+ * only when it has sukun. The final consonants need no written sukun. Long
+ * vowel carriers, silent heh, shadda and other ambiguous marks stay on the
+ * existing conservative path. The short-vowel marks themselves select the
+ * nucleus and the default citation accent is on the final syllable. */
+static int explicit_vowelled_word(const char *word,size_t bytes,char *output,size_t capacity)
+{
+    struct unit { char consonant,vowel; unsigned char sukun; } units[128];
+    if(!word || !bytes || !output || !capacity)return -1;
+    const unsigned char *input=(const unsigned char *)word;
+    size_t at=0,count=0,syllables=0;
+    while(at<bytes) {
+        if(count==sizeof units/sizeof units[0])return 0;
+        char consonant=explicit_consonant(explicit_arabic_scalar(input,bytes,&at));
+        if(!consonant)return 0;
+        struct unit u={consonant,0,0};
+        if(at<bytes) {
+            size_t next=at;
+            uint32_t mark=explicit_arabic_scalar(input,bytes,&next);
+            if(mark==0x064e || mark==0x0650 || mark==0x064f) {
+                u.vowel=mark==0x064e?'A':mark==0x0650?'e':'o';
+                ++syllables;at=next;
+            } else if(mark==0x0652) {u.sukun=1;at=next;}
+        }
+        units[count++]=u;
+    }
+    if(syllables<2 || !units[0].vowel)return 0;
+    size_t coda=0;
+    for(size_t i=0;i<count;++i) {
+        if(units[i].vowel){coda=0;continue;}
+        if(++coda>2)return 0;
+        if(!units[i].sukun)
+            for(size_t j=i+1;j<count;++j)if(units[j].vowel)return 0;
+    }
+    if(count>SIZE_MAX-4-3*syllables)return -2;
+    size_t needed=4+count+3*syllables;
+    if(needed>capacity)return -2;
+    size_t out=0,nucleus=0;output[out++]='`';output[out++]='[';
+    for(size_t i=0;i<count;++i) {
+        if(units[i].vowel) {
+            output[out++]='.';output[out++]=++nucleus==syllables?'1':'0';
+            output[out++]=units[i].consonant;output[out++]=units[i].vowel;
+        } else output[out++]=units[i].consonant;
+    }
+    output[out++]=']';output[out]=0;
+    return 1;
+}
+
 /* This transform is enabled only by the generated per-stem admission bits.
  * It mirrors direct_fa_suffix_rules.candidate, preserving every native phone
  * and length marker while assigning the reference's syllable stresses. */
@@ -605,6 +654,12 @@ static unsigned stress_class(const char *word,size_t bytes)
         ? fa_stress_classes[index].flags : 0;
 }
 
+unsigned reloq_fa_direct_word_classes(const char *word,size_t bytes)
+{
+    if(!word || !bytes || memchr(word,0,bytes))return 0;
+    return stress_class(word,bytes);
+}
+
 static int stress_adjective_final_y(const char *word,size_t bytes)
 {
     size_t index=stress_class_index(word,bytes);
@@ -649,6 +704,18 @@ static void stress_unaccent(char *tag)
         if(tag[i]=='.' && tag[i+1]>='0' && tag[i+1]<='2')tag[i+1]='0';
 }
 
+/* In connected speech a written final heh representing /e/ is short.
+ * A citation form can retain the provider's longer final vowel. */
+static int shorten_written_final_e(const char *word,size_t bytes,char *tag)
+{
+    static const char heh[]="ه";
+    size_t n=strlen(tag);
+    if(bytes<sizeof heh-1 || memcmp(word+bytes-(sizeof heh-1),heh,sizeof heh-1) ||
+       n<5 || memcmp(tag+n-5,"'e:']",5))return 0;
+    tag[n-5]='e';tag[n-4]=']';tag[n-3]=0;
+    return 1;
+}
+
 static int stress_word_is(const char *word,size_t bytes,const char *value)
 { return strlen(value)==bytes && !memcmp(word,value,bytes); }
 
@@ -683,7 +750,10 @@ static void apply_function_word_context(const char *word,size_t bytes,int follow
     /* Proclitics lean on a following word. When quoted or read alone, keep
      * the ordinary citation accent; punctuation is a phrase boundary. */
     if(reloq_fa_direct_is_proclitic(word,bytes)) {
-        if(follows_word)stress_unaccent(tag);
+        if(follows_word) {
+            stress_unaccent(tag);
+            (void)shorten_written_final_e(word,bytes,tag);
+        }
         else {
             size_t syllables=stress_syllables(tag);
             if(syllables)stress_primary(tag,syllables-1);
@@ -776,6 +846,19 @@ static void apply_persian_stress(const char *word,size_t bytes,char *tag,int dir
         }
     unsigned kind=stress_class(word,bytes);
 
+    /* The written plural -یان is accented when its independently known
+     * base already ends in ی and the generated last syllable is /jan/.
+     * Keep verbal homographs and unrelated spellings on their old path. */
+    size_t plural_stem=0,y_stem=0;
+    if(!(kind&2u) && ends_with(word,bytes,"ان",&plural_stem) &&
+       ends_with(word,plural_stem,"ی",&y_stem) &&
+       (stress_class(word,plural_stem)&1u)) {
+        size_t n=strlen(tag);
+        if(n>=5 && !memcmp(tag+n-4,"jan]",4)) {
+            stress_primary(tag,syllables-1);return;
+        }
+    }
+
     if(direct && !(kind&2u)) {
         size_t target=nominal_compound_primary(word,bytes,tag,syllables);
         if(target!=SIZE_MAX){stress_primary(tag,target);return;}
@@ -837,13 +920,15 @@ static void apply_persian_stress(const char *word,size_t bytes,char *tag,int dir
      * silently treated as nouns. */
     if(kind==1u) {
         /* The spelling -ی can be an unstressed indefinite clitic or a
-         * stressed derivational suffix (کتابی is a standard example).
-         * Do not override a reference form admitted as the former. */
+         * stressed derivational suffix. If the full spelling is already an
+         * independent lexical entry, prefer its citation accent; otherwise
+         * preserve a recognized base + indefinite form such as کتابی. */
         if(ends_with(word,bytes,"ی",&stem) && stress_class(word,stem)==1u) {
             size_t index=direct_index(word,stem);
             if(index<reloq_fa_direct_word_count() && index/8<sizeof fa_direct_suffix_bases[5] &&
                (fa_direct_suffix_bases[5][index/8] & (1u<<(index%8))) &&
-               !stress_adjective_final_y(word,bytes))return;
+               !stress_adjective_final_y(word,bytes) &&
+               direct_index(word,bytes)>=reloq_fa_direct_word_count())return;
         }
         stress_primary(tag,syllables-1);return;
     }
@@ -898,10 +983,245 @@ int reloq_fa_direct_stress(const char *word,size_t bytes,char *tag,size_t capaci
     return 0;
 }
 
-int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
-                                 char *output,size_t capacity)
+/* A nominal word followed by an otherwise unclassified noun-derived -i
+ * form is evidence for an adjective rather than an indefinite noun. Keep
+ * numerals, verbal homographs and explicit function words out of this
+ * heuristic. Unresolved isolated forms keep their existing pronunciation. */
+void reloq_fa_direct_stress_after_word(const char *previous,size_t previous_bytes,
+                                       const char *word,size_t bytes,char *tag)
+{
+    static const char *const numerals[]={"یک","دو","سه","چهار","پنج","شش","هفت",
+                                         "هشت","نه","ده","صد","هزار"};
+    if(!previous || !previous_bytes || !word || !bytes || !tag)return;
+    static const char kasra[]="ِ";
+    if(previous_bytes>sizeof kasra-1 &&
+       !memcmp(previous+previous_bytes-(sizeof kasra-1),kasra,sizeof kasra-1))
+        previous_bytes-=sizeof kasra-1;
+    for(size_t i=0;i<sizeof numerals/sizeof numerals[0];++i)
+        if(stress_word_is(previous,previous_bytes,numerals[i]))return;
+    if(stress_class(previous,previous_bytes)!=1u || stress_class(word,bytes))return;
+    size_t stem=0,n=strlen(tag),syllables=stress_syllables(tag);
+    if(!ends_with(word,bytes,"ی",&stem) || stress_class(word,stem)!=1u ||
+       !syllables || n<3 || tag[n-1]!=']' || tag[n-2]!='i')return;
+    stress_primary(tag,syllables-1);
+}
+
+static int direct_context_depth(const char *,size_t,int,char *,size_t,unsigned);
+
+/* Return the only written half-space, if present. Multiple boundaries are
+ * handled recursively by the suffix rules, not guessed as a binary word. */
+static size_t single_joiner(const char *word,size_t bytes)
+{
+    static const char join[]="\xe2\x80\x8c";
+    size_t found=SIZE_MAX;
+    for(size_t i=0;i+sizeof join-1<=bytes;++i) {
+        if(memcmp(word+i,join,sizeof join-1))continue;
+        if(found!=SIZE_MAX)return SIZE_MAX;
+        found=i;i+=sizeof join-2;
+    }
+    return found;
+}
+
+static int single_phone_tag(const char *tag)
+{
+    return stress_syllables(tag)>0;
+}
+
+static int append_phone_tags(const char *left,const char *right,char *output,size_t capacity)
+{
+    size_t a=strlen(left),b=strlen(right);
+    if(!single_phone_tag(left) || !single_phone_tag(right))return 0;
+    if(a>SIZE_MAX-b || a+b-2>capacity)return -2;
+    memcpy(output,left,a-1);
+    memcpy(output+a-1,right+2,b-1);
+    return 1;
+}
+
+static int same_phones(const char *a,const char *b)
+{
+    size_t n=strlen(a);
+    if(n!=strlen(b))return 0;
+    for(size_t i=0;i<n;++i) {
+        if(i && a[i-1]=='.' && b[i-1]=='.' &&
+           a[i]>='0' && a[i]<='2' && b[i]>='0' && b[i]<='2')continue;
+        if(a[i]!=b[i])return 0;
+    }
+    return 1;
+}
+
+/* A written enclitic هم retains the host's accent. In unspaced forms the
+ * host must itself have a native pronunciation; otherwise do not guess. */
+static int joined_ham_word(const char *word,size_t bytes,char *output,size_t capacity,unsigned depth)
+{
+    static const char ham[]="هم", join[]="\xe2\x80\x8c";
+    size_t stem=0;
+    if(!ends_with(word,bytes,ham,&stem))return 0;
+    if(stem>=sizeof join-1 && !memcmp(word+stem-(sizeof join-1),join,sizeof join-1))
+        stem-=sizeof join-1;
+    if(!stem)return 0;
+    /* A finite verb or a separately recorded full lexeme may merely end in
+     * these letters (e.g. an inflection), not contain the particle. */
+    if((stress_class(word,bytes)&2u) ||
+       direct_index(word,bytes)<reloq_fa_direct_word_count() ||
+       !stress_class(word,stem))return 0;
+    /* If an existing full pronunciation already has the /h/, retain its
+     * established vowels and consonants rather than rebuilding the host. */
+    char original[2048];
+    if(direct_context_word_exact(word,bytes,0,original,sizeof original)==1) {
+        const char *last=strrchr(original,'.');
+        if(last && last[1]>='0' && last[1]<='2' && last[2]=='h')return 0;
+    }
+    char left[2048],right[2048];
+    int a=direct_context_depth(word,stem,0,left,sizeof left,depth+1);
+    int b=direct_context_depth(ham,sizeof ham-1,0,right,sizeof right,depth+1);
+    if(a<0 || b<0)return a<0?a:b;
+    if(a!=1 || b!=1 || !single_phone_tag(left) || !single_phone_tag(right))return 0;
+    if(reloq_fa_direct_is_proclitic(word,stem)) {
+        stress_unaccent(left);
+        stress_primary(right,0);
+    } else stress_unaccent(right);
+    return append_phone_tags(left,right,output,capacity);
+}
+
+static int has_weak_nominal_ending(const char *word,size_t bytes,unsigned depth)
+{
+    static const char *const endings[]={"شان", "تان", "مان", "شون", "تون", "مون",
+                                        "م", "ت", "ش", "ی"};
+    for(size_t i=0;i<sizeof endings/sizeof endings[0];++i) {
+        size_t stem=0;
+        if(!ends_with(word,bytes,endings[i],&stem) || !(stress_class(word,stem)&1u))continue;
+        char base[2048];
+        if(direct_context_depth(word,stem,0,base,sizeof base,depth+1)==1 &&
+           single_phone_tag(base))return 1;
+    }
+    return 0;
+}
+
+/* Recognize already pronounced written combinations of an unaccented
+ * preposition or هم plus a content word. A separate concessive چه can also
+ * follow a function word. Require exactly the same native phones so this
+ * only moves stress, never rewrites a lexical pronunciation by assumption. */
+static void stress_fused_function_compound(const char *word,size_t bytes,char *tag,unsigned depth)
+{
+    unsigned kind=stress_class(word,bytes);
+    if((kind&2u) || kind==1u || single_joiner(word,bytes)!=SIZE_MAX)return;
+    if(has_weak_nominal_ending(word,bytes,depth))return;
+    size_t syllables=stress_syllables(tag);
+    if(syllables<2)return;
+    for(size_t split=2;split<bytes;++split) {
+        if(((unsigned char)word[split]&0xc0)==0x80)continue;
+        int ham=stress_word_is(word,split,"هم");
+        int prefix=reloq_fa_direct_is_proclitic(word,split) || ham;
+        if(prefix && !ham && !(kind&4u) && !stress_word_is(word,split,"در"))continue;
+        int concessive=stress_word_is(word+split,bytes-split,"چه") &&
+                       stress_class(word,split)==5u;
+        if(!prefix && !concessive)continue;
+        unsigned right_kind=stress_class(word+split,bytes-split);
+        if(prefix && (!(right_kind&1u) || (right_kind&2u)))continue;
+        char left[2048],right[2048],merged[4096];
+        if(direct_context_depth(word,split,0,left,sizeof left,depth+1)!=1 ||
+           direct_context_depth(word+split,bytes-split,0,right,sizeof right,depth+1)!=1)continue;
+        /* A one-syllable remainder is frequently the end of an unrelated
+         * word, e.g. a possessive after بابا, not a separate content word. */
+        if(prefix && stress_syllables(right)<2)continue;
+        if(concessive)(void)shorten_written_final_e(word+split,bytes-split,right);
+        if(append_phone_tags(left,right,merged,sizeof merged)!=1 || !same_phones(tag,merged))continue;
+        size_t target=0,right_at=0;
+        if(prefix && !ham) {
+            target=stress_syllables(left);
+            for(size_t i=2;right[i] && right[i]!=']';++i)
+                if(right[i]=='.' && right[i+1]>='0' && right[i+1]<='2') {
+                    if(right[i+1]=='1')target=stress_syllables(left)+right_at;
+                    ++right_at;
+                }
+        } else target=syllables-1;
+        stress_primary(tag,target);return;
+    }
+}
+
+/* Productive half-space suffixes are constructed from any pronounceable
+ * stem instead of a bitmap of individually admitted stems. The suffix owns
+ * the lexical accent; its trailing ezafe /je/ or indefinite /i/ is weak. */
+static int joined_suffix_word(const char *word,size_t bytes,int follows_word,
+                              char *output,size_t capacity,unsigned depth)
+{
+    static const struct {const char *written,*spoken;} endings[]={
+        {"‌هایی", "`[.1ha.0'i:']"}, {"‌های", "`[.1ha.0je]"},
+        {"‌ها", "`[.1ha]"}, {"‌ترین", "`[.0tA.1rin]"}, {"‌تر", "`[.1tAr]"}
+    };
+    (void)follows_word;
+    for(size_t i=0;i<sizeof endings/sizeof endings[0];++i) {
+        size_t stem=0;
+        if(!ends_with(word,bytes,endings[i].written,&stem))continue;
+        unsigned kind=stress_class(word,stem);
+        if(kind==2u)return 0;
+        char left[2048];
+        int result=direct_context_depth(word,stem,0,left,sizeof left,depth+1);
+        if(result!=1)return result<0?result:0;
+        if(!single_phone_tag(left))return 0;
+        (void)shorten_written_final_e(word,stem,left);
+        stress_unaccent(left);
+        return append_phone_tags(left,endings[i].spoken,output,capacity);
+    }
+    return 0;
+}
+
+/* For a fully known joined form, retain its existing phones and stress. If
+ * both halves reproduce it exactly, the boundary also identifies a short
+ * stem-final /e/ that must not be lengthened before the next component. */
+static void shorten_verified_compound(const char *word,size_t bytes,char *tag,unsigned depth)
+{
+    size_t split=single_joiner(word,bytes);
+    if(split==SIZE_MAX || !split || split+3>=bytes)return;
+    if(stress_word_is(word,split,"به"))return;
+    char left[2048],right[2048],combined[4096];
+    if(direct_context_depth(word,split,0,left,sizeof left,depth+1)!=1 ||
+       direct_context_depth(word+split+3,bytes-split-3,0,right,sizeof right,depth+1)!=1 ||
+       append_phone_tags(left,right,combined,sizeof combined)!=1)return;
+    size_t n=strlen(left),total=strlen(tag);
+    if(n<5 || total!=strlen(combined) ||
+       memcmp(left+n-5,"'e:']",5) ||
+       bytes<split || split<2 || memcmp(word+split-2,"ه",2))return;
+    for(size_t i=0;i<total;++i) {
+        if(i && tag[i-1]=='.' && combined[i-1]=='.' &&
+           tag[i]>='0' && tag[i]<='2' && combined[i]>='0' && combined[i]<='2')continue;
+        if(tag[i]!=combined[i])return;
+    }
+    char *vowel=tag+n-5;
+    if(memcmp(vowel,"'e:'",4))return;
+    memmove(vowel+1,vowel+4,strlen(vowel+4)+1);*vowel='e';
+}
+
+/* Compose otherwise unknown ZWNJ compounds from separately pronounced
+ * components. Productive verbal prefixes keep their own accent; ordinary
+ * compounds put the lexical accent on the final component. */
+static int joined_compound_word(const char *word,size_t bytes,char *output,size_t capacity,unsigned depth)
+{
+    size_t split=single_joiner(word,bytes);
+    if(split==SIZE_MAX || !split || split+3>=bytes)return 0;
+    if(stress_word_is(word,split,"به"))return 0;
+    const char *tail=word+split+3;size_t tail_bytes=bytes-split-3;
+    int verb_prefix=stress_word_is(word,split,"می") || stress_word_is(word,split,"نمی");
+    if(verb_prefix && !(stress_class(tail,tail_bytes)&2u))return 0;
+    char left[2048],right[2048];
+    int a=direct_context_depth(word,split,0,left,sizeof left,depth+1);
+    int b=direct_context_depth(tail,tail_bytes,0,right,sizeof right,depth+1);
+    if(a<0 || b<0)return a<0?a:b;
+    if(a!=1 || b!=1 || !single_phone_tag(left) || !single_phone_tag(right))return 0;
+    (void)shorten_written_final_e(word,split,left);
+    int result=append_phone_tags(left,right,output,capacity);
+    if(result!=1)return result;
+    size_t count=stress_syllables(output);
+    if(count)stress_primary(output,verb_prefix?0:count-1);
+    return 1;
+}
+
+static int direct_context_depth(const char *word,size_t bytes,int follows_word,
+                                char *output,size_t capacity,unsigned depth)
 {
     if(output && capacity)output[0]=0;
+    if(!word || !bytes || bytes==SIZE_MAX || !output || !capacity || memchr(word,0,bytes))return -1;
+    if(depth>8)return 0;
     char bare[5];
     int result=explicit_vowelled_cvc(word,bytes,output,capacity,bare);
     if(result==1) {
@@ -909,12 +1229,22 @@ int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
         return 1;
     }
     if(result<0)return result;
+    result=explicit_vowelled_word(word,bytes,output,capacity);
+    if(result)return result;
+    result=joined_ham_word(word,bytes,output,capacity,depth);
+    if(result)return result;
+    result=joined_suffix_word(word,bytes,follows_word,output,capacity,depth);
+    if(result)return result;
     result=direct_context_word_exact(word,bytes,follows_word,output,capacity);
     if(result==1) {
         apply_persian_stress(word,bytes,output,1);
         apply_function_word_context(word,bytes,follows_word,output);
+        stress_fused_function_compound(word,bytes,output,depth);
+        shorten_verified_compound(word,bytes,output,depth);
     }
-    if(result || !word || bytes==SIZE_MAX)return result;
+    if(result)return result;
+    result=joined_compound_word(word,bytes,output,capacity,depth);
+    if(result)return result;
 
     /* NFC/NFKC places Arabic vowel marks before shadda, while the eSpeak
        dictionary and input commonly place shadda first. They are canonically
@@ -946,4 +1276,10 @@ int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
     }
     free(variant);
     return result;
+}
+
+int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
+                                 char *output,size_t capacity)
+{
+    return direct_context_depth(word,bytes,follows_word,output,capacity,0);
 }

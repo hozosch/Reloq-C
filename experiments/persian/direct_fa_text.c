@@ -41,28 +41,40 @@ static int word_character(uint32_t c)
     return (c>=0x600 && c<=0x6ff && c!=0x60c && c!=0x61b && c!=0x61f) || c==0x200c;
 }
 
-/* These attested prepositional expressions permit a half-space without
- * becoming lexical compounds. In particular, do not split به‌روز or the
- * compound به‌روزرسانی: their first element is not this construction. */
+/* A half-space after the preposition may join any independently pronounceable
+ * following word. Preserve independently classified fused lexemes, including
+ * derived compounds whose first fused element is followed by a verb stem.
+ * The class lookup is evidence about morphology, not an allowlist of phrases. */
 static int joined_be_preposition(const char *word,size_t bytes)
 {
     static const char prefix[]="به\xe2\x80\x8c";
-    static const char *const names[]={"طور","سوی","طرف","خاطر","گفته","دیدن","دلیل"};
-    const size_t prefix_bytes=sizeof prefix-1;
+    static const char be[]="به";
+    const size_t prefix_bytes=sizeof prefix-1,be_bytes=sizeof be-1;
     if(bytes<=prefix_bytes || memcmp(word,prefix,prefix_bytes))return 0;
-    word+=prefix_bytes;bytes-=prefix_bytes;
-    for(size_t i=0;i<sizeof names/sizeof names[0];++i) {
-        size_t n=strlen(names[i]);
-        if(bytes<n || memcmp(word,names[i],n))continue;
-        size_t at=n;int valid=1;
-        while(at<bytes) {
-            uint32_t cp;
-            if(reloq_utf8_next((const unsigned char *)word,bytes,&at,&cp)!=1 ||
-               !((cp>=0x064b && cp<=0x065f) || cp==0x0670)){valid=0;break;}
-        }
-        if(valid && at==bytes)return 1;
+    const char *tail=word+prefix_bytes;
+    size_t tail_bytes=bytes-prefix_bytes;
+    if(tail_bytes>1024-be_bytes)return 0;
+    char reading[2048],fused[1025];
+    if(reloq_fa_direct_context_word(tail,tail_bytes,0,reading,sizeof reading)!=1)return 0;
+    memcpy(fused,be,be_bytes);memcpy(fused+be_bytes,tail,tail_bytes);
+    size_t main_end=0;
+    while(main_end<tail_bytes) {
+        size_t next=main_end;uint32_t cp;
+        if(reloq_utf8_next((const unsigned char *)tail,tail_bytes,&next,&cp)!=1)return 0;
+        if(cp==0x200c)break;
+        main_end=next;
     }
-    return 0;
+    if(reloq_fa_direct_word_classes(fused,be_bytes+main_end)&1u)return 0;
+    /* A fused lexical prefix followed by a separately classified verb can
+     * be the base of a derived word such as به‌روزرسانی. */
+    for(size_t at=0;at<main_end;) {
+        uint32_t cp;
+        if(reloq_utf8_next((const unsigned char *)tail,main_end,&at,&cp)!=1)return 0;
+        if(at==main_end)break;
+        if((reloq_fa_direct_word_classes(fused,be_bytes+at)&1u) &&
+           (reloq_fa_direct_word_classes(tail+at,main_end-at)&2u))return 0;
+    }
+    return 1;
 }
 
 /* Phrase-final function words receive the reference's final stress.  Keep
@@ -202,7 +214,7 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
     struct output_buffer b={0};
     if(append(&b,"",0)){free(map);return -2;}
     int status=0,preceding_word=0;
-    size_t at=0,prefixed_verb=SIZE_MAX;
+    size_t at=0,prefixed_verb=SIZE_MAX,previous_start=SIZE_MAX,previous_end=0;
     while(at<length) {
         size_t start=at,next=at;
         uint32_t cp;
@@ -228,6 +240,7 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             for(size_t i=start;i<end;++i)map[i]=tag_start;
             map[end]=b.used;at=end;
             preceding_word=1;
+            previous_start=SIZE_MAX;
         } else if(cp==0x066b || cp==0x066c) {
             status=2;break;
         } else if(word_character(cp)) {
@@ -248,6 +261,9 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             int follows=joined_be || follows_word_in_phrase(text,length,end);
             int found=reloq_fa_direct_context_word(text+start,end-start,follows,tag,sizeof tag);
             if(found!=1){status=found==0?1:-1;break;}
+            if(preceding_word && previous_start!=SIZE_MAX && previous_end<start)
+                reloq_fa_direct_stress_after_word(text+previous_start,previous_end-previous_start,
+                                                  text+start,end-start,tag);
             int weak_component=0;
             /* The object marker and ordinary copula are enclitic even at
              * the end of a phrase. Their isolated citation forms remain
@@ -292,6 +308,7 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             for(size_t i=start;i<end;++i)map[i]=tag_start;
             map[end]=b.used;at=end;
             preceding_word=1;
+            previous_start=start;previous_end=end;
             if(joined_be) {
                 size_t point=b.used;
                 if(append(&b," ",1)){status=-2;break;}
@@ -315,7 +332,7 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             if(append(&b,&punctuation,1)){status=-2;break;}
             for(size_t i=start;i<next;++i)map[i]=point;
             map[next]=b.used;at=next;
-            if(cp!=' ' && cp!='\t')preceding_word=0;
+            if(cp!=' ' && cp!='\t'){preceding_word=0;previous_start=SIZE_MAX;}
         }
     }
     if(status) {
