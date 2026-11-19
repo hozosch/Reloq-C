@@ -3,8 +3,44 @@ from __future__ import annotations
 import argparse
 import ctypes
 from pathlib import Path
-from direct_fa_sequence import EciIndex, EciPitch, project
+from direct_fa_sequence import EciIndex, project
 from hybrid_fa_frontend import DirectFirstPersian
+
+
+def runtime_tests(library):
+    from nvda_driver_probe import make_language_engine, PERSIAN_PROBE, PINGLISH_PROBE
+
+    original, fallback = DirectFirstPersian.project_direct, DirectFirstPersian._fallback
+    calls = []
+    def checked(frontend, text, events, *, pinglish=False):
+        result = original(frontend, text, events, pinglish=pinglish)
+        calls.append((pinglish, result is not None))
+        return result
+    def no_fallback(_frontend):
+        raise AssertionError('Covered Persian input unexpectedly fell back to eSpeak')
+    DirectFirstPersian.project_direct, DirectFirstPersian._fallback = checked, no_fallback
+    engines = []
+    try:
+        for mode in (PERSIAN_PROBE, PINGLISH_PROBE):
+            engines.append(make_language_engine(library, library, None, Path('/unavailable'),
+                                                 Path('/unavailable'), language=mode.id))
+        script = ('سلام دنیا؟', 'کتاب و خانه.', 'او آمد.')
+        for text in script:
+            output = []
+            for mode, engine in enumerate(engines):
+                calls.clear(); pcm = bytearray(); marks = []
+                assert engine.speak((EciIndex(1), text, EciIndex(2)), pcm.extend, marks.append)
+                assert pcm and marks == [1, 2] and (bool(mode), True) in calls, (text, calls)
+                output.append(bytes(pcm))
+            assert output[0] == output[1], text
+        for text in ('salam va donya', 'سلام khane را', 'salam دنیا؟'):
+            calls.clear(); pcm = bytearray(); marks = []
+            assert engines[1].speak((EciIndex(1), text, EciIndex(2)), pcm.extend, marks.append)
+            assert pcm and marks == [1, 2] and (True, True) in calls, (text, calls)
+    finally:
+        for engine in engines:
+            engine.close()
+        DirectFirstPersian.project_direct, DirectFirstPersian._fallback = original, fallback
 
 
 def main():
@@ -45,6 +81,8 @@ def main():
         status=f._project_text(raw,len(raw),2,None,None,0,ctypes.byref(out),None,ctypes.byref(error))
         assert status==-1 and not out.value and error.value==0
     finally:f.close()
+    if shim is None:
+        runtime_tests(args.library)
     print(f'Passed {count} Persian/Pinglish shared-frontend position comparisons and mode isolation.')
 
 if __name__=='__main__':main()
