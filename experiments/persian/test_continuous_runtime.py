@@ -54,7 +54,10 @@ def main():
     assert len(ordinary.calls) == 1
     contextual = ProxyProbe(alter_context=True)
     assert persian_proxy_for_english(proxy_source, contextual) == proxy_source
-    assert len(contextual.calls) == 3
+    # Recheck the changed second word, but reuse the exact first word from
+    # the batch. This preserves the contextual safeguard without repeating
+    # every native probe in a long sentence.
+    assert contextual.calls == [proxy_source, '`[.1do]']
     unmarked = '`[.0sA.0lam] `[.0do.0nja]'
     uniform_pilot = persian_proxy_for_english(unmarked, ProxyProbe())
     assert uniform_pilot == '`[.1sA.0lam] `[.1do.0nya]'
