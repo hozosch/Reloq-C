@@ -23,6 +23,13 @@ von Betonung, Position und Klangplanung ab. Ein explizites Längenzeichen wie
 `'a:'` ist eine zusätzliche Angabe und darf nicht bei jedem Vorkommen des
 Iran-A automatisch gesetzt werden.
 
+Der unveränderte finnische Lautschriftpfad enthält darüber hinaus beispielsweise
+`O` für Ö und `y` für Ü; `I`, `U` und `Y` treten als Bestandteile finnischer
+Doppellaute auf, etwa in `kaikki`, `sauna` und `pöytä`. Diese zusätzlichen
+finnischen Zeichen gehören nicht zur gegenwärtigen persischen Grundbelegung.
+Ohne aktivierten persischen Akustikbereich steht `G` weiterhin für finnisches
+Ng statt für den persischen Ach-Laut.
+
 ## Konsonanten
 
 | Zeichen | Gegenwärtiger persischer Laut | Hinweis |
